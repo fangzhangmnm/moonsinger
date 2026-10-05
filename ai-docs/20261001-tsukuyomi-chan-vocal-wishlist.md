@@ -2,6 +2,7 @@
 
 > created 20261001 · by Claude Fable 5.1 · as-of 2026-10-01（WebRings 仍是空壳孵化仓，无代码）
 > 出处：user 2026-10-01（PWAProjects 的朗读评估 session）「查了一下google，つくよみちゃん原来是为歌姬啊。那么你懂该干嘛了——给webrings丢一个wishlist/note」。
+> **2026-10-05 已升格**：user 改名 MoonSinger、定月读为第一公民，见 `20261005-moonsinger-upheaval.md`（edited by Claude Opus 5.5）。下面「想法」一节仍是 10-01 的 AI 草想。
 > **这是一条 wishlist，不是计划。** 下面「想法」一节是 AI 写的，没经 user 拍板；user 没兴趣就无视。
 
 ## 是谁
