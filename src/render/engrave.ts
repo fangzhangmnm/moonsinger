@@ -8,7 +8,7 @@
 // 写（光标）：光标 = 一条零宽的竖线，不占排版宽度、不画预览、不打断符杠——挪光标、写 / 改切换时谱面一动不动
 //   （user「插入不要在谱上显示音符预览，也不要让谱的排版抖动」；下一个音的时值 / 升降在 pad 工具条和状态行）；
 //   点谱面写音 2026-10-07 拿掉（user「先去掉触碰加音符的功能，以后用专门的toolstate做」）。改（选中）：选中的一段高亮。
-// 放不下就像文字一样折行，优先在小节线处折。右端对齐只给「不是最后一行、而且已经排到六成以上」的行（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）：
+// 放不下就像文字一样折行，优先在小节线处折；只超出一点的小节压进这一行（整行压紧 ≤ 15%）。右端对齐只给「不是最后一行、而且已经排到六成以上」的行（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）：
 //   正在写的最后一行不对齐 = 打字时前面的音不晃；一行写满折到下一行时，上一行会拉开一次。
 
 import { type Song, type NoteTok, type Token, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord } from "../score/song.ts";
@@ -55,6 +55,7 @@ export interface Layout {
 }
 
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
+const SQUEEZE = 0.15;   // 一行最多压紧多少（音符总宽的比例）
 const MARGIN = 1.2, STAFF_ABOVE = 6, SYS_H = 17, LYRIC_BELOW = 5.2, BAR_W = 1.6, TITLE_H = 4.6;   // TITLE_H = 纸面最上面歌名那一条
 const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;     // F5 / B4 / E4 的五线谱位置
 const SHARP_POS = [38, 35, 39, 36, 33, 37, 34], FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
@@ -191,21 +192,30 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const sysStarts: number[] = [x], sysKeys: number[] = [curKey];
   const newline = () => { system++; x = headerW(false, curKey); sysStarts.push(x); sysKeys.push(curKey); };
   let seg: Unit[] = [];
-  const place = (u: Unit) => { u.x = x; u.system = system; x += u.w; if (u.kind === "key") curKey = u.fifths; };
+  const placed = new Set<Unit>();
+  const place = (u: Unit) => { u.x = x; u.system = system; x += u.w; placed.add(u); if (u.kind === "key") curKey = u.fifths; };
+  // 挤一挤（user「「稍微超出一点的小节」压进当前行 这个就是我想要的」）：下一个小节只超出这一行音符总宽的 SQUEEZE 以内 = 留在这一行、整行压紧一点（下面右端对齐那一步压）。
+  //   还没写完的小节按「已经画上小节线」算超没超——写完那一下不会突然掉到下一行。
+  const chunkW = (us: Unit[]) => us.reduce((a, u) => a + (u.kind === "chunk" ? u.w : 0), 0);
   const flush = () => {
-    const segW = seg.reduce((s, u) => s + u.w, 0);
-    if (x + segW > right && x > sysStarts[system] + 0.01) newline();
+    const segW = seg.reduce((s, u) => s + u.w, 0), closed = seg.length > 0 && seg[seg.length - 1].kind === "bar";
+    const over = x + segW + (closed ? 0 : BAR_W) - right;
+    if (over > 0 && x > sysStarts[system] + 0.01) {
+      const lineChunks = chunkW(units.filter((u) => u.system === system && u.x >= sysStarts[system] && placed.has(u))) + chunkW(seg);
+      if (over <= lineChunks * SQUEEZE) { for (const u of seg) place(u); seg = []; return; }
+      newline();
+    }
     for (const u of seg) { if (x + u.w > right && x > sysStarts[system] + 0.01) newline(); place(u); }
     seg = [];
   };
   for (const u of units) { seg.push(u); if (u.kind === "bar") flush(); }
   flush();
   const nSys = system + 1;
-  // 右端对齐：多出来的地方按宽度分给这一行的音 / 休止（小节线、记号不拉宽）
-  for (let s = 0; s < nSys - 1; s++) {
+  // 右端对齐：多出来的地方按宽度分给这一行的音 / 休止（小节线、记号不拉宽）；挤进来超出的行（最后一行也算）同样按宽度压回来
+  for (let s = 0; s < nSys; s++) {
     const row = units.filter((u) => u.system === s);
     const end = row.reduce((m, u) => Math.max(m, u.x + u.w), sysStarts[s]), avail = right - sysStarts[s], used = end - sysStarts[s];
-    if (used < avail * 0.6) continue;
+    if (used <= avail + 1e-6 && (s === nSys - 1 || used < avail * 0.6)) continue;
     const grow = row.filter((u) => u.kind === "chunk"), gw = grow.reduce((a, u) => a + u.w, 0);
     if (!gw) continue;
     const k = (avail - used) / gw;

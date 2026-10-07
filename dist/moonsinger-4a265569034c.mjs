@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.15-2026-10-07";
+var APP_VERSION = "v0.2.16-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -1064,6 +1064,7 @@ var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
 // src/render/engrave.ts
 var LYRIC_EM = 1.6;
 var TEMPO_EM = 1.35;
+var SQUEEZE = 0.15;
 var MARGIN = 1.2;
 var STAFF_ABOVE = 6;
 var SYS_H = 17;
@@ -1241,15 +1242,27 @@ function engrave(song, o) {
     sysKeys.push(curKey);
   };
   let seg = [];
+  const placed = /* @__PURE__ */ new Set();
   const place = (u) => {
     u.x = x;
     u.system = system;
     x += u.w;
+    placed.add(u);
     if (u.kind === "key") curKey = u.fifths;
   };
+  const chunkW = (us) => us.reduce((a, u) => a + (u.kind === "chunk" ? u.w : 0), 0);
   const flush = () => {
-    const segW = seg.reduce((s, u) => s + u.w, 0);
-    if (x + segW > right && x > sysStarts[system] + 0.01) newline();
+    const segW = seg.reduce((s, u) => s + u.w, 0), closed = seg.length > 0 && seg[seg.length - 1].kind === "bar";
+    const over = x + segW + (closed ? 0 : BAR_W) - right;
+    if (over > 0 && x > sysStarts[system] + 0.01) {
+      const lineChunks = chunkW(units.filter((u) => u.system === system && u.x >= sysStarts[system] && placed.has(u))) + chunkW(seg);
+      if (over <= lineChunks * SQUEEZE) {
+        for (const u of seg) place(u);
+        seg = [];
+        return;
+      }
+      newline();
+    }
     for (const u of seg) {
       if (x + u.w > right && x > sysStarts[system] + 0.01) newline();
       place(u);
@@ -1262,10 +1275,10 @@ function engrave(song, o) {
   }
   flush();
   const nSys = system + 1;
-  for (let s = 0; s < nSys - 1; s++) {
+  for (let s = 0; s < nSys; s++) {
     const row = units.filter((u) => u.system === s);
     const end = row.reduce((m, u) => Math.max(m, u.x + u.w), sysStarts[s]), avail = right - sysStarts[s], used = end - sysStarts[s];
-    if (used < avail * 0.6) continue;
+    if (used <= avail + 1e-6 && (s === nSys - 1 || used < avail * 0.6)) continue;
     const grow = row.filter((u) => u.kind === "chunk"), gw = grow.reduce((a, u) => a + u.w, 0);
     if (!gw) continue;
     const k = (avail - used) / gw;
@@ -2650,7 +2663,7 @@ var Pad = class {
   buildHead(selKey, rows) {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
-    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b) => b.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       this.knobDown(b, e);
@@ -2682,6 +2695,7 @@ var Pad = class {
       this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) });
     });
     this.on(box, "[data-back]", () => this.back());
+    this.on(box, "[data-hide]", () => this.host.onHide());
     this.on(box, "[data-autobars]", () => {
       this.host.onAutoBars(!this.host.autoBars());
       this.toolsFor = "";
@@ -5289,6 +5303,7 @@ var pad = new Pad(padEl, {
     pad.render();
     renderStatus();
   },
+  onHide: () => showPad(false),
   onInsertMark: (kind) => {
     const at = st.sel ? st.sel.from : st.caret;
     const v = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
@@ -5611,7 +5626,7 @@ function offerFile(file, title, msg, onDone) {
 $("shareBtn").addEventListener("click", () => {
   void exportSong();
 });
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "a26121ba07fd" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "f1e5fe9f3c08" };
 $("humSel").value = st.song.hum;
 $("humSel").addEventListener("change", (e) => {
   update(setHum(st, e.target.value));
@@ -5866,4 +5881,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-9fa81ef110db.mjs.map
+//# sourceMappingURL=moonsinger-4a265569034c.mjs.map

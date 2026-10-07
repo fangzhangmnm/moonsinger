@@ -129,6 +129,7 @@ const pad = new Pad(padEl, {
   onInputScale: (id) => update(setInputScale(st, id)),
   autoBars: () => autoBars,
   onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); renderStatus(); },
+  onHide: () => showPad(false),
   onInsertMark: (kind) => {   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
     const at = st.sel ? st.sel.from : st.caret;
     const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };

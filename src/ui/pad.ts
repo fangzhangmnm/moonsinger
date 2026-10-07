@@ -94,6 +94,7 @@ export interface PadHost {
   onInputScale(id: string): void;
   autoBars(): boolean;                     // 谱面按拍号自动画小节线开着没有
   onAutoBars(on: boolean): void;
+  onHide(): void;                          // 收起键盘（pad）
   onInsertMark(kind: "key" | "time" | "tempo"): void;
   onSoundDown(p: Pitch, id: string): void;   // 试听 / 弹：按下响（复音：每根手指一个声音）
   onSoundUp(id: string): void;
@@ -234,6 +235,7 @@ export class Pad {
         : `<button class="btn knob k-key" data-knob="key" title="1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）"><span class="kl"></span><span class="kh">⇅</span></button>`) +
       `<button class="btn knob k-unit" data-knob="unit" title="长短基线：按住上下滑 / 点开选（含连音）"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-range" data-knob="range" title="音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的"><span class="kl"></span><span class="kh">⇅</span></button>` +
+      `<button class="btn hide-pad" data-hide="1" title="收起键盘（点五线谱再弹出来）">收起</button>` +
       `<button class="btn knob k-more" data-knob="more" title="更多：布局、插记号"><span class="kl">⋯</span></button>`;
     box.querySelectorAll<HTMLElement>("[data-knob]").forEach((b) => b.addEventListener("pointerdown", (e) => { e.preventDefault(); this.knobDown(b, e); }));
     // 候选
@@ -248,6 +250,7 @@ export class Pad {
     this.on(box, "[data-toct]", (b) => this.host.onCommand({ k: "octave", d: Number(b.dataset.toct) }));
     this.on(box, "[data-mod]", (b) => { this.back(); this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) }); });
     this.on(box, "[data-back]", () => this.back());
+    this.on(box, "[data-hide]", () => this.host.onHide());   // 「⋯」左边的收起键盘（user「...左边加一个hide keyboard的方形小按钮」）
     this.on(box, "[data-autobars]", () => { this.host.onAutoBars(!this.host.autoBars()); this.toolsFor = ""; this.render(); });   // 开关：点了不收，钮上亮 / 灭
   }
 

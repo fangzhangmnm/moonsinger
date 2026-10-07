@@ -38,5 +38,13 @@ describe("自动小节线", () => {
     const l = L([2, 1, 1, 1, 1, 1, 1, 1, "|", 1, 1, 1, 1]);
     eq(bars(l), "aama"); eq(l.shortBars, 1);
   });
+  it("挤一挤：只超出一点的小节压进这一行，超出很多才折行", () => {
+    const seq: (number | "|")[] = [1, 1, "|", 1, 1, 1, 1, 1, 1, 1, 1];
+    const at = (width: number) => engrave(song(seq), { width, sp: 10, caret: 3 + seq.length, sel: null, measureLyric: () => 10 });
+    const wide = at(4000), lastBar = Math.max(...wide.prims.filter((x) => x.t === "line" && x.cls?.startsWith("bar")).map((x) => (x as { x1: number }).x1));
+    eq(wide.systems.length, 1);
+    eq(at(lastBar * 0.97).systems.length, 1, "只差 3%：压进这一行");
+    eq(at(lastBar * 0.7).systems.length, 2, "差 30%：折行");
+  });
   it("关掉：只有人插的", () => { eq(bars(L([1, 1, 1, 1, 1, 1, 1, 1], false)), ""); eq(bars(L([1, 1, "|", 1, 1, 1, 1], false)), "m"); });
 });
