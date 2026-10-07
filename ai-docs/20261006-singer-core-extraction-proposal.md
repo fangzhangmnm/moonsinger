@@ -45,3 +45,20 @@
 3. 它今晚在 MoonSinger 不再动任何文件；以后要进，先 SendMessage，且只碰 `Lab/20261005 月读第一首/`。
 4. `.gitignore`、`CLAUDE.md` 归编辑器 session（它不碰；收工加「编辑器 v0」一节不用等它）。
 5. 编辑器 session 动 `Lab/20261005 月读第一首/` 之前发「开刀」，抽完发「完工 + commit」。
+
+## 完工（2026-10-06 23:0x，Claude Opus 5.5）
+
+- **抽法**：不手抄。用脚本从冻结点 `e2dfb26` 的 `sing.mjs` 按行号切出第 1–4 步 + `finish`，只做机械替换：piper / WORLD / 图谱由宿主递进来（`piper.run(ids, pros, opts)` 已绑 session；`loadAtlas(id)`）；`console.log` → `log`；`pn.session(MODEL)` / `loadWorld()` 移到壳里；图谱加载改 `await Promise.all`（顺序不变）；DIAG2 诊断挪回壳（只读 sp，不改结果）。浮点运算顺序一行未动。
+- **结果**：`src/singer/sing-core.mjs`（导出 `DEFAULT_OPT`、`singCore`）；`Lab/20261005 月读第一首/sing.mjs` 447 → 约 180 行的 Node 壳（参数、读写文件、测量、DIAG 原样）。新增 `--noise=0`、`DUMP_F32`、`RECORD_PIPER` / `REPLAY_PIPER`、`OUT_DIR`（验证时别清掉 `out/` 里 user 正在听的 mp3）。README 两处跟着改（参数住址、新开关）；参数名一个没变。
+- **验收 ①（noise 0，整链）**：基线 = `e2dfb26` 原文件拷到 tmp，只改路径指回 Lab + noise 开关 + 存样本。先确认基线自己 noise 0 跑两次逐字节相同（正常噪声两次不同，和你说的一致）。
+
+  | 变体 | 样本数（float32 字节） | 抽前 vs 抽后 |
+  |---|---|---|
+  | うさぎ（图谱 normal + 断气，默认） | 1 420 024 | 逐字节相同 |
+  | 団子（同上，含 ^ v O 断句） | 3 484 344 | 逐字节相同 |
+  | 爱（zh，同上） | 2 888 112 | 逐字节相同 |
+  | うさぎ `--atlas=off`（断气随之关） | 1 420 024 | 逐字节相同 |
+
+- **验收 ②（正常噪声，固定 piper 原料）**：新壳录下 piper 第二遍原料 → 抽前 / 抽后都回放这份 → 四个变体逐字节相同；回放结果也与录原料那次的成品逐字节相同（录放本身无偏差）。
+- **测量报告**：四个变体的终端输出（每音音高 / 起音 / 有声比例 / 响度、图谱与断气统计）抽前抽后去掉耗时与文件路径后逐行相同。
+- 一次运行耗时：うさぎ ≈ 7 s、団子 ≈ 16 s、爱 ≈ 16 s（本机 Node 单线程，含模型加载与三份 mp3 编码）。
