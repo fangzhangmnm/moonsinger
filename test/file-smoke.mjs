@@ -58,16 +58,17 @@ await p.click("#fileBtn");
 const [fc2] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="open"]')]);
 await fc2.setFiles(`${DIR}/twinkle.musicxml`); await p.waitForTimeout(300);
 const notice = await p.textContent(".notice-error .notice-text"); check(notice.includes("叠音") && notice.includes("还没人上场"), "别家谱：报出没读进来的和没人上场");
-check((await p.textContent("#score text.part-name")) === "未选角" && (await title()) === "twinkle" && (await p.textContent("#score text.song-title")) === "Twinkle",
-  "别家谱：歌手牌 = 未选角、顶栏 = 文件名、纸上 = 谱里的歌名");
+const partName = await p.textContent("#score text.part-name");
+check(partName.length > 0 && !!(await p.$("#score text.part-name.empty")) && (await title()) === "twinkle" && (await p.textContent("#score text.song-title")) === "Twinkle",
+  "别家谱：谱前 = 它的声部名（淡色 = 没人上场）、顶栏 = 文件名、纸上 = 谱里的歌名", partName);
 await p.click(".notice-error .dismiss"); await p.click("#playBtn"); await p.waitForTimeout(300);
 check((await p.textContent(".notice-error .notice-text")).includes("还没有人上场") && !(await p.evaluate(() => window.__moonsinger.singer.playing || window.__moonsinger.sampler.songPlaying)), "别家谱：点播放 = 不出声、报错（不自动替补）");
 // 歌手牌：点了选月读 → 不再是未选角
 await p.click(".notice-error .dismiss");
 const pn = await p.$eval("#score text.part-name", (t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await p.mouse.click(pn.x, pn.y); await p.waitForSelector(".offer .part-card");
-await p.click('.offer [data-v="who:yomi"]'); await p.click('.offer [data-v="close"]');
-check((await p.textContent("#score text.part-name")) === "月读", "点歌手牌选月读：谱前面变成「月读」");
+await p.click('.offer [data-v="q:full"]'); await p.click('.offer [data-v="role:voice.soprano"]'); await p.click('.offer [data-v="close"]');
+check(!(await p.$("#score text.part-name.empty")) && (await p.textContent("#score text.part-name")) === "Soprano", "点角色名：谁来演选月读、角色选 Soprano → 谱前写「Soprano」、不再淡色");
 // 改过没存关页面 → 挽留框
 await p.click("#score", { position: { x: 700, y: 400 } }); await p.keyboard.press("Digit3");
 let dialog = "";

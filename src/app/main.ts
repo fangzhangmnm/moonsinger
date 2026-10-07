@@ -22,7 +22,8 @@ import { createPackStore } from "@internal/model-packs";
 import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
-import { saveMxl, openBytes, emptyExtras, type Extras, type Quality } from "../format/project.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, withRoleName, activeCandidateName, type Extras, type Quality } from "../format/project.ts";
+import { ROLE_GROUPS, DEFAULT_ROLE } from "../score/roles.ts";
 import { type PaperKind, PAPER_KINDS, PAPER_NOTE, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
 import * as docFile from "./doc-file.ts";
 import { defaultStem, fileSafe } from "./names.ts";
@@ -31,7 +32,7 @@ let st: EditorState = initState();
 /** 这首歌的家（无地逃生口）：文件名主干（新建 = 默认名；打开 = 那个文件的名字）、打开的那个文件（桌面 Chromium）、
  *  文件里这一版不改动的部分、上次存 / 打开时的样子（判断改过没存）。歌名在谱里（st.song.title，可不填），和文件名分开。 */
 const doc = { stem: defaultStem(), named: false, handle: null as docFile.FileHandle | null, extras: emptyExtras() as Extras,
-  saved: { song: st.song as Song, quality: "full" as Quality } };
+  saved: { song: st.song as Song, quality: "full" as Quality, role: DEFAULT_ROLE.name } };
 /** 显示 / 存档用的名字：填了歌名用歌名，没填用文件名主干。 */
 /** 文件名（user「用歌名可以，然后也要yyyymmdd规则。之后各管各的同意」）：没存过 = 年月日-歌名（没歌名 = 年月日-四位随机 = doc.stem）；
  *  存过 / 打开的 / 改过名的 = 定下来（named），和纸上的歌名各管各的；改文件名在文件菜单。 */
@@ -94,7 +95,7 @@ const view = new ScoreView(scoreEl, {
   release: () => { clearTimeout(upTimer); sound.up("score"); },
   focus: (where) => showPad(where === "staff"),   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
-  part: () => ({ name: quality() === "none" ? "未选角" : "月读", empty: quality() === "none" }),
+  part: () => ({ name: roleName(doc.extras), empty: quality() === "none" }),   // 谱前写角色名（乐器的名字不上谱）
   onPart: () => openPartSheet(),
   onPaper: () => openPaperSheet(),
   reflow: () => reflow,
@@ -278,7 +279,7 @@ async function togglePlay(): Promise<void> {
     playIcon(true);
   } catch (e) {
     // 完整引擎带不起来（内存不够 / 加载失败）→ 不出声、报错，人手动换（user「不是显示自动上，而是就是不出声，报错，人类手动换」）
-    showError(`完整版月读唱不出来：${(e as Error).message}。没有出声。要先用元音版，点谱前面的「月读」把音质换成「轻量」再播。`);
+    showError(`完整版月读唱不出来：${(e as Error).message}。没有出声。要先用元音版，点谱前面的「${roleName(doc.extras)}」把「谁来演」换成「月读（轻量）」再播。`);
     progress("");
   } finally { singing = false; $("playBtn").classList.remove("is-on"); }
 }
@@ -295,7 +296,7 @@ async function exportSong(): Promise<void> {
     if (quality() === "none") { noCast("导出"); return; }
     if (quality() === "full") {
       try { r = await singFull(); how = "月读"; }
-      catch (e) { showError(`完整版月读唱不出来：${(e as Error).message}。没有导出。要先用元音版导出，点谱前面的「月读」把音质换成「轻量」再导出。`); progress(""); return; }
+      catch (e) { showError(`完整版月读唱不出来：${(e as Error).message}。没有导出。要先用元音版导出，点谱前面的「${roleName(doc.extras)}」把「谁来演」换成「月读（轻量）」再导出。`); progress(""); return; }
     } else {
       const notes = lightNotes();
       if (notes.length) { r = await sampler.renderSong(notes, st.song.hum); how = "轻量版"; }
@@ -406,7 +407,7 @@ bar.addEventListener("pointerdown", (e) => { if (!(e.target as HTMLElement).clos
 // ── 文件（无地逃生口）：一首歌 = 一个 .mxl；家 = 打开的那个文件（桌面 Chromium 能存回去）或没有家（iPad：存 = 下载 / 分享） ──────
 let curQuality: Quality = "full";
 function quality(): Quality { return curQuality; }
-const dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality;
+const dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality || roleName(doc.extras) !== doc.saved.role;
 function renderTitle(): void {
   const d = dirty(), name = docName();
   $("docTitle").textContent = `${name}${d ? " •" : ""}`;
@@ -415,7 +416,7 @@ function renderTitle(): void {
 }
 /** 主唱没人上场（别的软件存的谱，原来的乐器这一版没有）：不出声、报错，人来选（user「不出声，报错，人类手动换」）。 */
 function noCast(what: string): void {
-  showError(`主唱这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，点谱前面的「未选角」选月读。`);
+  showError(`「${roleName(doc.extras)}」这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，点谱前面的「${roleName(doc.extras)}」，在「谁来演」选月读。`);
 }
 /** 音质（= 主唱这个角色上场的是谁、用哪一版）：完整 / 轻量 / 未选角（别的软件存的谱）。改了重画歌手牌。 */
 function setQuality(q: Quality): void { curQuality = q; view.render(); renderTitle(); }
@@ -447,37 +448,49 @@ function openPaperSheet(): void {
     else if (v === "fit" || v === "reflow") { reflow = v === "reflow"; view.render(); draw(); }
   });
 }
-/** 歌手牌（第一行谱号左边的声部名）点开：上面选谁来唱（乐器），下面就地改它的设置，改了立刻生效
- *  （user「歌手牌同意，和打谱软件对齐」「应该就是乐器名可以选择一大堆乐器，然后下面可以in place改，大概这样？」）。
- *  现在只有一个声部、乐器只有月读 = 多乐器的占位（以后每个声部一张牌；数据契约「每个声部在谱号前面选角色和麦克风」）。 */
+/** 角色卡（第一行谱号左边的角色名）点开（user「歌手牌同意，和打谱软件对齐」→「谱上面显示的不应跟是月读，而是人声，女声 lead bass violin之类功能的东西…
+ *  所以是你可以写或者选role的名字，帮我多想几个preset。然后名字之外再选乐器」）：
+ *  上 = 角色名（谱上写的、MusicXML <part-name>；写或者点预设），中 = 谁来演（乐器 = 候选，名字不上谱——窄接口），下 = 就地改它的设置。改了立刻生效。
+ *  现在一个声部、乐器只有月读（完整 / 轻量）= 多乐器的占位（数据契约「每个声部在谱号前面选角色和麦克风」）。 */
 const HUMS: [Hum, string][] = [["n", "ん / 嗯"], ["a", "あ / 啊"], ["o", "お / 哦"], ["u", "う / 呜"], ["la", "ら / 啦"]];
 function openPartSheet(): void {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  const chip = (v: string, label: string, on: boolean, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v="${v}"${title ? ` title="${title}"` : ""}>${label}</button>`;
+  const chip = (v: string, label: string, on: boolean, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v="${esc(v)}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
+  const setRole = (name: string, sound?: string) => {
+    const n = name.trim(); if (!n || (n === roleName(doc.extras) && (!sound || sound === roleSound(doc.extras)))) return;
+    doc.extras = withRoleName(doc.extras, n, st.song.hum, quality(), sound); view.render(); renderTitle();
+  };
   const draw = () => {
-    const q = quality(), h = st.song.hum;
-    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">主唱</div>` +
-      `<div class="part-sec">谁来唱</div><div class="set-row">${chip("who:yomi", "月读（つくよみちゃん）", q !== "none")}` +
-      `${q === "none" ? chip("who:none", "未选角", true, "别的软件存的谱：原来的乐器这一版没有") : ""}</div>` +
+    const q = quality(), h = st.song.hum, rn = roleName(doc.extras), rs = roleSound(doc.extras);
+    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">声部</div>` +
+      `<div class="part-sec">角色（谱上写的名字；预设 = MusicXML 官方的乐器语义，可以自己改名）</div><input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" />` +
+      `<div class="role-sound">MusicXML：<code>${esc(rs)}</code></div>` +
+      ROLE_GROUPS.map((g) => `<div class="role-group"><span class="role-g">${g.group}</span>${g.items.map((r) => chip(`role:${r.sound}`, `${esc(r.name)}<small>${r.zh}</small>`, r.sound === rs && r.name === rn, r.sound)).join("")}</div>`).join("") +
+      `<div class="part-sec">谁来演（乐器；名字不上谱）</div><div class="set-row">` +
+      chip("q:full", "月读（完整）", q === "full", "月读本人（つくよみちゃん；第一次要加载约 65 MB）") +
+      chip("q:light", "月读（轻量）", q === "light", "元音采样，按下即响、任何设备都能跑") +
+      (q === "none" ? chip("q:none", `${esc(activeCandidateName(doc.extras) ?? "原来的乐器")}（这一版没有）`, true, "别的软件存的谱：原来的乐器这一版没有，所以没人上场") : "") + `</div>` +
       `<div class="offer-msg">以后这里能选一大堆乐器；现在只有月读。</div>` +
-      (q === "none" ? "" :
-        `<div class="part-sec">音质</div><div class="set-row">${chip("q:full", "完整", q === "full", "月读本人（第一次要加载约 65 MB）")}${chip("q:light", "轻量", q === "light", "元音采样，按下即响、任何设备都能跑")}</div>` +
-        `<div class="part-sec">没写歌词的音唱什么</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) +
+      (q === "none" ? "" : `<div class="part-sec">没写歌词的音唱什么</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) +
       `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+    const inp = box.querySelector<HTMLInputElement>("#roleIn")!;
+    inp.addEventListener("change", () => setRole(inp.value));
+    inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); setRole(inp.value); draw(); } });
   };
   draw();
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  const close = () => { const inp = box.querySelector<HTMLInputElement>("#roleIn"); if (inp) setRole(inp.value); box.remove(); closeOffer = null; scoreEl.focus(); };
   closeOffer = close;
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
     if (!v) return;
-    if (v === "who:yomi" && quality() === "none") setQuality("full");
-    else if (v.startsWith("q:")) setQuality(v.slice(2) as Quality);
+    if (v.startsWith("role:")) { const r = ROLE_GROUPS.flatMap((g) => g.items).find((x) => x.sound === v.slice(5)); if (r) setRole(r.name, r.sound); }
+    else if (v === "q:full" || v === "q:light") setQuality(v.slice(2) as Quality);
     else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
+    else return;
     draw();
   });
 }
@@ -486,12 +499,12 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; quality: Quality
   curQuality = o.quality;
   doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.extras = o.extras;
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };   // pad 是独立设备：换歌不换它的「1=」和调式
-  doc.saved = { song: st.song, quality: o.quality };
+  doc.saved = { song: st.song, quality: o.quality, role: roleName(o.extras) };
   lastFull = null;
   view.render(); pad.render(); renderTitle();
 }
 /** 存好了：文件名从此定下来（之后和歌名各管各的；user「之后各管各的同意」）。 */
-function markSaved(): void { doc.stem = docName(); doc.named = true; doc.saved = { song: st.song, quality: quality() }; renderTitle(); }
+function markSaved(): void { doc.stem = docName(); doc.named = true; doc.saved = { song: st.song, quality: quality(), role: roleName(doc.extras) }; renderTitle(); }
 /** 改过没存时先问一句（应用内面板，不用系统弹窗）。 */
 function confirmDiscard(what: string): Promise<boolean> {
   if (!dirty()) return Promise.resolve(true);

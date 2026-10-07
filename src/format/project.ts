@@ -6,6 +6,7 @@
 // 规矩（照 CatsUp 立宪）：每份扩展文件自带版本号；读到比这一版新的 = 拒开、明说（打开再存会丢东西）；
 //   不认识的文件、不认识的字段（以后的版本、别的工具加的、这台设备用不了的引擎配置）读进来留着、存档时原样写回。
 // 无地逃生口（user 2026-10-07「先不急着store。可以先按照无地规范导入导出做逃生口」）：这里只管字节 ↔ 歌，打开 / 存的界面在 app 里。
+import { DEFAULT_ROLE } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
 import type { Song, Hum } from "../score/song.ts";
 import { writeMusicXml, readMusicXml, type ReadPart } from "./musicxml.ts";
@@ -33,7 +34,7 @@ export const emptyExtras = (): Extras => ({ lounge: {}, unknown: {}, rootfiles: 
 const PART = "P1", ROLE = "r1", MIC = "m1";
 const CAND = { full: "c1", light: "c2" } as const;
 function defaultRole(hum: Hum, quality: Exclude<Quality, "none">): Json {
-  return { version: FORMAT.lounge, id: ROLE, name: "主唱", active: CAND[quality], candidates: [
+  return { version: FORMAT.lounge, id: ROLE, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CAND[quality], candidates: [
     { id: CAND.full, name: "月读", gm: { program: 55, variant: "tsukuyomi" }, hum, calibrationDb: 0, chain: [], engines: {} },
     { id: CAND.light, name: "月读（元音）", gm: { program: 55, variant: "tsukuyomi-vowels" }, hum, calibrationDb: 0, chain: [], engines: {} },
   ] };
@@ -50,7 +51,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   const studio: Json = structuredClone(a.extras.studio ?? { version: FORMAT.studio, mics: [{ id: MIC, name: "麦克风 1", gainDb: 0, pan: 0 }] });
   const mic = ((studio.mics as Json[] | undefined) ?? [])[0];
   const w = writeMusicXml(a.song, {
-    id: PART, name: String(role.name ?? "主唱"), instrumentName: String(active?.name ?? "月读"), sound: "voice.synth",
+    id: PART, name: String(role.name ?? DEFAULT_ROLE.name), instrumentName: String(active?.name ?? "月读"), sound: String(role.sound ?? DEFAULT_ROLE.sound),
     program: Number((active?.gm as Json | undefined)?.program ?? 55),
     variant: typeof (active?.gm as Json | undefined)?.variant === "string" ? { library: "MoonSinger", name: String((active!.gm as Json).variant) } : undefined,
     pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : undefined,
@@ -81,6 +82,25 @@ export function saveMxl(a: SaveArgs): Uint8Array {
 export interface Opened { song: Song; stem: string; hum: Hum; quality: Quality; extras: Extras; ours: boolean; notices: string[] }
 
 /** 字节 → 歌。认 .mxl（zip）和不压缩的 .musicxml / .xml。读不了 = 抛错（错误文字直接给人看）。 */
+/** 这个声部的角色名 = 谱前写的、MusicXML 的 <part-name>（user「谱上面显示的不应跟是月读，而是人声，女声 lead bass violin之类功能的东西，
+ *  还记得之前说的给role assign 乐器的逻辑吗？…不然的话你fl studio一个乱七八糟的插件，月读会变成c:/apps/…/月度_v1.0_绿色破解版.dll 这个就是我那个窄接口要拦的」）。
+ *  乐器（候选）的名字不上谱。 */
+export function roleName(extras: Extras): string { return String(extras.lounge[ROLE]?.name ?? DEFAULT_ROLE.name); }
+/** 这个声部是什么（MusicXML 官方 <instrument-sound> id，src/score/roles.ts；user「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的」）。 */
+export function roleSound(extras: Extras): string { return String(extras.lounge[ROLE]?.sound ?? DEFAULT_ROLE.sound); }
+/** 改角色名（选了预设 = 连官方 id 一起改；自己写的名字 = 官方 id 不变）。还没有角色快照 = 先按默认的建一份。 */
+export function withRoleName(extras: Extras, name: string, hum: Hum, quality: Quality, sound?: string): Extras {
+  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, quality === "none" ? "full" : quality));
+  role.name = name;
+  if (sound) role.sound = sound;
+  return { ...extras, lounge: { ...extras.lounge, [ROLE]: role } };
+}
+/** 现在上场的候选（乐器）叫什么——只给角色卡里看，不上谱。 */
+export function activeCandidateName(extras: Extras): string | null {
+  const role = extras.lounge[ROLE]; if (!role) return null;
+  const c = ((role.candidates as Json[] | undefined) ?? []).find((x) => x.id === role.active);
+  return c ? String(c.name ?? "") : null;
+}
 export function openBytes(name: string, bytes: Uint8Array): Opened {
   const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
   if (!isZip) {   // 不压缩的 MusicXML：只有谱
@@ -135,11 +155,12 @@ function finish(r: ReturnType<typeof readMusicXml>, extras: Extras, ours: boolea
     const was = p?.instrumentName || p?.name || "原来的乐器";
     const gm = p?.program;
     const role = defaultRole("n", "full");
-    role.name = p?.name || "主唱";
+    role.name = p?.name || DEFAULT_ROLE.name;
+    if (p?.sound) role.sound = p.sound;
     role.active = "c0";
     (role.candidates as Json[]).unshift({ id: "c0", name: was, gm: { program: gm ?? null, variant: p?.variant ?? null }, calibrationDb: 0, chain: [], engines: {} });
     extras.lounge[ROLE] = role;
-    notices.push(`声部「${role.name}」原来是${was}${gm ? `（GM ${gm} 号）` : ""}；这一版没有这件乐器，所以还没人上场。要月读来唱，在顶栏「音质」选「完整」或「轻量」。`);
+    notices.push(`声部「${role.name}」原来是${was}${gm ? `（GM ${gm} 号）` : ""}；这一版没有这件乐器，所以还没人上场。要月读来唱，点谱前面的「${role.name}」，在「谁来演」选月读。`);
   }
   const role = extras.lounge[ROLE];
   if (role) {

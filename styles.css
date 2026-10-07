@@ -295,3 +295,12 @@ button, input, select { font: inherit; color: inherit; }
 .settings-card .btn.cand small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
 .settings-card .btn.cand:has(small) { flex-direction: column; height: auto; padding: 6px 12px; gap: 2px; }
 .pad-tools .btn.lock small { color: rgba(255, 255, 255, .85); }   /* /2 锁住时小字也看得见 */
+/* 角色卡：角色名输入框 + 分组预设 */
+.part-card .role-in { width: 100%; box-sizing: border-box; height: 36px; border: 1px solid var(--line); border-radius: 7px; padding: 0 10px; font-size: 15px; color: var(--ink); -webkit-user-select: text; user-select: text; margin-bottom: 6px; }
+.part-card .role-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 4px 0; }
+.part-card .role-g { font-size: 11px; color: var(--muted); min-width: 5.5em; }
+.part-card .role-group .btn.cand { height: 30px; padding: 0 9px; font-size: 13px; }
+.part-card { max-height: calc(100dvh - 40px); overflow-y: auto; }
+.part-card .role-sound { font-size: 11px; color: var(--muted); margin: -2px 0 6px; }
+.part-card .role-group .btn.cand small { display: inline; margin-left: 4px; font-size: 10px; color: var(--muted); }
+.part-card .role-group .btn.cand:has(small) { flex-direction: row; height: 30px; padding: 0 8px; }

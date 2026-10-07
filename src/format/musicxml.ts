@@ -15,7 +15,7 @@ export interface PartInfo {
   id: string;               // "P1"
   name: string;             // 声部名 = 角色名（谱号前面那个）
   instrumentName: string;   // 上场的候选的名字（给别的软件看）
-  sound: string;            // MusicXML 标准音色 id，如 voice.synth
+  sound: string;            // MusicXML 官方乐器语义 id（= 角色是什么声部，如 voice.vocals；src/score/roles.ts）
   program: number;          // GM 音色号 1–128
   variant?: { library: string; name: string };   // <virtual-instrument>（我们的变体）
   volume?: number;          // 0–100（MusicXML <volume>）
@@ -131,7 +131,7 @@ ${body}
   return { xml, manualBars, unwritten };
 }
 
-export interface ReadPart { id: string; name: string; instrumentName?: string; program?: number; variant?: string; volume?: number; pan?: number }
+export interface ReadPart { id: string; name: string; instrumentName?: string; sound?: string; program?: number; variant?: string; volume?: number; pan?: number }
 export interface Read { song: Song; title: string; parts: ReadPart[]; dropped: Record<string, number> }
 export interface ReadHints { manualBars?: number[]; unwritten?: string[] }   // 自家文件的 .moonsinger/score.json；别家文件 = 没有
 
@@ -145,7 +145,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): Read {
   const parts: ReadPart[] = kids(kid(root, "part-list"), "score-part").map((sp) => {
     const si = kid(sp, "score-instrument"), mi = kid(sp, "midi-instrument"), vi = kid(si, "virtual-instrument");
     const num = (s?: string) => (s === undefined || s === "" ? undefined : Number(s));
-    return { id: sp.attrs.id, name: childText(sp, "part-name") ?? "", instrumentName: childText(si, "instrument-name"), program: num(childText(mi, "midi-program")),
+    return { id: sp.attrs.id, name: childText(sp, "part-name") ?? "", instrumentName: childText(si, "instrument-name"), sound: childText(si, "instrument-sound"), program: num(childText(mi, "midi-program")),
       variant: childText(vi, "virtual-name"), volume: num(childText(mi, "volume")), pan: num(childText(mi, "pan")) };
   });
   const partEls = kids(root, "part");

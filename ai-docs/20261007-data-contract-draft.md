@@ -93,6 +93,12 @@ user 2026-10-07「先不急着store。可以先按照无地规范导入导出做
 - 不需要 store、不长 gallery（家族「无库不长 gallery」）。
 - 休息室在 store 之前 = 当前这首歌里的角色（快照）；跨歌的休息室要持久化，等 store（或者能单独导出一个休息室文件——未定）。
 
+## 6⅓. 角色名 = 官方乐器语义（2026-10-07；edited by Claude Opus 5.5）
+
+user：「谱上面显示的不应跟是月读，而是人声，女声 lead bass violin之类功能的东西…这个就是我那个窄接口要拦的」「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的」。
+- MusicXML 三层正好对上：`<part-name>` = 角色名（谱上写的）；`<instrument-sound>` = 角色是什么声部（W3C sounds.xml 的官方 id，预设表 `src/score/roles.ts`）；`<virtual-instrument>` = 谁来演（候选：月读、以后的插件），**名字不上谱**。
+- 休息室的角色快照多一个 `sound` 字段（官方 id）；别的软件的谱：读它的 `<instrument-sound>` 记进角色。
+
 ## 6½. 图片：贴纸 + 封面（2026-10-07 user 定了方向；edited by Claude Opus 5.5）
 
 user：「贴纸同意，虽然ui麻烦些但是可能是必要的。然后可以类似webxiaoheiwu一样可以设置成封面的引用。但是我们也可以单独设置封面，不一定要上乐谱纸」
