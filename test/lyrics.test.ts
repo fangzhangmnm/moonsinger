@@ -1,21 +1,25 @@
 // created 2026-10-06 by Claude Opus 5.5
 import { describe, it, eq } from "./runner.mjs";
 import { splitSyllables, applyLyricLine } from "../src/score/lyrics.ts";
-import { initState, writeDegree, setCaret, TPQ, type NoteTok } from "../src/score/song.ts";
+import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
 import { setSongMeta } from "../src/score/song.ts";
 
 describe("lyrics", () => {
   it("假名一拍一个：小字并进前一个，ん 自己一个，ー 是拖腔", () => {
-    eq(splitSyllables("じゅうごや").join(" "), "じゅ う ご や");
-    eq(splitSyllables("でっかい").join(" "), "でっ か い");
-    eq(splitSyllables("みてはーーねる").join(" "), "み て は ー ー ね る");
-    eq(splitSyllables("だんご、てを").join(" "), "だ ん ご て を");
+    const j = (t: string) => splitSyllables(t).map((s) => s.text + (s.hyph ? "-" : "")).join(" ");
+    eq(j("じゅうごや"), "じゅ う ご や");
+    eq(j("でっかい"), "でっ か い");
+    eq(j("みてはーーねる"), "み て は ー ー ね る");
+    eq(j("みては~~ねる"), "み て は ー ー ね る");
+    eq(j("だんご、てを"), "だ ん ご て を");
   });
-  it("汉字一字一个；拉丁字母一词一个；标点空格跳过", () => {
-    eq(splitSyllables("小兔子 乖乖，").join(" "), "小 兔 子 乖 乖");
-    eq(splitSyllables("la la-la").join(" "), "la la ー la");
+  it("汉字一字一个；英文空格分词、词里 - = 断音节（hyph）；~ _ = 拖腔", () => {
+    const j = (t: string) => splitSyllables(t).map((s) => s.text + (s.hyph ? "-" : "")).join(" ");
+    eq(j("小兔子 乖乖，"), "小 兔 子 乖 乖");
+    eq(j("hap-py birth-day to you"), "hap- py birth- day to you");
+    eq(j("oh ~ yeah _"), "oh ー yeah ー");
   });
   it("先写曲：光标在末尾 → 从第一个没歌词的音开始贴", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near");
@@ -25,7 +29,7 @@ describe("lyrics", () => {
   it("先写词：空歌里打一行 → 每个字一个空音高的音；光标不动，数字接着填音高", () => {
     let st = initState(); st = applyLyricLine(st, "うさぎ");
     eq(st.song.tokens.length, 3); eq(st.caret, 0);
-    eq(st.song.tokens.every((t) => t.kind === "note" && t.pitch === null && t.dur === TPQ), true);
+    eq(st.song.tokens.every((t) => t.kind === "note" && t.pitch === null && t.dur === TPQ / 2), true);
     st = writeDegree(st, 4, "near"); st = writeDegree(st, 4, "near");
     eq(st.song.tokens.map((t) => (t as NoteTok).pitch ? pitchName((t as NoteTok).pitch!) : "?").join(" "), "F4 F4 ?");
     eq(st.song.tokens.length, 3);
@@ -41,5 +45,10 @@ describe("lyrics", () => {
     st = setSongMeta(st, { hum: "n" });
     eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "んん");
     eq(toLabScore(st.song, "zh").SCORE.map((e) => e.kana).join(""), "嗯嗯");
+  });
+  it("连音线连着的音（tie）不吃歌词", () => {
+    let st = initState(); st = writeDegree(st, 1, "near"); st = writeBar(st); st = extend(st); st = writeDegree(st, 2, "near");
+    st = applyLyricLine(st, "啊呀");
+    eq(st.song.tokens.filter((t) => t.kind === "note").map((t) => (t as NoteTok).lyric ?? "·").join(""), "啊·呀");
   });
 });

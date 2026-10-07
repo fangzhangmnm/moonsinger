@@ -86,6 +86,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       units.push({ kind: "bar", index: i, w: BAR_W, x: 0, system: 0, warn: barCount > 1 && !!f && !f.full });
       accState = new Map(); inBar = 0; return;
     }
+    if (t.kind === "key") return;   // 调号 token：下一步排版补上
     const isNote = t.kind === "note";
     const pitch = isNote ? effectivePitch(tokens, i) : null;
     const ghost = isNote && (t as NoteTok).pitch === null;

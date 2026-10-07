@@ -56,7 +56,7 @@ function renderStatus(): void {
   let s = "";
   if (i >= 0) {
     const t = st.song.tokens[i];
-    const dn = t.kind !== "bar" ? (DUR_NAME[t.dur] ?? `${t.dur / TPQ} 拍`) : "";
+    const dn = t.kind === "note" || t.kind === "rest" ? (DUR_NAME[t.dur] ?? `${+(t.dur / TPQ).toFixed(3)} 拍`) : "";
     s = t.kind === "rest" ? `休止 · ${dn}` : t.kind === "note"
       ? `${(t as NoteTok).pitch ? pitchName((t as NoteTok).pitch!) : "（音高空着）"} · ${dn}${(t as NoteTok).lyric ? ` · ${(t as NoteTok).lyric === MELISMA_MARK ? "拖腔" : (t as NoteTok).lyric}` : ""}` : "";
   } else s = st.song.tokens.length ? "开头" : "打 1–7 写音，| 或回车插小节线";
