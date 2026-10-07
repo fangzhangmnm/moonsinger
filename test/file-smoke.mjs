@@ -1,4 +1,5 @@
-// test/file-smoke.mjs —— 无地逃生口冒烟（真浏览器）：写 → Ctrl+S 存 .mxl → 改 → 打开先问 → 打开存的文件逐 token 相同 → 别家谱不自动选角、播放只报错 → 改过没存关页面有挽留框。
+// test/file-smoke.mjs —— 无地逃生口冒烟（真浏览器）：写 → Ctrl+S 存 .mxl → 改 → 导出 hub 存一份副本（「•」不变）→ 打开先问 → 打开存的文件逐 token 相同 → 别家谱不自动选角、播放只报错 → 拖进来打开 → 改过没存关页面有挽留框。
+// v0.3.0 2026-10-07 edited by Claude Fable 5.1：导出 hub / Ctrl+Shift+S / 拖进来。
 // created 2026-10-07 by Claude Opus 5.5。跑：先 bash scripts/build.sh，再 node test/file-smoke.mjs（同 shell-smoke 借 WeebPaint 的 playwright）。
 // 走 iPad 那条路（把桌面的文件选择框屏蔽掉 → 存 = 下载、打开 = 选文件）：桌面 Chromium 的系统文件框自动化不了，那条路没有自动测。
 import { chromium } from "../../20260524 WeebPaint/node_modules/playwright/index.mjs";
@@ -45,6 +46,18 @@ check(dl.suggestedFilename() === `${day}-春の歌.mxl` && (await title()) === `
 // 改一下 → 打开 → 先问
 await p.keyboard.press("Digit7");
 check((await title()) === `${day}-春の歌 •`, "又改了");
+// 导出 hub（v0.3.0）：另存为住这里（user 2026-08-20「另存为也变成导出」）；存一份副本 = 下载、文件名带时刻、「•」不变（导出不清 dirty）
+await p.click("#fileBtn"); await p.waitForSelector(".offer .file-row");
+check(!(await p.$('.offer [data-v="saveAs"]')) && !!(await p.$('.offer [data-v="export"]')) && !!(await p.$('.offer [data-v="rename"]')), "文件菜单：没有「另存为」、有「导出…」；还没有家 = 有「改文件名」");
+await p.click('.offer [data-v="export"]'); await p.waitForFunction(() => document.querySelector(".offer .offer-title")?.textContent === "导出");
+check(!!(await p.$('.offer [data-v="mp3"]')) && !!(await p.$('.offer [data-v="mxl"]')), "文件菜单「导出…」→ 导出 hub：歌声 mp3 / 存一份 .mxl 副本");
+await p.click('.offer [data-v="mxl"]'); await p.waitForSelector('.offer [data-v="download"]');
+const [dl2] = await Promise.all([p.waitForEvent("download"), p.click('.offer [data-v="download"]')]);
+check(new RegExp(`^${day}-春の歌-\\d{8}-\\d{4}\\.mxl$`).test(dl2.suggestedFilename()) && (await title()) === `${day}-春の歌 •`, "存一份 .mxl 副本：文件名带时刻、「•」还在（导出不清 dirty）", dl2.suggestedFilename());
+await p.click("#score", { position: { x: 700, y: 400 } });
+await p.keyboard.press("Control+Shift+KeyS"); await p.waitForFunction(() => document.querySelector(".offer .offer-title")?.textContent === "导出");
+check(true, "Ctrl+Shift+S → 导出 hub（原来的另存为键）");
+await p.click('.offer [data-v="close"]'); await p.waitForTimeout(100);
 await p.click("#fileBtn"); await p.click('.offer [data-v="open"]');
 await p.waitForSelector(".offer .offer-title");
 check((await p.textContent(".offer .offer-title")) === `「${day}-春の歌」改过还没存`, "改过没存时「打开」先问");
@@ -69,6 +82,16 @@ const pn = await p.$eval("#score text.part-name", (t) => { const r = t.getBoundi
 await p.mouse.click(pn.x, pn.y); await p.waitForSelector(".offer .part-card");
 await p.click('.offer [data-v="q:full"]'); await p.selectOption("#roleSel", "voice.soprano|Soprano"); await p.click('.offer [data-v="close"]');
 check(!(await p.$("#score text.part-name.empty")) && (await p.textContent("#score text.part-name")) === "Soprano", "点角色名：谁来演选月读、角色选 Soprano → 谱前写「Soprano」、不再淡色");
+// 拖进来打开（v0.3.0；DataTransfer 里放一个 .musicxml；改过没存先问）
+await p.click(".notice-error .dismiss").catch(() => undefined);
+const b64 = fs.readFileSync(`${DIR}/twinkle.musicxml`).toString("base64");
+const dtH = await p.evaluateHandle((b) => { const dt = new DataTransfer(); dt.items.add(new File([Uint8Array.from(atob(b), (c) => c.charCodeAt(0))], "dropped.musicxml", { type: "application/vnd.recordare.musicxml+xml" })); return dt; }, b64);
+await p.dispatchEvent("#score", "drop", { dataTransfer: dtH });
+await p.waitForSelector(".offer .offer-title");
+check((await p.textContent(".offer .offer-title")).includes("改过还没存"), "拖进来：改过没存先问");
+await p.click('.offer [data-v="go"]'); await p.waitForTimeout(300);
+check((await title()) === "dropped", "拖进来的 .musicxml 打开了（顶栏 = 它的文件名）");
+await p.click(".notice-error .dismiss").catch(() => undefined);
 // 改过没存关页面 → 挽留框
 await p.click("#score", { position: { x: 700, y: 400 } }); await p.keyboard.press("Digit3");
 let dialog = "";

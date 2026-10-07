@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.31-2026-10-07";
+var APP_VERSION = "v0.3.0-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -872,15 +872,15 @@ var BINDINGS = [
     keys: [{ code: "KeyS", mod: true }],
     show: "Ctrl / \u2318+S",
     act: () => ({ k: "file", a: "save" }),
-    does: { write: "\u5B58\uFF08\u5B58\u56DE\u6253\u5F00\u7684\u90A3\u4E2A\u6587\u4EF6\uFF1B\u8FD8\u6CA1\u6709\u5C31\u53E6\u5B58\u4E3A\uFF09", edit: "\u5B58", impro: "\u5B58", lyric: "\u5B58", mark: "\u5B58" }
+    does: { write: "\u5B58\uFF08\u5B58\u56DE\u6253\u5F00\u7684\u90A3\u4E2A\u6587\u4EF6\uFF1B\u8FD8\u6CA1\u6709\u5BB6 = \u95EE\u5B58\u5230\u54EA / iPad \u4E0B\u8F7D\uFF09", edit: "\u5B58", impro: "\u5B58", lyric: "\u5B58", mark: "\u5B58" }
   },
   {
-    id: "file.saveAs",
+    id: "file.export",
     group: "\u6587\u4EF6",
     keys: [{ code: "KeyS", mod: true, shift: true }],
     show: "Ctrl / \u2318+Shift+S",
-    act: () => ({ k: "file", a: "saveAs" }),
-    does: { write: "\u53E6\u5B58\u4E3A\u2026", edit: "\u53E6\u5B58\u4E3A\u2026", impro: "\u53E6\u5B58\u4E3A\u2026", lyric: "\u53E6\u5B58\u4E3A\u2026", mark: "\u53E6\u5B58\u4E3A\u2026" }
+    act: () => ({ k: "file", a: "export" }),
+    does: { write: "\u5BFC\u51FA\u2026\uFF08\u6B4C\u58F0 mp3 / \u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF1B\u539F\u6765\u7684\u300C\u53E6\u5B58\u4E3A\u300D\u4F4F\u8FD9\u91CC\uFF09", edit: "\u5BFC\u51FA\u2026", impro: "\u5BFC\u51FA\u2026", lyric: "\u5BFC\u51FA\u2026", mark: "\u5BFC\u51FA\u2026" }
   },
   {
     id: "file.open",
@@ -5690,6 +5690,7 @@ var TYPES2 = [{ description: "MusicXML \u4E50\u8C31\uFF08MoonSinger \u5B58\u6210
   "application/vnd.recordare.musicxml+xml": [".musicxml", ".xml"]
 } }];
 var ACCEPT = ".mxl,.musicxml,.xml";
+var accepts = (name) => /\.(mxl|musicxml|xml)$/i.test(name);
 var g = globalThis;
 var topLevel = () => {
   try {
@@ -5701,6 +5702,9 @@ var topLevel = () => {
 var canPickOpen = () => topLevel() && typeof g.showOpenFilePicker === "function";
 var canPickSave = () => topLevel() && typeof g.showSaveFilePicker === "function";
 var aborted = (e) => e.name === "AbortError";
+async function fromFile(f, handle) {
+  return { name: f.name, bytes: new Uint8Array(await f.arrayBuffer()), handle, mtime: f.lastModified };
+}
 async function pickOpen() {
   if (canPickOpen()) {
     let hs;
@@ -5710,8 +5714,7 @@ async function pickOpen() {
       if (aborted(e)) return null;
       throw e;
     }
-    const f = await hs[0].getFile();
-    return { name: f.name, bytes: new Uint8Array(await f.arrayBuffer()), handle: hs[0] };
+    return readHandle(hs[0]);
   }
   return new Promise((resolve, reject) => {
     const inp = document.createElement("input");
@@ -5726,7 +5729,7 @@ async function pickOpen() {
         return;
       }
       try {
-        resolve({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()), handle: null });
+        resolve(await fromFile(f, null));
       } catch (e) {
         reject(e);
       }
@@ -5734,6 +5737,9 @@ async function pickOpen() {
     document.body.append(inp);
     inp.click();
   });
+}
+async function readHandle(h) {
+  return fromFile(await h.getFile(), h);
 }
 async function pickSave(suggestedName) {
   try {
@@ -5748,6 +5754,38 @@ async function writeTo(h, bytes) {
   await w.write(bytes);
   await w.close();
 }
+async function mtime(h) {
+  try {
+    return (await h.getFile()).lastModified;
+  } catch {
+    return null;
+  }
+}
+var isStale = (seen, now) => seen != null && now != null && seen !== now;
+function grabDrop(dt) {
+  for (const it of [...dt.items ?? []]) {
+    if (it.kind !== "file") continue;
+    const file = it.getAsFile();
+    if (!file || !accepts(file.name)) continue;
+    const handle = it.getAsFileSystemHandle ? it.getAsFileSystemHandle().then((h) => h && h.kind === "file" ? h : null, () => null) : Promise.resolve(null);
+    return { file, handle };
+  }
+  for (const file of [...dt.files ?? []]) if (accepts(file.name)) return { file, handle: Promise.resolve(null) };
+  return null;
+}
+async function fromGrab(gr) {
+  return fromFile(gr.file, await gr.handle);
+}
+function consumeLaunchFiles(cb) {
+  const lq = globalThis.launchQueue;
+  if (!lq) return;
+  lq.setConsumer((p) => {
+    for (const f of p.files ?? []) {
+      const h = f;
+      if (accepts(h.name)) cb(h);
+    }
+  });
+}
 
 // src/app/names.ts
 function defaultStem(now = /* @__PURE__ */ new Date()) {
@@ -5761,6 +5799,10 @@ function defaultStem(now = /* @__PURE__ */ new Date()) {
   return `${now.getFullYear()}${z(now.getMonth() + 1)}${z(now.getDate())}-${r.toString(16).padStart(4, "0")}`;
 }
 var fileSafe = (s) => s.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim();
+function stampedCopy(stem, now = /* @__PURE__ */ new Date()) {
+  const z = (n2) => String(n2).padStart(2, "0");
+  return `${stem}-${now.getFullYear()}${z(now.getMonth() + 1)}${z(now.getDate())}-${z(now.getHours())}${z(now.getMinutes())}`;
+}
 
 // src/app/main.ts
 var st = initState();
@@ -5768,6 +5810,7 @@ var doc = {
   stem: defaultStem(),
   named: false,
   handle: null,
+  mtime: null,
   extras: emptyExtras(),
   saved: { song: st.song, quality: "full", role: DEFAULT_ROLE.name }
 };
@@ -5794,7 +5837,7 @@ function showUpdateBar() {
   });
   document.body.append(el);
 }
-bar.innerHTML = `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u53E6\u5B58\u4E3A / \u6539\u6587\u4EF6\u540D / \u5BFC\u51FA\u6B4C\u58F0\uFF08Ctrl / \u2318+S \u5B58\uFF09"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="padBtn" class="btn is-on" title="\u952E\u76D8\uFF08pad\uFF09"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="padBtn" class="btn is-on" title="\u952E\u76D8\uFF08pad\uFF09"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 var sampler = new Sampler();
 var sound = {
@@ -6399,6 +6442,7 @@ function loadDoc(song, o) {
   doc.stem = o.stem;
   doc.named = o.named;
   doc.handle = o.handle;
+  doc.mtime = o.handle ? o.mtime ?? null : null;
   doc.extras = o.extras;
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };
   doc.saved = { song: st.song, quality: o.quality, role: roleName(o.extras) };
@@ -6433,7 +6477,7 @@ function confirmDiscard(what) {
       else if (v === "go") close(true);
       else if (v === "save") {
         close(false);
-        void fileSave(false);
+        void fileSave();
       }
     });
   });
@@ -6452,10 +6496,12 @@ async function fileOpen() {
     showError(`\u6CA1\u6253\u5F00\uFF1A${e.message}`);
     return;
   }
-  if (!picked) return;
+  if (picked) openPicked(picked);
+}
+function openPicked(picked) {
   try {
-    const o = openBytes(picked.name, picked.bytes);
-    loadDoc(o.song, { stem: o.stem, named: true, quality: o.quality, extras: o.extras, handle: o.ours && !o.notices.length ? picked.handle : null });
+    const o = openBytes(picked.name, picked.bytes), own = o.ours && !o.notices.length;
+    loadDoc(o.song, { stem: o.stem, named: true, quality: o.quality, extras: o.extras, handle: own ? picked.handle : null, mtime: own ? picked.mtime : null });
     if (o.notices.length) showError(o.notices.join(" "));
     else info(`\u6253\u5F00\u4E86 ${picked.name}`);
   } catch (e) {
@@ -6463,36 +6509,92 @@ async function fileOpen() {
   }
 }
 var bytesNow = () => saveMxl({ song: st.song, hum: st.song.hum, quality: quality(), extras: doc.extras, app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
-async function fileSave(asNew) {
+var mxlFile = (name) => new File([bytesNow()], name, { type: "application/vnd.recordare.musicxml" });
+var stemOf = (name) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
+var sizeText = (n2) => n2 < 1e6 ? `${Math.max(1, Math.round(n2 / 1e3))} KB` : `${(n2 / 1e6).toFixed(1)} MB`;
+async function fileSave() {
   try {
-    if (!asNew && doc.handle) {
-      await writeTo(doc.handle, bytesNow());
-      markSaved();
-      info(`\u5B58\u597D\u4E86\uFF1A${doc.handle.name}`);
+    if (doc.handle) {
+      const h = doc.handle, now = await mtime(h);
+      if (isStale(doc.mtime, now) && !await askSheet(`\u300C${h.name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7`, "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002", "\u8986\u76D6")) {
+        info("\u6CA1\u5B58");
+        return;
+      }
+      await writeTo(h, bytesNow());
+      if (doc.handle === h) {
+        doc.mtime = await mtime(h);
+        markSaved();
+      }
+      info(`\u5B58\u597D\u4E86\uFF1A${h.name}`);
       return;
     }
     if (canPickSave()) {
       const h = await pickSave(`${docName()}.mxl`);
-      if (!h) return;
+      if (!h) {
+        info("\u6CA1\u5B58\uFF08\u53D6\u6D88\u4E86\uFF09");
+        return;
+      }
       await writeTo(h, bytesNow());
-      doc.stem = h.name.replace(/\.(mxl|musicxml|xml)$/i, "") || doc.stem;
+      doc.stem = stemOf(h.name) || doc.stem;
       doc.named = true;
       doc.handle = h;
+      doc.mtime = await mtime(h);
       markSaved();
       info(`\u5B58\u597D\u4E86\uFF1A${h.name}`);
       return;
     }
-    const file = new File([bytesNow()], `${docName()}.mxl`, { type: "application/vnd.recordare.musicxml" });
-    offerFile(file, "\u5B58\u6210 .mxl", `${esc3(file.name)} \xB7 ${file.size < 1e6 ? `${Math.max(1, Math.round(file.size / 1e3))} KB` : `${(file.size / 1e6).toFixed(1)} MB`}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
+    const file = mxlFile(`${docName()}.mxl`);
+    offerFile(file, "\u5B58\u6210 .mxl", `${esc3(file.name)} \xB7 ${sizeText(file.size)}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
   } catch (e) {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e.message}`);
   }
+}
+async function exportCopyMxl() {
+  const name = `${stampedCopy(docName())}.mxl`;
+  try {
+    if (canPickSave()) {
+      const h = await pickSave(name);
+      if (!h) return;
+      await writeTo(h, bytesNow());
+      info(`\u5B58\u4E86\u4E00\u4EFD\uFF1A${h.name}`);
+      return;
+    }
+    const file = mxlFile(name);
+    offerFile(file, "\u5B58\u4E00\u4EFD .mxl \u526F\u672C", `${esc3(file.name)} \xB7 ${sizeText(file.size)}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002`);
+  } catch (e) {
+    showError(`\u6CA1\u5B58\u4E0A\uFF1A${e.message}`);
+  }
+}
+function openExportHub() {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5BFC\u51FA</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="\u6708\u8BFB\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D"><svg class="ico"><use href="#export"/></svg>\u6B4C\u58F0\uFF08mp3\uFF09\u2026</button><button class="btn" data-v="mxl" title="\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026</button></div><div class="offer-msg">\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002\u4E50\u8C31 PDF \u4EE5\u540E\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  document.body.append(box);
+  const close = () => {
+    box.remove();
+    closeOffer = null;
+    scoreEl.focus();
+  };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") {
+      close();
+      return;
+    }
+    if (!v) return;
+    close();
+    if (v === "mp3") void exportSong();
+    else if (v === "mxl") void exportCopyMxl();
+  });
 }
 function openFileMenu() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc3(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>\uFF08\u6CA1\u5B58\u8FC7 = \u5E74\u6708\u65E5-\u6B4C\u540D\uFF1B\u5B58\u8FC7\u4E4B\u540E\u548C\u7EB8\u4E0A\u7684\u6B4C\u540D\u5404\u7BA1\u5404\u7684\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="saveAs"><svg class="ico"><use href="#save-as"/></svg>\u53E6\u5B58\u4E3A\u2026</button><button class="btn" data-v="rename">\u6539\u6587\u4EF6\u540D\u2026</button><button class="btn" data-v="export" title="\u6708\u8BFB\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D"><svg class="ico"><use href="#export"/></svg>\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09\u2026</button></div><div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${doc.handle ? `\u73B0\u5728\u5B58\u5728 ${esc3(doc.handle.name)}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\u3002` : canPickSave() ? "" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\u3002"}</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  const where = doc.handle ? `\u73B0\u5728\u5B58\u5728 <b>${esc3(doc.handle.name)}</b>\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\uFF08\u6587\u4EF6\u5728\u5916\u9762\u88AB\u6539\u8FC7\u4F1A\u5148\u95EE\uFF09\u3002\u8981\u6362\u540D\u5B57\uFF0C\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\u3002` : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF08\u4E0B\u8F7D\u4E86\u5C31\u7B97\u5B58\u4E86\uFF09\u3002";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc3(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>\uFF08\u6CA1\u5B58\u8FC7 = \u5E74\u6708\u65E5-\u6B4C\u540D\uFF1B\u5B58\u8FC7\u4E4B\u540E\u548C\u7EB8\u4E0A\u7684\u6B4C\u540D\u5404\u7BA1\u5404\u7684\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>\u5BFC\u51FA\u2026</button>` + (doc.handle ? "" : `<button class="btn" data-v="rename">\u6539\u6587\u4EF6\u540D\u2026</button>`) + `</div><div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${where} \u628A .mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -6510,18 +6612,18 @@ function openFileMenu() {
     close();
     if (v === "new") void fileNew();
     else if (v === "open") void fileOpen();
-    else if (v === "save") void fileSave(false);
-    else if (v === "saveAs") void fileSave(true);
+    else if (v === "save") void fileSave();
+    else if (v === "export") openExportHub();
     else if (v === "rename") renameFile();
-    else if (v === "export") void exportSong();
   });
 }
 $("fileBtn").addEventListener("click", () => openFileMenu());
 function renameFile() {
+  if (doc.handle) return;
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card"><div class="offer-title">\u6539\u6587\u4EF6\u540D</div><label class="set-field">\u6587\u4EF6\u540D<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc3(docName())}" /></label><div class="offer-msg">\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002${doc.handle ? `\u539F\u6765\u7684\u300C${esc3(doc.handle.name)}\u300D\u4E0D\u4F1A\u88AB\u6539\u540D\uFF1A\u4E0B\u6B21\u300C\u5B58\u300D\u7528\u65B0\u540D\u5B57\u53E6\u5B58\u3002` : "\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u65B0\u540D\u5B57\u3002"}</div><div class="offer-btns"><button class="btn" data-v="cancel">\u7B97\u4E86</button><button class="btn primary" data-v="ok">\u6539</button></div></div>`;
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">\u6539\u6587\u4EF6\u540D</div><label class="set-field">\u6587\u4EF6\u540D<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc3(docName())}" /></label><div class="offer-msg">\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u8FD9\u4E2A\u540D\u5B57\u3002</div><div class="offer-btns"><button class="btn" data-v="cancel">\u7B97\u4E86</button><button class="btn primary" data-v="ok">\u6539</button></div></div>`;
   document.body.append(box);
   const inp = box.querySelector("#fnIn");
   const close = () => {
@@ -6534,7 +6636,6 @@ function renameFile() {
     if (v && v !== docName()) {
       doc.stem = v;
       doc.named = true;
-      doc.handle = null;
       renderTitle();
       info(`\u6587\u4EF6\u540D\u6539\u6210 ${v}.mxl`);
     }
@@ -6561,11 +6662,61 @@ function renameFile() {
   inp.focus();
   inp.select();
 }
+function askSheet(title, msg, okLabel) {
+  return new Promise((resolve) => {
+    closeOffer?.();
+    const box = document.createElement("div");
+    box.className = "offer";
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc3(title)}</div><div class="offer-msg">${esc3(msg)}</div><div class="offer-btns"><button class="btn" data-v="ok">${esc3(okLabel)}</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
+    document.body.append(box);
+    const close = (ok) => {
+      box.remove();
+      closeOffer = null;
+      scoreEl.focus();
+      resolve(ok);
+    };
+    closeOffer = () => close(false);
+    box.addEventListener("click", (e) => {
+      const v = e.target.closest("[data-v]")?.dataset.v;
+      if (e.target === box || v === "no") close(false);
+      else if (v === "ok") close(true);
+    });
+  });
+}
 window.addEventListener("beforeunload", (e) => {
   if (dirty()) {
     e.preventDefault();
     e.returnValue = "";
   }
+});
+window.addEventListener("dragover", (e) => {
+  if (e.dataTransfer?.types.includes("Files")) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }
+});
+window.addEventListener("drop", (e) => {
+  const gr = e.dataTransfer ? grabDrop(e.dataTransfer) : null;
+  if (!gr) return;
+  e.preventDefault();
+  void (async () => {
+    if (!await confirmDiscard(`\u6253\u5F00\u300C${gr.file.name}\u300D`)) return;
+    try {
+      openPicked(await fromGrab(gr));
+    } catch (err2) {
+      showError(`\u6CA1\u6253\u5F00\uFF1A${err2.message}`);
+    }
+  })();
+});
+consumeLaunchFiles((h) => {
+  void (async () => {
+    if (!await confirmDiscard(`\u6253\u5F00\u300C${h.name}\u300D`)) return;
+    try {
+      openPicked(await readHandle(h));
+    } catch (err2) {
+      showError(`\u6CA1\u6253\u5F00\uFF1A${err2.message}`);
+    }
+  })();
 });
 function whereNow() {
   if (closeOffer) return "sheet";
@@ -6610,7 +6761,8 @@ function run(a, repeat, code) {
       return true;
     case "file":
       if (a.a === "open") void fileOpen();
-      else void fileSave(a.a === "saveAs");
+      else if (a.a === "save") void fileSave();
+      else openExportHub();
       return true;
   }
 }
@@ -6647,4 +6799,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-43543e05e747.mjs.map
+//# sourceMappingURL=moonsinger-489a8e4811ee.mjs.map

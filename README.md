@@ -4,7 +4,7 @@
 created 2026-10-07 by Claude Opus 5.5（公开工坊道首日）
 
 - **开发版（随 main 更新）**：https://fangzhangmnm.github.io/moonsinger/dev/
-- 正式版：尚未发布（编辑器第一版：歌存成 `.mxl` 文件——打开 / 存 / 另存为；还没有撤销、还没接云；唱好的歌可以导出 mp3）
+- **正式版**：https://fangzhangmnm.github.io/moonsinger/ （2026-10-07 首次上线 = v0.2.31；编辑器第一版：歌存成 `.mxl` 文件——打开 / 存 / 导出（歌声 mp3、.mxl 副本）；还没有撤销、还没接云）
 
 ## 现状（as-of v0.1.1 / 2026-10-07）
 

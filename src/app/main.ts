@@ -1,7 +1,9 @@
 // main.ts —— 试验页接线：顶栏 / 谱面板 / pad / 键盘。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
 // 第一版（grill 账本 §8½）：不做撤销；播放 = 月读在浏览器里唱（src/singer/，和 Lab 命令行共用一份唱法核心）。
-// 存档 = 无地逃生口（2026-10-07，user「先不急着store。可以先按照无地规范导入导出做逃生口」）：文件菜单 新建 / 打开 / 存 / 另存为 .mxl
+// 存档 = 无地逃生口（2026-10-07，user「先不急着store。可以先按照无地规范导入导出做逃生口」）：文件菜单 新建 / 打开 / 存 / 导出（.mxl）
 //   （格式 = src/format/，数据契约草稿 ai-docs/20261007-data-contract-draft.md）；没存就关页面 = 浏览器挽留框（照 WeebPaint，不偷偷写盘）。
+//   v0.3.0（2026-10-07，edited by Claude Fable 5.1；user「把无地做完美」）按 WeebPaint 无地标尺对齐：存 = 回家一个动作、另存为并进导出 hub、
+//   写回前 mtime 对表、有家不给改文件名、拖进来 / 双击 .mxl 打开（manifest file_handlers）。
 // UX-2（账本 §9¾）：选中 = 改、光标 = 写；歌词在谱下面点进去写（底部歌词栏拿掉了）；「弹」= 即兴只唱不写。
 // 调号 / 拍号 / 速度是谱里的记号 token，点谱上的记号就地改，pad「＋」在光标处插——顶栏不再有全局的调号 / 拍号 / 速度。
 
@@ -26,12 +28,12 @@ import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withR
 import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
 import { type PaperKind, PAPER_KINDS, PAPER_NOTE, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
 import * as docFile from "./doc-file.ts";
-import { defaultStem, fileSafe } from "./names.ts";
+import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 
 let st: EditorState = initState();
-/** 这首歌的家（无地逃生口）：文件名主干（新建 = 默认名；打开 = 那个文件的名字）、打开的那个文件（桌面 Chromium）、
+/** 这首歌的家（无地逃生口）：文件名主干（新建 = 默认名；打开 = 那个文件的名字）、打开的那个文件（桌面 Chromium）+ 打开 / 上次写回时它的 mtime（写前对表）、
  *  文件里这一版不改动的部分、上次存 / 打开时的样子（判断改过没存）。歌名在谱里（st.song.title，可不填），和文件名分开。 */
-const doc = { stem: defaultStem(), named: false, handle: null as docFile.FileHandle | null, extras: emptyExtras() as Extras,
+const doc = { stem: defaultStem(), named: false, handle: null as docFile.FileHandle | null, mtime: null as number | null, extras: emptyExtras() as Extras,
   saved: { song: st.song as Song, quality: "full" as Quality, role: DEFAULT_ROLE.name } };
 /** 显示 / 存档用的名字：填了歌名用歌名，没填用文件名主干。 */
 /** 文件名（user「用歌名可以，然后也要yyyymmdd规则。之后各管各的同意」）：没存过 = 年月日-歌名（没歌名 = 年月日-四位随机 = doc.stem）；
@@ -61,7 +63,7 @@ function showUpdateBar(): void {
 //   左 = 文件钮 + 文件名（点 = 文件菜单）；中 = 走带条（唱 / 停、弹、唱的进度）；右 = 键盘开关 + 扳手。
 //   音质 / 哼的字 → 谱前面的歌手牌；导出歌声 → 文件菜单；版本号 → 设置；状态细字不要了（user「状态细字可以精简，或者不要也行」）。
 bar.innerHTML =
-  `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="文件：新建 / 打开 / 存 / 另存为 / 改文件名 / 导出歌声（Ctrl / ⌘+S 存）"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">未命名</span></button></div>` +
+  `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="文件：新建 / 打开 / 存 / 导出（Ctrl / ⌘+S 存、+O 打开；.mxl 拖进来也能打开）"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">未命名</span></button></div>` +
   `<div class="tb-mid"><button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
   `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button><span id="singStatus" class="sing-st"></span></div>` +
   `<div class="tb-right"><button id="padBtn" class="btn is-on" title="键盘（pad）"><svg class="ico"><use href="#grid"/></svg></button>` +
@@ -522,10 +524,10 @@ function openPartSheet(): void {
     draw();
   });
 }
-function loadDoc(song: Song, o: { stem: string; named: boolean; quality: Quality; extras: Extras; handle: docFile.FileHandle | null }): void {
+function loadDoc(song: Song, o: { stem: string; named: boolean; quality: Quality; extras: Extras; handle: docFile.FileHandle | null; mtime?: number | null }): void {
   if (impro) toggleImpro();
   curQuality = o.quality;
-  doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.extras = o.extras;
+  doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.mtime = o.handle ? (o.mtime ?? null) : null; doc.extras = o.extras;
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };   // pad 是独立设备：换歌不换它的「1=」和调式
   doc.saved = { song: st.song, quality: o.quality, role: roleName(o.extras) };
   lastFull = null;
@@ -549,7 +551,7 @@ function confirmDiscard(what: string): Promise<boolean> {
       const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
       if (e.target === box || v === "no") close(false);
       else if (v === "go") close(true);
-      else if (v === "save") { close(false); void fileSave(false); }
+      else if (v === "save") { close(false); void fileSave(); }
     });
   });
 }
@@ -562,48 +564,69 @@ async function fileOpen(): Promise<void> {
   if (!(await confirmDiscard("打开别的歌"))) return;
   let picked: docFile.Picked | null;
   try { picked = await docFile.pickOpen(); } catch (e) { showError(`没打开：${(e as Error).message}`); return; }
-  if (!picked) return;
+  if (picked) openPicked(picked);
+}
+/** 拿到的文件（选的 / 拖进来的 / 双击打开的）→ 读进来。别的软件存的谱、或有读不进来的东西：不认它的家（存回去会把没读进来的丢掉 → 第一次「存」= 问存到哪）。 */
+function openPicked(picked: docFile.Picked): void {
   try {
-    const o = openBytes(picked.name, picked.bytes);
-    // 别的软件存的谱：不认它的家（存回去会把它没读进来的东西丢掉 → 第一次存走另存为）
-    loadDoc(o.song, { stem: o.stem, named: true, quality: o.quality, extras: o.extras, handle: o.ours && !o.notices.length ? picked.handle : null });
+    const o = openBytes(picked.name, picked.bytes), own = o.ours && !o.notices.length;
+    loadDoc(o.song, { stem: o.stem, named: true, quality: o.quality, extras: o.extras, handle: own ? picked.handle : null, mtime: own ? picked.mtime : null });
     if (o.notices.length) showError(o.notices.join(" "));
     else info(`打开了 ${picked.name}`);
   } catch (e) { showError(`打不开 ${picked.name}：${(e as Error).message}`); }
 }
 const bytesNow = () => saveMxl({ song: st.song, hum: st.song.hum, quality: quality(), extras: doc.extras, app: APP_VERSION, date: new Date().toISOString() });
-async function fileSave(asNew: boolean): Promise<void> {
+const mxlFile = (name: string) => new File([bytesNow() as unknown as BlobPart], name, { type: "application/vnd.recordare.musicxml" });
+const stemOf = (name: string) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
+const sizeText = (n: number) => (n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} KB` : `${(n / 1e6).toFixed(1)} MB`);
+/** 存 = 回家，一个动作（WeebPaint 一画一家；user 2026-08-25 grill「保存按钮=回家（单一动作），导出 hub=寄明信片」）：
+ *  · 有家（打开的那个文件）= 存回去。写之前对一次 mtime，文件在外面被改过就先问（0819 spec §7「原位写回前查 lastModified」）。
+ *  · 还没有家 = 安家：桌面 Chromium 先开系统保存框（在手势里；取消 = 到此为止，不降级弹下载——「AbortError ≠ 环境不支持」），再编码、写、认领句柄。
+ *  · iPad / Safari 没有句柄这回事 = 下载或分享一个 .mxl 到「文件」里，点了才算存了。这台设备上下载就是存（没有别的家可回；
+ *    WeebPaint 的「下载不清 dirty」是因为它 iPad 的家在图库——这里没有，「•」留着只会狼来了，0819 §7.2「有真正会丢的字节才拦」）。 */
+async function fileSave(): Promise<void> {
   try {
-    if (!asNew && doc.handle) { await docFile.writeTo(doc.handle, bytesNow()); markSaved(); info(`存好了：${doc.handle.name}`); return; }
+    if (doc.handle) {
+      const h = doc.handle, now = await docFile.mtime(h);
+      if (docFile.isStale(doc.mtime, now) && !(await askSheet(`「${h.name}」在外面被改过`, "打开或上次存之后，这个文件被别的程序改过。覆盖 = 外面改的那些会丢。", "覆盖"))) { info("没存"); return; }
+      await docFile.writeTo(h, bytesNow());
+      if (doc.handle === h) { doc.mtime = await docFile.mtime(h); markSaved(); }   // 写的间隙没换家才记（换了家 = 别把别人的名字标成存好了）
+      info(`存好了：${h.name}`); return;
+    }
     if (docFile.canPickSave()) {
       const h = await docFile.pickSave(`${docName()}.mxl`);
-      if (!h) return;
+      if (!h) { info("没存（取消了）"); return; }
       await docFile.writeTo(h, bytesNow());
-      doc.stem = h.name.replace(/\.(mxl|musicxml|xml)$/i, "") || doc.stem; doc.named = true;
-      doc.handle = h; markSaved(); info(`存好了：${h.name}`);
-      return;
+      doc.stem = stemOf(h.name) || doc.stem; doc.named = true; doc.handle = h; doc.mtime = await docFile.mtime(h);
+      markSaved(); info(`存好了：${h.name}`); return;
     }
-    // iPad / Safari：没有「存回原文件」——给一个 .mxl，下载或分享到「文件」（点了才算存了）
-    const file = new File([bytesNow() as unknown as BlobPart], `${docName()}.mxl`, { type: "application/vnd.recordare.musicxml" });
-    offerFile(file, "存成 .mxl", `${esc(file.name)} · ${file.size < 1e6 ? `${Math.max(1, Math.round(file.size / 1e3))} KB` : `${(file.size / 1e6).toFixed(1)} MB`}。下载或分享到「文件」里；以后从文件菜单「打开」。`, markSaved);
+    const file = mxlFile(`${docName()}.mxl`);
+    offerFile(file, "存成 .mxl", `${esc(file.name)} · ${sizeText(file.size)}。下载或分享到「文件」里；以后从文件菜单「打开」。`, markSaved);
   } catch (e) { showError(`没存上：${(e as Error).message}`); }
 }
-/** 文件菜单（应用内面板）：新建、打开、存、另存为（歌名在纸面最上面填）。 */
-function openFileMenu(): void {
+/** 导出 hub 的「存一份 .mxl 副本」= 原来的另存为（user 2026-08-20「另存为也变成导出」「复制一份就是导出的语义…放在导出的选项里面」）：
+ *  一份带时刻戳的拷贝，家不变、「•」不变（导出永不清 dirty）。桌面 = 系统保存框；iPad = 下载 / 分享。 */
+async function exportCopyMxl(): Promise<void> {
+  const name = `${stampedCopy(docName())}.mxl`;
+  try {
+    if (docFile.canPickSave()) {
+      const h = await docFile.pickSave(name); if (!h) return;
+      await docFile.writeTo(h, bytesNow()); info(`存了一份：${h.name}`); return;
+    }
+    const file = mxlFile(name);
+    offerFile(file, "存一份 .mxl 副本", `${esc(file.name)} · ${sizeText(file.size)}。现在这首歌的一份拷贝；这里再改，它不会跟着变。`);
+  } catch (e) { showError(`没存上：${(e as Error).message}`); }
+}
+/** 导出 hub（照 WeebPaint「导出与另存」hub：导出 = 寄明信片，和「存 = 回家」分开住）：歌声 mp3 / .mxl 副本；乐谱 PDF 以后也进这里。 */
+function openExportHub(): void {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">文件</div>` +
-    `<div class="offer-msg">文件名：<b>${esc(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>（没存过 = 年月日-歌名；存过之后和纸上的歌名各管各的）</div>` +
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">导出</div>` +
     `<div class="set-row file-row">` +
-    `<button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>新建</button>` +
-    `<button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>打开…</button>` +
-    `<button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>存</button>` +
-    `<button class="btn" data-v="saveAs"><svg class="ico"><use href="#save-as"/></svg>另存为…</button>` +
-    `<button class="btn" data-v="rename">改文件名…</button>` +
-    `<button class="btn" data-v="export" title="月读唱一遍，编成 mp3，分享或下载"><svg class="ico"><use href="#export"/></svg>导出歌声（mp3）…</button></div>` +
-    `<div class="offer-msg">存成 <code>.mxl</code>（MusicXML 乐谱的压缩包：别的乐谱软件也能打开；MoonSinger 自己的东西放在里面的 <code>.moonsinger/</code>）。` +
-    `${doc.handle ? `现在存在 ${esc(doc.handle.name)}，「存」= 存回去。` : docFile.canPickSave() ? "" : "这台设备上「存」= 下载或分享一个 .mxl 到「文件」里。"}</div>` +
+    `<button class="btn" data-v="mp3" title="月读唱一遍，编成 mp3，分享或下载"><svg class="ico"><use href="#export"/></svg>歌声（mp3）…</button>` +
+    `<button class="btn" data-v="mxl" title="现在这首歌的一份拷贝（文件名带时刻）；这里的歌还住原来的家"><svg class="ico"><use href="#save-as"/></svg>存一份 .mxl 副本…</button></div>` +
+    `<div class="offer-msg">导出 = 寄一份出去，这里的歌还是原来那个家，「存」才是存回去。乐谱 PDF 以后也在这里。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
   const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
@@ -613,25 +636,56 @@ function openFileMenu(): void {
     if (e.target === box || v === "close") { close(); return; }
     if (!v) return;
     close();
-    if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "save") void fileSave(false); else if (v === "saveAs") void fileSave(true);
-    else if (v === "rename") renameFile(); else if (v === "export") void exportSong();
+    if (v === "mp3") void exportSong(); else if (v === "mxl") void exportCopyMxl();
+  });
+}
+/** 文件菜单（应用内面板）：新建 / 打开 / 存 / 导出；还没有家的（没存过、或 iPad）多一个「改文件名」。
+ *  没有「另存为」（它住导出里，user 2026-08-20「open local file 和 save as 一加多了很多会混淆用户的东西」）；
+ *  有家的不给改文件名——浏览器改不了磁盘上的名字，这里假装改了 = 悄悄把家丢了（v0.2.x 的做法，v0.3.0 撤）。 */
+function openFileMenu(): void {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  const where = doc.handle ? `现在存在 <b>${esc(doc.handle.name)}</b>，「存」= 存回去（文件在外面被改过会先问）。要换名字，在文件管理器里改。`
+    : docFile.canPickSave() ? "还没存过：「存」会问存到哪。" : "这台设备上「存」= 下载或分享一个 .mxl 到「文件」里（下载了就算存了）。";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">文件</div>` +
+    `<div class="offer-msg">文件名：<b>${esc(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>（没存过 = 年月日-歌名；存过之后和纸上的歌名各管各的）</div>` +
+    `<div class="set-row file-row">` +
+    `<button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>新建</button>` +
+    `<button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>打开…</button>` +
+    `<button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>存</button>` +
+    `<button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>导出…</button>` +
+    (doc.handle ? "" : `<button class="btn" data-v="rename">改文件名…</button>`) + `</div>` +
+    `<div class="offer-msg">存成 <code>.mxl</code>（MusicXML 乐谱的压缩包：别的乐谱软件也能打开；MoonSinger 自己的东西放在里面的 <code>.moonsinger/</code>）。${where} 把 .mxl 拖进来也能打开。</div>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  document.body.append(box);
+  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (!v) return;
+    close();
+    if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "save") void fileSave(); else if (v === "export") openExportHub();
+    else if (v === "rename") renameFile();
   });
 }
 $("fileBtn").addEventListener("click", () => openFileMenu());
-/** 改文件名（只改文件名，纸上的歌名不变；user「之后各管各的同意，但是要有改文件名的规则？」）。
- *  这台设备上已经存回原文件的：浏览器没法给那个文件改名 → 下次「存」按新名字另存（会问存到哪）。 */
+/** 改文件名（只给还没有家的：下次存 / 下载用这个名字；纸上的歌名不变；user「之后各管各的同意，但是要有改文件名的规则？」）。
+ *  有家的不进这里（菜单不露）：浏览器改不了磁盘上的名字，在文件管理器里改。 */
 function renameFile(): void {
+  if (doc.handle) return;
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card"><div class="offer-title">改文件名</div>` +
     `<label class="set-field">文件名<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc(docName())}" /></label>` +
-    `<div class="offer-msg">只改文件名，纸上的歌名不变。${doc.handle ? `原来的「${esc(doc.handle.name)}」不会被改名：下次「存」用新名字另存。` : "下次存的时候用新名字。"}</div>` +
+    `<div class="offer-msg">只改文件名，纸上的歌名不变。下次存的时候用这个名字。</div>` +
     `<div class="offer-btns"><button class="btn" data-v="cancel">算了</button><button class="btn primary" data-v="ok">改</button></div></div>`;
   document.body.append(box);
   const inp = box.querySelector<HTMLInputElement>("#fnIn")!;
   const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
-  const ok = () => { const v = fileSafe(inp.value); if (v && v !== docName()) { doc.stem = v; doc.named = true; doc.handle = null; renderTitle(); info(`文件名改成 ${v}.mxl`); } close(); };
+  const ok = () => { const v = fileSafe(inp.value); if (v && v !== docName()) { doc.stem = v; doc.named = true; renderTitle(); info(`文件名改成 ${v}.mxl`); } close(); };
   closeOffer = close;
   inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); ok(); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } });
   box.addEventListener("click", (e) => {
@@ -640,8 +694,41 @@ function renameFile(): void {
   });
   inp.focus(); inp.select();
 }
+/** 问一句（应用内面板，不用系统弹窗）：点了 okLabel = true；点背板 / 算了 / Esc = false。 */
+function askSheet(title: string, msg: string, okLabel: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    closeOffer?.();
+    const box = document.createElement("div");
+    box.className = "offer";
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc(title)}</div><div class="offer-msg">${esc(msg)}</div>` +
+      `<div class="offer-btns"><button class="btn" data-v="ok">${esc(okLabel)}</button><button class="btn primary" data-v="no">算了</button></div></div>`;
+    document.body.append(box);
+    const close = (ok: boolean) => { box.remove(); closeOffer = null; scoreEl.focus(); resolve(ok); };
+    closeOffer = () => close(false);
+    box.addEventListener("click", (e) => {
+      const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+      if (e.target === box || v === "no") close(false); else if (v === "ok") close(true);
+    });
+  });
+}
 // 改过没存就关页面 / 刷新：浏览器自己的挽留框（照 WeebPaint；无地不偷偷写盘——静默写用户文件违背文件语义）
 window.addEventListener("beforeunload", (e) => { if (dirty()) { e.preventDefault(); e.returnValue = ""; } });
+// 拖进来打开（.mxl / .musicxml / .xml；桌面 Chromium 还能拿到句柄 = 有家）。⚠ 句柄要在 drop 事件里同步抓（docFile.grabDrop），await 之后 items 就空了。
+window.addEventListener("dragover", (e) => { if (e.dataTransfer?.types.includes("Files")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+window.addEventListener("drop", (e) => {
+  const gr = e.dataTransfer ? docFile.grabDrop(e.dataTransfer) : null;
+  if (!gr) return;   // 不是我们认的文件 = 不拦这次 drop
+  e.preventDefault();
+  void (async () => {
+    if (!(await confirmDiscard(`打开「${gr.file.name}」`))) return;
+    try { openPicked(await docFile.fromGrab(gr)); } catch (err) { showError(`没打开：${(err as Error).message}`); }
+  })();
+});
+// 安装成 PWA 后双击 .mxl 用 MoonSinger 打开（manifest file_handlers → launchQueue；照 WeebPaint consumeLaunchFiles）。
+docFile.consumeLaunchFiles((h) => { void (async () => {
+  if (!(await confirmDiscard(`打开「${h.name}」`))) return;
+  try { openPicked(await docFile.readHandle(h)); } catch (err) { showError(`没打开：${(err as Error).message}`); }
+})(); });
 
 // ── 键盘：映射是一张表（src/input/keys.ts）；这里只算「键盘现在归谁」，再照路由的结果做 ─────────────
 /** 谁在最上面归谁：导出面板 > 记号框 > 歌词框 > 谱面（弹 / 改 / 写）。 */
@@ -674,7 +761,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "lyric": return view.lyrics.act(a.a);
     case "mark": view.marks.act(a.a); return true;
     case "sheet": closeOffer?.(); return true;
-    case "file": if (a.a === "open") void fileOpen(); else void fileSave(a.a === "saveAs"); return true;
+    case "file": if (a.a === "open") void fileOpen(); else if (a.a === "save") void fileSave(); else openExportHub(); return true;
   }
 }
 window.addEventListener("keydown", (e) => {

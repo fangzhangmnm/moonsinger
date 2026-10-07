@@ -13,6 +13,7 @@ import "./scales.test.ts";
 import "./bars.test.ts";
 import "./paper.test.ts";
 import "./roles.test.ts";
+import "./doc-file.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

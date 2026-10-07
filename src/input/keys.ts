@@ -8,7 +8,7 @@
 //   导出面板 sheet > 记号框 mark > 歌词框 lyric > 谱面；谱面再分 写 write（光标）/ 改 edit（选中）/ 弹 impro（即兴开关开着）。
 //   同一个键在不同模式下做不同的事 = 同一行里不同的列（does[where]）；没写的列 = 这个键在那里不管（文本框里就照常打字）。
 //   「弹」只改变音符键（只唱不写，user「即兴做成 pad 上的一个开关（按住时只唱不写）」）：弹的那一列没写的键，照写 / 改走。
-// 只认物理键位（KeyboardEvent.code），不认打出来的字（换输入法 / 键盘布局不乱）；Ctrl / Cmd 组合只接表里标了 mod 的（存 / 另存为 / 打开，2026-10-07 无地逃生口），
+// 只认物理键位（KeyboardEvent.code），不认打出来的字（换输入法 / 键盘布局不乱）；Ctrl / Cmd 组合只接表里标了 mod 的（存 / 导出 / 打开，2026-10-07 无地逃生口），
 //   其余一律不接（浏览器的，Ctrl+1–8 是切标签页）；
 // 输入法正在拼（isComposing）的时候一律不接（拼音、假名输入法不被打断）。
 
@@ -26,7 +26,7 @@ export type Action =
   | { k: "cmd"; cmd: Command }                      // 编辑命令（score/commands.ts apply）
   | { k: "audition"; degree: number; dir: Dir }     // 弹：只唱这一级，不写
   | { k: "play" } | { k: "impro" }
-  | { k: "file"; a: "open" | "save" | "saveAs" }   // 无地逃生口（打开 / 存 .mxl）
+  | { k: "file"; a: "open" | "save" | "export" }   // 无地逃生口（打开 / 存 .mxl / 导出 hub；另存为住导出里，user 2026-08-20「另存为也变成导出」）
   | { k: "lyric"; a: "commit" | "cancel" | "next" | "prev" | "hyphen" | "back" }
   | { k: "mark"; a: "commit" | "cancel" }
   | { k: "sheet"; a: "close" };
@@ -104,9 +104,9 @@ export const BINDINGS: Binding[] = [
   { id: "impro", group: "播放", keys: [{ code: "Backquote" }], show: "`", act: () => ({ k: "impro" }), does: { write: "「弹」开 / 关（音符键只唱不写）", edit: "「弹」开 / 关", impro: "「弹」关" } },
   // ── 文件（无地逃生口：.mxl；user 2026-10-07「先按照无地规范导入导出做逃生口」）。新建只在菜单里（Ctrl+N 浏览器不让拦） ──
   { id: "file.save", group: "文件", keys: [{ code: "KeyS", mod: true }], show: "Ctrl / ⌘+S", act: () => ({ k: "file", a: "save" }),
-    does: { write: "存（存回打开的那个文件；还没有就另存为）", edit: "存", impro: "存", lyric: "存", mark: "存" } },
-  { id: "file.saveAs", group: "文件", keys: [{ code: "KeyS", mod: true, shift: true }], show: "Ctrl / ⌘+Shift+S", act: () => ({ k: "file", a: "saveAs" }),
-    does: { write: "另存为…", edit: "另存为…", impro: "另存为…", lyric: "另存为…", mark: "另存为…" } },
+    does: { write: "存（存回打开的那个文件；还没有家 = 问存到哪 / iPad 下载）", edit: "存", impro: "存", lyric: "存", mark: "存" } },
+  { id: "file.export", group: "文件", keys: [{ code: "KeyS", mod: true, shift: true }], show: "Ctrl / ⌘+Shift+S", act: () => ({ k: "file", a: "export" }),
+    does: { write: "导出…（歌声 mp3 / 存一份 .mxl 副本；原来的「另存为」住这里）", edit: "导出…", impro: "导出…", lyric: "导出…", mark: "导出…" } },
   { id: "file.open", group: "文件", keys: [{ code: "KeyO", mod: true }], show: "Ctrl / ⌘+O", act: () => ({ k: "file", a: "open" }),
     does: { write: "打开…（.mxl / .musicxml）", edit: "打开…", impro: "打开…", lyric: "打开…", mark: "打开…" } },
   // ── 歌词框（点谱下面打开；输入法照常用，中文 / 日文选定一段字就按字往后贴） ──
@@ -175,7 +175,7 @@ export function renderKeysDoc(): string {
   let md = `<!-- 自动生成：node scripts/gen-keys-doc.mjs 从 src/input/keys.ts 的 BINDINGS 生成——别手改，改表再重跑（测试守着它不过期）。 -->\n\n`;
   md += `# 键盘\n\n> 生成自 \`src/input/keys.ts\`\n\n`;
   md += `谱面上有三种状态：**写**（光标，打的音插在光标处）、**改**（选中了一段，打的音覆盖选中）、**弹**（「弹」开着：音符键只唱不写，其余键照写 / 改）。\n`;
-  md += `按物理键位认（换输入法 / 键盘布局不乱）；Ctrl / ⌘ 组合只接存 / 另存为 / 打开，其余交给浏览器。\n\n`;
+  md += `按物理键位认（换输入法 / 键盘布局不乱）；Ctrl / ⌘ 组合只接存 / 导出 / 打开，其余交给浏览器。\n\n`;
   const score = BINDINGS.filter((b) => b.does.write || b.does.edit || b.does.impro);
   const groups = [...new Set(score.map((b) => b.group))];
   for (const g of groups) {
