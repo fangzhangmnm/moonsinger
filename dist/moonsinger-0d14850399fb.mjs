@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.4-2026-10-07";
+var APP_VERSION = "v0.2.5-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2274,8 +2274,8 @@ function installPlatformGuards(surfaces) {
 // src/ui/drum.ts
 var ROW = 44;
 var VISIBLE = 5;
-var FRICTION = 0.92;
-var IDLE_CLOSE = 900;
+var SETTLE = 120;
+var CLOSE_AFTER = 450;
 var current = null;
 function openDrum(anchor, cols, o) {
   current?.close();
@@ -2287,11 +2287,11 @@ function openDrum(anchor, cols, o) {
   if (left + total > innerWidth - 4) left = Math.max(4, r.right - total);
   Object.assign(box.style, { left: `${left}px`, top: `${Math.max(4, Math.min(r.top, innerHeight - ROW * VISIBLE - 4))}px`, height: `${ROW * VISIBLE}px` });
   document.body.appendChild(box);
-  let idle = 0, closed = false;
+  let closeTimer = 0, closed = false;
   const close = () => {
     if (closed) return;
     closed = true;
-    clearTimeout(idle);
+    clearTimeout(closeTimer);
     box.remove();
     document.removeEventListener("pointerdown", outside, true);
     removeEventListener("keydown", esc4, true);
@@ -2312,107 +2312,51 @@ function openDrum(anchor, cols, o) {
       close();
     }
   };
-  const settle = () => {
-    clearTimeout(idle);
-    idle = window.setTimeout(close, IDLE_CLOSE);
-  };
   setTimeout(() => document.addEventListener("pointerdown", outside, true), 0);
   addEventListener("keydown", esc4, true);
-  box.addEventListener("touchstart", (e) => e.preventDefault(), { passive: false });
   cols.forEach((c, ci) => {
     const col = document.createElement("div");
     col.className = "drum-col";
     col.style.width = `${c.width}px`;
     if (c.title) col.title = c.title;
-    const strip = document.createElement("div");
-    strip.className = "drum-strip";
-    strip.innerHTML = c.items.map((h, i) => `<div class="drum-item" data-i="${i}">${h}</div>`).join("");
-    col.appendChild(strip);
+    const padRows = Math.floor(VISIBLE / 2);
+    col.innerHTML = `<div class="drum-pad" style="height:${ROW * padRows}px"></div>` + c.items.map((h, i) => `<div class="drum-item" data-i="${i}">${h}</div>`).join("") + `<div class="drum-pad" style="height:${ROW * padRows}px"></div>`;
     box.appendChild(col);
-    const n2 = c.items.length, pad2 = ROW * Math.floor(VISIBLE / 2);
-    let y = -c.index * ROW, shown = c.index, raf = 0;
-    const clampY = (v) => Math.max(-(n2 - 1) * ROW, Math.min(0, v));
+    const items = [...col.querySelectorAll(".drum-item")], n2 = items.length;
+    let shown = c.index, settleTimer = 0;
+    const at = () => Math.max(0, Math.min(n2 - 1, Math.round(col.scrollTop / ROW)));
     const paint = () => {
-      strip.style.transform = `translateY(${pad2 + y}px)`;
-      strip.querySelectorAll(".drum-item").forEach((el, i) => {
-        const dist = Math.abs(i * ROW + y) / ROW;
-        el.style.opacity = String(Math.max(0.25, 1 - dist * 0.3));
-        el.classList.toggle("on", Math.round(-y / ROW) === i);
+      const top = col.scrollTop, a = at();
+      items.forEach((el, i) => {
+        el.style.opacity = String(Math.max(0.25, 1 - Math.abs(i * ROW - top) / ROW * 0.3));
+        el.classList.toggle("on", i === a);
       });
-      const at = Math.max(0, Math.min(n2 - 1, Math.round(-y / ROW)));
-      if (at !== shown) {
-        shown = at;
-        o.onChange(ci, at);
-      }
     };
-    const animateTo = (target) => {
-      cancelAnimationFrame(raf);
-      const step = () => {
-        y += (target - y) * 0.25;
-        if (Math.abs(target - y) < 0.5) {
-          y = target;
-          paint();
-          settle();
-          return;
-        }
-        paint();
-        raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-    };
-    const coast = (v) => {
-      cancelAnimationFrame(raf);
-      const step = () => {
-        y = clampY(y + v);
-        v *= FRICTION;
-        paint();
-        if (Math.abs(v) < 0.6 || y === 0 || y === -(n2 - 1) * ROW) {
-          animateTo(Math.round(y / ROW) * ROW);
-          return;
-        }
-        raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-    };
-    let drag = null;
-    col.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      clearTimeout(idle);
-      cancelAnimationFrame(raf);
-      try {
-        col.setPointerCapture(e.pointerId);
-      } catch {
-      }
-      drag = { pid: e.pointerId, y0: e.clientY, start: y, moved: false, hist: [{ t: performance.now(), y: e.clientY }] };
-    });
-    col.addEventListener("pointermove", (e) => {
-      if (!drag || e.pointerId !== drag.pid) return;
-      const dy = e.clientY - drag.y0;
-      if (Math.abs(dy) > 4) drag.moved = true;
-      y = clampY(drag.start + dy);
-      paint();
-      drag.hist.push({ t: performance.now(), y: e.clientY });
-      if (drag.hist.length > 6) drag.hist.shift();
-    });
-    const end = (e) => {
-      if (!drag || e.pointerId !== drag.pid) return;
-      const d = drag;
-      drag = null;
-      if (!d.moved) {
-        const it = e.target.closest(".drum-item");
-        animateTo(it ? -Number(it.dataset.i) * ROW : Math.round(y / ROW) * ROW);
-        return;
-      }
-      const a = d.hist[0], b = d.hist[d.hist.length - 1], dt = Math.max(1, b.t - a.t);
-      if (performance.now() - b.t > 80) {
-        animateTo(Math.round(y / ROW) * ROW);
-        return;
-      }
-      coast((b.y - a.y) / dt * 16);
-    };
-    col.addEventListener("pointerup", end);
-    col.addEventListener("pointercancel", end);
+    col.scrollTop = c.index * ROW;
     paint();
+    col.addEventListener("scroll", () => {
+      paint();
+      const i = at();
+      if (i !== shown) {
+        shown = i;
+        o.onChange(ci, i);
+      }
+      clearTimeout(closeTimer);
+      clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => {
+        closeTimer = window.setTimeout(close, CLOSE_AFTER);
+      }, SETTLE);
+    }, { passive: true });
+    col.addEventListener("click", (e) => {
+      const it = e.target.closest(".drum-item");
+      if (!it) return;
+      const i = Number(it.dataset.i);
+      if (i !== shown) {
+        shown = i;
+        o.onChange(ci, i);
+      }
+      close();
+    });
   });
   const handle = { close };
   current = handle;
@@ -2431,6 +2375,7 @@ var UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
 var UNIT_NAME = ["\u4E09\u5341\u4E8C\u5206", "\u5341\u516D\u5206", "\u516B\u5206", "\u56DB\u5206", "\u4E8C\u5206", "\u5168\u97F3\u7B26"];
 var KEY_NAMES = KEY_LABEL;
 var KEY_CIRCLE = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+var tupletMark = (n2) => `<span class="tup"><span class="smufl">${String.fromCodePoint(59520 + n2)}</span><svg class="brace" viewBox="0 0 30 8" aria-hidden="true"><path d="M1.5 1 Q1.5 4.5 6 4.5 L12 4.5 Q15 4.5 15 7.5 Q15 4.5 18 4.5 L24 4.5 Q28.5 4.5 28.5 1"/></svg></span>`;
 var pretty = (p) => pitchName(p).replace(/#/g, "\u266F").replace(/b(?=\d)|b(?=b)/g, "\u266D");
 function homeTonic(fifths) {
   const t = tonicStepIndex(fifths), h = diatonicIndex(HOME);
@@ -2464,6 +2409,11 @@ var Pad = class {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
     const m = KEY_METRIC[padForm()], avail = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
     return Math.max(4, Math.min(6, Math.floor((avail + m.gap) / (m.h + m.gap))));
+  }
+  /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
+  spanText(shift, f, rows) {
+    const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
+    return `${pretty(fromDiatonic(lo, f))}\u2013${pretty(fromDiatonic(hi, f))}`;
   }
   /** 音域窗口第 shift 档时，左下那个键的五线谱位置（中央 C 那一行默认在中线下面一行）。 */
   baseAt(shift, f, rows) {
@@ -2511,7 +2461,7 @@ var Pad = class {
     }
   }
   build(f, base2, selKey, rows, st2) {
-    const tools = this.mode !== "normal" ? `<div class="pad-tools cands">${this.cands(f, selKey, rows, st2)}</div>` : `<div class="pad-tools knobs">` + (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF1A\u4E0A\u4E0B\u6ED1 = \u9009\u4E2D\u8FD9\u6BB5\u5347 / \u964D\u534A\u97F3\uFF1B\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span><span class="kh">\u21C5</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u4E0A\u4E0B\u6ED1 = \u4E94\u5EA6\u5708\u8D70\u4E00\u683C\uFF1B\u70B9\u5F00\u9009"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u4E0A\u4E0B\u6ED1 = \u957F / \u77ED\u4E00\u6863\uFF1B\u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF1A\u4E0A\u4E0B\u6ED1 = \u7A97\u53E3\u632A\u4E00\u884C\uFF1B\u70B9\u5F00\u9009"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\u2014</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div>`;
+    const tools = this.mode !== "normal" ? `<div class="pad-tools cands">${this.cands(f, selKey, rows, st2)}</div>` : `<div class="pad-tools knobs">` + (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF1A\u4E0A\u4E0B\u6ED1 = \u9009\u4E2D\u8FD9\u6BB5\u5347 / \u964D\u534A\u97F3\uFF1B\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span><span class="kh">\u21C5</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u4E0A\u4E0B\u6ED1 = \u4E94\u5EA6\u5708\u8D70\u4E00\u683C\uFF1B\u70B9\u5F00\u9009"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u4E0A\u4E0B\u6ED1 = \u957F / \u77ED\u4E00\u6863\uFF1B\u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u4E0A\u4E0B\u6ED1 = \u7A97\u53E3\u632A\u4E00\u884C\uFF1B\u70B9\u5F00\u9009"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\u2014</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div>`;
     const cells = [], ht = homeTonic(f);
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < this.cols; col++) {
@@ -2535,10 +2485,7 @@ var Pad = class {
       u.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i.unit]}${i.tuplet ? `\uFF08${i.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u4E0A\u4E0B\u6ED1 = \u957F / \u77ED\u4E00\u6863\uFF1B\u70B9\u5F00\u9009`;
     }
     const r = q(".k-range .kl");
-    if (r) {
-      const low = pretty(fromDiatonic(this.baseAt(this.rowShift, f, this.rows()), f));
-      r.innerHTML = `\u97F3\u57DF<small>${low}</small>`;
-    }
+    if (r) r.textContent = this.spanText(this.rowShift, f, this.rows());
     this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
       const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
       const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = a ? alterBy(p0, a) : p0;
@@ -2678,9 +2625,10 @@ var Pad = class {
       );
     } else if (knob === "unit") {
       const TUP = [0, 3, 5, 6, 7];
+      const wt = Math.max(40, Math.round(w * 0.4)), wu = w - wt - 2;
       openDrum(anchor, [
-        { items: UNIT_GLYPH.map((g2, i) => `<span class="smufl">${g2}</span><small>${UNIT_NAME[i]}</small>`), index: st2.input.unit, width: w, title: "\u957F\u77ED\u57FA\u7EBF" },
-        { items: TUP.map((n2) => n2 ? `${n2} \u8FDE` : "\u4E0D\u8FDE"), index: Math.max(0, TUP.indexOf(st2.input.tuplet)), width: 64, title: "\u8FDE\u97F3" }
+        { items: UNIT_GLYPH.map((g2, i) => `<span class="smufl">${g2}</span>${wu >= 100 ? `<small>${UNIT_NAME[i]}</small>` : ""}`), index: st2.input.unit, width: wu, title: "\u957F\u77ED\u57FA\u7EBF" },
+        { items: TUP.map((n2) => n2 ? tupletMark(n2) : `<span class="plain">\u4E0D\u8FDE</span>`), index: Math.max(0, TUP.indexOf(st2.input.tuplet)), width: wt, title: "\u8FDE\u97F3" }
       ], { onChange: (c, i) => {
         if (c === 0) this.host.onUnit(i);
         else this.host.onTuplet(TUP[i]);
@@ -2690,7 +2638,7 @@ var Pad = class {
       openDrum(
         anchor,
         [{
-          items: S.map((s) => `${s === 0 ? "\u4E2D\u592E C" : s > 0 ? `\u9AD8 ${s} \u884C` : `\u4F4E ${-s} \u884C`}<small>${pretty(fromDiatonic(this.baseAt(s, f, rows), f))} \u8D77</small>`),
+          items: S.map((s) => this.spanText(s, f, rows)),
           index: Math.max(0, S.indexOf(Math.max(-4, Math.min(4, this.rowShift)))),
           width: w,
           title: "\u97F3\u57DF\u7A97\u53E3"
@@ -5639,4 +5587,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-0b1f48833823.mjs.map
+//# sourceMappingURL=moonsinger-0d14850399fb.mjs.map

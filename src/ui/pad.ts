@@ -37,6 +37,9 @@ const UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
 const UNIT_NAME = ["三十二分", "十六分", "八分", "四分", "二分", "全音符"];
 const KEY_NAMES = KEY_LABEL;
 const KEY_CIRCLE = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];   // 五度圈，♭ 多 → C → ♯ 多
+/** 连音的样子：Bravura 的连音数字（SMuFL tuplet0–9 = U+E880–E889）下面一个横着的花括号（user「3 5能不能用符号+underbrace」）。 */
+const tupletMark = (n: number) => `<span class="tup"><span class="smufl">${String.fromCodePoint(0xe880 + n)}</span>` +
+  `<svg class="brace" viewBox="0 0 30 8" aria-hidden="true"><path d="M1.5 1 Q1.5 4.5 6 4.5 L12 4.5 Q15 4.5 15 7.5 Q15 4.5 18 4.5 L24 4.5 Q28.5 4.5 28.5 1"/></svg></span>`;
 const pretty = (p: Pitch) => pitchName(p).replace(/#/g, "♯").replace(/b(?=\d)|b(?=b)/g, "♭");
 
 /** 不带点的那一组 = 她说话的家（HOME = D4）所在的那个「1 到 7」：1=C 时 C4–B4 不带点。 */
@@ -80,6 +83,11 @@ export class Pad {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
     const m = KEY_METRIC[padForm()], avail = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
     return Math.max(4, Math.min(6, Math.floor((avail + m.gap) / (m.h + m.gap))));   // 封顶 6：再多就大半在她的音域外了
+  }
+  /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
+  private spanText(shift: number, f: number, rows: number): string {
+    const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
+    return `${pretty(fromDiatonic(lo, f))}–${pretty(fromDiatonic(hi, f))}`;
   }
   /** 音域窗口第 shift 档时，左下那个键的五线谱位置（中央 C 那一行默认在中线下面一行）。 */
   private baseAt(shift: number, f: number, rows: number): number {
@@ -126,7 +134,7 @@ export class Pad {
           ? `<button class="btn knob k-key" data-knob="key" title="移调：上下滑 = 选中这段升 / 降半音；点开 = 半音 / 全音 / 八度 / 转调"><span class="kl">移调</span><span class="kh">⇅</span></button>`
           : `<button class="btn knob k-key" data-knob="key" title="1=（pad 自己的调）：上下滑 = 五度圈走一格；点开选"><span class="kl"></span><span class="kh">⇅</span></button>`) +
         `<button class="btn knob k-unit" data-knob="unit" title="长短基线：上下滑 = 长 / 短一档；点开选（含连音）"><span class="kl"></span><span class="kh">⇅</span></button>` +
-        `<button class="btn knob k-range" data-knob="range" title="音域：上下滑 = 窗口挪一行；点开选"><span class="kl"></span><span class="kh">⇅</span></button>` +
+        `<button class="btn knob k-range" data-knob="range" title="音域（这块 pad 从哪个音到哪个音）：上下滑 = 窗口挪一行；点开选"><span class="kl"></span><span class="kh">⇅</span></button>` +
         `<button class="btn knob" data-knob="more" title="更多：布局、插记号"><span class="kl">⋯</span></button></div>` +
         `<div class="pad-tools writes">` +
         `<button class="btn" data-caret="-1" title="光标左移（${hint("left")}）">←</button>` +
@@ -156,7 +164,7 @@ export class Pad {
     const u = q(".k-unit .kl");
     if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`; u.parentElement!.title = `长短基线：${UNIT_NAME[i.unit]}${i.tuplet ? `（${i.tuplet} 连音）` : ""}——上下滑 = 长 / 短一档；点开选`; }
     const r = q(".k-range .kl");
-    if (r) { const low = pretty(fromDiatonic(this.baseAt(this.rowShift, f, this.rows()), f)); r.innerHTML = `音域<small>${low}</small>`; }
+    if (r) r.textContent = this.spanText(this.rowShift, f, this.rows());
     // 电脑键盘挂着 ♯ / ♭（Shift）：音键显示升 / 降之后的样子；手指正在滑的那个键显示它自己的
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => {
       const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
@@ -240,13 +248,15 @@ export class Pad {
         { onChange: (_c, i) => this.host.onInputKey(KEY_CIRCLE[i]) });
     } else if (knob === "unit") {
       const TUP = [0, 3, 5, 6, 7] as const;
+      // 两根合起来 = 旋钮原来那一格的宽度（user「宽度比例不合理，能不能共用原来的宽度」）：长短约六成、连音约四成；太窄就只画音符
+      const wt = Math.max(40, Math.round(w * 0.4)), wu = w - wt - 2;   // 2 = 两列之间的缝
       openDrum(anchor, [
-        { items: UNIT_GLYPH.map((g, i) => `<span class="smufl">${g}</span><small>${UNIT_NAME[i]}</small>`), index: st.input.unit, width: w, title: "长短基线" },
-        { items: TUP.map((n) => (n ? `${n} 连` : "不连")), index: Math.max(0, TUP.indexOf(st.input.tuplet as 0 | 3 | 5 | 6 | 7)), width: 64, title: "连音" },
+        { items: UNIT_GLYPH.map((g, i) => `<span class="smufl">${g}</span>${wu >= 100 ? `<small>${UNIT_NAME[i]}</small>` : ""}`), index: st.input.unit, width: wu, title: "长短基线" },
+        { items: TUP.map((n) => (n ? tupletMark(n) : `<span class="plain">不连</span>`)), index: Math.max(0, TUP.indexOf(st.input.tuplet as 0 | 3 | 5 | 6 | 7)), width: wt, title: "连音" },
       ], { onChange: (c, i) => { if (c === 0) this.host.onUnit(i); else this.host.onTuplet(TUP[i]); } });
     } else if (knob === "range") {
       const rows = this.rows(), S = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
-      openDrum(anchor, [{ items: S.map((s) => `${s === 0 ? "中央 C" : s > 0 ? `高 ${s} 行` : `低 ${-s} 行`}<small>${pretty(fromDiatonic(this.baseAt(s, f, rows), f))} 起</small>`),
+      openDrum(anchor, [{ items: S.map((s) => this.spanText(s, f, rows)),
         index: Math.max(0, S.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), width: w, title: "音域窗口" }],
         { onChange: (_c, i) => { this.rowShift = S[i]; this.render(); } });
     }
