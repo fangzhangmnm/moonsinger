@@ -46,6 +46,7 @@ describe("lyrics", () => {
     st = setHum(st, "n");
     eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "んん");
     eq(toLabScore(st.song, "zh").SCORE.map((e) => e.kana).join(""), "嗯嗯");
+    st = setHum(st, "o"); eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "おお"); eq(toLabScore(st.song, "zh").SCORE.map((e) => e.kana).join(""), "哦哦");
   });
   it("哼的字在给核心的乐谱里带 hum 标记（核心的哼参数只管这些），有歌词的不带", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near"); st = applyLyricLine(st, "あ");

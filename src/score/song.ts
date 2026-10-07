@@ -38,8 +38,8 @@ export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
 export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;
 
-/** 「哼的字」：跟语言无关的四档，唱的时候按语言换字（lab-score.ts HUM_SYLLABLE）。 */
-export type Hum = "la" | "n" | "u" | "a";
+/** 「哼的字」：跟语言无关的五档，唱的时候按语言换字（lab-score.ts HUM_SYLLABLE）。o = 2026-10-07 加（user「GM不是还有一个ooo吗」「对，哦 / お」）。 */
+export type Hum = "la" | "n" | "u" | "o" | "a";
 
 export interface Song {
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）

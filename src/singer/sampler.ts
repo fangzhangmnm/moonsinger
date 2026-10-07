@@ -23,7 +23,7 @@ const GLIDE_TC = 0.012;      // 拖音高滑过去的时间常数（s）
 const GLIDE_SPAN = 3;        // 离样本音高超过这么多半音就换一份样本（交叉淡入它的循环段，不带起音）
 const XFADE = 0.03;
 
-const KANA: Record<Hum, string> = { la: "ら", n: "ん", u: "う", a: "あ" };
+const KANA: Record<Hum, string> = { la: "ら", n: "ん", u: "う", o: "お", a: "あ" };
 interface Entry { kana: string; midi: number; start: number; len: number; loopStart: number; loopEnd: number; buf?: AudioBuffer }
 interface Table { sr: number; entries: Entry[] }
 interface Voice { src: AudioBufferSourceNode; gain: GainNode; entry: Entry }
@@ -66,7 +66,8 @@ export class Sampler {
   private get env() { return ENV[this.variant]; }
 
   private pick(midi: number, hum: Hum): Entry | null {
-    const es = this.table?.entries.filter((e) => e.kana === KANA[hum]) ?? [];
+    let es = this.table?.entries.filter((e) => e.kana === KANA[hum]) ?? [];
+    if (!es.length) es = this.table?.entries.filter((e) => e.kana === "あ") ?? [];   // 这套表没有这个字（旧表没有 お）：退回「啊」
     if (!es.length) return null;
     return es.reduce((a, b) => (Math.abs(b.midi - midi) < Math.abs(a.midi - midi) ? b : a));
   }

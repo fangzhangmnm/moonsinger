@@ -30,11 +30,11 @@ const piper = { SR: pn.SR, HOP: pn.HOP, phonemize: pn.phonemize, phonemizeZh: pn
 
 const VARIANT = process.argv[2] ?? "v2";
 if (!["v1", "v2"].includes(VARIANT)) throw new Error(`variant ${VARIANT}: v1 | v2`);
-const KANA = ["ら", "ん", "う", "あ"];   // = song.ts 的 Hum：la n u a
+const KANA = VARIANT === "v1" ? ["ら", "ん", "う", "あ"] : ["ら", "ん", "う", "お", "あ"];   // = song.ts 的 Hum：la n u (o) a；v1 = 旧表原样（没有 お）
 const ANCHORS = [57, 60, 63, 66, 69, 72, 75];   // A3 … D♯5，每 3 个半音（她的音域 A3–E5）
 const TEMPO = 80;
 // v2 每个字的生成语境：[目标字, 垫在后面的字, 语言]（ん 后面接 ま → 双唇，闭嘴哼；呜 / 拉 用中文：圆唇 u、边音 l）
-const V2_CTX = { ら: ["拉", "拉", "zh"], ん: ["ん", "ま", "ja"], う: ["呜", "拉", "zh"], あ: ["あ", "ら", "ja"] };
+const V2_CTX = { ら: ["拉", "拉", "zh"], ん: ["ん", "ま", "ja"], う: ["呜", "拉", "zh"], お: ["お", "ら", "ja"], あ: ["あ", "ら", "ja"] };   // お = 干净的圆唇 o（GM Voice Oohs 那种「哦」）
 const ZH_PRESET = JSON.parse(fs.readFileSync(path.join(TP, "piper-plus/work/model-singing/tsukuyomi-zhen-dur-override.config.json"), "utf8")).preset_default?.zh ?? 0;
 const VIB = DEFAULT_OPT.vibrato;
 

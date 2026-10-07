@@ -16,7 +16,7 @@ export interface LabEntry { kana: string; notes: [number, number][]; rest?: numb
 export interface LabScore { SCORE: LabEntry[]; TEXT: string; TEMPO_QUARTER: number; LANG: "ja" | "zh" }
 
 /** 「哼的字」四档在两种语言里的字：la 舌尖起音、节奏最清楚；n 闭嘴哼（同高的几个音会连成一个）；u = Ooh；a = Ahh（GM 人声兜底的两个元音）。 */
-export const HUM_SYLLABLE: Record<Hum, { ja: string; zh: string }> = { la: { ja: "ら", zh: "啦" }, n: { ja: "ん", zh: "嗯" }, u: { ja: "う", zh: "呜" }, a: { ja: "あ", zh: "啊" } };
+export const HUM_SYLLABLE: Record<Hum, { ja: string; zh: string }> = { la: { ja: "ら", zh: "啦" }, n: { ja: "ん", zh: "嗯" }, u: { ja: "う", zh: "呜" }, o: { ja: "お", zh: "哦" }, a: { ja: "あ", zh: "啊" } };
 
 export function toLabScore(song: Song, lang: "ja" | "zh" = "ja"): LabScore {
   const eighth = TPQ / 2, tl = timeline(song), base = tl[0]?.bpm ?? 90;
