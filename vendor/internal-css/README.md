@@ -1,0 +1,1 @@
+workbench-elements.css ← @internal/workbench-elements 0.1.2（notice / popup-menu 的样式；包只用 var()，token 值在 styles.css）。收货时随包一起更新（pull-package 后手动拷，同 CatsUp vendor/internal-css/）。2026-10-07 Claude Opus 5.5

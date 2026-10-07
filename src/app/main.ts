@@ -7,8 +7,8 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type NoteTok, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, setInputScale, setUnit, setNote, currentIndex, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
-import { type Pitch, pitchName, midiOf, KEY_LABEL, alterBy } from "../score/pitch.ts";
+import { type EditorState, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ } from "../score/song.ts";
+import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
@@ -19,6 +19,7 @@ import { toLabScore, type SingLang } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
 import { encodeMp3 } from "../export/mp3.ts";
 import { createPackStore } from "@internal/model-packs";
+import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, type Extras, type Quality } from "../format/project.ts";
@@ -28,10 +29,12 @@ import { defaultStem, fileSafe } from "./names.ts";
 let st: EditorState = initState();
 /** 这首歌的家（无地逃生口）：文件名主干（新建 = 默认名；打开 = 那个文件的名字）、打开的那个文件（桌面 Chromium）、
  *  文件里这一版不改动的部分、上次存 / 打开时的样子（判断改过没存）。歌名在谱里（st.song.title，可不填），和文件名分开。 */
-const doc = { stem: defaultStem(), handle: null as docFile.FileHandle | null, extras: emptyExtras() as Extras,
+const doc = { stem: defaultStem(), named: false, handle: null as docFile.FileHandle | null, extras: emptyExtras() as Extras,
   saved: { song: st.song as Song, quality: "full" as Quality } };
 /** 显示 / 存档用的名字：填了歌名用歌名，没填用文件名主干。 */
-const docName = () => fileSafe(st.song.title ?? "") || doc.stem;
+/** 文件名（user「用歌名可以，然后也要yyyymmdd规则。之后各管各的同意」）：没存过 = 年月日-歌名（没歌名 = 年月日-四位随机 = doc.stem）；
+ *  存过 / 打开的 / 改过名的 = 定下来（named），和纸上的歌名各管各的；改文件名在文件菜单。 */
+const docName = () => { const t = fileSafe(st.song.title ?? ""); return doc.named || !t ? doc.stem : `${doc.stem.slice(0, 8)}-${t}`; };
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const bar = $("bar"), scoreEl = $("score"), padEl = $("padPanel");
@@ -52,17 +55,16 @@ function showUpdateBar(): void {
 }
 
 
+// 顶栏只有一行（user 2026-10-07「顶栏应该只有一行」「顶栏同意」「浮动走带条 感觉要不放在顶端居中？」）：
+//   左 = 文件钮 + 文件名（点 = 文件菜单）；中 = 走带条（唱 / 停、弹、唱的进度）；右 = 键盘开关 + 扳手。
+//   音质 / 哼的字 → 谱前面的歌手牌；导出歌声 → 文件菜单；版本号 → 设置；状态细字不要了（user「状态细字可以精简，或者不要也行」）。
 bar.innerHTML =
-  `<button id="fileBtn" class="btn" title="文件：新建 / 打开 / 存 / 另存为（Ctrl / ⌘+S 存）"><svg class="ico"><use href="#file"/></svg></button>` +
-  `<span id="docTitle" class="title">未命名</span><span class="ver">${APP_VERSION}</span>` +
-  `<label class="field" title="完整 = 月读本人（第一次要加载约 65 MB）；轻量 = 元音采样，按下即响、任何设备都能跑">音质<select id="qualSel"><option value="full">完整</option><option value="light">轻量</option></select></label>` +
-  `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="o">お / 哦</option><option value="a">あ / 啊</option></select></label>` +
-  `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
-  `<button id="padBtn" class="btn is-on" title="手指 pad"><svg class="ico"><use href="#grid"/></svg></button>` +
-  `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款"><svg class="ico"><use href="#wrench"/></svg></button>` +
-  `<button id="shareBtn" class="btn" title="导出歌声（mp3），发给别人听"><svg class="ico"><use href="#export"/></svg></button>` +
-  `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button>` +
-  `<button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>`;
+  `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="文件：新建 / 打开 / 存 / 另存为 / 改文件名 / 导出歌声（Ctrl / ⌘+S 存）"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">未命名</span></button></div>` +
+  `<div class="tb-mid"><button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
+  `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button><span id="singStatus" class="sing-st"></span></div>` +
+  `<div class="tb-right"><button id="padBtn" class="btn is-on" title="键盘（pad）"><svg class="ico"><use href="#grid"/></svg></button>` +
+  `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款、版本"><svg class="ico"><use href="#wrench"/></svg></button></div>`;
+configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 
 // ── 试听：月读的元音采样器（出一个音就响；只唱「哼」那一个字，不看歌词——user「还是单一元音更适合当blueprint」） ─────
 const sampler = new Sampler();
@@ -91,6 +93,8 @@ const view = new ScoreView(scoreEl, {
   release: () => { clearTimeout(upTimer); sound.up("score"); },
   focus: (where) => { if (stacked()) showPad(where === "staff"); },
   autoBars: () => autoBars,
+  part: () => ({ name: quality() === "none" ? "未选角" : "月读", empty: quality() === "none" }),
+  onPart: () => openPartSheet(),
 });
 let impro = false;
 /** 按拍号自动画小节线（默认开；这次打开里有效）。user「自动加小节也是可以toggle的，默认开」 */
@@ -128,7 +132,7 @@ const pad = new Pad(padEl, {
   onInputKey: (f) => update(setInputKey(st, f)),
   onInputScale: (id) => update(setInputScale(st, id)),
   autoBars: () => autoBars,
-  onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); renderStatus(); },
+  onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); },
   onHide: () => showPad(false),
   onInsertMark: (kind) => {   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
     const at = st.sel ? st.sel.from : st.caret;
@@ -146,7 +150,7 @@ const pad = new Pad(padEl, {
 });
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
-function toggleImpro(): void { impro = !impro; $("improBtn").classList.toggle("is-on", impro); if (impro) showPad(true); renderStatus(); pad.render(); }
+function toggleImpro(): void { impro = !impro; $("improBtn").classList.toggle("is-on", impro); if (impro) showPad(true); pad.render(); }
 $("improBtn").addEventListener("click", () => toggleImpro());
 
 function update(next: EditorState): void {
@@ -154,50 +158,20 @@ function update(next: EditorState): void {
   st = next;
   view.render();
   pad.render();
-  renderStatus();
   renderTitle();
-}
-
-const DUR_NAME: Record<number, string> = { [TPQ * 4]: "全音符", [TPQ * 3]: "附点二分", [TPQ * 2]: "二分", [TPQ * 1.5]: "附点四分", [TPQ]: "四分",
-  [TPQ * 0.75]: "附点八分", [TPQ / 2]: "八分", [TPQ * 3 / 8]: "附点十六分", [TPQ / 4]: "十六分", [TPQ / 8]: "三十二分" };
-const UNIT_NAME = ["三十二分", "十六分", "八分", "四分", "二分", "全音符"];   // = song.ts LADDER
-const durName = (d: number) => DUR_NAME[d] ?? `${+(d / TPQ).toFixed(3)} 拍`;
-function renderStatus(): void {
-  const el = $("status"), off = view.layout?.shortBars ?? 0;   // 和谱面同一个数法（自动小节线开着时按拍号数）
-  // 写的时候谱上不预览下一个音（user「插入不要在谱上显示音符预览」）→ 下一个音的样子写在这里
-  const inp = st.input, next = `${UNIT_NAME[inp.unit]}${inp.tuplet ? ` ${inp.tuplet} 连` : ""}${inp.acc ? ` ${inp.acc > 0 ? "♯" : "♭"}${inp.accMode === "lock" ? "（锁）" : ""}` : ""}`;
-  let s = impro ? "弹（只唱不写）" : st.sel ? `改 · 选中 ${st.sel.to - st.sel.from} 个` : `写（下一个：${next}）`;
-  const i = st.sel ? st.sel.from : currentIndex(st);
-  if (i >= 0 && (!st.sel || st.sel.to - st.sel.from === 1)) {
-    const t = st.song.tokens[i];
-    if (t.kind === "rest") s += ` · 休止 · ${durName(t.dur)}`;
-    else if (t.kind === "note") s += ` · ${(t as NoteTok).pitch ? pitchName((t as NoteTok).pitch!) : "（音高空着）"} · ${durName(t.dur)}${t.tie ? " · 连着前一个" : ""}` +
-      `${(t as NoteTok).lyric ? ` · ${(t as NoteTok).lyric === MELISMA_MARK ? "拖腔" : (t as NoteTok).lyric}` : ""}`;
-    else if (t.kind === "key") s += ` · 调号 1=${KEY_LABEL[t.fifths]}`;
-    else if (t.kind === "time") s += ` · 拍号 ${t.beats}/${t.beatType}`;
-    else if (t.kind === "tempo") s += ` · 速度 ${tempoWord(t.bpm).it} ♩=${t.bpm}`;
-  } else if (st.song.tokens.length <= headLen(st.song.tokens)) s += " · 打 1–7 写音，点谱下面写歌词，点谱头改调号 / 拍号 / 速度";
-  if (off) s += ` · ${off} 个小节拍数和拍号对不上（只提示）`;
-  el.textContent = s;
 }
 
 // ── 播放：月读唱（第一次要加载引擎，之后复用） ─────────────────────────
 const singer = new Singer();
 let singing = false;
-const singStatus = (s: string) => { $("singStatus").textContent = s; };
-/** 报错条（顶上，带完整原因、点「知道了」才收）。user 2026-10-07「替补不能静默替补，需要显示报错」→ 订正「不是显示自动上，而是就是不出声，报错，人类手动换」：
- *  成员上不了场就不出声、报错，换谁由人来（选角是窄接口；谱子不受影响）。
- *  状态栏太窄、原因会被省略号截掉，所以不放在那里。 */
-function showError(text: string): void {
-  document.getElementById("errNotice")?.remove();
-  const el = document.createElement("div");
-  el.id = "errNotice"; el.className = "update-bar notice-err";
-  el.innerHTML = `<span class="notice-text"></span><button class="btn" data-v="ok">知道了</button>`;
-  el.querySelector<HTMLElement>(".notice-text")!.textContent = text;
-  el.addEventListener("click", (e) => { if ((e.target as HTMLElement).closest("[data-v]")) el.remove(); });
-  document.body.append(el);
-}
-const playIcon = (stop: boolean) => { $("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`; };
+/** 唱 / 导出的进度 = 顶栏走带条旁边的小字（停了就清）。 */
+const progress = (s: string) => { $("singStatus").textContent = s; };
+/** 一次性的消息（存好了、已分享…）= toast，3 秒（家族 @internal/workbench-elements 的 notice；错误另见 showError）。 */
+const info = (s: string) => { showNotice({ id: "info", level: "info", text: s, autoHideMs: 3000 }); };
+/** 报错：红色 toast，带完整原因，点了才收（家族四级 notice 的 error）。user 2026-10-07「替补不能静默替补，需要显示报错」→ 订正「不是显示自动上，而是就是不出声，报错，人类手动换」：
+ *  成员上不了场就不出声、报错，换谁由人来（选角是窄接口；谱子不受影响）。 */
+function showError(text: string): void { showNotice({ id: "err", level: "error", text }); }
+const playIcon = (stop: boolean) => { $("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`; if (!stop) progress(""); };
 /** 歌词里有汉字、没有假名 → 按中文唱；其余（含没有歌词）按日语唱。 */
 function songLang(): SingLang {
   const ls = st.song.tokens.flatMap((t) => (t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : [])).join("");
@@ -227,20 +201,20 @@ async function singFull(): Promise<SingResult | null> {
   if (!score.SCORE.length) return null;
   const opt = humOpt(), key = JSON.stringify([score, opt]);
   if (lastFull?.key === key) return lastFull.r;
-  const r = await singer.sing(score, (stage) => singStatus(`${stage}…`), { opt, models: modelBases() });
+  const r = await singer.sing(score, (stage) => progress(`${stage}…`), { opt, models: modelBases() });
   lastFull = { key, r };
   return r;
 }
 /** 轻量版：用元音采样器按乐谱唱（全唱「哼」那个字）。 */
 function playLight(who = "轻量版"): void {
   const notes = lightNotes();
-  if (!notes.length) { singStatus("还没有音"); return; }
-  if (!sampler.ready) { singStatus("轻量版的元音表还在下载…"); void sampler.load().then(() => playLight(who)); return; }
+  if (!notes.length) { info("还没有音"); return; }
+  if (!sampler.ready) { progress("元音表下载中…"); void sampler.load().then(() => playLight(who)); return; }
   const total = sampler.playSong(notes, st.song.hum, () => playIcon(false));
-  playIcon(true); singStatus(`${who}唱 ${total.toFixed(1)} 秒`);
+  playIcon(true); progress(`${who} ${total.toFixed(1)} 秒`);
 }
 async function togglePlay(): Promise<void> {
-  if (singer.playing || sampler.songPlaying) { singer.stop(); sampler.stopSong(); playIcon(false); singStatus(""); return; }
+  if (singer.playing || sampler.songPlaying) { singer.stop(); sampler.stopSong(); playIcon(false); return; }
   if (singing) return;
   singer.unlock();   // 在用户手势里先把声音打开（iPad）
   if (quality() === "none") { noCast("唱"); return; }
@@ -248,14 +222,14 @@ async function togglePlay(): Promise<void> {
   singing = true; $("playBtn").classList.add("is-on");
   try {
     const cached = lastFull, r = await singFull();
-    if (!r) { singStatus("还没有音"); return; }
-    singStatus(r === cached?.r ? `唱 ${(r.samples.length / r.sr).toFixed(1)} 秒（谱没改，用上次唱好的）` : `唱 ${(r.samples.length / r.sr).toFixed(1)} 秒（准备 ${(r.ms.load / 1000).toFixed(1)} s，合成 ${(r.ms.sing / 1000).toFixed(1)} s）`);
+    if (!r) { info("还没有音"); return; }
+    progress(r === cached?.r ? `${(r.samples.length / r.sr).toFixed(1)} 秒` : `${(r.samples.length / r.sr).toFixed(1)} 秒（准备 ${(r.ms.load / 1000).toFixed(1)} s，合成 ${(r.ms.sing / 1000).toFixed(1)} s）`);
     singer.play(r, () => { playIcon(false); });
     playIcon(true);
   } catch (e) {
     // 完整引擎带不起来（内存不够 / 加载失败）→ 不出声、报错，人手动换（user「不是显示自动上，而是就是不出声，报错，人类手动换」）
-    showError(`完整版月读唱不出来：${(e as Error).message}。没有出声。要先用元音版，就在顶栏「音质」换成「轻量」再播。`);
-    singStatus("没有出声（原因见上方）");
+    showError(`完整版月读唱不出来：${(e as Error).message}。没有出声。要先用元音版，点谱前面的「月读」把音质换成「轻量」再播。`);
+    progress("");
   } finally { singing = false; $("playBtn").classList.remove("is-on"); }
 }
 $("playBtn").addEventListener("click", () => { void togglePlay(); });
@@ -265,26 +239,26 @@ $("playBtn").addEventListener("click", () => { void togglePlay(); });
 let exporting = false;
 async function exportSong(): Promise<void> {
   if (exporting || singing) return;
-  exporting = true; $("shareBtn").classList.add("is-on");
+  exporting = true;
   try {
     let r: { samples: Float32Array; sr: number } | null = null, how = "";
     if (quality() === "none") { noCast("导出"); return; }
     if (quality() === "full") {
       try { r = await singFull(); how = "月读"; }
-      catch (e) { showError(`完整版月读唱不出来：${(e as Error).message}。没有导出。要先用元音版导出，就在顶栏「音质」换成「轻量」再导出。`); singStatus("没有导出（原因见上方）"); return; }
+      catch (e) { showError(`完整版月读唱不出来：${(e as Error).message}。没有导出。要先用元音版导出，点谱前面的「月读」把音质换成「轻量」再导出。`); progress(""); return; }
     } else {
       const notes = lightNotes();
       if (notes.length) { r = await sampler.renderSong(notes, st.song.hum); how = "轻量版"; }
     }
-    if (!r) { singStatus("还没有音"); return; }
-    singStatus("编 mp3…");
+    if (!r) { info("还没有音"); return; }
+    progress("编 mp3…");
     const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
     const file = new File([bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
-    singStatus("");
+    progress("");
     offerFile(file, "歌声导出好了", `${how}唱 ${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
   } catch (e) {
-    singStatus(`导出失败：${(e as Error).message}`);
-  } finally { exporting = false; $("shareBtn").classList.remove("is-on"); }
+    progress(""); showError(`导出失败：${(e as Error).message}`);
+  } finally { exporting = false; }
 }
 let closeOffer: (() => void) | null = null;
 
@@ -325,14 +299,14 @@ function openSettings(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
     else if (v === "default") srcIn.value = MODEL_SOURCE_DEFAULT;
-    else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else singStatus(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
+    else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
     else if (v === "reset") void shell.forceReset();
   });
   box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
     const files = [...((e.target as HTMLInputElement).files ?? [])]; if (!files.length) return;
     packSt.textContent = "导入中…";
     try { await packStore.importFiles(Object.keys(PACKS), files, (p) => (packSt.textContent = `导入中… ${Math.floor((p.done / p.total) * 100)}%`)); }
-    catch (err) { singStatus(`导入没成：${(err as Error).message === "no-matching-file" ? "这些文件不是月读要的模型包分片" : (err as Error).message}`); }
+    catch (err) { showError(`导入没成：${(err as Error).message === "no-matching-file" ? "这些文件不是月读要的模型包分片" : (err as Error).message}`); }
     refresh();
   });
 }
@@ -356,20 +330,17 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
       const a = document.createElement("a"), url = URL.createObjectURL(file);
       a.href = url; a.download = file.name; document.body.append(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 30_000);
-      singStatus(`已下载 ${file.name}`); onDone?.(); close();
+      info(`已下载 ${file.name}`); onDone?.(); close();
     } else if (v === "share") {
-      try { await navigator.share({ files: [file], title: file.name }); singStatus("已分享"); onDone?.(); close(); }
-      catch (err) { if ((err as { name?: string }).name !== "AbortError") singStatus(`分享失败：${(err as Error).message}`); }
+      try { await navigator.share({ files: [file], title: file.name }); info("已分享"); onDone?.(); close(); }
+      catch (err) { if ((err as { name?: string }).name !== "AbortError") showError(`分享失败：${(err as Error).message}`); }
     }
   });
 }
-$("shareBtn").addEventListener("click", () => { void exportSong(); });
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: __CSS_HASH__ };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
-$<HTMLSelectElement>("humSel").value = st.song.hum;   // 下拉的初值跟这首歌的设置（默认嗯）
-$<HTMLSelectElement>("humSel").addEventListener("change", (e) => { update(setHum(st, (e.target as HTMLSelectElement).value as Hum)); scoreEl.focus(); });
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
  *  点谱 = 弹出；打开歌词 / 歌名框（系统键盘要上来）= 收起；点顶栏空白处 = 收起。开局是弹出的（光标就在谱上）。
@@ -384,7 +355,8 @@ function showPad(on: boolean): void {
 bar.addEventListener("pointerdown", (e) => { if (stacked() && !(e.target as HTMLElement).closest("button, select, label, input, a")) showPad(false); });
 
 // ── 文件（无地逃生口）：一首歌 = 一个 .mxl；家 = 打开的那个文件（桌面 Chromium 能存回去）或没有家（iPad：存 = 下载 / 分享） ──────
-function quality(): Quality { return $<HTMLSelectElement>("qualSel").value as Quality; }
+let curQuality: Quality = "full";
+function quality(): Quality { return curQuality; }
 const dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality;
 function renderTitle(): void {
   const d = dirty(), name = docName();
@@ -394,28 +366,55 @@ function renderTitle(): void {
 }
 /** 主唱没人上场（别的软件存的谱，原来的乐器这一版没有）：不出声、报错，人来选（user「不出声，报错，人类手动换」）。 */
 function noCast(what: string): void {
-  showError(`主唱这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，在顶栏「音质」选「完整」或「轻量」。`);
-  singStatus(`没有${what}（原因见上方）`);
+  showError(`主唱这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，点谱前面的「未选角」选月读。`);
 }
-/** 音质下拉：别的软件存的谱打开时多一项「未选角」。 */
-function setQuality(q: Quality): void {
-  const sel = $<HTMLSelectElement>("qualSel");
-  let none = sel.querySelector<HTMLOptionElement>('option[value="none"]');
-  if (q === "none" && !none) { none = document.createElement("option"); none.value = "none"; none.textContent = "未选角"; sel.prepend(none); }
-  if (q !== "none") none?.remove();
-  sel.value = q;
+/** 音质（= 主唱这个角色上场的是谁、用哪一版）：完整 / 轻量 / 未选角（别的软件存的谱）。改了重画歌手牌。 */
+function setQuality(q: Quality): void { curQuality = q; view.render(); renderTitle(); }
+/** 歌手牌（第一行谱号左边的声部名）点开：上面选谁来唱（乐器），下面就地改它的设置，改了立刻生效
+ *  （user「歌手牌同意，和打谱软件对齐」「应该就是乐器名可以选择一大堆乐器，然后下面可以in place改，大概这样？」）。
+ *  现在只有一个声部、乐器只有月读 = 多乐器的占位（以后每个声部一张牌；数据契约「每个声部在谱号前面选角色和麦克风」）。 */
+const HUMS: [Hum, string][] = [["n", "ん / 嗯"], ["a", "あ / 啊"], ["o", "お / 哦"], ["u", "う / 呜"], ["la", "ら / 啦"]];
+function openPartSheet(): void {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  const chip = (v: string, label: string, on: boolean, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v="${v}"${title ? ` title="${title}"` : ""}>${label}</button>`;
+  const draw = () => {
+    const q = quality(), h = st.song.hum;
+    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">主唱</div>` +
+      `<div class="part-sec">谁来唱</div><div class="set-row">${chip("who:yomi", "月读（つくよみちゃん）", q !== "none")}` +
+      `${q === "none" ? chip("who:none", "未选角", true, "别的软件存的谱：原来的乐器这一版没有") : ""}</div>` +
+      `<div class="offer-msg">以后这里能选一大堆乐器；现在只有月读。</div>` +
+      (q === "none" ? "" :
+        `<div class="part-sec">音质</div><div class="set-row">${chip("q:full", "完整", q === "full", "月读本人（第一次要加载约 65 MB）")}${chip("q:light", "轻量", q === "light", "元音采样，按下即响、任何设备都能跑")}</div>` +
+        `<div class="part-sec">没写歌词的音唱什么</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) +
+      `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  };
+  draw();
+  document.body.append(box);
+  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (!v) return;
+    if (v === "who:yomi" && quality() === "none") setQuality("full");
+    else if (v.startsWith("q:")) setQuality(v.slice(2) as Quality);
+    else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
+    draw();
+  });
 }
-function loadDoc(song: Song, o: { stem: string; quality: Quality; extras: Extras; handle: docFile.FileHandle | null }): void {
+function loadDoc(song: Song, o: { stem: string; named: boolean; quality: Quality; extras: Extras; handle: docFile.FileHandle | null }): void {
   if (impro) toggleImpro();
-  setQuality(o.quality);
-  $<HTMLSelectElement>("humSel").value = song.hum;
-  doc.stem = o.stem; doc.handle = o.handle; doc.extras = o.extras;
+  curQuality = o.quality;
+  doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.extras = o.extras;
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };   // pad 是独立设备：换歌不换它的「1=」和调式
   doc.saved = { song: st.song, quality: o.quality };
   lastFull = null;
-  view.render(); pad.render(); renderStatus(); renderTitle();
+  view.render(); pad.render(); renderTitle();
 }
-function markSaved(): void { doc.saved = { song: st.song, quality: quality() }; renderTitle(); }
+/** 存好了：文件名从此定下来（之后和歌名各管各的；user「之后各管各的同意」）。 */
+function markSaved(): void { doc.stem = docName(); doc.named = true; doc.saved = { song: st.song, quality: quality() }; renderTitle(); }
 /** 改过没存时先问一句（应用内面板，不用系统弹窗）。 */
 function confirmDiscard(what: string): Promise<boolean> {
   if (!dirty()) return Promise.resolve(true);
@@ -438,8 +437,8 @@ function confirmDiscard(what: string): Promise<boolean> {
 }
 async function fileNew(): Promise<void> {
   if (!(await confirmDiscard("新建"))) return;
-  loadDoc(initState().song, { stem: defaultStem(), quality: "full", extras: emptyExtras(), handle: null });
-  singStatus("新的一首");
+  loadDoc(initState().song, { stem: defaultStem(), named: false, quality: "full", extras: emptyExtras(), handle: null });
+  info("新的一首");
 }
 async function fileOpen(): Promise<void> {
   if (!(await confirmDiscard("打开别的歌"))) return;
@@ -449,21 +448,21 @@ async function fileOpen(): Promise<void> {
   try {
     const o = openBytes(picked.name, picked.bytes);
     // 别的软件存的谱：不认它的家（存回去会把它没读进来的东西丢掉 → 第一次存走另存为）
-    loadDoc(o.song, { stem: o.stem, quality: o.quality, extras: o.extras, handle: o.ours && !o.notices.length ? picked.handle : null });
+    loadDoc(o.song, { stem: o.stem, named: true, quality: o.quality, extras: o.extras, handle: o.ours && !o.notices.length ? picked.handle : null });
     if (o.notices.length) showError(o.notices.join(" "));
-    singStatus(`打开了 ${picked.name}`);
+    else info(`打开了 ${picked.name}`);
   } catch (e) { showError(`打不开 ${picked.name}：${(e as Error).message}`); }
 }
 const bytesNow = () => saveMxl({ song: st.song, hum: st.song.hum, quality: quality(), extras: doc.extras, app: APP_VERSION, date: new Date().toISOString() });
 async function fileSave(asNew: boolean): Promise<void> {
   try {
-    if (!asNew && doc.handle) { await docFile.writeTo(doc.handle, bytesNow()); markSaved(); singStatus(`存好了：${doc.handle.name}`); return; }
+    if (!asNew && doc.handle) { await docFile.writeTo(doc.handle, bytesNow()); markSaved(); info(`存好了：${doc.handle.name}`); return; }
     if (docFile.canPickSave()) {
       const h = await docFile.pickSave(`${docName()}.mxl`);
       if (!h) return;
-      doc.stem = h.name.replace(/\.(mxl|musicxml|xml)$/i, "") || doc.stem;
       await docFile.writeTo(h, bytesNow());
-      doc.handle = h; markSaved(); singStatus(`存好了：${h.name}`);
+      doc.stem = h.name.replace(/\.(mxl|musicxml|xml)$/i, "") || doc.stem; doc.named = true;
+      doc.handle = h; markSaved(); info(`存好了：${h.name}`);
       return;
     }
     // iPad / Safari：没有「存回原文件」——给一个 .mxl，下载或分享到「文件」（点了才算存了）
@@ -477,12 +476,14 @@ function openFileMenu(): void {
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">文件</div>` +
-    `<div class="offer-msg">文件名：<b>${esc(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>（填了歌名就用歌名；歌名在纸面最上面点着填，可不填）</div>` +
+    `<div class="offer-msg">文件名：<b>${esc(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>（没存过 = 年月日-歌名；存过之后和纸上的歌名各管各的）</div>` +
     `<div class="set-row file-row">` +
     `<button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>新建</button>` +
     `<button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>打开…</button>` +
     `<button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>存</button>` +
-    `<button class="btn" data-v="saveAs"><svg class="ico"><use href="#save-as"/></svg>另存为…</button></div>` +
+    `<button class="btn" data-v="saveAs"><svg class="ico"><use href="#save-as"/></svg>另存为…</button>` +
+    `<button class="btn" data-v="rename">改文件名…</button>` +
+    `<button class="btn" data-v="export" title="月读唱一遍，编成 mp3，分享或下载"><svg class="ico"><use href="#export"/></svg>导出歌声（mp3）…</button></div>` +
     `<div class="offer-msg">存成 <code>.mxl</code>（MusicXML 乐谱的压缩包：别的乐谱软件也能打开；MoonSinger 自己的东西放在里面的 <code>.moonsinger/</code>）。` +
     `${doc.handle ? `现在存在 ${esc(doc.handle.name)}，「存」= 存回去。` : docFile.canPickSave() ? "" : "这台设备上「存」= 下载或分享一个 .mxl 到「文件」里。"}</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
@@ -495,10 +496,32 @@ function openFileMenu(): void {
     if (!v) return;
     close();
     if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "save") void fileSave(false); else if (v === "saveAs") void fileSave(true);
+    else if (v === "rename") renameFile(); else if (v === "export") void exportSong();
   });
 }
 $("fileBtn").addEventListener("click", () => openFileMenu());
-$<HTMLSelectElement>("qualSel").addEventListener("change", () => { if (quality() !== "none") setQuality(quality()); renderTitle(); });
+/** 改文件名（只改文件名，纸上的歌名不变；user「之后各管各的同意，但是要有改文件名的规则？」）。
+ *  这台设备上已经存回原文件的：浏览器没法给那个文件改名 → 下次「存」按新名字另存（会问存到哪）。 */
+function renameFile(): void {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">改文件名</div>` +
+    `<label class="set-field">文件名<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc(docName())}" /></label>` +
+    `<div class="offer-msg">只改文件名，纸上的歌名不变。${doc.handle ? `原来的「${esc(doc.handle.name)}」不会被改名：下次「存」用新名字另存。` : "下次存的时候用新名字。"}</div>` +
+    `<div class="offer-btns"><button class="btn" data-v="cancel">算了</button><button class="btn primary" data-v="ok">改</button></div></div>`;
+  document.body.append(box);
+  const inp = box.querySelector<HTMLInputElement>("#fnIn")!;
+  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  const ok = () => { const v = fileSafe(inp.value); if (v && v !== docName()) { doc.stem = v; doc.named = true; doc.handle = null; renderTitle(); info(`文件名改成 ${v}.mxl`); } close(); };
+  closeOffer = close;
+  inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); ok(); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } });
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "cancel") close(); else if (v === "ok") ok();
+  });
+  inp.focus(); inp.select();
+}
 // 改过没存就关页面 / 刷新：浏览器自己的挽留框（照 WeebPaint；无地不偷偷写盘——静默写用户文件违背文件语义）
 window.addEventListener("beforeunload", (e) => { if (dirty()) { e.preventDefault(); e.returnValue = ""; } });
 
@@ -549,8 +572,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 await document.fonts.load(`40px Bravura`).catch(() => undefined);
 view.render();
 pad.render();
-renderStatus();
 renderTitle();
 scoreEl.focus();
 // 试听元音表（约 3 MB）在画好之后的空闲时下载：选了月读就是意图，第一下就该响（user「选这个乐器就是意图，然后第一下就响」）
-setTimeout(() => { void sampler.load().catch((e) => singStatus(`试听元音表没下载下来：${(e as Error).message}`)); }, 300);
+setTimeout(() => { void sampler.load().catch((e) => showError(`试听元音表没下载下来：${(e as Error).message}`)); }, 300);

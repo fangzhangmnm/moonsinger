@@ -31,7 +31,8 @@ check((await title()) === `${stem0} •`, "写了之后标题带「•」（改�
 const tb = await p.evaluate(() => { const r = document.querySelector("#score").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + 18 }; });
 await p.mouse.click(tb.x, tb.y); await p.waitForSelector(".title-input:not([hidden])");
 await p.keyboard.type("春の歌"); await p.keyboard.press("Enter");
-check((await title()) === "春の歌 •" && (await p.$$eval("#score text.song-title", (ts) => ts.map((t) => t.textContent).join("|"))) === "春の歌", "点纸面最上面填歌名：纸上画出来、顶栏跟着变");
+const day = stem0.slice(0, 8);   // 文件名 = 年月日-歌名（没存过时跟着歌名；user「用歌名可以，然后也要yyyymmdd规则」）
+check((await title()) === `${day}-春の歌 •` && (await p.$$eval("#score text.song-title", (ts) => ts.map((t) => t.textContent).join("|"))) === "春の歌", "点纸面最上面填歌名：纸上画出来、顶栏的文件名 = 年月日-歌名");
 await p.click("#score", { position: { x: 700, y: 400 } });
 const before = await tokens();
 // 存：Ctrl+S → 面板 → 下载
@@ -40,13 +41,13 @@ await p.waitForSelector(".offer .offer-title");
 check((await p.textContent(".offer .offer-title")) === "存成 .mxl", "Ctrl+S → 存的面板（这台设备 = 下载 / 分享）");
 const [dl] = await Promise.all([p.waitForEvent("download"), p.click('.offer [data-v="download"]')]);
 const saved = `${DIR}/${dl.suggestedFilename()}`; await dl.saveAs(saved);
-check(dl.suggestedFilename() === "春の歌.mxl" && (await title()) === "春の歌", "存的文件名 = 歌名、存了之后「•」消失", dl.suggestedFilename());
+check(dl.suggestedFilename() === `${day}-春の歌.mxl` && (await title()) === `${day}-春の歌`, "存的文件名 = 年月日-歌名、存了之后「•」消失", dl.suggestedFilename());
 // 改一下 → 打开 → 先问
 await p.keyboard.press("Digit7");
-check((await title()) === "春の歌 •", "又改了");
+check((await title()) === `${day}-春の歌 •`, "又改了");
 await p.click("#fileBtn"); await p.click('.offer [data-v="open"]');
 await p.waitForSelector(".offer .offer-title");
-check((await p.textContent(".offer .offer-title")) === "「春の歌」改过还没存", "改过没存时「打开」先问");
+check((await p.textContent(".offer .offer-title")) === `「${day}-春の歌」改过还没存`, "改过没存时「打开」先问");
 const [fc] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="go"]')]);
 await fc.setFiles(saved); await p.waitForTimeout(300);
 const after = await tokens();
@@ -56,10 +57,17 @@ check(canon(after) === canon(before), "打开存的文件：逐 token 相同（�
 await p.click("#fileBtn");
 const [fc2] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="open"]')]);
 await fc2.setFiles(`${DIR}/twinkle.musicxml`); await p.waitForTimeout(300);
-const notice = await p.textContent("#errNotice .notice-text"); check(notice.includes("叠音") && notice.includes("还没人上场"), "别家谱：报出没读进来的和没人上场");
-check((await p.$eval("#qualSel", (s) => s.value)) === "none" && (await title()) === "Twinkle", "别家谱：音质 = 未选角、标题 = 谱里的歌名");
-await p.click('#errNotice [data-v="ok"]'); await p.click("#playBtn"); await p.waitForTimeout(300);
-check((await p.textContent("#errNotice .notice-text")).includes("还没有人上场") && !(await p.evaluate(() => window.__moonsinger.singer.playing || window.__moonsinger.sampler.songPlaying)), "别家谱：点播放 = 不出声、报错（不自动替补）");
+const notice = await p.textContent(".notice-error .notice-text"); check(notice.includes("叠音") && notice.includes("还没人上场"), "别家谱：报出没读进来的和没人上场");
+check((await p.textContent("#score text.part-name")) === "未选角" && (await title()) === "twinkle" && (await p.textContent("#score text.song-title")) === "Twinkle",
+  "别家谱：歌手牌 = 未选角、顶栏 = 文件名、纸上 = 谱里的歌名");
+await p.click(".notice-error .dismiss"); await p.click("#playBtn"); await p.waitForTimeout(300);
+check((await p.textContent(".notice-error .notice-text")).includes("还没有人上场") && !(await p.evaluate(() => window.__moonsinger.singer.playing || window.__moonsinger.sampler.songPlaying)), "别家谱：点播放 = 不出声、报错（不自动替补）");
+// 歌手牌：点了选月读 → 不再是未选角
+await p.click(".notice-error .dismiss");
+const pn = await p.$eval("#score text.part-name", (t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+await p.mouse.click(pn.x, pn.y); await p.waitForSelector(".offer .part-card");
+await p.click('.offer [data-v="who:yomi"]'); await p.click('.offer [data-v="close"]');
+check((await p.textContent("#score text.part-name")) === "月读", "点歌手牌选月读：谱前面变成「月读」");
 // 改过没存关页面 → 挽留框
 await p.click("#score", { position: { x: 700, y: 400 } }); await p.keyboard.press("Digit3");
 let dialog = "";

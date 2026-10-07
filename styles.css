@@ -14,6 +14,15 @@
   --z-menu: 300;
   --z-sheet: 500;
   --z-err: 900;
+  /* @internal/workbench-elements 要宿主给的 token（包只用 var()，值归宿主；同 CatsUp styles.css） */
+  --bg-soft: #ece9e2;
+  --ink-soft: #6b6b66;
+  --shadow: 0 8px 28px rgba(0, 0, 0, .18);
+  --danger: #b0412b;
+  --z-popover: var(--z-menu);
+  --z-modal: var(--z-sheet);
+  --z-notice: 950;
+  --z-toast: var(--z-notice);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
@@ -32,7 +41,21 @@ button, input, select { font: inherit; color: inherit; }
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
 
 /* 顶栏 */
-.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
+/* 顶栏只有一行（2026-10-07）：左 = 文件钮 + 文件名，中 = 走带条（居中），右 = 键盘 + 扳手；文件名太长省略号 */
+.bar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; white-space: nowrap; }
+.bar .tb-left { display: flex; align-items: center; min-width: 0; }
+.bar .tb-mid { display: flex; align-items: center; gap: 6px; }
+.bar .tb-right { display: flex; align-items: center; gap: 6px; justify-self: end; }
+.bar .tb-file { min-width: 0; max-width: 100%; gap: 6px; justify-content: flex-start; }
+.bar .tb-file .title { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.bar .sing-st { color: var(--muted); font-size: 12px; max-width: 26vw; overflow: hidden; text-overflow: ellipsis; }
+.bar .sing-st:empty { display: none; }
+/* toast 栈：顶栏下面（底下是 pad，别盖住键） */
+.notice-stack { bottom: auto; top: calc(var(--safe-top) + 54px); }
+/* 歌手牌：第一行谱号左边的声部名 */
+.staff-svg .part-name { fill: var(--ink); font-weight: 600; cursor: pointer; }
+.staff-svg .part-name.empty { fill: var(--muted); font-weight: 400; }
+.part-card .part-sec { font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
 .bar .title { font-weight: 600; letter-spacing: .02em; }
 .bar .ver { color: var(--muted); font-size: 12px; }
 .bar .spacer { flex: 1; }
@@ -254,3 +277,4 @@ button, input, select { font: inherit; color: inherit; }
 /* 「⋯」里：格子宽一点（可以多行），「自动小节线」一行写得下 */
 .pad-tools.cands.m-more { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); }
 .pad-tools.cands.m-more .btn.cand { white-space: nowrap; }
+@media (max-width: 420px) { .bar .tb-file svg { display: none; } .bar .tb-file { padding: 0 8px; } }   /* 手机：文件钮不画图标，多给文件名留地方 */

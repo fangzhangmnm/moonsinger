@@ -56,10 +56,11 @@ MP3=$(hashed ./src/export/mp3-worker.ts mp3-worker); echo "[build] ✓ dist/$MP3
 # 样式表也按内容版本化（2026-10-07，user「0 | - 的中文字在ipad上面没有自动换和别的一样的小灰字体」= iPad 拿到新 bundle 配旧 styles.css：
 #   Pages 给 styles.css 的缓存头是 max-age=600，dev 的 network-first 走浏览器 HTTP 缓存）。index.html 写 styles.css?v=<哈希> → 新地址绕过 HTTP 缓存；
 #   哈希 --define 进主 bundle → 样式一改主 bundle 的哈希也变 → service worker 换新缓存名、重新预缓存 styles.css。SW 本身不用改（取缓存时 ignoreSearch）。
-CSS_HASH=$(sha256sum styles.css | cut -c1-12)
+CSS_HASH=$(cat styles.css vendor/internal-css/*.css | sha256sum | cut -c1-12)   # 自家样式 + vendored 的包样式一起算（包样式升级也要换地址）
 MAIN=$(hashed "$ENTRY" moonsinger "--define:__SINGER_WORKER__=\"$SINGER\"" "--define:__MP3_WORKER__=\"$MP3\"" "--define:__CSS_HASH__=\"$CSS_HASH\""); echo "[build] ✓ dist/$MAIN"
 sed -i -E "s|src=\"\./dist/moonsinger(-[a-z0-9]+)?\.mjs\"|src=\"./dist/$MAIN\"|" index.html
 grep -q "$MAIN" index.html || { echo "[build] ✗ index.html 没改到主 bundle 的新文件名" >&2; exit 1; }
 sed -i -E "s|href=\"\./styles\.css(\?v=[a-z0-9]+)?\"|href=\"./styles.css?v=$CSS_HASH\"|" index.html
+sed -i -E "s|href=\"\./vendor/internal-css/workbench-elements\.css(\?v=[a-z0-9]+)?\"|href=\"./vendor/internal-css/workbench-elements.css?v=$CSS_HASH\"|" index.html
 grep -q "styles.css?v=$CSS_HASH" index.html || { echo "[build] ✗ index.html 没改到样式表的新版本号" >&2; exit 1; }
 echo "[build] index.html → ./dist/$MAIN"

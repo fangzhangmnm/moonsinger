@@ -33,6 +33,9 @@ export interface ScoreViewHost {
   focus?(where: "staff" | "text"): void;
   /** 按拍号自动画小节线开着没有（默认开）。 */
   autoBars?(): boolean;
+  /** 歌手牌：第一行谱号左边的声部名（未选角 = empty）；点了 = onPart（选乐器、就地改它的设置）。 */
+  part?(): { name: string; empty: boolean } | null;
+  onPart?(): void;
 }
 
 export class ScoreView {
@@ -71,7 +74,8 @@ export class ScoreView {
     const st = this.host.get(), sp = this.sp;
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     const width = Math.max(320, this.el.clientWidth);
-    this.layout = engrave(st.song, { width, sp, caret: st.caret, sel: st.sel, measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true, autoBars: this.host.autoBars?.() ?? true });
+    this.layout = engrave(st.song, { width, sp, caret: st.caret, sel: st.sel, measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true, autoBars: this.host.autoBars?.() ?? true,
+      partName: this.host.part?.()?.name, partEmpty: this.host.part?.()?.empty });
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
@@ -126,7 +130,10 @@ export class ScoreView {
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     if (wasMark) { this.host.focus?.("staff"); return true; }   // 点别处 = 先收起记号框（这一下不另做事）
     const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st = this.host.get();
-    // 0. 纸面最上面的歌名（可不填）
+    // 0. 歌手牌（第一行谱号左边的声部名）
+    const pt = L.part;
+    if (pt && x >= pt.x && x <= pt.x + pt.w && y >= pt.y && y <= pt.y + pt.h) { this.host.onPart?.(); return true; }
+    // 0¼. 纸面最上面的歌名（可不填）
     const tt = L.title;
     if (x >= tt.x && x <= tt.x + tt.w && y >= tt.y && y <= tt.y + tt.h) { this.title.openNow(); this.host.focus?.("text"); return true; }
     // 0½. 记号（调号 / 拍号 / 速度）

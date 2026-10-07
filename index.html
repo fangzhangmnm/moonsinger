@@ -11,7 +11,8 @@
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <title>MoonSinger</title>
-    <link rel="stylesheet" href="./styles.css?v=f1e5fe9f3c08" />
+    <link rel="stylesheet" href="./vendor/internal-css/workbench-elements.css?v=c460b06e6d00" />
+    <link rel="stylesheet" href="./styles.css?v=c460b06e6d00" />
     <script>
       // bundle 加载前的兜底：任何脚本错误糊一张红条（iPad 无 devtools）。抄 CatsUp。
       (function () {
@@ -35,7 +36,7 @@
     <!-- ICON-SPRITE:BEGIN — 由 scripts/inline-sprites.py 生成，勿手改 -->
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
 <!--
-  14 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
+  15 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
   Family SVG Icons — MIT License, Copyright (c) 2026 fangzhangmnm.
   Contains work derived from (per-icon provenance in data-src):
     Feather Icons — MIT License, Copyright (c) 2013-2023 Cole Bemis · https://github.com/feathericons/feather
@@ -65,6 +66,8 @@
   <symbol id="caret-up" data-cat="common" data-src="own" data-note="上调 ▲:圆角实心扁三角(数字框旁上下叠放的小转盘用,12–16px)；与带竿的 chevron-up(上移)分工【JustReadBooks 朗读控制条预设框右侧小转盘「预设加一」；2026-10-02 Claude Opus 5.5 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 15.5 L12 8 L18.5 15.5 Z" fill="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
   <!-- caret-down — 下调 ▼:caret-up 的精确上下镜像【JustReadBooks 朗读控制条预设框右侧小转盘「预设减一」；2026-10-02 Claude Opus 5.5 自画未过目】 -->
   <symbol id="caret-down" data-cat="common" data-src="own" data-note="下调 ▼:caret-up 的精确上下镜像【JustReadBooks 朗读控制条预设框右侧小转盘「预设减一」；2026-10-02 Claude Opus 5.5 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5 L12 16 L18.5 8.5 Z" fill="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <!-- x — 叉 -->
+  <symbol id="x" data-cat="common" data-src="own" data-note="叉" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5"/></symbol>
   <!-- viewport -->
   <!-- grid — 网格:直角外框 1.2 与内网格线同宽(20260725 甲方定稿; 原 rx1.6 圆角粗框版退役), 内部 4x4 细网格 -->
   <symbol id="grid" data-cat="viewport" data-src="own" data-note="网格:直角外框 1.2 与内网格线同宽(20260725 甲方定稿; 原 rx1.6 圆角粗框版退役), 内部 4x4 细网格" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><g stroke-width="1.2" stroke-linejoin="miter"><rect x="3.5" y="3.5" width="17" height="17"/></g><g stroke-width="1.2"><path d="M7.75 3.5 V20.5"/><path d="M3.5 7.75 H20.5"/><path d="M12.00 3.5 V20.5"/><path d="M3.5 12.00 H20.5"/><path d="M16.25 3.5 V20.5"/><path d="M3.5 16.25 H20.5"/></g></symbol>
@@ -82,6 +85,6 @@
         <aside id="padPanel" class="pad-panel"></aside>
       </main>
     </div>
-    <script type="module" src="./dist/moonsinger-4a265569034c.mjs"></script>
+    <script type="module" src="./dist/moonsinger-c35d0119ee2f.mjs"></script>
   </body>
 </html>

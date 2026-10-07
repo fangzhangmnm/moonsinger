@@ -32,6 +32,8 @@ export interface EngraveOpts {
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
   titlePlaceholder?: boolean;            // 歌名空着时画浅色的「歌名（可不填）」（编辑器里；导出 / 打印不画）
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
+  partName?: string;                     // 声部名（歌手牌），画在第一行谱号左边（第一行缩进让出来，同打谱软件的乐器名）；没有 = 不画
+  partEmpty?: boolean;                   // 还没人上场（未选角）：声部名画淡色
 }
 export const LYRIC_EM = 1.6;
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
@@ -48,6 +50,7 @@ export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; title: TitleHit;
   head: { system: number; x: number } | null;   // 光标在哪（画面跟随用；改的时候没有）
+  part: { x: number; y: number; w: number; h: number } | null;   // 歌手牌（声部名）的点击区域（px）
   shortBars: number;   // 拍数和拍号对不上的小节有几个（状态行用；第一小节当弱起不算）
   lyricY: (system: number) => number;
   yOf: (system: number, d: number) => number;
@@ -187,7 +190,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
 
   // 2. 折行（像文字：优先在小节线后折；一个小节都放不下就逐个单元折）。每行开头的调号 = 那里生效的调号
   const right = o.width / sp - MARGIN;
-  const headerW = (first: boolean, f: number) => MARGIN + 0.6 + W.gClef + 1.0 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(headTime.beats, headTime.beatType) + 1.2 : 0.4);
+  const PART_EM = LYRIC_EM * 0.85, ind0 = o.partName ? (o.measureLyric(o.partName) * PART_EM) / LYRIC_EM / sp + 1.4 : 0;   // 第一行让给声部名的缩进（sp）
+  const headerW = (first: boolean, f: number) => (first ? ind0 : 0) + MARGIN + 0.6 + W.gClef + 1.0 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(headTime.beats, headTime.beatType) + 1.2 : 0.4);
   let system = 0, curKey = headKey, x = headerW(true, curKey);
   const sysStarts: number[] = [x], sysKeys: number[] = [curKey];
   const newline = () => { system++; x = headerW(false, curKey); sysStarts.push(x); sysKeys.push(curKey); };
@@ -267,18 +271,21 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     for (let k = 0; k < Math.abs(f); k++) prims.push({ t: "glyph", x: P(x0 + k * 1.05), y: yOf(s, pos[k]), ch, cls });
   };
   for (let s = 0; s < nSys; s++) {
-    for (let k = 0; k < 5; k++) { const y = yOf(s, BOTTOM_LINE + 2 * k); prims.push({ t: "line", x1: P(MARGIN), y1: y, x2: P(right), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" }); }
-    let hx = MARGIN + 0.6;
+    const ind = s === 0 ? ind0 : 0;
+    for (let k = 0; k < 5; k++) { const y = yOf(s, BOTTOM_LINE + 2 * k); prims.push({ t: "line", x1: P(MARGIN + ind), y1: y, x2: P(right), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" }); }
+    let hx = MARGIN + ind + 0.6;
     prims.push({ t: "glyph", x: P(hx), y: yOf(s, 32), ch: GLYPH.gClef, cls: "clef" });
     hx += W.gClef + 1.0;
     drawKeySig(s, hx, sysKeys[s], "keysig"); hx += Math.abs(sysKeys[s]) * 1.05;
     if (s === 0) {
       // 谱头记号的点击区域：谱号 + 调号一块（改调号）、拍号（改拍号）、上方速度（改速度）
-      if (headIdx.key !== undefined) marks.push({ index: headIdx.key, kind: "key", system: 0, x: P(MARGIN + 0.3), ...staffHit(0), w: P(hx - MARGIN - 0.3 + 0.3) });
+      if (headIdx.key !== undefined) marks.push({ index: headIdx.key, kind: "key", system: 0, x: P(MARGIN + ind + 0.3), ...staffHit(0), w: P(hx - MARGIN - ind) });
       if (sysKeys[0]) hx += 0.8;
       const cw = drawTime(s, hx, headTime.beats, headTime.beatType, "timesig");
       if (headIdx.time !== undefined) marks.push({ index: headIdx.time, kind: "time", system: 0, x: P(hx - 0.3), ...staffHit(0), w: P(cw + 0.6) });
-      if (headIdx.tempo !== undefined) drawTempo(0, MARGIN + 0.6, headBpm, "tempo", headIdx.tempo);
+      if (headIdx.tempo !== undefined) drawTempo(0, MARGIN + ind + 0.6, headBpm, "tempo", headIdx.tempo);
+      // 歌手牌：声部名在第一行谱号左边、竖着居中（user「歌手牌同意，和打谱软件对齐」「乐器名可以选择一大堆乐器，然后下面可以in place改」）
+      if (o.partName) prims.push({ t: "text", x: P(MARGIN), y: yOf(0, MID_LINE) + P(0.55 * PART_EM), s: o.partName, cls: o.partEmpty ? "part-name empty" : "part-name", size: PART_EM * sp, anchor: "start" });
     }
   }
 
@@ -474,7 +481,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "歌名（可不填）", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
   const title: TitleHit = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
-  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, shortBars, lyricY, yOf, dOf };
+  const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
+  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, part, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };
