@@ -143,3 +143,13 @@ button, input, select { font: inherit; color: inherit; }
 
 /* 框选（笔 / 鼠标在谱面空白处拖） */
 .marquee { position: absolute; z-index: 4; border: 1px dashed var(--accent); background: rgba(43, 108, 176, .08); border-radius: 3px; pointer-events: none; }
+
+/* 速度框：节拍器（摆到一头 = 一拍）+ 确定（user「选速度的时候能不能有一个文本框旁边的节拍器动画让你参考，然后有一个确认按钮才commit」） */
+.mark-row { display: flex; align-items: center; gap: 8px; }
+.mark-row .mark-in { flex: 1; min-width: 0; }
+.metro { --beat: 0.667s; position: relative; width: 34px; height: 34px; flex: none; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.metro-arm { position: absolute; left: calc(50% - 1px); bottom: 4px; width: 2px; height: 24px; background: var(--accent); border-radius: 1px;
+  transform-origin: 50% 100%; animation: metro-swing var(--beat) ease-in-out infinite alternate; }
+.metro-arm::before { content: ""; position: absolute; left: -3px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+@keyframes metro-swing { from { transform: rotate(-32deg); } to { transform: rotate(32deg); } }
+.mark-ok { flex: none; }
