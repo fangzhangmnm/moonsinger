@@ -21,6 +21,8 @@ export interface ScoreViewHost {
   get(): EditorState; set(next: EditorState): void;
   /** 唱下标 i 那个音：hold = 按住一直响（等 release），否则响一下。 */
   audition?(i: number, hold?: boolean): void;
+  /** 拖音高时换到下标 i 的新音高（新的顶掉旧的；怎么顶由采样器定：滑过去或重新起音）。 */
+  glide?(i: number): void;
   release?(): void;
 }
 
@@ -157,7 +159,7 @@ export class ScoreView {
       if (d === g.heard) return;   // 还在同一个音高：不重画、不重新起音
       g.heard = d;
       this.host.set(setNote(st, g.index, { pitch: fromDiatonic(d, keyAt(st.song, g.index)) }));
-      this.host.audition?.(g.index, true);   // 新音顶掉旧音
+      if (this.host.glide) this.host.glide(g.index); else this.host.audition?.(g.index, true);   // 新音顶掉旧音
     } else {
       const i0 = DUR_LADDER.reduce((bi, v, i) => (Math.abs(v - g.dur0) < Math.abs(DUR_LADDER[bi] - g.dur0) ? i : bi), 0);
       const i = Math.max(0, Math.min(DUR_LADDER.length - 1, i0 + Math.round(dx / (L.sp * 2.2))));

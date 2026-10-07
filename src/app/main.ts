@@ -14,7 +14,7 @@ import { Pad } from "../ui/pad.ts";
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
 import { encodeMp3 } from "../export/mp3.ts";
-import { Sampler } from "../singer/sampler.ts";
+import { Sampler, type PreviewVariant } from "../singer/sampler.ts";
 
 let st: EditorState = initState();
 
@@ -25,6 +25,7 @@ const bar = $("bar"), scoreEl = $("score"), padEl = $("padPanel");
 bar.innerHTML =
   `<span class="title">MoonSinger</span><span class="ver">${APP_VERSION}</span>` +
   `<label class="field" title="完整 = 月读本人（第一次要加载约 65 MB）；轻量 = 元音采样，按下即响、任何设备都能跑">音质<select id="qualSel"><option value="full">完整</option><option value="light">轻量</option></select></label>` +
+  `<label class="field" title="实验开关（选定后删）：新 = 从安静里起唱的样本、ん 闭嘴哼、拖音高滑过去；旧 = 之前那套">试听<select id="prevSel"><option value="v2">新</option><option value="v1">旧</option></select></label>` +
   `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="a">あ / 啊</option></select></label>` +
   `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
   `<button id="padBtn" class="btn is-on" title="手指 pad"><svg class="ico"><use href="#grid"/></svg></button>` +
@@ -51,6 +52,7 @@ const view = new ScoreView(scoreEl, {
   get: () => st,
   set: (n) => update(n),
   audition: (i, hold) => { clearTimeout(upTimer); soundTok(st, i); if (!hold) upTimer = window.setTimeout(() => sound.up(), 350); },
+  glide: (i) => { clearTimeout(upTimer); const t = st.song.tokens[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum); },
   release: () => { clearTimeout(upTimer); sound.up(); },
 });
 let impro = false;
@@ -227,6 +229,11 @@ $("shareBtn").addEventListener("click", () => { void exportSong(); });
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st };
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
+$<HTMLSelectElement>("prevSel").addEventListener("change", (e) => {
+  const v = (e.target as HTMLSelectElement).value as PreviewVariant;
+  void sampler.setVariant(v).catch((err) => singStatus(`试听元音表没下载下来：${(err as Error).message}`));
+  scoreEl.focus();
+});
 $<HTMLSelectElement>("humSel").addEventListener("change", (e) => { update(setHum(st, (e.target as HTMLSelectElement).value as Hum)); scoreEl.focus(); });
 $("padBtn").addEventListener("click", () => { padEl.hidden = !padEl.hidden; $("padBtn").classList.toggle("is-on", !padEl.hidden); view.render(); });
 
