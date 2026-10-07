@@ -306,3 +306,4 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .credits.empty { fill: var(--muted); opacity: .7; }
 /* 歌词框左边的「合」：这个字并进前一个音（回头改用） */
 .lyric-merge { position: absolute; z-index: 5; min-width: 0; padding: 0; font-size: 15px; color: var(--accent); border-color: #b8cde8; background: #fff; box-sizing: border-box; }
+.credits-card .credits-in { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 15px; line-height: 1.5; color: var(--ink); resize: vertical; -webkit-user-select: text; user-select: text; }

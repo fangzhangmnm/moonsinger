@@ -101,6 +101,12 @@ user：「谱上面显示的不应跟是月读，而是人声，女声 lead bass
 - 同名：user「然后default name如果重名的话会变成vocals vocals2这样？」→ AI 答 → user「这个应该可以现在做」→ v0.2.25 做了（`src/score/roles.ts` numberParts；名字和官方 id 都一样才一起编，合唱 Bass 和贝斯不一起编；现在只有一个声部，看不出来）：照打谱软件（MuseScore 4 的自动编号），同名的都带号「Vocals 1 / Vocals 2」（第一个也补 1，单独一个不带号）；编号不存进角色名、按声部先后现算，写 MusicXML 时 `<part-name>` 带号；弦乐罗马数字（Violin I / II）要不要归 user。
 - 角色下拉按功能（v0.2.24，user「不应跟是乐器name salad，而是功能选」）：人声 Vocals / Backing Vocals / SATB，乐队 Piano / Guitar / Bass / Drums / Strings / Synth Pad / Synth Lead，`src/score/roles.ts`。
 
+## 6⅖. 作者栏 = 纯文本（2026-10-07；edited by Claude Opus 5.5）
+
+user：「作曲人那个框是比较自由就是可以写 role1: name / role2: name / disclaimer 这样对吧？」→「恩主要是月读的eula可能得把谁唱的写上去。嗯所见即所得。不过你权衡一个plain multiline text vs自动识别（但是这样有hidden convention），你看一下怎么办」→ AI 选纯文本 →「只是举例子，然后这个你也不应该强迫或者提醒用户写这个，因为谱子也不绑定乐器的」「…一键插入按钮 不要」。
+- `Song.credits` = 一块纯文本（几行都行），纸上照写的显示、标题下面靠右；**不解析**「作词：」这类写法（不留隐藏约定）。不提醒、不帮用户写任何署名。
+- MusicXML = `<credit page="1"><credit-words justify="right">`（印在页面上的字，几行用换行），不写 `<creator>` 元数据。读：第一页上不是标题 / 副标题 / 页码 / 声部名的 credit 字；没有就从 `<creator>` 拼（作词作曲同一人「X 词曲」、不同两行、编曲「Z 编曲」）。
+
 ## 6½. 图片：贴纸 + 封面（2026-10-07 user 定了方向；edited by Claude Opus 5.5）
 
 user：「贴纸同意，虽然ui麻烦些但是可能是必要的。然后可以类似webxiaoheiwu一样可以设置成封面的引用。但是我们也可以单独设置封面，不一定要上乐谱纸」

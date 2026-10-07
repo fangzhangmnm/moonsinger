@@ -37,14 +37,20 @@ describe("纸", () => {
   });
 });
 
-// 作词 / 作曲（user「顺便xxx 词曲这个field也可以有」）。edited by Claude Opus 5.5 2026-10-07
+// 作者栏 = 纯文本、所见即所得（user「你权衡一个plain multiline text vs自动识别（但是这样有hidden convention）」→ AI 选纯文本）。edited by Claude Opus 5.5 2026-10-07
 import { setCredits } from "../src/score/song.ts";
-describe("作词 / 作曲", () => {
-  it("存进 <identification><creator>、打开还在；清空 = 不记", () => {
-    let st = setCredits(initState(), { lyricist: "麻枝准", composer: "麻枝准" });
+describe("作者栏", () => {
+  it("一块纯文本：存进 <credit><credit-words>（在 defaults 和 part-list 中间）、打开还是那几行；头尾空行和行尾空白去掉；清空 = 不记", () => {
+    let st = setCredits(initState(), "\n麻枝准 词曲  \n某人 编曲\n\n");
+    eq(st.song.credits, "麻枝准 词曲\n某人 编曲");
     const xml = writeMusicXml(st.song, PART, { software: "t", date: "2026-10-07" }).xml;
-    assert(xml.includes('<creator type="composer">麻枝准</creator><creator type="lyricist">麻枝准</creator><encoding>'), "creator 在 encoding 前面（schema 顺序）");
-    eq(JSON.stringify(openBytes("x.mxl", save(st.song)).song.credits), JSON.stringify({ lyricist: "麻枝准", composer: "麻枝准" }));
-    st = setCredits(st, { lyricist: " ", composer: "" }); eq(st.song.credits, undefined);
+    assert(/<\/defaults>\s*<credit page="1"><credit-words[^>]*justify="right"[^>]*>麻枝准 词曲\n某人 编曲/.test(xml) && /<\/credit>\s*<part-list>/.test(xml), "credit 的位置和内容");
+    eq(openBytes("x.mxl", save(st.song)).song.credits, st.song.credits);
+    st = setCredits(st, "  \n "); eq(st.song.credits, undefined);
+  });
+  it("只有 <creator> 的（v0.2.23 存的 / 别的软件）：照当时纸上的样子拼成几行", () => {
+    const xml = writeMusicXml(initState().song, PART, { software: "t", date: "2026-10-07" }).xml
+      .replace("<identification>", '<identification><creator type="composer">麻枝准</creator><creator type="lyricist">麻枝准</creator><creator type="arranger">某人</creator>');
+    eq(openBytes("a.musicxml", new TextEncoder().encode(xml)).song.credits, "麻枝准 词曲\n某人 编曲");
   });
 });

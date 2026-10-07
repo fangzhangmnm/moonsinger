@@ -48,12 +48,13 @@ export interface Song {
   title?: string;
   /** 纸（A4 / A5 / A6 / 别的软件的别的纸）；没有 = 默认 A5（src/score/paper.ts；存档 = MusicXML <defaults>）。整首歌一个。 */
   paper?: Paper;
-  /** 作词 / 作曲（可不填；纸上标题下面靠右；存档 = MusicXML <identification><creator type="lyricist" / "composer">；user「顺便xxx 词曲这个field也可以有」）。 */
-  credits?: Credits;
+  /** 作者栏：一块纯文本、几行都行（作词作曲、演唱、月读的署名、声明…），纸上照写的显示（标题下面靠右）；可不填。
+   *  不自动认「作词：」这类写法（user「你权衡一个plain multiline text vs自动识别（但是这样有hidden convention），你看一下怎么办」→ AI 选纯文本、所见即所得）。
+   *  存档 = MusicXML <credit><credit-words>（印在页面上的字）。 */
+  credits?: string;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   tokens: Token[];       // 开头三个 = 谱头记号（调号 / 拍号 / 速度）
 }
-export interface Credits { lyricist?: string; composer?: string }
 export const DEFAULT_KEY = 0, DEFAULT_TIME = { beats: 4, beatType: 4 }, DEFAULT_BPM = 90;
 
 /** 输入状态（不进数据）：写的时候下一个音长什么样。 */
@@ -503,12 +504,15 @@ export function setPaper(st: EditorState, kind: PaperKind): EditorState {
   if (kind === DEFAULT_PAPER) delete song.paper; else song.paper = paperOf(kind);
   return (st.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st : { ...st, song };
 }
-/** 改作词 / 作曲（空 = 不填）。 */
-export function setCredits(st: EditorState, c: Credits): EditorState {
-  const l = (c.lyricist ?? "").trim(), m = (c.composer ?? "").trim(), cur = st.song.credits ?? {};
-  if ((cur.lyricist ?? "") === l && (cur.composer ?? "") === m) return st;
+/** 改作者栏（每行去掉行尾空白、去掉头尾空行；全空 = 不填）。 */
+export function setCredits(st: EditorState, text: string): EditorState {
+  const lines = text.replace(/\r/g, "").split("\n").map((l) => l.replace(/\s+$/, ""));
+  while (lines.length && !lines[0]) lines.shift();
+  while (lines.length && !lines[lines.length - 1]) lines.pop();
+  const t = lines.join("\n");
+  if ((st.song.credits ?? "") === t) return st;
   const song = { ...st.song };
-  if (l || m) song.credits = { ...(l ? { lyricist: l } : {}), ...(m ? { composer: m } : {}) }; else delete song.credits;
+  if (t) song.credits = t; else delete song.credits;
   return { ...st, song };
 }
 export function setTitle(st: EditorState, title: string): EditorState {

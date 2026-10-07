@@ -426,24 +426,25 @@ function noCast(what: string): void {
 }
 /** 音质（= 主唱这个角色上场的是谁、用哪一版）：完整 / 轻量 / 未选角（别的软件存的谱）。改了重画歌手牌。 */
 function setQuality(q: Quality): void { curQuality = q; view.render(); renderTitle(); }
-/** 作词 / 作曲（标题下面靠右那一块点开）：两个框，可不填；同一个人纸上写「X 词曲」（user「顺便xxx 词曲这个field也可以有」）。 */
+/** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。
+ *  不提醒、不帮用户写任何东西（user「只是举例子，然后这个你也不应该强迫或者提醒用户写这个，因为谱子也不绑定乐器的」「…一键插入按钮 不要」）。 */
 function openCreditsSheet(): void {
   closeOffer?.();
-  const c = st.song.credits ?? {};
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card"><div class="offer-title">词曲</div>` +
-    `<label class="set-field">作词<input id="lyIn" type="text" spellcheck="false" autocomplete="off" value="${esc(c.lyricist ?? "")}" /></label>` +
-    `<label class="set-field">作曲<input id="cmIn" type="text" spellcheck="false" autocomplete="off" value="${esc(c.composer ?? "")}" /></label>` +
-    `<div class="offer-msg">可不填。同一个人纸上写「X 词曲」。存进 MusicXML 的作词 / 作曲（别的乐谱软件也认）。</div>` +
+  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">作者栏</div>` +
+    `<textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="几行都行，照写的显示在纸上（标题下面靠右）">${esc(st.song.credits ?? "")}</textarea>` +
+    `<div class="offer-msg">可不填。存进 MusicXML「印在页面上的字」，别的乐谱软件打开也在纸上。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="ok">好</button></div></div>`;
   document.body.append(box);
-  const ly = box.querySelector<HTMLInputElement>("#lyIn")!, cm = box.querySelector<HTMLInputElement>("#cmIn")!;
-  const close = () => { update(setCredits(st, { lyricist: ly.value, composer: cm.value })); box.remove(); closeOffer = null; scoreEl.focus(); };
+  const ta = box.querySelector<HTMLTextAreaElement>("#crIn")!;
+  const close = () => { update(setCredits(st, ta.value)); box.remove(); closeOffer = null; scoreEl.focus(); };
   closeOffer = close;
-  for (const inp of [ly, cm]) inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); if (inp === ly) cm.focus(); else close(); } });
-  box.addEventListener("click", (e) => { const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (e.target === box || v === "ok") close(); });
-  ly.focus();
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "ok") close();
+  });
+  ta.focus();
 }
 /** 纸的设置（纸右上角的小钮点开）：A4 / A5 / A6，整首歌一个；以后插图片也从这里进（user「加图片的入口以后也可以放那里」）。改了立刻生效。 */
 function openPaperSheet(): void {

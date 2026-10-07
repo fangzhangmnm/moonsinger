@@ -1,6 +1,6 @@
 # 持久化交接（给接手做 store / gallery 的 agent）
 
-> created 20261007 by Claude Opus 5.5 · as-of v0.2.26 / 2026-10-07（dev 已上线 https://fangzhangmnm.github.io/moonsinger/dev/ ；prod 分支还不存在、没推。v0.2.26 只加了歌词「合」，存档格式没变）
+> created 20261007 by Claude Opus 5.5 · as-of v0.2.27 / 2026-10-07（dev 已上线 https://fangzhangmnm.github.io/moonsinger/dev/ ；prod 分支还不存在、没推。v0.2.26 加了歌词「合」；v0.2.27 作者栏从作词 / 作曲两个字段改成一块纯文本，存档从 `<creator>` 改成 `<credit>`）
 > user 2026-10-07：「我待会要compact一下然后换fable做持久化，你还有什么要记录的都记录一下。」
 > 这份只写事实和指针；「我看到的、要想的」那一节全部**未经 user 定**。
 
@@ -17,7 +17,7 @@
   - `src/format/xml.ts` 零依赖 XML；`src/format/musicxml.ts` token ↔ MusicXML 4.0；`src/format/project.ts` .mxl 打包（vendored `fflate`）。
   - `src/app/doc-file.ts`：桌面 Chromium 有文件句柄 = 存回原文件；iPad / Safari = 存是下载 / 分享、开是选文件。`src/app/names.ts`：`defaultStem()` = `yyyymmdd-hex4`、`fileSafe()`（注释写了接 gallery 时换 `@internal/gallery` 的 `galleryDefaultName`）。
   - `src/app/main.ts` 的 `doc` = `{ stem, named, handle, extras, saved: { song, quality, role } }`；`dirty()` = 谱 / 音质（上场的候选）/ 角色名变了；`docName()` = 没存过「年月日-歌名」（没歌名 = stem），存过 / 打开的 / 改过名的（`named`）= stem；`markSaved()` 把名字定下来；换歌先问（`confirmDiscard`）；关页面 = 浏览器挽留框；文件菜单「改文件名…」（有句柄的：浏览器没法改名，下次「存」按新名字另存）。
-- 写进 MusicXML 的（别的软件也认）：调号 / 拍号 / 速度、音符（`id`）、休止、歌词（每音节 `xml:lang`；一个音几个字 = `<elision/>`，数据里 U+203F「‿」）、`<work-title>` 歌名、`<creator type="composer" / "lyricist">` 作词作曲、`<defaults>` 纸（A4 / A5 / A6，五线谱高 7 mm）、`<part-name>` 角色名（同名同种带号）、`<instrument-sound>` 角色的官方乐器语义（`src/score/roles.ts`）、`<virtual-instrument>` 上场的候选（MoonSinger / tsukuyomi）。小节按拍号自动切，人插的小节线记在 score.json。样本过了 W3C MusicXML 4.0 XSD（手动跑的，见 §5）。
+- 写进 MusicXML 的（别的软件也认）：调号 / 拍号 / 速度、音符（`id`）、休止、歌词（每音节 `xml:lang`；一个音几个字 = `<elision/>`，数据里 U+203F「‿」）、`<work-title>` 歌名、作者栏 = 一块纯文本 → `<credit page="1"><credit-words>`（印在页面上的字；读的时候只有 `<creator>` 的照 v0.2.23 纸上的样子拼成几行）、`<defaults>` 纸（A4 / A5 / A6，五线谱高 7 mm）、`<part-name>` 角色名（同名同种带号）、`<instrument-sound>` 角色的官方乐器语义（`src/score/roles.ts`）、`<virtual-instrument>` 上场的候选（MoonSinger / tsukuyomi）。小节按拍号自动切，人插的小节线记在 score.json。样本过了 W3C MusicXML 4.0 XSD（手动跑的，见 §5）。
 - `.moonsinger/` 里已经有的（都是第 1 版，`FORMAT = { manifest: 1, score: 1, lounge: 1, studio: 1 }`）：`manifest.json`、`score.json`（声部 → 角色 / 麦克风、人插的小节线、还没写音高的音）、`lounge/r1.json`（角色快照：名字、sound、候选 c1 月读完整 / c2 月读元音、上场的是谁、哼的字）、`studio.json`（麦克风 m1）。比 app 新的版本 = 拒开、报出来；不认识的文件 / 多出来的 rootfile 原样写回。
 - 还没做的（数据契约里留了位置）：`curves.json`（曲线）、`shelf/`（谱架上的曲段草稿）、`attachments/`（贴纸 / 封面）。还没有 `src/format/migrate/`（都还是第 1 版）。
 - 单声部：P1 → 角色 r1 → 麦克风 m1。别的软件的谱只读第一个声部、第二段歌词起不读（报出来，存回去会丢 → 第一次存走另存为）；原来的乐器这一版没有 = 没人上场（Quality none，不自动替补）。

@@ -50,7 +50,7 @@ export interface TitleHit { x: number; y: number; w: number; h: number; baseline
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; title: TitleHit;
-  credits: { x: number; y: number; w: number; h: number } | null;   // 作词 / 作曲那一块的点击区域（px；空着时是浅色提示）
+  credits: { x: number; y: number; w: number; h: number } | null;   // 作者栏那一块的点击区域（px；空着时是浅色提示）
   head: { system: number; x: number } | null;   // 光标在哪（画面跟随用；改的时候没有）
   part: { x: number; y: number; w: number; h: number } | null;   // 歌手牌（声部名）的点击区域（px）
   paperChip: { x: number; y: number; w: number; h: number } | null;   // 纸右上角小钮的点击区域（px）
@@ -231,7 +231,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   }
 
   // 3. 坐标系
-  const sysTop = (s: number) => P(TITLE_H + 0.5 + s * SYS_H);
+  // 作者栏超过两行：第一行谱往下让（每多一行让一行字高），不和五线谱撞
+  const headExtra = Math.max(0, (song.credits ? song.credits.split("\n").length : 0) - 2) * 1.25 * 1.35;
+  const sysTop = (s: number) => P(TITLE_H + headExtra + 0.5 + s * SYS_H);
   const staffTop = (s: number) => sysTop(s) + P(STAFF_ABOVE);
   const yOf = (s: number, d: number) => staffTop(s) + (TOP_LINE - d) * P(0.5);
   const dOf = (s: number, y: number) => Math.round(TOP_LINE - (y - staffTop(s)) / P(0.5));
@@ -491,19 +493,18 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
   }
   const title: TitleHit = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
-  // 作词 / 作曲：标题下面靠右（同一个人 =「X 词曲」，不同 = 两行「X 词」「Y 曲」；user「顺便xxx 词曲这个field也可以有」）
-  const cl = song.credits?.lyricist ?? "", cm = song.credits?.composer ?? "";
-  const lines = cl && cm && cl === cm ? [`${cl} 词曲`] : [cl ? `${cl} 词` : "", cm ? `${cm} 曲` : ""].filter(Boolean);
+  // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）
+  const lines = song.credits ? song.credits.split("\n") : [];
   let credits: Layout["credits"] = null;
   if (lines.length || o.titlePlaceholder) {
     const cs = P(1.25), rx = o.width - P(MARGIN), y0 = P(TITLE_H + 1.0);
-    const show = lines.length ? lines : ["词曲（可不填）"];
+    const show = lines.length ? lines : ["作者 / 演唱 / 声明（可不填）"];
     show.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: lines.length ? "credits" : "credits empty", size: cs, anchor: "end" }));
     const w = Math.max(...show.map((s) => (o.measureLyric(s) * 1.25) / LYRIC_EM)) + P(0.6);
     credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.35 * show.length + cs * 0.4 };
   }
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
-  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, credits, head, part, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height: P(TITLE_H + headExtra + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, credits, head, part, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

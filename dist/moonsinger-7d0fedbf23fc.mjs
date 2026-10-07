@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.26-2026-10-07";
+var APP_VERSION = "v0.2.27-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -636,11 +636,14 @@ function setPaper(st2, kind) {
   else song.paper = paperOf(kind);
   return (st2.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st2 : { ...st2, song };
 }
-function setCredits(st2, c) {
-  const l = (c.lyricist ?? "").trim(), m = (c.composer ?? "").trim(), cur = st2.song.credits ?? {};
-  if ((cur.lyricist ?? "") === l && (cur.composer ?? "") === m) return st2;
+function setCredits(st2, text2) {
+  const lines = text2.replace(/\r/g, "").split("\n").map((l) => l.replace(/\s+$/, ""));
+  while (lines.length && !lines[0]) lines.shift();
+  while (lines.length && !lines[lines.length - 1]) lines.pop();
+  const t = lines.join("\n");
+  if ((st2.song.credits ?? "") === t) return st2;
   const song = { ...st2.song };
-  if (l || m) song.credits = { ...l ? { lyricist: l } : {}, ...m ? { composer: m } : {} };
+  if (t) song.credits = t;
   else delete song.credits;
   return { ...st2, song };
 }
@@ -1387,7 +1390,8 @@ function engrave(song, o) {
       x2 += u.w;
     }
   }
-  const sysTop = (s) => P(TITLE_H + 0.5 + s * SYS_H);
+  const headExtra = Math.max(0, (song.credits ? song.credits.split("\n").length : 0) - 2) * 1.25 * 1.35;
+  const sysTop = (s) => P(TITLE_H + headExtra + 0.5 + s * SYS_H);
   const staffTop = (s) => sysTop(s) + P(STAFF_ABOVE);
   const yOf = (s, d2) => staffTop(s) + (TOP_LINE - d2) * P(0.5);
   const dOf = (s, y) => Math.round(TOP_LINE - (y - staffTop(s)) / P(0.5));
@@ -1668,18 +1672,17 @@ function engrave(song, o) {
     paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
   }
   const title = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
-  const cl = song.credits?.lyricist ?? "", cm = song.credits?.composer ?? "";
-  const lines = cl && cm && cl === cm ? [`${cl} \u8BCD\u66F2`] : [cl ? `${cl} \u8BCD` : "", cm ? `${cm} \u66F2` : ""].filter(Boolean);
+  const lines = song.credits ? song.credits.split("\n") : [];
   let credits = null;
   if (lines.length || o.titlePlaceholder) {
     const cs = P(1.25), rx = o.width - P(MARGIN), y0 = P(TITLE_H + 1);
-    const show = lines.length ? lines : ["\u8BCD\u66F2\uFF08\u53EF\u4E0D\u586B\uFF09"];
+    const show = lines.length ? lines : ["\u4F5C\u8005 / \u6F14\u5531 / \u58F0\u660E\uFF08\u53EF\u4E0D\u586B\uFF09"];
     show.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: lines.length ? "credits" : "credits empty", size: cs, anchor: "end" }));
     const w = Math.max(...show.map((s) => o.measureLyric(s) * 1.25 / LYRIC_EM)) + P(0.6);
     credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.35 * show.length + cs * 0.4 };
   }
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
-  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, credits, head, part, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height: P(TITLE_H + headExtra + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, credits, head, part, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -5169,6 +5172,28 @@ function readPaper(root) {
   if (p.kind === DEFAULT_PAPER && same(p.marginMm.l, def.marginMm.l) && same(p.marginMm.r, def.marginMm.r) && same(p.marginMm.t, def.marginMm.t) && same(p.marginMm.b, def.marginMm.b)) return void 0;
   return p;
 }
+function creditXml(text2, p) {
+  const t = (mm) => +(mm * TENTHS_PER_MM).toFixed(1);
+  return `<credit page="1"><credit-words default-x="${t(p.widthMm - p.marginMm.r)}" default-y="${t(p.heightMm - p.marginMm.t - 12)}" justify="right" valign="top">${esc2(text2)}</credit-words></credit>`;
+}
+function readCredits(root, title) {
+  const skip = /* @__PURE__ */ new Set(["title", "subtitle", "page number", "part name"]);
+  const blocks = kids(root, "credit").filter((c) => !kids(c, "credit-type").some((ct) => skip.has(text(ct).trim()))).map((c) => kids(c, "credit-words").map((w) => text(w)).join("\n").trim()).filter((s) => s && s !== title);
+  if (blocks.length) return blocks.join("\n");
+  const cr = kids(kid(root, "identification"), "creator"), by = (...types) => cr.filter((c) => types.includes(c.attrs.type ?? "")).map((c) => text(c).trim()).filter(Boolean);
+  const ly = by("lyricist", "poet")[0], co = by("composer")[0], lines = [];
+  if (ly && co && ly === co) lines.push(`${ly} \u8BCD\u66F2`);
+  else {
+    if (ly) lines.push(`${ly} \u8BCD`);
+    if (co) lines.push(`${co} \u66F2`);
+  }
+  for (const a of by("arranger")) lines.push(`${a} \u7F16\u66F2`);
+  for (const c of cr) {
+    const ty = c.attrs.type ?? "";
+    if (!["lyricist", "poet", "composer", "arranger"].includes(ty) && text(c).trim()) lines.push(`${ty ? `${ty}\uFF1A` : ""}${text(c).trim()}`);
+  }
+  return lines.length ? lines.join("\n") : void 0;
+}
 function writeMusicXml(song, part, meta) {
   const toks = song.tokens, head = headLen(toks);
   const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
@@ -5267,9 +5292,9 @@ function writeMusicXml(song, part, meta) {
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
 ${song.title ? `<work><work-title>${esc2(song.title)}</work-title></work>
-` : ""}<identification>${song.credits?.composer ? `<creator type="composer">${esc2(song.credits.composer)}</creator>` : ""}${song.credits?.lyricist ? `<creator type="lyricist">${esc2(song.credits.lyricist)}</creator>` : ""}<encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
+` : ""}<identification><encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
 ${defaultsXml(song.paper ?? paperOf(DEFAULT_PAPER))}
-<part-list><score-part id="${P.id}"><part-name>${esc2(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc2(P.instrumentName)}</instrument-name><instrument-sound>${esc2(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc2(P.variant.library)}</virtual-library><virtual-name>${esc2(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== void 0 ? `<volume>${P.volume}</volume>` : ""}${P.pan !== void 0 ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
+${song.credits ? creditXml(song.credits, song.paper ?? paperOf(DEFAULT_PAPER)) + "\n" : ""}<part-list><score-part id="${P.id}"><part-name>${esc2(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc2(P.instrumentName)}</instrument-name><instrument-sound>${esc2(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc2(P.variant.library)}</virtual-library><virtual-name>${esc2(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== void 0 ? `<volume>${P.volume}</volume>` : ""}${P.pan !== void 0 ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
 <part id="${P.id}">
 ${body}
 </part>
@@ -5417,9 +5442,7 @@ function readMusicXml(xml, hints) {
   for (const t of tokens) if (!t.id) t.id = next2++;
   keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
   const paper = readPaper(root);
-  const creators = kids(kid(root, "identification"), "creator"), cr = (...types) => creators.find((c) => types.includes(c.attrs.type ?? ""));
-  const lyricist = cr("lyricist", "poet") ? text(cr("lyricist", "poet")).trim() : "", composer = cr("composer") ? text(cr("composer")).trim() : "";
-  const credits = lyricist || composer ? { ...lyricist ? { lyricist } : {}, ...composer ? { composer } : {} } : null;
+  const credits = readCredits(root, title);
   return { song: { ...title ? { title } : {}, ...paper ? { paper } : {}, ...credits ? { credits } : {}, hum: "n", tokens }, title, parts, dropped };
 }
 
@@ -6179,7 +6202,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "28c50a635000" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "289f919c152f" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6212,33 +6235,23 @@ function setQuality(q) {
 }
 function openCreditsSheet() {
   closeOffer?.();
-  const c = st.song.credits ?? {};
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card"><div class="offer-title">\u8BCD\u66F2</div><label class="set-field">\u4F5C\u8BCD<input id="lyIn" type="text" spellcheck="false" autocomplete="off" value="${esc3(c.lyricist ?? "")}" /></label><label class="set-field">\u4F5C\u66F2<input id="cmIn" type="text" spellcheck="false" autocomplete="off" value="${esc3(c.composer ?? "")}" /></label><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u540C\u4E00\u4E2A\u4EBA\u7EB8\u4E0A\u5199\u300CX \u8BCD\u66F2\u300D\u3002\u5B58\u8FDB MusicXML \u7684\u4F5C\u8BCD / \u4F5C\u66F2\uFF08\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u8BA4\uFF09\u3002</div><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">\u4F5C\u8005\u680F</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09">${esc3(st.song.credits ?? "")}</textarea><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002</div><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
   document.body.append(box);
-  const ly = box.querySelector("#lyIn"), cm = box.querySelector("#cmIn");
+  const ta = box.querySelector("#crIn");
   const close = () => {
-    update(setCredits(st, { lyricist: ly.value, composer: cm.value }));
+    update(setCredits(st, ta.value));
     box.remove();
     closeOffer = null;
     scoreEl.focus();
   };
   closeOffer = close;
-  for (const inp of [ly, cm]) inp.addEventListener("keydown", (e) => {
-    if (e.isComposing) return;
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
-      if (inp === ly) cm.focus();
-      else close();
-    }
-  });
   box.addEventListener("click", (e) => {
     const v = e.target.closest("[data-v]")?.dataset.v;
     if (e.target === box || v === "ok") close();
   });
-  ly.focus();
+  ta.focus();
 }
 function openPaperSheet() {
   closeOffer?.();
@@ -6584,4 +6597,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-81f1f5b5ac82.mjs.map
+//# sourceMappingURL=moonsinger-7d0fedbf23fc.mjs.map

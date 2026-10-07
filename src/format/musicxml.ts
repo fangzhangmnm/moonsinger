@@ -56,6 +56,24 @@ function readPaper(root: El): Paper | undefined {
   if (p.kind === DEFAULT_PAPER && same(p.marginMm.l, def.marginMm.l) && same(p.marginMm.r, def.marginMm.r) && same(p.marginMm.t, def.marginMm.t) && same(p.marginMm.b, def.marginMm.b)) return undefined;
   return p;
 }
+/** 作者栏 → 一块印在第一页右上（标题下面）的字：<credit><credit-words>，几行用换行隔开、右对齐（位置按纸算，tenths，y 从页底往上量）。 */
+function creditXml(text: string, p: Paper): string {
+  const t = (mm: number) => +(mm * TENTHS_PER_MM).toFixed(1);
+  return `<credit page="1"><credit-words default-x="${t(p.widthMm - p.marginMm.r)}" default-y="${t(p.heightMm - p.marginMm.t - 12)}" justify="right" valign="top">${esc(text)}</credit-words></credit>`;
+}
+/** 读作者栏：第一页上不是标题 / 副标题 / 页码 / 声部名的那些 credit 字；都没有就从 <creator> 拼（v0.2.23 存的、别的软件的作词作曲），照当时纸上的样子写成几行。 */
+function readCredits(root: El, title: string): string | undefined {
+  const skip = new Set(["title", "subtitle", "page number", "part name"]);
+  const blocks = kids(root, "credit").filter((c) => !kids(c, "credit-type").some((ct) => skip.has(text(ct).trim())))
+    .map((c) => kids(c, "credit-words").map((w) => text(w)).join("\n").trim()).filter((s) => s && s !== title);
+  if (blocks.length) return blocks.join("\n");
+  const cr = kids(kid(root, "identification"), "creator"), by = (...types: string[]) => cr.filter((c) => types.includes(c.attrs.type ?? "")).map((c) => text(c).trim()).filter(Boolean);
+  const ly = by("lyricist", "poet")[0], co = by("composer")[0], lines: string[] = [];
+  if (ly && co && ly === co) lines.push(`${ly} 词曲`); else { if (ly) lines.push(`${ly} 词`); if (co) lines.push(`${co} 曲`); }
+  for (const a of by("arranger")) lines.push(`${a} 编曲`);
+  for (const c of cr) { const ty = c.attrs.type ?? ""; if (!["lyricist", "poet", "composer", "arranger"].includes(ty) && text(c).trim()) lines.push(`${ty ? `${ty}：` : ""}${text(c).trim()}`); }
+  return lines.length ? lines.join("\n") : undefined;
+}
 export function writeMusicXml(song: Song, part: PartInfo, meta: WriteMeta): Written {
   const toks = song.tokens, head = headLen(toks);
   const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
@@ -124,9 +142,9 @@ export function writeMusicXml(song: Song, part: PartInfo, meta: WriteMeta): Writ
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
-${song.title ? `<work><work-title>${esc(song.title)}</work-title></work>\n` : ""}<identification>${song.credits?.composer ? `<creator type="composer">${esc(song.credits.composer)}</creator>` : ""}${song.credits?.lyricist ? `<creator type="lyricist">${esc(song.credits.lyricist)}</creator>` : ""}<encoding><software>${esc(meta.software)}</software><encoding-date>${esc(meta.date)}</encoding-date></encoding></identification>
+${song.title ? `<work><work-title>${esc(song.title)}</work-title></work>\n` : ""}<identification><encoding><software>${esc(meta.software)}</software><encoding-date>${esc(meta.date)}</encoding-date></encoding></identification>
 ${defaultsXml(song.paper ?? paperOf(DEFAULT_PAPER))}
-<part-list><score-part id="${P.id}"><part-name>${esc(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc(P.instrumentName)}</instrument-name><instrument-sound>${esc(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc(P.variant.library)}</virtual-library><virtual-name>${esc(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== undefined ? `<volume>${P.volume}</volume>` : ""}${P.pan !== undefined ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
+${song.credits ? creditXml(song.credits, song.paper ?? paperOf(DEFAULT_PAPER)) + "\n" : ""}<part-list><score-part id="${P.id}"><part-name>${esc(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc(P.instrumentName)}</instrument-name><instrument-sound>${esc(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc(P.variant.library)}</virtual-library><virtual-name>${esc(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== undefined ? `<volume>${P.volume}</volume>` : ""}${P.pan !== undefined ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
 <part id="${P.id}">
 ${body}
 </part>
@@ -216,9 +234,6 @@ export function readMusicXml(xml: string, hints?: ReadHints): Read {
   for (const t of tokens) if (!t.id) t.id = next++;
   keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
   const paper = readPaper(root);
-  // 作词 / 作曲：<identification><creator type="lyricist" / "composer">（「poet」也算作词）
-  const creators = kids(kid(root, "identification"), "creator"), cr = (...types: string[]) => creators.find((c) => types.includes(c.attrs.type ?? ""));
-  const lyricist = cr("lyricist", "poet") ? text(cr("lyricist", "poet")!).trim() : "", composer = cr("composer") ? text(cr("composer")!).trim() : "";
-  const credits = lyricist || composer ? { ...(lyricist ? { lyricist } : {}), ...(composer ? { composer } : {}) } : null;
+  const credits = readCredits(root, title);
   return { song: { ...(title ? { title } : {}), ...(paper ? { paper } : {}), ...(credits ? { credits } : {}), hum: "n", tokens }, title, parts, dropped };
 }
