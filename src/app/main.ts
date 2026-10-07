@@ -36,10 +36,11 @@ bar.innerHTML =
 // ── 试听：月读的元音采样器（出一个音就响；只唱「哼」那一个字，不看歌词——user「还是单一元音更适合当blueprint」） ─────
 const sampler = new Sampler();
 const sound = {
-  down: (p: Pitch) => sampler.down(midiOf(p), st.song.hum),
-  up: () => sampler.up(),
+  down: (p: Pitch, id = "main") => sampler.down(midiOf(p), st.song.hum, id),
+  up: (id = "main") => sampler.up(id),
 };
-const soundTok = (s: EditorState, i: number) => { const t = s.song.tokens[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch); };
+/** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
+const soundTok = (s: EditorState, i: number, id = "main") => { const t = s.song.tokens[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id); };
 /** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
 function writeAndLocate(write: (s: EditorState) => EditorState): number {
   let target = -1;
@@ -52,9 +53,9 @@ let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消�
 const view = new ScoreView(scoreEl, {
   get: () => st,
   set: (n) => update(n),
-  audition: (i, hold) => { clearTimeout(upTimer); soundTok(st, i); if (!hold) upTimer = window.setTimeout(() => sound.up(), 350); },
-  glide: (i) => { clearTimeout(upTimer); const t = st.song.tokens[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum); },
-  release: () => { clearTimeout(upTimer); sound.up(); },
+  audition: (i, hold) => { clearTimeout(upTimer); soundTok(st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
+  glide: (i) => { clearTimeout(upTimer); const t = st.song.tokens[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum, "score"); },
+  release: () => { clearTimeout(upTimer); sound.up("score"); },
 });
 let impro = false;
 let padWrote = -1;   // pad 按下：先写（onPitch）再响（onSoundDown）——响的时候唱刚写的那个音的字
@@ -72,8 +73,8 @@ const pad = new Pad(padEl, {
     update(r.st);
     view.marks.openAt(r.index, r.fresh);
   },
-  onSoundDown: (p) => { if (padWrote >= 0) soundTok(st, padWrote); else sound.down(p); padWrote = -1; },
-  onSoundUp: () => sound.up(),
+  onSoundDown: (p, id) => { if (padWrote >= 0) soundTok(st, padWrote, id); else sound.down(p, id); padWrote = -1; },
+  onSoundUp: (id) => sound.up(id),
 });
 
 function update(next: EditorState): void {
@@ -248,18 +249,18 @@ function whereNow(): Where {
   return impro ? "impro" : st.sel ? "edit" : "write";
 }
 /** 照做；返回 false = 这一下其实不归我们管（例如歌词框里「-」不跟在字母后面），让浏览器照常打字。 */
-function run(a: Action, repeat: boolean): boolean {
+function run(a: Action, repeat: boolean, code: string): boolean {
   switch (a.k) {
     case "cmd":
       if (a.cmd.k === "degree") {
-        if (!repeat) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); soundTok(st, i); }   // 先写再取 st（写完才有这个音）
+        if (!repeat) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); soundTok(st, i, `key${code}`); }   // 先写再取 st（写完才有这个音）
         return true;
       }
       update(apply(st, a.cmd, performance.now())); return true;
     case "audition": {   // 弹：在草稿状态上写一下，拿到那个音高就扔
       if (repeat) return true;
       const probe = apply({ ...st, sel: null, log: [] }, { k: "degree", degree: a.degree, dir: a.dir }, performance.now());
-      soundTok(probe, probe.caret - 1); return true;
+      soundTok(probe, probe.caret - 1, `key${code}`); return true;
     }
     case "play": void togglePlay(); return true;
     case "impro": pad.toggleImpro(); return true;
@@ -273,9 +274,12 @@ window.addEventListener("keydown", (e) => {
   const t = e.target as HTMLElement | null;
   if (t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed")))) return;
   const a = route(e, whereNow(), st.sel ? "edit" : "write");
-  if (a && run(a, e.repeat)) e.preventDefault();
+  if (a && run(a, e.repeat, e.code)) e.preventDefault();
 });
-window.addEventListener("keyup", (e) => { if (isSoundKey(e)) sound.up(); });
+window.addEventListener("keyup", (e) => { if (isSoundKey(e)) sound.up(`key${e.code}`); });   // 复音：只停这个键的
+// 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）
+window.addEventListener("blur", () => sampler.upAll());
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") sampler.upAll(); });
 
 await document.fonts.load(`40px Bravura`).catch(() => undefined);
 view.render();

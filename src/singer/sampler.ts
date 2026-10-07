@@ -3,7 +3,10 @@
 // 浏览器只下载这个小包（约 3 MB），不等 40 MB 的大引擎——user「选这个乐器就是意图，然后第一下就响」「带不起piper的就用我们的元音sampler来兜底」。
 // 只唱一个字（跟这首歌的「哼」走），不看歌词：采样器说不出字，按歌词换元音只会像念错字
 //   （user「我觉得如果不支持tts的话元音映射会弄巧成拙吧，还是单一元音更适合当blueprint」）。
-// 按下：取最近音高的那份样本，变速到目标音高，按住循环稳态段；松开淡出。一次只响一个音（她只有一张嘴）。
+// 按下：取最近音高的那份样本，变速到目标音高，按住循环稳态段；松开淡出。
+// 复音（2026-10-07 user「快速弹奏的时候也许multitouch逻辑要写对…要不月读preview也可以polyphonic吧，这样好作为打底」）：
+//   每个声音有个来源 id（一根手指 / 一个键 / 谱面拖动）——同一个来源再按 = 新的顶掉自己的旧音，不同来源同时响；谁松开停谁的。
+//   最多同时 MAX_VOICES 个，超了停最早的。
 // 样本句首起唱（自然起音；ん 闭嘴哼；呜 / 啦 用中文唱）；被新音抢占时旧音 20 ms 快速淡出；拖音高不重新起音（同一个声音滑过去）。
 // 2026-10-07 实验开关新旧对比后 user「旧的可以不要了」——旧做法（连唱中间切 + 硬起音 + 慢淡叠音 + 每级重起）见 git 历史 4998b89 之前。
 
@@ -20,6 +23,7 @@ const KANA: Record<Hum, string> = { la: "ら", n: "ん", u: "う", o: "お", a: 
 interface Entry { kana: string; midi: number; start: number; len: number; loopStart: number; loopEnd: number; buf?: AudioBuffer }
 interface Table { sr: number; entries: Entry[] }
 interface Voice { src: AudioBufferSourceNode; gain: GainNode; entry: Entry }
+const MAX_VOICES = 8;
 
 const base = new URL("../dev-assets/preview/", import.meta.url);
 
@@ -41,7 +45,7 @@ async function fetchTable(): Promise<Table> {
 export class Sampler {
   private loading: Promise<Table> | null = null;
   private table: Table | null = null;
-  private voice: Voice | null = null;
+  private voices = new Map<string, Voice>();   // 来源 id → 正在响的声音（Map 保持按下的先后）
   private song: Voice[] = [];
   private songTimer = 0;
 
@@ -72,26 +76,30 @@ export class Sampler {
     v.gain.gain.cancelScheduledValues(when); v.gain.gain.setTargetAtTime(0, when, tc); v.src.stop(when + stopAfter);
   }
 
-  /** 按下：响（先停掉上一个）。还没加载好 = 不响（加载在后台）。 */
-  down(midi: number, hum: Hum): void {
+  /** 按下：响（同一来源的旧音先停掉）。还没加载好 = 不响（加载在后台）。 */
+  down(midi: number, hum: Hum, id = "main"): void {
     if (!this.ready) { void this.load(); return; }
-    const ctx = audioCtx(), now = ctx.currentTime;
-    if (this.voice) this.fade(this.voice, now, ENV.cut, ENV.cutStop);
-    this.voice = this.start(midi, hum, now);
+    const ctx = audioCtx(), now = ctx.currentTime, old = this.voices.get(id);
+    if (old) { this.fade(old, now, ENV.cut, ENV.cutStop); this.voices.delete(id); }
+    while (this.voices.size >= MAX_VOICES) { const [k, v] = this.voices.entries().next().value!; this.fade(v, now, ENV.cut, ENV.cutStop); this.voices.delete(k); }
+    const v = this.start(midi, hum, now);
+    if (v) this.voices.set(id, v);
   }
   /** 拖音高：新的顶掉旧的——同一个声音滑过去（离样本太远就交叉淡到另一份的循环段，不带起音）。 */
-  glide(midi: number, hum: Hum): void {
-    const v = this.voice;
-    if (!v || !this.ready) { this.down(midi, hum); return; }
+  glide(midi: number, hum: Hum, id = "main"): void {
+    const v = this.voices.get(id);
+    if (!v || !this.ready) { this.down(midi, hum, id); return; }
     const ctx = audioCtx(), now = ctx.currentTime, sr = this.table!.sr;
     if (Math.abs(midi - v.entry.midi) <= GLIDE_SPAN) { v.src.playbackRate.setTargetAtTime(2 ** ((midi - v.entry.midi) / 12), now, GLIDE_TC); return; }
     const e = this.pick(midi, hum); if (!e) return;
     const nv = this.start(midi, hum, now, ctx, e.loopStart / sr, XFADE);
     this.fade(v, now, XFADE / 3, XFADE * 3);
-    this.voice = nv;
+    if (nv) this.voices.set(id, nv); else this.voices.delete(id);
   }
-  /** 松开：淡出。 */
-  up(): void { if (this.voice) { this.fade(this.voice, audioCtx().currentTime, ENV.rel, ENV.relStop); this.voice = null; } }
+  /** 松开：这个来源的声音淡出。 */
+  up(id = "main"): void { const v = this.voices.get(id); if (v) { this.fade(v, audioCtx().currentTime, ENV.rel, ENV.relStop); this.voices.delete(id); } }
+  /** 全部松开（切走 app / 失焦：抬手的事件可能收不到，别让音卡着响）。 */
+  upAll(): void { for (const id of [...this.voices.keys()]) this.up(id); }
 
   /** 轻量版整首：notes = [{ midi, t0, t1 }]（秒），全唱 hum 那个字。返回总时长；播完调 onEnd。 */
   playSong(notes: { midi: number; t0: number; t1: number }[], hum: Hum, onEnd: () => void): number {

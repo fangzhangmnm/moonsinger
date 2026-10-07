@@ -40,8 +40,8 @@ export interface PadHost {
   onInputKey(f: number | null): void;
   onImpro(on: boolean): void;
   onInsertMark(kind: "key" | "time" | "tempo"): void;
-  onSoundDown(p: Pitch): void;             // 试听 / 即兴：按下响
-  onSoundUp(): void;                       //              松开停
+  onSoundDown(p: Pitch, id: string): void;   // 试听 / 即兴：按下响（id = 哪根手指，复音）
+  onSoundUp(id: string): void;               //              松开停（只停这根手指的）
 }
 
 type Mode = "normal" | "key" | "tuplet" | "mark" | "transpose" | "modulate";
@@ -138,12 +138,12 @@ export class Pad {
     // 音键：按下 = 写（或改）+ 响；即兴 = 只响；松开 = 停
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => {
       b.addEventListener("pointerdown", (e) => {
-        e.preventDefault(); flash(b); b.setPointerCapture(e.pointerId);
+        e.preventDefault(); flash(b); try { b.setPointerCapture(e.pointerId); } catch { /* 指针已经没了：照样响，松手靠 pointerup / cancel */ }
         const st = this.host.state(), p = fromDiatonic(Number(b.dataset.d), inputKey(st));
         if (!this.impro) this.host.onPitch(p);
-        this.host.onSoundDown(p);
+        this.host.onSoundDown(p, `pad${e.pointerId}`);
       });
-      const up = () => this.host.onSoundUp();
+      const up = (e: PointerEvent) => this.host.onSoundUp(`pad${e.pointerId}`);
       b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up);
     });
     on("[data-cmd]", (b) => { if (b.classList.contains("pad-key")) flash(b); this.host.onCommand({ k: b.dataset.cmd } as Command); });
