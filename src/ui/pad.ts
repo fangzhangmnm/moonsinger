@@ -5,7 +5,9 @@
 //   「我还需要左右键导航」「弹应该放在顶栏」「写完再改坚决不行…就是设置好duration基线然后用dash」。
 // · 设备只往外发事件（音 / 休止 / — / 小节线 / 退格 / ← →），自己带旋钮：调（1=）、长短基线（含连音）、音域窗口。
 //   pad 的「1=」是它自己的，不跟谱上的调号（user「如果一个谱有好几个调怎么算」）；写进谱时按 pad 的调拼写，谱上该加临时记号就加。
-// · 旋钮：上下滑一格走一格（滑过一格的距离才算）；点开 = 候选列表里选（user「那些上下可以滑或者点开选对吧」）。没有「本调」。
+// · 旋钮：上下滑一格走一格（滑过一格的距离才算）；点开 = 从那一格往下展开一根同样宽的竖直滚轮（src/ui/drum.ts），拨到哪就是哪
+//   （user「那些上下可以滑或者点开选对吧」「我想的是点了之后变成一个overlay的同样宽度的竖直滚动桶」；长短那根旁边并一根窄的连音滚轮「2好主意」）。没有「本调」。
+//   移调（有选中时）和「⋯」是一次性的动作、不是选一个值：照旧整条换成候选。
 // · 音键：按下即写（手感不变）；按着往上 / 往下滑过门槛 = 这一个音升 / 降半音（临时离调，只管这一个音），
 //   松手前键上先显示结果、滑回中间 = 还原（user「touchscreen滑动天天做的…上下…滑动会非常适合临时离调」「滑过一定距离才算 + 松手前先显示结果 同意」）。
 // · 音键排法：列 × 行（默认 4 × 4），中央 C 那一行在中线下面一行；首调 / 绝对两档（默认绝对，大字永远是简谱数字）；
@@ -19,6 +21,7 @@ import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchNam
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
 import { type EditorState, inputKey, keyAt } from "../score/song.ts";
+import { openDrum } from "./drum.ts";
 
 const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置（月读音域：键底部画细条提示，音域外不拦、不变灰）
 /** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
@@ -57,7 +60,7 @@ export interface PadHost {
   onSoundUp(id: string): void;
 }
 
-type Mode = "normal" | "key" | "unit" | "range" | "more" | "mark" | "transpose" | "modulate" | "layout";
+type Mode = "normal" | "more" | "mark" | "transpose" | "modulate" | "layout";   // 选调 / 长短 / 音域 = 滚轮（drum.ts），不在这里
 
 export class Pad {
   private rowShift = 0;       // 音域窗口挪过几行
@@ -90,7 +93,7 @@ export class Pad {
     const base = this.baseAt(this.rowShift, f, rows);
     if ((this.mode === "transpose" || this.mode === "modulate") && !st.sel) this.mode = "normal";   // 选中没了：移调候选收起
     const selKey = st.sel ? keyAt(st.song, st.sel.from) : null;
-    const sig = `${this.mode}|${f}|${base}|${selKey}|${rows}x${this.cols}|${form}|${this.layoutMode}|${this.mode === "unit" ? `${st.input.unit}/${st.input.tuplet}` : ""}`;
+    const sig = `${this.mode}|${f}|${base}|${selKey}|${rows}x${this.cols}|${form}|${this.layoutMode}`;
     if (sig !== this.builtFor) { this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols)); this.build(f, base, selKey, rows, st); this.builtFor = sig; }
     this.refresh(st);
   }
@@ -99,15 +102,6 @@ export class Pad {
     const back = `<button class="btn cand" data-back="1">返回</button>`;
     const c = (attrs: string, label: string, on = false, title = "") => `<button class="btn cand${on ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
     switch (this.mode) {
-      case "key": return KEY_CIRCLE.map((k) => c(`data-key="${k}"`, `1=${KEY_NAMES[k]}`, k === f)).join("") + back;
-      case "unit":
-        return UNIT_GLYPH.map((g, i) => c(`data-unit="${i}"`, `<span class="smufl">${g}</span>`, i === st.input.unit, UNIT_NAME[i])).join("") +
-          ([0, 3, 5, 6, 7] as const).map((n) => c(`data-tup="${n}"`, n ? `${n} 连` : "不连", n === st.input.tuplet)).join("") + back;
-      case "range":
-        return [-3, -2, -1, 0, 1, 2, 3].map((s) => {
-          const low = pretty(fromDiatonic(this.baseAt(s, f, rows), f));
-          return c(`data-shift="${s}"`, `${s === 0 ? "中央 C" : s > 0 ? `高 ${s} 行` : `低 ${-s} 行`}<small>${low} 起</small>`, s === this.rowShift);
-        }).join("") + back;
       case "more": return c(`data-open="layout"`, "布局…", false, "几行几列、首调 / 绝对") + c(`data-open="mark"`, "插记号…", false, "在光标处插调号 / 拍号 / 速度") + back;
       case "layout":
         return [c(`data-rows="auto"`, `行 自动（${rows}）`, this.rowsSetting === "auto"),
@@ -217,10 +211,6 @@ export class Pad {
     on("[data-caret]", (b) => this.host.onCommand({ k: "caret", d: Number(b.dataset.caret) }));
     on("[data-cmd]", (b) => this.host.onCommand({ k: b.dataset.cmd } as Command));
     // 候选
-    on("[data-key]", (b) => { this.host.onInputKey(Number(b.dataset.key)); this.back(); });
-    on("[data-unit]", (b) => { this.host.onUnit(Number(b.dataset.unit)); this.back(); });
-    on("[data-tup]", (b) => { this.host.onTuplet(Number(b.dataset.tup) as 0 | 3 | 5 | 6 | 7); this.back(); });
-    on("[data-shift]", (b) => { this.rowShift = Number(b.dataset.shift); this.back(); });
     on("[data-open]", (b) => { this.mode = b.dataset.open as Mode; this.render(); });
     on("[data-mark]", (b) => { this.back(); this.host.onInsertMark(b.dataset.mark as "key" | "time" | "tempo"); });
     // 布局：点了不收（好试），按「返回」回去
@@ -242,9 +232,24 @@ export class Pad {
     else if (knob === "range") { this.rowShift = Math.max(-8, Math.min(8, this.rowShift + n)); this.render(); }
   }
   private tap(knob: string): void {
-    const st = this.host.state();
-    this.mode = knob === "key" ? (st.sel ? "transpose" : "key") : knob === "unit" ? "unit" : knob === "range" ? "range" : "more";
-    this.render();
+    const st = this.host.state(), anchor = this.el.querySelector<HTMLElement>(`[data-knob="${knob}"]`);
+    if (!anchor || knob === "more" || (knob === "key" && st.sel)) { this.mode = knob === "more" ? "more" : "transpose"; this.render(); return; }
+    const w = anchor.getBoundingClientRect().width, f = inputKey(st);
+    if (knob === "key") {
+      openDrum(anchor, [{ items: KEY_CIRCLE.map((k) => `1=${KEY_NAMES[k]}`), index: KEY_CIRCLE.indexOf(f), width: w, title: "pad 的调（五度圈）" }],
+        { onChange: (_c, i) => this.host.onInputKey(KEY_CIRCLE[i]) });
+    } else if (knob === "unit") {
+      const TUP = [0, 3, 5, 6, 7] as const;
+      openDrum(anchor, [
+        { items: UNIT_GLYPH.map((g, i) => `<span class="smufl">${g}</span><small>${UNIT_NAME[i]}</small>`), index: st.input.unit, width: w, title: "长短基线" },
+        { items: TUP.map((n) => (n ? `${n} 连` : "不连")), index: Math.max(0, TUP.indexOf(st.input.tuplet as 0 | 3 | 5 | 6 | 7)), width: 64, title: "连音" },
+      ], { onChange: (c, i) => { if (c === 0) this.host.onUnit(i); else this.host.onTuplet(TUP[i]); } });
+    } else if (knob === "range") {
+      const rows = this.rows(), S = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+      openDrum(anchor, [{ items: S.map((s) => `${s === 0 ? "中央 C" : s > 0 ? `高 ${s} 行` : `低 ${-s} 行`}<small>${pretty(fromDiatonic(this.baseAt(s, f, rows), f))} 起</small>`),
+        index: Math.max(0, S.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), width: w, title: "音域窗口" }],
+        { onChange: (_c, i) => { this.rowShift = S[i]; this.render(); } });
+    }
   }
   /** 某个来源（手指 / 电脑键盘的键）按下了五线谱位置 d 的音：pad 上那个键亮着，直到 showUp。 */
   showDown(d: number, id: string): void { this.held.set(id, d); this.refresh(this.host.state()); }
