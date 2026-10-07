@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.1.4-2026-10-07";
+var APP_VERSION = "v0.2.0-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5351,4 +5351,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-06676834886a.mjs.map
+//# sourceMappingURL=moonsinger-84c4608ee2ef.mjs.map
