@@ -170,6 +170,11 @@ function next(st: EditorState, tokens: Token[], patch: Partial<EditorState> = {}
 const leave = (st: EditorState): EditorState => (st.log.length ? { ...st, log: [] } : st);
 const validDur = (d: number) => Number.isInteger(d) && d >= MIN_DUR && d <= MAX_DUR;
 
+/** 只响不写（即兴）的那个音：带上挂着的 ♯ / ♭，「只管下一个音」的那一次照样用掉（user「升降号为什么对preview没用，也没有ui上面的反应」）。 */
+export function soundingPitch(st: EditorState, p: Pitch): { pitch: Pitch; st: EditorState } {
+  if (!st.input.acc) return { pitch: p, st };
+  return { pitch: applyAcc(p, st.input), st: { ...st, input: consumeAcc(st.input) } };
+}
 /** 用掉一次 Shift：一次性的用完就关，锁定的留着。 */
 function consumeAcc(input: InputState): InputState { return input.accMode === "once" ? { ...input, acc: 0, accMode: "off" } : input; }
 function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alterBy(p, input.acc) : p; }

@@ -4,7 +4,7 @@
 // 调号 / 拍号 / 速度是谱里的记号 token，点谱上的记号就地改，pad「＋」在光标处插——顶栏不再有全局的调号 / 拍号 / 速度。
 
 import { APP_VERSION } from "../version.ts";
-import { type EditorState, type NoteTok, type Hum, type MarkVal, initState, writePitch, writeMark, setHum, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
+import { type EditorState, type NoteTok, type Hum, type MarkVal, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
 import { type Pitch, pitchName, midiOf, diatonicIndex, KEY_LABEL } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -75,7 +75,11 @@ const pad = new Pad(padEl, {
     update(r.st);
     view.marks.openAt(r.index, r.fresh);
   },
-  onSoundDown: (p, id) => { if (padWrote >= 0) soundTok(st, padWrote, id); else sound.down(p, id); padWrote = -1; },
+  onSoundDown: (p, id) => {
+    if (padWrote >= 0) soundTok(st, padWrote, id);
+    else { const r = soundingPitch(st, p); update(r.st); sound.down(r.pitch, id); }   // 即兴：带上挂着的 ♯ / ♭
+    padWrote = -1;
+  },
   onSoundUp: (id) => sound.up(id),
 });
 
@@ -262,7 +266,9 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "audition": {   // 弹：在草稿状态上写一下，拿到那个音高就扔
       if (repeat) return true;
       const probe = apply({ ...st, sel: null, log: [] }, { k: "degree", degree: a.degree, dir: a.dir }, performance.now());
-      keyTok(probe, probe.caret - 1, code); return true;
+      keyTok(probe, probe.caret - 1, code);
+      if (probe.input !== st.input) update({ ...st, input: probe.input });   // 「只管下一个音」的 ♯ / ♭ 用掉了
+      return true;
     }
     case "play": void togglePlay(); return true;
     case "impro": pad.toggleImpro(); return true;

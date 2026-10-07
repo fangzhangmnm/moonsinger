@@ -7,16 +7,24 @@
 //   ♯ / ♭ 像手机 Shift（点一下只管下一个音，连点两下锁住）；「弹」= 即兴：按住临时只唱不写，快速点一下锁住
 //   （user「只有「改」和「写」两个模式，即兴做成 pad 上的一个开关（按住时只唱不写）」）。
 //   「＋」= 在光标处插记号（调号 / 拍号 / 速度，候选条里挑），插完就地打开它的编辑框（user「…都是token」）。
+//   2026-10-07 改版（user「然后键盘可以五row或者更多，0移回上面，16号还是音，然后我说了上下键是移动row而不是八度，就是平移row的窗口，
+//   可以调row数量，或者根据设备自己判断。然后键间距和ipad和iphone键盘对齐，可以看一下wxhw怎么做的」「col也可以调，我可以实验一下哈哈」）：
+//   网格 = 列 × 行，全是音（0 回到工具条）；▲▼ 整个窗口挪一行；「布局」候选里调行数（自动 / 3–8）和列数（3–7）；
+//   键高 / 键缝照 WXHW 量的 iOS 键盘（平板 = iPad mini：键高 55.5、上下缝 9；手机 = iPhone：46、6；左右缝 5；形态判断同 WXHW dock.ts）。
+//   布局只在这次打开里有效（持久化还没定）。
 //   改（有选中）的时候「1=」那个位子换成「移调」：候选 = ↑↓ 半音 / 全音 / 八度 + 「转调…」（再一层：转到 1=X）
 //   （user「然后很快我需要框选和整体移调转调」；写的时候它管输入的调，改的时候它管选中这段的调）。
 
-import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchName, KEY_LABEL } from "../score/pitch.ts";
+import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchName, alterBy, KEY_LABEL } from "../score/pitch.ts";
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
 import { type EditorState, inputKey, keyAt } from "../score/song.ts";
 
 const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置（她音域外的键变淡，只提示不拦）
-const NOTE_KEYS = 15;                // 16 格里 15 个音 + 右上 1 个 0
+/** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
+const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone");
+/** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
+const KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } } as const;
 const DOT_UP = "̇", DOT_DOWN = "̣";   // 简谱的上加点 / 下加点
 /** Bravura 的整个音符字形（SMuFL 预组合音符，符干朝上）：三十二分 … 全音符。 */
 const UNIT_GLYPH = ["", "", "", "", "", ""];
@@ -44,10 +52,12 @@ export interface PadHost {
   onSoundUp(id: string): void;               //              松开停（只停这根手指的）
 }
 
-type Mode = "normal" | "key" | "tuplet" | "mark" | "transpose" | "modulate";
+type Mode = "normal" | "key" | "tuplet" | "mark" | "transpose" | "modulate" | "layout";
 
 export class Pad {
-  private shift = 0;          // 用户挪过几个八度
+  private rowShift = 0;       // ▲▼ 挪过几行
+  private cols = 4;           // 每行几个音（MEDO = 4）
+  private rowsSetting: number | "auto" = "auto";
   private mode: Mode = "normal";
   private builtFor = "";
   private improLatched = false;
@@ -55,22 +65,34 @@ export class Pad {
   private held = new Map<string, number>();
   private improHeld = false;
 
-  constructor(private el: HTMLElement, private host: PadHost) { this.render(); }
+  constructor(private el: HTMLElement, private host: PadHost) { this.render(); addEventListener("resize", () => this.render()); }
+
+  /** 行数：手动设的，或按设备和屏幕剩下的高度算（竖屏 pad 占屏底四成多，横屏占侧栏整高）。 */
+  private rows(): number {
+    if (this.rowsSetting !== "auto") return this.rowsSetting;
+    const m = KEY_METRIC[padForm()], avail = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
+    return Math.max(4, Math.min(6, Math.floor((avail + m.gap) / (m.h + m.gap))));   // 封顶 6：再多就大半在她的音域外了
+  }
 
   get impro(): boolean { return this.improLatched || this.improHeld; }
 
   /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。 */
   render(): void {
-    const st = this.host.state(), f = inputKey(st), base = defaultPadBase(f) + 7 * this.shift;
+    const st = this.host.state(), f = inputKey(st), base = defaultPadBase(f) + this.cols * this.rowShift, rows = this.rows(), form = padForm();
     if ((this.mode === "transpose" || this.mode === "modulate") && !st.sel) this.mode = "normal";   // 选中没了：移调候选收起
     const selKey = st.sel ? keyAt(st.song, st.sel.from) : null;
-    const sig = `${this.mode}|${f}|${base}|${selKey}`;
-    if (sig !== this.builtFor) { this.build(f, base, selKey); this.builtFor = sig; }
+    const sig = `${this.mode}|${f}|${base}|${selKey}|${rows}x${this.cols}|${form}`;
+    if (sig !== this.builtFor) { this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols)); this.build(f, base, selKey, rows); this.builtFor = sig; }
     this.refresh(st);
   }
 
-  private build(f: number, base: number, selKey: number | null): void {
-    const tools = this.mode === "transpose"
+  private build(f: number, base: number, selKey: number | null, rows: number): void {
+    const tools = this.mode === "layout"
+      ? [`<button class="btn cand${this.rowsSetting === "auto" ? " is-on" : ""}" data-rows="auto">行 自动（${rows}）</button>`,
+         ...[3, 4, 5, 6, 7, 8].map((n) => `<button class="btn cand${this.rowsSetting === n ? " is-on" : ""}" data-rows="${n}">${n} 行</button>`),
+         ...[3, 4, 5, 6, 7].map((n) => `<button class="btn cand${this.cols === n ? " is-on" : ""}" data-cols="${n}">${n} 列</button>`),
+         `<button class="btn cand" data-back="1">返回</button>`].join("")
+      : this.mode === "transpose"
       ? `<button class="btn cand" data-tr="1">↑ 半音</button><button class="btn cand" data-tr="-1">↓ 半音</button>` +
         `<button class="btn cand" data-tr="2">↑ 全音</button><button class="btn cand" data-tr="-2">↓ 全音</button>` +
         `<button class="btn cand" data-toct="1">↑ 八度</button><button class="btn cand" data-toct="-1">↓ 八度</button>` +
@@ -95,23 +117,23 @@ export class Pad {
         `<button class="btn" data-cmd="longer" title="长（${hint("longer")}）">长</button>` +
         `<button class="btn t-tup" data-open="tuplet" title="连音（开着再点 = 选 3 5 6 7）">连</button>` +
         `<button class="btn" data-cmd="extend" title="拉长一份（${hint("extend")}）">－</button>` +
+        `<button class="btn" data-cmd="rest" title="休止（${hint("rest")}）">0</button>` +
         `<button class="btn" data-cmd="bar" title="小节线（${hint("bar")}）">|</button>` +
         `<button class="btn" data-open="mark" title="在光标处插记号：调号 / 拍号 / 速度">＋</button>` +
         `<button class="btn" data-cmd="backspace" title="退格（${hint("backspace")}）"><svg class="ico"><use href="#backspace"/></svg></button>` +
         `<button class="btn t-impro" data-impro="1" title="弹：按住只唱不写，快速点一下锁住（${hint("impro")}）">弹</button>` +
-        `<button class="btn" data-oct="-1" title="pad 整体低八度"><svg class="ico"><use href="#caret-down"/></svg></button>` +
-        `<button class="btn" data-oct="1" title="pad 整体高八度"><svg class="ico"><use href="#caret-up"/></svg></button>`;
-    const cells: string[] = [];
-    for (let row = 3; row >= 0; row--) {
-      for (let col = 0; col < 4; col++) {
-        const k = row * 4 + col;
-        if (k >= NOTE_KEYS) { cells.push(`<button class="pad-key rest" data-cmd="rest" title="休止（${hint("rest")}）"><span class="deg">0</span><span class="abs">休止</span></button>`); continue; }
-        const d = base + k, p = fromDiatonic(d, f);
-        const deg = (k % 7) + 1, oct = Math.floor((d - homeTonic(f)) / 7);
+        `<button class="btn" data-open="layout" title="pad 布局：几行几列">布局</button>` +
+        `<button class="btn" data-row="-1" title="整个 pad 往下挪一行"><svg class="ico"><use href="#caret-down"/></svg></button>` +
+        `<button class="btn" data-row="1" title="整个 pad 往上挪一行"><svg class="ico"><use href="#caret-up"/></svg></button>`;
+    const cells: string[] = [], ht = homeTonic(f);
+    for (let row = rows - 1; row >= 0; row--) {
+      for (let col = 0; col < this.cols; col++) {
+        const d = base + row * this.cols + col, p = fromDiatonic(d, f);
+        const deg = ((((d - ht) % 7) + 7) % 7) + 1, oct = Math.floor((d - ht) / 7);
         const dots = oct > 0 ? DOT_UP.repeat(oct) : DOT_DOWN.repeat(-oct);
         const inRange = d >= HER_LOW && d <= HER_HIGH;
         cells.push(`<button class="pad-key${inRange ? "" : " out"}${deg === 1 ? " tonic" : ""}" data-d="${d}">` +
-          `<span class="deg">${deg}${dots}</span><span class="abs">${pitchName(p).replace("#", "♯").replace(/b(?=\d)/, "♭")}</span></button>`);
+          `<span class="deg"><span class="acc"></span>${deg}${dots}</span><span class="abs">${pitchName(p).replace("#", "♯").replace(/b(?=\d)/, "♭")}</span></button>`);
       }
     }
     this.el.innerHTML = `<div class="pad-tools${this.mode === "normal" ? "" : " cands"}">${tools}</div><div class="pad-grid">${cells.join("")}</div>`;
@@ -130,6 +152,14 @@ export class Pad {
     if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`; u.title = `下一个音：${UNIT_NAME[i.unit]}${i.tuplet ? `（${i.tuplet} 连音）` : ""}`; }
     const t = q(".t-tup"); if (t) { t.textContent = i.tuplet ? String(i.tuplet) : "连"; t.classList.toggle("is-on", !!i.tuplet); }
     q(".t-impro")?.classList.toggle("is-on", this.impro);
+    // 挂着 ♯ / ♭：音键显示升 / 降之后的样子（数字前加 ♯ ♭、音名跟着换）——按下去会是什么一眼看得见
+    const f = inputKey(st);
+    this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
+    this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => {
+      const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = i.acc ? alterBy(p0, i.acc) : p0;
+      b.querySelector(".acc")!.textContent = i.acc > 0 ? "♯" : i.acc < 0 ? "♭" : "";
+      b.querySelector(".abs")!.textContent = pitchName(p).replace(/#/g, "♯").replace(/b(?=\d)|b(?=b)/g, "♭");
+    });
     const down = new Set(this.held.values());
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => b.classList.toggle("down", down.has(Number(b.dataset.d))));
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => b.classList.toggle("impro", this.impro));
@@ -153,9 +183,12 @@ export class Pad {
     });
     on("[data-cmd]", (b) => { if (b.classList.contains("pad-key")) flash(b); this.host.onCommand({ k: b.dataset.cmd } as Command); });
     on("[data-acc]", (b) => this.host.onCommand({ k: "acc", acc: Number(b.dataset.acc) as 1 | -1 }));
-    on("[data-oct]", (b) => { this.shift = Math.max(-2, Math.min(2, this.shift + Number(b.dataset.oct))); this.render(); });
+    on("[data-row]", (b) => { this.rowShift = Math.max(-8, Math.min(8, this.rowShift + Number(b.dataset.row))); this.render(); });
+    // 布局：点了不收（好试），按「返回」回去
+    on("[data-rows]", (b) => { this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows); this.render(); });
+    on("[data-cols]", (b) => { this.cols = Number(b.dataset.cols); this.render(); });
     on("[data-open]", (b) => {
-      if (b.dataset.open === "key" || b.dataset.open === "mark" || b.dataset.open === "transpose" || b.dataset.open === "modulate") { this.mode = b.dataset.open; this.render(); return; }
+      if (b.dataset.open === "key" || b.dataset.open === "mark" || b.dataset.open === "transpose" || b.dataset.open === "modulate" || b.dataset.open === "layout") { this.mode = b.dataset.open; this.render(); return; }
       const st = this.host.state();   // 连音：没开 → 开三连；开着 → 弹候选
       if (!st.input.tuplet) this.host.onTuplet(3); else { this.mode = "tuplet"; this.render(); }
     });
@@ -171,7 +204,7 @@ export class Pad {
     const imp = this.el.querySelector<HTMLElement>("[data-impro]");
     if (imp) {
       let t0 = 0, was = false;
-      imp.addEventListener("pointerdown", (e) => { e.preventDefault(); imp.setPointerCapture(e.pointerId); t0 = performance.now(); was = this.improLatched; this.improHeld = true; this.changed(); });
+      imp.addEventListener("pointerdown", (e) => { e.preventDefault(); try { imp.setPointerCapture(e.pointerId); } catch { /* 指针已经没了 */ } t0 = performance.now(); was = this.improLatched; this.improHeld = true; this.changed(); });
       const release = () => { if (!this.improHeld) return; this.improHeld = false; if (performance.now() - t0 < 250) this.improLatched = !was; this.changed(); };
       imp.addEventListener("pointerup", release); imp.addEventListener("pointercancel", release);
     }
