@@ -39,3 +39,6 @@ fi
 mkdir -p dist
 "$ESBUILD" "$ENTRY" --bundle --format=esm --target=es2022 --outfile="$OUT" --sourcemap --log-level=warning
 echo "[build] ✓ $OUT"
+# 月读的 worker（唱法核心 src/singer/sing-core.mjs 打进来；第三方引擎 / 模型运行时从 dev-assets/ 动态加载，不进包）
+"$ESBUILD" ./src/singer/worker.ts --bundle --format=esm --target=es2022 --outfile=./dist/singer-worker.mjs --sourcemap --log-level=warning
+echo "[build] ✓ ./dist/singer-worker.mjs"
