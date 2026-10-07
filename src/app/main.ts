@@ -136,7 +136,8 @@ function renderStatus(): void {
 const singer = new Singer();
 let singing = false;
 const singStatus = (s: string) => { $("singStatus").textContent = s; };
-/** 报错条（顶上，带完整原因、点「知道了」才收）：替补顶上必须明说，不许静默（user 2026-10-07「替补不能静默替补，需要显示报错」）。
+/** 报错条（顶上，带完整原因、点「知道了」才收）。user 2026-10-07「替补不能静默替补，需要显示报错」→ 订正「不是显示自动上，而是就是不出声，报错，人类手动换」：
+ *  成员上不了场就不出声、报错，换谁由人来（选角是窄接口；谱子不受影响）。
  *  状态栏太窄、原因会被省略号截掉，所以不放在那里。 */
 function showError(text: string): void {
   document.getElementById("errNotice")?.remove();
@@ -202,9 +203,9 @@ async function togglePlay(): Promise<void> {
     singer.play(r, () => { playIcon(false); });
     playIcon(true);
   } catch (e) {
-    // 完整引擎带不起来（内存不够 / 加载失败）→ 元音版替唱，并报错明说（user「带不起piper的就用我们的元音sampler来兜底」「替补不能静默替补，需要显示报错」）
-    showError(`完整版月读唱不出来：${(e as Error).message}。这次由元音版替唱。`);
-    playLight("元音版替");
+    // 完整引擎带不起来（内存不够 / 加载失败）→ 不出声、报错，人手动换（user「不是显示自动上，而是就是不出声，报错，人类手动换」）
+    showError(`完整版月读唱不出来：${(e as Error).message}。没有出声。要先用元音版，就在顶栏「音质」换成「轻量」再播。`);
+    singStatus("没有出声（原因见上方）");
   } finally { singing = false; $("playBtn").classList.remove("is-on"); }
 }
 $("playBtn").addEventListener("click", () => { void togglePlay(); });
@@ -216,21 +217,20 @@ async function exportSong(): Promise<void> {
   if (exporting || singing) return;
   exporting = true; $("shareBtn").classList.add("is-on");
   try {
-    let r: { samples: Float32Array; sr: number } | null = null, how = "", why = "";
+    let r: { samples: Float32Array; sr: number } | null = null, how = "";
     if ($<HTMLSelectElement>("qualSel").value === "full") {
       try { r = await singFull(); how = "月读"; }
-      catch (e) { why = (e as Error).message; showError(`完整版月读唱不出来：${why}。这份导出由元音版替唱。`); }
-    }
-    if (!r) {
+      catch (e) { showError(`完整版月读唱不出来：${(e as Error).message}。没有导出。要先用元音版导出，就在顶栏「音质」换成「轻量」再导出。`); singStatus("没有导出（原因见上方）"); return; }
+    } else {
       const notes = lightNotes();
-      if (notes.length) { r = await sampler.renderSong(notes, st.song.hum); how = why ? "元音版替" : "轻量版"; }
+      if (notes.length) { r = await sampler.renderSong(notes, st.song.hum); how = "轻量版"; }
     }
     if (!r) { singStatus("还没有音"); return; }
     singStatus("编 mp3…");
     const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
     const file = new File([bytes], `${songTitle()}.mp3`, { type: "audio/mpeg" });
     singStatus("");
-    offerFile(file, why ? "歌声导出好了（替补唱的）" : "歌声导出好了", `${why ? `完整版月读唱不出来（${esc(why)}），这份是元音版替唱的。<br>` : ""}${how}唱 ${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
+    offerFile(file, "歌声导出好了", `${how}唱 ${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
   } catch (e) {
     singStatus(`导出失败：${(e as Error).message}`);
   } finally { exporting = false; $("shareBtn").classList.remove("is-on"); }

@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.1.2-2026-10-07";
+var APP_VERSION = "v0.1.3-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3325,8 +3325,8 @@ async function togglePlay() {
     });
     playIcon(true);
   } catch (e) {
-    showError(`\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF1A${e.message}\u3002\u8FD9\u6B21\u7531\u5143\u97F3\u7248\u66FF\u5531\u3002`);
-    playLight("\u5143\u97F3\u7248\u66FF");
+    showError(`\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF1A${e.message}\u3002\u6CA1\u6709\u51FA\u58F0\u3002\u8981\u5148\u7528\u5143\u97F3\u7248\uFF0C\u5C31\u5728\u9876\u680F\u300C\u97F3\u8D28\u300D\u6362\u6210\u300C\u8F7B\u91CF\u300D\u518D\u64AD\u3002`);
+    singStatus("\u6CA1\u6709\u51FA\u58F0\uFF08\u539F\u56E0\u89C1\u4E0A\u65B9\uFF09");
   } finally {
     singing = false;
     $("playBtn").classList.remove("is-on");
@@ -3341,21 +3341,21 @@ async function exportSong() {
   exporting = true;
   $("shareBtn").classList.add("is-on");
   try {
-    let r = null, how = "", why = "";
+    let r = null, how = "";
     if ($("qualSel").value === "full") {
       try {
         r = await singFull();
         how = "\u6708\u8BFB";
       } catch (e) {
-        why = e.message;
-        showError(`\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF1A${why}\u3002\u8FD9\u4EFD\u5BFC\u51FA\u7531\u5143\u97F3\u7248\u66FF\u5531\u3002`);
+        showError(`\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF1A${e.message}\u3002\u6CA1\u6709\u5BFC\u51FA\u3002\u8981\u5148\u7528\u5143\u97F3\u7248\u5BFC\u51FA\uFF0C\u5C31\u5728\u9876\u680F\u300C\u97F3\u8D28\u300D\u6362\u6210\u300C\u8F7B\u91CF\u300D\u518D\u5BFC\u51FA\u3002`);
+        singStatus("\u6CA1\u6709\u5BFC\u51FA\uFF08\u539F\u56E0\u89C1\u4E0A\u65B9\uFF09");
+        return;
       }
-    }
-    if (!r) {
+    } else {
       const notes = lightNotes();
       if (notes.length) {
         r = await sampler.renderSong(notes, st.song.hum);
-        how = why ? "\u5143\u97F3\u7248\u66FF" : "\u8F7B\u91CF\u7248";
+        how = "\u8F7B\u91CF\u7248";
       }
     }
     if (!r) {
@@ -3366,7 +3366,7 @@ async function exportSong() {
     const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
     const file = new File([bytes], `${songTitle()}.mp3`, { type: "audio/mpeg" });
     singStatus("");
-    offerFile(file, why ? "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86\uFF08\u66FF\u8865\u5531\u7684\uFF09" : "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${why ? `\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF08${esc2(why)}\uFF09\uFF0C\u8FD9\u4EFD\u662F\u5143\u97F3\u7248\u66FF\u5531\u7684\u3002<br>` : ""}${how}\u5531 ${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
+    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${how}\u5531 ${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
   } catch (e) {
     singStatus(`\u5BFC\u51FA\u5931\u8D25\uFF1A${e.message}`);
   } finally {
@@ -3562,4 +3562,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-fe5824293d0f.mjs.map
+//# sourceMappingURL=moonsinger-7fad7a19e178.mjs.map
