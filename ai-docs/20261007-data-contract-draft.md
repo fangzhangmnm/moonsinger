@@ -189,7 +189,7 @@ user 2026-10-07（看完推荐稿）：「对，因为一般的daw对于音源�
 **事实（核过）**
 - 家族只有一个共享缓存：Cache Storage `pwa-models`（键 `/__pwa-models__/<包名>/<分片>`），`@internal/model-packs` 管下载 / 逐片 sha256 / 导入 / 删除；同域名 `fangzhangmnm.github.io` 下的兄弟 app 自动共享。没有任何 app 调 `navigator.storage.persist()`：整个缓存是 best-effort，被浏览器清掉 = 重下（哈希校验），不是丢数据；Safari 7 天 ITP 已知。
 - 库现在只认**app 内嵌了 manifest 的包**（packId = manifest 的 sha256 = 信任根）；`importFiles` 按内容哈希认分片，认不了任意文件。JRB 的两个先例：拖进来的本地模型 = 只在内存、这次打开有效；小雅 = 「只准本机导入」的包（内嵌 manifest、无下载源、用户选文件、按哈希入 `pwa-models`）。
-- **月读现在是两份字节**：JRB 钉 `voice-tsukuyomi-chan-zhen-6lang-fp16-20261002`，MoonSinger 钉 `voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007`（多一个 dur_override 输入，唱歌用）——同一域名下两个 65 MB。runtime / lang-ja 两家同名，已共享。
+- **月读的音色本体现在是两份字节**：JRB 钉 `voice-tsukuyomi-chan-zhen-6lang-fp16-20261002`（37.8 MB），MoonSinger 钉 `voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007`（37.8 MB，多一个 dur_override 输入，唱歌用）——同一域名下重复 37.8 MB（编辑器 session 核的数；「65 MB」是整套 = 音色 37.8 + lang-ja 23.3 + runtime 3.5）。runtime / lang-ja / zh / en 两家同名，已共享。
 
 **推荐**
 1. **用户拖进来的音源（sf2、本地月读 onnx+json）两档**：
@@ -198,7 +198,7 @@ user 2026-10-07（看完推荐稿）：「对，因为一般的daw对于音源�
 2. **歌里怎么认**：统一走包身份——`CandidateV2.source.soundfont = { pack, sha256 }`，`sha256` = packId；官方包 = 内嵌 manifest 的哈希，本地包 = 合成 manifest 的哈希。另加 `files: [{ name, sha256, bytes }]`（本地包必填、官方包可省）给界面显示和换设备时的提示（「要 MuseScore_General.sf2，哈希 …」）。换到没这个包的设备 = 没人上场、不出声、报错、人来换（已定）。`contract.ts` 待改这一行。
 3. **署名 / 许可证**：官方包从 manifest 的许可证快照抄；本地包 `credit = { attribution: [], license: { name: "unknown" } }`，角色卡里可填。**音源字节默认不拷进 .mxl**（32 MB 进每首歌没道理，再分发归 user 逐案）；§8「体积和许可证允许就拷进 attachments/」收窄为一个显式动作「带音源导出」，不是存档路径。
 4. **月读共享的头疼**：
-   - **去重**：唱歌用的 dur 变体若 dur_override 不喂时输出和 20261002 逐字节相同，JRB 可改钉 dur 包 → 一份字节。要朗读库 session 核（逐样本比对），不是本仓的活。
+   - **去重**（省 37.8 MB）：唱歌用的 dur 变体若 dur_override 不喂时输出和 20261002 逐字节相同，JRB 可改钉 dur 包 → 一份字节。要朗读库 session 核（逐样本比对），不是本仓的活。
    - **孤儿包**：app 只认自己钉的包；换钉之后旧包留在用户缓存里、任何 app 都看不见 → 配额慢慢漏（月读以后还会出 speaker 变体，每个都是新包）。提案（库层，等 user）：`model-packs` 加 `listAll()` 枚举整个 `pwa-models`（家规允许枚举 `pwa-` 共享前缀，禁的是别的 app 的私有前缀）→ 每个 app 的设置里多一栏「其他包（别的 app 或旧版本的）」可删；再加一个钉表 `/__pwa-models__/_pins/<appId>.json`（每个 app 写自己钉的包名）→ 哪个包没人钉一眼可见。
    - **配额可见**：设置里加 `navigator.storage.estimate()` 一行（patch）。要不要 `persist()` = user 定（家规 WeebPaint 的 persist 只在挂库时申请）。
 5. **分工**：1 的「试」+ 2 + 3 = 编辑器 session 现在就能做（不碰库）；1 的「留」+ 4 的 listAll / 钉表 = `@internal/model-packs` 的活，要 user 点头后另开 session；4 的去重 = 朗读库 session。
