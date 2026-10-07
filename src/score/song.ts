@@ -125,7 +125,7 @@ function mapCurrentDur(st: EditorState, f: (dur: number) => number): EditorState
   if (i < 0) return st;
   const t = st.song.tokens[i] as NoteTok | RestTok;
   const dur = f(t.dur);
-  if (dur === t.dur || dur < MIN_DUR || dur > MAX_DUR || !Number.isInteger(dur)) return st;
+  if (dur === t.dur || dur < MIN_DUR || dur > MAX_DUR || dur % MIN_DUR !== 0) return st;   // 只认三十二分音符的整数倍（画得出来）
   return replaceAt(st, i, { ...t, dur });
 }
 export const halve = (st: EditorState) => mapCurrentDur(st, (d) => d / 2);          // 8（诺基亚）
@@ -170,7 +170,7 @@ export function setNote(st: EditorState, i: number, patch: Partial<Pick<NoteTok,
 }
 export function setDur(st: EditorState, i: number, dur: number): EditorState {
   const t = st.song.tokens[i];
-  if (!t || t.kind === "bar" || dur < MIN_DUR || dur > MAX_DUR) return st;
+  if (!t || t.kind === "bar" || dur < MIN_DUR || dur > MAX_DUR || dur % MIN_DUR !== 0) return st;
   return replaceAt(st, i, { ...t, dur });
 }
 

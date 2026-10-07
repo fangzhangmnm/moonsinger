@@ -58,3 +58,45 @@ button, input, select { font: inherit; color: inherit; }
 
 .err-banner { position: fixed; left: 8px; right: 8px; bottom: calc(8px + var(--safe-bottom)); z-index: var(--z-err); background: #c0392b; color: #fff;
   padding: 10px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+
+/* 状态行 */
+.status { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 40vw; }
+
+/* 五线谱（颜色与 src/render/svg.ts 的 STANDALONE_CSS 同义） */
+.staff-svg line { stroke: var(--ink); stroke-linecap: butt; }
+.staff-svg text { fill: var(--ink); }
+.staff-svg path { fill: var(--ink); }
+.staff-svg line.staff { stroke: #666; }
+.staff-svg path.tie { fill: none; stroke: var(--ink); stroke-width: 1.4; }
+.staff-svg .ghost { fill: var(--ghost); stroke: var(--ghost); }
+.staff-svg path.tie.ghost { fill: none; }
+.staff-svg .cur { fill: var(--accent); stroke: var(--accent); }
+.staff-svg path.tie.cur { fill: none; }
+.staff-svg rect.head { fill: var(--accent-soft); opacity: .75; }
+.staff-svg line.caret { stroke: var(--accent); }
+.staff-svg rect.warn { fill: #d9a23a; }
+.staff-svg text.lyric { font-family: system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif; }
+.score { cursor: default; touch-action: none; }
+
+/* pad（MEDO 音符模式） */
+.pad-top { display: flex; align-items: center; justify-content: space-between; }
+.pad-label { color: var(--muted); font-size: 12px; }
+.pad-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; aspect-ratio: 1; }
+.pad-key { border: 1px solid var(--line); border-radius: 12px; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; cursor: pointer; touch-action: none; padding: 0; }
+.pad-key .deg { font-size: 22px; font-weight: 600; line-height: 1; }
+.pad-key .abs { font-size: 10px; color: var(--muted); }
+.pad-key.tonic { background: #fbf6ea; }
+.pad-key.out { opacity: .45; }
+.pad-key.hit { background: var(--accent-soft); border-color: #b8cde8; }
+.pad-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.pad-strip .btn { padding: 0; min-width: 0; height: 40px; font-size: 16px; }
+
+/* 竖屏（iPad mini 竖着拿）：pad 挪到谱下面 */
+@media (max-aspect-ratio: 1/1) {
+  #stage { flex-direction: column; }
+  .pad-panel { width: auto; border-left: 0; border-top: 1px solid var(--line); flex-direction: row; align-items: stretch; }
+  .pad-panel .pad-top { flex-direction: column; justify-content: center; gap: 8px; }
+  .pad-panel .pad-grid { height: min(36vh, 300px); aspect-ratio: 1; flex: none; }
+  .pad-panel .pad-strip { grid-template-columns: repeat(2, 1fr); flex: 1; align-content: start; }
+}

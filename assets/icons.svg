@@ -1,35 +1,3 @@
-<!doctype html>
-<!-- created 2026-10-06 by Claude Opus 5.5 —— MoonSinger 编辑器第一版试验页（整屏固定、页面不滚动；只有谱面板自己滚） -->
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#f4f1ea" />
-    <meta name="color-scheme" content="light" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>MoonSinger</title>
-    <link rel="stylesheet" href="./styles.css" />
-    <script>
-      // bundle 加载前的兜底：任何脚本错误糊一张红条（iPad 无 devtools）。抄 CatsUp。
-      (function () {
-        function show(text) {
-          var bar = document.getElementById("errBanner");
-          if (!bar) {
-            bar = document.createElement("div");
-            bar.id = "errBanner"; bar.className = "err-banner";
-            bar.addEventListener("click", function () { bar.hidden = true; });
-            (document.body || document.documentElement).appendChild(bar);
-          }
-          bar.hidden = false;
-          bar.textContent = text + "  (点击关闭)";
-        }
-        window.addEventListener("error", function (e) { show("脚本错误：" + (e.message || e.error || e)); });
-        window.addEventListener("unhandledrejection", function (e) { show("未处理的 Promise 错误：" + (e.reason && (e.reason.message || e.reason))); });
-      })();
-    </script>
-  </head>
-  <body>
-    <!-- ICON-SPRITE:BEGIN — 由 scripts/inline-sprites.py 生成，勿手改 -->
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
 <!--
   6 icons extracted from the family icon library (20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
@@ -52,15 +20,3 @@
   <!-- backspace — 退格 ⌫:左尖五边形 + 内部 ×【WebXiaoHeiWu 话筒左邻浮动「退格」钮；fable 自画未过目】 -->
   <symbol id="backspace" data-cat="ui" data-src="own" data-note="退格 ⌫:左尖五边形 + 内部 ×【WebXiaoHeiWu 话筒左邻浮动「退格」钮；fable 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 H19.5 a1.5 1.5 0 0 1 1.5 1.5 v11 a1.5 1.5 0 0 1 -1.5 1.5 H9 L3 12 Z"/><path d="M11.5 9.5 L17 14.5 M17 9.5 L11.5 14.5"/></symbol>
 </svg>
-<!-- ICON-SPRITE:END -->
-    <div id="app">
-      <header id="bar" class="bar"></header>
-      <main id="stage">
-        <div id="score" class="score" tabindex="0" aria-label="乐谱"></div>
-        <aside id="padPanel" class="pad-panel"></aside>
-      </main>
-      <footer id="lyricBar" class="lyric-bar"></footer>
-    </div>
-    <script type="module" src="./dist/moonsinger.mjs"></script>
-  </body>
-</html>
