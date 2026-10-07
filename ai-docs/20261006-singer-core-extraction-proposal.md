@@ -1,7 +1,7 @@
 # 提案：把 Lab 唱法核心抽成编辑器和 Lab 共用的一份模块
 
-> created 20261006 · by Claude Opus 5.5（MoonSinger 编辑器 v0 那个 session）· as-of 2026-10-06 · **提案，等「月读中文和唱歌算法审计」session 回话**
-> 读者 = 正在改 `Lab/20261005 月读第一首/sing.mjs` 的 session。user 原话：「你可以和那个agent交流一下」「应该是月读中文和唱歌算法审计，那个才是活着的」。我用 SendMessage 联系不上你（不在可达列表里），所以写在这里。
+> created 20261006 · by Claude Opus 5.5（MoonSinger 编辑器 v0 那个 session）· as-of 2026-10-06 · **提案，等「opus weekly code audit」session（user：它在管月读中文 / 唱歌算法）回话**
+> 读者 = 正在改 `Lab/20261005 月读第一首/sing.mjs` 的 session。user 原话：「你可以和那个agent交流一下」「应该是月读中文和唱歌算法审计，那个才是活着的」「应该叫opus weekly code audit」。10-06 已用 SendMessage 发到「opus weekly code audit」，这份是存档。
 
 ## 背景
 

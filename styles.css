@@ -1,0 +1,60 @@
+/* styles.css —— MoonSinger 试验页样式。created 2026-10-06 by Claude Opus 5.5
+   家族外壳规矩：页面本身永不滚动（html/body overflow hidden），只有谱面板内部滚。
+   z band：menu 300 / err 900（z 数字只写在这里）。 */
+@font-face { font-family: "Bravura"; src: url("./vendor/fonts/bravura/Bravura.woff2") format("woff2"); font-display: block; }
+:root {
+  --bg: #f4f1ea;
+  --panel: #ffffff;
+  --ink: #2a2a2a;
+  --muted: #8a8780;
+  --line: #ddd9d0;
+  --accent: #2b6cb0;
+  --accent-soft: #e3edf9;
+  --ghost: #a9b4c2;
+  --z-menu: 300;
+  --z-err: 900;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+  font-family: system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif; font-size: 14px;
+  touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+[hidden] { display: none !important; }
+button, input, select { font: inherit; color: inherit; }
+
+#app { height: 100%; display: grid; grid-template-rows: auto 1fr auto;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
+
+/* 顶栏 */
+.bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
+.bar .title { font-weight: 600; letter-spacing: .02em; }
+.bar .ver { color: var(--muted); font-size: 12px; }
+.bar .spacer { flex: 1; }
+.bar .field { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.bar select, .bar input { height: 30px; border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 0 6px; color: var(--ink); font-size: 13px; }
+.bar input[type=number] { width: 64px; }
+.btn { height: 34px; min-width: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; }
+.btn:hover { background: #f7f6f2; }
+.btn.is-on { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
+.btn:disabled { opacity: .35; cursor: default; }
+.ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: block; }
+
+/* 舞台：谱面板（内部滚）+ pad 面板 */
+#stage { min-height: 0; display: flex; }
+.score { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; outline: none; background: var(--panel);
+  -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+.score svg { display: block; }
+.pad-panel { flex: none; width: 300px; border-left: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; padding: 10px; gap: 8px; }
+
+/* 底部歌词条 */
+.lyric-bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-top: 1px solid var(--line); background: var(--panel); }
+.lyric-bar input { flex: 1; min-width: 0; height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; font-size: 15px;
+  -webkit-user-select: text; user-select: text; }
+.lyric-bar .hint { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+.err-banner { position: fixed; left: 8px; right: 8px; bottom: calc(8px + var(--safe-bottom)); z-index: var(--z-err); background: #c0392b; color: #fff;
+  padding: 10px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }

@@ -1,0 +1,22 @@
+{
+  // 类型检查专用（tsc --noEmit）——抄 CatsUp（created 2026-10-06 by Claude Opus 5.5）。
+  // 运行时 node 24 strip-types 直跑 test/，试验页由 esbuild bundle；import 写 .ts 扩展名。
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "target": "es2022",
+    "lib": ["es2022", "dom", "dom.iterable"],
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    // type-only import 必须写 `import type`，否则 strip-types 运行时报「does not provide an export」。
+    "verbatimModuleSyntax": true,
+    "types": [],
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["Lab", "node_modules", ".claude", "tools"]
+}

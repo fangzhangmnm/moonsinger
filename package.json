@@ -1,0 +1,16 @@
+{
+  "name": "moonsinger",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "comment": "created 2026-10-06 by Claude Opus 5.5（编辑器第一版：试验页，抄 CatsUp 工具链）。运行时零 npm 依赖；node 24 strip-types 直跑 test/；devDependencies 仅供 tsc --noEmit 类型门。版本 SSoT = src/version.ts。",
+  "scripts": {
+    "test": "node test/run.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "bash scripts/build.sh",
+    "serve": "bash scripts/serve.sh"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}
