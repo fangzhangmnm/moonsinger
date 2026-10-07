@@ -2,7 +2,8 @@
 // user 2026-10-07「我想的是点了之后变成一个overlay的同样宽度的竖直滚动桶？」→「2好主意！ 试一下吧」「1也同意」→
 //   「宽度比例不合理，能不能共用原来的宽度」（几列合起来 = 旋钮那一格的宽度）→
 //   「点了之后放完动画再回去响应太慢了，拖动的物理也很难受，能不能换成标准的」→ 用浏览器原生的滚动 + 吸附（scroll-snap），
-//   惯性 / 手感和系统里别的列表一样；点一格 = 立刻选中、立刻收起；滚完停稳很快自己收起；点外面 / Esc = 收起（点外面这一下吃掉，不顺手按到音键）。
+//   惯性 / 手感和系统里别的列表一样；点一格 = 立刻选中、立刻收起；点外面 / Esc = 收起（点外面这一下吃掉，不顺手按到音键）。
+//   不按时间自己收起（user「点开之后弹出来的滚轮不应该限时自动关，这样我几乎点不了」）。
 // · 停在中间高亮带里的那格 = 选中，一变就生效（旋钮上的字跟着变 = 预览）。
 // · 只在点一下旋钮时展开（按住滑 = 在旋钮那一格里原地滑，见 pad.ts；user「我希望手指松了立刻停，不要顿一下，这是快速输入。要不还是做成in place 滑动只在窗格里面预览」）。
 // · 一根滚轮可以并几列（长短 + 连音）：每列各滚各的。
@@ -13,7 +14,6 @@ export interface DrumOpts { onChange(col: number, index: number): void; onClose?
 export interface DrumHandle { close(): void; setItems(col: number, items: string[]): void }
 
 const ROW = 44, VISIBLE = 5;   // 每格高、看得见几格（中间那格 = 选中）
-const SETTLE = 120, CLOSE_AFTER = 450;   // ms：滚动停了多久算停稳；停稳以后多久收起
 
 let current: { close(): void } | null = null;
 
@@ -28,10 +28,10 @@ export function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): 
   if (left + total > innerWidth - 4) left = Math.max(4, r.right - total);   // 右边放不下：从右往左展开
   Object.assign(box.style, { left: `${left}px`, top: `${Math.max(4, Math.min(r.top + r.height / 2 - (ROW * VISIBLE) / 2, innerHeight - ROW * VISIBLE - 4))}px`, height: `${ROW * VISIBLE}px` });
   document.body.appendChild(box);
-  let closeTimer = 0, closed = false;
+  let closed = false;
   const close = () => {
     if (closed) return; closed = true;
-    clearTimeout(closeTimer); box.remove(); document.removeEventListener("pointerdown", outside, true); removeEventListener("keydown", esc, true);
+    box.remove(); document.removeEventListener("pointerdown", outside, true); removeEventListener("keydown", esc, true);
     if (current === handle) current = null;
     o.onClose?.();
   };
@@ -56,7 +56,7 @@ export function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): 
       `<div class="drum-pad" style="height:${ROW * padRows}px"></div>`;
     box.appendChild(col);
     const items = [...col.querySelectorAll<HTMLElement>(".drum-item")], n = items.length;
-    let shown = c.index, settleTimer = 0;
+    let shown = c.index;
     const at = () => Math.max(0, Math.min(n - 1, Math.round(col.scrollTop / ROW)));
     const paint = () => {
       const top = col.scrollTop, a = at();
@@ -67,8 +67,6 @@ export function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): 
     col.addEventListener("scroll", () => {
       paint();
       const i = at(); if (i !== shown) { shown = i; o.onChange(ci, i); }
-      clearTimeout(closeTimer); clearTimeout(settleTimer);
-      settleTimer = window.setTimeout(() => { closeTimer = window.setTimeout(close, CLOSE_AFTER); }, SETTLE);   // 停稳了：过一会儿收起
     }, { passive: true });
     col.addEventListener("click", (e) => {   // 点一格 = 立刻选中、立刻收起（不等动画）
       const it = (e.target as HTMLElement).closest<HTMLElement>(".drum-item"); if (!it) return;

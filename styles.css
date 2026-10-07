@@ -84,7 +84,7 @@ button, input, select { font: inherit; color: inherit; }
 
 /* pad（MEDO 音符模式）：工具键在上（像拼音候选条），音键网格 = 列 × 行（全是音，0 在工具条）。
    键高 / 键缝照 WXHW 量的 iOS 键盘：平板（iPad mini）键高 55.5、上下缝 9；手机（iPhone）46、6；左右缝 5；圆角 7（pad.ts KEY_METRIC 同一组数） */
-.pad-panel { --key-h: 46px; --kgv: 6px; --kg: 5px; --knob: 44px; }   /* --knob = 旋钮和 ← → 的方块边长（固定，不跟屏幕宽，好记肌肉记忆） */
+.pad-panel { --key-h: 46px; --kgv: 6px; --kg: 5px; --knob: 44px; }   /* --knob = 「⋯」和 ← → 的方块边长、头两排的高（固定，不跟屏幕宽，好记肌肉记忆） */
 .pad-panel[data-form="tablet"] { --key-h: 55.5px; --kgv: 9px; }
 .pad-tools { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
 .pad-tools .btn { padding: 0; min-width: 0; height: 40px; font-size: 16px; }
@@ -187,17 +187,19 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .song-title { fill: var(--ink); font-weight: 600; }
 .staff-svg .song-title.empty { fill: #b9b2a5; font-weight: 400; }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
-/* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 4 个旋钮 = 固定小方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
-.pad-tools.knobs { display: flex; gap: 4px; }
+/* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
+.pad-tools.knobs { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--knob); }
 .pad-tools.writes { grid-template-columns: var(--knob) var(--knob) repeat(4, minmax(0, 1fr)); }
 .pad-tools.writes .btn { height: var(--knob); }
-.pad-tools .btn.knob { position: relative; touch-action: none; gap: 2px; flex: none; width: var(--knob); height: var(--knob); }
+.pad-tools .btn.knob { position: relative; touch-action: none; gap: 2px; height: var(--knob); }
 .knob .kl { display: inline-flex; align-items: baseline; gap: 4px; }
 .knob .kl small { font-size: 11px; color: var(--muted); }
 .knob .kl .smufl { font-family: "Bravura"; font-size: 28px; line-height: 1; position: relative; top: 7px; }
 .knob .kl sup { font-size: 10px; color: var(--accent); }
-.knob .kl { font-size: 15px; }
-/* 音域在方块里写两行：高的在上、低的在下（滚轮里同样） */
+.knob .kh { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--muted); opacity: .8; }
+.knob.k-range .kl { font-size: 15px; }
+.knob.tight .kh { display: none; }   /* pad.ts TIGHT：音域字和 ⇅ 挤在一起时不画 ⇅ */
+/* 音域旋钮太窄：两行，下面是低的那头（滚轮里同样） */
 .rg { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.1; font-size: 12px; }
 .drum-item .rg { font-size: 13px; }
 .pad-tools.cands .btn.cand small { display: block; font-size: 10px; color: var(--muted); }

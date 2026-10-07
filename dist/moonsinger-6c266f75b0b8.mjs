@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.8-2026-10-07";
+var APP_VERSION = "v0.2.9-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2274,8 +2274,6 @@ function installPlatformGuards(surfaces) {
 // src/ui/drum.ts
 var ROW = 44;
 var VISIBLE = 5;
-var SETTLE = 120;
-var CLOSE_AFTER = 450;
 var current = null;
 function openDrum(anchor, cols, o) {
   current?.close();
@@ -2287,11 +2285,10 @@ function openDrum(anchor, cols, o) {
   if (left + total > innerWidth - 4) left = Math.max(4, r.right - total);
   Object.assign(box.style, { left: `${left}px`, top: `${Math.max(4, Math.min(r.top + r.height / 2 - ROW * VISIBLE / 2, innerHeight - ROW * VISIBLE - 4))}px`, height: `${ROW * VISIBLE}px` });
   document.body.appendChild(box);
-  let closeTimer = 0, closed = false;
+  let closed = false;
   const close = () => {
     if (closed) return;
     closed = true;
-    clearTimeout(closeTimer);
     box.remove();
     document.removeEventListener("pointerdown", outside, true);
     removeEventListener("keydown", esc4, true);
@@ -2324,7 +2321,7 @@ function openDrum(anchor, cols, o) {
     col.innerHTML = `<div class="drum-pad" style="height:${ROW * padRows}px"></div>` + c.items.map((h, i) => `<div class="drum-item" data-i="${i}">${h}</div>`).join("") + `<div class="drum-pad" style="height:${ROW * padRows}px"></div>`;
     box.appendChild(col);
     const items = [...col.querySelectorAll(".drum-item")], n2 = items.length;
-    let shown = c.index, settleTimer = 0;
+    let shown = c.index;
     const at = () => Math.max(0, Math.min(n2 - 1, Math.round(col.scrollTop / ROW)));
     const paint = () => {
       const top = col.scrollTop, a = at();
@@ -2342,11 +2339,6 @@ function openDrum(anchor, cols, o) {
         shown = i;
         o.onChange(ci, i);
       }
-      clearTimeout(closeTimer);
-      clearTimeout(settleTimer);
-      settleTimer = window.setTimeout(() => {
-        closeTimer = window.setTimeout(close, CLOSE_AFTER);
-      }, SETTLE);
     }, { passive: true });
     col.addEventListener("click", (e) => {
       const it = e.target.closest(".drum-item");
@@ -2381,6 +2373,8 @@ var KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } };
 var SWIPE = 20;
 var STEP = 28;
 var MOVE = 6;
+var NARROW = 96;
+var TIGHT = 130;
 var UNITS = [5, 4, 3, 2, 1, 0];
 var TUP = [0, 3, 5, 6, 7];
 var SHIFTS = [4, 3, 2, 1, 0, -1, -2, -3, -4];
@@ -2437,10 +2431,16 @@ var Pad = class {
     const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
     return `${pretty(fromDiatonic(lo, f))}\u2013${pretty(fromDiatonic(hi, f))}`;
   }
-  /** 同上，画在方块里：两行，高的在上、低的在下（和「大的在上」一个方向）。 */
-  spanHtml(shift, f, rows) {
+  /** 同上，画在旋钮 / 滚轮里：放得下就一行「F3–G5」；太窄就两行，下面那行是低的那头（user「也许上下两个吧，下面是lower bound」）。 */
+  spanHtml(shift, f, rows, narrow) {
+    if (!narrow) return this.spanText(shift, f, rows);
     const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
     return `<span class="rg"><span>${pretty(fromDiatonic(hi, f))}</span><span>${pretty(fromDiatonic(lo, f))}</span></span>`;
+  }
+  /** 音域旋钮窄到一行写不下（手机 / 桌面的窄 pad）。 */
+  rangeNarrow() {
+    const b = this.el.querySelector(".k-range");
+    return !!b && b.clientWidth < NARROW;
   }
   /** 音域窗口第 shift 档时，左下那个键的五线谱位置（中央 C 那一行默认在中线下面一行）。 */
   baseAt(shift, f, rows) {
@@ -2519,12 +2519,12 @@ var Pad = class {
         return "";
     }
   }
-  /** 最上面一排：旋钮 = 固定大小的小方块，从左排起（user「应该是方形的不应该那么宽」）；
+  /** 最上面一排：1= / 长短 / 音域三个分宽度，「⋯」是右边一个小方块（user「...和左右应该宽度和高度差不多，其他的也许adaptive一些」）；
    *  「⋯」/ 移调点开后整排换成候选。（试过放 pad 最下面，user「别扭，还是放在上面吧」） */
   buildHead(selKey, rows) {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : "cands"}`;
-    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b) => b.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       this.knobDown(b, e);
@@ -2613,7 +2613,10 @@ var Pad = class {
     }
     const r = q(".k-range .kl");
     if (r) {
-      r.innerHTML = this.spanHtml(this.rowShift, f, this.rows());
+      const nr = this.rangeNarrow();
+      r.parentElement.classList.toggle("narrow", nr);
+      r.parentElement.classList.toggle("tight", r.parentElement.clientWidth < TIGHT);
+      r.innerHTML = this.spanHtml(this.rowShift, f, this.rows(), nr);
       r.parentElement.title = `\u97F3\u57DF ${this.spanText(this.rowShift, f, this.rows())}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684`;
     }
     this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
@@ -2646,8 +2649,9 @@ var Pad = class {
     }
     if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st2.input.unit)), title: "\u957F\u77ED\u57FA\u7EBF", set: (i) => this.host.onUnit(UNITS[i]) };
     const rows = this.rows();
+    const nr = this.rangeNarrow();
     return {
-      items: SHIFTS.map((sh) => this.spanHtml(sh, f, rows)),
+      items: SHIFTS.map((sh) => this.spanHtml(sh, f, rows, nr)),
       index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))),
       title: "\u97F3\u57DF\u7A97\u53E3",
       set: (i) => {
@@ -2714,12 +2718,12 @@ var Pad = class {
     addEventListener("pointerup", up);
     addEventListener("pointercancel", up);
   }
-  /** 点一下值旋钮：在那个方块上展开滚轮（格子和方块一样大，第一列正好叠在旋钮上）。长短那根旁边并一根连音的，连音画成真的一组小蝌蚪、跟着长短变。 */
+  /** 点一下值旋钮：在它上面展开滚轮（第一列和旋钮一样宽、叠在旋钮上）。长短那根旁边并一根连音的，连音画成真的一组小蝌蚪、跟着长短变。 */
   openDrumFor(knob, anchor) {
     const w = anchor.getBoundingClientRect().width;
     if (knob === "unit") {
       const st2 = this.host.state();
-      const wu = w, wt = 68;
+      const [wu, wt] = w >= 120 ? [w - Math.round(w * 0.55) - 2, Math.round(w * 0.55)] : [w, 68];
       const tups = (u) => TUP.map((n2) => n2 ? tupletMark(n2, u) : `<span class="plain">\u4E0D\u8FDE</span>`);
       const h = openDrum(anchor, [
         { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: Math.max(0, UNITS.indexOf(st2.input.unit)), width: wu, title: "\u957F\u77ED\u57FA\u7EBF" },
@@ -5672,4 +5676,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-806e28c2fed7.mjs.map
+//# sourceMappingURL=moonsinger-6c266f75b0b8.mjs.map
