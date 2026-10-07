@@ -91,7 +91,7 @@ button, input, select { font: inherit; color: inherit; }
 .pad-key.tonic { background: #fbf6ea; }
 .pad-key.rest { background: #f1efe9; }
 .pad-key.out { opacity: .45; }
-.pad-key.hit { background: var(--accent-soft); border-color: #b8cde8; }
+.pad-key.hit, .pad-key.down { background: var(--accent-soft); border-color: #b8cde8; }
 
 /* 竖屏（iPad mini 竖着拿）：像 iPad 软键盘贴底——全宽，不是正方形；键高按手指定 */
 @media (max-aspect-ratio: 1/1) {

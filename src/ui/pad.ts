@@ -51,6 +51,8 @@ export class Pad {
   private mode: Mode = "normal";
   private builtFor = "";
   private improLatched = false;
+  /** 正按着的音（来源 id → 五线谱位置）：手指和电脑键盘共用，pad 上对应的键按住期间一直亮（user「小键盘的按下弹起也要和触控对齐啦」）。 */
+  private held = new Map<string, number>();
   private improHeld = false;
 
   constructor(private el: HTMLElement, private host: PadHost) { this.render(); }
@@ -128,6 +130,8 @@ export class Pad {
     if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`; u.title = `下一个音：${UNIT_NAME[i.unit]}${i.tuplet ? `（${i.tuplet} 连音）` : ""}`; }
     const t = q(".t-tup"); if (t) { t.textContent = i.tuplet ? String(i.tuplet) : "连"; t.classList.toggle("is-on", !!i.tuplet); }
     q(".t-impro")?.classList.toggle("is-on", this.impro);
+    const down = new Set(this.held.values());
+    this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => b.classList.toggle("down", down.has(Number(b.dataset.d))));
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => b.classList.toggle("impro", this.impro));
   }
 
@@ -138,12 +142,13 @@ export class Pad {
     // 音键：按下 = 写（或改）+ 响；即兴 = 只响；松开 = 停
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => {
       b.addEventListener("pointerdown", (e) => {
-        e.preventDefault(); flash(b); try { b.setPointerCapture(e.pointerId); } catch { /* 指针已经没了：照样响，松手靠 pointerup / cancel */ }
-        const st = this.host.state(), p = fromDiatonic(Number(b.dataset.d), inputKey(st));
+        e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* 指针已经没了：照样响，松手靠 pointerup / cancel */ }
+        const st = this.host.state(), d = Number(b.dataset.d), p = fromDiatonic(d, inputKey(st));
+        this.showDown(d, `pad${e.pointerId}`);
         if (!this.impro) this.host.onPitch(p);
         this.host.onSoundDown(p, `pad${e.pointerId}`);
       });
-      const up = (e: PointerEvent) => this.host.onSoundUp(`pad${e.pointerId}`);
+      const up = (e: PointerEvent) => { this.showUp(`pad${e.pointerId}`); this.host.onSoundUp(`pad${e.pointerId}`); };
       b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up);
     });
     on("[data-cmd]", (b) => { if (b.classList.contains("pad-key")) flash(b); this.host.onCommand({ k: b.dataset.cmd } as Command); });
@@ -172,6 +177,10 @@ export class Pad {
     }
   }
   private changed(): void { this.host.onImpro(this.impro); this.refresh(this.host.state()); }
+  /** 某个来源（手指 / 电脑键盘的键）按下了五线谱位置 d 的音：pad 上那个键亮着，直到 showUp。 */
+  showDown(d: number, id: string): void { this.held.set(id, d); this.refresh(this.host.state()); }
+  showUp(id: string): void { if (this.held.delete(id)) this.refresh(this.host.state()); }
+  clearHeld(): void { if (this.held.size) { this.held.clear(); this.refresh(this.host.state()); } }
   /** 键盘的 ` 键：锁住 / 解开即兴。 */
   toggleImpro(): void { this.improLatched = !this.improLatched; this.changed(); }
 }

@@ -5,7 +5,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { type EditorState, type NoteTok, type Hum, type MarkVal, initState, writePitch, writeMark, setHum, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
-import { type Pitch, pitchName, midiOf, KEY_LABEL } from "../score/pitch.ts";
+import { type Pitch, pitchName, midiOf, diatonicIndex, KEY_LABEL } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
@@ -41,6 +41,8 @@ const sound = {
 };
 /** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
 const soundTok = (s: EditorState, i: number, id = "main") => { const t = s.song.tokens[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id); };
+/** 电脑键盘按下一个音：响 + pad 上那个音高的键亮着（和手指按 pad 一样，松开键才灭）。 */
+const keyTok = (s: EditorState, i: number, code: string) => { const t = s.song.tokens[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(diatonicIndex(t.pitch), `key${code}`); };
 /** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
 function writeAndLocate(write: (s: EditorState) => EditorState): number {
   let target = -1;
@@ -253,14 +255,14 @@ function run(a: Action, repeat: boolean, code: string): boolean {
   switch (a.k) {
     case "cmd":
       if (a.cmd.k === "degree") {
-        if (!repeat) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); soundTok(st, i, `key${code}`); }   // 先写再取 st（写完才有这个音）
+        if (!repeat) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); }   // 先写再取 st（写完才有这个音）
         return true;
       }
       update(apply(st, a.cmd, performance.now())); return true;
     case "audition": {   // 弹：在草稿状态上写一下，拿到那个音高就扔
       if (repeat) return true;
       const probe = apply({ ...st, sel: null, log: [] }, { k: "degree", degree: a.degree, dir: a.dir }, performance.now());
-      soundTok(probe, probe.caret - 1, `key${code}`); return true;
+      keyTok(probe, probe.caret - 1, code); return true;
     }
     case "play": void togglePlay(); return true;
     case "impro": pad.toggleImpro(); return true;
@@ -276,10 +278,10 @@ window.addEventListener("keydown", (e) => {
   const a = route(e, whereNow(), st.sel ? "edit" : "write");
   if (a && run(a, e.repeat, e.code)) e.preventDefault();
 });
-window.addEventListener("keyup", (e) => { if (isSoundKey(e)) sound.up(`key${e.code}`); });   // 复音：只停这个键的
+window.addEventListener("keyup", (e) => { if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
 // 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）
-window.addEventListener("blur", () => sampler.upAll());
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") sampler.upAll(); });
+window.addEventListener("blur", () => { sampler.upAll(); pad.clearHeld(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { sampler.upAll(); pad.clearHeld(); } });
 
 await document.fonts.load(`40px Bravura`).catch(() => undefined);
 view.render();
