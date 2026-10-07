@@ -7,8 +7,8 @@
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
-import { type EditorState, type NoteTok, writePitch, setCaret, select, setNote, setDur, unitDur, prevPitch, inputKey, keyAt, TPQ } from "../score/song.ts";
-import { fromDiatonic, HOME } from "../score/pitch.ts";
+import { type EditorState, type NoteTok, writePitch, setCaret, select, setNote, setDur, inputKey, keyAt, TPQ } from "../score/song.ts";
+import { fromDiatonic } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
@@ -51,9 +51,7 @@ export class ScoreView {
     const st = this.host.get(), sp = this.sp;
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     const width = Math.max(320, this.el.clientWidth);
-    const writing = !st.sel;
-    const preview = writing ? { dur: unitDur(st.input), acc: st.input.acc, pitch: prevPitch(st.song.tokens, st.caret) ?? HOME } : null;
-    this.layout = engrave(st.song, { width, sp, caret: st.caret, sel: st.sel, preview, measureLyric: (s) => this.ctx.measureText(s).width });
+    this.layout = engrave(st.song, { width, sp, caret: st.caret, sel: st.sel, measureLyric: (s) => this.ctx.measureText(s).width });
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
@@ -125,7 +123,7 @@ export class ScoreView {
       } else this.host.audition?.(hit.index);
       return;
     }
-    // 3. 写字头那一列（写的时候才有）
+    // 3. 光标附近点线 = 在光标处写这个音（写的时候才有；歌尾 = 光标往右整段空谱）
     const h = L.head;
     if (h && sys === h.system && x >= h.x && x <= h.x + h.w) {
       const d = L.dOf(sys, y);

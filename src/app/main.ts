@@ -83,10 +83,13 @@ function update(next: EditorState): void {
 
 const DUR_NAME: Record<number, string> = { [TPQ * 4]: "全音符", [TPQ * 3]: "附点二分", [TPQ * 2]: "二分", [TPQ * 1.5]: "附点四分", [TPQ]: "四分",
   [TPQ * 0.75]: "附点八分", [TPQ / 2]: "八分", [TPQ * 3 / 8]: "附点十六分", [TPQ / 4]: "十六分", [TPQ / 8]: "三十二分" };
+const UNIT_NAME = ["三十二分", "十六分", "八分", "四分", "二分", "全音符"];   // = song.ts LADDER
 const durName = (d: number) => DUR_NAME[d] ?? `${+(d / TPQ).toFixed(3)} 拍`;
 function renderStatus(): void {
   const el = $("status"), fills = barFill(st.song), off = fills.slice(1).filter((f) => !f.full).length;
-  let s = impro ? "弹（只唱不写）" : st.sel ? `改 · 选中 ${st.sel.to - st.sel.from} 个` : "写";
+  // 写的时候谱上不预览下一个音（user「插入不要在谱上显示音符预览」）→ 下一个音的样子写在这里
+  const inp = st.input, next = `${UNIT_NAME[inp.unit]}${inp.tuplet ? ` ${inp.tuplet} 连` : ""}${inp.acc ? ` ${inp.acc > 0 ? "♯" : "♭"}${inp.accMode === "lock" ? "（锁）" : ""}` : ""}`;
+  let s = impro ? "弹（只唱不写）" : st.sel ? `改 · 选中 ${st.sel.to - st.sel.from} 个` : `写（下一个：${next}）`;
   const i = st.sel ? st.sel.from : currentIndex(st);
   if (i >= 0 && (!st.sel || st.sel.to - st.sel.from === 1)) {
     const t = st.song.tokens[i];

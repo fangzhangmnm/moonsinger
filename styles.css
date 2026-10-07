@@ -67,11 +67,9 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg path.tie.ghost { fill: none; }
 .staff-svg .cur { fill: var(--accent); stroke: var(--accent); }
 .staff-svg path.tie.cur { fill: none; }
-.staff-svg rect.head { fill: var(--accent-soft); opacity: .75; }
 .staff-svg line.caret { stroke: var(--accent); }
 .staff-svg rect.warn { fill: #d9a23a; }
 .staff-svg text.lyric { font-family: system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif; }
-.staff-svg .preview { fill: var(--accent); stroke: var(--accent); opacity: .45; }
 .staff-svg .sel { fill: #1d5fa8; stroke: #1d5fa8; }
 .staff-svg rect.selbox { fill: var(--accent-soft); opacity: .8; }
 .staff-svg path.tuplet-bracket { fill: none; stroke: var(--ink); stroke-width: 1; }

@@ -2,7 +2,9 @@
 // 范围：一行高音谱表、单声部；谱头（开头三个记号 token：调号 / 拍号 / 速度）+ 中途的记号 token；符头 / 符干 / 符尾 / 符杠 / 附点 / 临时记号（小节内记忆）/ 加线 / 休止；
 // 拆开的时值用连音线连；数据里的 tie（「−」跨小节线开的音）也画连音线；三 / 五 / 六 / 七连音画括号和数字；
 // 小节线 = 人插的 token（小节不满只轻标，第一小节当弱起不标）；歌词在音符下，英文断开处画连字符，拖腔画延长线；空音高的音画淡色。
-// 写（光标）：光标处撑开写字头，里面画预览音符（下一个音的时值 / 升降 / 连音）；改（选中）：没有写字头，选中的一段高亮。
+// 写（光标）：光标 = 一条零宽的竖线，不占排版宽度、不画预览、不打断符杠——挪光标、写 / 改切换时谱面一动不动
+//   （user「插入不要在谱上显示音符预览，也不要让谱的排版抖动」；下一个音的时值 / 升降在 pad 工具条和状态行）；
+//   笔 / 鼠标「点线写音」的区域 = 光标附近一条看不见的窄带（歌尾 = 光标往右整段空谱）。改（选中）：选中的一段高亮。
 // 不做右端对齐（打字时前面的音不晃）；放不下就像文字一样折行，优先在小节线处折。
 
 import { type Song, type NoteTok, type Token, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, barFill, isTimed, headLen, beatTicks, tempoWord } from "../score/song.ts";
@@ -18,14 +20,11 @@ export type Prim =
   | { t: "path"; d: string; cls?: string }
   | { t: "rect"; x: number; y: number; w: number; h: number; cls?: string };
 
-/** 写字头里的预览：下一个音长什么样（时值、升降、连音）；音高先画在上一个音的位置。 */
-export interface PreviewOpts { dur: number; acc: 0 | 1 | -1; pitch: Pitch }
 export interface EngraveOpts {
   width: number;                         // px，谱面板宽
   sp: number;                            // px，五线谱间距
   caret: number;                         // 光标（插入点）
-  sel?: { from: number; to: number } | null;   // 有 = 改（不撑写字头）
-  preview?: PreviewOpts | null;          // 写的时候的预览音符
+  sel?: { from: number; to: number } | null;   // 有 = 改（没有光标）
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
 }
 export const LYRIC_EM = 1.6;
@@ -40,14 +39,14 @@ export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[];
-  head: { system: number; x: number; w: number } | null;   // 写字头那一列（改的时候没有）
+  head: { system: number; x: number; w: number } | null;   // 点线写音的区域（光标附近；改的时候没有）
   lyricY: (system: number) => number;
   yOf: (system: number, d: number) => number;
   dOf: (system: number, y: number) => number;
 }
 
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
-const MARGIN = 1.2, STAFF_ABOVE = 6, SYS_H = 17, LYRIC_BELOW = 5.2, HEAD_W = 4.2, BAR_W = 1.6;
+const MARGIN = 1.2, STAFF_ABOVE = 6, SYS_H = 17, LYRIC_BELOW = 5.2, BAR_W = 1.6;
 const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;     // F5 / B4 / E4 的五线谱位置
 const SHARP_POS = [38, 35, 39, 36, 33, 37, 34], FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 const GLYPH_TUPLET = (n: number) => [...String(n)].map((d) => String.fromCodePoint(0xe880 + Number(d))).join("");
@@ -85,13 +84,13 @@ const baseWidth = (base: number) => 4.0 + 0.8 * Math.log2(base / TPQ);   // 四�
 interface Chunk {
   kind: "chunk"; index: number; j: number; last: boolean; base: number; dotted: boolean; note: boolean; ratio: [number, number] | null; ticks: number;
   pitch: Pitch | null; ghost: boolean; tie: boolean; lyric: string | null; hyph: boolean; inBar: number; beat: number; acc: number | null; w: number; accW: number;
-  x: number; system: number; preview?: boolean;
+  x: number; system: number;
 }
 interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; warn: boolean }
 interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: number; x: number; system: number }
 interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number }
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number }
-interface HeadU { kind: "head"; w: number; x: number; system: number; chunk: Chunk | null }
+interface HeadU { kind: "head"; w: 0; x: number; system: number }   // 光标：零宽
 type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU;
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
 const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
@@ -117,15 +116,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const units: Unit[] = [];
   const fills = barFill(song);
   let accState = new Map<string, number>(), inBar = 0, barCount = 0, beat = beatTicks(time.beats, time.beatType);
-  const pushHead = () => {
-    let chunk: Chunk | null = null;
-    if (o.preview) {
-      const { ratio, chunks } = notate(o.preview.dur), c0 = chunks[0];
-      chunk = { kind: "chunk", index: -1, j: 0, last: true, base: c0.base, dotted: c0.dotted, note: true, ratio, ticks: c0.ticks, pitch: o.preview.pitch, ghost: false, tie: false,
-        lyric: null, hyph: false, inBar: 0, beat, acc: o.preview.acc || null, w: HEAD_W, accW: o.preview.acc ? 1.3 : 0, x: 0, system: 0, preview: true };
-    }
-    units.push({ kind: "head", w: HEAD_W + (o.preview?.acc ? 1.3 : 0), x: 0, system: 0, chunk });
-  };
+  const pushHead = () => { units.push({ kind: "head", w: 0, x: 0, system: 0 }); };
   tokens.forEach((t, i) => {
     if (i < H) return;
     if (writing && i === o.caret) pushHead();
@@ -249,7 +240,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const curIndex = (() => { if (!writing) return -1; for (let i = o.caret - 1; i >= 0; i--) if (isTimed(tokens[i])) return i; return -1; })();
   const nhX = (c: Chunk) => P(c.x + c.accW + 0.35);
   const nhW = (c: Chunk) => P(c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
-  const clsOf = (c: Chunk) => [c.preview ? "preview" : "", c.ghost ? "ghost" : "", c.index >= 0 && c.index === curIndex ? "cur" : "", c.index >= 0 && inSel(c.index) ? "sel" : ""].filter(Boolean).join(" ") || undefined;
+  const clsOf = (c: Chunk) => [c.ghost ? "ghost" : "", c.index >= 0 && c.index === curIndex ? "cur" : "", c.index >= 0 && inSel(c.index) ? "sel" : ""].filter(Boolean).join(" ") || undefined;
   const drawChunk = (c: Chunk) => {
     const cls = clsOf(c);
     if (!c.note) {
@@ -265,13 +256,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const ag = c.acc === 1 ? GLYPH.accidentalSharp : c.acc === -1 ? GLYPH.accidentalFlat : c.acc === 2 ? GLYPH.accidentalDoubleSharp : c.acc === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
       prims.push({ t: "glyph", x: P(c.x + 0.2), y, ch: ag, cls });
     }
-    for (let L = 28; L >= d; L -= 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: c.preview ? "ledger preview" : "ledger" });
-    for (let L = 40; L <= d; L += 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: c.preview ? "ledger preview" : "ledger" });
+    for (let L = 28; L >= d; L -= 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: "ledger" });
+    for (let L = 40; L <= d; L += 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: "ledger" });
     const ng = c.base >= WHOLE ? GLYPH.noteheadWhole : c.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
     prims.push({ t: "glyph", x: x0, y, ch: ng, cls: cls ? `note ${cls}` : "note" });
     if (c.dotted) prims.push({ t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(c.system, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
-    if (c.preview && c.ratio) prims.push({ t: "glyph", x: x0, y: yOf(c.system, Math.max(d + 9, 44)), ch: GLYPH_TUPLET(c.ratio[0]), cls: "tuplet preview" });
-    if (c.index < 0) return;
     if (c.j === 0) notes.push({ index: c.index, system: c.system, x: x0, y, w: nhW(c), d });
     if (c.j === 0 && !c.tie) {
       const ly = lyricY(c.system), cx = x0 + nhW(c) / 2;
@@ -282,10 +271,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   };
   for (const u of units) {
     if (u.kind === "head") {
-      head = { system: u.system, x: P(u.x), w: P(u.w) };
-      prims.push({ t: "rect", x: P(u.x + 0.2), y: yOf(u.system, 44), w: P(u.w - 0.4), h: yOf(u.system, 24) - yOf(u.system, 44), cls: "head" });
-      prims.push({ t: "line", x1: P(u.x + 0.2), y1: yOf(u.system, 42), x2: P(u.x + 0.2), y2: yOf(u.system, 26), w: P(0.16), cls: "caret" });
-      if (u.chunk) { u.chunk.x = u.x + 0.5; u.chunk.system = u.system; drawChunk(u.chunk); }
+      const atEnd = o.caret >= tokens.length, x1 = atEnd ? right : u.x + 1.2;
+      head = { system: u.system, x: P(u.x - 0.7), w: P(x1 - u.x + 0.7) };
+      prims.push({ t: "line", x1: P(u.x + 0.1), y1: yOf(u.system, 42), x2: P(u.x + 0.1), y2: yOf(u.system, 26), w: P(0.16), cls: "caret" });
       continue;
     }
     if (u.kind === "bar") {
@@ -319,11 +307,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   let group: Stemmed[] = [], groupBeat = -1, groupSys = -1;
   const endGroup = () => { if (group.length) stemmed.push(group); group = []; groupBeat = -1; };
   const chunksInOrder: Chunk[] = [];
-  for (const u of units) { if (u.kind === "chunk") chunksInOrder.push(u); else if (u.kind === "head" && u.chunk) chunksInOrder.push(u.chunk); else chunksInOrder.push(null as unknown as Chunk); }
+  for (const u of units) { if (u.kind === "chunk") chunksInOrder.push(u); else if (u.kind !== "head") chunksInOrder.push(null as unknown as Chunk); }   // 光标不打断符杠
   for (const u of chunksInOrder) {
     if (!u || !u.note || u.base >= WHOLE) { endGroup(); continue; }
     const s: Stemmed = { c: u, x0: nhX(u), y: yOf(u.system, diatonicIndex(u.pitch!)), d: diatonicIndex(u.pitch!) };
-    if (u.preview || u.base > TPQ / 2) { endGroup(); stemmed.push([s]); continue; }
+    if (u.base > TPQ / 2) { endGroup(); stemmed.push([s]); continue; }
     const beat = Math.floor(u.inBar / u.beat);
     if (group.length && (beat !== groupBeat || u.system !== groupSys)) endGroup();
     group.push(s); groupBeat = beat; groupSys = u.system;
