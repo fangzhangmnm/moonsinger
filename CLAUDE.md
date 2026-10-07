@@ -22,7 +22,7 @@ Nokia 彩铃编辑器，不是 DAW。
 
 user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼store和undo,先把编辑器摸出来」→ grill 后「可以，以后随时吃书，先这样，开做」。
 决定与原话全在 `ai-docs/20261006-editor-v0-grill.md`（§8½ = 第一版范围）；同行调研 `ai-docs/20261006-peer-survey-melody-input.md`。
-**下一步 = 持久化（接 store / gallery）**：起手读 `ai-docs/20261007-persistence-handoff.md`（as-of v0.2.27：现状、哪些只在这次打开里有效、user 原话、要想的、坑；**§7 = 2026-10-07 user 定的轮次：无地做完美（已落 v0.3.0）→ 库 + gallery + MSAL 一口气（封面位一起留）→ undo（要和 user 讨论）；三者都算 0.3.x，不再 bump minor（user「无地 库和undo都算0.3.x吧」）**）。产品愿望单 `ai-docs/20261007-wishlist.md`。
+**0.4.0 = 多轨 + GM（2026-10-07 深夜起手，edited by Claude Fable 5.1）**：起手读 `ai-docs/20261007-format-handoff-to-editor-session.md` + 契约草稿 §6¾（纸 = 曲段、存法 B）/ §10（音源：样本类嵌进歌、引擎随 app 发、自描述 vault 文档）。此前的 **下一步 = 持久化（接 store / gallery）**（现排在 0.4.x）：起手读 `ai-docs/20261007-persistence-handoff.md`（as-of v0.2.27：现状、哪些只在这次打开里有效、user 原话、要想的、坑；**§7 = 2026-10-07 user 定的轮次：无地做完美（已落 v0.3.0）→ 库 + gallery + MSAL 一口气（封面位一起留）→ undo（要和 user 讨论）；三者都算 0.3.x，不再 bump minor（user「无地 库和undo都算0.3.x吧」）**）。产品愿望单 `ai-docs/20261007-wishlist.md`。
 
 - **跑**：`npm install` →（可选）`bash scripts/link-dev-assets.sh`（只有元音图谱实验要它，默认关）→ `npm run build` → `npm run serve` → 开 `http://localhost:8710/`（绑 0.0.0.0，iPad 走局域网 / Tailscale 也能开）。测试 `npm test`。
 - **iPad 上测（不留洞的做法，2026-10-06）**：WSL 里 `PORT=8710 BIND=127.0.0.1 npm run serve`（只听本机、只端出 app 要的文件）；Windows「以管理员身份运行」PowerShell 跑 `& "C:\Program Files\Tailscale\tailscale.exe" serve --http 18124 http://127.0.0.1:8710`（**不带 --bg**：窗口开着才通，Ctrl+C / 关窗即消失，不进常驻配置）；iPad 开 `http://<这台 Windows 的 Tailscale 机器名>:18124/`。坑：WSL mirrored 模式下 Windows 占着的端口号 WSL 用不了（18123 被 Tailscale 自己占着）；Tailscale serve 配置里有 path 条目，所以改 serve 要管理员；Windows 上 `localhost` 先走 ::1，目标写 `127.0.0.1`。
@@ -40,7 +40,7 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **契约 = `src/format/contract.ts`**（人读的 .h）：v1 = 这一版真写进 `.mxl` 的 `.moonsinger/*.json` 形状；v2 提案 = 多轨 / 曲线 / by value + 哈希的目标形状（未写入文件）。来龙去脉与 user 原话在 `ai-docs/20261007-data-contract-draft.md`（§3 目录表、§7 未定、§8 谁的字节）。
 - **守卫 = `test/format-guard.test.ts`**（在 `npm test` 里）：写出来的键形状 = `test/fixtures/format/shape.json`；写永远只写当前版；`MIGRATIONS[kind].length === FORMAT[kind] - 1`；每个冻结样本（`test/fixtures/format/v*/`）都能开、读出来和冻结时一样。**改格式不带版本号 / 迁移 / 冻结样本 = 红。**
 - **改格式的规矩**（CatsUp 立宪）：只加可选字段 → `node scripts/freeze-format-sample.mjs` 更新形状快照、审 diff；删 / 改字段 → `contract.ts` 的 FORMAT +1 + `src/format/migrate/index.ts` 加一步纯函数 + 跑 freeze 生成新版样本、**旧版目录不删**。老文件永远能开，只拒开比 app 新的；不认识的字段 / 文件原样写回。
-- **分工**（user 2026-10-07 两次）：多轨等编辑器活由 user 带别的 session 做。**契约（`contract.ts` v2 + 契约草稿）是推荐稿，不是定稿**（user「fable的任何数据结构契约都只是推荐稿，不对立刻说」「小节线按照我们0.2.x做好的，fable可能不知道我们之前调的手感」）：做多轨的 session 对着 0.2.x 的手感用，哪里不对立刻报 user、同时 SendMessage 格式 session 对账（不是审批）；碰到还没定的格式问题写进契约草稿 §7 再继续。**守卫测试照旧有效**——它防的是丢数据（版本号 / 迁移 / 冻结样本），不定设计。
+- **分工（2026-10-07 深夜起：一个 session 管契约 + 编辑器）**：user「你让那个fable把东西都交给你，我现在把你升级成fable，两个agent反而打架」→ 格式 session 交接后不再动仓（交接全文 = `ai-docs/20261007-format-handoff-to-editor-session.md`：等 user 拍的清单、未落档的对话事实、B 落地逐文件改动点、守卫 / freeze 注意）。下面「格式 session」的字样此后指同一个 session，对账 = 自己对着 0.2.x 手感核。此前两次分工：多轨等编辑器活由 user 带别的 session 做。**契约（`contract.ts` v2 + 契约草稿）是推荐稿，不是定稿**（user「fable的任何数据结构契约都只是推荐稿，不对立刻说」「小节线按照我们0.2.x做好的，fable可能不知道我们之前调的手感」）：做多轨的 session 对着 0.2.x 的手感用，哪里不对立刻报 user、同时 SendMessage 格式 session 对账（不是审批）；碰到还没定的格式问题写进契约草稿 §7 再继续。**守卫测试照旧有效**——它防的是丢数据（版本号 / 迁移 / 冻结样本），不定设计。
 
 ## 黄线区（外接服务白名单）
 **模型源** = 家族级白名单 ②（出厂预填 `https://fangzhangmnm.github.io/pwa-models`，同 JustReadBooks）：只读 GET 包的分片，到手先对 app 内嵌清单的 sha256（`@internal/model-packs`）；第一次整首唱才下（重资源等有意图）。user 2026-10-07「当然a」（月读照家规进 pwa-models）。

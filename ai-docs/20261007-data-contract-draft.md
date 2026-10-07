@@ -138,15 +138,19 @@ user 原话链：「但是纸的歌名是章节名啊，我还是在纠结」（
 **推断（编辑器 session 提、Fable 同意，user 没单独拍）**
 - 调号 / 拍号同理：每张纸、每个声部开头有自己的，新建纸时照抄上一张纸该声部结尾的——和 0.2.x「谱头三个记号删不掉」一致，和 §7.8「调号 / 拍号 = 各声部自己的画法」不冲突。
 
-**推荐（Fable；MusicXML 怎么写、歌名放哪）**
-- **歌名 = 歌一级**（`Song.title`，可不填），写 MusicXML `<work-title>`；文件名默认仍 = 年月日-歌名（没歌名 = 年月日-四位随机）。歌名在我们的纸上**不画**；封面 / 文件列表 / PDF 封面页用它（别的软件会把 `<work-title>` 印在第 1 页顶上——低保真，接受）。歌名的输入口从纸顶挪走（文件菜单 / 封面），归编辑器。
-- **曲段名 = 这张纸第一小节上的段落记号 `<rehearsal>`**（是谱的内容 → 以 `score.musicxml` 为准，不另存一份），可为空。
-- **纸的边界在 MusicXML 里 = 每个声部这张纸第一小节的 `<print new-page="yes"/>`**（字面意义上的新一页）+ 第一声部的 `<rehearsal>`。别的软件看到的 = 分页 + 段落标记，打印出来每张纸一页起。
-- **`score.json` 第 2 版加 `papers: [{ id, title?, start: { <声部 id>: 小节序号 }, manualBars: { <声部 id>: 纸内小节序号[] } }]`** 当索引（各声部在这张纸从第几小节开始；自家文件按它切，别家文件按 `<print new-page>` / `<rehearsal>` 推）。曲段名以 MusicXML 为准，`title` 只是缓存可省。**人插的小节线按纸、按纸内序号记**（不记全曲序号：纸挪顺序、前面的纸加减小节，后面的纸不用改）；`unwritten` 按音符 id 仍是全曲一份。
-- 每张纸开头的速度 = 第一声部这张纸第一小节的 `<direction><metronome>` + `<sound tempo>`（by value，必写）；调号 / 拍号 = 每个声部这张纸第一小节的 `<attributes>`（必写，不靠上一张继承）。
-- 作者栏仍歌一级（`<credit page="1">`），印在封面 / 第 1 页；每张纸不印。
-- 谱架的纸 = `.moonsinger/shelf/<纸 id>.musicxml`（§3 既有行），结构和顺序里的纸一样（声部 + 开头的三个记号），不进 `score.musicxml`、别的软件看不到。
-- **迁移 v1 → v2**：老文件 = 一张纸；纸顶那行文字当时是歌名 → 仍归 `Song.title`（`<work-title>` 不动、文件名规则不变），这张纸的曲段名 = 空；`papers = [{ id: "p1", start: { P1: 0 } }]`。
+**存法 B = 一张纸一份 MusicXML + 一份派生压平件（user 2026-10-07 深夜拍，编辑器 session；Fable 独立同意；edited by Claude Fable 5.1 编辑器 session）**
+user 问：「所以所有的纸放在同一个musicxml里面？为什么？然后这样title和各种元数据会不会只有第一张纸有？」「因为如果每个纸都standalone的话。你懂」→ 两案利弊（A 整首一份 MusicXML：实现简单，但声部必须贯穿全曲、谱架纸和歌里的纸两种写法、元数据只在第一页；B：每张纸是完整文件、元数据每纸自带、鼓只出现在有鼓的纸上、谱架纸和顺序里的纸同一种文件、别的软件靠派生压平件照样看整首）→ user 选 B。
+- **每张纸 = 一份完整的 MusicXML**：`.moonsinger/papers/<纸 id>.musicxml`（放 `.moonsinger/` 下，别的软件只看压平件、不会以为是多份谱；Fable 倾向，编辑器同意）。每份 by value 写全：`<work-title>` 歌名、`<movement-title>` 曲段名、`<defaults>` 纸张、`<credit>` 作者栏、每个声部第一小节的 `<attributes>`（调号 / 拍号）、第一声部第一小节的 `<direction><metronome>` + `<sound tempo>`——**单独拿出一张纸什么都不缺**（user 的担心在 B 里自然消失）。
+- **压平件 `score.musicxml` = 派生物**（ORA `mergedimage.png` 先例）：各纸声部取并集、某纸没有的声部补整小节休止、每纸起 `<print new-page="yes"/>` + `<rehearsal>`（= 曲段名）、小节号连续；**确定性**（同输入同字节，`<encoding-date>` 除外）。给别的软件和 PDF 用；`container.xml` 的 rootfile 仍指它。**自家读时无视它**：manifest 列 `derived: ["score.musicxml"]` + 它的 sha256；读时哈希不符 = 别的软件改过 → 当别家文件处理（按 `<print new-page>` / `<rehearsal>` 切纸、报出来），不静默。按字段 SSoT：纸是真相。代价 = 谱文本在文件里两份（谱文本很小，可忽略）。
+- **谱架的纸 = 同一目录、同一种文件**（`.moonsinger/papers/<id>.musicxml`），只是不在顺序表里；manifest 另列 `shelf: [id]`。能单独唱（排练），不进压平件、不进导出（§3）。
+- **`score.json` 第 2 版**：`papers: [{ id, file, manualBars: { <声部 id>: 纸内小节序号[] }, unwritten: string[] }]` 是**顺序表**（顺序 = 歌的顺序；`start` 不需要了）；`parts` = 歌级并集（id / role / mic / kind），某张纸没有某声部 = 那张纸的 MusicXML 里没那个 part；`unwritten` 按纸（音符 id 每张纸自己编，跨纸会撞）。
+- **迁移 v1 → v2**：老文件 = 一张纸——`score.musicxml` 整个变成 `papers/p1.musicxml`（**文件级迁移在 `openBytes` 里做**，`migrate()` 只管 JSON），再派生一份压平件；纸顶那行文字当时是歌名 → 仍归 `Song.title`，这张纸的曲段名 = 空；`papers = [{ id: "p1", file, manualBars: { P1: 旧 manualBars.P1 }, unwritten: 旧 unwritten }]`；manifest v2 加 `derived: []`（旧文件没有派生件）。
+
+**推荐（Fable；歌名放哪、其余 MusicXML 写法）**
+- **歌名 = 歌一级（user 2026-10-07 深夜拍：「歌名当然存歌一级」）**（`Song.title`，可不填），写 MusicXML `<work-title>`；文件名默认仍 = 年月日-歌名（没歌名 = 年月日-四位随机）。歌名在我们的纸上**不画**；封面 / 文件列表 / PDF 封面页用它（别的软件会把 `<work-title>` 印在第 1 页顶上——低保真，接受）。歌名的输入口从纸顶挪走（文件菜单 / 封面），归编辑器。
+- **曲段名 = 这张纸 MusicXML 的 `<movement-title>`**（谱的内容，不另存；压平件里变成这张纸第一小节的 `<rehearsal>`），可为空。
+- 作者栏仍歌一级（`<credit page="1">`，每张纸 by value 带一份），打印时印在第 1 页；编辑器每张纸不画。
+- ~~纸的边界 = `<print new-page>`、score.json papers 带 start、谱架 `shelf/`、迁移 papers = [{ id, start }]~~ → 被上面的存法 B 取代（2026-10-07 深夜）。
 - 内存模型（归编辑器）：`Song.papers[]` → 每张纸 `parts[]` → 每个声部自己的 token 串（开头三个记号）；§7.8 的「各声部按对齐标记对齐」在纸内算，纸界 = 硬对齐点。
 
 ## 7. 未定 / 还要想的
@@ -222,7 +226,7 @@ user 2026-10-07（看完推荐稿）：「对，因为一般的daw对于音源�
 - 歌里：`.moonsinger/sounds/<子集 sha256>.sf2`（标准 SF2，别的工具能开；manifest 列出）。候选的 `source = { kind: "sf2", embedded: "<路径>", presets: [{ bank, program }], origin: { name, fileSha256, pack?, bytes }, subsetBytes }` + `credit`（许可证快照 / unknown）。
 - **子集化 = 纯函数**（SF2 是 RIFF：preset → instrument → sample 三层表，只留引用到的，重写表；node 可测、冻结样本）。GeneralUser GS 整包 32 MB，一个鼓组 / 一架钢琴的子集估几 MB（未核，要量）。
 - **选乐器的那一刻就抄进歌**（不是存档时）：之后编辑、试听、导出全部从歌里的子集出声——听到的 = 文件里的。换音源 = 换嵌入块，旧块从歌里丢掉（设备上不管）。
-- **体积阀**：子集 ≤ 24 MiB（和包的分片一个尺度，可调）就嵌；超了 = 不嵌、只钉原文件哈希 + 角色卡上明写「这件乐器的声音没随歌携带，依赖本机的 X」。不静默。
+- **体积阀（user 2026-10-07 深夜拍）**：「不胖的嵌入歌里面可以…也应该控制在10M左右的体积（不严格要求）」；超过时 = **提示后仍可嵌**（嵌入前报体积，超 10 MB 提醒「存档会变大、变慢」，可继续也可改钉哈希；不硬拦，家规上限类规则只能警告可取消）。user 另嘱：「小心那个store太大之后每次保存慢还没做后台的问题」——接 store 后存档没有后台写之前，大歌每次保存都是前台等，体积阀的意义主要在这。不静默。
 - 同一首歌几个角色用同一个 sf2 的不同 preset：一个子集文件合并嵌一份（按原文件哈希分组）。
 - 体积杠杆（以后）：样本压缩（sf3 式 ogg / opus），引擎要配合（TinySoundFont 不认压缩样本，未核）。
 
@@ -236,7 +240,22 @@ user 2026-10-07（看完推荐稿）：「对，因为一般的daw对于音源�
 ### 10.4 代价（明说）
 - 要写 SF2 子集化器（读写 RIFF 表）+ 冻结样本测试；是一块独立的纯函数模块。
 - 歌文件变大（每首几 MB），gallery 缩略 / 同步成本随之上升；体积阀兜着。
-- 许可证不许再分发的音源（JRB 小雅那类数据集许可证）嵌进可分享的 .mxl = 再分发：许可证快照里 `redistribute: false` 的，嵌入时提示（可取消，不硬拦），或者改走引擎类规矩（只钉哈希）——归 user 定。
+- 许可证不许再分发的音源（JRB 小雅那类数据集许可证）嵌进可分享的 .mxl = 再分发：**user 2026-10-07 深夜拍 = 提示可取消，归 user**——嵌入时显示许可证快照并提醒「分享这首歌 = 再分发」，user 决定；角色卡上来路可见；app 不替 user 拦。
 - 月读那类模型仍是「外链」——但是第一方、不可变、可镜像的外链，和 DAW 的区别在这三个词；用户自己拖进来的模型（本地月读）没有这三个保证，只能钉哈希 + 明写「依赖本机文件」。
 
-**要 user 定的**：① 两类划分同意否；② 体积阀的数（24 MiB？）；③ 不许再分发的音源嵌不嵌；④ 用户拖进来的 sf2 默认不留设备（只记最近用过）同意否。
+**四问 user 2026-10-07 深夜全拍（编辑器 session 正式问的）**：① 两类划分 = 同意（附加：「引擎类留latex，样本类取决于是否是标准格式，不是的话也要留latex」→ §10.6）；② 超 10 MB = 提示后仍可嵌；③ 不许再分发的 = 提示可取消、归 user；④ 拖进来的默认不留设备 = 「好主意，也许这样就解构了插件库的问题。然后以后可以用户自己在onedrive屯插件可以onedrive导入。但是没有链接，永远by val。不过可以松一点，可以链接，但是只在找音，打开的文件夹这种asset explorer视图层」→ **歌对音源永远 by value、不链接任何库**；「链接」只准出现在找音源的视图层（asset explorer：浏览设备 / OneDrive 文件夹里有什么、从哪拖），不进歌。以后 user 自己在 OneDrive 屯的插件 = 从 OneDrive 导入进歌（仍 by value）。
+
+### 10.5 引擎随 app 发 + 「把音源存一份到本机」（user 2026-10-07 深夜拍：「引擎随 app 发；「把音源存一份到本机」。 同意」）
+- **引擎二进制是代码不是声音，随 app 一起发**（vendored，像 `vendor/world/`）：SoundFont 播放器（TinySoundFont，MIT）、onnxruntime-web（现在是包 `runtime-onnxruntime-web-1.30.0-20261001`，要搬进 app，3.5 MB）。只拿着 app = 谱永远能开、编辑、存、导出 MusicXML，能用元音采样器粗听。**这条修订家族 CLAUDE.md「共享模型库」第 6 条「引擎二进制也可以进包」（2026-10-01）在 MoonSinger 的适用**；JRB 等兄弟不受此条影响，要不要跟归 user 另说。
+- **「把音源存一份到本机」**：引擎类（月读 37.8 MB + 日语词典 23.3 MB）能从 app 导出成文件（夹）留在用户自己手里——补 WeebPaint 单 html / 反弃坑那条线：主机死了、浏览器缓存被清了，用户自己那份照样导回来（按哈希认，同 §9 importFiles）。样本类不需要（已在歌里）。
+- 便携版（以后要的话）：单 html + 一个装音源的文件夹，一起拷走就能用。
+
+### 10.6 自描述：歌要能在「末日 vault」里被重新渲染（user 2026-10-07 深夜；推荐稿，Claude Fable 5.1 编辑器 session）
+user 原话：「还记得GameDesignTransmissionLanguage这个sunset的老idea吗？比如合成器之类的，如果我们写的，必须存latex公式，或者github链接，在歌里面。所以一个拿到歌的fable可以复现出所有东西把歌给重新渲染出来（不一定要byte identical）反正就是存私有数据的时候顺便存一份si单位的metadata解释每个term是什么意思」「引擎类留latex，样本类取决于是否是标准格式，不是的话也要留latex」「latex是比喻，你可以用任何你觉得舒服的数理 末日vault存档 语音」。
+GDTF（`~/jupyter/20260716 GDTF/`，GameDescriptionTransmissionFormat，2026-08 茶话结晶）搬过来的核心：**AI 是编译器，文件是「信纸上的源语言」，PC 被 nuke 后拿着信纸能恢复六成**；表区 + 散文区并存；SI 单位的表既是 spec 也是判分表。
+推荐：
+1. **每个 .mxl 里带一份 `.moonsinger/README.md`（vault 文档）**。读者 = 几十年后只有这个文件、一个文本编辑器、一般音频常识、也许一个 AI 的人；没有 app、没有网。内容：① zip 里每个文件是什么、每个字段什么意思、单位；② **我们自己写的每个引擎的数理**，散文 + 公式（任何清楚的数理记法，不限 LaTeX）：月读管线（piper 文本 → 音素 → 时长接管 → WORLD 分析出 F0 / 频谱包络 / 非周期 → 按谱改 F0 与时长 → WORLD 合成）、元音采样器（按元音挑样本、重采样变速到目标音高）、以后的合成器（振荡器 / 包络 / 滤波的公式）；③ 出处：源码仓 + commit 哈希 + 路径 + 许可证；④ **标准格式只写名字和版本**（SoundFont 2.04、MusicXML 4.0、WAV / Opus），不复述标准（user：样本类是标准格式就不用留）。
+2. **由代码生成、测试守着不过期**（同 `docs/keys.md` / `packs.gen.ts` 的做法）：`scripts/gen-vault-readme.mjs` 从引擎源码头注释 + `contract.ts` 抽出来；手写会烂。每次存档写入（纯文本，很小）。
+3. 候选快照每个 `engine` 带 `spec`：标准格式 `{ kind: "standard", name, version }`；我们写的 `{ kind: "ours", doc: "<README 章节锚>", source: { repo, commit, path } }`；用户拖进来的非标准东西 `{ kind: "unknown" }` + 角色卡上明写「来路不明、无法复现」。
+4. 「每个 term 什么意思」的另一半已经定了：数值全 SI / 写明单位（§7.7）、旋钮的物理定义表 by value（§7.3）、by value 的默认数（§8）。10.6 补的是散文 + 公式 + 出处。
+5. 保真目标：不求逐字节；判分 = 拿着文件和 README、不开 app，能把谱和每个角色的声音大致重建。先不做自动判分。
