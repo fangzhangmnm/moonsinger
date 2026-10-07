@@ -1,4 +1,4 @@
-// song.ts —— 一首歌 = 一串 token（音符 / 休止 / 小节线 / 调号）+ 开头的调号、拍号、速度。created 2026-10-06 by Claude Opus 5.5
+// song.ts —— 一首歌 = 一串 token（音符 / 休止 / 小节线 / 记号：调号 · 拍号 · 速度）。created 2026-10-06 by Claude Opus 5.5
 // 2026-10-07 UX-2 重写（grill 账本 §9¾，user 原话见账本）：
 //   · 数据只存时长 + tie（「连着前一个音」）+ hyph（「这个词接到下一个音」）——单位、份数不进数据（user「不要hidden landmine，所以你说的份数可能就是编辑的立即存的，而不是音的属性？」）；
 //   · 时间精度 = 每四分 1680 格（2⁴·3·5·7：三十二分、三 / 五 / 七连音都是整数；user「所以你是想离散时间精度…那么可以啊」）；
@@ -6,6 +6,8 @@
 //   · 选中 = 改，光标 = 写（user「智能识别，选中音符就是改，光标就是写 对」）：有选中就作用在选中上，没选中就作用在下一个要写的音上；
 //   · 写的时候：长短 = 输入状态（三十二分…全音符六档，默认八分），「−」把刚写的音加一份它写入时的单位、跨小节线就新开一个 tie 着的音，
 //     退格撤回「本次输入记录」的最后一笔；记录在离开写（选中、挪光标）时清空——写字头在，记录就在。
+// 2026-10-07：调号 / 拍号 / 速度全是 token，没有全局设置（user「谱子的调号应该也是一个按了可以下拉的文本框。不是全局的，bpm也是，都是token」「这么说拍号也是」）。
+//   一首歌开头固定三个记号（谱头）：光标进不去、删不掉，只能就地改；中途可以插，插的地方旁边已有同类记号就改它而不是再插一个。
 // 编辑器状态是纯数据，所有命令是纯函数：旧状态 → 新状态。
 
 import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy } from "./pitch.ts";
@@ -28,20 +30,22 @@ export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: n
 export interface RestTok { kind: "rest"; id: number; dur: number }
 export interface BarTok { kind: "bar"; id: number }
 export interface KeyTok { kind: "key"; id: number; fifths: number }
-export type Token = NoteTok | RestTok | BarTok | KeyTok;
+export interface TimeTok { kind: "time"; id: number; beats: number; beatType: number }
+export interface TempoTok { kind: "tempo"; id: number; bpm: number }   // 每分钟几个四分音符
+export type MarkTok = KeyTok | TimeTok | TempoTok;
+export type Token = NoteTok | RestTok | BarTok | MarkTok;
 export type Timed = NoteTok | RestTok;
+/** 一个记号的值（不带 id）。 */
+export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;
 
 /** 「哼的字」：跟语言无关的四档，唱的时候按语言换字（lab-score.ts HUM_SYLLABLE）。 */
 export type Hum = "la" | "n" | "u" | "a";
 
 export interface Song {
-  fifths: number;        // 开头的调号（MusicXML <key><fifths>）；中途变化 = KeyTok
-  beats: number;         // 拍号分子
-  beatType: number;      // 拍号分母（第一版只认 4）
-  tempo: number;         // 每分钟几个四分音符
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
-  tokens: Token[];
+  tokens: Token[];       // 开头三个 = 谱头记号（调号 / 拍号 / 速度）
 }
+export const DEFAULT_KEY = 0, DEFAULT_TIME = { beats: 4, beatType: 4 }, DEFAULT_BPM = 90;
 
 /** 输入状态（不进数据）：写的时候下一个音长什么样。 */
 export interface InputState {
@@ -69,7 +73,13 @@ export interface EditorState {
   input: InputState;
 }
 
-export function emptySong(): Song { return { fifths: 0, beats: 4, beatType: 4, tempo: 90, hum: "la", tokens: [] }; }
+export function emptySong(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}): Song {
+  return { hum: "la", tokens: [
+    { kind: "key", id: 1, fifths: m.fifths ?? DEFAULT_KEY },
+    { kind: "time", id: 2, beats: m.beats ?? DEFAULT_TIME.beats, beatType: m.beatType ?? DEFAULT_TIME.beatType },
+    { kind: "tempo", id: 3, bpm: m.bpm ?? DEFAULT_BPM },
+  ] };
+}
 export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: null }; }
 export function initState(song: Song = emptySong()): EditorState {
   const maxId = song.tokens.reduce((m, t) => Math.max(m, t.id), 0);
@@ -77,6 +87,9 @@ export function initState(song: Song = emptySong()): EditorState {
 }
 
 export const isTimed = (t: Token): t is Timed => t.kind === "note" || t.kind === "rest";
+export const isMark = (t: Token): t is MarkTok => t.kind === "key" || t.kind === "time" || t.kind === "tempo";
+/** 谱头 = 开头连着的记号；光标最左只能到它后面。 */
+export function headLen(tokens: Token[]): number { let n = 0; while (n < tokens.length && isMark(tokens[n])) n++; return n; }
 export const isWriting = (st: EditorState): boolean => st.sel === null;
 
 // ── 查询 ────────────────────────────────────────────────────────────────
@@ -97,11 +110,44 @@ export function effectivePitch(tokens: Token[], i: number): Pitch {
   if (t.kind === "note" && t.pitch) return t.pitch;
   return prevPitch(tokens, i) ?? HOME;
 }
-/** 下标 i 处生效的调号（开头的调号，被之前的 KeyTok 覆盖）。 */
+/** 下标 i 处（i 之前最近的那个记号）生效的调号 / 拍号 / 速度。 */
 export function keyAt(song: Song, i: number): number {
-  let f = song.fifths;
+  let f = DEFAULT_KEY;
   for (let j = 0; j < i && j < song.tokens.length; j++) { const t = song.tokens[j]; if (t.kind === "key") f = t.fifths; }
   return f;
+}
+export function timeAt(song: Song, i: number): { beats: number; beatType: number } {
+  let v = DEFAULT_TIME;
+  for (let j = 0; j < i && j < song.tokens.length; j++) { const t = song.tokens[j]; if (t.kind === "time") v = t; }
+  return { beats: v.beats, beatType: v.beatType };
+}
+export function tempoAt(song: Song, i: number): number {
+  let v = DEFAULT_BPM;
+  for (let j = 0; j < i && j < song.tokens.length; j++) { const t = song.tokens[j]; if (t.kind === "tempo") v = t.bpm; }
+  return v;
+}
+/** 速度的「语义」：数据只存 bpm（绝对的那个数），词按 bpm 落在哪一档推出来，谱上画「词 ♩ = 数」
+ *  （user「速度记号可以用语义+数字吗。绝对零度。」）。typical = 候选里点这个词时给的 bpm；档的边界是常见范围取的整数。 */
+export const TEMPO_WORDS: { from: number; it: string; zh: string; typical: number }[] = [
+  { from: 0, it: "Largo", zh: "广板", typical: 50 },
+  { from: 60, it: "Larghetto", zh: "小广板", typical: 63 },
+  { from: 66, it: "Adagio", zh: "柔板", typical: 70 },
+  { from: 76, it: "Andante", zh: "行板", typical: 88 },
+  { from: 100, it: "Moderato", zh: "中板", typical: 108 },
+  { from: 112, it: "Allegretto", zh: "小快板", typical: 116 },
+  { from: 120, it: "Allegro", zh: "快板", typical: 132 },
+  { from: 156, it: "Vivace", zh: "活板", typical: 160 },
+  { from: 176, it: "Presto", zh: "急板", typical: 184 },
+  { from: 200, it: "Prestissimo", zh: "最急板", typical: 208 },
+];
+export function tempoWord(bpm: number): { it: string; zh: string } {
+  let w = TEMPO_WORDS[0];
+  for (const x of TEMPO_WORDS) if (bpm >= x.from) w = x;
+  return w;
+}
+/** 一拍多少 tick（符杠按拍分组用）：x/2 x/4 x/8 = 那个音符；6/8 9/8 12/8 这类复拍子 = 附点四分。 */
+export function beatTicks(beats: number, beatType: number): number {
+  return beatType === 8 && beats > 3 && beats % 3 === 0 ? (WHOLE * 3) / 8 : WHOLE / beatType;
 }
 /** 写的时候「1=」= 手动设过的，否则跟光标处的调号。 */
 export const inputKey = (st: EditorState): number => st.input.inputFifths ?? keyAt(st.song, st.caret);
@@ -117,7 +163,7 @@ const indexOfId = (tokens: Token[], id: number) => tokens.findIndex((t) => t.id 
 // ── 小工具 ──────────────────────────────────────────────────────────────
 
 function next(st: EditorState, tokens: Token[], patch: Partial<EditorState> = {}): EditorState {
-  const caret = Math.max(0, Math.min(tokens.length, patch.caret ?? st.caret));
+  const caret = Math.max(headLen(tokens), Math.min(tokens.length, patch.caret ?? st.caret));
   return { ...st, ...patch, song: { ...st.song, tokens }, caret };
 }
 /** 挪光标 / 选中 = 离开「本次输入」，记录清空。 */
@@ -128,11 +174,11 @@ const validDur = (d: number) => Number.isInteger(d) && d >= MIN_DUR && d <= MAX_
 function consumeAcc(input: InputState): InputState { return input.accMode === "once" ? { ...input, acc: 0, accMode: "off" } : input; }
 function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alterBy(p, input.acc) : p; }
 
-/** 写的时候：光标后（跳过小节线、调号）第一个是空音高的音符，就填它而不是插（詞先）。 */
+/** 写的时候：光标后（跳过小节线、记号）第一个是空音高的音符，就填它而不是插（詞先）。 */
 function fillTarget(st: EditorState): number {
   for (let i = st.caret; i < st.song.tokens.length; i++) {
     const t = st.song.tokens[i];
-    if (t.kind === "bar" || t.kind === "key") continue;
+    if (t.kind === "bar" || isMark(t)) continue;
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
   return -1;
@@ -176,11 +222,34 @@ export function writeBar(st: EditorState): EditorState {
   return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
 }
 
-/** 在光标处换调号（插一个调号 token）。 */
-export function writeKey(st: EditorState, fifths: number): EditorState {
-  const at = st.sel ? st.sel.from : st.caret, id = st.nextId, tokens = st.song.tokens.slice();
-  tokens.splice(at, 0, { kind: "key", id, fifths });
-  return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [], input: { ...st.input, inputFifths: null } });
+/** 在光标处（有选中 = 选中开头）插一个记号。插的地方前后连着的记号里已有同类 → 改它，不再插一个（谱头就是这样被改的）。
+ *  返回记号的下标，fresh = 新插的（界面打开它的编辑框；没改值就关 = 撤掉）。 */
+export function writeMark(st: EditorState, v: MarkVal): { st: EditorState; index: number; fresh: boolean } {
+  const at = st.sel ? st.sel.from : st.caret, tokens = st.song.tokens;
+  let a = at, b = at;
+  while (a > 0 && isMark(tokens[a - 1])) a--;
+  while (b < tokens.length && isMark(tokens[b])) b++;
+  for (let i = a; i < b; i++) if (tokens[i].kind === v.kind) return { st: setMark({ ...leave(st), sel: null }, i, v), index: i, fresh: false };
+  const id = st.nextId, nt = tokens.slice();
+  nt.splice(at, 0, { ...v, id } as MarkTok);
+  const input = v.kind === "key" ? { ...st.input, inputFifths: null } : st.input;
+  return { st: next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [], input }), index: at, fresh: true };
+}
+/** 换调号（插一个调号记号）。 */
+export const writeKey = (st: EditorState, fifths: number): EditorState => writeMark(st, { kind: "key", fifths }).st;
+/** 改一个记号的值（种类不变）。改调号 = 「1=」回到跟调号。 */
+export function setMark(st: EditorState, i: number, v: MarkVal): EditorState {
+  const t = st.song.tokens[i];
+  if (!t || t.kind !== v.kind) return st;
+  const nt = st.song.tokens.slice(); nt[i] = { ...v, id: t.id } as MarkTok;
+  return next(st, nt, v.kind === "key" ? { input: { ...st.input, inputFifths: null } } : {});
+}
+/** 删一个中途的记号（谱头的删不掉）。 */
+export function deleteMark(st: EditorState, i: number): EditorState {
+  const t = st.song.tokens[i];
+  if (!t || !isMark(t) || i < headLen(st.song.tokens)) return st;
+  const nt = st.song.tokens.slice(); nt.splice(i, 1);
+  return next(st, nt, { caret: i < st.caret ? st.caret - 1 : st.caret, sel: null });
 }
 
 /** 「−」：写的时候 = 刚写的那个音加一份它写入时的单位（下一个音不受影响）；中间隔着小节线 = 新开一个 tie 着的同音。
@@ -227,7 +296,7 @@ export function backspace(st: EditorState): EditorState {
     nt.splice(i, 1);                                // ins / tie：删掉那个 token
     return next(st, nt, { log, caret: i < st.caret ? st.caret - 1 : st.caret });
   }
-  if (st.caret <= 0) return st;
+  if (st.caret <= headLen(tokens)) return st;   // 谱头删不掉
   const nt = tokens.slice(); nt.splice(st.caret - 1, 1);
   return next(st, nt, { caret: st.caret - 1 });
 }
@@ -315,10 +384,10 @@ export const octaveTarget = (st: EditorState, d: number) => mapTargetPitch(st, (
 
 /** 放光标（= 写）：清选中、清本次输入记录。 */
 export const setCaret = (st: EditorState, caret: number): EditorState =>
-  ({ ...leave(st), sel: null, caret: Math.max(0, Math.min(st.song.tokens.length, caret)) });
+  ({ ...leave(st), sel: null, caret: Math.max(headLen(st.song.tokens), Math.min(st.song.tokens.length, caret)) });
 /** 选中一段（= 改）。 */
 export function select(st: EditorState, from: number, to: number): EditorState {
-  const n = st.song.tokens.length, a = Math.max(0, Math.min(from, to)), b = Math.min(n, Math.max(from, to));
+  const n = st.song.tokens.length, a = Math.max(headLen(st.song.tokens), Math.min(from, to)), b = Math.min(n, Math.max(from, to));
   if (b <= a) return setCaret(st, a);
   return { ...leave(st), sel: { from: a, to: b }, caret: b };
 }
@@ -335,7 +404,7 @@ export function extendSelection(st: EditorState, d: number): EditorState {
 /** Esc：写 → 选中光标前那个 token（改）。 */
 export function escape(st: EditorState): EditorState {
   if (st.sel) return st;
-  return st.caret > 0 ? select(st, st.caret - 1, st.caret) : st;
+  return st.caret > headLen(st.song.tokens) ? select(st, st.caret - 1, st.caret) : st;
 }
 
 // ── 直接改（指针拖动 / 歌词） ─────────────────────────────────────────
@@ -352,33 +421,41 @@ export function setDur(st: EditorState, i: number, dur: number): EditorState {
   const nt = st.song.tokens.slice(); nt[i] = { ...t, dur };
   return next(st, nt);
 }
-export function setSongMeta(st: EditorState, patch: Partial<Omit<Song, "tokens">>): EditorState {
-  return { ...st, song: { ...st.song, ...patch }, input: patch.fifths !== undefined ? { ...st.input, inputFifths: null } : st.input };
-}
+export function setHum(st: EditorState, hum: Hum): EditorState { return { ...st, song: { ...st.song, hum } }; }
 
 // ── 时间轴（播放、画谱、小节对账都用） ─────────────────────────────────
 
-export interface TimedAt { index: number; tok: Timed; start: number /* tick，从头算 */; inBar: number /* tick，从上一条小节线算 */ }
+export interface TimedAt {
+  index: number; tok: Timed;
+  start: number;            // tick，从头算
+  inBar: number;            // tick，从上一条小节线算
+  bpm: number;              // 这里生效的速度
+  t0: number; t1: number;   // 秒（按速度记号一段一段算）
+}
 
 export function timeline(song: Song): TimedAt[] {
   const out: TimedAt[] = [];
-  let t = 0, bar = 0;
+  let t = 0, bar = 0, sec = 0, bpm = DEFAULT_BPM;
   song.tokens.forEach((tok, index) => {
     if (tok.kind === "bar") { bar = t; return; }
-    if (tok.kind === "key") return;
-    out.push({ index, tok, start: t, inBar: t - bar });
-    t += tok.dur;
+    if (tok.kind === "tempo") { bpm = tok.bpm; return; }
+    if (!isTimed(tok)) return;
+    const len = (tok.dur / TPQ) * (60 / bpm);
+    out.push({ index, tok, start: t, inBar: t - bar, bpm, t0: sec, t1: sec + len });
+    t += tok.dur; sec += len;
   });
   return out;
 }
 
-/** 每个小节（两条小节线之间）实际拍数和拍号是否对得上——只用来轻标，不拦（家规：不许规训）。 */
+/** 每个小节（两条小节线之间）实际拍数和那里的拍号是否对得上——只用来轻标，不拦（家规：不许规训）。 */
 export function barFill(song: Song): { from: number; to: number; ticks: number; full: boolean }[] {
-  const want = (song.beats * TPQ * 4) / song.beatType;
+  const wantOf = (b: number, bt: number) => (b * WHOLE) / bt;
+  let want = wantOf(DEFAULT_TIME.beats, DEFAULT_TIME.beatType);
   const out: { from: number; to: number; ticks: number; full: boolean }[] = [];
   let from = 0, ticks = 0;
   song.tokens.forEach((tok, i) => {
     if (tok.kind === "bar") { out.push({ from, to: i, ticks, full: ticks === want }); from = i + 1; ticks = 0; }
+    else if (tok.kind === "time") want = wantOf(tok.beats, tok.beatType);
     else if (isTimed(tok)) ticks += tok.dur;
   });
   return out;

@@ -3,6 +3,7 @@
 // 元数据文件本身不进仓（vendor/fonts/bravura/README.md）。SMuFL 约定：字号 = 4 个 staff space（1 em = 4 sp）。
 
 export const GLYPH = {
+  metNoteQuarterUp: "\u{ECA5}",   // 速度记号里的四分音符（metronome mark）
   gClef: "",
   noteheadWhole: "", noteheadHalf: "", noteheadBlack: "",
   augmentationDot: "",

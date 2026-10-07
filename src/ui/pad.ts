@@ -6,8 +6,9 @@
 //   UX-2：从很多里挑一个 = 工具条整条变候选（「1=」12 个调；连音 3 5 6 7），全 app 不用长按（user「可以，用同一个交互范式」）；
 //   ♯ / ♭ 像手机 Shift（点一下只管下一个音，连点两下锁住）；「弹」= 即兴：按住临时只唱不写，快速点一下锁住
 //   （user「只有「改」和「写」两个模式，即兴做成 pad 上的一个开关（按住时只唱不写）」）。
+//   「＋」= 在光标处插记号（调号 / 拍号 / 速度，候选条里挑），插完就地打开它的编辑框（user「…都是token」）。
 
-import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchName } from "../score/pitch.ts";
+import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchName, KEY_LABEL } from "../score/pitch.ts";
 import type { Command } from "../score/keymap.ts";
 import { type EditorState, inputKey } from "../score/song.ts";
 
@@ -17,7 +18,7 @@ const DOT_UP = "̇", DOT_DOWN = "̣";   // 简谱的上加点 / 下加点
 /** Bravura 的整个音符字形（SMuFL 预组合音符，符干朝上）：三十二分 … 全音符。 */
 const UNIT_GLYPH = ["", "", "", "", "", ""];
 const UNIT_NAME = ["三十二分", "十六分", "八分", "四分", "二分", "全音符"];
-export const KEY_NAMES: Record<number, string> = { [-6]: "G♭", [-5]: "D♭", [-4]: "A♭", [-3]: "E♭", [-2]: "B♭", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F♯" };
+const KEY_NAMES = KEY_LABEL;
 const KEY_ORDER = [0, 1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6];
 
 /** 不带点的那一组 = 她说话的家（HOME = D4）所在的那个「1 到 7」：1=C 时 C4–B4 不带点。 */
@@ -35,11 +36,12 @@ export interface PadHost {
   onTuplet(n: 0 | 3 | 5 | 6 | 7): void;
   onInputKey(f: number | null): void;
   onImpro(on: boolean): void;
+  onInsertMark(kind: "key" | "time" | "tempo"): void;
   onSoundDown(p: Pitch): void;             // 试听 / 即兴：按下响
   onSoundUp(): void;                       //              松开停
 }
 
-type Mode = "normal" | "key" | "tuplet";
+type Mode = "normal" | "key" | "tuplet" | "mark";
 
 export class Pad {
   private shift = 0;          // 用户挪过几个八度
@@ -64,6 +66,9 @@ export class Pad {
     const tools = this.mode === "key"
       ? KEY_ORDER.map((k) => `<button class="btn cand" data-key="${k}">1=${KEY_NAMES[k]}</button>`).join("") +
         `<button class="btn cand" data-key="follow">跟调号</button><button class="btn cand" data-back="1">返回</button>`
+      : this.mode === "mark"
+      ? `<button class="btn cand" data-mark="key">调号</button><button class="btn cand" data-mark="time">拍号</button><button class="btn cand" data-mark="tempo">速度</button>` +
+        `<button class="btn cand" data-back="1">返回</button>`
       : this.mode === "tuplet"
       ? [3, 5, 6, 7].map((n) => `<button class="btn cand" data-tup="${n}">${n} 连</button>`).join("") +
         `<button class="btn cand" data-tup="0">关</button><button class="btn cand" data-back="1">返回</button>`
@@ -76,6 +81,7 @@ export class Pad {
         `<button class="btn t-tup" data-open="tuplet" title="连音（开着再点 = 选 3 5 6 7）">连</button>` +
         `<button class="btn" data-cmd="extend" title="拉长一份（-）">－</button>` +
         `<button class="btn" data-cmd="bar" title="小节线（|）">|</button>` +
+        `<button class="btn" data-open="mark" title="在光标处插记号：调号 / 拍号 / 速度">＋</button>` +
         `<button class="btn" data-cmd="backspace" title="退格"><svg class="ico"><use href="#backspace"/></svg></button>` +
         `<button class="btn t-impro" data-impro="1" title="弹：按住只唱不写，快速点一下锁住">弹</button>` +
         `<button class="btn" data-oct="-1" title="pad 整体低八度"><svg class="ico"><use href="#caret-down"/></svg></button>` +
@@ -131,13 +137,14 @@ export class Pad {
     on("[data-acc]", (b) => this.host.onCommand({ k: "acc", acc: Number(b.dataset.acc) as 1 | -1 }));
     on("[data-oct]", (b) => { this.shift = Math.max(-2, Math.min(2, this.shift + Number(b.dataset.oct))); this.render(); });
     on("[data-open]", (b) => {
-      if (b.dataset.open === "key") { this.mode = "key"; this.render(); return; }
+      if (b.dataset.open === "key" || b.dataset.open === "mark") { this.mode = b.dataset.open; this.render(); return; }
       const st = this.host.state();   // 连音：没开 → 开三连；开着 → 弹候选
       if (!st.input.tuplet) this.host.onTuplet(3); else { this.mode = "tuplet"; this.render(); }
     });
     on("[data-key]", (b) => { this.host.onInputKey(b.dataset.key === "follow" ? null : Number(b.dataset.key)); this.mode = "normal"; this.render(); });
     on("[data-tup]", (b) => { this.host.onTuplet(Number(b.dataset.tup) as 0 | 3 | 5 | 6 | 7); this.mode = "normal"; this.render(); });
     on("[data-back]", () => { this.mode = "normal"; this.render(); });
+    on("[data-mark]", (b) => { this.mode = "normal"; this.render(); this.host.onInsertMark(b.dataset.mark as "key" | "time" | "tempo"); });
     // 弹：按住临时、快速点一下锁住 / 解开
     const imp = this.el.querySelector<HTMLElement>("[data-impro]");
     if (imp) {

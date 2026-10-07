@@ -1,19 +1,20 @@
 // engrave.ts —— 一串 token → 五线谱的绘图指令 + 命中数据（纯函数，Node 里可测）。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 重写
-// 范围：一行高音谱表、单声部；开头调号 / 拍号 + 中途调号 token；符头 / 符干 / 符尾 / 符杠 / 附点 / 临时记号（小节内记忆）/ 加线 / 休止；
+// 范围：一行高音谱表、单声部；谱头（开头三个记号 token：调号 / 拍号 / 速度）+ 中途的记号 token；符头 / 符干 / 符尾 / 符杠 / 附点 / 临时记号（小节内记忆）/ 加线 / 休止；
 // 拆开的时值用连音线连；数据里的 tie（「−」跨小节线开的音）也画连音线；三 / 五 / 六 / 七连音画括号和数字；
 // 小节线 = 人插的 token（小节不满只轻标，第一小节当弱起不标）；歌词在音符下，英文断开处画连字符，拖腔画延长线；空音高的音画淡色。
 // 写（光标）：光标处撑开写字头，里面画预览音符（下一个音的时值 / 升降 / 连音）；改（选中）：没有写字头，选中的一段高亮。
 // 不做右端对齐（打字时前面的音不晃）；放不下就像文字一样折行，优先在小节线处折。
 
-import { type Song, type NoteTok, type Token, TPQ, BEAT, WHOLE, effectivePitch, barFill, isTimed } from "../score/song.ts";
+import { type Song, type NoteTok, type Token, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, barFill, isTimed, headLen, beatTicks, tempoWord } from "../score/song.ts";
 import { type Pitch, diatonicIndex, keyAlter } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { GLYPH, W, ENGRAVE, STEM_UP_SE, STEM_DOWN_NW, FLAG_ANCHOR_UP, FLAG_ANCHOR_DOWN, timeSigDigits } from "./smufl.ts";
+import { KEY_LABEL } from "../score/pitch.ts";
 
 export type Prim =
   | { t: "line"; x1: number; y1: number; x2: number; y2: number; w: number; cls?: string }
-  | { t: "glyph"; x: number; y: number; ch: string; cls?: string }
-  | { t: "text"; x: number; y: number; s: string; cls?: string }
+  | { t: "glyph"; x: number; y: number; ch: string; cls?: string; size?: number /* px，默认 4 sp */ }
+  | { t: "text"; x: number; y: number; s: string; cls?: string; size?: number /* px，默认歌词字号 */; anchor?: "start" | "middle" }
   | { t: "path"; d: string; cls?: string }
   | { t: "rect"; x: number; y: number; w: number; h: number; cls?: string };
 
@@ -28,14 +29,17 @@ export interface EngraveOpts {
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
 }
 export const LYRIC_EM = 1.6;
+const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
 
 export interface SystemBox { top: number; staffTop: number; bottom: number }
 export interface HitNote { index: number; system: number; x: number; y: number; w: number; d: number }
 export interface Slot { caret: number; system: number; x: number }
 export interface LyricHit { index: number; system: number; x: number; y: number }   // x = 歌词中心，y = 基线
+/** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
+export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
-  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[];
+  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[];
   head: { system: number; x: number; w: number } | null;   // 写字头那一列（改的时候没有）
   lyricY: (system: number) => number;
   yOf: (system: number, d: number) => number;
@@ -80,14 +84,17 @@ const baseWidth = (base: number) => 4.0 + 0.8 * Math.log2(base / TPQ);   // 四�
 // ── 排版单元 ────────────────────────────────────────────────────────────
 interface Chunk {
   kind: "chunk"; index: number; j: number; last: boolean; base: number; dotted: boolean; note: boolean; ratio: [number, number] | null; ticks: number;
-  pitch: Pitch | null; ghost: boolean; tie: boolean; lyric: string | null; hyph: boolean; inBar: number; acc: number | null; w: number; accW: number;
+  pitch: Pitch | null; ghost: boolean; tie: boolean; lyric: string | null; hyph: boolean; inBar: number; beat: number; acc: number | null; w: number; accW: number;
   x: number; system: number; preview?: boolean;
 }
 interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; warn: boolean }
 interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: number; x: number; system: number }
+interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number }
+interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number }
 interface HeadU { kind: "head"; w: number; x: number; system: number; chunk: Chunk | null }
-type Unit = Chunk | BarU | KeyU | HeadU;
+type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU;
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
+const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
 export function engrave(song: Song, o: EngraveOpts): Layout {
   const sp = o.sp, P = (v: number) => v * sp;
@@ -95,20 +102,32 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const prims: Prim[] = [];
   const inSel = (i: number) => !!sel && i >= sel.from && i < sel.to;
 
+  // 0. 谱头：开头连着的记号，画在每行行首（调号）/ 第一行（拍号、速度），不占排版单元
+  const H = headLen(tokens);
+  let fifths = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
+  const headIdx: Partial<Record<"key" | "time" | "tempo", number>> = {};
+  for (let i = 0; i < H; i++) {
+    const t = tokens[i];
+    if (t.kind === "key") fifths = t.fifths; else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType }; else if (t.kind === "tempo") bpm = t.bpm;
+    if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") headIdx[t.kind] = i;
+  }
+  const headKey = fifths, headTime = time, headBpm = bpm;
+
   // 1. 单元 + 临时记号（小节内记忆；小节线、调号清零）
   const units: Unit[] = [];
   const fills = barFill(song);
-  let accState = new Map<string, number>(), inBar = 0, barCount = 0, fifths = song.fifths;
+  let accState = new Map<string, number>(), inBar = 0, barCount = 0, beat = beatTicks(time.beats, time.beatType);
   const pushHead = () => {
     let chunk: Chunk | null = null;
     if (o.preview) {
       const { ratio, chunks } = notate(o.preview.dur), c0 = chunks[0];
       chunk = { kind: "chunk", index: -1, j: 0, last: true, base: c0.base, dotted: c0.dotted, note: true, ratio, ticks: c0.ticks, pitch: o.preview.pitch, ghost: false, tie: false,
-        lyric: null, hyph: false, inBar: 0, acc: o.preview.acc || null, w: HEAD_W, accW: o.preview.acc ? 1.3 : 0, x: 0, system: 0, preview: true };
+        lyric: null, hyph: false, inBar: 0, beat, acc: o.preview.acc || null, w: HEAD_W, accW: o.preview.acc ? 1.3 : 0, x: 0, system: 0, preview: true };
     }
     units.push({ kind: "head", w: HEAD_W + (o.preview?.acc ? 1.3 : 0), x: 0, system: 0, chunk });
   };
   tokens.forEach((t, i) => {
+    if (i < H) return;
     if (writing && i === o.caret) pushHead();
     if (t.kind === "bar") {
       const f = fills[barCount++];
@@ -119,6 +138,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: keyWidth(t.fifths, fifths), x: 0, system: 0 });
       fifths = t.fifths; accState = new Map(); return;
     }
+    if (t.kind === "time") {
+      units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: timeWidth(t.beats, t.beatType) + 1.2, x: 0, system: 0 });
+      beat = beatTicks(t.beats, t.beatType); return;
+    }
+    if (t.kind === "tempo") { units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0 }); return; }
     const isNote = t.kind === "note", nt = t as NoteTok;
     const pitch = isNote ? effectivePitch(tokens, i) : null;
     const { ratio, chunks } = notate(t.dur);
@@ -135,7 +159,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
       if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyric) / sp + (nt.hyph ? 1.4 : 0.7));
       units.push({ kind: "chunk", index: i, j, last: j === chunks.length - 1, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
-        ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, acc, w, accW, x: 0, system: 0 });
+        ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0 });
       off += c.ticks;
     });
     inBar += t.dur;
@@ -144,8 +168,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
 
   // 2. 折行（像文字：优先在小节线后折；一个小节都放不下就逐个单元折）。每行开头的调号 = 那里生效的调号
   const right = o.width / sp - MARGIN;
-  const headerW = (first: boolean, f: number) => MARGIN + 0.6 + W.gClef + 1.0 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? 2.4 + 1.2 : 0.4);
-  let system = 0, curKey = song.fifths, x = headerW(true, curKey);
+  const headerW = (first: boolean, f: number) => MARGIN + 0.6 + W.gClef + 1.0 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(headTime.beats, headTime.beatType) + 1.2 : 0.4);
+  let system = 0, curKey = headKey, x = headerW(true, curKey);
   const sysStarts: number[] = [x], sysKeys: number[] = [curKey];
   const newline = () => { system++; x = headerW(false, curKey); sysStarts.push(x); sysKeys.push(curKey); };
   let seg: Unit[] = [];
@@ -179,7 +203,26 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     for (const [s, [a, b]] of byS) prims.push({ t: "rect", x: P(a), y: yOf(s, 44), w: P(b - a), h: lyricY(s) + P(0.8) - yOf(s, 44), cls: "selbox" });
   }
 
-  // 5. 五线、谱号、调号、拍号
+  // 5. 五线、谱号、调号、拍号（+ 第一行上方的速度）
+  const marks: MarkHit[] = [];
+  const drawTime = (s: number, x0: number, beats: number, beatType: number, cls: string) => {
+    const num = timeSigDigits(beats), den = timeSigDigits(beatType);
+    const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw = Math.max(wn, wd);
+    prims.push({ t: "glyph", x: P(x0 + (cw - wn) / 2), y: yOf(s, 36), ch: num, cls });
+    prims.push({ t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(s, 32), ch: den, cls });
+    return cw;
+  };
+  /** 「Andante ♩ = 88」：词 + 四分音符 + 数（user「速度记号可以用语义+数字吗」）。返回点击区域。 */
+  const drawTempo = (s: number, x0: number, v: number, cls: string, index: number) => {
+    const fs = TEMPO_EM * sp, word = tempoWord(v).it, y = staffTop(s) - P(2.4);
+    const ww = (o.measureLyric(word) * TEMPO_EM) / LYRIC_EM / sp, num = `= ${v}`, nw = (o.measureLyric(num) * TEMPO_EM) / LYRIC_EM / sp;
+    prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
+    const gx = x0 + ww + 0.7;
+    prims.push({ t: "glyph", x: P(gx), y: y - P(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
+    prims.push({ t: "text", x: P(gx + 1.3), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+    marks.push({ index, kind: "tempo", system: s, x: P(x0 - 0.3), y: y - P(TEMPO_EM * 1.1), w: P(gx + 1.3 + nw + 0.6 - x0), h: P(TEMPO_EM * 1.5) });
+  };
+  const staffHit = (s: number) => ({ y: yOf(s, TOP_LINE) - P(1.2), h: yOf(s, BOTTOM_LINE) - yOf(s, TOP_LINE) + P(2.4) });
   const drawKeySig = (s: number, x0: number, f: number, cls: string) => {
     const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat;
     for (let k = 0; k < Math.abs(f); k++) prims.push({ t: "glyph", x: P(x0 + k * 1.05), y: yOf(s, pos[k]), ch, cls });
@@ -191,11 +234,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     hx += W.gClef + 1.0;
     drawKeySig(s, hx, sysKeys[s], "keysig"); hx += Math.abs(sysKeys[s]) * 1.05;
     if (s === 0) {
+      // 谱头记号的点击区域：谱号 + 调号一块（改调号）、拍号（改拍号）、上方速度（改速度）
+      if (headIdx.key !== undefined) marks.push({ index: headIdx.key, kind: "key", system: 0, x: P(MARGIN + 0.3), ...staffHit(0), w: P(hx - MARGIN - 0.3 + 0.3) });
       if (sysKeys[0]) hx += 0.8;
-      const num = timeSigDigits(song.beats), den = timeSigDigits(song.beatType);
-      const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw = Math.max(wn, wd);
-      prims.push({ t: "glyph", x: P(hx + (cw - wn) / 2), y: yOf(s, 36), ch: num, cls: "timesig" });
-      prims.push({ t: "glyph", x: P(hx + (cw - wd) / 2), y: yOf(s, 32), ch: den, cls: "timesig" });
+      const cw = drawTime(s, hx, headTime.beats, headTime.beatType, "timesig");
+      if (headIdx.time !== undefined) marks.push({ index: headIdx.time, kind: "time", system: 0, x: P(hx - 0.3), ...staffHit(0), w: P(cw + 0.6) });
+      if (headIdx.tempo !== undefined) drawTempo(0, MARGIN + 0.6, headBpm, "tempo", headIdx.tempo);
     }
   }
 
@@ -254,8 +298,18 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const cls = inSel(u.index) ? "keysig sel" : "keysig";
       if (u.fifths === 0) { const pos = u.prev > 0 ? SHARP_POS : FLAT_POS; for (let k = 0; k < Math.abs(u.prev); k++) prims.push({ t: "glyph", x: P(u.x + 0.4 + k * 0.8), y: yOf(u.system, pos[k]), ch: GLYPH.accidentalNatural, cls }); }
       else drawKeySig(u.system, u.x + 0.4, u.fifths, cls);
+      // 换到同一个调、又没有升降号（C → C）：什么都画不出来 → 写个小字，免得成了看不见的记号
+      if (u.fifths === 0 && u.prev === 0) prims.push({ t: "text", x: P(u.x + 0.2), y: staffTop(u.system) - P(0.8), s: `1=${KEY_LABEL[0]}`, cls: `${cls} key-label`, size: TEMPO_EM * sp * 0.85, anchor: "start" });
+      marks.push({ index: u.index, kind: "key", system: u.system, x: P(u.x), ...staffHit(u.system), w: P(Math.max(u.w, 1.6)) });
       continue;
     }
+    if (u.kind === "time") {
+      const cls = inSel(u.index) ? "timesig sel" : "timesig";
+      drawTime(u.system, u.x + 0.6, u.beats, u.beatType, cls);
+      marks.push({ index: u.index, kind: "time", system: u.system, x: P(u.x), ...staffHit(u.system), w: P(u.w) });
+      continue;
+    }
+    if (u.kind === "tempo") { drawTempo(u.system, u.x + 0.3, u.bpm, inSel(u.index) ? "tempo sel" : "tempo", u.index); continue; }
     drawChunk(u);
   }
 
@@ -270,7 +324,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     if (!u || !u.note || u.base >= WHOLE) { endGroup(); continue; }
     const s: Stemmed = { c: u, x0: nhX(u), y: yOf(u.system, diatonicIndex(u.pitch!)), d: diatonicIndex(u.pitch!) };
     if (u.preview || u.base > TPQ / 2) { endGroup(); stemmed.push([s]); continue; }
-    const beat = Math.floor(u.inBar / BEAT);
+    const beat = Math.floor(u.inBar / u.beat);
     if (group.length && (beat !== groupBeat || u.system !== groupSys)) endGroup();
     group.push(s); groupBeat = beat; groupSys = u.system;
   }
@@ -374,13 +428,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const slots: Slot[] = [];
   const firstUnitOf = new Map<number, Unit>();
   for (const u of units) if (u.kind !== "head" && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
-  for (let c = 0; c <= tokens.length; c++) {
+  for (let c = H; c <= tokens.length; c++) {
     const u = c < tokens.length ? firstUnitOf.get(c)! : null;
     if (u) slots.push({ caret: c, system: u.system, x: P(u.x) });
     else { const last = units[units.length - 1]; slots.push({ caret: c, system: last ? last.system : 0, x: last ? P(last.x + last.w) : P(sysStarts[0]) }); }
   }
 
-  return { prims, width: o.width, height: P(nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, head, lyricY, yOf, dOf };
+  return { prims, width: o.width, height: P(nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, head, lyricY, yOf, dOf };
 }
 
 export type { Token };

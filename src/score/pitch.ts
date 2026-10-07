@@ -71,3 +71,6 @@ export function pitchName(p: Pitch): string { return `${p.step}${p.alter > 0 ? "
 
 export const samePitch = (a: Pitch | null, b: Pitch | null): boolean =>
   !!a && !!b && a.step === b.step && a.alter === b.alter && a.octave === b.octave;
+
+/** 调名（「1=」后面那个字母）：五度数 → 名字（-7 … 7）。pad、谱面、记号编辑框共用。 */
+export const KEY_LABEL: Record<number, string> = { [-7]: "C♭", [-6]: "G♭", [-5]: "D♭", [-4]: "A♭", [-3]: "E♭", [-2]: "B♭", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F♯", 7: "C♯" };

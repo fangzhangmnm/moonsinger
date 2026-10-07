@@ -14,8 +14,8 @@ export function toSvg(l: Layout, inlineStyle = false): string {
     const c = p.cls ? ` class="${p.cls}"` : "";
     switch (p.t) {
       case "line": out.push(`<line${c} x1="${n(p.x1)}" y1="${n(p.y1)}" x2="${n(p.x2)}" y2="${n(p.y2)}" stroke-width="${n(p.w)}"/>`); break;
-      case "glyph": out.push(`<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${fs}">${p.ch}</text>`); break;
-      case "text": out.push(`<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${lfs}" text-anchor="middle">${esc(p.s)}</text>`); break;
+      case "glyph": out.push(`<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${p.size ? n(p.size) : fs}">${p.ch}</text>`); break;
+      case "text": out.push(`<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${p.size ? n(p.size) : lfs}" text-anchor="${p.anchor ?? "middle"}">${esc(p.s)}</text>`); break;
       case "path": out.push(`<path${c} d="${p.d}"/>`); break;
       case "rect": out.push(`<rect${c} x="${n(p.x)}" y="${n(p.y)}" width="${n(p.w)}" height="${n(p.h)}" rx="${n(l.sp * 0.6)}"/>`); break;
     }
@@ -45,4 +45,6 @@ export const STANDALONE_CSS = `
 .staff-svg .sel{fill:#1d5fa8;stroke:#1d5fa8}
 .staff-svg rect.selbox{fill:#e3edf9;opacity:.8}
 .staff-svg path.tuplet-bracket{fill:none;stroke:#2a2a2a;stroke-width:1}
+.staff-svg text.tempo-word{font-weight:600;font-family:system-ui,sans-serif}
+.staff-svg text.tempo-num,.staff-svg text.key-label{font-family:system-ui,sans-serif}
 `;

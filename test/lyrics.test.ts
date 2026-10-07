@@ -4,7 +4,8 @@ import { splitSyllables, applyLyricLine } from "../src/score/lyrics.ts";
 import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
-import { setSongMeta } from "../src/score/song.ts";
+import { setHum } from "../src/score/song.ts";
+const H = 3;   // 谱头三个记号
 
 describe("lyrics", () => {
   it("假名一拍一个：小字并进前一个，ん 自己一个，ー 是拖腔", () => {
@@ -28,21 +29,21 @@ describe("lyrics", () => {
   });
   it("先写词：空歌里打一行 → 每个字一个空音高的音；光标不动，数字接着填音高", () => {
     let st = initState(); st = applyLyricLine(st, "うさぎ");
-    eq(st.song.tokens.length, 3); eq(st.caret, 0);
-    eq(st.song.tokens.every((t) => t.kind === "note" && t.pitch === null && t.dur === TPQ / 2), true);
+    eq(st.song.tokens.length, H + 3); eq(st.caret, H);
+    eq(st.song.tokens.slice(H).every((t) => t.kind === "note" && t.pitch === null && t.dur === TPQ / 2), true);
     st = writeDegree(st, 4, "near"); st = writeDegree(st, 4, "near");
-    eq(st.song.tokens.map((t) => (t as NoteTok).pitch ? pitchName((t as NoteTok).pitch!) : "?").join(" "), "F4 F4 ?");
-    eq(st.song.tokens.length, 3);
+    eq(st.song.tokens.slice(H).map((t) => (t as NoteTok).pitch ? pitchName((t as NoteTok).pitch!) : "?").join(" "), "F4 F4 ?");
+    eq(st.song.tokens.length, H + 3);
   });
   it("改中间：光标放在某个音前，只覆盖从那开始的几个", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near"); st = writeDegree(st, 3, "near");
-    st = applyLyricLine(st, "あいう"); st = setCaret(st, 1); st = applyLyricLine(st, "か");
+    st = applyLyricLine(st, "あいう"); st = setCaret(st, H + 1); st = applyLyricLine(st, "か");
     eq(st.song.tokens.map((t) => (t as NoteTok).lyric).join(""), "あかう");
   });
   it("哼的字：没歌词的音按这首歌的设置唱，日语 / 中文各换各的字", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near");
     eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "らら");
-    st = setSongMeta(st, { hum: "n" });
+    st = setHum(st, "n");
     eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "んん");
     eq(toLabScore(st.song, "zh").SCORE.map((e) => e.kana).join(""), "嗯嗯");
   });

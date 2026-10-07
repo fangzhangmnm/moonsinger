@@ -1,34 +1,29 @@
 // main.ts —— 试验页接线：顶栏 / 谱面板 / pad / 键盘。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
 // 第一版（grill 账本 §8½）：内存态，刷新就清空（不做存档、不做撤销）；播放 = 月读在浏览器里唱（src/singer/，和 Lab 命令行共用一份唱法核心）。
 // UX-2（账本 §9¾）：选中 = 改、光标 = 写；歌词在谱下面点进去写（底部歌词栏拿掉了）；「弹」= 即兴只唱不写。
+// 调号 / 拍号 / 速度是谱里的记号 token，点谱上的记号就地改，pad「＋」在光标处插——顶栏不再有全局的调号 / 拍号 / 速度。
 
 import { APP_VERSION } from "../version.ts";
-import { type EditorState, type NoteTok, type Hum, initState, writePitch, writeKey, setSongMeta, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, TPQ } from "../score/song.ts";
-import { type Pitch, pitchName, midiOf } from "../score/pitch.ts";
+import { type EditorState, type NoteTok, type Hum, type MarkVal, initState, writePitch, writeMark, setHum, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
+import { type Pitch, pitchName, midiOf, KEY_LABEL } from "../score/pitch.ts";
 import { commandFor } from "../score/keymap.ts";
 import { apply } from "../score/commands.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { ScoreView } from "../ui/score-view.ts";
-import { Pad, KEY_NAMES } from "../ui/pad.ts";
+import { Pad } from "../ui/pad.ts";
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
 import { encodeMp3 } from "../export/mp3.ts";
 import { Sampler } from "../singer/sampler.ts";
 
-let st: EditorState = setSongMeta(initState(), { fifths: 0, beats: 4, beatType: 4, tempo: 90 });
+let st: EditorState = initState();
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const bar = $("bar"), scoreEl = $("score"), padEl = $("padPanel");
 
-const KEY_ORDER = [0, 1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6];
-const keyOpts = (sel: number | null) => KEY_ORDER.map((f) => `<option value="${f}"${f === sel ? " selected" : ""}>1=${KEY_NAMES[f]}（${f > 0 ? `${f}♯` : f < 0 ? `${-f}♭` : "无升降"}）</option>`).join("");
 
 bar.innerHTML =
   `<span class="title">MoonSinger</span><span class="ver">${APP_VERSION}</span>` +
-  `<label class="field" title="歌曲开头的调号（只管显示，不改音）">调号<select id="keySel">${keyOpts(0)}</select></label>` +
-  `<select id="keyIns" class="mini" title="在光标处换调号（插一个调号记号）"><option value="">在此换调…</option>${keyOpts(null)}</select>` +
-  `<label class="field">拍号<select id="timeSel"><option value="2">2/4</option><option value="3">3/4</option><option value="4" selected>4/4</option></select></label>` +
-  `<label class="field">速度<input id="tempoIn" type="number" min="30" max="240" value="90" /></label>` +
   `<label class="field" title="完整 = 月读本人（第一次要加载约 65 MB）；轻量 = 元音采样，按下即响、任何设备都能跑">音质<select id="qualSel"><option value="full">完整</option><option value="light">轻量</option></select></label>` +
   `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="a">あ / 啊</option></select></label>` +
   `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
@@ -51,10 +46,12 @@ function writeAndLocate(write: (s: EditorState) => EditorState): number {
   return target >= 0 ? target : st.caret - 1;
 }
 
+let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消旧的（不然会掐掉新音）
 const view = new ScoreView(scoreEl, {
   get: () => st,
   set: (n) => update(n),
-  audition: (i) => { soundTok(st, i); setTimeout(() => sound.up(), 350); },
+  audition: (i, hold) => { clearTimeout(upTimer); soundTok(st, i); if (!hold) upTimer = window.setTimeout(() => sound.up(), 350); },
+  release: () => { clearTimeout(upTimer); sound.up(); },
 });
 let impro = false;
 let padWrote = -1;   // pad 按下：先写（onPitch）再响（onSoundDown）——响的时候唱刚写的那个音的字
@@ -65,6 +62,13 @@ const pad = new Pad(padEl, {
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
   onImpro: (on) => { impro = on; renderStatus(); },
+  onInsertMark: (kind) => {   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
+    const at = st.sel ? st.sel.from : st.caret;
+    const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
+    const r = writeMark(st, v);
+    update(r.st);
+    view.marks.openAt(r.index, r.fresh);
+  },
   onSoundDown: (p) => { if (padWrote >= 0) soundTok(st, padWrote); else sound.down(p); padWrote = -1; },
   onSoundUp: () => sound.up(),
 });
@@ -89,8 +93,10 @@ function renderStatus(): void {
     if (t.kind === "rest") s += ` · 休止 · ${durName(t.dur)}`;
     else if (t.kind === "note") s += ` · ${(t as NoteTok).pitch ? pitchName((t as NoteTok).pitch!) : "（音高空着）"} · ${durName(t.dur)}${t.tie ? " · 连着前一个" : ""}` +
       `${(t as NoteTok).lyric ? ` · ${(t as NoteTok).lyric === MELISMA_MARK ? "拖腔" : (t as NoteTok).lyric}` : ""}`;
-    else if (t.kind === "key") s += ` · 调号 1=${KEY_NAMES[t.fifths]}`;
-  } else if (!st.song.tokens.length) s += " · 打 1–7 写音，点谱下面写歌词";
+    else if (t.kind === "key") s += ` · 调号 1=${KEY_LABEL[t.fifths]}`;
+    else if (t.kind === "time") s += ` · 拍号 ${t.beats}/${t.beatType}`;
+    else if (t.kind === "tempo") s += ` · 速度 ${tempoWord(t.bpm).it} ♩=${t.bpm}`;
+  } else if (st.song.tokens.length <= headLen(st.song.tokens)) s += " · 打 1–7 写音，点谱下面写歌词，点谱头改调号 / 拍号 / 速度";
   if (off) s += ` · ${off} 个小节拍数和拍号对不上（只提示）`;
   el.textContent = s;
 }
@@ -107,10 +113,10 @@ function songLang(): "ja" | "zh" {
 }
 /** 轻量版的音符表（秒）：tie 并成一个长音。 */
 function lightNotes(): { midi: number; t0: number; t1: number }[] {
-  const secPerTick = 60 / st.song.tempo / TPQ, notes: { midi: number; t0: number; t1: number }[] = [];
-  for (const { index, tok, start } of timeline(st.song)) {
+  const notes: { midi: number; t0: number; t1: number }[] = [];
+  for (const { index, tok, t0, t1 } of timeline(st.song)) {   // 秒数按速度记号一段一段算好了
     if (tok.kind !== "note") continue;
-    const t0 = start * secPerTick, t1 = (start + tok.dur) * secPerTick, midi = midiOf(effectivePitch(st.song.tokens, index)), last = notes[notes.length - 1];
+    const midi = midiOf(effectivePitch(st.song.tokens, index)), last = notes[notes.length - 1];
     if (tok.tie && last && last.midi === midi) { last.t1 = t1; continue; }
     notes.push({ midi, t0, t1 });
   }
@@ -216,11 +222,7 @@ $("shareBtn").addEventListener("click", () => { void exportSong(); });
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st };
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
-$<HTMLSelectElement>("keySel").addEventListener("change", (e) => { update(setSongMeta(st, { fifths: Number((e.target as HTMLSelectElement).value) })); scoreEl.focus(); });
-$<HTMLSelectElement>("keyIns").addEventListener("change", (e) => { const v = (e.target as HTMLSelectElement).value; (e.target as HTMLSelectElement).value = ""; if (v !== "") update(writeKey(st, Number(v))); scoreEl.focus(); });
-$<HTMLSelectElement>("timeSel").addEventListener("change", (e) => { update(setSongMeta(st, { beats: Number((e.target as HTMLSelectElement).value) })); scoreEl.focus(); });
-$<HTMLInputElement>("tempoIn").addEventListener("change", (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 30 && v <= 240) update(setSongMeta(st, { tempo: v })); });
-$<HTMLSelectElement>("humSel").addEventListener("change", (e) => { update(setSongMeta(st, { hum: (e.target as HTMLSelectElement).value as Hum })); scoreEl.focus(); });
+$<HTMLSelectElement>("humSel").addEventListener("change", (e) => { update(setHum(st, (e.target as HTMLSelectElement).value as Hum)); scoreEl.focus(); });
 $("padBtn").addEventListener("click", () => { padEl.hidden = !padEl.hidden; $("padBtn").classList.toggle("is-on", !padEl.hidden); view.render(); });
 
 // ── 键盘（输入框里打字时不接） ─────────────────────────────────────────

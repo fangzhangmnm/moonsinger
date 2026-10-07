@@ -3,34 +3,45 @@
 //   点音符 = 选中它（Shift+点 = 把选中扩到它）；点写字头那一列的线 / 间 = 在光标处写这个音；点歌词那一行 = 在那个音下面打开歌词框；
 //   点别处 = 放光标。笔 / 鼠标拖符头：上下改音高（按五线谱一级一级吸附）、左右改时值（离散阶梯）；手指拖 = 滚动，手指轻点和笔一样。
 // 歌词就地写（user「歌词输入不应该放在键盘上，而是放在五线谱下面点进去一个一个写或者删」）：见 lyric-editor.ts。
+// 点记号（调号 / 拍号 / 速度）= 就地改：见 mark-editor.ts。
+// 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
+//   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
 import { type EditorState, type NoteTok, writePitch, setCaret, select, setNote, setDur, unitDur, prevPitch, inputKey, keyAt, TPQ } from "../score/song.ts";
 import { fromDiatonic, HOME } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
+import { MarkEditor } from "./mark-editor.ts";
 
 /** 拖时值的阶梯：三十二分起，plain 与附点交替（都画得出来）。 */
 const DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => (v * TPQ) / 48);
 
-export interface ScoreViewHost { get(): EditorState; set(next: EditorState): void; audition?(i: number): void }
+export interface ScoreViewHost {
+  get(): EditorState; set(next: EditorState): void;
+  /** 唱下标 i 那个音：hold = 按住一直响（等 release），否则响一下。 */
+  audition?(i: number, hold?: boolean): void;
+  release?(): void;
+}
 
 export class ScoreView {
   layout: Layout | null = null;
   private sheet: HTMLDivElement;
   private ctx = document.createElement("canvas").getContext("2d")!;
-  private drag: null | { index: number; d0: number; dur0: number; x0: number; y0: number; axis: "" | "x" | "y"; pid: number } = null;
+  private drag: null | { index: number; d0: number; dur0: number; x0: number; y0: number; axis: "" | "x" | "y"; pid: number; heard: number } = null;
   private finger: null | { pid: number; y0: number; top0: number; x: number; y: number; moved: boolean; shift: boolean } = null;
   readonly lyrics: LyricEditor;
+  readonly marks: MarkEditor;
 
   constructor(private el: HTMLElement, private host: ScoreViewHost) {
     this.sheet = document.createElement("div"); this.sheet.className = "sheet";
     el.replaceChildren(this.sheet);
     this.lyrics = new LyricEditor(this.sheet, host, () => this.layout, () => this.render());
+    this.marks = new MarkEditor(this.sheet, host, () => this.layout, () => this.render());
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("pointerup", (e) => this.up(e));
-    el.addEventListener("pointercancel", () => { this.drag = null; this.finger = null; });
+    el.addEventListener("pointercancel", () => { if (this.drag) this.host.release?.(); this.drag = null; this.finger = null; });
     new ResizeObserver(() => this.render()).observe(el);
   }
 
@@ -47,6 +58,7 @@ export class ScoreView {
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
     this.lyrics.reposition();
+    this.marks.reposition();
     this.follow();
   }
 
@@ -56,6 +68,7 @@ export class ScoreView {
     let sys = L.head?.system ?? -1;
     if (sys < 0 && st.sel) sys = L.notes.find((n) => n.index >= st.sel!.from && n.index < st.sel!.to)?.system ?? -1;
     if (this.lyrics.open) sys = this.lyrics.system;
+    if (this.marks.open) sys = this.marks.system;
     const box = L.systems[sys]; if (!box) return;
     const top = this.el.scrollTop, h = this.el.clientHeight;
     if (box.top < top) this.el.scrollTop = box.top;
@@ -72,7 +85,7 @@ export class ScoreView {
   }
 
   private down(e: PointerEvent): void {
-    if ((e.target as HTMLElement).closest(".lyric-input")) return;   // 在歌词框里点：交给输入框
+    if ((e.target as HTMLElement).closest(".lyric-input, .mark-ed")) return;   // 在歌词框 / 记号框里点：交给它们
     const L = this.layout; if (!L) return;
     this.el.focus({ preventScroll: true });   // 点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）
     const p = this.local(e);
@@ -84,10 +97,15 @@ export class ScoreView {
     this.tap(p.x, p.y, e.shiftKey, e.pointerId);
   }
 
-  /** 一次轻点：歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）；写字头 → 写；别处 → 光标。 */
+  /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）；写字头 → 写；别处 → 光标。 */
   private tap(x: number, y: number, shift: boolean, pid: number | null): void {
-    const L = this.layout!, sp = L.sp, sys = this.systemAt(y), st = this.host.get();
-    this.lyrics.commitAndClose();
+    const L0 = this.layout!, wasMark = this.marks.open;
+    this.lyrics.commitAndClose(); this.marks.commitAndClose();
+    if (wasMark) return;   // 点别处 = 先收起记号框（这一下不另做事）
+    const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st = this.host.get();
+    // 0. 记号（调号 / 拍号 / 速度）
+    const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
+    if (mk) { this.marks.openAt(mk.index); return; }
     // 1. 歌词那一行
     const ly = L.lyricY(sys);
     if (y > ly - sp * 2.2 && y < ly + sp * 1.2) {
@@ -99,12 +117,12 @@ export class ScoreView {
     if (hit) {
       const cur = st.sel;
       this.host.set(shift && cur ? select(st, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : select(st, hit.index, hit.index + 1));
-      this.host.audition?.(hit.index);
-      if (pid !== null) {
+      if (pid !== null) {   // 笔 / 鼠标：按住一直响，拖音高换音，松手停
         const t = st.song.tokens[hit.index] as NoteTok;
-        this.drag = { index: hit.index, d0: hit.d, dur0: t.dur, x0: x, y0: y, axis: "", pid };
+        this.drag = { index: hit.index, d0: hit.d, dur0: t.dur, x0: x, y0: y, axis: "", pid, heard: hit.d };
         this.el.setPointerCapture(pid);
-      }
+        this.host.audition?.(hit.index, true);
+      } else this.host.audition?.(hit.index);
       return;
     }
     // 3. 写字头那一列（写的时候才有）
@@ -130,12 +148,18 @@ export class ScoreView {
     }
     const g = this.drag, L = this.layout; if (!g || !L || e.pointerId !== g.pid) return;
     const p = this.local(e), dx = p.x - g.x0, dy = p.y - g.y0;
-    if (!g.axis) { if (Math.hypot(dx, dy) < 6) return; g.axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x"; }
+    if (!g.axis) {
+      if (Math.hypot(dx, dy) < 6) return;
+      g.axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
+      if (g.axis === "x") this.host.release?.();   // 改时长不出声
+    }
     const st = this.host.get();
     if (g.axis === "y") {
-      const steps = Math.round(-dy / (L.sp / 2));
-      const ns = setNote(st, g.index, { pitch: fromDiatonic(g.d0 + steps, keyAt(st.song, g.index)) });
-      if (ns !== st) { this.host.set(ns); if (steps) this.host.audition?.(g.index); }
+      const d = g.d0 + Math.round(-dy / (L.sp / 2));
+      if (d === g.heard) return;   // 还在同一个音高：不重画、不重新起音
+      g.heard = d;
+      this.host.set(setNote(st, g.index, { pitch: fromDiatonic(d, keyAt(st.song, g.index)) }));
+      this.host.audition?.(g.index, true);   // 新音顶掉旧音
     } else {
       const i0 = DUR_LADDER.reduce((bi, v, i) => (Math.abs(v - g.dur0) < Math.abs(DUR_LADDER[bi] - g.dur0) ? i : bi), 0);
       const i = Math.max(0, Math.min(DUR_LADDER.length - 1, i0 + Math.round(dx / (L.sp * 2.2))));
@@ -149,6 +173,6 @@ export class ScoreView {
       if (!f.moved && this.layout) this.tap(f.x, f.y, f.shift, null);
       return;
     }
-    if (this.drag && e.pointerId === this.drag.pid) this.drag = null;
+    if (this.drag && e.pointerId === this.drag.pid) { if (this.drag.axis !== "x") this.host.release?.(); this.drag = null; }
   }
 }
