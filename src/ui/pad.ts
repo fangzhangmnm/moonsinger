@@ -2,7 +2,7 @@
 // created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
 // grill 账本 Q10 / Q11 / UX-1 / UX-2：user「Donner MEDO 是golden ui example…我只是当ocarina来按」「pad 跟着调走 当然可以config」
 //   「我反而不喜欢滑音和gyro，反而会误触」→ 只收离散的拍，按下即写；第 16 格（右上）= 0 休止；工具键一行在上面，像拼音候选条；
-//   左下永远是不带点的那个 1（「just use the muscle memory of that」），▲▼ 整体挪一个八度。
+//   ~~左下永远是不带点的那个 1（「just use the muscle memory of that」），▲▼ 整体挪一个八度~~ → 2026-10-07 改：不带点的 1 那一行放在中线下面一行，▲▼ 挪一行（见下）。
 //   UX-2：从很多里挑一个 = 工具条整条变候选（「1=」12 个调；连音 3 5 6 7），全 app 不用长按（user「可以，用同一个交互范式」）；
 //   ♯ / ♭ 像手机 Shift（点一下只管下一个音，连点两下锁住）；「弹」= 即兴：按住临时只唱不写，快速点一下锁住
 //   （user「只有「改」和「写」两个模式，即兴做成 pad 上的一个开关（按住时只唱不写）」）。
@@ -39,7 +39,7 @@ function homeTonic(fifths: number): number {
   const t = tonicStepIndex(fifths), h = diatonicIndex(HOME);
   return t + 7 * Math.floor((h - t) / 7);
 }
-/** 左下永远是不带点的那个 1——照 MEDO 的肌肉记忆，不替她的音域挑位置（user「no. just use the muscle memory of that」）。 */
+/** 不带点的那个 1 = 中央 C 那一行的开头（「1=」跟着调走）。它默认放在哪一行见 render()（2026-10-07 起：中线下面一行）。 */
 export function defaultPadBase(fifths: number): number { return homeTonic(fifths); }
 
 export interface PadHost {
@@ -80,7 +80,10 @@ export class Pad {
 
   /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。 */
   render(): void {
-    const st = this.host.state(), f = inputKey(st), base = defaultPadBase(f) + this.cols * this.rowShift, rows = this.rows(), form = padForm();
+    // 中央 C 那一行（不带点的 1 开头）默认放在中线下面一行：4 行 = 第 1 行、5 行 = 第 2 行（从下往上数，0 起）；
+    // 换行数时就按这一行对齐（user「多行的时候默认能把中央c放在中线下面一行吗…use that row to align when one change row counts」）
+    const st = this.host.state(), f = inputKey(st), rows = this.rows(), form = padForm();
+    const base = defaultPadBase(f) + this.cols * (this.rowShift - Math.floor((rows - 1) / 2));
     if ((this.mode === "transpose" || this.mode === "modulate") && !st.sel) this.mode = "normal";   // 选中没了：移调候选收起
     const selKey = st.sel ? keyAt(st.song, st.sel.from) : null;
     const sig = `${this.mode}|${f}|${base}|${selKey}|${rows}x${this.cols}|${form}`;
