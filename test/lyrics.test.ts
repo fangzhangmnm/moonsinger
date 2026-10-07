@@ -3,6 +3,8 @@ import { describe, it, eq } from "./runner.mjs";
 import { splitSyllables, applyLyricLine } from "../src/score/lyrics.ts";
 import { initState, writeDegree, setCaret, TPQ, type NoteTok } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
+import { toLabScore } from "../src/score/lab-score.ts";
+import { setSongMeta } from "../src/score/song.ts";
 
 describe("lyrics", () => {
   it("假名一拍一个：小字并进前一个，ん 自己一个，ー 是拖腔", () => {
@@ -32,5 +34,12 @@ describe("lyrics", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near"); st = writeDegree(st, 3, "near");
     st = applyLyricLine(st, "あいう"); st = setCaret(st, 1); st = applyLyricLine(st, "か");
     eq(st.song.tokens.map((t) => (t as NoteTok).lyric).join(""), "あかう");
+  });
+  it("哼的字：没歌词的音按这首歌的设置唱，日语 / 中文各换各的字", () => {
+    let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near");
+    eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "らら");
+    st = setSongMeta(st, { hum: "n" });
+    eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "んん");
+    eq(toLabScore(st.song, "zh").SCORE.map((e) => e.kana).join(""), "嗯嗯");
   });
 });

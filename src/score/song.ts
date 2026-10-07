@@ -23,12 +23,16 @@ export interface Song {
   beats: number;         // 拍号分子
   beatType: number;      // 拍号分母（第一版只认 4）
   tempo: number;         // 每分钟几个四分音符
+  hum: Hum;              // 没写歌词的音唱什么（一首歌一个；user 2026-10-06「同意」）
   tokens: Token[];
 }
 
+/** 「哼的字」：跟语言无关的四档，唱的时候按语言换字（lab-score.ts HUM_SYLLABLE）。 */
+export type Hum = "la" | "n" | "u" | "a";
+
 export interface EditorState { song: Song; caret: number; nextId: number }
 
-export function emptySong(): Song { return { fifths: 0, beats: 4, beatType: 4, tempo: 90, tokens: [] }; }
+export function emptySong(): Song { return { fifths: 0, beats: 4, beatType: 4, tempo: 90, hum: "la", tokens: [] }; }
 export function initState(song: Song = emptySong()): EditorState {
   const maxId = song.tokens.reduce((m, t) => Math.max(m, t.id), 0);
   return { song, caret: song.tokens.length, nextId: maxId + 1 };

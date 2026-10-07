@@ -2,7 +2,7 @@
 // 第一版（grill 账本 §8½）：内存态，刷新就清空（不做存档、不做撤销）；播放 = 月读在浏览器里唱（src/singer/，和 Lab 命令行共用一份唱法核心）。
 
 import { APP_VERSION } from "../version.ts";
-import { type EditorState, type NoteTok, initState, writePitch, setSongMeta, currentIndex, barFill, TPQ } from "../score/song.ts";
+import { type EditorState, type NoteTok, type Hum, initState, writePitch, setSongMeta, currentIndex, barFill, TPQ } from "../score/song.ts";
 import { pitchName } from "../score/pitch.ts";
 import { commandFor } from "../score/keymap.ts";
 import { apply } from "../score/commands.ts";
@@ -25,6 +25,7 @@ bar.innerHTML =
   `<label class="field">调<select id="keySel">${KEYS.map(([f, s]) => `<option value="${f}">${s}</option>`).join("")}</select></label>` +
   `<label class="field">拍号<select id="timeSel"><option value="2">2/4</option><option value="3">3/4</option><option value="4" selected>4/4</option></select></label>` +
   `<label class="field">速度<input id="tempoIn" type="number" min="30" max="240" value="90" /></label>` +
+  `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="a">あ / 啊</option></select></label>` +
   `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
   `<button id="padBtn" class="btn is-on" title="手指 pad"><svg class="ico"><use href="#grid"/></svg></button>` +
   `<button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>`;
@@ -97,6 +98,7 @@ $("playBtn").addEventListener("click", () => { void togglePlay(); });
 $<HTMLSelectElement>("keySel").addEventListener("change", (e) => { update(setSongMeta(st, { fifths: Number((e.target as HTMLSelectElement).value) })); pad.render(); scoreEl.focus(); });
 $<HTMLSelectElement>("timeSel").addEventListener("change", (e) => { update(setSongMeta(st, { beats: Number((e.target as HTMLSelectElement).value) })); scoreEl.focus(); });
 $<HTMLInputElement>("tempoIn").addEventListener("change", (e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 30 && v <= 240) update(setSongMeta(st, { tempo: v })); });
+$<HTMLSelectElement>("humSel").addEventListener("change", (e) => { update(setSongMeta(st, { hum: (e.target as HTMLSelectElement).value as Hum })); scoreEl.focus(); });
 $("padBtn").addEventListener("click", () => { padEl.hidden = !padEl.hidden; $("padBtn").classList.toggle("is-on", !padEl.hidden); view.render(); });
 
 // 歌词条
