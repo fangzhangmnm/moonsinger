@@ -41,4 +41,8 @@ export const STANDALONE_CSS = `
 .staff-svg rect.warn{fill:#d9a23a}
 .staff-svg text.lyric{font-family:system-ui,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
 .staff-svg line.melisma{stroke:#2a2a2a}
+.staff-svg .preview{fill:#2b6cb0;stroke:#2b6cb0;opacity:.45}
+.staff-svg .sel{fill:#1d5fa8;stroke:#1d5fa8}
+.staff-svg rect.selbox{fill:#e3edf9;opacity:.8}
+.staff-svg path.tuplet-bracket{fill:none;stroke:#2a2a2a;stroke-width:1}
 `;

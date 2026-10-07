@@ -25,15 +25,15 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 [hidden] { display: none !important; }
 button, input, select { font: inherit; color: inherit; }
 
-#app { height: 100%; display: grid; grid-template-rows: auto 1fr auto;
+#app { height: 100%; display: grid; grid-template-rows: auto 1fr;
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
 
 /* 顶栏 */
-.bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
 .bar .title { font-weight: 600; letter-spacing: .02em; }
 .bar .ver { color: var(--muted); font-size: 12px; }
 .bar .spacer { flex: 1; }
-.bar .field { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.bar .field { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .bar select, .bar input { height: 30px; border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 0 6px; color: var(--ink); font-size: 13px; }
 .bar input[type=number] { width: 64px; }
 .btn { height: 34px; min-width: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
@@ -49,12 +49,6 @@ button, input, select { font: inherit; color: inherit; }
   -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .score svg { display: block; }
 .pad-panel { flex: none; width: 300px; border-left: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; padding: 10px; gap: 8px; }
-
-/* 底部歌词条 */
-.lyric-bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-top: 1px solid var(--line); background: var(--panel); }
-.lyric-bar input { flex: 1; min-width: 0; height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; font-size: 15px;
-  -webkit-user-select: text; user-select: text; }
-.lyric-bar .hint { color: var(--muted); font-size: 12px; white-space: nowrap; }
 
 .err-banner { position: fixed; left: 8px; right: 8px; bottom: calc(8px + var(--safe-bottom)); z-index: var(--z-err); background: #c0392b; color: #fff;
   padding: 10px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
@@ -76,6 +70,15 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg line.caret { stroke: var(--accent); }
 .staff-svg rect.warn { fill: #d9a23a; }
 .staff-svg text.lyric { font-family: system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif; }
+.staff-svg .preview { fill: var(--accent); stroke: var(--accent); opacity: .45; }
+.staff-svg .sel { fill: #1d5fa8; stroke: #1d5fa8; }
+.staff-svg rect.selbox { fill: var(--accent-soft); opacity: .8; }
+.staff-svg path.tuplet-bracket { fill: none; stroke: var(--ink); stroke-width: 1; }
+/* 谱面板：svg 一层 + 歌词输入框一层（就地写歌词，不随重画消失） */
+.score { position: relative; }
+.score .sheet { position: relative; }
+.lyric-input { position: absolute; z-index: 5; height: 2em; min-width: 3em; border: 1px solid #b8cde8; border-radius: 6px; background: #fff;
+  text-align: center; padding: 0 4px; font: inherit; -webkit-user-select: text; user-select: text; outline: none; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
 .score { cursor: default; touch-action: none; }
 
 /* pad（MEDO 音符模式）：工具键一行在上（像拼音候选条），16 键在下；右上第 16 键 = 0 */
@@ -99,3 +102,18 @@ button, input, select { font: inherit; color: inherit; }
   .pad-grid { aspect-ratio: auto; grid-auto-rows: 56px; }
 }
 
+
+/* UX-2 工具条：候选、Shift 状态、时值字形、即兴 */
+.bar select.mini { height: 30px; border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 0 4px; color: var(--muted); font-size: 12px; max-width: 8.5em; }
+.pad-tools { grid-template-columns: repeat(13, 1fr); }
+.pad-tools.cands { grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); }
+.pad-tools .btn.once { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
+.pad-tools .btn.lock { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pad-tools .btn.manual { color: var(--accent); }
+.pad-tools .t-unit { display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ink); }
+.pad-tools .t-unit .smufl { font-family: "Bravura"; font-size: 30px; line-height: 1; position: relative; top: 8px; }
+.pad-tools .t-unit sup { font-size: 10px; color: var(--accent); }
+.pad-tools .btn.cand { font-size: 13px; }
+.pad-key.impro { border-color: #d9b46a; }
+/* 横屏侧栏 300 宽：工具条折成两行 */
+@media (min-aspect-ratio: 1/1) { .pad-tools { grid-template-columns: repeat(7, 1fr); } .pad-tools .btn { height: 36px; font-size: 15px; } }

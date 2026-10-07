@@ -1,73 +1,153 @@
-// pad.ts —— 手指面板：4×4 pad（照 Donner MEDO 音符模式 = 音阶 4 个一行往上折，左下是 1，跟着调走）+ 一条按钮。
-// created 2026-10-06 by Claude Opus 5.5
-// grill 账本 Q10 / Q11：user「Donner MEDO 是golden ui example…我只是当ocarina来按」「pad 跟着调走 当然可以config」
-//   「我反而不喜欢滑音和gyro，反而会误触」→ 只收离散的拍，按下即写，不做滑音。
-//   第 16 格（右上，MEDO 的菜单格）= 0 休止（user 2026-10-06「the 16th pad should be 0」）；工具键一行放在 16 键上面，像拼音候选条
-//   （user「the tool keys are above it like 拼音候选框」）；iPad 竖屏全宽、不必是正方形（「like the ipad software keyboard position」）。
-// 起点八度：左下永远是不带点的那个 1（她说话那组的 1；1=C 时 C4）——照 MEDO 的肌肉记忆，不替她的音域挑位置
-//   （user 2026-10-07「no. just use the muscle memory of that」）；▲▼ 整体挪一个八度（按八度挪每个键还是原来的级，按行挪会把指法打乱）。
+// pad.ts —— 手指面板：4×4 pad（照 Donner MEDO 音符模式 = 音阶 4 个一行往上折，左下是 1，跟着「1=」走）+ 上面一条工具键。
+// created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
+// grill 账本 Q10 / Q11 / UX-1 / UX-2：user「Donner MEDO 是golden ui example…我只是当ocarina来按」「pad 跟着调走 当然可以config」
+//   「我反而不喜欢滑音和gyro，反而会误触」→ 只收离散的拍，按下即写；第 16 格（右上）= 0 休止；工具键一行在上面，像拼音候选条；
+//   左下永远是不带点的那个 1（「just use the muscle memory of that」），▲▼ 整体挪一个八度。
+//   UX-2：从很多里挑一个 = 工具条整条变候选（「1=」12 个调；连音 3 5 6 7），全 app 不用长按（user「可以，用同一个交互范式」）；
+//   ♯ / ♭ 像手机 Shift（点一下只管下一个音，连点两下锁住）；「弹」= 即兴：按住临时只唱不写，快速点一下锁住
+//   （user「只有「改」和「写」两个模式，即兴做成 pad 上的一个开关（按住时只唱不写）」）。
 
 import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchName } from "../score/pitch.ts";
 import type { Command } from "../score/keymap.ts";
+import { type EditorState, inputKey } from "../score/song.ts";
 
-const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置
+const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置（她音域外的键变淡，只提示不拦）
 const NOTE_KEYS = 15;                // 16 格里 15 个音 + 右上 1 个 0
-
-export function defaultPadBase(fifths: number): number { return homeTonic(fifths); }
-
-const DOT_UP = "\u0307", DOT_DOWN = "\u0323";   // 简谱的上加点 / 下加点
+const DOT_UP = "̇", DOT_DOWN = "̣";   // 简谱的上加点 / 下加点
+/** Bravura 的整个音符字形（SMuFL 预组合音符，符干朝上）：三十二分 … 全音符。 */
+const UNIT_GLYPH = ["", "", "", "", "", ""];
+const UNIT_NAME = ["三十二分", "十六分", "八分", "四分", "二分", "全音符"];
+export const KEY_NAMES: Record<number, string> = { [-6]: "G♭", [-5]: "D♭", [-4]: "A♭", [-3]: "E♭", [-2]: "B♭", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F♯" };
+const KEY_ORDER = [0, 1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6];
 
 /** 不带点的那一组 = 她说话的家（HOME = D4）所在的那个「1 到 7」：1=C 时 C4–B4 不带点。 */
 function homeTonic(fifths: number): number {
   const t = tonicStepIndex(fifths), h = diatonicIndex(HOME);
   return t + 7 * Math.floor((h - t) / 7);
 }
+/** 左下永远是不带点的那个 1——照 MEDO 的肌肉记忆，不替她的音域挑位置（user「no. just use the muscle memory of that」）。 */
+export function defaultPadBase(fifths: number): number { return homeTonic(fifths); }
 
-export interface PadHost { fifths(): number; onPitch(p: Pitch): void; onCommand(c: Command): void }
+export interface PadHost {
+  state(): EditorState;
+  onPitch(p: Pitch): void;                 // 写（或改：覆盖选中）；即兴时不调
+  onCommand(c: Command): void;
+  onTuplet(n: 0 | 3 | 5 | 6 | 7): void;
+  onInputKey(f: number | null): void;
+  onImpro(on: boolean): void;
+  onSoundDown(p: Pitch): void;             // 试听 / 即兴：按下响
+  onSoundUp(): void;                       //              松开停
+}
+
+type Mode = "normal" | "key" | "tuplet";
 
 export class Pad {
   private shift = 0;          // 用户挪过几个八度
+  private mode: Mode = "normal";
+  private builtFor = "";
+  private improLatched = false;
+  private improHeld = false;
 
   constructor(private el: HTMLElement, private host: PadHost) { this.render(); }
 
+  get impro(): boolean { return this.improLatched || this.improHeld; }
+
+  /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。 */
   render(): void {
-    const fifths = this.host.fifths();
-    const base = defaultPadBase(fifths) + 7 * this.shift;
+    const st = this.host.state(), f = inputKey(st), base = defaultPadBase(f) + 7 * this.shift;
+    const sig = `${this.mode}|${f}|${base}`;
+    if (sig !== this.builtFor) { this.build(f, base); this.builtFor = sig; }
+    this.refresh(st);
+  }
+
+  private build(f: number, base: number): void {
+    const tools = this.mode === "key"
+      ? KEY_ORDER.map((k) => `<button class="btn cand" data-key="${k}">1=${KEY_NAMES[k]}</button>`).join("") +
+        `<button class="btn cand" data-key="follow">跟调号</button><button class="btn cand" data-back="1">返回</button>`
+      : this.mode === "tuplet"
+      ? [3, 5, 6, 7].map((n) => `<button class="btn cand" data-tup="${n}">${n} 连</button>`).join("") +
+        `<button class="btn cand" data-tup="0">关</button><button class="btn cand" data-back="1">返回</button>`
+      : `<button class="btn t-key" data-open="key" title="1=（只管输入）"></button>` +
+        `<button class="btn t-sharp" data-acc="1" title="♯（点一下管下一个音，连点两下锁住）">♯</button>` +
+        `<button class="btn t-flat" data-acc="-1" title="♭（点一下管下一个音，连点两下锁住）">♭</button>` +
+        `<button class="btn" data-cmd="shorter" title="短（8）">短</button>` +
+        `<span class="t-unit" title="下一个音的时值"></span>` +
+        `<button class="btn" data-cmd="longer" title="长（9）">长</button>` +
+        `<button class="btn t-tup" data-open="tuplet" title="连音（开着再点 = 选 3 5 6 7）">连</button>` +
+        `<button class="btn" data-cmd="extend" title="拉长一份（-）">－</button>` +
+        `<button class="btn" data-cmd="bar" title="小节线（|）">|</button>` +
+        `<button class="btn" data-cmd="backspace" title="退格"><svg class="ico"><use href="#backspace"/></svg></button>` +
+        `<button class="btn t-impro" data-impro="1" title="弹：按住只唱不写，快速点一下锁住">弹</button>` +
+        `<button class="btn" data-oct="-1" title="pad 整体低八度"><svg class="ico"><use href="#caret-down"/></svg></button>` +
+        `<button class="btn" data-oct="1" title="pad 整体高八度"><svg class="ico"><use href="#caret-up"/></svg></button>`;
     const cells: string[] = [];
     for (let row = 3; row >= 0; row--) {
       for (let col = 0; col < 4; col++) {
         const k = row * 4 + col;
         if (k >= NOTE_KEYS) { cells.push(`<button class="pad-key rest" data-cmd="rest" title="休止（0）"><span class="deg">0</span><span class="abs">休止</span></button>`); continue; }
-        const d = base + k, p = fromDiatonic(d, fifths);
-        const deg = (k % 7) + 1, oct = Math.floor((d - homeTonic(fifths)) / 7);
+        const d = base + k, p = fromDiatonic(d, f);
+        const deg = (k % 7) + 1, oct = Math.floor((d - homeTonic(f)) / 7);
         const dots = oct > 0 ? DOT_UP.repeat(oct) : DOT_DOWN.repeat(-oct);
         const inRange = d >= HER_LOW && d <= HER_HIGH;
         cells.push(`<button class="pad-key${inRange ? "" : " out"}${deg === 1 ? " tonic" : ""}" data-d="${d}">` +
           `<span class="deg">${deg}${dots}</span><span class="abs">${pitchName(p).replace("#", "♯").replace(/b(?=\d)/, "♭")}</span></button>`);
       }
     }
-    this.el.innerHTML =
-      `<div class="pad-tools">` +
-      `<button class="btn" data-oct="-1" title="整体低八度"><svg class="ico"><use href="#caret-down"/></svg></button>` +
-      `<button class="btn" data-oct="1" title="整体高八度"><svg class="ico"><use href="#caret-up"/></svg></button>` +
-      `<button class="btn" data-cmd="extend" title="拉长一拍（-）">－</button>` +
-      `<button class="btn" data-cmd="halve" title="减半（8）">短</button>` +
-      `<button class="btn" data-cmd="double" title="加倍（9）">长</button>` +
-      `<button class="btn" data-cmd="dot" title="附点（.）">·</button>` +
-      `<button class="btn" data-cmd="bar" title="小节线（|）">|</button>` +
-      `<button class="btn" data-cmd="backspace" title="退格"><svg class="ico"><use href="#backspace"/></svg></button>` +
-      `</div>` +
-      `<div class="pad-grid">${cells.join("")}</div>`;
-    this.el.querySelectorAll<HTMLButtonElement>(".pad-key[data-d]").forEach((b) => b.addEventListener("pointerdown", (e) => {
-      e.preventDefault(); b.classList.add("hit"); setTimeout(() => b.classList.remove("hit"), 120);
-      this.host.onPitch(fromDiatonic(Number(b.dataset.d), this.host.fifths()));
-    }));
-    this.el.querySelectorAll<HTMLButtonElement>("[data-cmd]").forEach((b) => b.addEventListener("pointerdown", (e) => {
-      e.preventDefault(); if (b.classList.contains("pad-key")) { b.classList.add("hit"); setTimeout(() => b.classList.remove("hit"), 120); }
-      this.host.onCommand({ k: b.dataset.cmd } as Command);
-    }));
-    this.el.querySelectorAll<HTMLButtonElement>("[data-oct]").forEach((b) => b.addEventListener("pointerdown", (e) => {
-      e.preventDefault(); this.shift = Math.max(-2, Math.min(2, this.shift + Number(b.dataset.oct))); this.render();
-    }));
+    this.el.innerHTML = `<div class="pad-tools${this.mode === "normal" ? "" : " cands"}">${tools}</div><div class="pad-grid">${cells.join("")}</div>`;
+    this.wire();
   }
+
+  private refresh(st: EditorState): void {
+    const q = <T extends HTMLElement>(s: string) => this.el.querySelector<T>(s);
+    const i = st.input, k = q(".t-key");
+    if (k) { k.textContent = `1=${KEY_NAMES[inputKey(st)] ?? "?"}`; k.classList.toggle("manual", i.inputFifths !== null); }
+    q(".t-sharp")?.classList.toggle("once", i.acc === 1 && i.accMode === "once");
+    q(".t-sharp")?.classList.toggle("lock", i.acc === 1 && i.accMode === "lock");
+    q(".t-flat")?.classList.toggle("once", i.acc === -1 && i.accMode === "once");
+    q(".t-flat")?.classList.toggle("lock", i.acc === -1 && i.accMode === "lock");
+    const u = q(".t-unit");
+    if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`; u.title = `下一个音：${UNIT_NAME[i.unit]}${i.tuplet ? `（${i.tuplet} 连音）` : ""}`; }
+    const t = q(".t-tup"); if (t) { t.textContent = i.tuplet ? String(i.tuplet) : "连"; t.classList.toggle("is-on", !!i.tuplet); }
+    q(".t-impro")?.classList.toggle("is-on", this.impro);
+    this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => b.classList.toggle("impro", this.impro));
+  }
+
+  private wire(): void {
+    const on = (sel: string, fn: (b: HTMLElement, e: PointerEvent) => void) =>
+      this.el.querySelectorAll<HTMLElement>(sel).forEach((b) => b.addEventListener("pointerdown", (e) => { e.preventDefault(); fn(b, e); }));
+    const flash = (b: HTMLElement) => { b.classList.add("hit"); setTimeout(() => b.classList.remove("hit"), 120); };
+    // 音键：按下 = 写（或改）+ 响；即兴 = 只响；松开 = 停
+    this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => {
+      b.addEventListener("pointerdown", (e) => {
+        e.preventDefault(); flash(b); b.setPointerCapture(e.pointerId);
+        const st = this.host.state(), p = fromDiatonic(Number(b.dataset.d), inputKey(st));
+        if (!this.impro) this.host.onPitch(p);
+        this.host.onSoundDown(p);
+      });
+      const up = () => this.host.onSoundUp();
+      b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up);
+    });
+    on("[data-cmd]", (b) => { if (b.classList.contains("pad-key")) flash(b); this.host.onCommand({ k: b.dataset.cmd } as Command); });
+    on("[data-acc]", (b) => this.host.onCommand({ k: "acc", acc: Number(b.dataset.acc) as 1 | -1 }));
+    on("[data-oct]", (b) => { this.shift = Math.max(-2, Math.min(2, this.shift + Number(b.dataset.oct))); this.render(); });
+    on("[data-open]", (b) => {
+      if (b.dataset.open === "key") { this.mode = "key"; this.render(); return; }
+      const st = this.host.state();   // 连音：没开 → 开三连；开着 → 弹候选
+      if (!st.input.tuplet) this.host.onTuplet(3); else { this.mode = "tuplet"; this.render(); }
+    });
+    on("[data-key]", (b) => { this.host.onInputKey(b.dataset.key === "follow" ? null : Number(b.dataset.key)); this.mode = "normal"; this.render(); });
+    on("[data-tup]", (b) => { this.host.onTuplet(Number(b.dataset.tup) as 0 | 3 | 5 | 6 | 7); this.mode = "normal"; this.render(); });
+    on("[data-back]", () => { this.mode = "normal"; this.render(); });
+    // 弹：按住临时、快速点一下锁住 / 解开
+    const imp = this.el.querySelector<HTMLElement>("[data-impro]");
+    if (imp) {
+      let t0 = 0, was = false;
+      imp.addEventListener("pointerdown", (e) => { e.preventDefault(); imp.setPointerCapture(e.pointerId); t0 = performance.now(); was = this.improLatched; this.improHeld = true; this.changed(); });
+      const release = () => { if (!this.improHeld) return; this.improHeld = false; if (performance.now() - t0 < 250) this.improLatched = !was; this.changed(); };
+      imp.addEventListener("pointerup", release); imp.addEventListener("pointercancel", release);
+    }
+  }
+  private changed(): void { this.host.onImpro(this.impro); this.refresh(this.host.state()); }
+  /** 键盘的 ` 键：锁住 / 解开即兴。 */
+  toggleImpro(): void { this.improLatched = !this.improLatched; this.changed(); }
 }
