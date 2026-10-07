@@ -100,6 +100,11 @@ export interface CandidateV2 {
     | { kind: "pack"; pack: string; sha256: string }                                        // 家族模型仓的包（月读）
     | { kind: "gm"; program: number; bank?: number; drums?: boolean; soundfont: { pack: string; sha256: string } }   // GM 音色，soundfont 按哈希钉
     | { kind: "builtin"; name: string };                                                     // app 内置（元音采样器）
+  //   sha256 = **包 manifest 的哈希**（家规「app 钉 manifest 的 sha256，不钉网址」；manifest 里才是逐片哈希），不是 sf2 / onnx 单个文件的。
+  //   包按家规拆小（「拆小包，包之间互不知道」）：GM 鼓组单独一包、旋律乐器另包；一首歌用到几个包就有几个候选各钉各的。
+  /** 署名与许可证 by value（2026-10-07 编辑器 session 问、Fable 定：纯函数(文件) + 「署名义务跟音源走」+ 反弃坑 → 包的主机没了文件也知道该谢谁）。
+   *  从包 manifest 的许可证快照抄过来；text 可省（太长时只留 name + url + 文本的 sha256）。 */
+  credit: { attribution: string[]; license: { name: string; url?: string; text?: string; textSha256?: string } };
   gm: { program: number | null; variant: string | null };   // 写给别的软件看的（MusicXML）
   hum?: "la" | "n" | "u" | "o" | "a";
   calibrationDb: number;
