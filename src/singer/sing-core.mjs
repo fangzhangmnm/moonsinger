@@ -143,7 +143,7 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
       for (let q = 0; q < bins; q++) { fr.forEach((f, i) => (col[i] = Math.log(an.sp[f * bins + q] + 1e-16))); col.sort(); out[q] = Math.exp(col[col.length >> 1]); } return out; };
     const good = moras.filter((m) => m.ownClean <= OPT.cleanMax), all = tmpl(good), allSp = tmplSp(good);
     for (const m of moras) if (m.ownClean > OPT.cleanMax) { const same = good.filter((g) => tokens[g.vowel] === tokens[m.vowel]);
-      m.apClean = tmpl(same) ?? all; m.spClean = tmplSp(same) ?? allSp; m.borrowed = true; }
+      m.apClean = tmpl(same) ?? all ?? m.apClean; m.spClean = tmplSp(same) ?? allSp ?? undefined; m.borrowed = (tmpl(same) ?? all) !== null; }   // 2026-10-07 (Claude Opus 5.5): nothing clean to borrow (a one-syllable phrase) → keep its own profile instead of crashing
     log(`whispered vowels sung from a clean sample of the same vowel: ${moras.filter((m) => m.borrowed).map((m) => m.kana).join(" ") || "none"}`);
   }
   { const lv = moras.filter((m) => m.ownClean <= OPT.cleanMax).map((m) => m.levelDb).sort((p, q) => p - q), med = lv[lv.length >> 1];

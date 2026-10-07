@@ -4,7 +4,8 @@
 //   「我反而不喜欢滑音和gyro，反而会误触」→ 只收离散的拍，按下即写，不做滑音。
 //   第 16 格（右上，MEDO 的菜单格）= 0 休止（user 2026-10-06「the 16th pad should be 0」）；工具键一行放在 16 键上面，像拼音候选条
 //   （user「the tool keys are above it like 拼音候选框」）；iPad 竖屏全宽、不必是正方形（「like the ipad software keyboard position」）。
-// 起点八度：默认取和月读音域（A3–E5，账本 §6 提案）重叠最多的那个 1（平手取低的）；▲▼ 整体挪一个八度。
+// 起点八度：左下永远是不带点的那个 1（她说话那组的 1；1=C 时 C4）——照 MEDO 的肌肉记忆，不替她的音域挑位置
+//   （user 2026-10-07「no. just use the muscle memory of that」）；▲▼ 整体挪一个八度（按八度挪每个键还是原来的级，按行挪会把指法打乱）。
 
 import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchName } from "../score/pitch.ts";
 import type { Command } from "../score/keymap.ts";
@@ -12,16 +13,7 @@ import type { Command } from "../score/keymap.ts";
 const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置
 const NOTE_KEYS = 15;                // 16 格里 15 个音 + 右上 1 个 0
 
-export function defaultPadBase(fifths: number): number {
-  const t = tonicStepIndex(fifths);
-  let best = t + 7 * 3, bestN = -1;
-  for (let o = 2; o <= 5; o++) {
-    const b = t + 7 * o; let n = 0;
-    for (let d = b; d < b + NOTE_KEYS; d++) if (d >= HER_LOW && d <= HER_HIGH) n++;
-    if (n > bestN) { best = b; bestN = n; }
-  }
-  return best;
-}
+export function defaultPadBase(fifths: number): number { return homeTonic(fifths); }
 
 const DOT_UP = "\u0307", DOT_DOWN = "\u0323";   // 简谱的上加点 / 下加点
 
