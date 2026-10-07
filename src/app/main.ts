@@ -7,7 +7,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ } from "../score/song.ts";
+import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -102,6 +102,48 @@ const view = new ScoreView(scoreEl, {
 let impro = false;
 /** 按拍号自动画小节线（默认开；这次打开里有效）。user「自动加小节也是可以toggle的，默认开」 */
 let autoBars = true;
+/** /2 = 和 Shift 一个逻辑（user「或者/2是类似shift，因为accessibility的issue可能按住不方便，而是和键盘shift的逻辑一样」）：
+ *  点一下 = 只管下一个音（写完自己回去）；350 ms 内连点两下 = 锁住（再点一下解开）；按住写 = 按住期间写的都减半、松手回去。
+ *  减半 = 临时把长短基线往短挪一档（旋钮上看得见）；已经最短（三十二分）就不挪；回去 = 挪回一档（中间拨过旋钮 = 照拨过的再挪回一档）。 */
+let half: "off" | "once" | "lock" = "off", halfShifted = false, halfAt = 0, halfHeld = false, halfWrote = false;
+function setHalf(m: "off" | "once" | "lock"): void {
+  if (half === "off" && m !== "off") { halfShifted = st.input.unit > 0; if (halfShifted) update(setUnit(st, st.input.unit - 1)); }
+  else if (half !== "off" && m === "off" && halfShifted) { halfShifted = false; update(setUnit(st, st.input.unit + 1)); }
+  half = m; pad.showHalf(m);
+}
+function halfKey(down: boolean): void {
+  if (down) {
+    const t = performance.now();
+    halfHeld = true; halfWrote = false;
+    setHalf(half === "off" ? "once" : half === "once" && t - halfAt < 350 ? "lock" : "off");
+    halfAt = t;
+  } else {
+    halfHeld = false;
+    if (halfWrote && half !== "lock") setHalf("off");   // 按住写过 = 松手回去（同 iOS 按住 Shift 打字）
+  }
+}
+/** 升降键（pad）：和 Shift 一个逻辑（点一下 = 下一个、350 ms 内连点两下 = 锁、再点 = 关；按住写 = 按住期间、松手回去），
+ *  按着上下滑 = 换一种（𝄪 / ♯ / ♭ / 𝄫；user「按是当作shift，滑动是toggle which shift」）。有选中 = 选中的音直接升降（同电脑键盘的 [ ]）。 */
+let accPrior: Pick<InputState, "acc" | "accMode" | "accAt"> | null = null, accWrote = false, accSlid = false;
+function accKey(phase: "down" | "slide" | "up", acc: Exclude<Acc, 0>): void {
+  if (phase === "down") {
+    if (st.sel) { update(tapAcc(st, acc, performance.now())); accPrior = null; return; }
+    accPrior = { acc: st.input.acc, accMode: st.input.accMode, accAt: st.input.accAt }; accWrote = false; accSlid = false;
+    update(setAccState(st, acc, "lock"));   // 按着的时候一直生效（写几个都算）
+  } else if (phase === "slide") {
+    if (!accPrior) return;
+    accSlid = true; update(setAccState(st, acc, "lock"));
+  } else {
+    const prior = accPrior; accPrior = null;
+    if (!prior) return;
+    const back = { ...st, input: { ...st.input, ...prior } };
+    if (accWrote) update(setAccState(back, 0, "off"));                                  // 按住写过 = 松手回去
+    else if (accSlid) update(prior.accMode === "off" ? back : setAccState(back, acc, prior.accMode));   // 只是滑着换了一种
+    else update(tapAcc(back, acc, performance.now()));                                   // 点了一下 = Shift
+  }
+}
+/** 写了一个音 / 休止 / 拉长：「只管下一个」的 /2 用掉了（按住的时候不算，松手再回去）；升降键按着的时候记一笔。 */
+function afterWrite(): void { if (accPrior) accWrote = true; if (halfHeld) { halfWrote = true; return; } if (half === "once") setHalf("off"); }
 /** 屏幕放不下纸的时候折不折行（默认不折行 = 整张纸按比例缩小；这次打开里有效，不进文件——怎么看，不是谱的内容）。 */
 let reflow = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
 /** pad 上每根按着的手指：刚写的是第几个音（弹 = -1）、它原本的音高——上下滑过门槛时在它上面升 / 降。 */
@@ -124,6 +166,7 @@ const pad = new Pad(padEl, {
   onPitch: (p, id) => {
     const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
+    afterWrite();
   },
   onAlter: (id, alt) => {   // 临时离调：只管这一个音（滑回中间 = 还原）；重新唱一下让人听见
     const n = padNotes.get(id); if (!n) return;
@@ -131,7 +174,7 @@ const pad = new Pad(padEl, {
     if (n.index >= 0) update(setNote(st, n.index, { pitch: np }));
     sound.down(np, id);
   },
-  onCommand: (c) => update(apply(st, c, performance.now())),
+  onCommand: (c) => { update(apply(st, c, performance.now())); if (c.k === "rest" || c.k === "extend") afterWrite(); },
   onUnit: (u) => update(setUnit(st, u)),
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
@@ -139,6 +182,8 @@ const pad = new Pad(padEl, {
   autoBars: () => autoBars,
   onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); },
   onHide: () => showPad(false),
+  onHalf: (down) => halfKey(down),
+  onAccShift: (phase, acc) => accKey(phase, acc),
   onInsertMark: (kind) => {   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
     const at = st.sel ? st.sel.from : st.caret;
     const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
@@ -570,10 +615,12 @@ function run(a: Action, repeat: boolean, code: string): boolean {
   switch (a.k) {
     case "cmd":
       if (a.cmd.k === "degree") {
-        if (!repeat && monoAccept(`key${code}`)) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); }   // 先写再取 st（写完才有这个音）
+        if (!repeat && monoAccept(`key${code}`)) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); afterWrite(); }   // 先写再取 st（写完才有这个音）
         return true;
       }
-      update(apply(st, a.cmd, performance.now())); return true;
+      update(apply(st, a.cmd, performance.now()));
+      if (a.cmd.k === "rest" || a.cmd.k === "extend") afterWrite();
+      return true;
     case "audition": {   // 弹：在草稿状态上写一下，拿到那个音高就扔
       if (repeat) return true;
       const probe = apply({ ...st, sel: null, log: [] }, { k: "degree", degree: a.degree, dir: a.dir }, performance.now());

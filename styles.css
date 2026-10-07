@@ -213,7 +213,16 @@ button, input, select { font: inherit; color: inherit; }
 /* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
 .pad-tools.knobs { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--knob) var(--knob); }   /* 1= / 长短 / 音域 分宽度；收起、⋯ = 方块 */
 .pad-tools .btn.hide-pad { height: var(--knob); font-size: 13px; color: var(--muted); padding: 0; }
-.pad-tools.writes { grid-template-columns: var(--knob) var(--knob) repeat(4, minmax(0, 1fr)); }
+/* 写字键：← → 方块；0 | 升降 /2 — ⌫ 分剩下的宽。pad 窄了依次让位（user「太窄的时候这几个功能怎么办…0和-是必须要的|一般一首歌至少要一次，
+   /2可以用时长平替，#b可能一辈子也用不上」）：先藏升降（单个音照样能在音键上上下滑升降），再藏 /2（长短旋钮能代替） */
+.pad-panel { container-type: inline-size; }
+.pad-tools.writes { display: flex; gap: 4px; }
+.pad-tools.writes .btn { flex: 1 1 0; min-width: 0; }
+.pad-tools.writes .btn[data-caret] { flex: 0 0 var(--knob); }
+@container (max-width: 440px) { .pad-tools.writes .btn.accshift { display: none; } }
+@container (max-width: 330px) { .pad-tools.writes .btn.half { display: none; } }
+.pad-tools .btn.accshift { touch-action: none; }
+.pad-tools .btn.accshift .smufl { font-family: "Bravura"; font-size: 22px; line-height: 1; display: inline-block; height: 16px; position: relative; top: -2px; }
 .pad-tools.writes .btn { height: var(--knob); }
 .pad-tools .btn.knob { position: relative; touch-action: none; gap: 2px; height: var(--knob); }
 .knob .kl { display: inline-flex; align-items: baseline; gap: 4px; }
@@ -285,3 +294,4 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .paper-chip-text { fill: var(--muted); font-weight: 600; }
 .settings-card .btn.cand small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
 .settings-card .btn.cand:has(small) { flex-direction: column; height: auto; padding: 6px 12px; gap: 2px; }
+.pad-tools .btn.lock small { color: rgba(255, 255, 255, .85); }   /* /2 锁住时小字也看得见 */

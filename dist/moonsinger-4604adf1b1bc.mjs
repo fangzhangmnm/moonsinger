@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.19-2026-10-07";
+var APP_VERSION = "v0.2.20-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -471,6 +471,10 @@ function tapAcc(st2, acc, now) {
   if (i.acc !== acc || i.accMode === "off") return { ...st2, input: { ...i, acc, accMode: "once", accAt: now } };
   if (i.accMode === "once" && now - i.accAt < 350) return { ...st2, input: { ...i, accMode: "lock", accAt: now } };
   return { ...st2, input: { ...i, acc: 0, accMode: "off", accAt: now } };
+}
+function setAccState(st2, acc, mode) {
+  const i = st2.input;
+  return i.acc === acc && i.accMode === mode ? st2 : { ...st2, input: { ...i, acc: mode === "off" ? 0 : acc, accMode: mode === "off" || acc === 0 ? "off" : mode } };
 }
 function setInputKey(st2, fifths) {
   return { ...st2, input: { ...st2.input, inputFifths: Math.max(-7, Math.min(7, fifths)) } };
@@ -2554,6 +2558,9 @@ var HER_HIGH = 76;
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } };
 var SWIPE = 20;
+var ACC_ORDER = [2, 1, -1, -2];
+var ACC_GLYPH = ["\uE264", "\uE260", "", "\uE262", "\uE263"];
+var ACC_TEXT = ["\u266D\u266D", "\u266D", "", "\u266F", "\u266F\u266F"];
 var STEP = 28;
 var MOVE = 6;
 var STACK = 150;
@@ -2608,6 +2615,8 @@ var Pad = class {
   swipes = /* @__PURE__ */ new Map();
   /** 网格上每个键（调式梯子上的第 k 级）的音高。 */
   keys = /* @__PURE__ */ new Map();
+  /** 升降键选的是哪一种（滑着换；记住，下次按还是它）。 */
+  accSel = 1;
   rows() {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
     const m = KEY_METRIC[padForm()], avail = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
@@ -2654,7 +2663,7 @@ var Pad = class {
     this.el.dataset.form = form;
     this.el.style.setProperty("--cols", String(this.cols));
     if (!this.el.querySelector(".pad-grid")) {
-      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
+      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
       const w = this.el.querySelector(".writes");
       this.on(w, "[data-caret]", (b) => this.host.onCommand({ k: "caret", d: Number(b.dataset.caret) }));
       this.on(w, "[data-cmd]:not([data-cmd=backspace])", (b) => this.host.onCommand({ k: b.dataset.cmd }));
@@ -2677,6 +2686,51 @@ var Pad = class {
       });
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) bs.addEventListener(t, stop);
       addEventListener("blur", stop);
+      const half2 = w.querySelector("[data-half]"), holding = /* @__PURE__ */ new Set();
+      const halfUp = (e) => {
+        if (!holding.delete(e.pointerId)) return;
+        if (!holding.size) this.host.onHalf(false);
+      };
+      half2.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        try {
+          half2.setPointerCapture(e.pointerId);
+        } catch {
+        }
+        if (!holding.size) this.host.onHalf(true);
+        holding.add(e.pointerId);
+      });
+      for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) half2.addEventListener(t, (e) => halfUp(e));
+      addEventListener("blur", () => {
+        for (const id of [...holding]) halfUp({ pointerId: id });
+      });
+      const ak = w.querySelector("[data-accshift]");
+      let akDrag = null;
+      ak.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        try {
+          ak.setPointerCapture(e.pointerId);
+        } catch {
+        }
+        if (akDrag) return;
+        akDrag = { pid: e.pointerId, y0: e.clientY, i0: ACC_ORDER.indexOf(this.accSel) };
+        this.host.onAccShift("down", this.accSel);
+      });
+      ak.addEventListener("pointermove", (e) => {
+        if (!akDrag || e.pointerId !== akDrag.pid) return;
+        const i = Math.max(0, Math.min(ACC_ORDER.length - 1, akDrag.i0 - Math.trunc((akDrag.y0 - e.clientY) / SWIPE)));
+        if (ACC_ORDER[i] !== this.accSel) {
+          this.accSel = ACC_ORDER[i];
+          this.host.onAccShift("slide", this.accSel);
+          this.refresh(this.host.state());
+        }
+      });
+      const akUp = (e) => {
+        if (!akDrag || e.pointerId !== akDrag.pid) return;
+        akDrag = null;
+        this.host.onAccShift("up", this.accSel);
+      };
+      for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) ak.addEventListener(t, (e) => akUp(e));
     }
     const gridSig = `${f}|${st2.input.inputScale}|${base2}|${rows}x${this.cols}|${this.layoutMode}`;
     if (gridSig !== this.gridFor) {
@@ -2840,11 +2894,18 @@ var Pad = class {
     this.el.querySelectorAll(".pad-key[data-k]").forEach((b) => {
       const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
       const p0 = this.keys.get(Number(b.dataset.k)), p = a ? alterBy(p0, a) : p0;
-      b.querySelector(".acc").textContent = a > 0 ? "\u266F" : a < 0 ? "\u266D" : "";
+      b.querySelector(".acc").textContent = ACC_TEXT[a + 2];
       b.querySelector(".abs").textContent = pretty(p);
       b.classList.toggle("swiping", !!sw && sw.alt !== 0);
     });
     this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
+    const ak = this.el.querySelector("[data-accshift]");
+    if (ak) {
+      const on = i.accMode !== "off" && i.acc !== 0;
+      ak.querySelector(".ag").innerHTML = `<span class="smufl">${ACC_GLYPH[(on ? i.acc : this.accSel) + 2]}</span>`;
+      ak.classList.toggle("once", on && i.accMode === "once");
+      ak.classList.toggle("lock", on && i.accMode === "lock");
+    }
     const down = new Set(this.held.values());
     this.el.querySelectorAll(".pad-key[data-k]").forEach((b) => b.classList.toggle("down", down.has(midiOf(this.keys.get(Number(b.dataset.k))))));
   }
@@ -2970,6 +3031,13 @@ var Pad = class {
     }
     const v = this.knobList(knob, false), wr = Math.max(w, 120);
     openDrum(anchor, [{ items: v.items, index: v.index, width: wr, title: v.title }], { onChange: (_c, i) => v.set(i) });
+  }
+  /** /2 的样子：once = 浅亮（下一个音减半）、lock = 深亮（锁住）。 */
+  showHalf(m) {
+    const b = this.el.querySelector("[data-half]");
+    if (!b) return;
+    b.classList.toggle("once", m === "once");
+    b.classList.toggle("lock", m === "lock");
   }
   /** 某个来源（手指 / 电脑键盘的键）按下了音高 p：pad 上同音高的键亮着，直到 showUp（调式里没有这个音 = 不亮）。 */
   showDown(p, id) {
@@ -5510,6 +5578,70 @@ var view = new ScoreView(scoreEl, {
 });
 var impro = false;
 var autoBars = true;
+var half = "off";
+var halfShifted = false;
+var halfAt = 0;
+var halfHeld = false;
+var halfWrote = false;
+function setHalf(m) {
+  if (half === "off" && m !== "off") {
+    halfShifted = st.input.unit > 0;
+    if (halfShifted) update(setUnit(st, st.input.unit - 1));
+  } else if (half !== "off" && m === "off" && halfShifted) {
+    halfShifted = false;
+    update(setUnit(st, st.input.unit + 1));
+  }
+  half = m;
+  pad.showHalf(m);
+}
+function halfKey(down) {
+  if (down) {
+    const t = performance.now();
+    halfHeld = true;
+    halfWrote = false;
+    setHalf(half === "off" ? "once" : half === "once" && t - halfAt < 350 ? "lock" : "off");
+    halfAt = t;
+  } else {
+    halfHeld = false;
+    if (halfWrote && half !== "lock") setHalf("off");
+  }
+}
+var accPrior = null;
+var accWrote = false;
+var accSlid = false;
+function accKey(phase, acc) {
+  if (phase === "down") {
+    if (st.sel) {
+      update(tapAcc(st, acc, performance.now()));
+      accPrior = null;
+      return;
+    }
+    accPrior = { acc: st.input.acc, accMode: st.input.accMode, accAt: st.input.accAt };
+    accWrote = false;
+    accSlid = false;
+    update(setAccState(st, acc, "lock"));
+  } else if (phase === "slide") {
+    if (!accPrior) return;
+    accSlid = true;
+    update(setAccState(st, acc, "lock"));
+  } else {
+    const prior = accPrior;
+    accPrior = null;
+    if (!prior) return;
+    const back = { ...st, input: { ...st.input, ...prior } };
+    if (accWrote) update(setAccState(back, 0, "off"));
+    else if (accSlid) update(prior.accMode === "off" ? back : setAccState(back, acc, prior.accMode));
+    else update(tapAcc(back, acc, performance.now()));
+  }
+}
+function afterWrite() {
+  if (accPrior) accWrote = true;
+  if (halfHeld) {
+    halfWrote = true;
+    return;
+  }
+  if (half === "once") setHalf("off");
+}
 var reflow = false;
 var padNotes = /* @__PURE__ */ new Map();
 var CHORD_MS = 50;
@@ -5529,6 +5661,7 @@ var pad = new Pad(padEl, {
   onPitch: (p, id) => {
     const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
+    afterWrite();
   },
   onAlter: (id, alt) => {
     const n2 = padNotes.get(id);
@@ -5537,7 +5670,10 @@ var pad = new Pad(padEl, {
     if (n2.index >= 0) update(setNote(st, n2.index, { pitch: np }));
     sound.down(np, id);
   },
-  onCommand: (c) => update(apply(st, c, performance.now())),
+  onCommand: (c) => {
+    update(apply(st, c, performance.now()));
+    if (c.k === "rest" || c.k === "extend") afterWrite();
+  },
   onUnit: (u) => update(setUnit(st, u)),
   onTuplet: (n2) => update(setTuplet(st, n2)),
   onInputKey: (f) => update(setInputKey(st, f)),
@@ -5549,6 +5685,8 @@ var pad = new Pad(padEl, {
     pad.render();
   },
   onHide: () => showPad(false),
+  onHalf: (down) => halfKey(down),
+  onAccShift: (phase, acc) => accKey(phase, acc),
   onInsertMark: (kind) => {
     const at = st.sel ? st.sel.from : st.caret;
     const v = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
@@ -5829,7 +5967,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "b14017a6b692" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "f5e0049562b3" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6110,10 +6248,12 @@ function run(a, repeat, code) {
         if (!repeat && monoAccept(`key${code}`)) {
           const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now()));
           keyTok(st, i, code);
+          afterWrite();
         }
         return true;
       }
       update(apply(st, a.cmd, performance.now()));
+      if (a.cmd.k === "rest" || a.cmd.k === "extend") afterWrite();
       return true;
     case "audition": {
       if (repeat) return true;
@@ -6175,4 +6315,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-53e8af889025.mjs.map
+//# sourceMappingURL=moonsinger-4604adf1b1bc.mjs.map

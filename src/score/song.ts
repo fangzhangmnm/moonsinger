@@ -54,10 +54,11 @@ export interface Song {
 export const DEFAULT_KEY = 0, DEFAULT_TIME = { beats: 4, beatType: 4 }, DEFAULT_BPM = 90;
 
 /** 输入状态（不进数据）：写的时候下一个音长什么样。 */
+export type Acc = -2 | -1 | 0 | 1 | 2;
 export interface InputState {
   unit: number;                       // LADDER 下标
   tuplet: 0 | 3 | 5 | 6 | 7;          // 0 = 不连音；锁定式
-  acc: 0 | 1 | -1;                    // ♯ / ♭ Shift
+  acc: Acc;                           // ♯ / ♭ Shift（pad 的升降键还能 𝄪 / 𝄫 = ±2）
   accMode: "off" | "once" | "lock";   // 点一下只管下一个音，连点两下锁住（user「double tap shift is "capslock"」）
   accAt: number;                      // 上一次点 Shift 的时刻（ms，判连点）
   inputFifths: number;                // 「1=」= 输入设备（pad / 电脑键盘）自己的调，默认 C；不跟谱上的调号（2026-10-07 user「把pad想成一个独立的medo式的输入设备，假设没有谱」「如果一个谱有好几个调怎么算」）
@@ -334,12 +335,17 @@ export function longer(st: EditorState): EditorState {
 /** 连音：设成 0 / 3 / 5 / 6 / 7（锁定式；候选由界面弹）。 */
 export function setTuplet(st: EditorState, n: InputState["tuplet"]): EditorState { return { ...st, input: { ...st.input, tuplet: n } }; }
 /** ♯ / ♭ Shift：关 → 一次；一次且 350 ms 内再点 → 锁；其余 → 关。有选中 = 选中的音直接升降半音。 */
-export function tapAcc(st: EditorState, acc: 1 | -1, now: number): EditorState {
+export function tapAcc(st: EditorState, acc: Exclude<Acc, 0>, now: number): EditorState {
   if (st.sel) return mapSelPitch(st, (p) => alterBy(p, acc));
   const i = st.input;
   if (i.acc !== acc || i.accMode === "off") return { ...st, input: { ...i, acc, accMode: "once", accAt: now } };
   if (i.accMode === "once" && now - i.accAt < 350) return { ...st, input: { ...i, accMode: "lock", accAt: now } };
   return { ...st, input: { ...i, acc: 0, accMode: "off", accAt: now } };
+}
+/** 直接设升降 Shift 的状态（pad 升降键按住 / 滑着换的时候用；accAt 不动，连点判定照旧）。 */
+export function setAccState(st: EditorState, acc: Acc, mode: InputState["accMode"]): EditorState {
+  const i = st.input;
+  return i.acc === acc && i.accMode === mode ? st : { ...st, input: { ...i, acc: mode === "off" ? 0 : acc, accMode: mode === "off" || acc === 0 ? "off" : mode } };
 }
 /** 「1=」：只管输入（user「after you change the 1=???, the original inputted note should not be changed」）。 */
 export function setInputKey(st: EditorState, fifths: number): EditorState { return { ...st, input: { ...st.input, inputFifths: Math.max(-7, Math.min(7, fifths)) } }; }

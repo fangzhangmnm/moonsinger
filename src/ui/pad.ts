@@ -30,7 +30,7 @@ import { type Pitch, HOME, diatonicIndex, tonicStepIndex, pitchName, alterBy, mi
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
-import { type EditorState, inputKey, keyAt, timeAt, tempoAt } from "../score/song.ts";
+import { type EditorState, type Acc, inputKey, keyAt, timeAt, tempoAt } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
 
 const HER_LOW = 57, HER_HIGH = 76;   // A3 / E5（MIDI；月读音域：键底部画细条提示，音域外不拦、不变灰）
@@ -39,6 +39,10 @@ const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
 const KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } } as const;
 const SWIPE = 20;       // px：音键上下滑过这么远才算升 / 降
+/** 升降键的四种，上面的更升（滑着换：往上 = 更升）；键上的字（Bravura：𝄫 ♭ · ♯ 𝄪）；音键上的小字。 */
+const ACC_ORDER: Exclude<Acc, 0>[] = [2, 1, -1, -2];
+const ACC_GLYPH = ["\uE264", "\uE260", "", "\uE262", "\uE263"];
+const ACC_TEXT = ["♭♭", "♭", "", "♯", "♯♯"];
 const STEP = 28;        // px：旋钮上滑这么远 = 窗里滚一整格（一次最多一格，过半格就算）
 const MOVE = 6;         // px：按下旋钮挪过这么远才算「滑」；没挪就松手 = 点（展开滚轮）
 const STACK = 150;      // px：「1=」旋钮比这窄 = 调和调式名分两行写
@@ -95,6 +99,8 @@ export interface PadHost {
   autoBars(): boolean;                     // 谱面按拍号自动画小节线开着没有
   onAutoBars(on: boolean): void;
   onHide(): void;                          // 收起键盘（pad）
+  onHalf(down: boolean): void;             // /2 按下 / 松开：写的音临时减半
+  onAccShift(phase: "down" | "slide" | "up", acc: Exclude<Acc, 0>): void;   // 升降键：按下 / 滑着换 / 松开
   onInsertMark(kind: "key" | "time" | "tempo"): void;
   onSoundDown(p: Pitch, id: string): void;   // 试听 / 弹：按下响（复音：每根手指一个声音）
   onSoundUp(id: string): void;
@@ -116,6 +122,8 @@ export class Pad {
   private swipes = new Map<number, { y0: number; alt: -1 | 0 | 1; key: HTMLElement }>();
   /** 网格上每个键（调式梯子上的第 k 级）的音高。 */
   private keys = new Map<number, Pitch>();
+  /** 升降键选的是哪一种（滑着换；记住，下次按还是它）。 */
+  private accSel: Exclude<Acc, 0> = 1;
 
   constructor(private el: HTMLElement, private host: PadHost) { this.render(); addEventListener("resize", () => this.render()); }
 
@@ -163,6 +171,8 @@ export class Pad {
         `<button class="btn" data-caret="1" title="光标右移（${hint("right")}）">→</button>` +
         `<button class="btn wk" data-cmd="rest" title="休止（${hint("rest")}）"><span>0</span><small>休止</small></button>` +
         `<button class="btn wk" data-cmd="bar" title="小节线（${hint("bar")}）"><span>|</span><small>小节线</small></button>` +
+        `<button class="btn wk accshift" data-accshift="1" title="升降（和 Shift 一样）：点一下 = 下一个音；连点两下 = 锁住，再点解开；按住写 = 按住期间。在键上上下滑换 𝄪 / ♯ / ♭ / 𝄫"><span class="ag"></span><small>升降</small></button>` +
+        `<button class="btn wk half" data-half="1" title="减半（长短基线短一档）：点一下 = 下一个音；连点两下 = 锁住，再点解开；也可以按住写"><span>/2</span><small>减半</small></button>` +
         `<button class="btn wk" data-cmd="extend" title="拉长一份（${hint("extend")}）"><span>—</span><small>拉长</small></button>` +
         `<button class="btn" data-cmd="backspace" title="退格（${hint("backspace")}）"><svg class="ico"><use href="#backspace"/></svg></button></div>` +
         `<div class="pad-grid"></div>`;
@@ -181,6 +191,35 @@ export class Pad {
       });
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) bs.addEventListener(t, stop);
       addEventListener("blur", stop);
+      // /2：写的音减半（user「0左边加一个/2效果是按住的时候临时输入的是/2duration的音符。之前那个糊涂的想法现在看来应该这么做」
+      //   →「嗯或者放在拉长左边吧，0 | /2 -」→「或者/2是类似shift，因为accessibility的issue可能按住不方便，而是和键盘shift的逻辑一样」）：
+      //   点一下 = 下一个、连点两下 = 锁住、按住写 = 按住期间（逻辑在宿主 main.ts halfKey）。另一根手指按音键照常写（单音护栏不管它：它不写音）
+      const half = w.querySelector<HTMLElement>("[data-half]")!, holding = new Set<number>();
+      const halfUp = (e: { pointerId: number }) => { if (!holding.delete(e.pointerId)) return; if (!holding.size) this.host.onHalf(false); };
+      half.addEventListener("pointerdown", (e) => {
+        e.preventDefault(); try { half.setPointerCapture(e.pointerId); } catch { /* 合成事件：没有捕获也能用 */ }
+        if (!holding.size) this.host.onHalf(true);
+        holding.add(e.pointerId);
+      });
+      for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) half.addEventListener(t, (e) => halfUp(e as PointerEvent));
+      addEventListener("blur", () => { for (const id of [...holding]) halfUp({ pointerId: id }); });
+      // 升降键（user「以及临时升降号的shift好像你也忘了哈哈，要不就是按住是shift，然后也可以上下滑动切换## # b bb，然后按是当作shift，滑动是toggle which shift」）：
+      //   按 = Shift（点一下 / 连点两下 / 按住写，逻辑在宿主 main.ts accKey）；按着上下滑过 SWIPE = 换一种（往上 = 更升），键上跟着显示
+      const ak = w.querySelector<HTMLElement>("[data-accshift]")!;
+      let akDrag: { pid: number; y0: number; i0: number } | null = null;
+      ak.addEventListener("pointerdown", (e) => {
+        e.preventDefault(); try { ak.setPointerCapture(e.pointerId); } catch { /* 合成事件 */ }
+        if (akDrag) return;
+        akDrag = { pid: e.pointerId, y0: e.clientY, i0: ACC_ORDER.indexOf(this.accSel) };
+        this.host.onAccShift("down", this.accSel);
+      });
+      ak.addEventListener("pointermove", (e) => {
+        if (!akDrag || e.pointerId !== akDrag.pid) return;
+        const i = Math.max(0, Math.min(ACC_ORDER.length - 1, akDrag.i0 - Math.trunc((akDrag.y0 - e.clientY) / SWIPE)));   // 往上滑 = 下标变小 = 更升
+        if (ACC_ORDER[i] !== this.accSel) { this.accSel = ACC_ORDER[i]; this.host.onAccShift("slide", this.accSel); this.refresh(this.host.state()); }
+      });
+      const akUp = (e: PointerEvent) => { if (!akDrag || e.pointerId !== akDrag.pid) return; akDrag = null; this.host.onAccShift("up", this.accSel); };
+      for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) ak.addEventListener(t, (e) => akUp(e as PointerEvent));
     }
     const gridSig = `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}`;
     if (gridSig !== this.gridFor) { this.buildGrid(f, base, rows); this.gridFor = gridSig; }
@@ -306,11 +345,18 @@ export class Pad {
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => {
       const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
       const p0 = this.keys.get(Number(b.dataset.k))!, p = a ? alterBy(p0, a) : p0;
-      b.querySelector(".acc")!.textContent = a > 0 ? "♯" : a < 0 ? "♭" : "";
+      b.querySelector(".acc")!.textContent = ACC_TEXT[a + 2];
       b.querySelector(".abs")!.textContent = pretty(p);
       b.classList.toggle("swiping", !!sw && sw.alt !== 0);
     });
     this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
+    // 升降键：亮着的时候显示正在用的那个（电脑键盘 [ ] 开的也算），关着显示选好的那个；浅亮 = 下一个、深亮 = 锁住
+    const ak = this.el.querySelector<HTMLElement>("[data-accshift]");
+    if (ak) {
+      const on = i.accMode !== "off" && i.acc !== 0;
+      ak.querySelector(".ag")!.innerHTML = `<span class="smufl">${ACC_GLYPH[(on ? i.acc : this.accSel) + 2]}</span>`;
+      ak.classList.toggle("once", on && i.accMode === "once"); ak.classList.toggle("lock", on && i.accMode === "lock");
+    }
     const down = new Set(this.held.values());
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => b.classList.toggle("down", down.has(midiOf(this.keys.get(Number(b.dataset.k))!))));
   }
@@ -404,6 +450,11 @@ export class Pad {
     }
     const v = this.knobList(knob, false), wr = Math.max(w, 120);   // 音域：滚轮至少 120 宽，一行写得下「F♯3–G♯5」
     openDrum(anchor, [{ items: v.items, index: v.index, width: wr, title: v.title }], { onChange: (_c, i) => v.set(i) });
+  }
+  /** /2 的样子：once = 浅亮（下一个音减半）、lock = 深亮（锁住）。 */
+  showHalf(m: "off" | "once" | "lock"): void {
+    const b = this.el.querySelector<HTMLElement>("[data-half]"); if (!b) return;
+    b.classList.toggle("once", m === "once"); b.classList.toggle("lock", m === "lock");
   }
   /** 某个来源（手指 / 电脑键盘的键）按下了音高 p：pad 上同音高的键亮着，直到 showUp（调式里没有这个音 = 不亮）。 */
   showDown(p: Pitch, id: string): void { this.held.set(id, midiOf(p)); this.refresh(this.host.state()); }

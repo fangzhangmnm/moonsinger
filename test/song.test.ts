@@ -149,3 +149,15 @@ describe("song（移调 / 转调）", () => {
     st = setCaret(st, H + 2); st = selectToEdge(st, -1); eq(JSON.stringify(st.sel), `{"from":${H},"to":${H + 2}}`);
   });
 });
+
+// 升降 Shift 的 𝄪 / 𝄫（pad 升降键；user「上下滑动切换## # b bb，然后按是当作shift」）。edited by Claude Opus 5.5 2026-10-07
+import { setAccState as _setAcc, tapAcc as _tapAcc, writePitch as _write, initState as _init } from "../src/score/song.ts";
+describe("升降 Shift（±2）", () => {
+  it("锁住 𝄫：写的都降两个半音；点一下 𝄪 = 只管下一个", () => {
+    const C = { step: "C" as const, alter: 0, octave: 4 };
+    let st = _setAcc(_init(), -2, "lock");
+    st = _write(st, C); st = _write(st, C);
+    st = _setAcc(st, 0, "off"); st = _tapAcc(st, 2, 0); st = _write(st, C); st = _write(st, C);
+    eq(st.song.tokens.filter((t) => t.kind === "note").map((t) => (t as { pitch: { alter: number } }).pitch.alter).join(","), "-2,-2,2,0");
+  });
+});
