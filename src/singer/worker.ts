@@ -25,7 +25,7 @@ const dyn = (p: string): Promise<any> => import(/* @vite-ignore */ u(p));
 const ORT = "piper-plus/work/node_modules/onnxruntime-web/dist/", PACK = "piper-plus/backend/pack/";
 const SR = 22050, HOP = 256;
 
-interface Engine { piper: any; world: any; loadAtlas: ((id: string) => Promise<any>) | null; hasAtlas: boolean; ensureZh: () => Promise<void> }
+interface Engine { piper: any; world: any; loadAtlas: ((id: string) => Promise<any>) | null; hasAtlas: boolean; ensureZh: () => Promise<void>; presetDefault: Record<string, number> }
 let engine: Promise<Engine> | null = null;
 
 async function loadEngine(say: (s: string) => void): Promise<Engine> {
@@ -34,7 +34,8 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
   ort.env.wasm.wasmBinary = await bytes(ORT + "ort-wasm-simd-threaded.wasm");
   say("加载月读的模型（约 40 MB）");
-  const sess = await ort.InferenceSession.create(await bytes("piper-plus/work/model-singing/tsukuyomi-dur-override.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
+  // 中英增强（zhen）时长接管版：日语与原版逐字节相同（2026-10-07 实测），中 / 英按它的预设读——user「中英增强的日文是原版的，理论上我们只需要host这一个模型就行了」
+  const sess = await ort.InferenceSession.create(await bytes("piper-plus/work/model-singing/tsukuyomi-zhen-dur-override.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
   ort.env.wasm.wasmBinary = undefined;
   say("加载日语前端（词典约 24 MB）");
   const { default: createOjt } = await dyn("piper-plus/ojt/wasm/dist/ojt.mjs");
@@ -43,7 +44,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const Module = await createOjt({ wasmBinary: await bytes(PACK + "ja/ojt.wasm"), print: () => {}, printErr: () => {} });
   mountDictionaryBytes(Module, { sys: await bytes(PACK + "ja/sys.dic"), matrix: await bytes(PACK + "ja/matrix.bin"), char: await bytes(PACK + "ja/char.bin"), unk: await bytes(PACK + "ja/unk.dic") });
   const ja = createJaFrontend(Module, "/dic", { naniModel: await json(PACK + "ja/nani-model.json") });
-  const config = await json(PACK + "config.json");
+  const config = await json("piper-plus/work/model-singing/tsukuyomi-zhen-dur-override.config.json");
   let zh: any = null;
   const ensureZh = async () => {
     if (zh) return;
@@ -74,7 +75,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id: string) => { const meta = await json(`atlas/${id}.json`); const raw = await bytes(`atlas/${id}.f32`);
     return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) }; } : null;
-  return { piper, world, loadAtlas, hasAtlas, ensureZh };
+  return { piper, world, loadAtlas, hasAtlas, ensureZh, presetDefault: config.preset_default ?? {} };
 }
 
 self.onmessage = async (ev: MessageEvent<SingRequest>) => {
@@ -90,7 +91,8 @@ self.onmessage = async (ev: MessageEvent<SingRequest>) => {
     say("月读在唱");
     // 元音图谱默认关（user 2026-10-06「元音图谱一般般，先不做」）；断气随图谱（和 Lab 命令行的规则一样）。要试图谱就传 atlas: "normal"。
     const atlas = q.atlas ?? "off", breath = q.breath ?? atlas !== "off";
-    const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q.opt ?? {} });
+    const preset = e.presetDefault[q.lang] ?? 0;   // 模型配置的 preset_default（中 3、英 9；日语没写 = 0 = 原版），同 Lab piper-node.mjs
+    const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q.opt ?? {} });
     const samples: Float32Array = r.sung;
     post({ type: "done", id: q.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1 } }, [samples.buffer]);
   } catch (err) {
