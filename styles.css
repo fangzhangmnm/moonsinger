@@ -278,3 +278,10 @@ button, input, select { font: inherit; color: inherit; }
 .pad-tools.cands.m-more { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); }
 .pad-tools.cands.m-more .btn.cand { white-space: nowrap; }
 @media (max-width: 420px) { .bar .tb-file svg { display: none; } .bar .tb-file { padding: 0 8px; } }   /* 手机：文件钮不画图标，多给文件名留地方 */
+/* 纸（2026-10-07）：纸的版心放得下 = 纸居中、四周是桌面（同 WXHW 屏幕太宽时行宽有上限）；放不下（手机）= 纸铺满 */
+.score.desk { background: var(--bg); }
+.score.desk .sheet { margin: 0 auto; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 2px 10px rgba(0, 0, 0, .08); min-height: 100%; }
+.staff-svg .paper-chip { fill: var(--panel); stroke: var(--line); rx: 6px; cursor: pointer; }
+.staff-svg .paper-chip-text { fill: var(--muted); font-weight: 600; }
+.settings-card .btn.cand small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+.settings-card .btn.cand:has(small) { flex-direction: column; height: auto; padding: 6px 12px; gap: 2px; }

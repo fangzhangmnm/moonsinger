@@ -10,6 +10,7 @@
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
+import { DEFAULT_PAPER, paperOf, lineSp } from "../score/paper.ts";
 import { type EditorState, type NoteTok, setCaret, select, setNote, setDur, keyAt, TPQ } from "../score/song.ts";
 import { fromDiatonic } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout } from "../render/engrave.ts";
@@ -36,6 +37,8 @@ export interface ScoreViewHost {
   /** 歌手牌：第一行谱号左边的声部名（未选角 = empty）；点了 = onPart（选乐器、就地改它的设置）。 */
   part?(): { name: string; empty: boolean } | null;
   onPart?(): void;
+  /** 纸右上角的小钮（纸张）点了。 */
+  onPaper?(): void;
 }
 
 export class ScoreView {
@@ -65,17 +68,24 @@ export class ScoreView {
   }
 
   /** 五线谱间距（px）：触屏 11、鼠标 10；窄屏（< 420，iPhone）跟着宽度小一点，最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。 */
-  get sp(): number {
-    const base = matchMedia("(pointer: coarse)").matches ? 11 : 10, w = this.el.clientWidth;
-    return w > 0 && w < 420 ? Math.max(8.5, Math.min(base, w / 42)) : base;
+  /** 五线谱间距（px）和纸面宽（px）：触屏 11、鼠标 10 一格；纸的版心放得下 = 严格按纸（纸居中、四周是桌面），
+   *  放不下（手机）= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
+   *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
+  private frame(): { sp: number; width: number; strict: boolean } {
+    const st = this.host.get(), base = matchMedia("(pointer: coarse)").matches ? 11 : 10, avail = this.el.clientWidth;
+    const want = Math.ceil(lineSp(st.song.paper ?? paperOf(DEFAULT_PAPER)) * base);
+    if (avail > 0 && want <= avail) return { sp: base, width: want, strict: true };
+    return { sp: avail > 0 && avail < 420 ? Math.max(8.5, Math.min(base, avail / 42)) : base, width: Math.max(320, avail), strict: false };
   }
 
   render(): void {
-    const st = this.host.get(), sp = this.sp;
+    const st = this.host.get(), { sp, width, strict } = this.frame();
+    this.el.classList.toggle("desk", strict && width < this.el.clientWidth - 1);
+    this.sheet.style.width = strict ? `${width}px` : "";
+    const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
-    const width = Math.max(320, this.el.clientWidth);
     this.layout = engrave(st.song, { width, sp, caret: st.caret, sel: st.sel, measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true, autoBars: this.host.autoBars?.() ?? true,
-      partName: this.host.part?.()?.name, partEmpty: this.host.part?.()?.empty });
+      partName: this.host.part?.()?.name, partEmpty: this.host.part?.()?.empty, paperLabel: paper.kind === "other" ? "其他纸" : paper.kind });
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
@@ -99,9 +109,10 @@ export class ScoreView {
     else if (box.bottom > top + h) this.el.scrollTop = box.bottom - h;
   }
 
+  /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算）。 */
   private local(e: PointerEvent): { x: number; y: number } {
-    const r = this.el.getBoundingClientRect();
-    return { x: e.clientX - r.left + this.el.scrollLeft, y: e.clientY - r.top + this.el.scrollTop };
+    const r = this.sheet.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   private systemAt(y: number): number {
     const L = this.layout!; const i = L.systems.findIndex((s) => y >= s.top && y < s.bottom);
@@ -130,7 +141,10 @@ export class ScoreView {
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     if (wasMark) { this.host.focus?.("staff"); return true; }   // 点别处 = 先收起记号框（这一下不另做事）
     const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st = this.host.get();
-    // 0. 歌手牌（第一行谱号左边的声部名）
+    // 0. 纸右上角的小钮（纸张）
+    const pc = L.paperChip;
+    if (pc && x >= pc.x && x <= pc.x + pc.w && y >= pc.y && y <= pc.y + pc.h) { this.host.onPaper?.(); return true; }
+    // 0⅛. 歌手牌（第一行谱号左边的声部名）
     const pt = L.part;
     if (pt && x >= pt.x && x <= pt.x + pt.w && y >= pt.y && y <= pt.y + pt.h) { this.host.onPart?.(); return true; }
     // 0¼. 纸面最上面的歌名（可不填）

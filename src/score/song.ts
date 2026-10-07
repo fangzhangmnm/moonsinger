@@ -10,6 +10,7 @@
 //   一首歌开头固定三个记号（谱头）：光标进不去、删不掉，只能就地改；中途可以插，插的地方旁边已有同类记号就改它而不是再插一个。
 // 编辑器状态是纯数据，所有命令是纯函数：旧状态 → 新状态。
 
+import { type Paper, type PaperKind, DEFAULT_PAPER, paperOf } from "./paper.ts";
 import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval } from "./pitch.ts";
 
 /** 一个四分音符的 tick 数。 */
@@ -45,6 +46,8 @@ export type Hum = "la" | "n" | "u" | "o" | "a";
 export interface Song {
   /** 歌名（可不填；纸面最上面那一行，存档 = MusicXML <work-title>；user 2026-10-07「纸张的最上面加一个可选的歌名吧，未来也是文件名」）。 */
   title?: string;
+  /** 纸（A4 / A5 / A6 / 别的软件的别的纸）；没有 = 默认 A5（src/score/paper.ts；存档 = MusicXML <defaults>）。整首歌一个。 */
+  paper?: Paper;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   tokens: Token[];       // 开头三个 = 谱头记号（调号 / 拍号 / 速度）
 }
@@ -485,6 +488,12 @@ export function setDur(st: EditorState, i: number, dur: number): EditorState {
 }
 export function setHum(st: EditorState, hum: Hum): EditorState { return { ...st, song: { ...st.song, hum } }; }
 /** 改歌名（空 = 不填）。 */
+/** 换纸（整首歌一个）：A5 = 默认，存成「没有」。 */
+export function setPaper(st: EditorState, kind: PaperKind): EditorState {
+  const song = { ...st.song };
+  if (kind === DEFAULT_PAPER) delete song.paper; else song.paper = paperOf(kind);
+  return (st.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st : { ...st, song };
+}
 export function setTitle(st: EditorState, title: string): EditorState {
   const t = title.trim(), song = { ...st.song };
   if (t) song.title = t; else delete song.title;

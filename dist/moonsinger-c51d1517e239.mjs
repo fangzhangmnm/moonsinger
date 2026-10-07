@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.17-2026-10-07";
+var APP_VERSION = "v0.2.18-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -106,6 +106,25 @@ function initPwaShell(opts) {
   }
   return { isDevRoute, reload, forceReset, checkForUpdate };
 }
+
+// src/score/paper.ts
+var STAFF_MM = 7;
+var SP_MM = STAFF_MM / 4;
+var SIZES = { A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
+var PAPER_KINDS = ["A4", "A5", "A6"];
+var DEFAULT_PAPER = "A5";
+var PAPER_NOTE = { A4: "\u6B63\u7ECF\u7EB8", A5: "\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09", A6: "\u53E3\u888B\u672C" };
+function paperOf(kind) {
+  const s = SIZES[kind];
+  return { kind, widthMm: s.w, heightMm: s.h, marginMm: { l: s.m, r: s.m, t: s.m, b: s.m } };
+}
+var lineSp = (p) => (p.widthMm - p.marginMm.l - p.marginMm.r) / SP_MM;
+function detectPaper(widthMm, heightMm, marginMm) {
+  const near = (a, b) => Math.abs(a - b) <= 2;
+  const kind = PAPER_KINDS.find((k) => near(widthMm, SIZES[k].w) && near(heightMm, SIZES[k].h));
+  return kind ? { ...paperOf(kind), marginMm } : { kind: "other", widthMm, heightMm, marginMm };
+}
+var paperSizeText = (p) => `${Math.round(p.widthMm)} \xD7 ${Math.round(p.heightMm)} mm`;
 
 // src/score/pitch.ts
 var STEPS = ["C", "D", "E", "F", "G", "A", "B"];
@@ -606,6 +625,12 @@ function setDur(st2, i, dur) {
 }
 function setHum(st2, hum) {
   return { ...st2, song: { ...st2.song, hum } };
+}
+function setPaper(st2, kind) {
+  const song = { ...st2.song };
+  if (kind === DEFAULT_PAPER) delete song.paper;
+  else song.paper = paperOf(kind);
+  return (st2.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st2 : { ...st2, song };
 }
 function setTitle(st2, title) {
   const t = title.trim(), song = { ...st2.song };
@@ -1563,9 +1588,16 @@ function engrave(song, o) {
   const titleSize = P(1.9), titleBase = P(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "\u6B4C\u540D\uFF08\u53EF\u4E0D\u586B\uFF09", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
+  let paperChip = null;
+  if (o.paperLabel) {
+    const fs = P(1.15), cw = o.measureLyric(o.paperLabel) * 1.15 / LYRIC_EM + P(1.4), ch = P(2.2), cx = o.width - P(MARGIN) - cw, cy = P(0.9);
+    prims.push({ t: "rect", x: cx, y: cy, w: cw, h: ch, cls: "paper-chip" });
+    prims.push({ t: "text", x: cx + cw / 2, y: cy + ch / 2 + fs * 0.36, s: o.paperLabel, cls: "paper-chip-text", size: fs, anchor: "middle" });
+    paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
+  }
   const title = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
-  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, part, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, part, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -2102,14 +2134,21 @@ var ScoreView = class {
   marks;
   title;
   /** 五线谱间距（px）：触屏 11、鼠标 10；窄屏（< 420，iPhone）跟着宽度小一点，最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。 */
-  get sp() {
-    const base2 = matchMedia("(pointer: coarse)").matches ? 11 : 10, w = this.el.clientWidth;
-    return w > 0 && w < 420 ? Math.max(8.5, Math.min(base2, w / 42)) : base2;
+  /** 五线谱间距（px）和纸面宽（px）：触屏 11、鼠标 10 一格；纸的版心放得下 = 严格按纸（纸居中、四周是桌面），
+   *  放不下（手机）= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
+   *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
+  frame() {
+    const st2 = this.host.get(), base2 = matchMedia("(pointer: coarse)").matches ? 11 : 10, avail = this.el.clientWidth;
+    const want = Math.ceil(lineSp(st2.song.paper ?? paperOf(DEFAULT_PAPER)) * base2);
+    if (avail > 0 && want <= avail) return { sp: base2, width: want, strict: true };
+    return { sp: avail > 0 && avail < 420 ? Math.max(8.5, Math.min(base2, avail / 42)) : base2, width: Math.max(320, avail), strict: false };
   }
   render() {
-    const st2 = this.host.get(), sp = this.sp;
+    const st2 = this.host.get(), { sp, width, strict } = this.frame();
+    this.el.classList.toggle("desk", strict && width < this.el.clientWidth - 1);
+    this.sheet.style.width = strict ? `${width}px` : "";
+    const paper = st2.song.paper ?? paperOf(DEFAULT_PAPER);
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
-    const width = Math.max(320, this.el.clientWidth);
     this.layout = engrave(st2.song, {
       width,
       sp,
@@ -2119,7 +2158,8 @@ var ScoreView = class {
       titlePlaceholder: true,
       autoBars: this.host.autoBars?.() ?? true,
       partName: this.host.part?.()?.name,
-      partEmpty: this.host.part?.()?.empty
+      partEmpty: this.host.part?.()?.empty,
+      paperLabel: paper.kind === "other" ? "\u5176\u4ED6\u7EB8" : paper.kind
     });
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
@@ -2145,9 +2185,10 @@ var ScoreView = class {
     if (box.top < top) this.el.scrollTop = box.top;
     else if (box.bottom > top + h) this.el.scrollTop = box.bottom - h;
   }
+  /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算）。 */
   local(e) {
-    const r = this.el.getBoundingClientRect();
-    return { x: e.clientX - r.left + this.el.scrollLeft, y: e.clientY - r.top + this.el.scrollTop };
+    const r = this.sheet.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   systemAt(y) {
     const L = this.layout;
@@ -2180,6 +2221,11 @@ var ScoreView = class {
       return true;
     }
     const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st2 = this.host.get();
+    const pc = L.paperChip;
+    if (pc && x >= pc.x && x <= pc.x + pc.w && y >= pc.y && y <= pc.y + pc.h) {
+      this.host.onPaper?.();
+      return true;
+    }
     const pt = L.part;
     if (pt && x >= pt.x && x <= pt.x + pt.w && y >= pt.y && y <= pt.y + pt.h) {
       this.host.onPart?.();
@@ -4863,6 +4909,28 @@ function noteType(dur) {
   return null;
 }
 var pitchXml = (p) => `<pitch><step>${p.step}</step>${p.alter ? `<alter>${p.alter}</alter>` : ""}<octave>${p.octave}</octave></pitch>`;
+var TENTHS_PER_MM = 40 / STAFF_MM;
+function defaultsXml(p) {
+  const t = (mm) => +(mm * TENTHS_PER_MM).toFixed(2), m = p.marginMm;
+  return `<defaults><scaling><millimeters>${STAFF_MM}</millimeters><tenths>40</tenths></scaling><page-layout><page-height>${t(p.heightMm)}</page-height><page-width>${t(p.widthMm)}</page-width><page-margins type="both"><left-margin>${t(m.l)}</left-margin><right-margin>${t(m.r)}</right-margin><top-margin>${t(m.t)}</top-margin><bottom-margin>${t(m.b)}</bottom-margin></page-margins></page-layout></defaults>`;
+}
+function readPaper(root) {
+  const d2 = kid(root, "defaults"), pl = kid(d2, "page-layout");
+  const n2 = (el, name) => {
+    const v = childText(el, name);
+    return v === void 0 ? NaN : Number(v);
+  };
+  const mm = n2(kid(d2, "scaling"), "millimeters"), tn = n2(kid(d2, "scaling"), "tenths"), w = n2(pl, "page-width"), h = n2(pl, "page-height");
+  if (!(mm > 0 && tn > 0 && w > 0 && h > 0)) return void 0;
+  const k = mm / tn, pm = kid(pl, "page-margins"), mg = (name) => {
+    const v = n2(pm, name);
+    return v >= 0 ? v * k : 15;
+  };
+  const p = detectPaper(w * k, h * k, { l: mg("left-margin"), r: mg("right-margin"), t: mg("top-margin"), b: mg("bottom-margin") });
+  const def = paperOf(DEFAULT_PAPER), same = (a, b) => Math.abs(a - b) < 0.05;
+  if (p.kind === DEFAULT_PAPER && same(p.marginMm.l, def.marginMm.l) && same(p.marginMm.r, def.marginMm.r) && same(p.marginMm.t, def.marginMm.t) && same(p.marginMm.b, def.marginMm.b)) return void 0;
+  return p;
+}
 function writeMusicXml(song, part, meta) {
   const toks = song.tokens, head = headLen(toks);
   const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
@@ -4959,6 +5027,7 @@ function writeMusicXml(song, part, meta) {
 <score-partwise version="4.0">
 ${song.title ? `<work><work-title>${esc2(song.title)}</work-title></work>
 ` : ""}<identification><encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
+${defaultsXml(song.paper ?? paperOf(DEFAULT_PAPER))}
 <part-list><score-part id="${P.id}"><part-name>${esc2(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc2(P.instrumentName)}</instrument-name><instrument-sound>${esc2(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc2(P.variant.library)}</virtual-library><virtual-name>${esc2(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== void 0 ? `<volume>${P.volume}</volume>` : ""}${P.pan !== void 0 ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
 <part id="${P.id}">
 ${body}
@@ -5105,7 +5174,8 @@ function readMusicXml(xml, hints) {
   let next2 = Math.max(0, ...usedIds) + 1;
   for (const t of tokens) if (!t.id) t.id = next2++;
   keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
-  return { song: { ...title ? { title } : {}, hum: "n", tokens }, title, parts, dropped };
+  const paper = readPaper(root);
+  return { song: { ...title ? { title } : {}, ...paper ? { paper } : {}, hum: "n", tokens }, title, parts, dropped };
 }
 
 // src/format/project.ts
@@ -5429,12 +5499,12 @@ var view = new ScoreView(scoreEl, {
     clearTimeout(upTimer);
     sound.up("score");
   },
-  focus: (where) => {
-    if (stacked()) showPad(where === "staff");
-  },
+  focus: (where) => showPad(where === "staff"),
+  // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
   part: () => ({ name: quality() === "none" ? "\u672A\u9009\u89D2" : "\u6708\u8BFB", empty: quality() === "none" }),
-  onPart: () => openPartSheet()
+  onPart: () => openPartSheet(),
+  onPaper: () => openPaperSheet()
 });
 var impro = false;
 var autoBars = true;
@@ -5756,11 +5826,8 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "c460b06e6d00" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "b14017a6b692" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
-function stacked() {
-  return matchMedia("(max-aspect-ratio: 1/1)").matches;
-}
 function showPad(on) {
   if (padEl.hidden === !on) return;
   padEl.hidden = !on;
@@ -5769,7 +5836,7 @@ function showPad(on) {
   view.render();
 }
 bar.addEventListener("pointerdown", (e) => {
-  if (stacked() && !e.target.closest("button, select, label, input, a")) showPad(false);
+  if (!e.target.closest("button, select, label, input, a")) showPad(false);
 });
 var curQuality = "full";
 function quality() {
@@ -5789,6 +5856,34 @@ function setQuality(q) {
   curQuality = q;
   view.render();
   renderTitle();
+}
+function openPaperSheet() {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  const draw = () => {
+    const p = st.song.paper ?? paperOf(DEFAULT_PAPER);
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${k}<small>${PAPER_NOTE[k]}</small></button>`).join("") + (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF0C\u4E94\u7EBF\u8C31\u7684\u5927\u5C0F\u4E0D\u53D8\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\uFF0C\u653E\u4E0D\u4E0B\uFF08\u624B\u673A\uFF09\u6309\u5C4F\u5E55\u6298\u884C\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  };
+  draw();
+  document.body.append(box);
+  const close = () => {
+    box.remove();
+    closeOffer = null;
+    scoreEl.focus();
+  };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") {
+      close();
+      return;
+    }
+    if (v && PAPER_KINDS.includes(v)) {
+      update(setPaper(st, v));
+      draw();
+    }
+  });
 }
 var HUMS = [["n", "\u3093 / \u55EF"], ["a", "\u3042 / \u554A"], ["o", "\u304A / \u54E6"], ["u", "\u3046 / \u545C"], ["la", "\u3089 / \u5566"]];
 function openPartSheet() {
@@ -6073,4 +6168,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-c35d0119ee2f.mjs.map
+//# sourceMappingURL=moonsinger-c51d1517e239.mjs.map

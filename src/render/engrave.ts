@@ -34,6 +34,7 @@ export interface EngraveOpts {
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
   partName?: string;                     // 声部名（歌手牌），画在第一行谱号左边（第一行缩进让出来，同打谱软件的乐器名）；没有 = 不画
   partEmpty?: boolean;                   // 还没人上场（未选角）：声部名画淡色
+  paperLabel?: string;                   // 纸右上角的小钮（「A5」）；点了 = 纸的设置（user「这种应该是纸的右上角有一个可以设置纸的属性吧。加图片的入口以后也可以放那里」）
 }
 export const LYRIC_EM = 1.6;
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
@@ -51,6 +52,7 @@ export interface Layout {
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; title: TitleHit;
   head: { system: number; x: number } | null;   // 光标在哪（画面跟随用；改的时候没有）
   part: { x: number; y: number; w: number; h: number } | null;   // 歌手牌（声部名）的点击区域（px）
+  paperChip: { x: number; y: number; w: number; h: number } | null;   // 纸右上角小钮的点击区域（px）
   shortBars: number;   // 拍数和拍号对不上的小节有几个（状态行用；第一小节当弱起不算）
   lyricY: (system: number) => number;
   yOf: (system: number, d: number) => number;
@@ -480,9 +482,16 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const titleSize = P(1.9), titleBase = P(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "歌名（可不填）", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
+  let paperChip: Layout["paperChip"] = null;
+  if (o.paperLabel) {   // 纸右上角：一个写着纸张的小钮
+    const fs = P(1.15), cw = (o.measureLyric(o.paperLabel) * 1.15) / LYRIC_EM + P(1.4), ch = P(2.2), cx = o.width - P(MARGIN) - cw, cy = P(0.9);
+    prims.push({ t: "rect", x: cx, y: cy, w: cw, h: ch, cls: "paper-chip" });
+    prims.push({ t: "text", x: cx + cw / 2, y: cy + ch / 2 + fs * 0.36, s: o.paperLabel, cls: "paper-chip-text", size: fs, anchor: "middle" });
+    paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
+  }
   const title: TitleHit = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
-  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, part, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, part, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

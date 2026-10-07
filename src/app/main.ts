@@ -7,7 +7,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ } from "../score/song.ts";
+import { type EditorState, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -23,6 +23,7 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, type Extras, type Quality } from "../format/project.ts";
+import { type PaperKind, PAPER_KINDS, PAPER_NOTE, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
 import * as docFile from "./doc-file.ts";
 import { defaultStem, fileSafe } from "./names.ts";
 
@@ -91,10 +92,11 @@ const view = new ScoreView(scoreEl, {
   audition: (i, hold) => { clearTimeout(upTimer); soundTok(st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
   glide: (i) => { clearTimeout(upTimer); const t = st.song.tokens[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum, "score"); },
   release: () => { clearTimeout(upTimer); sound.up("score"); },
-  focus: (where) => { if (stacked()) showPad(where === "staff"); },
+  focus: (where) => showPad(where === "staff"),   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
   part: () => ({ name: quality() === "none" ? "未选角" : "月读", empty: quality() === "none" }),
   onPart: () => openPartSheet(),
+  onPaper: () => openPaperSheet(),
 });
 let impro = false;
 /** 按拍号自动画小节线（默认开；这次打开里有效）。user「自动加小节也是可以toggle的，默认开」 */
@@ -344,15 +346,14 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
  *  点谱 = 弹出；打开歌词 / 歌名框（系统键盘要上来）= 收起；点顶栏空白处 = 收起。开局是弹出的（光标就在谱上）。
- *  只在 pad 贴底（竖屏）时自动：横屏 / 桌面 pad 在旁边，收起会让整页谱重新排、点的那个字跟着跑。顶栏的 pad 钮照旧手动开关；开「弹」= 弹出。 */
-function stacked(): boolean { return matchMedia("(max-aspect-ratio: 1/1)").matches; }
+ *  横屏 / 桌面也一样（纸宽固定了，收起旁边的 pad 不会让谱重排）。顶栏的 pad 钮照旧手动开关；开「弹」= 弹出。 */
 function showPad(on: boolean): void {
   if (padEl.hidden === !on) return;
   padEl.hidden = !on; $("padBtn").classList.toggle("is-on", on);
   if (!on) pad.clearHeld();
   view.render();
 }
-bar.addEventListener("pointerdown", (e) => { if (stacked() && !(e.target as HTMLElement).closest("button, select, label, input, a")) showPad(false); });
+bar.addEventListener("pointerdown", (e) => { if (!(e.target as HTMLElement).closest("button, select, label, input, a")) showPad(false); });
 
 // ── 文件（无地逃生口）：一首歌 = 一个 .mxl；家 = 打开的那个文件（桌面 Chromium 能存回去）或没有家（iPad：存 = 下载 / 分享） ──────
 let curQuality: Quality = "full";
@@ -370,6 +371,30 @@ function noCast(what: string): void {
 }
 /** 音质（= 主唱这个角色上场的是谁、用哪一版）：完整 / 轻量 / 未选角（别的软件存的谱）。改了重画歌手牌。 */
 function setQuality(q: Quality): void { curQuality = q; view.render(); renderTitle(); }
+/** 纸的设置（纸右上角的小钮点开）：A4 / A5 / A6，整首歌一个；以后插图片也从这里进（user「加图片的入口以后也可以放那里」）。改了立刻生效。 */
+function openPaperSheet(): void {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  const draw = () => {
+    const p = st.song.paper ?? paperOf(DEFAULT_PAPER);
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">纸</div><div class="set-row">` +
+      PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${k}<small>${PAPER_NOTE[k]}</small></button>`).join("") +
+      (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">其他<small>${paperSizeText(p)}</small></button>` : "") + `</div>` +
+      `<div class="offer-msg">整首歌一张纸。纸越大一行放的小节越多，五线谱的大小不变；屏幕放得下就照纸排，放不下（手机）按屏幕折行。不打印的时候不分页。</div>` +
+      `<div class="offer-msg">以后插图片也在这里。</div>` +
+      `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  };
+  draw();
+  document.body.append(box);
+  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (v && (PAPER_KINDS as string[]).includes(v)) { update(setPaper(st, v as PaperKind)); draw(); }
+  });
+}
 /** 歌手牌（第一行谱号左边的声部名）点开：上面选谁来唱（乐器），下面就地改它的设置，改了立刻生效
  *  （user「歌手牌同意，和打谱软件对齐」「应该就是乐器名可以选择一大堆乐器，然后下面可以in place改，大概这样？」）。
  *  现在只有一个声部、乐器只有月读 = 多乐器的占位（以后每个声部一张牌；数据契约「每个声部在谱号前面选角色和麦克风」）。 */

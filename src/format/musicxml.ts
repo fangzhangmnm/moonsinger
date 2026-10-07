@@ -4,6 +4,7 @@
 //   MusicXML 必须分小节：人插的小节线和按拍号自动断的都写成小节，哪些是人插的由调用方记进 .moonsinger/score.json；
 //   音跨过自动断开的小节线 → 拆成几段用连音线连着，后面几段的 id 是「n17-2」，读回来时并回一个音（自家文件原样复原）。
 // 读：自家文件按上面的规矩原样复原；别的软件存的尽量读（第一个声部、第一个 voice；读不了的东西数出来报给人，不静默丢）。
+import { type Paper, STAFF_MM, DEFAULT_PAPER, paperOf, detectPaper } from "../score/paper.ts";
 import { type Song, type Token, type NoteTok, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch } from "../score/song.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
@@ -36,6 +37,25 @@ function noteType(dur: number): { type: string; dots: number; tuplet: [number, n
 const pitchXml = (p: Pitch) => `<pitch><step>${p.step}</step>${p.alter ? `<alter>${p.alter}</alter>` : ""}<octave>${p.octave}</octave></pitch>`;
 
 /** 一条声部 → 整份 MusicXML。 */
+/** 纸 → <defaults>：<scaling> = 五线谱多大（四个线间距 = STAFF_MM mm = 40 tenths），<page-layout> = 页宽高 + 四边边距（tenths）。 */
+const TENTHS_PER_MM = 40 / STAFF_MM;
+function defaultsXml(p: Paper): string {
+  const t = (mm: number) => +(mm * TENTHS_PER_MM).toFixed(2), m = p.marginMm;
+  return `<defaults><scaling><millimeters>${STAFF_MM}</millimeters><tenths>40</tenths></scaling><page-layout><page-height>${t(p.heightMm)}</page-height><page-width>${t(p.widthMm)}</page-width>` +
+    `<page-margins type="both"><left-margin>${t(m.l)}</left-margin><right-margin>${t(m.r)}</right-margin><top-margin>${t(m.t)}</top-margin><bottom-margin>${t(m.b)}</bottom-margin></page-margins></page-layout></defaults>`;
+}
+/** <defaults> → 纸（按文件自己的 <scaling> 换成 mm 再认档）；没有页面设置 = undefined（= 默认 A5）。默认 A5 原样也记成 undefined（往返不多出字段）。 */
+function readPaper(root: El): Paper | undefined {
+  const d = kid(root, "defaults"), pl = kid(d, "page-layout");
+  const n = (el: El | undefined, name: string) => { const v = childText(el, name); return v === undefined ? NaN : Number(v); };
+  const mm = n(kid(d, "scaling"), "millimeters"), tn = n(kid(d, "scaling"), "tenths"), w = n(pl, "page-width"), h = n(pl, "page-height");
+  if (!(mm > 0 && tn > 0 && w > 0 && h > 0)) return undefined;
+  const k = mm / tn, pm = kid(pl, "page-margins"), mg = (name: string) => { const v = n(pm, name); return v >= 0 ? v * k : 15; };
+  const p = detectPaper(w * k, h * k, { l: mg("left-margin"), r: mg("right-margin"), t: mg("top-margin"), b: mg("bottom-margin") });
+  const def = paperOf(DEFAULT_PAPER), same = (a: number, b: number) => Math.abs(a - b) < 0.05;
+  if (p.kind === DEFAULT_PAPER && same(p.marginMm.l, def.marginMm.l) && same(p.marginMm.r, def.marginMm.r) && same(p.marginMm.t, def.marginMm.t) && same(p.marginMm.b, def.marginMm.b)) return undefined;
+  return p;
+}
 export function writeMusicXml(song: Song, part: PartInfo, meta: WriteMeta): Written {
   const toks = song.tokens, head = headLen(toks);
   const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
@@ -101,6 +121,7 @@ export function writeMusicXml(song: Song, part: PartInfo, meta: WriteMeta): Writ
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
 ${song.title ? `<work><work-title>${esc(song.title)}</work-title></work>\n` : ""}<identification><encoding><software>${esc(meta.software)}</software><encoding-date>${esc(meta.date)}</encoding-date></encoding></identification>
+${defaultsXml(song.paper ?? paperOf(DEFAULT_PAPER))}
 <part-list><score-part id="${P.id}"><part-name>${esc(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc(P.instrumentName)}</instrument-name><instrument-sound>${esc(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc(P.variant.library)}</virtual-library><virtual-name>${esc(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== undefined ? `<volume>${P.volume}</volume>` : ""}${P.pan !== undefined ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
 <part id="${P.id}">
 ${body}
@@ -190,5 +211,6 @@ export function readMusicXml(xml: string, hints?: ReadHints): Read {
   let next = Math.max(0, ...usedIds) + 1;
   for (const t of tokens) if (!t.id) t.id = next++;
   keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
-  return { song: { ...(title ? { title } : {}), hum: "n", tokens }, title, parts, dropped };
+  const paper = readPaper(root);
+  return { song: { ...(title ? { title } : {}), ...(paper ? { paper } : {}), hum: "n", tokens }, title, parts, dropped };
 }
