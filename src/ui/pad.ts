@@ -199,7 +199,7 @@ export class Pad {
     switch (this.mode) {
       // 「⋯」里可以多行：插记号直接展开（user「...里面可以多行，放很多东西。所以插记号可以展开，然后应该也是用音乐符号？也许用一个加号？」）；
       // 按钮上写光标处正生效的那个（插进去的默认值），调号写「1=G」不写 ♯♭（user「+1=G才比较好懂吧，+#b只会让人觉得是加升降号」）；
-      // 「+」是左上角的小角标、和内容分开（user「不过加号和后面的东西也许需要分开来」）
+      // 「+」在符号左边、小一号浅一色（user「不过加号和后面的东西也许需要分开来」→ 试过左上角角标 →「太不显眼了，能不能放在符号左边，只是字号和颜色拉开差距」）
       case "more": {
         const m = this.marksHere(this.host.state()), plus = `<span class="plus">+</span>`;
         const digits = (n: number) => [...String(n)].map((ch) => TS(Number(ch))).join("");
@@ -227,7 +227,7 @@ export class Pad {
    *  「⋯」/ 移调点开后整排换成候选。（试过放 pad 最下面，user「别扭，还是放在上面吧」） */
   private buildHead(selKey: number | null, rows: number): void {
     const box = this.el.querySelector<HTMLElement>(".pad-head")!;
-    box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : "cands"}`;
+    box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) :
       (selKey !== null
         ? `<button class="btn knob k-key" data-knob="key" title="移调（选中的这段）：点开 = 半音 / 全音 / 八度 / 转调"><span class="kl">移调</span></button>`
@@ -318,12 +318,12 @@ export class Pad {
   private back(): void { this.mode = "normal"; this.render(); }
 
   /** 值旋钮的一串值，大的在上（升号多 / 长的 / 音域高的在上）+ 现在是第几个 + 选第 i 个（立刻生效）。 */
-  private knobList(knob: string, narrow = this.rangeNarrow()): { items: string[]; index: number; title: string; set(i: number): void } {
+  private knobList(knob: string, narrow = this.rangeNarrow()): { items: string[]; index: number; title: string; set(i: number): void; loop?: boolean } {
     const st = this.host.state(), f = inputKey(st);
     if (knob === "key") {
       const K = [...KEY_CIRCLE].reverse();   // 1=F♯ … 1=C … 1=G♭
       const sc = this.scale();
-      return { items: K.map((k) => keyLabel(k, sc)), index: Math.max(0, K.indexOf(f)), title: "pad 的调（五度圈）", set: (i) => this.host.onInputKey(K[i]) };
+      return { items: K.map((k) => keyLabel(k, sc)), index: Math.max(0, K.indexOf(f)), title: "pad 的调（五度圈）", set: (i) => this.host.onInputKey(K[i]), loop: true };
     }
     if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st.input.unit)), title: "长短基线", set: (i) => this.host.onUnit(UNITS[i]) };
     const rows = this.rows();   // 音域：高的在上（一张纸：往上推 = 看下面更低的）
@@ -343,13 +343,15 @@ export class Pad {
     if (knob === "more" || (knob === "key" && this.host.state().sel)) { this.mode = knob === "more" ? "more" : "transpose"; this.render(); return; }
     try { b.setPointerCapture(e.pointerId); } catch { /* 指针已经没了 */ }
     const v = this.knobList(knob), n = v.items.length, pid = e.pointerId, y0 = e.clientY;
+    // 环（五度圈）：滚轮两头各多摆一格（接着另一头），一格就能绕过去
+    const rollItems = v.loop ? [v.items[n - 1], ...v.items, v.items[0]] : v.items, at0 = v.loop ? v.index + 1 : v.index;
     let moved = false, cur = v.index, roll: HTMLElement | null = null, H = 0;
     // 一次最多一格：窗里最多滚到下一格；滑过半格 = 下一格在窗里占了多半 = 就是它（到头了只让它稍微晃一下）
-    const room = (dir: number) => (v.index + dir >= 0 && v.index + dir < n ? STEP : STEP * 0.3);   // dir = -1：往下拉（上面大的进窗）；+1：往上推
+    const room = (dir: number) => (v.loop || (v.index + dir >= 0 && v.index + dir < n) ? STEP : STEP * 0.3);   // dir = -1：往下拉（上面大的进窗）；+1：往上推
     const paint = (dy: number) => {
       const off = Math.max(-room(1), Math.min(room(-1), dy));
-      roll!.style.transform = `translateY(${(-v.index * STEP + off) * (H / STEP)}px)`;   // 窗里一格 = 方块那么高；手指走 STEP = 窗里滚一整格
-      return Math.abs(off) >= STEP / 2 ? v.index - Math.sign(off) : v.index;
+      roll!.style.transform = `translateY(${(-at0 * STEP + off) * (H / STEP)}px)`;   // 窗里一格 = 方块那么高；手指走 STEP = 窗里滚一整格
+      return Math.abs(off) >= STEP / 2 ? (v.index - Math.sign(off) + n) % n : v.index;
     };
     const move = (ev: PointerEvent) => {
       if (ev.pointerId !== pid) return;
@@ -358,7 +360,7 @@ export class Pad {
         if (Math.abs(dy) < MOVE) return;
         moved = true; H = b.clientHeight;
         roll = document.createElement("div"); roll.className = "kroll";
-        roll.innerHTML = v.items.map((h) => `<div class="kroll-i" style="height:${H}px">${h}</div>`).join("");
+        roll.innerHTML = rollItems.map((h) => `<div class="kroll-i" style="height:${H}px">${h}</div>`).join("");
         b.appendChild(roll); b.classList.add("rolling");
       }
       const i = paint(dy);
@@ -392,7 +394,7 @@ export class Pad {
       const st = this.host.state(), K = [...KEY_CIRCLE].reverse();
       const [wk, ws] = w >= 210 ? [Math.round(w * 0.36), w - Math.round(w * 0.36) - 2] : [72, 136];
       openDrum(anchor, [
-        { items: K.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K.indexOf(inputKey(st))), width: wk, title: "pad 的调（五度圈）" },
+        { items: K.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K.indexOf(inputKey(st))), width: wk, title: "pad 的调（五度圈）", loop: true },
         { items: SCALES.map(scaleItem), index: Math.max(0, SCALES.findIndex((x) => x.id === st.input.inputScale)), width: ws, title: "调式：pad 上排哪些音" },
       ], { onChange: (c, i) => { if (c === 0) this.host.onInputKey(K[i]); else this.host.onInputScale(SCALES[i].id); } });
       return;

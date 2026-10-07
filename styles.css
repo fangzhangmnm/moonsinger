@@ -242,8 +242,7 @@ button, input, select { font: inherit; color: inherit; }
 .drum-item .sc b { font-weight: inherit; font-size: 15px; }
 .drum-item .sc small { font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 /* 「⋯」里的插记号：「+」+ 音乐符号（Bravura） */
-.pad-tools.cands .btn.cand { position: relative; }
-.pad-tools.cands .btn.cand .plus { position: absolute; left: 5px; top: 2px; font-size: 13px; line-height: 1; color: var(--muted); }
+.pad-tools.cands .btn.cand .plus { font-size: 13px; line-height: 1; color: var(--muted); margin-right: 5px; }   /* 「+」在符号左边，字号和颜色拉开（user「放在左上角太不显眼了，能不能放在符号左边，只是字号和颜色拉开差距」） */
 .pad-tools.cands .btn.cand .mg { font-family: "Bravura"; font-size: 22px; line-height: 1; }
 .pad-tools.cands .btn.cand .mg.met { font-size: 24px; position: relative; top: 3px; }
 .pad-tools.cands .btn.cand .mg.ts { display: inline-flex; flex-direction: column; font-size: 20px; line-height: .5; }
@@ -251,3 +250,6 @@ button, input, select { font: inherit; color: inherit; }
 /* 写字键 0 | —：符号下面一行小字（user「0 - | 三个承重的按钮还是有点谜语人」） */
 .pad-tools.writes .btn.wk { flex-direction: column; gap: 1px; line-height: 1.05; }
 .pad-tools.writes .btn.wk small { font-size: 10px; color: var(--muted); }
+/* 「⋯」里：格子宽一点（可以多行），「自动小节线」一行写得下 */
+.pad-tools.cands.m-more { grid-template-columns: repeat(auto-fit, minmax(78px, 1fr)); }
+.pad-tools.cands.m-more .btn.cand { white-space: nowrap; }

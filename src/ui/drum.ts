@@ -7,13 +7,15 @@
 // · 停在中间高亮带里的那格 = 选中，一变就生效（旋钮上的字跟着变 = 预览）。
 // · 只在点一下旋钮时展开（按住滑 = 在旋钮那一格里原地滑，见 pad.ts；user「我希望手指松了立刻停，不要顿一下，这是快速输入。要不还是做成in place 滑动只在窗格里面预览」）。
 // · 一根滚轮可以并几列（长短 + 连音）：每列各滚各的。
+// · loop 列 = 环（五度圈；user「五度圈应该是一个环吧」）：内容摆 LOOP_COPIES 份，从中间那份开始；滚停了悄悄挪回中间那份（看起来一样），一直转都转不到头。
 
-export interface DrumColumn { items: string[]; index: number; width: number; title?: string }   // items = 每格的 HTML
+export interface DrumColumn { items: string[]; index: number; width: number; title?: string; loop?: boolean }   // items = 每格的 HTML；loop = 首尾相接
 export interface DrumOpts { onChange(col: number, index: number): void; onClose?(): void }
 /** setItems：换某一列的内容（位置不变）——长短一变，连音那列的小蝌蚪跟着变（user「三联五联的小蝌蚪应该跟着base时值adaptive的变」）。 */
 export interface DrumHandle { close(): void; setItems(col: number, items: string[]): void }
 
 const ROW = 44, VISIBLE = 5;   // 每格高、看得见几格（中间那格 = 选中）
+const LOOP_COPIES = 7, RECENTER_MS = 140;   // 环：摆几份；滚停了多久挪回中间那份
 
 let current: { close(): void } | null = null;
 
@@ -50,27 +52,31 @@ export function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): 
     const col = document.createElement("div");
     col.className = "drum-col"; col.style.width = `${c.width}px`;
     if (c.title) col.title = c.title;
-    const padRows = Math.floor(VISIBLE / 2);
+    const padRows = Math.floor(VISIBLE / 2), n = c.items.length, copies = c.loop ? LOOP_COPIES : 1, mid = Math.floor(copies / 2) * n;
     col.innerHTML = `<div class="drum-pad" style="height:${ROW * padRows}px"></div>` +
-      c.items.map((h, i) => `<div class="drum-item" data-i="${i}">${h}</div>`).join("") +
+      Array.from({ length: n * copies }, (_, r) => `<div class="drum-item" data-i="${r}">${c.items[r % n]}</div>`).join("") +
       `<div class="drum-pad" style="height:${ROW * padRows}px"></div>`;
     box.appendChild(col);
-    const items = [...col.querySelectorAll<HTMLElement>(".drum-item")], n = items.length;
-    let shown = c.index;
-    const at = () => Math.max(0, Math.min(n - 1, Math.round(col.scrollTop / ROW)));
+    const items = [...col.querySelectorAll<HTMLElement>(".drum-item")], total = items.length;
+    const raw = () => Math.max(0, Math.min(total - 1, Math.round(col.scrollTop / ROW)));
+    let shown = c.index, recenter = 0;
     const paint = () => {
-      const top = col.scrollTop, a = at();
+      const top = col.scrollTop, a = raw();
       items.forEach((el, i) => { el.style.opacity = String(Math.max(0.25, 1 - (Math.abs(i * ROW - top) / ROW) * 0.3)); el.classList.toggle("on", i === a); });
     };
-    col.scrollTop = c.index * ROW;
+    col.scrollTop = (c.index + mid) * ROW;
     paint();
     col.addEventListener("scroll", () => {
       paint();
-      const i = at(); if (i !== shown) { shown = i; o.onChange(ci, i); }
+      const i = raw() % n; if (i !== shown) { shown = i; o.onChange(ci, i); }
+      if (c.loop) {   // 滚停了：挪回中间那份（内容一样，看不出来）
+        clearTimeout(recenter);
+        recenter = window.setTimeout(() => { const r = raw(); if (Math.abs(r - (r % n) - mid) >= n) col.scrollTop = ((r % n) + mid) * ROW; }, RECENTER_MS);
+      }
     }, { passive: true });
     col.addEventListener("click", (e) => {   // 点一格 = 立刻选中、立刻收起（不等动画）
       const it = (e.target as HTMLElement).closest<HTMLElement>(".drum-item"); if (!it) return;
-      const i = Number(it.dataset.i);
+      const i = Number(it.dataset.i) % n;
       if (i !== shown) { shown = i; o.onChange(ci, i); }
       close();
     });
@@ -79,7 +85,7 @@ export function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): 
     close,
     setItems: (ci, items) => {
       const col = box.querySelectorAll<HTMLElement>(".drum-col")[ci]; if (!col) return;
-      col.querySelectorAll<HTMLElement>(".drum-item").forEach((el, i) => { if (items[i] !== undefined) el.innerHTML = items[i]; });
+      col.querySelectorAll<HTMLElement>(".drum-item").forEach((el, i) => { const h = items[i % items.length]; if (h !== undefined) el.innerHTML = h; });
     },
   };
   current = handle;

@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.14-2026-10-07";
+var APP_VERSION = "v0.2.15-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2368,6 +2368,8 @@ var degLabel = (g2) => `${g2.alt > 0 ? "\u266F" : g2.alt < 0 ? "\u266D" : ""}${g
 // src/ui/drum.ts
 var ROW = 44;
 var VISIBLE = 5;
+var LOOP_COPIES = 7;
+var RECENTER_MS = 140;
 var current = null;
 function openDrum(anchor, cols, o) {
   current?.close();
@@ -2411,33 +2413,40 @@ function openDrum(anchor, cols, o) {
     col.className = "drum-col";
     col.style.width = `${c.width}px`;
     if (c.title) col.title = c.title;
-    const padRows = Math.floor(VISIBLE / 2);
-    col.innerHTML = `<div class="drum-pad" style="height:${ROW * padRows}px"></div>` + c.items.map((h, i) => `<div class="drum-item" data-i="${i}">${h}</div>`).join("") + `<div class="drum-pad" style="height:${ROW * padRows}px"></div>`;
+    const padRows = Math.floor(VISIBLE / 2), n2 = c.items.length, copies = c.loop ? LOOP_COPIES : 1, mid = Math.floor(copies / 2) * n2;
+    col.innerHTML = `<div class="drum-pad" style="height:${ROW * padRows}px"></div>` + Array.from({ length: n2 * copies }, (_, r2) => `<div class="drum-item" data-i="${r2}">${c.items[r2 % n2]}</div>`).join("") + `<div class="drum-pad" style="height:${ROW * padRows}px"></div>`;
     box.appendChild(col);
-    const items = [...col.querySelectorAll(".drum-item")], n2 = items.length;
-    let shown = c.index;
-    const at = () => Math.max(0, Math.min(n2 - 1, Math.round(col.scrollTop / ROW)));
+    const items = [...col.querySelectorAll(".drum-item")], total2 = items.length;
+    const raw = () => Math.max(0, Math.min(total2 - 1, Math.round(col.scrollTop / ROW)));
+    let shown = c.index, recenter = 0;
     const paint = () => {
-      const top = col.scrollTop, a = at();
+      const top = col.scrollTop, a = raw();
       items.forEach((el, i) => {
         el.style.opacity = String(Math.max(0.25, 1 - Math.abs(i * ROW - top) / ROW * 0.3));
         el.classList.toggle("on", i === a);
       });
     };
-    col.scrollTop = c.index * ROW;
+    col.scrollTop = (c.index + mid) * ROW;
     paint();
     col.addEventListener("scroll", () => {
       paint();
-      const i = at();
+      const i = raw() % n2;
       if (i !== shown) {
         shown = i;
         o.onChange(ci, i);
+      }
+      if (c.loop) {
+        clearTimeout(recenter);
+        recenter = window.setTimeout(() => {
+          const r2 = raw();
+          if (Math.abs(r2 - r2 % n2 - mid) >= n2) col.scrollTop = (r2 % n2 + mid) * ROW;
+        }, RECENTER_MS);
       }
     }, { passive: true });
     col.addEventListener("click", (e) => {
       const it = e.target.closest(".drum-item");
       if (!it) return;
-      const i = Number(it.dataset.i);
+      const i = Number(it.dataset.i) % n2;
       if (i !== shown) {
         shown = i;
         o.onChange(ci, i);
@@ -2451,7 +2460,8 @@ function openDrum(anchor, cols, o) {
       const col = box.querySelectorAll(".drum-col")[ci];
       if (!col) return;
       col.querySelectorAll(".drum-item").forEach((el, i) => {
-        if (items[i] !== void 0) el.innerHTML = items[i];
+        const h = items[i % items.length];
+        if (h !== void 0) el.innerHTML = h;
       });
     }
   };
@@ -2612,7 +2622,7 @@ var Pad = class {
     switch (this.mode) {
       // 「⋯」里可以多行：插记号直接展开（user「...里面可以多行，放很多东西。所以插记号可以展开，然后应该也是用音乐符号？也许用一个加号？」）；
       // 按钮上写光标处正生效的那个（插进去的默认值），调号写「1=G」不写 ♯♭（user「+1=G才比较好懂吧，+#b只会让人觉得是加升降号」）；
-      // 「+」是左上角的小角标、和内容分开（user「不过加号和后面的东西也许需要分开来」）
+      // 「+」在符号左边、小一号浅一色（user「不过加号和后面的东西也许需要分开来」→ 试过左上角角标 →「太不显眼了，能不能放在符号左边，只是字号和颜色拉开差距」）
       case "more": {
         const m = this.marksHere(this.host.state()), plus = `<span class="plus">+</span>`;
         const digits = (n2) => [...String(n2)].map((ch) => TS(Number(ch))).join("");
@@ -2639,7 +2649,7 @@ var Pad = class {
    *  「⋯」/ 移调点开后整排换成候选。（试过放 pad 最下面，user「别扭，还是放在上面吧」） */
   buildHead(selKey, rows) {
     const box = this.el.querySelector(".pad-head");
-    box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : "cands"}`;
+    box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b) => b.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -2774,7 +2784,7 @@ var Pad = class {
     if (knob === "key") {
       const K2 = [...KEY_CIRCLE].reverse();
       const sc = this.scale();
-      return { items: K2.map((k) => keyLabel(k, sc)), index: Math.max(0, K2.indexOf(f)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i) => this.host.onInputKey(K2[i]) };
+      return { items: K2.map((k) => keyLabel(k, sc)), index: Math.max(0, K2.indexOf(f)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i) => this.host.onInputKey(K2[i]), loop: true };
     }
     if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st2.input.unit)), title: "\u957F\u77ED\u57FA\u7EBF", set: (i) => this.host.onUnit(UNITS[i]) };
     const rows = this.rows();
@@ -2807,12 +2817,13 @@ var Pad = class {
     } catch {
     }
     const v = this.knobList(knob), n2 = v.items.length, pid = e.pointerId, y0 = e.clientY;
+    const rollItems = v.loop ? [v.items[n2 - 1], ...v.items, v.items[0]] : v.items, at0 = v.loop ? v.index + 1 : v.index;
     let moved = false, cur = v.index, roll = null, H = 0;
-    const room = (dir) => v.index + dir >= 0 && v.index + dir < n2 ? STEP : STEP * 0.3;
+    const room = (dir) => v.loop || v.index + dir >= 0 && v.index + dir < n2 ? STEP : STEP * 0.3;
     const paint = (dy) => {
       const off = Math.max(-room(1), Math.min(room(-1), dy));
-      roll.style.transform = `translateY(${(-v.index * STEP + off) * (H / STEP)}px)`;
-      return Math.abs(off) >= STEP / 2 ? v.index - Math.sign(off) : v.index;
+      roll.style.transform = `translateY(${(-at0 * STEP + off) * (H / STEP)}px)`;
+      return Math.abs(off) >= STEP / 2 ? (v.index - Math.sign(off) + n2) % n2 : v.index;
     };
     const move = (ev) => {
       if (ev.pointerId !== pid) return;
@@ -2823,7 +2834,7 @@ var Pad = class {
         H = b.clientHeight;
         roll = document.createElement("div");
         roll.className = "kroll";
-        roll.innerHTML = v.items.map((h) => `<div class="kroll-i" style="height:${H}px">${h}</div>`).join("");
+        roll.innerHTML = rollItems.map((h) => `<div class="kroll-i" style="height:${H}px">${h}</div>`).join("");
         b.appendChild(roll);
         b.classList.add("rolling");
       }
@@ -2869,7 +2880,7 @@ var Pad = class {
       const st2 = this.host.state(), K2 = [...KEY_CIRCLE].reverse();
       const [wk, ws] = w >= 210 ? [Math.round(w * 0.36), w - Math.round(w * 0.36) - 2] : [72, 136];
       openDrum(anchor, [
-        { items: K2.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K2.indexOf(inputKey(st2))), width: wk, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09" },
+        { items: K2.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K2.indexOf(inputKey(st2))), width: wk, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", loop: true },
         { items: SCALES.map(scaleItem), index: Math.max(0, SCALES.findIndex((x) => x.id === st2.input.inputScale)), width: ws, title: "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3" }
       ], { onChange: (c, i) => {
         if (c === 0) this.host.onInputKey(K2[i]);
@@ -5600,7 +5611,7 @@ function offerFile(file, title, msg, onDone) {
 $("shareBtn").addEventListener("click", () => {
   void exportSong();
 });
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "f55e9d2e2073" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "a26121ba07fd" };
 $("humSel").value = st.song.hum;
 $("humSel").addEventListener("change", (e) => {
   update(setHum(st, e.target.value));
@@ -5855,4 +5866,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-c427440b3b6e.mjs.map
+//# sourceMappingURL=moonsinger-9fa81ef110db.mjs.map
