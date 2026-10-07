@@ -98,6 +98,8 @@ user 2026-10-07「先不急着store。可以先按照无地规范导入导出做
 user：「谱上面显示的不应跟是月读，而是人声，女声 lead bass violin之类功能的东西…这个就是我那个窄接口要拦的」「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的」。
 - MusicXML 三层正好对上：`<part-name>` = 角色名（谱上写的）；`<instrument-sound>` = 角色是什么声部（W3C sounds.xml 的官方 id，预设表 `src/score/roles.ts`）；`<virtual-instrument>` = 谁来演（候选：月读、以后的插件），**名字不上谱**。
 - 休息室的角色快照多一个 `sound` 字段（官方 id）；别的软件的谱：读它的 `<instrument-sound>` 记进角色。
+- 同名（多声部以后）：user「然后default name如果重名的话会变成vocals vocals2这样？」→ AI 答（未做，现在只有一个声部）：照打谱软件（MuseScore 4 的自动编号），同名的都带号「Vocals 1 / Vocals 2」（第一个也补 1，单独一个不带号）；编号不存进角色名、按声部先后现算，写 MusicXML 时 `<part-name>` 带号；弦乐罗马数字（Violin I / II）要不要归 user。
+- 角色下拉按功能（v0.2.24，user「不应跟是乐器name salad，而是功能选」）：人声 Vocals / Backing Vocals / SATB，乐队 Piano / Guitar / Bass / Drums / Strings / Synth Pad / Synth Lead，`src/score/roles.ts`。
 
 ## 6½. 图片：贴纸 + 封面（2026-10-07 user 定了方向；edited by Claude Opus 5.5）
 
