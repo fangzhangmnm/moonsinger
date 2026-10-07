@@ -15,7 +15,9 @@
     // type-only import 必须写 `import type`，否则 strip-types 运行时报「does not provide an export」。
     "verbatimModuleSyntax": true,
     "types": [],
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    // 开发期直连共享库源码（@internal/model-packs 还没发版；发 0.1.0 后改成 vendor-pkgs 收货、删掉这条和 build.sh 的 alias）
+    "paths": { "@internal/model-packs": ["../20261007 internal-model-packs/src/index.ts"] }
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
   "exclude": ["Lab", "node_modules", ".claude", "tools"]

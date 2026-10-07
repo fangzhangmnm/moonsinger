@@ -7,6 +7,7 @@ import "./lyrics.test.ts";
 import "./usagi.test.ts";
 import "./keys.test.ts";
 import "./en.test.ts";
+import "./packs.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

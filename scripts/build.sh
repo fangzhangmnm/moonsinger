@@ -9,6 +9,8 @@ ENTRY="./src/app/main.ts"
 OUT="./dist/moonsinger.mjs"
 ESBUILD_VER="0.24.0"
 ESBUILD="./tools/esbuild/esbuild"
+# 开发期直连共享库源码（@internal/model-packs 还没发版；发 0.1.0 后改成 vendor-pkgs 收货、删掉这个 alias 和 tsconfig 的 paths）
+MP_ALIAS="--alias:@internal/model-packs=../20261007 internal-model-packs/src/index.ts"
 
 # 没 esbuild 自动 curl 一份（tools/ gitignored；tools/ = 构建工具，区别于运行时 vendor）
 if [ ! -x "$ESBUILD" ]; then
@@ -40,7 +42,7 @@ mkdir -p dist
 "$ESBUILD" "$ENTRY" --bundle --format=esm --target=es2022 --outfile="$OUT" --sourcemap --log-level=warning
 echo "[build] ✓ $OUT"
 # 月读的 worker（唱法核心 src/singer/sing-core.mjs 打进来；第三方引擎 / 模型运行时从 dev-assets/ 动态加载，不进包）
-"$ESBUILD" ./src/singer/worker.ts --bundle --format=esm --target=es2022 --outfile=./dist/singer-worker.mjs --sourcemap --log-level=warning
+"$ESBUILD" ./src/singer/worker.ts --bundle "$MP_ALIAS" --format=esm --target=es2022 --outfile=./dist/singer-worker.mjs --sourcemap --log-level=warning
 echo "[build] ✓ ./dist/singer-worker.mjs"
 # mp3 编码 worker（vendored lamejs，LGPL-3.0，单独一个文件；点导出才加载）
 "$ESBUILD" ./src/export/mp3-worker.ts --bundle --format=esm --target=es2022 --outfile=./dist/mp3-worker.mjs --sourcemap --log-level=warning
