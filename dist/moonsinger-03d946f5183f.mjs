@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.12-2026-10-07";
+var APP_VERSION = "v0.2.13-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5155,7 +5155,7 @@ function showUpdateBar() {
   });
   document.body.append(el);
 }
-bar.innerHTML = `<button id="fileBtn" class="btn" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u53E6\u5B58\u4E3A\uFF08Ctrl / \u2318+S \u5B58\uFF09"><svg class="ico"><use href="#file"/></svg></button><span id="docTitle" class="title">\u672A\u547D\u540D</span><span class="ver">${APP_VERSION}</span><label class="field" title="\u5B8C\u6574 = \u6708\u8BFB\u672C\u4EBA\uFF08\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09\uFF1B\u8F7B\u91CF = \u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1">\u97F3\u8D28<select id="qualSel"><option value="full">\u5B8C\u6574</option><option value="light">\u8F7B\u91CF</option></select></label><label class="field" title="\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48">\u54FC<select id="humSel"><option value="la">\u3089 / \u5566</option><option value="n">\u3093 / \u55EF</option><option value="u">\u3046 / \u545C</option><option value="o">\u304A / \u54E6</option><option value="a">\u3042 / \u554A</option></select></label><span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span><button id="padBtn" class="btn is-on" title="\u624B\u6307 pad"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"><svg class="ico"><use href="#settings"/></svg></button><button id="shareBtn" class="btn" title="\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u53D1\u7ED9\u522B\u4EBA\u542C"><svg class="ico"><use href="#export"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button>`;
+bar.innerHTML = `<button id="fileBtn" class="btn" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u53E6\u5B58\u4E3A\uFF08Ctrl / \u2318+S \u5B58\uFF09"><svg class="ico"><use href="#file"/></svg></button><span id="docTitle" class="title">\u672A\u547D\u540D</span><span class="ver">${APP_VERSION}</span><label class="field" title="\u5B8C\u6574 = \u6708\u8BFB\u672C\u4EBA\uFF08\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09\uFF1B\u8F7B\u91CF = \u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1">\u97F3\u8D28<select id="qualSel"><option value="full">\u5B8C\u6574</option><option value="light">\u8F7B\u91CF</option></select></label><label class="field" title="\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48">\u54FC<select id="humSel"><option value="la">\u3089 / \u5566</option><option value="n">\u3093 / \u55EF</option><option value="u">\u3046 / \u545C</option><option value="o">\u304A / \u54E6</option><option value="a">\u3042 / \u554A</option></select></label><span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span><button id="padBtn" class="btn is-on" title="\u624B\u6307 pad"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"><svg class="ico"><use href="#wrench"/></svg></button><button id="shareBtn" class="btn" title="\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u53D1\u7ED9\u522B\u4EBA\u542C"><svg class="ico"><use href="#export"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button>`;
 var sampler = new Sampler();
 var sound = {
   down: (p, id = "main") => sampler.down(midiOf(p), st.song.hum, id),
@@ -5557,7 +5557,7 @@ function offerFile(file, title, msg, onDone) {
 $("shareBtn").addEventListener("click", () => {
   void exportSong();
 });
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "f55e9d2e2073" };
 $("humSel").value = st.song.hum;
 $("humSel").addEventListener("change", (e) => {
   update(setHum(st, e.target.value));
@@ -5812,4 +5812,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-088667613401.mjs.map
+//# sourceMappingURL=moonsinger-03d946f5183f.mjs.map

@@ -59,7 +59,7 @@ bar.innerHTML =
   `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="o">お / 哦</option><option value="a">あ / 啊</option></select></label>` +
   `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
   `<button id="padBtn" class="btn is-on" title="手指 pad"><svg class="ico"><use href="#grid"/></svg></button>` +
-  `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款"><svg class="ico"><use href="#settings"/></svg></button>` +
+  `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款"><svg class="ico"><use href="#wrench"/></svg></button>` +
   `<button id="shareBtn" class="btn" title="导出歌声（mp3），发给别人听"><svg class="ico"><use href="#export"/></svg></button>` +
   `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button>` +
   `<button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>`;
@@ -359,7 +359,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 }
 $("shareBtn").addEventListener("click", () => { void exportSong(); });
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
-(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st };
+(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: __CSS_HASH__ };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 $<HTMLSelectElement>("humSel").value = st.song.hum;   // 下拉的初值跟这首歌的设置（默认嗯）
