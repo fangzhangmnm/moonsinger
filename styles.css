@@ -26,7 +26,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 [hidden] { display: none !important; }
 button, input, select { font: inherit; color: inherit; }
 
-#app { height: 100%; display: grid; grid-template-rows: auto 1fr;
+/* 列宽 minmax(0, 1fr)：里面的内容（谱面 SVG 按上一次的宽度画的）不许把整页撑宽——转屏 / PWA 启动时会卡在宽的那次（2026-10-07 user 截图「pwa的时候好像宽度超了」）；
+   border-box：安全区的内边距算在 100% 里面（PWA 全屏时不再多出一截） */
+#app { height: 100%; box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
 
 /* 顶栏 */
@@ -45,7 +47,7 @@ button, input, select { font: inherit; color: inherit; }
 .ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
 /* 舞台：谱面板（内部滚）+ pad 面板 */
-#stage { min-height: 0; display: flex; }
+#stage { min-height: 0; min-width: 0; display: flex; }
 .score { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; outline: none; background: var(--panel);
   -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .score svg { display: block; }
@@ -84,9 +86,9 @@ button, input, select { font: inherit; color: inherit; }
    键高 / 键缝照 WXHW 量的 iOS 键盘：平板（iPad mini）键高 55.5、上下缝 9；手机（iPhone）46、6；左右缝 5；圆角 7（pad.ts KEY_METRIC 同一组数） */
 .pad-panel { --key-h: 46px; --kgv: 6px; --kg: 5px; }
 .pad-panel[data-form="tablet"] { --key-h: 55.5px; --kgv: 9px; }
-.pad-tools { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.pad-tools { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; }
 .pad-tools .btn { padding: 0; min-width: 0; height: 40px; font-size: 16px; }
-.pad-grid { display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); grid-auto-rows: var(--key-h); column-gap: var(--kg); row-gap: var(--kgv); }
+.pad-grid { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); grid-auto-rows: var(--key-h); column-gap: var(--kg); row-gap: var(--kgv); }
 .pad-key { border: 0; border-radius: 7px; background: #fff; box-shadow: 0 1px 0 rgba(42, 42, 42, .28); display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2px; cursor: pointer; touch-action: none; padding: 0; min-width: 0; }
 .pad-key .deg { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 21px; font-weight: 600; line-height: 1; }
@@ -104,7 +106,7 @@ button, input, select { font: inherit; color: inherit; }
 /* 竖屏（iPad mini 竖着拿）：像 iPad 软键盘贴底——全宽，不是正方形；键高按手指定 */
 @media (max-aspect-ratio: 1/1) {
   #stage { flex-direction: column; }
-  .pad-panel { width: auto; border-left: 0; border-top: 1px solid var(--line); padding: 6px 8px 8px; gap: 6px; }
+  .pad-panel { width: auto; min-width: 0; border-left: 0; border-top: 1px solid var(--line); padding: 6px 8px 8px; gap: 6px; }
   .pad-tools .btn { height: 44px; }
 }
 
