@@ -9,7 +9,7 @@
 //   「＋」= 在光标处插记号（调号 / 拍号 / 速度，候选条里挑），插完就地打开它的编辑框（user「…都是token」）。
 //   2026-10-07 改版（user「然后键盘可以五row或者更多，0移回上面，16号还是音，然后我说了上下键是移动row而不是八度，就是平移row的窗口，
 //   可以调row数量，或者根据设备自己判断。然后键间距和ipad和iphone键盘对齐，可以看一下wxhw怎么做的」「col也可以调，我可以实验一下哈哈」）：
-//   网格 = 列 × 行，全是音（0 回到工具条）；▲▼ 整个窗口挪一行；「布局」候选里调行数（自动 / 3–8）和列数（3–7）；
+//   网格 = 列 × 行，全是音（0 回到工具条）；▲▼ 整个窗口挪一行；「布局」候选里调行数（默认 4；自动 / 3–8）和列数（3–7）；
 //   键高 / 键缝照 WXHW 量的 iOS 键盘（平板 = iPad mini：键高 55.5、上下缝 9；手机 = iPhone：46、6；左右缝 5；形态判断同 WXHW dock.ts）。
 //   布局只在这次打开里有效（持久化还没定）。
 //   排法两档（user 2026-10-07「键盘的键位布局能不能按照绝对音高来，试试」）：首调 = 每行从「1」起、跟着「1=」走、大字是简谱数字；
@@ -61,7 +61,7 @@ type Mode = "normal" | "key" | "tuplet" | "mark" | "transpose" | "modulate" | "l
 export class Pad {
   private rowShift = 0;       // ▲▼ 挪过几行
   private cols = 4;           // 每行几个音（MEDO = 4）
-  private rowsSetting: number | "auto" = "auto";
+  private rowsSetting: number | "auto" = 4;   // 默认 4 行（user 2026-10-07「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
   private layoutMode: "movable" | "absolute" = "movable";   // 首调 / 绝对音高
   private mode: Mode = "normal";
   private builtFor = "";
