@@ -92,6 +92,8 @@ export interface PadHost {
   onTuplet(n: 0 | 3 | 5 | 6 | 7): void;
   onInputKey(f: number): void;
   onInputScale(id: string): void;
+  autoBars(): boolean;                     // 谱面按拍号自动画小节线开着没有
+  onAutoBars(on: boolean): void;
   onInsertMark(kind: "key" | "time" | "tempo"): void;
   onSoundDown(p: Pitch, id: string): void;   // 试听 / 弹：按下响（复音：每根手指一个声音）
   onSoundUp(id: string): void;
@@ -204,6 +206,7 @@ export class Pad {
         return c(`data-mark="key"`, `${plus}1=${KEY_NAMES[m.key] ?? "?"}`, false, "插调号（在光标处；先填现在的，插了再改）") +
           c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.time.beats)}</span><span>${digits(m.time.beatType)}</span></span>`, false, "插拍号（在光标处；先填现在的，插了再改）") +
           c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, "插速度（在光标处；先填现在的，插了再改）") +
+          c(`data-autobars="1"`, "自动小节线", this.host.autoBars(), "按拍号自动画小节线（只画、不进数据）；手插的「|」= 从那里重新数，弱起 = 写完弱起的音按一下「|」") +
           c(`data-open="layout"`, "布局…", false, "几行几列、首调 / 绝对") + back;
       }
       case "layout":
@@ -245,6 +248,7 @@ export class Pad {
     this.on(box, "[data-toct]", (b) => this.host.onCommand({ k: "octave", d: Number(b.dataset.toct) }));
     this.on(box, "[data-mod]", (b) => { this.back(); this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) }); });
     this.on(box, "[data-back]", () => this.back());
+    this.on(box, "[data-autobars]", () => { this.host.onAutoBars(!this.host.autoBars()); this.toolsFor = ""; this.render(); });   // 开关：点了不收，钮上亮 / 灭
   }
 
   private buildGrid(f: number, base: number, rows: number): void {

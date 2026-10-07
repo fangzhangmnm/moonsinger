@@ -31,6 +31,8 @@ export interface ScoreViewHost {
   /** 五线谱像文本框（user「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
    *  staff = 点在谱上（音 / 空白 / 框选）；text = 打开了要系统键盘的框（歌词 / 歌名）。记号框不算（触屏上不弹系统键盘）。 */
   focus?(where: "staff" | "text"): void;
+  /** 按拍号自动画小节线开着没有（默认开）。 */
+  autoBars?(): boolean;
 }
 
 export class ScoreView {
@@ -59,13 +61,17 @@ export class ScoreView {
     new ResizeObserver(() => this.render()).observe(el);
   }
 
-  get sp(): number { return matchMedia("(pointer: coarse)").matches ? 11 : 10; }
+  /** 五线谱间距（px）：触屏 11、鼠标 10；窄屏（< 420，iPhone）跟着宽度小一点，最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。 */
+  get sp(): number {
+    const base = matchMedia("(pointer: coarse)").matches ? 11 : 10, w = this.el.clientWidth;
+    return w > 0 && w < 420 ? Math.max(8.5, Math.min(base, w / 42)) : base;
+  }
 
   render(): void {
     const st = this.host.get(), sp = this.sp;
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     const width = Math.max(320, this.el.clientWidth);
-    this.layout = engrave(st.song, { width, sp, caret: st.caret, sel: st.sel, measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true });
+    this.layout = engrave(st.song, { width, sp, caret: st.caret, sel: st.sel, measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true, autoBars: this.host.autoBars?.() ?? true });
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);

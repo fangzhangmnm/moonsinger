@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.13-2026-10-07";
+var APP_VERSION = "v0.2.14-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -633,21 +633,6 @@ function timeline(song) {
   });
   return out;
 }
-function barFill(song) {
-  const wantOf = (b, bt) => b * WHOLE / bt;
-  let want = wantOf(DEFAULT_TIME.beats, DEFAULT_TIME.beatType);
-  const out = [];
-  let from = 0, ticks = 0;
-  song.tokens.forEach((tok, i) => {
-    if (tok.kind === "bar") {
-      out.push({ from, to: i, ticks, full: ticks === want });
-      from = i + 1;
-      ticks = 0;
-    } else if (tok.kind === "time") want = wantOf(tok.beats, tok.beatType);
-    else if (isTimed(tok)) ticks += tok.dur;
-  });
-  return out;
-}
 
 // src/score/commands.ts
 function apply(st2, c, now = Date.now()) {
@@ -1121,7 +1106,7 @@ function notate(dur) {
   return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
 }
 var flagLevel = (base2) => base2 >= TPQ ? 0 : Math.round(Math.log2(TPQ / base2));
-var baseWidth = (base2) => 4 + 0.8 * Math.log2(base2 / TPQ);
+var baseWidth = (base2) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base2 / TPQ));
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 function engrave(song, o) {
@@ -1140,82 +1125,110 @@ function engrave(song, o) {
     if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") headIdx[t.kind] = i;
   }
   const headKey = fifths, headTime = time, headBpm = bpm;
+  const autoBars2 = o.autoBars !== false;
   const units = [];
-  const fills = barFill(song);
-  let accState = /* @__PURE__ */ new Map(), inBar = 0, barCount = 0, beat = beatTicks(time.beats, time.beatType);
+  const measureLen2 = (b, bt) => b * WHOLE / bt;
+  let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0;
+  let beat = beatTicks(time.beats, time.beatType), len = measureLen2(time.beats, time.beatType);
   const pushHead = () => {
     units.push({ kind: "head", w: 0, x: 0, system: 0 });
   };
+  const pushBar = (index, auto) => {
+    const warn = inBar !== len && measureNo > 0;
+    if (warn) shortBars++;
+    units.push({ kind: "bar", index, w: BAR_W, x: 0, system: 0, warn, auto });
+    accState = /* @__PURE__ */ new Map();
+    inBar = 0;
+    measureNo++;
+  };
+  const flushFull = () => {
+    if (autoBars2 && inBar >= len && inBar > 0) pushBar(-1, true);
+  };
   tokens.forEach((t, i) => {
     if (i < H) return;
-    if (writing && i === o.caret) pushHead();
+    if (writing && i === o.caret) {
+      if (t.kind !== "bar") flushFull();
+      pushHead();
+    }
     if (t.kind === "bar") {
-      const f = fills[barCount++];
-      units.push({ kind: "bar", index: i, w: BAR_W, x: 0, system: 0, warn: barCount > 1 && !!f && !f.full });
-      accState = /* @__PURE__ */ new Map();
-      inBar = 0;
+      pushBar(i, false);
       return;
     }
     if (t.kind === "key") {
+      flushFull();
       units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: keyWidth(t.fifths, fifths), x: 0, system: 0 });
       fifths = t.fifths;
       accState = /* @__PURE__ */ new Map();
       return;
     }
     if (t.kind === "time") {
+      if (autoBars2 && inBar > 0) pushBar(-1, true);
       units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: timeWidth(t.beats, t.beatType) + 1.2, x: 0, system: 0 });
       beat = beatTicks(t.beats, t.beatType);
+      len = measureLen2(t.beats, t.beatType);
       return;
     }
     if (t.kind === "tempo") {
+      flushFull();
       units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0 });
       return;
     }
     const isNote = t.kind === "note", nt = t;
     const pitch = isNote ? effectivePitch(tokens, i) : null;
-    const { ratio, chunks } = notate(t.dur);
-    let off = 0;
-    chunks.forEach((c, j) => {
-      let acc2 = null;
-      if (pitch && j === 0 && !(isNote && nt.tie)) {
-        const key = `${pitch.step}${pitch.octave}`;
-        const cur = accState.has(key) ? accState.get(key) : keyAlter(pitch.step, fifths);
-        if (pitch.alter !== cur) {
-          acc2 = pitch.alter;
-          accState.set(key, pitch.alter);
+    let left = t.dur, j = 0, lastChunk = null;
+    while (left > 1e-6) {
+      flushFull();
+      const piece = autoBars2 ? Math.min(left, len - inBar) : left;
+      const { ratio, chunks } = notate(piece);
+      let off = 0;
+      for (const c of chunks) {
+        let acc2 = null;
+        if (pitch && j === 0 && !(isNote && nt.tie)) {
+          const key = `${pitch.step}${pitch.octave}`;
+          const cur = accState.has(key) ? accState.get(key) : keyAlter(pitch.step, fifths);
+          if (pitch.alter !== cur) {
+            acc2 = pitch.alter;
+            accState.set(key, pitch.alter);
+          }
         }
+        const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
+        const accW = acc2 === null ? 0 : 1.3;
+        let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
+        if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyric) / sp + (nt.hyph ? 1.4 : 0.7));
+        const u = {
+          kind: "chunk",
+          index: i,
+          j,
+          last: false,
+          base: c.base,
+          dotted: c.dotted,
+          note: isNote,
+          ratio,
+          ticks: c.ticks,
+          pitch,
+          ghost: isNote && nt.pitch === null,
+          tie: isNote && !!nt.tie && j === 0,
+          lyric,
+          hyph: !!(isNote && nt.hyph && j === 0),
+          inBar: inBar + off,
+          beat,
+          acc: acc2,
+          w,
+          accW,
+          x: 0,
+          system: 0
+        };
+        units.push(u);
+        lastChunk = u;
+        off += c.ticks;
+        j++;
       }
-      const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
-      const accW = acc2 === null ? 0 : 1.3;
-      let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
-      if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyric) / sp + (nt.hyph ? 1.4 : 0.7));
-      units.push({
-        kind: "chunk",
-        index: i,
-        j,
-        last: j === chunks.length - 1,
-        base: c.base,
-        dotted: c.dotted,
-        note: isNote,
-        ratio,
-        ticks: c.ticks,
-        pitch,
-        ghost: isNote && nt.pitch === null,
-        tie: isNote && !!nt.tie && j === 0,
-        lyric,
-        hyph: !!(isNote && nt.hyph && j === 0),
-        inBar: inBar + off,
-        beat,
-        acc: acc2,
-        w,
-        accW,
-        x: 0,
-        system: 0
-      });
-      off += c.ticks;
-    });
-    inBar += t.dur;
+      inBar += piece;
+      left -= piece;
+    }
+    if (lastChunk) lastChunk.last = true;
   });
+  flushFull();
   if (writing && o.caret >= tokens.length) pushHead();
   const right = o.width / sp - MARGIN;
   const headerW = (first, f) => MARGIN + 0.6 + W.gClef + 1 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(headTime.beats, headTime.beatType) + 1.2 : 0.4);
@@ -1249,6 +1262,20 @@ function engrave(song, o) {
   }
   flush();
   const nSys = system + 1;
+  for (let s = 0; s < nSys - 1; s++) {
+    const row = units.filter((u) => u.system === s);
+    const end = row.reduce((m, u) => Math.max(m, u.x + u.w), sysStarts[s]), avail = right - sysStarts[s], used = end - sysStarts[s];
+    if (used < avail * 0.6) continue;
+    const grow = row.filter((u) => u.kind === "chunk"), gw = grow.reduce((a, u) => a + u.w, 0);
+    if (!gw) continue;
+    const k = (avail - used) / gw;
+    let x2 = sysStarts[s];
+    for (const u of row) {
+      u.x = x2;
+      if (u.kind === "chunk") u.w *= 1 + k;
+      x2 += u.w;
+    }
+  }
   const sysTop = (s) => P(TITLE_H + 0.5 + s * SYS_H);
   const staffTop = (s) => sysTop(s) + P(STAFF_ABOVE);
   const yOf = (s, d2) => staffTop(s) + (TOP_LINE - d2) * P(0.5);
@@ -1350,7 +1377,7 @@ function engrave(song, o) {
     }
     if (u.kind === "bar") {
       const bx = P(u.x + 0.7);
-      prims.push({ t: "line", x1: bx, y1: yOf(u.system, TOP_LINE), x2: bx, y2: yOf(u.system, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: inSel(u.index) ? "bar sel" : "bar" });
+      prims.push({ t: "line", x1: bx, y1: yOf(u.system, TOP_LINE), x2: bx, y2: yOf(u.system, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: u.auto ? "bar auto" : inSel(u.index) ? "bar sel" : "bar" });
       if (u.warn) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(u.system, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn" });
       continue;
     }
@@ -1508,7 +1535,7 @@ function engrave(song, o) {
   closeRun();
   const slots = [];
   const firstUnitOf = /* @__PURE__ */ new Map();
-  for (const u of units) if (u.kind !== "head" && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
+  for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
   for (let c = H; c <= tokens.length; c++) {
     const u = c < tokens.length ? firstUnitOf.get(c) : null;
     if (u) slots.push({ caret: c, system: u.system, x: P(u.x) });
@@ -1521,7 +1548,7 @@ function engrave(song, o) {
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "\u6B4C\u540D\uFF08\u53EF\u4E0D\u586B\uFF09", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
   const title = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
-  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, lyricY, yOf, dOf };
+  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -2057,14 +2084,16 @@ var ScoreView = class {
   lyrics;
   marks;
   title;
+  /** 五线谱间距（px）：触屏 11、鼠标 10；窄屏（< 420，iPhone）跟着宽度小一点，最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。 */
   get sp() {
-    return matchMedia("(pointer: coarse)").matches ? 11 : 10;
+    const base2 = matchMedia("(pointer: coarse)").matches ? 11 : 10, w = this.el.clientWidth;
+    return w > 0 && w < 420 ? Math.max(8.5, Math.min(base2, w / 42)) : base2;
   }
   render() {
     const st2 = this.host.get(), sp = this.sp;
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     const width = Math.max(320, this.el.clientWidth);
-    this.layout = engrave(st2.song, { width, sp, caret: st2.caret, sel: st2.sel, measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true });
+    this.layout = engrave(st2.song, { width, sp, caret: st2.caret, sel: st2.sel, measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true, autoBars: this.host.autoBars?.() ?? true });
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg;
@@ -2587,7 +2616,7 @@ var Pad = class {
       case "more": {
         const m = this.marksHere(this.host.state()), plus = `<span class="plus">+</span>`;
         const digits = (n2) => [...String(n2)].map((ch) => TS(Number(ch))).join("");
-        return c(`data-mark="key"`, `${plus}1=${KEY_NAMES[m.key] ?? "?"}`, false, "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.time.beats)}</span><span>${digits(m.time.beatType)}</span></span>`, false, "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-open="layout"`, "\u5E03\u5C40\u2026", false, "\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9") + back;
+        return c(`data-mark="key"`, `${plus}1=${KEY_NAMES[m.key] ?? "?"}`, false, "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.time.beats)}</span><span>${digits(m.time.beatType)}</span></span>`, false, "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-autobars="1"`, "\u81EA\u52A8\u5C0F\u8282\u7EBF", this.host.autoBars(), "\u6309\u62CD\u53F7\u81EA\u52A8\u753B\u5C0F\u8282\u7EBF\uFF08\u53EA\u753B\u3001\u4E0D\u8FDB\u6570\u636E\uFF09\uFF1B\u624B\u63D2\u7684\u300C|\u300D= \u4ECE\u90A3\u91CC\u91CD\u65B0\u6570\uFF0C\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\u300C|\u300D") + c(`data-open="layout"`, "\u5E03\u5C40\u2026", false, "\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9") + back;
       }
       case "layout":
         return [
@@ -2643,6 +2672,11 @@ var Pad = class {
       this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) });
     });
     this.on(box, "[data-back]", () => this.back());
+    this.on(box, "[data-autobars]", () => {
+      this.host.onAutoBars(!this.host.autoBars());
+      this.toolsFor = "";
+      this.render();
+    });
   }
   buildGrid(f, base2, rows) {
     const cells = [], sc = this.scale(), ht = homeTonic(f);
@@ -5201,9 +5235,11 @@ var view = new ScoreView(scoreEl, {
   },
   focus: (where) => {
     if (stacked()) showPad(where === "staff");
-  }
+  },
+  autoBars: () => autoBars
 });
 var impro = false;
+var autoBars = true;
 var padNotes = /* @__PURE__ */ new Map();
 var CHORD_MS = 50;
 var monoHeld = /* @__PURE__ */ new Set();
@@ -5235,6 +5271,13 @@ var pad = new Pad(padEl, {
   onTuplet: (n2) => update(setTuplet(st, n2)),
   onInputKey: (f) => update(setInputKey(st, f)),
   onInputScale: (id) => update(setInputScale(st, id)),
+  autoBars: () => autoBars,
+  onAutoBars: (on) => {
+    autoBars = on;
+    view.render();
+    pad.render();
+    renderStatus();
+  },
   onInsertMark: (kind) => {
     const at = st.sel ? st.sel.from : st.caret;
     const v = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
@@ -5289,7 +5332,7 @@ var DUR_NAME = {
 var UNIT_NAME2 = ["\u4E09\u5341\u4E8C\u5206", "\u5341\u516D\u5206", "\u516B\u5206", "\u56DB\u5206", "\u4E8C\u5206", "\u5168\u97F3\u7B26"];
 var durName = (d2) => DUR_NAME[d2] ?? `${+(d2 / TPQ).toFixed(3)} \u62CD`;
 function renderStatus() {
-  const el = $("status"), fills = barFill(st.song), off = fills.slice(1).filter((f) => !f.full).length;
+  const el = $("status"), off = view.layout?.shortBars ?? 0;
   const inp = st.input, next2 = `${UNIT_NAME2[inp.unit]}${inp.tuplet ? ` ${inp.tuplet} \u8FDE` : ""}${inp.acc ? ` ${inp.acc > 0 ? "\u266F" : "\u266D"}${inp.accMode === "lock" ? "\uFF08\u9501\uFF09" : ""}` : ""}`;
   let s = impro ? "\u5F39\uFF08\u53EA\u5531\u4E0D\u5199\uFF09" : st.sel ? `\u6539 \xB7 \u9009\u4E2D ${st.sel.to - st.sel.from} \u4E2A` : `\u5199\uFF08\u4E0B\u4E00\u4E2A\uFF1A${next2}\uFF09`;
   const i = st.sel ? st.sel.from : currentIndex(st);
@@ -5812,4 +5855,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-03d946f5183f.mjs.map
+//# sourceMappingURL=moonsinger-c427440b3b6e.mjs.map

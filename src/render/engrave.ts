@@ -1,13 +1,17 @@
 // engrave.ts —— 一串 token → 五线谱的绘图指令 + 命中数据（纯函数，Node 里可测）。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 重写
 // 范围：一行高音谱表、单声部；谱头（开头三个记号 token：调号 / 拍号 / 速度）+ 中途的记号 token；符头 / 符干 / 符尾 / 符杠 / 附点 / 临时记号（小节内记忆）/ 加线 / 休止；
 // 拆开的时值用连音线连；数据里的 tie（「−」跨小节线开的音）也画连音线；三 / 五 / 六 / 七连音画括号和数字；
-// 小节线 = 人插的 token（小节不满只轻标，第一小节当弱起不标）；歌词在音符下，英文断开处画连字符，拖腔画延长线；空音高的音画淡色。
+// 小节线：按拍号自动数（autoBars，默认开；只画、不进数据，和存 MusicXML 时切小节同一个规则）+ 人插的「|」= 从这里重新数
+//   （弱起 = 写完弱起的音按一下「|」；user「按拍号自动画小节线，手插「|」= 从这里重新数 可以啊，试试，然后自动加小节也是可以toggle的，默认开」
+//   「嗯弱起就是你写两个音然后加一个小节线，电脑就自动适应了」）。跨过自动小节线的音画成连起来的两段（数据里还是一个音）。
+//   拍数和拍号对不上的小节只轻标（第一小节当弱起不标）；歌词在音符下，英文断开处画连字符，拖腔画延长线；空音高的音画淡色。
 // 写（光标）：光标 = 一条零宽的竖线，不占排版宽度、不画预览、不打断符杠——挪光标、写 / 改切换时谱面一动不动
 //   （user「插入不要在谱上显示音符预览，也不要让谱的排版抖动」；下一个音的时值 / 升降在 pad 工具条和状态行）；
 //   点谱面写音 2026-10-07 拿掉（user「先去掉触碰加音符的功能，以后用专门的toolstate做」）。改（选中）：选中的一段高亮。
-// 不做右端对齐（打字时前面的音不晃）；放不下就像文字一样折行，优先在小节线处折。
+// 放不下就像文字一样折行，优先在小节线处折。右端对齐只给「不是最后一行、而且已经排到六成以上」的行（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）：
+//   正在写的最后一行不对齐 = 打字时前面的音不晃；一行写满折到下一行时，上一行会拉开一次。
 
-import { type Song, type NoteTok, type Token, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, barFill, isTimed, headLen, beatTicks, tempoWord } from "../score/song.ts";
+import { type Song, type NoteTok, type Token, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord } from "../score/song.ts";
 import { type Pitch, diatonicIndex, keyAlter } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { GLYPH, W, ENGRAVE, STEM_UP_SE, STEM_DOWN_NW, FLAG_ANCHOR_UP, FLAG_ANCHOR_DOWN, timeSigDigits } from "./smufl.ts";
@@ -27,6 +31,7 @@ export interface EngraveOpts {
   sel?: { from: number; to: number } | null;   // 有 = 改（没有光标）
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
   titlePlaceholder?: boolean;            // 歌名空着时画浅色的「歌名（可不填）」（编辑器里；导出 / 打印不画）
+  autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
 }
 export const LYRIC_EM = 1.6;
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
@@ -43,6 +48,7 @@ export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; title: TitleHit;
   head: { system: number; x: number } | null;   // 光标在哪（画面跟随用；改的时候没有）
+  shortBars: number;   // 拍数和拍号对不上的小节有几个（状态行用；第一小节当弱起不算）
   lyricY: (system: number) => number;
   yOf: (system: number, d: number) => number;
   dOf: (system: number, y: number) => number;
@@ -81,7 +87,7 @@ export function notate(dur: number): { ratio: [number, number] | null; chunks: {
   return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
 }
 const flagLevel = (base: number) => (base >= TPQ ? 0 : Math.round(Math.log2(TPQ / base)));
-const baseWidth = (base: number) => 4.0 + 0.8 * Math.log2(base / TPQ);   // 四分 4.0，每翻倍 +0.8
+const baseWidth = (base: number) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base / TPQ));   // 四分 3.6，每翻倍 +0.75（2026-10-07 收紧一点：原 4.0 / +0.8，SE2 一行放不下一小节八分）
 
 // ── 排版单元 ────────────────────────────────────────────────────────────
 interface Chunk {
@@ -89,7 +95,7 @@ interface Chunk {
   pitch: Pitch | null; ghost: boolean; tie: boolean; lyric: string | null; hyph: boolean; inBar: number; beat: number; acc: number | null; w: number; accW: number;
   x: number; system: number;
 }
-interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; warn: boolean }
+interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; warn: boolean; auto: boolean }   // auto = 按拍号自动画的（index = -1，不是 token）
 interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: number; x: number; system: number }
 interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number }
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number }
@@ -115,49 +121,67 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   }
   const headKey = fifths, headTime = time, headBpm = bpm;
 
-  // 1. 单元 + 临时记号（小节内记忆；小节线、调号清零）
+  // 1. 单元 + 临时记号（小节内记忆；小节线、调号清零）+ 小节怎么分
+  //   inBar = 这个小节里已经走了多少；满了（= len）不马上画小节线，等下一个音 / 记号 / 写字头 / 曲尾来了再画——
+  //   紧跟着的是人插的「|」就用它那一条（不画两条）。拍号中途变了：没写完的这个小节就此结束（同存 MusicXML）。
+  const autoBars = o.autoBars !== false;
   const units: Unit[] = [];
-  const fills = barFill(song);
-  let accState = new Map<string, number>(), inBar = 0, barCount = 0, beat = beatTicks(time.beats, time.beatType);
+  const measureLen = (b: number, bt: number) => (b * WHOLE) / bt;
+  let accState = new Map<string, number>(), inBar = 0, measureNo = 0, shortBars = 0;
+  let beat = beatTicks(time.beats, time.beatType), len = measureLen(time.beats, time.beatType);
   const pushHead = () => { units.push({ kind: "head", w: 0, x: 0, system: 0 }); };
+  const pushBar = (index: number, auto: boolean) => {
+    const warn = inBar !== len && measureNo > 0;   // 第一小节 = 弱起，不标
+    if (warn) shortBars++;
+    units.push({ kind: "bar", index, w: BAR_W, x: 0, system: 0, warn, auto });
+    accState = new Map(); inBar = 0; measureNo++;
+  };
+  const flushFull = () => { if (autoBars && inBar >= len && inBar > 0) pushBar(-1, true); };
   tokens.forEach((t, i) => {
     if (i < H) return;
-    if (writing && i === o.caret) pushHead();
-    if (t.kind === "bar") {
-      const f = fills[barCount++];
-      units.push({ kind: "bar", index: i, w: BAR_W, x: 0, system: 0, warn: barCount > 1 && !!f && !f.full });
-      accState = new Map(); inBar = 0; return;
-    }
+    if (writing && i === o.caret) { if (t.kind !== "bar") flushFull(); pushHead(); }   // 光标在满了的小节后面 = 画在小节线后面（下一个音写在那）
+    if (t.kind === "bar") { pushBar(i, false); return; }
     if (t.kind === "key") {
+      flushFull();
       units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: keyWidth(t.fifths, fifths), x: 0, system: 0 });
       fifths = t.fifths; accState = new Map(); return;
     }
     if (t.kind === "time") {
+      if (autoBars && inBar > 0) pushBar(-1, true);
       units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: timeWidth(t.beats, t.beatType) + 1.2, x: 0, system: 0 });
-      beat = beatTicks(t.beats, t.beatType); return;
+      beat = beatTicks(t.beats, t.beatType); len = measureLen(t.beats, t.beatType); return;
     }
-    if (t.kind === "tempo") { units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0 }); return; }
+    if (t.kind === "tempo") { flushFull(); units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0 }); return; }
     const isNote = t.kind === "note", nt = t as NoteTok;
     const pitch = isNote ? effectivePitch(tokens, i) : null;
-    const { ratio, chunks } = notate(t.dur);
-    let off = 0;
-    chunks.forEach((c, j) => {
-      let acc: number | null = null;
-      if (pitch && j === 0 && !(isNote && nt.tie)) {
-        const key = `${pitch.step}${pitch.octave}`;
-        const cur = accState.has(key) ? accState.get(key)! : keyAlter(pitch.step, fifths);
-        if (pitch.alter !== cur) { acc = pitch.alter; accState.set(key, pitch.alter); }
+    // 一个音按自动小节线切成几段（不切 = 整个一段，和以前一样记）；每段再拆成能记的时值
+    let left = t.dur, j = 0, lastChunk: Chunk | null = null;
+    while (left > 1e-6) {
+      flushFull();
+      const piece = autoBars ? Math.min(left, len - inBar) : left;
+      const { ratio, chunks } = notate(piece);
+      let off = 0;
+      for (const c of chunks) {
+        let acc: number | null = null;
+        if (pitch && j === 0 && !(isNote && nt.tie)) {
+          const key = `${pitch.step}${pitch.octave}`;
+          const cur = accState.has(key) ? accState.get(key)! : keyAlter(pitch.step, fifths);
+          if (pitch.alter !== cur) { acc = pitch.alter; accState.set(key, pitch.alter); }
+        }
+        const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
+        const accW = acc === null ? 0 : 1.3;
+        let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
+        if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyric) / sp + (nt.hyph ? 1.4 : 0.7));
+        const u: Chunk = { kind: "chunk", index: i, j, last: false, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
+          ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0 };
+        units.push(u); lastChunk = u;
+        off += c.ticks; j++;
       }
-      const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
-      const accW = acc === null ? 0 : 1.3;
-      let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
-      if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyric) / sp + (nt.hyph ? 1.4 : 0.7));
-      units.push({ kind: "chunk", index: i, j, last: j === chunks.length - 1, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
-        ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0 });
-      off += c.ticks;
-    });
-    inBar += t.dur;
+      inBar += piece; left -= piece;
+    }
+    if (lastChunk) lastChunk.last = true;
   });
+  flushFull();   // 曲尾正好写满：画上这一条小节线
   if (writing && o.caret >= tokens.length) pushHead();
 
   // 2. 折行（像文字：优先在小节线后折；一个小节都放不下就逐个单元折）。每行开头的调号 = 那里生效的调号
@@ -177,6 +201,17 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   for (const u of units) { seg.push(u); if (u.kind === "bar") flush(); }
   flush();
   const nSys = system + 1;
+  // 右端对齐：多出来的地方按宽度分给这一行的音 / 休止（小节线、记号不拉宽）
+  for (let s = 0; s < nSys - 1; s++) {
+    const row = units.filter((u) => u.system === s);
+    const end = row.reduce((m, u) => Math.max(m, u.x + u.w), sysStarts[s]), avail = right - sysStarts[s], used = end - sysStarts[s];
+    if (used < avail * 0.6) continue;
+    const grow = row.filter((u) => u.kind === "chunk"), gw = grow.reduce((a, u) => a + u.w, 0);
+    if (!gw) continue;
+    const k = (avail - used) / gw;
+    let x = sysStarts[s];
+    for (const u of row) { u.x = x; if (u.kind === "chunk") u.w *= 1 + k; x += u.w; }
+  }
 
   // 3. 坐标系
   const sysTop = (s: number) => P(TITLE_H + 0.5 + s * SYS_H);
@@ -280,7 +315,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     }
     if (u.kind === "bar") {
       const bx = P(u.x + 0.7);
-      prims.push({ t: "line", x1: bx, y1: yOf(u.system, TOP_LINE), x2: bx, y2: yOf(u.system, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: inSel(u.index) ? "bar sel" : "bar" });
+      prims.push({ t: "line", x1: bx, y1: yOf(u.system, TOP_LINE), x2: bx, y2: yOf(u.system, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: u.auto ? "bar auto" : inSel(u.index) ? "bar sel" : "bar" });
       if (u.warn) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(u.system, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn" });
       continue;
     }
@@ -417,7 +452,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   // 11. 光标落点（点在哪个空隙）
   const slots: Slot[] = [];
   const firstUnitOf = new Map<number, Unit>();
-  for (const u of units) if (u.kind !== "head" && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
+  for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
   for (let c = H; c <= tokens.length; c++) {
     const u = c < tokens.length ? firstUnitOf.get(c)! : null;
     if (u) slots.push({ caret: c, system: u.system, x: P(u.x) });
@@ -429,7 +464,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "歌名（可不填）", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
   const title: TitleHit = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
-  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, lyricY, yOf, dOf };
+  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

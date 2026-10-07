@@ -7,7 +7,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type NoteTok, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, setInputScale, setUnit, setNote, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
+import { type EditorState, type NoteTok, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, setInputScale, setUnit, setNote, currentIndex, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
 import { type Pitch, pitchName, midiOf, KEY_LABEL, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -90,8 +90,11 @@ const view = new ScoreView(scoreEl, {
   glide: (i) => { clearTimeout(upTimer); const t = st.song.tokens[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum, "score"); },
   release: () => { clearTimeout(upTimer); sound.up("score"); },
   focus: (where) => { if (stacked()) showPad(where === "staff"); },
+  autoBars: () => autoBars,
 });
-let impro = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
+let impro = false;
+/** 按拍号自动画小节线（默认开；这次打开里有效）。user「自动加小节也是可以toggle的，默认开」 */
+let autoBars = true;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
 /** pad 上每根按着的手指：刚写的是第几个音（弹 = -1）、它原本的音高——上下滑过门槛时在它上面升 / 降。 */
 const padNotes = new Map<string, { index: number; base: Pitch }>();
 /** 单音乐器（现在的主唱月读）写音：同时多按只写第一个（user「monophonic乐器输入的时候如果你多按只会输第一个。但是做好模糊护栏免得快速输入的时候第二个音被吃掉」）。
@@ -124,6 +127,8 @@ const pad = new Pad(padEl, {
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
   onInputScale: (id) => update(setInputScale(st, id)),
+  autoBars: () => autoBars,
+  onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); renderStatus(); },
   onInsertMark: (kind) => {   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
     const at = st.sel ? st.sel.from : st.caret;
     const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
@@ -157,7 +162,7 @@ const DUR_NAME: Record<number, string> = { [TPQ * 4]: "全音符", [TPQ * 3]: "�
 const UNIT_NAME = ["三十二分", "十六分", "八分", "四分", "二分", "全音符"];   // = song.ts LADDER
 const durName = (d: number) => DUR_NAME[d] ?? `${+(d / TPQ).toFixed(3)} 拍`;
 function renderStatus(): void {
-  const el = $("status"), fills = barFill(st.song), off = fills.slice(1).filter((f) => !f.full).length;
+  const el = $("status"), off = view.layout?.shortBars ?? 0;   // 和谱面同一个数法（自动小节线开着时按拍号数）
   // 写的时候谱上不预览下一个音（user「插入不要在谱上显示音符预览」）→ 下一个音的样子写在这里
   const inp = st.input, next = `${UNIT_NAME[inp.unit]}${inp.tuplet ? ` ${inp.tuplet} 连` : ""}${inp.acc ? ` ${inp.acc > 0 ? "♯" : "♭"}${inp.accMode === "lock" ? "（锁）" : ""}` : ""}`;
   let s = impro ? "弹（只唱不写）" : st.sel ? `改 · 选中 ${st.sel.to - st.sel.from} 个` : `写（下一个：${next}）`;
