@@ -99,7 +99,9 @@ export interface CandidateV2 {
   /** 音源身份：装了且哈希对 = 出声；否则没人上场、不出声、报错、人来换（不自动替补）。字节进不进文件看体积 / 许可证（§8）。 */
   source:
     | { kind: "pack"; pack: string; sha256: string }                                        // 家族模型仓的包（月读）
-    | { kind: "gm"; program: number; bank?: number; drums?: boolean; soundfont: { pack: string; sha256: string } }   // GM 音色，soundfont 按哈希钉
+    | { kind: "gm"; program: number; bank?: number; drums?: boolean;
+        soundfont: { pack: string; sha256: string; files?: { name: string; sha256: string; bytes: number }[] } }   // GM 音色，soundfont 按包哈希钉；
+        //   用户自己拖进来的 sf2 = 「本地包」（契约草稿 §9：浏览器里按固定规则合成 manifest，同一份字节在任何设备算出同一个 packId），files 给显示 / 换设备提示
     | { kind: "builtin"; name: string };                                                     // app 内置（元音采样器）
   //   sha256 = **包 manifest 的哈希**（家规「app 钉 manifest 的 sha256，不钉网址」；manifest 里才是逐片哈希），不是 sf2 / onnx 单个文件的。
   //   包按家规拆小（「拆小包，包之间互不知道」）：GM 鼓组单独一包、旋律乐器另包；一首歌用到几个包就有几个候选各钉各的。
