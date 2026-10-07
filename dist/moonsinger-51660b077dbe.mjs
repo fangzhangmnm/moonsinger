@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.24-2026-10-07";
+var APP_VERSION = "v0.2.25-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3976,6 +3976,19 @@ var ROLE_GROUPS = [
 ];
 var ROLE_PRESETS = ROLE_GROUPS.flatMap((g2) => g2.items);
 var DEFAULT_ROLE = ROLE_PRESETS[0];
+function numberParts(parts) {
+  const key = (p) => `${p.name}\0${p.sound}`;
+  const total = /* @__PURE__ */ new Map();
+  for (const p of parts) total.set(key(p), (total.get(key(p)) ?? 0) + 1);
+  const seen = /* @__PURE__ */ new Map();
+  return parts.map((p) => {
+    const k = key(p);
+    if ((total.get(k) ?? 0) < 2) return p.name;
+    const n2 = (seen.get(k) ?? 0) + 1;
+    seen.set(k, n2);
+    return `${p.name} ${n2}`;
+  });
+}
 
 // vendor/fflate/fflate.esm.js
 var u8 = Uint8Array;
@@ -5377,7 +5390,7 @@ function saveMxl(a) {
   const mic = (studio.mics ?? [])[0];
   const w = writeMusicXml(a.song, {
     id: PART,
-    name: String(role.name ?? DEFAULT_ROLE.name),
+    name: partLabels({ ...a.extras, lounge: { ...a.extras.lounge, [ROLE]: role } })[0],
     instrumentName: String(active?.name ?? "\u6708\u8BFB"),
     sound: String(role.sound ?? DEFAULT_ROLE.sound),
     program: Number(active?.gm?.program ?? 55),
@@ -5429,6 +5442,9 @@ function roleName(extras) {
 }
 function roleSound(extras) {
   return String(extras.lounge[ROLE]?.sound ?? DEFAULT_ROLE.sound);
+}
+function partLabels(extras) {
+  return numberParts([{ name: roleName(extras), sound: roleSound(extras) }]);
 }
 function withRoleName(extras, name, hum, quality2, sound2) {
   const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, quality2 === "none" ? "full" : quality2));
@@ -5695,8 +5711,8 @@ var view = new ScoreView(scoreEl, {
   focus: (where) => showPad(where === "staff"),
   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
-  part: () => ({ name: roleName(doc.extras), empty: quality() === "none" }),
-  // 谱前写角色名（乐器的名字不上谱）
+  part: () => ({ name: partLabels(doc.extras)[0], empty: quality() === "none" }),
+  // 谱前写角色名（乐器的名字不上谱；同名同种带号）
   onPart: () => openPartSheet(),
   onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),
@@ -6510,4 +6526,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-dc698e8f747f.mjs.map
+//# sourceMappingURL=moonsinger-51660b077dbe.mjs.map

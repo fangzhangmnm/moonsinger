@@ -6,7 +6,7 @@
 // 规矩（照 CatsUp 立宪）：每份扩展文件自带版本号；读到比这一版新的 = 拒开、明说（打开再存会丢东西）；
 //   不认识的文件、不认识的字段（以后的版本、别的工具加的、这台设备用不了的引擎配置）读进来留着、存档时原样写回。
 // 无地逃生口（user 2026-10-07「先不急着store。可以先按照无地规范导入导出做逃生口」）：这里只管字节 ↔ 歌，打开 / 存的界面在 app 里。
-import { DEFAULT_ROLE } from "../score/roles.ts";
+import { DEFAULT_ROLE, numberParts } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
 import type { Song, Hum } from "../score/song.ts";
 import { writeMusicXml, readMusicXml, type ReadPart } from "./musicxml.ts";
@@ -51,7 +51,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   const studio: Json = structuredClone(a.extras.studio ?? { version: FORMAT.studio, mics: [{ id: MIC, name: "麦克风 1", gainDb: 0, pan: 0 }] });
   const mic = ((studio.mics as Json[] | undefined) ?? [])[0];
   const w = writeMusicXml(a.song, {
-    id: PART, name: String(role.name ?? DEFAULT_ROLE.name), instrumentName: String(active?.name ?? "月读"), sound: String(role.sound ?? DEFAULT_ROLE.sound),
+    id: PART, name: partLabels({ ...a.extras, lounge: { ...a.extras.lounge, [ROLE]: role } })[0], instrumentName: String(active?.name ?? "月读"), sound: String(role.sound ?? DEFAULT_ROLE.sound),
     program: Number((active?.gm as Json | undefined)?.program ?? 55),
     variant: typeof (active?.gm as Json | undefined)?.variant === "string" ? { library: "MoonSinger", name: String((active!.gm as Json).variant) } : undefined,
     pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : undefined,
@@ -88,6 +88,8 @@ export interface Opened { song: Song; stem: string; hum: Hum; quality: Quality; 
 export function roleName(extras: Extras): string { return String(extras.lounge[ROLE]?.name ?? DEFAULT_ROLE.name); }
 /** 这个声部是什么（MusicXML 官方 <instrument-sound> id，src/score/roles.ts；user「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的」）。 */
 export function roleSound(extras: Extras): string { return String(extras.lounge[ROLE]?.sound ?? DEFAULT_ROLE.sound); }
+/** 各声部谱上写的名字（同名同种的带号，src/score/roles.ts numberParts）；现在只有一个声部。 */
+export function partLabels(extras: Extras): string[] { return numberParts([{ name: roleName(extras), sound: roleSound(extras) }]); }
 /** 改角色名（选了预设 = 连官方 id 一起改；自己写的名字 = 官方 id 不变）。还没有角色快照 = 先按默认的建一份。 */
 export function withRoleName(extras: Extras, name: string, hum: Hum, quality: Quality, sound?: string): Extras {
   const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, quality === "none" ? "full" : quality));

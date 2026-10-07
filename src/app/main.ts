@@ -22,7 +22,7 @@ import { createPackStore } from "@internal/model-packs";
 import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, withRoleName, activeCandidateName, type Extras, type Quality } from "../format/project.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, activeCandidateName, type Extras, type Quality } from "../format/project.ts";
 import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
 import { type PaperKind, PAPER_KINDS, PAPER_NOTE, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
 import * as docFile from "./doc-file.ts";
@@ -95,7 +95,7 @@ const view = new ScoreView(scoreEl, {
   release: () => { clearTimeout(upTimer); sound.up("score"); },
   focus: (where) => showPad(where === "staff"),   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
-  part: () => ({ name: roleName(doc.extras), empty: quality() === "none" }),   // 谱前写角色名（乐器的名字不上谱）
+  part: () => ({ name: partLabels(doc.extras)[0], empty: quality() === "none" }),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）
   onPart: () => openPartSheet(),
   onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),

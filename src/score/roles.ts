@@ -31,3 +31,19 @@ export const ROLE_GROUPS: { group: string; items: RolePreset[] }[] = [
 export const ROLE_PRESETS: RolePreset[] = ROLE_GROUPS.flatMap((g) => g.items);
 /** 新建的歌：主唱这个声部 = Vocals（voice.vocals）。 */
 export const DEFAULT_ROLE: RolePreset = ROLE_PRESETS[0];
+
+/** 同名声部编号（user「然后default name如果重名的话会变成vocals vocals2这样？」→ AI 答照打谱软件（MuseScore 4 自动编号）→ user「这个应该可以现在做」）：
+ *  名字和官方 id 都一样的几个声部 = 按先后补「 1」「 2」…（第一个也补；单独一个不带号）。名字一样但不是同一种（合唱的 Bass 和贝斯）不一起编。
+ *  编号不存进角色名、每次现算（删了一个声部剩下的自动重排）；写 MusicXML 的 <part-name> 也带号。 */
+export function numberParts(parts: { name: string; sound: string }[]): string[] {
+  const key = (p: { name: string; sound: string }) => `${p.name}\u0000${p.sound}`;
+  const total = new Map<string, number>();
+  for (const p of parts) total.set(key(p), (total.get(key(p)) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  return parts.map((p) => {
+    const k = key(p);
+    if ((total.get(k) ?? 0) < 2) return p.name;
+    const n = (seen.get(k) ?? 0) + 1; seen.set(k, n);
+    return `${p.name} ${n}`;
+  });
+}
