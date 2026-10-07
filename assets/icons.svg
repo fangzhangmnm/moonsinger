@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
 <!--
-  7 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
+  9 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
   Family SVG Icons — MIT License, Copyright (c) 2026 fangzhangmnm.
 -->
   <!-- media -->
@@ -11,6 +11,8 @@
   <!-- file -->
   <!-- export — 导出:向上箭头离开托盘(import 的上下镜像) -->
   <symbol id="export" data-cat="file" data-src="own" data-note="导出:向上箭头离开托盘(import 的上下镜像)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 v-11"/><polyline points="7 15, 12 10, 17 15"/> <path d="M4 7 v-3 a1 1 0 0 1 1 -1 h14 a1 1 0 0 1 1 1 v3"/></symbol>
+  <!-- import — 导入:向下箭头落进托盘(托盘=开口朝上的 U) -->
+  <symbol id="import" data-cat="file" data-src="own" data-note="导入:向下箭头落进托盘(托盘=开口朝上的 U)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 v11"/><polyline points="7 9, 12 14, 17 9"/> <path d="M4 17 v3 a1 1 0 0 0 1 1 h14 a1 1 0 0 0 1 -1 v-3"/></symbol>
   <!-- common -->
   <!-- caret-up — 上调 ▲:圆角实心扁三角(数字框旁上下叠放的小转盘用,12–16px)；与带竿的 chevron-up(上移)分工【JustReadBooks 朗读控制条预设框右侧小转盘「预设加一」；2026-10-02 Claude Opus 5.5 自画未过目】 -->
   <symbol id="caret-up" data-cat="common" data-src="own" data-note="上调 ▲:圆角实心扁三角(数字框旁上下叠放的小转盘用,12–16px)；与带竿的 chevron-up(上移)分工【JustReadBooks 朗读控制条预设框右侧小转盘「预设加一」；2026-10-02 Claude Opus 5.5 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 15.5 L12 8 L18.5 15.5 Z" fill="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
@@ -22,4 +24,6 @@
   <!-- ui -->
   <!-- backspace — 退格 ⌫:左尖五边形 + 内部 ×【WebXiaoHeiWu 话筒左邻浮动「退格」钮；fable 自画未过目】 -->
   <symbol id="backspace" data-cat="ui" data-src="own" data-note="退格 ⌫:左尖五边形 + 内部 ×【WebXiaoHeiWu 话筒左邻浮动「退格」钮；fable 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 H19.5 a1.5 1.5 0 0 1 1.5 1.5 v11 a1.5 1.5 0 0 1 -1.5 1.5 H9 L3 12 Z"/><path d="M11.5 9.5 L17 14.5 M17 9.5 L11.5 14.5"/></symbol>
+  <!-- settings — 设置:齿轮=内圆+外圆+8 根短齿(圆帽)；家族里 sliders 是「调整」别撞【WebXiaoHeiWu 抽屉底栏「设置」入口；fable 自画未过目】 -->
+  <symbol id="settings" data-cat="ui" data-src="own" data-note="设置:齿轮=内圆+外圆+8 根短齿(圆帽)；家族里 sliders 是「调整」别撞【WebXiaoHeiWu 抽屉底栏「设置」入口；fable 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="7"/><path d="M19.00 12.00 L21.60 12.00"/><path d="M16.95 16.95 L18.79 18.79"/><path d="M12.00 19.00 L12.00 21.60"/><path d="M7.05 16.95 L5.21 18.79"/><path d="M5.00 12.00 L2.40 12.00"/><path d="M7.05 7.05 L5.21 5.21"/><path d="M12.00 5.00 L12.00 2.40"/><path d="M16.95 7.05 L18.79 5.21"/></symbol>
 </svg>

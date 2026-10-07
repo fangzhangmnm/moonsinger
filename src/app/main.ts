@@ -15,6 +15,8 @@ import { Pad } from "../ui/pad.ts";
 import { toLabScore, type SingLang } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
 import { encodeMp3 } from "../export/mp3.ts";
+import { createPackStore } from "@internal/model-packs";
+import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
 
 let st: EditorState = initState();
@@ -30,6 +32,7 @@ bar.innerHTML =
   `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="o">お / 哦</option><option value="a">あ / 啊</option></select></label>` +
   `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
   `<button id="padBtn" class="btn is-on" title="手指 pad"><svg class="ico"><use href="#grid"/></svg></button>` +
+  `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款"><svg class="ico"><use href="#settings"/></svg></button>` +
   `<button id="shareBtn" class="btn" title="导出歌声（mp3），发给别人听"><svg class="ico"><use href="#export"/></svg></button>` +
   `<button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>`;
 
@@ -148,7 +151,7 @@ async function singFull(): Promise<SingResult | null> {
   if (!score.SCORE.length) return null;
   const opt = humOpt(), key = JSON.stringify([score, opt]);
   if (lastFull?.key === key) return lastFull.r;
-  const r = await singer.sing(score, (stage) => singStatus(`${stage}…`), { opt });
+  const r = await singer.sing(score, (stage) => singStatus(`${stage}…`), { opt, models: modelBases() });
   lastFull = { key, r };
   return r;
 }
@@ -212,6 +215,53 @@ function songTitle(): string {
   return `${ly || "旋律"}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`;
 }
 let closeOffer: (() => void) | null = null;
+
+// ── 模型来源（ADR-0006 ③ re-pointable endpoints：界面上能改、出厂预填；user 2026-10-07「i might worry about hardcode my gh link so if
+//    i closed my gh account all app are not able to run in private server which violates the anti abandonware rule」）：
+//    先找同一个网站下的 pwa-models/（自己搭服务器的人把模型仓拷过来就能用、不用配置），找不到再用这里设的；还能从本机文件导入。
+//    设的值只在这次打开里有效（持久化还没定）。
+const MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
+let modelSource = MODEL_SOURCE_DEFAULT;
+const modelBases = () => [...new Set([new URL("pwa-models", location.href).href, modelSource.trim().replace(/\/+$/, "") || MODEL_SOURCE_DEFAULT])];
+const packStore = createPackStore({ packs: PACKS });   // 只用来导入 / 看状态；下载在 worker 里（同一个 Cache Storage pwa-models）
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+async function packStatusText(): Promise<string> {
+  const st = await packStore.status(Object.keys(PACKS));
+  return st.map((s) => `${s.ready ? "✓" : "·"} ${s.slug}（${(s.bytesTotal / 1e6).toFixed(1)} MB）`).join("\n");
+}
+/** 设置面板（应用内，不用系统弹窗）：模型来源、从本机文件导入模型包、月读的署名与使用条款（包内 LICENSE [1][2] 要求显示）。 */
+function openSettings(): void {
+  if (closeOffer) closeOffer();
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">设置</div>` +
+    `<label class="set-field">模型来源<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(modelSource)}" /></label>` +
+    `<div class="offer-msg">先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。</div>` +
+    `<div class="set-row"><button class="btn" data-v="default">恢复默认</button>` +
+    `<label class="btn" title="选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包<input id="impIn" type="file" multiple hidden /></label></div>` +
+    `<pre id="packSt" class="set-packs">…</pre>` +
+    `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre></details>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  document.body.append(box);
+  const srcIn = box.querySelector<HTMLInputElement>("#srcIn")!, packSt = box.querySelector<HTMLElement>("#packSt")!;
+  const refresh = () => { void packStatusText().then((t) => (packSt.textContent = t)); };
+  refresh();
+  const close = () => { modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT; box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") close();
+    else if (v === "default") srcIn.value = MODEL_SOURCE_DEFAULT;
+  });
+  box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
+    const files = [...((e.target as HTMLInputElement).files ?? [])]; if (!files.length) return;
+    packSt.textContent = "导入中…";
+    try { await packStore.importFiles(Object.keys(PACKS), files, (p) => (packSt.textContent = `导入中… ${Math.floor((p.done / p.total) * 100)}%`)); }
+    catch (err) { singStatus(`导入没成：${(err as Error).message === "no-matching-file" ? "这些文件不是月读要的模型包分片" : (err as Error).message}`); }
+    refresh();
+  });
+}
+$("setBtn").addEventListener("click", () => openSettings());
 /** 「好了」面板（应用内，不用系统弹窗）：分享 / 下载 / 关。 */
 function offerFile(file: File, title: string, msg: string): void {
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };

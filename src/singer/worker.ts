@@ -14,7 +14,9 @@ import type { SingLang } from "../score/lab-score.ts";
 import { createPackStore } from "@internal/model-packs";
 import { PACKS, SINGER } from "./packs.gen.ts";
 
-export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: SingLang; opt?: Record<string, unknown>; atlas?: string; breath?: boolean }
+export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: SingLang; opt?: Record<string, unknown>; atlas?: string; breath?: boolean;
+  /** 模型源，按顺序试（宿主给：同源 pwa-models/ → 设置里的来源）。不给 = 出厂默认。 */
+  models?: string[] }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number } }
@@ -32,12 +34,19 @@ const dyn = (p: string): Promise<any> => import(/* @vite-ignore */ u(p));
 const ORT = "piper-plus/work/node_modules/onnxruntime-web/dist/";
 
 // ── 模型包 ──
-const MODELS = "https://fangzhangmnm.github.io/pwa-models";   // 家族模型仓（黄线区白名单 ②，同 JustReadBooks src/config.ts）；主机只是运输，字节先对内嵌清单的哈希
+// 模型源 = 宿主随请求给的候选列表（ADR-0006 ③：界面上能改、出厂预填；user 2026-10-07「i might worry about hardcode my gh link…」）；
+// 主机只是运输，字节先对内嵌清单的哈希。没给就用出厂默认（家族模型仓，黄线区白名单 ②）。
+let bases: string[] = ["https://fangzhangmnm.github.io/pwa-models"];
 const store = createPackStore({ packs: PACKS });
 /** 这几个包不在缓存里就下（只下这一次）；进度报给界面。 */
 async function ensurePacks(slugs: string[], what: string, say: (s: string) => void): Promise<void> {
   if ((await store.status(slugs)).every((s) => s.ready)) return;
-  await store.download(slugs, MODELS, (p) => say(`下载${what}（${(p.total / 1e6).toFixed(0)} MB，只下这一次）${Math.floor((p.done / p.total) * 100)}%`));
+  let last: unknown = null;
+  for (const base of bases) {   // 按顺序试；已经下好的分片不重取（续传 + 逐片验，从两个来源各拿一部分也没关系）
+    try { await store.download(slugs, base, (p) => say(`下载${what}（${(p.total / 1e6).toFixed(0)} MB，只下这一次）${Math.floor((p.done / p.total) * 100)}%`)); return; }
+    catch (e) { last = e; }
+  }
+  throw new Error(`${what}下载不下来（试过 ${bases.join("、")}）：${(last as Error)?.message ?? last}。可以在设置里换模型来源，或从本机文件导入`);
 }
 /** 包里的一个文件：按清单的偏移切出来，.gz 的解开（包里的压缩文件是 gzip 格式）。 */
 async function packFile(slug: string, path: string): Promise<Uint8Array> {
@@ -123,6 +132,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest>) => {
   const say = (stage: string) => post({ type: "progress", id: q.id, stage });
   try {
     const t0 = performance.now();
+    if (q.models?.length) bases = q.models;
     if (!engine) engine = loadEngine(say);
     const e = await engine;
     if (q.lang === "zh") await e.ensureZh(say);

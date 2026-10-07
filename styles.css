@@ -162,3 +162,12 @@ button, input, select { font: inherit; color: inherit; }
 .metro-arm::before { content: ""; position: absolute; left: -3px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 @keyframes metro-swing { from { transform: rotate(-32deg); } to { transform: rotate(32deg); } }
 .mark-ok { flex: none; }
+
+/* 设置面板：模型来源 / 导入模型包 / 月读的署名与条款 */
+.settings-card { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; }
+.set-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.set-field input { height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; font-size: 14px; color: var(--ink); -webkit-user-select: text; user-select: text; }
+.set-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.set-packs { font-size: 11px; color: var(--muted); white-space: pre-wrap; margin: 0 0 10px; }
+.set-credit { margin-bottom: 12px; font-size: 13px; }
+.set-credit pre { white-space: pre-wrap; font: inherit; font-size: 12px; -webkit-user-select: text; user-select: text; }

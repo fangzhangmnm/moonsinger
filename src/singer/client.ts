@@ -28,7 +28,7 @@ export class Singer {
     return this.w;
   }
 
-  sing(s: LabScore, progress: (stage: string) => void = () => {}, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath">> = {}): Promise<SingResult> {
+  sing(s: LabScore, progress: (stage: string) => void = () => {}, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models">> = {}): Promise<SingResult> {
     const id = ++this.seq;
     const req: SingRequest = { type: "sing", id, score: s.SCORE, text: s.TEXT, tempo: s.TEMPO_QUARTER, lang: s.LANG, ...extra };
     return new Promise((ok, fail) => { this.pending.set(id, { ok, fail, progress }); this.worker().postMessage(req); });
