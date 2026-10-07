@@ -4,7 +4,9 @@
 // 大字节（模型 / 运行时 / 日中英词典）= 家族模型包（2026-10-07，user「持久化先做不爽的就是每次bump version都得重新下载月读」→「当然a」）：
 //   @internal/model-packs 按内嵌清单（packs.gen.ts）下载、逐片 sha256、存进 Cache Storage `pwa-models`——下一次、升版本都不用重下，
 //   同域名的 JustReadBooks 也用同一份（user「然后最好jrb和moonsinger只用存一份」）。模型源 = 家族模型仓的 GitHub Pages。
-// JS 胶水（前端 / 运行时的 .js）还从 /dev-assets/（scripts/link-dev-assets.sh 软链的检疫桶）动态加载；和 Lab 的 Node 命令行是同一批文件，
+// JS 胶水（2026-10-07 起，user「毕业差的东西做」）：日 / 中 / 英前端、encode、onnxruntime-web 与 OpenJTalk 的胶水 = 朗读库的底层出口
+//   `@internal/read-aloud/backend/piper-plus/*`（0.1.22；前端与 ort 胶水和检疫桶那份逐字节相同，ojt 胶水是同一份 C 的纯浏览器构建），打进本 worker；
+//   WORLD = 自己编的 WASM，vendored 在 `vendor/world/`。`dev-assets/` 只剩开发期的元音图谱实验（默认关，出货没有）。
 // piper.run 的喂法照抄 third-party/piper-plus/dur-override-exp/piper-node.mjs 的 run()（逐符号相同的输入 = 浏览器 == Node 的前提）。
 
 import { singCore } from "./sing-core.mjs";
@@ -22,16 +24,21 @@ export type SingReply =
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number } }
   | { type: "error"; id: number; message: string };
 
-const base = new URL("../dev-assets/", import.meta.url);
+import * as ortLib from "@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs";
+import createOjt from "@internal/read-aloud/backend/piper-plus/vendor/ojt/ojt.mjs";
+import { createJaFrontend, mountDictionaryBytes } from "@internal/read-aloud/backend/piper-plus/ja-frontend.js";
+import { encodeTokens } from "@internal/read-aloud/backend/piper-plus/encode.js";
+import { createChineseG2p } from "@internal/read-aloud/backend/piper-plus/zh-g2p.js";
+import { createEnglishG2p } from "@internal/read-aloud/backend/piper-plus/en-g2p.js";
+
+const base = new URL("../dev-assets/", import.meta.url);   // 开发期：元音图谱（默认关）
 const u = (p: string) => new URL(p, base).href;
 async function bytes(p: string): Promise<Uint8Array> {
   const r = await fetch(u(p)); if (!r.ok) throw new Error(`${p}: HTTP ${r.status}（先跑 scripts/link-dev-assets.sh？）`);
   return new Uint8Array(await r.arrayBuffer());
 }
 const json = async (p: string) => JSON.parse(new TextDecoder().decode(await bytes(p)));
-const dyn = (p: string): Promise<any> => import(/* @vite-ignore */ u(p));
-
-const ORT = "piper-plus/work/node_modules/onnxruntime-web/dist/";
+const WORLD = new URL("../vendor/world/", import.meta.url);   // 相对 dist/singer-worker.mjs
 
 // ── 模型包 ──
 // 模型源 = 宿主随请求给的候选列表（ADR-0006 ③：界面上能改、出厂预填；user 2026-10-07「i might worry about hardcode my gh link…」）；
@@ -66,7 +73,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const V = SINGER.voice, JA = SINGER.lang.ja;
   await ensurePacks([V, SINGER.runtime, JA], "月读", say);
   say("加载 piper 引擎");
-  const ort = await dyn(ORT + "ort.wasm.bundle.min.mjs");
+  const ort: any = ortLib;
   ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
   ort.env.wasm.wasmBinary = await packFile(SINGER.runtime, "ort-wasm-simd-threaded.wasm.gz");
   say("加载月读的模型");
@@ -74,9 +81,6 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const sess = await ort.InferenceSession.create(await packFile(V, "model.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
   ort.env.wasm.wasmBinary = undefined;
   say("加载日语前端");
-  const { default: createOjt } = await dyn("piper-plus/ojt/wasm/dist/ojt.mjs");
-  const { createJaFrontend, mountDictionaryBytes } = await dyn("piper-plus/backend/ja-frontend.js");
-  const { encodeTokens } = await dyn("piper-plus/backend/encode.js");
   const Module = await createOjt({ wasmBinary: await packFile(JA, "ja/ojt.wasm.gz"), print: () => {}, printErr: () => {} });
   mountDictionaryBytes(Module, { sys: await packFile(JA, "ja/sys.dic.gz"), matrix: await packFile(JA, "ja/matrix.bin.gz"), char: await packFile(JA, "ja/char.bin.gz"), unk: await packFile(JA, "ja/unk.dic.gz") });
   const ja = createJaFrontend(Module, "/dic", { naniModel: await packJson(JA, "ja/nani-model.json.gz") });
@@ -86,7 +90,6 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
     if (zh) return;
     const ZH = SINGER.lang.zh;
     await ensurePacks([ZH], "中文前端", say);
-    const { createChineseG2p } = await dyn("piper-plus/backend/zh-g2p.js");
     zh = createChineseG2p({ single: await packJson(ZH, "zh/pinyin_single.tone3.json.gz"), phrases: await packJson(ZH, "zh/pinyin_phrases.tone3.json.gz") });
   };
   // 英文前端（朗读库同一份 en-g2p.js + CMUdict 约 3.7 MB）：第一次唱英文才加载（家规：有意图才加载重资源）
@@ -95,7 +98,6 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
     if (en) return;
     const EN = SINGER.lang.en;
     await ensurePacks([EN], "英文词典", say);
-    const { createEnglishG2p } = await dyn("piper-plus/backend/en-g2p.js");
     en = makeEnglishFront({ g2p: createEnglishG2p({ cmudict: await packJson(EN, "en/cmudict_data.json.gz"), homographs: await packJson(EN, "en/homographs.json.gz") }), encodeTokens, idMap: config.phoneme_id_map });
   };
   // ↓ piper-node.mjs run() 原样（feeds 的名字、类型、形状、默认值）
@@ -118,8 +120,9 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
     phonemizeEnWords: (words: string[]) => en.phonemizeWords(words),
   };
   say("加载 WORLD");
-  const { default: createWorld } = await dyn("world/world.mjs");
-  const world = wrapWorld(await createWorld({ wasmBinary: await bytes("world/world.wasm") }));
+  const { default: createWorld } = await import(/* @vite-ignore */ new URL("world.mjs", WORLD).href);   // emscripten 产物带 node 分支，不进打包，运行时按地址载
+  const wasm = await fetch(new URL("world.wasm", WORLD)); if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
+  const world = wrapWorld(await createWorld({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) }));
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id: string) => { const meta = await json(`atlas/${id}.json`); const raw = await bytes(`atlas/${id}.f32`);
     return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) }; } : null;

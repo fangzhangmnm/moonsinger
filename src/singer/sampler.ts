@@ -25,7 +25,7 @@ interface Table { sr: number; entries: Entry[] }
 interface Voice { src: AudioBufferSourceNode; gain: GainNode; entry: Entry }
 const MAX_VOICES = 8;
 
-const base = new URL("../dev-assets/preview/", import.meta.url);
+const base = new URL("../assets/preview/", import.meta.url);   // 进仓（3.3 MB，随 app 出货；离线、自建都在）
 
 async function fetchTable(): Promise<Table> {
   const [idx, pcm] = await Promise.all([   // no-cache = 每次跟服务器核对（重新生成过的表不吃浏览器缓存）

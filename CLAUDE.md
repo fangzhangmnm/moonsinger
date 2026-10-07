@@ -23,20 +23,20 @@ Nokia 彩铃编辑器，不是 DAW。
 user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼store和undo,先把编辑器摸出来」→ grill 后「可以，以后随时吃书，先这样，开做」。
 决定与原话全在 `ai-docs/20261006-editor-v0-grill.md`（§8½ = 第一版范围）；同行调研 `ai-docs/20261006-peer-survey-melody-input.md`。
 
-- **跑**：`npm install` → `bash scripts/link-dev-assets.sh`（把检疫桶的模型 / 词典 / 引擎软链进 `dev-assets/`，gitignored）→ `npm run build` → `npm run serve` → 开 `http://localhost:8710/`（绑 0.0.0.0，iPad 走局域网 / Tailscale 也能开）。测试 `npm test`。
+- **跑**：`npm install` →（可选）`bash scripts/link-dev-assets.sh`（只有元音图谱实验要它，默认关）→ `npm run build` → `npm run serve` → 开 `http://localhost:8710/`（绑 0.0.0.0，iPad 走局域网 / Tailscale 也能开）。测试 `npm test`。
 - **iPad 上测（不留洞的做法，2026-10-06）**：WSL 里 `PORT=8710 BIND=127.0.0.1 npm run serve`（只听本机、只端出 app 要的文件）；Windows「以管理员身份运行」PowerShell 跑 `& "C:\Program Files\Tailscale\tailscale.exe" serve --http 18124 http://127.0.0.1:8710`（**不带 --bg**：窗口开着才通，Ctrl+C / 关窗即消失，不进常驻配置）；iPad 开 `http://<这台 Windows 的 Tailscale 机器名>:18124/`。坑：WSL mirrored 模式下 Windows 占着的端口号 WSL 用不了（18123 被 Tailscale 自己占着）；Tailscale serve 配置里有 path 条目，所以改 serve 要管理员；Windows 上 `localhost` 先走 ::1，目标写 `127.0.0.1`。
 - **形状**：真五线谱（自画 SVG + Bravura）；旋律 = 一串 token（音符 / 休止 / 小节线 / 记号；user「一串token，拍」「bar是你人工插的token」）；调号 / 拍号 / 速度也是 token（开头三个 = 谱头，点了就地改；user「都是token」）；数据存带拼写的绝对音高；输入三路写同一串：键盘（**键位唯一真理源 = `src/input/keys.ts` 的 BINDINGS 表**：路由 + `docs/keys.md`（`node scripts/gen-keys-doc.mjs` 生成，测试守着不过期）+ pad 按钮提示都读它；加 / 改快捷键只改这张表）、笔 / 鼠标（点选、拖改音高 / 时值；点谱面写音 10-07 拿掉，user「以后用专门的toolstate做」）、手指 4×4 pad（照 Donner MEDO，跟调）；歌词在谱下面就地写（詞先 / 曲先都行，空歌词唱「哼的字」，默认「嗯」）。内存态，刷新清空（不做存档 / 撤销，按 user 说的）。
-- **试听元音表**：`node scripts/gen-preview-vowels.mjs`（离线跑共用核心，出 `dev-assets/preview/vowels.{pcm16,json}`，约 14 s；五个哼的字：嗯 / 啊 / 哦 用日语，呜 / 啦 用中文；做法与 user 原话在脚本头注释）；整首唱时哼的字走核心 opt humNasal / humConsMin（核心默认关，app 打开）；浏览器的元音采样器（`src/singer/sampler.ts`）管试听 / 即兴 / 轻量兜底，只唱「哼」那一个字，不看歌词（user「还是单一元音更适合当blueprint」）。出货时这包也进 `pwa-models`。
+- **试听元音表**：`node scripts/gen-preview-vowels.mjs`（离线跑共用核心，出 `assets/preview/vowels.{pcm16,json}`（进仓随 app 出货，3.3 MB），约 14 s；五个哼的字：嗯 / 啊 / 哦 用日语，呜 / 啦 用中文；做法与 user 原话在脚本头注释）；整首唱时哼的字走核心 opt humNasal / humConsMin（核心默认关，app 打开）；浏览器的元音采样器（`src/singer/sampler.ts`）管试听 / 即兴 / 轻量兜底，只唱「哼」那一个字，不看歌词（user「还是单一元音更适合当blueprint」）。
 - **英文歌词（2026-10-07）**：歌词有拉丁字母、没有假名汉字 → 按英文唱（中英增强模型 preset 9）。记谱层只存音节 + 「词没完」（hyph，MusicXML syllabic），引擎这边拼回单词、查读音、分元音核心（`src/singer/en-front.mjs` + 朗读库同一份 `backend/en-g2p.js` / CMUdict）；词尾辅音只在后面是休止 / 全曲结尾时留在这个音的末尾（核心 `m.coda`，只在英文分支）。拼回的词要是真实单词（「ev-ry」拼成 evry 查不到，写「ev-er-y」或「ev-ery」）；英文歌里哼「嗯」只能用 hum（mm 没有元音）。
 - **唱法只有一份**：`src/singer/sing-core.mjs`（浏览器 worker 与写歌实验室仓的 `Lab/20261005 月读第一首/sing.mjs` 命令行壳共用（它按兄弟路径 import 本仓这一份）；user「免得你两边写的不一样」）。改唱法改它；Lab 命令行 `--noise=0` + `DUMP_F32` 做逐样本对比。抽取验收与浏览器 == Node 验收记在 `ai-docs/20261006-singer-core-extraction-proposal.md`。
 - **模型包（2026-10-07 起）**：月读本体 / 运行时 / 日中英词典走家族模型包（`@internal/model-packs` 下载、逐片验、存 Cache Storage `pwa-models`，下一次和升版本都不重下；user「当然a」「最好jrb和moonsinger只用存一份」）。清单 = `src/singer/packs.gen.ts`（`node scripts/gen-packs.mjs` 从 `../20260903 PWA Models` 生成，测试守着不过期）。模型源 = `https://fangzhangmnm.github.io/pwa-models`（同 JRB）。共享库 `@internal/model-packs` 0.1.0 = `vendor-pkgs/` 的 tgz（收货：`bash "../20261007 internal-model-packs/scripts/pull-package.sh"`）。
-- **出货前要换的路**：①② 已做（2026-10-07：模型包推上 GitHub Pages、共享库 0.1.0 收货）；③ JS 胶水（前端 / 运行时的 .js）还从 `dev-assets/` 取，要走 `@internal/read-aloud`（需给库加底层出口 → 先问 user）；④ 界面显示月读的署名块和四条禁止用途（`packs.gen.ts` 的 CREDIT）。
+- **出货前要换的路**：①② 已做（2026-10-07：模型包推上 GitHub Pages、共享库 0.1.0 收货）；③ 已做（2026-10-07，user「毕业差的东西做」）：JS 胶水走朗读库 0.1.22 的底层出口 `@internal/read-aloud/backend/piper-plus/*`（打进 worker；类型 `src/singer/read-aloud-backend.d.ts`）、WORLD vendored `vendor/world/`（含许可证与构建脚本）、试听元音表进仓 `assets/preview/`——日 / 中 / 英三首逐样本与改前相同，且拿掉 `dev-assets/` 照样唱；④ 已做（设置里显示月读的署名块和四条禁止用途）。还差：PWA 壳（manifest / service worker / 图标）、部署（GitHub Pages dev/prod）、公开前的隐私分拣。
 - **唱法核心有两个用户**：本仓的浏览器 worker + 写歌实验室的 Lab 命令行（`../20260810 写歌实验室/Lab/20261005 月读第一首/sing.mjs`）。改 `sing-core.mjs` 的接口要顾到那边；动实验室的 `Lab/20261005 月读第一首/` 之前先 SendMessage 打招呼（约定原文在抽取提案文末）。源码注释里写的「Lab/…」都指写歌实验室仓。
 
 ## 黄线区（外接服务白名单）
 **模型源** = 家族级白名单 ②（出厂预填 `https://fangzhangmnm.github.io/pwa-models`，同 JustReadBooks）：只读 GET 包的分片，到手先对 app 内嵌清单的 sha256（`@internal/model-packs`）；第一次整首唱才下（重资源等有意图）。user 2026-10-07「当然a」（月读照家规进 pwa-models）。
 **反弃坑（ADR-0006 ③；user 2026-10-07「i might worry about hardcode my gh link…」）**：查找顺序 = 同源 `pwa-models/`（自建服务器把模型仓拷过去就能用）→ 设置里的「模型来源」（界面上能改、恢复默认）；设置里还能「从本机文件导入模型包」（按内容哈希认分片）。来源只在这次打开里有效（持久化未定）。全家族检查交接 = 家族根 `ai-docs/20261007-anti-abandonware-audit-handoff.md`。
-除此之外 MoonSinger 不接任何第三方网络服务（试听元音表、JS 胶水目前都是同源的开发期文件）。
+除此之外 MoonSinger 不接任何第三方网络服务（试听元音表、JS 胶水、WORLD 都随 app 同源出货）。
 
 ## 红线（本仓重申）
 
