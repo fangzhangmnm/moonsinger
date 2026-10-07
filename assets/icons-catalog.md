@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-6 icons · 提取自家族图标库 `20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+7 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -22,6 +22,12 @@
 |------|------|
 | `play` | 播放:实心右向三角 ▶(IEC 60417 磁带机惯例统一实心, 描边同色叠加得圆角); 20260819 media 批入库 |
 | `stop` | 停止:实心圆角方块 ⏹; WebPaint timelapse「暂停录制」也用它(record-pause 已驳回, stop 停段+record 续录=磁带机语义); 20260819 media 批入库 |
+
+## file
+
+| name | 说明 |
+|------|------|
+| `export` | 导出:向上箭头离开托盘(import 的上下镜像) |
 
 ## common
 

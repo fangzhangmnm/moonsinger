@@ -42,3 +42,6 @@ echo "[build] ✓ $OUT"
 # 月读的 worker（唱法核心 src/singer/sing-core.mjs 打进来；第三方引擎 / 模型运行时从 dev-assets/ 动态加载，不进包）
 "$ESBUILD" ./src/singer/worker.ts --bundle --format=esm --target=es2022 --outfile=./dist/singer-worker.mjs --sourcemap --log-level=warning
 echo "[build] ✓ ./dist/singer-worker.mjs"
+# mp3 编码 worker（vendored lamejs，LGPL-3.0，单独一个文件；点导出才加载）
+"$ESBUILD" ./src/export/mp3-worker.ts --bundle --format=esm --target=es2022 --outfile=./dist/mp3-worker.mjs --sourcemap --log-level=warning
+echo "[build] ✓ ./dist/mp3-worker.mjs"

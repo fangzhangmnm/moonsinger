@@ -11,7 +11,8 @@ import { MELISMA_MARK } from "../score/lyrics.ts";
 import { ScoreView } from "../ui/score-view.ts";
 import { Pad, KEY_NAMES } from "../ui/pad.ts";
 import { toLabScore } from "../score/lab-score.ts";
-import { Singer } from "../singer/client.ts";
+import { Singer, type SingResult } from "../singer/client.ts";
+import { encodeMp3 } from "../export/mp3.ts";
 import { Sampler } from "../singer/sampler.ts";
 
 let st: EditorState = setSongMeta(initState(), { fifths: 0, beats: 4, beatType: 4, tempo: 90 });
@@ -32,6 +33,7 @@ bar.innerHTML =
   `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="a">あ / 啊</option></select></label>` +
   `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
   `<button id="padBtn" class="btn is-on" title="手指 pad"><svg class="ico"><use href="#grid"/></svg></button>` +
+  `<button id="shareBtn" class="btn" title="导出歌声（mp3），发给别人听"><svg class="ico"><use href="#export"/></svg></button>` +
   `<button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>`;
 
 // ── 试听：月读的元音采样器（出一个音就响；只唱「哼」那一个字，不看歌词——user「还是单一元音更适合当blueprint」） ─────
@@ -103,8 +105,8 @@ function songLang(): "ja" | "zh" {
   const ls = st.song.tokens.flatMap((t) => (t.kind === "note" && t.lyric ? [t.lyric] : [])).join("");
   return /\p{Script=Han}/u.test(ls) && !/[぀-ヿ]/.test(ls) ? "zh" : "ja";
 }
-/** 轻量版：用元音采样器按乐谱唱（tie 并成一个长音；全唱「哼」那个字）。 */
-function playLight(note = ""): void {
+/** 轻量版的音符表（秒）：tie 并成一个长音。 */
+function lightNotes(): { midi: number; t0: number; t1: number }[] {
   const secPerTick = 60 / st.song.tempo / TPQ, notes: { midi: number; t0: number; t1: number }[] = [];
   for (const { index, tok, start } of timeline(st.song)) {
     if (tok.kind !== "note") continue;
@@ -112,6 +114,22 @@ function playLight(note = ""): void {
     if (tok.tie && last && last.midi === midi) { last.t1 = t1; continue; }
     notes.push({ midi, t0, t1 });
   }
+  return notes;
+}
+/** 完整版：同一份谱只算一次（再播 / 导出直接用上次的）。 */
+let lastFull: { key: string; r: SingResult } | null = null;
+async function singFull(): Promise<SingResult | null> {
+  const score = toLabScore(st.song, songLang());
+  if (!score.SCORE.length) return null;
+  const key = JSON.stringify(score);
+  if (lastFull?.key === key) return lastFull.r;
+  const r = await singer.sing(score, (stage) => singStatus(`${stage}…`));
+  lastFull = { key, r };
+  return r;
+}
+/** 轻量版：用元音采样器按乐谱唱（全唱「哼」那个字）。 */
+function playLight(note = ""): void {
+  const notes = lightNotes();
   if (!notes.length) { singStatus("还没有音"); return; }
   if (!sampler.ready) { singStatus("轻量版的元音表还在下载…"); void sampler.load().then(() => playLight(note)); return; }
   const total = sampler.playSong(notes, st.song.hum, () => playIcon(false));
@@ -122,12 +140,11 @@ async function togglePlay(): Promise<void> {
   if (singing) return;
   singer.unlock();   // 在用户手势里先把声音打开（iPad）
   if ($<HTMLSelectElement>("qualSel").value === "light") { playLight(); return; }
-  const score = toLabScore(st.song, songLang());
-  if (!score.SCORE.length) { singStatus("还没有音"); return; }
   singing = true; $("playBtn").classList.add("is-on");
   try {
-    const r = await singer.sing(score, (stage) => singStatus(`${stage}…`));
-    singStatus(`唱 ${(r.samples.length / r.sr).toFixed(1)} 秒（准备 ${(r.ms.load / 1000).toFixed(1)} s，合成 ${(r.ms.sing / 1000).toFixed(1)} s）`);
+    const cached = lastFull, r = await singFull();
+    if (!r) { singStatus("还没有音"); return; }
+    singStatus(r === cached?.r ? `唱 ${(r.samples.length / r.sr).toFixed(1)} 秒（谱没改，用上次唱好的）` : `唱 ${(r.samples.length / r.sr).toFixed(1)} 秒（准备 ${(r.ms.load / 1000).toFixed(1)} s，合成 ${(r.ms.sing / 1000).toFixed(1)} s）`);
     singer.play(r, () => { playIcon(false); });
     playIcon(true);
   } catch (e) {
@@ -136,8 +153,67 @@ async function togglePlay(): Promise<void> {
   } finally { singing = false; $("playBtn").classList.remove("is-on"); }
 }
 $("playBtn").addEventListener("click", () => { void togglePlay(); });
+
+// ── 导出歌声（user「基于wxhw的经验分享是可以很早就做」）：照 WXHW 的形状——先生成，再弹「好了」面板，
+//    点「分享」那一下才调系统分享（iOS Safari 只认用户手势里的 navigator.share）；没有分享的（桌面 / Quest）= 下载。
+let exporting = false;
+async function exportSong(): Promise<void> {
+  if (exporting || singing) return;
+  exporting = true; $("shareBtn").classList.add("is-on");
+  try {
+    let r: { samples: Float32Array; sr: number } | null = null, how = "";
+    if ($<HTMLSelectElement>("qualSel").value === "full") {
+      try { r = await singFull(); how = "月读"; }
+      catch (e) { singStatus(`完整版唱不出来（${(e as Error).message}），改用轻量版导出…`); }
+    }
+    if (!r) {
+      const notes = lightNotes();
+      if (notes.length) { r = await sampler.renderSong(notes, st.song.hum); how = "轻量版"; }
+    }
+    if (!r) { singStatus("还没有音"); return; }
+    singStatus("编 mp3…");
+    const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
+    const file = new File([bytes], `${songTitle()}.mp3`, { type: "audio/mpeg" });
+    singStatus("");
+    offerFile(file, "歌声导出好了", `${how}唱 ${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
+  } catch (e) {
+    singStatus(`导出失败：${(e as Error).message}`);
+  } finally { exporting = false; $("shareBtn").classList.remove("is-on"); }
+}
+/** 文件名：歌词开头几个字（没有歌词 = 「旋律」）+ 时间。 */
+function songTitle(): string {
+  const ly = st.song.tokens.flatMap((t) => (t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : [])).join("").replace(/[\\/:*?"<>|\s]/g, "").slice(0, 12);
+  const d = new Date(), z = (n: number) => String(n).padStart(2, "0");
+  return `${ly || "旋律"}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`;
+}
+/** 「好了」面板（应用内，不用系统弹窗）：分享 / 下载 / 关。 */
+function offerFile(file: File, title: string, msg: string): void {
+  const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+  const canShare = typeof navigator.share === "function" && !!nav.canShare?.({ files: [file] });
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">${title}</div><div class="offer-msg">${msg}</div><div class="offer-btns">` +
+    (canShare ? `<button class="btn primary" data-v="share">分享</button>` : "") +
+    `<button class="btn${canShare ? "" : " primary"}" data-v="download">下载</button><button class="btn" data-v="close">关</button></div></div>`;
+  document.body.append(box);
+  const close = () => { box.remove(); scoreEl.focus(); };
+  box.addEventListener("click", async (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (v === "download") {
+      const a = document.createElement("a"), url = URL.createObjectURL(file);
+      a.href = url; a.download = file.name; document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      singStatus(`已下载 ${file.name}`); close();
+    } else if (v === "share") {
+      try { await navigator.share({ files: [file], title: file.name }); singStatus("已分享"); close(); }
+      catch (err) { if ((err as { name?: string }).name !== "AbortError") singStatus(`分享失败：${(err as Error).message}`); }
+    }
+  });
+}
+$("shareBtn").addEventListener("click", () => { void exportSong(); });
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
-(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, labScore: () => toLabScore(st.song, songLang()), state: () => st };
+(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st };
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 $<HTMLSelectElement>("keySel").addEventListener("change", (e) => { update(setSongMeta(st, { fifths: Number((e.target as HTMLSelectElement).value) })); scoreEl.focus(); });

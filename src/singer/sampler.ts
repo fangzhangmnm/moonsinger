@@ -47,9 +47,9 @@ export class Sampler {
     if (!es.length) return null;
     return es.reduce((a, b) => (Math.abs(b.midi - midi) < Math.abs(a.midi - midi) ? b : a));
   }
-  private start(midi: number, hum: Hum, when: number): Voice | null {
+  private start(midi: number, hum: Hum, when: number, ctx: BaseAudioContext = audioCtx()): Voice | null {
     const e = this.pick(midi, hum); if (!e?.buf) return null;
-    const ctx = audioCtx(), src = ctx.createBufferSource(), gain = ctx.createGain();
+    const src = ctx.createBufferSource(), gain = ctx.createGain();
     src.buffer = e.buf; src.loop = true;
     src.loopStart = e.loopStart / this.sr; src.loopEnd = e.loopEnd / this.sr;
     src.playbackRate.value = 2 ** ((midi - e.midi) / 12);
@@ -79,6 +79,15 @@ export class Sampler {
     const total = notes.length ? notes[notes.length - 1].t1 : 0;
     this.songTimer = window.setTimeout(() => { this.song = []; onEnd(); }, (total + 0.4) * 1000);
     return total;
+  }
+  /** 轻量版整首离线渲染（导出用）：同 playSong 的排法，不出声，直接拿样本。 */
+  async renderSong(notes: { midi: number; t0: number; t1: number }[], hum: Hum): Promise<{ samples: Float32Array; sr: number }> {
+    if (!this.ready) await this.load();
+    const lead = 0.1, total = (notes.length ? notes[notes.length - 1].t1 : 0) + lead + 0.4;
+    const ctx = new OfflineAudioContext(1, Math.ceil(total * this.sr), this.sr);
+    for (const n of notes) { const v = this.start(n.midi, hum, lead + n.t0, ctx); if (v) this.release(v, lead + n.t1); }
+    const buf = await ctx.startRendering();
+    return { samples: buf.getChannelData(0), sr: this.sr };
   }
   stopSong(): void {
     clearTimeout(this.songTimer);
