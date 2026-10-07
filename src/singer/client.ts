@@ -2,6 +2,7 @@
 // worker 第一次用到才创建（家规：重资源要等用户有意图才加载）。
 import type { LabScore } from "../score/lab-score.ts";
 import type { SingReply, SingRequest } from "./worker.ts";
+import { audioCtx } from "./audio.ts";
 
 export interface SingResult { samples: Float32Array; sr: number; ms: { load: number; sing: number } }
 
@@ -9,7 +10,6 @@ export class Singer {
   private w: Worker | null = null;
   private seq = 0;
   private pending = new Map<number, { ok: (r: SingResult) => void; fail: (e: Error) => void; progress: (s: string) => void }>();
-  private ctx: AudioContext | null = null;
   private src: AudioBufferSourceNode | null = null;
 
   private worker(): Worker {
@@ -21,7 +21,10 @@ export class Singer {
       else if (m.type === "done") { this.pending.delete(m.id); p.ok({ samples: m.samples, sr: m.sr, ms: m.ms }); }
       else { this.pending.delete(m.id); p.fail(new Error(m.message)); }
     };
-    this.w.onerror = (e) => { for (const p of this.pending.values()) p.fail(new Error(e.message || "月读的 worker 出错")); this.pending.clear(); };
+    this.w.onerror = (e) => {   // 坏了就丢掉，下次点播放重建（不然下一次永远等不到回复）
+      this.w?.terminate(); this.w = null;
+      for (const p of this.pending.values()) p.fail(new Error(e.message || "月读的 worker 出错")); this.pending.clear();
+    };
     return this.w;
   }
 
@@ -43,5 +46,5 @@ export class Singer {
   }
   stop(): void { const s = this.src; this.src = null; if (s) { s.onended = null; try { s.stop(); } catch { /* 已停 */ } } }
   get playing(): boolean { return this.src !== null; }
-  unlock(): AudioContext { if (!this.ctx) this.ctx = new AudioContext(); if (this.ctx.state === "suspended") void this.ctx.resume(); return this.ctx; }
+  unlock(): AudioContext { return audioCtx(); }   // 全 app 共用一个（audio.ts）
 }

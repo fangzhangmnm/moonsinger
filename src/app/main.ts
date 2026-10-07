@@ -3,8 +3,8 @@
 // UX-2（账本 §9¾）：选中 = 改、光标 = 写；歌词在谱下面点进去写（底部歌词栏拿掉了）；「弹」= 即兴只唱不写。
 
 import { APP_VERSION } from "../version.ts";
-import { type EditorState, type NoteTok, type Hum, initState, writePitch, writeKey, setSongMeta, setTuplet, setInputKey, currentIndex, barFill, TPQ } from "../score/song.ts";
-import { type Pitch, pitchName } from "../score/pitch.ts";
+import { type EditorState, type NoteTok, type Hum, initState, writePitch, writeKey, setSongMeta, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, TPQ } from "../score/song.ts";
+import { type Pitch, pitchName, midiOf } from "../score/pitch.ts";
 import { commandFor } from "../score/keymap.ts";
 import { apply } from "../score/commands.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
@@ -12,6 +12,7 @@ import { ScoreView } from "../ui/score-view.ts";
 import { Pad, KEY_NAMES } from "../ui/pad.ts";
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer } from "../singer/client.ts";
+import { Sampler } from "../singer/sampler.ts";
 
 let st: EditorState = setSongMeta(initState(), { fifths: 0, beats: 4, beatType: 4, tempo: 90 });
 
@@ -27,14 +28,26 @@ bar.innerHTML =
   `<select id="keyIns" class="mini" title="在光标处换调号（插一个调号记号）"><option value="">在此换调…</option>${keyOpts(null)}</select>` +
   `<label class="field">拍号<select id="timeSel"><option value="2">2/4</option><option value="3">3/4</option><option value="4" selected>4/4</option></select></label>` +
   `<label class="field">速度<input id="tempoIn" type="number" min="30" max="240" value="90" /></label>` +
+  `<label class="field" title="完整 = 月读本人（第一次要加载约 65 MB）；轻量 = 元音采样，按下即响、任何设备都能跑">音质<select id="qualSel"><option value="full">完整</option><option value="light">轻量</option></select></label>` +
   `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="a">あ / 啊</option></select></label>` +
   `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
   `<button id="padBtn" class="btn is-on" title="手指 pad"><svg class="ico"><use href="#grid"/></svg></button>` +
   `<button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>`;
 
-// ── 试听（第 5 步接采样器；先留口子） ─────────────────────────────────
-const sound = { down: (_p: Pitch) => {}, up: () => {} };
+// ── 试听：月读的元音采样器（出一个音就响；只唱「哼」那一个字，不看歌词——user「还是单一元音更适合当blueprint」） ─────
+const sampler = new Sampler();
+const sound = {
+  down: (p: Pitch) => sampler.down(midiOf(p), st.song.hum),
+  up: () => sampler.up(),
+};
 const soundTok = (s: EditorState, i: number) => { const t = s.song.tokens[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch); };
+/** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
+function writeAndLocate(write: (s: EditorState) => EditorState): number {
+  let target = -1;
+  if (st.sel) for (let k = st.sel.from; k < st.sel.to; k++) if (st.song.tokens[k].kind === "note") { target = k; break; }
+  update(write(st));
+  return target >= 0 ? target : st.caret - 1;
+}
 
 const view = new ScoreView(scoreEl, {
   get: () => st,
@@ -42,14 +55,15 @@ const view = new ScoreView(scoreEl, {
   audition: (i) => { soundTok(st, i); setTimeout(() => sound.up(), 350); },
 });
 let impro = false;
+let padWrote = -1;   // pad 按下：先写（onPitch）再响（onSoundDown）——响的时候唱刚写的那个音的字
 const pad = new Pad(padEl, {
   state: () => st,
-  onPitch: (p) => update(writePitch(st, p)),
+  onPitch: (p) => { padWrote = writeAndLocate((s) => writePitch(s, p)); },
   onCommand: (c) => update(apply(st, c, performance.now())),
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
   onImpro: (on) => { impro = on; renderStatus(); },
-  onSoundDown: (p) => sound.down(p),
+  onSoundDown: (p) => { if (padWrote >= 0) soundTok(st, padWrote); else sound.down(p); padWrote = -1; },
   onSoundUp: () => sound.up(),
 });
 
@@ -89,12 +103,27 @@ function songLang(): "ja" | "zh" {
   const ls = st.song.tokens.flatMap((t) => (t.kind === "note" && t.lyric ? [t.lyric] : [])).join("");
   return /\p{Script=Han}/u.test(ls) && !/[぀-ヿ]/.test(ls) ? "zh" : "ja";
 }
+/** 轻量版：用元音采样器按乐谱唱（tie 并成一个长音；全唱「哼」那个字）。 */
+function playLight(note = ""): void {
+  const secPerTick = 60 / st.song.tempo / TPQ, notes: { midi: number; t0: number; t1: number }[] = [];
+  for (const { index, tok, start } of timeline(st.song)) {
+    if (tok.kind !== "note") continue;
+    const t0 = start * secPerTick, t1 = (start + tok.dur) * secPerTick, midi = midiOf(effectivePitch(st.song.tokens, index)), last = notes[notes.length - 1];
+    if (tok.tie && last && last.midi === midi) { last.t1 = t1; continue; }
+    notes.push({ midi, t0, t1 });
+  }
+  if (!notes.length) { singStatus("还没有音"); return; }
+  if (!sampler.ready) { singStatus("轻量版的元音表还在下载…"); void sampler.load().then(() => playLight(note)); return; }
+  const total = sampler.playSong(notes, st.song.hum, () => playIcon(false));
+  playIcon(true); singStatus(`${note}轻量版唱 ${total.toFixed(1)} 秒`);
+}
 async function togglePlay(): Promise<void> {
-  if (singer.playing) { singer.stop(); playIcon(false); singStatus(""); return; }
+  if (singer.playing || sampler.songPlaying) { singer.stop(); sampler.stopSong(); playIcon(false); singStatus(""); return; }
   if (singing) return;
+  singer.unlock();   // 在用户手势里先把声音打开（iPad）
+  if ($<HTMLSelectElement>("qualSel").value === "light") { playLight(); return; }
   const score = toLabScore(st.song, songLang());
   if (!score.SCORE.length) { singStatus("还没有音"); return; }
-  singer.unlock();   // 在用户手势里先把声音打开（iPad）
   singing = true; $("playBtn").classList.add("is-on");
   try {
     const r = await singer.sing(score, (stage) => singStatus(`${stage}…`));
@@ -102,12 +131,13 @@ async function togglePlay(): Promise<void> {
     singer.play(r, () => { playIcon(false); });
     playIcon(true);
   } catch (e) {
-    singStatus(`月读唱不出来：${(e as Error).message}`);
+    // 完整引擎带不起来（内存不够 / 加载失败）→ 退到轻量版接着唱，并明说（user「带不起piper的就用我们的元音sampler来兜底」）
+    playLight(`完整版唱不出来（${(e as Error).message}），先用`);
   } finally { singing = false; $("playBtn").classList.remove("is-on"); }
 }
 $("playBtn").addEventListener("click", () => { void togglePlay(); });
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
-(window as unknown as Record<string, unknown>).__moonsinger = { singer, labScore: () => toLabScore(st.song, songLang()), state: () => st };
+(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, labScore: () => toLabScore(st.song, songLang()), state: () => st };
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 $<HTMLSelectElement>("keySel").addEventListener("change", (e) => { update(setSongMeta(st, { fifths: Number((e.target as HTMLSelectElement).value) })); scoreEl.focus(); });
@@ -132,12 +162,8 @@ window.addEventListener("keydown", (e) => {
     soundTok(probe, probe.caret - 1);
     return;
   }
-  // 写 = 光标前那个新音；改 = 被覆盖的那个音（旧选中里的第一个音）
-  let target = -1;
-  if (c.k === "degree" && st.sel) for (let k = st.sel.from; k < st.sel.to; k++) if (st.song.tokens[k].kind === "note") { target = k; break; }
-  const next = apply(st, c, performance.now());
-  update(next);
-  if (c.k === "degree") soundTok(next, target >= 0 ? target : next.caret - 1);
+  if (c.k === "degree") { const i = writeAndLocate((s) => apply(s, c, performance.now())); soundTok(st, i); return; }   // 先写再取 st（写完才有这个音）
+  update(apply(st, c, performance.now()));
 });
 window.addEventListener("keyup", (e) => { if (/^(Digit[1-7]|Key[QWERTYU]|Numpad[1-7])$/.test(e.code)) sound.up(); });
 
@@ -146,3 +172,5 @@ view.render();
 pad.render();
 renderStatus();
 scoreEl.focus();
+// 试听元音表（约 3 MB）在画好之后的空闲时下载：选了月读就是意图，第一下就该响（user「选这个乐器就是意图，然后第一下就响」）
+setTimeout(() => { void sampler.load().catch((e) => singStatus(`试听元音表没下载下来：${(e as Error).message}`)); }, 300);
