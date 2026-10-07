@@ -34,6 +34,13 @@
 | **jianpu-ly 等简谱文本** | 简谱文本格式（10-05 peek：jianpu-ly Apache-2.0、simple-notation MIT、musje 许可矛盾） | 简谱更像「视图」而不是存档格式 |
 | MEI / DiffSinger .ds / VOCALOID .vpr / Synthesizer V .svp | 学术 XML / 音素级 JSON / 商业私有 | 大概率只作导入参考 |
 
+**2026-10-07 核过的 MusicXML 4.0 事实（edited by Claude Opus 5.5；出处 = W3C MusicXML 4.0 文档 https://www.w3.org/2021/06/musicxml40/ 的 compressed-mxl-files 教程页与 lyric / text / harmony / note 元素页）**：
+- **.mxl 容器**：zip 的第一个文件是不压缩的 `mimetype`（内容 `application/vnd.recordare.musicxml`）；`META-INF/container.xml` 里**第一个** `<rootfile>` 是主乐谱。原文「The zip archive can also include images … or other media」「MusicXML 4.0 does not specify where these files need to be located in the zip file」→ 我们的扩展文件可以放进去、位置自定。
+- **歌词**：`<lyric number name>`，一个音符可以有多条（多段词 / 副歌）；歌词文字 `<text>` 有 `xml:lang`（标这个字是哪种语言）。
+- **音符 `id`**：`<note id>` 可选、全文唯一 → 扩展文件（月读的曲线）可以按 id 对号。
+- **和弦两种**：`<harmony>` = 和弦记号（`<root>` 或 `<numeral>` + `<kind>`，可带 `<bass>` / `<inversion>` / `<degree>`），是小节里与音符并列的元素、用 `<offset>` 定时间点、属于某个声部；`<note><chord/>` = 和前一个音同时响（叠音）。
+- 没核：简谱有没有官方表示；别的软件打开 .mxl 时怎么对待我们的额外文件（规范允许存在，是否保留不保证）。
+
 一个 AI 的猜想（待内耗）：**存档主体 = MusicXML（.mxl 容器），月读的旋钮曲线、贴纸图等作为容器里的扩展文件，每个扩展一个版本号**；或者反过来，以 USTX 为主体。哪个当主体，取决于第 4 节里「音高存什么」「旋钮挂在哪」的答案。
 
 ## 4. 内耗时要回答的问题（从今天的对话里攒的）
