@@ -40,7 +40,7 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **契约 = `src/format/contract.ts`**（人读的 .h）：v1 = 这一版真写进 `.mxl` 的 `.moonsinger/*.json` 形状；v2 提案 = 多轨 / 曲线 / by value + 哈希的目标形状（未写入文件）。来龙去脉与 user 原话在 `ai-docs/20261007-data-contract-draft.md`（§3 目录表、§7 未定、§8 谁的字节）。
 - **守卫 = `test/format-guard.test.ts`**（在 `npm test` 里）：写出来的键形状 = `test/fixtures/format/shape.json`；写永远只写当前版；`MIGRATIONS[kind].length === FORMAT[kind] - 1`；每个冻结样本（`test/fixtures/format/v*/`）都能开、读出来和冻结时一样。**改格式不带版本号 / 迁移 / 冻结样本 = 红。**
 - **改格式的规矩**（CatsUp 立宪）：只加可选字段 → `node scripts/freeze-format-sample.mjs` 更新形状快照、审 diff；删 / 改字段 → `contract.ts` 的 FORMAT +1 + `src/format/migrate/index.ts` 加一步纯函数 + 跑 freeze 生成新版样本、**旧版目录不删**。老文件永远能开，只拒开比 app 新的；不认识的字段 / 文件原样写回。
-- **分工**（user 2026-10-07）：多轨等编辑器活由 user 带别的 session 做；碰到格式问题先写进契约草稿 §7「未定」再继续，不自己拍；本仓碰 `src/format/` 和 `.mxl` 布局的改动合并前给管契约的 session 过（活着就 SendMessage，不在就看契约 + 守卫）。
+- **分工**（user 2026-10-07 两次）：多轨等编辑器活由 user 带别的 session 做。**契约（`contract.ts` v2 + 契约草稿）是推荐稿，不是定稿**（user「fable的任何数据结构契约都只是推荐稿，不对立刻说」「小节线按照我们0.2.x做好的，fable可能不知道我们之前调的手感」）：做多轨的 session 对着 0.2.x 的手感用，哪里不对立刻报 user、同时 SendMessage 格式 session 对账（不是审批）；碰到还没定的格式问题写进契约草稿 §7 再继续。**守卫测试照旧有效**——它防的是丢数据（版本号 / 迁移 / 冻结样本），不定设计。
 
 ## 黄线区（外接服务白名单）
 **模型源** = 家族级白名单 ②（出厂预填 `https://fangzhangmnm.github.io/pwa-models`，同 JustReadBooks）：只读 GET 包的分片，到手先对 app 内嵌清单的 sha256（`@internal/model-packs`）；第一次整首唱才下（重资源等有意图）。user 2026-10-07「当然a」（月读照家规进 pwa-models）。

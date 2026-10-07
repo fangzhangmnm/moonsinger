@@ -1,4 +1,5 @@
-// contract.ts —— `.mxl` 里 `.moonsinger/` 各份 JSON 的形状 = 持久化契约（人读的 .h；代码照它写、守卫测试照它查）。
+// contract.ts —— `.mxl` 里 `.moonsinger/` 各份 JSON 的形状（人读的 .h；v1 = 代码现在写的，守卫测试照它查；v2 = **推荐稿**，不是定稿——
+//   user 2026-10-07「fable的任何数据结构契约都只是推荐稿，不对立刻说」：做多轨的 session 对着 0.2.x 的手感用，不对就改、报 user、知会格式 session）。
 // created 2026-10-07 by Claude Fable 5.1（user「数据结构你来把关」「碰到格式问题就问你」）。
 // 来龙去脉与 user 原话 = ai-docs/20261007-data-contract-draft.md（§3 目录表、§7 未定、§8 谁的字节）。
 //
