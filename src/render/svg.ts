@@ -18,6 +18,7 @@ export function toSvg(l: Layout, inlineStyle = false): string {
       case "text": out.push(`<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${p.size ? n(p.size) : lfs}" text-anchor="${p.anchor ?? "middle"}">${esc(p.s)}</text>`); break;
       case "path": out.push(`<path${c} d="${p.d}"/>`); break;
       case "rect": out.push(`<rect${c} x="${n(p.x)}" y="${n(p.y)}" width="${n(p.w)}" height="${n(p.h)}" rx="${n(l.sp * 0.6)}"/>`); break;
+      case "icon": out.push(`<use${c} href="#${p.id}" x="${n(p.x)}" y="${n(p.y)}" width="${n(p.size)}" height="${n(p.size)}">${p.title ? `<title>${esc(p.title)}</title>` : ""}</use>`); break;
     }
   }
   out.push("</svg>");

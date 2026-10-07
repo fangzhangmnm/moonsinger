@@ -22,7 +22,8 @@ export type Prim =
   | { t: "glyph"; x: number; y: number; ch: string; cls?: string; size?: number /* px，默认 4 sp */ }
   | { t: "text"; x: number; y: number; s: string; cls?: string; size?: number /* px，默认歌词字号 */; anchor?: "start" | "middle" | "end" }
   | { t: "path"; d: string; cls?: string }
-  | { t: "rect"; x: number; y: number; w: number; h: number; cls?: string };
+  | { t: "rect"; x: number; y: number; w: number; h: number; cls?: string }
+  | { t: "icon"; id: string; x: number; y: number; size: number; cls?: string; title?: string };   // 家族图标库的一个图标（页面里内联的 sprite，<use href="#id">）
 
 export interface EngraveOpts {
   width: number;                         // px，谱面板宽
@@ -34,7 +35,8 @@ export interface EngraveOpts {
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
   partName?: string;                     // 声部名（歌手牌），画在第一行谱号左边（第一行缩进让出来，同打谱软件的乐器名）；没有 = 不画
   partEmpty?: boolean;                   // 还没人上场（未选角）：声部名画淡色
-  paperLabel?: string;                   // 纸右上角的小钮（「A5」）；点了 = 纸的设置（user「这种应该是纸的右上角有一个可以设置纸的属性吧。加图片的入口以后也可以放那里」）
+  paperLabel?: string;                   // 纸右上角的小钮（扳手；这里的字只进悬停提示「纸：A5」）；点了 = 纸的设置（user「这种应该是纸的右上角有一个可以设置纸的属性吧。加图片的入口以后也可以放那里」；
+                                         //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
 export const LYRIC_EM = 1.6;
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
@@ -489,10 +491,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.push({ t: "rect", x: o.width / 2 - w / 2, y: titleBase - titleSize * 0.36 - h / 2, w, h, cls: "slot-box" });
   }
   let paperChip: Layout["paperChip"] = null;
-  if (o.paperLabel) {   // 纸右上角：一个写着纸张的小钮
-    const fs = P(1.15), cw = (o.measureLyric(o.paperLabel) * 1.15) / LYRIC_EM + P(1.4), ch = P(2.2), cx = o.width - P(MARGIN) - cw, cy = P(0.9);
+  if (o.paperLabel) {   // 纸右上角：一个扳手小钮（纸的设置）
+    const ch = P(2.2), cw = ch, cx = o.width - P(MARGIN) - cw, cy = P(0.9), is = P(1.5);
     prims.push({ t: "rect", x: cx, y: cy, w: cw, h: ch, cls: "paper-chip" });
-    prims.push({ t: "text", x: cx + cw / 2, y: cy + ch / 2 + fs * 0.36, s: o.paperLabel, cls: "paper-chip-text", size: fs, anchor: "middle" });
+    prims.push({ t: "icon", id: "wrench", x: cx + (cw - is) / 2, y: cy + (ch - is) / 2, size: is, cls: "paper-chip-icon", title: `纸：${o.paperLabel}` });
     paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
   }
   const title: TitleHit = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };

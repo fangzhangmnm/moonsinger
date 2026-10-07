@@ -298,7 +298,7 @@ button, input, select { font: inherit; color: inherit; }
 .score.desk { background: var(--bg); }
 .score.desk .sheet { margin: 0 auto; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 2px 10px rgba(0, 0, 0, .08); min-height: 100%; }
 .staff-svg .paper-chip { fill: var(--panel); stroke: var(--line); rx: 6px; cursor: pointer; }
-.staff-svg .paper-chip-text { fill: var(--muted); font-weight: 600; }
+.staff-svg .paper-chip-icon { color: var(--muted); cursor: pointer; }
 .settings-card .btn.cand small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
 .settings-card .btn.cand:has(small) { flex-direction: column; height: auto; padding: 6px 12px; gap: 2px; }
 .pad-tools .btn.lock small { color: rgba(255, 255, 255, .85); }   /* /2 锁住时小字也看得见 */

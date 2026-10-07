@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.30-2026-10-07";
+var APP_VERSION = "v0.2.31-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -1671,9 +1671,9 @@ function engrave(song, o) {
   }
   let paperChip = null;
   if (o.paperLabel) {
-    const fs = P(1.15), cw = o.measureLyric(o.paperLabel) * 1.15 / LYRIC_EM + P(1.4), ch = P(2.2), cx = o.width - P(MARGIN) - cw, cy = P(0.9);
+    const ch = P(2.2), cw = ch, cx = o.width - P(MARGIN) - cw, cy = P(0.9), is = P(1.5);
     prims.push({ t: "rect", x: cx, y: cy, w: cw, h: ch, cls: "paper-chip" });
-    prims.push({ t: "text", x: cx + cw / 2, y: cy + ch / 2 + fs * 0.36, s: o.paperLabel, cls: "paper-chip-text", size: fs, anchor: "middle" });
+    prims.push({ t: "icon", id: "wrench", x: cx + (cw - is) / 2, y: cy + (ch - is) / 2, size: is, cls: "paper-chip-icon", title: `\u7EB8\uFF1A${o.paperLabel}` });
     paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
   }
   const title = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
@@ -1718,6 +1718,9 @@ function toSvg(l, inlineStyle = false) {
         break;
       case "rect":
         out.push(`<rect${c} x="${n(p.x)}" y="${n(p.y)}" width="${n(p.w)}" height="${n(p.h)}" rx="${n(l.sp * 0.6)}"/>`);
+        break;
+      case "icon":
+        out.push(`<use${c} href="#${p.id}" x="${n(p.x)}" y="${n(p.y)}" width="${n(p.size)}" height="${n(p.size)}">${p.title ? `<title>${esc(p.title)}</title>` : ""}</use>`);
         break;
     }
   }
@@ -5791,7 +5794,7 @@ function showUpdateBar() {
   });
   document.body.append(el);
 }
-bar.innerHTML = `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u53E6\u5B58\u4E3A / \u6539\u6587\u4EF6\u540D / \u5BFC\u51FA\u6B4C\u58F0\uFF08Ctrl / \u2318+S \u5B58\uFF09"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="padBtn" class="btn is-on" title="\u952E\u76D8\uFF08pad\uFF09"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u7248\u672C"><svg class="ico"><use href="#wrench"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u53E6\u5B58\u4E3A / \u6539\u6587\u4EF6\u540D / \u5BFC\u51FA\u6B4C\u58F0\uFF08Ctrl / \u2318+S \u5B58\uFF09"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="padBtn" class="btn is-on" title="\u952E\u76D8\uFF08pad\uFF09"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 var sampler = new Sampler();
 var sound = {
@@ -6249,7 +6252,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "45c7ab08880c" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "537be153e240" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6644,4 +6647,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-dc4f4a3e8811.mjs.map
+//# sourceMappingURL=moonsinger-43543e05e747.mjs.map
