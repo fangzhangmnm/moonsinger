@@ -20,7 +20,7 @@ import { KEY_LABEL } from "../score/pitch.ts";
 export type Prim =
   | { t: "line"; x1: number; y1: number; x2: number; y2: number; w: number; cls?: string }
   | { t: "glyph"; x: number; y: number; ch: string; cls?: string; size?: number /* px，默认 4 sp */ }
-  | { t: "text"; x: number; y: number; s: string; cls?: string; size?: number /* px，默认歌词字号 */; anchor?: "start" | "middle" }
+  | { t: "text"; x: number; y: number; s: string; cls?: string; size?: number /* px，默认歌词字号 */; anchor?: "start" | "middle" | "end" }
   | { t: "path"; d: string; cls?: string }
   | { t: "rect"; x: number; y: number; w: number; h: number; cls?: string };
 
@@ -30,7 +30,7 @@ export interface EngraveOpts {
   caret: number;                         // 光标（插入点）
   sel?: { from: number; to: number } | null;   // 有 = 改（没有光标）
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
-  titlePlaceholder?: boolean;            // 歌名空着时画浅色的「歌名（可不填）」（编辑器里；导出 / 打印不画）
+  titlePlaceholder?: boolean;            // 歌名 / 词曲空着时画浅色提示（编辑器里；导出 / 打印不画）
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
   partName?: string;                     // 声部名（歌手牌），画在第一行谱号左边（第一行缩进让出来，同打谱软件的乐器名）；没有 = 不画
   partEmpty?: boolean;                   // 还没人上场（未选角）：声部名画淡色
@@ -50,6 +50,7 @@ export interface TitleHit { x: number; y: number; w: number; h: number; baseline
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; title: TitleHit;
+  credits: { x: number; y: number; w: number; h: number } | null;   // 作词 / 作曲那一块的点击区域（px；空着时是浅色提示）
   head: { system: number; x: number } | null;   // 光标在哪（画面跟随用；改的时候没有）
   part: { x: number; y: number; w: number; h: number } | null;   // 歌手牌（声部名）的点击区域（px）
   paperChip: { x: number; y: number; w: number; h: number } | null;   // 纸右上角小钮的点击区域（px）
@@ -490,8 +491,19 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
   }
   const title: TitleHit = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
+  // 作词 / 作曲：标题下面靠右（同一个人 =「X 词曲」，不同 = 两行「X 词」「Y 曲」；user「顺便xxx 词曲这个field也可以有」）
+  const cl = song.credits?.lyricist ?? "", cm = song.credits?.composer ?? "";
+  const lines = cl && cm && cl === cm ? [`${cl} 词曲`] : [cl ? `${cl} 词` : "", cm ? `${cm} 曲` : ""].filter(Boolean);
+  let credits: Layout["credits"] = null;
+  if (lines.length || o.titlePlaceholder) {
+    const cs = P(1.25), rx = o.width - P(MARGIN), y0 = P(TITLE_H + 1.0);
+    const show = lines.length ? lines : ["词曲（可不填）"];
+    show.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: lines.length ? "credits" : "credits empty", size: cs, anchor: "end" }));
+    const w = Math.max(...show.map((s) => (o.measureLyric(s) * 1.25) / LYRIC_EM)) + P(0.6);
+    credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.35 * show.length + cs * 0.4 };
+  }
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
-  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, part, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, credits, head, part, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

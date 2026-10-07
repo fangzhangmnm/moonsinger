@@ -36,3 +36,15 @@ describe("纸", () => {
     eq(Math.round(openBytes("x.mxl", save(o.song)).song.paper!.heightMm), 279, "再存一遍还是 Letter");
   });
 });
+
+// 作词 / 作曲（user「顺便xxx 词曲这个field也可以有」）。edited by Claude Opus 5.5 2026-10-07
+import { setCredits } from "../src/score/song.ts";
+describe("作词 / 作曲", () => {
+  it("存进 <identification><creator>、打开还在；清空 = 不记", () => {
+    let st = setCredits(initState(), { lyricist: "麻枝准", composer: "麻枝准" });
+    const xml = writeMusicXml(st.song, PART, { software: "t", date: "2026-10-07" }).xml;
+    assert(xml.includes('<creator type="composer">麻枝准</creator><creator type="lyricist">麻枝准</creator><encoding>'), "creator 在 encoding 前面（schema 顺序）");
+    eq(JSON.stringify(openBytes("x.mxl", save(st.song)).song.credits), JSON.stringify({ lyricist: "麻枝准", composer: "麻枝准" }));
+    st = setCredits(st, { lyricist: " ", composer: "" }); eq(st.song.credits, undefined);
+  });
+});

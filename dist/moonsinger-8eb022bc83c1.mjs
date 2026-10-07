@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.22-2026-10-07";
+var APP_VERSION = "v0.2.23-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -635,6 +635,14 @@ function setPaper(st2, kind) {
   if (kind === DEFAULT_PAPER) delete song.paper;
   else song.paper = paperOf(kind);
   return (st2.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st2 : { ...st2, song };
+}
+function setCredits(st2, c) {
+  const l = (c.lyricist ?? "").trim(), m = (c.composer ?? "").trim(), cur = st2.song.credits ?? {};
+  if ((cur.lyricist ?? "") === l && (cur.composer ?? "") === m) return st2;
+  const song = { ...st2.song };
+  if (l || m) song.credits = { ...l ? { lyricist: l } : {}, ...m ? { composer: m } : {} };
+  else delete song.credits;
+  return { ...st2, song };
 }
 function setTitle(st2, title) {
   const t = title.trim(), song = { ...st2.song };
@@ -1636,8 +1644,18 @@ function engrave(song, o) {
     paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
   }
   const title = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
+  const cl = song.credits?.lyricist ?? "", cm = song.credits?.composer ?? "";
+  const lines = cl && cm && cl === cm ? [`${cl} \u8BCD\u66F2`] : [cl ? `${cl} \u8BCD` : "", cm ? `${cm} \u66F2` : ""].filter(Boolean);
+  let credits = null;
+  if (lines.length || o.titlePlaceholder) {
+    const cs = P(1.25), rx = o.width - P(MARGIN), y0 = P(TITLE_H + 1);
+    const show = lines.length ? lines : ["\u8BCD\u66F2\uFF08\u53EF\u4E0D\u586B\uFF09"];
+    show.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: lines.length ? "credits" : "credits empty", size: cs, anchor: "end" }));
+    const w = Math.max(...show.map((s) => o.measureLyric(s) * 1.25 / LYRIC_EM)) + P(0.6);
+    credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.35 * show.length + cs * 0.4 };
+  }
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
-  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, part, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, credits, head, part, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -2275,6 +2293,12 @@ var ScoreView = class {
     const pc = L.paperChip;
     if (pc && x >= pc.x && x <= pc.x + pc.w && y >= pc.y && y <= pc.y + pc.h) {
       this.host.onPaper?.();
+      return true;
+    }
+    const cr = L.credits;
+    if (cr && x >= cr.x && x <= cr.x + cr.w && y >= cr.y && y <= cr.y + cr.h) {
+      this.host.focus?.("text");
+      this.host.onCredits?.();
       return true;
     }
     const pt = L.part;
@@ -5217,7 +5241,7 @@ function writeMusicXml(song, part, meta) {
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
 ${song.title ? `<work><work-title>${esc2(song.title)}</work-title></work>
-` : ""}<identification><encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
+` : ""}<identification>${song.credits?.composer ? `<creator type="composer">${esc2(song.credits.composer)}</creator>` : ""}${song.credits?.lyricist ? `<creator type="lyricist">${esc2(song.credits.lyricist)}</creator>` : ""}<encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
 ${defaultsXml(song.paper ?? paperOf(DEFAULT_PAPER))}
 <part-list><score-part id="${P.id}"><part-name>${esc2(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc2(P.instrumentName)}</instrument-name><instrument-sound>${esc2(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc2(P.variant.library)}</virtual-library><virtual-name>${esc2(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== void 0 ? `<volume>${P.volume}</volume>` : ""}${P.pan !== void 0 ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
 <part id="${P.id}">
@@ -5367,7 +5391,10 @@ function readMusicXml(xml, hints) {
   for (const t of tokens) if (!t.id) t.id = next2++;
   keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
   const paper = readPaper(root);
-  return { song: { ...title ? { title } : {}, ...paper ? { paper } : {}, hum: "n", tokens }, title, parts, dropped };
+  const creators = kids(kid(root, "identification"), "creator"), cr = (...types) => creators.find((c) => types.includes(c.attrs.type ?? ""));
+  const lyricist = cr("lyricist", "poet") ? text(cr("lyricist", "poet")).trim() : "", composer = cr("composer") ? text(cr("composer")).trim() : "";
+  const credits = lyricist || composer ? { ...lyricist ? { lyricist } : {}, ...composer ? { composer } : {} } : null;
+  return { song: { ...title ? { title } : {}, ...paper ? { paper } : {}, ...credits ? { credits } : {}, hum: "n", tokens }, title, parts, dropped };
 }
 
 // src/format/project.ts
@@ -5717,6 +5744,7 @@ var view = new ScoreView(scoreEl, {
   // 谱前写角色名（乐器的名字不上谱）
   onPart: () => openPartSheet(),
   onPaper: () => openPaperSheet(),
+  onCredits: () => openCreditsSheet(),
   reflow: () => reflow
 });
 var impro = false;
@@ -6122,7 +6150,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "7d21d2cb73fc" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "e28fc743d06d" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6152,6 +6180,36 @@ function setQuality(q) {
   curQuality = q;
   view.render();
   renderTitle();
+}
+function openCreditsSheet() {
+  closeOffer?.();
+  const c = st.song.credits ?? {};
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">\u8BCD\u66F2</div><label class="set-field">\u4F5C\u8BCD<input id="lyIn" type="text" spellcheck="false" autocomplete="off" value="${esc3(c.lyricist ?? "")}" /></label><label class="set-field">\u4F5C\u66F2<input id="cmIn" type="text" spellcheck="false" autocomplete="off" value="${esc3(c.composer ?? "")}" /></label><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u540C\u4E00\u4E2A\u4EBA\u7EB8\u4E0A\u5199\u300CX \u8BCD\u66F2\u300D\u3002\u5B58\u8FDB MusicXML \u7684\u4F5C\u8BCD / \u4F5C\u66F2\uFF08\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u8BA4\uFF09\u3002</div><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
+  document.body.append(box);
+  const ly = box.querySelector("#lyIn"), cm = box.querySelector("#cmIn");
+  const close = () => {
+    update(setCredits(st, { lyricist: ly.value, composer: cm.value }));
+    box.remove();
+    closeOffer = null;
+    scoreEl.focus();
+  };
+  closeOffer = close;
+  for (const inp of [ly, cm]) inp.addEventListener("keydown", (e) => {
+    if (e.isComposing) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (inp === ly) cm.focus();
+      else close();
+    }
+  });
+  box.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-v]")?.dataset.v;
+    if (e.target === box || v === "ok") close();
+  });
+  ly.focus();
 }
 function openPaperSheet() {
   closeOffer?.();
@@ -6493,4 +6551,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-98b47893bc8f.mjs.map
+//# sourceMappingURL=moonsinger-8eb022bc83c1.mjs.map

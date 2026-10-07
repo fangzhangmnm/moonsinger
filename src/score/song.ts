@@ -48,9 +48,12 @@ export interface Song {
   title?: string;
   /** 纸（A4 / A5 / A6 / 别的软件的别的纸）；没有 = 默认 A5（src/score/paper.ts；存档 = MusicXML <defaults>）。整首歌一个。 */
   paper?: Paper;
+  /** 作词 / 作曲（可不填；纸上标题下面靠右；存档 = MusicXML <identification><creator type="lyricist" / "composer">；user「顺便xxx 词曲这个field也可以有」）。 */
+  credits?: Credits;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   tokens: Token[];       // 开头三个 = 谱头记号（调号 / 拍号 / 速度）
 }
+export interface Credits { lyricist?: string; composer?: string }
 export const DEFAULT_KEY = 0, DEFAULT_TIME = { beats: 4, beatType: 4 }, DEFAULT_BPM = 90;
 
 /** 输入状态（不进数据）：写的时候下一个音长什么样。 */
@@ -499,6 +502,14 @@ export function setPaper(st: EditorState, kind: PaperKind): EditorState {
   const song = { ...st.song };
   if (kind === DEFAULT_PAPER) delete song.paper; else song.paper = paperOf(kind);
   return (st.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st : { ...st, song };
+}
+/** 改作词 / 作曲（空 = 不填）。 */
+export function setCredits(st: EditorState, c: Credits): EditorState {
+  const l = (c.lyricist ?? "").trim(), m = (c.composer ?? "").trim(), cur = st.song.credits ?? {};
+  if ((cur.lyricist ?? "") === l && (cur.composer ?? "") === m) return st;
+  const song = { ...st.song };
+  if (l || m) song.credits = { ...(l ? { lyricist: l } : {}), ...(m ? { composer: m } : {}) }; else delete song.credits;
+  return { ...st, song };
 }
 export function setTitle(st: EditorState, title: string): EditorState {
   const t = title.trim(), song = { ...st.song };

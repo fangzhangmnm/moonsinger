@@ -39,6 +39,8 @@ export interface ScoreViewHost {
   onPart?(): void;
   /** 纸右上角的小钮（纸张）点了。 */
   onPaper?(): void;
+  /** 标题下面靠右的作词 / 作曲点了。 */
+  onCredits?(): void;
   /** 屏幕放不下纸的时候：true = 按屏宽重新折行；false（默认）= 不折行、整张纸按比例缩小（行和纸上一模一样）。 */
   reflow?(): boolean;
 }
@@ -149,6 +151,9 @@ export class ScoreView {
     // 0. 纸右上角的小钮（纸张）
     const pc = L.paperChip;
     if (pc && x >= pc.x && x <= pc.x + pc.w && y >= pc.y && y <= pc.y + pc.h) { this.host.onPaper?.(); return true; }
+    // 0⅙. 作词 / 作曲（标题下面靠右）
+    const cr = L.credits;
+    if (cr && x >= cr.x && x <= cr.x + cr.w && y >= cr.y && y <= cr.y + cr.h) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }
     // 0⅛. 歌手牌（第一行谱号左边的声部名）
     const pt = L.part;
     if (pt && x >= pt.x && x <= pt.x + pt.w && y >= pt.y && y <= pt.y + pt.h) { this.host.onPart?.(); return true; }

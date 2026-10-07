@@ -262,6 +262,7 @@
   - user（看着《だんご大家族》的简谱）：「日语歌词引擎也需要修一下，你看这里第二个1对应的是两个日文字」「日语歌词需支持一个音对应两个假名 也许不一定两个，然后中文也一样，这样之前的自动输入怎么办呢？之前的自动输入其实蛮舒服的」「给你一道送命题，/2的shift应该是一次管一个音然后弹回来还是两个？」→ AI 答（照常连打、字中间打「+」= elision；/2 = 凑满一份原来的时值再弹回、平常两个）→ user「点头」→ v0.2.22（edited by Claude Opus 5.5）：
     - 歌词「+」（全角「＋」也认）：后一个字和前一个放同一个音；歌词框已经跳到下一个音时打「+」再打字 = 并进前一个音。数据里用 U+203F「‿」连着；纸上中日文之间不画弧（「だん」）、拉丁之间画「‿」；MusicXML = 一个 <lyric> 里 <elision/> 隔开几段 <text>（过了 W3C 4.0 schema）；唱 = 这个音平分给这几个字（toLabScore 一个字一条），核心不用改。歌词框里显示成「だ+ん」好改。
     - /2 的「点一下」= 凑满一份原来的时值再弹回（两个减半的音 / 休止 / 拉长）；中途挪光标或拨长短旋钮 = 取消。
+  - user：「顺便xxx 词曲这个field也可以有」→ v0.2.23（edited by Claude Opus 5.5）：作词 / 作曲 = Song.credits，存 MusicXML `<identification><creator type="composer" / "lyricist">`（读时「poet」也算作词；过了 W3C 4.0 schema）；纸上标题下面靠右：同一个人「X 词曲」、不同两行「X 词」「Y 曲」，空着浅色「词曲（可不填）」，点了 = 两个框。
   - 同一轮 user 问「突然觉得按键有延迟，是因为刚才我换上了蓝牙耳机吗」→ AI 答蓝牙耳机本身 0.1–0.3 秒输出延迟、app 改不了（AudioContext 已是默认 interactive）→ user「外放就没了，应该是耳机的问题」。
 - user：「简谱上面和下面的点太多了会看不见，你可以想想怎么表达」→ pad 的八度点改成真的小圆点（上方 = 高八度、下方 = 低八度，多个横排；原来是组合附加点，叠两三个就糊了）。横排 = 偏离传统简谱的竖叠，为了小键帽上看得清。
 - user：「多行的时候默认能把中央c放在 中线下面一行吗，就forfour rows it is row 1 for five row it is row 2 and use that row to align when one change row counts」「but if you use the up down arrows, the pivot line also changes」→ 锚定行 = floor((行数 − 1) / 2)（从下往上 0 起）；默认中央 C 那一行在锚定行；▲▼ 挪的是内容；换行数时锚定行上的内容不动（挪过以后就是挪过的那一排）。取代「左下永远是不带点的 1」。

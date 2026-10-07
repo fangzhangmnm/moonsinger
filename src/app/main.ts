@@ -7,7 +7,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ } from "../score/song.ts";
+import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -98,6 +98,7 @@ const view = new ScoreView(scoreEl, {
   part: () => ({ name: roleName(doc.extras), empty: quality() === "none" }),   // 谱前写角色名（乐器的名字不上谱）
   onPart: () => openPartSheet(),
   onPaper: () => openPaperSheet(),
+  onCredits: () => openCreditsSheet(),
   reflow: () => reflow,
 });
 let impro = false;
@@ -425,6 +426,25 @@ function noCast(what: string): void {
 }
 /** 音质（= 主唱这个角色上场的是谁、用哪一版）：完整 / 轻量 / 未选角（别的软件存的谱）。改了重画歌手牌。 */
 function setQuality(q: Quality): void { curQuality = q; view.render(); renderTitle(); }
+/** 作词 / 作曲（标题下面靠右那一块点开）：两个框，可不填；同一个人纸上写「X 词曲」（user「顺便xxx 词曲这个field也可以有」）。 */
+function openCreditsSheet(): void {
+  closeOffer?.();
+  const c = st.song.credits ?? {};
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">词曲</div>` +
+    `<label class="set-field">作词<input id="lyIn" type="text" spellcheck="false" autocomplete="off" value="${esc(c.lyricist ?? "")}" /></label>` +
+    `<label class="set-field">作曲<input id="cmIn" type="text" spellcheck="false" autocomplete="off" value="${esc(c.composer ?? "")}" /></label>` +
+    `<div class="offer-msg">可不填。同一个人纸上写「X 词曲」。存进 MusicXML 的作词 / 作曲（别的乐谱软件也认）。</div>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="ok">好</button></div></div>`;
+  document.body.append(box);
+  const ly = box.querySelector<HTMLInputElement>("#lyIn")!, cm = box.querySelector<HTMLInputElement>("#cmIn")!;
+  const close = () => { update(setCredits(st, { lyricist: ly.value, composer: cm.value })); box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
+  for (const inp of [ly, cm]) inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); if (inp === ly) cm.focus(); else close(); } });
+  box.addEventListener("click", (e) => { const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (e.target === box || v === "ok") close(); });
+  ly.focus();
+}
 /** 纸的设置（纸右上角的小钮点开）：A4 / A5 / A6，整首歌一个；以后插图片也从这里进（user「加图片的入口以后也可以放那里」）。改了立刻生效。 */
 function openPaperSheet(): void {
   closeOffer?.();

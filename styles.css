@@ -304,3 +304,6 @@ button, input, select { font: inherit; color: inherit; }
 .part-card .role-sound { font-size: 11px; color: var(--muted); margin: -2px 0 6px; }
 .part-card .role-group .btn.cand small { display: inline; margin-left: 4px; font-size: 10px; color: var(--muted); }
 .part-card .role-group .btn.cand:has(small) { flex-direction: row; height: 30px; padding: 0 8px; }
+/* 作词 / 作曲：标题下面靠右 */
+.staff-svg .credits { fill: var(--ink); cursor: pointer; }
+.staff-svg .credits.empty { fill: var(--muted); opacity: .7; }

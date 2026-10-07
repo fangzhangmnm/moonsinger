@@ -124,7 +124,7 @@ export function writeMusicXml(song: Song, part: PartInfo, meta: WriteMeta): Writ
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
-${song.title ? `<work><work-title>${esc(song.title)}</work-title></work>\n` : ""}<identification><encoding><software>${esc(meta.software)}</software><encoding-date>${esc(meta.date)}</encoding-date></encoding></identification>
+${song.title ? `<work><work-title>${esc(song.title)}</work-title></work>\n` : ""}<identification>${song.credits?.composer ? `<creator type="composer">${esc(song.credits.composer)}</creator>` : ""}${song.credits?.lyricist ? `<creator type="lyricist">${esc(song.credits.lyricist)}</creator>` : ""}<encoding><software>${esc(meta.software)}</software><encoding-date>${esc(meta.date)}</encoding-date></encoding></identification>
 ${defaultsXml(song.paper ?? paperOf(DEFAULT_PAPER))}
 <part-list><score-part id="${P.id}"><part-name>${esc(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc(P.instrumentName)}</instrument-name><instrument-sound>${esc(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc(P.variant.library)}</virtual-library><virtual-name>${esc(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== undefined ? `<volume>${P.volume}</volume>` : ""}${P.pan !== undefined ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
 <part id="${P.id}">
@@ -216,5 +216,9 @@ export function readMusicXml(xml: string, hints?: ReadHints): Read {
   for (const t of tokens) if (!t.id) t.id = next++;
   keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
   const paper = readPaper(root);
-  return { song: { ...(title ? { title } : {}), ...(paper ? { paper } : {}), hum: "n", tokens }, title, parts, dropped };
+  // 作词 / 作曲：<identification><creator type="lyricist" / "composer">（「poet」也算作词）
+  const creators = kids(kid(root, "identification"), "creator"), cr = (...types: string[]) => creators.find((c) => types.includes(c.attrs.type ?? ""));
+  const lyricist = cr("lyricist", "poet") ? text(cr("lyricist", "poet")!).trim() : "", composer = cr("composer") ? text(cr("composer")!).trim() : "";
+  const credits = lyricist || composer ? { ...(lyricist ? { lyricist } : {}), ...(composer ? { composer } : {}) } : null;
+  return { song: { ...(title ? { title } : {}), ...(paper ? { paper } : {}), ...(credits ? { credits } : {}), hum: "n", tokens }, title, parts, dropped };
 }
