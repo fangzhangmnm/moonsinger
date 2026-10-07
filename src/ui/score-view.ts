@@ -1,13 +1,14 @@
 // score-view.ts —— 谱面板：画谱、指针、光标跟随、就地写歌词。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
 // 选中 = 改，光标 = 写（user「智能识别，选中音符就是改，光标就是写 对」）：
-//   点音符 = 选中它（Shift+点 = 把选中扩到它）；点写字头那一列的线 / 间 = 在光标处写这个音；点歌词那一行 = 在那个音下面打开歌词框；
+//   点音符 = 选中它（Shift+点 = 把选中扩到它）；点歌词那一行 = 在那个音下面打开歌词框；
+//   点谱面写音 2026-10-07 拿掉（user「先去掉触碰加音符的功能，以后用专门的toolstate做」）——指针现在只选、只拖、只放光标；
 //   点别处 = 放光标。笔 / 鼠标拖符头：上下改音高（按五线谱一级一级吸附）、左右改时值（离散阶梯）；手指拖 = 滚动，手指轻点和笔一样。
 // 歌词就地写（user「歌词输入不应该放在键盘上，而是放在五线谱下面点进去一个一个写或者删」）：见 lyric-editor.ts。
 // 点记号（调号 / 拍号 / 速度）= 就地改：见 mark-editor.ts。
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
-import { type EditorState, type NoteTok, writePitch, setCaret, select, setNote, setDur, inputKey, keyAt, TPQ } from "../score/song.ts";
+import { type EditorState, type NoteTok, setCaret, select, setNote, setDur, keyAt, TPQ } from "../score/song.ts";
 import { fromDiatonic } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
@@ -97,7 +98,7 @@ export class ScoreView {
     this.tap(p.x, p.y, e.shiftKey, e.pointerId);
   }
 
-  /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）；写字头 → 写；别处 → 光标。 */
+  /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）；别处 → 光标。 */
   private tap(x: number, y: number, shift: boolean, pid: number | null): void {
     const L0 = this.layout!, wasMark = this.marks.open;
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
@@ -125,14 +126,7 @@ export class ScoreView {
       } else this.host.audition?.(hit.index);
       return;
     }
-    // 3. 光标附近点线 = 在光标处写这个音（写的时候才有；歌尾 = 光标往右整段空谱）
-    const h = L.head;
-    if (h && sys === h.system && x >= h.x && x <= h.x + h.w) {
-      const d = L.dOf(sys, y);
-      if (d >= 20 && d <= 48) { const ns = writePitch(st, fromDiatonic(d, inputKey(st))); this.host.set(ns); this.host.audition?.(ns.caret - 1); }
-      return;
-    }
-    // 4. 别处 → 光标（= 写）
+    // 3. 别处 → 光标（= 写）
     const cands = L.slots.filter((s) => s.system === sys);
     if (!cands.length) return;
     const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a));

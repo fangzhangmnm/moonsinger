@@ -4,7 +4,7 @@
 // 小节线 = 人插的 token（小节不满只轻标，第一小节当弱起不标）；歌词在音符下，英文断开处画连字符，拖腔画延长线；空音高的音画淡色。
 // 写（光标）：光标 = 一条零宽的竖线，不占排版宽度、不画预览、不打断符杠——挪光标、写 / 改切换时谱面一动不动
 //   （user「插入不要在谱上显示音符预览，也不要让谱的排版抖动」；下一个音的时值 / 升降在 pad 工具条和状态行）；
-//   笔 / 鼠标「点线写音」的区域 = 光标附近一条看不见的窄带（歌尾 = 光标往右整段空谱）。改（选中）：选中的一段高亮。
+//   点谱面写音 2026-10-07 拿掉（user「先去掉触碰加音符的功能，以后用专门的toolstate做」）。改（选中）：选中的一段高亮。
 // 不做右端对齐（打字时前面的音不晃）；放不下就像文字一样折行，优先在小节线处折。
 
 import { type Song, type NoteTok, type Token, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, barFill, isTimed, headLen, beatTicks, tempoWord } from "../score/song.ts";
@@ -39,7 +39,7 @@ export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[];
-  head: { system: number; x: number; w: number } | null;   // 点线写音的区域（光标附近；改的时候没有）
+  head: { system: number; x: number } | null;   // 光标在哪（画面跟随用；改的时候没有）
   lyricY: (system: number) => number;
   yOf: (system: number, d: number) => number;
   dOf: (system: number, y: number) => number;
@@ -271,8 +271,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   };
   for (const u of units) {
     if (u.kind === "head") {
-      const atEnd = o.caret >= tokens.length, x1 = atEnd ? right : u.x + 1.2;
-      head = { system: u.system, x: P(u.x - 0.7), w: P(x1 - u.x + 0.7) };
+      head = { system: u.system, x: P(u.x) };
       prims.push({ t: "line", x1: P(u.x + 0.1), y1: yOf(u.system, 42), x2: P(u.x + 0.1), y2: yOf(u.system, 26), w: P(0.16), cls: "caret" });
       continue;
     }
