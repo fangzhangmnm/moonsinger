@@ -6,8 +6,8 @@
 import { APP_VERSION } from "../version.ts";
 import { type EditorState, type NoteTok, type Hum, type MarkVal, initState, writePitch, writeMark, setHum, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
 import { type Pitch, pitchName, midiOf, KEY_LABEL } from "../score/pitch.ts";
-import { commandFor } from "../score/keymap.ts";
 import { apply } from "../score/commands.ts";
+import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { ScoreView } from "../ui/score-view.ts";
 import { Pad } from "../ui/pad.ts";
@@ -195,6 +195,7 @@ function songTitle(): string {
   const d = new Date(), z = (n: number) => String(n).padStart(2, "0");
   return `${ly || "旋律"}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`;
 }
+let closeOffer: (() => void) | null = null;
 /** 「好了」面板（应用内，不用系统弹窗）：分享 / 下载 / 关。 */
 function offerFile(file: File, title: string, msg: string): void {
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
@@ -205,7 +206,8 @@ function offerFile(file: File, title: string, msg: string): void {
     (canShare ? `<button class="btn primary" data-v="share">分享</button>` : "") +
     `<button class="btn${canShare ? "" : " primary"}" data-v="download">下载</button><button class="btn" data-v="close">关</button></div></div>`;
   document.body.append(box);
-  const close = () => { box.remove(); scoreEl.focus(); };
+  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
   box.addEventListener("click", async (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
@@ -228,25 +230,43 @@ $("shareBtn").addEventListener("click", () => { void exportSong(); });
 $<HTMLSelectElement>("humSel").addEventListener("change", (e) => { update(setHum(st, (e.target as HTMLSelectElement).value as Hum)); scoreEl.focus(); });
 $("padBtn").addEventListener("click", () => { padEl.hidden = !padEl.hidden; $("padBtn").classList.toggle("is-on", !padEl.hidden); view.render(); });
 
-// ── 键盘（输入框里打字时不接） ─────────────────────────────────────────
-window.addEventListener("keydown", (e) => {
-  const t = e.target as HTMLElement;
-  if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
-  if (e.code === "Backquote" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); pad.toggleImpro(); return; }
-  const c = commandFor(e);
-  if (!c) return;
-  e.preventDefault();
-  if (c.k === "play") { void togglePlay(); return; }
-  if (e.repeat && c.k === "degree") return;
-  if (impro && c.k === "degree") {   // 即兴：只唱不写（在草稿状态上写一下，拿到那个音高就扔）
-    const probe = apply({ ...st, sel: null, log: [] }, c, performance.now());
-    soundTok(probe, probe.caret - 1);
-    return;
+// ── 键盘：映射是一张表（src/input/keys.ts）；这里只算「键盘现在归谁」，再照路由的结果做 ─────────────
+/** 谁在最上面归谁：导出面板 > 记号框 > 歌词框 > 谱面（弹 / 改 / 写）。 */
+function whereNow(): Where {
+  if (closeOffer) return "sheet";
+  if (view.marks.open) return "mark";
+  if (view.lyrics.open) return "lyric";
+  return impro ? "impro" : st.sel ? "edit" : "write";
+}
+/** 照做；返回 false = 这一下其实不归我们管（例如歌词框里「-」不跟在字母后面），让浏览器照常打字。 */
+function run(a: Action, repeat: boolean): boolean {
+  switch (a.k) {
+    case "cmd":
+      if (a.cmd.k === "degree") {
+        if (!repeat) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); soundTok(st, i); }   // 先写再取 st（写完才有这个音）
+        return true;
+      }
+      update(apply(st, a.cmd, performance.now())); return true;
+    case "audition": {   // 弹：在草稿状态上写一下，拿到那个音高就扔
+      if (repeat) return true;
+      const probe = apply({ ...st, sel: null, log: [] }, { k: "degree", degree: a.degree, dir: a.dir }, performance.now());
+      soundTok(probe, probe.caret - 1); return true;
+    }
+    case "play": void togglePlay(); return true;
+    case "impro": pad.toggleImpro(); return true;
+    case "lyric": return view.lyrics.act(a.a);
+    case "mark": view.marks.act(a.a); return true;
+    case "sheet": closeOffer?.(); return true;
   }
-  if (c.k === "degree") { const i = writeAndLocate((s) => apply(s, c, performance.now())); soundTok(st, i); return; }   // 先写再取 st（写完才有这个音）
-  update(apply(st, c, performance.now()));
+}
+window.addEventListener("keydown", (e) => {
+  // 别的表单控件（顶栏的下拉框）拿着焦点：不接，它们自己吃方向键 / 空格。歌词框、记号框的输入框照常路由。
+  const t = e.target as HTMLElement | null;
+  if (t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed")))) return;
+  const a = route(e, whereNow(), st.sel ? "edit" : "write");
+  if (a && run(a, e.repeat)) e.preventDefault();
 });
-window.addEventListener("keyup", (e) => { if (/^(Digit[1-7]|Key[QWERTYU]|Numpad[1-7])$/.test(e.code)) sound.up(); });
+window.addEventListener("keyup", (e) => { if (isSoundKey(e)) sound.up(); });
 
 await document.fonts.load(`40px Bravura`).catch(() => undefined);
 view.render();

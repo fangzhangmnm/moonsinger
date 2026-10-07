@@ -2,7 +2,7 @@
 // created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改成新打法：默认八分，四分 = 八分 + 「−」，十六分 = 「短」再「长」回来，二分 = 八分 + 三个「−」
 import { describe, it, eq } from "./runner.mjs";
 import { initState, emptySong } from "../src/score/song.ts";
-import { commandFor } from "../src/score/keymap.ts";
+import { route } from "../src/input/keys.ts";
 import { apply } from "../src/score/commands.ts";
 import { applyLyricLine } from "../src/score/lyrics.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
@@ -10,9 +10,9 @@ import { toLabScore } from "../src/score/lab-score.ts";
 const CODE: Record<string, string> = { "|": "Enter", "-": "Minus" };
 function press(st: ReturnType<typeof initState>, keys: string) {
   for (const ch of keys.replace(/\s+/g, "")) {
-    const c = commandFor({ key: ch, code: CODE[ch] ?? `Digit${ch}`, shiftKey: false, altKey: false, ctrlKey: false, metaKey: false });
-    if (!c) throw new Error(`没有命令：${ch}`);
-    st = apply(st, c);
+    const a = route({ key: ch, code: CODE[ch] ?? `Digit${ch}`, shiftKey: false, altKey: false, ctrlKey: false, metaKey: false }, st.sel ? "edit" : "write");
+    if (a?.k !== "cmd") throw new Error(`没有命令：${ch}`);
+    st = apply(st, a.cmd);
   }
   return st;
 }

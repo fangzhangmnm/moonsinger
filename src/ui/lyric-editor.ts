@@ -5,6 +5,7 @@
 //   · 英文：空格 = 这个词完了、跳下一个音；「-」= 音节完了、词没完（谱面画连字符）、跳下一个音；
 //   · 「~」（或 _ ー）= 拖腔：这个音延续上一个字；
 //   · 空框里退格 = 回到上一个音，把它的字拿出来接着删；回车 / 点别处 = 收起；Esc = 收起不贴；Tab / Shift+Tab = 前后挪。
+//   键位在 src/input/keys.ts（一张表）；这里只收路由来的动作（act）。
 // 输入法还在拼（isComposing）的时候什么都不做——拼音、假名输入法都不被打断。
 
 import { type EditorState, type NoteTok } from "../score/song.ts";
@@ -25,7 +26,6 @@ export class LyricEditor {
     i.setAttribute("autocapitalize", "off"); i.setAttribute("enterkeyhint", "done");
     parent.appendChild(i);
     this.input = i;
-    i.addEventListener("keydown", (e) => this.key(e));
     i.addEventListener("compositionend", () => this.absorb());
     i.addEventListener("input", (e) => { if (!(e as InputEvent).isComposing) this.absorb(); });
     i.addEventListener("blur", () => { if (this.open) setTimeout(() => { if (document.activeElement !== this.input) this.commitAndClose(); }, 0); });
@@ -82,24 +82,22 @@ export class LyricEditor {
     this.reposition();
   }
 
-  private key(e: KeyboardEvent): void {
-    if (e.isComposing) return;
+  /** 键盘路由来的动作（src/input/keys.ts 的「歌词框」那几行）。返回 false = 这一下不归歌词框管（让输入框照常打字）。 */
+  act(a: "commit" | "cancel" | "next" | "prev" | "hyphen" | "back"): boolean {
+    if (!this.open) return false;
     const v = this.input.value;
-    if (e.key === "Enter") { e.preventDefault(); this.commitAndClose(); return; }
-    if (e.key === "Escape") { e.preventDefault(); this.close(); return; }
-    if (e.key === " " || e.key === "Tab" && !e.shiftKey) {
-      e.preventDefault();
-      if (v.trim()) this.place(v.trim(), false); else this.step(1);
-      return;
-    }
-    if (e.key === "Tab" && e.shiftKey) { e.preventDefault(); this.commitOnly(); this.step(-1); return; }
-    if (e.key === "-" && /[A-Za-z']$/.test(v)) { e.preventDefault(); this.place(v, true); return; }
-    if (e.key === "Backspace" && !v) {
-      e.preventDefault();
-      const st = this.host.get(), cur = st.song.tokens[this.index] as NoteTok;
-      if (cur?.lyric) this.host.set({ ...st, song: { ...st.song, tokens: st.song.tokens.map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t)) } });
-      this.step(-1);
-      return;
+    switch (a) {
+      case "commit": this.commitAndClose(); return true;
+      case "cancel": this.close(); return true;
+      case "next": if (v.trim()) this.place(v.trim(), false); else this.step(1); return true;
+      case "prev": this.commitOnly(); this.step(-1); return true;
+      case "hyphen": if (!/[A-Za-z']$/.test(v)) return false; this.place(v, true); return true;
+      case "back": {
+        if (v) return false;
+        const st = this.host.get(), cur = st.song.tokens[this.index] as NoteTok;
+        if (cur?.lyric) this.host.set({ ...st, song: { ...st.song, tokens: st.song.tokens.map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t)) } });
+        this.step(-1); return true;
+      }
     }
   }
 

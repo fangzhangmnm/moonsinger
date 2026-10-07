@@ -34,11 +34,6 @@ export class MarkEditor {
     parent.appendChild(this.box);
     this.input = this.box.querySelector("input")!;
     this.list = this.box.querySelector(".mark-cands")!;
-    this.input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); this.commitAndClose(); }
-      else if (e.key === "Escape") { e.preventDefault(); this.close(); }
-      e.stopPropagation();
-    });
     // 候选：按下就改（pointerdown，不等 click，免得输入框先失焦）
     this.list.addEventListener("pointerdown", (e) => {
       const b = (e.target as HTMLElement).closest<HTMLElement>("[data-v]"); if (!b) return;
@@ -50,6 +45,8 @@ export class MarkEditor {
   }
 
   get open(): boolean { return this.id >= 0; }
+  /** 键盘路由来的动作（src/input/keys.ts 的「记号框」那几行）。 */
+  act(a: "commit" | "cancel"): void { if (a === "commit") this.commitAndClose(); else this.close(); }
   private indexNow(): number { return this.host.get().song.tokens.findIndex((t) => t.id === this.id); }
 
   /** 打开下标 i 的记号。fresh = 刚插进去的（没改就收起 = 撤掉）。 */

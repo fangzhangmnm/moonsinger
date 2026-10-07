@@ -9,7 +9,8 @@
 //   「＋」= 在光标处插记号（调号 / 拍号 / 速度，候选条里挑），插完就地打开它的编辑框（user「…都是token」）。
 
 import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchName, KEY_LABEL } from "../score/pitch.ts";
-import type { Command } from "../score/keymap.ts";
+import type { Command } from "../score/commands.ts";
+import { hint } from "../input/keys.ts";
 import { type EditorState, inputKey } from "../score/song.ts";
 
 const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置（她音域外的键变淡，只提示不拦）
@@ -73,24 +74,24 @@ export class Pad {
       ? [3, 5, 6, 7].map((n) => `<button class="btn cand" data-tup="${n}">${n} 连</button>`).join("") +
         `<button class="btn cand" data-tup="0">关</button><button class="btn cand" data-back="1">返回</button>`
       : `<button class="btn t-key" data-open="key" title="1=（只管输入）"></button>` +
-        `<button class="btn t-sharp" data-acc="1" title="♯（点一下管下一个音，连点两下锁住）">♯</button>` +
-        `<button class="btn t-flat" data-acc="-1" title="♭（点一下管下一个音，连点两下锁住）">♭</button>` +
-        `<button class="btn" data-cmd="shorter" title="短（8）">短</button>` +
+        `<button class="btn t-sharp" data-acc="1" title="♯（点一下管下一个音，连点两下锁住；${hint("sharp")}）">♯</button>` +
+        `<button class="btn t-flat" data-acc="-1" title="♭（点一下管下一个音，连点两下锁住；${hint("flat")}）">♭</button>` +
+        `<button class="btn" data-cmd="shorter" title="短（${hint("shorter")}）">短</button>` +
         `<span class="t-unit" title="下一个音的时值"></span>` +
-        `<button class="btn" data-cmd="longer" title="长（9）">长</button>` +
+        `<button class="btn" data-cmd="longer" title="长（${hint("longer")}）">长</button>` +
         `<button class="btn t-tup" data-open="tuplet" title="连音（开着再点 = 选 3 5 6 7）">连</button>` +
-        `<button class="btn" data-cmd="extend" title="拉长一份（-）">－</button>` +
-        `<button class="btn" data-cmd="bar" title="小节线（|）">|</button>` +
+        `<button class="btn" data-cmd="extend" title="拉长一份（${hint("extend")}）">－</button>` +
+        `<button class="btn" data-cmd="bar" title="小节线（${hint("bar")}）">|</button>` +
         `<button class="btn" data-open="mark" title="在光标处插记号：调号 / 拍号 / 速度">＋</button>` +
-        `<button class="btn" data-cmd="backspace" title="退格"><svg class="ico"><use href="#backspace"/></svg></button>` +
-        `<button class="btn t-impro" data-impro="1" title="弹：按住只唱不写，快速点一下锁住">弹</button>` +
+        `<button class="btn" data-cmd="backspace" title="退格（${hint("backspace")}）"><svg class="ico"><use href="#backspace"/></svg></button>` +
+        `<button class="btn t-impro" data-impro="1" title="弹：按住只唱不写，快速点一下锁住（${hint("impro")}）">弹</button>` +
         `<button class="btn" data-oct="-1" title="pad 整体低八度"><svg class="ico"><use href="#caret-down"/></svg></button>` +
         `<button class="btn" data-oct="1" title="pad 整体高八度"><svg class="ico"><use href="#caret-up"/></svg></button>`;
     const cells: string[] = [];
     for (let row = 3; row >= 0; row--) {
       for (let col = 0; col < 4; col++) {
         const k = row * 4 + col;
-        if (k >= NOTE_KEYS) { cells.push(`<button class="pad-key rest" data-cmd="rest" title="休止（0）"><span class="deg">0</span><span class="abs">休止</span></button>`); continue; }
+        if (k >= NOTE_KEYS) { cells.push(`<button class="pad-key rest" data-cmd="rest" title="休止（${hint("rest")}）"><span class="deg">0</span><span class="abs">休止</span></button>`); continue; }
         const d = base + k, p = fromDiatonic(d, f);
         const deg = (k % 7) + 1, oct = Math.floor((d - homeTonic(f)) / 7);
         const dots = oct > 0 ? DOT_UP.repeat(oct) : DOT_DOWN.repeat(-oct);
