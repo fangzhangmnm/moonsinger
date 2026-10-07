@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.28-2026-10-07";
+var APP_VERSION = "v0.2.29-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -1576,16 +1576,16 @@ function engrave(song, o) {
     }
     const xa = sx(g2[0]), xb = sx(g2[g2.length - 1]);
     const k = Math.max(-0.2, Math.min(0.2, (g2[g2.length - 1].y - g2[0].y) / (xb - xa) * 0.5));
-    const at = (x2, y02) => y02 + k * (x2 - xa);
-    const y0 = up ? Math.min(...g2.map((s) => s.y - P(3.5) - k * (sx(s) - xa))) : Math.max(...g2.map((s) => s.y + P(3.5) - k * (sx(s) - xa)));
+    const at = (x2, y03) => y03 + k * (x2 - xa);
+    const y02 = up ? Math.min(...g2.map((s) => s.y - P(3.5) - k * (sx(s) - xa))) : Math.max(...g2.map((s) => s.y + P(3.5) - k * (sx(s) - xa)));
     for (const s of g2) {
-      tipOf.set(s.c, at(sx(s), y0));
-      prims.push({ t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: at(sx(s), y0), w: P(ENGRAVE.stem), cls: stemCls(s) });
+      tipOf.set(s.c, at(sx(s), y02));
+      prims.push({ t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: at(sx(s), y02), w: P(ENGRAVE.stem), cls: stemCls(s) });
     }
     const step = P(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th = P(ENGRAVE.beam) * (up ? 1 : -1);
     const beamPath = (xL, xR, lvl) => {
       const of = step * lvl;
-      const a = at(xL, y0) + of, b = at(xR, y0) + of;
+      const a = at(xL, y02) + of, b = at(xR, y02) + of;
       return `M${xL - P(ENGRAVE.stem / 2)},${a}L${xR + P(ENGRAVE.stem / 2)},${b}L${xR + P(ENGRAVE.stem / 2)},${b + th}L${xL - P(ENGRAVE.stem / 2)},${a + th}Z`;
     };
     const gcls = ["beam", g2.every((s) => s.c.ghost) ? "ghost" : "", g2.every((s) => s.c.index >= 0 && inSel(s.c.index)) ? "sel" : ""].filter(Boolean).join(" ");
@@ -1665,7 +1665,11 @@ function engrave(song, o) {
   }
   const titleSize = P(1.9), titleBase = P(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
-  else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "\u6B4C\u540D\uFF08\u53EF\u4E0D\u586B\uFF09", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
+  else if (o.titlePlaceholder) {
+    const w = Math.min(P(20), o.width * 0.45), h = P(3);
+    prims.push({ t: "rect", x: o.width / 2 - w / 2, y: titleBase - titleSize * 0.36 - h / 2, w, h, cls: "slot-box" });
+    prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "\u6B4C\u540D", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
+  }
   let paperChip = null;
   if (o.paperLabel) {
     const fs = P(1.15), cw = o.measureLyric(o.paperLabel) * 1.15 / LYRIC_EM + P(1.4), ch = P(2.2), cx = o.width - P(MARGIN) - cw, cy = P(0.9);
@@ -1676,12 +1680,16 @@ function engrave(song, o) {
   const title = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
   const lines = song.credits ? song.credits.split("\n") : [];
   let credits = null;
-  if (lines.length || o.titlePlaceholder) {
-    const cs = P(1.25), rx = o.width - P(MARGIN), y0 = P(TITLE_H + 1);
-    const show = lines.length ? lines : ["\u4F5C\u8005 / \u6F14\u5531 / \u58F0\u660E\uFF08\u53EF\u4E0D\u586B\uFF09"];
-    show.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: lines.length ? "credits" : "credits empty", size: cs, anchor: "end" }));
-    const w = Math.max(...show.map((s) => o.measureLyric(s) * 1.25 / LYRIC_EM)) + P(0.6);
-    credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.35 * show.length + cs * 0.4 };
+  const cs = P(1.25), rx = o.width - P(MARGIN), y0 = P(TITLE_H + 1);
+  if (lines.length) {
+    lines.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: "credits", size: cs, anchor: "end" }));
+    const w = Math.max(...lines.map((s) => o.measureLyric(s) * 1.25 / LYRIC_EM)) + P(0.6);
+    credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.35 * lines.length + cs * 0.4 };
+  } else if (o.titlePlaceholder) {
+    const w = Math.min(P(12), o.width * 0.4), h = cs * 1.7, y = y0 - cs * 0.36 - h / 2;
+    prims.push({ t: "rect", x: rx - w, y, w, h, cls: "slot-box" });
+    prims.push({ t: "text", x: rx - w / 2, y: y0, s: "\u4F5C\u8005", cls: "credits empty", size: cs, anchor: "middle" });
+    credits = { x: rx - w - P(0.3), y: y - P(0.3), w: w + P(0.6), h: h + P(0.6) };
   }
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
   return { prims, width: o.width, height: P(TITLE_H + headExtra + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, credits, head, part, paperChip, shortBars, lyricY, yOf, dOf };
@@ -2324,7 +2332,7 @@ var TitleEditor = class {
     this.input.className = "title-input";
     this.input.type = "text";
     this.input.hidden = true;
-    this.input.placeholder = "\u6B4C\u540D\uFF08\u53EF\u4E0D\u586B\uFF09";
+    this.input.placeholder = "\u6B4C\u540D";
     this.input.autocomplete = "off";
     this.input.spellcheck = false;
     this.input.enterKeyHint = "done";
@@ -6246,7 +6254,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "a8b1d8f24b40" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "8e8c03ea3d57" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6641,4 +6649,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-19415c7bef0b.mjs.map
+//# sourceMappingURL=moonsinger-95531cbbc64b.mjs.map
