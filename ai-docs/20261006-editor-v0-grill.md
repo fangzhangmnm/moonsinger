@@ -91,6 +91,11 @@
 - 页面本身不滚动，只有谱面板自己滚；iPad 竖屏 pad 挪到谱下（Playwright 744×1133 截图看过）。
 - user 中途问「我日语能力还没进prealpha哦，没歌词输入的话月读念什么」「哼歌会用什么」→ AI 答：空歌词唱「ら」（Q9 user 已同意），并提议顶栏加一首歌一个的「哼的字」开关（ら / ん / う / あ；中文 啦 / 嗯 / 呜 / 啊），**等 user 回**。
 
+## 9¾. 真机之后：UX grill（2026-10-06 深夜起，一条一条来）
+
+- user 在 iPad 上听过之后：「月读的声音很好听，气息很足。」「慢慢grill ux」（当时编辑器默认已关元音图谱、断气随之关）。
+- **UX-1**：user「ipad potrait, use fullwide keyboard, it does not need to be square. it is like a non touch screen phone numpad experience, like the ipad software keyboard position. the 16 keys spans the width to an ergonomic size, then the tool keys are above it like 拼音候选框. the 16th pad should be 0」→ 已做：竖屏 pad 全宽贴底（键约 178×56）、工具键一行在上（▼ ▲ － 短 长 · | ⌫）、右上第 16 键 = 0 休止（横屏同）；pad 默认八度按 15 个音重算。
+
 ## 9. 还开着的
 
 - ~~打数字时音落在哪个八度~~ → AI 推荐「就近：第一个音落在她的家（说话音高所在那一组），之后每个音落在离上一个音最近处（不超过四度），跳更远按上 / 下八度键；同 LilyPond relative 模式（AI 凭记忆）」。user：「A」。
