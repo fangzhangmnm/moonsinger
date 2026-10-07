@@ -97,6 +97,25 @@ export function joinIntoPrev(st: EditorState, i: number, text: string): EditorSt
   tokens[p] = { ...t, lyric: t.lyric + ELISION + text };
   return { ...st, song: { ...st.song, tokens } };
 }
+/** 「合」：下标 i 那个音的字并进前一个有字的音（一个音上几个字），这一句（到下一个休止为止）后面的字依次往前挪一个音、这一句最后一个音空出来
+ *  （user「打完回头改同意。这里的心流反而是输入。所以不应该提前按」：打字照常自动分，回头点一个字再合）。这个音 / 前一个音没有字（或是拖腔）= 原样。 */
+export function mergeIntoPrev(st: EditorState, i: number): EditorState {
+  const toks = st.song.tokens, cur = toks[i], p = prevLyricSlot(toks, i), prev = toks[p];
+  if (!cur || !lyricSlot(cur) || !cur.lyric || cur.lyric === MELISMA_MARK || !prev || !lyricSlot(prev) || !prev.lyric || prev.lyric === MELISMA_MARK) return st;
+  const slots = [i];   // 这一句后面的歌词位：从 i 往后、到下一个休止为止
+  for (let j = i + 1; j < toks.length; j++) { const t = toks[j]; if (t.kind === "rest") break; if (lyricSlot(t)) slots.push(j); }
+  const tokens = toks.slice();
+  const merged: NoteTok = { ...prev, lyric: prev.lyric + ELISION + cur.lyric };
+  if (cur.hyph) merged.hyph = true; else delete merged.hyph;
+  tokens[p] = merged;
+  slots.forEach((at, k) => {   // 字往前挪一个音（「词没完」和手动改过的语言跟着字走）
+    const from = k + 1 < slots.length ? (toks[slots[k + 1]] as NoteTok) : null, t: NoteTok = { ...(toks[at] as NoteTok), lyric: from ? from.lyric : null };
+    if (from?.hyph) t.hyph = true; else delete t.hyph;
+    if (from?.lang) t.lang = from.lang; else delete t.lang;
+    tokens[at] = t;
+  });
+  return { ...st, song: { ...st.song, tokens } };
+}
 /** 下一个能放歌词的音（跳过休止、小节线、调号、tie 音）；没有 = -1。 */
 export function nextLyricSlot(tokens: Token[], i: number): number { for (let j = i + 1; j < tokens.length; j++) if (lyricSlot(tokens[j])) return j; return -1; }
 export function prevLyricSlot(tokens: Token[], i: number): number { for (let j = i - 1; j >= 0; j--) if (lyricSlot(tokens[j])) return j; return -1; }

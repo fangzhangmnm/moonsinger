@@ -127,7 +127,7 @@ export class ScoreView {
   }
 
   private down(e: PointerEvent): void {
-    if ((e.target as HTMLElement).closest(".lyric-input, .mark-ed, .title-input")) return;   // 在歌词框 / 记号框里点：交给它们
+    if ((e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input")) return;   // 在歌词框 / 记号框里点：交给它们
     const L = this.layout; if (!L) return;
     this.el.focus({ preventScroll: true });   // 点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）
     const p = this.local(e);

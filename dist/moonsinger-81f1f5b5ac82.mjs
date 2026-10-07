@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.25-2026-10-07";
+var APP_VERSION = "v0.2.26-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -1063,6 +1063,30 @@ function joinIntoPrev(st2, i, text2) {
   tokens[p] = { ...t, lyric: t.lyric + ELISION + text2 };
   return { ...st2, song: { ...st2.song, tokens } };
 }
+function mergeIntoPrev(st2, i) {
+  const toks = st2.song.tokens, cur = toks[i], p = prevLyricSlot(toks, i), prev = toks[p];
+  if (!cur || !lyricSlot(cur) || !cur.lyric || cur.lyric === MELISMA_MARK || !prev || !lyricSlot(prev) || !prev.lyric || prev.lyric === MELISMA_MARK) return st2;
+  const slots = [i];
+  for (let j = i + 1; j < toks.length; j++) {
+    const t = toks[j];
+    if (t.kind === "rest") break;
+    if (lyricSlot(t)) slots.push(j);
+  }
+  const tokens = toks.slice();
+  const merged = { ...prev, lyric: prev.lyric + ELISION + cur.lyric };
+  if (cur.hyph) merged.hyph = true;
+  else delete merged.hyph;
+  tokens[p] = merged;
+  slots.forEach((at, k) => {
+    const from = k + 1 < slots.length ? toks[slots[k + 1]] : null, t = { ...toks[at], lyric: from ? from.lyric : null };
+    if (from?.hyph) t.hyph = true;
+    else delete t.hyph;
+    if (from?.lang) t.lang = from.lang;
+    else delete t.lang;
+    tokens[at] = t;
+  });
+  return { ...st2, song: { ...st2.song, tokens } };
+}
 function nextLyricSlot(tokens, i) {
   for (let j = i + 1; j < tokens.length; j++) if (lyricSlot(tokens[j])) return j;
   return -1;
@@ -1729,6 +1753,19 @@ var LyricEditor = class {
     i.setAttribute("enterkeyhint", "done");
     parent.appendChild(i);
     this.input = i;
+    const m = document.createElement("button");
+    m.className = "btn lyric-merge";
+    m.type = "button";
+    m.textContent = "\u5408";
+    m.hidden = true;
+    m.title = "\u8FD9\u4E2A\u5B57\u5E76\u8FDB\u524D\u4E00\u4E2A\u97F3\uFF08\u4E00\u4E2A\u97F3\u4E0A\u51E0\u4E2A\u5B57\uFF09\uFF1B\u8FD9\u4E00\u53E5\u540E\u9762\u7684\u5B57\u5F80\u524D\u632A\u4E00\u4E2A\u97F3";
+    m.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.mergeNow();
+    });
+    parent.appendChild(m);
+    this.merge = m;
     i.addEventListener("compositionend", () => this.absorb());
     i.addEventListener("input", (e) => {
       if (!e.isComposing) this.absorb();
@@ -1740,6 +1777,8 @@ var LyricEditor = class {
     });
   }
   input;
+  /** 「合」：这个字并进前一个音（回头改用；打字的时候框在空的音上，它不出来）。 */
+  merge;
   index = -1;
   system = 0;
   get open() {
@@ -1750,7 +1789,7 @@ var LyricEditor = class {
     const st2 = this.host.get(), t = st2.song.tokens[i];
     if (!t || !lyricSlot(t)) return;
     this.index = i;
-    this.input.value = t.lyric === MELISMA_MARK ? "~" : (t.lyric ?? "") + (t.hyph ? "-" : "");
+    this.input.value = this.slotText(i);
     this.input.hidden = false;
     this.reposition();
     this.input.focus({ preventScroll: true });
@@ -1758,7 +1797,10 @@ var LyricEditor = class {
   }
   /** 重画之后把框挪回那个音下面。 */
   reposition() {
-    if (!this.open) return;
+    if (!this.open) {
+      this.merge.hidden = true;
+      return;
+    }
     const L = this.layout(), h = L?.lyrics.find((x) => x.index === this.index);
     if (!L || !h) {
       this.close();
@@ -1767,6 +1809,20 @@ var LyricEditor = class {
     this.system = h.system;
     const w = Math.max(48, this.input.value.length * L.sp * 1.6 + 24);
     Object.assign(this.input.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1}px`, width: `${w}px`, fontSize: `${L.sp * 1.6}px` });
+    const can = mergeIntoPrev(this.host.get(), this.index) !== this.host.get(), mh = L.sp * 1.6 * 2;
+    this.merge.hidden = !can;
+    if (can) Object.assign(this.merge.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1 + L.sp * 1.6 * 2 + 4}px`, width: `${mh}px`, height: `${mh * 0.8}px` });
+  }
+  /** 点「合」：框里改过的先贴上，再把这个字并进前一个音、这一句后面的字往前挪；框留在这个音上（现在是挪过来的字）。 */
+  mergeNow() {
+    if (!this.open) return;
+    this.commitOnly();
+    const st2 = this.host.get(), next2 = mergeIntoPrev(st2, this.index);
+    if (next2 === st2) return;
+    this.host.set(next2);
+    this.input.value = this.slotText(this.index);
+    this.rerender();
+    this.input.select();
   }
   /** 把框里的字贴到当前这个音（可能一次贴好几个音节，往后挪），并跳到下一个空位。 */
   place(text2, hyphEnd) {
@@ -1795,6 +1851,7 @@ var LyricEditor = class {
     } else {
       this.index = -1;
       this.input.hidden = true;
+      this.merge.hidden = true;
       this.rerender();
     }
   }
@@ -1884,6 +1941,7 @@ var LyricEditor = class {
     this.index = -1;
     this.input.value = "";
     this.input.hidden = true;
+    this.merge.hidden = true;
     this.rerender();
   }
 };
@@ -2265,7 +2323,7 @@ var ScoreView = class {
     return i < 0 ? L.systems.length - 1 : i;
   }
   down(e) {
-    if (e.target.closest(".lyric-input, .mark-ed, .title-input")) return;
+    if (e.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input")) return;
     const L = this.layout;
     if (!L) return;
     this.el.focus({ preventScroll: true });
@@ -6121,7 +6179,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "42cdbc54f3e9" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "28c50a635000" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6526,4 +6584,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-51660b077dbe.mjs.map
+//# sourceMappingURL=moonsinger-81f1f5b5ac82.mjs.map

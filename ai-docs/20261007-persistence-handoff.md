@@ -1,6 +1,6 @@
 # 持久化交接（给接手做 store / gallery 的 agent）
 
-> created 20261007 by Claude Opus 5.5 · as-of v0.2.25 / 2026-10-07（dev 已上线 https://fangzhangmnm.github.io/moonsinger/dev/ ，commit 46f6a88；prod 分支还不存在、没推）
+> created 20261007 by Claude Opus 5.5 · as-of v0.2.26 / 2026-10-07（dev 已上线 https://fangzhangmnm.github.io/moonsinger/dev/ ；prod 分支还不存在、没推。v0.2.26 只加了歌词「合」，存档格式没变）
 > user 2026-10-07：「我待会要compact一下然后换fable做持久化，你还有什么要记录的都记录一下。」
 > 这份只写事实和指针；「我看到的、要想的」那一节全部**未经 user 定**。
 

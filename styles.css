@@ -304,3 +304,5 @@ button, input, select { font: inherit; color: inherit; }
 /* 作词 / 作曲：标题下面靠右 */
 .staff-svg .credits { fill: var(--ink); cursor: pointer; }
 .staff-svg .credits.empty { fill: var(--muted); opacity: .7; }
+/* 歌词框左边的「合」：这个字并进前一个音（回头改用） */
+.lyric-merge { position: absolute; z-index: 5; min-width: 0; padding: 0; font-size: 15px; color: var(--accent); border-color: #b8cde8; background: #fff; box-sizing: border-box; }

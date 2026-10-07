@@ -9,7 +9,7 @@
 // 输入法还在拼（isComposing）的时候什么都不做——拼音、假名输入法都不被打断。
 
 import { type EditorState, type NoteTok } from "../score/song.ts";
-import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl, joinIntoPrev, lyricEdit } from "../score/lyrics.ts";
+import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl, joinIntoPrev, lyricEdit, mergeIntoPrev } from "../score/lyrics.ts";
 import type { Layout } from "../render/engrave.ts";
 
 interface Host { get(): EditorState; set(next: EditorState): void }
@@ -17,6 +17,8 @@ const CJK = /[\p{Script=Han}぀-ヿ]/u;
 
 export class LyricEditor {
   private input: HTMLInputElement;
+  /** 「合」：这个字并进前一个音（回头改用；打字的时候框在空的音上，它不出来）。 */
+  private merge: HTMLButtonElement;
   private index = -1;
   system = 0;
 
@@ -26,6 +28,12 @@ export class LyricEditor {
     i.setAttribute("autocapitalize", "off"); i.setAttribute("enterkeyhint", "done");
     parent.appendChild(i);
     this.input = i;
+    const m = document.createElement("button");
+    m.className = "btn lyric-merge"; m.type = "button"; m.textContent = "合"; m.hidden = true;
+    m.title = "这个字并进前一个音（一个音上几个字）；这一句后面的字往前挪一个音";
+    m.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); this.mergeNow(); });   // 不抢焦点：框照常开着
+    parent.appendChild(m);
+    this.merge = m;
     i.addEventListener("compositionend", () => this.absorb());
     i.addEventListener("input", (e) => { if (!(e as InputEvent).isComposing) this.absorb(); });
     i.addEventListener("blur", () => { if (this.open) setTimeout(() => { if (document.activeElement !== this.input) this.commitAndClose(); }, 0); });
@@ -38,7 +46,7 @@ export class LyricEditor {
     const st = this.host.get(), t = st.song.tokens[i];
     if (!t || !lyricSlot(t)) return;
     this.index = i;
-    this.input.value = t.lyric === MELISMA_MARK ? "~" : (t.lyric ?? "") + (t.hyph ? "-" : "");
+    this.input.value = this.slotText(i);
     this.input.hidden = false;
     this.reposition();
     this.input.focus({ preventScroll: true });
@@ -47,12 +55,25 @@ export class LyricEditor {
 
   /** 重画之后把框挪回那个音下面。 */
   reposition(): void {
-    if (!this.open) return;
+    if (!this.open) { this.merge.hidden = true; return; }   // 框收了（包括打完最后一个字自己收的）=「合」也收
     const L = this.layout(), h = L?.lyrics.find((x) => x.index === this.index);
     if (!L || !h) { this.close(); return; }
     this.system = h.system;
     const w = Math.max(48, this.input.value.length * L.sp * 1.6 + 24);
     Object.assign(this.input.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1}px`, width: `${w}px`, fontSize: `${L.sp * 1.6}px` });
+    const can = mergeIntoPrev(this.host.get(), this.index) !== this.host.get(), mh = L.sp * 1.6 * 2;
+    this.merge.hidden = !can;
+    // 放在框的正下方（不挡前面那几个字——要合的就是它们）
+    if (can) Object.assign(this.merge.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1 + L.sp * 1.6 * 2 + 4}px`, width: `${mh}px`, height: `${mh * 0.8}px` });
+  }
+  /** 点「合」：框里改过的先贴上，再把这个字并进前一个音、这一句后面的字往前挪；框留在这个音上（现在是挪过来的字）。 */
+  private mergeNow(): void {
+    if (!this.open) return;
+    this.commitOnly();
+    const st = this.host.get(), next = mergeIntoPrev(st, this.index);
+    if (next === st) return;
+    this.host.set(next);
+    this.input.value = this.slotText(this.index); this.rerender(); this.input.select();
   }
 
   /** 把框里的字贴到当前这个音（可能一次贴好几个音节，往后挪），并跳到下一个空位。 */
@@ -70,7 +91,7 @@ export class LyricEditor {
     const nx = nextLyricSlot(st.song.tokens, last);
     this.input.value = "";
     if (nx >= 0) { this.index = nx; this.input.value = this.slotText(nx); this.rerender(); this.input.select(); }
-    else { this.index = -1; this.input.hidden = true; this.rerender(); }   // 没有下一个音了：收起（多出来的字已经补成新音）
+    else { this.index = -1; this.input.hidden = true; this.merge.hidden = true; this.rerender(); }   // 没有下一个音了：收起（多出来的字已经补成新音）
   }
   private slotText(i: number): string {
     const t = this.host.get().song.tokens[i] as NoteTok;
@@ -126,5 +147,5 @@ export class LyricEditor {
   }
 
   commitAndClose(): void { if (!this.open) return; this.commitOnly(); this.close(); }
-  close(): void { this.index = -1; this.input.value = ""; this.input.hidden = true; this.rerender(); }
+  close(): void { this.index = -1; this.input.value = ""; this.input.hidden = true; this.merge.hidden = true; this.rerender(); }
 }

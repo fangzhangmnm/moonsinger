@@ -87,3 +87,28 @@ describe("一个音上几个字（+）", () => {
     eq((o.song.tokens[o.song.tokens.length - 1] as { lyric: string }).lyric, `だ${ELISION}ん`);
   });
 });
+
+// 「合」：打完回头改（user「打完回头改同意。这里的心流反而是输入。所以不应该提前按」）。edited by Claude Opus 5.5 2026-10-07
+import { mergeIntoPrev } from "../src/score/lyrics.ts";
+import { type Token as _Tok, type Song as _Song } from "../src/score/song.ts";
+describe("合（并进前一个音，这一句后面的往前挪）", () => {
+  const song = (ly: (string | null | "|rest")[]): _Song => {
+    let id = 1;
+    const toks: _Tok[] = [{ kind: "key", fifths: 0, id: id++ }, { kind: "time", beats: 4, beatType: 4, id: id++ }, { kind: "tempo", bpm: 90, id: id++ }] as _Tok[];
+    for (const l of ly) toks.push((l === "|rest" ? { kind: "rest", dur: _Q, id: id++ } : { kind: "note", pitch: { step: "C", alter: 0, octave: 4 }, dur: _Q, lyric: l, id: id++ }) as _Tok);
+    return { hum: "n", tokens: toks };
+  };
+  const lyrics = (s: _Song) => s.tokens.map((t) => (t.kind === "note" ? t.lyric ?? "·" : t.kind === "rest" ? "|" : "")).filter(Boolean).join(" ");
+  it("だんごだんご（6 个音）在第 5 个音上合 = だ ん ご だ‿ん ご ·；休止后面的不动", () => {
+    const st = { ..._init(), song: song(["だ", "ん", "ご", "だ", "ん", "ご", "|rest", "や", "さ"]) };
+    const out = mergeIntoPrev(st, 3 + 4).song;
+    eq(lyrics(out), `だ ん ご だ${ELISION}ん ご · | や さ`);
+  });
+  it("前一个音没字 / 这个音没字 / 拖腔 = 不动", () => {
+    const st = { ..._init(), song: song([null, "ん", "ご", "ー"]) };
+    eq(mergeIntoPrev(st, 4), st, "前一个没字");
+    const s2 = { ...st, song: song(["だ", null]) };
+    eq(mergeIntoPrev(s2, 4), s2, "这个没字");
+    eq(mergeIntoPrev(st, 6), st, "这个是拖腔");
+  });
+});
