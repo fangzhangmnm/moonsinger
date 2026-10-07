@@ -241,3 +241,13 @@ button, input, select { font: inherit; color: inherit; }
 .drum-item .sc { display: flex; flex-direction: column; align-items: center; line-height: 1.2; max-width: 100%; padding: 0 4px; }
 .drum-item .sc b { font-weight: inherit; font-size: 15px; }
 .drum-item .sc small { font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+/* 「⋯」里的插记号：「+」+ 音乐符号（Bravura） */
+.pad-tools.cands .btn.cand { position: relative; }
+.pad-tools.cands .btn.cand .plus { position: absolute; left: 5px; top: 2px; font-size: 13px; line-height: 1; color: var(--muted); }
+.pad-tools.cands .btn.cand .mg { font-family: "Bravura"; font-size: 22px; line-height: 1; }
+.pad-tools.cands .btn.cand .mg.met { font-size: 24px; position: relative; top: 3px; }
+.pad-tools.cands .btn.cand .mg.ts { display: inline-flex; flex-direction: column; font-size: 20px; line-height: .5; }
+.pad-tools.cands .btn.cand .eq { font-size: 14px; margin-left: 1px; }
+/* 写字键 0 | —：符号下面一行小字（user「0 - | 三个承重的按钮还是有点谜语人」） */
+.pad-tools.writes .btn.wk { flex-direction: column; gap: 1px; line-height: 1.05; }
+.pad-tools.writes .btn.wk small { font-size: 10px; color: var(--muted); }

@@ -30,7 +30,7 @@ import { type Pitch, HOME, diatonicIndex, tonicStepIndex, pitchName, alterBy, mi
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
-import { type EditorState, inputKey, keyAt } from "../score/song.ts";
+import { type EditorState, inputKey, keyAt, timeAt, tempoAt } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
 
 const HER_LOW = 57, HER_HIGH = 76;   // A3 / E5（MIDI；月读音域：键底部画细条提示，音域外不拦、不变灰）
@@ -51,6 +51,8 @@ const SHIFTS = [4, 3, 2, 1, 0, -1, -2, -3, -4];   // 音域窗口，高的在上
 const octDots = (n: number) => (n > 0 ? `<span class="jp-dots">${"<i></i>".repeat(n)}</span>` : `<span class="jp-dots"></span>`);
 /** Bravura 的整个音符字形（SMuFL 预组合音符，符干朝上）：三十二分 … 全音符。 */
 const UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];   // SMuFL note32ndUp / 16thUp / 8thUp / QuarterUp / HalfUp / Whole（写成转义，免得编辑器吞掉私用区字符）
+/** 插记号按钮上的音乐符号（Bravura；SMuFL timeSig0–9 = U+E080–E089、metNoteQuarterUp）。写成转义，免得编辑器吞掉私用区字符。 */
+const QUARTER = "\uECA5", TS = (n: number) => String.fromCodePoint(0xe080 + n);   // QUARTER = metNoteQuarterUp（速度记号里用的小号音符）
 const UNIT_NAME = ["三十二分", "十六分", "八分", "四分", "二分", "全音符"];
 const KEY_NAMES = KEY_LABEL;
 const KEY_CIRCLE = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];   // 五度圈，♭ 多 → C → ♯ 多
@@ -95,7 +97,7 @@ export interface PadHost {
   onSoundUp(id: string): void;
 }
 
-type Mode = "normal" | "more" | "mark" | "transpose" | "modulate" | "layout";   // 选调 / 长短 / 音域 = 旋钮（原地滚 / 点开滚轮），不在这里
+type Mode = "normal" | "more" | "transpose" | "modulate" | "layout";   // 选调 / 长短 / 音域 = 旋钮（原地滚 / 点开滚轮），不在这里
 
 export class Pad {
   private rowShift = 0;       // 音域窗口挪过几行
@@ -156,9 +158,9 @@ export class Pad {
       this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes">` +
         `<button class="btn" data-caret="-1" title="光标左移（${hint("left")}）">←</button>` +
         `<button class="btn" data-caret="1" title="光标右移（${hint("right")}）">→</button>` +
-        `<button class="btn" data-cmd="rest" title="休止（${hint("rest")}）">0</button>` +
-        `<button class="btn" data-cmd="bar" title="小节线（${hint("bar")}）">|</button>` +
-        `<button class="btn" data-cmd="extend" title="拉长一份（${hint("extend")}）">—</button>` +
+        `<button class="btn wk" data-cmd="rest" title="休止（${hint("rest")}）"><span>0</span><small>休止</small></button>` +
+        `<button class="btn wk" data-cmd="bar" title="小节线（${hint("bar")}）"><span>|</span><small>小节线</small></button>` +
+        `<button class="btn wk" data-cmd="extend" title="拉长一份（${hint("extend")}）"><span>—</span><small>拉长</small></button>` +
         `<button class="btn" data-cmd="backspace" title="退格（${hint("backspace")}）"><svg class="ico"><use href="#backspace"/></svg></button></div>` +
         `<div class="pad-grid"></div>`;
       const w = this.el.querySelector<HTMLElement>(".writes")!;
@@ -179,23 +181,37 @@ export class Pad {
     }
     const gridSig = `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}`;
     if (gridSig !== this.gridFor) { this.buildGrid(f, base, rows); this.gridFor = gridSig; }
-    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}`;
+    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st)) : ""}`;
     if (toolSig !== this.toolsFor) { this.buildHead(selKey, rows); this.toolsFor = toolSig; }
     this.refresh(st);
   }
 
+  /** 光标处正生效的调号 / 拍号 / 速度（插记号按钮上写的就是它：插进去的默认值）。 */
+  private marksHere(st: EditorState): { key: number; time: { beats: number; beatType: number }; bpm: number } {
+    const at = st.sel ? st.sel.from : st.caret;
+    return { key: keyAt(st.song, at), time: timeAt(st.song, at), bpm: tempoAt(st.song, at) };
+  }
   private cands(selKey: number | null, rows: number): string {
     const back = `<button class="btn cand" data-back="1">返回</button>`;
     const c = (attrs: string, label: string, on = false, title = "") => `<button class="btn cand${on ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
     switch (this.mode) {
-      case "more": return c(`data-open="layout"`, "布局…", false, "几行几列、首调 / 绝对") + c(`data-open="mark"`, "插记号…", false, "在光标处插调号 / 拍号 / 速度") + back;
+      // 「⋯」里可以多行：插记号直接展开（user「...里面可以多行，放很多东西。所以插记号可以展开，然后应该也是用音乐符号？也许用一个加号？」）；
+      // 按钮上写光标处正生效的那个（插进去的默认值），调号写「1=G」不写 ♯♭（user「+1=G才比较好懂吧，+#b只会让人觉得是加升降号」）；
+      // 「+」是左上角的小角标、和内容分开（user「不过加号和后面的东西也许需要分开来」）
+      case "more": {
+        const m = this.marksHere(this.host.state()), plus = `<span class="plus">+</span>`;
+        const digits = (n: number) => [...String(n)].map((ch) => TS(Number(ch))).join("");
+        return c(`data-mark="key"`, `${plus}1=${KEY_NAMES[m.key] ?? "?"}`, false, "插调号（在光标处；先填现在的，插了再改）") +
+          c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.time.beats)}</span><span>${digits(m.time.beatType)}</span></span>`, false, "插拍号（在光标处；先填现在的，插了再改）") +
+          c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, "插速度（在光标处；先填现在的，插了再改）") +
+          c(`data-open="layout"`, "布局…", false, "几行几列、首调 / 绝对") + back;
+      }
       case "layout":
         return [c(`data-rows="auto"`, `行 自动（${rows}）`, this.rowsSetting === "auto"),
           ...[3, 4, 5, 6, 7, 8].map((n) => c(`data-rows="${n}"`, `${n} 行`, this.rowsSetting === n)),
           ...[3, 4, 5, 6, 7].map((n) => c(`data-cols="${n}"`, `${n} 列`, this.cols === n)),
           c(`data-pl="movable"`, "首调", this.layoutMode === "movable", "每行从 1 起，跟着「1=」走"),
           c(`data-pl="absolute"`, "绝对", this.layoutMode === "absolute", "每行从 C 起（不跟着「1=」挪）"), back].join("");
-      case "mark": return c(`data-mark="key"`, "调号") + c(`data-mark="time"`, "拍号") + c(`data-mark="tempo"`, "速度") + back;
       case "transpose":
         return c(`data-tr="1"`, "↑ 半音") + c(`data-tr="-1"`, "↓ 半音") + c(`data-tr="2"`, "↑ 全音") + c(`data-tr="-2"`, "↓ 全音") +
           c(`data-toct="1"`, "↑ 八度") + c(`data-toct="-1"`, "↓ 八度") + c(`data-open="modulate"`, "转调…", false, "整段转到另一个调：音按两个主音之间的音程挪，调号跟着换") + back;
