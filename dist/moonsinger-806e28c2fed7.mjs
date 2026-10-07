@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.7-2026-10-07";
+var APP_VERSION = "v0.2.8-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2437,13 +2437,18 @@ var Pad = class {
     const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
     return `${pretty(fromDiatonic(lo, f))}\u2013${pretty(fromDiatonic(hi, f))}`;
   }
+  /** 同上，画在方块里：两行，高的在上、低的在下（和「大的在上」一个方向）。 */
+  spanHtml(shift, f, rows) {
+    const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
+    return `<span class="rg"><span>${pretty(fromDiatonic(hi, f))}</span><span>${pretty(fromDiatonic(lo, f))}</span></span>`;
+  }
   /** 音域窗口第 shift 档时，左下那个键的五线谱位置（中央 C 那一行默认在中线下面一行）。 */
   baseAt(shift, f, rows) {
     const home = this.layoutMode === "absolute" ? diatonicIndex({ step: "C", alter: 0, octave: 4 }) : defaultPadBase(f);
     return home + this.cols * (shift - Math.floor((rows - 1) / 2));
   }
   /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。
-   *  三块各管各的：写字键一排（只建一次）、音键网格（调 / 音域 / 布局变了才重建）、最下面一排旋钮或候选（模式 / 有没有选中变了才重建）——
+   *  三块各管各的：最上面一排旋钮或候选（模式 / 有没有选中变了才重建）、写字键一排（只建一次）、音键网格（调 / 音域 / 布局变了才重建）——
    *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render() {
     const st2 = this.host.state(), f = inputKey(st2), rows = this.rows(), form = padForm();
@@ -2453,7 +2458,7 @@ var Pad = class {
     this.el.dataset.form = form;
     this.el.style.setProperty("--cols", String(this.cols));
     if (!this.el.querySelector(".pad-grid")) {
-      this.el.innerHTML = `<div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\u2014</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div><div class="pad-bottom"></div>`;
+      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\u2014</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
       const w = this.el.querySelector(".writes");
       this.on(w, "[data-caret]", (b) => this.host.onCommand({ k: "caret", d: Number(b.dataset.caret) }));
       this.on(w, "[data-cmd]:not([data-cmd=backspace])", (b) => this.host.onCommand({ k: b.dataset.cmd }));
@@ -2484,7 +2489,7 @@ var Pad = class {
     }
     const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}`;
     if (toolSig !== this.toolsFor) {
-      this.buildBottom(f, selKey, rows);
+      this.buildHead(selKey, rows);
       this.toolsFor = toolSig;
     }
     this.refresh(st2);
@@ -2514,11 +2519,12 @@ var Pad = class {
         return "";
     }
   }
-  /** 最下面一排：旋钮（user「试一下把上面这一行放最下面防我按第二行的功能键的时候误触」）；「⋯」/ 移调点开后整排换成候选。 */
-  buildBottom(_f, selKey, rows) {
-    const box = this.el.querySelector(".pad-bottom");
-    box.className = `pad-bottom pad-tools ${this.mode === "normal" ? "knobs" : "cands"}`;
-    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
+  /** 最上面一排：旋钮 = 固定大小的小方块，从左排起（user「应该是方形的不应该那么宽」）；
+   *  「⋯」/ 移调点开后整排换成候选。（试过放 pad 最下面，user「别扭，还是放在上面吧」） */
+  buildHead(selKey, rows) {
+    const box = this.el.querySelector(".pad-head");
+    box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : "cands"}`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b) => b.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       this.knobDown(b, e);
@@ -2606,7 +2612,10 @@ var Pad = class {
       u.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i.unit]}${i.tuplet ? `\uFF08${i.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009`;
     }
     const r = q(".k-range .kl");
-    if (r) r.textContent = this.spanText(this.rowShift, f, this.rows());
+    if (r) {
+      r.innerHTML = this.spanHtml(this.rowShift, f, this.rows());
+      r.parentElement.title = `\u97F3\u57DF ${this.spanText(this.rowShift, f, this.rows())}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684`;
+    }
     this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
       const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
       const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = a ? alterBy(p0, a) : p0;
@@ -2638,7 +2647,7 @@ var Pad = class {
     if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st2.input.unit)), title: "\u957F\u77ED\u57FA\u7EBF", set: (i) => this.host.onUnit(UNITS[i]) };
     const rows = this.rows();
     return {
-      items: SHIFTS.map((sh) => this.spanText(sh, f, rows)),
+      items: SHIFTS.map((sh) => this.spanHtml(sh, f, rows)),
       index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))),
       title: "\u97F3\u57DF\u7A97\u53E3",
       set: (i) => {
@@ -2705,12 +2714,12 @@ var Pad = class {
     addEventListener("pointerup", up);
     addEventListener("pointercancel", up);
   }
-  /** 点一下值旋钮：从那一格展开一根同样宽的滚轮。长短那根旁边并一根连音的，连音画成真的一组小蝌蚪、跟着长短变。 */
+  /** 点一下值旋钮：在那个方块上展开滚轮（格子和方块一样大，第一列正好叠在旋钮上）。长短那根旁边并一根连音的，连音画成真的一组小蝌蚪、跟着长短变。 */
   openDrumFor(knob, anchor) {
     const w = anchor.getBoundingClientRect().width;
     if (knob === "unit") {
       const st2 = this.host.state();
-      const wt = Math.round(w * 0.55), wu = w - wt - 2;
+      const wu = w, wt = 68;
       const tups = (u) => TUP.map((n2) => n2 ? tupletMark(n2, u) : `<span class="plain">\u4E0D\u8FDE</span>`);
       const h = openDrum(anchor, [
         { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: Math.max(0, UNITS.indexOf(st2.input.unit)), width: wu, title: "\u957F\u77ED\u57FA\u7EBF" },
@@ -5663,4 +5672,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-b829c68b873e.mjs.map
+//# sourceMappingURL=moonsinger-806e28c2fed7.mjs.map
