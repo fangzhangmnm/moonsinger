@@ -50,6 +50,7 @@ export const DEFAULT_OPT = {
   breathMinRest: 1,       // in eighths: only rests at least this long get an inhale (shorter = no time to breathe)
 };
 
+import { wordsOf, alignEnglish } from "./en-front.mjs";   // 英文：音节拼回单词、元音核心对齐（2026-10-07 Claude Opus 5.5）
 const VOWEL = new Set(["a", "i", "u", "e", "o", "N"])   /* cl (っ) is not a sung syllable: it joins the next consonant */, VOICED_FOR = { A: "a", I: "i", U: "u", E: "e", O: "o" };
 const isMark = (t) => "[]#?!".includes(t) || /^tone\d$/.test(t);   // zh: the tone token after each final is a one-frame mark
 
@@ -57,25 +58,30 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   atlas: ATLAS = "off", mix: MIX = 1, breath: BREATH = false, preset: PRESET = 0, piper: pn, world: W, loadAtlas = null, opt = {}, log = () => {} }) {
   const OPT = { ...DEFAULT_OPT, ...opt };
   if (ATLAS !== "off" && !loadAtlas) throw new Error(`atlas=${ATLAS} needs loadAtlas`);
+  // English (2026-10-07, Claude Opus 5.5; user「好吧英文先做完」): the score has one entry per WRITTEN syllable (hyph = the word goes on);
+  //   the engine glues the words back, looks them up and gives every vowel nucleus its own entry (en-front.mjs). ja / zh untouched.
+  let EN = null, leadRest = 0, SRC = SCORE_IN;
+  if (LANG === "en") { EN = pn.phonemizeEnWords(wordsOf(SCORE_IN)); ({ entries: SRC, leadRest } = alignEnglish(SCORE_IN, EN.nuclei)); }
   // an entry sung on several kana (しい) becomes one entry per kana sharing its single note evenly
-  const SCORE = SCORE_IN.map((e) => ({ ...e, notes: e.notes.map(([m, l]) => [m + TRANSPOSE, l]) })).flatMap((e) => { const n = e.moras || 1; if (n === 1) return [e]; if (e.notes.length !== 1) throw new Error(`${e.kana}: moras > 1 needs one note`);
+  const SCORE = SRC.map((e) => ({ ...e, notes: e.notes.map(([m, l]) => [m + TRANSPOSE, l]) })).flatMap((e) => { const n = e.moras || 1; if (n === 1) return [e]; if (e.notes.length !== 1) throw new Error(`${e.kana}: moras > 1 needs one note`);
     const [midi, len] = e.notes[0]; return Array.from({ length: n }, (_, i) => ({ kana: [...e.kana][i] ?? e.kana, notes: [[midi, len / n]], rest: i === n - 1 ? e.rest : 0, before: i === 0 ? e.before : undefined })); });
   const SR = pn.SR, HOP = pn.HOP, FR = SR / HOP, EIGHTH = 60 / TEMPO_QUARTER / 2, FP = 5, FPS = FP / 1000;
 
   // ---- 1. tokens -> moras -------------------------------------------------------------------------------------------------
   const sungText = TEXT.replace(/[、。，．,.！？!?]/g, "");       // rests are made on the song clock, not as speech pauses
-  const ph = LANG === "zh" ? pn.phonemizeZh(sungText) : pn.phonemize(sungText);
-  const tokens = LANG === "zh" ? ph.tokens : ph.tokens.map((t) => VOICED_FOR[t] ?? t);
-  if (OPT.humNasal && LANG !== "zh") {                           // 哼的「ん」：第 k 个唱的音素属于 SCORE[k]（同下面的 sung1 规则）
+  const ph = LANG === "en" ? EN : LANG === "zh" ? pn.phonemizeZh(sungText) : pn.phonemize(sungText);
+  const tokens = LANG === "ja" ? ph.tokens.map((t) => VOICED_FOR[t] ?? t) : ph.tokens;
+  if (OPT.humNasal && LANG === "ja") {                           // 哼的「ん」：第 k 个唱的音素属于 SCORE[k]（同下面的 sung1 规则）
     let k = 0; tokens.forEach((t, i) => { if (!(VOWEL.has(t) || /^N/.test(t))) return; if (SCORE[k]?.hum && /^N/.test(t)) tokens[i] = OPT.humNasal; k++; });
   }
-  const { ids, pros } = LANG === "zh" ? ph : pn.encode(tokens, ph.prosody);
+  const { ids, pros } = LANG === "ja" ? pn.encode(tokens, ph.prosody) : ph;
   const RUN = { lang: LANG, preset: PRESET };
   const owner = []; let p = 2;                                   // ids: ^ pad (tok pad)* … $ ; a pause "_" is a single pad id
   for (const t of tokens) { owner.push(t === "_" ? [p] : [p, p + 1]); p += t === "_" ? 1 : 2; }
   if (p !== ids.length - 1) throw new Error(`id layout: expected EOS at ${p}, have ${ids.length - 1}`);
   const moras = []; let gap = [];                                 // gap = token indices between two vowels (marks, pauses, consonants)
   const sung1 = LANG === "zh" ? (t, i) => /^tone\d$/.test(tokens[i + 1] ?? "")   // zh: the final (the token before its tone mark) is the sung part
+    : LANG === "en" ? (t, i) => EN.sung[i]                          // en: the first char of each vowel nucleus (en-front.mjs nucleusStarts)
     : (t) => VOWEL.has(t) || /^N/.test(t);                          // ja: vowels and ん (N_n / N_m / N_ng … by place of articulation)
   tokens.forEach((t, i) => { if (sung1(t, i)) { moras.push({ gap, vowel: i }); gap = []; } else gap.push(i); });
   const trailing = gap;
@@ -86,6 +92,12 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
     m.pause = lastPause >= 0 ? m.gap[lastPause] : null;
     m.cons = m.gap.slice(lastPause + 1);                          // marks + consonants after the last pause: sung on the way into the beat
     m.before = lastPause >= 0 ? m.gap.slice(0, lastPause + 1) : []; // marks + pause before that: belong to the rest
+  });
+  if (LANG === "en") moras.forEach((m, k) => {                   // en: a word's final consonants (and a diphthong's glide / length mark) stay at the end of
+    const w = EN.wordOf[m.vowel], next = moras[k + 1];            //   their own note when a rest or the song end follows — not after the rest with the next word
+    if (!next) { m.coda = trailing.filter((i) => !isMark(tokens[i])); return; }
+    if (!(SCORE[k].rest > 0)) return;
+    m.coda = next.cons.filter((i) => EN.wordOf[i] === w); next.cons = next.cons.filter((i) => EN.wordOf[i] !== w);
   });
   if (PHRASING !== "score") {                                    // --phrasing=punct: breathe where the lyric's own 、。 are (っ has no note; it is skipped on the walk)
     if (PHRASING !== "punct" && PHRASING !== "none") throw new Error(`--phrasing=${PHRASING}: unknown (score|punct|none)`);
@@ -100,6 +112,7 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   frames[0] = 10;                                                 // ^ : lead-in material for the first consonant
   for (const m of moras) {
     for (const i of m.cons) if (!isMark(tokens[i])) owner[i].forEach((j) => (frames[j] = Math.max(1, Math.round(pred[j]))));
+    for (const i of m.coda ?? []) if (!isMark(tokens[i])) owner[i].forEach((j) => (frames[j] = Math.max(1, Math.round(pred[j]))));
     if (m.pause !== null) frames[owner[m.pause][0]] = 10;
     const [a, b] = owner[m.vowel], tot = Math.min(OPT.vowelFrames[1], Math.max(OPT.vowelFrames[0], Math.round(2 * (pred[a] + pred[b]))));
     frames[a] = Math.max(1, Math.round(tot * pred[a] / (pred[a] + pred[b]))); frames[b] = Math.max(1, tot - frames[a]);
@@ -115,6 +128,7 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   for (const m of moras) {                                        // compact spans
     m.c0 = m.cons.length ? sec(owner[m.cons[0]][0]) : sec(owner[m.vowel][0]);
     m.v0 = sec(owner[m.vowel][0]); m.v1 = sec(owner[m.vowel][1] + 1);   // nominal; the onset is moved to where the voice starts below
+    if (m.coda?.length) m.codaC1 = sec(owner[m.coda[m.coda.length - 1]][1] + 1);
   }
 
   // ---- 3. the score's clock ---------------------------------------------------------------------------------------------
@@ -155,7 +169,7 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   }
   { const lv = moras.filter((m) => m.ownClean <= OPT.cleanMax).map((m) => m.levelDb).sort((p, q) => p - q), med = lv[lv.length >> 1];
     for (const m of moras) m.gainDb = m.ownClean > OPT.cleanMax ? 0 : Math.max(-OPT.levelMaxDb, Math.min(OPT.levelMaxDb, OPT.level * (med - m.levelDb))); }
-  let t = OPT.leadIn; const notes = [];
+  let t = OPT.leadIn + leadRest * EIGHTH; const notes = [];
   SCORE.forEach((s, k) => {
     const m = moras[k]; m.noteStart = t;
     for (const [midi, len] of s.notes) { notes.push({ k, midi, t0: t, t1: t + len * EIGHTH }); t += len * EIGHTH; }
@@ -180,8 +194,9 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   seg(0, moras[0].preStart, 0, moras[0].c0, "lead", -1);
   moras.forEach((m, k) => {
     seg(m.preStart, m.noteStart, m.c0, m.v0, "cons", k);
-    const sEnd = k + 1 < moras.length && !m.rest ? moras[k + 1].preStart : m.end;
-    const L = sEnd - m.noteStart, last = k + 1 === moras.length, fade = m.rest || last ? OPT.release : 0;
+    const sEnd0 = k + 1 < moras.length && !m.rest ? moras[k + 1].preStart : m.end;
+    const codaLen = m.codaC1 ? Math.min(m.codaC1 - m.v1, 0.45 * (sEnd0 - m.noteStart)) : 0, sEnd = sEnd0 - codaLen;   // en coda: the note's last bit
+    const L = sEnd - m.noteStart, last = k + 1 === moras.length, fade = (m.rest || last) && !codaLen ? OPT.release : 0;
     m.fade = fade > 0 ? [sEnd - Math.min(fade, 0.4 * L), sEnd] : null;
     const { h0, h1 } = m.hold, tailC = fade > 0 ? 0 : Math.min(OPT.tailIntoNext, m.v1 - h1);
     const attC = h0 - m.v0;
@@ -191,7 +206,8 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
       seg(m.noteStart + attC, sEnd - tailC, h0, h1, "vowel", k, true);   // the held stretch: the atlas sings here
       if (tailC > 0) seg(sEnd - tailC, sEnd, m.v1 - tailC, m.v1, "vowel", k, "tail");   // atlas → piper crossfade happens here
     }
-    if (m.rest && k + 1 < moras.length) seg(m.end, moras[k + 1].preStart, m.v1, moras[k + 1].c0, "rest", k);
+    if (codaLen > 0) { seg(sEnd, sEnd0, m.v1, m.codaC1, "cons", k, "coda"); m.codaFade = [sEnd0 - Math.min(0.04, codaLen / 2), sEnd0]; }
+    if (m.rest && k + 1 < moras.length) seg(m.end, moras[k + 1].preStart, m.codaC1 ?? m.v1, moras[k + 1].c0, "rest", k);
   });
   const songEnd = moras[moras.length - 1].noteEnd;
 
@@ -303,7 +319,7 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
         if (fr) { atlasFrames++; for (let q = 0; q < bins; q++) { sp[j * bins + q] = Math.exp((1 - wa) * Math.log(sp[j * bins + q] + 1e-16) + wa * fr.logsp[q]); ap[j * bins + q] = (1 - wa) * ap[j * bins + q] + wa * fr.ap[q]; } }
       }
     }
-    const fm = s.kind === "vowel" ? moras[s.k].fade : null;
+    const fm = s.kind === "vowel" ? moras[s.k].fade : s.kind === "cons" && s.hold === "coda" ? moras[s.k].codaFade : null;
     if (fm && tt >= fm[0]) { const g = Math.max(0.01, 1 - (tt - fm[0]) / (fm[1] - fm[0])); for (let q = 0; q < bins; q++) sp[j * bins + q] *= g * g; }
     if (s.kind === "vowel" && s.k >= 0) {                           // level: vowels only (consonants untouched), ramp over the first 30 ms
       const m = moras[s.k], w = Math.min(1, Math.max(0, (tt - m.noteStart) / 0.03)), gg = 10 ** ((w * m.gainDb) / 10);

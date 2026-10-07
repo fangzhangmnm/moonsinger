@@ -6,8 +6,10 @@
 
 import { singCore } from "./sing-core.mjs";
 import { wrapWorld } from "./world-wrap.mjs";
+import { makeEnglishFront } from "./en-front.mjs";
+import type { SingLang } from "../score/lab-score.ts";
 
-export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: "ja" | "zh"; opt?: Record<string, unknown>; atlas?: string; breath?: boolean }
+export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: SingLang; opt?: Record<string, unknown>; atlas?: string; breath?: boolean }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number } }
@@ -25,7 +27,7 @@ const dyn = (p: string): Promise<any> => import(/* @vite-ignore */ u(p));
 const ORT = "piper-plus/work/node_modules/onnxruntime-web/dist/", PACK = "piper-plus/backend/pack/";
 const SR = 22050, HOP = 256;
 
-interface Engine { piper: any; world: any; loadAtlas: ((id: string) => Promise<any>) | null; hasAtlas: boolean; ensureZh: () => Promise<void>; presetDefault: Record<string, number> }
+interface Engine { piper: any; world: any; loadAtlas: ((id: string) => Promise<any>) | null; hasAtlas: boolean; ensureZh: () => Promise<void>; ensureEn: (say: (s: string) => void) => Promise<void>; presetDefault: Record<string, number> }
 let engine: Promise<Engine> | null = null;
 
 async function loadEngine(say: (s: string) => void): Promise<Engine> {
@@ -51,6 +53,14 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
     const { createChineseG2p } = await dyn("piper-plus/backend/zh-g2p.js");
     zh = createChineseG2p({ single: await json(PACK + "zh/pinyin_single.tone3.json"), phrases: await json(PACK + "zh/pinyin_phrases.tone3.json") });
   };
+  // 英文前端（朗读库同一份 en-g2p.js + CMUdict 约 3.7 MB）：第一次唱英文才加载（家规：有意图才加载重资源）
+  let en: any = null;
+  const ensureEn = async (say: (s: string) => void) => {
+    if (en) return;
+    say("加载英文词典（约 3.7 MB）");
+    const { createEnglishG2p } = await dyn("piper-plus/backend/en-g2p.js");
+    en = makeEnglishFront({ g2p: createEnglishG2p({ cmudict: await json(PACK + "en/cmudict_data.json"), homographs: await json(PACK + "en/homographs.json") }), encodeTokens, idMap: config.phoneme_id_map });
+  };
   // ↓ piper-node.mjs run() 原样（feeds 的名字、类型、形状、默认值）
   async function run(ids: number[], pros: number[][], { noiseScale = 0.667, lengthScale = 1.5, noiseW = 0.5, override = null as number[] | null, lang = "ja", preset = 0 } = {}) {
     const n = ids.length, big = (v: number) => BigInt(v), lid = config.language_id_map?.[lang] ?? 0;
@@ -68,6 +78,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
     phonemize: (text: string) => { const r = ja.phonemize(text); return { tokens: r.tokens, prosody: r.prosody, ...encodeTokens(r.tokens, r.prosody, config.phoneme_id_map) }; },
     phonemizeZh: (text: string) => { const t = zh.phonemize(text), e = zh.encode(text, config.phoneme_id_map); return { tokens: t.tokens, prosody: t.prosody, ids: e.ids, pros: e.pros }; },
     encode: (tokens: string[], prosody: number[][]) => encodeTokens(tokens, prosody, config.phoneme_id_map),
+    phonemizeEnWords: (words: string[]) => en.phonemizeWords(words),
   };
   say("加载 WORLD");
   const { default: createWorld } = await dyn("world/world.mjs");
@@ -75,7 +86,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id: string) => { const meta = await json(`atlas/${id}.json`); const raw = await bytes(`atlas/${id}.f32`);
     return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) }; } : null;
-  return { piper, world, loadAtlas, hasAtlas, ensureZh, presetDefault: config.preset_default ?? {} };
+  return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, presetDefault: config.preset_default ?? {} };
 }
 
 self.onmessage = async (ev: MessageEvent<SingRequest>) => {
@@ -87,6 +98,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest>) => {
     if (!engine) engine = loadEngine(say);
     const e = await engine;
     if (q.lang === "zh") await e.ensureZh();
+    if (q.lang === "en") await e.ensureEn(say);
     const t1 = performance.now();
     say("月读在唱");
     // 元音图谱默认关（user 2026-10-06「元音图谱一般般，先不做」）；断气随图谱（和 Lab 命令行的规则一样）。要试图谱就传 atlas: "normal"。

@@ -11,7 +11,7 @@ import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { ScoreView } from "../ui/score-view.ts";
 import { Pad } from "../ui/pad.ts";
-import { toLabScore } from "../score/lab-score.ts";
+import { toLabScore, type SingLang } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
 import { encodeMp3 } from "../export/mp3.ts";
 import { Sampler } from "../singer/sampler.ts";
@@ -111,8 +111,10 @@ let singing = false;
 const singStatus = (s: string) => { $("singStatus").textContent = s; };
 const playIcon = (stop: boolean) => { $("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`; };
 /** 歌词里有汉字、没有假名 → 按中文唱；其余（含没有歌词）按日语唱。 */
-function songLang(): "ja" | "zh" {
-  const ls = st.song.tokens.flatMap((t) => (t.kind === "note" && t.lyric ? [t.lyric] : [])).join("");
+function songLang(): SingLang {
+  const ls = st.song.tokens.flatMap((t) => (t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : [])).join("");
+  // 英文：歌词里有拉丁字母、没有假名也没有汉字（user「好吧英文先做完」）；中英日混着的歌第一版按日 / 中唱
+  if (/[A-Za-z]/.test(ls) && !/[\p{Script=Han}぀-ヿ]/u.test(ls)) return "en";
   // 整首没写歌词时，哼「啦」「呜」用中文唱（日语 ら 是轻弹舌、う 不圆唇；user「呜还是啊，拉也不行」）
   if (!ls && (st.song.hum === "la" || st.song.hum === "u")) return "zh";
   return /\p{Script=Han}/u.test(ls) && !/[぀-ヿ]/.test(ls) ? "zh" : "ja";
