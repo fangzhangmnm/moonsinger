@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.5-2026-10-07";
+var APP_VERSION = "v0.2.6-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2287,7 +2287,7 @@ function openDrum(anchor, cols, o) {
   if (left + total > innerWidth - 4) left = Math.max(4, r.right - total);
   Object.assign(box.style, { left: `${left}px`, top: `${Math.max(4, Math.min(r.top, innerHeight - ROW * VISIBLE - 4))}px`, height: `${ROW * VISIBLE}px` });
   document.body.appendChild(box);
-  let closeTimer = 0, closed = false;
+  let closeTimer = 0, closed = false, holding = false;
   const close = () => {
     if (closed) return;
     closed = true;
@@ -2299,11 +2299,12 @@ function openDrum(anchor, cols, o) {
     o.onClose?.();
   };
   const outside = (e) => {
-    if (!box.contains(e.target)) {
+    if (box.contains(e.target)) return;
+    if (!e.target.closest?.("[data-knob]")) {
       e.preventDefault();
       e.stopPropagation();
-      close();
     }
+    close();
   };
   const esc4 = (e) => {
     if (e.key === "Escape") {
@@ -2343,7 +2344,7 @@ function openDrum(anchor, cols, o) {
       }
       clearTimeout(closeTimer);
       clearTimeout(settleTimer);
-      settleTimer = window.setTimeout(() => {
+      if (!holding) settleTimer = window.setTimeout(() => {
         closeTimer = window.setTimeout(close, CLOSE_AFTER);
       }, SETTLE);
     }, { passive: true });
@@ -2358,7 +2359,29 @@ function openDrum(anchor, cols, o) {
       close();
     });
   });
-  const handle = { close };
+  const first = box.querySelector(".drum-col");
+  let startTop = 0;
+  const handle = {
+    close,
+    dragStart: () => {
+      holding = true;
+      clearTimeout(closeTimer);
+      first.style.scrollSnapType = "none";
+      startTop = first.scrollTop;
+    },
+    // 拖的时候先不吸附（不然一格一格跳）
+    dragBy: (dy) => {
+      first.scrollTop = startTop - dy;
+    },
+    dragEnd: (moved) => {
+      holding = false;
+      first.style.scrollSnapType = "";
+      if (!moved) return;
+      first.scrollTo({ top: Math.round(first.scrollTop / ROW) * ROW, behavior: "smooth" });
+      clearTimeout(closeTimer);
+      closeTimer = window.setTimeout(close, SETTLE + CLOSE_AFTER);
+    }
+  };
   current = handle;
   return handle;
 }
@@ -2369,7 +2392,6 @@ var HER_HIGH = 37;
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } };
 var SWIPE = 20;
-var KNOB_STEP = 26;
 var octDots = (n2) => n2 > 0 ? `<span class="jp-dots">${"<i></i>".repeat(n2)}</span>` : `<span class="jp-dots"></span>`;
 var UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
 var UNIT_NAME = ["\u4E09\u5341\u4E8C\u5206", "\u5341\u516D\u5206", "\u516B\u5206", "\u56DB\u5206", "\u4E8C\u5206", "\u5168\u97F3\u7B26"];
@@ -2461,7 +2483,7 @@ var Pad = class {
     }
   }
   build(f, base2, selKey, rows, st2) {
-    const tools = this.mode !== "normal" ? `<div class="pad-tools cands">${this.cands(f, selKey, rows, st2)}</div>` : `<div class="pad-tools knobs">` + (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF1A\u4E0A\u4E0B\u6ED1 = \u9009\u4E2D\u8FD9\u6BB5\u5347 / \u964D\u534A\u97F3\uFF1B\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span><span class="kh">\u21C5</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u4E0A\u4E0B\u6ED1 = \u4E94\u5EA6\u5708\u8D70\u4E00\u683C\uFF1B\u70B9\u5F00\u9009"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u4E0A\u4E0B\u6ED1 = \u957F / \u77ED\u4E00\u6863\uFF1B\u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u4E0A\u4E0B\u6ED1 = \u7A97\u53E3\u632A\u4E00\u884C\uFF1B\u70B9\u5F00\u9009"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\u2014</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div>`;
+    const tools = this.mode !== "normal" ? `<div class="pad-tools cands">${this.cands(f, selKey, rows, st2)}</div>` : `<div class="pad-tools knobs">` + (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span><span class="kh">\u21C5</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u62D6 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u62D6 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u62D6 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u62D6\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\u2014</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div>`;
     const cells = [], ht = homeTonic(f);
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < this.cols; col++) {
@@ -2482,7 +2504,7 @@ var Pad = class {
     const u = q(".k-unit .kl");
     if (u) {
       u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`;
-      u.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i.unit]}${i.tuplet ? `\uFF08${i.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u4E0A\u4E0B\u6ED1 = \u957F / \u77ED\u4E00\u6863\uFF1B\u70B9\u5F00\u9009`;
+      u.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i.unit]}${i.tuplet ? `\uFF08${i.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u62D6 / \u70B9\u5F00\u9009`;
     }
     const r = q(".k-range .kl");
     if (r) r.textContent = this.spanText(this.rowShift, f, this.rows());
@@ -2533,35 +2555,30 @@ var Pad = class {
       b.addEventListener("pointercancel", up);
     });
     this.el.querySelectorAll("[data-knob]").forEach((b) => {
-      let y0 = 0, steps = 0, moved = false, pid = -1;
       b.addEventListener("pointerdown", (e) => {
         e.preventDefault();
-        try {
-          b.setPointerCapture(e.pointerId);
-        } catch {
-        }
-        pid = e.pointerId;
-        y0 = e.clientY;
-        steps = 0;
-        moved = false;
+        const h = this.open(b.dataset.knob, b);
+        if (!h) return;
+        const pid = e.pointerId, y0 = e.clientY;
+        let moved = false;
+        h.dragStart();
+        const move = (ev) => {
+          if (ev.pointerId !== pid) return;
+          const dy = ev.clientY - y0;
+          if (Math.abs(dy) > 4) moved = true;
+          h.dragBy(dy);
+        };
+        const up = (ev) => {
+          if (ev.pointerId !== pid) return;
+          removeEventListener("pointermove", move);
+          removeEventListener("pointerup", up);
+          removeEventListener("pointercancel", up);
+          h.dragEnd(moved);
+        };
+        addEventListener("pointermove", move);
+        addEventListener("pointerup", up);
+        addEventListener("pointercancel", up);
       });
-      b.addEventListener("pointermove", (e) => {
-        if (e.pointerId !== pid) return;
-        const dy = y0 - e.clientY;
-        if (Math.abs(dy) > 8) moved = true;
-        const k = Math.trunc(dy / KNOB_STEP);
-        if (k !== steps) {
-          this.step(b.dataset.knob, k - steps);
-          steps = k;
-        }
-      });
-      const end = (e, tap) => {
-        if (e.pointerId !== pid) return;
-        pid = -1;
-        if (tap && !moved) this.tap(b.dataset.knob);
-      };
-      b.addEventListener("pointerup", (e) => end(e, true));
-      b.addEventListener("pointercancel", (e) => end(e, false));
     });
     on("[data-caret]", (b) => this.host.onCommand({ k: "caret", d: Number(b.dataset.caret) }));
     on("[data-cmd]", (b) => this.host.onCommand({ k: b.dataset.cmd }));
@@ -2597,58 +2614,44 @@ var Pad = class {
     this.mode = "normal";
     this.render();
   }
-  /** 旋钮走 n 格（上 = 正）。 */
-  step(knob, n2) {
+  /** 点开 / 按住一个旋钮：值的旋钮 = 滚轮（返回它，让手指接着拖）；移调（有选中）和「⋯」= 整条候选（返回 null）。
+   *  滚轮里大的在上（升号多 / 长的 / 音域高的在上）：内容跟着手指走，往下拖 = 把上面的拉到中间 = 变大。 */
+  open(knob, anchor) {
     const st2 = this.host.state();
-    if (knob === "key") {
-      if (st2.sel) this.host.onCommand({ k: "transpose", semis: n2 });
-      else this.host.onInputKey(inputKey(st2) + n2);
-    } else if (knob === "unit") for (let i = 0; i < Math.abs(n2); i++) this.host.onCommand({ k: n2 > 0 ? "longer" : "shorter" });
-    else if (knob === "range") {
-      this.rowShift = Math.max(-8, Math.min(8, this.rowShift + n2));
-      this.render();
-    }
-  }
-  tap(knob) {
-    const st2 = this.host.state(), anchor = this.el.querySelector(`[data-knob="${knob}"]`);
-    if (!anchor || knob === "more" || knob === "key" && st2.sel) {
+    if (knob === "more" || knob === "key" && st2.sel) {
       this.mode = knob === "more" ? "more" : "transpose";
       this.render();
-      return;
+      return null;
     }
     const w = anchor.getBoundingClientRect().width, f = inputKey(st2);
     if (knob === "key") {
-      openDrum(
+      const K2 = [...KEY_CIRCLE].reverse();
+      return openDrum(
         anchor,
-        [{ items: KEY_CIRCLE.map((k) => `1=${KEY_NAMES[k]}`), index: KEY_CIRCLE.indexOf(f), width: w, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09" }],
-        { onChange: (_c, i) => this.host.onInputKey(KEY_CIRCLE[i]) }
-      );
-    } else if (knob === "unit") {
-      const TUP = [0, 3, 5, 6, 7];
-      const wt = Math.max(40, Math.round(w * 0.4)), wu = w - wt - 2;
-      openDrum(anchor, [
-        { items: UNIT_GLYPH.map((g2, i) => `<span class="smufl">${g2}</span>${wu >= 100 ? `<small>${UNIT_NAME[i]}</small>` : ""}`), index: st2.input.unit, width: wu, title: "\u957F\u77ED\u57FA\u7EBF" },
-        { items: TUP.map((n2) => n2 ? tupletMark(n2) : `<span class="plain">\u4E0D\u8FDE</span>`), index: Math.max(0, TUP.indexOf(st2.input.tuplet)), width: wt, title: "\u8FDE\u97F3" }
-      ], { onChange: (c, i) => {
-        if (c === 0) this.host.onUnit(i);
-        else this.host.onTuplet(TUP[i]);
-      } });
-    } else if (knob === "range") {
-      const rows = this.rows(), S = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
-      openDrum(
-        anchor,
-        [{
-          items: S.map((s) => this.spanText(s, f, rows)),
-          index: Math.max(0, S.indexOf(Math.max(-4, Math.min(4, this.rowShift)))),
-          width: w,
-          title: "\u97F3\u57DF\u7A97\u53E3"
-        }],
-        { onChange: (_c, i) => {
-          this.rowShift = S[i];
-          this.render();
-        } }
+        [{ items: K2.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K2.indexOf(f)), width: w, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09" }],
+        { onChange: (_c, i) => this.host.onInputKey(K2[i]) }
       );
     }
+    if (knob === "unit") {
+      const TUP = [0, 3, 5, 6, 7], U = [5, 4, 3, 2, 1, 0];
+      const wt = Math.max(40, Math.round(w * 0.4)), wu = w - wt - 2;
+      return openDrum(anchor, [
+        { items: U.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: U.indexOf(st2.input.unit), width: wu, title: "\u957F\u77ED\u57FA\u7EBF" },
+        { items: TUP.map((n2) => n2 ? tupletMark(n2) : `<span class="plain">\u4E0D\u8FDE</span>`), index: Math.max(0, TUP.indexOf(st2.input.tuplet)), width: wt, title: "\u8FDE\u97F3" }
+      ], { onChange: (c, i) => {
+        if (c === 0) this.host.onUnit(U[i]);
+        else this.host.onTuplet(TUP[i]);
+      } });
+    }
+    const rows = this.rows(), S = [4, 3, 2, 1, 0, -1, -2, -3, -4];
+    return openDrum(
+      anchor,
+      [{ items: S.map((sh) => this.spanText(sh, f, rows)), index: Math.max(0, S.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), width: w, title: "\u97F3\u57DF\u7A97\u53E3" }],
+      { onChange: (_c, i) => {
+        this.rowShift = S[i];
+        this.render();
+      } }
+    );
   }
   /** 某个来源（手指 / 电脑键盘的键）按下了五线谱位置 d 的音：pad 上那个键亮着，直到 showUp。 */
   showDown(d, id) {
@@ -5587,4 +5590,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-0d14850399fb.mjs.map
+//# sourceMappingURL=moonsinger-f0c72cb0bd40.mjs.map
