@@ -67,9 +67,11 @@ export interface StudioV1 {
 //   ② 调号 / 拍号 = 各声部自己的画法，不共享、不影响渲染；真相 = 音符 + 小节线（对齐标记）。速度、段落记号仍整首一份（待 user 确认）。
 //   ③ 休息室是歌的一部分（不做跨歌笔架）；新建角色从 app 内置预设 by value 拷进歌；音源按包名 + sha256 钉；渲染 = 纯函数(文件)。
 
-/** score.json 第 2 版：按声部各自一份；打击乐声部另一种记谱（user「鼓是最优先的」）。调号 / 拍号 token 留在各声部的 MusicXML 里，不进这里。 */
+/** score.json 第 2 版：按声部各自一份；打击乐声部另一种记谱（user「鼓是最优先的」）。调号 / 拍号 token 留在各声部的 MusicXML 里，不进这里。
+ *  纸 = 曲段（契约草稿 §6¾，user 2026-10-07「我以为纸就是曲段」）：papers 是索引（各声部在这张纸从第几小节开始），曲段名以 MusicXML 的 <rehearsal> 为准。 */
 export interface ScoreExtV2 {
   version: 2;
+  papers: { id: string; title?: string; start: Record<string, number> }[];   // 顺序里的纸；start = 声部 id → 这张纸第一小节的序号（0 起）
   parts: {
     id: string; role: string; mic: string;
     kind: "pitched" | "percussion";
