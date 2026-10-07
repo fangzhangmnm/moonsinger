@@ -71,12 +71,13 @@ export interface StudioV1 {
  *  纸 = 曲段（契约草稿 §6¾，user 2026-10-07「我以为纸就是曲段」）：papers 是索引（各声部在这张纸从第几小节开始），曲段名以 MusicXML 的 <rehearsal> 为准。 */
 export interface ScoreExtV2 {
   version: 2;
-  papers: { id: string; title?: string; start: Record<string, number> }[];   // 顺序里的纸；start = 声部 id → 这张纸第一小节的序号（0 起）
+  /** 顺序里的纸（纸 = 曲段）；start = 声部 id → 这张纸第一小节在 score.musicxml 里的序号（0 起）；
+   *  manualBars = 声部 id → 这张纸里人插的小节线（**纸内**序号，0 起；纸挪顺序、前面加减小节后面不用改）。自动小节线只画不存（0.2.x 现状）。 */
+  papers: { id: string; title?: string; start: Record<string, number>; manualBars: Record<string, number[]> }[];
   parts: {
     id: string; role: string; mic: string;
     kind: "pitched" | "percussion";
-    manualBars: number[];              // 这个声部人插的小节线（自动小节线要不要物化成存着的 = 契约 §7.8 待定）
-    unwritten: string[];               // 这个声部还没写音高的音
+    unwritten: string[];               // 这个声部还没写音高的音（MusicXML note id，全曲一份）
   }[];
 }
 
