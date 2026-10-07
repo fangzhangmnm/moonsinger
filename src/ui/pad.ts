@@ -13,7 +13,7 @@
 //   键高 / 键缝照 WXHW 量的 iOS 键盘（平板 = iPad mini：键高 55.5、上下缝 9；手机 = iPhone：46、6；左右缝 5；形态判断同 WXHW dock.ts）。
 //   布局只在这次打开里有效（持久化还没定）。
 //   排法两档（user 2026-10-07「键盘的键位布局能不能按照绝对音高来，试试」）：首调 = 每行从「1」起、跟着「1=」走、大字是简谱数字；
-//   绝对 = 每行从 C 起、大字是音名（带调号的升降：D 大调里 F 键写 F♯、按下去也是 F♯，和看五线谱一样）、C 键当路标高亮。
+//   绝对 = 每行从 C 起（音高照调号走：D 大调里 F 那个键是 F♯，和看五线谱一样）；大字两档都是简谱数字（user「大字显示的还是数字吧」），小字是音名。
 //   改（有选中）的时候「1=」那个位子换成「移调」：候选 = ↑↓ 半音 / 全音 / 八度 + 「转调…」（再一层：转到 1=X）
 //   （user「然后很快我需要框选和整体移调转调」；写的时候它管输入的调，改的时候它管选中这段的调）。
 
@@ -23,8 +23,6 @@ import { hint } from "../input/keys.ts";
 import { type EditorState, inputKey, keyAt } from "../score/song.ts";
 
 const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置（她音域外的键变淡，只提示不拦）
-/** 音名（带升降，不带八度）：F♯、B♭。 */
-const letterOf = (p: Pitch) => p.step + (p.alter > 0 ? "♯".repeat(p.alter) : "♭".repeat(-p.alter));
 /** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
 const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone");
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
@@ -103,7 +101,7 @@ export class Pad {
          ...[3, 4, 5, 6, 7, 8].map((n) => `<button class="btn cand${this.rowsSetting === n ? " is-on" : ""}" data-rows="${n}">${n} 行</button>`),
          ...[3, 4, 5, 6, 7].map((n) => `<button class="btn cand${this.cols === n ? " is-on" : ""}" data-cols="${n}">${n} 列</button>`),
          `<button class="btn cand${this.layoutMode === "movable" ? " is-on" : ""}" data-pl="movable" title="每行从 1 起，跟着「1=」走">首调</button>`,
-         `<button class="btn cand${this.layoutMode === "absolute" ? " is-on" : ""}" data-pl="absolute" title="每行从 C 起，键上写音名">绝对</button>`,
+         `<button class="btn cand${this.layoutMode === "absolute" ? " is-on" : ""}" data-pl="absolute" title="每行从 C 起（不跟着「1=」挪）">绝对</button>`,
          `<button class="btn cand" data-back="1">返回</button>`].join("")
       : this.mode === "transpose"
       ? `<button class="btn cand" data-tr="1">↑ 半音</button><button class="btn cand" data-tr="-1">↓ 半音</button>` +
@@ -142,12 +140,10 @@ export class Pad {
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < this.cols; col++) {
         const d = base + row * this.cols + col, p = fromDiatonic(d, f);
-        const deg = ((((d - ht) % 7) + 7) % 7) + 1, oct = Math.floor((d - ht) / 7), abs = this.layoutMode === "absolute";
+        const deg = ((((d - ht) % 7) + 7) % 7) + 1, oct = Math.floor((d - ht) / 7);
         const inRange = d >= HER_LOW && d <= HER_HIGH;
-        const landmark = abs ? p.step === "C" : deg === 1;   // 首调：主音；绝对：C
-        const big = abs ? `${octDots(0)}<span class="num">${letterOf(p)}</span>${octDots(0)}` : `${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${deg}</span>${octDots(Math.max(0, -oct))}`;
-        cells.push(`<button class="pad-key${inRange ? "" : " out"}${landmark ? " tonic" : ""}" data-d="${d}">` +
-          `<span class="deg">${big}</span><span class="abs">${pitchName(p).replace("#", "♯").replace(/b(?=\d)/, "♭")}</span></button>`);
+        cells.push(`<button class="pad-key${inRange ? "" : " out"}${deg === 1 ? " tonic" : ""}" data-d="${d}">` +
+          `<span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${deg}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pitchName(p).replace("#", "♯").replace(/b(?=\d)/, "♭")}</span></button>`);
       }
     }
     this.el.innerHTML = `<div class="pad-tools${this.mode === "normal" ? "" : " cands"}">${tools}</div><div class="pad-grid">${cells.join("")}</div>`;
@@ -171,8 +167,7 @@ export class Pad {
     this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => {
       const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = i.acc ? alterBy(p0, i.acc) : p0;
-      if (this.layoutMode === "absolute") b.querySelector(".num")!.textContent = letterOf(p);   // 绝对：大字就是音名，跟着变
-      else b.querySelector(".acc")!.textContent = i.acc > 0 ? "♯" : i.acc < 0 ? "♭" : "";
+      b.querySelector(".acc")!.textContent = i.acc > 0 ? "♯" : i.acc < 0 ? "♭" : "";
       b.querySelector(".abs")!.textContent = pitchName(p).replace(/#/g, "♯").replace(/b(?=\d)|b(?=b)/g, "♭");
     });
     const down = new Set(this.held.values());
