@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.2-2026-10-07";
+var APP_VERSION = "v0.2.3-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -202,7 +202,7 @@ function emptySong(m = {}) {
   ] };
 }
 function initInput() {
-  return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: null };
+  return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0 };
 }
 function initState(song = emptySong()) {
   const maxId = song.tokens.reduce((m, t) => Math.max(m, t.id), 0);
@@ -275,7 +275,7 @@ function tempoWord(bpm) {
 function beatTicks(beats, beatType) {
   return beatType === 8 && beats > 3 && beats % 3 === 0 ? WHOLE * 3 / 8 : WHOLE / beatType;
 }
-var inputKey = (st2) => st2.input.inputFifths ?? keyAt(st2.song, st2.caret);
+var inputKey = (st2) => st2.input.inputFifths;
 function unitDur(input) {
   const plain = LADDER[input.unit];
   if (!input.tuplet) return plain;
@@ -349,15 +349,14 @@ function writeMark(st2, v) {
   for (let i = a; i < b; i++) if (tokens[i].kind === v.kind) return { st: setMark({ ...leave(st2), sel: null }, i, v), index: i, fresh: false };
   const id = st2.nextId, nt = tokens.slice();
   nt.splice(at, 0, { ...v, id });
-  const input = v.kind === "key" ? { ...st2.input, inputFifths: null } : st2.input;
-  return { st: next(st2, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [], input }), index: at, fresh: true };
+  return { st: next(st2, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] }), index: at, fresh: true };
 }
 function setMark(st2, i, v) {
   const t = st2.song.tokens[i];
   if (!t || t.kind !== v.kind) return st2;
   const nt = st2.song.tokens.slice();
   nt[i] = { ...v, id: t.id };
-  return next(st2, nt, v.kind === "key" ? { input: { ...st2.input, inputFifths: null } } : {});
+  return next(st2, nt, {});
 }
 function deleteMark(st2, i) {
   const t = st2.song.tokens[i];
@@ -433,6 +432,9 @@ function deleteForward(st2) {
   nt.splice(st2.caret, 1);
   return next(leave(st2), nt);
 }
+function setUnit(st2, unit) {
+  return { ...st2, input: { ...st2.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) } };
+}
 function shorter(st2) {
   if (st2.sel) return mapSelDur(st2, (d) => d / 2);
   return st2.input.unit > 0 ? { ...st2, input: { ...st2.input, unit: st2.input.unit - 1 } } : st2;
@@ -452,7 +454,7 @@ function tapAcc(st2, acc, now) {
   return { ...st2, input: { ...i, acc: 0, accMode: "off", accAt: now } };
 }
 function setInputKey(st2, fifths) {
-  return { ...st2, input: { ...st2.input, inputFifths: fifths } };
+  return { ...st2, input: { ...st2.input, inputFifths: Math.max(-7, Math.min(7, fifths)) } };
 }
 function firstNoteIn(st2) {
   if (!st2.sel) return -1;
@@ -560,7 +562,7 @@ function modulateSel(st2, toFifths) {
     shift = 1;
   }
   const sel = { from: from + shift, to: to + shift };
-  return next({ ...st2, nextId }, nt, { sel, caret: sel.to, input: { ...st2.input, inputFifths: null } });
+  return next({ ...st2, nextId }, nt, { sel, caret: sel.to });
 }
 var setCaret = (st2, caret) => ({ ...leave(st2), sel: null, caret: Math.max(headLen(st2.song.tokens), Math.min(st2.song.tokens.length, caret)) });
 function select(st2, from, to) {
@@ -2274,11 +2276,14 @@ var HER_LOW = 26;
 var HER_HIGH = 37;
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } };
+var SWIPE = 20;
+var KNOB_STEP = 26;
 var octDots = (n2) => n2 > 0 ? `<span class="jp-dots">${"<i></i>".repeat(n2)}</span>` : `<span class="jp-dots"></span>`;
 var UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
 var UNIT_NAME = ["\u4E09\u5341\u4E8C\u5206", "\u5341\u516D\u5206", "\u516B\u5206", "\u56DB\u5206", "\u4E8C\u5206", "\u5168\u97F3\u7B26"];
 var KEY_NAMES = KEY_LABEL;
-var KEY_ORDER2 = [0, 1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6];
+var KEY_CIRCLE = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+var pretty = (p) => pitchName(p).replace(/#/g, "\u266F").replace(/b(?=\d)|b(?=b)/g, "\u266D");
 function homeTonic(fifths) {
   const t = tonicStepIndex(fifths), h = diatonicIndex(HOME);
   return t + 7 * Math.floor((h - t) / 7);
@@ -2294,107 +2299,123 @@ var Pad = class {
     addEventListener("resize", () => this.render());
   }
   rowShift = 0;
-  // ▲▼ 挪过几行
+  // 音域窗口挪过几行
   cols = 4;
   // 每行几个音（MEDO = 4）
   rowsSetting = 4;
-  // 默认 4 行（user 2026-10-07「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
+  // 默认 4 行（user「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
   layoutMode = "absolute";
-  // 首调 / 绝对音高；默认绝对（user 2026-10-07「键盘默认绝对布局」）
+  // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
   mode = "normal";
   builtFor = "";
-  improLatched = false;
-  /** 正按着的音（来源 id → 五线谱位置）：手指和电脑键盘共用，pad 上对应的键按住期间一直亮（user「小键盘的按下弹起也要和触控对齐啦」）。 */
+  /** 正按着的音（来源 id → 五线谱位置）：手指和电脑键盘共用，pad 上对应的键按住期间一直亮。 */
   held = /* @__PURE__ */ new Map();
-  improHeld = false;
-  /** 行数：手动设的，或按设备和屏幕剩下的高度算（竖屏 pad 占屏底四成多，横屏占侧栏整高）。 */
+  /** 正在音键上滑的手指（pointerId → 起点 y、当前升降、哪个键）。 */
+  swipes = /* @__PURE__ */ new Map();
   rows() {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
     const m = KEY_METRIC[padForm()], avail = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
     return Math.max(4, Math.min(6, Math.floor((avail + m.gap) / (m.h + m.gap))));
   }
-  get impro() {
-    return this.improLatched || this.improHeld;
+  /** 音域窗口第 shift 档时，左下那个键的五线谱位置（中央 C 那一行默认在中线下面一行）。 */
+  baseAt(shift, f, rows) {
+    const home = this.layoutMode === "absolute" ? diatonicIndex({ step: "C", alter: 0, octave: 4 }) : defaultPadBase(f);
+    return home + this.cols * (shift - Math.floor((rows - 1) / 2));
   }
   /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。 */
   render() {
     const st2 = this.host.state(), f = inputKey(st2), rows = this.rows(), form = padForm();
-    const home = this.layoutMode === "absolute" ? diatonicIndex({ step: "C", alter: 0, octave: 4 }) : defaultPadBase(f);
-    const base2 = home + this.cols * (this.rowShift - Math.floor((rows - 1) / 2));
+    const base2 = this.baseAt(this.rowShift, f, rows);
     if ((this.mode === "transpose" || this.mode === "modulate") && !st2.sel) this.mode = "normal";
     const selKey = st2.sel ? keyAt(st2.song, st2.sel.from) : null;
-    const sig = `${this.mode}|${f}|${base2}|${selKey}|${rows}x${this.cols}|${form}|${this.layoutMode}`;
+    const sig = `${this.mode}|${f}|${base2}|${selKey}|${rows}x${this.cols}|${form}|${this.layoutMode}|${this.mode === "unit" ? `${st2.input.unit}/${st2.input.tuplet}` : ""}`;
     if (sig !== this.builtFor) {
       this.el.dataset.form = form;
       this.el.style.setProperty("--cols", String(this.cols));
-      this.build(f, base2, selKey, rows);
+      this.build(f, base2, selKey, rows, st2);
       this.builtFor = sig;
     }
     this.refresh(st2);
   }
-  build(f, base2, selKey, rows) {
-    const tools = this.mode === "layout" ? [
-      `<button class="btn cand${this.rowsSetting === "auto" ? " is-on" : ""}" data-rows="auto">\u884C \u81EA\u52A8\uFF08${rows}\uFF09</button>`,
-      ...[3, 4, 5, 6, 7, 8].map((n2) => `<button class="btn cand${this.rowsSetting === n2 ? " is-on" : ""}" data-rows="${n2}">${n2} \u884C</button>`),
-      ...[3, 4, 5, 6, 7].map((n2) => `<button class="btn cand${this.cols === n2 ? " is-on" : ""}" data-cols="${n2}">${n2} \u5217</button>`),
-      `<button class="btn cand${this.layoutMode === "movable" ? " is-on" : ""}" data-pl="movable" title="\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70">\u9996\u8C03</button>`,
-      `<button class="btn cand${this.layoutMode === "absolute" ? " is-on" : ""}" data-pl="absolute" title="\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09">\u7EDD\u5BF9</button>`,
-      `<button class="btn cand" data-back="1">\u8FD4\u56DE</button>`
-    ].join("") : this.mode === "transpose" ? `<button class="btn cand" data-tr="1">\u2191 \u534A\u97F3</button><button class="btn cand" data-tr="-1">\u2193 \u534A\u97F3</button><button class="btn cand" data-tr="2">\u2191 \u5168\u97F3</button><button class="btn cand" data-tr="-2">\u2193 \u5168\u97F3</button><button class="btn cand" data-toct="1">\u2191 \u516B\u5EA6</button><button class="btn cand" data-toct="-1">\u2193 \u516B\u5EA6</button><button class="btn cand" data-open="modulate" title="\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362">\u8F6C\u8C03\u2026</button><button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : this.mode === "modulate" ? KEY_ORDER2.map((k) => `<button class="btn cand${k === selKey ? " is-on" : ""}" data-mod="${k}">\u8F6C\u5230 1=${KEY_NAMES[k]}</button>`).join("") + `<button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : this.mode === "key" ? KEY_ORDER2.map((k) => `<button class="btn cand" data-key="${k}">1=${KEY_NAMES[k]}</button>`).join("") + `<button class="btn cand" data-key="follow">\u8DDF\u8C03\u53F7</button><button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : this.mode === "mark" ? `<button class="btn cand" data-mark="key">\u8C03\u53F7</button><button class="btn cand" data-mark="time">\u62CD\u53F7</button><button class="btn cand" data-mark="tempo">\u901F\u5EA6</button><button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : this.mode === "tuplet" ? [3, 5, 6, 7].map((n2) => `<button class="btn cand" data-tup="${n2}">${n2} \u8FDE</button>`).join("") + `<button class="btn cand" data-tup="0">\u5173</button><button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : (selKey !== null ? `<button class="btn t-tr" data-open="transpose" title="\u79FB\u8C03 / \u8F6C\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09">\u79FB\u8C03</button>` : `<button class="btn t-key" data-open="key" title="1=\uFF08\u53EA\u7BA1\u8F93\u5165\uFF09"></button>`) + `<button class="btn t-sharp" data-acc="1" title="\u266F\uFF08\u70B9\u4E00\u4E0B\u7BA1\u4E0B\u4E00\u4E2A\u97F3\uFF0C\u8FDE\u70B9\u4E24\u4E0B\u9501\u4F4F\uFF1B${hint("sharp")}\uFF09">\u266F</button><button class="btn t-flat" data-acc="-1" title="\u266D\uFF08\u70B9\u4E00\u4E0B\u7BA1\u4E0B\u4E00\u4E2A\u97F3\uFF0C\u8FDE\u70B9\u4E24\u4E0B\u9501\u4F4F\uFF1B${hint("flat")}\uFF09">\u266D</button><button class="btn" data-cmd="shorter" title="\u77ED\uFF08${hint("shorter")}\uFF09">\u77ED</button><span class="t-unit" title="\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C"></span><button class="btn" data-cmd="longer" title="\u957F\uFF08${hint("longer")}\uFF09">\u957F</button><button class="btn t-tup" data-open="tuplet" title="\u8FDE\u97F3\uFF08\u5F00\u7740\u518D\u70B9 = \u9009 3 5 6 7\uFF09">\u8FDE</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\uFF0D</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-open="mark" title="\u5728\u5149\u6807\u5904\u63D2\u8BB0\u53F7\uFF1A\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6">\uFF0B</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button><button class="btn t-impro" data-impro="1" title="\u5F39\uFF1A\u6309\u4F4F\u53EA\u5531\u4E0D\u5199\uFF0C\u5FEB\u901F\u70B9\u4E00\u4E0B\u9501\u4F4F\uFF08${hint("impro")}\uFF09">\u5F39</button><button class="btn" data-open="layout" title="pad \u5E03\u5C40\uFF1A\u51E0\u884C\u51E0\u5217">\u5E03\u5C40</button><button class="btn" data-row="-1" title="\u6574\u4E2A pad \u5F80\u4E0B\u632A\u4E00\u884C"><svg class="ico"><use href="#caret-down"/></svg></button><button class="btn" data-row="1" title="\u6574\u4E2A pad \u5F80\u4E0A\u632A\u4E00\u884C"><svg class="ico"><use href="#caret-up"/></svg></button>`;
+  cands(f, selKey, rows, st2) {
+    const back = `<button class="btn cand" data-back="1">\u8FD4\u56DE</button>`;
+    const c = (attrs, label, on = false, title = "") => `<button class="btn cand${on ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
+    switch (this.mode) {
+      case "key":
+        return KEY_CIRCLE.map((k) => c(`data-key="${k}"`, `1=${KEY_NAMES[k]}`, k === f)).join("") + back;
+      case "unit":
+        return UNIT_GLYPH.map((g2, i) => c(`data-unit="${i}"`, `<span class="smufl">${g2}</span>`, i === st2.input.unit, UNIT_NAME[i])).join("") + [0, 3, 5, 6, 7].map((n2) => c(`data-tup="${n2}"`, n2 ? `${n2} \u8FDE` : "\u4E0D\u8FDE", n2 === st2.input.tuplet)).join("") + back;
+      case "range":
+        return [-3, -2, -1, 0, 1, 2, 3].map((s) => {
+          const low = pretty(fromDiatonic(this.baseAt(s, f, rows), f));
+          return c(`data-shift="${s}"`, `${s === 0 ? "\u4E2D\u592E C" : s > 0 ? `\u9AD8 ${s} \u884C` : `\u4F4E ${-s} \u884C`}<small>${low} \u8D77</small>`, s === this.rowShift);
+        }).join("") + back;
+      case "more":
+        return c(`data-open="layout"`, "\u5E03\u5C40\u2026", false, "\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9") + c(`data-open="mark"`, "\u63D2\u8BB0\u53F7\u2026", false, "\u5728\u5149\u6807\u5904\u63D2\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6") + back;
+      case "layout":
+        return [
+          c(`data-rows="auto"`, `\u884C \u81EA\u52A8\uFF08${rows}\uFF09`, this.rowsSetting === "auto"),
+          ...[3, 4, 5, 6, 7, 8].map((n2) => c(`data-rows="${n2}"`, `${n2} \u884C`, this.rowsSetting === n2)),
+          ...[3, 4, 5, 6, 7].map((n2) => c(`data-cols="${n2}"`, `${n2} \u5217`, this.cols === n2)),
+          c(`data-pl="movable"`, "\u9996\u8C03", this.layoutMode === "movable", "\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70"),
+          c(`data-pl="absolute"`, "\u7EDD\u5BF9", this.layoutMode === "absolute", "\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09"),
+          back
+        ].join("");
+      case "mark":
+        return c(`data-mark="key"`, "\u8C03\u53F7") + c(`data-mark="time"`, "\u62CD\u53F7") + c(`data-mark="tempo"`, "\u901F\u5EA6") + back;
+      case "transpose":
+        return c(`data-tr="1"`, "\u2191 \u534A\u97F3") + c(`data-tr="-1"`, "\u2193 \u534A\u97F3") + c(`data-tr="2"`, "\u2191 \u5168\u97F3") + c(`data-tr="-2"`, "\u2193 \u5168\u97F3") + c(`data-toct="1"`, "\u2191 \u516B\u5EA6") + c(`data-toct="-1"`, "\u2193 \u516B\u5EA6") + c(`data-open="modulate"`, "\u8F6C\u8C03\u2026", false, "\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362") + back;
+      case "modulate":
+        return KEY_CIRCLE.map((k) => c(`data-mod="${k}"`, `\u8F6C\u5230 1=${KEY_NAMES[k]}`, k === selKey)).join("") + back;
+      default:
+        return "";
+    }
+  }
+  build(f, base2, selKey, rows, st2) {
+    const tools = this.mode !== "normal" ? `<div class="pad-tools cands">${this.cands(f, selKey, rows, st2)}</div>` : `<div class="pad-tools knobs">` + (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF1A\u4E0A\u4E0B\u6ED1 = \u9009\u4E2D\u8FD9\u6BB5\u5347 / \u964D\u534A\u97F3\uFF1B\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span><span class="kh">\u21C5</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u4E0A\u4E0B\u6ED1 = \u4E94\u5EA6\u5708\u8D70\u4E00\u683C\uFF1B\u70B9\u5F00\u9009"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u4E0A\u4E0B\u6ED1 = \u957F / \u77ED\u4E00\u6863\uFF1B\u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF1A\u4E0A\u4E0B\u6ED1 = \u7A97\u53E3\u632A\u4E00\u884C\uFF1B\u70B9\u5F00\u9009"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\u2014</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div>`;
     const cells = [], ht = homeTonic(f);
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < this.cols; col++) {
         const d = base2 + row * this.cols + col, p = fromDiatonic(d, f);
         const deg = ((d - ht) % 7 + 7) % 7 + 1, oct = Math.floor((d - ht) / 7);
         const inRange = d >= HER_LOW && d <= HER_HIGH;
-        cells.push(`<button class="pad-key${inRange ? "" : " out"}${deg === 1 ? " tonic" : ""}" data-d="${d}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${deg}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pitchName(p).replace("#", "\u266F").replace(/b(?=\d)/, "\u266D")}</span></button>`);
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-d="${d}" title="${inRange ? "\u6708\u8BFB\u7684\u97F3\u57DF\u91CC" : ""}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${deg}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p)}</span></button>`);
       }
     }
-    this.el.innerHTML = `<div class="pad-tools${this.mode === "normal" ? "" : " cands"}">${tools}</div><div class="pad-grid">${cells.join("")}</div>`;
+    this.el.innerHTML = `${tools}<div class="pad-grid">${cells.join("")}</div>`;
     this.wire();
   }
   refresh(st2) {
     const q = (s) => this.el.querySelector(s);
-    const i = st2.input, k = q(".t-key");
-    if (k) {
-      k.textContent = `1=${KEY_NAMES[inputKey(st2)] ?? "?"}`;
-      k.classList.toggle("manual", i.inputFifths !== null);
-    }
-    q(".t-sharp")?.classList.toggle("once", i.acc === 1 && i.accMode === "once");
-    q(".t-sharp")?.classList.toggle("lock", i.acc === 1 && i.accMode === "lock");
-    q(".t-flat")?.classList.toggle("once", i.acc === -1 && i.accMode === "once");
-    q(".t-flat")?.classList.toggle("lock", i.acc === -1 && i.accMode === "lock");
-    const u = q(".t-unit");
+    const i = st2.input, f = inputKey(st2);
+    const k = q(".k-key .kl");
+    if (k && !st2.sel) k.textContent = `1=${KEY_NAMES[f] ?? "?"}`;
+    const u = q(".k-unit .kl");
     if (u) {
       u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`;
-      u.title = `\u4E0B\u4E00\u4E2A\u97F3\uFF1A${UNIT_NAME[i.unit]}${i.tuplet ? `\uFF08${i.tuplet} \u8FDE\u97F3\uFF09` : ""}`;
+      u.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i.unit]}${i.tuplet ? `\uFF08${i.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u4E0A\u4E0B\u6ED1 = \u957F / \u77ED\u4E00\u6863\uFF1B\u70B9\u5F00\u9009`;
     }
-    const t = q(".t-tup");
-    if (t) {
-      t.textContent = i.tuplet ? String(i.tuplet) : "\u8FDE";
-      t.classList.toggle("is-on", !!i.tuplet);
+    const r = q(".k-range .kl");
+    if (r) {
+      const low = pretty(fromDiatonic(this.baseAt(this.rowShift, f, this.rows()), f));
+      r.innerHTML = `\u97F3\u57DF<small>${low}</small>`;
     }
-    q(".t-impro")?.classList.toggle("is-on", this.impro);
-    const f = inputKey(st2);
-    this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
     this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
-      const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = i.acc ? alterBy(p0, i.acc) : p0;
-      b.querySelector(".acc").textContent = i.acc > 0 ? "\u266F" : i.acc < 0 ? "\u266D" : "";
-      b.querySelector(".abs").textContent = pitchName(p).replace(/#/g, "\u266F").replace(/b(?=\d)|b(?=b)/g, "\u266D");
+      const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
+      const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = a ? alterBy(p0, a) : p0;
+      b.querySelector(".acc").textContent = a > 0 ? "\u266F" : a < 0 ? "\u266D" : "";
+      b.querySelector(".abs").textContent = pretty(p);
+      b.classList.toggle("swiping", !!sw && sw.alt !== 0);
     });
+    this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
     const down = new Set(this.held.values());
     this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => b.classList.toggle("down", down.has(Number(b.dataset.d))));
-    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => b.classList.toggle("impro", this.impro));
   }
   wire() {
     const on = (sel, fn) => this.el.querySelectorAll(sel).forEach((b) => b.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       fn(b, e);
     }));
-    const flash = (b) => {
-      b.classList.add("hit");
-      setTimeout(() => b.classList.remove("hit"), 120);
-    };
     this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
       b.addEventListener("pointerdown", (e) => {
         e.preventDefault();
@@ -2402,26 +2423,85 @@ var Pad = class {
           b.setPointerCapture(e.pointerId);
         } catch {
         }
-        const st2 = this.host.state(), d = Number(b.dataset.d), p = fromDiatonic(d, inputKey(st2));
-        this.showDown(d, `pad${e.pointerId}`);
-        if (!this.impro) this.host.onPitch(p);
-        this.host.onSoundDown(p, `pad${e.pointerId}`);
+        const st2 = this.host.state(), d = Number(b.dataset.d), p = fromDiatonic(d, inputKey(st2)), id = `pad${e.pointerId}`;
+        this.swipes.set(e.pointerId, { y0: e.clientY, alt: 0, d, key: b });
+        this.showDown(d, id);
+        if (!this.host.isImpro()) this.host.onPitch(p, id);
+        this.host.onSoundDown(p, id);
+      });
+      b.addEventListener("pointermove", (e) => {
+        const s = this.swipes.get(e.pointerId);
+        if (!s) return;
+        const dy = s.y0 - e.clientY, alt = dy > SWIPE ? 1 : dy < -SWIPE ? -1 : 0;
+        if (alt === s.alt) return;
+        s.alt = alt;
+        this.host.onAlter(`pad${e.pointerId}`, alt);
+        this.refresh(this.host.state());
       });
       const up = (e) => {
+        this.swipes.delete(e.pointerId);
         this.showUp(`pad${e.pointerId}`);
         this.host.onSoundUp(`pad${e.pointerId}`);
       };
       b.addEventListener("pointerup", up);
       b.addEventListener("pointercancel", up);
     });
-    on("[data-cmd]", (b) => {
-      if (b.classList.contains("pad-key")) flash(b);
-      this.host.onCommand({ k: b.dataset.cmd });
+    this.el.querySelectorAll("[data-knob]").forEach((b) => {
+      let y0 = 0, steps = 0, moved = false, pid = -1;
+      b.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        try {
+          b.setPointerCapture(e.pointerId);
+        } catch {
+        }
+        pid = e.pointerId;
+        y0 = e.clientY;
+        steps = 0;
+        moved = false;
+      });
+      b.addEventListener("pointermove", (e) => {
+        if (e.pointerId !== pid) return;
+        const dy = y0 - e.clientY;
+        if (Math.abs(dy) > 8) moved = true;
+        const k = Math.trunc(dy / KNOB_STEP);
+        if (k !== steps) {
+          this.step(b.dataset.knob, k - steps);
+          steps = k;
+        }
+      });
+      const end = (e, tap) => {
+        if (e.pointerId !== pid) return;
+        pid = -1;
+        if (tap && !moved) this.tap(b.dataset.knob);
+      };
+      b.addEventListener("pointerup", (e) => end(e, true));
+      b.addEventListener("pointercancel", (e) => end(e, false));
     });
-    on("[data-acc]", (b) => this.host.onCommand({ k: "acc", acc: Number(b.dataset.acc) }));
-    on("[data-row]", (b) => {
-      this.rowShift = Math.max(-8, Math.min(8, this.rowShift + Number(b.dataset.row)));
+    on("[data-caret]", (b) => this.host.onCommand({ k: "caret", d: Number(b.dataset.caret) }));
+    on("[data-cmd]", (b) => this.host.onCommand({ k: b.dataset.cmd }));
+    on("[data-key]", (b) => {
+      this.host.onInputKey(Number(b.dataset.key));
+      this.back();
+    });
+    on("[data-unit]", (b) => {
+      this.host.onUnit(Number(b.dataset.unit));
+      this.back();
+    });
+    on("[data-tup]", (b) => {
+      this.host.onTuplet(Number(b.dataset.tup));
+      this.back();
+    });
+    on("[data-shift]", (b) => {
+      this.rowShift = Number(b.dataset.shift);
+      this.back();
+    });
+    on("[data-open]", (b) => {
+      this.mode = b.dataset.open;
       this.render();
+    });
+    on("[data-mark]", (b) => {
+      this.back();
+      this.host.onInsertMark(b.dataset.mark);
     });
     on("[data-rows]", (b) => {
       this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows);
@@ -2435,72 +2515,34 @@ var Pad = class {
       this.layoutMode = b.dataset.pl === "absolute" ? "absolute" : "movable";
       this.render();
     });
-    on("[data-open]", (b) => {
-      if (b.dataset.open === "key" || b.dataset.open === "mark" || b.dataset.open === "transpose" || b.dataset.open === "modulate" || b.dataset.open === "layout") {
-        this.mode = b.dataset.open;
-        this.render();
-        return;
-      }
-      const st2 = this.host.state();
-      if (!st2.input.tuplet) this.host.onTuplet(3);
-      else {
-        this.mode = "tuplet";
-        this.render();
-      }
-    });
-    on("[data-key]", (b) => {
-      this.host.onInputKey(b.dataset.key === "follow" ? null : Number(b.dataset.key));
-      this.mode = "normal";
-      this.render();
-    });
-    on("[data-tup]", (b) => {
-      this.host.onTuplet(Number(b.dataset.tup));
-      this.mode = "normal";
-      this.render();
-    });
-    on("[data-back]", () => {
-      this.mode = "normal";
-      this.render();
-    });
     on("[data-tr]", (b) => this.host.onCommand({ k: "transpose", semis: Number(b.dataset.tr) }));
     on("[data-toct]", (b) => this.host.onCommand({ k: "octave", d: Number(b.dataset.toct) }));
     on("[data-mod]", (b) => {
-      this.mode = "normal";
+      this.back();
       this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) });
-      this.render();
     });
-    on("[data-mark]", (b) => {
-      this.mode = "normal";
+    on("[data-back]", () => this.back());
+  }
+  back() {
+    this.mode = "normal";
+    this.render();
+  }
+  /** 旋钮走 n 格（上 = 正）。 */
+  step(knob, n2) {
+    const st2 = this.host.state();
+    if (knob === "key") {
+      if (st2.sel) this.host.onCommand({ k: "transpose", semis: n2 });
+      else this.host.onInputKey(inputKey(st2) + n2);
+    } else if (knob === "unit") for (let i = 0; i < Math.abs(n2); i++) this.host.onCommand({ k: n2 > 0 ? "longer" : "shorter" });
+    else if (knob === "range") {
+      this.rowShift = Math.max(-8, Math.min(8, this.rowShift + n2));
       this.render();
-      this.host.onInsertMark(b.dataset.mark);
-    });
-    const imp = this.el.querySelector("[data-impro]");
-    if (imp) {
-      let t0 = 0, was = false;
-      imp.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        try {
-          imp.setPointerCapture(e.pointerId);
-        } catch {
-        }
-        t0 = performance.now();
-        was = this.improLatched;
-        this.improHeld = true;
-        this.changed();
-      });
-      const release = () => {
-        if (!this.improHeld) return;
-        this.improHeld = false;
-        if (performance.now() - t0 < 250) this.improLatched = !was;
-        this.changed();
-      };
-      imp.addEventListener("pointerup", release);
-      imp.addEventListener("pointercancel", release);
     }
   }
-  changed() {
-    this.host.onImpro(this.impro);
-    this.refresh(this.host.state());
+  tap(knob) {
+    const st2 = this.host.state();
+    this.mode = knob === "key" ? st2.sel ? "transpose" : "key" : knob === "unit" ? "unit" : knob === "range" ? "range" : "more";
+    this.render();
   }
   /** 某个来源（手指 / 电脑键盘的键）按下了五线谱位置 d 的音：pad 上那个键亮着，直到 showUp。 */
   showDown(d, id) {
@@ -2511,15 +2553,11 @@ var Pad = class {
     if (this.held.delete(id)) this.refresh(this.host.state());
   }
   clearHeld() {
-    if (this.held.size) {
+    if (this.held.size || this.swipes.size) {
       this.held.clear();
+      this.swipes.clear();
       this.refresh(this.host.state());
     }
-  }
-  /** 键盘的 ` 键：锁住 / 解开即兴。 */
-  toggleImpro() {
-    this.improLatched = !this.improLatched;
-    this.changed();
   }
 };
 
@@ -4815,7 +4853,7 @@ function showUpdateBar() {
   });
   document.body.append(el);
 }
-bar.innerHTML = `<button id="fileBtn" class="btn" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u53E6\u5B58\u4E3A\uFF08Ctrl / \u2318+S \u5B58\uFF09"><svg class="ico"><use href="#file"/></svg></button><span id="docTitle" class="title">\u672A\u547D\u540D</span><span class="ver">${APP_VERSION}</span><label class="field" title="\u5B8C\u6574 = \u6708\u8BFB\u672C\u4EBA\uFF08\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09\uFF1B\u8F7B\u91CF = \u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1">\u97F3\u8D28<select id="qualSel"><option value="full">\u5B8C\u6574</option><option value="light">\u8F7B\u91CF</option></select></label><label class="field" title="\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48">\u54FC<select id="humSel"><option value="la">\u3089 / \u5566</option><option value="n">\u3093 / \u55EF</option><option value="u">\u3046 / \u545C</option><option value="o">\u304A / \u54E6</option><option value="a">\u3042 / \u554A</option></select></label><span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span><button id="padBtn" class="btn is-on" title="\u624B\u6307 pad"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"><svg class="ico"><use href="#settings"/></svg></button><button id="shareBtn" class="btn" title="\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u53D1\u7ED9\u522B\u4EBA\u542C"><svg class="ico"><use href="#export"/></svg></button><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button>`;
+bar.innerHTML = `<button id="fileBtn" class="btn" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u53E6\u5B58\u4E3A\uFF08Ctrl / \u2318+S \u5B58\uFF09"><svg class="ico"><use href="#file"/></svg></button><span id="docTitle" class="title">\u672A\u547D\u540D</span><span class="ver">${APP_VERSION}</span><label class="field" title="\u5B8C\u6574 = \u6708\u8BFB\u672C\u4EBA\uFF08\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09\uFF1B\u8F7B\u91CF = \u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1">\u97F3\u8D28<select id="qualSel"><option value="full">\u5B8C\u6574</option><option value="light">\u8F7B\u91CF</option></select></label><label class="field" title="\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48">\u54FC<select id="humSel"><option value="la">\u3089 / \u5566</option><option value="n">\u3093 / \u55EF</option><option value="u">\u3046 / \u545C</option><option value="o">\u304A / \u54E6</option><option value="a">\u3042 / \u554A</option></select></label><span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span><button id="padBtn" class="btn is-on" title="\u624B\u6307 pad"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"><svg class="ico"><use href="#settings"/></svg></button><button id="shareBtn" class="btn" title="\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u53D1\u7ED9\u522B\u4EBA\u542C"><svg class="ico"><use href="#export"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button>`;
 var sampler = new Sampler();
 var sound = {
   down: (p, id = "main") => sampler.down(midiOf(p), st.song.hum, id),
@@ -4861,19 +4899,25 @@ var view = new ScoreView(scoreEl, {
   }
 });
 var impro = false;
-var padWrote = -1;
+var padNotes = /* @__PURE__ */ new Map();
 var pad = new Pad(padEl, {
   state: () => st,
-  onPitch: (p) => {
-    padWrote = writeAndLocate((s) => writePitch(s, p));
+  isImpro: () => impro,
+  onPitch: (p, id) => {
+    const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
+    padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
+  },
+  onAlter: (id, alt) => {
+    const n2 = padNotes.get(id);
+    if (!n2) return;
+    const np = alt ? alterBy(n2.base, alt) : n2.base;
+    if (n2.index >= 0) update(setNote(st, n2.index, { pitch: np }));
+    sound.down(np, id);
   },
   onCommand: (c) => update(apply(st, c, performance.now())),
+  onUnit: (u) => update(setUnit(st, u)),
   onTuplet: (n2) => update(setTuplet(st, n2)),
   onInputKey: (f) => update(setInputKey(st, f)),
-  onImpro: (on) => {
-    impro = on;
-    renderStatus();
-  },
   onInsertMark: (kind) => {
     const at = st.sel ? st.sel.from : st.caret;
     const v = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
@@ -4882,16 +4926,27 @@ var pad = new Pad(padEl, {
     view.marks.openAt(r.index, r.fresh);
   },
   onSoundDown: (p, id) => {
-    if (padWrote >= 0) soundTok(st, padWrote, id);
+    const n2 = padNotes.get(id);
+    if (n2 && n2.index >= 0) soundTok(st, n2.index, id);
     else {
       const r = soundingPitch(st, p);
       update(r.st);
+      padNotes.set(id, { index: -1, base: r.pitch });
       sound.down(r.pitch, id);
     }
-    padWrote = -1;
   },
-  onSoundUp: (id) => sound.up(id)
+  onSoundUp: (id) => {
+    padNotes.delete(id);
+    sound.up(id);
+  }
 });
+function toggleImpro() {
+  impro = !impro;
+  $("improBtn").classList.toggle("is-on", impro);
+  renderStatus();
+  pad.render();
+}
+$("improBtn").addEventListener("click", () => toggleImpro());
 function update(next2) {
   if (next2 === st) return;
   st = next2;
@@ -5221,7 +5276,7 @@ function setQuality(q) {
   sel.value = q;
 }
 function loadDoc(song, o) {
-  impro && pad.toggleImpro();
+  if (impro) toggleImpro();
   setQuality(o.quality);
   $("humSel").value = song.hum;
   doc.stem = o.stem;
@@ -5379,7 +5434,7 @@ function run(a, repeat, code) {
       void togglePlay();
       return true;
     case "impro":
-      pad.toggleImpro();
+      toggleImpro();
       return true;
     case "lyric":
       return view.lyrics.act(a.a);
@@ -5426,4 +5481,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-dac5bd780216.mjs.map
+//# sourceMappingURL=moonsinger-fdd1f4d65dcf.mjs.map

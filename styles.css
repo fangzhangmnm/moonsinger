@@ -99,8 +99,6 @@ button, input, select { font: inherit; color: inherit; }
 .pad-panel[data-form="tablet"] .pad-key .jp-dots { height: 5px; gap: 3px; }
 .pad-panel[data-form="tablet"] .pad-key .jp-dots i { width: 5px; height: 5px; }
 .pad-key .abs { font-size: 10px; color: var(--muted); }
-.pad-key.tonic { background: #fbf6ea; }
-.pad-key.out { opacity: .45; }
 .pad-key.hit, .pad-key.down { background: var(--accent-soft); }
 
 /* 竖屏（iPad mini 竖着拿）：像 iPad 软键盘贴底——全宽，不是正方形；键高按手指定 */
@@ -124,7 +122,6 @@ button, input, select { font: inherit; color: inherit; }
 .pad-tools .t-unit .smufl { font-family: "Bravura"; font-size: 30px; line-height: 1; position: relative; top: 8px; }
 .pad-tools .t-unit sup { font-size: 10px; color: var(--accent); }
 .pad-tools .btn.cand { font-size: 13px; }
-.pad-key.impro { box-shadow: 0 0 0 1.5px #d9b46a; }
 /* 横屏侧栏 300 宽：工具条折成两行 */
 @media (min-aspect-ratio: 1/1) { .pad-panel { width: 340px; } .pad-tools .btn { height: 36px; font-size: 15px; } }
 
@@ -190,3 +187,19 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .song-title { fill: var(--ink); font-weight: 600; }
 .staff-svg .song-title.empty { fill: #b9b2a5; font-weight: 400; }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
+/* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：4 个旋钮（上下滑一格走一格、点开选）+ 6 个写字键（⌫ 最右）+ 音键占满整宽 */
+.pad-tools.knobs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.pad-tools.writes { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.pad-tools .btn.knob { position: relative; touch-action: none; gap: 2px; }
+.knob .kl { display: inline-flex; align-items: baseline; gap: 4px; }
+.knob .kl small { font-size: 11px; color: var(--muted); }
+.knob .kl .smufl { font-family: "Bravura"; font-size: 28px; line-height: 1; position: relative; top: 7px; }
+.knob .kl sup { font-size: 10px; color: var(--accent); }
+.knob .kh { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--muted); opacity: .8; }
+.pad-tools.cands .btn.cand small { display: block; font-size: 10px; color: var(--muted); }
+.pad-tools.cands .btn.cand .smufl { font-family: "Bravura"; font-size: 26px; line-height: 1; position: relative; top: 6px; }
+.pad-key { touch-action: none; }
+/* 月读音域里的键：底部一道细条（正面提示；音域外的键就是普通的键，不变灰——user「灰色…容易以为是unavailable，而不是not hinted」） */
+.pad-key.hint { box-shadow: inset 0 -3px 0 #e3cf9c, 0 1px 0 rgba(42, 42, 42, .28); }
+.pad-key.swiping { background: var(--accent-soft); }
+.pad-key.swiping .acc { font-weight: 700; }

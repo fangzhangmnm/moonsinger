@@ -57,7 +57,7 @@ export interface InputState {
   acc: 0 | 1 | -1;                    // ♯ / ♭ Shift
   accMode: "off" | "once" | "lock";   // 点一下只管下一个音，连点两下锁住（user「double tap shift is "capslock"」）
   accAt: number;                      // 上一次点 Shift 的时刻（ms，判连点）
-  inputFifths: number | null;         // 「1=」：null = 跟光标处生效的调号（user「it is an input toggle」）
+  inputFifths: number;                // 「1=」= 输入设备（pad / 电脑键盘）自己的调，默认 C；不跟谱上的调号（2026-10-07 user「把pad想成一个独立的medo式的输入设备，假设没有谱」「如果一个谱有好几个调怎么算」）
 }
 
 /** 本次输入记录：退格撤回最后一笔（写字头在，记录就在）。 */
@@ -83,7 +83,7 @@ export function emptySong(m: { fifths?: number; beats?: number; beatType?: numbe
     { kind: "tempo", id: 3, bpm: m.bpm ?? DEFAULT_BPM },
   ] };
 }
-export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: null }; }
+export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0 }; }
 export function initState(song: Song = emptySong()): EditorState {
   const maxId = song.tokens.reduce((m, t) => Math.max(m, t.id), 0);
   return { song, caret: song.tokens.length, sel: null, nextId: maxId + 1, log: [], input: initInput() };
@@ -153,7 +153,7 @@ export function beatTicks(beats: number, beatType: number): number {
   return beatType === 8 && beats > 3 && beats % 3 === 0 ? (WHOLE * 3) / 8 : WHOLE / beatType;
 }
 /** 写的时候「1=」= 手动设过的，否则跟光标处的调号。 */
-export const inputKey = (st: EditorState): number => st.input.inputFifths ?? keyAt(st.song, st.caret);
+export const inputKey = (st: EditorState): number => st.input.inputFifths;
 /** 下一个要写的音的时长 = 当前档 ×（连音比例）。 */
 export function unitDur(input: InputState): number {
   const plain = LADDER[input.unit];
@@ -240,17 +240,16 @@ export function writeMark(st: EditorState, v: MarkVal): { st: EditorState; index
   for (let i = a; i < b; i++) if (tokens[i].kind === v.kind) return { st: setMark({ ...leave(st), sel: null }, i, v), index: i, fresh: false };
   const id = st.nextId, nt = tokens.slice();
   nt.splice(at, 0, { ...v, id } as MarkTok);
-  const input = v.kind === "key" ? { ...st.input, inputFifths: null } : st.input;
-  return { st: next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [], input }), index: at, fresh: true };
+  return { st: next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] }), index: at, fresh: true };
 }
 /** 换调号（插一个调号记号）。 */
 export const writeKey = (st: EditorState, fifths: number): EditorState => writeMark(st, { kind: "key", fifths }).st;
-/** 改一个记号的值（种类不变）。改调号 = 「1=」回到跟调号。 */
+/** 改一个记号的值（种类不变）。输入的「1=」不跟着变（输入设备自己的调）。 */
 export function setMark(st: EditorState, i: number, v: MarkVal): EditorState {
   const t = st.song.tokens[i];
   if (!t || t.kind !== v.kind) return st;
   const nt = st.song.tokens.slice(); nt[i] = { ...v, id: t.id } as MarkTok;
-  return next(st, nt, v.kind === "key" ? { input: { ...st.input, inputFifths: null } } : {});
+  return next(st, nt, {});
 }
 /** 删一个中途的记号（谱头的删不掉）。 */
 export function deleteMark(st: EditorState, i: number): EditorState {
@@ -317,6 +316,8 @@ export function deleteForward(st: EditorState): EditorState {
 
 // ── 输入状态（写的时候改的是下一个音） ────────────────────────────────
 
+/** 长短基线直接设成第几档（pad 的长短旋钮点开选）。 */
+export function setUnit(st: EditorState, unit: number): EditorState { return { ...st, input: { ...st.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) } }; }
 /** 长短：有选中 = 选中的音减半 / 加倍；写的时候 = 输入档位（到头不动）。 */
 export function shorter(st: EditorState): EditorState {
   if (st.sel) return mapSelDur(st, (d) => d / 2);
@@ -337,7 +338,7 @@ export function tapAcc(st: EditorState, acc: 1 | -1, now: number): EditorState {
   return { ...st, input: { ...i, acc: 0, accMode: "off", accAt: now } };
 }
 /** 「1=」：只管输入（user「after you change the 1=???, the original inputted note should not be changed」）。 */
-export function setInputKey(st: EditorState, fifths: number | null): EditorState { return { ...st, input: { ...st.input, inputFifths: fifths } }; }
+export function setInputKey(st: EditorState, fifths: number): EditorState { return { ...st, input: { ...st.input, inputFifths: Math.max(-7, Math.min(7, fifths)) } }; }
 
 // ── 改（选中） ──────────────────────────────────────────────────────────
 
@@ -429,7 +430,7 @@ export function modulateSel(st: EditorState, toFifths: number): EditorState {
   if (keyIdx >= 0 && keyIdx < from) nt[keyIdx] = { ...(nt[keyIdx] as KeyTok), fifths: toFifths };
   else if (keyIdx < 0) { nt.splice(from, 0, { kind: "key", id: nextId++, fifths: toFifths }); shift = 1; }
   const sel = { from: from + shift, to: to + shift };
-  return next({ ...st, nextId }, nt, { sel, caret: sel.to, input: { ...st.input, inputFifths: null } });
+  return next({ ...st, nextId }, nt, { sel, caret: sel.to });
 }
 
 // ── 光标与选中 ──────────────────────────────────────────────────────────

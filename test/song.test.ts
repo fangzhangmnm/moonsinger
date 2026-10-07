@@ -46,11 +46,11 @@ describe("song（写）", () => {
   it("三连音：×⅔（八分三连 = ⅓ 拍）", () => {
     let st = initState(); st = setTuplet(st, 3); st = writeDegree(st, 1, "near"); eq((st.song.tokens[H] as NoteTok).dur, TPQ / 3);
   });
-  it("「1=」只管输入：换了以后写进去的音不变；调号 token 之后输入跟新调", () => {
+  it("「1=」只管输入：换了以后写进去的音不变；输入的调是输入设备自己的，不跟谱上的调号（2026-10-07 pad = 独立设备）", () => {
     let st = initState(); st = writeDegree(st, 4, "near"); st = setInputKey(st, 1); st = writeDegree(st, 7, "near");
     eq(show(st), "F4/1 F#4/1");
-    st = setInputKey(st, null); st = writeKey(st, -1); st = writeDegree(st, 4, "near");
-    eq(show(st), "F4/1 F#4/1 K-1 Bb4/1"); eq(keyAt(st.song, st.song.tokens.length), -1);
+    st = setInputKey(st, 0); st = writeKey(st, -1); st = writeDegree(st, 4, "near");
+    eq(show(st), "F4/1 F#4/1 K-1 F4/1"); eq(keyAt(st.song, st.song.tokens.length), -1); eq(st.input.inputFifths, 0);
   });
   it("光标后是空音高的音 → 数字填它（詞先），退格把它撤回成空", () => {
     const head = emptySong();
@@ -95,14 +95,14 @@ describe("song（记号：调号 / 拍号 / 速度都是 token）", () => {
     let st = initState(); let r = writeMark(st, { kind: "tempo", bpm: 120 });
     eq(r.fresh, false); eq(r.index, 2); eq(r.st.song.tokens.length, H); eq(timeline(r.st.song).length, 0);
     st = writeDegree(r.st, 1, "near"); r = writeMark(st, { kind: "key", fifths: 2 }); eq(r.fresh, true); eq(r.index, H + 1);
-    st = writeDegree(r.st, 2, "near"); eq(show(st), "C4/1 K2 E4/1");   // 换调以后输入跟新调：1=D 的 2 = E
+    st = writeDegree(r.st, 2, "near"); eq(show(st), "C4/1 K2 D4/1");   // 输入的调不跟谱上的调号（1=C 的 2 = D）
   });
   it("中途记号能删；删了光标跟着挪", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeMark(st, { kind: "time", beats: 3, beatType: 4 }).st; st = writeDegree(st, 2, "near");
     eq(show(st), "C4/1 T3/4 D4/1"); st = deleteMark(st, H + 1); eq(show(st), "C4/1 D4/1"); eq(st.caret, H + 2);
   });
-  it("改调号记号 = 「1=」回到跟调号", () => {
-    let st = setInputKey(initState(), 3); st = setMark(st, 0, { kind: "key", fifths: -1 }); eq(st.input.inputFifths, null); eq(keyAt(st.song, H), -1);
+  it("改谱上的调号记号不动输入的「1=」（输入设备自己的调）", () => {
+    let st = setInputKey(initState(), 3); st = setMark(st, 0, { kind: "key", fifths: -1 }); eq(st.input.inputFifths, 3); eq(keyAt(st.song, H), -1);
   });
   it("速度分段：换速度以后的音按新速度算秒；Lab 换算成第一个速度下的八分数", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeMark(st, { kind: "tempo", bpm: 180 }).st; st = writeDegree(st, 2, "near");

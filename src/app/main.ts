@@ -7,8 +7,8 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type NoteTok, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
-import { type Pitch, pitchName, midiOf, diatonicIndex, KEY_LABEL } from "../score/pitch.ts";
+import { type EditorState, type NoteTok, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, setUnit, setNote, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
+import { type Pitch, pitchName, midiOf, diatonicIndex, KEY_LABEL, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
@@ -61,6 +61,7 @@ bar.innerHTML =
   `<button id="padBtn" class="btn is-on" title="手指 pad"><svg class="ico"><use href="#grid"/></svg></button>` +
   `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款"><svg class="ico"><use href="#settings"/></svg></button>` +
   `<button id="shareBtn" class="btn" title="导出歌声（mp3），发给别人听"><svg class="ico"><use href="#export"/></svg></button>` +
+  `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button>` +
   `<button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>`;
 
 // ── 试听：月读的元音采样器（出一个音就响；只唱「哼」那一个字，不看歌词——user「还是单一元音更适合当blueprint」） ─────
@@ -89,15 +90,26 @@ const view = new ScoreView(scoreEl, {
   glide: (i) => { clearTimeout(upTimer); const t = st.song.tokens[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum, "score"); },
   release: () => { clearTimeout(upTimer); sound.up("score"); },
 });
-let impro = false;
-let padWrote = -1;   // pad 按下：先写（onPitch）再响（onSoundDown）——响的时候唱刚写的那个音的字
+let impro = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
+/** pad 上每根按着的手指：刚写的是第几个音（弹 = -1）、它原本的音高——上下滑过门槛时在它上面升 / 降。 */
+const padNotes = new Map<string, { index: number; base: Pitch }>();
 const pad = new Pad(padEl, {
   state: () => st,
-  onPitch: (p) => { padWrote = writeAndLocate((s) => writePitch(s, p)); },
+  isImpro: () => impro,
+  onPitch: (p, id) => {
+    const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
+    padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
+  },
+  onAlter: (id, alt) => {   // 临时离调：只管这一个音（滑回中间 = 还原）；重新唱一下让人听见
+    const n = padNotes.get(id); if (!n) return;
+    const np = alt ? alterBy(n.base, alt) : n.base;
+    if (n.index >= 0) update(setNote(st, n.index, { pitch: np }));
+    sound.down(np, id);
+  },
   onCommand: (c) => update(apply(st, c, performance.now())),
+  onUnit: (u) => update(setUnit(st, u)),
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
-  onImpro: (on) => { impro = on; renderStatus(); },
   onInsertMark: (kind) => {   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
     const at = st.sel ? st.sel.from : st.caret;
     const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
@@ -106,12 +118,16 @@ const pad = new Pad(padEl, {
     view.marks.openAt(r.index, r.fresh);
   },
   onSoundDown: (p, id) => {
-    if (padWrote >= 0) soundTok(st, padWrote, id);
-    else { const r = soundingPitch(st, p); update(r.st); sound.down(r.pitch, id); }   // 即兴：带上挂着的 ♯ / ♭
-    padWrote = -1;
+    const n = padNotes.get(id);
+    if (n && n.index >= 0) soundTok(st, n.index, id);
+    else { const r = soundingPitch(st, p); update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); sound.down(r.pitch, id); }   // 弹：带上挂着的 ♯ / ♭
   },
-  onSoundUp: (id) => sound.up(id),
+  onSoundUp: (id) => { padNotes.delete(id); sound.up(id); },
 });
+
+/** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
+function toggleImpro(): void { impro = !impro; $("improBtn").classList.toggle("is-on", impro); renderStatus(); pad.render(); }
+$("improBtn").addEventListener("click", () => toggleImpro());
 
 function update(next: EditorState): void {
   if (next === st) return;
@@ -359,7 +375,7 @@ function setQuality(q: Quality): void {
   sel.value = q;
 }
 function loadDoc(song: Song, o: { stem: string; quality: Quality; extras: Extras; handle: docFile.FileHandle | null }): void {
-  impro && pad.toggleImpro();
+  if (impro) toggleImpro();
   setQuality(o.quality);
   $<HTMLSelectElement>("humSel").value = song.hum;
   doc.stem = o.stem; doc.handle = o.handle; doc.extras = o.extras;
@@ -480,7 +496,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       return true;
     }
     case "play": void togglePlay(); return true;
-    case "impro": pad.toggleImpro(); return true;
+    case "impro": toggleImpro(); return true;
     case "lyric": return view.lyrics.act(a.a);
     case "mark": view.marks.act(a.a); return true;
     case "sheet": closeOffer?.(); return true;
