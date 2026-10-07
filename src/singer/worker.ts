@@ -88,8 +88,8 @@ self.onmessage = async (ev: MessageEvent<SingRequest>) => {
     if (q.lang === "zh") await e.ensureZh();
     const t1 = performance.now();
     say("月读在唱");
-    // Lab 命令行的默认：图谱在就开（normal），断气随图谱
-    const atlas = q.atlas ?? (e.hasAtlas ? "normal" : "off"), breath = q.breath ?? atlas !== "off";
+    // 元音图谱默认关（user 2026-10-06「元音图谱一般般，先不做」）；断气随图谱（和 Lab 命令行的规则一样）。要试图谱就传 atlas: "normal"。
+    const atlas = q.atlas ?? "off", breath = q.breath ?? atlas !== "off";
     const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q.opt ?? {} });
     const samples: Float32Array = r.sung;
     post({ type: "done", id: q.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1 } }, [samples.buffer]);
