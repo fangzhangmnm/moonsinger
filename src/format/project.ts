@@ -10,9 +10,9 @@ import { DEFAULT_ROLE, numberParts } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
 import type { Song, Hum } from "../score/song.ts";
 import { writeMusicXml, readMusicXml, type ReadPart } from "./musicxml.ts";
-
-/** 这一版能读写的各份文件的版本号。改格式 = 这里 +1 并在 src/format/migrate/ 加一条纯函数迁移（现在都是 1，还没有迁移）。 */
-export const FORMAT = { manifest: 1, score: 1, lounge: 1, studio: 1 } as const;
+import { FORMAT } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
+import { migrate } from "./migrate/index.ts";
+export { FORMAT };
 const MIMETYPE = "application/vnd.recordare.musicxml";
 const DIR = ".moonsinger/";
 
@@ -127,9 +127,10 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     const manifest = parse(`${DIR}manifest.json`); known.add(`${DIR}manifest.json`);
     const newer = (what: string, v: unknown, mine: number) => { if (Number(v) > mine) throw new Error(`这首歌是更新版本的 MoonSinger 存的（${what} 第 ${v} 版，这一版只认到第 ${mine} 版），打开再存会丢东西，所以没有打开。请先更新 app。`); };
     newer("总目录", manifest.version, FORMAT.manifest);
-    extras.manifest = manifest;
+    extras.manifest = migrate("manifest", manifest);
     if (files[`${DIR}score.json`]) {
-      const s = parse(`${DIR}score.json`); known.add(`${DIR}score.json`); newer("谱的扩展", s.version, FORMAT.score);
+      const s0 = parse(`${DIR}score.json`); known.add(`${DIR}score.json`); newer("谱的扩展", s0.version, FORMAT.score);
+      const s = migrate("score", s0);
       extras.scoreExt = s;
       const part = ((s.parts as Json[] | undefined) ?? [])[0];
       const pid = String(part?.id ?? PART);
@@ -137,9 +138,9 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     }
     for (const p of Object.keys(files)) {
       const m = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p);
-      if (m) { const r = parse(p); newer(`休息室「${r.name ?? m[1]}」`, r.version, FORMAT.lounge); extras.lounge[m[1]] = r; known.add(p); }
+      if (m) { const r = parse(p); newer(`休息室「${r.name ?? m[1]}」`, r.version, FORMAT.lounge); extras.lounge[m[1]] = migrate("lounge", r); known.add(p); }
     }
-    if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer("录音房", s.version, FORMAT.studio); extras.studio = s; }
+    if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer("录音房", s.version, FORMAT.studio); extras.studio = migrate("studio", s); }
   }
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
   const r = readMusicXml(strFromU8(files[main]), hints);

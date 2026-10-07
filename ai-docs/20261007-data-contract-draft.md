@@ -58,6 +58,8 @@
 
 不认识的文件（以后的版本加的、别的工具加的）：读时留在内存里，存档时原样写回。
 
+**代码里的契约 = `src/format/contract.ts`**（v1 现役形状 + v2 提案形状）；守卫 = `test/format-guard.test.ts`（形状快照 / 迁移链 / 冻结样本，2026-10-07 起）。
+
 **每个字段只有一处真相**（2026-10-07 user 问「score.json和score.musicxml那个是ssot哪个是derived？还是这里卫生很差？」；edited by Claude Fable 5.1）：谱的内容（声部、音符、歌词、记号、纸、歌名、作者栏）以 `score.musicxml` 为准；声部的绑定（角色 / 麦克风）、候选、录音房以 `.moonsinger/` 为准——`score.musicxml` 里每个声部的乐器名 / GM 号 / `<instrument-sound>` / 音量 / pan 是**写给别的软件看的派生物**，读自家文件时不看它们（代码现状如此：`project.ts` 读时以 lounge / studio 为准）。`score.json` 不复制谱的内容，只按音符 id / 小节序号**挂注**（哪些小节线是人插的、哪些音还没写音高）；对不上的条目忽略（别的软件改过谱）。「正本」是按字段说的，不是按文件说的。
 
 ## 4. 谱：我们的 token ↔ MusicXML

@@ -1,0 +1,71 @@
+{
+  "versions": {
+    "manifest": 1,
+    "score": 1,
+    "lounge": 1,
+    "studio": 1
+  },
+  "shapes": {
+    "manifest": {
+      "app": "string",
+      "files": {
+        "lounge/r1.json": "number",
+        "score.json": "number",
+        "studio.json": "number"
+      },
+      "format": "string",
+      "saved": "string",
+      "version": "number"
+    },
+    "score": {
+      "manualBars": {
+        "P1": [
+          "number"
+        ]
+      },
+      "parts": [
+        {
+          "id": "string",
+          "mic": "string",
+          "role": "string"
+        }
+      ],
+      "unwritten": [
+        "string"
+      ],
+      "version": "number"
+    },
+    "lounge": {
+      "active": "string",
+      "candidates": [
+        {
+          "calibrationDb": "number",
+          "chain": [],
+          "engines": {},
+          "gm": {
+            "program": "number",
+            "variant": "string"
+          },
+          "hum": "string",
+          "id": "string",
+          "name": "string"
+        }
+      ],
+      "id": "string",
+      "name": "string",
+      "sound": "string",
+      "version": "number"
+    },
+    "studio": {
+      "mics": [
+        {
+          "gainDb": "number",
+          "id": "string",
+          "name": "string",
+          "pan": "number"
+        }
+      ],
+      "version": "number"
+    }
+  }
+}

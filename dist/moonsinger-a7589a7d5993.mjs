@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.3.0-2026-10-07";
+var APP_VERSION = "v0.3.1-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5496,8 +5496,28 @@ function readMusicXml(xml, hints) {
   return { song: { ...title ? { title } : {}, ...paper ? { paper } : {}, ...credits ? { credits } : {}, hum: "n", tokens }, title, parts, dropped };
 }
 
-// src/format/project.ts
+// src/format/contract.ts
 var FORMAT = { manifest: 1, score: 1, lounge: 1, studio: 1 };
+
+// src/format/migrate/index.ts
+var MIGRATIONS = {
+  manifest: [],
+  score: [],
+  lounge: [],
+  studio: []
+};
+function migrate(kind, json) {
+  let v = Number(json.version ?? 1), out = json;
+  while (v < FORMAT[kind]) {
+    const step = MIGRATIONS[kind][v - 1];
+    if (!step) throw new Error(`[format] no migration for ${kind} v${v} -> v${v + 1}`);
+    out = { ...step(out), version: v + 1 };
+    v++;
+  }
+  return out;
+}
+
+// src/format/project.ts
 var MIMETYPE = "application/vnd.recordare.musicxml";
 var DIR = ".moonsinger/";
 var emptyExtras = () => ({ lounge: {}, unknown: {}, rootfiles: [] });
@@ -5626,11 +5646,12 @@ function openBytes(name, bytes) {
       if (Number(v) > mine) throw new Error(`\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08${what} \u7B2C ${v} \u7248\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BA4\u5230\u7B2C ${mine} \u7248\uFF09\uFF0C\u6253\u5F00\u518D\u5B58\u4F1A\u4E22\u4E1C\u897F\uFF0C\u6240\u4EE5\u6CA1\u6709\u6253\u5F00\u3002\u8BF7\u5148\u66F4\u65B0 app\u3002`);
     };
     newer("\u603B\u76EE\u5F55", manifest.version, FORMAT.manifest);
-    extras.manifest = manifest;
+    extras.manifest = migrate("manifest", manifest);
     if (files[`${DIR}score.json`]) {
-      const s = parse(`${DIR}score.json`);
+      const s0 = parse(`${DIR}score.json`);
       known.add(`${DIR}score.json`);
-      newer("\u8C31\u7684\u6269\u5C55", s.version, FORMAT.score);
+      newer("\u8C31\u7684\u6269\u5C55", s0.version, FORMAT.score);
+      const s = migrate("score", s0);
       extras.scoreExt = s;
       const part = (s.parts ?? [])[0];
       const pid = String(part?.id ?? PART);
@@ -5641,7 +5662,7 @@ function openBytes(name, bytes) {
       if (m) {
         const r2 = parse(p);
         newer(`\u4F11\u606F\u5BA4\u300C${r2.name ?? m[1]}\u300D`, r2.version, FORMAT.lounge);
-        extras.lounge[m[1]] = r2;
+        extras.lounge[m[1]] = migrate("lounge", r2);
         known.add(p);
       }
     }
@@ -5649,7 +5670,7 @@ function openBytes(name, bytes) {
       const s = parse(`${DIR}studio.json`);
       known.add(`${DIR}studio.json`);
       newer("\u5F55\u97F3\u623F", s.version, FORMAT.studio);
-      extras.studio = s;
+      extras.studio = migrate("studio", s);
     }
   }
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
@@ -6799,4 +6820,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-489a8e4811ee.mjs.map
+//# sourceMappingURL=moonsinger-a7589a7d5993.mjs.map

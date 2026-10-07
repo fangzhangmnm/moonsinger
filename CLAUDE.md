@@ -35,6 +35,13 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **出货前要换的路**：①② 已做（2026-10-07：模型包推上 GitHub Pages、共享库 0.1.0 收货）；③ 已做（2026-10-07，user「毕业差的东西做」）：JS 胶水走朗读库 0.1.22 的底层出口 `@internal/read-aloud/backend/piper-plus/*`（打进 worker；类型 `src/singer/read-aloud-backend.d.ts`）、WORLD vendored `vendor/world/`（含许可证与构建脚本）、试听元音表进仓 `assets/preview/`——日 / 中 / 英三首逐样本与改前相同，且拿掉 `dev-assets/` 照样唱；④ 已做（设置里显示月读的署名块和四条禁止用途）。⑤ PWA 壳已做（2026-10-07，抄 JustReadBooks）：content-hash 三个 bundle（`scripts/build.sh`，worker 文件名 `--define` 进主 bundle），styles.css 按内容哈希写成 `styles.css?v=<哈希>`、哈希也 `--define` 进主 bundle（不然 iPad 会拿新 bundle 配旧样式表）、`service-worker.js`（缓存前缀 `moonsinger-`，不碰 `pwa-models` / 兄弟 app）、`src/app/pwa-shell.ts`（四路更新检测，顶上「有新版本 · 刷新」，设置里「检查更新」「清缓存重启」）、`manifest.webmanifest`、`icon.svg`（占位，待 user 过目）+ png；`npm run smoke` = 真浏览器 + 真 SW 冒烟（装上 / 断网 / 新部署出提示 / 清缓存只清自己的）；部署 `.github/workflows/deploy.yml`（main → /dev/、prod → /，dist 进 git）；版本 `./bump.sh vX.Y.Z-YYYY-MM-DD`。⑥ 公开前隐私分拣已做、已公开（2026-10-07，见下「git」节）。
 - **唱法核心有两个用户**：本仓的浏览器 worker + 写歌实验室的 Lab 命令行（`../20260810 写歌实验室/Lab/20261005 月读第一首/sing.mjs`）。改 `sing-core.mjs` 的接口要顾到那边；动实验室的 `Lab/20261005 月读第一首/` 之前先 SendMessage 打招呼（约定原文在抽取提案文末）。源码注释里写的「Lab/…」都指写歌实验室仓。
 
+## 格式红线区（`src/format/`；2026-10-07 立，Claude Fable 5.1；user「数据结构你来把关」「碰到格式问题就问你」）
+
+- **契约 = `src/format/contract.ts`**（人读的 .h）：v1 = 这一版真写进 `.mxl` 的 `.moonsinger/*.json` 形状；v2 提案 = 多轨 / 曲线 / by value + 哈希的目标形状（未写入文件）。来龙去脉与 user 原话在 `ai-docs/20261007-data-contract-draft.md`（§3 目录表、§7 未定、§8 谁的字节）。
+- **守卫 = `test/format-guard.test.ts`**（在 `npm test` 里）：写出来的键形状 = `test/fixtures/format/shape.json`；写永远只写当前版；`MIGRATIONS[kind].length === FORMAT[kind] - 1`；每个冻结样本（`test/fixtures/format/v*/`）都能开、读出来和冻结时一样。**改格式不带版本号 / 迁移 / 冻结样本 = 红。**
+- **改格式的规矩**（CatsUp 立宪）：只加可选字段 → `node scripts/freeze-format-sample.mjs` 更新形状快照、审 diff；删 / 改字段 → `contract.ts` 的 FORMAT +1 + `src/format/migrate/index.ts` 加一步纯函数 + 跑 freeze 生成新版样本、**旧版目录不删**。老文件永远能开，只拒开比 app 新的；不认识的字段 / 文件原样写回。
+- **分工**（user 2026-10-07）：多轨等编辑器活由 user 带别的 session 做；碰到格式问题先写进契约草稿 §7「未定」再继续，不自己拍；本仓碰 `src/format/` 和 `.mxl` 布局的改动合并前给管契约的 session 过（活着就 SendMessage，不在就看契约 + 守卫）。
+
 ## 黄线区（外接服务白名单）
 **模型源** = 家族级白名单 ②（出厂预填 `https://fangzhangmnm.github.io/pwa-models`，同 JustReadBooks）：只读 GET 包的分片，到手先对 app 内嵌清单的 sha256（`@internal/model-packs`）；第一次整首唱才下（重资源等有意图）。user 2026-10-07「当然a」（月读照家规进 pwa-models）。
 **反弃坑（ADR-0006 ③；user 2026-10-07「i might worry about hardcode my gh link…」）**：查找顺序 = 同源 `pwa-models/`（自建服务器把模型仓拷过去就能用）→ 设置里的「模型来源」（界面上能改、恢复默认）；设置里还能「从本机文件导入模型包」（按内容哈希认分片）。来源只在这次打开里有效（持久化未定）。全家族检查交接 = 家族根 `ai-docs/20261007-anti-abandonware-audit-handoff.md`。
