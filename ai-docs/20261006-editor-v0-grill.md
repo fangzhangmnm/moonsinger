@@ -96,6 +96,9 @@
 - user 在 iPad 上听过之后：「月读的声音很好听，气息很足。」「慢慢grill ux」（当时编辑器默认已关元音图谱、断气随之关）。
 - **UX-1**：user「ipad potrait, use fullwide keyboard, it does not need to be square. it is like a non touch screen phone numpad experience, like the ipad software keyboard position. the 16 keys spans the width to an ergonomic size, then the tool keys are above it like 拼音候选框. the 16th pad should be 0」→ 已做：竖屏 pad 全宽贴底（键约 178×56）、工具键一行在上（▼ ▲ － 短 长 · | ⌫）、右上第 16 键 = 0 休止（横屏同）；pad 默认八度按 15 个音重算。
 
+- **UX-2（2026-10-07，讨论中）**：user「then, we want to separate input mode and edit mode. (like the insert and the normal cursor in a text editor). the edit mode should not insert that annoying space. only input mode will. in input mode, the note change, like the duration, should not affect the previous note. there should be a note preview. the # shifts the keyboard turn them into #, like the keyboard shift. double tap shift is "capslock". - append the previous note by its base time span temporaily, without affect the next token duration. it is tricky because 1--- is span 4, not span 2^4, and can  be undo by backspace. sorry i know it introduces very difficult data structure, think critically. / divide the time span temporaily, and toggle between 1 1/2 1/3 1/4 1/6 (or what you think proper. dot might not be very useful. since we can go to 1/2 and *3, which makes the next token also 1/2 for duration, perhaps shift them can convert them into 1/3, etc. think clever for an input scheme. also the 1= toggle should be also on the keyboard. after you change the 1=???, the original inputted note should not be changed. it is an input toggle」
+  - 这一条推翻 Q6 的一半：时值不再「只改刚打的音」（8 / 9 / . 退场），改成输入状态 + 预览；「−」仍作用在上一个音（份数 +1），但不改下一个音。
+
 ## 9. 还开着的
 
 - ~~打数字时音落在哪个八度~~ → AI 推荐「就近：第一个音落在她的家（说话音高所在那一组），之后每个音落在离上一个音最近处（不超过四度），跳更远按上 / 下八度键；同 LilyPond relative 模式（AI 凭记忆）」。user：「A」。
