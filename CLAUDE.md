@@ -22,6 +22,7 @@ Nokia 彩铃编辑器，不是 DAW。
 
 user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼store和undo,先把编辑器摸出来」→ grill 后「可以，以后随时吃书，先这样，开做」。
 决定与原话全在 `ai-docs/20261006-editor-v0-grill.md`（§8½ = 第一版范围）；同行调研 `ai-docs/20261006-peer-survey-melody-input.md`。
+**下一步 = 持久化（接 store / gallery）**：起手读 `ai-docs/20261007-persistence-handoff.md`（as-of v0.2.25：现状、哪些只在这次打开里有效、user 原话、要想的、坑）。产品愿望单 `ai-docs/20261007-wishlist.md`。
 
 - **跑**：`npm install` →（可选）`bash scripts/link-dev-assets.sh`（只有元音图谱实验要它，默认关）→ `npm run build` → `npm run serve` → 开 `http://localhost:8710/`（绑 0.0.0.0，iPad 走局域网 / Tailscale 也能开）。测试 `npm test`。
 - **iPad 上测（不留洞的做法，2026-10-06）**：WSL 里 `PORT=8710 BIND=127.0.0.1 npm run serve`（只听本机、只端出 app 要的文件）；Windows「以管理员身份运行」PowerShell 跑 `& "C:\Program Files\Tailscale\tailscale.exe" serve --http 18124 http://127.0.0.1:8710`（**不带 --bg**：窗口开着才通，Ctrl+C / 关窗即消失，不进常驻配置）；iPad 开 `http://<这台 Windows 的 Tailscale 机器名>:18124/`。坑：WSL mirrored 模式下 Windows 占着的端口号 WSL 用不了（18123 被 Tailscale 自己占着）；Tailscale serve 配置里有 path 条目，所以改 serve 要管理员；Windows 上 `localhost` 先走 ::1，目标写 `127.0.0.1`。
