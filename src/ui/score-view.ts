@@ -28,6 +28,9 @@ export interface ScoreViewHost {
   /** 拖音高时换到下标 i 的新音高（新的顶掉旧的；怎么顶由采样器定：滑过去或重新起音）。 */
   glide?(i: number): void;
   release?(): void;
+  /** 五线谱像文本框（user「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
+   *  staff = 点在谱上（音 / 空白 / 框选）；text = 打开了要系统键盘的框（歌词 / 歌名）。记号框不算（触屏上不弹系统键盘）。 */
+  focus?(where: "staff" | "text"): void;
 }
 
 export class ScoreView {
@@ -115,11 +118,11 @@ export class ScoreView {
   private tap(x: number, y: number, shift: boolean, pid: number | null): boolean {
     const L0 = this.layout!, wasMark = this.marks.open;
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
-    if (wasMark) return true;   // 点别处 = 先收起记号框（这一下不另做事）
+    if (wasMark) { this.host.focus?.("staff"); return true; }   // 点别处 = 先收起记号框（这一下不另做事）
     const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st = this.host.get();
     // 0. 纸面最上面的歌名（可不填）
     const tt = L.title;
-    if (x >= tt.x && x <= tt.x + tt.w && y >= tt.y && y <= tt.y + tt.h) { this.title.openNow(); return true; }
+    if (x >= tt.x && x <= tt.x + tt.w && y >= tt.y && y <= tt.y + tt.h) { this.title.openNow(); this.host.focus?.("text"); return true; }
     // 0½. 记号（调号 / 拍号 / 速度）
     const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
     if (mk) { this.marks.openAt(mk.index); return true; }
@@ -127,11 +130,12 @@ export class ScoreView {
     const ly = L.lyricY(sys);
     if (y > ly - sp * 2.2 && y < ly + sp * 1.2) {
       const cands = L.lyrics.filter((h) => h.system === sys);
-      if (cands.length) { const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)); if (Math.abs(best.x - x) < sp * 4) { this.lyrics.openAt(best.index); return true; } }
+      if (cands.length) { const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)); if (Math.abs(best.x - x) < sp * 4) { this.lyrics.openAt(best.index); this.host.focus?.("text"); return true; } }
     }
     // 2. 音符
     const hit = L.notes.find((n) => n.system === sys && x >= n.x - sp * 0.5 && x <= n.x + n.w + sp * 0.5 && Math.abs(y - n.y) <= sp * 0.9);
     if (hit) {
+      this.host.focus?.("staff");
       const cur = st.sel;
       this.host.set(shift && cur ? select(st, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : select(st, hit.index, hit.index + 1));
       if (pid !== null) {   // 笔 / 鼠标：按住一直响，拖音高换音，松手停
@@ -198,12 +202,13 @@ export class ScoreView {
   private up(e: PointerEvent): void {
     if (this.finger && e.pointerId === this.finger.pid) {
       const f = this.finger; this.finger = null;
-      if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) this.host.set(this.caretAt(f.x, f.y));
+      if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) { this.host.set(this.caretAt(f.x, f.y)); this.host.focus?.("staff"); }
       return;
     }
     if (this.box && e.pointerId === this.box.pid) {
       const b = this.box; this.box = null; this.boxEl.hidden = true;
       if (!b.moved && this.layout) this.host.set(this.caretAt(b.x0, b.y0));   // 没拖 = 放光标
+      this.host.focus?.("staff");
       return;
     }
     if (this.drag && e.pointerId === this.drag.pid) { if (this.drag.axis !== "x") this.host.release?.(); this.drag = null; }

@@ -89,6 +89,7 @@ const view = new ScoreView(scoreEl, {
   audition: (i, hold) => { clearTimeout(upTimer); soundTok(st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
   glide: (i) => { clearTimeout(upTimer); const t = st.song.tokens[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum, "score"); },
   release: () => { clearTimeout(upTimer); sound.up("score"); },
+  focus: (where) => { if (stacked()) showPad(where === "staff"); },
 });
 let impro = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
 /** pad 上每根按着的手指：刚写的是第几个音（弹 = -1）、它原本的音高——上下滑过门槛时在它上面升 / 降。 */
@@ -126,7 +127,7 @@ const pad = new Pad(padEl, {
 });
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
-function toggleImpro(): void { impro = !impro; $("improBtn").classList.toggle("is-on", impro); renderStatus(); pad.render(); }
+function toggleImpro(): void { impro = !impro; $("improBtn").classList.toggle("is-on", impro); if (impro) showPad(true); renderStatus(); pad.render(); }
 $("improBtn").addEventListener("click", () => toggleImpro());
 
 function update(next: EditorState): void {
@@ -350,7 +351,18 @@ $("shareBtn").addEventListener("click", () => { void exportSong(); });
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 $<HTMLSelectElement>("humSel").value = st.song.hum;   // 下拉的初值跟这首歌的设置（默认嗯）
 $<HTMLSelectElement>("humSel").addEventListener("change", (e) => { update(setHum(st, (e.target as HTMLSelectElement).value as Hum)); scoreEl.focus(); });
-$("padBtn").addEventListener("click", () => { padEl.hidden = !padEl.hidden; $("padBtn").classList.toggle("is-on", !padEl.hidden); view.render(); });
+$("padBtn").addEventListener("click", () => showPad(padEl.hidden));
+/** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
+ *  点谱 = 弹出；打开歌词 / 歌名框（系统键盘要上来）= 收起；点顶栏空白处 = 收起。开局是弹出的（光标就在谱上）。
+ *  只在 pad 贴底（竖屏）时自动：横屏 / 桌面 pad 在旁边，收起会让整页谱重新排、点的那个字跟着跑。顶栏的 pad 钮照旧手动开关；开「弹」= 弹出。 */
+function stacked(): boolean { return matchMedia("(max-aspect-ratio: 1/1)").matches; }
+function showPad(on: boolean): void {
+  if (padEl.hidden === !on) return;
+  padEl.hidden = !on; $("padBtn").classList.toggle("is-on", on);
+  if (!on) pad.clearHeld();
+  view.render();
+}
+bar.addEventListener("pointerdown", (e) => { if (stacked() && !(e.target as HTMLElement).closest("button, select, label, input, a")) showPad(false); });
 
 // ── 文件（无地逃生口）：一首歌 = 一个 .mxl；家 = 打开的那个文件（桌面 Chromium 能存回去）或没有家（iPad：存 = 下载 / 分享） ──────
 function quality(): Quality { return $<HTMLSelectElement>("qualSel").value as Quality; }

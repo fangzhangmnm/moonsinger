@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.9-2026-10-07";
+var APP_VERSION = "v0.2.10-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2116,11 +2116,15 @@ var ScoreView = class {
     const L0 = this.layout, wasMark = this.marks.open;
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
-    if (wasMark) return true;
+    if (wasMark) {
+      this.host.focus?.("staff");
+      return true;
+    }
     const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st2 = this.host.get();
     const tt = L.title;
     if (x >= tt.x && x <= tt.x + tt.w && y >= tt.y && y <= tt.y + tt.h) {
       this.title.openNow();
+      this.host.focus?.("text");
       return true;
     }
     const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
@@ -2135,12 +2139,14 @@ var ScoreView = class {
         const best = cands.reduce((a, b) => Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a);
         if (Math.abs(best.x - x) < sp * 4) {
           this.lyrics.openAt(best.index);
+          this.host.focus?.("text");
           return true;
         }
       }
     }
     const hit = L.notes.find((n2) => n2.system === sys && x >= n2.x - sp * 0.5 && x <= n2.x + n2.w + sp * 0.5 && Math.abs(y - n2.y) <= sp * 0.9);
     if (hit) {
+      this.host.focus?.("staff");
       const cur = st2.sel;
       this.host.set(shift && cur ? select(st2, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : select(st2, hit.index, hit.index + 1));
       if (pid !== null) {
@@ -2217,7 +2223,10 @@ var ScoreView = class {
     if (this.finger && e.pointerId === this.finger.pid) {
       const f = this.finger;
       this.finger = null;
-      if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) this.host.set(this.caretAt(f.x, f.y));
+      if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) {
+        this.host.set(this.caretAt(f.x, f.y));
+        this.host.focus?.("staff");
+      }
       return;
     }
     if (this.box && e.pointerId === this.box.pid) {
@@ -2225,6 +2234,7 @@ var ScoreView = class {
       this.box = null;
       this.boxEl.hidden = true;
       if (!b.moved && this.layout) this.host.set(this.caretAt(b.x0, b.y0));
+      this.host.focus?.("staff");
       return;
     }
     if (this.drag && e.pointerId === this.drag.pid) {
@@ -5091,6 +5101,9 @@ var view = new ScoreView(scoreEl, {
   release: () => {
     clearTimeout(upTimer);
     sound.up("score");
+  },
+  focus: (where) => {
+    if (stacked()) showPad(where === "staff");
   }
 });
 var impro = false;
@@ -5138,6 +5151,7 @@ var pad = new Pad(padEl, {
 function toggleImpro() {
   impro = !impro;
   $("improBtn").classList.toggle("is-on", impro);
+  if (impro) showPad(true);
   renderStatus();
   pad.render();
 }
@@ -5439,10 +5453,19 @@ $("humSel").addEventListener("change", (e) => {
   update(setHum(st, e.target.value));
   scoreEl.focus();
 });
-$("padBtn").addEventListener("click", () => {
-  padEl.hidden = !padEl.hidden;
-  $("padBtn").classList.toggle("is-on", !padEl.hidden);
+$("padBtn").addEventListener("click", () => showPad(padEl.hidden));
+function stacked() {
+  return matchMedia("(max-aspect-ratio: 1/1)").matches;
+}
+function showPad(on) {
+  if (padEl.hidden === !on) return;
+  padEl.hidden = !on;
+  $("padBtn").classList.toggle("is-on", on);
+  if (!on) pad.clearHeld();
   view.render();
+}
+bar.addEventListener("pointerdown", (e) => {
+  if (stacked() && !e.target.closest("button, select, label, input, a")) showPad(false);
 });
 function quality() {
   return $("qualSel").value;
@@ -5676,4 +5699,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-6c266f75b0b8.mjs.map
+//# sourceMappingURL=moonsinger-3669a1b0088d.mjs.map
