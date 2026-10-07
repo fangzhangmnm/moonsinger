@@ -4,7 +4,7 @@ import type { Mp3Reply, Mp3Request } from "./mp3-worker.ts";
 
 export function encodeMp3(samples: Float32Array, sr: number, kbps = 64): Promise<Uint8Array<ArrayBuffer>> {
   return new Promise((ok, fail) => {
-    const w = new Worker(new URL("./mp3-worker.mjs", import.meta.url), { type: "module" });
+    const w = new Worker(new URL(`./${__MP3_WORKER__}`, import.meta.url), { type: "module" });
     w.onmessage = (ev: MessageEvent<Mp3Reply>) => { w.terminate(); if (ev.data.ok) ok(ev.data.bytes); else fail(new Error(ev.data.message)); };
     w.onerror = (e) => { w.terminate(); fail(new Error(e.message || "mp3 编码 worker 出错")); };
     const req: Mp3Request = { samples: samples.slice(), sr, kbps };   // 拷一份再转移，原样本（缓存里的）不动

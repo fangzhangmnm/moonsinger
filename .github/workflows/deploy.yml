@@ -1,0 +1,63 @@
+# 部署 GitHub Pages：prod 分支 → /，main 分支 → /dev/（家族 dev/prod split，抄 JustReadBooks deploy.yml）。created 2026-10-07 by Claude Opus 5.5
+#
+# 各分支自己 commit 好构建产物（dist/moonsinger-<hash>.mjs 等，bash scripts/build.sh）；本 workflow 只「组合两分支 → upload」，不重 build。
+# 第一次 setup：prod 分支 = 第一次上线时 main 的快照；Pages source 切成 GitHub Actions；github-pages environment 放行 prod 分支
+#   （坑：environment 默认只放行 main——WXHW 09-30 的绕法见 WXHW CLAUDE.md）。push prod 必问 user（家规 #5）。
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main, prod]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true   # main+prod 几乎同 push 时最后一次必赢（WeebPaint v130 坑）
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout prod branch
+        uses: actions/checkout@v4
+        with:
+          ref: prod
+          path: prod-tree
+
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-tree
+
+      - name: Compose site (prod=/, main=/dev/)
+        run: |
+          mkdir -p site/dev
+          compose() {   # $1 = 源树, $2 = 目标目录
+            for f in index.html manifest.webmanifest service-worker.js styles.css icon.svg icon-192.png icon-512.png; do
+              cp -p "$1/$f" "$2/"
+            done
+            for d in vendor dist assets; do cp -r "$1/$d" "$2/"; done
+          }
+          compose prod-tree site
+          compose main-tree site/dev
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

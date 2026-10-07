@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- MoonSinger 应用图标（占位，待 user 过目）：夜色底 + 月牙 + 八分音符。created 2026-10-07 by Claude Opus 5.5 -->
+  <rect width="512" height="512" rx="112" fill="#24305e"/>
+  <path d="M236 92 A164 164 0 0 0 236 420 A220 220 0 0 1 236 92 Z" fill="#f4e4b0"/>
+  <g fill="#f4e4b0">
+    <ellipse cx="300" cy="352" rx="42" ry="31" transform="rotate(-22 300 352)"/>
+    <rect x="328" y="148" width="16" height="206" rx="6"/>
+    <path d="M336 148 C362 176 404 186 408 234 C410 256 400 274 388 286 C394 262 390 236 366 222 C352 214 342 210 336 208 Z"/>
+  </g>
+</svg>

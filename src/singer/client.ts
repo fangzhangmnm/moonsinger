@@ -14,7 +14,7 @@ export class Singer {
 
   private worker(): Worker {
     if (this.w) return this.w;
-    this.w = new Worker(new URL("./singer-worker.mjs", import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${__SINGER_WORKER__}`, import.meta.url), { type: "module" });
     this.w.onmessage = (ev: MessageEvent<SingReply>) => {
       const m = ev.data, p = this.pending.get(m.id); if (!p) return;
       if (m.type === "progress") p.progress(m.stage);

@@ -1,0 +1,3551 @@
+// src/version.ts
+var APP_VERSION = "v0.1.1-2026-10-07";
+
+// src/app/pwa-shell.ts
+var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
+var SHELL_CACHE_PREFIX = "moonsinger-";
+function initPwaShell(opts) {
+  const isDevRoute = location.pathname.includes("/dev/") || LOCAL_HOSTS.has(location.hostname);
+  let registration = null;
+  async function reload() {
+    try {
+      await opts.onBeforeReload?.();
+    } catch {
+    }
+    const reg = registration ?? await navigator.serviceWorker?.getRegistration() ?? null;
+    if (!reg || !reg.waiting) {
+      location.reload();
+      return;
+    }
+    let done = false;
+    const doReload = () => {
+      if (done) return;
+      done = true;
+      location.reload();
+    };
+    navigator.serviceWorker.addEventListener("controllerchange", doReload, { once: true });
+    reg.waiting.postMessage({ type: "skip-waiting" });
+    setTimeout(doReload, 5e3);
+  }
+  async function forceReset() {
+    const settle = (p, ms) => Promise.race([Promise.resolve(p).catch(() => void 0), new Promise((r) => setTimeout(r, ms))]);
+    await settle(opts.onBeforeReload?.(), 4e3);
+    try {
+      if (navigator.serviceWorker) {
+        const r = await navigator.serviceWorker.getRegistration();
+        if (r) await r.unregister().catch(() => {
+        });
+      }
+      if (typeof caches !== "undefined") for (const k of await caches.keys()) {
+        if (k.startsWith(SHELL_CACHE_PREFIX)) await caches.delete(k).catch(() => {
+        });
+      }
+    } catch {
+    }
+    const target = `${location.pathname}?reset=${Date.now()}`;
+    setTimeout(() => location.replace(target), 150);
+    setTimeout(() => {
+      location.href = target;
+    }, 2500);
+  }
+  async function checkForUpdate() {
+    const reg = registration ?? await navigator.serviceWorker?.getRegistration() ?? null;
+    if (!reg) return "unavailable";
+    if (reg.waiting) return "found";
+    try {
+      await reg.update();
+    } catch {
+      return "unavailable";
+    }
+    if (reg.waiting) return "found";
+    const sw = reg.installing;
+    if (!sw) return "latest";
+    return await new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(reg.waiting ? "found" : "latest"), 15e3);
+      sw.addEventListener("statechange", () => {
+        if (sw.state === "installed") {
+          clearTimeout(timer);
+          resolve("found");
+        } else if (sw.state === "redundant") {
+          clearTimeout(timer);
+          resolve("latest");
+        }
+      });
+    });
+  }
+  const onFg = () => {
+    registration?.update().catch(() => {
+    });
+    opts.onForeground?.();
+  };
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") onFg();
+  });
+  window.addEventListener("focus", onFg);
+  if ("serviceWorker" in navigator && !LOCAL_HOSTS.has(location.hostname)) {
+    navigator.serviceWorker.addEventListener("message", (e) => {
+      if (e.data?.type === "asset-updated") opts.onUpdateAvailable();
+    });
+    navigator.serviceWorker.register("./service-worker.js").then((reg) => {
+      registration = reg;
+      if (reg.waiting && navigator.serviceWorker.controller) opts.onUpdateAvailable();
+      reg.addEventListener("updatefound", () => {
+        const sw = reg.installing;
+        if (!sw) return;
+        sw.addEventListener("statechange", () => {
+          if (sw.state === "installed" && navigator.serviceWorker.controller) opts.onUpdateAvailable();
+        });
+      });
+      setInterval(() => {
+        reg.update().catch(() => {
+        });
+      }, 10 * 60 * 1e3);
+    }).catch((err) => {
+      console.warn("[pwa] SW register failed", err);
+    });
+  }
+  return { isDevRoute, reload, forceReset, checkForUpdate };
+}
+
+// src/score/pitch.ts
+var STEPS = ["C", "D", "E", "F", "G", "A", "B"];
+var STEP_SEMI = [0, 2, 4, 5, 7, 9, 11];
+var HOME = { step: "D", alter: 0, octave: 4 };
+var stepIndex = (s) => STEPS.indexOf(s);
+function midiOf(p) {
+  return (p.octave + 1) * 12 + STEP_SEMI[stepIndex(p.step)] + p.alter;
+}
+function diatonicIndex(p) {
+  return p.octave * 7 + stepIndex(p.step);
+}
+var SHARP_ORDER = ["F", "C", "G", "D", "A", "E", "B"];
+var FLAT_ORDER = ["B", "E", "A", "D", "G", "C", "F"];
+function keyAlter(step, fifths) {
+  if (fifths > 0) return SHARP_ORDER.slice(0, fifths).includes(step) ? 1 : 0;
+  if (fifths < 0) return FLAT_ORDER.slice(0, -fifths).includes(step) ? -1 : 0;
+  return 0;
+}
+function tonicStepIndex(fifths) {
+  return (4 * fifths % 7 + 7) % 7;
+}
+function fromDiatonic(d, fifths) {
+  const octave = Math.floor(d / 7), step = STEPS[(d % 7 + 7) % 7];
+  return { step, alter: keyAlter(step, fifths), octave };
+}
+function degreeStepIndex(degree2, fifths) {
+  return (tonicStepIndex(fifths) + degree2 - 1) % 7;
+}
+function placeDegree(degree2, fifths, prev, dir) {
+  const s = degreeStepIndex(degree2, fifths);
+  const ref = diatonicIndex(prev ?? HOME);
+  const base2 = Math.floor(ref / 7) * 7 + s;
+  const cands = [base2 - 7, base2, base2 + 7];
+  let d;
+  if (dir === "near") d = cands.reduce((a, b) => Math.abs(b - ref) < Math.abs(a - ref) ? b : a);
+  else if (dir === "up") d = cands.find((c) => c > ref);
+  else d = [...cands].reverse().find((c) => c < ref);
+  return fromDiatonic(d, fifths);
+}
+function stepBy(p, steps, fifths) {
+  return fromDiatonic(diatonicIndex(p) + steps, fifths);
+}
+function alterBy(p, d) {
+  return { ...p, alter: Math.max(-2, Math.min(2, p.alter + d)) };
+}
+function spellMidi(midi, fifths, prefer = fifths < 0 ? -1 : 1) {
+  const cands = [];
+  for (const step of STEPS) for (let o = Math.floor(midi / 12) - 2; o <= Math.floor(midi / 12); o++) {
+    const alter = midi - midiOf({ step, alter: 0, octave: o });
+    if (Math.abs(alter) <= 1) cands.push({ step, alter, octave: o });
+  }
+  return cands.find((p) => p.alter === keyAlter(p.step, fifths)) ?? cands.find((p) => p.alter === prefer) ?? cands.find((p) => p.alter === 0) ?? cands[0];
+}
+function transposeSemis(p, semis, fifths) {
+  return semis === 0 ? p : spellMidi(midiOf(p) + semis, fifths, semis > 0 ? 1 : -1);
+}
+function transposeInterval(p, steps, semis) {
+  const d = diatonicIndex(p) + steps, step = STEPS[(d % 7 + 7) % 7], octave = Math.floor(d / 7);
+  return { step, alter: midiOf(p) + semis - midiOf({ step, alter: 0, octave }), octave };
+}
+function keyInterval(f0, f1) {
+  let semis = (7 * (f1 - f0) % 12 + 12) % 12;
+  if (semis > 6) semis -= 12;
+  let steps = ((tonicStepIndex(f1) - tonicStepIndex(f0)) % 7 + 7) % 7;
+  if (semis < 0 && steps > 0) steps -= 7;
+  return { steps, semis };
+}
+function octaveBy(p, d) {
+  return { ...p, octave: p.octave + d };
+}
+function pitchName(p) {
+  return `${p.step}${p.alter > 0 ? "#".repeat(p.alter) : "b".repeat(-p.alter)}${p.octave}`;
+}
+var KEY_LABEL = { [-7]: "C\u266D", [-6]: "G\u266D", [-5]: "D\u266D", [-4]: "A\u266D", [-3]: "E\u266D", [-2]: "B\u266D", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F\u266F", 7: "C\u266F" };
+
+// src/score/song.ts
+var TPQ = 1680;
+var WHOLE = TPQ * 4;
+var LADDER = [TPQ / 8, TPQ / 4, TPQ / 2, TPQ, TPQ * 2, WHOLE];
+var DEFAULT_UNIT = 2;
+var TUPLET = { 3: [2, 3], 5: [4, 5], 6: [4, 6], 7: [4, 7] };
+var MIN_DUR = TPQ / 8 * 4 / 7;
+var MAX_DUR = WHOLE * 4;
+var DEFAULT_KEY = 0;
+var DEFAULT_TIME = { beats: 4, beatType: 4 };
+var DEFAULT_BPM = 90;
+function emptySong(m = {}) {
+  return { hum: "n", tokens: [
+    // 哼的字默认「嗯」（user 2026-10-07「月读不是有啦嗯哦吗，默认嗯」）
+    { kind: "key", id: 1, fifths: m.fifths ?? DEFAULT_KEY },
+    { kind: "time", id: 2, beats: m.beats ?? DEFAULT_TIME.beats, beatType: m.beatType ?? DEFAULT_TIME.beatType },
+    { kind: "tempo", id: 3, bpm: m.bpm ?? DEFAULT_BPM }
+  ] };
+}
+function initInput() {
+  return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: null };
+}
+function initState(song = emptySong()) {
+  const maxId = song.tokens.reduce((m, t) => Math.max(m, t.id), 0);
+  return { song, caret: song.tokens.length, sel: null, nextId: maxId + 1, log: [], input: initInput() };
+}
+var isTimed = (t) => t.kind === "note" || t.kind === "rest";
+var isMark = (t) => t.kind === "key" || t.kind === "time" || t.kind === "tempo";
+function headLen(tokens) {
+  let n2 = 0;
+  while (n2 < tokens.length && isMark(tokens[n2])) n2++;
+  return n2;
+}
+function currentIndex(st2) {
+  for (let i = st2.caret - 1; i >= 0; i--) if (isTimed(st2.song.tokens[i])) return i;
+  return -1;
+}
+function prevPitch(tokens, i) {
+  for (let j = i - 1; j >= 0; j--) {
+    const t = tokens[j];
+    if (t.kind === "note" && t.pitch) return t.pitch;
+  }
+  return null;
+}
+function effectivePitch(tokens, i) {
+  const t = tokens[i];
+  if (t.kind === "note" && t.pitch) return t.pitch;
+  return prevPitch(tokens, i) ?? HOME;
+}
+function keyAt(song, i) {
+  let f = DEFAULT_KEY;
+  for (let j = 0; j < i && j < song.tokens.length; j++) {
+    const t = song.tokens[j];
+    if (t.kind === "key") f = t.fifths;
+  }
+  return f;
+}
+function timeAt(song, i) {
+  let v = DEFAULT_TIME;
+  for (let j = 0; j < i && j < song.tokens.length; j++) {
+    const t = song.tokens[j];
+    if (t.kind === "time") v = t;
+  }
+  return { beats: v.beats, beatType: v.beatType };
+}
+function tempoAt(song, i) {
+  let v = DEFAULT_BPM;
+  for (let j = 0; j < i && j < song.tokens.length; j++) {
+    const t = song.tokens[j];
+    if (t.kind === "tempo") v = t.bpm;
+  }
+  return v;
+}
+var TEMPO_WORDS = [
+  { from: 0, it: "Largo", zh: "\u5E7F\u677F", typical: 50 },
+  { from: 60, it: "Larghetto", zh: "\u5C0F\u5E7F\u677F", typical: 63 },
+  { from: 66, it: "Adagio", zh: "\u67D4\u677F", typical: 70 },
+  { from: 76, it: "Andante", zh: "\u884C\u677F", typical: 88 },
+  { from: 100, it: "Moderato", zh: "\u4E2D\u677F", typical: 108 },
+  { from: 112, it: "Allegretto", zh: "\u5C0F\u5FEB\u677F", typical: 116 },
+  { from: 120, it: "Allegro", zh: "\u5FEB\u677F", typical: 132 },
+  { from: 156, it: "Vivace", zh: "\u6D3B\u677F", typical: 160 },
+  { from: 176, it: "Presto", zh: "\u6025\u677F", typical: 184 },
+  { from: 200, it: "Prestissimo", zh: "\u6700\u6025\u677F", typical: 208 }
+];
+function tempoWord(bpm) {
+  let w = TEMPO_WORDS[0];
+  for (const x of TEMPO_WORDS) if (bpm >= x.from) w = x;
+  return w;
+}
+function beatTicks(beats, beatType) {
+  return beatType === 8 && beats > 3 && beats % 3 === 0 ? WHOLE * 3 / 8 : WHOLE / beatType;
+}
+var inputKey = (st2) => st2.input.inputFifths ?? keyAt(st2.song, st2.caret);
+function unitDur(input) {
+  const plain = LADDER[input.unit];
+  if (!input.tuplet) return plain;
+  const [m, n2] = TUPLET[input.tuplet];
+  return plain * m / n2;
+}
+var indexOfId = (tokens, id) => tokens.findIndex((t) => t.id === id);
+function next(st2, tokens, patch = {}) {
+  const caret = Math.max(headLen(tokens), Math.min(tokens.length, patch.caret ?? st2.caret));
+  return { ...st2, ...patch, song: { ...st2.song, tokens }, caret };
+}
+var leave = (st2) => st2.log.length ? { ...st2, log: [] } : st2;
+var validDur = (d) => Number.isInteger(d) && d >= MIN_DUR && d <= MAX_DUR;
+function soundingPitch(st2, p) {
+  if (!st2.input.acc) return { pitch: p, st: st2 };
+  return { pitch: applyAcc(p, st2.input), st: { ...st2, input: consumeAcc(st2.input) } };
+}
+function consumeAcc(input) {
+  return input.accMode === "once" ? { ...input, acc: 0, accMode: "off" } : input;
+}
+function applyAcc(p, input) {
+  return input.acc ? alterBy(p, input.acc) : p;
+}
+function fillTarget(st2) {
+  for (let i = st2.caret; i < st2.song.tokens.length; i++) {
+    const t = st2.song.tokens[i];
+    if (t.kind === "bar" || isMark(t)) continue;
+    return t.kind === "note" && t.pitch === null ? i : -1;
+  }
+  return -1;
+}
+function writePitch(st2, pitch0) {
+  const pitch = applyAcc(pitch0, st2.input), input = consumeAcc(st2.input);
+  if (st2.sel) return overwritePitch({ ...st2, input }, pitch);
+  const f = fillTarget(st2);
+  if (f >= 0) {
+    const t = st2.song.tokens[f], tokens2 = st2.song.tokens.slice();
+    tokens2[f] = { ...t, pitch };
+    return next(st2, tokens2, { caret: f + 1, input, log: [...st2.log, { k: "fill", id: t.id, unit: t.dur }] });
+  }
+  const dur = unitDur(st2.input), id = st2.nextId, tokens = st2.song.tokens.slice();
+  tokens.splice(st2.caret, 0, { kind: "note", id, pitch, dur, lyric: null });
+  return next(st2, tokens, { caret: st2.caret + 1, nextId: id + 1, input, log: [...st2.log, { k: "ins", id, unit: dur }] });
+}
+function writeDegree(st2, degree2, dir) {
+  let at;
+  if (st2.sel) at = firstNoteIn(st2);
+  else {
+    const f = fillTarget(st2);
+    at = f >= 0 ? f : st2.caret;
+  }
+  if (at < 0) return st2;
+  return writePitch(st2, placeDegree(degree2, inputKey(st2), prevPitch(st2.song.tokens, at), dir));
+}
+function writeRest(st2) {
+  if (st2.sel) return st2;
+  const dur = unitDur(st2.input), id = st2.nextId, tokens = st2.song.tokens.slice();
+  tokens.splice(st2.caret, 0, { kind: "rest", id, dur });
+  return next(st2, tokens, { caret: st2.caret + 1, nextId: id + 1, log: [...st2.log, { k: "ins", id, unit: dur }] });
+}
+function writeBar(st2) {
+  const at = st2.sel ? st2.sel.to : st2.caret, id = st2.nextId, tokens = st2.song.tokens.slice();
+  tokens.splice(at, 0, { kind: "bar", id });
+  return next(st2, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+}
+function writeMark(st2, v) {
+  const at = st2.sel ? st2.sel.from : st2.caret, tokens = st2.song.tokens;
+  let a = at, b = at;
+  while (a > 0 && isMark(tokens[a - 1])) a--;
+  while (b < tokens.length && isMark(tokens[b])) b++;
+  for (let i = a; i < b; i++) if (tokens[i].kind === v.kind) return { st: setMark({ ...leave(st2), sel: null }, i, v), index: i, fresh: false };
+  const id = st2.nextId, nt = tokens.slice();
+  nt.splice(at, 0, { ...v, id });
+  const input = v.kind === "key" ? { ...st2.input, inputFifths: null } : st2.input;
+  return { st: next(st2, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [], input }), index: at, fresh: true };
+}
+function setMark(st2, i, v) {
+  const t = st2.song.tokens[i];
+  if (!t || t.kind !== v.kind) return st2;
+  const nt = st2.song.tokens.slice();
+  nt[i] = { ...v, id: t.id };
+  return next(st2, nt, v.kind === "key" ? { input: { ...st2.input, inputFifths: null } } : {});
+}
+function deleteMark(st2, i) {
+  const t = st2.song.tokens[i];
+  if (!t || !isMark(t) || i < headLen(st2.song.tokens)) return st2;
+  const nt = st2.song.tokens.slice();
+  nt.splice(i, 1);
+  return next(st2, nt, { caret: i < st2.caret ? st2.caret - 1 : st2.caret, sel: null });
+}
+function extend(st2) {
+  if (st2.sel) return mapSelDur(st2, (d2) => d2 + unitDur(st2.input));
+  const tokens = st2.song.tokens;
+  let target = -1, unit = unitDur(st2.input);
+  for (let k = st2.log.length - 1; k >= 0 && target < 0; k--) {
+    const e = st2.log[k], i = indexOfId(tokens, e.id);
+    if (i < 0) continue;
+    target = i;
+    for (let q = k; q >= 0; q--) {
+      const f = st2.log[q];
+      if (f.id === e.id && f.k !== "ext") {
+        unit = f.unit;
+        break;
+      }
+    }
+  }
+  if (target < 0) target = currentIndex(st2);
+  if (target < 0) return st2;
+  const t = tokens[target];
+  const barBetween = tokens.slice(target + 1, st2.caret).some((x) => x.kind === "bar");
+  if (barBetween) {
+    const id = st2.nextId, nt2 = tokens.slice();
+    const tok = t.kind === "note" ? { kind: "note", id, pitch: t.pitch, dur: unit, lyric: null, tie: true } : { kind: "rest", id, dur: unit };
+    nt2.splice(st2.caret, 0, tok);
+    return next(st2, nt2, { caret: st2.caret + 1, nextId: id + 1, log: [...st2.log, { k: "tie", id, unit }] });
+  }
+  const d = t.dur + unit;
+  if (!validDur(d)) return st2;
+  const nt = tokens.slice();
+  nt[target] = { ...t, dur: d };
+  return next(st2, nt, { log: [...st2.log, { k: "ext", id: t.id, by: unit }] });
+}
+function backspace(st2) {
+  if (st2.sel) return deleteSel(st2);
+  const tokens = st2.song.tokens;
+  while (st2.log.length) {
+    const e = st2.log[st2.log.length - 1], log = st2.log.slice(0, -1), i = indexOfId(tokens, e.id);
+    if (i < 0) {
+      st2 = { ...st2, log };
+      continue;
+    }
+    const nt2 = tokens.slice();
+    if (e.k === "ext") {
+      const t = nt2[i];
+      nt2[i] = { ...t, dur: t.dur - e.by };
+      return next(st2, nt2, { log });
+    }
+    if (e.k === "fill") {
+      const t = nt2[i];
+      nt2[i] = { ...t, pitch: null };
+      return next(st2, nt2, { log, caret: i });
+    }
+    nt2.splice(i, 1);
+    return next(st2, nt2, { log, caret: i < st2.caret ? st2.caret - 1 : st2.caret });
+  }
+  if (st2.caret <= headLen(tokens)) return st2;
+  const nt = tokens.slice();
+  nt.splice(st2.caret - 1, 1);
+  return next(st2, nt, { caret: st2.caret - 1 });
+}
+function deleteForward(st2) {
+  if (st2.sel) return deleteSel(st2);
+  if (st2.caret >= st2.song.tokens.length) return st2;
+  const nt = st2.song.tokens.slice();
+  nt.splice(st2.caret, 1);
+  return next(leave(st2), nt);
+}
+function shorter(st2) {
+  if (st2.sel) return mapSelDur(st2, (d) => d / 2);
+  return st2.input.unit > 0 ? { ...st2, input: { ...st2.input, unit: st2.input.unit - 1 } } : st2;
+}
+function longer(st2) {
+  if (st2.sel) return mapSelDur(st2, (d) => d * 2);
+  return st2.input.unit < LADDER.length - 1 ? { ...st2, input: { ...st2.input, unit: st2.input.unit + 1 } } : st2;
+}
+function setTuplet(st2, n2) {
+  return { ...st2, input: { ...st2.input, tuplet: n2 } };
+}
+function tapAcc(st2, acc, now) {
+  if (st2.sel) return mapSelPitch(st2, (p) => alterBy(p, acc));
+  const i = st2.input;
+  if (i.acc !== acc || i.accMode === "off") return { ...st2, input: { ...i, acc, accMode: "once", accAt: now } };
+  if (i.accMode === "once" && now - i.accAt < 350) return { ...st2, input: { ...i, accMode: "lock", accAt: now } };
+  return { ...st2, input: { ...i, acc: 0, accMode: "off", accAt: now } };
+}
+function setInputKey(st2, fifths) {
+  return { ...st2, input: { ...st2.input, inputFifths: fifths } };
+}
+function firstNoteIn(st2) {
+  if (!st2.sel) return -1;
+  for (let i = st2.sel.from; i < st2.sel.to; i++) if (st2.song.tokens[i].kind === "note") return i;
+  return -1;
+}
+function nextNoteAfter(tokens, i) {
+  for (let j = i + 1; j < tokens.length; j++) if (tokens[j].kind === "note") return j;
+  return -1;
+}
+function overwritePitch(st2, pitch) {
+  const i = firstNoteIn(st2);
+  if (i < 0) return st2;
+  const nt = st2.song.tokens.slice();
+  nt[i] = { ...nt[i], pitch };
+  const j = nextNoteAfter(nt, i);
+  return j >= 0 ? next(st2, nt, { sel: { from: j, to: j + 1 }, caret: j + 1 }) : next(st2, nt, { sel: null, caret: nt.length, log: [] });
+}
+function mapSelDur(st2, f) {
+  if (!st2.sel) return st2;
+  const nt = st2.song.tokens.slice();
+  let changed = false;
+  for (let i = st2.sel.from; i < st2.sel.to; i++) {
+    const t = nt[i];
+    if (!isTimed(t)) continue;
+    const d = f(t.dur);
+    if (validDur(d)) {
+      nt[i] = { ...t, dur: d };
+      changed = true;
+    }
+  }
+  return changed ? next(st2, nt) : st2;
+}
+function mapSelPitch(st2, f) {
+  if (!st2.sel) return st2;
+  const nt = st2.song.tokens.slice();
+  for (let i = st2.sel.from; i < st2.sel.to; i++) {
+    const t = nt[i];
+    if (t.kind === "note") nt[i] = { ...t, pitch: f(effectivePitch(nt, i)) };
+  }
+  return next(st2, nt);
+}
+function deleteSel(st2) {
+  if (!st2.sel) return st2;
+  const nt = st2.song.tokens.slice();
+  nt.splice(st2.sel.from, st2.sel.to - st2.sel.from);
+  return next(st2, nt, { sel: null, caret: st2.sel.from, log: [] });
+}
+function mapTargetPitch(st2, f) {
+  if (st2.sel) {
+    const from = st2.sel.from;
+    return mapSelPitch(st2, (p) => f(p, keyAt(st2.song, from)));
+  }
+  const i = currentIndex(st2);
+  if (i < 0 || st2.song.tokens[i].kind !== "note") return st2;
+  const nt = st2.song.tokens.slice();
+  nt[i] = { ...nt[i], pitch: f(effectivePitch(nt, i), keyAt(st2.song, i)) };
+  return next(st2, nt);
+}
+var stepTarget = (st2, steps) => mapTargetPitch(st2, (p, k) => stepBy(p, steps, k));
+var alterTarget = (st2, d) => mapTargetPitch(st2, (p, k) => transposeSemis(p, d, k));
+var octaveTarget = (st2, d) => mapTargetPitch(st2, (p) => octaveBy(p, d));
+function transposeSel(st2, semis) {
+  if (!st2.sel || !semis) return st2;
+  const nt = st2.song.tokens.slice();
+  for (let i = st2.sel.from; i < st2.sel.to; i++) {
+    const t = nt[i];
+    if (t.kind === "note" && t.pitch) nt[i] = { ...t, pitch: transposeSemis(t.pitch, semis, keyAt(st2.song, i)) };
+  }
+  return next(st2, nt);
+}
+function modulateSel(st2, toFifths) {
+  if (!st2.sel) return st2;
+  const { from, to } = st2.sel, old = st2.song, f0 = keyAt(old, from), df = toFifths - f0;
+  if (!df) return st2;
+  const { steps, semis } = keyInterval(f0, toFifths);
+  const wrap = (f) => f > 7 ? f - 12 : f < -7 ? f + 12 : f;
+  const nt = old.tokens.slice();
+  for (let i = from; i < to; i++) {
+    const t = nt[i];
+    if (t.kind === "note" && t.pitch) nt[i] = { ...t, pitch: transposeInterval(t.pitch, steps, semis) };
+    else if (t.kind === "key") nt[i] = { ...t, fifths: wrap(t.fifths + df) };
+  }
+  let nextId = st2.nextId;
+  if (to < nt.length) {
+    let hasKey = false;
+    for (let i = to; i < nt.length && isMark(nt[i]); i++) if (nt[i].kind === "key") hasKey = true;
+    let after = toFifths;
+    for (let i = from; i < to; i++) {
+      const t = nt[i];
+      if (t.kind === "key") after = t.fifths;
+    }
+    const back = keyAt(old, to);
+    if (!hasKey && back !== after) nt.splice(to, 0, { kind: "key", id: nextId++, fifths: back });
+  }
+  let a = from;
+  while (a > 0 && isMark(nt[a - 1])) a--;
+  let b = from;
+  while (b < nt.length && isMark(nt[b])) b++;
+  let shift = 0, keyIdx = -1;
+  for (let i = a; i < b; i++) if (nt[i].kind === "key") keyIdx = i;
+  if (keyIdx >= 0 && keyIdx < from) nt[keyIdx] = { ...nt[keyIdx], fifths: toFifths };
+  else if (keyIdx < 0) {
+    nt.splice(from, 0, { kind: "key", id: nextId++, fifths: toFifths });
+    shift = 1;
+  }
+  const sel = { from: from + shift, to: to + shift };
+  return next({ ...st2, nextId }, nt, { sel, caret: sel.to, input: { ...st2.input, inputFifths: null } });
+}
+var setCaret = (st2, caret) => ({ ...leave(st2), sel: null, caret: Math.max(headLen(st2.song.tokens), Math.min(st2.song.tokens.length, caret)) });
+function select(st2, from, to) {
+  const n2 = st2.song.tokens.length, a = Math.max(headLen(st2.song.tokens), Math.min(from, to)), b = Math.min(n2, Math.max(from, to));
+  if (b <= a) return setCaret(st2, a);
+  return { ...leave(st2), sel: { from: a, to: b }, caret: b };
+}
+function moveCaret(st2, d) {
+  if (st2.sel) return setCaret(st2, d < 0 ? st2.sel.from : st2.sel.to);
+  return setCaret(st2, st2.caret + d);
+}
+function extendSelection(st2, d) {
+  if (!st2.sel) return d < 0 ? select(st2, st2.caret - 1, st2.caret) : select(st2, st2.caret, st2.caret + 1);
+  return d < 0 ? select(st2, st2.sel.from - 1, st2.sel.to) : select(st2, st2.sel.from, st2.sel.to + 1);
+}
+function selectToEdge(st2, d) {
+  const n2 = st2.song.tokens.length;
+  if (d < 0) return select(st2, headLen(st2.song.tokens), st2.sel ? st2.sel.to : st2.caret);
+  return select(st2, st2.sel ? st2.sel.from : st2.caret, n2);
+}
+function escape(st2) {
+  if (st2.sel) return st2;
+  return st2.caret > headLen(st2.song.tokens) ? select(st2, st2.caret - 1, st2.caret) : st2;
+}
+function setNote(st2, i, patch) {
+  const t = st2.song.tokens[i];
+  if (!t || t.kind !== "note") return st2;
+  const nt = st2.song.tokens.slice();
+  nt[i] = { ...t, ...patch };
+  return next(st2, nt);
+}
+function setDur(st2, i, dur) {
+  const t = st2.song.tokens[i];
+  if (!t || !isTimed(t) || !validDur(dur)) return st2;
+  const nt = st2.song.tokens.slice();
+  nt[i] = { ...t, dur };
+  return next(st2, nt);
+}
+function setHum(st2, hum) {
+  return { ...st2, song: { ...st2.song, hum } };
+}
+function timeline(song) {
+  const out = [];
+  let t = 0, bar2 = 0, sec = 0, bpm = DEFAULT_BPM;
+  song.tokens.forEach((tok, index) => {
+    if (tok.kind === "bar") {
+      bar2 = t;
+      return;
+    }
+    if (tok.kind === "tempo") {
+      bpm = tok.bpm;
+      return;
+    }
+    if (!isTimed(tok)) return;
+    const len = tok.dur / TPQ * (60 / bpm);
+    out.push({ index, tok, start: t, inBar: t - bar2, bpm, t0: sec, t1: sec + len });
+    t += tok.dur;
+    sec += len;
+  });
+  return out;
+}
+function barFill(song) {
+  const wantOf = (b, bt) => b * WHOLE / bt;
+  let want = wantOf(DEFAULT_TIME.beats, DEFAULT_TIME.beatType);
+  const out = [];
+  let from = 0, ticks = 0;
+  song.tokens.forEach((tok, i) => {
+    if (tok.kind === "bar") {
+      out.push({ from, to: i, ticks, full: ticks === want });
+      from = i + 1;
+      ticks = 0;
+    } else if (tok.kind === "time") want = wantOf(tok.beats, tok.beatType);
+    else if (isTimed(tok)) ticks += tok.dur;
+  });
+  return out;
+}
+
+// src/score/commands.ts
+function apply(st2, c, now = Date.now()) {
+  switch (c.k) {
+    case "degree":
+      return writeDegree(st2, c.degree, c.dir);
+    case "rest":
+      return writeRest(st2);
+    case "bar":
+      return writeBar(st2);
+    case "shorter":
+      return shorter(st2);
+    case "longer":
+      return longer(st2);
+    case "tuplet":
+      return setTuplet(st2, st2.input.tuplet ? 0 : 3);
+    case "extend":
+      return extend(st2);
+    case "acc":
+      return tapAcc(st2, c.acc, now);
+    case "octave":
+      return octaveTarget(st2, c.d);
+    case "step":
+      return stepTarget(st2, c.d);
+    case "alter":
+      return alterTarget(st2, c.d);
+    case "caret":
+      return moveCaret(st2, c.d);
+    case "selext":
+      return extendSelection(st2, c.d);
+    case "home":
+      return setCaret(st2, 0);
+    // setCaret 自己夹到谱头后面
+    case "end":
+      return setCaret(st2, st2.song.tokens.length);
+    case "escape":
+      return escape(st2);
+    case "backspace":
+      return backspace(st2);
+    case "delete":
+      return deleteForward(st2);
+    case "transpose":
+      return transposeSel(st2, c.semis);
+    case "modulate":
+      return modulateSel(st2, c.fifths);
+    case "seledge":
+      return selectToEdge(st2, c.d);
+  }
+}
+
+// src/input/keys.ts
+var range = (codes, m = {}) => codes.map((code) => ({ code, ...m }));
+var DIGITS = ["Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7"];
+var NUMPAD = ["Numpad1", "Numpad2", "Numpad3", "Numpad4", "Numpad5", "Numpad6", "Numpad7"];
+var DOWN_ROW = ["KeyQ", "KeyW", "KeyE", "KeyR", "KeyT", "KeyY", "KeyU"];
+var cmd = (c) => () => ({ k: "cmd", cmd: c });
+var degree = (dir) => (i, where) => where === "impro" ? { k: "audition", degree: i % 7 + 1, dir } : { k: "cmd", cmd: { k: "degree", degree: i % 7 + 1, dir } };
+var BINDINGS = [
+  // ── 写音 ──
+  {
+    id: "degree.near",
+    group: "\u5199\u97F3",
+    keys: [...range(DIGITS), ...range(NUMPAD)],
+    show: "1\u20137\uFF08\u5C0F\u952E\u76D8\u4E5F\u884C\uFF09",
+    sound: true,
+    act: degree("near"),
+    does: { write: "\u5199\u4E00\u4E2A\u97F3\uFF1A\u8C03\u91CC\u7B2C\u51E0\u7EA7\uFF0C\u843D\u5728\u79BB\u4E0A\u4E00\u4E2A\u97F3\u6700\u8FD1\u5904", edit: "\u628A\u9009\u4E2D\u7684\u7B2C\u4E00\u4E2A\u97F3\u6539\u6210\u8FD9\u4E00\u7EA7\uFF0C\u9009\u4E2D\u8DF3\u5230\u4E0B\u4E00\u4E2A\u97F3", impro: "\u53EA\u5531\u4E0D\u5199" }
+  },
+  {
+    id: "degree.up",
+    group: "\u5199\u97F3",
+    keys: range(DIGITS, { shift: true }),
+    show: "Shift+1\u20137",
+    sound: true,
+    act: degree("up"),
+    does: { write: "\u540C\u4E0A\uFF0C\u5F80\u4E0A\u627E", edit: "\u540C\u4E0A\uFF0C\u5F80\u4E0A\u627E", impro: "\u53EA\u5531\u4E0D\u5199\uFF08\u5F80\u4E0A\u627E\uFF09" }
+  },
+  {
+    id: "degree.down",
+    group: "\u5199\u97F3",
+    keys: range(DOWN_ROW),
+    show: "Q W E R T Y U",
+    sound: true,
+    act: degree("down"),
+    does: { write: "\u540C\u4E0A\uFF0C\u5F80\u4E0B\u627E\uFF08\u6570\u5B57\u6B63\u4E0B\u65B9\u90A3\u4E00\u6392\uFF09", edit: "\u540C\u4E0A\uFF0C\u5F80\u4E0B\u627E", impro: "\u53EA\u5531\u4E0D\u5199\uFF08\u5F80\u4E0B\u627E\uFF09" }
+  },
+  {
+    id: "rest",
+    group: "\u5199\u97F3",
+    keys: [{ code: "Digit0" }, { code: "Numpad0" }],
+    act: cmd({ k: "rest" }),
+    does: { write: "\u4F11\u6B62" }
+  },
+  {
+    id: "bar",
+    group: "\u5199\u97F3",
+    keys: [{ code: "Enter" }, { code: "NumpadEnter" }, { code: "Backslash", shift: true }],
+    show: "Enter / |",
+    act: cmd({ k: "bar" }),
+    does: { write: "\u5C0F\u8282\u7EBF", edit: "\u5728\u9009\u4E2D\u540E\u9762\u63D2\u5C0F\u8282\u7EBF" }
+  },
+  // ── 时值 ──
+  {
+    id: "shorter",
+    group: "\u65F6\u503C",
+    keys: [{ code: "Digit8" }, { code: "Numpad8" }],
+    act: cmd({ k: "shorter" }),
+    does: { write: "\u77ED\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u51CF\u534A\uFF08\u5230\u4E09\u5341\u4E8C\u5206\u4E3A\u6B62\uFF09", edit: "\u9009\u4E2D\u7684\u97F3\u51CF\u534A" }
+  },
+  {
+    id: "longer",
+    group: "\u65F6\u503C",
+    keys: [{ code: "Digit9" }, { code: "Numpad9" }],
+    act: cmd({ k: "longer" }),
+    does: { write: "\u957F\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u52A0\u500D\uFF08\u5230\u5168\u97F3\u7B26\u4E3A\u6B62\uFF09", edit: "\u9009\u4E2D\u7684\u97F3\u52A0\u500D" }
+  },
+  {
+    id: "tuplet",
+    group: "\u65F6\u503C",
+    keys: [{ code: "Digit8", shift: true }],
+    act: cmd({ k: "tuplet" }),
+    does: { write: "\u4E09\u8FDE\u97F3\u5F00 / \u5173\uFF08\u4E0B\u4E00\u4E2A\u97F3\u8D77\uFF09", edit: "\u4E09\u8FDE\u97F3\u5F00 / \u5173\uFF08\u4E0B\u4E00\u4E2A\u97F3\u8D77\uFF09" }
+  },
+  {
+    id: "extend",
+    group: "\u65F6\u503C",
+    keys: [{ code: "Minus" }, { code: "NumpadSubtract" }],
+    act: cmd({ k: "extend" }),
+    does: { write: "\u521A\u5199\u7684\u97F3\u52A0\u4E00\u4EFD\uFF08\u7B80\u8C31\u7684\u6A2A\u7EBF\uFF09\uFF1B\u9694\u7740\u5C0F\u8282\u7EBF = \u65B0\u5F00\u4E00\u4E2A\u8FDE\u7740\u7684\u540C\u97F3", edit: "\u9009\u4E2D\u7684\u97F3\u5404\u52A0\u4E00\u4EFD" }
+  },
+  // ── 音高 ──
+  {
+    id: "sharp",
+    group: "\u97F3\u9AD8",
+    keys: [{ code: "BracketRight" }],
+    act: cmd({ k: "acc", acc: 1 }),
+    does: { write: "\u266F\uFF1A\u70B9\u4E00\u4E0B\u7BA1\u4E0B\u4E00\u4E2A\u97F3\uFF0C\u8FDE\u70B9\u4E24\u4E0B\u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00", edit: "\u9009\u4E2D\u7684\u97F3\u5347\u534A\u97F3" }
+  },
+  {
+    id: "flat",
+    group: "\u97F3\u9AD8",
+    keys: [{ code: "BracketLeft" }],
+    act: cmd({ k: "acc", acc: -1 }),
+    does: { write: "\u266D\uFF1A\u540C\u4E0A", edit: "\u9009\u4E2D\u7684\u97F3\u964D\u534A\u97F3" }
+  },
+  {
+    id: "octave.up",
+    group: "\u97F3\u9AD8",
+    keys: [{ code: "Quote" }, { code: "NumpadMultiply" }, { code: "ArrowUp", alt: true }],
+    act: cmd({ k: "octave", d: 1 }),
+    does: { write: "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u9AD8\u516B\u5EA6", edit: "\u9009\u4E2D\u7684\u97F3\u9AD8\u516B\u5EA6" }
+  },
+  {
+    id: "octave.down",
+    group: "\u97F3\u9AD8",
+    keys: [{ code: "Comma" }, { code: "NumpadDivide" }, { code: "ArrowDown", alt: true }],
+    act: cmd({ k: "octave", d: -1 }),
+    does: { write: "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u4F4E\u516B\u5EA6", edit: "\u9009\u4E2D\u7684\u97F3\u4F4E\u516B\u5EA6" }
+  },
+  { id: "step.up", group: "\u97F3\u9AD8", keys: [{ code: "ArrowUp" }], act: cmd({ k: "step", d: 1 }), does: { write: "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u5F80\u4E0A\u4E00\u7EA7", edit: "\u9009\u4E2D\u7684\u97F3\u5F80\u4E0A\u4E00\u7EA7" } },
+  { id: "step.down", group: "\u97F3\u9AD8", keys: [{ code: "ArrowDown" }], act: cmd({ k: "step", d: -1 }), does: { write: "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u5F80\u4E0B\u4E00\u7EA7", edit: "\u9009\u4E2D\u7684\u97F3\u5F80\u4E0B\u4E00\u7EA7" } },
+  { id: "alter.up", group: "\u97F3\u9AD8", keys: [{ code: "ArrowUp", shift: true }], act: cmd({ k: "alter", d: 1 }), does: { write: "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u5347\u534A\u97F3\uFF08\u6309\u8C03\u62FC\u5199\uFF1AC \u5927\u8C03 E \u2192 F\uFF09", edit: "\u9009\u4E2D\u7684\u97F3\u6574\u4F53\u5347\u534A\u97F3\uFF08\u6309\u8C03\u62FC\u5199\uFF09" } },
+  { id: "alter.down", group: "\u97F3\u9AD8", keys: [{ code: "ArrowDown", shift: true }], act: cmd({ k: "alter", d: -1 }), does: { write: "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u964D\u534A\u97F3\uFF08\u6309\u8C03\u62FC\u5199\uFF09", edit: "\u9009\u4E2D\u7684\u97F3\u6574\u4F53\u964D\u534A\u97F3\uFF08\u6309\u8C03\u62FC\u5199\uFF09" } },
+  // ── 光标与选中 ──
+  { id: "left", group: "\u5149\u6807\u4E0E\u9009\u4E2D", keys: [{ code: "ArrowLeft" }], act: cmd({ k: "caret", d: -1 }), does: { write: "\u5149\u6807\u5DE6\u79FB", edit: "\u6536\u6210\u9009\u4E2D\u5DE6\u8FB9\u7684\u5149\u6807\uFF08\u56DE\u5230\u5199\uFF09" } },
+  { id: "right", group: "\u5149\u6807\u4E0E\u9009\u4E2D", keys: [{ code: "ArrowRight" }], act: cmd({ k: "caret", d: 1 }), does: { write: "\u5149\u6807\u53F3\u79FB", edit: "\u6536\u6210\u9009\u4E2D\u53F3\u8FB9\u7684\u5149\u6807\uFF08\u56DE\u5230\u5199\uFF09" } },
+  { id: "sel.left", group: "\u5149\u6807\u4E0E\u9009\u4E2D", keys: [{ code: "ArrowLeft", shift: true }], act: cmd({ k: "selext", d: -1 }), does: { write: "\u9009\u4E2D\u5149\u6807\u524D\u90A3\u4E2A\uFF08\u5199 \u2192 \u6539\uFF09", edit: "\u9009\u4E2D\u5F80\u5DE6\u6269\u4E00\u4E2A" } },
+  { id: "sel.right", group: "\u5149\u6807\u4E0E\u9009\u4E2D", keys: [{ code: "ArrowRight", shift: true }], act: cmd({ k: "selext", d: 1 }), does: { write: "\u9009\u4E2D\u5149\u6807\u540E\u90A3\u4E2A\uFF08\u5199 \u2192 \u6539\uFF09", edit: "\u9009\u4E2D\u5F80\u53F3\u6269\u4E00\u4E2A" } },
+  { id: "sel.home", group: "\u5149\u6807\u4E0E\u9009\u4E2D", keys: [{ code: "Home", shift: true }], act: cmd({ k: "seledge", d: -1 }), does: { write: "\u4ECE\u5149\u6807\u9009\u5230\u5F00\u5934\uFF08\u5199 \u2192 \u6539\uFF09", edit: "\u9009\u5230\u5F00\u5934" } },
+  { id: "sel.end", group: "\u5149\u6807\u4E0E\u9009\u4E2D", keys: [{ code: "End", shift: true }], act: cmd({ k: "seledge", d: 1 }), does: { write: "\u4ECE\u5149\u6807\u9009\u5230\u672B\u5C3E\uFF08Home \u518D Shift+End = \u5168\u9009\uFF09", edit: "\u9009\u5230\u672B\u5C3E" } },
+  { id: "home", group: "\u5149\u6807\u4E0E\u9009\u4E2D", keys: [{ code: "Home" }], act: cmd({ k: "home" }), does: { write: "\u5149\u6807\u5230\u5F00\u5934", edit: "\u5149\u6807\u5230\u5F00\u5934" } },
+  { id: "end", group: "\u5149\u6807\u4E0E\u9009\u4E2D", keys: [{ code: "End" }], act: cmd({ k: "end" }), does: { write: "\u5149\u6807\u5230\u672B\u5C3E", edit: "\u5149\u6807\u5230\u672B\u5C3E" } },
+  {
+    id: "escape",
+    group: "\u5149\u6807\u4E0E\u9009\u4E2D",
+    keys: [{ code: "Escape" }],
+    act: (_i, w) => w === "lyric" ? { k: "lyric", a: "cancel" } : w === "mark" ? { k: "mark", a: "cancel" } : w === "sheet" ? { k: "sheet", a: "close" } : { k: "cmd", cmd: { k: "escape" } },
+    does: { write: "\u9009\u4E2D\u5149\u6807\u524D\u90A3\u4E2A\uFF08\u5199 \u2192 \u6539\uFF09", lyric: "\u6536\u8D77\uFF0C\u4E0D\u8D34\u6846\u91CC\u7684\u5B57", mark: "\u6536\u8D77\uFF0C\u4E0D\u6539\uFF08\u521A\u63D2\u7684\u8BB0\u53F7 = \u64A4\u6389\uFF09", sheet: "\u5173\u6389\u9762\u677F" }
+  },
+  {
+    id: "backspace",
+    group: "\u5149\u6807\u4E0E\u9009\u4E2D",
+    keys: [{ code: "Backspace" }],
+    act: (_i, w) => w === "lyric" ? { k: "lyric", a: "back" } : { k: "cmd", cmd: { k: "backspace" } },
+    does: { write: "\u64A4\u56DE\u672C\u6B21\u8F93\u5165\u7684\u6700\u540E\u4E00\u7B14\uFF08\u300C\u2212\u300D\u3001\u97F3\uFF09\uFF1B\u632A\u8FC7\u5149\u6807\u540E = \u5220\u5149\u6807\u524D\u4E00\u4E2A", edit: "\u5220\u6389\u9009\u4E2D", lyric: "\u6846\u662F\u7A7A\u7684\uFF1A\u56DE\u5230\u4E0A\u4E00\u4E2A\u97F3\uFF0C\u628A\u5B83\u7684\u5B57\u62FF\u51FA\u6765\u63A5\u7740\u5220" }
+  },
+  { id: "delete", group: "\u5149\u6807\u4E0E\u9009\u4E2D", keys: [{ code: "Delete" }], act: cmd({ k: "delete" }), does: { write: "\u5220\u5149\u6807\u540E\u4E00\u4E2A", edit: "\u5220\u6389\u9009\u4E2D" } },
+  // ── 播放 ──
+  { id: "play", group: "\u64AD\u653E", keys: [{ code: "Space" }], act: () => ({ k: "play" }), does: { write: "\u6708\u8BFB\u5531 / \u505C", edit: "\u6708\u8BFB\u5531 / \u505C" } },
+  { id: "impro", group: "\u64AD\u653E", keys: [{ code: "Backquote" }], show: "`", act: () => ({ k: "impro" }), does: { write: "\u300C\u5F39\u300D\u5F00 / \u5173\uFF08\u97F3\u7B26\u952E\u53EA\u5531\u4E0D\u5199\uFF09", edit: "\u300C\u5F39\u300D\u5F00 / \u5173", impro: "\u300C\u5F39\u300D\u5173" } },
+  // ── 歌词框（点谱下面打开；输入法照常用，中文 / 日文选定一段字就按字往后贴） ──
+  {
+    id: "lyric.next",
+    group: "\u6B4C\u8BCD\u6846",
+    keys: [{ code: "Space" }, { code: "Tab" }],
+    show: "\u7A7A\u683C / Tab",
+    act: () => ({ k: "lyric", a: "next" }),
+    does: { lyric: "\u8FD9\u4E2A\u8BCD\u5B8C\u4E86\uFF1A\u8D34\u4E0A\u3001\u8DF3\u4E0B\u4E00\u4E2A\u97F3\uFF08\u6846\u662F\u7A7A\u7684 = \u53EA\u8DF3\uFF09" }
+  },
+  { id: "lyric.prev", group: "\u6B4C\u8BCD\u6846", keys: [{ code: "Tab", shift: true }], act: () => ({ k: "lyric", a: "prev" }), does: { lyric: "\u56DE\u4E0A\u4E00\u4E2A\u97F3" } },
+  {
+    id: "lyric.hyphen",
+    group: "\u6B4C\u8BCD\u6846",
+    keys: [{ code: "Minus" }],
+    show: "-",
+    act: () => ({ k: "lyric", a: "hyphen" }),
+    does: { lyric: "\u8DDF\u5728\u5B57\u6BCD\u540E\u9762\uFF1A\u97F3\u8282\u5B8C\u4E86\u3001\u8BCD\u6CA1\u5B8C\uFF08\u8C31\u4E0A\u753B\u8FDE\u5B57\u7B26\uFF09\uFF0C\u8DF3\u4E0B\u4E00\u4E2A\u97F3" }
+  },
+  { id: "lyric.commit", group: "\u6B4C\u8BCD\u6846", keys: [{ code: "Enter" }, { code: "NumpadEnter" }], act: () => ({ k: "lyric", a: "commit" }), does: { lyric: "\u8D34\u4E0A\u3001\u6536\u8D77" } },
+  // ── 记号框（点谱上的调号 / 拍号 / 速度打开） ──
+  { id: "mark.commit", group: "\u8BB0\u53F7\u6846", keys: [{ code: "Enter" }, { code: "NumpadEnter" }], act: () => ({ k: "mark", a: "commit" }), does: { mark: "\u6309\u6846\u91CC\u7684\u5B57\u6539\uFF081=D / Bb / 2# \xB7 3/4 \xB7 90 \u6216 Andante\uFF09\u3001\u6536\u8D77" } }
+];
+var NAME = {
+  Minus: "-",
+  BracketRight: "]",
+  BracketLeft: "[",
+  Backslash: "\\",
+  Quote: "'",
+  Comma: ",",
+  Backquote: "`",
+  Space: "\u7A7A\u683C",
+  Enter: "Enter",
+  NumpadEnter: "\u5C0F\u952E\u76D8 Enter",
+  Escape: "Esc",
+  Backspace: "\u9000\u683C",
+  Delete: "Delete",
+  Home: "Home",
+  End: "End",
+  Tab: "Tab",
+  ArrowUp: "\u2191",
+  ArrowDown: "\u2193",
+  ArrowLeft: "\u2190",
+  ArrowRight: "\u2192",
+  NumpadSubtract: "\u5C0F\u952E\u76D8 -",
+  NumpadMultiply: "\u5C0F\u952E\u76D8 *",
+  NumpadDivide: "\u5C0F\u952E\u76D8 /"
+};
+function chordName(c) {
+  const base2 = NAME[c.code] ?? c.code.replace(/^Digit/, "").replace(/^Key/, "").replace(/^Numpad(\d)$/, "\u5C0F\u952E\u76D8 $1");
+  return `${c.alt ? "Alt+" : ""}${c.shift ? "Shift+" : ""}${base2}`;
+}
+function hint(id) {
+  const b = BINDINGS.find((x) => x.id === id);
+  return b ? b.show?.split(" / ")[0] ?? chordName(b.keys[0]) : "";
+}
+function matches(c, e) {
+  if (c.code !== e.code || !!c.shift !== e.shiftKey || !!c.alt !== e.altKey) return false;
+  if (/^Numpad\d$/.test(c.code) && !/^\d$/.test(e.key)) return false;
+  return true;
+}
+function route(e, where, base2 = "write") {
+  if (e.ctrlKey || e.metaKey || e.isComposing) return null;
+  const tryWhere = (w) => {
+    for (const b of BINDINGS) {
+      if (!b.does[w]) continue;
+      const i = b.keys.findIndex((c) => matches(c, e));
+      if (i >= 0) return b.act(i, w);
+    }
+    return null;
+  };
+  return tryWhere(where) ?? (where === "impro" ? tryWhere(base2) : null);
+}
+function isSoundKey(e) {
+  return BINDINGS.some((b) => b.sound && b.keys.some((c) => c.code === e.code));
+}
+
+// src/score/lyrics.ts
+var MELISMA_MARK = "\u30FC";
+var SMALL = /* @__PURE__ */ new Set([..."\u3083\u3085\u3087\u3041\u3043\u3045\u3047\u3049\u308E\u3095\u3096\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9\u30EE\u30F5\u30F6", "\u3063", "\u30C3"]);
+var MELISMA = /* @__PURE__ */ new Set(["\u30FC", "~", "\uFF5E", "_", "\uFF3F"]);
+var isKana = (c) => /[぀-ゟ゠-ヿ]/.test(c);
+var isHan = (c) => /\p{Script=Han}/u.test(c);
+var isLatin = (c) => /[A-Za-z'’]/.test(c);
+function splitSyllables(text) {
+  const out = [];
+  const chars = [...text.normalize("NFC")];
+  for (let i = 0; i < chars.length; i++) {
+    const c = chars[i];
+    if (MELISMA.has(c)) {
+      out.push({ text: MELISMA_MARK, hyph: false });
+      continue;
+    }
+    if (c === "-" || c === "\uFF0D") {
+      out.push({ text: MELISMA_MARK, hyph: false });
+      continue;
+    }
+    if (SMALL.has(c)) {
+      const last = out[out.length - 1];
+      if (last && last.text !== MELISMA_MARK) last.text += c;
+      else out.push({ text: c, hyph: false });
+      continue;
+    }
+    if (isKana(c) || isHan(c)) {
+      out.push({ text: c, hyph: false });
+      continue;
+    }
+    if (isLatin(c)) {
+      let w = c;
+      while (i + 1 < chars.length) {
+        const n2 = chars[i + 1];
+        if (isLatin(n2)) {
+          w += n2;
+          i++;
+          continue;
+        }
+        if ((n2 === "-" || n2 === "\uFF0D") && i + 2 < chars.length && isLatin(chars[i + 2])) {
+          out.push({ text: w, hyph: true });
+          w = "";
+          i++;
+          continue;
+        }
+        break;
+      }
+      if (w) out.push({ text: w, hyph: false });
+      continue;
+    }
+  }
+  return out;
+}
+var lyricSlot = (t) => t.kind === "note" && !t.tie;
+function distributeFrom(st2, start, syl) {
+  const tokens = st2.song.tokens.slice();
+  let nextId = st2.nextId, i = start, last = -1;
+  for (const s of syl) {
+    while (i < tokens.length && !lyricSlot(tokens[i])) i++;
+    if (i < tokens.length) tokens[i] = { ...tokens[i], lyric: s.text, hyph: s.hyph || void 0 };
+    else tokens.push({ kind: "note", id: nextId++, pitch: null, dur: unitDur(st2.input), lyric: s.text, hyph: s.hyph || void 0 });
+    last = i;
+    i++;
+  }
+  return { st: { ...st2, song: { ...st2.song, tokens }, nextId }, last };
+}
+function nextLyricSlot(tokens, i) {
+  for (let j = i + 1; j < tokens.length; j++) if (lyricSlot(tokens[j])) return j;
+  return -1;
+}
+function prevLyricSlot(tokens, i) {
+  for (let j = i - 1; j >= 0; j--) if (lyricSlot(tokens[j])) return j;
+  return -1;
+}
+
+// src/render/smufl.ts
+var GLYPH = {
+  metNoteQuarterUp: "\uECA5",
+  // 速度记号里的四分音符（metronome mark）
+  gClef: "\uE050",
+  noteheadWhole: "\uE0A2",
+  noteheadHalf: "\uE0A3",
+  noteheadBlack: "\uE0A4",
+  augmentationDot: "\uE1E7",
+  flag8thUp: "\uE240",
+  flag8thDown: "\uE241",
+  flag16thUp: "\uE242",
+  flag16thDown: "\uE243",
+  flag32ndUp: "\uE244",
+  flag32ndDown: "\uE245",
+  accidentalFlat: "\uE260",
+  accidentalNatural: "\uE261",
+  accidentalSharp: "\uE262",
+  accidentalDoubleSharp: "\uE263",
+  accidentalDoubleFlat: "\uE264",
+  restWhole: "\uE4E3",
+  restHalf: "\uE4E4",
+  restQuarter: "\uE4E5",
+  rest8th: "\uE4E6",
+  rest16th: "\uE4E7",
+  rest32nd: "\uE4E8"
+};
+var timeSigDigits = (n2) => [...String(n2)].map((d) => String.fromCodePoint(57472 + Number(d))).join("");
+var W = {
+  noteheadBlack: 1.18,
+  noteheadHalf: 1.18,
+  noteheadWhole: 1.688,
+  gClef: 2.684,
+  sharp: 0.996,
+  flat: 0.904,
+  natural: 0.672,
+  doubleSharp: 1,
+  doubleFlat: 1.644,
+  dot: 0.4,
+  timeSigDigit: 1.8,
+  restWhole: 1.128,
+  restHalf: 1.128,
+  restQuarter: 1.08,
+  rest8th: 0.988,
+  rest16th: 1.28,
+  rest32nd: 1.452
+};
+var ENGRAVE = {
+  staffLine: 0.13,
+  stem: 0.12,
+  ledger: 0.16,
+  ledgerExt: 0.4,
+  beam: 0.5,
+  beamGap: 0.25,
+  thinBar: 0.16,
+  tieMid: 0.22
+};
+var STEM_UP_SE = [1.18, 0.168];
+var STEM_DOWN_NW = [0, -0.168];
+var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
+var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
+
+// src/render/engrave.ts
+var LYRIC_EM = 1.6;
+var TEMPO_EM = 1.35;
+var MARGIN = 1.2;
+var STAFF_ABOVE = 6;
+var SYS_H = 17;
+var LYRIC_BELOW = 5.2;
+var BAR_W = 1.6;
+var TOP_LINE = 38;
+var MID_LINE = 34;
+var BOTTOM_LINE = 30;
+var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
+var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
+var GLYPH_TUPLET = (n2) => [...String(n2)].map((d) => String.fromCodePoint(59520 + Number(d))).join("");
+var MIN_PLAIN = TPQ / 8;
+var NOTATABLE = [];
+for (let b = WHOLE; b >= MIN_PLAIN; b /= 2) {
+  NOTATABLE.push({ ticks: b * 1.5, base: b, dotted: true }, { ticks: b, base: b, dotted: false });
+}
+NOTATABLE.sort((a, b) => b.ticks - a.ticks);
+function splitDur(dur) {
+  const out = [];
+  let left = dur;
+  while (left > 0) {
+    const n2 = NOTATABLE.find((v) => v.ticks <= left && (v.dotted ? v.base >= MIN_PLAIN * 2 : true));
+    if (!n2) {
+      out.push({ base: MIN_PLAIN, dotted: false, ticks: left });
+      break;
+    }
+    out.push(n2);
+    left -= n2.ticks;
+  }
+  return out;
+}
+var RATIOS = [[3, 2], [5, 4], [6, 4], [7, 4]];
+function notate(dur) {
+  if (dur % MIN_PLAIN === 0) return { ratio: null, chunks: splitDur(dur) };
+  for (const [n2, m] of RATIOS) {
+    const written = dur * n2 / m;
+    if (Number.isInteger(written) && written % MIN_PLAIN === 0) return { ratio: [n2, m], chunks: splitDur(written).map((c) => ({ ...c, ticks: c.ticks * m / n2 })) };
+  }
+  return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
+}
+var flagLevel = (base2) => base2 >= TPQ ? 0 : Math.round(Math.log2(TPQ / base2));
+var baseWidth = (base2) => 4 + 0.8 * Math.log2(base2 / TPQ);
+var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
+var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
+function engrave(song, o) {
+  const sp = o.sp, P = (v) => v * sp;
+  const tokens = song.tokens, sel = o.sel ?? null, writing = !sel;
+  const prims = [];
+  const inSel = (i) => !!sel && i >= sel.from && i < sel.to;
+  const H = headLen(tokens);
+  let fifths = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
+  const headIdx = {};
+  for (let i = 0; i < H; i++) {
+    const t = tokens[i];
+    if (t.kind === "key") fifths = t.fifths;
+    else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType };
+    else if (t.kind === "tempo") bpm = t.bpm;
+    if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") headIdx[t.kind] = i;
+  }
+  const headKey = fifths, headTime = time, headBpm = bpm;
+  const units = [];
+  const fills = barFill(song);
+  let accState = /* @__PURE__ */ new Map(), inBar = 0, barCount = 0, beat = beatTicks(time.beats, time.beatType);
+  const pushHead = () => {
+    units.push({ kind: "head", w: 0, x: 0, system: 0 });
+  };
+  tokens.forEach((t, i) => {
+    if (i < H) return;
+    if (writing && i === o.caret) pushHead();
+    if (t.kind === "bar") {
+      const f = fills[barCount++];
+      units.push({ kind: "bar", index: i, w: BAR_W, x: 0, system: 0, warn: barCount > 1 && !!f && !f.full });
+      accState = /* @__PURE__ */ new Map();
+      inBar = 0;
+      return;
+    }
+    if (t.kind === "key") {
+      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: keyWidth(t.fifths, fifths), x: 0, system: 0 });
+      fifths = t.fifths;
+      accState = /* @__PURE__ */ new Map();
+      return;
+    }
+    if (t.kind === "time") {
+      units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: timeWidth(t.beats, t.beatType) + 1.2, x: 0, system: 0 });
+      beat = beatTicks(t.beats, t.beatType);
+      return;
+    }
+    if (t.kind === "tempo") {
+      units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0 });
+      return;
+    }
+    const isNote = t.kind === "note", nt = t;
+    const pitch = isNote ? effectivePitch(tokens, i) : null;
+    const { ratio, chunks } = notate(t.dur);
+    let off = 0;
+    chunks.forEach((c, j) => {
+      let acc2 = null;
+      if (pitch && j === 0 && !(isNote && nt.tie)) {
+        const key = `${pitch.step}${pitch.octave}`;
+        const cur = accState.has(key) ? accState.get(key) : keyAlter(pitch.step, fifths);
+        if (pitch.alter !== cur) {
+          acc2 = pitch.alter;
+          accState.set(key, pitch.alter);
+        }
+      }
+      const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
+      const accW = acc2 === null ? 0 : 1.3;
+      let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
+      if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyric) / sp + (nt.hyph ? 1.4 : 0.7));
+      units.push({
+        kind: "chunk",
+        index: i,
+        j,
+        last: j === chunks.length - 1,
+        base: c.base,
+        dotted: c.dotted,
+        note: isNote,
+        ratio,
+        ticks: c.ticks,
+        pitch,
+        ghost: isNote && nt.pitch === null,
+        tie: isNote && !!nt.tie && j === 0,
+        lyric,
+        hyph: !!(isNote && nt.hyph && j === 0),
+        inBar: inBar + off,
+        beat,
+        acc: acc2,
+        w,
+        accW,
+        x: 0,
+        system: 0
+      });
+      off += c.ticks;
+    });
+    inBar += t.dur;
+  });
+  if (writing && o.caret >= tokens.length) pushHead();
+  const right = o.width / sp - MARGIN;
+  const headerW = (first, f) => MARGIN + 0.6 + W.gClef + 1 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(headTime.beats, headTime.beatType) + 1.2 : 0.4);
+  let system = 0, curKey = headKey, x = headerW(true, curKey);
+  const sysStarts = [x], sysKeys = [curKey];
+  const newline = () => {
+    system++;
+    x = headerW(false, curKey);
+    sysStarts.push(x);
+    sysKeys.push(curKey);
+  };
+  let seg = [];
+  const place = (u) => {
+    u.x = x;
+    u.system = system;
+    x += u.w;
+    if (u.kind === "key") curKey = u.fifths;
+  };
+  const flush = () => {
+    const segW = seg.reduce((s, u) => s + u.w, 0);
+    if (x + segW > right && x > sysStarts[system] + 0.01) newline();
+    for (const u of seg) {
+      if (x + u.w > right && x > sysStarts[system] + 0.01) newline();
+      place(u);
+    }
+    seg = [];
+  };
+  for (const u of units) {
+    seg.push(u);
+    if (u.kind === "bar") flush();
+  }
+  flush();
+  const nSys = system + 1;
+  const sysTop = (s) => P(0.5 + s * SYS_H);
+  const staffTop = (s) => sysTop(s) + P(STAFF_ABOVE);
+  const yOf = (s, d) => staffTop(s) + (TOP_LINE - d) * P(0.5);
+  const dOf = (s, y) => Math.round(TOP_LINE - (y - staffTop(s)) / P(0.5));
+  const lyricY = (s) => yOf(s, BOTTOM_LINE) + P(LYRIC_BELOW);
+  const systems = Array.from({ length: nSys }, (_, s) => ({ top: sysTop(s), staffTop: staffTop(s), bottom: sysTop(s) + P(SYS_H) }));
+  if (sel) {
+    const byS = /* @__PURE__ */ new Map();
+    for (const u of units) {
+      if (u.kind === "head" || !inSel(u.index)) continue;
+      const r = byS.get(u.system);
+      const a = u.x, b = u.x + u.w;
+      byS.set(u.system, r ? [Math.min(r[0], a), Math.max(r[1], b)] : [a, b]);
+    }
+    for (const [s, [a, b]] of byS) prims.push({ t: "rect", x: P(a), y: yOf(s, 44), w: P(b - a), h: lyricY(s) + P(0.8) - yOf(s, 44), cls: "selbox" });
+  }
+  const marks = [];
+  const drawTime = (s, x0, beats, beatType, cls) => {
+    const num = timeSigDigits(beats), den = timeSigDigits(beatType);
+    const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw = Math.max(wn, wd);
+    prims.push({ t: "glyph", x: P(x0 + (cw - wn) / 2), y: yOf(s, 36), ch: num, cls });
+    prims.push({ t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(s, 32), ch: den, cls });
+    return cw;
+  };
+  const drawTempo = (s, x0, v, cls, index) => {
+    const fs = TEMPO_EM * sp, word = tempoWord(v).it, y = staffTop(s) - P(2.4);
+    const ww = o.measureLyric(word) * TEMPO_EM / LYRIC_EM / sp, num = `= ${v}`, nw = o.measureLyric(num) * TEMPO_EM / LYRIC_EM / sp;
+    prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
+    const gx = x0 + ww + 0.7;
+    prims.push({ t: "glyph", x: P(gx), y: y - P(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
+    prims.push({ t: "text", x: P(gx + 1.3), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+    marks.push({ index, kind: "tempo", system: s, x: P(x0 - 0.3), y: y - P(TEMPO_EM * 1.1), w: P(gx + 1.3 + nw + 0.6 - x0), h: P(TEMPO_EM * 1.5) });
+  };
+  const staffHit = (s) => ({ y: yOf(s, TOP_LINE) - P(1.2), h: yOf(s, BOTTOM_LINE) - yOf(s, TOP_LINE) + P(2.4) });
+  const drawKeySig = (s, x0, f, cls) => {
+    const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat;
+    for (let k = 0; k < Math.abs(f); k++) prims.push({ t: "glyph", x: P(x0 + k * 1.05), y: yOf(s, pos[k]), ch, cls });
+  };
+  for (let s = 0; s < nSys; s++) {
+    for (let k = 0; k < 5; k++) {
+      const y = yOf(s, BOTTOM_LINE + 2 * k);
+      prims.push({ t: "line", x1: P(MARGIN), y1: y, x2: P(right), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" });
+    }
+    let hx = MARGIN + 0.6;
+    prims.push({ t: "glyph", x: P(hx), y: yOf(s, 32), ch: GLYPH.gClef, cls: "clef" });
+    hx += W.gClef + 1;
+    drawKeySig(s, hx, sysKeys[s], "keysig");
+    hx += Math.abs(sysKeys[s]) * 1.05;
+    if (s === 0) {
+      if (headIdx.key !== void 0) marks.push({ index: headIdx.key, kind: "key", system: 0, x: P(MARGIN + 0.3), ...staffHit(0), w: P(hx - MARGIN - 0.3 + 0.3) });
+      if (sysKeys[0]) hx += 0.8;
+      const cw = drawTime(s, hx, headTime.beats, headTime.beatType, "timesig");
+      if (headIdx.time !== void 0) marks.push({ index: headIdx.time, kind: "time", system: 0, x: P(hx - 0.3), ...staffHit(0), w: P(cw + 0.6) });
+      if (headIdx.tempo !== void 0) drawTempo(0, MARGIN + 0.6, headBpm, "tempo", headIdx.tempo);
+    }
+  }
+  const notes = [], lyrics = [];
+  let head = null;
+  const curIndex = (() => {
+    if (!writing) return -1;
+    for (let i = o.caret - 1; i >= 0; i--) if (isTimed(tokens[i])) return i;
+    return -1;
+  })();
+  const nhX = (c) => P(c.x + c.accW + 0.35);
+  const nhW = (c) => P(c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+  const clsOf = (c) => [c.ghost ? "ghost" : "", c.index >= 0 && c.index === curIndex ? "cur" : "", c.index >= 0 && inSel(c.index) ? "sel" : ""].filter(Boolean).join(" ") || void 0;
+  const drawChunk = (c) => {
+    const cls = clsOf(c);
+    if (!c.note) {
+      const g = c.base >= WHOLE ? GLYPH.restWhole : c.base >= TPQ * 2 ? GLYPH.restHalf : c.base >= TPQ ? GLYPH.restQuarter : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
+      const ry = c.base >= WHOLE ? yOf(c.system, 36) : yOf(c.system, MID_LINE);
+      prims.push({ t: "glyph", x: P(c.x + 0.35), y: ry, ch: g, cls: cls ? `rest ${cls}` : "rest" });
+      if (c.dotted) prims.push({ t: "glyph", x: P(c.x + 0.35 + 1.5), y: yOf(c.system, 35), ch: GLYPH.augmentationDot, cls });
+      return;
+    }
+    const d = diatonicIndex(c.pitch), y = yOf(c.system, d), x0 = nhX(c);
+    if (c.acc !== null) {
+      const ag = c.acc === 1 ? GLYPH.accidentalSharp : c.acc === -1 ? GLYPH.accidentalFlat : c.acc === 2 ? GLYPH.accidentalDoubleSharp : c.acc === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
+      prims.push({ t: "glyph", x: P(c.x + 0.2), y, ch: ag, cls });
+    }
+    for (let L = 28; L >= d; L -= 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: "ledger" });
+    for (let L = 40; L <= d; L += 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: "ledger" });
+    const ng = c.base >= WHOLE ? GLYPH.noteheadWhole : c.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
+    prims.push({ t: "glyph", x: x0, y, ch: ng, cls: cls ? `note ${cls}` : "note" });
+    if (c.dotted) prims.push({ t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(c.system, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
+    if (c.j === 0) notes.push({ index: c.index, system: c.system, x: x0, y, w: nhW(c), d });
+    if (c.j === 0 && !c.tie) {
+      const ly = lyricY(c.system), cx = x0 + nhW(c) / 2;
+      lyrics.push({ index: c.index, system: c.system, x: cx, y: ly });
+      if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly, x2: x0 + nhW(c) + P(0.4), y2: ly, w: P(0.12), cls: "melisma" });
+      else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: c.lyric, cls: cls ? `lyric ${cls}` : "lyric" });
+    }
+  };
+  for (const u of units) {
+    if (u.kind === "head") {
+      head = { system: u.system, x: P(u.x) };
+      prims.push({ t: "line", x1: P(u.x + 0.1), y1: yOf(u.system, 42), x2: P(u.x + 0.1), y2: yOf(u.system, 26), w: P(0.16), cls: "caret" });
+      continue;
+    }
+    if (u.kind === "bar") {
+      const bx = P(u.x + 0.7);
+      prims.push({ t: "line", x1: bx, y1: yOf(u.system, TOP_LINE), x2: bx, y2: yOf(u.system, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: inSel(u.index) ? "bar sel" : "bar" });
+      if (u.warn) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(u.system, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn" });
+      continue;
+    }
+    if (u.kind === "key") {
+      const cls = inSel(u.index) ? "keysig sel" : "keysig";
+      if (u.fifths === 0) {
+        const pos = u.prev > 0 ? SHARP_POS : FLAT_POS;
+        for (let k = 0; k < Math.abs(u.prev); k++) prims.push({ t: "glyph", x: P(u.x + 0.4 + k * 0.8), y: yOf(u.system, pos[k]), ch: GLYPH.accidentalNatural, cls });
+      } else drawKeySig(u.system, u.x + 0.4, u.fifths, cls);
+      if (u.fifths === 0 && u.prev === 0) prims.push({ t: "text", x: P(u.x + 0.2), y: staffTop(u.system) - P(0.8), s: `1=${KEY_LABEL[0]}`, cls: `${cls} key-label`, size: TEMPO_EM * sp * 0.85, anchor: "start" });
+      marks.push({ index: u.index, kind: "key", system: u.system, x: P(u.x), ...staffHit(u.system), w: P(Math.max(u.w, 1.6)) });
+      continue;
+    }
+    if (u.kind === "time") {
+      const cls = inSel(u.index) ? "timesig sel" : "timesig";
+      drawTime(u.system, u.x + 0.6, u.beats, u.beatType, cls);
+      marks.push({ index: u.index, kind: "time", system: u.system, x: P(u.x), ...staffHit(u.system), w: P(u.w) });
+      continue;
+    }
+    if (u.kind === "tempo") {
+      drawTempo(u.system, u.x + 0.3, u.bpm, inSel(u.index) ? "tempo sel" : "tempo", u.index);
+      continue;
+    }
+    drawChunk(u);
+  }
+  const stemmed = [];
+  let group = [], groupBeat = -1, groupSys = -1;
+  const endGroup = () => {
+    if (group.length) stemmed.push(group);
+    group = [];
+    groupBeat = -1;
+  };
+  const chunksInOrder = [];
+  for (const u of units) {
+    if (u.kind === "chunk") chunksInOrder.push(u);
+    else if (u.kind !== "head") chunksInOrder.push(null);
+  }
+  for (const u of chunksInOrder) {
+    if (!u || !u.note || u.base >= WHOLE) {
+      endGroup();
+      continue;
+    }
+    const s = { c: u, x0: nhX(u), y: yOf(u.system, diatonicIndex(u.pitch)), d: diatonicIndex(u.pitch) };
+    if (u.base > TPQ / 2) {
+      endGroup();
+      stemmed.push([s]);
+      continue;
+    }
+    const beat2 = Math.floor(u.inBar / u.beat);
+    if (group.length && (beat2 !== groupBeat || u.system !== groupSys)) endGroup();
+    group.push(s);
+    groupBeat = beat2;
+    groupSys = u.system;
+  }
+  endGroup();
+  const stemCls = (s) => clsOf(s.c);
+  const tipOf = /* @__PURE__ */ new Map();
+  for (const g of stemmed) {
+    const sys = g[0].c.system, mid = yOf(sys, MID_LINE);
+    const up = g.reduce((a, s) => a + s.d, 0) / g.length < MID_LINE;
+    const sx = (s) => up ? s.x0 + P(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s.x0 + P(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
+    const sy0 = (s) => up ? s.y - P(STEM_UP_SE[1]) : s.y - P(STEM_DOWN_NW[1]);
+    if (g.length === 1) {
+      const s = g[0];
+      let tip = up ? s.y - P(3.5) : s.y + P(3.5);
+      if (up && s.d < 27) tip = Math.min(tip, mid);
+      if (!up && s.d > 41) tip = Math.max(tip, mid);
+      tipOf.set(s.c, tip);
+      prims.push({ t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: tip, w: P(ENGRAVE.stem), cls: stemCls(s) });
+      const lv = flagLevel(s.c.base);
+      if (lv > 0) {
+        const fx = sx(s) - P(ENGRAVE.stem / 2);
+        const fg = up ? [GLYPH.flag8thUp, GLYPH.flag16thUp, GLYPH.flag32ndUp][lv - 1] : [GLYPH.flag8thDown, GLYPH.flag16thDown, GLYPH.flag32ndDown][lv - 1];
+        prims.push({ t: "glyph", x: fx, y: up ? tip + P(FLAG_ANCHOR_UP[lv]) : tip + P(FLAG_ANCHOR_DOWN[lv]), ch: fg, cls: stemCls(s) });
+      }
+      continue;
+    }
+    const xa = sx(g[0]), xb = sx(g[g.length - 1]);
+    const k = Math.max(-0.2, Math.min(0.2, (g[g.length - 1].y - g[0].y) / (xb - xa) * 0.5));
+    const at = (x2, y02) => y02 + k * (x2 - xa);
+    const y0 = up ? Math.min(...g.map((s) => s.y - P(3.5) - k * (sx(s) - xa))) : Math.max(...g.map((s) => s.y + P(3.5) - k * (sx(s) - xa)));
+    for (const s of g) {
+      tipOf.set(s.c, at(sx(s), y0));
+      prims.push({ t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: at(sx(s), y0), w: P(ENGRAVE.stem), cls: stemCls(s) });
+    }
+    const step = P(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th = P(ENGRAVE.beam) * (up ? 1 : -1);
+    const beamPath = (xL, xR, lvl) => {
+      const of = step * lvl;
+      const a = at(xL, y0) + of, b = at(xR, y0) + of;
+      return `M${xL - P(ENGRAVE.stem / 2)},${a}L${xR + P(ENGRAVE.stem / 2)},${b}L${xR + P(ENGRAVE.stem / 2)},${b + th}L${xL - P(ENGRAVE.stem / 2)},${a + th}Z`;
+    };
+    const gcls = ["beam", g.every((s) => s.c.ghost) ? "ghost" : "", g.every((s) => s.c.index >= 0 && inSel(s.c.index)) ? "sel" : ""].filter(Boolean).join(" ");
+    prims.push({ t: "path", d: beamPath(xa, xb, 0), cls: gcls });
+    const maxLv = Math.max(...g.map((s) => flagLevel(s.c.base)));
+    for (let lvl = 2; lvl <= maxLv; lvl++) {
+      let runStart = -1;
+      for (let n2 = 0; n2 <= g.length; n2++) {
+        const has = n2 < g.length && flagLevel(g[n2].c.base) >= lvl;
+        if (has && runStart < 0) runStart = n2;
+        if (!has && runStart >= 0) {
+          const L = runStart, R = n2 - 1;
+          if (L === R) {
+            const stub = P(1.1), toRight = L < g.length - 1;
+            prims.push({ t: "path", d: beamPath(toRight ? sx(g[L]) : sx(g[L]) - stub, toRight ? sx(g[L]) + stub : sx(g[L]), lvl - 1), cls: gcls });
+          } else prims.push({ t: "path", d: beamPath(sx(g[L]), sx(g[R]), lvl - 1), cls: gcls });
+          runStart = -1;
+        }
+      }
+    }
+  }
+  const tieBetween = (a, b) => {
+    if (a.system !== b.system || !a.pitch || !b.pitch) return;
+    const d = diatonicIndex(b.pitch), below = d < MID_LINE, sgn = below ? 1 : -1;
+    const y = yOf(b.system, d) + sgn * P(0.8), xa2 = nhX(a) + nhW(a) * 0.8, xb2 = nhX(b) + nhW(b) * 0.2;
+    prims.push({ t: "path", d: `M${xa2},${y}Q${(xa2 + xb2) / 2},${y + sgn * P(1)} ${xb2},${y}`, cls: b.ghost ? "tie ghost" : "tie" });
+  };
+  const realChunks = units.filter((u) => u.kind === "chunk");
+  for (let n2 = 1; n2 < realChunks.length; n2++) {
+    const a = realChunks[n2 - 1], b = realChunks[n2];
+    if (!a.note || !b.note) continue;
+    if (b.j > 0 && a.index === b.index || b.tie && a.last) tieBetween(a, b);
+  }
+  for (let n2 = 0; n2 < lyrics.length; n2++) {
+    const L = lyrics[n2], tok = tokens[L.index];
+    if (!tok.hyph) continue;
+    const R = lyrics[n2 + 1];
+    const x2 = R && R.system === L.system ? (L.x + R.x) / 2 : L.x + P(1.6);
+    prims.push({ t: "text", x: x2, y: L.y, s: "-", cls: "lyric hyphen" });
+  }
+  let run2 = [], runRatio = null, acc = 0, minBase = Infinity;
+  const closeRun = () => {
+    if (run2.length && run2[0].ratio) {
+      const s = run2[0].system, n2 = run2[0].ratio[0];
+      const xa = nhX(run2[0]), xb = nhX(run2[run2.length - 1]) + nhW(run2[run2.length - 1]);
+      const top = Math.min(...run2.map((c) => Math.min(c.pitch ? yOf(s, diatonicIndex(c.pitch)) : yOf(s, MID_LINE), tipOf.get(c) ?? Infinity)), yOf(s, TOP_LINE)) - P(1.6);
+      const mid = (xa + xb) / 2, gap = P(1);
+      prims.push({ t: "path", d: `M${xa},${top + P(0.6)}L${xa},${top}L${mid - gap},${top}M${mid + gap},${top}L${xb},${top}L${xb},${top + P(0.6)}`, cls: "tuplet-bracket" });
+      prims.push({ t: "glyph", x: mid - P(0.55), y: top + P(0.55), ch: GLYPH_TUPLET(n2), cls: "tuplet" });
+    }
+    run2 = [];
+    runRatio = null;
+    acc = 0;
+    minBase = Infinity;
+  };
+  for (const c of realChunks) {
+    const r = c.ratio ? c.ratio.join(":") : null;
+    if (r !== runRatio || run2.length && c.system !== run2[0].system) closeRun();
+    if (!r) continue;
+    run2.push(c);
+    runRatio = r;
+    acc += c.ticks;
+    minBase = Math.min(minBase, c.base);
+    if (acc >= c.ratio[1] * minBase - 1e-6) closeRun();
+  }
+  closeRun();
+  const slots = [];
+  const firstUnitOf = /* @__PURE__ */ new Map();
+  for (const u of units) if (u.kind !== "head" && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
+  for (let c = H; c <= tokens.length; c++) {
+    const u = c < tokens.length ? firstUnitOf.get(c) : null;
+    if (u) slots.push({ caret: c, system: u.system, x: P(u.x) });
+    else {
+      const last = units[units.length - 1];
+      slots.push({ caret: c, system: last ? last.system : 0, x: last ? P(last.x + last.w) : P(sysStarts[0]) });
+    }
+  }
+  return { prims, width: o.width, height: P(nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, head, lyricY, yOf, dOf };
+}
+
+// src/render/svg.ts
+var esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+var n = (v) => (Math.round(v * 100) / 100).toString();
+function toSvg(l, inlineStyle = false) {
+  const out = [];
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(l.width)}" height="${n(l.height)}" viewBox="0 0 ${n(l.width)} ${n(l.height)}">`);
+  if (inlineStyle) out.push(`<style>${STANDALONE_CSS}</style>`);
+  const fs = n(4 * l.sp), lfs = n(LYRIC_EM * l.sp);
+  for (const p of l.prims) {
+    const c = p.cls ? ` class="${p.cls}"` : "";
+    switch (p.t) {
+      case "line":
+        out.push(`<line${c} x1="${n(p.x1)}" y1="${n(p.y1)}" x2="${n(p.x2)}" y2="${n(p.y2)}" stroke-width="${n(p.w)}"/>`);
+        break;
+      case "glyph":
+        out.push(`<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${p.size ? n(p.size) : fs}">${p.ch}</text>`);
+        break;
+      case "text":
+        out.push(`<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${p.size ? n(p.size) : lfs}" text-anchor="${p.anchor ?? "middle"}">${esc(p.s)}</text>`);
+        break;
+      case "path":
+        out.push(`<path${c} d="${p.d}"/>`);
+        break;
+      case "rect":
+        out.push(`<rect${c} x="${n(p.x)}" y="${n(p.y)}" width="${n(p.w)}" height="${n(p.h)}" rx="${n(l.sp * 0.6)}"/>`);
+        break;
+    }
+  }
+  out.push("</svg>");
+  return out.join("");
+}
+var STANDALONE_CSS = `
+.staff-svg{background:#fff}
+.staff-svg line{stroke:#2a2a2a;stroke-linecap:butt}
+.staff-svg text{fill:#2a2a2a}
+.staff-svg path{fill:#2a2a2a}
+.staff-svg line.staff{stroke:#666}
+.staff-svg path.tie{fill:none;stroke:#2a2a2a;stroke-width:1.4}
+.staff-svg .ghost{fill:#a9b4c2;stroke:#a9b4c2}
+.staff-svg path.tie.ghost{fill:none}
+.staff-svg .cur{fill:#2b6cb0;stroke:#2b6cb0}
+.staff-svg path.tie.cur{fill:none}
+.staff-svg line.caret{stroke:#2b6cb0}
+.staff-svg rect.warn{fill:#d9a23a}
+.staff-svg text.lyric{font-family:system-ui,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
+.staff-svg line.melisma{stroke:#2a2a2a}
+.staff-svg .sel{fill:#1d5fa8;stroke:#1d5fa8}
+.staff-svg rect.selbox{fill:#e3edf9;opacity:.8}
+.staff-svg path.tuplet-bracket{fill:none;stroke:#2a2a2a;stroke-width:1}
+.staff-svg text.tempo-word{font-weight:600;font-family:system-ui,sans-serif}
+.staff-svg text.tempo-num,.staff-svg text.key-label{font-family:system-ui,sans-serif}
+`;
+
+// src/ui/lyric-editor.ts
+var CJK = /[\p{Script=Han}぀-ヿ]/u;
+var LyricEditor = class {
+  constructor(parent, host, layout, rerender) {
+    this.parent = parent;
+    this.host = host;
+    this.layout = layout;
+    this.rerender = rerender;
+    const i = document.createElement("input");
+    i.className = "lyric-input";
+    i.type = "text";
+    i.autocomplete = "off";
+    i.spellcheck = false;
+    i.hidden = true;
+    i.setAttribute("autocapitalize", "off");
+    i.setAttribute("enterkeyhint", "done");
+    parent.appendChild(i);
+    this.input = i;
+    i.addEventListener("compositionend", () => this.absorb());
+    i.addEventListener("input", (e) => {
+      if (!e.isComposing) this.absorb();
+    });
+    i.addEventListener("blur", () => {
+      if (this.open) setTimeout(() => {
+        if (document.activeElement !== this.input) this.commitAndClose();
+      }, 0);
+    });
+  }
+  input;
+  index = -1;
+  system = 0;
+  get open() {
+    return this.index >= 0;
+  }
+  /** 在下标 i 的音下面打开（框里放着它现在的字，全选，方便直接改写）。 */
+  openAt(i) {
+    const st2 = this.host.get(), t = st2.song.tokens[i];
+    if (!t || !lyricSlot(t)) return;
+    this.index = i;
+    this.input.value = t.lyric === MELISMA_MARK ? "~" : (t.lyric ?? "") + (t.hyph ? "-" : "");
+    this.input.hidden = false;
+    this.reposition();
+    this.input.focus({ preventScroll: true });
+    this.input.select();
+  }
+  /** 重画之后把框挪回那个音下面。 */
+  reposition() {
+    if (!this.open) return;
+    const L = this.layout(), h = L?.lyrics.find((x) => x.index === this.index);
+    if (!L || !h) {
+      this.close();
+      return;
+    }
+    this.system = h.system;
+    const w = Math.max(48, this.input.value.length * L.sp * 1.6 + 24);
+    Object.assign(this.input.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1}px`, width: `${w}px`, fontSize: `${L.sp * 1.6}px` });
+  }
+  /** 把框里的字贴到当前这个音（可能一次贴好几个音节，往后挪），并跳到下一个空位。 */
+  place(text, hyphEnd) {
+    let syl = splitSyllables(text);
+    if (!syl.length) return;
+    if (hyphEnd) syl = syl.map((s, k) => k === syl.length - 1 ? { ...s, hyph: true } : s);
+    const { st: st2, last } = distributeFrom(this.host.get(), this.index, syl);
+    this.host.set(st2);
+    const nx = nextLyricSlot(st2.song.tokens, last);
+    this.input.value = "";
+    if (nx >= 0) {
+      this.index = nx;
+      this.input.value = this.slotText(nx);
+      this.rerender();
+      this.input.select();
+    } else {
+      this.index = -1;
+      this.input.hidden = true;
+      this.rerender();
+    }
+  }
+  slotText(i) {
+    const t = this.host.get().song.tokens[i];
+    return t.lyric === MELISMA_MARK ? "~" : (t.lyric ?? "") + (t.hyph ? "-" : "");
+  }
+  /** 输入法选定 / 直接打字之后：中日文字立刻贴；拖腔记号立刻贴；英文等空格或「-」。 */
+  absorb() {
+    if (!this.open) return;
+    const v = this.input.value;
+    if (!v) return;
+    if (/^[~～_＿ー]$/.test(v)) {
+      this.place(v, false);
+      return;
+    }
+    if (CJK.test(v) && !/[A-Za-z]/.test(v)) {
+      this.place(v, false);
+      return;
+    }
+    this.reposition();
+  }
+  /** 键盘路由来的动作（src/input/keys.ts 的「歌词框」那几行）。返回 false = 这一下不归歌词框管（让输入框照常打字）。 */
+  act(a) {
+    if (!this.open) return false;
+    const v = this.input.value;
+    switch (a) {
+      case "commit":
+        this.commitAndClose();
+        return true;
+      case "cancel":
+        this.close();
+        return true;
+      case "next":
+        if (v.trim()) this.place(v.trim(), false);
+        else this.step(1);
+        return true;
+      case "prev":
+        this.commitOnly();
+        this.step(-1);
+        return true;
+      case "hyphen":
+        if (!/[A-Za-z']$/.test(v)) return false;
+        this.place(v, true);
+        return true;
+      case "back": {
+        if (v) return false;
+        const st2 = this.host.get(), cur = st2.song.tokens[this.index];
+        if (cur?.lyric) this.host.set({ ...st2, song: { ...st2.song, tokens: st2.song.tokens.map((t, k) => k === this.index ? { ...cur, lyric: null, hyph: void 0 } : t) } });
+        this.step(-1);
+        return true;
+      }
+    }
+  }
+  /** 前后挪一个歌词位（不贴字）。 */
+  step(d) {
+    const toks = this.host.get().song.tokens;
+    const j = d > 0 ? nextLyricSlot(toks, this.index) : prevLyricSlot(toks, this.index);
+    if (j < 0) {
+      this.rerender();
+      return;
+    }
+    this.index = j;
+    this.input.value = this.slotText(j);
+    this.rerender();
+    this.input.select();
+  }
+  /** 框里有字就照原样贴到当前这个音（不往后挪）；空框 = 清掉这个音的字。 */
+  commitOnly() {
+    if (!this.open) return;
+    const st2 = this.host.get(), cur = st2.song.tokens[this.index], v = this.input.value.trim();
+    if (!cur) return;
+    if (!v) {
+      if (cur.lyric) this.host.set({ ...st2, song: { ...st2.song, tokens: st2.song.tokens.map((t, k) => k === this.index ? { ...cur, lyric: null, hyph: void 0 } : t) } });
+      return;
+    }
+    if (v === this.slotText(this.index)) return;
+    const syl = splitSyllables(v.replace(/-$/, "")).map((s, k, a) => k === a.length - 1 && /-$/.test(v) ? { ...s, hyph: true } : s);
+    if (syl.length) this.host.set(distributeFrom(st2, this.index, syl).st);
+  }
+  commitAndClose() {
+    if (!this.open) return;
+    this.commitOnly();
+    this.close();
+  }
+  close() {
+    this.index = -1;
+    this.input.value = "";
+    this.input.hidden = true;
+    this.rerender();
+  }
+};
+
+// src/score/marks.ts
+function markText(t) {
+  if (t.kind === "key") return `1=${KEY_LABEL[t.fifths]}`;
+  if (t.kind === "time") return `${t.beats}/${t.beatType}`;
+  return String(t.bpm);
+}
+function parseMark(kind, raw) {
+  const s = raw.trim().replace(/\s+/g, "").replace(/♯/g, "#").replace(/♭/g, "b");
+  if (kind === "key") {
+    const v = s.replace(/^1=/, "");
+    let m = /^([+-]?\d)$/.exec(v);
+    if (m) {
+      const f = Number(m[1]);
+      return f >= -7 && f <= 7 ? { kind, fifths: f } : null;
+    }
+    m = /^(\d)([#b])$/.exec(v);
+    if (m) {
+      const f = Number(m[1]) * (m[2] === "#" ? 1 : -1);
+      return f >= -7 && f <= 7 ? { kind, fifths: f } : null;
+    }
+    const name = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+    for (const [f, label] of Object.entries(KEY_LABEL)) if (label.replace("\u266F", "#").replace("\u266D", "b") === name) return { kind, fifths: Number(f) };
+    return null;
+  }
+  if (kind === "time") {
+    const m = /^(\d{1,2})\/(\d{1,2})$/.exec(s);
+    if (!m) return null;
+    const beats = Number(m[1]), beatType = Number(m[2]);
+    return beats >= 1 && beats <= 32 && [1, 2, 4, 8, 16, 32].includes(beatType) ? { kind, beats, beatType } : null;
+  }
+  const n2 = /(\d{2,3})/.exec(s);
+  if (n2) {
+    const bpm = Number(n2[1]);
+    return bpm >= 20 && bpm <= 400 ? { kind, bpm } : null;
+  }
+  const w = TEMPO_WORDS.find((x) => x.it.toLowerCase() === s.toLowerCase() || x.zh === s);
+  return w ? { kind, bpm: w.typical } : null;
+}
+
+// src/ui/mark-editor.ts
+var KEY_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, -1, -2, -3, -4, -5, -6, -7];
+var TIMES = [[2, 4], [3, 4], [4, 4], [5, 4], [3, 8], [6, 8], [9, 8], [12, 8], [7, 8], [2, 2]];
+var accName = (f) => f > 0 ? `${f}\u266F` : f < 0 ? `${-f}\u266D` : "\u65E0\u5347\u964D";
+var MarkEditor = class {
+  constructor(parent, host, layout, rerender) {
+    this.host = host;
+    this.layout = layout;
+    this.rerender = rerender;
+    this.box = document.createElement("div");
+    this.box.className = "mark-ed";
+    this.box.hidden = true;
+    this.box.innerHTML = `<div class="mark-row"><input class="mark-in" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" enterkeyhint="done" /><div class="metro" hidden title="\u6309\u8FD9\u4E2A\u901F\u5EA6\u6446\uFF1A\u6446\u5230\u4E00\u5934 = \u4E00\u62CD"><div class="metro-arm"></div></div><button class="btn primary mark-ok" hidden>\u786E\u5B9A</button></div><div class="mark-cands"></div>`;
+    parent.appendChild(this.box);
+    this.input = this.box.querySelector("input");
+    this.list = this.box.querySelector(".mark-cands");
+    this.metro = this.box.querySelector(".metro");
+    this.ok = this.box.querySelector(".mark-ok");
+    this.ok.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      this.confirmTempo();
+    });
+    this.input.addEventListener("input", () => {
+      if (this.kind !== "tempo") return;
+      const v = parseMark("tempo", this.input.value);
+      if (v && v.kind === "tempo") this.setPending(v.bpm, false);
+    });
+    this.list.addEventListener("pointerdown", (e) => {
+      const b = e.target.closest("[data-v]");
+      if (!b) return;
+      e.preventDefault();
+      if (b.dataset.v === "delete") {
+        this.remove();
+        return;
+      }
+      const v = JSON.parse(b.dataset.v);
+      if (v.kind === "tempo") {
+        this.setPending(v.bpm, true);
+        return;
+      }
+      this.apply(v);
+      this.close();
+    });
+  }
+  box;
+  input;
+  list;
+  id = -1;
+  fresh = false;
+  initial = "";
+  kind = null;
+  pending = null;
+  // 速度：正在试的 bpm（还没写进谱）
+  metro;
+  ok;
+  system = 0;
+  get open() {
+    return this.id >= 0;
+  }
+  /** 键盘路由来的动作（src/input/keys.ts 的「记号框」那几行）。 */
+  act(a) {
+    if (a !== "commit") this.close();
+    else if (this.kind === "tempo") this.confirmTempo();
+    else this.commitAndClose();
+  }
+  indexNow() {
+    return this.host.get().song.tokens.findIndex((t) => t.id === this.id);
+  }
+  /** 打开下标 i 的记号。fresh = 刚插进去的（没改就收起 = 撤掉）。 */
+  openAt(i, fresh = false) {
+    const st2 = this.host.get(), t = st2.song.tokens[i];
+    if (!t || t.kind !== "key" && t.kind !== "time" && t.kind !== "tempo") return;
+    this.id = t.id;
+    this.fresh = fresh;
+    this.initial = this.input.value = markText(t);
+    this.input.inputMode = t.kind === "tempo" ? "numeric" : "text";
+    this.input.placeholder = t.kind === "key" ? "1=D / Bb / 2#" : t.kind === "time" ? "3/4" : "90";
+    this.kind = t.kind;
+    this.fill(t, i >= headLen(st2.song.tokens));
+    this.metro.hidden = this.ok.hidden = t.kind !== "tempo";
+    this.pending = null;
+    if (t.kind === "tempo") this.setPending(t.bpm, false);
+    this.box.hidden = false;
+    this.reposition();
+    if (!matchMedia("(pointer: coarse)").matches) {
+      this.input.focus({ preventScroll: true });
+      this.input.select();
+    }
+  }
+  fill(t, deletable) {
+    const chip = (v, label, on, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v='${JSON.stringify(v)}' title="${title}">${label}</button>`;
+    let h = "";
+    if (t.kind === "key") h = KEY_ORDER.map((f) => chip({ kind: "key", fifths: f }, `1=${KEY_LABEL[f]}`, f === t.fifths, accName(f))).join("");
+    else if (t.kind === "time") h = TIMES.map(([b, bt]) => chip({ kind: "time", beats: b, beatType: bt }, `${b}/${bt}`, b === t.beats && bt === t.beatType)).join("");
+    else {
+      const cur = tempoWord(t.bpm).it;
+      h = TEMPO_WORDS.map((w) => chip({ kind: "tempo", bpm: w.typical }, `<b>${w.it}</b><small>${w.zh} ${w.typical}</small>`, w.it === cur, `${w.from} \u8D77`)).join("");
+    }
+    if (deletable) h += `<button class="btn cand danger" data-v="delete">\u5220\u9664</button>`;
+    this.list.innerHTML = h;
+    this.list.className = `mark-cands ${t.kind}`;
+  }
+  /** 速度：换试听值——节拍器按它摆（重新起摆，和数字对得上），候选高亮它那一档；fromChip = 框里的数字也跟着换。 */
+  setPending(bpm, fromChip) {
+    this.pending = bpm;
+    if (fromChip) this.input.value = String(bpm);
+    const arm = this.metro.firstElementChild;
+    this.metro.style.setProperty("--beat", `${60 / bpm}s`);
+    arm.style.animation = "none";
+    void arm.offsetWidth;
+    arm.style.animation = "";
+    const word = tempoWord(bpm).it;
+    this.list.querySelectorAll("[data-v]").forEach((b) => {
+      const v = b.dataset.v === "delete" ? null : JSON.parse(b.dataset.v);
+      b.classList.toggle("is-on", v?.kind === "tempo" && tempoWord(v.bpm).it === word);
+    });
+  }
+  /** 速度：「确定」= 把试听值写进谱、收起。 */
+  confirmTempo() {
+    if (this.pending !== null) {
+      const t = this.host.get().song.tokens[this.indexNow()];
+      if (t?.kind === "tempo" && t.bpm !== this.pending) this.apply({ kind: "tempo", bpm: this.pending });
+      else if (t?.kind === "tempo") this.fresh = false;
+    }
+    this.close();
+  }
+  /** 重画之后把框挪回那个记号下面（记号没了 = 收起）。 */
+  reposition() {
+    if (!this.open) return;
+    const L = this.layout(), i = this.indexNow(), h = L?.marks.find((m) => m.index === i);
+    if (!L || !h) {
+      this.id = -1;
+      this.box.hidden = true;
+      return;
+    }
+    this.system = h.system;
+    const parentW = this.box.parentElement?.clientWidth ?? 400, w = Math.min(340, parentW - 16);
+    Object.assign(this.box.style, { left: `${Math.max(8, Math.min(h.x, parentW - w - 8))}px`, top: `${h.y + h.h + 4}px`, width: `${w}px` });
+  }
+  apply(v) {
+    const i = this.indexNow();
+    if (i < 0) return;
+    this.fresh = false;
+    this.host.set(setMark(this.host.get(), i, v));
+  }
+  remove() {
+    const i = this.indexNow();
+    this.id = -1;
+    this.box.hidden = true;
+    if (i >= 0) this.host.set(deleteMark(this.host.get(), i));
+    else this.rerender();
+  }
+  /** 收起：框里打了合法的新值就先改（速度例外：没按「确定」= 不改）。 */
+  commitAndClose() {
+    if (!this.open) return;
+    if (this.kind === "tempo") {
+      this.close();
+      return;
+    }
+    const t = this.host.get().song.tokens[this.indexNow()];
+    if (t && this.input.value.trim() !== this.initial) {
+      const v = parseMark(t.kind, this.input.value);
+      if (v) this.apply(v);
+    }
+    this.close();
+  }
+  /** 收起不改；新插的记号没改过 = 撤掉。 */
+  close() {
+    if (!this.open) return;
+    if (this.fresh) {
+      this.remove();
+      return;
+    }
+    this.id = -1;
+    this.box.hidden = true;
+    this.rerender();
+  }
+};
+
+// src/ui/score-view.ts
+var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
+var ScoreView = class {
+  constructor(el, host) {
+    this.el = el;
+    this.host = host;
+    this.sheet = document.createElement("div");
+    this.sheet.className = "sheet";
+    this.boxEl = document.createElement("div");
+    this.boxEl.className = "marquee";
+    this.boxEl.hidden = true;
+    el.replaceChildren(this.sheet);
+    this.lyrics = new LyricEditor(this.sheet, host, () => this.layout, () => this.render());
+    this.marks = new MarkEditor(this.sheet, host, () => this.layout, () => this.render());
+    el.addEventListener("pointerdown", (e) => this.down(e));
+    el.addEventListener("pointermove", (e) => this.move(e));
+    el.addEventListener("pointerup", (e) => this.up(e));
+    el.addEventListener("pointercancel", () => {
+      if (this.drag) this.host.release?.();
+      this.drag = null;
+      this.finger = null;
+      this.box = null;
+      this.boxEl.hidden = true;
+    });
+    new ResizeObserver(() => this.render()).observe(el);
+  }
+  layout = null;
+  sheet;
+  ctx = document.createElement("canvas").getContext("2d");
+  drag = null;
+  finger = null;
+  box = null;
+  boxEl;
+  lyrics;
+  marks;
+  get sp() {
+    return matchMedia("(pointer: coarse)").matches ? 11 : 10;
+  }
+  render() {
+    const st2 = this.host.get(), sp = this.sp;
+    this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
+    const width = Math.max(320, this.el.clientWidth);
+    this.layout = engrave(st2.song, { width, sp, caret: st2.caret, sel: st2.sel, measureLyric: (s) => this.ctx.measureText(s).width });
+    const svg = toSvg(this.layout);
+    const old = this.sheet.querySelector("svg");
+    if (old) old.outerHTML = svg;
+    else this.sheet.insertAdjacentHTML("afterbegin", svg);
+    if (!this.boxEl.isConnected) this.sheet.appendChild(this.boxEl);
+    this.lyrics.reposition();
+    this.marks.reposition();
+    this.follow();
+  }
+  /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
+  follow() {
+    const L = this.layout, st2 = this.host.get();
+    if (!L) return;
+    let sys = L.head?.system ?? -1;
+    if (sys < 0 && st2.sel) sys = L.notes.find((n2) => n2.index >= st2.sel.from && n2.index < st2.sel.to)?.system ?? -1;
+    if (this.lyrics.open) sys = this.lyrics.system;
+    if (this.marks.open) sys = this.marks.system;
+    const box = L.systems[sys];
+    if (!box) return;
+    const top = this.el.scrollTop, h = this.el.clientHeight;
+    if (box.top < top) this.el.scrollTop = box.top;
+    else if (box.bottom > top + h) this.el.scrollTop = box.bottom - h;
+  }
+  local(e) {
+    const r = this.el.getBoundingClientRect();
+    return { x: e.clientX - r.left + this.el.scrollLeft, y: e.clientY - r.top + this.el.scrollTop };
+  }
+  systemAt(y) {
+    const L = this.layout;
+    const i = L.systems.findIndex((s) => y >= s.top && y < s.bottom);
+    return i < 0 ? L.systems.length - 1 : i;
+  }
+  down(e) {
+    if (e.target.closest(".lyric-input, .mark-ed")) return;
+    const L = this.layout;
+    if (!L) return;
+    this.el.focus({ preventScroll: true });
+    const p = this.local(e);
+    if (e.pointerType === "touch") {
+      this.finger = { pid: e.pointerId, y0: e.clientY, top0: this.el.scrollTop, x: p.x, y: p.y, moved: false, shift: e.shiftKey };
+      this.el.setPointerCapture(e.pointerId);
+      return;
+    }
+    e.preventDefault();
+    if (this.tap(p.x, p.y, e.shiftKey, e.pointerId)) return;
+    this.box = { pid: e.pointerId, x0: p.x, y0: p.y, moved: false, st0: this.host.get() };
+    this.el.setPointerCapture(e.pointerId);
+  }
+  /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）。点中了东西返回 true；落在空白处返回 false（调用方决定放光标还是框选）。 */
+  tap(x, y, shift, pid) {
+    const L0 = this.layout, wasMark = this.marks.open;
+    this.lyrics.commitAndClose();
+    this.marks.commitAndClose();
+    if (wasMark) return true;
+    const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st2 = this.host.get();
+    const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
+    if (mk) {
+      this.marks.openAt(mk.index);
+      return true;
+    }
+    const ly = L.lyricY(sys);
+    if (y > ly - sp * 2.2 && y < ly + sp * 1.2) {
+      const cands = L.lyrics.filter((h) => h.system === sys);
+      if (cands.length) {
+        const best = cands.reduce((a, b) => Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a);
+        if (Math.abs(best.x - x) < sp * 4) {
+          this.lyrics.openAt(best.index);
+          return true;
+        }
+      }
+    }
+    const hit = L.notes.find((n2) => n2.system === sys && x >= n2.x - sp * 0.5 && x <= n2.x + n2.w + sp * 0.5 && Math.abs(y - n2.y) <= sp * 0.9);
+    if (hit) {
+      const cur = st2.sel;
+      this.host.set(shift && cur ? select(st2, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : select(st2, hit.index, hit.index + 1));
+      if (pid !== null) {
+        const t = st2.song.tokens[hit.index];
+        this.drag = { index: hit.index, d0: hit.d, dur0: t.dur, x0: x, y0: y, axis: "", pid, heard: hit.d };
+        this.el.setPointerCapture(pid);
+        this.host.audition?.(hit.index, true);
+      } else this.host.audition?.(hit.index);
+      return true;
+    }
+    return false;
+  }
+  /** 空白处 → 最近的光标落点（= 写）。 */
+  caretAt(x, y, st2 = this.host.get()) {
+    const L = this.layout, sys = this.systemAt(y), cands = L.slots.filter((s) => s.system === sys);
+    if (!cands.length) return st2;
+    const best = cands.reduce((a, b) => Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a);
+    return setCaret(st2, best.caret);
+  }
+  /** 框选：框住的音（音头中心在框里）从第一个到最后一个选成一段；一个都没框住 = 回到起点的光标。 */
+  boxSelect(x1, y1) {
+    const b = this.box, L = this.layout, xa = Math.min(b.x0, x1), xb = Math.max(b.x0, x1), ya = Math.min(b.y0, y1), yb = Math.max(b.y0, y1);
+    Object.assign(this.boxEl.style, { left: `${xa}px`, top: `${ya}px`, width: `${xb - xa}px`, height: `${yb - ya}px` });
+    const inside = L.notes.filter((n2) => {
+      const cx = n2.x + n2.w / 2;
+      return cx >= xa && cx <= xb && n2.y >= ya && n2.y <= yb;
+    }).map((n2) => n2.index);
+    if (!inside.length) {
+      this.host.set(this.caretAt(b.x0, b.y0, b.st0));
+      return;
+    }
+    this.host.set(select(b.st0, Math.min(...inside), Math.max(...inside) + 1));
+  }
+  move(e) {
+    if (this.finger && e.pointerId === this.finger.pid) {
+      const dy2 = e.clientY - this.finger.y0;
+      if (Math.abs(dy2) > 6) this.finger.moved = true;
+      if (this.finger.moved) this.el.scrollTop = this.finger.top0 - dy2;
+      return;
+    }
+    if (this.box && e.pointerId === this.box.pid && this.layout) {
+      const p2 = this.local(e), b = this.box;
+      if (!b.moved && Math.hypot(p2.x - b.x0, p2.y - b.y0) < 6) return;
+      if (!b.moved) {
+        b.moved = true;
+        this.boxEl.hidden = false;
+      }
+      this.boxSelect(p2.x, p2.y);
+      return;
+    }
+    const g = this.drag, L = this.layout;
+    if (!g || !L || e.pointerId !== g.pid) return;
+    const p = this.local(e), dx = p.x - g.x0, dy = p.y - g.y0;
+    if (!g.axis) {
+      if (Math.hypot(dx, dy) < 6) return;
+      g.axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
+      if (g.axis === "x") this.host.release?.();
+    }
+    const st2 = this.host.get();
+    if (g.axis === "y") {
+      const d = g.d0 + Math.round(-dy / (L.sp / 2));
+      if (d === g.heard) return;
+      g.heard = d;
+      this.host.set(setNote(st2, g.index, { pitch: fromDiatonic(d, keyAt(st2.song, g.index)) }));
+      if (this.host.glide) this.host.glide(g.index);
+      else this.host.audition?.(g.index, true);
+    } else {
+      const i0 = DUR_LADDER.reduce((bi, v, i2) => Math.abs(v - g.dur0) < Math.abs(DUR_LADDER[bi] - g.dur0) ? i2 : bi, 0);
+      const i = Math.max(0, Math.min(DUR_LADDER.length - 1, i0 + Math.round(dx / (L.sp * 2.2))));
+      this.host.set(setDur(st2, g.index, DUR_LADDER[i]));
+    }
+  }
+  up(e) {
+    if (this.finger && e.pointerId === this.finger.pid) {
+      const f = this.finger;
+      this.finger = null;
+      if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) this.host.set(this.caretAt(f.x, f.y));
+      return;
+    }
+    if (this.box && e.pointerId === this.box.pid) {
+      const b = this.box;
+      this.box = null;
+      this.boxEl.hidden = true;
+      if (!b.moved && this.layout) this.host.set(this.caretAt(b.x0, b.y0));
+      return;
+    }
+    if (this.drag && e.pointerId === this.drag.pid) {
+      if (this.drag.axis !== "x") this.host.release?.();
+      this.drag = null;
+    }
+  }
+};
+
+// src/ui/platform-guards.ts
+function isTextTarget(t) {
+  const el = t;
+  if (!el || !el.tagName) return false;
+  return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable;
+}
+function installPlatformGuards(surfaces) {
+  const cap = { capture: true, passive: false };
+  window.addEventListener("dblclick", (e) => {
+    if (!isTextTarget(e.target)) e.preventDefault();
+  }, cap);
+  window.addEventListener("touchstart", (e) => {
+    if (e.touches.length >= 3 && !isTextTarget(e.target)) e.preventDefault();
+  }, cap);
+  window.addEventListener("gesturestart", (e) => e.preventDefault(), cap);
+  window.addEventListener("gesturechange", (e) => e.preventDefault(), cap);
+  document.addEventListener("selectstart", (e) => {
+    if (!isTextTarget(e.target)) e.preventDefault();
+  }, { capture: true });
+  document.addEventListener("selectionchange", () => {
+    const sel = document.getSelection();
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+    let n2 = sel.anchorNode;
+    if (n2 && n2.nodeType === Node.TEXT_NODE) n2 = n2.parentElement;
+    for (let el = n2; el; el = el.parentElement) if (isTextTarget(el)) return;
+    sel.removeAllRanges();
+  });
+  for (const s of surfaces) {
+    s.addEventListener("contextmenu", (e) => {
+      if (!isTextTarget(e.target)) e.preventDefault();
+    });
+    s.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 1 && !isTextTarget(e.target)) e.preventDefault();
+    }, { passive: false });
+  }
+}
+
+// src/ui/pad.ts
+var HER_LOW = 26;
+var HER_HIGH = 37;
+var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
+var KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } };
+var octDots = (n2) => n2 > 0 ? `<span class="jp-dots">${"<i></i>".repeat(n2)}</span>` : `<span class="jp-dots"></span>`;
+var UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
+var UNIT_NAME = ["\u4E09\u5341\u4E8C\u5206", "\u5341\u516D\u5206", "\u516B\u5206", "\u56DB\u5206", "\u4E8C\u5206", "\u5168\u97F3\u7B26"];
+var KEY_NAMES = KEY_LABEL;
+var KEY_ORDER2 = [0, 1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6];
+function homeTonic(fifths) {
+  const t = tonicStepIndex(fifths), h = diatonicIndex(HOME);
+  return t + 7 * Math.floor((h - t) / 7);
+}
+function defaultPadBase(fifths) {
+  return homeTonic(fifths);
+}
+var Pad = class {
+  constructor(el, host) {
+    this.el = el;
+    this.host = host;
+    this.render();
+    addEventListener("resize", () => this.render());
+  }
+  rowShift = 0;
+  // ▲▼ 挪过几行
+  cols = 4;
+  // 每行几个音（MEDO = 4）
+  rowsSetting = 4;
+  // 默认 4 行（user 2026-10-07「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
+  layoutMode = "absolute";
+  // 首调 / 绝对音高；默认绝对（user 2026-10-07「键盘默认绝对布局」）
+  mode = "normal";
+  builtFor = "";
+  improLatched = false;
+  /** 正按着的音（来源 id → 五线谱位置）：手指和电脑键盘共用，pad 上对应的键按住期间一直亮（user「小键盘的按下弹起也要和触控对齐啦」）。 */
+  held = /* @__PURE__ */ new Map();
+  improHeld = false;
+  /** 行数：手动设的，或按设备和屏幕剩下的高度算（竖屏 pad 占屏底四成多，横屏占侧栏整高）。 */
+  rows() {
+    if (this.rowsSetting !== "auto") return this.rowsSetting;
+    const m = KEY_METRIC[padForm()], avail = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
+    return Math.max(4, Math.min(6, Math.floor((avail + m.gap) / (m.h + m.gap))));
+  }
+  get impro() {
+    return this.improLatched || this.improHeld;
+  }
+  /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。 */
+  render() {
+    const st2 = this.host.state(), f = inputKey(st2), rows = this.rows(), form = padForm();
+    const home = this.layoutMode === "absolute" ? diatonicIndex({ step: "C", alter: 0, octave: 4 }) : defaultPadBase(f);
+    const base2 = home + this.cols * (this.rowShift - Math.floor((rows - 1) / 2));
+    if ((this.mode === "transpose" || this.mode === "modulate") && !st2.sel) this.mode = "normal";
+    const selKey = st2.sel ? keyAt(st2.song, st2.sel.from) : null;
+    const sig = `${this.mode}|${f}|${base2}|${selKey}|${rows}x${this.cols}|${form}|${this.layoutMode}`;
+    if (sig !== this.builtFor) {
+      this.el.dataset.form = form;
+      this.el.style.setProperty("--cols", String(this.cols));
+      this.build(f, base2, selKey, rows);
+      this.builtFor = sig;
+    }
+    this.refresh(st2);
+  }
+  build(f, base2, selKey, rows) {
+    const tools = this.mode === "layout" ? [
+      `<button class="btn cand${this.rowsSetting === "auto" ? " is-on" : ""}" data-rows="auto">\u884C \u81EA\u52A8\uFF08${rows}\uFF09</button>`,
+      ...[3, 4, 5, 6, 7, 8].map((n2) => `<button class="btn cand${this.rowsSetting === n2 ? " is-on" : ""}" data-rows="${n2}">${n2} \u884C</button>`),
+      ...[3, 4, 5, 6, 7].map((n2) => `<button class="btn cand${this.cols === n2 ? " is-on" : ""}" data-cols="${n2}">${n2} \u5217</button>`),
+      `<button class="btn cand${this.layoutMode === "movable" ? " is-on" : ""}" data-pl="movable" title="\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70">\u9996\u8C03</button>`,
+      `<button class="btn cand${this.layoutMode === "absolute" ? " is-on" : ""}" data-pl="absolute" title="\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09">\u7EDD\u5BF9</button>`,
+      `<button class="btn cand" data-back="1">\u8FD4\u56DE</button>`
+    ].join("") : this.mode === "transpose" ? `<button class="btn cand" data-tr="1">\u2191 \u534A\u97F3</button><button class="btn cand" data-tr="-1">\u2193 \u534A\u97F3</button><button class="btn cand" data-tr="2">\u2191 \u5168\u97F3</button><button class="btn cand" data-tr="-2">\u2193 \u5168\u97F3</button><button class="btn cand" data-toct="1">\u2191 \u516B\u5EA6</button><button class="btn cand" data-toct="-1">\u2193 \u516B\u5EA6</button><button class="btn cand" data-open="modulate" title="\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362">\u8F6C\u8C03\u2026</button><button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : this.mode === "modulate" ? KEY_ORDER2.map((k) => `<button class="btn cand${k === selKey ? " is-on" : ""}" data-mod="${k}">\u8F6C\u5230 1=${KEY_NAMES[k]}</button>`).join("") + `<button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : this.mode === "key" ? KEY_ORDER2.map((k) => `<button class="btn cand" data-key="${k}">1=${KEY_NAMES[k]}</button>`).join("") + `<button class="btn cand" data-key="follow">\u8DDF\u8C03\u53F7</button><button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : this.mode === "mark" ? `<button class="btn cand" data-mark="key">\u8C03\u53F7</button><button class="btn cand" data-mark="time">\u62CD\u53F7</button><button class="btn cand" data-mark="tempo">\u901F\u5EA6</button><button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : this.mode === "tuplet" ? [3, 5, 6, 7].map((n2) => `<button class="btn cand" data-tup="${n2}">${n2} \u8FDE</button>`).join("") + `<button class="btn cand" data-tup="0">\u5173</button><button class="btn cand" data-back="1">\u8FD4\u56DE</button>` : (selKey !== null ? `<button class="btn t-tr" data-open="transpose" title="\u79FB\u8C03 / \u8F6C\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09">\u79FB\u8C03</button>` : `<button class="btn t-key" data-open="key" title="1=\uFF08\u53EA\u7BA1\u8F93\u5165\uFF09"></button>`) + `<button class="btn t-sharp" data-acc="1" title="\u266F\uFF08\u70B9\u4E00\u4E0B\u7BA1\u4E0B\u4E00\u4E2A\u97F3\uFF0C\u8FDE\u70B9\u4E24\u4E0B\u9501\u4F4F\uFF1B${hint("sharp")}\uFF09">\u266F</button><button class="btn t-flat" data-acc="-1" title="\u266D\uFF08\u70B9\u4E00\u4E0B\u7BA1\u4E0B\u4E00\u4E2A\u97F3\uFF0C\u8FDE\u70B9\u4E24\u4E0B\u9501\u4F4F\uFF1B${hint("flat")}\uFF09">\u266D</button><button class="btn" data-cmd="shorter" title="\u77ED\uFF08${hint("shorter")}\uFF09">\u77ED</button><span class="t-unit" title="\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C"></span><button class="btn" data-cmd="longer" title="\u957F\uFF08${hint("longer")}\uFF09">\u957F</button><button class="btn t-tup" data-open="tuplet" title="\u8FDE\u97F3\uFF08\u5F00\u7740\u518D\u70B9 = \u9009 3 5 6 7\uFF09">\u8FDE</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\uFF0D</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-open="mark" title="\u5728\u5149\u6807\u5904\u63D2\u8BB0\u53F7\uFF1A\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6">\uFF0B</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button><button class="btn t-impro" data-impro="1" title="\u5F39\uFF1A\u6309\u4F4F\u53EA\u5531\u4E0D\u5199\uFF0C\u5FEB\u901F\u70B9\u4E00\u4E0B\u9501\u4F4F\uFF08${hint("impro")}\uFF09">\u5F39</button><button class="btn" data-open="layout" title="pad \u5E03\u5C40\uFF1A\u51E0\u884C\u51E0\u5217">\u5E03\u5C40</button><button class="btn" data-row="-1" title="\u6574\u4E2A pad \u5F80\u4E0B\u632A\u4E00\u884C"><svg class="ico"><use href="#caret-down"/></svg></button><button class="btn" data-row="1" title="\u6574\u4E2A pad \u5F80\u4E0A\u632A\u4E00\u884C"><svg class="ico"><use href="#caret-up"/></svg></button>`;
+    const cells = [], ht = homeTonic(f);
+    for (let row = rows - 1; row >= 0; row--) {
+      for (let col = 0; col < this.cols; col++) {
+        const d = base2 + row * this.cols + col, p = fromDiatonic(d, f);
+        const deg = ((d - ht) % 7 + 7) % 7 + 1, oct = Math.floor((d - ht) / 7);
+        const inRange = d >= HER_LOW && d <= HER_HIGH;
+        cells.push(`<button class="pad-key${inRange ? "" : " out"}${deg === 1 ? " tonic" : ""}" data-d="${d}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${deg}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pitchName(p).replace("#", "\u266F").replace(/b(?=\d)/, "\u266D")}</span></button>`);
+      }
+    }
+    this.el.innerHTML = `<div class="pad-tools${this.mode === "normal" ? "" : " cands"}">${tools}</div><div class="pad-grid">${cells.join("")}</div>`;
+    this.wire();
+  }
+  refresh(st2) {
+    const q = (s) => this.el.querySelector(s);
+    const i = st2.input, k = q(".t-key");
+    if (k) {
+      k.textContent = `1=${KEY_NAMES[inputKey(st2)] ?? "?"}`;
+      k.classList.toggle("manual", i.inputFifths !== null);
+    }
+    q(".t-sharp")?.classList.toggle("once", i.acc === 1 && i.accMode === "once");
+    q(".t-sharp")?.classList.toggle("lock", i.acc === 1 && i.accMode === "lock");
+    q(".t-flat")?.classList.toggle("once", i.acc === -1 && i.accMode === "once");
+    q(".t-flat")?.classList.toggle("lock", i.acc === -1 && i.accMode === "lock");
+    const u = q(".t-unit");
+    if (u) {
+      u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`;
+      u.title = `\u4E0B\u4E00\u4E2A\u97F3\uFF1A${UNIT_NAME[i.unit]}${i.tuplet ? `\uFF08${i.tuplet} \u8FDE\u97F3\uFF09` : ""}`;
+    }
+    const t = q(".t-tup");
+    if (t) {
+      t.textContent = i.tuplet ? String(i.tuplet) : "\u8FDE";
+      t.classList.toggle("is-on", !!i.tuplet);
+    }
+    q(".t-impro")?.classList.toggle("is-on", this.impro);
+    const f = inputKey(st2);
+    this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
+    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
+      const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = i.acc ? alterBy(p0, i.acc) : p0;
+      b.querySelector(".acc").textContent = i.acc > 0 ? "\u266F" : i.acc < 0 ? "\u266D" : "";
+      b.querySelector(".abs").textContent = pitchName(p).replace(/#/g, "\u266F").replace(/b(?=\d)|b(?=b)/g, "\u266D");
+    });
+    const down = new Set(this.held.values());
+    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => b.classList.toggle("down", down.has(Number(b.dataset.d))));
+    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => b.classList.toggle("impro", this.impro));
+  }
+  wire() {
+    const on = (sel, fn) => this.el.querySelectorAll(sel).forEach((b) => b.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      fn(b, e);
+    }));
+    const flash = (b) => {
+      b.classList.add("hit");
+      setTimeout(() => b.classList.remove("hit"), 120);
+    };
+    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
+      b.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        try {
+          b.setPointerCapture(e.pointerId);
+        } catch {
+        }
+        const st2 = this.host.state(), d = Number(b.dataset.d), p = fromDiatonic(d, inputKey(st2));
+        this.showDown(d, `pad${e.pointerId}`);
+        if (!this.impro) this.host.onPitch(p);
+        this.host.onSoundDown(p, `pad${e.pointerId}`);
+      });
+      const up = (e) => {
+        this.showUp(`pad${e.pointerId}`);
+        this.host.onSoundUp(`pad${e.pointerId}`);
+      };
+      b.addEventListener("pointerup", up);
+      b.addEventListener("pointercancel", up);
+    });
+    on("[data-cmd]", (b) => {
+      if (b.classList.contains("pad-key")) flash(b);
+      this.host.onCommand({ k: b.dataset.cmd });
+    });
+    on("[data-acc]", (b) => this.host.onCommand({ k: "acc", acc: Number(b.dataset.acc) }));
+    on("[data-row]", (b) => {
+      this.rowShift = Math.max(-8, Math.min(8, this.rowShift + Number(b.dataset.row)));
+      this.render();
+    });
+    on("[data-rows]", (b) => {
+      this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows);
+      this.render();
+    });
+    on("[data-cols]", (b) => {
+      this.cols = Number(b.dataset.cols);
+      this.render();
+    });
+    on("[data-pl]", (b) => {
+      this.layoutMode = b.dataset.pl === "absolute" ? "absolute" : "movable";
+      this.render();
+    });
+    on("[data-open]", (b) => {
+      if (b.dataset.open === "key" || b.dataset.open === "mark" || b.dataset.open === "transpose" || b.dataset.open === "modulate" || b.dataset.open === "layout") {
+        this.mode = b.dataset.open;
+        this.render();
+        return;
+      }
+      const st2 = this.host.state();
+      if (!st2.input.tuplet) this.host.onTuplet(3);
+      else {
+        this.mode = "tuplet";
+        this.render();
+      }
+    });
+    on("[data-key]", (b) => {
+      this.host.onInputKey(b.dataset.key === "follow" ? null : Number(b.dataset.key));
+      this.mode = "normal";
+      this.render();
+    });
+    on("[data-tup]", (b) => {
+      this.host.onTuplet(Number(b.dataset.tup));
+      this.mode = "normal";
+      this.render();
+    });
+    on("[data-back]", () => {
+      this.mode = "normal";
+      this.render();
+    });
+    on("[data-tr]", (b) => this.host.onCommand({ k: "transpose", semis: Number(b.dataset.tr) }));
+    on("[data-toct]", (b) => this.host.onCommand({ k: "octave", d: Number(b.dataset.toct) }));
+    on("[data-mod]", (b) => {
+      this.mode = "normal";
+      this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) });
+      this.render();
+    });
+    on("[data-mark]", (b) => {
+      this.mode = "normal";
+      this.render();
+      this.host.onInsertMark(b.dataset.mark);
+    });
+    const imp = this.el.querySelector("[data-impro]");
+    if (imp) {
+      let t0 = 0, was = false;
+      imp.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        try {
+          imp.setPointerCapture(e.pointerId);
+        } catch {
+        }
+        t0 = performance.now();
+        was = this.improLatched;
+        this.improHeld = true;
+        this.changed();
+      });
+      const release = () => {
+        if (!this.improHeld) return;
+        this.improHeld = false;
+        if (performance.now() - t0 < 250) this.improLatched = !was;
+        this.changed();
+      };
+      imp.addEventListener("pointerup", release);
+      imp.addEventListener("pointercancel", release);
+    }
+  }
+  changed() {
+    this.host.onImpro(this.impro);
+    this.refresh(this.host.state());
+  }
+  /** 某个来源（手指 / 电脑键盘的键）按下了五线谱位置 d 的音：pad 上那个键亮着，直到 showUp。 */
+  showDown(d, id) {
+    this.held.set(id, d);
+    this.refresh(this.host.state());
+  }
+  showUp(id) {
+    if (this.held.delete(id)) this.refresh(this.host.state());
+  }
+  clearHeld() {
+    if (this.held.size) {
+      this.held.clear();
+      this.refresh(this.host.state());
+    }
+  }
+  /** 键盘的 ` 键：锁住 / 解开即兴。 */
+  toggleImpro() {
+    this.improLatched = !this.improLatched;
+    this.changed();
+  }
+};
+
+// src/score/lab-score.ts
+var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
+function toLabScore(song, lang = "ja") {
+  const eighth = TPQ / 2, tl = timeline(song), base2 = tl[0]?.bpm ?? 90;
+  const bpmOf = new Map(tl.map((x) => [x.index, x.bpm]));
+  const out = [];
+  song.tokens.forEach((t, i) => {
+    if (!isTimed(t)) return;
+    const len = t.dur / eighth * (base2 / bpmOf.get(i));
+    if (t.kind === "rest") {
+      const last2 = out[out.length - 1];
+      if (last2) last2.rest = (last2.rest ?? 0) + len;
+      return;
+    }
+    const midi = midiOf(effectivePitch(song.tokens, i));
+    const last = out[out.length - 1];
+    if ((t.lyric === MELISMA_MARK || t.tie) && last && !last.rest) {
+      last.notes.push([midi, len]);
+      return;
+    }
+    const lyric = t.lyric && t.lyric !== MELISMA_MARK ? t.lyric : null;
+    out.push(lyric ? { kana: lyric, notes: [[midi, len]], ...lang === "en" && t.hyph ? { hyph: true } : {} } : { kana: HUM_SYLLABLE[song.hum ?? "n"][lang], notes: [[midi, len]], hum: true });
+  });
+  const TEXT = lang === "en" ? out.map((e) => e.kana + (e.hyph ? "" : " ")).join("").trim() : out.map((e, k) => e.kana + (e.rest ? "\u3001" : k === out.length - 1 ? "\u3002" : "")).join("");
+  return { SCORE: out, TEXT, TEMPO_QUARTER: base2, LANG: lang };
+}
+
+// src/singer/audio.ts
+var ctx = null;
+function audioCtx() {
+  if (!ctx) ctx = new AudioContext();
+  if (ctx.state === "suspended") void ctx.resume();
+  return ctx;
+}
+
+// src/singer/client.ts
+var Singer = class {
+  w = null;
+  seq = 0;
+  pending = /* @__PURE__ */ new Map();
+  src = null;
+  worker() {
+    if (this.w) return this.w;
+    this.w = new Worker(new URL(`./${"singer-worker-16400ef03270.mjs"}`, import.meta.url), { type: "module" });
+    this.w.onmessage = (ev) => {
+      const m = ev.data, p = this.pending.get(m.id);
+      if (!p) return;
+      if (m.type === "progress") p.progress(m.stage);
+      else if (m.type === "done") {
+        this.pending.delete(m.id);
+        p.ok({ samples: m.samples, sr: m.sr, ms: m.ms });
+      } else {
+        this.pending.delete(m.id);
+        p.fail(new Error(m.message));
+      }
+    };
+    this.w.onerror = (e) => {
+      this.w?.terminate();
+      this.w = null;
+      for (const p of this.pending.values()) p.fail(new Error(e.message || "\u6708\u8BFB\u7684 worker \u51FA\u9519"));
+      this.pending.clear();
+    };
+    return this.w;
+  }
+  sing(s, progress = () => {
+  }, extra = {}) {
+    const id = ++this.seq;
+    const req = { type: "sing", id, score: s.SCORE, text: s.TEXT, tempo: s.TEMPO_QUARTER, lang: s.LANG, ...extra };
+    return new Promise((ok, fail) => {
+      this.pending.set(id, { ok, fail, progress });
+      this.worker().postMessage(req);
+    });
+  }
+  /** 播放（必须在用户手势里先调过 unlock()，iPad 才放声）。播完回调 onEnd。 */
+  play(r, onEnd) {
+    this.stop();
+    const ctx2 = this.unlock();
+    const buf = ctx2.createBuffer(1, r.samples.length, r.sr);
+    buf.copyToChannel(r.samples, 0);
+    const src = ctx2.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx2.destination);
+    src.onended = () => {
+      if (this.src === src) {
+        this.src = null;
+        onEnd();
+      }
+    };
+    src.start();
+    this.src = src;
+  }
+  stop() {
+    const s = this.src;
+    this.src = null;
+    if (s) {
+      s.onended = null;
+      try {
+        s.stop();
+      } catch {
+      }
+    }
+  }
+  get playing() {
+    return this.src !== null;
+  }
+  unlock() {
+    return audioCtx();
+  }
+  // 全 app 共用一个（audio.ts）
+};
+
+// src/export/mp3.ts
+function encodeMp3(samples, sr, kbps = 64) {
+  return new Promise((ok, fail) => {
+    const w = new Worker(new URL(`./${"mp3-worker-518bd328d28b.mjs"}`, import.meta.url), { type: "module" });
+    w.onmessage = (ev) => {
+      w.terminate();
+      if (ev.data.ok) ok(ev.data.bytes);
+      else fail(new Error(ev.data.message));
+    };
+    w.onerror = (e) => {
+      w.terminate();
+      fail(new Error(e.message || "mp3 \u7F16\u7801 worker \u51FA\u9519"));
+    };
+    const req = { samples: samples.slice(), sr, kbps };
+    w.postMessage(req, [req.samples.buffer]);
+  });
+}
+
+// node_modules/@internal/model-packs/dist/sha256.js
+var K = new Uint32Array([
+  1116352408,
+  1899447441,
+  3049323471,
+  3921009573,
+  961987163,
+  1508970993,
+  2453635748,
+  2870763221,
+  3624381080,
+  310598401,
+  607225278,
+  1426881987,
+  1925078388,
+  2162078206,
+  2614888103,
+  3248222580,
+  3835390401,
+  4022224774,
+  264347078,
+  604807628,
+  770255983,
+  1249150122,
+  1555081692,
+  1996064986,
+  2554220882,
+  2821834349,
+  2952996808,
+  3210313671,
+  3336571891,
+  3584528711,
+  113926993,
+  338241895,
+  666307205,
+  773529912,
+  1294757372,
+  1396182291,
+  1695183700,
+  1986661051,
+  2177026350,
+  2456956037,
+  2730485921,
+  2820302411,
+  3259730800,
+  3345764771,
+  3516065817,
+  3600352804,
+  4094571909,
+  275423344,
+  430227734,
+  506948616,
+  659060556,
+  883997877,
+  958139571,
+  1322822218,
+  1537002063,
+  1747873779,
+  1955562222,
+  2024104815,
+  2227730452,
+  2361852424,
+  2428436474,
+  2756734187,
+  3204031479,
+  3329325298
+]);
+var Sha256 = class {
+  h = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
+  buf = new Uint8Array(64);
+  bufLen = 0;
+  total = 0;
+  w = new Uint32Array(64);
+  done = false;
+  update(bytes) {
+    if (this.done)
+      throw new Error("Sha256: update after hex()");
+    let i = 0;
+    this.total += bytes.length;
+    if (this.bufLen) {
+      const take = Math.min(64 - this.bufLen, bytes.length);
+      this.buf.set(bytes.subarray(0, take), this.bufLen);
+      this.bufLen += take;
+      i = take;
+      if (this.bufLen === 64) {
+        this.block(this.buf, 0);
+        this.bufLen = 0;
+      }
+    }
+    for (; i + 64 <= bytes.length; i += 64)
+      this.block(bytes, i);
+    if (i < bytes.length) {
+      this.buf.set(bytes.subarray(i), 0);
+      this.bufLen = bytes.length - i;
+    }
+    return this;
+  }
+  block(p, o) {
+    const w = this.w, H = this.h;
+    for (let t = 0; t < 16; t++, o += 4)
+      w[t] = p[o] << 24 | p[o + 1] << 16 | p[o + 2] << 8 | p[o + 3];
+    for (let t = 16; t < 64; t++) {
+      const x = w[t - 15], y = w[t - 2];
+      const s0 = (x >>> 7 | x << 25) ^ (x >>> 18 | x << 14) ^ x >>> 3;
+      const s1 = (y >>> 17 | y << 15) ^ (y >>> 19 | y << 13) ^ y >>> 10;
+      w[t] = w[t - 16] + s0 + w[t - 7] + s1 | 0;
+    }
+    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+    for (let t = 0; t < 64; t++) {
+      const S1 = (e >>> 6 | e << 26) ^ (e >>> 11 | e << 21) ^ (e >>> 25 | e << 7);
+      const ch = e & f ^ ~e & g;
+      const t1 = h + S1 + ch + K[t] + w[t] | 0;
+      const S0 = (a >>> 2 | a << 30) ^ (a >>> 13 | a << 19) ^ (a >>> 22 | a << 10);
+      const maj = a & b ^ a & c ^ b & c;
+      const t2 = S0 + maj | 0;
+      h = g;
+      g = f;
+      f = e;
+      e = d + t1 | 0;
+      d = c;
+      c = b;
+      b = a;
+      a = t1 + t2 | 0;
+    }
+    H[0] += a;
+    H[1] += b;
+    H[2] += c;
+    H[3] += d;
+    H[4] += e;
+    H[5] += f;
+    H[6] += g;
+    H[7] += h;
+  }
+  hex() {
+    if (this.done)
+      throw new Error("Sha256: hex() twice");
+    const total = this.total;
+    const padLen = (this.bufLen < 56 ? 56 - this.bufLen : 120 - this.bufLen) + 8;
+    const pad2 = new Uint8Array(padLen);
+    pad2[0] = 128;
+    const bits = total * 8, hi = Math.floor(bits / 4294967296), lo = bits >>> 0, n2 = padLen;
+    pad2[n2 - 8] = hi >>> 24;
+    pad2[n2 - 7] = hi >>> 16;
+    pad2[n2 - 6] = hi >>> 8;
+    pad2[n2 - 5] = hi;
+    pad2[n2 - 4] = lo >>> 24;
+    pad2[n2 - 3] = lo >>> 16;
+    pad2[n2 - 2] = lo >>> 8;
+    pad2[n2 - 1] = lo;
+    this.total -= padLen;
+    this.update(pad2);
+    this.done = true;
+    return Array.from(this.h, (x) => x.toString(16).padStart(8, "0")).join("");
+  }
+};
+
+// node_modules/@internal/model-packs/dist/pack-store.js
+var SLICE = 1 << 20;
+function createPackStore(deps) {
+  const cacheName = deps.cacheName ?? "pwa-models";
+  const keyOf = (slug, name) => `${location.origin}/__pwa-models__/${slug}/${name}`;
+  function manifestOf(slug) {
+    const p = deps.packs[slug];
+    if (!p)
+      throw new Error(`unknown pack: ${slug}`);
+    return p;
+  }
+  const openCache = () => caches.open(cacheName);
+  async function hashBlob(b) {
+    const sha = new Sha256();
+    for (let o = 0; o < b.size; o += SLICE)
+      sha.update(new Uint8Array(await b.slice(o, Math.min(o + SLICE, b.size)).arrayBuffer()));
+    return sha.hex();
+  }
+  async function cachedChunkSizes(slug, m) {
+    const cache = await openCache();
+    const sizes = [];
+    for (const c of m.chunks) {
+      const r = await cache.match(keyOf(slug, c.name));
+      sizes.push(r ? Number(r.headers.get("content-length") ?? 0) : 0);
+    }
+    return sizes;
+  }
+  async function putChunk(slug, name, bytes) {
+    const cache = await openCache();
+    const size = bytes instanceof Blob ? bytes.size : bytes.length;
+    await cache.put(keyOf(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
+  }
+  async function markVerified(slug, packId) {
+    const cache = await openCache();
+    await cache.put(keyOf(slug, "verified.json"), new Response(JSON.stringify({ packId, at: (/* @__PURE__ */ new Date()).toISOString() }), { headers: { "content-type": "application/json" } }));
+  }
+  async function status(slug) {
+    const { packId, manifest: m } = manifestOf(slug);
+    const cache = await openCache();
+    const sizes = await cachedChunkSizes(slug, m);
+    const complete = sizes.every((n2, i) => n2 === m.chunks[i].bytes);
+    const marker = await cache.match(keyOf(slug, "verified.json"));
+    const verified = marker ? (await marker.json()).packId === packId : false;
+    return { slug, ready: complete && verified, bytesCached: sizes.reduce((a, b) => a + b, 0), bytesTotal: m.totalBytes };
+  }
+  async function dropIfStale(slug) {
+    const { packId, manifest: m } = manifestOf(slug);
+    const cache = await openCache();
+    const marker = await cache.match(keyOf(slug, "verified.json"));
+    if (!marker || (await marker.json()).packId === packId)
+      return;
+    for (const c of m.chunks)
+      await cache.delete(keyOf(slug, c.name));
+    await cache.delete(keyOf(slug, "verified.json"));
+  }
+  async function sealIfComplete(slug, fresh) {
+    const { packId, manifest: m } = manifestOf(slug);
+    const sizes = await cachedChunkSizes(slug, m);
+    if (!sizes.every((n2, i) => n2 === m.chunks[i].bytes))
+      return;
+    const cache = await openCache();
+    for (const c of m.chunks) {
+      if (fresh.has(c.name))
+        continue;
+      const r = await cache.match(keyOf(slug, c.name));
+      const ok = !!r && await hashBlob(await r.blob()) === c.sha256;
+      if (!ok) {
+        await cache.delete(keyOf(slug, c.name));
+        return;
+      }
+    }
+    await markVerified(slug, packId);
+  }
+  async function download(slug, base2, progress) {
+    const { packId, manifest: m } = manifestOf(slug);
+    await dropIfStale(slug);
+    const sizes = await cachedChunkSizes(slug, m);
+    let done = sizes.reduce((a, n2, i) => a + (n2 === m.chunks[i].bytes ? n2 : 0), 0);
+    progress({ done, total: m.totalBytes });
+    const root = base2.replace(/\/+$/, "");
+    for (let i = 0; i < m.chunks.length; i++) {
+      const c = m.chunks[i];
+      if (sizes[i] === c.bytes)
+        continue;
+      const res = await fetch(`${root}/packs/${slug}/${c.name}`, { cache: "no-store" });
+      if (!res.ok || !res.body)
+        throw new Error(`fetch ${c.name}: HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const sha = new Sha256();
+      const buf = new Uint8Array(c.bytes);
+      let got = 0, lastReported = 0;
+      for (; ; ) {
+        const { value, done: end } = await reader.read();
+        if (end)
+          break;
+        if (got + value.length > c.bytes)
+          throw new Error(`${c.name}: larger than manifest says`);
+        sha.update(value);
+        buf.set(value, got);
+        got += value.length;
+        if (got - lastReported >= 1048576 || got === c.bytes) {
+          lastReported = got;
+          progress({ done: done + got, total: m.totalBytes });
+        }
+      }
+      if (got !== c.bytes)
+        throw new Error(`${c.name}: got ${got} bytes, expected ${c.bytes}`);
+      if (sha.hex() !== c.sha256)
+        throw new Error(`${c.name}: sha256 mismatch (source tampered or corrupted)`);
+      await putChunk(slug, c.name, buf);
+      done += got;
+    }
+    await markVerified(slug, packId);
+    return status(slug);
+  }
+  async function importFiles(slugs, files, progress) {
+    const packs = slugs.map((slug) => ({ slug, m: manifestOf(slug).manifest }));
+    for (const p of packs)
+      await dropIfStale(p.slug);
+    const fresh = new Map(packs.map((p) => [p.slug, /* @__PURE__ */ new Set()]));
+    const total = files.reduce((a, f) => a + f.size, 0);
+    let done = 0, matched = 0;
+    const bad = [];
+    for (const f of files) {
+      const whole = packs.find((p) => p.m.chunks.length > 1 && p.m.totalBytes === f.size);
+      if (whole) {
+        let offset = 0;
+        for (const c of whole.m.chunks) {
+          const piece = f.slice(offset, offset + c.bytes);
+          if (await hashBlob(piece) !== c.sha256)
+            throw new Error(`${f.name}: sha256 mismatch at ${c.name} (wrong or corrupted file)`);
+          await putChunk(whole.slug, c.name, piece);
+          fresh.get(whole.slug).add(c.name);
+          offset += c.bytes;
+          progress({ done: done + offset, total });
+        }
+        matched++;
+      } else {
+        const sameSize = packs.flatMap((p) => p.m.chunks.filter((c) => c.bytes === f.size).map((c) => ({ slug: p.slug, c })));
+        if (sameSize.length) {
+          const hex = await hashBlob(f);
+          const hits = sameSize.filter((x) => x.c.sha256 === hex);
+          if (!hits.length)
+            bad.push(f.name);
+          for (const h of hits) {
+            await putChunk(h.slug, h.c.name, f);
+            fresh.get(h.slug).add(h.c.name);
+          }
+          if (hits.length)
+            matched++;
+        }
+      }
+      done += f.size;
+      progress({ done, total });
+    }
+    for (const p of packs)
+      await sealIfComplete(p.slug, fresh.get(p.slug));
+    if (bad.length)
+      throw new Error(`${bad[0]}: sha256 mismatch (wrong or corrupted file)`);
+    if (!matched)
+      throw new Error("no-matching-file");
+    return Promise.all(slugs.map(status));
+  }
+  async function downloadAll(slugs, base2, progress) {
+    const total = slugs.reduce((a, s) => a + manifestOf(s).manifest.totalBytes, 0);
+    const have = (await Promise.all(slugs.map(status))).map((st2) => st2.bytesCached);
+    const report = () => progress({ done: have.reduce((a, b) => a + b, 0), total });
+    report();
+    for (let i = 0; i < slugs.length; i++)
+      await download(slugs[i], base2, (p) => {
+        have[i] = p.done;
+        report();
+      });
+    return Promise.all(slugs.map(status));
+  }
+  async function deletePack(slug) {
+    const { manifest: m } = manifestOf(slug);
+    const cache = await openCache();
+    for (const c of m.chunks)
+      await cache.delete(keyOf(slug, c.name));
+    await cache.delete(keyOf(slug, "verified.json"));
+  }
+  const noop = () => {
+  };
+  return {
+    status: (slugs) => Promise.all(slugs.map(status)),
+    download: (slugs, base2, onProgress) => downloadAll(slugs, base2, onProgress ?? noop),
+    importFiles: (slugs, files, onProgress) => importFiles(slugs, files, onProgress ?? noop),
+    async delete(slugs) {
+      for (const slug of slugs)
+        await deletePack(slug);
+    },
+    async chunks(slug) {
+      if (!(await status(slug)).ready)
+        throw new Error("pack-missing");
+      const { manifest: m } = manifestOf(slug);
+      const cache = await openCache();
+      const out = [];
+      for (const c of m.chunks) {
+        const r = await cache.match(keyOf(slug, c.name));
+        if (!r)
+          throw new Error("pack-missing");
+        out.push(await r.blob());
+      }
+      return out;
+    }
+  };
+}
+
+// src/singer/packs.gen.ts
+var PACKS = {
+  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
+  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
+  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
+  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
+  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
+};
+var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
+
+// src/singer/sampler.ts
+var ENV = { attack: 0.01, cut: 6e-3, cutStop: 0.06, rel: 0.04, relStop: 0.25 };
+var GLIDE_TC = 0.012;
+var GLIDE_SPAN = 3;
+var XFADE = 0.03;
+var KANA = { la: "\u3089", n: "\u3093", u: "\u3046", o: "\u304A", a: "\u3042" };
+var MAX_VOICES = 8;
+var base = new URL("../assets/preview/", import.meta.url);
+async function fetchTable() {
+  const [idx, pcm] = await Promise.all([
+    // no-cache = 每次跟服务器核对（重新生成过的表不吃浏览器缓存）
+    fetch(new URL("vowels.json", base), { cache: "no-cache" }).then((r) => {
+      if (!r.ok) throw new Error(`\u8BD5\u542C\u5143\u97F3\u8868\uFF1AHTTP ${r.status}\uFF08\u5148\u8DD1 node scripts/gen-preview-vowels.mjs\uFF1F\uFF09`);
+      return r.json();
+    }),
+    fetch(new URL("vowels.pcm16", base), { cache: "no-cache" }).then((r) => r.arrayBuffer())
+  ]);
+  const all = new Int16Array(pcm), entries = idx.entries;
+  for (const e of entries) {
+    const f = new Float32Array(e.len);
+    for (let k = 0; k < e.len; k++) f[k] = all[e.start + k] / 32768;
+    const b = new AudioBuffer({ length: e.len, numberOfChannels: 1, sampleRate: idx.sr });
+    b.copyToChannel(f, 0);
+    e.buf = b;
+  }
+  return { sr: idx.sr, entries };
+}
+var Sampler = class {
+  loading = null;
+  table = null;
+  voices = /* @__PURE__ */ new Map();
+  // 来源 id → 正在响的声音（Map 保持按下的先后）
+  song = [];
+  songTimer = 0;
+  /** 开始加载（不挡任何东西）；重复调用只加载一次，失败了下次重试。 */
+  load() {
+    if (!this.loading) {
+      const p = fetchTable();
+      this.loading = p;
+      p.then((t) => {
+        this.table = t;
+      }, () => {
+        this.loading = null;
+      });
+    }
+    return this.loading.then(() => void 0);
+  }
+  get ready() {
+    return this.table !== null;
+  }
+  pick(midi, hum) {
+    const es = this.table?.entries.filter((e) => e.kana === KANA[hum]) ?? [];
+    if (!es.length) return null;
+    return es.reduce((a, b) => Math.abs(b.midi - midi) < Math.abs(a.midi - midi) ? b : a);
+  }
+  /** 起一个声音；offset > 0 = 从样本中间（循环段）开始，不带起音（滑音换样本时用）。 */
+  start(midi, hum, when, ctx2 = audioCtx(), offset = 0, attack = ENV.attack) {
+    const e = this.pick(midi, hum), sr = this.table?.sr ?? 22050;
+    if (!e?.buf) return null;
+    const src = ctx2.createBufferSource(), gain = ctx2.createGain();
+    src.buffer = e.buf;
+    src.loop = true;
+    src.loopStart = e.loopStart / sr;
+    src.loopEnd = e.loopEnd / sr;
+    src.playbackRate.value = 2 ** ((midi - e.midi) / 12);
+    gain.gain.setValueAtTime(0, when);
+    gain.gain.linearRampToValueAtTime(1, when + attack);
+    src.connect(gain).connect(ctx2.destination);
+    src.start(when, offset);
+    return { src, gain, entry: e };
+  }
+  fade(v, when, tc, stopAfter) {
+    v.gain.gain.cancelScheduledValues(when);
+    v.gain.gain.setTargetAtTime(0, when, tc);
+    v.src.stop(when + stopAfter);
+  }
+  /** 按下：响（同一来源的旧音先停掉）。还没加载好 = 不响（加载在后台）。 */
+  down(midi, hum, id = "main") {
+    if (!this.ready) {
+      void this.load();
+      return;
+    }
+    const ctx2 = audioCtx(), now = ctx2.currentTime, old = this.voices.get(id);
+    if (old) {
+      this.fade(old, now, ENV.cut, ENV.cutStop);
+      this.voices.delete(id);
+    }
+    while (this.voices.size >= MAX_VOICES) {
+      const [k, v2] = this.voices.entries().next().value;
+      this.fade(v2, now, ENV.cut, ENV.cutStop);
+      this.voices.delete(k);
+    }
+    const v = this.start(midi, hum, now);
+    if (v) this.voices.set(id, v);
+  }
+  /** 拖音高：新的顶掉旧的——同一个声音滑过去（离样本太远就交叉淡到另一份的循环段，不带起音）。 */
+  glide(midi, hum, id = "main") {
+    const v = this.voices.get(id);
+    if (!v || !this.ready) {
+      this.down(midi, hum, id);
+      return;
+    }
+    const ctx2 = audioCtx(), now = ctx2.currentTime, sr = this.table.sr;
+    if (Math.abs(midi - v.entry.midi) <= GLIDE_SPAN) {
+      v.src.playbackRate.setTargetAtTime(2 ** ((midi - v.entry.midi) / 12), now, GLIDE_TC);
+      return;
+    }
+    const e = this.pick(midi, hum);
+    if (!e) return;
+    const nv = this.start(midi, hum, now, ctx2, e.loopStart / sr, XFADE);
+    this.fade(v, now, XFADE / 3, XFADE * 3);
+    if (nv) this.voices.set(id, nv);
+    else this.voices.delete(id);
+  }
+  /** 松开：这个来源的声音淡出。 */
+  up(id = "main") {
+    const v = this.voices.get(id);
+    if (v) {
+      this.fade(v, audioCtx().currentTime, ENV.rel, ENV.relStop);
+      this.voices.delete(id);
+    }
+  }
+  /** 全部松开（切走 app / 失焦：抬手的事件可能收不到，别让音卡着响）。 */
+  upAll() {
+    for (const id of [...this.voices.keys()]) this.up(id);
+  }
+  /** 轻量版整首：notes = [{ midi, t0, t1 }]（秒），全唱 hum 那个字。返回总时长；播完调 onEnd。 */
+  playSong(notes, hum, onEnd) {
+    this.stopSong();
+    const ctx2 = audioCtx(), t = ctx2.currentTime + 0.1;
+    for (const n2 of notes) {
+      const v = this.start(n2.midi, hum, t + n2.t0);
+      if (v) {
+        this.fade(v, t + n2.t1, ENV.rel, ENV.relStop);
+        this.song.push(v);
+      }
+    }
+    const total = notes.length ? notes[notes.length - 1].t1 : 0;
+    this.songTimer = window.setTimeout(() => {
+      this.song = [];
+      onEnd();
+    }, (total + 0.4) * 1e3);
+    return total;
+  }
+  /** 轻量版整首离线渲染（导出用）：同 playSong 的排法，不出声，直接拿样本。 */
+  async renderSong(notes, hum) {
+    if (!this.ready) await this.load();
+    const sr = this.table.sr, lead = 0.1, total = (notes.length ? notes[notes.length - 1].t1 : 0) + lead + 0.4;
+    const ctx2 = new OfflineAudioContext(1, Math.ceil(total * sr), sr);
+    for (const n2 of notes) {
+      const v = this.start(n2.midi, hum, lead + n2.t0, ctx2);
+      if (v) this.fade(v, lead + n2.t1, ENV.rel, ENV.relStop);
+    }
+    const buf = await ctx2.startRendering();
+    return { samples: buf.getChannelData(0), sr };
+  }
+  stopSong() {
+    clearTimeout(this.songTimer);
+    const now = audioCtx().currentTime;
+    for (const v of this.song) {
+      try {
+        this.fade(v, now, ENV.cut, ENV.cutStop);
+      } catch {
+      }
+    }
+    this.song = [];
+  }
+  get songPlaying() {
+    return this.song.length > 0;
+  }
+};
+
+// src/app/main.ts
+var st = initState();
+var $ = (id) => document.getElementById(id);
+var bar = $("bar");
+var scoreEl = $("score");
+var padEl = $("padPanel");
+installPlatformGuards([scoreEl, padEl]);
+var shell = initPwaShell({ onUpdateAvailable: () => showUpdateBar() });
+function showUpdateBar() {
+  if (document.getElementById("updateBar")) return;
+  const el = document.createElement("div");
+  el.id = "updateBar";
+  el.className = "update-bar";
+  el.innerHTML = `<span>\u6709\u65B0\u7248\u672C</span><button class="btn primary" data-v="reload">\u5237\u65B0</button><button class="btn" data-v="later">\u5F85\u4F1A\u513F</button>`;
+  el.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-v]")?.dataset.v;
+    if (v === "reload") void shell.reload();
+    else if (v === "later") el.remove();
+  });
+  document.body.append(el);
+}
+bar.innerHTML = `<span class="title">MoonSinger</span><span class="ver">${APP_VERSION}</span><label class="field" title="\u5B8C\u6574 = \u6708\u8BFB\u672C\u4EBA\uFF08\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09\uFF1B\u8F7B\u91CF = \u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1">\u97F3\u8D28<select id="qualSel"><option value="full">\u5B8C\u6574</option><option value="light">\u8F7B\u91CF</option></select></label><label class="field" title="\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48">\u54FC<select id="humSel"><option value="la">\u3089 / \u5566</option><option value="n">\u3093 / \u55EF</option><option value="u">\u3046 / \u545C</option><option value="o">\u304A / \u54E6</option><option value="a">\u3042 / \u554A</option></select></label><span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span><button id="padBtn" class="btn is-on" title="\u624B\u6307 pad"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"><svg class="ico"><use href="#settings"/></svg></button><button id="shareBtn" class="btn" title="\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u53D1\u7ED9\u522B\u4EBA\u542C"><svg class="ico"><use href="#export"/></svg></button><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button>`;
+var sampler = new Sampler();
+var sound = {
+  down: (p, id = "main") => sampler.down(midiOf(p), st.song.hum, id),
+  up: (id = "main") => sampler.up(id)
+};
+var soundTok = (s, i, id = "main") => {
+  const t = s.song.tokens[i];
+  if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id);
+};
+var keyTok = (s, i, code) => {
+  const t = s.song.tokens[i];
+  soundTok(s, i, `key${code}`);
+  if (t?.kind === "note" && t.pitch) pad.showDown(diatonicIndex(t.pitch), `key${code}`);
+};
+function writeAndLocate(write) {
+  let target = -1;
+  if (st.sel) {
+    for (let k = st.sel.from; k < st.sel.to; k++) if (st.song.tokens[k].kind === "note") {
+      target = k;
+      break;
+    }
+  }
+  update(write(st));
+  return target >= 0 ? target : st.caret - 1;
+}
+var upTimer = 0;
+var view = new ScoreView(scoreEl, {
+  get: () => st,
+  set: (n2) => update(n2),
+  audition: (i, hold) => {
+    clearTimeout(upTimer);
+    soundTok(st, i, "score");
+    if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350);
+  },
+  glide: (i) => {
+    clearTimeout(upTimer);
+    const t = st.song.tokens[i];
+    if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum, "score");
+  },
+  release: () => {
+    clearTimeout(upTimer);
+    sound.up("score");
+  }
+});
+var impro = false;
+var padWrote = -1;
+var pad = new Pad(padEl, {
+  state: () => st,
+  onPitch: (p) => {
+    padWrote = writeAndLocate((s) => writePitch(s, p));
+  },
+  onCommand: (c) => update(apply(st, c, performance.now())),
+  onTuplet: (n2) => update(setTuplet(st, n2)),
+  onInputKey: (f) => update(setInputKey(st, f)),
+  onImpro: (on) => {
+    impro = on;
+    renderStatus();
+  },
+  onInsertMark: (kind) => {
+    const at = st.sel ? st.sel.from : st.caret;
+    const v = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
+    const r = writeMark(st, v);
+    update(r.st);
+    view.marks.openAt(r.index, r.fresh);
+  },
+  onSoundDown: (p, id) => {
+    if (padWrote >= 0) soundTok(st, padWrote, id);
+    else {
+      const r = soundingPitch(st, p);
+      update(r.st);
+      sound.down(r.pitch, id);
+    }
+    padWrote = -1;
+  },
+  onSoundUp: (id) => sound.up(id)
+});
+function update(next2) {
+  if (next2 === st) return;
+  st = next2;
+  view.render();
+  pad.render();
+  renderStatus();
+}
+var DUR_NAME = {
+  [TPQ * 4]: "\u5168\u97F3\u7B26",
+  [TPQ * 3]: "\u9644\u70B9\u4E8C\u5206",
+  [TPQ * 2]: "\u4E8C\u5206",
+  [TPQ * 1.5]: "\u9644\u70B9\u56DB\u5206",
+  [TPQ]: "\u56DB\u5206",
+  [TPQ * 0.75]: "\u9644\u70B9\u516B\u5206",
+  [TPQ / 2]: "\u516B\u5206",
+  [TPQ * 3 / 8]: "\u9644\u70B9\u5341\u516D\u5206",
+  [TPQ / 4]: "\u5341\u516D\u5206",
+  [TPQ / 8]: "\u4E09\u5341\u4E8C\u5206"
+};
+var UNIT_NAME2 = ["\u4E09\u5341\u4E8C\u5206", "\u5341\u516D\u5206", "\u516B\u5206", "\u56DB\u5206", "\u4E8C\u5206", "\u5168\u97F3\u7B26"];
+var durName = (d) => DUR_NAME[d] ?? `${+(d / TPQ).toFixed(3)} \u62CD`;
+function renderStatus() {
+  const el = $("status"), fills = barFill(st.song), off = fills.slice(1).filter((f) => !f.full).length;
+  const inp = st.input, next2 = `${UNIT_NAME2[inp.unit]}${inp.tuplet ? ` ${inp.tuplet} \u8FDE` : ""}${inp.acc ? ` ${inp.acc > 0 ? "\u266F" : "\u266D"}${inp.accMode === "lock" ? "\uFF08\u9501\uFF09" : ""}` : ""}`;
+  let s = impro ? "\u5F39\uFF08\u53EA\u5531\u4E0D\u5199\uFF09" : st.sel ? `\u6539 \xB7 \u9009\u4E2D ${st.sel.to - st.sel.from} \u4E2A` : `\u5199\uFF08\u4E0B\u4E00\u4E2A\uFF1A${next2}\uFF09`;
+  const i = st.sel ? st.sel.from : currentIndex(st);
+  if (i >= 0 && (!st.sel || st.sel.to - st.sel.from === 1)) {
+    const t = st.song.tokens[i];
+    if (t.kind === "rest") s += ` \xB7 \u4F11\u6B62 \xB7 ${durName(t.dur)}`;
+    else if (t.kind === "note") s += ` \xB7 ${t.pitch ? pitchName(t.pitch) : "\uFF08\u97F3\u9AD8\u7A7A\u7740\uFF09"} \xB7 ${durName(t.dur)}${t.tie ? " \xB7 \u8FDE\u7740\u524D\u4E00\u4E2A" : ""}${t.lyric ? ` \xB7 ${t.lyric === MELISMA_MARK ? "\u62D6\u8154" : t.lyric}` : ""}`;
+    else if (t.kind === "key") s += ` \xB7 \u8C03\u53F7 1=${KEY_LABEL[t.fifths]}`;
+    else if (t.kind === "time") s += ` \xB7 \u62CD\u53F7 ${t.beats}/${t.beatType}`;
+    else if (t.kind === "tempo") s += ` \xB7 \u901F\u5EA6 ${tempoWord(t.bpm).it} \u2669=${t.bpm}`;
+  } else if (st.song.tokens.length <= headLen(st.song.tokens)) s += " \xB7 \u6253 1\u20137 \u5199\u97F3\uFF0C\u70B9\u8C31\u4E0B\u9762\u5199\u6B4C\u8BCD\uFF0C\u70B9\u8C31\u5934\u6539\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6";
+  if (off) s += ` \xB7 ${off} \u4E2A\u5C0F\u8282\u62CD\u6570\u548C\u62CD\u53F7\u5BF9\u4E0D\u4E0A\uFF08\u53EA\u63D0\u793A\uFF09`;
+  el.textContent = s;
+}
+var singer = new Singer();
+var singing = false;
+var singStatus = (s) => {
+  $("singStatus").textContent = s;
+};
+var playIcon = (stop) => {
+  $("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`;
+};
+function songLang() {
+  const ls = st.song.tokens.flatMap((t) => t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : []).join("");
+  if (/[A-Za-z]/.test(ls) && !/[\p{Script=Han}぀-ヿ]/u.test(ls)) return "en";
+  if (!ls && (st.song.hum === "la" || st.song.hum === "u")) return "zh";
+  return /\p{Script=Han}/u.test(ls) && !/[぀-ヿ]/.test(ls) ? "zh" : "ja";
+}
+var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07 });
+function lightNotes() {
+  const notes = [];
+  for (const { index, tok, t0, t1 } of timeline(st.song)) {
+    if (tok.kind !== "note") continue;
+    const midi = midiOf(effectivePitch(st.song.tokens, index)), last = notes[notes.length - 1];
+    if (tok.tie && last && last.midi === midi) {
+      last.t1 = t1;
+      continue;
+    }
+    notes.push({ midi, t0, t1 });
+  }
+  return notes;
+}
+var lastFull = null;
+async function singFull() {
+  const score = toLabScore(st.song, songLang());
+  if (!score.SCORE.length) return null;
+  const opt = humOpt(), key = JSON.stringify([score, opt]);
+  if (lastFull?.key === key) return lastFull.r;
+  const r = await singer.sing(score, (stage) => singStatus(`${stage}\u2026`), { opt, models: modelBases() });
+  lastFull = { key, r };
+  return r;
+}
+function playLight(note = "") {
+  const notes = lightNotes();
+  if (!notes.length) {
+    singStatus("\u8FD8\u6CA1\u6709\u97F3");
+    return;
+  }
+  if (!sampler.ready) {
+    singStatus("\u8F7B\u91CF\u7248\u7684\u5143\u97F3\u8868\u8FD8\u5728\u4E0B\u8F7D\u2026");
+    void sampler.load().then(() => playLight(note));
+    return;
+  }
+  const total = sampler.playSong(notes, st.song.hum, () => playIcon(false));
+  playIcon(true);
+  singStatus(`${note}\u8F7B\u91CF\u7248\u5531 ${total.toFixed(1)} \u79D2`);
+}
+async function togglePlay() {
+  if (singer.playing || sampler.songPlaying) {
+    singer.stop();
+    sampler.stopSong();
+    playIcon(false);
+    singStatus("");
+    return;
+  }
+  if (singing) return;
+  singer.unlock();
+  if ($("qualSel").value === "light") {
+    playLight();
+    return;
+  }
+  singing = true;
+  $("playBtn").classList.add("is-on");
+  try {
+    const cached = lastFull, r = await singFull();
+    if (!r) {
+      singStatus("\u8FD8\u6CA1\u6709\u97F3");
+      return;
+    }
+    singStatus(r === cached?.r ? `\u5531 ${(r.samples.length / r.sr).toFixed(1)} \u79D2\uFF08\u8C31\u6CA1\u6539\uFF0C\u7528\u4E0A\u6B21\u5531\u597D\u7684\uFF09` : `\u5531 ${(r.samples.length / r.sr).toFixed(1)} \u79D2\uFF08\u51C6\u5907 ${(r.ms.load / 1e3).toFixed(1)} s\uFF0C\u5408\u6210 ${(r.ms.sing / 1e3).toFixed(1)} s\uFF09`);
+    singer.play(r, () => {
+      playIcon(false);
+    });
+    playIcon(true);
+  } catch (e) {
+    playLight(`\u5B8C\u6574\u7248\u5531\u4E0D\u51FA\u6765\uFF08${e.message}\uFF09\uFF0C\u5148\u7528`);
+  } finally {
+    singing = false;
+    $("playBtn").classList.remove("is-on");
+  }
+}
+$("playBtn").addEventListener("click", () => {
+  void togglePlay();
+});
+var exporting = false;
+async function exportSong() {
+  if (exporting || singing) return;
+  exporting = true;
+  $("shareBtn").classList.add("is-on");
+  try {
+    let r = null, how = "";
+    if ($("qualSel").value === "full") {
+      try {
+        r = await singFull();
+        how = "\u6708\u8BFB";
+      } catch (e) {
+        singStatus(`\u5B8C\u6574\u7248\u5531\u4E0D\u51FA\u6765\uFF08${e.message}\uFF09\uFF0C\u6539\u7528\u8F7B\u91CF\u7248\u5BFC\u51FA\u2026`);
+      }
+    }
+    if (!r) {
+      const notes = lightNotes();
+      if (notes.length) {
+        r = await sampler.renderSong(notes, st.song.hum);
+        how = "\u8F7B\u91CF\u7248";
+      }
+    }
+    if (!r) {
+      singStatus("\u8FD8\u6CA1\u6709\u97F3");
+      return;
+    }
+    singStatus("\u7F16 mp3\u2026");
+    const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
+    const file = new File([bytes], `${songTitle()}.mp3`, { type: "audio/mpeg" });
+    singStatus("");
+    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${how}\u5531 ${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
+  } catch (e) {
+    singStatus(`\u5BFC\u51FA\u5931\u8D25\uFF1A${e.message}`);
+  } finally {
+    exporting = false;
+    $("shareBtn").classList.remove("is-on");
+  }
+}
+function songTitle() {
+  const ly = st.song.tokens.flatMap((t) => t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : []).join("").replace(/[\\/:*?"<>|\s]/g, "").slice(0, 12);
+  const d = /* @__PURE__ */ new Date(), z = (n2) => String(n2).padStart(2, "0");
+  return `${ly || "\u65CB\u5F8B"}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`;
+}
+var closeOffer = null;
+var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
+var modelSource = MODEL_SOURCE_DEFAULT;
+var modelBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-models", location.href).href, modelSource.trim().replace(/\/+$/, "") || MODEL_SOURCE_DEFAULT])];
+var packStore = createPackStore({ packs: PACKS });
+var esc2 = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+async function packStatusText() {
+  const st2 = await packStore.status(Object.keys(PACKS));
+  return st2.map((s) => `${s.ready ? "\u2713" : "\xB7"} ${s.slug}\uFF08${(s.bytesTotal / 1e6).toFixed(1)} MB\uFF09`).join("\n");
+}
+function openSettings() {
+  if (closeOffer) closeOffer();
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc2(modelSource)}" /></label><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc2(CREDIT.credit)}
+
+${esc2(CREDIT.terms)}
+${esc2(CREDIT.termsUrl)}
+
+${esc2(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  document.body.append(box);
+  const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
+  const refresh = () => {
+    void packStatusText().then((t) => packSt.textContent = t);
+  };
+  refresh();
+  const close = () => {
+    modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT;
+    box.remove();
+    closeOffer = null;
+    scoreEl.focus();
+  };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") close();
+    else if (v === "default") srcIn.value = MODEL_SOURCE_DEFAULT;
+    else if (v === "check") void shell.checkForUpdate().then((r) => {
+      if (r === "found") {
+        close();
+        showUpdateBar();
+      } else singStatus(r === "latest" ? "\u5DF2\u7ECF\u662F\u6700\u65B0\u7248" : "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0");
+    });
+    else if (v === "reset") void shell.forceReset();
+  });
+  box.querySelector("#impIn").addEventListener("change", async (e) => {
+    const files = [...e.target.files ?? []];
+    if (!files.length) return;
+    packSt.textContent = "\u5BFC\u5165\u4E2D\u2026";
+    try {
+      await packStore.importFiles(Object.keys(PACKS), files, (p) => packSt.textContent = `\u5BFC\u5165\u4E2D\u2026 ${Math.floor(p.done / p.total * 100)}%`);
+    } catch (err) {
+      singStatus(`\u5BFC\u5165\u6CA1\u6210\uFF1A${err.message === "no-matching-file" ? "\u8FD9\u4E9B\u6587\u4EF6\u4E0D\u662F\u6708\u8BFB\u8981\u7684\u6A21\u578B\u5305\u5206\u7247" : err.message}`);
+    }
+    refresh();
+  });
+}
+$("setBtn").addEventListener("click", () => openSettings());
+function offerFile(file, title, msg) {
+  const nav = navigator;
+  const canShare = typeof navigator.share === "function" && !!nav.canShare?.({ files: [file] });
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">${title}</div><div class="offer-msg">${msg}</div><div class="offer-btns">` + (canShare ? `<button class="btn primary" data-v="share">\u5206\u4EAB</button>` : "") + `<button class="btn${canShare ? "" : " primary"}" data-v="download">\u4E0B\u8F7D</button><button class="btn" data-v="close">\u5173</button></div></div>`;
+  document.body.append(box);
+  const close = () => {
+    box.remove();
+    closeOffer = null;
+    scoreEl.focus();
+  };
+  closeOffer = close;
+  box.addEventListener("click", async (e) => {
+    const v = e.target.closest("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") {
+      close();
+      return;
+    }
+    if (v === "download") {
+      const a = document.createElement("a"), url = URL.createObjectURL(file);
+      a.href = url;
+      a.download = file.name;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 3e4);
+      singStatus(`\u5DF2\u4E0B\u8F7D ${file.name}`);
+      close();
+    } else if (v === "share") {
+      try {
+        await navigator.share({ files: [file], title: file.name });
+        singStatus("\u5DF2\u5206\u4EAB");
+        close();
+      } catch (err) {
+        if (err.name !== "AbortError") singStatus(`\u5206\u4EAB\u5931\u8D25\uFF1A${err.message}`);
+      }
+    }
+  });
+}
+$("shareBtn").addEventListener("click", () => {
+  void exportSong();
+});
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st };
+$("humSel").value = st.song.hum;
+$("humSel").addEventListener("change", (e) => {
+  update(setHum(st, e.target.value));
+  scoreEl.focus();
+});
+$("padBtn").addEventListener("click", () => {
+  padEl.hidden = !padEl.hidden;
+  $("padBtn").classList.toggle("is-on", !padEl.hidden);
+  view.render();
+});
+function whereNow() {
+  if (closeOffer) return "sheet";
+  if (view.marks.open) return "mark";
+  if (view.lyrics.open) return "lyric";
+  return impro ? "impro" : st.sel ? "edit" : "write";
+}
+function run(a, repeat, code) {
+  switch (a.k) {
+    case "cmd":
+      if (a.cmd.k === "degree") {
+        if (!repeat) {
+          const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now()));
+          keyTok(st, i, code);
+        }
+        return true;
+      }
+      update(apply(st, a.cmd, performance.now()));
+      return true;
+    case "audition": {
+      if (repeat) return true;
+      const probe = apply({ ...st, sel: null, log: [] }, { k: "degree", degree: a.degree, dir: a.dir }, performance.now());
+      keyTok(probe, probe.caret - 1, code);
+      if (probe.input !== st.input) update({ ...st, input: probe.input });
+      return true;
+    }
+    case "play":
+      void togglePlay();
+      return true;
+    case "impro":
+      pad.toggleImpro();
+      return true;
+    case "lyric":
+      return view.lyrics.act(a.a);
+    case "mark":
+      view.marks.act(a.a);
+      return true;
+    case "sheet":
+      closeOffer?.();
+      return true;
+  }
+}
+window.addEventListener("keydown", (e) => {
+  const t = e.target;
+  if (t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed"))) return;
+  const a = route(e, whereNow(), st.sel ? "edit" : "write");
+  if (a && run(a, e.repeat, e.code)) e.preventDefault();
+});
+window.addEventListener("keyup", (e) => {
+  if (isSoundKey(e)) {
+    sound.up(`key${e.code}`);
+    pad.showUp(`key${e.code}`);
+  }
+});
+window.addEventListener("blur", () => {
+  sampler.upAll();
+  pad.clearHeld();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    sampler.upAll();
+    pad.clearHeld();
+  }
+});
+await document.fonts.load(`40px Bravura`).catch(() => void 0);
+view.render();
+pad.render();
+renderStatus();
+scoreEl.focus();
+setTimeout(() => {
+  void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
+}, 300);
+//# sourceMappingURL=moonsinger-6d0124060883.mjs.map

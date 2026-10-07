@@ -4,6 +4,7 @@
 // 调号 / 拍号 / 速度是谱里的记号 token，点谱上的记号就地改，pad「＋」在光标处插——顶栏不再有全局的调号 / 拍号 / 速度。
 
 import { APP_VERSION } from "../version.ts";
+import { initPwaShell } from "./pwa-shell.ts";
 import { type EditorState, type NoteTok, type Hum, type MarkVal, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
 import { type Pitch, pitchName, midiOf, diatonicIndex, KEY_LABEL } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
@@ -24,6 +25,20 @@ let st: EditorState = initState();
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const bar = $("bar"), scoreEl = $("score"), padEl = $("padPanel");
 installPlatformGuards([scoreEl, padEl]);   // iPad：长按放大镜 / 系统菜单 / 双击缩放（照 WeebPaint）
+
+// ── PWA 壳（2026-10-07 出生）：service worker + 四路更新检测；有新版不强刷，顶上出一条「有新版本 · 刷新」（不用系统弹窗） ─────
+const shell = initPwaShell({ onUpdateAvailable: () => showUpdateBar() });
+function showUpdateBar(): void {
+  if (document.getElementById("updateBar")) return;
+  const el = document.createElement("div");
+  el.id = "updateBar"; el.className = "update-bar";
+  el.innerHTML = `<span>有新版本</span><button class="btn primary" data-v="reload">刷新</button><button class="btn" data-v="later">待会儿</button>`;
+  el.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (v === "reload") void shell.reload(); else if (v === "later") el.remove();
+  });
+  document.body.append(el);
+}
 
 
 bar.innerHTML =
@@ -241,6 +256,7 @@ function openSettings(): void {
     `<label class="btn" title="选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包<input id="impIn" type="file" multiple hidden /></label></div>` +
     `<pre id="packSt" class="set-packs">…</pre>` +
     `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre></details>` +
+    `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的月读模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector<HTMLInputElement>("#srcIn")!, packSt = box.querySelector<HTMLElement>("#packSt")!;
@@ -252,6 +268,8 @@ function openSettings(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
     else if (v === "default") srcIn.value = MODEL_SOURCE_DEFAULT;
+    else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else singStatus(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
+    else if (v === "reset") void shell.forceReset();
   });
   box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
     const files = [...((e.target as HTMLInputElement).files ?? [])]; if (!files.length) return;

@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# scripts/build.sh —— src/app/main.ts → dist/moonsinger.mjs。created 2026-10-06 by Claude Opus 5.5（抄 CatsUp scripts/build.sh）
-# 孵化期：固定文件名、无 content-hash、无 service worker（正式出生那天走 create-pwa-project 换家族 content-hash 形）。
+# scripts/build.sh —— src/app/main.ts → dist/moonsinger-<hash>.mjs（+ 两个 worker），就地改 index.html。created 2026-10-06 by Claude Opus 5.5（抄 CatsUp scripts/build.sh）
+# 2026-10-07 出生（user「毕业差的东西做」）：换家族 content-hash 形 + service worker（service-worker.js / src/app/pwa-shell.ts）。
 # 用法：编辑 src/ → bash scripts/build.sh → bash scripts/serve.sh → 浏览器开 http://localhost:8710/
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ENTRY="./src/app/main.ts"
-OUT="./dist/moonsinger.mjs"
 ESBUILD_VER="0.24.0"
 ESBUILD="./tools/esbuild/esbuild"
 
@@ -37,11 +36,24 @@ else
 fi
 
 mkdir -p dist
-"$ESBUILD" "$ENTRY" --bundle --format=esm --target=es2022 --outfile="$OUT" --sourcemap --log-level=warning
-echo "[build] ✓ $OUT"
+# 家族 content-hash 形（2026-10-07 出生，抄 JRB / WXHW build.sh）：每个 bundle 文件名带内容哈希 → service worker 的缓存名跟着变，换版本自动失效。
+# 两个 worker 先打（主 bundle 要知道它们的文件名：--define 进去，改 worker = 主 bundle 也变 = 新版本），主 bundle 最后打，index.html 就地改指新哈希。
+hashed() {   # $1 = 入口, $2 = 名字前缀, 其余 = 额外 esbuild 参数 → stdout 打出最终文件名
+  local entry="$1" name="$2"; shift 2
+  local tmp="./dist/.$name.tmp.mjs"
+  "$ESBUILD" "$entry" --bundle --format=esm --target=es2022 --outfile="$tmp" --sourcemap --log-level=warning "$@" >&2
+  local h; h=$(sha256sum "$tmp" | cut -c1-12)
+  local out="$name-$h.mjs"
+  sed -i "s|sourceMappingURL=$(basename "$tmp").map|sourceMappingURL=$out.map|" "$tmp"
+  mv "$tmp" "./dist/$out"; mv "$tmp.map" "./dist/$out.map"
+  echo "$out"
+}
+rm -f ./dist/*.mjs ./dist/*.mjs.map   # 旧哈希的产物不留（dist 进 git：只留这一版）
 # 月读的 worker（唱法核心 src/singer/sing-core.mjs + 朗读库底层出口的前端 / ort / ojt 胶水打进来；WORLD 运行时从 vendor/world/ 载，模型 / 运行时 wasm / 词典随模型包来）
-"$ESBUILD" ./src/singer/worker.ts --bundle --format=esm --target=es2022 --outfile=./dist/singer-worker.mjs --sourcemap --log-level=warning
-echo "[build] ✓ ./dist/singer-worker.mjs"
+SINGER=$(hashed ./src/singer/worker.ts singer-worker); echo "[build] ✓ dist/$SINGER"
 # mp3 编码 worker（vendored lamejs，LGPL-3.0，单独一个文件；点导出才加载）
-"$ESBUILD" ./src/export/mp3-worker.ts --bundle --format=esm --target=es2022 --outfile=./dist/mp3-worker.mjs --sourcemap --log-level=warning
-echo "[build] ✓ ./dist/mp3-worker.mjs"
+MP3=$(hashed ./src/export/mp3-worker.ts mp3-worker); echo "[build] ✓ dist/$MP3"
+MAIN=$(hashed "$ENTRY" moonsinger "--define:__SINGER_WORKER__=\"$SINGER\"" "--define:__MP3_WORKER__=\"$MP3\""); echo "[build] ✓ dist/$MAIN"
+sed -i -E "s|src=\"\./dist/moonsinger(-[a-z0-9]+)?\.mjs\"|src=\"./dist/$MAIN\"|" index.html
+grep -q "$MAIN" index.html || { echo "[build] ✗ index.html 没改到主 bundle 的新文件名" >&2; exit 1; }
+echo "[build] index.html → ./dist/$MAIN"

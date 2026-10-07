@@ -5,7 +5,7 @@ private/
 .claude/
 # 依赖与构建
 node_modules/
-dist/
+# dist/ 进 git（部署 = 各分支自带构建产物；家族 bundle 形）
 tools/esbuild/
 # 开发期软链（检疫桶的模型 / 词典 / 引擎）与 serve 白名单
 dev-assets/
