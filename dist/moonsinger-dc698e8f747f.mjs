@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.23-2026-10-07";
+var APP_VERSION = "v0.2.24-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3957,66 +3957,21 @@ var Sampler = class {
 // src/score/roles.ts
 var ROLE_GROUPS = [
   { group: "\u4EBA\u58F0", items: [
-    { sound: "voice.vocals", name: "Vocals", zh: "\u4EBA\u58F0" },
-    { sound: "voice.soprano", name: "Soprano", zh: "\u5973\u9AD8\u97F3" },
-    { sound: "voice.mezzo-soprano", name: "Mezzo-soprano", zh: "\u5973\u4E2D\u97F3" },
-    { sound: "voice.alto", name: "Alto", zh: "\u5973\u4F4E\u97F3" },
-    { sound: "voice.countertenor", name: "Countertenor", zh: "\u5047\u58F0\u7537\u9AD8\u97F3" },
-    { sound: "voice.tenor", name: "Tenor", zh: "\u7537\u9AD8\u97F3" },
-    { sound: "voice.baritone", name: "Baritone", zh: "\u7537\u4E2D\u97F3" },
-    { sound: "voice.bass", name: "Bass", zh: "\u7537\u4F4E\u97F3" },
-    { sound: "voice.female", name: "Female Voice", zh: "\u5973\u58F0" },
-    { sound: "voice.male", name: "Male Voice", zh: "\u7537\u58F0" },
-    { sound: "voice.child", name: "Child", zh: "\u7AE5\u58F0" },
-    { sound: "voice.synth", name: "Synth Voice", zh: "\u5408\u6210\u4EBA\u58F0" }
+    { sound: "voice.vocals", name: "Vocals", zh: "\u4E3B\u5531" },
+    { sound: "voice.vocals", name: "Backing Vocals", zh: "\u548C\u58F0" },
+    { sound: "voice.soprano", name: "Soprano", zh: "\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09" },
+    { sound: "voice.alto", name: "Alto", zh: "\u5973\u4F4E\u97F3\uFF08\u5408\u5531\uFF09" },
+    { sound: "voice.tenor", name: "Tenor", zh: "\u7537\u9AD8\u97F3\uFF08\u5408\u5531\uFF09" },
+    { sound: "voice.bass", name: "Bass", zh: "\u7537\u4F4E\u97F3\uFF08\u5408\u5531\uFF09" }
   ] },
-  { group: "\u5F26\u4E50", items: [
-    { sound: "strings.violin", name: "Violin", zh: "\u5C0F\u63D0\u7434" },
-    { sound: "strings.viola", name: "Viola", zh: "\u4E2D\u63D0\u7434" },
-    { sound: "strings.cello", name: "Violoncello", zh: "\u5927\u63D0\u7434" },
-    { sound: "strings.contrabass", name: "Contrabass", zh: "\u4F4E\u97F3\u63D0\u7434" },
-    { sound: "strings.erhu", name: "Erhu", zh: "\u4E8C\u80E1" }
-  ] },
-  { group: "\u952E\u76D8", items: [
-    { sound: "keyboard.piano", name: "Piano", zh: "\u94A2\u7434" },
-    { sound: "keyboard.piano.electric", name: "Electric Piano", zh: "\u7535\u94A2\u7434" },
-    { sound: "keyboard.organ", name: "Organ", zh: "\u7BA1\u98CE\u7434" },
-    { sound: "keyboard.harpsichord", name: "Harpsichord", zh: "\u7FBD\u7BA1\u952E\u7434" },
-    { sound: "keyboard.accordion", name: "Accordion", zh: "\u624B\u98CE\u7434" }
-  ] },
-  { group: "\u6728\u7BA1", items: [
-    { sound: "wind.flutes.flute", name: "Flute", zh: "\u957F\u7B1B" },
-    { sound: "wind.flutes.flute.piccolo", name: "Piccolo", zh: "\u77ED\u7B1B" },
-    { sound: "wind.flutes.recorder", name: "Recorder", zh: "\u7AD6\u7B1B" },
-    { sound: "wind.reed.oboe", name: "Oboe", zh: "\u53CC\u7C27\u7BA1" },
-    { sound: "wind.reed.clarinet", name: "Clarinet", zh: "\u5355\u7C27\u7BA1" },
-    { sound: "wind.reed.bassoon", name: "Bassoon", zh: "\u5927\u7BA1" },
-    { sound: "wind.reed.saxophone.alto", name: "Alto Saxophone", zh: "\u4E2D\u97F3\u8428\u514B\u65AF" },
-    { sound: "wind.flutes.xiao", name: "Xiao", zh: "\u7BAB" },
-    { sound: "wind.reed.sheng", name: "Sheng", zh: "\u7B19" }
-  ] },
-  { group: "\u94DC\u7BA1", items: [
-    { sound: "brass.trumpet", name: "Trumpet", zh: "\u5C0F\u53F7" },
-    { sound: "brass.french-horn", name: "Horn", zh: "\u5706\u53F7" },
-    { sound: "brass.trombone", name: "Trombone", zh: "\u957F\u53F7" },
-    { sound: "brass.tuba", name: "Tuba", zh: "\u5927\u53F7" }
-  ] },
-  { group: "\u62E8\u5F26", items: [
-    { sound: "pluck.guitar.acoustic", name: "Acoustic Guitar", zh: "\u6728\u5409\u4ED6" },
-    { sound: "pluck.guitar.electric", name: "Electric Guitar", zh: "\u7535\u5409\u4ED6" },
-    { sound: "pluck.bass.electric", name: "Electric Bass", zh: "\u7535\u8D1D\u65AF" },
-    { sound: "pluck.ukulele", name: "Ukulele", zh: "\u5C24\u514B\u91CC\u91CC" },
-    { sound: "pluck.harp", name: "Harp", zh: "\u7AD6\u7434" },
-    { sound: "pluck.guzheng", name: "Guzheng", zh: "\u53E4\u7B5D" },
-    { sound: "pluck.pipa", name: "Pipa", zh: "\u7435\u7436" }
-  ] },
-  { group: "\u6253\u51FB / \u5408\u6210", items: [
-    { sound: "drum.group.set", name: "Drum Set", zh: "\u67B6\u5B50\u9F13" },
-    { sound: "drum.timpani", name: "Timpani", zh: "\u5B9A\u97F3\u9F13" },
-    { sound: "pitched-percussion.glockenspiel", name: "Glockenspiel", zh: "\u949F\u7434" },
-    { sound: "pitched-percussion.marimba", name: "Marimba", zh: "\u9A6C\u6797\u5DF4" },
+  { group: "\u4E50\u961F", items: [
+    { sound: "keyboard.piano", name: "Piano", zh: "\u94A2\u7434 / \u952E\u76D8" },
+    { sound: "pluck.guitar", name: "Guitar", zh: "\u5409\u4ED6" },
+    { sound: "pluck.bass", name: "Bass", zh: "\u8D1D\u65AF" },
+    { sound: "drum.group.set", name: "Drums", zh: "\u9F13" },
+    { sound: "strings.group", name: "Strings", zh: "\u5F26\u4E50" },
     { sound: "synth.pad", name: "Synth Pad", zh: "\u5408\u6210\u94FA\u5E95" },
-    { sound: "synth.tone.square", name: "Square Synth", zh: "\u65B9\u6CE2\u5408\u6210" }
+    { sound: "synth.tone.sawtooth", name: "Synth Lead", zh: "\u5408\u6210\u4E3B\u97F3" }
   ] }
 ];
 var ROLE_PRESETS = ROLE_GROUPS.flatMap((g2) => g2.items);
@@ -6150,7 +6105,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "e28fc743d06d" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "42cdbc54f3e9" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6258,8 +6213,15 @@ function openPartSheet() {
   };
   const draw = () => {
     const q = quality(), h = st.song.hum, rn = roleName(doc.extras), rs = roleSound(doc.extras);
-    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8</div><div class="part-sec">\u89D2\u8272\uFF08\u8C31\u4E0A\u5199\u7684\u540D\u5B57\uFF1B\u9884\u8BBE = MusicXML \u5B98\u65B9\u7684\u4E50\u5668\u8BED\u4E49\uFF0C\u53EF\u4EE5\u81EA\u5DF1\u6539\u540D\uFF09</div><input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(rn)}" /><div class="role-sound">MusicXML\uFF1A<code>${esc3(rs)}</code></div>` + ROLE_GROUPS.map((g2) => `<div class="role-group"><span class="role-g">${g2.group}</span>${g2.items.map((r) => chip(`role:${r.sound}`, `${esc3(r.name)}<small>${r.zh}</small>`, r.sound === rs && r.name === rn, r.sound)).join("")}</div>`).join("") + `<div class="part-sec">\u8C01\u6765\u6F14\uFF08\u4E50\u5668\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + chip("q:full", "\u6708\u8BFB\uFF08\u5B8C\u6574\uFF09", q === "full", "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09") + chip("q:light", "\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09", q === "light", "\u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1") + (q === "none" ? chip("q:none", `${esc3(activeCandidateName(doc.extras) ?? "\u539F\u6765\u7684\u4E50\u5668")}\uFF08\u8FD9\u4E00\u7248\u6CA1\u6709\uFF09`, true, "\u522B\u7684\u8F6F\u4EF6\u5B58\u7684\u8C31\uFF1A\u539F\u6765\u7684\u4E50\u5668\u8FD9\u4E00\u7248\u6CA1\u6709\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A") : "") + `</div><div class="offer-msg">\u4EE5\u540E\u8FD9\u91CC\u80FD\u9009\u4E00\u5927\u5806\u4E50\u5668\uFF1B\u73B0\u5728\u53EA\u6709\u6708\u8BFB\u3002</div>` + (q === "none" ? "" : `<div class="part-sec">\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) + `<div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
-    const inp = box.querySelector("#roleIn");
+    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8</div><div class="part-sec">\u89D2\u8272\uFF08\u6309\u529F\u80FD\u9009\uFF0C\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc3(rn)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g2) => `<optgroup label="${g2.group}">${g2.items.map((r) => `<option value="${esc3(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc3(r.name)} \u2014 ${r.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(rn)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc3(rs)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u4E50\u5668\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + chip("q:full", "\u6708\u8BFB\uFF08\u5B8C\u6574\uFF09", q === "full", "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09") + chip("q:light", "\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09", q === "light", "\u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1") + (q === "none" ? chip("q:none", `${esc3(activeCandidateName(doc.extras) ?? "\u539F\u6765\u7684\u4E50\u5668")}\uFF08\u8FD9\u4E00\u7248\u6CA1\u6709\uFF09`, true, "\u522B\u7684\u8F6F\u4EF6\u5B58\u7684\u8C31\uFF1A\u539F\u6765\u7684\u4E50\u5668\u8FD9\u4E00\u7248\u6CA1\u6709\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A") : "") + `</div><div class="offer-msg">\u4EE5\u540E\u8FD9\u91CC\u80FD\u9009\u4E00\u5927\u5806\u4E50\u5668\uFF1B\u73B0\u5728\u53EA\u6709\u6708\u8BFB\u3002</div>` + (q === "none" ? "" : `<div class="part-sec">\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) + `<div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    const inp = box.querySelector("#roleIn"), sel = box.querySelector("#roleSel");
+    sel.addEventListener("change", () => {
+      const [snd, ...nm] = sel.value.split("|");
+      if (snd) {
+        setRole(nm.join("|"), snd);
+        draw();
+      }
+    });
     inp.addEventListener("change", () => setRole(inp.value));
     inp.addEventListener("keydown", (e) => {
       if (e.isComposing) return;
@@ -6288,10 +6250,7 @@ function openPartSheet() {
       return;
     }
     if (!v) return;
-    if (v.startsWith("role:")) {
-      const r = ROLE_GROUPS.flatMap((g2) => g2.items).find((x) => x.sound === v.slice(5));
-      if (r) setRole(r.name, r.sound);
-    } else if (v === "q:full" || v === "q:light") setQuality(v.slice(2));
+    if (v === "q:full" || v === "q:light") setQuality(v.slice(2));
     else if (v.startsWith("hum:")) update(setHum(st, v.slice(4)));
     else return;
     draw();
@@ -6551,4 +6510,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-8eb022bc83c1.mjs.map
+//# sourceMappingURL=moonsinger-dc698e8f747f.mjs.map

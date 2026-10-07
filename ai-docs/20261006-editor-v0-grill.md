@@ -263,6 +263,8 @@
     - 歌词「+」（全角「＋」也认）：后一个字和前一个放同一个音；歌词框已经跳到下一个音时打「+」再打字 = 并进前一个音。数据里用 U+203F「‿」连着；纸上中日文之间不画弧（「だん」）、拉丁之间画「‿」；MusicXML = 一个 <lyric> 里 <elision/> 隔开几段 <text>（过了 W3C 4.0 schema）；唱 = 这个音平分给这几个字（toLabScore 一个字一条），核心不用改。歌词框里显示成「だ+ん」好改。
     - /2 的「点一下」= 凑满一份原来的时值再弹回（两个减半的音 / 休止 / 拉长）；中途挪光标或拨长短旋钮 = 取消。
   - user：「顺便xxx 词曲这个field也可以有」→ v0.2.23（edited by Claude Opus 5.5）：作词 / 作曲 = Song.credits，存 MusicXML `<identification><creator type="composer" / "lyricist">`（读时「poet」也算作词；过了 W3C 4.0 schema）；纸上标题下面靠右：同一个人「X 词曲」、不同两行「X 词」「Y 曲」，空着浅色「词曲（可不填）」，点了 = 两个框。
+  - user（看了 v0.2.21 的 55 个预设）：「声部名的选项太多了。不应跟是乐器name salad，而是功能选，不过你可以push back。也许专业的谱子上面就是这样。乐器名就是功能。而且应该是下拉选。」→ AI 同意改按功能、pushback 一点（官方表按乐器分、没有 Lead 这种功能名，每项背后还是一个官方 id）→ v0.2.24（edited by Claude Opus 5.5）：角色 = 一个下拉、13 项两组——人声：Vocals 主唱 / Backing Vocals 和声 / Soprano / Alto / Tenor / Bass（合唱四部）；乐队：Piano / Guitar / Bass（贝斯）/ Drums / Strings / Synth Pad / Synth Lead（synth.tone.sawtooth）。下拉下面「谱上写」可以自己改名字（官方 id 不变），表外的名字显示「（自己写的）」。
+  - user 同一轮的愿望单（不优先）：「可以选五线谱和简谱两种模式，纸张里面设置。简谱怎么poly以后慢慢想办法。这个满想要的，但是不优先。以及简谱的话肯定是相对音高」「A6童书可能还是需要简谱」「A6卡片简谱会compact很多我觉得」→ 记进 `ai-docs/20261007-wishlist.md` W-1（新建的产品愿望单，另记了贴纸 / 谱架 / PDF 分享）。
   - 同一轮 user 问「突然觉得按键有延迟，是因为刚才我换上了蓝牙耳机吗」→ AI 答蓝牙耳机本身 0.1–0.3 秒输出延迟、app 改不了（AudioContext 已是默认 interactive）→ user「外放就没了，应该是耳机的问题」。
 - user：「简谱上面和下面的点太多了会看不见，你可以想想怎么表达」→ pad 的八度点改成真的小圆点（上方 = 高八度、下方 = 低八度，多个横排；原来是组合附加点，叠两三个就糊了）。横排 = 偏离传统简谱的竖叠，为了小键帽上看得清。
 - user：「多行的时候默认能把中央c放在 中线下面一行吗，就forfour rows it is row 1 for five row it is row 2 and use that row to align when one change row counts」「but if you use the up down arrows, the pivot line also changes」→ 锚定行 = floor((行数 − 1) / 2)（从下往上 0 起）；默认中央 C 那一行在锚定行；▲▼ 挪的是内容；换行数时锚定行上的内容不动（挪过以后就是挪过的那一排）。取代「左下永远是不带点的 1」。

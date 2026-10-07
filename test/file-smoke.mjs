@@ -67,7 +67,7 @@ check((await p.textContent(".notice-error .notice-text")).includes("还没有人
 await p.click(".notice-error .dismiss");
 const pn = await p.$eval("#score text.part-name", (t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await p.mouse.click(pn.x, pn.y); await p.waitForSelector(".offer .part-card");
-await p.click('.offer [data-v="q:full"]'); await p.click('.offer [data-v="role:voice.soprano"]'); await p.click('.offer [data-v="close"]');
+await p.click('.offer [data-v="q:full"]'); await p.selectOption("#roleSel", "voice.soprano|Soprano"); await p.click('.offer [data-v="close"]');
 check(!(await p.$("#score text.part-name.empty")) && (await p.textContent("#score text.part-name")) === "Soprano", "点角色名：谁来演选月读、角色选 Soprano → 谱前写「Soprano」、不再淡色");
 // 改过没存关页面 → 挽留框
 await p.click("#score", { position: { x: 700, y: 400 } }); await p.keyboard.press("Digit3");

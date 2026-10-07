@@ -23,7 +23,7 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, roleName, roleSound, withRoleName, activeCandidateName, type Extras, type Quality } from "../format/project.ts";
-import { ROLE_GROUPS, DEFAULT_ROLE } from "../score/roles.ts";
+import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
 import { type PaperKind, PAPER_KINDS, PAPER_NOTE, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
 import * as docFile from "./doc-file.ts";
 import { defaultStem, fileSafe } from "./names.ts";
@@ -490,9 +490,11 @@ function openPartSheet(): void {
   const draw = () => {
     const q = quality(), h = st.song.hum, rn = roleName(doc.extras), rs = roleSound(doc.extras);
     box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">声部</div>` +
-      `<div class="part-sec">角色（谱上写的名字；预设 = MusicXML 官方的乐器语义，可以自己改名）</div><input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" />` +
+      `<div class="part-sec">角色（按功能选，谱上写它的名字）</div><select id="roleSel" class="role-sel">` +
+      (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc(rn)}（自己写的）</option>`) +
+      ROLE_GROUPS.map((g) => `<optgroup label="${g.group}">${g.items.map((r) => `<option value="${esc(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc(r.name)} — ${r.zh}</option>`).join("")}</optgroup>`).join("") +
+      `</select><label class="role-name">谱上写<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" /></label>` +
       `<div class="role-sound">MusicXML：<code>${esc(rs)}</code></div>` +
-      ROLE_GROUPS.map((g) => `<div class="role-group"><span class="role-g">${g.group}</span>${g.items.map((r) => chip(`role:${r.sound}`, `${esc(r.name)}<small>${r.zh}</small>`, r.sound === rs && r.name === rn, r.sound)).join("")}</div>`).join("") +
       `<div class="part-sec">谁来演（乐器；名字不上谱）</div><div class="set-row">` +
       chip("q:full", "月读（完整）", q === "full", "月读本人（つくよみちゃん；第一次要加载约 65 MB）") +
       chip("q:light", "月读（轻量）", q === "light", "元音采样，按下即响、任何设备都能跑") +
@@ -500,7 +502,8 @@ function openPartSheet(): void {
       `<div class="offer-msg">以后这里能选一大堆乐器；现在只有月读。</div>` +
       (q === "none" ? "" : `<div class="part-sec">没写歌词的音唱什么</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) +
       `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
-    const inp = box.querySelector<HTMLInputElement>("#roleIn")!;
+    const inp = box.querySelector<HTMLInputElement>("#roleIn")!, sel = box.querySelector<HTMLSelectElement>("#roleSel")!;
+    sel.addEventListener("change", () => { const [snd, ...nm] = sel.value.split("|"); if (snd) { setRole(nm.join("|"), snd); draw(); } });
     inp.addEventListener("change", () => setRole(inp.value));
     inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); setRole(inp.value); draw(); } });
   };
@@ -512,8 +515,7 @@ function openPartSheet(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
     if (!v) return;
-    if (v.startsWith("role:")) { const r = ROLE_GROUPS.flatMap((g) => g.items).find((x) => x.sound === v.slice(5)); if (r) setRole(r.name, r.sound); }
-    else if (v === "q:full" || v === "q:light") setQuality(v.slice(2) as Quality);
+    if (v === "q:full" || v === "q:light") setQuality(v.slice(2) as Quality);
     else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
     else return;
     draw();
