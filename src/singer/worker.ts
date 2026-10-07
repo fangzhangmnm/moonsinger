@@ -3,7 +3,7 @@
 // 家规「重资源要等用户有意图才加载」：第一次点播放才加载（约 40 MB 模型 + 24 MB 日语词典 + 图谱），之后留着复用。
 // 大字节（模型 / 运行时 / 日中英词典）= 家族模型包（2026-10-07，user「持久化先做不爽的就是每次bump version都得重新下载月读」→「当然a」）：
 //   @internal/model-packs 按内嵌清单（packs.gen.ts）下载、逐片 sha256、存进 Cache Storage `pwa-models`——下一次、升版本都不用重下，
-//   同域名的 JustReadBooks 也用同一份（user「然后最好jrb和moonsinger只用存一份」）。开发期模型源 = 本机模型仓（scripts/serve.sh）。
+//   同域名的 JustReadBooks 也用同一份（user「然后最好jrb和moonsinger只用存一份」）。模型源 = 家族模型仓的 GitHub Pages。
 // JS 胶水（前端 / 运行时的 .js）还从 /dev-assets/（scripts/link-dev-assets.sh 软链的检疫桶）动态加载；和 Lab 的 Node 命令行是同一批文件，
 // piper.run 的喂法照抄 third-party/piper-plus/dur-override-exp/piper-node.mjs 的 run()（逐符号相同的输入 = 浏览器 == Node 的前提）。
 
@@ -32,7 +32,7 @@ const dyn = (p: string): Promise<any> => import(/* @vite-ignore */ u(p));
 const ORT = "piper-plus/work/node_modules/onnxruntime-web/dist/";
 
 // ── 模型包 ──
-const MODELS = new URL("../pwa-models/", import.meta.url).href;   // 开发期 = 本机模型仓的 packs/（scripts/serve.sh）；出货换 GitHub Pages
+const MODELS = "https://fangzhangmnm.github.io/pwa-models";   // 家族模型仓（黄线区白名单 ②，同 JustReadBooks src/config.ts）；主机只是运输，字节先对内嵌清单的哈希
 const store = createPackStore({ packs: PACKS });
 /** 这几个包不在缓存里就下（只下这一次）；进度报给界面。 */
 async function ensurePacks(slugs: string[], what: string, say: (s: string) => void): Promise<void> {

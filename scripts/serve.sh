@@ -8,8 +8,5 @@ PORT="${PORT:-8710}"
 BIND="${BIND:-0.0.0.0}"   # iPad 走 tailscale serve（它把 tailnet 的 :18123 转给本机 localhost:18123）时用 PORT=18123 BIND=127.0.0.1：只在本机回环上听，局域网碰不到
 rm -rf .serve && mkdir -p .serve
 for f in index.html styles.css dist vendor assets dev-assets; do [ -e "$f" ] && ln -s "../$f" ".serve/$f"; done
-# 开发期的模型源 = 本机的模型仓（只端出 packs/，不端出它的 .git 等）；出货换成 GitHub Pages（见 CLAUDE.md「出货前要换的路」）
-MODELS="$(cd .. && pwd)/20260903 PWA Models/packs"
-[ -d "$MODELS" ] && mkdir -p .serve/pwa-models && ln -s "$MODELS" .serve/pwa-models/packs
 echo "[serve] http://localhost:$PORT/ bind $BIND  （只端出：$(ls .serve | tr '\n' ' ')）"
 exec python3 -m http.server "$PORT" --bind "$BIND" --directory .serve
