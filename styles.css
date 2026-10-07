@@ -89,8 +89,13 @@ button, input, select { font: inherit; color: inherit; }
 .pad-grid { display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); grid-auto-rows: var(--key-h); column-gap: var(--kg); row-gap: var(--kgv); }
 .pad-key { border: 0; border-radius: 7px; background: #fff; box-shadow: 0 1px 0 rgba(42, 42, 42, .28); display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2px; cursor: pointer; touch-action: none; padding: 0; min-width: 0; }
-.pad-key .deg { font-size: 22px; font-weight: 600; line-height: 1; }
-.pad-panel[data-form="tablet"] .pad-key .deg { font-size: 23px; }
+.pad-key .deg { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 21px; font-weight: 600; line-height: 1; }
+.pad-panel[data-form="tablet"] .pad-key .deg { font-size: 23px; gap: 3px; }
+/* 简谱八度点：真的小圆点，上方 = 高八度、下方 = 低八度，多个横排（占位固定高，有没有点数字都不跳） */
+.pad-key .jp-dots { display: flex; gap: 2px; height: 4px; }
+.pad-key .jp-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.pad-panel[data-form="tablet"] .pad-key .jp-dots { height: 5px; gap: 3px; }
+.pad-panel[data-form="tablet"] .pad-key .jp-dots i { width: 5px; height: 5px; }
 .pad-key .abs { font-size: 10px; color: var(--muted); }
 .pad-key.tonic { background: #fbf6ea; }
 .pad-key.out { opacity: .45; }

@@ -25,7 +25,9 @@ const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置（她音域�
 const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone");
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
 const KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } } as const;
-const DOT_UP = "̇", DOT_DOWN = "̣";   // 简谱的上加点 / 下加点
+/** 简谱的八度点：画成真的小圆点（数字上方 = 高八度、下方 = 低八度，多个横排）——组合附加点叠两三个就糊成一团看不见
+ *  （user 2026-10-07「简谱上面和下面的点太多了会看不见，你可以想想怎么表达」）。 */
+const octDots = (n: number) => (n > 0 ? `<span class="jp-dots">${"<i></i>".repeat(n)}</span>` : `<span class="jp-dots"></span>`);
 /** Bravura 的整个音符字形（SMuFL 预组合音符，符干朝上）：三十二分 … 全音符。 */
 const UNIT_GLYPH = ["", "", "", "", "", ""];
 const UNIT_NAME = ["三十二分", "十六分", "八分", "四分", "二分", "全音符"];
@@ -130,10 +132,9 @@ export class Pad {
       for (let col = 0; col < this.cols; col++) {
         const d = base + row * this.cols + col, p = fromDiatonic(d, f);
         const deg = ((((d - ht) % 7) + 7) % 7) + 1, oct = Math.floor((d - ht) / 7);
-        const dots = oct > 0 ? DOT_UP.repeat(oct) : DOT_DOWN.repeat(-oct);
         const inRange = d >= HER_LOW && d <= HER_HIGH;
         cells.push(`<button class="pad-key${inRange ? "" : " out"}${deg === 1 ? " tonic" : ""}" data-d="${d}">` +
-          `<span class="deg"><span class="acc"></span>${deg}${dots}</span><span class="abs">${pitchName(p).replace("#", "♯").replace(/b(?=\d)/, "♭")}</span></button>`);
+          `<span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${deg}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pitchName(p).replace("#", "♯").replace(/b(?=\d)/, "♭")}</span></button>`);
       }
     }
     this.el.innerHTML = `<div class="pad-tools${this.mode === "normal" ? "" : " cands"}">${tools}</div><div class="pad-grid">${cells.join("")}</div>`;
