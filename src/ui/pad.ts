@@ -62,7 +62,7 @@ export class Pad {
   private rowShift = 0;       // ▲▼ 挪过几行
   private cols = 4;           // 每行几个音（MEDO = 4）
   private rowsSetting: number | "auto" = 4;   // 默认 4 行（user 2026-10-07「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
-  private layoutMode: "movable" | "absolute" = "movable";   // 首调 / 绝对音高
+  private layoutMode: "movable" | "absolute" = "absolute";   // 首调 / 绝对音高；默认绝对（user 2026-10-07「键盘默认绝对布局」）
   private mode: Mode = "normal";
   private builtFor = "";
   private improLatched = false;
