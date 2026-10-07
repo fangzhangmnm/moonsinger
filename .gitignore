@@ -1,0 +1,14 @@
+# 人类区 / 本机区（家族契约）
+journal/
+journals/
+private/
+.claude/
+# 依赖与构建
+node_modules/
+dist/
+# 开发期软链（检疫桶的模型 / 词典 / 引擎）与 serve 白名单
+dev-assets/
+.serve/
+# 临时
+*.log
+.DS_Store

@@ -8,5 +8,5 @@ cd "$(dirname "$0")/.."
 mkdir -p dev-assets
 ln -sfn "$HOME/jupyter/third-party/piper-plus" dev-assets/piper-plus          # piper-plus 前端 / ojt / onnxruntime-web / 唱歌用的时长接管模型
 ln -sfn "$HOME/jupyter/third-party/world/build" dev-assets/world              # 自编 WORLD WASM（Lab tools/build-world.sh 产物）
-ln -sfn "$PWD/Lab/20261005 月读第一首/out/atlas" dev-assets/atlas           # 元音图谱（Lab atlas-build.mjs 产物；没有就是图谱关）
+ln -sfn "$PWD/../20260810 写歌实验室/Lab/20261005 月读第一首/out/atlas" dev-assets/atlas   # 元音图谱（写歌实验室仓 Lab atlas-build.mjs 产物；没有就是图谱关）
 ls -la dev-assets
