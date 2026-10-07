@@ -13,7 +13,7 @@ export class TitleEditor {
   constructor(parent: HTMLElement, private host: Host, private layout: () => Layout | null) {
     this.input = document.createElement("input");
     this.input.className = "title-input"; this.input.type = "text"; this.input.hidden = true;
-    this.input.placeholder = "歌名"; this.input.autocomplete = "off"; this.input.spellcheck = false; this.input.enterKeyHint = "done";
+    this.input.placeholder = "";   // 空框本身就是提示（user「dashed boxes就不用字了哈哈」） this.input.autocomplete = "off"; this.input.spellcheck = false; this.input.enterKeyHint = "done";
     parent.appendChild(this.input);
     this.input.addEventListener("keydown", (e) => {
       if (e.isComposing) return;

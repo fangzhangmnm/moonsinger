@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.29-2026-10-07";
+var APP_VERSION = "v0.2.30-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -1668,7 +1668,6 @@ function engrave(song, o) {
   else if (o.titlePlaceholder) {
     const w = Math.min(P(20), o.width * 0.45), h = P(3);
     prims.push({ t: "rect", x: o.width / 2 - w / 2, y: titleBase - titleSize * 0.36 - h / 2, w, h, cls: "slot-box" });
-    prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "\u6B4C\u540D", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
   }
   let paperChip = null;
   if (o.paperLabel) {
@@ -1688,7 +1687,6 @@ function engrave(song, o) {
   } else if (o.titlePlaceholder) {
     const w = Math.min(P(12), o.width * 0.4), h = cs * 1.7, y = y0 - cs * 0.36 - h / 2;
     prims.push({ t: "rect", x: rx - w, y, w, h, cls: "slot-box" });
-    prims.push({ t: "text", x: rx - w / 2, y: y0, s: "\u4F5C\u8005", cls: "credits empty", size: cs, anchor: "middle" });
     credits = { x: rx - w - P(0.3), y: y - P(0.3), w: w + P(0.6), h: h + P(0.6) };
   }
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
@@ -2332,10 +2330,7 @@ var TitleEditor = class {
     this.input.className = "title-input";
     this.input.type = "text";
     this.input.hidden = true;
-    this.input.placeholder = "\u6B4C\u540D";
-    this.input.autocomplete = "off";
-    this.input.spellcheck = false;
-    this.input.enterKeyHint = "done";
+    this.input.placeholder = "";
     parent.appendChild(this.input);
     this.input.addEventListener("keydown", (e) => {
       if (e.isComposing) return;
@@ -6254,7 +6249,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "8e8c03ea3d57" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "45c7ab08880c" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6649,4 +6644,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-95531cbbc64b.mjs.map
+//# sourceMappingURL=moonsinger-dc4f4a3e8811.mjs.map

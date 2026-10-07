@@ -481,13 +481,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     else { const last = units[units.length - 1]; slots.push({ caret: c, system: last ? last.system : 0, x: last ? P(last.x + last.w) : P(sysStarts[0]) }); }
   }
 
-  // 歌名：纸面最上面居中；空着时编辑器里画一个虚线框 + 浅色的「歌名」（user 2026-10-07「两个括号可不填太尬了，可以去掉，其实我反而倾向于一个虚线文本框？」）
+  // 歌名：纸面最上面居中；空着时编辑器里只画一个空的虚线框（user 2026-10-07「两个括号可不填太尬了，可以去掉，其实我反而倾向于一个虚线文本框？」「dashed boxes就不用字了哈哈」）
   const titleSize = P(1.9), titleBase = P(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o.titlePlaceholder) {
     const w = Math.min(P(20), o.width * 0.45), h = P(3);
     prims.push({ t: "rect", x: o.width / 2 - w / 2, y: titleBase - titleSize * 0.36 - h / 2, w, h, cls: "slot-box" });
-    prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "歌名", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
   }
   let paperChip: Layout["paperChip"] = null;
   if (o.paperLabel) {   // 纸右上角：一个写着纸张的小钮
@@ -497,7 +496,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
   }
   const title: TitleHit = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
-  // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）；空着时编辑器里同样是虚线框 + 浅色的「作者」
+  // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）；空着时编辑器里同样只画一个空的虚线框
   const lines = song.credits ? song.credits.split("\n") : [];
   let credits: Layout["credits"] = null;
   const cs = P(1.25), rx = o.width - P(MARGIN), y0 = P(TITLE_H + 1.0);
@@ -508,7 +507,6 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   } else if (o.titlePlaceholder) {
     const w = Math.min(P(12), o.width * 0.4), h = cs * 1.7, y = y0 - cs * 0.36 - h / 2;
     prims.push({ t: "rect", x: rx - w, y, w, h, cls: "slot-box" });
-    prims.push({ t: "text", x: rx - w / 2, y: y0, s: "作者", cls: "credits empty", size: cs, anchor: "middle" });
     credits = { x: rx - w - P(0.3), y: y - P(0.3), w: w + P(0.6), h: h + P(0.6) };
   }
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;

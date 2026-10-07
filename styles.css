@@ -215,7 +215,6 @@ button, input, select { font: inherit; color: inherit; }
 #docTitle { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 纸面最上面的歌名（不填也行；点了就地改） */
 .staff-svg .song-title { fill: var(--ink); font-weight: 600; }
-.staff-svg .song-title.empty { fill: #b9b2a5; font-weight: 400; }
 .staff-svg rect.slot-box { fill: none; stroke: #c9c1b3; stroke-width: 1; stroke-dasharray: 4 3; cursor: pointer; }   /* 歌名 / 作者空着：虚线框（只在编辑器里画） */
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
 /* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
@@ -311,7 +310,6 @@ button, input, select { font: inherit; color: inherit; }
 .part-card .role-sound { font-size: 11px; color: var(--muted); margin: -2px 0 6px; }
 /* 作词 / 作曲：标题下面靠右 */
 .staff-svg .credits { fill: var(--ink); cursor: pointer; }
-.staff-svg .credits.empty { fill: var(--muted); opacity: .7; }
 /* 歌词框左边的「合」：这个字并进前一个音（回头改用） */
 .lyric-merge { position: absolute; z-index: 5; min-width: 0; padding: 0; font-size: 15px; color: var(--accent); border-color: #b8cde8; background: #fff; box-sizing: border-box; }
 .credits-card .credits-in { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 15px; line-height: 1.5; color: var(--ink); resize: vertical; -webkit-user-select: text; user-select: text; }
