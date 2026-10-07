@@ -74,7 +74,7 @@ export interface EditorState {
 }
 
 export function emptySong(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}): Song {
-  return { hum: "la", tokens: [
+  return { hum: "n", tokens: [   // 哼的字默认「嗯」（user 2026-10-07「月读不是有啦嗯哦吗，默认嗯」）
     { kind: "key", id: 1, fifths: m.fifths ?? DEFAULT_KEY },
     { kind: "time", id: 2, beats: m.beats ?? DEFAULT_TIME.beats, beatType: m.beatType ?? DEFAULT_TIME.beatType },
     { kind: "tempo", id: 3, bpm: m.bpm ?? DEFAULT_BPM },

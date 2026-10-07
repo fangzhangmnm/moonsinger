@@ -293,6 +293,7 @@ $("shareBtn").addEventListener("click", () => { void exportSong(); });
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st };
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
+$<HTMLSelectElement>("humSel").value = st.song.hum;   // 下拉的初值跟这首歌的设置（默认嗯）
 $<HTMLSelectElement>("humSel").addEventListener("change", (e) => { update(setHum(st, (e.target as HTMLSelectElement).value as Hum)); scoreEl.focus(); });
 $("padBtn").addEventListener("click", () => { padEl.hidden = !padEl.hidden; $("padBtn").classList.toggle("is-on", !padEl.hidden); view.render(); });
 

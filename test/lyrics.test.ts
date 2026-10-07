@@ -40,9 +40,10 @@ describe("lyrics", () => {
     st = applyLyricLine(st, "あいう"); st = setCaret(st, H + 1); st = applyLyricLine(st, "か");
     eq(st.song.tokens.map((t) => (t as NoteTok).lyric).join(""), "あかう");
   });
-  it("哼的字：没歌词的音按这首歌的设置唱，日语 / 中文各换各的字", () => {
+  it("哼的字：没歌词的音按这首歌的设置唱（默认嗯），日语 / 中文各换各的字", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near");
-    eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "らら");
+    eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "んん");
+    st = setHum(st, "la"); eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "らら");
     st = setHum(st, "n");
     eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "んん");
     eq(toLabScore(st.song, "zh").SCORE.map((e) => e.kana).join(""), "嗯嗯");
