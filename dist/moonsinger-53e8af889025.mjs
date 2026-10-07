@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.18-2026-10-07";
+var APP_VERSION = "v0.2.19-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2135,12 +2135,13 @@ var ScoreView = class {
   title;
   /** 五线谱间距（px）：触屏 11、鼠标 10；窄屏（< 420，iPhone）跟着宽度小一点，最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。 */
   /** 五线谱间距（px）和纸面宽（px）：触屏 11、鼠标 10 一格；纸的版心放得下 = 严格按纸（纸居中、四周是桌面），
-   *  放不下（手机）= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
+   *  放不下（手机）：默认不折行 = 整张纸按比例缩小；选了「折行」= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
    *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
   frame() {
     const st2 = this.host.get(), base2 = matchMedia("(pointer: coarse)").matches ? 11 : 10, avail = this.el.clientWidth;
     const want = Math.ceil(lineSp(st2.song.paper ?? paperOf(DEFAULT_PAPER)) * base2);
     if (avail > 0 && want <= avail) return { sp: base2, width: want, strict: true };
+    if (avail > 0 && !(this.host.reflow?.() ?? false)) return { sp: base2 * avail / want, width: avail, strict: false };
     return { sp: avail > 0 && avail < 420 ? Math.max(8.5, Math.min(base2, avail / 42)) : base2, width: Math.max(320, avail), strict: false };
   }
   render() {
@@ -5504,10 +5505,12 @@ var view = new ScoreView(scoreEl, {
   autoBars: () => autoBars,
   part: () => ({ name: quality() === "none" ? "\u672A\u9009\u89D2" : "\u6708\u8BFB", empty: quality() === "none" }),
   onPart: () => openPartSheet(),
-  onPaper: () => openPaperSheet()
+  onPaper: () => openPaperSheet(),
+  reflow: () => reflow
 });
 var impro = false;
 var autoBars = true;
+var reflow = false;
 var padNotes = /* @__PURE__ */ new Map();
 var CHORD_MS = 50;
 var monoHeld = /* @__PURE__ */ new Set();
@@ -5863,7 +5866,7 @@ function openPaperSheet() {
   box.className = "offer";
   const draw = () => {
     const p = st.song.paper ?? paperOf(DEFAULT_PAPER);
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${k}<small>${PAPER_NOTE[k]}</small></button>`).join("") + (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF0C\u4E94\u7EBF\u8C31\u7684\u5927\u5C0F\u4E0D\u53D8\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\uFF0C\u653E\u4E0D\u4E0B\uFF08\u624B\u673A\uFF09\u6309\u5C4F\u5E55\u6298\u884C\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${k}<small>${PAPER_NOTE[k]}</small></button>`).join("") + (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF0C\u4E94\u7EBF\u8C31\u7684\u5927\u5C0F\u4E0D\u53D8\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -5881,6 +5884,10 @@ function openPaperSheet() {
     }
     if (v && PAPER_KINDS.includes(v)) {
       update(setPaper(st, v));
+      draw();
+    } else if (v === "fit" || v === "reflow") {
+      reflow = v === "reflow";
+      view.render();
       draw();
     }
   });
@@ -6168,4 +6175,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-c51d1517e239.mjs.map
+//# sourceMappingURL=moonsinger-53e8af889025.mjs.map

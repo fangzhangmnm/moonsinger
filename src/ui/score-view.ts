@@ -39,6 +39,8 @@ export interface ScoreViewHost {
   onPart?(): void;
   /** 纸右上角的小钮（纸张）点了。 */
   onPaper?(): void;
+  /** 屏幕放不下纸的时候：true = 按屏宽重新折行；false（默认）= 不折行、整张纸按比例缩小（行和纸上一模一样）。 */
+  reflow?(): boolean;
 }
 
 export class ScoreView {
@@ -69,12 +71,15 @@ export class ScoreView {
 
   /** 五线谱间距（px）：触屏 11、鼠标 10；窄屏（< 420，iPhone）跟着宽度小一点，最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。 */
   /** 五线谱间距（px）和纸面宽（px）：触屏 11、鼠标 10 一格；纸的版心放得下 = 严格按纸（纸居中、四周是桌面），
-   *  放不下（手机）= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
+   *  放不下（手机）：默认不折行 = 整张纸按比例缩小；选了「折行」= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
    *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
   private frame(): { sp: number; width: number; strict: boolean } {
     const st = this.host.get(), base = matchMedia("(pointer: coarse)").matches ? 11 : 10, avail = this.el.clientWidth;
     const want = Math.ceil(lineSp(st.song.paper ?? paperOf(DEFAULT_PAPER)) * base);
     if (avail > 0 && want <= avail) return { sp: base, width: want, strict: true };
+    // 放不下、不折行（默认；user「纸能不能toggle不折行预览有多宽和折行的两种选项。我其实还是倾向于不折行」
+    //   「我现在发现我基本不点五线谱，都是用键盘输入。这样的话其实五线谱只是让你看你在哪里」）：整张纸按比例缩小，行和纸上一样
+    if (avail > 0 && !(this.host.reflow?.() ?? false)) return { sp: (base * avail) / want, width: avail, strict: false };
     return { sp: avail > 0 && avail < 420 ? Math.max(8.5, Math.min(base, avail / 42)) : base, width: Math.max(320, avail), strict: false };
   }
 

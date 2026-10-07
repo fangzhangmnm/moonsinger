@@ -97,10 +97,13 @@ const view = new ScoreView(scoreEl, {
   part: () => ({ name: quality() === "none" ? "未选角" : "月读", empty: quality() === "none" }),
   onPart: () => openPartSheet(),
   onPaper: () => openPaperSheet(),
+  reflow: () => reflow,
 });
 let impro = false;
 /** 按拍号自动画小节线（默认开；这次打开里有效）。user「自动加小节也是可以toggle的，默认开」 */
-let autoBars = true;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
+let autoBars = true;
+/** 屏幕放不下纸的时候折不折行（默认不折行 = 整张纸按比例缩小；这次打开里有效，不进文件——怎么看，不是谱的内容）。 */
+let reflow = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
 /** pad 上每根按着的手指：刚写的是第几个音（弹 = -1）、它原本的音高——上下滑过门槛时在它上面升 / 降。 */
 const padNotes = new Map<string, { index: number; base: Pitch }>();
 /** 单音乐器（现在的主唱月读）写音：同时多按只写第一个（user「monophonic乐器输入的时候如果你多按只会输第一个。但是做好模糊护栏免得快速输入的时候第二个音被吃掉」）。
@@ -381,7 +384,10 @@ function openPaperSheet(): void {
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">纸</div><div class="set-row">` +
       PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${k}<small>${PAPER_NOTE[k]}</small></button>`).join("") +
       (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">其他<small>${paperSizeText(p)}</small></button>` : "") + `</div>` +
-      `<div class="offer-msg">整首歌一张纸。纸越大一行放的小节越多，五线谱的大小不变；屏幕放得下就照纸排，放不下（手机）按屏幕折行。不打印的时候不分页。</div>` +
+      `<div class="offer-msg">整首歌一张纸。纸越大一行放的小节越多，五线谱的大小不变；屏幕放得下就照纸排。不打印的时候不分页。</div>` +
+      `<div class="part-sec">屏幕放不下纸的时候</div><div class="set-row">` +
+      `<button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">不折行<small>整张纸缩小，行和纸上一样</small></button>` +
+      `<button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">折行<small>按屏幕宽排，谱大一点</small></button></div>` +
       `<div class="offer-msg">以后插图片也在这里。</div>` +
       `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   };
@@ -393,6 +399,7 @@ function openPaperSheet(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
     if (v && (PAPER_KINDS as string[]).includes(v)) { update(setPaper(st, v as PaperKind)); draw(); }
+    else if (v === "fit" || v === "reflow") { reflow = v === "reflow"; view.render(); draw(); }
   });
 }
 /** 歌手牌（第一行谱号左边的声部名）点开：上面选谁来唱（乐器），下面就地改它的设置，改了立刻生效
