@@ -152,6 +152,9 @@ export const TEMPO_WORDS: { from: number; it: string; zh: string; typical: numbe
   { from: 176, it: "Presto", zh: "急板", typical: 184 },
   { from: 200, it: "Prestissimo", zh: "最急板", typical: 208 },
 ];
+/** 速度能写多少（♩ = 每分钟几个四分音符）：打字和速度框的滚轮同一个范围（user 2026-10-07「typing到400的话wheel也到400或者都300…反正对齐一点」）。
+ *  上限 400：2/2 的快歌「二分音符 = 160」在这里是 ♩ = 320，bebop / 速核也过 300；唱歌本身用不到这么快，但没有技术理由卡。 */
+export const TEMPO_MIN = 20, TEMPO_MAX = 400;
 export function tempoWord(bpm: number): { it: string; zh: string } {
   let w = TEMPO_WORDS[0];
   for (const x of TEMPO_WORDS) if (bpm >= x.from) w = x;

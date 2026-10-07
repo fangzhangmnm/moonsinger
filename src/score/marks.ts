@@ -1,6 +1,6 @@
 // marks.ts —— 记号（调号 / 拍号 / 速度）和文字之间互转：记号框里显示什么、打进去的字认成什么。纯函数（Node 里可测）。
 // created 2026-10-07 by Claude Opus 5.5（从 src/ui/mark-editor.ts 拆出来）
-import { type MarkTok, type MarkVal, TEMPO_WORDS } from "./song.ts";
+import { type MarkTok, type MarkVal, TEMPO_WORDS, TEMPO_MIN, TEMPO_MAX } from "./song.ts";
 import { KEY_LABEL } from "./pitch.ts";
 
 /** 记号 → 框里的字。 */
@@ -29,7 +29,7 @@ export function parseMark(kind: MarkTok["kind"], raw: string): MarkVal | null {
     return beats >= 1 && beats <= 32 && [1, 2, 4, 8, 16, 32].includes(beatType) ? { kind, beats, beatType } : null;
   }
   const n = /(\d{2,3})/.exec(s);
-  if (n) { const bpm = Number(n[1]); return bpm >= 20 && bpm <= 400 ? { kind, bpm } : null; }
+  if (n) { const bpm = Number(n[1]); return bpm >= TEMPO_MIN && bpm <= TEMPO_MAX ? { kind, bpm } : null; }
   const w = TEMPO_WORDS.find((x) => x.it.toLowerCase() === s.toLowerCase() || x.zh === s);
   return w ? { kind, bpm: w.typical } : null;
 }

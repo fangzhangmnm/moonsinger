@@ -7,18 +7,27 @@
 // · 手指（粗指针）不自动弹系统键盘，免得盖住候选；要打字就点框。
 // · 速度（2026-10-07 user「选速度的时候能不能有一个文本框旁边的节拍器动画让你参考，然后有一个确认按钮才commit，这样你可以试哪个对」）：
 //   点候选 / 打字只改「试听值」，框旁边的节拍器按它摆；按「确定」（或回车）才写进谱；点别处 / Esc = 不改（新插的 = 撤掉）。
+//   2026-10-07 加滚轮（user「速度输入框能不能也做成这种能dial的…」；分开每一位的拨法 AI 没做 = 一根滚轮）：
+//   候选左边一根 ♩ = TEMPO_MIN～TEMPO_MAX（20～400，和打字同一个范围：user「typing到400的话wheel也到400或者都300…反正对齐一点」）的滚轮
+//   （和 pad 弹出的滚轮同一份 mountWheel：慢拖一格 ±1、一甩靠惯性滑一大段），拨到头就停；拨到哪试到哪，同样按「确定」才写；滚轮 / 候选 / 打字三边互相跟。
 // 跟踪的是 token id（谱改了下标会变）。
 
-import { type EditorState, type MarkTok, type MarkVal, setMark, deleteMark, headLen, TEMPO_WORDS, tempoWord } from "../score/song.ts";
+import { type EditorState, type MarkTok, type MarkVal, setMark, deleteMark, headLen, TEMPO_WORDS, tempoWord, TEMPO_MIN, TEMPO_MAX } from "../score/song.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { markText, parseMark } from "../score/marks.ts";
 import type { Layout } from "../render/engrave.ts";
+import { mountWheel, type WheelHandle } from "./drum.ts";
 
 interface Host { get(): EditorState; set(next: EditorState): void }
 
 const KEY_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, -1, -2, -3, -4, -5, -6, -7];
 const TIMES: [number, number][] = [[2, 4], [3, 4], [4, 4], [5, 4], [3, 8], [6, 8], [9, 8], [12, 8], [7, 8], [2, 2]];
 const accName = (f: number) => (f > 0 ? `${f}♯` : f < 0 ? `${-f}♭` : "无升降");
+const WHEEL_MIN = TEMPO_MIN, WHEEL_MAX = TEMPO_MAX, WHEEL_ROW = 40, WHEEL_VISIBLE = 5;
+const WHEEL_ITEMS = Array.from({ length: WHEEL_MAX - WHEEL_MIN + 1 }, (_, i) => String(WHEEL_MIN + i));
+const wheelIndex = (bpm: number) => Math.max(WHEEL_MIN, Math.min(WHEEL_MAX, Math.round(bpm))) - WHEEL_MIN;
+/** 速度试听值是从哪边改的：那一边自己已经是这个值，别的边跟上。 */
+type TempoSrc = "open" | "chip" | "type" | "wheel";
 
 export class MarkEditor {
   private box: HTMLDivElement;
@@ -31,23 +40,28 @@ export class MarkEditor {
   private pending: number | null = null;   // 速度：正在试的 bpm（还没写进谱）
   private metro: HTMLDivElement;
   private ok: HTMLButtonElement;
+  private wheelBox: HTMLDivElement;
+  private wheel: WheelHandle | null = null;
+  private metroTimer = 0;
   system = 0;
 
   constructor(parent: HTMLElement, private host: Host, private layout: () => Layout | null, private rerender: () => void) {
     this.box = document.createElement("div");
     this.box.className = "mark-ed"; this.box.hidden = true;
     this.box.innerHTML = `<div class="mark-row"><input class="mark-in" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" enterkeyhint="done" />` +
-      `<div class="metro" hidden title="按这个速度摆：摆到一头 = 一拍"><div class="metro-arm"></div></div><button class="btn primary mark-ok" hidden>确定</button></div><div class="mark-cands"></div>`;
+      `<div class="metro" hidden title="按这个速度摆：摆到一头 = 一拍"><div class="metro-arm"></div></div><button class="btn primary mark-ok" hidden>确定</button></div>` +
+      `<div class="mark-body"><div class="tempo-wheel" hidden title="拨速度：一格 = 1，一甩滑一大段"></div><div class="mark-cands"></div></div>`;
     parent.appendChild(this.box);
     this.input = this.box.querySelector("input")!;
     this.list = this.box.querySelector(".mark-cands")!;
     this.metro = this.box.querySelector(".metro")!;
     this.ok = this.box.querySelector(".mark-ok")!;
+    this.wheelBox = this.box.querySelector(".tempo-wheel")!;
     this.ok.addEventListener("pointerdown", (e) => { e.preventDefault(); this.confirmTempo(); });
     this.input.addEventListener("input", () => {   // 速度：打字就试（合法才换节拍器），不写进谱
       if (this.kind !== "tempo") return;
       const v = parseMark("tempo", this.input.value);
-      if (v && v.kind === "tempo") this.setPending(v.bpm, false);
+      if (v && v.kind === "tempo") this.setPending(v.bpm, "type");
     });
     // 候选：按下就改（pointerdown，不等 click，免得输入框先失焦）
     this.list.addEventListener("pointerdown", (e) => {
@@ -55,7 +69,7 @@ export class MarkEditor {
       e.preventDefault();
       if (b.dataset.v === "delete") { this.remove(); return; }
       const v = JSON.parse(b.dataset.v!) as MarkVal;
-      if (v.kind === "tempo") { this.setPending(v.bpm, true); return; }   // 速度：只试，按「确定」才写
+      if (v.kind === "tempo") { this.setPending(v.bpm, "chip"); return; }   // 速度：只试，按「确定」才写
       this.apply(v); this.close();
     });
   }
@@ -75,11 +89,23 @@ export class MarkEditor {
     this.input.placeholder = t.kind === "key" ? "1=D / Bb / 2#" : t.kind === "time" ? "3/4" : "90";
     this.kind = t.kind;
     this.fill(t, i >= headLen(st.song.tokens));
-    this.metro.hidden = this.ok.hidden = t.kind !== "tempo";
-    this.pending = null;
-    if (t.kind === "tempo") this.setPending(t.bpm, false);
+    this.metro.hidden = this.ok.hidden = this.wheelBox.hidden = t.kind !== "tempo";
+    this.pending = null; this.wheel = null;
     this.box.hidden = false;
     this.reposition();
+    if (t.kind === "tempo") {   // 滚轮要等框露出来才能滚到位
+      const col = document.createElement("div"); col.className = "drum-col";
+      this.wheelBox.replaceChildren(col);
+      this.wheel = mountWheel(col, { items: WHEEL_ITEMS, index: wheelIndex(t.bpm), row: WHEEL_ROW, visible: WHEEL_VISIBLE, onChange: (i) => this.setPending(WHEEL_MIN + i, "wheel") });
+      this.setPending(t.bpm, "open");
+    }
+    // 框比谱的可见区域低（小手机：pad 占了下半屏）：把谱往上滚到框的底露出来（框顶不滚出去）
+    const sc = this.box.closest<HTMLElement>(".score");
+    if (sc) {
+      const b = this.box.getBoundingClientRect(), v = sc.getBoundingClientRect();
+      const over = Math.min(b.bottom + 8 - v.bottom, b.top - v.top - 4);
+      if (over > 0) sc.scrollTop += over;
+    }
     if (!matchMedia("(pointer: coarse)").matches) { this.input.focus({ preventScroll: true }); this.input.select(); }
   }
 
@@ -97,13 +123,18 @@ export class MarkEditor {
     this.list.className = `mark-cands ${t.kind}`;
   }
 
-  /** 速度：换试听值——节拍器按它摆（重新起摆，和数字对得上），候选高亮它那一档；fromChip = 框里的数字也跟着换。 */
-  private setPending(bpm: number, fromChip: boolean): void {
+  /** 速度：换试听值——节拍器按它摆（重新起摆，和数字对得上），候选高亮它那一档；框里的数字、滚轮跟上（改的那一边不动）。 */
+  private setPending(bpm: number, src: TempoSrc): void {
     this.pending = bpm;
-    if (fromChip) this.input.value = String(bpm);
-    const arm = this.metro.firstElementChild as HTMLElement;
-    this.metro.style.setProperty("--beat", `${60 / bpm}s`);
-    arm.style.animation = "none"; void arm.offsetWidth; arm.style.animation = "";   // 重新起摆
+    if (src === "chip" || src === "wheel") this.input.value = String(bpm);
+    if (src !== "wheel") this.wheel?.scrollTo(wheelIndex(bpm));
+    clearTimeout(this.metroTimer);
+    const swing = () => {
+      const arm = this.metro.firstElementChild as HTMLElement;
+      this.metro.style.setProperty("--beat", `${60 / bpm}s`);
+      arm.style.animation = "none"; void arm.offsetWidth; arm.style.animation = "";   // 重新起摆
+    };
+    if (src === "wheel") this.metroTimer = window.setTimeout(swing, 150); else swing();   // 滚轮滚着的时候每格都重起会一直抽，停一下再摆
     const word = tempoWord(bpm).it;
     this.list.querySelectorAll<HTMLElement>("[data-v]").forEach((b) => {
       const v = b.dataset.v === "delete" ? null : (JSON.parse(b.dataset.v!) as MarkVal);
@@ -155,6 +186,7 @@ export class MarkEditor {
   /** 收起不改；新插的记号没改过 = 撤掉。 */
   close(): void {
     if (!this.open) return;
+    clearTimeout(this.metroTimer); this.wheel = null;
     if (this.fresh) { this.remove(); return; }
     this.id = -1; this.box.hidden = true; this.rerender();
   }

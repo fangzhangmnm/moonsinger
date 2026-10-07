@@ -120,6 +120,7 @@ describe("song（记号：调号 / 拍号 / 速度都是 token）", () => {
     eq((parseMark("key", "B♭") as { fifths: number }).fifths, -2); eq((parseMark("key", "3b") as { fifths: number }).fifths, -3); eq((parseMark("key", "f#") as { fifths: number }).fifths, 6);
     eq(JSON.stringify(parseMark("time", "6/8")), '{"kind":"time","beats":6,"beatType":8}'); eq(parseMark("time", "3/5"), null);
     eq((parseMark("tempo", "Andante 76") as { bpm: number }).bpm, 76); eq((parseMark("tempo", "allegro") as { bpm: number }).bpm, 132); eq(parseMark("tempo", "5"), null);
+    eq((parseMark("tempo", "400") as { bpm: number }).bpm, 400); eq(parseMark("tempo", "401"), null); eq((parseMark("tempo", "20") as { bpm: number }).bpm, 20); eq(parseMark("tempo", "19"), null);   // 和速度滚轮同一个范围（TEMPO_MIN / TEMPO_MAX）
   });
   it("速度词：每个词点下去给的数，推回来还是那个词", () => {
     for (const w of TEMPO_WORDS) eq(tempoWord(w.typical).it, w.it);

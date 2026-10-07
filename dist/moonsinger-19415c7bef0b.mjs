@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.27-2026-10-07";
+var APP_VERSION = "v0.2.28-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -286,6 +286,8 @@ var TEMPO_WORDS = [
   { from: 176, it: "Presto", zh: "\u6025\u677F", typical: 184 },
   { from: 200, it: "Prestissimo", zh: "\u6700\u6025\u677F", typical: 208 }
 ];
+var TEMPO_MIN = 20;
+var TEMPO_MAX = 400;
 function tempoWord(bpm) {
   let w = TEMPO_WORDS[0];
   for (const x of TEMPO_WORDS) if (bpm >= x.from) w = x;
@@ -1982,16 +1984,137 @@ function parseMark(kind, raw) {
   const n2 = /(\d{2,3})/.exec(s);
   if (n2) {
     const bpm = Number(n2[1]);
-    return bpm >= 20 && bpm <= 400 ? { kind, bpm } : null;
+    return bpm >= TEMPO_MIN && bpm <= TEMPO_MAX ? { kind, bpm } : null;
   }
   const w = TEMPO_WORDS.find((x) => x.it.toLowerCase() === s.toLowerCase() || x.zh === s);
   return w ? { kind, bpm: w.typical } : null;
+}
+
+// src/ui/drum.ts
+var ROW = 44;
+var VISIBLE = 5;
+var LOOP_COPIES = 7;
+var RECENTER_MS = 140;
+var current = null;
+function openDrum(anchor, cols, o) {
+  current?.close();
+  const r = anchor.getBoundingClientRect();
+  const box = document.createElement("div");
+  box.className = "drum";
+  const total = cols.reduce((s, c) => s + c.width, 0) + (cols.length - 1) * 2;
+  let left = r.left;
+  if (left + total > innerWidth - 4) left = Math.max(4, r.right - total);
+  Object.assign(box.style, { left: `${left}px`, top: `${Math.max(4, Math.min(r.top + r.height / 2 - ROW * VISIBLE / 2, innerHeight - ROW * VISIBLE - 4))}px`, height: `${ROW * VISIBLE}px` });
+  document.body.appendChild(box);
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    box.remove();
+    document.removeEventListener("pointerdown", outside, true);
+    removeEventListener("keydown", esc4, true);
+    if (current === handle) current = null;
+    o.onClose?.();
+  };
+  const outside = (e) => {
+    if (box.contains(e.target)) return;
+    if (!e.target.closest?.("[data-knob]")) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    close();
+  };
+  const esc4 = (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+    }
+  };
+  setTimeout(() => document.addEventListener("pointerdown", outside, true), 0);
+  addEventListener("keydown", esc4, true);
+  const wheels = cols.map((c, ci) => {
+    const col = document.createElement("div");
+    col.className = "drum-col";
+    col.style.width = `${c.width}px`;
+    if (c.title) col.title = c.title;
+    box.appendChild(col);
+    return mountWheel(col, { items: c.items, index: c.index, loop: c.loop, onChange: (i) => o.onChange(ci, i), onPick: () => close() });
+  });
+  const handle = {
+    close,
+    setItems: (ci, items) => wheels[ci]?.setItems(items)
+  };
+  current = handle;
+  return handle;
+}
+function mountWheel(col, c) {
+  const row = c.row ?? ROW, visible = c.visible ?? VISIBLE, padRows = Math.floor(visible / 2), n2 = c.items.length;
+  const copies = c.loop ? LOOP_COPIES : 1, mid = Math.floor(copies / 2) * n2;
+  col.style.height = `${row * visible}px`;
+  col.innerHTML = `<div class="drum-pad" style="height:${row * padRows}px"></div>` + Array.from({ length: n2 * copies }, (_, r) => `<div class="drum-item" data-i="${r}" style="height:${row}px">${c.items[r % n2]}</div>`).join("") + `<div class="drum-pad" style="height:${row * padRows}px"></div>`;
+  const items = [...col.querySelectorAll(".drum-item")], total = items.length;
+  const raw = () => Math.max(0, Math.min(total - 1, Math.round(col.scrollTop / row)));
+  let shown = c.index, recenter = 0;
+  const paint = () => {
+    const top = col.scrollTop, a = raw();
+    items.forEach((el, i) => {
+      el.style.opacity = String(Math.max(0.25, 1 - Math.abs(i * row - top) / row * 0.3));
+      el.classList.toggle("on", i === a);
+    });
+  };
+  col.scrollTop = (c.index + mid) * row;
+  paint();
+  col.addEventListener("scroll", () => {
+    paint();
+    const i = raw() % n2;
+    if (i !== shown) {
+      shown = i;
+      c.onChange(i);
+    }
+    if (c.loop) {
+      clearTimeout(recenter);
+      recenter = window.setTimeout(() => {
+        const r = raw();
+        if (Math.abs(r - r % n2 - mid) >= n2) col.scrollTop = (r % n2 + mid) * row;
+      }, RECENTER_MS);
+    }
+  }, { passive: true });
+  col.addEventListener("click", (e) => {
+    const it = e.target.closest(".drum-item");
+    if (!it) return;
+    const i = Number(it.dataset.i) % n2;
+    if (i !== shown) {
+      shown = i;
+      c.onChange(i);
+    }
+    if (c.onPick) c.onPick(i);
+    else col.scrollTop = (i + mid) * row;
+  });
+  return {
+    setItems: (its) => items.forEach((el, i) => {
+      const h = its[i % its.length];
+      if (h !== void 0) el.innerHTML = h;
+    }),
+    scrollTo: (i) => {
+      shown = i;
+      col.scrollTop = (i + mid) * row;
+      paint();
+    }
+    // 外面改了值（点候选 / 打字）：滚过去，不再回报 onChange
+  };
 }
 
 // src/ui/mark-editor.ts
 var KEY_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, -1, -2, -3, -4, -5, -6, -7];
 var TIMES = [[2, 4], [3, 4], [4, 4], [5, 4], [3, 8], [6, 8], [9, 8], [12, 8], [7, 8], [2, 2]];
 var accName = (f) => f > 0 ? `${f}\u266F` : f < 0 ? `${-f}\u266D` : "\u65E0\u5347\u964D";
+var WHEEL_MIN = TEMPO_MIN;
+var WHEEL_MAX = TEMPO_MAX;
+var WHEEL_ROW = 40;
+var WHEEL_VISIBLE = 5;
+var WHEEL_ITEMS = Array.from({ length: WHEEL_MAX - WHEEL_MIN + 1 }, (_, i) => String(WHEEL_MIN + i));
+var wheelIndex = (bpm) => Math.max(WHEEL_MIN, Math.min(WHEEL_MAX, Math.round(bpm))) - WHEEL_MIN;
 var MarkEditor = class {
   constructor(parent, host, layout, rerender) {
     this.host = host;
@@ -2000,12 +2123,13 @@ var MarkEditor = class {
     this.box = document.createElement("div");
     this.box.className = "mark-ed";
     this.box.hidden = true;
-    this.box.innerHTML = `<div class="mark-row"><input class="mark-in" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" enterkeyhint="done" /><div class="metro" hidden title="\u6309\u8FD9\u4E2A\u901F\u5EA6\u6446\uFF1A\u6446\u5230\u4E00\u5934 = \u4E00\u62CD"><div class="metro-arm"></div></div><button class="btn primary mark-ok" hidden>\u786E\u5B9A</button></div><div class="mark-cands"></div>`;
+    this.box.innerHTML = `<div class="mark-row"><input class="mark-in" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" enterkeyhint="done" /><div class="metro" hidden title="\u6309\u8FD9\u4E2A\u901F\u5EA6\u6446\uFF1A\u6446\u5230\u4E00\u5934 = \u4E00\u62CD"><div class="metro-arm"></div></div><button class="btn primary mark-ok" hidden>\u786E\u5B9A</button></div><div class="mark-body"><div class="tempo-wheel" hidden title="\u62E8\u901F\u5EA6\uFF1A\u4E00\u683C = 1\uFF0C\u4E00\u7529\u6ED1\u4E00\u5927\u6BB5"></div><div class="mark-cands"></div></div>`;
     parent.appendChild(this.box);
     this.input = this.box.querySelector("input");
     this.list = this.box.querySelector(".mark-cands");
     this.metro = this.box.querySelector(".metro");
     this.ok = this.box.querySelector(".mark-ok");
+    this.wheelBox = this.box.querySelector(".tempo-wheel");
     this.ok.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       this.confirmTempo();
@@ -2013,7 +2137,7 @@ var MarkEditor = class {
     this.input.addEventListener("input", () => {
       if (this.kind !== "tempo") return;
       const v = parseMark("tempo", this.input.value);
-      if (v && v.kind === "tempo") this.setPending(v.bpm, false);
+      if (v && v.kind === "tempo") this.setPending(v.bpm, "type");
     });
     this.list.addEventListener("pointerdown", (e) => {
       const b = e.target.closest("[data-v]");
@@ -2025,7 +2149,7 @@ var MarkEditor = class {
       }
       const v = JSON.parse(b.dataset.v);
       if (v.kind === "tempo") {
-        this.setPending(v.bpm, true);
+        this.setPending(v.bpm, "chip");
         return;
       }
       this.apply(v);
@@ -2043,6 +2167,9 @@ var MarkEditor = class {
   // 速度：正在试的 bpm（还没写进谱）
   metro;
   ok;
+  wheelBox;
+  wheel = null;
+  metroTimer = 0;
   system = 0;
   get open() {
     return this.id >= 0;
@@ -2067,11 +2194,24 @@ var MarkEditor = class {
     this.input.placeholder = t.kind === "key" ? "1=D / Bb / 2#" : t.kind === "time" ? "3/4" : "90";
     this.kind = t.kind;
     this.fill(t, i >= headLen(st2.song.tokens));
-    this.metro.hidden = this.ok.hidden = t.kind !== "tempo";
+    this.metro.hidden = this.ok.hidden = this.wheelBox.hidden = t.kind !== "tempo";
     this.pending = null;
-    if (t.kind === "tempo") this.setPending(t.bpm, false);
+    this.wheel = null;
     this.box.hidden = false;
     this.reposition();
+    if (t.kind === "tempo") {
+      const col = document.createElement("div");
+      col.className = "drum-col";
+      this.wheelBox.replaceChildren(col);
+      this.wheel = mountWheel(col, { items: WHEEL_ITEMS, index: wheelIndex(t.bpm), row: WHEEL_ROW, visible: WHEEL_VISIBLE, onChange: (i2) => this.setPending(WHEEL_MIN + i2, "wheel") });
+      this.setPending(t.bpm, "open");
+    }
+    const sc = this.box.closest(".score");
+    if (sc) {
+      const b = this.box.getBoundingClientRect(), v = sc.getBoundingClientRect();
+      const over = Math.min(b.bottom + 8 - v.bottom, b.top - v.top - 4);
+      if (over > 0) sc.scrollTop += over;
+    }
     if (!matchMedia("(pointer: coarse)").matches) {
       this.input.focus({ preventScroll: true });
       this.input.select();
@@ -2090,15 +2230,21 @@ var MarkEditor = class {
     this.list.innerHTML = h;
     this.list.className = `mark-cands ${t.kind}`;
   }
-  /** 速度：换试听值——节拍器按它摆（重新起摆，和数字对得上），候选高亮它那一档；fromChip = 框里的数字也跟着换。 */
-  setPending(bpm, fromChip) {
+  /** 速度：换试听值——节拍器按它摆（重新起摆，和数字对得上），候选高亮它那一档；框里的数字、滚轮跟上（改的那一边不动）。 */
+  setPending(bpm, src) {
     this.pending = bpm;
-    if (fromChip) this.input.value = String(bpm);
-    const arm = this.metro.firstElementChild;
-    this.metro.style.setProperty("--beat", `${60 / bpm}s`);
-    arm.style.animation = "none";
-    void arm.offsetWidth;
-    arm.style.animation = "";
+    if (src === "chip" || src === "wheel") this.input.value = String(bpm);
+    if (src !== "wheel") this.wheel?.scrollTo(wheelIndex(bpm));
+    clearTimeout(this.metroTimer);
+    const swing = () => {
+      const arm = this.metro.firstElementChild;
+      this.metro.style.setProperty("--beat", `${60 / bpm}s`);
+      arm.style.animation = "none";
+      void arm.offsetWidth;
+      arm.style.animation = "";
+    };
+    if (src === "wheel") this.metroTimer = window.setTimeout(swing, 150);
+    else swing();
     const word = tempoWord(bpm).it;
     this.list.querySelectorAll("[data-v]").forEach((b) => {
       const v = b.dataset.v === "delete" ? null : JSON.parse(b.dataset.v);
@@ -2157,6 +2303,8 @@ var MarkEditor = class {
   /** 收起不改；新插的记号没改过 = 撤掉。 */
   close() {
     if (!this.open) return;
+    clearTimeout(this.metroTimer);
+    this.wheel = null;
     if (this.fresh) {
       this.remove();
       return;
@@ -2578,110 +2726,6 @@ function ladderHome(sc, tonicD, fifths) {
   return Math.abs(midiOf(ladderAt(sc, down, tonicD, fifths).pitch) - m0) < Math.abs(midiOf(ladderAt(sc, up, tonicD, fifths).pitch) - m0) ? down : up;
 }
 var degLabel = (g2) => `${g2.alt > 0 ? "\u266F" : g2.alt < 0 ? "\u266D" : ""}${g2.deg}`;
-
-// src/ui/drum.ts
-var ROW = 44;
-var VISIBLE = 5;
-var LOOP_COPIES = 7;
-var RECENTER_MS = 140;
-var current = null;
-function openDrum(anchor, cols, o) {
-  current?.close();
-  const r = anchor.getBoundingClientRect();
-  const box = document.createElement("div");
-  box.className = "drum";
-  const total = cols.reduce((s, c) => s + c.width, 0) + (cols.length - 1) * 2;
-  let left = r.left;
-  if (left + total > innerWidth - 4) left = Math.max(4, r.right - total);
-  Object.assign(box.style, { left: `${left}px`, top: `${Math.max(4, Math.min(r.top + r.height / 2 - ROW * VISIBLE / 2, innerHeight - ROW * VISIBLE - 4))}px`, height: `${ROW * VISIBLE}px` });
-  document.body.appendChild(box);
-  let closed = false;
-  const close = () => {
-    if (closed) return;
-    closed = true;
-    box.remove();
-    document.removeEventListener("pointerdown", outside, true);
-    removeEventListener("keydown", esc4, true);
-    if (current === handle) current = null;
-    o.onClose?.();
-  };
-  const outside = (e) => {
-    if (box.contains(e.target)) return;
-    if (!e.target.closest?.("[data-knob]")) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    close();
-  };
-  const esc4 = (e) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      close();
-    }
-  };
-  setTimeout(() => document.addEventListener("pointerdown", outside, true), 0);
-  addEventListener("keydown", esc4, true);
-  cols.forEach((c, ci) => {
-    const col = document.createElement("div");
-    col.className = "drum-col";
-    col.style.width = `${c.width}px`;
-    if (c.title) col.title = c.title;
-    const padRows = Math.floor(VISIBLE / 2), n2 = c.items.length, copies = c.loop ? LOOP_COPIES : 1, mid = Math.floor(copies / 2) * n2;
-    col.innerHTML = `<div class="drum-pad" style="height:${ROW * padRows}px"></div>` + Array.from({ length: n2 * copies }, (_, r2) => `<div class="drum-item" data-i="${r2}">${c.items[r2 % n2]}</div>`).join("") + `<div class="drum-pad" style="height:${ROW * padRows}px"></div>`;
-    box.appendChild(col);
-    const items = [...col.querySelectorAll(".drum-item")], total2 = items.length;
-    const raw = () => Math.max(0, Math.min(total2 - 1, Math.round(col.scrollTop / ROW)));
-    let shown = c.index, recenter = 0;
-    const paint = () => {
-      const top = col.scrollTop, a = raw();
-      items.forEach((el, i) => {
-        el.style.opacity = String(Math.max(0.25, 1 - Math.abs(i * ROW - top) / ROW * 0.3));
-        el.classList.toggle("on", i === a);
-      });
-    };
-    col.scrollTop = (c.index + mid) * ROW;
-    paint();
-    col.addEventListener("scroll", () => {
-      paint();
-      const i = raw() % n2;
-      if (i !== shown) {
-        shown = i;
-        o.onChange(ci, i);
-      }
-      if (c.loop) {
-        clearTimeout(recenter);
-        recenter = window.setTimeout(() => {
-          const r2 = raw();
-          if (Math.abs(r2 - r2 % n2 - mid) >= n2) col.scrollTop = (r2 % n2 + mid) * ROW;
-        }, RECENTER_MS);
-      }
-    }, { passive: true });
-    col.addEventListener("click", (e) => {
-      const it = e.target.closest(".drum-item");
-      if (!it) return;
-      const i = Number(it.dataset.i) % n2;
-      if (i !== shown) {
-        shown = i;
-        o.onChange(ci, i);
-      }
-      close();
-    });
-  });
-  const handle = {
-    close,
-    setItems: (ci, items) => {
-      const col = box.querySelectorAll(".drum-col")[ci];
-      if (!col) return;
-      col.querySelectorAll(".drum-item").forEach((el, i) => {
-        const h = items[i % items.length];
-        if (h !== void 0) el.innerHTML = h;
-      });
-    }
-  };
-  current = handle;
-  return handle;
-}
 
 // src/ui/pad.ts
 var HER_LOW = 57;
@@ -6202,7 +6246,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "289f919c152f" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "a8b1d8f24b40" };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6597,4 +6641,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-7d0fedbf23fc.mjs.map
+//# sourceMappingURL=moonsinger-19415c7bef0b.mjs.map

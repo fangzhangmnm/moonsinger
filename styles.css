@@ -184,6 +184,13 @@ button, input, select { font: inherit; color: inherit; }
 .metro-arm::before { content: ""; position: absolute; left: -3px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 @keyframes metro-swing { from { transform: rotate(-32deg); } to { transform: rotate(32deg); } }
 .mark-ok { flex: none; }
+/* 速度滚轮（候选左边；user「速度输入框能不能也做成这种能dial的」）：滚轮本体同 .drum-col，中间那格 = 试听值 */
+.mark-body { display: flex; align-items: center; gap: 8px; }
+.mark-body .mark-cands { flex: 1; min-width: 0; }
+.tempo-wheel { position: relative; flex: none; width: 64px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+.tempo-wheel[hidden] { display: none; }
+.tempo-wheel::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 40px; transform: translateY(-50%); background: var(--accent-soft); pointer-events: none; }
+.tempo-wheel .drum-item { font-size: 18px; font-variant-numeric: tabular-nums; }
 
 /* 设置面板：模型来源 / 导入模型包 / 月读的署名与条款 */
 .settings-card { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; }

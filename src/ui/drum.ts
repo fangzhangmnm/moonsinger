@@ -48,47 +48,58 @@ export function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): 
   setTimeout(() => document.addEventListener("pointerdown", outside, true), 0);   // 打开它的那一下不算「点外面」
   addEventListener("keydown", esc, true);
 
-  cols.forEach((c, ci) => {
+  const wheels = cols.map((c, ci) => {
     const col = document.createElement("div");
     col.className = "drum-col"; col.style.width = `${c.width}px`;
     if (c.title) col.title = c.title;
-    const padRows = Math.floor(VISIBLE / 2), n = c.items.length, copies = c.loop ? LOOP_COPIES : 1, mid = Math.floor(copies / 2) * n;
-    col.innerHTML = `<div class="drum-pad" style="height:${ROW * padRows}px"></div>` +
-      Array.from({ length: n * copies }, (_, r) => `<div class="drum-item" data-i="${r}">${c.items[r % n]}</div>`).join("") +
-      `<div class="drum-pad" style="height:${ROW * padRows}px"></div>`;
     box.appendChild(col);
-    const items = [...col.querySelectorAll<HTMLElement>(".drum-item")], total = items.length;
-    const raw = () => Math.max(0, Math.min(total - 1, Math.round(col.scrollTop / ROW)));
-    let shown = c.index, recenter = 0;
-    const paint = () => {
-      const top = col.scrollTop, a = raw();
-      items.forEach((el, i) => { el.style.opacity = String(Math.max(0.25, 1 - (Math.abs(i * ROW - top) / ROW) * 0.3)); el.classList.toggle("on", i === a); });
-    };
-    col.scrollTop = (c.index + mid) * ROW;
-    paint();
-    col.addEventListener("scroll", () => {
-      paint();
-      const i = raw() % n; if (i !== shown) { shown = i; o.onChange(ci, i); }
-      if (c.loop) {   // 滚停了：挪回中间那份（内容一样，看不出来）
-        clearTimeout(recenter);
-        recenter = window.setTimeout(() => { const r = raw(); if (Math.abs(r - (r % n) - mid) >= n) col.scrollTop = ((r % n) + mid) * ROW; }, RECENTER_MS);
-      }
-    }, { passive: true });
-    col.addEventListener("click", (e) => {   // 点一格 = 立刻选中、立刻收起（不等动画）
-      const it = (e.target as HTMLElement).closest<HTMLElement>(".drum-item"); if (!it) return;
-      const i = Number(it.dataset.i) % n;
-      if (i !== shown) { shown = i; o.onChange(ci, i); }
-      close();
-    });
+    return mountWheel(col, { items: c.items, index: c.index, loop: c.loop, onChange: (i) => o.onChange(ci, i), onPick: () => close() });   // 点一格 = 立刻选中、立刻收起（不等动画）
   });
   const handle: DrumHandle = {
     close,
-    setItems: (ci, items) => {
-      const col = box.querySelectorAll<HTMLElement>(".drum-col")[ci]; if (!col) return;
-      col.querySelectorAll<HTMLElement>(".drum-item").forEach((el, i) => { const h = items[i % items.length]; if (h !== undefined) el.innerHTML = h; });
-    },
+    setItems: (ci, items) => wheels[ci]?.setItems(items),
   };
   current = handle;
   return handle;
 }
 export const closeDrum = () => current?.close();
+
+export interface WheelOpts { items: string[]; index: number; row?: number; visible?: number; loop?: boolean; onChange(i: number): void; onPick?(i: number): void }
+export interface WheelHandle { setItems(items: string[]): void; scrollTo(i: number): void }
+/** 一根滚轮（浏览器原生滚动 + 吸附：手感 = 系统里别的列表；慢拖微调、一甩靠惯性滑一大段）。弹出的滚轮（上面）和速度面板里嵌着的共用一份。
+ *  col = 一个 class 为 drum-col 的空元素（CSS 管滚动和吸附），高度 = row × visible。停在中间那格 = 选中，一变就 onChange；点一格 = onPick。 */
+export function mountWheel(col: HTMLElement, c: WheelOpts): WheelHandle {
+  const row = c.row ?? ROW, visible = c.visible ?? VISIBLE, padRows = Math.floor(visible / 2), n = c.items.length;
+  const copies = c.loop ? LOOP_COPIES : 1, mid = Math.floor(copies / 2) * n;
+  col.style.height = `${row * visible}px`;
+  col.innerHTML = `<div class="drum-pad" style="height:${row * padRows}px"></div>` +
+    Array.from({ length: n * copies }, (_, r) => `<div class="drum-item" data-i="${r}" style="height:${row}px">${c.items[r % n]}</div>`).join("") +
+    `<div class="drum-pad" style="height:${row * padRows}px"></div>`;
+  const items = [...col.querySelectorAll<HTMLElement>(".drum-item")], total = items.length;
+  const raw = () => Math.max(0, Math.min(total - 1, Math.round(col.scrollTop / row)));
+  let shown = c.index, recenter = 0;
+  const paint = () => {
+    const top = col.scrollTop, a = raw();
+    items.forEach((el, i) => { el.style.opacity = String(Math.max(0.25, 1 - (Math.abs(i * row - top) / row) * 0.3)); el.classList.toggle("on", i === a); });
+  };
+  col.scrollTop = (c.index + mid) * row;
+  paint();
+  col.addEventListener("scroll", () => {
+    paint();
+    const i = raw() % n; if (i !== shown) { shown = i; c.onChange(i); }
+    if (c.loop) {   // 环：滚停了挪回中间那份（内容一样，看不出来）
+      clearTimeout(recenter);
+      recenter = window.setTimeout(() => { const r = raw(); if (Math.abs(r - (r % n) - mid) >= n) col.scrollTop = ((r % n) + mid) * row; }, RECENTER_MS);
+    }
+  }, { passive: true });
+  col.addEventListener("click", (e) => {
+    const it = (e.target as HTMLElement).closest<HTMLElement>(".drum-item"); if (!it) return;
+    const i = Number(it.dataset.i) % n;
+    if (i !== shown) { shown = i; c.onChange(i); }
+    if (c.onPick) c.onPick(i); else col.scrollTop = (i + mid) * row;
+  });
+  return {
+    setItems: (its) => items.forEach((el, i) => { const h = its[i % its.length]; if (h !== undefined) el.innerHTML = h; }),
+    scrollTo: (i) => { shown = i; col.scrollTop = (i + mid) * row; paint(); },   // 外面改了值（点候选 / 打字）：滚过去，不再回报 onChange
+  };
+}
