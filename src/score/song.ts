@@ -58,6 +58,7 @@ export interface InputState {
   accMode: "off" | "once" | "lock";   // 点一下只管下一个音，连点两下锁住（user「double tap shift is "capslock"」）
   accAt: number;                      // 上一次点 Shift 的时刻（ms，判连点）
   inputFifths: number;                // 「1=」= 输入设备（pad / 电脑键盘）自己的调，默认 C；不跟谱上的调号（2026-10-07 user「把pad想成一个独立的medo式的输入设备，假设没有谱」「如果一个谱有好几个调怎么算」）
+  inputScale: string;                 // pad 的调式（src/score/scales.ts 的 id），默认大调；只管 pad 上排哪些音（user「1=F能不能也做成两个的滚轮，右边可以换调性」）
 }
 
 /** 本次输入记录：退格撤回最后一笔（写字头在，记录就在）。 */
@@ -83,7 +84,7 @@ export function emptySong(m: { fifths?: number; beats?: number; beatType?: numbe
     { kind: "tempo", id: 3, bpm: m.bpm ?? DEFAULT_BPM },
   ] };
 }
-export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0 }; }
+export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major" }; }
 export function initState(song: Song = emptySong()): EditorState {
   const maxId = song.tokens.reduce((m, t) => Math.max(m, t.id), 0);
   return { song, caret: song.tokens.length, sel: null, nextId: maxId + 1, log: [], input: initInput() };
@@ -339,6 +340,8 @@ export function tapAcc(st: EditorState, acc: 1 | -1, now: number): EditorState {
 }
 /** 「1=」：只管输入（user「after you change the 1=???, the original inputted note should not be changed」）。 */
 export function setInputKey(st: EditorState, fifths: number): EditorState { return { ...st, input: { ...st.input, inputFifths: Math.max(-7, Math.min(7, fifths)) } }; }
+/** pad 的调式：只管 pad 上排哪些音。 */
+export function setInputScale(st: EditorState, id: string): EditorState { return { ...st, input: { ...st.input, inputScale: id } }; }
 
 // ── 改（选中） ──────────────────────────────────────────────────────────
 

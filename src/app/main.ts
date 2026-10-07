@@ -7,8 +7,8 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type NoteTok, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, setUnit, setNote, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
-import { type Pitch, pitchName, midiOf, diatonicIndex, KEY_LABEL, alterBy } from "../score/pitch.ts";
+import { type EditorState, type NoteTok, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, setInputScale, setUnit, setNote, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
+import { type Pitch, pitchName, midiOf, KEY_LABEL, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
@@ -73,7 +73,7 @@ const sound = {
 /** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
 const soundTok = (s: EditorState, i: number, id = "main") => { const t = s.song.tokens[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id); };
 /** 电脑键盘按下一个音：响 + pad 上那个音高的键亮着（和手指按 pad 一样，松开键才灭）。 */
-const keyTok = (s: EditorState, i: number, code: string) => { const t = s.song.tokens[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(diatonicIndex(t.pitch), `key${code}`); };
+const keyTok = (s: EditorState, i: number, code: string) => { const t = s.song.tokens[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(t.pitch, `key${code}`); };
 /** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
 function writeAndLocate(write: (s: EditorState) => EditorState): number {
   let target = -1;
@@ -94,9 +94,21 @@ const view = new ScoreView(scoreEl, {
 let impro = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
 /** pad 上每根按着的手指：刚写的是第几个音（弹 = -1）、它原本的音高——上下滑过门槛时在它上面升 / 降。 */
 const padNotes = new Map<string, { index: number; base: Pitch }>();
+/** 单音乐器（现在的主唱月读）写音：同时多按只写第一个（user「monophonic乐器输入的时候如果你多按只会输第一个。但是做好模糊护栏免得快速输入的时候第二个音被吃掉」）。
+ *  模糊护栏：只有「上一个写进去的音还按着，而且才过了不到 CHORD_MS」才算同时按、不写不响不亮；
+ *  快速连按（前一根手指还没抬，但已经隔开了）照写，抬过手的更不管。手指和电脑键盘共用一份；弹（只唱不写）不管，几个音一起响。 */
+const CHORD_MS = 50;
+const monoHeld = new Set<string>();
+let monoAt = -Infinity;
+function monoAccept(id: string): boolean {
+  const now = performance.now();
+  if (monoHeld.size && now - monoAt < CHORD_MS) return false;
+  monoHeld.add(id); monoAt = now; return true;
+}
 const pad = new Pad(padEl, {
   state: () => st,
   isImpro: () => impro,
+  accept: (id) => monoAccept(id),
   onPitch: (p, id) => {
     const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
@@ -111,6 +123,7 @@ const pad = new Pad(padEl, {
   onUnit: (u) => update(setUnit(st, u)),
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
+  onInputScale: (id) => update(setInputScale(st, id)),
   onInsertMark: (kind) => {   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
     const at = st.sel ? st.sel.from : st.caret;
     const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
@@ -123,7 +136,7 @@ const pad = new Pad(padEl, {
     if (n && n.index >= 0) soundTok(st, n.index, id);
     else { const r = soundingPitch(st, p); update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); sound.down(r.pitch, id); }   // 弹：带上挂着的 ♯ / ♭
   },
-  onSoundUp: (id) => { padNotes.delete(id); sound.up(id); },
+  onSoundUp: (id) => { padNotes.delete(id); monoHeld.delete(id); sound.up(id); },
 });
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
@@ -391,7 +404,7 @@ function loadDoc(song: Song, o: { stem: string; quality: Quality; extras: Extras
   setQuality(o.quality);
   $<HTMLSelectElement>("humSel").value = song.hum;
   doc.stem = o.stem; doc.handle = o.handle; doc.extras = o.extras;
-  st = initState(song);
+  st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };   // pad 是独立设备：换歌不换它的「1=」和调式
   doc.saved = { song: st.song, quality: o.quality };
   lastFull = null;
   view.render(); pad.render(); renderStatus(); renderTitle();
@@ -496,7 +509,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
   switch (a.k) {
     case "cmd":
       if (a.cmd.k === "degree") {
-        if (!repeat) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); }   // 先写再取 st（写完才有这个音）
+        if (!repeat && monoAccept(`key${code}`)) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); }   // 先写再取 st（写完才有这个音）
         return true;
       }
       update(apply(st, a.cmd, performance.now())); return true;
@@ -522,10 +535,10 @@ window.addEventListener("keydown", (e) => {
   const a = route(e, whereNow(), st.sel ? "edit" : "write");
   if (a && run(a, e.repeat, e.code)) e.preventDefault();
 });
-window.addEventListener("keyup", (e) => { if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
+window.addEventListener("keyup", (e) => { monoHeld.delete(`key${e.code}`); if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
 // 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）
-window.addEventListener("blur", () => { sampler.upAll(); pad.clearHeld(); });
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { sampler.upAll(); pad.clearHeld(); } });
+window.addEventListener("blur", () => { sampler.upAll(); pad.clearHeld(); monoHeld.clear(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { sampler.upAll(); pad.clearHeld(); monoHeld.clear(); } });
 
 await document.fonts.load(`40px Bravura`).catch(() => undefined);
 view.render();

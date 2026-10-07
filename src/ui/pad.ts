@@ -26,13 +26,14 @@
 // · 「弹」不在 pad 上（顶栏）；弹的时候音键外面不画框（user「弹时候的那圈奇怪的框不要」）。
 // · 有选中（改）的时候「1=」旋钮变成「移调」：点了 = 半音 / 全音 / 八度 / 转调…
 
-import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchName, alterBy, KEY_LABEL } from "../score/pitch.ts";
+import { type Pitch, HOME, diatonicIndex, tonicStepIndex, pitchName, alterBy, midiOf, KEY_LABEL } from "../score/pitch.ts";
+import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
 import { type EditorState, inputKey, keyAt } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
 
-const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置（月读音域：键底部画细条提示，音域外不拦、不变灰）
+const HER_LOW = 57, HER_HIGH = 76;   // A3 / E5（MIDI；月读音域：键底部画细条提示，音域外不拦、不变灰）
 /** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
 const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone");
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
@@ -40,6 +41,7 @@ const KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } } as 
 const SWIPE = 20;       // px：音键上下滑过这么远才算升 / 降
 const STEP = 28;        // px：旋钮上滑这么远 = 窗里滚一整格（一次最多一格，过半格就算）
 const MOVE = 6;         // px：按下旋钮挪过这么远才算「滑」；没挪就松手 = 点（展开滚轮）
+const STACK = 150;      // px：「1=」旋钮比这窄 = 调和调式名分两行写
 const NARROW = 96;      // px：音域旋钮比这窄 = 一行写不下「F♯3–G♯5」，改两行
 const TIGHT = 130;      // px：音域旋钮比这窄 = 一行字和 ⇅ 挤在一起，这一个不画 ⇅（另外两个旋钮上有，手势一样）
 const UNITS = [5, 4, 3, 2, 1, 0];          // 长短，长的在上：全音符 … 三十二分
@@ -65,6 +67,8 @@ function tupletMark(n: number, unit: number): string {
     `<path class="br" d="M${M} ${by + 2.5}V${by}H${cx - 3.6}M${cx + 3.6} ${by}H${W - M}V${by + 2.5}"/>` +
     `<text x="${cx}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(0xe880 + n)}</text>${stems}${beam}${heads}</svg>`;
 }
+/** 「1=」旋钮上的字：调 + 调式名（小字）。 */
+const keyLabel = (f: number, sc: Scale) => `<span class="kk">1=${KEY_LABEL[f] ?? "?"}</span><small>${sc.name}</small>`;
 const pretty = (p: Pitch) => pitchName(p).replace(/#/g, "♯").replace(/b(?=\d)|b(?=b)/g, "♭");
 
 /** 不带点的那一组 = 她说话的家（HOME = D4）所在的那个「1 到 7」：1=C 时 C4–B4 不带点。 */
@@ -72,17 +76,20 @@ function homeTonic(fifths: number): number {
   const t = tonicStepIndex(fifths), h = diatonicIndex(HOME);
   return t + 7 * Math.floor((h - t) / 7);
 }
-export function defaultPadBase(fifths: number): number { return homeTonic(fifths); }
+/** 调式在滚轮里的样子：名字 + 从主音起的音级（羽调式 = 6 1 2 3 5）。 */
+const scaleItem = (sc: Scale) => `<span class="sc"><b>${sc.name}</b><small>${[...sc.degs.slice(sc.home), ...sc.degs.slice(0, sc.home)].map(degLabel).join(" ")}</small></span>`;
 
 export interface PadHost {
   state(): EditorState;
   isImpro(): boolean;                      // 「弹」（顶栏）开着 = 音键只唱不写
+  accept(id: string): boolean;             // 写之前问一声：单音乐器和别的手指几乎同时按下 = false（这一下不写、不响、不亮）
   onPitch(p: Pitch, id: string): void;     // 写（或改：覆盖选中）；弹的时候不调。id = 哪根手指
   onAlter(id: string, alt: -1 | 0 | 1): void;   // 按着的这根手指滑过门槛：刚写的音（弹 = 正在响的音）升 / 降 / 还原
   onCommand(c: Command): void;
   onUnit(unit: number): void;
   onTuplet(n: 0 | 3 | 5 | 6 | 7): void;
   onInputKey(f: number): void;
+  onInputScale(id: string): void;
   onInsertMark(kind: "key" | "time" | "tempo"): void;
   onSoundDown(p: Pitch, id: string): void;   // 试听 / 弹：按下响（复音：每根手指一个声音）
   onSoundUp(id: string): void;
@@ -101,7 +108,9 @@ export class Pad {
   /** 正按着的音（来源 id → 五线谱位置）：手指和电脑键盘共用，pad 上对应的键按住期间一直亮。 */
   private held = new Map<string, number>();
   /** 正在音键上滑的手指（pointerId → 起点 y、当前升降、哪个键）。 */
-  private swipes = new Map<number, { y0: number; alt: -1 | 0 | 1; d: number; key: HTMLElement }>();
+  private swipes = new Map<number, { y0: number; alt: -1 | 0 | 1; key: HTMLElement }>();
+  /** 网格上每个键（调式梯子上的第 k 级）的音高。 */
+  private keys = new Map<number, Pitch>();
 
   constructor(private el: HTMLElement, private host: PadHost) { this.render(); addEventListener("resize", () => this.render()); }
 
@@ -113,20 +122,25 @@ export class Pad {
   /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
   private spanText(shift: number, f: number, rows: number): string {
     const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
-    return `${pretty(fromDiatonic(lo, f))}–${pretty(fromDiatonic(hi, f))}`;
+    return `${pretty(this.pitchAt(lo, f))}–${pretty(this.pitchAt(hi, f))}`;
   }
   /** 同上，画在旋钮 / 滚轮里：放得下就一行「F3–G5」；太窄就两行，下面那行是低的那头（user「也许上下两个吧，下面是lower bound」）。 */
   private spanHtml(shift: number, f: number, rows: number, narrow: boolean): string {
     if (!narrow) return this.spanText(shift, f, rows);
     const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
-    return `<span class="rg"><span>${pretty(fromDiatonic(hi, f))}</span><span>${pretty(fromDiatonic(lo, f))}</span></span>`;
+    return `<span class="rg"><span>${pretty(this.pitchAt(hi, f))}</span><span>${pretty(this.pitchAt(lo, f))}</span></span>`;
   }
   /** 音域旋钮窄到一行写不下（手机 / 桌面的窄 pad）。 */
   private rangeNarrow(): boolean { const b = this.el.querySelector<HTMLElement>(".k-range"); return !!b && b.clientWidth < NARROW; }
-  /** 音域窗口第 shift 档时，左下那个键的五线谱位置（中央 C 那一行默认在中线下面一行）。 */
+  private scale(): Scale { return scaleById(this.host.state().input.inputScale); }
+  /** 调式梯子上第 k 级的音高（k = 0 是 do；pad 的「1=」+ 调式定）。 */
+  private pitchAt(k: number, f: number): Pitch { return ladderAt(this.scale(), k, homeTonic(f), f).pitch; }
+  /** 音域窗口第 shift 档时，左下那个键在调式梯子上是第几级：绝对 = 那一行从 C4（或它上面第一个调式音）起；
+   *  首调 = 从主音起（小调 / 羽调式从 6 起）；中央那一行默认在中线下面一行。 */
   private baseAt(shift: number, f: number, rows: number): number {
-    const home = this.layoutMode === "absolute" ? diatonicIndex({ step: "C", alter: 0, octave: 4 }) : defaultPadBase(f);
-    return home + this.cols * (shift - Math.floor((rows - 1) / 2));
+    const sc = this.scale(), t = homeTonic(f);
+    const anchor = this.layoutMode === "absolute" ? ladderFirstAtOrAbove(sc, 60, t, f) : ladderHome(sc, t, f);
+    return anchor + this.cols * (shift - Math.floor((rows - 1) / 2));
   }
 
   /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。
@@ -163,7 +177,7 @@ export class Pad {
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) bs.addEventListener(t, stop);
       addEventListener("blur", stop);
     }
-    const gridSig = `${f}|${base}|${rows}x${this.cols}|${this.layoutMode}`;
+    const gridSig = `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}`;
     if (gridSig !== this.gridFor) { this.buildGrid(f, base, rows); this.gridFor = gridSig; }
     const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}`;
     if (toolSig !== this.toolsFor) { this.buildHead(selKey, rows); this.toolsFor = toolSig; }
@@ -218,26 +232,28 @@ export class Pad {
   }
 
   private buildGrid(f: number, base: number, rows: number): void {
-    const cells: string[] = [], ht = homeTonic(f);
+    const cells: string[] = [], sc = this.scale(), ht = homeTonic(f);
+    this.keys.clear();
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < this.cols; col++) {
-        const d = base + row * this.cols + col, p = fromDiatonic(d, f);
-        const deg = ((((d - ht) % 7) + 7) % 7) + 1, oct = Math.floor((d - ht) / 7);
-        const inRange = d >= HER_LOW && d <= HER_HIGH;
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-d="${d}" title="${inRange ? "月读的音域里" : ""}">` +
-          `<span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${deg}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p)}</span></button>`);
+        const k = base + row * this.cols + col, { pitch: p, deg, oct } = ladderAt(sc, k, ht, f), m = midiOf(p);
+        const inRange = m >= HER_LOW && m <= HER_HIGH;
+        this.keys.set(k, p);
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k}" title="${inRange ? "月读的音域里" : ""}">` +
+          `<span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${degLabel(deg)}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p)}</span></button>`);
       }
     }
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
     grid.innerHTML = cells.join("");
     this.swipes.clear();   // 键换了：旧键上的滑动作废（声音照常由 pointerup 停）
     // 音键：按下 = 写（或改）+ 响；弹 = 只响；按着上下滑过门槛 = 这个音升 / 降（键上先显示）；松开 = 停
-    grid.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => {
+    grid.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => {
       b.addEventListener("pointerdown", (e) => {
         e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* 指针已经没了：照样响 */ }
-        const st = this.host.state(), d = Number(b.dataset.d), p = fromDiatonic(d, inputKey(st)), id = `pad${e.pointerId}`;
-        this.swipes.set(e.pointerId, { y0: e.clientY, alt: 0, d, key: b });
-        this.showDown(d, id);
+        const p = this.keys.get(Number(b.dataset.k))!, id = `pad${e.pointerId}`;
+        if (!this.host.isImpro() && !this.host.accept(id)) return;   // 单音乐器：同时多按只写第一个（模糊护栏在宿主）
+        this.swipes.set(e.pointerId, { y0: e.clientY, alt: 0, key: b });
+        this.showDown(p, id);
         if (!this.host.isImpro()) this.host.onPitch(p, id);
         this.host.onSoundDown(p, id);
       });
@@ -257,22 +273,23 @@ export class Pad {
   private refresh(st: EditorState): void {
     const q = <T extends HTMLElement>(s: string) => this.el.querySelector<T>(s);
     const i = st.input, f = inputKey(st);
-    const k = q(".k-key .kl"); if (k && !st.sel) k.textContent = `1=${KEY_NAMES[f] ?? "?"}`;
+    const k = q(".k-key .kl");
+    if (k && !st.sel) { const sc = this.scale(); k.innerHTML = keyLabel(f, sc); k.parentElement!.classList.toggle("stack", k.parentElement!.clientWidth < STACK); k.parentElement!.title = `1=${KEY_NAMES[f]} ${sc.name}（pad 自己的调和调式）：按住上下滑换调 / 点开选调和调式`; }
     const u = q(".k-unit .kl");
     if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`; u.parentElement!.title = `长短基线：${UNIT_NAME[i.unit]}${i.tuplet ? `（${i.tuplet} 连音）` : ""}——按住上下滑 / 点开选`; }
     const r = q(".k-range .kl");
     if (r) { const nr = this.rangeNarrow(); r.parentElement!.classList.toggle("narrow", nr); r.parentElement!.classList.toggle("tight", r.parentElement!.clientWidth < TIGHT); r.innerHTML = this.spanHtml(this.rowShift, f, this.rows(), nr); r.parentElement!.title = `音域 ${this.spanText(this.rowShift, f, this.rows())}：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的`; }
     // 电脑键盘挂着 ♯ / ♭（Shift）：音键显示升 / 降之后的样子；手指正在滑的那个键显示它自己的
-    this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => {
+    this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => {
       const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
-      const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = a ? alterBy(p0, a) : p0;
+      const p0 = this.keys.get(Number(b.dataset.k))!, p = a ? alterBy(p0, a) : p0;
       b.querySelector(".acc")!.textContent = a > 0 ? "♯" : a < 0 ? "♭" : "";
       b.querySelector(".abs")!.textContent = pretty(p);
       b.classList.toggle("swiping", !!sw && sw.alt !== 0);
     });
     this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
     const down = new Set(this.held.values());
-    this.el.querySelectorAll<HTMLElement>(".pad-key[data-d]").forEach((b) => b.classList.toggle("down", down.has(Number(b.dataset.d))));
+    this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => b.classList.toggle("down", down.has(midiOf(this.keys.get(Number(b.dataset.k))!))));
   }
 
   private on(root: HTMLElement, sel: string, fn: (b: HTMLElement) => void): void {
@@ -281,16 +298,16 @@ export class Pad {
   private back(): void { this.mode = "normal"; this.render(); }
 
   /** 值旋钮的一串值，大的在上（升号多 / 长的 / 音域高的在上）+ 现在是第几个 + 选第 i 个（立刻生效）。 */
-  private knobList(knob: string): { items: string[]; index: number; title: string; set(i: number): void } {
+  private knobList(knob: string, narrow = this.rangeNarrow()): { items: string[]; index: number; title: string; set(i: number): void } {
     const st = this.host.state(), f = inputKey(st);
     if (knob === "key") {
       const K = [...KEY_CIRCLE].reverse();   // 1=F♯ … 1=C … 1=G♭
-      return { items: K.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K.indexOf(f)), title: "pad 的调（五度圈）", set: (i) => this.host.onInputKey(K[i]) };
+      const sc = this.scale();
+      return { items: K.map((k) => keyLabel(k, sc)), index: Math.max(0, K.indexOf(f)), title: "pad 的调（五度圈）", set: (i) => this.host.onInputKey(K[i]) };
     }
     if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st.input.unit)), title: "长短基线", set: (i) => this.host.onUnit(UNITS[i]) };
     const rows = this.rows();   // 音域：高的在上（一张纸：往上推 = 看下面更低的）
-    const nr = this.rangeNarrow();
-    return { items: SHIFTS.map((sh) => this.spanHtml(sh, f, rows, nr)), index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), title: "音域窗口",
+    return { items: SHIFTS.map((sh) => this.spanHtml(sh, f, rows, narrow)), index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), title: "音域窗口",
       set: (i) => { this.rowShift = SHIFTS[i]; this.render(); } };
   }
 
@@ -336,13 +353,14 @@ export class Pad {
     addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
   }
 
-  /** 点一下值旋钮：在它上面展开滚轮（第一列和旋钮一样宽、叠在旋钮上）。长短那根旁边并一根连音的，连音画成真的一组小蝌蚪、跟着长短变。 */
+  /** 点一下值旋钮：在它上面展开滚轮。旋钮够宽（iPad）= 几列分旋钮的宽；太窄（iPhone）= 每列按放得下的宽来，比旋钮宽
+   *  （user「如果是iphone等太窄的时候弹出来的窗可以宽一点」）。长短那根旁边并一根连音的，连音画成真的一组小蝌蚪、跟着长短变。 */
   private openDrumFor(knob: string, anchor: HTMLElement): void {
     const w = anchor.getBoundingClientRect().width;
     if (knob === "unit") {
       const st = this.host.state();
-      // 宽的旋钮：两列分它的宽度（user「能不能共用原来的宽度」），连音那列占一半多一点；窄的旋钮：长短那列 = 旋钮宽、连音那列接在右边
-      const [wu, wt] = w >= 120 ? [w - Math.round(w * 0.55) - 2, Math.round(w * 0.55)] : [w, 68];   // 2 = 两列之间的缝
+      // 宽的旋钮：两列分它的宽度（user「能不能共用原来的宽度」），连音那列占一半多一点；窄的：长短 56 + 连音 84
+      const [wu, wt] = w >= 142 ? [w - Math.round(w * 0.55) - 2, Math.round(w * 0.55)] : [56, 84];   // 2 = 两列之间的缝
       const tups = (u: number) => TUP.map((n) => (n ? tupletMark(n, u) : `<span class="plain">不连</span>`));
       const h: DrumHandle = openDrum(anchor, [
         { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: Math.max(0, UNITS.indexOf(st.input.unit)), width: wu, title: "长短基线" },
@@ -350,11 +368,20 @@ export class Pad {
       ], { onChange: (c, i) => { if (c === 0) { this.host.onUnit(UNITS[i]); h.setItems(1, tups(UNITS[i])); } else this.host.onTuplet(TUP[i]); } });
       return;
     }
-    const v = this.knobList(knob);
-    openDrum(anchor, [{ items: v.items, index: v.index, width: w, title: v.title }], { onChange: (_c, i) => v.set(i) });
+    if (knob === "key") {   // 两列：调（五度圈）+ 调式（user「1=F能不能也做成两个的滚轮，右边可以换调性」）
+      const st = this.host.state(), K = [...KEY_CIRCLE].reverse();
+      const [wk, ws] = w >= 210 ? [Math.round(w * 0.36), w - Math.round(w * 0.36) - 2] : [72, 136];
+      openDrum(anchor, [
+        { items: K.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K.indexOf(inputKey(st))), width: wk, title: "pad 的调（五度圈）" },
+        { items: SCALES.map(scaleItem), index: Math.max(0, SCALES.findIndex((x) => x.id === st.input.inputScale)), width: ws, title: "调式：pad 上排哪些音" },
+      ], { onChange: (c, i) => { if (c === 0) this.host.onInputKey(K[i]); else this.host.onInputScale(SCALES[i].id); } });
+      return;
+    }
+    const v = this.knobList(knob, false), wr = Math.max(w, 120);   // 音域：滚轮至少 120 宽，一行写得下「F♯3–G♯5」
+    openDrum(anchor, [{ items: v.items, index: v.index, width: wr, title: v.title }], { onChange: (_c, i) => v.set(i) });
   }
-  /** 某个来源（手指 / 电脑键盘的键）按下了五线谱位置 d 的音：pad 上那个键亮着，直到 showUp。 */
-  showDown(d: number, id: string): void { this.held.set(id, d); this.refresh(this.host.state()); }
+  /** 某个来源（手指 / 电脑键盘的键）按下了音高 p：pad 上同音高的键亮着，直到 showUp（调式里没有这个音 = 不亮）。 */
+  showDown(p: Pitch, id: string): void { this.held.set(id, midiOf(p)); this.refresh(this.host.state()); }
   showUp(id: string): void { if (this.held.delete(id)) this.refresh(this.host.state()); }
   clearHeld(): void { if (this.held.size || this.swipes.size) { this.held.clear(); this.swipes.clear(); this.refresh(this.host.state()); } }
 }

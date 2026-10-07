@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.10-2026-10-07";
+var APP_VERSION = "v0.2.11-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -128,8 +128,8 @@ function keyAlter(step, fifths) {
 function tonicStepIndex(fifths) {
   return (4 * fifths % 7 + 7) % 7;
 }
-function fromDiatonic(d, fifths) {
-  const octave = Math.floor(d / 7), step = STEPS[(d % 7 + 7) % 7];
+function fromDiatonic(d2, fifths) {
+  const octave = Math.floor(d2 / 7), step = STEPS[(d2 % 7 + 7) % 7];
   return { step, alter: keyAlter(step, fifths), octave };
 }
 function degreeStepIndex(degree2, fifths) {
@@ -140,17 +140,17 @@ function placeDegree(degree2, fifths, prev, dir) {
   const ref = diatonicIndex(prev ?? HOME);
   const base2 = Math.floor(ref / 7) * 7 + s;
   const cands = [base2 - 7, base2, base2 + 7];
-  let d;
-  if (dir === "near") d = cands.reduce((a, b) => Math.abs(b - ref) < Math.abs(a - ref) ? b : a);
-  else if (dir === "up") d = cands.find((c) => c > ref);
-  else d = [...cands].reverse().find((c) => c < ref);
-  return fromDiatonic(d, fifths);
+  let d2;
+  if (dir === "near") d2 = cands.reduce((a, b) => Math.abs(b - ref) < Math.abs(a - ref) ? b : a);
+  else if (dir === "up") d2 = cands.find((c) => c > ref);
+  else d2 = [...cands].reverse().find((c) => c < ref);
+  return fromDiatonic(d2, fifths);
 }
 function stepBy(p, steps, fifths) {
   return fromDiatonic(diatonicIndex(p) + steps, fifths);
 }
-function alterBy(p, d) {
-  return { ...p, alter: Math.max(-2, Math.min(2, p.alter + d)) };
+function alterBy(p, d2) {
+  return { ...p, alter: Math.max(-2, Math.min(2, p.alter + d2)) };
 }
 function spellMidi(midi, fifths, prefer = fifths < 0 ? -1 : 1) {
   const cands = [];
@@ -164,7 +164,7 @@ function transposeSemis(p, semis, fifths) {
   return semis === 0 ? p : spellMidi(midiOf(p) + semis, fifths, semis > 0 ? 1 : -1);
 }
 function transposeInterval(p, steps, semis) {
-  const d = diatonicIndex(p) + steps, step = STEPS[(d % 7 + 7) % 7], octave = Math.floor(d / 7);
+  const d2 = diatonicIndex(p) + steps, step = STEPS[(d2 % 7 + 7) % 7], octave = Math.floor(d2 / 7);
   return { step, alter: midiOf(p) + semis - midiOf({ step, alter: 0, octave }), octave };
 }
 function keyInterval(f0, f1) {
@@ -174,8 +174,8 @@ function keyInterval(f0, f1) {
   if (semis < 0 && steps > 0) steps -= 7;
   return { steps, semis };
 }
-function octaveBy(p, d) {
-  return { ...p, octave: p.octave + d };
+function octaveBy(p, d2) {
+  return { ...p, octave: p.octave + d2 };
 }
 function pitchName(p) {
   return `${p.step}${p.alter > 0 ? "#".repeat(p.alter) : "b".repeat(-p.alter)}${p.octave}`;
@@ -202,7 +202,7 @@ function emptySong(m = {}) {
   ] };
 }
 function initInput() {
-  return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0 };
+  return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major" };
 }
 function initState(song = emptySong()) {
   const maxId = song.tokens.reduce((m, t) => Math.max(m, t.id), 0);
@@ -288,7 +288,7 @@ function next(st2, tokens, patch = {}) {
   return { ...st2, ...patch, song: { ...st2.song, tokens }, caret };
 }
 var leave = (st2) => st2.log.length ? { ...st2, log: [] } : st2;
-var validDur = (d) => Number.isInteger(d) && d >= MIN_DUR && d <= MAX_DUR;
+var validDur = (d2) => Number.isInteger(d2) && d2 >= MIN_DUR && d2 <= MAX_DUR;
 function soundingPitch(st2, p) {
   if (!st2.input.acc) return { pitch: p, st: st2 };
   return { pitch: applyAcc(p, st2.input), st: { ...st2, input: consumeAcc(st2.input) } };
@@ -366,7 +366,7 @@ function deleteMark(st2, i) {
   return next(st2, nt, { caret: i < st2.caret ? st2.caret - 1 : st2.caret, sel: null });
 }
 function extend(st2) {
-  if (st2.sel) return mapSelDur(st2, (d2) => d2 + unitDur(st2.input));
+  if (st2.sel) return mapSelDur(st2, (d3) => d3 + unitDur(st2.input));
   const tokens = st2.song.tokens;
   let target = -1, unit = unitDur(st2.input);
   for (let k = st2.log.length - 1; k >= 0 && target < 0; k--) {
@@ -391,10 +391,10 @@ function extend(st2) {
     nt2.splice(st2.caret, 0, tok);
     return next(st2, nt2, { caret: st2.caret + 1, nextId: id + 1, log: [...st2.log, { k: "tie", id, unit }] });
   }
-  const d = t.dur + unit;
-  if (!validDur(d)) return st2;
+  const d2 = t.dur + unit;
+  if (!validDur(d2)) return st2;
   const nt = tokens.slice();
-  nt[target] = { ...t, dur: d };
+  nt[target] = { ...t, dur: d2 };
   return next(st2, nt, { log: [...st2.log, { k: "ext", id: t.id, by: unit }] });
 }
 function backspace(st2) {
@@ -436,11 +436,11 @@ function setUnit(st2, unit) {
   return { ...st2, input: { ...st2.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) } };
 }
 function shorter(st2) {
-  if (st2.sel) return mapSelDur(st2, (d) => d / 2);
+  if (st2.sel) return mapSelDur(st2, (d2) => d2 / 2);
   return st2.input.unit > 0 ? { ...st2, input: { ...st2.input, unit: st2.input.unit - 1 } } : st2;
 }
 function longer(st2) {
-  if (st2.sel) return mapSelDur(st2, (d) => d * 2);
+  if (st2.sel) return mapSelDur(st2, (d2) => d2 * 2);
   return st2.input.unit < LADDER.length - 1 ? { ...st2, input: { ...st2.input, unit: st2.input.unit + 1 } } : st2;
 }
 function setTuplet(st2, n2) {
@@ -455,6 +455,9 @@ function tapAcc(st2, acc, now) {
 }
 function setInputKey(st2, fifths) {
   return { ...st2, input: { ...st2.input, inputFifths: Math.max(-7, Math.min(7, fifths)) } };
+}
+function setInputScale(st2, id) {
+  return { ...st2, input: { ...st2.input, inputScale: id } };
 }
 function firstNoteIn(st2) {
   if (!st2.sel) return -1;
@@ -480,9 +483,9 @@ function mapSelDur(st2, f) {
   for (let i = st2.sel.from; i < st2.sel.to; i++) {
     const t = nt[i];
     if (!isTimed(t)) continue;
-    const d = f(t.dur);
-    if (validDur(d)) {
-      nt[i] = { ...t, dur: d };
+    const d2 = f(t.dur);
+    if (validDur(d2)) {
+      nt[i] = { ...t, dur: d2 };
       changed = true;
     }
   }
@@ -515,8 +518,8 @@ function mapTargetPitch(st2, f) {
   return next(st2, nt);
 }
 var stepTarget = (st2, steps) => mapTargetPitch(st2, (p, k) => stepBy(p, steps, k));
-var alterTarget = (st2, d) => mapTargetPitch(st2, (p, k) => transposeSemis(p, d, k));
-var octaveTarget = (st2, d) => mapTargetPitch(st2, (p) => octaveBy(p, d));
+var alterTarget = (st2, d2) => mapTargetPitch(st2, (p, k) => transposeSemis(p, d2, k));
+var octaveTarget = (st2, d2) => mapTargetPitch(st2, (p) => octaveBy(p, d2));
 function transposeSel(st2, semis) {
   if (!st2.sel || !semis) return st2;
   const nt = st2.song.tokens.slice();
@@ -570,17 +573,17 @@ function select(st2, from, to) {
   if (b <= a) return setCaret(st2, a);
   return { ...leave(st2), sel: { from: a, to: b }, caret: b };
 }
-function moveCaret(st2, d) {
-  if (st2.sel) return setCaret(st2, d < 0 ? st2.sel.from : st2.sel.to);
-  return setCaret(st2, st2.caret + d);
+function moveCaret(st2, d2) {
+  if (st2.sel) return setCaret(st2, d2 < 0 ? st2.sel.from : st2.sel.to);
+  return setCaret(st2, st2.caret + d2);
 }
-function extendSelection(st2, d) {
-  if (!st2.sel) return d < 0 ? select(st2, st2.caret - 1, st2.caret) : select(st2, st2.caret, st2.caret + 1);
-  return d < 0 ? select(st2, st2.sel.from - 1, st2.sel.to) : select(st2, st2.sel.from, st2.sel.to + 1);
+function extendSelection(st2, d2) {
+  if (!st2.sel) return d2 < 0 ? select(st2, st2.caret - 1, st2.caret) : select(st2, st2.caret, st2.caret + 1);
+  return d2 < 0 ? select(st2, st2.sel.from - 1, st2.sel.to) : select(st2, st2.sel.from, st2.sel.to + 1);
 }
-function selectToEdge(st2, d) {
+function selectToEdge(st2, d2) {
   const n2 = st2.song.tokens.length;
-  if (d < 0) return select(st2, headLen(st2.song.tokens), st2.sel ? st2.sel.to : st2.caret);
+  if (d2 < 0) return select(st2, headLen(st2.song.tokens), st2.sel ? st2.sel.to : st2.caret);
   return select(st2, st2.sel ? st2.sel.from : st2.caret, n2);
 }
 function escape(st2) {
@@ -1038,7 +1041,7 @@ var GLYPH = {
   rest16th: "\uE4E7",
   rest32nd: "\uE4E8"
 };
-var timeSigDigits = (n2) => [...String(n2)].map((d) => String.fromCodePoint(57472 + Number(d))).join("");
+var timeSigDigits = (n2) => [...String(n2)].map((d2) => String.fromCodePoint(57472 + Number(d2))).join("");
 var W = {
   noteheadBlack: 1.18,
   noteheadHalf: 1.18,
@@ -1087,7 +1090,7 @@ var MID_LINE = 34;
 var BOTTOM_LINE = 30;
 var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
 var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
-var GLYPH_TUPLET = (n2) => [...String(n2)].map((d) => String.fromCodePoint(59520 + Number(d))).join("");
+var GLYPH_TUPLET = (n2) => [...String(n2)].map((d2) => String.fromCodePoint(59520 + Number(d2))).join("");
 var MIN_PLAIN = TPQ / 8;
 var NOTATABLE = [];
 for (let b = WHOLE; b >= MIN_PLAIN; b /= 2) {
@@ -1248,7 +1251,7 @@ function engrave(song, o) {
   const nSys = system + 1;
   const sysTop = (s) => P(TITLE_H + 0.5 + s * SYS_H);
   const staffTop = (s) => sysTop(s) + P(STAFF_ABOVE);
-  const yOf = (s, d) => staffTop(s) + (TOP_LINE - d) * P(0.5);
+  const yOf = (s, d2) => staffTop(s) + (TOP_LINE - d2) * P(0.5);
   const dOf = (s, y) => Math.round(TOP_LINE - (y - staffTop(s)) / P(0.5));
   const lyricY = (s) => yOf(s, BOTTOM_LINE) + P(LYRIC_BELOW);
   const systems = Array.from({ length: nSys }, (_, s) => ({ top: sysTop(s), staffTop: staffTop(s), bottom: sysTop(s) + P(SYS_H) }));
@@ -1321,17 +1324,17 @@ function engrave(song, o) {
       if (c.dotted) prims.push({ t: "glyph", x: P(c.x + 0.35 + 1.5), y: yOf(c.system, 35), ch: GLYPH.augmentationDot, cls });
       return;
     }
-    const d = diatonicIndex(c.pitch), y = yOf(c.system, d), x0 = nhX(c);
+    const d2 = diatonicIndex(c.pitch), y = yOf(c.system, d2), x0 = nhX(c);
     if (c.acc !== null) {
       const ag = c.acc === 1 ? GLYPH.accidentalSharp : c.acc === -1 ? GLYPH.accidentalFlat : c.acc === 2 ? GLYPH.accidentalDoubleSharp : c.acc === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
       prims.push({ t: "glyph", x: P(c.x + 0.2), y, ch: ag, cls });
     }
-    for (let L = 28; L >= d; L -= 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: "ledger" });
-    for (let L = 40; L <= d; L += 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: "ledger" });
+    for (let L = 28; L >= d2; L -= 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: "ledger" });
+    for (let L = 40; L <= d2; L += 2) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(c.system, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(c.system, L), w: P(ENGRAVE.ledger), cls: "ledger" });
     const ng = c.base >= WHOLE ? GLYPH.noteheadWhole : c.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
     prims.push({ t: "glyph", x: x0, y, ch: ng, cls: cls ? `note ${cls}` : "note" });
-    if (c.dotted) prims.push({ t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(c.system, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
-    if (c.j === 0) notes.push({ index: c.index, system: c.system, x: x0, y, w: nhW(c), d });
+    if (c.dotted) prims.push({ t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(c.system, d2 % 2 === 0 ? d2 + 1 : d2), ch: GLYPH.augmentationDot, cls });
+    if (c.j === 0) notes.push({ index: c.index, system: c.system, x: x0, y, w: nhW(c), d: d2 });
     if (c.j === 0 && !c.tie) {
       const ly = lyricY(c.system), cx = x0 + nhW(c) / 2;
       lyrics.push({ index: c.index, system: c.system, x: cx, y: ly });
@@ -1460,8 +1463,8 @@ function engrave(song, o) {
   }
   const tieBetween = (a, b) => {
     if (a.system !== b.system || !a.pitch || !b.pitch) return;
-    const d = diatonicIndex(b.pitch), below = d < MID_LINE, sgn = below ? 1 : -1;
-    const y = yOf(b.system, d) + sgn * P(0.8), xa2 = nhX(a) + nhW(a) * 0.8, xb2 = nhX(b) + nhW(b) * 0.2;
+    const d2 = diatonicIndex(b.pitch), below = d2 < MID_LINE, sgn = below ? 1 : -1;
+    const y = yOf(b.system, d2) + sgn * P(0.8), xa2 = nhX(a) + nhW(a) * 0.8, xb2 = nhX(b) + nhW(b) * 0.2;
     prims.push({ t: "path", d: `M${xa2},${y}Q${(xa2 + xb2) / 2},${y + sgn * P(1)} ${xb2},${y}`, cls: b.ghost ? "tie ghost" : "tie" });
   };
   const realChunks = units.filter((u) => u.kind === "chunk");
@@ -1703,9 +1706,9 @@ var LyricEditor = class {
     }
   }
   /** 前后挪一个歌词位（不贴字）。 */
-  step(d) {
+  step(d2) {
     const toks = this.host.get().song.tokens;
-    const j = d > 0 ? nextLyricSlot(toks, this.index) : prevLyricSlot(toks, this.index);
+    const j = d2 > 0 ? nextLyricSlot(toks, this.index) : prevLyricSlot(toks, this.index);
     if (j < 0) {
       this.rerender();
       return;
@@ -2127,9 +2130,9 @@ var ScoreView = class {
       this.host.focus?.("text");
       return true;
     }
-    const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
-    if (mk) {
-      this.marks.openAt(mk.index);
+    const mk2 = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
+    if (mk2) {
+      this.marks.openAt(mk2.index);
       return true;
     }
     const ly = L.lyricY(sys);
@@ -2207,10 +2210,10 @@ var ScoreView = class {
     }
     const st2 = this.host.get();
     if (g2.axis === "y") {
-      const d = g2.d0 + Math.round(-dy / (L.sp / 2));
-      if (d === g2.heard) return;
-      g2.heard = d;
-      this.host.set(setNote(st2, g2.index, { pitch: fromDiatonic(d, keyAt(st2.song, g2.index)) }));
+      const d2 = g2.d0 + Math.round(-dy / (L.sp / 2));
+      if (d2 === g2.heard) return;
+      g2.heard = d2;
+      this.host.set(setNote(st2, g2.index, { pitch: fromDiatonic(d2, keyAt(st2.song, g2.index)) }));
       if (this.host.glide) this.host.glide(g2.index);
       else this.host.audition?.(g2.index, true);
     } else {
@@ -2280,6 +2283,58 @@ function installPlatformGuards(surfaces) {
     }, { passive: false });
   }
 }
+
+// src/score/scales.ts
+var d = (s) => s.split(" ").map((t) => ({ deg: Number(t.replace(/[#b]/g, "")), alt: t.startsWith("#") ? 1 : t.startsWith("b") ? -1 : 0 }));
+var mk = (id, name, group, degs, homeDeg) => {
+  const ds = d(degs), h = d(homeDeg)[0];
+  return { id, name, group, degs: ds, home: ds.findIndex((x) => x.deg === h.deg && x.alt === h.alt) };
+};
+var SCALES = [
+  mk("major", "\u5927\u8C03", "\u5927\u5C0F\u8C03", "1 2 3 4 5 6 7", "1"),
+  mk("minor", "\u5C0F\u8C03", "\u5927\u5C0F\u8C03", "1 2 3 4 5 6 7", "6"),
+  mk("harmonic-minor", "\u548C\u58F0\u5C0F\u8C03", "\u5927\u5C0F\u8C03", "1 2 3 4 #5 6 7", "6"),
+  mk("melodic-minor", "\u65CB\u5F8B\u5C0F\u8C03", "\u5927\u5C0F\u8C03", "1 2 3 #4 #5 6 7", "6"),
+  mk("gong", "\u5BAB\u8C03\u5F0F", "\u4E94\u58F0", "1 2 3 5 6", "1"),
+  mk("shang", "\u5546\u8C03\u5F0F", "\u4E94\u58F0", "1 2 3 5 6", "2"),
+  mk("jue", "\u89D2\u8C03\u5F0F", "\u4E94\u58F0", "1 2 3 5 6", "3"),
+  mk("zhi", "\u5FB5\u8C03\u5F0F", "\u4E94\u58F0", "1 2 3 5 6", "5"),
+  mk("yu", "\u7FBD\u8C03\u5F0F", "\u4E94\u58F0", "1 2 3 5 6", "6"),
+  mk("qingjue", "\u516D\u58F0\u52A0\u6E05\u89D2", "\u6C11\u65CF", "1 2 3 4 5 6", "1"),
+  mk("biangong", "\u516D\u58F0\u52A0\u53D8\u5BAB", "\u6C11\u65CF", "1 2 3 5 6 7", "1"),
+  mk("yayue", "\u96C5\u4E50", "\u6C11\u65CF", "1 2 3 #4 5 6 7", "1"),
+  mk("yanyue", "\u71D5\u4E50", "\u6C11\u65CF", "1 2 3 4 5 6 b7", "1"),
+  mk("miyakobushi", "\u90FD\u8282", "\u65E5\u672C", "1 3 4 6 7", "3"),
+  mk("ryukyu", "\u7409\u7403", "\u65E5\u672C", "1 3 4 5 7", "1"),
+  mk("blues", "\u5E03\u9C81\u65AF", "\u5176\u4ED6", "1 b3 4 b5 5 b7", "1"),
+  mk("dorian", "\u591A\u5229\u4E9A", "\u6559\u4F1A\u8C03\u5F0F", "1 2 3 4 5 6 7", "2"),
+  mk("phrygian", "\u5F17\u91CC\u51E0\u4E9A", "\u6559\u4F1A\u8C03\u5F0F", "1 2 3 4 5 6 7", "3"),
+  mk("lydian", "\u5229\u5E95\u4E9A", "\u6559\u4F1A\u8C03\u5F0F", "1 2 3 4 5 6 7", "4"),
+  mk("mixolydian", "\u6DF7\u5408\u5229\u5E95\u4E9A", "\u6559\u4F1A\u8C03\u5F0F", "1 2 3 4 5 6 7", "5"),
+  mk("locrian", "\u6D1B\u514B\u5229\u4E9A", "\u6559\u4F1A\u8C03\u5F0F", "1 2 3 4 5 6 7", "7"),
+  mk("spanish", "\u897F\u73ED\u7259", "\u5176\u4ED6", "1 2 3 4 #5 6 7", "3"),
+  mk("double-harmonic", "\u963F\u62C9\u4F2F", "\u5176\u4ED6", "1 b2 3 4 5 b6 7", "1"),
+  mk("hungarian-minor", "\u5308\u7259\u5229\u5C0F\u8C03", "\u5176\u4ED6", "1 #2 3 4 #5 6 7", "6"),
+  mk("whole-tone", "\u5168\u97F3\u9636", "\u5176\u4ED6", "1 2 3 #4 #5 #6", "1"),
+  mk("chromatic", "\u534A\u97F3\u9636", "\u5176\u4ED6", "1 #1 2 #2 3 4 #4 5 #5 6 #6 7", "1")
+];
+var scaleById = (id) => SCALES.find((s) => s.id === id) ?? SCALES[0];
+function ladderAt(sc, k, tonicD, fifths) {
+  const n2 = sc.degs.length, oct = Math.floor(k / n2), deg = sc.degs[k - oct * n2];
+  const pitch = alterBy(fromDiatonic(tonicD + deg.deg - 1 + 7 * oct, fifths), deg.alt);
+  return { pitch, deg, oct };
+}
+function ladderFirstAtOrAbove(sc, midi, tonicD, fifths) {
+  let k = Math.floor((midi - midiOf(ladderAt(sc, 0, tonicD, fifths).pitch)) / 12 * sc.degs.length) - sc.degs.length;
+  while (midiOf(ladderAt(sc, k, tonicD, fifths).pitch) < midi) k++;
+  return k;
+}
+function ladderHome(sc, tonicD, fifths) {
+  const n2 = sc.degs.length, m0 = midiOf(ladderAt(sc, 0, tonicD, fifths).pitch);
+  const up = sc.home, down = sc.home - n2;
+  return Math.abs(midiOf(ladderAt(sc, down, tonicD, fifths).pitch) - m0) < Math.abs(midiOf(ladderAt(sc, up, tonicD, fifths).pitch) - m0) ? down : up;
+}
+var degLabel = (g2) => `${g2.alt > 0 ? "\u266F" : g2.alt < 0 ? "\u266D" : ""}${g2.deg}`;
 
 // src/ui/drum.ts
 var ROW = 44;
@@ -2376,13 +2431,14 @@ function openDrum(anchor, cols, o) {
 }
 
 // src/ui/pad.ts
-var HER_LOW = 26;
-var HER_HIGH = 37;
+var HER_LOW = 57;
+var HER_HIGH = 76;
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } };
 var SWIPE = 20;
 var STEP = 28;
 var MOVE = 6;
+var STACK = 150;
 var NARROW = 96;
 var TIGHT = 130;
 var UNITS = [5, 4, 3, 2, 1, 0];
@@ -2401,14 +2457,13 @@ function tupletMark(n2, unit) {
   const beam = Array.from({ length: beams }, (_, k) => `<rect x="${sx(0) - 0.45}" y="${TOP + k * 3}" width="${sx(n2 - 1) - sx(0) + 0.9}" height="1.8"/>`).join("");
   return `<svg class="tupsvg" viewBox="0 0 ${W2} 28.5" width="${(W2 * 32 / 28.5).toFixed(1)}" height="32" aria-label="${n2} \u8FDE\u97F3"><path class="br" d="M${M} ${by + 2.5}V${by}H${cx - 3.6}M${cx + 3.6} ${by}H${W2 - M}V${by + 2.5}"/><text x="${cx}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(59520 + n2)}</text>${stems}${beam}${heads}</svg>`;
 }
+var keyLabel = (f, sc) => `<span class="kk">1=${KEY_LABEL[f] ?? "?"}</span><small>${sc.name}</small>`;
 var pretty = (p) => pitchName(p).replace(/#/g, "\u266F").replace(/b(?=\d)|b(?=b)/g, "\u266D");
 function homeTonic(fifths) {
   const t = tonicStepIndex(fifths), h = diatonicIndex(HOME);
   return t + 7 * Math.floor((h - t) / 7);
 }
-function defaultPadBase(fifths) {
-  return homeTonic(fifths);
-}
+var scaleItem = (sc) => `<span class="sc"><b>${sc.name}</b><small>${[...sc.degs.slice(sc.home), ...sc.degs.slice(0, sc.home)].map(degLabel).join(" ")}</small></span>`;
 var Pad = class {
   constructor(el, host) {
     this.el = el;
@@ -2431,6 +2486,8 @@ var Pad = class {
   held = /* @__PURE__ */ new Map();
   /** 正在音键上滑的手指（pointerId → 起点 y、当前升降、哪个键）。 */
   swipes = /* @__PURE__ */ new Map();
+  /** 网格上每个键（调式梯子上的第 k 级）的音高。 */
+  keys = /* @__PURE__ */ new Map();
   rows() {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
     const m = KEY_METRIC[padForm()], avail = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
@@ -2439,23 +2496,32 @@ var Pad = class {
   /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
   spanText(shift, f, rows) {
     const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
-    return `${pretty(fromDiatonic(lo, f))}\u2013${pretty(fromDiatonic(hi, f))}`;
+    return `${pretty(this.pitchAt(lo, f))}\u2013${pretty(this.pitchAt(hi, f))}`;
   }
   /** 同上，画在旋钮 / 滚轮里：放得下就一行「F3–G5」；太窄就两行，下面那行是低的那头（user「也许上下两个吧，下面是lower bound」）。 */
   spanHtml(shift, f, rows, narrow) {
     if (!narrow) return this.spanText(shift, f, rows);
     const lo = this.baseAt(shift, f, rows), hi = lo + rows * this.cols - 1;
-    return `<span class="rg"><span>${pretty(fromDiatonic(hi, f))}</span><span>${pretty(fromDiatonic(lo, f))}</span></span>`;
+    return `<span class="rg"><span>${pretty(this.pitchAt(hi, f))}</span><span>${pretty(this.pitchAt(lo, f))}</span></span>`;
   }
   /** 音域旋钮窄到一行写不下（手机 / 桌面的窄 pad）。 */
   rangeNarrow() {
     const b = this.el.querySelector(".k-range");
     return !!b && b.clientWidth < NARROW;
   }
-  /** 音域窗口第 shift 档时，左下那个键的五线谱位置（中央 C 那一行默认在中线下面一行）。 */
+  scale() {
+    return scaleById(this.host.state().input.inputScale);
+  }
+  /** 调式梯子上第 k 级的音高（k = 0 是 do；pad 的「1=」+ 调式定）。 */
+  pitchAt(k, f) {
+    return ladderAt(this.scale(), k, homeTonic(f), f).pitch;
+  }
+  /** 音域窗口第 shift 档时，左下那个键在调式梯子上是第几级：绝对 = 那一行从 C4（或它上面第一个调式音）起；
+   *  首调 = 从主音起（小调 / 羽调式从 6 起）；中央那一行默认在中线下面一行。 */
   baseAt(shift, f, rows) {
-    const home = this.layoutMode === "absolute" ? diatonicIndex({ step: "C", alter: 0, octave: 4 }) : defaultPadBase(f);
-    return home + this.cols * (shift - Math.floor((rows - 1) / 2));
+    const sc = this.scale(), t = homeTonic(f);
+    const anchor = this.layoutMode === "absolute" ? ladderFirstAtOrAbove(sc, 60, t, f) : ladderHome(sc, t, f);
+    return anchor + this.cols * (shift - Math.floor((rows - 1) / 2));
   }
   /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。
    *  三块各管各的：最上面一排旋钮或候选（模式 / 有没有选中变了才重建）、写字键一排（只建一次）、音键网格（调 / 音域 / 布局变了才重建）——
@@ -2492,7 +2558,7 @@ var Pad = class {
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) bs.addEventListener(t, stop);
       addEventListener("blur", stop);
     }
-    const gridSig = `${f}|${base2}|${rows}x${this.cols}|${this.layoutMode}`;
+    const gridSig = `${f}|${st2.input.inputScale}|${base2}|${rows}x${this.cols}|${this.layoutMode}`;
     if (gridSig !== this.gridFor) {
       this.buildGrid(f, base2, rows);
       this.gridFor = gridSig;
@@ -2568,28 +2634,30 @@ var Pad = class {
     this.on(box, "[data-back]", () => this.back());
   }
   buildGrid(f, base2, rows) {
-    const cells = [], ht = homeTonic(f);
+    const cells = [], sc = this.scale(), ht = homeTonic(f);
+    this.keys.clear();
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < this.cols; col++) {
-        const d = base2 + row * this.cols + col, p = fromDiatonic(d, f);
-        const deg = ((d - ht) % 7 + 7) % 7 + 1, oct = Math.floor((d - ht) / 7);
-        const inRange = d >= HER_LOW && d <= HER_HIGH;
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-d="${d}" title="${inRange ? "\u6708\u8BFB\u7684\u97F3\u57DF\u91CC" : ""}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${deg}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p)}</span></button>`);
+        const k = base2 + row * this.cols + col, { pitch: p, deg, oct } = ladderAt(sc, k, ht, f), m = midiOf(p);
+        const inRange = m >= HER_LOW && m <= HER_HIGH;
+        this.keys.set(k, p);
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k}" title="${inRange ? "\u6708\u8BFB\u7684\u97F3\u57DF\u91CC" : ""}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${degLabel(deg)}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p)}</span></button>`);
       }
     }
     const grid = this.el.querySelector(".pad-grid");
     grid.innerHTML = cells.join("");
     this.swipes.clear();
-    grid.querySelectorAll(".pad-key[data-d]").forEach((b) => {
+    grid.querySelectorAll(".pad-key[data-k]").forEach((b) => {
       b.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         try {
           b.setPointerCapture(e.pointerId);
         } catch {
         }
-        const st2 = this.host.state(), d = Number(b.dataset.d), p = fromDiatonic(d, inputKey(st2)), id = `pad${e.pointerId}`;
-        this.swipes.set(e.pointerId, { y0: e.clientY, alt: 0, d, key: b });
-        this.showDown(d, id);
+        const p = this.keys.get(Number(b.dataset.k)), id = `pad${e.pointerId}`;
+        if (!this.host.isImpro() && !this.host.accept(id)) return;
+        this.swipes.set(e.pointerId, { y0: e.clientY, alt: 0, key: b });
+        this.showDown(p, id);
         if (!this.host.isImpro()) this.host.onPitch(p, id);
         this.host.onSoundDown(p, id);
       });
@@ -2615,7 +2683,12 @@ var Pad = class {
     const q = (s) => this.el.querySelector(s);
     const i = st2.input, f = inputKey(st2);
     const k = q(".k-key .kl");
-    if (k && !st2.sel) k.textContent = `1=${KEY_NAMES[f] ?? "?"}`;
+    if (k && !st2.sel) {
+      const sc = this.scale();
+      k.innerHTML = keyLabel(f, sc);
+      k.parentElement.classList.toggle("stack", k.parentElement.clientWidth < STACK);
+      k.parentElement.title = `1=${KEY_NAMES[f]} ${sc.name}\uFF08pad \u81EA\u5DF1\u7684\u8C03\u548C\u8C03\u5F0F\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F`;
+    }
     const u = q(".k-unit .kl");
     if (u) {
       u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`;
@@ -2629,16 +2702,16 @@ var Pad = class {
       r.innerHTML = this.spanHtml(this.rowShift, f, this.rows(), nr);
       r.parentElement.title = `\u97F3\u57DF ${this.spanText(this.rowShift, f, this.rows())}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684`;
     }
-    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
+    this.el.querySelectorAll(".pad-key[data-k]").forEach((b) => {
       const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
-      const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = a ? alterBy(p0, a) : p0;
+      const p0 = this.keys.get(Number(b.dataset.k)), p = a ? alterBy(p0, a) : p0;
       b.querySelector(".acc").textContent = a > 0 ? "\u266F" : a < 0 ? "\u266D" : "";
       b.querySelector(".abs").textContent = pretty(p);
       b.classList.toggle("swiping", !!sw && sw.alt !== 0);
     });
     this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
     const down = new Set(this.held.values());
-    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => b.classList.toggle("down", down.has(Number(b.dataset.d))));
+    this.el.querySelectorAll(".pad-key[data-k]").forEach((b) => b.classList.toggle("down", down.has(midiOf(this.keys.get(Number(b.dataset.k))))));
   }
   on(root, sel, fn) {
     root.querySelectorAll(sel).forEach((b) => b.addEventListener("pointerdown", (e) => {
@@ -2651,17 +2724,17 @@ var Pad = class {
     this.render();
   }
   /** 值旋钮的一串值，大的在上（升号多 / 长的 / 音域高的在上）+ 现在是第几个 + 选第 i 个（立刻生效）。 */
-  knobList(knob) {
+  knobList(knob, narrow = this.rangeNarrow()) {
     const st2 = this.host.state(), f = inputKey(st2);
     if (knob === "key") {
       const K2 = [...KEY_CIRCLE].reverse();
-      return { items: K2.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K2.indexOf(f)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i) => this.host.onInputKey(K2[i]) };
+      const sc = this.scale();
+      return { items: K2.map((k) => keyLabel(k, sc)), index: Math.max(0, K2.indexOf(f)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i) => this.host.onInputKey(K2[i]) };
     }
     if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st2.input.unit)), title: "\u957F\u77ED\u57FA\u7EBF", set: (i) => this.host.onUnit(UNITS[i]) };
     const rows = this.rows();
-    const nr = this.rangeNarrow();
     return {
-      items: SHIFTS.map((sh) => this.spanHtml(sh, f, rows, nr)),
+      items: SHIFTS.map((sh) => this.spanHtml(sh, f, rows, narrow)),
       index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))),
       title: "\u97F3\u57DF\u7A97\u53E3",
       set: (i) => {
@@ -2728,12 +2801,13 @@ var Pad = class {
     addEventListener("pointerup", up);
     addEventListener("pointercancel", up);
   }
-  /** 点一下值旋钮：在它上面展开滚轮（第一列和旋钮一样宽、叠在旋钮上）。长短那根旁边并一根连音的，连音画成真的一组小蝌蚪、跟着长短变。 */
+  /** 点一下值旋钮：在它上面展开滚轮。旋钮够宽（iPad）= 几列分旋钮的宽；太窄（iPhone）= 每列按放得下的宽来，比旋钮宽
+   *  （user「如果是iphone等太窄的时候弹出来的窗可以宽一点」）。长短那根旁边并一根连音的，连音画成真的一组小蝌蚪、跟着长短变。 */
   openDrumFor(knob, anchor) {
     const w = anchor.getBoundingClientRect().width;
     if (knob === "unit") {
       const st2 = this.host.state();
-      const [wu, wt] = w >= 120 ? [w - Math.round(w * 0.55) - 2, Math.round(w * 0.55)] : [w, 68];
+      const [wu, wt] = w >= 142 ? [w - Math.round(w * 0.55) - 2, Math.round(w * 0.55)] : [56, 84];
       const tups = (u) => TUP.map((n2) => n2 ? tupletMark(n2, u) : `<span class="plain">\u4E0D\u8FDE</span>`);
       const h = openDrum(anchor, [
         { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: Math.max(0, UNITS.indexOf(st2.input.unit)), width: wu, title: "\u957F\u77ED\u57FA\u7EBF" },
@@ -2746,12 +2820,24 @@ var Pad = class {
       } });
       return;
     }
-    const v = this.knobList(knob);
-    openDrum(anchor, [{ items: v.items, index: v.index, width: w, title: v.title }], { onChange: (_c, i) => v.set(i) });
+    if (knob === "key") {
+      const st2 = this.host.state(), K2 = [...KEY_CIRCLE].reverse();
+      const [wk, ws] = w >= 210 ? [Math.round(w * 0.36), w - Math.round(w * 0.36) - 2] : [72, 136];
+      openDrum(anchor, [
+        { items: K2.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K2.indexOf(inputKey(st2))), width: wk, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09" },
+        { items: SCALES.map(scaleItem), index: Math.max(0, SCALES.findIndex((x) => x.id === st2.input.inputScale)), width: ws, title: "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3" }
+      ], { onChange: (c, i) => {
+        if (c === 0) this.host.onInputKey(K2[i]);
+        else this.host.onInputScale(SCALES[i].id);
+      } });
+      return;
+    }
+    const v = this.knobList(knob, false), wr = Math.max(w, 120);
+    openDrum(anchor, [{ items: v.items, index: v.index, width: wr, title: v.title }], { onChange: (_c, i) => v.set(i) });
   }
-  /** 某个来源（手指 / 电脑键盘的键）按下了五线谱位置 d 的音：pad 上那个键亮着，直到 showUp。 */
-  showDown(d, id) {
-    this.held.set(id, d);
+  /** 某个来源（手指 / 电脑键盘的键）按下了音高 p：pad 上同音高的键亮着，直到 showUp（调式里没有这个音 = 不亮）。 */
+  showDown(p, id) {
+    this.held.set(id, midiOf(p));
     this.refresh(this.host.state());
   }
   showUp(id) {
@@ -3002,7 +3088,7 @@ var Sha256 = class {
       const s1 = (y >>> 17 | y << 15) ^ (y >>> 19 | y << 13) ^ y >>> 10;
       w[t] = w[t - 16] + s0 + w[t - 7] + s1 | 0;
     }
-    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g2 = H[6], h = H[7];
+    let a = H[0], b = H[1], c = H[2], d2 = H[3], e = H[4], f = H[5], g2 = H[6], h = H[7];
     for (let t = 0; t < 64; t++) {
       const S1 = (e >>> 6 | e << 26) ^ (e >>> 11 | e << 21) ^ (e >>> 25 | e << 7);
       const ch = e & f ^ ~e & g2;
@@ -3013,8 +3099,8 @@ var Sha256 = class {
       h = g2;
       g2 = f;
       f = e;
-      e = d + t1 | 0;
-      d = c;
+      e = d2 + t1 | 0;
+      d2 = c;
       c = b;
       b = a;
       a = t1 + t2 | 0;
@@ -3022,7 +3108,7 @@ var Sha256 = class {
     H[0] += a;
     H[1] += b;
     H[2] += c;
-    H[3] += d;
+    H[3] += d2;
     H[4] += e;
     H[5] += f;
     H[6] += g2;
@@ -3612,13 +3698,13 @@ var max = function(a) {
   }
   return m;
 };
-var bits = function(d, p, m) {
+var bits = function(d2, p, m) {
   var o = p / 8 | 0;
-  return (d[o] | d[o + 1] << 8) >> (p & 7) & m;
+  return (d2[o] | d2[o + 1] << 8) >> (p & 7) & m;
 };
-var bits16 = function(d, p) {
+var bits16 = function(d2, p) {
   var o = p / 8 | 0;
-  return (d[o] | d[o + 1] << 8 | d[o + 2] << 16) >> (p & 7);
+  return (d2[o] | d2[o + 1] << 8 | d2[o + 2] << 16) >> (p & 7);
 };
 var shft = function(p) {
   return (p + 7) / 8 | 0;
@@ -3763,10 +3849,10 @@ var inflt = function(dat, st2, buf, dict) {
           add = bits(dat, pos, (1 << b) - 1) + fl[i];
           pos += b;
         }
-        var d = dm[bits16(dat, pos) & dms], dsym = d >> 4;
-        if (!d)
+        var d2 = dm[bits16(dat, pos) & dms], dsym = d2 >> 4;
+        if (!d2)
           err(3);
-        pos += d & 15;
+        pos += d2 & 15;
         var dt = fd[dsym];
         if (dsym > 3) {
           var b = fdeb[dsym];
@@ -3797,24 +3883,24 @@ var inflt = function(dat, st2, buf, dict) {
   } while (!final);
   return bt != buf.length && noBuf ? slc(buf, 0, bt) : buf.subarray(0, bt);
 };
-var wbits = function(d, p, v) {
+var wbits = function(d2, p, v) {
   v <<= p & 7;
   var o = p / 8 | 0;
-  d[o] |= v;
-  d[o + 1] |= v >> 8;
+  d2[o] |= v;
+  d2[o + 1] |= v >> 8;
 };
-var wbits16 = function(d, p, v) {
+var wbits16 = function(d2, p, v) {
   v <<= p & 7;
   var o = p / 8 | 0;
-  d[o] |= v;
-  d[o + 1] |= v >> 8;
-  d[o + 2] |= v >> 16;
+  d2[o] |= v;
+  d2[o + 1] |= v >> 8;
+  d2[o + 2] |= v >> 16;
 };
-var hTree = function(d, mb) {
+var hTree = function(d2, mb) {
   var t = [];
-  for (var i = 0; i < d.length; ++i) {
-    if (d[i])
-      t.push({ s: i, f: d[i] });
+  for (var i = 0; i < d2.length; ++i) {
+    if (d2[i])
+      t.push({ s: i, f: d2[i] });
   }
   var s = t.length;
   var t2 = t.slice();
@@ -3876,8 +3962,8 @@ var hTree = function(d, mb) {
   }
   return { t: new u8(tr), l: mbt };
 };
-var ln = function(n2, l, d) {
-  return n2.s == -1 ? Math.max(ln(n2.l, l, d + 1), ln(n2.r, l, d + 1)) : l[n2.s] = d;
+var ln = function(n2, l, d2) {
+  return n2.s == -1 ? Math.max(ln(n2.l, l, d2 + 1), ln(n2.r, l, d2 + 1)) : l[n2.s] = d2;
 };
 var lc = function(c) {
   var s = c.length;
@@ -4032,7 +4118,7 @@ var dflt = function(dat, lvl, plvl, pre, post, st2) {
           for (var j = 0; j < 30; ++j)
             df[j] = 0;
         }
-        var l = 2, d = 0, ch_1 = c, dif = imod - pimod & 32767;
+        var l = 2, d2 = 0, ch_1 = c, dif = imod - pimod & 32767;
         if (rem > 2 && hv == hsh(i - dif)) {
           var maxn = Math.min(n2, rem) - 1;
           var maxd = Math.min(32767, i);
@@ -4043,7 +4129,7 @@ var dflt = function(dat, lvl, plvl, pre, post, st2) {
               for (; nl < ml && dat[i + nl] == dat[i + nl - dif]; ++nl)
                 ;
               if (nl > l) {
-                l = nl, d = dif;
+                l = nl, d2 = dif;
                 if (nl > maxn)
                   break;
                 var mmd = Math.min(dif, nl - 2);
@@ -4061,9 +4147,9 @@ var dflt = function(dat, lvl, plvl, pre, post, st2) {
             dif += imod - pimod & 32767;
           }
         }
-        if (d) {
-          syms[li++] = 268435456 | revfl[l] << 18 | revfd[d];
-          var lin = revfl[l] & 31, din = revfd[d] & 31;
+        if (d2) {
+          syms[li++] = 268435456 | revfl[l] << 18 | revfd[d2];
+          var lin = revfl[l] & 31, din = revfd[d2] & 31;
           eb += fleb[lin] + fdeb[din];
           ++lf[257 + lin];
           ++df[din];
@@ -4111,10 +4197,10 @@ var crct = /* @__PURE__ */ function() {
 var crc = function() {
   var c = -1;
   return {
-    p: function(d) {
+    p: function(d2) {
       var cr = c;
-      for (var i = 0; i < d.length; ++i)
-        cr = crct[cr & 255 ^ d[i]] ^ cr >>> 8;
+      for (var i = 0; i < d2.length; ++i)
+        cr = crct[cr & 255 ^ d2[i]] ^ cr >>> 8;
       c = cr;
     },
     d: function() {
@@ -4144,18 +4230,18 @@ var mrg = function(a, b) {
     o[k] = b[k];
   return o;
 };
-var b2 = function(d, b) {
-  return d[b] | d[b + 1] << 8;
+var b2 = function(d2, b) {
+  return d2[b] | d2[b + 1] << 8;
 };
-var b4 = function(d, b) {
-  return (d[b] | d[b + 1] << 8 | d[b + 2] << 16 | d[b + 3] << 24) >>> 0;
+var b4 = function(d2, b) {
+  return (d2[b] | d2[b + 1] << 8 | d2[b + 2] << 16 | d2[b + 3] << 24) >>> 0;
 };
-var b8 = function(d, b) {
-  return b4(d, b) + b4(d, b + 4) * 4294967296;
+var b8 = function(d2, b) {
+  return b4(d2, b) + b4(d2, b + 4) * 4294967296;
 };
-var wbytes = function(d, b, v) {
+var wbytes = function(d2, b, v) {
   for (; v; ++b)
-    d[b] = v, v >>>= 8;
+    d2[b] = v, v >>>= 8;
 };
 function deflateSync(data, opts) {
   return dopt(data, opts || {}, 0, 0);
@@ -4163,9 +4249,9 @@ function deflateSync(data, opts) {
 function inflateSync(data, opts) {
   return inflt(data, { i: 2 }, opts && opts.out, opts && opts.dictionary);
 }
-var fltn = function(d, p, t, o) {
-  for (var k in d) {
-    var val = d[k], n2 = p + k, op = o;
+var fltn = function(d2, p, t, o) {
+  for (var k in d2) {
+    var val = d2[k], n2 = p + k, op = o;
     if (Array.isArray(val))
       op = mrg(o, val[1]), val = val[0];
     if (val instanceof u8)
@@ -4184,20 +4270,20 @@ try {
   tds = 1;
 } catch (e) {
 }
-var dutf8 = function(d) {
+var dutf8 = function(d2) {
   for (var r = "", i = 0; ; ) {
-    var c = d[i++];
+    var c = d2[i++];
     var eb = (c > 127) + (c > 223) + (c > 239);
-    if (i + eb > d.length)
-      return { s: r, r: slc(d, i - 1) };
+    if (i + eb > d2.length)
+      return { s: r, r: slc(d2, i - 1) };
     if (!eb)
       r += String.fromCharCode(c);
     else if (eb == 3) {
-      c = ((c & 15) << 18 | (d[i++] & 63) << 12 | (d[i++] & 63) << 6 | d[i++] & 63) - 65536, r += String.fromCharCode(55296 | c >> 10, 56320 | c & 1023);
+      c = ((c & 15) << 18 | (d2[i++] & 63) << 12 | (d2[i++] & 63) << 6 | d2[i++] & 63) - 65536, r += String.fromCharCode(55296 | c >> 10, 56320 | c & 1023);
     } else if (eb & 1)
-      r += String.fromCharCode((c & 31) << 6 | d[i++] & 63);
+      r += String.fromCharCode((c & 31) << 6 | d2[i++] & 63);
     else
-      r += String.fromCharCode((c & 15) << 12 | (d[i++] & 63) << 6 | d[i++] & 63);
+      r += String.fromCharCode((c & 15) << 12 | (d2[i++] & 63) << 6 | d2[i++] & 63);
   }
 };
 function strToU8(str, latin1) {
@@ -4248,18 +4334,18 @@ function strFromU8(dat, latin1) {
     return s;
   }
 }
-var slzh = function(d, b) {
-  return b + 30 + b2(d, b + 26) + b2(d, b + 28);
+var slzh = function(d2, b) {
+  return b + 30 + b2(d2, b + 26) + b2(d2, b + 28);
 };
-var zh = function(d, b, z) {
-  var fnl = b2(d, b + 28), fn = strFromU8(d.subarray(b + 46, b + 46 + fnl), !(b2(d, b + 8) & 2048)), es = b + 46 + fnl, bs = b4(d, b + 20);
-  var _a2 = z && bs == 4294967295 ? z64e(d, es) : [bs, b4(d, b + 24), b4(d, b + 42)], sc = _a2[0], su = _a2[1], off = _a2[2];
-  return [b2(d, b + 10), sc, su, fn, es + b2(d, b + 30) + b2(d, b + 32), off];
+var zh = function(d2, b, z) {
+  var fnl = b2(d2, b + 28), fn = strFromU8(d2.subarray(b + 46, b + 46 + fnl), !(b2(d2, b + 8) & 2048)), es = b + 46 + fnl, bs = b4(d2, b + 20);
+  var _a2 = z && bs == 4294967295 ? z64e(d2, es) : [bs, b4(d2, b + 24), b4(d2, b + 42)], sc = _a2[0], su = _a2[1], off = _a2[2];
+  return [b2(d2, b + 10), sc, su, fn, es + b2(d2, b + 30) + b2(d2, b + 32), off];
 };
-var z64e = function(d, b) {
-  for (; b2(d, b) != 1; b += 4 + b2(d, b + 2))
+var z64e = function(d2, b) {
+  for (; b2(d2, b) != 1; b += 4 + b2(d2, b + 2))
     ;
-  return [b8(d, b + 12), b8(d, b + 4), b8(d, b + 20)];
+  return [b8(d2, b + 12), b8(d2, b + 4), b8(d2, b + 20)];
 };
 var exfl = function(ex) {
   var le = 0;
@@ -4273,50 +4359,50 @@ var exfl = function(ex) {
   }
   return le;
 };
-var wzh = function(d, b, f, fn, u, c, ce, co) {
+var wzh = function(d2, b, f, fn, u, c, ce, co) {
   var fl2 = fn.length, ex = f.extra, col = co && co.length;
   var exl = exfl(ex);
-  wbytes(d, b, ce != null ? 33639248 : 67324752), b += 4;
+  wbytes(d2, b, ce != null ? 33639248 : 67324752), b += 4;
   if (ce != null)
-    d[b++] = 20, d[b++] = f.os;
-  d[b] = 20, b += 2;
-  d[b++] = f.flag << 1 | (c < 0 && 8), d[b++] = u && 8;
-  d[b++] = f.compression & 255, d[b++] = f.compression >> 8;
+    d2[b++] = 20, d2[b++] = f.os;
+  d2[b] = 20, b += 2;
+  d2[b++] = f.flag << 1 | (c < 0 && 8), d2[b++] = u && 8;
+  d2[b++] = f.compression & 255, d2[b++] = f.compression >> 8;
   var dt = new Date(f.mtime == null ? Date.now() : f.mtime), y = dt.getFullYear() - 1980;
   if (y < 0 || y > 119)
     err(10);
-  wbytes(d, b, y << 25 | dt.getMonth() + 1 << 21 | dt.getDate() << 16 | dt.getHours() << 11 | dt.getMinutes() << 5 | dt.getSeconds() >> 1), b += 4;
+  wbytes(d2, b, y << 25 | dt.getMonth() + 1 << 21 | dt.getDate() << 16 | dt.getHours() << 11 | dt.getMinutes() << 5 | dt.getSeconds() >> 1), b += 4;
   if (c != -1) {
-    wbytes(d, b, f.crc);
-    wbytes(d, b + 4, c < 0 ? -c - 2 : c);
-    wbytes(d, b + 8, f.size);
+    wbytes(d2, b, f.crc);
+    wbytes(d2, b + 4, c < 0 ? -c - 2 : c);
+    wbytes(d2, b + 8, f.size);
   }
-  wbytes(d, b + 12, fl2);
-  wbytes(d, b + 14, exl), b += 16;
+  wbytes(d2, b + 12, fl2);
+  wbytes(d2, b + 14, exl), b += 16;
   if (ce != null) {
-    wbytes(d, b, col);
-    wbytes(d, b + 6, f.attrs);
-    wbytes(d, b + 10, ce), b += 14;
+    wbytes(d2, b, col);
+    wbytes(d2, b + 6, f.attrs);
+    wbytes(d2, b + 10, ce), b += 14;
   }
-  d.set(fn, b);
+  d2.set(fn, b);
   b += fl2;
   if (exl) {
     for (var k in ex) {
       var exf = ex[k], l = exf.length;
-      wbytes(d, b, +k);
-      wbytes(d, b + 2, l);
-      d.set(exf, b + 4), b += 4 + l;
+      wbytes(d2, b, +k);
+      wbytes(d2, b + 2, l);
+      d2.set(exf, b + 4), b += 4 + l;
     }
   }
   if (col)
-    d.set(co, b), b += col;
+    d2.set(co, b), b += col;
   return b;
 };
-var wzf = function(o, b, c, d, e) {
+var wzf = function(o, b, c, d2, e) {
   wbytes(o, b, 101010256);
   wbytes(o, b + 8, c);
   wbytes(o, b + 10, c);
-  wbytes(o, b + 12, d);
+  wbytes(o, b + 12, d2);
   wbytes(o, b + 16, e);
 };
 function zipSync(data, opts) {
@@ -4335,13 +4421,13 @@ function zipSync(data, opts) {
     var exl = exfl(p.extra);
     if (s > 65535)
       err(11);
-    var d = compression ? deflateSync(file, p) : file, l = d.length;
+    var d2 = compression ? deflateSync(file, p) : file, l = d2.length;
     var c = crc();
     c.p(file);
     files.push(mrg(p, {
       size: file.length,
       crc: c.d(),
-      c: d,
+      c: d2,
       f,
       m,
       u: s != fn.length || m && com.length != ms,
@@ -4694,8 +4780,8 @@ function readMusicXml(xml, hints) {
   kids(partEls[0], "measure").forEach((m, mi) => {
     for (const c of kids(m)) {
       if (c.name === "attributes") {
-        const d = childText(c, "divisions");
-        if (d) divisions = Number(d);
+        const d2 = childText(c, "divisions");
+        if (d2) divisions = Number(d2);
         const key = kid(c, "key"), time = kid(c, "time");
         if (key && childText(key, "fifths") !== void 0) {
           const f = Number(childText(key, "fifths"));
@@ -5071,7 +5157,7 @@ var soundTok = (s, i, id = "main") => {
 var keyTok = (s, i, code) => {
   const t = s.song.tokens[i];
   soundTok(s, i, `key${code}`);
-  if (t?.kind === "note" && t.pitch) pad.showDown(diatonicIndex(t.pitch), `key${code}`);
+  if (t?.kind === "note" && t.pitch) pad.showDown(t.pitch, `key${code}`);
 };
 function writeAndLocate(write) {
   let target = -1;
@@ -5108,9 +5194,20 @@ var view = new ScoreView(scoreEl, {
 });
 var impro = false;
 var padNotes = /* @__PURE__ */ new Map();
+var CHORD_MS = 50;
+var monoHeld = /* @__PURE__ */ new Set();
+var monoAt = -Infinity;
+function monoAccept(id) {
+  const now = performance.now();
+  if (monoHeld.size && now - monoAt < CHORD_MS) return false;
+  monoHeld.add(id);
+  monoAt = now;
+  return true;
+}
 var pad = new Pad(padEl, {
   state: () => st,
   isImpro: () => impro,
+  accept: (id) => monoAccept(id),
   onPitch: (p, id) => {
     const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
@@ -5126,6 +5223,7 @@ var pad = new Pad(padEl, {
   onUnit: (u) => update(setUnit(st, u)),
   onTuplet: (n2) => update(setTuplet(st, n2)),
   onInputKey: (f) => update(setInputKey(st, f)),
+  onInputScale: (id) => update(setInputScale(st, id)),
   onInsertMark: (kind) => {
     const at = st.sel ? st.sel.from : st.caret;
     const v = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
@@ -5145,6 +5243,7 @@ var pad = new Pad(padEl, {
   },
   onSoundUp: (id) => {
     padNotes.delete(id);
+    monoHeld.delete(id);
     sound.up(id);
   }
 });
@@ -5177,7 +5276,7 @@ var DUR_NAME = {
   [TPQ / 8]: "\u4E09\u5341\u4E8C\u5206"
 };
 var UNIT_NAME2 = ["\u4E09\u5341\u4E8C\u5206", "\u5341\u516D\u5206", "\u516B\u5206", "\u56DB\u5206", "\u4E8C\u5206", "\u5168\u97F3\u7B26"];
-var durName = (d) => DUR_NAME[d] ?? `${+(d / TPQ).toFixed(3)} \u62CD`;
+var durName = (d2) => DUR_NAME[d2] ?? `${+(d2 / TPQ).toFixed(3)} \u62CD`;
 function renderStatus() {
   const el = $("status"), fills = barFill(st.song), off = fills.slice(1).filter((f) => !f.full).length;
   const inp = st.input, next2 = `${UNIT_NAME2[inp.unit]}${inp.tuplet ? ` ${inp.tuplet} \u8FDE` : ""}${inp.acc ? ` ${inp.acc > 0 ? "\u266F" : "\u266D"}${inp.accMode === "lock" ? "\uFF08\u9501\uFF09" : ""}` : ""}`;
@@ -5472,10 +5571,10 @@ function quality() {
 }
 var dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality;
 function renderTitle() {
-  const d = dirty(), name = docName();
-  $("docTitle").textContent = `${name}${d ? " \u2022" : ""}`;
-  $("docTitle").title = d ? "\u6539\u8FC7\u8FD8\u6CA1\u5B58" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : "";
-  document.title = `${d ? "\u2022 " : ""}${name} \xB7 MoonSinger`;
+  const d2 = dirty(), name = docName();
+  $("docTitle").textContent = `${name}${d2 ? " \u2022" : ""}`;
+  $("docTitle").title = d2 ? "\u6539\u8FC7\u8FD8\u6CA1\u5B58" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : "";
+  document.title = `${d2 ? "\u2022 " : ""}${name} \xB7 MoonSinger`;
 }
 function noCast(what) {
   showError(`\u4E3B\u5531\u8FD9\u4E2A\u89D2\u8272\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u539F\u6765\u7684\u4E50\u5668\u8FD9\u4E00\u7248\u6CA1\u6709\uFF09\uFF0C\u6240\u4EE5\u6CA1\u6709${what}\u3002\u8981\u6708\u8BFB\u6765\u5531\uFF0C\u5728\u9876\u680F\u300C\u97F3\u8D28\u300D\u9009\u300C\u5B8C\u6574\u300D\u6216\u300C\u8F7B\u91CF\u300D\u3002`);
@@ -5500,7 +5599,7 @@ function loadDoc(song, o) {
   doc.stem = o.stem;
   doc.handle = o.handle;
   doc.extras = o.extras;
-  st = initState(song);
+  st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };
   doc.saved = { song: st.song, quality: o.quality };
   lastFull = null;
   view.render();
@@ -5633,7 +5732,7 @@ function run(a, repeat, code) {
   switch (a.k) {
     case "cmd":
       if (a.cmd.k === "degree") {
-        if (!repeat) {
+        if (!repeat && monoAccept(`key${code}`)) {
           const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now()));
           keyTok(st, i, code);
         }
@@ -5675,6 +5774,7 @@ window.addEventListener("keydown", (e) => {
   if (a && run(a, e.repeat, e.code)) e.preventDefault();
 });
 window.addEventListener("keyup", (e) => {
+  monoHeld.delete(`key${e.code}`);
   if (isSoundKey(e)) {
     sound.up(`key${e.code}`);
     pad.showUp(`key${e.code}`);
@@ -5683,11 +5783,13 @@ window.addEventListener("keyup", (e) => {
 window.addEventListener("blur", () => {
   sampler.upAll();
   pad.clearHeld();
+  monoHeld.clear();
 });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     sampler.upAll();
     pad.clearHeld();
+    monoHeld.clear();
   }
 });
 await document.fonts.load(`40px Bravura`).catch(() => void 0);
@@ -5699,4 +5801,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-3669a1b0088d.mjs.map
+//# sourceMappingURL=moonsinger-aa4d67ac46f6.mjs.map

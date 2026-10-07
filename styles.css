@@ -41,7 +41,7 @@ button, input, select { font: inherit; color: inherit; }
 .bar input[type=number] { width: 64px; }
 .btn { height: 34px; min-width: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; }
-.btn:hover { background: #f7f6f2; }
+@media (hover: hover) { .btn:hover { background: #f7f6f2; } }   /* 只给真的会悬停的（鼠标）：iPad 点过的钮会一直粘着 hover 变灰（user「点了之后按下的灰色没有自动消失」；同 gallery 0.6.3） */
 .btn.is-on { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
 .btn:disabled { opacity: .35; cursor: default; }
 .ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: block; }
@@ -233,3 +233,11 @@ button, input, select { font: inherit; color: inherit; }
 .kroll-i { display: flex; align-items: center; justify-content: center; white-space: nowrap; color: var(--ink); }
 .kroll-i .smufl { font-family: "Bravura"; font-size: 28px; line-height: 1; position: relative; top: 7px; }
 .drum-item .plain { font-size: 13px; }
+/* 「1=」旋钮：调 + 调式名（小字）；窄了分两行（pad.ts STACK）。调式滚轮：名字 + 从主音起的音级（羽调式 = 6 1 2 3 5） */
+.knob.k-key .kl { align-items: baseline; gap: 6px; }
+.knob.k-key.stack .kl { flex-direction: column; align-items: center; gap: 0; line-height: 1.15; }
+.knob.k-key.stack .kl small { font-size: 10px; }
+.kroll-i small { font-size: 11px; color: var(--muted); margin-left: 6px; }
+.drum-item .sc { display: flex; flex-direction: column; align-items: center; line-height: 1.2; max-width: 100%; padding: 0 4px; }
+.drum-item .sc b { font-weight: inherit; font-size: 15px; }
+.drum-item .sc small { font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
