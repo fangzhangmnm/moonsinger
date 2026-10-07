@@ -104,13 +104,15 @@ let impro = false;
 /** 按拍号自动画小节线（默认开；这次打开里有效）。user「自动加小节也是可以toggle的，默认开」 */
 let autoBars = true;
 /** /2 = 和 Shift 一个逻辑（user「或者/2是类似shift，因为accessibility的issue可能按住不方便，而是和键盘shift的逻辑一样」）：
- *  点一下 = 只管下一个音（写完自己回去）；350 ms 内连点两下 = 锁住（再点一下解开）；按住写 = 按住期间写的都减半、松手回去。
+ *  点一下 = 凑满一份原来的时值再回去（= 两个减半的音 / 休止 / 拉长；user 点头 AI 的答：只管一个会留半拍窟窿，节奏是成对凑整拍的）；
+ *  中途挪了光标或拨了长短旋钮 = 取消；350 ms 内连点两下 = 锁住（再点一下解开）；按住写 = 按住期间写的都减半、松手回去。
  *  减半 = 临时把长短基线往短挪一档（旋钮上看得见）；已经最短（三十二分）就不挪；回去 = 挪回一档（中间拨过旋钮 = 照拨过的再挪回一档）。 */
-let half: "off" | "once" | "lock" = "off", halfShifted = false, halfAt = 0, halfHeld = false, halfWrote = false;
+let half: "off" | "once" | "lock" = "off", halfShifted = false, halfAt = 0, halfHeld = false, halfWrote = false, halfLeft = 0;
 function setHalf(m: "off" | "once" | "lock"): void {
   if (half === "off" && m !== "off") { halfShifted = st.input.unit > 0; if (halfShifted) update(setUnit(st, st.input.unit - 1)); }
   else if (half !== "off" && m === "off" && halfShifted) { halfShifted = false; update(setUnit(st, st.input.unit + 1)); }
   half = m; pad.showHalf(m);
+  halfLeft = m === "once" ? 2 : 0;   // 两个减半的 = 一份原来的
 }
 function halfKey(down: boolean): void {
   if (down) {
@@ -144,7 +146,7 @@ function accKey(phase: "down" | "slide" | "up", acc: Exclude<Acc, 0>): void {
   }
 }
 /** 写了一个音 / 休止 / 拉长：「只管下一个」的 /2 用掉了（按住的时候不算，松手再回去）；升降键按着的时候记一笔。 */
-function afterWrite(): void { if (accPrior) accWrote = true; if (halfHeld) { halfWrote = true; return; } if (half === "once") setHalf("off"); }
+function afterWrite(): void { if (accPrior) accWrote = true; if (halfHeld) { halfWrote = true; return; } if (half === "once" && --halfLeft <= 0) setHalf("off"); }
 /** 屏幕放不下纸的时候折不折行（默认不折行 = 整张纸按比例缩小；这次打开里有效，不进文件——怎么看，不是谱的内容）。 */
 let reflow = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
 /** pad 上每根按着的手指：刚写的是第几个音（弹 = -1）、它原本的音高——上下滑过门槛时在它上面升 / 降。 */
@@ -175,8 +177,11 @@ const pad = new Pad(padEl, {
     if (n.index >= 0) update(setNote(st, n.index, { pitch: np }));
     sound.down(np, id);
   },
-  onCommand: (c) => { update(apply(st, c, performance.now())); if (c.k === "rest" || c.k === "extend") afterWrite(); },
-  onUnit: (u) => update(setUnit(st, u)),
+  onCommand: (c) => {
+    if (c.k === "caret" && half === "once") setHalf("off");   // 挪光标 = 取消「凑满一份」
+    update(apply(st, c, performance.now())); if (c.k === "rest" || c.k === "extend") afterWrite();
+  },
+  onUnit: (u) => { if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
   onInputScale: (id) => update(setInputScale(st, id)),

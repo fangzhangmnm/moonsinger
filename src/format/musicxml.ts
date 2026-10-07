@@ -7,7 +7,7 @@
 import { type Paper, STAFF_MM, DEFAULT_PAPER, paperOf, detectPaper } from "../score/paper.ts";
 import { type Song, type Token, type NoteTok, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch } from "../score/song.ts";
 import type { Pitch } from "../score/pitch.ts";
-import { MELISMA_MARK } from "../score/lyrics.ts";
+import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
 import { syllableLangs, keepOnlyOverrides } from "../score/lang.ts";
 import { type El, esc, parseXml, kids, kid, childText, text } from "./xml.ts";
 
@@ -103,7 +103,11 @@ export function writeMusicXml(song: Song, part: PartInfo, meta: WriteMeta): Writ
         if (tieIn || tieOn) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>`;
         if (!lyricDone && t.lyric) {
           if (t.lyric === MELISMA_MARK) x += `<lyric number="1"><extend/></lyric>`;
-          else x += `<lyric number="1"><syllabic>${syllabic(t)}</syllabic><text xml:lang="${esc(langs[i] ?? "ja")}">${esc(t.lyric)}</text></lyric>`;
+          else {   // 一个音上几个音节（「+」连着的）= <elision/> 隔开的几段 text（MusicXML 的标准写法）
+            const lang = esc(langs[i] ?? "ja"), parts = t.lyric.split(ELISION);
+            x += `<lyric number="1"><syllabic>${syllabic(t)}</syllabic><text xml:lang="${lang}">${esc(parts[0])}</text>` +
+              parts.slice(1).map((p) => `<elision/><syllabic>single</syllabic><text xml:lang="${lang}">${esc(p)}</text>`).join("") + `</lyric>`;
+          }
         }
         lyricDone = true;
       }
@@ -195,7 +199,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): Read {
         if (ly) {
           const tx = kid(ly, "text");
           if (tx) {
-            tok.lyric = text(tx);
+            tok.lyric = kids(ly, "text").map((e) => text(e)).filter(Boolean).join(ELISION);   // <elision/> 隔开的几段 = 一个音上几个音节
             const syl = childText(ly, "syllabic"); if (syl === "begin" || syl === "middle") tok.hyph = true;
             if (tx.attrs["xml:lang"]) langRead.set(tok, tx.attrs["xml:lang"]);
           } else if (kid(ly, "extend")) tok.lyric = MELISMA_MARK;

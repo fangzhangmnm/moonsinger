@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.21-2026-10-07";
+var APP_VERSION = "v0.2.22-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -955,6 +955,11 @@ function isSoundKey(e) {
 
 // src/score/lyrics.ts
 var MELISMA_MARK = "\u30FC";
+var ELISION = "\u203F";
+var JOINERS = /* @__PURE__ */ new Set(["+", "\uFF0B"]);
+var CJK_CHAR = /[぀-ヿ\p{Script=Han}]/u;
+var lyricShow = (s) => s.split(ELISION).reduce((a, b) => !a ? b : CJK_CHAR.test(a.slice(-1)) && CJK_CHAR.test(b.slice(0, 1)) ? a + b : `${a}${ELISION}${b}`, "");
+var lyricEdit = (s) => s.split(ELISION).join("+");
 var SMALL = /* @__PURE__ */ new Set([..."\u3083\u3085\u3087\u3041\u3043\u3045\u3047\u3049\u308E\u3095\u3096\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9\u30EE\u30F5\u30F6", "\u3063", "\u30C3"]);
 var MELISMA = /* @__PURE__ */ new Set(["\u30FC", "~", "\uFF5E", "_", "\uFF3F"]);
 var isKana = (c) => /[぀-ゟ゠-ヿ]/.test(c);
@@ -963,14 +968,38 @@ var isLatin = (c) => /[A-Za-z'’]/.test(c);
 function splitSyllables(text2) {
   const out = [];
   const chars = [...text2.normalize("NFC")];
+  let join = false, leadJoin = false;
+  const push = (s) => {
+    if (join && s.text !== MELISMA_MARK) {
+      const last = out[out.length - 1];
+      if (last && last.text !== MELISMA_MARK) {
+        last.text += ELISION + s.text;
+        last.hyph = s.hyph;
+        join = false;
+        return;
+      }
+      if (!last && leadJoin) {
+        out.push({ ...s, joinPrev: true });
+        join = false;
+        return;
+      }
+    }
+    join = false;
+    out.push(s);
+  };
   for (let i = 0; i < chars.length; i++) {
     const c = chars[i];
+    if (JOINERS.has(c)) {
+      join = true;
+      if (!out.length) leadJoin = true;
+      continue;
+    }
     if (MELISMA.has(c)) {
-      out.push({ text: MELISMA_MARK, hyph: false });
+      push({ text: MELISMA_MARK, hyph: false });
       continue;
     }
     if (c === "-" || c === "\uFF0D") {
-      out.push({ text: MELISMA_MARK, hyph: false });
+      push({ text: MELISMA_MARK, hyph: false });
       continue;
     }
     if (SMALL.has(c)) {
@@ -980,7 +1009,7 @@ function splitSyllables(text2) {
       continue;
     }
     if (isKana(c) || isHan(c)) {
-      out.push({ text: c, hyph: false });
+      push({ text: c, hyph: false });
       continue;
     }
     if (isLatin(c)) {
@@ -993,14 +1022,14 @@ function splitSyllables(text2) {
           continue;
         }
         if ((n2 === "-" || n2 === "\uFF0D") && i + 2 < chars.length && isLatin(chars[i + 2])) {
-          out.push({ text: w, hyph: true });
+          push({ text: w, hyph: true });
           w = "";
           i++;
           continue;
         }
         break;
       }
-      if (w) out.push({ text: w, hyph: false });
+      if (w) push({ text: w, hyph: false });
       continue;
     }
   }
@@ -1018,6 +1047,13 @@ function distributeFrom(st2, start, syl) {
     i++;
   }
   return { st: { ...st2, song: { ...st2.song, tokens }, nextId }, last };
+}
+function joinIntoPrev(st2, i, text2) {
+  const p = prevLyricSlot(st2.song.tokens, i), t = st2.song.tokens[p];
+  if (!t || !t.lyric || t.lyric === MELISMA_MARK) return st2;
+  const tokens = st2.song.tokens.slice();
+  tokens[p] = { ...t, lyric: t.lyric + ELISION + text2 };
+  return { ...st2, song: { ...st2.song, tokens } };
 }
 function nextLyricSlot(tokens, i) {
   for (let j = i + 1; j < tokens.length; j++) if (lyricSlot(tokens[j])) return j;
@@ -1224,7 +1260,7 @@ function engrave(song, o) {
         const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
         const accW = acc2 === null ? 0 : 1.3;
         let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
-        if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyric) / sp + (nt.hyph ? 1.4 : 0.7));
+        if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyricShow(lyric)) / sp + (nt.hyph ? 1.4 : 0.7));
         const u = {
           kind: "chunk",
           index: i,
@@ -1411,7 +1447,7 @@ function engrave(song, o) {
       const ly = lyricY(c.system), cx = x0 + nhW(c) / 2;
       lyrics.push({ index: c.index, system: c.system, x: cx, y: ly });
       if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly, x2: x0 + nhW(c) + P(0.4), y2: ly, w: P(0.12), cls: "melisma" });
-      else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: c.lyric, cls: cls ? `lyric ${cls}` : "lyric" });
+      else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: lyricShow(c.lyric), cls: cls ? `lyric ${cls}` : "lyric" });
     }
   };
   for (const u of units) {
@@ -1719,6 +1755,16 @@ var LyricEditor = class {
     let syl = splitSyllables(text2);
     if (!syl.length) return;
     if (hyphEnd) syl = syl.map((s, k) => k === syl.length - 1 ? { ...s, hyph: true } : s);
+    if (syl[0].joinPrev) {
+      this.host.set(joinIntoPrev(this.host.get(), this.index, syl[0].text));
+      syl = syl.slice(1);
+      if (!syl.length) {
+        this.input.value = this.slotText(this.index);
+        this.rerender();
+        this.input.select();
+        return;
+      }
+    }
     const { st: st2, last } = distributeFrom(this.host.get(), this.index, syl);
     this.host.set(st2);
     const nx = nextLyricSlot(st2.song.tokens, last);
@@ -1736,7 +1782,7 @@ var LyricEditor = class {
   }
   slotText(i) {
     const t = this.host.get().song.tokens[i];
-    return t.lyric === MELISMA_MARK ? "~" : (t.lyric ?? "") + (t.hyph ? "-" : "");
+    return t.lyric === MELISMA_MARK ? "~" : lyricEdit(t.lyric ?? "") + (t.hyph ? "-" : "");
   }
   /** 输入法选定 / 直接打字之后：中日文字立刻贴；拖腔记号立刻贴；英文等空格或「-」。 */
   absorb() {
@@ -3077,7 +3123,12 @@ function toLabScore(song, lang = "ja") {
       return;
     }
     const lyric = t.lyric && t.lyric !== MELISMA_MARK ? t.lyric : null;
-    out.push(lyric ? { kana: lyric, notes: [[midi, len]], ...lang === "en" && t.hyph ? { hyph: true } : {} } : { kana: HUM_SYLLABLE[song.hum ?? "n"][lang], notes: [[midi, len]], hum: true });
+    if (!lyric) {
+      out.push({ kana: HUM_SYLLABLE[song.hum ?? "n"][lang], notes: [[midi, len]], hum: true });
+      return;
+    }
+    const parts = lyric.split(ELISION).filter(Boolean);
+    parts.forEach((kana, k) => out.push({ kana, notes: [[midi, len / parts.length]], ...lang === "en" && t.hyph && k === parts.length - 1 ? { hyph: true } : {} }));
   });
   const TEXT = lang === "en" ? out.map((e) => e.kana + (e.hyph ? "" : " ")).join("").trim() : out.map((e, k) => e.kana + (e.rest ? "\u3001" : k === out.length - 1 ? "\u3002" : "")).join("");
   return { SCORE: out, TEXT, TEMPO_QUARTER: base2, LANG: lang };
@@ -5140,7 +5191,10 @@ function writeMusicXml(song, part, meta) {
         if (tieIn || tieOn) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>`;
         if (!lyricDone && t.lyric) {
           if (t.lyric === MELISMA_MARK) x += `<lyric number="1"><extend/></lyric>`;
-          else x += `<lyric number="1"><syllabic>${syllabic(t)}</syllabic><text xml:lang="${esc2(langs[i] ?? "ja")}">${esc2(t.lyric)}</text></lyric>`;
+          else {
+            const lang = esc2(langs[i] ?? "ja"), parts = t.lyric.split(ELISION);
+            x += `<lyric number="1"><syllabic>${syllabic(t)}</syllabic><text xml:lang="${lang}">${esc2(parts[0])}</text>` + parts.slice(1).map((p) => `<elision/><syllabic>single</syllabic><text xml:lang="${lang}">${esc2(p)}</text>`).join("") + `</lyric>`;
+          }
         }
         lyricDone = true;
       }
@@ -5295,7 +5349,7 @@ function readMusicXml(xml, hints) {
         if (ly) {
           const tx = kid(ly, "text");
           if (tx) {
-            tok.lyric = text(tx);
+            tok.lyric = kids(ly, "text").map((e) => text(e)).filter(Boolean).join(ELISION);
             const syl = childText(ly, "syllabic");
             if (syl === "begin" || syl === "middle") tok.hyph = true;
             if (tx.attrs["xml:lang"]) langRead.set(tok, tx.attrs["xml:lang"]);
@@ -5672,6 +5726,7 @@ var halfShifted = false;
 var halfAt = 0;
 var halfHeld = false;
 var halfWrote = false;
+var halfLeft = 0;
 function setHalf(m) {
   if (half === "off" && m !== "off") {
     halfShifted = st.input.unit > 0;
@@ -5682,6 +5737,7 @@ function setHalf(m) {
   }
   half = m;
   pad.showHalf(m);
+  halfLeft = m === "once" ? 2 : 0;
 }
 function halfKey(down) {
   if (down) {
@@ -5729,7 +5785,7 @@ function afterWrite() {
     halfWrote = true;
     return;
   }
-  if (half === "once") setHalf("off");
+  if (half === "once" && --halfLeft <= 0) setHalf("off");
 }
 var reflow = false;
 var padNotes = /* @__PURE__ */ new Map();
@@ -5760,10 +5816,20 @@ var pad = new Pad(padEl, {
     sound.down(np, id);
   },
   onCommand: (c) => {
+    if (c.k === "caret" && half === "once") setHalf("off");
     update(apply(st, c, performance.now()));
     if (c.k === "rest" || c.k === "extend") afterWrite();
   },
-  onUnit: (u) => update(setUnit(st, u)),
+  onUnit: (u) => {
+    if (half === "once") {
+      half = "off";
+      halfShifted = false;
+      halfLeft = 0;
+      pad.showHalf("off");
+    }
+    update(setUnit(st, u));
+  },
+  // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n2) => update(setTuplet(st, n2)),
   onInputKey: (f) => update(setInputKey(st, f)),
   onInputScale: (id) => update(setInputScale(st, id)),
@@ -6427,4 +6493,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-d0859ced3547.mjs.map
+//# sourceMappingURL=moonsinger-98b47893bc8f.mjs.map

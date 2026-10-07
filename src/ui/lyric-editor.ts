@@ -9,7 +9,7 @@
 // 输入法还在拼（isComposing）的时候什么都不做——拼音、假名输入法都不被打断。
 
 import { type EditorState, type NoteTok } from "../score/song.ts";
-import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl } from "../score/lyrics.ts";
+import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl, joinIntoPrev, lyricEdit } from "../score/lyrics.ts";
 import type { Layout } from "../render/engrave.ts";
 
 interface Host { get(): EditorState; set(next: EditorState): void }
@@ -60,6 +60,11 @@ export class LyricEditor {
     let syl: Syl[] = splitSyllables(text);
     if (!syl.length) return;
     if (hyphEnd) syl = syl.map((s, k) => (k === syl.length - 1 ? { ...s, hyph: true } : s));
+    if (syl[0].joinPrev) {   // 「+」开头：第一个字并进前一个音（框已经跳到这个音了）；剩下的照常从这个音往后贴
+      this.host.set(joinIntoPrev(this.host.get(), this.index, syl[0].text));
+      syl = syl.slice(1);
+      if (!syl.length) { this.input.value = this.slotText(this.index); this.rerender(); this.input.select(); return; }
+    }
     const { st, last } = distributeFrom(this.host.get(), this.index, syl);
     this.host.set(st);
     const nx = nextLyricSlot(st.song.tokens, last);
@@ -69,7 +74,7 @@ export class LyricEditor {
   }
   private slotText(i: number): string {
     const t = this.host.get().song.tokens[i] as NoteTok;
-    return t.lyric === MELISMA_MARK ? "~" : (t.lyric ?? "") + (t.hyph ? "-" : "");
+    return t.lyric === MELISMA_MARK ? "~" : lyricEdit(t.lyric ?? "") + (t.hyph ? "-" : "");
   }
 
   /** 输入法选定 / 直接打字之后：中日文字立刻贴；拖腔记号立刻贴；英文等空格或「-」。 */

@@ -59,3 +59,31 @@ describe("lyrics", () => {
     eq(st.song.tokens.filter((t) => t.kind === "note").map((t) => (t as NoteTok).lyric ?? "·").join(""), "啊·呀");
   });
 });
+
+// 一个音上几个字（「+」= elision；user「日语歌词需支持一个音对应两个假名 也许不一定两个，然后中文也一样」→ 点头）。edited by Claude Opus 5.5 2026-10-07
+import { splitSyllables as _split, lyricShow, ELISION, distributeFrom as _dist } from "../src/score/lyrics.ts";
+import { toLabScore as _lab } from "../src/score/lab-score.ts";
+import { saveMxl as _save, openBytes as _open, emptyExtras as _ex } from "../src/format/project.ts";
+import { initState as _init, writePitch as _wp, TPQ as _Q } from "../src/score/song.ts";
+describe("一个音上几个字（+）", () => {
+  it("だんご、だ+んご、 = だ ん ご だん ご；中文三个字也行；+ 开头 = 并进前一个音", () => {
+    eq(_split("だんご、だ+んご、").map((s) => s.text).join("/"), `だ/ん/ご/だ${ELISION}ん/ご`);
+    eq(_split("我+的+歌").map((s) => s.text).join("/"), `我${ELISION}的${ELISION}歌`);
+    const lead = _split("+ん");
+    eq(lead.length, 1); eq(lead[0].joinPrev, true); eq(lead[0].text, "ん");
+    eq(_split("ご＋、だ").map((s) => s.text).join("/"), `ご${ELISION}だ`, "全角 ＋ 也认，中间的标点照旧跳过");
+  });
+  it("纸上：中日文两个字之间不画弧，拉丁字母之间画 ‿", () => {
+    eq(lyricShow(`だ${ELISION}ん`), "だん"); eq(lyricShow(`me${ELISION}and`), `me${ELISION}and`);
+  });
+  it("唱：这个音平分给几个字；存 MusicXML = <elision/>，打开还是一个音", () => {
+    let st = _init();
+    st = _wp(st, { step: "C", alter: 0, octave: 4 });
+    st = _dist(st, st.song.tokens.length - 1, _split("だ+ん")).st;
+    const sc = _lab(st.song, "ja");
+    eq(sc.SCORE.map((e) => `${e.kana}:${e.notes[0][1]}`).join(" "), `だ:${st.song.tokens[st.song.tokens.length - 1].kind === "note" ? (st.song.tokens[st.song.tokens.length - 1] as { dur: number }).dur / (_Q / 2) / 2 : 0} ん:${(st.song.tokens[st.song.tokens.length - 1] as { dur: number }).dur / (_Q / 2) / 2}`);
+    const bytes = _save({ song: st.song, hum: st.song.hum, quality: "full", extras: _ex(), app: "t", date: "d" });
+    const o = _open("x.mxl", bytes);
+    eq((o.song.tokens[o.song.tokens.length - 1] as { lyric: string }).lyric, `だ${ELISION}ん`);
+  });
+});

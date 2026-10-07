@@ -13,7 +13,7 @@
 
 import { type Song, type NoteTok, type Token, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord } from "../score/song.ts";
 import { type Pitch, diatonicIndex, keyAlter } from "../score/pitch.ts";
-import { MELISMA_MARK } from "../score/lyrics.ts";
+import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
 import { GLYPH, W, ENGRAVE, STEM_UP_SE, STEM_DOWN_NW, FLAG_ANCHOR_UP, FLAG_ANCHOR_DOWN, timeSigDigits } from "./smufl.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 
@@ -177,7 +177,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
         const accW = acc === null ? 0 : 1.3;
         let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
-        if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyric) / sp + (nt.hyph ? 1.4 : 0.7));
+        if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyricShow(lyric)) / sp + (nt.hyph ? 1.4 : 0.7));
         const u: Chunk = { kind: "chunk", index: i, j, last: false, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
           ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0 };
         units.push(u); lastChunk = u;
@@ -323,7 +323,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const ly = lyricY(c.system), cx = x0 + nhW(c) / 2;
       lyrics.push({ index: c.index, system: c.system, x: cx, y: ly });
       if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly, x2: x0 + nhW(c) + P(0.4), y2: ly, w: P(0.12), cls: "melisma" });
-      else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: c.lyric, cls: cls ? `lyric ${cls}` : "lyric" });
+      else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: lyricShow(c.lyric), cls: cls ? `lyric ${cls}` : "lyric" });
     }
   };
   for (const u of units) {
