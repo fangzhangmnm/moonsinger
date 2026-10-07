@@ -32,8 +32,8 @@ const base = new URL("../dev-assets/preview/", import.meta.url);
 
 async function fetchTable(v: PreviewVariant): Promise<Table> {
   const [idx, pcm] = await Promise.all([
-    fetch(new URL(`${FILES[v]}.json`, base)).then((r) => { if (!r.ok) throw new Error(`试听元音表（${v}）：HTTP ${r.status}（先跑 node scripts/gen-preview-vowels.mjs ${v}？）`); return r.json(); }),
-    fetch(new URL(`${FILES[v]}.pcm16`, base)).then((r) => r.arrayBuffer()),
+    fetch(new URL(`${FILES[v]}.json`, base), { cache: "no-cache" }).then((r) => { if (!r.ok) throw new Error(`试听元音表（${v}）：HTTP ${r.status}（先跑 node scripts/gen-preview-vowels.mjs ${v}？）`); return r.json(); }),
+    fetch(new URL(`${FILES[v]}.pcm16`, base), { cache: "no-cache" }).then((r) => r.arrayBuffer()),
   ]);
   const all = new Int16Array(pcm), entries = idx.entries as Entry[];
   for (const e of entries) {

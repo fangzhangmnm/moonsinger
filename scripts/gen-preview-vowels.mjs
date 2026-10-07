@@ -9,6 +9,9 @@
 //     还带着前一个 a 滑过来的那段；短按只听到这段，四个字都像 a；「らんら」的 ん 被注成舌根鼻音 N_uvular，跟在 a 后面 = 鼻化的 a；ら 的弹舌夹在两个 a 中间。
 //   v2（新）：目标字放句首（前面是安静，她自己唱出起音），后面垫一个字防念轻；ん 用「んま」（注成双唇 N_m = 闭嘴哼）；
 //     切口从起音前的安静开始；循环段在颤音完全进来以后、长度取整数个颤音周期（接缝处音高连续）；整张表一个增益（保留 ん 比 あ 轻）。
+//   v2 第二版（user 听后「preview的嗯对了，呜还是啊，拉也不行而且attack太慢」）：
+//     「呜」「啦」改用中文前端唱（呜拉、拉拉）——日语 う 是不圆唇的 [ɯ]、ら 是一下轻弹舌，user 要的「呜」是圆唇 [u]、「啦」有边音 [l]；
+//     「嗯」「啊」照旧日语（んま、あら）；切口改从真正出声前 5 ms 起（之前句首前面有 30–160 ms 的空白 = 起音慢）。
 // 输出（dev-assets/preview/，gitignored；出货时进家族模型仓 pwa-models）：v1 = vowels.*，v2 = vowels-v2.*
 //   vowels.pcm16  所有样本首尾相接的 16 位单声道 PCM（22050 Hz）
 //   vowels.json   索引 { sr, entries: [{ kana, midi, start, len, loopStart, loopEnd }] }（单位：样本）
@@ -30,17 +33,19 @@ if (!["v1", "v2"].includes(VARIANT)) throw new Error(`variant ${VARIANT}: v1 | v
 const KANA = ["ら", "ん", "う", "あ"];   // = song.ts 的 Hum：la n u a
 const ANCHORS = [57, 60, 63, 66, 69, 72, 75];   // A3 … D♯5，每 3 个半音（她的音域 A3–E5）
 const TEMPO = 80;
-const V2_FOLLOW = { ら: "ら", ん: "ま", う: "ら", あ: "ら" };   // v2 垫在后面的字（ん 后面接 ま → 双唇，闭嘴哼）
+// v2 每个字的生成语境：[目标字, 垫在后面的字, 语言]（ん 后面接 ま → 双唇，闭嘴哼；呜 / 拉 用中文：圆唇 u、边音 l）
+const V2_CTX = { ら: ["拉", "拉", "zh"], ん: ["ん", "ま", "ja"], う: ["呜", "拉", "zh"], あ: ["あ", "ら", "ja"] };
+const ZH_PRESET = JSON.parse(fs.readFileSync(path.join(TP, "piper-plus/work/model-singing/tsukuyomi-zhen-dur-override.config.json"), "utf8")).preset_default?.zh ?? 0;
 const VIB = DEFAULT_OPT.vibrato;
 
 const segs = [], entries = [];
 const t0 = Date.now();
 for (const kana of KANA) {
   for (const midi of ANCHORS) {
-    let score, text, target;
+    let score, text, target, lang = "ja";
     if (VARIANT === "v1") { score = [{ kana: "ら", notes: [[midi, 1]] }, { kana, notes: [[midi, 4]] }, { kana: "ら", notes: [[midi, 1]] }]; text = `ら${kana}ら。`; target = 1; }
-    else { score = [{ kana, notes: [[midi, 6]] }, { kana: V2_FOLLOW[kana], notes: [[midi, 1]] }]; text = `${kana}${V2_FOLLOW[kana]}。`; target = 0; }
-    const r = await singCore({ score, text, tempo: TEMPO, lang: "ja", preset: 0, piper, world, opt: { noiseScale: 0, noiseW: 0 } });
+    else { const [t, f, l] = V2_CTX[kana]; score = [{ kana: t, notes: [[midi, 6]] }, { kana: f, notes: [[midi, 1]] }]; text = `${t}${f}。`; target = 0; lang = l; }
+    const r = await singCore({ score, text, tempo: TEMPO, lang, preset: lang === "zh" ? ZH_PRESET : 0, piper, world, opt: { noiseScale: 0, noiseW: 0 } });
     const { notes, moras } = r.internals, SR = r.SR;
     const nt = notes.filter((n) => n.k === target), m = moras[target], nt0 = nt[0].t0, end = nt[nt.length - 1].t1;
     let a, b, ls, le;
@@ -50,13 +55,18 @@ for (const kana of KANA) {
     } else {
       const cutEnd = Math.min(end, moras[target + 1].preStart) - 0.01;            // 后面那个字的辅音开始之前
       a = Math.max(0, Math.round(((m.preStart ?? nt0) - 0.03) * SR)); b = Math.round(cutEnd * SR);
+      // 切口挪到真正出声前 5 ms：5 ms 一窗，第一个比目标音稳定段（音符中间 0.3 s）低不到 30 dB 的窗
+      const rms = (i0, n) => { let e = 0; for (let i = i0; i < i0 + n; i++) e += r.sung[i] ** 2; return Math.sqrt(e / n); };
+      const ref = rms(Math.round((nt0 + 0.5) * SR), Math.round(0.3 * SR)), W5 = Math.round(0.005 * SR);
+      let on = a; while (on + W5 < b && rms(on, W5) < ref * 10 ** (-30 / 20)) on += W5;
+      a = Math.max(a, on - W5);
       const u0 = Math.ceil(VIB.fadeIn * VIB.hz) / VIB.hz;                        // 颤音完全进来以后的第一个整周期
       const loopStart = nt0 + VIB.delay + u0, cycles = Math.floor((cutEnd - 0.12 - loopStart) * VIB.hz);
       if (cycles < 2) throw new Error(`${kana}${midi}: 循环段不够长`);
       ls = Math.round(loopStart * SR) - a; le = Math.round((loopStart + cycles / VIB.hz) * SR) - a;
     }
     segs.push(r.sung.subarray(a, b));
-    entries.push({ kana, midi, len: b - a, loopStart: ls, loopEnd: le, ctx: text });
+    entries.push({ kana, midi, len: b - a, loopStart: ls, loopEnd: le, ctx: `${text}（${lang}）` });
     process.stdout.write(`${kana}${midi} `);
   }
 }

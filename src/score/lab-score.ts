@@ -12,7 +12,7 @@ import { midiOf } from "./pitch.ts";
 import { type Song, type Hum, TPQ, effectivePitch, isTimed, timeline } from "./song.ts";
 import { MELISMA_MARK } from "./lyrics.ts";
 
-export interface LabEntry { kana: string; notes: [number, number][]; rest?: number }
+export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean }   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
 export interface LabScore { SCORE: LabEntry[]; TEXT: string; TEMPO_QUARTER: number; LANG: "ja" | "zh" }
 
 /** 「哼的字」四档在两种语言里的字：la 舌尖起音、节奏最清楚；n 闭嘴哼（同高的几个音会连成一个）；u = Ooh；a = Ahh（GM 人声兜底的两个元音）。 */
@@ -30,7 +30,8 @@ export function toLabScore(song: Song, lang: "ja" | "zh" = "ja"): LabScore {
     const last = out[out.length - 1];
     // 拖腔（ー / ~）和连音线连着的音（tie）都并进上一个音节：同一个字唱过几个音 / 同一个音连下去
     if ((t.lyric === MELISMA_MARK || t.tie) && last && !last.rest) { last.notes.push([midi, len]); return; }
-    out.push({ kana: t.lyric && t.lyric !== MELISMA_MARK ? t.lyric : HUM_SYLLABLE[song.hum ?? "la"][lang], notes: [[midi, len]] });
+    const lyric = t.lyric && t.lyric !== MELISMA_MARK ? t.lyric : null;
+    out.push(lyric ? { kana: lyric, notes: [[midi, len]] } : { kana: HUM_SYLLABLE[song.hum ?? "la"][lang], notes: [[midi, len]], hum: true });
   });
   const TEXT = out.map((e, k) => e.kana + (e.rest ? "、" : k === out.length - 1 ? "。" : "")).join("");
   return { SCORE: out, TEXT, TEMPO_QUARTER: base, LANG: lang };

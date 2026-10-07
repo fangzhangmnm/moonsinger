@@ -33,6 +33,10 @@ export const DEFAULT_OPT = {
   levelMaxDb: 6,          // take 5 allowed 12 and boosted the consonants too: user「一堆麦克风的电噪声……有时候还有电锯声」
   tailIntoNext: 0.04,     // s at most of the vowel's tail copied 1:1 into the next consonant
   portamentoMs: 40,       // width of the pitch glide between two notes
+  // 哼的字（score 条目带 hum: true = 没写歌词、唱这首歌「哼的字」的音；MoonSinger 编辑器给）。2026-10-07 (Claude Opus 5.5)，
+  //   user「全歌唱的时候也是都听的像啊」：「んんん」全被注成舌根 N_uvular（嘴张着 ≈ 鼻化的 a）；「ららら」的弹舌只有 20–70 ms，夹在两个 a 中间。默认关 = 原样。
+  humNasal: null,         // 哼「ん」改用哪个 N（"N_m" = 双唇，闭嘴哼）；null = 照注音
+  humConsMin: 0,          // s：哼的字的辅音在歌的时钟上至少这么长（ら 的弹舌拉开）；0 = 照 piper
   vibrato: { cents: 15, hz: 5.5, delay: 0.25, fadeIn: 0.2, minNote: 0.5 },   // only on notes ≥ minNote s
   noiseScale: 0.667, noiseW: 0.5,                                              // the read-aloud library's defaults
   atlasXfade: 0.04,       // s: crossfade piper → atlas at the start of the held stretch; atlas → piper happens across the tail segment (not inside the hold)
@@ -62,6 +66,9 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   const sungText = TEXT.replace(/[、。，．,.！？!?]/g, "");       // rests are made on the song clock, not as speech pauses
   const ph = LANG === "zh" ? pn.phonemizeZh(sungText) : pn.phonemize(sungText);
   const tokens = LANG === "zh" ? ph.tokens : ph.tokens.map((t) => VOICED_FOR[t] ?? t);
+  if (OPT.humNasal && LANG !== "zh") {                           // 哼的「ん」：第 k 个唱的音素属于 SCORE[k]（同下面的 sung1 规则）
+    let k = 0; tokens.forEach((t, i) => { if (!(VOWEL.has(t) || /^N/.test(t))) return; if (SCORE[k]?.hum && /^N/.test(t)) tokens[i] = OPT.humNasal; k++; });
+  }
   const { ids, pros } = LANG === "zh" ? ph : pn.encode(tokens, ph.prosody);
   const RUN = { lang: LANG, preset: PRESET };
   const owner = []; let p = 2;                                   // ids: ^ pad (tok pad)* … $ ; a pause "_" is a single pad id
@@ -163,6 +170,7 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   });
   moras.forEach((m, k) => {                                       // consonant pre-roll on the song clock
     let len = m.v0 - m.c0;
+    if (SCORE[k].hum && OPT.humConsMin > 0 && m.cons.some((i) => !isMark(tokens[i]) && tokens[i] !== "_")) len = Math.max(len, OPT.humConsMin);   // 哼的字：辅音拉开
     if (k > 0 && (!moras[k - 1].rest || moras[k - 1].stolen)) len = Math.min(len, OPT.consonantCap * (moras[k - 1].noteEnd - moras[k - 1].noteStart));
     m.preStart = m.noteStart - len;
   });

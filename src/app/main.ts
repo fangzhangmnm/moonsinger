@@ -25,7 +25,7 @@ const bar = $("bar"), scoreEl = $("score"), padEl = $("padPanel");
 bar.innerHTML =
   `<span class="title">MoonSinger</span><span class="ver">${APP_VERSION}</span>` +
   `<label class="field" title="完整 = 月读本人（第一次要加载约 65 MB）；轻量 = 元音采样，按下即响、任何设备都能跑">音质<select id="qualSel"><option value="full">完整</option><option value="light">轻量</option></select></label>` +
-  `<label class="field" title="实验开关（选定后删）：新 = 从安静里起唱的样本、ん 闭嘴哼、拖音高滑过去；旧 = 之前那套">试听<select id="prevSel"><option value="v2">新</option><option value="v1">旧</option></select></label>` +
+  `<label class="field" title="实验开关（选定后删）：新 = 试听样本从安静里起唱（嗯 闭嘴、呜 / 啦 用中文唱）、抢占快淡出、拖音高滑过去；整首的哼：嗯 闭嘴、啦 的辅音拉开、没歌词时 呜 / 啦 用中文唱。旧 = 之前那套">实验<select id="prevSel"><option value="v2">新</option><option value="v1">旧</option></select></label>` +
   `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="a">あ / 啊</option></select></label>` +
   `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
   `<button id="padBtn" class="btn is-on" title="手指 pad"><svg class="ico"><use href="#grid"/></svg></button>` +
@@ -114,8 +114,14 @@ const playIcon = (stop: boolean) => { $("playBtn").innerHTML = `<svg class="ico"
 /** 歌词里有汉字、没有假名 → 按中文唱；其余（含没有歌词）按日语唱。 */
 function songLang(): "ja" | "zh" {
   const ls = st.song.tokens.flatMap((t) => (t.kind === "note" && t.lyric ? [t.lyric] : [])).join("");
+  // 实验开关「新」：整首没写歌词时，哼「啦」「呜」用中文唱（日语 ら 是轻弹舌、う 不圆唇；user「呜还是啊，拉也不行」）
+  if (!ls && experimentNew() && (st.song.hum === "la" || st.song.hum === "u")) return "zh";
   return /\p{Script=Han}/u.test(ls) && !/[぀-ヿ]/.test(ls) ? "zh" : "ja";
 }
+/** 实验开关（顶栏「实验 新 / 旧」）：新 = 新的试听元音表 + 包络 + 滑音，整首的哼也按新办法唱。选定后删。 */
+const experimentNew = () => sampler.variant === "v2";
+/** 整首唱时给核心的哼的参数（新：ん 闭嘴 N_m、哼的字辅音至少 70 ms；旧：不给 = 原样）。 */
+const humOpt = (): Record<string, unknown> => (experimentNew() ? { humNasal: "N_m", humConsMin: 0.07 } : {});
 /** 轻量版的音符表（秒）：tie 并成一个长音。 */
 function lightNotes(): { midi: number; t0: number; t1: number }[] {
   const notes: { midi: number; t0: number; t1: number }[] = [];
@@ -132,9 +138,9 @@ let lastFull: { key: string; r: SingResult } | null = null;
 async function singFull(): Promise<SingResult | null> {
   const score = toLabScore(st.song, songLang());
   if (!score.SCORE.length) return null;
-  const key = JSON.stringify(score);
+  const opt = humOpt(), key = JSON.stringify([score, opt]);
   if (lastFull?.key === key) return lastFull.r;
-  const r = await singer.sing(score, (stage) => singStatus(`${stage}…`));
+  const r = await singer.sing(score, (stage) => singStatus(`${stage}…`), { opt });
   lastFull = { key, r };
   return r;
 }

@@ -7,7 +7,7 @@
 import { singCore } from "./sing-core.mjs";
 import { wrapWorld } from "./world-wrap.mjs";
 
-export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: "ja" | "zh"; opt?: Record<string, number>; atlas?: string; breath?: boolean }
+export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: "ja" | "zh"; opt?: Record<string, unknown>; atlas?: string; breath?: boolean }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number } }
