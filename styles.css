@@ -187,7 +187,7 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .song-title { fill: var(--ink); font-weight: 600; }
 .staff-svg .song-title.empty { fill: #b9b2a5; font-weight: 400; }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
-/* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：4 个旋钮（上下滑一格走一格、点开选）+ 6 个写字键（⌫ 最右）+ 音键占满整宽 */
+/* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：6 个写字键（⌫ 最右）+ 音键占满整宽 + 最下面 4 个旋钮（按住原地滚、点开滚轮） */
 .pad-tools.knobs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .pad-tools.writes { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .pad-tools .btn.knob { position: relative; touch-action: none; gap: 2px; }
@@ -195,7 +195,10 @@ button, input, select { font: inherit; color: inherit; }
 .knob .kl small { font-size: 11px; color: var(--muted); }
 .knob .kl .smufl { font-family: "Bravura"; font-size: 28px; line-height: 1; position: relative; top: 7px; }
 .knob .kl sup { font-size: 10px; color: var(--accent); }
-.knob .kh { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--muted); opacity: .8; }
+.knob .kh { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--muted); opacity: .8; }
+.knob.k-range .kl { font-size: 14px; padding-right: 6px; }   /* 「F♯3–G♯5」在手机的窄旋钮里别压到 ⇅ */
+.pad-panel[data-form="phone"] .knob.k-range .kl { font-size: 13px; padding-right: 0; }
+.pad-panel[data-form="phone"] .knob.k-range .kh { display: none; }   /* 手机上音域字太长：这一个不画 ⇅（另外几个旋钮上有，手势一样） */
 .pad-tools.cands .btn.cand small { display: block; font-size: 10px; color: var(--muted); }
 .pad-tools.cands .btn.cand .smufl { font-family: "Bravura"; font-size: 26px; line-height: 1; position: relative; top: 6px; }
 .pad-key { touch-action: none; }
@@ -214,9 +217,16 @@ button, input, select { font: inherit; color: inherit; }
 .drum-item.on { color: var(--accent); font-weight: 600; }
 .drum-item small { font-size: 11px; color: var(--muted); font-weight: 400; }
 .drum-item .smufl { font-family: "Bravura"; font-size: 26px; line-height: 1; position: relative; top: 6px; }
-/* 连音的样子：连音数字（Bravura）+ 下面的横花括号 */
-.tup { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; gap: 1px; }
-.tup .smufl { font-family: "Bravura"; font-size: 34px; line-height: .8; position: static; }
-.tup .brace { width: 28px; height: 8px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; }
-.drum-item .tup .smufl { font-size: 34px; top: 0; }
+/* 连音的样子 = 真画一组小蝌蚪（pad.ts tupletMark，跟着长短基线变）；太窄就整组等比缩小 */
+.tupsvg { max-width: 100%; fill: none; stroke: currentColor; stroke-width: .9; }
+.tupsvg .fi, .tupsvg rect, .tupsvg text { fill: currentColor; stroke: none; }
+.tupsvg .ho { stroke-width: 1; }
+.tupsvg text { font-family: "Bravura"; font-size: 15px; }
+/* 旋钮原地滚 = 汽车里程表：旋钮变成一扇窗，滚轮藏在后面，窗里只露一格（上下边一道内阴影 = 窗沿） */
+.pad-tools .btn.knob.rolling { overflow: hidden; background: #fff; border-color: var(--accent);
+  box-shadow: inset 0 8px 7px -7px rgba(0, 0, 0, .3), inset 0 -8px 7px -7px rgba(0, 0, 0, .3); }
+.knob.rolling > .kl, .knob.rolling > .kh { visibility: hidden; }
+.kroll { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; will-change: transform; }
+.kroll-i { display: flex; align-items: center; justify-content: center; white-space: nowrap; color: var(--ink); }
+.kroll-i .smufl { font-family: "Bravura"; font-size: 28px; line-height: 1; position: relative; top: 7px; }
 .drum-item .plain { font-size: 13px; }

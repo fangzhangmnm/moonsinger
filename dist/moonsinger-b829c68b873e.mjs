@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.6-2026-10-07";
+var APP_VERSION = "v0.2.7-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2285,9 +2285,9 @@ function openDrum(anchor, cols, o) {
   const total = cols.reduce((s, c) => s + c.width, 0) + (cols.length - 1) * 2;
   let left = r.left;
   if (left + total > innerWidth - 4) left = Math.max(4, r.right - total);
-  Object.assign(box.style, { left: `${left}px`, top: `${Math.max(4, Math.min(r.top, innerHeight - ROW * VISIBLE - 4))}px`, height: `${ROW * VISIBLE}px` });
+  Object.assign(box.style, { left: `${left}px`, top: `${Math.max(4, Math.min(r.top + r.height / 2 - ROW * VISIBLE / 2, innerHeight - ROW * VISIBLE - 4))}px`, height: `${ROW * VISIBLE}px` });
   document.body.appendChild(box);
-  let closeTimer = 0, closed = false, holding = false;
+  let closeTimer = 0, closed = false;
   const close = () => {
     if (closed) return;
     closed = true;
@@ -2344,7 +2344,7 @@ function openDrum(anchor, cols, o) {
       }
       clearTimeout(closeTimer);
       clearTimeout(settleTimer);
-      if (!holding) settleTimer = window.setTimeout(() => {
+      settleTimer = window.setTimeout(() => {
         closeTimer = window.setTimeout(close, CLOSE_AFTER);
       }, SETTLE);
     }, { passive: true });
@@ -2359,27 +2359,14 @@ function openDrum(anchor, cols, o) {
       close();
     });
   });
-  const first = box.querySelector(".drum-col");
-  let startTop = 0;
   const handle = {
     close,
-    dragStart: () => {
-      holding = true;
-      clearTimeout(closeTimer);
-      first.style.scrollSnapType = "none";
-      startTop = first.scrollTop;
-    },
-    // 拖的时候先不吸附（不然一格一格跳）
-    dragBy: (dy) => {
-      first.scrollTop = startTop - dy;
-    },
-    dragEnd: (moved) => {
-      holding = false;
-      first.style.scrollSnapType = "";
-      if (!moved) return;
-      first.scrollTo({ top: Math.round(first.scrollTop / ROW) * ROW, behavior: "smooth" });
-      clearTimeout(closeTimer);
-      closeTimer = window.setTimeout(close, SETTLE + CLOSE_AFTER);
+    setItems: (ci, items) => {
+      const col = box.querySelectorAll(".drum-col")[ci];
+      if (!col) return;
+      col.querySelectorAll(".drum-item").forEach((el, i) => {
+        if (items[i] !== void 0) el.innerHTML = items[i];
+      });
     }
   };
   current = handle;
@@ -2392,12 +2379,24 @@ var HER_HIGH = 37;
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } };
 var SWIPE = 20;
+var STEP = 28;
+var MOVE = 6;
+var UNITS = [5, 4, 3, 2, 1, 0];
+var TUP = [0, 3, 5, 6, 7];
+var SHIFTS = [4, 3, 2, 1, 0, -1, -2, -3, -4];
 var octDots = (n2) => n2 > 0 ? `<span class="jp-dots">${"<i></i>".repeat(n2)}</span>` : `<span class="jp-dots"></span>`;
 var UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
 var UNIT_NAME = ["\u4E09\u5341\u4E8C\u5206", "\u5341\u516D\u5206", "\u516B\u5206", "\u56DB\u5206", "\u4E8C\u5206", "\u5168\u97F3\u7B26"];
 var KEY_NAMES = KEY_LABEL;
 var KEY_CIRCLE = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
-var tupletMark = (n2) => `<span class="tup"><span class="smufl">${String.fromCodePoint(59520 + n2)}</span><svg class="brace" viewBox="0 0 30 8" aria-hidden="true"><path d="M1.5 1 Q1.5 4.5 6 4.5 L12 4.5 Q15 4.5 15 7.5 Q15 4.5 18 4.5 L24 4.5 Q28.5 4.5 28.5 1"/></svg></span>`;
+function tupletMark(n2, unit) {
+  const S = 7, M = 1.5, HY = 25, TOP = 11.5, hx = (i) => M + 3 + i * S, sx = (i) => hx(i) + 2.35;
+  const W2 = hx(n2 - 1) + 3 + M, hollow = unit >= 4, beams = Math.max(0, 3 - unit), cx = W2 / 2, by = 4.5;
+  const heads = Array.from({ length: n2 }, (_, i) => `<ellipse class="${hollow ? "ho" : "fi"}" cx="${hx(i)}" cy="${HY}" rx="${unit === 5 ? 3 : 2.6}" ry="1.85" transform="rotate(-20 ${hx(i)} ${HY})"/>`).join("");
+  const stems = unit <= 4 ? Array.from({ length: n2 }, (_, i) => `<line x1="${sx(i)}" y1="${HY - 0.5}" x2="${sx(i)}" y2="${TOP}"/>`).join("") : "";
+  const beam = Array.from({ length: beams }, (_, k) => `<rect x="${sx(0) - 0.45}" y="${TOP + k * 3}" width="${sx(n2 - 1) - sx(0) + 0.9}" height="1.8"/>`).join("");
+  return `<svg class="tupsvg" viewBox="0 0 ${W2} 28.5" width="${(W2 * 32 / 28.5).toFixed(1)}" height="32" aria-label="${n2} \u8FDE\u97F3"><path class="br" d="M${M} ${by + 2.5}V${by}H${cx - 3.6}M${cx + 3.6} ${by}H${W2 - M}V${by + 2.5}"/><text x="${cx}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(59520 + n2)}</text>${stems}${beam}${heads}</svg>`;
+}
 var pretty = (p) => pitchName(p).replace(/#/g, "\u266F").replace(/b(?=\d)|b(?=b)/g, "\u266D");
 function homeTonic(fifths) {
   const t = tonicStepIndex(fifths), h = diatonicIndex(HOME);
@@ -2422,7 +2421,8 @@ var Pad = class {
   layoutMode = "absolute";
   // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
   mode = "normal";
-  builtFor = "";
+  gridFor = "";
+  toolsFor = "";
   /** 正按着的音（来源 id → 五线谱位置）：手指和电脑键盘共用，pad 上对应的键按住期间一直亮。 */
   held = /* @__PURE__ */ new Map();
   /** 正在音键上滑的手指（pointerId → 起点 y、当前升降、哪个键）。 */
@@ -2442,22 +2442,54 @@ var Pad = class {
     const home = this.layoutMode === "absolute" ? diatonicIndex({ step: "C", alter: 0, octave: 4 }) : defaultPadBase(f);
     return home + this.cols * (shift - Math.floor((rows - 1) / 2));
   }
-  /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。 */
+  /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。
+   *  三块各管各的：写字键一排（只建一次）、音键网格（调 / 音域 / 布局变了才重建）、最下面一排旋钮或候选（模式 / 有没有选中变了才重建）——
+   *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render() {
     const st2 = this.host.state(), f = inputKey(st2), rows = this.rows(), form = padForm();
     const base2 = this.baseAt(this.rowShift, f, rows);
     if ((this.mode === "transpose" || this.mode === "modulate") && !st2.sel) this.mode = "normal";
     const selKey = st2.sel ? keyAt(st2.song, st2.sel.from) : null;
-    const sig = `${this.mode}|${f}|${base2}|${selKey}|${rows}x${this.cols}|${form}|${this.layoutMode}`;
-    if (sig !== this.builtFor) {
-      this.el.dataset.form = form;
-      this.el.style.setProperty("--cols", String(this.cols));
-      this.build(f, base2, selKey, rows, st2);
-      this.builtFor = sig;
+    this.el.dataset.form = form;
+    this.el.style.setProperty("--cols", String(this.cols));
+    if (!this.el.querySelector(".pad-grid")) {
+      this.el.innerHTML = `<div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\u2014</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div><div class="pad-bottom"></div>`;
+      const w = this.el.querySelector(".writes");
+      this.on(w, "[data-caret]", (b) => this.host.onCommand({ k: "caret", d: Number(b.dataset.caret) }));
+      this.on(w, "[data-cmd]:not([data-cmd=backspace])", (b) => this.host.onCommand({ k: b.dataset.cmd }));
+      const bs = w.querySelector('[data-cmd="backspace"]');
+      let timer = 0;
+      const stop = () => clearTimeout(timer), del = () => this.host.onCommand({ k: "backspace" });
+      bs.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        try {
+          bs.setPointerCapture(e.pointerId);
+        } catch {
+        }
+        stop();
+        del();
+        const tick = () => {
+          del();
+          timer = window.setTimeout(tick, 70);
+        };
+        timer = window.setTimeout(tick, 420);
+      });
+      for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) bs.addEventListener(t, stop);
+      addEventListener("blur", stop);
+    }
+    const gridSig = `${f}|${base2}|${rows}x${this.cols}|${this.layoutMode}`;
+    if (gridSig !== this.gridFor) {
+      this.buildGrid(f, base2, rows);
+      this.gridFor = gridSig;
+    }
+    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}`;
+    if (toolSig !== this.toolsFor) {
+      this.buildBottom(f, selKey, rows);
+      this.toolsFor = toolSig;
     }
     this.refresh(st2);
   }
-  cands(f, selKey, rows, st2) {
+  cands(selKey, rows) {
     const back = `<button class="btn cand" data-back="1">\u8FD4\u56DE</button>`;
     const c = (attrs, label, on = false, title = "") => `<button class="btn cand${on ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
     switch (this.mode) {
@@ -2482,8 +2514,44 @@ var Pad = class {
         return "";
     }
   }
-  build(f, base2, selKey, rows, st2) {
-    const tools = this.mode !== "normal" ? `<div class="pad-tools cands">${this.cands(f, selKey, rows, st2)}</div>` : `<div class="pad-tools knobs">` + (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span><span class="kh">\u21C5</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u62D6 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u62D6 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u62D6 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u62D6\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09">0</button><button class="btn" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09">|</button><button class="btn" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09">\u2014</button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div>`;
+  /** 最下面一排：旋钮（user「试一下把上面这一行放最下面防我按第二行的功能键的时候误触」）；「⋯」/ 移调点开后整排换成候选。 */
+  buildBottom(_f, selKey, rows) {
+    const box = this.el.querySelector(".pad-bottom");
+    box.className = `pad-bottom pad-tools ${this.mode === "normal" ? "knobs" : "cands"}`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
+    box.querySelectorAll("[data-knob]").forEach((b) => b.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      this.knobDown(b, e);
+    }));
+    this.on(box, "[data-open]", (b) => {
+      this.mode = b.dataset.open;
+      this.render();
+    });
+    this.on(box, "[data-mark]", (b) => {
+      this.back();
+      this.host.onInsertMark(b.dataset.mark);
+    });
+    this.on(box, "[data-rows]", (b) => {
+      this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows);
+      this.render();
+    });
+    this.on(box, "[data-cols]", (b) => {
+      this.cols = Number(b.dataset.cols);
+      this.render();
+    });
+    this.on(box, "[data-pl]", (b) => {
+      this.layoutMode = b.dataset.pl === "absolute" ? "absolute" : "movable";
+      this.render();
+    });
+    this.on(box, "[data-tr]", (b) => this.host.onCommand({ k: "transpose", semis: Number(b.dataset.tr) }));
+    this.on(box, "[data-toct]", (b) => this.host.onCommand({ k: "octave", d: Number(b.dataset.toct) }));
+    this.on(box, "[data-mod]", (b) => {
+      this.back();
+      this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) });
+    });
+    this.on(box, "[data-back]", () => this.back());
+  }
+  buildGrid(f, base2, rows) {
     const cells = [], ht = homeTonic(f);
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < this.cols; col++) {
@@ -2493,38 +2561,10 @@ var Pad = class {
         cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-d="${d}" title="${inRange ? "\u6708\u8BFB\u7684\u97F3\u57DF\u91CC" : ""}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${deg}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p)}</span></button>`);
       }
     }
-    this.el.innerHTML = `${tools}<div class="pad-grid">${cells.join("")}</div>`;
-    this.wire();
-  }
-  refresh(st2) {
-    const q = (s) => this.el.querySelector(s);
-    const i = st2.input, f = inputKey(st2);
-    const k = q(".k-key .kl");
-    if (k && !st2.sel) k.textContent = `1=${KEY_NAMES[f] ?? "?"}`;
-    const u = q(".k-unit .kl");
-    if (u) {
-      u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`;
-      u.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i.unit]}${i.tuplet ? `\uFF08${i.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u62D6 / \u70B9\u5F00\u9009`;
-    }
-    const r = q(".k-range .kl");
-    if (r) r.textContent = this.spanText(this.rowShift, f, this.rows());
-    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
-      const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
-      const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = a ? alterBy(p0, a) : p0;
-      b.querySelector(".acc").textContent = a > 0 ? "\u266F" : a < 0 ? "\u266D" : "";
-      b.querySelector(".abs").textContent = pretty(p);
-      b.classList.toggle("swiping", !!sw && sw.alt !== 0);
-    });
-    this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
-    const down = new Set(this.held.values());
-    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => b.classList.toggle("down", down.has(Number(b.dataset.d))));
-  }
-  wire() {
-    const on = (sel, fn) => this.el.querySelectorAll(sel).forEach((b) => b.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      fn(b, e);
-    }));
-    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
+    const grid = this.el.querySelector(".pad-grid");
+    grid.innerHTML = cells.join("");
+    this.swipes.clear();
+    grid.querySelectorAll(".pad-key[data-d]").forEach((b) => {
       b.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         try {
@@ -2554,104 +2594,137 @@ var Pad = class {
       b.addEventListener("pointerup", up);
       b.addEventListener("pointercancel", up);
     });
-    this.el.querySelectorAll("[data-knob]").forEach((b) => {
-      b.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        const h = this.open(b.dataset.knob, b);
-        if (!h) return;
-        const pid = e.pointerId, y0 = e.clientY;
-        let moved = false;
-        h.dragStart();
-        const move = (ev) => {
-          if (ev.pointerId !== pid) return;
-          const dy = ev.clientY - y0;
-          if (Math.abs(dy) > 4) moved = true;
-          h.dragBy(dy);
-        };
-        const up = (ev) => {
-          if (ev.pointerId !== pid) return;
-          removeEventListener("pointermove", move);
-          removeEventListener("pointerup", up);
-          removeEventListener("pointercancel", up);
-          h.dragEnd(moved);
-        };
-        addEventListener("pointermove", move);
-        addEventListener("pointerup", up);
-        addEventListener("pointercancel", up);
-      });
+  }
+  refresh(st2) {
+    const q = (s) => this.el.querySelector(s);
+    const i = st2.input, f = inputKey(st2);
+    const k = q(".k-key .kl");
+    if (k && !st2.sel) k.textContent = `1=${KEY_NAMES[f] ?? "?"}`;
+    const u = q(".k-unit .kl");
+    if (u) {
+      u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`;
+      u.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i.unit]}${i.tuplet ? `\uFF08${i.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009`;
+    }
+    const r = q(".k-range .kl");
+    if (r) r.textContent = this.spanText(this.rowShift, f, this.rows());
+    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => {
+      const sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : i.acc;
+      const d = Number(b.dataset.d), p0 = fromDiatonic(d, f), p = a ? alterBy(p0, a) : p0;
+      b.querySelector(".acc").textContent = a > 0 ? "\u266F" : a < 0 ? "\u266D" : "";
+      b.querySelector(".abs").textContent = pretty(p);
+      b.classList.toggle("swiping", !!sw && sw.alt !== 0);
     });
-    on("[data-caret]", (b) => this.host.onCommand({ k: "caret", d: Number(b.dataset.caret) }));
-    on("[data-cmd]", (b) => this.host.onCommand({ k: b.dataset.cmd }));
-    on("[data-open]", (b) => {
-      this.mode = b.dataset.open;
-      this.render();
-    });
-    on("[data-mark]", (b) => {
-      this.back();
-      this.host.onInsertMark(b.dataset.mark);
-    });
-    on("[data-rows]", (b) => {
-      this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows);
-      this.render();
-    });
-    on("[data-cols]", (b) => {
-      this.cols = Number(b.dataset.cols);
-      this.render();
-    });
-    on("[data-pl]", (b) => {
-      this.layoutMode = b.dataset.pl === "absolute" ? "absolute" : "movable";
-      this.render();
-    });
-    on("[data-tr]", (b) => this.host.onCommand({ k: "transpose", semis: Number(b.dataset.tr) }));
-    on("[data-toct]", (b) => this.host.onCommand({ k: "octave", d: Number(b.dataset.toct) }));
-    on("[data-mod]", (b) => {
-      this.back();
-      this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) });
-    });
-    on("[data-back]", () => this.back());
+    this.el.querySelector(".pad-grid")?.classList.toggle("acc-armed", !!i.acc);
+    const down = new Set(this.held.values());
+    this.el.querySelectorAll(".pad-key[data-d]").forEach((b) => b.classList.toggle("down", down.has(Number(b.dataset.d))));
+  }
+  on(root, sel, fn) {
+    root.querySelectorAll(sel).forEach((b) => b.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      fn(b);
+    }));
   }
   back() {
     this.mode = "normal";
     this.render();
   }
-  /** 点开 / 按住一个旋钮：值的旋钮 = 滚轮（返回它，让手指接着拖）；移调（有选中）和「⋯」= 整条候选（返回 null）。
-   *  滚轮里大的在上（升号多 / 长的 / 音域高的在上）：内容跟着手指走，往下拖 = 把上面的拉到中间 = 变大。 */
-  open(knob, anchor) {
-    const st2 = this.host.state();
-    if (knob === "more" || knob === "key" && st2.sel) {
-      this.mode = knob === "more" ? "more" : "transpose";
-      this.render();
-      return null;
-    }
-    const w = anchor.getBoundingClientRect().width, f = inputKey(st2);
+  /** 值旋钮的一串值，大的在上（升号多 / 长的 / 音域高的在上）+ 现在是第几个 + 选第 i 个（立刻生效）。 */
+  knobList(knob) {
+    const st2 = this.host.state(), f = inputKey(st2);
     if (knob === "key") {
       const K2 = [...KEY_CIRCLE].reverse();
-      return openDrum(
-        anchor,
-        [{ items: K2.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K2.indexOf(f)), width: w, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09" }],
-        { onChange: (_c, i) => this.host.onInputKey(K2[i]) }
-      );
+      return { items: K2.map((k) => `1=${KEY_NAMES[k]}`), index: Math.max(0, K2.indexOf(f)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i) => this.host.onInputKey(K2[i]) };
     }
-    if (knob === "unit") {
-      const TUP = [0, 3, 5, 6, 7], U = [5, 4, 3, 2, 1, 0];
-      const wt = Math.max(40, Math.round(w * 0.4)), wu = w - wt - 2;
-      return openDrum(anchor, [
-        { items: U.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: U.indexOf(st2.input.unit), width: wu, title: "\u957F\u77ED\u57FA\u7EBF" },
-        { items: TUP.map((n2) => n2 ? tupletMark(n2) : `<span class="plain">\u4E0D\u8FDE</span>`), index: Math.max(0, TUP.indexOf(st2.input.tuplet)), width: wt, title: "\u8FDE\u97F3" }
-      ], { onChange: (c, i) => {
-        if (c === 0) this.host.onUnit(U[i]);
-        else this.host.onTuplet(TUP[i]);
-      } });
-    }
-    const rows = this.rows(), S = [4, 3, 2, 1, 0, -1, -2, -3, -4];
-    return openDrum(
-      anchor,
-      [{ items: S.map((sh) => this.spanText(sh, f, rows)), index: Math.max(0, S.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), width: w, title: "\u97F3\u57DF\u7A97\u53E3" }],
-      { onChange: (_c, i) => {
-        this.rowShift = S[i];
+    if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st2.input.unit)), title: "\u957F\u77ED\u57FA\u7EBF", set: (i) => this.host.onUnit(UNITS[i]) };
+    const rows = this.rows();
+    return {
+      items: SHIFTS.map((sh) => this.spanText(sh, f, rows)),
+      index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))),
+      title: "\u97F3\u57DF\u7A97\u53E3",
+      set: (i) => {
+        this.rowShift = SHIFTS[i];
         this.render();
-      } }
-    );
+      }
+    };
+  }
+  /** 按下一个旋钮。「⋯」/ 移调（有选中）= 整排换成候选。值旋钮：
+   *  · 按住上下滑 = 就在这一格里滚，像汽车里程表——旋钮变成一扇窗，滚轮藏在后面，窗里只露一格，滚的时候上下格从窗边滑进来；
+   *    内容跟着手指走（往下拉 = 上面大的进窗）；**一次最多一格**，滑过半格值就生效；松手立刻停，不吸附、不放动画
+   *    （user「in place的时候一次最多一格，这样方便快速swipe几次就是几格」）
+   *    （user「我希望手指松了立刻停，不要顿一下，这是快速输入。要不还是做成in place 滑动只在窗格里面预览？」
+   *     「in place滚的时候应该是原来的钮变成一个窗，滚轮藏在下面，就像汽车里程表一样」）。
+   *  · 只是点一下（没滑）= 松手时展开滚轮（drum.ts）点选 / 原生滚动。 */
+  knobDown(b, e) {
+    const knob = b.dataset.knob;
+    if (knob === "more" || knob === "key" && this.host.state().sel) {
+      this.mode = knob === "more" ? "more" : "transpose";
+      this.render();
+      return;
+    }
+    try {
+      b.setPointerCapture(e.pointerId);
+    } catch {
+    }
+    const v = this.knobList(knob), n2 = v.items.length, pid = e.pointerId, y0 = e.clientY;
+    let moved = false, cur = v.index, roll = null, H = 0;
+    const room = (dir) => v.index + dir >= 0 && v.index + dir < n2 ? STEP : STEP * 0.3;
+    const paint = (dy) => {
+      const off = Math.max(-room(1), Math.min(room(-1), dy));
+      roll.style.transform = `translateY(${(-v.index * STEP + off) * (H / STEP)}px)`;
+      return Math.abs(off) >= STEP / 2 ? v.index - Math.sign(off) : v.index;
+    };
+    const move = (ev) => {
+      if (ev.pointerId !== pid) return;
+      const dy = ev.clientY - y0;
+      if (!moved) {
+        if (Math.abs(dy) < MOVE) return;
+        moved = true;
+        H = b.clientHeight;
+        roll = document.createElement("div");
+        roll.className = "kroll";
+        roll.innerHTML = v.items.map((h) => `<div class="kroll-i" style="height:${H}px">${h}</div>`).join("");
+        b.appendChild(roll);
+        b.classList.add("rolling");
+      }
+      const i = paint(dy);
+      if (i !== cur) {
+        cur = i;
+        v.set(i);
+      }
+    };
+    const up = (ev) => {
+      if (ev.pointerId !== pid) return;
+      removeEventListener("pointermove", move);
+      removeEventListener("pointerup", up);
+      removeEventListener("pointercancel", up);
+      roll?.remove();
+      b.classList.remove("rolling");
+      if (!moved && ev.type === "pointerup") this.openDrumFor(knob, b);
+    };
+    addEventListener("pointermove", move);
+    addEventListener("pointerup", up);
+    addEventListener("pointercancel", up);
+  }
+  /** 点一下值旋钮：从那一格展开一根同样宽的滚轮。长短那根旁边并一根连音的，连音画成真的一组小蝌蚪、跟着长短变。 */
+  openDrumFor(knob, anchor) {
+    const w = anchor.getBoundingClientRect().width;
+    if (knob === "unit") {
+      const st2 = this.host.state();
+      const wt = Math.round(w * 0.55), wu = w - wt - 2;
+      const tups = (u) => TUP.map((n2) => n2 ? tupletMark(n2, u) : `<span class="plain">\u4E0D\u8FDE</span>`);
+      const h = openDrum(anchor, [
+        { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: Math.max(0, UNITS.indexOf(st2.input.unit)), width: wu, title: "\u957F\u77ED\u57FA\u7EBF" },
+        { items: tups(st2.input.unit), index: Math.max(0, TUP.indexOf(st2.input.tuplet)), width: wt, title: "\u8FDE\u97F3" }
+      ], { onChange: (c, i) => {
+        if (c === 0) {
+          this.host.onUnit(UNITS[i]);
+          h.setItems(1, tups(UNITS[i]));
+        } else this.host.onTuplet(TUP[i]);
+      } });
+      return;
+    }
+    const v = this.knobList(knob);
+    openDrum(anchor, [{ items: v.items, index: v.index, width: w, title: v.title }], { onChange: (_c, i) => v.set(i) });
   }
   /** 某个来源（手指 / 电脑键盘的键）按下了五线谱位置 d 的音：pad 上那个键亮着，直到 showUp。 */
   showDown(d, id) {
@@ -5590,4 +5663,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-f0c72cb0bd40.mjs.map
+//# sourceMappingURL=moonsinger-b829c68b873e.mjs.map
