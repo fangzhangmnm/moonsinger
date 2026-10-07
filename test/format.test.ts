@@ -12,7 +12,7 @@ const p = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", octave = 4, alter = 0)
 function bigSong(): Song {
   let id = 1;
   const t = (x: Omit<Token, "id"> & Record<string, unknown>) => ({ ...x, id: id++ }) as Token;
-  return { hum: "u", tokens: [
+  return { title: "測試", hum: "u", tokens: [
     t({ kind: "key", fifths: 2 }), t({ kind: "time", beats: 3, beatType: 4 }), t({ kind: "tempo", bpm: 96 }),
     t({ kind: "note", pitch: p("F", 4, 1), dur: Q, lyric: "う" }),
     t({ kind: "note", pitch: p("A"), dur: E, lyric: "さ" }),
@@ -37,13 +37,13 @@ function bigSong(): Song {
 const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon((v as Record<string, unknown>)[k])])) : v;
 const norm = (s: Song) => JSON.stringify(canon(s.tokens.map((t) => (t.kind === "note" || t.kind === "rest" ? t : { ...t, id: 0 }))));
 const save = (song: Song, extras = emptyExtras(), quality: "full" | "light" | "none" = "light") =>
-  saveMxl({ song, title: "測試", hum: song.hum, quality, extras, app: "v0.0.0-test", date: "2026-10-07" });
+  saveMxl({ song, hum: song.hum, quality, extras, app: "v0.0.0-test", date: "2026-10-07" });
 
 describe("存档 .mxl", () => {
   it("自家文件：存了再开，每个 token 原样复原（连音、附点、连音线、人插 / 自动的小节线、跨小节的音、中途换记号、连字符、拖腔、改过的语言、没写音高）", () => {
     const song = bigSong(), bytes = save(song), o = openBytes("x.mxl", bytes);
     eq(norm(o.song), norm(song), "tokens");
-    eq(o.hum, "u", "哼的字"); eq(o.quality, "light", "上场的是元音版"); eq(o.title, "測試", "标题"); eq(o.ours, true, "认得是自家文件");
+    eq(o.hum, "u", "哼的字"); eq(o.quality, "light", "上场的是元音版"); eq(o.song.title, "測試", "歌名"); eq(o.stem, "x", "文件名主干"); eq(o.ours, true, "认得是自家文件");
     eq(o.notices.length, 0, "自家文件没有提示");
     eq(norm(openBytes("x.mxl", save(o.song, o.extras)).song), norm(song), "再存一遍还一样");
   });
@@ -116,7 +116,7 @@ describe("打开别的软件存的 MusicXML", () => {
     const body = o.song.tokens.slice(3).map((t) => t.kind === "note" ? `${t.pitch!.step}${t.pitch!.alter || ""}${t.pitch!.octave}:${t.dur / TPQ}${t.lyric ? `:${t.lyric}` : ""}` : t.kind === "rest" ? `0:${t.dur / TPQ}` : t.kind).join(" ");
     eq(body, "C4:1:Twin G4:0.5 0:0.5 A-14:2 bar G4:4", "音符");
     const tempo = o.song.tokens[2]; eq(tempo.kind === "tempo" && tempo.bpm, 100, "速度进谱头");
-    eq(o.title, "Twinkle", "标题");
+    eq(o.song.title, "Twinkle", "歌名"); eq(o.stem, "twinkle", "文件名主干");
     assert(o.notices.some((n) => n.includes("叠音") && n.includes("其余声部")), `报了丢掉的：${o.notices.join(" / ")}`);
   });
   it("不自动选角：原来的乐器记成候选、没人上场，人来选（user「不出声，报错，人类手动换」）", () => {
@@ -129,5 +129,21 @@ describe("打开别的软件存的 MusicXML", () => {
     eq(again.quality, "none", "存了再开仍然没人上场");
     // 人选了月读 → 存了再开就是月读完整版
     eq(openBytes("t.mxl", save(o.song, o.extras, "full")).quality, "full", "选了月读");
+  });
+});
+
+import { defaultStem, fileSafe } from "../src/app/names.ts";
+import { initState, setTitle } from "../src/score/song.ts";
+describe("歌名与默认文件名", () => {
+  it("没填歌名的默认名 = 家族约定 yyyymmdd-hex4（本地日期）", () => {
+    const n = defaultStem(new Date(2026, 9, 7, 23, 59));
+    assert(/^20261007-[0-9a-f]{4}$/.test(n), n);
+  });
+  it("歌名：空 = 不填（字段拿掉）；文件名去掉文件系统不认的字符", () => {
+    let st = setTitle(initState(), "  うさぎ  ");
+    eq(st.song.title, "うさぎ", "去首尾空白");
+    st = setTitle(st, "   ");
+    eq("title" in st.song, false, "清空 = 不填");
+    eq(fileSafe('a/b:c*?"<>|d'), "abcd", "文件名");
   });
 });

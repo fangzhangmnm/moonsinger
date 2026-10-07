@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.2.0-2026-10-07";
+var APP_VERSION = "v0.2.1-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -602,6 +602,12 @@ function setDur(st2, i, dur) {
 function setHum(st2, hum) {
   return { ...st2, song: { ...st2.song, hum } };
 }
+function setTitle(st2, title) {
+  const t = title.trim(), song = { ...st2.song };
+  if (t) song.title = t;
+  else delete song.title;
+  return (st2.song.title ?? "") === t ? st2 : { ...st2, song };
+}
 function timeline(song) {
   const out = [];
   let t = 0, bar2 = 0, sec = 0, bpm = DEFAULT_BPM;
@@ -1073,6 +1079,7 @@ var STAFF_ABOVE = 6;
 var SYS_H = 17;
 var LYRIC_BELOW = 5.2;
 var BAR_W = 1.6;
+var TITLE_H = 4.6;
 var TOP_LINE = 38;
 var MID_LINE = 34;
 var BOTTOM_LINE = 30;
@@ -1237,7 +1244,7 @@ function engrave(song, o) {
   }
   flush();
   const nSys = system + 1;
-  const sysTop = (s) => P(0.5 + s * SYS_H);
+  const sysTop = (s) => P(TITLE_H + 0.5 + s * SYS_H);
   const staffTop = (s) => sysTop(s) + P(STAFF_ABOVE);
   const yOf = (s, d) => staffTop(s) + (TOP_LINE - d) * P(0.5);
   const dOf = (s, y) => Math.round(TOP_LINE - (y - staffTop(s)) / P(0.5));
@@ -1505,7 +1512,11 @@ function engrave(song, o) {
       slots.push({ caret: c, system: last ? last.system : 0, x: last ? P(last.x + last.w) : P(sysStarts[0]) });
     }
   }
-  return { prims, width: o.width, height: P(nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, head, lyricY, yOf, dOf };
+  const titleSize = P(1.9), titleBase = P(TITLE_H * 0.62);
+  if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
+  else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "\u6B4C\u540D\uFF08\u53EF\u4E0D\u586B\uFF09", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
+  const title = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
+  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -1946,6 +1957,64 @@ var MarkEditor = class {
   }
 };
 
+// src/ui/title-editor.ts
+var TitleEditor = class {
+  constructor(parent, host, layout) {
+    this.host = host;
+    this.layout = layout;
+    this.input = document.createElement("input");
+    this.input.className = "title-input";
+    this.input.type = "text";
+    this.input.hidden = true;
+    this.input.placeholder = "\u6B4C\u540D\uFF08\u53EF\u4E0D\u586B\uFF09";
+    this.input.autocomplete = "off";
+    this.input.spellcheck = false;
+    this.input.enterKeyHint = "done";
+    parent.appendChild(this.input);
+    this.input.addEventListener("keydown", (e) => {
+      if (e.isComposing) return;
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        this.commitAndClose();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        this.close();
+      }
+    });
+    this.input.addEventListener("blur", () => {
+      if (this.open) this.commitAndClose();
+    });
+  }
+  input;
+  open = false;
+  openNow() {
+    this.open = true;
+    this.input.value = this.host.get().song.title ?? "";
+    this.input.hidden = false;
+    this.reposition();
+    this.input.focus({ preventScroll: true });
+    this.input.select();
+  }
+  commitAndClose() {
+    if (!this.open) return;
+    const v = this.input.value;
+    this.close();
+    this.host.set(setTitle(this.host.get(), v));
+  }
+  close() {
+    this.open = false;
+    this.input.hidden = true;
+  }
+  reposition() {
+    const L = this.layout();
+    if (!this.open || !L) return;
+    const t = L.title;
+    Object.assign(this.input.style, { left: `${t.x}px`, top: `${t.y}px`, width: `${t.w}px`, height: `${t.h}px`, fontSize: `${t.size}px` });
+  }
+};
+
 // src/ui/score-view.ts
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
 var ScoreView = class {
@@ -1960,6 +2029,7 @@ var ScoreView = class {
     el.replaceChildren(this.sheet);
     this.lyrics = new LyricEditor(this.sheet, host, () => this.layout, () => this.render());
     this.marks = new MarkEditor(this.sheet, host, () => this.layout, () => this.render());
+    this.title = new TitleEditor(this.sheet, host, () => this.layout);
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("pointerup", (e) => this.up(e));
@@ -1981,6 +2051,7 @@ var ScoreView = class {
   boxEl;
   lyrics;
   marks;
+  title;
   get sp() {
     return matchMedia("(pointer: coarse)").matches ? 11 : 10;
   }
@@ -1988,7 +2059,7 @@ var ScoreView = class {
     const st2 = this.host.get(), sp = this.sp;
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     const width = Math.max(320, this.el.clientWidth);
-    this.layout = engrave(st2.song, { width, sp, caret: st2.caret, sel: st2.sel, measureLyric: (s) => this.ctx.measureText(s).width });
+    this.layout = engrave(st2.song, { width, sp, caret: st2.caret, sel: st2.sel, measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true });
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg;
@@ -1996,6 +2067,7 @@ var ScoreView = class {
     if (!this.boxEl.isConnected) this.sheet.appendChild(this.boxEl);
     this.lyrics.reposition();
     this.marks.reposition();
+    this.title.reposition();
     this.follow();
   }
   /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
@@ -2022,7 +2094,7 @@ var ScoreView = class {
     return i < 0 ? L.systems.length - 1 : i;
   }
   down(e) {
-    if (e.target.closest(".lyric-input, .mark-ed")) return;
+    if (e.target.closest(".lyric-input, .mark-ed, .title-input")) return;
     const L = this.layout;
     if (!L) return;
     this.el.focus({ preventScroll: true });
@@ -2044,6 +2116,11 @@ var ScoreView = class {
     this.marks.commitAndClose();
     if (wasMark) return true;
     const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st2 = this.host.get();
+    const tt = L.title;
+    if (x >= tt.x && x <= tt.x + tt.w && y >= tt.y && y <= tt.y + tt.h) {
+      this.title.openNow();
+      return true;
+    }
     const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
     if (mk) {
       this.marks.openAt(mk.index);
@@ -4315,8 +4392,8 @@ function writeMusicXml(song, part, meta) {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
-<work><work-title>${esc2(meta.title)}</work-title></work>
-<identification><encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
+${song.title ? `<work><work-title>${esc2(song.title)}</work-title></work>
+` : ""}<identification><encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
 <part-list><score-part id="${P.id}"><part-name>${esc2(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc2(P.instrumentName)}</instrument-name><instrument-sound>${esc2(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc2(P.variant.library)}</virtual-library><virtual-name>${esc2(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== void 0 ? `<volume>${P.volume}</volume>` : ""}${P.pan !== void 0 ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
 <part id="${P.id}">
 ${body}
@@ -4463,7 +4540,7 @@ function readMusicXml(xml, hints) {
   let next2 = Math.max(0, ...usedIds) + 1;
   for (const t of tokens) if (!t.id) t.id = next2++;
   keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
-  return { song: { hum: "n", tokens }, title, parts, dropped };
+  return { song: { ...title ? { title } : {}, hum: "n", tokens }, title, parts, dropped };
 }
 
 // src/format/project.ts
@@ -4497,7 +4574,7 @@ function saveMxl(a) {
     program: Number(active?.gm?.program ?? 55),
     variant: typeof active?.gm?.variant === "string" ? { library: "MoonSinger", name: String(active.gm.variant) } : void 0,
     pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : void 0
-  }, { title: a.title, software: `MoonSinger ${a.app}`, date: a.date });
+  }, { software: `MoonSinger ${a.app}`, date: a.date });
   const scoreExt = {
     ...a.extras.scoreExt ?? {},
     version: FORMAT.score,
@@ -4628,8 +4705,8 @@ function finish(r, extras, ours, name) {
     const h = c?.hum;
     if (h === "la" || h === "n" || h === "u" || h === "o" || h === "a") hum = h;
   }
-  const title = r.title || name.replace(/\.(mxl|musicxml|xml)$/i, "");
-  return { song: { ...r.song, hum }, title, hum, quality: quality2, extras, ours, notices };
+  const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
+  return { song: { ...r.song, hum }, stem, hum, quality: quality2, extras, ours, notices };
 }
 
 // src/app/doc-file.ts
@@ -4697,15 +4774,28 @@ async function writeTo(h, bytes) {
   await w.close();
 }
 
+// src/app/names.ts
+function defaultStem(now = /* @__PURE__ */ new Date()) {
+  const z = (n2) => String(n2).padStart(2, "0");
+  let r;
+  try {
+    r = crypto.getRandomValues(new Uint16Array(1))[0];
+  } catch {
+    r = Math.floor(Math.random() * 65536);
+  }
+  return `${now.getFullYear()}${z(now.getMonth() + 1)}${z(now.getDate())}-${r.toString(16).padStart(4, "0")}`;
+}
+var fileSafe = (s) => s.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim();
+
 // src/app/main.ts
 var st = initState();
-var UNTITLED = "\u672A\u547D\u540D";
 var doc = {
-  title: UNTITLED,
+  stem: defaultStem(),
   handle: null,
   extras: emptyExtras(),
-  saved: { song: st.song, quality: "full", title: UNTITLED }
+  saved: { song: st.song, quality: "full" }
 };
+var docName = () => fileSafe(st.song.title ?? "") || doc.stem;
 var $ = (id) => document.getElementById(id);
 var bar = $("bar");
 var scoreEl = $("score");
@@ -4980,7 +5070,7 @@ async function exportSong() {
     }
     singStatus("\u7F16 mp3\u2026");
     const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
-    const file = new File([bytes], `${doc.title !== UNTITLED ? doc.title : songTitle()}.mp3`, { type: "audio/mpeg" });
+    const file = new File([bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
     singStatus("");
     offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${how}\u5531 ${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
   } catch (e) {
@@ -4989,11 +5079,6 @@ async function exportSong() {
     exporting = false;
     $("shareBtn").classList.remove("is-on");
   }
-}
-function songTitle() {
-  const ly = st.song.tokens.flatMap((t) => t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : []).join("").replace(/[\\/:*?"<>|\s]/g, "").slice(0, 12);
-  const d = /* @__PURE__ */ new Date(), z = (n2) => String(n2).padStart(2, "0");
-  return `${ly || "\u65CB\u5F8B"}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`;
 }
 var closeOffer = null;
 var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
@@ -5112,12 +5197,12 @@ $("padBtn").addEventListener("click", () => {
 function quality() {
   return $("qualSel").value;
 }
-var dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality || doc.title !== doc.saved.title;
+var dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality;
 function renderTitle() {
-  const d = dirty();
-  $("docTitle").textContent = `${doc.title}${d ? " \u2022" : ""}`;
+  const d = dirty(), name = docName();
+  $("docTitle").textContent = `${name}${d ? " \u2022" : ""}`;
   $("docTitle").title = d ? "\u6539\u8FC7\u8FD8\u6CA1\u5B58" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : "";
-  document.title = `${d ? "\u2022 " : ""}${doc.title} \xB7 MoonSinger`;
+  document.title = `${d ? "\u2022 " : ""}${name} \xB7 MoonSinger`;
 }
 function noCast(what) {
   showError(`\u4E3B\u5531\u8FD9\u4E2A\u89D2\u8272\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u539F\u6765\u7684\u4E50\u5668\u8FD9\u4E00\u7248\u6CA1\u6709\uFF09\uFF0C\u6240\u4EE5\u6CA1\u6709${what}\u3002\u8981\u6708\u8BFB\u6765\u5531\uFF0C\u5728\u9876\u680F\u300C\u97F3\u8D28\u300D\u9009\u300C\u5B8C\u6574\u300D\u6216\u300C\u8F7B\u91CF\u300D\u3002`);
@@ -5139,11 +5224,11 @@ function loadDoc(song, o) {
   impro && pad.toggleImpro();
   setQuality(o.quality);
   $("humSel").value = song.hum;
-  doc.title = o.title;
+  doc.stem = o.stem;
   doc.handle = o.handle;
   doc.extras = o.extras;
   st = initState(song);
-  doc.saved = { song: st.song, quality: o.quality, title: o.title };
+  doc.saved = { song: st.song, quality: o.quality };
   lastFull = null;
   view.render();
   pad.render();
@@ -5151,7 +5236,7 @@ function loadDoc(song, o) {
   renderTitle();
 }
 function markSaved() {
-  doc.saved = { song: st.song, quality: quality(), title: doc.title };
+  doc.saved = { song: st.song, quality: quality() };
   renderTitle();
 }
 function confirmDiscard(what) {
@@ -5160,7 +5245,7 @@ function confirmDiscard(what) {
     closeOffer?.();
     const box = document.createElement("div");
     box.className = "offer";
-    box.innerHTML = `<div class="offer-card"><div class="offer-title">\u300C${esc3(doc.title)}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58</div><div class="offer-msg">${what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002</div><div class="offer-btns"><button class="btn" data-v="save">\u5148\u5B58</button><button class="btn" data-v="go">\u4E22\u6389\uFF0C\u7EE7\u7EED</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">\u300C${esc3(docName())}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58</div><div class="offer-msg">${what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002</div><div class="offer-btns"><button class="btn" data-v="save">\u5148\u5B58</button><button class="btn" data-v="go">\u4E22\u6389\uFF0C\u7EE7\u7EED</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
     document.body.append(box);
     const close = (ok) => {
       box.remove();
@@ -5181,7 +5266,7 @@ function confirmDiscard(what) {
 }
 async function fileNew() {
   if (!await confirmDiscard("\u65B0\u5EFA")) return;
-  loadDoc(initState().song, { title: UNTITLED, quality: "full", extras: emptyExtras(), handle: null });
+  loadDoc(initState().song, { stem: defaultStem(), quality: "full", extras: emptyExtras(), handle: null });
   singStatus("\u65B0\u7684\u4E00\u9996");
 }
 async function fileOpen() {
@@ -5196,14 +5281,14 @@ async function fileOpen() {
   if (!picked) return;
   try {
     const o = openBytes(picked.name, picked.bytes);
-    loadDoc(o.song, { title: o.title, quality: o.quality, extras: o.extras, handle: o.ours && !o.notices.length ? picked.handle : null });
+    loadDoc(o.song, { stem: o.stem, quality: o.quality, extras: o.extras, handle: o.ours && !o.notices.length ? picked.handle : null });
     if (o.notices.length) showError(o.notices.join(" "));
     singStatus(`\u6253\u5F00\u4E86 ${picked.name}`);
   } catch (e) {
     showError(`\u6253\u4E0D\u5F00 ${picked.name}\uFF1A${e.message}`);
   }
 }
-var bytesNow = () => saveMxl({ song: st.song, title: doc.title, hum: st.song.hum, quality: quality(), extras: doc.extras, app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
+var bytesNow = () => saveMxl({ song: st.song, hum: st.song.hum, quality: quality(), extras: doc.extras, app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
 async function fileSave(asNew) {
   try {
     if (!asNew && doc.handle) {
@@ -5213,17 +5298,17 @@ async function fileSave(asNew) {
       return;
     }
     if (canPickSave()) {
-      const h = await pickSave(`${doc.title}.mxl`);
+      const h = await pickSave(`${docName()}.mxl`);
       if (!h) return;
-      doc.title = h.name.replace(/\.(mxl|musicxml|xml)$/i, "") || doc.title;
+      doc.stem = h.name.replace(/\.(mxl|musicxml|xml)$/i, "") || doc.stem;
       await writeTo(h, bytesNow());
       doc.handle = h;
       markSaved();
       singStatus(`\u5B58\u597D\u4E86\uFF1A${h.name}`);
       return;
     }
-    const file = new File([bytesNow()], `${doc.title}.mxl`, { type: "application/vnd.recordare.musicxml" });
-    offerFile(file, "\u5B58\u6210 .mxl", `\u300C${esc3(doc.title)}\u300D\xB7 ${file.size < 1e6 ? `${Math.max(1, Math.round(file.size / 1e3))} KB` : `${(file.size / 1e6).toFixed(1)} MB`}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
+    const file = new File([bytesNow()], `${docName()}.mxl`, { type: "application/vnd.recordare.musicxml" });
+    offerFile(file, "\u5B58\u6210 .mxl", `${esc3(file.name)} \xB7 ${file.size < 1e6 ? `${Math.max(1, Math.round(file.size / 1e3))} KB` : `${(file.size / 1e6).toFixed(1)} MB`}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
   } catch (e) {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e.message}`);
   }
@@ -5232,24 +5317,14 @@ function openFileMenu() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><label class="set-field">\u6B4C\u540D<input id="titleIn" type="text" spellcheck="false" autocomplete="off" value="${esc3(doc.title)}" /></label><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="saveAs"><svg class="ico"><use href="#save-as"/></svg>\u53E6\u5B58\u4E3A\u2026</button></div><div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${doc.handle ? `\u73B0\u5728\u5B58\u5728 ${esc3(doc.handle.name)}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\u3002` : canPickSave() ? "" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\u3002"}</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc3(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>\uFF08\u586B\u4E86\u6B4C\u540D\u5C31\u7528\u6B4C\u540D\uFF1B\u6B4C\u540D\u5728\u7EB8\u9762\u6700\u4E0A\u9762\u70B9\u7740\u586B\uFF0C\u53EF\u4E0D\u586B\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="saveAs"><svg class="ico"><use href="#save-as"/></svg>\u53E6\u5B58\u4E3A\u2026</button></div><div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${doc.handle ? `\u73B0\u5728\u5B58\u5728 ${esc3(doc.handle.name)}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\u3002` : canPickSave() ? "" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\u3002"}</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
-  const titleIn = box.querySelector("#titleIn");
-  const applyTitle = () => {
-    const t = titleIn.value.trim().replace(/[\\/:*?"<>|]/g, "");
-    if (t && t !== doc.title) {
-      doc.title = t;
-      renderTitle();
-    }
-  };
   const close = () => {
-    applyTitle();
     box.remove();
     closeOffer = null;
     scoreEl.focus();
   };
   closeOffer = close;
-  titleIn.addEventListener("change", applyTitle);
   box.addEventListener("click", (e) => {
     const v = e.target.closest("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") {
@@ -5351,4 +5426,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-84c4608ee2ef.mjs.map
+//# sourceMappingURL=moonsinger-68306e93cb41.mjs.map

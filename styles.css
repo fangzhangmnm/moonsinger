@@ -184,3 +184,7 @@ button, input, select { font: inherit; color: inherit; }
 .file-row { flex-wrap: wrap; }
 .file-row .btn { display: inline-flex; align-items: center; gap: 6px; }
 #docTitle { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 纸面最上面的歌名（可不填；点了就地改） */
+.staff-svg .song-title { fill: var(--ink); font-weight: 600; }
+.staff-svg .song-title.empty { fill: #b9b2a5; font-weight: 400; }
+.title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }

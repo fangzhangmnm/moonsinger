@@ -39,7 +39,7 @@ function defaultRole(hum: Hum, quality: Exclude<Quality, "none">): Json {
   ] };
 }
 
-export interface SaveArgs { song: Song; title: string; hum: Hum; quality: Quality; extras: Extras; app: string; date: string }
+export interface SaveArgs { song: Song; hum: Hum; quality: Quality; extras: Extras; app: string; date: string }   // 歌名 = song.title（可不填）
 /** 歌 → .mxl 的字节。 */
 export function saveMxl(a: SaveArgs): Uint8Array {
   const role: Json = structuredClone(a.extras.lounge[ROLE] ?? defaultRole(a.hum, a.quality === "none" ? "full" : a.quality));
@@ -54,7 +54,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     program: Number((active?.gm as Json | undefined)?.program ?? 55),
     variant: typeof (active?.gm as Json | undefined)?.variant === "string" ? { library: "MoonSinger", name: String((active!.gm as Json).variant) } : undefined,
     pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : undefined,
-  }, { title: a.title, software: `MoonSinger ${a.app}`, date: a.date });
+  }, { software: `MoonSinger ${a.app}`, date: a.date });
   const scoreExt: Json = { ...(a.extras.scoreExt ?? {}), version: FORMAT.score,
     parts: [{ id: PART, role: ROLE, mic: MIC }], manualBars: { [PART]: w.manualBars }, unwritten: w.unwritten };
   const files: Record<string, Uint8Array> = {};
@@ -77,7 +77,8 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   return zipSync(entries);
 }
 
-export interface Opened { song: Song; title: string; hum: Hum; quality: Quality; extras: Extras; ours: boolean; notices: string[] }
+/** stem = 打开的文件叫什么（去掉扩展名；文件名和歌名分开：歌名在 song.title，可不填）。 */
+export interface Opened { song: Song; stem: string; hum: Hum; quality: Quality; extras: Extras; ours: boolean; notices: string[] }
 
 /** 字节 → 歌。认 .mxl（zip）和不压缩的 .musicxml / .xml。读不了 = 抛错（错误文字直接给人看）。 */
 export function openBytes(name: string, bytes: Uint8Array): Opened {
@@ -146,6 +147,6 @@ function finish(r: ReturnType<typeof readMusicXml>, extras: Extras, ours: boolea
     const c = ((role.candidates as Json[] | undefined) ?? []).find((x) => x.id === CAND.full);
     const h = c?.hum; if (h === "la" || h === "n" || h === "u" || h === "o" || h === "a") hum = h;
   }
-  const title = r.title || name.replace(/\.(mxl|musicxml|xml)$/i, "");
-  return { song: { ...r.song, hum }, title, hum, quality, extras, ours, notices };
+  const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
+  return { song: { ...r.song, hum }, stem, hum, quality, extras, ours, notices };
 }

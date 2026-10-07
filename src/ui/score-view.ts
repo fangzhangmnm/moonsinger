@@ -16,6 +16,7 @@ import { engrave, LYRIC_EM, type Layout } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
+import { TitleEditor } from "./title-editor.ts";
 
 /** 拖时值的阶梯：三十二分起，plain 与附点交替（都画得出来）。 */
 const DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => (v * TPQ) / 48);
@@ -39,6 +40,7 @@ export class ScoreView {
   private boxEl: HTMLDivElement;
   readonly lyrics: LyricEditor;
   readonly marks: MarkEditor;
+  readonly title: TitleEditor;
 
   constructor(private el: HTMLElement, private host: ScoreViewHost) {
     this.sheet = document.createElement("div"); this.sheet.className = "sheet";
@@ -46,6 +48,7 @@ export class ScoreView {
     el.replaceChildren(this.sheet);
     this.lyrics = new LyricEditor(this.sheet, host, () => this.layout, () => this.render());
     this.marks = new MarkEditor(this.sheet, host, () => this.layout, () => this.render());
+    this.title = new TitleEditor(this.sheet, host, () => this.layout);
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("pointerup", (e) => this.up(e));
@@ -59,13 +62,14 @@ export class ScoreView {
     const st = this.host.get(), sp = this.sp;
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     const width = Math.max(320, this.el.clientWidth);
-    this.layout = engrave(st.song, { width, sp, caret: st.caret, sel: st.sel, measureLyric: (s) => this.ctx.measureText(s).width });
+    this.layout = engrave(st.song, { width, sp, caret: st.caret, sel: st.sel, measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true });
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
     if (!this.boxEl.isConnected) this.sheet.appendChild(this.boxEl);
     this.lyrics.reposition();
     this.marks.reposition();
+    this.title.reposition();
     this.follow();
   }
 
@@ -92,7 +96,7 @@ export class ScoreView {
   }
 
   private down(e: PointerEvent): void {
-    if ((e.target as HTMLElement).closest(".lyric-input, .mark-ed")) return;   // 在歌词框 / 记号框里点：交给它们
+    if ((e.target as HTMLElement).closest(".lyric-input, .mark-ed, .title-input")) return;   // 在歌词框 / 记号框里点：交给它们
     const L = this.layout; if (!L) return;
     this.el.focus({ preventScroll: true });   // 点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）
     const p = this.local(e);
@@ -113,7 +117,10 @@ export class ScoreView {
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     if (wasMark) return true;   // 点别处 = 先收起记号框（这一下不另做事）
     const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st = this.host.get();
-    // 0. 记号（调号 / 拍号 / 速度）
+    // 0. 纸面最上面的歌名（可不填）
+    const tt = L.title;
+    if (x >= tt.x && x <= tt.x + tt.w && y >= tt.y && y <= tt.y + tt.h) { this.title.openNow(); return true; }
+    // 0½. 记号（调号 / 拍号 / 速度）
     const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
     if (mk) { this.marks.openAt(mk.index); return true; }
     // 1. 歌词那一行

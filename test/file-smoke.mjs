@@ -19,14 +19,20 @@ const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.pu
 const title = () => p.textContent("#docTitle");
 const tokens = () => p.evaluate(() => JSON.stringify(window.__moonsinger.state().song.tokens));
 await p.goto(`http://127.0.0.1:${PORT}/`); await p.waitForTimeout(400);
-check((await title()) === "未命名", "开局 = 未命名、没改过");
+const stem0 = await title(); check(/^\d{8}-[0-9a-f]{4}$/.test(stem0), "开局 = 默认名 yyyymmdd-hex4、没改过", stem0);
 await p.click("#score", { position: { x: 600, y: 400 } });
 for (const k of ["Digit1", "Digit2", "Digit3", "Enter", "Digit5", "Minus", "Digit6"]) await p.keyboard.press(k);
 const n0 = await p.$eval("#score text.note", (t) => { const b = t.getBoundingClientRect(); return { x: b.x + b.width / 2 }; });
 const staffBottom = await p.$$eval("#score line.staff", (ls) => Math.max(...ls.slice(0, 5).map((l) => l.getBoundingClientRect().y)));
 await p.mouse.click(n0.x, staffBottom + 52); await p.keyboard.type("さくら"); await p.keyboard.press("Enter");
 await p.click("#score", { position: { x: 700, y: 400 } });
-check((await title()) === "未命名 •", "写了之后标题带「•」（改过没存）");
+check((await title()) === `${stem0} •`, "写了之后标题带「•」（改过没存）");
+// 纸面最上面点歌名、填上
+const tb = await p.evaluate(() => { const r = document.querySelector("#score").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + 18 }; });
+await p.mouse.click(tb.x, tb.y); await p.waitForSelector(".title-input:not([hidden])");
+await p.keyboard.type("春の歌"); await p.keyboard.press("Enter");
+check((await title()) === "春の歌 •" && (await p.$$eval("#score text.song-title", (ts) => ts.map((t) => t.textContent).join("|"))) === "春の歌", "点纸面最上面填歌名：纸上画出来、顶栏跟着变");
+await p.click("#score", { position: { x: 700, y: 400 } });
 const before = await tokens();
 // 存：Ctrl+S → 面板 → 下载
 await p.keyboard.press("Control+KeyS");
@@ -34,13 +40,13 @@ await p.waitForSelector(".offer .offer-title");
 check((await p.textContent(".offer .offer-title")) === "存成 .mxl", "Ctrl+S → 存的面板（这台设备 = 下载 / 分享）");
 const [dl] = await Promise.all([p.waitForEvent("download"), p.click('.offer [data-v="download"]')]);
 const saved = `${DIR}/${dl.suggestedFilename()}`; await dl.saveAs(saved);
-check(dl.suggestedFilename() === "未命名.mxl" && (await title()) === "未命名", "下载了 .mxl、存了之后「•」消失");
+check(dl.suggestedFilename() === "春の歌.mxl" && (await title()) === "春の歌", "存的文件名 = 歌名、存了之后「•」消失", dl.suggestedFilename());
 // 改一下 → 打开 → 先问
 await p.keyboard.press("Digit7");
-check((await title()) === "未命名 •", "又改了");
+check((await title()) === "春の歌 •", "又改了");
 await p.click("#fileBtn"); await p.click('.offer [data-v="open"]');
 await p.waitForSelector(".offer .offer-title");
-check((await p.textContent(".offer .offer-title")) === "「未命名」改过还没存", "改过没存时「打开」先问");
+check((await p.textContent(".offer .offer-title")) === "「春の歌」改过还没存", "改过没存时「打开」先问");
 const [fc] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="go"]')]);
 await fc.setFiles(saved); await p.waitForTimeout(300);
 const after = await tokens();

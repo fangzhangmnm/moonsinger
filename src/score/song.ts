@@ -43,6 +43,8 @@ export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, 
 export type Hum = "la" | "n" | "u" | "o" | "a";
 
 export interface Song {
+  /** 歌名（可不填；纸面最上面那一行，存档 = MusicXML <work-title>；user 2026-10-07「纸张的最上面加一个可选的歌名吧，未来也是文件名」）。 */
+  title?: string;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   tokens: Token[];       // 开头三个 = 谱头记号（调号 / 拍号 / 速度）
 }
@@ -478,6 +480,12 @@ export function setDur(st: EditorState, i: number, dur: number): EditorState {
   return next(st, nt);
 }
 export function setHum(st: EditorState, hum: Hum): EditorState { return { ...st, song: { ...st.song, hum } }; }
+/** 改歌名（空 = 不填）。 */
+export function setTitle(st: EditorState, title: string): EditorState {
+  const t = title.trim(), song = { ...st.song };
+  if (t) song.title = t; else delete song.title;
+  return (st.song.title ?? "") === t ? st : { ...st, song };
+}
 
 // ── 时间轴（播放、画谱、小节对账都用） ─────────────────────────────────
 

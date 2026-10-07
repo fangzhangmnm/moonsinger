@@ -26,6 +26,7 @@ export interface EngraveOpts {
   caret: number;                         // 光标（插入点）
   sel?: { from: number; to: number } | null;   // 有 = 改（没有光标）
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
+  titlePlaceholder?: boolean;            // 歌名空着时画浅色的「歌名（可不填）」（编辑器里；导出 / 打印不画）
 }
 export const LYRIC_EM = 1.6;
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
@@ -36,9 +37,11 @@ export interface Slot { caret: number; system: number; x: number }
 export interface LyricHit { index: number; system: number; x: number; y: number }   // x = 歌词中心，y = 基线
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
+/** 纸面最上面的歌名那一条（点了就地改）。 */
+export interface TitleHit { x: number; y: number; w: number; h: number; baseline: number; size: number }
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
-  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[];
+  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; title: TitleHit;
   head: { system: number; x: number } | null;   // 光标在哪（画面跟随用；改的时候没有）
   lyricY: (system: number) => number;
   yOf: (system: number, d: number) => number;
@@ -46,7 +49,7 @@ export interface Layout {
 }
 
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
-const MARGIN = 1.2, STAFF_ABOVE = 6, SYS_H = 17, LYRIC_BELOW = 5.2, BAR_W = 1.6;
+const MARGIN = 1.2, STAFF_ABOVE = 6, SYS_H = 17, LYRIC_BELOW = 5.2, BAR_W = 1.6, TITLE_H = 4.6;   // TITLE_H = 纸面最上面歌名那一条
 const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;     // F5 / B4 / E4 的五线谱位置
 const SHARP_POS = [38, 35, 39, 36, 33, 37, 34], FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 const GLYPH_TUPLET = (n: number) => [...String(n)].map((d) => String.fromCodePoint(0xe880 + Number(d))).join("");
@@ -176,7 +179,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const nSys = system + 1;
 
   // 3. 坐标系
-  const sysTop = (s: number) => P(0.5 + s * SYS_H);
+  const sysTop = (s: number) => P(TITLE_H + 0.5 + s * SYS_H);
   const staffTop = (s: number) => sysTop(s) + P(STAFF_ABOVE);
   const yOf = (s: number, d: number) => staffTop(s) + (TOP_LINE - d) * P(0.5);
   const dOf = (s: number, y: number) => Math.round(TOP_LINE - (y - staffTop(s)) / P(0.5));
@@ -421,7 +424,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     else { const last = units[units.length - 1]; slots.push({ caret: c, system: last ? last.system : 0, x: last ? P(last.x + last.w) : P(sysStarts[0]) }); }
   }
 
-  return { prims, width: o.width, height: P(nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, head, lyricY, yOf, dOf };
+  // 歌名：纸面最上面居中；空着时编辑器里画浅色提示（可不填）
+  const titleSize = P(1.9), titleBase = P(TITLE_H * 0.62);
+  if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
+  else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "歌名（可不填）", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
+  const title: TitleHit = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
+  return { prims, width: o.width, height: P(TITLE_H + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, head, lyricY, yOf, dOf };
 }
 
 export type { Token };
