@@ -177,3 +177,6 @@ button, input, select { font: inherit; color: inherit; }
   background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px 6px 14px; box-shadow: 0 4px 16px rgba(0,0,0,.12); font-size: 14px; }
 .set-app { align-items: center; }
 .set-ver { color: #777; font-size: 12px; margin-right: auto; }
+/* 报错条（替补顶上等）：在「有新版本」那条下面，字可以折行，原因不截断 */
+.notice-err { top: calc(env(safe-area-inset-top, 0px) + 54px); max-width: calc(100vw - 32px); border-color: #e5a29b; color: #8a1c12; }
+.notice-err .notice-text { white-space: normal; }

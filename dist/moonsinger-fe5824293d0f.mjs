@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.1.1-2026-10-07";
+var APP_VERSION = "v0.1.2-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3237,6 +3237,18 @@ var singing = false;
 var singStatus = (s) => {
   $("singStatus").textContent = s;
 };
+function showError(text) {
+  document.getElementById("errNotice")?.remove();
+  const el = document.createElement("div");
+  el.id = "errNotice";
+  el.className = "update-bar notice-err";
+  el.innerHTML = `<span class="notice-text"></span><button class="btn" data-v="ok">\u77E5\u9053\u4E86</button>`;
+  el.querySelector(".notice-text").textContent = text;
+  el.addEventListener("click", (e) => {
+    if (e.target.closest("[data-v]")) el.remove();
+  });
+  document.body.append(el);
+}
 var playIcon = (stop) => {
   $("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`;
 };
@@ -3270,7 +3282,7 @@ async function singFull() {
   lastFull = { key, r };
   return r;
 }
-function playLight(note = "") {
+function playLight(who = "\u8F7B\u91CF\u7248") {
   const notes = lightNotes();
   if (!notes.length) {
     singStatus("\u8FD8\u6CA1\u6709\u97F3");
@@ -3278,12 +3290,12 @@ function playLight(note = "") {
   }
   if (!sampler.ready) {
     singStatus("\u8F7B\u91CF\u7248\u7684\u5143\u97F3\u8868\u8FD8\u5728\u4E0B\u8F7D\u2026");
-    void sampler.load().then(() => playLight(note));
+    void sampler.load().then(() => playLight(who));
     return;
   }
   const total = sampler.playSong(notes, st.song.hum, () => playIcon(false));
   playIcon(true);
-  singStatus(`${note}\u8F7B\u91CF\u7248\u5531 ${total.toFixed(1)} \u79D2`);
+  singStatus(`${who}\u5531 ${total.toFixed(1)} \u79D2`);
 }
 async function togglePlay() {
   if (singer.playing || sampler.songPlaying) {
@@ -3313,7 +3325,8 @@ async function togglePlay() {
     });
     playIcon(true);
   } catch (e) {
-    playLight(`\u5B8C\u6574\u7248\u5531\u4E0D\u51FA\u6765\uFF08${e.message}\uFF09\uFF0C\u5148\u7528`);
+    showError(`\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF1A${e.message}\u3002\u8FD9\u6B21\u7531\u5143\u97F3\u7248\u66FF\u5531\u3002`);
+    playLight("\u5143\u97F3\u7248\u66FF");
   } finally {
     singing = false;
     $("playBtn").classList.remove("is-on");
@@ -3328,20 +3341,21 @@ async function exportSong() {
   exporting = true;
   $("shareBtn").classList.add("is-on");
   try {
-    let r = null, how = "";
+    let r = null, how = "", why = "";
     if ($("qualSel").value === "full") {
       try {
         r = await singFull();
         how = "\u6708\u8BFB";
       } catch (e) {
-        singStatus(`\u5B8C\u6574\u7248\u5531\u4E0D\u51FA\u6765\uFF08${e.message}\uFF09\uFF0C\u6539\u7528\u8F7B\u91CF\u7248\u5BFC\u51FA\u2026`);
+        why = e.message;
+        showError(`\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF1A${why}\u3002\u8FD9\u4EFD\u5BFC\u51FA\u7531\u5143\u97F3\u7248\u66FF\u5531\u3002`);
       }
     }
     if (!r) {
       const notes = lightNotes();
       if (notes.length) {
         r = await sampler.renderSong(notes, st.song.hum);
-        how = "\u8F7B\u91CF\u7248";
+        how = why ? "\u5143\u97F3\u7248\u66FF" : "\u8F7B\u91CF\u7248";
       }
     }
     if (!r) {
@@ -3352,7 +3366,7 @@ async function exportSong() {
     const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
     const file = new File([bytes], `${songTitle()}.mp3`, { type: "audio/mpeg" });
     singStatus("");
-    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${how}\u5531 ${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
+    offerFile(file, why ? "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86\uFF08\u66FF\u8865\u5531\u7684\uFF09" : "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${why ? `\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF08${esc2(why)}\uFF09\uFF0C\u8FD9\u4EFD\u662F\u5143\u97F3\u7248\u66FF\u5531\u7684\u3002<br>` : ""}${how}\u5531 ${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
   } catch (e) {
     singStatus(`\u5BFC\u51FA\u5931\u8D25\uFF1A${e.message}`);
   } finally {
@@ -3548,4 +3562,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-6d0124060883.mjs.map
+//# sourceMappingURL=moonsinger-fe5824293d0f.mjs.map
