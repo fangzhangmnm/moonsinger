@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "bash scripts/build.sh",
     "serve": "bash scripts/serve.sh",
-    "smoke": "node test/shell-smoke.mjs"
+    "smoke": "node test/shell-smoke.mjs && node test/file-smoke.mjs"
   },
   "devDependencies": {
     "typescript": "5.7.3"

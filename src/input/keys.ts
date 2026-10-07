@@ -8,7 +8,8 @@
 //   导出面板 sheet > 记号框 mark > 歌词框 lyric > 谱面；谱面再分 写 write（光标）/ 改 edit（选中）/ 弹 impro（即兴开关开着）。
 //   同一个键在不同模式下做不同的事 = 同一行里不同的列（does[where]）；没写的列 = 这个键在那里不管（文本框里就照常打字）。
 //   「弹」只改变音符键（只唱不写，user「即兴做成 pad 上的一个开关（按住时只唱不写）」）：弹的那一列没写的键，照写 / 改走。
-// 只认物理键位（KeyboardEvent.code），不认打出来的字（换输入法 / 键盘布局不乱）；Ctrl / Cmd 组合一律不接（浏览器的，Ctrl+1–8 是切标签页）；
+// 只认物理键位（KeyboardEvent.code），不认打出来的字（换输入法 / 键盘布局不乱）；Ctrl / Cmd 组合只接表里标了 mod 的（存 / 另存为 / 打开，2026-10-07 无地逃生口），
+//   其余一律不接（浏览器的，Ctrl+1–8 是切标签页）；
 // 输入法正在拼（isComposing）的时候一律不接（拼音、假名输入法不被打断）。
 
 import type { Command } from "../score/commands.ts";
@@ -17,14 +18,15 @@ import type { Dir } from "../score/pitch.ts";
 export type Mode = "write" | "edit" | "impro";
 export type Where = Mode | "lyric" | "mark" | "sheet";
 
-/** 一个按键：物理键位 + Shift / Alt（必须完全一致）。 */
-export interface Chord { code: string; shift?: boolean; alt?: boolean }
+/** 一个按键：物理键位 + Shift / Alt / mod（Windows·Linux 的 Ctrl 或 Mac 的 ⌘）（必须完全一致）。 */
+export interface Chord { code: string; shift?: boolean; alt?: boolean; mod?: boolean }
 
 /** 路由的结果：宿主照着做。 */
 export type Action =
   | { k: "cmd"; cmd: Command }                      // 编辑命令（score/commands.ts apply）
   | { k: "audition"; degree: number; dir: Dir }     // 弹：只唱这一级，不写
   | { k: "play" } | { k: "impro" }
+  | { k: "file"; a: "open" | "save" | "saveAs" }   // 无地逃生口（打开 / 存 .mxl）
   | { k: "lyric"; a: "commit" | "cancel" | "next" | "prev" | "hyphen" | "back" }
   | { k: "mark"; a: "commit" | "cancel" }
   | { k: "sheet"; a: "close" };
@@ -100,6 +102,13 @@ export const BINDINGS: Binding[] = [
   // ── 播放 ──
   { id: "play", group: "播放", keys: [{ code: "Space" }], act: () => ({ k: "play" }), does: { write: "月读唱 / 停", edit: "月读唱 / 停" } },
   { id: "impro", group: "播放", keys: [{ code: "Backquote" }], show: "`", act: () => ({ k: "impro" }), does: { write: "「弹」开 / 关（音符键只唱不写）", edit: "「弹」开 / 关", impro: "「弹」关" } },
+  // ── 文件（无地逃生口：.mxl；user 2026-10-07「先按照无地规范导入导出做逃生口」）。新建只在菜单里（Ctrl+N 浏览器不让拦） ──
+  { id: "file.save", group: "文件", keys: [{ code: "KeyS", mod: true }], show: "Ctrl / ⌘+S", act: () => ({ k: "file", a: "save" }),
+    does: { write: "存（存回打开的那个文件；还没有就另存为）", edit: "存", impro: "存", lyric: "存", mark: "存" } },
+  { id: "file.saveAs", group: "文件", keys: [{ code: "KeyS", mod: true, shift: true }], show: "Ctrl / ⌘+Shift+S", act: () => ({ k: "file", a: "saveAs" }),
+    does: { write: "另存为…", edit: "另存为…", impro: "另存为…", lyric: "另存为…", mark: "另存为…" } },
+  { id: "file.open", group: "文件", keys: [{ code: "KeyO", mod: true }], show: "Ctrl / ⌘+O", act: () => ({ k: "file", a: "open" }),
+    does: { write: "打开…（.mxl / .musicxml）", edit: "打开…", impro: "打开…", lyric: "打开…", mark: "打开…" } },
   // ── 歌词框（点谱下面打开；输入法照常用，中文 / 日文选定一段字就按字往后贴） ──
   { id: "lyric.next", group: "歌词框", keys: [{ code: "Space" }, { code: "Tab" }], show: "空格 / Tab", act: () => ({ k: "lyric", a: "next" }),
     does: { lyric: "这个词完了：贴上、跳下一个音（框是空的 = 只跳）" } },
@@ -120,7 +129,7 @@ const NAME: Record<string, string> = {
 };
 export function chordName(c: Chord): string {
   const base = NAME[c.code] ?? c.code.replace(/^Digit/, "").replace(/^Key/, "").replace(/^Numpad(\d)$/, "小键盘 $1");
-  return `${c.alt ? "Alt+" : ""}${c.shift ? "Shift+" : ""}${base}`;
+  return `${c.mod ? "Ctrl / ⌘+" : ""}${c.alt ? "Alt+" : ""}${c.shift ? "Shift+" : ""}${base}`;
 }
 /** pad 按钮提示用：某条映射的第一个键（没有 = ""）。 */
 export function hint(id: string): string {
@@ -131,7 +140,7 @@ export function hint(id: string): string {
 export interface KeyLike { code: string; key: string; shiftKey: boolean; altKey: boolean; ctrlKey: boolean; metaKey: boolean; isComposing?: boolean }
 
 function matches(c: Chord, e: KeyLike): boolean {
-  if (c.code !== e.code || !!c.shift !== e.shiftKey || !!c.alt !== e.altKey) return false;
+  if (c.code !== e.code || !!c.shift !== e.shiftKey || !!c.alt !== e.altKey || !!c.mod !== (e.ctrlKey || e.metaKey)) return false;
   // 小键盘数字：NumLock 关着时它们是方向键（key 不是数字），不接
   if (/^Numpad\d$/.test(c.code) && !/^\d$/.test(e.key)) return false;
   return true;
@@ -139,7 +148,7 @@ function matches(c: Chord, e: KeyLike): boolean {
 
 /** 路由：这个按键在 where 该做什么（null = 不管，让浏览器 / 文本框照常）。弹没写的键照写 / 改走（base）。 */
 export function route(e: KeyLike, where: Where, base: "write" | "edit" = "write"): Action | null {
-  if (e.ctrlKey || e.metaKey || e.isComposing) return null;
+  if (e.isComposing) return null;   // Ctrl / ⌘ 组合：只有表里标了 mod 的键能命中（matches 里比），其余照旧交给浏览器
   const tryWhere = (w: Where): Action | null => {
     for (const b of BINDINGS) {
       if (!b.does[w]) continue;
@@ -166,7 +175,7 @@ export function renderKeysDoc(): string {
   let md = `<!-- 自动生成：node scripts/gen-keys-doc.mjs 从 src/input/keys.ts 的 BINDINGS 生成——别手改，改表再重跑（测试守着它不过期）。 -->\n\n`;
   md += `# 键盘\n\n> 生成自 \`src/input/keys.ts\`\n\n`;
   md += `谱面上有三种状态：**写**（光标，打的音插在光标处）、**改**（选中了一段，打的音覆盖选中）、**弹**（「弹」开着：音符键只唱不写，其余键照写 / 改）。\n`;
-  md += `按物理键位认（换输入法 / 键盘布局不乱）；Ctrl / Cmd 组合不接。\n\n`;
+  md += `按物理键位认（换输入法 / 键盘布局不乱）；Ctrl / ⌘ 组合只接存 / 另存为 / 打开，其余交给浏览器。\n\n`;
   const score = BINDINGS.filter((b) => b.does.write || b.does.edit || b.does.impro);
   const groups = [...new Set(score.map((b) => b.group))];
   for (const g of groups) {

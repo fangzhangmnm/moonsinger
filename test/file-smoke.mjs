@@ -1,0 +1,66 @@
+// test/file-smoke.mjs —— 无地逃生口冒烟（真浏览器）：写 → Ctrl+S 存 .mxl → 改 → 打开先问 → 打开存的文件逐 token 相同 → 别家谱不自动选角、播放只报错 → 改过没存关页面有挽留框。
+// created 2026-10-07 by Claude Opus 5.5。跑：先 bash scripts/build.sh，再 node test/file-smoke.mjs（同 shell-smoke 借 WeebPaint 的 playwright）。
+// 走 iPad 那条路（把桌面的文件选择框屏蔽掉 → 存 = 下载、打开 = 选文件）：桌面 Chromium 的系统文件框自动化不了，那条路没有自动测。
+import { chromium } from "../../20260524 WeebPaint/node_modules/playwright/index.mjs";
+import fs from "node:fs"; import os from "node:os"; import path from "node:path"; import { spawn } from "node:child_process"; import { fileURLToPath } from "node:url";
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const SITE = fs.mkdtempSync(path.join(os.tmpdir(), "moonsinger-file-")), DIR = fs.mkdtempSync(path.join(os.tmpdir(), "moonsinger-dl-"));
+for (const f of ["index.html", "styles.css", "manifest.webmanifest", "service-worker.js", "icon.svg", "icon-192.png", "icon-512.png", "dist", "vendor", "assets"]) fs.cpSync(path.join(ROOT, f), path.join(SITE, f), { recursive: true, dereference: true });
+fs.copyFileSync(path.join(ROOT, "test/fixtures/twinkle.musicxml"), path.join(DIR, "twinkle.musicxml"));
+const PORT = 8890 + Math.floor(Math.random() * 100);
+const server = spawn("python3", ["-m", "http.server", String(PORT), "--bind", "127.0.0.1", "--directory", SITE], { stdio: "ignore" });
+await new Promise((r) => setTimeout(r, 600));
+let pass = 0, fail = 0;
+const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
+const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 760 }, acceptDownloads: true });
+await ctx.addInitScript(() => { window.showSaveFilePicker = undefined; window.showOpenFilePicker = undefined; });
+try {
+const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
+const title = () => p.textContent("#docTitle");
+const tokens = () => p.evaluate(() => JSON.stringify(window.__moonsinger.state().song.tokens));
+await p.goto(`http://127.0.0.1:${PORT}/`); await p.waitForTimeout(400);
+check((await title()) === "未命名", "开局 = 未命名、没改过");
+await p.click("#score", { position: { x: 600, y: 400 } });
+for (const k of ["Digit1", "Digit2", "Digit3", "Enter", "Digit5", "Minus", "Digit6"]) await p.keyboard.press(k);
+const n0 = await p.$eval("#score text.note", (t) => { const b = t.getBoundingClientRect(); return { x: b.x + b.width / 2 }; });
+const staffBottom = await p.$$eval("#score line.staff", (ls) => Math.max(...ls.slice(0, 5).map((l) => l.getBoundingClientRect().y)));
+await p.mouse.click(n0.x, staffBottom + 52); await p.keyboard.type("さくら"); await p.keyboard.press("Enter");
+await p.click("#score", { position: { x: 700, y: 400 } });
+check((await title()) === "未命名 •", "写了之后标题带「•」（改过没存）");
+const before = await tokens();
+// 存：Ctrl+S → 面板 → 下载
+await p.keyboard.press("Control+KeyS");
+await p.waitForSelector(".offer .offer-title");
+check((await p.textContent(".offer .offer-title")) === "存成 .mxl", "Ctrl+S → 存的面板（这台设备 = 下载 / 分享）");
+const [dl] = await Promise.all([p.waitForEvent("download"), p.click('.offer [data-v="download"]')]);
+const saved = `${DIR}/${dl.suggestedFilename()}`; await dl.saveAs(saved);
+check(dl.suggestedFilename() === "未命名.mxl" && (await title()) === "未命名", "下载了 .mxl、存了之后「•」消失");
+// 改一下 → 打开 → 先问
+await p.keyboard.press("Digit7");
+check((await title()) === "未命名 •", "又改了");
+await p.click("#fileBtn"); await p.click('.offer [data-v="open"]');
+await p.waitForSelector(".offer .offer-title");
+check((await p.textContent(".offer .offer-title")) === "「未命名」改过还没存", "改过没存时「打开」先问");
+const [fc] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="go"]')]);
+await fc.setFiles(saved); await p.waitForTimeout(300);
+const after = await tokens();
+const canon = (j) => JSON.stringify(JSON.parse(j).map((t) => { const o = (t.kind === "note" || t.kind === "rest") ? t : { ...t, id: 0 }; return Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]])); }));
+check(canon(after) === canon(before), "打开存的文件：逐 token 相同（小节线 / 记号的 id 是编辑器自己的，不比）");
+// 别家的谱
+await p.click("#fileBtn");
+const [fc2] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="open"]')]);
+await fc2.setFiles(`${DIR}/twinkle.musicxml`); await p.waitForTimeout(300);
+const notice = await p.textContent("#errNotice .notice-text"); check(notice.includes("叠音") && notice.includes("还没人上场"), "别家谱：报出没读进来的和没人上场");
+check((await p.$eval("#qualSel", (s) => s.value)) === "none" && (await title()) === "Twinkle", "别家谱：音质 = 未选角、标题 = 谱里的歌名");
+await p.click('#errNotice [data-v="ok"]'); await p.click("#playBtn"); await p.waitForTimeout(300);
+check((await p.textContent("#errNotice .notice-text")).includes("还没有人上场") && !(await p.evaluate(() => window.__moonsinger.singer.playing || window.__moonsinger.sampler.songPlaying)), "别家谱：点播放 = 不出声、报错（不自动替补）");
+// 改过没存关页面 → 挽留框
+await p.click("#score", { position: { x: 700, y: 400 } }); await p.keyboard.press("Digit3");
+let dialog = "";
+p.on("dialog", async (d) => { dialog = d.type(); await d.dismiss(); });
+await p.close({ runBeforeUnload: true }); await new Promise((r) => setTimeout(r, 500));
+check(errs.length === 0, "页面无报错", errs.join(" | "));
+check(dialog === "beforeunload", "改过没存关页面：浏览器挽留框");
+} finally { await b.close(); server.kill(); fs.rmSync(SITE, { recursive: true, force: true }); fs.rmSync(DIR, { recursive: true, force: true }); }
+console.log(`\n  ${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

@@ -35,8 +35,10 @@
     <!-- ICON-SPRITE:BEGIN — 由 scripts/inline-sprites.py 生成，勿手改 -->
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
 <!--
-  9 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
+  14 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
   Family SVG Icons — MIT License, Copyright (c) 2026 fangzhangmnm.
+  Contains work derived from (per-icon provenance in data-src):
+    Feather Icons — MIT License, Copyright (c) 2013-2023 Cole Bemis · https://github.com/feathericons/feather
 -->
   <!-- media -->
   <!-- play — 播放:实心右向三角 ▶(IEC 60417 磁带机惯例统一实心, 描边同色叠加得圆角); 20260819 media 批入库 -->
@@ -48,6 +50,16 @@
   <symbol id="export" data-cat="file" data-src="own" data-note="导出:向上箭头离开托盘(import 的上下镜像)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 v-11"/><polyline points="7 15, 12 10, 17 15"/> <path d="M4 7 v-3 a1 1 0 0 1 1 -1 h14 a1 1 0 0 1 1 1 v3"/></symbol>
   <!-- import — 导入:向下箭头落进托盘(托盘=开口朝上的 U) -->
   <symbol id="import" data-cat="file" data-src="own" data-note="导入:向下箭头落进托盘(托盘=开口朝上的 U)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 v11"/><polyline points="7 9, 12 14, 17 9"/> <path d="M4 17 v3 a1 1 0 0 0 1 1 h14 a1 1 0 0 0 1 -1 v-3"/></symbol>
+  <!-- file — 文档:单张纸+折角(copy/paste/clear-canvas 共用母题) -->
+  <symbol id="file" data-cat="file" data-src="own" data-note="文档:单张纸+折角(copy/paste/clear-canvas 共用母题)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.6a1.7 1.7 0 0 1 1.7-1.7h6.6l4 4v11.5a1.7 1.7 0 0 1-1.7 1.7H5.7A1.7 1.7 0 0 1 4 20.8z"/><path d="M12.3 3.9V8h4"/></symbol>
+  <!-- new — 新建:纯加号(等长十字线) -->
+  <symbol id="new" data-cat="file" data-src="own" data-note="新建:纯加号(等长十字线)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/> <line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <!-- folder-open — 打开的文件夹:背板止于盖顶 T 接,不再互相压线 -->
+  <symbol id="folder-open" data-cat="file" data-src="own" data-note="打开的文件夹:背板止于盖顶 T 接,不再互相压线" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18 V7 a2 2 0 0 1 2 -2 h4 l2 2 h6 a2 2 0 0 1 2 2 v1.8"/><path d="M3 18 L6.4 10.8 H21.6 L18.2 18 Z"/></symbol>
+  <!-- floppy-disk — 软盘/保存:滑盖左右对称(7/17)且两竖线顶到顶边 + 防呆角 k=3 -->
+  <symbol id="floppy-disk" data-cat="file" data-src="feather:save" data-note="软盘/保存:滑盖左右对称(7/17)且两竖线顶到顶边 + 防呆角 k=3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h13l3 3v13a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 17 8 17 3"/></symbol>
+  <!-- save-as — 另存为(floppy-disk=保存 的配对键):双软盘叠放(copy 的前后件语法), 后盘右上探出, 前盘遮罩留白; 20260724 候选 3 号入库 -->
+  <symbol id="save-as" data-cat="file" data-src="feather:save" data-note="另存为(floppy-disk=保存 的配对键):双软盘叠放(copy 的前后件语法), 后盘右上探出, 前盘遮罩留白; 20260724 候选 3 号入库" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><mask id="icSa3"><rect width="24" height="24" fill="#fff"/><g transform="translate(-0.5 5.0) scale(0.75)"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h13l3 3v13a2 2 0 0 1-2 2z" fill="#000" stroke="#000" stroke-width="4.3"/></g></mask><g mask="url(#icSa3)"><g transform="translate(5.5 -0.5) scale(0.75)" stroke-width="2.27"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h13l3 3v13a2 2 0 0 1-2 2z"/><polyline points="7 3 7 8 17 8 17 3"/></g></g><g transform="translate(-0.5 5.0) scale(0.75)" stroke-width="2.27"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h13l3 3v13a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 17 8 17 3"/></g></symbol>
   <!-- common -->
   <!-- caret-up — 上调 ▲:圆角实心扁三角(数字框旁上下叠放的小转盘用,12–16px)；与带竿的 chevron-up(上移)分工【JustReadBooks 朗读控制条预设框右侧小转盘「预设加一」；2026-10-02 Claude Opus 5.5 自画未过目】 -->
   <symbol id="caret-up" data-cat="common" data-src="own" data-note="上调 ▲:圆角实心扁三角(数字框旁上下叠放的小转盘用,12–16px)；与带竿的 chevron-up(上移)分工【JustReadBooks 朗读控制条预设框右侧小转盘「预设加一」；2026-10-02 Claude Opus 5.5 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 15.5 L12 8 L18.5 15.5 Z" fill="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
@@ -70,6 +82,6 @@
         <aside id="padPanel" class="pad-panel"></aside>
       </main>
     </div>
-    <script type="module" src="./dist/moonsinger-7fad7a19e178.mjs"></script>
+    <script type="module" src="./dist/moonsinger-06676834886a.mjs"></script>
   </body>
 </html>

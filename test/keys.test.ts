@@ -28,6 +28,9 @@ describe("键盘路由", () => {
   });
   it("Ctrl / Cmd 组合、输入法正在拼、NumLock 关着的小键盘：一律不接", () => {
     eq(r(K("Digit1", { ctrlKey: true }), "write"), "null"); eq(r(K("Space", { isComposing: true }), "lyric"), "null");
+    eq(r(K("KeyS", { ctrlKey: true }), "write"), '{"k":"file","a":"save"}'); eq(r(K("KeyS", { metaKey: true }), "lyric"), '{"k":"file","a":"save"}');
+    eq(r(K("KeyS", { ctrlKey: true, shiftKey: true }), "edit"), '{"k":"file","a":"saveAs"}'); eq(r(K("KeyO", { ctrlKey: true }), "mark"), '{"k":"file","a":"open"}');
+    eq(r(K("KeyS"), "write"), "null"); eq(r(K("KeyT", { ctrlKey: true }), "write"), "null");   // 不带 Ctrl 的 S、别的 Ctrl 组合都不接
     eq(r(K("Numpad1", { key: "End" }), "write"), "null"); eq(r(K("Numpad1", { key: "1" }), "write"), '{"k":"cmd","cmd":{"k":"degree","degree":1,"dir":"near"}}');
   });
   it("按住响的键：松开要停声", () => { eq(isSoundKey(K("KeyQ")), true); eq(isSoundKey(K("Digit8")), false); });

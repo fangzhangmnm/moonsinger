@@ -26,7 +26,8 @@ export const TUPLET: Record<number, [number, number]> = { 3: [2, 3], 5: [4, 5], 
 export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean }
+/** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string }
 export interface RestTok { kind: "rest"; id: number; dur: number }
 export interface BarTok { kind: "bar"; id: number }
 export interface KeyTok { kind: "key"; id: number; fifths: number }

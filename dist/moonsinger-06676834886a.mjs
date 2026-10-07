@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.1.3-2026-10-07";
+var APP_VERSION = "v0.1.4-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -100,8 +100,8 @@ function initPwaShell(opts) {
         reg.update().catch(() => {
         });
       }, 10 * 60 * 1e3);
-    }).catch((err) => {
-      console.warn("[pwa] SW register failed", err);
+    }).catch((err2) => {
+      console.warn("[pwa] SW register failed", err2);
     });
   }
   return { isDevRoute, reload, forceReset, checkForUpdate };
@@ -827,6 +827,31 @@ var BINDINGS = [
   // ── 播放 ──
   { id: "play", group: "\u64AD\u653E", keys: [{ code: "Space" }], act: () => ({ k: "play" }), does: { write: "\u6708\u8BFB\u5531 / \u505C", edit: "\u6708\u8BFB\u5531 / \u505C" } },
   { id: "impro", group: "\u64AD\u653E", keys: [{ code: "Backquote" }], show: "`", act: () => ({ k: "impro" }), does: { write: "\u300C\u5F39\u300D\u5F00 / \u5173\uFF08\u97F3\u7B26\u952E\u53EA\u5531\u4E0D\u5199\uFF09", edit: "\u300C\u5F39\u300D\u5F00 / \u5173", impro: "\u300C\u5F39\u300D\u5173" } },
+  // ── 文件（无地逃生口：.mxl；user 2026-10-07「先按照无地规范导入导出做逃生口」）。新建只在菜单里（Ctrl+N 浏览器不让拦） ──
+  {
+    id: "file.save",
+    group: "\u6587\u4EF6",
+    keys: [{ code: "KeyS", mod: true }],
+    show: "Ctrl / \u2318+S",
+    act: () => ({ k: "file", a: "save" }),
+    does: { write: "\u5B58\uFF08\u5B58\u56DE\u6253\u5F00\u7684\u90A3\u4E2A\u6587\u4EF6\uFF1B\u8FD8\u6CA1\u6709\u5C31\u53E6\u5B58\u4E3A\uFF09", edit: "\u5B58", impro: "\u5B58", lyric: "\u5B58", mark: "\u5B58" }
+  },
+  {
+    id: "file.saveAs",
+    group: "\u6587\u4EF6",
+    keys: [{ code: "KeyS", mod: true, shift: true }],
+    show: "Ctrl / \u2318+Shift+S",
+    act: () => ({ k: "file", a: "saveAs" }),
+    does: { write: "\u53E6\u5B58\u4E3A\u2026", edit: "\u53E6\u5B58\u4E3A\u2026", impro: "\u53E6\u5B58\u4E3A\u2026", lyric: "\u53E6\u5B58\u4E3A\u2026", mark: "\u53E6\u5B58\u4E3A\u2026" }
+  },
+  {
+    id: "file.open",
+    group: "\u6587\u4EF6",
+    keys: [{ code: "KeyO", mod: true }],
+    show: "Ctrl / \u2318+O",
+    act: () => ({ k: "file", a: "open" }),
+    does: { write: "\u6253\u5F00\u2026\uFF08.mxl / .musicxml\uFF09", edit: "\u6253\u5F00\u2026", impro: "\u6253\u5F00\u2026", lyric: "\u6253\u5F00\u2026", mark: "\u6253\u5F00\u2026" }
+  },
   // ── 歌词框（点谱下面打开；输入法照常用，中文 / 日文选定一段字就按字往后贴） ──
   {
     id: "lyric.next",
@@ -876,19 +901,19 @@ var NAME = {
 };
 function chordName(c) {
   const base2 = NAME[c.code] ?? c.code.replace(/^Digit/, "").replace(/^Key/, "").replace(/^Numpad(\d)$/, "\u5C0F\u952E\u76D8 $1");
-  return `${c.alt ? "Alt+" : ""}${c.shift ? "Shift+" : ""}${base2}`;
+  return `${c.mod ? "Ctrl / \u2318+" : ""}${c.alt ? "Alt+" : ""}${c.shift ? "Shift+" : ""}${base2}`;
 }
 function hint(id) {
   const b = BINDINGS.find((x) => x.id === id);
   return b ? b.show?.split(" / ")[0] ?? chordName(b.keys[0]) : "";
 }
 function matches(c, e) {
-  if (c.code !== e.code || !!c.shift !== e.shiftKey || !!c.alt !== e.altKey) return false;
+  if (c.code !== e.code || !!c.shift !== e.shiftKey || !!c.alt !== e.altKey || !!c.mod !== (e.ctrlKey || e.metaKey)) return false;
   if (/^Numpad\d$/.test(c.code) && !/^\d$/.test(e.key)) return false;
   return true;
 }
 function route(e, where, base2 = "write") {
-  if (e.ctrlKey || e.metaKey || e.isComposing) return null;
+  if (e.isComposing) return null;
   const tryWhere = (w) => {
     for (const b of BINDINGS) {
       if (!b.does[w]) continue;
@@ -910,9 +935,9 @@ var MELISMA = /* @__PURE__ */ new Set(["\u30FC", "~", "\uFF5E", "_", "\uFF3F"]);
 var isKana = (c) => /[぀-ゟ゠-ヿ]/.test(c);
 var isHan = (c) => /\p{Script=Han}/u.test(c);
 var isLatin = (c) => /[A-Za-z'’]/.test(c);
-function splitSyllables(text) {
+function splitSyllables(text2) {
   const out = [];
-  const chars = [...text.normalize("NFC")];
+  const chars = [...text2.normalize("NFC")];
   for (let i = 0; i < chars.length; i++) {
     const c = chars[i];
     if (MELISMA.has(c)) {
@@ -1281,9 +1306,9 @@ function engrave(song, o) {
   const drawChunk = (c) => {
     const cls = clsOf(c);
     if (!c.note) {
-      const g = c.base >= WHOLE ? GLYPH.restWhole : c.base >= TPQ * 2 ? GLYPH.restHalf : c.base >= TPQ ? GLYPH.restQuarter : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
+      const g2 = c.base >= WHOLE ? GLYPH.restWhole : c.base >= TPQ * 2 ? GLYPH.restHalf : c.base >= TPQ ? GLYPH.restQuarter : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
       const ry = c.base >= WHOLE ? yOf(c.system, 36) : yOf(c.system, MID_LINE);
-      prims.push({ t: "glyph", x: P(c.x + 0.35), y: ry, ch: g, cls: cls ? `rest ${cls}` : "rest" });
+      prims.push({ t: "glyph", x: P(c.x + 0.35), y: ry, ch: g2, cls: cls ? `rest ${cls}` : "rest" });
       if (c.dotted) prims.push({ t: "glyph", x: P(c.x + 0.35 + 1.5), y: yOf(c.system, 35), ch: GLYPH.augmentationDot, cls });
       return;
     }
@@ -1371,13 +1396,13 @@ function engrave(song, o) {
   endGroup();
   const stemCls = (s) => clsOf(s.c);
   const tipOf = /* @__PURE__ */ new Map();
-  for (const g of stemmed) {
-    const sys = g[0].c.system, mid = yOf(sys, MID_LINE);
-    const up = g.reduce((a, s) => a + s.d, 0) / g.length < MID_LINE;
+  for (const g2 of stemmed) {
+    const sys = g2[0].c.system, mid = yOf(sys, MID_LINE);
+    const up = g2.reduce((a, s) => a + s.d, 0) / g2.length < MID_LINE;
     const sx = (s) => up ? s.x0 + P(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s.x0 + P(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
     const sy0 = (s) => up ? s.y - P(STEM_UP_SE[1]) : s.y - P(STEM_DOWN_NW[1]);
-    if (g.length === 1) {
-      const s = g[0];
+    if (g2.length === 1) {
+      const s = g2[0];
       let tip = up ? s.y - P(3.5) : s.y + P(3.5);
       if (up && s.d < 27) tip = Math.min(tip, mid);
       if (!up && s.d > 41) tip = Math.max(tip, mid);
@@ -1391,11 +1416,11 @@ function engrave(song, o) {
       }
       continue;
     }
-    const xa = sx(g[0]), xb = sx(g[g.length - 1]);
-    const k = Math.max(-0.2, Math.min(0.2, (g[g.length - 1].y - g[0].y) / (xb - xa) * 0.5));
+    const xa = sx(g2[0]), xb = sx(g2[g2.length - 1]);
+    const k = Math.max(-0.2, Math.min(0.2, (g2[g2.length - 1].y - g2[0].y) / (xb - xa) * 0.5));
     const at = (x2, y02) => y02 + k * (x2 - xa);
-    const y0 = up ? Math.min(...g.map((s) => s.y - P(3.5) - k * (sx(s) - xa))) : Math.max(...g.map((s) => s.y + P(3.5) - k * (sx(s) - xa)));
-    for (const s of g) {
+    const y0 = up ? Math.min(...g2.map((s) => s.y - P(3.5) - k * (sx(s) - xa))) : Math.max(...g2.map((s) => s.y + P(3.5) - k * (sx(s) - xa)));
+    for (const s of g2) {
       tipOf.set(s.c, at(sx(s), y0));
       prims.push({ t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: at(sx(s), y0), w: P(ENGRAVE.stem), cls: stemCls(s) });
     }
@@ -1405,20 +1430,20 @@ function engrave(song, o) {
       const a = at(xL, y0) + of, b = at(xR, y0) + of;
       return `M${xL - P(ENGRAVE.stem / 2)},${a}L${xR + P(ENGRAVE.stem / 2)},${b}L${xR + P(ENGRAVE.stem / 2)},${b + th}L${xL - P(ENGRAVE.stem / 2)},${a + th}Z`;
     };
-    const gcls = ["beam", g.every((s) => s.c.ghost) ? "ghost" : "", g.every((s) => s.c.index >= 0 && inSel(s.c.index)) ? "sel" : ""].filter(Boolean).join(" ");
+    const gcls = ["beam", g2.every((s) => s.c.ghost) ? "ghost" : "", g2.every((s) => s.c.index >= 0 && inSel(s.c.index)) ? "sel" : ""].filter(Boolean).join(" ");
     prims.push({ t: "path", d: beamPath(xa, xb, 0), cls: gcls });
-    const maxLv = Math.max(...g.map((s) => flagLevel(s.c.base)));
+    const maxLv = Math.max(...g2.map((s) => flagLevel(s.c.base)));
     for (let lvl = 2; lvl <= maxLv; lvl++) {
       let runStart = -1;
-      for (let n2 = 0; n2 <= g.length; n2++) {
-        const has = n2 < g.length && flagLevel(g[n2].c.base) >= lvl;
+      for (let n2 = 0; n2 <= g2.length; n2++) {
+        const has = n2 < g2.length && flagLevel(g2[n2].c.base) >= lvl;
         if (has && runStart < 0) runStart = n2;
         if (!has && runStart >= 0) {
           const L = runStart, R = n2 - 1;
           if (L === R) {
-            const stub = P(1.1), toRight = L < g.length - 1;
-            prims.push({ t: "path", d: beamPath(toRight ? sx(g[L]) : sx(g[L]) - stub, toRight ? sx(g[L]) + stub : sx(g[L]), lvl - 1), cls: gcls });
-          } else prims.push({ t: "path", d: beamPath(sx(g[L]), sx(g[R]), lvl - 1), cls: gcls });
+            const stub = P(1.1), toRight = L < g2.length - 1;
+            prims.push({ t: "path", d: beamPath(toRight ? sx(g2[L]) : sx(g2[L]) - stub, toRight ? sx(g2[L]) + stub : sx(g2[L]), lvl - 1), cls: gcls });
+          } else prims.push({ t: "path", d: beamPath(sx(g2[L]), sx(g2[R]), lvl - 1), cls: gcls });
           runStart = -1;
         }
       }
@@ -1594,8 +1619,8 @@ var LyricEditor = class {
     Object.assign(this.input.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1}px`, width: `${w}px`, fontSize: `${L.sp * 1.6}px` });
   }
   /** 把框里的字贴到当前这个音（可能一次贴好几个音节，往后挪），并跳到下一个空位。 */
-  place(text, hyphEnd) {
-    let syl = splitSyllables(text);
+  place(text2, hyphEnd) {
+    let syl = splitSyllables(text2);
     if (!syl.length) return;
     if (hyphEnd) syl = syl.map((s, k) => k === syl.length - 1 ? { ...s, hyph: true } : s);
     const { st: st2, last } = distributeFrom(this.host.get(), this.index, syl);
@@ -2087,26 +2112,26 @@ var ScoreView = class {
       this.boxSelect(p2.x, p2.y);
       return;
     }
-    const g = this.drag, L = this.layout;
-    if (!g || !L || e.pointerId !== g.pid) return;
-    const p = this.local(e), dx = p.x - g.x0, dy = p.y - g.y0;
-    if (!g.axis) {
+    const g2 = this.drag, L = this.layout;
+    if (!g2 || !L || e.pointerId !== g2.pid) return;
+    const p = this.local(e), dx = p.x - g2.x0, dy = p.y - g2.y0;
+    if (!g2.axis) {
       if (Math.hypot(dx, dy) < 6) return;
-      g.axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
-      if (g.axis === "x") this.host.release?.();
+      g2.axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
+      if (g2.axis === "x") this.host.release?.();
     }
     const st2 = this.host.get();
-    if (g.axis === "y") {
-      const d = g.d0 + Math.round(-dy / (L.sp / 2));
-      if (d === g.heard) return;
-      g.heard = d;
-      this.host.set(setNote(st2, g.index, { pitch: fromDiatonic(d, keyAt(st2.song, g.index)) }));
-      if (this.host.glide) this.host.glide(g.index);
-      else this.host.audition?.(g.index, true);
+    if (g2.axis === "y") {
+      const d = g2.d0 + Math.round(-dy / (L.sp / 2));
+      if (d === g2.heard) return;
+      g2.heard = d;
+      this.host.set(setNote(st2, g2.index, { pitch: fromDiatonic(d, keyAt(st2.song, g2.index)) }));
+      if (this.host.glide) this.host.glide(g2.index);
+      else this.host.audition?.(g2.index, true);
     } else {
-      const i0 = DUR_LADDER.reduce((bi, v, i2) => Math.abs(v - g.dur0) < Math.abs(DUR_LADDER[bi] - g.dur0) ? i2 : bi, 0);
+      const i0 = DUR_LADDER.reduce((bi, v, i2) => Math.abs(v - g2.dur0) < Math.abs(DUR_LADDER[bi] - g2.dur0) ? i2 : bi, 0);
       const i = Math.max(0, Math.min(DUR_LADDER.length - 1, i0 + Math.round(dx / (L.sp * 2.2))));
-      this.host.set(setDur(st2, g.index, DUR_LADDER[i]));
+      this.host.set(setDur(st2, g2.index, DUR_LADDER[i]));
     }
   }
   up(e) {
@@ -2657,16 +2682,16 @@ var Sha256 = class {
       const s1 = (y >>> 17 | y << 15) ^ (y >>> 19 | y << 13) ^ y >>> 10;
       w[t] = w[t - 16] + s0 + w[t - 7] + s1 | 0;
     }
-    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g2 = H[6], h = H[7];
     for (let t = 0; t < 64; t++) {
       const S1 = (e >>> 6 | e << 26) ^ (e >>> 11 | e << 21) ^ (e >>> 25 | e << 7);
-      const ch = e & f ^ ~e & g;
+      const ch = e & f ^ ~e & g2;
       const t1 = h + S1 + ch + K[t] + w[t] | 0;
       const S0 = (a >>> 2 | a << 30) ^ (a >>> 13 | a << 19) ^ (a >>> 22 | a << 10);
       const maj = a & b ^ a & c ^ b & c;
       const t2 = S0 + maj | 0;
-      h = g;
-      g = f;
+      h = g2;
+      g2 = f;
       f = e;
       e = d + t1 | 0;
       d = c;
@@ -2680,7 +2705,7 @@ var Sha256 = class {
     H[3] += d;
     H[4] += e;
     H[5] += f;
-    H[6] += g;
+    H[6] += g2;
     H[7] += h;
   }
   hex() {
@@ -2690,7 +2715,7 @@ var Sha256 = class {
     const padLen = (this.bufLen < 56 ? 56 - this.bufLen : 120 - this.bufLen) + 8;
     const pad2 = new Uint8Array(padLen);
     pad2[0] = 128;
-    const bits = total * 8, hi = Math.floor(bits / 4294967296), lo = bits >>> 0, n2 = padLen;
+    const bits2 = total * 8, hi = Math.floor(bits2 / 4294967296), lo = bits2 >>> 0, n2 = padLen;
     pad2[n2 - 8] = hi >>> 24;
     pad2[n2 - 7] = hi >>> 16;
     pad2[n2 - 6] = hi >>> 8;
@@ -3097,8 +3122,1590 @@ var Sampler = class {
   }
 };
 
+// vendor/fflate/fflate.esm.js
+var u8 = Uint8Array;
+var u16 = Uint16Array;
+var i32 = Int32Array;
+var fleb = new u8([
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1,
+  1,
+  1,
+  1,
+  2,
+  2,
+  2,
+  2,
+  3,
+  3,
+  3,
+  3,
+  4,
+  4,
+  4,
+  4,
+  5,
+  5,
+  5,
+  5,
+  0,
+  /* unused */
+  0,
+  0,
+  /* impossible */
+  0
+]);
+var fdeb = new u8([
+  0,
+  0,
+  0,
+  0,
+  1,
+  1,
+  2,
+  2,
+  3,
+  3,
+  4,
+  4,
+  5,
+  5,
+  6,
+  6,
+  7,
+  7,
+  8,
+  8,
+  9,
+  9,
+  10,
+  10,
+  11,
+  11,
+  12,
+  12,
+  13,
+  13,
+  /* unused */
+  0,
+  0
+]);
+var clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+var freb = function(eb, start) {
+  var b = new u16(31);
+  for (var i = 0; i < 31; ++i) {
+    b[i] = start += 1 << eb[i - 1];
+  }
+  var r = new i32(b[30]);
+  for (var i = 1; i < 30; ++i) {
+    for (var j = b[i]; j < b[i + 1]; ++j) {
+      r[j] = j - b[i] << 5 | i;
+    }
+  }
+  return { b, r };
+};
+var _a = freb(fleb, 2);
+var fl = _a.b;
+var revfl = _a.r;
+fl[28] = 258, revfl[258] = 28;
+var _b = freb(fdeb, 0);
+var fd = _b.b;
+var revfd = _b.r;
+var rev = new u16(32768);
+for (i = 0; i < 32768; ++i) {
+  x = (i & 43690) >> 1 | (i & 21845) << 1;
+  x = (x & 52428) >> 2 | (x & 13107) << 2;
+  x = (x & 61680) >> 4 | (x & 3855) << 4;
+  rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
+}
+var x;
+var i;
+var hMap = function(cd, mb, r) {
+  var s = cd.length;
+  var i = 0;
+  var l = new u16(mb);
+  for (; i < s; ++i) {
+    if (cd[i])
+      ++l[cd[i] - 1];
+  }
+  var le = new u16(mb);
+  for (i = 1; i < mb; ++i) {
+    le[i] = le[i - 1] + l[i - 1] << 1;
+  }
+  var co;
+  if (r) {
+    co = new u16(1 << mb);
+    var rvb = 15 - mb;
+    for (i = 0; i < s; ++i) {
+      if (cd[i]) {
+        var sv = i << 4 | cd[i];
+        var r_1 = mb - cd[i];
+        var v = le[cd[i] - 1]++ << r_1;
+        for (var m = v | (1 << r_1) - 1; v <= m; ++v) {
+          co[rev[v] >> rvb] = sv;
+        }
+      }
+    }
+  } else {
+    co = new u16(s);
+    for (i = 0; i < s; ++i) {
+      if (cd[i]) {
+        co[i] = rev[le[cd[i] - 1]++] >> 15 - cd[i];
+      }
+    }
+  }
+  return co;
+};
+var flt = new u8(288);
+for (i = 0; i < 144; ++i)
+  flt[i] = 8;
+var i;
+for (i = 144; i < 256; ++i)
+  flt[i] = 9;
+var i;
+for (i = 256; i < 280; ++i)
+  flt[i] = 7;
+var i;
+for (i = 280; i < 288; ++i)
+  flt[i] = 8;
+var i;
+var fdt = new u8(32);
+for (i = 0; i < 32; ++i)
+  fdt[i] = 5;
+var i;
+var flm = /* @__PURE__ */ hMap(flt, 9, 0);
+var flrm = /* @__PURE__ */ hMap(flt, 9, 1);
+var fdm = /* @__PURE__ */ hMap(fdt, 5, 0);
+var fdrm = /* @__PURE__ */ hMap(fdt, 5, 1);
+var max = function(a) {
+  var m = a[0];
+  for (var i = 1; i < a.length; ++i) {
+    if (a[i] > m)
+      m = a[i];
+  }
+  return m;
+};
+var bits = function(d, p, m) {
+  var o = p / 8 | 0;
+  return (d[o] | d[o + 1] << 8) >> (p & 7) & m;
+};
+var bits16 = function(d, p) {
+  var o = p / 8 | 0;
+  return (d[o] | d[o + 1] << 8 | d[o + 2] << 16) >> (p & 7);
+};
+var shft = function(p) {
+  return (p + 7) / 8 | 0;
+};
+var slc = function(v, s, e) {
+  if (s == null || s < 0)
+    s = 0;
+  if (e == null || e > v.length)
+    e = v.length;
+  return new u8(v.subarray(s, e));
+};
+var ec = [
+  "unexpected EOF",
+  "invalid block type",
+  "invalid length/literal",
+  "invalid distance",
+  "stream finished",
+  "no stream handler",
+  ,
+  "no callback",
+  "invalid UTF-8 data",
+  "extra field too long",
+  "date not in range 1980-2099",
+  "filename too long",
+  "stream finishing",
+  "invalid zip data"
+  // determined by unknown compression method
+];
+var err = function(ind, msg, nt) {
+  var e = new Error(msg || ec[ind]);
+  e.code = ind;
+  if (Error.captureStackTrace)
+    Error.captureStackTrace(e, err);
+  if (!nt)
+    throw e;
+  return e;
+};
+var inflt = function(dat, st2, buf, dict) {
+  var sl = dat.length, dl = dict ? dict.length : 0;
+  if (!sl || st2.f && !st2.l)
+    return buf || new u8(0);
+  var noBuf = !buf;
+  var resize = noBuf || st2.i != 2;
+  var noSt = st2.i;
+  if (noBuf)
+    buf = new u8(sl * 3);
+  var cbuf = function(l2) {
+    var bl = buf.length;
+    if (l2 > bl) {
+      var nbuf = new u8(Math.max(bl * 2, l2));
+      nbuf.set(buf);
+      buf = nbuf;
+    }
+  };
+  var final = st2.f || 0, pos = st2.p || 0, bt = st2.b || 0, lm = st2.l, dm = st2.d, lbt = st2.m, dbt = st2.n;
+  var tbts = sl * 8;
+  do {
+    if (!lm) {
+      final = bits(dat, pos, 1);
+      var type = bits(dat, pos + 1, 3);
+      pos += 3;
+      if (!type) {
+        var s = shft(pos) + 4, l = dat[s - 4] | dat[s - 3] << 8, t = s + l;
+        if (t > sl) {
+          if (noSt)
+            err(0);
+          break;
+        }
+        if (resize)
+          cbuf(bt + l);
+        buf.set(dat.subarray(s, t), bt);
+        st2.b = bt += l, st2.p = pos = t * 8, st2.f = final;
+        continue;
+      } else if (type == 1)
+        lm = flrm, dm = fdrm, lbt = 9, dbt = 5;
+      else if (type == 2) {
+        var hLit = bits(dat, pos, 31) + 257, hcLen = bits(dat, pos + 10, 15) + 4;
+        var tl = hLit + bits(dat, pos + 5, 31) + 1;
+        pos += 14;
+        var ldt = new u8(tl);
+        var clt = new u8(19);
+        for (var i = 0; i < hcLen; ++i) {
+          clt[clim[i]] = bits(dat, pos + i * 3, 7);
+        }
+        pos += hcLen * 3;
+        var clb = max(clt), clbmsk = (1 << clb) - 1;
+        var clm = hMap(clt, clb, 1);
+        for (var i = 0; i < tl; ) {
+          var r = clm[bits(dat, pos, clbmsk)];
+          pos += r & 15;
+          var s = r >> 4;
+          if (s < 16) {
+            ldt[i++] = s;
+          } else {
+            var c = 0, n2 = 0;
+            if (s == 16)
+              n2 = 3 + bits(dat, pos, 3), pos += 2, c = ldt[i - 1];
+            else if (s == 17)
+              n2 = 3 + bits(dat, pos, 7), pos += 3;
+            else if (s == 18)
+              n2 = 11 + bits(dat, pos, 127), pos += 7;
+            while (n2--)
+              ldt[i++] = c;
+          }
+        }
+        var lt = ldt.subarray(0, hLit), dt = ldt.subarray(hLit);
+        lbt = max(lt);
+        dbt = max(dt);
+        lm = hMap(lt, lbt, 1);
+        dm = hMap(dt, dbt, 1);
+      } else
+        err(1);
+      if (pos > tbts) {
+        if (noSt)
+          err(0);
+        break;
+      }
+    }
+    if (resize)
+      cbuf(bt + 131072);
+    var lms = (1 << lbt) - 1, dms = (1 << dbt) - 1;
+    var lpos = pos;
+    for (; ; lpos = pos) {
+      var c = lm[bits16(dat, pos) & lms], sym = c >> 4;
+      pos += c & 15;
+      if (pos > tbts) {
+        if (noSt)
+          err(0);
+        break;
+      }
+      if (!c)
+        err(2);
+      if (sym < 256)
+        buf[bt++] = sym;
+      else if (sym == 256) {
+        lpos = pos, lm = null;
+        break;
+      } else {
+        var add = sym - 254;
+        if (sym > 264) {
+          var i = sym - 257, b = fleb[i];
+          add = bits(dat, pos, (1 << b) - 1) + fl[i];
+          pos += b;
+        }
+        var d = dm[bits16(dat, pos) & dms], dsym = d >> 4;
+        if (!d)
+          err(3);
+        pos += d & 15;
+        var dt = fd[dsym];
+        if (dsym > 3) {
+          var b = fdeb[dsym];
+          dt += bits16(dat, pos) & (1 << b) - 1, pos += b;
+        }
+        if (pos > tbts) {
+          if (noSt)
+            err(0);
+          break;
+        }
+        if (resize)
+          cbuf(bt + 131072);
+        var end = bt + add;
+        if (bt < dt) {
+          var shift = dl - dt, dend = Math.min(dt, end);
+          if (shift + bt < 0)
+            err(3);
+          for (; bt < dend; ++bt)
+            buf[bt] = dict[shift + bt];
+        }
+        for (; bt < end; ++bt)
+          buf[bt] = buf[bt - dt];
+      }
+    }
+    st2.l = lm, st2.p = lpos, st2.b = bt, st2.f = final;
+    if (lm)
+      final = 1, st2.m = lbt, st2.d = dm, st2.n = dbt;
+  } while (!final);
+  return bt != buf.length && noBuf ? slc(buf, 0, bt) : buf.subarray(0, bt);
+};
+var wbits = function(d, p, v) {
+  v <<= p & 7;
+  var o = p / 8 | 0;
+  d[o] |= v;
+  d[o + 1] |= v >> 8;
+};
+var wbits16 = function(d, p, v) {
+  v <<= p & 7;
+  var o = p / 8 | 0;
+  d[o] |= v;
+  d[o + 1] |= v >> 8;
+  d[o + 2] |= v >> 16;
+};
+var hTree = function(d, mb) {
+  var t = [];
+  for (var i = 0; i < d.length; ++i) {
+    if (d[i])
+      t.push({ s: i, f: d[i] });
+  }
+  var s = t.length;
+  var t2 = t.slice();
+  if (!s)
+    return { t: et, l: 0 };
+  if (s == 1) {
+    var v = new u8(t[0].s + 1);
+    v[t[0].s] = 1;
+    return { t: v, l: 1 };
+  }
+  t.sort(function(a, b) {
+    return a.f - b.f;
+  });
+  t.push({ s: -1, f: 25001 });
+  var l = t[0], r = t[1], i0 = 0, i1 = 1, i2 = 2;
+  t[0] = { s: -1, f: l.f + r.f, l, r };
+  while (i1 != s - 1) {
+    l = t[t[i0].f < t[i2].f ? i0++ : i2++];
+    r = t[i0 != i1 && t[i0].f < t[i2].f ? i0++ : i2++];
+    t[i1++] = { s: -1, f: l.f + r.f, l, r };
+  }
+  var maxSym = t2[0].s;
+  for (var i = 1; i < s; ++i) {
+    if (t2[i].s > maxSym)
+      maxSym = t2[i].s;
+  }
+  var tr = new u16(maxSym + 1);
+  var mbt = ln(t[i1 - 1], tr, 0);
+  if (mbt > mb) {
+    var i = 0, dt = 0;
+    var lft = mbt - mb, cst = 1 << lft;
+    t2.sort(function(a, b) {
+      return tr[b.s] - tr[a.s] || a.f - b.f;
+    });
+    for (; i < s; ++i) {
+      var i2_1 = t2[i].s;
+      if (tr[i2_1] > mb) {
+        dt += cst - (1 << mbt - tr[i2_1]);
+        tr[i2_1] = mb;
+      } else
+        break;
+    }
+    dt >>= lft;
+    while (dt > 0) {
+      var i2_2 = t2[i].s;
+      if (tr[i2_2] < mb)
+        dt -= 1 << mb - tr[i2_2]++ - 1;
+      else
+        ++i;
+    }
+    for (; i >= 0 && dt; --i) {
+      var i2_3 = t2[i].s;
+      if (tr[i2_3] == mb) {
+        --tr[i2_3];
+        ++dt;
+      }
+    }
+    mbt = mb;
+  }
+  return { t: new u8(tr), l: mbt };
+};
+var ln = function(n2, l, d) {
+  return n2.s == -1 ? Math.max(ln(n2.l, l, d + 1), ln(n2.r, l, d + 1)) : l[n2.s] = d;
+};
+var lc = function(c) {
+  var s = c.length;
+  while (s && !c[--s])
+    ;
+  var cl = new u16(++s);
+  var cli = 0, cln = c[0], cls = 1;
+  var w = function(v) {
+    cl[cli++] = v;
+  };
+  for (var i = 1; i <= s; ++i) {
+    if (c[i] == cln && i != s)
+      ++cls;
+    else {
+      if (!cln && cls > 2) {
+        for (; cls > 138; cls -= 138)
+          w(32754);
+        if (cls > 2) {
+          w(cls > 10 ? cls - 11 << 5 | 28690 : cls - 3 << 5 | 12305);
+          cls = 0;
+        }
+      } else if (cls > 3) {
+        w(cln), --cls;
+        for (; cls > 6; cls -= 6)
+          w(8304);
+        if (cls > 2)
+          w(cls - 3 << 5 | 8208), cls = 0;
+      }
+      while (cls--)
+        w(cln);
+      cls = 1;
+      cln = c[i];
+    }
+  }
+  return { c: cl.subarray(0, cli), n: s };
+};
+var clen = function(cf, cl) {
+  var l = 0;
+  for (var i = 0; i < cl.length; ++i)
+    l += cf[i] * cl[i];
+  return l;
+};
+var wfblk = function(out, pos, dat) {
+  var s = dat.length;
+  var o = shft(pos + 2);
+  out[o] = s & 255;
+  out[o + 1] = s >> 8;
+  out[o + 2] = out[o] ^ 255;
+  out[o + 3] = out[o + 1] ^ 255;
+  for (var i = 0; i < s; ++i)
+    out[o + i + 4] = dat[i];
+  return (o + 4 + s) * 8;
+};
+var wblk = function(dat, out, final, syms, lf, df, eb, li, bs, bl, p) {
+  wbits(out, p++, final);
+  ++lf[256];
+  var _a2 = hTree(lf, 15), dlt = _a2.t, mlb = _a2.l;
+  var _b2 = hTree(df, 15), ddt = _b2.t, mdb = _b2.l;
+  var _c = lc(dlt), lclt = _c.c, nlc = _c.n;
+  var _d = lc(ddt), lcdt = _d.c, ndc = _d.n;
+  var lcfreq = new u16(19);
+  for (var i = 0; i < lclt.length; ++i)
+    ++lcfreq[lclt[i] & 31];
+  for (var i = 0; i < lcdt.length; ++i)
+    ++lcfreq[lcdt[i] & 31];
+  var _e = hTree(lcfreq, 7), lct = _e.t, mlcb = _e.l;
+  var nlcc = 19;
+  for (; nlcc > 4 && !lct[clim[nlcc - 1]]; --nlcc)
+    ;
+  var flen = bl + 5 << 3;
+  var ftlen = clen(lf, flt) + clen(df, fdt) + eb;
+  var dtlen = clen(lf, dlt) + clen(df, ddt) + eb + 14 + 3 * nlcc + clen(lcfreq, lct) + 2 * lcfreq[16] + 3 * lcfreq[17] + 7 * lcfreq[18];
+  if (bs >= 0 && flen <= ftlen && flen <= dtlen)
+    return wfblk(out, p, dat.subarray(bs, bs + bl));
+  var lm, ll, dm, dl;
+  wbits(out, p, 1 + (dtlen < ftlen)), p += 2;
+  if (dtlen < ftlen) {
+    lm = hMap(dlt, mlb, 0), ll = dlt, dm = hMap(ddt, mdb, 0), dl = ddt;
+    var llm = hMap(lct, mlcb, 0);
+    wbits(out, p, nlc - 257);
+    wbits(out, p + 5, ndc - 1);
+    wbits(out, p + 10, nlcc - 4);
+    p += 14;
+    for (var i = 0; i < nlcc; ++i)
+      wbits(out, p + 3 * i, lct[clim[i]]);
+    p += 3 * nlcc;
+    var lcts = [lclt, lcdt];
+    for (var it = 0; it < 2; ++it) {
+      var clct = lcts[it];
+      for (var i = 0; i < clct.length; ++i) {
+        var len = clct[i] & 31;
+        wbits(out, p, llm[len]), p += lct[len];
+        if (len > 15)
+          wbits(out, p, clct[i] >> 5 & 127), p += clct[i] >> 12;
+      }
+    }
+  } else {
+    lm = flm, ll = flt, dm = fdm, dl = fdt;
+  }
+  for (var i = 0; i < li; ++i) {
+    var sym = syms[i];
+    if (sym > 255) {
+      var len = sym >> 18 & 31;
+      wbits16(out, p, lm[len + 257]), p += ll[len + 257];
+      if (len > 7)
+        wbits(out, p, sym >> 23 & 31), p += fleb[len];
+      var dst = sym & 31;
+      wbits16(out, p, dm[dst]), p += dl[dst];
+      if (dst > 3)
+        wbits16(out, p, sym >> 5 & 8191), p += fdeb[dst];
+    } else {
+      wbits16(out, p, lm[sym]), p += ll[sym];
+    }
+  }
+  wbits16(out, p, lm[256]);
+  return p + ll[256];
+};
+var deo = /* @__PURE__ */ new i32([65540, 131080, 131088, 131104, 262176, 1048704, 1048832, 2114560, 2117632]);
+var et = /* @__PURE__ */ new u8(0);
+var dflt = function(dat, lvl, plvl, pre, post, st2) {
+  var s = st2.z || dat.length;
+  var o = new u8(pre + s + 5 * (1 + Math.ceil(s / 7e3)) + post);
+  var w = o.subarray(pre, o.length - post);
+  var lst = st2.l;
+  var pos = (st2.r || 0) & 7;
+  if (lvl) {
+    if (pos)
+      w[0] = st2.r >> 3;
+    var opt = deo[lvl - 1];
+    var n2 = opt >> 13, c = opt & 8191;
+    var msk_1 = (1 << plvl) - 1;
+    var prev = st2.p || new u16(32768), head = st2.h || new u16(msk_1 + 1);
+    var bs1_1 = Math.ceil(plvl / 3), bs2_1 = 2 * bs1_1;
+    var hsh = function(i2) {
+      return (dat[i2] ^ dat[i2 + 1] << bs1_1 ^ dat[i2 + 2] << bs2_1) & msk_1;
+    };
+    var syms = new i32(25e3);
+    var lf = new u16(288), df = new u16(32);
+    var lc_1 = 0, eb = 0, i = st2.i || 0, li = 0, wi = st2.w || 0, bs = 0;
+    for (; i + 2 < s; ++i) {
+      var hv = hsh(i);
+      var imod = i & 32767, pimod = head[hv];
+      prev[imod] = pimod;
+      head[hv] = imod;
+      if (wi <= i) {
+        var rem = s - i;
+        if ((lc_1 > 7e3 || li > 24576) && (rem > 423 || !lst)) {
+          pos = wblk(dat, w, 0, syms, lf, df, eb, li, bs, i - bs, pos);
+          li = lc_1 = eb = 0, bs = i;
+          for (var j = 0; j < 286; ++j)
+            lf[j] = 0;
+          for (var j = 0; j < 30; ++j)
+            df[j] = 0;
+        }
+        var l = 2, d = 0, ch_1 = c, dif = imod - pimod & 32767;
+        if (rem > 2 && hv == hsh(i - dif)) {
+          var maxn = Math.min(n2, rem) - 1;
+          var maxd = Math.min(32767, i);
+          var ml = Math.min(258, rem);
+          while (dif <= maxd && --ch_1 && imod != pimod) {
+            if (dat[i + l] == dat[i + l - dif]) {
+              var nl = 0;
+              for (; nl < ml && dat[i + nl] == dat[i + nl - dif]; ++nl)
+                ;
+              if (nl > l) {
+                l = nl, d = dif;
+                if (nl > maxn)
+                  break;
+                var mmd = Math.min(dif, nl - 2);
+                var md = 0;
+                for (var j = 0; j < mmd; ++j) {
+                  var ti = i - dif + j & 32767;
+                  var pti = prev[ti];
+                  var cd = ti - pti & 32767;
+                  if (cd > md)
+                    md = cd, pimod = ti;
+                }
+              }
+            }
+            imod = pimod, pimod = prev[imod];
+            dif += imod - pimod & 32767;
+          }
+        }
+        if (d) {
+          syms[li++] = 268435456 | revfl[l] << 18 | revfd[d];
+          var lin = revfl[l] & 31, din = revfd[d] & 31;
+          eb += fleb[lin] + fdeb[din];
+          ++lf[257 + lin];
+          ++df[din];
+          wi = i + l;
+          ++lc_1;
+        } else {
+          syms[li++] = dat[i];
+          ++lf[dat[i]];
+        }
+      }
+    }
+    for (i = Math.max(i, wi); i < s; ++i) {
+      syms[li++] = dat[i];
+      ++lf[dat[i]];
+    }
+    pos = wblk(dat, w, lst, syms, lf, df, eb, li, bs, i - bs, pos);
+    if (!lst) {
+      st2.r = pos & 7 | w[pos / 8 | 0] << 3;
+      pos -= 7;
+      st2.h = head, st2.p = prev, st2.i = i, st2.w = wi;
+    }
+  } else {
+    for (var i = st2.w || 0; i < s + lst; i += 65535) {
+      var e = i + 65535;
+      if (e >= s) {
+        w[pos / 8 | 0] = lst;
+        e = s;
+      }
+      pos = wfblk(w, pos + 1, dat.subarray(i, e));
+    }
+    st2.i = s;
+  }
+  return slc(o, 0, pre + shft(pos) + post);
+};
+var crct = /* @__PURE__ */ function() {
+  var t = new Int32Array(256);
+  for (var i = 0; i < 256; ++i) {
+    var c = i, k = 9;
+    while (--k)
+      c = (c & 1 && -306674912) ^ c >>> 1;
+    t[i] = c;
+  }
+  return t;
+}();
+var crc = function() {
+  var c = -1;
+  return {
+    p: function(d) {
+      var cr = c;
+      for (var i = 0; i < d.length; ++i)
+        cr = crct[cr & 255 ^ d[i]] ^ cr >>> 8;
+      c = cr;
+    },
+    d: function() {
+      return ~c;
+    }
+  };
+};
+var dopt = function(dat, opt, pre, post, st2) {
+  if (!st2) {
+    st2 = { l: 1 };
+    if (opt.dictionary) {
+      var dict = opt.dictionary.subarray(-32768);
+      var newDat = new u8(dict.length + dat.length);
+      newDat.set(dict);
+      newDat.set(dat, dict.length);
+      dat = newDat;
+      st2.w = dict.length;
+    }
+  }
+  return dflt(dat, opt.level == null ? 6 : opt.level, opt.mem == null ? st2.l ? Math.ceil(Math.max(8, Math.min(13, Math.log(dat.length))) * 1.5) : 20 : 12 + opt.mem, pre, post, st2);
+};
+var mrg = function(a, b) {
+  var o = {};
+  for (var k in a)
+    o[k] = a[k];
+  for (var k in b)
+    o[k] = b[k];
+  return o;
+};
+var b2 = function(d, b) {
+  return d[b] | d[b + 1] << 8;
+};
+var b4 = function(d, b) {
+  return (d[b] | d[b + 1] << 8 | d[b + 2] << 16 | d[b + 3] << 24) >>> 0;
+};
+var b8 = function(d, b) {
+  return b4(d, b) + b4(d, b + 4) * 4294967296;
+};
+var wbytes = function(d, b, v) {
+  for (; v; ++b)
+    d[b] = v, v >>>= 8;
+};
+function deflateSync(data, opts) {
+  return dopt(data, opts || {}, 0, 0);
+}
+function inflateSync(data, opts) {
+  return inflt(data, { i: 2 }, opts && opts.out, opts && opts.dictionary);
+}
+var fltn = function(d, p, t, o) {
+  for (var k in d) {
+    var val = d[k], n2 = p + k, op = o;
+    if (Array.isArray(val))
+      op = mrg(o, val[1]), val = val[0];
+    if (val instanceof u8)
+      t[n2] = [val, op];
+    else {
+      t[n2 += "/"] = [new u8(0), op];
+      fltn(val, n2, t, o);
+    }
+  }
+};
+var te = typeof TextEncoder != "undefined" && /* @__PURE__ */ new TextEncoder();
+var td = typeof TextDecoder != "undefined" && /* @__PURE__ */ new TextDecoder();
+var tds = 0;
+try {
+  td.decode(et, { stream: true });
+  tds = 1;
+} catch (e) {
+}
+var dutf8 = function(d) {
+  for (var r = "", i = 0; ; ) {
+    var c = d[i++];
+    var eb = (c > 127) + (c > 223) + (c > 239);
+    if (i + eb > d.length)
+      return { s: r, r: slc(d, i - 1) };
+    if (!eb)
+      r += String.fromCharCode(c);
+    else if (eb == 3) {
+      c = ((c & 15) << 18 | (d[i++] & 63) << 12 | (d[i++] & 63) << 6 | d[i++] & 63) - 65536, r += String.fromCharCode(55296 | c >> 10, 56320 | c & 1023);
+    } else if (eb & 1)
+      r += String.fromCharCode((c & 31) << 6 | d[i++] & 63);
+    else
+      r += String.fromCharCode((c & 15) << 12 | (d[i++] & 63) << 6 | d[i++] & 63);
+  }
+};
+function strToU8(str, latin1) {
+  if (latin1) {
+    var ar_1 = new u8(str.length);
+    for (var i = 0; i < str.length; ++i)
+      ar_1[i] = str.charCodeAt(i);
+    return ar_1;
+  }
+  if (te)
+    return te.encode(str);
+  var l = str.length;
+  var ar = new u8(str.length + (str.length >> 1));
+  var ai = 0;
+  var w = function(v) {
+    ar[ai++] = v;
+  };
+  for (var i = 0; i < l; ++i) {
+    if (ai + 5 > ar.length) {
+      var n2 = new u8(ai + 8 + (l - i << 1));
+      n2.set(ar);
+      ar = n2;
+    }
+    var c = str.charCodeAt(i);
+    if (c < 128 || latin1)
+      w(c);
+    else if (c < 2048)
+      w(192 | c >> 6), w(128 | c & 63);
+    else if (c > 55295 && c < 57344)
+      c = 65536 + (c & 1023 << 10) | str.charCodeAt(++i) & 1023, w(240 | c >> 18), w(128 | c >> 12 & 63), w(128 | c >> 6 & 63), w(128 | c & 63);
+    else
+      w(224 | c >> 12), w(128 | c >> 6 & 63), w(128 | c & 63);
+  }
+  return slc(ar, 0, ai);
+}
+function strFromU8(dat, latin1) {
+  if (latin1) {
+    var r = "";
+    for (var i = 0; i < dat.length; i += 16384)
+      r += String.fromCharCode.apply(null, dat.subarray(i, i + 16384));
+    return r;
+  } else if (td) {
+    return td.decode(dat);
+  } else {
+    var _a2 = dutf8(dat), s = _a2.s, r = _a2.r;
+    if (r.length)
+      err(8);
+    return s;
+  }
+}
+var slzh = function(d, b) {
+  return b + 30 + b2(d, b + 26) + b2(d, b + 28);
+};
+var zh = function(d, b, z) {
+  var fnl = b2(d, b + 28), fn = strFromU8(d.subarray(b + 46, b + 46 + fnl), !(b2(d, b + 8) & 2048)), es = b + 46 + fnl, bs = b4(d, b + 20);
+  var _a2 = z && bs == 4294967295 ? z64e(d, es) : [bs, b4(d, b + 24), b4(d, b + 42)], sc = _a2[0], su = _a2[1], off = _a2[2];
+  return [b2(d, b + 10), sc, su, fn, es + b2(d, b + 30) + b2(d, b + 32), off];
+};
+var z64e = function(d, b) {
+  for (; b2(d, b) != 1; b += 4 + b2(d, b + 2))
+    ;
+  return [b8(d, b + 12), b8(d, b + 4), b8(d, b + 20)];
+};
+var exfl = function(ex) {
+  var le = 0;
+  if (ex) {
+    for (var k in ex) {
+      var l = ex[k].length;
+      if (l > 65535)
+        err(9);
+      le += l + 4;
+    }
+  }
+  return le;
+};
+var wzh = function(d, b, f, fn, u, c, ce, co) {
+  var fl2 = fn.length, ex = f.extra, col = co && co.length;
+  var exl = exfl(ex);
+  wbytes(d, b, ce != null ? 33639248 : 67324752), b += 4;
+  if (ce != null)
+    d[b++] = 20, d[b++] = f.os;
+  d[b] = 20, b += 2;
+  d[b++] = f.flag << 1 | (c < 0 && 8), d[b++] = u && 8;
+  d[b++] = f.compression & 255, d[b++] = f.compression >> 8;
+  var dt = new Date(f.mtime == null ? Date.now() : f.mtime), y = dt.getFullYear() - 1980;
+  if (y < 0 || y > 119)
+    err(10);
+  wbytes(d, b, y << 25 | dt.getMonth() + 1 << 21 | dt.getDate() << 16 | dt.getHours() << 11 | dt.getMinutes() << 5 | dt.getSeconds() >> 1), b += 4;
+  if (c != -1) {
+    wbytes(d, b, f.crc);
+    wbytes(d, b + 4, c < 0 ? -c - 2 : c);
+    wbytes(d, b + 8, f.size);
+  }
+  wbytes(d, b + 12, fl2);
+  wbytes(d, b + 14, exl), b += 16;
+  if (ce != null) {
+    wbytes(d, b, col);
+    wbytes(d, b + 6, f.attrs);
+    wbytes(d, b + 10, ce), b += 14;
+  }
+  d.set(fn, b);
+  b += fl2;
+  if (exl) {
+    for (var k in ex) {
+      var exf = ex[k], l = exf.length;
+      wbytes(d, b, +k);
+      wbytes(d, b + 2, l);
+      d.set(exf, b + 4), b += 4 + l;
+    }
+  }
+  if (col)
+    d.set(co, b), b += col;
+  return b;
+};
+var wzf = function(o, b, c, d, e) {
+  wbytes(o, b, 101010256);
+  wbytes(o, b + 8, c);
+  wbytes(o, b + 10, c);
+  wbytes(o, b + 12, d);
+  wbytes(o, b + 16, e);
+};
+function zipSync(data, opts) {
+  if (!opts)
+    opts = {};
+  var r = {};
+  var files = [];
+  fltn(data, "", r, opts);
+  var o = 0;
+  var tot = 0;
+  for (var fn in r) {
+    var _a2 = r[fn], file = _a2[0], p = _a2[1];
+    var compression = p.level == 0 ? 0 : 8;
+    var f = strToU8(fn), s = f.length;
+    var com = p.comment, m = com && strToU8(com), ms = m && m.length;
+    var exl = exfl(p.extra);
+    if (s > 65535)
+      err(11);
+    var d = compression ? deflateSync(file, p) : file, l = d.length;
+    var c = crc();
+    c.p(file);
+    files.push(mrg(p, {
+      size: file.length,
+      crc: c.d(),
+      c: d,
+      f,
+      m,
+      u: s != fn.length || m && com.length != ms,
+      o,
+      compression
+    }));
+    o += 30 + s + exl + l;
+    tot += 76 + 2 * (s + exl) + (ms || 0) + l;
+  }
+  var out = new u8(tot + 22), oe = o, cdl = tot - o;
+  for (var i = 0; i < files.length; ++i) {
+    var f = files[i];
+    wzh(out, f.o, f, f.f, f.u, f.c.length);
+    var badd = 30 + f.f.length + exfl(f.extra);
+    out.set(f.c, f.o + badd);
+    wzh(out, o, f, f.f, f.u, f.c.length, f.o, f.m), o += 16 + badd + (f.m ? f.m.length : 0);
+  }
+  wzf(out, o, files.length, cdl, oe);
+  return out;
+}
+function unzipSync(data, opts) {
+  var files = {};
+  var e = data.length - 22;
+  for (; b4(data, e) != 101010256; --e) {
+    if (!e || data.length - e > 65558)
+      err(13);
+  }
+  ;
+  var c = b2(data, e + 8);
+  if (!c)
+    return {};
+  var o = b4(data, e + 16);
+  var z = o == 4294967295 || c == 65535;
+  if (z) {
+    var ze = b4(data, e - 12);
+    z = b4(data, ze) == 101075792;
+    if (z) {
+      c = b4(data, ze + 32);
+      o = b4(data, ze + 48);
+    }
+  }
+  var fltr = opts && opts.filter;
+  for (var i = 0; i < c; ++i) {
+    var _a2 = zh(data, o, z), c_2 = _a2[0], sc = _a2[1], su = _a2[2], fn = _a2[3], no = _a2[4], off = _a2[5], b = slzh(data, off);
+    o = no;
+    if (!fltr || fltr({
+      name: fn,
+      size: sc,
+      originalSize: su,
+      compression: c_2
+    })) {
+      if (!c_2)
+        files[fn] = slc(data, b, b + sc);
+      else if (c_2 == 8)
+        files[fn] = inflateSync(data.subarray(b, b + sc), { out: new u8(su) });
+      else
+        err(14, "unknown compression type " + c_2);
+    }
+  }
+  return files;
+}
+
+// src/score/lang.ts
+var KANA2 = /[぀-ヿㇰ-ㇿｦ-ﾟ]/;
+var HAN = /\p{Script=Han}/u;
+var LATIN = /[A-Za-z]/;
+function partDefaultLang(tokens) {
+  const ls = tokens.flatMap((t) => t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : []).join("");
+  if (KANA2.test(ls)) return "ja";
+  if (HAN.test(ls)) return "zh";
+  if (LATIN.test(ls)) return "en";
+  return "ja";
+}
+function syllableLangs(tokens, override = true) {
+  const def = partDefaultLang(tokens);
+  let prev = def;
+  return tokens.map((t) => {
+    if (t.kind !== "note" || !t.lyric || t.lyric === MELISMA_MARK) return null;
+    let l = KANA2.test(t.lyric) ? "ja" : HAN.test(t.lyric) ? prev : LATIN.test(t.lyric) ? "en" : prev;
+    if (override && t.lang) l = t.lang;
+    prev = l;
+    return l;
+  });
+}
+function keepOnlyOverrides(tokens, read) {
+  const def = partDefaultLang(tokens);
+  let prev = def;
+  tokens.forEach((t, i) => {
+    if (t.kind !== "note" || !t.lyric || t.lyric === MELISMA_MARK) return;
+    const auto = KANA2.test(t.lyric) ? "ja" : HAN.test(t.lyric) ? prev : LATIN.test(t.lyric) ? "en" : prev;
+    const got = read[i];
+    if (got && got !== auto) t.lang = got;
+    else delete t.lang;
+    prev = got ?? auto;
+  });
+}
+
+// src/format/xml.ts
+var ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+function decode(s) {
+  return s.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, (m, e) => e[0] === "#" ? String.fromCodePoint(e[1] === "x" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) : ENT[e] ?? m);
+}
+var esc2 = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+function parseXml(src) {
+  let i = 0;
+  const fail = (what) => {
+    throw new Error(`XML \u8BFB\u4E0D\u61C2\uFF08\u7B2C ${src.slice(0, i).split("\n").length} \u884C\uFF09\uFF1A${what}`);
+  };
+  const stack = [{ name: "#doc", attrs: {}, children: [] }];
+  while (i < src.length) {
+    const lt = src.indexOf("<", i);
+    const text2 = src.slice(i, lt < 0 ? src.length : lt);
+    if (text2 && stack.length > 1) stack[stack.length - 1].children.push(decode(text2));
+    if (lt < 0) break;
+    i = lt;
+    if (src.startsWith("<!--", i)) {
+      const e = src.indexOf("-->", i);
+      if (e < 0) fail("\u6CE8\u91CA\u6CA1\u6536\u5C3E");
+      i = e + 3;
+      continue;
+    }
+    if (src.startsWith("<![CDATA[", i)) {
+      const e = src.indexOf("]]>", i);
+      if (e < 0) fail("CDATA \u6CA1\u6536\u5C3E");
+      stack[stack.length - 1].children.push(src.slice(i + 9, e));
+      i = e + 3;
+      continue;
+    }
+    if (src.startsWith("<?", i)) {
+      const e = src.indexOf("?>", i);
+      if (e < 0) fail("\u5904\u7406\u6307\u4EE4\u6CA1\u6536\u5C3E");
+      i = e + 2;
+      continue;
+    }
+    if (src.startsWith("<!", i)) {
+      let depth = 0, j = i;
+      for (; j < src.length; j++) {
+        const c = src[j];
+        if (c === "[") depth++;
+        else if (c === "]") depth--;
+        else if (c === ">" && depth === 0) break;
+      }
+      i = j + 1;
+      continue;
+    }
+    if (src[i + 1] === "/") {
+      const e = src.indexOf(">", i);
+      if (e < 0) fail("\u7ED3\u675F\u6807\u7B7E\u6CA1\u6536\u5C3E");
+      const name = src.slice(i + 2, e).trim(), top = stack.pop();
+      if (!top || top.name !== name) fail(`\u7ED3\u675F\u6807\u7B7E </${name}> \u5BF9\u4E0D\u4E0A <${top?.name}>`);
+      i = e + 1;
+      continue;
+    }
+    const m = /^<([^\s/>]+)/.exec(src.slice(i, i + 200));
+    if (!m) fail("\u6807\u7B7E\u540D");
+    const el = { name: m[1], attrs: {}, children: [] };
+    i += m[0].length;
+    const attrRe = /\s*([^\s=/>]+)\s*=\s*("([^"]*)"|'([^']*)')/y;
+    for (; ; ) {
+      attrRe.lastIndex = i;
+      const a = attrRe.exec(src);
+      if (!a) break;
+      el.attrs[a[1]] = decode(a[3] ?? a[4] ?? "");
+      i = attrRe.lastIndex;
+    }
+    while (/\s/.test(src[i] ?? "")) i++;
+    stack[stack.length - 1].children.push(el);
+    if (src.startsWith("/>", i)) {
+      i += 2;
+      continue;
+    }
+    if (src[i] !== ">") fail(`<${el.name}> \u91CC\u6709\u8BFB\u4E0D\u61C2\u7684\u4E1C\u897F`);
+    i++;
+    stack.push(el);
+  }
+  if (stack.length !== 1) fail(`<${stack[stack.length - 1].name}> \u6CA1\u6709\u7ED3\u675F`);
+  const root = stack[0].children.find((c) => typeof c !== "string");
+  if (!root) fail("\u6CA1\u6709\u6839\u5143\u7D20");
+  return root;
+}
+var kids = (el, name) => (el?.children ?? []).filter((c) => typeof c !== "string" && (name === void 0 || c.name === name));
+var kid = (el, name) => kids(el, name)[0];
+var text = (el) => (el?.children ?? []).map((c) => typeof c === "string" ? c : text(c)).join("");
+var childText = (el, name) => {
+  const k = kid(el, name);
+  return k ? text(k).trim() : void 0;
+};
+
+// src/format/musicxml.ts
+var measureLen = (beats, beatType) => beats * WHOLE / beatType;
+var TYPES = [["whole", WHOLE], ["half", WHOLE / 2], ["quarter", TPQ], ["eighth", TPQ / 2], ["16th", TPQ / 4], ["32nd", TPQ / 8], ["64th", TPQ / 16]];
+var TUPLETS = [[1, 1], [3, 2], [5, 4], [6, 4], [7, 4]];
+function noteType(dur) {
+  for (const [act, norm] of TUPLETS) for (const [type, base2] of TYPES) for (let dots = 0; dots <= 2; dots++) {
+    if (Math.abs(base2 * (2 - 1 / 2 ** dots) * (norm / act) - dur) < 0.5) return { type, dots, tuplet: act === 1 ? null : [act, norm] };
+  }
+  return null;
+}
+var pitchXml = (p) => `<pitch><step>${p.step}</step>${p.alter ? `<alter>${p.alter}</alter>` : ""}<octave>${p.octave}</octave></pitch>`;
+function writeMusicXml(song, part, meta) {
+  const toks = song.tokens, head = headLen(toks);
+  const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
+  for (let i = 0; i < head; i++) {
+    const t = toks[i];
+    if (t.kind === "key") H.fifths = t.fifths;
+    else if (t.kind === "time") {
+      H.beats = t.beats;
+      H.beatType = t.beatType;
+    } else if (t.kind === "tempo") H.bpm = t.bpm;
+  }
+  const langs = syllableLangs(toks);
+  const measures = [];
+  let cur = [], ticks = 0, len = measureLen(H.beats, H.beatType);
+  const close = (manual) => {
+    measures.push({ body: cur, manual });
+    cur = [];
+    ticks = 0;
+  };
+  const tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
+  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>`, tempoXml(H.bpm));
+  let prevHyph = false;
+  const syllabic = (t) => {
+    const s = t.hyph ? prevHyph ? "middle" : "begin" : prevHyph ? "end" : "single";
+    prevHyph = !!t.hyph;
+    return s;
+  };
+  const unwritten = [];
+  const nextTimed = (i) => {
+    for (let j = i + 1; j < toks.length; j++) {
+      const t = toks[j];
+      if (t.kind === "note" || t.kind === "rest") return t;
+    }
+    return null;
+  };
+  for (let i = head; i < toks.length; i++) {
+    const t = toks[i];
+    if (t.kind === "bar") {
+      close(true);
+      continue;
+    }
+    if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") {
+      if (ticks >= len || t.kind === "time" && ticks > 0) close(false);
+      if (t.kind === "key") cur.push(`<attributes><key><fifths>${t.fifths}</fifths></key></attributes>`);
+      else if (t.kind === "time") {
+        cur.push(`<attributes><time><beats>${t.beats}</beats><beat-type>${t.beatType}</beat-type></time></attributes>`);
+        len = measureLen(t.beats, t.beatType);
+      } else cur.push(tempoXml(t.bpm));
+      continue;
+    }
+    if (t.kind !== "note" && t.kind !== "rest") continue;
+    let left = t.dur, k = 0;
+    const tieOut = t.kind === "note" && nextTimed(i)?.kind === "note" && nextTimed(i).tie;
+    let lyricDone = false;
+    while (left > 0.5) {
+      if (ticks >= len) close(false);
+      const piece = Math.min(left, len - ticks), first = k === 0, last = left - piece <= 0.5;
+      const ty = noteType(piece);
+      const id = `${t.kind === "note" ? "n" : "r"}${t.id}${first ? "" : `-${k + 1}`}`;
+      let x = `<note id="${id}">`;
+      if (t.kind === "rest") x += `<rest/><duration>${Math.round(piece)}</duration>`;
+      else {
+        const tieIn = first ? !!t.tie : true, tieOn = last ? tieOut : true;
+        x += pitchXml(effectivePitch(toks, i)) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "");
+      }
+      x += `<voice>1</voice>`;
+      if (ty) x += `<type>${ty.type}</type>` + "<dot/>".repeat(ty.dots) + (ty.tuplet ? `<time-modification><actual-notes>${ty.tuplet[0]}</actual-notes><normal-notes>${ty.tuplet[1]}</normal-notes></time-modification>` : "");
+      if (t.kind === "note") {
+        const tieIn = first ? !!t.tie : true, tieOn = last ? tieOut : true;
+        if (tieIn || tieOn) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>`;
+        if (!lyricDone && t.lyric) {
+          if (t.lyric === MELISMA_MARK) x += `<lyric number="1"><extend/></lyric>`;
+          else x += `<lyric number="1"><syllabic>${syllabic(t)}</syllabic><text xml:lang="${esc2(langs[i] ?? "ja")}">${esc2(t.lyric)}</text></lyric>`;
+        }
+        lyricDone = true;
+      }
+      x += `</note>`;
+      cur.push(x);
+      ticks += piece;
+      left -= piece;
+      k++;
+    }
+    if (t.kind === "note" && !t.pitch) unwritten.push(`n${t.id}`);
+  }
+  if (cur.length || !measures.length) close(false);
+  const manualBars = [];
+  const body = measures.map((m, n2) => {
+    if (m.manual) manualBars.push(n2 + 1);
+    return `<measure number="${n2 + 1}">${m.body.join("")}</measure>`;
+  }).join("\n");
+  const P = part;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="4.0">
+<work><work-title>${esc2(meta.title)}</work-title></work>
+<identification><encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
+<part-list><score-part id="${P.id}"><part-name>${esc2(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc2(P.instrumentName)}</instrument-name><instrument-sound>${esc2(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc2(P.variant.library)}</virtual-library><virtual-name>${esc2(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== void 0 ? `<volume>${P.volume}</volume>` : ""}${P.pan !== void 0 ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part></part-list>
+<part id="${P.id}">
+${body}
+</part>
+</score-partwise>
+`;
+  return { xml, manualBars, unwritten };
+}
+function readMusicXml(xml, hints) {
+  const root = parseXml(xml);
+  if (root.name === "score-timewise") throw new Error("\u8FD9\u4EFD MusicXML \u662F timewise \u6392\u6CD5\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BFB partwise");
+  if (root.name !== "score-partwise") throw new Error(`\u8FD9\u4E0D\u662F MusicXML \u4E50\u8C31\uFF08\u6839\u5143\u7D20\u662F <${root.name}>\uFF09`);
+  const dropped = {};
+  const drop = (what) => {
+    dropped[what] = (dropped[what] ?? 0) + 1;
+  };
+  const parts = kids(kid(root, "part-list"), "score-part").map((sp) => {
+    const si = kid(sp, "score-instrument"), mi = kid(sp, "midi-instrument"), vi = kid(si, "virtual-instrument");
+    const num = (s) => s === void 0 || s === "" ? void 0 : Number(s);
+    return {
+      id: sp.attrs.id,
+      name: childText(sp, "part-name") ?? "",
+      instrumentName: childText(si, "instrument-name"),
+      program: num(childText(mi, "midi-program")),
+      variant: childText(vi, "virtual-name"),
+      volume: num(childText(mi, "volume")),
+      pan: num(childText(mi, "pan"))
+    };
+  });
+  const partEls = kids(root, "part");
+  if (!partEls.length) throw new Error("\u8FD9\u4EFD MusicXML \u91CC\u6CA1\u6709\u58F0\u90E8");
+  if (partEls.length > 1) dropped["\u5176\u4F59\u58F0\u90E8\uFF08\u8FD9\u4E00\u7248\u53EA\u7F16\u8F91\u7B2C\u4E00\u4E2A\u58F0\u90E8\uFF09"] = partEls.length - 1;
+  const title = childText(kid(root, "work"), "work-title") ?? childText(root, "movement-title") ?? "";
+  const manual = hints?.manualBars ? new Set(hints.manualBars) : null, unwritten = new Set(hints?.unwritten ?? []);
+  const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
+  const body = [], langRead = /* @__PURE__ */ new Map();
+  let headPhase = true, divisions = TPQ, voice = null;
+  const usedIds = /* @__PURE__ */ new Set();
+  const takeId = (s) => {
+    const m = s ? /^[nr](\d+)$/.exec(s) : null;
+    if (!m) return null;
+    const n2 = +m[1];
+    if (usedIds.has(n2)) return null;
+    usedIds.add(n2);
+    return n2;
+  };
+  const tempoOf = (el) => {
+    const s = el.name === "sound" ? el : kid(el, "sound");
+    const v = s?.attrs.tempo;
+    return v ? Math.round(Number(v)) : null;
+  };
+  const mark = (t) => {
+    body.push(t);
+  };
+  kids(partEls[0], "measure").forEach((m, mi) => {
+    for (const c of kids(m)) {
+      if (c.name === "attributes") {
+        const d = childText(c, "divisions");
+        if (d) divisions = Number(d);
+        const key = kid(c, "key"), time = kid(c, "time");
+        if (key && childText(key, "fifths") !== void 0) {
+          const f = Number(childText(key, "fifths"));
+          if (headPhase && !H.gotKey) {
+            H.fifths = f;
+            H.gotKey = true;
+          } else mark({ kind: "key", id: 0, fifths: f });
+        }
+        if (time && childText(time, "beats")) {
+          const b = Number(childText(time, "beats")), bt = Number(childText(time, "beat-type"));
+          if (headPhase && !H.gotTime) {
+            H.beats = b;
+            H.beatType = bt;
+            H.gotTime = true;
+          } else mark({ kind: "time", id: 0, beats: b, beatType: bt });
+        }
+      } else if (c.name === "direction" || c.name === "sound") {
+        const bpm = tempoOf(c);
+        if (bpm) {
+          if (headPhase && !H.gotTempo) {
+            H.bpm = bpm;
+            H.gotTempo = true;
+          } else mark({ kind: "tempo", id: 0, bpm });
+        }
+      } else if (c.name === "note") {
+        if (kid(c, "grace")) {
+          drop("\u88C5\u9970\u97F3");
+          continue;
+        }
+        if (kid(c, "cue")) {
+          drop("\u63D0\u793A\u97F3\u7B26");
+          continue;
+        }
+        const v = childText(c, "voice") ?? "1";
+        if (voice === null) voice = v;
+        if (v !== voice) {
+          drop("\u540C\u4E00\u58F0\u90E8\u91CC\u7684\u7B2C\u4E8C\u6761\u65CB\u5F8B");
+          continue;
+        }
+        if (kid(c, "chord")) {
+          drop("\u53E0\u97F3\uFF08\u540C\u65F6\u54CD\u7684\u97F3\uFF09");
+          continue;
+        }
+        headPhase = false;
+        const dur = Math.round(Number(childText(c, "duration") ?? "0") * TPQ / divisions);
+        if (dur <= 0) continue;
+        const idAttr = c.attrs.id, cont = idAttr ? /^([nr])(\d+)-\d+$/.exec(idAttr) : null;
+        const prev = body[body.length - 1];
+        if (cont && prev && (prev.kind === "note" || prev.kind === "rest") && prev.id === +cont[2] && cont[1] === "n" === (prev.kind === "note")) {
+          prev.dur += dur;
+          continue;
+        }
+        const isRest = !!kid(c, "rest");
+        if (isRest) {
+          mark({ kind: "rest", id: takeId(idAttr) ?? 0, dur });
+          continue;
+        }
+        const pe = kid(c, "pitch");
+        if (!pe) {
+          drop("\u6CA1\u6709\u97F3\u9AD8\u7684\u97F3\uFF08\u6253\u51FB\u4E50\uFF09");
+          continue;
+        }
+        const pitch = { step: childText(pe, "step") ?? "C", alter: Number(childText(pe, "alter") ?? "0"), octave: Number(childText(pe, "octave") ?? "4") };
+        const tok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null };
+        if (kids(c, "tie").some((t) => t.attrs.type === "stop")) tok.tie = true;
+        const lyrics = kids(c, "lyric"), ly = lyrics.find((l) => (l.attrs.number ?? "1") === "1") ?? lyrics[0];
+        if (lyrics.length > 1) drop("\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD");
+        if (ly) {
+          const tx = kid(ly, "text");
+          if (tx) {
+            tok.lyric = text(tx);
+            const syl = childText(ly, "syllabic");
+            if (syl === "begin" || syl === "middle") tok.hyph = true;
+            if (tx.attrs["xml:lang"]) langRead.set(tok, tx.attrs["xml:lang"]);
+          } else if (kid(ly, "extend")) tok.lyric = MELISMA_MARK;
+        }
+        mark(tok);
+      } else if (c.name === "backup" || c.name === "forward") {
+      } else if (c.name === "harmony") drop("\u548C\u5F26\u8BB0\u53F7");
+    }
+    const n2 = Number(m.attrs.number ?? mi + 1);
+    if (manual ? manual.has(n2) : mi < kids(partEls[0], "measure").length - 1) body.push({ kind: "bar", id: 0 });
+  });
+  const tokens = [{ kind: "key", id: 0, fifths: H.fifths }, { kind: "time", id: 0, beats: H.beats, beatType: H.beatType }, { kind: "tempo", id: 0, bpm: H.bpm }, ...body];
+  let next2 = Math.max(0, ...usedIds) + 1;
+  for (const t of tokens) if (!t.id) t.id = next2++;
+  keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
+  return { song: { hum: "n", tokens }, title, parts, dropped };
+}
+
+// src/format/project.ts
+var FORMAT = { manifest: 1, score: 1, lounge: 1, studio: 1 };
+var MIMETYPE = "application/vnd.recordare.musicxml";
+var DIR = ".moonsinger/";
+var emptyExtras = () => ({ lounge: {}, unknown: {}, rootfiles: [] });
+var PART = "P1";
+var ROLE = "r1";
+var MIC = "m1";
+var CAND = { full: "c1", light: "c2" };
+function defaultRole(hum, quality2) {
+  return { version: FORMAT.lounge, id: ROLE, name: "\u4E3B\u5531", active: CAND[quality2], candidates: [
+    { id: CAND.full, name: "\u6708\u8BFB", gm: { program: 55, variant: "tsukuyomi" }, hum, calibrationDb: 0, chain: [], engines: {} },
+    { id: CAND.light, name: "\u6708\u8BFB\uFF08\u5143\u97F3\uFF09", gm: { program: 55, variant: "tsukuyomi-vowels" }, hum, calibrationDb: 0, chain: [], engines: {} }
+  ] };
+}
+function saveMxl(a) {
+  const role = structuredClone(a.extras.lounge[ROLE] ?? defaultRole(a.hum, a.quality === "none" ? "full" : a.quality));
+  if (a.quality !== "none") role.active = CAND[a.quality];
+  const cands = role.candidates ?? [];
+  for (const c of cands) if (c.id === CAND.full || c.id === CAND.light) c.hum = a.hum;
+  const active = cands.find((c) => c.id === role.active);
+  const studio = structuredClone(a.extras.studio ?? { version: FORMAT.studio, mics: [{ id: MIC, name: "\u9EA6\u514B\u98CE 1", gainDb: 0, pan: 0 }] });
+  const mic = (studio.mics ?? [])[0];
+  const w = writeMusicXml(a.song, {
+    id: PART,
+    name: String(role.name ?? "\u4E3B\u5531"),
+    instrumentName: String(active?.name ?? "\u6708\u8BFB"),
+    sound: "voice.synth",
+    program: Number(active?.gm?.program ?? 55),
+    variant: typeof active?.gm?.variant === "string" ? { library: "MoonSinger", name: String(active.gm.variant) } : void 0,
+    pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : void 0
+  }, { title: a.title, software: `MoonSinger ${a.app}`, date: a.date });
+  const scoreExt = {
+    ...a.extras.scoreExt ?? {},
+    version: FORMAT.score,
+    parts: [{ id: PART, role: ROLE, mic: MIC }],
+    manualBars: { [PART]: w.manualBars },
+    unwritten: w.unwritten
+  };
+  const files = {};
+  const lounge = { ...a.extras.lounge, [ROLE]: role };
+  const manifest = {
+    ...a.extras.manifest ?? {},
+    format: "moonsinger",
+    version: FORMAT.manifest,
+    app: a.app,
+    saved: a.date,
+    files: { "score.json": FORMAT.score, "studio.json": FORMAT.studio, ...Object.fromEntries(Object.entries(lounge).map(([id, r]) => [`lounge/${id}.json`, Number(r.version ?? 1)])) }
+  };
+  const json = (o) => strToU8(JSON.stringify(o, null, 2) + "\n");
+  const rootfiles = [
+    `<rootfile full-path="score.musicxml" media-type="application/vnd.recordare.musicxml+xml"/>`,
+    ...a.extras.rootfiles.map((r) => `<rootfile full-path="${r.path}" media-type="${r.mediaType}"/>`)
+  ].join("\n    ");
+  files["mimetype"] = strToU8(MIMETYPE);
+  files["META-INF/container.xml"] = strToU8(`<?xml version="1.0" encoding="UTF-8"?>
+<container>
+  <rootfiles>
+    ${rootfiles}
+  </rootfiles>
+</container>
+`);
+  files["score.musicxml"] = strToU8(w.xml);
+  files[`${DIR}manifest.json`] = json(manifest);
+  files[`${DIR}score.json`] = json(scoreExt);
+  for (const [id, r] of Object.entries(lounge)) files[`${DIR}lounge/${id}.json`] = json(r);
+  files[`${DIR}studio.json`] = json(studio);
+  for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in files)) files[path] = bytes;
+  const entries = {};
+  for (const [path, bytes] of Object.entries(files)) entries[path] = [bytes, { level: path === "mimetype" ? 0 : 6 }];
+  return zipSync(entries);
+}
+function openBytes(name, bytes) {
+  const isZip = bytes[0] === 80 && bytes[1] === 75;
+  if (!isZip) {
+    const r2 = readMusicXml(new TextDecoder().decode(bytes));
+    return finish(r2, emptyExtras(), false, name);
+  }
+  let files;
+  try {
+    files = unzipSync(bytes);
+  } catch (e) {
+    throw new Error(`\u8FD9\u4E2A\u6587\u4EF6\u89E3\u4E0D\u5F00\uFF08\u4E0D\u662F\u5B8C\u6574\u7684 .mxl\uFF1F\uFF09\uFF1A${e.message}`);
+  }
+  const container = files["META-INF/container.xml"];
+  if (!container) throw new Error("\u8FD9\u4E2A\u538B\u7F29\u5305\u91CC\u6CA1\u6709 META-INF/container.xml\uFF0C\u4E0D\u662F .mxl");
+  const paths = [...strFromU8(container).matchAll(/<rootfile\b[^>]*full-path="([^"]+)"[^>]*?(?:media-type="([^"]*)")?[^>]*\/?>/g)].map((m) => ({ path: m[1], mediaType: m[2] ?? "" }));
+  const main = paths[0]?.path;
+  if (!main || !files[main]) throw new Error("container.xml \u6307\u7684\u4E3B\u4E50\u8C31\u5728\u5305\u91CC\u627E\u4E0D\u5230");
+  const extras = emptyExtras();
+  extras.rootfiles = paths.slice(1);
+  const known = /* @__PURE__ */ new Set(["mimetype", "META-INF/container.xml", main]);
+  const manifestBytes = files[`${DIR}manifest.json`];
+  const ours = !!manifestBytes;
+  let hints;
+  if (ours) {
+    const parse = (p) => {
+      try {
+        return JSON.parse(strFromU8(files[p]));
+      } catch {
+        throw new Error(`${p} \u8BFB\u4E0D\u61C2\uFF08\u6587\u4EF6\u574F\u4E86\uFF1F\uFF09`);
+      }
+    };
+    const manifest = parse(`${DIR}manifest.json`);
+    known.add(`${DIR}manifest.json`);
+    const newer = (what, v, mine) => {
+      if (Number(v) > mine) throw new Error(`\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08${what} \u7B2C ${v} \u7248\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BA4\u5230\u7B2C ${mine} \u7248\uFF09\uFF0C\u6253\u5F00\u518D\u5B58\u4F1A\u4E22\u4E1C\u897F\uFF0C\u6240\u4EE5\u6CA1\u6709\u6253\u5F00\u3002\u8BF7\u5148\u66F4\u65B0 app\u3002`);
+    };
+    newer("\u603B\u76EE\u5F55", manifest.version, FORMAT.manifest);
+    extras.manifest = manifest;
+    if (files[`${DIR}score.json`]) {
+      const s = parse(`${DIR}score.json`);
+      known.add(`${DIR}score.json`);
+      newer("\u8C31\u7684\u6269\u5C55", s.version, FORMAT.score);
+      extras.scoreExt = s;
+      const part = (s.parts ?? [])[0];
+      const pid = String(part?.id ?? PART);
+      hints = { manualBars: (s.manualBars ?? {})[pid] ?? [], unwritten: s.unwritten ?? [] };
+    }
+    for (const p of Object.keys(files)) {
+      const m = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p);
+      if (m) {
+        const r2 = parse(p);
+        newer(`\u4F11\u606F\u5BA4\u300C${r2.name ?? m[1]}\u300D`, r2.version, FORMAT.lounge);
+        extras.lounge[m[1]] = r2;
+        known.add(p);
+      }
+    }
+    if (files[`${DIR}studio.json`]) {
+      const s = parse(`${DIR}studio.json`);
+      known.add(`${DIR}studio.json`);
+      newer("\u5F55\u97F3\u623F", s.version, FORMAT.studio);
+      extras.studio = s;
+    }
+  }
+  for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
+  const r = readMusicXml(strFromU8(files[main]), hints);
+  return finish(r, extras, ours, name);
+}
+function finish(r, extras, ours, name) {
+  const notices = [];
+  const dropped = Object.entries(r.dropped);
+  if (dropped.length) notices.push(`\u8FD9\u4EFD\u8C31\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u4E0D\u652F\u6301\u7684\u4E1C\u897F\uFF0C\u6CA1\u6709\u8BFB\u8FDB\u6765\uFF1A${dropped.map(([k, n2]) => `${k} ${n2} \u5904`).join("\u3001")}\u3002\u5B58\u7684\u65F6\u5019\u5B83\u4EEC\u4E0D\u4F1A\u5728\u65B0\u6587\u4EF6\u91CC\u2014\u2014\u8981\u7559\u539F\u6837\uFF0C\u8BF7\u300C\u53E6\u5B58\u4E3A\u300D\u65B0\u6587\u4EF6\u3002`);
+  let hum = "n", quality2 = "full";
+  if (!extras.lounge[ROLE] && !ours) {
+    const p = r.parts[0];
+    const was = p?.instrumentName || p?.name || "\u539F\u6765\u7684\u4E50\u5668";
+    const gm = p?.program;
+    const role2 = defaultRole("n", "full");
+    role2.name = p?.name || "\u4E3B\u5531";
+    role2.active = "c0";
+    role2.candidates.unshift({ id: "c0", name: was, gm: { program: gm ?? null, variant: p?.variant ?? null }, calibrationDb: 0, chain: [], engines: {} });
+    extras.lounge[ROLE] = role2;
+    notices.push(`\u58F0\u90E8\u300C${role2.name}\u300D\u539F\u6765\u662F${was}${gm ? `\uFF08GM ${gm} \u53F7\uFF09` : ""}\uFF1B\u8FD9\u4E00\u7248\u6CA1\u6709\u8FD9\u4EF6\u4E50\u5668\uFF0C\u6240\u4EE5\u8FD8\u6CA1\u4EBA\u4E0A\u573A\u3002\u8981\u6708\u8BFB\u6765\u5531\uFF0C\u5728\u9876\u680F\u300C\u97F3\u8D28\u300D\u9009\u300C\u5B8C\u6574\u300D\u6216\u300C\u8F7B\u91CF\u300D\u3002`);
+  }
+  const role = extras.lounge[ROLE];
+  if (role) {
+    quality2 = role.active === CAND.full ? "full" : role.active === CAND.light ? "light" : "none";
+    const c = (role.candidates ?? []).find((x) => x.id === CAND.full);
+    const h = c?.hum;
+    if (h === "la" || h === "n" || h === "u" || h === "o" || h === "a") hum = h;
+  }
+  const title = r.title || name.replace(/\.(mxl|musicxml|xml)$/i, "");
+  return { song: { ...r.song, hum }, title, hum, quality: quality2, extras, ours, notices };
+}
+
+// src/app/doc-file.ts
+var TYPES2 = [{ description: "MusicXML \u4E50\u8C31\uFF08MoonSinger \u5B58\u6210 .mxl\uFF09", accept: {
+  "application/vnd.recordare.musicxml": [".mxl"],
+  "application/vnd.recordare.musicxml+xml": [".musicxml", ".xml"]
+} }];
+var ACCEPT = ".mxl,.musicxml,.xml";
+var g = globalThis;
+var topLevel = () => {
+  try {
+    return window.self === window.top;
+  } catch {
+    return false;
+  }
+};
+var canPickOpen = () => topLevel() && typeof g.showOpenFilePicker === "function";
+var canPickSave = () => topLevel() && typeof g.showSaveFilePicker === "function";
+var aborted = (e) => e.name === "AbortError";
+async function pickOpen() {
+  if (canPickOpen()) {
+    let hs;
+    try {
+      hs = await g.showOpenFilePicker({ types: TYPES2, multiple: false, excludeAcceptAllOption: false });
+    } catch (e) {
+      if (aborted(e)) return null;
+      throw e;
+    }
+    const f = await hs[0].getFile();
+    return { name: f.name, bytes: new Uint8Array(await f.arrayBuffer()), handle: hs[0] };
+  }
+  return new Promise((resolve, reject) => {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ACCEPT;
+    inp.hidden = true;
+    inp.addEventListener("change", async () => {
+      const f = inp.files?.[0];
+      inp.remove();
+      if (!f) {
+        resolve(null);
+        return;
+      }
+      try {
+        resolve({ name: f.name, bytes: new Uint8Array(await f.arrayBuffer()), handle: null });
+      } catch (e) {
+        reject(e);
+      }
+    }, { once: true });
+    document.body.append(inp);
+    inp.click();
+  });
+}
+async function pickSave(suggestedName) {
+  try {
+    return await g.showSaveFilePicker({ suggestedName, types: TYPES2 });
+  } catch (e) {
+    if (aborted(e)) return null;
+    throw e;
+  }
+}
+async function writeTo(h, bytes) {
+  const w = await h.createWritable();
+  await w.write(bytes);
+  await w.close();
+}
+
 // src/app/main.ts
 var st = initState();
+var UNTITLED = "\u672A\u547D\u540D";
+var doc = {
+  title: UNTITLED,
+  handle: null,
+  extras: emptyExtras(),
+  saved: { song: st.song, quality: "full", title: UNTITLED }
+};
 var $ = (id) => document.getElementById(id);
 var bar = $("bar");
 var scoreEl = $("score");
@@ -3118,7 +4725,7 @@ function showUpdateBar() {
   });
   document.body.append(el);
 }
-bar.innerHTML = `<span class="title">MoonSinger</span><span class="ver">${APP_VERSION}</span><label class="field" title="\u5B8C\u6574 = \u6708\u8BFB\u672C\u4EBA\uFF08\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09\uFF1B\u8F7B\u91CF = \u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1">\u97F3\u8D28<select id="qualSel"><option value="full">\u5B8C\u6574</option><option value="light">\u8F7B\u91CF</option></select></label><label class="field" title="\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48">\u54FC<select id="humSel"><option value="la">\u3089 / \u5566</option><option value="n">\u3093 / \u55EF</option><option value="u">\u3046 / \u545C</option><option value="o">\u304A / \u54E6</option><option value="a">\u3042 / \u554A</option></select></label><span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span><button id="padBtn" class="btn is-on" title="\u624B\u6307 pad"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"><svg class="ico"><use href="#settings"/></svg></button><button id="shareBtn" class="btn" title="\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u53D1\u7ED9\u522B\u4EBA\u542C"><svg class="ico"><use href="#export"/></svg></button><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button>`;
+bar.innerHTML = `<button id="fileBtn" class="btn" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u53E6\u5B58\u4E3A\uFF08Ctrl / \u2318+S \u5B58\uFF09"><svg class="ico"><use href="#file"/></svg></button><span id="docTitle" class="title">\u672A\u547D\u540D</span><span class="ver">${APP_VERSION}</span><label class="field" title="\u5B8C\u6574 = \u6708\u8BFB\u672C\u4EBA\uFF08\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09\uFF1B\u8F7B\u91CF = \u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1">\u97F3\u8D28<select id="qualSel"><option value="full">\u5B8C\u6574</option><option value="light">\u8F7B\u91CF</option></select></label><label class="field" title="\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48">\u54FC<select id="humSel"><option value="la">\u3089 / \u5566</option><option value="n">\u3093 / \u55EF</option><option value="u">\u3046 / \u545C</option><option value="o">\u304A / \u54E6</option><option value="a">\u3042 / \u554A</option></select></label><span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span><button id="padBtn" class="btn is-on" title="\u624B\u6307 pad"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E"><svg class="ico"><use href="#settings"/></svg></button><button id="shareBtn" class="btn" title="\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u53D1\u7ED9\u522B\u4EBA\u542C"><svg class="ico"><use href="#export"/></svg></button><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button>`;
 var sampler = new Sampler();
 var sound = {
   down: (p, id = "main") => sampler.down(midiOf(p), st.song.hum, id),
@@ -3201,6 +4808,7 @@ function update(next2) {
   view.render();
   pad.render();
   renderStatus();
+  renderTitle();
 }
 var DUR_NAME = {
   [TPQ * 4]: "\u5168\u97F3\u7B26",
@@ -3237,13 +4845,13 @@ var singing = false;
 var singStatus = (s) => {
   $("singStatus").textContent = s;
 };
-function showError(text) {
+function showError(text2) {
   document.getElementById("errNotice")?.remove();
   const el = document.createElement("div");
   el.id = "errNotice";
   el.className = "update-bar notice-err";
   el.innerHTML = `<span class="notice-text"></span><button class="btn" data-v="ok">\u77E5\u9053\u4E86</button>`;
-  el.querySelector(".notice-text").textContent = text;
+  el.querySelector(".notice-text").textContent = text2;
   el.addEventListener("click", (e) => {
     if (e.target.closest("[data-v]")) el.remove();
   });
@@ -3307,7 +4915,11 @@ async function togglePlay() {
   }
   if (singing) return;
   singer.unlock();
-  if ($("qualSel").value === "light") {
+  if (quality() === "none") {
+    noCast("\u5531");
+    return;
+  }
+  if (quality() === "light") {
     playLight();
     return;
   }
@@ -3342,7 +4954,11 @@ async function exportSong() {
   $("shareBtn").classList.add("is-on");
   try {
     let r = null, how = "";
-    if ($("qualSel").value === "full") {
+    if (quality() === "none") {
+      noCast("\u5BFC\u51FA");
+      return;
+    }
+    if (quality() === "full") {
       try {
         r = await singFull();
         how = "\u6708\u8BFB";
@@ -3364,7 +4980,7 @@ async function exportSong() {
     }
     singStatus("\u7F16 mp3\u2026");
     const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
-    const file = new File([bytes], `${songTitle()}.mp3`, { type: "audio/mpeg" });
+    const file = new File([bytes], `${doc.title !== UNTITLED ? doc.title : songTitle()}.mp3`, { type: "audio/mpeg" });
     singStatus("");
     offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${how}\u5531 ${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
   } catch (e) {
@@ -3384,7 +5000,7 @@ var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
 var modelSource = MODEL_SOURCE_DEFAULT;
 var modelBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-models", location.href).href, modelSource.trim().replace(/\/+$/, "") || MODEL_SOURCE_DEFAULT])];
 var packStore = createPackStore({ packs: PACKS });
-var esc2 = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+var esc3 = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 async function packStatusText() {
   const st2 = await packStore.status(Object.keys(PACKS));
   return st2.map((s) => `${s.ready ? "\u2713" : "\xB7"} ${s.slug}\uFF08${(s.bytesTotal / 1e6).toFixed(1)} MB\uFF09`).join("\n");
@@ -3393,12 +5009,12 @@ function openSettings() {
   if (closeOffer) closeOffer();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc2(modelSource)}" /></label><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc2(CREDIT.credit)}
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc3(modelSource)}" /></label><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc3(CREDIT.credit)}
 
-${esc2(CREDIT.terms)}
-${esc2(CREDIT.termsUrl)}
+${esc3(CREDIT.terms)}
+${esc3(CREDIT.termsUrl)}
 
-${esc2(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc3(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -3430,14 +5046,14 @@ ${esc2(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-ap
     packSt.textContent = "\u5BFC\u5165\u4E2D\u2026";
     try {
       await packStore.importFiles(Object.keys(PACKS), files, (p) => packSt.textContent = `\u5BFC\u5165\u4E2D\u2026 ${Math.floor(p.done / p.total * 100)}%`);
-    } catch (err) {
-      singStatus(`\u5BFC\u5165\u6CA1\u6210\uFF1A${err.message === "no-matching-file" ? "\u8FD9\u4E9B\u6587\u4EF6\u4E0D\u662F\u6708\u8BFB\u8981\u7684\u6A21\u578B\u5305\u5206\u7247" : err.message}`);
+    } catch (err2) {
+      singStatus(`\u5BFC\u5165\u6CA1\u6210\uFF1A${err2.message === "no-matching-file" ? "\u8FD9\u4E9B\u6587\u4EF6\u4E0D\u662F\u6708\u8BFB\u8981\u7684\u6A21\u578B\u5305\u5206\u7247" : err2.message}`);
     }
     refresh();
   });
 }
 $("setBtn").addEventListener("click", () => openSettings());
-function offerFile(file, title, msg) {
+function offerFile(file, title, msg, onDone) {
   const nav = navigator;
   const canShare = typeof navigator.share === "function" && !!nav.canShare?.({ files: [file] });
   const box = document.createElement("div");
@@ -3465,14 +5081,16 @@ function offerFile(file, title, msg) {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 3e4);
       singStatus(`\u5DF2\u4E0B\u8F7D ${file.name}`);
+      onDone?.();
       close();
     } else if (v === "share") {
       try {
         await navigator.share({ files: [file], title: file.name });
         singStatus("\u5DF2\u5206\u4EAB");
+        onDone?.();
         close();
-      } catch (err) {
-        if (err.name !== "AbortError") singStatus(`\u5206\u4EAB\u5931\u8D25\uFF1A${err.message}`);
+      } catch (err2) {
+        if (err2.name !== "AbortError") singStatus(`\u5206\u4EAB\u5931\u8D25\uFF1A${err2.message}`);
       }
     }
   });
@@ -3490,6 +5108,172 @@ $("padBtn").addEventListener("click", () => {
   padEl.hidden = !padEl.hidden;
   $("padBtn").classList.toggle("is-on", !padEl.hidden);
   view.render();
+});
+function quality() {
+  return $("qualSel").value;
+}
+var dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality || doc.title !== doc.saved.title;
+function renderTitle() {
+  const d = dirty();
+  $("docTitle").textContent = `${doc.title}${d ? " \u2022" : ""}`;
+  $("docTitle").title = d ? "\u6539\u8FC7\u8FD8\u6CA1\u5B58" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : "";
+  document.title = `${d ? "\u2022 " : ""}${doc.title} \xB7 MoonSinger`;
+}
+function noCast(what) {
+  showError(`\u4E3B\u5531\u8FD9\u4E2A\u89D2\u8272\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u539F\u6765\u7684\u4E50\u5668\u8FD9\u4E00\u7248\u6CA1\u6709\uFF09\uFF0C\u6240\u4EE5\u6CA1\u6709${what}\u3002\u8981\u6708\u8BFB\u6765\u5531\uFF0C\u5728\u9876\u680F\u300C\u97F3\u8D28\u300D\u9009\u300C\u5B8C\u6574\u300D\u6216\u300C\u8F7B\u91CF\u300D\u3002`);
+  singStatus(`\u6CA1\u6709${what}\uFF08\u539F\u56E0\u89C1\u4E0A\u65B9\uFF09`);
+}
+function setQuality(q) {
+  const sel = $("qualSel");
+  let none = sel.querySelector('option[value="none"]');
+  if (q === "none" && !none) {
+    none = document.createElement("option");
+    none.value = "none";
+    none.textContent = "\u672A\u9009\u89D2";
+    sel.prepend(none);
+  }
+  if (q !== "none") none?.remove();
+  sel.value = q;
+}
+function loadDoc(song, o) {
+  impro && pad.toggleImpro();
+  setQuality(o.quality);
+  $("humSel").value = song.hum;
+  doc.title = o.title;
+  doc.handle = o.handle;
+  doc.extras = o.extras;
+  st = initState(song);
+  doc.saved = { song: st.song, quality: o.quality, title: o.title };
+  lastFull = null;
+  view.render();
+  pad.render();
+  renderStatus();
+  renderTitle();
+}
+function markSaved() {
+  doc.saved = { song: st.song, quality: quality(), title: doc.title };
+  renderTitle();
+}
+function confirmDiscard(what) {
+  if (!dirty()) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    closeOffer?.();
+    const box = document.createElement("div");
+    box.className = "offer";
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">\u300C${esc3(doc.title)}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58</div><div class="offer-msg">${what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002</div><div class="offer-btns"><button class="btn" data-v="save">\u5148\u5B58</button><button class="btn" data-v="go">\u4E22\u6389\uFF0C\u7EE7\u7EED</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
+    document.body.append(box);
+    const close = (ok) => {
+      box.remove();
+      closeOffer = null;
+      resolve(ok);
+    };
+    closeOffer = () => close(false);
+    box.addEventListener("click", (e) => {
+      const v = e.target.closest("[data-v]")?.dataset.v;
+      if (e.target === box || v === "no") close(false);
+      else if (v === "go") close(true);
+      else if (v === "save") {
+        close(false);
+        void fileSave(false);
+      }
+    });
+  });
+}
+async function fileNew() {
+  if (!await confirmDiscard("\u65B0\u5EFA")) return;
+  loadDoc(initState().song, { title: UNTITLED, quality: "full", extras: emptyExtras(), handle: null });
+  singStatus("\u65B0\u7684\u4E00\u9996");
+}
+async function fileOpen() {
+  if (!await confirmDiscard("\u6253\u5F00\u522B\u7684\u6B4C")) return;
+  let picked;
+  try {
+    picked = await pickOpen();
+  } catch (e) {
+    showError(`\u6CA1\u6253\u5F00\uFF1A${e.message}`);
+    return;
+  }
+  if (!picked) return;
+  try {
+    const o = openBytes(picked.name, picked.bytes);
+    loadDoc(o.song, { title: o.title, quality: o.quality, extras: o.extras, handle: o.ours && !o.notices.length ? picked.handle : null });
+    if (o.notices.length) showError(o.notices.join(" "));
+    singStatus(`\u6253\u5F00\u4E86 ${picked.name}`);
+  } catch (e) {
+    showError(`\u6253\u4E0D\u5F00 ${picked.name}\uFF1A${e.message}`);
+  }
+}
+var bytesNow = () => saveMxl({ song: st.song, title: doc.title, hum: st.song.hum, quality: quality(), extras: doc.extras, app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
+async function fileSave(asNew) {
+  try {
+    if (!asNew && doc.handle) {
+      await writeTo(doc.handle, bytesNow());
+      markSaved();
+      singStatus(`\u5B58\u597D\u4E86\uFF1A${doc.handle.name}`);
+      return;
+    }
+    if (canPickSave()) {
+      const h = await pickSave(`${doc.title}.mxl`);
+      if (!h) return;
+      doc.title = h.name.replace(/\.(mxl|musicxml|xml)$/i, "") || doc.title;
+      await writeTo(h, bytesNow());
+      doc.handle = h;
+      markSaved();
+      singStatus(`\u5B58\u597D\u4E86\uFF1A${h.name}`);
+      return;
+    }
+    const file = new File([bytesNow()], `${doc.title}.mxl`, { type: "application/vnd.recordare.musicxml" });
+    offerFile(file, "\u5B58\u6210 .mxl", `\u300C${esc3(doc.title)}\u300D\xB7 ${file.size < 1e6 ? `${Math.max(1, Math.round(file.size / 1e3))} KB` : `${(file.size / 1e6).toFixed(1)} MB`}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
+  } catch (e) {
+    showError(`\u6CA1\u5B58\u4E0A\uFF1A${e.message}`);
+  }
+}
+function openFileMenu() {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><label class="set-field">\u6B4C\u540D<input id="titleIn" type="text" spellcheck="false" autocomplete="off" value="${esc3(doc.title)}" /></label><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="saveAs"><svg class="ico"><use href="#save-as"/></svg>\u53E6\u5B58\u4E3A\u2026</button></div><div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${doc.handle ? `\u73B0\u5728\u5B58\u5728 ${esc3(doc.handle.name)}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\u3002` : canPickSave() ? "" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\u3002"}</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  document.body.append(box);
+  const titleIn = box.querySelector("#titleIn");
+  const applyTitle = () => {
+    const t = titleIn.value.trim().replace(/[\\/:*?"<>|]/g, "");
+    if (t && t !== doc.title) {
+      doc.title = t;
+      renderTitle();
+    }
+  };
+  const close = () => {
+    applyTitle();
+    box.remove();
+    closeOffer = null;
+    scoreEl.focus();
+  };
+  closeOffer = close;
+  titleIn.addEventListener("change", applyTitle);
+  box.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") {
+      close();
+      return;
+    }
+    if (!v) return;
+    close();
+    if (v === "new") void fileNew();
+    else if (v === "open") void fileOpen();
+    else if (v === "save") void fileSave(false);
+    else if (v === "saveAs") void fileSave(true);
+  });
+}
+$("fileBtn").addEventListener("click", () => openFileMenu());
+$("qualSel").addEventListener("change", () => {
+  if (quality() !== "none") setQuality(quality());
+  renderTitle();
+});
+window.addEventListener("beforeunload", (e) => {
+  if (dirty()) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
 });
 function whereNow() {
   if (closeOffer) return "sheet";
@@ -3530,11 +5314,15 @@ function run(a, repeat, code) {
     case "sheet":
       closeOffer?.();
       return true;
+    case "file":
+      if (a.a === "open") void fileOpen();
+      else void fileSave(a.a === "saveAs");
+      return true;
   }
 }
 window.addEventListener("keydown", (e) => {
   const t = e.target;
-  if (t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed"))) return;
+  if (!(e.ctrlKey || e.metaKey) && t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed"))) return;
   const a = route(e, whereNow(), st.sel ? "edit" : "write");
   if (a && run(a, e.repeat, e.code)) e.preventDefault();
 });
@@ -3558,8 +5346,9 @@ await document.fonts.load(`40px Bravura`).catch(() => void 0);
 view.render();
 pad.render();
 renderStatus();
+renderTitle();
 scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => singStatus(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-7fad7a19e178.mjs.map
+//# sourceMappingURL=moonsinger-06676834886a.mjs.map

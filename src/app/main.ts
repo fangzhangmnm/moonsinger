@@ -1,11 +1,13 @@
 // main.ts —— 试验页接线：顶栏 / 谱面板 / pad / 键盘。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
-// 第一版（grill 账本 §8½）：内存态，刷新就清空（不做存档、不做撤销）；播放 = 月读在浏览器里唱（src/singer/，和 Lab 命令行共用一份唱法核心）。
+// 第一版（grill 账本 §8½）：不做撤销；播放 = 月读在浏览器里唱（src/singer/，和 Lab 命令行共用一份唱法核心）。
+// 存档 = 无地逃生口（2026-10-07，user「先不急着store。可以先按照无地规范导入导出做逃生口」）：文件菜单 新建 / 打开 / 存 / 另存为 .mxl
+//   （格式 = src/format/，数据契约草稿 ai-docs/20261007-data-contract-draft.md）；没存就关页面 = 浏览器挽留框（照 WeebPaint，不偷偷写盘）。
 // UX-2（账本 §9¾）：选中 = 改、光标 = 写；歌词在谱下面点进去写（底部歌词栏拿掉了）；「弹」= 即兴只唱不写。
 // 调号 / 拍号 / 速度是谱里的记号 token，点谱上的记号就地改，pad「＋」在光标处插——顶栏不再有全局的调号 / 拍号 / 速度。
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type NoteTok, type Hum, type MarkVal, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
+import { type EditorState, type NoteTok, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setTuplet, setInputKey, currentIndex, barFill, effectivePitch, timeline, headLen, keyAt, timeAt, tempoAt, tempoWord, TPQ } from "../score/song.ts";
 import { type Pitch, pitchName, midiOf, diatonicIndex, KEY_LABEL } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -19,8 +21,14 @@ import { encodeMp3 } from "../export/mp3.ts";
 import { createPackStore } from "@internal/model-packs";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
+import { saveMxl, openBytes, emptyExtras, type Extras, type Quality } from "../format/project.ts";
+import * as docFile from "./doc-file.ts";
 
 let st: EditorState = initState();
+/** 这首歌的家（无地逃生口）：歌名、打开的那个文件（桌面 Chromium）、文件里这一版不改动的部分、上次存 / 打开时的样子（判断改过没存）。 */
+const UNTITLED = "未命名";
+const doc = { title: UNTITLED, handle: null as docFile.FileHandle | null, extras: emptyExtras() as Extras,
+  saved: { song: st.song as Song, quality: "full" as Quality, title: UNTITLED } };
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const bar = $("bar"), scoreEl = $("score"), padEl = $("padPanel");
@@ -42,7 +50,8 @@ function showUpdateBar(): void {
 
 
 bar.innerHTML =
-  `<span class="title">MoonSinger</span><span class="ver">${APP_VERSION}</span>` +
+  `<button id="fileBtn" class="btn" title="文件：新建 / 打开 / 存 / 另存为（Ctrl / ⌘+S 存）"><svg class="ico"><use href="#file"/></svg></button>` +
+  `<span id="docTitle" class="title">未命名</span><span class="ver">${APP_VERSION}</span>` +
   `<label class="field" title="完整 = 月读本人（第一次要加载约 65 MB）；轻量 = 元音采样，按下即响、任何设备都能跑">音质<select id="qualSel"><option value="full">完整</option><option value="light">轻量</option></select></label>` +
   `<label class="field" title="没写歌词的音唱什么">哼<select id="humSel"><option value="la">ら / 啦</option><option value="n">ん / 嗯</option><option value="u">う / 呜</option><option value="o">お / 哦</option><option value="a">あ / 啊</option></select></label>` +
   `<span class="spacer"></span><span id="singStatus" class="status sing"></span><span id="status" class="status"></span>` +
@@ -107,6 +116,7 @@ function update(next: EditorState): void {
   view.render();
   pad.render();
   renderStatus();
+  renderTitle();
 }
 
 const DUR_NAME: Record<number, string> = { [TPQ * 4]: "全音符", [TPQ * 3]: "附点二分", [TPQ * 2]: "二分", [TPQ * 1.5]: "附点四分", [TPQ]: "四分",
@@ -194,7 +204,8 @@ async function togglePlay(): Promise<void> {
   if (singer.playing || sampler.songPlaying) { singer.stop(); sampler.stopSong(); playIcon(false); singStatus(""); return; }
   if (singing) return;
   singer.unlock();   // 在用户手势里先把声音打开（iPad）
-  if ($<HTMLSelectElement>("qualSel").value === "light") { playLight(); return; }
+  if (quality() === "none") { noCast("唱"); return; }
+  if (quality() === "light") { playLight(); return; }
   singing = true; $("playBtn").classList.add("is-on");
   try {
     const cached = lastFull, r = await singFull();
@@ -218,7 +229,8 @@ async function exportSong(): Promise<void> {
   exporting = true; $("shareBtn").classList.add("is-on");
   try {
     let r: { samples: Float32Array; sr: number } | null = null, how = "";
-    if ($<HTMLSelectElement>("qualSel").value === "full") {
+    if (quality() === "none") { noCast("导出"); return; }
+    if (quality() === "full") {
       try { r = await singFull(); how = "月读"; }
       catch (e) { showError(`完整版月读唱不出来：${(e as Error).message}。没有导出。要先用元音版导出，就在顶栏「音质」换成「轻量」再导出。`); singStatus("没有导出（原因见上方）"); return; }
     } else {
@@ -228,7 +240,7 @@ async function exportSong(): Promise<void> {
     if (!r) { singStatus("还没有音"); return; }
     singStatus("编 mp3…");
     const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
-    const file = new File([bytes], `${songTitle()}.mp3`, { type: "audio/mpeg" });
+    const file = new File([bytes], `${doc.title !== UNTITLED ? doc.title : songTitle()}.mp3`, { type: "audio/mpeg" });
     singStatus("");
     offerFile(file, "歌声导出好了", `${how}唱 ${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
   } catch (e) {
@@ -293,7 +305,7 @@ function openSettings(): void {
 }
 $("setBtn").addEventListener("click", () => openSettings());
 /** 「好了」面板（应用内，不用系统弹窗）：分享 / 下载 / 关。 */
-function offerFile(file: File, title: string, msg: string): void {
+function offerFile(file: File, title: string, msg: string, onDone?: () => void): void {
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
   const canShare = typeof navigator.share === "function" && !!nav.canShare?.({ files: [file] });
   const box = document.createElement("div");
@@ -311,9 +323,9 @@ function offerFile(file: File, title: string, msg: string): void {
       const a = document.createElement("a"), url = URL.createObjectURL(file);
       a.href = url; a.download = file.name; document.body.append(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 30_000);
-      singStatus(`已下载 ${file.name}`); close();
+      singStatus(`已下载 ${file.name}`); onDone?.(); close();
     } else if (v === "share") {
-      try { await navigator.share({ files: [file], title: file.name }); singStatus("已分享"); close(); }
+      try { await navigator.share({ files: [file], title: file.name }); singStatus("已分享"); onDone?.(); close(); }
       catch (err) { if ((err as { name?: string }).name !== "AbortError") singStatus(`分享失败：${(err as Error).message}`); }
     }
   });
@@ -326,6 +338,128 @@ $("shareBtn").addEventListener("click", () => { void exportSong(); });
 $<HTMLSelectElement>("humSel").value = st.song.hum;   // 下拉的初值跟这首歌的设置（默认嗯）
 $<HTMLSelectElement>("humSel").addEventListener("change", (e) => { update(setHum(st, (e.target as HTMLSelectElement).value as Hum)); scoreEl.focus(); });
 $("padBtn").addEventListener("click", () => { padEl.hidden = !padEl.hidden; $("padBtn").classList.toggle("is-on", !padEl.hidden); view.render(); });
+
+// ── 文件（无地逃生口）：一首歌 = 一个 .mxl；家 = 打开的那个文件（桌面 Chromium 能存回去）或没有家（iPad：存 = 下载 / 分享） ──────
+function quality(): Quality { return $<HTMLSelectElement>("qualSel").value as Quality; }
+const dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality || doc.title !== doc.saved.title;
+function renderTitle(): void {
+  const d = dirty();
+  $("docTitle").textContent = `${doc.title}${d ? " •" : ""}`;
+  $("docTitle").title = d ? "改过还没存" : doc.handle ? `存在 ${doc.handle.name}` : "";
+  document.title = `${d ? "• " : ""}${doc.title} · MoonSinger`;
+}
+/** 主唱没人上场（别的软件存的谱，原来的乐器这一版没有）：不出声、报错，人来选（user「不出声，报错，人类手动换」）。 */
+function noCast(what: string): void {
+  showError(`主唱这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，在顶栏「音质」选「完整」或「轻量」。`);
+  singStatus(`没有${what}（原因见上方）`);
+}
+/** 音质下拉：别的软件存的谱打开时多一项「未选角」。 */
+function setQuality(q: Quality): void {
+  const sel = $<HTMLSelectElement>("qualSel");
+  let none = sel.querySelector<HTMLOptionElement>('option[value="none"]');
+  if (q === "none" && !none) { none = document.createElement("option"); none.value = "none"; none.textContent = "未选角"; sel.prepend(none); }
+  if (q !== "none") none?.remove();
+  sel.value = q;
+}
+function loadDoc(song: Song, o: { title: string; quality: Quality; extras: Extras; handle: docFile.FileHandle | null }): void {
+  impro && pad.toggleImpro();
+  setQuality(o.quality);
+  $<HTMLSelectElement>("humSel").value = song.hum;
+  doc.title = o.title; doc.handle = o.handle; doc.extras = o.extras;
+  st = initState(song);
+  doc.saved = { song: st.song, quality: o.quality, title: o.title };
+  lastFull = null;
+  view.render(); pad.render(); renderStatus(); renderTitle();
+}
+function markSaved(): void { doc.saved = { song: st.song, quality: quality(), title: doc.title }; renderTitle(); }
+/** 改过没存时先问一句（应用内面板，不用系统弹窗）。 */
+function confirmDiscard(what: string): Promise<boolean> {
+  if (!dirty()) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    closeOffer?.();
+    const box = document.createElement("div");
+    box.className = "offer";
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">「${esc(doc.title)}」改过还没存</div><div class="offer-msg">${what}会丢掉这些改动。</div>` +
+      `<div class="offer-btns"><button class="btn" data-v="save">先存</button><button class="btn" data-v="go">丢掉，继续</button><button class="btn primary" data-v="no">算了</button></div></div>`;
+    document.body.append(box);
+    const close = (ok: boolean) => { box.remove(); closeOffer = null; resolve(ok); };
+    closeOffer = () => close(false);
+    box.addEventListener("click", (e) => {
+      const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+      if (e.target === box || v === "no") close(false);
+      else if (v === "go") close(true);
+      else if (v === "save") { close(false); void fileSave(false); }
+    });
+  });
+}
+async function fileNew(): Promise<void> {
+  if (!(await confirmDiscard("新建"))) return;
+  loadDoc(initState().song, { title: UNTITLED, quality: "full", extras: emptyExtras(), handle: null });
+  singStatus("新的一首");
+}
+async function fileOpen(): Promise<void> {
+  if (!(await confirmDiscard("打开别的歌"))) return;
+  let picked: docFile.Picked | null;
+  try { picked = await docFile.pickOpen(); } catch (e) { showError(`没打开：${(e as Error).message}`); return; }
+  if (!picked) return;
+  try {
+    const o = openBytes(picked.name, picked.bytes);
+    // 别的软件存的谱：不认它的家（存回去会把它没读进来的东西丢掉 → 第一次存走另存为）
+    loadDoc(o.song, { title: o.title, quality: o.quality, extras: o.extras, handle: o.ours && !o.notices.length ? picked.handle : null });
+    if (o.notices.length) showError(o.notices.join(" "));
+    singStatus(`打开了 ${picked.name}`);
+  } catch (e) { showError(`打不开 ${picked.name}：${(e as Error).message}`); }
+}
+const bytesNow = () => saveMxl({ song: st.song, title: doc.title, hum: st.song.hum, quality: quality(), extras: doc.extras, app: APP_VERSION, date: new Date().toISOString() });
+async function fileSave(asNew: boolean): Promise<void> {
+  try {
+    if (!asNew && doc.handle) { await docFile.writeTo(doc.handle, bytesNow()); markSaved(); singStatus(`存好了：${doc.handle.name}`); return; }
+    if (docFile.canPickSave()) {
+      const h = await docFile.pickSave(`${doc.title}.mxl`);
+      if (!h) return;
+      doc.title = h.name.replace(/\.(mxl|musicxml|xml)$/i, "") || doc.title;
+      await docFile.writeTo(h, bytesNow());
+      doc.handle = h; markSaved(); singStatus(`存好了：${h.name}`);
+      return;
+    }
+    // iPad / Safari：没有「存回原文件」——给一个 .mxl，下载或分享到「文件」（点了才算存了）
+    const file = new File([bytesNow() as unknown as BlobPart], `${doc.title}.mxl`, { type: "application/vnd.recordare.musicxml" });
+    offerFile(file, "存成 .mxl", `「${esc(doc.title)}」· ${file.size < 1e6 ? `${Math.max(1, Math.round(file.size / 1e3))} KB` : `${(file.size / 1e6).toFixed(1)} MB`}。下载或分享到「文件」里；以后从文件菜单「打开」。`, markSaved);
+  } catch (e) { showError(`没存上：${(e as Error).message}`); }
+}
+/** 文件菜单（应用内面板）：歌名、新建、打开、存、另存为。 */
+function openFileMenu(): void {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">文件</div>` +
+    `<label class="set-field">歌名<input id="titleIn" type="text" spellcheck="false" autocomplete="off" value="${esc(doc.title)}" /></label>` +
+    `<div class="set-row file-row">` +
+    `<button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>新建</button>` +
+    `<button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>打开…</button>` +
+    `<button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>存</button>` +
+    `<button class="btn" data-v="saveAs"><svg class="ico"><use href="#save-as"/></svg>另存为…</button></div>` +
+    `<div class="offer-msg">存成 <code>.mxl</code>（MusicXML 乐谱的压缩包：别的乐谱软件也能打开；MoonSinger 自己的东西放在里面的 <code>.moonsinger/</code>）。` +
+    `${doc.handle ? `现在存在 ${esc(doc.handle.name)}，「存」= 存回去。` : docFile.canPickSave() ? "" : "这台设备上「存」= 下载或分享一个 .mxl 到「文件」里。"}</div>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  document.body.append(box);
+  const titleIn = box.querySelector<HTMLInputElement>("#titleIn")!;
+  const applyTitle = () => { const t = titleIn.value.trim().replace(/[\\/:*?"<>|]/g, ""); if (t && t !== doc.title) { doc.title = t; renderTitle(); } };
+  const close = () => { applyTitle(); box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
+  titleIn.addEventListener("change", applyTitle);
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (!v) return;
+    close();
+    if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "save") void fileSave(false); else if (v === "saveAs") void fileSave(true);
+  });
+}
+$("fileBtn").addEventListener("click", () => openFileMenu());
+$<HTMLSelectElement>("qualSel").addEventListener("change", () => { if (quality() !== "none") setQuality(quality()); renderTitle(); });
+// 改过没存就关页面 / 刷新：浏览器自己的挽留框（照 WeebPaint；无地不偷偷写盘——静默写用户文件违背文件语义）
+window.addEventListener("beforeunload", (e) => { if (dirty()) { e.preventDefault(); e.returnValue = ""; } });
 
 // ── 键盘：映射是一张表（src/input/keys.ts）；这里只算「键盘现在归谁」，再照路由的结果做 ─────────────
 /** 谁在最上面归谁：导出面板 > 记号框 > 歌词框 > 谱面（弹 / 改 / 写）。 */
@@ -356,12 +490,13 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "lyric": return view.lyrics.act(a.a);
     case "mark": view.marks.act(a.a); return true;
     case "sheet": closeOffer?.(); return true;
+    case "file": if (a.a === "open") void fileOpen(); else void fileSave(a.a === "saveAs"); return true;
   }
 }
 window.addEventListener("keydown", (e) => {
   // 别的表单控件（顶栏的下拉框）拿着焦点：不接，它们自己吃方向键 / 空格。歌词框、记号框的输入框照常路由。
   const t = e.target as HTMLElement | null;
-  if (t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed")))) return;
+  if (!(e.ctrlKey || e.metaKey) && t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed")))) return;
   const a = route(e, whereNow(), st.sel ? "edit" : "write");
   if (a && run(a, e.repeat, e.code)) e.preventDefault();
 });
@@ -374,6 +509,7 @@ await document.fonts.load(`40px Bravura`).catch(() => undefined);
 view.render();
 pad.render();
 renderStatus();
+renderTitle();
 scoreEl.focus();
 // 试听元音表（约 3 MB）在画好之后的空闲时下载：选了月读就是意图，第一下就该响（user「选这个乐器就是意图，然后第一下就响」）
 setTimeout(() => { void sampler.load().catch((e) => singStatus(`试听元音表没下载下来：${(e as Error).message}`)); }, 300);

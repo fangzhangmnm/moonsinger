@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-9 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+14 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -29,6 +29,11 @@
 |------|------|
 | `export` | 导出:向上箭头离开托盘(import 的上下镜像) |
 | `import` | 导入:向下箭头落进托盘(托盘=开口朝上的 U) |
+| `file` | 文档:单张纸+折角(copy/paste/clear-canvas 共用母题) |
+| `new` | 新建:纯加号(等长十字线) |
+| `folder-open` | 打开的文件夹:背板止于盖顶 T 接,不再互相压线 |
+| `floppy-disk` | 软盘/保存:滑盖左右对称(7/17)且两竖线顶到顶边 + 防呆角 k=3 |
+| `save-as` | 另存为(floppy-disk=保存 的配对键):双软盘叠放(copy 的前后件语法), 后盘右上探出, 前盘遮罩留白; 20260724 候选 3 号入库 |
 
 ## common
 

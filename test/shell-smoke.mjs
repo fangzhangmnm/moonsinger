@@ -29,8 +29,8 @@ try {
   check(keys.includes(bundle), "① SW 装上，壳缓存名 = 主 bundle", JSON.stringify(keys));
 
   await ctx.setOffline(true);
-  await page.reload(); await page.waitForSelector("#bar .title");
-  check((await page.textContent("#bar .title")) === "MoonSinger", "② 断网刷新照样开");
+  await page.reload(); await page.waitForSelector("#bar .ver");
+  check(/^v\d/.test((await page.textContent("#bar .ver")) ?? ""), "② 断网刷新照样开（顶栏画出来了）");
   await ctx.setOffline(false);
 
   // ③ 模拟一次新部署：主 bundle 换个名字（内容不变），index.html 指过去（再加一行注释让长度也变——本机 python 服务没有 ETag，SW 靠长度比）
@@ -45,7 +45,7 @@ try {
   if (await page.$("#updateBar")) {
     await ctx.unrouteAll();
     await Promise.all([page.waitForNavigation(), page.click('#updateBar [data-v="reload"]')]);
-    await page.waitForSelector("#bar .title");
+    await page.waitForSelector("#bar .ver");
     const src = await page.evaluate(() => document.querySelector('script[type="module"]')?.getAttribute("src"));
     check(src?.includes(nb), "   点「刷新」后换到新 bundle", src ?? "");
   }
@@ -53,7 +53,7 @@ try {
   // ④ 清缓存重启只动自己的
   await page.evaluate(async () => { await (await caches.open("pwa-models")).put("/__pwa-models__/x/chunk-000", new Response("x")); await (await caches.open("jrb-sibling")).put("/x", new Response("x")); });
   await page.click("#setBtn"); await page.click('[data-v="reset"]');
-  await page.waitForURL(/\?reset=/, { timeout: 10000 }); await page.waitForSelector("#bar .title");
+  await page.waitForURL(/\?reset=/, { timeout: 10000 }); await page.waitForSelector("#bar .ver");
   const after = await page.evaluate(() => caches.keys());
   check(after.includes("pwa-models") && after.includes("jrb-sibling"), "④「清缓存重启」后共享模型缓存和兄弟 app 的缓存都还在", JSON.stringify(after));
   check(errs.length === 0, "页面无报错", errs.join(" | "));
