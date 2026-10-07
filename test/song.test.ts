@@ -3,7 +3,7 @@ import { describe, it, eq } from "./runner.mjs";
 import {
   initState, emptySong, writeDegree, writeRest, writeBar, writeKey, extend, backspace, shorter, longer, setTuplet, tapAcc,
   setCaret, select, escape, moveCaret, setInputKey, barFill, keyAt, TPQ, type NoteTok, type EditorState,
-  headLen, writeMark, deleteMark, setMark, timeline, tempoWord, TEMPO_WORDS,
+  headLen, writeMark, deleteMark, setMark, timeline, tempoWord, TEMPO_WORDS, transposeSel, modulateSel, selectToEdge, alterTarget,
 } from "../src/score/song.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
 import { parseMark } from "../src/score/marks.ts";
@@ -124,5 +124,28 @@ describe("song（记号：调号 / 拍号 / 速度都是 token）", () => {
   it("速度词：每个词点下去给的数，推回来还是那个词", () => {
     for (const w of TEMPO_WORDS) eq(tempoWord(w.typical).it, w.it);
     eq(tempoWord(90).it, "Andante");
+  });
+});
+
+describe("song（移调 / 转调）", () => {
+  const four = () => { let st = initState(); for (const d of [1, 3, 5, 7]) st = writeDegree(st, d, "near"); return st; };   // C4 E4 G4 B4
+  it("移调：选中的音按调重新拼写，调号不动", () => {
+    let st = select(four(), H, H + 4); st = transposeSel(st, 1); eq(show(st), "C#4/1 F4/1 G#4/1 C5/1");
+    st = transposeSel(st, -1); eq(show(st), "C4/1 E4/1 G4/1 B4/1");
+  });
+  it("Shift+↑ 半音按调拼写（E 升半音 = F）", () => {
+    let st = initState(); st = writeDegree(st, 3, "near"); st = alterTarget(st, 1); eq(show(st), "F4/1");
+  });
+  it("转调：中间一段 C → D，开头插新调号、后面插回原调，选中跟着挪过的那段", () => {
+    let st = four(); st = select(st, H + 1, H + 3); st = modulateSel(st, 2);
+    eq(show(st), "C4/1 K2 F#4/1 A4/1 K0 B4/1"); eq(st.sel?.from, H + 2); eq(st.sel?.to, H + 4);
+  });
+  it("转调：从歌开头全选 = 改谱头，不插记号；音按音程拼写", () => {
+    let st = four(); st = select(st, H, H + 4); st = modulateSel(st, -2);
+    eq(show(st), "Bb3/1 D4/1 F4/1 A4/1"); eq(keyAt(st.song, H), -2); eq(st.song.tokens.length, H + 4);
+  });
+  it("Shift+Home / Shift+End：选到开头 / 末尾", () => {
+    let st = four(); st = setCaret(st, H + 2); st = selectToEdge(st, 1); eq(JSON.stringify(st.sel), `{"from":${H + 2},"to":${H + 4}}`);
+    st = setCaret(st, H + 2); st = selectToEdge(st, -1); eq(JSON.stringify(st.sel), `{"from":${H},"to":${H + 2}}`);
   });
 });

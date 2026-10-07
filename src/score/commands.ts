@@ -4,6 +4,7 @@ import type { Dir } from "./pitch.ts";
 import {
   type EditorState, writeDegree, writeRest, writeBar, shorter, longer, setTuplet, extend, tapAcc,
   octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward,
+  transposeSel, modulateSel, selectToEdge,
 } from "./song.ts";
 
 export type Command =
@@ -13,7 +14,8 @@ export type Command =
   | { k: "acc"; acc: 1 | -1 }
   | { k: "octave"; d: number } | { k: "step"; d: number } | { k: "alter"; d: number }
   | { k: "caret"; d: number } | { k: "selext"; d: number } | { k: "home" } | { k: "end" } | { k: "escape" }
-  | { k: "backspace" } | { k: "delete" };
+  | { k: "backspace" } | { k: "delete" }
+  | { k: "transpose"; semis: number } | { k: "modulate"; fifths: number } | { k: "seledge"; d: -1 | 1 };
 
 /** 应用一条编辑命令。now = 判 Shift 连点用的时刻（ms）。 */
 export function apply(st: EditorState, c: Command, now = Date.now()): EditorState {
@@ -36,5 +38,8 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "escape": return escape(st);
     case "backspace": return backspace(st);
     case "delete": return deleteForward(st);
+    case "transpose": return transposeSel(st, c.semis);
+    case "modulate": return modulateSel(st, c.fifths);
+    case "seledge": return selectToEdge(st, c.d);
   }
 }

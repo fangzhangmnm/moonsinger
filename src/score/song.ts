@@ -10,7 +10,7 @@
 //   一首歌开头固定三个记号（谱头）：光标进不去、删不掉，只能就地改；中途可以插，插的地方旁边已有同类记号就改它而不是再插一个。
 // 编辑器状态是纯数据，所有命令是纯函数：旧状态 → 新状态。
 
-import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy } from "./pitch.ts";
+import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval } from "./pitch.ts";
 
 /** 一个四分音符的 tick 数。 */
 export const TPQ = 1680;
@@ -377,8 +377,52 @@ function mapTargetPitch(st: EditorState, f: (p: Pitch, fifths: number) => Pitch)
   return next(st, nt);
 }
 export const stepTarget = (st: EditorState, steps: number) => mapTargetPitch(st, (p, k) => stepBy(p, steps, k));
-export const alterTarget = (st: EditorState, d: number) => mapTargetPitch(st, (p) => alterBy(p, d));
+export const alterTarget = (st: EditorState, d: number) => mapTargetPitch(st, (p, k) => transposeSemis(p, d, k));   // 按调拼写（E 升半音 = F）
 export const octaveTarget = (st: EditorState, d: number) => mapTargetPitch(st, (p) => octaveBy(p, d));
+
+// ── 移调 / 转调（选中的一段） ──────────────────────────────────────────
+// user「然后很快我需要框选和整体移调转调」「框选 + 整体移调 / 转调 也先做」。
+
+/** 移调：选中的音整体移几个半音，按各自所在的调重新拼写；调号不动。 */
+export function transposeSel(st: EditorState, semis: number): EditorState {
+  if (!st.sel || !semis) return st;
+  const nt = st.song.tokens.slice();
+  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note" && t.pitch) nt[i] = { ...t, pitch: transposeSemis(t.pitch, semis, keyAt(st.song, i)) }; }
+  return next(st, nt);
+}
+/** 转调：选中的一段从开头生效的调转到 toFifths——音按两个主音之间的音程挪（就近方向，拼写关系不变），
+ *  选中开头的调号改成新调（旁边已有调号 = 改它；从歌开头选 = 改谱头），选中后面插回原来的调（后面本来就有调号的不插）；
+ *  选中里面的调号跟着一起挪。选中保持在挪过的那一段上。 */
+export function modulateSel(st: EditorState, toFifths: number): EditorState {
+  if (!st.sel) return st;
+  const { from, to } = st.sel, old = st.song, f0 = keyAt(old, from), df = toFifths - f0;
+  if (!df) return st;
+  const { steps, semis } = keyInterval(f0, toFifths);
+  const wrap = (f: number) => (f > 7 ? f - 12 : f < -7 ? f + 12 : f);   // 超出 ±7 用等音调
+  const nt = old.tokens.slice();
+  for (let i = from; i < to; i++) {
+    const t = nt[i];
+    if (t.kind === "note" && t.pitch) nt[i] = { ...t, pitch: transposeInterval(t.pitch, steps, semis) };
+    else if (t.kind === "key") nt[i] = { ...t, fifths: wrap(t.fifths + df) };
+  }
+  let nextId = st.nextId;
+  // 后面：插回原来的调（后面连着的记号里已有调号 = 它自己说了算）
+  if (to < nt.length) {
+    let hasKey = false; for (let i = to; i < nt.length && isMark(nt[i]); i++) if (nt[i].kind === "key") hasKey = true;
+    let after = toFifths; for (let i = from; i < to; i++) { const t = nt[i]; if (t.kind === "key") after = t.fifths; }   // 选中末尾生效的新调
+    const back = keyAt(old, to);
+    if (!hasKey && back !== after) nt.splice(to, 0, { kind: "key", id: nextId++, fifths: back });
+  }
+  // 开头：旁边连着的记号里有调号 = 改它，否则插一个
+  let a = from; while (a > 0 && isMark(nt[a - 1])) a--;
+  let b = from; while (b < nt.length && isMark(nt[b])) b++;
+  let shift = 0, keyIdx = -1;
+  for (let i = a; i < b; i++) if (nt[i].kind === "key") keyIdx = i;
+  if (keyIdx >= 0 && keyIdx < from) nt[keyIdx] = { ...(nt[keyIdx] as KeyTok), fifths: toFifths };
+  else if (keyIdx < 0) { nt.splice(from, 0, { kind: "key", id: nextId++, fifths: toFifths }); shift = 1; }
+  const sel = { from: from + shift, to: to + shift };
+  return next({ ...st, nextId }, nt, { sel, caret: sel.to, input: { ...st.input, inputFifths: null } });
+}
 
 // ── 光标与选中 ──────────────────────────────────────────────────────────
 
@@ -400,6 +444,12 @@ export function moveCaret(st: EditorState, d: number): EditorState {
 export function extendSelection(st: EditorState, d: number): EditorState {
   if (!st.sel) return d < 0 ? select(st, st.caret - 1, st.caret) : select(st, st.caret, st.caret + 1);
   return d < 0 ? select(st, st.sel.from - 1, st.sel.to) : select(st, st.sel.from, st.sel.to + 1);
+}
+/** Shift+Home / Shift+End：从光标（或已有选中的另一头）选到开头 / 末尾（配 Home 就是全选）。 */
+export function selectToEdge(st: EditorState, d: -1 | 1): EditorState {
+  const n = st.song.tokens.length;
+  if (d < 0) return select(st, headLen(st.song.tokens), st.sel ? st.sel.to : st.caret);
+  return select(st, st.sel ? st.sel.from : st.caret, n);
 }
 /** Esc：写 → 选中光标前那个 token（改）。 */
 export function escape(st: EditorState): EditorState {

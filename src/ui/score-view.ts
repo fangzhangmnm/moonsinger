@@ -5,6 +5,8 @@
 //   点别处 = 放光标。笔 / 鼠标拖符头：上下改音高（按五线谱一级一级吸附）、左右改时值（离散阶梯）；手指拖 = 滚动，手指轻点和笔一样。
 // 歌词就地写（user「歌词输入不应该放在键盘上，而是放在五线谱下面点进去一个一个写或者删」）：见 lyric-editor.ts。
 // 点记号（调号 / 拍号 / 速度）= 就地改：见 mark-editor.ts。
+// 框选（user「框选 + 整体移调 / 转调 也先做」）：笔 / 鼠标在空白处拖 = 拉一个框，框住的音（第一个到最后一个之间的一整段）实时选中；
+//   空白处不拖 = 放光标（松开时才放）；手指拖照旧是滚动。
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
@@ -33,18 +35,21 @@ export class ScoreView {
   private ctx = document.createElement("canvas").getContext("2d")!;
   private drag: null | { index: number; d0: number; dur0: number; x0: number; y0: number; axis: "" | "x" | "y"; pid: number; heard: number } = null;
   private finger: null | { pid: number; y0: number; top0: number; x: number; y: number; moved: boolean; shift: boolean } = null;
+  private box: null | { pid: number; x0: number; y0: number; moved: boolean; st0: EditorState } = null;
+  private boxEl: HTMLDivElement;
   readonly lyrics: LyricEditor;
   readonly marks: MarkEditor;
 
   constructor(private el: HTMLElement, private host: ScoreViewHost) {
     this.sheet = document.createElement("div"); this.sheet.className = "sheet";
+    this.boxEl = document.createElement("div"); this.boxEl.className = "marquee"; this.boxEl.hidden = true;
     el.replaceChildren(this.sheet);
     this.lyrics = new LyricEditor(this.sheet, host, () => this.layout, () => this.render());
     this.marks = new MarkEditor(this.sheet, host, () => this.layout, () => this.render());
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("pointerup", (e) => this.up(e));
-    el.addEventListener("pointercancel", () => { if (this.drag) this.host.release?.(); this.drag = null; this.finger = null; });
+    el.addEventListener("pointercancel", () => { if (this.drag) this.host.release?.(); this.drag = null; this.finger = null; this.box = null; this.boxEl.hidden = true; });
     new ResizeObserver(() => this.render()).observe(el);
   }
 
@@ -58,6 +63,7 @@ export class ScoreView {
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
+    if (!this.boxEl.isConnected) this.sheet.appendChild(this.boxEl);
     this.lyrics.reposition();
     this.marks.reposition();
     this.follow();
@@ -95,23 +101,26 @@ export class ScoreView {
       this.el.setPointerCapture(e.pointerId); return;
     }
     e.preventDefault();
-    this.tap(p.x, p.y, e.shiftKey, e.pointerId);
+    if (this.tap(p.x, p.y, e.shiftKey, e.pointerId)) return;
+    // 空白处：先不放光标——拖了就是框选，没拖（松开）才放光标
+    this.box = { pid: e.pointerId, x0: p.x, y0: p.y, moved: false, st0: this.host.get() };
+    this.el.setPointerCapture(e.pointerId);
   }
 
-  /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）；别处 → 光标。 */
-  private tap(x: number, y: number, shift: boolean, pid: number | null): void {
+  /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）。点中了东西返回 true；落在空白处返回 false（调用方决定放光标还是框选）。 */
+  private tap(x: number, y: number, shift: boolean, pid: number | null): boolean {
     const L0 = this.layout!, wasMark = this.marks.open;
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
-    if (wasMark) return;   // 点别处 = 先收起记号框（这一下不另做事）
+    if (wasMark) return true;   // 点别处 = 先收起记号框（这一下不另做事）
     const L = this.layout ?? L0, sp = L.sp, sys = this.systemAt(y), st = this.host.get();
     // 0. 记号（调号 / 拍号 / 速度）
     const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
-    if (mk) { this.marks.openAt(mk.index); return; }
+    if (mk) { this.marks.openAt(mk.index); return true; }
     // 1. 歌词那一行
     const ly = L.lyricY(sys);
     if (y > ly - sp * 2.2 && y < ly + sp * 1.2) {
       const cands = L.lyrics.filter((h) => h.system === sys);
-      if (cands.length) { const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)); if (Math.abs(best.x - x) < sp * 4) { this.lyrics.openAt(best.index); return; } }
+      if (cands.length) { const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)); if (Math.abs(best.x - x) < sp * 4) { this.lyrics.openAt(best.index); return true; } }
     }
     // 2. 音符
     const hit = L.notes.find((n) => n.system === sys && x >= n.x - sp * 0.5 && x <= n.x + n.w + sp * 0.5 && Math.abs(y - n.y) <= sp * 0.9);
@@ -124,13 +133,24 @@ export class ScoreView {
         this.el.setPointerCapture(pid);
         this.host.audition?.(hit.index, true);
       } else this.host.audition?.(hit.index);
-      return;
+      return true;
     }
-    // 3. 别处 → 光标（= 写）
-    const cands = L.slots.filter((s) => s.system === sys);
-    if (!cands.length) return;
+    return false;
+  }
+  /** 空白处 → 最近的光标落点（= 写）。 */
+  private caretAt(x: number, y: number, st = this.host.get()): EditorState {
+    const L = this.layout!, sys = this.systemAt(y), cands = L.slots.filter((s) => s.system === sys);
+    if (!cands.length) return st;
     const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a));
-    this.host.set(setCaret(st, best.caret));
+    return setCaret(st, best.caret);
+  }
+  /** 框选：框住的音（音头中心在框里）从第一个到最后一个选成一段；一个都没框住 = 回到起点的光标。 */
+  private boxSelect(x1: number, y1: number): void {
+    const b = this.box!, L = this.layout!, xa = Math.min(b.x0, x1), xb = Math.max(b.x0, x1), ya = Math.min(b.y0, y1), yb = Math.max(b.y0, y1);
+    Object.assign(this.boxEl.style, { left: `${xa}px`, top: `${ya}px`, width: `${xb - xa}px`, height: `${yb - ya}px` });
+    const inside = L.notes.filter((n) => { const cx = n.x + n.w / 2; return cx >= xa && cx <= xb && n.y >= ya && n.y <= yb; }).map((n) => n.index);
+    if (!inside.length) { this.host.set(this.caretAt(b.x0, b.y0, b.st0)); return; }
+    this.host.set(select(b.st0, Math.min(...inside), Math.max(...inside) + 1));
   }
 
   private move(e: PointerEvent): void {
@@ -138,6 +158,13 @@ export class ScoreView {
       const dy = e.clientY - this.finger.y0;
       if (Math.abs(dy) > 6) this.finger.moved = true;
       if (this.finger.moved) this.el.scrollTop = this.finger.top0 - dy;
+      return;
+    }
+    if (this.box && e.pointerId === this.box.pid && this.layout) {
+      const p = this.local(e), b = this.box;
+      if (!b.moved && Math.hypot(p.x - b.x0, p.y - b.y0) < 6) return;
+      if (!b.moved) { b.moved = true; this.boxEl.hidden = false; }
+      this.boxSelect(p.x, p.y);
       return;
     }
     const g = this.drag, L = this.layout; if (!g || !L || e.pointerId !== g.pid) return;
@@ -164,7 +191,12 @@ export class ScoreView {
   private up(e: PointerEvent): void {
     if (this.finger && e.pointerId === this.finger.pid) {
       const f = this.finger; this.finger = null;
-      if (!f.moved && this.layout) this.tap(f.x, f.y, f.shift, null);
+      if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) this.host.set(this.caretAt(f.x, f.y));
+      return;
+    }
+    if (this.box && e.pointerId === this.box.pid) {
+      const b = this.box; this.box = null; this.boxEl.hidden = true;
+      if (!b.moved && this.layout) this.host.set(this.caretAt(b.x0, b.y0));   // 没拖 = 放光标
       return;
     }
     if (this.drag && e.pointerId === this.drag.pid) { if (this.drag.axis !== "x") this.host.release?.(); this.drag = null; }

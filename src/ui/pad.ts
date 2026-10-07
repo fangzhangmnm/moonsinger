@@ -7,11 +7,13 @@
 //   ♯ / ♭ 像手机 Shift（点一下只管下一个音，连点两下锁住）；「弹」= 即兴：按住临时只唱不写，快速点一下锁住
 //   （user「只有「改」和「写」两个模式，即兴做成 pad 上的一个开关（按住时只唱不写）」）。
 //   「＋」= 在光标处插记号（调号 / 拍号 / 速度，候选条里挑），插完就地打开它的编辑框（user「…都是token」）。
+//   改（有选中）的时候「1=」那个位子换成「移调」：候选 = ↑↓ 半音 / 全音 / 八度 + 「转调…」（再一层：转到 1=X）
+//   （user「然后很快我需要框选和整体移调转调」；写的时候它管输入的调，改的时候它管选中这段的调）。
 
 import { type Pitch, HOME, diatonicIndex, fromDiatonic, tonicStepIndex, pitchName, KEY_LABEL } from "../score/pitch.ts";
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
-import { type EditorState, inputKey } from "../score/song.ts";
+import { type EditorState, inputKey, keyAt } from "../score/song.ts";
 
 const HER_LOW = 26, HER_HIGH = 37;   // A3 / E5 的五线谱位置（她音域外的键变淡，只提示不拦）
 const NOTE_KEYS = 15;                // 16 格里 15 个音 + 右上 1 个 0
@@ -42,7 +44,7 @@ export interface PadHost {
   onSoundUp(): void;                       //              松开停
 }
 
-type Mode = "normal" | "key" | "tuplet" | "mark";
+type Mode = "normal" | "key" | "tuplet" | "mark" | "transpose" | "modulate";
 
 export class Pad {
   private shift = 0;          // 用户挪过几个八度
@@ -58,13 +60,23 @@ export class Pad {
   /** 状态变了：结构没变就只改文字和样式（按住的键不会被重建打断）。 */
   render(): void {
     const st = this.host.state(), f = inputKey(st), base = defaultPadBase(f) + 7 * this.shift;
-    const sig = `${this.mode}|${f}|${base}`;
-    if (sig !== this.builtFor) { this.build(f, base); this.builtFor = sig; }
+    if ((this.mode === "transpose" || this.mode === "modulate") && !st.sel) this.mode = "normal";   // 选中没了：移调候选收起
+    const selKey = st.sel ? keyAt(st.song, st.sel.from) : null;
+    const sig = `${this.mode}|${f}|${base}|${selKey}`;
+    if (sig !== this.builtFor) { this.build(f, base, selKey); this.builtFor = sig; }
     this.refresh(st);
   }
 
-  private build(f: number, base: number): void {
-    const tools = this.mode === "key"
+  private build(f: number, base: number, selKey: number | null): void {
+    const tools = this.mode === "transpose"
+      ? `<button class="btn cand" data-tr="1">↑ 半音</button><button class="btn cand" data-tr="-1">↓ 半音</button>` +
+        `<button class="btn cand" data-tr="2">↑ 全音</button><button class="btn cand" data-tr="-2">↓ 全音</button>` +
+        `<button class="btn cand" data-toct="1">↑ 八度</button><button class="btn cand" data-toct="-1">↓ 八度</button>` +
+        `<button class="btn cand" data-open="modulate" title="整段转到另一个调：音按两个主音之间的音程挪，调号跟着换">转调…</button><button class="btn cand" data-back="1">返回</button>`
+      : this.mode === "modulate"
+      ? KEY_ORDER.map((k) => `<button class="btn cand${k === selKey ? " is-on" : ""}" data-mod="${k}">转到 1=${KEY_NAMES[k]}</button>`).join("") +
+        `<button class="btn cand" data-back="1">返回</button>`
+      : this.mode === "key"
       ? KEY_ORDER.map((k) => `<button class="btn cand" data-key="${k}">1=${KEY_NAMES[k]}</button>`).join("") +
         `<button class="btn cand" data-key="follow">跟调号</button><button class="btn cand" data-back="1">返回</button>`
       : this.mode === "mark"
@@ -73,7 +85,7 @@ export class Pad {
       : this.mode === "tuplet"
       ? [3, 5, 6, 7].map((n) => `<button class="btn cand" data-tup="${n}">${n} 连</button>`).join("") +
         `<button class="btn cand" data-tup="0">关</button><button class="btn cand" data-back="1">返回</button>`
-      : `<button class="btn t-key" data-open="key" title="1=（只管输入）"></button>` +
+      : (selKey !== null ? `<button class="btn t-tr" data-open="transpose" title="移调 / 转调（选中的这段）">移调</button>` : `<button class="btn t-key" data-open="key" title="1=（只管输入）"></button>`) +
         `<button class="btn t-sharp" data-acc="1" title="♯（点一下管下一个音，连点两下锁住；${hint("sharp")}）">♯</button>` +
         `<button class="btn t-flat" data-acc="-1" title="♭（点一下管下一个音，连点两下锁住；${hint("flat")}）">♭</button>` +
         `<button class="btn" data-cmd="shorter" title="短（${hint("shorter")}）">短</button>` +
@@ -138,13 +150,17 @@ export class Pad {
     on("[data-acc]", (b) => this.host.onCommand({ k: "acc", acc: Number(b.dataset.acc) as 1 | -1 }));
     on("[data-oct]", (b) => { this.shift = Math.max(-2, Math.min(2, this.shift + Number(b.dataset.oct))); this.render(); });
     on("[data-open]", (b) => {
-      if (b.dataset.open === "key" || b.dataset.open === "mark") { this.mode = b.dataset.open; this.render(); return; }
+      if (b.dataset.open === "key" || b.dataset.open === "mark" || b.dataset.open === "transpose" || b.dataset.open === "modulate") { this.mode = b.dataset.open; this.render(); return; }
       const st = this.host.state();   // 连音：没开 → 开三连；开着 → 弹候选
       if (!st.input.tuplet) this.host.onTuplet(3); else { this.mode = "tuplet"; this.render(); }
     });
     on("[data-key]", (b) => { this.host.onInputKey(b.dataset.key === "follow" ? null : Number(b.dataset.key)); this.mode = "normal"; this.render(); });
     on("[data-tup]", (b) => { this.host.onTuplet(Number(b.dataset.tup) as 0 | 3 | 5 | 6 | 7); this.mode = "normal"; this.render(); });
     on("[data-back]", () => { this.mode = "normal"; this.render(); });
+    // 移调：点了不收（可以连着点几下）；转调：选了就回到普通工具条
+    on("[data-tr]", (b) => this.host.onCommand({ k: "transpose", semis: Number(b.dataset.tr) }));
+    on("[data-toct]", (b) => this.host.onCommand({ k: "octave", d: Number(b.dataset.toct) }));
+    on("[data-mod]", (b) => { this.mode = "normal"; this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) }); this.render(); });
     on("[data-mark]", (b) => { this.mode = "normal"; this.render(); this.host.onInsertMark(b.dataset.mark as "key" | "time" | "tempo"); });
     // 弹：按住临时、快速点一下锁住 / 解开
     const imp = this.el.querySelector<HTMLElement>("[data-impro]");

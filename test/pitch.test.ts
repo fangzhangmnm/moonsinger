@@ -1,6 +1,6 @@
 // created 2026-10-06 by Claude Opus 5.5
 import { describe, it, eq } from "./runner.mjs";
-import { type Pitch, placeDegree, keyAlter, midiOf, pitchName, tonicStepIndex, stepBy, alterBy } from "../src/score/pitch.ts";
+import { type Pitch, placeDegree, keyAlter, midiOf, pitchName, tonicStepIndex, stepBy, alterBy, transposeSemis, transposeInterval, keyInterval } from "../src/score/pitch.ts";
 
 const P = (s: string): Pitch => { const m = /^([A-G])(#*|b*)(-?\d)$/.exec(s)!; return { step: m[1] as Pitch["step"], alter: m[2].startsWith("#") ? m[2].length : -m[2].length, octave: Number(m[3]) }; };
 const place = (deg: number, fifths: number, prev: string | null, dir: "near" | "up" | "down") => pitchName(placeDegree(deg, fifths, prev ? P(prev) : null, dir));
@@ -20,3 +20,19 @@ describe("pitch", () => {
   it("G 大调里 7 = F#（升降照调号）", () => { eq(place(7, 1, "G4", "up"), "F#5"); eq(place(7, 1, "G4", "near"), "F#4"); });
   it("↑↓ 挪一级回到调号默认；Shift 挪半音", () => { eq(pitchName(stepBy(P("E4"), 1, 1)), "F#4"); eq(pitchName(alterBy(P("E4"), -1)), "Eb4"); });
 });
+
+describe("移调 / 转调的拼写", () => {
+  it("按调移半音：调内音用调里的拼法，调外往上 ♯ 往下 ♭", () => {
+    eq(pitchName(transposeSemis(P("E4"), 1, 0)), "F4"); eq(pitchName(transposeSemis(P("C4"), 1, 0)), "C#4"); eq(pitchName(transposeSemis(P("D4"), -1, 0)), "Db4");
+    eq(pitchName(transposeSemis(P("A4"), 1, -2)), "Bb4"); eq(pitchName(transposeSemis(P("E4"), 2, 0)), "F#4"); eq(pitchName(transposeSemis(P("B4"), 1, 0)), "C5");
+  });
+  it("按音程移：拼写关系不变", () => {
+    eq(pitchName(transposeInterval(P("F#4"), 1, 2)), "G#4"); eq(pitchName(transposeInterval(P("Bb3"), 1, 2)), "C4"); eq(pitchName(transposeInterval(P("B4"), -1, -2)), "A4");
+  });
+  it("两个调之间：就近方向的音程", () => {
+    const k = (a: number, b: number) => JSON.stringify(keyInterval(a, b));
+    eq(k(0, 2), '{"steps":1,"semis":2}'); eq(k(0, -2), '{"steps":-1,"semis":-2}'); eq(k(1, -1), '{"steps":-1,"semis":-2}');
+    eq(k(0, 6), '{"steps":3,"semis":6}'); eq(k(0, 7), '{"steps":0,"semis":1}'); eq(k(0, 5), '{"steps":-1,"semis":-1}');
+  });
+});
+

@@ -140,3 +140,6 @@ button, input, select { font: inherit; color: inherit; }
 .mark-cands .btn.danger { color: #b0412b; }
 .staff-svg text.tempo-word { font-weight: 600; font-family: system-ui, sans-serif; }
 .staff-svg text.tempo-num, .staff-svg text.key-label { font-family: system-ui, sans-serif; }
+
+/* 框选（笔 / 鼠标在谱面空白处拖） */
+.marquee { position: absolute; z-index: 4; border: 1px dashed var(--accent); background: rgba(43, 108, 176, .08); border-radius: 3px; pointer-events: none; }

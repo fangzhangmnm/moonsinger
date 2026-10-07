@@ -64,6 +64,34 @@ export function stepBy(p: Pitch, steps: number, fifths: number): Pitch { return 
 /** 挪半音（Shift+↑↓）：音级不动，只改升降，夹在 -2..2。 */
 export function alterBy(p: Pitch, d: number): Pitch { return { ...p, alter: Math.max(-2, Math.min(2, p.alter + d)) }; }
 
+/** 按调拼写一个 MIDI 音：调内音用调里的拼法；调外音按方向（prefer 1 = ♯、-1 = ♭；默认升号调用 ♯、降号调用 ♭）。 */
+export function spellMidi(midi: number, fifths: number, prefer: 1 | -1 = fifths < 0 ? -1 : 1): Pitch {
+  const cands: Pitch[] = [];
+  for (const step of STEPS) for (let o = Math.floor(midi / 12) - 2; o <= Math.floor(midi / 12); o++) {
+    const alter = midi - midiOf({ step, alter: 0, octave: o });
+    if (Math.abs(alter) <= 1) cands.push({ step, alter, octave: o });
+  }
+  return cands.find((p) => p.alter === keyAlter(p.step, fifths))   // 调内音
+    ?? cands.find((p) => p.alter === prefer)                       // 调外：按方向
+    ?? cands.find((p) => p.alter === 0) ?? cands[0];
+}
+/** 移几个半音，按调重新拼写（Shift+↑↓、移调的半音 / 全音）：往上用 ♯、往下用 ♭，调内音用调里的拼法（C 大调 E 升半音 = F，不是 E♯）。 */
+export function transposeSemis(p: Pitch, semis: number, fifths: number): Pitch {
+  return semis === 0 ? p : spellMidi(midiOf(p) + semis, fifths, semis > 0 ? 1 : -1);
+}
+/** 按音程移（转调用）：字母走 steps 级、音高走 semis 个半音——拼写关系不变（F♯ 上大二度 = G♯，不是 A♭）。 */
+export function transposeInterval(p: Pitch, steps: number, semis: number): Pitch {
+  const d = diatonicIndex(p) + steps, step = STEPS[((d % 7) + 7) % 7], octave = Math.floor(d / 7);
+  return { step, alter: midiOf(p) + semis - midiOf({ step, alter: 0, octave }), octave };
+}
+/** 从调 f0 转到调 f1：主音之间的音程（就近方向，-6..+6 个半音）+ 字母走几级。 */
+export function keyInterval(f0: number, f1: number): { steps: number; semis: number } {
+  let semis = (((7 * (f1 - f0)) % 12) + 12) % 12; if (semis > 6) semis -= 12;
+  let steps = (((tonicStepIndex(f1) - tonicStepIndex(f0)) % 7) + 7) % 7;
+  if (semis < 0 && steps > 0) steps -= 7;
+  return { steps, semis };
+}
+
 /** 挪八度（Alt+↑↓）。 */
 export function octaveBy(p: Pitch, d: number): Pitch { return { ...p, octave: p.octave + d }; }
 
