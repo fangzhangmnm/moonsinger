@@ -2,7 +2,7 @@
 // created 2026-10-07 by Claude Fable 5.1。user 2026-10-07「找人视图同意，然后最好是全屏的而不是弹出窗口，类似gallery，然后能用这个音乐键盘」「默认按年代排哈哈哈」
 //   「试听不生成演奏者」（试听台 = 临时槽；只在「上场」时才 by value 造演奏者）「顺序本来就是先选概念再选演奏者」。
 // 数据 = src/gm/catalog.ts（vendor/instruments/ 的两张表 + 图标 sprite）；音频 / 选角归 host（src/app/main.ts）。
-import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, SORT_LABEL, type Catalog, type Concept, type Provider, type SortMode } from "../gm/catalog.ts";
+import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightOf, weightLabel, SORT_LABEL, type Catalog, type Concept, type Provider, type SortMode } from "../gm/catalog.ts";
 
 export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept };
 export interface FinderHost {
@@ -89,11 +89,13 @@ export class Finder {
     const list = this.el.querySelector(".finder-list")!; if (!this.cat) return;
     const groups = groupConcepts(this.cat, this.mode, this.q);
     if (!groups.length) { list.innerHTML = `<div class="finder-empty">没有叫「${esc(this.q)}」的</div>`; return; }
-    list.innerHTML = groups.map((g) => `<div class="finder-group"><div class="finder-group-h">${esc(g.label)}<span>${g.concepts.length}</span></div>${g.concepts.map((c) => this.rowHtml(c)).join("")}</div>`).join("");
+    list.innerHTML = groups.map((g) => `<div class="finder-group"><div class="finder-group-h">${esc(g.label)}<span>${g.concepts.length}</span></div>${g.concepts.map((c) => this.rowHtml(c, this.mode === "style" ? g.id : null)).join("")}</div>`).join("");
     list.querySelector(".prov.is-on")?.scrollIntoView({ block: "nearest" });
   }
-  private rowHtml(c: Concept): string {
+  private rowHtml(c: Concept, styleTag: string | null = null): string {
     const cat = this.cat!, open = this.opened === c.id, icon = c.icon?.id;
+    // 〇〇风里显示承重：★★★ 承重 / ★★ 常用 / ★ 点缀（仓鼠 v3；user「每个风里面按照承重排…让他ui里面显示出来」）
+    const w = styleTag ? weightOf(c, styleTag) : 0, stars = w ? `<span class="inst-w" title="${esc(weightLabel(cat, w))}">${"★".repeat(w)}</span>` : "";
     const meta = [eraLabel(cat, c), c.year !== null ? `${c.yearApprox ? "约 " : ""}${fmtYear(c.year)}` : ""].filter(Boolean).join(" · ");
     let body = "";
     if (open) {
@@ -105,12 +107,12 @@ export class Finder {
         `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}<button class="btn primary" data-v="cast">上场</button></div></div>` +
         (this.over?.key === key ? `<div class="prov-over">「${esc(this.over.pick.kind === "gs" ? this.over.pick.provider.gmName : "")}」的声音超过了嵌入的软上限：<button class="btn primary" data-v="embed">嵌进歌</button><button class="btn" data-v="weak">不嵌，只记来源</button><button class="btn" data-v="cancel">算了</button></div>` : "");
       body = `<div class="inst-prov">` +
-        provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? `鼓件 · ${esc(p.gmName)}（Standard 鼓组的 ${p.note} 号键）` : p.bank === 128 ? `鼓组 · ${esc(p.gmName)}` : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? `顶替${p.basis === "official" ? "（GM 原文认可）" : p.basis === "lineage" ? "（前身）" : p.basis === "family" ? "（同类）" : "（只是同名）"}${p.reason ? `：${esc(p.reason)}` : ""}` : "", true, p.kind === "substitute")).join("") +
+        provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? `鼓件 · ${esc(p.gmName)}（Standard 鼓组的 ${p.note} 号键）` : p.bank === 128 ? `鼓组 · ${esc(p.gmName)}` : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? `顶替${p.basis === "official" ? "（GM 原文认可）" : p.basis === "lineage" ? "（前身）" : p.basis === "imitation" ? "（仿声）" : p.basis === "family" ? "（同类）" : "（只是同名）"}${p.reason ? `：${esc(p.reason)}` : ""}` : "", true, p.kind === "substitute")).join("") +
         (pitched ? prov(`${c.id}|voice`, "月读", "唱歌词；没写歌词的音按「哼的字」唱", false) : "") +
         (!provs.length && !pitched ? `<div class="prov-none">目录里还没有谁能演它</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc(c.id)}">` +
       (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc(icon)}"/></svg>` : `<span class="inst-ico none">${esc(c.names.zh.slice(0, 1))}</span>`) +
-      `<div class="inst-name"><b>${esc(c.names.zh)}</b><span>${esc(roleNameOf(c))}${c.names.ja ? ` · ${esc(c.names.ja)}` : ""}</span></div><div class="inst-meta">${esc(meta)}</div></div>` + body;
+      `<div class="inst-name"><b>${esc(c.names.zh)}</b>${stars}<span>${esc(roleNameOf(c))}${c.names.ja ? ` · ${esc(c.names.ja)}` : ""}</span></div><div class="inst-meta">${esc(meta)}</div></div>` + body;
   }
 }

@@ -9,12 +9,13 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ } from "../score/song.ts";
+import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { ScoreView } from "../ui/score-view.ts";
+import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
 import { Pad } from "../ui/pad.ts";
 import { toLabScore, type SingLang } from "../score/lab-score.ts";
@@ -25,7 +26,7 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes } from "../gm/sound-cache.ts";
 import { GmSynth } from "../gm/synth.ts";
 import { Finder, type FinderPick } from "../ui/finder.ts";
@@ -33,15 +34,26 @@ import { roleNameOf, roleSoundOf, loadCatalog } from "../gm/catalog.ts";
 import { ICON_CREDITS } from "../gm/instruments.gen.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
-import { type PaperKind, PAPER_KINDS, PAPER_NOTE, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
+import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES, densityOf, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
 import * as docFile from "./doc-file.ts";
+import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 
 let st: EditorState = initState();
 /** 这首歌的家（无地逃生口）：文件名主干（新建 = 默认名；打开 = 那个文件的名字）、打开的那个文件（桌面 Chromium）+ 打开 / 上次写回时它的 mtime（写前对表）、
  *  文件里这一版不改动的部分、上次存 / 打开时的样子（判断改过没存）。歌名在谱里（st.song.title，可不填），和文件名分开。 */
 const doc = { stem: defaultStem(), named: false, handle: null as docFile.FileHandle | null, mtime: null as number | null, extras: emptyExtras() as Extras,
-  saved: { song: st.song as Song, role: DEFAULT_ROLE.name, active: "c1" } };
+  saved: { song: st.song as Song, lounge: "" } };
+/** 休息室里和「改过没存」有关的部分：各角色的名字、谁上场、候选有哪些（候选增删也算改过）。 */
+const loungeKey = () => JSON.stringify(Object.entries(doc.extras.lounge).map(([id, r]) => [id, r.name, r.active, ((r.candidates as { id: string }[] | undefined) ?? []).map((c) => c.id)]).sort());
+doc.saved.lounge = loungeKey();
+/** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
+const curPart = (): PartDef => st.song.parts.find((p) => p.id === st.at.part) ?? st.song.parts[0];
+const curRole = (): string => curPart().role;
+/** 声部的显示 / 出声状态：隐藏（不画）、静音、独奏——这次打开里有效，不进文件（user 2026-10-08「不同的声部视图和出声应该分别可以solo和hide」）。 */
+const partView = new Map<string, { hidden: boolean; muted: boolean; solo: boolean }>();
+const pv = (id: string) => partView.get(id) ?? { hidden: false, muted: false, solo: false };
+const setPv = (id: string, patch: Partial<{ hidden: boolean; muted: boolean; solo: boolean }>) => partView.set(id, { ...pv(id), ...patch });
 /** 显示 / 存档用的名字：填了歌名用歌名，没填用文件名主干。 */
 /** 文件名（user「用歌名可以，然后也要yyyymmdd规则。之后各管各的同意」）：没存过 = 年月日-歌名（没歌名 = 年月日-四位随机 = doc.stem）；
  *  存过 / 打开的 / 改过名的 = 定下来（named），和纸上的歌名各管各的；改文件名在文件菜单。 */
@@ -91,13 +103,13 @@ const sound = {
   up: (id = "main") => { if (gmHeld.has(id)) gmUp(id); else sampler.up(id); },
 };
 /** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
-const soundTok = (s: EditorState, i: number, id = "main") => { const t = s.song.tokens[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id); };
+const soundTok = (s: EditorState, i: number, id = "main") => { const t = tr(s)[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id); };
 /** 电脑键盘按下一个音：响 + pad 上那个音高的键亮着（和手指按 pad 一样，松开键才灭）。 */
-const keyTok = (s: EditorState, i: number, code: string) => { const t = s.song.tokens[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(t.pitch, `key${code}`); };
+const keyTok = (s: EditorState, i: number, code: string) => { const t = tr(s)[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(t.pitch, `key${code}`); };
 /** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
 function writeAndLocate(write: (s: EditorState) => EditorState): number {
   let target = -1;
-  if (st.sel) for (let k = st.sel.from; k < st.sel.to; k++) if (st.song.tokens[k].kind === "note") { target = k; break; }
+  if (st.sel) for (let k = st.sel.from; k < st.sel.to; k++) if (tr(st)[k].kind === "note") { target = k; break; }
   update(write(st));
   return target >= 0 ? target : st.caret - 1;
 }
@@ -107,12 +119,14 @@ const view = new ScoreView(scoreEl, {
   get: () => st,
   set: (n) => update(n),
   audition: (i, hold) => { clearTimeout(upTimer); soundTok(st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
-  glide: (i) => { clearTimeout(upTimer); const t = st.song.tokens[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum, "score"); },
+  glide: (i) => { clearTimeout(upTimer); const t = tr(st)[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum, "score"); },
   release: () => { clearTimeout(upTimer); sound.up("score"); },
   focus: (where) => showPad(where === "staff"),   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
-  part: () => ({ name: partLabels(doc.extras)[0], empty: engineNow() === "unknown" }),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）
+  parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: () => openPartSheet(),
+  onPaperMenu: (id) => openPaperMenu(id),
+  onAddPaper: () => { update(addPaper(st)); info("新的一张纸"); },
   onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),
   reflow: () => reflow,
@@ -186,7 +200,7 @@ const pad = new Pad(padEl, {
   // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
   onPitch: (p, id) => {
     if (finder.isOpen) return;
-    const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
+    const i = writeAndLocate((s) => writePitch(s, p)), t = tr(st)[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
     afterWrite();
   },
@@ -214,7 +228,7 @@ const pad = new Pad(padEl, {
   onInsertMark: (kind) => {
     if (finder.isOpen) return;   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
     const at = st.sel ? st.sel.from : st.caret;
-    const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
+    const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(tr(st), at) } : kind === "time" ? { kind, ...timeAt(tr(st), at) } : { kind, bpm: tempoAt(tr(st), at) };
     const r = writeMark(st, v);
     update(r.st);
     view.marks.openAt(r.index, r.fresh);
@@ -233,7 +247,9 @@ $("improBtn").addEventListener("click", () => toggleImpro());
 
 function update(next: EditorState): void {
   if (next === st) return;
+  const moved = next.at.paper !== st.at.paper || next.at.part !== st.at.part;
   st = next;
+  if (moved) { synth.allOff(); gmHeld.clear(); void prepareSynth(); }
   view.render();
   pad.render();
   renderTitle();
@@ -250,41 +266,100 @@ const info = (s: string) => { showNotice({ id: "info", level: "info", text: s, a
  *  成员上不了场就不出声、报错，换谁由人来（选角是窄接口；谱子不受影响）。 */
 function showError(text: string): void { showNotice({ id: "err", level: "error", text }); }
 const playIcon = (stop: boolean) => { $("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`; if (!stop) progress(""); };
-/** 歌词里有汉字、没有假名 → 按中文唱；其余（含没有歌词）按日语唱。 */
-function songLang(): SingLang {
-  const ls = st.song.tokens.flatMap((t) => (t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : [])).join("");
+/** 歌词里有汉字、没有假名 → 按中文唱；其余（含没有歌词）按日语唱。按一个声部（压平后的一串）判。 */
+function songLangOf(tokens: Token[]): SingLang {
+  const ls = tokens.flatMap((t) => (t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : [])).join("");
   // 英文：歌词里有拉丁字母、没有假名也没有汉字（user「好吧英文先做完」）；中英日混着的歌第一版按日 / 中唱
   if (/[A-Za-z]/.test(ls) && !/[\p{Script=Han}぀-ヿ]/u.test(ls)) return "en";
   // 整首没写歌词时，哼「啦」「呜」用中文唱（日语 ら 是轻弹舌、う 不圆唇；user「呜还是啊，拉也不行」）
   if (!ls && (st.song.hum === "la" || st.song.hum === "u")) return "zh";
   return /\p{Script=Han}/u.test(ls) && !/[぀-ヿ]/.test(ls) ? "zh" : "ja";
 }
-/** 整首唱时给核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）。 */
-const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07 });
-/** 轻量版的音符表（秒）：tie 并成一个长音。 */
-function lightNotes(): { midi: number; t0: number; t1: number }[] {
+/** 整首唱时给核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）；leadIn 明说（混音对齐要扣掉它）。 */
+const LEAD_IN = 0.5;   // 月读核心 OPT.leadIn（sing-core.mjs）：第一个元音前留的秒数
+const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
+/** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。tempoMap = 第一个声部的速度表（别的声部按它算秒数）。 */
+function lightNotes(tokens: Token[], tempoMap: TempoMap): { midi: number; t0: number; t1: number }[] {
   const notes: { midi: number; t0: number; t1: number }[] = [];
-  for (const { index, tok, t0, t1 } of timeline(st.song)) {   // 秒数按速度记号一段一段算好了
+  for (const { index, tok, t0, t1 } of timeline(tokens, tempoMap)) {   // 秒数按速度记号一段一段算好了
     if (tok.kind !== "note") continue;
-    const midi = midiOf(effectivePitch(st.song.tokens, index)), last = notes[notes.length - 1];
+    const midi = midiOf(effectivePitch(tokens, index)), last = notes[notes.length - 1];
     if (tok.tie && last && last.midi === midi) { last.t1 = t1; continue; }
     notes.push({ midi, t0, t1 });
   }
   return notes;
 }
-/** 完整版：同一份谱只算一次（再播 / 导出直接用上次的）。 */
-let lastFull: { key: string; r: SingResult } | null = null;
-async function singFull(): Promise<SingResult | null> {
-  const score = toLabScore(st.song, songLang());
-  if (!score.SCORE.length) return null;
-  const opt = humOpt(), key = JSON.stringify([score, opt]);
-  if (lastFull?.key === key) return lastFull.r;
-  const r = await singer.sing(score, (stage) => progress(`${stage}…`), { opt, models: modelBases() });
-  lastFull = { key, r };
-  return r;
-}
-/** GM 候选（歌里嵌的 SF2 子集，契约 §10.2）按谱出声：worker 里 TinySoundFont 渲染（纯函数）；同一份谱 + 同一个候选只算一次。 */
+/** 光标所在声部压平后的一串 + 速度表（试听「听开头」、月读哼用）。 */
+const curFlat = () => ({ tokens: flattenPart(st.song, st.at.part).tokens, map: tempoMapOf(st.song) });
+/** 一个声部渲染出来的声音：samples 的 0 秒对应谱上的第 at 秒（月读的前面有 leadIn、采样器前面有 0.1 s，混音时扣掉）。 */
+interface Rendered { samples: Float32Array; sr: number; at: number }
+/** 同一份谱 + 同一个演奏者只算一次（再播 / 导出直接用上次的）；按声部各存一份。 */
+const lastRender = new Map<string, { key: string; r: Rendered }>();
 const GM_SR = 44100;
+/** 一个声部按它上场的演奏者出声（离线渲染）：月读 = worker 里唱；元音版 = 采样器；SoundFont = TinySoundFont。没人上场 / 响不了 = 抛错（不出声、报错、人换）。 */
+async function renderPart(part: PartDef): Promise<Rendered | null> {
+  const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
+  if (eng === "unknown") throw new Error(`「${roleName(doc.extras, role)}」还没有人上场`);
+  const { tokens } = flattenPart(st.song, part.id), map = tempoMapOf(st.song);
+  if (eng === "tsukuyomi") {
+    const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map);
+    if (!score.SCORE.length) return null;
+    const opt = humOpt(), key = JSON.stringify(["tsukuyomi", score, opt]), had = lastRender.get(part.id);
+    if (had?.key === key) return had.r;
+    const first = timeline(tokens, map).find((x) => x.tok.kind === "note")?.t0 ?? 0;   // 开头的休止 Lab 格式表达不了（lab-score.ts）：按第一个音的时刻摆
+    const r = await singer.sing(score, (stage) => progress(`${roleName(doc.extras, role)}：${stage}…`), { opt, models: modelBases() });
+    const out = { samples: r.samples, sr: r.sr, at: first - LEAD_IN };
+    lastRender.set(part.id, { key, r: out }); return out;
+  }
+  const notes = lightNotes(tokens, map);
+  if (!notes.length) return null;
+  if (eng === "vowel-sampler") {
+    const key = JSON.stringify(["vowel", notes, st.song.hum]), had = lastRender.get(part.id);
+    if (had?.key === key) return had.r;
+    const r = await sampler.renderSong(notes, st.song.hum), out = { ...r, at: -0.1 };   // 采样器前面留了 0.1 s
+    lastRender.set(part.id, { key, r: out }); return out;
+  }
+  const g = activeGm(doc.extras, role);
+  if (!g) throw new Error("台上的不是 SoundFont 乐器");
+  const gmNotes = notes.map((n) => ({ preset: [g.bank, g.program] as [number, number], key: g.note ?? n.midi, vel: 0.8, t0: n.t0, t1: n.t1 }));   // 鼓件：每个音都敲那个键（只剩节奏）
+  const key = JSON.stringify(["gm", g.subsetSha256, gmNotes]), had = lastRender.get(part.id);
+  if (had?.key === key) return had.r;
+  const bytes = await resolveGmBytes(g);
+  const r = await singer.gm(bytes, g.subsetSha256, gmNotes, GM_SR, 2), out = { samples: r.samples, sr: r.sr, at: 0 };
+  lastRender.set(part.id, { key, r: out }); return out;
+}
+/** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
+const audibleParts = (): PartDef[] => { const solo = st.song.parts.some((p) => pv(p.id).solo); return st.song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted)); };
+/** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；没有 = 0 / 0。 */
+function micOf(part: PartDef): { gainDb: number; pan: number } {
+  const m = ((doc.extras.studio?.mics as { id: string; gainDb?: number; pan?: number }[] | undefined) ?? []).find((x) => x.id === part.mic);
+  return { gainDb: Number(m?.gainDb ?? 0), pan: Math.max(-1, Math.min(1, Number(m?.pan ?? 0))) };
+}
+/** 整首 = 各声部各自渲染再混成立体声（线性重采样到 44.1k；麦克风增益 / 等功率声像；超过 0 dB 整体压回来）。
+ *  哪个声部响不了 = 那个声部不出声、报错，其余照出（user「不是显示自动上，而是就是不出声，报错，人类手动换」）。 */
+async function renderMix(): Promise<{ left: Float32Array; right: Float32Array; sr: number } | null> {
+  const parts = audibleParts(), got: { part: PartDef; r: Rendered }[] = [], errs: string[] = [];
+  for (const part of parts) {
+    try { const r = await renderPart(part); if (r) got.push({ part, r }); }
+    catch (e) { errs.push(`「${roleName(doc.extras, part.role)}」：${(e as Error).message}`); }
+  }
+  if (errs.length) showError(`${errs.join("；")}。${got.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
+  if (!got.length) return null;
+  const SR = GM_SR, pad = 0.3;
+  const start = Math.min(0, ...got.map((x) => x.r.at)), end = Math.max(...got.map((x) => x.r.at + x.r.samples.length / x.r.sr)) + pad;
+  const n = Math.ceil((end - start) * SR), left = new Float32Array(n), right = new Float32Array(n);
+  for (const { part, r } of got) {
+    const { gainDb, pan } = micOf(part), g = 10 ** (gainDb / 20), gl = g * Math.cos(((pan + 1) * Math.PI) / 4), gr = g * Math.sin(((pan + 1) * Math.PI) / 4);
+    const off = Math.round((r.at - start) * SR), ratio = r.sr / SR, len = Math.floor(r.samples.length / ratio);
+    for (let i = 0; i < len; i++) {
+      const p = i * ratio, k = Math.floor(p), f = p - k, v = r.samples[k] * (1 - f) + (r.samples[k + 1] ?? 0) * f;
+      left[off + i] += v * gl; right[off + i] += v * gr;
+    }
+  }
+  let peak = 0; for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+  if (peak > 0.98) { const k = 0.98 / peak; for (let i = 0; i < n; i++) { left[i] *= k; right[i] *= k; } }
+  return { left, right, sr: SR };
+}
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */
 let embedSoftLimit = 10e6;
 /** 弱引用解析到的子集（本次打开；subsetSha256 → 字节）。 */
@@ -300,29 +375,17 @@ async function resolveGmBytes(g: GmCandidate): Promise<Uint8Array> {
     const e = Object.values(SOUNDS).find((x) => x.sha256 === g.origin.fileSha256);
     if (e) { try { bank = await fetchSound(e, (done) => progress(`找「${g.name}」的声音：下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`)); } finally { progress(""); } }
   }
-  if (!bank) throw new Error(`「${g.name}」的声音没随歌带（弱引用），这台设备和家族音源库里也没有它来自的「${g.origin.name}」（sha256 ${g.origin.fileSha256.slice(0, 12)}…）。点谱前面的「${roleName(doc.extras)}」，给它「找文件…」，或换一个「谁来演」`);
+  if (!bank) throw new Error(`「${g.name}」的声音没随歌带（弱引用），这台设备和家族音源库里也没有它来自的「${g.origin.name}」（sha256 ${g.origin.fileSha256.slice(0, 12)}…）。点谱前面的「${roleName(doc.extras, curRole())}」，给它「找文件…」，或换一个「谁来演」`);
   const subset = subsetSf2(bank, [{ bank: g.bank, program: g.program }]), sha = await sha256Hex(subset);
   if (sha !== g.subsetSha256) throw new Error(`从「${g.origin.name}」切出来的「${g.name}」和歌里记的不一样（sha256 ${sha.slice(0, 12)}… ≠ ${g.subsetSha256.slice(0, 12)}…），没有用它`);
   sessionSubsets.set(g.subsetSha256, subset);
   return subset;
 }
-let lastGm: { key: string; r: SingResult } | null = null;
-async function renderGm(): Promise<SingResult | null> {
-  const g = activeGm(doc.extras);
-  if (!g) throw new Error("台上的不是 SoundFont 乐器");
-  const notes = lightNotes().map((n) => ({ preset: [g.bank, g.program] as [number, number], key: g.note ?? n.midi, vel: 0.8, t0: n.t0, t1: n.t1 }));   // 鼓件：每个音都敲那个键（只剩节奏）
-  if (!notes.length) return null;
-  const key = JSON.stringify([g.subsetSha256, notes]);
-  if (lastGm?.key === key) return lastGm.r;
-  const bytes = await resolveGmBytes(g);
-  const r = await singer.gm(bytes, g.subsetSha256, notes, GM_SR, 2);
-  lastGm = { key, r }; return r;
-}
 /** SoundFont 候选的试听走实时合成器。载子集是异步的（几 MB，瞬时）：没载好时这一下丢掉、顺手去载（试听要即时，迟到的音更烦）。 */
 const gmHeld = new Map<string, { bank: number; program: number; key: number }>();   // 哪根手指 / 哪个键按着哪个音
 let gmPreparing: Promise<void> | null = null;
 function prepareSynth(): Promise<void> {
-  const g = activeGm(doc.extras); if (!g || synth.loaded === g.subsetSha256) return Promise.resolve();
+  const g = activeGm(doc.extras, curRole()); if (!g || synth.loaded === g.subsetSha256) return Promise.resolve();
   if (gmPreparing) return gmPreparing;
   gmPreparing = (async () => { const bytes = await resolveGmBytes(g); await synth.load(g.subsetSha256, bytes); })()
     .catch((e) => { showError(`「${g.name}」响不了：${(e as Error).message}`); })
@@ -331,16 +394,16 @@ function prepareSynth(): Promise<void> {
 }
 function gmDown(midi: number, id: string): void {
   const a = finder.isOpen && audition ? audition : null;
-  const g = a ? { bank: a.bank, program: a.program, note: a.note, subsetSha256: a.sha256 } : activeGm(doc.extras); if (!g) return;
+  const g = a ? { bank: a.bank, program: a.program, note: a.note, subsetSha256: a.sha256 } : activeGm(doc.extras, curRole()); if (!g) return;
   if (synth.loaded !== g.subsetSha256) { if (!a) void prepareSynth(); return; }
   singer.unlock();
   const key = g.note ?? midi;   // 鼓件：任何键都敲它
   gmUp(id); synth.noteOn(g.bank, g.program, key, 0.8); gmHeld.set(id, { bank: g.bank, program: g.program, key });
 }
 function gmUp(id: string): void { const h = gmHeld.get(id); if (h) { gmHeld.delete(id); synth.noteOff(h.bank, h.program, h.key); } }
-/** 轻量版：用元音采样器按乐谱唱（全唱「哼」那个字）。 */
-function playLight(who = "轻量版"): void {
-  const notes = lightNotes();
+/** 月读哼整首（找人视图里给人声概念「听开头」）：元音采样器按光标所在的声部唱。 */
+function playLight(who = "月读（哼）"): void {
+  const { tokens, map } = curFlat(), notes = lightNotes(tokens, map);
   if (!notes.length) { info("还没有音"); return; }
   if (!sampler.ready) { progress("元音表下载中…"); void sampler.load().then(() => playLight(who)); return; }
   const total = sampler.playSong(notes, st.song.hum, () => playIcon(false));
@@ -350,21 +413,16 @@ async function togglePlay(): Promise<void> {
   if (singer.playing || sampler.songPlaying) { singer.stop(); sampler.stopSong(); playIcon(false); return; }
   if (singing) return;
   singer.unlock();   // 在用户手势里先把声音打开（iPad）
-  const eng = engineNow();
-  if (eng === "unknown") { noCast("唱"); return; }
-  if (eng === "vowel-sampler") { playLight(); return; }
   singing = true; $("playBtn").classList.add("is-on");
-  const gm = eng === "soundfont";
   try {
-    const cached = lastFull, r = gm ? await renderGm() : await singFull();
-    if (!r) { info("还没有音"); return; }
-    progress(r === cached?.r ? `${(r.samples.length / r.sr).toFixed(1)} 秒` : `${(r.samples.length / r.sr).toFixed(1)} 秒（准备 ${(r.ms.load / 1000).toFixed(1)} s，合成 ${(r.ms.sing / 1000).toFixed(1)} s）`);
-    singer.play(r, () => { playIcon(false); });
+    const t0 = performance.now(), m = await renderMix();
+    if (!m) { progress(""); return; }
+    const secs = m.left.length / m.sr, took = (performance.now() - t0) / 1000;
+    progress(took > 0.3 ? `${secs.toFixed(1)} 秒（准备 ${took.toFixed(1)} s）` : `${secs.toFixed(1)} 秒`);
+    singer.play({ samples: m.left, right: m.right, sr: m.sr }, () => { playIcon(false); });
     playIcon(true);
   } catch (e) {
-    // 完整引擎带不起来（内存不够 / 加载失败）→ 不出声、报错，人手动换（user「不是显示自动上，而是就是不出声，报错，人类手动换」）
-    showError(gm ? `「${activeCandidateName(doc.extras) ?? "乐器"}」响不了：${(e as Error).message}。没有出声。点谱前面的「${roleName(doc.extras)}」换一个「谁来演」。`
-      : `完整版月读唱不出来：${(e as Error).message}。没有出声。要先用元音版，点谱前面的「${roleName(doc.extras)}」把「谁来演」换成「月读（轻量）」再播。`);
+    showError(`放不了：${(e as Error).message}`);
     progress("");
   } finally { singing = false; $("playBtn").classList.remove("is-on"); }
 }
@@ -377,25 +435,15 @@ async function exportSong(): Promise<void> {
   if (exporting || singing) return;
   exporting = true;
   try {
-    let r: { samples: Float32Array; sr: number } | null = null, how = "";
-    const eng = engineNow();
-    if (eng === "unknown") { noCast("导出"); return; }
-    if (eng === "tsukuyomi") {
-      try { r = await singFull(); how = "月读"; }
-      catch (e) { showError(`完整版月读唱不出来：${(e as Error).message}。没有导出。要先用元音版导出，点谱前面的「${roleName(doc.extras)}」把「谁来演」换成「月读（轻量）」再导出。`); progress(""); return; }
-    } else if (eng === "soundfont") {
-      try { r = await renderGm(); how = activeCandidateName(doc.extras) ?? "乐器"; }
-      catch (e) { showError(`「${activeCandidateName(doc.extras) ?? "乐器"}」响不了：${(e as Error).message}。没有导出。`); progress(""); return; }
-    } else {
-      const notes = lightNotes();
-      if (notes.length) { r = await sampler.renderSong(notes, st.song.hum); how = "轻量版"; }
-    }
-    if (!r) { info("还没有音"); return; }
+    const m = await renderMix();
+    if (!m) { progress(""); return; }
     progress("编 mp3…");
-    const secs = r.samples.length / r.sr, bytes = await encodeMp3(r.samples, r.sr);
+    const mono = new Float32Array(m.left.length);   // mp3 这一版单声道（左右平均；声像以后随立体声导出一起做）
+    for (let i = 0; i < mono.length; i++) mono[i] = (m.left[i] + m.right[i]) / 2;
+    const secs = mono.length / m.sr, bytes = await encodeMp3(mono, m.sr);
     const file = new File([bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
     progress("");
-    offerFile(file, "歌声导出好了", `${how}唱 ${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
+    offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
   } catch (e) {
     progress(""); showError(`导出失败：${(e as Error).message}`);
   } finally { exporting = false; }
@@ -521,7 +569,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   });
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
-(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth };   // cssHash：样式表版本（见 scripts/build.sh）
+(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null }) };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
@@ -538,8 +586,8 @@ bar.addEventListener("pointerdown", (e) => { if (!(e.target as HTMLElement).clos
 
 // ── 文件（无地逃生口）：一首歌 = 一个 .mxl；家 = 打开的那个文件（桌面 Chromium 能存回去）或没有家（iPad：存 = 下载 / 分享） ──────
 /** 台上那位的引擎（= 谁来演、怎么出声）；unknown = 没人能出声（别家谱原来的乐器 / 这一版不认识）。SSoT = 休息室快照（doc.extras），不另存状态。 */
-function engineNow(): Engine { return activeInstrument(doc.extras)?.engine ?? "unknown"; }
-const dirty = () => st.song !== doc.saved.song || roleName(doc.extras) !== doc.saved.role || activeId(doc.extras) !== doc.saved.active;
+function engineNow(): Engine { return activeInstrument(doc.extras, curRole())?.engine ?? "unknown"; }
+const dirty = () => st.song !== doc.saved.song || loungeKey() !== doc.saved.lounge;
 function renderTitle(): void {
   const d = dirty(), name = docName();
   $("docTitle").textContent = `${name}${d ? " •" : ""}`;
@@ -548,7 +596,7 @@ function renderTitle(): void {
 }
 /** 主唱没人上场（别的软件存的谱，原来的乐器这一版没有）：不出声、报错，人来选（user「不出声，报错，人类手动换」）。 */
 function noCast(what: string): void {
-  showError(`「${roleName(doc.extras)}」这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，点谱前面的「${roleName(doc.extras)}」，在「谁来演」选月读。`);
+  showError(`「${roleName(doc.extras, curRole())}」这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，点谱前面的「${roleName(doc.extras, curRole())}」，在「谁来演」选月读。`);
 }
 // ── 找人视图（src/ui/finder.ts）：全屏替掉谱区，pad 当试听键盘；试听台 = 临时的一个槽（不进休息室），「上场」才造演奏者 ──────────
 let audition: { bank: number; program: number; note?: number; sha256: string; subset: Uint8Array; label: string } | null = null;   // 试听台上的（GS 预设；note = 鼓件，pad 任何键都敲它）；null = 月读 / 没选
@@ -568,7 +616,8 @@ async function playHeadWith(p: FinderPick): Promise<void> {
   if (p.kind === "voice") { playLight("月读（哼）"); return; }
   if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
   if (!audition) return;
-  const notes = lightNotes().filter((n) => n.t0 < 8).map((n) => ({ preset: [audition!.bank, audition!.program] as [number, number], key: audition!.note ?? n.midi, vel: 0.8, t0: n.t0, t1: Math.min(n.t1, 8) }));
+  const { tokens, map } = curFlat();
+  const notes = lightNotes(tokens, map).filter((n) => n.t0 < 8).map((n) => ({ preset: [audition!.bank, audition!.program] as [number, number], key: audition!.note ?? n.midi, vel: 0.8, t0: n.t0, t1: Math.min(n.t1, 8) }));
   if (!notes.length) { info("谱上还没有音"); return; }
   singer.unlock();
   try { const r = await singer.gm(audition.subset, audition.sha256, notes, GM_SR, 1.5); singer.play(r, () => playIcon(false)); playIcon(true); progress(`${audition.label} · 开头 ${(r.samples.length / r.sr).toFixed(1)} 秒`); }
@@ -578,24 +627,24 @@ async function playHeadWith(p: FinderPick): Promise<void> {
 async function castPick(p: FinderPick, mode: "auto" | "embed" | "weak"): Promise<"done" | "over"> {
   const cat = await loadCatalog(new URL(import.meta.url)), c = p.concept;
   const sound = p.kind === "gs" ? (p.provider.sound ?? roleSoundOf(cat, c)) : roleSoundOf(cat, c);
-  doc.extras = withRoleConcept(doc.extras, { name: roleNameOf(c), sound, concept: { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) } } }, st.song.hum);
+  doc.extras = withRoleConcept(doc.extras, curRole(), { name: roleNameOf(c), sound, concept: { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) } } }, st.song.hum);
   if (p.kind === "voice") { setActive(CANDIDATE_ID.full); closeFinder(); return "done"; }
   if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
   if (!audition) { view.render(); renderTitle(); return "done"; }
   const { subset, sha256 } = audition, inf = sf2Info(subset);
   if (mode === "auto" && subset.length > embedSoftLimit) return "over";
   const fileSha256 = GS.sha256;   // 试听台的整包 = 货架上的那份（哈希就是目录钉的）
-  doc.extras = withSf2Candidate(doc.extras, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...(p.provider.note !== undefined ? { note: p.provider.note } : {}), subset, sha256, embed: mode !== "weak",
+  doc.extras = withSf2Candidate(doc.extras, curRole(), { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...(p.provider.note !== undefined ? { note: p.provider.note } : {}), subset, sha256, embed: mode !== "weak",
     origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, st.song.hum);
   if (mode === "weak") sessionSubsets.set(sha256, subset);
-  closeFinder(); setActive(activeId(doc.extras)); info(`「${roleNameOf(c)}」上场：${p.provider.gmName}`);
+  closeFinder(); setActive(activeId(doc.extras, curRole())); info(`「${roleNameOf(c)}」上场：${p.provider.gmName}`);
   return "done";
 }
-const finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder() });
+const finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder() });
 function openFinder(): void { closeOffer?.(); scoreEl.hidden = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); $("improBtn").classList.add("is-on"); void finder.show(); }   // 「弹」亮着 = pad 只弹不写
 function closeFinder(): void { if (!finder.isOpen) return; finder.hide(); audition = null; synth.allOff(); gmHeld.clear(); padEl.classList.remove("is-locked"); $("improBtn").classList.toggle("is-on", impro); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); scoreEl.focus(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
-function setActive(id: string): void { doc.extras = withActive(doc.extras, id, st.song.hum); synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); }
+function setActive(id: string): void { doc.extras = withActive(doc.extras, curRole(), id, st.song.hum); synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); }
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");
 /** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。
  *  不提醒、不帮用户写任何东西（user「只是举例子，然后这个你也不应该强迫或者提醒用户写这个，因为谱子也不绑定乐器的」「…一键插入按钮 不要」）。 */
@@ -625,9 +674,12 @@ function openPaperSheet(): void {
   const draw = () => {
     const p = st.song.paper ?? paperOf(DEFAULT_PAPER);
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">纸</div><div class="set-row">` +
-      PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${k}<small>${PAPER_NOTE[k]}</small></button>`).join("") +
+      PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${PAPER_LABEL[k]}<small>${PAPER_NOTE[k]}</small></button>`).join("") +
       (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">其他<small>${paperSizeText(p)}</small></button>` : "") + `</div>` +
-      `<div class="offer-msg">整首歌一张纸。纸越大一行放的小节越多，五线谱的大小不变；屏幕放得下就照纸排。不打印的时候不分页。</div>` +
+      `<div class="offer-msg">整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。</div>` +
+      `<div class="part-sec">版式</div><div class="set-row">` +
+      DENSITIES.map((z) => `<button class="btn cand${densityOf(p) === z.id ? " is-on" : ""}" data-v="density:${z.id}">${z.label}<small>${z.note}</small></button>`).join("") + `</div>` +
+      `<div class="offer-msg">紧凑 = 谱小一号、行距和谱距收紧、没写歌词的声部不留歌词位。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。</div>` +
       `<div class="part-sec">屏幕放不下纸的时候</div><div class="set-row">` +
       `<button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">不折行<small>整张纸缩小，行和纸上一样</small></button>` +
       `<button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">折行<small>按屏幕宽排，谱大一点</small></button></div>` +
@@ -642,6 +694,7 @@ function openPaperSheet(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
     if (v && (PAPER_KINDS as string[]).includes(v)) { update(setPaper(st, v as PaperKind)); draw(); }
+    else if (v?.startsWith("density:")) { update(setDensity(st, v.slice(8) as Density)); draw(); }
     else if (v === "fit" || v === "reflow") { reflow = v === "reflow"; view.render(); draw(); }
   });
 }
@@ -650,14 +703,60 @@ function openPaperSheet(): void {
  *  上 = 角色名（谱上写的、MusicXML <part-name>；写或者点预设），中 = 谁来演（乐器 = 候选，名字不上谱——窄接口），下 = 就地改它的设置。改了立刻生效。
  *  现在一个声部、乐器只有月读（完整 / 轻量）= 多乐器的占位（数据契约「每个声部在谱号前面选角色和麦克风」）。 */
 const HUMS: [Hum, string][] = [["n", "ん / 嗯"], ["a", "あ / 啊"], ["o", "お / 哦"], ["u", "う / 呜"], ["la", "ら / 啦"]];
+/** 要画的声部（隐藏的不画）：谱上写角色名（同名同种带号）、没人上场的画淡色、第一个声部上面画速度。 */
+function partViews(): PartView[] {
+  const labels = partLabels(st.song, doc.extras);
+  return st.song.parts.flatMap((p, k) => (pv(p.id).hidden ? [] : [{ id: p.id, name: labels[k], empty: (activeInstrument(doc.extras, p.role)?.engine ?? "unknown") === "unknown", first: k === 0 }]));
+}
+/** 新声部：休息室里建一份默认角色（月读两个候选）+ 录音房一个麦克风，每张纸上给它一条只有谱头的 track；光标跳过去、开它的歌手牌。 */
+function addNewPart(): void {
+  const role = newRoleId(doc.extras, st.song), mic = newMicId(doc.extras, st.song);
+  const id = `P${Math.max(0, ...st.song.parts.map((p) => Number(/^P(\d+)$/.exec(p.id)?.[1] ?? 0))) + 1}`;
+  doc.extras = withNewRole(doc.extras, role, st.song.hum);
+  update(addPart(st, { id, role, mic }));
+  renderTitle();
+  openPartSheet();
+}
+/** 纸的菜单（纸顶「⋯」）：改曲段名、挪、在后面加一张、这张纸上加 / 不加某个声部、删这张纸。 */
+function openPaperMenu(id: string): void {
+  closeOffer?.();
+  const paper = st.song.papers.find((p) => p.id === id); if (!paper) return;
+  const k = st.song.papers.indexOf(paper), labels = partLabels(st.song, doc.extras);
+  const absent = st.song.parts.flatMap((p, i) => (paper.tracks[p.id] ? [] : [{ id: p.id, name: labels[i] }]));
+  const box = document.createElement("div");
+  box.className = "offer";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc(paper.name || `第 ${k + 1} 张纸`)}</div>` +
+    `<div class="set-row"><button class="btn" data-v="name">改曲段名…</button><button class="btn" data-v="up"${k === 0 ? " disabled" : ""}>上移</button><button class="btn" data-v="down"${k === st.song.papers.length - 1 ? " disabled" : ""}>下移</button><button class="btn" data-v="add">在它后面加一张纸</button></div>` +
+    (absent.length ? `<div class="part-sec">这张纸上加上声部</div><div class="set-row">${absent.map((a) => `<button class="btn cand" data-v="track:${esc(a.id)}">${esc(a.name)}</button>`).join("")}</div>` : "") +
+    `<div class="set-row"><button class="btn" data-v="newpart">＋ 新声部…</button>${st.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">删这张纸…</button>` : ""}</div>` +
+    `<div class="offer-msg">纸 = 曲段：每张纸是一个新的开始，各声部在这里重新对齐；一张纸上要哪些声部随它。</div>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  document.body.append(box);
+  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (!v) return;
+    if (v === "name") { close(); view.title.openNow(id); return; }
+    if (v === "up" || v === "down") { update(movePaper(st, id, v === "up" ? -1 : 1)); close(); return; }
+    if (v === "add") { update(addPaper(st, id)); close(); info("新的一张纸"); return; }
+    if (v.startsWith("track:")) { update(addTrack(st, id, v.slice(6))); close(); return; }
+    if (v === "newpart") { close(); addNewPart(); return; }
+    if (v === "del") {
+      close();
+      void askSheet(`删掉「${paper.name || `第 ${k + 1} 张纸`}」？`, "这张纸上所有声部写的东西都没了（没有撤销）。", "删").then((ok) => { if (ok) update(removePaper(st, id)); });
+    }
+  });
+}
 function openPartSheet(): void {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
   const chip = (v: string, label: string, on: boolean, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v="${esc(v)}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
   const setRole = (name: string, sound?: string) => {
-    const n = name.trim(); if (!n || (n === roleName(doc.extras) && (!sound || sound === roleSound(doc.extras)))) return;
-    doc.extras = withRoleName(doc.extras, n, st.song.hum, sound); view.render(); renderTitle();
+    const n = name.trim(); if (!n || (n === roleName(doc.extras, curRole()) && (!sound || sound === roleSound(doc.extras, curRole())))) return;
+    doc.extras = withRoleName(doc.extras, curRole(), n, st.song.hum, sound); view.render(); renderTitle();
   };
   // 找人：从货架（家族音源库）或自己的 .sf2 文件挑一把琴 → 只把那一件子集化嵌进歌（契约 §10.2）；超软上限三选一（嵌 / 弱引用 / 算了）
   let picked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel: string; library?: SoundEntry } | null = null;
@@ -687,18 +786,18 @@ function openPartSheet(): void {
   });
   // 弱引用找不到整包时：人把文件给它（核整包 sha256；对了就留在设备上）
   const findBankFile = (id: string) => {
-    const g = gmCandidates(doc.extras).find((c) => c.id === id); if (!g) return;
+    const g = gmCandidates(doc.extras, curRole()).find((c) => c.id === id); if (!g) return;
     fileInput(".sf2,audio/x-soundfont", async (f) => {
       try {
         const bytes = new Uint8Array(await f.arrayBuffer()), sha = await sha256Hex(bytes);
         if (sha !== g.origin.fileSha256) throw new Error(`「${f.name}」不是歌里记的那个「${g.origin.name}」（sha256 ${sha.slice(0, 12)}… ≠ ${g.origin.fileSha256.slice(0, 12)}…）`);
-        await rememberSound(sha, bytes, true); sessionSubsets.delete(g.subsetSha256); lastGm = null;
+        await rememberSound(sha, bytes, true); sessionSubsets.delete(g.subsetSha256); lastRender.clear();
         await resolveGmBytes(g); info(`找到了：「${g.name}」能响了`); draw();
       } catch (e) { showError((e as Error).message); }
     });
   };
   const finishAdd = (c: Chosen, embed: boolean) => {
-    doc.extras = withSf2Candidate(doc.extras, { ...c, embed }, st.song.hum);
+    doc.extras = withSf2Candidate(doc.extras, curRole(), { ...c, embed }, st.song.hum);
     if (!embed) sessionSubsets.set(c.sha256, c.subset);   // 弱引用：本次打开里直接能响
     picked = null; over = null; synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); draw();
   };
@@ -735,26 +834,32 @@ function openPartSheet(): void {
   };
   const ENGINE_TITLE: Record<Engine, string> = { tsukuyomi: "月读本人（つくよみちゃん；第一次要加载约 65 MB）", "vowel-sampler": "月读的元音采样：按下即响、任何设备都能跑", soundfont: "SoundFont 乐器（TinySoundFont 出声）", unknown: "这一版出不了声（别的软件原来的乐器）" };
   const draw = () => {
-    const eng = engineNow(), h = st.song.hum, rn = roleName(doc.extras), rs = roleSound(doc.extras), aid = activeId(doc.extras);
-    const gms = new Map(gmCandidates(doc.extras).map((g) => [g.id, g])), active = gms.get(aid);
+    const eng = engineNow(), h = st.song.hum, rn = roleName(doc.extras, curRole()), rs = roleSound(doc.extras, curRole()), aid = activeId(doc.extras, curRole());
+    const gms = new Map(gmCandidates(doc.extras, curRole()).map((g) => [g.id, g])), active = gms.get(aid);
     const chipTitle = (c: { id: string; engine: Engine }) => { const g = gms.get(c.id); if (!g) return ENGINE_TITLE[c.engine]; return g.bytes ? `SoundFont ${g.bank}:${g.program}，声音嵌在歌里（${sizeText(g.bytes.length)}）` : g.path ? "声音没随这首歌带来" : `弱引用：声音不在歌里，用时从「${g.origin.name}」找`; };
     const status = !active ? "" : active.bytes ? `<div class="cand-status">声音嵌在歌里（${sizeText(active.bytes.length)}）${active.origin.library ? `，来自家族音源库的 ${esc(active.origin.name)}` : `，来自 ${esc(active.origin.name)}`}</div>`
       : active.path ? `<div class="cand-status">声音没随这首歌带来，所以没人上场——换一个「谁来演」</div>`
       : `<div class="cand-status">弱引用：歌里不带声音，用时从「${esc(active.origin.name)}」找（${sessionSubsets.has(active.subsetSha256) ? "本次已找到" : "家族音源库 / 设备缓存 / 你的文件"}）<button class="btn" data-v="find:${esc(active.id)}">找文件…</button></div>`;
-    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">声部</div>` +
+    const me = curPart(), me_v = pv(me.id), onPaper = Object.keys(st.song.papers.find((p) => p.id === st.at.paper)?.tracks ?? {}).length;
+    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">声部 ${esc(partLabels(st.song, doc.extras)[st.song.parts.indexOf(me)] ?? "")}</div>` +
       `<div class="part-sec">角色（这个声部是什么；谱上写它的名字）</div><select id="roleSel" class="role-sel">` +
       (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc(rn)}（自己写的）</option>`) +
       ROLE_GROUPS.map((g) => `<optgroup label="${g.group}">${g.items.map((r) => `<option value="${esc(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc(r.name)} — ${r.zh}</option>`).join("")}</optgroup>`).join("") +
       `</select><label class="role-name">谱上写<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" /></label>` +
       `<div class="role-sound">MusicXML：<code>${esc(rs)}</code></div>` +
       `<div class="part-sec">谁来演（演奏者和他手里的琴；名字不上谱）</div><div class="set-row">` +
-      candidates(doc.extras).map((c) => chip(`cand:${c.id}`, c.engine === "unknown" ? `${esc(c.name)}（没人能演）` : esc(c.name), aid === c.id, chipTitle(c)) +
+      candidates(doc.extras, curRole()).map((c) => chip(`cand:${c.id}`, c.engine === "unknown" ? `${esc(c.name)}（没人能演）` : esc(c.name), aid === c.id, chipTitle(c)) +
         (aid !== c.id && (c.engine === "soundfont" || c.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc(c.id)}" title="从休息室删掉（它嵌在歌里的声音一起丢）">×</button>` : "")).join("") + `</div>` + status +
       `<div class="part-sec">找人</div><div class="set-row"><button class="btn primary" data-v="finder" title="全屏的乐器目录：按年代 / 族 / 发声方式 / 风浏览，右边的键盘试听，上场">打开乐器目录…</button></div><div class="set-row">` +
       Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(`${e.description ?? e.name}（${sizeText(e.bytes)}；家族音源库，第一次点才下载、之后留在设备上；${e.license.name}）`)}">从 ${esc(e.name)} 选…</button>`).join("") +
       `<button class="btn" data-v="sf2:pick" title="自己的 .sf2 文件：只把选中的那一件嵌进歌，文件本身不留">从 .sf2 文件选…</button></div>` + pickerHtml() +
       `<div class="offer-msg">选了的琴只把用到的那一件（通常几 MB）嵌进歌里，歌到哪都响。</div>` +
       (eng === "tsukuyomi" || eng === "vowel-sampler" ? `<div class="part-sec">月读：没写歌词的音唱什么</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>` : "") +
+      // 多声部（user「不同的声部视图和出声应该分别可以solo和hide」）：隐藏 = 谱上不画；静音 / 独奏 = 播放时；再加一个声部 / 这张纸上不要它 / 整首删掉
+      `<div class="part-sec">这个声部</div><div class="set-row">${chip("hide", "隐藏", me_v.hidden, "谱上不画它（光标会挪到别的声部）")}${chip("mute", "静音", me_v.muted, "播放时不出声")}${chip("solo", "独奏", me_v.solo, "播放时只出有独奏的声部")}</div>` +
+      `<div class="set-row"><button class="btn" data-v="addpart" title="再加一个声部：每张纸上都给它一行，谱头照抄">＋ 加一个声部</button>` +
+      (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="这张纸上不要这个声部（别的纸照旧）">这张纸上去掉它</button>` : "") +
+      (st.song.parts.length > 1 ? `<button class="btn cand danger" data-v="delpart" title="整首歌里删掉这个声部（休息室里它的角色一起删）">删掉这个声部…</button>` : "") + `</div>` +
       `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
     const inp = box.querySelector<HTMLInputElement>("#roleIn")!, sel = box.querySelector<HTMLSelectElement>("#roleSel")!;
     sel.addEventListener("change", () => { const [snd, ...nm] = sel.value.split("|"); if (snd) { setRole(nm.join("|"), snd); draw(); } });
@@ -772,7 +877,7 @@ function openPartSheet(): void {
     if (!v) return;
     if (v === "finder") { close(); openFinder(); return; }
     if (v.startsWith("cand:")) setActive(v.slice(5));
-    else if (v.startsWith("del:")) { try { doc.extras = withoutCandidate(doc.extras, v.slice(4)); renderTitle(); } catch (err) { showError((err as Error).message); } }
+    else if (v.startsWith("del:")) { try { doc.extras = withoutCandidate(doc.extras, curRole(), v.slice(4)); renderTitle(); } catch (err) { showError((err as Error).message); } }
     else if (v.startsWith("find:")) { findBankFile(v.slice(5)); return; }
     else if (v === "sf2:pick") { pickFile(); return; }
     else if (v.startsWith("sound:")) { void pickOfficial(v.slice(6)); return; }
@@ -781,6 +886,17 @@ function openPartSheet(): void {
     else if (v === "sf2:weak") { if (over) finishAdd(over, false); return; }
     else if (v === "sf2:cancel") { picked = null; over = null; }
     else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
+    else if (v === "hide") { const id = curPart().id, h = !pv(id).hidden; setPv(id, { hidden: h }); if (h) { const to = st.song.parts.find((p) => !pv(p.id).hidden && st.song.papers.find((pp) => pp.id === st.at.paper)?.tracks[p.id]); if (to) update(setFocus(st, st.at.paper, to.id)); } view.render(); if (h) { close(); return; } }
+    else if (v === "mute") { setPv(curPart().id, { muted: !pv(curPart().id).muted }); }
+    else if (v === "solo") { setPv(curPart().id, { solo: !pv(curPart().id).solo }); }
+    else if (v === "addpart") { close(); addNewPart(); return; }
+    else if (v === "droptrack") { close(); update(removeTrack(st, st.at.paper, curPart().id)); return; }
+    else if (v === "delpart") {
+      close();
+      const me = curPart();
+      void askSheet(`删掉声部「${roleName(doc.extras, me.role)}」？`, "整首歌里它写的东西都没了（没有撤销），休息室里它的角色也一起删。", "删").then((ok) => { if (!ok) return; update(removePart(st, me.id)); doc.extras = withoutRole(doc.extras, me.role); renderTitle(); view.render(); });
+      return;
+    }
     else return;
     draw();
   });
@@ -789,12 +905,13 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   if (impro) toggleImpro();
   doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.mtime = o.handle ? (o.mtime ?? null) : null; doc.extras = o.extras;
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };   // pad 是独立设备：换歌不换它的「1=」和调式
-  doc.saved = { song: st.song, role: roleName(o.extras), active: activeId(o.extras) };
-  lastFull = null; lastGm = null; synth.allOff(); gmHeld.clear(); void prepareSynth();
+  doc.saved = { song: st.song, lounge: loungeKey() };
+  partView.clear();
+  lastRender.clear(); synth.allOff(); gmHeld.clear(); void prepareSynth();
   view.render(); pad.render(); renderTitle();
 }
 /** 存好了：文件名从此定下来（之后和歌名各管各的；user「之后各管各的同意」）。 */
-function markSaved(): void { doc.stem = docName(); doc.named = true; doc.saved = { song: st.song, role: roleName(doc.extras), active: activeId(doc.extras) }; renderTitle(); }
+function markSaved(): void { doc.stem = docName(); doc.named = true; doc.saved = { song: st.song, lounge: loungeKey() }; renderTitle(); }
 /** 改过没存时先问一句（应用内面板，不用系统弹窗）。 */
 function confirmDiscard(what: string): Promise<boolean> {
   if (!dirty()) return Promise.resolve(true);

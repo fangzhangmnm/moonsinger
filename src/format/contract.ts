@@ -10,29 +10,43 @@
 //   · 守卫 = test/format-guard.test.ts：形状快照、迁移链完整、冻结样本能开。
 
 /** 这一版能读写的各份文件的版本号（改格式 = 这里 +1 + migrate + 冻结样本；守卫测试盯着）。
- *  lounge 2（2026-10-07 深夜，user「现在开始好好做乐器这个数据结构，不要偷懒」）：候选从「月读形状 + 贴字段」改成按引擎分的乐器。 */
-export const FORMAT = { manifest: 1, score: 1, lounge: 2, studio: 1 } as const;
+ *  lounge 2（2026-10-07 深夜，user「现在开始好好做乐器这个数据结构，不要偷懒」）：候选从「月读形状 + 贴字段」改成按引擎分的乐器。
+ *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。 */
+export const FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 1 } as const;
 export type FormatFile = keyof typeof FORMAT;
 
 // ═══ 现役（project.ts 写的就是这些）═══════════════════════════════════════════════════════
 
 /** `.moonsinger/manifest.json`：总目录。 */
-export interface ManifestV1 {
+export interface ManifestV2 {
   format: "moonsinger";
-  version: 1;
-  app: string;                         // 写它的 app 版本（如 v0.4.3-2026-10-07）
+  version: 2;
+  app: string;                         // 写它的 app 版本（如 v0.5.0-2026-10-08）
   saved: string;                       // ISO 时刻
-  files: Record<string, number>;       // `.moonsinger/` 下每份文件 → 它的版本号（"score.json" / "studio.json" / "lounge/r1.json"…）
-  /** 2026-10-07 加（可选，不升版本）：歌里嵌的音源字节（契约 §10.2 样本类 by value）。path 相对 zip 根（`.moonsinger/sounds/<sha256>.sf2`）。 */
+  files: Record<string, number>;       // `.moonsinger/` 下每份文件 → 它的版本号（"score.json" / "studio.json" / "lounge/r1.json"…；"papers/p1.musicxml" 记 0 = 标准件）
+  derived: string[];                   // 派生件（zip 根下的路径；自家读时无视、存档时重新生成）：["score.musicxml"]
+  /** 2026-10-07 加（可选）：歌里嵌的音源字节（契约 §10.2 样本类 by value）。path 相对 zip 根（`.moonsinger/sounds/<sha256>.sf2`）。 */
   sounds?: { path: string; sha256: string; bytes: number }[];
 }
 
-/** `.moonsinger/score.json`：谱的扩展（MusicXML 装不下的）。按声部 id / 音符 id / 小节序号挂注，不复制谱的内容。 */
+/** `.moonsinger/score.json` 第 2 版：纸的顺序表 + 声部并集（存法 B，§6¾）。按声部 id / 音符 id / 小节序号挂注，不复制谱的内容。 */
+export interface ScoreExtV2 {
+  version: 2;
+  /** 顺序里的纸（纸 = 曲段）：file = 这张纸的 MusicXML 正本（`.moonsinger/papers/<id>.musicxml`）；manualBars = 声部 id → 这张纸里人插的小节线（小节序号，1 起）；
+   *  unwritten = 这张纸还没写音高的音（note id）。自动小节线只画不存（0.2.x 现状）。曲段名在那份 MusicXML 的 <movement-title>。 */
+  papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[] }[];
+  /** 歌级声部并集（总谱从上到下）：声部 → 角色 id → 麦克风 id；某张纸没有某声部 = 那张纸的 MusicXML 里没那个 part。kind 留给打击乐记谱（现在都是 pitched）。 */
+  parts: { id: string; role: string; mic: string; kind: "pitched" | "percussion" }[];
+}
+
+// ─── 第 1 版（只给迁移对照；migrate/index.ts）────────────────────────────────────────────
+export interface ManifestV1 { format: "moonsinger"; version: 1; app: string; saved: string; files: Record<string, number>; sounds?: { path: string; sha256: string; bytes: number }[] }
+/** 第 1 版的 score.json：一张纸、整首一份 score.musicxml 就是正本。 */
 export interface ScoreExtV1 {
   version: 1;
-  parts: { id: string; role: string; mic: string }[];   // 声部 → 角色 id → 麦克风 id（user「每个谱号的前面选」）
-  manualBars: Record<string, number[]>;                   // 声部 id → 哪些小节线是人插的（小节序号，0 起）；自动的不进数据
-  unwritten: string[];                                    // 还没写音高的音（MusicXML 里的 note id）
+  parts: { id: string; role: string; mic: string }[];
+  manualBars: Record<string, number[]>;                   // 声部 id → 哪些小节线是人插的
+  unwritten: string[];
 }
 
 /** `.moonsinger/studio.json`：录音房。 */
@@ -113,16 +127,10 @@ export interface CandidateV1 {
 //   ① 曲线是真相：绝对值、SI；谱上的 mp / mf / < > / 跳音 / 重音从曲线算出来写进 MusicXML（低保真可视化 + 备份）；默认演绎不藏在 app，
 //      一个音没画曲线就用候选快照里写明的默认数。
 //   ② 调号 / 拍号 = 各声部自己的画法，不共享、不影响渲染；真相 = 音符 + 小节线（对齐标记）。速度住第一声部、仍是状态机。
-//   ③ 纸 = 曲段，存法 B：一张纸一份 MusicXML（`.moonsinger/papers/<id>.musicxml`，元数据每纸自带）+ 一份派生压平的 score.musicxml 给别的软件。
+//   ③ 纸 = 曲段，存法 B：一张纸一份 MusicXML（`.moonsinger/papers/<id>.musicxml`，元数据每纸自带）+ 一份派生压平的 score.musicxml 给别的软件。（0.5.0 已落地）
 //   ④ 休息室是歌的一部分（不做跨歌笔架）；新建角色从 app 内置预设 by value 拷进歌；渲染 = 纯函数(文件)。
 
-/** score.json 第 2 版：纸的顺序表 + 声部并集；打击乐声部另一种记谱（user「鼓是最优先的」）。 */
-export interface ScoreExtV2 {
-  version: 2;
-  /** 顺序里的纸（纸 = 曲段）：file = 这张纸的 MusicXML 路径；manualBars = 声部 id → 这张纸里人插的小节线（纸内序号）；unwritten = 这张纸还没写音高的音。自动小节线只画不存（0.2.x 现状）。 */
-  papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[] }[];
-  parts: { id: string; role: string; mic: string; kind: "pitched" | "percussion" }[];   // 歌级并集；某张纸没有某声部 = 那张纸的 MusicXML 里没那个 part
-}
+// （score.json 第 2 版 2026-10-08 已落地，见上「现役」。）
 
 /** `.moonsinger/curves.json`（新文件）：曲线 = 真相。按音符 id；时间 = 音里 0–1；数值**绝对**、单位写明（SI 兜底）。 */
 export interface CurvesV1 {

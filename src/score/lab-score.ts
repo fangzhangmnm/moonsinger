@@ -9,7 +9,7 @@
 // 开头的休止 Lab 格式表达不了（它有固定的 leadIn），第一版直接丢掉。
 
 import { midiOf } from "./pitch.ts";
-import { type Song, type Hum, TPQ, effectivePitch, isTimed, timeline } from "./song.ts";
+import { type Token, type Hum, type TempoMap, TPQ, effectivePitch, isTimed, timeline } from "./song.ts";
 import { MELISMA_MARK, ELISION } from "./lyrics.ts";
 
 export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean; hyph?: boolean }   // hyph = 英文：这个词没完（下一条接着拼）   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
@@ -20,20 +20,21 @@ export interface LabScore { SCORE: LabEntry[]; TEXT: string; TEMPO_QUARTER: numb
 // 英文歌里：la / hum / ooh / oh / ah（「mm」「hmm」词典里没有元音唱不出来，嗯 只好用 hum）
 export const HUM_SYLLABLE: Record<Hum, Record<SingLang, string>> = { la: { ja: "ら", zh: "啦", en: "la" }, n: { ja: "ん", zh: "嗯", en: "hum" }, u: { ja: "う", zh: "呜", en: "ooh" }, o: { ja: "お", zh: "哦", en: "oh" }, a: { ja: "あ", zh: "啊", en: "ah" } };
 
-export function toLabScore(song: Song, lang: SingLang = "ja"): LabScore {
-  const eighth = TPQ / 2, tl = timeline(song), base = tl[0]?.bpm ?? 90;
+/** tokens = 一个声部（压平后的一串）；tempoMap = 第一个声部的速度表（这个声部不是第一个时给，自己串里的速度记号不算数）。 */
+export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap): LabScore {
+  const eighth = TPQ / 2, tl = timeline(tokens, tempoMap), base = tl[0]?.bpm ?? 90;
   const bpmOf = new Map(tl.map((x) => [x.index, x.bpm]));
   const out: LabEntry[] = [];
-  song.tokens.forEach((t, i) => {
+  tokens.forEach((t, i) => {
     if (!isTimed(t)) return;
     const len = (t.dur / eighth) * (base / bpmOf.get(i)!);
     if (t.kind === "rest") { const last = out[out.length - 1]; if (last) last.rest = (last.rest ?? 0) + len; return; }
-    const midi = midiOf(effectivePitch(song.tokens, i));
+    const midi = midiOf(effectivePitch(tokens, i));
     const last = out[out.length - 1];
     // 拖腔（ー / ~）和连音线连着的音（tie）都并进上一个音节：同一个字唱过几个音 / 同一个音连下去
     if ((t.lyric === MELISMA_MARK || t.tie) && last && !last.rest) { last.notes.push([midi, len]); return; }
     const lyric = t.lyric && t.lyric !== MELISMA_MARK ? t.lyric : null;
-    if (!lyric) { out.push({ kana: HUM_SYLLABLE[song.hum ?? "n"][lang], notes: [[midi, len]], hum: true }); return; }
+    if (!lyric) { out.push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true }); return; }
     // 一个音上几个音节（「+」连着的，如 だ‿ん）：这个音平分给它们，一个音节一条（user 点头「唱的时候把这个音的时值切成几段，先按平均分」）
     const parts = lyric.split(ELISION).filter(Boolean);
     parts.forEach((kana, k) => out.push({ kana, notes: [[midi, len / parts.length]], ...(lang === "en" && t.hyph && k === parts.length - 1 ? { hyph: true } : {}) }));

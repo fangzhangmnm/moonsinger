@@ -47,11 +47,12 @@ export class Singer {
     catch (e) { if (!/bank not loaded/.test((e as Error).message)) throw e; this.sent.delete(sha256); const r = await ask(true); this.sent.add(sha256); return r; }
   }
   /** 播放（必须在用户手势里先调过 unlock()，iPad 才放声）。播完回调 onEnd。 */
-  play(r: SingResult, onEnd: () => void): void {
+  play(r: { samples: Float32Array; sr: number; right?: Float32Array }, onEnd: () => void): void {
     this.stop();
     const ctx = this.unlock();
-    const buf = ctx.createBuffer(1, r.samples.length, r.sr);
+    const buf = ctx.createBuffer(r.right ? 2 : 1, r.samples.length, r.sr);   // 混音给左右两路（多声部的声像）；单路照旧
     buf.copyToChannel(r.samples as Float32Array<ArrayBuffer>, 0);
+    if (r.right) buf.copyToChannel(r.right as Float32Array<ArrayBuffer>, 1);
     const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination);
     src.onended = () => { if (this.src === src) { this.src = null; onEnd(); } };
     src.start(); this.src = src;

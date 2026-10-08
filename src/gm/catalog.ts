@@ -11,13 +11,13 @@ export interface Concept {
   kind: "instrument" | "model" | "ensemble" | "voice" | "sound";
   year: number | null; yearApprox?: boolean; lineageYear?: number | null; era?: string | null;
   regions?: string[]; family: string[]; wikipedia?: string;
-  styles?: { tag: string; ear: string; as?: string }[];
-  substitutes?: { program: number; bank: number; note?: number; gmNumber: number; gmName: string; basis: "official" | "lineage" | "family" | "name-only"; hsCommon?: string; reason?: string }[];
+  styles?: { tag: string; ear: string; as?: string; weight?: number }[];   // weight = 承重 3 / 常用 2 / 点缀 1（v3；defs.weights；AI 判的配器分量，不是 fundamental）
+  substitutes?: { program: number; bank: number; note?: number; gmNumber: number; gmName: string; basis: "official" | "lineage" | "imitation" | "family" | "name-only"; hsCommon?: string; reason?: string }[];
   icon?: { id: string | null; candidates?: string[]; license?: string; borrowedFrom?: string } | null;
   fundamentalRank: number | null;
 }
-export interface GmRow { program: number; bank: number; note?: number; gmNumber: number; gmName: string; family?: string; concept: string; relation: "self" | "substitute"; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string }
-export interface Defs { eras: { id: string; zh: string; from: number | null; to: number | null }[]; families: { id: string; en: string; zh: string }[]; kinds: { id: string; zh: string }[]; styles?: { id?: string; tag?: string; zh?: string; en?: string }[] }
+export interface GmRow { program: number; bank: number; note?: number; gmNumber: number; gmName: string; family?: string; concept: string; relation: "self" | "substitute"; primary?: boolean; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string }   // primary = 一个号多重认领时的主本尊（v3）
+export interface Defs { eras: { id: string; zh: string; from: number | null; to: number | null }[]; families: { id: string; en: string; zh: string }[]; kinds: { id: string; zh: string }[]; styles?: { id?: string; tag?: string; zh?: string; en?: string }[]; weights?: { id: number; zh: string }[] }
 export interface Catalog {
   version: number; concepts: Concept[]; byId: Map<string, Concept>;
   gmSelf: Map<string, GmRow>;                     // gmKey（"bank:program[:note]"）→ 本尊行
@@ -29,7 +29,7 @@ export const gmKey = (g: { bank: number; program: number; note?: number }): stri
 
 export function loadCatalogFromJson(concepts: { v?: number; defs: Defs; concepts: Concept[] }, gmMap: { rows: GmRow[] }): Catalog {
   const rows = gmMap.rows, gmSelf = new Map<string, GmRow>();
-  for (const r of rows) if (r.relation === "self") gmSelf.set(gmKey(r), r);   // 鼓件靠 note 区分（47 个鼓件都在 128:0 下）
+  for (const r of rows) if (r.relation === "self" && (r.primary !== false || !gmSelf.has(gmKey(r)))) gmSelf.set(gmKey(r), r);   // 鼓件靠 note 区分（47 个鼓件都在 128:0 下）；一个号多重认领取主本尊
   const list = concepts.concepts;
   return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c) => [c.id, c])), gmSelf, rows, defs: concepts.defs };
 }
@@ -90,9 +90,13 @@ export function groupConcepts(cat: Catalog, mode: SortMode, query = ""): Group[]
     for (const c of list) { const k = c.ids.hs?.[0] ?? "?"; put(k, HS_CLASS[k] ?? "分类不详", c); }
     return [...groups.values()].sort((a, b) => a.id.localeCompare(b.id)).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.ids.hs ?? "~").localeCompare(b.ids.hs ?? "~")) }));
   }
+  // 〇〇风：每种风里按承重降序（user 2026-10-08「每个风里面按照承重排可以吗，可以加一个重要性」），同承重再按 GM 顺序
   for (const c of list) { const tags = [...new Set((c.styles ?? []).map((s) => s.tag))]; if (!tags.length) put("none", "没贴风格", c); for (const t of tags) put(t, styleLabel(cat, t), c); }
-  return [...groups.values()].sort((a, b) => (a.id === "none" ? 1 : b.id === "none" ? -1 : a.label.localeCompare(b.label, "zh"))).map((g) => ({ ...g, concepts: g.concepts.sort(byGm) }));
+  return [...groups.values()].sort((a, b) => (a.id === "none" ? 1 : b.id === "none" ? -1 : a.label.localeCompare(b.label, "zh"))).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => weightOf(b, g.id) - weightOf(a, g.id) || byGm(a, b)) }));
 }
+/** 这个概念在某种风里的承重（3 承重 / 2 常用 / 1 点缀；没标 = 0）。 */
+export const weightOf = (c: Concept, tag: string): number => Math.max(0, ...(c.styles ?? []).filter((s) => s.tag === tag).map((s) => s.weight ?? 0));
+export const weightLabel = (cat: Catalog, w: number): string => cat.defs.weights?.find((x) => x.id === w)?.zh ?? "";
 function styleLabel(cat: Catalog, tag: string): string { const s = cat.defs.styles?.find((x) => (x.id ?? x.tag) === tag); return s?.zh ?? s?.en ?? tag; }
 export const fmtYear = (y: number): string => (y < 0 ? `公元前 ${-y}` : String(y));
 export const eraLabel = (cat: Catalog, c: Concept): string => cat.defs.eras.find((e) => e.id === c.era)?.zh ?? "";

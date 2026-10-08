@@ -4,8 +4,7 @@ import type { Dir } from "./pitch.ts";
 import {
   type EditorState, writeDegree, writeRest, writeBar, shorter, longer, setTuplet, extend, tapAcc,
   octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward,
-  transposeSel, modulateSel, selectToEdge,
-} from "./song.ts";
+  transposeSel, modulateSel, selectToEdge, tr } from "./song.ts";
 
 export type Command =
   | { k: "degree"; degree: number; dir: Dir }
@@ -34,7 +33,7 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "caret": return moveCaret(st, c.d);
     case "selext": return extendSelection(st, c.d);
     case "home": return setCaret(st, 0);   // setCaret 自己夹到谱头后面
-    case "end": return setCaret(st, st.song.tokens.length);
+    case "end": return setCaret(st, tr(st).length);
     case "escape": return escape(st);
     case "backspace": return backspace(st);
     case "delete": return deleteForward(st);

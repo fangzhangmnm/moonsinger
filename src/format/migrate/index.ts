@@ -31,9 +31,18 @@ function loungeV1toV2(json: Json): Json {
   return { ...json, candidates: cands };
 }
 
+/** 总目录 1 → 2：加 derived（第 1 版的 score.musicxml 是正本、不是派生件——但读第 1 版文件时纸 p1 就是从它读的，存档后它才变派生件）。 */
+const manifestV1toV2 = (json: Json): Json => ({ ...json, derived: [] });
+/** 谱的扩展 1 → 2（存法 B）：整首一份 score.musicxml → 一张纸 p1（文件级迁移在 project.ts openBytes：包里没有 papers/p1.musicxml 就读 score.musicxml）；声部并集加 kind。 */
+function scoreV1toV2(json: Json): Json {
+  const parts = ((json.parts as Json[] | undefined) ?? []).map((p, k) => ({ id: String(p.id ?? `P${k + 1}`), role: String(p.role ?? `r${k + 1}`), mic: String(p.mic ?? `m${k + 1}`), kind: "pitched" }));
+  const manualBars = (json.manualBars as Record<string, number[]> | undefined) ?? {};
+  return { papers: [{ id: "p1", file: ".moonsinger/papers/p1.musicxml", manualBars: { ...manualBars }, unwritten: [...((json.unwritten as string[] | undefined) ?? [])] }], parts };
+}
+
 export const MIGRATIONS: Record<FormatFile, Migration[]> = {
-  manifest: [],
-  score: [],
+  manifest: [manifestV1toV2],
+  score: [scoreV1toV2],
   lounge: [loungeV1toV2],
   studio: [],
 };

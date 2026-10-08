@@ -1,5 +1,5 @@
 {
- "v": 2,
+ "v": 3,
  "date": "2026-10-07",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效）。id = Wikidata QID（没有用 x: 本地 id）；ids 束里 gm 只放本尊，平替在 substitutes[]（按 basis 强弱 + 分类号同到的位数排）。year = 这个概念的声音第一次能被听见；lineageYear = 算上原文点名的前身。fundamentalRank 一律 null，归 user。AI 判的字段：musicxml、styles、技法号挂母乐器、平替 family / 自动、部分 hs 和中日名。",
@@ -136,7 +136,17 @@
    {
     "id": "beethoven",
     "icon": "🎻",
-    "zh": "贝多风"
+    "zh": "贝多风（交响乐）"
+   },
+   {
+    "id": "beethoven-band",
+    "icon": "🪈",
+    "zh": "贝多风（管乐团）"
+   },
+   {
+    "id": "military",
+    "icon": "🎺",
+    "zh": "军乐风"
    },
    {
     "id": "church",
@@ -278,14 +288,19 @@
     "rank": 1
    },
    {
+    "id": "imitation",
+    "zh": "仿声（这个号是模仿它的声音做的）",
+    "rank": 2
+   },
+   {
     "id": "family",
     "zh": "同类（分类号相近）",
-    "rank": 2
+    "rank": 3
    },
    {
     "id": "name-only",
     "zh": "只同名",
-    "rank": 3
+    "rank": 4
    }
   ],
   "families": [
@@ -375,6 +390,20 @@
     "zh": "鼓组（第 10 通道）"
    }
   ],
+  "weights": [
+   {
+    "id": 3,
+    "zh": "承重"
+   },
+   {
+    "id": 2,
+    "zh": "常用"
+   },
+   {
+    "id": 1,
+    "zh": "点缀"
+   }
+  ],
   "kinds": [
    {
     "id": "instrument",
@@ -442,11 +471,13 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -514,7 +545,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -576,7 +608,8 @@
    "styles": [
     {
      "tag": "western",
-     "ear": "western"
+     "ear": "western",
+     "weight": 2
     }
    ],
    "icon": {
@@ -639,11 +672,13 @@
    "styles": [
     {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "synth",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -711,7 +746,8 @@
    "styles": [
     {
      "tag": "church",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -755,9 +791,9 @@
     "hs": "52"
    },
    "names": {
-    "zh": "克拉维内特琴",
-    "en": "clavinet",
-    "ja": "クラビネット"
+    "zh": "电击弦古钢琴（霍纳 Clavinet）",
+    "en": "electric clavichord (Hohner Clavinet)",
+    "ja": "エレクトリック・クラヴィコード（ホーナー・クラビネット）"
    },
    "kind": "instrument",
    "year": 1961,
@@ -779,7 +815,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -847,7 +884,8 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -907,8 +945,19 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -956,7 +1005,8 @@
    "styles": [
     {
      "tag": "fairground",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -1006,8 +1056,14 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -1054,8 +1110,14 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "latin",
-     "ear": "western"
+     "ear": "western",
+     "weight": 1
     }
    ],
    "icon": {
@@ -1106,8 +1168,14 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -1159,7 +1227,8 @@
    "styles": [
     {
      "tag": "church",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -1223,11 +1292,13 @@
     {
      "tag": "indian",
      "ear": "gm-text",
+     "weight": 2,
      "as": "Q2912399"
     },
     {
      "tag": "chinese",
      "ear": "zh",
+     "weight": 2,
      "as": "Q877239"
     }
    ],
@@ -1264,9 +1335,9 @@
     "hs": "53"
    },
    "names": {
-    "zh": "哈蒙德风琴",
-    "en": "Hammond organ",
-    "ja": "ハモンドオルガン"
+    "zh": "音轮风琴（哈蒙德）",
+    "en": "tonewheel organ (Hammond)",
+    "ja": "トーンホイール・オルガン（ハモンド）"
    },
    "kind": "instrument",
    "year": 1934,
@@ -1288,11 +1359,13 @@
    "styles": [
     {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -1352,7 +1425,8 @@
    "styles": [
     {
      "tag": "church",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -1402,12 +1476,14 @@
    ],
    "styles": [
     {
-     "tag": "church",
-     "ear": "common"
+     "tag": "school-music",
+     "ear": "zh",
+     "weight": 3
     },
     {
-     "tag": "school-music",
-     "ear": "zh"
+     "tag": "church",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -1468,11 +1544,13 @@
    "styles": [
     {
      "tag": "paris",
-     "ear": "western"
+     "ear": "western",
+     "weight": 3
     },
     {
      "tag": "soviet",
      "ear": "zh",
+     "weight": 3,
      "as": "Q804099"
     }
    ],
@@ -1531,12 +1609,19 @@
    ],
    "styles": [
     {
+     "tag": "military",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "western",
-     "ear": "western"
+     "ear": "western",
+     "weight": 2
     },
     {
      "tag": "school-music",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 2
     }
    ],
    "icon": {
@@ -1588,22 +1673,13 @@
     {
      "tag": "latin",
      "ear": "gm-text",
+     "weight": 2,
      "as": "Q215032"
     },
     {
      "tag": "latin",
-     "ear": "gm-text"
-    }
-   ],
-   "substitutes": [
-    {
-     "program": 23,
-     "bank": 0,
-     "gmNumber": 24,
-     "gmName": "Tango Accordion",
-     "basis": "official",
-     "hsCommon": "412.132",
-     "reason": "GM：「Tango Accordion or Bandoneon」——手风琴顶班多钮琴，探戈"
+     "ear": "gm-text",
+     "weight": 2
     }
    ],
    "icon": {
@@ -1662,7 +1738,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "western"
+     "ear": "western",
+     "weight": 3
     }
    ],
    "icon": {
@@ -1727,7 +1804,8 @@
    "styles": [
     {
      "tag": "western",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -1792,7 +1870,8 @@
    "styles": [
     {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -1872,7 +1951,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -1944,11 +2024,18 @@
    "styles": [
     {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     },
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2023,7 +2110,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -2076,7 +2164,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2133,7 +2222,8 @@
    "styles": [
     {
      "tag": "synth",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -2193,11 +2283,13 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     },
     {
      "tag": "chinese",
      "ear": "zh",
+     "weight": 3,
      "as": "Q726306"
     }
    ],
@@ -2258,7 +2350,8 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -2319,7 +2412,8 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -2394,7 +2488,8 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -2458,7 +2553,13 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2509,7 +2610,18 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -2573,7 +2685,8 @@
    "styles": [
     {
      "tag": "synth",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -2633,7 +2746,18 @@
    "styles": [
     {
      "tag": "church",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "beethoven",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2664,6 +2788,10 @@
      {
       "program": 53,
       "bank": 0
+     },
+     {
+      "program": 52,
+      "bank": 0
      }
     ],
     "hs": null
@@ -2689,7 +2817,18 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 54,
+     "bank": 0,
+     "gmNumber": 55,
+     "gmName": "Synth Voice",
+     "basis": "imitation",
+     "reason": "合成人声：机器模拟人的元音（克拉岑施泰因的共鸣管一系）"
     }
    ],
    "icon": {
@@ -2721,6 +2860,18 @@
      {
       "program": 54,
       "bank": 0
+     },
+     {
+      "program": 85,
+      "bank": 0
+     },
+     {
+      "program": 91,
+      "bank": 0
+     },
+     {
+      "program": 94,
+      "bank": 0
      }
     ],
     "hs": "53"
@@ -2745,12 +2896,15 @@
    ],
    "wikipedia": "en:Speech synthesis",
    "family": [
-    "ensemble"
+    "ensemble",
+    "synth-lead",
+    "synth-pad"
    ],
    "styles": [
     {
      "tag": "synth",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2797,7 +2951,13 @@
    "styles": [
     {
      "tag": "synth",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2847,12 +3007,24 @@
    ],
    "styles": [
     {
+     "tag": "military",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -2912,8 +3084,19 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2968,8 +3151,19 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3021,7 +3215,18 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3078,8 +3283,14 @@
    ],
    "styles": [
     {
+     "tag": "military",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -3146,10 +3357,6 @@
       "bank": 0
      },
      {
-      "program": 85,
-      "bank": 0
-     },
-     {
       "program": 86,
       "bank": 0
      },
@@ -3170,19 +3377,11 @@
       "bank": 0
      },
      {
-      "program": 91,
-      "bank": 0
-     },
-     {
       "program": 92,
       "bank": 0
      },
      {
       "program": 93,
-      "bank": 0
-     },
-     {
-      "program": 94,
       "bank": 0
      },
      {
@@ -3252,15 +3451,18 @@
    "styles": [
     {
      "tag": "synth",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     },
     {
      "tag": "eight-bit",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     },
     {
      "tag": "fairground",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -3315,8 +3517,14 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3371,8 +3579,19 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3427,8 +3646,19 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3483,8 +3713,19 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "jazz",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3544,7 +3785,13 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3593,7 +3840,13 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3646,7 +3899,13 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3697,8 +3956,19 @@
    ],
    "styles": [
     {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3749,8 +4019,19 @@
    ],
    "styles": [
     {
+     "tag": "military",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3810,7 +4091,18 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3867,12 +4159,14 @@
    ],
    "styles": [
     {
-     "tag": "church",
-     "ear": "common"
+     "tag": "school-music",
+     "ear": "zh",
+     "weight": 3
     },
     {
-     "tag": "school-music",
-     "ear": "zh"
+     "tag": "church",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3929,11 +4223,13 @@
     {
      "tag": "andes",
      "ear": "western",
+     "weight": 3,
      "as": "Q905244"
     },
     {
      "tag": "tribal",
-     "ear": "western"
+     "ear": "western",
+     "weight": 2
     }
    ],
    "icon": {
@@ -3988,7 +4284,8 @@
    "styles": [
     {
      "tag": "western",
-     "ear": "western"
+     "ear": "western",
+     "weight": 1
     }
    ],
    "fundamentalRank": null
@@ -4032,11 +4329,13 @@
    "styles": [
     {
      "tag": "wafu",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     },
     {
      "tag": "chinese",
      "ear": "zh",
+     "weight": 2,
      "as": "Q1394795"
     }
    ],
@@ -4097,7 +4396,8 @@
    "styles": [
     {
      "tag": "celtic",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -4161,11 +4461,13 @@
    "styles": [
     {
      "tag": "tribal",
-     "ear": "western"
+     "ear": "western",
+     "weight": 2
     },
     {
      "tag": "chinese",
      "ear": "zh",
+     "weight": 1,
      "as": "Q839767"
     }
    ],
@@ -4218,7 +4520,8 @@
    "styles": [
     {
      "tag": "indian",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -4265,7 +4568,8 @@
    "styles": [
     {
      "tag": "western",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -4323,11 +4627,13 @@
    "styles": [
     {
      "tag": "wafu",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "chinese",
      "ear": "zh",
+     "weight": 1,
      "as": "Q1860805"
     }
    ],
@@ -4379,11 +4685,13 @@
    "styles": [
     {
      "tag": "wafu",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     },
     {
      "tag": "chinese",
      "ear": "zh",
+     "weight": 3,
      "as": "Q726303"
     }
    ],
@@ -4435,11 +4743,13 @@
    "styles": [
     {
      "tag": "africa",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     },
     {
      "tag": "tribal",
-     "ear": "western"
+     "ear": "western",
+     "weight": 2
     }
    ],
    "icon": {
@@ -4490,7 +4800,13 @@
    "styles": [
     {
      "tag": "celtic",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -4542,11 +4858,13 @@
    "styles": [
     {
      "tag": "western",
-     "ear": "western"
+     "ear": "western",
+     "weight": 3
     },
     {
      "tag": "celtic",
-     "ear": "western"
+     "ear": "western",
+     "weight": 3
     }
    ],
    "icon": {
@@ -4606,11 +4924,13 @@
    "styles": [
     {
      "tag": "indian",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "chinese",
      "ear": "zh",
+     "weight": 2,
      "as": "Q2096912"
     }
    ],
@@ -4664,6 +4984,7 @@
     {
      "tag": "wafu",
      "ear": "zh",
+     "weight": 1,
      "as": "Q21651966"
     }
    ],
@@ -4730,12 +5051,14 @@
    ],
    "styles": [
     {
-     "tag": "latin",
-     "ear": "common"
+     "tag": "africa",
+     "ear": "western",
+     "weight": 2
     },
     {
-     "tag": "africa",
-     "ear": "western"
+     "tag": "latin",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -4795,7 +5118,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -4857,7 +5181,8 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 2
     }
    ],
    "icon": {
@@ -4909,11 +5234,13 @@
     {
      "tag": "latin",
      "ear": "gm-text",
+     "weight": 2,
      "as": "Q940274"
     },
     {
      "tag": "wafu",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -4994,12 +5321,14 @@
    ],
    "styles": [
     {
-     "tag": "synth",
-     "ear": "common"
+     "tag": "rock-pop",
+     "ear": "common",
+     "weight": 2
     },
     {
-     "tag": "rock-pop",
-     "ear": "common"
+     "tag": "synth",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -5060,7 +5389,8 @@
    "styles": [
     {
      "tag": "synth",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5122,7 +5452,8 @@
    "styles": [
     {
      "tag": "synth",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -5173,7 +5504,8 @@
    "styles": [
     {
      "tag": "sfx",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5238,7 +5570,8 @@
    "styles": [
     {
      "tag": "nature",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "fundamentalRank": null
@@ -5276,7 +5609,8 @@
    "styles": [
     {
      "tag": "nature",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "fundamentalRank": null
@@ -5316,7 +5650,8 @@
    "styles": [
     {
      "tag": "nature",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "fundamentalRank": null
@@ -5354,7 +5689,8 @@
    "styles": [
     {
      "tag": "sfx",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "fundamentalRank": null
@@ -5392,7 +5728,8 @@
    "styles": [
     {
      "tag": "sfx",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5456,7 +5793,8 @@
    "styles": [
     {
      "tag": "sfx",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5506,8 +5844,14 @@
    ],
    "styles": [
     {
+     "tag": "military",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "sfx",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5559,8 +5903,19 @@
    ],
    "styles": [
     {
+     "tag": "military",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5628,11 +5983,23 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "synth",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5690,7 +6057,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -5753,7 +6121,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5825,7 +6194,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -5882,8 +6252,19 @@
    ],
    "styles": [
     {
+     "tag": "military",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5945,7 +6326,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -5997,11 +6379,13 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     },
     {
      "tag": "chinese",
      "ear": "name",
+     "weight": 1,
      "as": "Q7206087"
     }
    ],
@@ -6050,7 +6434,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6103,7 +6488,8 @@
    "styles": [
     {
      "tag": "rock-pop",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6155,7 +6541,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -6220,7 +6607,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6273,7 +6661,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -6349,7 +6738,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "icon": {
@@ -6420,7 +6810,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -6481,7 +6872,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6536,7 +6928,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -6596,7 +6989,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6652,7 +7046,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -6700,11 +7095,13 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "chinese",
      "ear": "zh",
+     "weight": 1,
      "as": "x:bei-bangzi"
     }
    ],
@@ -6762,7 +7159,8 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6828,7 +7226,8 @@
    "styles": [
     {
      "tag": "beethoven",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6850,9 +7249,9 @@
     "hs": "52"
    },
    "names": {
-    "zh": "雅马哈 CP-70",
-    "en": "Yamaha CP-70",
-    "ja": ""
+    "zh": "电声三角钢琴（雅马哈 CP-70）",
+    "en": "electro-acoustic grand piano (Yamaha CP-70)",
+    "ja": "エレクトリック・グランドピアノ（ヤマハ CP-70）"
    },
    "kind": "model",
    "year": 1976,
@@ -6868,12 +7267,7 @@
     "日本"
    ],
    "wikipedia": "en:Yamaha CP-70",
-   "styles": [
-    {
-     "tag": "rock-pop",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 2,
@@ -6922,9 +7316,9 @@
     "hs": "52"
    },
    "names": {
-    "zh": "罗兹电钢琴",
-    "en": "Rhodes piano",
-    "ja": "ローズ・ピアノ"
+    "zh": "音叉电钢琴（罗兹）",
+    "en": "tine electric piano (Rhodes)",
+    "ja": "音叉式エレクトリックピアノ（ローズ）"
    },
    "kind": "model",
    "year": 1947,
@@ -6940,12 +7334,7 @@
     "美国"
    ],
    "wikipedia": "en:Rhodes piano",
-   "styles": [
-    {
-     "tag": "jazz",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 4,
@@ -6994,9 +7383,9 @@
     "hs": "52"
    },
    "names": {
-    "zh": "沃利策电钢琴",
-    "en": "Wurlitzer Electric Piano",
-    "ja": "ウーリッツァー・エレクトロニック・ピアノ"
+    "zh": "簧片电钢琴（沃利策）",
+    "en": "reed electric piano (Wurlitzer)",
+    "ja": "リード式エレクトリックピアノ（ウーリッツァー）"
    },
    "kind": "model",
    "year": 1954,
@@ -7012,12 +7401,7 @@
     "美国"
    ],
    "wikipedia": "en:Wurlitzer electronic piano",
-   "styles": [
-    {
-     "tag": "jazz",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 4,
@@ -7066,9 +7450,9 @@
     "hs": "53"
    },
    "names": {
-    "zh": "雅马哈 DX7",
-    "en": "Yamaha DX7",
-    "ja": "ヤマハ・DXシリーズ"
+    "zh": "FM 合成器（雅马哈 DX7）",
+    "en": "FM synthesizer (Yamaha DX7)",
+    "ja": "FMシンセサイザー（ヤマハ DX7）"
    },
    "kind": "model",
    "year": 1983,
@@ -7084,12 +7468,7 @@
     "日本"
    ],
    "wikipedia": "en:Yamaha DX7",
-   "styles": [
-    {
-     "tag": "synth",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 39,
@@ -7139,9 +7518,9 @@
     "hs": "321.322"
    },
    "names": {
-    "zh": "Fender Stratocaster",
-    "en": "Fender Stratocaster",
-    "ja": "フェンダー・ストラトキャスター"
+    "zh": "实心电吉他（芬达 Stratocaster）",
+    "en": "solid-body electric guitar (Fender Stratocaster)",
+    "ja": "ソリッドボディ・エレキギター（フェンダー・ストラトキャスター）"
    },
    "kind": "model",
    "year": 1954,
@@ -7157,12 +7536,7 @@
     "美国"
    ],
    "wikipedia": "en:Fender Stratocaster",
-   "styles": [
-    {
-     "tag": "rock-pop",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 27,
@@ -7210,9 +7584,9 @@
     "hs": "321.322"
    },
    "names": {
-    "zh": "芬达 Jazz Bass",
-    "en": "Fender Jazz Bass",
-    "ja": "フェンダー・ジャズベース"
+    "zh": "双拾音器电贝斯（芬达 Jazz Bass）",
+    "en": "dual-pickup electric bass (Fender Jazz Bass)",
+    "ja": "2ピックアップ・エレキベース（フェンダー・ジャズベース）"
    },
    "kind": "model",
    "year": 1960,
@@ -7222,12 +7596,7 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Fender Jazz Bass",
-   "styles": [
-    {
-     "tag": "rock-pop",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 33,
@@ -7261,9 +7630,9 @@
     "hs": "321.322"
    },
    "names": {
-    "zh": "芬达 Precision Bass",
-    "en": "Fender Precision Bass",
-    "ja": "フェンダー・プレシジョンベース"
+    "zh": "实心电贝斯（芬达 Precision Bass）",
+    "en": "solid-body electric bass (Fender Precision Bass)",
+    "ja": "ソリッドボディ・エレキベース（フェンダー・プレシジョンベース）"
    },
    "kind": "model",
    "year": 1951,
@@ -7279,12 +7648,7 @@
     "美国"
    ],
    "wikipedia": "en:Fender Precision Bass",
-   "styles": [
-    {
-     "tag": "rock-pop",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 34,
@@ -7318,9 +7682,9 @@
     "hs": "53"
    },
    "names": {
-    "zh": "迷你穆格",
-    "en": "Minimoog",
-    "ja": "ミニモーグ"
+    "zh": "便携模拟合成器（Minimoog）",
+    "en": "portable analog synthesizer (Minimoog)",
+    "ja": "ポータブル・アナログシンセサイザー（ミニモーグ）"
    },
    "kind": "model",
    "year": 1970,
@@ -7330,12 +7694,7 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Minimoog",
-   "styles": [
-    {
-     "tag": "synth",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 38,
@@ -7376,9 +7735,9 @@
     "hs": "53"
    },
    "names": {
-    "zh": "ARP 弦乐合奏机",
-    "en": "ARP String Ensemble",
-    "ja": "アープ・ストリングアンサンブル"
+    "zh": "弦乐机（ARP / Solina String Ensemble）",
+    "en": "string machine (ARP / Solina String Ensemble)",
+    "ja": "ストリングス・マシン（ARP / ソリーナ）"
    },
    "kind": "model",
    "year": 1974,
@@ -7394,12 +7753,7 @@
     "美国"
    ],
    "wikipedia": "en:ARP String Ensemble",
-   "styles": [
-    {
-     "tag": "synth",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 50,
@@ -7440,9 +7794,9 @@
     "hs": "53"
    },
    "names": {
-    "zh": "罗兰 Jupiter-8",
-    "en": "Roland Jupiter-8",
-    "ja": ""
+    "zh": "复音模拟合成器（罗兰 Jupiter-8）",
+    "en": "polyphonic analog synthesizer (Roland Jupiter-8)",
+    "ja": "ポリフォニック・アナログシンセサイザー（ローランド Jupiter-8）"
    },
    "kind": "model",
    "year": 1981,
@@ -7452,12 +7806,7 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Roland Jupiter-8",
-   "styles": [
-    {
-     "tag": "synth",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 51,
@@ -7507,9 +7856,9 @@
     "hs": "53"
    },
    "names": {
-    "zh": "雅马哈 CS-80",
-    "en": "Yamaha CS-80",
-    "ja": "ヤマハ・CS-80"
+    "zh": "复音模拟合成器（雅马哈 CS-80）",
+    "en": "polyphonic analog synthesizer (Yamaha CS-80)",
+    "ja": "ポリフォニック・アナログシンセサイザー（ヤマハ CS-80）"
    },
    "kind": "model",
    "year": 1977,
@@ -7519,12 +7868,7 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Yamaha CS-80",
-   "styles": [
-    {
-     "tag": "synth",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 63,
@@ -7565,9 +7909,9 @@
     "hs": "53"
    },
    "names": {
-    "zh": "奥伯海姆 OB-X",
-    "en": "Oberheim OB-X",
-    "ja": ""
+    "zh": "复音模拟合成器（奥伯海姆 OB-X）",
+    "en": "polyphonic analog synthesizer (Oberheim OB-X)",
+    "ja": "ポリフォニック・アナログシンセサイザー（オーバーハイム OB-X）"
    },
    "kind": "model",
    "year": 1979,
@@ -7583,12 +7927,7 @@
     "美国"
    ],
    "wikipedia": "en:Oberheim OB-X",
-   "styles": [
-    {
-     "tag": "synth",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 62,
@@ -7629,9 +7968,9 @@
     "hs": "53"
    },
    "names": {
-    "zh": "罗兰 D-50",
-    "en": "Roland D-50",
-    "ja": ""
+    "zh": "采样起音合成器（罗兰 D-50）",
+    "en": "sample-attack synthesizer (Roland D-50)",
+    "ja": "PCMアタック・シンセサイザー（ローランド D-50）"
    },
    "kind": "model",
    "year": 1987,
@@ -7641,12 +7980,7 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Roland D-50",
-   "styles": [
-    {
-     "tag": "synth",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 88,
@@ -7687,9 +8021,9 @@
     "hs": "53"
    },
    "names": {
-    "zh": "Fairlight 采样合成器",
-    "en": "Fairlight CMI",
-    "ja": "フェアライトCMI"
+    "zh": "采样合成器（Fairlight CMI）",
+    "en": "sampling synthesizer (Fairlight CMI)",
+    "ja": "サンプリング・シンセサイザー（フェアライト CMI）"
    },
    "kind": "model",
    "year": 1979,
@@ -7701,12 +8035,7 @@
     "澳大利亚"
    ],
    "wikipedia": "en:Fairlight CMI",
-   "styles": [
-    {
-     "tag": "synth",
-     "ear": "common"
-    }
-   ],
+   "styles": [],
    "substitutes": [
     {
      "program": 55,
@@ -7755,11 +8084,13 @@
    "styles": [
     {
      "tag": "indian",
-     "ear": "gm-text"
+     "ear": "common",
+     "weight": 3
     },
     {
      "tag": "indian",
-     "ear": "common"
+     "ear": "gm-text",
+     "weight": 2
     }
    ],
    "substitutes": [
@@ -7808,11 +8139,13 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 2
     },
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "substitutes": [
@@ -7868,11 +8201,13 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 3
     },
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "substitutes": [
@@ -7927,11 +8262,13 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 1
     },
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "substitutes": [
@@ -7982,11 +8319,13 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 2
     },
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "substitutes": [
@@ -8050,11 +8389,13 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 1
     },
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "substitutes": [
@@ -8110,11 +8451,13 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 2
     },
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 2
     }
    ],
    "substitutes": [
@@ -8170,11 +8513,13 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 3
     },
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "substitutes": [
@@ -8238,7 +8583,8 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "substitutes": [
@@ -8300,11 +8646,13 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "name"
+     "ear": "name",
+     "weight": 1
     },
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "substitutes": [
@@ -8360,7 +8708,8 @@
    "styles": [
     {
      "tag": "soviet",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 3
     }
    ],
    "substitutes": [
@@ -8419,11 +8768,13 @@
    "styles": [
     {
      "tag": "latin",
-     "ear": "gm-text"
+     "ear": "common",
+     "weight": 3
     },
     {
      "tag": "latin",
-     "ear": "common"
+     "ear": "gm-text",
+     "weight": 2
     }
    ],
    "substitutes": [
@@ -8483,11 +8834,13 @@
    "styles": [
     {
      "tag": "andes",
-     "ear": "western"
+     "ear": "western",
+     "weight": 3
     },
     {
      "tag": "andes",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "substitutes": [
@@ -8550,11 +8903,13 @@
    "styles": [
     {
      "tag": "wafu",
-     "ear": "zh"
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "wafu",
-     "ear": "common"
+     "ear": "zh",
+     "weight": 1
     }
    ],
    "substitutes": [
@@ -8604,17 +8959,18 @@
    "era": "manuscript",
    "communityEra": {
     "region": "大洋洲",
-    "name": "波利尼西亚航海",
-    "icon": "🛶"
+    "name": "澳洲原住民",
+    "icon": "🪃"
    },
    "regions": [
-    "大洋洲"
+    "澳大利亚"
    ],
    "wikipedia": "en:Didgeridoo",
    "styles": [
     {
      "tag": "tribal",
-     "ear": "western"
+     "ear": "western",
+     "weight": 3
     }
    ],
    "substitutes": [
@@ -8695,7 +9051,8 @@
    "styles": [
     {
      "tag": "tribal",
-     "ear": "western"
+     "ear": "western",
+     "weight": 2
     }
    ],
    "substitutes": [
@@ -8750,7 +9107,8 @@
    "styles": [
     {
      "tag": "hawaii",
-     "ear": "common"
+     "ear": "common",
+     "weight": 3
     }
    ],
    "substitutes": [
@@ -8905,7 +9263,8 @@
    "styles": [
     {
      "tag": "church",
-     "ear": "western"
+     "ear": "western",
+     "weight": 2
     }
    ],
    "substitutes": [
@@ -9059,7 +9418,8 @@
    "styles": [
     {
      "tag": "tribal",
-     "ear": "western"
+     "ear": "western",
+     "weight": 1
     }
    ],
    "substitutes": [
@@ -9142,9 +9502,268 @@
    "styles": [
     {
      "tag": "tribal",
-     "ear": "western"
+     "ear": "western",
+     "weight": 1
     }
    ],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q38681",
+   "ids": {
+    "wikidata": "Q38681",
+    "local": null,
+    "musicxml": "effect.dog",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "狗叫",
+    "en": "bark",
+    "ja": "吠え声"
+   },
+   "kind": "sound",
+   "year": -12000,
+   "yearApprox": false,
+   "lineageYear": -12000,
+   "era": "stone",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "旧石器",
+    "icon": "🦬"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Bark (sound)",
+   "styles": [],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q3307942",
+   "ids": {
+    "wikidata": "Q3307942",
+    "local": null,
+    "musicxml": "effect.dog",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "猫叫",
+    "en": "meow",
+    "ja": "ニャー"
+   },
+   "kind": "sound",
+   "year": -7500,
+   "yearApprox": false,
+   "lineageYear": -7500,
+   "era": "agriculture",
+   "communityEra": null,
+   "regions": [
+    "古代近东"
+   ],
+   "wikipedia": "en:Meow",
+   "styles": [],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q8094",
+   "ids": {
+    "wikidata": "Q8094",
+    "local": null,
+    "musicxml": "effect.wind",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "风",
+    "en": "wind",
+    "ja": "風"
+   },
+   "kind": "sound",
+   "year": -4600000000,
+   "yearApprox": true,
+   "lineageYear": -4600000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Wind",
+   "styles": [],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q7925",
+   "ids": {
+    "wikidata": "Q7925",
+    "local": null,
+    "musicxml": "effect.rain",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "雨",
+    "en": "rain",
+    "ja": "雨"
+   },
+   "kind": "sound",
+   "year": -2700000000,
+   "yearApprox": false,
+   "lineageYear": -2700000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Rain",
+   "styles": [],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q83301",
+   "ids": {
+    "wikidata": "Q83301",
+    "local": null,
+    "musicxml": "effect.thunder",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "雷",
+    "en": "thunder",
+    "ja": "雷鳴"
+   },
+   "kind": "sound",
+   "year": -4600000000,
+   "yearApprox": true,
+   "lineageYear": -4600000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Thunder",
+   "styles": [],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q47521",
+   "ids": {
+    "wikidata": "Q47521",
+    "local": null,
+    "musicxml": "effect.stream",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "溪流",
+    "en": "stream",
+    "ja": "流れ"
+   },
+   "kind": "sound",
+   "year": -2970000000,
+   "yearApprox": false,
+   "lineageYear": -2970000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Stream",
+   "styles": [],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q3196",
+   "ids": {
+    "wikidata": "Q3196",
+    "local": null,
+    "musicxml": "",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "火",
+    "en": "fire",
+    "ja": "火"
+   },
+   "kind": "sound",
+   "year": -430000000,
+   "yearApprox": false,
+   "lineageYear": -430000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Fire",
+   "styles": [],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q3776776",
+   "ids": {
+    "wikidata": "Q3776776",
+    "local": null,
+    "musicxml": "effect.crickets",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "蟋蟀",
+    "en": "cricket",
+    "ja": "コオロギ"
+   },
+   "kind": "sound",
+   "year": -250000000,
+   "yearApprox": false,
+   "lineageYear": -250000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Cricket (insect)",
+   "styles": [],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1947892",
+   "ids": {
+    "wikidata": "Q1947892",
+    "local": null,
+    "musicxml": "effect.crickets",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "蝉",
+    "en": "cicada",
+    "ja": "セミ"
+   },
+   "kind": "sound",
+   "year": -165000000,
+   "yearApprox": false,
+   "lineageYear": -165000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Cicada",
+   "styles": [],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q53636",
+   "ids": {
+    "wikidata": "Q53636",
+    "local": null,
+    "musicxml": "effect.frogs",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "蛙",
+    "en": "frog",
+    "ja": "カエル"
+   },
+   "kind": "sound",
+   "year": -199600000,
+   "yearApprox": false,
+   "lineageYear": -199600000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Frog",
+   "styles": [],
    "fundamentalRank": null
   },
   {
@@ -9173,11 +9792,13 @@
    "styles": [
     {
      "tag": "chinese",
-     "ear": "zh"
+     "ear": "zh",
+     "weight": 1
     },
     {
      "tag": "chinese",
-     "ear": "common"
+     "ear": "common",
+     "weight": 1
     }
    ],
    "substitutes": [

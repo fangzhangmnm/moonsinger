@@ -1,15 +1,21 @@
 {
   "versions": {
-    "manifest": 1,
-    "score": 1,
+    "manifest": 2,
+    "score": 2,
     "lounge": 2,
     "studio": 1
   },
   "shapes": {
     "manifest": {
       "app": "string",
+      "derived": [
+        "string"
+      ],
       "files": {
         "lounge/r1.json": "number",
+        "lounge/r2.json": "number",
+        "papers/p1.musicxml": "number",
+        "papers/p2.musicxml": "number",
         "score.json": "number",
         "studio.json": "number"
       },
@@ -19,20 +25,30 @@
       "version": "number"
     },
     "score": {
-      "manualBars": {
-        "P1": [
-          "number"
-        ]
-      },
+      "papers": [
+        {
+          "file": "string",
+          "id": "string",
+          "manualBars": {
+            "P1": [
+              "number"
+            ],
+            "P2": [
+              "number"
+            ]
+          },
+          "unwritten": [
+            "string"
+          ]
+        }
+      ],
       "parts": [
         {
           "id": "string",
+          "kind": "string",
           "mic": "string",
           "role": "string"
         }
-      ],
-      "unwritten": [
-        "string"
       ],
       "version": "number"
     },

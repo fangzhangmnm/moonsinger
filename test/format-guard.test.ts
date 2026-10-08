@@ -9,7 +9,7 @@ const fs = (await import("node:fs" as string)) as {
 import { saveMxl, openBytes, emptyExtras, activeInstrument, FORMAT } from "../src/format/project.ts";
 import { MIGRATIONS } from "../src/format/migrate/index.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
-import { sampleSong, canonTokens, shapeOf } from "./fixtures/format/sample-song.ts";
+import { sampleSong, canonTokens, canonTracks, shapeOf } from "./fixtures/format/sample-song.ts";
 
 const DIR = new URL("./fixtures/format/", import.meta.url);
 const at = (...parts: string[]) => new URL(parts.join("/"), DIR);
@@ -34,7 +34,9 @@ describe("持久化守卫", () => {
     const w = writeNow();
     for (const k of KINDS) eq(w[k].version, FORMAT[k], `${k}.version`);
     const files = w.manifest.files as Record<string, number>;
-    eq(files["score.json"], FORMAT.score); eq(files["studio.json"], FORMAT.studio); eq(files["lounge/r1.json"], FORMAT.lounge);
+    eq(files["score.json"], FORMAT.score); eq(files["studio.json"], FORMAT.studio); eq(files["lounge/r1.json"], FORMAT.lounge); eq(files["lounge/r2.json"], FORMAT.lounge);
+    eq(files["papers/p1.musicxml"], 0); eq(files["papers/p2.musicxml"], 0);   // 标准件记 0
+    eq(JSON.stringify(w.manifest.derived), JSON.stringify(["score.musicxml"]));
   });
   it("迁移链完整：MIGRATIONS[kind].length === FORMAT[kind] - 1（升了版本没写迁移 = 红）", () => {
     for (const k of KINDS) eq(MIGRATIONS[k].length, FORMAT[k] - 1, `${k}：第 1 版升到第 ${FORMAT[k]} 版要 ${FORMAT[k] - 1} 步纯函数（src/format/migrate/index.ts）`);
@@ -51,10 +53,14 @@ describe("持久化守卫", () => {
       for (const k of KINDS) assert(Number(exp.versions[k]) <= FORMAT[k], `${d} 的 ${k} 比这一版新？冻结样本不该比 app 新`);
       const o = openBytes("sample.mxl", new Uint8Array(fs.readFileSync(at(d, "sample.mxl"))));
       eq(o.notices.length, 0, `${d}：自家样本不该有提示`);
-      eq(JSON.stringify(canonTokens(o.song)), JSON.stringify(exp.tokens), `${d}：tokens`);
+      eq(JSON.stringify(canonTokens(o.song)), JSON.stringify(exp.tokens), `${d}：tokens（第一张纸第一个声部）`);
+      if (exp.tracks) eq(JSON.stringify(canonTracks(o.song)), JSON.stringify(exp.tracks), `${d}：所有纸 × 声部`);   // 0.5.0 起的样本
+      if (exp.papers) eq(JSON.stringify(o.song.papers.map((p) => ({ id: p.id, name: p.name }))), JSON.stringify(exp.papers), `${d}：纸`);
+      if (exp.parts) eq(JSON.stringify(o.song.parts.map((p) => p.id)), JSON.stringify(exp.parts), `${d}：声部`);
+      else { eq(o.song.papers.length, 1, `${d}：第 1 版文件 = 一张纸`); eq(o.song.parts.length, 1, `${d}：第 1 版文件 = 一个声部`); }
       eq(o.song.title, exp.title, `${d}：歌名`); eq(o.hum, exp.hum, `${d}：哼的字`);
       // 上场的引擎：第 1 版样本记的是 quality（full / light / none），第 2 版起记 engine
-      const engine = activeInstrument(o.extras)?.engine ?? "unknown", want = exp.engine ?? ({ full: "tsukuyomi", light: "vowel-sampler", none: "unknown" } as Record<string, string>)[exp.quality];
+      const engine = activeInstrument(o.extras, "r1")?.engine ?? "unknown", want = exp.engine ?? ({ full: "tsukuyomi", light: "vowel-sampler", none: "unknown" } as Record<string, string>)[exp.quality];
       eq(engine, want, `${d}：上场的引擎`);
       const role = o.extras.lounge["r1"] as Json;
       eq(role.name, exp.role.name, `${d}：角色名`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);

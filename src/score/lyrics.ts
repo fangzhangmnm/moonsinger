@@ -9,7 +9,7 @@
 //     MusicXML = 一个 <lyric> 里 <text>…<elision/>…<text>；纸上中日文两个字之间不画弧（日文谱的习惯），拉丁字母之间画「‿」；唱的时候这个音平分给这几拍字。
 // 贴的规则：从某个音符开始往后贴，覆盖原来的歌词；连音线连着的音（tie）不吃歌词；音符不够就在末尾补新音（音高空着 = 继承上一个）。
 
-import { type EditorState, type NoteTok, type Token, unitDur } from "./song.ts";
+import { type EditorState, type NoteTok, type Token, unitDur, tr, withTrack } from "./song.ts";
 
 export interface Syl { text: string; hyph: boolean; joinPrev?: boolean }   // joinPrev = 这段文字一开头就是「+」：第一个字并进前一个音（歌词框已经跳到下一个音的时候）
 export const MELISMA_MARK = "ー";
@@ -67,7 +67,7 @@ const lyricSlot = (t: Token): t is NoteTok => t.kind === "note" && !t.tie;
 
 /** 从下标 start 起（含）往后把音节贴到音符上；不够就在末尾补空音高的新音。返回新状态 + 最后贴到的下标。 */
 export function distributeFrom(st: EditorState, start: number, syl: Syl[]): { st: EditorState; last: number } {
-  const tokens: Token[] = st.song.tokens.slice();
+  const tokens: Token[] = tr(st).slice();
   let nextId = st.nextId, i = start, last = -1;
   for (const s of syl) {
     while (i < tokens.length && !lyricSlot(tokens[i])) i++;
@@ -75,14 +75,14 @@ export function distributeFrom(st: EditorState, start: number, syl: Syl[]): { st
     else tokens.push({ kind: "note", id: nextId++, pitch: null, dur: unitDur(st.input), lyric: s.text, hyph: s.hyph || undefined });
     last = i; i++;
   }
-  return { st: { ...st, song: { ...st.song, tokens }, nextId }, last };
+  return { st: { ...st, song: withTrack(st.song, st.at.paper, st.at.part, tokens), nextId }, last };
 }
 
 /** 一整行歌词贴到谱上（粘贴用）：光标后第一个音起；光标在末尾时从第一个还没有歌词的音起。光标不动（詞先之后接着用数字填音高）。 */
 export function applyLyricLine(st: EditorState, text: string): EditorState {
   const syl = splitSyllables(text);
   if (!syl.length) return st;
-  const tokens = st.song.tokens;
+  const tokens = tr(st);
   let start: number;
   if (st.caret >= tokens.length && !st.sel) { start = tokens.findIndex((t) => lyricSlot(t) && t.lyric === null); if (start < 0) start = tokens.length; }
   else start = st.sel ? st.sel.from : st.caret;
@@ -91,16 +91,16 @@ export function applyLyricLine(st: EditorState, text: string): EditorState {
 
 /** 「+」开头的那个字并进下标 i 之前最近的那个有歌词的音（歌词框已经跳到下一个音了）；前面没有 = 原样。 */
 export function joinIntoPrev(st: EditorState, i: number, text: string): EditorState {
-  const p = prevLyricSlot(st.song.tokens, i), t = st.song.tokens[p] as NoteTok | undefined;
+  const p = prevLyricSlot(tr(st), i), t = tr(st)[p] as NoteTok | undefined;
   if (!t || !t.lyric || t.lyric === MELISMA_MARK) return st;
-  const tokens = st.song.tokens.slice();
+  const tokens = tr(st).slice();
   tokens[p] = { ...t, lyric: t.lyric + ELISION + text };
-  return { ...st, song: { ...st.song, tokens } };
+  return { ...st, song: withTrack(st.song, st.at.paper, st.at.part, tokens) };
 }
 /** 「合」：下标 i 那个音的字并进前一个有字的音（一个音上几个字），这一句（到下一个休止为止）后面的字依次往前挪一个音、这一句最后一个音空出来
  *  （user「打完回头改同意。这里的心流反而是输入。所以不应该提前按」：打字照常自动分，回头点一个字再合）。这个音 / 前一个音没有字（或是拖腔）= 原样。 */
 export function mergeIntoPrev(st: EditorState, i: number): EditorState {
-  const toks = st.song.tokens, cur = toks[i], p = prevLyricSlot(toks, i), prev = toks[p];
+  const toks = tr(st), cur = toks[i], p = prevLyricSlot(toks, i), prev = toks[p];
   if (!cur || !lyricSlot(cur) || !cur.lyric || cur.lyric === MELISMA_MARK || !prev || !lyricSlot(prev) || !prev.lyric || prev.lyric === MELISMA_MARK) return st;
   const slots = [i];   // 这一句后面的歌词位：从 i 往后、到下一个休止为止
   for (let j = i + 1; j < toks.length; j++) { const t = toks[j]; if (t.kind === "rest") break; if (lyricSlot(t)) slots.push(j); }
@@ -114,7 +114,7 @@ export function mergeIntoPrev(st: EditorState, i: number): EditorState {
     if (from?.lang) t.lang = from.lang; else delete t.lang;
     tokens[at] = t;
   });
-  return { ...st, song: { ...st.song, tokens } };
+  return { ...st, song: withTrack(st.song, st.at.paper, st.at.part, tokens) };
 }
 /** 下一个能放歌词的音（跳过休止、小节线、调号、tie 音）；没有 = -1。 */
 export function nextLyricSlot(tokens: Token[], i: number): number { for (let j = i + 1; j < tokens.length; j++) if (lyricSlot(tokens[j])) return j; return -1; }

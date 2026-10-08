@@ -13,7 +13,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const SRC = join(ROOT, "..", "..", "20260813 MyLlamaReborn", "20261007 音乐史", "export", "moonsinger");   // ~/jupyter/20260813 MyLlamaReborn（不在 PWAProjects 里）
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
-export const VERSION = 2;
+export const VERSION = 3;
 export const FILES = {
   concepts: `instruments-v${VERSION}.json`,
   gmMap: `gm-map-v${VERSION}.json`,

@@ -18,7 +18,7 @@ await ctx.addInitScript(() => { window.showSaveFilePicker = undefined; window.sh
 try {
 const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 const title = () => p.textContent("#docTitle");
-const tokens = () => p.evaluate(() => JSON.stringify(window.__moonsinger.state().song.tokens));
+const tokens = () => p.evaluate(() => JSON.stringify(window.__moonsinger.state().song.papers[0].tracks.P1));
 await p.goto(`http://127.0.0.1:${PORT}/`); await p.waitForTimeout(400);
 const stem0 = await title(); check(/^\d{8}-[0-9a-f]{4}$/.test(stem0), "开局 = 默认名 yyyymmdd-hex4、没改过", stem0);
 await p.click("#score", { position: { x: 600, y: 400 } });
@@ -81,7 +81,8 @@ await p.click(".notice-error .dismiss");
 const pn = await p.$eval("#score text.part-name", (t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await p.mouse.click(pn.x, pn.y); await p.waitForSelector(".offer .part-card");
 await p.click('.offer [data-v="cand:c1"]'); await p.selectOption("#roleSel", "voice.soprano|Soprano"); await p.click('.offer [data-v="close"]');
-check(!(await p.$("#score text.part-name.empty")) && (await p.textContent("#score text.part-name")) === "Soprano", "点角色名：谁来演选月读、角色选 Soprano → 谱前写「Soprano」、不再淡色");
+check(!(await p.$eval("#score text.part-name", (t) => t.classList.contains("empty"))) && (await p.textContent("#score text.part-name")) === "Soprano" && !!(await p.$("#score text.part-name.empty")),
+  "点角色名：谁来演选月读、角色选 Soprano → 谱前写「Soprano」、不再淡色；第二个声部（Bass）还没人上场、仍淡色（0.5.0 起别家谱的声部都读进来）");
 // 拖进来打开（v0.3.0；DataTransfer 里放一个 .musicxml；改过没存先问）
 await p.click(".notice-error .dismiss").catch(() => undefined);
 const b64 = fs.readFileSync(`${DIR}/twinkle.musicxml`).toString("base64");

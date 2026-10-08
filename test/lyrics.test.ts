@@ -1,7 +1,7 @@
 // created 2026-10-06 by Claude Opus 5.5
 import { describe, it, eq } from "./runner.mjs";
 import { splitSyllables, applyLyricLine } from "../src/score/lyrics.ts";
-import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok } from "../src/score/song.ts";
+import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok, tr, firstTrack } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
 import { setHum } from "../src/score/song.ts";
@@ -25,38 +25,38 @@ describe("lyrics", () => {
   it("先写曲：光标在末尾 → 从第一个没歌词的音开始贴", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near");
     st = applyLyricLine(st, "うさ");
-    eq(st.song.tokens.map((t) => (t as NoteTok).lyric).join(""), "うさ");
+    eq(tr(st).map((t) => (t as NoteTok).lyric).join(""), "うさ");
   });
   it("先写词：空歌里打一行 → 每个字一个空音高的音；光标不动，数字接着填音高", () => {
     let st = initState(); st = applyLyricLine(st, "うさぎ");
-    eq(st.song.tokens.length, H + 3); eq(st.caret, H);
-    eq(st.song.tokens.slice(H).every((t) => t.kind === "note" && t.pitch === null && t.dur === TPQ / 2), true);
+    eq(tr(st).length, H + 3); eq(st.caret, H);
+    eq(tr(st).slice(H).every((t) => t.kind === "note" && t.pitch === null && t.dur === TPQ / 2), true);
     st = writeDegree(st, 4, "near"); st = writeDegree(st, 4, "near");
-    eq(st.song.tokens.slice(H).map((t) => (t as NoteTok).pitch ? pitchName((t as NoteTok).pitch!) : "?").join(" "), "F4 F4 ?");
-    eq(st.song.tokens.length, H + 3);
+    eq(tr(st).slice(H).map((t) => (t as NoteTok).pitch ? pitchName((t as NoteTok).pitch!) : "?").join(" "), "F4 F4 ?");
+    eq(tr(st).length, H + 3);
   });
   it("改中间：光标放在某个音前，只覆盖从那开始的几个", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near"); st = writeDegree(st, 3, "near");
     st = applyLyricLine(st, "あいう"); st = setCaret(st, H + 1); st = applyLyricLine(st, "か");
-    eq(st.song.tokens.map((t) => (t as NoteTok).lyric).join(""), "あかう");
+    eq(tr(st).map((t) => (t as NoteTok).lyric).join(""), "あかう");
   });
   it("哼的字：没歌词的音按这首歌的设置唱（默认嗯），日语 / 中文各换各的字", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near");
-    eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "んん");
-    st = setHum(st, "la"); eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "らら");
+    eq(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.kana).join(""), "んん");
+    st = setHum(st, "la"); eq(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.kana).join(""), "らら");
     st = setHum(st, "n");
-    eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "んん");
-    eq(toLabScore(st.song, "zh").SCORE.map((e) => e.kana).join(""), "嗯嗯");
-    st = setHum(st, "o"); eq(toLabScore(st.song, "ja").SCORE.map((e) => e.kana).join(""), "おお"); eq(toLabScore(st.song, "zh").SCORE.map((e) => e.kana).join(""), "哦哦");
+    eq(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.kana).join(""), "んん");
+    eq(toLabScore(tr(st), st.song.hum, "zh").SCORE.map((e) => e.kana).join(""), "嗯嗯");
+    st = setHum(st, "o"); eq(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.kana).join(""), "おお"); eq(toLabScore(tr(st), st.song.hum, "zh").SCORE.map((e) => e.kana).join(""), "哦哦");
   });
   it("哼的字在给核心的乐谱里带 hum 标记（核心的哼参数只管这些），有歌词的不带", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near"); st = applyLyricLine(st, "あ");
-    eq(JSON.stringify(toLabScore(st.song, "ja").SCORE.map((e) => e.hum ?? false)), "[false,true]");
+    eq(JSON.stringify(toLabScore(tr(st), st.song.hum, "ja").SCORE.map((e) => e.hum ?? false)), "[false,true]");
   });
   it("连音线连着的音（tie）不吃歌词", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeBar(st); st = extend(st); st = writeDegree(st, 2, "near");
     st = applyLyricLine(st, "啊呀");
-    eq(st.song.tokens.filter((t) => t.kind === "note").map((t) => (t as NoteTok).lyric ?? "·").join(""), "啊·呀");
+    eq(tr(st).filter((t) => t.kind === "note").map((t) => (t as NoteTok).lyric ?? "·").join(""), "啊·呀");
   });
 });
 
@@ -79,26 +79,26 @@ describe("一个音上几个字（+）", () => {
   it("唱：这个音平分给几个字；存 MusicXML = <elision/>，打开还是一个音", () => {
     let st = _init();
     st = _wp(st, { step: "C", alter: 0, octave: 4 });
-    st = _dist(st, st.song.tokens.length - 1, _split("だ+ん")).st;
-    const sc = _lab(st.song, "ja");
-    eq(sc.SCORE.map((e) => `${e.kana}:${e.notes[0][1]}`).join(" "), `だ:${st.song.tokens[st.song.tokens.length - 1].kind === "note" ? (st.song.tokens[st.song.tokens.length - 1] as { dur: number }).dur / (_Q / 2) / 2 : 0} ん:${(st.song.tokens[st.song.tokens.length - 1] as { dur: number }).dur / (_Q / 2) / 2}`);
+    st = _dist(st, tr(st).length - 1, _split("だ+ん")).st;
+    const sc = _lab(tr(st), st.song.hum, "ja");
+    eq(sc.SCORE.map((e) => `${e.kana}:${e.notes[0][1]}`).join(" "), `だ:${tr(st)[tr(st).length - 1].kind === "note" ? (tr(st)[tr(st).length - 1] as { dur: number }).dur / (_Q / 2) / 2 : 0} ん:${(tr(st)[tr(st).length - 1] as { dur: number }).dur / (_Q / 2) / 2}`);
     const bytes = _save({ song: st.song, hum: st.song.hum, extras: _ex(), app: "t", date: "d" });
     const o = _open("x.mxl", bytes);
-    eq((o.song.tokens[o.song.tokens.length - 1] as { lyric: string }).lyric, `だ${ELISION}ん`);
+    eq((firstTrack(o.song)[firstTrack(o.song).length - 1] as { lyric: string }).lyric, `だ${ELISION}ん`);
   });
 });
 
 // 「合」：打完回头改（user「打完回头改同意。这里的心流反而是输入。所以不应该提前按」）。edited by Claude Opus 5.5 2026-10-07
 import { mergeIntoPrev } from "../src/score/lyrics.ts";
-import { type Token as _Tok, type Song as _Song } from "../src/score/song.ts";
+import { type Token as _Tok, type Song as _Song, songOf } from "../src/score/song.ts";
 describe("合（并进前一个音，这一句后面的往前挪）", () => {
   const song = (ly: (string | null | "|rest")[]): _Song => {
     let id = 1;
     const toks: _Tok[] = [{ kind: "key", fifths: 0, id: id++ }, { kind: "time", beats: 4, beatType: 4, id: id++ }, { kind: "tempo", bpm: 90, id: id++ }] as _Tok[];
     for (const l of ly) toks.push((l === "|rest" ? { kind: "rest", dur: _Q, id: id++ } : { kind: "note", pitch: { step: "C", alter: 0, octave: 4 }, dur: _Q, lyric: l, id: id++ }) as _Tok);
-    return { hum: "n", tokens: toks };
+    return songOf(toks);
   };
-  const lyrics = (s: _Song) => s.tokens.map((t) => (t.kind === "note" ? t.lyric ?? "·" : t.kind === "rest" ? "|" : "")).filter(Boolean).join(" ");
+  const lyrics = (s: _Song) => firstTrack(s).map((t) => (t.kind === "note" ? t.lyric ?? "·" : t.kind === "rest" ? "|" : "")).filter(Boolean).join(" ");
   it("だんごだんご（6 个音）在第 5 个音上合 = だ ん ご だ‿ん ご ·；休止后面的不动", () => {
     const st = { ..._init(), song: song(["だ", "ん", "ご", "だ", "ん", "ご", "|rest", "や", "さ"]) };
     const out = mergeIntoPrev(st, 3 + 4).song;

@@ -1,7 +1,7 @@
 // 验收预演：用键盘把《うさぎ》整首打进去 + 贴歌词 → 转成 Lab 乐谱结构 → 与 Lab/20261005 月读第一首/score.mjs 逐音相同。
 // created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改成新打法：默认八分，四分 = 八分 + 「−」，十六分 = 「短」再「长」回来，二分 = 八分 + 三个「−」
 import { describe, it, eq, todo } from "./runner.mjs";
-import { initState, emptySong } from "../src/score/song.ts";
+import { initState, emptySong, tr } from "../src/score/song.ts";
 import { route } from "../src/input/keys.ts";
 import { apply } from "../src/score/commands.ts";
 import { applyLyricLine } from "../src/score/lyrics.ts";
@@ -30,7 +30,7 @@ describe("うさぎ（验收预演）", () => {
       4-46 | 7670 | 4446 | 7670 |
       6711 | 78669 43 | 643- | 432- | 3---`);
     st = applyLyricLine(st, "うさぎうさぎ、なにみてはねる、じゅうごやおつきさま、みてはーーねる");
-    const ours = toLabScore(st.song, "ja");
+    const ours = toLabScore(tr(st), st.song.hum, "ja");
     const lab = await import(LAB_SCORE.href);
     eq(JSON.stringify(ours.SCORE), JSON.stringify(lab.SCORE), "SCORE");
     eq(ours.TEXT, lab.TEXT, "TEXT");

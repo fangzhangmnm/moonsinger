@@ -12,7 +12,7 @@
 //   （和 pad 弹出的滚轮同一份 mountWheel：慢拖一格 ±1、一甩靠惯性滑一大段），拨到头就停；拨到哪试到哪，同样按「确定」才写；滚轮 / 候选 / 打字三边互相跟。
 // 跟踪的是 token id（谱改了下标会变）。
 
-import { type EditorState, type MarkTok, type MarkVal, setMark, deleteMark, headLen, TEMPO_WORDS, tempoWord, TEMPO_MIN, TEMPO_MAX } from "../score/song.ts";
+import { type EditorState, type MarkTok, type MarkVal, setMark, deleteMark, headLen, TEMPO_WORDS, tempoWord, TEMPO_MIN, TEMPO_MAX, tr } from "../score/song.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { markText, parseMark } from "../score/marks.ts";
 import type { Layout } from "../render/engrave.ts";
@@ -77,18 +77,18 @@ export class MarkEditor {
   get open(): boolean { return this.id >= 0; }
   /** 键盘路由来的动作（src/input/keys.ts 的「记号框」那几行）。 */
   act(a: "commit" | "cancel"): void { if (a !== "commit") this.close(); else if (this.kind === "tempo") this.confirmTempo(); else this.commitAndClose(); }
-  private indexNow(): number { return this.host.get().song.tokens.findIndex((t) => t.id === this.id); }
+  private indexNow(): number { return tr(this.host.get()).findIndex((t) => t.id === this.id); }
 
   /** 打开下标 i 的记号。fresh = 刚插进去的（没改就收起 = 撤掉）。 */
   openAt(i: number, fresh = false): void {
-    const st = this.host.get(), t = st.song.tokens[i];
+    const st = this.host.get(), t = tr(st)[i];
     if (!t || (t.kind !== "key" && t.kind !== "time" && t.kind !== "tempo")) return;
     this.id = t.id; this.fresh = fresh;
     this.initial = this.input.value = markText(t);
     this.input.inputMode = t.kind === "tempo" ? "numeric" : "text";
     this.input.placeholder = t.kind === "key" ? "1=D / Bb / 2#" : t.kind === "time" ? "3/4" : "90";
     this.kind = t.kind;
-    this.fill(t, i >= headLen(st.song.tokens));
+    this.fill(t, i >= headLen(tr(st)));
     this.metro.hidden = this.ok.hidden = this.wheelBox.hidden = t.kind !== "tempo";
     this.pending = null; this.wheel = null;
     this.box.hidden = false;
@@ -144,7 +144,7 @@ export class MarkEditor {
   /** 速度：「确定」= 把试听值写进谱、收起。 */
   private confirmTempo(): void {
     if (this.pending !== null) {
-      const t = this.host.get().song.tokens[this.indexNow()];
+      const t = tr(this.host.get())[this.indexNow()];
       if (t?.kind === "tempo" && t.bpm !== this.pending) this.apply({ kind: "tempo", bpm: this.pending });
       else if (t?.kind === "tempo") this.fresh = false;   // 新插的、试过以后确定用原值：也留下
     }
@@ -154,7 +154,7 @@ export class MarkEditor {
   /** 重画之后把框挪回那个记号下面（记号没了 = 收起）。 */
   reposition(): void {
     if (!this.open) return;
-    const L = this.layout(), i = this.indexNow(), h = L?.marks.find((m) => m.index === i);
+    const L = this.layout(), i = this.indexNow(), at = this.host.get().at, h = L?.marks.find((m) => m.index === i && L.systems[m.system]?.paper === at.paper && L.systems[m.system]?.part === at.part);
     if (!L || !h) { this.id = -1; this.box.hidden = true; return; }
     this.system = h.system;
     const parentW = (this.box.parentElement?.clientWidth ?? 400), w = Math.min(340, parentW - 16);
@@ -176,7 +176,7 @@ export class MarkEditor {
   commitAndClose(): void {
     if (!this.open) return;
     if (this.kind === "tempo") { this.close(); return; }
-    const t = this.host.get().song.tokens[this.indexNow()];
+    const t = tr(this.host.get())[this.indexNow()];
     if (t && this.input.value.trim() !== this.initial) {
       const v = parseMark(t.kind as MarkTok["kind"], this.input.value);
       if (v) this.apply(v);

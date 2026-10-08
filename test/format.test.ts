@@ -1,7 +1,7 @@
 // 存档格式（.mxl）测试：自家文件原样复原、mimetype 规矩、不认识的东西原样写回、新版本拒开、别家文件尽量读且不自动选角。
 // created 2026-10-07 by Claude Opus 5.5（数据契约草稿 ai-docs/20261007-data-contract-draft.md；无地逃生口）
 import { describe, it, eq, assert } from "./runner.mjs";
-import { TPQ, type Song, type Token } from "../src/score/song.ts";
+import { TPQ, type Song, type Token, firstTrack, songOf } from "../src/score/song.ts";
 import { MELISMA_MARK } from "../src/score/lyrics.ts";
 import { saveMxl, openBytes, emptyExtras, withActive, activeInstrument, CANDIDATE_ID, FORMAT, type Extras } from "../src/format/project.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../vendor/fflate/fflate.esm.js";
@@ -12,7 +12,7 @@ const p = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", octave = 4, alter = 0)
 function bigSong(): Song {
   let id = 1;
   const t = (x: Omit<Token, "id"> & Record<string, unknown>) => ({ ...x, id: id++ }) as Token;
-  return { title: "測試", hum: "u", tokens: [
+  return songOf([
     t({ kind: "key", fifths: 2 }), t({ kind: "time", beats: 3, beatType: 4 }), t({ kind: "tempo", bpm: 96 }),
     t({ kind: "note", pitch: p("F", 4, 1), dur: Q, lyric: "う" }),
     t({ kind: "note", pitch: p("A"), dur: E, lyric: "さ" }),
@@ -31,14 +31,14 @@ function bigSong(): Song {
     t({ kind: "note", pitch: p("G"), dur: Q, lyric: "る" }),
     t({ kind: "rest", dur: Q * 3 }),
     t({ kind: "bar" }),                                                            // 最后一条人插的
-  ] };
+  ], { title: "測試", hum: "u" });
 }
 /** 比较用：小节线 / 记号的 id 是编辑器自己的（文件里不存），去掉；音符 / 休止的 id 要原样。 */
 const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon((v as Record<string, unknown>)[k])])) : v;
-const norm = (s: Song) => JSON.stringify(canon(s.tokens.map((t) => (t.kind === "note" || t.kind === "rest" ? t : { ...t, id: 0 }))));
+const norm = (s: Song) => JSON.stringify(canon(firstTrack(s).map((t) => (t.kind === "note" || t.kind === "rest" ? t : { ...t, id: 0 }))));
 const save = (song: Song, extras = emptyExtras(), quality: "full" | "light" | "none" = "light") =>   // quality = 上场的：full 月读 / light 元音版 / none 不动 role.active
-  saveMxl({ song, hum: song.hum, extras: quality === "none" ? extras : withActive(extras, quality === "full" ? CANDIDATE_ID.full : CANDIDATE_ID.light, song.hum), app: "v0.0.0-test", date: "2026-10-07" });
-const engineOf = (o: { extras: Extras }) => activeInstrument(o.extras)?.engine ?? "unknown";
+  saveMxl({ song, hum: song.hum, extras: quality === "none" ? extras : withActive(extras, "r1", quality === "full" ? CANDIDATE_ID.full : CANDIDATE_ID.light, song.hum), app: "v0.0.0-test", date: "2026-10-07" });
+const engineOf = (o: { extras: Extras }) => activeInstrument(o.extras, "r1")?.engine ?? "unknown";
 
 describe("存档 .mxl", () => {
   it("自家文件：存了再开，每个 token 原样复原（连音、附点、连音线、人插 / 自动的小节线、跨小节的音、中途换记号、连字符、拖腔、改过的语言、没写音高）", () => {
@@ -112,13 +112,15 @@ const FOREIGN = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 </score-partwise>`;
 
 describe("打开别的软件存的 MusicXML", () => {
-  it("读第一个声部；小节都当人插的；读不了的数出来报给人", () => {
+  it("每个声部一串；小节都当人插的；读不了的数出来报给人", () => {
     const o = openBytes("twinkle.musicxml", strToU8(FOREIGN));
-    const body = o.song.tokens.slice(3).map((t) => t.kind === "note" ? `${t.pitch!.step}${t.pitch!.alter || ""}${t.pitch!.octave}:${t.dur / TPQ}${t.lyric ? `:${t.lyric}` : ""}` : t.kind === "rest" ? `0:${t.dur / TPQ}` : t.kind).join(" ");
+    const body = firstTrack(o.song).slice(3).map((t) => t.kind === "note" ? `${t.pitch!.step}${t.pitch!.alter || ""}${t.pitch!.octave}:${t.dur / TPQ}${t.lyric ? `:${t.lyric}` : ""}` : t.kind === "rest" ? `0:${t.dur / TPQ}` : t.kind).join(" ");
     eq(body, "C4:1:Twin G4:0.5 0:0.5 A-14:2 bar G4:4", "音符");
-    const tempo = o.song.tokens[2]; eq(tempo.kind === "tempo" && tempo.bpm, 100, "速度进谱头");
+    const tempo = firstTrack(o.song)[2]; eq(tempo.kind === "tempo" && tempo.bpm, 100, "速度进谱头");
     eq(o.song.title, "Twinkle", "歌名"); eq(o.stem, "twinkle", "文件名主干");
-    assert(o.notices.some((n) => n.includes("叠音") && n.includes("其余声部")), `报了丢掉的：${o.notices.join(" / ")}`);
+    assert(o.notices.some((n) => n.includes("叠音")), `报了丢掉的：${o.notices.join(" / ")}`);
+    eq(o.song.parts.map((p) => p.id).join(","), "P1,P2", "两个声部都读了"); eq(o.song.papers.length, 1, "一张纸");
+    eq(o.extras.lounge.r2.name, "Bass", "第二个声部的角色");
   });
   it("不自动选角：原来的乐器记成候选、没人上场，人来选（user「不出声，报错，人类手动换」）", () => {
     const o = openBytes("twinkle.musicxml", strToU8(FOREIGN));

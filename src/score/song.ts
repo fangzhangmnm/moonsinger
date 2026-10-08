@@ -9,8 +9,13 @@
 // 2026-10-07：调号 / 拍号 / 速度全是 token，没有全局设置（user「谱子的调号应该也是一个按了可以下拉的文本框。不是全局的，bpm也是，都是token」「这么说拍号也是」）。
 //   一首歌开头固定三个记号（谱头）：光标进不去、删不掉，只能就地改；中途可以插，插的地方旁边已有同类记号就改它而不是再插一个。
 // 编辑器状态是纯数据，所有命令是纯函数：旧状态 → 新状态。
+// 2026-10-08 多声部多纸（0.5.0；user「首先就是不同的声部视图和出声应该分别可以solo和hide」「总谱式上下叠」「我以为纸就是曲段」）：
+//   · 一首歌 = 按顺序的几张纸（纸 = 曲段）× 歌级的声部并集；每张纸上每个声部一串 token（开头三个谱头记号照旧）；某张纸没某声部 = 没那串。
+//   · 编辑器的光标 / 选中落在**一条 track**（哪张纸 × 哪个声部 = EditorState.at）；所有写 / 改命令只碰那一条（tr(st) 取、withTrack 写回）。
+//   · 纸内各声部按 tick 对齐（从纸的开头数；不按小节线对齐——小节线只是各自的记谱）；纸界 = 硬对齐点（短的补休止到最长的那条，契约 §6¾）。
+//   · 速度 = 第一个声部的状态机（其余声部的速度记号只是跟着抄、不出声不画）。
 
-import { type Paper, type PaperKind, DEFAULT_PAPER, paperOf } from "./paper.ts";
+import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
 import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval } from "./pitch.ts";
 
 /** 一个四分音符的 tick 数。 */
@@ -43,6 +48,10 @@ export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, 
 /** 「哼的字」：跟语言无关的五档，唱的时候按语言换字（lab-score.ts HUM_SYLLABLE）。o = 2026-10-07 加（user「GM不是还有一个ooo吗」「对，哦 / お」）。 */
 export type Hum = "la" | "n" | "u" | "o" | "a";
 
+/** 歌级的一个声部（谱上的一行；顺序 = 总谱从上到下）：role = 休息室角色 id（谁来演、叫什么），mic = 录音房麦克风 id。 */
+export interface PartDef { id: string; role: string; mic: string }
+/** 一张纸 = 一个曲段：name = 曲段名（纸顶那一条，可空）；tracks = 声部 id → 这张纸上这个声部的 token 串（开头三个谱头记号）。 */
+export interface PaperSeg { id: string; name: string; tracks: Record<string, Token[]> }
 export interface Song {
   /** 歌名（可不填；纸面最上面那一行，存档 = MusicXML <work-title>；user 2026-10-07「纸张的最上面加一个可选的歌名吧，未来也是文件名」）。 */
   title?: string;
@@ -53,8 +62,11 @@ export interface Song {
    *  存档 = MusicXML <credit><credit-words>（印在页面上的字）。 */
   credits?: string;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
-  tokens: Token[];       // 开头三个 = 谱头记号（调号 / 拍号 / 速度）
+  parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
+  papers: PaperSeg[];    // 纸（曲段）的顺序表
 }
+/** 光标 / 选中落在哪条 track（哪张纸 × 哪个声部）。 */
+export interface Focus { paper: string; part: string }
 export const DEFAULT_KEY = 0, DEFAULT_TIME = { beats: 4, beatType: 4 }, DEFAULT_BPM = 90;
 
 /** 输入状态（不进数据）：写的时候下一个音长什么样。 */
@@ -78,6 +90,7 @@ export type LogEntry =
 
 export interface EditorState {
   song: Song;
+  at: Focus;                                        // 正在写 / 改的那条 track
   caret: number;                                    // 插入点 0..tokens.length（sel 为 null 时 = 写）
   sel: { from: number; to: number } | null;         // 选中范围 [from, to)（= 改）
   nextId: number;
@@ -85,17 +98,49 @@ export interface EditorState {
   input: InputState;
 }
 
+/** 一条 track 开头的三个谱头记号（id 从 id0 起连着编）。 */
+export function headTokens(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}, id0 = 1): Token[] {
+  return [
+    { kind: "key", id: id0, fifths: m.fifths ?? DEFAULT_KEY },
+    { kind: "time", id: id0 + 1, beats: m.beats ?? DEFAULT_TIME.beats, beatType: m.beatType ?? DEFAULT_TIME.beatType },
+    { kind: "tempo", id: id0 + 2, bpm: m.bpm ?? DEFAULT_BPM },
+  ];
+}
+export const FIRST_PART = "P1", FIRST_PAPER = "p1";
+/** 新歌：一张纸、一个声部（P1 → 角色 r1 → 麦克风 m1），哼的字默认「嗯」（user 2026-10-07「月读不是有啦嗯哦吗，默认嗯」）。 */
 export function emptySong(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}): Song {
-  return { hum: "n", tokens: [   // 哼的字默认「嗯」（user 2026-10-07「月读不是有啦嗯哦吗，默认嗯」）
-    { kind: "key", id: 1, fifths: m.fifths ?? DEFAULT_KEY },
-    { kind: "time", id: 2, beats: m.beats ?? DEFAULT_TIME.beats, beatType: m.beatType ?? DEFAULT_TIME.beatType },
-    { kind: "tempo", id: 3, bpm: m.bpm ?? DEFAULT_BPM },
-  ] };
+  return { hum: "n", parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m) } }] };
+}
+/** 单 track 的歌（测试 / 读别家单声部谱时顺手用）。 */
+export function songOf(tokens: Token[], rest: Partial<Omit<Song, "parts" | "papers">> = {}): Song {
+  return { hum: "n", ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
 }
 export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major" }; }
-export function initState(song: Song = emptySong()): EditorState {
-  const maxId = song.tokens.reduce((m, t) => Math.max(m, t.id), 0);
-  return { song, caret: song.tokens.length, sel: null, nextId: maxId + 1, log: [], input: initInput() };
+/** 整首歌最大的 token id（新 id 从它后面编；所有纸、所有声部一起算，id 全歌唯一）。 */
+export function maxId(song: Song): number { let m = 0; for (const p of song.papers) for (const ts of Object.values(p.tracks)) for (const t of ts) m = Math.max(m, t.id); return m; }
+/** 第一条有内容的 track（第一张纸上第一个在场的声部）。 */
+export function firstFocus(song: Song): Focus {
+  const p = song.papers[0], part = song.parts.find((x) => p && p.tracks[x.id]) ?? song.parts[0];
+  return { paper: p?.id ?? FIRST_PAPER, part: part?.id ?? FIRST_PART };
+}
+export function initState(song: Song = emptySong(), at: Focus = firstFocus(song)): EditorState {
+  return { song, at, caret: trackOf(song, at.paper, at.part).length, sel: null, nextId: maxId(song) + 1, log: [], input: initInput() };
+}
+/** 某张纸上某声部的 token 串（没有这条 = 空）。 */
+export function trackOf(song: Song, paper: string, part: string): Token[] { return song.papers.find((p) => p.id === paper)?.tracks[part] ?? []; }
+/** 第一张纸上第一个声部的那条（单 track 的歌就是「那串 token」；测试 / 读别家谱用）。 */
+export const firstTrack = (song: Song): Token[] => { const f = firstFocus(song); return trackOf(song, f.paper, f.part); };
+/** 光标所在的那条 track。 */
+export const tr = (st: EditorState): Token[] => trackOf(st.song, st.at.paper, st.at.part);
+/** 把一条 track 换掉（纯函数）。 */
+export function withTrack(song: Song, paper: string, part: string, tokens: Token[]): Song {
+  return { ...song, papers: song.papers.map((p) => (p.id === paper ? { ...p, tracks: { ...p.tracks, [part]: tokens } } : p)) };
+}
+/** 换到另一条 track（点了别的谱行 / 别的纸）：清选中、清本次输入记录；caret 默认放到那条的末尾。 */
+export function setFocus(st: EditorState, paper: string, part: string, caret?: number): EditorState {
+  if (st.at.paper === paper && st.at.part === part && caret === undefined) return st;
+  const toks = trackOf(st.song, paper, part);
+  return { ...leave(st), at: { paper, part }, sel: null, caret: Math.max(headLen(toks), Math.min(toks.length, caret ?? toks.length)) };
 }
 
 export const isTimed = (t: Token): t is Timed => t.kind === "note" || t.kind === "rest";
@@ -108,7 +153,7 @@ export const isWriting = (st: EditorState): boolean => st.sel === null;
 
 /** 光标前最近的音符 / 休止（跳过小节线、调号）。 */
 export function currentIndex(st: EditorState): number {
-  for (let i = st.caret - 1; i >= 0; i--) if (isTimed(st.song.tokens[i])) return i;
+  for (let i = st.caret - 1; i >= 0; i--) if (isTimed(tr(st)[i])) return i;
   return -1;
 }
 /** 下标 i 之前最近一个有音高的音（就近规则的参照）。 */
@@ -122,20 +167,20 @@ export function effectivePitch(tokens: Token[], i: number): Pitch {
   if (t.kind === "note" && t.pitch) return t.pitch;
   return prevPitch(tokens, i) ?? HOME;
 }
-/** 下标 i 处（i 之前最近的那个记号）生效的调号 / 拍号 / 速度。 */
-export function keyAt(song: Song, i: number): number {
+/** 下标 i 处（i 之前最近的那个记号）生效的调号 / 拍号 / 速度（一条 track 内）。 */
+export function keyAt(tokens: Token[], i: number): number {
   let f = DEFAULT_KEY;
-  for (let j = 0; j < i && j < song.tokens.length; j++) { const t = song.tokens[j]; if (t.kind === "key") f = t.fifths; }
+  for (let j = 0; j < i && j < tokens.length; j++) { const t = tokens[j]; if (t.kind === "key") f = t.fifths; }
   return f;
 }
-export function timeAt(song: Song, i: number): { beats: number; beatType: number } {
+export function timeAt(tokens: Token[], i: number): { beats: number; beatType: number } {
   let v = DEFAULT_TIME;
-  for (let j = 0; j < i && j < song.tokens.length; j++) { const t = song.tokens[j]; if (t.kind === "time") v = t; }
+  for (let j = 0; j < i && j < tokens.length; j++) { const t = tokens[j]; if (t.kind === "time") v = t; }
   return { beats: v.beats, beatType: v.beatType };
 }
-export function tempoAt(song: Song, i: number): number {
+export function tempoAt(tokens: Token[], i: number): number {
   let v = DEFAULT_BPM;
-  for (let j = 0; j < i && j < song.tokens.length; j++) { const t = song.tokens[j]; if (t.kind === "tempo") v = t.bpm; }
+  for (let j = 0; j < i && j < tokens.length; j++) { const t = tokens[j]; if (t.kind === "tempo") v = t.bpm; }
   return v;
 }
 /** 速度的「语义」：数据只存 bpm（绝对的那个数），词按 bpm 落在哪一档推出来，谱上画「词 ♩ = 数」
@@ -179,7 +224,7 @@ const indexOfId = (tokens: Token[], id: number) => tokens.findIndex((t) => t.id 
 
 function next(st: EditorState, tokens: Token[], patch: Partial<EditorState> = {}): EditorState {
   const caret = Math.max(headLen(tokens), Math.min(tokens.length, patch.caret ?? st.caret));
-  return { ...st, ...patch, song: { ...st.song, tokens }, caret };
+  return { ...st, ...patch, song: withTrack(st.song, st.at.paper, st.at.part, tokens), caret };
 }
 /** 挪光标 / 选中 = 离开「本次输入」，记录清空。 */
 const leave = (st: EditorState): EditorState => (st.log.length ? { ...st, log: [] } : st);
@@ -196,8 +241,8 @@ function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alter
 
 /** 写的时候：光标后（跳过小节线、记号）第一个是空音高的音符，就填它而不是插（詞先）。 */
 function fillTarget(st: EditorState): number {
-  for (let i = st.caret; i < st.song.tokens.length; i++) {
-    const t = st.song.tokens[i];
+  for (let i = st.caret; i < tr(st).length; i++) {
+    const t = tr(st)[i];
     if (t.kind === "bar" || isMark(t)) continue;
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
@@ -212,10 +257,10 @@ export function writePitch(st: EditorState, pitch0: Pitch): EditorState {
   if (st.sel) return overwritePitch({ ...st, input }, pitch);
   const f = fillTarget(st);
   if (f >= 0) {
-    const t = st.song.tokens[f] as NoteTok, tokens = st.song.tokens.slice(); tokens[f] = { ...t, pitch };
+    const t = tr(st)[f] as NoteTok, tokens = tr(st).slice(); tokens[f] = { ...t, pitch };
     return next(st, tokens, { caret: f + 1, input, log: [...st.log, { k: "fill", id: t.id, unit: t.dur }] });
   }
-  const dur = unitDur(st.input), id = st.nextId, tokens = st.song.tokens.slice();
+  const dur = unitDur(st.input), id = st.nextId, tokens = tr(st).slice();
   tokens.splice(st.caret, 0, { kind: "note", id, pitch, dur, lyric: null });
   return next(st, tokens, { caret: st.caret + 1, nextId: id + 1, input, log: [...st.log, { k: "ins", id, unit: dur }] });
 }
@@ -226,18 +271,18 @@ export function writeDegree(st: EditorState, degree: number, dir: Dir): EditorSt
   if (st.sel) at = firstNoteIn(st);
   else { const f = fillTarget(st); at = f >= 0 ? f : st.caret; }
   if (at < 0) return st;
-  return writePitch(st, placeDegree(degree, inputKey(st), prevPitch(st.song.tokens, at), dir));
+  return writePitch(st, placeDegree(degree, inputKey(st), prevPitch(tr(st), at), dir));
 }
 
 export function writeRest(st: EditorState): EditorState {
   if (st.sel) return st;
-  const dur = unitDur(st.input), id = st.nextId, tokens = st.song.tokens.slice();
+  const dur = unitDur(st.input), id = st.nextId, tokens = tr(st).slice();
   tokens.splice(st.caret, 0, { kind: "rest", id, dur });
   return next(st, tokens, { caret: st.caret + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur }] });
 }
 
 export function writeBar(st: EditorState): EditorState {
-  const at = st.sel ? st.sel.to : st.caret, id = st.nextId, tokens = st.song.tokens.slice();
+  const at = st.sel ? st.sel.to : st.caret, id = st.nextId, tokens = tr(st).slice();
   tokens.splice(at, 0, { kind: "bar", id });
   return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
 }
@@ -245,7 +290,7 @@ export function writeBar(st: EditorState): EditorState {
 /** 在光标处（有选中 = 选中开头）插一个记号。插的地方前后连着的记号里已有同类 → 改它，不再插一个（谱头就是这样被改的）。
  *  返回记号的下标，fresh = 新插的（界面打开它的编辑框；没改值就关 = 撤掉）。 */
 export function writeMark(st: EditorState, v: MarkVal): { st: EditorState; index: number; fresh: boolean } {
-  const at = st.sel ? st.sel.from : st.caret, tokens = st.song.tokens;
+  const at = st.sel ? st.sel.from : st.caret, tokens = tr(st);
   let a = at, b = at;
   while (a > 0 && isMark(tokens[a - 1])) a--;
   while (b < tokens.length && isMark(tokens[b])) b++;
@@ -258,16 +303,16 @@ export function writeMark(st: EditorState, v: MarkVal): { st: EditorState; index
 export const writeKey = (st: EditorState, fifths: number): EditorState => writeMark(st, { kind: "key", fifths }).st;
 /** 改一个记号的值（种类不变）。输入的「1=」不跟着变（输入设备自己的调）。 */
 export function setMark(st: EditorState, i: number, v: MarkVal): EditorState {
-  const t = st.song.tokens[i];
+  const t = tr(st)[i];
   if (!t || t.kind !== v.kind) return st;
-  const nt = st.song.tokens.slice(); nt[i] = { ...v, id: t.id } as MarkTok;
+  const nt = tr(st).slice(); nt[i] = { ...v, id: t.id } as MarkTok;
   return next(st, nt, {});
 }
 /** 删一个中途的记号（谱头的删不掉）。 */
 export function deleteMark(st: EditorState, i: number): EditorState {
-  const t = st.song.tokens[i];
-  if (!t || !isMark(t) || i < headLen(st.song.tokens)) return st;
-  const nt = st.song.tokens.slice(); nt.splice(i, 1);
+  const t = tr(st)[i];
+  if (!t || !isMark(t) || i < headLen(tr(st))) return st;
+  const nt = tr(st).slice(); nt.splice(i, 1);
   return next(st, nt, { caret: i < st.caret ? st.caret - 1 : st.caret, sel: null });
 }
 
@@ -275,7 +320,7 @@ export function deleteMark(st: EditorState, i: number): EditorState {
  *  有选中 = 每个选中的音加一份当前单位。 */
 export function extend(st: EditorState): EditorState {
   if (st.sel) return mapSelDur(st, (d) => d + unitDur(st.input));
-  const tokens = st.song.tokens;
+  const tokens = tr(st);
   // 目标 = 本次输入记录里最后一个音（还在的话），否则光标前最近的音 / 休止
   let target = -1, unit = unitDur(st.input);
   for (let k = st.log.length - 1; k >= 0 && target < 0; k--) {
@@ -305,7 +350,7 @@ export function extend(st: EditorState): EditorState {
 /** 退格：有选中 = 删选中；写的时候 = 撤回本次输入记录的最后一笔，记录空了就删光标前一个 token。 */
 export function backspace(st: EditorState): EditorState {
   if (st.sel) return deleteSel(st);
-  const tokens = st.song.tokens;
+  const tokens = tr(st);
   while (st.log.length) {
     const e = st.log[st.log.length - 1], log = st.log.slice(0, -1), i = indexOfId(tokens, e.id);
     if (i < 0) { st = { ...st, log }; continue; }   // 记录里的东西已经不在了（别处删过）：跳过这笔
@@ -321,8 +366,8 @@ export function backspace(st: EditorState): EditorState {
 }
 export function deleteForward(st: EditorState): EditorState {
   if (st.sel) return deleteSel(st);
-  if (st.caret >= st.song.tokens.length) return st;
-  const nt = st.song.tokens.slice(); nt.splice(st.caret, 1);
+  if (st.caret >= tr(st).length) return st;
+  const nt = tr(st).slice(); nt.splice(st.caret, 1);
   return next(leave(st), nt);
 }
 
@@ -363,7 +408,7 @@ export function setInputScale(st: EditorState, id: string): EditorState { return
 
 function firstNoteIn(st: EditorState): number {
   if (!st.sel) return -1;
-  for (let i = st.sel.from; i < st.sel.to; i++) if (st.song.tokens[i].kind === "note") return i;
+  for (let i = st.sel.from; i < st.sel.to; i++) if (tr(st)[i].kind === "note") return i;
   return -1;
 }
 function nextNoteAfter(tokens: Token[], i: number): number {
@@ -374,34 +419,34 @@ function nextNoteAfter(tokens: Token[], i: number): number {
 function overwritePitch(st: EditorState, pitch: Pitch): EditorState {
   const i = firstNoteIn(st);
   if (i < 0) return st;
-  const nt = st.song.tokens.slice(); nt[i] = { ...(nt[i] as NoteTok), pitch };
+  const nt = tr(st).slice(); nt[i] = { ...(nt[i] as NoteTok), pitch };
   const j = nextNoteAfter(nt, i);
   return j >= 0 ? next(st, nt, { sel: { from: j, to: j + 1 }, caret: j + 1 }) : next(st, nt, { sel: null, caret: nt.length, log: [] });
 }
 function mapSelDur(st: EditorState, f: (d: number) => number): EditorState {
   if (!st.sel) return st;
-  const nt = st.song.tokens.slice(); let changed = false;
+  const nt = tr(st).slice(); let changed = false;
   for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (!isTimed(t)) continue; const d = f(t.dur); if (validDur(d)) { nt[i] = { ...t, dur: d }; changed = true; } }
   return changed ? next(st, nt) : st;
 }
 function mapSelPitch(st: EditorState, f: (p: Pitch) => Pitch): EditorState {
   if (!st.sel) return st;
-  const nt = st.song.tokens.slice();
+  const nt = tr(st).slice();
   for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note") nt[i] = { ...t, pitch: f(effectivePitch(nt, i)) }; }
   return next(st, nt);
 }
 function deleteSel(st: EditorState): EditorState {
   if (!st.sel) return st;
-  const nt = st.song.tokens.slice(); nt.splice(st.sel.from, st.sel.to - st.sel.from);
+  const nt = tr(st).slice(); nt.splice(st.sel.from, st.sel.to - st.sel.from);
   return next(st, nt, { sel: null, caret: st.sel.from, log: [] });
 }
 
 /** 改音高（↑↓ 一级 / Shift 半音 / Alt 八度）：有选中 = 全部选中；写的时候 = 光标前那个音。 */
 function mapTargetPitch(st: EditorState, f: (p: Pitch, fifths: number) => Pitch): EditorState {
-  if (st.sel) { const from = st.sel.from; return mapSelPitch(st, (p) => f(p, keyAt(st.song, from))); }
+  if (st.sel) { const from = st.sel.from; return mapSelPitch(st, (p) => f(p, keyAt(tr(st), from))); }
   const i = currentIndex(st);
-  if (i < 0 || st.song.tokens[i].kind !== "note") return st;
-  const nt = st.song.tokens.slice(); nt[i] = { ...(nt[i] as NoteTok), pitch: f(effectivePitch(nt, i), keyAt(st.song, i)) };
+  if (i < 0 || tr(st)[i].kind !== "note") return st;
+  const nt = tr(st).slice(); nt[i] = { ...(nt[i] as NoteTok), pitch: f(effectivePitch(nt, i), keyAt(tr(st), i)) };
   return next(st, nt);
 }
 export const stepTarget = (st: EditorState, steps: number) => mapTargetPitch(st, (p, k) => stepBy(p, steps, k));
@@ -414,8 +459,8 @@ export const octaveTarget = (st: EditorState, d: number) => mapTargetPitch(st, (
 /** 移调：选中的音整体移几个半音，按各自所在的调重新拼写；调号不动。 */
 export function transposeSel(st: EditorState, semis: number): EditorState {
   if (!st.sel || !semis) return st;
-  const nt = st.song.tokens.slice();
-  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note" && t.pitch) nt[i] = { ...t, pitch: transposeSemis(t.pitch, semis, keyAt(st.song, i)) }; }
+  const nt = tr(st).slice();
+  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note" && t.pitch) nt[i] = { ...t, pitch: transposeSemis(t.pitch, semis, keyAt(tr(st), i)) }; }
   return next(st, nt);
 }
 /** 转调：选中的一段从开头生效的调转到 toFifths——音按两个主音之间的音程挪（就近方向，拼写关系不变），
@@ -423,11 +468,11 @@ export function transposeSel(st: EditorState, semis: number): EditorState {
  *  选中里面的调号跟着一起挪。选中保持在挪过的那一段上。 */
 export function modulateSel(st: EditorState, toFifths: number): EditorState {
   if (!st.sel) return st;
-  const { from, to } = st.sel, old = st.song, f0 = keyAt(old, from), df = toFifths - f0;
+  const { from, to } = st.sel, old = tr(st), f0 = keyAt(old, from), df = toFifths - f0;
   if (!df) return st;
   const { steps, semis } = keyInterval(f0, toFifths);
   const wrap = (f: number) => (f > 7 ? f - 12 : f < -7 ? f + 12 : f);   // 超出 ±7 用等音调
-  const nt = old.tokens.slice();
+  const nt = old.slice();
   for (let i = from; i < to; i++) {
     const t = nt[i];
     if (t.kind === "note" && t.pitch) nt[i] = { ...t, pitch: transposeInterval(t.pitch, steps, semis) };
@@ -456,10 +501,10 @@ export function modulateSel(st: EditorState, toFifths: number): EditorState {
 
 /** 放光标（= 写）：清选中、清本次输入记录。 */
 export const setCaret = (st: EditorState, caret: number): EditorState =>
-  ({ ...leave(st), sel: null, caret: Math.max(headLen(st.song.tokens), Math.min(st.song.tokens.length, caret)) });
+  ({ ...leave(st), sel: null, caret: Math.max(headLen(tr(st)), Math.min(tr(st).length, caret)) });
 /** 选中一段（= 改）。 */
 export function select(st: EditorState, from: number, to: number): EditorState {
-  const n = st.song.tokens.length, a = Math.max(headLen(st.song.tokens), Math.min(from, to)), b = Math.min(n, Math.max(from, to));
+  const n = tr(st).length, a = Math.max(headLen(tr(st)), Math.min(from, to)), b = Math.min(n, Math.max(from, to));
   if (b <= a) return setCaret(st, a);
   return { ...leave(st), sel: { from: a, to: b }, caret: b };
 }
@@ -475,37 +520,46 @@ export function extendSelection(st: EditorState, d: number): EditorState {
 }
 /** Shift+Home / Shift+End：从光标（或已有选中的另一头）选到开头 / 末尾（配 Home 就是全选）。 */
 export function selectToEdge(st: EditorState, d: -1 | 1): EditorState {
-  const n = st.song.tokens.length;
-  if (d < 0) return select(st, headLen(st.song.tokens), st.sel ? st.sel.to : st.caret);
+  const n = tr(st).length;
+  if (d < 0) return select(st, headLen(tr(st)), st.sel ? st.sel.to : st.caret);
   return select(st, st.sel ? st.sel.from : st.caret, n);
 }
 /** Esc：写 → 选中光标前那个 token（改）。 */
 export function escape(st: EditorState): EditorState {
   if (st.sel) return st;
-  return st.caret > headLen(st.song.tokens) ? select(st, st.caret - 1, st.caret) : st;
+  return st.caret > headLen(tr(st)) ? select(st, st.caret - 1, st.caret) : st;
 }
 
 // ── 直接改（指针拖动 / 歌词） ─────────────────────────────────────────
 
 export function setNote(st: EditorState, i: number, patch: Partial<Pick<NoteTok, "pitch" | "dur" | "lyric" | "hyph">>): EditorState {
-  const t = st.song.tokens[i];
+  const t = tr(st)[i];
   if (!t || t.kind !== "note") return st;
-  const nt = st.song.tokens.slice(); nt[i] = { ...t, ...patch };
+  const nt = tr(st).slice(); nt[i] = { ...t, ...patch };
   return next(st, nt);
 }
 export function setDur(st: EditorState, i: number, dur: number): EditorState {
-  const t = st.song.tokens[i];
+  const t = tr(st)[i];
   if (!t || !isTimed(t) || !validDur(dur)) return st;
-  const nt = st.song.tokens.slice(); nt[i] = { ...t, dur };
+  const nt = tr(st).slice(); nt[i] = { ...t, dur };
   return next(st, nt);
 }
 export function setHum(st: EditorState, hum: Hum): EditorState { return { ...st, song: { ...st.song, hum } }; }
 /** 改歌名（空 = 不填）。 */
 /** 换纸（整首歌一个）：A5 = 默认，存成「没有」。 */
 export function setPaper(st: EditorState, kind: PaperKind): EditorState {
-  const song = { ...st.song };
-  if (kind === DEFAULT_PAPER) delete song.paper; else song.paper = paperOf(kind);
+  const song = { ...st.song }, density = densityOf(st.song.paper ?? paperOf(DEFAULT_PAPER));
+  if (kind === DEFAULT_PAPER && density === "cozy") delete song.paper; else song.paper = paperOf(kind, density);
   return (st.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st : { ...st, song };
+}
+/** 版式：舒适 / 紧凑（整首歌一个；舒适 = 默认，存成「没有」；自家文件不另记 staffMm）。 */
+export function setDensity(st: EditorState, d: Density): EditorState {
+  const cur = st.song.paper ?? paperOf(DEFAULT_PAPER);
+  if (densityOf(cur) === d) return st;
+  const paper: Paper = { ...cur }; delete paper.staffMm; if (d === "cozy") delete paper.density; else paper.density = d;
+  const song = { ...st.song };
+  if (paper.kind === DEFAULT_PAPER && !paper.density) delete song.paper; else song.paper = paper;
+  return { ...st, song };
 }
 /** 改作者栏（每行去掉行尾空白、去掉头尾空行；全空 = 不填）。 */
 export function setCredits(st: EditorState, text: string): EditorState {
@@ -524,6 +578,89 @@ export function setTitle(st: EditorState, title: string): EditorState {
   return (st.song.title ?? "") === t ? st : { ...st, song };
 }
 
+// ── 纸 / 声部（0.5.0）────────────────────────────────────────────────────
+
+const nextKey = (ids: string[], prefix: string) => `${prefix}${Math.max(0, ...ids.map((x) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x)?.[1] ?? 0))) + 1}`;
+/** 一条 track 末尾生效的调号 / 拍号 / 速度（新纸 / 新声部的谱头照抄它）。 */
+const endMarks = (toks: Token[]) => ({ fifths: keyAt(toks, toks.length), ...timeAt(toks, toks.length), bpm: tempoAt(toks, toks.length) });
+/** 加一个声部（歌级）：每张纸上给它一条只有谱头的 track（谱头抄那张纸第一个在场声部的开头）；光标跳到当前纸上它那条。
+ *  role / mic 的 id 由调用方（休息室 / 录音房）配好。 */
+export function addPart(st: EditorState, part: PartDef): EditorState {
+  if (st.song.parts.some((p) => p.id === part.id)) return st;
+  let id = st.nextId;
+  const papers = st.song.papers.map((p) => {
+    const src = st.song.parts.map((x) => p.tracks[x.id]).find((x) => x) ?? [];
+    const h = src.slice(0, headLen(src));
+    const toks = h.length ? h.map((t) => ({ ...t, id: id++ })) : headTokens({}, (id += 3) - 3);
+    return { ...p, tracks: { ...p.tracks, [part.id]: toks } };
+  });
+  const song = { ...st.song, parts: [...st.song.parts, part], papers };
+  return setFocus({ ...st, song, nextId: id }, st.at.paper, part.id);
+}
+/** 删一个声部（最后一个不能删）：所有纸上它那条一起没了。 */
+export function removePart(st: EditorState, partId: string): EditorState {
+  if (st.song.parts.length <= 1 || !st.song.parts.some((p) => p.id === partId)) return st;
+  const papers = st.song.papers.map((p) => { const tracks = { ...p.tracks }; delete tracks[partId]; return { ...p, tracks }; });
+  const song = { ...st.song, parts: st.song.parts.filter((p) => p.id !== partId), papers };
+  const at = st.at.part === partId ? { paper: st.at.paper, part: song.parts[0].id } : st.at;
+  return setFocus({ ...st, song }, at.paper, at.part, st.at.part === partId ? undefined : st.caret);
+}
+/** 这张纸上加上某个（歌里已有的）声部：一条只有谱头的 track（谱头抄这张纸第一个在场声部的开头）。user 2026-10-08「每个sheet的track数量当然不同」。 */
+export function addTrack(st: EditorState, paperId: string, partId: string): EditorState {
+  const p = st.song.papers.find((x) => x.id === paperId);
+  if (!p || p.tracks[partId] || !st.song.parts.some((x) => x.id === partId)) return st;
+  const src = st.song.parts.map((x) => p.tracks[x.id]).find((x) => x) ?? [], h = src.slice(0, headLen(src));
+  let id = st.nextId;
+  const toks = h.length ? h.map((t) => ({ ...t, id: id++ })) : headTokens({}, (id += 3) - 3);
+  return setFocus({ ...st, song: withTrack(st.song, paperId, partId, toks), nextId: id }, paperId, partId);
+}
+/** 这张纸上去掉某个声部的那条 track（纸上最后一条不能去）。声部本身还在歌里（别的纸照旧）。 */
+export function removeTrack(st: EditorState, paperId: string, partId: string): EditorState {
+  const p = st.song.papers.find((x) => x.id === paperId);
+  if (!p || !p.tracks[partId] || Object.keys(p.tracks).length <= 1) return st;
+  const tracks = { ...p.tracks }; delete tracks[partId];
+  const song = { ...st.song, papers: st.song.papers.map((x) => (x.id === paperId ? { ...x, tracks } : x)) };
+  if (st.at.paper !== paperId || st.at.part !== partId) return { ...st, song };
+  return setFocus({ ...st, song }, paperId, st.song.parts.find((x) => tracks[x.id])!.id);
+}
+/** 新的一张纸（接在 after 后面；没给 = 最后）：每个声部一条只有谱头的 track，谱头照抄上一张纸那个声部结尾时的调号 / 拍号 / 速度
+ *  （契约 §6¾：速度每张纸开头明确写一个，新建时照抄上一张纸结尾的）。光标跳到新纸上当前声部。 */
+export function addPaper(st: EditorState, after?: string): EditorState {
+  const papers = st.song.papers, k = after ? papers.findIndex((p) => p.id === after) : papers.length - 1;
+  const prev = papers[k] ?? papers[papers.length - 1], id = nextKey(papers.map((p) => p.id), "p");
+  let nid = st.nextId;
+  const tracks: Record<string, Token[]> = {};
+  for (const part of st.song.parts) {
+    const src = prev?.tracks[part.id] ?? st.song.parts.map((x) => prev?.tracks[x.id]).find((x) => x) ?? [];
+    tracks[part.id] = headTokens(endMarks(src), nid); nid += 3;
+  }
+  const paper: PaperSeg = { id, name: "", tracks };
+  const list = papers.slice(); list.splice(k + 1, 0, paper);
+  return setFocus({ ...st, song: { ...st.song, papers: list }, nextId: nid }, id, st.at.part);
+}
+/** 删一张纸（最后一张不能删）。 */
+export function removePaper(st: EditorState, paperId: string): EditorState {
+  const papers = st.song.papers; if (papers.length <= 1) return st;
+  const k = papers.findIndex((p) => p.id === paperId); if (k < 0) return st;
+  const list = papers.filter((p) => p.id !== paperId), song = { ...st.song, papers: list };
+  if (st.at.paper !== paperId) return { ...st, song };
+  const to = list[Math.min(k, list.length - 1)];
+  return setFocus({ ...st, song }, to.id, st.at.part);
+}
+/** 纸挪一位（上 / 下）。 */
+export function movePaper(st: EditorState, paperId: string, d: -1 | 1): EditorState {
+  const list = st.song.papers.slice(), k = list.findIndex((p) => p.id === paperId), j = k + d;
+  if (k < 0 || j < 0 || j >= list.length) return st;
+  [list[k], list[j]] = [list[j], list[k]];
+  return { ...st, song: { ...st.song, papers: list } };
+}
+/** 改曲段名（纸顶那一条；空 = 不填）。 */
+export function setPaperName(st: EditorState, paperId: string, name: string): EditorState {
+  const t = name.trim(), p = st.song.papers.find((x) => x.id === paperId);
+  if (!p || p.name === t) return st;
+  return { ...st, song: { ...st.song, papers: st.song.papers.map((x) => (x.id === paperId ? { ...x, name: t } : x)) } };
+}
+
 // ── 时间轴（播放、画谱、小节对账都用） ─────────────────────────────────
 
 export interface TimedAt {
@@ -534,27 +671,63 @@ export interface TimedAt {
   t0: number; t1: number;   // 秒（按速度记号一段一段算）
 }
 
-export function timeline(song: Song): TimedAt[] {
+/** 速度表：tick → 从这里起的 bpm（第一个声部压平后的速度记号；其余声部按它算秒数，自己串里的速度记号不算数）。 */
+export type TempoMap = { tick: number; bpm: number }[];
+export function timeline(tokens: Token[], tempoMap?: TempoMap): TimedAt[] {
   const out: TimedAt[] = [];
-  let t = 0, bar = 0, sec = 0, bpm = DEFAULT_BPM;
-  song.tokens.forEach((tok, index) => {
+  let t = 0, bar = 0, sec = 0, bpm = DEFAULT_BPM, k = 0;
+  tokens.forEach((tok, index) => {
     if (tok.kind === "bar") { bar = t; return; }
-    if (tok.kind === "tempo") { bpm = tok.bpm; return; }
+    if (tok.kind === "tempo") { if (!tempoMap) bpm = tok.bpm; return; }
     if (!isTimed(tok)) return;
+    if (tempoMap) { while (k < tempoMap.length && tempoMap[k].tick <= t) { bpm = tempoMap[k].bpm; k++; } }
     const len = (tok.dur / TPQ) * (60 / bpm);
     out.push({ index, tok, start: t, inBar: t - bar, bpm, t0: sec, t1: sec + len });
     t += tok.dur; sec += len;
   });
   return out;
 }
+/** 一条 track 的总长（tick）。 */
+export const trackTicks = (tokens: Token[]): number => tokens.reduce((a, t) => a + (isTimed(t) ? t.dur : 0), 0);
+/** 一张纸的长度 = 上面最长的那条 track（纸界 = 硬对齐点，短的补到这么长）。 */
+export const paperTicks = (p: PaperSeg): number => Math.max(0, ...Object.values(p.tracks).map(trackTicks));
+/** 一个声部压平成一串（播放 / 派生的 score.musicxml 用）：各纸按序接起来，后面纸的谱头记号变成中途的记号；
+ *  某张纸没这个声部 = 只有谱头（抄这张纸第一个在场声部的）+ 整纸休止；短的补休止到纸的长度。starts = 每张纸在这串里从哪个下标起。 */
+export function flattenPart(song: Song, partId: string): { tokens: Token[]; starts: { index: number; paper: PaperSeg }[] } {
+  const out: Token[] = [], starts: { index: number; paper: PaperSeg }[] = [];
+  let id = -1;   // 补的休止 / 抄的记号用负 id（不落地，只在这一串里；文件里的 id 由写的那边编）
+  song.papers.forEach((p, k) => {
+    const have = p.tracks[partId], len = paperTicks(p);
+    starts.push({ index: out.length, paper: p });
+    let toks: Token[];
+    if (have) toks = have;
+    else {
+      const src = song.parts.map((x) => p.tracks[x.id]).find((x) => x) ?? [];
+      toks = src.slice(0, headLen(src)).map((t) => ({ ...t, id: id-- }));
+    }
+    if (k === 0) out.push(...toks);
+    else { const h = headLen(toks); out.push(...toks.slice(0, h).map((t) => ({ ...t, id: id-- })), ...toks.slice(h)); }   // 后面纸的谱头：抄一份当中途记号（id 不撞）
+    const pad = len - trackTicks(toks);
+    if (pad > 0) out.push({ kind: "rest", id: id--, dur: pad });
+  });
+  return { tokens: out, starts };
+}
+/** 第一个声部的速度表（压平后的速度记号按 tick 列出来；别的声部按它算秒数）。 */
+export function tempoMapOf(song: Song): TempoMap {
+  const first = song.parts[0]; if (!first) return [];
+  const { tokens } = flattenPart(song, first.id), map: TempoMap = [];
+  let t = 0;
+  for (const tok of tokens) { if (tok.kind === "tempo") map.push({ tick: t, bpm: tok.bpm }); else if (isTimed(tok)) t += tok.dur; }
+  return map;
+}
 
 /** 每个小节（两条小节线之间）实际拍数和那里的拍号是否对得上——只用来轻标，不拦（家规：不许规训）。 */
-export function barFill(song: Song): { from: number; to: number; ticks: number; full: boolean }[] {
+export function barFill(tokens: Token[]): { from: number; to: number; ticks: number; full: boolean }[] {
   const wantOf = (b: number, bt: number) => (b * WHOLE) / bt;
   let want = wantOf(DEFAULT_TIME.beats, DEFAULT_TIME.beatType);
   const out: { from: number; to: number; ticks: number; full: boolean }[] = [];
   let from = 0, ticks = 0;
-  song.tokens.forEach((tok, i) => {
+  tokens.forEach((tok, i) => {
     if (tok.kind === "bar") { out.push({ from, to: i, ticks, full: ticks === want }); from = i + 1; ticks = 0; }
     else if (tok.kind === "time") want = wantOf(tok.beats, tok.beatType);
     else if (isTimed(tok)) ticks += tok.dur;

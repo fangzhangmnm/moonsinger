@@ -30,7 +30,7 @@ import { type Pitch, HOME, diatonicIndex, tonicStepIndex, pitchName, alterBy, mi
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
-import { type EditorState, type Acc, inputKey, keyAt, timeAt, tempoAt } from "../score/song.ts";
+import { type EditorState, type Acc, inputKey, keyAt, timeAt, tempoAt, tr } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
 
 const HER_LOW = 57, HER_HIGH = 76;   // A3 / E5（MIDI；月读音域：键底部画细条提示，音域外不拦、不变灰）
@@ -164,7 +164,7 @@ export class Pad {
     const st = this.host.state(), f = inputKey(st), rows = this.rows(), form = padForm();
     const base = this.baseAt(this.rowShift, f, rows);
     if ((this.mode === "transpose" || this.mode === "modulate") && !st.sel) this.mode = "normal";   // 选中没了：移调候选收起
-    const selKey = st.sel ? keyAt(st.song, st.sel.from) : null;
+    const selKey = st.sel ? keyAt(tr(st), st.sel.from) : null;
     this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols));
     if (!this.el.querySelector(".pad-grid")) {
       this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes">` +
@@ -232,7 +232,7 @@ export class Pad {
   /** 光标处正生效的调号 / 拍号 / 速度（插记号按钮上写的就是它：插进去的默认值）。 */
   private marksHere(st: EditorState): { key: number; time: { beats: number; beatType: number }; bpm: number } {
     const at = st.sel ? st.sel.from : st.caret;
-    return { key: keyAt(st.song, at), time: timeAt(st.song, at), bpm: tempoAt(st.song, at) };
+    return { key: keyAt(tr(st), at), time: timeAt(tr(st), at), bpm: tempoAt(tr(st), at) };
   }
   private cands(selKey: number | null, rows: number): string {
     const back = `<button class="btn cand" data-back="1">返回</button>`;

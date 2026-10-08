@@ -222,6 +222,13 @@ button, input, select { font: inherit; color: inherit; }
 /* 纸面最上面的歌名（不填也行；点了就地改） */
 .staff-svg .song-title { fill: var(--ink); font-weight: 600; }
 .staff-svg .song-title.empty { fill: #b9b2a5; font-weight: 400; }   /* 歌名 / 作者空着：浅色短提示（只在编辑器里画） */
+.staff-svg .part-name.focus { fill: var(--accent); }                 /* 光标所在的声部 */
+.staff-svg .paper-name { fill: var(--ink); font-weight: 600; }        /* 曲段名（纸顶一条） */
+.staff-svg .paper-name.empty { fill: #b9b2a5; font-weight: 400; }
+.staff-svg .paper-chip-text { fill: var(--muted); font-weight: 600; }
+.staff-svg rect.add-paper { fill: none; stroke: #c9c1b3; stroke-width: 1; stroke-dasharray: 4 3; cursor: pointer; }   /* 「＋ 新的纸」 */
+.staff-svg .add-paper-text { fill: var(--muted); }
+.title-input.paper { text-align: left; font-weight: 600; }
 .staff-svg .credits.empty { fill: var(--muted); opacity: .7; }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
 /* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
@@ -303,6 +310,9 @@ button, input, select { font: inherit; color: inherit; }
 @media (max-width: 420px) { .bar .tb-file svg { display: none; } .bar .tb-file { padding: 0 8px; } }   /* 手机：文件钮不画图标，多给文件名留地方 */
 /* 纸（2026-10-07）：纸的版心放得下 = 纸居中、四周是桌面（同 WXHW 屏幕太宽时行宽有上限）；放不下（手机）= 纸铺满 */
 .score.desk { background: var(--bg); }
+.score.zoomed { overflow-x: auto; }                 /* 触屏捏合放大后能横着滚 */
+.score.zoomed.desk .sheet { margin: 0; }            /* 放大超出屏幕时不再居中（居中会让左边滚不到） */
+.btn.zoom-reset { position: fixed; z-index: 30; height: 30px; padding: 0 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
 .score.desk .sheet { margin: 0 auto; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 2px 10px rgba(0, 0, 0, .08); min-height: 100%; }
 .staff-svg .paper-chip { fill: var(--panel); stroke: var(--line); rx: 6px; cursor: pointer; }
 .staff-svg .paper-chip-icon { color: var(--muted); cursor: pointer; }
@@ -339,6 +349,7 @@ button, input, select { font: inherit; color: inherit; }
 .inst-name { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
 .inst-name b { font-weight: 600; font-size: 15px; }
 .inst-name span { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inst-name .inst-w { font-size: 11px; color: var(--accent); margin-left: 6px; letter-spacing: 1px; }   /* 〇〇风里的承重 ★ */
 .inst-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .inst-prov { padding: 4px 12px 10px 48px; background: var(--accent-soft); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
 .prov { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; }

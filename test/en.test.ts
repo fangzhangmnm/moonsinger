@@ -1,7 +1,7 @@
 // 英文：元音核心切分、音节拼回单词、音节和核心对齐、乐谱转换。created 2026-10-07 by Claude Opus 5.5
 import { describe, it, eq } from "./runner.mjs";
 import { nucleusStarts, wordsOf, alignEnglish } from "../src/singer/en-front.mjs";
-import { initState, writeDegree, setHum, type NoteTok } from "../src/score/song.ts";
+import { initState, writeDegree, setHum, type NoteTok, tr } from "../src/score/song.ts";
 import { applyLyricLine } from "../src/score/lyrics.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
 
@@ -38,9 +38,9 @@ describe("英文：音节和元音核心对齐", () => {
 describe("英文：乐谱转换", () => {
   it("英文歌词带 hyph、TEXT 拼回单词；哼的字用英文", () => {
     let st = initState(); for (const d of [1, 1, 2, 1]) st = writeDegree(st, d, "near"); st = applyLyricLine(st, "hap-py birth-day");
-    const lab = toLabScore(st.song, "en");
+    const lab = toLabScore(tr(st), st.song.hum, "en");
     eq(lab.TEXT, "happy birthday"); eq(JSON.stringify(lab.SCORE.map((e) => !!e.hyph)), "[true,false,true,false]");
     st = initState(); st = writeDegree(st, 1, "near"); st = setHum(st, "n");
-    eq(toLabScore(st.song, "en").SCORE[0].kana, "hum"); eq((st.song.tokens.at(-1) as NoteTok).lyric, null);
+    eq(toLabScore(tr(st), st.song.hum, "en").SCORE[0].kana, "hum"); eq((tr(st).at(-1) as NoteTok).lyric, null);
   });
 });

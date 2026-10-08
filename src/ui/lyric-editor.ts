@@ -8,7 +8,7 @@
 //   键位在 src/input/keys.ts（一张表）；这里只收路由来的动作（act）。
 // 输入法还在拼（isComposing）的时候什么都不做——拼音、假名输入法都不被打断。
 
-import { type EditorState, type NoteTok } from "../score/song.ts";
+import { type EditorState, type NoteTok, tr, withTrack } from "../score/song.ts";
 import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl, joinIntoPrev, lyricEdit, mergeIntoPrev } from "../score/lyrics.ts";
 import type { Layout } from "../render/engrave.ts";
 
@@ -43,7 +43,7 @@ export class LyricEditor {
 
   /** 在下标 i 的音下面打开（框里放着它现在的字，全选，方便直接改写）。 */
   openAt(i: number): void {
-    const st = this.host.get(), t = st.song.tokens[i];
+    const st = this.host.get(), t = tr(st)[i];
     if (!t || !lyricSlot(t)) return;
     this.index = i;
     this.input.value = this.slotText(i);
@@ -56,7 +56,7 @@ export class LyricEditor {
   /** 重画之后把框挪回那个音下面。 */
   reposition(): void {
     if (!this.open) { this.merge.hidden = true; return; }   // 框收了（包括打完最后一个字自己收的）=「合」也收
-    const L = this.layout(), h = L?.lyrics.find((x) => x.index === this.index);
+    const L = this.layout(), at = this.host.get().at, h = L?.lyrics.find((x) => x.index === this.index && L.systems[x.system]?.paper === at.paper && L.systems[x.system]?.part === at.part);
     if (!L || !h) { this.close(); return; }
     this.system = h.system;
     const w = Math.max(48, this.input.value.length * L.sp * 1.6 + 24);
@@ -88,13 +88,13 @@ export class LyricEditor {
     }
     const { st, last } = distributeFrom(this.host.get(), this.index, syl);
     this.host.set(st);
-    const nx = nextLyricSlot(st.song.tokens, last);
+    const nx = nextLyricSlot(tr(st), last);
     this.input.value = "";
     if (nx >= 0) { this.index = nx; this.input.value = this.slotText(nx); this.rerender(); this.input.select(); }
     else { this.index = -1; this.input.hidden = true; this.merge.hidden = true; this.rerender(); }   // 没有下一个音了：收起（多出来的字已经补成新音）
   }
   private slotText(i: number): string {
-    const t = this.host.get().song.tokens[i] as NoteTok;
+    const t = tr(this.host.get())[i] as NoteTok;
     return t.lyric === MELISMA_MARK ? "~" : lyricEdit(t.lyric ?? "") + (t.hyph ? "-" : "");
   }
 
@@ -120,8 +120,8 @@ export class LyricEditor {
       case "hyphen": if (!/[A-Za-z']$/.test(v)) return false; this.place(v, true); return true;
       case "back": {
         if (v) return false;
-        const st = this.host.get(), cur = st.song.tokens[this.index] as NoteTok;
-        if (cur?.lyric) this.host.set({ ...st, song: { ...st.song, tokens: st.song.tokens.map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t)) } });
+        const st = this.host.get(), cur = tr(st)[this.index] as NoteTok;
+        if (cur?.lyric) this.host.set({ ...st, song: withTrack(st.song, st.at.paper, st.at.part, tr(st).map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t))) });
         this.step(-1); return true;
       }
     }
@@ -129,7 +129,7 @@ export class LyricEditor {
 
   /** 前后挪一个歌词位（不贴字）。 */
   private step(d: number): void {
-    const toks = this.host.get().song.tokens;
+    const toks = tr(this.host.get());
     const j = d > 0 ? nextLyricSlot(toks, this.index) : prevLyricSlot(toks, this.index);
     if (j < 0) { this.rerender(); return; }
     this.index = j; this.input.value = this.slotText(j); this.rerender(); this.input.select();
@@ -138,9 +138,9 @@ export class LyricEditor {
   /** 框里有字就照原样贴到当前这个音（不往后挪）；空框 = 清掉这个音的字。 */
   private commitOnly(): void {
     if (!this.open) return;
-    const st = this.host.get(), cur = st.song.tokens[this.index] as NoteTok, v = this.input.value.trim();
+    const st = this.host.get(), cur = tr(st)[this.index] as NoteTok, v = this.input.value.trim();
     if (!cur) return;
-    if (!v) { if (cur.lyric) this.host.set({ ...st, song: { ...st.song, tokens: st.song.tokens.map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t)) } }); return; }
+    if (!v) { if (cur.lyric) this.host.set({ ...st, song: withTrack(st.song, st.at.paper, st.at.part, tr(st).map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t))) }); return; }
     if (v === this.slotText(this.index)) return;
     const syl = splitSyllables(v.replace(/-$/, "")).map((s, k, a) => (k === a.length - 1 && /-$/.test(v) ? { ...s, hyph: true } : s));
     if (syl.length) this.host.set(distributeFrom(st, this.index, syl).st);

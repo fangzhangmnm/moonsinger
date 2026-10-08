@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { saveMxl, openBytes, emptyExtras, activeInstrument, withActive, FORMAT } from "../src/format/project.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
-import { sampleSong, canonTokens, shapeOf } from "../test/fixtures/format/sample-song.ts";
+import { sampleSong, canonTokens, canonTracks, shapeOf } from "../test/fixtures/format/sample-song.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const tag = `v${Object.values(FORMAT).join("-")}`;
@@ -18,13 +18,14 @@ const force = process.argv.includes("--force");
 const exists = existsSync(join(dir, "sample.mxl"));
 mkdirSync(dir, { recursive: true });
 const song = sampleSong();
-const bytes = saveMxl({ song, hum: song.hum, extras: withActive(emptyExtras(), "c2", song.hum), app: "frozen-sample", date: "2026-10-07T00:00:00.000Z" });   // 上场 = 月读元音版（同 v1 样本的 quality light）
+const bytes = saveMxl({ song, hum: song.hum, extras: withActive(emptyExtras(), "r1", "c2", song.hum), app: "frozen-sample", date: "2026-10-07T00:00:00.000Z" });   // 上场 = 月读元音版（同 v1 样本的 quality light）
 const o = openBytes("sample.mxl", bytes);
 const files = unzipSync(bytes);
 const json = (p) => JSON.parse(strFromU8(files[p]));
 const role = json(".moonsinger/lounge/r1.json"), studio = json(".moonsinger/studio.json");
 const expected = {
-  versions: FORMAT, title: song.title, hum: o.hum, engine: activeInstrument(o.extras)?.engine ?? "unknown", tokens: canonTokens(song),
+  versions: FORMAT, title: song.title, hum: o.hum, engine: activeInstrument(o.extras, "r1")?.engine ?? "unknown", tokens: canonTokens(song),
+  tracks: canonTracks(song), papers: song.papers.map((p) => ({ id: p.id, name: p.name })), parts: song.parts.map((p) => p.id),   // 0.5.0 起：所有纸 × 声部
   role: { name: role.name, sound: role.sound, active: role.active, candidates: role.candidates.map((c) => c.id) },
   mics: studio.mics.map((m) => m.id),
 };
