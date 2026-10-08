@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.4.8-2026-10-07";
+var APP_VERSION = "v0.4.9-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3129,7 +3129,6 @@ var Pad = class {
    *  · 只是点一下（没滑）= 松手时展开滚轮（drum.ts）点选 / 原生滚动。 */
   knobDown(b, e) {
     const knob = b.dataset.knob;
-    if (knob === "more" && b.closest(".pad-panel")?.classList.contains("is-locked")) return;
     if (knob === "more" || knob === "key" && this.host.state().sel) {
       this.mode = knob === "more" ? "more" : "transpose";
       this.render();
@@ -7355,7 +7354,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "4422f7fcb841", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "a567b52e7fe6", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
   embedSoftLimit = n2;
 }, synth };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
@@ -8126,4 +8125,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-d5820e288bcb.mjs.map
+//# sourceMappingURL=moonsinger-52b03f28ad7c.mjs.map
