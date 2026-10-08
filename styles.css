@@ -253,7 +253,7 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .credits.empty { fill: var(--muted); opacity: .7; }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
 /* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
-.pad-tools.knobs { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--knob) var(--knob); }   /* 1= / 长短 / 音域 分宽度；收起、⋯ = 方块 */
+.pad-tools.knobs { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--knob) var(--knob) var(--knob); }   /* 1= / 长短 / 音域 分宽度；弹、收起、⋯ = 方块（2026-10-08 Opus：加「弹」时漏加一列，「⋯」被挤到第二排） */
 .pad-tools .btn.hide-pad { height: var(--knob); font-size: 13px; color: var(--muted); padding: 0; }
 .pad-tools .btn.impro-pad { height: var(--knob); font-size: 15px; font-weight: 600; padding: 0; }   /* 弹（只响不写）：收起左边 */
 .pad-panel.is-locked .pad-tools .btn.impro-pad { pointer-events: none; }   /* 找人视图里一直是弹 */
