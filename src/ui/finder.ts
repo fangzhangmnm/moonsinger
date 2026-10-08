@@ -14,6 +14,7 @@ export interface FinderHost {
   close(): void;
   togglePad(): void;                                                 // 顶条「键盘」：开 / 关试听键盘（user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）
 }
+const HINT = "点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「上场」。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。";
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export class Finder {
@@ -25,6 +26,7 @@ export class Finder {
                                             // 记组：按曲风排时同一件乐器在好几个组里都有，只记概念 = 每个组里的它都展开、滚去第一个（user 2026-10-08「在一个category里面选择一个乐器，会跳到第一个出现这个乐器的category」）
   private selected = "";                    // 试听台上的提供者（`${概念 id}|${bank}:${program}` / `${概念 id}|voice`）
   private loading: Promise<void> | null = null;
+  private playOnly = false;                 // 从歌库进的 = 只弹着玩：不出「上场」，返回回歌库
   private host: FinderHost;
   constructor(parent: HTMLElement, host: FinderHost) {
     this.host = host;
@@ -33,7 +35,7 @@ export class Finder {
       `<input class="finder-q" type="search" placeholder="搜乐器（中 / 英 / 日）" spellcheck="false" autocomplete="off" />` +
       `<select class="finder-sort">${(Object.keys(SORT_LABEL) as SortMode[]).map((m) => `<option value="${m}">${SORT_LABEL[m]}</option>`).join("")}</select>` +
       `<button class="btn finder-pad" data-v="pad" title="试听键盘：开 / 关"><svg class="ico"><use href="#grid"/></svg><span>键盘</span></button></div>` +
-      `<div class="finder-hint">点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「上场」。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。</div>` +
+      `<div class="finder-hint">${HINT}</div>` +
       `<div class="finder-jump" hidden></div>` +
       `<div class="finder-list"><div class="finder-empty">加载目录…</div></div>`;
     parent.append(this.el);   // 位置由 #stage 的 grid 命名区域钉死（.finder 占 main、pad 占 pad），和节点顺序无关（user「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）
@@ -47,9 +49,11 @@ export class Finder {
   get isOpen(): boolean { return !this.el.hidden; }
   /** 顶条「键盘」钮亮不亮（宿主在键盘开 / 关时告诉它）。 */
   setPadShown(on: boolean): void { this.el.querySelector(".finder-pad")?.classList.toggle("is-on", on); }
-  async show(): Promise<void> {
-    this.el.hidden = false;
-    this.el.querySelector(".finder-title")!.textContent = `找人给「${this.host.roleName()}」`;
+  async show(o: { playOnly?: boolean } = {}): Promise<void> {
+    this.el.hidden = false; this.playOnly = !!o.playOnly;
+    this.el.querySelector(".finder-title")!.textContent = this.playOnly ? "乐器目录（弹着玩）" : `找人给「${this.host.roleName()}」`;
+    this.el.querySelector('[data-v="back"]')!.textContent = this.playOnly ? "← 歌库" : "← 谱";
+    this.el.querySelector(".finder-hint")!.textContent = this.playOnly ? "点一件乐器 → 挑谁来演 → 用键盘弹着玩。要给歌里的声部选乐器：开一首歌，点谱前面的声部名。" : HINT;
     this.el.querySelector<HTMLSelectElement>(".finder-sort")!.value = this.mode;
     if (!this.cat) {
       this.loading ??= (async () => {
@@ -147,7 +151,7 @@ export class Finder {
       const provs = providersOf(cat, c), pitched = c.kind === "voice";
       // 平替弱化显示（user「平替换的ui也需要弄出区别」「也许需要弱化显示」）：虚线框、灰字、「顶替」标
       const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">顶替</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
-        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}<button class="btn primary" data-v="cast">上场</button></div></div>`;
+        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast">上场</button>`}</div></div>`;
       body = `<div class="inst-prov">` +
         provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? `鼓件 · ${esc(p.gmName)}（Standard 鼓组的 ${p.note} 号键）` : p.bank === 128 ? `鼓组 · ${esc(p.gmName)}` : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? `顶替${p.basis === "official" ? "（GM 原文认可）" : p.basis === "lineage" ? "（前身）" : p.basis === "imitation" ? "（仿声）" : p.basis === "family" ? "（同类）" : "（只是同名）"}${p.reason ? `：${esc(p.reason)}` : ""}` : "", true, p.kind === "substitute")).join("") +
         (pitched ? prov(`${c.id}|voice`, "月读", "唱歌词；没写歌词的音按「哼的字」唱", false) : "") +

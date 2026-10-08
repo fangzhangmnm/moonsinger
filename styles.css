@@ -360,6 +360,8 @@ button, input, select { font: inherit; color: inherit; }
 .finder-title { font-weight: 600; white-space: nowrap; }
 .finder-q { flex: 1; min-width: 80px; height: 32px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; font-size: 14px; -webkit-user-select: text; user-select: text; }
 .finder-sort { height: 32px; border: 1px solid var(--line); border-radius: 7px; background: #fff; font-size: 13px; max-width: 42%; }
+/* 从歌库进的乐器目录（只弹着玩）：舞台整层盖到歌库上面（歌库 = --z-overlay 的整屏） */
+body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(--z-overlay) + 1); background: var(--bg); padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
 .finder-pad { flex: none; display: inline-flex; align-items: center; gap: 4px; }   /* 试听键盘开关（收起了也叫得回来） */
 @media (max-width: 560px) { .finder-pad span, .finder-title { display: none; } }
 .finder-hint { flex: none; padding: 6px 12px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
