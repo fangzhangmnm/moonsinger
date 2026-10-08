@@ -11,6 +11,7 @@
 import { midiOf } from "./pitch.ts";
 import { type Token, type Hum, type TempoMap, TPQ, effectivePitch, isTimed, timeline, artOf } from "./song.ts";
 import { MELISMA_MARK, ELISION } from "./lyrics.ts";
+import { SING_MARKS, type SingMark } from "../format/performance.ts";
 
 export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean; hyph?: boolean; before?: "^" | "v" | "O" }   // before = 这个字前面的记号（唱法核心：v = 换一口气，从前一个音末尾偷时间）   // hyph = 英文：这个词没完（下一条接着拼）   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
 export type SingLang = "ja" | "zh" | "en";
@@ -21,26 +22,25 @@ export interface LabScore { SCORE: LabEntry[]; TEXT: string; TEMPO_QUARTER: numb
 export const HUM_SYLLABLE: Record<Hum, Record<SingLang, string>> = { la: { ja: "ら", zh: "啦", en: "la" }, n: { ja: "ん", zh: "嗯", en: "hum" }, u: { ja: "う", zh: "呜", en: "ooh" }, o: { ja: "お", zh: "哦", en: "oh" }, a: { ja: "あ", zh: "啊", en: "ah" } };
 
 /** tokens = 一个声部（压平后的一串）；tempoMap = 第一个声部的速度表（这个声部不是第一个时给，自己串里的速度记号不算数）。 */
-export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap): LabScore {
+export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap, sing: Record<string, SingMark | null> = SING_MARKS): LabScore {
   const eighth = TPQ / 2, tl = timeline(tokens, tempoMap), base = tl[0]?.bpm ?? 90;
   const bpmOf = new Map(tl.map((x) => [x.index, x.bpm]));
   const out: LabEntry[] = [];
-  // 呼吸（2026-10-08，user 拍「月读在那儿换气」）：挂了 breath 的音 → 下一个字前面一个「v」（唱法核心从这个音末尾偷一口气的空当）
-  let breathNext = false;
-  // 跳音（2026-10-08，user「月读的跳音效果很差，不应该是切音频，而是看一下语音引擎后段里面她认什么修饰符号」「跳音就是顿一下」）：
-  //   唱法核心认的「^」= 下一个字前面顿一下（从这个音尾巴偷一小段静音，不换气）；同一处又有呼吸 = 按呼吸（v 本来就带一个空当）
-  //   重音 / 强音也顿（user「嗯重音也顿」）：这个字自己前面「^」，音头干净；呼吸在同一处 = 按呼吸
-  let liftNext = false, liftThis = false;
-  const push = (e: LabEntry) => { if (breathNext) e.before = "v"; else if (liftNext || liftThis) e.before = "^"; breathNext = liftNext = liftThis = false; out.push(e); };
+  // 记号 → 唱法核心认的字前记号（v = 换气 / O = 大口换气 / ^ = 顿一下不换气）：怎么对应是这位演奏者自己的配置（候选 sing，by value；没写 = SING_MARKS），
+  //   不写死在这里（2026-10-08 user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」；「跳音就是顿一下」「嗯重音也顿」「月读在那儿换气」）。
+  //   at = this：这个字自己前面；at = next：下一个字前面。同一个字前面几个记号撞了：换气（v / O 本来就带空当）优先于 ^。
+  //   拖着的同一个字（连音线 / 拖腔）前面放不了；跳到「下一个字」的那种，后面紧跟着的还是同一个字 = 放不了（顿不开）。
+  const pick = (a: "^" | "v" | "O" | null, b: "^" | "v" | "O") => (!a ? b : a === "^" ? b : a);
+  let nextMark: "^" | "v" | "O" | null = null, thisMark: "^" | "v" | "O" | null = null;
+  const push = (e: LabEntry) => { const m = thisMark && nextMark ? pick(thisMark, nextMark) : thisMark ?? nextMark; if (m) e.before = m; nextMark = thisMark = null; out.push(e); };
   const nextTimed = (i: number) => { for (let j = i + 1; j < tokens.length; j++) { const u = tokens[j]; if (isTimed(u)) return u; } return null; };
   tokens.forEach((t, i) => {
     if (!isTimed(t)) return;
-    liftThis = t.kind === "note" && !t.tie && t.lyric !== MELISMA_MARK && (artOf(t).includes("accent") || artOf(t).includes("marcato"));   // 拖着的同一个字顿不了
-    one(t, i); liftThis = false;
-    if (t.kind === "note" && artOf(t).includes("breath")) breathNext = true;
-    if (t.kind === "note" && artOf(t).includes("staccato")) {   // 后面还是同一个字（连音线 / 拖腔）= 顿不了
-      const nx = nextTimed(i); if (!(nx?.kind === "note" && (nx.tie || nx.lyric === MELISMA_MARK))) liftNext = true;
-    }
+    const arts = t.kind === "note" ? artOf(t) : [], held = (u: Token | null) => u?.kind === "note" && (u.tie || u.lyric === MELISMA_MARK);
+    thisMark = null;
+    if (t.kind === "note" && !held(t)) for (const a of arts) { const s = sing[a]; if (s && s.at === "this") thisMark = pick(thisMark, s.mark); }
+    one(t, i); thisMark = null;
+    if (t.kind === "note" && !held(nextTimed(i))) for (const a of arts) { const s = sing[a]; if (s && s.at === "next") nextMark = pick(nextMark, s.mark); }
   });
   function one(t: Token & { dur: number }, i: number): void {
     const len = (t.dur / eighth) * (base / bpmOf.get(i)!);

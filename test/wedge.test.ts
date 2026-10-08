@@ -2,8 +2,9 @@
 // user「mp mf 大于小于号这种，可以preliminary的控制力度」「力度就是velocity」。终点 = 被连到的那个音前面写的力度记号，没写 = 走一档；过渡完停在那儿。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, select, tr, toggleWedgeSel, toggleWedgeBefore, wedgeStateSel, type NoteTok, type Token, type EditorState } from "../src/score/song.ts";
-import { dynLevels, noteVelocities, gainSegments, WEDGE_STEP_VEL } from "../src/score/perform.ts";
-import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION } from "../src/format/performance.ts";
+import { dynLevels, noteVelocities, gainSegments } from "../src/score/perform.ts";
+import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
+const WEDGE_STEP_VEL = MARK_DEFAULTS.wedgeStepVel;
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { apply } from "../src/score/commands.ts";
 
@@ -50,10 +51,10 @@ describe("渐强渐弱：力度怎么过渡（dynLevels）", () => {
   it("力度（SoundFont）= 每个音按音头取；dB 那一路在一个音里面也走（月读一个长音能渐强）", () => {
     const toks = cresc("f"), V = noteVelocities(toks, undefined, sv, 80 / 127), [a, b, c] = noteIdx(toks);
     eq(Math.round(V.get(a)! * 127), 64); eq(Math.round(V.get(b)! * 127), 80); eq(Math.round(V.get(c)! * 127), 96);
-    const { dynamicsVel: _v, ...dbSpec } = sv, g = gainSegments(toks, undefined, dbSpec, true)!;
+    const { dynamicsVel: _v, ...dbSpec } = sv, g = gainSegments(toks, undefined, dbSpec)!;
     const inA = g.filter((x) => x.t1 <= 0.67 && x.dB > -100).map((x) => x.dB);   // 90 bpm 一拍 0.667 s：第一个音里面
     assert(inA.length > 1 && inA[inA.length - 1] > inA[0], "第一个音里面 dB 往上走");
-    eq(gainSegments(toks, undefined, sv, true), null, "有力度表 = 音量曲线不再管力度（不双算）");
+    eq(gainSegments(toks, undefined, sv), null, "有力度表 = 音量曲线不再管力度（不双算）");
   });
 });
 

@@ -68,10 +68,16 @@
         {
           "articulation": {
             "accentDb": "number",
+            "accentSec": "number",
+            "breathSec": "number",
+            "breathShare": "number",
             "gapSec": "number",
+            "gapShare": "number",
             "marcatoDb": "number",
             "staccatoGate": "number",
-            "tenutoGate": "number"
+            "tenutoGate": "number",
+            "wedgeStepDb": "number",
+            "wedgeStepVel": "number"
           },
           "calibrationDb": "number",
           "chain": [],
@@ -108,6 +114,24 @@
             }
           },
           "name": "string",
+          "sing": {
+            "accent": {
+              "at": "string",
+              "mark": "string"
+            },
+            "breath": {
+              "at": "string",
+              "mark": "string"
+            },
+            "marcato": {
+              "at": "string",
+              "mark": "string"
+            },
+            "staccato": {
+              "at": "string",
+              "mark": "string"
+            }
+          },
           "spec": {
             "doc": "string",
             "kind": "string",

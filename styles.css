@@ -631,3 +631,10 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .ctx-menu .ctx-dyn .ctx-chip { min-width: 34px; padding: 0 4px; }
 .ctx-menu .ctx-dyn .ctx-chip .smufl { font-family: "Bravura"; font-size: 24px; line-height: 1; position: relative; top: 5px; }
 .ctx-menu .ctx-chip.is-on { background: var(--accent-soft); border-color: var(--accent); }
+/* 乐器页「记号怎么演」：这位 by value 的解读表（只读） */
+.ip-marks { margin-top: 10px; font-size: 13px; }
+.ip-marks summary { cursor: pointer; color: var(--muted); }
+.ip-marks table { border-collapse: collapse; margin-top: 6px; }
+.ip-marks th { text-align: left; font-weight: 500; padding: 3px 12px 3px 0; white-space: nowrap; color: var(--ink); vertical-align: top; }
+.ip-marks td { padding: 3px 0; color: var(--ink); }
+.ip-marks tr.ign th, .ip-marks tr.ign td { color: var(--muted); }

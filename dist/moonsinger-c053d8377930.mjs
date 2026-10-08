@@ -1529,10 +1529,10 @@ var init_upng_esm = __esm({
               } else if (L2 == 256) {
                 break;
               } else {
-                var M2 = N2 + L2 - 254;
+                var M3 = N2 + L2 - 254;
                 if (L2 > 264) {
                   var z2 = D2.B[L2 - 257];
-                  M2 = N2 + (z2 >>> 3) + F2(o10, x2, z2 & 7);
+                  M3 = N2 + (z2 >>> 3) + F2(o10, x2, z2 & 7);
                   x2 += z2 & 7;
                 }
                 var e10 = J2[w2(o10, x2) & k2];
@@ -1540,13 +1540,13 @@ var init_upng_esm = __esm({
                 var E2 = e10 >>> 4, c10 = D2.h[E2], q2 = (c10 >>> 4) + s10(o10, x2, c10 & 15);
                 x2 += c10 & 15;
                 if (A2) j2 = H2(j2, N2 + (1 << 17));
-                while (N2 < M2) {
+                while (N2 < M3) {
                   j2[N2] = j2[N2++ - q2];
                   j2[N2] = j2[N2++ - q2];
                   j2[N2] = j2[N2++ - q2];
                   j2[N2] = j2[N2++ - q2];
                 }
-                N2 = M2;
+                N2 = M3;
               }
             }
           }
@@ -1834,7 +1834,7 @@ var init_upng_esm = __esm({
         }
         var tb32 = new Uint32Array(tb2.buffer);
         var err2 = new Int16Array(w2 * h2 * 4);
-        var S2 = 4, M2 = [
+        var S2 = 4, M3 = [
           0,
           8,
           2,
@@ -1852,14 +1852,14 @@ var init_upng_esm = __esm({
           13,
           5
         ];
-        for (var i10 = 0; i10 < M2.length; i10++) M2[i10] = 255 * (-0.5 + (M2[i10] + 0.5) / (S2 * S2));
+        for (var i10 = 0; i10 < M3.length; i10++) M3[i10] = 255 * (-0.5 + (M3[i10] + 0.5) / (S2 * S2));
         for (var y2 = 0; y2 < h2; y2++) {
           for (var x2 = 0; x2 < w2; x2++) {
             var i10 = (y2 * w2 + x2) * 4;
             var cc2;
             if (MTD != 2) cc2 = [N2(sb2[i10] + err2[i10]), N2(sb2[i10 + 1] + err2[i10 + 1]), N2(sb2[i10 + 2] + err2[i10 + 2]), N2(sb2[i10 + 3] + err2[i10 + 3])];
             else {
-              var ce2 = M2[(y2 & S2 - 1) * S2 + (x2 & S2 - 1)];
+              var ce2 = M3[(y2 & S2 - 1) * S2 + (x2 & S2 - 1)];
               cc2 = [N2(sb2[i10] + ce2), N2(sb2[i10 + 1] + ce2), N2(sb2[i10 + 2] + ce2), N2(sb2[i10 + 3] + ce2)];
             }
             var ni2 = 0, nd2 = 16777215;
@@ -2553,25 +2553,25 @@ var init_upng_esm = __esm({
           R2[14] - m3 * m22 * iN2,
           R2[15] - m3 * m3 * iN2
         ];
-        var A2 = Rj, M2 = M4;
+        var A2 = Rj, M3 = M4;
         var b3 = [0.6180339887, 0.3819660113, 0.7320508076, 0.4142135624], mi = 0, tmi = 0;
         if (N3 != 0)
           for (var i10 = 0; i10 < 16; i10++) {
-            b3 = M2.multVec(A2, b3);
-            tmi = Math.sqrt(M2.dot(b3, b3));
-            b3 = M2.sml(1 / tmi, b3);
+            b3 = M3.multVec(A2, b3);
+            tmi = Math.sqrt(M3.dot(b3, b3));
+            b3 = M3.sml(1 / tmi, b3);
             if (i10 != 0 && Math.abs(tmi - mi) < 1e-9) break;
             mi = tmi;
           }
         var q2 = [m0 * iN2, m1 * iN2, m22 * iN2, m3 * iN2];
-        var eMq255 = M2.dot(M2.sml(255, q2), b3);
+        var eMq255 = M3.dot(M3.sml(255, q2), b3);
         return {
           Cov: Rj,
           q: q2,
           e: b3,
           L: mi,
           eMq255,
-          eMq: M2.dot(b3, q2),
+          eMq: M3.dot(b3, q2),
           rgba: (Math.round(255 * q2[3]) << 24 | Math.round(255 * q2[2]) << 16 | Math.round(255 * q2[1]) << 8 | Math.round(255 * q2[0]) << 0) >>> 0
         };
       }
@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.4-2026-10-08";
+var APP_VERSION = "v0.7.5-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6844,12 +6844,12 @@ var UNIT_NAME = ["\u4E09\u5341\u4E8C\u5206", "\u5341\u516D\u5206", "\u516B\u5206
 var KEY_NAMES = KEY_LABEL;
 var KEY_CIRCLE = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
 function tupletMark(n10, unit) {
-  const S2 = 7, M2 = 1.5, HY = 25, TOP = 11.5, hx = (i10) => M2 + 3 + i10 * S2, sx2 = (i10) => hx(i10) + 2.35;
-  const W3 = hx(n10 - 1) + 3 + M2, hollow = unit >= 4, beams = Math.max(0, 3 - unit), cx2 = W3 / 2, by = 4.5;
+  const S2 = 7, M3 = 1.5, HY = 25, TOP = 11.5, hx = (i10) => M3 + 3 + i10 * S2, sx2 = (i10) => hx(i10) + 2.35;
+  const W3 = hx(n10 - 1) + 3 + M3, hollow = unit >= 4, beams = Math.max(0, 3 - unit), cx2 = W3 / 2, by = 4.5;
   const heads = Array.from({ length: n10 }, (_2, i10) => `<ellipse class="${hollow ? "ho" : "fi"}" cx="${hx(i10)}" cy="${HY}" rx="${unit === 5 ? 3 : 2.6}" ry="1.85" transform="rotate(-20 ${hx(i10)} ${HY})"/>`).join("");
   const stems = unit <= 4 ? Array.from({ length: n10 }, (_2, i10) => `<line x1="${sx2(i10)}" y1="${HY - 0.5}" x2="${sx2(i10)}" y2="${TOP}"/>`).join("") : "";
   const beam = Array.from({ length: beams }, (_2, k2) => `<rect x="${sx2(0) - 0.45}" y="${TOP + k2 * 3}" width="${sx2(n10 - 1) - sx2(0) + 0.9}" height="1.8"/>`).join("");
-  return `<svg class="tupsvg" viewBox="0 0 ${W3} 28.5" width="${(W3 * 32 / 28.5).toFixed(1)}" height="32" aria-label="${n10} \u8FDE\u97F3"><path class="br" d="M${M2} ${by + 2.5}V${by}H${cx2 - 3.6}M${cx2 + 3.6} ${by}H${W3 - M2}V${by + 2.5}"/><text x="${cx2}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(59520 + n10)}</text>${stems}${beam}${heads}</svg>`;
+  return `<svg class="tupsvg" viewBox="0 0 ${W3} 28.5" width="${(W3 * 32 / 28.5).toFixed(1)}" height="32" aria-label="${n10} \u8FDE\u97F3"><path class="br" d="M${M3} ${by + 2.5}V${by}H${cx2 - 3.6}M${cx2 + 3.6} ${by}H${W3 - M3}V${by + 2.5}"/><text x="${cx2}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(59520 + n10)}</text>${stems}${beam}${heads}</svg>`;
 }
 var keyLabel = (f2, sc2) => `<span class="kk">1=${KEY_LABEL[f2] ?? "?"}</span><small>${sc2.name}</small>`;
 var pretty = (p2) => pitchName(p2).replace(/#/g, "\u266F").replace(/b(?=\d)|b(?=b)/g, "\u266D");
@@ -7509,18 +7509,68 @@ var Pad = class {
   }
 };
 
+// src/singer/packs.gen.ts
+var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
+var PACKS = {
+  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
+  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
+  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
+  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
+  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
+};
+var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
+
+// src/format/performance.ts
+var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
+var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
+var MARK_DEFAULTS = {
+  accentSec: 0.12,
+  // 重音 / 强音：音头加重持续多久（秒；月读 / 元音版 / 旧乐器的 dB 那一路）
+  breathSec: 0.16,
+  breathShare: 0.25,
+  // 呼吸：前一个音收短多少（秒），最多占这个音的几分之几（元音版 / 乐器）
+  gapShare: 0.25,
+  // 连断底色的缝最多吃掉这个音的几分之几
+  wedgeStepDb: 6,
+  wedgeStepVel: 16
+  // 渐强渐弱后面没写力度记号 = 走一档：dB 那一路 / 力度那一路各走多少
+};
+var SING_MARKS = {
+  staccato: { mark: "^", at: "next" },
+  accent: { mark: "^", at: "this" },
+  marcato: { mark: "^", at: "this" },
+  breath: { mark: "v", at: "next" }
+};
+var DYNAMICS_VEL = { pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112 };
+var ACCENT_VEL = 16;
+var MARCATO_VEL = 28;
+var MARCATO_DB = 7;
+var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
+var SOUNDFONT_CALIBRATION_DB = -6;
+var DEFAULT_CALIBRATION_DB = -6;
+var TSUKUYOMI_DEFAULTS = {};
+var REPO = "https://github.com/fangzhangmnm/moonsinger";
+var TSUKUYOMI_CREDIT = {
+  attribution: [CREDIT.credit, ...CREDIT.attribution],
+  license: { name: "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09", url: CREDIT.termsUrl, text: CREDIT.terms }
+};
+var TSUKUYOMI_SPEC = { kind: "ours", doc: "#tsukuyomi", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sing-core.mjs" } };
+var VOWEL_SAMPLER_SPEC = { kind: "ours", doc: "#vowel-sampler", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sampler.ts" } };
+var SOUNDFONT_SPEC = { kind: "standard", name: "SoundFont", version: "2.04" };
+var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
+
 // src/score/lab-score.ts
 var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
-function toLabScore(tokens, hum, lang = "ja", tempoMap) {
+function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS) {
   const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2[0]?.bpm ?? 90;
   const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
   const out = [];
-  let breathNext = false;
-  let liftNext = false, liftThis = false;
+  const pick = (a10, b3) => !a10 ? b3 : a10 === "^" ? b3 : a10;
+  let nextMark = null, thisMark = null;
   const push = (e10) => {
-    if (breathNext) e10.before = "v";
-    else if (liftNext || liftThis) e10.before = "^";
-    breathNext = liftNext = liftThis = false;
+    const m2 = thisMark && nextMark ? pick(thisMark, nextMark) : thisMark ?? nextMark;
+    if (m2) e10.before = m2;
+    nextMark = thisMark = null;
     out.push(e10);
   };
   const nextTimed = (i10) => {
@@ -7532,13 +7582,17 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap) {
   };
   tokens.forEach((t10, i10) => {
     if (!isTimed(t10)) return;
-    liftThis = t10.kind === "note" && !t10.tie && t10.lyric !== MELISMA_MARK && (artOf(t10).includes("accent") || artOf(t10).includes("marcato"));
+    const arts = t10.kind === "note" ? artOf(t10) : [], held = (u2) => u2?.kind === "note" && (u2.tie || u2.lyric === MELISMA_MARK);
+    thisMark = null;
+    if (t10.kind === "note" && !held(t10)) for (const a10 of arts) {
+      const s10 = sing[a10];
+      if (s10 && s10.at === "this") thisMark = pick(thisMark, s10.mark);
+    }
     one(t10, i10);
-    liftThis = false;
-    if (t10.kind === "note" && artOf(t10).includes("breath")) breathNext = true;
-    if (t10.kind === "note" && artOf(t10).includes("staccato")) {
-      const nx2 = nextTimed(i10);
-      if (!(nx2?.kind === "note" && (nx2.tie || nx2.lyric === MELISMA_MARK))) liftNext = true;
+    thisMark = null;
+    if (t10.kind === "note" && !held(nextTimed(i10))) for (const a10 of arts) {
+      const s10 = sing[a10];
+      if (s10 && s10.at === "next") nextMark = pick(nextMark, s10.mark);
     }
   });
   function one(t10, i10) {
@@ -15965,38 +16019,6 @@ var Singer = class {
   // 全 app 共用一个（audio.ts）
 };
 
-// src/singer/packs.gen.ts
-var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
-var PACKS = {
-  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
-  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
-  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
-  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
-  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
-};
-var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
-
-// src/format/performance.ts
-var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
-var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
-var DYNAMICS_VEL = { pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112 };
-var ACCENT_VEL = 16;
-var MARCATO_VEL = 28;
-var MARCATO_DB = 7;
-var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
-var SOUNDFONT_CALIBRATION_DB = -6;
-var DEFAULT_CALIBRATION_DB = -6;
-var TSUKUYOMI_DEFAULTS = {};
-var REPO = "https://github.com/fangzhangmnm/moonsinger";
-var TSUKUYOMI_CREDIT = {
-  attribution: [CREDIT.credit, ...CREDIT.attribution],
-  license: { name: "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09", url: CREDIT.termsUrl, text: CREDIT.terms }
-};
-var TSUKUYOMI_SPEC = { kind: "ours", doc: "#tsukuyomi", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sing-core.mjs" } };
-var VOWEL_SAMPLER_SPEC = { kind: "ours", doc: "#vowel-sampler", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sampler.ts" } };
-var SOUNDFONT_SPEC = { kind: "standard", name: "SoundFont", version: "2.04" };
-var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
-
 // src/export/mp3.ts
 var MP3_QUALITY = {
   standard: { label: "\u6807\u51C6", note: "\u7ACB\u4F53\u58F0 128k\uFF0C\u7EA6 1 MB / \u5206\u949F", stereo: true, kbps: 128 },
@@ -17337,10 +17359,10 @@ var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], t
 var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
 var CANDIDATE_ID = { full: "c1", light: "c2" };
-var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB } });
+var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
 function defaultRole(hum, id2) {
   return { version: FORMAT.lounge, id: id2, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
-    { id: CANDIDATE_ID.full, name: "\u6708\u8BFB", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
+    { id: CANDIDATE_ID.full, name: "\u6708\u8BFB", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
     { id: CANDIDATE_ID.light, name: "\u6708\u8BFB\uFF08\u5143\u97F3\uFF09", instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) }
   ] };
 }
@@ -17553,7 +17575,7 @@ function withSf2Candidate(extras, role, c10, hum) {
   const n10 = Math.max(0, ...list.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
   const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
   const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, ...c10.sfx ? { sfx: { ...c10.sfx } } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
-  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r10.candidates = list;
   r10.active = id2;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 }, sounds: path ? { ...extras.sounds, [path]: c10.subset } : extras.sounds };
@@ -17644,6 +17666,13 @@ function activePerfSpec(extras, role) {
     marcatoDb: num(a10.marcatoDb, MARCATO_DB),
     accentVel: num(a10.accentVel, ACCENT_VEL),
     marcatoVel: num(a10.marcatoVel, MARCATO_VEL),
+    accentSec: Math.max(0, num(a10.accentSec, MARK_DEFAULTS.accentSec)),
+    breathSec: Math.max(0, num(a10.breathSec, MARK_DEFAULTS.breathSec)),
+    breathShare: Math.max(0, Math.min(1, num(a10.breathShare, MARK_DEFAULTS.breathShare))),
+    gapShare: Math.max(0, Math.min(1, num(a10.gapShare, MARK_DEFAULTS.gapShare))),
+    wedgeStepDb: num(a10.wedgeStepDb, MARK_DEFAULTS.wedgeStepDb),
+    wedgeStepVel: num(a10.wedgeStepVel, MARK_DEFAULTS.wedgeStepVel),
+    sing: { ...SING_MARKS, ...c10?.sing ?? {} },
     dynamicsVel: c10?.dynamicsVel ? Object.fromEntries(Object.keys(DYNAMICS_VEL).map((k2) => [k2, Math.max(1, Math.min(127, num(c10.dynamicsVel[k2], DYNAMICS_VEL[k2])))])) : null
   };
 }
@@ -17994,14 +18023,12 @@ function mixTracks(tracks, sr2, tailSec = 0.3) {
 
 // src/score/perform.ts
 var DEFAULT_DYN_KEY = DEFAULT_DYN;
-var ACCENT_SEC = 0.12;
-var CONS_ROOM = 0.06;
-var MIN_GATE = 0.04;
-function gainSegments(tokens, map, spec, gateStaccato) {
+var M = MARK_DEFAULTS;
+function gainSegments(tokens, map, spec) {
   const segs = [];
   let any = false;
   const vel = !!spec.dynamicsVel;
-  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, WEDGE_STEP_DB);
+  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb);
   const ramp = (a10, b3, s02, s12) => {
     const n10 = Math.max(1, Math.min(32, Math.ceil((s12 - s02) / 0.03)));
     for (let k2 = 0; k2 < n10; k2++) segs.push({ t0: s02 + (s12 - s02) * k2 / n10, t1: s02 + (s12 - s02) * (k2 + 1) / n10, dB: a10 + (b3 - a10) * (k2 + 0.5) / n10 });
@@ -18018,19 +18045,10 @@ function gainSegments(tokens, map, spec, gateStaccato) {
     let cur = t02;
     const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : 0;
     if (boost) {
-      const e10 = Math.min(t12, t02 + ACCENT_SEC);
+      const e10 = Math.min(t12, t02 + (spec.accentSec ?? M.accentSec));
       segs.push({ t0: t02, t1: e10, dB: base3 + boost });
       cur = e10;
       any = true;
-    }
-    if (gateStaccato && art.includes("staccato")) {
-      const g3 = Math.max(cur, t02 + (t12 - t02) * spec.staccatoGate), off1 = t12 - CONS_ROOM;
-      if (off1 - g3 > MIN_GATE) {
-        if (g3 > cur) segs.push({ t0: cur, t1: g3, dB: base3 });
-        segs.push({ t0: g3, t1: off1, dB: -Infinity }, { t0: off1, t1: t12, dB: base3 });
-        any = true;
-        continue;
-      }
     }
     if (t12 > cur) {
       if (baseEnd !== base3) ramp(base3 + (baseEnd - base3) * (cur - t02) / Math.max(1e-9, t12 - t02), baseEnd, cur, t12);
@@ -18042,12 +18060,10 @@ function gainSegments(tokens, map, spec, gateStaccato) {
 function noteEnd(t02, t12, art, o10, slur = false) {
   let end = t12;
   if (art.includes("staccato")) end = t02 + (t12 - t02) * o10.staccatoGate;
-  else if (!slur && !art.includes("tenuto") && (o10.gapSec ?? 0) > 0) end = t12 - Math.min(o10.gapSec, 0.25 * (t12 - t02));
-  if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(0.16, 0.25 * (t12 - t02)));
+  else if (!slur && !art.includes("tenuto") && (o10.gapSec ?? 0) > 0) end = t12 - Math.min(o10.gapSec, (o10.gapShare ?? M.gapShare) * (t12 - t02));
+  if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(o10.breathSec ?? M.breathSec, (o10.breathShare ?? M.breathShare) * (t12 - t02)));
   return end;
 }
-var WEDGE_STEP_VEL = 16;
-var WEDGE_STEP_DB = 6;
 function dynLevels(tokens, map, table, def, step) {
   const out = /* @__PURE__ */ new Map(), tl2 = timeline(tokens, map), at2 = new Map(tl2.map((x2) => [x2.index, x2]));
   const lo2 = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
@@ -18092,7 +18108,7 @@ function noteVelocities(tokens, map, spec, defaultVel) {
     });
     return out;
   }
-  for (const [i10, l10] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, WEDGE_STEP_VEL)) {
+  for (const [i10, l10] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel)) {
     const t10 = tokens[i10];
     if (t10.kind === "note") out.set(i10, noteVel(l10.at0, artOf(t10), spec));
   }
@@ -18120,7 +18136,7 @@ function whyIgnored(engine, m2) {
   return engine && HONORS[engine]?.includes(m2) ? "gap" : "engine";
 }
 function lightMarks(spec) {
-  return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0 };
+  return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
 }
 
 // src/gm/sound-cache.ts
@@ -19664,7 +19680,7 @@ var R = (e10) => (E(e10) || w(e10)) && w(e10.then) && w(e10.catch);
 var I = Object.prototype.toString;
 var O = (e10) => N(e10) && "NaN" !== e10 && "-" !== e10[0] && "" + parseInt(e10, 10) === e10;
 var P = h(",key,ref,ref_for,ref_key,onVnodeBeforeMount,onVnodeMounted,onVnodeBeforeUpdate,onVnodeUpdated,onVnodeBeforeUnmount,onVnodeUnmounted");
-var M = h("bind,cloak,else-if,else,for,html,if,model,on,once,pre,show,slot,text,memo");
+var M2 = h("bind,cloak,else-if,else,for,html,if,model,on,once,pre,show,slot,text,memo");
 var D = (e10) => {
   let t10 = /* @__PURE__ */ Object.create(null);
   return (n10) => t10[n10] || (t10[n10] = e10(n10));
@@ -21914,7 +21930,7 @@ function iL(e10, t10) {
     else {
       let n12 = e11.el && e11.el._isVueCE ? e11.el : null;
       try {
-        n12 && n12._beginPatch(), M2(e11, t11, i11, l11, s11, o11, a11);
+        n12 && n12._beginPatch(), M3(e11, t11, i11, l11, s11, o11, a11);
       } finally {
         n12 && n12._endPatch();
       }
@@ -21941,7 +21957,7 @@ function iL(e10, t10) {
     }
   }, O2 = (e11, t11, n11, r11, i11, l11, s11, o11, a11 = 0) => {
     for (let c11 = a11; c11 < e11.length; c11++) x2(null, e11[c11] = o11 ? lh(e11[c11]) : lp(e11[c11]), t11, n11, r11, i11, l11, s11, o11);
-  }, M2 = (e11, t11, n11, r11, i11, l11, s11) => {
+  }, M3 = (e11, t11, n11, r11, i11, l11, s11) => {
     let a11, c11 = t11.el = e11.el, { patchFlag: u3, dynamicChildren: d4, dirs: h3 } = t11;
     u3 |= 16 & e11.patchFlag;
     let g3 = e11.props || f, m2 = t11.props || f;
@@ -22688,10 +22704,10 @@ function lR(e10, t10, n10) {
             nd(t13, e12[t13]);
           });
         }
-        function M2(e12, t13) {
+        function M3(e12, t13) {
           T(t13) ? t13.forEach((t14) => e12(t14.bind(n11))) : t13 && e12(t13.bind(n11));
         }
-        if (u2 && r5(u2, e11, "c"), M2(ry, d3), M2(rb, p2), M2(r_, h2), M2(rS, f2), M2(rd, g3), M2(rp, y2), M2(rN, k2), M2(rw, x2), M2(rT, C2), M2(rx, b3), M2(rC, _2), M2(rk, A2), T(R2)) if (R2.length) {
+        if (u2 && r5(u2, e11, "c"), M3(ry, d3), M3(rb, p2), M3(r_, h2), M3(rS, f2), M3(rd, g3), M3(rp, y2), M3(rN, k2), M3(rw, x2), M3(rT, C2), M3(rx, b3), M3(rC, _2), M3(rk, A2), T(R2)) if (R2.length) {
           let t13 = e11.exposed || (e11.exposed = {});
           R2.forEach((e12) => {
             Object.defineProperty(t13, e12, { get: () => n11[e12], set: (t14) => n11[e12] = t14, enumerable: true });
@@ -24840,7 +24856,7 @@ function cM(e10, t10, n10 = e10.props, r10, i10, l10 = false) {
       if (S3) {
         let { props: n12, needRuntime: r11 } = S3(s11, e10, t10);
         l10 || n12.forEach(N2), _3 && i12 && !am(i12) ? T2(o9(n12, a10)) : u2.push(...n12), r11 && (p2.push(s11), A(r11) && cO.set(s11, r11));
-      } else !M(n11) && (p2.push(s11), h2 && (f2 = true));
+      } else !M2(n11) && (p2.push(s11), h2 && (f2 = true));
     }
   }
   if (d3.length ? (T2(), s10 = d3.length > 1 ? an(t10.helper(oj), d3, a10) : d3[0]) : u2.length && (s10 = o9(cD(u2), a10)), x2 ? g3 |= 16 : (y2 && !r10 && (g3 |= 2), _2 && !r10 && (g3 |= 4), k2.length && (g3 |= 8), S2 && (g3 |= 32)), !f2 && (0 === g3 || 32 === g3) && (m2 || C2 || p2.length > 0) && (g3 |= 512), !t10.inSSR && s10) switch (s10.type) {
@@ -26805,7 +26821,7 @@ async function renderPart(part, scope = "view") {
   const song = songIn(scope);
   const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
   if (eng === "tsukuyomi") {
-    const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map);
+    const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);
     if (!score.SCORE.length) return null;
     const opt = humOpt(), key2 = JSON.stringify(["tsukuyomi", score, opt]), had2 = lastRender.get(part.id);
     if (had2?.key === key2) return had2.r;
@@ -26840,7 +26856,7 @@ async function renderPart(part, scope = "view") {
 }
 function partGain(part, scope) {
   const song = songIn(scope), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
-  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), false);
+  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role));
 }
 var audibleParts = () => {
   const solo = st2.song.parts.some((p2) => pv(p2.id).solo);
@@ -27251,7 +27267,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "d4f774821ad3",
+  cssHash: "1ffb5415f62d",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -27413,6 +27429,27 @@ function gsKeyArgs(cat2, bank, program, drumNote) {
   const sk2 = sampleKeyOf(cat2, bank, program);
   if (!sk2) return g3;
   return { note: sk2.key, sfx: { key: sk2.key, ...sk2.midi !== void 0 ? { midi: sk2.midi } : {}, ...sk2.centsPerKey ? { centsPerKey: sk2.centsPerKey } : {} }, ...g3 };
+}
+function marksTableHtml(role, eng) {
+  const sp2 = activePerfSpec(doc.extras, role), ms = (x2) => `${Math.round(x2 * 1e3)} ms`, pct = (x2) => `${Math.round(x2 * 100)}%`, db = (x2) => `${x2 > 0 ? "+" : ""}${x2} dB`;
+  const ign = ignoredArts(eng, sp2.gapSec), gray = (m2) => ign.includes(m2) ? ` class="ign"` : "";
+  const singTxt = (k2) => {
+    const m2 = sp2.sing[k2];
+    return m2 ? `${m2.at === "next" ? "\u4E0B\u4E00\u4E2A\u5B57" : "\u8FD9\u4E2A\u5B57"}\u524D\u300C${m2.mark}\u300D${m2.mark === "^" ? "\uFF08\u987F\u4E00\u4E0B\uFF0C\u4E0D\u6362\u6C14\uFF09" : m2.mark === "v" ? "\uFF08\u6362\u6C14\uFF09" : "\uFF08\u5927\u53E3\u6362\u6C14\uFF09"}` : "\u4E0D\u53D8\u6210\u5531\u6CD5\u8BB0\u53F7";
+  };
+  const vel = !!sp2.dynamicsVel;
+  const rows = [
+    ["\u529B\u5EA6\u8BB0\u53F7", "", vel ? `\u529B\u5EA6\u8868\uFF1A${Object.entries(sp2.dynamicsVel).map(([d3, x2]) => `${d3} ${x2}`).join(" \xB7 ")}` : `\u97F3\u91CF\uFF1A${Object.entries(sp2.dynamicsDb).map(([d3, x2]) => `${d3} ${db(x2)}`).join(" \xB7 ")}`],
+    ["\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9", "", vel ? `\u8D70\u4E00\u6863 = \u529B\u5EA6 ${sp2.wedgeStepVel}` : `\u8D70\u4E00\u6863 = ${db(sp2.wedgeStepDb)}`],
+    ["\u91CD\u97F3", "accent", vel ? `\u529B\u5EA6 +${sp2.accentVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.accentDb)}${eng === "tsukuyomi" ? `\uFF1B${singTxt("accent")}` : ""}`],
+    ["\u5F3A\u97F3", "marcato", vel ? `\u529B\u5EA6 +${sp2.marcatoVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.marcatoDb)}${eng === "tsukuyomi" ? `\uFF1B${singTxt("marcato")}` : ""}`],
+    ["\u8DF3\u97F3", "staccato", eng === "tsukuyomi" ? singTxt("staccato") : `\u5531 / \u5F39 ${pct(sp2.staccatoGate)} \u7684\u957F\u5EA6`],
+    ["\u4FDD\u6301", "tenuto", "\u8FD9\u4E2A\u97F3\u4E0D\u7559\u7F1D"],
+    ["\u8FDE\u7EBF", "slur", "\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\u3001\u4E0D\u7559\u7F1D"],
+    ["\u547C\u5438", "breath", eng === "tsukuyomi" ? singTxt("breath") : `\u524D\u4E00\u4E2A\u97F3\u6536\u77ED ${ms(sp2.breathSec)}\uFF08\u6700\u591A ${pct(sp2.breathShare)}\uFF09`],
+    ["\u97F3\u548C\u97F3\u4E4B\u95F4", "", eng === "tsukuyomi" ? "\u8FDE\u7740\u5531" : `${ms(sp2.gapSec)}\uFF08\u6700\u591A ${pct(sp2.gapShare)}\uFF09`]
+  ];
+  return `<details class="ip-marks"><summary>\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09</summary><table>${rows.map(([k2, m2, v]) => `<tr${gray(m2)}><th>${k2}</th><td>${esc7(v)}${m2 && ign.includes(m2) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</td></tr>`).join("")}</table></details>`;
 }
 function gapDefaultOf(role) {
   const g3 = activeGm(doc.extras, role);
@@ -28174,7 +28211,7 @@ function drawInst() {
     `<b class="ip-val">${tr3 > 0 ? "+" : tr3 < 0 ? "\u2212" : ""}${Math.abs(tr3)} \u534A\u97F3</b><button class="btn" data-v="tr:-12" title="\u4F4E\u4E00\u4E2A\u516B\u5EA6">\u221212</button><button class="btn" data-v="tr:-1" title="\u4F4E\u534A\u97F3">\u22121</button><button class="btn" data-v="tr:1" title="\u9AD8\u534A\u97F3">+1</button><button class="btn" data-v="tr:12" title="\u9AD8\u4E00\u4E2A\u516B\u5EA6">+12</button>${tr3 ? `<button class="btn" data-v="tr:0" title="\u56DE\u5230 0">\u5F52\u96F6</button>` : ""}`,
     "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3"
   ) : "") + (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
-  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc7(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc7(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc7(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div></section></div></div>`;
+  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc7(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc7(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc7(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
   const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
   sel.addEventListener("change", () => {
     const [snd, ...nm2] = sel.value.split("|");
@@ -29492,4 +29529,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-7de4f3ba3db1.mjs.map
+//# sourceMappingURL=moonsinger-c053d8377930.mjs.map

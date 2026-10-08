@@ -15,7 +15,7 @@ import { type Song, type PartDef, type PaperSeg, type Token, flattenPart } from 
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
 import { FORMAT, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
 import { migrate } from "./migrate/index.ts";
-import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
+import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
 export type { Hum, InstrumentV2 };
 const MIMETYPE = "application/vnd.recordare.musicxml";
@@ -46,11 +46,11 @@ export const withThumbnail = (extras: Extras, png: Uint8Array | null): Extras =>
 /** 新歌默认的两个候选：月读完整 / 月读元音版（轻量）。 */
 export const CANDIDATE_ID = { full: "c1", light: "c2" } as const;
 export type Engine = InstrumentV2["engine"];
-const common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [] as unknown[], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB } });   // gapSec / marcatoDb 写明（by value）；迁移出来的旧候选不补
+const common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [] as unknown[], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });   // 记号怎么解读的数全写明（by value）；迁移出来的旧候选不补
 /** 新建角色：从 app 内置预设 by value 拷进歌（契约 §8；之后 app 升级改了预设也不影响这首歌）。 */
 function defaultRole(hum: Hum, id: string): Json {
   return { version: FORMAT.lounge, id, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
-    { id: CANDIDATE_ID.full, name: "月读", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
+    { id: CANDIDATE_ID.full, name: "月读", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
     { id: CANDIDATE_ID.light, name: "月读（元音）", instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) },
   ] };
 }
@@ -254,7 +254,7 @@ export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateAr
   const n = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n}`;
   const embed = c.embed !== false, path = embed ? `${SOUNDS}${c.sha256}.sf2` : null;
   const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), ...(c.sfx ? { sfx: { ...c.sfx } } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
-  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r.candidates = list; r.active = id;
   return { ...extras, lounge: { ...extras.lounge, [role]: r }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };
 }
@@ -331,12 +331,16 @@ export function withUnpacked(extras: Extras, only?: (subsetSha256: string) => bo
 // ── 演奏规格（修的记号怎么出声：上场那位 by value 带着的力度表 + 演奏法；src/score/perform.ts 用；2026-10-08 by Claude Opus 5.5）──
 /** 上场那位的力度表（mf = 0 dB）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（DYNAMICS_DB / ARTICULATION）。 */
 export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number>; staccatoGate: number; accentDb: number; gapSec: number;
-  marcatoDb: number; dynamicsVel: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number> | null; accentVel: number; marcatoVel: number } {
+  marcatoDb: number; dynamicsVel: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number> | null; accentVel: number; marcatoVel: number;
+  accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepDb: number; wedgeStepVel: number; sing: Record<string, SingMark | null> } {
   const c = activeCandidate(extras, role), d = (c?.dynamicsDb ?? {}) as Partial<Record<string, number>>, a = (c?.articulation ?? {}) as Partial<Record<string, number>>;
   const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
   const dynamicsDb = Object.fromEntries((Object.keys(DYNAMICS_DB) as (keyof typeof DYNAMICS_DB)[]).map((k) => [k, num(d[k], DYNAMICS_DB[k])])) as Record<keyof typeof DYNAMICS_DB, number>;
   return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a.accentDb, ARTICULATION.accentDb), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a.gapSec, 0))),
     marcatoDb: num(a.marcatoDb, MARCATO_DB), accentVel: num(a.accentVel, ACCENT_VEL), marcatoVel: num(a.marcatoVel, MARCATO_VEL),
+    accentSec: Math.max(0, num(a.accentSec, MARK_DEFAULTS.accentSec)), breathSec: Math.max(0, num(a.breathSec, MARK_DEFAULTS.breathSec)), breathShare: Math.max(0, Math.min(1, num(a.breathShare, MARK_DEFAULTS.breathShare))),
+    gapShare: Math.max(0, Math.min(1, num(a.gapShare, MARK_DEFAULTS.gapShare))), wedgeStepDb: num(a.wedgeStepDb, MARK_DEFAULTS.wedgeStepDb), wedgeStepVel: num(a.wedgeStepVel, MARK_DEFAULTS.wedgeStepVel),
+    sing: { ...SING_MARKS, ...((c?.sing ?? {}) as Record<string, SingMark | null>) },
     dynamicsVel: c?.dynamicsVel ? (Object.fromEntries((Object.keys(DYNAMICS_VEL) as (keyof typeof DYNAMICS_VEL)[]).map((k) => [k, Math.max(1, Math.min(127, num((c.dynamicsVel as Json)[k], DYNAMICS_VEL[k])))])) as Record<keyof typeof DYNAMICS_VEL, number>) : null };
 }
 /** 连断底色能调到多大（秒）。 */

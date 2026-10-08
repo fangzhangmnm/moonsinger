@@ -8,7 +8,9 @@ import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { toJianpu, fromJianpu } from "../src/score/clipboard.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
-import { gainSegments, noteEnd, ACCENT_SEC } from "../src/score/perform.ts";
+import { gainSegments, noteEnd } from "../src/score/perform.ts";
+import { MARK_DEFAULTS } from "../src/format/performance.ts";
+const ACCENT_SEC = MARK_DEFAULTS.accentSec;
 import { applyGain } from "../src/audio/mix.ts";
 import { DYNAMICS_DB, ARTICULATION } from "../src/format/performance.ts";
 
@@ -134,14 +136,14 @@ describe("修：MusicXML（musicxml.ts）", () => {
 
 describe("修：出声的数（perform.ts / lab-score / mix）", () => {
   it("没有力度 / 重音 = null（旧谱逐样本不变）；只有 mf = null", () => {
-    let st = four(); eq(gainSegments(tr(st), undefined, SPEC, true), null);
-    st = select(st, noteIdx(st)[0], noteIdx(st)[0] + 1); st = setDynSel(st, "mf"); eq(gainSegments(tr(st), undefined, SPEC, true), null);
-    st = toggleArtSel(st, "staccato"); eq(gainSegments(tr(st), undefined, SPEC, false), null, "跳音给乐器 = 截短，不走曲线");
+    let st = four(); eq(gainSegments(tr(st), undefined, SPEC), null);
+    st = select(st, noteIdx(st)[0], noteIdx(st)[0] + 1); st = setDynSel(st, "mf"); eq(gainSegments(tr(st), undefined, SPEC), null);
+    st = toggleArtSel(st, "staccato"); eq(gainSegments(tr(st), undefined, SPEC), null, "跳音给乐器 = 截短，不走曲线");
   });
   it("力度 f = +6 dB；重音 = 音头 ACCENT_SEC 再加 accentDb", () => {
     let st = four(); const [, b] = noteIdx(st);
     st = select(st, b, b + 1); st = setDynSel(st, "f"); st = toggleArtSel(st, "accent");
-    const segs = gainSegments(tr(st), undefined, SPEC, false)!;
+    const segs = gainSegments(tr(st), undefined, SPEC)!;
     eq(segs[0].dB, 0, "第一个音 mf");
     const acc = segs.find((s) => s.dB === DYNAMICS_DB.f + ARTICULATION.accentDb)!;
     assert(!!acc && Math.abs(acc.t1 - acc.t0 - ACCENT_SEC) < 1e-9, "重音段"); eq(segs[segs.length - 1].dB, DYNAMICS_DB.f, "后面的音还是 f");
@@ -161,11 +163,7 @@ describe("修：出声的数（perform.ts / lab-score / mix）", () => {
     st = select(st, b, b + 1); st = toggleArtSel(st, "breath");
     deq(toLabScore(tr(st), "n").SCORE.map((e) => e.before ?? null), [null, "^", "v", null], "第二个音有呼吸 → 第三个字前按呼吸");
   });
-  it("（旧路，测试 / 兜底）月读的跳音 = 后半段收声（-Infinity），留辅音的余量；乐器 = 截短", () => {
-    let st = four(); const [a] = noteIdx(st); st = select(st, a, a + 1); st = toggleArtSel(st, "staccato");
-    const segs = gainSegments(tr(st), undefined, SPEC, true)!, mute = segs.find((s) => s.dB === -Infinity)!;
-    const beat = 60 / 90;   // 默认 90 bpm 的四分
-    assert(Math.abs(mute.t0 - beat * SPEC.staccatoGate) < 1e-9 && Math.abs(mute.t1 - (beat - 0.06)) < 1e-9, JSON.stringify(mute));
+  it("乐器 / 元音版的跳音 = 截短；呼吸 = 收短一口气（关着 = 不收）", () => {
     eq(noteEnd(0, 1, ["staccato"], { staccatoGate: 0.5, breath: false }), 0.5);
     eq(noteEnd(0, 1, ["breath"], { staccatoGate: 0.5, breath: true }), 1 - 0.16); eq(noteEnd(0, 1, ["breath"], { staccatoGate: 0.5, breath: false }), 1, "breath 关着（试听 / 听开头不落记号）= 不收短");
   });

@@ -619,7 +619,7 @@ async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<R
   const song = songIn(scope);
   const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
   if (eng === "tsukuyomi") {
-    const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map);   // 跳音 / 呼吸都在唱谱里（核心认的 ^ / v），改了就重唱
+    const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);   // 跳音 / 重音 / 呼吸 → 核心认的 ^ / v（怎么对应 = 这位的配置），改了就重唱
     if (!score.SCORE.length) return null;
     const opt = humOpt(), key = JSON.stringify(["tsukuyomi", score, opt]), had = lastRender.get(part.id);
     if (had?.key === key) return had.r;
@@ -653,7 +653,7 @@ async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<R
 /** 一个声部的音量曲线（力度 + 重音；月读的跳音 = 后半段收声；src/score/perform.ts）：没有力度 / 重音 = null，声音不碰。渲染结果是缓存的，乘在拷贝上。 */
 function partGain(part: PartDef, scope: RenderScope) {
   const song = songIn(scope), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
-  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), false);   // 月读的跳音 v0.7.1 起走唱谱（lab-score 的休止），不再切音频
+  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role));   // 月读的跳音走唱谱（核心认的 ^），不再切音频
 }
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
 const audibleParts = (): PartDef[] => { const solo = st.song.parts.some((p) => pv(p.id).solo); return st.song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted)); };
@@ -1050,6 +1050,25 @@ function gsKeyArgs(cat: Catalog, bank: number, program: number, drumNote?: numbe
   if (drumNote !== undefined) return { note: drumNote, ...g };
   const sk = sampleKeyOf(cat, bank, program); if (!sk) return g;
   return { note: sk.key, sfx: { key: sk.key, ...(sk.midi !== undefined ? { midi: sk.midi } : {}), ...(sk.centsPerKey ? { centsPerKey: sk.centsPerKey } : {}) }, ...g };
+}
+/** 「记号怎么演」：这位演奏者 by value 带着的解读表，原样摊开（user 2026-10-08「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）。现在只读；改数以后做。 */
+function marksTableHtml(role: string, eng: string): string {
+  const sp = activePerfSpec(doc.extras, role), ms = (x: number) => `${Math.round(x * 1000)} ms`, pct = (x: number) => `${Math.round(x * 100)}%`, db = (x: number) => `${x > 0 ? "+" : ""}${x} dB`;
+  const ign = ignoredArts(eng, sp.gapSec), gray = (m: string) => (ign.includes(m as Mark) ? ` class="ign"` : "");
+  const singTxt = (k: string) => { const m = sp.sing[k]; return m ? `${m.at === "next" ? "下一个字" : "这个字"}前「${m.mark}」${m.mark === "^" ? "（顿一下，不换气）" : m.mark === "v" ? "（换气）" : "（大口换气）"}` : "不变成唱法记号"; };
+  const vel = !!sp.dynamicsVel;
+  const rows: [string, string, string][] = [
+    ["力度记号", "", vel ? `力度表：${(Object.entries(sp.dynamicsVel!) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ")}` : `音量：${(Object.entries(sp.dynamicsDb) as [string, number][]).map(([d, x]) => `${d} ${db(x)}`).join(" · ")}`],
+    ["渐强渐弱没写终点", "", vel ? `走一档 = 力度 ${sp.wedgeStepVel}` : `走一档 = ${db(sp.wedgeStepDb)}`],
+    ["重音", "accent", vel ? `力度 +${sp.accentVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.accentDb)}${eng === "tsukuyomi" ? `；${singTxt("accent")}` : ""}`],
+    ["强音", "marcato", vel ? `力度 +${sp.marcatoVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.marcatoDb)}${eng === "tsukuyomi" ? `；${singTxt("marcato")}` : ""}`],
+    ["跳音", "staccato", eng === "tsukuyomi" ? singTxt("staccato") : `唱 / 弹 ${pct(sp.staccatoGate)} 的长度`],
+    ["保持", "tenuto", "这个音不留缝"],
+    ["连线", "slur", "连到下一个音、不留缝"],
+    ["呼吸", "breath", eng === "tsukuyomi" ? singTxt("breath") : `前一个音收短 ${ms(sp.breathSec)}（最多 ${pct(sp.breathShare)}）`],
+    ["音和音之间", "", eng === "tsukuyomi" ? "连着唱" : `${ms(sp.gapSec)}（最多 ${pct(sp.gapShare)}）`],
+  ];
+  return `<details class="ip-marks"><summary>记号怎么演（这位自己的配置，跟着演奏者存进歌）</summary><table>${rows.map(([k, m, v]) => `<tr${gray(m)}><th>${k}</th><td>${esc(v)}${m && ign.includes(m as Mark) ? `<span class="ign-tag">不认</span>` : ""}</td></tr>`).join("")}</table></details>`;
 }
 /** 乐器页「音和音之间」的默认 + 说明：GS 货架上的 = 目录的 joint；自己的 .sf2 = 0（目录不认识）；元音版 = 0（人声连着唱）。目录还没载 = null（先载，载好重画）。 */
 function gapDefaultOf(role: string): { gapSec: number; label: string } | null {
@@ -1577,7 +1596,7 @@ function drawInst(): void {
       Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(`${e.description ?? e.name}（${sizeText(e.bytes)}；家族音源库，第一次点才下载、之后留在设备上；${e.license.name}）`)}">从 ${esc(e.name)} 选…</button>`).join("") +
       `<button class="btn" data-v="sf2:pick" title="自己的 .sf2 文件：选中的那一件切出来留在这台设备上（几 MB），歌里只记来源；整个文件不留">从 .sf2 文件选…</button></div>` + pickerHtml() +
       `<div class="ip-note">选的琴歌里只记来源（歌小）：声音从这台设备 / 家族音源库 / 你的文件里找。要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。</div></section>` +
-    `<section class="ip-card ip-how"><h3>${esc(who)} 怎么演<small>右边的键盘弹的就是台上这位，改了马上能试</small></h3><div class="ip-grid">${how}</div></section>` +
+    `<section class="ip-card ip-how"><h3>${esc(who)} 怎么演<small>右边的键盘弹的就是台上这位，改了马上能试</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section>` +
     `</div></div>`;
   const inp = instEl.querySelector<HTMLInputElement>("#roleIn")!, sel = instEl.querySelector<HTMLSelectElement>("#roleSel")!;
   sel.addEventListener("change", () => { const [snd, ...nm] = sel.value.split("|"); if (snd) { setRole(nm.join("|"), snd); drawInst(); } });

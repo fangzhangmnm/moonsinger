@@ -7,24 +7,24 @@
 //   呼吸：月读 = 下一个字前「v」（lab-score.ts）；元音版和乐器 = 前一个音收短一点（lightNotes；乐器上的逗号 = 稍微断开再进下一个音，管乐 / 人声就是换气；
 //   2026-10-08 user「breath是否应该对大量GS乐器也生效。毕竟不断气一直拖着也不对，fl你还得手动调一下时长」）。
 import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, DEFAULT_DYN } from "./song.ts";
+import { MARK_DEFAULTS } from "../format/performance.ts";
 const DEFAULT_DYN_KEY: Dyn = DEFAULT_DYN;
 
 export interface PerfSpec { dynamicsDb: Record<Dyn, number>; staccatoGate: number; accentDb: number; marcatoDb?: number;
+  /** 记号怎么解读的其余的数（候选 articulation by value；没给 = MARK_DEFAULTS）。 */
+  accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; wedgeStepDb?: number; wedgeStepVel?: number;
   /** 有 = 力度记号 / 重音 / 强音走 MIDI 力度（SoundFont 新候选），音量曲线就不再管它们；没有 = 走 dB（月读 / 元音版 / 旧候选）。 */
   dynamicsVel?: Record<Dyn, number> | null; accentVel?: number; marcatoVel?: number }
-/** 重音加在音头多长（秒；短于这个的音整个加）。 */
-export const ACCENT_SEC = 0.12;
-/** 月读的跳音收声：留给下一个字的辅音的余量（秒）——收声段太短（< 40 ms）就不收。 */
-const CONS_ROOM = 0.06, MIN_GATE = 0.04;
+const M = MARK_DEFAULTS;   // 演奏者没写的键用它（= 这一版之前写死的数）
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */
 export interface GainSeg { t0: number; t1: number; dB: number }
 
 /** 一个声部的音量曲线。gateStaccato = 跳音靠收声（月读）。全程 0 dB = null。 */
-export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, gateStaccato: boolean): GainSeg[] | null {
+export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec): GainSeg[] | null {
   const segs: GainSeg[] = [];
   let any = false;
   const vel = !!spec.dynamicsVel;   // 力度记号 / 重音 / 强音 / 渐强渐弱走 MIDI 力度（noteVelocities）：这条曲线只剩跳音收声
-  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, WEDGE_STEP_DB);
+  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb);
   /** 渐强渐弱：一个音里面的 dB 从 a 走到 b（切成小段；月读一个长音也能渐强）。 */
   const ramp = (a: number, b: number, s0: number, s1: number) => { const n = Math.max(1, Math.min(32, Math.ceil((s1 - s0) / 0.03))); for (let k = 0; k < n; k++) segs.push({ t0: s0 + ((s1 - s0) * k) / n, t1: s0 + ((s1 - s0) * (k + 1)) / n, dB: a + ((b - a) * (k + 0.5)) / n }); };
   for (const { index, tok, t0, t1 } of timeline(tokens, map)) {
@@ -34,32 +34,22 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
     const art = artOf(tok);
     let cur = t0;
     const boost = vel ? 0 : art.includes("marcato") ? (spec.marcatoDb ?? spec.accentDb + 3) : art.includes("accent") ? spec.accentDb : 0;   // 强音比重音重；两个都标 = 按强音
-    if (boost) { const e = Math.min(t1, t0 + ACCENT_SEC); segs.push({ t0, t1: e, dB: base + boost }); cur = e; any = true; }
-    if (gateStaccato && art.includes("staccato")) {
-      const g = Math.max(cur, t0 + (t1 - t0) * spec.staccatoGate), off1 = t1 - CONS_ROOM;
-      if (off1 - g > MIN_GATE) {
-        if (g > cur) segs.push({ t0: cur, t1: g, dB: base });
-        segs.push({ t0: g, t1: off1, dB: -Infinity }, { t0: off1, t1, dB: base });
-        any = true; continue;
-      }
-    }
+    if (boost) { const e = Math.min(t1, t0 + (spec.accentSec ?? M.accentSec)); segs.push({ t0, t1: e, dB: base + boost }); cur = e; any = true; }
     if (t1 > cur) { if (baseEnd !== base) ramp(base + ((baseEnd - base) * (cur - t0)) / Math.max(1e-9, t1 - t0), baseEnd, cur, t1); else segs.push({ t0: cur, t1, dB: base }); }
   }
   return any ? segs : null;
 }
 
 /** 轻量版 / SoundFont 一个音的结束时刻（秒）：跳音截到 staccatoGate；呼吸（只给元音版）= 收短一口气的空当（同唱法核心的 v：至多 0.16 s / 25%）。 */
-export function noteEnd(t0: number, t1: number, art: readonly string[], o: { staccatoGate: number; breath: boolean; gapSec?: number }, slur = false): number {
+export function noteEnd(t0: number, t1: number, art: readonly string[], o: { staccatoGate: number; breath: boolean; gapSec?: number; gapShare?: number; breathSec?: number; breathShare?: number }, slur = false): number {
   let end = t1;
   if (art.includes("staccato")) end = t0 + (t1 - t0) * o.staccatoGate;
   // 连断的底色：不写记号的音留 gapSec 的缝（最多吃掉这个音的 1/4，短音不被吃光）；连线（连到下一个）/ 保持 = 不留（2026-10-08，user「连断 预设 都同意」）
-  else if (!slur && !art.includes("tenuto") && (o.gapSec ?? 0) > 0) end = t1 - Math.min(o.gapSec!, 0.25 * (t1 - t0));
-  if (o.breath && art.includes("breath")) end = Math.min(end, t1 - Math.min(0.16, 0.25 * (t1 - t0)));
+  else if (!slur && !art.includes("tenuto") && (o.gapSec ?? 0) > 0) end = t1 - Math.min(o.gapSec!, (o.gapShare ?? M.gapShare) * (t1 - t0));
+  if (o.breath && art.includes("breath")) end = Math.min(end, t1 - Math.min(o.breathSec ?? M.breathSec, (o.breathShare ?? M.breathShare) * (t1 - t0)));
   return end;
 }
 
-/** 没写终点力度时，渐强 / 渐弱走多少（= 力度表相邻两档的差：MIDI 力度 16 / dB 6）。 */
-export const WEDGE_STEP_VEL = 16, WEDGE_STEP_DB = 6;
 /** 每个有时值的 token（音 / 休止）的力度水平：音头 at0、音尾 at1（单位 = 表的单位：MIDI 力度或 dB）。按力度记号（查 table）+ 渐强渐弱：
  *  一串标了 wedge 的音 = 从第一个的音头到被连到的那个音的音头线性过渡；终点 = 那之间写的力度记号，没写 = 走一档（step，卡在表的最小最大之间）；
  *  过渡完停在终点，直到下一个力度记号。前面一个力度记号都没有 = def（演奏者的默认 / 旋钮）。2026-10-08，user「mp mf 大于小于号这种，可以preliminary的控制力度」。 */
@@ -92,14 +82,14 @@ export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Rec
  *  再加重音 / 强音。没有力度表（旧候选）= 一律 defaultVel（力度记号照旧走 dB）。2026-10-08 user「应该send的就是velocity！」「力度就是velocity」。 */
 export function noteVelocity(tokens: Token[], index: number, art: readonly string[], spec: PerfSpec, defaultVel: number): number {
   if (!spec.dynamicsVel) return defaultVel;
-  const l = dynLevels(tokens, undefined, spec.dynamicsVel, defaultVel * 127, WEDGE_STEP_VEL).get(index);
+  const l = dynLevels(tokens, undefined, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel).get(index);
   return noteVel(l ? l.at0 : defaultVel * 127, art, spec);
 }
 /** 一整条的每个音的力度（index → 0–1）：力度记号 + 渐强渐弱（dynLevels，取音头）+ 重音 / 强音。没有力度表 = 一律 defaultVel。 */
 export function noteVelocities(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number): Map<number, number> {
   const out = new Map<number, number>();
   if (!spec.dynamicsVel) { tokens.forEach((t, i) => { if (t.kind === "note") out.set(i, defaultVel); }); return out; }
-  for (const [i, l] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, WEDGE_STEP_VEL)) { const t = tokens[i]; if (t.kind === "note") out.set(i, noteVel(l.at0, artOf(t), spec)); }
+  for (const [i, l] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel)) { const t = tokens[i]; if (t.kind === "note") out.set(i, noteVel(l.at0, artOf(t), spec)); }
   return out;
 }
 const noteVel = (v: number, art: readonly string[], spec: PerfSpec) => {
@@ -133,4 +123,6 @@ export function whyIgnored(engine: string | null | undefined, m: Mark): "engine"
 }
 /** 元音版 / SoundFont 这一路（lightNotes）怎么落修的记号：跳音截到 staccatoGate、呼吸收短一口气（两种引擎一样；月读不走这条，走唱谱 + 音量曲线）。
  *  main.ts 的出声和 test/honors.test.ts 都从这里取，不各写一份。 */
-export function lightMarks(spec: { staccatoGate: number; gapSec?: number }): { staccatoGate: number; breath: boolean; gapSec: number } { return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0 }; }
+export function lightMarks(spec: { staccatoGate: number; gapSec?: number; gapShare?: number; breathSec?: number; breathShare?: number }): { staccatoGate: number; breath: boolean; gapSec: number; gapShare: number; breathSec: number; breathShare: number } {
+  return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
+}
