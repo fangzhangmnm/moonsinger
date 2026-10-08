@@ -285,7 +285,7 @@ export class Pad {
           c(`data-swipe="alter"`, "滑 = 升降", this.swipeMode === "alter", "在音键上上下滑 = 这一个音升 / 降（黏着）"), back].join("");
       case "transpose":
         return c(`data-tr="1"`, "↑ 半音") + c(`data-tr="-1"`, "↓ 半音") + c(`data-tr="2"`, "↑ 全音") + c(`data-tr="-2"`, "↓ 全音") +
-          c(`data-toct="1"`, "↑ 八度") + c(`data-toct="-1"`, "↓ 八度") + c(`data-open="modulate"`, "转调…", false, "整段转到另一个调：音按两个主音之间的音程挪，调号跟着换") + back;
+          c(`data-toct="1"`, "↑ 八度") + c(`data-toct="-1"`, "↓ 八度") + c(`data-respell="1"`, "按调号拼写", false, "音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动") + c(`data-open="modulate"`, "转调…", false, "整段转到另一个调：音按两个主音之间的音程挪，调号跟着换") + back;
       case "modulate": return KEY_CIRCLE.map((k) => c(`data-mod="${k}"`, `转到 1=${KEY_NAMES[k]}`, k === selKey)).join("") + back;
       default: return "";
     }
@@ -317,6 +317,7 @@ export class Pad {
     this.on(box, "[data-pl]", (b) => { this.layoutMode = b.dataset.pl === "absolute" ? "absolute" : "movable"; this.render(); });
     // 移调：点了不收（可以连着点几下）；转调：选了就回去
     this.on(box, "[data-tr]", (b) => this.host.onCommand({ k: "transpose", semis: Number(b.dataset.tr) }));
+    this.on(box, "[data-respell]", () => this.host.onCommand({ k: "respell" }));
     this.on(box, "[data-toct]", (b) => this.host.onCommand({ k: "octave", d: Number(b.dataset.toct) }));
     this.on(box, "[data-mod]", (b) => { this.back(); this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) }); });
     this.on(box, "[data-back]", () => this.back());

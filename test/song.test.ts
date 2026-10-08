@@ -175,3 +175,26 @@ describe("升降 Shift（±2）", () => {
     eq(tr(st).filter((t) => t.kind === "note").map((t) => (t as { pitch: { alter: number } }).pitch.alter).join(","), "-2,-2,2,0");
   });
 });
+
+// 按谱上的调号简化拼写（2026-10-08 Opus；user「升降号的歧义导致的没有自动简化怎么办」——绿袖子：五个升号的调、pad 1=C 按 ♭ 写，满篇 ♭）
+import { respellSel as _respell, select as _select } from "../src/score/song.ts";
+describe("按调号拼写", () => {
+  const spelled = (st: EditorState) => tr(st).filter((t) => t.kind === "note").map((t) => { const p = (t as NoteTok).pitch!; return `${p.step}${p.alter > 0 ? "#".repeat(p.alter) : "b".repeat(-p.alter)}${p.octave}`; }).join(" ");
+  it("写的时候：调内的音用谱上调号的写法（A♭ → G♯），调外的照写（G♮），重升 / 重降不动", () => {
+    let st = setMark(initState(), 0, { kind: "key", fifths: 5 });   // 谱：五个升号；pad 还是 1=C
+    st = _tapAcc(st, -1, 0); st = writeDegree(st, 6, "near");   // ♭ + 6 = A♭ → G♯
+    st = writeDegree(st, 5, "near");                            // 5 = G（调外）→ G♮ 照写
+    st = _tapAcc(st, -1, 0); st = writeDegree(st, 3, "near");   // ♭ + 3 = E♭ → D♯
+    st = _setAcc(st, 2, "once"); st = writeDegree(st, 4, "near");   // 𝄪 + 4 = F𝄪（有意的导音）→ 不动
+    eq(spelled(st), "G#3 G3 D#3 F##3");
+  });
+  it("「按调号拼写」收拾已经写下的：选中的调内音换写法、音高不变，调外的和重升降不动", () => {
+    let st = initState(); st = _tapAcc(st, -1, 0); st = writeDegree(st, 6, "near"); st = writeDegree(st, 7, "near"); st = _tapAcc(st, -1, 0); st = writeDegree(st, 2, "near");
+    eq(spelled(st), "Ab3 B3 Db4");   // C 大调里写的：A♭ / D♭ 是调外音，照写
+    st = setMark(st, 0, { kind: "key", fifths: 5 });   // 后来把调号改成五个升号
+    eq(spelled(st), "Ab3 B3 Db4", "改调号不动音");
+    st = _respell(_select(st, H, H + 3));
+    eq(spelled(st), "G#3 B3 C#4");
+    eq(_respell(st), st, "没选中 = 原样");
+  });
+});

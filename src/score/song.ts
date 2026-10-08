@@ -16,7 +16,7 @@
 //   · 速度 = 第一个声部的状态机（其余声部的速度记号只是跟着抄、不出声不画）。
 
 import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
-import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf } from "./pitch.ts";
+import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell } from "./pitch.ts";
 
 /** 一个四分音符的 tick 数。 */
 export const TPQ = 1680;
@@ -209,9 +209,10 @@ export function toggleChordPitch(st: EditorState, i: number, p: Pitch): EditorSt
 }
 /** pad 的「叠」：往前一个音（有选中 = 选中的第一个音）上叠（挂着的升降一样用掉）。 */
 export function stackPitch(st: EditorState, pitch0: Pitch): EditorState {
-  const pitch = applyAcc(pitch0, st.input), input = consumeAcc(st.input);
+  const input = consumeAcc(st.input);
   const i = st.sel ? firstNoteIn(st) : currentIndex(st);
   if (i < 0 || tr(st)[i].kind !== "note") return { ...st, input };
+  const pitch = keySpell(applyAcc(pitch0, st.input), keyAt(tr(st), i));   // 按谱上的调号简化拼写（同 writePitch）
   return toggleChordPitch({ ...st, input }, i, pitch);
 }
 /** 只有这一张纸的歌（本段视图的播放范围；user 2026-10-08「为什么在本段视图下播放还是播放全部了？」）。 */
@@ -303,9 +304,11 @@ function fillTarget(st: EditorState): number {
 
 /** 写一个音（给定音高：pad / 指针）。有选中 = 覆盖选中第一个音的音高并跳到下一个音（改）。 */
 export function writePitch(st: EditorState, pitch0: Pitch): EditorState {
-  const pitch = applyAcc(pitch0, st.input), input = consumeAcc(st.input);
+  const f = fillTarget(st), at = st.sel ? Math.max(0, firstNoteIn(st)) : f >= 0 ? f : st.caret;
+  // 按谱上的调号简化拼写：pad 的「1=」是它自己的（user「把pad想成一个独立的medo式的输入设备」），音落进谱时调内的音用谱上调号的写法——
+  //   pad 1=C 按 ♭ 写的 A♭ 在五个升号的调里 = G♯（user 2026-10-08「升降号的歧义导致的没有自动简化怎么办」）；调外音照 pad 写的
+  const pitch = keySpell(applyAcc(pitch0, st.input), keyAt(tr(st), at)), input = consumeAcc(st.input);
   if (st.sel) return overwritePitch({ ...st, input }, pitch);
-  const f = fillTarget(st);
   if (f >= 0) {
     const t = tr(st)[f] as NoteTok, tokens = tr(st).slice(); tokens[f] = { ...t, pitch };
     return next(st, tokens, { caret: f + 1, input, log: [...st.log, { k: "fill", id: t.id, unit: t.dur }] });
@@ -605,6 +608,17 @@ export function transposeSel(st: EditorState, semis: number): EditorState {
   const nt = tr(st).slice();
   for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note" && t.pitch) nt[i] = withPitches(t, allPitches(t).map((p) => transposeSemis(p, semis, keyAt(tr(st), i)))); }
   return next(st, nt);
+}
+/** 按调号拼写（选中的一段）：调内的音换成调号里的写法，调外的不动；音高不变（已经写下的谱用它收拾，比如五个升号的调里全写成降号的）。 */
+export function respellSel(st: EditorState): EditorState {
+  if (!st.sel) return st;
+  const nt = tr(st).slice(); let changed = false;
+  for (let i = st.sel.from; i < st.sel.to; i++) {
+    const t = nt[i]; if (t.kind !== "note" || !t.pitch) continue;
+    const k = keyAt(tr(st), i), ps = allPitches(t), qs = ps.map((p) => keySpell(p, k));
+    if (qs.some((q, j) => q !== ps[j])) { nt[i] = withPitches(t, qs); changed = true; }
+  }
+  return changed ? next(st, nt) : st;
 }
 /** 转调：选中的一段从开头生效的调转到 toFifths——音按两个主音之间的音程挪（就近方向，拼写关系不变），
  *  选中开头的调号改成新调（旁边已有调号 = 改它；从歌开头选 = 改谱头），选中后面插回原来的调（后面本来就有调号的不插）；

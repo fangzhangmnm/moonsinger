@@ -139,7 +139,7 @@ let chromeReady = false;
  *  选区条藏；录音室里胶囊留着（▶ / 空格都能播）、tab 藏。 */
 function updateChrome(): void {
   if (!chromeReady) return;
-  const over = finder.isOpen || (gallery?.isOpen() ?? false);
+  const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);   // 乐器页开着：选区条也收（不然盖住乐器页顶条的「← 谱」）
   padTab.hidden = !padEl.hidden || ((gallery?.isOpen() ?? false) && !finderShown) || studio.isOpen;
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);

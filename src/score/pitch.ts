@@ -75,6 +75,14 @@ export function spellMidi(midi: number, fifths: number, prefer: 1 | -1 = fifths 
     ?? cands.find((p) => p.alter === prefer)                       // 调外：按方向
     ?? cands.find((p) => p.alter === 0) ?? cands[0];
 }
+/** 按谱上的调号简化拼写：这个音（同音换写后）在调号里 = 用调号的写法；不在调里 = 照原样（人写的 ♯ / ♭ 不动）。
+ *  例：五个升号的调里 A♭ = G♯（不挂临时记号）；G♮ 不在调里 = 还是 G♮。user 2026-10-08「升降号的歧义导致的没有自动简化怎么办」。
+ *  重升 / 重降不动：单个 ♯ / ♭ 多半只是在 pad 上够黑键，𝄪 / 𝄫 一定是有意的拼法（升 G 小调的导音 F𝄪）。 */
+export function keySpell(p: Pitch, fifths: number): Pitch {
+  if (Math.abs(p.alter) === 2) return p;
+  const k = spellMidi(midiOf(p), fifths);
+  return k.alter === keyAlter(k.step, fifths) && (k.step !== p.step || k.alter !== p.alter) ? k : p;
+}
 /** 移几个半音，按调重新拼写（Shift+↑↓、移调的半音 / 全音）：往上用 ♯、往下用 ♭，调内音用调里的拼法（C 大调 E 升半音 = F，不是 E♯）。 */
 export function transposeSemis(p: Pitch, semis: number, fifths: number): Pitch {
   return semis === 0 ? p : spellMidi(midiOf(p) + semis, fifths, semis > 0 ? 1 : -1);

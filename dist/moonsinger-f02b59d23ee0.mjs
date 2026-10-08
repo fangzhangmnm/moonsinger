@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.14-2026-10-08";
+var APP_VERSION = "v0.6.15-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2810,6 +2810,11 @@ function spellMidi(midi, fifths, prefer = fifths < 0 ? -1 : 1) {
   }
   return cands3.find((p2) => p2.alter === keyAlter(p2.step, fifths)) ?? cands3.find((p2) => p2.alter === prefer) ?? cands3.find((p2) => p2.alter === 0) ?? cands3[0];
 }
+function keySpell(p2, fifths) {
+  if (Math.abs(p2.alter) === 2) return p2;
+  const k2 = spellMidi(midiOf(p2), fifths);
+  return k2.alter === keyAlter(k2.step, fifths) && (k2.step !== p2.step || k2.alter !== p2.alter) ? k2 : p2;
+}
 function transposeSemis(p2, semis, fifths) {
   return semis === 0 ? p2 : spellMidi(midiOf(p2) + semis, fifths, semis > 0 ? 1 : -1);
 }
@@ -2931,9 +2936,10 @@ function toggleChordPitch(st3, i10, p2) {
   return next(st3, nt2);
 }
 function stackPitch(st3, pitch0) {
-  const pitch = applyAcc(pitch0, st3.input), input = consumeAcc(st3.input);
+  const input = consumeAcc(st3.input);
   const i10 = st3.sel ? firstNoteIn(st3) : currentIndex(st3);
   if (i10 < 0 || tr(st3)[i10].kind !== "note") return { ...st3, input };
+  const pitch = keySpell(applyAcc(pitch0, st3.input), keyAt(tr(st3), i10));
   return toggleChordPitch({ ...st3, input }, i10, pitch);
 }
 var songOnlyPaper = (song, paperId) => ({ ...song, papers: song.papers.filter((p2) => p2.id === paperId) });
@@ -3016,9 +3022,9 @@ function fillTarget(st3) {
   return -1;
 }
 function writePitch(st3, pitch0) {
-  const pitch = applyAcc(pitch0, st3.input), input = consumeAcc(st3.input);
+  const f2 = fillTarget(st3), at2 = st3.sel ? Math.max(0, firstNoteIn(st3)) : f2 >= 0 ? f2 : st3.caret;
+  const pitch = keySpell(applyAcc(pitch0, st3.input), keyAt(tr(st3), at2)), input = consumeAcc(st3.input);
   if (st3.sel) return overwritePitch({ ...st3, input }, pitch);
-  const f2 = fillTarget(st3);
   if (f2 >= 0) {
     const t10 = tr(st3)[f2], tokens2 = tr(st3).slice();
     tokens2[f2] = { ...t10, pitch };
@@ -3340,6 +3346,21 @@ function transposeSel(st3, semis) {
     if (t10.kind === "note" && t10.pitch) nt2[i10] = withPitches(t10, allPitches(t10).map((p2) => transposeSemis(p2, semis, keyAt(tr(st3), i10))));
   }
   return next(st3, nt2);
+}
+function respellSel(st3) {
+  if (!st3.sel) return st3;
+  const nt2 = tr(st3).slice();
+  let changed2 = false;
+  for (let i10 = st3.sel.from; i10 < st3.sel.to; i10++) {
+    const t10 = nt2[i10];
+    if (t10.kind !== "note" || !t10.pitch) continue;
+    const k2 = keyAt(tr(st3), i10), ps = allPitches(t10), qs = ps.map((p2) => keySpell(p2, k2));
+    if (qs.some((q2, j2) => q2 !== ps[j2])) {
+      nt2[i10] = withPitches(t10, qs);
+      changed2 = true;
+    }
+  }
+  return changed2 ? next(st3, nt2) : st3;
 }
 function modulateSel(st3, toFifths) {
   if (!st3.sel) return st3;
@@ -3708,6 +3729,8 @@ function apply(st3, c10, now = Date.now()) {
       return deleteForward(st3);
     case "transpose":
       return transposeSel(st3, c10.semis);
+    case "respell":
+      return respellSel(st3);
     case "modulate":
       return modulateSel(st3, c10.fifths);
     case "seledge":
@@ -6659,7 +6682,7 @@ var Pad = class {
           back
         ].join("");
       case "transpose":
-        return c10(`data-tr="1"`, "\u2191 \u534A\u97F3") + c10(`data-tr="-1"`, "\u2193 \u534A\u97F3") + c10(`data-tr="2"`, "\u2191 \u5168\u97F3") + c10(`data-tr="-2"`, "\u2193 \u5168\u97F3") + c10(`data-toct="1"`, "\u2191 \u516B\u5EA6") + c10(`data-toct="-1"`, "\u2193 \u516B\u5EA6") + c10(`data-open="modulate"`, "\u8F6C\u8C03\u2026", false, "\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362") + back;
+        return c10(`data-tr="1"`, "\u2191 \u534A\u97F3") + c10(`data-tr="-1"`, "\u2193 \u534A\u97F3") + c10(`data-tr="2"`, "\u2191 \u5168\u97F3") + c10(`data-tr="-2"`, "\u2193 \u5168\u97F3") + c10(`data-toct="1"`, "\u2191 \u516B\u5EA6") + c10(`data-toct="-1"`, "\u2193 \u516B\u5EA6") + c10(`data-respell="1"`, "\u6309\u8C03\u53F7\u62FC\u5199", false, "\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8") + c10(`data-open="modulate"`, "\u8F6C\u8C03\u2026", false, "\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362") + back;
       case "modulate":
         return KEY_CIRCLE.map((k2) => c10(`data-mod="${k2}"`, `\u8F6C\u5230 1=${KEY_NAMES[k2]}`, k2 === selKey)).join("") + back;
       default:
@@ -6704,6 +6727,7 @@ var Pad = class {
       this.render();
     });
     this.on(box, "[data-tr]", (b3) => this.host.onCommand({ k: "transpose", semis: Number(b3.dataset.tr) }));
+    this.on(box, "[data-respell]", () => this.host.onCommand({ k: "respell" }));
     this.on(box, "[data-toct]", (b3) => this.host.onCommand({ k: "octave", d: Number(b3.dataset.toct) }));
     this.on(box, "[data-mod]", (b3) => {
       this.back();
@@ -25429,7 +25453,7 @@ var selFix = false;
 var chromeReady = false;
 function updateChrome() {
   if (!chromeReady) return;
-  const over = finder.isOpen || (gallery?.isOpen() ?? false);
+  const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);
   padTab.hidden = !padEl.hidden || (gallery?.isOpen() ?? false) && !finderShown || studio.isOpen;
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
@@ -28353,4 +28377,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2b62c559a9ae.mjs.map
+//# sourceMappingURL=moonsinger-f02b59d23ee0.mjs.map
