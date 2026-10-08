@@ -9764,17 +9764,20 @@ var Sr = fa.Mp3Encoder = cr;
 var dr = fa.WavHeader = A1;
 
 // src/export/mp3-worker.ts
+var toPcm = (src, i, n, pcm) => {
+  for (let k = 0; k < n; k++) {
+    const x = Math.max(-1, Math.min(1, src[i + k]));
+    pcm[k] = Math.round(x < 0 ? x * 32768 : x * 32767);
+  }
+  return n === pcm.length ? pcm : pcm.subarray(0, n);
+};
 self.onmessage = (ev) => {
   try {
-    const { samples, sr: sr2, kbps } = ev.data, enc = new Sr(1, sr2, kbps), parts = [];
-    const BLOCK = 1152 * 16, pcm = new Int16Array(BLOCK);
-    for (let i = 0; i < samples.length; i += BLOCK) {
-      const n = Math.min(BLOCK, samples.length - i);
-      for (let k = 0; k < n; k++) {
-        const x = Math.max(-1, Math.min(1, samples[i + k]));
-        pcm[k] = Math.round(x < 0 ? x * 32768 : x * 32767);
-      }
-      const out = enc.encodeBuffer(n === BLOCK ? pcm : pcm.subarray(0, n));
+    const { left, right, sr: sr2, kbps } = ev.data, stereo = !!right, enc = new Sr(stereo ? 2 : 1, sr2, kbps), parts = [];
+    const BLOCK = 1152 * 16, pl = new Int16Array(BLOCK), pr = new Int16Array(BLOCK);
+    for (let i = 0; i < left.length; i += BLOCK) {
+      const n = Math.min(BLOCK, left.length - i);
+      const out = stereo ? enc.encodeBuffer(toPcm(left, i, n, pl), toPcm(right, i, n, pr)) : enc.encodeBuffer(toPcm(left, i, n, pl));
       if (out.length) parts.push(out.slice());
     }
     const tail = enc.flush();
@@ -9790,4 +9793,4 @@ self.onmessage = (ev) => {
     self.postMessage({ ok: false, message: e.message });
   }
 };
-//# sourceMappingURL=mp3-worker-518bd328d28b.mjs.map
+//# sourceMappingURL=mp3-worker-b681ea012d1c.mjs.map

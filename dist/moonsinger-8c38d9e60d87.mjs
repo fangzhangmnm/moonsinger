@@ -7195,9 +7195,13 @@ var Singer = class {
 };
 
 // src/export/mp3.ts
-function encodeMp3(samples, sr2, kbps = 64) {
+var MP3_QUALITY = {
+  standard: { label: "\u6807\u51C6", note: "\u7ACB\u4F53\u58F0 128k\uFF0C\u7EA6 1 MB / \u5206\u949F", stereo: true, kbps: 128 },
+  small: { label: "\u5C0F\u6587\u4EF6", note: "\u5355\u58F0\u9053 64k\uFF0C\u7EA6 0.5 MB / \u5206\u949F", stereo: false, kbps: 64 }
+};
+function encodeMp3(left, right, sr2, kbps = 64) {
   return new Promise((ok2, fail) => {
-    const w2 = new Worker(new URL(`./${"mp3-worker-518bd328d28b.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"mp3-worker-b681ea012d1c.mjs"}`, import.meta.url), { type: "module" });
     w2.onmessage = (ev2) => {
       w2.terminate();
       if (ev2.data.ok) ok2(ev2.data.bytes);
@@ -7207,8 +7211,8 @@ function encodeMp3(samples, sr2, kbps = 64) {
       w2.terminate();
       fail(new Error(e10.message || "mp3 \u7F16\u7801 worker \u51FA\u9519"));
     };
-    const req = { samples: samples.slice(), sr: sr2, kbps };
-    w2.postMessage(req, [req.samples.buffer]);
+    const req = { left: left.slice(), ...right ? { right: right.slice() } : {}, sr: sr2, kbps };
+    w2.postMessage(req, [req.left.buffer, ...req.right ? [req.right.buffer] : []]);
   });
 }
 
@@ -9023,6 +9027,10 @@ function activeCandidate(extras, role) {
   if (!r10) return null;
   return cands(r10).find((x2) => x2.id === r10.active) ?? null;
 }
+function activeOrDefaultCandidate(extras, role) {
+  const r10 = extras.lounge[role] ?? defaultRole("n", role);
+  return cands(r10).find((x2) => x2.id === r10.active) ?? null;
+}
 function activeCandidateName(extras, role) {
   const c10 = activeCandidate(extras, role);
   return c10 ? String(c10.name ?? "") : null;
@@ -9337,7 +9345,7 @@ function group(items) {
 function performerCredits(extras, roles) {
   const items = [];
   for (const role of new Set(roles)) {
-    const r10 = extras.lounge[role], c10 = cands2(r10).find((x2) => x2.id === r10?.active);
+    const c10 = activeOrDefaultCandidate(extras, role);
     if (!c10) continue;
     if (c10.instrument?.engine === "unknown") continue;
     const credit = creditOf(c10);
@@ -9372,7 +9380,7 @@ var RIGHTS_PRESETS = [
 function licenseHints(rights, performers) {
   const reusable = !!rights && (/CC0|public ?domain|公有领域|publicdomain\/zero/i.test(rights) || /CC[ -]?BY/i.test(rights) && !/\bND\b|-nd\//i.test(rights));
   const tsukuyomi = performers.some((l10) => l10.license.name.includes("\u3064\u304F\u3088\u307F\u3061\u3083\u3093"));
-  return reusable && tsukuyomi ? ["\u8FD9\u9996\u6B4C\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16 / \u5F53\u7D20\u6750\u518D\u7528\uFF0C\u53EF\u91CC\u9762\u6709\u6708\u8BFB\u7684\u58F0\u97F3\uFF1A\u6708\u8BFB\u7684\u6761\u6B3E\u7981\u6B62\u300C\u4EE5\u5141\u8BB8\u4ED6\u4EBA\u4E8C\u6B21\u5229\u7528\uFF08\u5F53\u4F5C\u7D20\u6750\u4F7F\u7528\uFF09\u7684\u5F62\u5F0F\u516C\u5F00\u300D\uFF08\u8BBE\u7F6E\u91CC\u6709\u6761\u6B3E\u539F\u6587\u548C\u8BD1\u6587\uFF09\u3002\u8FD9\u4E24\u6837\u53EF\u80FD\u51B2\u7A81\uFF0C\u8BF7\u770B\u6E05\u695A\u518D\u53D1\uFF08\u8FD9\u662F\u63D0\u793A\uFF0C\u4E0D\u662F\u6CD5\u5F8B\u610F\u89C1\uFF09\u3002"] : [];
+  return reusable && tsukuyomi ? ["\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16 / \u5F53\u7D20\u6750\u518D\u7528\uFF0C\u53EF\u91CC\u9762\u6709\u6708\u8BFB\u7684\u58F0\u97F3\uFF0C\u6708\u8BFB\u7684\u6761\u6B3E\u4E0D\u8BB8\u8FD9\u6837\u516C\u5F00\uFF08\u8BBE\u7F6E\u91CC\u6709\u539F\u6587\u548C\u8BD1\u6587\uFF09\uFF0C\u6240\u4EE5\u5BFC\u51FA\u65F6\u8BB8\u53EF\u90A3\u4E00\u9879\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\uFF1B\u4F60\u5728\u8FD9\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\u3002"] : [];
 }
 function creditsText(lines) {
   return lines.map((l10) => {
@@ -25188,10 +25196,11 @@ function describeSongChange(prev, next2) {
 
 // src/score/desk.ts
 var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
-var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {} });
+var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard" });
 function serializeDesk(d3) {
   const out = {};
   if (d3.scope === "all") out.scope = "all";
+  if (d3.mp3 === "small") out.mp3 = "small";
   if (d3.pageFlow) out.pageFlow = true;
   if (d3.paper) out.paper = d3.paper;
   const parts = {};
@@ -25212,6 +25221,7 @@ function unserializeDesk(json) {
   const j2 = json;
   if (j2.scope === "all") d3.scope = "all";
   if (j2.pageFlow === true) d3.pageFlow = true;
+  if (j2.mp3 === "small") d3.mp3 = "small";
   if (typeof j2.paper === "string" && j2.paper) d3.paper = j2.paper;
   if (j2.parts && typeof j2.parts === "object") {
     for (const [id2, v] of Object.entries(j2.parts)) {
@@ -25500,6 +25510,7 @@ var view = new ScoreView(scoreEl, {
   scope: () => viewScope
 });
 var viewScope = "segment";
+var mp3Quality = "standard";
 var impro = false;
 var autoBars = true;
 var half = "off";
@@ -25861,10 +25872,11 @@ var playSong = () => viewScope === "segment" ? songOnlyPaper(st2.song, st2.at.pa
 var curFlat = () => ({ tokens: flattenPart(playSong(), st2.at.part).tokens, map: tempoMapOf(playSong()) });
 var lastRender = /* @__PURE__ */ new Map();
 var GM_SR = 44100;
-async function renderPart(part, whole = false) {
+var songIn = (s10) => s10 === "all" ? st2.song : s10 === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : playSong();
+async function renderPart(part, scope = "view") {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`\u300C${roleName(doc.extras, role)}\u300D\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A`);
-  const song = whole ? st2.song : playSong();
+  const song = songIn(scope);
   const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map);
@@ -25897,8 +25909,8 @@ async function renderPart(part, whole = false) {
   lastRender.set(part.id, { key, r: out });
   return out;
 }
-function partGain(part, whole) {
-  const song = whole ? st2.song : playSong(), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
+function partGain(part, scope) {
+  const song = songIn(scope), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
   return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), eng === "tsukuyomi");
 }
 var audibleParts = () => {
@@ -25909,11 +25921,11 @@ function micOf(part) {
   const m2 = (doc.extras.studio?.mics ?? []).find((x2) => x2.id === part.mic);
   return { gainDb: Number(m2?.gainDb ?? 0), pan: Math.max(-1, Math.min(1, Number(m2?.pan ?? 0))) };
 }
-async function renderMix(whole = false) {
+async function renderMix(scope = "view") {
   const parts = audibleParts(), got = [], errs = [];
   for (const part of parts) {
     try {
-      const r10 = await renderPart(part, whole);
+      const r10 = await renderPart(part, scope);
       if (r10) got.push({ part, r: r10 });
     } catch (e10) {
       errs.push(`\u300C${roleName(doc.extras, part.role)}\u300D\uFF1A${e10.message}`);
@@ -25922,7 +25934,7 @@ async function renderMix(whole = false) {
   if (errs.length) showError(`${errs.join("\uFF1B")}\u3002${got.length ? "\u8FD9\u4E9B\u58F0\u90E8\u6CA1\u6709\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\u3002" : "\u6CA1\u6709\u51FA\u58F0\u3002"}\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
   if (!got.length) return null;
   const m2 = mixTracks(got.map(({ part, r: r10 }) => {
-    const { gainDb, pan } = micOf(part), segs = partGain(part, whole);
+    const { gainDb, pan } = micOf(part), segs = partGain(part, scope);
     return { samples: segs ? applyGain(r10.samples, r10.sr, r10.at, segs) : r10.samples, sr: r10.sr, at: r10.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan };
   }), GM_SR);
   return { left: m2.left, right: m2.right, sr: m2.sr, roles: got.map((x2) => x2.part.role) };
@@ -26043,24 +26055,71 @@ $2("playBtn").addEventListener("click", () => {
   void togglePlay();
 });
 var exporting = false;
-async function exportSong() {
+var mp3Scope = "all";
+function openMp3Panel() {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  const paper = st2.song.papers.find((p2) => p2.id === st2.at.paper), k2 = st2.song.papers.indexOf(paper);
+  const draw = () => {
+    const chip = (v, label, note2, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc7(label)}<small>${esc7(note2)}</small></button>`;
+    const er2 = st2.song.rights ? exportRights(soundingRoles()) : null;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09</div><div class="part-sec">\u97F3\u8D28</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (st2.song.papers.length > 1 ? `<div class="part-sec">\u8303\u56F4</div><div class="set-row">${chip("s:all", "\u6574\u9996", "\u9690\u85CF\u7684\u7EB8\u4E0D\u653E", mp3Scope === "all")}${chip("s:segment", "\u8FD9\u4E00\u5F20\u7EB8", paper?.name || `\u7B2C ${k2 + 1} \u5F20`, mp3Scope === "segment")}</div>` : "") + (er2 ? `<div class="offer-msg">\u8BB8\u53EF\uFF1A${er2.fellBack ? `\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u6708\u8BFB\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09` : esc7(er2.rights)}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002</div>` : "") + `<div class="offer-btns"><button class="btn primary" data-v="go">\u5BFC\u51FA</button><button class="btn" data-v="close">\u7B97\u4E86</button></div></div>`;
+  };
+  draw();
+  document.body.append(box);
+  const close = () => {
+    box.remove();
+    closeOffer = null;
+    scoreEl.focus();
+  };
+  closeOffer = close;
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (e10.target === box || v === "close") {
+      close();
+      return;
+    }
+    if (v?.startsWith("q:")) {
+      mp3Quality = v.slice(2);
+      draw();
+    } else if (v?.startsWith("s:")) {
+      mp3Scope = v.slice(2);
+      draw();
+    } else if (v === "go") {
+      close();
+      void exportSong({ quality: mp3Quality, scope: mp3Scope });
+    }
+  });
+}
+function exportRights(roles) {
+  const r10 = st2.song.rights;
+  if (!r10) return { rights: void 0, fellBack: false };
+  return licenseHints(r10, performerCredits(doc.extras, roles)).length ? { rights: void 0, fellBack: true } : { rights: r10, fellBack: false };
+}
+async function exportSong(o10 = { quality: "standard", scope: "all" }) {
   if (exporting || singing) return;
   exporting = true;
   try {
-    const m2 = await renderMix(true);
+    const m2 = await renderMix(o10.scope);
     if (!m2) {
       progress("");
       return;
     }
     progress("\u7F16 mp3\u2026");
-    const mono = new Float32Array(m2.left.length);
-    for (let i10 = 0; i10 < mono.length; i10++) mono[i10] = (m2.left[i10] + m2.right[i10]) / 2;
-    const secs = mono.length / m2.sr, bytes = await encodeMp3(mono, m2.sr);
-    const { lines } = creditsOf(m2.roles), rights = st2.song.rights;
+    const Q2 = MP3_QUALITY[o10.quality];
+    let left = m2.left, right = m2.right;
+    if (!Q2.stereo) {
+      left = new Float32Array(m2.left.length);
+      for (let i10 = 0; i10 < left.length; i10++) left[i10] = (m2.left[i10] + m2.right[i10]) / 2;
+      right = null;
+    }
+    const secs = left.length / m2.sr, bytes = await encodeMp3(left, right, m2.sr, Q2.kbps);
+    const { rights, fellBack } = exportRights(m2.roles), { lines } = creditsOf(m2.roles, rights);
     const tag2 = id3v2({ title: st2.song.title || docName(), artist: (st2.song.credits ?? "").split("\n").map((s10) => s10.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || void 0, software: `MoonSinger ${APP_VERSION}` });
-    const file = new File([tag2, bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
+    const file = new File([tag2, bytes], `${docName()}${o10.scope === "segment" ? `-${fileSafe(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.name || "\u8FD9\u4E00\u5F20")}` : ""}.mp3`, { type: "audio/mpeg" });
     progress("");
-    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}<div class="offer-msg">${rights ? "\u8FD9\u9996\u6B4C\u7684\u8BB8\u53EF\u548C\u4E0B\u9762\u7684\u7F72\u540D\u5DF2\u7ECF\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u91CC\u3002" : "\u4E0B\u9762\u7684\u7F72\u540D\u5DF2\u7ECF\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u91CC\uFF08\u8BB8\u53EF\u672A\u58F0\u660E = \u6CD5\u5F8B\u9ED8\u8BA4\u7684\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF1B\u8981\u58F0\u660E\u5728\u4F5C\u8005\u680F\u91CC\u9009\uFF09\u3002"}</div>` + performersBlock(m2.roles, "\u7F72\u540D\uFF08\u8FD9\u9996\u6B4C + \u8FD9\u6BB5\u58F0\u97F3\u91CC\u51FA\u4E86\u58F0\u7684\u58F0\u90E8\u4E0A\u573A\u7684\u90A3\u4F4D\uFF09"));
+    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${secs.toFixed(1)} \u79D2 \xB7 mp3 ${Q2.label} ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` + (fellBack ? `<div class="offer-msg">\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u6708\u8BFB\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002</div>` : "") + creditsBlock(lines, "\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E"));
   } catch (e10) {
     progress("");
     showError(`\u5BFC\u51FA\u5931\u8D25\uFF1A${e10.message}`);
@@ -26572,7 +26631,7 @@ function openCreditsSheet() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">\u4F5C\u8005\u680F</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09">${esc7(st2.song.credits ?? "")}</textarea><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002</div><div class="part-sec">\u8BB8\u53EF\uFF08\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09</div><div class="set-row"><button class="btn cand" data-r="-1" title="\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09">\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc7(p2.note)}">${esc7(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199" value="${esc7(st2.song.rights ?? "")}" /><div class="offer-msg">\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">\u4F5C\u8005\u680F</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09">${esc7(st2.song.credits ?? "")}</textarea><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002</div><details class="rights-sec"${st2.song.rights ? " open" : ""}><summary class="part-sec">\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09</summary><div class="set-row"><button class="btn cand" data-r="-1" title="\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09">\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc7(p2.note)}">${esc7(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199" value="${esc7(st2.song.rights ?? "")}" /><div class="offer-msg">\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002</div></details><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
   document.body.append(box);
   const ta2 = box.querySelector("#crIn"), rt2 = box.querySelector("#rtIn");
   const close = () => {
@@ -26969,10 +27028,11 @@ function openPartSheet() {
     draw();
   });
 }
-var deskNow = () => ({ scope: viewScope, pageFlow, paper: st2.at.paper, parts: Object.fromEntries(partView) });
+var deskNow = () => ({ scope: viewScope, pageFlow, paper: st2.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality });
 function applyDesk(d3) {
   viewScope = d3.scope;
   pageFlow = d3.pageFlow;
+  mp3Quality = d3.mp3;
   partView.clear();
   for (const [id2, p2] of Object.entries(d3.parts)) partView.set(id2, { ...freshPartView(), ...p2 });
   if (d3.paper && d3.paper !== st2.at.paper) {
@@ -27064,8 +27124,8 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = doc.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (st2.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var bytesNow = (extras) => saveMxl({ view: serializeDesk(deskNow()), song: st2.song, hum: st2.song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
-var mxlFile = (name, extras) => new File([bytesNow(extras)], name, { type: "application/vnd.recordare.musicxml" });
+var bytesNow = (extras, song = st2.song) => saveMxl({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
+var mxlFile = (name, extras, song) => new File([bytesNow(extras, song)], name, { type: "application/vnd.recordare.musicxml" });
 var stemOf2 = (name) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
 var sizeText = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 async function fileSave() {
@@ -27118,15 +27178,17 @@ async function exportCopyMxl(packed = false) {
       extras = withPacked(extras, (sha) => got.get(sha)).extras;
       if (missing.length) showError(`\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u526F\u672C\u91CC\u6CA1\u5E26\uFF1A${missing.join("\u3001")}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u518D\u5BFC\u51FA\u4E00\u6B21\u3002`);
     }
-    const credits = performersBlock(soundingRoles()) + creditsBlock(packedLicenses(extras), "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u8FD9\u4EFD\u526F\u672C\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09");
+    const roles = soundingRoles(), { rights, fellBack } = exportRights(roles);
+    const song = fellBack ? (({ rights: _r, ...rest }) => rest)(st2.song) : st2.song;
+    const credits = (fellBack ? `<div class="offer-msg">\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u6708\u8BFB\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002</div>` : "") + creditsBlock(creditsOf(roles, rights).lines, "\u7F72\u540D") + creditsBlock(packedLicenses(extras), "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u8FD9\u4EFD\u526F\u672C\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09");
     if (canPickSave()) {
       const h2 = await pickSave(name);
       if (!h2) return;
-      await writeTo(h2, bytesNow(extras));
-      info(`\u5B58\u4E86\u4E00\u4EFD\uFF1A${h2.name}`);
+      await writeTo(h2, bytesNow(extras, song));
+      info(`\u5B58\u4E86\u4E00\u4EFD\uFF1A${h2.name}${fellBack ? "\uFF08\u8BB8\u53EF\u6309\u672A\u58F0\u660E\u5199\uFF09" : ""}`);
       return;
     }
-    const file = mxlFile(name, extras);
+    const file = mxlFile(name, extras, song);
     offerFile(file, packed ? "\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09" : "\u5B58\u4E00\u4EFD .mxl \u526F\u672C", `${esc7(file.name)} \xB7 ${sizeText(file.size)}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002${credits}`);
   } catch (e10) {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e10.message}`);
@@ -27181,7 +27243,7 @@ async function unpackAll() {
 }
 function creditsBlock(lines, title) {
   if (!lines.length) return "";
-  return `<div class="credits-box"><div class="part-sec">${esc7(title)}</div><pre class="credits-pre">${esc7(creditsText(lines))}</pre><button class="btn" data-copy-credits title="\u590D\u5236\u4E0B\u6765\u8D34\u8FDB\u4F5C\u54C1\u8BF4\u660E">\u590D\u5236\u7F72\u540D</button></div>`;
+  return `<details class="credits-box"><summary class="part-sec">${esc7(title)}</summary><pre class="credits-pre">${esc7(creditsText(lines))}</pre><button class="btn" data-copy-credits title="\u590D\u5236\u4E0B\u6765\u8D34\u8FDB\u4F5C\u54C1\u8BF4\u660E">\u590D\u5236\u7F72\u540D</button></details>`;
 }
 document.addEventListener("click", (e10) => {
   const b3 = e10.target.closest("[data-copy-credits]");
@@ -27210,7 +27272,7 @@ function openExportHub() {
     }
     if (!v) return;
     close();
-    if (v === "mp3") void exportSong();
+    if (v === "mp3") openMp3Panel();
     else if (v === "mxl") void exportCopyMxl();
     else if (v === "mxlPacked") void exportCopyMxl(true);
   });
@@ -27222,13 +27284,13 @@ function soundsSection() {
   const uses = soundUses(doc.extras);
   if (!uses.length) return "";
   const packed = uses.filter((u2) => u2.packed), size = packed.reduce((n10, u2) => n10 + u2.bytes, 0);
-  return `<div class="part-sec">\u4E50\u5668\u7684\u58F0\u97F3</div><div class="offer-msg">${uses.length} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC ${packed.length} \u4EF6${packed.length ? `\uFF08${sizeText(size)}\uFF09` : ""}\uFF0C\u53EA\u8BB0\u6765\u6E90 ${uses.length - packed.length} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u6708\u8BFB\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002</div><div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">\u5168\u90E8\u6253\u5305\u8FDB\u6B4C</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09</button>` : ""}</div>` + creditsBlock(packedLicenses(doc.extras), "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u6587\u4EF6\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF0C\u5206\u53D1\u8FD9\u4EFD\u6587\u4EF6\u8981\u5B88\u7684\uFF1B\u548C\u6F14\u51FA\u7F72\u540D\u5206\u5F00\u7B97\uFF09");
+  return `<div class="part-sec">\u4E50\u5668\u7684\u58F0\u97F3</div><div class="offer-msg">${uses.length} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC ${packed.length} \u4EF6${packed.length ? `\uFF08${sizeText(size)}\uFF09` : ""}\uFF0C\u53EA\u8BB0\u6765\u6E90 ${uses.length - packed.length} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u6708\u8BFB\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002</div><div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">\u5168\u90E8\u6253\u5305\u8FDB\u6B4C</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09</button>` : ""}</div>` + creditsBlock(packedLicenses(doc.extras), "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u6587\u4EF6\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09");
 }
-function creditsOf(roles) {
-  const perf = performerCredits(doc.extras, roles), own = songCreditLine(st2.song);
-  return { lines: own ? [own, ...perf] : perf, hints: licenseHints(st2.song.rights, perf) };
+function creditsOf(roles, rights = st2.song.rights) {
+  const perf = performerCredits(doc.extras, roles), own = songCreditLine({ ...st2.song, rights });
+  return { lines: own ? [own, ...perf] : perf, hints: licenseHints(rights, perf) };
 }
-var performersBlock = (roles, title = "\u7F72\u540D\uFF08\u8FD9\u9996\u6B4C + \u73B0\u5728\u51FA\u58F0\u7684\u58F0\u90E8\u4E0A\u573A\u7684\u90A3\u4F4D\uFF1B\u5BFC\u51FA mp3 \u65F6\u6309\u771F\u51FA\u4E86\u58F0\u7684\u7B97\uFF09") => {
+var performersBlock = (roles, title = "\u7F72\u540D") => {
   const { lines, hints } = creditsOf(roles);
   return creditsBlock(lines, title) + hints.map((h2) => `<div class="offer-msg credits-hint">${esc7(h2)}</div>`).join("");
 };
@@ -28026,4 +28088,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-bb988a563781.mjs.map
+//# sourceMappingURL=moonsinger-8c38d9e60d87.mjs.map
