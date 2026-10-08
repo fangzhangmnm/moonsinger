@@ -13,6 +13,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const MODELS_ROOT = join(ROOT, "..", "20260903 PWA Models");
 export const OUT = join(ROOT, "src", "singer", "packs.gen.ts");
 /** 唱歌要的包：权重（时长接管版）+ 运行时 + 每种语言一个文本前端。 */
+/** GM 的货架（0.4，契约 §10.2）：官方 SoundFont 包，只在「从官方音色库选乐器」时下载；选中的那一件子集化嵌进歌，包本身不进歌。user 2026-10-07「先看看GS」「好，不拆」。 */
+export const GM_SOUNDFONT = "sf2-generaluser-gs-2.0.3-20260222";
 export const SINGER = {
   voice: "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007",
   runtime: "runtime-onnxruntime-web-1.30.0-20261001",
@@ -22,7 +24,7 @@ export const SINGER = {
 export function render() {
   if (!existsSync(MODELS_ROOT)) return null;
   const packs = {};
-  for (const slug of [SINGER.voice, SINGER.runtime, ...Object.values(SINGER.lang)]) {
+  for (const slug of [SINGER.voice, SINGER.runtime, ...Object.values(SINGER.lang), GM_SOUNDFONT]) {
     const p = join(MODELS_ROOT, "packs", slug, "manifest.json");
     if (!existsSync(p)) throw new Error(`pack ${slug} is not in the models repo`);
     const bytes = readFileSync(p);
@@ -35,6 +37,7 @@ export function render() {
 // packId = sha256(manifest.json 原字节) = app 钉死的信任根。
 import type { EmbeddedPack } from "@internal/model-packs";
 export const SINGER = ${JSON.stringify(SINGER)} as const;
+export const GM_SOUNDFONT = ${JSON.stringify(GM_SOUNDFONT)};
 export const PACKS: Record<string, EmbeddedPack> = {
 ${lines(packs)}
 };

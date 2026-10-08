@@ -141,7 +141,7 @@ export function withActive(extras: Extras, id: string, hum: Hum): Extras {
 export interface Sf2CandidateArgs {
   name: string; bank: number; program: number;
   subset: Uint8Array; sha256: string;                                   // 子集字节 + 它的 sha256（调用方算，crypto.subtle 是异步的）
-  origin: { name: string; fileSha256: string; bytes: number };          // 从哪个整包切的
+  origin: { name: string; fileSha256: string; bytes: number; pack?: string };   // 从哪个整包切的；pack = 家族模型仓的包名（官方货架来的才有）
   credit: { attribution: string[]; license: { name: string; url?: string; text?: string } };
 }
 /** 加一个 GM 候选（样本类音源 by value：子集字节进歌、候选记 source / credit / spec）并让它上场。同一份字节（同 sha256）只存一份。 */

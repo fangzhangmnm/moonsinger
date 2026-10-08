@@ -22,7 +22,7 @@ import { Singer, type SingResult } from "../singer/client.ts";
 import { encodeMp3 } from "../export/mp3.ts";
 import { createPackStore } from "@internal/model-packs";
 import { showNotice, configureFloors } from "@internal/workbench-elements";
-import { PACKS, CREDIT } from "../singer/packs.gen.ts";
+import { PACKS, CREDIT, GM_SOUNDFONT } from "../singer/packs.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, activeCandidateName, activeId, activeGm, gmCandidates, withActive, withSf2Candidate, CANDIDATE_ID, type Extras, type Quality } from "../format/project.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
@@ -532,7 +532,27 @@ function openPartSheet(): void {
     doc.extras = withRoleName(doc.extras, n, st.song.hum, quality(), sound); view.render(); renderTitle();
   };
   // 从 .sf2 文件选乐器（契约 §10：只把选中的那一件子集化嵌进歌；文件本身不留在设备上——user「拖进来的默认不留」）
-  let picked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel: string } | null = null;
+  let picked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel: string; pack?: string } | null = null;
+  // 官方货架：家族模型仓里的 GeneralUser GS 包（32 MB）——点了才下载（有意图才加载）；之后和自己拖进来的文件走同一个面板
+  const pickOfficial = async () => {
+    const slug = GM_SOUNDFONT, m = PACKS[slug].manifest as unknown as { name: string; totalBytes: number };
+    try {
+      const [st] = await packStore.status([slug]);
+      if (!st.ready) {
+        let last: unknown = null;
+        for (const base of modelBases()) {
+          try { progress(`下载 ${m.name}…`); await packStore.download([slug], base, (p) => progress(`下载音色库 ${Math.round((p.done / p.total) * 100)}%`)); last = null; break; }
+          catch (e) { last = e; }
+        }
+        if (last) throw new Error(`音色库下载不下来（试过 ${modelBases().join("、")}）：${(last as Error).message}。可以在设置里换模型来源，或从本机 .sf2 文件选。`);
+      }
+      progress("");
+      const blobs = await packStore.chunks(slug), parts = await Promise.all(blobs.map((b) => b.arrayBuffer()));
+      const bytes = new Uint8Array(parts.reduce((s, p) => s + p.byteLength, 0)); let o = 0; for (const p of parts) { bytes.set(new Uint8Array(p), o); o += p.byteLength; }
+      const presets = listSf2Presets(bytes), first = presets.find((p) => p.bank === 0) ?? presets[0];
+      picked = { name: m.name, bytes, presets, sel: `${first.bank}:${first.program}`, pack: slug }; draw();
+    } catch (e) { progress(""); showError((e as Error).message); }
+  };
   const pickFile = () => {
     const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".sf2,audio/x-soundfont"; inp.hidden = true; document.body.append(inp);
     inp.addEventListener("change", async () => {
@@ -555,8 +575,12 @@ function openPartSheet(): void {
       const subset = subsetSf2(picked.bytes, [{ bank, program }]), inf = sf2Info(picked.bytes);
       const [sha256, fileSha256] = await Promise.all([sha256Hex(subset), sha256Hex(picked.bytes)]);
       if (subset.length > 10e6) info(`「${name}」的声音有 ${sizeText(subset.length)}，嵌进歌里存档会变大、变慢`);   // 提示后仍可嵌（user 2026-10-07）
-      doc.extras = withSf2Candidate(doc.extras, { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length },
-        credit: { attribution: [inf.name, inf.engineer, inf.copyright].filter((x): x is string => !!x), license: { name: "unknown", text: inf.comment } } }, st.song.hum);
+      // 署名 / 许可证快照 by value：官方包从包清单抄（名字 + 出处 + 许可证名），自己拖进来的只有 INFO 块里的字、许可证 unknown（角色卡可填）
+      const lic = picked.pack ? (PACKS[picked.pack].manifest as unknown as { license: { name: string; attribution: string }; source: { model: string } }) : null;
+      const credit = lic
+        ? { attribution: [lic.license.attribution], license: { name: lic.license.name, url: lic.source.model, text: inf.comment } }
+        : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x): x is string => !!x), license: { name: "unknown", text: inf.comment } };
+      doc.extras = withSf2Candidate(doc.extras, { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...(picked.pack ? { pack: picked.pack } : {}) }, credit }, st.song.hum);
       picked = null; setQuality("gm"); draw();
     } catch (e) { showError(`加不进来：${(e as Error).message}`); }
   };
@@ -583,7 +607,8 @@ function openPartSheet(): void {
       chip("q:light", "月读（轻量）", q === "light", "元音采样，按下即响、任何设备都能跑") +
       gmCandidates(doc.extras).map((c) => chip(`cand:${c.id}`, c.name, q === "gm" && aid === c.id, c.bytes ? `SoundFont ${c.bank}:${c.program}，声音嵌在歌里（${sizeText(c.bytes.length)}）` : "声音没随这首歌带来")).join("") +
       (q === "none" ? chip("q:none", `${esc(activeCandidateName(doc.extras) ?? "原来的乐器")}（没人上场）`, true, "这件乐器这一版出不了声，所以没人上场") : "") + `</div>` +
-      `<div class="set-row"><button class="btn" data-v="sf2:pick">从 SoundFont（.sf2）文件选乐器…</button></div>` + pickerHtml() +
+      `<div class="set-row"><button class="btn" data-v="sf2:official" title="家族模型仓里的 GeneralUser GS 2.0.3（287 件乐器含 13 套鼓组，32 MB；第一次要下载，之后留在设备上）">从官方音色库选乐器…</button>` +
+      `<button class="btn" data-v="sf2:pick" title="自己的 .sf2 文件：只把选中的那一件嵌进歌，文件本身不留">从 .sf2 文件选乐器…</button></div>` + pickerHtml() +
       `<div class="offer-msg">选了的乐器只把用到的那一件（通常几 MB）嵌进歌里，歌到哪都响；.sf2 文件本身不留在设备上。</div>` +
       (q === "none" ? "" : `<div class="part-sec">没写歌词的音唱什么</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) +
       `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
@@ -604,6 +629,7 @@ function openPartSheet(): void {
     if (v === "q:full" || v === "q:light") setQuality(v.slice(2) as Quality);
     else if (v.startsWith("cand:")) setActiveGm(v.slice(5));
     else if (v === "sf2:pick") { pickFile(); return; }
+    else if (v === "sf2:official") { void pickOfficial(); return; }
     else if (v === "sf2:add") { void addPicked(); return; }
     else if (v === "sf2:cancel") picked = null;
     else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
