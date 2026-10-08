@@ -26,7 +26,8 @@ import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
-import { cachedSound, rememberSound, listCachedSounds, forgetSound } from "../gm/sound-cache.ts";
+import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes } from "../gm/sound-cache.ts";
+import { GmSynth } from "../gm/synth.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
 import { type PaperKind, PAPER_KINDS, PAPER_NOTE, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
@@ -75,9 +76,12 @@ configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 
 // ── 试听：月读的元音采样器（出一个音就响；只唱「哼」那一个字，不看歌词——user「还是单一元音更适合当blueprint」） ─────
 const sampler = new Sampler();
+// 实时合成器（AudioWorklet 里的 TinySoundFont，src/gm/synth.ts）：SoundFont 候选的试听走它——按下 note-on、松开 note-off，长音乐器按着就一直响，
+//   松开由乐器自己的包络收尾（user「钢琴按了之后一会声音就没了」「preview的时候那些可以长时间的乐器 包络是不是没做」「做，这个以后我们要做实时播放的」）。
+const synth = new GmSynth(() => singer.unlock(), new URL(`./${__SYNTH_WORKLET__}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 const sound = {
-  down: (p: Pitch, id = "main") => { if (engineNow() === "soundfont") { void gmDown(midiOf(p)); return; } sampler.down(midiOf(p), st.song.hum, id); },
-  up: (id = "main") => { if (engineNow() !== "soundfont") sampler.up(id); },   // GM 乐器：松键不截断，让它自己收尾（试听是一个固定长度的音）
+  down: (p: Pitch, id = "main") => { if (engineNow() === "soundfont") { gmDown(midiOf(p), id); return; } sampler.down(midiOf(p), st.song.hum, id); },
+  up: (id = "main") => { if (engineNow() === "soundfont") gmUp(id); else sampler.up(id); },
 };
 /** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
 const soundTok = (s: EditorState, i: number, id = "main") => { const t = s.song.tokens[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id); };
@@ -302,21 +306,24 @@ async function renderGm(): Promise<SingResult | null> {
   const r = await singer.gm(bytes, g.subsetSha256, notes, GM_SR, 2);
   lastGm = { key, r }; return r;
 }
-/** SoundFont 候选的试听：出一个音（按 0.35 s + 乐器自己收尾），worker 渲染、按音高缓存。
- *  TODO（user 2026-10-07「钢琴按了之后一会声音就没了」「preview的时候那些可以长时间的乐器 包络是不是没做」）：改成 AudioWorklet 里的实时合成器，按下 note-on、松开 note-off。 */
-const gmAudCache = new Map<string, Float32Array>();
-async function gmDown(midi: number): Promise<void> {
-  const g = activeGm(doc.extras); if (!g) return;
-  const key = `${g.subsetSha256}:${midi}`;
-  let smp = gmAudCache.get(key);
-  if (!smp) {
-    try { const bytes = await resolveGmBytes(g); smp = (await singer.gm(bytes, g.subsetSha256, [{ preset: [g.bank, g.program], key: midi, vel: 0.8, t0: 0, t1: 0.35 }], GM_SR, 1.5)).samples; }
-    catch (e) { showError(`「${g.name}」响不了：${(e as Error).message}`); return; }
-    gmAudCache.set(key, smp);
-  }
-  const ctx = singer.unlock(), buf = ctx.createBuffer(1, smp.length, GM_SR); buf.copyToChannel(smp as Float32Array<ArrayBuffer>, 0);
-  const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); src.start();
+/** SoundFont 候选的试听走实时合成器。载子集是异步的（几 MB，瞬时）：没载好时这一下丢掉、顺手去载（试听要即时，迟到的音更烦）。 */
+const gmHeld = new Map<string, { bank: number; program: number; key: number }>();   // 哪根手指 / 哪个键按着哪个音
+let gmPreparing: Promise<void> | null = null;
+function prepareSynth(): Promise<void> {
+  const g = activeGm(doc.extras); if (!g || synth.loaded === g.subsetSha256) return Promise.resolve();
+  if (gmPreparing) return gmPreparing;
+  gmPreparing = (async () => { const bytes = await resolveGmBytes(g); await synth.load(g.subsetSha256, bytes); })()
+    .catch((e) => { showError(`「${g.name}」响不了：${(e as Error).message}`); })
+    .finally(() => { gmPreparing = null; });
+  return gmPreparing;
 }
+function gmDown(midi: number, id: string): void {
+  const g = activeGm(doc.extras); if (!g) return;
+  if (synth.loaded !== g.subsetSha256) { void prepareSynth(); return; }
+  singer.unlock();
+  gmUp(id); synth.noteOn(g.bank, g.program, midi, 0.8); gmHeld.set(id, { bank: g.bank, program: g.program, key: midi });
+}
+function gmUp(id: string): void { const h = gmHeld.get(id); if (h) { gmHeld.delete(id); synth.noteOff(h.bank, h.program, h.key); } }
 /** 轻量版：用元音采样器按乐谱唱（全唱「哼」那个字）。 */
 function playLight(who = "轻量版"): void {
   const notes = lightNotes();
@@ -441,7 +448,10 @@ function openSettings(): void {
   const sndIn = box.querySelector<HTMLInputElement>("#sndIn")!, sndCache = box.querySelector<HTMLElement>("#sndCache")!;
   const refreshSounds = async () => {
     const cached = await listCachedSounds(), bySha = new Map(cached.map((c) => [c.sha256, c])), known = new Set(Object.values(SOUNDS).map((e) => e.sha256));
-    sndCache.innerHTML = Object.values(SOUNDS).map((e) => { const c = bySha.get(e.sha256); return `<div class="set-row"><span>${esc(e.name)} · ${sizeText(e.bytes)} · ${c ? "已留在设备上" : "没下载"}</span>${c ? `<button class="btn" data-v="snd:del:${esc(e.id)}">删掉</button>` : `<button class="btn" data-v="snd:get:${esc(e.id)}">下载留着</button>`}</div>`; }).join("") +
+    const total = cached.reduce((n, c) => n + c.bytes, 0), mem = soundMemoryBytes();
+    let quota = ""; try { const est = await navigator.storage?.estimate?.(); if (est?.usage !== undefined && est.quota) quota = `；这个站点共用了 ${sizeText(est.usage)} / 配额 ${sizeText(est.quota)}`; } catch { /* 没有就不显示 */ }
+    sndCache.innerHTML = `<div class="set-row"><span>设备上留着 ${sizeText(total)}${quota}；内存里现在 ${sizeText(mem)}</span>${mem ? `<button class="btn" data-v="snd:mem" title="放掉内存里的整包（设备上留着的不动，下次用再从设备读）">放掉内存</button>` : ""}</div>` +
+      Object.values(SOUNDS).map((e) => { const c = bySha.get(e.sha256); return `<div class="set-row"><span>${esc(e.name)} · ${sizeText(e.bytes)} · ${c ? "已留在设备上" : "没下载"}</span>${c ? `<button class="btn" data-v="snd:del:${esc(e.id)}">删掉</button>` : `<button class="btn" data-v="snd:get:${esc(e.id)}">下载留着</button>`}</div>`; }).join("") +
       cached.filter((c) => !known.has(c.sha256)).map((c) => `<div class="set-row"><span>别的版本 / 别的 app 留的（${c.sha256.slice(0, 8)}…）· ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">删掉</button></div>`).join("") || "（没有）";
   };
   void refreshSounds();
@@ -454,6 +464,7 @@ function openSettings(): void {
     else if (v?.startsWith("snd:get:")) { const e = SOUNDS[v.slice(8)]; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; void fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`)).then(() => { progress(""); info(`${e.name} 留在设备上了`); }).catch((err) => { progress(""); showError((err as Error).message); }).finally(() => void refreshSounds()); }
     else if (v?.startsWith("snd:del:")) { const e = SOUNDS[v.slice(8)]; void forgetSound(e.sha256).then(refreshSounds); }
     else if (v?.startsWith("snd:delsha:")) void forgetSound(v.slice(11)).then(refreshSounds);
+    else if (v === "snd:mem") { releaseSoundMemory(); void refreshSounds(); }
     else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
     else if (v === "reset") void shell.forceReset();
   });
@@ -493,7 +504,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   });
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
-(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; } };   // cssHash：样式表版本（见 scripts/build.sh）
+(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
@@ -523,7 +534,7 @@ function noCast(what: string): void {
   showError(`「${roleName(doc.extras)}」这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，点谱前面的「${roleName(doc.extras)}」，在「谁来演」选月读。`);
 }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
-function setActive(id: string): void { doc.extras = withActive(doc.extras, id, st.song.hum); view.render(); renderTitle(); }
+function setActive(id: string): void { doc.extras = withActive(doc.extras, id, st.song.hum); synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); }
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");
 /** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。
  *  不提醒、不帮用户写任何东西（user「只是举例子，然后这个你也不应该强迫或者提醒用户写这个，因为谱子也不绑定乐器的」「…一键插入按钮 不要」）。 */
@@ -620,7 +631,7 @@ function openPartSheet(): void {
       try {
         const bytes = new Uint8Array(await f.arrayBuffer()), sha = await sha256Hex(bytes);
         if (sha !== g.origin.fileSha256) throw new Error(`「${f.name}」不是歌里记的那个「${g.origin.name}」（sha256 ${sha.slice(0, 12)}… ≠ ${g.origin.fileSha256.slice(0, 12)}…）`);
-        await rememberSound(sha, bytes, true); sessionSubsets.delete(g.subsetSha256); gmAudCache.clear(); lastGm = null;
+        await rememberSound(sha, bytes, true); sessionSubsets.delete(g.subsetSha256); lastGm = null;
         await resolveGmBytes(g); info(`找到了：「${g.name}」能响了`); draw();
       } catch (e) { showError((e as Error).message); }
     });
@@ -628,7 +639,7 @@ function openPartSheet(): void {
   const finishAdd = (c: Chosen, embed: boolean) => {
     doc.extras = withSf2Candidate(doc.extras, { ...c, embed }, st.song.hum);
     if (!embed) sessionSubsets.set(c.sha256, c.subset);   // 弱引用：本次打开里直接能响
-    picked = null; over = null; gmAudCache.clear(); view.render(); renderTitle(); draw();
+    picked = null; over = null; synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); draw();
   };
   const addPicked = async () => {
     if (!picked) return;
@@ -717,7 +728,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.mtime = o.handle ? (o.mtime ?? null) : null; doc.extras = o.extras;
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };   // pad 是独立设备：换歌不换它的「1=」和调式
   doc.saved = { song: st.song, role: roleName(o.extras), active: activeId(o.extras) };
-  lastFull = null;
+  lastFull = null; lastGm = null; synth.allOff(); gmHeld.clear(); void prepareSynth();
   view.render(); pad.render(); renderTitle();
 }
 /** 存好了：文件名从此定下来（之后和歌名各管各的；user「之后各管各的同意」）。 */

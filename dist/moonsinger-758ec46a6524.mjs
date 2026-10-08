@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.4.3-2026-10-07";
+var APP_VERSION = "v0.4.4-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5946,6 +5946,127 @@ async function forgetSound(sha256) {
   } catch {
   }
 }
+function releaseSoundMemory() {
+  memory.clear();
+}
+function soundMemoryBytes() {
+  let n2 = 0;
+  for (const b of memory.values()) n2 += b.length;
+  return n2;
+}
+
+// src/gm/synth.ts
+var GmSynth = class {
+  node = null;
+  moduleAdded = null;
+  wasm = null;
+  readyP = null;
+  seq = 0;
+  pending = /* @__PURE__ */ new Map();
+  loadedSha = "";
+  loading = null;
+  presets = /* @__PURE__ */ new Map();
+  // "bank:program" → 预设下标
+  meterCb = null;
+  ctx;
+  moduleUrl;
+  wasmUrl;
+  constructor(ctx2, moduleUrl, wasmUrl) {
+    this.ctx = ctx2;
+    this.moduleUrl = moduleUrl;
+    this.wasmUrl = wasmUrl;
+  }
+  /** 装好 worklet + WASM（第一次用才做；AudioContext 可以还没解锁）。 */
+  ensure() {
+    if (this.readyP) return this.readyP;
+    this.readyP = (async () => {
+      const ctx2 = this.ctx();
+      this.moduleAdded ??= ctx2.audioWorklet.addModule(this.moduleUrl.href);
+      this.wasm ??= fetch(this.wasmUrl).then(async (r) => {
+        if (!r.ok) throw new Error(`TinySoundFont (standalone): HTTP ${r.status}`);
+        return WebAssembly.compile(await r.arrayBuffer());
+      });
+      const [, module] = await Promise.all([this.moduleAdded, this.wasm]);
+      const node = new AudioWorkletNode(ctx2, "gm-synth", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: { module } });
+      await new Promise((ok, fail) => {
+        node.port.onmessage = (e) => {
+          const m = e.data;
+          if (m.type === "ready") ok();
+          else if (m.type === "loaded") {
+            this.pending.get(m.id)?.ok();
+            this.pending.delete(m.id);
+            this.presets = new Map(m.presets.map(([b, p], i) => [`${b}:${p}`, i]));
+          } else if (m.type === "error") {
+            if (m.id !== void 0) {
+              this.pending.get(m.id)?.fail(new Error(m.message));
+              this.pending.delete(m.id);
+            } else fail(new Error(m.message));
+          } else if (m.type === "meter") this.meterCb?.(m.peak, m.active);
+        };
+      });
+      node.connect(ctx2.destination);
+      this.node = node;
+    })().catch((e) => {
+      this.readyP = null;
+      throw e;
+    });
+    return this.readyP;
+  }
+  post(m, transfer = []) {
+    this.node?.port.postMessage(m, transfer);
+  }
+  /** 载一份子集（同一份不重载）。 */
+  async load(sha, bytes) {
+    if (this.loadedSha === sha) return;
+    if (this.loading) await this.loading.catch(() => {
+    });
+    if (this.loadedSha === sha) return;
+    this.loading = (async () => {
+      await this.ensure();
+      const id = ++this.seq, copy = bytes.slice();
+      await new Promise((ok, fail) => {
+        this.pending.set(id, { ok, fail });
+        this.post({ type: "load", id, sha, bytes: copy }, [copy.buffer]);
+      });
+      this.loadedSha = sha;
+    })().finally(() => {
+      this.loading = null;
+    });
+    return this.loading;
+  }
+  get loaded() {
+    return this.loadedSha;
+  }
+  /** 预设下标（载好的子集里按 bank:program 找；没有 = −1）。 */
+  presetIndex(bank, program) {
+    return this.presets.get(`${bank}:${program}`) ?? -1;
+  }
+  /** 按下 / 松开（t = AudioContext 的秒，不给 = 立刻）。 */
+  noteOn(bank, program, key, vel, t) {
+    const p = this.presetIndex(bank, program);
+    if (p >= 0) this.post({ type: "noteOn", preset: p, key, vel, t });
+  }
+  noteOff(bank, program, key, t) {
+    const p = this.presetIndex(bank, program);
+    if (p >= 0) this.post({ type: "noteOff", preset: p, key, t });
+  }
+  allOff() {
+    this.post({ type: "allOff" });
+  }
+  unload() {
+    this.post({ type: "unload" });
+    this.loadedSha = "";
+    this.presets.clear();
+  }
+  /** 电平表（e2e / 调试用）：每 1024 帧回报峰值和正在发声的 voice 数。 */
+  meter(cb) {
+    this.meterCb = cb;
+    this.post({ type: "meter", on: !!cb });
+  }
+  get now() {
+    return this.ctx().currentTime;
+  }
+};
 
 // src/gm/sf2-subset.ts
 var REC = { phdr: 38, pbag: 4, pmod: 10, pgen: 4, inst: 22, ibag: 4, imod: 10, igen: 4, shdr: 46 };
@@ -6312,18 +6433,19 @@ function showUpdateBar() {
 bar.innerHTML = `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="padBtn" class="btn is-on" title="\u952E\u76D8\uFF08pad\uFF09"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 var sampler = new Sampler();
+var synth = new GmSynth(() => singer.unlock(), new URL(`./${"synth-worklet-70420f49185f.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var sound = {
   down: (p, id = "main") => {
     if (engineNow() === "soundfont") {
-      void gmDown(midiOf(p));
+      gmDown(midiOf(p), id);
       return;
     }
     sampler.down(midiOf(p), st.song.hum, id);
   },
   up: (id = "main") => {
-    if (engineNow() !== "soundfont") sampler.up(id);
+    if (engineNow() === "soundfont") gmUp(id);
+    else sampler.up(id);
   }
-  // GM 乐器：松键不截断，让它自己收尾（试听是一个固定长度的音）
 };
 var soundTok = (s, i, id = "main") => {
   const t = s.song.tokens[i];
@@ -6616,28 +6738,40 @@ async function renderGm() {
   lastGm = { key, r };
   return r;
 }
-var gmAudCache = /* @__PURE__ */ new Map();
-async function gmDown(midi) {
+var gmHeld = /* @__PURE__ */ new Map();
+var gmPreparing = null;
+function prepareSynth() {
+  const g2 = activeGm(doc.extras);
+  if (!g2 || synth.loaded === g2.subsetSha256) return Promise.resolve();
+  if (gmPreparing) return gmPreparing;
+  gmPreparing = (async () => {
+    const bytes = await resolveGmBytes(g2);
+    await synth.load(g2.subsetSha256, bytes);
+  })().catch((e) => {
+    showError(`\u300C${g2.name}\u300D\u54CD\u4E0D\u4E86\uFF1A${e.message}`);
+  }).finally(() => {
+    gmPreparing = null;
+  });
+  return gmPreparing;
+}
+function gmDown(midi, id) {
   const g2 = activeGm(doc.extras);
   if (!g2) return;
-  const key = `${g2.subsetSha256}:${midi}`;
-  let smp = gmAudCache.get(key);
-  if (!smp) {
-    try {
-      const bytes = await resolveGmBytes(g2);
-      smp = (await singer.gm(bytes, g2.subsetSha256, [{ preset: [g2.bank, g2.program], key: midi, vel: 0.8, t0: 0, t1: 0.35 }], GM_SR, 1.5)).samples;
-    } catch (e) {
-      showError(`\u300C${g2.name}\u300D\u54CD\u4E0D\u4E86\uFF1A${e.message}`);
-      return;
-    }
-    gmAudCache.set(key, smp);
+  if (synth.loaded !== g2.subsetSha256) {
+    void prepareSynth();
+    return;
   }
-  const ctx2 = singer.unlock(), buf = ctx2.createBuffer(1, smp.length, GM_SR);
-  buf.copyToChannel(smp, 0);
-  const src = ctx2.createBufferSource();
-  src.buffer = buf;
-  src.connect(ctx2.destination);
-  src.start();
+  singer.unlock();
+  gmUp(id);
+  synth.noteOn(g2.bank, g2.program, midi, 0.8);
+  gmHeld.set(id, { bank: g2.bank, program: g2.program, key: midi });
+}
+function gmUp(id) {
+  const h = gmHeld.get(id);
+  if (h) {
+    gmHeld.delete(id);
+    synth.noteOff(h.bank, h.program, h.key);
+  }
 }
 function playLight(who = "\u8F7B\u91CF\u7248") {
   const notes = lightNotes();
@@ -6815,7 +6949,14 @@ ${esc3(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-ap
   const sndIn = box.querySelector("#sndIn"), sndCache = box.querySelector("#sndCache");
   const refreshSounds = async () => {
     const cached = await listCachedSounds(), bySha = new Map(cached.map((c) => [c.sha256, c])), known = new Set(Object.values(SOUNDS).map((e) => e.sha256));
-    sndCache.innerHTML = Object.values(SOUNDS).map((e) => {
+    const total = cached.reduce((n2, c) => n2 + c.bytes, 0), mem = soundMemoryBytes();
+    let quota = "";
+    try {
+      const est = await navigator.storage?.estimate?.();
+      if (est?.usage !== void 0 && est.quota) quota = `\uFF1B\u8FD9\u4E2A\u7AD9\u70B9\u5171\u7528\u4E86 ${sizeText(est.usage)} / \u914D\u989D ${sizeText(est.quota)}`;
+    } catch {
+    }
+    sndCache.innerHTML = `<div class="set-row"><span>\u8BBE\u5907\u4E0A\u7559\u7740 ${sizeText(total)}${quota}\uFF1B\u5185\u5B58\u91CC\u73B0\u5728 ${sizeText(mem)}</span>${mem ? `<button class="btn" data-v="snd:mem" title="\u653E\u6389\u5185\u5B58\u91CC\u7684\u6574\u5305\uFF08\u8BBE\u5907\u4E0A\u7559\u7740\u7684\u4E0D\u52A8\uFF0C\u4E0B\u6B21\u7528\u518D\u4ECE\u8BBE\u5907\u8BFB\uFF09">\u653E\u6389\u5185\u5B58</button>` : ""}</div>` + Object.values(SOUNDS).map((e) => {
       const c = bySha.get(e.sha256);
       return `<div class="set-row"><span>${esc3(e.name)} \xB7 ${sizeText(e.bytes)} \xB7 ${c ? "\u5DF2\u7559\u5728\u8BBE\u5907\u4E0A" : "\u6CA1\u4E0B\u8F7D"}</span>${c ? `<button class="btn" data-v="snd:del:${esc3(e.id)}">\u5220\u6389</button>` : `<button class="btn" data-v="snd:get:${esc3(e.id)}">\u4E0B\u8F7D\u7559\u7740</button>`}</div>`;
     }).join("") + cached.filter((c) => !known.has(c.sha256)).map((c) => `<div class="set-row"><span>\u522B\u7684\u7248\u672C / \u522B\u7684 app \u7559\u7684\uFF08${c.sha256.slice(0, 8)}\u2026\uFF09\xB7 ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">\u5220\u6389</button></div>`).join("") || "\uFF08\u6CA1\u6709\uFF09";
@@ -6849,7 +6990,10 @@ ${esc3(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-ap
       const e2 = SOUNDS[v.slice(8)];
       void forgetSound(e2.sha256).then(refreshSounds);
     } else if (v?.startsWith("snd:delsha:")) void forgetSound(v.slice(11)).then(refreshSounds);
-    else if (v === "check") void shell.checkForUpdate().then((r) => {
+    else if (v === "snd:mem") {
+      releaseSoundMemory();
+      void refreshSounds();
+    } else if (v === "check") void shell.checkForUpdate().then((r) => {
       if (r === "found") {
         close();
         showUpdateBar();
@@ -6914,7 +7058,7 @@ function offerFile(file, title, msg, onDone) {
 }
 window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "537be153e240", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
   embedSoftLimit = n2;
-} };
+}, synth };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6941,6 +7085,9 @@ function noCast(what) {
 }
 function setActive(id) {
   doc.extras = withActive(doc.extras, id, st.song.hum);
+  synth.allOff();
+  gmHeld.clear();
+  void prepareSynth();
   view.render();
   renderTitle();
 }
@@ -7060,7 +7207,6 @@ function openPartSheet() {
         if (sha !== g2.origin.fileSha256) throw new Error(`\u300C${f.name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C${g2.origin.name}\u300D\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g2.origin.fileSha256.slice(0, 12)}\u2026\uFF09`);
         await rememberSound(sha, bytes, true);
         sessionSubsets.delete(g2.subsetSha256);
-        gmAudCache.clear();
         lastGm = null;
         await resolveGmBytes(g2);
         info(`\u627E\u5230\u4E86\uFF1A\u300C${g2.name}\u300D\u80FD\u54CD\u4E86`);
@@ -7075,7 +7221,9 @@ function openPartSheet() {
     if (!embed) sessionSubsets.set(c.sha256, c.subset);
     picked = null;
     over = null;
-    gmAudCache.clear();
+    synth.allOff();
+    gmHeld.clear();
+    void prepareSynth();
     view.render();
     renderTitle();
     draw();
@@ -7207,6 +7355,10 @@ function loadDoc(song, o) {
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };
   doc.saved = { song: st.song, role: roleName(o.extras), active: activeId(o.extras) };
   lastFull = null;
+  lastGm = null;
+  synth.allOff();
+  gmHeld.clear();
+  void prepareSynth();
   view.render();
   pad.render();
   renderTitle();
@@ -7559,4 +7711,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-64340d773890.mjs.map
+//# sourceMappingURL=moonsinger-758ec46a6524.mjs.map

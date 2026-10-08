@@ -55,3 +55,7 @@ export async function forgetSound(sha256: string): Promise<void> {
   if (!hasCaches()) return;
   try { await (await caches.open(CACHE)).delete(keyOf(sha256)); } catch { /* 没有就算了 */ }
 }
+/** 放掉内存里的整包（user「你需要能手动释放缓存空间」）；持久缓存不动。 */
+export function releaseSoundMemory(): void { memory.clear(); }
+/** 内存里现在占着多少字节（整包）。 */
+export function soundMemoryBytes(): number { let n = 0; for (const b of memory.values()) n += b.length; return n; }

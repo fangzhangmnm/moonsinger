@@ -18,6 +18,7 @@ import "./format-guard.test.ts";
 import "./sf2.test.ts";
 import "./gm-format.test.ts";
 import "./sounds.test.ts";
+import "./synth-wasm.test.ts";
 import { run } from "./runner.mjs";
 
 await run();
