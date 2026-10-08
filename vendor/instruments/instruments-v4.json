@@ -1,6 +1,6 @@
 {
- "v": 3,
- "date": "2026-10-07",
+ "v": 4,
+ "date": "2026-10-08",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效）。id = Wikidata QID（没有用 x: 本地 id）；ids 束里 gm 只放本尊，平替在 substitutes[]（按 basis 强弱 + 分类号同到的位数排）。year = 这个概念的声音第一次能被听见；lineageYear = 算上原文点名的前身。fundamentalRank 一律 null，归 user。AI 判的字段：musicxml、styles、技法号挂母乐器、平替 family / 自动、部分 hs 和中日名。",
  "defs": {
@@ -252,6 +252,36 @@
     "id": "hawaii",
     "icon": "🌺",
     "zh": "夏威夷风"
+   },
+   {
+    "id": "new-age",
+    "icon": "🌿",
+    "zh": "新世纪风"
+   },
+   {
+    "id": "space",
+    "icon": "🌌",
+    "zh": "太空风"
+   },
+   {
+    "id": "fairytale",
+    "icon": "🧸",
+    "zh": "童话治愈风"
+   },
+   {
+    "id": "anime-electro",
+    "icon": "⚡",
+    "zh": "电音动漫歌风"
+   },
+   {
+    "id": "symphonic-metal",
+    "icon": "🤘",
+    "zh": "交响金属风"
+   },
+   {
+    "id": "folk",
+    "icon": "🏕️",
+    "zh": "民谣风"
    }
   ],
   "ears": [
@@ -470,14 +500,39 @@
    ],
    "styles": [
     {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "beethoven",
      "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "school-music",
+     "ear": "zh",
      "weight": 2
     },
     {
      "tag": "rock-pop",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -526,9 +581,9 @@
     "ja": "エレクトリック・グランドピアノ"
    },
    "kind": "instrument",
-   "year": 1927,
+   "year": 1931,
    "yearApprox": false,
-   "lineageYear": 1927,
+   "lineageYear": 1931,
    "era": "world-wars",
    "communityEra": {
     "region": "德国",
@@ -796,9 +851,9 @@
     "ja": "エレクトリック・クラヴィコード（ホーナー・クラビネット）"
    },
    "kind": "instrument",
-   "year": 1961,
+   "year": 1964,
    "yearApprox": false,
-   "lineageYear": 1961,
+   "lineageYear": 1964,
    "era": "atomic",
    "communityEra": {
     "region": "德国",
@@ -883,7 +938,22 @@
    ],
    "styles": [
     {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "space",
      "ear": "common",
      "weight": 1
     }
@@ -945,6 +1015,11 @@
    ],
    "styles": [
     {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "beethoven-band",
      "ear": "common",
      "weight": 2
@@ -956,6 +1031,16 @@
     },
     {
      "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "school-music",
+     "ear": "zh",
+     "weight": 1
+    },
+    {
+     "tag": "fairground",
      "ear": "common",
      "weight": 1
     }
@@ -1004,13 +1089,19 @@
    ],
    "styles": [
     {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "fairground",
      "ear": "common",
      "weight": 2
     }
    ],
    "icon": {
-    "id": "qlementine-icons--idiophone",
+    "id": "qlementine-icons--idiophone--tile",
+    "derivedFrom": "qlementine-icons--idiophone",
     "candidates": [
      "qlementine-icons--idiophone"
     ],
@@ -1118,6 +1209,11 @@
      "tag": "latin",
      "ear": "western",
      "weight": 1
+    },
+    {
+     "tag": "africa",
+     "ear": "western",
+     "weight": 1
     }
    ],
    "icon": {
@@ -1173,8 +1269,23 @@
      "weight": 2
     },
     {
+     "tag": "africa",
+     "ear": "western",
+     "weight": 2
+    },
+    {
      "tag": "beethoven",
      "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "school-music",
+     "ear": "zh",
      "weight": 1
     }
    ],
@@ -1340,9 +1451,9 @@
     "ja": "トーンホイール・オルガン（ハモンド）"
    },
    "kind": "instrument",
-   "year": 1934,
+   "year": 1935,
    "yearApprox": false,
-   "lineageYear": 1897,
+   "lineageYear": 1906,
    "era": "world-wars",
    "communityEra": {
     "region": "美国",
@@ -1427,6 +1538,16 @@
      "tag": "church",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -1552,6 +1673,16 @@
      "ear": "zh",
      "weight": 3,
      "as": "Q804099"
+    },
+    {
+     "tag": "celtic",
+     "ear": "western",
+     "weight": 1
+    },
+    {
+     "tag": "fairground",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -1622,10 +1753,16 @@
      "tag": "school-music",
      "ear": "zh",
      "weight": 2
+    },
+    {
+     "tag": "folk",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
-    "id": "qlementine-icons--harmonica",
+    "id": "qlementine-icons--harmonica--tile",
+    "derivedFrom": "qlementine-icons--harmonica",
     "candidates": [
      "qlementine-icons--harmonica"
     ],
@@ -1740,6 +1877,26 @@
      "tag": "latin",
      "ear": "western",
      "weight": 3
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "hawaii",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "andes",
+     "ear": "western",
+     "weight": 2
+    },
+    {
+     "tag": "folk",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -1806,6 +1963,26 @@
      "tag": "western",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "folk",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "paris",
+     "ear": "western",
+     "weight": 2
+    },
+    {
+     "tag": "hawaii",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "celtic",
+     "ear": "western",
+     "weight": 1
     }
    ],
    "icon": {
@@ -1953,6 +2130,16 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -2033,6 +2220,16 @@
      "weight": 2
     },
     {
+     "tag": "paris",
+     "ear": "western",
+     "weight": 1
+    },
+    {
+     "tag": "folk",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "beethoven-band",
      "ear": "common",
      "weight": 1
@@ -2091,9 +2288,9 @@
     "ja": "ベース・ギター"
    },
    "kind": "instrument",
-   "year": 1930,
+   "year": 1935,
    "yearApprox": false,
-   "lineageYear": 1930,
+   "lineageYear": 1935,
    "era": "world-wars",
    "communityEra": {
     "region": "美国",
@@ -2112,6 +2309,11 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -2224,6 +2426,16 @@
      "tag": "synth",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "eight-bit",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -2291,6 +2503,16 @@
      "ear": "zh",
      "weight": 3,
      "as": "Q726306"
+    },
+    {
+     "tag": "paris",
+     "ear": "western",
+     "weight": 1
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2490,6 +2712,31 @@
      "tag": "beethoven",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -2554,6 +2801,21 @@
     {
      "tag": "beethoven",
      "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "celtic",
+     "ear": "western",
      "weight": 2
     },
     {
@@ -2622,6 +2884,16 @@
      "tag": "military",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2671,12 +2943,12 @@
    "lineageYear": 1970,
    "era": "personal-computer",
    "communityEra": {
-    "region": "荷兰",
-    "name": "宽容年代",
-    "icon": "🚲"
+    "region": "英国",
+    "name": "摇摆年代",
+    "icon": "🎸"
    },
    "regions": [
-    "荷兰"
+    "英国"
    ],
    "wikipedia": "en:String synthesizer",
    "family": [
@@ -2750,13 +3022,38 @@
      "weight": 3
     },
     {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "beethoven",
      "ear": "common",
      "weight": 2
     },
     {
+     "tag": "space",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "soviet",
+     "ear": "zh",
+     "weight": 2
+    },
+    {
+     "tag": "school-music",
+     "ear": "zh",
+     "weight": 2
+    },
+    {
      "tag": "military",
      "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "africa",
+     "ear": "western",
      "weight": 1
     }
    ],
@@ -2882,17 +3179,17 @@
     "ja": "音声合成"
    },
    "kind": "voice",
-   "year": 1779,
+   "year": 1939,
    "yearApprox": false,
    "lineageYear": 1779,
-   "era": "enlightenment",
+   "era": "world-wars",
    "communityEra": {
-    "region": "俄国",
-    "name": "帝国西化",
-    "icon": "✂️"
+    "region": "美国",
+    "name": "大萧条",
+    "icon": "🍞"
    },
    "regions": [
-    "俄国"
+    "美国"
    ],
    "wikipedia": "en:Speech synthesis",
    "family": [
@@ -2902,13 +3199,24 @@
    ],
    "styles": [
     {
+     "tag": "space",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "synth",
      "ear": "common",
      "weight": 1
     }
    ],
    "icon": {
-    "id": "iconmind--speech-synth",
+    "id": "iconmind--speech-synth--tile",
+    "derivedFrom": "iconmind--speech-synth",
     "candidates": [
      "iconmind--speech-synth"
     ],
@@ -2936,13 +3244,17 @@
     "ja": "オーケストラル・ヒット"
    },
    "kind": "ensemble",
-   "year": 1980,
+   "year": 1982,
    "yearApprox": false,
-   "lineageYear": 1980,
+   "lineageYear": 1982,
    "era": "personal-computer",
-   "communityEra": null,
+   "communityEra": {
+    "region": "美国",
+    "name": "里根时代",
+    "icon": "🕹️"
+   },
    "regions": [
-    "澳大利亚"
+    "美国"
    ],
    "wikipedia": "en:Orchestra hit",
    "family": [
@@ -2955,13 +3267,24 @@
      "weight": 2
     },
     {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "symphonic-metal",
      "ear": "common",
      "weight": 1
     }
    ],
    "icon": {
-    "id": "iconmind--orchestra",
+    "id": "iconmind--orchestra--tile",
+    "derivedFrom": "iconmind--orchestra",
     "candidates": [
      "iconmind--orchestra"
     ],
@@ -3164,6 +3487,11 @@
      "tag": "beethoven",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "fairground",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3220,6 +3548,16 @@
     },
     {
      "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "symphonic-metal",
      "ear": "common",
      "weight": 2
     },
@@ -3429,14 +3767,14 @@
     "ja": "シンセサイザー"
    },
    "kind": "instrument",
-   "year": 1940,
+   "year": 1955,
    "yearApprox": false,
    "lineageYear": 1900,
-   "era": "world-wars",
+   "era": "atomic",
    "communityEra": {
     "region": "美国",
-    "name": "大萧条",
-    "icon": "🍞"
+    "name": "战后繁荣",
+    "icon": "🏡"
    },
    "regions": [
     "美国"
@@ -3460,9 +3798,29 @@
      "weight": 3
     },
     {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "fairground",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3792,6 +4150,11 @@
      "tag": "beethoven-band",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3969,6 +4332,11 @@
      "tag": "military",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -4100,8 +4468,33 @@
      "weight": 2
     },
     {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "andes",
+     "ear": "western",
+     "weight": 2
+    },
+    {
      "tag": "military",
      "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "celtic",
+     "ear": "western",
+     "weight": 1
+    },
+    {
+     "tag": "indian",
+     "ear": "western",
      "weight": 1
     }
    ],
@@ -4162,6 +4555,11 @@
      "tag": "school-music",
      "ear": "zh",
      "weight": 3
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "church",
@@ -4230,6 +4628,11 @@
      "tag": "tribal",
      "ear": "western",
      "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
@@ -4288,6 +4691,23 @@
      "weight": 1
     }
    ],
+   "icon": {
+    "id": "game-icons--beer-bottle",
+    "candidates": [
+     "game-icons--beer-bottle",
+     "twemoji--1f37e",
+     "noto-emoji--emoji_u1f37e",
+     "openmoji-color--1F37E",
+     "openmoji-black--1F37E",
+     "fluent-flat--bottle_with_popping_cork_flat",
+     "fluent-color--bottle_with_popping_cork_color",
+     "mdi--bottle-soda-classic",
+     "tabler--bottle",
+     "lucide--bottle-wine",
+     "phosphor--beer-bottle"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -4469,6 +4889,11 @@
      "ear": "zh",
      "weight": 1,
      "as": "Q839767"
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -4525,7 +4950,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--sitar",
+    "id": "qlementine-icons--sitar--tile",
+    "derivedFrom": "qlementine-icons--sitar",
     "candidates": [
      "qlementine-icons--sitar"
     ],
@@ -4570,6 +4996,11 @@
      "tag": "western",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "folk",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -4638,7 +5069,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--shamisen",
+    "id": "qlementine-icons--shamisen--tile",
+    "derivedFrom": "qlementine-icons--shamisen",
     "candidates": [
      "qlementine-icons--shamisen"
     ],
@@ -4753,7 +5185,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--idiophone",
+    "id": "qlementine-icons--idiophone--tile",
+    "derivedFrom": "qlementine-icons--idiophone",
     "candidates": [
      "qlementine-icons--idiophone"
     ],
@@ -4935,7 +5368,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--woodwind",
+    "id": "qlementine-icons--woodwind--tile",
+    "derivedFrom": "qlementine-icons--woodwind",
     "candidates": [
      "qlementine-icons--woodwind",
      "commons--Oboe_1"
@@ -4986,10 +5420,16 @@
      "ear": "zh",
      "weight": 1,
      "as": "Q21651966"
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
-    "id": "twemoji--1f390",
+    "id": "openmoji-black--1F390--tile",
+    "derivedFrom": "openmoji-black--1F390",
     "candidates": [
      "twemoji--1f390",
      "noto-emoji--emoji_u1f390",
@@ -4998,7 +5438,7 @@
      "fluent-flat--wind_chime_flat",
      "fluent-color--wind_chime_color"
     ],
-    "license": "CC-BY-4.0"
+    "license": "CC-BY-SA-4.0"
    },
    "fundamentalRank": null
   },
@@ -5123,7 +5563,8 @@
     }
    ],
    "icon": {
-    "id": "fontawesome--drum-steelpan",
+    "id": "fontawesome--drum-steelpan--tile",
+    "derivedFrom": "fontawesome--drum-steelpan",
     "candidates": [
      "fontawesome--drum-steelpan"
     ],
@@ -5186,7 +5627,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--idiophone",
+    "id": "qlementine-icons--idiophone--tile",
+    "derivedFrom": "qlementine-icons--idiophone",
     "candidates": [
      "qlementine-icons--idiophone"
     ],
@@ -5370,9 +5812,9 @@
     "ja": "電子ドラム"
    },
    "kind": "instrument",
-   "year": 1970,
+   "year": 1971,
    "yearApprox": false,
-   "lineageYear": 1970,
+   "lineageYear": 1971,
    "era": "personal-computer",
    "communityEra": {
     "region": "英国",
@@ -5391,6 +5833,11 @@
      "tag": "synth",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "eight-bit",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -5457,7 +5904,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--cymbal",
+    "id": "qlementine-icons--cymbal--tile",
+    "derivedFrom": "qlementine-icons--cymbal",
     "candidates": [
      "qlementine-icons--cymbal"
     ],
@@ -5505,7 +5953,7 @@
     {
      "tag": "sfx",
      "ear": "common",
-     "weight": 2
+     "weight": 1
     }
    ],
    "icon": {
@@ -5569,11 +6017,32 @@
    ],
    "styles": [
     {
-     "tag": "nature",
+     "tag": "space",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "nature",
+     "ear": "common",
+     "weight": 1
     }
    ],
+   "icon": {
+    "id": "game-icons--lungs",
+    "candidates": [
+     "game-icons--lungs",
+     "twemoji--1fac1",
+     "noto-emoji--emoji_u1fac1",
+     "openmoji-color--1FAC1",
+     "openmoji-black--1FAC1",
+     "fluent-flat--lungs_flat",
+     "fluent-color--lungs_color",
+     "mdi--lungs",
+     "material-symbols--pulmonology_24px",
+     "tabler--lungs"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -5610,9 +6079,40 @@
     {
      "tag": "nature",
      "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "hawaii",
+     "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
     }
    ],
+   "icon": {
+    "id": "game-icons--wave-crest",
+    "candidates": [
+     "game-icons--wave-crest",
+     "game-icons--sea-cliff",
+     "mdi--shore",
+     "twemoji--1f30a",
+     "noto-emoji--emoji_u1f30a",
+     "openmoji-color--1F30A",
+     "openmoji-black--1F30A",
+     "fluent-flat--water_wave_flat",
+     "fluent-color--water_wave_color",
+     "mdi--waves",
+     "material-symbols--waves_24px",
+     "tabler--ripple",
+     "lucide--waves-horizontal",
+     "phosphor--waves",
+     "tabler--beach"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -5652,8 +6152,40 @@
      "tag": "nature",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "chinese",
+     "ear": "common",
+     "weight": 1
     }
    ],
+   "icon": {
+    "id": "game-icons--bird-twitter",
+    "candidates": [
+     "game-icons--bird-twitter",
+     "twemoji--1f426",
+     "noto-emoji--emoji_u1f426",
+     "openmoji-color--1F426",
+     "openmoji-black--1F426",
+     "fluent-flat--bird_flat",
+     "fluent-color--bird_color",
+     "mdi--bird",
+     "lucide--bird",
+     "phosphor--bird",
+     "material-symbols--raven_24px"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -5677,7 +6209,7 @@
    },
    "kind": "sound",
    "year": 1878,
-   "yearApprox": false,
+   "yearApprox": true,
    "lineageYear": 1870,
    "era": "telephone",
    "communityEra": null,
@@ -5691,8 +6223,31 @@
      "tag": "sfx",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "jazz",
+     "ear": "common",
+     "weight": 1
     }
    ],
+   "icon": {
+    "id": "game-icons--rotary-phone",
+    "candidates": [
+     "game-icons--rotary-phone",
+     "mdi--phone-ring",
+     "material-symbols--ring_volume_24px",
+     "tabler--phone-ringing",
+     "twemoji--260e",
+     "noto-emoji--emoji_u260e",
+     "openmoji-color--260E",
+     "openmoji-black--260E",
+     "fluent-flat--telephone_flat",
+     "fluent-color--telephone_color",
+     "lucide--phone-call",
+     "phosphor--phone-call"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -5730,6 +6285,11 @@
      "tag": "sfx",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -5795,10 +6355,41 @@
      "tag": "sfx",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "fairground",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "rock-pop",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "latin",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
-    "id": "mdi--hand-clap",
+    "id": "mdi--hand-clap--tile",
+    "derivedFrom": "mdi--hand-clap",
     "candidates": [
      "mdi--hand-clap",
      "twemoji--1f44f",
@@ -5844,14 +6435,19 @@
    ],
    "styles": [
     {
-     "tag": "military",
+     "tag": "sfx",
      "ear": "common",
      "weight": 2
     },
     {
-     "tag": "sfx",
+     "tag": "western",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -5913,9 +6509,24 @@
      "weight": 3
     },
     {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "beethoven-band",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "andes",
+     "ear": "western",
+     "weight": 1
     }
    ],
    "icon": {
@@ -5997,9 +6608,19 @@
      "weight": 2
     },
     {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "synth",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "soviet",
+     "ear": "zh",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6059,10 +6680,16 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
-    "id": "qlementine-icons--clap",
+    "id": "qlementine-icons--clap--tile",
+    "derivedFrom": "qlementine-icons--clap",
     "candidates": [
      "qlementine-icons--clap",
      "mdi--hand-clap",
@@ -6196,10 +6823,16 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
-    "id": "qlementine-icons--hi-hat",
+    "id": "qlementine-icons--hi-hat--tile",
+    "derivedFrom": "qlementine-icons--hi-hat",
     "candidates": [
      "qlementine-icons--hi-hat",
      "qlementine-icons--cymbal"
@@ -6265,10 +6898,16 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 2
     }
    ],
    "icon": {
-    "id": "qlementine-icons--cymbal",
+    "id": "qlementine-icons--cymbal--tile",
+    "derivedFrom": "qlementine-icons--cymbal",
     "candidates": [
      "qlementine-icons--cymbal"
     ],
@@ -6331,7 +6970,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--cymbal",
+    "id": "qlementine-icons--cymbal--tile",
+    "derivedFrom": "qlementine-icons--cymbal",
     "candidates": [
      "qlementine-icons--cymbal"
     ],
@@ -6390,7 +7030,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--cymbal",
+    "id": "qlementine-icons--cymbal--tile",
+    "derivedFrom": "qlementine-icons--cymbal",
     "candidates": [
      "qlementine-icons--cymbal"
     ],
@@ -6435,6 +7076,11 @@
     {
      "tag": "rock-pop",
      "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "school-music",
+     "ear": "zh",
      "weight": 1
     }
    ],
@@ -6493,7 +7139,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--cymbal",
+    "id": "qlementine-icons--cymbal--tile",
+    "derivedFrom": "qlementine-icons--cymbal",
     "candidates": [
      "qlementine-icons--cymbal"
     ],
@@ -6612,7 +7259,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--idiophone",
+    "id": "qlementine-icons--idiophone--tile",
+    "derivedFrom": "qlementine-icons--idiophone",
     "candidates": [
      "qlementine-icons--idiophone"
     ],
@@ -6663,6 +7311,11 @@
      "tag": "latin",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "indian",
+     "ear": "western",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6740,6 +7393,11 @@
      "tag": "latin",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "africa",
+     "ear": "western",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6873,6 +7531,11 @@
     {
      "tag": "latin",
      "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "africa",
+     "ear": "western",
      "weight": 1
     }
    ],
@@ -7051,7 +7714,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--idiophone",
+    "id": "qlementine-icons--idiophone--tile",
+    "derivedFrom": "qlementine-icons--idiophone",
     "candidates": [
      "qlementine-icons--idiophone"
     ],
@@ -7106,7 +7770,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--idiophone",
+    "id": "qlementine-icons--idiophone--tile",
+    "derivedFrom": "qlementine-icons--idiophone",
     "candidates": [
      "qlementine-icons--idiophone"
     ],
@@ -7228,10 +7893,16 @@
      "tag": "beethoven",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "school-music",
+     "ear": "zh",
+     "weight": 1
     }
    ],
    "icon": {
-    "id": "mdi--instrument-triangle",
+    "id": "mdi--instrument-triangle--tile",
+    "derivedFrom": "mdi--instrument-triangle",
     "candidates": [
      "mdi--instrument-triangle"
     ],
@@ -8048,7 +8719,8 @@
     }
    ],
    "icon": {
-    "id": "iconmind--orchestra",
+    "id": "iconmind--orchestra--tile",
+    "derivedFrom": "iconmind--orchestra",
     "candidates": [
      "iconmind--orchestra"
     ],
@@ -8072,14 +8744,19 @@
     "ja": "サントゥール"
    },
    "kind": "instrument",
-   "year": null,
-   "yearApprox": false,
-   "lineageYear": null,
-   "era": null,
-   "communityEra": null,
+   "year": 1000,
+   "yearApprox": true,
+   "lineageYear": 1000,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "印度",
+    "name": "神庙诸王国",
+    "icon": "🛕"
+   },
    "regions": [
     "印度"
    ],
+   "yearSource": "ai-estimate",
    "wikipedia": "en:Santoor",
    "styles": [
     {
@@ -8129,12 +8806,19 @@
     "ja": "揚琴"
    },
    "kind": "instrument",
-   "year": null,
-   "yearApprox": false,
-   "lineageYear": null,
-   "era": null,
-   "communityEra": null,
-   "regions": [],
+   "year": 1600,
+   "yearApprox": true,
+   "lineageYear": 1600,
+   "era": "scientific-revolution",
+   "communityEra": {
+    "region": "中国",
+    "name": "明",
+    "icon": "🏮"
+   },
+   "regions": [
+    "中国"
+   ],
+   "yearSource": "ai-estimate",
    "wikipedia": "en:Yangqin",
    "styles": [
     {
@@ -8283,7 +8967,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--shamisen",
+    "id": "qlementine-icons--shamisen--tile",
+    "derivedFrom": "qlementine-icons--shamisen",
     "candidates": [
      "qlementine-icons--shamisen"
     ],
@@ -8307,14 +8992,19 @@
     "ja": "簫"
    },
    "kind": "instrument",
-   "year": null,
-   "yearApprox": false,
-   "lineageYear": null,
-   "era": null,
-   "communityEra": null,
+   "year": 100,
+   "yearApprox": true,
+   "lineageYear": 100,
+   "era": "classical",
+   "communityEra": {
+    "region": "中国",
+    "name": "汉",
+    "icon": "🐎"
+   },
    "regions": [
     "中国"
    ],
+   "yearSource": "ai-estimate",
    "wikipedia": "en:Xiao (flute)",
    "styles": [
     {
@@ -8472,7 +9162,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--woodwind",
+    "id": "qlementine-icons--woodwind--tile",
+    "derivedFrom": "qlementine-icons--woodwind",
     "candidates": [
      "qlementine-icons--woodwind",
      "commons--Oboe_1"
@@ -8668,7 +9359,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--cymbal",
+    "id": "qlementine-icons--cymbal--tile",
+    "derivedFrom": "qlementine-icons--cymbal",
     "candidates": [
      "qlementine-icons--cymbal"
     ],
@@ -8822,14 +9514,15 @@
     "ja": "シーク"
    },
    "kind": "instrument",
-   "year": null,
-   "yearApprox": false,
-   "lineageYear": null,
-   "era": null,
+   "year": -100,
+   "yearApprox": true,
+   "lineageYear": -100,
+   "era": "classical",
    "communityEra": null,
    "regions": [
     "安第斯"
    ],
+   "yearSource": "ai-estimate",
    "wikipedia": "en:Siku (instrument)",
    "styles": [
     {
@@ -8924,7 +9617,8 @@
     }
    ],
    "icon": {
-    "id": "twemoji--1f390",
+    "id": "openmoji-black--1F390--tile",
+    "derivedFrom": "openmoji-black--1F390",
     "candidates": [
      "twemoji--1f390",
      "noto-emoji--emoji_u1f390",
@@ -8934,7 +9628,7 @@
      "fluent-color--wind_chime_color"
     ],
     "borrowedFrom": "Q1621499",
-    "license": "CC-BY-4.0"
+    "license": "CC-BY-SA-4.0"
    },
    "fundamentalRank": null
   },
@@ -9037,16 +9731,17 @@
     "ja": "木鼓"
    },
    "kind": "instrument",
-   "year": null,
-   "yearApprox": false,
-   "lineageYear": null,
-   "era": null,
+   "year": -3000,
+   "yearApprox": true,
+   "lineageYear": -3000,
+   "era": "bronze",
    "communityEra": null,
    "regions": [
     "撒哈拉以南非洲",
     "东南亚",
     "大洋洲"
    ],
+   "yearSource": "ai-estimate",
    "wikipedia": "en:Slit drum",
    "styles": [
     {
@@ -9067,7 +9762,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--idiophone",
+    "id": "qlementine-icons--idiophone--tile",
+    "derivedFrom": "qlementine-icons--idiophone",
     "candidates": [
      "qlementine-icons--idiophone"
     ],
@@ -9192,7 +9888,18 @@
     "东南亚"
    ],
    "wikipedia": "en:Gong",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
    "substitutes": [
     {
      "program": 114,
@@ -9347,7 +10054,13 @@
     "古代近东"
    ],
    "wikipedia": "en:Lyre",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "celtic",
+     "ear": "western",
+     "weight": 1
+    }
+   ],
    "substitutes": [
     {
      "program": 24,
@@ -9422,53 +10135,6 @@
      "weight": 1
     }
    ],
-   "substitutes": [
-    {
-     "program": 20,
-     "bank": 0,
-     "gmNumber": 21,
-     "gmName": "Reed Organ",
-     "basis": "family",
-     "hsCommon": "412",
-     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
-    },
-    {
-     "program": 21,
-     "bank": 0,
-     "gmNumber": 22,
-     "gmName": "Accordion",
-     "basis": "family",
-     "hsCommon": "412",
-     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
-    },
-    {
-     "program": 22,
-     "bank": 0,
-     "gmNumber": 23,
-     "gmName": "Harmonica",
-     "basis": "family",
-     "hsCommon": "412",
-     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
-    }
-   ],
-   "icon": {
-    "id": "game-icons--pipe-organ",
-    "candidates": [
-     "game-icons--pipe-organ",
-     "game-icons--musical-keyboard",
-     "commons--Woman_at_melodeon",
-     "twemoji--1f3b9",
-     "noto-emoji--emoji_u1f3b9",
-     "openmoji-color--1F3B9",
-     "openmoji-black--1F3B9",
-     "fluent-flat--musical_keyboard_flat",
-     "fluent-color--musical_keyboard_color",
-     "lucide--keyboard-music",
-     "streamline-freehand--instrument-electronic-keyboard"
-    ],
-    "borrowedFrom": "Q12460259",
-    "license": "CC-BY-3.0"
-   },
    "fundamentalRank": null
   },
   {
@@ -9506,6 +10172,22 @@
      "weight": 1
     }
    ],
+   "icon": {
+    "id": "game-icons--bow-string",
+    "candidates": [
+     "game-icons--bow-string",
+     "twemoji--1f3f9",
+     "noto-emoji--emoji_u1f3f9",
+     "openmoji-color--1F3F9",
+     "openmoji-black--1F3F9",
+     "fluent-flat--bow_and_arrow_flat",
+     "fluent-color--bow_and_arrow_color",
+     "mdi--bow-arrow",
+     "tabler--bow",
+     "lucide--bow-arrow"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9536,7 +10218,35 @@
     "德国"
    ],
    "wikipedia": "en:Bark (sound)",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--sitting-dog",
+    "candidates": [
+     "game-icons--sitting-dog",
+     "material-symbols--sound_detection_dog_barking_24px",
+     "twemoji--1f436",
+     "openmoji-color--1F436",
+     "openmoji-black--1F436",
+     "fluent-flat--dog_face_flat",
+     "fluent-color--dog_face_color",
+     "mdi--dog",
+     "tabler--dog",
+     "lucide--dog",
+     "phosphor--dog"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9563,7 +10273,35 @@
     "古代近东"
    ],
    "wikipedia": "en:Meow",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--cat",
+    "candidates": [
+     "game-icons--cat",
+     "twemoji--1f431",
+     "noto-emoji--emoji_u1f431",
+     "openmoji-color--1F431",
+     "openmoji-black--1F431",
+     "fluent-flat--cat_face_flat",
+     "fluent-color--cat_face_color",
+     "mdi--cat",
+     "tabler--cat",
+     "lucide--cat",
+     "phosphor--cat"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9588,7 +10326,51 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Wind",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "western",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "andes",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "celtic",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--windy-stripes",
+    "candidates": [
+     "game-icons--windy-stripes",
+     "mdi--weather-windy",
+     "tabler--wind",
+     "lucide--wind",
+     "phosphor--wind",
+     "twemoji--1f32c",
+     "noto-emoji--emoji_u1f32c",
+     "openmoji-color--1F32C",
+     "openmoji-black--1F32C",
+     "fluent-flat--wind_face_flat",
+     "fluent-color--wind_face_color",
+     "material-symbols--air_24px"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9613,7 +10395,56 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Rain",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "jazz",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "chinese",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--heavy-rain",
+    "candidates": [
+     "game-icons--heavy-rain",
+     "mdi--weather-rainy",
+     "material-symbols--rainy_24px",
+     "tabler--cloud-rain",
+     "lucide--cloud-rain",
+     "phosphor--cloud-rain",
+     "twemoji--1f327",
+     "noto-emoji--emoji_u1f327",
+     "openmoji-color--1F327",
+     "openmoji-black--1F327",
+     "fluent-flat--cloud_with_rain_flat",
+     "fluent-color--cloud_with_rain_color"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9638,7 +10469,41 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Thunder",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "tribal",
+     "ear": "western",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--lightning-storm",
+    "candidates": [
+     "game-icons--lightning-storm",
+     "mdi--weather-lightning",
+     "material-symbols--thunderstorm_24px",
+     "twemoji--26c8",
+     "noto-emoji--emoji_u26c8",
+     "openmoji-color--26C8",
+     "openmoji-black--26C8",
+     "fluent-flat--cloud_with_lightning_and_rain_flat",
+     "fluent-color--cloud_with_lightning_and_rain_color",
+     "tabler--cloud-storm",
+     "lucide--cloud-lightning",
+     "phosphor--cloud-lightning"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9663,7 +10528,49 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Stream",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "wafu",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "chinese",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--splashy-stream",
+    "candidates": [
+     "game-icons--splashy-stream",
+     "game-icons--river",
+     "game-icons--wave-crest",
+     "material-symbols--water_24px",
+     "twemoji--1f30a",
+     "noto-emoji--emoji_u1f30a",
+     "openmoji-color--1F30A",
+     "openmoji-black--1F30A",
+     "fluent-flat--water_wave_flat",
+     "fluent-color--water_wave_color",
+     "mdi--waves",
+     "material-symbols--waves_24px",
+     "tabler--ripple",
+     "lucide--waves-horizontal",
+     "phosphor--waves"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9688,7 +10595,37 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Fire",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "tribal",
+     "ear": "western",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--flame",
+    "candidates": [
+     "game-icons--flame",
+     "game-icons--campfire",
+     "fluent-flat--fire_flat",
+     "fluent-color--fire_color",
+     "mdi--fire",
+     "tabler--flame",
+     "lucide--flame",
+     "phosphor--fire",
+     "twemoji--1f525",
+     "noto-emoji--emoji_u1f525",
+     "openmoji-color--1F525",
+     "openmoji-black--1F525",
+     "material-symbols--local_fire_department_24px"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9713,7 +10650,41 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Cricket (insect)",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "wafu",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--cricket",
+    "candidates": [
+     "game-icons--cricket",
+     "fluent-flat--cricket_flat",
+     "fluent-color--cricket_color",
+     "twemoji--1f997",
+     "noto-emoji--emoji_u1f997",
+     "openmoji-color--1F997",
+     "openmoji-black--1F997",
+     "mdi--bug",
+     "material-symbols--pest_control_24px",
+     "tabler--bug",
+     "lucide--bug",
+     "phosphor--bug"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9738,7 +10709,41 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Cicada",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "wafu",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--cricket",
+    "candidates": [
+     "game-icons--cricket",
+     "twemoji--1f997",
+     "noto-emoji--emoji_u1f997",
+     "openmoji-color--1F997",
+     "openmoji-black--1F997",
+     "fluent-flat--cricket_flat",
+     "fluent-color--cricket_color",
+     "mdi--bug",
+     "material-symbols--pest_control_24px",
+     "tabler--bug",
+     "lucide--bug",
+     "phosphor--bug"
+    ],
+    "license": "CC-BY-3.0"
+   },
    "fundamentalRank": null
   },
   {
@@ -9763,7 +10768,447 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Frog",
-   "styles": [],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "wafu",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--frog",
+    "candidates": [
+     "game-icons--frog",
+     "fluent-flat--frog_flat",
+     "fluent-color--frog_color",
+     "fontawesome--frog",
+     "twemoji--1f438",
+     "noto-emoji--emoji_u1f438",
+     "openmoji-color--1F438",
+     "openmoji-black--1F438"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q495529",
+   "ids": {
+    "wikidata": "Q495529",
+    "local": null,
+    "musicxml": "brass.euphonium",
+    "gm": [],
+    "hs": "423.231.2"
+   },
+   "names": {
+    "zh": "上低音号",
+    "en": "euphonium",
+    "ja": "ユーフォニアム"
+   },
+   "kind": "instrument",
+   "year": 1843,
+   "yearApprox": false,
+   "lineageYear": 1843,
+   "era": "railway",
+   "communityEra": {
+    "region": "德国",
+    "name": "比德迈",
+    "icon": "🛋️"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Euphonium",
+   "styles": [
+    {
+     "tag": "beethoven-band",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 2
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 58,
+     "bank": 0,
+     "gmNumber": 59,
+     "gmName": "Tuba",
+     "basis": "family",
+     "hsCommon": "423.231.2",
+     "reason": "Euphonium 条目：上低音号「sometimes called the tenor tuba」"
+    },
+    {
+     "program": 60,
+     "bank": 0,
+     "gmNumber": 61,
+     "gmName": "French Horn",
+     "basis": "family",
+     "hsCommon": "423.23",
+     "reason": "同是锥形管，声音圆暖"
+    },
+    {
+     "program": 57,
+     "bank": 0,
+     "gmNumber": 58,
+     "gmName": "Trombone",
+     "basis": "family",
+     "hsCommon": "423.2",
+     "reason": "音域和长号差不多"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--tuba",
+    "candidates": [
+     "game-icons--tuba",
+     "qlementine-icons--tuba"
+    ],
+    "borrowedFrom": "Q131168",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q127933",
+   "ids": {
+    "wikidata": "Q127933",
+    "local": null,
+    "musicxml": "effect.explosion",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "烟火（发射 / 哨音 / 炸开）",
+    "en": "firework",
+    "ja": "花火"
+   },
+   "kind": "sound",
+   "year": 960,
+   "yearApprox": false,
+   "lineageYear": 960,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "中国",
+    "name": "宋",
+    "icon": "🍵"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Fireworks",
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "fairground",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "wafu",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--firework-rocket",
+    "candidates": [
+     "game-icons--firework-rocket",
+     "fluent-flat--fireworks_flat",
+     "fluent-color--fireworks_color",
+     "mdi--firework",
+     "twemoji--1f386",
+     "noto-emoji--emoji_u1f386",
+     "openmoji-color--1F386",
+     "openmoji-black--1F386",
+     "material-symbols--celebration_24px"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q81103",
+   "ids": {
+    "wikidata": "Q81103",
+    "local": null,
+    "musicxml": "effect.explosion",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "大炮（炮声）",
+    "en": "cannon",
+    "ja": "カノン砲"
+   },
+   "kind": "sound",
+   "year": 1227,
+   "yearApprox": false,
+   "lineageYear": 1227,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "中国",
+    "name": "宋",
+    "icon": "🍵"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Cannon",
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "military",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--cannon",
+    "candidates": [
+     "game-icons--cannon"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1420",
+   "ids": {
+    "wikidata": "Q1420",
+    "local": null,
+    "musicxml": "effect.car.engine",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "汽车（行驶声）",
+    "en": "car",
+    "ja": "自動車"
+   },
+   "kind": "sound",
+   "year": 1886,
+   "yearApprox": false,
+   "lineageYear": 1886,
+   "era": "telephone",
+   "communityEra": {
+    "region": "德国",
+    "name": "德意志帝国",
+    "icon": "🧪"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Car",
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "jazz",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "game-icons--city-car",
+    "candidates": [
+     "game-icons--city-car",
+     "fluent-flat--automobile_flat",
+     "fluent-color--automobile_color",
+     "mdi--car",
+     "material-symbols--directions_car_24px",
+     "tabler--car",
+     "lucide--car",
+     "phosphor--car",
+     "twemoji--1f697",
+     "noto-emoji--emoji_u1f697",
+     "openmoji-color--1F697",
+     "openmoji-black--1F697"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q814068",
+   "ids": {
+    "wikidata": "Q814068",
+    "local": null,
+    "musicxml": "",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "电子哔声",
+    "en": "beep",
+    "ja": "ビープ音"
+   },
+   "kind": "sound",
+   "year": 1924,
+   "yearApprox": false,
+   "lineageYear": 1924,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "英国",
+    "name": "两战之间",
+    "icon": "🍸"
+   },
+   "regions": [
+    "英国"
+   ],
+   "wikipedia": "en:Beep (sound)",
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "eight-bit",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
+    }
+   ],
+   "icon": {
+    "id": "mdi--square-wave--tile",
+    "derivedFrom": "mdi--square-wave",
+    "candidates": [
+     "mdi--square-wave",
+     "tabler--wave-square",
+     "phosphor--wave-square"
+    ],
+    "license": "Apache-2.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q12760",
+   "ids": {
+    "wikidata": "Q12760",
+    "local": null,
+    "musicxml": "effect.train",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "机器声（蒸汽机）",
+    "en": "steam engine",
+    "ja": "蒸気機関"
+   },
+   "kind": "sound",
+   "year": 1712,
+   "yearApprox": false,
+   "lineageYear": 1712,
+   "era": "enlightenment",
+   "communityEra": {
+    "region": "英国",
+    "name": "复辟",
+    "icon": "☕"
+   },
+   "regions": [
+    "英国"
+   ],
+   "wikipedia": "en:Steam engine",
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common",
+     "weight": 2
+    }
+   ],
+   "icon": {
+    "id": "game-icons--steam-locomotive",
+    "candidates": [
+     "game-icons--steam-locomotive",
+     "twemoji--1f682",
+     "noto-emoji--emoji_u1f682",
+     "openmoji-color--1F682",
+     "openmoji-black--1F682",
+     "fluent-flat--locomotive_flat",
+     "fluent-color--locomotive_color",
+     "mdi--train",
+     "material-symbols--train_24px",
+     "tabler--train",
+     "lucide--train-front",
+     "phosphor--train"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q207691",
+   "ids": {
+    "wikidata": "Q207691",
+    "local": null,
+    "musicxml": "synth.theremin",
+    "gm": [],
+    "hs": "531.1"
+   },
+   "names": {
+    "zh": "特雷门琴",
+    "en": "theremin",
+    "ja": "テルミン"
+   },
+   "kind": "instrument",
+   "year": 1920,
+   "yearApprox": false,
+   "lineageYear": 1920,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "俄国",
+    "name": "革命与斯大林",
+    "icon": "🚩"
+   },
+   "regions": [
+    "俄国"
+   ],
+   "wikipedia": "en:Theremin",
+   "styles": [
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 2
+    }
+   ],
    "fundamentalRank": null
   },
   {
@@ -9781,14 +11226,19 @@
     "ja": ""
    },
    "kind": "instrument",
-   "year": null,
-   "yearApprox": false,
-   "lineageYear": null,
-   "era": null,
-   "communityEra": null,
+   "year": 1600,
+   "yearApprox": true,
+   "lineageYear": 1600,
+   "era": "scientific-revolution",
+   "communityEra": {
+    "region": "中国",
+    "name": "明",
+    "icon": "🏮"
+   },
    "regions": [
     "中国"
    ],
+   "yearSource": "ai-estimate",
    "styles": [
     {
      "tag": "chinese",
@@ -9813,7 +11263,8 @@
     }
    ],
    "icon": {
-    "id": "qlementine-icons--idiophone",
+    "id": "qlementine-icons--idiophone--tile",
+    "derivedFrom": "qlementine-icons--idiophone",
     "candidates": [
      "qlementine-icons--idiophone"
     ],

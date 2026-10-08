@@ -32,11 +32,15 @@ export class Finder {
       `<input class="finder-q" type="search" placeholder="搜乐器（中 / 英 / 日）" spellcheck="false" autocomplete="off" />` +
       `<select class="finder-sort">${(Object.keys(SORT_LABEL) as SortMode[]).map((m) => `<option value="${m}">${SORT_LABEL[m]}</option>`).join("")}</select></div>` +
       `<div class="finder-hint">点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「上场」。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。</div>` +
+      `<div class="finder-jump" hidden></div>` +
       `<div class="finder-list"><div class="finder-empty">加载目录…</div></div>`;
     parent.append(this.el);   // 位置由 #stage 的 grid 命名区域钉死（.finder 占 main、pad 占 pad），和节点顺序无关（user「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）
     this.el.querySelector<HTMLInputElement>(".finder-q")!.addEventListener("input", (e) => { this.q = (e.target as HTMLInputElement).value; this.render(); });
     this.el.querySelector<HTMLSelectElement>(".finder-sort")!.addEventListener("change", (e) => { this.mode = (e.target as HTMLSelectElement).value as SortMode; this.render(); });
     this.el.addEventListener("click", (e) => void this.onClick(e));
+    // 滚动时跳转条亮着「现在在哪一组」（一帧最多算一次）
+    let raf = 0;
+    this.el.querySelector(".finder-list")!.addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; this.markJump(); }); }, { passive: true });
   }
   get isOpen(): boolean { return !this.el.hidden; }
   async show(): Promise<void> {
@@ -64,6 +68,8 @@ export class Finder {
   }
   private async onClick(e: Event): Promise<void> {
     const t = e.target as HTMLElement, btn = t.closest<HTMLElement>("[data-v]"), row = t.closest<HTMLElement>(".inst-row"), prov = t.closest<HTMLElement>(".prov");
+    const jump = t.closest<HTMLElement>("[data-j]");
+    if (jump) { this.jumpTo(Number(jump.dataset.j)); return; }
     const v = btn?.dataset.v;
     if (v === "back") { this.host.close(); return; }
     if (v && btn) {
@@ -87,10 +93,32 @@ export class Finder {
   }
   render(): void {
     const list = this.el.querySelector(".finder-list")!; if (!this.cat) return;
-    const groups = groupConcepts(this.cat, this.mode, this.q);
+    const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector<HTMLElement>(".finder-jump")!;
+    // 类级跳转（user 2026-10-08「分类能不能有一个类级别的跳转功能，不然一个一个下拉很累」）：一组一粒，点了列表滚到那组；只有一组就不出。
+    // 粒上只去掉年代组的「（xxxx 起）」（贝多风（交响乐）/ 贝多风（管乐团）这种括号是名字的一部分）
+    jump.hidden = groups.length < 2;
+    jump.innerHTML = groups.map((g, k) => `<button class="jump-chip" data-j="${k}" title="${esc(g.label)}">${esc(g.label.replace(/（[^（）]*起）$/, ""))}<small>${g.concepts.length}</small></button>`).join("");
     if (!groups.length) { list.innerHTML = `<div class="finder-empty">没有叫「${esc(this.q)}」的</div>`; return; }
-    list.innerHTML = groups.map((g) => `<div class="finder-group"><div class="finder-group-h">${esc(g.label)}<span>${g.concepts.length}</span></div>${g.concepts.map((c) => this.rowHtml(c, this.mode === "style" ? g.id : null)).join("")}</div>`).join("");
+    list.innerHTML = groups.map((g, k) => `<div class="finder-group" data-g="${k}"><div class="finder-group-h">${esc(g.label)}<span>${g.concepts.length}</span></div>${g.concepts.map((c) => this.rowHtml(c, this.mode === "style" ? g.id : null)).join("")}</div>`).join("");
     list.querySelector(".prov.is-on")?.scrollIntoView({ block: "nearest" });
+    this.markJump();
+  }
+  /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）。 */
+  private jumpTo(k: number): void {
+    const list = this.el.querySelector<HTMLElement>(".finder-list")!, g = list.querySelector<HTMLElement>(`[data-g="${k}"]`); if (!g) return;
+    list.scrollTop += g.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    this.markJump();
+  }
+  /** 跳转条上亮着「现在在哪一组」（组头顶到列表顶的最后一组），并把那粒横向挪进视野（.finder-jump 是 position: relative，offsetLeft 相对它）。 */
+  private markJump(): void {
+    const list = this.el.querySelector<HTMLElement>(".finder-list")!, jump = this.el.querySelector<HTMLElement>(".finder-jump")!; if (jump.hidden) return;
+    const top = list.getBoundingClientRect().top + 1;
+    let cur = 0;
+    for (const g of list.querySelectorAll<HTMLElement>("[data-g]")) { if (g.getBoundingClientRect().top <= top) cur = Number(g.dataset.g); else break; }
+    for (const b of jump.querySelectorAll<HTMLElement>("[data-j]")) {
+      const on = Number(b.dataset.j) === cur; b.classList.toggle("is-on", on);
+      if (on) { const l = b.offsetLeft, r = l + b.offsetWidth; if (l < jump.scrollLeft) jump.scrollLeft = l - 8; else if (r > jump.scrollLeft + jump.clientWidth) jump.scrollLeft = r - jump.clientWidth + 8; }
+    }
   }
   private rowHtml(c: Concept, styleTag: string | null = null): string {
     const cat = this.cat!, open = this.opened === c.id, icon = c.icon?.id;

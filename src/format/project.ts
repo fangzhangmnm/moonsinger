@@ -15,7 +15,7 @@ import { type Song, type PartDef, type PaperSeg, type Token, flattenPart } from 
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
 import { FORMAT, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
 import { migrate } from "./migrate/index.ts";
-import { DYNAMICS_DB, ARTICULATION, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
+import { DYNAMICS_DB, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
 export type { Hum, InstrumentV2 };
 const MIMETYPE = "application/vnd.recordare.musicxml";
@@ -236,6 +236,7 @@ export interface Sf2CandidateArgs {
   embed?: boolean;                                                      // 默认 true = 字节进歌；false = 弱引用（只记来源 + 子集 sha256，歌里不带声音）
   origin: Sf2Source["origin"];                                          // 从哪个整包切的
   credit: Credit;
+  calibrationDb?: number;                                               // 响度校准；默认 SOUNDFONT_CALIBRATION_DB（performance.ts；歌手牌上看得见、能调）
 }
 /** 加一个 SoundFont 候选并让它上场。同一份字节（同 sha256）只存一份。 */
 export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateArgs, hum: Hum): Extras {
@@ -244,7 +245,7 @@ export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateAr
   const n = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n}`;
   const embed = c.embed !== false, path = embed ? `${SOUNDS}${c.sha256}.sf2` : null;
   const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
-  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), defaults: { ...SOUNDFONT_DEFAULTS }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), calibrationDb: c.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r.candidates = list; r.active = id;
   return { ...extras, lounge: { ...extras.lounge, [role]: r }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };
 }
@@ -265,6 +266,67 @@ export function withoutCandidate(extras: Extras, role: string, id: string): Extr
   if (r.active === id) throw new Error("上场的候选不能删，先换一个「谁来演」");
   r.candidates = cands(r).filter((c) => c.id !== id);
   return pruneSounds({ ...extras, lounge: { ...extras.lounge, [role]: r } });
+}
+
+// ── 打包 / 解包（2026-10-08 by Claude Opus 5.5；user「我后悔自动embed音源了，改成弱引用吧，app可以自己找吗，然后类似blender，
+//    可以pack all packable resources或者unpack all。然后导出的时候可以选导出packed版本的。不过月读不能pack吧」）──────────
+// 只动 source.embedded（字节来去），**sha256 / origin 一律不碰**：解析链按子集 sha256 认人（契约 Sf2Source）。
+// 能打包的只有 SoundFont 子集（样本类，契约 §10.2）；月读 / 元音版是家族模型包 / app 随带的表，钉哈希，永不进歌。
+export interface SoundUse { subsetSha256: string; packed: boolean; bytes: number; origin: Sf2Source["origin"]; names: string[] }
+/** 歌里所有 SoundFont 候选用到的声音（台上 + 候补都算；同一份子集只算一次）。packed = 字节在歌里。 */
+export function soundUses(extras: Extras): SoundUse[] {
+  const out = new Map<string, SoundUse>();
+  for (const r of Object.values(extras.lounge)) for (const c of cands(r)) {
+    const i = instrumentOf(c); if (i?.engine !== "soundfont") continue;
+    const s = i.source, had = out.get(s.subsetSha256), packed = !!(s.embedded && extras.sounds[s.embedded]);
+    if (had) { had.packed ||= packed; if (!had.names.includes(String(c.name ?? ""))) had.names.push(String(c.name ?? "")); continue; }
+    out.set(s.subsetSha256, { subsetSha256: s.subsetSha256, packed, bytes: Number(s.subsetBytes ?? 0), origin: s.origin, names: [String(c.name ?? "")] });
+  }
+  return [...out.values()];
+}
+const soundPath = (sha256: string) => `${SOUNDS}${sha256}.sf2`;
+/** 打包：没在歌里的 SoundFont 候选（弱引用，或强引用但文件里少了那块），have(子集 sha256) 给得出字节的 → 嵌进歌。
+ *  调用方保证 have 给的字节核过 sha256。返回打包了哪些、哪些拿不到（拿不到的保持原样，不静默：调用方报出来）。 */
+export function withPacked(extras: Extras, have: (subsetSha256: string) => Uint8Array | undefined): { extras: Extras; packed: string[]; missing: string[] } {
+  const lounge: Record<string, Json> = {}, sounds = { ...extras.sounds }, packed = new Set<string>(), missing = new Set<string>();
+  for (const [id, r0] of Object.entries(extras.lounge)) {
+    const r = structuredClone(r0);
+    for (const c of cands(r)) {
+      const i = instrumentOf(c); if (i?.engine !== "soundfont") continue;
+      const s = i.source; if (s.embedded && sounds[s.embedded]) continue;
+      const path = soundPath(s.subsetSha256), b = sounds[path] ?? have(s.subsetSha256);
+      if (!b) { missing.add(s.subsetSha256); continue; }
+      sounds[path] = b; s.embedded = path; packed.add(s.subsetSha256);
+    }
+    lounge[id] = r;
+  }
+  return packed.size ? { extras: { ...extras, lounge, sounds }, packed: [...packed], missing: [...missing] } : { extras, packed: [], missing: [...missing] };
+}
+/** 解包：嵌着的 SoundFont 候选全部改弱引用（embedded = null），字节从歌里拿掉。
+ *  返回拿掉的字节（子集 sha256 → 字节）：调用方留到设备上，这台设备照样能响（Blender 的 unpack = 写到旁边的文件，这里 = 设备的音源缓存）。 */
+export function withUnpacked(extras: Extras): { extras: Extras; removed: Map<string, Uint8Array> } {
+  const lounge: Record<string, Json> = {}, removed = new Map<string, Uint8Array>();
+  let changed = false;
+  for (const [id, r0] of Object.entries(extras.lounge)) {
+    const r = structuredClone(r0);
+    for (const c of cands(r)) {
+      const i = instrumentOf(c); if (i?.engine !== "soundfont" || !i.source.embedded) continue;
+      const b = extras.sounds[i.source.embedded]; if (b) removed.set(i.source.subsetSha256, b);
+      i.source.embedded = null; changed = true;
+    }
+    lounge[id] = r;
+  }
+  return changed ? { extras: pruneSounds({ ...extras, lounge }), removed } : { extras, removed };
+}
+
+// ── 响度校准（候选的 calibrationDb：契约「看得见、能调的默认，不偷偷自动」；user「不太建议自动校准，除非是可调的默认。不然就是不透明了」）──
+/** 上场那位的校准（dB；没有角色快照 / 没写 = 0）。渲染时乘在这个声部上，和录音室推子相加（推子 = 混音决定，校准 = 演奏者自己的响度）。 */
+export function activeCalibrationDb(extras: Extras, role: string): number { const c = activeCandidate(extras, role); const v = Number(c?.calibrationDb ?? 0); return Number.isFinite(v) ? v : 0; }
+/** 改上场那位的校准。 */
+export function withCalibration(extras: Extras, role: string, dB: number, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
+  c.calibrationDb = Math.round(dB * 10) / 10;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
 
 // ── 读 ─────────────────────────────────────────────────────────────────────────────────

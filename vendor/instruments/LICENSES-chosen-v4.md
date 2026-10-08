@@ -1,5 +1,5 @@
-# 挑中图标的许可证原文（2026-10-07，build_export.py 从 icons/upstream/ 原样拼接）
-署名逐图见 `icon-credits-v3.json`；完整署名块见源仓 `icons/LICENSES.md`。
+# 挑中图标的许可证原文（2026-10-08，build_export.py 从 icons/upstream/ 原样拼接）
+署名逐图见 `icon-credits-v4.json`；完整署名块见源仓 `icons/LICENSES.md`。
 
 ## commons（icons/upstream/wikimedia-commons/）
 
@@ -1194,11 +1194,11 @@ to represent the company, product, or service to which they refer.**
 
 - 仓库：https://github.com/FortAwesome/Font-Awesome
 - ref：`7.3.1`（commit `14c65a3747d0f3b751f15831fc719236aea8729d`）
-- 抓取日期：2026-10-07
+- 抓取日期：2026-10-07；备注写「2026-10-08 补收」的 1 个是 2026-10-08 第二轮抓的（只下了新增的，用同一套 curl 参数，状态行追加在 curl.log 末尾「# 2026-10-08 补收」那行之后）
 - 许可证：CC BY 4.0（图标）
 - 版权 / 作者：Copyright 2026 Fonticons, Inc.（每个 SVG 里自带一行署名注释，合进 sprite 后原样保留）
 - 本目录里的许可证原文：LICENSE.txt（Font Awesome Free License 原文）、LICENSE-CC-BY-4.0-legalcode.txt
-- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 7）。文件按上游仓库里的相对路径原样存放、原名不改。
+- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 8）。文件按上游仓库里的相对路径原样存放、原名不改。
 - 没有用 git，没有经 Iconify 重新打包（Iconify 只用来检索，见 `upstream/iconify/SOURCE.md`）。
 
 | 套件 | 上游原名 | 本地文件 | 许可证 | 作者 | 备注 |
@@ -1208,6 +1208,7 @@ to represent the company, product, or service to which they refer.**
 | fontawesome | drum-steelpan | `svgs/solid/drum-steelpan.svg`（已落盘） | CC-BY-4.0 | Fonticons, Inc.（Font Awesome Free） | Font Awesome 7 Free Solid |
 | fontawesome | bell | `svgs/solid/bell.svg`（已落盘） | CC-BY-4.0 | Fonticons, Inc.（Font Awesome Free） | Font Awesome 7 Free Solid |
 | fontawesome | helicopter | `svgs/solid/helicopter.svg`（已落盘） | CC-BY-4.0 | Fonticons, Inc.（Font Awesome Free） | Font Awesome 7 Free Solid |
+| fontawesome | frog | `svgs/solid/frog.svg`（已落盘） | CC-BY-4.0 | Fonticons, Inc.（Font Awesome Free） | Font Awesome 7 Free Solid；2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
 ```
 
 ## game-icons（icons/upstream/game-icons/）
@@ -1543,11 +1544,11 @@ Creative Commons Notice
 
 - 仓库：https://github.com/game-icons/icons
 - ref：`master`（commit `82d948812bfe3f269ef8f731dcdb07b08160edc4`）
-- 抓取日期：2026-10-07
+- 抓取日期：2026-10-07；备注写「2026-10-08 补收」的 22 个是 2026-10-08 第二轮抓的（只下了新增的，用同一套 curl 参数，状态行追加在 curl.log 末尾「# 2026-10-08 补收」那行之后）
 - 许可证：CC BY 3.0
 - 版权 / 作者：每个子目录是一位作者（license.txt 原文：Please, include a mention "Icons made by {author}" in your derivative work.）
 - 本目录里的许可证原文：license.txt（上游原文）、LICENSE-CC-BY-3.0-legalcode.txt（creativecommons.org 的法律文本全文）
-- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 40）。文件按上游仓库里的相对路径原样存放、原名不改。
+- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 62）。文件按上游仓库里的相对路径原样存放、原名不改。
 - 没有用 git，没有经 Iconify 重新打包（Iconify 只用来检索，见 `upstream/iconify/SOURCE.md`）。
 
 | 套件 | 上游原名 | 本地文件 | 许可证 | 作者 | 备注 |
@@ -1590,6 +1591,28 @@ Creative Commons Notice
 | game-icons | xylophone | `delapouite/xylophone.svg`（已落盘） | CC-BY-3.0 | delapouite |  |
 | game-icons | gunshot | `lorc/gunshot.svg`（已落盘） | CC-BY-3.0 | lorc |  |
 | game-icons | helicopter | `delapouite/helicopter.svg`（已落盘） | CC-BY-3.0 | delapouite |  |
+| game-icons | cat | `lorc/cat.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | sitting-dog | `delapouite/sitting-dog.svg`（已落盘） | CC-BY-3.0 | delapouite | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | bird-twitter | `lorc/bird-twitter.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | windy-stripes | `lorc/windy-stripes.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | heavy-rain | `lorc/heavy-rain.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | lightning-storm | `lorc/lightning-storm.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | splashy-stream | `lorc/splashy-stream.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | river | `delapouite/river.svg`（已落盘） | CC-BY-3.0 | delapouite | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | wave-crest | `lorc/wave-crest.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | sea-cliff | `delapouite/sea-cliff.svg`（已落盘） | CC-BY-3.0 | delapouite | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | flame | `carl-olsen/flame.svg`（已落盘） | CC-BY-3.0 | carl-olsen | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | campfire | `lorc/campfire.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | cricket | `delapouite/cricket.svg`（已落盘） | CC-BY-3.0 | delapouite | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | frog | `lorc/frog.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | firework-rocket | `lorc/firework-rocket.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | cannon | `lorc/cannon.svg`（已落盘） | CC-BY-3.0 | lorc | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | city-car | `delapouite/city-car.svg`（已落盘） | CC-BY-3.0 | delapouite | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | steam-locomotive | `delapouite/steam-locomotive.svg`（已落盘） | CC-BY-3.0 | delapouite | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | rotary-phone | `caro-asercion/rotary-phone.svg`（已落盘） | CC-BY-3.0 | caro-asercion | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | beer-bottle | `delapouite/beer-bottle.svg`（已落盘） | CC-BY-3.0 | delapouite | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | lungs | `delapouite/lungs.svg`（已落盘） | CC-BY-3.0 | delapouite | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| game-icons | bow-string | `delapouite/bow-string.svg`（已落盘） | CC-BY-3.0 | delapouite | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
 
 上游原件自带黑底方块（第一个 path 是 `M0 0h512v512H0z`，图形是白色 `fill="#fff"`）；Iconify 版把底去掉了。这里收的是原件，没去底。
 ```
@@ -1738,11 +1761,11 @@ The MIT license applies to all non-font and non-icon files.
 
 - 仓库：https://github.com/Templarian/MaterialDesign
 - ref：`master`（commit `2424e748e0cc63ab7b9c095a099b9fe239b737c0`）
-- 抓取日期：2026-10-07
+- 抓取日期：2026-10-07；备注写「2026-10-08 补收」的 18 个是 2026-10-08 第二轮抓的（只下了新增的，用同一套 curl 参数，状态行追加在 curl.log 末尾「# 2026-10-08 补收」那行之后）
 - 许可证：Apache-2.0（Pictogrammers Free License：图标 Apache 2.0）
 - 版权 / 作者：Pictogrammers（LICENSE 原文无版权年份行）
 - 本目录里的许可证原文：LICENSE（Pictogrammers Free License 原文）
-- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 14）。文件按上游仓库里的相对路径原样存放、原名不改。
+- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 32）。文件按上游仓库里的相对路径原样存放、原名不改。
 - 没有用 git，没有经 Iconify 重新打包（Iconify 只用来检索，见 `upstream/iconify/SOURCE.md`）。
 
 | 套件 | 上游原名 | 本地文件 | 许可证 | 作者 | 备注 |
@@ -1760,128 +1783,32 @@ The MIT license applies to all non-font and non-icon files.
 | mdi | helicopter | `svg/helicopter.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） |  |
 | mdi | bell | `svg/bell.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） |  |
 | mdi | account-voice | `svg/account-voice.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） |  |
+| mdi | cat | `svg/cat.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | dog | `svg/dog.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | bird | `svg/bird.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | weather-windy | `svg/weather-windy.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | weather-rainy | `svg/weather-rainy.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | weather-lightning | `svg/weather-lightning.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件）；上游 meta.json 的别名 weather-thunder / weather-storm |
+| mdi | shore | `svg/shore.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | waves | `svg/waves.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件）；上游 meta.json 的别名 ocean / lake / water |
+| mdi | fire | `svg/fire.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | bug | `svg/bug.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | firework | `svg/firework.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | car | `svg/car.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | train | `svg/train.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件）；上游 meta.json 的别名 locomotive |
+| mdi | phone-ring | `svg/phone-ring.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | bottle-soda-classic | `svg/bottle-soda-classic.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | lungs | `svg/lungs.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | bow-arrow | `svg/bow-arrow.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| mdi | square-wave | `svg/square-wave.svg`（已落盘） | Apache-2.0 | Pictogrammers（Material Design Icons 社区） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
 ```
 
-## qlementine-icons（icons/upstream/qlementine-icons/）
+## openmoji-black（icons/upstream/openmoji/）
 
-### LICENSE
-
-```
-MIT License
-
-Copyright (c) 2023 Olivier Cléro
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### SOURCE.md
+### LICENSE.txt
 
 ```
-# Qlementine Icons — 来源记录
-
-- 仓库：https://github.com/oclero/qlementine-icons
-- ref：`v1.16.1`（commit `e7cf96d0c60836b285f117cede9ed8c4113ebfa8`）
-- 抓取日期：2026-10-07
-- 许可证：MIT
-- 版权 / 作者：Copyright (c) 2023 Olivier Cléro
-- 本目录里的许可证原文：LICENSE（MIT 全文）
-- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 40）。文件按上游仓库里的相对路径原样存放、原名不改。
-- 没有用 git，没有经 Iconify 重新打包（Iconify 只用来检索，见 `upstream/iconify/SOURCE.md`）。
-
-| 套件 | 上游原名 | 本地文件 | 许可证 | 作者 | 备注 |
-|---|---|---|---|---|---|
-| qlementine-icons | accordion | `sources/resources/icons/16/instrument/accordion.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
-| qlementine-icons | banjo | `sources/resources/icons/24/instrument/banjo.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | bass | `sources/resources/icons/24/instrument/bass.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | bongos | `sources/resources/icons/24/instrument/bongos.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | cello | `sources/resources/icons/24/instrument/cello.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | clap | `sources/resources/icons/24/instrument/clap.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | cowbell | `sources/resources/icons/24/instrument/cowbell.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | cymbal | `sources/resources/icons/24/instrument/cymbal.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | drumkit | `sources/resources/icons/24/instrument/drumkit.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | guitar | `sources/resources/icons/24/instrument/guitar.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | guitar-12-strings | `sources/resources/icons/24/instrument/guitar-12-strings.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | guitar-classical | `sources/resources/icons/24/instrument/guitar-classical.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | guitar-folk | `sources/resources/icons/24/instrument/guitar-folk.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | guitar-jackson | `sources/resources/icons/16/instrument/guitar-jackson.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
-| qlementine-icons | guitar-strat | `sources/resources/icons/24/instrument/guitar-strat.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | guitar-tele | `sources/resources/icons/24/instrument/guitar-tele.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | harmonica | `sources/resources/icons/16/instrument/harmonica.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
-| qlementine-icons | harp | `sources/resources/icons/16/instrument/harp.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
-| qlementine-icons | hi-hat | `sources/resources/icons/24/instrument/hi-hat.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | idiophone | `sources/resources/icons/24/instrument/idiophone.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | kick | `sources/resources/icons/24/instrument/kick.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | mandolin | `sources/resources/icons/24/instrument/mandolin.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | piano | `sources/resources/icons/24/instrument/piano.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | pipe | `sources/resources/icons/24/instrument/pipe.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | saxophone | `sources/resources/icons/24/instrument/saxophone.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | shakers | `sources/resources/icons/24/instrument/shakers.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | shamisen | `sources/resources/icons/24/instrument/shamisen.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | sitar | `sources/resources/icons/16/instrument/sitar.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
-| qlementine-icons | snare | `sources/resources/icons/24/instrument/snare.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | synthesizer | `sources/resources/icons/24/instrument/synthesizer.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | tambourine | `sources/resources/icons/24/instrument/tambourine.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | tamtam | `sources/resources/icons/24/instrument/tamtam.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | tom | `sources/resources/icons/24/instrument/tom.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | trombone | `sources/resources/icons/16/instrument/trombone.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
-| qlementine-icons | trumpet | `sources/resources/icons/24/instrument/trumpet.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | tuba | `sources/resources/icons/16/instrument/tuba.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
-| qlementine-icons | ukulele | `sources/resources/icons/24/instrument/ukulele.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | violin | `sources/resources/icons/24/instrument/violin.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-| qlementine-icons | woodwind | `sources/resources/icons/24/instrument/woodwind.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
-
-乐器都在 `sources/resources/icons/<尺寸>/instrument/`。同一图标 16px / 24px 是两张不同的图，24 有就取 24，否则取 16。没收：amp、pedal、pedalboard、pedal-outlines、drumsticks、drum-brushes、guitar-machine-head、mastering、microphone（配件 / 设备，不是乐器）；shape/triangle 是几何三角形。
-```
-
-## twemoji（icons/upstream/twemoji/）
-
-### LICENSE
-
-```
-MIT License
-
-Copyright (c) 2022–present Jason Sofonia & Justine De Caires
-Copyright (c) 2014–2021 Twitter
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### LICENSE-GRAPHICS
-
-```
-Attribution 4.0 International
+Attribution-ShareAlike 4.0 International
 
 =======================================================================
 
@@ -1916,7 +1843,7 @@ exhaustive, and do not form part of our licenses.
      material not subject to the license. This includes other CC-
      licensed material, or material used under an exception or
      limitation to copyright. More considerations for licensors:
-	wiki.creativecommons.org/Considerations_for_licensors
+    wiki.creativecommons.org/Considerations_for_licensors
 
      Considerations for the public: By using one of our public
      licenses, a licensor grants the public permission to use the
@@ -1931,22 +1858,24 @@ exhaustive, and do not form part of our licenses.
      rights in the material. A licensor may make special requests,
      such as asking that all changes be marked or described.
      Although not required by our licenses, you are encouraged to
-     respect those requests where reasonable. More_considerations
-     for the public: 
-	wiki.creativecommons.org/Considerations_for_licensees
+     respect those requests where reasonable. More considerations
+     for the public:
+    wiki.creativecommons.org/Considerations_for_licensees
 
 =======================================================================
 
-Creative Commons Attribution 4.0 International Public License
+Creative Commons Attribution-ShareAlike 4.0 International Public
+License
 
 By exercising the Licensed Rights (defined below), You accept and agree
 to be bound by the terms and conditions of this Creative Commons
-Attribution 4.0 International Public License ("Public License"). To the
-extent this Public License may be interpreted as a contract, You are
-granted the Licensed Rights in consideration of Your acceptance of
-these terms and conditions, and the Licensor grants You such rights in
-consideration of benefits the Licensor receives from making the
-Licensed Material available under these terms and conditions.
+Attribution-ShareAlike 4.0 International Public License ("Public
+License"). To the extent this Public License may be interpreted as a
+contract, You are granted the Licensed Rights in consideration of Your
+acceptance of these terms and conditions, and the Licensor grants You
+such rights in consideration of benefits the Licensor receives from
+making the Licensed Material available under these terms and
+conditions.
 
 
 Section 1 -- Definitions.
@@ -1965,7 +1894,11 @@ Section 1 -- Definitions.
      and Similar Rights in Your contributions to Adapted Material in
      accordance with the terms and conditions of this Public License.
 
-  c. Copyright and Similar Rights means copyright and/or similar rights
+  c. BY-SA Compatible License means a license listed at
+     creativecommons.org/compatiblelicenses, approved by Creative
+     Commons as essentially the equivalent of this Public License.
+
+  d. Copyright and Similar Rights means copyright and/or similar rights
      closely related to copyright including, without limitation,
      performance, broadcast, sound recording, and Sui Generis Database
      Rights, without regard to how the rights are labeled or
@@ -1973,29 +1906,33 @@ Section 1 -- Definitions.
      specified in Section 2(b)(1)-(2) are not Copyright and Similar
      Rights.
 
-  d. Effective Technological Measures means those measures that, in the
+  e. Effective Technological Measures means those measures that, in the
      absence of proper authority, may not be circumvented under laws
      fulfilling obligations under Article 11 of the WIPO Copyright
      Treaty adopted on December 20, 1996, and/or similar international
      agreements.
 
-  e. Exceptions and Limitations means fair use, fair dealing, and/or
+  f. Exceptions and Limitations means fair use, fair dealing, and/or
      any other exception or limitation to Copyright and Similar Rights
      that applies to Your use of the Licensed Material.
 
-  f. Licensed Material means the artistic or literary work, database,
+  g. License Elements means the license attributes listed in the name
+     of a Creative Commons Public License. The License Elements of this
+     Public License are Attribution and ShareAlike.
+
+  h. Licensed Material means the artistic or literary work, database,
      or other material to which the Licensor applied this Public
      License.
 
-  g. Licensed Rights means the rights granted to You subject to the
+  i. Licensed Rights means the rights granted to You subject to the
      terms and conditions of this Public License, which are limited to
      all Copyright and Similar Rights that apply to Your use of the
      Licensed Material and that the Licensor has authority to license.
 
-  h. Licensor means the individual(s) or entity(ies) granting rights
+  j. Licensor means the individual(s) or entity(ies) granting rights
      under this Public License.
 
-  i. Share means to provide material to the public by any means or
+  k. Share means to provide material to the public by any means or
      process that requires permission under the Licensed Rights, such
      as reproduction, public display, public performance, distribution,
      dissemination, communication, or importation, and to make material
@@ -2003,13 +1940,13 @@ Section 1 -- Definitions.
      public may access the material from a place and at a time
      individually chosen by them.
 
-  j. Sui Generis Database Rights means rights other than copyright
+  l. Sui Generis Database Rights means rights other than copyright
      resulting from Directive 96/9/EC of the European Parliament and of
      the Council of 11 March 1996 on the legal protection of databases,
      as amended and/or succeeded, as well as other essentially
      equivalent rights anywhere in the world.
 
-  k. You means the individual or entity exercising the Licensed Rights
+  m. You means the individual or entity exercising the Licensed Rights
      under this Public License. Your has a corresponding meaning.
 
 
@@ -2055,7 +1992,13 @@ Section 2 -- Scope.
                Licensed Rights under the terms and conditions of this
                Public License.
 
-            b. No downstream restrictions. You may not offer or impose
+            b. Additional offer from the Licensor -- Adapted Material.
+               Every recipient of Adapted Material from You
+               automatically receives an offer from the Licensor to
+               exercise the Licensed Rights in the Adapted Material
+               under the conditions of the Adapter's License You apply.
+
+            c. No downstream restrictions. You may not offer or impose
                any additional or different terms or conditions on, or
                apply any Effective Technological Measures to, the
                Licensed Material if doing so restricts exercise of the
@@ -2137,9 +2080,24 @@ following conditions.
           information required by Section 3(a)(1)(A) to the extent
           reasonably practicable.
 
-       4. If You Share Adapted Material You produce, the Adapter's
-          License You apply must not prevent recipients of the Adapted
-          Material from complying with this Public License.
+  b. ShareAlike.
+
+     In addition to the conditions in Section 3(a), if You Share
+     Adapted Material You produce, the following conditions also apply.
+
+       1. The Adapter's License You apply must be a Creative Commons
+          license with the same License Elements, this version or
+          later, or a BY-SA Compatible License.
+
+       2. You must include the text of, or the URI or hyperlink to, the
+          Adapter's License You apply. You may satisfy this condition
+          in any reasonable manner based on the medium, means, and
+          context in which You Share Adapted Material.
+
+       3. You may not offer or impose any additional or different terms
+          or conditions on, or apply any Effective Technological
+          Measures to, Adapted Material that restrict exercise of the
+          rights granted under the Adapter's License You apply.
 
 
 Section 4 -- Sui Generis Database Rights.
@@ -2154,8 +2112,9 @@ apply to Your use of the Licensed Material:
   b. if You include all or a substantial portion of the database
      contents in a database in which You have Sui Generis Database
      Rights, then the database in which You have Sui Generis Database
-     Rights (but not its individual contents) is Adapted Material; and
+     Rights (but not its individual contents) is Adapted Material,
 
+     including for purposes of Section 3(b); and
   c. You must comply with the conditions in Section 3(a) if You Share
      all or a substantial portion of the contents of the database.
 
@@ -2258,11 +2217,13 @@ Section 8 -- Interpretation.
 
 =======================================================================
 
-Creative Commons is not a party to its public licenses.
-Notwithstanding, Creative Commons may elect to apply one of its public
-licenses to material it publishes and in those instances will be
-considered the "Licensor." Except for the limited purpose of indicating
-that material is shared under a Creative Commons public license or as
+Creative Commons is not a party to its public
+licenses. Notwithstanding, Creative Commons may elect to apply one of
+its public licenses to material it publishes and in those instances
+will be considered the “Licensor.” The text of the Creative Commons
+public licenses is dedicated to the public domain under the CC0 Public
+Domain Dedication. Except for the limited purpose of indicating that
+material is shared under a Creative Commons public license or as
 otherwise permitted by the Creative Commons policies published at
 creativecommons.org/policies, Creative Commons does not authorize the
 use of the trademark "Creative Commons" or any other trademark or logo
@@ -2270,8 +2231,8 @@ of Creative Commons without its prior written consent including,
 without limitation, in connection with any unauthorized modifications
 to any of its public licenses or any other arrangements,
 understandings, or agreements concerning use of licensed material. For
-the avoidance of doubt, this paragraph does not form part of the public
-licenses.
+the avoidance of doubt, this paragraph does not form part of the
+public licenses.
 
 Creative Commons may be contacted at creativecommons.org.
 ```
@@ -2279,36 +2240,178 @@ Creative Commons may be contacted at creativecommons.org.
 ### SOURCE.md
 
 ```
-# Twemoji — 来源记录
+# OpenMoji（彩色）、OpenMoji（黑线） — 来源记录
 
-- 仓库：https://github.com/jdecked/twemoji
-- ref：`v17.0.3`（commit `b6b55fef1e8636b540a6d016a4729ca8cdf2e60b`）
-- 抓取日期：2026-10-07
-- 许可证：CC BY 4.0（图形）
-- 版权 / 作者：Copyright (c) 2014–2021 Twitter；Copyright (c) 2022–present Jason Sofonia & Justine De Caires（摘自 LICENSE）
-- 本目录里的许可证原文：LICENSE-GRAPHICS（CC BY 4.0 全文）、LICENSE（代码 MIT）、README.md（含 Attribution Requirements 一节）
-- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 22）。文件按上游仓库里的相对路径原样存放、原名不改。
+- 仓库：https://github.com/hfg-gmuend/openmoji
+- ref：`17.0.0`（commit `f9fc506a3f913be9897ab0181d611d4c910a4104`）
+- 抓取日期：2026-10-07；备注写「2026-10-08 补收」的 34 个是 2026-10-08 第二轮抓的（只下了新增的，用同一套 curl 参数，状态行追加在 curl.log 末尾「# 2026-10-08 补收」那行之后）
+- 许可证：CC BY-SA 4.0
+- 版权 / 作者：OpenMoji – the open-source emoji and icon project；每个 emoji 有自己的设计者（data/openmoji.json 的 openmoji_author）
+- 本目录里的许可证原文：LICENSE.txt（CC BY-SA 4.0 全文）
+- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 73）。文件按上游仓库里的相对路径原样存放、原名不改。
 - 没有用 git，没有经 Iconify 重新打包（Iconify 只用来检索，见 `upstream/iconify/SOURCE.md`）。
 
 | 套件 | 上游原名 | 本地文件 | 许可证 | 作者 | 备注 |
 |---|---|---|---|---|---|
-| twemoji | 1f3b7 | `assets/svg/1f3b7.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f3ba | `assets/svg/1f3ba.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1fa8a | `assets/svg/1fa8a.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1fa97 | `assets/svg/1fa97.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f3b8 | `assets/svg/1f3b8.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f3b9 | `assets/svg/1f3b9.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f3bb | `assets/svg/1f3bb.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1fa95 | `assets/svg/1fa95.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f941 | `assets/svg/1f941.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1fa98 | `assets/svg/1fa98.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1fa87 | `assets/svg/1fa87.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1fa88 | `assets/svg/1fa88.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1fa89 | `assets/svg/1fa89.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f4ef | `assets/svg/1f4ef.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f514 | `assets/svg/1f514.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f390 | `assets/svg/1f390.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f44f | `assets/svg/1f44f.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f681 | `assets/svg/1f681.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
-| twemoji | 1f9d1-200d-1f3a4 | `assets/svg/1f9d1-200d-1f3a4.svg`（已落盘） | CC-BY-4.0 | Twitter, Inc and other contributors（jdecked/twemoji 维护的分支） |  |
+| openmoji-color | 1F3B7 | `color/svg/1F3B7.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-black | 1F3B7 | `black/svg/1F3B7.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-color | 1F3BA | `color/svg/1F3BA.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-black | 1F3BA | `black/svg/1F3BA.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-color | 1FA8A | `color/svg/1FA8A.svg`（已落盘） | CC-BY-SA-4.0 | Natalia Kenig（OpenMoji） |  |
+| openmoji-black | 1FA8A | `black/svg/1FA8A.svg`（已落盘） | CC-BY-SA-4.0 | Natalia Kenig（OpenMoji） |  |
+| openmoji-color | 1FA97 | `color/svg/1FA97.svg`（已落盘） | CC-BY-SA-4.0 | Liz Bravo（OpenMoji） |  |
+| openmoji-black | 1FA97 | `black/svg/1FA97.svg`（已落盘） | CC-BY-SA-4.0 | Liz Bravo（OpenMoji） |  |
+| openmoji-color | 1F3B8 | `color/svg/1F3B8.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-black | 1F3B8 | `black/svg/1F3B8.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-color | 1F3B9 | `color/svg/1F3B9.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-black | 1F3B9 | `black/svg/1F3B9.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-color | 1F3BB | `color/svg/1F3BB.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-black | 1F3BB | `black/svg/1F3BB.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-color | 1FA95 | `color/svg/1FA95.svg`（已落盘） | CC-BY-SA-4.0 | Sam Eckert（OpenMoji） |  |
+| openmoji-black | 1FA95 | `black/svg/1FA95.svg`（已落盘） | CC-BY-SA-4.0 | Sam Eckert（OpenMoji） |  |
+| openmoji-color | 1F941 | `color/svg/1F941.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-black | 1F941 | `black/svg/1F941.svg`（已落盘） | CC-BY-SA-4.0 | Sina Schulz（OpenMoji） |  |
+| openmoji-color | 1FA98 | `color/svg/1FA98.svg`（已落盘） | CC-BY-SA-4.0 | Liz Bravo（OpenMoji） |  |
+| openmoji-black | 1FA98 | `black/svg/1FA98.svg`（已落盘） | CC-BY-SA-4.0 | Liz Bravo（OpenMoji） |  |
+| openmoji-color | 1FA87 | `color/svg/1FA87.svg`（已落盘） | CC-BY-SA-4.0 | Ben Engelhardt（OpenMoji） |  |
+| openmoji-black | 1FA87 | `black/svg/1FA87.svg`（已落盘） | CC-BY-SA-4.0 | Ben Engelhardt（OpenMoji） |  |
+| openmoji-color | 1FA88 | `color/svg/1FA88.svg`（已落盘） | CC-BY-SA-4.0 | Christian Engler（OpenMoji） |  |
+| openmoji-black | 1FA88 | `black/svg/1FA88.svg`（已落盘） | CC-BY-SA-4.0 | Christian Engler（OpenMoji） |  |
+| openmoji-color | 1FA89 | `color/svg/1FA89.svg`（已落盘） | CC-BY-SA-4.0 | Daniel Utz（OpenMoji） |  |
+| openmoji-black | 1FA89 | `black/svg/1FA89.svg`（已落盘） | CC-BY-SA-4.0 | Daniel Utz（OpenMoji） |  |
+| openmoji-color | 1F4EF | `color/svg/1F4EF.svg`（已落盘） | CC-BY-SA-4.0 | Rana Cakir（OpenMoji） |  |
+| openmoji-black | 1F4EF | `black/svg/1F4EF.svg`（已落盘） | CC-BY-SA-4.0 | Rana Cakir（OpenMoji） |  |
+| openmoji-color | 1F514 | `color/svg/1F514.svg`（已落盘） | CC-BY-SA-4.0 | Rana Cakir（OpenMoji） |  |
+| openmoji-black | 1F514 | `black/svg/1F514.svg`（已落盘） | CC-BY-SA-4.0 | Rana Cakir（OpenMoji） |  |
+| openmoji-color | 1F390 | `color/svg/1F390.svg`（已落盘） | CC-BY-SA-4.0 | Jonas Dunkel（OpenMoji） |  |
+| openmoji-black | 1F390 | `black/svg/1F390.svg`（已落盘） | CC-BY-SA-4.0 | Jonas Dunkel（OpenMoji） |  |
+| openmoji-color | 1F44F | `color/svg/1F44F.svg`（已落盘） | CC-BY-SA-4.0 | Julian Grüneberg（OpenMoji） |  |
+| openmoji-black | 1F44F | `black/svg/1F44F.svg`（已落盘） | CC-BY-SA-4.0 | Julian Grüneberg（OpenMoji） |  |
+| openmoji-color | 1F681 | `color/svg/1F681.svg`（已落盘） | CC-BY-SA-4.0 | Ronja Bäurlen（OpenMoji） |  |
+| openmoji-black | 1F681 | `black/svg/1F681.svg`（已落盘） | CC-BY-SA-4.0 | Ronja Bäurlen（OpenMoji） |  |
+| openmoji-color | 1F9D1-200D-1F3A4 | `color/svg/1F9D1-200D-1F3A4.svg`（已落盘） | CC-BY-SA-4.0 | Benedikt Groß（OpenMoji） |  |
+| openmoji-black | 1F9D1-200D-1F3A4 | `black/svg/1F9D1-200D-1F3A4.svg`（已落盘） | CC-BY-SA-4.0 | Benedikt Groß（OpenMoji） |  |
+| openmoji-color | 1F431 | `color/svg/1F431.svg`（已落盘） | CC-BY-SA-4.0 | Sofie Ascherl（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F431 | `black/svg/1F431.svg`（已落盘） | CC-BY-SA-4.0 | Sofie Ascherl（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F436 | `color/svg/1F436.svg`（已落盘） | CC-BY-SA-4.0 | Sofie Ascherl（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F436 | `black/svg/1F436.svg`（已落盘） | CC-BY-SA-4.0 | Sofie Ascherl（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F426 | `color/svg/1F426.svg`（已落盘） | CC-BY-SA-4.0 | Selina Bauder（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F426 | `black/svg/1F426.svg`（已落盘） | CC-BY-SA-4.0 | Selina Bauder（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F32C | `color/svg/1F32C.svg`（已落盘） | CC-BY-SA-4.0 | Vanessa Boutzikoudi（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F32C | `black/svg/1F32C.svg`（已落盘） | CC-BY-SA-4.0 | Vanessa Boutzikoudi（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F327 | `color/svg/1F327.svg`（已落盘） | CC-BY-SA-4.0 | Vanessa Boutzikoudi（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F327 | `black/svg/1F327.svg`（已落盘） | CC-BY-SA-4.0 | Vanessa Boutzikoudi（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 26C8 | `color/svg/26C8.svg`（已落盘） | CC-BY-SA-4.0 | Vanessa Boutzikoudi（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 26C8 | `black/svg/26C8.svg`（已落盘） | CC-BY-SA-4.0 | Vanessa Boutzikoudi（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F30A | `color/svg/1F30A.svg`（已落盘） | CC-BY-SA-4.0 | Vanessa Boutzikoudi（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F30A | `black/svg/1F30A.svg`（已落盘） | CC-BY-SA-4.0 | Vanessa Boutzikoudi（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F525 | `color/svg/1F525.svg`（已落盘） | CC-BY-SA-4.0 | Guemil Project（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F525 | `black/svg/1F525.svg`（已落盘） | CC-BY-SA-4.0 | Guemil Project（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F997 | `color/svg/1F997.svg`（已落盘） | CC-BY-SA-4.0 | Selina Bauder（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F997 | `black/svg/1F997.svg`（已落盘） | CC-BY-SA-4.0 | Selina Bauder（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F438 | `color/svg/1F438.svg`（已落盘） | CC-BY-SA-4.0 | Selina Bauder（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F438 | `black/svg/1F438.svg`（已落盘） | CC-BY-SA-4.0 | Selina Bauder（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F386 | `color/svg/1F386.svg`（已落盘） | CC-BY-SA-4.0 | Jonas Dunkel（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F386 | `black/svg/1F386.svg`（已落盘） | CC-BY-SA-4.0 | Jonas Dunkel（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F697 | `color/svg/1F697.svg`（已落盘） | CC-BY-SA-4.0 | Ronja Bäurlen（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F697 | `black/svg/1F697.svg`（已落盘） | CC-BY-SA-4.0 | Ronja Bäurlen（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F682 | `color/svg/1F682.svg`（已落盘） | CC-BY-SA-4.0 | Ronja Bäurlen（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F682 | `black/svg/1F682.svg`（已落盘） | CC-BY-SA-4.0 | Ronja Bäurlen（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 260E | `color/svg/260E.svg`（已落盘） | CC-BY-SA-4.0 | Kai Wanschura（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 260E | `black/svg/260E.svg`（已落盘） | CC-BY-SA-4.0 | Kai Wanschura（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F37E | `color/svg/1F37E.svg`（已落盘） | CC-BY-SA-4.0 | Laura Humpfer（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F37E | `black/svg/1F37E.svg`（已落盘） | CC-BY-SA-4.0 | Laura Humpfer（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1FAC1 | `color/svg/1FAC1.svg`（已落盘） | CC-BY-SA-4.0 | Fanny Jung（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1FAC1 | `black/svg/1FAC1.svg`（已落盘） | CC-BY-SA-4.0 | Fanny Jung（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-color | 1F3F9 | `color/svg/1F3F9.svg`（已落盘） | CC-BY-SA-4.0 | Marleen Heine（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+| openmoji-black | 1F3F9 | `black/svg/1F3F9.svg`（已落盘） | CC-BY-SA-4.0 | Marleen Heine（OpenMoji） | 2026-10-08 补收（音效 / 自然声 / 动物叫声的声源物件） |
+
+color/ 与 black/ 两种都收（同名文件，所以按上游子目录分开放）。另查了 data/openmoji.json 的 extras-openmoji / extras-unicode：没有乐器（E1D1 keyboard 是电脑键盘，E048 是 MusicBrainz 品牌标），所以 extras 一个没收。
+```
+
+## qlementine-icons（icons/upstream/qlementine-icons/）
+
+### LICENSE
+
+```
+MIT License
+
+Copyright (c) 2023 Olivier Cléro
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### SOURCE.md
+
+```
+# Qlementine Icons — 来源记录
+
+- 仓库：https://github.com/oclero/qlementine-icons
+- ref：`v1.16.1`（commit `e7cf96d0c60836b285f117cede9ed8c4113ebfa8`）
+- 抓取日期：2026-10-07
+- 许可证：MIT
+- 版权 / 作者：Copyright (c) 2023 Olivier Cléro
+- 本目录里的许可证原文：LICENSE（MIT 全文）
+- 怎么下的：`scripts/icons_plan.py` 生成本目录的 `curl.cfg`（每个原件一对 url / output，URL 都是 `raw.githubusercontent.com/<仓库>/<ref>/<路径>`）→ `curl -sS -L --fail --retry 3 --rate 4/s -A "MyLlamaReborn-hamster/0.1 …" -K curl.cfg`；每个请求的状态码与字节数在 `curl.log`（HTTP 200 × 40）。文件按上游仓库里的相对路径原样存放、原名不改。
+- 没有用 git，没有经 Iconify 重新打包（Iconify 只用来检索，见 `upstream/iconify/SOURCE.md`）。
+
+| 套件 | 上游原名 | 本地文件 | 许可证 | 作者 | 备注 |
+|---|---|---|---|---|---|
+| qlementine-icons | accordion | `sources/resources/icons/16/instrument/accordion.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
+| qlementine-icons | banjo | `sources/resources/icons/24/instrument/banjo.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | bass | `sources/resources/icons/24/instrument/bass.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | bongos | `sources/resources/icons/24/instrument/bongos.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | cello | `sources/resources/icons/24/instrument/cello.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | clap | `sources/resources/icons/24/instrument/clap.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | cowbell | `sources/resources/icons/24/instrument/cowbell.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | cymbal | `sources/resources/icons/24/instrument/cymbal.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | drumkit | `sources/resources/icons/24/instrument/drumkit.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | guitar | `sources/resources/icons/24/instrument/guitar.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | guitar-12-strings | `sources/resources/icons/24/instrument/guitar-12-strings.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | guitar-classical | `sources/resources/icons/24/instrument/guitar-classical.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | guitar-folk | `sources/resources/icons/24/instrument/guitar-folk.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | guitar-jackson | `sources/resources/icons/16/instrument/guitar-jackson.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
+| qlementine-icons | guitar-strat | `sources/resources/icons/24/instrument/guitar-strat.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | guitar-tele | `sources/resources/icons/24/instrument/guitar-tele.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | harmonica | `sources/resources/icons/16/instrument/harmonica.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
+| qlementine-icons | harp | `sources/resources/icons/16/instrument/harp.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
+| qlementine-icons | hi-hat | `sources/resources/icons/24/instrument/hi-hat.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | idiophone | `sources/resources/icons/24/instrument/idiophone.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | kick | `sources/resources/icons/24/instrument/kick.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | mandolin | `sources/resources/icons/24/instrument/mandolin.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | piano | `sources/resources/icons/24/instrument/piano.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | pipe | `sources/resources/icons/24/instrument/pipe.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | saxophone | `sources/resources/icons/24/instrument/saxophone.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | shakers | `sources/resources/icons/24/instrument/shakers.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | shamisen | `sources/resources/icons/24/instrument/shamisen.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | sitar | `sources/resources/icons/16/instrument/sitar.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
+| qlementine-icons | snare | `sources/resources/icons/24/instrument/snare.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | synthesizer | `sources/resources/icons/24/instrument/synthesizer.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | tambourine | `sources/resources/icons/24/instrument/tambourine.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | tamtam | `sources/resources/icons/24/instrument/tamtam.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | tom | `sources/resources/icons/24/instrument/tom.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | trombone | `sources/resources/icons/16/instrument/trombone.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
+| qlementine-icons | trumpet | `sources/resources/icons/24/instrument/trumpet.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | tuba | `sources/resources/icons/16/instrument/tuba.svg`（已落盘） | MIT | Olivier Cléro | 16px 款 |
+| qlementine-icons | ukulele | `sources/resources/icons/24/instrument/ukulele.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | violin | `sources/resources/icons/24/instrument/violin.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+| qlementine-icons | woodwind | `sources/resources/icons/24/instrument/woodwind.svg`（已落盘） | MIT | Olivier Cléro | 24px 款 |
+
+乐器都在 `sources/resources/icons/<尺寸>/instrument/`。同一图标 16px / 24px 是两张不同的图，24 有就取 24，否则取 16。没收：amp、pedal、pedalboard、pedal-outlines、drumsticks、drum-brushes、guitar-machine-head、mastering、microphone（配件 / 设备，不是乐器）；shape/triangle 是几何三角形。
 ```

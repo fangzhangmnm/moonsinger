@@ -11,6 +11,9 @@ export const DYNAMICS_DB: Record<Dynamic, number> = { pp: -18, p: -12, mp: -6, m
 export const ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1.0, accentDb: 4 } as const;
 /** 没画曲线的音用的默认数（单位同 curves.json 的 units）：soundfont 的 velocity = MIDI 力度比例 0–1。 */
 export const SOUNDFONT_DEFAULTS: Record<string, number> = { velocity: 0.8 };
+/** 新建 SoundFont 候选的响度校准（dB）：月读当基准（0），乐器默认让一点（2026-10-08 by Claude Opus 5.5；user「感觉乐器进来之后好像月读变轻了」）。
+ *  只是起点：好不好听归 user 耳朵，歌手牌上看得见、能调（契约「校准 = 看得见、能调的默认，不偷偷自动」）；进歌 by value，以后改这个数动不到旧歌。 */
+export const SOUNDFONT_CALIBRATION_DB = -6;
 export const TSUKUYOMI_DEFAULTS: Record<string, number> = {};   // 月读的旋钮（气息 / 张力 / 实声…）的物理定义表 = 契约 §7.3，还没定；定了之后新建时抄进来
 
 const REPO = "https://github.com/fangzhangmnm/moonsinger";

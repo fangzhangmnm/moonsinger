@@ -13,11 +13,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const SRC = join(ROOT, "..", "..", "20260813 MyLlamaReborn", "20261007 音乐史", "export", "moonsinger");   // ~/jupyter/20260813 MyLlamaReborn（不在 PWAProjects 里）
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
-export const VERSION = 3;
+export const VERSION = 4;   // v4 = 2026-10-08 收货（仓鼠 099fd3e：161 个概念、--tile 派生图标、AI 估算年份 yearSource；没删 / 改名字段）
 export const FILES = {
   concepts: `instruments-v${VERSION}.json`,
   gmMap: `gm-map-v${VERSION}.json`,
-  icons: `instrument-icons-20261007-v${VERSION}.svg`,
+  icons: `instrument-icons-20261008-v${VERSION}.svg`,   // sprite 文件名里的日期 = 那一版出图的日子（v2 / v3 = 20261007）
   iconCredits: `icon-credits-v${VERSION}.json`,
   licenses: `LICENSES-chosen-v${VERSION}.md`,
 };
@@ -35,8 +35,8 @@ export function render() {
 // 找人视图的目录：乐器概念（百科，id 束）+ GM 映射 + 图标。打开视图时才 fetch，到手先对这里钉的 sha256。
 export const INSTRUMENTS_VERSION = ${VERSION};
 export const INSTRUMENT_FILES = ${JSON.stringify(entries, null, 1)} as const;
-/** 图标署名（第三方图标，随 app vendor；设置里显示）。 */
-export const ICON_CREDITS: { id: string; set: string; author: string; license: string; url: string }[] = ${JSON.stringify((credits.icons ?? credits).map((c) => ({ id: c.id, set: c.set, author: c.author, license: c.license, url: c.url })))};
+/** 图标署名（第三方图标，随 app vendor；设置里显示）。modified = 派生图标（--tile）改了什么（CC-BY 要求注明改动；v4 起）。 */
+export const ICON_CREDITS: { id: string; set: string; author: string; license: string; url: string; modified?: string }[] = ${JSON.stringify((credits.icons ?? credits).map((c) => ({ id: c.id, set: c.set, author: c.author, license: c.license, url: c.url, ...(c.modified ? { modified: c.modified } : {}) })))};
 `;
 }
 
