@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.16-2026-10-08";
+var APP_VERSION = "v0.7.17-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6413,6 +6413,10 @@ var ScoreView = class {
     this.boxEl.className = "marquee";
     this.boxEl.hidden = true;
     el2.replaceChildren(this.sheet);
+    this.tail = document.createElement("div");
+    this.tail.className = "sheet-tail";
+    this.tail.setAttribute("aria-hidden", "true");
+    el2.appendChild(this.tail);
     this.ink = document.createElement("div");
     this.ink.className = "sheet-ink";
     this.sheet.appendChild(this.ink);
@@ -6514,6 +6518,7 @@ var ScoreView = class {
   finger = null;
   box = null;
   boxEl;
+  tail;
   /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
   press = null;
   /** 拿起来拖着的字 / 记号：st0 = 拿起来之前（每一下都从它重算，谱上实时是挪过去的样子）；targets = 拿起来时这条 track 上能落的音（下标 + 位置，拖的时候不跟着重排跳）；
@@ -6572,6 +6577,7 @@ var ScoreView = class {
       ...(this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st3.at.paper } : {}
     });
     this.ink.style.left = `${this.layout.pageX.left}px`;
+    this.tail.style.height = `${this.el.clientHeight}px`;
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg;
@@ -6637,8 +6643,9 @@ var ScoreView = class {
     const box = L2.systems[sys];
     if (!box) return;
     const top = this.el.scrollTop, h2 = this.el.clientHeight, z2 = this.zoom, off = this.sheet.offsetTop;
-    if (off + box.top * z2 < top) this.el.scrollTop = off + box.top * z2;
-    else if (off + box.bottom * z2 > top + h2) this.el.scrollTop = off + box.bottom * z2 - h2;
+    const a10 = off + box.top * z2, bt = off + box.bottom * z2, rowH = bt - a10, below = Math.min(rowH, h2 * 0.3), above = Math.min(rowH * 0.25, h2 * 0.1);
+    if (a10 - above < top) this.el.scrollTop = Math.max(0, a10 - above);
+    else if (bt + below > top + h2) this.el.scrollTop = Math.min(bt + below - h2, a10 - above);
   }
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
   /** 纸面上的框 → 屏幕坐标（local 的反过来）。 */
@@ -6694,7 +6701,7 @@ var ScoreView = class {
     const L2 = this.layout;
     if (!L2 || e10.button === 2) return;
     const p2 = this.local(e10);
-    this.el.focus({ preventScroll: true });
+    if (e10.pointerType !== "touch") this.el.focus({ preventScroll: true });
     if (e10.pointerType === "touch") {
       this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
       this.el.setPointerCapture(e10.pointerId);
@@ -6753,6 +6760,7 @@ var ScoreView = class {
     const pr = this.press;
     if (!pr || pr.moved) return;
     pr.fired = true;
+    if (pr.type === "touch") this.el.focus({ preventScroll: true });
     if (pr.grab) {
       this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, pr.type === "touch");
       return;
@@ -7158,6 +7166,7 @@ var ScoreView = class {
     }
   }
   up(e10) {
+    if (e10.pointerType === "touch" && this.press && this.press.pid === e10.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
     if (this.touches.delete(e10.pointerId) && this.pinch && this.touches.size < 2) {
       this.pinch = null;
       this.finger = null;
@@ -30297,4 +30306,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3e905c70572f.mjs.map
+//# sourceMappingURL=moonsinger-f6024ac16b58.mjs.map

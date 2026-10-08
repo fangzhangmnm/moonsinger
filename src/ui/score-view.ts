@@ -91,6 +91,7 @@ export class ScoreView {
   private finger: null | { pid: number; y0: number; top0: number; x: number; y: number; moved: boolean; shift: boolean; x0: number; left0: number } = null;
   private box: null | { pid: number; x0: number; y0: number; moved: boolean; st0: EditorState; row: number } = null;
   private boxEl: HTMLDivElement;
+  private tail: HTMLDivElement;
   /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
   private press: null | { pid: number; type: string; x: number; y: number; cx: number; cy: number; hit: HitNote | null; grab: Grab | null; timer: number; shift: boolean; moved: boolean; fired: boolean } = null;
   /** 拿起来拖着的字 / 记号：st0 = 拿起来之前（每一下都从它重算，谱上实时是挪过去的样子）；targets = 拿起来时这条 track 上能落的音（下标 + 位置，拖的时候不跟着重排跳）；
@@ -111,6 +112,10 @@ export class ScoreView {
     this.sheet = document.createElement("div"); this.sheet.className = "sheet";
     this.boxEl = document.createElement("div"); this.boxEl.className = "marquee"; this.boxEl.hidden = true;
     el.replaceChildren(this.sheet);
+    // 谱下面永远留一整屏的空白（user 2026-10-08「做一个护栏：滚动的时候页面下面还是留一整页白」）：最后一行也能滚到上面来，
+    //   跟随光标往下推时不会被「滚到底了」卡住（软键盘弹出谱面变矮时尤其）。高度 = 谱面板自己的高（render 里跟着改）
+    this.tail = document.createElement("div"); this.tail.className = "sheet-tail"; this.tail.setAttribute("aria-hidden", "true");
+    el.appendChild(this.tail);
     this.ink = document.createElement("div"); this.ink.className = "sheet-ink"; this.sheet.appendChild(this.ink);
     this.zoomBtn = document.createElement("button"); this.zoomBtn.className = "btn zoom-reset"; this.zoomBtn.type = "button"; this.zoomBtn.textContent = "1:1"; this.zoomBtn.title = "回到原大"; this.zoomBtn.hidden = true;
     this.zoomBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); this.setZoom(1, null); });
@@ -194,6 +199,7 @@ export class ScoreView {
       autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
       ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}) });
     this.ink.style.left = `${this.layout.pageX.left}px`;
+    this.tail.style.height = `${this.el.clientHeight}px`;
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
@@ -242,8 +248,11 @@ export class ScoreView {
     if (this.marks.open) sys = this.marks.system;
     const box = L.systems[sys]; if (!box) return;
     const top = this.el.scrollTop, h = this.el.clientHeight, z = this.zoom, off = this.sheet.offsetTop;   // off = 纸上面留给走带胶囊的边距（styles.css .sheet margin-top）
-    if (off + box.top * z < top) this.el.scrollTop = off + box.top * z;
-    else if (off + box.bottom * z > top + h) this.el.scrollTop = off + box.bottom * z - h;
+    // 不贴着最下面：下面留出大约一行（user 2026-10-08「打字的自动对齐也不要靠着最下面，而是倒数第二排之类的，打音符也是」）——最多三成屏高
+    //   （矮屏 + 软键盘时别把这一行推出上沿）；往上跟的时候上面也留一点。放不下两头 = 这一行的上沿优先看得见
+    const a = off + box.top * z, bt = off + box.bottom * z, rowH = bt - a, below = Math.min(rowH, h * 0.3), above = Math.min(rowH * 0.25, h * 0.1);
+    if (a - above < top) this.el.scrollTop = Math.max(0, a - above);
+    else if (bt + below > top + h) this.el.scrollTop = Math.min(bt + below - h, a - above);
   }
 
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
@@ -290,7 +299,10 @@ export class ScoreView {
     if ((e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;   // 在歌词框 / 记号框 / 把手上点：交给它们
     const L = this.layout; if (!L || e.button === 2) return;   // 右键归 contextmenu
     const p = this.local(e);   // 先算纸面坐标再拿焦点：focus 可能连带滚一下（分页时光标那行在页外），坐标就错了（2026-10-08 E2E 抓到）
-    this.el.focus({ preventScroll: true });   // 点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）
+    // 笔 / 鼠标：点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）。手指：按下先不抢——拖 = 滚动，歌词框开着时滚谱不该把它收掉、
+    //   把系统键盘收回去（收键盘 → 谱面变高 → 跟随光标又把视图拽回去 = 白滚；user 2026-10-08「每次打日文还是跟八年抗战一样…歌词输入模式滚动会导致键盘弹回来，然后白滚」）；
+    //   轻点（up）/ 长按（longPress）才抢
+    if (e.pointerType !== "touch") this.el.focus({ preventScroll: true });
     if (e.pointerType === "touch") {   // 手指：拖 = 滚动；不动 = 轻点；按住不动 = 长按选区；第二根手指落下 = 捏合缩放 / 双指平移
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       this.el.setPointerCapture(e.pointerId);
@@ -342,6 +354,7 @@ export class ScoreView {
   private longPress(): void {
     const pr = this.press; if (!pr || pr.moved) return;
     pr.fired = true;
+    if (pr.type === "touch") this.el.focus({ preventScroll: true });   // 手指按下时没抢焦点（见 down），长按到点才抢
     if (pr.grab) { this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, pr.type === "touch"); return; }
     if (!pr.hit) { this.blankPress(pr.x, pr.y, pr.cx, pr.cy); return; }
     const cur = this.host.get().sel;
@@ -616,6 +629,8 @@ export class ScoreView {
   }
 
   private up(e: PointerEvent): void {
+    // 手指轻点（没拖、没长按）= 这时才把焦点拿回谱面（down 里手指不抢）；先拿焦点再 tap：tap 打开的歌词框会自己再把焦点拿走
+    if (e.pointerType === "touch" && this.press && this.press.pid === e.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
     if (this.touches.delete(e.pointerId) && this.pinch && this.touches.size < 2) { this.pinch = null; this.finger = null; this.cancelPress(); return; }   // 捏合结束：剩下那根手指不接着当滚动（会跳）
     if (this.lift && e.pointerId === this.lift.pid) { this.cancelPress(); this.finger = null; this.endLift(); return; }
     const pr = this.press;
