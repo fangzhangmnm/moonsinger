@@ -10,6 +10,21 @@
 - 推 dev = push main 两端（origin OneDrive + github）；**push prod 必问 user**（prod = v0.5.1，33592aa）。版本：**只 bump patch**，minor 由 user 说（10-01 规矩）。
 - 测试钩子 `window.__moonsinger`（main.ts 末尾）：state / set / layout / bytes / open / store / es / gallery / attach / newStoreSong / openStoreDoc / setScope / setPages / setPaperHidden / toggleChord / playSong / undo / redo / history / flatten …
 
+## 0½. Opus 接手后的进度（as-of 2026-10-08 早上，edited by Claude Opus 5.5；提交 84eaa22 + 694fdf2，还没升版本、没推 dev——等 Fable 的歌库同步修复一起构建）
+
+| § 2 | 状态 |
+|---|---|
+| 1 弱引用 + 打包 / 解包 + 导出打包副本 | 已做（细节在仓 CLAUDE.md「交接活」节） |
+| 2 license + credit 推演 | 已做；「reference 里面的东西不算」按**弱引用 = 引用、不算**读（MoonSinger 没有参考窗），待 user 确认 |
+| 3 混音 | 已做：母线限幅 + 用上候选 `calibrationDb`（乐器默认 −6 dB，歌手牌上能调）；听感待 user |
+| 4 试弹音域 | 管线已做（提示条跟谁在弹、试听换人窗口跟进）；乐器音域数据等仓鼠 v5 `range`（user「让仓鼠调查」） |
+| 5 滚键盘 | 代码在（v0.6.6）；问 user：写的时候滑过的每个键都写一个音，会不会误写 |
+| 6 目录类级跳转 | 已做；顺带修了 user 当场报的「选乐器跳去第一次出现的组」、组头缝、目录里键盘开关、默认按曲风 |
+| 7 修的记号 + 笔工具盘 | 没动：格式（属性 / 记号 vs「曲线是真相」）和入口要 user 先拍 |
+| 8 仓鼠收货 | v4 已收（099fd3e） |
+
+另：user 当场加的——月读条款中 / 英译文（已做）；歌库里不开歌进乐器目录玩（提议「只弹着玩」模式，等 user 点头）。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |
