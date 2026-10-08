@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.0-2026-10-08";
+var APP_VERSION = "v0.7.1-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3156,24 +3156,45 @@ function slurStateSel(st3) {
   const on2 = idx.length === 1 ? idx : idx.slice(0, -1), n10 = on2.filter((i10) => tr(st3)[i10].slur).length;
   return n10 === 0 ? "none" : n10 === on2.length ? "all" : "some";
 }
+function toggleWedgeSel(st3, w2) {
+  const idx = selNoteIdx(st3);
+  if (!idx.length) return st3;
+  const on2 = idx.length === 1 ? idx : idx.slice(0, -1), toks = tr(st3), nt2 = toks.slice();
+  const all = on2.every((i10) => toks[i10].wedge === w2);
+  for (const i10 of on2) nt2[i10] = withWedge(nt2[i10], all ? null : w2);
+  return next(st3, nt2);
+}
+function toggleWedgeBefore(st3, w2) {
+  if (st3.sel) {
+    const nx2 = toggleWedgeSel(st3, w2);
+    return nx2 === st3 ? null : nx2;
+  }
+  const toks = tr(st3);
+  for (let i10 = st3.caret - 1; i10 >= headLen(toks); i10--) {
+    const t10 = toks[i10];
+    if (t10.kind === "rest") return null;
+    if (t10.kind !== "note") continue;
+    const nt2 = toks.slice();
+    nt2[i10] = withWedge(t10, t10.wedge === w2 ? null : w2);
+    return next(st3, nt2);
+  }
+  return null;
+}
+function withWedge(t10, w2) {
+  if (w2) return { ...t10, wedge: w2 };
+  const { wedge: _w, ...rest } = t10;
+  return rest;
+}
+function wedgeStateSel(st3, w2) {
+  const idx = selNoteIdx(st3);
+  if (!idx.length) return "none";
+  const on2 = idx.length === 1 ? idx : idx.slice(0, -1), n10 = on2.filter((i10) => tr(st3)[i10].wedge === w2).length;
+  return n10 === 0 ? "none" : n10 === on2.length ? "all" : "some";
+}
 function withSlur(t10, on2) {
   if (on2) return { ...t10, slur: true };
   const { slur: _s, ...rest } = t10;
   return rest;
-}
-function dynMarkAt(tokens, i10) {
-  for (let j2 = Math.min(i10, tokens.length) - 1; j2 >= 0; j2--) {
-    const t10 = tokens[j2];
-    if (t10.kind === "dyn") return t10.value;
-  }
-  return null;
-}
-function dynAt(tokens, i10) {
-  for (let j2 = Math.min(i10, tokens.length) - 1; j2 >= 0; j2--) {
-    const t10 = tokens[j2];
-    if (t10.kind === "dyn") return t10.value;
-  }
-  return DEFAULT_DYN;
 }
 function dynRunAt(tokens, at2) {
   let a10 = at2, b3 = at2;
@@ -3834,7 +3855,9 @@ function apply(st3, c10, now = Date.now()) {
       return toggleArtBefore(st3, c10.a) ?? st3;
     case "slur":
       return toggleSlurBefore(st3) ?? st3;
-    // 光标前那个音连到下一个（有选区 = 选区那样）
+    case "wedge":
+      return toggleWedgeBefore(st3, c10.w) ?? st3;
+    // 光标前那个音往下一个音渐强 / 渐弱（有选区 = 选区那样）   // 光标前那个音连到下一个（有选区 = 选区那样）
     case "shorter":
       return shorter(st3);
     case "longer":
@@ -5169,6 +5192,38 @@ function engrave(song, o10) {
           const ya = ext(f2, below) + sgn * P2(1.2), yb = ext(l10, below) + sgn * P2(1.2);
           const peak = g3.map((c10) => ext(c10, below) + sgn * P2(2.2)), cy2 = below ? Math.max(ya, yb, ...peak) + P2(0.6) : Math.min(ya, yb, ...peak) - P2(0.6);
           prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy2} ${xb - (xb - xa) * 0.2},${cy2} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
+        });
+      }
+      const wedgeOf = (k2) => tokens[noteIdx[k2]].wedge;
+      for (let k2 = 0; k2 < noteIdx.length; k2++) {
+        const w2 = wedgeOf(k2);
+        if (!w2 || k2 > 0 && wedgeOf(k2 - 1) === w2) continue;
+        let e10 = k2;
+        while (e10 < noteIdx.length - 1 && wedgeOf(e10) === w2) e10++;
+        const hasEnd = e10 > k2 && wedgeOf(e10) !== w2, last = hasEnd ? e10 - 1 : e10;
+        const run3 = noteIdx.slice(k2, last + 1).map((x3) => headOf.get(x3)), endC = hasEnd ? headOf.get(noteIdx[e10]) : null, n10 = run3.length;
+        const groups = [];
+        run3.forEach((c10, j2) => {
+          const g3 = groups[groups.length - 1];
+          if (g3 && g3.cs[0].system === c10.system) g3.cs.push(c10);
+          else groups.push({ cs: [c10], from: j2 });
+        });
+        const H3 = P2(0.5), afterDyn = (idx) => {
+          for (let j2 = idx - 1; j2 >= 0; j2--) {
+            const u2 = tokens[j2];
+            if (u2.kind === "dyn") return true;
+            if (u2.kind === "note" || u2.kind === "rest") return false;
+          }
+          return false;
+        };
+        groups.forEach((g3, gi) => {
+          const f2 = g3.cs[0], l10 = g3.cs[g3.cs.length - 1], row = rowOf(f2.system, r10, 0), y2 = yOf(row, TOP_LINE + 3.4);
+          const xa = gi === 0 ? nhX(f2) + (afterDyn(f2.index) ? P2(2.6) : 0) : nhX(f2) - P2(1.5);
+          const xb = gi === groups.length - 1 && endC && endC.system === f2.system ? nhX(endC) - P2(0.8) : nhX(l10) + nhW(l10) + P2(1.5);
+          if (xb - xa < P2(1.2)) return;
+          const f0 = g3.from / n10, f1 = gi === groups.length - 1 ? 1 : (g3.from + g3.cs.length) / n10;
+          const [h0, h1] = w2 === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)];
+          prims.push({ t: "path", d: `M${xa},${y2 - h0}L${xb},${y2 - h1}M${xa},${y2 + h0}L${xb},${y2 + h1}`, cls: "hairpin" });
         });
       }
       for (let n10 = 0; n10 < partLyrics.length; n10++) {
@@ -6719,6 +6774,8 @@ var degLabel = (g3) => `${g3.alt > 0 ? "\u266F" : g3.alt < 0 ? "\u266D" : ""}${g
 var HER_RANGE = { lo: 57, hi: 76, who: "\u6708\u8BFB" };
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+var CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+var DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var ROWS_MIN = 3;
 var ROWS_MAX = 8;
 var COLS_MIN = 3;
@@ -7057,6 +7114,8 @@ var Pad = class {
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "\u91CD\u97F3", "\u91CD\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u52A0\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:marcato", `<span class="smufl">\uE4AC</span>`, "\u5F3A\u97F3", "\u5F3A\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6BD4\u91CD\u97F3\u66F4\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "\u4FDD\u6301", "\u4FDD\u6301\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u6EE1\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
+      cell("wedge:cresc", CRESC_CELL, "\u6E10\u5F3A", "\u6E10\u5F3A <\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u4E00\u8DEF\u6E10\u5F3A\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF1B\u7EC8\u70B9 = \u90A3\u91CC\u5199\u7684\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
+      cell("wedge:dim", DIM_CELL, "\u6E10\u5F31", "\u6E10\u5F31 >\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u4E00\u8DEF\u6E10\u5F31\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u548C\u547C\u5438\u76F8\u53CD\u2014\u2014\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("bar", `<span class="big">|</span>`, "\u5C0F\u8282\u7EBF", "\u5C0F\u8282\u7EBF\uFF08\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\uFF09"),
@@ -7093,6 +7152,7 @@ var Pad = class {
       else if (id2 === "staff") this.host.onCommand({ k: "staff" });
       else if (id2.startsWith("art:")) this.host.onCommand({ k: "art", a: id2.slice(4) });
       else if (id2 === "slur") this.host.onCommand({ k: "slur" });
+      else if (id2 === "wedge:cresc" || id2 === "wedge:dim") this.host.onCommand({ k: "wedge", w: id2 === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: id2 });
       this.render();
     };
@@ -7404,7 +7464,7 @@ var Pad = class {
 
 // src/score/lab-score.ts
 var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
-function toLabScore(tokens, hum, lang = "ja", tempoMap) {
+function toLabScore(tokens, hum, lang = "ja", tempoMap, marks) {
   const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2[0]?.bpm ?? 90;
   const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
   const out = [];
@@ -7416,10 +7476,27 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap) {
     }
     out.push(e10);
   };
+  const nextTimed = (i10) => {
+    for (let j2 = i10 + 1; j2 < tokens.length; j2++) {
+      const u2 = tokens[j2];
+      if (isTimed(u2)) return u2;
+    }
+    return null;
+  };
   tokens.forEach((t10, i10) => {
     if (!isTimed(t10)) return;
     one(t10, i10);
     if (t10.kind === "note" && artOf(t10).includes("breath")) breathNext = true;
+    if (marks && t10.kind === "note" && artOf(t10).includes("staccato")) {
+      const nx2 = nextTimed(i10), held = nx2?.kind === "note" && (nx2.tie || nx2.lyric === MELISMA_MARK), last = out[out.length - 1], piece = last?.notes[last.notes.length - 1];
+      if (!held && last && piece && !last.rest) {
+        const cut = piece[1] * (1 - Math.max(0.05, Math.min(1, marks.staccatoGate)));
+        if (cut > 0) {
+          piece[1] -= cut;
+          last.rest = cut;
+        }
+      }
+    }
   });
   function one(t10, i10) {
     const len = t10.dur / eighth * (base3 / bpmOf.get(i10));
@@ -16764,6 +16841,7 @@ function readCredits(root, title) {
   return lines.length ? lines.join("\n") : void 0;
 }
 var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
+var wedgeXml = (type) => `<direction placement="above"><direction-type><wedge type="${type}" number="1"/></direction-type></direction>`;
 var ART_XML = { accent: "accent", marcato: "strong-accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
 var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
 var XML_DYN = (name) => ["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? name : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null;
@@ -16809,6 +16887,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
     for (let j2 = i10 + d3; j2 >= 0 && j2 < toks.length; j2 += d3) if (toks[j2].kind === "note") return toks[j2];
     return null;
   };
+  let wedgeOpen = false;
   const slurs = (i10, t10) => {
     const pv2 = noteAt(i10, -1), nx2 = noteAt(i10, 1), out = !!t10.slur && !!nx2, into = !!pv2?.slur;
     return `${into && !out ? `<slur type="stop" number="1"/>` : ""}${out && !into ? `<slur type="start" number="1"/>` : ""}`;
@@ -16841,6 +16920,19 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       continue;
     }
     if (t10.kind !== "note" && t10.kind !== "rest") continue;
+    if (t10.kind === "note") {
+      const pv2 = noteAt(i10, -1)?.wedge, w2 = t10.wedge;
+      if (pv2 && pv2 !== w2) {
+        if (ticks >= len) close(false);
+        cur.push(wedgeXml("stop"));
+        wedgeOpen = false;
+      }
+      if (w2 && pv2 !== w2) {
+        if (ticks >= len) close(false);
+        cur.push(wedgeXml(w2 === "cresc" ? "crescendo" : "diminuendo"));
+        wedgeOpen = true;
+      }
+    }
     let left = t10.dur, k2 = 0;
     const tieOut = t10.kind === "note" && nextTimed(i10)?.kind === "note" && nextTimed(i10).tie;
     let lyricDone = false;
@@ -16887,6 +16979,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
     }
     if (t10.kind === "note" && !t10.pitch) unwritten.push(`n${t10.id}`);
   }
+  if (wedgeOpen) cur.push(wedgeXml("stop"));
   if (cur.length || !measures.length) close(false);
   return { measures, unwritten, lastLen: len };
 }
@@ -16984,6 +17077,7 @@ function readMusicXml(xml, hints) {
     const body2 = [], langRead = /* @__PURE__ */ new Map();
     let headPhase = true, divisions = TPQ, voice = null;
     const openSlurs = /* @__PURE__ */ new Set();
+    let wedgeNow = null;
     const mark = (t10) => {
       body2.push(t10);
     };
@@ -17024,6 +17118,12 @@ function readMusicXml(xml, hints) {
             const v = XML_DYN(e10.name);
             if (v) mark({ kind: "dyn", id: 0, value: v });
             else drop("\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09");
+          }
+          for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const w2 of kids(dt, "wedge")) {
+            const ty2 = w2.attrs.type;
+            if (ty2 === "crescendo") wedgeNow = "cresc";
+            else if (ty2 === "diminuendo") wedgeNow = "dim";
+            else if (ty2 === "stop") wedgeNow = null;
           }
         } else if (c10.name === "note") {
           if (kid(c10, "grace")) {
@@ -17085,6 +17185,7 @@ function readMusicXml(xml, hints) {
           addArts(tok, c10);
           slurEvents(c10, openSlurs);
           if (openSlurs.size) tok.slur = true;
+          if (wedgeNow) tok.wedge = wedgeNow;
           const lyrics = kids(c10, "lyric"), ly2 = lyrics.find((l10) => (l10.attrs.number ?? "1") === "1") ?? lyrics[0];
           if (lyrics.length > 1) drop("\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD");
           if (ly2) {
@@ -17849,6 +17950,7 @@ function mixTracks(tracks, sr2, tailSec = 0.3) {
 }
 
 // src/score/perform.ts
+var DEFAULT_DYN_KEY = DEFAULT_DYN;
 var ACCENT_SEC = 0.12;
 var CONS_ROOM = 0.06;
 var MIN_GATE = 0.04;
@@ -17856,11 +17958,17 @@ function gainSegments(tokens, map, spec, gateStaccato) {
   const segs = [];
   let any = false;
   const vel = !!spec.dynamicsVel;
+  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, WEDGE_STEP_DB);
+  const ramp = (a10, b3, s02, s12) => {
+    const n10 = Math.max(1, Math.min(32, Math.ceil((s12 - s02) / 0.03)));
+    for (let k2 = 0; k2 < n10; k2++) segs.push({ t0: s02 + (s12 - s02) * k2 / n10, t1: s02 + (s12 - s02) * (k2 + 1) / n10, dB: a10 + (b3 - a10) * (k2 + 0.5) / n10 });
+  };
   for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
-    const base3 = vel ? 0 : spec.dynamicsDb[dynAt(tokens, index)] ?? 0;
-    if (base3 !== 0) any = true;
+    const L2 = levels?.get(index), base3 = L2 ? L2.at0 : 0, baseEnd = L2 ? L2.at1 : 0;
+    if (base3 !== 0 || baseEnd !== 0) any = true;
     if (tok.kind !== "note") {
-      segs.push({ t0: t02, t1: t12, dB: base3 });
+      if (baseEnd !== base3) ramp(base3, baseEnd, t02, t12);
+      else segs.push({ t0: t02, t1: t12, dB: base3 });
       continue;
     }
     const art = artOf(tok);
@@ -17881,7 +17989,10 @@ function gainSegments(tokens, map, spec, gateStaccato) {
         continue;
       }
     }
-    if (t12 > cur) segs.push({ t0: cur, t1: t12, dB: base3 });
+    if (t12 > cur) {
+      if (baseEnd !== base3) ramp(base3 + (baseEnd - base3) * (cur - t02) / Math.max(1e-9, t12 - t02), baseEnd, cur, t12);
+      else segs.push({ t0: cur, t1: t12, dB: base3 });
+    }
   }
   return any ? segs : null;
 }
@@ -17892,14 +18003,63 @@ function noteEnd(t02, t12, art, o10, slur = false) {
   if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(0.16, 0.25 * (t12 - t02)));
   return end;
 }
-function noteVelocity(tokens, index, art, spec, defaultVel) {
-  if (!spec.dynamicsVel) return defaultVel;
-  const mark = dynMarkAt(tokens, index);
-  let v = mark ? spec.dynamicsVel[mark] : defaultVel * 127;
+var WEDGE_STEP_VEL = 16;
+var WEDGE_STEP_DB = 6;
+function dynLevels(tokens, map, table, def, step) {
+  const out = /* @__PURE__ */ new Map(), tl2 = timeline(tokens, map), at2 = new Map(tl2.map((x2) => [x2.index, x2]));
+  const lo2 = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
+  const noteIdx = tl2.filter((x2) => x2.tok.kind === "note").map((x2) => x2.index);
+  let cur = def, ramp = null;
+  const lvl = (t10) => ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t10 - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur;
+  for (let i10 = 0; i10 < tokens.length; i10++) {
+    const t10 = tokens[i10];
+    if (t10.kind === "dyn") {
+      if (!ramp) cur = table[t10.value];
+      continue;
+    }
+    const x2 = at2.get(i10);
+    if (!x2) continue;
+    if (ramp && i10 >= ramp.end) {
+      cur = ramp.to;
+      ramp = null;
+    }
+    if (!ramp && t10.kind === "note" && t10.wedge) {
+      const k2 = noteIdx.indexOf(i10);
+      let e10 = k2;
+      while (e10 < noteIdx.length - 1 && tokens[noteIdx[e10]].wedge === t10.wedge) e10++;
+      const endIdx = e10 > k2 ? noteIdx[e10] : i10 + 1, lastFlag = noteIdx[e10 > k2 ? e10 - 1 : k2];
+      let to2 = null;
+      for (let j2 = lastFlag + 1; j2 < endIdx && j2 < tokens.length; j2++) {
+        const u2 = tokens[j2];
+        if (u2.kind === "dyn") to2 = table[u2.value];
+      }
+      if (to2 === null) to2 = Math.max(lo2, Math.min(hi, cur + (t10.wedge === "cresc" ? step : -step)));
+      const endAt = at2.get(endIdx);
+      ramp = { from: cur, to: to2, T0: x2.t0, T1: endAt ? endAt.t0 : at2.get(lastFlag).t1, end: endAt ? endIdx : lastFlag + 1 };
+    }
+    out.set(i10, { at0: lvl(x2.t0), at1: lvl(x2.t1) });
+  }
+  return out;
+}
+function noteVelocities(tokens, map, spec, defaultVel) {
+  const out = /* @__PURE__ */ new Map();
+  if (!spec.dynamicsVel) {
+    tokens.forEach((t10, i10) => {
+      if (t10.kind === "note") out.set(i10, defaultVel);
+    });
+    return out;
+  }
+  for (const [i10, l10] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, WEDGE_STEP_VEL)) {
+    const t10 = tokens[i10];
+    if (t10.kind === "note") out.set(i10, noteVel(l10.at0, artOf(t10), spec));
+  }
+  return out;
+}
+var noteVel = (v, art, spec) => {
   if (art.includes("marcato")) v += spec.marcatoVel ?? 0;
   else if (art.includes("accent")) v += spec.accentVel ?? 0;
   return Math.max(1, Math.min(127, Math.round(v))) / 127;
-}
+};
 var HONORS = {
   tsukuyomi: ["staccato", "accent", "marcato", "breath"],
   // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
@@ -25819,6 +25979,8 @@ function unserializeDesk(json) {
 }
 
 // src/ui/sel-bar.ts
+var CRESC_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+var DIM_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var ART_LABEL = { staccato: ["\uE4A2", "\u8DF3\u97F3"], accent: ["\uE4A0", "\u91CD\u97F3"], marcato: ["\uE4AC", "\u5F3A\u97F3"], tenuto: ["\uE4A4", "\u4FDD\u6301"], breath: ["\uE4CE", "\u547C\u5438"] };
 var DYN_GLYPH2 = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
@@ -25843,7 +26005,7 @@ var SelBar = class {
     }
     const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
     if (sel && fix) {
-      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<button type="button" class="btn fix-art fix-slur${fix.slur === "all" ? " is-on" : fix.slur === "some" ? " is-some" : ""}" data-v="slur" title="\u8FDE\u7EBF\uFF1A\u9009\u4E2D\u7684\u97F3\u8FDE\u8D77\u6765\uFF08\u4E0D\u7559\u7F1D\uFF09\uFF1B\u90FD\u8FDE\u7740 = \u53BB\u6389${fix.ignores?.includes("slur") ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u73B0\u5728\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF09" : ""}">${SLUR_SVG}<span>\u8FDE\u7EBF</span>${fix.ignores?.includes("slur") ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button><span class="sel-gap"></span>` + DYNS.map((d3) => `<button type="button" class="btn fix-dyn${fix.dyn === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u653E\u5728\u9009\u533A\u5F00\u5934\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6"><span class="smufl">${DYN_GLYPH2[d3]}</span></button>`).join("") + (fix.dyn ? b3("dyn:none", "\u53BB\u6389\u529B\u5EA6") : "") + b3("fixdone", "\u5B8C\u6210", "", "primary");
+      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<button type="button" class="btn fix-art fix-slur${fix.slur === "all" ? " is-on" : fix.slur === "some" ? " is-some" : ""}" data-v="slur" title="\u8FDE\u7EBF\uFF1A\u9009\u4E2D\u7684\u97F3\u8FDE\u8D77\u6765\uFF08\u4E0D\u7559\u7F1D\uFF09\uFF1B\u90FD\u8FDE\u7740 = \u53BB\u6389${fix.ignores?.includes("slur") ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u73B0\u5728\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF09" : ""}">${SLUR_SVG}<span>\u8FDE\u7EBF</span>${fix.ignores?.includes("slur") ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button><span class="sel-gap"></span>` + [["cresc", "\u6E10\u5F3A", CRESC_SVG], ["dim", "\u6E10\u5F31", DIM_SVG]].map(([w2, zh2, ic2]) => `<button type="button" class="btn fix-art fix-wedge${fix[w2] === "all" ? " is-on" : fix[w2] === "some" ? " is-some" : ""}" data-v="wedge:${w2}" title="${zh2}\uFF1A\u9009\u4E2D\u7684\u97F3\u4E00\u8DEF${zh2}\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u7EC8\u70B9 = \u90A3\u91CC\u5199\u7684\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF09\uFF1B\u90FD\u662F = \u53BB\u6389">${ic2}<span>${zh2}</span></button>`).join("") + DYNS.map((d3) => `<button type="button" class="btn fix-dyn${fix.dyn === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u653E\u5728\u9009\u533A\u5F00\u5934\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6"><span class="smufl">${DYN_GLYPH2[d3]}</span></button>`).join("") + (fix.dyn ? b3("dyn:none", "\u53BB\u6389\u529B\u5EA6") : "") + b3("fixdone", "\u5B8C\u6210", "", "primary");
       this.el.hidden = false;
       return;
     }
@@ -25943,7 +26105,7 @@ function updateChrome() {
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
   if (!n10) selFix = false;
-  const fix = selFix ? { art: artStateSel(st2), slur: slurStateSel(st2), dyn: dynMarkSel(st2), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const fix = selFix ? { art: artStateSel(st2), slur: slurStateSel(st2), cresc: wedgeStateSel(st2, "cresc"), dim: wedgeStateSel(st2, "dim"), dyn: dynMarkSel(st2), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) {
     selSig = sig;
     selBar.update(n10, !!clip, over || studio.isOpen, fix);
@@ -25981,6 +26143,10 @@ async function selVerb(v) {
     const prev = st2;
     update(toggleSlurSel(st2));
     discloseArt(prev, "slur");
+    return;
+  }
+  if (v === "wedge:cresc" || v === "wedge:dim") {
+    update(toggleWedgeSel(st2, v === "wedge:cresc" ? "cresc" : "dim"));
     return;
   }
   if (v.startsWith("dyn:")) {
@@ -26359,6 +26525,10 @@ var pad3 = new Pad(padEl, {
       info("\u8FDE\u7EBF\u4ECE\u4E00\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
       return;
     }
+    if (c10.k === "wedge" && nx2 === st2) {
+      info(`${c10.w === "cresc" ? "\u6E10\u5F3A" : "\u6E10\u5F31"}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
+      return;
+    }
     const prev = st2;
     update(nx2);
     if (c10.k === "rest" || c10.k === "extend") afterWrite();
@@ -26581,7 +26751,7 @@ async function renderPart(part, scope = "view") {
   const song = songIn(scope);
   const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
   if (eng === "tsukuyomi") {
-    const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map);
+    const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map, { staccatoGate: activePerfSpec(doc.extras, role).staccatoGate });
     if (!score.SCORE.length) return null;
     const opt = humOpt(), key2 = JSON.stringify(["tsukuyomi", score, opt]), had2 = lastRender.get(part.id);
     if (had2?.key === key2) return had2.r;
@@ -26593,7 +26763,8 @@ async function renderPart(part, scope = "view") {
   }
   const spec = activePerfSpec(doc.extras, role);
   const defVel = activeVelocity(doc.extras, role);
-  const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec), (i10, art) => noteVelocity(tokens, i10, art, spec, defVel));
+  const vels = noteVelocities(tokens, map, spec, defVel);
+  const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec), (i10) => vels.get(i10) ?? defVel);
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
     const key2 = JSON.stringify(["vowel", notes, st2.song.hum]), had2 = lastRender.get(part.id);
@@ -26615,7 +26786,7 @@ async function renderPart(part, scope = "view") {
 }
 function partGain(part, scope) {
   const song = songIn(scope), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
-  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), eng === "tsukuyomi");
+  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), false);
 }
 var audibleParts = () => {
   const solo = st2.song.parts.some((p2) => pv(p2.id).solo);
@@ -27026,7 +27197,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "e6b92b454376",
+  cssHash: "cd9b5c3638b5",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -29256,4 +29427,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e416e8941766.mjs.map
+//# sourceMappingURL=moonsinger-602e7067291d.mjs.map

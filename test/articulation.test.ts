@@ -146,7 +146,15 @@ describe("修：出声的数（perform.ts / lab-score / mix）", () => {
     const acc = segs.find((s) => s.dB === DYNAMICS_DB.f + ARTICULATION.accentDb)!;
     assert(!!acc && Math.abs(acc.t1 - acc.t0 - ACCENT_SEC) < 1e-9, "重音段"); eq(segs[segs.length - 1].dB, DYNAMICS_DB.f, "后面的音还是 f");
   });
-  it("月读的跳音 = 后半段收声（-Infinity），留辅音的余量；乐器 = 截短", () => {
+  it("月读的跳音（v0.7.1 起）= 唱谱里这个音唱一半、剩下变休止（唱法核心认的休止，自己收尾）；后面是同一个字（连音线）= 不切；不给门限 = 照旧", () => {
+    let st = four(); const [a, b] = noteIdx(st); st = select(st, a, a + 1); st = toggleArtSel(st, "staccato");
+    const sc = toLabScore(tr(st), "n", "ja", undefined, { staccatoGate: 0.5 }).SCORE;
+    deq(sc[0].notes.map((n) => n[1]), [1]); eq(sc[0].rest, 1, "四分 = 两个八分：唱一个、休一个");
+    eq(toLabScore(tr(st), "n").SCORE[0].rest, undefined, "不给门限（别的调用方）= 唱谱不变");
+    const toks = tr(st).slice(); toks[b] = { ...(toks[b] as NoteTok), tie: true };
+    eq(toLabScore(toks, "n", "ja", undefined, { staccatoGate: 0.5 }).SCORE[0].rest, undefined, "连着下一个音 = 不切");
+  });
+  it("（旧路，测试 / 兜底）月读的跳音 = 后半段收声（-Infinity），留辅音的余量；乐器 = 截短", () => {
     let st = four(); const [a] = noteIdx(st); st = select(st, a, a + 1); st = toggleArtSel(st, "staccato");
     const segs = gainSegments(tr(st), undefined, SPEC, true)!, mute = segs.find((s) => s.dB === -Infinity)!;
     const beat = 60 / 90;   // 默认 90 bpm 的四分

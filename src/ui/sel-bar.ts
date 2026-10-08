@@ -4,9 +4,12 @@
 import { iconHtml } from "./icon.ts";
 import { ARTS, DYNS, type Art, type Dyn } from "../score/song.ts";
 
-export type SelVerb = "all" | "copy" | "cut" | "paste" | "transpose" | "delete" | "clear" | "forget" | "fix" | "fixdone" | "slur" | `art:${Art}` | `dyn:${Dyn}` | "dyn:none";
+export type SelVerb = "all" | "copy" | "cut" | "paste" | "transpose" | "delete" | "clear" | "forget" | "fix" | "fixdone" | "slur" | "wedge:cresc" | "wedge:dim" | `art:${Art}` | `dyn:${Dyn}` | "dyn:none";
 /** 「修」（2026-10-08 by Claude Opus 5.5；user 拍「挂在音上 + 选区条」）：选区条原地换成一排开关——演奏法（选中的音都有 = 亮；有的有 = 半亮）+ 力度（选区开头那儿写着的亮）。 */
-export interface FixState { art: Record<Art, "all" | "some" | "none">; slur?: "all" | "some" | "none"; dyn: Dyn | null; ignores?: readonly string[] }   // ignores = 台上那位不认的（钮上标「不认」，照样能写）；slur = 连线（2026-10-08 连断）
+export interface FixState { art: Record<Art, "all" | "some" | "none">; slur?: "all" | "some" | "none"; cresc?: "all" | "some" | "none"; dim?: "all" | "some" | "none"; dyn: Dyn | null; ignores?: readonly string[] }   // ignores = 台上那位不认的（钮上标「不认」，照样能写）；slur = 连线（2026-10-08 连断）
+/** 渐强 / 渐弱的钮面：< / >（两条线）。 */
+export const CRESC_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+export const DIM_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 /** 连线的钮面：一道弧（SMuFL 没有单个连线字形）。 */
 export const SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 const ART_LABEL: Record<Art, [string, string]> = { staccato: ["\u{E4A2}", "跳音"], accent: ["\u{E4A0}", "重音"], marcato: ["\u{E4AC}", "强音"], tenuto: ["\u{E4A4}", "保持"], breath: ["\u{E4CE}", "呼吸"] };
@@ -30,6 +33,7 @@ export class SelBar {
         ARTS.map((a) => `<button type="button" class="btn fix-art${fix.art[a] === "all" ? " is-on" : fix.art[a] === "some" ? " is-some" : ""}" data-v="art:${a}" title="${ART_LABEL[a][1]}：选中的音都有 = 去掉，否则都加上${fix.ignores?.includes(a) ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}"><span class="smufl">${ART_LABEL[a][0]}</span><span>${ART_LABEL[a][1]}</span>${fix.ignores?.includes(a) ? `<span class="ign-tag">不认</span>` : ""}</button>`).join("") +
         `<button type="button" class="btn fix-art fix-slur${fix.slur === "all" ? " is-on" : fix.slur === "some" ? " is-some" : ""}" data-v="slur" title="连线：选中的音连起来（不留缝）；都连着 = 去掉${fix.ignores?.includes("slur") ? "（台上这位现在不认：写在谱上画灰，出声不变）" : ""}">${SLUR_SVG}<span>连线</span>${fix.ignores?.includes("slur") ? `<span class="ign-tag">不认</span>` : ""}</button>` +
         `<span class="sel-gap"></span>` +
+        ([["cresc", "渐强", CRESC_SVG], ["dim", "渐弱", DIM_SVG]] as const).map(([w, zh, ic]) => `<button type="button" class="btn fix-art fix-wedge${fix[w] === "all" ? " is-on" : fix[w] === "some" ? " is-some" : ""}" data-v="wedge:${w}" title="${zh}：选中的音一路${zh}到下一个音（终点 = 那里写的力度记号，没写 = 走一档）；都是 = 去掉">${ic}<span>${zh}</span></button>`).join("") +
         DYNS.map((d) => `<button type="button" class="btn fix-dyn${fix.dyn === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：放在选区开头，管到下一个力度"><span class="smufl">${DYN_GLYPH[d]}</span></button>`).join("") +
         (fix.dyn ? b("dyn:none", "去掉力度") : "") + b("fixdone", "完成", "", "primary");
       this.el.hidden = false; return;

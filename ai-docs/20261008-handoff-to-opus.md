@@ -46,6 +46,8 @@
 
 **v0.7.0（2026-10-08 深夜，edited by Claude Opus 5.5）= 表情纪元起手**：prod = v0.6.28（user「push prod bump minor」；推法见仓 CLAUDE.md git 节）。力度就是 velocity（力度表 / 重音 / 强音 / 旋钮，旧演奏者照旧）+ 强音记号；细节在仓 CLAUDE.md「0.7.0 = 表情」。**user 同轮排的后续（方向，不是规矩）**：先把「改与演」做好（user「我们先把改与演做好」）——下一刀 = 渐强渐弱 < >；之后的卫生需求 = 参考窗（`@internal/reference-window`）；实时播放 / 从中间播放之前，「让fable好好的重构一下发声和混音引擎契约。最好能设计一个插件式的窄接口，让每一个音源可以热插拔」（user 原话）。
 
+**v0.7.1（2026-10-08 深夜，edited by Claude Opus 5.5）**：渐强渐弱 < >；月读跳音改走唱谱的休止（不切音频）。user 问「参考窗你能做吗还是要 fable」：参考窗的数据契约归 `@internal/reference-window` 库（`.<app>/references/manifest.json` + 每张卡的字节，版本 / 迁移在库里；WeebPaint / WXHW 已接，WXHW `src/reference-host.ts` + `src/project/format.ts` 是样板），本仓只是容器里多一个目录 → Opus 回答「能做，动手前先交一页对齐稿」，等 user 定；要 bump minor（user「2需要bump minor」）。发声 / 混音引擎契约重构 + 算法优化 = Fable（user「3需要fable想一下算法优化这些东西」）。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |

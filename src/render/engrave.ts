@@ -759,6 +759,27 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy} ${xb - (xb - xa) * 0.2},${cy} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
         });
       }
+      // 8¾. 渐强渐弱（2026-10-08）：一串标了 wedge 的音 = 一个 < 或 >，画在力度那一行（谱上方），从第一个音到被连到的那个音前面；
+      //   前面紧挨着力度记号 = 让开字形；跨行 = 每行画它那一份开口（按音数分）
+      const wedgeOf = (k: number) => (tokens[noteIdx[k]] as NoteTok).wedge;
+      for (let k = 0; k < noteIdx.length; k++) {
+        const w = wedgeOf(k); if (!w || (k > 0 && wedgeOf(k - 1) === w)) continue;
+        let e = k; while (e < noteIdx.length - 1 && wedgeOf(e) === w) e++;
+        const hasEnd = e > k && wedgeOf(e) !== w, last = hasEnd ? e - 1 : e;
+        const run = noteIdx.slice(k, last + 1).map((x) => headOf.get(x)!), endC = hasEnd ? headOf.get(noteIdx[e])! : null, n = run.length;
+        const groups: { cs: Chunk[]; from: number }[] = [];
+        run.forEach((c, j) => { const g = groups[groups.length - 1]; if (g && g.cs[0].system === c.system) g.cs.push(c); else groups.push({ cs: [c], from: j }); });
+        const H = P(0.5), afterDyn = (idx: number) => { for (let j = idx - 1; j >= 0; j--) { const u = tokens[j]; if (u.kind === "dyn") return true; if (u.kind === "note" || u.kind === "rest") return false; } return false; };
+        groups.forEach((g, gi) => {
+          const f = g.cs[0], l = g.cs[g.cs.length - 1], row = rowOf(f.system, r, 0), y = yOf(row, TOP_LINE + 3.4);
+          const xa = gi === 0 ? nhX(f) + (afterDyn(f.index) ? P(2.6) : 0) : nhX(f) - P(1.5);
+          const xb = gi === groups.length - 1 && endC && endC.system === f.system ? nhX(endC) - P(0.8) : nhX(l) + nhW(l) + P(1.5);
+          if (xb - xa < P(1.2)) return;
+          const f0 = g.from / n, f1 = gi === groups.length - 1 ? 1 : (g.from + g.cs.length) / n;   // 这一行占整个开口的哪一段
+          const [h0, h1] = w === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)];
+          prims.push({ t: "path", d: `M${xa},${y - h0}L${xb},${y - h1}M${xa},${y + h0}L${xb},${y + h1}`, cls: "hairpin" });
+        });
+      }
       // 9. 歌词连字符（英文断开的音节）：画在两个歌词中间
       for (let n = 0; n < partLyrics.length; n++) {
         const L = partLyrics[n], tok = tokens[L.index] as NoteTok;

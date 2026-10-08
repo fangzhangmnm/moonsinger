@@ -90,6 +90,8 @@ function readCredits(root: El, title: string): string | undefined {
 
 // 修（2026-10-08 by Claude Opus 5.5）：力度 = <direction><dynamics>（声乐谱放谱上方：下面是歌词）；演奏法 = <notations><articulations>（呼吸 = breath-mark，挂在呼吸前那个音上）
 const dynXml = (v: Dyn) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
+/** 渐强渐弱（2026-10-08）：<wedge> 是一种 direction，和力度记号放在一起（谱上方）。 */
+const wedgeXml = (type: "crescendo" | "diminuendo" | "stop") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"/></direction-type></direction>`;
 const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
 const XML_ART: Record<string, Art> = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
 /** 别家谱的力度归到这一版认的六档（更弱 / 更强的并到两头）；sfz / fp 这类认不了 = null（数出来报给人）。 */
@@ -115,6 +117,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
   const nextTimed = (i: number) => { for (let j = i + 1; j < toks.length; j++) { const t = toks[j]; if (t.kind === "note" || t.kind === "rest") return t; } return null; };
   // 连线（2026-10-08）：一串「连到下一个」的音 = 一条 <slur>：头一个音 start，被连到的那个音 stop（后面没有音的那个标记不写，免得 start 没有 stop）
   const noteAt = (i: number, d: 1 | -1) => { for (let j = i + d; j >= 0 && j < toks.length; j += d) if (toks[j].kind === "note") return toks[j] as NoteTok; return null; };
+  let wedgeOpen = false;
   const slurs = (i: number, t: NoteTok) => { const pv = noteAt(i, -1), nx = noteAt(i, 1), out = !!t.slur && !!nx, into = !!pv?.slur;
     return `${into && !out ? `<slur type="stop" number="1"/>` : ""}${out && !into ? `<slur type="start" number="1"/>` : ""}`; };
   for (let i = head; i < toks.length; i++) {
@@ -136,6 +139,12 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
     }
     if (t.kind === "dyn") { if (ticks >= len) close(false); cur.push(dynXml(t.value)); continue; }
     if (t.kind !== "note" && t.kind !== "rest") continue;
+    // 渐强渐弱：一串标了 wedge 的音 = 头一个前面 start、被连到的那个音前面 stop（谱尾没有下一个音 = 写完收尾时 stop）
+    if (t.kind === "note") {
+      const pv = noteAt(i, -1)?.wedge, w = t.wedge;
+      if (pv && pv !== w) { if (ticks >= len) close(false); cur.push(wedgeXml("stop")); wedgeOpen = false; }
+      if (w && pv !== w) { if (ticks >= len) close(false); cur.push(wedgeXml(w === "cresc" ? "crescendo" : "diminuendo")); wedgeOpen = true; }
+    }
     let left = t.dur, k = 0;
     const tieOut = t.kind === "note" && nextTimed(i)?.kind === "note" && (nextTimed(i) as NoteTok).tie;
     let lyricDone = false;
@@ -185,6 +194,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
     }
     if (t.kind === "note" && !t.pitch) unwritten.push(`n${t.id}`);
   }
+  if (wedgeOpen) cur.push(wedgeXml("stop"));   // 渐强渐弱一直到谱尾
   if (cur.length || !measures.length) close(false);
   return { measures, unwritten, lastLen: len };
 }
@@ -263,6 +273,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     const body: Token[] = [], langRead = new Map<Token, string>();
     let headPhase = true, divisions = TPQ, voice: string | null = null;
     const openSlurs = new Set<string>();
+    let wedgeNow: "cresc" | "dim" | null = null;
     const mark = (t: Token) => { body.push(t); };
     const measures = kids(pe, "measure");
     measures.forEach((m, mi) => {
@@ -279,6 +290,9 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           if (bpm) { if (headPhase && !H.gotTempo) { H.bpm = bpm; H.gotTempo = true; } else mark({ kind: "tempo", id: 0, bpm }); }
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const dy of kids(dt, "dynamics")) for (const e of kids(dy)) {
             const v = XML_DYN(e.name); if (v) mark({ kind: "dyn", id: 0, value: v }); else drop("力度记号（这一版不认的，如 sfz）");
+          }
+          for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const w of kids(dt, "wedge")) {   // 渐强渐弱：开着的时候读到的音标 wedge（stop 之后那个音 = 终点，不标）
+            const ty = w.attrs.type; if (ty === "crescendo") wedgeNow = "cresc"; else if (ty === "diminuendo") wedgeNow = "dim"; else if (ty === "stop") wedgeNow = null;
           }
         } else if (c.name === "note") {
           if (kid(c, "grace")) { drop("装饰音"); continue; }
@@ -312,6 +326,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           if (kids(c, "tie").some((t) => t.attrs.type === "stop")) tok.tie = true;
           addArts(tok, c);
           slurEvents(c, openSlurs); if (openSlurs.size) tok.slur = true;
+          if (wedgeNow) tok.wedge = wedgeNow;
           const lyrics = kids(c, "lyric"), ly = lyrics.find((l) => (l.attrs.number ?? "1") === "1") ?? lyrics[0];
           if (lyrics.length > 1) drop("第二段及以后的歌词");
           if (ly) {

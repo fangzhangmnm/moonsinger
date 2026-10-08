@@ -42,6 +42,8 @@ const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 
 /** 布局里行 / 列能调的范围（加减号到头就灰）。 */
 /** 符号层「连线」格子：一道弧（SMuFL 没有单个连线字形）。 */
 const SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+const CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const ROWS_MIN = 3, ROWS_MAX = 8, COLS_MIN = 3, COLS_MAX = 7;
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
 const KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } } as const;
@@ -360,6 +362,8 @@ export class Pad {
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "重音", "重音：光标前那个音（有选区 = 选中的）加重；再点一次去掉"),
       cell("art:marcato", `<span class="smufl">\uE4AC</span>`, "强音", "强音：光标前那个音（有选区 = 选中的）比重音更重；再点一次去掉"),
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "保持", "保持：光标前那个音（有选区 = 选中的）唱 / 弹满；再点一次去掉"),
+      cell("wedge:cresc", CRESC_CELL, "渐强", "渐强 <：光标前那个音一路渐强到下一个音（有选区 = 选中的；终点 = 那里写的力度记号，没写 = 走一档；再点一次去掉）"),
+      cell("wedge:dim", DIM_CELL, "渐弱", "渐弱 >：光标前那个音一路渐弱到下一个音（有选区 = 选中的；再点一次去掉）"),
       cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；和呼吸相反——呼吸 = 这里断开；有选区 = 选中的连起来；再点一次去掉）"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；再点一次去掉）"),
       cell("bar", `<span class="big">|</span>`, "小节线", "小节线（弱起 = 写完弱起的音按一下）"),
@@ -392,6 +396,7 @@ export class Pad {
       else if (id === "staff") this.host.onCommand({ k: "staff" });
       else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
       else if (id === "slur") this.host.onCommand({ k: "slur" });
+      else if (id === "wedge:cresc" || id === "wedge:dim") this.host.onCommand({ k: "wedge", w: id === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: id as "phrase" | "bar" | "rest" | "extend" });
       this.render();
     };
