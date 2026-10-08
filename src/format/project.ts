@@ -60,7 +60,7 @@ const isVoice = (i: InstrumentV2 | null): i is Extract<InstrumentV2, { hum: Hum 
 const roleOf = (extras: Extras, role: string, hum: Hum): Json => structuredClone(extras.lounge[role] ?? defaultRole(hum, role));
 const nextKey = (ids: string[], prefix: string) => `${prefix}${Math.max(0, ...ids.map((x) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x)?.[1] ?? 0))) + 1}`;
 
-export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; date: string }   // 歌名 = song.title（可不填）；hum = 编辑器里的哼的字（写进月读候选的乐器配置）
+export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; date: string; view?: Record<string, unknown> | null }   // 歌名 = song.title（可不填）；hum = 编辑器里的哼的字（写进月读候选的乐器配置）
 /** 歌 → .mxl 的字节。 */
 export function saveMxl(a: SaveArgs): Uint8Array {
   const song = a.song;
@@ -99,7 +99,8 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     const f = flattenPart(song, part.id);
     return { info: infos[k], tokens: f.tokens, breaks: new Map(f.starts.slice(1).map((s) => [s.index, s.paper.name])) };
   }) }, meta);
-  const scoreExt: Json = { version: FORMAT.score, papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched" })) };
+  const scoreExt: Json = { version: FORMAT.score, papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched" })),
+    ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}) };   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
   // 嵌的音源：只写还有候选引用着的（换了音源 = 旧块从歌里丢掉；§10.2）
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => (x < y ? -1 : 1));
@@ -129,7 +130,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
 }
 
 /** stem = 打开的文件叫什么（去掉扩展名；文件名和歌名分开：歌名在 song.title，可不填）。 */
-export interface Opened { song: Song; stem: string; hum: Hum; extras: Extras; ours: boolean; notices: string[] }
+export interface Opened { song: Song; stem: string; hum: Hum; extras: Extras; ours: boolean; notices: string[]; view: Record<string, unknown> | null }   // view = score.json 里的视图态（没有 = null；desk.ts 宽容读）
 
 // ── 角色（谱上的功能位；一个声部一个角色 id）────────────────────────────────────────────
 /** 这个角色谱上写的名字 = MusicXML 的 <part-name>（user「谱上面显示的不应跟是月读，而是人声，女声 lead bass violin之类功能的东西，
@@ -454,5 +455,5 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   }
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
-  return { song: { ...song0, hum }, stem, hum, extras, ours, notices };
+  return { song: { ...song0, hum }, stem, hum, extras, ours, notices, view: (extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null };
 }

@@ -3,7 +3,7 @@
 // 查四件事：① SW 装上、预缓存进 moonsinger-<主 bundle 哈希>；② 断网刷新照样开；③「新部署」后顶上出「有新版本」，点刷新换到新 bundle；
 //   ④「清缓存重启」只清自己前缀的缓存——家族共享的 pwa-models、兄弟 app 的壳缓存都还在（家规 2026-10-01）。
 // 本机 localhost 不注册 SW（pwa-shell 跳过），所以用 moonsinger.localhost：浏览器把 *.localhost 指回本机、当安全来源（SW 要安全来源）。
-import { chromium } from "../../20260524 WeebPaint/node_modules/playwright/index.mjs";
+import { chromium } from "./e2e/pw.mjs";
 import fs from "node:fs"; import os from "node:os"; import path from "node:path"; import { spawn } from "node:child_process"; import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");

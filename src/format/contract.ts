@@ -35,6 +35,8 @@ export interface ScoreExtV2 {
   /** 顺序里的纸（纸 = 曲段）：file = 这张纸的 MusicXML 正本（`.moonsinger/papers/<id>.musicxml`）；manualBars = 声部 id → 这张纸里人插的小节线（小节序号，1 起）；
    *  unwritten = 这张纸还没写音高的音（note id）。自动小节线只画不存（0.2.x 现状）。曲段名在那份 MusicXML 的 <movement-title>。 */
   papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[]; hidden?: boolean; phrases?: Record<string, number[]> }[];   // hidden（2026-10-08 加，可选）= 这张纸不放、不进压平件；phrases（同日加，可选）= 声部 id → 句号跟在哪些 token（id）后面（句号不算打谱符号，不进 MusicXML）
+  /** 视图态（2026-10-08 加，可选；src/score/desk.ts）：怎么看 / 怎么听这首——范围 / 排法 / 在哪张纸 / 每个声部的隐藏·只看·静音·独奏。**存时顺手捞进来、改了不标脏、不进 undo**（照 WeebPaint desk）。只写非默认值；没有 = 全默认。 */
+  view?: ViewV1;
   /** 歌级声部并集（总谱从上到下）：声部 → 角色 id → 麦克风 id；某张纸没有某声部 = 那张纸的 MusicXML 里没那个 part。kind 留给打击乐记谱（现在都是 pitched）。 */
   parts: { id: string; role: string; mic: string; kind: "pitched" | "percussion" }[];
 }
@@ -42,6 +44,8 @@ export interface ScoreExtV2 {
 // ─── 第 1 版（只给迁移对照；migrate/index.ts）────────────────────────────────────────────
 export interface ManifestV1 { format: "moonsinger"; version: 1; app: string; saved: string; files: Record<string, number>; sounds?: { path: string; sha256: string; bytes: number }[] }
 /** 第 1 版的 score.json：一张纸、整首一份 score.musicxml 就是正本。 */
+/** 视图态（推荐稿）。全是可选、只写非默认值；读的一方宽容（不认识的忽略）。 */
+export interface ViewV1 { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }> }
 export interface ScoreExtV1 {
   version: 1;
   parts: { id: string; role: string; mic: string }[];

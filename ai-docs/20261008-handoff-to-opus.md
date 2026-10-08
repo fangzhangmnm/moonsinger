@@ -7,6 +7,7 @@
 
 - `npm run build`（tsc 门 + 接缝 lint + content-hash）→ `PORT=8710 BIND=127.0.0.1 npm run serve` → `npm test`（单元 164）→ `npm run smoke`（壳 6 + 无地 20）→ `npm run e2e`（真浏览器：歌库 41 / 选区 19 / 句号·隐藏纸·符号层 19 / 撤销 ~15；要 8710 在跑、借 WeebPaint 的 playwright）。
 - 真机：**零**。user 用 iPad（竖屏）+ iPhone；dev 站 https://fangzhangmnm.github.io/moonsinger/dev/ 。user 清缓存撞过一次部署窗口（白屏，现在会糊红条）。
+- worktree 里跑 E2E（2026-10-08 起两个 session 各自 worktree）：另起一口 `PORT=8713 BIND=127.0.0.1 npm run serve` + `MS_E2E_BASE=http://127.0.0.1:8713/ node test/e2e/<x>.mjs`；playwright 借 WeebPaint 的那份，`test/e2e/pw.mjs` 从 git common dir 定位（主目录 / worktree 都行）；smoke 自己起服务不用管。
 - 推 dev = push main 两端（origin OneDrive + github）；**push prod 必问 user**（prod = v0.5.1，33592aa）。版本：**只 bump patch**，minor 由 user 说（10-01 规矩）。
 - 测试钩子 `window.__moonsinger`（main.ts 末尾）：state / set / layout / bytes / open / store / es / gallery / attach / newStoreSong / openStoreDoc / setScope / setPages / setPaperHidden / toggleChord / playSong / undo / redo / history / flatten …
 
@@ -53,9 +54,10 @@
 - **音源弱引用（§2.1）**：候选的 `source` 永远带 `{ subsetSha256, origin }`，字节（`embedded`）可来可去——「打包」= 填字节、「解包」= 去字节，**两边都不碰 sha256 / origin**，解析链（歌里 → 本次 → 设备缓存 → 音源库 → 找文件）按 sha256 认，解不到 = 不出声、报错、人换（家规「不许自动替补」）。「导出打包版」= 临时打包进那一份副本，**不改正本**（和导出 = 寄明信片一致）。月读 / 模型永不进歌（它们是 pwa-models 的包，钉哈希）。格式只加可选字段，走 `test/format-guard` 的冻结样本规矩。
 - **license + credit 推演（§2.2）**：只看**会出声的**候选（休息室里台上 + 候补都算；参考窗里的素材不算），按（许可证, 署名）去重后推一段最小文字；来源 = 音源库条目快照 / sf2 INFO / 月读 CREDIT 块，**不联网查**。推演是提示，不拦存 / 不拦导出（家规「不许规训用户」）。
 - **混音（§2.3）**：母线上别做「整条按峰值缩」这种会改相对音量的事；要么每声部的增益是人定的（录音室）+ 母线只限峰，要么明说「自动响度」是一个开关。
-- **撤销（0.6.7）**：只盖谱（song）；**休息室（选角 / 候选）、麦克风、封面、纸隐藏不进 undo**（它们改 `doc.extras` 或 `song.papers[].hidden`…hidden 在 song 里所以进了）——要盖的话把那些改动也走 `update()` 或另开一条 extras 的历史。任何新代码直接调 `applyState()` = 绕过 undo（只有 undo / redo 自己能调）。
+- **撤销（0.6.7 → v0.6.11 已扩到 extras，见本条末尾）**：~~只盖谱（song）~~；~~**休息室（选角 / 候选）、麦克风、封面、纸隐藏不进 undo**~~（它们改 `doc.extras` 或 `song.papers[].hidden`…hidden 在 song 里所以进了）——要盖的话把那些改动也走 `update()` 或另开一条 extras 的历史。任何新代码直接调 `applyState()` = 绕过 undo（只有 undo / redo 自己能调）。
   **user 2026-10-08 上午的方向**：「undo 可以参考 weebpaint 的视图 vs 文件。视图会顺手捞进文件」= WeebPaint 的 `desk`（workbench-state.ts：视口 / 工具旋钮 / 调色板等视图态，**存时顺手捞进文件、改了不标脏、不进 undo**；editor-session 注释里还叫它 editor-state.ts，那个文件已经没了）。落到 MoonSinger：判据只有「进不进文件」——进文件的内容（谱、选角 / 候选、麦克风增益声像、封面）走同一条 undo（快照从 `song` 扩成 `{song, extras}`，引用快照不费地方）；视图态（静音 / 独奏 / 只看、当前纸、缩放、排法）像 desk：存时顺手写进 score.json、不标脏、不进 undo。推子拖动当手势合并（同拖音高）。
-  **user 的顾虑（未拍）**：「不同模块用同一个 undo，多按几次会不会静默变你没有监视的页面、曲段和文件」。Fable 建议：每步快照带 **locus**（纸 id / 声部 / 模块：谱 · 休息室 · 录音室），undo 时**视图跟着走**（切到那张纸 / 那条声部，光标已经随快照回去了；休息室 / 录音室的改动就把那块面板带出来或闪一下）+ 每次 undo 出一条短 toast 写明撤了什么（「撤销 · 第 2 段 · 删 3 个音」「撤销 · 录音室 · 二胡 −6 dB」）；更严的可选项 = 「先露再撤」：locus 不在眼前时第一下 ⌘Z 只把它带到眼前、第二下才真撤（IDE 式）。**绝不**跨文件：换歌清栈（已是）。归 user 选一档。
+  **→ 2026-10-08 上午 user 拍：「每一步快照带 locus 同意」「undo 同意啊」「undo 我们需要 workbench 机制吗」（答：要一个薄的，不要 WeebPaint 那套反应式大机器——一个对象 ↔ score.json 的 view 字段，变量不搬家）。v0.6.11 落地：`history.ts` 快照 `{song, extras, at, caret, sel, locus}`、`updateExtras / updateBoth`、`restore()` 视图跟着走 + toast、`src/score/desk.ts` + 契约 ViewV1 + `openBytes().view`；「先露再撤」那一档没做。E2E undo.mjs 28 条。以后加任何改 extras 的操作：走 `updateExtras`，给一句人话 locus；连续动作给 gesture。**
+  **user 的顾虑（当时未拍，现已按下面的建议落地）**：「不同模块用同一个 undo，多按几次会不会静默变你没有监视的页面、曲段和文件」。Fable 建议：每步快照带 **locus**（纸 id / 声部 / 模块：谱 · 休息室 · 录音室），undo 时**视图跟着走**（切到那张纸 / 那条声部，光标已经随快照回去了；休息室 / 录音室的改动就把那块面板带出来或闪一下）+ 每次 undo 出一条短 toast 写明撤了什么（「撤销 · 第 2 段 · 删 3 个音」「撤销 · 录音室 · 二胡 −6 dB」）；更严的可选项 = 「先露再撤」：locus 不在眼前时第一下 ⌘Z 只把它带到眼前、第二下才真撤（IDE 式）。**绝不**跨文件：换歌清栈（已是）。归 user 选一档。
 - **测试钩子 `window.__moonsinger`**：生产页也露着（同源 JS 才摸得到，和 WXHW 的探针一个级别）；别往里放会越过 store 护栏的东西。
 - **诊断日志**：只落设备，只在用户点「复制 / 分享」时离开；里面有文件身份、登录态，没有账号名、没有 token。
 
