@@ -45,7 +45,8 @@ export interface ScoreExtV2 {
 export interface ManifestV1 { format: "moonsinger"; version: 1; app: string; saved: string; files: Record<string, number>; sounds?: { path: string; sha256: string; bytes: number }[] }
 /** 第 1 版的 score.json：一张纸、整首一份 score.musicxml 就是正本。 */
 /** 视图态（推荐稿）。全是可选、只写非默认值；读的一方宽容（不认识的忽略）。 */
-export interface ViewV1 { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }> }
+export interface ViewV1 { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>;
+  mp3?: "small" }   // mp3 = 导出歌声的音质（只写非默认的「小文件」；2026-10-08 by Claude Opus 5.5，user「音质配置就是应该也跟着吧」）
 export interface ScoreExtV1 {
   version: 1;
   parts: { id: string; role: string; mic: string }[];

@@ -6,14 +6,16 @@
 // 这个模块只管「一个对象 ↔ 文件里的 JSON」；变量本身仍住在 main.ts（viewScope / pageFlow / partView），存时 deskNow() 聚一下、开时 applyDesk() 散回去——不搬家，少改线。
 export interface PartViewState { hidden: boolean; only: boolean; muted: boolean; solo: boolean }
 export const freshPartView = (): PartViewState => ({ hidden: false, only: false, muted: false, solo: false });
-export interface Desk { scope: "all" | "segment"; pageFlow: boolean; paper: string | null; parts: Record<string, PartViewState> }
-export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, paper: null, parts: {} });
+/** mp3 = 导出歌声的音质（导出面板里选的；2026-10-08 by Claude Opus 5.5，user「音质配置就是应该也跟着吧」——跟这首歌走、存时顺手带、不标脏、不进 undo）。 */
+export interface Desk { scope: "all" | "segment"; pageFlow: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small" }
+export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard" });
 
 /** 文件里的形状（只写非默认值；全默认 = 不写这个字段）。 */
-export interface DeskJson { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }> }
+export interface DeskJson { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small" }
 export function serializeDesk(d: Desk): DeskJson | null {
   const out: DeskJson = {};
   if (d.scope === "all") out.scope = "all";
+  if (d.mp3 === "small") out.mp3 = "small";
   if (d.pageFlow) out.pageFlow = true;
   if (d.paper) out.paper = d.paper;
   const parts: NonNullable<DeskJson["parts"]> = {};
@@ -32,6 +34,7 @@ export function unserializeDesk(json: unknown): Desk {
   const j = json as Record<string, unknown>;
   if (j.scope === "all") d.scope = "all";
   if (j.pageFlow === true) d.pageFlow = true;
+  if (j.mp3 === "small") d.mp3 = "small";
   if (typeof j.paper === "string" && j.paper) d.paper = j.paper;
   if (j.parts && typeof j.parts === "object") {
     for (const [id, v] of Object.entries(j.parts as Record<string, unknown>)) {

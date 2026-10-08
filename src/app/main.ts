@@ -226,6 +226,7 @@ const view = new ScoreView(scoreEl, {
 });
 /** 视图范围（这次打开里有效）：本段 = 一次只看光标所在的纸，‹ › 翻（默认；user「不同曲段应该是不同页，而不是一起显示」）；全部 = 整首（隐藏的纸折叠着）。 */
 let viewScope: "all" | "segment" = "segment";
+let mp3Quality: Mp3Quality = "standard";   // 导出歌声的音质：跟这首歌走（desk：存时顺手带、不标脏、不进 undo；user「音质配置就是应该也跟着吧」）
 let impro = false;
 /** 按拍号自动画小节线（默认开；这次打开里有效）。user「自动加小节也是可以toggle的，默认开」 */
 let autoBars = true;
@@ -635,7 +636,7 @@ $("playBtn").addEventListener("click", () => { void togglePlay(); });
 //    点「分享」那一下才调系统分享（iOS Safari 只认用户手势里的 navigator.share）；没有分享的（桌面 / Quest）= 下载。
 let exporting = false;
 /** 导出面板记住的选择（这次打开里有效）。 */
-let mp3Quality: Mp3Quality = "standard", mp3Scope: "all" | "segment" = "all";
+let mp3Scope: "all" | "segment" = "all";   // 范围只在这次打开里记着；音质跟歌走（desk，见 viewScope 旁边）
 /** 导出歌声前的面板（user 2026-10-08「mp3导出可能本来就该有一个对话框？比如quality之类的？」→「好，同意」）：音质 / 范围，都预设好，点「导出」就走。
  *  许可那一行只在用户自己选过许可时才出现（user「只有用户自己关心协议的时候才提出这些」）。 */
 function openMp3Panel(): void {
@@ -1277,9 +1278,9 @@ function openPartSheet(): void {
   });
 }
 /** 视图态（desk，src/score/desk.ts）：存时聚一下（bytesNow）、开歌时散回去（loadDoc）。变量本身仍住这里（viewScope / pageFlow / partView）。 */
-const deskNow = (): Desk => ({ scope: viewScope, pageFlow, paper: st.at.paper, parts: Object.fromEntries(partView) });
+const deskNow = (): Desk => ({ scope: viewScope, pageFlow, paper: st.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality });
 function applyDesk(d: Desk): void {
-  viewScope = d.scope; pageFlow = d.pageFlow;
+  viewScope = d.scope; pageFlow = d.pageFlow; mp3Quality = d.mp3;
   partView.clear(); for (const [id, p] of Object.entries(d.parts)) partView.set(id, { ...freshPartView(), ...p });
   if (d.paper && d.paper !== st.at.paper) {
     const paper = st.song.papers.find((p) => p.id === d.paper), part = paper?.tracks[st.at.part] ? st.at.part : st.song.parts.find((p) => paper?.tracks[p.id])?.id;

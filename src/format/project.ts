@@ -193,6 +193,11 @@ export function activeCandidate(extras: Extras, role: string): Json | null {
   const r = extras.lounge[role]; if (!r) return null;
   return cands(r).find((x) => x.id === r.active) ?? null;
 }
+/** 上场那位（整份 json）；没有角色快照 = 默认角色里上场的（月读）——署名推演要它：新歌没动过「谁来演」的声部也是月读在唱（2026-10-08 by Claude Opus 5.5）。 */
+export function activeOrDefaultCandidate(extras: Extras, role: string): Json | null {
+  const r = extras.lounge[role] ?? defaultRole("n", role);
+  return cands(r).find((x) => x.id === r.active) ?? null;
+}
 /** 现在上场的候选（乐器）叫什么——只给角色卡里看，不上谱。 */
 export function activeCandidateName(extras: Extras, role: string): string | null { const c = activeCandidate(extras, role); return c ? String(c.name ?? "") : null; }
 /** 上场的那位的乐器（按引擎分）；没有角色快照 = 默认的月读完整版。 */

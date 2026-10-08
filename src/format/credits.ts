@@ -7,7 +7,7 @@
 //   以后的参考窗里的素材都不算。
 // 来源只看歌里 by value 的署名快照（候选的 credit：音源库条目 / sf2 INFO / 月读 CREDIT 块），**不联网查**；推演是提示，不拦存 / 不拦导出（家规「不许规训用户」）。
 import type { Credit } from "./contract.ts";
-import type { Extras } from "./project.ts";
+import { activeOrDefaultCandidate, type Extras } from "./project.ts";
 
 export interface CreditLine { who: string[]; attribution: string[]; license: { name: string; url?: string } }
 type Json = Record<string, unknown>;
@@ -29,7 +29,7 @@ function group(items: { name: string; credit: Credit }[]): CreditLine[] {
 export function performerCredits(extras: Extras, roles: readonly string[]): CreditLine[] {
   const items: { name: string; credit: Credit }[] = [];
   for (const role of new Set(roles)) {
-    const r = extras.lounge[role], c = cands(r).find((x) => x.id === r?.active); if (!c) continue;
+    const c = activeOrDefaultCandidate(extras, role); if (!c) continue;   // 没有角色快照 = 默认的月读在唱（新歌），照样算
     if ((c.instrument as { engine?: string } | undefined)?.engine === "unknown") continue;   // 没人能演 = 没出声
     const credit = creditOf(c); if (credit) items.push({ name: String(c.name ?? ""), credit });
   }

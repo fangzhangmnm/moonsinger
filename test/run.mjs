@@ -23,6 +23,7 @@ import "./instruments.test.ts";
 import "./clipboard.test.ts";
 import "./chord.test.ts";
 import "./history.test.ts";
+import "./desk.test.ts";
 import "./mix.test.ts";
 import "./pack.test.ts";
 import "./credits.test.ts";
