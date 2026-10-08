@@ -6,7 +6,7 @@ import { storeUIFor } from "@internal/gallery";
 import type { StoreUI } from "@internal/store";
 import { showNotice } from "@internal/workbench-elements";
 import { withBusy, lockSyncGate, settleSyncGate } from "./ui/sheets.ts";
-import { reportError } from "./app/report-error.ts";
+import { reportError, diagNote } from "./app/report-error.ts";
 import { identifiers } from "./identifiers.ts";
 
 const stemOf = (id: string) => identifiers.parse(id)?.stem ?? id;
@@ -19,6 +19,8 @@ const base = storeUIFor({
 });
 export const storeUI: StoreUI = {
   ...base,
+  // 冲突面每次弹出 / 人选了什么都进黑匣子（user 2026-10-08「一直会遇到云端冲突的提示」——诊断日志里得看得见是哪首、哪个场合、怎么选的）。
+  resolveConflict: async (q) => { diagNote("sync", `conflict occasion=${q.occasion} ${stemOf(q.name)}`); const r = await base.resolveConflict(q); diagNote("sync", `conflict → ${r}`); return r; },
   // 未登录时库的后台云动作会撞 auth 的 "Not signed in"——那是正常态不是故障，只进黑匣子不上横幅（WXHW 2026-09-03 截图：橙条常驻）。其余照包的分级（CloudNetworkError 换人话）。
   reportError: (err, level) => { if ((err as { message?: string } | null)?.message === "Not signed in") { reportError(err, "log"); return; } base.reportError(err, level); },
   // ADR-0018：offlineUploadReplay:"auto"（离线新建的歌回线自动补推）的进度 / 撞名 surface——库在 createStore 时强制要有这条线（没有就当场抛）。

@@ -73,3 +73,26 @@
 - 连续排法的纸有上下左右边距（和分页同几何）：E2E 里点歌名要用 `layout().title` 的框。
 - 发版那一分钟清缓存 = 模块 404 白屏（index.html 已有 onerror 红条）。
 - 守卫：`test/redline-guard` / `storage-whitelist` / `store-wiring` 结构性测试——碰持久层 / 接缝先看它们的白名单。
+
+## 5. 歌库同步：「一直弹云端冲突」的查案（2026-10-08 早上，Claude Fable 5.1；user「跑一下，其实我刚才就一直会遇到云端冲突的提示」「我是写着写着过一会就跳一次，这时候 onedrive 凭证还没过期」）
+
+**结论：是库（@internal/store 0.16.1）的一个缺口，不是两台设备真打架。** 每次 reload / 冷启动之后、第一次推（= 写着写着 15 s 空闲推）必弹一次「本地覆盖云端 / 云端覆盖本地 / 取消」，之后这次打开里不再弹——和 user 的描述逐字对上。真机 iPad 的诊断日志（04:23 那份）里一小时五次 reload（升版本），每次之后都会撞一次。
+
+**机制**（`node_modules/@internal/store/dist/local-head.js` + `freshness.js`）：
+1. 谱系是 per-tab 的：`_base`（本 tab 见过的云端 tip）只在内存；reload 后空。durable 轨（localStorage `files.etag:<name>`）只给 `seenBase` 回退用。
+2. 本 tab 第一次编辑 `recordEdit` 捕 `_parent = _base.get(name) ?? null`——**只看内存 `_base`**（这是对的：W2 红线，别的 tab 推过的 etag 不能当我的 parent）。
+3. `_base` 在 reload 后靠 `freshness.open()` 的 in-sync 分支 `markSeen` 重捕——但只在 **open 时云端可达（登录着）** 才跑。MoonSinger 的 boot 顺序 = 建 store → 本地恢复（开歌）→ initAuth（CatsUp 2026-09-22 顺序），开歌那一刻还没登录 → 不查云 → 不重捕。登录后 `afterSignIn` → `refreshOpenDoc` = `pullIfClean` = `freshness.refresh()`：in-sync 分支**直接 return，不 markSeen**（和 open 的分支不对称）。
+4. 于是第一次编辑 parent = null → push 不带 If-Match → `conflictBehavior:"fail"` → 云端有同名 → 409 → `CloudNameCollisionError` → `surfaceCollision`（mode existing）→ **冲突面**。人选「本地覆盖云端」= weakOverride → `markSynced` 写 `_base` → 之后正常，直到下一次 reload。
+5. WXHW 为什么没撞：它登录后 `pushNowAny()` 把开着的稿**无条件推一次**（推成功 `onPushed` 顺带设 `_base`）；MoonSinger 的 `es.flushAndPush()` 不脏不推。
+
+**复现 + 验证**：`test/e2e/sync.mjs`（mock 云住 node 侧、两个浏览器 context = 两台设备；`test/e2e/cloud-bridge.mjs` 是桥）。mock 的登录态照真机：开局未登录、`signIn()` 之后才算。未修库：3 条「reload 之后推」打成「已知库缺口」（打印 ✗ 但不计失败，exit 0）；把 `freshness.js` 的 `refresh()` in-sync 分支加一行 `head.markSeen(name, meta.etag)`（只在 node_modules 里做实验、已还原）→ 37/37 全绿、零冲突面。
+
+**要 user 拍板的库改动（硬规则：改库先 escalate）**：`20260813 internal-store` `src/freshness.ts` `refresh()`：
+```ts
+if (base != null && meta.etag === base) { head.markSeen(name, meta.etag); return { status: "in-sync" }; }
+```
+安全性论证和 `open()` 同一分支一样（库里那段注释写的就是这个窗口）；`refresh` 比 `open` 更严——进这一分支之前已经 `isDirtyAnywhere` 过（只对干净 tab 重捕）。patch 版本（0.16.2），`pull-package.sh` 收货。**不动库的替代（都不推荐）**：app 登录后把开着的歌无条件再推一次（WXHW 式，白推一份字节、云端时间戳乱走）；或登录后对干净的歌 `es.open` 同名重开（为了触发 open 的 gate 绕一圈 = 家规「不在 app 端绕」）。
+
+**顺手修掉的（app 层）**：① `store-ui.ts` 冲突面每次弹出 / 人选了什么进黑匣子（`[sync] conflict occasion=… → …`），`main.ts` 每次推的结果进黑匣子（`[sync] push <id>: pushed | not pushed <reason> → <resolution>`）——下一份诊断日志就能直接看到场合和选择；② `openStoreDoc`（登录着从歌库再开一首）先 `pushDirtyAll` 再开：上一次「上传落了云、回执没回来、页面被杀」留下的脏标，推路径会逐字节比对自愈（`tryHeal`），而 open 的新鲜度检查不比字节、会白问一次「打开本地 / 云端覆盖本地」（E2E ③b）；③ `app-store.ts` 的 mock 云注入只认本机地址（`127.0.0.1` / `localhost`），线上没有这条路；`isSignedIn()` 收成一个出口。
+
+**库侧另一条更深的缺口（这次没碰，记着）**：推到一半页面死掉 + 回来之前又编辑了 → 本地字节 ≠ 云端（自己上次推的）→ `tryHeal` 比对不等 → 真当分叉弹面。根治 = 推路径记住「在途字节的哈希」，412 时云端 == 上次在途 → 采纳 etag 当 base 再推。属 store 的活，等 user 要不要。

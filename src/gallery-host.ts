@@ -5,7 +5,7 @@
 //   派生缓存 IDB `moonsinger-thumbs`（user 2026-10-08「没问题」批；CLAUDE.md 持久层白名单表登记）。
 import { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } from "../vendor/vue/vue.esm-browser.prod.js";
 import { createGallery, humanSize, type CreateGalleryDeps, type GalleryDocHost, type VueRuntime, type GItem, type TileInfo, type VerbStore, type DataFaceStore, type Gallery, type GalleryView, type AsideKind, type AsideScope } from "@internal/gallery";
-import { requireStore, auth, hasStore } from "./app-store.ts";
+import { requireStore, auth, hasStore, isSignedIn } from "./app-store.ts";
 import { THUMBNAIL_ENTRY } from "./format/project.ts";
 import { identifiers } from "./identifiers.ts";
 import { openConfirmSheet, openInputSheet, openChoiceSheet, withBusy } from "./ui/sheets.ts";
@@ -84,7 +84,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
     store: storeFace,
     doc,
     host: {
-      signedIn: () => auth.isSignedIn(), online: () => (typeof navigator === "undefined" || navigator.onLine !== false), activeIdentifier: () => d.activeIdentifier(),
+      signedIn: () => isSignedIn(), online: () => (typeof navigator === "undefined" || navigator.onLine !== false), activeIdentifier: () => d.activeIdentifier(),
       confirm: (title, msg) => openConfirmSheet(title, msg),
       input: (title, def, opts) => openInputSheet(title, { defaultValue: def, placeholder: opts?.placeholder }),
       chooseFolder: (title, msg, options) => openChoiceSheet<string>(title, msg, options.map((o) => ({ label: o.label, value: o.value }))),
@@ -134,7 +134,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
   });
   /** 云按钮的样子跟登录态走（图标 + 「已登录」态）。 */
   function renderCloud(): void {
-    const on = auth.isSignedIn();
+    const on = isSignedIn();
     cloudBtn.classList.toggle("is-on", on); cloudBtn.title = on ? `云端：已登录${accountName() ? ` ${accountName()}` : ""}` : "云端：没登录（歌只在这台设备上）";
     refreshBtn.hidden = !on;
   }

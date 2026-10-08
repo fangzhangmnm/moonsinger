@@ -4,7 +4,7 @@
 //   store **懒建**（attachStore）：没进过歌库的设备 = 无地模式（v0.3.0），不开 IDB、不载 MSAL（user 2026-10-01「用户有意图才弄」）；
 //   进过一次（device-kv storeAttached）以后开局就建，且**先建 store 再 initAuth**（CatsUp 2026-09-22 教训：没建 store 时库的报错是 no-op，登录回跳失败人看不到）。
 import { createStore, createOneDriveProvider, requestStoragePersistence, isCached, isDirty, withStemTail } from "@internal/store";
-import type { Store, OneDriveAuth } from "@internal/store";
+import type { Store, OneDriveAuth, CloudProvider } from "@internal/store";
 import { APP_ID, CLIENT_ID, AUTHORITY, SCOPES, MSAL_URL } from "./config.ts";
 import { DOC_KINDS } from "./identifiers.ts";
 import { storeUI } from "./store-ui.ts";
@@ -23,12 +23,22 @@ const KV_ATTACHED = "storeAttached";
 /** 这台设备进过歌库没有（进过 = 以后开局就建 store）。 */
 export const storeWasAttached = (): boolean => deviceKvGet(KV_ATTACHED) === "1";
 
-let _store: Store | null = null;
+let _store: Store | null = null, _signedIn: () => boolean = () => od.auth.isSignedIn();
+/** 登录着没有（= store 的 signedIn 表态；E2E 的 mock 云下 = 页面全局 `__moonsingerCloudSignedIn`，reload 后回到未登录、和真机 initAuth 之前一样）。app 层一律问这个，别直接问 auth。 */
+export const isSignedIn = (): boolean => _signedIn();
+/** 只给 E2E（test/e2e/sync.mjs）：页面开局前（addInitScript）塞一朵 mock 云——@internal/store/testing 的 provider 住 node 侧、经 RPC 桥进页面，
+ *  reload / 两个浏览器 context（= 两台设备）共用同一朵云。**只在本机地址上认**（127.0.0.1 / localhost），线上页面这条路不存在。 */
+function injectedCloud(): CloudProvider | null {
+  const g = globalThis as { __moonsingerCloud?: CloudProvider; location?: { hostname: string } };
+  return g.__moonsingerCloud && /^(127\.0\.0\.1|localhost)$/.test(g.location?.hostname ?? "") ? g.__moonsingerCloud : null;
+}
 /** 建 store（幂等）。第一次要在用户手势里调（attach 的时候顺便 requestStoragePersistence）。 */
 export function attachStore(): Store {
   if (_store) return _store;
+  const inj = injectedCloud();
+  if (inj) _signedIn = () => (globalThis as { __moonsingerCloudSignedIn?: boolean }).__moonsingerCloudSignedIn === true;
   _store = createStore({
-    provider: od.provider,
+    provider: inj ?? od.provider,
     ui: storeUI,
     appId: APP_ID,
     persistence: "app-managed",          // app 在进歌库 / 首存的手势里调 requestStoragePersistence()
@@ -39,7 +49,7 @@ export function attachStore(): Store {
     docKinds: DOC_KINDS,
     autoCacheOpenedFile: true,           // 编辑器：打开就留本地（离线能开）
     offlineUploadReplay: "auto",         // 离线新建的歌回线自动补推（ADR-0018；进度走 storeUI.onReplayStatus）
-    signedIn: () => od.auth.isSignedIn(),
+    signedIn: () => _signedIn(),
     activeIdentifier: () => _activeIdentifier,
   });
   deviceKvSet(KV_ATTACHED, "1");

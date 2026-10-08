@@ -25,7 +25,7 @@ describe("store-wiring", () => {
   });
   it("src/app-store.ts：createStore 每个必填表态都在、validateAdopt 真查 zip 魔数、不是 placeholder", () => {
     const s = read("src/app-store.ts");
-    for (const f of ["provider: od.provider", "ui: storeUI", "appId: APP_ID", 'persistence: "app-managed"', "encryption: appEncryption", 'reconcilePolicy: "app-driven"', "docKinds: DOC_KINDS", "signedIn:", "activeIdentifier:", 'offlineUploadReplay: "auto"']) has(s, new RegExp(f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `createStore 缺 ${f}`);
+    for (const f of ["provider: inj ?? od.provider", "ui: storeUI", "appId: APP_ID", 'persistence: "app-managed"', "encryption: appEncryption", 'reconcilePolicy: "app-driven"', "docKinds: DOC_KINDS", "signedIn: () => _signedIn()", "activeIdentifier:", 'offlineUploadReplay: "auto"']) has(s, new RegExp(f.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `createStore 缺 ${f}`);
     has(s, /validateAdopt:[^\n]*0x50[^\n]*0x4b[^\n]*0x03[^\n]*0x04/, "validateAdopt 必须查 zip 魔数 PK\\x03\\x04（captive portal 的 200 HTML 不许盖掉本地唯一好副本）");
     assert(!/validateAdopt:\s*\(\)\s*=>\s*true/.test(s), "validateAdopt 不许 () => true");
     has(s, /authority: AUTHORITY/, "provider 必须带 authority（家规 #7 personal only）");
@@ -44,7 +44,8 @@ describe("store-wiring", () => {
   });
   it("src/app/main.ts：editor-session 接的是 store.zip、takeCloud 重载走同一条 adopt 管线、pushOn 含 exit", () => {
     const s = read("src/app/main.ts");
-    has(s, /store: \{ file: \(name, o\) => requireStore\(\)\.zip\(name, \{ mode: o\.mode \}\) \}/, "editor-session 的 StoreLike 必须包 store.zip（0.16.1：zip 种类才有 getPeek / 尾读）");
+    has(s, /store: \{ file: \(name, o\) => \{ const f = requireStore\(\)\.zip\(name, \{ mode: o\.mode \}\);/, "editor-session 的 StoreLike 必须包 store.zip（0.16.1：zip 种类才有 getPeek / 尾读）");
+    has(s, /diagNote\("sync", `push \$\{name\}/, "每次推的结果（pushed / reason / resolution）要进黑匣子");
     has(s, /pushOn: \["exit"/, "policy.pushOn 必须含 exit（退出 / 换歌时推云）");
     has(s, /adopt: async \(blob\) => \{ const id = pendingOpenId \?\? doc\.identifier/, "adapter.adopt 要能在 takeCloud 重载（没有 pendingOpenId）时用 doc.identifier");
     has(s, /files\.dirty\.pushAll\(\)/, "登录后必须 pushAll（0.15.1：at-rest 字节直推）");
