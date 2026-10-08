@@ -29,6 +29,8 @@ import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
 import { TitleEditor } from "./title-editor.ts";
 
+/** 连续排法的边距（sp）：纸的真边距只在分页里画（所见即所得）；连续 = 一圈舒服的窄边，行宽照旧是版心。 */
+const CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 } as const;
 /** 拖时值的阶梯：三十二分起，plain 与附点交替（都画得出来）。 */
 const DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => (v * TPQ) / 48);
 
@@ -169,12 +171,14 @@ export class ScoreView {
     const base = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
     // 分页：整页（版心 + 左右边距）要放得下；页高 / 边距按这张纸算（sp）
     const mm = spMm(paper), m = paper.marginMm, geo = { h: paper.heightMm / mm, l: m.l / mm, r: m.r / mm, t: m.t / mm, b: m.b / mm }, page = this.host.pages?.() ? geo : null;
-    const margins = { l: geo.l, r: geo.r, t: geo.t, b: geo.b };   // 连续 / 分页同一张纸的边距：行宽、每一行一模一样，只差断不断页
-    const extra = geo.l + geo.r, want = Math.ceil((lineSp(paper) + extra) * base);
-    if (avail > 0 && want <= avail) return { sp: base, width: Math.ceil(lineSp(paper) * base), strict: true, page, margins };
+    // 边距：分页 = 纸的真边距（所见即所得）；连续 = 一圈舒服的窄边（CONT_MARGIN；user 2026-10-08「非分页显示…能不能把页边距省了，选一个舒服的边距，
+    //   和做分页显示之前类似。但是行宽必须严格一样」）。行宽两种都是这张纸的版心 lineSp 个间距、不取整（取整会让两边差零点几个间距，可能断行不同）→ 每一行一模一样，只差断不断页、边多宽
+    const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
+    const extra = margins.l + margins.r, want = Math.ceil((lineSp(paper) + extra) * base);
+    if (avail > 0 && want <= avail) return { sp: base, width: lineSp(paper) * base, strict: true, page, margins };
     // 放不下、不折行（默认；user「纸能不能toggle不折行预览有多宽和折行的两种选项。我其实还是倾向于不折行」
     //   「我现在发现我基本不点五线谱，都是用键盘输入。这样的话其实五线谱只是让你看你在哪里」）：整张纸按比例缩小，行和纸上一样
-    if (avail > 0 && (page || !(this.host.reflow?.() ?? false))) { const sp = (base * avail) / want; return { sp, width: Math.floor(lineSp(paper) * sp), strict: false, page, margins }; }
+    if (avail > 0 && (page || !(this.host.reflow?.() ?? false))) { const sp = (base * avail) / want; return { sp, width: lineSp(paper) * sp, strict: false, page, margins }; }
     return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
   }
 

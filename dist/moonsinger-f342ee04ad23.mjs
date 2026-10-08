@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.12-2026-10-08";
+var APP_VERSION = "v0.7.13-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6372,6 +6372,7 @@ var TitleEditor = class {
 };
 
 // src/ui/score-view.ts
+var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
 var ScoreView = class {
   constructor(el2, host) {
@@ -6509,12 +6510,12 @@ var ScoreView = class {
     const st3 = this.host.get(), paper = st3.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
     const base3 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
     const mm = spMm(paper), m2 = paper.marginMm, geo = { h: paper.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm }, page = this.host.pages?.() ? geo : null;
-    const margins = { l: geo.l, r: geo.r, t: geo.t, b: geo.b };
-    const extra = geo.l + geo.r, want = Math.ceil((lineSp(paper) + extra) * base3);
-    if (avail > 0 && want <= avail) return { sp: base3, width: Math.ceil(lineSp(paper) * base3), strict: true, page, margins };
+    const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
+    const extra = margins.l + margins.r, want = Math.ceil((lineSp(paper) + extra) * base3);
+    if (avail > 0 && want <= avail) return { sp: base3, width: lineSp(paper) * base3, strict: true, page, margins };
     if (avail > 0 && (page || !(this.host.reflow?.() ?? false))) {
       const sp2 = base3 * avail / want;
-      return { sp: sp2, width: Math.floor(lineSp(paper) * sp2), strict: false, page, margins };
+      return { sp: sp2, width: lineSp(paper) * sp2, strict: false, page, margins };
     }
     return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base3, avail / 42 * scale)) : base3, width: Math.max(320, avail), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
   }
@@ -30151,4 +30152,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5d6a711255fe.mjs.map
+//# sourceMappingURL=moonsinger-f342ee04ad23.mjs.map

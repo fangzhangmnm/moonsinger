@@ -68,12 +68,25 @@ try {
   const flatLen = await p.evaluate(() => { const m = window.__moonsinger; return m.flatten().tokens.length; });
   const p1Len = await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.length);
   check(flatLen === p1Len, "压平跳过隐藏的纸", `${flatLen} vs ${p1Len}`);
-  // 连续 vs 分页：行宽（第一行谱的宽度）一样
+  // 连续 vs 分页：行宽（间距数）一样、每一行从哪个音到哪个音一样（边距不一样：连续 = 一圈窄边，分页 = 纸的真边距；屏幕上的像素可以不一样大——
+  //   2026-10-08 Opus 5.5 改：user「非分页显示…能不能把页边距省了…但是行宽必须严格一样」，原来比像素宽度）
+  await p.evaluate(() => {   // 一首 24 小节、带歌词的歌（八分 / 四分交替），排出好几行
+    const N = (s, o, d, ty) => `<note><pitch><step>${s}</step><octave>${o}</octave></pitch><duration>${d}</duration><type>${ty}</type><lyric><syllabic>single</syllabic><text>啦</text></lyric></note>`, S = "CDEFGAB";
+    let ms = "";
+    for (let k = 0; k < 24; k++) { let body = k ? "" : `<attributes><divisions>2</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>`;
+      for (let j = 0; j < (k % 3 ? 4 : 8); j++) body += k % 3 ? N(S[(k + j) % 7], 4, 2, "quarter") : N(S[(k + j) % 7], 5, 1, "eighth"); ms += `<measure number="${k + 1}">${body}</measure>`; }
+    const xml = `<?xml version="1.0" encoding="UTF-8"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Vocals</part-name></score-part></part-list><part id="P1">${ms}</part></score-partwise>`;
+    const m = window.__moonsinger; m.setPages(false); m.load(m.open("lines.musicxml", new TextEncoder().encode(xml)));
+  });
+  await p.waitForTimeout(300);
   await p.evaluate(() => window.__moonsinger.setScope("segment")); await p.waitForTimeout(100);
-  const w1 = await p.$$eval("#score line.staff", (ls) => { const r = ls[0].getBoundingClientRect(); return Math.round(r.width); });
+  const geo = () => p.evaluate(() => { const L = window.__moonsinger.layout(), rows = {}; for (const n of L.notes) (rows[n.system] ??= []).push(n.index); return { w: L.width / L.sp, left: L.pageX.left / L.sp, rows: Object.values(rows).map((r) => `${Math.min(...r)}-${Math.max(...r)}`).join(",") }; });
+  const g1 = await geo();
   await p.evaluate(() => window.__moonsinger.setPages(true)); await p.waitForTimeout(150);
-  const w2 = await p.$$eval("#score line.staff", (ls) => { const r = ls[0].getBoundingClientRect(); return Math.round(r.width); });
-  check(Math.abs(w1 - w2) <= 1, "连续和分页的行宽一样", `${w1} vs ${w2}`);
+  const g2 = await geo();
+  check(Math.abs(g1.w - g2.w) < 1e-9, "连续和分页的行宽（间距数）一样", `${g1.w} vs ${g2.w}`);
+  check(g1.rows.split(",").length >= 4 && g1.rows === g2.rows, "连续和分页每一行的音一样（好几行）", `${g1.rows} / ${g2.rows}`);
+  check(g1.left < g2.left, "连续的边距比纸边距窄", `${g1.left} vs ${g2.left}`);
   await p.evaluate(() => window.__moonsinger.setPages(false));
   check(errs.length === 0, "零页面错误", errs.join(" | ").slice(0, 200));
 } finally { await b.close(); }
