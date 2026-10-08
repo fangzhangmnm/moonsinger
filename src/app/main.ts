@@ -315,7 +315,7 @@ let finderShown = false;   // 找人视图开着（openFinder / closeFinder 维�
 let finderPlayOnly = false;   // 从歌库进的乐器目录 = 只弹着玩（盖在歌库上面、不出「上场」；user 2026-10-08「库里面不开歌能进乐器目录玩吗」→「做只弹着玩模式」）
 const pad = new Pad(padEl, {
   state: () => st,
-  isImpro: () => impro || finder.isOpen,   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）
+  isImpro: () => impro || finderShown,   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
   onImpro: () => toggleImpro(),
   accept: (id) => (canStack() ? (monoHeld.add(id), true) : monoAccept(id)),   // 能叠音的声部：同时多按都收（80 ms 内 = 叠在一起）；单声乐器照旧只写第一个
   // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）

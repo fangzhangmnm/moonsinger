@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.9-2026-10-08";
+var APP_VERSION = "v0.6.10-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2842,6 +2842,7 @@ var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
 var ARTS = ["staccato", "accent", "tenuto", "breath"];
 var DYNS = ["pp", "p", "mp", "mf", "f", "ff"];
+var DEFAULT_DYN = "mf";
 var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
 var DEFAULT_TIME = { beats: 4, beatType: 4 };
@@ -3073,6 +3074,27 @@ function withArt(t10, a10, on2) {
   const { art: _a2, ...rest } = t10;
   return rest;
 }
+var selNoteIdx = (st3) => {
+  if (!st3.sel) return [];
+  const out = [];
+  for (let i10 = st3.sel.from; i10 < st3.sel.to; i10++) if (tr(st3)[i10]?.kind === "note") out.push(i10);
+  return out;
+};
+function artStateSel(st3) {
+  const idx = selNoteIdx(st3), toks = tr(st3), out = {};
+  for (const a10 of ARTS) {
+    const n10 = idx.filter((i10) => artOf(toks[i10]).includes(a10)).length;
+    out[a10] = !idx.length || n10 === 0 ? "none" : n10 === idx.length ? "all" : "some";
+  }
+  return out;
+}
+function toggleArtSel(st3, a10) {
+  const idx = selNoteIdx(st3);
+  if (!idx.length) return st3;
+  const on2 = artStateSel(st3)[a10] !== "all", nt2 = tr(st3).slice();
+  for (const i10 of idx) nt2[i10] = withArt(nt2[i10], a10, on2);
+  return next(st3, nt2);
+}
 function toggleBreath(st3) {
   const toks = tr(st3);
   for (let i10 = (st3.sel ? st3.sel.to : st3.caret) - 1; i10 >= headLen(toks); i10--) {
@@ -3084,6 +3106,42 @@ function toggleBreath(st3) {
     return next(st3, nt2);
   }
   return null;
+}
+function dynAt(tokens, i10) {
+  for (let j2 = Math.min(i10, tokens.length) - 1; j2 >= 0; j2--) {
+    const t10 = tokens[j2];
+    if (t10.kind === "dyn") return t10.value;
+  }
+  return DEFAULT_DYN;
+}
+function dynRunAt(tokens, at2) {
+  let a10 = at2, b3 = at2;
+  const zero = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "phrase" || isMark(t10));
+  while (a10 > headLen(tokens) && zero(tokens[a10 - 1])) a10--;
+  while (b3 < tokens.length && zero(tokens[b3])) b3++;
+  let k2 = -1;
+  for (let i10 = a10; i10 < b3; i10++) if (tokens[i10].kind === "dyn") k2 = i10;
+  return { a: a10, b: b3, k: k2 };
+}
+function setDynSel(st3, value) {
+  const toks = tr(st3), at2 = Math.max(headLen(toks), st3.sel ? st3.sel.from : st3.caret), { k: k2 } = dynRunAt(toks, at2), nt2 = toks.slice();
+  const shift = (d3, pos) => ({ sel: st3.sel ? { from: st3.sel.from + (st3.sel.from >= pos ? d3 : 0), to: st3.sel.to + (st3.sel.to > pos || st3.sel.to === pos && d3 > 0 ? d3 : 0) } : null, caret: st3.caret + (st3.caret >= pos ? d3 : 0) });
+  if (k2 >= 0) {
+    if (value === null) {
+      nt2.splice(k2, 1);
+      return next(st3, nt2, shift(-1, k2));
+    }
+    nt2[k2] = { ...nt2[k2], value };
+    return next(st3, nt2);
+  }
+  if (value === null) return st3;
+  const id2 = st3.nextId;
+  nt2.splice(at2, 0, { kind: "dyn", id: id2, value });
+  return next({ ...st3, nextId: id2 + 1 }, nt2, shift(1, at2));
+}
+function dynMarkSel(st3) {
+  const toks = tr(st3), { k: k2 } = dynRunAt(toks, Math.max(headLen(toks), st3.sel ? st3.sel.from : st3.caret));
+  return k2 >= 0 ? toks[k2].value : null;
 }
 function setPaperHidden(st3, paperId, hidden) {
   const papers = st3.song.papers.map((p2) => p2.id !== paperId ? p2 : hidden ? { ...p2, hidden: true } : (({ hidden: _h, ...rest }) => rest)(p2));
@@ -6551,7 +6609,7 @@ var Pad = class {
   buildHead(selKey, rows) {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
-    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b3) => b3.addEventListener("pointerdown", (e10) => {
       e10.preventDefault();
       this.knobDown(b3, e10);
@@ -6590,6 +6648,7 @@ var Pad = class {
       this.host.onCommand({ k: "modulate", fifths: Number(b3.dataset.mod) });
     });
     this.on(box, "[data-back]", () => this.back());
+    this.on(box, "[data-impro]", () => this.host.onImpro());
     this.on(box, "[data-hide]", () => this.host.onHide());
     this.on(box, "[data-autobars]", () => {
       this.host.onAutoBars(!this.host.autoBars());
@@ -6739,6 +6798,7 @@ var Pad = class {
       u2.innerHTML = `<span class="smufl">${UNIT_GLYPH[i10.unit]}</span>${i10.tuplet ? `<sup>${i10.tuplet}</sup>` : ""}`;
       u2.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i10.unit]}${i10.tuplet ? `\uFF08${i10.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009`;
     }
+    q2(".impro-pad")?.classList.toggle("is-on", this.host.isImpro());
     const r10 = q2(".k-range .kl");
     if (r10) {
       const nr2 = this.rangeNarrow();
@@ -6996,7 +7056,7 @@ var Singer = class {
   // worker 里已经载过的音色库（sha256）；worker 重建就清
   worker() {
     if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-1d8b2ed6a3ab.mjs"}`, import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${"singer-worker-a270f74bfc54.mjs"}`, import.meta.url), { type: "module" });
     this.sent.clear();
     this.w.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -7107,7 +7167,7 @@ function encodeMp3(samples, sr2, kbps = 64) {
   });
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/model-packs/dist/sha256.js
+// node_modules/@internal/model-packs/dist/sha256.js
 var K = new Uint32Array([
   1116352408,
   1899447441,
@@ -7263,7 +7323,7 @@ var Sha256 = class {
   }
 };
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/model-packs/dist/pack-store.js
+// node_modules/@internal/model-packs/dist/pack-store.js
 var SLICE = 1 << 20;
 function createPackStore(deps) {
   const cacheName = deps.cacheName ?? "pwa-models";
@@ -7472,7 +7532,7 @@ function createPackStore(deps) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/host-floors.js
+// node_modules/@internal/workbench-elements/dist/host-floors.js
 function safeAreaTop() {
   const probe = document.createElement("div");
   probe.style.cssText = "position:fixed;top:0;left:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;";
@@ -7492,7 +7552,7 @@ function configureFloors(f2) {
     _f.floatingTop = () => Math.max(safeAreaTop(), f2.toolbarBottom());
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/anchored-popup.js
+// node_modules/@internal/workbench-elements/dist/anchored-popup.js
 function topToolbarBottom() {
   return floors.toolbarBottom();
 }
@@ -7541,7 +7601,7 @@ function positionPopup(popupEl, opts = {}) {
   popupEl.style.top = top + "px";
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/icon.js
+// node_modules/@internal/workbench-elements/dist/icon.js
 function iconHtml(name, opts = {}) {
   const { size, cls } = opts;
   const attrs = [
@@ -7553,7 +7613,7 @@ function iconHtml(name, opts = {}) {
   return `<svg ${attrs}><use href="#${name}"/></svg>`;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/popup-menu.js
+// node_modules/@internal/workbench-elements/dist/popup-menu.js
 var _open = [];
 function currentPopupMenu() {
   return _open[_open.length - 1] ?? null;
@@ -7693,7 +7753,7 @@ function _mount(el2, opts, hooks) {
   return handle;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/notice.js
+// node_modules/@internal/workbench-elements/dist/notice.js
 var _stack = null;
 var _live = /* @__PURE__ */ new Map();
 var _seq = 0;
@@ -8974,6 +9034,12 @@ function withUnpacked(extras, only) {
   }
   return changed2 ? { extras: pruneSounds({ ...extras, lounge }), removed } : { extras, removed };
 }
+function activePerfSpec(extras, role) {
+  const c10 = activeCandidate(extras, role), d3 = c10?.dynamicsDb ?? {}, a10 = c10?.articulation ?? {};
+  const num = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
+  const dynamicsDb = Object.fromEntries(Object.keys(DYNAMICS_DB).map((k2) => [k2, num(d3[k2], DYNAMICS_DB[k2])]));
+  return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a10.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a10.accentDb, ARTICULATION.accentDb) };
+}
 function activeCalibrationDb(extras, role) {
   const c10 = activeCandidate(extras, role);
   const v = Number(c10?.calibrationDb ?? 0);
@@ -9235,9 +9301,68 @@ function limitBus(left, right, sr2, o10 = {}) {
   }
   return 20 * Math.log10(min);
 }
+function applyGain(samples, sr2, at2, segs, smoothSec = 4e-3) {
+  const out = new Float32Array(samples.length);
+  if (!segs.length) {
+    out.set(samples);
+    return out;
+  }
+  const lin = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
+  const a10 = 1 - Math.exp(-1 / (smoothSec * sr2));
+  let k2 = 0, y2 = lin(segs[0].dB);
+  for (let i10 = 0; i10 < samples.length; i10++) {
+    const t10 = at2 + i10 / sr2;
+    while (k2 < segs.length - 1 && t10 >= segs[k2].t1) k2++;
+    y2 += (lin(segs[k2].dB) - y2) * a10;
+    out[i10] = samples[i10] * y2;
+  }
+  return out;
+}
 function mixTracks(tracks, sr2, tailSec = 0.3) {
   const m2 = sumTracks(tracks, sr2, tailSec);
   return { ...m2, limitedDb: limitBus(m2.left, m2.right, sr2) };
+}
+
+// src/score/perform.ts
+var ACCENT_SEC = 0.12;
+var CONS_ROOM = 0.06;
+var MIN_GATE = 0.04;
+function gainSegments(tokens, map, spec, gateStaccato) {
+  const segs = [];
+  let any = false;
+  for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
+    const base3 = spec.dynamicsDb[dynAt(tokens, index)] ?? 0;
+    if (base3 !== 0) any = true;
+    if (tok.kind !== "note") {
+      segs.push({ t0: t02, t1: t12, dB: base3 });
+      continue;
+    }
+    const art = artOf(tok);
+    let cur = t02;
+    if (art.includes("accent") && spec.accentDb) {
+      const e10 = Math.min(t12, t02 + ACCENT_SEC);
+      segs.push({ t0: t02, t1: e10, dB: base3 + spec.accentDb });
+      cur = e10;
+      any = true;
+    }
+    if (gateStaccato && art.includes("staccato")) {
+      const g3 = Math.max(cur, t02 + (t12 - t02) * spec.staccatoGate), off1 = t12 - CONS_ROOM;
+      if (off1 - g3 > MIN_GATE) {
+        if (g3 > cur) segs.push({ t0: cur, t1: g3, dB: base3 });
+        segs.push({ t0: g3, t1: off1, dB: -Infinity }, { t0: off1, t1: t12, dB: base3 });
+        any = true;
+        continue;
+      }
+    }
+    if (t12 > cur) segs.push({ t0: cur, t1: t12, dB: base3 });
+  }
+  return any ? segs : null;
+}
+function noteEnd(t02, t12, art, o10) {
+  let end = t12;
+  if (art.includes("staccato")) end = t02 + (t12 - t02) * o10.staccatoGate;
+  if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(0.16, 0.25 * (t12 - t02)));
+  return end;
 }
 
 // src/gm/sound-cache.ts
@@ -10179,7 +10304,7 @@ function stampedCopy(stem, now = /* @__PURE__ */ new Date()) {
   return `${stem}-${now.getFullYear()}${z2(now.getMonth() + 1)}${z2(now.getDate())}-${z2(now.getHours())}${z2(now.getMinutes())}`;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/substrate.js
+// node_modules/@internal/store/dist/substrate.js
 async function toU8(x2) {
   if (x2 == null)
     return new Uint8Array(0);
@@ -10292,7 +10417,7 @@ function createSubstrate() {
   return { edits, session, serialize, serialize2, drain };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/local-head.js
+// node_modules/@internal/store/dist/local-head.js
 var BypassError = class extends Error {
   code = "BYPASS";
   constructor(name) {
@@ -10377,7 +10502,7 @@ function createLocalHead({ kv, getCloudEtag, setCloudEtag, keyPrefix = "head" })
   return { ifMatchFor, seenBase, isDirtyThisTab, isDirtyAnywhere, recordEdit, markSeen, markSynced, onPushed, forget, editCount: (name) => _edits.get(name) ?? 0 };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/error-handling.js
+// node_modules/@internal/store/dist/error-handling.js
 var reporter = null;
 function setStoreErrorReporter(fn) {
   reporter = fn;
@@ -10388,7 +10513,7 @@ function reportStoreError(err2, level = "error") {
   reporter?.(err2, level);
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/seal.js
+// node_modules/@internal/store/dist/seal.js
 var LockedError = class extends Error {
   code = "LOCKED";
   constructor(name) {
@@ -10450,7 +10575,7 @@ function createSeal(cfg) {
   return { isContainer, sealForWrite, unsealForRead, withPassword };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/identifiers.js
+// node_modules/@internal/store/dist/identifiers.js
 var SEAL_SUFFIX = ".zip";
 function validateDocKinds(docKinds) {
   if (!Array.isArray(docKinds))
@@ -10529,7 +10654,7 @@ function withStemTail(identifier, tail, ids) {
   return `${slash < 0 ? "" : identifier.slice(0, slash + 1)}${stem}${tail}${rest}`;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/safe-resolve.js
+// node_modules/@internal/store/dist/safe-resolve.js
 function createSafeResolve(cfg) {
   const { cloud, local, head, localDirty = () => false, validateAdopt, unseal = (_n, blob) => Promise.resolve(blob), onReplacing = () => {
   }, looksEncrypted = () => Promise.resolve(false), serialize = (_n, fn) => fn() } = cfg;
@@ -10621,7 +10746,7 @@ function createSafeResolve(cfg) {
   return { safePull, tryHeal, weakOverride, resolveConflict };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/push.js
+// node_modules/@internal/store/dist/push.js
 var passBusy = (_l, fn) => fn();
 var isConflict = (e10) => !!e10 && (e10.name === "CloudConflictError" || e10.status === 412);
 function retriable(e10) {
@@ -10683,7 +10808,7 @@ function createPush(cfg) {
   return { push, doPush };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/freshness.js
+// node_modules/@internal/store/dist/freshness.js
 var passBusy2 = (_l, fn) => fn();
 function createFreshness(cfg) {
   const { cloud, head, safeResolve, busy: _busy = passBusy2 } = cfg;
@@ -10779,7 +10904,7 @@ function createFreshness(cfg) {
   return { open, refresh };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/move-aside.js
+// node_modules/@internal/store/dist/move-aside.js
 function pad(n10, w2 = 2) {
   return String(n10).padStart(w2, "0");
 }
@@ -10824,7 +10949,7 @@ async function restoreTargetName(orig, occupied, stamp14, fallbackMs, ids) {
   return target;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/delete.js
+// node_modules/@internal/store/dist/delete.js
 var passBusy3 = (_l, fn) => fn();
 var DELQ_KEY = "internal.pending_deletions";
 function createDelete(cfg) {
@@ -10948,7 +11073,7 @@ function createDelete(cfg) {
   return { del, replayDelete, drainDeleteQueue };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/is-hidden.js
+// node_modules/@internal/store/dist/is-hidden.js
 function isHidden(name) {
   if (!name)
     return false;
@@ -10969,7 +11094,7 @@ function assertValidCollectionName(name) {
   }
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/errors.js
+// node_modules/@internal/store/dist/errors.js
 var CloudNetworkError = class extends Error {
   cause;
   constructor(message, cause) {
@@ -10990,7 +11115,7 @@ var CloudStaleRefError = class extends Error {
   }
 };
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/cloud-sync.js
+// node_modules/@internal/store/dist/cloud-sync.js
 var CloudConflictError = class extends Error {
   sessionName;
   constructor(message, sessionName) {
@@ -11393,7 +11518,7 @@ function createCloudSync(cfg) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/identity.js
+// node_modules/@internal/store/dist/identity.js
 var passBusy4 = (_l, fn) => fn();
 function createIdentity(cfg) {
   const { cloud, local, head, doPush, serialize, serialize2, seal, busy: _busy = passBusy4, isOnline, deleteOffline, queueUpload, nameOccupied } = cfg;
@@ -11510,7 +11635,7 @@ function createIdentity(cfg) {
   return { rename, acquire };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/trash.js
+// node_modules/@internal/store/dist/trash.js
 var passBusy5 = (_l, fn) => fn();
 function createTrash(cfg) {
   const { cloud, local, head, busy: _busy = passBusy5 } = cfg;
@@ -11635,7 +11760,7 @@ function createTrash(cfg) {
   return { restore, purge, emptyTrash, emptyBackup };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/offload.js
+// node_modules/@internal/store/dist/offload.js
 var OffloadIllegalError = class extends Error {
   code = "OFFLOAD_ILLEGAL";
   reason;
@@ -11675,7 +11800,7 @@ function createOffload(cfg) {
   return { offload };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/reconcile.js
+// node_modules/@internal/store/dist/reconcile.js
 function classifyCloudGone(localNames, cloudNameSet, opts) {
   const demote = [];
   if (!opts.authoritative)
@@ -11760,7 +11885,7 @@ function createReconcile(cfg) {
   return { reconcile, reconcileFolder };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/pending-gone.js
+// node_modules/@internal/store/dist/pending-gone.js
 var KEY = "internal.pending_gone";
 function createPendingGone(kv, graceMs) {
   function read() {
@@ -11807,7 +11932,7 @@ function createPendingGone(kv, graceMs) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/folder-merge.js
+// node_modules/@internal/store/dist/folder-merge.js
 var lastWinResolve = (x2, y2) => defaultResolve(x2, y2);
 function resolverForPolicy(policy) {
   switch (policy) {
@@ -11864,7 +11989,7 @@ function normalizeFolder(f2) {
   });
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/folder-flow.js
+// node_modules/@internal/store/dist/folder-flow.js
 function withTimeout(p2, ms) {
   if (!ms)
     return p2;
@@ -11926,7 +12051,7 @@ function createFolderFlow(cfg) {
   return { sync };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/collection.js
+// node_modules/@internal/store/dist/collection.js
 function collectionLocalKey(name) {
   return `collections/${name}`;
 }
@@ -12177,7 +12302,7 @@ function createCollection(cfg) {
   return { init, reconcileWithRemote, setItem, deleteItem, getItem, getEntry, entries: entries2, keys, onChange, flushLocal, isDirty: isDirty2 };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/listing.js
+// node_modules/@internal/store/dist/listing.js
 function isCached(s10) {
   return s10 !== "cloud-only";
 }
@@ -12352,7 +12477,7 @@ function createListing(cfg) {
   return { listAllItems, listFolder };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/upload-queue.js
+// node_modules/@internal/store/dist/upload-queue.js
 var UPQ_KEY = "internal.pending_uploads";
 function createUploadReplay(cfg) {
   const { kv, local, head, isOnline, serialize, pushLocal, policy, confirm, onStatus } = cfg;
@@ -12428,7 +12553,7 @@ function createUploadReplay(cfg) {
   return { enqueue, remove, drain, pending: readQueue };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/trash-merge.js
+// node_modules/@internal/store/dist/trash-merge.js
 var STAMP_RE = /^(.*) \[((\d{14})-[0-9a-fA-F-]+)\](\.zip)?$/;
 var baseNameOf = (n10) => n10.includes("/") ? n10.slice(n10.lastIndexOf("/") + 1) : n10;
 function parseCloudTrashName(cloudName, toName) {
@@ -12495,7 +12620,7 @@ function mergeTrash(localEntries, cloudEntries, liveCloudNames = /* @__PURE__ */
   return out;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/idb-store.js
+// node_modules/@internal/store/dist/idb-store.js
 var STORE = "blobs";
 var _idbOpTimeoutMs = 3e3;
 var IdbTimeoutError = class extends Error {
@@ -12751,7 +12876,7 @@ function createIdbCache(dbName) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/blob-partition.js
+// node_modules/@internal/store/dist/blob-partition.js
 function createPartitionedBlobStore(dbName) {
   const idb = createIdbCache(dbName);
   const key = (p2, name) => `${p2}/${name}`;
@@ -12770,7 +12895,7 @@ function createPartitionedBlobStore(dbName) {
   return { partition: view2, close: () => idb.close() };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/local-cache.js
+// node_modules/@internal/store/dist/local-cache.js
 var NO_KINDS2 = createIdentifiers([]);
 var stripStamp = (inner) => inner.replace(/^[^:]*:/, "");
 var stamp = () => asideStamp(Date.now());
@@ -12931,7 +13056,7 @@ function createCollectionCache(dbName) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/download-session.js
+// node_modules/@internal/store/dist/download-session.js
 var EtagChangedError = class extends Error {
   constructor(name) {
     super(`\u4E91\u7AEF\u6587\u4EF6\u5DF2\u66F4\u65B0\uFF0C\u4E0B\u8F7D\u4F1A\u8BDD\u5931\u6548\uFF1A${name}`);
@@ -13195,7 +13320,7 @@ function createDownloadSessions(cfg) {
   return { open, coverage, promoteFromStaging, purgeName, _enforceCap: enforceCap };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/kv-namespace.js
+// node_modules/@internal/store/dist/kv-namespace.js
 function namespacedKv(kv, ns2) {
   if (!ns2)
     throw new Error("namespacedKv: ns \u5FC5\u586B\uFF08${appId}.${databaseId}\uFF09");
@@ -13208,7 +13333,7 @@ function namespacedKv(kv, ns2) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/migration.js
+// node_modules/@internal/store/dist/migration.js
 function parseSchemaVersion(v) {
   const m2 = /^v(\d{3,})-(\d{8})$/.exec(v);
   if (!m2)
@@ -13261,7 +13386,7 @@ async function runStoreMigrations(appId, databaseId, log) {
   await runMigrations({ kv, ns: ns2, log });
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/zip-peek.js
+// node_modules/@internal/store/dist/zip-peek.js
 var SIG_EOCD = 101010256;
 var SIG_CD = 33639248;
 var SIG_LOCAL = 67324752;
@@ -13359,7 +13484,7 @@ async function readEntryBytes(src, entry) {
   return await inflate(raw, entry.method);
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/persistence.js
+// node_modules/@internal/store/dist/persistence.js
 var globalStorage = () => globalThis.navigator?.storage ?? null;
 async function queryStoragePersistence(sm2 = globalStorage()) {
   if (typeof sm2?.persisted !== "function")
@@ -13382,7 +13507,7 @@ async function requestStoragePersistence(sm2 = globalStorage()) {
   }
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/ui-text.js
+// node_modules/@internal/store/dist/ui-text.js
 var STORE_TEXT_EN = {
   "sync.pushing": "Syncing\u2026",
   "file.renaming": "Renaming\u2026",
@@ -13413,7 +13538,7 @@ function resolveStoreText(custom, key, params) {
   return base3 != null ? interpolate(base3, params) : String(key);
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/create-store.js
+// node_modules/@internal/store/dist/create-store.js
 var ReadOnlyFilesError = class extends Error {
   constructor(op2) {
     super(`\u53EA\u8BFB\u955C\u50CF\uFF1Afiles \u9762\u4E0D\u53EF\u5199\uFF08${op2}\uFF09`);
@@ -14568,7 +14693,7 @@ function createStore(config) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/providers/graph.js
+// node_modules/@internal/store/dist/providers/graph.js
 var GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 var SIMPLE_UPLOAD_LIMIT = 4 * 1024 * 1024;
 function encodeSeg(name) {
@@ -14879,7 +15004,7 @@ function createGraph(tokenSource) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/providers/auth.js
+// node_modules/@internal/store/dist/providers/auth.js
 var CLIENT_ID = "";
 var AUTHORITY = "https://login.microsoftonline.com/common";
 var SCOPES = ["Files.ReadWrite.AppFolder", "offline_access"];
@@ -15276,7 +15401,7 @@ async function retrySilentSignIn() {
   }
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/folder-delete.js
+// node_modules/@internal/store/dist/folder-delete.js
 async function deleteEmptyFolderVia(getItemByPath, list, deleteById, path) {
   const item = await getItemByPath(path);
   if (!item)
@@ -15295,7 +15420,7 @@ async function deleteEmptyFolderVia(getItemByPath, list, deleteById, path) {
   return { status: "deleted" };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/onedrive-provider.js
+// node_modules/@internal/store/dist/onedrive-provider.js
 function toItem(it2) {
   if (!it2)
     return null;
@@ -15343,7 +15468,7 @@ function graphToCloudProvider(graph) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/providers/index.js
+// node_modules/@internal/store/dist/providers/index.js
 function createOneDriveProvider(config = {}) {
   configureOneDriveAuth(config);
   const hid = config.homeAccountId;
@@ -15376,7 +15501,7 @@ var DOC_KINDS = Object.freeze([
 ]);
 var identifiers = createIdentifiers(DOC_KINDS);
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/text.js
+// node_modules/@internal/gallery/dist/core/text.js
 var GALLERY_TEXT = {
   "bk.andMore": { zh: "\u2026\u2026\u7B49 {n} \u4EF6\uFF08\u5168\u91CF\u540D\u5355\u5728\u5305\u5185 backup-manifest.txt\uFF09", en: "\u2026and {n} more (full list in backup-manifest.txt inside the zip)", ja: "\u2026\u307B\u304B {n} \u4EF6\uFF08\u5168\u30EA\u30B9\u30C8\u306F zip \u5185\u306E backup-manifest.txt\uFF09" },
   "bk.done": { zh: "\u5DF2\u4E0B\u8F7D\u5907\u4EFD {name}\uFF08{n} \u4EF6\uFF09", en: "Backup downloaded: {name} ({n} files)", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F\uFF1A{name}\uFF08{n} \u4EF6\uFF09" },
@@ -15705,7 +15830,7 @@ function configureText(opts) {
 }
 var t = (key, params) => (_host ?? defaultT)(key, params);
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/device-kv.js
+// node_modules/@internal/gallery/dist/core/device-kv.js
 var _mem = /* @__PURE__ */ new Map();
 var _kv = { get: (k2) => _mem.get(k2) ?? null, set: (k2, v) => {
   if (v == null)
@@ -15743,7 +15868,7 @@ function deviceKvSetJson(key, v) {
   deviceKvSet(key, v === void 0 ? null : JSON.stringify(v));
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/gallery-model.js
+// node_modules/@internal/gallery/dist/core/model/gallery-model.js
 function copyTargetName(source, taken, ids) {
   const SUF = t("name.copySuffix");
   let candidate = withStemTail(source, ` ${SUF}`, ids);
@@ -15757,7 +15882,7 @@ function copyTargetName(source, taken, ids) {
   return withStemTail(source, ` ${SUF}${Date.now()}`, ids);
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/gallery-path.js
+// node_modules/@internal/gallery/dist/core/model/gallery-path.js
 function pathFolder(name) {
   const i10 = name.lastIndexOf("/");
   return i10 < 0 ? "" : name.slice(0, i10);
@@ -15770,13 +15895,13 @@ function pathJoin(folder, name) {
   return `${folder}/${name}`;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/natural-order.js
+// node_modules/@internal/gallery/dist/core/model/natural-order.js
 var _collator = new Intl.Collator(void 0, { numeric: true, sensitivity: "base" });
 function naturalCompare(a10, b3) {
   return _collator.compare(a10, b3);
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/gallery-view-model.js
+// node_modules/@internal/gallery/dist/core/model/gallery-view-model.js
 var hasLocalCopy = (s10) => isCached(s10);
 var hasCloudCopy = (s10) => s10 === "cloud-only" || s10 === "synced" || s10 === "unpushed" || s10 === "newer-on-cloud" || s10 === "conflict";
 var hasUnpushed = (s10) => isDirty(s10);
@@ -15864,7 +15989,7 @@ function fullTime(ts2) {
   return ts2 ? new Date(ts2).toLocaleString() : t("gv.time.unknown");
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/cloud-image-model.js
+// node_modules/@internal/gallery/dist/core/model/cloud-image-model.js
 var IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|avif)$/i;
 var isImagePath = (p2) => IMAGE_EXT_RE.test(p2);
 var imageTwinIdentifier = (folder, basename2, docSuffix) => {
@@ -15879,7 +16004,7 @@ function imageThumbToken(it2) {
   return it2.lastModified != null ? `m:${it2.lastModified}` : `s:${it2.size ?? 0}`;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/guards/frame-gate.js
+// node_modules/@internal/gallery/dist/core/guards/frame-gate.js
 var REAL_TIMERS = {
   set: (fn, ms) => setTimeout(fn, ms),
   clear: (h2) => clearTimeout(h2)
@@ -15949,7 +16074,7 @@ function createFrameGate(apply2, opts) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/guards/first-frame-watchdog.js
+// node_modules/@internal/gallery/dist/core/guards/first-frame-watchdog.js
 var REAL_TIMERS2 = {
   set: (fn, ms) => setTimeout(fn, ms),
   clear: (h2) => clearTimeout(h2)
@@ -15992,7 +16117,7 @@ function createFirstFrameWatchdog(onStall, opts) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/guards/diag-log.js
+// node_modules/@internal/gallery/dist/core/guards/diag-log.js
 var diag_log_exports = {};
 __export(diag_log_exports, {
   clear: () => clear,
@@ -16099,7 +16224,7 @@ function initDiagLog(opts = {}) {
   g3.addEventListener("offline", () => note("net", "offline"));
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/library/gallery-registry.js
+// node_modules/@internal/gallery/dist/core/library/gallery-registry.js
 var mintId = () => "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 var oneDriveLabel = (username) => "OneDrive \xB7 " + (username || "\u8D26\u53F7");
 var LEGACY_ID = "default";
@@ -16246,10 +16371,10 @@ function idbRegistryKV() {
 }
 var galleryRegistry = createGalleryRegistry(idbRegistryKV());
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/backup/library-backup.js
+// node_modules/@internal/gallery/dist/core/backup/library-backup.js
 var BACKUP_BUDGET_BYTES = 512 * 1024 * 1024;
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/aside.js
+// node_modules/@internal/gallery/dist/core/model/aside.js
 var ASIDE = deepFreeze({
   trash: {
     list: (f2) => f2.listTrash(),
@@ -16323,7 +16448,7 @@ function sortAside(items, compareName) {
   return [...items].sort((a10, b3) => b3.at - a10.at || compareName(a10.identifier, b3.identifier) || a10.key.localeCompare(b3.key));
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/data-face.js
+// node_modules/@internal/gallery/dist/core/data-face.js
 var basename = (p2) => p2.slice(p2.lastIndexOf("/") + 1);
 function galleryItemFromStoreItem(it2, ids) {
   const d3 = ids.parse(it2.identifier);
@@ -16376,7 +16501,7 @@ function createGalleryDataFace(deps) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/verbs.js
+// node_modules/@internal/gallery/dist/core/verbs.js
 var errMsg = (e10) => String(e10?.message || e10);
 function createGalleryVerbs(d3) {
   const docFile = (identifier, mode = "existing") => d3.store().file(identifier, { mode });
@@ -16727,7 +16852,7 @@ function createGalleryVerbs(d3) {
   return { rename, move, moveTargets, copy, push, unload, keepOffline, reupload, del, deleteImage, folderDelete, asideRestore, asidePurge, emptyAside, encryptItem, decryptItem, unlock, whereLabel };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/thumbs/thumb-store.js
+// node_modules/@internal/gallery/dist/core/thumbs/thumb-store.js
 function memoryThumbStore() {
   const m2 = /* @__PURE__ */ new Map();
   return { async get(k2) {
@@ -16804,7 +16929,7 @@ function idbThumbStore(opts) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/thumbs/thumb-cache.js
+// node_modules/@internal/gallery/dist/core/thumbs/thumb-cache.js
 var thumbKeyFor = (galleryId, fullName) => galleryId === "default" ? fullName : `${galleryId}:${fullName}`;
 function createThumbCache(deps) {
   const now = deps.now ?? (() => Date.now());
@@ -16882,7 +17007,7 @@ function createThumbCache(deps) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/thumbs/png-text.js
+// node_modules/@internal/gallery/dist/core/thumbs/png-text.js
 var PNG_BLURB_KEYWORD = "Description";
 var SIG = [137, 80, 78, 71, 13, 10, 26, 10];
 function isPng(bytes) {
@@ -17028,7 +17153,7 @@ function withPngText(png, keyword, text2) {
   return out;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/thumbs/make-thumb.js
+// node_modules/@internal/gallery/dist/core/thumbs/make-thumb.js
 var THUMB_MAX_BYTES = 70 * 1024;
 var THUMB_LADDER = [256, 192, 128];
 var THUMB_PALETTE_COLORS = 256;
@@ -17108,7 +17233,7 @@ function makeThumbAdaptive(src, opts) {
   return last;
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/ui/store-ui.js
+// node_modules/@internal/gallery/dist/ui/store-ui.js
 var STORE_TEXT_KEYS = {
   "sync.pushing": "st.syncPushing",
   "file.renaming": "st.fileRenaming",
@@ -17189,7 +17314,7 @@ function storeUIFor(d3) {
   };
 }
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/ui/gallery-screen.js
+// node_modules/@internal/gallery/dist/ui/gallery-screen.js
 var PIXELATED_THUMB_MAX_EDGE = 128;
 function thumbLoadPixelated(e10) {
   const img = e10.target;
@@ -17972,7 +18097,7 @@ var GALLERY_TEMPLATE = `
       <div class="gallery-empty" v-show="isEmpty && !loading">{{ emptyText }}</div>
 `;
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/create-gallery.js
+// node_modules/@internal/gallery/dist/create-gallery.js
 function createGallery(el2, deps) {
   if (deps.text)
     configureText(deps.text);
@@ -18324,7 +18449,7 @@ var storeUI = {
   }
 };
 
-// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/encryption/dist/encryption.js
+// node_modules/@internal/encryption/dist/encryption.js
 var SEVENZ_MAGIC = [55, 122, 188, 175, 39, 28];
 var ZIP_MAGIC = [80, 75, 3, 4];
 function _startsWith(u82, sig) {
@@ -25003,7 +25128,7 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA / \u5C01\u9762\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA / \u5C01\u9762\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
 padTab.id = "padTab";
@@ -25019,16 +25144,19 @@ var selBar = new SelBar(stageEl, { verb: (v) => {
 var clip = null;
 var clipText = "";
 var selSig = "";
+var selFix = false;
 var chromeReady = false;
 function updateChrome() {
   if (!chromeReady) return;
   const over = finder.isOpen || (gallery?.isOpen() ?? false);
   padTab.hidden = !padEl.hidden || (gallery?.isOpen() ?? false) && !finderShown || studio.isOpen;
   finder.setPadShown(!padEl.hidden);
-  const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0, sig = `${n10}|${!!clip}|${over || studio.isOpen}`;
+  const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
+  if (!n10) selFix = false;
+  const fix = selFix ? { art: artStateSel(st2), dyn: dynMarkSel(st2) } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) {
     selSig = sig;
-    selBar.update(n10, !!clip, over || studio.isOpen);
+    selBar.update(n10, !!clip, over || studio.isOpen, fix);
   }
 }
 function setClip(t10) {
@@ -25053,7 +25181,23 @@ async function pasteNow() {
   info(`\u8D34\u4E86 ${toks.length} \u4E2A`);
 }
 async function selVerb(v) {
+  if (v.startsWith("art:")) {
+    update(toggleArtSel(st2, v.slice(4)));
+    return;
+  }
+  if (v.startsWith("dyn:")) {
+    update(setDynSel(st2, v === "dyn:none" ? null : v.slice(4)));
+    return;
+  }
   switch (v) {
+    case "fix":
+      selFix = true;
+      updateChrome();
+      return;
+    case "fixdone":
+      selFix = false;
+      updateChrome();
+      break;
     case "all":
       update(selectAll(st2));
       break;
@@ -25289,8 +25433,9 @@ var finderShown = false;
 var finderPlayOnly = false;
 var pad3 = new Pad(padEl, {
   state: () => st2,
-  isImpro: () => impro || finder.isOpen,
-  // 找人视图开着：pad 只弹不写（弹的是试听台上那位）
+  isImpro: () => impro || finderShown,
+  // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
+  onImpro: () => toggleImpro(),
   accept: (id2) => canStack() ? (monoHeld.add(id2), true) : monoAccept(id2),
   // 能叠音的声部：同时多按都收（80 ms 内 = 叠在一起）；单声乐器照旧只写第一个
   // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
@@ -25323,7 +25468,12 @@ var pad3 = new Pad(padEl, {
   onCommand: (c10) => {
     if (finder.isOpen) return;
     if (c10.k === "caret" && half === "once") setHalf("off");
-    update(apply(st2, c10, performance.now()));
+    const nx2 = apply(st2, c10, performance.now());
+    if (c10.k === "breath" && nx2 === st2) {
+      info("\u547C\u5438\u8981\u8DDF\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
+      return;
+    }
+    update(nx2);
     if (c10.k === "rest" || c10.k === "extend") afterWrite();
   },
   onUnit: (u2) => {
@@ -25379,12 +25529,11 @@ var pad3 = new Pad(padEl, {
   }
 });
 function toggleImpro() {
+  if (finder.isOpen) return;
   impro = !impro;
-  $2("improBtn").classList.toggle("is-on", impro);
   if (impro) showPad(true);
   pad3.render();
 }
-$2("improBtn").addEventListener("click", () => toggleImpro());
 var history = emptyHistory();
 function update(next2, gesture) {
   if (next2 === st2) return;
@@ -25455,7 +25604,7 @@ function songLangOf(tokens) {
 }
 var LEAD_IN = 0.5;
 var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
-function lightNotes(tokens, tempoMap, poly = false) {
+function lightNotes(tokens, tempoMap, poly = false, marks) {
   const notes = [];
   let open = /* @__PURE__ */ new Map();
   for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, tempoMap)) {
@@ -25469,7 +25618,7 @@ function lightNotes(tokens, tempoMap, poly = false) {
         nextOpen.set(midi, prev);
         continue;
       }
-      const n10 = { midi, t0: t02, t1: t12 };
+      const n10 = { midi, t0: t02, t1: marks && tok.art ? noteEnd(t02, t12, tok.art, marks) : t12 };
       notes.push(n10);
       nextOpen.set(midi, n10);
     }
@@ -25497,7 +25646,8 @@ async function renderPart(part, whole = false) {
     lastRender.set(part.id, { key: key2, r: out2 });
     return out2;
   }
-  const notes = lightNotes(tokens, map, eng === "soundfont");
+  const spec = activePerfSpec(doc.extras, role);
+  const notes = lightNotes(tokens, map, eng === "soundfont", { staccatoGate: spec.staccatoGate, breath: eng === "vowel-sampler" });
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
     const key2 = JSON.stringify(["vowel", notes, st2.song.hum]), had2 = lastRender.get(part.id);
@@ -25515,6 +25665,10 @@ async function renderPart(part, whole = false) {
   const r10 = await singer.gm(bytes, g3.subsetSha256, gmNotes, GM_SR, 2), out = { samples: r10.samples, sr: r10.sr, at: 0 };
   lastRender.set(part.id, { key, r: out });
   return out;
+}
+function partGain(part, whole) {
+  const song = whole ? st2.song : playSong(), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
+  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), eng === "tsukuyomi");
 }
 var audibleParts = () => {
   const solo = st2.song.parts.some((p2) => pv(p2.id).solo);
@@ -25537,8 +25691,8 @@ async function renderMix(whole = false) {
   if (errs.length) showError(`${errs.join("\uFF1B")}\u3002${got.length ? "\u8FD9\u4E9B\u58F0\u90E8\u6CA1\u6709\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\u3002" : "\u6CA1\u6709\u51FA\u58F0\u3002"}\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
   if (!got.length) return null;
   const m2 = mixTracks(got.map(({ part, r: r10 }) => {
-    const { gainDb, pan } = micOf(part);
-    return { samples: r10.samples, sr: r10.sr, at: r10.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan };
+    const { gainDb, pan } = micOf(part), segs = partGain(part, whole);
+    return { samples: segs ? applyGain(r10.samples, r10.sr, r10.at, segs) : r10.samples, sr: r10.sr, at: r10.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan };
   }), GM_SR);
   return { left: m2.left, right: m2.right, sr: m2.sr, roles: got.map((x2) => x2.part.role) };
 }
@@ -25886,7 +26040,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "ec6f4ddb1112",
+  cssHash: "8a3e3fef8c74",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -26146,7 +26300,7 @@ function openFinder() {
   showPad(true);
   padEl.classList.add("is-locked");
   pad3.clearHeld();
-  $2("improBtn").classList.add("is-on");
+  pad3.render();
   void finder.show({ playOnly: finderPlayOnly });
   updateChrome();
 }
@@ -26163,7 +26317,7 @@ function closeFinder() {
   synth.allOff();
   gmHeld.clear();
   padEl.classList.remove("is-locked");
-  $2("improBtn").classList.toggle("is-on", impro);
+  pad3.render();
   scoreEl.hidden = false;
   void prepareSynth();
   view.render();
@@ -27623,4 +27777,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2c68c39ee165.mjs.map
+//# sourceMappingURL=moonsinger-8c8bcb15126d.mjs.map
