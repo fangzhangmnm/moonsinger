@@ -1,16 +1,26 @@
 # MoonSinger 挑乐器数据（2026-10-07）
 
-**现行版本 = v10**（2026-10-08）。v1–v9 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v11。
+**现行版本 = v11**（2026-10-08）。v1–v10 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v12。
 
 > 由 `scripts/build_export.py` 生成，别手改；改数据改 `data/` 再重跑。规格 = PWAProjects 的 webpaint editor v1 prototyping 会话转述的 user 拍板 + 本仓会话 user 原话（见脚本头注释）。
 
 | 文件 | 是什么 |
 |---|---|
-| `instruments-v10.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
-| `gm-map-v10.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
-| `instrument-icons-20261008-v10.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
-| `icon-credits-v10.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
-| `LICENSES-chosen-v10.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+| `instruments-v11.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
+| `gm-map-v11.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
+| `instrument-icons-20261008-v11.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
+| `icon-credits-v11.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
+| `LICENSES-chosen-v11.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+
+## v10 → v11 改了什么（只加字段；风的数据和 v10 一样）
+
+MoonSinger 要的演奏元数据：gm-map **每一行**（本尊 / 多重认领 / 平替，同一个 GM 号挂同一份）加六个字段，都带 `basis`；通用测法在 `defs.perfMethod`，枚举的中文名在 `defs.excitations / sustains / joints / breaths`。详细说明和统计见源仓 `ai-docs/20261008-演奏元数据.md`。
+- **`excitation {id, basis}`**：bowed / plucked / struck / blown / voice / electronic / sfx（AI 判）。
+- **`sustain {id, attackMs, noteOffCuts, basis}`**：sustained / decaying / oneshot。在 TinySoundFont + GU 2.0.3 里实测（力度 80，按住 5 秒 vs 0.25 秒松手）。`attackMs` = 到峰值 −3 dB；`noteOffCuts` = 松手会不会截断。
+- **`technique {id, zh, basis}`**：这个音色本身的奏法（ordinario / arco / arco-slow / tremolo / pizzicato / palm-mute / harmonics / slap / muted / open / closed / cross-stick…）；音效 `id: null`。Strings 1 = arco（实测起音约 120 ms），Strings 2 = arco-slow（约 260 ms，只适合连奏铺底）。
+- **`joint {id, gapMs, basis}`**：legato 0 / detache 20 / tongued 40 / lift 0；不适用（实测 oneshot、音效）`id: null`。毫秒数对齐 MoonSinger 现行连断预设；和 `gapClassOf` 不同的只有风笛（legato 0）、口琴（tongued 40）。
+- **`breath {id, basis}`**：breathe 真换气 / lift 抬一下 / none 无意义（AI 判）。
+- **`velLayers {soundfont, engine, key, count, ranges, mpMfSwitchesLayer, staticFilter, filterEnvelope, centroidShiftPct {mpToMf, ppToFf}, basis}`**：参考键上的力度层（力度 0→127 扫一遍，响的 zone 组合变几次）；`mpMfSwitchesLayer` = 力度 64 和 80 用的 zone 不同（54 个号会换）；`centroidShiftPct` = pp 33 / mp 64 / mf 80 / ff 112 渲染的频谱重心变化。TSF 不执行 sf2 调制器（GU 写的力度 → 滤波只在 FluidSynth 之类里生效），所以 `staticFilter` 是固定滤波、不随力度变。MoonSinger 现在 velocity 固定 0.8，这组数据是给「要不要把力度记号接到 velocity」用的。
 
 ## v9 → v10 改了什么（只改风的认领数据，结构不变）
 

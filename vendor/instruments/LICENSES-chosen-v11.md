@@ -1,5 +1,5 @@
 # 挑中图标的许可证原文（2026-10-08，build_export.py 从 icons/upstream/ 原样拼接）
-署名逐图见 `icon-credits-v10.json`；完整署名块见源仓 `icons/LICENSES.md`。
+署名逐图见 `icon-credits-v11.json`；完整署名块见源仓 `icons/LICENSES.md`。
 
 ## commons（icons/upstream/wikimedia-commons/）
 

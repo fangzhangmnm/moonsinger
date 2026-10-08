@@ -4,7 +4,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL): Uint8Array; existsSync(p: string): boolean };
 const g = (await import(new URL("../scripts/gen-instruments.mjs", import.meta.url).href)) as { render(): string | null };
 import { INSTRUMENT_FILES } from "../src/gm/instruments.gen.ts";
-import { loadCatalogFromJson, providersOf, gmKey, groupConcepts, type Catalog } from "../src/gm/catalog.ts";
+import { loadCatalogFromJson, providersOf, gmKey, groupConcepts, jointOf, type Catalog } from "../src/gm/catalog.ts";
 
 describe("挑乐器数据", () => {
   it("instruments.gen.ts 是最新的（不是就跑 node scripts/gen-instruments.mjs）", () => {
@@ -60,5 +60,18 @@ describe("按曲风：成员 / 星级按音色", () => {
     const styled = new Set(cat.rows.filter((r) => r.styles?.length).map((r) => r.concept));
     const missing = [...cat.gmSelf.values()].filter((r) => styled.has(r.concept) && !seen.has(gmKey(r)));
     eq(missing.length, 0, missing.map((r) => r.gmName).join(","));
+  });
+});
+
+// 连断的底色从目录来（仓鼠 v11 的 joint，按 GM 号逐个；2026-10-08 by Claude Opus 5.5；user「midi的string系乐器是有不同的演奏方法的，你不能按乐器一刀切」
+//   「是不是应该让音乐仓鼠准备一下分类用的元数据？因为我们每次是拉他那边的json的」）：代码里不再写死一张分类表（W-13）
+describe("连断的底色：目录的 joint", () => {
+  const read = (k: keyof typeof INSTRUMENT_FILES) => JSON.parse(fs.readFileSync(new URL(`../${INSTRUMENT_FILES[k].file}`, import.meta.url)).toString());
+  const cat: Catalog = loadCatalogFromJson(read("concepts"), read("gmMap"));
+  it("按 GM 号逐个：小提琴断奏 20 ms、拨弦没有、风笛连 0、口琴吐音 40 ms、钢琴抬手 0；鼓件没有", () => {
+    eq(jointOf(cat, 0, 40)?.gapSec, 0.02); eq(jointOf(cat, 0, 40)?.zh, "断奏（换弓）");
+    eq(jointOf(cat, 0, 45), null, "Pizzicato：一下就完，没有接法");
+    eq(jointOf(cat, 0, 109)?.gapSec, 0); eq(jointOf(cat, 0, 22)?.gapSec, 0.04); eq(jointOf(cat, 0, 0)?.gapSec, 0);
+    eq(jointOf(cat, 128, 0, 35), null, "鼓件");
   });
 });

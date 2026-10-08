@@ -24,8 +24,12 @@ export interface GmRow { program: number; bank: number; note?: number; gmNumber:
   /** 这个音色自己在哪些风里（仓鼠 v8 起逐个音色判；本尊行才有）：as = 在这种风里顶替哪个概念（平替认领）。概念上的 styles 是这些聚合出来的，只拿来说「这件乐器属于哪些风」。 */
   styles?: { tag: string; ear: string; weight?: number; as?: string }[]; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string;   // primary = 一个号多重认领时的主本尊（v3）
   /** GM 116–128 音效：在 GS + TinySoundFont 里按哪个键是采样原速（v8 按 TSF 的音高公式重算；换音色库 / 引擎就不算数）。 */
+  joint?: RowJoint; excitation?: { id: string; basis?: string }; breath?: { id: string; basis?: string };
   sampleKey?: { soundfont: string; engine?: string; recommended: number; recommendedBasis?: string;
     layers?: { sample?: string; originalSpeedKey?: number; centsPerKey?: number; keyRange?: string; peakAtRecommended?: { hz: number; midi: number; pitched: boolean } | null }[] } }
+/** 演奏元数据（仓鼠 v11 起，gm-map 每行都有，各带 basis 依据；W-13：中文标签从 defs 取，不写死）。
+ *  joint = 不写记号时音和下一个音怎么接（连断的底色）；鼓件 / 音效 / 一下就完的 id = null。 */
+export interface RowJoint { id: string | null; gapMs: number | null; basis?: string }
 export interface Defs { eras: { id: string; zh: string; from: number | null; to: number | null }[]; families: { id: string; en: string; zh: string }[]; kinds: { id: string; zh: string }[]; styles?: { id?: string; tag?: string; zh?: string; en?: string }[]; weights?: { id: number; zh: string }[] }
 export interface Catalog {
   version: number; concepts: Concept[]; byId: Map<string, Concept>;
@@ -36,11 +40,12 @@ export interface Catalog {
 export interface Provider { kind: "self" | "substitute"; bank: number; program: number; note?: number; gmName: string; sound: string | null; basis?: string; reason?: string }   // note = 鼓件（bank 128 的鼓组里固定敲这个键）
 export const gmKey = (g: { bank: number; program: number; note?: number }): string => `${g.bank}:${g.program}${g.note !== undefined ? `:${g.note}` : ""}`;
 
-export function loadCatalogFromJson(concepts: { v?: number; defs: Defs; concepts: Concept[] }, gmMap: { rows: GmRow[] }): Catalog {
+export function loadCatalogFromJson(concepts: { v?: number; defs: Defs; concepts: Concept[] }, gmMap: { rows: GmRow[]; defs?: Partial<Defs> & Record<string, unknown> }): Catalog {
   const rows = gmMap.rows, gmSelf = new Map<string, GmRow>();
   for (const r of rows) if (r.relation === "self" && (r.primary !== false || !gmSelf.has(gmKey(r)))) gmSelf.set(gmKey(r), r);   // 鼓件靠 note 区分（47 个鼓件都在 128:0 下）；一个号多重认领取主本尊
   const list = concepts.concepts;
-  return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c) => [c.id, c])), gmSelf, rows, defs: concepts.defs };
+  // defs：两张表各带一份；演奏元数据的枚举（joints / excitations / sustains / breaths，仓鼠 v11）只在 gm-map 里——并起来，同名的以表 ① 为准
+  return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c) => [c.id, c])), gmSelf, rows, defs: { ...(gmMap.defs ?? {}), ...concepts.defs } as Defs };
 }
 let cached: Promise<Catalog> | null = null;
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");
@@ -86,6 +91,14 @@ export function sampleKeyOf(cat: Catalog, bank: number, program: number): { key:
   const main = ls.find((l) => Math.round(l.originalSpeedKey ?? NaN) === k.recommended) ?? ls[0];
   return { key: k.recommended, title: `原速键：按这个键，采样不拉伸不压缩${k.recommendedBasis ? `（${k.recommendedBasis}）` : ""}`,
     ...(main ? { midi: Math.round(main.peakAtRecommended!.midi * 100) / 100, centsPerKey: main.centsPerKey } : {}) };
+}
+/** 连断的底色（仓鼠 v11 的 joint）：这个 GM 号建议音和音之间留多大缝 + 中文名 + 依据。目录里没有 / 没写（旧版目录、鼓件、音效）= null。
+ *  按 GM 号逐个（user 2026-10-08「midi的string系乐器是有不同的演奏方法的，你不能按乐器一刀切」）。 */
+export function jointOf(cat: Catalog, bank: number, program: number, note?: number): { gapSec: number; zh: string; basis: string } | null {
+  const row = cat.rows.find((r) => r.bank === bank && r.program === program && r.note === note && r.joint) ?? cat.rows.find((r) => r.bank === bank && r.program === program && r.joint);
+  const j = row?.joint; if (!j || j.id === null || j.gapMs === null) return null;
+  const zh = (cat.defs as Defs & { joints?: { id: string; zh: string }[] }).joints?.find((x) => x.id === j.id)?.zh ?? j.id;
+  return { gapSec: j.gapMs / 1000, zh, basis: j.basis ?? "" };
 }
 /** GS 在家族音源库里的 id（sampleKey 只对它成立）。 */
 export const GS_LIBRARY_ID = "generaluser-gs-2.0.3";
