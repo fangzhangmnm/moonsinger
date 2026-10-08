@@ -1,16 +1,20 @@
 # MoonSinger 挑乐器数据（2026-10-07）
 
-**现行版本 = v6**（2026-10-08）。v1–v5 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v7。
+**现行版本 = v7**（2026-10-08）。v1–v6 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v8。
 
 > 由 `scripts/build_export.py` 生成，别手改；改数据改 `data/` 再重跑。规格 = PWAProjects 的 webpaint editor v1 prototyping 会话转述的 user 拍板 + 本仓会话 user 原话（见脚本头注释）。
 
 | 文件 | 是什么 |
 |---|---|
-| `instruments-v6.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
-| `gm-map-v6.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
-| `instrument-icons-20261008-v6.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
-| `icon-credits-v6.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
-| `LICENSES-chosen-v6.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+| `instruments-v7.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
+| `gm-map-v7.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
+| `instrument-icons-20261008-v7.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
+| `icon-credits-v7.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
+| `LICENSES-chosen-v7.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+
+## v6 → v7 改了什么（只改两个值）
+
+- **电话铃改按 GS 作者可能拆样的那台电话推**（user「我觉得应该按照gs的作者可能拆样的那台电话来推理」）：GU 的电话采样整段就是一个 35.9 ms 的循环（一个振铃周期）；作者是美国人、采样来自自录或网上免费音色库，最可能是北美老式话机 20 Hz → GM 125 `sampleKey.recommended` 86 → **79**，电话 `naturalKey` 100 → **96**（约 2148 Hz）。备选：中国 / 欧洲 25 Hz ≈ 86，日本约 16 Hz ≈ 72。推理见源仓 `ai-docs/20261008-电话该用哪个音高.md` §6。
 
 ## v5 → v6 改了什么（只改两个值、加一个字段）
 

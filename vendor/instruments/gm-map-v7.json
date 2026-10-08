@@ -1,5 +1,5 @@
 {
- "v": 6,
+ "v": 7,
  "date": "2026-10-08",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ② GM 映射：一行 = 一个 GM 号 → 一个概念。relation = self（本尊：这个号就是这个概念，175 个号每个恰好一条 primary: true；多重认领的另加 primary: false）/ substitute（平替：这个号能拿来顶这个概念，basis 见 defs）。program 从 0 起；鼓件 bank 128、program 0、note = MIDI 键号。musicxmlSound = 这个号自己最贴的 sound id。",
@@ -4198,8 +4198,8 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 86,
-    "recommendedBasis": "老式话机的 25 Hz 振铃（中国 / 欧洲）：原速 90 键每秒颤约 28 下，86 键约 25 下；北美 20 Hz 约 79 键",
+    "recommended": 79,
+    "recommendedBasis": "按 GS 作者可能拆样的那台电话推：最可能是北美老式话机 20 Hz 振铃，79 键时 35.9 ms 的循环每秒约 20 遍（原速 90 键约 28 遍）；中国 / 欧洲 25 Hz 约 86 键，日本约 16 Hz 约 72 键",
     "layers": [
      {
       "sample": "LeFone",

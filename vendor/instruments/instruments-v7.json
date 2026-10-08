@@ -1,5 +1,5 @@
 {
- "v": 6,
+ "v": 7,
  "date": "2026-10-08",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效）。id = Wikidata QID（没有用 x: 本地 id）；ids 束里 gm 只放本尊，平替在 substitutes[]（按 basis 强弱 + 分类号同到的位数排）。year = 这个概念的声音第一次能被听见；lineageYear = 算上原文点名的前身。fundamentalRank 一律 null，归 user。AI 判的字段：musicxml、styles、技法号挂母乐器、平替 family / 自动、部分 hs 和中日名。",
@@ -6596,8 +6596,8 @@
    },
    "range": null,
    "naturalKey": {
-    "note": 100,
-    "hz": 2629.1,
+    "note": 96,
+    "hz": 2147.9,
     "basis": "采样实测 + 推算"
    },
    "fundamentalRank": null

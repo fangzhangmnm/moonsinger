@@ -14,7 +14,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const SRC = process.env.INSTRUMENTS_SRC ?? join(ROOT, "..", "..", "20260813 MyLlamaReborn", "20261007 音乐史", "export", "moonsinger");   // ~/jupyter/20260813 MyLlamaReborn（不在 PWAProjects 里）
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
-export const VERSION = 6;   // v6 = 2026-10-08（仓鼠：user 澄清电话铃 = 老式机械铃 → 电话 naturalKey 102 → 100、GS 推荐键 90 → 86；GM 行 sampleKey 加 recommendedBasis）。v5 = 概念 range / naturalKey、GM 行 sampleKey。v4 = 161 个概念、--tile 派生图标、AI 估算年份
+export const VERSION = 7;   // v7 = 2026-10-08（仓鼠：user「我觉得应该按照gs的作者可能拆样的那台电话来推理」→ 北美老式话机 20 Hz：电话 naturalKey 100 → 96、GS 推荐键 86 → 79）。v6 = 2026-10-08（仓鼠：user 澄清电话铃 = 老式机械铃 → 电话 naturalKey 102 → 100、GS 推荐键 90 → 86；GM 行 sampleKey 加 recommendedBasis）。v5 = 概念 range / naturalKey、GM 行 sampleKey。v4 = 161 个概念、--tile 派生图标、AI 估算年份
 export const FILES = {
   concepts: `instruments-v${VERSION}.json`,
   gmMap: `gm-map-v${VERSION}.json`,
