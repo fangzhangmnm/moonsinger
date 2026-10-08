@@ -34,6 +34,14 @@
 - `Singer.play` 收 `right` 就放立体声；mp3 导出这一版左右平均成单声道。
 - 隐藏 / 静音 / 独奏 = `partView`（main.ts 内存），换歌清空；不进文件（要不要存待 user）。
 
+## 4½. 0.5.1 追加（同日第二批）
+
+- 显示 / 出声两轴（`partView`：hidden / only / muted / solo；`isShown`）；隐藏 = 细行（`partsHit` 同一条路开歌手牌）；角标 `PartView.badges`。
+- 谱号 `PartDef.clef`（engrave 里低音谱号 = 音位 +12、升降号位 −2）；大谱表 `PartDef.staves = 2` + `NoteTok.staff`（`autoStaffs` / `staffOfTokens` / `toggleStaff`；MusicXML 读回来和自动一样的不记）；engrave 一个声部两行（`rowOf(s, r, k)`、`SPACING.graveUpper`）、符杠在换谱表处断（跨谱表符杠下一轮）。
+- 排法 分页：`EngraveOpts.page`（sp：页高 + 四边）→ `ensure()` 整块翻页、页框 + 页码、`Layout.pageX / pages`；svg viewBox 往左扩边距；score-view 的 `.sheet-ink` 容器装歌词框 / 记号框 / 框选并右移边距，`local()` 减掉。
+- 录音室 `src/ui/studio.ts`（StudioHost 接 main：增益 / 声像写 `withMic`，静音 / 独奏写 partView）；顶栏推子钮；`loungeKey()` 把 mics 也算进「改过没存」。
+- 「＋」在扳手旁 + 扳手面板纸列表；「‹ 2/3 ›」= `navPaper`。
+
 ## 5. 没做 / 等 user
 
 - **实时播放**（user「之后再grill」）；鼓谱；草稿听；建议 chip；vault README。

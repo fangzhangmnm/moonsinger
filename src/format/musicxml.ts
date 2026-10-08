@@ -7,7 +7,7 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { type Token, type NoteTok, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch } from "../score/song.ts";
+import { type Token, type NoteTok, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs } from "../score/song.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
 import { syllableLangs, keepOnlyOverrides } from "../score/lang.ts";
@@ -15,6 +15,8 @@ import { type El, esc, parseXml, kids, kid, childText, text } from "./xml.ts";
 
 export interface PartInfo {
   id: string;               // "P1"
+  clef?: "G" | "F";         // 谱号（没有 = 高音）
+  staves?: 2;               // 大谱表（上高音下低音；每个音带 <staff>）
   name: string;             // 声部名 = 角色名（谱号前面那个）
   instrumentName: string;   // 上场的候选的名字（给别的软件看）
   sound: string;            // MusicXML 官方乐器语义 id（= 角色是什么声部，如 voice.vocals；src/score/roles.ts）
@@ -87,7 +89,8 @@ function readCredits(root: El, title: string): string | undefined {
 
 const tempoXml = (bpm: number) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
 /** 一条声部 → 它的小节们（body = 每小节里的 XML 片段，manual = 这小节后面那条小节线是人插的）+ 还没写音高的音。first = 第一个声部（才写速度 / 排练记号）。 */
-function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, first: boolean): { measures: { body: string[]; manual: boolean }[]; unwritten: string[]; lastLen: number } {
+function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, first: boolean, clef: "G" | "F" = "G", staves: 1 | 2 = 1): { measures: { body: string[]; manual: boolean }[]; unwritten: string[]; lastLen: number } {
+  const staffs = staffOfTokens(toks, staves);
   const head = headLen(toks);
   const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
   for (let i = 0; i < head; i++) { const t = toks[i]; if (t.kind === "key") H.fifths = t.fifths; else if (t.kind === "time") { H.beats = t.beats; H.beatType = t.beatType; } else if (t.kind === "tempo") H.bpm = t.bpm; }
@@ -95,7 +98,8 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
   const measures: { body: string[]; manual: boolean }[] = [];
   let cur: string[] = [], ticks = 0, len = measureLen(H.beats, H.beatType);
   const close = (manual: boolean) => { measures.push({ body: cur, manual }); cur = []; ticks = 0; };
-  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>`);
+  const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : `<clef><sign>${clef}</sign><line>${clef === "F" ? 4 : 2}</line></clef>`;
+  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time>${clefs}</attributes>`);
   if (first) cur.push(tempoXml(H.bpm));
   // 歌词的 syllabic：按「这个词没完」（hyph）推；拖腔记号不打断一个词
   let prevHyph = false;
@@ -134,6 +138,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
         x += pitchXml(effectivePitch(toks, i)) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "");
       }
       x += `<voice>1</voice>`;
+      if (staves === 2) x += `<staff>${staffs[i]}</staff>`;
       if (ty) x += `<type>${ty.type}</type>` + "<dot/>".repeat(ty.dots) + (ty.tuplet ? `<time-modification><actual-notes>${ty.tuplet[0]}</actual-notes><normal-notes>${ty.tuplet[1]}</normal-notes></time-modification>` : "");
       if (t.kind === "note") {
         const tieIn = firstPiece ? !!t.tie : true, tieOn = last ? tieOut : true;
@@ -161,7 +166,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
 /** 几条声部 → 整份 MusicXML。manualBars = 声部 id → 人插的小节线（小节序号，1 起）；unwritten = 还没写音高的音（note id，各声部一起）。 */
 export function writeMusicXml(doc: ScoreXml, meta: WriteMeta): Written {
   const paper = doc.paper ?? paperOf(DEFAULT_PAPER);
-  const built = doc.parts.map((p, k) => ({ p, ...partMeasures(p.tokens, p.breaks, k === 0) }));
+  const built = doc.parts.map((p, k) => ({ p, ...partMeasures(p.tokens, p.breaks, k === 0, p.info.clef ?? "G", p.info.staves === 2 ? 2 : 1) }));
   const nMeas = Math.max(0, ...built.map((b) => b.measures.length));
   const manualBars: Record<string, number[]> = {}, unwritten: string[] = [];
   const bodies = built.map((b) => {
@@ -186,7 +191,7 @@ ${bodies.join("\n")}
   return { xml, manualBars, unwritten };
 }
 
-export interface ReadPart { id: string; name: string; instrumentName?: string; sound?: string; program?: number; variant?: string; volume?: number; pan?: number }
+export interface ReadPart { id: string; name: string; instrumentName?: string; sound?: string; program?: number; variant?: string; volume?: number; pan?: number; clef?: "G" | "F"; staves?: 2 }   // clef = 第一个 <clef>（F = 低音；别的谱号先按高音）；staves = <staves> 2 = 大谱表
 export interface ReadScore { title: string; movementTitle: string; paper?: Paper; credits?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number> }
 export interface ReadHints { manualBars?: Record<string, number[]>; unwritten?: string[] }   // 自家文件的 .moonsinger/score.json（这张纸的）；别家文件 = 没有
 
@@ -212,7 +217,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   const takeId = (s: string | undefined): number | null => { const m = s ? /^[nr](\d+)$/.exec(s) : null; if (!m) return null; const n = +m[1]; if (usedIds.has(n)) return null; usedIds.add(n); return n; };
   const tempoOf = (el: El): number | null => { const s = el.name === "sound" ? el : kid(el, "sound"); const v = s?.attrs.tempo; return v ? Math.round(Number(v)) : null; };
   const parts = partEls.map((pe, pi) => {
-    const pid = pe.attrs.id ?? `P${pi + 1}`, info = infos.find((x) => x.id === pid) ?? { id: pid, name: "" };
+    const pid = pe.attrs.id ?? `P${pi + 1}`, info: ReadPart = infos.find((x) => x.id === pid) ?? { id: pid, name: "" };
     const manual = hints?.manualBars ? new Set(hints.manualBars[pid] ?? []) : null;
     const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
     // 谱头 = 第一个音之前、每种记号第一次出现的那个；同一种再出现（谱头后面紧跟着插的）= 记号 token
@@ -224,6 +229,8 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
       for (const c of kids(m)) {
         if (c.name === "attributes") {
           const d = childText(c, "divisions"); if (d) divisions = Number(d);
+          const cl = kid(c, "clef"); if (cl && info.clef === undefined) info.clef = childText(cl, "sign") === "F" ? "F" : "G";
+          if (Number(childText(c, "staves") ?? "1") >= 2) info.staves = 2;
           const key = kid(c, "key"), time = kid(c, "time");
           if (key && childText(key, "fifths") !== undefined) { const f = Number(childText(key, "fifths")); if (headPhase && !H.gotKey) { H.fifths = f; H.gotKey = true; } else mark({ kind: "key", id: 0, fifths: f }); }
           if (time && childText(time, "beats")) { const b = Number(childText(time, "beats")), bt = Number(childText(time, "beat-type")); if (headPhase && !H.gotTime) { H.beats = b; H.beatType = bt; H.gotTime = true; } else mark({ kind: "time", id: 0, beats: b, beatType: bt }); }
@@ -243,11 +250,12 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           const prev = body[body.length - 1];
           if (cont && prev && (prev.kind === "note" || prev.kind === "rest") && prev.id === +cont[2] && (cont[1] === "n") === (prev.kind === "note")) { prev.dur += dur; continue; }   // 自家拆开的那几段并回去
           const isRest = !!kid(c, "rest");
-          if (isRest) { mark({ kind: "rest", id: takeId(idAttr) ?? 0, dur }); continue; }
+          const stf = childText(c, "staff"), staffOf = stf === "2" ? { staff: 2 as const } : stf === "1" ? { staff: 1 as const } : {};
+          if (isRest) { mark({ kind: "rest", id: takeId(idAttr) ?? 0, dur, ...staffOf }); continue; }
           const p = kid(c, "pitch");
           if (!p) { drop("没有音高的音（打击乐）"); continue; }
           const pitch: Pitch = { step: (childText(p, "step") ?? "C") as Pitch["step"], alter: Number(childText(p, "alter") ?? "0"), octave: Number(childText(p, "octave") ?? "4") };
-          const tok: NoteTok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null };
+          const tok: NoteTok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null, ...staffOf };
           if (kids(c, "tie").some((t) => t.attrs.type === "stop")) tok.tie = true;
           const lyrics = kids(c, "lyric"), ly = lyrics.find((l) => (l.attrs.number ?? "1") === "1") ?? lyrics[0];
           if (lyrics.length > 1) drop("第二段及以后的歌词");
@@ -268,6 +276,9 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     });
     const tokens: Token[] = [{ kind: "key", id: 0, fifths: H.fifths }, { kind: "time", id: 0, beats: H.beats, beatType: H.beatType }, { kind: "tempo", id: 0, bpm: H.bpm }, ...body];
     keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
+    // 大谱表：文件里每个音都写了 <staff>；和「按音高自动」一样的不记（只留手动指定的），单谱表的一律不记
+    if (info.staves === 2) { const auto = autoStaffs(tokens, 2); tokens.forEach((t, i) => { if ((t.kind === "note" || t.kind === "rest") && t.staff !== undefined) { const keep = t.kind === "note" ? t.staff !== auto[i] : t.staff !== staffOfTokens(tokens.map((x, j) => (j === i ? { ...x, staff: undefined } : x)) as Token[], 2)[i]; if (!keep) delete t.staff; } }); }
+    else for (const t of tokens) if ((t.kind === "note" || t.kind === "rest") && t.staff !== undefined) delete t.staff;
     return { info, tokens, gotTempo: H.gotTempo };
   });
   // 速度：只有第一个声部的算数；别的声部没写的，谱头抄第一个的（数据里每条 track 都有三个谱头记号）

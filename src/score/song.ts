@@ -16,7 +16,7 @@
 //   · 速度 = 第一个声部的状态机（其余声部的速度记号只是跟着抄、不出声不画）。
 
 import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
-import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval } from "./pitch.ts";
+import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf } from "./pitch.ts";
 
 /** 一个四分音符的 tick 数。 */
 export const TPQ = 1680;
@@ -33,8 +33,8 @@ export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
 /** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string }
-export interface RestTok { kind: "rest"; id: number; dur: number }
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
 export interface BarTok { kind: "bar"; id: number }
 export interface KeyTok { kind: "key"; id: number; fifths: number }
 export interface TimeTok { kind: "time"; id: number; beats: number; beatType: number }
@@ -49,7 +49,11 @@ export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, 
 export type Hum = "la" | "n" | "u" | "o" | "a";
 
 /** 歌级的一个声部（谱上的一行；顺序 = 总谱从上到下）：role = 休息室角色 id（谁来演、叫什么），mic = 录音房麦克风 id。 */
-export interface PartDef { id: string; role: string; mic: string }
+export interface PartDef { id: string; role: string; mic: string; clef?: Clef; staves?: 2 }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
+export type Clef = "G" | "F";
+export type Staff = 1 | 2;
+/** 大谱表的分界：中央 C 以下自动落到下谱表（音可以手动指定 staff 覆盖；user 2026-10-08「钢琴这种左右手要两个谱号」「musicxml原生支持那就不纠结了直接上」）。 */
+export const SPLIT_MIDI = 60;
 /** 一张纸 = 一个曲段：name = 曲段名（纸顶那一条，可空）；tracks = 声部 id → 这张纸上这个声部的 token 串（开头三个谱头记号）。 */
 export interface PaperSeg { id: string; name: string; tracks: Record<string, Token[]> }
 export interface Song {
@@ -653,6 +657,51 @@ export function movePaper(st: EditorState, paperId: string, d: -1 | 1): EditorSt
   if (k < 0 || j < 0 || j >= list.length) return st;
   [list[k], list[j]] = [list[j], list[k]];
   return { ...st, song: { ...st.song, papers: list } };
+}
+/** 改一个声部的谱号（高音 = 默认，存成「没有」）。 */
+export function setPartClef(st: EditorState, partId: string, clef: Clef): EditorState {
+  const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.clef ?? "G") === clef) return st;
+  const np: PartDef = { ...p }; if (clef === "G") delete np.clef; else np.clef = clef;
+  return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
+}
+/** 大谱表：每个 token 落在上（1）还是下（2）谱表——按音高自动（中央 C 以下 = 下），手动指定的优先；休止 / 记号跟前一个音。单谱表 = 全 1。 */
+export function autoStaffs(tokens: Token[], staves: 1 | 2): Staff[] {
+  let last: Staff = 1;
+  return tokens.map((t, i) => {
+    if (staves !== 2) return 1;
+    if (t.kind === "note") last = midiOf(effectivePitch(tokens, i)) < SPLIT_MIDI ? 2 : 1;
+    return last;
+  });
+}
+export function staffOfTokens(tokens: Token[], staves: 1 | 2): Staff[] {
+  const auto = autoStaffs(tokens, staves);
+  let last: Staff = 1;
+  return tokens.map((t, i) => {
+    if (staves !== 2) return 1;
+    const s = (t.kind === "note" || t.kind === "rest") && t.staff ? t.staff : t.kind === "note" ? auto[i] : last;
+    last = s; return s;
+  });
+}
+/** 单谱表 ↔ 大谱表。 */
+export function setPartStaves(st: EditorState, partId: string, n: 1 | 2): EditorState {
+  const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.staves ?? 1) === n) return st;
+  const np: PartDef = { ...p }; if (n === 1) delete np.staves; else np.staves = 2;
+  return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
+}
+/** 「换谱表」：选中的音 / 刚写的音挪到另一张谱表（手动指定）；已经手动指定的 = 取消指定（回到按音高自动）。 */
+export function toggleStaff(st: EditorState, staves: 1 | 2): EditorState {
+  if (staves !== 2) return st;
+  const toks = tr(st), targets: number[] = [];
+  if (st.sel) { for (let i = st.sel.from; i < st.sel.to; i++) if (isTimed(toks[i])) targets.push(i); }
+  else { const i = currentIndex(st); if (i >= 0) targets.push(i); }
+  if (!targets.length) return st;
+  const auto = autoStaffs(toks, 2), nt = toks.slice();
+  for (const i of targets) {
+    const t = nt[i] as Timed;
+    if (t.staff) { const c = { ...t }; delete c.staff; nt[i] = c; }
+    else nt[i] = { ...t, staff: auto[i] === 1 ? 2 : 1 };
+  }
+  return next(st, nt);
 }
 /** 改曲段名（纸顶那一条；空 = 不填）。 */
 export function setPaperName(st: EditorState, paperId: string, name: string): EditorState {

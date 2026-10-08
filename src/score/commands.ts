@@ -4,7 +4,7 @@ import type { Dir } from "./pitch.ts";
 import {
   type EditorState, writeDegree, writeRest, writeBar, shorter, longer, setTuplet, extend, tapAcc,
   octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward,
-  transposeSel, modulateSel, selectToEdge, tr } from "./song.ts";
+  transposeSel, modulateSel, selectToEdge, tr, toggleStaff } from "./song.ts";
 
 export type Command =
   | { k: "degree"; degree: number; dir: Dir }
@@ -14,7 +14,8 @@ export type Command =
   | { k: "octave"; d: number } | { k: "step"; d: number } | { k: "alter"; d: number }
   | { k: "caret"; d: number } | { k: "selext"; d: number } | { k: "home" } | { k: "end" } | { k: "escape" }
   | { k: "backspace" } | { k: "delete" }
-  | { k: "transpose"; semis: number } | { k: "modulate"; fifths: number } | { k: "seledge"; d: -1 | 1 };
+  | { k: "transpose"; semis: number } | { k: "modulate"; fifths: number } | { k: "seledge"; d: -1 | 1 }
+  | { k: "staff" };   // 大谱表：这个音换到另一张谱表
 
 /** 应用一条编辑命令。now = 判 Shift 连点用的时刻（ms）。 */
 export function apply(st: EditorState, c: Command, now = Date.now()): EditorState {
@@ -34,6 +35,7 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "selext": return extendSelection(st, c.d);
     case "home": return setCaret(st, 0);   // setCaret 自己夹到谱头后面
     case "end": return setCaret(st, tr(st).length);
+    case "staff": return toggleStaff(st, 2);
     case "escape": return escape(st);
     case "backspace": return backspace(st);
     case "delete": return deleteForward(st);

@@ -7,7 +7,8 @@ const n = (v: number) => (Math.round(v * 100) / 100).toString();
 /** 颜色走 CSS 变量（styles.css 定义）；Node 里离线看图时用 inlineStyle=true 把默认颜色写进去。 */
 export function toSvg(l: Layout, inlineStyle = false): string {
   const out: string[] = [];
-  out.push(`<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(l.width)}" height="${n(l.height)}" viewBox="0 0 ${n(l.width)} ${n(l.height)}">`);
+  const L = l.pageX?.left ?? 0, R = l.pageX?.right ?? 0, W = l.width + L + R;   // 分页：版心左右留边距，页框画在负 x
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W)}" height="${n(l.height)}" viewBox="${n(-L)} 0 ${n(W)} ${n(l.height)}">`);
   if (inlineStyle) out.push(`<style>${STANDALONE_CSS}</style>`);
   const fs = n(4 * l.sp), lfs = n(LYRIC_EM * l.sp);
   for (const p of l.prims) {

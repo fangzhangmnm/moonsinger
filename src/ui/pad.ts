@@ -97,6 +97,7 @@ export interface PadHost {
   onInputKey(f: number): void;
   onInputScale(id: string): void;
   autoBars(): boolean;                     // 谱面按拍号自动画小节线开着没有
+  staves(): number;                        // 光标所在声部几张谱表（2 = 大谱表：「⋯」里多一个「换谱表」）
   onAutoBars(on: boolean): void;
   onHide(): void;                          // 收起键盘（pad）
   onHalf(down: boolean): void;             // /2 按下 / 松开：写的音临时减半
@@ -248,6 +249,7 @@ export class Pad {
           c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.time.beats)}</span><span>${digits(m.time.beatType)}</span></span>`, false, "插拍号（在光标处；先填现在的，插了再改）") +
           c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, "插速度（在光标处；先填现在的，插了再改）") +
           c(`data-autobars="1"`, "自动小节线", this.host.autoBars(), "按拍号自动画小节线（只画、不进数据）；手插的「|」= 从那里重新数，弱起 = 写完弱起的音按一下「|」") +
+          (this.host.staves() === 2 ? c(`data-staff="1"`, "换谱表", false, "大谱表：刚写的音（或选中的）挪到另一张谱表；再按一次回到按音高自动分") : "") +
           c(`data-open="layout"`, "布局…", false, "几行几列、首调 / 绝对") + back;
       }
       case "layout":
@@ -283,6 +285,7 @@ export class Pad {
     // 候选
     this.on(box, "[data-open]", (b) => { this.mode = b.dataset.open as Mode; this.render(); });
     this.on(box, "[data-mark]", (b) => { this.back(); this.host.onInsertMark(b.dataset.mark as "key" | "time" | "tempo"); });
+    this.on(box, "[data-staff]", () => { this.host.onCommand({ k: "staff" }); });
     // 布局：点了不收（好试），按「返回」回去
     this.on(box, "[data-rows]", (b) => { this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows); this.render(); });
     this.on(box, "[data-swipe]", (b) => { this.swipeMode = b.dataset.swipe === "alter" ? "alter" : "scroll"; this.render(); });

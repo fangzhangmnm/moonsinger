@@ -71,7 +71,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   const labels = partLabels(song, { ...a.extras, lounge });
   const infoOf = (part: PartDef, k: number): PartInfo => {
     const role = lounge[part.role], active = cands(role).find((c) => c.id === role.active), mic = mics.find((m) => m.id === part.mic);
-    return { id: part.id, name: labels[k], instrumentName: String(active?.name ?? "月读"), sound: String(role.sound ?? DEFAULT_ROLE.sound),
+    return { id: part.id, name: labels[k], ...(part.clef && part.clef !== "G" ? { clef: part.clef } : {}), ...(part.staves === 2 ? { staves: 2 as const } : {}), instrumentName: String(active?.name ?? "月读"), sound: String(role.sound ?? DEFAULT_ROLE.sound),
       program: Number((active?.gm as Json | undefined)?.program ?? 55),
       variant: typeof (active?.gm as Json | undefined)?.variant === "string" ? { library: "MoonSinger", name: String((active!.gm as Json).variant) } : undefined,
       pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : undefined };
@@ -157,6 +157,17 @@ export function withNewRole(extras: Extras, role: string, hum: Hum, name?: strin
 export function withoutRole(extras: Extras, role: string): Extras {
   const lounge = { ...extras.lounge }; delete lounge[role];
   return pruneSounds({ ...extras, lounge });
+}
+// ── 录音房（麦克风）────────────────────────────────────────────────────────────────────────
+/** 改一个麦克风的增益 / 声像（没有录音房 / 没有这个麦克风 = 先建）。 */
+export function withMic(extras: Extras, micId: string, patch: { gainDb?: number; pan?: number }): Extras {
+  const studio: Json = structuredClone(extras.studio ?? { version: FORMAT.studio, mics: [] });
+  const mics = ((studio.mics as Json[] | undefined) ?? []).slice();
+  let m = mics.find((x) => x.id === micId);
+  if (!m) { m = { id: micId, name: `麦克风 ${mics.length + 1}`, gainDb: 0, pan: 0 }; mics.push(m); }
+  if (patch.gainDb !== undefined) m.gainDb = patch.gainDb; if (patch.pan !== undefined) m.pan = patch.pan;
+  studio.mics = mics;
+  return { ...extras, studio };
 }
 // ── 候选（谁来演；休息室）────────────────────────────────────────────────────────────────
 export interface CandidateInfo { id: string; name: string; engine: Engine }
@@ -320,6 +331,8 @@ function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: 
   const seen = new Map<string, PartDef>();
   for (const p of partList ?? []) seen.set(String(p.id), { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) });
   for (const p of ps) for (const id of Object.keys(p.tracks)) if (!seen.has(id)) seen.set(id, { id, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
+  // 谱号：MusicXML 里这个声部第一个 <clef>（任何一张纸上的）是 F = 低音谱号
+  for (const r of reads) for (const p of r.parts) { const d = seen.get(p.info.id); if (!d) continue; if (p.info.clef === "F" && !d.clef) d.clef = "F"; if (p.info.staves === 2) d.staves = 2; }
   const parts = [...seen.values()];
   let id = 1;
   const renumbered = ps.map((p) => ({ ...p, tracks: Object.fromEntries(parts.flatMap((part) => (p.tracks[part.id] ? [[part.id, p.tracks[part.id].map((t) => ({ ...t, id: id++ }))]] : []))) }));

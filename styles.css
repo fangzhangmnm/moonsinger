@@ -74,7 +74,7 @@ button, input, select { font: inherit; color: inherit; }
    谱区 / 找人视图都占 main，pad 永远占 pad；节点顺序随便，位置由这里钉死。横屏 main | pad，竖屏 main 上 pad 下；pad 收起 = 那一列 / 行消失。 */
 #stage { min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr); grid-template-areas: "main pad"; }
 #stage:has(.pad-panel[hidden]) { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main"; }
-.score, .finder { grid-area: main; }
+.score, .finder, .studio { grid-area: main; }
 .pad-panel { grid-area: pad; }
 .score { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; outline: none; background: var(--panel);
   -webkit-overflow-scrolling: touch; touch-action: pan-y; }
@@ -106,6 +106,8 @@ button, input, select { font: inherit; color: inherit; }
 /* 谱面板：svg 一层 + 歌词输入框一层（就地写歌词，不随重画消失） */
 .score { position: relative; }
 .score .sheet { position: relative; }
+.sheet-ink { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; }   /* 歌词框 / 记号框的容器（分页时挪到版心） */
+.score.pages .sheet { background: transparent; box-shadow: none; }   /* 分页：页框自己画，桌面当背景 */
 .lyric-input { position: absolute; z-index: 5; height: 2em; min-width: 3em; border: 1px solid #b8cde8; border-radius: 6px; background: #fff;
   text-align: center; padding: 0 4px; font: inherit; -webkit-user-select: text; user-select: text; outline: none; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
 .score { cursor: default; touch-action: none; }
@@ -226,8 +228,14 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .paper-name { fill: var(--ink); font-weight: 600; }        /* 曲段名（纸顶一条） */
 .staff-svg .paper-name.empty { fill: #b9b2a5; font-weight: 400; }
 .staff-svg .paper-chip-text { fill: var(--muted); font-weight: 600; }
-.staff-svg rect.add-paper { fill: none; stroke: #c9c1b3; stroke-width: 1; stroke-dasharray: 4 3; cursor: pointer; }   /* 「＋ 新的纸」 */
-.staff-svg .add-paper-text { fill: var(--muted); }
+.staff-svg .part-badge { fill: var(--accent); font-weight: 600; }       /* 名字下面的角标：静音 / 独奏 / 只看它 */
+.staff-svg .part-stub { fill: #b9b2a5; }                                   /* 隐藏的声部缩成的细行 */
+.staff-svg .part-stub-line { stroke: #ddd6c8; }
+.staff-svg path.brace { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }   /* 大谱表花括号 */
+.staff-svg rect.paper-chip.off { opacity: .35; }                           /* ‹ › 到头了 */
+.staff-svg .nav-text { fill: var(--muted); font-variant-numeric: tabular-nums; }
+.paper-row { align-items: center; justify-content: space-between; }
+.paper-row-name { font-size: 14px; }
 .title-input.paper { text-align: left; font-weight: 600; }
 .staff-svg .credits.empty { fill: var(--muted); opacity: .7; }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
@@ -370,3 +378,17 @@ button, input, select { font: inherit; color: inherit; }
 .prov.sub .prov-l b { font-weight: 500; color: var(--muted); }
 .prov.sub.is-on { border-color: var(--accent); }
 .prov-tag { display: inline-block; font-size: 10px; line-height: 1.5; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; margin-right: 5px; color: var(--muted); vertical-align: 1px; }
+
+/* 录音室（src/ui/studio.ts）：占 #stage 的 main 区；一个声部一条 */
+.studio { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--panel); }
+.studio-strips { flex: 1; overflow: auto; display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; align-content: flex-start; }
+.strip { width: 200px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
+.strip-name { font-weight: 600; }
+.strip-who { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip-row { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 2px; }
+.strip-row output { color: var(--ink); font-variant-numeric: tabular-nums; }
+.strip-row input[type="range"] { width: 100%; }
+.strip-btns { display: flex; gap: 6px; }
+/* 分页：页框 + 页码 */
+.staff-svg rect.page { fill: #fff; stroke: var(--line); stroke-width: 1; }
+.staff-svg .page-no { fill: var(--muted); }

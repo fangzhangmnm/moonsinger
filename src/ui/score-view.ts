@@ -13,7 +13,7 @@
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
-import { DEFAULT_PAPER, paperOf, lineSp, staffMmOf, STAFF_MM, PAPER_LABEL } from "../score/paper.ts";
+import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL } from "../score/paper.ts";
 import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ } from "../score/song.ts";
 import { fromDiatonic } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout, type PartView } from "../render/engrave.ts";
@@ -41,20 +41,24 @@ export interface ScoreViewHost {
   parts(): PartView[];
   /** 歌手牌：某张纸第一行某条谱左边的声部名点了（那条已经成了光标所在的 track）。 */
   onPart?(paper: string, part: string): void;
-  /** 纸顶「⋯」点了（纸的菜单）；「＋ 新的纸」点了。 */
+  /** 纸顶「⋯」点了（纸的菜单）；扳手旁的「＋」点了（新的纸）；歌名左边「‹ ›」点了（上一张 / 下一张纸）。 */
   onPaperMenu?(paper: string): void;
   onAddPaper?(): void;
+  onNav?(dir: -1 | 1): void;
   /** 纸右上角的小钮（纸张）点了。 */
   onPaper?(): void;
   /** 标题下面靠右的作词 / 作曲点了。 */
   onCredits?(): void;
   /** 屏幕放不下纸的时候：true = 按屏宽重新折行；false（默认）= 不折行、整张纸按比例缩小（行和纸上一模一样）。 */
   reflow?(): boolean;
+  /** 排法：true = 分页（按纸高分页、画页框，所见即所得）；false = 连续。 */
+  pages?(): boolean;
 }
 
 export class ScoreView {
   layout: Layout | null = null;
   private sheet: HTMLDivElement;
+  private ink: HTMLDivElement;   // 歌词框 / 记号框 / 框选的容器：分页时往右挪到版心（svg 的 viewBox 往左扩了边距）
   private ctx = document.createElement("canvas").getContext("2d")!;
   private drag: null | { index: number; d0: number; dur0: number; x0: number; y0: number; axis: "" | "x" | "y"; pid: number; heard: number } = null;
   private finger: null | { pid: number; y0: number; top0: number; x: number; y: number; moved: boolean; shift: boolean; x0: number; left0: number } = null;
@@ -72,12 +76,13 @@ export class ScoreView {
     this.sheet = document.createElement("div"); this.sheet.className = "sheet";
     this.boxEl = document.createElement("div"); this.boxEl.className = "marquee"; this.boxEl.hidden = true;
     el.replaceChildren(this.sheet);
+    this.ink = document.createElement("div"); this.ink.className = "sheet-ink"; this.sheet.appendChild(this.ink);
     this.zoomBtn = document.createElement("button"); this.zoomBtn.className = "btn zoom-reset"; this.zoomBtn.type = "button"; this.zoomBtn.textContent = "1:1"; this.zoomBtn.title = "回到原大"; this.zoomBtn.hidden = true;
     this.zoomBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); this.setZoom(1, null); });
     el.appendChild(this.zoomBtn);
-    this.lyrics = new LyricEditor(this.sheet, host, () => this.layout, () => this.render());
-    this.marks = new MarkEditor(this.sheet, host, () => this.layout, () => this.render());
-    this.title = new TitleEditor(this.sheet, host, () => this.layout);
+    this.lyrics = new LyricEditor(this.ink, host, () => this.layout, () => this.render());
+    this.marks = new MarkEditor(this.ink, host, () => this.layout, () => this.render());
+    this.title = new TitleEditor(this.ink, host, () => this.layout);
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("pointerup", (e) => this.up(e));
@@ -88,29 +93,34 @@ export class ScoreView {
   /** 五线谱间距（px）和纸面宽（px）：触屏 11、鼠标 10 一格（× 这张纸的谱大小 / 默认档——谱小了一格就小、纸的宽度不变）；纸的版心放得下 = 严格按纸（纸居中、四周是桌面），
    *  放不下（手机）：默认不折行 = 整张纸按比例缩小；选了「折行」= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
    *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
-  private frame(): { sp: number; width: number; strict: boolean } {
+  private frame(): { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null } {
     const st = this.host.get(), paper = st.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
     const base = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
-    const want = Math.ceil(lineSp(paper) * base);
-    if (avail > 0 && want <= avail) return { sp: base, width: want, strict: true };
+    // 分页：整页（版心 + 左右边距）要放得下；页高 / 边距按这张纸算（sp）
+    const mm = spMm(paper), m = paper.marginMm, page = this.host.pages?.() ? { h: paper.heightMm / mm, l: m.l / mm, r: m.r / mm, t: m.t / mm, b: m.b / mm } : null;
+    const extra = page ? page.l + page.r : 0, want = Math.ceil((lineSp(paper) + extra) * base);
+    if (avail > 0 && want <= avail) return { sp: base, width: Math.ceil(lineSp(paper) * base), strict: true, page };
     // 放不下、不折行（默认；user「纸能不能toggle不折行预览有多宽和折行的两种选项。我其实还是倾向于不折行」
     //   「我现在发现我基本不点五线谱，都是用键盘输入。这样的话其实五线谱只是让你看你在哪里」）：整张纸按比例缩小，行和纸上一样
-    if (avail > 0 && !(this.host.reflow?.() ?? false)) return { sp: (base * avail) / want, width: avail, strict: false };
-    return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail), strict: false };
+    if (avail > 0 && (page || !(this.host.reflow?.() ?? false))) { const sp = (base * avail) / want; return { sp, width: Math.floor(lineSp(paper) * sp), strict: false, page }; }
+    return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail), strict: false, page: null };
   }
 
   render(): void {
-    const st = this.host.get(), { sp, width, strict } = this.frame();
-    this.el.classList.toggle("desk", strict && width < this.el.clientWidth - 1);
-    this.sheet.style.width = strict ? `${width}px` : "";
+    const st = this.host.get(), { sp, width, strict, page } = this.frame();
+    const totalW = width + (page ? (page.l + page.r) * sp : 0);
+    this.el.classList.toggle("desk", (strict && totalW < this.el.clientWidth - 1) || !!page);
+    this.el.classList.toggle("pages", !!page);
+    this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true,
-      autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind] });
+      autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], ...(page ? { page } : {}) });
+    this.ink.style.left = `${this.layout.pageX.left}px`;
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
-    if (!this.boxEl.isConnected) this.sheet.appendChild(this.boxEl);
+    if (!this.boxEl.isConnected) this.ink.appendChild(this.boxEl);
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
@@ -137,8 +147,8 @@ export class ScoreView {
 
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
   private local(e: { clientX: number; clientY: number }): { x: number; y: number } {
-    const r = this.sheet.getBoundingClientRect();
-    return { x: (e.clientX - r.left) / this.zoom, y: (e.clientY - r.top) / this.zoom };
+    const r = this.sheet.getBoundingClientRect(), ox = this.layout?.pageX.left ?? 0;
+    return { x: (e.clientX - r.left) / this.zoom - ox, y: (e.clientY - r.top) / this.zoom };
   }
   /** 放大 / 缩小到 z（1 = 原大，最多 5 倍）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
   private setZoom(z: number, anchor: { x: number; y: number; cx: number; cy: number } | null): void {
@@ -173,8 +183,8 @@ export class ScoreView {
   private down(e: PointerEvent): void {
     if ((e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input")) return;   // 在歌词框 / 记号框里点：交给它们
     const L = this.layout; if (!L) return;
+    const p = this.local(e);   // 先算纸面坐标再拿焦点：focus 可能连带滚一下（分页时光标那行在页外），坐标就错了（2026-10-08 E2E 抓到）
     this.el.focus({ preventScroll: true });   // 点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）
-    const p = this.local(e);
     if (e.pointerType === "touch") {   // 手指：拖 = 滚动；不动 = 和笔一样的轻点；第二根手指落下 = 捏合缩放 / 双指平移
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       this.el.setPointerCapture(e.pointerId);
@@ -202,8 +212,11 @@ export class ScoreView {
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     if (wasMark) { this.host.focus?.("staff"); return true; }   // 点别处 = 先收起记号框（这一下不另做事）
     const L = this.layout ?? L0, sp = L.sp;
-    // 0. 纸右上角的小钮（纸张）
+    // 0. 纸右上角的小钮（纸张）、旁边的「＋」、歌名左边的「‹ ›」——都在歌名那一条里，先于歌名判
     if (this.inBox(L.paperChip, x, y)) { this.host.onPaper?.(); return true; }
+    if (this.inBox(L.addPaper, x, y)) { this.host.onAddPaper?.(); return true; }
+    if (this.inBox(L.nav?.prev, x, y)) { this.host.onNav?.(-1); return true; }
+    if (this.inBox(L.nav?.next, x, y)) { this.host.onNav?.(1); return true; }
     // 0⅙. 作词 / 作曲（标题下面靠右）
     if (this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌
@@ -216,7 +229,6 @@ export class ScoreView {
       if (this.inBox(pp.menu, x, y)) { this.host.onPaperMenu?.(pp.id); return true; }
       if (pp.title.shown && this.inBox(pp.title, x, y)) { this.title.openNow(pp.id); this.host.focus?.("text"); return true; }
     }
-    if (this.inBox(L.addPaper, x, y)) { this.host.onAddPaper?.(); return true; }
     const row = this.rowAt(y); if (row < 0) return false;
     // 0½. 记号（调号 / 拍号 / 速度）：换到那条 track 再开框
     const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);

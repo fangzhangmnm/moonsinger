@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.5.0-2026-10-08";
+var APP_VERSION = "v0.5.1-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -114,11 +114,11 @@ var DENSITIES = [{ id: "cozy", label: "\u8212\u9002", note: "\u8C31\u5927\u3001\
 var densityOf = (p) => p.density ?? "cozy";
 var staffMmOf = (p) => p.staffMm ?? (densityOf(p) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
 var spMm = (p) => staffMmOf(p) / 4;
-var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A3: { w: 297, h: 420, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
-var PAPER_KINDS = ["A3L", "A3", "A4", "A5", "A6"];
+var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
+var PAPER_KINDS = ["A3L", "A4", "A5", "A6"];
 var DEFAULT_PAPER = "A5";
-var PAPER_NOTE = { A3L: "\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F", A3: "\u5927\u5F20", A4: "\u6B63\u7ECF\u7EB8", A5: "\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09", A6: "\u53E3\u888B\u672C" };
-var PAPER_LABEL = { A3L: "A3 \u6A2A", A3: "A3", A4: "A4", A5: "A5", A6: "A6" };
+var PAPER_NOTE = { A3L: "\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F", A4: "\u6B63\u7ECF\u7EB8", A5: "\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09", A6: "\u53E3\u888B\u672C" };
+var PAPER_LABEL = { A3L: "A3 \u6A2A", A4: "A4", A5: "A5", A6: "A6" };
 function paperOf(kind, density = "cozy") {
   const s = SIZES[kind];
   return { kind, widthMm: s.w, heightMm: s.h, marginMm: { l: s.m, r: s.m, t: s.m, b: s.m }, ...density === "compact" ? { density } : {} };
@@ -216,6 +216,7 @@ var DEFAULT_UNIT = 2;
 var TUPLET = { 3: [2, 3], 5: [4, 5], 6: [4, 6], 7: [4, 7] };
 var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
+var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
 var DEFAULT_TIME = { beats: 4, beatType: 4 };
 var DEFAULT_BPM = 90;
@@ -771,6 +772,61 @@ function movePaper(st2, paperId, d2) {
   [list[k], list[j]] = [list[j], list[k]];
   return { ...st2, song: { ...st2.song, papers: list } };
 }
+function setPartClef(st2, partId, clef) {
+  const p = st2.song.parts.find((x) => x.id === partId);
+  if (!p || (p.clef ?? "G") === clef) return st2;
+  const np = { ...p };
+  if (clef === "G") delete np.clef;
+  else np.clef = clef;
+  return { ...st2, song: { ...st2.song, parts: st2.song.parts.map((x) => x.id === partId ? np : x) } };
+}
+function autoStaffs(tokens, staves) {
+  let last = 1;
+  return tokens.map((t, i) => {
+    if (staves !== 2) return 1;
+    if (t.kind === "note") last = midiOf(effectivePitch(tokens, i)) < SPLIT_MIDI ? 2 : 1;
+    return last;
+  });
+}
+function staffOfTokens(tokens, staves) {
+  const auto = autoStaffs(tokens, staves);
+  let last = 1;
+  return tokens.map((t, i) => {
+    if (staves !== 2) return 1;
+    const s = (t.kind === "note" || t.kind === "rest") && t.staff ? t.staff : t.kind === "note" ? auto[i] : last;
+    last = s;
+    return s;
+  });
+}
+function setPartStaves(st2, partId, n2) {
+  const p = st2.song.parts.find((x) => x.id === partId);
+  if (!p || (p.staves ?? 1) === n2) return st2;
+  const np = { ...p };
+  if (n2 === 1) delete np.staves;
+  else np.staves = 2;
+  return { ...st2, song: { ...st2.song, parts: st2.song.parts.map((x) => x.id === partId ? np : x) } };
+}
+function toggleStaff(st2, staves) {
+  if (staves !== 2) return st2;
+  const toks = tr(st2), targets = [];
+  if (st2.sel) {
+    for (let i = st2.sel.from; i < st2.sel.to; i++) if (isTimed(toks[i])) targets.push(i);
+  } else {
+    const i = currentIndex(st2);
+    if (i >= 0) targets.push(i);
+  }
+  if (!targets.length) return st2;
+  const auto = autoStaffs(toks, 2), nt = toks.slice();
+  for (const i of targets) {
+    const t = nt[i];
+    if (t.staff) {
+      const c = { ...t };
+      delete c.staff;
+      nt[i] = c;
+    } else nt[i] = { ...t, staff: auto[i] === 1 ? 2 : 1 };
+  }
+  return next(st2, nt);
+}
 function setPaperName(st2, paperId, name) {
   const t = name.trim(), p = st2.song.papers.find((x) => x.id === paperId);
   if (!p || p.name === t) return st2;
@@ -872,6 +928,8 @@ function apply(st2, c, now = Date.now()) {
     // setCaret 自己夹到谱头后面
     case "end":
       return setCaret(st2, tr(st2).length);
+    case "staff":
+      return toggleStaff(st2, 2);
     case "escape":
       return escape(st2);
     case "backspace":
@@ -1268,6 +1326,8 @@ var GLYPH = {
   metNoteQuarterUp: "\uECA5",
   // 速度记号里的四分音符（metronome mark）
   gClef: "\uE050",
+  fClef: "\uE062",
+  // 低音谱号（2026-10-08）
   noteheadWhole: "\uE0A2",
   noteheadHalf: "\uE0A3",
   noteheadBlack: "\uE0A4",
@@ -1296,6 +1356,7 @@ var W = {
   noteheadHalf: 1.18,
   noteheadWhole: 1.688,
   gClef: 2.684,
+  fClef: 2.736,
   sharp: 0.996,
   flat: 0.904,
   natural: 0.672,
@@ -1334,10 +1395,11 @@ var BAR_W = 1.6;
 var TITLE_H = 4.6;
 var PAPER_H = 3.4;
 var PAPER_GAP = 1.6;
-var ADD_H = 3.2;
+var STUB_H = 2.4;
 var SPACING = {
-  cozy: { staffAbove: 6, rowH: 17, rowHNoLyric: 17, lyricBelow: 5.2, sysGap: 1.5 },
-  compact: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, lyricBelow: 4.4, sysGap: 0.4 }
+  cozy: { staffAbove: 6, rowH: 17, rowHNoLyric: 17, graveUpper: 11.5, lyricBelow: 5.2, sysGap: 1.5 },
+  // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
+  compact: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 }
 };
 var TOP_LINE = 38;
 var MID_LINE = 34;
@@ -1395,12 +1457,12 @@ function unitsOf(tokens, o) {
   let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0;
   let beat = beatTicks(time.beats, time.beatType), len = measureLen2(time.beats, time.beatType);
   const pushHead = () => {
-    units.push({ kind: "head", index: -1, w: 0, x: 0, system: 0, tick });
+    units.push({ kind: "head", index: -1, w: 0, x: 0, system: 0, tick, staff: 1 });
   };
   const pushBar = (index, auto) => {
     const warn = inBar !== len && measureNo > 0;
     if (warn) shortBars++;
-    units.push({ kind: "bar", index, w: BAR_W, x: 0, system: 0, tick, warn, auto });
+    units.push({ kind: "bar", index, w: BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto });
     accState = /* @__PURE__ */ new Map();
     inBar = 0;
     measureNo++;
@@ -1420,21 +1482,21 @@ function unitsOf(tokens, o) {
     }
     if (t.kind === "key") {
       flushFull();
-      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: keyWidth(t.fifths, fifths), x: 0, system: 0, tick });
+      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1 });
       fifths = t.fifths;
       accState = /* @__PURE__ */ new Map();
       return;
     }
     if (t.kind === "time") {
       if (o.autoBars && inBar > 0) pushBar(-1, true);
-      units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: timeWidth(t.beats, t.beatType) + 1.2, x: 0, system: 0, tick });
+      units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: timeWidth(t.beats, t.beatType) + 1.2, x: 0, system: 0, tick, staff: 1 });
       beat = beatTicks(t.beats, t.beatType);
       len = measureLen2(t.beats, t.beatType);
       return;
     }
     if (t.kind === "tempo") {
       flushFull();
-      units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0, tick });
+      units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     const isNote = t.kind === "note", nt = t;
@@ -1481,7 +1543,8 @@ function unitsOf(tokens, o) {
           accW,
           x: 0,
           system: 0,
-          tick: tick + off
+          tick: tick + off,
+          staff: 1
         };
         units.push(u);
         lastChunk = u;
@@ -1501,26 +1564,49 @@ function unitsOf(tokens, o) {
 function engrave(song, o) {
   const sp = o.sp, P = (v) => v * sp;
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
+  const PG = o.page ?? null, PAGE_GAP = 3;
+  const pageTopY = (k) => P(k * ((PG?.h ?? 0) + PAGE_GAP));
+  const contentTop = (k) => pageTopY(k) + P(PG?.t ?? 0), contentBottom = (k) => pageTopY(k) + P((PG?.h ?? 0) - (PG?.b ?? 0));
+  let pageNo = 0;
+  const TOP = PG ? P(PG.t) : 0;
   const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow, SYS_GAP = SPC.sysGap;
   const prims = [];
   const sel = o.sel ?? null, writing = !sel, autoBars2 = o.autoBars !== false;
   const right = o.width / sp - MARGIN;
   const PART_EM = LYRIC_EM * 0.85;
   const nameW = (s) => o.measureLyric(s) * PART_EM / LYRIC_EM / sp;
-  const titleSize = P(1.9), titleBase = P(TITLE_H * 0.62);
+  const titleSize = P(1.9), titleBase = TOP + P(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "\u6B4C\u540D", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
-  let paperChip = null;
+  let paperChip = null, addPaper2 = null, nav = null;
   if (o.paperLabel) {
-    const ch = P(2.2), cw = ch, cx = o.width - P(MARGIN) - cw, cy = P(0.9), is = P(1.5);
+    const ch = P(2.2), cw = ch, cx = o.width - P(MARGIN) - cw, cy = TOP + P(0.9), is = P(1.5);
     prims.push({ t: "rect", x: cx, y: cy, w: cw, h: ch, cls: "paper-chip" });
     prims.push({ t: "icon", id: "wrench", x: cx + (cw - is) / 2, y: cy + (ch - is) / 2, size: is, cls: "paper-chip-icon", title: `\u7EB8\uFF1A${o.paperLabel}` });
     paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
+    if (o.titlePlaceholder) {
+      const ax = cx - cw - P(0.5);
+      prims.push({ t: "rect", x: ax, y: cy, w: cw, h: ch, cls: "paper-chip" });
+      prims.push({ t: "text", x: ax + cw / 2, y: cy + ch * 0.74, s: "\uFF0B", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+      addPaper2 = { x: ax - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
+    }
   }
-  const title = { x: P(MARGIN), y: P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
+  if (song.papers.length > 1) {
+    const k = Math.max(0, song.papers.findIndex((p) => p.id === o.at.paper)), ch = P(2.2), cw = P(2.2), cy = TOP + P(0.9);
+    const x0 = P(MARGIN);
+    prims.push({ t: "rect", x: x0, y: cy, w: cw, h: ch, cls: k > 0 ? "paper-chip" : "paper-chip off" });
+    prims.push({ t: "text", x: x0 + cw / 2, y: cy + ch * 0.72, s: "\u2039", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+    const lab = `${k + 1}/${song.papers.length}`, lw = o.measureLyric(lab) * 1.1 / LYRIC_EM + P(0.8);
+    prims.push({ t: "text", x: x0 + cw + lw / 2, y: cy + ch * 0.7, s: lab, cls: "nav-text", size: P(1.1), anchor: "middle" });
+    const x1 = x0 + cw + lw;
+    prims.push({ t: "rect", x: x1, y: cy, w: cw, h: ch, cls: k < song.papers.length - 1 ? "paper-chip" : "paper-chip off" });
+    prims.push({ t: "text", x: x1 + cw / 2, y: cy + ch * 0.72, s: "\u203A", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+    nav = { prev: k > 0 ? { x: x0 - P(0.4), y: cy - P(0.4), w: cw + P(0.8), h: ch + P(0.8) } : null, next: k < song.papers.length - 1 ? { x: x1 - P(0.4), y: cy - P(0.4), w: cw + P(0.8), h: ch + P(0.8) } : null };
+  }
+  const title = { x: P(MARGIN), y: TOP + P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
   const lines = song.credits ? song.credits.split("\n") : [];
   let credits = null;
-  const cs = P(1.25), rx = o.width - P(MARGIN), y0 = P(TITLE_H + 1);
+  const cs = P(1.25), rx = o.width - P(MARGIN), y0 = TOP + P(TITLE_H + 1);
   if (lines.length) {
     lines.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: "credits", size: cs, anchor: "end" }));
     const w = Math.max(...lines.map((s) => o.measureLyric(s) * 1.25 / LYRIC_EM)) + P(0.6);
@@ -1531,7 +1617,13 @@ function engrave(song, o) {
     credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.75 };
   }
   const headExtra = Math.max(0, lines.length - 2) * 1.25 * 1.35;
-  let yCur = P(TITLE_H + headExtra + 0.5);
+  let yCur = TOP + P(TITLE_H + headExtra + 0.5);
+  const ensure = (h) => {
+    if (PG && yCur + h > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) {
+      pageNo++;
+      yCur = contentTop(pageNo);
+    }
+  };
   const rows = [], notes = [], slots = [], lyrics = [], marks = [];
   const partsHit = [], papersHit = [];
   let head = null, shortBars = 0;
@@ -1557,18 +1649,23 @@ function engrave(song, o) {
     prims.push({ t: "text", x: P(gx + 1.3), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
     marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - P(TEMPO_EM * 1.1), w: P(gx + 1.3 + nw + 0.6 - x0), h: P(TEMPO_EM * 1.5) });
   };
-  const drawKeySig = (r, x0, f, cls) => {
-    const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat;
-    for (let k = 0; k < Math.abs(f); k++) prims.push({ t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k]), ch, cls });
+  const drawKeySig = (r, x0, f, cls, clef = "G") => {
+    const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
+    for (let k = 0; k < Math.abs(f); k++) prims.push({ t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
   };
   const showPaperLine = song.papers.length > 1 || song.papers.some((p) => p.name);
   song.papers.forEach((paper, pk) => {
     if (pk > 0) yCur += P(PAPER_GAP);
     const paperTop = yCur;
-    const pSize = P(1.6), pBase = yCur + P(PAPER_H * 0.68);
+    const pSize = P(1.6);
     let menu = null;
-    const pTitle = { x: P(MARGIN), y: yCur, w: o.width - P(2 * MARGIN) - P(4), h: P(PAPER_H), baseline: pBase, size: pSize, shown: showPaperLine };
-    if (showPaperLine) {
+    const pTitle = { x: P(MARGIN), y: yCur, w: o.width - P(2 * MARGIN) - P(4), h: P(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };
+    const drawPaperTitle = (firstBlock) => {
+      if (!showPaperLine) return;
+      ensure(P(PAPER_H) + firstBlock);
+      const pBase = yCur + P(PAPER_H * 0.68);
+      pTitle.y = yCur;
+      pTitle.baseline = pBase;
       if (paper.name) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });
       else if (o.titlePlaceholder) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: "\u66F2\u6BB5\u540D", cls: "paper-name empty", size: pSize, anchor: "start" });
       if (o.titlePlaceholder) {
@@ -1578,19 +1675,42 @@ function engrave(song, o) {
         menu = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
       }
       yCur += P(PAPER_H);
-    }
-    const parts = o.parts.filter((p) => paper.tracks[p.id]);
+    };
+    const present = o.parts.filter((p) => paper.tracks[p.id]), parts = present.filter((p) => !p.hidden), hiddenParts = present.filter((p) => p.hidden);
+    const stubs = () => {
+      for (const p of hiddenParts) {
+        ensure(P(STUB_H));
+        prims.push({ t: "text", x: P(MARGIN), y: yCur + P(STUB_H * 0.7), s: `${p.name} \xB7 \u9690\u85CF`, cls: "part-stub", size: P(1.1), anchor: "start" });
+        prims.push({ t: "line", x1: P(MARGIN + 0.2) + o.measureLyric(`${p.name} \xB7 \u9690\u85CF`) * 1.1 / LYRIC_EM + P(0.8), y1: yCur + P(STUB_H * 0.5), x2: P(right), y2: yCur + P(STUB_H * 0.5), w: P(0.08), cls: "part-stub-line" });
+        partsHit.push({ paper: paper.id, part: p.id, x: P(MARGIN - 0.4), y: yCur, w: P(right - MARGIN + 0.4), h: P(STUB_H) });
+        yCur += P(STUB_H);
+      }
+    };
     if (!parts.length) {
-      prims.push({ t: "text", x: P(MARGIN), y: yCur + P(2.2), s: "\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709\u663E\u793A\u7684\u58F0\u90E8\uFF09", cls: "paper-name empty", size: P(1.3), anchor: "start" });
-      yCur += P(3.2);
+      drawPaperTitle(P(hiddenParts.length ? STUB_H : 3.2));
+      if (!hiddenParts.length) {
+        prims.push({ t: "text", x: P(MARGIN), y: yCur + P(2.2), s: "\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709\u58F0\u90E8\uFF09", cls: "paper-name empty", size: P(1.3), anchor: "start" });
+        yCur += P(3.2);
+      }
+      stubs();
       papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur });
       return;
     }
     const per = parts.map((p) => {
-      const tokens = paper.tracks[p.id], focused = o.at.paper === paper.id && o.at.part === p.id;
+      const tokens = paper.tracks[p.id], focused = o.at.paper === paper.id && o.at.part === p.id, staves = p.staves === 2 ? 2 : 1;
       const u = unitsOf(tokens, { caret: focused && writing ? o.caret : null, autoBars: autoBars2, measureLyric: o.measureLyric, sp });
       shortBars += u.shortBars;
-      return { p, tokens, focused, ...u };
+      if (staves === 2) {
+        const stf = staffOfTokens(tokens, 2);
+        let last = 1;
+        for (const x2 of u.units) {
+          if (x2.kind === "chunk") {
+            x2.staff = stf[x2.index];
+            last = x2.staff;
+          } else if (x2.kind === "head") x2.staff = last;
+        }
+      }
+      return { p, tokens, focused, staves, ...u };
     });
     const colMap = /* @__PURE__ */ new Map();
     for (const q of per) {
@@ -1615,9 +1735,10 @@ function engrave(song, o) {
     const breakableAt = (tick) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
     const ind0 = Math.max(...parts.map((p) => nameW(p.name))) + 1.4;
     const keyNow = new Map(per.map((q) => [q.p.id, q.head.key]));
+    const clefW = (p) => p.clef === "F" || p.staves === 2 ? W.fClef : W.gClef;
     const headerOf = (first) => Math.max(...per.map((q) => {
       const f = keyNow.get(q.p.id);
-      return (first ? ind0 : 0) + MARGIN + 0.6 + W.gClef + 1 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
+      return (first ? ind0 : 0) + MARGIN + 0.6 + clefW(q.p) + 1 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
     }));
     let system = 0, x = headerOf(true);
     const sysStarts = [x], sysKeys = [new Map(keyNow)];
@@ -1684,46 +1805,68 @@ function engrave(song, o) {
       }
     }
     const rowBase = rows.length, nR = parts.length;
-    const rowOf = (s, r) => rowBase + s * nR + r;
-    const rowH = per.map((q) => q.tokens.some((t) => t.kind === "note" && t.lyric) ? SPC.rowH : SPC.rowHNoLyric);
+    const rowStart = per.map((_, i) => per.slice(0, i).reduce((a, q) => a + q.staves, 0)), nRowsSys = per.reduce((a, q) => a + q.staves, 0);
+    const rowOf = (s, r, k = 0) => rowBase + s * nRowsSys + rowStart[r] + k;
+    const rowH = per.map((q) => {
+      const ly = q.tokens.some((t) => t.kind === "note" && t.lyric) ? SPC.rowH : SPC.rowHNoLyric;
+      return q.staves === 2 ? [SPC.graveUpper, ly] : [ly];
+    });
+    const sysH = P(rowH.flat().reduce((a, b) => a + b, 0) + SYS_GAP);
+    drawPaperTitle(sysH);
     for (let s = 0; s < nSys; s++) {
-      for (let r = 0; r < nR; r++) {
+      ensure(sysH);
+      for (let r = 0; r < nR; r++) for (let k = 0; k < per[r].staves; k++) {
         const top = yCur;
-        rowTop.set(rowOf(s, r), top);
-        rows.push({ top, staffTop: top + P(STAFF_ABOVE), bottom: top + P(rowH[r]), paper: paper.id, part: parts[r].id, sys: s });
-        yCur += P(rowH[r]);
+        rowTop.set(rowOf(s, r, k), top);
+        rows.push({ top, staffTop: top + P(STAFF_ABOVE), bottom: top + P(rowH[r][k]), paper: paper.id, part: parts[r].id, sys: s, staff: k + 1 });
+        yCur += P(rowH[r][k]);
       }
       yCur += P(SYS_GAP);
     }
     for (let s = 0; s < nSys; s++) {
       const ind = s === 0 ? ind0 : 0;
       per.forEach((q, r) => {
-        const row = rowOf(s, r), f = sysKeys[s].get(q.p.id) ?? q.head.key;
-        for (let k = 0; k < 5; k++) {
-          const y = yOf(row, BOTTOM_LINE + 2 * k);
-          prims.push({ t: "line", x1: P(MARGIN + ind), y1: y, x2: P(right), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" });
+        const f = sysKeys[s].get(q.p.id) ?? q.head.key;
+        for (let k = 0; k < q.staves; k++) {
+          const row = rowOf(s, r, k), clef = q.staves === 2 ? k ? "F" : "G" : q.p.clef ?? "G";
+          for (let L = 0; L < 5; L++) {
+            const y = yOf(row, BOTTOM_LINE + 2 * L);
+            prims.push({ t: "line", x1: P(MARGIN + ind), y1: y, x2: P(right), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" });
+          }
+          let hx = MARGIN + ind + 0.6;
+          prims.push({ t: "glyph", x: P(hx), y: yOf(row, clef === "F" ? 36 : 32), ch: clef === "F" ? GLYPH.fClef : GLYPH.gClef, cls: "clef" });
+          hx += clefW(q.p) + 1;
+          drawKeySig(row, hx, f, "keysig", clef);
+          hx += Math.abs(f) * 1.05;
+          if (s === 0) {
+            if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(MARGIN + ind + 0.3), ...staffHit(row), w: P(hx - MARGIN - ind) });
+            if (f) hx += 0.8;
+            const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
+            if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
+            if (k === 0 && q.p.first && q.head.idx.tempo !== void 0) drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", q.head.idx.tempo);
+          }
         }
-        let hx = MARGIN + ind + 0.6;
-        prims.push({ t: "glyph", x: P(hx), y: yOf(row, 32), ch: GLYPH.gClef, cls: "clef" });
-        hx += W.gClef + 1;
-        drawKeySig(row, hx, f, "keysig");
-        hx += Math.abs(f) * 1.05;
         if (s === 0) {
-          if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(MARGIN + ind + 0.3), ...staffHit(row), w: P(hx - MARGIN - ind) });
-          if (f) hx += 0.8;
-          const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
-          if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
-          if (q.p.first && q.head.idx.tempo !== void 0) drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", q.head.idx.tempo);
-          prims.push({ t: "text", x: P(MARGIN), y: yOf(row, MID_LINE) + P(0.55 * PART_EM), s: q.p.name, cls: q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name", size: PART_EM * sp, anchor: "start" });
-          partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(row, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(row, BOTTOM_LINE) - yOf(row, TOP_LINE) + P(2.4) });
+          const r0 = rowOf(s, r, 0), r1 = rowOf(s, r, q.staves - 1), ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM);
+          prims.push({ t: "text", x: P(MARGIN), y: ny, s: q.p.name, cls: q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name", size: PART_EM * sp, anchor: "start" });
+          if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1), anchor: "start" });
+          partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
+        }
+        if (q.staves === 2) {
+          const bx = P(MARGIN + ind - 0.7), y02 = yOf(rowOf(s, r, 0), TOP_LINE), y1 = yOf(rowOf(s, r, 1), BOTTOM_LINE);
+          prims.push({ t: "path", d: `M${bx + P(0.5)},${y02}Q${bx - P(0.3)},${y02 + P(0.6)} ${bx},${(y02 + y1) / 2}Q${bx - P(0.3)},${y1 - P(0.6)} ${bx + P(0.5)},${y1}`, cls: "brace" });
         }
       });
-      if (nR > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: yOf(rowOf(s, 0), TOP_LINE), x2: P(MARGIN + ind), y2: yOf(rowOf(s, nR - 1), BOTTOM_LINE), w: P(ENGRAVE.thinBar * 1.4), cls: "bar" });
+      if (nRowsSys > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: yOf(rowOf(s, 0, 0), TOP_LINE), x2: P(MARGIN + ind), y2: yOf(rowOf(s, nR - 1, per[nR - 1].staves - 1), BOTTOM_LINE), w: P(ENGRAVE.thinBar * 1.4), cls: "bar" });
     }
     per.forEach((q, r) => {
       const tokens = q.tokens, units = q.units, focused = q.focused;
+      const clefOf = (staff) => q.staves === 2 ? staff === 2 ? "F" : "G" : q.p.clef ?? "G";
+      const shOf = (staff) => clefOf(staff) === "F" ? 12 : 0;
+      const dIdx = (p, staff) => diatonicIndex(p) + shOf(staff);
       const inSel = (i) => focused && !!sel && i >= sel.from && i < sel.to;
-      const RW = (u) => rowOf(u.system, r);
+      const RW = (u) => rowOf(u.system, r, u.staff - 1);
+      const lyricRow = (s) => rowOf(s, r, q.staves - 1);
       if (focused && sel) {
         const byS = /* @__PURE__ */ new Map();
         for (const u of units) {
@@ -1732,7 +1875,7 @@ function engrave(song, o) {
           const a = u.x, b = u.x + u.w;
           byS.set(u.system, rr ? [Math.min(rr[0], a), Math.max(rr[1], b)] : [a, b]);
         }
-        for (const [s, [a, b]] of byS) prims.push({ t: "rect", x: P(a), y: yOf(rowOf(s, r), 44), w: P(b - a), h: lyricY(rowOf(s, r)) + P(0.8) - yOf(rowOf(s, r), 44), cls: "selbox" });
+        for (const [s, [a, b]] of byS) prims.push({ t: "rect", x: P(a), y: yOf(rowOf(s, r, 0), 44), w: P(b - a), h: lyricY(lyricRow(s)) + P(0.8) - yOf(rowOf(s, r, 0), 44), cls: "selbox" });
       }
       const curIndex = (() => {
         if (!focused || !writing) return -1;
@@ -1752,7 +1895,7 @@ function engrave(song, o) {
           if (c.dotted) prims.push({ t: "glyph", x: P(c.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
           return;
         }
-        const d2 = diatonicIndex(c.pitch), y = yOf(row, d2), x0 = nhX(c);
+        const d2 = dIdx(c.pitch, c.staff), y = yOf(row, d2), x0 = nhX(c);
         if (c.acc !== null) {
           const ag = c.acc === 1 ? GLYPH.accidentalSharp : c.acc === -1 ? GLYPH.accidentalFlat : c.acc === 2 ? GLYPH.accidentalDoubleSharp : c.acc === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
           prims.push({ t: "glyph", x: P(c.x + 0.2), y, ch: ag, cls });
@@ -1762,9 +1905,9 @@ function engrave(song, o) {
         const ng = c.base >= WHOLE ? GLYPH.noteheadWhole : c.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
         prims.push({ t: "glyph", x: x0, y, ch: ng, cls: cls ? `note ${cls}` : "note" });
         if (c.dotted) prims.push({ t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(row, d2 % 2 === 0 ? d2 + 1 : d2), ch: GLYPH.augmentationDot, cls });
-        if (c.j === 0) notes.push({ index: c.index, system: row, x: x0, y, w: nhW(c), d: d2 });
+        if (c.j === 0) notes.push({ index: c.index, system: row, x: x0, y, w: nhW(c), d: diatonicIndex(c.pitch) });
         if (c.j === 0 && !c.tie) {
-          const ly = lyricY(row), cx = x0 + nhW(c) / 2;
+          const ly = lyricY(lyricRow(c.system)), cx = x0 + nhW(c) / 2;
           partLyrics.push({ index: c.index, system: row, x: cx, y: ly });
           if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly, x2: x0 + nhW(c) + P(0.4), y2: ly, w: P(0.12), cls: "melisma" });
           else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: lyricShow(c.lyric), cls: cls ? `lyric ${cls}` : "lyric" });
@@ -1777,26 +1920,27 @@ function engrave(song, o) {
           prims.push({ t: "line", x1: P(u.x + 0.1), y1: yOf(row, 42), x2: P(u.x + 0.1), y2: yOf(row, 26), w: P(0.16), cls: "caret" });
           continue;
         }
-        if (u.kind === "bar") {
-          const bx = P(u.x + 0.7);
-          prims.push({ t: "line", x1: bx, y1: yOf(row, TOP_LINE), x2: bx, y2: yOf(row, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: u.auto ? "bar auto" : inSel(u.index) ? "bar sel" : "bar" });
-          if (u.warn) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(row, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn" });
-          continue;
-        }
-        if (u.kind === "key") {
-          const cls = inSel(u.index) ? "keysig sel" : "keysig";
-          if (u.fifths === 0) {
-            const pos = u.prev > 0 ? SHARP_POS : FLAT_POS;
-            for (let k = 0; k < Math.abs(u.prev); k++) prims.push({ t: "glyph", x: P(u.x + 0.4 + k * 0.8), y: yOf(row, pos[k]), ch: GLYPH.accidentalNatural, cls });
-          } else drawKeySig(row, u.x + 0.4, u.fifths, cls);
-          if (u.fifths === 0 && u.prev === 0) prims.push({ t: "text", x: P(u.x + 0.2), y: staffTop(row) - P(0.8), s: `1=${KEY_LABEL[0]}`, cls: `${cls} key-label`, size: TEMPO_EM * sp * 0.85, anchor: "start" });
-          marks.push({ index: u.index, kind: "key", system: row, x: P(u.x), ...staffHit(row), w: P(Math.max(u.w, 1.6)) });
-          continue;
-        }
-        if (u.kind === "time") {
-          const cls = inSel(u.index) ? "timesig sel" : "timesig";
-          drawTime(row, u.x + 0.6, u.beats, u.beatType, cls);
-          marks.push({ index: u.index, kind: "time", system: row, x: P(u.x), ...staffHit(row), w: P(u.w) });
+        if (u.kind === "bar" || u.kind === "key" || u.kind === "time") {
+          for (let k = 0; k < q.staves; k++) {
+            const rr = rowOf(u.system, r, k), clef = clefOf(k + 1), sh = shOf(k + 1);
+            if (u.kind === "bar") {
+              const bx = P(u.x + 0.7);
+              prims.push({ t: "line", x1: bx, y1: yOf(rr, TOP_LINE), x2: bx, y2: yOf(rr, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: u.auto ? "bar auto" : inSel(u.index) ? "bar sel" : "bar" });
+              if (u.warn && k === 0) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn" });
+            } else if (u.kind === "key") {
+              const cls = inSel(u.index) ? "keysig sel" : "keysig";
+              if (u.fifths === 0) {
+                const pos = u.prev > 0 ? SHARP_POS : FLAT_POS;
+                for (let j = 0; j < Math.abs(u.prev); j++) prims.push({ t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
+              } else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef);
+              if (u.fifths === 0 && u.prev === 0 && k === 0) prims.push({ t: "text", x: P(u.x + 0.2), y: staffTop(rr) - P(0.8), s: `1=${KEY_LABEL[0]}`, cls: `${cls} key-label`, size: TEMPO_EM * sp * 0.85, anchor: "start" });
+              marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
+            } else {
+              const cls = inSel(u.index) ? "timesig sel" : "timesig";
+              drawTime(rr, u.x + 0.6, u.beats, u.beatType, cls);
+              marks.push({ index: u.index, kind: "time", system: rr, x: P(u.x), ...staffHit(rr), w: P(u.w) });
+            }
+          }
           continue;
         }
         if (u.kind === "tempo") {
@@ -1822,14 +1966,14 @@ function engrave(song, o) {
           endGroup();
           continue;
         }
-        const s = { c: u, x0: nhX(u), y: yOf(RW(u), diatonicIndex(u.pitch)), d: diatonicIndex(u.pitch) };
+        const s = { c: u, x0: nhX(u), y: yOf(RW(u), dIdx(u.pitch, u.staff)), d: dIdx(u.pitch, u.staff) };
         if (u.base > TPQ / 2) {
           endGroup();
           stemmed.push([s]);
           continue;
         }
         const beat = Math.floor(u.inBar / u.beat);
-        if (group.length && (beat !== groupBeat || u.system !== groupSys)) endGroup();
+        if (group.length && (beat !== groupBeat || u.system !== groupSys || u.staff !== group[0].c.staff)) endGroup();
         group.push(s);
         groupBeat = beat;
         groupSys = u.system;
@@ -1891,8 +2035,8 @@ function engrave(song, o) {
         }
       }
       const tieBetween = (a, b) => {
-        if (a.system !== b.system || !a.pitch || !b.pitch) return;
-        const row = RW(b), d2 = diatonicIndex(b.pitch), below = d2 < MID_LINE, sgn = below ? 1 : -1;
+        if (a.system !== b.system || a.staff !== b.staff || !a.pitch || !b.pitch) return;
+        const row = RW(b), d2 = dIdx(b.pitch, b.staff), below = d2 < MID_LINE, sgn = below ? 1 : -1;
         const y = yOf(row, d2) + sgn * P(0.8), xa2 = nhX(a) + nhW(a) * 0.8, xb2 = nhX(b) + nhW(b) * 0.2;
         prims.push({ t: "path", d: `M${xa2},${y}Q${(xa2 + xb2) / 2},${y + sgn * P(1)} ${xb2},${y}`, cls: b.ghost ? "tie ghost" : "tie" });
       };
@@ -1915,7 +2059,7 @@ function engrave(song, o) {
         if (run2.length && run2[0].ratio) {
           const row = RW(run2[0]), n2 = run2[0].ratio[0];
           const xa = nhX(run2[0]), xb = nhX(run2[run2.length - 1]) + nhW(run2[run2.length - 1]);
-          const top = Math.min(...run2.map((c) => Math.min(c.pitch ? yOf(row, diatonicIndex(c.pitch)) : yOf(row, MID_LINE), tipOf.get(c) ?? Infinity)), yOf(row, TOP_LINE)) - P(1.6);
+          const top = Math.min(...run2.map((c) => Math.min(c.pitch ? yOf(row, dIdx(c.pitch, c.staff)) : yOf(row, MID_LINE), tipOf.get(c) ?? Infinity)), yOf(row, TOP_LINE)) - P(1.6);
           const mid = (xa + xb) / 2, gap = P(1);
           prims.push({ t: "path", d: `M${xa},${top + P(0.6)}L${xa},${top}L${mid - gap},${top}M${mid + gap},${top}L${xb},${top}L${xb},${top + P(0.6)}`, cls: "tuplet-bracket" });
           prims.push({ t: "glyph", x: mid - P(0.55), y: top + P(0.55), ch: GLYPH_TUPLET(n2), cls: "tuplet" });
@@ -1927,7 +2071,7 @@ function engrave(song, o) {
       };
       for (const c of realChunks) {
         const rr = c.ratio ? c.ratio.join(":") : null;
-        if (rr !== runRatio || run2.length && c.system !== run2[0].system) closeRun();
+        if (rr !== runRatio || run2.length && (c.system !== run2[0].system || c.staff !== run2[0].staff)) closeRun();
         if (!rr) continue;
         run2.push(c);
         runRatio = rr;
@@ -1941,24 +2085,27 @@ function engrave(song, o) {
       for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
       for (let c = H; c <= tokens.length; c++) {
         const u = c < tokens.length ? firstUnitOf.get(c) : void 0;
-        if (u) slots.push({ caret: c, system: RW(u), x: P(u.x) });
-        else {
-          const last = [...units].reverse().find((v) => v.kind !== "head");
-          slots.push({ caret: c, system: last ? RW(last) : rowOf(0, r), x: last ? P(last.x + last.w) : P(sysStarts[0]) });
-        }
+        const last = u ? null : [...units].reverse().find((v) => v.kind !== "head");
+        const sys = u ? u.system : last ? last.system : 0, x2 = u ? P(u.x) : last ? P(last.x + last.w) : P(sysStarts[0]);
+        for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(sys, r, k), x: x2 });
       }
     });
+    stubs();
     papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur });
   });
-  let addPaper2 = null;
-  if (o.titlePlaceholder) {
-    const h = P(ADD_H), w = Math.min(P(16), o.width - P(2 * MARGIN));
-    prims.push({ t: "rect", x: P(MARGIN), y: yCur, w, h, cls: "add-paper" });
-    prims.push({ t: "text", x: P(MARGIN) + w / 2, y: yCur + h * 0.68, s: "\uFF0B \u65B0\u7684\u7EB8", cls: "add-paper-text", size: P(1.4), anchor: "middle" });
-    addPaper2 = { x: P(MARGIN), y: yCur, w, h };
-    yCur += h;
+  const pages = [];
+  if (PG) {
+    const frames = [];
+    for (let k = 0; k <= pageNo; k++) {
+      const top = pageTopY(k);
+      frames.push({ t: "rect", x: -P(PG.l), y: top, w: o.width + P(PG.l + PG.r), h: P(PG.h), cls: "page" });
+      prims.push({ t: "text", x: o.width / 2, y: top + P(PG.h - PG.b / 2), s: String(k + 1), cls: "page-no", size: P(1.2), anchor: "middle" });
+      pages.push({ top, h: P(PG.h) });
+    }
+    prims.unshift(...frames);
   }
-  return { prims, width: o.width, height: yCur + P(1.5), sp, systems: rows, notes, slots, lyrics, marks, title, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, paperChip, shortBars, lyricY, yOf, dOf };
+  const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(1.5);
+  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, title, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, pageX: { left: P(PG?.l ?? 0), right: P(PG?.r ?? 0) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -1966,7 +2113,8 @@ var esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&
 var n = (v) => (Math.round(v * 100) / 100).toString();
 function toSvg(l, inlineStyle = false) {
   const out = [];
-  out.push(`<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(l.width)}" height="${n(l.height)}" viewBox="0 0 ${n(l.width)} ${n(l.height)}">`);
+  const L = l.pageX?.left ?? 0, R = l.pageX?.right ?? 0, W2 = l.width + L + R;
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W2)}" height="${n(l.height)}" viewBox="${n(-L)} 0 ${n(W2)} ${n(l.height)}">`);
   if (inlineStyle) out.push(`<style>${STANDALONE_CSS}</style>`);
   const fs = n(4 * l.sp), lfs = n(LYRIC_EM * l.sp);
   for (const p of l.prims) {
@@ -2289,7 +2437,7 @@ function openDrum(anchor, cols, o) {
     closed = true;
     box.remove();
     document.removeEventListener("pointerdown", outside, true);
-    removeEventListener("keydown", esc5, true);
+    removeEventListener("keydown", esc6, true);
     if (current === handle) current = null;
     o.onClose?.();
   };
@@ -2301,7 +2449,7 @@ function openDrum(anchor, cols, o) {
     }
     close();
   };
-  const esc5 = (e) => {
+  const esc6 = (e) => {
     if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
@@ -2309,7 +2457,7 @@ function openDrum(anchor, cols, o) {
     }
   };
   setTimeout(() => document.addEventListener("pointerdown", outside, true), 0);
-  addEventListener("keydown", esc5, true);
+  addEventListener("keydown", esc6, true);
   const wheels = cols.map((c, ci) => {
     const col = document.createElement("div");
     col.className = "drum-col";
@@ -2669,6 +2817,9 @@ var ScoreView = class {
     this.boxEl.className = "marquee";
     this.boxEl.hidden = true;
     el.replaceChildren(this.sheet);
+    this.ink = document.createElement("div");
+    this.ink.className = "sheet-ink";
+    this.sheet.appendChild(this.ink);
     this.zoomBtn = document.createElement("button");
     this.zoomBtn.className = "btn zoom-reset";
     this.zoomBtn.type = "button";
@@ -2681,9 +2832,9 @@ var ScoreView = class {
       this.setZoom(1, null);
     });
     el.appendChild(this.zoomBtn);
-    this.lyrics = new LyricEditor(this.sheet, host, () => this.layout, () => this.render());
-    this.marks = new MarkEditor(this.sheet, host, () => this.layout, () => this.render());
-    this.title = new TitleEditor(this.sheet, host, () => this.layout);
+    this.lyrics = new LyricEditor(this.ink, host, () => this.layout, () => this.render());
+    this.marks = new MarkEditor(this.ink, host, () => this.layout, () => this.render());
+    this.title = new TitleEditor(this.ink, host, () => this.layout);
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("pointerup", (e) => this.up(e));
@@ -2700,6 +2851,8 @@ var ScoreView = class {
   }
   layout = null;
   sheet;
+  ink;
+  // 歌词框 / 记号框 / 框选的容器：分页时往右挪到版心（svg 的 viewBox 往左扩了边距）
   ctx = document.createElement("canvas").getContext("2d");
   drag = null;
   finger = null;
@@ -2720,15 +2873,21 @@ var ScoreView = class {
   frame() {
     const st2 = this.host.get(), paper = st2.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
     const base2 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
-    const want = Math.ceil(lineSp(paper) * base2);
-    if (avail > 0 && want <= avail) return { sp: base2, width: want, strict: true };
-    if (avail > 0 && !(this.host.reflow?.() ?? false)) return { sp: base2 * avail / want, width: avail, strict: false };
-    return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base2, avail / 42 * scale)) : base2, width: Math.max(320, avail), strict: false };
+    const mm = spMm(paper), m = paper.marginMm, page = this.host.pages?.() ? { h: paper.heightMm / mm, l: m.l / mm, r: m.r / mm, t: m.t / mm, b: m.b / mm } : null;
+    const extra = page ? page.l + page.r : 0, want = Math.ceil((lineSp(paper) + extra) * base2);
+    if (avail > 0 && want <= avail) return { sp: base2, width: Math.ceil(lineSp(paper) * base2), strict: true, page };
+    if (avail > 0 && (page || !(this.host.reflow?.() ?? false))) {
+      const sp = base2 * avail / want;
+      return { sp, width: Math.floor(lineSp(paper) * sp), strict: false, page };
+    }
+    return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base2, avail / 42 * scale)) : base2, width: Math.max(320, avail), strict: false, page: null };
   }
   render() {
-    const st2 = this.host.get(), { sp, width, strict } = this.frame();
-    this.el.classList.toggle("desk", strict && width < this.el.clientWidth - 1);
-    this.sheet.style.width = strict ? `${width}px` : "";
+    const st2 = this.host.get(), { sp, width, strict, page } = this.frame();
+    const totalW = width + (page ? (page.l + page.r) * sp : 0);
+    this.el.classList.toggle("desk", strict && totalW < this.el.clientWidth - 1 || !!page);
+    this.el.classList.toggle("pages", !!page);
+    this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st2.song.paper ?? paperOf(DEFAULT_PAPER);
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     this.layout = engrave(st2.song, {
@@ -2741,13 +2900,15 @@ var ScoreView = class {
       measureLyric: (s) => this.ctx.measureText(s).width,
       titlePlaceholder: true,
       autoBars: this.host.autoBars?.() ?? true,
-      paperLabel: paper.kind === "other" ? "\u5176\u4ED6\u7EB8" : PAPER_LABEL[paper.kind]
+      paperLabel: paper.kind === "other" ? "\u5176\u4ED6\u7EB8" : PAPER_LABEL[paper.kind],
+      ...page ? { page } : {}
     });
+    this.ink.style.left = `${this.layout.pageX.left}px`;
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg;
     else this.sheet.insertAdjacentHTML("afterbegin", svg);
-    if (!this.boxEl.isConnected) this.sheet.appendChild(this.boxEl);
+    if (!this.boxEl.isConnected) this.ink.appendChild(this.boxEl);
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
@@ -2774,8 +2935,8 @@ var ScoreView = class {
   }
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
   local(e) {
-    const r = this.sheet.getBoundingClientRect();
-    return { x: (e.clientX - r.left) / this.zoom, y: (e.clientY - r.top) / this.zoom };
+    const r = this.sheet.getBoundingClientRect(), ox = this.layout?.pageX.left ?? 0;
+    return { x: (e.clientX - r.left) / this.zoom - ox, y: (e.clientY - r.top) / this.zoom };
   }
   /** 放大 / 缩小到 z（1 = 原大，最多 5 倍）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
   setZoom(z, anchor) {
@@ -2820,8 +2981,8 @@ var ScoreView = class {
     if (e.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input")) return;
     const L = this.layout;
     if (!L) return;
-    this.el.focus({ preventScroll: true });
     const p = this.local(e);
+    this.el.focus({ preventScroll: true });
     if (e.pointerType === "touch") {
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       this.el.setPointerCapture(e.pointerId);
@@ -2857,6 +3018,18 @@ var ScoreView = class {
       this.host.onPaper?.();
       return true;
     }
+    if (this.inBox(L.addPaper, x, y)) {
+      this.host.onAddPaper?.();
+      return true;
+    }
+    if (this.inBox(L.nav?.prev, x, y)) {
+      this.host.onNav?.(-1);
+      return true;
+    }
+    if (this.inBox(L.nav?.next, x, y)) {
+      this.host.onNav?.(1);
+      return true;
+    }
     if (this.inBox(L.credits, x, y)) {
       this.host.focus?.("text");
       this.host.onCredits?.();
@@ -2883,10 +3056,6 @@ var ScoreView = class {
         this.host.focus?.("text");
         return true;
       }
-    }
-    if (this.inBox(L.addPaper, x, y)) {
-      this.host.onAddPaper?.();
-      return true;
     }
     const row = this.rowAt(y);
     if (row < 0) return false;
@@ -3326,7 +3495,7 @@ var Pad = class {
       case "more": {
         const m = this.marksHere(this.host.state()), plus = `<span class="plus">+</span>`;
         const digits = (n2) => [...String(n2)].map((ch) => TS(Number(ch))).join("");
-        return c(`data-mark="key"`, `${plus}1=${KEY_NAMES[m.key] ?? "?"}`, false, "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.time.beats)}</span><span>${digits(m.time.beatType)}</span></span>`, false, "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-autobars="1"`, "\u81EA\u52A8\u5C0F\u8282\u7EBF", this.host.autoBars(), "\u6309\u62CD\u53F7\u81EA\u52A8\u753B\u5C0F\u8282\u7EBF\uFF08\u53EA\u753B\u3001\u4E0D\u8FDB\u6570\u636E\uFF09\uFF1B\u624B\u63D2\u7684\u300C|\u300D= \u4ECE\u90A3\u91CC\u91CD\u65B0\u6570\uFF0C\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\u300C|\u300D") + c(`data-open="layout"`, "\u5E03\u5C40\u2026", false, "\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9") + back;
+        return c(`data-mark="key"`, `${plus}1=${KEY_NAMES[m.key] ?? "?"}`, false, "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.time.beats)}</span><span>${digits(m.time.beatType)}</span></span>`, false, "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c(`data-autobars="1"`, "\u81EA\u52A8\u5C0F\u8282\u7EBF", this.host.autoBars(), "\u6309\u62CD\u53F7\u81EA\u52A8\u753B\u5C0F\u8282\u7EBF\uFF08\u53EA\u753B\u3001\u4E0D\u8FDB\u6570\u636E\uFF09\uFF1B\u624B\u63D2\u7684\u300C|\u300D= \u4ECE\u90A3\u91CC\u91CD\u65B0\u6570\uFF0C\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\u300C|\u300D") + (this.host.staves() === 2 ? c(`data-staff="1"`, "\u6362\u8C31\u8868", false, "\u5927\u8C31\u8868\uFF1A\u521A\u5199\u7684\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u632A\u5230\u53E6\u4E00\u5F20\u8C31\u8868\uFF1B\u518D\u6309\u4E00\u6B21\u56DE\u5230\u6309\u97F3\u9AD8\u81EA\u52A8\u5206") : "") + c(`data-open="layout"`, "\u5E03\u5C40\u2026", false, "\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9") + back;
       }
       case "layout":
         return [
@@ -3364,6 +3533,9 @@ var Pad = class {
     this.on(box, "[data-mark]", (b) => {
       this.back();
       this.host.onInsertMark(b.dataset.mark);
+    });
+    this.on(box, "[data-staff]", () => {
+      this.host.onCommand({ k: "staff" });
     });
     this.on(box, "[data-rows]", (b) => {
       this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows);
@@ -5729,7 +5901,8 @@ function readCredits(root, title) {
   return lines.length ? lines.join("\n") : void 0;
 }
 var tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
-function partMeasures(toks, breaks, first) {
+function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
+  const staffs = staffOfTokens(toks, staves);
   const head = headLen(toks);
   const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
   for (let i = 0; i < head; i++) {
@@ -5748,7 +5921,8 @@ function partMeasures(toks, breaks, first) {
     cur = [];
     ticks = 0;
   };
-  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>`);
+  const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : `<clef><sign>${clef}</sign><line>${clef === "F" ? 4 : 2}</line></clef>`;
+  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time>${clefs}</attributes>`);
   if (first) cur.push(tempoXml(H.bpm));
   let prevHyph = false;
   const syllabic = (t) => {
@@ -5801,6 +5975,7 @@ function partMeasures(toks, breaks, first) {
         x += pitchXml(effectivePitch(toks, i)) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "");
       }
       x += `<voice>1</voice>`;
+      if (staves === 2) x += `<staff>${staffs[i]}</staff>`;
       if (ty) x += `<type>${ty.type}</type>` + "<dot/>".repeat(ty.dots) + (ty.tuplet ? `<time-modification><actual-notes>${ty.tuplet[0]}</actual-notes><normal-notes>${ty.tuplet[1]}</normal-notes></time-modification>` : "");
       if (t.kind === "note") {
         const tieIn = firstPiece ? !!t.tie : true, tieOn = last ? tieOut : true;
@@ -5827,7 +6002,7 @@ function partMeasures(toks, breaks, first) {
 }
 function writeMusicXml(doc2, meta) {
   const paper = doc2.paper ?? paperOf(DEFAULT_PAPER);
-  const built = doc2.parts.map((p, k) => ({ p, ...partMeasures(p.tokens, p.breaks, k === 0) }));
+  const built = doc2.parts.map((p, k) => ({ p, ...partMeasures(p.tokens, p.breaks, k === 0, p.info.clef ?? "G", p.info.staves === 2 ? 2 : 1) }));
   const nMeas = Math.max(0, ...built.map((b) => b.measures.length));
   const manualBars = {}, unwritten = [];
   const bodies = built.map((b) => {
@@ -5912,6 +6087,9 @@ function readMusicXml(xml, hints) {
         if (c.name === "attributes") {
           const d2 = childText(c, "divisions");
           if (d2) divisions = Number(d2);
+          const cl = kid(c, "clef");
+          if (cl && info2.clef === void 0) info2.clef = childText(cl, "sign") === "F" ? "F" : "G";
+          if (Number(childText(c, "staves") ?? "1") >= 2) info2.staves = 2;
           const key = kid(c, "key"), time = kid(c, "time");
           if (key && childText(key, "fifths") !== void 0) {
             const f = Number(childText(key, "fifths"));
@@ -5965,8 +6143,9 @@ function readMusicXml(xml, hints) {
             continue;
           }
           const isRest = !!kid(c, "rest");
+          const stf = childText(c, "staff"), staffOf = stf === "2" ? { staff: 2 } : stf === "1" ? { staff: 1 } : {};
           if (isRest) {
-            mark({ kind: "rest", id: takeId(idAttr) ?? 0, dur });
+            mark({ kind: "rest", id: takeId(idAttr) ?? 0, dur, ...staffOf });
             continue;
           }
           const p = kid(c, "pitch");
@@ -5975,7 +6154,7 @@ function readMusicXml(xml, hints) {
             continue;
           }
           const pitch = { step: childText(p, "step") ?? "C", alter: Number(childText(p, "alter") ?? "0"), octave: Number(childText(p, "octave") ?? "4") };
-          const tok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null };
+          const tok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null, ...staffOf };
           if (kids(c, "tie").some((t) => t.attrs.type === "stop")) tok.tie = true;
           const lyrics = kids(c, "lyric"), ly = lyrics.find((l) => (l.attrs.number ?? "1") === "1") ?? lyrics[0];
           if (lyrics.length > 1) drop("\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD");
@@ -5997,6 +6176,15 @@ function readMusicXml(xml, hints) {
     });
     const tokens = [{ kind: "key", id: 0, fifths: H.fifths }, { kind: "time", id: 0, beats: H.beats, beatType: H.beatType }, { kind: "tempo", id: 0, bpm: H.bpm }, ...body];
     keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
+    if (info2.staves === 2) {
+      const auto = autoStaffs(tokens, 2);
+      tokens.forEach((t, i) => {
+        if ((t.kind === "note" || t.kind === "rest") && t.staff !== void 0) {
+          const keep = t.kind === "note" ? t.staff !== auto[i] : t.staff !== staffOfTokens(tokens.map((x, j) => j === i ? { ...x, staff: void 0 } : x), 2)[i];
+          if (!keep) delete t.staff;
+        }
+      });
+    } else for (const t of tokens) if ((t.kind === "note" || t.kind === "rest") && t.staff !== void 0) delete t.staff;
     return { info: info2, tokens, gotTempo: H.gotTempo };
   });
   const bpm0 = parts[0].tokens[2].bpm;
@@ -6111,16 +6299,18 @@ function saveMxl(a) {
     }
     lounge[part.role] = role;
   }
-  const studio = structuredClone(a.extras.studio ?? { version: FORMAT.studio, mics: [] });
-  const mics = (studio.mics ?? []).slice();
+  const studio2 = structuredClone(a.extras.studio ?? { version: FORMAT.studio, mics: [] });
+  const mics = (studio2.mics ?? []).slice();
   for (const part of song.parts) if (!mics.some((m) => m.id === part.mic)) mics.push({ id: part.mic, name: `\u9EA6\u514B\u98CE ${mics.length + 1}`, gainDb: 0, pan: 0 });
-  studio.mics = mics;
+  studio2.mics = mics;
   const labels = partLabels(song, { ...a.extras, lounge });
   const infoOf = (part, k) => {
     const role = lounge[part.role], active = cands(role).find((c) => c.id === role.active), mic = mics.find((m) => m.id === part.mic);
     return {
       id: part.id,
       name: labels[k],
+      ...part.clef && part.clef !== "G" ? { clef: part.clef } : {},
+      ...part.staves === 2 ? { staves: 2 } : {},
       instrumentName: String(active?.name ?? "\u6708\u8BFB"),
       sound: String(role.sound ?? DEFAULT_ROLE.sound),
       program: Number(active?.gm?.program ?? 55),
@@ -6178,7 +6368,7 @@ function saveMxl(a) {
   out[`${DIR}score.json`] = json(scoreExt);
   for (const [path, bytes] of Object.entries(files)) out[path] = bytes;
   for (const [id, r] of Object.entries(lounge)) out[`${DIR}lounge/${id}.json`] = json(r);
-  out[`${DIR}studio.json`] = json(studio);
+  out[`${DIR}studio.json`] = json(studio2);
   for (const [path, bytes] of sounds) out[path] = bytes;
   for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in out)) out[path] = bytes;
   const entries = {};
@@ -6225,6 +6415,19 @@ function withoutRole(extras, role) {
   delete lounge[role];
   return pruneSounds({ ...extras, lounge });
 }
+function withMic(extras, micId, patch) {
+  const studio2 = structuredClone(extras.studio ?? { version: FORMAT.studio, mics: [] });
+  const mics = (studio2.mics ?? []).slice();
+  let m = mics.find((x) => x.id === micId);
+  if (!m) {
+    m = { id: micId, name: `\u9EA6\u514B\u98CE ${mics.length + 1}`, gainDb: 0, pan: 0 };
+    mics.push(m);
+  }
+  if (patch.gainDb !== void 0) m.gainDb = patch.gainDb;
+  if (patch.pan !== void 0) m.pan = patch.pan;
+  studio2.mics = mics;
+  return { ...extras, studio: studio2 };
+}
 function candidates(extras, role) {
   return cands(extras.lounge[role] ?? defaultRole("n", role)).map((c) => ({ id: String(c.id), name: String(c.name ?? ""), engine: instrumentOf(c)?.engine ?? "unknown" }));
 }
@@ -6235,6 +6438,10 @@ function activeCandidate(extras, role) {
   const r = extras.lounge[role];
   if (!r) return null;
   return cands(r).find((x) => x.id === r.active) ?? null;
+}
+function activeCandidateName(extras, role) {
+  const c = activeCandidate(extras, role);
+  return c ? String(c.name ?? "") : null;
 }
 function activeInstrument(extras, role) {
   if (!extras.lounge[role]) return { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum: "n" };
@@ -6389,6 +6596,12 @@ function songFromReads(reads, papers, partList = null) {
   const seen = /* @__PURE__ */ new Map();
   for (const p of partList ?? []) seen.set(String(p.id), { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) });
   for (const p of ps) for (const id2 of Object.keys(p.tracks)) if (!seen.has(id2)) seen.set(id2, { id: id2, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
+  for (const r of reads) for (const p of r.parts) {
+    const d2 = seen.get(p.info.id);
+    if (!d2) continue;
+    if (p.info.clef === "F" && !d2.clef) d2.clef = "F";
+    if (p.info.staves === 2) d2.staves = 2;
+  }
   const parts = [...seen.values()];
   let id = 1;
   const renumbered = ps.map((p) => ({ ...p, tracks: Object.fromEntries(parts.flatMap((part) => p.tracks[part.id] ? [[part.id, p.tracks[part.id].map((t) => ({ ...t, id: id++ }))]] : [])) }));
@@ -6889,6 +7102,67 @@ var Finder = class {
   }
 };
 
+// src/ui/studio.ts
+var esc4 = (s) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+var panText = (p) => Math.abs(p) < 0.025 ? "\u4E2D" : p < 0 ? `\u5DE6 ${Math.round(-p * 100)}` : `\u53F3 ${Math.round(p * 100)}`;
+var dbText = (d2) => `${d2 > 0 ? "+" : ""}${d2.toFixed(1)} dB`;
+var Studio = class {
+  constructor(parent, host) {
+    this.host = host;
+    this.el = document.createElement("div");
+    this.el.className = "studio";
+    this.el.hidden = true;
+    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title">\u5F55\u97F3\u5BA4</span><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="finder-hint">\u6BCF\u4E2A\u58F0\u90E8\u4E00\u6761\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\u3002\u589E\u76CA\u548C\u58F0\u50CF\u5B58\u8FDB\u6B4C\uFF08\u5F55\u97F3\u623F\uFF09\uFF1B\u9759\u97F3 / \u72EC\u594F\u53EA\u662F\u8FD9\u6B21\u3002\u8C31\u4E0A\u4F1A\u7ED9\u9759\u97F3 / \u72EC\u594F\u6253\u89D2\u6807\u3002</div><div class="studio-strips"></div>`;
+    parent.append(this.el);
+    this.el.addEventListener("click", (e) => {
+      const t = e.target, v = t.closest("[data-v]")?.dataset.v, strip = t.closest(".strip")?.dataset.id;
+      if (v === "back") this.host.close();
+      else if (v === "play") this.host.play();
+      else if (v === "mute" && strip) {
+        this.host.toggleMute(strip);
+        this.render();
+      } else if (v === "solo" && strip) {
+        this.host.toggleSolo(strip);
+        this.render();
+      }
+    });
+    this.el.addEventListener("input", (e) => {
+      const t = e.target, strip = t.closest(".strip");
+      if (!strip) return;
+      const id = strip.dataset.id, out = t.parentElement?.querySelector("output");
+      if (t.dataset.gain !== void 0) {
+        this.host.setGain(id, Number(t.value));
+        if (out) out.textContent = dbText(Number(t.value));
+      } else if (t.dataset.pan !== void 0) {
+        this.host.setPan(id, Number(t.value));
+        if (out) out.textContent = panText(Number(t.value));
+      }
+    });
+    this.el.addEventListener("dblclick", (e) => {
+      const t = e.target, strip = t.closest(".strip");
+      if (!strip || t.tagName !== "INPUT") return;
+      if (t.dataset.gain !== void 0) this.host.setGain(strip.dataset.id, 0);
+      else if (t.dataset.pan !== void 0) this.host.setPan(strip.dataset.id, 0);
+      this.render();
+    });
+  }
+  el;
+  get isOpen() {
+    return !this.el.hidden;
+  }
+  show() {
+    this.el.hidden = false;
+    this.render();
+  }
+  hide() {
+    this.el.hidden = true;
+  }
+  render() {
+    const box = this.el.querySelector(".studio-strips");
+    box.innerHTML = this.host.strips().map((s) => `<div class="strip" data-id="${esc4(s.id)}"><div class="strip-name">${esc4(s.name)}</div><div class="strip-who">${esc4(s.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label><div class="strip-btns"><button class="btn cand${s.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div></div>`).join("");
+  }
+};
+
 // src/gm/sf2-subset.ts
 var REC = { phdr: 38, pbag: 4, pmod: 10, pgen: 4, inst: 22, ibag: 4, imod: 10, igen: 4, shdr: 46 };
 var GEN_INSTRUMENT = 41;
@@ -7228,13 +7502,17 @@ var doc = {
   extras: emptyExtras(),
   saved: { song: st.song, lounge: "" }
 };
-var loungeKey = () => JSON.stringify(Object.entries(doc.extras.lounge).map(([id, r]) => [id, r.name, r.active, (r.candidates ?? []).map((c) => c.id)]).sort());
+var loungeKey = () => JSON.stringify([Object.entries(doc.extras.lounge).map(([id, r]) => [id, r.name, r.active, (r.candidates ?? []).map((c) => c.id)]).sort(), doc.extras.studio?.mics ?? []]);
 doc.saved.lounge = loungeKey();
 var curPart = () => st.song.parts.find((p) => p.id === st.at.part) ?? st.song.parts[0];
 var curRole = () => curPart().role;
 var partView = /* @__PURE__ */ new Map();
-var pv = (id) => partView.get(id) ?? { hidden: false, muted: false, solo: false };
+var pv = (id) => partView.get(id) ?? { hidden: false, only: false, muted: false, solo: false };
 var setPv = (id, patch) => partView.set(id, { ...pv(id), ...patch });
+var isShown = (id) => {
+  const only = st.song.parts.some((p) => pv(p.id).only);
+  return only ? pv(id).only : !pv(id).hidden;
+};
 var docName = () => {
   const t = fileSafe(st.song.title ?? "");
   return doc.named || !t ? doc.stem : `${doc.stem.slice(0, 8)}-${t}`;
@@ -7258,7 +7536,7 @@ function showUpdateBar() {
   });
   document.body.append(el);
 }
-bar.innerHTML = `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="padBtn" class="btn is-on" title="\u952E\u76D8\uFF08pad\uFF09"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="padBtn" class="btn is-on" title="\u952E\u76D8\uFF08pad\uFF09"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 var sampler = new Sampler();
 var synth = new GmSynth(() => singer.unlock(), new URL(`./${"synth-worklet-70420f49185f.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
@@ -7329,9 +7607,11 @@ var view = new ScoreView(scoreEl, {
     update(addPaper(st));
     info("\u65B0\u7684\u4E00\u5F20\u7EB8");
   },
+  onNav: (dir) => navPaper(dir),
   onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),
-  reflow: () => reflow
+  reflow: () => reflow,
+  pages: () => pageFlow
 });
 var impro = false;
 var autoBars = true;
@@ -7402,6 +7682,7 @@ function afterWrite() {
   if (half === "once" && --halfLeft <= 0) setHalf("off");
 }
 var reflow = false;
+var pageFlow = false;
 var padNotes = /* @__PURE__ */ new Map();
 var CHORD_MS = 50;
 var monoHeld = /* @__PURE__ */ new Set();
@@ -7453,6 +7734,7 @@ var pad = new Pad(padEl, {
   onInputKey: (f) => update(setInputKey(st, f)),
   onInputScale: (id) => update(setInputScale(st, id)),
   autoBars: () => autoBars,
+  staves: () => curPart().staves ?? 1,
   onAutoBars: (on) => {
     autoBars = on;
     view.render();
@@ -7801,7 +8083,7 @@ async function fetchSound(e, onProgress) {
 var modelSource = MODEL_SOURCE_DEFAULT;
 var modelBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-models", location.href).href, modelSource.trim().replace(/\/+$/, "") || MODEL_SOURCE_DEFAULT])];
 var packStore = createPackStore({ packs: PACKS });
-var esc4 = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+var esc5 = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 async function packStatusText() {
   const st2 = await packStore.status(Object.keys(PACKS));
   return st2.map((s) => `${s.ready ? "\u2713" : "\xB7"} ${s.slug}\uFF08${(s.bytesTotal / 1e6).toFixed(1)} MB\uFF09`).join("\n");
@@ -7810,12 +8092,12 @@ function openSettings() {
   if (closeOffer) closeOffer();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc4(modelSource)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc4(soundsSource)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc4(ICON_CREDITS.map((c) => `${c.id} \u2014 ${c.author} (${c.set}, ${c.license}) ${c.url}`).join("\n"))}</pre></details><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc4(CREDIT.credit)}
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc5(modelSource)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc5(soundsSource)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc5(ICON_CREDITS.map((c) => `${c.id} \u2014 ${c.author} (${c.set}, ${c.license}) ${c.url}`).join("\n"))}</pre></details><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc5(CREDIT.credit)}
 
-${esc4(CREDIT.terms)}
-${esc4(CREDIT.termsUrl)}
+${esc5(CREDIT.terms)}
+${esc5(CREDIT.termsUrl)}
 
-${esc4(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button></div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc5(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button></div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -7834,7 +8116,7 @@ ${esc4(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><butt
     }
     sndCache.innerHTML = `<div class="set-row"><span>\u8BBE\u5907\u4E0A\u7559\u7740 ${sizeText(total)}${quota}\uFF1B\u5185\u5B58\u91CC\u73B0\u5728 ${sizeText(mem)}</span>${mem ? `<button class="btn" data-v="snd:mem" title="\u653E\u6389\u5185\u5B58\u91CC\u7684\u6574\u5305\uFF08\u8BBE\u5907\u4E0A\u7559\u7740\u7684\u4E0D\u52A8\uFF0C\u4E0B\u6B21\u7528\u518D\u4ECE\u8BBE\u5907\u8BFB\uFF09">\u653E\u6389\u5185\u5B58</button>` : ""}</div>` + Object.values(SOUNDS).map((e) => {
       const c = bySha.get(e.sha256);
-      return `<div class="set-row"><span>${esc4(e.name)} \xB7 ${sizeText(e.bytes)} \xB7 ${c ? "\u5DF2\u7559\u5728\u8BBE\u5907\u4E0A" : "\u6CA1\u4E0B\u8F7D"}</span>${c ? `<button class="btn" data-v="snd:del:${esc4(e.id)}">\u5220\u6389</button>` : `<button class="btn" data-v="snd:get:${esc4(e.id)}">\u4E0B\u8F7D\u7559\u7740</button>`}</div>`;
+      return `<div class="set-row"><span>${esc5(e.name)} \xB7 ${sizeText(e.bytes)} \xB7 ${c ? "\u5DF2\u7559\u5728\u8BBE\u5907\u4E0A" : "\u6CA1\u4E0B\u8F7D"}</span>${c ? `<button class="btn" data-v="snd:del:${esc5(e.id)}">\u5220\u6389</button>` : `<button class="btn" data-v="snd:get:${esc5(e.id)}">\u4E0B\u8F7D\u7559\u7740</button>`}</div>`;
     }).join("") + cached2.filter((c) => !known.has(c.sha256)).map((c) => `<div class="set-row"><span>\u522B\u7684\u7248\u672C / \u522B\u7684 app \u7559\u7684\uFF08${c.sha256.slice(0, 8)}\u2026\uFF09\xB7 ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">\u5220\u6389</button></div>`).join("") || "\uFF08\u6CA1\u6709\uFF09";
   };
   void refreshSounds();
@@ -7939,9 +8221,9 @@ function offerFile(file, title, msg, onDone) {
 window.__moonsinger = { singer, sampler, exportSong, labScore: () => {
   const { tokens, map } = curFlat();
   return toLabScore(tokens, st.song.hum, songLangOf(tokens), map);
-}, state: () => st, cssHash: "9d9d709d2d03", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
+}, state: () => st, cssHash: "011dec4ec9f2", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
   embedSoftLimit = n2;
-}, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name, bytes) => openBytes(name, bytes), zipList: (bytes) => Object.keys(unzipSync(bytes)), load: (o) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null }) };
+}, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name, bytes) => openBytes(name, bytes), view, zipList: (bytes) => Object.keys(unzipSync(bytes)), zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null }) };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -8045,6 +8327,55 @@ async function castPick(p, mode) {
   return "done";
 }
 var finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder() });
+var studio = new Studio($("stage"), {
+  strips: () => {
+    const labels = partLabels(st.song, doc.extras);
+    return st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], performer: activeCandidateName(doc.extras, p.role) ?? "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09", ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo }));
+  },
+  setGain: (id, dB) => {
+    const p = st.song.parts.find((x) => x.id === id);
+    if (p) {
+      doc.extras = withMic(doc.extras, p.mic, { gainDb: dB });
+      renderTitle();
+    }
+  },
+  setPan: (id, pan) => {
+    const p = st.song.parts.find((x) => x.id === id);
+    if (p) {
+      doc.extras = withMic(doc.extras, p.mic, { pan });
+      renderTitle();
+    }
+  },
+  toggleMute: (id) => {
+    setPv(id, { muted: !pv(id).muted });
+    view.render();
+  },
+  toggleSolo: (id) => {
+    setPv(id, { solo: !pv(id).solo });
+    view.render();
+  },
+  play: () => {
+    void togglePlay();
+  },
+  close: () => closeStudio()
+});
+function openStudio() {
+  closeOffer?.();
+  closeFinder();
+  scoreEl.hidden = true;
+  showPad(false);
+  studio.show();
+}
+function closeStudio() {
+  if (!studio.isOpen) return;
+  studio.hide();
+  scoreEl.hidden = false;
+  scoreEl.focus();
+}
+$("studioBtn").addEventListener("click", () => {
+  if (studio.isOpen) closeStudio();
+  else openStudio();
+});
 function openFinder() {
   closeOffer?.();
   scoreEl.hidden = true;
@@ -8081,7 +8412,7 @@ function openCreditsSheet() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">\u4F5C\u8005\u680F</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09">${esc4(st.song.credits ?? "")}</textarea><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002</div><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">\u4F5C\u8005\u680F</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09">${esc5(st.song.credits ?? "")}</textarea><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002</div><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
   document.body.append(box);
   const ta = box.querySelector("#crIn");
   const close = () => {
@@ -8103,7 +8434,7 @@ function openPaperSheet() {
   box.className = "offer";
   const draw = () => {
     const p = st.song.paper ?? paperOf(DEFAULT_PAPER);
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${PAPER_LABEL[k]}<small>${PAPER_NOTE[k]}</small></button>`).join("") + (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u7248\u5F0F</div><div class="set-row">` + DENSITIES.map((z) => `<button class="btn cand${densityOf(p) === z.id ? " is-on" : ""}" data-v="density:${z.id}">${z.label}<small>${z.note}</small></button>`).join("") + `</div><div class="offer-msg">\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002</div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${PAPER_LABEL[k]}<small>${PAPER_NOTE[k]}</small></button>`).join("") + (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u7248\u5F0F</div><div class="set-row">` + DENSITIES.map((z) => `<button class="btn cand${densityOf(p) === z.id ? " is-on" : ""}" data-v="density:${z.id}">${z.label}<small>${z.note}</small></button>`).join("") + `</div><div class="offer-msg">\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002</div><div class="part-sec">\u7EB8\uFF08\u66F2\u6BB5\uFF09</div>` + st.song.papers.map((pp, k) => `<div class="set-row paper-row"><span class="paper-row-name">${k + 1}. ${esc5(pp.name || "\uFF08\u6CA1\u540D\u5B57\uFF09")}${pp.id === st.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc5(pp.id)}" title="\u8FD9\u5F20\u7EB8\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u632A / \u52A0\u58F0\u90E8 / \u5220">\u22EF</button></div>`).join("") + `<div class="set-row"><button class="btn" data-v="addpaper">\uFF0B \u65B0\u7684\u7EB8\uFF08\u63A5\u5728\u6700\u540E\uFF09</button></div><div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E00\u5F20\u957F\u7EB8\u5F80\u4E0B\u6EDA</small></button><button class="btn cand${pageFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\u9AD8\u5206\u9875\uFF0C\u9884\u89C8\u6253\u5370\uFF08= \u4EE5\u540E\u7684 PDF\uFF09</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -8125,8 +8456,19 @@ function openPaperSheet() {
     } else if (v?.startsWith("density:")) {
       update(setDensity(st, v.slice(8)));
       draw();
+    } else if (v === "addpaper") {
+      close();
+      update(addPaper(st));
+      info("\u65B0\u7684\u4E00\u5F20\u7EB8");
+    } else if (v?.startsWith("pm:")) {
+      close();
+      openPaperMenu(v.slice(3));
     } else if (v === "fit" || v === "reflow") {
       reflow = v === "reflow";
+      view.render();
+      draw();
+    } else if (v === "flow:cont" || v === "flow:pages") {
+      pageFlow = v === "flow:pages";
       view.render();
       draw();
     }
@@ -8135,7 +8477,23 @@ function openPaperSheet() {
 var HUMS2 = [["n", "\u3093 / \u55EF"], ["a", "\u3042 / \u554A"], ["o", "\u304A / \u54E6"], ["u", "\u3046 / \u545C"], ["la", "\u3089 / \u5566"]];
 function partViews() {
   const labels = partLabels(st.song, doc.extras);
-  return st.song.parts.flatMap((p, k) => pv(p.id).hidden ? [] : [{ id: p.id, name: labels[k], empty: (activeInstrument(doc.extras, p.role)?.engine ?? "unknown") === "unknown", first: k === 0 }]);
+  return st.song.parts.map((p, k) => {
+    const v = pv(p.id), badges = [v.muted ? "\u9759\u97F3" : "", v.solo ? "\u72EC\u594F" : "", v.only ? "\u53EA\u770B\u5B83" : ""].filter(Boolean);
+    return { id: p.id, name: labels[k], empty: (activeInstrument(doc.extras, p.role)?.engine ?? "unknown") === "unknown", first: k === 0, clef: p.clef ?? "G", ...p.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p.id), badges };
+  });
+}
+function afterViewChange() {
+  if (!isShown(st.at.part)) {
+    const paper = st.song.papers.find((pp) => pp.id === st.at.paper), to = st.song.parts.find((p) => isShown(p.id) && paper?.tracks[p.id]);
+    if (to) update(setFocus(st, st.at.paper, to.id));
+  }
+  view.render();
+}
+function navPaper(dir) {
+  const k = st.song.papers.findIndex((p) => p.id === st.at.paper), to = st.song.papers[k + dir];
+  if (!to) return;
+  const part = to.tracks[st.at.part] ? st.at.part : st.song.parts.find((p) => to.tracks[p.id])?.id ?? st.at.part;
+  update(setFocus(st, to.id, part));
 }
 function addNewPart() {
   const role = newRoleId(doc.extras, st.song), mic = newMicId(doc.extras, st.song);
@@ -8153,7 +8511,7 @@ function openPaperMenu(id) {
   const absent = st.song.parts.flatMap((p, i) => paper.tracks[p.id] ? [] : [{ id: p.id, name: labels[i] }]);
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc4(paper.name || `\u7B2C ${k + 1} \u5F20\u7EB8`)}</div><div class="set-row"><button class="btn" data-v="name">\u6539\u66F2\u6BB5\u540D\u2026</button><button class="btn" data-v="up"${k === 0 ? " disabled" : ""}>\u4E0A\u79FB</button><button class="btn" data-v="down"${k === st.song.papers.length - 1 ? " disabled" : ""}>\u4E0B\u79FB</button><button class="btn" data-v="add">\u5728\u5B83\u540E\u9762\u52A0\u4E00\u5F20\u7EB8</button></div>` + (absent.length ? `<div class="part-sec">\u8FD9\u5F20\u7EB8\u4E0A\u52A0\u4E0A\u58F0\u90E8</div><div class="set-row">${absent.map((a) => `<button class="btn cand" data-v="track:${esc4(a.id)}">${esc4(a.name)}</button>`).join("")}</div>` : "") + `<div class="set-row"><button class="btn" data-v="newpart">\uFF0B \u65B0\u58F0\u90E8\u2026</button>${st.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">\u5220\u8FD9\u5F20\u7EB8\u2026</button>` : ""}</div><div class="offer-msg">\u7EB8 = \u66F2\u6BB5\uFF1A\u6BCF\u5F20\u7EB8\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u5F20\u7EB8\u4E0A\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc5(paper.name || `\u7B2C ${k + 1} \u5F20\u7EB8`)}</div><div class="set-row"><button class="btn" data-v="name">\u6539\u66F2\u6BB5\u540D\u2026</button><button class="btn" data-v="up"${k === 0 ? " disabled" : ""}>\u4E0A\u79FB</button><button class="btn" data-v="down"${k === st.song.papers.length - 1 ? " disabled" : ""}>\u4E0B\u79FB</button><button class="btn" data-v="add">\u5728\u5B83\u540E\u9762\u52A0\u4E00\u5F20\u7EB8</button></div>` + (absent.length ? `<div class="part-sec">\u8FD9\u5F20\u7EB8\u4E0A\u52A0\u4E0A\u58F0\u90E8</div><div class="set-row">${absent.map((a) => `<button class="btn cand" data-v="track:${esc5(a.id)}">${esc5(a.name)}</button>`).join("")}</div>` : "") + `<div class="set-row"><button class="btn" data-v="newpart">\uFF0B \u65B0\u58F0\u90E8\u2026</button>${st.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">\u5220\u8FD9\u5F20\u7EB8\u2026</button>` : ""}</div><div class="offer-msg">\u7EB8 = \u66F2\u6BB5\uFF1A\u6BCF\u5F20\u7EB8\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u5F20\u7EB8\u4E0A\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -8206,7 +8564,7 @@ function openPartSheet() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  const chip = (v, label, on, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v="${esc4(v)}"${title ? ` title="${esc4(title)}"` : ""}>${label}</button>`;
+  const chip = (v, label, on, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v="${esc5(v)}"${title ? ` title="${esc5(title)}"` : ""}>${label}</button>`;
   const setRole = (name, sound2) => {
     const n2 = name.trim();
     if (!n2 || n2 === roleName(doc.extras, curRole()) && (!sound2 || sound2 === roleSound(doc.extras, curRole()))) return;
@@ -8307,12 +8665,12 @@ function openPartSheet() {
     }
   };
   const pickerHtml = () => {
-    if (over) return `<div class="part-sec">\u300C${esc4(over.name)}\u300D\u7684\u58F0\u97F3\u6709 ${sizeText(over.subset.length)}\uFF08\u8D85\u8FC7 ${sizeText(embedSoftLimit)}\uFF09</div><div class="set-row"><button class="btn primary" data-v="sf2:embed" title="\u5B57\u8282\u8FDB\u6B4C\uFF1A\u6B4C\u5230\u54EA\u90FD\u54CD\uFF1B\u5B58\u6863\u4F1A\u53D8\u5927\u3001\u53D8\u6162">\u5D4C\u8FDB\u6B4C</button><button class="btn" data-v="sf2:weak" title="\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\u548C\u54C8\u5E0C\uFF08\u5F31\u5F15\u7528\uFF09\uFF1A\u7528\u65F6\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u4F60\u7684\u6587\u4EF6\u91CC\u627E\uFF1B\u627E\u4E0D\u5230 = \u4E0D\u51FA\u58F0\u3001\u62A5\u9519\u3001\u4EBA\u6362">\u4E0D\u5D4C\uFF0C\u53EA\u8BB0\u6765\u6E90</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div>`;
+    if (over) return `<div class="part-sec">\u300C${esc5(over.name)}\u300D\u7684\u58F0\u97F3\u6709 ${sizeText(over.subset.length)}\uFF08\u8D85\u8FC7 ${sizeText(embedSoftLimit)}\uFF09</div><div class="set-row"><button class="btn primary" data-v="sf2:embed" title="\u5B57\u8282\u8FDB\u6B4C\uFF1A\u6B4C\u5230\u54EA\u90FD\u54CD\uFF1B\u5B58\u6863\u4F1A\u53D8\u5927\u3001\u53D8\u6162">\u5D4C\u8FDB\u6B4C</button><button class="btn" data-v="sf2:weak" title="\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\u548C\u54C8\u5E0C\uFF08\u5F31\u5F15\u7528\uFF09\uFF1A\u7528\u65F6\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u4F60\u7684\u6587\u4EF6\u91CC\u627E\uFF1B\u627E\u4E0D\u5230 = \u4E0D\u51FA\u58F0\u3001\u62A5\u9519\u3001\u4EBA\u6362">\u4E0D\u5D4C\uFF0C\u53EA\u8BB0\u6765\u6E90</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div>`;
     if (!picked) return "";
     const banks = [...new Set(picked.presets.map((p) => p.bank))].sort((a, b) => a - b);
     const label = (b) => b === 128 ? "\u9F13\u7EC4" : b === 0 ? "\u4E50\u5668" : `\u53D8\u4F53\uFF08bank ${b}\uFF09`;
     const cur = picked.presets.find((p) => `${p.bank}:${p.program}` === picked.sel);
-    return `<div class="part-sec">${esc4(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b) => `<optgroup label="${label(b)}">${picked.presets.filter((p) => p.bank === b).map((p) => `<option value="${p.bank}:${p.program}"${`${p.bank}:${p.program}` === picked.sel ? " selected" : ""}>${String(p.program).padStart(3, "0")} ${esc4(p.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc4(cur?.name ?? "")}" /></label><div class="set-row"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u4E0A\u573A</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div>`;
+    return `<div class="part-sec">${esc5(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b) => `<optgroup label="${label(b)}">${picked.presets.filter((p) => p.bank === b).map((p) => `<option value="${p.bank}:${p.program}"${`${p.bank}:${p.program}` === picked.sel ? " selected" : ""}>${String(p.program).padStart(3, "0")} ${esc5(p.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc5(cur?.name ?? "")}" /></label><div class="set-row"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u4E0A\u573A</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div>`;
   };
   const ENGINE_TITLE = { tsukuyomi: "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09", "vowel-sampler": "\u6708\u8BFB\u7684\u5143\u97F3\u91C7\u6837\uFF1A\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1", soundfont: "SoundFont \u4E50\u5668\uFF08TinySoundFont \u51FA\u58F0\uFF09", unknown: "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09" };
   const draw = () => {
@@ -8323,10 +8681,10 @@ function openPartSheet() {
       if (!g2) return ENGINE_TITLE[c.engine];
       return g2.bytes ? `SoundFont ${g2.bank}:${g2.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(g2.bytes.length)}\uFF09` : g2.path ? "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765" : `\u5F31\u5F15\u7528\uFF1A\u58F0\u97F3\u4E0D\u5728\u6B4C\u91CC\uFF0C\u7528\u65F6\u4ECE\u300C${g2.origin.name}\u300D\u627E`;
     };
-    const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc4(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc4(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc4(active.origin.name)}\u300D\u627E\uFF08${sessionSubsets.has(active.subsetSha256) ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09<button class="btn" data-v="find:${esc4(active.id)}">\u627E\u6587\u4EF6\u2026</button></div>`;
+    const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc5(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc5(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc5(active.origin.name)}\u300D\u627E\uFF08${sessionSubsets.has(active.subsetSha256) ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09<button class="btn" data-v="find:${esc5(active.id)}">\u627E\u6587\u4EF6\u2026</button></div>`;
     const me = curPart(), me_v = pv(me.id), onPaper = Object.keys(st.song.papers.find((p) => p.id === st.at.paper)?.tracks ?? {}).length;
-    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8 ${esc4(partLabels(st.song, doc.extras)[st.song.parts.indexOf(me)] ?? "")}</div><div class="part-sec">\u89D2\u8272\uFF08\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\uFF1B\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc4(rn)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g2) => `<optgroup label="${g2.group}">${g2.items.map((r) => `<option value="${esc4(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc4(r.name)} \u2014 ${r.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc4(rn)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc4(rs)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + candidates(doc.extras, curRole()).map((c) => chip(`cand:${c.id}`, c.engine === "unknown" ? `${esc4(c.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc4(c.name), aid === c.id, chipTitle(c)) + (aid !== c.id && (c.engine === "soundfont" || c.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc4(c.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="part-sec">\u627E\u4EBA</div><div class="set-row"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F / \u98CE\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button></div><div class="set-row">` + Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc4(e.id)}" title="${esc4(`${e.description ?? e.name}\uFF08${sizeText(e.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e.license.name}\uFF09`)}">\u4ECE ${esc4(e.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u53EA\u628A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5D4C\u8FDB\u6B4C\uFF0C\u6587\u4EF6\u672C\u8EAB\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u7434\u53EA\u628A\u7528\u5230\u7684\u90A3\u4E00\u4EF6\uFF08\u901A\u5E38\u51E0 MB\uFF09\u5D4C\u8FDB\u6B4C\u91CC\uFF0C\u6B4C\u5230\u54EA\u90FD\u54CD\u3002</div>` + (eng === "tsukuyomi" || eng === "vowel-sampler" ? `<div class="part-sec">\u6708\u8BFB\uFF1A\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS2.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>` : "") + // 多声部（user「不同的声部视图和出声应该分别可以solo和hide」）：隐藏 = 谱上不画；静音 / 独奏 = 播放时；再加一个声部 / 这张纸上不要它 / 整首删掉
-    `<div class="part-sec">\u8FD9\u4E2A\u58F0\u90E8</div><div class="set-row">${chip("hide", "\u9690\u85CF", me_v.hidden, "\u8C31\u4E0A\u4E0D\u753B\u5B83\uFF08\u5149\u6807\u4F1A\u632A\u5230\u522B\u7684\u58F0\u90E8\uFF09")}${chip("mute", "\u9759\u97F3", me_v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0")}${chip("solo", "\u72EC\u594F", me_v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><div class="set-row"><button class="btn" data-v="addpart" title="\u518D\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF1A\u6BCF\u5F20\u7EB8\u4E0A\u90FD\u7ED9\u5B83\u4E00\u884C\uFF0C\u8C31\u5934\u7167\u6284">\uFF0B \u52A0\u4E00\u4E2A\u58F0\u90E8</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389\u5B83</button>` : "") + (st.song.parts.length > 1 ? `<button class="btn cand danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF09">\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\u2026</button>` : "") + `</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8 ${esc5(partLabels(st.song, doc.extras)[st.song.parts.indexOf(me)] ?? "")}</div><div class="part-sec">\u89D2\u8272\uFF08\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\uFF1B\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc5(rn)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g2) => `<optgroup label="${g2.group}">${g2.items.map((r) => `<option value="${esc5(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc5(r.name)} \u2014 ${r.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc5(rn)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc5(rs)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + candidates(doc.extras, curRole()).map((c) => chip(`cand:${c.id}`, c.engine === "unknown" ? `${esc5(c.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc5(c.name), aid === c.id, chipTitle(c)) + (aid !== c.id && (c.engine === "soundfont" || c.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc5(c.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="part-sec">\u627E\u4EBA</div><div class="set-row"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F / \u98CE\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button></div><div class="set-row">` + Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc5(e.id)}" title="${esc5(`${e.description ?? e.name}\uFF08${sizeText(e.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e.license.name}\uFF09`)}">\u4ECE ${esc5(e.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u53EA\u628A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5D4C\u8FDB\u6B4C\uFF0C\u6587\u4EF6\u672C\u8EAB\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u7434\u53EA\u628A\u7528\u5230\u7684\u90A3\u4E00\u4EF6\uFF08\u901A\u5E38\u51E0 MB\uFF09\u5D4C\u8FDB\u6B4C\u91CC\uFF0C\u6B4C\u5230\u54EA\u90FD\u54CD\u3002</div>` + (eng === "tsukuyomi" || eng === "vowel-sampler" ? `<div class="part-sec">\u6708\u8BFB\uFF1A\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS2.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>` : "") + // 多声部（user「display有hide 和show only， play有mute和solo」）：显示一轴、出声一轴，各自「关掉」+「只要」；谱号
+    `<div class="part-sec">\u663E\u793A\uFF08\u8C31\u4E0A\uFF09</div><div class="set-row">${chip("hide", "\u9690\u85CF", me_v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", me_v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><div class="part-sec">\u51FA\u58F0\uFF08\u64AD\u653E\uFF09</div><div class="set-row">${chip("mute", "\u9759\u97F3", me_v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", me_v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><div class="part-sec">\u8C31\u8868</div><div class="set-row">${chip("staves:1", "\u4E00\u5F20", (me.staves ?? 1) === 1)}${chip("staves:2", "\u5927\u8C31\u8868", me.staves === 2, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}` + ((me.staves ?? 1) === 1 ? `<span class="set-gap"></span>${chip("clef:G", "\u9AD8\u97F3\u8C31\u53F7", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3\u8C31\u53F7", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}` : "") + `</div><div class="set-row"><button class="btn" data-v="addpart" title="\u518D\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF1A\u6BCF\u5F20\u7EB8\u4E0A\u90FD\u7ED9\u5B83\u4E00\u884C\uFF0C\u8C31\u5934\u7167\u6284">\uFF0B \u52A0\u4E00\u4E2A\u58F0\u90E8</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389\u5B83</button>` : "") + (st.song.parts.length > 1 ? `<button class="btn cand danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF09">\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\u2026</button>` : "") + `</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
     const inp = box.querySelector("#roleIn"), sel = box.querySelector("#roleSel");
     sel.addEventListener("change", () => {
       const [snd, ...nm] = sel.value.split("|");
@@ -8406,21 +8764,24 @@ function openPartSheet() {
       over = null;
     } else if (v.startsWith("hum:")) update(setHum(st, v.slice(4)));
     else if (v === "hide") {
-      const id = curPart().id, h = !pv(id).hidden;
-      setPv(id, { hidden: h });
-      if (h) {
-        const to = st.song.parts.find((p) => !pv(p.id).hidden && st.song.papers.find((pp) => pp.id === st.at.paper)?.tracks[p.id]);
-        if (to) update(setFocus(st, st.at.paper, to.id));
-      }
-      view.render();
-      if (h) {
-        close();
-        return;
-      }
+      const id = curPart().id;
+      setPv(id, { hidden: !pv(id).hidden });
+      afterViewChange();
+    } else if (v === "only") {
+      const id = curPart().id;
+      setPv(id, { only: !pv(id).only });
+      afterViewChange();
     } else if (v === "mute") {
       setPv(curPart().id, { muted: !pv(curPart().id).muted });
+      view.render();
     } else if (v === "solo") {
       setPv(curPart().id, { solo: !pv(curPart().id).solo });
+      view.render();
+    } else if (v.startsWith("clef:")) {
+      update(setPartClef(st, curPart().id, v.slice(5)));
+    } else if (v.startsWith("staves:")) {
+      update(setPartStaves(st, curPart().id, v.slice(7) === "2" ? 2 : 1));
+      pad.render();
     } else if (v === "addpart") {
       close();
       addNewPart();
@@ -8474,7 +8835,7 @@ function confirmDiscard(what) {
     closeOffer?.();
     const box = document.createElement("div");
     box.className = "offer";
-    box.innerHTML = `<div class="offer-card"><div class="offer-title">\u300C${esc4(docName())}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58</div><div class="offer-msg">${what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002</div><div class="offer-btns"><button class="btn" data-v="save">\u5148\u5B58</button><button class="btn" data-v="go">\u4E22\u6389\uFF0C\u7EE7\u7EED</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">\u300C${esc5(docName())}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58</div><div class="offer-msg">${what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002</div><div class="offer-btns"><button class="btn" data-v="save">\u5148\u5B58</button><button class="btn" data-v="go">\u4E22\u6389\uFF0C\u7EE7\u7EED</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
     document.body.append(box);
     const close = (ok) => {
       box.remove();
@@ -8555,7 +8916,7 @@ async function fileSave() {
       return;
     }
     const file = mxlFile(`${docName()}.mxl`);
-    offerFile(file, "\u5B58\u6210 .mxl", `${esc4(file.name)} \xB7 ${sizeText(file.size)}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
+    offerFile(file, "\u5B58\u6210 .mxl", `${esc5(file.name)} \xB7 ${sizeText(file.size)}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
   } catch (e) {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e.message}`);
   }
@@ -8571,7 +8932,7 @@ async function exportCopyMxl() {
       return;
     }
     const file = mxlFile(name);
-    offerFile(file, "\u5B58\u4E00\u4EFD .mxl \u526F\u672C", `${esc4(file.name)} \xB7 ${sizeText(file.size)}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002`);
+    offerFile(file, "\u5B58\u4E00\u4EFD .mxl \u526F\u672C", `${esc5(file.name)} \xB7 ${sizeText(file.size)}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002`);
   } catch (e) {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e.message}`);
   }
@@ -8604,8 +8965,8 @@ function openFileMenu() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  const where = doc.handle ? `\u73B0\u5728\u5B58\u5728 <b>${esc4(doc.handle.name)}</b>\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\uFF08\u6587\u4EF6\u5728\u5916\u9762\u88AB\u6539\u8FC7\u4F1A\u5148\u95EE\uFF09\u3002\u8981\u6362\u540D\u5B57\uFF0C\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\u3002` : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF08\u4E0B\u8F7D\u4E86\u5C31\u7B97\u5B58\u4E86\uFF09\u3002";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc4(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>\uFF08\u6CA1\u5B58\u8FC7 = \u5E74\u6708\u65E5-\u6B4C\u540D\uFF1B\u5B58\u8FC7\u4E4B\u540E\u548C\u7EB8\u4E0A\u7684\u6B4C\u540D\u5404\u7BA1\u5404\u7684\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>\u5BFC\u51FA\u2026</button>` + (doc.handle ? "" : `<button class="btn" data-v="rename">\u6539\u6587\u4EF6\u540D\u2026</button>`) + `</div><div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${where} \u628A .mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  const where = doc.handle ? `\u73B0\u5728\u5B58\u5728 <b>${esc5(doc.handle.name)}</b>\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\uFF08\u6587\u4EF6\u5728\u5916\u9762\u88AB\u6539\u8FC7\u4F1A\u5148\u95EE\uFF09\u3002\u8981\u6362\u540D\u5B57\uFF0C\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\u3002` : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF08\u4E0B\u8F7D\u4E86\u5C31\u7B97\u5B58\u4E86\uFF09\u3002";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc5(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>\uFF08\u6CA1\u5B58\u8FC7 = \u5E74\u6708\u65E5-\u6B4C\u540D\uFF1B\u5B58\u8FC7\u4E4B\u540E\u548C\u7EB8\u4E0A\u7684\u6B4C\u540D\u5404\u7BA1\u5404\u7684\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>\u5BFC\u51FA\u2026</button>` + (doc.handle ? "" : `<button class="btn" data-v="rename">\u6539\u6587\u4EF6\u540D\u2026</button>`) + `</div><div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${where} \u628A .mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -8634,7 +8995,7 @@ function renameFile() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card"><div class="offer-title">\u6539\u6587\u4EF6\u540D</div><label class="set-field">\u6587\u4EF6\u540D<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc4(docName())}" /></label><div class="offer-msg">\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u8FD9\u4E2A\u540D\u5B57\u3002</div><div class="offer-btns"><button class="btn" data-v="cancel">\u7B97\u4E86</button><button class="btn primary" data-v="ok">\u6539</button></div></div>`;
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">\u6539\u6587\u4EF6\u540D</div><label class="set-field">\u6587\u4EF6\u540D<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc5(docName())}" /></label><div class="offer-msg">\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u8FD9\u4E2A\u540D\u5B57\u3002</div><div class="offer-btns"><button class="btn" data-v="cancel">\u7B97\u4E86</button><button class="btn primary" data-v="ok">\u6539</button></div></div>`;
   document.body.append(box);
   const inp = box.querySelector("#fnIn");
   const close = () => {
@@ -8678,7 +9039,7 @@ function askSheet(title, msg, okLabel) {
     closeOffer?.();
     const box = document.createElement("div");
     box.className = "offer";
-    box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc4(title)}</div><div class="offer-msg">${esc4(msg)}</div><div class="offer-btns"><button class="btn" data-v="ok">${esc4(okLabel)}</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc5(title)}</div><div class="offer-msg">${esc5(msg)}</div><div class="offer-btns"><button class="btn" data-v="ok">${esc5(okLabel)}</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
     document.body.append(box);
     const close = (ok) => {
       box.remove();
@@ -8785,6 +9146,16 @@ window.addEventListener("keydown", (e) => {
     }
     return;
   }
+  if (studio.isOpen) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeStudio();
+    } else if (e.key === " " && !e.target?.closest("input")) {
+      e.preventDefault();
+      void togglePlay();
+    }
+    return;
+  }
   const t = e.target;
   if (!(e.ctrlKey || e.metaKey) && t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed"))) return;
   const a = route(e, whereNow(), st.sel ? "edit" : "write");
@@ -8817,4 +9188,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-d32589690df1.mjs.map
+//# sourceMappingURL=moonsinger-a4f79f315e8c.mjs.map

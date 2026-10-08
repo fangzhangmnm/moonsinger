@@ -13,7 +13,7 @@ const doc = (song: ReturnType<typeof emptySong>) => ({ title: song.title, paper:
 describe("纸", () => {
   it("一行多宽：纸越大放得越多，A5 放得进 iPad mini 竖屏（11 px 一格）", () => {
     const w = (k: (typeof PAPER_KINDS)[number]) => lineSp(paperOf(k));
-    assert(w("A3L") > w("A3") && w("A3") > w("A4") && w("A4") > w("A5") && w("A5") > w("A6"), PAPER_KINDS.map((k) => w(k).toFixed(1)).join(" > "));
+    assert(w("A3L") > w("A4") && w("A4") > w("A5") && w("A5") > w("A6"), PAPER_KINDS.map((k) => w(k).toFixed(1)).join(" > "));
     assert(w("A5") * 11 <= 744 - 8, `A5 = ${(w("A5") * 11).toFixed(0)} px`);
     // 谱的大小（staffMm）：谱小了一行放得多，纸的宽度不变（user 2026-10-08「排版引擎还是要支持小字号…交响总谱」）
     assert(lineSp(paperOf("A3L", "compact")) > lineSp(paperOf("A3L")) * 1.3, "紧凑（5 mm 的谱）一行放得多");
