@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.4.2-2026-10-07";
+var APP_VERSION = "v0.4.3-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -158,11 +158,11 @@ function placeDegree(degree2, fifths, prev, dir) {
   const s = degreeStepIndex(degree2, fifths);
   const ref = diatonicIndex(prev ?? HOME);
   const base2 = Math.floor(ref / 7) * 7 + s;
-  const cands = [base2 - 7, base2, base2 + 7];
+  const cands2 = [base2 - 7, base2, base2 + 7];
   let d2;
-  if (dir === "near") d2 = cands.reduce((a, b) => Math.abs(b - ref) < Math.abs(a - ref) ? b : a);
-  else if (dir === "up") d2 = cands.find((c) => c > ref);
-  else d2 = [...cands].reverse().find((c) => c < ref);
+  if (dir === "near") d2 = cands2.reduce((a, b) => Math.abs(b - ref) < Math.abs(a - ref) ? b : a);
+  else if (dir === "up") d2 = cands2.find((c) => c > ref);
+  else d2 = [...cands2].reverse().find((c) => c < ref);
   return fromDiatonic(d2, fifths);
 }
 function stepBy(p, steps, fifths) {
@@ -172,12 +172,12 @@ function alterBy(p, d2) {
   return { ...p, alter: Math.max(-2, Math.min(2, p.alter + d2)) };
 }
 function spellMidi(midi, fifths, prefer = fifths < 0 ? -1 : 1) {
-  const cands = [];
+  const cands2 = [];
   for (const step of STEPS) for (let o = Math.floor(midi / 12) - 2; o <= Math.floor(midi / 12); o++) {
     const alter = midi - midiOf({ step, alter: 0, octave: o });
-    if (Math.abs(alter) <= 1) cands.push({ step, alter, octave: o });
+    if (Math.abs(alter) <= 1) cands2.push({ step, alter, octave: o });
   }
-  return cands.find((p) => p.alter === keyAlter(p.step, fifths)) ?? cands.find((p) => p.alter === prefer) ?? cands.find((p) => p.alter === 0) ?? cands[0];
+  return cands2.find((p) => p.alter === keyAlter(p.step, fifths)) ?? cands2.find((p) => p.alter === prefer) ?? cands2.find((p) => p.alter === 0) ?? cands2[0];
 }
 function transposeSemis(p, semis, fifths) {
   return semis === 0 ? p : spellMidi(midiOf(p) + semis, fifths, semis > 0 ? 1 : -1);
@@ -2534,9 +2534,9 @@ var ScoreView = class {
     }
     const ly = L.lyricY(sys);
     if (y > ly - sp * 2.2 && y < ly + sp * 1.2) {
-      const cands = L.lyrics.filter((h) => h.system === sys);
-      if (cands.length) {
-        const best = cands.reduce((a, b) => Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a);
+      const cands2 = L.lyrics.filter((h) => h.system === sys);
+      if (cands2.length) {
+        const best = cands2.reduce((a, b) => Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a);
         if (Math.abs(best.x - x) < sp * 4) {
           this.lyrics.openAt(best.index);
           this.host.focus?.("text");
@@ -2561,9 +2561,9 @@ var ScoreView = class {
   }
   /** 空白处 → 最近的光标落点（= 写）。 */
   caretAt(x, y, st2 = this.host.get()) {
-    const L = this.layout, sys = this.systemAt(y), cands = L.slots.filter((s) => s.system === sys);
-    if (!cands.length) return st2;
-    const best = cands.reduce((a, b) => Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a);
+    const L = this.layout, sys = this.systemAt(y), cands2 = L.slots.filter((s) => s.system === sys);
+    if (!cands2.length) return st2;
+    const best = cands2.reduce((a, b) => Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a);
     return setCaret(st2, best.caret);
   }
   /** 框选：框住的音（音头中心在框里）从第一个到最后一个选成一段；一个都没框住 = 回到起点的光标。 */
@@ -3557,7 +3557,7 @@ var Sha256 = class {
 var SLICE = 1 << 20;
 function createPackStore(deps) {
   const cacheName = deps.cacheName ?? "pwa-models";
-  const keyOf = (slug, name) => `${location.origin}/__pwa-models__/${slug}/${name}`;
+  const keyOf2 = (slug, name) => `${location.origin}/__pwa-models__/${slug}/${name}`;
   function manifestOf(slug) {
     const p = deps.packs[slug];
     if (!p)
@@ -3575,7 +3575,7 @@ function createPackStore(deps) {
     const cache = await openCache();
     const sizes = [];
     for (const c of m.chunks) {
-      const r = await cache.match(keyOf(slug, c.name));
+      const r = await cache.match(keyOf2(slug, c.name));
       sizes.push(r ? Number(r.headers.get("content-length") ?? 0) : 0);
     }
     return sizes;
@@ -3583,30 +3583,30 @@ function createPackStore(deps) {
   async function putChunk(slug, name, bytes) {
     const cache = await openCache();
     const size = bytes instanceof Blob ? bytes.size : bytes.length;
-    await cache.put(keyOf(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
+    await cache.put(keyOf2(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
   }
   async function markVerified(slug, packId) {
     const cache = await openCache();
-    await cache.put(keyOf(slug, "verified.json"), new Response(JSON.stringify({ packId, at: (/* @__PURE__ */ new Date()).toISOString() }), { headers: { "content-type": "application/json" } }));
+    await cache.put(keyOf2(slug, "verified.json"), new Response(JSON.stringify({ packId, at: (/* @__PURE__ */ new Date()).toISOString() }), { headers: { "content-type": "application/json" } }));
   }
   async function status(slug) {
     const { packId, manifest: m } = manifestOf(slug);
     const cache = await openCache();
     const sizes = await cachedChunkSizes(slug, m);
     const complete = sizes.every((n2, i) => n2 === m.chunks[i].bytes);
-    const marker = await cache.match(keyOf(slug, "verified.json"));
+    const marker = await cache.match(keyOf2(slug, "verified.json"));
     const verified = marker ? (await marker.json()).packId === packId : false;
     return { slug, ready: complete && verified, bytesCached: sizes.reduce((a, b) => a + b, 0), bytesTotal: m.totalBytes };
   }
   async function dropIfStale(slug) {
     const { packId, manifest: m } = manifestOf(slug);
     const cache = await openCache();
-    const marker = await cache.match(keyOf(slug, "verified.json"));
+    const marker = await cache.match(keyOf2(slug, "verified.json"));
     if (!marker || (await marker.json()).packId === packId)
       return;
     for (const c of m.chunks)
-      await cache.delete(keyOf(slug, c.name));
-    await cache.delete(keyOf(slug, "verified.json"));
+      await cache.delete(keyOf2(slug, c.name));
+    await cache.delete(keyOf2(slug, "verified.json"));
   }
   async function sealIfComplete(slug, fresh) {
     const { packId, manifest: m } = manifestOf(slug);
@@ -3617,10 +3617,10 @@ function createPackStore(deps) {
     for (const c of m.chunks) {
       if (fresh.has(c.name))
         continue;
-      const r = await cache.match(keyOf(slug, c.name));
+      const r = await cache.match(keyOf2(slug, c.name));
       const ok = !!r && await hashBlob(await r.blob()) === c.sha256;
       if (!ok) {
-        await cache.delete(keyOf(slug, c.name));
+        await cache.delete(keyOf2(slug, c.name));
         return;
       }
     }
@@ -3732,8 +3732,8 @@ function createPackStore(deps) {
     const { manifest: m } = manifestOf(slug);
     const cache = await openCache();
     for (const c of m.chunks)
-      await cache.delete(keyOf(slug, c.name));
-    await cache.delete(keyOf(slug, "verified.json"));
+      await cache.delete(keyOf2(slug, c.name));
+    await cache.delete(keyOf2(slug, "verified.json"));
   }
   const noop = () => {
   };
@@ -3752,7 +3752,7 @@ function createPackStore(deps) {
       const cache = await openCache();
       const out = [];
       for (const c of m.chunks) {
-        const r = await cache.match(keyOf(slug, c.name));
+        const r = await cache.match(keyOf2(slug, c.name));
         if (!r)
           throw new Error("pack-missing");
         out.push(await r.blob());
@@ -3910,6 +3910,7 @@ function showNotice(opts) {
 }
 
 // src/singer/packs.gen.ts
+var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
 var PACKS = {
   "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
   "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
@@ -5550,13 +5551,58 @@ function readMusicXml(xml, hints) {
 }
 
 // src/format/contract.ts
-var FORMAT = { manifest: 1, score: 1, lounge: 1, studio: 1 };
+var FORMAT = { manifest: 1, score: 1, lounge: 2, studio: 1 };
+
+// src/format/performance.ts
+var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
+var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
+var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
+var TSUKUYOMI_DEFAULTS = {};
+var REPO = "https://github.com/fangzhangmnm/moonsinger";
+var TSUKUYOMI_CREDIT = {
+  attribution: [CREDIT.credit, ...CREDIT.attribution],
+  license: { name: "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09", url: CREDIT.termsUrl, text: CREDIT.terms }
+};
+var TSUKUYOMI_SPEC = { kind: "ours", doc: "#tsukuyomi", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sing-core.mjs" } };
+var VOWEL_SAMPLER_SPEC = { kind: "ours", doc: "#vowel-sampler", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sampler.ts" } };
+var SOUNDFONT_SPEC = { kind: "standard", name: "SoundFont", version: "2.04" };
+var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
 
 // src/format/migrate/index.ts
+var HUMS = /* @__PURE__ */ new Set(["la", "n", "u", "o", "a"]);
+function loungeV1toV2(json) {
+  const cands2 = (json.candidates ?? []).map((c0) => {
+    const c = { ...c0 }, gm = c.gm ?? {}, src = c.source, engines = c.engines ?? {};
+    const hum = HUMS.has(String(c.hum)) ? String(c.hum) : "n";
+    delete c.hum;
+    delete c.source;
+    delete c.engines;
+    delete c.credit;
+    delete c.spec;
+    const common2 = { calibrationDb: Number(c0.calibrationDb ?? 0), chain: c0.chain ?? [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } };
+    if (gm.variant === "tsukuyomi") return { ...c, ...common2, instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC), ...Object.keys(engines).length ? { engines } : {} };
+    if (gm.variant === "tsukuyomi-vowels") return { ...c, ...common2, instrument: { engine: "vowel-sampler", table: "builtin", hum }, defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC), ...Object.keys(engines).length ? { engines } : {} };
+    if (src?.kind === "sf2") {
+      const embedded = typeof src.embedded === "string" ? src.embedded : null;
+      const subsetSha256 = typeof src.subsetSha256 === "string" ? src.subsetSha256 : embedded ? embedded.slice(embedded.lastIndexOf("/") + 1).replace(/\.sf2$/, "") : "";
+      return {
+        ...c,
+        ...common2,
+        instrument: { engine: "soundfont", bank: Number(src.bank), program: Number(src.program), source: { embedded, subsetBytes: Number(src.subsetBytes ?? 0), subsetSha256, origin: src.origin ?? { name: "", fileSha256: "", bytes: 0 } } },
+        defaults: { ...SOUNDFONT_DEFAULTS },
+        credit: c0.credit ?? { attribution: [], license: { name: "unknown" } },
+        spec: c0.spec ?? structuredClone(SOUNDFONT_SPEC),
+        ...Object.keys(engines).length ? { engines } : {}
+      };
+    }
+    return { ...c, ...common2, instrument: { engine: "unknown", engines }, defaults: {}, credit: c0.credit ?? { attribution: [], license: { name: "unknown" } }, spec: c0.spec ?? { kind: "unknown" } };
+  });
+  return { ...json, candidates: cands2 };
+}
 var MIGRATIONS = {
   manifest: [],
   score: [],
-  lounge: [],
+  lounge: [loungeV1toV2],
   studio: []
 };
 function migrate(kind, json) {
@@ -5573,25 +5619,29 @@ function migrate(kind, json) {
 // src/format/project.ts
 var MIMETYPE = "application/vnd.recordare.musicxml";
 var DIR = ".moonsinger/";
-var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [] });
 var SOUNDS2 = `${DIR}sounds/`;
+var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [] });
 var PART = "P1";
 var ROLE = "r1";
 var MIC = "m1";
-var CAND = { full: "c1", light: "c2" };
-var CANDIDATE_ID = CAND;
-function defaultRole(hum, quality2) {
-  return { version: FORMAT.lounge, id: ROLE, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CAND[quality2], candidates: [
-    { id: CAND.full, name: "\u6708\u8BFB", gm: { program: 55, variant: "tsukuyomi" }, hum, calibrationDb: 0, chain: [], engines: {} },
-    { id: CAND.light, name: "\u6708\u8BFB\uFF08\u5143\u97F3\uFF09", gm: { program: 55, variant: "tsukuyomi-vowels" }, hum, calibrationDb: 0, chain: [], engines: {} }
+var CANDIDATE_ID = { full: "c1", light: "c2" };
+var common = () => ({ calibrationDb: 0, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } });
+function defaultRole(hum) {
+  return { version: FORMAT.lounge, id: ROLE, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
+    { id: CANDIDATE_ID.full, name: "\u6708\u8BFB", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
+    { id: CANDIDATE_ID.light, name: "\u6708\u8BFB\uFF08\u5143\u97F3\uFF09", instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) }
   ] };
 }
+var cands = (role) => role?.candidates ?? [];
+var instrumentOf = (c) => c && c.instrument && typeof c.instrument === "object" ? c.instrument : null;
+var isVoice = (i) => !!i && (i.engine === "tsukuyomi" || i.engine === "vowel-sampler");
 function saveMxl(a) {
-  const role = structuredClone(a.extras.lounge[ROLE] ?? defaultRole(a.hum, a.quality === "light" ? "light" : "full"));
-  if (a.quality === "full" || a.quality === "light") role.active = CAND[a.quality];
-  const cands = role.candidates ?? [];
-  for (const c of cands) if (c.id === CAND.full || c.id === CAND.light) c.hum = a.hum;
-  const active = cands.find((c) => c.id === role.active);
+  const role = structuredClone(a.extras.lounge[ROLE] ?? defaultRole(a.hum));
+  for (const c of cands(role)) {
+    const i = instrumentOf(c);
+    if (isVoice(i)) i.hum = a.hum;
+  }
+  const active = cands(role).find((c) => c.id === role.active);
   const studio = structuredClone(a.extras.studio ?? { version: FORMAT.studio, mics: [{ id: MIC, name: "\u9EA6\u514B\u98CE 1", gainDb: 0, pan: 0 }] });
   const mic = (studio.mics ?? [])[0];
   const w = writeMusicXml(a.song, {
@@ -5612,11 +5662,7 @@ function saveMxl(a) {
   };
   const files = {};
   const lounge = { ...a.extras.lounge, [ROLE]: role };
-  const referenced = /* @__PURE__ */ new Set();
-  for (const r of Object.values(lounge)) for (const c of r.candidates ?? []) {
-    const src = c.source;
-    if (src?.kind === "sf2" && typeof src.embedded === "string") referenced.add(src.embedded);
-  }
+  const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => x < y ? -1 : 1);
   const manifest = {
     ...a.extras.manifest ?? {},
@@ -5660,62 +5706,84 @@ function roleSound(extras) {
 function partLabels(extras) {
   return numberParts([{ name: roleName(extras), sound: roleSound(extras) }]);
 }
-function withRoleName(extras, name, hum, quality2, sound2) {
-  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, quality2 === "light" ? "light" : "full"));
+function withRoleName(extras, name, hum, sound2) {
+  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum));
   role.name = name;
   if (sound2) role.sound = sound2;
   return { ...extras, lounge: { ...extras.lounge, [ROLE]: role } };
+}
+function candidates(extras) {
+  return cands(extras.lounge[ROLE]).map((c) => ({ id: String(c.id), name: String(c.name ?? ""), engine: instrumentOf(c)?.engine ?? "unknown" }));
+}
+function activeId(extras) {
+  return String(extras.lounge[ROLE]?.active ?? CANDIDATE_ID.full);
+}
+function activeCandidate(extras) {
+  const role = extras.lounge[ROLE];
+  if (!role) return null;
+  return cands(role).find((x) => x.id === role.active) ?? null;
 }
 function activeCandidateName(extras) {
   const c = activeCandidate(extras);
   return c ? String(c.name ?? "") : null;
 }
-function activeCandidate(extras) {
-  const role = extras.lounge[ROLE];
-  if (!role) return null;
-  return (role.candidates ?? []).find((x) => x.id === role.active) ?? null;
+function activeInstrument(extras) {
+  if (!extras.lounge[ROLE]) return { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum: "n" };
+  return instrumentOf(activeCandidate(extras));
 }
-function activeId(extras) {
-  return String(extras.lounge[ROLE]?.active ?? CAND.full);
+function humOf(extras) {
+  for (const c of cands(extras.lounge[ROLE])) {
+    const i = instrumentOf(c);
+    if (isVoice(i)) return i.hum;
+  }
+  return "n";
+}
+function withActive(extras, id, hum) {
+  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum));
+  role.active = id;
+  return { ...extras, lounge: { ...extras.lounge, [ROLE]: role } };
 }
 function gmCandidates(extras) {
-  const role = extras.lounge[ROLE];
-  if (!role) return [];
-  return (role.candidates ?? []).flatMap((c) => {
-    const s = c.source;
-    if (s?.kind !== "sf2") return [];
-    const path = String(s.embedded);
-    return [{ id: String(c.id), name: String(c.name ?? ""), bank: Number(s.bank), program: Number(s.program), path, bytes: extras.sounds[path] ?? null }];
+  return cands(extras.lounge[ROLE]).flatMap((c) => {
+    const i = instrumentOf(c);
+    if (i?.engine !== "soundfont") return [];
+    const s = i.source;
+    return [{ id: String(c.id), name: String(c.name ?? ""), bank: i.bank, program: i.program, path: s.embedded, bytes: s.embedded ? extras.sounds[s.embedded] ?? null : null, origin: s.origin, subsetSha256: s.subsetSha256 }];
   });
 }
 function activeGm(extras) {
   const id = activeId(extras);
   return gmCandidates(extras).find((c) => c.id === id) ?? null;
 }
-function withActive(extras, id, hum) {
-  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, "full"));
-  role.active = id;
-  return { ...extras, lounge: { ...extras.lounge, [ROLE]: role } };
-}
 function withSf2Candidate(extras, c, hum) {
-  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, "full"));
-  const cands = role.candidates ?? [];
-  const n2 = Math.max(0, ...cands.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n2}`;
-  const path = `${SOUNDS2}${c.sha256}.sf2`;
-  cands.push({
-    id,
-    name: c.name,
-    gm: { program: c.bank === 128 ? null : c.program + 1, variant: null },
-    calibrationDb: 0,
-    chain: [],
-    engines: {},
-    source: { kind: "sf2", embedded: path, bank: c.bank, program: c.program, origin: c.origin, subsetBytes: c.subset.length },
-    credit: c.credit,
-    spec: { kind: "standard", name: "SoundFont", version: "2.04" }
-  });
-  role.candidates = cands;
+  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum));
+  const list = cands(role);
+  const n2 = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n2}`;
+  const embed = c.embed !== false, path = embed ? `${SOUNDS2}${c.sha256}.sf2` : null;
+  const instrument = { engine: "soundfont", bank: c.bank, program: c.program, source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
+  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), defaults: { ...SOUNDFONT_DEFAULTS }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  role.candidates = list;
   role.active = id;
-  return { ...extras, lounge: { ...extras.lounge, [ROLE]: role }, sounds: { ...extras.sounds, [path]: c.subset } };
+  return { ...extras, lounge: { ...extras.lounge, [ROLE]: role }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };
+}
+function referencedSounds(lounge) {
+  const refs = /* @__PURE__ */ new Set();
+  for (const r of Object.values(lounge)) for (const c of cands(r)) {
+    const i = instrumentOf(c);
+    if (i?.engine === "soundfont" && typeof i.source?.embedded === "string") refs.add(i.source.embedded);
+  }
+  return refs;
+}
+function pruneSounds(extras) {
+  const refs = referencedSounds(extras.lounge), keep = Object.entries(extras.sounds).filter(([p]) => refs.has(p));
+  return keep.length === Object.keys(extras.sounds).length ? extras : { ...extras, sounds: Object.fromEntries(keep) };
+}
+function withoutCandidate(extras, id) {
+  const role = structuredClone(extras.lounge[ROLE]);
+  if (!role) return extras;
+  if (role.active === id) throw new Error("\u4E0A\u573A\u7684\u5019\u9009\u4E0D\u80FD\u5220\uFF0C\u5148\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D");
+  role.candidates = cands(role).filter((c) => c.id !== id);
+  return pruneSounds({ ...extras, lounge: { ...extras.lounge, [ROLE]: role } });
 }
 function openBytes(name, bytes) {
   const isZip = bytes[0] === 80 && bytes[1] === 75;
@@ -5787,39 +5855,96 @@ function openBytes(name, bytes) {
   }
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
   const r = readMusicXml(strFromU8(files[main]), hints);
-  return finish(r, extras, ours, name);
+  return finish(r, pruneSounds(extras), ours, name);
 }
 function finish(r, extras, ours, name) {
   const notices = [];
   const dropped = Object.entries(r.dropped);
   if (dropped.length) notices.push(`\u8FD9\u4EFD\u8C31\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u4E0D\u652F\u6301\u7684\u4E1C\u897F\uFF0C\u6CA1\u6709\u8BFB\u8FDB\u6765\uFF1A${dropped.map(([k, n2]) => `${k} ${n2} \u5904`).join("\u3001")}\u3002\u5B58\u7684\u65F6\u5019\u5B83\u4EEC\u4E0D\u4F1A\u5728\u65B0\u6587\u4EF6\u91CC\u2014\u2014\u8981\u7559\u539F\u6837\uFF0C\u8BF7\u300C\u53E6\u5B58\u4E3A\u300D\u65B0\u6587\u4EF6\u3002`);
-  let hum = "n", quality2 = "full";
   if (!extras.lounge[ROLE] && !ours) {
     const p = r.parts[0];
     const was = p?.instrumentName || p?.name || "\u539F\u6765\u7684\u4E50\u5668";
     const gm = p?.program;
-    const role2 = defaultRole("n", "full");
+    const role2 = defaultRole("n");
     role2.name = p?.name || DEFAULT_ROLE.name;
     if (p?.sound) role2.sound = p.sound;
     role2.active = "c0";
-    role2.candidates.unshift({ id: "c0", name: was, gm: { program: gm ?? null, variant: p?.variant ?? null }, calibrationDb: 0, chain: [], engines: {} });
+    cands(role2).unshift({ id: "c0", name: was, instrument: { engine: "unknown", midi: { program: gm ?? null, variant: p?.variant ?? null } }, gm: { program: gm ?? null, variant: p?.variant ?? null }, ...common(), defaults: {}, credit: { attribution: [], license: { name: "unknown" } }, spec: { kind: "unknown" } });
     extras.lounge[ROLE] = role2;
     notices.push(`\u58F0\u90E8\u300C${role2.name}\u300D\u539F\u6765\u662F${was}${gm ? `\uFF08GM ${gm} \u53F7\uFF09` : ""}\uFF1B\u8FD9\u4E00\u7248\u6CA1\u6709\u8FD9\u4EF6\u4E50\u5668\uFF0C\u6240\u4EE5\u8FD8\u6CA1\u4EBA\u4E0A\u573A\u3002\u8981\u6708\u8BFB\u6765\u5531\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C${role2.name}\u300D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u9009\u6708\u8BFB\u3002`);
   }
   const role = extras.lounge[ROLE];
   if (role) {
     const gm = activeGm(extras);
-    quality2 = role.active === CAND.full ? "full" : role.active === CAND.light ? "light" : gm ? "gm" : "none";
-    if (gm && !gm.bytes) {
-      quality2 = "none";
-      notices.push(`\u300C${gm.name}\u300D\u7684\u58F0\u97F3\uFF08${gm.path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${role.name ?? ""}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
-    }
-    const c = (role.candidates ?? []).find((x) => x.id === CAND.full);
-    const h = c?.hum;
-    if (h === "la" || h === "n" || h === "u" || h === "o" || h === "a") hum = h;
+    if (gm && gm.path && !gm.bytes) notices.push(`\u300C${gm.name}\u300D\u7684\u58F0\u97F3\uFF08${gm.path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${role.name ?? ""}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
   }
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
-  return { song: { ...r.song, hum }, stem, hum, quality: quality2, extras, ours, notices };
+  const hum = humOf(extras);
+  return { song: { ...r.song, hum }, stem, hum, extras, ours, notices };
+}
+
+// src/gm/sound-cache.ts
+var CACHE = "pwa-sounds";
+var keyOf = (sha256) => `${location.origin}/__pwa-sounds__/${sha256}`;
+var MEM_MAX = 2;
+var memory = /* @__PURE__ */ new Map();
+var hasCaches = () => typeof caches !== "undefined";
+var sha256Hex = async (b) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
+function rememberInMemory(sha256, bytes) {
+  memory.delete(sha256);
+  memory.set(sha256, bytes);
+  while (memory.size > MEM_MAX) memory.delete(memory.keys().next().value);
+}
+async function cachedSound(sha256) {
+  const m = memory.get(sha256);
+  if (m) {
+    rememberInMemory(sha256, m);
+    return m;
+  }
+  if (!hasCaches()) return null;
+  try {
+    const c = await caches.open(CACHE), r = await c.match(keyOf(sha256));
+    if (!r) return null;
+    const bytes = new Uint8Array(await r.arrayBuffer());
+    if (await sha256Hex(bytes) !== sha256) {
+      await c.delete(keyOf(sha256));
+      return null;
+    }
+    rememberInMemory(sha256, bytes);
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+async function rememberSound(sha256, bytes, persist) {
+  rememberInMemory(sha256, bytes);
+  if (!persist || !hasCaches()) return;
+  try {
+    const c = await caches.open(CACHE);
+    await c.put(keyOf(sha256), new Response(bytes, { headers: { "Content-Type": "application/octet-stream", "Content-Length": String(bytes.length) } }));
+  } catch {
+  }
+}
+async function listCachedSounds() {
+  if (!hasCaches()) return [];
+  try {
+    const c = await caches.open(CACHE), keys = await c.keys(), out = [];
+    for (const k of keys) {
+      const sha256 = k.url.slice(k.url.lastIndexOf("/") + 1), r = await c.match(k);
+      out.push({ sha256, bytes: Number(r?.headers.get("Content-Length") ?? 0) });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+async function forgetSound(sha256) {
+  memory.delete(sha256);
+  if (!hasCaches()) return;
+  try {
+    await (await caches.open(CACHE)).delete(keyOf(sha256));
+  } catch {
+  }
 }
 
 // src/gm/sf2-subset.ts
@@ -6159,7 +6284,7 @@ var doc = {
   handle: null,
   mtime: null,
   extras: emptyExtras(),
-  saved: { song: st.song, quality: "full", role: DEFAULT_ROLE.name, active: "c1" }
+  saved: { song: st.song, role: DEFAULT_ROLE.name, active: "c1" }
 };
 var docName = () => {
   const t = fileSafe(st.song.title ?? "");
@@ -6189,14 +6314,14 @@ configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 var sampler = new Sampler();
 var sound = {
   down: (p, id = "main") => {
-    if (quality() === "gm") {
+    if (engineNow() === "soundfont") {
       void gmDown(midiOf(p));
       return;
     }
     sampler.down(midiOf(p), st.song.hum, id);
   },
   up: (id = "main") => {
-    if (quality() !== "gm") sampler.up(id);
+    if (engineNow() !== "soundfont") sampler.up(id);
   }
   // GM 乐器：松键不截断，让它自己收尾（试听是一个固定长度的音）
 };
@@ -6241,7 +6366,7 @@ var view = new ScoreView(scoreEl, {
   focus: (where) => showPad(where === "staff"),
   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
-  part: () => ({ name: partLabels(doc.extras)[0], empty: quality() === "none" }),
+  part: () => ({ name: partLabels(doc.extras)[0], empty: engineNow() === "unknown" }),
   // 谱前写角色名（乐器的名字不上谱；同名同种带号）
   onPart: () => openPartSheet(),
   onPaper: () => openPaperSheet(),
@@ -6454,29 +6579,53 @@ async function singFull() {
   return r;
 }
 var GM_SR = 44100;
-var shaOfPath = (path) => path.slice(path.lastIndexOf("/") + 1).replace(/\.sf2$/, "");
+var embedSoftLimit = 1e7;
+var sessionSubsets = /* @__PURE__ */ new Map();
+async function resolveGmBytes(g2) {
+  if (g2.bytes) return g2.bytes;
+  if (g2.path) throw new Error(`\u300C${g2.name}\u300D\u7684\u58F0\u97F3\uFF08${g2.path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765`);
+  const have = sessionSubsets.get(g2.subsetSha256);
+  if (have) return have;
+  let bank = await cachedSound(g2.origin.fileSha256);
+  if (!bank) {
+    const e = Object.values(SOUNDS).find((x) => x.sha256 === g2.origin.fileSha256);
+    if (e) {
+      try {
+        bank = await fetchSound(e, (done) => progress(`\u627E\u300C${g2.name}\u300D\u7684\u58F0\u97F3\uFF1A\u4E0B\u8F7D ${e.name} ${Math.round(done / e.bytes * 100)}%`));
+      } finally {
+        progress("");
+      }
+    }
+  }
+  if (!bank) throw new Error(`\u300C${g2.name}\u300D\u7684\u58F0\u97F3\u6CA1\u968F\u6B4C\u5E26\uFF08\u5F31\u5F15\u7528\uFF09\uFF0C\u8FD9\u53F0\u8BBE\u5907\u548C\u5BB6\u65CF\u97F3\u6E90\u5E93\u91CC\u4E5F\u6CA1\u6709\u5B83\u6765\u81EA\u7684\u300C${g2.origin.name}\u300D\uFF08sha256 ${g2.origin.fileSha256.slice(0, 12)}\u2026\uFF09\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${roleName(doc.extras)}\u300D\uFF0C\u7ED9\u5B83\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u6216\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D`);
+  const subset = subsetSf2(bank, [{ bank: g2.bank, program: g2.program }]), sha = await sha256Hex2(subset);
+  if (sha !== g2.subsetSha256) throw new Error(`\u4ECE\u300C${g2.origin.name}\u300D\u5207\u51FA\u6765\u7684\u300C${g2.name}\u300D\u548C\u6B4C\u91CC\u8BB0\u7684\u4E0D\u4E00\u6837\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g2.subsetSha256.slice(0, 12)}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83`);
+  sessionSubsets.set(g2.subsetSha256, subset);
+  return subset;
+}
 var lastGm = null;
 async function renderGm() {
   const g2 = activeGm(doc.extras);
-  if (!g2) throw new Error("\u6CA1\u6709\u4E0A\u573A\u7684\u4E50\u5668");
-  if (!g2.bytes) throw new Error(`\u300C${g2.name}\u300D\u7684\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765`);
+  if (!g2) throw new Error("\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668");
   const notes = lightNotes().map((n2) => ({ preset: [g2.bank, g2.program], key: n2.midi, vel: 0.8, t0: n2.t0, t1: n2.t1 }));
   if (!notes.length) return null;
-  const key = JSON.stringify([g2.path, notes]);
+  const key = JSON.stringify([g2.subsetSha256, notes]);
   if (lastGm?.key === key) return lastGm.r;
-  const r = await singer.gm(g2.bytes, shaOfPath(g2.path), notes, GM_SR, 2);
+  const bytes = await resolveGmBytes(g2);
+  const r = await singer.gm(bytes, g2.subsetSha256, notes, GM_SR, 2);
   lastGm = { key, r };
   return r;
 }
 var gmAudCache = /* @__PURE__ */ new Map();
 async function gmDown(midi) {
   const g2 = activeGm(doc.extras);
-  if (!g2?.bytes) return;
-  const key = `${g2.path}:${midi}`;
+  if (!g2) return;
+  const key = `${g2.subsetSha256}:${midi}`;
   let smp = gmAudCache.get(key);
   if (!smp) {
     try {
-      smp = (await singer.gm(g2.bytes, shaOfPath(g2.path), [{ preset: [g2.bank, g2.program], key: midi, vel: 0.8, t0: 0, t1: 0.35 }], GM_SR, 1.5)).samples;
+      const bytes = await resolveGmBytes(g2);
+      smp = (await singer.gm(bytes, g2.subsetSha256, [{ preset: [g2.bank, g2.program], key: midi, vel: 0.8, t0: 0, t1: 0.35 }], GM_SR, 1.5)).samples;
     } catch (e) {
       showError(`\u300C${g2.name}\u300D\u54CD\u4E0D\u4E86\uFF1A${e.message}`);
       return;
@@ -6514,17 +6663,18 @@ async function togglePlay() {
   }
   if (singing) return;
   singer.unlock();
-  if (quality() === "none") {
+  const eng = engineNow();
+  if (eng === "unknown") {
     noCast("\u5531");
     return;
   }
-  if (quality() === "light") {
+  if (eng === "vowel-sampler") {
     playLight();
     return;
   }
   singing = true;
   $("playBtn").classList.add("is-on");
-  const gm = quality() === "gm";
+  const gm = eng === "soundfont";
   try {
     const cached = lastFull, r = gm ? await renderGm() : await singFull();
     if (!r) {
@@ -6553,11 +6703,12 @@ async function exportSong() {
   exporting = true;
   try {
     let r = null, how = "";
-    if (quality() === "none") {
+    const eng = engineNow();
+    if (eng === "unknown") {
       noCast("\u5BFC\u51FA");
       return;
     }
-    if (quality() === "full") {
+    if (eng === "tsukuyomi") {
       try {
         r = await singFull();
         how = "\u6708\u8BFB";
@@ -6566,7 +6717,7 @@ async function exportSong() {
         progress("");
         return;
       }
-    } else if (quality() === "gm") {
+    } else if (eng === "soundfont") {
       try {
         r = await renderGm();
         how = activeCandidateName(doc.extras) ?? "\u4E50\u5668";
@@ -6603,6 +6754,8 @@ var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
 var soundsSource = SOUNDS_SOURCE_DEFAULT;
 var soundsBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-sounds", location.href).href, soundsSource.trim().replace(/\/+$/, "") || SOUNDS_SOURCE_DEFAULT])];
 async function fetchSound(e, onProgress) {
+  const hit = await cachedSound(e.sha256);
+  if (hit) return hit;
   let last = "";
   for (const base2 of soundsBases()) {
     try {
@@ -6625,8 +6778,9 @@ async function fetchSound(e, onProgress) {
         onProgress(o);
       }
       if (o !== e.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${o} \u2260 ${e.bytes}\uFF09`);
-      const got = await sha256Hex(out);
+      const got = await sha256Hex2(out);
       if (got !== e.sha256) throw new Error(`\u5185\u5BB9\u548C\u76EE\u5F55\u91CC\u9489\u7684\u4E0D\u4E00\u6837\uFF08sha256 ${got.slice(0, 12)}\u2026 \u2260 ${e.sha256.slice(0, 12)}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83`);
+      await rememberSound(e.sha256, out, true);
       return out;
     } catch (err2) {
       last = `${base2}\uFF1A${err2.message}`;
@@ -6646,7 +6800,7 @@ function openSettings() {
   if (closeOffer) closeOffer();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc3(modelSource)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc3(soundsSource)}" /></label><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc3(CREDIT.credit)}
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc3(modelSource)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc3(soundsSource)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc3(CREDIT.credit)}
 
 ${esc3(CREDIT.terms)}
 ${esc3(CREDIT.termsUrl)}
@@ -6658,7 +6812,15 @@ ${esc3(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-ap
     void packStatusText().then((t) => packSt.textContent = t);
   };
   refresh();
-  const sndIn = box.querySelector("#sndIn");
+  const sndIn = box.querySelector("#sndIn"), sndCache = box.querySelector("#sndCache");
+  const refreshSounds = async () => {
+    const cached = await listCachedSounds(), bySha = new Map(cached.map((c) => [c.sha256, c])), known = new Set(Object.values(SOUNDS).map((e) => e.sha256));
+    sndCache.innerHTML = Object.values(SOUNDS).map((e) => {
+      const c = bySha.get(e.sha256);
+      return `<div class="set-row"><span>${esc3(e.name)} \xB7 ${sizeText(e.bytes)} \xB7 ${c ? "\u5DF2\u7559\u5728\u8BBE\u5907\u4E0A" : "\u6CA1\u4E0B\u8F7D"}</span>${c ? `<button class="btn" data-v="snd:del:${esc3(e.id)}">\u5220\u6389</button>` : `<button class="btn" data-v="snd:get:${esc3(e.id)}">\u4E0B\u8F7D\u7559\u7740</button>`}</div>`;
+    }).join("") + cached.filter((c) => !known.has(c.sha256)).map((c) => `<div class="set-row"><span>\u522B\u7684\u7248\u672C / \u522B\u7684 app \u7559\u7684\uFF08${c.sha256.slice(0, 8)}\u2026\uFF09\xB7 ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">\u5220\u6389</button></div>`).join("") || "\uFF08\u6CA1\u6709\uFF09";
+  };
+  void refreshSounds();
   const close = () => {
     modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT;
     soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT;
@@ -6673,7 +6835,21 @@ ${esc3(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-ap
     else if (v === "default") {
       srcIn.value = MODEL_SOURCE_DEFAULT;
       sndIn.value = SOUNDS_SOURCE_DEFAULT;
-    } else if (v === "check") void shell.checkForUpdate().then((r) => {
+    } else if (v?.startsWith("snd:get:")) {
+      const e2 = SOUNDS[v.slice(8)];
+      soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT;
+      void fetchSound(e2, (done) => progress(`\u4E0B\u8F7D ${e2.name} ${Math.round(done / e2.bytes * 100)}%`)).then(() => {
+        progress("");
+        info(`${e2.name} \u7559\u5728\u8BBE\u5907\u4E0A\u4E86`);
+      }).catch((err2) => {
+        progress("");
+        showError(err2.message);
+      }).finally(() => void refreshSounds());
+    } else if (v?.startsWith("snd:del:")) {
+      const e2 = SOUNDS[v.slice(8)];
+      void forgetSound(e2.sha256).then(refreshSounds);
+    } else if (v?.startsWith("snd:delsha:")) void forgetSound(v.slice(11)).then(refreshSounds);
+    else if (v === "check") void shell.checkForUpdate().then((r) => {
       if (r === "found") {
         close();
         showUpdateBar();
@@ -6736,7 +6912,9 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "537be153e240" };
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "537be153e240", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
+  embedSoftLimit = n2;
+} };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on) {
   if (padEl.hidden === !on) return;
@@ -6748,11 +6926,10 @@ function showPad(on) {
 bar.addEventListener("pointerdown", (e) => {
   if (!e.target.closest("button, select, label, input, a")) showPad(false);
 });
-var curQuality = "full";
-function quality() {
-  return curQuality;
+function engineNow() {
+  return activeInstrument(doc.extras)?.engine ?? "unknown";
 }
-var dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality || roleName(doc.extras) !== doc.saved.role || activeId(doc.extras) !== doc.saved.active;
+var dirty = () => st.song !== doc.saved.song || roleName(doc.extras) !== doc.saved.role || activeId(doc.extras) !== doc.saved.active;
 function renderTitle() {
   const d2 = dirty(), name = docName();
   $("docTitle").textContent = `${name}${d2 ? " \u2022" : ""}`;
@@ -6762,17 +6939,12 @@ function renderTitle() {
 function noCast(what) {
   showError(`\u300C${roleName(doc.extras)}\u300D\u8FD9\u4E2A\u89D2\u8272\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u539F\u6765\u7684\u4E50\u5668\u8FD9\u4E00\u7248\u6CA1\u6709\uFF09\uFF0C\u6240\u4EE5\u6CA1\u6709${what}\u3002\u8981\u6708\u8BFB\u6765\u5531\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C${roleName(doc.extras)}\u300D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u9009\u6708\u8BFB\u3002`);
 }
-function setQuality(q) {
-  if (q === "full" || q === "light") doc.extras = withActive(doc.extras, CANDIDATE_ID[q], st.song.hum);
-  curQuality = q;
+function setActive(id) {
+  doc.extras = withActive(doc.extras, id, st.song.hum);
   view.render();
   renderTitle();
 }
-function setActiveGm(id) {
-  doc.extras = withActive(doc.extras, id, st.song.hum);
-  setQuality("gm");
-}
-var sha256Hex = async (b) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
+var sha256Hex2 = async (b) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
 function openCreditsSheet() {
   closeOffer?.();
   const box = document.createElement("div");
@@ -6825,7 +6997,7 @@ function openPaperSheet() {
     }
   });
 }
-var HUMS = [["n", "\u3093 / \u55EF"], ["a", "\u3042 / \u554A"], ["o", "\u304A / \u54E6"], ["u", "\u3046 / \u545C"], ["la", "\u3089 / \u5566"]];
+var HUMS2 = [["n", "\u3093 / \u55EF"], ["a", "\u3042 / \u554A"], ["o", "\u304A / \u54E6"], ["u", "\u3046 / \u545C"], ["la", "\u3089 / \u5566"]];
 function openPartSheet() {
   closeOffer?.();
   const box = document.createElement("div");
@@ -6834,11 +7006,12 @@ function openPartSheet() {
   const setRole = (name, sound2) => {
     const n2 = name.trim();
     if (!n2 || n2 === roleName(doc.extras) && (!sound2 || sound2 === roleSound(doc.extras))) return;
-    doc.extras = withRoleName(doc.extras, n2, st.song.hum, quality(), sound2);
+    doc.extras = withRoleName(doc.extras, n2, st.song.hum, sound2);
     view.render();
     renderTitle();
   };
   let picked = null;
+  let over = null;
   const pickOfficial = async (id) => {
     const e = SOUNDS[id];
     try {
@@ -6846,33 +7019,66 @@ function openPartSheet() {
       progress("");
       const presets = listSf2Presets(bytes), first = presets.find((p) => p.bank === 0) ?? presets[0];
       picked = { name: e.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e };
+      over = null;
       draw();
     } catch (err2) {
       progress("");
       showError(err2.message);
     }
   };
-  const pickFile = () => {
+  const fileInput = (accept, onFile) => {
     const inp = document.createElement("input");
     inp.type = "file";
-    inp.accept = ".sf2,audio/x-soundfont";
+    inp.accept = accept;
     inp.hidden = true;
     document.body.append(inp);
     inp.addEventListener("change", async () => {
       const f = inp.files?.[0];
       inp.remove();
-      if (!f) return;
-      try {
-        const bytes = new Uint8Array(await f.arrayBuffer()), presets = listSf2Presets(bytes);
-        if (!presets.length) throw new Error("\u91CC\u9762\u6CA1\u6709\u4E50\u5668");
-        const first = presets.find((p) => p.bank === 0) ?? presets[0];
-        picked = { name: f.name, bytes, presets, sel: `${first.bank}:${first.program}` };
-        draw();
-      } catch (e) {
-        showError(`\u8BFB\u4E0D\u4E86\u300C${f.name}\u300D\uFF1A${e.message}`);
-      }
+      if (f) await onFile(f);
     });
     inp.click();
+  };
+  const pickFile = () => fileInput(".sf2,audio/x-soundfont", async (f) => {
+    try {
+      const bytes = new Uint8Array(await f.arrayBuffer()), presets = listSf2Presets(bytes);
+      if (!presets.length) throw new Error("\u91CC\u9762\u6CA1\u6709\u4E50\u5668");
+      const first = presets.find((p) => p.bank === 0) ?? presets[0];
+      picked = { name: f.name, bytes, presets, sel: `${first.bank}:${first.program}` };
+      over = null;
+      draw();
+    } catch (e) {
+      showError(`\u8BFB\u4E0D\u4E86\u300C${f.name}\u300D\uFF1A${e.message}`);
+    }
+  });
+  const findBankFile = (id) => {
+    const g2 = gmCandidates(doc.extras).find((c) => c.id === id);
+    if (!g2) return;
+    fileInput(".sf2,audio/x-soundfont", async (f) => {
+      try {
+        const bytes = new Uint8Array(await f.arrayBuffer()), sha = await sha256Hex2(bytes);
+        if (sha !== g2.origin.fileSha256) throw new Error(`\u300C${f.name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C${g2.origin.name}\u300D\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g2.origin.fileSha256.slice(0, 12)}\u2026\uFF09`);
+        await rememberSound(sha, bytes, true);
+        sessionSubsets.delete(g2.subsetSha256);
+        gmAudCache.clear();
+        lastGm = null;
+        await resolveGmBytes(g2);
+        info(`\u627E\u5230\u4E86\uFF1A\u300C${g2.name}\u300D\u80FD\u54CD\u4E86`);
+        draw();
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+  };
+  const finishAdd = (c, embed) => {
+    doc.extras = withSf2Candidate(doc.extras, { ...c, embed }, st.song.hum);
+    if (!embed) sessionSubsets.set(c.sha256, c.subset);
+    picked = null;
+    over = null;
+    gmAudCache.clear();
+    view.render();
+    renderTitle();
+    draw();
   };
   const addPicked = async () => {
     if (!picked) return;
@@ -6881,28 +7087,39 @@ function openPartSheet() {
     const name = box.querySelector("#sfName")?.value.trim() || preset.name;
     try {
       const subset = subsetSf2(picked.bytes, [{ bank, program }]), inf = sf2Info(picked.bytes);
-      const [sha256, fileSha256] = await Promise.all([sha256Hex(subset), sha256Hex(picked.bytes)]);
-      if (subset.length > 1e7) info(`\u300C${name}\u300D\u7684\u58F0\u97F3\u6709 ${sizeText(subset.length)}\uFF0C\u5D4C\u8FDB\u6B4C\u91CC\u5B58\u6863\u4F1A\u53D8\u5927\u3001\u53D8\u6162`);
+      const [sha256, fileSha256] = await Promise.all([sha256Hex2(subset), sha256Hex2(picked.bytes)]);
       const lib = picked.library;
       const credit = lib ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } } : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x) => !!x), license: { name: "unknown", text: inf.comment } };
-      doc.extras = withSf2Candidate(doc.extras, { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...lib ? { library: lib.id } : {} }, credit }, st.song.hum);
-      picked = null;
-      setQuality("gm");
-      draw();
+      const c = { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...lib ? { library: lib.id } : {} }, credit };
+      if (subset.length > embedSoftLimit) {
+        over = c;
+        draw();
+        return;
+      }
+      finishAdd(c, true);
     } catch (e) {
       showError(`\u52A0\u4E0D\u8FDB\u6765\uFF1A${e.message}`);
     }
   };
   const pickerHtml = () => {
+    if (over) return `<div class="part-sec">\u300C${esc3(over.name)}\u300D\u7684\u58F0\u97F3\u6709 ${sizeText(over.subset.length)}\uFF08\u8D85\u8FC7 ${sizeText(embedSoftLimit)}\uFF09</div><div class="set-row"><button class="btn primary" data-v="sf2:embed" title="\u5B57\u8282\u8FDB\u6B4C\uFF1A\u6B4C\u5230\u54EA\u90FD\u54CD\uFF1B\u5B58\u6863\u4F1A\u53D8\u5927\u3001\u53D8\u6162">\u5D4C\u8FDB\u6B4C</button><button class="btn" data-v="sf2:weak" title="\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\u548C\u54C8\u5E0C\uFF08\u5F31\u5F15\u7528\uFF09\uFF1A\u7528\u65F6\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u4F60\u7684\u6587\u4EF6\u91CC\u627E\uFF1B\u627E\u4E0D\u5230 = \u4E0D\u51FA\u58F0\u3001\u62A5\u9519\u3001\u4EBA\u6362">\u4E0D\u5D4C\uFF0C\u53EA\u8BB0\u6765\u6E90</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div>`;
     if (!picked) return "";
     const banks = [...new Set(picked.presets.map((p) => p.bank))].sort((a, b) => a - b);
     const label = (b) => b === 128 ? "\u9F13\u7EC4" : b === 0 ? "\u4E50\u5668" : `\u53D8\u4F53\uFF08bank ${b}\uFF09`;
     const cur = picked.presets.find((p) => `${p.bank}:${p.program}` === picked.sel);
     return `<div class="part-sec">${esc3(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b) => `<optgroup label="${label(b)}">${picked.presets.filter((p) => p.bank === b).map((p) => `<option value="${p.bank}:${p.program}"${`${p.bank}:${p.program}` === picked.sel ? " selected" : ""}>${String(p.program).padStart(3, "0")} ${esc3(p.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(cur?.name ?? "")}" /></label><div class="set-row"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u4E0A\u573A</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div>`;
   };
+  const ENGINE_TITLE = { tsukuyomi: "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09", "vowel-sampler": "\u6708\u8BFB\u7684\u5143\u97F3\u91C7\u6837\uFF1A\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1", soundfont: "SoundFont \u4E50\u5668\uFF08TinySoundFont \u51FA\u58F0\uFF09", unknown: "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09" };
   const draw = () => {
-    const q = quality(), h = st.song.hum, rn = roleName(doc.extras), rs = roleSound(doc.extras), aid = activeId(doc.extras);
-    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8</div><div class="part-sec">\u89D2\u8272\uFF08\u6309\u529F\u80FD\u9009\uFF0C\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc3(rn)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g2) => `<optgroup label="${g2.group}">${g2.items.map((r) => `<option value="${esc3(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc3(r.name)} \u2014 ${r.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(rn)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc3(rs)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u4E50\u5668\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + chip("q:full", "\u6708\u8BFB\uFF08\u5B8C\u6574\uFF09", q === "full", "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09") + chip("q:light", "\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09", q === "light", "\u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1") + gmCandidates(doc.extras).map((c) => chip(`cand:${c.id}`, c.name, q === "gm" && aid === c.id, c.bytes ? `SoundFont ${c.bank}:${c.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(c.bytes.length)}\uFF09` : "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765")).join("") + (q === "none" ? chip("q:none", `${esc3(activeCandidateName(doc.extras) ?? "\u539F\u6765\u7684\u4E50\u5668")}\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09`, true, "\u8FD9\u4EF6\u4E50\u5668\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A") : "") + `</div><div class="set-row">` + Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc3(e.id)}" title="${esc3(`${e.description ?? e.name}\uFF08${sizeText(e.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u70B9\u4E86\u624D\u4E0B\u8F7D\uFF1B${e.license.name}\uFF09`)}">\u4ECE ${esc3(e.name)} \u9009\u4E50\u5668\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u53EA\u628A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5D4C\u8FDB\u6B4C\uFF0C\u6587\u4EF6\u672C\u8EAB\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u4E50\u5668\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u4E50\u5668\u53EA\u628A\u7528\u5230\u7684\u90A3\u4E00\u4EF6\uFF08\u901A\u5E38\u51E0 MB\uFF09\u5D4C\u8FDB\u6B4C\u91CC\uFF0C\u6B4C\u5230\u54EA\u90FD\u54CD\uFF1B.sf2 \u6587\u4EF6\u672C\u8EAB\u4E0D\u7559\u5728\u8BBE\u5907\u4E0A\u3002</div>` + (q === "none" ? "" : `<div class="part-sec">\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) + `<div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    const eng = engineNow(), h = st.song.hum, rn = roleName(doc.extras), rs = roleSound(doc.extras), aid = activeId(doc.extras);
+    const gms = new Map(gmCandidates(doc.extras).map((g2) => [g2.id, g2])), active = gms.get(aid);
+    const chipTitle = (c) => {
+      const g2 = gms.get(c.id);
+      if (!g2) return ENGINE_TITLE[c.engine];
+      return g2.bytes ? `SoundFont ${g2.bank}:${g2.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(g2.bytes.length)}\uFF09` : g2.path ? "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765" : `\u5F31\u5F15\u7528\uFF1A\u58F0\u97F3\u4E0D\u5728\u6B4C\u91CC\uFF0C\u7528\u65F6\u4ECE\u300C${g2.origin.name}\u300D\u627E`;
+    };
+    const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc3(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc3(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc3(active.origin.name)}\u300D\u627E\uFF08${sessionSubsets.has(active.subsetSha256) ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09<button class="btn" data-v="find:${esc3(active.id)}">\u627E\u6587\u4EF6\u2026</button></div>`;
+    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8</div><div class="part-sec">\u89D2\u8272\uFF08\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\uFF1B\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc3(rn)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g2) => `<optgroup label="${g2.group}">${g2.items.map((r) => `<option value="${esc3(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc3(r.name)} \u2014 ${r.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(rn)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc3(rs)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + candidates(doc.extras).map((c) => chip(`cand:${c.id}`, c.engine === "unknown" ? `${esc3(c.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc3(c.name), aid === c.id, chipTitle(c)) + (aid !== c.id && (c.engine === "soundfont" || c.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc3(c.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="part-sec">\u627E\u4EBA</div><div class="set-row">` + Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc3(e.id)}" title="${esc3(`${e.description ?? e.name}\uFF08${sizeText(e.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e.license.name}\uFF09`)}">\u4ECE ${esc3(e.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u53EA\u628A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5D4C\u8FDB\u6B4C\uFF0C\u6587\u4EF6\u672C\u8EAB\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u7434\u53EA\u628A\u7528\u5230\u7684\u90A3\u4E00\u4EF6\uFF08\u901A\u5E38\u51E0 MB\uFF09\u5D4C\u8FDB\u6B4C\u91CC\uFF0C\u6B4C\u5230\u54EA\u90FD\u54CD\u3002</div>` + (eng === "tsukuyomi" || eng === "vowel-sampler" ? `<div class="part-sec">\u6708\u8BFB\uFF1A\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS2.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>` : "") + `<div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
     const inp = box.querySelector("#roleIn"), sel = box.querySelector("#roleSel");
     sel.addEventListener("change", () => {
       const [snd, ...nm] = sel.value.split("|");
@@ -6946,9 +7163,18 @@ function openPartSheet() {
       return;
     }
     if (!v) return;
-    if (v === "q:full" || v === "q:light") setQuality(v.slice(2));
-    else if (v.startsWith("cand:")) setActiveGm(v.slice(5));
-    else if (v === "sf2:pick") {
+    if (v.startsWith("cand:")) setActive(v.slice(5));
+    else if (v.startsWith("del:")) {
+      try {
+        doc.extras = withoutCandidate(doc.extras, v.slice(4));
+        renderTitle();
+      } catch (err2) {
+        showError(err2.message);
+      }
+    } else if (v.startsWith("find:")) {
+      findBankFile(v.slice(5));
+      return;
+    } else if (v === "sf2:pick") {
       pickFile();
       return;
     } else if (v.startsWith("sound:")) {
@@ -6957,22 +7183,29 @@ function openPartSheet() {
     } else if (v === "sf2:add") {
       void addPicked();
       return;
-    } else if (v === "sf2:cancel") picked = null;
-    else if (v.startsWith("hum:")) update(setHum(st, v.slice(4)));
+    } else if (v === "sf2:embed") {
+      if (over) finishAdd(over, true);
+      return;
+    } else if (v === "sf2:weak") {
+      if (over) finishAdd(over, false);
+      return;
+    } else if (v === "sf2:cancel") {
+      picked = null;
+      over = null;
+    } else if (v.startsWith("hum:")) update(setHum(st, v.slice(4)));
     else return;
     draw();
   });
 }
 function loadDoc(song, o) {
   if (impro) toggleImpro();
-  curQuality = o.quality;
   doc.stem = o.stem;
   doc.named = o.named;
   doc.handle = o.handle;
   doc.mtime = o.handle ? o.mtime ?? null : null;
   doc.extras = o.extras;
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };
-  doc.saved = { song: st.song, quality: o.quality, role: roleName(o.extras), active: activeId(o.extras) };
+  doc.saved = { song: st.song, role: roleName(o.extras), active: activeId(o.extras) };
   lastFull = null;
   view.render();
   pad.render();
@@ -6981,7 +7214,7 @@ function loadDoc(song, o) {
 function markSaved() {
   doc.stem = docName();
   doc.named = true;
-  doc.saved = { song: st.song, quality: quality(), role: roleName(doc.extras), active: activeId(doc.extras) };
+  doc.saved = { song: st.song, role: roleName(doc.extras), active: activeId(doc.extras) };
   renderTitle();
 }
 function confirmDiscard(what) {
@@ -7011,7 +7244,7 @@ function confirmDiscard(what) {
 }
 async function fileNew() {
   if (!await confirmDiscard("\u65B0\u5EFA")) return;
-  loadDoc(initState().song, { stem: defaultStem(), named: false, quality: "full", extras: emptyExtras(), handle: null });
+  loadDoc(initState().song, { stem: defaultStem(), named: false, extras: emptyExtras(), handle: null });
   info("\u65B0\u7684\u4E00\u9996");
 }
 async function fileOpen() {
@@ -7028,14 +7261,14 @@ async function fileOpen() {
 function openPicked(picked) {
   try {
     const o = openBytes(picked.name, picked.bytes), own = o.ours && !o.notices.length;
-    loadDoc(o.song, { stem: o.stem, named: true, quality: o.quality, extras: o.extras, handle: own ? picked.handle : null, mtime: own ? picked.mtime : null });
+    loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: own ? picked.handle : null, mtime: own ? picked.mtime : null });
     if (o.notices.length) showError(o.notices.join(" "));
     else info(`\u6253\u5F00\u4E86 ${picked.name}`);
   } catch (e) {
     showError(`\u6253\u4E0D\u5F00 ${picked.name}\uFF1A${e.message}`);
   }
 }
-var bytesNow = () => saveMxl({ song: st.song, hum: st.song.hum, quality: quality(), extras: doc.extras, app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
+var bytesNow = () => saveMxl({ song: st.song, hum: st.song.hum, extras: doc.extras, app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
 var mxlFile = (name) => new File([bytesNow()], name, { type: "application/vnd.recordare.musicxml" });
 var stemOf = (name) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
 var sizeText = (n2) => n2 < 1e6 ? `${Math.max(1, Math.round(n2 / 1e3))} KB` : `${(n2 / 1e6).toFixed(1)} MB`;
@@ -7326,4 +7559,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-74ea16b82922.mjs.map
+//# sourceMappingURL=moonsinger-64340d773890.mjs.map

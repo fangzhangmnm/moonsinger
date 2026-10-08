@@ -6,7 +6,7 @@ const fs = (await import("node:fs" as string)) as {
   readFileSync(u: URL, enc: "utf8"): string; readFileSync(u: URL): Uint8Array;
   readdirSync(u: URL): string[]; existsSync(u: URL): boolean;
 };
-import { saveMxl, openBytes, emptyExtras, FORMAT } from "../src/format/project.ts";
+import { saveMxl, openBytes, emptyExtras, activeInstrument, FORMAT } from "../src/format/project.ts";
 import { MIGRATIONS } from "../src/format/migrate/index.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong, canonTokens, shapeOf } from "./fixtures/format/sample-song.ts";
@@ -18,7 +18,7 @@ type Json = Record<string, unknown>;
 const KINDS = ["manifest", "score", "lounge", "studio"] as const;
 function writeNow(): Record<(typeof KINDS)[number], Json> {
   const song = sampleSong();
-  const files = unzipSync(saveMxl({ song, hum: song.hum, quality: "light", extras: emptyExtras(), app: "guard", date: "2026-10-07T00:00:00.000Z" }));
+  const files = unzipSync(saveMxl({ song, hum: song.hum, extras: emptyExtras(), app: "guard", date: "2026-10-07T00:00:00.000Z" }));
   const json = (p: string): Json => JSON.parse(strFromU8(files[p]));
   return { manifest: json(".moonsinger/manifest.json"), score: json(".moonsinger/score.json"), lounge: json(".moonsinger/lounge/r1.json"), studio: json(".moonsinger/studio.json") };
 }
@@ -52,7 +52,10 @@ describe("持久化守卫", () => {
       const o = openBytes("sample.mxl", new Uint8Array(fs.readFileSync(at(d, "sample.mxl"))));
       eq(o.notices.length, 0, `${d}：自家样本不该有提示`);
       eq(JSON.stringify(canonTokens(o.song)), JSON.stringify(exp.tokens), `${d}：tokens`);
-      eq(o.song.title, exp.title, `${d}：歌名`); eq(o.hum, exp.hum, `${d}：哼的字`); eq(o.quality, exp.quality, `${d}：上场的`);
+      eq(o.song.title, exp.title, `${d}：歌名`); eq(o.hum, exp.hum, `${d}：哼的字`);
+      // 上场的引擎：第 1 版样本记的是 quality（full / light / none），第 2 版起记 engine
+      const engine = activeInstrument(o.extras)?.engine ?? "unknown", want = exp.engine ?? ({ full: "tsukuyomi", light: "vowel-sampler", none: "unknown" } as Record<string, string>)[exp.quality];
+      eq(engine, want, `${d}：上场的引擎`);
       const role = o.extras.lounge["r1"] as Json;
       eq(role.name, exp.role.name, `${d}：角色名`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);
       eq(JSON.stringify((role.candidates as Json[]).map((c) => c.id)), JSON.stringify(exp.role.candidates), `${d}：候选 id`);

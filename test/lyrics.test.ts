@@ -82,7 +82,7 @@ describe("一个音上几个字（+）", () => {
     st = _dist(st, st.song.tokens.length - 1, _split("だ+ん")).st;
     const sc = _lab(st.song, "ja");
     eq(sc.SCORE.map((e) => `${e.kana}:${e.notes[0][1]}`).join(" "), `だ:${st.song.tokens[st.song.tokens.length - 1].kind === "note" ? (st.song.tokens[st.song.tokens.length - 1] as { dur: number }).dur / (_Q / 2) / 2 : 0} ん:${(st.song.tokens[st.song.tokens.length - 1] as { dur: number }).dur / (_Q / 2) / 2}`);
-    const bytes = _save({ song: st.song, hum: st.song.hum, quality: "full", extras: _ex(), app: "t", date: "d" });
+    const bytes = _save({ song: st.song, hum: st.song.hum, extras: _ex(), app: "t", date: "d" });
     const o = _open("x.mxl", bytes);
     eq((o.song.tokens[o.song.tokens.length - 1] as { lyric: string }).lyric, `だ${ELISION}ん`);
   });

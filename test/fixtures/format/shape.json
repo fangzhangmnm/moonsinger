@@ -2,7 +2,7 @@
   "versions": {
     "manifest": 1,
     "score": 1,
-    "lounge": 1,
+    "lounge": 2,
     "studio": 1
   },
   "shapes": {
@@ -40,16 +40,55 @@
       "active": "string",
       "candidates": [
         {
+          "articulation": {
+            "accentDb": "number",
+            "staccatoGate": "number",
+            "tenutoGate": "number"
+          },
           "calibrationDb": "number",
           "chain": [],
-          "engines": {},
+          "credit": {
+            "attribution": [
+              "string"
+            ],
+            "license": {
+              "name": "string",
+              "text": "string",
+              "url": "string"
+            }
+          },
+          "defaults": {},
+          "dynamicsDb": {
+            "f": "number",
+            "ff": "number",
+            "mf": "number",
+            "mp": "number",
+            "p": "number",
+            "pp": "number"
+          },
           "gm": {
             "program": "number",
             "variant": "string"
           },
-          "hum": "string",
           "id": "string",
-          "name": "string"
+          "instrument": {
+            "engine": "string",
+            "hum": "string",
+            "model": {
+              "pack": "string",
+              "sha256": "string"
+            }
+          },
+          "name": "string",
+          "spec": {
+            "doc": "string",
+            "kind": "string",
+            "source": {
+              "path": "string",
+              "ref": "string",
+              "repo": "string"
+            }
+          }
         }
       ],
       "id": "string",

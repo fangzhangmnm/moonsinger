@@ -7,7 +7,7 @@
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { saveMxl, openBytes, emptyExtras, FORMAT } from "../src/format/project.ts";
+import { saveMxl, openBytes, emptyExtras, activeInstrument, withActive, FORMAT } from "../src/format/project.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong, canonTokens, shapeOf } from "../test/fixtures/format/sample-song.ts";
 
@@ -18,13 +18,13 @@ const force = process.argv.includes("--force");
 const exists = existsSync(join(dir, "sample.mxl"));
 mkdirSync(dir, { recursive: true });
 const song = sampleSong();
-const bytes = saveMxl({ song, hum: song.hum, quality: "light", extras: emptyExtras(), app: "frozen-sample", date: "2026-10-07T00:00:00.000Z" });
+const bytes = saveMxl({ song, hum: song.hum, extras: withActive(emptyExtras(), "c2", song.hum), app: "frozen-sample", date: "2026-10-07T00:00:00.000Z" });   // 上场 = 月读元音版（同 v1 样本的 quality light）
 const o = openBytes("sample.mxl", bytes);
 const files = unzipSync(bytes);
 const json = (p) => JSON.parse(strFromU8(files[p]));
 const role = json(".moonsinger/lounge/r1.json"), studio = json(".moonsinger/studio.json");
 const expected = {
-  versions: FORMAT, title: song.title, hum: o.hum, quality: o.quality, tokens: canonTokens(song),
+  versions: FORMAT, title: song.title, hum: o.hum, engine: activeInstrument(o.extras)?.engine ?? "unknown", tokens: canonTokens(song),
   role: { name: role.name, sound: role.sound, active: role.active, candidates: role.candidates.map((c) => c.id) },
   mics: studio.mics.map((m) => m.id),
 };

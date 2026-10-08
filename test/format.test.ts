@@ -3,7 +3,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { TPQ, type Song, type Token } from "../src/score/song.ts";
 import { MELISMA_MARK } from "../src/score/lyrics.ts";
-import { saveMxl, openBytes, emptyExtras, FORMAT } from "../src/format/project.ts";
+import { saveMxl, openBytes, emptyExtras, withActive, activeInstrument, CANDIDATE_ID, FORMAT, type Extras } from "../src/format/project.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../vendor/fflate/fflate.esm.js";
 
 const Q = TPQ, E = TPQ / 2, T3 = (TPQ / 2) * 2 / 3;   // 四分 / 八分 / 八分三连音
@@ -36,14 +36,15 @@ function bigSong(): Song {
 /** 比较用：小节线 / 记号的 id 是编辑器自己的（文件里不存），去掉；音符 / 休止的 id 要原样。 */
 const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon((v as Record<string, unknown>)[k])])) : v;
 const norm = (s: Song) => JSON.stringify(canon(s.tokens.map((t) => (t.kind === "note" || t.kind === "rest" ? t : { ...t, id: 0 }))));
-const save = (song: Song, extras = emptyExtras(), quality: "full" | "light" | "none" = "light") =>
-  saveMxl({ song, hum: song.hum, quality, extras, app: "v0.0.0-test", date: "2026-10-07" });
+const save = (song: Song, extras = emptyExtras(), quality: "full" | "light" | "none" = "light") =>   // quality = 上场的：full 月读 / light 元音版 / none 不动 role.active
+  saveMxl({ song, hum: song.hum, extras: quality === "none" ? extras : withActive(extras, quality === "full" ? CANDIDATE_ID.full : CANDIDATE_ID.light, song.hum), app: "v0.0.0-test", date: "2026-10-07" });
+const engineOf = (o: { extras: Extras }) => activeInstrument(o.extras)?.engine ?? "unknown";
 
 describe("存档 .mxl", () => {
   it("自家文件：存了再开，每个 token 原样复原（连音、附点、连音线、人插 / 自动的小节线、跨小节的音、中途换记号、连字符、拖腔、改过的语言、没写音高）", () => {
     const song = bigSong(), bytes = save(song), o = openBytes("x.mxl", bytes);
     eq(norm(o.song), norm(song), "tokens");
-    eq(o.hum, "u", "哼的字"); eq(o.quality, "light", "上场的是元音版"); eq(o.song.title, "測試", "歌名"); eq(o.stem, "x", "文件名主干"); eq(o.ours, true, "认得是自家文件");
+    eq(o.hum, "u", "哼的字"); eq(engineOf(o), "vowel-sampler", "上场的是元音版"); eq(o.song.title, "測試", "歌名"); eq(o.stem, "x", "文件名主干"); eq(o.ours, true, "认得是自家文件");
     eq(o.notices.length, 0, "自家文件没有提示");
     eq(norm(openBytes("x.mxl", save(o.song, o.extras)).song), norm(song), "再存一遍还一样");
   });
@@ -121,14 +122,14 @@ describe("打开别的软件存的 MusicXML", () => {
   });
   it("不自动选角：原来的乐器记成候选、没人上场，人来选（user「不出声，报错，人类手动换」）", () => {
     const o = openBytes("twinkle.musicxml", strToU8(FOREIGN));
-    eq(o.quality, "none", "没人上场");
+    eq(engineOf(o), "unknown", "没人上场");
     eq(o.extras.lounge.r1.active, "c0", "上场的还是原来那件");
     assert(o.notices.some((n) => n.includes("Piano") && n.includes("GM 1 号") && n.includes("还没人上场")), `提示：${o.notices.join(" / ")}`);
     // 存了再开：原来那件还在、还是它上场（这一版没有 = 原样写回）
     const again = openBytes("t.mxl", save(o.song, o.extras, "none"));
-    eq(again.quality, "none", "存了再开仍然没人上场");
+    eq(engineOf(again), "unknown", "存了再开仍然没人上场");
     // 人选了月读 → 存了再开就是月读完整版
-    eq(openBytes("t.mxl", save(o.song, o.extras, "full")).quality, "full", "选了月读");
+    eq(engineOf(openBytes("t.mxl", save(o.song, o.extras, "full"))), "tsukuyomi", "选了月读");
   });
 });
 

@@ -153,6 +153,24 @@ user 问：「所以所有的纸放在同一个musicxml里面？为什么？然�
 - ~~纸的边界 = `<print new-page>`、score.json papers 带 start、谱架 `shelf/`、迁移 papers = [{ id, start }]~~ → 被上面的存法 B 取代（2026-10-07 深夜）。
 - 内存模型（归编辑器）：`Song.papers[]` → 每张纸 `parts[]` → 每个声部自己的 token 串（开头三个记号）；§7.8 的「各声部按对齐标记对齐」在纸内算，纸界 = 硬对齐点。
 
+## 6⅞. 乐器的数据结构：五个名词（2026-10-07 深夜 user 逐条认；Claude Fable 5.1）
+
+user：「现在开始好好做乐器这个数据结构，不要偷懒」「关键是谁来演到底是什么？以及试听各个乐器怎么办，以及不同的音源里面同一个乐器功能怎么办」「think from very above」「小提琴声部 小提琴 拉小提琴的那个轻音少女 和 罗兰的小提琴 和罗兰的音色库 这三个东西的关系是什么」「五个名词要分开，之前混了两个 同意」「谁来演到底是什么：演奏者…对」「按概念组织…同意，那边的数据结构也这么定，所以也许是两张表，一个是乐器史表。一个是GM自己的映射，那个是独立的一张表。GM只是一开始用来头脑风暴的」「顺序本来就是先选概念再选演奏者 同意」「QID 可以，但也有custom的，就是相当于多重编号，类似仓鼠那边有PG（古腾堡）有AO（青空）」「GM 号和 MusicXML 的 id 降级为投影 不太懂，你把握，我没想好」。
+
+| 名词 | 是什么 | 在数据里 |
+|---|---|---|
+| **乐器概念** | 音乐上的「它是什么」（小提琴、二胡），不是文件。身份 = **多重编号束**：`ids: { wikidata, musicxml, gm, hs, local }`，主键 wikidata 有就用、没有用 `x:` 本地；歌里 by value 存整个束 + 名字。仓鼠会话出两张表：乐器史表（百科）+ GM 映射表（独立） | 角色的 `sound`（现在 = MusicXML id）；以后加 `concept: { ids, name }` |
+| **角色** | 声部在谱上的功能位，带一个概念 | `LoungeRoleV2`：`name / sound / active / candidates` |
+| **演奏者 = 候选 = 谁来演** | 能把音符变成声音的「人」：演绎方式跟着他走（力度表、演奏法、校准、链、署名）；手里拿着琴 | `CandidateV2`（人）+ `candidate.instrument`（琴 = 引擎 + 素材 + 配置，按引擎分：tsukuyomi / vowel-sampler / soundfont / unknown） |
+| **货架** | 音源库里的一个文件（GeneralUser GS、你的 sfz），供应很多把琴；声明能提供哪些概念 | `instrument.source.origin.library`；库在 pwa-sounds / 本机，不进歌 |
+| **引擎** | 出声的算法，随 app 发，公式进 vault | `instrument.engine` + `spec` |
+
+关系：声部有角色；角色是概念；角色请演奏者上台（一次一个，下台的留在休息室）；演奏者拿琴；琴实现概念、来自货架。**换人**（换演奏者）和**换琴**（只换 `instrument`）是两个操作。月读人琴合一（嗓子 = 引擎 + 权重，哼的字是嗓子的配置）；GM 没有真的少女，「人」= 这台机器上的无名乐手。
+- **GM 号 / MusicXML id**：就是概念 id 束里的两个条目（GM 号 = 哪个 GM 音源能顶；MusicXML id = 导出给别的软件写哪个），不是主键——user 对「投影」一词没想好，交给 AI 把握，按「束里的条目」理解就不需要这个词。
+- **试听不生成演奏者**（user「需要spawn一百个生命周期非常短的『谁来演』吗」）：找人视图里一个**试听台**——临时的、不进休息室的一个槽，按概念列供应商，点哪个预设就用它放本声部的前几小节（或 pad 按键）；A/B 切着听；只在「上场」时才 by value 造一个演奏者。货架在缓存里时切一个预设 22 ms，即时。
+- **角色改了、懒得动歌手牌**（user「如果我把钢琴改成小提琴歌手牌懒得动怎么办」）：角色改概念不碰台上的人（钢琴手照样奏小提琴线，错配标出来、不硬拦）；歌手牌上给一个**建议 chip**「台上的还是钢琴——换成能演小提琴的？[GS 的 Violin]」一点就换，仍是人选、不自动。
+- **落地（v0.4.3）**：`contract.ts` 休息室 v2（`CandidateV2 / InstrumentV2 / Sf2Source / Credit / Spec`）、`performance.ts`（by value 的默认数）、`migrate/` 1→2、冻结样本 `v1-1-2-1`；app 去掉 `quality`；歌手牌三段；弱引用解析（歌里 → 本次 → 设备缓存 → 音源库 → 找文件）；音源缓存 `pwa-sounds`。还没做：试听台、建议 chip、角色 `concept`、AudioWorklet 实时试听。
+
 ## 7. 未定 / 还要想的
 
 1. 「乐器链 vs 录音房按跟谁走分」user 还没表态。
@@ -246,6 +264,8 @@ user 2026-10-07（看完推荐稿）：「对，因为一般的daw对于音源�
 **四问 user 2026-10-07 深夜全拍（编辑器 session 正式问的）**：① 两类划分 = 同意（附加：「引擎类留latex，样本类取决于是否是标准格式，不是的话也要留latex」→ §10.6）；② 超 10 MB = 提示后仍可嵌；③ 不许再分发的 = 提示可取消、归 user；④ 拖进来的默认不留设备 = 「好主意，也许这样就解构了插件库的问题。然后以后可以用户自己在onedrive屯插件可以onedrive导入。但是没有链接，永远by val。不过可以松一点，可以链接，但是只在找音，打开的文件夹这种asset explorer视图层」→ **歌对音源永远 by value、不链接任何库**；「链接」只准出现在找音源的视图层（asset explorer：浏览设备 / OneDrive 文件夹里有什么、从哪拖），不进歌。以后 user 自己在 OneDrive 屯的插件 = 从 OneDrive 导入进歌（仍 by value）。
 
 **落地（v0.4.0，2026-10-07 深夜，Claude Fable 5.1 编辑器 session）**：10.1 / 10.2 的样本类已做——`src/gm/sf2-subset.ts`（子集化纯函数；INFO 原样留；守卫 = 子集 ≡ 整包 ≤ 1e-5）、`vendor/tsf/`（TinySoundFont WASM，tsf_copy = 一次渲染一份发声状态 → 纯函数）、`src/gm/soundfont.ts`、候选 `source / credit / spec` + manifest `sounds`（v1 只加可选字段，shape.json 已更新）、`project.ts` 只写还引用着的音源、声音缺了 = quality none + 报出来、`main.ts` 歌手牌选乐器 / 播放 / 导出 / 试听。**v0.4.1 → v0.4.2**：官方货架先被打成 pwa-models 的包（错：user「音源不是ai」），v0.4.2 改为**家族音源库 `pwa-sounds`**（`20261007 PWA Sounds/`，普通 .sf2 文件 + `index.json`，跟人走、别的软件能直接用）：歌手牌「从 GeneralUser GS 2.0.3 选乐器…」点了才拉整文件、核目录里钉的 sha256、走 HTTP 缓存不进家族缓存；候选 `source.origin.library` 记目录 id、`credit` 从目录条目抄。一个文件不拆（user「好，不拆」）。还没做：鼓谱与鼓 pad、多声部、10.3「最近用过」、10.6 vault README。
+
+**音源缓存（user 2026-10-07「我觉得还是idb有缓存吧，可以缓存指定的包，不然没网的时候很麻烦」）**：`src/gm/sound-cache.ts` = Cache Storage `pwa-sounds`（按 sha256 存；和 AI 模型的 `pwa-models` 分开；用 Cache Storage 不用 IDB 是因为和模型包同一种机制、iOS 验证过，目的一样）+ 本次内存；第一次下载就留，设置里逐条删 / 「下载留着」预先下；取出来再核一次 sha256。e2e：弱引用的歌离线重开照样响（233 ms）。
 
 **官方 GS 不拆、一个文件（user 2026-10-07 深夜「好，不拆」）**：此前「鼓组一包、旋律一包」（cb7a1b9）作废；**而且它不是模型包**（user「公开模型仓是什么？音源不是ai音源不是ai音源不是ai」）——住家族音源库 `pwa-sounds`（音效素材也住那：user「所以你的意思是音效和音源都放这里对吧？」→ 是，`kind` = instrument / drumkit / ir / sfx），AI 模型留 `pwa-models`，效果器算法随 app 发，私人录音不上公仓。实测 GeneralUser GS 2.0.3：整包 30.8 MB；鼓组单独切出 5.9 MB，旋律包仍 30.8 MB（鼓组的采样几乎全和旋律乐器共用），两包合计多 19%；「浏览时省内存」靠只解析预设表不载采样、试听时子集化那一件解决，和包大小无关。包名 `sf2-generaluser-gs-2.0.3-<定稿日期>`，24 MiB 两片。
 
