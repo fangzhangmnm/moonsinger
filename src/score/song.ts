@@ -36,8 +36,8 @@ export const MAX_DUR = WHOLE * 4;
 export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
 export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
 export interface BarTok { kind: "bar"; id: number }
-/** 句（2026-10-08，Claude Fable 5.1；user「现在 || 没有这个我碰到稍微长一点的曲子都快疯了」「歌词的句号可能需要这个」）：这一句到这儿 = 排版换行 + 换气点 + 「合」挪字的边界。
- *  不是小节线（不参与数拍、弱起照旧）。连按两次「|」或歌词里打句号插入。存 MusicXML = 前一个音的 <breath-mark/>（+ 恰在小节边界时下一小节 <print new-system>）。 */
+/** 句（2026-10-08，Claude Fable 5.1；user「现在 || 没有这个我碰到稍微长一点的曲子都快疯了」「歌词的句号可能需要这个」）：这一句到这儿 = 换气记号 + 「合」挪字的边界。
+ *  **不换行**（user「不应该按照句换行，打谱软件没这么干的」）、不是小节线（不参与数拍、弱起照旧）。连按两次「|」或歌词里打句读插入。存 MusicXML = 前一个音的 <breath-mark/>。 */
 export interface PhraseTok { kind: "phrase"; id: number }
 export interface KeyTok { kind: "key"; id: number; fifths: number }
 export interface TimeTok { kind: "time"; id: number; beats: number; beatType: number }

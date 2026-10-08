@@ -140,9 +140,9 @@ interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: nu
 interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface HeadU { kind: "head"; index: -1; w: 0; x: number; system: number; tick: number; staff: Staff }   // 光标：零宽
-interface PhraseU { kind: "phrase"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 句：换气记号 + 这里换行
+interface PhraseU { kind: "phrase"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 句：换气记号（不换行）
 type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | PhraseU;
-const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, head: 4, chunk: 5 };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面，换行在小节线后面）
+const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, head: 4, chunk: 5 };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
 const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
@@ -427,23 +427,15 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       for (const c of seg) { if (x + c.w > right && x > sysStarts[system] + 0.01) newline(); place(c); }
       seg = [];
     };
-    // 句 = 这里一定换行（同一 tick 上紧跟的小节线留在这一行末尾）
-    const forcedEnd = new Set<number>();
-    const forceNewline = () => { if (x > sysStarts[system] + 0.01) { forcedEnd.add(system); newline(); } };
-    let pendingBreak: number | null = null;
-    for (const c of cols) {
-      if (pendingBreak !== null && !(c.bar && c.tick === pendingBreak)) { flush(); forceNewline(); pendingBreak = null; }
-      seg.push(c);
-      if (c.phrase) { pendingBreak = c.tick; continue; }
-      if (c.bar && breakableAt(c.tick)) { flush(); if (pendingBreak !== null) { forceNewline(); pendingBreak = null; } }
-    }
+    // 句不换行（user 2026-10-08「不应该按照句换行，打谱软件没这么干的」）：只是换气记号 + 「合」的边界；折行照旧只在小节线后
+    for (const c of cols) { seg.push(c); if (c.bar && breakableAt(c.tick)) flush(); }
     flush();
     const nSys = system + 1;
     // 右端对齐：多出来的地方按宽度分给这一行的音 / 休止（小节线、记号不拉宽）；挤进来超出的行（最后一行也算）同样按宽度压回来
     for (let s = 0; s < nSys; s++) {
       const row = cols.filter((c) => c.system === s);
       const end = row.reduce((m, c) => Math.max(m, c.x + c.w), sysStarts[s]), avail = right - sysStarts[s], used = end - sysStarts[s];
-      if (used <= avail + 1e-6 && (s === nSys - 1 || used < avail * 0.6)) continue;   // 句尾的行也和别的行一样右端拉齐（user 2026-10-08「换行感觉不规整」）；太短的（< 60%）不拉
+      if (used <= avail + 1e-6 && (s === nSys - 1 || used < avail * 0.6)) continue;
       const gw = chunkW(row);
       if (!gw) continue;
       const k = (avail - used) / gw;

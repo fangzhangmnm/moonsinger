@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.4-2026-10-08";
+var APP_VERSION = "v0.6.5-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4446,32 +4446,9 @@ function engrave(song, o10) {
       }
       seg = [];
     };
-    const forcedEnd = /* @__PURE__ */ new Set();
-    const forceNewline = () => {
-      if (x2 > sysStarts[system] + 0.01) {
-        forcedEnd.add(system);
-        newline();
-      }
-    };
-    let pendingBreak = null;
     for (const c10 of cols) {
-      if (pendingBreak !== null && !(c10.bar && c10.tick === pendingBreak)) {
-        flush2();
-        forceNewline();
-        pendingBreak = null;
-      }
       seg.push(c10);
-      if (c10.phrase) {
-        pendingBreak = c10.tick;
-        continue;
-      }
-      if (c10.bar && breakableAt(c10.tick)) {
-        flush2();
-        if (pendingBreak !== null) {
-          forceNewline();
-          pendingBreak = null;
-        }
-      }
+      if (c10.bar && breakableAt(c10.tick)) flush2();
     }
     flush2();
     const nSys = system + 1;
@@ -8055,15 +8032,11 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
   const langs = syllableLangs(toks);
   const measures = [];
   let cur = [], ticks = 0, len = measureLen(H2.beats, H2.beatType);
-  let lastNote = null, breakNext = false;
+  let lastNote = null;
   const close = (manual) => {
     measures.push({ body: cur, manual });
     cur = [];
     ticks = 0;
-    if (breakNext) {
-      cur.push(`<print new-system="yes"/>`);
-      breakNext = false;
-    }
   };
   const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : `<clef><sign>${clef}</sign><line>${clef === "F" ? 4 : 2}</line></clef>`;
   cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H2.fifths}</fifths></key><time><beats>${H2.beats}</beats><beat-type>${H2.beatType}</beat-type></time>${clefs}</attributes>`);
@@ -8099,7 +8072,6 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
         const a10 = lastNote.arr, k3 = lastNote.idx, mark = `<articulations><breath-mark/></articulations>`;
         a10[k3] = a10[k3].includes("</notations>") ? a10[k3].replace("</notations>", mark + "</notations>") : a10[k3].includes("<lyric") ? a10[k3].replace("<lyric", `<notations>${mark}</notations><lyric`) : a10[k3].replace("</note>", `<notations>${mark}</notations></note>`);
       }
-      breakNext = ticks >= len || ticks === 0;
       continue;
     }
     if (t10.kind === "key" || t10.kind === "time" || t10.kind === "tempo") {
@@ -8144,7 +8116,6 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       x2 += `</note>`;
       cur.push(x2);
       lastNote = { arr: cur, idx: cur.length - 1 };
-      breakNext = false;
       ticks += piece;
       left -= piece;
       k2++;
@@ -26768,4 +26739,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c2285ff8bebc.mjs.map
+//# sourceMappingURL=moonsinger-fc69bcc7ad35.mjs.map

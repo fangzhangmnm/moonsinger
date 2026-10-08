@@ -97,9 +97,9 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
   const langs = syllableLangs(toks);
   const measures: { body: string[]; manual: boolean }[] = [];
   let cur: string[] = [], ticks = 0, len = measureLen(H.beats, H.beatType);
-  // 句：前一个音的 <breath-mark/>；句恰在小节边界 = 下一小节 <print new-system="yes"/>（句在小节中间 = 只有换气记号，排版换行读回来照样有：句 token 从 breath-mark 认）
-  let lastNote: { arr: string[]; idx: number } | null = null, breakNext = false;
-  const close = (manual: boolean) => { measures.push({ body: cur, manual }); cur = []; ticks = 0; if (breakNext) { cur.push(`<print new-system="yes"/>`); breakNext = false; } };
+  // 句：前一个音的 <breath-mark/>（读回来从它认；不写 new-system——句不换行）
+  let lastNote: { arr: string[]; idx: number } | null = null;
+  const close = (manual: boolean) => { measures.push({ body: cur, manual }); cur = []; ticks = 0; };
   const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : `<clef><sign>${clef}</sign><line>${clef === "F" ? 4 : 2}</line></clef>`;
   cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time>${clefs}</attributes>`);
   if (first) cur.push(tempoXml(H.bpm));
@@ -119,7 +119,6 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
     if (t.kind === "bar") { close(true); continue; }
     if (t.kind === "phrase") {
       if (lastNote) { const a = lastNote.arr, k = lastNote.idx, mark = `<articulations><breath-mark/></articulations>`; a[k] = a[k].includes("</notations>") ? a[k].replace("</notations>", mark + "</notations>") : a[k].includes("<lyric") ? a[k].replace("<lyric", `<notations>${mark}</notations><lyric`) : a[k].replace("</note>", `<notations>${mark}</notations></note>`); }
-      breakNext = ticks >= len || ticks === 0;   // 小节边界上的句才写 new-system（小节中间的句写不进标准 MusicXML 的换行）
       continue;
     }
     if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") {
@@ -161,7 +160,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
         lyricDone = true;
       }
       x += `</note>`;
-      cur.push(x); lastNote = { arr: cur, idx: cur.length - 1 }; breakNext = false;
+      cur.push(x); lastNote = { arr: cur, idx: cur.length - 1 };
       ticks += piece; left -= piece; k++;
     }
     if (t.kind === "note" && !t.pitch) unwritten.push(`n${t.id}`);

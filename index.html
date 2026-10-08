@@ -29,6 +29,7 @@
           bar.textContent = text + "  (点击关闭)";
           try { (window.__msEarlyErrors = window.__msEarlyErrors || []).push({ t: Date.now(), m: text }); } catch (e) {}   // 进黑匣子（bundle 起来后 src/app/report-error.ts 收走）
         }
+        window.__msShowError = show;   // 主 bundle 加载失败（<script onerror>）也走这条红条：刚发了新版本 / 网络不通时页面不再是纯白（2026-10-08 iPad 清缓存撞上部署窗口）
         window.addEventListener("error", function (e) { show("脚本错误：" + (e.message || e.error || e)); });
         window.addEventListener("unhandledrejection", function (e) { show("未处理的 Promise 错误：" + (e.reason && (e.reason.message || e.reason))); });
       })();
@@ -127,6 +128,6 @@
         <aside id="padPanel" class="pad-panel"></aside>
       </main>
     </div>
-    <script type="module" src="./dist/moonsinger-c2285ff8bebc.mjs"></script>
+    <script type="module" src="./dist/moonsinger-fc69bcc7ad35.mjs" onerror="window.__msShowError && window.__msShowError(\'主程序没加载下来（刚发了新版本还没到、或网络不通）：等几秒再刷新一次\')"></script>
   </body>
 </html>
