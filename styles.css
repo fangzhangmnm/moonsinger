@@ -590,17 +590,20 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .ctx-menu .ctx-chip .smufl { font-family: "Bravura"; font-size: 20px; line-height: 1; position: relative; top: 4px; }
 .ctx-menu .ctx-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; }
 .ctx-menu .ctx-item.danger { color: var(--danger); }
-/* pad「⋯ → 布局…」：行 / 列 = 加减号步进，二选一 = 分段钮（2026-10-08 Opus 5.5；user「…优化一下，比如变成加减号」） */
-.pad-tools.cands.m-layout { display: flex; flex-wrap: wrap; gap: 6px; }
-.pad-tools.cands.m-layout > .btn.cand { min-width: 64px; height: var(--knob); }
-.lay-grp { display: inline-flex; align-items: stretch; height: var(--knob); border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
-.lay-grp .btn.cand { border: 0; border-radius: 0; box-shadow: none; min-width: 52px; height: 100%; padding: 0 10px; }
+/* pad「⋯ → 布局…」= 对话框（2026-10-08 Opus 5.5；user「…比如变成加减号」「要不键盘layout还是一个模态对话框，不会破坏键盘的尺寸」）：
+   行 / 列 = 加减号步进，二选一 = 分段钮；卡片靠上，键盘在下面看得见、点了马上变 */
+.offer.pad-layout { align-items: flex-start; padding-top: 64px; }
+.pad-layout-card { width: min(380px, 100%); }
+.lay-body { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 14px; }
+.lay-line { display: flex; align-items: center; gap: 10px; }
+.lay-line > .lay-k { width: 2.6em; flex: none; font-size: 13px; color: var(--muted); }
+.lay-grp { display: inline-flex; align-items: stretch; height: 44px; border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+.lay-grp .btn.cand { border: 0; border-radius: 0; box-shadow: none; min-width: 56px; height: 100%; padding: 0 12px; background: transparent; }
 .lay-grp > * + * { border-left: 1px solid var(--line) !important; }
 .lay-grp .btn.cand.is-on { background: var(--accent-soft); color: var(--accent); }
 .lay-grp .btn.cand:disabled { opacity: .3; }
-.lay-k { display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--muted); background: var(--bg); }
-.lay-v { display: flex; align-items: center; justify-content: center; min-width: 34px; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.lay-step { font-size: 22px !important; line-height: 1; min-width: 46px !important; }
+.lay-v { display: flex; align-items: center; justify-content: center; min-width: 40px; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lay-step { font-size: 22px !important; line-height: 1; min-width: 48px !important; }
 /* 顶栏三条杠的菜单（2026-10-08 Opus 5.5；同 WeebPaint ☰「文件」页：这首歌的低频事务 + 设置） */
 .ctx-menu.main-menu { min-width: 220px; max-width: 300px; }
 .ctx-menu .ctx-head { display: flex; flex-direction: column; gap: 2px; padding: 6px 12px 8px; font-size: 13px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }

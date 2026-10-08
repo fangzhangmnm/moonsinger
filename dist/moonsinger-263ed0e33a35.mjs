@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.23-2026-10-08";
+var APP_VERSION = "v0.6.24-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6882,11 +6882,6 @@ var Pad = class {
         const digits = (n10) => [...String(n10)].map((ch2) => TS(Number(ch2))).join("");
         return c10(`data-mark="key"`, `${plus}1=${KEY_NAMES[m2.key] ?? "?"}`, false, "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c10(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m2.time.beats)}</span><span>${digits(m2.time.beatType)}</span></span>`, false, "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c10(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m2.bpm}</span>`, false, "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c10(`data-autobars="1"`, "\u81EA\u52A8\u5C0F\u8282\u7EBF", this.host.autoBars(), "\u6309\u62CD\u53F7\u81EA\u52A8\u753B\u5C0F\u8282\u7EBF\uFF08\u53EA\u753B\u3001\u4E0D\u8FDB\u6570\u636E\uFF09\uFF1B\u624B\u63D2\u7684\u300C|\u300D= \u4ECE\u90A3\u91CC\u91CD\u65B0\u6570\uFF0C\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\u300C|\u300D") + (this.host.staves() === 2 ? c10(`data-staff="1"`, "\u6362\u8C31\u8868", false, "\u5927\u8C31\u8868\uFF1A\u521A\u5199\u7684\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u632A\u5230\u53E6\u4E00\u5F20\u8C31\u8868\uFF1B\u518D\u6309\u4E00\u6B21\u56DE\u5230\u6309\u97F3\u9AD8\u81EA\u52A8\u5206") : "") + c10(`data-open="layout"`, "\u5E03\u5C40\u2026", false, "\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9") + back;
       }
-      case "layout": {
-        const step = (k2, name, v, lo2, hi) => `<button class="btn cand lay-step" data-${k2}step="-1"${v <= lo2 ? " disabled" : ""} title="\u5C11\u4E00${name}">\u2212</button><span class="lay-v">${v}</span><button class="btn cand lay-step" data-${k2}step="1"${v >= hi ? " disabled" : ""} title="\u591A\u4E00${name}">+</button>`;
-        const grp = (label, inner, title = "") => `<span class="lay-grp"${title ? ` title="${title}"` : ""}><span class="lay-k">${label}</span>${inner}</span>`;
-        return grp("\u884C", step("r", "\u884C", rows, ROWS_MIN, ROWS_MAX) + c10(`data-rows="auto"`, "\u81EA\u52A8", this.rowsSetting === "auto", "\u6309\u5C4F\u5E55\u9AD8\u5EA6\u81EA\u52A8\u5B9A\u51E0\u884C"), "\u952E\u76D8\u51E0\u884C\uFF08\u9AD8\u5EA6\uFF09") + grp("\u5217", step("c", "\u5217", this.cols, COLS_MIN, COLS_MAX), "\u952E\u76D8\u51E0\u5217") + grp("\u952E\u4F4D", c10(`data-pl="movable"`, "\u9996\u8C03", this.layoutMode === "movable", "\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70") + c10(`data-pl="absolute"`, "\u7EDD\u5BF9", this.layoutMode === "absolute", "\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09")) + grp("\u6ED1", c10(`data-swipe="glide"`, "\u6EDA\u952E\u76D8", this.swipeMode === "glide", "\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09") + c10(`data-swipe="alter"`, "\u5347\u964D", this.swipeMode === "alter", "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09")) + back;
-      }
       default:
         return "";
     }
@@ -6901,9 +6896,9 @@ var Pad = class {
       e10.preventDefault();
       this.knobDown(b3, e10);
     }));
-    this.on(box, "[data-open]", (b3) => {
-      this.mode = b3.dataset.open;
-      this.render();
+    this.on(box, "[data-open]", () => {
+      this.back();
+      this.openLayout();
     });
     this.on(box, "[data-mark]", (b3) => {
       this.back();
@@ -6912,26 +6907,6 @@ var Pad = class {
     this.on(box, "[data-staff]", () => {
       this.host.onCommand({ k: "staff" });
     });
-    this.on(box, "[data-rows]", (b3) => {
-      this.rowsSetting = b3.dataset.rows === "auto" ? "auto" : Number(b3.dataset.rows);
-      this.render();
-    });
-    this.on(box, "[data-swipe]", (b3) => {
-      this.swipeMode = b3.dataset.swipe === "alter" ? "alter" : "glide";
-      this.render();
-    });
-    this.on(box, "[data-rstep]", (b3) => {
-      this.rowsSetting = Math.max(ROWS_MIN, Math.min(ROWS_MAX, this.rows() + Number(b3.dataset.rstep)));
-      this.render();
-    });
-    this.on(box, "[data-cstep]", (b3) => {
-      this.cols = Math.max(COLS_MIN, Math.min(COLS_MAX, this.cols + Number(b3.dataset.cstep)));
-      this.render();
-    });
-    this.on(box, "[data-pl]", (b3) => {
-      this.layoutMode = b3.dataset.pl === "absolute" ? "absolute" : "movable";
-      this.render();
-    });
     this.on(box, "[data-back]", () => this.back());
     this.on(box, "[data-impro]", () => this.host.onImpro());
     this.on(box, "[data-hide]", () => this.host.onHide());
@@ -6939,6 +6914,55 @@ var Pad = class {
       this.host.onAutoBars(!this.host.autoBars());
       this.toolsFor = "";
       this.render();
+    });
+  }
+  /** 键盘布局对话框（「⋯ → 布局…」）：行 / 列 = 加减号步进（user 2026-10-08「…优化一下，比如变成加减号」），二选一 = 分段钮。
+   *  点了马上生效（对话框靠上、键盘在下面看得见），好 / 点外面 / Esc 收起。 */
+  openLayout() {
+    document.querySelector(".offer.pad-layout")?.remove();
+    const box = document.createElement("div");
+    box.className = "offer pad-layout";
+    const c10 = (attrs, label, on2 = false, title = "") => `<button type="button" class="btn cand${on2 ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
+    const step = (k2, name, v, lo2, hi) => `<button type="button" class="btn cand lay-step" data-${k2}step="-1"${v <= lo2 ? " disabled" : ""} title="\u5C11\u4E00${name}">\u2212</button><span class="lay-v">${v}</span><button type="button" class="btn cand lay-step" data-${k2}step="1"${v >= hi ? " disabled" : ""} title="\u591A\u4E00${name}">+</button>`;
+    const grp = (label, inner, title = "") => `<div class="lay-line"><span class="lay-k">${label}</span><span class="lay-grp"${title ? ` title="${title}"` : ""}>${inner}</span></div>`;
+    const body2 = () => grp("\u884C", step("r", "\u884C", this.rows(), ROWS_MIN, ROWS_MAX) + c10(`data-rows="auto"`, "\u81EA\u52A8", this.rowsSetting === "auto", "\u6309\u5C4F\u5E55\u9AD8\u5EA6\u81EA\u52A8\u5B9A\u51E0\u884C"), "\u952E\u76D8\u51E0\u884C\uFF08\u9AD8\u5EA6\uFF09") + grp("\u5217", step("c", "\u5217", this.cols, COLS_MIN, COLS_MAX), "\u952E\u76D8\u51E0\u5217") + grp("\u952E\u4F4D", c10(`data-pl="movable"`, "\u9996\u8C03", this.layoutMode === "movable", "\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70") + c10(`data-pl="absolute"`, "\u7EDD\u5BF9", this.layoutMode === "absolute", "\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09")) + grp("\u6ED1", c10(`data-swipe="glide"`, "\u6EDA\u952E\u76D8", this.swipeMode === "glide", "\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09") + c10(`data-swipe="alter"`, "\u5347\u964D", this.swipeMode === "alter", "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09"));
+    box.innerHTML = `<div class="offer-card pad-layout-card"><div class="offer-title">\u952E\u76D8\u5E03\u5C40</div><div class="lay-body">${body2()}</div><div class="offer-btns"><button type="button" class="btn primary" data-v="close">\u597D</button></div></div>`;
+    document.body.append(box);
+    const lay = box.querySelector(".lay-body");
+    const esc8 = (e10) => {
+      if (e10.key === "Escape") {
+        e10.preventDefault();
+        e10.stopPropagation();
+        close();
+      }
+    };
+    const close = () => {
+      window.removeEventListener("keydown", esc8, true);
+      box.remove();
+    };
+    window.addEventListener("keydown", esc8, true);
+    box.addEventListener("pointerdown", (e10) => {
+      if (e10.target === box) {
+        e10.preventDefault();
+        close();
+      }
+    });
+    box.addEventListener("click", (e10) => {
+      const b3 = e10.target.closest("button");
+      if (!b3 || b3.disabled) return;
+      const d3 = b3.dataset;
+      if (d3.v === "close") {
+        close();
+        return;
+      }
+      if (d3.rstep) this.rowsSetting = Math.max(ROWS_MIN, Math.min(ROWS_MAX, this.rows() + Number(d3.rstep)));
+      else if (d3.cstep) this.cols = Math.max(COLS_MIN, Math.min(COLS_MAX, this.cols + Number(d3.cstep)));
+      else if (d3.rows) this.rowsSetting = "auto";
+      else if (d3.pl) this.layoutMode = d3.pl === "absolute" ? "absolute" : "movable";
+      else if (d3.swipe) this.swipeMode = d3.swipe === "alter" ? "alter" : "glide";
+      else return;
+      this.render();
+      lay.innerHTML = body2();
     });
   }
   /** 符号层（user 2026-10-08「呼吸的话我建议就是特殊符号吧，专门的特殊符号，软键盘里面后面有一个符号模式」「速度符号调号符号也都在里面…row col 超了可以拖动滚」）：
@@ -26797,7 +26821,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "49526707d134",
+  cssHash: "b295a6604cda",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -28991,4 +29015,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-416ed1c06613.mjs.map
+//# sourceMappingURL=moonsinger-263ed0e33a35.mjs.map

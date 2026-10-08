@@ -117,7 +117,7 @@ export interface PadHost {
   hintRange?(): HintRange;
 }
 
-type Mode = "normal" | "more" | "layout";   // 有选区时的移调 / 转调 / 时值不在 pad 上（2026-10-08 user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单，键盘只做纯粹的打谱」→ 选区菜单）   // 选调 / 长短 / 音域 = 旋钮（原地滚 / 点开滚轮），不在这里
+type Mode = "normal" | "more";   // 有选区时的移调 / 转调 / 时值不在 pad 上（2026-10-08 user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单，键盘只做纯粹的打谱」→ 选区菜单）   // 选调 / 长短 / 音域 = 旋钮（原地滚 / 点开滚轮），不在这里
 
 export class Pad {
   private rowShift = 0;       // 音域窗口挪过几行
@@ -279,17 +279,6 @@ export class Pad {
           (this.host.staves() === 2 ? c(`data-staff="1"`, "换谱表", false, "大谱表：刚写的音（或选中的）挪到另一张谱表；再按一次回到按音高自动分") : "") +
           c(`data-open="layout"`, "布局…", false, "几行几列、首调 / 绝对") + back;
       }
-      case "layout": {
-        // 行 / 列 = 加减号步进（user 2026-10-08「调整键盘高度col数布局的那个优化一下，比如变成加减号」；原来是 3 行…8 行、3 列…7 列一长串 chip）；二选一的 = 一个分段钮
-        const step = (k: "r" | "c", name: string, v: number, lo: number, hi: number) =>
-          `<button class="btn cand lay-step" data-${k}step="-1"${v <= lo ? " disabled" : ""} title="少一${name}">−</button><span class="lay-v">${v}</span>` +
-          `<button class="btn cand lay-step" data-${k}step="1"${v >= hi ? " disabled" : ""} title="多一${name}">+</button>`;
-        const grp = (label: string, inner: string, title = "") => `<span class="lay-grp"${title ? ` title="${title}"` : ""}><span class="lay-k">${label}</span>${inner}</span>`;
-        return grp("行", step("r", "行", rows, ROWS_MIN, ROWS_MAX) + c(`data-rows="auto"`, "自动", this.rowsSetting === "auto", "按屏幕高度自动定几行"), "键盘几行（高度）") +
-          grp("列", step("c", "列", this.cols, COLS_MIN, COLS_MAX), "键盘几列") +
-          grp("键位", c(`data-pl="movable"`, "首调", this.layoutMode === "movable", "每行从 1 起，跟着「1=」走") + c(`data-pl="absolute"`, "绝对", this.layoutMode === "absolute", "每行从 C 起（不跟着「1=」挪）")) +
-          grp("滑", c(`data-swipe="glide"`, "滚键盘", this.swipeMode === "glide", "手指按着滑到下一个键 = 响下一个（写的时候一路写）") + c(`data-swipe="alter"`, "升降", this.swipeMode === "alter", "在音键上上下滑 = 这一个音升 / 降（黏着）")) + back;
-      }
       default: return "";
     }
   }
@@ -308,21 +297,51 @@ export class Pad {
       `<button class="btn knob k-more" data-knob="more" title="更多：布局、插记号"><span class="kl">⋯</span></button>`;
     box.querySelectorAll<HTMLElement>("[data-knob]").forEach((b) => b.addEventListener("pointerdown", (e) => { e.preventDefault(); this.knobDown(b, e); }));
     // 候选
-    this.on(box, "[data-open]", (b) => { this.mode = b.dataset.open as Mode; this.render(); });
+    this.on(box, "[data-open]", () => { this.back(); this.openLayout(); });   // 「布局…」= 对话框（不再占 pad 头那一排：换成几排会把键盘挤变形；user 2026-10-08「要不键盘layout还是一个模态对话框，不会破坏键盘的尺寸」）
     this.on(box, "[data-mark]", (b) => { this.back(); this.host.onInsertMark(b.dataset.mark as "key" | "time" | "tempo"); });
     this.on(box, "[data-staff]", () => { this.host.onCommand({ k: "staff" }); });
-    // 布局：点了不收（好试），按「返回」回去
-    this.on(box, "[data-rows]", (b) => { this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows); this.render(); });
-    this.on(box, "[data-swipe]", (b) => { this.swipeMode = b.dataset.swipe === "alter" ? "alter" : "glide"; this.render(); });
-    this.on(box, "[data-rstep]", (b) => { this.rowsSetting = Math.max(ROWS_MIN, Math.min(ROWS_MAX, this.rows() + Number(b.dataset.rstep))); this.render(); });
-    this.on(box, "[data-cstep]", (b) => { this.cols = Math.max(COLS_MIN, Math.min(COLS_MAX, this.cols + Number(b.dataset.cstep))); this.render(); });
-    this.on(box, "[data-pl]", (b) => { this.layoutMode = b.dataset.pl === "absolute" ? "absolute" : "movable"; this.render(); });
     this.on(box, "[data-back]", () => this.back());
     this.on(box, "[data-impro]", () => this.host.onImpro());
     this.on(box, "[data-hide]", () => this.host.onHide());   // 「⋯」左边的收起键盘（user「...左边加一个hide keyboard的方形小按钮」）
     this.on(box, "[data-autobars]", () => { this.host.onAutoBars(!this.host.autoBars()); this.toolsFor = ""; this.render(); });   // 开关：点了不收，钮上亮 / 灭
   }
 
+  /** 键盘布局对话框（「⋯ → 布局…」）：行 / 列 = 加减号步进（user 2026-10-08「…优化一下，比如变成加减号」），二选一 = 分段钮。
+   *  点了马上生效（对话框靠上、键盘在下面看得见），好 / 点外面 / Esc 收起。 */
+  private openLayout(): void {
+    document.querySelector(".offer.pad-layout")?.remove();
+    const box = document.createElement("div");
+    box.className = "offer pad-layout";
+    const c = (attrs: string, label: string, on = false, title = "") => `<button type="button" class="btn cand${on ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
+    const step = (k: "r" | "c", name: string, v: number, lo: number, hi: number) =>
+      `<button type="button" class="btn cand lay-step" data-${k}step="-1"${v <= lo ? " disabled" : ""} title="少一${name}">−</button><span class="lay-v">${v}</span>` +
+      `<button type="button" class="btn cand lay-step" data-${k}step="1"${v >= hi ? " disabled" : ""} title="多一${name}">+</button>`;
+    const grp = (label: string, inner: string, title = "") => `<div class="lay-line"><span class="lay-k">${label}</span><span class="lay-grp"${title ? ` title="${title}"` : ""}>${inner}</span></div>`;
+    const body = () => grp("行", step("r", "行", this.rows(), ROWS_MIN, ROWS_MAX) + c(`data-rows="auto"`, "自动", this.rowsSetting === "auto", "按屏幕高度自动定几行"), "键盘几行（高度）") +
+      grp("列", step("c", "列", this.cols, COLS_MIN, COLS_MAX), "键盘几列") +
+      grp("键位", c(`data-pl="movable"`, "首调", this.layoutMode === "movable", "每行从 1 起，跟着「1=」走") + c(`data-pl="absolute"`, "绝对", this.layoutMode === "absolute", "每行从 C 起（不跟着「1=」挪）")) +
+      grp("滑", c(`data-swipe="glide"`, "滚键盘", this.swipeMode === "glide", "手指按着滑到下一个键 = 响下一个（写的时候一路写）") + c(`data-swipe="alter"`, "升降", this.swipeMode === "alter", "在音键上上下滑 = 这一个音升 / 降（黏着）"));
+    box.innerHTML = `<div class="offer-card pad-layout-card"><div class="offer-title">键盘布局</div><div class="lay-body">${body()}</div>` +
+      `<div class="offer-btns"><button type="button" class="btn primary" data-v="close">好</button></div></div>`;
+    document.body.append(box);
+    const lay = box.querySelector<HTMLElement>(".lay-body")!;
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } };
+    const close = () => { window.removeEventListener("keydown", esc, true); box.remove(); };
+    window.addEventListener("keydown", esc, true);
+    box.addEventListener("pointerdown", (e) => { if (e.target === box) { e.preventDefault(); close(); } });
+    box.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>("button"); if (!b || b.disabled) return;
+      const d = b.dataset;
+      if (d.v === "close") { close(); return; }
+      if (d.rstep) this.rowsSetting = Math.max(ROWS_MIN, Math.min(ROWS_MAX, this.rows() + Number(d.rstep)));
+      else if (d.cstep) this.cols = Math.max(COLS_MIN, Math.min(COLS_MAX, this.cols + Number(d.cstep)));
+      else if (d.rows) this.rowsSetting = "auto";
+      else if (d.pl) this.layoutMode = d.pl === "absolute" ? "absolute" : "movable";
+      else if (d.swipe) this.swipeMode = d.swipe === "alter" ? "alter" : "glide";
+      else return;
+      this.render(); lay.innerHTML = body();
+    });
+  }
   /** 符号层（user 2026-10-08「呼吸的话我建议就是特殊符号吧，专门的特殊符号，软键盘里面后面有一个符号模式」「速度符号调号符号也都在里面…row col 超了可以拖动滚」）：
    *  和音键一样大的格子，多了往下滚；点一个 = 做那件事、回到音键（一次性）。 */
   private buildSymbols(): void {
