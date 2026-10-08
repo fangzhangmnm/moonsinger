@@ -326,10 +326,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
   let head: Layout["head"] = null, shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
-  const staffTop = (r: number) => rowTop.get(r)! + P(STAFF_ABOVE);
+  const rowAbove = new Map<number, number>(), lyricOff = new Map<number, number>(), dynYAt = new Map<number, number>(), tempoYAt = new Map<number, number>();   // + 速度记号的基线（px；第一个声部）   // 行号 → 谱上面留多少（sp）/ 歌词基线在第一线下多少（sp）；声部第一条谱行号 → 力度字基线（px）
+  const staffTop = (r: number) => rowTop.get(r)! + P(rowAbove.get(r) ?? STAFF_ABOVE);
   const yOf = (r: number, d: number) => staffTop(r) + (TOP_LINE - d) * P(0.5);
   const dOf = (r: number, y: number) => Math.round(TOP_LINE - (y - staffTop(r)) / P(0.5));
-  const lyricY = (r: number) => yOf(r, BOTTOM_LINE) + P(LYRIC_BELOW);
+  const lyricY = (r: number) => yOf(r, BOTTOM_LINE) + P(lyricOff.get(r) ?? LYRIC_BELOW);
   const staffHit = (r: number) => ({ y: yOf(r, TOP_LINE) - P(1.2), h: yOf(r, BOTTOM_LINE) - yOf(r, TOP_LINE) + P(2.4) });
   const drawTime = (r: number, x0: number, beats: number, beatType: number, cls: string) => {
     const num = timeSigDigits(beats), den = timeSigDigits(beatType);
@@ -340,7 +341,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   };
   /** 「Andante ♩ = 88」：词 + 四分音符 + 数（user「速度记号可以用语义+数字吗」）。 */
   const drawTempo = (r: number, x0: number, v: number, cls: string, index: number) => {
-    const fs = TEMPO_EM * sp, word = tempoWord(v).it, y = staffTop(r) - P(2.4);
+    const fs = TEMPO_EM * sp, word = tempoWord(v).it, y = tempoYAt.get(r) ?? staffTop(r) - P(2.4);   // 速度记号在最上面：高音、力度字（写上面的时候）都在它下面
     const ww = (o.measureLyric(word) * TEMPO_EM) / LYRIC_EM / sp, num = `= ${v}`, nw = (o.measureLyric(num) * TEMPO_EM) / LYRIC_EM / sp;
     prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
     const gx = x0 + ww + 0.7;
@@ -497,13 +498,60 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const rowBase = rows.length, nR = parts.length;
     const rowStart = per.map((_, i) => per.slice(0, i).reduce((a, q) => a + q.staves, 0)), nRowsSys = per.reduce((a, q) => a + q.staves, 0);
     const rowOf = (s: number, r: number, k = 0) => rowBase + s * nRowsSys + rowStart[r] + k;
-    const rowH = per.map((q) => { const ly = q.tokens.some((t) => t.kind === "note" && t.lyric) ? SPC.rowH : SPC.rowHNoLyric; return q.staves === 2 ? [SPC.graveUpper, ly] : [ly]; });
-    const sysH = P(rowH.flat().reduce((a, b) => a + b, 0) + SYS_GAP);
-    drawPaperTitle(sysH);
+    // 4½. 行距按内容（2026-10-08 Opus 5.5；user「和歌词一样能不能根据有没有来自动调整行距」「行距计算应该考虑到有没有歌词，最高最低符号的位置之类的」）：
+    //   每一行（这张纸第 s 行 × 声部 × 谱表）估最高 / 最低（符头、符干的大概、加线、演奏法）；谱上下的空从版式的最小值起，内容要更多才加。
+    //   力度那一行（user「感觉一般强弱是写下面而不是上面的吧？然后同时有两个谱号就是写中间？」）：有歌词的声部写上面（下面让给歌词）、大谱表写两条谱中间、
+    //   其余写下面；这一行这个声部真有力度记号 / 渐强渐弱 / sfz fp 才留地方。
+    const lyricsOf = per.map((q) => q.tokens.some((t) => t.kind === "note" && t.lyric));
+    const dynMode = per.map((q, r) => (lyricsOf[r] ? "above" : q.staves === 2 ? "between" : "below"));
+    const clefShift = (q: (typeof per)[number], k: number) => ((q.staves === 2 ? (k === 1 ? "F" : "G") : (q.p.clef ?? "G")) === "F" ? 12 : 0);
+    const extentOf = (q: (typeof per)[number], s: number, k: number) => {
+      let top = TOP_LINE, bot = BOTTOM_LINE;
+      for (const u of q.units) {
+        if (u.kind !== "chunk" || u.system !== s || !u.note || (u.staff ?? 1) !== k + 1) continue;
+        const ds = (u.pitches.length ? u.pitches : u.pitch ? [u.pitch] : []).map((pp) => diatonicIndex(pp) + clefShift(q, k)); if (!ds.length) continue;
+        const hi = Math.max(...ds), lo = Math.min(...ds), stem = u.base < WHOLE, up = (hi + lo) / 2 < MID_LINE;
+        top = Math.max(top, hi + (stem && up ? 7 : 1)); bot = Math.min(bot, lo - (stem && !up ? 7 : 1));
+        if (u.art.some((a) => a !== "sfz" && a !== "fp")) { if (up) bot = Math.min(bot, lo - 3); else top = Math.max(top, hi + 3); }   // 演奏法在符干另一侧
+      }
+      return { top, bot };
+    };
+    const dynIn = (q: (typeof per)[number], s: number) => q.units.some((u) => u.system === s && (u.kind === "dyn" || u.kind === "hairpin" || (u.kind === "chunk" && u.note && (u.art.includes("sfz") || u.art.includes("fp")))));
+    /** 第 s 行：每个声部每张谱表的「上面留多少 / 下面留多少 / 歌词基线」（sp）+ 力度字基线的位置（谱上的级数；中间那种放好了再算）。 */
+    const geoOf = (s: number) => per.map((q, r) => {
+      const ex = Array.from({ length: q.staves }, (_, k) => extentOf(q, s, k)), dyn = dynIn(q, s), mode = dynMode[r];
+      const g = ex.map((e, k) => {
+        const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
+        let above = Math.max(STAFF_ABOVE, (e.top - TOP_LINE) / 2 + 0.8), below = Math.max(minBelow, (BOTTOM_LINE - e.bot) / 2 + 0.8), lyric: number | null = null;
+        if (lyricsOf[r] && k === q.staves - 1) { lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e.bot) / 2 + 2.0); below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW)); }
+        return { above, below, lyric, dynD: null as number | null, tempoD: null as number | null };
+      });
+      if (dyn && mode === "above") { const d = Math.max(TOP_LINE + 2.4, ex[0].top + 3); g[0].dynD = d; g[0].above = Math.max(g[0].above, (d - TOP_LINE) / 2 + 2.2); }   // f 这种字有下伸：离音远一点
+      if (dyn && mode === "below") { const d = Math.min(BOTTOM_LINE - 5, ex[0].bot - 4); g[0].dynD = d; g[0].below = Math.max(g[0].below, (BOTTOM_LINE - d) / 2 + 0.6); }
+      if (q.p.first) {   // 速度记号（第一个声部上面）：在最高的音和写在上面的力度字之上
+        const t = Math.max(TOP_LINE + 4.8, ex[0].top + 3, g[0].dynD !== null ? g[0].dynD + 4.6 : 0); g[0].tempoD = t; g[0].above = Math.max(g[0].above, (t - TOP_LINE) / 2 + 1.6);
+      }
+      if (dyn && mode === "between") { g[0].below = Math.max(g[0].below, (BOTTOM_LINE - ex[0].bot) / 2 + 1.6); g[1].above = Math.max(g[1].above, (ex[1].top - TOP_LINE) / 2 + 1.6); }
+      return { g, ex, dyn, mode };
+    });
+    const sysHOf = (G: ReturnType<typeof geoOf>) => P(G.reduce((n, x) => n + x.g.reduce((m, y) => m + y.above + 4 + y.below, 0), 0) + SYS_GAP);
+    const geos = Array.from({ length: nSys }, (_, s) => geoOf(s));
+    drawPaperTitle(geos.length ? sysHOf(geos[0]) : P(SPC.rowH));
     if (paper.hidden) { ensure(P(STUB_H)); prims.push({ t: "text", x: P(MARGIN), y: yCur + P(STUB_H * 0.7), s: "这张纸隐藏着：不放、不进压平件（「⋯」里显示）", cls: "part-stub hidden-note", size: P(1.1), anchor: "start" }); yCur += P(STUB_H); }
     for (let s = 0; s < nSys; s++) {
-      ensure(sysH);   // 分页：一行谱整块放不下就翻页
-      for (let r = 0; r < nR; r++) for (let k = 0; k < per[r].staves; k++) { const top = yCur; rowTop.set(rowOf(s, r, k), top); rows.push({ top, staffTop: top + P(STAFF_ABOVE), bottom: top + P(rowH[r][k]), paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff }); yCur += P(rowH[r][k]); }
+      const G = geos[s];
+      ensure(sysHOf(G));   // 分页：一行谱整块放不下就翻页
+      for (let r = 0; r < nR; r++) for (let k = 0; k < per[r].staves; k++) {
+        const top = yCur, row = rowOf(s, r, k), g = G[r].g[k], h = g.above + 4 + g.below;
+        rowTop.set(row, top); rowAbove.set(row, g.above); if (g.lyric !== null) lyricOff.set(row, g.lyric);
+        rows.push({ top, staffTop: top + P(g.above), bottom: top + P(h), paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff }); yCur += P(h);
+      }
+      for (let r = 0; r < nR; r++) {   // 力度字的基线（px）：上面 / 下面按算好的级数；中间 = 两条谱的内容之间的正中
+        const x = G[r], r0 = rowOf(s, r, 0);
+        if (x.g[0].tempoD !== null) tempoYAt.set(r0, yOf(r0, x.g[0].tempoD));
+        if (x.mode === "between" && per[r].staves === 2) dynYAt.set(r0, (yOf(r0, Math.min(BOTTOM_LINE, x.ex[0].bot - 1)) + yOf(rowOf(s, r, 1), Math.max(TOP_LINE, x.ex[1].top + 1))) / 2 + P(0.7));
+        else dynYAt.set(r0, yOf(r0, x.g[0].dynD ?? (x.mode === "below" ? BOTTOM_LINE - 5 : TOP_LINE + 2.4)));
+      }
       yCur += P(SYS_GAP);
     }
     // 每行五线画到哪：这一行最后一列是小节线 = 到那根小节线为止（不出头；user 2026-10-08「每行五线谱最好过了最后一个小节线能不能不出头」）；
@@ -620,7 +668,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           continue;
         }
         if (u.kind === "dyn") {   // 力度：谱上方（声乐谱的下面是歌词），和后面那个音左对齐；基线在第五线上方 1.2 个间距——再高就撞开头的速度记号（它的基线约 2.9）
-          prims.push({ t: "glyph", x: P(u.x + 0.3), y: yOf(row, TOP_LINE + 2.4), ch: DYN_GLYPH[u.value], cls: inSel(u.index) ? "dyn sel" : "dyn" });
+          prims.push({ t: "glyph", x: P(u.x + 0.3), y: dynYAt.get(rowOf(u.system, r, 0)) ?? yOf(row, TOP_LINE + 2.4), ch: DYN_GLYPH[u.value], cls: inSel(u.index) ? "dyn sel" : "dyn" });
           continue;
         }
         if (u.kind === "head") {
@@ -740,7 +788,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         }
         // 突强 / 强后即弱：音头的力度形状，画在力度那一行、和这个音左对齐（同力度记号的字）
         for (const a of (["sfz", "fp"] as const).filter((x) => c.art.includes(x)))
-          prims.push({ t: "glyph", x: nhX(c) - P(0.2), y: yOf(RW(c), TOP_LINE + 2.4), ch: a === "sfz" ? "\u{E539}" : "\u{E534}", cls: ["dyn", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+          prims.push({ t: "glyph", x: nhX(c) - P(0.2), y: dynYAt.get(rowOf(c.system, r, 0)) ?? yOf(RW(c), TOP_LINE + 2.4), ch: a === "sfz" ? "\u{E539}" : "\u{E534}", cls: ["dyn", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         if (c.breath) prims.push({ t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
       // 8. 连音线：同一个 token 拆开的几段之间 + 数据里的 tie（连着前一个音）。跨行的第一版不画
@@ -800,13 +848,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         for (const [sy, a, b] of segs) {
           if (b - a < P(0.3)) continue;
           const f0 = acc / total, f1 = (acc + b - a) / total; acc += b - a;
-          const [h0, h1] = h.dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)], y = yOf(rowOf(sy, r, 0), TOP_LINE + 3.4);
+          const [h0, h1] = h.dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)], y = (dynYAt.get(rowOf(sy, r, 0)) ?? yOf(rowOf(sy, r, 0), TOP_LINE + 2.4)) - P(0.5);
           prims.push({ t: "path", d: `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`, cls: "hairpin" });
         }
         if (!endU) {   // 推定的终点：现在的力度往上 / 往下一档
           let cur: string = "mf"; for (let j = h.index - 1; j >= 0; j--) { const u = tokens[j]; if (u.kind === "dyn") { cur = u.value; break; } }
           const k = Math.max(0, Math.min(LEVELS.length - 1, LEVELS.indexOf(cur as (typeof LEVELS)[number]) + (h.dir === "cresc" ? 1 : -1)));
-          prims.push({ t: "text", x: endX + P(0.4), y: yOf(rowOf(s1, r, 0), TOP_LINE + 2.6), s: `(${LEVELS[k]})`, cls: "dyn-implied", size: P(1.3), anchor: "start" });
+          prims.push({ t: "text", x: endX + P(0.4), y: (dynYAt.get(rowOf(s1, r, 0)) ?? yOf(rowOf(s1, r, 0), TOP_LINE + 2.4)) + P(0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied", size: P(1.3), anchor: "start" });
         }
         void implied;
       });

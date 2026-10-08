@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.7-2026-10-08";
+var APP_VERSION = "v0.7.8-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4685,10 +4685,11 @@ function engrave(song, o10) {
   const partsHit = [], papersHit = [];
   let head = null, shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
-  const staffTop = (r10) => rowTop.get(r10) + P2(STAFF_ABOVE);
+  const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map(), dynYAt = /* @__PURE__ */ new Map(), tempoYAt = /* @__PURE__ */ new Map();
+  const staffTop = (r10) => rowTop.get(r10) + P2(rowAbove.get(r10) ?? STAFF_ABOVE);
   const yOf = (r10, d3) => staffTop(r10) + (TOP_LINE - d3) * P2(0.5);
   const dOf = (r10, y2) => Math.round(TOP_LINE - (y2 - staffTop(r10)) / P2(0.5));
-  const lyricY = (r10) => yOf(r10, BOTTOM_LINE) + P2(LYRIC_BELOW);
+  const lyricY = (r10) => yOf(r10, BOTTOM_LINE) + P2(lyricOff.get(r10) ?? LYRIC_BELOW);
   const staffHit = (r10) => ({ y: yOf(r10, TOP_LINE) - P2(1.2), h: yOf(r10, BOTTOM_LINE) - yOf(r10, TOP_LINE) + P2(2.4) });
   const drawTime = (r10, x0, beats, beatType, cls) => {
     const num = timeSigDigits(beats), den = timeSigDigits(beatType);
@@ -4698,7 +4699,7 @@ function engrave(song, o10) {
     return cw2;
   };
   const drawTempo = (r10, x0, v, cls, index) => {
-    const fs = TEMPO_EM * sp2, word = tempoWord(v).it, y2 = staffTop(r10) - P2(2.4);
+    const fs = TEMPO_EM * sp2, word = tempoWord(v).it, y2 = tempoYAt.get(r10) ?? staffTop(r10) - P2(2.4);
     const ww = o10.measureLyric(word) * TEMPO_EM / LYRIC_EM / sp2, num = `= ${v}`, nw2 = o10.measureLyric(num) * TEMPO_EM / LYRIC_EM / sp2;
     prims.push({ t: "text", x: P2(x0), y: y2, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
     const gx = x0 + ww + 0.7;
@@ -4896,24 +4897,82 @@ function engrave(song, o10) {
     const rowBase = rows.length, nR2 = parts.length;
     const rowStart = per.map((_2, i10) => per.slice(0, i10).reduce((a10, q2) => a10 + q2.staves, 0)), nRowsSys = per.reduce((a10, q2) => a10 + q2.staves, 0);
     const rowOf = (s10, r10, k2 = 0) => rowBase + s10 * nRowsSys + rowStart[r10] + k2;
-    const rowH = per.map((q2) => {
-      const ly2 = q2.tokens.some((t10) => t10.kind === "note" && t10.lyric) ? SPC.rowH : SPC.rowHNoLyric;
-      return q2.staves === 2 ? [SPC.graveUpper, ly2] : [ly2];
+    const lyricsOf = per.map((q2) => q2.tokens.some((t10) => t10.kind === "note" && t10.lyric));
+    const dynMode = per.map((q2, r10) => lyricsOf[r10] ? "above" : q2.staves === 2 ? "between" : "below");
+    const clefShift = (q2, k2) => (q2.staves === 2 ? k2 === 1 ? "F" : "G" : q2.p.clef ?? "G") === "F" ? 12 : 0;
+    const extentOf = (q2, s10, k2) => {
+      let top = TOP_LINE, bot = BOTTOM_LINE;
+      for (const u2 of q2.units) {
+        if (u2.kind !== "chunk" || u2.system !== s10 || !u2.note || (u2.staff ?? 1) !== k2 + 1) continue;
+        const ds = (u2.pitches.length ? u2.pitches : u2.pitch ? [u2.pitch] : []).map((pp) => diatonicIndex(pp) + clefShift(q2, k2));
+        if (!ds.length) continue;
+        const hi = Math.max(...ds), lo2 = Math.min(...ds), stem = u2.base < WHOLE, up = (hi + lo2) / 2 < MID_LINE;
+        top = Math.max(top, hi + (stem && up ? 7 : 1));
+        bot = Math.min(bot, lo2 - (stem && !up ? 7 : 1));
+        if (u2.art.some((a10) => a10 !== "sfz" && a10 !== "fp")) {
+          if (up) bot = Math.min(bot, lo2 - 3);
+          else top = Math.max(top, hi + 3);
+        }
+      }
+      return { top, bot };
+    };
+    const dynIn = (q2, s10) => q2.units.some((u2) => u2.system === s10 && (u2.kind === "dyn" || u2.kind === "hairpin" || u2.kind === "chunk" && u2.note && (u2.art.includes("sfz") || u2.art.includes("fp"))));
+    const geoOf = (s10) => per.map((q2, r10) => {
+      const ex2 = Array.from({ length: q2.staves }, (_2, k2) => extentOf(q2, s10, k2)), dyn = dynIn(q2, s10), mode = dynMode[r10];
+      const g3 = ex2.map((e10, k2) => {
+        const minBelow = q2.staves === 2 && k2 === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r10] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
+        let above = Math.max(STAFF_ABOVE, (e10.top - TOP_LINE) / 2 + 0.8), below = Math.max(minBelow, (BOTTOM_LINE - e10.bot) / 2 + 0.8), lyric = null;
+        if (lyricsOf[r10] && k2 === q2.staves - 1) {
+          lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e10.bot) / 2 + 2);
+          below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW));
+        }
+        return { above, below, lyric, dynD: null, tempoD: null };
+      });
+      if (dyn && mode === "above") {
+        const d3 = Math.max(TOP_LINE + 2.4, ex2[0].top + 3);
+        g3[0].dynD = d3;
+        g3[0].above = Math.max(g3[0].above, (d3 - TOP_LINE) / 2 + 2.2);
+      }
+      if (dyn && mode === "below") {
+        const d3 = Math.min(BOTTOM_LINE - 5, ex2[0].bot - 4);
+        g3[0].dynD = d3;
+        g3[0].below = Math.max(g3[0].below, (BOTTOM_LINE - d3) / 2 + 0.6);
+      }
+      if (q2.p.first) {
+        const t10 = Math.max(TOP_LINE + 4.8, ex2[0].top + 3, g3[0].dynD !== null ? g3[0].dynD + 4.6 : 0);
+        g3[0].tempoD = t10;
+        g3[0].above = Math.max(g3[0].above, (t10 - TOP_LINE) / 2 + 1.6);
+      }
+      if (dyn && mode === "between") {
+        g3[0].below = Math.max(g3[0].below, (BOTTOM_LINE - ex2[0].bot) / 2 + 1.6);
+        g3[1].above = Math.max(g3[1].above, (ex2[1].top - TOP_LINE) / 2 + 1.6);
+      }
+      return { g: g3, ex: ex2, dyn, mode };
     });
-    const sysH = P2(rowH.flat().reduce((a10, b3) => a10 + b3, 0) + SYS_GAP);
-    drawPaperTitle(sysH);
+    const sysHOf = (G2) => P2(G2.reduce((n10, x3) => n10 + x3.g.reduce((m2, y2) => m2 + y2.above + 4 + y2.below, 0), 0) + SYS_GAP);
+    const geos = Array.from({ length: nSys }, (_2, s10) => geoOf(s10));
+    drawPaperTitle(geos.length ? sysHOf(geos[0]) : P2(SPC.rowH));
     if (paper.hidden) {
       ensure(P2(STUB_H));
       prims.push({ t: "text", x: P2(MARGIN), y: yCur + P2(STUB_H * 0.7), s: "\u8FD9\u5F20\u7EB8\u9690\u85CF\u7740\uFF1A\u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF08\u300C\u22EF\u300D\u91CC\u663E\u793A\uFF09", cls: "part-stub hidden-note", size: P2(1.1), anchor: "start" });
       yCur += P2(STUB_H);
     }
     for (let s10 = 0; s10 < nSys; s10++) {
-      ensure(sysH);
+      const G2 = geos[s10];
+      ensure(sysHOf(G2));
       for (let r10 = 0; r10 < nR2; r10++) for (let k2 = 0; k2 < per[r10].staves; k2++) {
-        const top = yCur;
-        rowTop.set(rowOf(s10, r10, k2), top);
-        rows.push({ top, staffTop: top + P2(STAFF_ABOVE), bottom: top + P2(rowH[r10][k2]), paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1 });
-        yCur += P2(rowH[r10][k2]);
+        const top = yCur, row = rowOf(s10, r10, k2), g3 = G2[r10].g[k2], h2 = g3.above + 4 + g3.below;
+        rowTop.set(row, top);
+        rowAbove.set(row, g3.above);
+        if (g3.lyric !== null) lyricOff.set(row, g3.lyric);
+        rows.push({ top, staffTop: top + P2(g3.above), bottom: top + P2(h2), paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1 });
+        yCur += P2(h2);
+      }
+      for (let r10 = 0; r10 < nR2; r10++) {
+        const x3 = G2[r10], r02 = rowOf(s10, r10, 0);
+        if (x3.g[0].tempoD !== null) tempoYAt.set(r02, yOf(r02, x3.g[0].tempoD));
+        if (x3.mode === "between" && per[r10].staves === 2) dynYAt.set(r02, (yOf(r02, Math.min(BOTTOM_LINE, x3.ex[0].bot - 1)) + yOf(rowOf(s10, r10, 1), Math.max(TOP_LINE, x3.ex[1].top + 1))) / 2 + P2(0.7));
+        else dynYAt.set(r02, yOf(r02, x3.g[0].dynD ?? (x3.mode === "below" ? BOTTOM_LINE - 5 : TOP_LINE + 2.4)));
       }
       yCur += P2(SYS_GAP);
     }
@@ -5036,7 +5095,7 @@ function engrave(song, o10) {
           continue;
         }
         if (u2.kind === "dyn") {
-          prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: yOf(row, TOP_LINE + 2.4), ch: DYN_GLYPH[u2.value], cls: inSel(u2.index) ? "dyn sel" : "dyn" });
+          prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: dynYAt.get(rowOf(u2.system, r10, 0)) ?? yOf(row, TOP_LINE + 2.4), ch: DYN_GLYPH[u2.value], cls: inSel(u2.index) ? "dyn sel" : "dyn" });
           continue;
         }
         if (u2.kind === "head") {
@@ -5178,7 +5237,7 @@ function engrave(song, o10) {
           d3 += sgn * (a10 === "accent" || a10 === "marcato" ? 3 : 2);
         }
         for (const a10 of ["sfz", "fp"].filter((x3) => c10.art.includes(x3)))
-          prims.push({ t: "glyph", x: nhX(c10) - P2(0.2), y: yOf(RW(c10), TOP_LINE + 2.4), ch: a10 === "sfz" ? "\uE539" : "\uE534", cls: ["dyn", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+          prims.push({ t: "glyph", x: nhX(c10) - P2(0.2), y: dynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4), ch: a10 === "sfz" ? "\uE539" : "\uE534", cls: ["dyn", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
       const tieBetween = (a10, b3) => {
@@ -5241,7 +5300,7 @@ function engrave(song, o10) {
           if (b3 - a10 < P2(0.3)) continue;
           const f0 = acc2 / total, f1 = (acc2 + b3 - a10) / total;
           acc2 += b3 - a10;
-          const [h0, h1] = h2.dir === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)], y2 = yOf(rowOf(sy2, r10, 0), TOP_LINE + 3.4);
+          const [h0, h1] = h2.dir === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)], y2 = (dynYAt.get(rowOf(sy2, r10, 0)) ?? yOf(rowOf(sy2, r10, 0), TOP_LINE + 2.4)) - P2(0.5);
           prims.push({ t: "path", d: `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`, cls: "hairpin" });
         }
         if (!endU) {
@@ -5254,7 +5313,7 @@ function engrave(song, o10) {
             }
           }
           const k2 = Math.max(0, Math.min(LEVELS.length - 1, LEVELS.indexOf(cur) + (h2.dir === "cresc" ? 1 : -1)));
-          prims.push({ t: "text", x: endX + P2(0.4), y: yOf(rowOf(s12, r10, 0), TOP_LINE + 2.6), s: `(${LEVELS[k2]})`, cls: "dyn-implied", size: P2(1.3), anchor: "start" });
+          prims.push({ t: "text", x: endX + P2(0.4), y: (dynYAt.get(rowOf(s12, r10, 0)) ?? yOf(rowOf(s12, r10, 0), TOP_LINE + 2.4)) + P2(0.1), s: `(${LEVELS[k2]})`, cls: "dyn-implied", size: P2(1.3), anchor: "start" });
         }
       });
       for (let n10 = 0; n10 < partLyrics.length; n10++) {
@@ -29606,4 +29665,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5f2ec0491905.mjs.map
+//# sourceMappingURL=moonsinger-1e5c29afe5b0.mjs.map
