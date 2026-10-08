@@ -382,6 +382,8 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .inst-name b { font-weight: 600; font-size: 15px; }
 .inst-name span { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .inst-name .inst-w { font-size: 11px; color: var(--accent); margin-left: 6px; letter-spacing: 1px; }   /* 〇〇风里的承重 ★ */
+.inst-name b .inst-preset { font-size: 13px; font-weight: 400; color: var(--ink); }   /* 按曲风：音色行的 GM 名（星级 / 入选按音色） */
+.inst-name b .inst-as { display: inline-block; font-size: 10px; font-weight: 400; line-height: 1.5; border: 1px dashed var(--line); border-radius: 4px; padding: 0 4px; margin-left: 6px; color: var(--muted); vertical-align: 1px; }   /* 在这种风里顶替某个概念 */
 .inst-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .inst-prov { padding: 4px 12px 10px 48px; background: var(--accent-soft); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
 .prov { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; }

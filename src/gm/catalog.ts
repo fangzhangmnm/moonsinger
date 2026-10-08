@@ -20,7 +20,9 @@ export interface Concept {
   /** 音效在现实里最像的那个键（v5；电话 = 102，GS 采样实测 2951 Hz；user「电话铃感觉就是老实的，以你听到的为准」）。 */
   naturalKey?: { note: number; hz?: number; basis?: string } | null;
 }
-export interface GmRow { program: number; bank: number; note?: number; gmNumber: number; gmName: string; family?: string; concept: string; relation: "self" | "substitute"; primary?: boolean; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string;   // primary = 一个号多重认领时的主本尊（v3）
+export interface GmRow { program: number; bank: number; note?: number; gmNumber: number; gmName: string; family?: string; concept: string; relation: "self" | "substitute"; primary?: boolean;
+  /** 这个音色自己在哪些风里（仓鼠 v8 起逐个音色判；本尊行才有）：as = 在这种风里顶替哪个概念（平替认领）。概念上的 styles 是这些聚合出来的，只拿来说「这件乐器属于哪些风」。 */
+  styles?: { tag: string; ear: string; weight?: number; as?: string }[]; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string;   // primary = 一个号多重认领时的主本尊（v3）
   /** GM 116–128 音效：在 GS + TinySoundFont 里按哪个键是采样原速（v8 按 TSF 的音高公式重算；换音色库 / 引擎就不算数）。 */
   sampleKey?: { soundfont: string; engine?: string; recommended: number; recommendedBasis?: string;
     layers?: { sample?: string; originalSpeedKey?: number; centsPerKey?: number; keyRange?: string; peakAtRecommended?: { hz: number; midi: number; pitched: boolean } | null }[] } }
@@ -96,36 +98,60 @@ export type SortMode = "family" | "year" | "hs" | "style";
 // 「按曲风」= 原「按〇〇风」（user 2026-10-08「按OO风换一个更正式好懂的名字」）；组名（和风 / 中华风 / 贝多风…）照旧用仓鼠表里的
 export const SORT_LABEL: Record<SortMode, string> = { style: "按曲风", family: "按族（GM 的顺序）", year: "按年代", hs: "按发声方式" };   // 下拉的顺序 = 这里的顺序（默认的排第一）
 const HS_CLASS: Record<string, string> = { "1": "体鸣（敲它自己）", "2": "膜鸣（敲皮）", "3": "弦鸣（弦）", "4": "气鸣（气）", "5": "电鸣（电）" };
-export interface Group { id: string; label: string; concepts: Concept[] }
-/** 分组 + 组内排序。搜索词按中 / 英 / 日名子串过滤。 */
+/** 列表里的一行：一个概念；按曲风时可以是概念名下的**一个音色**（preset = 那一行 GM 映射，星级 / 入选按它自己的，user 2026-10-08「音色为单位而不是家族一把捞」）。 */
+export interface Entry { concept: Concept; preset?: GmRow; weight?: number; as?: string }
+export interface Group { id: string; label: string; items: Entry[] }
+/** 分组 + 组内排序。搜索词按中 / 英 / 日名子串过滤（按曲风时音色行也认 GM 名：搜「Pad」）。 */
 export function groupConcepts(cat: Catalog, mode: SortMode, query = ""): Group[] {
   const q = query.trim().toLowerCase();
   const hit = (c: Concept) => !q || [c.names.zh, c.names.en, c.names.ja ?? ""].some((n) => n.toLowerCase().includes(q));
   const list = cat.concepts.filter(hit);
   const byGm = (a: Concept, b: Concept) => ((a.ids.gm ?? [])[0]?.program ?? 999) - ((b.ids.gm ?? [])[0]?.program ?? 999) || a.names.zh.localeCompare(b.names.zh, "zh");
-  const groups = new Map<string, Group>();
+  const groups = new Map<string, { id: string; label: string; concepts: Concept[] }>();
   const put = (id: string, label: string, c: Concept) => { let g = groups.get(id); if (!g) { g = { id, label, concepts: [] }; groups.set(id, g); } g.concepts.push(c); };
+  const asItems = (gs: { id: string; label: string; concepts: Concept[] }[]): Group[] => gs.map((g) => ({ id: g.id, label: g.label, items: g.concepts.map((concept) => ({ concept })) }));
   if (mode === "family") {
     const order = new Map(cat.defs.families.map((f, i) => [f.id, i]));
     for (const c of list) { const f = (c.family ?? [])[0] ?? "other"; put(f, cat.defs.families.find((x) => x.id === f)?.zh ?? (c.kind === "voice" ? "人声" : c.kind === "sound" ? "音效" : "其他"), c); }   // GM 以外的乐器（二胡）没有 family
-    return [...groups.values()].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).map((g) => ({ ...g, concepts: g.concepts.sort(byGm) }));
+    return asItems([...groups.values()].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).map((g) => ({ ...g, concepts: g.concepts.sort(byGm) })));
   }
   if (mode === "year") {
     const eras = cat.defs.eras;
     for (const c of list) { const e = eras.find((x) => x.id === c.era); put(e?.id ?? "unknown", e ? `${e.zh}${e.from !== null ? `（${fmtYear(e.from)} 起）` : ""}` : "年代不详", c); }
     const order = new Map(eras.map((e, i) => [e.id, i]));
-    return [...groups.values()].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.year ?? 1e9) - (b.year ?? 1e9)) }));
+    return asItems([...groups.values()].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.year ?? 1e9) - (b.year ?? 1e9)) })));
   }
   if (mode === "hs") {
     for (const c of list) { const k = c.ids.hs?.[0] ?? "?"; put(k, HS_CLASS[k] ?? "分类不详", c); }
-    return [...groups.values()].sort((a, b) => a.id.localeCompare(b.id)).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.ids.hs ?? "~").localeCompare(b.ids.hs ?? "~")) }));
+    return asItems([...groups.values()].sort((a, b) => (a.id.localeCompare(b.id))).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.ids.hs ?? "~").localeCompare(b.ids.hs ?? "~")) })));
   }
-  // 〇〇风：每种风里按承重降序（user 2026-10-08「每个风里面按照承重排可以吗，可以加一个重要性」），同承重再按 GM 顺序
-  for (const c of list) { const tags = [...new Set((c.styles ?? []).map((s) => s.tag))]; if (!tags.length) put("none", "没贴风格", c); for (const t of tags) put(t, styleLabel(cat, t), c); }
-  return [...groups.values()].sort((a, b) => (a.id === "none" ? 1 : b.id === "none" ? -1 : a.label.localeCompare(b.label, "zh"))).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => weightOf(b, g.id) - weightOf(a, g.id) || byGm(a, b)) }));
+  return styleGroups(cat, q, hit);
 }
-/** 这个概念在某种风里的承重（3 承重 / 2 常用 / 1 点缀；没标 = 0）。 */
-export const weightOf = (c: Concept, tag: string): number => Math.max(0, ...(c.styles ?? []).filter((s) => s.tag === tag).map((s) => s.weight ?? 0));
+/** 按曲风：**以 GM 音色为单位**（user 2026-10-08「评级和是否入选能不能精确到合成器里面的子音色」「每个不同的音色都单列单评级」「音色为单位而不是家族一把捞」「丢了子音的排序和策展」）。
+ *  成员 = 本尊行自己的 styles（仓鼠 v8 起逐个音色判；一个号多重认领只看主本尊）；没有 GM 音色能演的概念（古筝 / 风铃…）照旧按概念、星级用概念的。
+ *  组内：承重降序 → 年份升序 → GM 号（user「每个风里面按照承重排」；同承重按时间 = 仓鼠转述的 user 口径）。 */
+function styleGroups(cat: Catalog, q: string, hit: (c: Concept) => boolean): Group[] {
+  const groups = new Map<string, Group>();
+  const put = (tag: string, e: Entry) => { let g = groups.get(tag); if (!g) { g = { id: tag, label: tag === "none" ? "没贴风格" : styleLabel(cat, tag), items: [] }; groups.set(tag, g); } g.items.push(e); };
+  const self = [...cat.gmSelf.values()];
+  const styled = new Set(self.filter((r) => r.styles?.length).map((r) => r.concept));   // 有逐音色风格的概念：成员按音色算
+  for (const r of self) {
+    const c = cat.byId.get(r.concept); if (!c || !styled.has(c.id)) continue;
+    if (!hit(c) && !(q && r.gmName.toLowerCase().includes(q))) continue;
+    if (!r.styles?.length) { put("none", { concept: c, preset: r }); continue; }   // 没入选任何风的音色：照样找得到
+    for (const s of r.styles) put(s.tag, { concept: c, preset: r, weight: s.weight ?? 0, ...(s.as ? { as: s.as } : {}) });
+  }
+  for (const c of cat.concepts) {
+    if (styled.has(c.id) || !hit(c)) continue;
+    const tags = new Map<string, { weight: number; as?: string }>();
+    for (const s of c.styles ?? []) { const was = tags.get(s.tag); if (!was || (s.weight ?? 0) > was.weight) tags.set(s.tag, { weight: s.weight ?? 0, ...(s.as ? { as: s.as } : {}) }); }
+    if (!tags.size) put("none", { concept: c });
+    for (const [t, w] of tags) put(t, { concept: c, ...w });
+  }
+  const yearOf = (e: Entry) => e.preset?.year ?? e.concept.year ?? 1e9, gmOf = (e: Entry) => e.preset?.gmNumber ?? 999;
+  return [...groups.values()].sort((a, b) => (a.id === "none" ? 1 : b.id === "none" ? -1 : a.label.localeCompare(b.label, "zh")))
+    .map((g) => ({ ...g, items: g.items.sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0) || yearOf(a) - yearOf(b) || gmOf(a) - gmOf(b) || a.concept.names.zh.localeCompare(b.concept.names.zh, "zh")) }));
+}
 export const weightLabel = (cat: Catalog, w: number): string => cat.defs.weights?.find((x) => x.id === w)?.zh ?? "";
 function styleLabel(cat: Catalog, tag: string): string { const s = cat.defs.styles?.find((x) => (x.id ?? x.tag) === tag); return s?.zh ?? s?.en ?? tag; }
 export const fmtYear = (y: number): string => (y < 0 ? `公元前 ${-y}` : String(y));

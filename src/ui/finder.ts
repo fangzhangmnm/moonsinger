@@ -2,7 +2,7 @@
 // created 2026-10-07 by Claude Fable 5.1。user 2026-10-07「找人视图同意，然后最好是全屏的而不是弹出窗口，类似gallery，然后能用这个音乐键盘」「默认按年代排哈哈哈」
 //   「试听不生成演奏者」（试听台 = 临时槽；只在「上场」时才 by value 造演奏者）「顺序本来就是先选概念再选演奏者」。
 // 数据 = src/gm/catalog.ts（vendor/instruments/ 的两张表 + 图标 sprite）；音频 / 选角归 host（src/app/main.ts）。
-import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightOf, weightLabel, SORT_LABEL, type Catalog, type Concept, type Provider, type SortMode } from "../gm/catalog.ts";
+import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightLabel, SORT_LABEL, type Catalog, type Concept, type Entry, type Provider, type SortMode } from "../gm/catalog.ts";
 
 export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept };
 export interface FinderHost {
@@ -90,7 +90,7 @@ export class Finder {
     if (row) {
       const id = row.dataset.c!, o = row.dataset.o!;
       if (this.opened === o) this.opened = null;
-      else { this.opened = o; const c = this.cat!.byId.get(id)!, first = providersOf(this.cat!, c)[0]; const key = first ? `${id}|${gmKey(first)}` : c.kind === "voice" ? `${id}|voice` : ""; this.selected = key; this.renderAnchored(o, true); if (key) await this.host.audition(this.pickOf(key)); return; }
+      else { this.opened = o; const c = this.cat!.byId.get(id)!, pk = row.dataset.k, first = providersOf(this.cat!, c).find((x) => !pk || gmKey(x) === pk); /* 音色行 = 试听它自己 */ const key = first ? `${id}|${gmKey(first)}` : c.kind === "voice" ? `${id}|voice` : ""; this.selected = key; this.renderAnchored(o, true); if (key) await this.host.audition(this.pickOf(key)); return; }
       this.renderAnchored(o);
     }
   }
@@ -100,9 +100,9 @@ export class Finder {
     // 类级跳转（user 2026-10-08「分类能不能有一个类级别的跳转功能，不然一个一个下拉很累」）：一组一项，选了列表滚到那组；只有一组就不出。
     //   做成下拉（user 同日「category选项能做成下拉而不是滑动吗」；原来是横着滑的一排粒）
     jump.hidden = groups.length < 2;
-    jump.querySelector("select")!.innerHTML = groups.map((g, k) => `<option value="${k}">${esc(g.label)} · ${g.concepts.length} 件</option>`).join("");
+    jump.querySelector("select")!.innerHTML = groups.map((g, k) => `<option value="${k}">${esc(g.label)} · ${g.items.length} 件</option>`).join("");
     if (!groups.length) { list.innerHTML = `<div class="finder-empty">没有叫「${esc(this.q)}」的</div>`; return; }
-    list.innerHTML = groups.map((g, k) => `<div class="finder-group" data-g="${k}"><div class="finder-group-h">${esc(g.label)}<span>${g.concepts.length}</span></div>${g.concepts.map((c) => this.rowHtml(c, g.id, this.mode === "style" ? g.id : null)).join("")}</div>`).join("");
+    list.innerHTML = groups.map((g, k) => `<div class="finder-group" data-g="${k}"><div class="finder-group-h">${esc(g.label)}<span>${g.items.length}</span></div>${g.items.map((e) => this.rowHtml(e, g.id)).join("")}</div>`).join("");
     this.markJump();
   }
   /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
@@ -137,16 +137,18 @@ export class Finder {
     if (atBottom && Number(sel.value) > cur) return;
     if (sel.value !== String(cur)) sel.value = String(cur);
   }
-  private rowHtml(c: Concept, groupId: string, styleTag: string | null = null): string {
-    const cat = this.cat!, o = `${groupId}::${c.id}`, open = this.opened === o, icon = c.icon?.id;
-    // 〇〇风里显示承重：★★★ 承重 / ★★ 常用 / ★ 点缀（仓鼠 v3；user「每个风里面按照承重排…让他ui里面显示出来」）
-    const w = styleTag ? weightOf(c, styleTag) : 0, stars = w ? `<span class="inst-w" title="${esc(weightLabel(cat, w))}">${"★".repeat(w)}</span>` : "";
-    const meta = [eraLabel(cat, c), c.year !== null ? `${c.yearApprox ? "约 " : ""}${fmtYear(c.year)}` : ""].filter(Boolean).join(" · ");
+  private rowHtml(e: Entry, groupId: string): string {
+    const cat = this.cat!, c = e.concept, pk = e.preset ? gmKey(e.preset) : "", o = `${groupId}::${c.id}${pk ? `::${pk}` : ""}`, open = this.opened === o, icon = c.icon?.id;
+    // 按曲风显示承重：★★★ 承重 / ★★ 常用 / ★ 点缀（仓鼠 v3；user「每个风里面按照承重排…让他ui里面显示出来」）；音色行 = 这个音色自己的（v8 起逐个音色判）
+    const w = e.weight ?? 0, stars = w ? `<span class="inst-w" title="${esc(weightLabel(cat, w))}">${"★".repeat(w)}</span>` : "";
+    const asName = e.as ? (cat.byId.get(e.as)?.names.zh ?? e.as) : "", asTag = asName ? `<span class="inst-as" title="在这种风里顶替「${esc(asName)}」">顶 ${esc(asName)}</span>` : "";
+    const year = e.preset?.year ?? c.year, approx = e.preset ? !!(e.preset as { yearApprox?: boolean }).yearApprox : c.yearApprox;
+    const meta = [eraLabel(cat, c), year !== null && year !== undefined ? `${approx ? "约 " : ""}${fmtYear(year)}` : ""].filter(Boolean).join(" · ");
     let body = "";
     if (open) {
       // 月读只在人声类概念下面（user 2026-10-07「为什么月读可以全量平替所有乐器…也许不大合适」：她实现的是人声，不是小提琴；
       //   「让她哼一下这条线听听」归监听方式（草稿听，契约 §1），不是选角）
-      const provs = providersOf(cat, c), pitched = c.kind === "voice";
+      const provs = providersOf(cat, c).filter((x) => !pk || gmKey(x) === pk), pitched = c.kind === "voice";   // 音色行 = 只列它自己
       // 平替弱化显示（user「平替换的ui也需要弄出区别」「也许需要弱化显示」）：虚线框、灰字、「顶替」标
       const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">顶替</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
         `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast">上场</button>`}</div></div>`;
@@ -155,8 +157,8 @@ export class Finder {
         (pitched ? prov(`${c.id}|voice`, "月读", "唱歌词；没写歌词的音按「哼的字」唱", false) : "") +
         (!provs.length && !pitched ? `<div class="prov-none">目录里还没有谁能演它</div>` : "") + `</div>`;
     }
-    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc(c.id)}" data-o="${esc(o)}">` +
+    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc(c.id)}" data-o="${esc(o)}"${pk ? ` data-k="${esc(pk)}"` : ""}>` +
       (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc(icon)}"/></svg>` : `<span class="inst-ico none">${esc(c.names.zh.slice(0, 1))}</span>`) +
-      `<div class="inst-name"><b>${esc(c.names.zh)}</b>${stars}<span>${esc(roleNameOf(c))}${c.names.ja ? ` · ${esc(c.names.ja)}` : ""}</span></div><div class="inst-meta">${esc(meta)}</div></div>` + body;
+      `<div class="inst-name"><b>${esc(c.names.zh)}${e.preset ? `<span class="inst-preset"> · ${esc(e.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span>${esc(roleNameOf(c))}${c.names.ja ? ` · ${esc(c.names.ja)}` : ""}</span></div><div class="inst-meta">${esc(meta)}</div></div>` + body;
   }
 }
