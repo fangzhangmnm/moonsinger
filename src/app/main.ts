@@ -20,7 +20,7 @@ import { installPlatformGuards } from "../ui/platform-guards.ts";
 import { Pad, HER_RANGE, type HintRange } from "../ui/pad.ts";
 import { toLabScore, type SingLang } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
-import { encodeMp3 } from "../export/mp3.ts";
+import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
 import { showNotice, configureFloors } from "@internal/workbench-elements";
@@ -499,10 +499,13 @@ interface Rendered { samples: Float32Array; sr: number; at: number }
 const lastRender = new Map<string, { key: string; r: Rendered }>();
 const GM_SR = 44100;
 /** 一个声部按它上场的演奏者出声（离线渲染）：月读 = worker 里唱；元音版 = 采样器；SoundFont = TinySoundFont。没人上场 / 响不了 = 抛错（不出声、报错、人换）。 */
-async function renderPart(part: PartDef, whole = false): Promise<Rendered | null> {
+/** 渲染哪一段：view = 跟视图（本段 / 全部，播放用）；all = 整首；segment = 光标所在的这一张纸（导出面板里选）。 */
+type RenderScope = "view" | "all" | "segment";
+const songIn = (s: RenderScope): Song => (s === "all" ? st.song : s === "segment" ? songOnlyPaper(st.song, st.at.paper) : playSong());
+async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<Rendered | null> {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`「${roleName(doc.extras, role)}」还没有人上场`);
-  const song = whole ? st.song : playSong();
+  const song = songIn(scope);
   const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map);
@@ -533,8 +536,8 @@ async function renderPart(part: PartDef, whole = false): Promise<Rendered | null
   lastRender.set(part.id, { key, r: out }); return out;
 }
 /** 一个声部的音量曲线（力度 + 重音；月读的跳音 = 后半段收声；src/score/perform.ts）：没有力度 / 重音 = null，声音不碰。渲染结果是缓存的，乘在拷贝上。 */
-function partGain(part: PartDef, whole: boolean) {
-  const song = whole ? st.song : playSong(), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
+function partGain(part: PartDef, scope: RenderScope) {
+  const song = songIn(scope), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
   return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), eng === "tsukuyomi");
 }
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
@@ -547,15 +550,15 @@ function micOf(part: PartDef): { gainDb: number; pan: number } {
 /** 整首 = 各声部各自渲染再混成立体声（src/audio/mix.ts：线性重采样到 44.1k；推子 = 麦克风增益 + 上场那位的响度校准；等功率声像；母线只在超天花板的地方限幅）。
  *  旧做法超 0 dB 就整条按峰值缩——响的乐器一进来，整首（包括只有月读的段落）一起变轻（user 2026-10-08「感觉乐器进来之后好像月读变轻了」）。
  *  哪个声部响不了 = 那个声部不出声、报错，其余照出（user「不是显示自动上，而是就是不出声，报错，人类手动换」）。roles = 真出了声的声部的角色（署名推演用）。 */
-async function renderMix(whole = false): Promise<{ left: Float32Array; right: Float32Array; sr: number; roles: string[] } | null> {
+async function renderMix(scope: RenderScope = "view"): Promise<{ left: Float32Array; right: Float32Array; sr: number; roles: string[] } | null> {
   const parts = audibleParts(), got: { part: PartDef; r: Rendered }[] = [], errs: string[] = [];
   for (const part of parts) {
-    try { const r = await renderPart(part, whole); if (r) got.push({ part, r }); }
+    try { const r = await renderPart(part, scope); if (r) got.push({ part, r }); }
     catch (e) { errs.push(`「${roleName(doc.extras, part.role)}」：${(e as Error).message}`); }
   }
   if (errs.length) showError(`${errs.join("；")}。${got.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
   if (!got.length) return null;
-  const m = mixTracks(got.map(({ part, r }) => { const { gainDb, pan } = micOf(part), segs = partGain(part, whole); return { samples: segs ? applyGain(r.samples, r.sr, r.at, segs) : r.samples, sr: r.sr, at: r.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; }), GM_SR);
+  const m = mixTracks(got.map(({ part, r }) => { const { gainDb, pan } = micOf(part), segs = partGain(part, scope); return { samples: segs ? applyGain(r.samples, r.sr, r.at, segs) : r.samples, sr: r.sr, at: r.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; }), GM_SR);
   return { left: m.left, right: m.right, sr: m.sr, roles: got.map((x) => x.part.role) };
 }
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */
@@ -631,24 +634,61 @@ $("playBtn").addEventListener("click", () => { void togglePlay(); });
 // ── 导出歌声（user「基于wxhw的经验分享是可以很早就做」）：照 WXHW 的形状——先生成，再弹「好了」面板，
 //    点「分享」那一下才调系统分享（iOS Safari 只认用户手势里的 navigator.share）；没有分享的（桌面 / Quest）= 下载。
 let exporting = false;
-async function exportSong(): Promise<void> {
+/** 导出面板记住的选择（这次打开里有效）。 */
+let mp3Quality: Mp3Quality = "standard", mp3Scope: "all" | "segment" = "all";
+/** 导出歌声前的面板（user 2026-10-08「mp3导出可能本来就该有一个对话框？比如quality之类的？」→「好，同意」）：音质 / 范围，都预设好，点「导出」就走。
+ *  许可那一行只在用户自己选过许可时才出现（user「只有用户自己关心协议的时候才提出这些」）。 */
+function openMp3Panel(): void {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  const paper = st.song.papers.find((p) => p.id === st.at.paper), k = st.song.papers.indexOf(paper!);
+  const draw = () => {
+    const chip = (v: string, label: string, note: string, on: boolean) => `<button class="btn cand${on ? " is-on" : ""}" data-v="${v}">${esc(label)}<small>${esc(note)}</small></button>`;
+    const er = st.song.rights ? exportRights(soundingRoles()) : null;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">导出歌声（mp3）</div>` +
+      `<div class="part-sec">音质</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>` +
+      (st.song.papers.length > 1 ? `<div class="part-sec">范围</div><div class="set-row">${chip("s:all", "整首", "隐藏的纸不放", mp3Scope === "all")}${chip("s:segment", "这一张纸", paper?.name || `第 ${k + 1} 张`, mp3Scope === "segment")}</div>` : "") +
+      (er ? `<div class="offer-msg">许可：${er.fellBack ? `这份按「未声明」写——你选的许可允许别人改编，和月读的条款可能冲突（作者栏里的选择没动）` : esc(er.rights!)}。和署名一起写进 mp3 的标签。</div>` : "") +
+      `<div class="offer-btns"><button class="btn primary" data-v="go">导出</button><button class="btn" data-v="close">算了</button></div></div>`;
+  };
+  draw();
+  document.body.append(box);
+  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (v?.startsWith("q:")) { mp3Quality = v.slice(2) as Mp3Quality; draw(); }
+    else if (v?.startsWith("s:")) { mp3Scope = v.slice(2) as "all" | "segment"; draw(); }
+    else if (v === "go") { close(); void exportSong({ quality: mp3Quality, scope: mp3Scope }); }
+  });
+}
+/** 这份导出写什么许可：用户选的；和月读条款可能冲突 = 这一份按「未声明」写（user 2026-10-08「即使版权冲突…也不block导出mp3和工程文件。而只是回到未声明。不警察用户」）。
+ *  只动导出的那一份；歌里存的选择不动（那是用户的数据）。 */
+function exportRights(roles: readonly string[]): { rights: string | undefined; fellBack: boolean } {
+  const r = st.song.rights; if (!r) return { rights: undefined, fellBack: false };
+  return licenseHints(r, performerCredits(doc.extras, roles)).length ? { rights: undefined, fellBack: true } : { rights: r, fellBack: false };
+}
+async function exportSong(o: { quality: Mp3Quality; scope: "all" | "segment" } = { quality: "standard", scope: "all" }): Promise<void> {
   if (exporting || singing) return;
   exporting = true;
   try {
-    const m = await renderMix(true);   // 导出永远整首（播放才跟视图范围）
+    const m = await renderMix(o.scope);   // 导出 = 面板里选的范围（默认整首；播放才跟视图范围）
     if (!m) { progress(""); return; }
     progress("编 mp3…");
-    const mono = new Float32Array(m.left.length);   // mp3 这一版单声道（左右平均；声像以后随立体声导出一起做）
-    for (let i = 0; i < mono.length; i++) mono[i] = (m.left[i] + m.right[i]) / 2;
-    const secs = mono.length / m.sr, bytes = await encodeMp3(mono, m.sr);
-    // mp3 标签（user 2026-10-08「mp3能自动生成license吗」）：歌名 / 作者（作者栏第一行，用户自己写的）/ 这首歌的许可（用户选的；未声明 = 不写）/ 整段署名。
-    const { lines } = creditsOf(m.roles), rights = st.song.rights;
+    const Q = MP3_QUALITY[o.quality];
+    let left = m.left, right: Float32Array | null = m.right;
+    if (!Q.stereo) { left = new Float32Array(m.left.length); for (let i = 0; i < left.length; i++) left[i] = (m.left[i] + m.right[i]) / 2; right = null; }   // 小文件：左右平均成单声道
+    const secs = left.length / m.sr, bytes = await encodeMp3(left, right, m.sr, Q.kbps);
+    // mp3 标签（user 2026-10-08「mp3能自动生成license吗」）：歌名 / 作者（作者栏第一行，用户自己写的）/ 这首歌的许可（用户选的；未声明或冲突 = 不写）/ 整段署名。
+    const { rights, fellBack } = exportRights(m.roles), { lines } = creditsOf(m.roles, rights);
     const tag = id3v2({ title: st.song.title || docName(), artist: (st.song.credits ?? "").split("\n").map((s) => s.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || undefined, software: `MoonSinger ${APP_VERSION}` });
-    const file = new File([tag as unknown as BlobPart, bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
+    const file = new File([tag as unknown as BlobPart, bytes], `${docName()}${o.scope === "segment" ? `-${fileSafe(st.song.papers.find((p) => p.id === st.at.paper)?.name || "这一张")}` : ""}.mp3`, { type: "audio/mpeg" });
     progress("");
-    offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` +
-      `<div class="offer-msg">${rights ? "这首歌的许可和下面的署名已经写进 mp3 的标签里。" : "下面的署名已经写进 mp3 的标签里（许可未声明 = 法律默认的保留所有权利；要声明在作者栏里选）。"}</div>` +
-      performersBlock(m.roles, "署名（这首歌 + 这段声音里出了声的声部上场的那位）"));
+    offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${Q.label} ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` +
+      (fellBack ? `<div class="offer-msg">许可这一份按「未声明」写了（你选的许可和月读的条款可能冲突；作者栏里的选择没动）。</div>` : "") +
+      creditsBlock(lines, "署名 · 已写进 mp3 的标签"));
   } catch (e) {
     progress(""); showError(`导出失败：${(e as Error).message}`);
   } finally { exporting = false; }
@@ -939,10 +979,11 @@ function openCreditsSheet(): void {
     `<textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="几行都行，照写的显示在纸上（标题下面靠右）">${esc(st.song.credits ?? "")}</textarea>` +
     `<div class="offer-msg">可不填。存进 MusicXML「印在页面上的字」，别的乐谱软件打开也在纸上。</div>` +
     // 这首歌自己的许可（user 2026-10-08「你计算的时候别忘了用户自己写的那一部分，用户可以选」）：默认不写、不替用户选；选了照抄进 <rights>，还能改
-    `<div class="part-sec">许可（你写的这部分：词 / 曲 / 编）</div><div class="set-row">` +
+    // 折叠着（user「只有用户自己关心协议的时候才提出这些」）：选过许可才默认展开
+    `<details class="rights-sec"${st.song.rights ? " open" : ""}><summary class="part-sec">许可（可选；你写的这部分：词 / 曲 / 编）</summary><div class="set-row">` +
     `<button class="btn cand" data-r="-1" title="不写：法律默认 = 保留所有权利（别人用要先问你）">未声明（默认）</button>` + RIGHTS_PRESETS.map((p, k) => `<button class="btn cand" data-r="${k}" title="${esc(p.note)}">${esc(p.label)}</button>`).join("") + `</div>` +
     `<input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="空着 = 未声明（法律默认就是保留所有权利）；也可以自己写" value="${esc(st.song.rights ?? "")}" />` +
-    `<div class="offer-msg">从紧到松排；CC 那几个发出去以后对已经发出去的收不回。存进 MusicXML 的 &lt;rights&gt;；导出 mp3 时连同署名写进文件的标签里。</div>` +
+    `<div class="offer-msg">从紧到松排；CC 那几个发出去以后对已经发出去的收不回。存进 MusicXML 的 &lt;rights&gt;；导出 mp3 时连同署名写进文件的标签里。</div></details>` +
     `<div class="offer-btns"><button class="btn primary" data-v="ok">好</button></div></div>`;
   document.body.append(box);
   const ta = box.querySelector<HTMLTextAreaElement>("#crIn")!, rt = box.querySelector<HTMLInputElement>("#rtIn")!;
@@ -1302,8 +1343,8 @@ function openPicked(picked: docFile.Picked): void {
 /** 封面的腰封 = 作者栏第一行（每次存重写，withPngText 先删旧块）；没有封面图就没有封面 entry。 */
 const extrasForSave = (base: Extras = doc.extras): Extras => (base.thumbnail ? withThumbnail(base, coverWithBlurb(base.thumbnail, (st.song.credits ?? "").split("\n").map((l) => l.trim()).find(Boolean) ?? null)) : base);
 /** 这首歌的 .mxl 字节；extras = 换一份休息室 / 音源来存（导出「打包音源」的副本：只改那一份，不改正本）。 */
-const bytesNow = (extras?: Extras) => saveMxl({ view: serializeDesk(deskNow()) as Record<string, unknown> | null, song: st.song, hum: st.song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: new Date().toISOString() });
-const mxlFile = (name: string, extras?: Extras) => new File([bytesNow(extras) as unknown as BlobPart], name, { type: "application/vnd.recordare.musicxml" });
+const bytesNow = (extras?: Extras, song: Song = st.song) => saveMxl({ view: serializeDesk(deskNow()) as Record<string, unknown> | null, song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: new Date().toISOString() });   // song = 换一份歌来存（导出副本：许可冲突时按未声明写）
+const mxlFile = (name: string, extras?: Extras, song?: Song) => new File([bytesNow(extras, song) as unknown as BlobPart], name, { type: "application/vnd.recordare.musicxml" });
 const stemOf = (name: string) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
 const sizeText = (n: number) => (n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} KB` : `${(n / 1e6).toFixed(1)} MB`);
 /** 存 = 回家，一个动作（WeebPaint 一画一家；user 2026-08-25 grill「保存按钮=回家（单一动作），导出 hub=寄明信片」）：
@@ -1335,7 +1376,7 @@ async function fileSave(): Promise<void> {
 /** 导出 hub 的「存一份 .mxl 副本」= 原来的另存为（user 2026-08-20「另存为也变成导出」「复制一份就是导出的语义…放在导出的选项里面」）：
  *  一份带时刻戳的拷贝，家不变、「•」不变（导出永不清 dirty）。桌面 = 系统保存框；iPad = 下载 / 分享。
  *  packed = 打包音源的副本（user 2026-10-08「导出的时候可以选导出packed版本的」）：只这一份把弱引用的声音装进去，正本照旧（导出 = 寄明信片）。
- *  好了的面板里带这份文件的署名推演（带着谁的字节；引用不算）。 */
+ *  好了的面板里带署名（折叠）。许可和月读条款可能冲突 = 这一份副本的 <rights> 按未声明写（user「不block导出mp3和工程文件。而只是回到未声明」），正本不动。 */
 async function exportCopyMxl(packed = false): Promise<void> {
   const name = `${stampedCopy(docName())}${packed ? "-packed" : ""}.mxl`;
   try {
@@ -1345,12 +1386,15 @@ async function exportCopyMxl(packed = false): Promise<void> {
       extras = withPacked(extras, (sha) => got.get(sha)).extras;
       if (missing.length) showError(`这几件找不到声音，副本里没带：${missing.join("、")}。点谱前面的声部名，在「谁来演」里「找文件…」，再导出一次。`);
     }
-    const credits = performersBlock(soundingRoles()) + creditsBlock(packedLicenses(extras), "打包分发的许可（这份副本里带着这些源文件）");
+    const roles = soundingRoles(), { rights, fellBack } = exportRights(roles);
+    const song: Song = fellBack ? (({ rights: _r, ...rest }) => rest)(st.song) : st.song;
+    const credits = (fellBack ? `<div class="offer-msg">许可这一份按「未声明」写了（你选的许可和月读的条款可能冲突；作者栏里的选择没动）。</div>` : "") +
+      creditsBlock(creditsOf(roles, rights).lines, "署名") + creditsBlock(packedLicenses(extras), "打包分发的许可（这份副本里带着这些源文件）");
     if (docFile.canPickSave()) {
       const h = await docFile.pickSave(name); if (!h) return;
-      await docFile.writeTo(h, bytesNow(extras)); info(`存了一份：${h.name}`); return;
+      await docFile.writeTo(h, bytesNow(extras, song)); info(`存了一份：${h.name}${fellBack ? "（许可按未声明写）" : ""}`); return;
     }
-    const file = mxlFile(name, extras);
+    const file = mxlFile(name, extras, song);
     offerFile(file, packed ? "存一份 .mxl 副本（打包音源）" : "存一份 .mxl 副本", `${esc(file.name)} · ${sizeText(file.size)}。现在这首歌的一份拷贝；这里再改，它不会跟着变。${credits}`);
   } catch (e) { showError(`没存上：${(e as Error).message}`); }
 }
@@ -1398,10 +1442,11 @@ async function unpackAll(): Promise<void> {
   if (stuck.length) showError(`这几件没解包：${stuck.join("；")}——这台设备留不住它的声音（空间不够，或浏览器不让存），家族音源库里也没有，解了就找不回来。`);
 }
 /** 署名推演的一块（文件菜单 / 导出好了的面板里；src/format/credits.ts）：空 = 不画。「复制署名」由下面那个全局监听接。 */
+/** 署名一块：**折叠着**，点开才看（user 2026-10-08「只有用户自己关心协议的时候才提出这些」——不推到眼前）。 */
 function creditsBlock(lines: CreditLine[], title: string): string {
   if (!lines.length) return "";
-  return `<div class="credits-box"><div class="part-sec">${esc(title)}</div><pre class="credits-pre">${esc(creditsText(lines))}</pre>` +
-    `<button class="btn" data-copy-credits title="复制下来贴进作品说明">复制署名</button></div>`;
+  return `<details class="credits-box"><summary class="part-sec">${esc(title)}</summary><pre class="credits-pre">${esc(creditsText(lines))}</pre>` +
+    `<button class="btn" data-copy-credits title="复制下来贴进作品说明">复制署名</button></details>`;
 }
 document.addEventListener("click", (e) => {
   const b = (e.target as HTMLElement).closest<HTMLElement>("[data-copy-credits]"); if (!b) return;
@@ -1429,7 +1474,7 @@ function openExportHub(): void {
     if (e.target === box || v === "close") { close(); return; }
     if (!v) return;
     close();
-    if (v === "mp3") void exportSong(); else if (v === "mxl") void exportCopyMxl(); else if (v === "mxlPacked") void exportCopyMxl(true);
+    if (v === "mp3") openMp3Panel(); else if (v === "mxl") void exportCopyMxl(); else if (v === "mxlPacked") void exportCopyMxl(true);
   });
 }
 /** 现在会出声的声部的角色（预览演出署名用）：出声的（静音 / 独奏照现在的）、整首里有音的；导出 mp3 时按真渲染出了声的算（renderMix 的 roles）。 */
@@ -1443,15 +1488,17 @@ function soundsSection(): string {
   return `<div class="part-sec">乐器的声音</div>` +
     `<div class="offer-msg">${uses.length} 件：打包在歌里 ${packed.length} 件${packed.length ? `（${sizeText(size)}）` : ""}，只记来源 ${uses.length - packed.length} 件。打包 = 声音跟着歌走（发给别人也能响，文件变大）；只记来源 = 歌小，声音从这台设备 / 家族音源库 / 你的文件里找。月读不打包（她是模型包，歌里只钉哈希）。</div>` +
     `<div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">全部打包进歌</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">全部解包（只记来源）</button>` : ""}</div>` +
-    creditsBlock(packedLicenses(doc.extras), "打包分发的许可（文件里带着这些源文件，分发这份文件要守的；和演出署名分开算）");
+    creditsBlock(packedLicenses(doc.extras), "打包分发的许可（文件里带着这些源文件）");
 }
 /** 演出署名（文件菜单 / 导出）：用了谁的声音——出了声的声部上场那位，打包 / 弱引用都算；冷板凳、没出声的声部不算（user 2026-10-08 口径）。 */
 /** 署名 = 这首歌自己那一条（作者栏 + 用户选的许可；都空 = 没有这条）+ 演出署名；外加只提示不拦的提醒（licenseHints）。导出 mp3 写进 ID3 也用这一份。 */
-function creditsOf(roles: readonly string[]): { lines: CreditLine[]; hints: string[] } {
-  const perf = performerCredits(doc.extras, roles), own = songCreditLine(st.song);
-  return { lines: own ? [own, ...perf] : perf, hints: licenseHints(st.song.rights, perf) };
+/** rights = 这一份写的许可（导出时可能回退成未声明：exportRights）；不给 = 歌里选的。 */
+function creditsOf(roles: readonly string[], rights: string | undefined = st.song.rights): { lines: CreditLine[]; hints: string[] } {
+  const perf = performerCredits(doc.extras, roles), own = songCreditLine({ ...st.song, rights });
+  return { lines: own ? [own, ...perf] : perf, hints: licenseHints(rights, perf) };
 }
-const performersBlock = (roles: readonly string[], title = "署名（这首歌 + 现在出声的声部上场的那位；导出 mp3 时按真出了声的算）") => {
+/** 文件菜单里的署名（折叠）；提醒只在用户自己选了许可时才可能出现（licenseHints 要 rights）。 */
+const performersBlock = (roles: readonly string[], title = "署名") => {
   const { lines, hints } = creditsOf(roles);
   return creditsBlock(lines, title) + hints.map((h) => `<div class="offer-msg credits-hint">${esc(h)}</div>`).join("");
 };
