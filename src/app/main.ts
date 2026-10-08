@@ -240,6 +240,8 @@ const view = new ScoreView(scoreEl, {
   onPaperMenu: (id) => openPaperMenu(id),
   onAddPaper: () => { update(addPaper(st)); info("新的一张纸"); },
   onNav: (dir) => navPaper(dir),
+  onNavFrom: (paper, dir) => navPaperFrom(paper, dir),
+  onScopeOf: (paper) => { if (viewScope === "segment" && st.at.paper === paper) viewScope = "all"; else { viewScope = "segment"; if (st.at.paper !== paper) navPaperTo(paper); } view.render(); },
   onScopeToggle: () => { viewScope = viewScope === "segment" ? "all" : "segment"; view.render(); },   // 「本段」开关在曲段导航旁边（user「…放在和曲段导航在一起」「就一个按钮toggle」「类似solo toggle」）
   onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),
@@ -1205,8 +1207,13 @@ function afterViewChange(): void {
   view.render();
 }
 /** 歌名左边「‹ ›」：跳到上一张 / 下一张纸（光标跟着过去，视图滚到它）。 */
-function navPaper(dir: -1 | 1): void {
-  const k = st.song.papers.findIndex((p) => p.id === st.at.paper), to = st.song.papers[k + dir]; if (!to) return;
+function navPaper(dir: -1 | 1): void { navPaperFrom(st.at.paper, dir); }
+/** 从某张纸往前 / 往后跳（每张纸自己的曲段控件；光标跟着过去）。 */
+function navPaperFrom(from: string, dir: -1 | 1): void {
+  const k = st.song.papers.findIndex((p) => p.id === from), to = st.song.papers[k + dir]; if (to) navPaperTo(to.id);
+}
+function navPaperTo(id: string): void {
+  const to = st.song.papers.find((p) => p.id === id); if (!to) return;
   const part = to.tracks[st.at.part] ? st.at.part : st.song.parts.find((p) => to.tracks[p.id])?.id ?? st.at.part;
   update(setFocus(st, to.id, part));
 }
@@ -1317,6 +1324,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
 
 /** 空白处的小菜单（长按 / 电脑右键；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」「小菜单同意」）：非模态，开在按的地方，点外面就收。
  *  光标已经由 score-view 放到按的位置：粘贴 = 贴在那里；插记号 = 插在那里。 */
+const DYN_MENU = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" } as const;   // Bravura 力度字形
 function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: number } | null): void {
   closeOffer?.();
   const box = document.createElement("div");
@@ -1327,6 +1335,8 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
     `<div class="ctx-sep"></div>` +
     item("bar", "小节线 |", "从这里重新数小节（弱起）") + item("phrase", "句号", "这一句到这儿（「合」挪字的边界；不换行不换气）") +
     item("mark:key", "调号…") + item("mark:time", "拍号…") + item("mark:tempo", "速度…") +
+    // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
+    `<div class="ctx-row ctx-dyn">${(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(st), st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：从这儿起"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
     `<div class="ctx-sep"></div>` +
     item("row", "全选这一行", "", !row) + item("all", "全选");
   document.body.append(box);
@@ -1345,6 +1355,7 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
     else if (v === "bar") update(apply(st, { k: "bar" }, performance.now()));
     else if (v === "phrase") update(apply(st, { k: "phrase" }, performance.now()));
     else if (v.startsWith("mark:")) insertMarkHere(v.slice(5) as MarkVal["kind"]);
+    else if (v.startsWith("dyn:")) update(apply(st, { k: "dyn", v: v.slice(4) as Dyn }, performance.now()));
     else if (v === "row" && row) { update(select(st, row.from, row.to)); updateChrome(); }
     else if (v === "all") { update(selectAll(st)); updateChrome(); }
     scoreEl.focus();

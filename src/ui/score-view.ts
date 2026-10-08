@@ -50,6 +50,9 @@ export interface ScoreViewHost {
   onNav?(dir: -1 | 1): void;
   /** 「‹ 2/3 ›」旁边的「本段」开关点了（视图范围：本段 ⇄ 全部）。 */
   onScopeToggle?(): void;
+  /** 每张纸自己那组曲段控件：从这张纸往前 / 往后跳；「本段」= 只看这张（已经是 = 回到全部）。 */
+  onNavFrom?(paper: string, dir: -1 | 1): void;
+  onScopeOf?(paper: string): void;
   /** 纸右上角的小钮（纸张）点了。 */
   onPaper?(): void;
   /** 标题下面靠右的作词 / 作曲点了。 */
@@ -378,6 +381,7 @@ export class ScoreView {
     if (this.inBox(L.nav?.prev, x, y)) { this.host.onNav?.(-1); return true; }
     if (this.inBox(L.nav?.next, x, y)) { this.host.onNav?.(1); return true; }
     if (this.inBox(L.nav?.scope, x, y)) { this.host.onScopeToggle?.(); return true; }
+    if (this.inBox(L.paperMenu, x, y)) { this.host.onPaperMenu?.(this.host.get().at.paper); return true; }
     // 0⅙. 作词 / 作曲（标题下面靠右）
     if (this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌
@@ -392,6 +396,9 @@ export class ScoreView {
     // 0⅜. 纸顶：「⋯」（纸的菜单）、曲段名（就地改）；最底下「＋ 新的纸」
     for (const pp of L.papers) {
       if (this.inBox(pp.menu, x, y)) { this.host.onPaperMenu?.(pp.id); return true; }
+      if (this.inBox(pp.prev ?? null, x, y)) { this.host.onNavFrom?.(pp.id, -1); return true; }
+      if (this.inBox(pp.next ?? null, x, y)) { this.host.onNavFrom?.(pp.id, 1); return true; }
+      if (this.inBox(pp.scope, x, y)) { this.host.onScopeOf?.(pp.id); return true; }
       if (pp.title.shown && this.inBox(pp.title, x, y)) { this.title.openNow(pp.id); this.host.focus?.("text"); return true; }
     }
     const row = this.rowAt(y); if (row < 0) return false;

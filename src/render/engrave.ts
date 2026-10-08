@@ -75,9 +75,10 @@ export interface Layout {
   credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
   head: { system: number; x: number } | null;    // 光标在哪（画面跟随用；改的时候没有）
   parts: (Box & { paper: string; part: string })[];   // 歌手牌（每张纸第一行各条谱左边的声部名）的点击区域
-  papers: { id: string; title: (TitleHit & { shown: boolean }); menu: Box | null; top: number; bottom: number }[];   // 每张纸：曲段名那一条（shown = 画了）、「⋯」、占的竖直范围
+  papers: { id: string; title: (TitleHit & { shown: boolean }); menu: Box | null; top: number; bottom: number; prev?: Box | null; next?: Box | null; scope?: Box }[];   // 多张纸：每张纸曲段名那一行右边一组「‹ k/n › 本段 ⋯」   // 每张纸：曲段名那一条（shown = 画了）、「⋯」、占的竖直范围
   addPaper: Box | null;                          // 扳手旁边的「＋」（新的纸；user「这个很低频的，可以小加号放在扳手旁边」）
   nav: { prev: Box | null; next: Box | null; scope: Box } | null;   // 歌名左边的「‹ 2/3 ›」+ 紧跟着「本段」开关（多于一张纸才画）
+  paperMenu: Box | null;   // 曲段控件最后的「⋯」= 光标所在那张纸的菜单（编辑器里总画；只有一张纸时曲段控件就只有它）
   pageX: { left: number; right: number };        // 分页时版心左右的边距（px；svg 的 viewBox 往左扩这么多，页框画在负 x）；连续 = 0
   pages: { top: number; h: number }[];           // 分页时每页占的竖直范围（px）；连续 = []
   paperChip: Box | null;                         // 纸右上角小钮的点击区域（px）
@@ -280,7 +281,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const titleSize = P(1.9), titleBase = TOP + P(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "歌名", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });   // user「虚框更不舒服，换回字提示（不过简短一点）」
-  let paperChip: Box | null = null, addPaper: Box | null = null, nav: Layout["nav"] = null;
+  let paperChip: Box | null = null, addPaper: Box | null = null, nav: Layout["nav"] = null, paperMenu: Box | null = null;
   if (o.paperLabel) {   // 纸右上角：一个扳手小钮（纸的设置）+ 左边一个「＋」（新的纸，低频，收在角上）
     const ch = P(2.2), cw = ch, cx = o.width - P(MARGIN) - cw, cy = TOP + P(0.9), is = P(1.5);
     prims.push({ t: "rect", x: cx, y: cy, w: cw, h: ch, cls: "paper-chip" });
@@ -293,23 +294,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       addPaper = { x: ax - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
     }
   }
-  if (song.papers.length > 1) {   // 歌名左边：‹ 2/3 ›（跳到上一张 / 下一张纸）
-    const k = Math.max(0, song.papers.findIndex((p) => p.id === o.at.paper)), ch = P(2.2), cw = P(2.2), cy = TOP + P(0.9);
-    const x0 = P(MARGIN);
-    prims.push({ t: "rect", x: x0, y: cy, w: cw, h: ch, cls: k > 0 ? "paper-chip" : "paper-chip off" });
-    prims.push({ t: "text", x: x0 + cw / 2, y: cy + ch * 0.72, s: "‹", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
-    const lab = `${k + 1}/${song.papers.length}`, lw = (o.measureLyric(lab) * 1.1) / LYRIC_EM + P(0.8);
-    prims.push({ t: "text", x: x0 + cw + lw / 2, y: cy + ch * 0.7, s: lab, cls: "nav-text", size: P(1.1), anchor: "middle" });
-    const x1 = x0 + cw + lw;
-    prims.push({ t: "rect", x: x1, y: cy, w: cw, h: ch, cls: k < song.papers.length - 1 ? "paper-chip" : "paper-chip off" });
-    prims.push({ t: "text", x: x1 + cw / 2, y: cy + ch * 0.72, s: "›", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
-    // 范围开关跟曲段导航放在一起（2026-10-08 user「页面显示曲段还是全部的toggle能不能放在和曲段导航在一起」「本段全部能不能就一个按钮toggle的按钮」「类似solo toggle」）：
-    //   一个「本段」开关，亮 = 一次只看这一张纸（同独奏：亮 = 只要它）；灭 = 全部
-    const segOn = o.onlyPaper !== undefined, sx = x1 + cw + P(0.8), sw = (o.measureLyric("本段") * 1.1) / LYRIC_EM + P(1.2);
-    prims.push({ t: "rect", x: sx, y: cy, w: sw, h: ch, cls: segOn ? "paper-chip on" : "paper-chip" });
-    prims.push({ t: "text", x: sx + sw / 2, y: cy + ch * 0.7, s: "本段", cls: segOn ? "nav-text on" : "nav-text", size: P(1.1), anchor: "middle" });
-    nav = { prev: k > 0 ? { x: x0 - P(0.4), y: cy - P(0.4), w: cw + P(0.8), h: ch + P(0.8) } : null, next: k < song.papers.length - 1 ? { x: x1 - P(0.4), y: cy - P(0.4), w: cw + P(0.8), h: ch + P(0.8) } : null,
-      scope: { x: sx - P(0.3), y: cy - P(0.4), w: sw + P(0.6), h: ch + P(0.8) } };
+  if (o.titlePlaceholder && song.papers.length === 1) {   // 只有一张纸（没有曲段名那一行）：纸的「⋯」在歌名左边；多张纸 = 每张纸自己那一行上一组曲段控件（下面 drawPaperTitle）
+    const ch = P(2.2), cw = P(2.6), cy = TOP + P(0.9), mx = P(MARGIN);
+    prims.push({ t: "rect", x: mx, y: cy, w: cw, h: ch, cls: "paper-chip" });
+    prims.push({ t: "text", x: mx + cw / 2, y: cy + ch * 0.72, s: "⋯", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+    paperMenu = { x: mx - P(0.3), y: cy - P(0.4), w: cw + P(0.6), h: ch + P(0.8) };
   }
   const title: TitleHit = { x: P(MARGIN), y: TOP + P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
   // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）；空着时编辑器里画浅色短提示「作者」
@@ -371,7 +360,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     // 曲段名那一条（多于一张纸或填了名字才画；空着画浅色提示；右边「⋯」= 纸的菜单）。分页时和第一行谱一起挪，所以等算完行高再画
     const pSize = P(1.6);
     let menu: Box | null = null;
-    const pTitle: TitleHit & { shown: boolean } = { x: P(MARGIN), y: yCur, w: o.width - P(2 * MARGIN) - P(4), h: P(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };
+    const paperNav: { prev?: Box | null; next?: Box | null; scope?: Box } = {};
+    const pTitle: TitleHit & { shown: boolean } = { x: P(MARGIN), y: yCur, w: o.width - P(2 * MARGIN) - P(o.titlePlaceholder && song.papers.length > 1 ? 16 : 4), h: P(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };   // 右边让出曲段控件组
     const drawPaperTitle = (firstBlock: number) => {
       if (!showPaperLine) return;
       ensure(P(PAPER_H) + firstBlock);
@@ -379,11 +369,28 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       pTitle.y = yCur; pTitle.baseline = pBase;
       if (paper.name) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });
       else if (o.titlePlaceholder) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: "曲段名", cls: "paper-name empty", size: pSize, anchor: "start" });
-      if (o.titlePlaceholder) {
-        const ch = P(2.2), cw = P(3), cx = o.width - P(MARGIN) - cw, cy = yCur + P((PAPER_H - 2.2) / 2);
-        prims.push({ t: "rect", x: cx, y: cy, w: cw, h: ch, cls: "paper-chip" });
-        prims.push({ t: "text", x: cx + cw / 2, y: cy + ch * 0.72, s: "⋯", cls: "paper-chip-text", size: P(1.6), anchor: "middle" });
-        menu = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
+      // 曲段控件组（2026-10-08 user「…能不能放在和曲段导航在一起」「就一个按钮toggle」「类似solo toggle」「然后曲段的...也放在曲段控件那里」
+      //   「多曲段模式下面应该每个曲段都有对应的小控件组」）：每张纸自己那一行右边「‹ k/n › 本段 ⋯」——‹ › 从这张跳；本段 = 只看这张（亮）/ 回到全部；⋯ = 这张纸的菜单
+      if (o.titlePlaceholder && song.papers.length > 1) {
+        const k = song.papers.findIndex((p) => p.id === paper.id), n = song.papers.length, ch = P(2.2), cw = P(2.2), cy = yCur + P((PAPER_H - 2.2) / 2);
+        const lab = `${k + 1}/${n}`, lw = (o.measureLyric(lab) * 1.1) / LYRIC_EM + P(0.8), sw = (o.measureLyric("本段") * 1.1) / LYRIC_EM + P(1.2), mw = P(2.6);
+        const segOn = o.onlyPaper === paper.id, total = cw + lw + cw + P(0.8) + sw + P(0.5) + mw;
+        let x = o.width - P(MARGIN) - total;
+        const hit = (bx: number, w: number): Box => ({ x: bx - P(0.3), y: cy - P(0.4), w: w + P(0.6), h: ch + P(0.8) });
+        prims.push({ t: "rect", x, y: cy, w: cw, h: ch, cls: k > 0 ? "paper-chip" : "paper-chip off" });
+        prims.push({ t: "text", x: x + cw / 2, y: cy + ch * 0.72, s: "‹", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+        const prev = k > 0 ? hit(x, cw) : null; x += cw;
+        prims.push({ t: "text", x: x + lw / 2, y: cy + ch * 0.7, s: lab, cls: "nav-text", size: P(1.1), anchor: "middle" }); x += lw;
+        prims.push({ t: "rect", x, y: cy, w: cw, h: ch, cls: k < n - 1 ? "paper-chip" : "paper-chip off" });
+        prims.push({ t: "text", x: x + cw / 2, y: cy + ch * 0.72, s: "›", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+        const next = k < n - 1 ? hit(x, cw) : null; x += cw + P(0.8);
+        prims.push({ t: "rect", x, y: cy, w: sw, h: ch, cls: segOn ? "paper-chip on" : "paper-chip" });
+        prims.push({ t: "text", x: x + sw / 2, y: cy + ch * 0.7, s: "本段", cls: segOn ? "nav-text on" : "nav-text", size: P(1.1), anchor: "middle" });
+        const scope = hit(x, sw); x += sw + P(0.5);
+        prims.push({ t: "rect", x, y: cy, w: mw, h: ch, cls: "paper-chip" });
+        prims.push({ t: "text", x: x + mw / 2, y: cy + ch * 0.72, s: "⋯", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+        menu = hit(x, mw);
+        Object.assign(paperNav, { prev, next, scope });
       }
       yCur += P(PAPER_H);
     };
@@ -394,7 +401,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       prims.push({ t: "text", x: P(MARGIN), y: yCur + P(STUB_H * 0.7), s: "隐藏 · 不放（点曲段名进去）", cls: "part-stub", size: P(1.1), anchor: "start" });
       prims.push({ t: "line", x1: P(MARGIN + 0.2) + (o.measureLyric("隐藏 · 不放（点曲段名进去）") * 1.1) / LYRIC_EM + P(0.8), y1: yCur + P(STUB_H * 0.5), x2: P(right), y2: yCur + P(STUB_H * 0.5), w: P(0.08), cls: "part-stub-line" });
       yCur += P(STUB_H);
-      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur });
+      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
       return;
     }
     const present = o.parts.filter((p) => paper.tracks[p.id]), parts = present.filter((p) => !p.hidden), hiddenParts = present.filter((p) => p.hidden);
@@ -412,7 +419,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       drawPaperTitle(P(hiddenParts.length ? STUB_H : 3.2));
       if (!hiddenParts.length) { prims.push({ t: "text", x: P(MARGIN), y: yCur + P(2.2), s: "（这张纸上没有声部）", cls: "paper-name empty", size: P(1.3), anchor: "start" }); yCur += P(3.2); }
       stubs();
-      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur });
+      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
       return;
     }
     // 1. 每个声部的排版单元
@@ -828,7 +835,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       }
     });
     stubs();
-    papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur });
+    papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
   });
   // 分页：页框（压在最底下）+ 页码；高 = 最后一页的底
   const pages: Layout["pages"] = [];
@@ -843,7 +850,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, title, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, title, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

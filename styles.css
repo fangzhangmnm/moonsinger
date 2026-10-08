@@ -627,3 +627,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .pad-key.sym.ignored .slur-ico { opacity: .45; }
 .pad-key.sym.is-on { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }   /* 符号层：现在生效的力度（状态） */
 .ctx-menu .ctx-ver { font-size: 11px; color: var(--muted); padding: 2px 12px 0; font-variant-numeric: tabular-nums; }   /* 三条杠菜单：设置上面的版本号 */
+.ctx-menu .ctx-dyn { flex-wrap: nowrap; }
+.ctx-menu .ctx-dyn .ctx-chip { min-width: 34px; padding: 0 4px; }
+.ctx-menu .ctx-dyn .ctx-chip .smufl { font-family: "Bravura"; font-size: 24px; line-height: 1; position: relative; top: 5px; }
+.ctx-menu .ctx-chip.is-on { background: var(--accent-soft); border-color: var(--accent); }

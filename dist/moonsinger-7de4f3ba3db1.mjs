@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.3-2026-10-08";
+var APP_VERSION = "v0.7.4-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4639,7 +4639,7 @@ function engrave(song, o10) {
   const titleSize = P2(1.9), titleBase = TOP + P2(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o10.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o10.titlePlaceholder) prims.push({ t: "text", x: o10.width / 2, y: titleBase, s: "\u6B4C\u540D", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
-  let paperChip = null, addPaper2 = null, nav = null;
+  let paperChip = null, addPaper2 = null, nav = null, paperMenu = null;
   if (o10.paperLabel) {
     const ch2 = P2(2.2), cw2 = ch2, cx2 = o10.width - P2(MARGIN) - cw2, cy2 = TOP + P2(0.9), is2 = P2(1.5);
     prims.push({ t: "rect", x: cx2, y: cy2, w: cw2, h: ch2, cls: "paper-chip" });
@@ -4652,24 +4652,11 @@ function engrave(song, o10) {
       addPaper2 = { x: ax2 - P2(0.5), y: cy2 - P2(0.5), w: cw2 + P2(1), h: ch2 + P2(1) };
     }
   }
-  if (song.papers.length > 1) {
-    const k2 = Math.max(0, song.papers.findIndex((p2) => p2.id === o10.at.paper)), ch2 = P2(2.2), cw2 = P2(2.2), cy2 = TOP + P2(0.9);
-    const x0 = P2(MARGIN);
-    prims.push({ t: "rect", x: x0, y: cy2, w: cw2, h: ch2, cls: k2 > 0 ? "paper-chip" : "paper-chip off" });
-    prims.push({ t: "text", x: x0 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u2039", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
-    const lab = `${k2 + 1}/${song.papers.length}`, lw2 = o10.measureLyric(lab) * 1.1 / LYRIC_EM + P2(0.8);
-    prims.push({ t: "text", x: x0 + cw2 + lw2 / 2, y: cy2 + ch2 * 0.7, s: lab, cls: "nav-text", size: P2(1.1), anchor: "middle" });
-    const x1 = x0 + cw2 + lw2;
-    prims.push({ t: "rect", x: x1, y: cy2, w: cw2, h: ch2, cls: k2 < song.papers.length - 1 ? "paper-chip" : "paper-chip off" });
-    prims.push({ t: "text", x: x1 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u203A", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
-    const segOn = o10.onlyPaper !== void 0, sx2 = x1 + cw2 + P2(0.8), sw2 = o10.measureLyric("\u672C\u6BB5") * 1.1 / LYRIC_EM + P2(1.2);
-    prims.push({ t: "rect", x: sx2, y: cy2, w: sw2, h: ch2, cls: segOn ? "paper-chip on" : "paper-chip" });
-    prims.push({ t: "text", x: sx2 + sw2 / 2, y: cy2 + ch2 * 0.7, s: "\u672C\u6BB5", cls: segOn ? "nav-text on" : "nav-text", size: P2(1.1), anchor: "middle" });
-    nav = {
-      prev: k2 > 0 ? { x: x0 - P2(0.4), y: cy2 - P2(0.4), w: cw2 + P2(0.8), h: ch2 + P2(0.8) } : null,
-      next: k2 < song.papers.length - 1 ? { x: x1 - P2(0.4), y: cy2 - P2(0.4), w: cw2 + P2(0.8), h: ch2 + P2(0.8) } : null,
-      scope: { x: sx2 - P2(0.3), y: cy2 - P2(0.4), w: sw2 + P2(0.6), h: ch2 + P2(0.8) }
-    };
+  if (o10.titlePlaceholder && song.papers.length === 1) {
+    const ch2 = P2(2.2), cw2 = P2(2.6), cy2 = TOP + P2(0.9), mx = P2(MARGIN);
+    prims.push({ t: "rect", x: mx, y: cy2, w: cw2, h: ch2, cls: "paper-chip" });
+    prims.push({ t: "text", x: mx + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u22EF", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
+    paperMenu = { x: mx - P2(0.3), y: cy2 - P2(0.4), w: cw2 + P2(0.6), h: ch2 + P2(0.8) };
   }
   const title = { x: P2(MARGIN), y: TOP + P2(0.3), w: o10.width - P2(2 * MARGIN), h: P2(TITLE_H), baseline: titleBase, size: titleSize };
   const lines = song.credits ? song.credits.split("\n") : [];
@@ -4729,7 +4716,8 @@ function engrave(song, o10) {
     const paperTop = yCur;
     const pSize = P2(1.6);
     let menu = null;
-    const pTitle = { x: P2(MARGIN), y: yCur, w: o10.width - P2(2 * MARGIN) - P2(4), h: P2(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };
+    const paperNav = {};
+    const pTitle = { x: P2(MARGIN), y: yCur, w: o10.width - P2(2 * MARGIN) - P2(o10.titlePlaceholder && song.papers.length > 1 ? 16 : 4), h: P2(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };
     const drawPaperTitle = (firstBlock) => {
       if (!showPaperLine) return;
       ensure(P2(PAPER_H) + firstBlock);
@@ -4738,11 +4726,30 @@ function engrave(song, o10) {
       pTitle.baseline = pBase;
       if (paper.name) prims.push({ t: "text", x: P2(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });
       else if (o10.titlePlaceholder) prims.push({ t: "text", x: P2(MARGIN), y: pBase, s: "\u66F2\u6BB5\u540D", cls: "paper-name empty", size: pSize, anchor: "start" });
-      if (o10.titlePlaceholder) {
-        const ch2 = P2(2.2), cw2 = P2(3), cx2 = o10.width - P2(MARGIN) - cw2, cy2 = yCur + P2((PAPER_H - 2.2) / 2);
-        prims.push({ t: "rect", x: cx2, y: cy2, w: cw2, h: ch2, cls: "paper-chip" });
-        prims.push({ t: "text", x: cx2 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u22EF", cls: "paper-chip-text", size: P2(1.6), anchor: "middle" });
-        menu = { x: cx2 - P2(0.5), y: cy2 - P2(0.5), w: cw2 + P2(1), h: ch2 + P2(1) };
+      if (o10.titlePlaceholder && song.papers.length > 1) {
+        const k2 = song.papers.findIndex((p2) => p2.id === paper.id), n10 = song.papers.length, ch2 = P2(2.2), cw2 = P2(2.2), cy2 = yCur + P2((PAPER_H - 2.2) / 2);
+        const lab = `${k2 + 1}/${n10}`, lw2 = o10.measureLyric(lab) * 1.1 / LYRIC_EM + P2(0.8), sw2 = o10.measureLyric("\u672C\u6BB5") * 1.1 / LYRIC_EM + P2(1.2), mw = P2(2.6);
+        const segOn = o10.onlyPaper === paper.id, total = cw2 + lw2 + cw2 + P2(0.8) + sw2 + P2(0.5) + mw;
+        let x3 = o10.width - P2(MARGIN) - total;
+        const hit = (bx, w2) => ({ x: bx - P2(0.3), y: cy2 - P2(0.4), w: w2 + P2(0.6), h: ch2 + P2(0.8) });
+        prims.push({ t: "rect", x: x3, y: cy2, w: cw2, h: ch2, cls: k2 > 0 ? "paper-chip" : "paper-chip off" });
+        prims.push({ t: "text", x: x3 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u2039", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
+        const prev = k2 > 0 ? hit(x3, cw2) : null;
+        x3 += cw2;
+        prims.push({ t: "text", x: x3 + lw2 / 2, y: cy2 + ch2 * 0.7, s: lab, cls: "nav-text", size: P2(1.1), anchor: "middle" });
+        x3 += lw2;
+        prims.push({ t: "rect", x: x3, y: cy2, w: cw2, h: ch2, cls: k2 < n10 - 1 ? "paper-chip" : "paper-chip off" });
+        prims.push({ t: "text", x: x3 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u203A", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
+        const next2 = k2 < n10 - 1 ? hit(x3, cw2) : null;
+        x3 += cw2 + P2(0.8);
+        prims.push({ t: "rect", x: x3, y: cy2, w: sw2, h: ch2, cls: segOn ? "paper-chip on" : "paper-chip" });
+        prims.push({ t: "text", x: x3 + sw2 / 2, y: cy2 + ch2 * 0.7, s: "\u672C\u6BB5", cls: segOn ? "nav-text on" : "nav-text", size: P2(1.1), anchor: "middle" });
+        const scope = hit(x3, sw2);
+        x3 += sw2 + P2(0.5);
+        prims.push({ t: "rect", x: x3, y: cy2, w: mw, h: ch2, cls: "paper-chip" });
+        prims.push({ t: "text", x: x3 + mw / 2, y: cy2 + ch2 * 0.72, s: "\u22EF", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
+        menu = hit(x3, mw);
+        Object.assign(paperNav, { prev, next: next2, scope });
       }
       yCur += P2(PAPER_H);
     };
@@ -4752,7 +4759,7 @@ function engrave(song, o10) {
       prims.push({ t: "text", x: P2(MARGIN), y: yCur + P2(STUB_H * 0.7), s: "\u9690\u85CF \xB7 \u4E0D\u653E\uFF08\u70B9\u66F2\u6BB5\u540D\u8FDB\u53BB\uFF09", cls: "part-stub", size: P2(1.1), anchor: "start" });
       prims.push({ t: "line", x1: P2(MARGIN + 0.2) + o10.measureLyric("\u9690\u85CF \xB7 \u4E0D\u653E\uFF08\u70B9\u66F2\u6BB5\u540D\u8FDB\u53BB\uFF09") * 1.1 / LYRIC_EM + P2(0.8), y1: yCur + P2(STUB_H * 0.5), x2: P2(right), y2: yCur + P2(STUB_H * 0.5), w: P2(0.08), cls: "part-stub-line" });
       yCur += P2(STUB_H);
-      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur });
+      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
       return;
     }
     const present = o10.parts.filter((p2) => paper.tracks[p2.id]), parts = present.filter((p2) => !p2.hidden), hiddenParts = present.filter((p2) => p2.hidden);
@@ -4772,7 +4779,7 @@ function engrave(song, o10) {
         yCur += P2(3.2);
       }
       stubs();
-      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur });
+      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
       return;
     }
     const per = parts.map((p2) => {
@@ -5286,7 +5293,7 @@ function engrave(song, o10) {
       }
     });
     stubs();
-    papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur });
+    papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
   });
   const pages = [];
   if (PG) {
@@ -5300,7 +5307,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P2(PG.h) : yCur + P2(MX.b);
-  return { prims, width: o10.width, height, sp: sp2, systems: rows, notes, slots, lyrics, marks, title, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o10.width, height, sp: sp2, systems: rows, notes, slots, lyrics, marks, title, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -6473,6 +6480,10 @@ var ScoreView = class {
       this.host.onScopeToggle?.();
       return true;
     }
+    if (this.inBox(L2.paperMenu, x2, y2)) {
+      this.host.onPaperMenu?.(this.host.get().at.paper);
+      return true;
+    }
     if (this.inBox(L2.credits, x2, y2)) {
       this.host.focus?.("text");
       this.host.onCredits?.();
@@ -6496,6 +6507,18 @@ var ScoreView = class {
     for (const pp of L2.papers) {
       if (this.inBox(pp.menu, x2, y2)) {
         this.host.onPaperMenu?.(pp.id);
+        return true;
+      }
+      if (this.inBox(pp.prev ?? null, x2, y2)) {
+        this.host.onNavFrom?.(pp.id, -1);
+        return true;
+      }
+      if (this.inBox(pp.next ?? null, x2, y2)) {
+        this.host.onNavFrom?.(pp.id, 1);
+        return true;
+      }
+      if (this.inBox(pp.scope, x2, y2)) {
+        this.host.onScopeOf?.(pp.id);
         return true;
       }
       if (pp.title.shown && this.inBox(pp.title, x2, y2)) {
@@ -26286,6 +26309,15 @@ var view = new ScoreView(scoreEl, {
     info("\u65B0\u7684\u4E00\u5F20\u7EB8");
   },
   onNav: (dir) => navPaper(dir),
+  onNavFrom: (paper, dir) => navPaperFrom(paper, dir),
+  onScopeOf: (paper) => {
+    if (viewScope === "segment" && st2.at.paper === paper) viewScope = "all";
+    else {
+      viewScope = "segment";
+      if (st2.at.paper !== paper) navPaperTo(paper);
+    }
+    view.render();
+  },
   onScopeToggle: () => {
     viewScope = viewScope === "segment" ? "all" : "segment";
     view.render();
@@ -27219,7 +27251,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "4031f374dc20",
+  cssHash: "d4f774821ad3",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -27649,7 +27681,14 @@ function afterViewChange() {
   view.render();
 }
 function navPaper(dir) {
-  const k2 = st2.song.papers.findIndex((p2) => p2.id === st2.at.paper), to2 = st2.song.papers[k2 + dir];
+  navPaperFrom(st2.at.paper, dir);
+}
+function navPaperFrom(from, dir) {
+  const k2 = st2.song.papers.findIndex((p2) => p2.id === from), to2 = st2.song.papers[k2 + dir];
+  if (to2) navPaperTo(to2.id);
+}
+function navPaperTo(id2) {
+  const to2 = st2.song.papers.find((p2) => p2.id === id2);
   if (!to2) return;
   const part = to2.tracks[st2.at.part] ? st2.at.part : st2.song.parts.find((p2) => to2.tracks[p2.id])?.id ?? st2.at.part;
   update(setFocus(st2, to2.id, part));
@@ -27816,13 +27855,15 @@ function openTrackCard(at2) {
     draw();
   });
 }
+var DYN_MENU = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
 function openScoreMenu(at2, row) {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
-  box.innerHTML = item("paste", "\u7C98\u8D34", "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09") + `<div class="ctx-sep"></div>` + item("bar", "\u5C0F\u8282\u7EBF |", "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09") + item("phrase", "\u53E5\u53F7", "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09") + item("mark:key", "\u8C03\u53F7\u2026") + item("mark:time", "\u62CD\u53F7\u2026") + item("mark:tempo", "\u901F\u5EA6\u2026") + `<div class="ctx-sep"></div>` + item("row", "\u5168\u9009\u8FD9\u4E00\u884C", "", !row) + item("all", "\u5168\u9009");
+  box.innerHTML = item("paste", "\u7C98\u8D34", "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09") + `<div class="ctx-sep"></div>` + item("bar", "\u5C0F\u8282\u7EBF |", "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09") + item("phrase", "\u53E5\u53F7", "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09") + item("mark:key", "\u8C03\u53F7\u2026") + item("mark:time", "\u62CD\u53F7\u2026") + item("mark:tempo", "\u901F\u5EA6\u2026") + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
+  `<div class="ctx-row ctx-dyn">${["pp", "p", "mp", "mf", "f", "ff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(st2), st2.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u8FD9\u513F\u8D77"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("row", "\u5168\u9009\u8FD9\u4E00\u884C", "", !row) + item("all", "\u5168\u9009");
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let x2 = at2.x + 6, y2 = at2.y + 10;
@@ -27849,6 +27890,7 @@ function openScoreMenu(at2, row) {
     else if (v === "bar") update(apply(st2, { k: "bar" }, performance.now()));
     else if (v === "phrase") update(apply(st2, { k: "phrase" }, performance.now()));
     else if (v.startsWith("mark:")) insertMarkHere(v.slice(5));
+    else if (v.startsWith("dyn:")) update(apply(st2, { k: "dyn", v: v.slice(4) }, performance.now()));
     else if (v === "row" && row) {
       update(select(st2, row.from, row.to));
       updateChrome();
@@ -29450,4 +29492,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6d79dcb4fa68.mjs.map
+//# sourceMappingURL=moonsinger-7de4f3ba3db1.mjs.map
