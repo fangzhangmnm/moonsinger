@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.7-2026-10-08";
+var APP_VERSION = "v0.6.8-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2789,11 +2789,11 @@ function placeDegree(degree2, fifths, prev, dir) {
   const s10 = degreeStepIndex(degree2, fifths);
   const ref = diatonicIndex(prev ?? HOME);
   const base3 = Math.floor(ref / 7) * 7 + s10;
-  const cands2 = [base3 - 7, base3, base3 + 7];
+  const cands3 = [base3 - 7, base3, base3 + 7];
   let d3;
-  if (dir === "near") d3 = cands2.reduce((a10, b3) => Math.abs(b3 - ref) < Math.abs(a10 - ref) ? b3 : a10);
-  else if (dir === "up") d3 = cands2.find((c10) => c10 > ref);
-  else d3 = [...cands2].reverse().find((c10) => c10 < ref);
+  if (dir === "near") d3 = cands3.reduce((a10, b3) => Math.abs(b3 - ref) < Math.abs(a10 - ref) ? b3 : a10);
+  else if (dir === "up") d3 = cands3.find((c10) => c10 > ref);
+  else d3 = [...cands3].reverse().find((c10) => c10 < ref);
   return fromDiatonic(d3, fifths);
 }
 function stepBy(p2, steps, fifths) {
@@ -2803,12 +2803,12 @@ function alterBy(p2, d3) {
   return { ...p2, alter: Math.max(-2, Math.min(2, p2.alter + d3)) };
 }
 function spellMidi(midi, fifths, prefer = fifths < 0 ? -1 : 1) {
-  const cands2 = [];
+  const cands3 = [];
   for (const step of STEPS) for (let o10 = Math.floor(midi / 12) - 2; o10 <= Math.floor(midi / 12); o10++) {
     const alter = midi - midiOf({ step, alter: 0, octave: o10 });
-    if (Math.abs(alter) <= 1) cands2.push({ step, alter, octave: o10 });
+    if (Math.abs(alter) <= 1) cands3.push({ step, alter, octave: o10 });
   }
-  return cands2.find((p2) => p2.alter === keyAlter(p2.step, fifths)) ?? cands2.find((p2) => p2.alter === prefer) ?? cands2.find((p2) => p2.alter === 0) ?? cands2[0];
+  return cands3.find((p2) => p2.alter === keyAlter(p2.step, fifths)) ?? cands3.find((p2) => p2.alter === prefer) ?? cands3.find((p2) => p2.alter === 0) ?? cands3[0];
 }
 function transposeSemis(p2, semis, fifths) {
   return semis === 0 ? p2 : spellMidi(midiOf(p2) + semis, fifths, semis > 0 ? 1 : -1);
@@ -4685,10 +4685,10 @@ function engrave(song, o10) {
         drawChunk(u2);
       }
       const stemmed = [];
-      let group = [], groupBeat = -1, groupSys = -1;
+      let group2 = [], groupBeat = -1, groupSys = -1;
       const endGroup = () => {
-        if (group.length) stemmed.push(group);
-        group = [];
+        if (group2.length) stemmed.push(group2);
+        group2 = [];
         groupBeat = -1;
       };
       const chunksInOrder = [];
@@ -4709,8 +4709,8 @@ function engrave(song, o10) {
           continue;
         }
         const beat = Math.floor(u2.inBar / u2.beat);
-        if (group.length && (beat !== groupBeat || u2.system !== groupSys || u2.staff !== group[0].c.staff)) endGroup();
-        group.push(s10);
+        if (group2.length && (beat !== groupBeat || u2.system !== groupSys || u2.staff !== group2[0].c.staff)) endGroup();
+        group2.push(s10);
         groupBeat = beat;
         groupSys = u2.system;
       }
@@ -5889,8 +5889,8 @@ var ScoreView = class {
     if (!mine.length) return -1;
     const row = this.rowAt(p2.y);
     const rows = [...new Set(mine.map((n10) => n10.system))], sys = rows.includes(row) ? row : rows.reduce((a10, b3) => Math.abs(b3 - row) < Math.abs(a10 - row) ? b3 : a10);
-    const cands2 = mine.filter((n10) => n10.system === sys);
-    return cands2.reduce((a10, b3) => Math.abs(b3.x + b3.w / 2 - p2.x) < Math.abs(a10.x + a10.w / 2 - p2.x) ? b3 : a10).index;
+    const cands3 = mine.filter((n10) => n10.system === sys);
+    return cands3.reduce((a10, b3) => Math.abs(b3.x + b3.w / 2 - p2.x) < Math.abs(a10.x + a10.w / 2 - p2.x) ? b3 : a10).index;
   }
   inBox(b3, x2, y2) {
     return !!b3 && x2 >= b3.x && x2 <= b3.x + b3.w && y2 >= b3.y && y2 <= b3.y + b3.h;
@@ -5964,9 +5964,9 @@ var ScoreView = class {
       for (let r10 = 0; r10 < L2.systems.length; r10++) {
         const ly2 = L2.lyricY(r10);
         if (!(y2 > ly2 - sp2 * 2.2 && y2 < ly2 + sp2 * 2.4)) continue;
-        const cands2 = L2.lyrics.filter((h2) => h2.system === r10);
-        if (cands2.length) {
-          const best = cands2.reduce((a10, b3) => Math.abs(b3.x - x2) < Math.abs(a10.x - x2) ? b3 : a10);
+        const cands3 = L2.lyrics.filter((h2) => h2.system === r10);
+        if (cands3.length) {
+          const best = cands3.reduce((a10, b3) => Math.abs(b3.x - x2) < Math.abs(a10.x - x2) ? b3 : a10);
           if (Math.abs(best.x - x2) < sp2 * 4) {
             this.host.set(this.focusRow(this.host.get(), r10, this.host.get().caret));
             this.lyrics.openAt(best.index);
@@ -5990,9 +5990,9 @@ var ScoreView = class {
   }
   /** 空白处 → 那条谱最近的光标落点（= 写；点哪条谱光标就到哪条）。 */
   caretAt(x2, y2, st3 = this.host.get()) {
-    const L2 = this.layout, row = this.rowAt(y2), cands2 = L2.slots.filter((s10) => s10.system === row);
-    if (!cands2.length) return st3;
-    const best = cands2.reduce((a10, b3) => Math.abs(b3.x - x2) < Math.abs(a10.x - x2) ? b3 : a10);
+    const L2 = this.layout, row = this.rowAt(y2), cands3 = L2.slots.filter((s10) => s10.system === row);
+    if (!cands3.length) return st3;
+    const best = cands3.reduce((a10, b3) => Math.abs(b3.x - x2) < Math.abs(a10.x - x2) ? b3 : a10);
     const r10 = L2.systems[row];
     return r10.paper === st3.at.paper && r10.part === st3.at.part ? setCaret(st3, best.caret) : setFocus(st3, r10.paper, r10.part, best.caret);
   }
@@ -6173,9 +6173,9 @@ function installPlatformGuards(surfaces) {
 
 // src/score/scales.ts
 var d = (s10) => s10.split(" ").map((t10) => ({ deg: Number(t10.replace(/[#b]/g, "")), alt: t10.startsWith("#") ? 1 : t10.startsWith("b") ? -1 : 0 }));
-var mk = (id2, name, group, degs, homeDeg) => {
+var mk = (id2, name, group2, degs, homeDeg) => {
   const ds = d(degs), h2 = d(homeDeg)[0];
-  return { id: id2, name, group, degs: ds, home: ds.findIndex((x2) => x2.deg === h2.deg && x2.alt === h2.alt) };
+  return { id: id2, name, group: group2, degs: ds, home: ds.findIndex((x2) => x2.deg === h2.deg && x2.alt === h2.alt) };
 };
 var SCALES = [
   mk("major", "\u5927\u8C03", "\u5927\u5C0F\u8C03", "1 2 3 4 5 6 7", "1"),
@@ -6224,8 +6224,7 @@ function ladderHome(sc2, tonicD, fifths) {
 var degLabel = (g3) => `${g3.alt > 0 ? "\u266F" : g3.alt < 0 ? "\u266D" : ""}${g3.deg}`;
 
 // src/ui/pad.ts
-var HER_LOW = 57;
-var HER_HIGH = 76;
+var HER_RANGE = { lo: 57, hi: 76, who: "\u6708\u8BFB" };
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } };
 var SWIPE = 20;
@@ -6430,7 +6429,7 @@ var Pad = class {
       };
       for (const t10 of ["pointerup", "pointercancel", "lostpointercapture"]) ak2.addEventListener(t10, (e10) => akUp(e10));
     }
-    const gridSig = this.symbols ? `symbols|${this.host.staves()}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}`;
+    const hr = this.hint(), gridSig = this.symbols ? `symbols|${this.host.staves()}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) {
       if (this.symbols) this.buildSymbols();
       else this.buildGrid(f2, base3, rows);
@@ -6556,15 +6555,36 @@ var Pad = class {
       this.render();
     });
   }
+  hint() {
+    return this.host.hintRange ? this.host.hintRange() : HER_RANGE;
+  }
+  /** 音域窗口挪到最能盖住 [lo, hi] 的那一档（重叠最多；一样多取中心最近的）。试听换了乐器时宿主调（「跟进」）；人自己拨旋钮照旧。 */
+  follow(lo2, hi) {
+    const f2 = inputKey(this.host.state()), rows = this.rows(), mid = (lo2 + hi) / 2;
+    let best = this.rowShift, bestOv = -Infinity, bestD = Infinity;
+    for (const sh2 of SHIFTS) {
+      const k0 = this.baseAt(sh2, f2, rows), wlo = midiOf(this.pitchAt(k0, f2)), whi = midiOf(this.pitchAt(k0 + rows * this.cols - 1, f2));
+      const ov2 = Math.min(hi, whi) - Math.max(lo2, wlo), d3 = Math.abs((wlo + whi) / 2 - mid);
+      if (ov2 > bestOv || ov2 === bestOv && d3 < bestD) {
+        best = sh2;
+        bestOv = ov2;
+        bestD = d3;
+      }
+    }
+    if (best !== this.rowShift) {
+      this.rowShift = best;
+      this.render();
+    }
+  }
   buildGrid(f2, base3, rows) {
-    const cells = [], sc2 = this.scale(), ht = homeTonic(f2);
+    const cells = [], sc2 = this.scale(), ht = homeTonic(f2), hr = this.hint();
     this.keys.clear();
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < this.cols; col++) {
         const k2 = base3 + row * this.cols + col, { pitch: p2, deg, oct } = ladderAt(sc2, k2, ht, f2), m2 = midiOf(p2);
-        const inRange = m2 >= HER_LOW && m2 <= HER_HIGH;
+        const inRange = !!hr && m2 >= hr.lo && m2 <= hr.hi;
         this.keys.set(k2, p2);
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k2}" title="${inRange ? "\u6708\u8BFB\u7684\u97F3\u57DF\u91CC" : ""}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${degLabel(deg)}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p2)}</span></button>`);
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k2}" title="${inRange ? `${hr.who}\u7684\u97F3\u57DF\u91CC` : ""}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${degLabel(deg)}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p2)}</span></button>`);
       }
     }
     const grid = this.el.querySelector(".pad-grid");
@@ -7717,6 +7737,28 @@ var PACKS = {
 };
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
+// src/singer/credit-translations.ts
+var CREDIT_TRANSLATIONS = {
+  /** 译自的原文（sha256）。 */
+  of: {
+    credit: "5c233b5c7f4d890be860df437d6f5d258bc530f39e0577295651b67ae8072f1f",
+    terms: "6c04cd4680d210e6eb189cdc1e5a81b2c65c65510a46eb5708076b612b930887"
+  },
+  zh: {
+    credit: "\u672C\u8F6F\u4EF6\u7684\u8BED\u97F3\u5408\u6210\u4F7F\u7528\u4E86\u514D\u8D39\u7D20\u6750\u89D2\u8272\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\u6708\u8BFB\uFF1B\xA9 Rei Yumesaki\uFF09\u514D\u8D39\u516C\u5F00\u7684\u8BED\u97F3\u6570\u636E\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u8BED\u6599\u5E93\uFF08CV. \u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/",
+    terms: "\u4F7F\u7528\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u7684\u58F0\u7EBF\u65F6\uFF0C\u7981\u6B62\u628A\u751F\u6210\u51FA\u6765\u7684\u58F0\u97F3\u7528\u4E8E\u4EE5\u4E0B\u76EE\u7684\u3002\n\u3010\u7981\u6B62\u4E8B\u9879\u3011\n\u25A0\u6279\u8BC4\u3001\u653B\u51FB\u4ED6\u4EBA\u3002\uFF08\u300C\u6279\u8BC4\u3001\u653B\u51FB\u300D\u7684\u5B9A\u4E49\u4EE5\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u89D2\u8272\u8BB8\u53EF\uFF08\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\uFF09\u4E3A\u51C6\uFF09\n\u25A0\u53F7\u53EC\u4EBA\u4EEC\u8D5E\u540C\u6216\u53CD\u5BF9\u7279\u5B9A\u7684\u653F\u6CBB\u7ACB\u573A\u3001\u5B97\u6559\u3001\u601D\u60F3\u3002\n\u25A0\u4E0D\u505A\u533A\u9694\uFF08\u30BE\u30FC\u30CB\u30F3\u30B0\uFF09\u5C31\u516C\u5F00\u523A\u6FC0\u6027\u5F3A\u7684\u5185\u5BB9\u3002\uFF08\u8BD1\u6CE8\uFF1A\u533A\u9694 = \u5206\u7EA7\u3001\u52A0\u63D0\u793A\u3001\u653E\u8FDB\u5355\u72EC\u7684\u5730\u65B9\u7B49\uFF0C\u8BA9\u4E0D\u60F3\u770B\u7684\u4EBA\u78B0\u4E0D\u5230\uFF09\n\u25A0\u4EE5\u5141\u8BB8\u4ED6\u4EBA\u4E8C\u6B21\u5229\u7528\uFF08\u5F53\u4F5C\u7D20\u6750\u4F7F\u7528\uFF09\u7684\u5F62\u5F0F\u516C\u5F00\u3002"
+  },
+  en: {
+    credit: 'The voice synthesis in this software uses voice data released free of charge by the free-material character "Tsukuyomi-chan" (\xA9 Rei Yumesaki).\n\u25A0 Tsukuyomi-chan Corpus (CV: Rei Yumesaki)\nhttps://tyc.rei-yumesaki.net/material/corpus/',
+    terms: `When using Tsukuyomi-chan's voice, you must not use the generated audio for the following purposes.
+[Prohibited]
+\u25A0 Criticizing or attacking people. (What counts as "criticizing or attacking" follows the Tsukuyomi-chan Character License.)
+\u25A0 Calling on people to support or oppose a particular political position, religion, or ideology.
+\u25A0 Publishing intense or provocative content without zoning. (Translator's note: zoning = age gates, content warnings, separate spaces, so that people who don't want to see it don't run into it.)
+\u25A0 Publishing it in a form that permits others to reuse it (as material for their own works).`
+  }
+};
+
 // src/gm/sounds.gen.ts
 var SOUNDS_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-sounds";
 var SOUNDS = {
@@ -8459,6 +8501,7 @@ var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 1 };
 var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
 var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
 var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
+var SOUNDFONT_CALIBRATION_DB = -6;
 var TSUKUYOMI_DEFAULTS = {};
 var REPO = "https://github.com/fangzhangmnm/moonsinger";
 var TSUKUYOMI_CREDIT = {
@@ -8473,7 +8516,7 @@ var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId }
 // src/format/migrate/index.ts
 var HUMS = /* @__PURE__ */ new Set(["la", "n", "u", "o", "a"]);
 function loungeV1toV2(json) {
-  const cands2 = (json.candidates ?? []).map((c02) => {
+  const cands3 = (json.candidates ?? []).map((c02) => {
     const c10 = { ...c02 }, gm = c10.gm ?? {}, src = c10.source, engines = c10.engines ?? {};
     const hum = HUMS.has(String(c10.hum)) ? String(c10.hum) : "n";
     delete c10.hum;
@@ -8499,7 +8542,7 @@ function loungeV1toV2(json) {
     }
     return { ...c10, ...common2, instrument: { engine: "unknown", engines }, defaults: {}, credit: c02.credit ?? { attribution: [], license: { name: "unknown" } }, spec: c02.spec ?? { kind: "unknown" } };
   });
-  return { ...json, candidates: cands2 };
+  return { ...json, candidates: cands3 };
 }
 var manifestV1toV2 = (json) => ({ ...json, derived: [] });
 function scoreV1toV2(json) {
@@ -8741,7 +8784,7 @@ function withSf2Candidate(extras, role, c10, hum) {
   const n10 = Math.max(0, ...list.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
   const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
   const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
-  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), defaults: { ...SOUNDFONT_DEFAULTS }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r10.candidates = list;
   r10.active = id2;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 }, sounds: path ? { ...extras.sounds, [path]: c10.subset } : extras.sounds };
@@ -8764,6 +8807,72 @@ function withoutCandidate(extras, role, id2) {
   if (r10.active === id2) throw new Error("\u4E0A\u573A\u7684\u5019\u9009\u4E0D\u80FD\u5220\uFF0C\u5148\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D");
   r10.candidates = cands(r10).filter((c10) => c10.id !== id2);
   return pruneSounds({ ...extras, lounge: { ...extras.lounge, [role]: r10 } });
+}
+function soundUses(extras) {
+  const out = /* @__PURE__ */ new Map();
+  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands(r10)) {
+    const i10 = instrumentOf(c10);
+    if (i10?.engine !== "soundfont") continue;
+    const s10 = i10.source, had = out.get(s10.subsetSha256), packed = !!(s10.embedded && extras.sounds[s10.embedded]);
+    if (had) {
+      had.packed ||= packed;
+      if (!had.names.includes(String(c10.name ?? ""))) had.names.push(String(c10.name ?? ""));
+      continue;
+    }
+    out.set(s10.subsetSha256, { subsetSha256: s10.subsetSha256, packed, bytes: Number(s10.subsetBytes ?? 0), origin: s10.origin, names: [String(c10.name ?? "")] });
+  }
+  return [...out.values()];
+}
+var soundPath = (sha256) => `${SOUNDS2}${sha256}.sf2`;
+function withPacked(extras, have) {
+  const lounge = {}, sounds = { ...extras.sounds }, packed = /* @__PURE__ */ new Set(), missing = /* @__PURE__ */ new Set();
+  for (const [id2, r02] of Object.entries(extras.lounge)) {
+    const r10 = structuredClone(r02);
+    for (const c10 of cands(r10)) {
+      const i10 = instrumentOf(c10);
+      if (i10?.engine !== "soundfont") continue;
+      const s10 = i10.source;
+      if (s10.embedded && sounds[s10.embedded]) continue;
+      const path = soundPath(s10.subsetSha256), b3 = sounds[path] ?? have(s10.subsetSha256);
+      if (!b3) {
+        missing.add(s10.subsetSha256);
+        continue;
+      }
+      sounds[path] = b3;
+      s10.embedded = path;
+      packed.add(s10.subsetSha256);
+    }
+    lounge[id2] = r10;
+  }
+  return packed.size ? { extras: { ...extras, lounge, sounds }, packed: [...packed], missing: [...missing] } : { extras, packed: [], missing: [...missing] };
+}
+function withUnpacked(extras, only) {
+  const lounge = {}, removed = /* @__PURE__ */ new Map();
+  let changed2 = false;
+  for (const [id2, r02] of Object.entries(extras.lounge)) {
+    const r10 = structuredClone(r02);
+    for (const c10 of cands(r10)) {
+      const i10 = instrumentOf(c10);
+      if (i10?.engine !== "soundfont" || !i10.source.embedded || only && !only(i10.source.subsetSha256)) continue;
+      const b3 = extras.sounds[i10.source.embedded];
+      if (b3) removed.set(i10.source.subsetSha256, b3);
+      i10.source.embedded = null;
+      changed2 = true;
+    }
+    lounge[id2] = r10;
+  }
+  return changed2 ? { extras: pruneSounds({ ...extras, lounge }), removed } : { extras, removed };
+}
+function activeCalibrationDb(extras, role) {
+  const c10 = activeCandidate(extras, role);
+  const v = Number(c10?.calibrationDb ?? 0);
+  return Number.isFinite(v) ? v : 0;
+}
+function withCalibration(extras, role, dB, hum) {
+  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
+  if (!c10) return extras;
+  c10.calibrationDb = Math.round(dB * 10) / 10;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
 var foreign = (r10) => r10.title || !r10.movementTitle ? r10 : { ...r10, title: r10.movementTitle, movementTitle: "" };
 function paperOfRead(id2, r10) {
@@ -8919,6 +9028,107 @@ function finish(reads, song0, extras, ours, name) {
   return { song: { ...song0, hum }, stem, hum, extras, ours, notices };
 }
 
+// src/format/credits.ts
+var cands2 = (r10) => r10?.candidates ?? [];
+var creditOf = (c10) => {
+  const k2 = c10.credit;
+  return k2 && Array.isArray(k2.attribution) ? k2 : null;
+};
+function group(items) {
+  const out = /* @__PURE__ */ new Map();
+  for (const { name, credit } of items) {
+    const attribution = credit.attribution.map((s10) => String(s10).trim()).filter(Boolean);
+    const license = { name: String(credit.license?.name ?? "unknown"), ...credit.license?.url ? { url: String(credit.license.url) } : {} };
+    if (!attribution.length && license.name === "unknown") {
+      const k3 = `?${name}`;
+      out.set(k3, { who: [name], attribution: [], license });
+      continue;
+    }
+    const k2 = JSON.stringify([attribution, license]), had = out.get(k2);
+    if (had) {
+      if (!had.who.includes(name)) had.who.push(name);
+    } else out.set(k2, { who: [name], attribution, license });
+  }
+  return [...out.values()];
+}
+function fileCredits(extras) {
+  const items = [];
+  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands2(r10)) {
+    const i10 = c10.instrument;
+    if (i10?.engine !== "soundfont" || !i10.source?.embedded || !extras.sounds[i10.source.embedded]) continue;
+    const credit = creditOf(c10);
+    if (credit) items.push({ name: String(c10.name ?? ""), credit });
+  }
+  return group(items);
+}
+function audioCredits(extras, roles) {
+  const items = [];
+  for (const role of new Set(roles)) {
+    const r10 = extras.lounge[role], c10 = cands2(r10).find((x2) => x2.id === r10?.active);
+    if (!c10) continue;
+    if (c10.instrument?.engine === "unknown") continue;
+    const credit = creditOf(c10);
+    if (credit) items.push({ name: String(c10.name ?? ""), credit });
+  }
+  return group(items);
+}
+function creditsText(lines) {
+  return lines.map((l10) => {
+    const lic = l10.license.name === "unknown" ? "\u8BB8\u53EF\u8BC1\u4E0D\u660E" : `${l10.license.name}${l10.license.url ? ` ${l10.license.url}` : ""}`;
+    return [`${l10.who.join("\u3001")} \u2014 ${lic}`, ...l10.attribution.length ? l10.attribution : ["\uFF08\u6CA1\u6709\u7F72\u540D\u4FE1\u606F\uFF09"]].join("\n");
+  }).join("\n\n");
+}
+
+// src/audio/mix.ts
+var CEILING = 0.98;
+function sumTracks(tracks, sr2, tailSec = 0.3) {
+  const start = Math.min(0, ...tracks.map((t10) => t10.at));
+  const end = tracks.length ? Math.max(...tracks.map((t10) => t10.at + t10.samples.length / t10.sr)) + tailSec : 0;
+  const n10 = Math.max(0, Math.ceil((end - start) * sr2)), left = new Float32Array(n10), right = new Float32Array(n10);
+  for (const t10 of tracks) {
+    const g3 = 10 ** (t10.gainDb / 20), pan = Math.max(-1, Math.min(1, t10.pan));
+    const gl = g3 * Math.cos((pan + 1) * Math.PI / 4), gr = g3 * Math.sin((pan + 1) * Math.PI / 4);
+    const off = Math.round((t10.at - start) * sr2), ratio = t10.sr / sr2, len = Math.floor(t10.samples.length / ratio);
+    for (let i10 = 0; i10 < len; i10++) {
+      const p2 = i10 * ratio, k2 = Math.floor(p2), f2 = p2 - k2, v = t10.samples[k2] * (1 - f2) + (t10.samples[k2 + 1] ?? 0) * f2;
+      left[off + i10] += v * gl;
+      right[off + i10] += v * gr;
+    }
+  }
+  return { left, right, sr: sr2, start };
+}
+function limitBus(left, right, sr2, o10 = {}) {
+  const c10 = o10.ceiling ?? CEILING, n10 = left.length;
+  const g3 = new Float64Array(n10);
+  let any = false;
+  for (let i10 = 0; i10 < n10; i10++) {
+    const p2 = Math.max(Math.abs(left[i10]), Math.abs(right[i10]));
+    g3[i10] = p2 > c10 ? c10 / p2 : 1;
+    if (p2 > c10) any = true;
+  }
+  if (!any) return 0;
+  const aRel = Math.exp(-1 / ((o10.releaseSec ?? 0.15) * sr2)), aAtt = Math.exp(-1 / ((o10.attackSec ?? 3e-3) * sr2));
+  for (let i10 = 1; i10 < n10; i10++) g3[i10] = Math.min(g3[i10], 1 - (1 - g3[i10 - 1]) * aRel);
+  for (let i10 = n10 - 2; i10 >= 0; i10--) g3[i10] = Math.min(g3[i10], 1 - (1 - g3[i10 + 1]) * aAtt);
+  let min = 1;
+  for (let i10 = 0; i10 < n10; i10++) {
+    const k2 = g3[i10];
+    if (k2 >= 1) continue;
+    if (k2 < min) min = k2;
+    left[i10] *= k2;
+    right[i10] *= k2;
+    if (left[i10] > c10) left[i10] = c10;
+    else if (left[i10] < -c10) left[i10] = -c10;
+    if (right[i10] > c10) right[i10] = c10;
+    else if (right[i10] < -c10) right[i10] = -c10;
+  }
+  return 20 * Math.log10(min);
+}
+function mixTracks(tracks, sr2, tailSec = 0.3) {
+  const m2 = sumTracks(tracks, sr2, tailSec);
+  return { ...m2, limitedDb: limitBus(m2.left, m2.right, sr2) };
+}
+
 // src/gm/sound-cache.ts
 var CACHE = "pwa-sounds";
 var keyOf = (sha256) => `${location.origin}/__pwa-sounds__/${sha256}`;
@@ -8972,6 +9182,14 @@ async function listCachedSounds() {
     return out;
   } catch {
     return [];
+  }
+}
+async function isSoundPersisted(sha256) {
+  if (!hasCaches()) return false;
+  try {
+    return !!await (await caches.open(CACHE)).match(keyOf(sha256));
+  } catch {
+    return false;
   }
 }
 async function forgetSound(sha256) {
@@ -9115,32 +9333,32 @@ var GmSynth = class {
 // src/gm/instruments.gen.ts
 var INSTRUMENT_FILES = {
   "concepts": {
-    "file": "vendor/instruments/instruments-v3.json",
-    "bytes": 189292,
-    "sha256": "998b2705e73afdc1403f73e9ee7bbc1a90dd0c0c70978b4aaaf24f013b759a39"
+    "file": "vendor/instruments/instruments-v4.json",
+    "bytes": 216409,
+    "sha256": "bbfb91f12919c5e5b6aad0f9f22316667275ca40612ac19e8b7d954ae5654692"
   },
   "gmMap": {
-    "file": "vendor/instruments/gm-map-v3.json",
-    "bytes": 98355,
-    "sha256": "c3921256a72ca4d137e6beffa51e618c611e1bd7589d43efd4ce113fa3a07d15"
+    "file": "vendor/instruments/gm-map-v4.json",
+    "bytes": 108621,
+    "sha256": "6766817f55c202df7b645cbd3df0dd24d0a604d304f090277f5a4be2c9af1fcf"
   },
   "icons": {
-    "file": "vendor/instruments/instrument-icons-20261007-v3.svg",
-    "bytes": 103251,
-    "sha256": "407b377c9d1e1c75011ec709a446711324944f8577f35ba6169d8872654192e9"
+    "file": "vendor/instruments/instrument-icons-20261008-v4.svg",
+    "bytes": 139012,
+    "sha256": "d201bf704ffe6081c868fb45f2d43449b58bbd62efafdcfad9ad89cdd7e98067"
   },
   "iconCredits": {
-    "file": "vendor/instruments/icon-credits-v3.json",
-    "bytes": 13266,
-    "sha256": "d8e3fd9a397256edd4092f3a8640817e6722f0a2dd0f1cd9623ebf9c2a16a12f"
+    "file": "vendor/instruments/icon-credits-v4.json",
+    "bytes": 20668,
+    "sha256": "bbd85f260d1bf14a9a8d12f8e3235e0a1764b7da820957a5d9807d743c20736e"
   },
   "licenses": {
-    "file": "vendor/instruments/LICENSES-chosen-v3.md",
-    "bytes": 129060,
-    "sha256": "7f28450f4c1c82debd0b421dc28b77f2059f3cb3b446d8a96e4bf0ad503483d1"
+    "file": "vendor/instruments/LICENSES-chosen-v4.md",
+    "bytes": 145789,
+    "sha256": "a7a2429eebd6a8b66ff83a9145f43efed4bc85ec61f0fbbfd231f3416ba3784e"
   }
 };
-var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg" }, { "id": "iconmind--speech-synth", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg" }, { "id": "mdi--hand-clap", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg" }, { "id": "mdi--instrument-triangle", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg" }, { "id": "qlementine-icons--clap", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg" }, { "id": "qlementine-icons--cymbal", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg" }, { "id": "qlementine-icons--harmonica", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg" }, { "id": "qlementine-icons--hi-hat", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg" }, { "id": "qlementine-icons--idiophone", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg" }, { "id": "qlementine-icons--shamisen", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg" }, { "id": "qlementine-icons--sitar", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg" }, { "id": "qlementine-icons--woodwind", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg" }, { "id": "twemoji--1f390", "set": "twemoji", "author": "Twitter, Inc and other contributors\uFF08jdecked/twemoji \u7EF4\u62A4\u7684\u5206\u652F\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/jdecked/twemoji/v17.0.3/assets/svg/1f390.svg" }];
+var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
 
 // src/gm/catalog.ts
 var gmKey = (g3) => `${g3.bank}:${g3.program}${g3.note !== void 0 ? `:${g3.note}` : ""}`;
@@ -9180,9 +9398,13 @@ function providersOf(cat, c10) {
   if (self2.length) return self2;
   return (c10.substitutes ?? []).map((s10) => ({ kind: "substitute", bank: s10.bank, program: s10.program, ...s10.note !== void 0 ? { note: s10.note } : {}, gmName: s10.gmName, sound: c10.ids.musicxml, basis: s10.basis, reason: s10.reason }));
 }
+function rangeOf(c10) {
+  const r10 = c10?.range;
+  return r10 && Number.isFinite(r10.low) && Number.isFinite(r10.high) && r10.low <= r10.high ? { lo: r10.low, hi: r10.high } : null;
+}
 var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
 var roleSoundOf = (cat, c10) => c10.ids.musicxml ?? providersOf(cat, c10)[0]?.sound ?? null;
-var SORT_LABEL = { family: "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09", year: "\u6309\u5E74\u4EE3", hs: "\u6309\u53D1\u58F0\u65B9\u5F0F", style: "\u6309\u3007\u3007\u98CE" };
+var SORT_LABEL = { style: "\u6309\u66F2\u98CE", family: "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09", year: "\u6309\u5E74\u4EE3", hs: "\u6309\u53D1\u58F0\u65B9\u5F0F" };
 var HS_CLASS = { "1": "\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09", "2": "\u819C\u9E23\uFF08\u6572\u76AE\uFF09", "3": "\u5F26\u9E23\uFF08\u5F26\uFF09", "4": "\u6C14\u9E23\uFF08\u6C14\uFF09", "5": "\u7535\u9E23\uFF08\u7535\uFF09" };
 function groupConcepts(cat, mode, query = "") {
   const q2 = query.trim().toLowerCase();
@@ -9239,27 +9461,29 @@ var fmtYear = (y2) => y2 < 0 ? `\u516C\u5143\u524D ${-y2}` : String(y2);
 var eraLabel = (cat, c10) => cat.defs.eras.find((e10) => e10.id === c10.era)?.zh ?? "";
 
 // src/ui/finder.ts
+var HINT = "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u4E0A\u573A\u300D\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002";
 var esc3 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 var Finder = class {
   el;
   cat = null;
-  mode = "year";
-  // user「默认按年代排哈哈哈」
+  mode = "style";
+  // 默认按〇〇风（user 2026-10-08「然后音色排序默认还是画风吧。年代好玩但其实每次都要多点一次哈哈」；此前 10-07「默认按年代排哈哈哈」）
   q = "";
   opened = null;
-  // 展开的概念（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）
+  // 展开的那一行 = 「组 id::概念 id」（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）。
+  // 记组：按曲风排时同一件乐器在好几个组里都有，只记概念 = 每个组里的它都展开、滚去第一个（user 2026-10-08「在一个category里面选择一个乐器，会跳到第一个出现这个乐器的category」）
   selected = "";
   // 试听台上的提供者（`${概念 id}|${bank}:${program}` / `${概念 id}|voice`）
-  over = null;
-  // 超软上限等三选一
   loading = null;
+  playOnly = false;
+  // 从歌库进的 = 只弹着玩：不出「上场」，返回回歌库
   host;
   constructor(parent, host) {
     this.host = host;
     this.el = document.createElement("div");
     this.el.className = "finder";
     this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select></div><div class="finder-hint">\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u4E0A\u573A\u300D\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002</div><div class="finder-list"><div class="finder-empty">\u52A0\u8F7D\u76EE\u5F55\u2026</div></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select><button class="btn finder-pad" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="finder-hint">${HINT}</div><div class="finder-jump" hidden></div><div class="finder-list"><div class="finder-empty">\u52A0\u8F7D\u76EE\u5F55\u2026</div></div>`;
     parent.append(this.el);
     this.el.querySelector(".finder-q").addEventListener("input", (e10) => {
       this.q = e10.target.value;
@@ -9270,13 +9494,27 @@ var Finder = class {
       this.render();
     });
     this.el.addEventListener("click", (e10) => void this.onClick(e10));
+    let raf = 0;
+    this.el.querySelector(".finder-list").addEventListener("scroll", () => {
+      if (!raf) raf = requestAnimationFrame(() => {
+        raf = 0;
+        this.markJump();
+      });
+    }, { passive: true });
   }
   get isOpen() {
     return !this.el.hidden;
   }
-  async show() {
+  /** 顶条「键盘」钮亮不亮（宿主在键盘开 / 关时告诉它）。 */
+  setPadShown(on2) {
+    this.el.querySelector(".finder-pad")?.classList.toggle("is-on", on2);
+  }
+  async show(o10 = {}) {
     this.el.hidden = false;
-    this.el.querySelector(".finder-title").textContent = `\u627E\u4EBA\u7ED9\u300C${this.host.roleName()}\u300D`;
+    this.playOnly = !!o10.playOnly;
+    this.el.querySelector(".finder-title").textContent = this.playOnly ? "\u4E50\u5668\u76EE\u5F55\uFF08\u5F39\u7740\u73A9\uFF09" : `\u627E\u4EBA\u7ED9\u300C${this.host.roleName()}\u300D`;
+    this.el.querySelector('[data-v="back"]').textContent = this.playOnly ? "\u2190 \u6B4C\u5E93" : "\u2190 \u8C31";
+    this.el.querySelector(".finder-hint").textContent = this.playOnly ? "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u952E\u76D8\u5F39\u7740\u73A9\u3002\u8981\u7ED9\u6B4C\u91CC\u7684\u58F0\u90E8\u9009\u4E50\u5668\uFF1A\u5F00\u4E00\u9996\u6B4C\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u3002" : HINT;
     this.el.querySelector(".finder-sort").value = this.mode;
     if (!this.cat) {
       this.loading ??= (async () => {
@@ -9300,7 +9538,6 @@ var Finder = class {
   }
   hide() {
     this.el.hidden = true;
-    this.over = null;
   }
   pickOf(key) {
     if (!this.cat) return null;
@@ -9312,29 +9549,30 @@ var Finder = class {
   }
   async onClick(e10) {
     const t10 = e10.target, btn = t10.closest("[data-v]"), row = t10.closest(".inst-row"), prov = t10.closest(".prov");
+    const rowOf = (el2) => el2.closest(".inst-prov")?.previousElementSibling?.dataset.o ?? "";
+    const jump = t10.closest("[data-j]");
+    if (jump) {
+      this.jumpTo(Number(jump.dataset.j));
+      return;
+    }
     const v = btn?.dataset.v;
     if (v === "back") {
       this.host.close();
       return;
     }
+    if (v === "pad") {
+      this.host.togglePad();
+      return;
+    }
     if (v && btn) {
-      const key = btn.closest("[data-p]")?.dataset.p ?? this.over?.key ?? "", pick = this.pickOf(key);
+      const key = btn.closest("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key);
       if (!pick) return;
       if (v === "play") {
         await this.host.playHead(pick);
         return;
       }
-      if (v === "cast" || v === "embed" || v === "weak") {
-        const r10 = await this.host.cast(pick, v === "cast" ? "auto" : v);
-        if (r10 === "over") {
-          this.over = { key, pick };
-          this.render();
-        } else this.over = null;
-        return;
-      }
-      if (v === "cancel") {
-        this.over = null;
-        this.render();
+      if (v === "cast") {
+        await this.host.cast(pick);
         return;
       }
     }
@@ -9342,50 +9580,95 @@ var Finder = class {
       const key = prov.dataset.p;
       if (this.selected !== key) {
         this.selected = key;
-        this.render();
+        this.renderAnchored(rowOf(prov));
         await this.host.audition(this.pickOf(key));
       }
       return;
     }
     if (row) {
-      const id2 = row.dataset.c;
-      if (this.opened === id2) this.opened = null;
+      const id2 = row.dataset.c, o10 = row.dataset.o;
+      if (this.opened === o10) this.opened = null;
       else {
-        this.opened = id2;
-        this.over = null;
+        this.opened = o10;
         const c10 = this.cat.byId.get(id2), first = providersOf(this.cat, c10)[0];
         const key = first ? `${id2}|${gmKey(first)}` : c10.kind === "voice" ? `${id2}|voice` : "";
         this.selected = key;
-        this.render();
-        row.scrollIntoView({ block: "nearest" });
+        this.renderAnchored(o10, true);
         if (key) await this.host.audition(this.pickOf(key));
         return;
       }
-      this.render();
+      this.renderAnchored(o10);
     }
   }
   render() {
     const list = this.el.querySelector(".finder-list");
     if (!this.cat) return;
-    const groups = groupConcepts(this.cat, this.mode, this.q);
+    const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector(".finder-jump");
+    jump.hidden = groups.length < 2;
+    jump.innerHTML = groups.map((g3, k2) => `<button class="jump-chip" data-j="${k2}" title="${esc3(g3.label)}">${esc3(g3.label.replace(/（[^（）]*起）$/, ""))}<small>${g3.concepts.length}</small></button>`).join("");
     if (!groups.length) {
       list.innerHTML = `<div class="finder-empty">\u6CA1\u6709\u53EB\u300C${esc3(this.q)}\u300D\u7684</div>`;
       return;
     }
-    list.innerHTML = groups.map((g3) => `<div class="finder-group"><div class="finder-group-h">${esc3(g3.label)}<span>${g3.concepts.length}</span></div>${g3.concepts.map((c10) => this.rowHtml(c10, this.mode === "style" ? g3.id : null)).join("")}</div>`).join("");
-    list.querySelector(".prov.is-on")?.scrollIntoView({ block: "nearest" });
+    list.innerHTML = groups.map((g3, k2) => `<div class="finder-group" data-g="${k2}"><div class="finder-group-h">${esc3(g3.label)}<span>${g3.concepts.length}</span></div>${g3.concepts.map((c10) => this.rowHtml(c10, g3.id, this.mode === "style" ? g3.id : null)).join("")}</div>`).join("");
+    this.markJump();
   }
-  rowHtml(c10, styleTag = null) {
-    const cat = this.cat, open = this.opened === c10.id, icon = c10.icon?.id;
+  /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
+   *  点另一件 = 上面展开的那件收起，整张列表往上缩，原来又用 scrollIntoView 去追选中项、在 iPad 上还会连外层一起滚——手指底下那行就跑了）。
+   *  reveal = 刚展开的：它的「谁能演」露不全就往上挪一点，但这一行不挪到组头底下。只滚列表自己。 */
+  renderAnchored(anchor, reveal = false) {
+    const list = this.el.querySelector(".finder-list"), sel = `.inst-row[data-o="${CSS.escape(anchor)}"]`;
+    const before = list.querySelector(sel)?.getBoundingClientRect().top;
+    this.render();
+    const row = list.querySelector(sel);
+    if (!row || before === void 0) return;
+    list.scrollTop += row.getBoundingClientRect().top - before;
+    if (!reveal) return;
+    const body = row.nextElementSibling;
+    if (!body?.classList.contains("inst-prov")) return;
+    const lr2 = list.getBoundingClientRect(), hdr = row.closest(".finder-group")?.querySelector(".finder-group-h")?.offsetHeight ?? 0;
+    const over = body.getBoundingClientRect().bottom - lr2.bottom, room = row.getBoundingClientRect().top - (lr2.top + hdr);
+    if (over > 0 && room > 0) list.scrollTop += Math.min(over, room);
+    this.markJump();
+  }
+  /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）。 */
+  jumpTo(k2) {
+    const list = this.el.querySelector(".finder-list"), g3 = list.querySelector(`[data-g="${k2}"]`);
+    if (!g3) return;
+    list.scrollTop += g3.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    this.markJump();
+  }
+  /** 跳转条上亮着「现在在哪一组」（组头顶到列表顶的最后一组），并把那粒横向挪进视野（.finder-jump 是 position: relative，offsetLeft 相对它）。 */
+  markJump() {
+    const list = this.el.querySelector(".finder-list"), jump = this.el.querySelector(".finder-jump");
+    if (jump.hidden) return;
+    const top = list.getBoundingClientRect().top + 1;
+    let cur = 0;
+    for (const g3 of list.querySelectorAll("[data-g]")) {
+      if (g3.getBoundingClientRect().top <= top) cur = Number(g3.dataset.g);
+      else break;
+    }
+    for (const b3 of jump.querySelectorAll("[data-j]")) {
+      const on2 = Number(b3.dataset.j) === cur;
+      b3.classList.toggle("is-on", on2);
+      if (on2) {
+        const l10 = b3.offsetLeft, r10 = l10 + b3.offsetWidth;
+        if (l10 < jump.scrollLeft) jump.scrollLeft = l10 - 8;
+        else if (r10 > jump.scrollLeft + jump.clientWidth) jump.scrollLeft = r10 - jump.clientWidth + 8;
+      }
+    }
+  }
+  rowHtml(c10, groupId, styleTag = null) {
+    const cat = this.cat, o10 = `${groupId}::${c10.id}`, open = this.opened === o10, icon = c10.icon?.id;
     const w2 = styleTag ? weightOf(c10, styleTag) : 0, stars = w2 ? `<span class="inst-w" title="${esc3(weightLabel(cat, w2))}">${"\u2605".repeat(w2)}</span>` : "";
     const meta = [eraLabel(cat, c10), c10.year !== null ? `${c10.yearApprox ? "\u7EA6 " : ""}${fmtYear(c10.year)}` : ""].filter(Boolean).join(" \xB7 ");
     let body = "";
     if (open) {
       const provs = providersOf(cat, c10), pitched = c10.kind === "voice";
-      const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}<button class="btn primary" data-v="cast">\u4E0A\u573A</button></div></div>` + (this.over?.key === key ? `<div class="prov-over">\u300C${esc3(this.over.pick.kind === "gs" ? this.over.pick.provider.gmName : "")}\u300D\u7684\u58F0\u97F3\u8D85\u8FC7\u4E86\u5D4C\u5165\u7684\u8F6F\u4E0A\u9650\uFF1A<button class="btn primary" data-v="embed">\u5D4C\u8FDB\u6B4C</button><button class="btn" data-v="weak">\u4E0D\u5D4C\uFF0C\u53EA\u8BB0\u6765\u6E90</button><button class="btn" data-v="cancel">\u7B97\u4E86</button></div>` : "");
+      const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast">\u4E0A\u573A</button>`}</div></div>`;
       body = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? `\u9F13\u4EF6 \xB7 ${esc3(p2.gmName)}\uFF08Standard \u9F13\u7EC4\u7684 ${p2.note} \u53F7\u952E\uFF09` : p2.bank === 128 ? `\u9F13\u7EC4 \xB7 ${esc3(p2.gmName)}` : `GeneralUser GS \xB7 ${esc3(p2.gmName)}`}`, p2.kind === "substitute" ? `\u9876\u66FF${p2.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p2.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p2.basis === "imitation" ? "\uFF08\u4EFF\u58F0\uFF09" : p2.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p2.reason ? `\uFF1A${esc3(p2.reason)}` : ""}` : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
     }
-    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}">` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c10.names.zh)}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body;
+    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}">` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c10.names.zh)}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body;
   }
 };
 
@@ -17901,6 +18184,13 @@ var base2 = storeUIFor({
 });
 var storeUI = {
   ...base2,
+  // 冲突面每次弹出 / 人选了什么都进黑匣子（user 2026-10-08「一直会遇到云端冲突的提示」——诊断日志里得看得见是哪首、哪个场合、怎么选的）。
+  resolveConflict: async (q2) => {
+    diagNote("sync", `conflict occasion=${q2.occasion} ${stemOf(q2.name)}`);
+    const r10 = await base2.resolveConflict(q2);
+    diagNote("sync", `conflict \u2192 ${r10}`);
+    return r10;
+  },
   // 未登录时库的后台云动作会撞 auth 的 "Not signed in"——那是正常态不是故障，只进黑匣子不上横幅（WXHW 2026-09-03 截图：橙条常驻）。其余照包的分级（CloudNetworkError 换人话）。
   reportError: (err2, level) => {
     if (err2?.message === "Not signed in") {
@@ -18128,10 +18418,18 @@ function setActiveIdentifier(id2) {
 var KV_ATTACHED = "storeAttached";
 var storeWasAttached = () => deviceKvGet2(KV_ATTACHED) === "1";
 var _store = null;
+var _signedIn = () => od.auth.isSignedIn();
+var isSignedIn2 = () => _signedIn();
+function injectedCloud() {
+  const g3 = globalThis;
+  return g3.__moonsingerCloud && /^(127\.0\.0\.1|localhost)$/.test(g3.location?.hostname ?? "") ? g3.__moonsingerCloud : null;
+}
 function attachStore() {
   if (_store) return _store;
+  const inj = injectedCloud();
+  if (inj) _signedIn = () => globalThis.__moonsingerCloudSignedIn === true;
   _store = createStore({
-    provider: od.provider,
+    provider: inj ?? od.provider,
     ui: storeUI,
     appId: APP_ID,
     persistence: "app-managed",
@@ -18151,7 +18449,7 @@ function attachStore() {
     // 编辑器：打开就留本地（离线能开）
     offlineUploadReplay: "auto",
     // 离线新建的歌回线自动补推（ADR-0018；进度走 storeUI.onReplayStatus）
-    signedIn: () => od.auth.isSignedIn(),
+    signedIn: () => _signedIn(),
     activeIdentifier: () => _activeIdentifier
   });
   deviceKvSet2(KV_ATTACHED, "1");
@@ -23906,7 +24204,7 @@ function initGalleryHost(d3) {
     store: storeFace,
     doc: doc2,
     host: {
-      signedIn: () => auth.isSignedIn(),
+      signedIn: () => isSignedIn2(),
       online: () => typeof navigator === "undefined" || navigator.onLine !== false,
       activeIdentifier: () => d3.activeIdentifier(),
       confirm: (title, msg) => openConfirmSheet(title, msg),
@@ -23964,7 +24262,7 @@ function initGalleryHost(d3) {
     } else if (v === "settings") d3.openSettings();
   });
   function renderCloud() {
-    const on2 = auth.isSignedIn();
+    const on2 = isSignedIn2();
     cloudBtn.classList.toggle("is-on", on2);
     cloudBtn.title = on2 ? `\u4E91\u7AEF\uFF1A\u5DF2\u767B\u5F55${accountName() ? ` ${accountName()}` : ""}` : "\u4E91\u7AEF\uFF1A\u6CA1\u767B\u5F55\uFF08\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09";
     refreshBtn.hidden = !on2;
@@ -24534,7 +24832,7 @@ var doc = {
   saved: { song: st2.song, lounge: "" }
 };
 var coverRev = 0;
-var loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).map(([id2, r10]) => [id2, r10.name, r10.active, (r10.candidates ?? []).map((c10) => c10.id)]).sort(), doc.extras.studio?.mics ?? []]);
+var loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), doc.extras.studio?.mics ?? []]);
 doc.saved.lounge = loungeKey();
 var curPart = () => st2.song.parts.find((p2) => p2.id === st2.at.part) ?? st2.song.parts[0];
 var curRole = () => curPart().role;
@@ -24591,7 +24889,8 @@ var chromeReady = false;
 function updateChrome() {
   if (!chromeReady) return;
   const over = finder.isOpen || (gallery?.isOpen() ?? false);
-  padTab.hidden = !padEl.hidden || over || studio.isOpen;
+  padTab.hidden = !padEl.hidden || (gallery?.isOpen() ?? false) && !finderShown || studio.isOpen;
+  finder.setPadShown(!padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0, sig = `${n10}|${!!clip}|${over || studio.isOpen}`;
   if (sig !== selSig) {
     selSig = sig;
@@ -24850,6 +25149,10 @@ function monoAccept(id2) {
   monoAt = now;
   return true;
 }
+var auditionHint = null;
+var catalogNow = null;
+var finderShown = false;
+var finderPlayOnly = false;
 var pad3 = new Pad(padEl, {
   state: () => st2,
   isImpro: () => impro || finder.isOpen,
@@ -24904,6 +25207,7 @@ var pad3 = new Pad(padEl, {
   onInputScale: (id2) => update(setInputScale(st2, id2)),
   autoBars: () => autoBars,
   staves: () => curPart().staves ?? 1,
+  hintRange: () => padHint(),
   onAutoBars: (on2) => {
     autoBars = on2;
     view.render();
@@ -25098,28 +25402,11 @@ async function renderMix(whole = false) {
   }
   if (errs.length) showError(`${errs.join("\uFF1B")}\u3002${got.length ? "\u8FD9\u4E9B\u58F0\u90E8\u6CA1\u6709\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\u3002" : "\u6CA1\u6709\u51FA\u58F0\u3002"}\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
   if (!got.length) return null;
-  const SR = GM_SR, pad4 = 0.3;
-  const start = Math.min(0, ...got.map((x2) => x2.r.at)), end = Math.max(...got.map((x2) => x2.r.at + x2.r.samples.length / x2.r.sr)) + pad4;
-  const n10 = Math.ceil((end - start) * SR), left = new Float32Array(n10), right = new Float32Array(n10);
-  for (const { part, r: r10 } of got) {
-    const { gainDb, pan } = micOf(part), g3 = 10 ** (gainDb / 20), gl = g3 * Math.cos((pan + 1) * Math.PI / 4), gr = g3 * Math.sin((pan + 1) * Math.PI / 4);
-    const off = Math.round((r10.at - start) * SR), ratio = r10.sr / SR, len = Math.floor(r10.samples.length / ratio);
-    for (let i10 = 0; i10 < len; i10++) {
-      const p2 = i10 * ratio, k2 = Math.floor(p2), f2 = p2 - k2, v = r10.samples[k2] * (1 - f2) + (r10.samples[k2 + 1] ?? 0) * f2;
-      left[off + i10] += v * gl;
-      right[off + i10] += v * gr;
-    }
-  }
-  let peak = 0;
-  for (let i10 = 0; i10 < n10; i10++) peak = Math.max(peak, Math.abs(left[i10]), Math.abs(right[i10]));
-  if (peak > 0.98) {
-    const k2 = 0.98 / peak;
-    for (let i10 = 0; i10 < n10; i10++) {
-      left[i10] *= k2;
-      right[i10] *= k2;
-    }
-  }
-  return { left, right, sr: SR };
+  const m2 = mixTracks(got.map(({ part, r: r10 }) => {
+    const { gainDb, pan } = micOf(part);
+    return { samples: r10.samples, sr: r10.sr, at: r10.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan };
+  }), GM_SR);
+  return { left: m2.left, right: m2.right, sr: m2.sr, roles: got.map((x2) => x2.part.role) };
 }
 var embedSoftLimit = 1e7;
 var sessionSubsets = /* @__PURE__ */ new Map();
@@ -25128,6 +25415,11 @@ async function resolveGmBytes(g3) {
   if (g3.path) throw new Error(`\u300C${g3.name}\u300D\u7684\u58F0\u97F3\uFF08${g3.path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765`);
   const have = sessionSubsets.get(g3.subsetSha256);
   if (have) return have;
+  const kept = await cachedSound(g3.subsetSha256);
+  if (kept) {
+    sessionSubsets.set(g3.subsetSha256, kept);
+    return kept;
+  }
   let bank = await cachedSound(g3.origin.fileSha256);
   if (!bank) {
     const e10 = Object.values(SOUNDS).find((x2) => x2.sha256 === g3.origin.fileSha256);
@@ -25247,7 +25539,7 @@ async function exportSong() {
     const secs = mono.length / m2.sr, bytes = await encodeMp3(mono, m2.sr);
     const file = new File([bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
     progress("");
-    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}`);
+    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}${creditsBlock(audioCredits(doc.extras, m2.roles), "\u8FD9\u6BB5\u58F0\u97F3\u91CC\u7528\u5230\u7684\u58F0\u97F3\u7684\u7F72\u540D")}`);
   } catch (e10) {
     progress("");
     showError(`\u5BFC\u51FA\u5931\u8D25\uFF1A${e10.message}`);
@@ -25306,12 +25598,17 @@ function openSettings() {
   if (closeOffer) closeOffer();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc7(modelSource)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc7(soundsSource)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc7(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}`).join("\n"))}</pre></details><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc7(CREDIT.credit)}
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc7(modelSource)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc7(soundsSource)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc7(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? `
+    \u6539\u52A8\uFF1A${c10.modified}` : ""}`).join("\n"))}</pre></details><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><div class="part-sec">\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09</div><pre>${esc7(CREDIT.credit)}
 
 ${esc7(CREDIT.terms)}
 ${esc7(CREDIT.termsUrl)}
 
-${esc7(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button><button class="btn" data-v="lib">\u6B4C\u5E93\u2026</button><button class="btn" data-v="cloud">\u4E91\u7AEF\uFF08OneDrive\uFF09\u2026</button><button class="btn" data-v="studio">\u5F55\u97F3\u5BA4\u2026</button></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc7(CREDIT.attribution.join("\n"))}</pre><div class="part-sec">\u4E2D\u6587\u8BD1\u6587\uFF08\u4EC5\u4F9B\u9605\u8BFB\uFF0C\u4EE5\u65E5\u6587\u539F\u6587\u4E3A\u51C6\uFF09</div><pre>${esc7(CREDIT_TRANSLATIONS.zh.credit)}
+
+${esc7(CREDIT_TRANSLATIONS.zh.terms)}</pre><div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc7(CREDIT_TRANSLATIONS.en.credit)}
+
+${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button><button class="btn" data-v="lib">\u6B4C\u5E93\u2026</button><button class="btn" data-v="cloud">\u4E91\u7AEF\uFF08OneDrive\uFF09\u2026</button><button class="btn" data-v="studio">\u5F55\u97F3\u5BA4\u2026</button></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -25320,7 +25617,7 @@ ${esc7(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><butt
   refresh();
   const sndIn = box.querySelector("#sndIn"), sndCache = box.querySelector("#sndCache");
   const refreshSounds = async () => {
-    const cached2 = await listCachedSounds(), bySha = new Map(cached2.map((c10) => [c10.sha256, c10])), known = new Set(Object.values(SOUNDS).map((e10) => e10.sha256));
+    const cached2 = await listCachedSounds(), bySha = new Map(cached2.map((c10) => [c10.sha256, c10])), known = new Set(Object.values(SOUNDS).map((e10) => e10.sha256)), uses = new Map(soundUses(doc.extras).map((u2) => [u2.subsetSha256, u2]));
     const total = cached2.reduce((n10, c10) => n10 + c10.bytes, 0), mem = soundMemoryBytes();
     let quota = "";
     const est = await siteStorageEstimate();
@@ -25328,7 +25625,11 @@ ${esc7(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><butt
     sndCache.innerHTML = `<div class="set-row"><span>\u8BBE\u5907\u4E0A\u7559\u7740 ${sizeText(total)}${quota}\uFF1B\u5185\u5B58\u91CC\u73B0\u5728 ${sizeText(mem)}</span>${mem ? `<button class="btn" data-v="snd:mem" title="\u653E\u6389\u5185\u5B58\u91CC\u7684\u6574\u5305\uFF08\u8BBE\u5907\u4E0A\u7559\u7740\u7684\u4E0D\u52A8\uFF0C\u4E0B\u6B21\u7528\u518D\u4ECE\u8BBE\u5907\u8BFB\uFF09">\u653E\u6389\u5185\u5B58</button>` : ""}</div>` + Object.values(SOUNDS).map((e10) => {
       const c10 = bySha.get(e10.sha256);
       return `<div class="set-row"><span>${esc7(e10.name)} \xB7 ${sizeText(e10.bytes)} \xB7 ${c10 ? "\u5DF2\u7559\u5728\u8BBE\u5907\u4E0A" : "\u6CA1\u4E0B\u8F7D"}</span>${c10 ? `<button class="btn" data-v="snd:del:${esc7(e10.id)}">\u5220\u6389</button>` : `<button class="btn" data-v="snd:get:${esc7(e10.id)}">\u4E0B\u8F7D\u7559\u7740</button>`}</div>`;
-    }).join("") + cached2.filter((c10) => !known.has(c10.sha256)).map((c10) => `<div class="set-row"><span>\u522B\u7684\u7248\u672C / \u522B\u7684 app \u7559\u7684\uFF08${c10.sha256.slice(0, 8)}\u2026\uFF09\xB7 ${sizeText(c10.bytes)}</span><button class="btn" data-v="snd:delsha:${c10.sha256}">\u5220\u6389</button></div>`).join("") || "\uFF08\u6CA1\u6709\uFF09";
+    }).join("") + // 子集（自己的 .sf2 加进来时 / 解包时留的，按子集 sha256 存）：这首歌弱引用着的写出名字——删了它，没有原文件就找不回来
+    cached2.filter((c10) => !known.has(c10.sha256)).map((c10) => {
+      const u2 = uses.get(c10.sha256);
+      return `<div class="set-row"><span>${u2 ? `\u300C${esc7(u2.names.join("\u3001"))}\u300D\u7684\u58F0\u97F3\uFF08\u8FD9\u9996\u6B4C${u2.packed ? "\u4E5F\u6253\u5305\u7740" : "\u5F15\u7528\u7740\uFF1B\u5220\u4E86\u8981\u4ECE\u300C" + esc7(u2.origin.name) + "\u300D\u627E"}\uFF09` : `\u522B\u7684\u6B4C / \u522B\u7684\u7248\u672C / \u522B\u7684 app \u7559\u7684\uFF08${c10.sha256.slice(0, 8)}\u2026\uFF09`} \xB7 ${sizeText(c10.bytes)}</span><button class="btn" data-v="snd:delsha:${c10.sha256}">\u5220\u6389</button></div>`;
+    }).join("") || "\uFF08\u6CA1\u6709\uFF09";
   };
   void refreshSounds();
   const close = () => {
@@ -25451,7 +25752,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "8234134fe85b",
+  cssHash: "f1826df9ea3e",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -25468,6 +25769,11 @@ window.__moonsinger = {
   addPaper: () => update(addPaper(st2)),
   toggleChord: (i10, p2) => update(toggleChordPitch(st2, i10, p2)),
   playSong: () => playSong(),
+  afterSignIn: () => afterSignIn(),
+  diagText: () => diagText(),
+  refreshOpenDoc: () => refreshOpenDoc(),
+  pushDirtyAll: () => pushDirtyAll(),
+  gateOpen: () => isGateOpen(),
   undo: () => undoNow(),
   redo: () => redoNow(),
   history: () => ({ past: history.past.length, future: history.future.length }),
@@ -25517,7 +25823,7 @@ function renderTitle() {
 function syncKind() {
   if (doc.identifier) {
     if (dirty()) return "saving";
-    if (!auth.isSignedIn()) return "local";
+    if (!isSignedIn2()) return "local";
     if (!navigator.onLine) return "offline";
     return es2.isPushPending() ? "unsynced" : "clean";
   }
@@ -25542,9 +25848,32 @@ function renderSaveButton() {
   b3.title = spec.title;
   b3.dataset.kind = k2;
 }
+var fmtDb = (dB) => `${dB > 0 ? "+" : dB < 0 ? "\u2212" : ""}${Math.abs(dB)} dB`;
 var audition = null;
+function padHint() {
+  if (finderShown) return auditionHint;
+  const eng = activeInstrument(doc.extras, curRole())?.engine;
+  if (eng === "tsukuyomi" || eng === "vowel-sampler") return HER_RANGE;
+  if (eng !== "soundfont") return null;
+  const concept = doc.extras.lounge[curRole()]?.concept;
+  const id2 = concept?.ids?.wikidata ?? concept?.ids?.local;
+  if (!id2) return null;
+  if (!catalogNow) {
+    void loadCatalog(new URL(import.meta.url)).then((c10) => {
+      catalogNow = c10;
+      pad3.render();
+    }).catch(() => {
+    });
+    return null;
+  }
+  const r10 = rangeOf(catalogNow.byId.get(id2));
+  return r10 ? { ...r10, who: concept?.name?.zh ?? roleName(doc.extras, curRole()) } : null;
+}
 var GS = SOUNDS["generaluser-gs-2.0.3"];
 async function setAudition(p2) {
+  auditionHint = !p2 ? null : p2.kind === "voice" ? HER_RANGE : ((r10) => r10 ? { ...r10, who: p2.concept.names.zh } : null)(rangeOf(p2.concept));
+  if (auditionHint) pad3.follow(auditionHint.lo, auditionHint.hi);
+  else pad3.render();
   if (!p2 || p2.kind === "voice") {
     audition = null;
     synth.allOff();
@@ -25588,23 +25917,23 @@ async function playHeadWith(p2) {
     showError(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`);
   }
 }
-async function castPick(p2, mode) {
+async function castPick(p2) {
+  if (finderPlayOnly) return;
   const cat = await loadCatalog(new URL(import.meta.url)), c10 = p2.concept;
   const sound2 = p2.kind === "gs" ? p2.provider.sound ?? roleSoundOf(cat, c10) : roleSoundOf(cat, c10);
   doc.extras = withRoleConcept(doc.extras, curRole(), { name: roleNameOf(c10), sound: sound2, concept: { ids: { wikidata: c10.ids.wikidata, local: c10.ids.local, musicxml: c10.ids.musicxml, gm: c10.ids.gm.map((g3) => ({ program: g3.program, bank: g3.bank })), hs: c10.ids.hs }, name: { zh: c10.names.zh, en: c10.names.en, ...c10.names.ja ? { ja: c10.names.ja } : {} } } }, st2.song.hum);
   if (p2.kind === "voice") {
     setActive(CANDIDATE_ID.full);
     closeFinder();
-    return "done";
+    return;
   }
   if (!audition || audition.bank !== p2.provider.bank || audition.program !== p2.provider.program) await setAudition(p2);
   if (!audition) {
     view.render();
     renderTitle();
-    return "done";
+    return;
   }
   const { subset, sha256 } = audition, inf = sf2Info(subset);
-  if (mode === "auto" && subset.length > embedSoftLimit) return "over";
   const fileSha256 = GS.sha256;
   doc.extras = withSf2Candidate(doc.extras, curRole(), {
     name: p2.provider.gmName,
@@ -25613,17 +25942,16 @@ async function castPick(p2, mode) {
     ...p2.provider.note !== void 0 ? { note: p2.provider.note } : {},
     subset,
     sha256,
-    embed: mode !== "weak",
+    embed: false,
     origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id },
     credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } }
   }, st2.song.hum);
-  if (mode === "weak") sessionSubsets.set(sha256, subset);
+  sessionSubsets.set(sha256, subset);
   closeFinder();
   setActive(activeId(doc.extras, curRole()));
   info(`\u300C${roleNameOf(c10)}\u300D\u4E0A\u573A\uFF1A${p2.provider.gmName}`);
-  return "done";
 }
-var finder = new Finder($2("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder() });
+var finder = new Finder($2("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
 var studio = new Studio($2("stage"), {
   strips: () => {
     const labels = partLabels(st2.song, doc.extras);
@@ -25676,19 +26004,28 @@ $2("studioBtn").addEventListener("click", () => {
   else openStudio();
 });
 function openFinder() {
+  finderShown = true;
+  finderPlayOnly = gallery?.isOpen() ?? false;
+  document.body.classList.toggle("finder-over-gallery", finderPlayOnly);
   closeOffer?.();
   scoreEl.hidden = true;
   showPad(true);
   padEl.classList.add("is-locked");
   pad3.clearHeld();
   $2("improBtn").classList.add("is-on");
-  void finder.show();
+  void finder.show({ playOnly: finderPlayOnly });
   updateChrome();
 }
 function closeFinder() {
   if (!finder.isOpen) return;
+  finderShown = false;
+  if (finderPlayOnly) {
+    finderPlayOnly = false;
+    document.body.classList.remove("finder-over-gallery");
+  }
   finder.hide();
   audition = null;
+  auditionHint = null;
   synth.allOff();
   gmHeld.clear();
   padEl.classList.remove("is-locked");
@@ -25885,7 +26222,6 @@ function openPartSheet() {
     renderTitle();
   };
   let picked = null;
-  let over = null;
   const pickOfficial = async (id2) => {
     const e10 = SOUNDS[id2];
     try {
@@ -25893,7 +26229,6 @@ function openPartSheet() {
       progress("");
       const presets = listSf2Presets(bytes), first = presets.find((p2) => p2.bank === 0) ?? presets[0];
       picked = { name: e10.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e10 };
-      over = null;
       draw();
     } catch (err2) {
       progress("");
@@ -25919,7 +26254,6 @@ function openPartSheet() {
       if (!presets.length) throw new Error("\u91CC\u9762\u6CA1\u6709\u4E50\u5668");
       const first = presets.find((p2) => p2.bank === 0) ?? presets[0];
       picked = { name: f2.name, bytes, presets, sel: `${first.bank}:${first.program}` };
-      over = null;
       draw();
     } catch (e10) {
       showError(`\u8BFB\u4E0D\u4E86\u300C${f2.name}\u300D\uFF1A${e10.message}`);
@@ -25943,17 +26277,20 @@ function openPartSheet() {
       }
     });
   };
-  const finishAdd = (c10, embed) => {
-    doc.extras = withSf2Candidate(doc.extras, curRole(), { ...c10, embed }, st2.song.hum);
-    if (!embed) sessionSubsets.set(c10.sha256, c10.subset);
+  const finishAdd = async (c10) => {
+    doc.extras = withSf2Candidate(doc.extras, curRole(), { ...c10, embed: false }, st2.song.hum);
+    sessionSubsets.set(c10.sha256, c10.subset);
     picked = null;
-    over = null;
     synth.allOff();
     gmHeld.clear();
     void prepareSynth();
     view.render();
     renderTitle();
     draw();
+    if (!c10.origin.library) {
+      await rememberSound(c10.sha256, c10.subset, true);
+      if (!await isSoundPersisted(c10.sha256)) showError(`\u300C${c10.name}\u300D\u7684\u58F0\u97F3\u6CA1\u80FD\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u91CC\u80FD\u54CD\uFF1B\u4E0B\u6B21\u8981\u4ECE\u300C${c10.origin.name}\u300D\u6587\u4EF6\u627E\u3002\u60F3\u8BA9\u6B4C\u81EA\u5DF1\u5E26\u7740\u5B83\uFF1A\u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\u3002`);
+    }
   };
   const addPicked = async () => {
     if (!picked) return;
@@ -25966,18 +26303,12 @@ function openPartSheet() {
       const lib = picked.library;
       const credit = lib ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } } : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x2) => !!x2), license: { name: "unknown", text: inf.comment } };
       const c10 = { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...lib ? { library: lib.id } : {} }, credit };
-      if (subset.length > embedSoftLimit) {
-        over = c10;
-        draw();
-        return;
-      }
-      finishAdd(c10, true);
+      await finishAdd(c10);
     } catch (e10) {
       showError(`\u52A0\u4E0D\u8FDB\u6765\uFF1A${e10.message}`);
     }
   };
   const pickerHtml = () => {
-    if (over) return `<div class="part-sec">\u300C${esc7(over.name)}\u300D\u7684\u58F0\u97F3\u6709 ${sizeText(over.subset.length)}\uFF08\u8D85\u8FC7 ${sizeText(embedSoftLimit)}\uFF09</div><div class="set-row"><button class="btn primary" data-v="sf2:embed" title="\u5B57\u8282\u8FDB\u6B4C\uFF1A\u6B4C\u5230\u54EA\u90FD\u54CD\uFF1B\u5B58\u6863\u4F1A\u53D8\u5927\u3001\u53D8\u6162">\u5D4C\u8FDB\u6B4C</button><button class="btn" data-v="sf2:weak" title="\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\u548C\u54C8\u5E0C\uFF08\u5F31\u5F15\u7528\uFF09\uFF1A\u7528\u65F6\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u4F60\u7684\u6587\u4EF6\u91CC\u627E\uFF1B\u627E\u4E0D\u5230 = \u4E0D\u51FA\u58F0\u3001\u62A5\u9519\u3001\u4EBA\u6362">\u4E0D\u5D4C\uFF0C\u53EA\u8BB0\u6765\u6E90</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div>`;
     if (!picked) return "";
     const banks = [...new Set(picked.presets.map((p2) => p2.bank))].sort((a10, b3) => a10 - b3);
     const label = (b3) => b3 === 128 ? "\u9F13\u7EC4" : b3 === 0 ? "\u4E50\u5668" : `\u53D8\u4F53\uFF08bank ${b3}\uFF09`;
@@ -25995,7 +26326,8 @@ function openPartSheet() {
     };
     const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc7(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc7(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc7(active.origin.name)}\u300D\u627E\uFF08${sessionSubsets.has(active.subsetSha256) ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09<button class="btn" data-v="find:${esc7(active.id)}">\u627E\u6587\u4EF6\u2026</button></div>`;
     const me = curPart(), me_v = pv(me.id), onPaper = Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}).length;
-    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8 ${esc7(partLabels(st2.song, doc.extras)[st2.song.parts.indexOf(me)] ?? "")}</div><div class="part-sec">\u89D2\u8272\uFF08\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\uFF1B\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + candidates(doc.extras, curRole()).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="part-sec">\u627E\u4EBA</div><div class="set-row"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F / \u98CE\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button></div><div class="set-row">` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u53EA\u628A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5D4C\u8FDB\u6B4C\uFF0C\u6587\u4EF6\u672C\u8EAB\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u7434\u53EA\u628A\u7528\u5230\u7684\u90A3\u4E00\u4EF6\uFF08\u901A\u5E38\u51E0 MB\uFF09\u5D4C\u8FDB\u6B4C\u91CC\uFF0C\u6B4C\u5230\u54EA\u90FD\u54CD\u3002</div>` + (eng === "tsukuyomi" || eng === "vowel-sampler" ? `<div class="part-sec">\u6708\u8BFB\uFF1A\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join("")}</div>` : "") + // 多声部（user「display有hide 和show only， play有mute和solo」）：显示一轴、出声一轴，各自「关掉」+「只要」；谱号
+    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8 ${esc7(partLabels(st2.song, doc.extras)[st2.song.parts.indexOf(me)] ?? "")}</div><div class="part-sec">\u89D2\u8272\uFF08\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\uFF1B\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + candidates(doc.extras, curRole()).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + // 响度校准 = 这位演奏者自己的音量（契约「看得见、能调的默认，不偷偷自动」；月读 = 0 当基准，新的乐器默认 −6）；推子在录音室另算
+    (eng !== "unknown" ? `<div class="set-row cal-row"><span>\u54CD\u5EA6\u6821\u51C6 <b>${fmtDb(activeCalibrationDb(doc.extras, curRole()))}</b></span><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>` + (activeCalibrationDb(doc.extras, curRole()) !== 0 ? `<button class="btn" data-v="cal:0" title="\u56DE\u5230 0\uFF08\u548C\u6708\u8BFB\u4E00\u6837\u7684\u57FA\u51C6\uFF09">\u5F52\u96F6</button>` : "") + `<span class="cal-note">\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u6708\u8BFB = 0 \u5F53\u57FA\u51C6\uFF0C\u65B0\u52A0\u7684\u4E50\u5668\u9ED8\u8BA4 \u22126\uFF1B\u5F55\u97F3\u5BA4\u7684\u63A8\u5B50\u53E6\u7B97</span></div>` : "") + `<div class="part-sec">\u627E\u4EBA</div><div class="set-row"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F / \u98CE\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button></div><div class="set-row">` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09= \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div>` + (eng === "tsukuyomi" || eng === "vowel-sampler" ? `<div class="part-sec">\u6708\u8BFB\uFF1A\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join("")}</div>` : "") + // 多声部（user「display有hide 和show only， play有mute和solo」）：显示一轴、出声一轴，各自「关掉」+「只要」；谱号
     `<div class="part-sec">\u663E\u793A\uFF08\u8C31\u4E0A\uFF09</div><div class="set-row">${chip("hide", "\u9690\u85CF", me_v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", me_v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><div class="part-sec">\u51FA\u58F0\uFF08\u64AD\u653E\uFF09</div><div class="set-row">${chip("mute", "\u9759\u97F3", me_v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", me_v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><div class="part-sec">\u8C31\u8868</div><div class="set-row">${chip("staves:1", "\u4E00\u5F20", (me.staves ?? 1) === 1)}${chip("staves:2", "\u5927\u8C31\u8868", me.staves === 2, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}` + ((me.staves ?? 1) === 1 ? `<span class="set-gap"></span>${chip("clef:G", "\u9AD8\u97F3\u8C31\u53F7", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3\u8C31\u53F7", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}` : "") + `</div><div class="set-row"><button class="btn" data-v="addpart" title="\u518D\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF1A\u6BCF\u5F20\u7EB8\u4E0A\u90FD\u7ED9\u5B83\u4E00\u884C\uFF0C\u8C31\u5934\u7167\u6284">\uFF0B \u52A0\u4E00\u4E2A\u58F0\u90E8</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389\u5B83</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn cand danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF09">\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\u2026</button>` : "") + `</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
     const inp = box.querySelector("#roleIn"), sel = box.querySelector("#roleSel");
     sel.addEventListener("change", () => {
@@ -26065,15 +26397,12 @@ function openPartSheet() {
     } else if (v === "sf2:add") {
       void addPicked();
       return;
-    } else if (v === "sf2:embed") {
-      if (over) finishAdd(over, true);
-      return;
-    } else if (v === "sf2:weak") {
-      if (over) finishAdd(over, false);
-      return;
     } else if (v === "sf2:cancel") {
       picked = null;
-      over = null;
+    } else if (v.startsWith("cal:")) {
+      const d3 = Number(v.slice(4)), next2 = d3 === 0 ? 0 : activeCalibrationDb(doc.extras, curRole()) + d3;
+      doc.extras = withCalibration(doc.extras, curRole(), Math.max(-30, Math.min(12, next2)), st2.song.hum);
+      renderTitle();
     } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
     else if (v === "hide") {
       const id2 = curPart().id;
@@ -26200,9 +26529,9 @@ function openPicked(picked) {
     showError(`\u6253\u4E0D\u5F00 ${picked.name}\uFF1A${e10.message}`);
   }
 }
-var extrasForSave = () => doc.extras.thumbnail ? withThumbnail(doc.extras, coverWithBlurb(doc.extras.thumbnail, (st2.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : doc.extras;
-var bytesNow = () => saveMxl({ song: st2.song, hum: st2.song.hum, extras: extrasForSave(), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
-var mxlFile = (name) => new File([bytesNow()], name, { type: "application/vnd.recordare.musicxml" });
+var extrasForSave = (base3 = doc.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (st2.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
+var bytesNow = (extras) => saveMxl({ song: st2.song, hum: st2.song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
+var mxlFile = (name, extras) => new File([bytesNow(extras)], name, { type: "application/vnd.recordare.musicxml" });
 var stemOf2 = (name) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
 var sizeText = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 async function fileSave() {
@@ -26246,27 +26575,96 @@ async function fileSave() {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e10.message}`);
   }
 }
-async function exportCopyMxl() {
-  const name = `${stampedCopy(docName())}.mxl`;
+async function exportCopyMxl(packed = false) {
+  const name = `${stampedCopy(docName())}${packed ? "-packed" : ""}.mxl`;
   try {
+    let extras = doc.extras;
+    if (packed) {
+      const { got, missing } = await gatherSubsets(extras);
+      extras = withPacked(extras, (sha) => got.get(sha)).extras;
+      if (missing.length) showError(`\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u526F\u672C\u91CC\u6CA1\u5E26\uFF1A${missing.join("\u3001")}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u518D\u5BFC\u51FA\u4E00\u6B21\u3002`);
+    }
+    const credits = creditsBlock(fileCredits(extras), "\u8FD9\u4EFD\u6587\u4EF6\u5E26\u7740\u7684\u58F0\u97F3\u7684\u7F72\u540D");
     if (canPickSave()) {
       const h2 = await pickSave(name);
       if (!h2) return;
-      await writeTo(h2, bytesNow());
+      await writeTo(h2, bytesNow(extras));
       info(`\u5B58\u4E86\u4E00\u4EFD\uFF1A${h2.name}`);
       return;
     }
-    const file = mxlFile(name);
-    offerFile(file, "\u5B58\u4E00\u4EFD .mxl \u526F\u672C", `${esc7(file.name)} \xB7 ${sizeText(file.size)}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002`);
+    const file = mxlFile(name, extras);
+    offerFile(file, packed ? "\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09" : "\u5B58\u4E00\u4EFD .mxl \u526F\u672C", `${esc7(file.name)} \xB7 ${sizeText(file.size)}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002${credits}`);
   } catch (e10) {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e10.message}`);
   }
 }
+async function gatherSubsets(extras) {
+  const got = /* @__PURE__ */ new Map(), missing = [], seen = /* @__PURE__ */ new Set();
+  for (const role of Object.keys(extras.lounge)) for (const g3 of gmCandidates(extras, role)) {
+    if (g3.bytes || seen.has(g3.subsetSha256)) continue;
+    seen.add(g3.subsetSha256);
+    try {
+      got.set(g3.subsetSha256, await resolveGmBytes({ ...g3, path: null }));
+    } catch {
+      missing.push(g3.name);
+    }
+  }
+  return { got, missing };
+}
+async function packAll() {
+  const { got, missing } = await gatherSubsets(doc.extras);
+  const r10 = withPacked(doc.extras, (sha) => got.get(sha));
+  if (r10.packed.length) {
+    doc.extras = r10.extras;
+    renderTitle();
+    changed();
+    const size = Object.values(doc.extras.sounds).reduce((n10, b3) => n10 + b3.length, 0);
+    info(`\u6253\u5305\u4E86 ${r10.packed.length} \u4EF6\u58F0\u97F3\u8FDB\u6B4C\uFF1A\u73B0\u5728\u6B4C\u91CC\u5E26\u7740 ${sizeText(size)}${size > embedSoftLimit ? `\uFF08\u8D85\u8FC7 ${sizeText(embedSoftLimit)}\uFF1A\u5B58 / \u540C\u6B65\u4F1A\u6162\u4E00\u70B9\uFF09` : ""}\uFF0C\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD`);
+  }
+  if (missing.length) showError(`\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u6CA1\u6253\u5305\uFF1A${missing.join("\u3001")}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\u3002`);
+  if (!r10.packed.length && !missing.length) info("\u6CA1\u6709\u8981\u6253\u5305\u7684\uFF08\u6708\u8BFB / \u5143\u97F3\u7248\u4E0D\u6253\u5305\uFF1A\u5B83\u4EEC\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09");
+}
+async function unpackAll() {
+  const bytesBySha = /* @__PURE__ */ new Map();
+  for (const role of Object.keys(doc.extras.lounge)) for (const g3 of gmCandidates(doc.extras, role)) if (g3.bytes) bytesBySha.set(g3.subsetSha256, g3.bytes);
+  const uses = soundUses(doc.extras).filter((u2) => u2.packed && bytesBySha.has(u2.subsetSha256));
+  if (!uses.length) {
+    info("\u6B4C\u91CC\u6CA1\u6709\u6253\u5305\u7740\u7684\u58F0\u97F3");
+    return;
+  }
+  const ok2 = /* @__PURE__ */ new Set(), stuck = [];
+  for (const u2 of uses) {
+    const b3 = bytesBySha.get(u2.subsetSha256);
+    sessionSubsets.set(u2.subsetSha256, b3);
+    await rememberSound(u2.subsetSha256, b3, true);
+    if (u2.origin.library || await isSoundPersisted(u2.subsetSha256)) ok2.add(u2.subsetSha256);
+    else stuck.push(u2.names.join("\u3001"));
+  }
+  const r10 = withUnpacked(doc.extras, (sha) => ok2.has(sha));
+  if (r10.removed.size) {
+    doc.extras = r10.extras;
+    renderTitle();
+    changed();
+    info(`\u89E3\u5305\u4E86 ${r10.removed.size} \u4EF6\uFF1A\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u5C0F\u4E86 ${sizeText([...r10.removed.values()].reduce((n10, b3) => n10 + b3.length, 0))}\uFF09\uFF1B\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u7740\uFF0C\u7167\u6837\u80FD\u54CD\u3002\u522B\u7684\u8BBE\u5907\u4E0A\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u539F\u6587\u4EF6\u627E`);
+  }
+  if (stuck.length) showError(`\u8FD9\u51E0\u4EF6\u6CA1\u89E3\u5305\uFF1A${stuck.join("\uFF1B")}\u2014\u2014\u8FD9\u53F0\u8BBE\u5907\u7559\u4E0D\u4F4F\u5B83\u7684\u58F0\u97F3\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF0C\u5BB6\u65CF\u97F3\u6E90\u5E93\u91CC\u4E5F\u6CA1\u6709\uFF0C\u89E3\u4E86\u5C31\u627E\u4E0D\u56DE\u6765\u3002`);
+}
+function creditsBlock(lines, title) {
+  if (!lines.length) return "";
+  return `<div class="credits-box"><div class="part-sec">${esc7(title)}</div><pre class="credits-pre">${esc7(creditsText(lines))}</pre><button class="btn" data-copy-credits title="\u590D\u5236\u4E0B\u6765\u8D34\u8FDB\u4F5C\u54C1\u8BF4\u660E">\u590D\u5236\u7F72\u540D</button></div>`;
+}
+document.addEventListener("click", (e10) => {
+  const b3 = e10.target.closest("[data-copy-credits]");
+  if (!b3) return;
+  e10.stopPropagation();
+  const text2 = b3.parentElement?.querySelector(".credits-pre")?.textContent ?? "";
+  void navigator.clipboard?.writeText(text2).then(() => info("\u7F72\u540D\u590D\u5236\u597D\u4E86"), () => showError("\u590D\u5236\u4E0D\u4E86\uFF08\u6D4F\u89C8\u5668\u4E0D\u8BA9\uFF09\uFF1A\u957F\u6309\u4E0A\u9762\u7684\u5B57\u81EA\u5DF1\u9009"));
+}, true);
 function openExportHub() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5BFC\u51FA</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="\u6708\u8BFB\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D"><svg class="ico"><use href="#export"/></svg>\u6B4C\u58F0\uFF08mp3\uFF09\u2026</button><button class="btn" data-v="mxl" title="\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026</button></div><div class="offer-msg">\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002\u4E50\u8C31 PDF \u4EE5\u540E\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5BFC\u51FA</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="\u6708\u8BFB\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D"><svg class="ico"><use href="#export"/></svg>\u6B4C\u58F0\uFF08mp3\uFF09\u2026</button><button class="btn" data-v="mxl" title="\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026</button>` + (soundUses(doc.extras).some((u2) => !u2.packed) ? `<button class="btn" data-v="mxlPacked" title="\u526F\u672C\u91CC\u628A\u4E50\u5668\u7684\u58F0\u97F3\u4E5F\u88C5\u8FDB\u53BB\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u7167\u65E7\u53EA\u8BB0\u6765\u6E90"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026</button>` : "") + `</div><div class="offer-msg">\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002\u4E50\u8C31 PDF \u4EE5\u540E\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -26284,17 +26682,24 @@ function openExportHub() {
     close();
     if (v === "mp3") void exportSong();
     else if (v === "mxl") void exportCopyMxl();
+    else if (v === "mxlPacked") void exportCopyMxl(true);
   });
+}
+function soundsSection() {
+  const uses = soundUses(doc.extras);
+  if (!uses.length) return "";
+  const packed = uses.filter((u2) => u2.packed), size = packed.reduce((n10, u2) => n10 + u2.bytes, 0);
+  return `<div class="part-sec">\u4E50\u5668\u7684\u58F0\u97F3</div><div class="offer-msg">${uses.length} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC ${packed.length} \u4EF6${packed.length ? `\uFF08${sizeText(size)}\uFF09` : ""}\uFF0C\u53EA\u8BB0\u6765\u6E90 ${uses.length - packed.length} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u6708\u8BFB\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002</div><div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">\u5168\u90E8\u6253\u5305\u8FDB\u6B4C</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09</button>` : ""}</div>` + (creditsBlock(fileCredits(doc.extras), "\u8FD9\u9996\u6B4C\u6587\u4EF6\u91CC\u5E26\u7740\u7684\u58F0\u97F3\u7684\u7F72\u540D") || `<div class="offer-msg">\u7F72\u540D\uFF1A\u6587\u4EF6\u91CC\u6CA1\u5E26\u522B\u4EBA\u7684\u58F0\u97F3\uFF08\u53EA\u8BB0\u6765\u6E90\u7684\u3001\u6708\u8BFB\u90FD\u4E0D\u7B97\uFF09\u3002\u5BFC\u51FA mp3 \u65F6\u53E6\u7B97\u3002</div>`);
 }
 function openFileMenu() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
   const inStore = doc.identifier != null;
-  const where = inStore ? `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58\uFF08\u6539\u4E86 2 \u79D2\u5185\u843D\u5230\u8FD9\u53F0\u8BBE\u5907\uFF1B${auth.isSignedIn() ? "\u767B\u5F55\u7740\uFF0C\u7A0D\u540E\u63A8\u4E0A OneDrive" : "\u6CA1\u767B\u5F55\uFF0C\u4E0D\u4E0A\u4E91"}\uFF09\u3002\u300C\u5B58\u300D= \u7ACB\u523B\u5B58 + \u63A8\u3002` : doc.handle ? `\u73B0\u5728\u5B58\u5728 <b>${esc7(doc.handle.name)}</b>\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\uFF08\u6587\u4EF6\u5728\u5916\u9762\u88AB\u6539\u8FC7\u4F1A\u5148\u95EE\uFF09\u3002\u8981\u6362\u540D\u5B57\uFF0C\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\u3002` : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF08\u4E0B\u8F7D\u4E86\u5C31\u7B97\u5B58\u4E86\uFF09\u3002";
+  const where = inStore ? `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58\uFF08\u6539\u4E86 2 \u79D2\u5185\u843D\u5230\u8FD9\u53F0\u8BBE\u5907\uFF1B${isSignedIn2() ? "\u767B\u5F55\u7740\uFF0C\u7A0D\u540E\u63A8\u4E0A OneDrive" : "\u6CA1\u767B\u5F55\uFF0C\u4E0D\u4E0A\u4E91"}\uFF09\u3002\u300C\u5B58\u300D= \u7ACB\u523B\u5B58 + \u63A8\u3002` : doc.handle ? `\u73B0\u5728\u5B58\u5728 <b>${esc7(doc.handle.name)}</b>\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\uFF08\u6587\u4EF6\u5728\u5916\u9762\u88AB\u6539\u8FC7\u4F1A\u5148\u95EE\uFF09\u3002\u8981\u6362\u540D\u5B57\uFF0C\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\u3002` : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF08\u4E0B\u8F7D\u4E86\u5C31\u7B97\u5B58\u4E86\uFF09\u3002";
   const thumb = doc.extras.thumbnail;
   const coverUrl = thumb ? URL.createObjectURL(new Blob([thumb], { type: "image/png" })) : null;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc7(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b>\uFF08\u6CA1\u5B58\u8FC7 = \u5E74\u6708\u65E5-\u6B4C\u540D\uFF1B\u5B58\u8FC7\u4E4B\u540E\u548C\u7EB8\u4E0A\u7684\u6B4C\u540D\u5404\u7BA1\u5404\u7684\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="lib"><svg class="ico"><use href="#folder"/></svg>\u6B4C\u5E93\u2026</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>\u5BFC\u51FA\u2026</button>` + (hasStore() && !inStore ? `<button class="btn" data-v="intoLib" title="\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09"><svg class="ico"><use href="#import"/></svg>\u5B58\u8FDB\u6B4C\u5E93</button>` : "") + (doc.handle ? "" : `<button class="btn" data-v="rename">\u6539\u6587\u4EF6\u540D\u2026</button>`) + `</div><div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="\u5C01\u9762" />` : `<span class="cover-none">\u6CA1\u6709\u5C01\u9762\u56FE</span>`}</span><label class="btn" title="\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09"><svg class="ico"><use href="#image"/></svg>\u5C01\u9762\u56FE\u2026<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">\u53BB\u6389\u5C01\u9762\u56FE</button>` : "") + `</div><div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${where} \u628A .mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc7(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b>\uFF08\u6CA1\u5B58\u8FC7 = \u5E74\u6708\u65E5-\u6B4C\u540D\uFF1B\u5B58\u8FC7\u4E4B\u540E\u548C\u7EB8\u4E0A\u7684\u6B4C\u540D\u5404\u7BA1\u5404\u7684\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="lib"><svg class="ico"><use href="#folder"/></svg>\u6B4C\u5E93\u2026</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>\u5BFC\u51FA\u2026</button>` + (hasStore() && !inStore ? `<button class="btn" data-v="intoLib" title="\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09"><svg class="ico"><use href="#import"/></svg>\u5B58\u8FDB\u6B4C\u5E93</button>` : "") + (doc.handle ? "" : `<button class="btn" data-v="rename">\u6539\u6587\u4EF6\u540D\u2026</button>`) + `</div><div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="\u5C01\u9762" />` : `<span class="cover-none">\u6CA1\u6709\u5C01\u9762\u56FE</span>`}</span><label class="btn" title="\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09"><svg class="ico"><use href="#image"/></svg>\u5C01\u9762\u56FE\u2026<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">\u53BB\u6389\u5C01\u9762\u56FE</button>` : "") + `</div>` + soundsSection() + `<div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${where} \u628A .mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -26321,6 +26726,7 @@ function openFileMenu() {
     else if (v === "open") void fileOpen();
     else if (v === "save") void fileSave();
     else if (v === "export") openExportHub();
+    else if (v === "pack" || v === "unpack") void (v === "pack" ? packAll() : unpackAll()).then(() => openFileMenu());
     else if (v === "rename") void renameActive();
     else if (v === "intoLib") void saveIntoGallery();
     else if (v === "coverOff") {
@@ -26444,8 +26850,20 @@ var pendingOpenId = null;
 var encodedSnap = null;
 var coverTouched = false;
 var es2 = createEditorSession({
-  store: { file: (name, o10) => requireStore().zip(name, { mode: o10.mode }) },
-  // store 0.16.1：zip 种类走 store.zip（有 getPeek）；isZip 由种类表说了算
+  // store 0.16.1：zip 种类走 store.zip（有 getPeek）；isZip 由种类表说了算。save 的结果进黑匣子：推没推上、为什么（离线 / 冲突面选了什么）——诊断日志里能看到每一次推。
+  store: { file: (name, o10) => {
+    const f2 = requireStore().zip(name, { mode: o10.mode });
+    return {
+      open: () => f2.open(),
+      tryMove: (to2) => f2.tryMove(to2),
+      delete: () => f2.delete(),
+      save: async (bytes, opts) => {
+        const r10 = await f2.save(bytes, opts);
+        if (opts?.tryPush) diagNote("sync", `push ${name}: ${r10.pushed ? "pushed" : "not pushed"}${r10.reason ? " " + r10.reason : ""}${r10.resolution ? " \u2192 " + r10.resolution : ""}`);
+        return r10;
+      }
+    };
+  } },
   editor: {
     adopt: async (blob) => {
       const id2 = pendingOpenId ?? doc.identifier;
@@ -26482,7 +26900,7 @@ setInterval(() => {
   if (doc.identifier) renderTitle();
 }, 1e3);
 setInterval(() => {
-  if (doc.identifier && es2.isPushPending() && auth.isSignedIn() && navigator.onLine) void es2.flushAndPush().catch((e10) => reportError(e10, "warning"));
+  if (doc.identifier && es2.isPushPending() && isSignedIn2() && navigator.onLine) void es2.flushAndPush().catch((e10) => reportError(e10, "warning"));
 }, PUSH_HEARTBEAT_MS);
 function adoptStoreBytes(id2, bytes) {
   const o10 = openBytes(id2, bytes);
@@ -26504,6 +26922,13 @@ async function leaveCurrent(what) {
 }
 async function openStoreDoc(id2) {
   if (doc.identifier !== id2 && !doc.identifier && !await confirmDiscard(`\u6253\u5F00\u300C${stemOfId(id2)}\u300D`)) return false;
+  if (isSignedIn2() && navigator.onLine) {
+    try {
+      if (await requireStore().files.dirty.count() > 0) await pushDirtyAll();
+    } catch (e10) {
+      reportError(e10, "log");
+    }
+  }
   pendingOpenId = id2;
   try {
     const ok2 = await es2.open(id2);
@@ -26688,7 +27113,7 @@ $2("libBtn").addEventListener("click", () => {
   void openGallery();
 });
 async function openCloudMenu() {
-  const signed = auth.isSignedIn();
+  const signed = isSignedIn2();
   let who = "";
   try {
     const a10 = auth.getActiveAccount();
@@ -26740,7 +27165,7 @@ function redirectToSignIn() {
 var refreshing = false;
 async function refreshOpenDoc() {
   const id2 = doc.identifier;
-  if (!id2 || refreshing || !hasStore() || !auth.isSignedIn() || !navigator.onLine || dirty() || es2.isPushPending()) return;
+  if (!id2 || refreshing || !hasStore() || !isSignedIn2() || !navigator.onLine || dirty() || es2.isPushPending()) return;
   refreshing = true;
   try {
     const r10 = await requireStore().zip(id2, { mode: "existing" }).pullIfClean({ localDirty: () => dirty() || es2.isPushPending(), onReplaceStart: () => info("\u4E91\u7AEF\u6709\u65B0\u7248\u672C\uFF0C\u6B63\u5728\u62C9\u2026") });
@@ -26759,7 +27184,7 @@ async function refreshOpenDoc() {
   }
 }
 function retrySilent() {
-  if (hasStore() && authStarted && !auth.isSignedIn() && auth.isAuthConfigured()) void auth.retrySilentSignIn().catch((e10) => reportError(e10, "log"));
+  if (hasStore() && authStarted && !isSignedIn2() && auth.isAuthConfigured()) void auth.retrySilentSignIn().catch((e10) => reportError(e10, "log"));
 }
 function afterSignIn() {
   if (afterSignInInFlight) return afterSignInInFlight;
@@ -26829,7 +27254,7 @@ async function smartSaveStore() {
   }
   await es2.forceSaveAndPush();
   renderTitle();
-  if (!auth.isSignedIn()) {
+  if (!isSignedIn2()) {
     if (signInDeclined || navigator.onLine === false || !auth.isAuthConfigured()) {
       info("\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86");
       return;
@@ -26873,13 +27298,13 @@ if (window.visualViewport) {
 window.addEventListener("online", () => {
   renderTitle();
   if (!hasStore()) return;
-  if (auth.isSignedIn()) void afterSignIn();
+  if (isSignedIn2()) void afterSignIn();
   else retrySilent();
 });
 window.addEventListener("offline", () => renderTitle());
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible" || !hasStore()) return;
-  if (auth.isSignedIn()) void refreshOpenDoc();
+  if (isSignedIn2()) void refreshOpenDoc();
   else retrySilent();
 });
 function whereNow() {
@@ -26941,6 +27366,13 @@ function run(a10, repeat, code) {
   }
 }
 window.addEventListener("keydown", (e10) => {
+  if (finderShown && gallery?.isOpen()) {
+    if (e10.key === "Escape") {
+      e10.preventDefault();
+      closeFinder();
+    }
+    return;
+  }
   if (gallery?.isOpen()) {
     if (e10.key === "Escape" && !isSheetOpen() && !isGateOpen()) {
       e10.preventDefault();
@@ -27011,4 +27443,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0dde7b887412.mjs.map
+//# sourceMappingURL=moonsinger-3cd6ded12756.mjs.map
