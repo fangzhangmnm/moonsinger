@@ -313,3 +313,35 @@ button, input, select { font: inherit; color: inherit; }
 /* 歌词框左边的「合」：这个字并进前一个音（回头改用） */
 .lyric-merge { position: absolute; z-index: 5; min-width: 0; padding: 0; font-size: 15px; color: var(--accent); border-color: #b8cde8; background: #fff; box-sizing: border-box; }
 .credits-card .credits-in { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 15px; line-height: 1.5; color: var(--ink); resize: vertical; -webkit-user-select: text; user-select: text; }
+
+/* 找人视图（src/ui/finder.ts）：全屏替掉谱区，pad 留着当试听键盘；按概念列，展开 = 谁能演 */
+.finder { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--panel); min-height: 0; }
+.finder[hidden] { display: none; }
+.finder-bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); flex: none; }
+.finder-title { font-weight: 600; white-space: nowrap; }
+.finder-q { flex: 1; min-width: 80px; height: 32px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; font-size: 14px; -webkit-user-select: text; user-select: text; }
+.finder-sort { height: 32px; border: 1px solid var(--line); border-radius: 7px; background: #fff; font-size: 13px; max-width: 42%; }
+.finder-hint { flex: none; padding: 6px 12px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.finder-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 4px 0 24px; }
+.finder-empty { padding: 24px; color: var(--muted); text-align: center; }
+.finder-group-h { position: sticky; top: 0; z-index: 1; background: var(--bg); padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+.inst-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--line); }
+.inst-row.is-open { background: var(--accent-soft); }
+.inst-ico { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; }
+.inst-ico.none { border: 1px dashed var(--line); border-radius: 6px; font-size: 13px; color: var(--muted); }
+.inst-name { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.inst-name b { font-weight: 600; font-size: 15px; }
+.inst-name span { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inst-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.inst-prov { padding: 4px 12px 10px 48px; background: var(--accent-soft); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.prov { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; }
+.prov.is-on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.prov-l { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.prov-l b { font-weight: 600; font-size: 14px; }
+.prov-l small { font-size: 11px; color: var(--muted); }
+.prov-b { display: flex; gap: 6px; flex: none; }
+.prov-b .btn { height: 30px; padding: 0 10px; font-size: 13px; }
+.prov-over { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); padding: 2px 4px; }
+.prov-none { font-size: 12px; color: var(--muted); padding: 4px; }
+.cand-status { font-size: 12px; color: var(--muted); margin: -2px 0 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cand-del { height: 28px; width: 28px; padding: 0; font-size: 13px; color: var(--muted); margin-left: -4px; }

@@ -1,0 +1,399 @@
+{
+ "v": 2,
+ "date": "2026-10-07",
+ "sprite": "instrument-icons-20261007-v2.svg",
+ "icons": [
+  {
+   "id": "commons--Zither",
+   "set": "commons",
+   "author": "Mani Vieregg",
+   "license": "CC0",
+   "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original",
+   "bytes": 16263
+  },
+  {
+   "id": "fontawesome--drum-steelpan",
+   "set": "fontawesome",
+   "author": "Fonticons, Inc.（Font Awesome Free）",
+   "license": "CC-BY-4.0",
+   "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg",
+   "bytes": 1194
+  },
+  {
+   "id": "game-icons--accordion",
+   "set": "game-icons",
+   "author": "caro-asercion",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg",
+   "bytes": 1426
+  },
+  {
+   "id": "game-icons--bagpipes",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg",
+   "bytes": 3155
+  },
+  {
+   "id": "game-icons--banjo",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg",
+   "bytes": 1358
+  },
+  {
+   "id": "game-icons--bassoon",
+   "set": "game-icons",
+   "author": "caro-asercion",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg",
+   "bytes": 1366
+  },
+  {
+   "id": "game-icons--clarinet",
+   "set": "game-icons",
+   "author": "caro-asercion",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg",
+   "bytes": 1525
+  },
+  {
+   "id": "game-icons--djembe",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg",
+   "bytes": 1940
+  },
+  {
+   "id": "game-icons--drum",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg",
+   "bytes": 3894
+  },
+  {
+   "id": "game-icons--drum-kit",
+   "set": "game-icons",
+   "author": "caro-asercion",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg",
+   "bytes": 1726
+  },
+  {
+   "id": "game-icons--flute",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg",
+   "bytes": 1490
+  },
+  {
+   "id": "game-icons--french-horn",
+   "set": "game-icons",
+   "author": "caro-asercion",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg",
+   "bytes": 3354
+  },
+  {
+   "id": "game-icons--gong",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg",
+   "bytes": 983
+  },
+  {
+   "id": "game-icons--grand-piano",
+   "set": "game-icons",
+   "author": "caro-asercion",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg",
+   "bytes": 1159
+  },
+  {
+   "id": "game-icons--guitar",
+   "set": "game-icons",
+   "author": "lorc",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg",
+   "bytes": 1407
+  },
+  {
+   "id": "game-icons--guitar-bass-head",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg",
+   "bytes": 1599
+  },
+  {
+   "id": "game-icons--gunshot",
+   "set": "game-icons",
+   "author": "lorc",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg",
+   "bytes": 1410
+  },
+  {
+   "id": "game-icons--harp",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg",
+   "bytes": 1325
+  },
+  {
+   "id": "game-icons--helicopter",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg",
+   "bytes": 1070
+  },
+  {
+   "id": "game-icons--lyre",
+   "set": "game-icons",
+   "author": "lorc",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg",
+   "bytes": 2632
+  },
+  {
+   "id": "game-icons--maracas",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg",
+   "bytes": 1697
+  },
+  {
+   "id": "game-icons--musical-keyboard",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg",
+   "bytes": 1258
+  },
+  {
+   "id": "game-icons--ocarina",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg",
+   "bytes": 1920
+  },
+  {
+   "id": "game-icons--pan-flute",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg",
+   "bytes": 1751
+  },
+  {
+   "id": "game-icons--pipe-organ",
+   "set": "game-icons",
+   "author": "caro-asercion",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg",
+   "bytes": 1568
+  },
+  {
+   "id": "game-icons--ringing-bell",
+   "set": "game-icons",
+   "author": "lorc",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg",
+   "bytes": 2359
+  },
+  {
+   "id": "game-icons--saxophone",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg",
+   "bytes": 1921
+  },
+  {
+   "id": "game-icons--sing",
+   "set": "game-icons",
+   "author": "lorc",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg",
+   "bytes": 1383
+  },
+  {
+   "id": "game-icons--tambourine",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg",
+   "bytes": 1766
+  },
+  {
+   "id": "game-icons--trombone",
+   "set": "game-icons",
+   "author": "caro-asercion",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg",
+   "bytes": 1285
+  },
+  {
+   "id": "game-icons--trumpet",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg",
+   "bytes": 2384
+  },
+  {
+   "id": "game-icons--tuba",
+   "set": "game-icons",
+   "author": "caro-asercion",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg",
+   "bytes": 2400
+  },
+  {
+   "id": "game-icons--viola",
+   "set": "game-icons",
+   "author": "lorc",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg",
+   "bytes": 3172
+  },
+  {
+   "id": "game-icons--violin",
+   "set": "game-icons",
+   "author": "zajkonur",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg",
+   "bytes": 1371
+  },
+  {
+   "id": "game-icons--whistle",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg",
+   "bytes": 1743
+  },
+  {
+   "id": "game-icons--xylophone",
+   "set": "game-icons",
+   "author": "delapouite",
+   "license": "CC-BY-3.0",
+   "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg",
+   "bytes": 1567
+  },
+  {
+   "id": "iconmind--orchestra",
+   "set": "iconmind",
+   "author": "IconMind",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg",
+   "bytes": 527
+  },
+  {
+   "id": "iconmind--speech-synth",
+   "set": "iconmind",
+   "author": "IconMind",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg",
+   "bytes": 449
+  },
+  {
+   "id": "mdi--hand-clap",
+   "set": "mdi",
+   "author": "Pictogrammers（Material Design Icons 社区）",
+   "license": "Apache-2.0",
+   "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg",
+   "bytes": 1397
+  },
+  {
+   "id": "mdi--instrument-triangle",
+   "set": "mdi",
+   "author": "Pictogrammers（Material Design Icons 社区）",
+   "license": "Apache-2.0",
+   "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg",
+   "bytes": 473
+  },
+  {
+   "id": "qlementine-icons--clap",
+   "set": "qlementine-icons",
+   "author": "Olivier Cléro",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg",
+   "bytes": 2851
+  },
+  {
+   "id": "qlementine-icons--cymbal",
+   "set": "qlementine-icons",
+   "author": "Olivier Cléro",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg",
+   "bytes": 1524
+  },
+  {
+   "id": "qlementine-icons--harmonica",
+   "set": "qlementine-icons",
+   "author": "Olivier Cléro",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg",
+   "bytes": 2302
+  },
+  {
+   "id": "qlementine-icons--hi-hat",
+   "set": "qlementine-icons",
+   "author": "Olivier Cléro",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg",
+   "bytes": 1420
+  },
+  {
+   "id": "qlementine-icons--idiophone",
+   "set": "qlementine-icons",
+   "author": "Olivier Cléro",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg",
+   "bytes": 4330
+  },
+  {
+   "id": "qlementine-icons--shamisen",
+   "set": "qlementine-icons",
+   "author": "Olivier Cléro",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg",
+   "bytes": 2001
+  },
+  {
+   "id": "qlementine-icons--sitar",
+   "set": "qlementine-icons",
+   "author": "Olivier Cléro",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg",
+   "bytes": 2534
+  },
+  {
+   "id": "qlementine-icons--woodwind",
+   "set": "qlementine-icons",
+   "author": "Olivier Cléro",
+   "license": "MIT",
+   "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg",
+   "bytes": 1956
+  },
+  {
+   "id": "twemoji--1f390",
+   "set": "twemoji",
+   "author": "Twitter, Inc and other contributors（jdecked/twemoji 维护的分支）",
+   "license": "CC-BY-4.0",
+   "url": "https://raw.githubusercontent.com/jdecked/twemoji/v17.0.3/assets/svg/1f390.svg",
+   "bytes": 995
+  }
+ ]
+}

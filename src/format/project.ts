@@ -111,6 +111,12 @@ export function withRoleName(extras: Extras, name: string, hum: Hum, sound?: str
   return { ...extras, lounge: { ...extras.lounge, [ROLE]: role } };
 }
 
+/** 角色改成某个乐器概念（找人视图里挑了）：名字 + 官方 id + id 束 by value。 */
+export function withRoleConcept(extras: Extras, c: { name: string; sound: string | null; concept: NonNullable<import("./contract.ts").LoungeRoleV2["concept"]> }, hum: Hum): Extras {
+  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum));
+  role.name = c.name; if (c.sound) role.sound = c.sound; role.concept = c.concept;
+  return { ...extras, lounge: { ...extras.lounge, [ROLE]: role } };
+}
 // ── 候选（谁来演；休息室）────────────────────────────────────────────────────────────────
 export interface CandidateInfo { id: string; name: string; engine: Engine }
 /** 角色的候选们（顺序 = 文件里的顺序）。 */

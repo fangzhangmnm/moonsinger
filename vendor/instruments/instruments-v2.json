@@ -1,0 +1,9205 @@
+{
+ "v": 2,
+ "date": "2026-10-07",
+ "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
+ "about": "表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效）。id = Wikidata QID（没有用 x: 本地 id）；ids 束里 gm 只放本尊，平替在 substitutes[]（按 basis 强弱 + 分类号同到的位数排）。year = 这个概念的声音第一次能被听见；lineageYear = 算上原文点名的前身。fundamentalRank 一律 null，归 user。AI 判的字段：musicxml、styles、技法号挂母乐器、平替 family / 自动、部分 hs 和中日名。",
+ "defs": {
+  "eras": [
+   {
+    "id": "prehuman",
+    "icon": "🌍",
+    "zh": "人类以前",
+    "from": null,
+    "to": -3300000
+   },
+   {
+    "id": "stone",
+    "icon": "🪨",
+    "zh": "石器",
+    "from": -3300000,
+    "to": -10000
+   },
+   {
+    "id": "agriculture",
+    "icon": "🌾",
+    "zh": "农业",
+    "from": -10000,
+    "to": -3000
+   },
+   {
+    "id": "bronze",
+    "icon": "🏺",
+    "zh": "青铜与文字",
+    "from": -3000,
+    "to": -500
+   },
+   {
+    "id": "classical",
+    "icon": "🏛️",
+    "zh": "古典",
+    "from": -500,
+    "to": 500
+   },
+   {
+    "id": "manuscript",
+    "icon": "📜",
+    "zh": "手抄本",
+    "from": 500,
+    "to": 1450
+   },
+   {
+    "id": "printing",
+    "icon": "📖",
+    "zh": "印刷术",
+    "from": 1450,
+    "to": 1600
+   },
+   {
+    "id": "scientific-revolution",
+    "icon": "🔭",
+    "zh": "科学革命",
+    "from": 1600,
+    "to": 1687
+   },
+   {
+    "id": "enlightenment",
+    "icon": "🕯️",
+    "zh": "启蒙",
+    "from": 1687,
+    "to": 1780
+   },
+   {
+    "id": "industrial",
+    "icon": "⚙️",
+    "zh": "工业革命",
+    "from": 1780,
+    "to": 1830
+   },
+   {
+    "id": "railway",
+    "icon": "🚂",
+    "zh": "铁路",
+    "from": 1830,
+    "to": 1870
+   },
+   {
+    "id": "telephone",
+    "icon": "☎️",
+    "zh": "电话电灯",
+    "from": 1870,
+    "to": 1895
+   },
+   {
+    "id": "radio",
+    "icon": "📻",
+    "zh": "无线电",
+    "from": 1895,
+    "to": 1914
+   },
+   {
+    "id": "world-wars",
+    "icon": "🪖",
+    "zh": "两次大战",
+    "from": 1914,
+    "to": 1945
+   },
+   {
+    "id": "atomic",
+    "icon": "🚀",
+    "zh": "原子时代",
+    "from": 1945,
+    "to": 1970
+   },
+   {
+    "id": "personal-computer",
+    "icon": "💻",
+    "zh": "个人计算机",
+    "from": 1970,
+    "to": 1995
+   },
+   {
+    "id": "internet",
+    "icon": "🌐",
+    "zh": "互联网",
+    "from": 1995,
+    "to": 2017
+   },
+   {
+    "id": "ai",
+    "icon": "🤖",
+    "zh": "AI",
+    "from": 2017,
+    "to": null
+   }
+  ],
+  "styles": [
+   {
+    "id": "beethoven",
+    "icon": "🎻",
+    "zh": "贝多风"
+   },
+   {
+    "id": "church",
+    "icon": "⛪",
+    "zh": "教堂风"
+   },
+   {
+    "id": "jazz",
+    "icon": "🎷",
+    "zh": "爵士风"
+   },
+   {
+    "id": "rock-pop",
+    "icon": "🎸",
+    "zh": "摇滚流行风"
+   },
+   {
+    "id": "synth",
+    "icon": "💾",
+    "zh": "合成器风"
+   },
+   {
+    "id": "eight-bit",
+    "icon": "🎮",
+    "zh": "8-bit 风"
+   },
+   {
+    "id": "fairground",
+    "icon": "🎪",
+    "zh": "游乐场风"
+   },
+   {
+    "id": "western",
+    "icon": "🤠",
+    "zh": "西部风"
+   },
+   {
+    "id": "celtic",
+    "icon": "🍀",
+    "zh": "凯尔特风"
+   },
+   {
+    "id": "paris",
+    "icon": "🥖",
+    "zh": "巴黎风"
+   },
+   {
+    "id": "soviet",
+    "icon": "🪆",
+    "zh": "苏联风"
+   },
+   {
+    "id": "school-music",
+    "icon": "🏫",
+    "zh": "音乐课风"
+   },
+   {
+    "id": "latin",
+    "icon": "💃",
+    "zh": "拉丁风"
+   },
+   {
+    "id": "andes",
+    "icon": "🦙",
+    "zh": "安第斯风"
+   },
+   {
+    "id": "africa",
+    "icon": "🦁",
+    "zh": "非洲风"
+   },
+   {
+    "id": "tribal",
+    "icon": "🌴",
+    "zh": "原始部落风"
+   },
+   {
+    "id": "wafu",
+    "icon": "🏯",
+    "zh": "和风"
+   },
+   {
+    "id": "indian",
+    "icon": "🐘",
+    "zh": "印度风"
+   },
+   {
+    "id": "chinese",
+    "icon": "🐉",
+    "zh": "中华风"
+   },
+   {
+    "id": "sfx",
+    "icon": "📢",
+    "zh": "音效"
+   },
+   {
+    "id": "nature",
+    "icon": "🌍",
+    "zh": "自然声"
+   },
+   {
+    "id": "hawaii",
+    "icon": "🌺",
+    "zh": "夏威夷风"
+   }
+  ],
+  "ears": [
+   {
+    "id": "common",
+    "zh": "通用"
+   },
+   {
+    "id": "gm-text",
+    "zh": "GM 原文"
+   },
+   {
+    "id": "western",
+    "zh": "西方耳朵"
+   },
+   {
+    "id": "zh",
+    "zh": "中文耳朵"
+   },
+   {
+    "id": "name",
+    "zh": "名字"
+   }
+  ],
+  "bases": [
+   {
+    "id": "official",
+    "zh": "GM 原文写了「or」/ 说明里点名",
+    "rank": 0
+   },
+   {
+    "id": "lineage",
+    "zh": "同源（维基原文说原主是前身）",
+    "rank": 1
+   },
+   {
+    "id": "family",
+    "zh": "同类（分类号相近）",
+    "rank": 2
+   },
+   {
+    "id": "name-only",
+    "zh": "只同名",
+    "rank": 3
+   }
+  ],
+  "families": [
+   {
+    "id": "piano",
+    "en": "Piano",
+    "zh": "钢琴"
+   },
+   {
+    "id": "chromatic-percussion",
+    "en": "Chromatic Percussion",
+    "zh": "有音高打击乐"
+   },
+   {
+    "id": "organ",
+    "en": "Organ",
+    "zh": "风琴"
+   },
+   {
+    "id": "guitar",
+    "en": "Guitar",
+    "zh": "吉他"
+   },
+   {
+    "id": "bass",
+    "en": "Bass",
+    "zh": "贝斯"
+   },
+   {
+    "id": "strings",
+    "en": "Strings",
+    "zh": "弦乐"
+   },
+   {
+    "id": "ensemble",
+    "en": "Ensemble",
+    "zh": "合奏"
+   },
+   {
+    "id": "brass",
+    "en": "Brass",
+    "zh": "铜管"
+   },
+   {
+    "id": "reed",
+    "en": "Reed",
+    "zh": "簧管"
+   },
+   {
+    "id": "pipe",
+    "en": "Pipe",
+    "zh": "笛管"
+   },
+   {
+    "id": "synth-lead",
+    "en": "Synth Lead",
+    "zh": "合成主音"
+   },
+   {
+    "id": "synth-pad",
+    "en": "Synth Pad",
+    "zh": "合成铺底"
+   },
+   {
+    "id": "synth-effects",
+    "en": "Synth Effects",
+    "zh": "合成效果"
+   },
+   {
+    "id": "ethnic",
+    "en": "Ethnic",
+    "zh": "民族"
+   },
+   {
+    "id": "percussive",
+    "en": "Percussive",
+    "zh": "打击"
+   },
+   {
+    "id": "sound-effects",
+    "en": "Sound Effects",
+    "zh": "音效"
+   },
+   {
+    "id": "percussion",
+    "en": "Percussion",
+    "zh": "鼓组（第 10 通道）"
+   }
+  ],
+  "kinds": [
+   {
+    "id": "instrument",
+    "zh": "乐器"
+   },
+   {
+    "id": "model",
+    "zh": "型号"
+   },
+   {
+    "id": "ensemble",
+    "zh": "编制 / 合奏"
+   },
+   {
+    "id": "voice",
+    "zh": "人声"
+   },
+   {
+    "id": "sound",
+    "zh": "音效"
+   }
+  ]
+ },
+ "concepts": [
+  {
+   "id": "Q5994",
+   "ids": {
+    "wikidata": "Q5994",
+    "local": null,
+    "musicxml": "keyboard.piano",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 0
+     },
+     {
+      "program": 1,
+      "bank": 0
+     }
+    ],
+    "hs": "314.122-4-8"
+   },
+   "names": {
+    "zh": "钢琴",
+    "en": "piano",
+    "ja": "ピアノ"
+   },
+   "kind": "instrument",
+   "year": 1700,
+   "yearApprox": false,
+   "lineageYear": 1700,
+   "era": "enlightenment",
+   "communityEra": {
+    "region": "意大利",
+    "name": "巴洛克余晖",
+    "icon": "🎻"
+   },
+   "regions": [
+    "意大利"
+   ],
+   "wikipedia": "en:Piano",
+   "family": [
+    "piano"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    },
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--grand-piano",
+    "candidates": [
+     "game-icons--grand-piano",
+     "game-icons--piano-keys",
+     "game-icons--musical-keyboard",
+     "qlementine-icons--piano",
+     "mdi--piano",
+     "material-symbols--piano_24px",
+     "tabler--piano",
+     "lucide--piano",
+     "phosphor--piano-keys",
+     "iconmind--piano",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q5357606",
+   "ids": {
+    "wikidata": "Q5357606",
+    "local": null,
+    "musicxml": "keyboard.piano.electric",
+    "gm": [
+     {
+      "program": 2,
+      "bank": 0
+     }
+    ],
+    "hs": "52"
+   },
+   "names": {
+    "zh": "电三角钢琴",
+    "en": "electric grand piano",
+    "ja": "エレクトリック・グランドピアノ"
+   },
+   "kind": "instrument",
+   "year": 1927,
+   "yearApprox": false,
+   "lineageYear": 1927,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "德国",
+    "name": "魏玛",
+    "icon": "📐"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Electric grand piano",
+   "family": [
+    "piano"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--grand-piano",
+    "candidates": [
+     "game-icons--grand-piano",
+     "game-icons--piano-keys",
+     "game-icons--musical-keyboard",
+     "qlementine-icons--piano",
+     "mdi--piano",
+     "material-symbols--piano_24px",
+     "tabler--piano",
+     "lucide--piano",
+     "phosphor--piano-keys",
+     "iconmind--piano",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q7673920",
+   "ids": {
+    "wikidata": "Q7673920",
+    "local": null,
+    "musicxml": "keyboard.piano.honky-tonk",
+    "gm": [
+     {
+      "program": 3,
+      "bank": 0
+     }
+    ],
+    "hs": "314.122-4-8"
+   },
+   "names": {
+    "zh": "图钉钢琴",
+    "en": "tack piano",
+    "ja": "タック・ピアノ"
+   },
+   "kind": "instrument",
+   "year": 1870,
+   "yearApprox": false,
+   "lineageYear": 1870,
+   "era": "telephone",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Tack piano",
+   "family": [
+    "piano"
+   ],
+   "styles": [
+    {
+     "tag": "western",
+     "ear": "western"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--grand-piano",
+    "candidates": [
+     "game-icons--grand-piano",
+     "game-icons--piano-keys",
+     "qlementine-icons--piano",
+     "mdi--piano",
+     "material-symbols--piano_24px",
+     "tabler--piano",
+     "lucide--piano",
+     "phosphor--piano-keys",
+     "iconmind--piano"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1136507",
+   "ids": {
+    "wikidata": "Q1136507",
+    "local": null,
+    "musicxml": "keyboard.piano.electric",
+    "gm": [
+     {
+      "program": 4,
+      "bank": 0
+     },
+     {
+      "program": 5,
+      "bank": 0
+     }
+    ],
+    "hs": "52"
+   },
+   "names": {
+    "zh": "电钢琴",
+    "en": "electric piano",
+    "ja": "エレクトリックピアノ"
+   },
+   "kind": "instrument",
+   "year": 1931,
+   "yearApprox": false,
+   "lineageYear": 1931,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "德国",
+    "name": "魏玛",
+    "icon": "📐"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Electric piano",
+   "family": [
+    "piano"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    },
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "game-icons--grand-piano",
+     "game-icons--piano-keys",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard",
+     "qlementine-icons--piano",
+     "mdi--piano",
+     "material-symbols--piano_24px",
+     "tabler--piano",
+     "lucide--piano",
+     "phosphor--piano-keys",
+     "iconmind--piano"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q81982",
+   "ids": {
+    "wikidata": "Q81982",
+    "local": null,
+    "musicxml": "keyboard.harpsichord",
+    "gm": [
+     {
+      "program": 6,
+      "bank": 0
+     }
+    ],
+    "hs": "314.122-6-8"
+   },
+   "names": {
+    "zh": "大键琴",
+    "en": "harpsichord",
+    "ja": "チェンバロ"
+   },
+   "kind": "instrument",
+   "year": 1370,
+   "yearApprox": false,
+   "lineageYear": 1370,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "中世纪晚期",
+    "icon": "💀"
+   },
+   "regions": [
+    "意大利"
+   ],
+   "wikipedia": "en:Harpsichord",
+   "family": [
+    "piano"
+   ],
+   "styles": [
+    {
+     "tag": "church",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "game-icons--grand-piano",
+     "game-icons--piano-keys",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard",
+     "qlementine-icons--piano",
+     "mdi--piano",
+     "material-symbols--piano_24px",
+     "tabler--piano",
+     "lucide--piano",
+     "phosphor--piano-keys",
+     "iconmind--piano"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1099153",
+   "ids": {
+    "wikidata": "Q1099153",
+    "local": null,
+    "musicxml": "keyboard.clavichord",
+    "gm": [
+     {
+      "program": 7,
+      "bank": 0
+     }
+    ],
+    "hs": "52"
+   },
+   "names": {
+    "zh": "克拉维内特琴",
+    "en": "clavinet",
+    "ja": "クラビネット"
+   },
+   "kind": "instrument",
+   "year": 1961,
+   "yearApprox": false,
+   "lineageYear": 1961,
+   "era": "atomic",
+   "communityEra": {
+    "region": "德国",
+    "name": "经济奇迹",
+    "icon": "🪲"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Clavinet",
+   "family": [
+    "piano"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "game-icons--grand-piano",
+     "game-icons--piano-keys",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard",
+     "qlementine-icons--piano",
+     "mdi--piano",
+     "material-symbols--piano_24px",
+     "tabler--piano",
+     "lucide--piano",
+     "phosphor--piano-keys",
+     "iconmind--piano"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q320341",
+   "ids": {
+    "wikidata": "Q320341",
+    "local": null,
+    "musicxml": "keyboard.celesta",
+    "gm": [
+     {
+      "program": 8,
+      "bank": 0
+     }
+    ],
+    "hs": "111.222"
+   },
+   "names": {
+    "zh": "钢片琴",
+    "en": "celesta",
+    "ja": "チェレスタ"
+   },
+   "kind": "instrument",
+   "year": 1886,
+   "yearApprox": false,
+   "lineageYear": 1860,
+   "era": "telephone",
+   "communityEra": {
+    "region": "法国",
+    "name": "美好年代",
+    "icon": "🍾"
+   },
+   "regions": [
+    "法国"
+   ],
+   "wikipedia": "en:Celesta",
+   "family": [
+    "chromatic-percussion"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "game-icons--xylophone",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard",
+     "commons--Xylophone_887845_-_The_Noun_Project"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q626035",
+   "ids": {
+    "wikidata": "Q626035",
+    "local": null,
+    "musicxml": "pitched-percussion.glockenspiel",
+    "gm": [
+     {
+      "program": 9,
+      "bank": 0
+     }
+    ],
+    "hs": "111.222"
+   },
+   "names": {
+    "zh": "钟琴",
+    "en": "glockenspiel",
+    "ja": "グロッケンシュピール"
+   },
+   "kind": "instrument",
+   "year": 1600,
+   "yearApprox": false,
+   "lineageYear": 1600,
+   "era": "scientific-revolution",
+   "communityEra": {
+    "region": "荷兰",
+    "name": "黄金时代",
+    "icon": "⛵"
+   },
+   "regions": [
+    "荷兰"
+   ],
+   "wikipedia": "en:Glockenspiel",
+   "family": [
+    "chromatic-percussion"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--xylophone",
+    "candidates": [
+     "game-icons--xylophone",
+     "commons--Xylophone_887845_-_The_Noun_Project"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1365218",
+   "ids": {
+    "wikidata": "Q1365218",
+    "local": null,
+    "musicxml": "pitched-percussion.music-box",
+    "gm": [
+     {
+      "program": 10,
+      "bank": 0
+     }
+    ],
+    "hs": "122"
+   },
+   "names": {
+    "zh": "八音盒",
+    "en": "music box",
+    "ja": "オルゴール"
+   },
+   "kind": "instrument",
+   "year": 1796,
+   "yearApprox": false,
+   "lineageYear": 1700,
+   "era": "industrial",
+   "communityEra": null,
+   "regions": [
+    "日内瓦"
+   ],
+   "wikipedia": "en:Music box",
+   "family": [
+    "chromatic-percussion"
+   ],
+   "styles": [
+    {
+     "tag": "fairground",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--idiophone",
+    "candidates": [
+     "qlementine-icons--idiophone"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q206987",
+   "ids": {
+    "wikidata": "Q206987",
+    "local": null,
+    "musicxml": "pitched-percussion.vibraphone",
+    "gm": [
+     {
+      "program": 11,
+      "bank": 0
+     }
+    ],
+    "hs": "111.222"
+   },
+   "names": {
+    "zh": "颤音琴",
+    "en": "vibraphone",
+    "ja": "ヴィブラフォン"
+   },
+   "kind": "instrument",
+   "year": 1916,
+   "yearApprox": false,
+   "lineageYear": 1916,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "进步时代",
+    "icon": "🗽"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Vibraphone",
+   "family": [
+    "chromatic-percussion"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--xylophone",
+    "candidates": [
+     "game-icons--xylophone",
+     "commons--Xylophone_887845_-_The_Noun_Project"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q220971",
+   "ids": {
+    "wikidata": "Q220971",
+    "local": null,
+    "musicxml": "pitched-percussion.marimba",
+    "gm": [
+     {
+      "program": 12,
+      "bank": 0
+     }
+    ],
+    "hs": "111.212"
+   },
+   "names": {
+    "zh": "马林巴",
+    "en": "marimba",
+    "ja": "マリンバ"
+   },
+   "kind": "instrument",
+   "year": 1545,
+   "yearApprox": false,
+   "lineageYear": 1545,
+   "era": "printing",
+   "communityEra": null,
+   "regions": [
+    "墨西哥"
+   ],
+   "wikipedia": "en:Marimba",
+   "family": [
+    "chromatic-percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "western"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--xylophone",
+    "candidates": [
+     "game-icons--xylophone",
+     "commons--Xylophone_887845_-_The_Noun_Project"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q165666",
+   "ids": {
+    "wikidata": "Q165666",
+    "local": null,
+    "musicxml": "pitched-percussion.xylophone",
+    "gm": [
+     {
+      "program": 13,
+      "bank": 0
+     }
+    ],
+    "hs": "111.212"
+   },
+   "names": {
+    "zh": "木琴",
+    "en": "xylophone",
+    "ja": "シロフォン"
+   },
+   "kind": "instrument",
+   "year": 800,
+   "yearApprox": false,
+   "lineageYear": 800,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "东南亚",
+    "name": "室利佛逝",
+    "icon": "⛵"
+   },
+   "regions": [
+    "东南亚"
+   ],
+   "wikipedia": "en:Xylophone",
+   "family": [
+    "chromatic-percussion"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--xylophone",
+    "candidates": [
+     "game-icons--xylophone",
+     "commons--Xylophone_887845_-_The_Noun_Project"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q178812",
+   "ids": {
+    "wikidata": "Q178812",
+    "local": null,
+    "musicxml": "pitched-percussion.tubular-bells",
+    "gm": [
+     {
+      "program": 14,
+      "bank": 0
+     }
+    ],
+    "hs": "111.232"
+   },
+   "names": {
+    "zh": "管钟",
+    "en": "tubular bell",
+    "ja": "チューブラーベル"
+   },
+   "kind": "instrument",
+   "year": 1851,
+   "yearApprox": false,
+   "lineageYear": 1851,
+   "era": "railway",
+   "communityEra": {
+    "region": "意大利",
+    "name": "复兴运动",
+    "icon": "🇮🇹"
+   },
+   "regions": [
+    "意大利"
+   ],
+   "wikipedia": "en:Tubular bells",
+   "family": [
+    "chromatic-percussion"
+   ],
+   "styles": [
+    {
+     "tag": "church",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--ringing-bell",
+    "candidates": [
+     "game-icons--ringing-bell",
+     "twemoji--1f514",
+     "noto-emoji--emoji_u1f514",
+     "openmoji-color--1F514",
+     "openmoji-black--1F514",
+     "fluent-flat--bell_flat",
+     "fluent-color--bell_color",
+     "mdi--bell",
+     "mdi-light--bell",
+     "tabler--bell",
+     "lucide--bell",
+     "phosphor--bell",
+     "fontawesome--bell"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1588017",
+   "ids": {
+    "wikidata": "Q1588017",
+    "local": null,
+    "musicxml": "pitched-percussion.hammer-dulcimer",
+    "gm": [
+     {
+      "program": 15,
+      "bank": 0
+     }
+    ],
+    "hs": "314.122-4"
+   },
+   "names": {
+    "zh": "击弦扬琴",
+    "en": "hammered dulcimer",
+    "ja": "ダルシマー"
+   },
+   "kind": "instrument",
+   "year": -669,
+   "yearApprox": false,
+   "lineageYear": -669,
+   "era": "bronze",
+   "communityEra": {
+    "region": "古代近东",
+    "name": "亚述与新巴比伦",
+    "icon": "🐂"
+   },
+   "regions": [
+    "古代近东"
+   ],
+   "wikipedia": "en:Hammered dulcimer",
+   "family": [
+    "chromatic-percussion"
+   ],
+   "styles": [
+    {
+     "tag": "indian",
+     "ear": "gm-text",
+     "as": "Q2912399"
+    },
+    {
+     "tag": "chinese",
+     "ear": "zh",
+     "as": "Q877239"
+    }
+   ],
+   "icon": {
+    "id": "commons--Zither",
+    "candidates": [
+     "commons--Zither",
+     "commons--Coa_Illustration_Elements_Musical_Instrument_Hammered_Dulcimer"
+    ],
+    "license": "CC0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q105891",
+   "ids": {
+    "wikidata": "Q105891",
+    "local": null,
+    "musicxml": "keyboard.organ.drawbar",
+    "gm": [
+     {
+      "program": 16,
+      "bank": 0
+     },
+     {
+      "program": 17,
+      "bank": 0
+     },
+     {
+      "program": 18,
+      "bank": 0
+     }
+    ],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "哈蒙德风琴",
+    "en": "Hammond organ",
+    "ja": "ハモンドオルガン"
+   },
+   "kind": "instrument",
+   "year": 1934,
+   "yearApprox": false,
+   "lineageYear": 1897,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "大萧条",
+    "icon": "🍞"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Hammond organ",
+   "family": [
+    "organ"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    },
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--pipe-organ",
+    "candidates": [
+     "game-icons--pipe-organ",
+     "game-icons--musical-keyboard",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q281460",
+   "ids": {
+    "wikidata": "Q281460",
+    "local": null,
+    "musicxml": "keyboard.organ.pipe",
+    "gm": [
+     {
+      "program": 19,
+      "bank": 0
+     }
+    ],
+    "hs": "422.222.11"
+   },
+   "names": {
+    "zh": "管风琴",
+    "en": "pipe organ",
+    "ja": "パイプオルガン"
+   },
+   "kind": "instrument",
+   "year": -300,
+   "yearApprox": false,
+   "lineageYear": -300,
+   "era": "classical",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "希腊化",
+    "icon": "📜"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Pipe organ",
+   "family": [
+    "organ"
+   ],
+   "styles": [
+    {
+     "tag": "church",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--pipe-organ",
+    "candidates": [
+     "game-icons--pipe-organ"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q12460259",
+   "ids": {
+    "wikidata": "Q12460259",
+    "local": null,
+    "musicxml": "keyboard.organ.reed",
+    "gm": [
+     {
+      "program": 20,
+      "bank": 0
+     }
+    ],
+    "hs": "412.132"
+   },
+   "names": {
+    "zh": "簧风琴",
+    "en": "reed organ",
+    "ja": "ハーモニウム"
+   },
+   "kind": "instrument",
+   "year": 1810,
+   "yearApprox": false,
+   "lineageYear": 1810,
+   "era": "industrial",
+   "communityEra": {
+    "region": "法国",
+    "name": "拿破仑",
+    "icon": "🎖️"
+   },
+   "regions": [
+    "法国"
+   ],
+   "wikipedia": "en:Pump organ",
+   "family": [
+    "organ"
+   ],
+   "styles": [
+    {
+     "tag": "church",
+     "ear": "common"
+    },
+    {
+     "tag": "school-music",
+     "ear": "zh"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--pipe-organ",
+    "candidates": [
+     "game-icons--pipe-organ",
+     "game-icons--musical-keyboard",
+     "commons--Woman_at_melodeon",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q79838",
+   "ids": {
+    "wikidata": "Q79838",
+    "local": null,
+    "musicxml": "keyboard.accordion",
+    "gm": [
+     {
+      "program": 21,
+      "bank": 0
+     }
+    ],
+    "hs": "412.132"
+   },
+   "names": {
+    "zh": "手风琴",
+    "en": "accordion",
+    "ja": "アコーディオン"
+   },
+   "kind": "instrument",
+   "year": 1822,
+   "yearApprox": false,
+   "lineageYear": 1822,
+   "era": "industrial",
+   "communityEra": {
+    "region": "德国",
+    "name": "比德迈",
+    "icon": "🛋️"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Accordion",
+   "family": [
+    "organ"
+   ],
+   "styles": [
+    {
+     "tag": "paris",
+     "ear": "western"
+    },
+    {
+     "tag": "soviet",
+     "ear": "zh",
+     "as": "Q804099"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--accordion",
+    "candidates": [
+     "game-icons--accordion",
+     "fluent-flat--accordion_flat",
+     "fluent-color--accordion_color",
+     "qlementine-icons--accordion",
+     "streamline-freehand--instrument-accordian",
+     "twemoji--1fa97",
+     "noto-emoji--emoji_u1fa97",
+     "openmoji-color--1FA97",
+     "openmoji-black--1FA97"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q51290",
+   "ids": {
+    "wikidata": "Q51290",
+    "local": null,
+    "musicxml": "wind.reed.harmonica",
+    "gm": [
+     {
+      "program": 22,
+      "bank": 0
+     }
+    ],
+    "hs": "412.132"
+   },
+   "names": {
+    "zh": "口琴",
+    "en": "harmonica",
+    "ja": "ハーモニカ"
+   },
+   "kind": "instrument",
+   "year": 1800,
+   "yearApprox": false,
+   "lineageYear": 1800,
+   "era": "industrial",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "革命的年代",
+    "icon": "🎖️"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Harmonica",
+   "family": [
+    "organ"
+   ],
+   "styles": [
+    {
+     "tag": "western",
+     "ear": "western"
+    },
+    {
+     "tag": "school-music",
+     "ear": "zh"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--harmonica",
+    "candidates": [
+     "qlementine-icons--harmonica"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q215032",
+   "ids": {
+    "wikidata": "Q215032",
+    "local": null,
+    "musicxml": "keyboard.bandoneon",
+    "gm": [
+     {
+      "program": 23,
+      "bank": 0
+     }
+    ],
+    "hs": "412.132"
+   },
+   "names": {
+    "zh": "班东尼琴",
+    "en": "bandoneon",
+    "ja": "バンドネオン"
+   },
+   "kind": "instrument",
+   "year": 1846,
+   "yearApprox": false,
+   "lineageYear": 1846,
+   "era": "railway",
+   "communityEra": {
+    "region": "德国",
+    "name": "比德迈",
+    "icon": "🛋️"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Bandoneon",
+   "family": [
+    "organ"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "gm-text",
+     "as": "Q215032"
+    },
+    {
+     "tag": "latin",
+     "ear": "gm-text"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 23,
+     "bank": 0,
+     "gmNumber": 24,
+     "gmName": "Tango Accordion",
+     "basis": "official",
+     "hsCommon": "412.132",
+     "reason": "GM：「Tango Accordion or Bandoneon」——手风琴顶班多钮琴，探戈"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--accordion",
+    "candidates": [
+     "game-icons--accordion",
+     "twemoji--1fa97",
+     "noto-emoji--emoji_u1fa97",
+     "openmoji-color--1FA97",
+     "openmoji-black--1FA97",
+     "fluent-flat--accordion_flat",
+     "fluent-color--accordion_color",
+     "qlementine-icons--accordion",
+     "streamline-freehand--instrument-accordian"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q719120",
+   "ids": {
+    "wikidata": "Q719120",
+    "local": null,
+    "musicxml": "pluck.guitar.nylon-string",
+    "gm": [
+     {
+      "program": 24,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322–5"
+   },
+   "names": {
+    "zh": "古典吉他",
+    "en": "classical guitar",
+    "ja": "クラシック・ギター"
+   },
+   "kind": "instrument",
+   "year": 1800,
+   "yearApprox": false,
+   "lineageYear": 1200,
+   "era": "industrial",
+   "communityEra": {
+    "region": "西班牙",
+    "name": "波旁时代",
+    "icon": "🪭"
+   },
+   "regions": [
+    "西班牙"
+   ],
+   "wikipedia": "en:Classical guitar",
+   "family": [
+    "guitar"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "western"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar",
+    "candidates": [
+     "game-icons--guitar",
+     "qlementine-icons--guitar-classical",
+     "twemoji--1f3b8",
+     "noto-emoji--emoji_u1f3b8",
+     "openmoji-color--1F3B8",
+     "openmoji-black--1F3B8",
+     "fluent-flat--guitar_flat",
+     "fluent-color--guitar_color",
+     "qlementine-icons--guitar",
+     "qlementine-icons--guitar-12-strings",
+     "lucide--guitar",
+     "phosphor--guitar",
+     "fontawesome--guitar",
+     "iconmind--guitar",
+     "mdi--guitar-acoustic"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q2563510",
+   "ids": {
+    "wikidata": "Q2563510",
+    "local": null,
+    "musicxml": "pluck.guitar.steel-string",
+    "gm": [
+     {
+      "program": 25,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322-6"
+   },
+   "names": {
+    "zh": "民谣吉他",
+    "en": "steel-string acoustic guitar",
+    "ja": "スティール弦アコースティックギター"
+   },
+   "kind": "instrument",
+   "year": 1870,
+   "yearApprox": false,
+   "lineageYear": 1870,
+   "era": "telephone",
+   "communityEra": {
+    "region": "美国",
+    "name": "内战与重建",
+    "icon": "🥁"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Steel-string acoustic guitar",
+   "family": [
+    "guitar"
+   ],
+   "styles": [
+    {
+     "tag": "western",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar",
+    "candidates": [
+     "game-icons--guitar",
+     "mdi--guitar-acoustic",
+     "qlementine-icons--guitar-folk",
+     "twemoji--1f3b8",
+     "noto-emoji--emoji_u1f3b8",
+     "openmoji-color--1F3B8",
+     "openmoji-black--1F3B8",
+     "fluent-flat--guitar_flat",
+     "fluent-color--guitar_color",
+     "qlementine-icons--guitar",
+     "qlementine-icons--guitar-12-strings",
+     "lucide--guitar",
+     "phosphor--guitar",
+     "fontawesome--guitar",
+     "iconmind--guitar"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q636313",
+   "ids": {
+    "wikidata": "Q636313",
+    "local": null,
+    "musicxml": "pluck.guitar.electric",
+    "gm": [
+     {
+      "program": 26,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322"
+   },
+   "names": {
+    "zh": "拱面吉他",
+    "en": "archtop guitar",
+    "ja": "アーチトップ・ギター"
+   },
+   "kind": "instrument",
+   "year": 1893,
+   "yearApprox": false,
+   "lineageYear": 1893,
+   "era": "telephone",
+   "communityEra": {
+    "region": "加拿大",
+    "name": "联邦与西进",
+    "icon": "🚂"
+   },
+   "regions": [
+    "加拿大"
+   ],
+   "wikipedia": "en:Archtop guitar",
+   "family": [
+    "guitar"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar",
+    "candidates": [
+     "game-icons--guitar",
+     "twemoji--1f3b8",
+     "noto-emoji--emoji_u1f3b8",
+     "openmoji-color--1F3B8",
+     "openmoji-black--1F3B8",
+     "fluent-flat--guitar_flat",
+     "fluent-color--guitar_color",
+     "qlementine-icons--guitar",
+     "qlementine-icons--guitar-12-strings",
+     "lucide--guitar",
+     "phosphor--guitar",
+     "fontawesome--guitar",
+     "iconmind--guitar",
+     "mdi--guitar-electric"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q78987",
+   "ids": {
+    "wikidata": "Q78987",
+    "local": null,
+    "musicxml": "pluck.guitar.electric",
+    "gm": [
+     {
+      "program": 27,
+      "bank": 0
+     },
+     {
+      "program": 28,
+      "bank": 0
+     },
+     {
+      "program": 29,
+      "bank": 0
+     },
+     {
+      "program": 30,
+      "bank": 0
+     },
+     {
+      "program": 31,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322"
+   },
+   "names": {
+    "zh": "电吉他",
+    "en": "electric guitar",
+    "ja": "エレクトリック・ギター"
+   },
+   "kind": "instrument",
+   "year": 1932,
+   "yearApprox": false,
+   "lineageYear": 1932,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "大萧条",
+    "icon": "🍞"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Electric guitar",
+   "family": [
+    "guitar"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar",
+    "candidates": [
+     "game-icons--guitar",
+     "mdi--guitar-electric",
+     "qlementine-icons--guitar-jackson",
+     "qlementine-icons--guitar-strat",
+     "qlementine-icons--guitar-tele",
+     "twemoji--1f3b8",
+     "noto-emoji--emoji_u1f3b8",
+     "openmoji-color--1F3B8",
+     "openmoji-black--1F3B8",
+     "fluent-flat--guitar_flat",
+     "fluent-color--guitar_color",
+     "qlementine-icons--guitar",
+     "qlementine-icons--guitar-12-strings",
+     "lucide--guitar",
+     "phosphor--guitar",
+     "fontawesome--guitar",
+     "iconmind--guitar"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q80019",
+   "ids": {
+    "wikidata": "Q80019",
+    "local": null,
+    "musicxml": "strings.contrabass",
+    "gm": [
+     {
+      "program": 32,
+      "bank": 0
+     },
+     {
+      "program": 43,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322-71"
+   },
+   "names": {
+    "zh": "低音提琴",
+    "en": "double bass",
+    "ja": "コントラバス"
+   },
+   "kind": "instrument",
+   "year": 1500,
+   "yearApprox": false,
+   "lineageYear": 1400,
+   "era": "printing",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "文艺复兴",
+    "icon": "🎨"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Double bass",
+   "family": [
+    "bass",
+    "strings"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    },
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--violin",
+    "candidates": [
+     "game-icons--violin",
+     "commons--Double_bass_1",
+     "qlementine-icons--cello",
+     "twemoji--1f3bb",
+     "noto-emoji--emoji_u1f3bb",
+     "openmoji-color--1F3BB",
+     "openmoji-black--1F3BB",
+     "fluent-flat--violin_flat",
+     "fluent-color--violin_color",
+     "qlementine-icons--violin",
+     "mdi--violin",
+     "iconmind--violin",
+     "qlementine-icons--bass"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q46185",
+   "ids": {
+    "wikidata": "Q46185",
+    "local": null,
+    "musicxml": "pluck.bass.electric",
+    "gm": [
+     {
+      "program": 33,
+      "bank": 0
+     },
+     {
+      "program": 34,
+      "bank": 0
+     },
+     {
+      "program": 36,
+      "bank": 0
+     },
+     {
+      "program": 37,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322"
+   },
+   "names": {
+    "zh": "低音吉他",
+    "en": "bass guitar",
+    "ja": "ベース・ギター"
+   },
+   "kind": "instrument",
+   "year": 1930,
+   "yearApprox": false,
+   "lineageYear": 1930,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "大萧条",
+    "icon": "🍞"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Bass guitar",
+   "family": [
+    "bass"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar-bass-head",
+    "candidates": [
+     "game-icons--guitar-bass-head",
+     "streamline-freehand--modern-music-bass-guitar",
+     "qlementine-icons--bass"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q932855",
+   "ids": {
+    "wikidata": "Q932855",
+    "local": null,
+    "musicxml": "pluck.bass.fretless",
+    "gm": [
+     {
+      "program": 35,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322"
+   },
+   "names": {
+    "zh": "无品贝斯",
+    "en": "fretless bass",
+    "ja": "フレットレスベース"
+   },
+   "kind": "instrument",
+   "year": 1961,
+   "yearApprox": false,
+   "lineageYear": 1961,
+   "era": "atomic",
+   "communityEra": {
+    "region": "英国",
+    "name": "摇摆年代",
+    "icon": "🎸"
+   },
+   "regions": [
+    "英国"
+   ],
+   "wikipedia": "en:Fretless bass",
+   "family": [
+    "bass"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar-bass-head",
+    "candidates": [
+     "game-icons--guitar-bass-head",
+     "streamline-freehand--modern-music-bass-guitar",
+     "qlementine-icons--bass"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q6398221",
+   "ids": {
+    "wikidata": "Q6398221",
+    "local": null,
+    "musicxml": "pluck.bass.synth",
+    "gm": [
+     {
+      "program": 38,
+      "bank": 0
+     },
+     {
+      "program": 39,
+      "bank": 0
+     }
+    ],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "键盘贝斯",
+    "en": "keyboard bass",
+    "ja": "シンセベース"
+   },
+   "kind": "instrument",
+   "year": 1960,
+   "yearApprox": false,
+   "lineageYear": 1200,
+   "era": "atomic",
+   "communityEra": {
+    "region": "美国",
+    "name": "战后繁荣",
+    "icon": "🏡"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Keyboard bass",
+   "family": [
+    "bass"
+   ],
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q8355",
+   "ids": {
+    "wikidata": "Q8355",
+    "local": null,
+    "musicxml": "strings.violin",
+    "gm": [
+     {
+      "program": 40,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322-71"
+   },
+   "names": {
+    "zh": "小提琴",
+    "en": "violin",
+    "ja": "ヴァイオリン"
+   },
+   "kind": "instrument",
+   "year": 1500,
+   "yearApprox": false,
+   "lineageYear": 1500,
+   "era": "printing",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "文艺复兴",
+    "icon": "🎨"
+   },
+   "regions": [
+    "意大利"
+   ],
+   "wikipedia": "en:Violin",
+   "family": [
+    "strings"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    },
+    {
+     "tag": "chinese",
+     "ear": "zh",
+     "as": "Q726306"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--violin",
+    "candidates": [
+     "game-icons--violin",
+     "fluent-flat--violin_flat",
+     "fluent-color--violin_color",
+     "qlementine-icons--violin",
+     "mdi--violin",
+     "iconmind--violin",
+     "twemoji--1f3bb",
+     "noto-emoji--emoji_u1f3bb",
+     "openmoji-color--1F3BB",
+     "openmoji-black--1F3BB"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q80284",
+   "ids": {
+    "wikidata": "Q80284",
+    "local": null,
+    "musicxml": "strings.viola",
+    "gm": [
+     {
+      "program": 41,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322–71"
+   },
+   "names": {
+    "zh": "中提琴",
+    "en": "viola",
+    "ja": "ヴィオラ"
+   },
+   "kind": "instrument",
+   "year": 1530,
+   "yearApprox": false,
+   "lineageYear": 1530,
+   "era": "printing",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "大航海与宗教改革",
+    "icon": "🧭"
+   },
+   "regions": [
+    "意大利"
+   ],
+   "wikipedia": "en:Viola",
+   "family": [
+    "strings"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--viola",
+    "candidates": [
+     "game-icons--viola",
+     "game-icons--violin",
+     "twemoji--1f3bb",
+     "noto-emoji--emoji_u1f3bb",
+     "openmoji-color--1F3BB",
+     "openmoji-black--1F3BB",
+     "fluent-flat--violin_flat",
+     "fluent-color--violin_color",
+     "qlementine-icons--violin",
+     "mdi--violin",
+     "iconmind--violin"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q8371",
+   "ids": {
+    "wikidata": "Q8371",
+    "local": null,
+    "musicxml": "strings.cello",
+    "gm": [
+     {
+      "program": 42,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322-71"
+   },
+   "names": {
+    "zh": "大提琴",
+    "en": "cello",
+    "ja": "チェロ"
+   },
+   "kind": "instrument",
+   "year": 1500,
+   "yearApprox": false,
+   "lineageYear": 1500,
+   "era": "printing",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "文艺复兴",
+    "icon": "🎨"
+   },
+   "regions": [
+    "意大利"
+   ],
+   "wikipedia": "en:Cello",
+   "family": [
+    "strings"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--violin",
+    "candidates": [
+     "game-icons--violin",
+     "game-icons--viola",
+     "qlementine-icons--cello",
+     "twemoji--1f3bb",
+     "noto-emoji--emoji_u1f3bb",
+     "openmoji-color--1F3BB",
+     "openmoji-black--1F3BB",
+     "fluent-flat--violin_flat",
+     "fluent-color--violin_color",
+     "qlementine-icons--violin",
+     "mdi--violin",
+     "iconmind--violin"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q2997126",
+   "ids": {
+    "wikidata": "Q2997126",
+    "local": null,
+    "musicxml": "strings.group",
+    "gm": [
+     {
+      "program": 44,
+      "bank": 0
+     },
+     {
+      "program": 45,
+      "bank": 0
+     },
+     {
+      "program": 48,
+      "bank": 0
+     },
+     {
+      "program": 49,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322-71"
+   },
+   "names": {
+    "zh": "弦乐组",
+    "en": "string section",
+    "ja": "弦楽セクション"
+   },
+   "kind": "ensemble",
+   "year": 1600,
+   "yearApprox": false,
+   "lineageYear": 1600,
+   "era": "scientific-revolution",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "大航海与宗教改革",
+    "icon": "🧭"
+   },
+   "regions": [
+    "意大利"
+   ],
+   "wikipedia": "en:String section",
+   "family": [
+    "ensemble",
+    "strings"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--violin",
+    "candidates": [
+     "game-icons--violin",
+     "game-icons--viola",
+     "twemoji--1f3bb",
+     "noto-emoji--emoji_u1f3bb",
+     "openmoji-color--1F3BB",
+     "openmoji-black--1F3BB",
+     "fluent-flat--violin_flat",
+     "fluent-color--violin_color",
+     "qlementine-icons--violin",
+     "mdi--violin",
+     "iconmind--violin",
+     "qlementine-icons--cello",
+     "commons--Double_bass_1",
+     "iconmind--orchestra"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1231959",
+   "ids": {
+    "wikidata": "Q1231959",
+    "local": null,
+    "musicxml": "pluck.harp",
+    "gm": [
+     {
+      "program": 46,
+      "bank": 0
+     }
+    ],
+    "hs": "322.222"
+   },
+   "names": {
+    "zh": "踏板竖琴",
+    "en": "pedal harp",
+    "ja": "ペダル・ハープ"
+   },
+   "kind": "instrument",
+   "year": 1697,
+   "yearApprox": false,
+   "lineageYear": 1697,
+   "era": "enlightenment",
+   "communityEra": {
+    "region": "德国",
+    "name": "小邦林立",
+    "icon": "🧩"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Pedal harp",
+   "family": [
+    "strings"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--harp",
+    "candidates": [
+     "game-icons--harp",
+     "twemoji--1fa89",
+     "openmoji-color--1FA89",
+     "openmoji-black--1FA89",
+     "qlementine-icons--harp"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q189737",
+   "ids": {
+    "wikidata": "Q189737",
+    "local": null,
+    "musicxml": "drum.timpani",
+    "gm": [
+     {
+      "program": 47,
+      "bank": 0
+     }
+    ],
+    "hs": "211.11"
+   },
+   "names": {
+    "zh": "定音鼓",
+    "en": "timpani",
+    "ja": "ティンパニ"
+   },
+   "kind": "instrument",
+   "year": 1100,
+   "yearApprox": false,
+   "lineageYear": 1100,
+   "era": "manuscript",
+   "communityEra": null,
+   "regions": [
+    "中东"
+   ],
+   "wikipedia": "en:Timpani",
+   "family": [
+    "strings"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum",
+    "candidates": [
+     "game-icons--drum",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q110897746",
+   "ids": {
+    "wikidata": "Q110897746",
+    "local": null,
+    "musicxml": "strings.group.synth",
+    "gm": [
+     {
+      "program": 50,
+      "bank": 0
+     },
+     {
+      "program": 51,
+      "bank": 0
+     }
+    ],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "弦乐合成器",
+    "en": "String ensemble keyboard",
+    "ja": "ストリングアンサンブル"
+   },
+   "kind": "instrument",
+   "year": 1970,
+   "yearApprox": false,
+   "lineageYear": 1970,
+   "era": "personal-computer",
+   "communityEra": {
+    "region": "荷兰",
+    "name": "宽容年代",
+    "icon": "🚲"
+   },
+   "regions": [
+    "荷兰"
+   ],
+   "wikipedia": "en:String synthesizer",
+   "family": [
+    "ensemble"
+   ],
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q131186",
+   "ids": {
+    "wikidata": "Q131186",
+    "local": null,
+    "musicxml": "voice.aa",
+    "gm": [
+     {
+      "program": 52,
+      "bank": 0
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "合唱",
+    "en": "choir",
+    "ja": "合唱"
+   },
+   "kind": "voice",
+   "year": -200,
+   "yearApprox": false,
+   "lineageYear": -200,
+   "era": "classical",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "希腊化",
+    "icon": "📜"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Choir",
+   "family": [
+    "ensemble"
+   ],
+   "styles": [
+    {
+     "tag": "church",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--sing",
+    "candidates": [
+     "game-icons--sing",
+     "iconmind--choir",
+     "twemoji--1f9d1-200d-1f3a4",
+     "noto-emoji--emoji_u1f9d1_200d_1f3a4",
+     "openmoji-color--1F9D1-200D-1F3A4",
+     "openmoji-black--1F9D1-200D-1F3A4",
+     "fluent-flat--singer_flat_default",
+     "fluent-color--singer_color_default",
+     "tabler--mood-sing",
+     "iconmind--sing-microphone"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q7390",
+   "ids": {
+    "wikidata": "Q7390",
+    "local": null,
+    "musicxml": "voice.vocals",
+    "gm": [
+     {
+      "program": 53,
+      "bank": 0
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "人声",
+    "en": "human voice",
+    "ja": "声"
+   },
+   "kind": "voice",
+   "year": -300000,
+   "yearApprox": false,
+   "lineageYear": -300000,
+   "era": "stone",
+   "communityEra": null,
+   "regions": [
+    "撒哈拉以南非洲"
+   ],
+   "wikipedia": "en:Human voice",
+   "family": [
+    "ensemble"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--sing",
+    "candidates": [
+     "game-icons--sing",
+     "tabler--voice",
+     "twemoji--1f9d1-200d-1f3a4",
+     "noto-emoji--emoji_u1f9d1_200d_1f3a4",
+     "openmoji-color--1F9D1-200D-1F3A4",
+     "openmoji-black--1F9D1-200D-1F3A4",
+     "fluent-flat--singer_flat_default",
+     "fluent-color--singer_color_default",
+     "tabler--mood-sing",
+     "iconmind--sing-microphone",
+     "mdi--account-voice"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q16346",
+   "ids": {
+    "wikidata": "Q16346",
+    "local": null,
+    "musicxml": "voice.synth",
+    "gm": [
+     {
+      "program": 54,
+      "bank": 0
+     }
+    ],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "语音合成",
+    "en": "speech synthesis",
+    "ja": "音声合成"
+   },
+   "kind": "voice",
+   "year": 1779,
+   "yearApprox": false,
+   "lineageYear": 1779,
+   "era": "enlightenment",
+   "communityEra": {
+    "region": "俄国",
+    "name": "帝国西化",
+    "icon": "✂️"
+   },
+   "regions": [
+    "俄国"
+   ],
+   "wikipedia": "en:Speech synthesis",
+   "family": [
+    "ensemble"
+   ],
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "iconmind--speech-synth",
+    "candidates": [
+     "iconmind--speech-synth"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q7100251",
+   "ids": {
+    "wikidata": "Q7100251",
+    "local": null,
+    "musicxml": "synth.group.orchestra",
+    "gm": [
+     {
+      "program": 55,
+      "bank": 0
+     }
+    ],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "管弦齐奏重音",
+    "en": "Orchestra hit",
+    "ja": "オーケストラル・ヒット"
+   },
+   "kind": "ensemble",
+   "year": 1980,
+   "yearApprox": false,
+   "lineageYear": 1980,
+   "era": "personal-computer",
+   "communityEra": null,
+   "regions": [
+    "澳大利亚"
+   ],
+   "wikipedia": "en:Orchestra hit",
+   "family": [
+    "ensemble"
+   ],
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "iconmind--orchestra",
+    "candidates": [
+     "iconmind--orchestra"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q8338",
+   "ids": {
+    "wikidata": "Q8338",
+    "local": null,
+    "musicxml": "brass.trumpet",
+    "gm": [
+     {
+      "program": 56,
+      "bank": 0
+     },
+     {
+      "program": 59,
+      "bank": 0
+     }
+    ],
+    "hs": "423.233"
+   },
+   "names": {
+    "zh": "小号",
+    "en": "trumpet",
+    "ja": "トランペット"
+   },
+   "kind": "instrument",
+   "year": -3000,
+   "yearApprox": false,
+   "lineageYear": -3000,
+   "era": "bronze",
+   "communityEra": null,
+   "regions": [
+    "中亚"
+   ],
+   "wikipedia": "en:Trumpet",
+   "family": [
+    "brass"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    },
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--trumpet",
+    "candidates": [
+     "game-icons--trumpet",
+     "game-icons--trumpet-flag",
+     "fluent-flat--trumpet_flat",
+     "fluent-color--trumpet_color",
+     "qlementine-icons--trumpet",
+     "mdi--trumpet",
+     "iconmind--trumpet",
+     "twemoji--1f3ba",
+     "noto-emoji--emoji_u1f3ba",
+     "openmoji-color--1F3BA",
+     "openmoji-black--1F3BA"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q8350",
+   "ids": {
+    "wikidata": "Q8350",
+    "local": null,
+    "musicxml": "brass.trombone",
+    "gm": [
+     {
+      "program": 57,
+      "bank": 0
+     }
+    ],
+    "hs": "423.22"
+   },
+   "names": {
+    "zh": "长号",
+    "en": "trombone",
+    "ja": "トロンボーン"
+   },
+   "kind": "instrument",
+   "year": 1400,
+   "yearApprox": false,
+   "lineageYear": 1400,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "中世纪晚期",
+    "icon": "💀"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Trombone",
+   "family": [
+    "brass"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--trombone",
+    "candidates": [
+     "game-icons--trombone",
+     "qlementine-icons--trombone",
+     "twemoji--1fa8a",
+     "noto-emoji--emoji_u1fa8a",
+     "openmoji-color--1FA8A",
+     "openmoji-black--1FA8A"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q131168",
+   "ids": {
+    "wikidata": "Q131168",
+    "local": null,
+    "musicxml": "brass.tuba",
+    "gm": [
+     {
+      "program": 58,
+      "bank": 0
+     }
+    ],
+    "hs": "423.231.2"
+   },
+   "names": {
+    "zh": "大号",
+    "en": "tuba",
+    "ja": "チューバ"
+   },
+   "kind": "instrument",
+   "year": 1835,
+   "yearApprox": false,
+   "lineageYear": 1817,
+   "era": "railway",
+   "communityEra": {
+    "region": "德国",
+    "name": "比德迈",
+    "icon": "🛋️"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Tuba",
+   "family": [
+    "brass"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--tuba",
+    "candidates": [
+     "game-icons--tuba",
+     "qlementine-icons--tuba"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q163759",
+   "ids": {
+    "wikidata": "Q163759",
+    "local": null,
+    "musicxml": "brass.french-horn",
+    "gm": [
+     {
+      "program": 60,
+      "bank": 0
+     }
+    ],
+    "hs": "423.232"
+   },
+   "names": {
+    "zh": "法国号",
+    "en": "horn",
+    "ja": "ホルン"
+   },
+   "kind": "instrument",
+   "year": 1670,
+   "yearApprox": false,
+   "lineageYear": 1670,
+   "era": "scientific-revolution",
+   "communityEra": {
+    "region": "法国",
+    "name": "太阳王",
+    "icon": "☀️"
+   },
+   "regions": [
+    "法国"
+   ],
+   "wikipedia": "en:French horn",
+   "family": [
+    "brass"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--french-horn",
+    "candidates": [
+     "game-icons--french-horn",
+     "game-icons--hunting-horn",
+     "twemoji--1f4ef",
+     "noto-emoji--emoji_u1f4ef",
+     "openmoji-color--1F4EF",
+     "openmoji-black--1F4EF",
+     "fluent-flat--postal_horn_flat",
+     "fluent-color--postal_horn_color"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q16824192",
+   "ids": {
+    "wikidata": "Q16824192",
+    "local": null,
+    "musicxml": "brass.group",
+    "gm": [
+     {
+      "program": 61,
+      "bank": 0
+     }
+    ],
+    "hs": "423.2"
+   },
+   "names": {
+    "zh": "铜管组",
+    "en": "brass section",
+    "ja": "ブラス・セクション"
+   },
+   "kind": "ensemble",
+   "year": 1600,
+   "yearApprox": true,
+   "lineageYear": 1600,
+   "era": "scientific-revolution",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "大航海与宗教改革",
+    "icon": "🧭"
+   },
+   "regions": [
+    "意大利"
+   ],
+   "wikipedia": "en:Brass section",
+   "family": [
+    "brass"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--trumpet",
+    "candidates": [
+     "game-icons--trumpet",
+     "game-icons--trumpet-flag",
+     "game-icons--trombone",
+     "game-icons--tuba",
+     "game-icons--french-horn",
+     "twemoji--1f3ba",
+     "noto-emoji--emoji_u1f3ba",
+     "openmoji-color--1F3BA",
+     "openmoji-black--1F3BA",
+     "fluent-flat--trumpet_flat",
+     "fluent-color--trumpet_color",
+     "qlementine-icons--trumpet",
+     "mdi--trumpet",
+     "iconmind--trumpet",
+     "twemoji--1fa8a",
+     "noto-emoji--emoji_u1fa8a",
+     "openmoji-color--1FA8A",
+     "openmoji-black--1FA8A",
+     "qlementine-icons--trombone",
+     "qlementine-icons--tuba"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q163829",
+   "ids": {
+    "wikidata": "Q163829",
+    "local": null,
+    "musicxml": "synth.group",
+    "gm": [
+     {
+      "program": 62,
+      "bank": 0
+     },
+     {
+      "program": 63,
+      "bank": 0
+     },
+     {
+      "program": 80,
+      "bank": 0
+     },
+     {
+      "program": 81,
+      "bank": 0
+     },
+     {
+      "program": 82,
+      "bank": 0
+     },
+     {
+      "program": 83,
+      "bank": 0
+     },
+     {
+      "program": 84,
+      "bank": 0
+     },
+     {
+      "program": 85,
+      "bank": 0
+     },
+     {
+      "program": 86,
+      "bank": 0
+     },
+     {
+      "program": 87,
+      "bank": 0
+     },
+     {
+      "program": 88,
+      "bank": 0
+     },
+     {
+      "program": 89,
+      "bank": 0
+     },
+     {
+      "program": 90,
+      "bank": 0
+     },
+     {
+      "program": 91,
+      "bank": 0
+     },
+     {
+      "program": 92,
+      "bank": 0
+     },
+     {
+      "program": 93,
+      "bank": 0
+     },
+     {
+      "program": 94,
+      "bank": 0
+     },
+     {
+      "program": 95,
+      "bank": 0
+     },
+     {
+      "program": 96,
+      "bank": 0
+     },
+     {
+      "program": 97,
+      "bank": 0
+     },
+     {
+      "program": 98,
+      "bank": 0
+     },
+     {
+      "program": 99,
+      "bank": 0
+     },
+     {
+      "program": 100,
+      "bank": 0
+     },
+     {
+      "program": 101,
+      "bank": 0
+     },
+     {
+      "program": 102,
+      "bank": 0
+     },
+     {
+      "program": 103,
+      "bank": 0
+     }
+    ],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "合成器",
+    "en": "synthesizer",
+    "ja": "シンセサイザー"
+   },
+   "kind": "instrument",
+   "year": 1940,
+   "yearApprox": false,
+   "lineageYear": 1900,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "大萧条",
+    "icon": "🍞"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Synthesizer",
+   "family": [
+    "brass",
+    "synth-effects",
+    "synth-lead",
+    "synth-pad"
+   ],
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    },
+    {
+     "tag": "eight-bit",
+     "ear": "common"
+    },
+    {
+     "tag": "fairground",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1463985",
+   "ids": {
+    "wikidata": "Q1463985",
+    "local": null,
+    "musicxml": "wind.reed.saxophone.soprano",
+    "gm": [
+     {
+      "program": 64,
+      "bank": 0
+     }
+    ],
+    "hs": "422.212"
+   },
+   "names": {
+    "zh": "高音萨克斯管",
+    "en": "soprano saxophone",
+    "ja": "ソプラノ・サクソフォーン"
+   },
+   "kind": "instrument",
+   "year": 1840,
+   "yearApprox": false,
+   "lineageYear": 1840,
+   "era": "railway",
+   "communityEra": null,
+   "regions": [
+    "比利时"
+   ],
+   "wikipedia": "en:Soprano saxophone",
+   "family": [
+    "reed"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--saxophone",
+    "candidates": [
+     "game-icons--saxophone",
+     "twemoji--1f3b7",
+     "noto-emoji--emoji_u1f3b7",
+     "openmoji-color--1F3B7",
+     "openmoji-black--1F3B7",
+     "fluent-flat--saxophone_flat",
+     "fluent-color--saxophone_color",
+     "qlementine-icons--saxophone",
+     "mdi--saxophone",
+     "streamline-freehand--instrument-saxophone"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q445275",
+   "ids": {
+    "wikidata": "Q445275",
+    "local": null,
+    "musicxml": "wind.reed.saxophone.alto",
+    "gm": [
+     {
+      "program": 65,
+      "bank": 0
+     }
+    ],
+    "hs": "422.212"
+   },
+   "names": {
+    "zh": "中音萨克斯风",
+    "en": "alto saxophone",
+    "ja": "アルト・サクソフォーン"
+   },
+   "kind": "instrument",
+   "year": 1840,
+   "yearApprox": false,
+   "lineageYear": 1840,
+   "era": "railway",
+   "communityEra": null,
+   "regions": [
+    "比利时"
+   ],
+   "wikipedia": "en:Alto saxophone",
+   "family": [
+    "reed"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--saxophone",
+    "candidates": [
+     "game-icons--saxophone",
+     "twemoji--1f3b7",
+     "noto-emoji--emoji_u1f3b7",
+     "openmoji-color--1F3B7",
+     "openmoji-black--1F3B7",
+     "fluent-flat--saxophone_flat",
+     "fluent-color--saxophone_color",
+     "qlementine-icons--saxophone",
+     "mdi--saxophone",
+     "streamline-freehand--instrument-saxophone"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1414932",
+   "ids": {
+    "wikidata": "Q1414932",
+    "local": null,
+    "musicxml": "wind.reed.saxophone.tenor",
+    "gm": [
+     {
+      "program": 66,
+      "bank": 0
+     }
+    ],
+    "hs": "422.212"
+   },
+   "names": {
+    "zh": "次中音萨克斯风",
+    "en": "tenor saxophone",
+    "ja": "テナー・サクソフォーン"
+   },
+   "kind": "instrument",
+   "year": 1840,
+   "yearApprox": false,
+   "lineageYear": 1840,
+   "era": "railway",
+   "communityEra": null,
+   "regions": [
+    "比利时"
+   ],
+   "wikipedia": "en:Tenor saxophone",
+   "family": [
+    "reed"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--saxophone",
+    "candidates": [
+     "game-icons--saxophone",
+     "twemoji--1f3b7",
+     "noto-emoji--emoji_u1f3b7",
+     "openmoji-color--1F3B7",
+     "openmoji-black--1F3B7",
+     "fluent-flat--saxophone_flat",
+     "fluent-color--saxophone_color",
+     "qlementine-icons--saxophone",
+     "mdi--saxophone",
+     "streamline-freehand--instrument-saxophone"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q808218",
+   "ids": {
+    "wikidata": "Q808218",
+    "local": null,
+    "musicxml": "wind.reed.saxophone.baritone",
+    "gm": [
+     {
+      "program": 67,
+      "bank": 0
+     }
+    ],
+    "hs": "422.212"
+   },
+   "names": {
+    "zh": "上低音萨克斯管",
+    "en": "baritone saxophone",
+    "ja": "バリトン・サクソフォーン"
+   },
+   "kind": "instrument",
+   "year": 1846,
+   "yearApprox": false,
+   "lineageYear": 1846,
+   "era": "railway",
+   "communityEra": null,
+   "regions": [
+    "比利时"
+   ],
+   "wikipedia": "en:Baritone saxophone",
+   "family": [
+    "reed"
+   ],
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--saxophone",
+    "candidates": [
+     "game-icons--saxophone",
+     "twemoji--1f3b7",
+     "noto-emoji--emoji_u1f3b7",
+     "openmoji-color--1F3B7",
+     "openmoji-black--1F3B7",
+     "fluent-flat--saxophone_flat",
+     "fluent-color--saxophone_color",
+     "qlementine-icons--saxophone",
+     "mdi--saxophone",
+     "streamline-freehand--instrument-saxophone"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q8377",
+   "ids": {
+    "wikidata": "Q8377",
+    "local": null,
+    "musicxml": "wind.reed.oboe",
+    "gm": [
+     {
+      "program": 68,
+      "bank": 0
+     }
+    ],
+    "hs": "422.112-71"
+   },
+   "names": {
+    "zh": "双簧管",
+    "en": "oboe",
+    "ja": "オーボエ"
+   },
+   "kind": "instrument",
+   "year": 1600,
+   "yearApprox": false,
+   "lineageYear": 1200,
+   "era": "scientific-revolution",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "大航海与宗教改革",
+    "icon": "🧭"
+   },
+   "regions": [
+    "法国"
+   ],
+   "wikipedia": "en:Oboe",
+   "family": [
+    "reed"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--bassoon",
+    "candidates": [
+     "game-icons--bassoon",
+     "commons--Oboe_1",
+     "qlementine-icons--woodwind"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q185041",
+   "ids": {
+    "wikidata": "Q185041",
+    "local": null,
+    "musicxml": "wind.reed.english-horn",
+    "gm": [
+     {
+      "program": 69,
+      "bank": 0
+     }
+    ],
+    "hs": "422.112-71"
+   },
+   "names": {
+    "zh": "英国管",
+    "en": "cor anglais",
+    "ja": "コーラングレ"
+   },
+   "kind": "instrument",
+   "year": 1720,
+   "yearApprox": false,
+   "lineageYear": 1720,
+   "era": "enlightenment",
+   "communityEra": null,
+   "regions": [
+    "西里西亚"
+   ],
+   "wikipedia": "en:Cor anglais",
+   "family": [
+    "reed"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--bassoon",
+    "candidates": [
+     "game-icons--bassoon",
+     "commons--Oboe_1",
+     "qlementine-icons--woodwind"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q159998",
+   "ids": {
+    "wikidata": "Q159998",
+    "local": null,
+    "musicxml": "wind.reed.bassoon",
+    "gm": [
+     {
+      "program": 70,
+      "bank": 0
+     }
+    ],
+    "hs": "422.112–71"
+   },
+   "names": {
+    "zh": "低音管",
+    "en": "bassoon",
+    "ja": "ファゴット"
+   },
+   "kind": "instrument",
+   "year": 1680,
+   "yearApprox": false,
+   "lineageYear": 1540,
+   "era": "scientific-revolution",
+   "communityEra": {
+    "region": "德国",
+    "name": "小邦林立",
+    "icon": "🧩"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Bassoon",
+   "family": [
+    "reed"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--bassoon",
+    "candidates": [
+     "game-icons--bassoon",
+     "qlementine-icons--woodwind"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q8343",
+   "ids": {
+    "wikidata": "Q8343",
+    "local": null,
+    "musicxml": "wind.reed.clarinet",
+    "gm": [
+     {
+      "program": 71,
+      "bank": 0
+     }
+    ],
+    "hs": "422.211.2–71"
+   },
+   "names": {
+    "zh": "单簧管",
+    "en": "clarinet",
+    "ja": "クラリネット"
+   },
+   "kind": "instrument",
+   "year": 1700,
+   "yearApprox": false,
+   "lineageYear": 1700,
+   "era": "enlightenment",
+   "communityEra": {
+    "region": "德国",
+    "name": "小邦林立",
+    "icon": "🧩"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Clarinet",
+   "family": [
+    "reed"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--clarinet",
+    "candidates": [
+     "game-icons--clarinet",
+     "qlementine-icons--woodwind"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q83509",
+   "ids": {
+    "wikidata": "Q83509",
+    "local": null,
+    "musicxml": "wind.flutes.flute.piccolo",
+    "gm": [
+     {
+      "program": 72,
+      "bank": 0
+     }
+    ],
+    "hs": "421.121.12-71"
+   },
+   "names": {
+    "zh": "短笛",
+    "en": "piccolo",
+    "ja": "ピッコロ"
+   },
+   "kind": "instrument",
+   "year": 1700,
+   "yearApprox": false,
+   "lineageYear": 1700,
+   "era": "enlightenment",
+   "communityEra": {
+    "region": "法国",
+    "name": "太阳王",
+    "icon": "☀️"
+   },
+   "regions": [
+    "法国"
+   ],
+   "wikipedia": "en:Piccolo",
+   "family": [
+    "pipe"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--flute",
+    "candidates": [
+     "game-icons--flute",
+     "twemoji--1fa88",
+     "noto-emoji--emoji_u1fa88",
+     "openmoji-color--1FA88",
+     "openmoji-black--1FA88",
+     "fluent-flat--flute_flat",
+     "fluent-color--flute_color",
+     "iconmind--flute",
+     "qlementine-icons--pipe",
+     "qlementine-icons--woodwind"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q209554",
+   "ids": {
+    "wikidata": "Q209554",
+    "local": null,
+    "musicxml": "wind.flutes.flute",
+    "gm": [
+     {
+      "program": 73,
+      "bank": 0
+     }
+    ],
+    "hs": "421.121.12"
+   },
+   "names": {
+    "zh": "长笛",
+    "en": "Western concert flute",
+    "ja": "フルート"
+   },
+   "kind": "instrument",
+   "year": 1847,
+   "yearApprox": false,
+   "lineageYear": 1285,
+   "era": "railway",
+   "communityEra": {
+    "region": "德国",
+    "name": "比德迈",
+    "icon": "🛋️"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Western concert flute",
+   "family": [
+    "pipe"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--flute",
+    "candidates": [
+     "game-icons--flute",
+     "twemoji--1fa88",
+     "noto-emoji--emoji_u1fa88",
+     "openmoji-color--1FA88",
+     "openmoji-black--1FA88",
+     "fluent-flat--flute_flat",
+     "fluent-color--flute_color",
+     "iconmind--flute"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q187851",
+   "ids": {
+    "wikidata": "Q187851",
+    "local": null,
+    "musicxml": "wind.flutes.recorder",
+    "gm": [
+     {
+      "program": 74,
+      "bank": 0
+     }
+    ],
+    "hs": "421.221.12"
+   },
+   "names": {
+    "zh": "直笛",
+    "en": "recorder",
+    "ja": "リコーダー"
+   },
+   "kind": "instrument",
+   "year": 1246,
+   "yearApprox": false,
+   "lineageYear": 1246,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "中世纪盛期",
+    "icon": "🏰"
+   },
+   "regions": [
+    "德国"
+   ],
+   "wikipedia": "en:Recorder (musical instrument)",
+   "family": [
+    "pipe"
+   ],
+   "styles": [
+    {
+     "tag": "church",
+     "ear": "common"
+    },
+    {
+     "tag": "school-music",
+     "ear": "zh"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--flute",
+    "candidates": [
+     "game-icons--flute",
+     "twemoji--1fa88",
+     "noto-emoji--emoji_u1fa88",
+     "openmoji-color--1FA88",
+     "openmoji-black--1FA88",
+     "fluent-flat--flute_flat",
+     "fluent-color--flute_color",
+     "iconmind--flute",
+     "qlementine-icons--pipe",
+     "qlementine-icons--woodwind"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q218802",
+   "ids": {
+    "wikidata": "Q218802",
+    "local": null,
+    "musicxml": "wind.flutes.panpipes",
+    "gm": [
+     {
+      "program": 75,
+      "bank": 0
+     }
+    ],
+    "hs": "421.112"
+   },
+   "names": {
+    "zh": "排箫 (总称)",
+    "en": "pan flute",
+    "ja": "パンパイプ"
+   },
+   "kind": "instrument",
+   "year": -4000,
+   "yearApprox": false,
+   "lineageYear": -4000,
+   "era": "agriculture",
+   "communityEra": null,
+   "regions": [
+    "世界多地"
+   ],
+   "wikipedia": "en:Pan flute",
+   "family": [
+    "pipe"
+   ],
+   "styles": [
+    {
+     "tag": "andes",
+     "ear": "western",
+     "as": "Q905244"
+    },
+    {
+     "tag": "tribal",
+     "ear": "western"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--pan-flute",
+    "candidates": [
+     "game-icons--pan-flute",
+     "game-icons--flute",
+     "twemoji--1fa88",
+     "noto-emoji--emoji_u1fa88",
+     "openmoji-color--1FA88",
+     "openmoji-black--1FA88",
+     "fluent-flat--flute_flat",
+     "fluent-color--flute_color",
+     "iconmind--flute"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q4928615",
+   "ids": {
+    "wikidata": "Q4928615",
+    "local": null,
+    "musicxml": "wind.flutes.blown-bottle",
+    "gm": [
+     {
+      "program": 76,
+      "bank": 0
+     }
+    ],
+    "hs": "421.13"
+   },
+   "names": {
+    "zh": "吹瓶",
+    "en": "Blown bottle",
+    "ja": "ブロウン・ボトル"
+   },
+   "kind": "instrument",
+   "year": -50,
+   "yearApprox": true,
+   "lineageYear": -50,
+   "era": "classical",
+   "communityEra": null,
+   "regions": [
+    "古代近东"
+   ],
+   "wikipedia": "en:Blown bottle",
+   "family": [
+    "pipe"
+   ],
+   "styles": [
+    {
+     "tag": "western",
+     "ear": "western"
+    }
+   ],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q524526",
+   "ids": {
+    "wikidata": "Q524526",
+    "local": null,
+    "musicxml": "wind.flutes.shakuhachi",
+    "gm": [
+     {
+      "program": 77,
+      "bank": 0
+     }
+    ],
+    "hs": "421.111.12"
+   },
+   "names": {
+    "zh": "尺八",
+    "en": "shakuhachi",
+    "ja": "尺八"
+   },
+   "kind": "instrument",
+   "year": 1500,
+   "yearApprox": false,
+   "lineageYear": 600,
+   "era": "printing",
+   "communityEra": {
+    "region": "日本",
+    "name": "战国",
+    "icon": "⚔️"
+   },
+   "regions": [
+    "日本"
+   ],
+   "wikipedia": "en:Shakuhachi",
+   "family": [
+    "pipe"
+   ],
+   "styles": [
+    {
+     "tag": "wafu",
+     "ear": "common"
+    },
+    {
+     "tag": "chinese",
+     "ear": "zh",
+     "as": "Q1394795"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--flute",
+    "candidates": [
+     "game-icons--flute",
+     "twemoji--1fa88",
+     "noto-emoji--emoji_u1fa88",
+     "openmoji-color--1FA88",
+     "openmoji-black--1FA88",
+     "fluent-flat--flute_flat",
+     "fluent-color--flute_color",
+     "iconmind--flute",
+     "qlementine-icons--pipe",
+     "qlementine-icons--woodwind"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q615403",
+   "ids": {
+    "wikidata": "Q615403",
+    "local": null,
+    "musicxml": "wind.flutes.whistle.tin",
+    "gm": [
+     {
+      "program": 78,
+      "bank": 0
+     }
+    ],
+    "hs": "421.221.12"
+   },
+   "names": {
+    "zh": "高音哨笛",
+    "en": "tin whistle",
+    "ja": "ティン・ホイッスル"
+   },
+   "kind": "instrument",
+   "year": 1840,
+   "yearApprox": false,
+   "lineageYear": -33000,
+   "era": "railway",
+   "communityEra": {
+    "region": "英国",
+    "name": "维多利亚",
+    "icon": "🎩"
+   },
+   "regions": [
+    "英国"
+   ],
+   "wikipedia": "en:Tin whistle",
+   "family": [
+    "pipe"
+   ],
+   "styles": [
+    {
+     "tag": "celtic",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--whistle",
+    "candidates": [
+     "game-icons--whistle",
+     "game-icons--flute",
+     "mdi--whistle",
+     "lucide--whistle",
+     "iconmind--whistle",
+     "twemoji--1fa88",
+     "noto-emoji--emoji_u1fa88",
+     "openmoji-color--1FA88",
+     "openmoji-black--1FA88",
+     "fluent-flat--flute_flat",
+     "fluent-color--flute_color",
+     "iconmind--flute",
+     "qlementine-icons--pipe"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q187780",
+   "ids": {
+    "wikidata": "Q187780",
+    "local": null,
+    "musicxml": "wind.flutes.ocarina",
+    "gm": [
+     {
+      "program": 79,
+      "bank": 0
+     }
+    ],
+    "hs": "421.221.42"
+   },
+   "names": {
+    "zh": "陶笛",
+    "en": "ocarina",
+    "ja": "オカリナ"
+   },
+   "kind": "instrument",
+   "year": -10000,
+   "yearApprox": false,
+   "lineageYear": -10000,
+   "era": "agriculture",
+   "communityEra": {
+    "region": "中国",
+    "name": "新石器",
+    "icon": "🌾"
+   },
+   "regions": [
+    "中国",
+    "中美洲"
+   ],
+   "wikipedia": "en:Ocarina",
+   "family": [
+    "pipe"
+   ],
+   "styles": [
+    {
+     "tag": "tribal",
+     "ear": "western"
+    },
+    {
+     "tag": "chinese",
+     "ear": "zh",
+     "as": "Q839767"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--ocarina",
+    "candidates": [
+     "game-icons--ocarina",
+     "mdi--ocarina"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q229205",
+   "ids": {
+    "wikidata": "Q229205",
+    "local": null,
+    "musicxml": "pluck.sitar",
+    "gm": [
+     {
+      "program": 104,
+      "bank": 0
+     }
+    ],
+    "hs": "321.321"
+   },
+   "names": {
+    "zh": "锡塔琴",
+    "en": "sitar",
+    "ja": "シタール"
+   },
+   "kind": "instrument",
+   "year": 1700,
+   "yearApprox": false,
+   "lineageYear": 1700,
+   "era": "enlightenment",
+   "communityEra": {
+    "region": "印度",
+    "name": "莫卧儿",
+    "icon": "💎"
+   },
+   "regions": [
+    "印度"
+   ],
+   "wikipedia": "en:Sitar",
+   "family": [
+    "ethnic"
+   ],
+   "styles": [
+    {
+     "tag": "indian",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--sitar",
+    "candidates": [
+     "qlementine-icons--sitar"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q258896",
+   "ids": {
+    "wikidata": "Q258896",
+    "local": null,
+    "musicxml": "pluck.banjo",
+    "gm": [
+     {
+      "program": 105,
+      "bank": 0
+     }
+    ],
+    "hs": "321.312"
+   },
+   "names": {
+    "zh": "班卓琴",
+    "en": "banjo",
+    "ja": "バンジョー"
+   },
+   "kind": "instrument",
+   "year": 1600,
+   "yearApprox": false,
+   "lineageYear": 1000,
+   "era": "scientific-revolution",
+   "communityEra": null,
+   "regions": [
+    "加勒比"
+   ],
+   "wikipedia": "en:Banjo",
+   "family": [
+    "ethnic"
+   ],
+   "styles": [
+    {
+     "tag": "western",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--banjo",
+    "candidates": [
+     "game-icons--banjo",
+     "fluent-flat--banjo_flat",
+     "fluent-color--banjo_color",
+     "qlementine-icons--banjo",
+     "twemoji--1fa95",
+     "noto-emoji--emoji_u1fa95",
+     "openmoji-color--1FA95",
+     "openmoji-black--1FA95"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q241337",
+   "ids": {
+    "wikidata": "Q241337",
+    "local": null,
+    "musicxml": "pluck.shamisen",
+    "gm": [
+     {
+      "program": 106,
+      "bank": 0
+     }
+    ],
+    "hs": "321.312"
+   },
+   "names": {
+    "zh": "三味线",
+    "en": "shamisen",
+    "ja": "三味線"
+   },
+   "kind": "instrument",
+   "year": 1558,
+   "yearApprox": false,
+   "lineageYear": 1500,
+   "era": "printing",
+   "communityEra": {
+    "region": "日本",
+    "name": "战国",
+    "icon": "⚔️"
+   },
+   "regions": [
+    "日本"
+   ],
+   "wikipedia": "en:Shamisen",
+   "family": [
+    "ethnic"
+   ],
+   "styles": [
+    {
+     "tag": "wafu",
+     "ear": "common"
+    },
+    {
+     "tag": "chinese",
+     "ear": "zh",
+     "as": "Q1860805"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--shamisen",
+    "candidates": [
+     "qlementine-icons--shamisen"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q289037",
+   "ids": {
+    "wikidata": "Q289037",
+    "local": null,
+    "musicxml": "pluck.koto",
+    "gm": [
+     {
+      "program": 107,
+      "bank": 0
+     }
+    ],
+    "hs": "312.22–6"
+   },
+   "names": {
+    "zh": "日本筝",
+    "en": "koto",
+    "ja": "箏"
+   },
+   "kind": "instrument",
+   "year": 600,
+   "yearApprox": false,
+   "lineageYear": 600,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "日本",
+    "name": "飞鸟",
+    "icon": "🪷"
+   },
+   "regions": [
+    "日本"
+   ],
+   "wikipedia": "en:Koto (instrument)",
+   "family": [
+    "ethnic"
+   ],
+   "styles": [
+    {
+     "tag": "wafu",
+     "ear": "common"
+    },
+    {
+     "tag": "chinese",
+     "ear": "zh",
+     "as": "Q726303"
+    }
+   ],
+   "icon": {
+    "id": "commons--Zither",
+    "candidates": [
+     "commons--Zither"
+    ],
+    "license": "CC0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1467960",
+   "ids": {
+    "wikidata": "Q1467960",
+    "local": null,
+    "musicxml": "pitched-percussion.mbira",
+    "gm": [
+     {
+      "program": 108,
+      "bank": 0
+     }
+    ],
+    "hs": "122.1"
+   },
+   "names": {
+    "zh": "拇指琴",
+    "en": "mbira",
+    "ja": "カリンバ"
+   },
+   "kind": "instrument",
+   "year": -1000,
+   "yearApprox": false,
+   "lineageYear": -1000,
+   "era": "bronze",
+   "communityEra": {
+    "region": "撒哈拉以南非洲",
+    "name": "诺克与班图扩张",
+    "icon": "⚒️"
+   },
+   "regions": [
+    "撒哈拉以南非洲"
+   ],
+   "wikipedia": "en:Mbira",
+   "family": [
+    "ethnic"
+   ],
+   "styles": [
+    {
+     "tag": "africa",
+     "ear": "common"
+    },
+    {
+     "tag": "tribal",
+     "ear": "western"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--idiophone",
+    "candidates": [
+     "qlementine-icons--idiophone"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q8347",
+   "ids": {
+    "wikidata": "Q8347",
+    "local": null,
+    "musicxml": "wind.pipes.bagpipes",
+    "gm": [
+     {
+      "program": 109,
+      "bank": 0
+     }
+    ],
+    "hs": "422.112"
+   },
+   "names": {
+    "zh": "风笛",
+    "en": "bagpipe",
+    "ja": "バグパイプ"
+   },
+   "kind": "instrument",
+   "year": 1000,
+   "yearApprox": false,
+   "lineageYear": 1000,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "中世纪盛期",
+    "icon": "🏰"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Bagpipes",
+   "family": [
+    "ethnic"
+   ],
+   "styles": [
+    {
+     "tag": "celtic",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--bagpipes",
+    "candidates": [
+     "game-icons--bagpipes",
+     "commons--Bagpipes"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q510487",
+   "ids": {
+    "wikidata": "Q510487",
+    "local": null,
+    "musicxml": "strings.fiddle",
+    "gm": [
+     {
+      "program": 110,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322-71"
+   },
+   "names": {
+    "zh": "民间提琴",
+    "en": "fiddle",
+    "ja": "フィドル"
+   },
+   "kind": "instrument",
+   "year": 900,
+   "yearApprox": false,
+   "lineageYear": 900,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "中世纪早期",
+    "icon": "🪓"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Fiddle",
+   "family": [
+    "ethnic"
+   ],
+   "styles": [
+    {
+     "tag": "western",
+     "ear": "western"
+    },
+    {
+     "tag": "celtic",
+     "ear": "western"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--violin",
+    "candidates": [
+     "game-icons--violin",
+     "twemoji--1f3bb",
+     "noto-emoji--emoji_u1f3bb",
+     "openmoji-color--1F3BB",
+     "openmoji-black--1F3BB",
+     "fluent-flat--violin_flat",
+     "fluent-color--violin_color",
+     "qlementine-icons--violin",
+     "mdi--violin",
+     "iconmind--violin"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q847911",
+   "ids": {
+    "wikidata": "Q847911",
+    "local": null,
+    "musicxml": "wind.reed.shenai",
+    "gm": [
+     {
+      "program": 111,
+      "bank": 0
+     }
+    ],
+    "hs": "422.112"
+   },
+   "names": {
+    "zh": "印度唢呐",
+    "en": "shehnai",
+    "ja": "シャハナーイー"
+   },
+   "kind": "instrument",
+   "year": 1526,
+   "yearApprox": true,
+   "lineageYear": 1526,
+   "era": "printing",
+   "communityEra": {
+    "region": "印度",
+    "name": "莫卧儿",
+    "icon": "💎"
+   },
+   "regions": [
+    "印度"
+   ],
+   "wikipedia": "en:Shehnai",
+   "family": [
+    "ethnic"
+   ],
+   "styles": [
+    {
+     "tag": "indian",
+     "ear": "common"
+    },
+    {
+     "tag": "chinese",
+     "ear": "zh",
+     "as": "Q2096912"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--woodwind",
+    "candidates": [
+     "qlementine-icons--woodwind",
+     "commons--Oboe_1"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1621499",
+   "ids": {
+    "wikidata": "Q1621499",
+    "local": null,
+    "musicxml": "metal.bells.wind-chimes",
+    "gm": [
+     {
+      "program": 112,
+      "bank": 0
+     }
+    ],
+    "hs": "111.2"
+   },
+   "names": {
+    "zh": "风铃",
+    "en": "wind chime",
+    "ja": "ウィンドチャイム"
+   },
+   "kind": "instrument",
+   "year": 100,
+   "yearApprox": false,
+   "lineageYear": 100,
+   "era": "classical",
+   "communityEra": {
+    "region": "印度",
+    "name": "贵霜与诸国",
+    "icon": "🐫"
+   },
+   "regions": [
+    "印度"
+   ],
+   "wikipedia": "en:Wind chime",
+   "family": [
+    "percussive"
+   ],
+   "styles": [
+    {
+     "tag": "wafu",
+     "ear": "zh",
+     "as": "Q21651966"
+    }
+   ],
+   "icon": {
+    "id": "twemoji--1f390",
+    "candidates": [
+     "twemoji--1f390",
+     "noto-emoji--emoji_u1f390",
+     "openmoji-color--1F390",
+     "openmoji-black--1F390",
+     "fluent-flat--wind_chime_flat",
+     "fluent-color--wind_chime_color"
+    ],
+    "license": "CC-BY-4.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q395212",
+   "ids": {
+    "wikidata": "Q395212",
+    "local": null,
+    "musicxml": "metal.bells.agogo",
+    "gm": [
+     {
+      "program": 113,
+      "bank": 0
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 67
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 68
+     }
+    ],
+    "hs": "111.242"
+   },
+   "names": {
+    "zh": "阿哥哥铃",
+    "en": "Agogô",
+    "ja": "アゴゴ"
+   },
+   "kind": "instrument",
+   "year": 1400,
+   "yearApprox": true,
+   "lineageYear": 1400,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "撒哈拉以南非洲",
+    "name": "大津巴布韦",
+    "icon": "🦅"
+   },
+   "regions": [
+    "撒哈拉以南非洲"
+   ],
+   "wikipedia": "en:Agogô",
+   "family": [
+    "percussion",
+    "percussive"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    },
+    {
+     "tag": "africa",
+     "ear": "western"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--ringing-bell",
+    "candidates": [
+     "game-icons--ringing-bell",
+     "qlementine-icons--cowbell",
+     "twemoji--1f514",
+     "noto-emoji--emoji_u1f514",
+     "openmoji-color--1F514",
+     "openmoji-black--1F514",
+     "fluent-flat--bell_flat",
+     "fluent-color--bell_color",
+     "mdi--bell",
+     "mdi-light--bell",
+     "tabler--bell",
+     "lucide--bell",
+     "phosphor--bell",
+     "fontawesome--bell"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q6610630",
+   "ids": {
+    "wikidata": "Q6610630",
+    "local": null,
+    "musicxml": "metal.steel-drums",
+    "gm": [
+     {
+      "program": 114,
+      "bank": 0
+     }
+    ],
+    "hs": "111.241.12"
+   },
+   "names": {
+    "zh": "钢鼓",
+    "en": "steelpan",
+    "ja": "スティールパン"
+   },
+   "kind": "instrument",
+   "year": 1930,
+   "yearApprox": false,
+   "lineageYear": 1930,
+   "era": "world-wars",
+   "communityEra": null,
+   "regions": [
+    "特立尼达和多巴哥"
+   ],
+   "wikipedia": "en:Steelpan",
+   "family": [
+    "percussive"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "fontawesome--drum-steelpan",
+    "candidates": [
+     "fontawesome--drum-steelpan"
+    ],
+    "license": "CC-BY-4.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q957212",
+   "ids": {
+    "wikidata": "Q957212",
+    "local": null,
+    "musicxml": "wood.wood-block",
+    "gm": [
+     {
+      "program": 115,
+      "bank": 0
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 76
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 77
+     }
+    ],
+    "hs": "111.242.1"
+   },
+   "names": {
+    "zh": "梆子 (乐器)",
+    "en": "wood block",
+    "ja": "ウッドブロック"
+   },
+   "kind": "instrument",
+   "year": 1600,
+   "yearApprox": true,
+   "lineageYear": 1600,
+   "era": "scientific-revolution",
+   "communityEra": {
+    "region": "中国",
+    "name": "明",
+    "icon": "🏮"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Woodblock (instrument)",
+   "family": [
+    "percussion",
+    "percussive"
+   ],
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "zh"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--idiophone",
+    "candidates": [
+     "qlementine-icons--idiophone"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q221769",
+   "ids": {
+    "wikidata": "Q221769",
+    "local": null,
+    "musicxml": "drum.taiko",
+    "gm": [
+     {
+      "program": 116,
+      "bank": 0
+     }
+    ],
+    "hs": "211.2"
+   },
+   "names": {
+    "zh": "和太鼓",
+    "en": "taiko",
+    "ja": "和太鼓"
+   },
+   "kind": "instrument",
+   "year": 500,
+   "yearApprox": false,
+   "lineageYear": 500,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "日本",
+    "name": "古坟",
+    "icon": "⛰️"
+   },
+   "regions": [
+    "日本"
+   ],
+   "wikipedia": "en:Taiko",
+   "family": [
+    "percussive"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "gm-text",
+     "as": "Q940274"
+    },
+    {
+     "tag": "wafu",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum",
+    "candidates": [
+     "game-icons--drum",
+     "commons--Taiko",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q849349",
+   "ids": {
+    "wikidata": "Q849349",
+    "local": null,
+    "musicxml": "drum.tom-tom",
+    "gm": [
+     {
+      "program": 117,
+      "bank": 0
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 45
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 47
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 48
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 50
+     }
+    ],
+    "hs": "211.212.1"
+   },
+   "names": {
+    "zh": "筒鼓",
+    "en": "tom-tom drum",
+    "ja": "トムトム"
+   },
+   "kind": "instrument",
+   "year": 1900,
+   "yearApprox": false,
+   "lineageYear": 1900,
+   "era": "radio",
+   "communityEra": {
+    "region": "美国",
+    "name": "进步时代",
+    "icon": "🗽"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Tom drum",
+   "family": [
+    "percussion",
+    "percussive"
+   ],
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    },
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum",
+    "candidates": [
+     "game-icons--drum",
+     "qlementine-icons--tom",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1327480",
+   "ids": {
+    "wikidata": "Q1327480",
+    "local": null,
+    "musicxml": "drum.tom-tom.synth",
+    "gm": [
+     {
+      "program": 118,
+      "bank": 0
+     }
+    ],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "电子鼓",
+    "en": "electronic drum",
+    "ja": "電子ドラム"
+   },
+   "kind": "instrument",
+   "year": 1970,
+   "yearApprox": false,
+   "lineageYear": 1970,
+   "era": "personal-computer",
+   "communityEra": {
+    "region": "英国",
+    "name": "摇摆年代",
+    "icon": "🎸"
+   },
+   "regions": [
+    "英国"
+   ],
+   "wikipedia": "en:Electronic drum",
+   "family": [
+    "percussive"
+   ],
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum-kit",
+    "candidates": [
+     "game-icons--drum-kit",
+     "game-icons--drum",
+     "qlementine-icons--drumkit",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q7649196",
+   "ids": {
+    "wikidata": "Q7649196",
+    "local": null,
+    "musicxml": "metal.cymbal.suspended",
+    "gm": [
+     {
+      "program": 119,
+      "bank": 0
+     }
+    ],
+    "hs": "111.142"
+   },
+   "names": {
+    "zh": "吊钹",
+    "en": "suspended cymbal",
+    "ja": "サスペンデッド・シンバル"
+   },
+   "kind": "instrument",
+   "year": 1830,
+   "yearApprox": true,
+   "lineageYear": 1830,
+   "era": "railway",
+   "communityEra": {
+    "region": "法国",
+    "name": "复辟与七月王朝",
+    "icon": "🌂"
+   },
+   "regions": [
+    "法国"
+   ],
+   "wikipedia": "en:Suspended cymbal",
+   "family": [
+    "percussive"
+   ],
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--cymbal",
+    "candidates": [
+     "qlementine-icons--cymbal"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q6607",
+   "ids": {
+    "wikidata": "Q6607",
+    "local": null,
+    "musicxml": "pluck.guitar",
+    "gm": [
+     {
+      "program": 120,
+      "bank": 0
+     }
+    ],
+    "hs": "321.322"
+   },
+   "names": {
+    "zh": "吉他",
+    "en": "guitar",
+    "ja": "ギター"
+   },
+   "kind": "instrument",
+   "year": 1100,
+   "yearApprox": false,
+   "lineageYear": 700,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "中世纪盛期",
+    "icon": "🏰"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Guitar",
+   "family": [
+    "sound-effects"
+   ],
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar",
+    "candidates": [
+     "game-icons--guitar",
+     "game-icons--guitar-head",
+     "fluent-flat--guitar_flat",
+     "fluent-color--guitar_color",
+     "qlementine-icons--guitar",
+     "qlementine-icons--guitar-12-strings",
+     "lucide--guitar",
+     "phosphor--guitar",
+     "fontawesome--guitar",
+     "iconmind--guitar",
+     "mdi--guitar-acoustic",
+     "qlementine-icons--guitar-classical",
+     "qlementine-icons--guitar-folk",
+     "mdi--guitar-electric",
+     "qlementine-icons--guitar-jackson",
+     "qlementine-icons--guitar-strat",
+     "qlementine-icons--guitar-tele",
+     "twemoji--1f3b8",
+     "noto-emoji--emoji_u1f3b8",
+     "openmoji-color--1F3B8",
+     "openmoji-black--1F3B8"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q9530",
+   "ids": {
+    "wikidata": "Q9530",
+    "local": null,
+    "musicxml": "effect.breath",
+    "gm": [
+     {
+      "program": 121,
+      "bank": 0
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "呼吸",
+    "en": "breathing",
+    "ja": "呼吸"
+   },
+   "kind": "sound",
+   "year": -410000000,
+   "yearApprox": false,
+   "lineageYear": -410000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Breathing",
+   "family": [
+    "sound-effects"
+   ],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common"
+    }
+   ],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q93352",
+   "ids": {
+    "wikidata": "Q93352",
+    "local": null,
+    "musicxml": "effect.seashore",
+    "gm": [
+     {
+      "program": 122,
+      "bank": 0
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "岸",
+    "en": "coast",
+    "ja": "海岸"
+   },
+   "kind": "sound",
+   "year": -3800000000,
+   "yearApprox": false,
+   "lineageYear": -3800000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Coast",
+   "family": [
+    "sound-effects"
+   ],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common"
+    }
+   ],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1126556",
+   "ids": {
+    "wikidata": "Q1126556",
+    "local": null,
+    "musicxml": "effect.bird.tweet",
+    "gm": [
+     {
+      "program": 123,
+      "bank": 0
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "鸟类鸣声",
+    "en": "bird vocalization",
+    "ja": "鳥のさえずり"
+   },
+   "kind": "sound",
+   "year": -50000000,
+   "yearApprox": false,
+   "lineageYear": -50000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [
+    "大洋洲"
+   ],
+   "wikipedia": "en:Bird vocalization",
+   "family": [
+    "sound-effects"
+   ],
+   "styles": [
+    {
+     "tag": "nature",
+     "ear": "common"
+    }
+   ],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q690856",
+   "ids": {
+    "wikidata": "Q690856",
+    "local": null,
+    "musicxml": "effect.telephone-ring",
+    "gm": [
+     {
+      "program": 124,
+      "bank": 0
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "电话铃声",
+    "en": "ringtone",
+    "ja": "着信音"
+   },
+   "kind": "sound",
+   "year": 1878,
+   "yearApprox": false,
+   "lineageYear": 1870,
+   "era": "telephone",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Ringtone",
+   "family": [
+    "sound-effects"
+   ],
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common"
+    }
+   ],
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q34486",
+   "ids": {
+    "wikidata": "Q34486",
+    "local": null,
+    "musicxml": "effect.helicopter",
+    "gm": [
+     {
+      "program": 125,
+      "bank": 0
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "直升机",
+    "en": "helicopter",
+    "ja": "ヘリコプター"
+   },
+   "kind": "sound",
+   "year": 1936,
+   "yearApprox": false,
+   "lineageYear": 1877,
+   "era": "world-wars",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Helicopter",
+   "family": [
+    "sound-effects"
+   ],
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--helicopter",
+    "candidates": [
+     "game-icons--helicopter",
+     "fluent-flat--helicopter_flat",
+     "fluent-color--helicopter_color",
+     "mdi--helicopter",
+     "material-symbols--helicopter_24px",
+     "tabler--helicopter",
+     "lucide--helicopter",
+     "fontawesome--helicopter",
+     "healthicons--helicopter",
+     "iconmind--helicopter",
+     "twemoji--1f681",
+     "noto-emoji--emoji_u1f681",
+     "openmoji-color--1F681",
+     "openmoji-black--1F681"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q814696",
+   "ids": {
+    "wikidata": "Q814696",
+    "local": null,
+    "musicxml": "effect.applause",
+    "gm": [
+     {
+      "program": 126,
+      "bank": 0
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "鼓掌",
+    "en": "applause",
+    "ja": "拍手"
+   },
+   "kind": "sound",
+   "year": -400,
+   "yearApprox": true,
+   "lineageYear": -400,
+   "era": "classical",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "古典希腊",
+    "icon": "🏛️"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Applause",
+   "family": [
+    "sound-effects"
+   ],
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "mdi--hand-clap",
+    "candidates": [
+     "mdi--hand-clap",
+     "twemoji--1f44f",
+     "openmoji-color--1F44F",
+     "openmoji-black--1F44F",
+     "fluent-flat--clapping_hands_flat_default",
+     "fluent-color--clapping_hands_color_default",
+     "qlementine-icons--clap"
+    ],
+    "license": "Apache-2.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q2992372",
+   "ids": {
+    "wikidata": "Q2992372",
+    "local": null,
+    "musicxml": "effect.gunshot",
+    "gm": [
+     {
+      "program": 127,
+      "bank": 0
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "枪声",
+    "en": "gunshot",
+    "ja": "銃声"
+   },
+   "kind": "sound",
+   "year": 1200,
+   "yearApprox": false,
+   "lineageYear": 1200,
+   "era": "manuscript",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Gunshot",
+   "family": [
+    "sound-effects"
+   ],
+   "styles": [
+    {
+     "tag": "sfx",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--gunshot",
+    "candidates": [
+     "game-icons--gunshot"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q211028",
+   "ids": {
+    "wikidata": "Q211028",
+    "local": null,
+    "musicxml": "drum.bass-drum",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 35
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 36
+     }
+    ],
+    "hs": "211.212.1"
+   },
+   "names": {
+    "zh": "大鼓",
+    "en": "kick drum",
+    "ja": "バスドラム"
+   },
+   "kind": "instrument",
+   "year": 1300,
+   "yearApprox": false,
+   "lineageYear": 1300,
+   "era": "manuscript",
+   "communityEra": null,
+   "regions": [
+    "巴尔干"
+   ],
+   "wikipedia": "en:Bass drum",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum",
+    "candidates": [
+     "game-icons--drum",
+     "qlementine-icons--kick",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q208421",
+   "ids": {
+    "wikidata": "Q208421",
+    "local": null,
+    "musicxml": "drum.snare-drum",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 37
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 38
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 40
+     }
+    ],
+    "hs": "211.212.11"
+   },
+   "names": {
+    "zh": "小鼓",
+    "en": "snare drum",
+    "ja": "スネアドラム"
+   },
+   "kind": "instrument",
+   "year": 1400,
+   "yearApprox": false,
+   "lineageYear": 1300,
+   "era": "manuscript",
+   "communityEra": null,
+   "regions": [
+    "瑞士"
+   ],
+   "wikipedia": "en:Snare drum",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    },
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum",
+    "candidates": [
+     "game-icons--drum",
+     "qlementine-icons--snare",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1322478",
+   "ids": {
+    "wikidata": "Q1322478",
+    "local": null,
+    "musicxml": "effect.hand-clap",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 39
+     }
+    ],
+    "hs": null
+   },
+   "names": {
+    "zh": "拍手",
+    "en": "clapping",
+    "ja": "手拍子"
+   },
+   "kind": "sound",
+   "year": -8000000,
+   "yearApprox": true,
+   "lineageYear": -8000000,
+   "era": "prehuman",
+   "communityEra": null,
+   "regions": [
+    "撒哈拉以南非洲"
+   ],
+   "wikipedia": "en:Clapping",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--clap",
+    "candidates": [
+     "qlementine-icons--clap",
+     "mdi--hand-clap",
+     "twemoji--1f44f",
+     "openmoji-color--1F44F",
+     "openmoji-black--1F44F",
+     "fluent-flat--clapping_hands_flat_default",
+     "fluent-color--clapping_hands_color_default"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q3305735",
+   "ids": {
+    "wikidata": "Q3305735",
+    "local": null,
+    "musicxml": "drum.tom-tom",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 41
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 43
+     }
+    ],
+    "hs": "211.212.1"
+   },
+   "names": {
+    "zh": "落地鼓",
+    "en": "floor tom",
+    "ja": "フロアタム"
+   },
+   "kind": "instrument",
+   "year": 1936,
+   "yearApprox": true,
+   "lineageYear": 1936,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "大萧条",
+    "icon": "🍞"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Floor tom",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum",
+    "candidates": [
+     "game-icons--drum",
+     "qlementine-icons--tom",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q963334",
+   "ids": {
+    "wikidata": "Q963334",
+    "local": null,
+    "musicxml": "metal.hi-hat",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 42
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 44
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 46
+     }
+    ],
+    "hs": "111.24"
+   },
+   "names": {
+    "zh": "脚踏钹",
+    "en": "hi-hat",
+    "ja": "ハイハット"
+   },
+   "kind": "instrument",
+   "year": 1926,
+   "yearApprox": false,
+   "lineageYear": 1926,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "咆哮的二十年代",
+    "icon": "🎺"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Hi-hat",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--hi-hat",
+    "candidates": [
+     "qlementine-icons--hi-hat",
+     "qlementine-icons--cymbal"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q93985",
+   "ids": {
+    "wikidata": "Q93985",
+    "local": null,
+    "musicxml": "metal.cymbal.crash",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 49
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 57
+     }
+    ],
+    "hs": "111.142"
+   },
+   "names": {
+    "zh": "碎音钹",
+    "en": "crash cymbal",
+    "ja": "クラッシュ・シンバル"
+   },
+   "kind": "instrument",
+   "year": 1936,
+   "yearApprox": false,
+   "lineageYear": 1936,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "大萧条",
+    "icon": "🍞"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Crash cymbal",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--cymbal",
+    "candidates": [
+     "qlementine-icons--cymbal"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q93992",
+   "ids": {
+    "wikidata": "Q93992",
+    "local": null,
+    "musicxml": "metal.cymbal.ride",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 51
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 53
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 59
+     }
+    ],
+    "hs": "111.142"
+   },
+   "names": {
+    "zh": "叠音钹",
+    "en": "ride cymbal",
+    "ja": "ライド・シンバル"
+   },
+   "kind": "instrument",
+   "year": 1918,
+   "yearApprox": false,
+   "lineageYear": 1918,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "咆哮的二十年代",
+    "icon": "🎺"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Ride cymbal",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--cymbal",
+    "candidates": [
+     "qlementine-icons--cymbal"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q2451592",
+   "ids": {
+    "wikidata": "Q2451592",
+    "local": null,
+    "musicxml": "metal.cymbal.chinese",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 52
+     }
+    ],
+    "hs": "111.142"
+   },
+   "names": {
+    "zh": "中国钹",
+    "en": "China cymbal",
+    "ja": "チャイナ・シンバル"
+   },
+   "kind": "instrument",
+   "year": 200,
+   "yearApprox": true,
+   "lineageYear": 200,
+   "era": "classical",
+   "communityEra": {
+    "region": "中国",
+    "name": "汉",
+    "icon": "🐎"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:China cymbal",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    },
+    {
+     "tag": "chinese",
+     "ear": "name",
+     "as": "Q7206087"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--cymbal",
+    "candidates": [
+     "qlementine-icons--cymbal"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q193666",
+   "ids": {
+    "wikidata": "Q193666",
+    "local": null,
+    "musicxml": "drum.tambourine",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 54
+     }
+    ],
+    "hs": "112.122(+211.311"
+   },
+   "names": {
+    "zh": "铃鼓",
+    "en": "tambourine",
+    "ja": "タンバリン"
+   },
+   "kind": "instrument",
+   "year": -1700,
+   "yearApprox": false,
+   "lineageYear": -1700,
+   "era": "bronze",
+   "communityEra": null,
+   "regions": [
+    "埃及"
+   ],
+   "wikipedia": "en:Tambourine",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--tambourine",
+    "candidates": [
+     "game-icons--tambourine",
+     "qlementine-icons--tambourine"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1074981",
+   "ids": {
+    "wikidata": "Q1074981",
+    "local": null,
+    "musicxml": "metal.cymbal.splash",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 55
+     }
+    ],
+    "hs": "111.142"
+   },
+   "names": {
+    "zh": "水钹",
+    "en": "splash cymbal",
+    "ja": "スプラッシュ・シンバル"
+   },
+   "kind": "instrument",
+   "year": 1920,
+   "yearApprox": false,
+   "lineageYear": 1920,
+   "era": "world-wars",
+   "communityEra": {
+    "region": "美国",
+    "name": "咆哮的二十年代",
+    "icon": "🎺"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Splash cymbal",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--cymbal",
+    "candidates": [
+     "qlementine-icons--cymbal"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q775570",
+   "ids": {
+    "wikidata": "Q775570",
+    "local": null,
+    "musicxml": "metal.bells.cowbell",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 56
+     }
+    ],
+    "hs": "111.242"
+   },
+   "names": {
+    "zh": "牛铃",
+    "en": "cowbell",
+    "ja": "カウベル"
+   },
+   "kind": "instrument",
+   "year": 1903,
+   "yearApprox": true,
+   "lineageYear": 1903,
+   "era": "radio",
+   "communityEra": {
+    "region": "奥地利（哈布斯堡）",
+    "name": "奥匈帝国",
+    "icon": "🎻"
+   },
+   "regions": [
+    "奥地利（哈布斯堡"
+   ],
+   "wikipedia": "en:Cowbell (instrument)",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--ringing-bell",
+    "candidates": [
+     "game-icons--ringing-bell",
+     "qlementine-icons--cowbell",
+     "twemoji--1f514",
+     "noto-emoji--emoji_u1f514",
+     "openmoji-color--1F514",
+     "openmoji-black--1F514",
+     "fluent-flat--bell_flat",
+     "fluent-color--bell_color",
+     "mdi--bell",
+     "mdi-light--bell",
+     "tabler--bell",
+     "lucide--bell",
+     "phosphor--bell",
+     "fontawesome--bell"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q390110",
+   "ids": {
+    "wikidata": "Q390110",
+    "local": null,
+    "musicxml": "rattle.vibraslap",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 58
+     }
+    ],
+    "hs": "112.1"
+   },
+   "names": {
+    "zh": "颤音器",
+    "en": "vibraslap",
+    "ja": "ヴィブラスラップ"
+   },
+   "kind": "instrument",
+   "year": 1967,
+   "yearApprox": false,
+   "lineageYear": 1967,
+   "era": "atomic",
+   "communityEra": {
+    "region": "美国",
+    "name": "动荡年代",
+    "icon": "☮️"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Vibraslap",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--idiophone",
+    "candidates": [
+     "qlementine-icons--idiophone"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q243998",
+   "ids": {
+    "wikidata": "Q243998",
+    "local": null,
+    "musicxml": "drum.bongo",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 60
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 61
+     }
+    ],
+    "hs": "211.251.2"
+   },
+   "names": {
+    "zh": "邦哥鼓",
+    "en": "bongo",
+    "ja": "ボンゴ"
+   },
+   "kind": "instrument",
+   "year": 1870,
+   "yearApprox": false,
+   "lineageYear": 1870,
+   "era": "telephone",
+   "communityEra": null,
+   "regions": [
+    "古巴"
+   ],
+   "wikipedia": "en:Bongo drum",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--djembe",
+    "candidates": [
+     "game-icons--djembe",
+     "game-icons--drum",
+     "qlementine-icons--bongos",
+     "commons--Conga",
+     "twemoji--1fa98",
+     "noto-emoji--emoji_u1fa98",
+     "openmoji-color--1FA98",
+     "openmoji-black--1FA98",
+     "fluent-flat--long_drum_flat",
+     "fluent-color--long_drum_color",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q270200",
+   "ids": {
+    "wikidata": "Q270200",
+    "local": null,
+    "musicxml": "drum.conga",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 62
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 63
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 64
+     }
+    ],
+    "hs": "211.221.1"
+   },
+   "names": {
+    "zh": "康加鼓",
+    "en": "conga",
+    "ja": "コンガ"
+   },
+   "kind": "instrument",
+   "year": 1870,
+   "yearApprox": false,
+   "lineageYear": 1870,
+   "era": "telephone",
+   "communityEra": null,
+   "regions": [
+    "古巴"
+   ],
+   "wikipedia": "en:Conga",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--djembe",
+    "candidates": [
+     "game-icons--djembe",
+     "game-icons--drum",
+     "commons--Conga",
+     "twemoji--1fa98",
+     "noto-emoji--emoji_u1fa98",
+     "openmoji-color--1FA98",
+     "openmoji-black--1FA98",
+     "fluent-flat--long_drum_flat",
+     "fluent-color--long_drum_color",
+     "qlementine-icons--bongos",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q379248",
+   "ids": {
+    "wikidata": "Q379248",
+    "local": null,
+    "musicxml": "drum.timbale",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 65
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 66
+     }
+    ],
+    "hs": "211.2"
+   },
+   "names": {
+    "zh": "天巴鼓",
+    "en": "timbales",
+    "ja": "ティンバレス"
+   },
+   "kind": "instrument",
+   "year": 1900,
+   "yearApprox": false,
+   "lineageYear": 1800,
+   "era": "radio",
+   "communityEra": null,
+   "regions": [
+    "古巴"
+   ],
+   "wikipedia": "en:Timbales",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum",
+    "candidates": [
+     "game-icons--drum",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1024685",
+   "ids": {
+    "wikidata": "Q1024685",
+    "local": null,
+    "musicxml": "rattle.cabasa",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 69
+     }
+    ],
+    "hs": "112.1"
+   },
+   "names": {
+    "zh": "铁沙铃",
+    "en": "cabasa",
+    "ja": "カバサ"
+   },
+   "kind": "instrument",
+   "year": 1968,
+   "yearApprox": false,
+   "lineageYear": 1968,
+   "era": "atomic",
+   "communityEra": {
+    "region": "美国",
+    "name": "动荡年代",
+    "icon": "☮️"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Cabasa",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--maracas",
+    "candidates": [
+     "game-icons--maracas",
+     "qlementine-icons--shakers",
+     "twemoji--1fa87",
+     "noto-emoji--emoji_u1fa87",
+     "openmoji-color--1FA87",
+     "openmoji-black--1FA87",
+     "fluent-flat--maracas_flat",
+     "fluent-color--maracas_color"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q39777",
+   "ids": {
+    "wikidata": "Q39777",
+    "local": null,
+    "musicxml": "rattle.maraca",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 70
+     }
+    ],
+    "hs": "112.1"
+   },
+   "names": {
+    "zh": "沙槌",
+    "en": "maraca",
+    "ja": "マラカス"
+   },
+   "kind": "instrument",
+   "year": 1700,
+   "yearApprox": false,
+   "lineageYear": 1700,
+   "era": "enlightenment",
+   "communityEra": null,
+   "regions": [
+    "奥里诺科河流域"
+   ],
+   "wikipedia": "en:Maraca",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--maracas",
+    "candidates": [
+     "game-icons--maracas",
+     "fluent-flat--maracas_flat",
+     "fluent-color--maracas_color",
+     "twemoji--1fa87",
+     "noto-emoji--emoji_u1fa87",
+     "openmoji-color--1FA87",
+     "openmoji-black--1FA87",
+     "qlementine-icons--shakers"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1483670",
+   "ids": {
+    "wikidata": "Q1483670",
+    "local": null,
+    "musicxml": "wind.flutes.whistle",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 71
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 72
+     }
+    ],
+    "hs": "421.221.11"
+   },
+   "names": {
+    "zh": "巴西哨",
+    "en": "apito de samba",
+    "ja": "サンバホイッスル"
+   },
+   "kind": "instrument",
+   "year": 1870,
+   "yearApprox": false,
+   "lineageYear": 1870,
+   "era": "telephone",
+   "communityEra": null,
+   "regions": [
+    "巴西"
+   ],
+   "wikipedia": "en:Apito",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--whistle",
+    "candidates": [
+     "game-icons--whistle",
+     "mdi--whistle",
+     "lucide--whistle",
+     "iconmind--whistle"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q2237198",
+   "ids": {
+    "wikidata": "Q2237198",
+    "local": null,
+    "musicxml": "wood.guiro",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 73
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 74
+     }
+    ],
+    "hs": "112.23"
+   },
+   "names": {
+    "zh": "刮瓜",
+    "en": "güiro",
+    "ja": "ギロ"
+   },
+   "kind": "instrument",
+   "year": 1771,
+   "yearApprox": true,
+   "lineageYear": 1771,
+   "era": "enlightenment",
+   "communityEra": null,
+   "regions": [
+    "波多黎各"
+   ],
+   "wikipedia": "en:Güiro",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--idiophone",
+    "candidates": [
+     "qlementine-icons--idiophone"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q850118",
+   "ids": {
+    "wikidata": "Q850118",
+    "local": null,
+    "musicxml": "wood.claves",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 75
+     }
+    ],
+    "hs": "111.11"
+   },
+   "names": {
+    "zh": "击木",
+    "en": "claves",
+    "ja": "クラベス"
+   },
+   "kind": "instrument",
+   "year": 1600,
+   "yearApprox": false,
+   "lineageYear": 1600,
+   "era": "scientific-revolution",
+   "communityEra": null,
+   "regions": [
+    "古巴"
+   ],
+   "wikipedia": "en:Claves",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    },
+    {
+     "tag": "chinese",
+     "ear": "zh",
+     "as": "x:bei-bangzi"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--idiophone",
+    "candidates": [
+     "qlementine-icons--idiophone"
+    ],
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q176926",
+   "ids": {
+    "wikidata": "Q176926",
+    "local": null,
+    "musicxml": "drum.cuica",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 78
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 79
+     }
+    ],
+    "hs": "231"
+   },
+   "names": {
+    "zh": "奎卡鼓",
+    "en": "cuíca",
+    "ja": "クイーカ"
+   },
+   "kind": "instrument",
+   "year": 1500,
+   "yearApprox": false,
+   "lineageYear": 1500,
+   "era": "printing",
+   "communityEra": {
+    "region": "撒哈拉以南非洲",
+    "name": "奴隶贸易",
+    "icon": "⛓️"
+   },
+   "regions": [
+    "撒哈拉以南非洲"
+   ],
+   "wikipedia": "en:Cuíca",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum",
+    "candidates": [
+     "game-icons--drum",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q201735",
+   "ids": {
+    "wikidata": "Q201735",
+    "local": null,
+    "musicxml": "metal.triangle",
+    "gm": [
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 80
+     },
+     {
+      "program": 0,
+      "bank": 128,
+      "note": 81
+     }
+    ],
+    "hs": "111.211"
+   },
+   "names": {
+    "zh": "三角铁",
+    "en": "triangle",
+    "ja": "トライアングル"
+   },
+   "kind": "instrument",
+   "year": 1300,
+   "yearApprox": false,
+   "lineageYear": 1300,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "中世纪晚期",
+    "icon": "💀"
+   },
+   "regions": [
+    "欧洲"
+   ],
+   "wikipedia": "en:Triangle (musical instrument)",
+   "family": [
+    "percussion"
+   ],
+   "styles": [
+    {
+     "tag": "beethoven",
+     "ear": "common"
+    }
+   ],
+   "icon": {
+    "id": "mdi--instrument-triangle",
+    "candidates": [
+     "mdi--instrument-triangle"
+    ],
+    "license": "Apache-2.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q113624956",
+   "ids": {
+    "wikidata": "Q113624956",
+    "local": null,
+    "musicxml": "keyboard.piano.electric",
+    "gm": [],
+    "hs": "52"
+   },
+   "names": {
+    "zh": "雅马哈 CP-70",
+    "en": "Yamaha CP-70",
+    "ja": ""
+   },
+   "kind": "model",
+   "year": 1976,
+   "yearApprox": false,
+   "lineageYear": 1976,
+   "era": "personal-computer",
+   "communityEra": {
+    "region": "日本",
+    "name": "经济大国",
+    "icon": "📼"
+   },
+   "regions": [
+    "日本"
+   ],
+   "wikipedia": "en:Yamaha CP-70",
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 2,
+     "bank": 0,
+     "gmNumber": 3,
+     "gmName": "Electric Grand Piano",
+     "basis": "official",
+     "hsCommon": "52",
+     "reason": "GM 说明：Electric Grand Piano or Piano 3 (usually modeled after Yamaha CP-70)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--grand-piano",
+    "candidates": [
+     "game-icons--grand-piano",
+     "game-icons--piano-keys",
+     "game-icons--musical-keyboard",
+     "qlementine-icons--piano",
+     "mdi--piano",
+     "material-symbols--piano_24px",
+     "tabler--piano",
+     "lucide--piano",
+     "phosphor--piano-keys",
+     "iconmind--piano",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "borrowedFrom": "Q5357606",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q743659",
+   "ids": {
+    "wikidata": "Q743659",
+    "local": null,
+    "musicxml": "keyboard.piano.electric",
+    "gm": [],
+    "hs": "52"
+   },
+   "names": {
+    "zh": "罗兹电钢琴",
+    "en": "Rhodes piano",
+    "ja": "ローズ・ピアノ"
+   },
+   "kind": "model",
+   "year": 1947,
+   "yearApprox": false,
+   "lineageYear": 1945,
+   "era": "atomic",
+   "communityEra": {
+    "region": "美国",
+    "name": "战后繁荣",
+    "icon": "🏡"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Rhodes piano",
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 4,
+     "bank": 0,
+     "gmNumber": 5,
+     "gmName": "Electric Piano 1",
+     "basis": "official",
+     "hsCommon": "52",
+     "reason": "GM 说明：Electric Piano 1 (usually a Rhodes or Wurlitzer piano)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "game-icons--grand-piano",
+     "game-icons--piano-keys",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard",
+     "qlementine-icons--piano",
+     "mdi--piano",
+     "material-symbols--piano_24px",
+     "tabler--piano",
+     "lucide--piano",
+     "phosphor--piano-keys",
+     "iconmind--piano"
+    ],
+    "borrowedFrom": "Q1136507",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1759986",
+   "ids": {
+    "wikidata": "Q1759986",
+    "local": null,
+    "musicxml": "keyboard.piano.electric",
+    "gm": [],
+    "hs": "52"
+   },
+   "names": {
+    "zh": "沃利策电钢琴",
+    "en": "Wurlitzer Electric Piano",
+    "ja": "ウーリッツァー・エレクトロニック・ピアノ"
+   },
+   "kind": "model",
+   "year": 1954,
+   "yearApprox": false,
+   "lineageYear": 1954,
+   "era": "atomic",
+   "communityEra": {
+    "region": "美国",
+    "name": "战后繁荣",
+    "icon": "🏡"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Wurlitzer electronic piano",
+   "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 4,
+     "bank": 0,
+     "gmNumber": 5,
+     "gmName": "Electric Piano 1",
+     "basis": "official",
+     "hsCommon": "52",
+     "reason": "GM 说明：Electric Piano 1 (usually a Rhodes or Wurlitzer piano)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "game-icons--grand-piano",
+     "game-icons--piano-keys",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard",
+     "qlementine-icons--piano",
+     "mdi--piano",
+     "material-symbols--piano_24px",
+     "tabler--piano",
+     "lucide--piano",
+     "phosphor--piano-keys",
+     "iconmind--piano"
+    ],
+    "borrowedFrom": "Q1136507",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q139300",
+   "ids": {
+    "wikidata": "Q139300",
+    "local": null,
+    "musicxml": "synth.group",
+    "gm": [],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "雅马哈 DX7",
+    "en": "Yamaha DX7",
+    "ja": "ヤマハ・DXシリーズ"
+   },
+   "kind": "model",
+   "year": 1983,
+   "yearApprox": false,
+   "lineageYear": 1983,
+   "era": "personal-computer",
+   "communityEra": {
+    "region": "日本",
+    "name": "经济大国",
+    "icon": "📼"
+   },
+   "regions": [
+    "日本"
+   ],
+   "wikipedia": "en:Yamaha DX7",
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 39,
+     "bank": 0,
+     "gmNumber": 40,
+     "gmName": "Synth Bass 2",
+     "basis": "official",
+     "hsCommon": "53",
+     "reason": "GM 说明：Synth Bass 2 (based on a Yamaha DX7 e. bass 1 preset)"
+    },
+    {
+     "program": 5,
+     "bank": 0,
+     "gmNumber": 6,
+     "gmName": "Electric Piano 2",
+     "basis": "official",
+     "hsCommon": "5",
+     "reason": "GM 说明：Electric Piano 2 (usually a Yamaha DX7 e. piano 1 preset)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "borrowedFrom": "Q6398221",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q208173",
+   "ids": {
+    "wikidata": "Q208173",
+    "local": null,
+    "musicxml": "pluck.guitar.electric",
+    "gm": [],
+    "hs": "321.322"
+   },
+   "names": {
+    "zh": "Fender Stratocaster",
+    "en": "Fender Stratocaster",
+    "ja": "フェンダー・ストラトキャスター"
+   },
+   "kind": "model",
+   "year": 1954,
+   "yearApprox": false,
+   "lineageYear": 1954,
+   "era": "atomic",
+   "communityEra": {
+    "region": "美国",
+    "name": "战后繁荣",
+    "icon": "🏡"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Fender Stratocaster",
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 27,
+     "bank": 0,
+     "gmNumber": 28,
+     "gmName": "Electric Guitar (clean)",
+     "basis": "official",
+     "hsCommon": "321.322",
+     "reason": "GM 说明：Electric Guitar (clean, often chorused, resembling a Stratocaster run through a Roland Jazz Chorus amplifier)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar",
+    "candidates": [
+     "game-icons--guitar",
+     "mdi--guitar-electric",
+     "qlementine-icons--guitar-jackson",
+     "qlementine-icons--guitar-strat",
+     "qlementine-icons--guitar-tele",
+     "twemoji--1f3b8",
+     "noto-emoji--emoji_u1f3b8",
+     "openmoji-color--1F3B8",
+     "openmoji-black--1F3B8",
+     "fluent-flat--guitar_flat",
+     "fluent-color--guitar_color",
+     "qlementine-icons--guitar",
+     "qlementine-icons--guitar-12-strings",
+     "lucide--guitar",
+     "phosphor--guitar",
+     "fontawesome--guitar",
+     "iconmind--guitar"
+    ],
+    "borrowedFrom": "Q78987",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q288342",
+   "ids": {
+    "wikidata": "Q288342",
+    "local": null,
+    "musicxml": "pluck.bass.electric",
+    "gm": [],
+    "hs": "321.322"
+   },
+   "names": {
+    "zh": "芬达 Jazz Bass",
+    "en": "Fender Jazz Bass",
+    "ja": "フェンダー・ジャズベース"
+   },
+   "kind": "model",
+   "year": 1960,
+   "yearApprox": false,
+   "lineageYear": 1960,
+   "era": "atomic",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Fender Jazz Bass",
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 33,
+     "bank": 0,
+     "gmNumber": 34,
+     "gmName": "Electric Bass (finger)",
+     "basis": "official",
+     "hsCommon": "321.322",
+     "reason": "GM 说明：Electric Bass (finger) (usually based on a Fender Jazz Bass)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar-bass-head",
+    "candidates": [
+     "game-icons--guitar-bass-head",
+     "streamline-freehand--modern-music-bass-guitar",
+     "qlementine-icons--bass"
+    ],
+    "borrowedFrom": "Q46185",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q727758",
+   "ids": {
+    "wikidata": "Q727758",
+    "local": null,
+    "musicxml": "pluck.bass.electric",
+    "gm": [],
+    "hs": "321.322"
+   },
+   "names": {
+    "zh": "芬达 Precision Bass",
+    "en": "Fender Precision Bass",
+    "ja": "フェンダー・プレシジョンベース"
+   },
+   "kind": "model",
+   "year": 1951,
+   "yearApprox": false,
+   "lineageYear": 1951,
+   "era": "atomic",
+   "communityEra": {
+    "region": "美国",
+    "name": "战后繁荣",
+    "icon": "🏡"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Fender Precision Bass",
+   "styles": [
+    {
+     "tag": "rock-pop",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 34,
+     "bank": 0,
+     "gmNumber": 35,
+     "gmName": "Electric Bass (pick)",
+     "basis": "official",
+     "hsCommon": "321.322",
+     "reason": "GM 说明：Electric Bass (picked) (usually based on a Fender Precision Bass)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar-bass-head",
+    "candidates": [
+     "game-icons--guitar-bass-head",
+     "streamline-freehand--modern-music-bass-guitar",
+     "qlementine-icons--bass"
+    ],
+    "borrowedFrom": "Q46185",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q734687",
+   "ids": {
+    "wikidata": "Q734687",
+    "local": null,
+    "musicxml": "synth.group",
+    "gm": [],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "迷你穆格",
+    "en": "Minimoog",
+    "ja": "ミニモーグ"
+   },
+   "kind": "model",
+   "year": 1970,
+   "yearApprox": false,
+   "lineageYear": 1960,
+   "era": "personal-computer",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Minimoog",
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 38,
+     "bank": 0,
+     "gmNumber": 39,
+     "gmName": "Synth Bass 1",
+     "basis": "official",
+     "hsCommon": "53",
+     "reason": "GM 说明：Synth Bass 1 (based on a minimoog bass sound)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "borrowedFrom": "Q6398221",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q296879",
+   "ids": {
+    "wikidata": "Q296879",
+    "local": null,
+    "musicxml": "strings.group.synth",
+    "gm": [],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "ARP 弦乐合奏机",
+    "en": "ARP String Ensemble",
+    "ja": "アープ・ストリングアンサンブル"
+   },
+   "kind": "model",
+   "year": 1974,
+   "yearApprox": false,
+   "lineageYear": 1972,
+   "era": "personal-computer",
+   "communityEra": {
+    "region": "美国",
+    "name": "迪斯科年代",
+    "icon": "🪩"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:ARP String Ensemble",
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 50,
+     "bank": 0,
+     "gmNumber": 51,
+     "gmName": "SynthStrings 1",
+     "basis": "official",
+     "hsCommon": "53",
+     "reason": "GM 说明：Synth Strings 1 (usually roughly based on a Solina String Ensemble)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "borrowedFrom": "Q110897746",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q2536440",
+   "ids": {
+    "wikidata": "Q2536440",
+    "local": null,
+    "musicxml": "synth.group",
+    "gm": [],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "罗兰 Jupiter-8",
+    "en": "Roland Jupiter-8",
+    "ja": ""
+   },
+   "kind": "model",
+   "year": 1981,
+   "yearApprox": false,
+   "lineageYear": 1981,
+   "era": "personal-computer",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Roland Jupiter-8",
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 51,
+     "bank": 0,
+     "gmNumber": 52,
+     "gmName": "SynthStrings 2",
+     "basis": "official",
+     "hsCommon": "53",
+     "reason": "GM 说明：Synth Strings 2 (often similar to a Roland JP8 synthesizer, with chorus effect)"
+    },
+    {
+     "program": 63,
+     "bank": 0,
+     "gmNumber": 64,
+     "gmName": "SynthBrass 2",
+     "basis": "official",
+     "hsCommon": "53",
+     "reason": "GM 说明：Synth Brass 2 (usually based on a Yamaha CS-80 or Roland JP8)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "borrowedFrom": "Q110897746",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q366063",
+   "ids": {
+    "wikidata": "Q366063",
+    "local": null,
+    "musicxml": "synth.group",
+    "gm": [],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "雅马哈 CS-80",
+    "en": "Yamaha CS-80",
+    "ja": "ヤマハ・CS-80"
+   },
+   "kind": "model",
+   "year": 1977,
+   "yearApprox": false,
+   "lineageYear": 1973,
+   "era": "personal-computer",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Yamaha CS-80",
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 63,
+     "bank": 0,
+     "gmNumber": 64,
+     "gmName": "SynthBrass 2",
+     "basis": "official",
+     "hsCommon": "53",
+     "reason": "GM 说明：Synth Brass 2 (usually based on a Yamaha CS-80 or Roland JP8)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "borrowedFrom": "Q163829",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q3347942",
+   "ids": {
+    "wikidata": "Q3347942",
+    "local": null,
+    "musicxml": "synth.group",
+    "gm": [],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "奥伯海姆 OB-X",
+    "en": "Oberheim OB-X",
+    "ja": ""
+   },
+   "kind": "model",
+   "year": 1979,
+   "yearApprox": false,
+   "lineageYear": 1979,
+   "era": "personal-computer",
+   "communityEra": {
+    "region": "美国",
+    "name": "迪斯科年代",
+    "icon": "🪩"
+   },
+   "regions": [
+    "美国"
+   ],
+   "wikipedia": "en:Oberheim OB-X",
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 62,
+     "bank": 0,
+     "gmNumber": 63,
+     "gmName": "SynthBrass 1",
+     "basis": "official",
+     "hsCommon": "53",
+     "reason": "GM 说明：Synth Brass 1 (based roughly on an Oberheim OBx synthesizer)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "borrowedFrom": "Q163829",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q744418",
+   "ids": {
+    "wikidata": "Q744418",
+    "local": null,
+    "musicxml": "synth.group",
+    "gm": [],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "罗兰 D-50",
+    "en": "Roland D-50",
+    "ja": ""
+   },
+   "kind": "model",
+   "year": 1987,
+   "yearApprox": false,
+   "lineageYear": 1987,
+   "era": "personal-computer",
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Roland D-50",
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 88,
+     "bank": 0,
+     "gmNumber": 89,
+     "gmName": "Pad 1 (new age)",
+     "basis": "official",
+     "hsCommon": "53",
+     "reason": "GM 说明：Pad 1 (new age, pad stacked with a bell, often derived from \"Fantasia\" patch from Roland D-50)"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--musical-keyboard",
+    "candidates": [
+     "game-icons--musical-keyboard",
+     "qlementine-icons--synthesizer",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "borrowedFrom": "Q163829",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q512222",
+   "ids": {
+    "wikidata": "Q512222",
+    "local": null,
+    "musicxml": "synth.group",
+    "gm": [],
+    "hs": "53"
+   },
+   "names": {
+    "zh": "Fairlight 采样合成器",
+    "en": "Fairlight CMI",
+    "ja": "フェアライトCMI"
+   },
+   "kind": "model",
+   "year": 1979,
+   "yearApprox": false,
+   "lineageYear": 1974,
+   "era": "personal-computer",
+   "communityEra": null,
+   "regions": [
+    "澳大利亚"
+   ],
+   "wikipedia": "en:Fairlight CMI",
+   "styles": [
+    {
+     "tag": "synth",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 55,
+     "bank": 0,
+     "gmNumber": 56,
+     "gmName": "Orchestra Hit",
+     "basis": "official",
+     "hsCommon": "53",
+     "reason": "GM 说明：Orchestra Hit (based on a Fairlight CMI orch2 preset)"
+    }
+   ],
+   "icon": {
+    "id": "iconmind--orchestra",
+    "candidates": [
+     "iconmind--orchestra"
+    ],
+    "borrowedFrom": "Q7100251",
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q2912399",
+   "ids": {
+    "wikidata": "Q2912399",
+    "local": null,
+    "musicxml": "pluck.santoor",
+    "gm": [],
+    "hs": "314.122-4"
+   },
+   "names": {
+    "zh": "桑图尔琴",
+    "en": "santoor",
+    "ja": "サントゥール"
+   },
+   "kind": "instrument",
+   "year": null,
+   "yearApprox": false,
+   "lineageYear": null,
+   "era": null,
+   "communityEra": null,
+   "regions": [
+    "印度"
+   ],
+   "wikipedia": "en:Santoor",
+   "styles": [
+    {
+     "tag": "indian",
+     "ear": "gm-text"
+    },
+    {
+     "tag": "indian",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 15,
+     "bank": 0,
+     "gmNumber": 16,
+     "gmName": "Dulcimer",
+     "basis": "official",
+     "hsCommon": "314.122",
+     "reason": "GM：「Dulcimer or Santoor」"
+    }
+   ],
+   "icon": {
+    "id": "commons--Zither",
+    "candidates": [
+     "commons--Zither",
+     "commons--Coa_Illustration_Elements_Musical_Instrument_Hammered_Dulcimer"
+    ],
+    "license": "CC0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q877239",
+   "ids": {
+    "wikidata": "Q877239",
+    "local": null,
+    "musicxml": "pitched-percussion.yangqin",
+    "gm": [],
+    "hs": "314.122-4"
+   },
+   "names": {
+    "zh": "扬琴",
+    "en": "yangqin",
+    "ja": "揚琴"
+   },
+   "kind": "instrument",
+   "year": null,
+   "yearApprox": false,
+   "lineageYear": null,
+   "era": null,
+   "communityEra": null,
+   "regions": [],
+   "wikipedia": "en:Yangqin",
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "zh"
+    },
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 15,
+     "bank": 0,
+     "gmNumber": 16,
+     "gmName": "Dulcimer",
+     "basis": "family",
+     "hsCommon": "314.122",
+     "reason": "中文耳朵一听是扬琴"
+    }
+   ],
+   "icon": {
+    "id": "commons--Zither",
+    "candidates": [
+     "commons--Zither",
+     "commons--Coa_Illustration_Elements_Musical_Instrument_Hammered_Dulcimer"
+    ],
+    "borrowedFrom": "Q1588017",
+    "license": "CC0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q726303",
+   "ids": {
+    "wikidata": "Q726303",
+    "local": null,
+    "musicxml": "pluck.guzheng",
+    "gm": [],
+    "hs": "312.22"
+   },
+   "names": {
+    "zh": "古筝",
+    "en": "guzheng",
+    "ja": "古箏"
+   },
+   "kind": "instrument",
+   "year": -475,
+   "yearApprox": false,
+   "lineageYear": -475,
+   "era": "classical",
+   "communityEra": {
+    "region": "中国",
+    "name": "战国",
+    "icon": "⚔️"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Guzheng",
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "zh"
+    },
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 107,
+     "bank": 0,
+     "gmNumber": 108,
+     "gmName": "Koto",
+     "basis": "lineage",
+     "hsCommon": "312.22",
+     "reason": "Koto 条目：「The ancestor of the koto was the Chinese guzheng」"
+    }
+   ],
+   "icon": {
+    "id": "commons--Zither",
+    "candidates": [
+     "commons--Zither"
+    ],
+    "borrowedFrom": "Q289037",
+    "license": "CC0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1860805",
+   "ids": {
+    "wikidata": "Q1860805",
+    "local": null,
+    "musicxml": "pluck.sanxian",
+    "gm": [],
+    "hs": "321.312"
+   },
+   "names": {
+    "zh": "三弦",
+    "en": "sanxian",
+    "ja": "三弦"
+   },
+   "kind": "instrument",
+   "year": -221,
+   "yearApprox": false,
+   "lineageYear": -221,
+   "era": "classical",
+   "communityEra": {
+    "region": "中国",
+    "name": "秦",
+    "icon": "🧱"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Sanxian",
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "zh"
+    },
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 106,
+     "bank": 0,
+     "gmNumber": 107,
+     "gmName": "Shamisen",
+     "basis": "lineage",
+     "hsCommon": "321.312",
+     "reason": "Shamisen 条目：三味线最终源自三弦（经琉球三线）"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--shamisen",
+    "candidates": [
+     "qlementine-icons--shamisen"
+    ],
+    "borrowedFrom": "Q241337",
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1394795",
+   "ids": {
+    "wikidata": "Q1394795",
+    "local": null,
+    "musicxml": "wind.flutes.xiao",
+    "gm": [],
+    "hs": "421.111.12"
+   },
+   "names": {
+    "zh": "箫",
+    "en": "xiao",
+    "ja": "簫"
+   },
+   "kind": "instrument",
+   "year": null,
+   "yearApprox": false,
+   "lineageYear": null,
+   "era": null,
+   "communityEra": null,
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Xiao (flute)",
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "zh"
+    },
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 77,
+     "bank": 0,
+     "gmNumber": 78,
+     "gmName": "Shakuhachi",
+     "basis": "lineage",
+     "hsCommon": "421.111.12",
+     "reason": "Shakuhachi 条目：「derived from the Chinese bamboo-flute」；原主取箫是 AI 判"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--flute",
+    "candidates": [
+     "game-icons--flute",
+     "twemoji--1fa88",
+     "noto-emoji--emoji_u1fa88",
+     "openmoji-color--1FA88",
+     "openmoji-black--1FA88",
+     "fluent-flat--flute_flat",
+     "fluent-color--flute_color",
+     "iconmind--flute",
+     "qlementine-icons--pipe",
+     "qlementine-icons--woodwind"
+    ],
+    "borrowedFrom": "Q524526",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q839767",
+   "ids": {
+    "wikidata": "Q839767",
+    "local": null,
+    "musicxml": "wind.flutes.xun",
+    "gm": [],
+    "hs": "421.221.42"
+   },
+   "names": {
+    "zh": "埙",
+    "en": "xun",
+    "ja": "塤"
+   },
+   "kind": "instrument",
+   "year": -5000,
+   "yearApprox": false,
+   "lineageYear": -5000,
+   "era": "agriculture",
+   "communityEra": {
+    "region": "中国",
+    "name": "新石器",
+    "icon": "🌾"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Xun (instrument)",
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "zh"
+    },
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 79,
+     "bank": 0,
+     "gmNumber": 80,
+     "gmName": "Ocarina",
+     "basis": "family",
+     "hsCommon": "421.221.42",
+     "reason": "陶笛顶埙（AI 判）"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--ocarina",
+    "candidates": [
+     "game-icons--ocarina",
+     "mdi--ocarina"
+    ],
+    "borrowedFrom": "Q187780",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q2096912",
+   "ids": {
+    "wikidata": "Q2096912",
+    "local": null,
+    "musicxml": "wind.reed.suona",
+    "gm": [],
+    "hs": "422.112"
+   },
+   "names": {
+    "zh": "唢呐",
+    "en": "suona",
+    "ja": "チャルメラ"
+   },
+   "kind": "instrument",
+   "year": 200,
+   "yearApprox": false,
+   "lineageYear": 200,
+   "era": "classical",
+   "communityEra": {
+    "region": "中国",
+    "name": "汉",
+    "icon": "🐎"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Suona",
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "zh"
+    },
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 111,
+     "bank": 0,
+     "gmNumber": 112,
+     "gmName": "Shanai",
+     "basis": "family",
+     "hsCommon": "422.112",
+     "reason": "中文耳朵一听是唢呐（AI 判）"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--woodwind",
+    "candidates": [
+     "qlementine-icons--woodwind",
+     "commons--Oboe_1"
+    ],
+    "borrowedFrom": "Q847911",
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q726306",
+   "ids": {
+    "wikidata": "Q726306",
+    "local": null,
+    "musicxml": "strings.erhu",
+    "gm": [],
+    "hs": "321.313"
+   },
+   "names": {
+    "zh": "二胡",
+    "en": "erhu",
+    "ja": "二胡"
+   },
+   "kind": "instrument",
+   "year": 618,
+   "yearApprox": false,
+   "lineageYear": 618,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "中国",
+    "name": "隋唐",
+    "icon": "🐫"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Erhu",
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "zh"
+    },
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 40,
+     "bank": 0,
+     "gmNumber": 41,
+     "gmName": "Violin",
+     "basis": "family",
+     "hsCommon": "321.3",
+     "reason": "GM 里没有二胡，能拿来顶的只有小提琴（AI 判）"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--violin",
+    "candidates": [
+     "game-icons--violin",
+     "fluent-flat--violin_flat",
+     "fluent-color--violin_color",
+     "qlementine-icons--violin",
+     "mdi--violin",
+     "iconmind--violin",
+     "twemoji--1f3bb",
+     "noto-emoji--emoji_u1f3bb",
+     "openmoji-color--1F3BB",
+     "openmoji-black--1F3BB"
+    ],
+    "borrowedFrom": "Q8355",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1146067",
+   "ids": {
+    "wikidata": "Q1146067",
+    "local": null,
+    "musicxml": "wind.flutes.di-zi",
+    "gm": [],
+    "hs": "421.121.12"
+   },
+   "names": {
+    "zh": "笛子",
+    "en": "dizi",
+    "ja": "笛子"
+   },
+   "kind": "instrument",
+   "year": -7000,
+   "yearApprox": false,
+   "lineageYear": -7000,
+   "era": "agriculture",
+   "communityEra": {
+    "region": "中国",
+    "name": "新石器",
+    "icon": "🌾"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Dizi (instrument)",
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 73,
+     "bank": 0,
+     "gmNumber": 74,
+     "gmName": "Flute",
+     "basis": "family",
+     "hsCommon": "421.121.12",
+     "reason": "笛子和长笛分类号一样（421.121.12）；同分的短笛（GM 73）音域太高，取长笛"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--flute",
+    "candidates": [
+     "game-icons--flute",
+     "twemoji--1fa88",
+     "noto-emoji--emoji_u1fa88",
+     "openmoji-color--1FA88",
+     "openmoji-black--1FA88",
+     "fluent-flat--flute_flat",
+     "fluent-color--flute_color",
+     "iconmind--flute"
+    ],
+    "borrowedFrom": "Q209554",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q7206087",
+   "ids": {
+    "wikidata": "Q7206087",
+    "local": null,
+    "musicxml": "metal.cymbal.bo",
+    "gm": [],
+    "hs": "111.142"
+   },
+   "names": {
+    "zh": "钹",
+    "en": "bo",
+    "ja": "鈸"
+   },
+   "kind": "instrument",
+   "year": 200,
+   "yearApprox": false,
+   "lineageYear": 200,
+   "era": "classical",
+   "communityEra": {
+    "region": "中国",
+    "name": "汉",
+    "icon": "🐎"
+   },
+   "regions": [
+    "中国"
+   ],
+   "wikipedia": "en:Bo (instrument)",
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "name"
+    },
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 0,
+     "bank": 128,
+     "note": 52,
+     "gmNumber": 52,
+     "gmName": "Chinese Cymbal",
+     "basis": "family",
+     "hsCommon": "111.142",
+     "reason": "名字叫 Chinese cymbal，在鼓组里其实是摇滚镲"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--cymbal",
+    "candidates": [
+     "qlementine-icons--cymbal"
+    ],
+    "borrowedFrom": "Q2451592",
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q804099",
+   "ids": {
+    "wikidata": "Q804099",
+    "local": null,
+    "musicxml": "keyboard.accordion",
+    "gm": [],
+    "hs": "412.132"
+   },
+   "names": {
+    "zh": "巴扬手风琴",
+    "en": "bayan",
+    "ja": "バヤン (楽器)"
+   },
+   "kind": "instrument",
+   "year": 1900,
+   "yearApprox": false,
+   "lineageYear": 1900,
+   "era": "radio",
+   "communityEra": {
+    "region": "俄国",
+    "name": "帝国晚期",
+    "icon": "🩰"
+   },
+   "regions": [
+    "俄国"
+   ],
+   "wikipedia": "en:Bayan (accordion)",
+   "styles": [
+    {
+     "tag": "soviet",
+     "ear": "zh"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 21,
+     "bank": 0,
+     "gmNumber": 22,
+     "gmName": "Accordion",
+     "basis": "family",
+     "hsCommon": "412.132",
+     "reason": "手风琴：《喀秋莎》那一路的苏联歌曲（AI 判）"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--accordion",
+    "candidates": [
+     "game-icons--accordion",
+     "fluent-flat--accordion_flat",
+     "fluent-color--accordion_color",
+     "qlementine-icons--accordion",
+     "streamline-freehand--instrument-accordian",
+     "twemoji--1fa97",
+     "noto-emoji--emoji_u1fa97",
+     "openmoji-color--1FA97",
+     "openmoji-black--1FA97"
+    ],
+    "borrowedFrom": "Q79838",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q940274",
+   "ids": {
+    "wikidata": "Q940274",
+    "local": null,
+    "musicxml": "drum.surdo",
+    "gm": [],
+    "hs": "211.212.1"
+   },
+   "names": {
+    "zh": "苏尔多鼓",
+    "en": "surdo",
+    "ja": "スルド"
+   },
+   "kind": "instrument",
+   "year": 1920,
+   "yearApprox": false,
+   "lineageYear": 1920,
+   "era": "world-wars",
+   "communityEra": null,
+   "regions": [
+    "巴西"
+   ],
+   "wikipedia": "en:Surdo",
+   "styles": [
+    {
+     "tag": "latin",
+     "ear": "gm-text"
+    },
+    {
+     "tag": "latin",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 116,
+     "bank": 0,
+     "gmNumber": 117,
+     "gmName": "Taiko Drum",
+     "basis": "official",
+     "hsCommon": "211.2",
+     "reason": "GM：「Taiko Drum or Surdo」——太鼓顶巴西苏尔多鼓，桑巴"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--drum",
+    "candidates": [
+     "game-icons--drum",
+     "twemoji--1f941",
+     "noto-emoji--emoji_u1f941",
+     "openmoji-color--1F941",
+     "openmoji-black--1F941",
+     "fluent-flat--drum_flat",
+     "fluent-color--drum_color",
+     "lucide--drum",
+     "fontawesome--drum",
+     "iconmind--drum",
+     "qlementine-icons--kick"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q905244",
+   "ids": {
+    "wikidata": "Q905244",
+    "local": null,
+    "musicxml": "wind.flutes.panpipes",
+    "gm": [],
+    "hs": "421.112"
+   },
+   "names": {
+    "zh": "西库（安第斯排箫）",
+    "en": "sikus",
+    "ja": "シーク"
+   },
+   "kind": "instrument",
+   "year": null,
+   "yearApprox": false,
+   "lineageYear": null,
+   "era": null,
+   "communityEra": null,
+   "regions": [
+    "安第斯"
+   ],
+   "wikipedia": "en:Siku (instrument)",
+   "styles": [
+    {
+     "tag": "andes",
+     "ear": "western"
+    },
+    {
+     "tag": "andes",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 75,
+     "bank": 0,
+     "gmNumber": 76,
+     "gmName": "Pan Flute",
+     "basis": "family",
+     "hsCommon": "421.112",
+     "reason": "排箫：《山鹰之歌》那一路的安第斯排箫"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--pan-flute",
+    "candidates": [
+     "game-icons--pan-flute",
+     "game-icons--flute",
+     "twemoji--1fa88",
+     "noto-emoji--emoji_u1fa88",
+     "openmoji-color--1FA88",
+     "openmoji-black--1FA88",
+     "fluent-flat--flute_flat",
+     "fluent-color--flute_color",
+     "iconmind--flute"
+    ],
+    "borrowedFrom": "Q218802",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q21651966",
+   "ids": {
+    "wikidata": "Q21651966",
+    "local": null,
+    "musicxml": "metal.bells.wind-chimes",
+    "gm": [],
+    "hs": "111.2"
+   },
+   "names": {
+    "zh": "风铃",
+    "en": "fūrin",
+    "ja": "風鈴"
+   },
+   "kind": "instrument",
+   "year": 794,
+   "yearApprox": false,
+   "lineageYear": 794,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "日本",
+    "name": "平安",
+    "icon": "🪭"
+   },
+   "regions": [
+    "日本"
+   ],
+   "wikipedia": "en:Fūrin",
+   "styles": [
+    {
+     "tag": "wafu",
+     "ear": "zh"
+    },
+    {
+     "tag": "wafu",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 112,
+     "bank": 0,
+     "gmNumber": 113,
+     "gmName": "Tinkle Bell",
+     "basis": "family",
+     "hsCommon": "111.2",
+     "reason": "风铃：日本夏天（AI 判）"
+    }
+   ],
+   "icon": {
+    "id": "twemoji--1f390",
+    "candidates": [
+     "twemoji--1f390",
+     "noto-emoji--emoji_u1f390",
+     "openmoji-color--1F390",
+     "openmoji-black--1F390",
+     "fluent-flat--wind_chime_flat",
+     "fluent-color--wind_chime_color"
+    ],
+    "borrowedFrom": "Q1621499",
+    "license": "CC-BY-4.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q189388",
+   "ids": {
+    "wikidata": "Q189388",
+    "local": null,
+    "musicxml": "brass.didgeridoo",
+    "gm": [],
+    "hs": "423.121.11"
+   },
+   "names": {
+    "zh": "迪吉里杜管",
+    "en": "didgeridoo",
+    "ja": "ディジュリドゥ"
+   },
+   "kind": "instrument",
+   "year": 1000,
+   "yearApprox": false,
+   "lineageYear": 1000,
+   "era": "manuscript",
+   "communityEra": {
+    "region": "大洋洲",
+    "name": "波利尼西亚航海",
+    "icon": "🛶"
+   },
+   "regions": [
+    "大洋洲"
+   ],
+   "wikipedia": "en:Didgeridoo",
+   "styles": [
+    {
+     "tag": "tribal",
+     "ear": "western"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 56,
+     "bank": 0,
+     "gmNumber": 57,
+     "gmName": "Trumpet",
+     "basis": "family",
+     "hsCommon": "423",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 57,
+     "bank": 0,
+     "gmNumber": 58,
+     "gmName": "Trombone",
+     "basis": "family",
+     "hsCommon": "423",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 58,
+     "bank": 0,
+     "gmNumber": 59,
+     "gmName": "Tuba",
+     "basis": "family",
+     "hsCommon": "423",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--trumpet",
+    "candidates": [
+     "game-icons--trumpet",
+     "game-icons--trumpet-flag",
+     "fluent-flat--trumpet_flat",
+     "fluent-color--trumpet_color",
+     "qlementine-icons--trumpet",
+     "mdi--trumpet",
+     "iconmind--trumpet",
+     "twemoji--1f3ba",
+     "noto-emoji--emoji_u1f3ba",
+     "openmoji-color--1F3BA",
+     "openmoji-black--1F3BA"
+    ],
+    "borrowedFrom": "Q8338",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q628428",
+   "ids": {
+    "wikidata": "Q628428",
+    "local": null,
+    "musicxml": "drum.slit-drum",
+    "gm": [],
+    "hs": "111.2"
+   },
+   "names": {
+    "zh": "木鼓",
+    "en": "slit drum",
+    "ja": "木鼓"
+   },
+   "kind": "instrument",
+   "year": null,
+   "yearApprox": false,
+   "lineageYear": null,
+   "era": null,
+   "communityEra": null,
+   "regions": [
+    "撒哈拉以南非洲",
+    "东南亚",
+    "大洋洲"
+   ],
+   "wikipedia": "en:Slit drum",
+   "styles": [
+    {
+     "tag": "tribal",
+     "ear": "western"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 115,
+     "bank": 0,
+     "gmNumber": 116,
+     "gmName": "Woodblock",
+     "basis": "family",
+     "hsCommon": "111.2",
+     "reason": "Woodblock 条目：「A woodblock … is a small slit drum made from a single piece of wood」"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--idiophone",
+    "candidates": [
+     "qlementine-icons--idiophone"
+    ],
+    "borrowedFrom": "Q957212",
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q61285",
+   "ids": {
+    "wikidata": "Q61285",
+    "local": null,
+    "musicxml": "pluck.ukulele",
+    "gm": [],
+    "hs": "321.322"
+   },
+   "names": {
+    "zh": "尤克里里",
+    "en": "ukulele",
+    "ja": "ウクレレ"
+   },
+   "kind": "instrument",
+   "year": 1880,
+   "yearApprox": false,
+   "lineageYear": 1880,
+   "era": "telephone",
+   "communityEra": {
+    "region": "大洋洲",
+    "name": "接触之后",
+    "icon": "⛵"
+   },
+   "regions": [
+    "大洋洲"
+   ],
+   "wikipedia": "en:Ukulele",
+   "styles": [
+    {
+     "tag": "hawaii",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 24,
+     "bank": 0,
+     "gmNumber": 25,
+     "gmName": "Acoustic Guitar (nylon)",
+     "basis": "family",
+     "hsCommon": "321.322",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 25,
+     "bank": 0,
+     "gmNumber": 26,
+     "gmName": "Acoustic Guitar (steel)",
+     "basis": "family",
+     "hsCommon": "321.322",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 26,
+     "bank": 0,
+     "gmNumber": 27,
+     "gmName": "Electric Guitar (jazz)",
+     "basis": "family",
+     "hsCommon": "321.322",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--guitar",
+    "candidates": [
+     "game-icons--guitar",
+     "qlementine-icons--guitar-classical",
+     "twemoji--1f3b8",
+     "noto-emoji--emoji_u1f3b8",
+     "openmoji-color--1F3B8",
+     "openmoji-black--1F3B8",
+     "fluent-flat--guitar_flat",
+     "fluent-color--guitar_color",
+     "qlementine-icons--guitar",
+     "qlementine-icons--guitar-12-strings",
+     "lucide--guitar",
+     "phosphor--guitar",
+     "fontawesome--guitar",
+     "iconmind--guitar",
+     "mdi--guitar-acoustic"
+    ],
+    "borrowedFrom": "Q719120",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q208320",
+   "ids": {
+    "wikidata": "Q208320",
+    "local": null,
+    "musicxml": "metal.gong",
+    "gm": [],
+    "hs": "111.241"
+   },
+   "names": {
+    "zh": "锣",
+    "en": "gong",
+    "ja": "ゴング"
+   },
+   "kind": "instrument",
+   "year": -300,
+   "yearApprox": false,
+   "lineageYear": -300,
+   "era": "classical",
+   "communityEra": {
+    "region": "东南亚",
+    "name": "东山",
+    "icon": "🪘"
+   },
+   "regions": [
+    "东南亚"
+   ],
+   "wikipedia": "en:Gong",
+   "styles": [],
+   "substitutes": [
+    {
+     "program": 114,
+     "bank": 0,
+     "gmNumber": 115,
+     "gmName": "Steel Drums",
+     "basis": "family",
+     "hsCommon": "111.241",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 113,
+     "bank": 0,
+     "gmNumber": 114,
+     "gmName": "Agogo",
+     "basis": "family",
+     "hsCommon": "111.24",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 115,
+     "bank": 0,
+     "gmNumber": 116,
+     "gmName": "Woodblock",
+     "basis": "family",
+     "hsCommon": "111.24",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--gong",
+    "candidates": [
+     "game-icons--gong",
+     "qlementine-icons--tamtam"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q180733",
+   "ids": {
+    "wikidata": "Q180733",
+    "local": null,
+    "musicxml": "pluck.lute",
+    "gm": [],
+    "hs": "321"
+   },
+   "names": {
+    "zh": "鲁特琴",
+    "en": "lute",
+    "ja": "リュート"
+   },
+   "kind": "instrument",
+   "year": -3100,
+   "yearApprox": false,
+   "lineageYear": -3100,
+   "era": "agriculture",
+   "communityEra": {
+    "region": "古代近东",
+    "name": "苏美尔与阿卡德",
+    "icon": "🏺"
+   },
+   "regions": [
+    "古代近东"
+   ],
+   "wikipedia": "en:Lute",
+   "styles": [
+    {
+     "tag": "church",
+     "ear": "western"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 24,
+     "bank": 0,
+     "gmNumber": 25,
+     "gmName": "Acoustic Guitar (nylon)",
+     "basis": "family",
+     "hsCommon": "321",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 25,
+     "bank": 0,
+     "gmNumber": 26,
+     "gmName": "Acoustic Guitar (steel)",
+     "basis": "family",
+     "hsCommon": "321",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 26,
+     "bank": 0,
+     "gmNumber": 27,
+     "gmName": "Electric Guitar (jazz)",
+     "basis": "family",
+     "hsCommon": "321",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--banjo",
+    "candidates": [
+     "game-icons--banjo",
+     "commons--Lute_1",
+     "commons--Lute_2",
+     "commons--Lute_3",
+     "qlementine-icons--mandolin",
+     "qlementine-icons--ukulele",
+     "twemoji--1fa95",
+     "noto-emoji--emoji_u1fa95",
+     "openmoji-color--1FA95",
+     "openmoji-black--1FA95",
+     "fluent-flat--banjo_flat",
+     "fluent-color--banjo_color",
+     "qlementine-icons--banjo",
+     "qlementine-icons--sitar",
+     "qlementine-icons--shamisen"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q201129",
+   "ids": {
+    "wikidata": "Q201129",
+    "local": null,
+    "musicxml": "pluck.lyre",
+    "gm": [],
+    "hs": "321.2"
+   },
+   "names": {
+    "zh": "里拉琴",
+    "en": "lyre",
+    "ja": "リラ"
+   },
+   "kind": "instrument",
+   "year": -2700,
+   "yearApprox": false,
+   "lineageYear": -2700,
+   "era": "bronze",
+   "communityEra": {
+    "region": "古代近东",
+    "name": "苏美尔与阿卡德",
+    "icon": "🏺"
+   },
+   "regions": [
+    "古代近东"
+   ],
+   "wikipedia": "en:Lyre",
+   "styles": [],
+   "substitutes": [
+    {
+     "program": 24,
+     "bank": 0,
+     "gmNumber": 25,
+     "gmName": "Acoustic Guitar (nylon)",
+     "basis": "family",
+     "hsCommon": "321",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 25,
+     "bank": 0,
+     "gmNumber": 26,
+     "gmName": "Acoustic Guitar (steel)",
+     "basis": "family",
+     "hsCommon": "321",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 26,
+     "bank": 0,
+     "gmNumber": 27,
+     "gmName": "Electric Guitar (jazz)",
+     "basis": "family",
+     "hsCommon": "321",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--lyre",
+    "candidates": [
+     "game-icons--lyre",
+     "game-icons--harp",
+     "twemoji--1fa89",
+     "openmoji-color--1FA89",
+     "openmoji-black--1FA89",
+     "qlementine-icons--harp"
+    ],
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q666971",
+   "ids": {
+    "wikidata": "Q666971",
+    "local": null,
+    "musicxml": "effect.bullroarer",
+    "gm": [],
+    "hs": "412.2"
+   },
+   "names": {
+    "zh": "牛吼器",
+    "en": "bullroarer",
+    "ja": "うなり木"
+   },
+   "kind": "instrument",
+   "year": -18000,
+   "yearApprox": false,
+   "lineageYear": -18000,
+   "era": "stone",
+   "communityEra": null,
+   "regions": [
+    "乌克兰"
+   ],
+   "wikipedia": "en:Bullroarer",
+   "styles": [
+    {
+     "tag": "tribal",
+     "ear": "western"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 20,
+     "bank": 0,
+     "gmNumber": 21,
+     "gmName": "Reed Organ",
+     "basis": "family",
+     "hsCommon": "412",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 21,
+     "bank": 0,
+     "gmNumber": 22,
+     "gmName": "Accordion",
+     "basis": "family",
+     "hsCommon": "412",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    },
+    {
+     "program": 22,
+     "bank": 0,
+     "gmNumber": 23,
+     "gmName": "Harmonica",
+     "basis": "family",
+     "hsCommon": "412",
+     "reason": "按霍恩博斯特尔–萨克斯分类号自动找的最近 GM 号（同到的位数越多越像）"
+    }
+   ],
+   "icon": {
+    "id": "game-icons--pipe-organ",
+    "candidates": [
+     "game-icons--pipe-organ",
+     "game-icons--musical-keyboard",
+     "commons--Woman_at_melodeon",
+     "twemoji--1f3b9",
+     "noto-emoji--emoji_u1f3b9",
+     "openmoji-color--1F3B9",
+     "openmoji-black--1F3B9",
+     "fluent-flat--musical_keyboard_flat",
+     "fluent-color--musical_keyboard_color",
+     "lucide--keyboard-music",
+     "streamline-freehand--instrument-electronic-keyboard"
+    ],
+    "borrowedFrom": "Q12460259",
+    "license": "CC-BY-3.0"
+   },
+   "fundamentalRank": null
+  },
+  {
+   "id": "Q1630744",
+   "ids": {
+    "wikidata": "Q1630744",
+    "local": null,
+    "musicxml": "pluck.musical-bow",
+    "gm": [],
+    "hs": "311.1"
+   },
+   "names": {
+    "zh": "乐弓",
+    "en": "musical bow",
+    "ja": "楽弓"
+   },
+   "kind": "instrument",
+   "year": -13000,
+   "yearApprox": false,
+   "lineageYear": -13000,
+   "era": "stone",
+   "communityEra": {
+    "region": "欧洲",
+    "name": "旧石器",
+    "icon": "🦬"
+   },
+   "regions": [
+    "法国"
+   ],
+   "wikipedia": "en:Musical bow",
+   "styles": [
+    {
+     "tag": "tribal",
+     "ear": "western"
+    }
+   ],
+   "fundamentalRank": null
+  },
+  {
+   "id": "x:bei-bangzi",
+   "ids": {
+    "wikidata": null,
+    "local": "x:bei-bangzi",
+    "musicxml": "wood.claves",
+    "gm": [],
+    "hs": null
+   },
+   "names": {
+    "zh": "北梆子",
+    "en": "bei bangzi (northern Chinese wooden clappers)",
+    "ja": ""
+   },
+   "kind": "instrument",
+   "year": null,
+   "yearApprox": false,
+   "lineageYear": null,
+   "era": null,
+   "communityEra": null,
+   "regions": [
+    "中国"
+   ],
+   "styles": [
+    {
+     "tag": "chinese",
+     "ear": "zh"
+    },
+    {
+     "tag": "chinese",
+     "ear": "common"
+    }
+   ],
+   "substitutes": [
+    {
+     "program": 0,
+     "bank": 128,
+     "note": 75,
+     "gmNumber": 75,
+     "gmName": "Claves",
+     "basis": "family",
+     "reason": "两根硬木对击，顶北梆子（AI 判）"
+    }
+   ],
+   "icon": {
+    "id": "qlementine-icons--idiophone",
+    "candidates": [
+     "qlementine-icons--idiophone"
+    ],
+    "borrowedFrom": "Q850118",
+    "license": "MIT"
+   },
+   "fundamentalRank": null
+  }
+ ]
+}

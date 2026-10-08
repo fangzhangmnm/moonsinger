@@ -169,7 +169,7 @@ user：「现在开始好好做乐器这个数据结构，不要偷懒」「关�
 - **GM 号 / MusicXML id**：就是概念 id 束里的两个条目（GM 号 = 哪个 GM 音源能顶；MusicXML id = 导出给别的软件写哪个），不是主键——user 对「投影」一词没想好，交给 AI 把握，按「束里的条目」理解就不需要这个词。
 - **试听不生成演奏者**（user「需要spawn一百个生命周期非常短的『谁来演』吗」）：找人视图里一个**试听台**——临时的、不进休息室的一个槽，按概念列供应商，点哪个预设就用它放本声部的前几小节（或 pad 按键）；A/B 切着听；只在「上场」时才 by value 造一个演奏者。货架在缓存里时切一个预设 22 ms，即时。
 - **角色改了、懒得动歌手牌**（user「如果我把钢琴改成小提琴歌手牌懒得动怎么办」）：角色改概念不碰台上的人（钢琴手照样奏小提琴线，错配标出来、不硬拦）；歌手牌上给一个**建议 chip**「台上的还是钢琴——换成能演小提琴的？[GS 的 Violin]」一点就换，仍是人选、不自动。
-- **落地（v0.4.3）**：`contract.ts` 休息室 v2（`CandidateV2 / InstrumentV2 / Sf2Source / Credit / Spec`）、`performance.ts`（by value 的默认数）、`migrate/` 1→2、冻结样本 `v1-1-2-1`；app 去掉 `quality`；歌手牌三段；弱引用解析（歌里 → 本次 → 设备缓存 → 音源库 → 找文件）；音源缓存 `pwa-sounds`。**v0.4.4**：AudioWorklet 实时合成器（`src/gm/synth-processor.ts` + `synth.ts`，独立 WASM `tsf-standalone.wasm`）接到 pad 的按下 / 松开；设置里缓存总量 / 配额 / 内存 / 放掉。还没做：试听台、建议 chip、角色 `concept` 束、实时播放整首。
+- **落地（v0.4.3）**：`contract.ts` 休息室 v2（`CandidateV2 / InstrumentV2 / Sf2Source / Credit / Spec`）、`performance.ts`（by value 的默认数）、`migrate/` 1→2、冻结样本 `v1-1-2-1`；app 去掉 `quality`；歌手牌三段；弱引用解析（歌里 → 本次 → 设备缓存 → 音源库 → 找文件）；音源缓存 `pwa-sounds`。**v0.4.4**：AudioWorklet 实时合成器（`src/gm/synth-processor.ts` + `synth.ts`，独立 WASM `tsf-standalone.wasm`）接到 pad 的按下 / 松开；设置里缓存总量 / 配额 / 内存 / 放掉。**v0.4.5**：找人视图（`src/ui/finder.ts`，全屏、按概念、默认按年代、试听台 + pad、上场 = 角色 concept 束 by value + 演奏者）；目录 = `vendor/instruments/`（仓鼠数据 v2 快照，取货 = `scripts/gen-instruments.mjs`）。还没做：建议 chip、实时播放整首。
 
 ## 7. 未定 / 还要想的
 

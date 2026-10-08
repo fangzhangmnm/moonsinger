@@ -56,6 +56,9 @@ export interface LoungeRoleV2 {
   sound: string;                       // MusicXML 官方乐器语义 id（<instrument-sound>，src/score/roles.ts）
   active: string;                      // 上场的候选 id（人选的；上不了场 = 不出声、报错、人换，不自动替补）
   candidates: CandidateV2[];
+  /** 2026-10-07 加（可选，不升版本）：角色是什么乐器**概念**——百科的多重编号束 + 名字 by value（user「乐器的百科全书」「多重编号」）。
+   *  sound（MusicXML id）仍是导出给别的软件看的；concept 是真身份，目录（vendor/instruments/）常改也不影响歌。 */
+  concept?: { ids: { wikidata: string | null; local: string | null; musicxml: string | null; gm: { program: number; bank: number }[]; hs: string | null }; name: { zh: string; en: string; ja?: string } };
 }
 export interface CandidateV2 {
   id: string;                          // "c1"…（c1 / c2 = 新歌默认的月读完整 / 元音版）

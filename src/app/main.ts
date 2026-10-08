@@ -25,9 +25,12 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes } from "../gm/sound-cache.ts";
 import { GmSynth } from "../gm/synth.ts";
+import { Finder, type FinderPick } from "../ui/finder.ts";
+import { roleNameOf, roleSoundOf, loadCatalog } from "../gm/catalog.ts";
+import { ICON_CREDITS } from "../gm/instruments.gen.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
 import { type PaperKind, PAPER_KINDS, PAPER_NOTE, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
@@ -80,8 +83,12 @@ const sampler = new Sampler();
 //   松开由乐器自己的包络收尾（user「钢琴按了之后一会声音就没了」「preview的时候那些可以长时间的乐器 包络是不是没做」「做，这个以后我们要做实时播放的」）。
 const synth = new GmSynth(() => singer.unlock(), new URL(`./${__SYNTH_WORKLET__}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 const sound = {
-  down: (p: Pitch, id = "main") => { if (engineNow() === "soundfont") { gmDown(midiOf(p), id); return; } sampler.down(midiOf(p), st.song.hum, id); },
-  up: (id = "main") => { if (engineNow() === "soundfont") gmUp(id); else sampler.up(id); },
+  down: (p: Pitch, id = "main") => {
+    if (finder.isOpen) { if (audition) gmDown(midiOf(p), id); else sampler.down(midiOf(p), st.song.hum, id); return; }   // 试听台：GS 走合成器、月读走元音采样
+    if (engineNow() === "soundfont") { gmDown(midiOf(p), id); return; }
+    sampler.down(midiOf(p), st.song.hum, id);
+  },
+  up: (id = "main") => { if (gmHeld.has(id)) gmUp(id); else sampler.up(id); },
 };
 /** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
 const soundTok = (s: EditorState, i: number, id = "main") => { const t = s.song.tokens[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id); };
@@ -174,7 +181,7 @@ function monoAccept(id: string): boolean {
 }
 const pad = new Pad(padEl, {
   state: () => st,
-  isImpro: () => impro,
+  isImpro: () => impro || finder.isOpen,   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）
   accept: (id) => monoAccept(id),
   onPitch: (p, id) => {
     const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
@@ -318,8 +325,9 @@ function prepareSynth(): Promise<void> {
   return gmPreparing;
 }
 function gmDown(midi: number, id: string): void {
-  const g = activeGm(doc.extras); if (!g) return;
-  if (synth.loaded !== g.subsetSha256) { void prepareSynth(); return; }
+  const a = finder.isOpen && audition ? audition : null;
+  const g = a ? { bank: a.bank, program: a.program, subsetSha256: a.sha256 } : activeGm(doc.extras); if (!g) return;
+  if (synth.loaded !== g.subsetSha256) { if (!a) void prepareSynth(); return; }
   singer.unlock();
   gmUp(id); synth.noteOn(g.bank, g.program, midi, 0.8); gmHeld.set(id, { bank: g.bank, program: g.program, key: midi });
 }
@@ -438,6 +446,7 @@ function openSettings(): void {
     `<div class="set-row"><button class="btn" data-v="default">恢复默认</button>` +
     `<label class="btn" title="选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包<input id="impIn" type="file" multiple hidden /></label></div>` +
     `<pre id="packSt" class="set-packs">…</pre>` +
+    `<details class="set-credit"><summary>乐器目录的图标（第三方，${ICON_CREDITS.length} 个）</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}`).join("\n"))}</pre></details>` +
     `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre></details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的月读模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
@@ -533,6 +542,50 @@ function renderTitle(): void {
 function noCast(what: string): void {
   showError(`「${roleName(doc.extras)}」这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，点谱前面的「${roleName(doc.extras)}」，在「谁来演」选月读。`);
 }
+// ── 找人视图（src/ui/finder.ts）：全屏替掉谱区，pad 当试听键盘；试听台 = 临时的一个槽（不进休息室），「上场」才造演奏者 ──────────
+let audition: { bank: number; program: number; sha256: string; subset: Uint8Array; label: string } | null = null;   // 试听台上的（GS 预设）；null = 月读 / 没选
+const GS = SOUNDS["generaluser-gs-2.0.3"];
+/** 试听台：从 GS 切出这个预设、载进实时合成器（22 ms + 几 MB）；换到月读 = 清掉。 */
+async function setAudition(p: FinderPick | null): Promise<void> {
+  if (!p || p.kind === "voice") { audition = null; synth.allOff(); gmHeld.clear(); return; }
+  try {
+    const bank = await fetchSound(GS, (done) => progress(`下载 ${GS.name} ${Math.round((done / GS.bytes) * 100)}%`)); progress("");
+    const subset = subsetSf2(bank, [{ bank: p.provider.bank, program: p.provider.program }]), sha256 = await sha256Hex(subset);
+    audition = { bank: p.provider.bank, program: p.provider.program, sha256, subset, label: p.provider.gmName };
+    synth.allOff(); gmHeld.clear(); await synth.load(sha256, subset);
+  } catch (e) { progress(""); audition = null; showError(`试听不了：${(e as Error).message}`); }
+}
+/** 用试听台上那位放本声部的开头（前 8 秒；离线渲染）。 */
+async function playHeadWith(p: FinderPick): Promise<void> {
+  if (p.kind === "voice") { playLight("月读（哼）"); return; }
+  if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
+  if (!audition) return;
+  const notes = lightNotes().filter((n) => n.t0 < 8).map((n) => ({ preset: [audition!.bank, audition!.program] as [number, number], key: n.midi, vel: 0.8, t0: n.t0, t1: Math.min(n.t1, 8) }));
+  if (!notes.length) { info("谱上还没有音"); return; }
+  singer.unlock();
+  try { const r = await singer.gm(audition.subset, audition.sha256, notes, GM_SR, 1.5); singer.play(r, () => playIcon(false)); playIcon(true); progress(`${audition.label} · 开头 ${(r.samples.length / r.sr).toFixed(1)} 秒`); }
+  catch (e) { showError(`放不了：${(e as Error).message}`); }
+}
+/** 上场：角色改成这个概念（谱上写它的英文名 + 官方 id + id 束 by value），再造演奏者。mode auto = 不超软上限就嵌、超了回 "over" 让视图问。 */
+async function castPick(p: FinderPick, mode: "auto" | "embed" | "weak"): Promise<"done" | "over"> {
+  const cat = await loadCatalog(new URL(import.meta.url)), c = p.concept;
+  const sound = p.kind === "gs" ? (p.provider.sound ?? roleSoundOf(cat, c)) : roleSoundOf(cat, c);
+  doc.extras = withRoleConcept(doc.extras, { name: roleNameOf(c), sound, concept: { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) } } }, st.song.hum);
+  if (p.kind === "voice") { setActive(CANDIDATE_ID.full); closeFinder(); return "done"; }
+  if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
+  if (!audition) { view.render(); renderTitle(); return "done"; }
+  const { subset, sha256 } = audition, inf = sf2Info(subset);
+  if (mode === "auto" && subset.length > embedSoftLimit) return "over";
+  const fileSha256 = GS.sha256;   // 试听台的整包 = 货架上的那份（哈希就是目录钉的）
+  doc.extras = withSf2Candidate(doc.extras, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, subset, sha256, embed: mode !== "weak",
+    origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, st.song.hum);
+  if (mode === "weak") sessionSubsets.set(sha256, subset);
+  closeFinder(); setActive(activeId(doc.extras)); info(`「${roleNameOf(c)}」上场：${p.provider.gmName}`);
+  return "done";
+}
+const finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder() });
+function openFinder(): void { closeOffer?.(); scoreEl.hidden = true; showPad(true); void finder.show(); }
+function closeFinder(): void { if (!finder.isOpen) return; finder.hide(); audition = null; synth.allOff(); gmHeld.clear(); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); scoreEl.focus(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 function setActive(id: string): void { doc.extras = withActive(doc.extras, id, st.song.hum); synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); }
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");
@@ -689,7 +742,7 @@ function openPartSheet(): void {
       `<div class="part-sec">谁来演（演奏者和他手里的琴；名字不上谱）</div><div class="set-row">` +
       candidates(doc.extras).map((c) => chip(`cand:${c.id}`, c.engine === "unknown" ? `${esc(c.name)}（没人能演）` : esc(c.name), aid === c.id, chipTitle(c)) +
         (aid !== c.id && (c.engine === "soundfont" || c.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc(c.id)}" title="从休息室删掉（它嵌在歌里的声音一起丢）">×</button>` : "")).join("") + `</div>` + status +
-      `<div class="part-sec">找人</div><div class="set-row">` +
+      `<div class="part-sec">找人</div><div class="set-row"><button class="btn primary" data-v="finder" title="全屏的乐器目录：按年代 / 族 / 发声方式 / 风浏览，右边的键盘试听，上场">打开乐器目录…</button></div><div class="set-row">` +
       Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(`${e.description ?? e.name}（${sizeText(e.bytes)}；家族音源库，第一次点才下载、之后留在设备上；${e.license.name}）`)}">从 ${esc(e.name)} 选…</button>`).join("") +
       `<button class="btn" data-v="sf2:pick" title="自己的 .sf2 文件：只把选中的那一件嵌进歌，文件本身不留">从 .sf2 文件选…</button></div>` + pickerHtml() +
       `<div class="offer-msg">选了的琴只把用到的那一件（通常几 MB）嵌进歌里，歌到哪都响。</div>` +
@@ -709,6 +762,7 @@ function openPartSheet(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
     if (!v) return;
+    if (v === "finder") { close(); openFinder(); return; }
     if (v.startsWith("cand:")) setActive(v.slice(5));
     else if (v.startsWith("del:")) { try { doc.extras = withoutCandidate(doc.extras, v.slice(4)); renderTitle(); } catch (err) { showError((err as Error).message); } }
     else if (v.startsWith("find:")) { findBankFile(v.slice(5)); return; }
@@ -963,6 +1017,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
   }
 }
 window.addEventListener("keydown", (e) => {
+  if (finder.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } return; }   // 找人视图开着：只认 Esc（pad 的触屏键照常）
   // 别的表单控件（顶栏的下拉框）拿着焦点：不接，它们自己吃方向键 / 空格。歌词框、记号框的输入框照常路由。
   const t = e.target as HTMLElement | null;
   if (!(e.ctrlKey || e.metaKey) && t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed")))) return;
