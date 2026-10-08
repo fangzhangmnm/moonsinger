@@ -63,7 +63,9 @@ export const BINDINGS: Binding[] = [
   { id: "rest", group: "写音", keys: [{ code: "Digit0" }, { code: "Numpad0" }], act: cmd({ k: "rest" }),
     does: { write: "休止" } },
   { id: "bar", group: "写音", keys: [{ code: "Enter" }, { code: "NumpadEnter" }, { code: "Backslash", shift: true }], show: "Enter / |", act: cmd({ k: "bar" }),
-    does: { write: "小节线；连按两次 = 句（这一句到这儿：换行、换气、「合」的边界）", edit: "在选中后面插小节线" } },
+    does: { write: "小节线", edit: "在选中后面插小节线" } },
+  { id: "phrase", group: "写音", keys: [{ code: "Enter", shift: true }, { code: "NumpadEnter", shift: true }], show: "Shift+Enter", act: cmd({ k: "phrase" }),
+    does: { write: "句号（这一句到这儿：「合」挪字的边界；没有语义：不换气、不换行、不是小节线）", edit: "在选中后面插句号" } },
   // ── 时值 ──
   { id: "shorter", group: "时值", keys: [{ code: "Digit8" }, { code: "Numpad8" }], act: cmd({ k: "shorter" }),
     does: { write: "短：下一个音的时值减半（到三十二分为止）", edit: "选中的音减半" } },

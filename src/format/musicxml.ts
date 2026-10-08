@@ -7,7 +7,8 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { type Token, type NoteTok, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs } from "../score/song.ts";
+import { type Token, type NoteTok, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches } from "../score/song.ts";
+import { midiOf } from "../score/pitch.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
 import { syllableLangs, keepOnlyOverrides } from "../score/lang.ts";
@@ -97,8 +98,6 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
   const langs = syllableLangs(toks);
   const measures: { body: string[]; manual: boolean }[] = [];
   let cur: string[] = [], ticks = 0, len = measureLen(H.beats, H.beatType);
-  // 句：前一个音的 <breath-mark/>（读回来从它认；不写 new-system——句不换行）
-  let lastNote: { arr: string[]; idx: number } | null = null;
   const close = (manual: boolean) => { measures.push({ body: cur, manual }); cur = []; ticks = 0; };
   const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : `<clef><sign>${clef}</sign><line>${clef === "F" ? 4 : 2}</line></clef>`;
   cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time>${clefs}</attributes>`);
@@ -117,10 +116,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       if (first && br) cur.push(`<direction placement="above"><direction-type><rehearsal>${esc(br)}</rehearsal></direction-type></direction>`);
     }
     if (t.kind === "bar") { close(true); continue; }
-    if (t.kind === "phrase") {
-      if (lastNote) { const a = lastNote.arr, k = lastNote.idx, mark = `<articulations><breath-mark/></articulations>`; a[k] = a[k].includes("</notations>") ? a[k].replace("</notations>", mark + "</notations>") : a[k].includes("<lyric") ? a[k].replace("<lyric", `<notations>${mark}</notations><lyric`) : a[k].replace("</note>", `<notations>${mark}</notations></note>`); }
-      continue;
-    }
+    if (t.kind === "phrase") continue;   // 句号不算打谱符号（user 2026-10-08）：不进 MusicXML，存 .moonsinger/score.json（project.ts）
     if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") {
       if (ticks >= len || (t.kind === "time" && ticks > 0)) close(false);   // 满了的小节先断开；拍号变了从新小节开始
       if (t.kind === "key") cur.push(`<attributes><key><fifths>${t.fifths}</fifths></key></attributes>`);
@@ -145,10 +141,17 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       }
       x += `<voice>1</voice>`;
       if (staves === 2) x += `<staff>${staffs[i]}</staff>`;
-      if (ty) x += `<type>${ty.type}</type>` + "<dot/>".repeat(ty.dots) + (ty.tuplet ? `<time-modification><actual-notes>${ty.tuplet[0]}</actual-notes><normal-notes>${ty.tuplet[1]}</normal-notes></time-modification>` : "");
+      const typeXml = ty ? `<type>${ty.type}</type>` + "<dot/>".repeat(ty.dots) + (ty.tuplet ? `<time-modification><actual-notes>${ty.tuplet[0]}</actual-notes><normal-notes>${ty.tuplet[1]}</normal-notes></time-modification>` : "") : "";
+      x += typeXml;
+      const chordXml: string[] = [];
       if (t.kind === "note") {
         const tieIn = firstPiece ? !!t.tie : true, tieOn = last ? tieOut : true;
         if (tieIn || tieOn) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>`;
+        // 叠音：跟在后面的 <chord/> 音（同时值、同连音线；歌词只在第一个上）
+        for (const [ci, cp] of (t.chord ?? []).entries()) {
+          chordXml.push(`<note id="${id}c${ci + 1}"><chord/>` + pitchXml(cp) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` +
+            (staves === 2 ? `<staff>${staffs[i]}</staff>` : "") + typeXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
+        }
         if (!lyricDone && t.lyric) {
           if (t.lyric === MELISMA_MARK) x += `<lyric number="1"><extend/></lyric>`;
           else {   // 一个音上几个音节（「+」连着的）= <elision/> 隔开的几段 text（MusicXML 的标准写法）
@@ -160,7 +163,8 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
         lyricDone = true;
       }
       x += `</note>`;
-      cur.push(x); lastNote = { arr: cur, idx: cur.length - 1 };
+      cur.push(x);
+      for (const cx of chordXml) cur.push(cx);
       ticks += piece; left -= piece; k++;
     }
     if (t.kind === "note" && !t.pitch) unwritten.push(`n${t.id}`);
@@ -248,7 +252,15 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           if (kid(c, "cue")) { drop("提示音符"); continue; }
           const v = childText(c, "voice") ?? "1"; if (voice === null) voice = v;
           if (v !== voice) { drop("同一声部里的第二条旋律"); continue; }
-          if (kid(c, "chord")) { drop("叠音（同时响的音）"); continue; }
+          if (kid(c, "chord")) {   // 叠音：并进前一个音（最高的当旋律线）
+            const prevN = body[body.length - 1], pch = kid(c, "pitch");
+            if (prevN && prevN.kind === "note" && prevN.pitch && pch) {
+              const pp: Pitch = { step: (childText(pch, "step") ?? "C") as Pitch["step"], alter: Number(childText(pch, "alter") ?? "0"), octave: Number(childText(pch, "octave") ?? "4") };
+              const ps = allPitches(prevN);
+              if (!ps.some((q) => midiOf(q) === midiOf(pp))) { const w = withPitches(prevN, [...ps, pp]); prevN.pitch = w.pitch; if (w.chord) prevN.chord = w.chord; else delete prevN.chord; }
+            } else drop("叠音（前面没有能叠的音）");
+            continue;
+          }
           headPhase = false;
           const dur = Math.round((Number(childText(c, "duration") ?? "0") * TPQ) / divisions);
           if (dur <= 0) continue;
@@ -274,7 +286,6 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
             } else if (kid(ly, "extend")) tok.lyric = MELISMA_MARK;
           }
           mark(tok);
-          if (kids(c, "notations").some((n) => kids(n, "articulations").some((a) => !!kid(a, "breath-mark")))) body.push({ kind: "phrase", id: 0 });   // 换气记号 = 句
         } else if (c.name === "backup" || c.name === "forward") { /* 第二条旋律的定位，跟着那些音一起不读 */ }
         else if (c.name === "harmony") drop("和弦记号");
       }

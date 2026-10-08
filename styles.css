@@ -493,5 +493,17 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .sel-bar .sel-n { color: var(--muted); font-size: 12px; padding: 0 4px; }
 
 /* 句（换气记号）、隐藏的纸 */
-.staff-svg .breath { fill: var(--ink); }
+.staff-svg .phrase-mark { fill: var(--muted); }
 .staff-svg .part-stub.hidden-note { fill: var(--muted); }   /* 灰字（user「红字：应该用灰字」） */
+
+/* 叠音（polyphony，2026-10-08）：单声乐器的声部里下面的音灰掉 */
+.staff-svg .note.chord-mute { fill: var(--muted); stroke: var(--muted); }
+/* pad：叠音键（Shift 逻辑同 /2）；单声乐器的声部叠不了 = 灰 */
+.pad-tools .btn.stack.off { opacity: .3; pointer-events: none; }
+@container (max-width: 520px) { .pad-tools.writes .btn.stack { display: none; } }
+/* pad 符号层（像 iOS 键盘的 .?123 翻过去那一页；user 2026-10-08「软键盘里面后面有一个符号模式」「row col 超了可以拖动滚」） */
+.pad-grid.symbols { overflow-y: auto; touch-action: pan-y; align-content: start; grid-auto-rows: var(--key-h); -webkit-overflow-scrolling: touch; }
+.pad-key.sym .big { font-size: 20px; font-weight: 600; line-height: 1; }
+.pad-key.sym .smufl { font-family: "Bravura"; font-size: 26px; line-height: 1; display: inline-block; height: 22px; }
+.pad-key.sym small { font-size: 10px; color: var(--muted); }
+.pad-tools .btn.sym-toggle.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }

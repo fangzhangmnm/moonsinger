@@ -70,7 +70,7 @@ check(canon(after) === canon(before), "打开存的文件：逐 token 相同（�
 await p.click("#fileBtn");
 const [fc2] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="open"]')]);
 await fc2.setFiles(`${DIR}/twinkle.musicxml`); await p.waitForTimeout(300);
-const notice = await p.textContent(".notice-error .notice-text"); check(notice.includes("叠音") && notice.includes("还没人上场"), "别家谱：报出没读进来的和没人上场");
+const notice = await p.textContent(".notice-error .notice-text"); check(notice.includes("还没人上场") && !notice.includes("叠音"), "别家谱：报出没人上场（叠音 2026-10-08 起读进来，不再算丢）");
 const partName = await p.textContent("#score text.part-name");
 check(partName.length > 0 && !!(await p.$("#score text.part-name.empty")) && (await title()) === "twinkle" && (await p.textContent("#score text.song-title")) === "Twinkle",
   "别家谱：谱前 = 它的声部名（淡色 = 没人上场）、顶栏 = 文件名、纸上 = 谱里的歌名", partName);

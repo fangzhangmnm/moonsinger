@@ -2,13 +2,13 @@
 // 键盘怎么变成命令 = src/input/keys.ts（一张表）；这里只管命令做什么。
 import type { Dir } from "./pitch.ts";
 import {
-  type EditorState, writeDegree, writeRest, writeBar, shorter, longer, setTuplet, extend, tapAcc,
+  type EditorState, writeDegree, writeRest, writeBar, writePhrase, shorter, longer, setTuplet, extend, tapAcc,
   octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward,
   transposeSel, modulateSel, selectToEdge, tr, toggleStaff } from "./song.ts";
 
 export type Command =
   | { k: "degree"; degree: number; dir: Dir }
-  | { k: "rest" } | { k: "bar" }
+  | { k: "rest" } | { k: "bar" } | { k: "phrase" }
   | { k: "shorter" } | { k: "longer" } | { k: "tuplet" } | { k: "extend" }
   | { k: "acc"; acc: 1 | -1 }
   | { k: "octave"; d: number } | { k: "step"; d: number } | { k: "alter"; d: number }
@@ -22,7 +22,8 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
   switch (c.k) {
     case "degree": return writeDegree(st, c.degree, c.dir);
     case "rest": return writeRest(st);
-    case "bar": return writeBar(st, now);
+    case "bar": return writeBar(st);
+    case "phrase": return writePhrase(st);
     case "shorter": return shorter(st);
     case "longer": return longer(st);
     case "tuplet": return setTuplet(st, st.input.tuplet ? 0 : 3);

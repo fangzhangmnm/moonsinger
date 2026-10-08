@@ -1,11 +1,11 @@
 // clipboard.ts —— 选区的复制 / 剪切 / 粘贴 / 全选（纯函数）+ 简谱文字（系统剪贴板那一层）。created 2026-10-08 by Claude Fable 5.1
 // user 2026-10-08「剪贴板两层 同意」：app 内存一份原 token（连歌词、连音、记号）；系统剪贴板放一行简谱文字（能贴进聊天，反过来也能把简谱文字贴进来当输入）。
 // 简谱文字的语法（相对「选区开头生效的调」写，贴的时候相对光标处的调读）：
-//   音 = [升降][音级][八度][时值][/歌词]：升降 # / b（相对调内音）；音级 1–7；八度 ' 高一个 , 低一个（可叠）；时值：不写 = 四分，_ 八分，__ 十六分，___ 三十二分，. 附点；
+//   音 = [升降][音级][八度][时值][/歌词]：升降 # / b（相对调内音）；音级 1–7；八度 ' 高一个 , 低一个（可叠）；叠音 = 几个音高用 & 连（1&3&5）；时值：不写 = 四分，_ 八分，__ 十六分，___ 三十二分，. 附点；
 //   连音线 / 延音：^ 前缀 = 连着前一个音（tie）；0 = 休止（时值同音）；- = 前一个音 / 休止再加一个四分（简谱的横线）；| = 小节线；单独一个 , = 句（换气 / 换行）；
 //   记号：[1=G] 调号、[3/4] 拍号、[T=90] 速度；歌词里的空格 / 斜杠不许（歌词只认到下一个空格）。
 //   写不出的时值（连音 / 奇怪的 tick 数）写成 (tick)：1(560)。
-import { type EditorState, type Token, type NoteTok, type Timed, tr, withTrack, headLen, keyAt, isMark, TPQ } from "./song.ts";
+import { type EditorState, type Token, type NoteTok, type Timed, tr, withTrack, headLen, keyAt, isMark, TPQ, allPitches, withPitches } from "./song.ts";
 import { type Pitch, STEPS, type Step, stepIndex, diatonicIndex, tonicStepIndex, keyAlter, KEY_LABEL } from "./pitch.ts";
 
 /** 选中的那一段（没选中 = null）。原样切片，id 原样（贴的时候重编）。 */
@@ -68,7 +68,7 @@ export function toJianpu(toks: Token[], fifths: number): string {
     if (t.kind === "phrase") { out.push(","); continue; }   // 句 = 单独一个逗号（换气）
     const suf = durText(t.dur), lead = suf.startsWith(" -") ? "" : suf, tail = suf.startsWith(" -") ? suf : "";
     if (t.kind === "rest") { out.push(`0${lead}${tail}`); continue; }
-    const body = t.pitch ? (() => { const { degree, shift, acc } = toDegree(t.pitch, f); return `${accText(acc)}${degree}${octText(shift)}`; })() : "x";
+    const body = t.pitch ? allPitches(t).map((pp) => { const { degree, shift, acc } = toDegree(pp, f); return `${accText(acc)}${degree}${octText(shift)}`; }).join("&") : "x";   // 叠音 = 1&3&5（从高到低）
     const ly = t.lyric ? `/${t.lyric.replace(/\s+/g, "")}${t.hyph ? "-" : ""}` : "";
     out.push(`${t.tie ? "^" : ""}${body}${lead}${ly}${tail}`);
   }
@@ -91,16 +91,15 @@ export function fromJianpu(text: string, fifths: number): Token[] | null {
     if (m) { out.push({ kind: "time", id: id++, beats: Number(m[1]), beatType: Number(m[2]) }); continue; }
     m = /^\[T=(\d+)\]$/.exec(w);
     if (m) { out.push({ kind: "tempo", id: id++, bpm: Number(m[1]) }); continue; }
-    m = /^(\^?)([#b]*)([0-7x])(['’,]*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w);
+    m = /^(\^?)((?:[#b]*[0-7x]['’,]*)(?:&[#b]*[1-7]['’,]*)*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w);
     if (!m) return null;
-    const [, tie, accS, deg, oct, unders, dot, ticks, lyric, hyph] = m;
+    const [, tie, body, unders, dot, ticks, lyric, hyph] = m;
     let dur = ticks ? Number(ticks) : TPQ / 2 ** unders.length;
     if (dot && !ticks) dur *= 1.5;
-    if (deg === "0") { out.push({ kind: "rest", id: id++, dur }); n++; continue; }
-    const acc = accS ? (accS[0] === "#" ? accS.length : -accS.length) : 0;
-    const shift = [...oct].reduce((a, c) => a + (c === "," ? -1 : 1), 0);
-    const pitch = deg === "x" ? null : fromDegree(Number(deg), shift, acc, f);
-    const t: NoteTok = { kind: "note", id: id++, pitch, dur, lyric: lyric ?? null };
+    if (body === "0") { out.push({ kind: "rest", id: id++, dur }); n++; continue; }
+    const heads = body.split("&").map((h) => { const hm = /^([#b]*)([0-7x])(['’,]*)$/.exec(h)!; const acc = hm[1] ? (hm[1][0] === "#" ? hm[1].length : -hm[1].length) : 0; const shift = [...hm[3]].reduce((a, c) => a + (c === "," ? -1 : 1), 0); return hm[2] === "x" ? null : fromDegree(Number(hm[2]), shift, acc, f); });
+    const t0: NoteTok = { kind: "note", id: id++, pitch: null, dur, lyric: lyric ?? null };
+    const t = heads[0] ? withPitches(t0, heads.filter((h): h is NonNullable<typeof h> => !!h)) : t0;
     if (hyph) t.hyph = true; if (tie) t.tie = true;
     out.push(t); n++;
   }

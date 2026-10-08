@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
+import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -230,6 +230,21 @@ function halfKey(down: boolean): void {
     if (halfWrote && half !== "lock") setHalf("off");   // 按住写过 = 松手回去（同 iOS 按住 Shift 打字）
   }
 }
+/** 叠键（pad）：和 /2 一个逻辑（点一下 = 下一个按的音叠到前一个音上；350 ms 内连点两下 = 锁住，叠着写；按住写 = 按住期间；松手回去）。 */
+let stack: "off" | "once" | "lock" = "off", stackAt = 0, stackHeld = false, stackWrote = false;
+function setStack(m: "off" | "once" | "lock"): void { stack = m; pad.showStack(m); }
+function stackKey(down: boolean): void {
+  if (!canStack()) { if (down) info(`「${roleName(doc.extras, curRole())}」是单声乐器，这个声部叠不了音`); return; }
+  if (down) {
+    const t = performance.now();
+    stackHeld = true; stackWrote = false;
+    setStack(stack === "off" ? "once" : stack === "once" && t - stackAt < 350 ? "lock" : "off");
+    stackAt = t;
+  } else {
+    stackHeld = false;
+    if (stackWrote && stack !== "lock") setStack("off");
+  }
+}
 /** 升降键（pad）：和 Shift 一个逻辑（点一下 = 下一个、350 ms 内连点两下 = 锁、再点 = 关；按住写 = 按住期间、松手回去），
  *  按着上下滑 = 换一种（𝄪 / ♯ / ♭ / 𝄫；user「按是当作shift，滑动是toggle which shift」）。有选中 = 选中的音直接升降（同电脑键盘的 [ ]）。 */
 let accPrior: Pick<InputState, "acc" | "accMode" | "accAt"> | null = null, accWrote = false, accSlid = false;
@@ -262,6 +277,10 @@ const padNotes = new Map<string, { index: number; base: Pitch }>();
  *  模糊护栏：只有「上一个写进去的音还按着，而且才过了不到 CHORD_MS」才算同时按、不写不响不亮；
  *  快速连按（前一根手指还没抬，但已经隔开了）照写，抬过手的更不管。手指和电脑键盘共用一份；弹（只唱不写）不管，几个音一起响。 */
 const CHORD_MS = 50;
+const CHORD_WIN = 80;   // 能叠音的声部：前一个音 80 ms 内再按一个键（前一个还按着）= 叠在一起（user「同时按同意」）
+let lastWrite = { index: -1, at: -Infinity };
+/** 光标所在声部的乐器能叠音吗（SoundFont = 能；月读 / 元音 / 没人 = 单声，护栏：pad 的叠键灰掉、同时按也只写第一个）。 */
+const canStack = (): boolean => engineNow() === "soundfont";
 const monoHeld = new Set<string>();
 let monoAt = -Infinity;
 function monoAccept(id: string): boolean {
@@ -272,14 +291,26 @@ function monoAccept(id: string): boolean {
 const pad = new Pad(padEl, {
   state: () => st,
   isImpro: () => impro || finder.isOpen,   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）
-  accept: (id) => monoAccept(id),
+  accept: (id) => (canStack() ? (monoHeld.add(id), true) : monoAccept(id)),   // 能叠音的声部：同时多按都收（80 ms 内 = 叠在一起）；单声乐器照旧只写第一个
   // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
   onPitch: (p, id) => {
     if (finder.isOpen) return;
+    const now = performance.now();
+    // 叠音：叠键开着（点一下 / 锁住 / 按住）、或两键同时按（前一个 80 ms 内刚写、还按着）→ 叠到前一个音上（XOR，最后一个留着）；单声乐器的声部永远不叠（护栏）
+    if (canStack() && (stack !== "off" || (lastWrite.index >= 0 && now - lastWrite.at < CHORD_WIN && monoHeld.size > 1))) {
+      const i = stack !== "off" ? -1 : lastWrite.index;
+      update(i >= 0 ? toggleChordPitch(st, i, soundingPitch(st, p).pitch) : stackPitch(st, p));
+      padNotes.set(id, { index: -1, base: p });
+      if (stack === "once" && !stackHeld) setStack("off"); if (stackHeld) stackWrote = true;
+      return;
+    }
     const i = writeAndLocate((s) => writePitch(s, p)), t = tr(st)[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
+    lastWrite = { index: i, at: now };
     afterWrite();
   },
+  onStack: (down) => stackKey(down),
+  canStack: () => canStack(),
   onAlter: (id, alt) => {
     if (finder.isOpen) return;   // 临时离调：只管这一个音（滑回中间 = 还原）；重新唱一下让人听见
     const n = padNotes.get(id); if (!n) return;
@@ -358,28 +389,37 @@ function songLangOf(tokens: Token[]): SingLang {
 const LEAD_IN = 0.5;   // 月读核心 OPT.leadIn（sing-core.mjs）：第一个元音前留的秒数
 const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。tempoMap = 第一个声部的速度表（别的声部按它算秒数）。 */
-function lightNotes(tokens: Token[], tempoMap: TempoMap): { midi: number; t0: number; t1: number }[] {
+function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false): { midi: number; t0: number; t1: number }[] {
   const notes: { midi: number; t0: number; t1: number }[] = [];
+  let open = new Map<number, { midi: number; t0: number; t1: number }>();   // 上一个音正在响的各音高（连音线按音高接）
   for (const { index, tok, t0, t1 } of timeline(tokens, tempoMap)) {   // 秒数按速度记号一段一段算好了
     if (tok.kind !== "note") continue;
-    const midi = midiOf(effectivePitch(tokens, index)), last = notes[notes.length - 1];
-    if (tok.tie && last && last.midi === midi) { last.t1 = t1; continue; }
-    notes.push({ midi, t0, t1 });
+    const ps = poly && tok.pitch ? allPitches(tok) : [effectivePitch(tokens, index)];   // 单声引擎只拿最上面那条线
+    const nextOpen = new Map<number, { midi: number; t0: number; t1: number }>();
+    for (const p of ps) {
+      const midi = midiOf(p), prev = tok.tie ? open.get(midi) : undefined;
+      if (prev) { prev.t1 = t1; nextOpen.set(midi, prev); continue; }
+      const n = { midi, t0, t1 }; notes.push(n); nextOpen.set(midi, n);
+    }
+    open = nextOpen;
   }
   return notes;
 }
 /** 光标所在声部压平后的一串 + 速度表（试听「听开头」、月读哼用）。 */
-const curFlat = () => ({ tokens: flattenPart(st.song, st.at.part).tokens, map: tempoMapOf(st.song) });
+/** 播放 / 试听的范围跟着视图走：本段 = 只有光标所在的纸；全部 = 整首（导出永远整首）。user 2026-10-08「为什么在本段视图下播放还是播放全部了？」 */
+const playSong = (): Song => (viewScope === "segment" ? songOnlyPaper(st.song, st.at.paper) : st.song);
+const curFlat = () => ({ tokens: flattenPart(playSong(), st.at.part).tokens, map: tempoMapOf(playSong()) });
 /** 一个声部渲染出来的声音：samples 的 0 秒对应谱上的第 at 秒（月读的前面有 leadIn、采样器前面有 0.1 s，混音时扣掉）。 */
 interface Rendered { samples: Float32Array; sr: number; at: number }
 /** 同一份谱 + 同一个演奏者只算一次（再播 / 导出直接用上次的）；按声部各存一份。 */
 const lastRender = new Map<string, { key: string; r: Rendered }>();
 const GM_SR = 44100;
 /** 一个声部按它上场的演奏者出声（离线渲染）：月读 = worker 里唱；元音版 = 采样器；SoundFont = TinySoundFont。没人上场 / 响不了 = 抛错（不出声、报错、人换）。 */
-async function renderPart(part: PartDef): Promise<Rendered | null> {
+async function renderPart(part: PartDef, whole = false): Promise<Rendered | null> {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`「${roleName(doc.extras, role)}」还没有人上场`);
-  const { tokens } = flattenPart(st.song, part.id), map = tempoMapOf(st.song);
+  const song = whole ? st.song : playSong();
+  const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map);
     if (!score.SCORE.length) return null;
@@ -390,7 +430,7 @@ async function renderPart(part: PartDef): Promise<Rendered | null> {
     const out = { samples: r.samples, sr: r.sr, at: first - LEAD_IN };
     lastRender.set(part.id, { key, r: out }); return out;
   }
-  const notes = lightNotes(tokens, map);
+  const notes = lightNotes(tokens, map, eng === "soundfont");   // SoundFont 叠音全响；元音采样器只唱最上面那条线
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
     const key = JSON.stringify(["vowel", notes, st.song.hum]), had = lastRender.get(part.id);
@@ -416,10 +456,10 @@ function micOf(part: PartDef): { gainDb: number; pan: number } {
 }
 /** 整首 = 各声部各自渲染再混成立体声（线性重采样到 44.1k；麦克风增益 / 等功率声像；超过 0 dB 整体压回来）。
  *  哪个声部响不了 = 那个声部不出声、报错，其余照出（user「不是显示自动上，而是就是不出声，报错，人类手动换」）。 */
-async function renderMix(): Promise<{ left: Float32Array; right: Float32Array; sr: number } | null> {
+async function renderMix(whole = false): Promise<{ left: Float32Array; right: Float32Array; sr: number } | null> {
   const parts = audibleParts(), got: { part: PartDef; r: Rendered }[] = [], errs: string[] = [];
   for (const part of parts) {
-    try { const r = await renderPart(part); if (r) got.push({ part, r }); }
+    try { const r = await renderPart(part, whole); if (r) got.push({ part, r }); }
     catch (e) { errs.push(`「${roleName(doc.extras, part.role)}」：${(e as Error).message}`); }
   }
   if (errs.length) showError(`${errs.join("；")}。${got.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
@@ -514,7 +554,7 @@ async function exportSong(): Promise<void> {
   if (exporting || singing) return;
   exporting = true;
   try {
-    const m = await renderMix();
+    const m = await renderMix(true);   // 导出永远整首（播放才跟视图范围）
     if (!m) { progress(""); return; }
     progress("编 mp3…");
     const mono = new Float32Array(m.left.length);   // mp3 这一版单声道（左右平均；声像以后随立体声导出一起做）
@@ -656,7 +696,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null }),
-  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
+  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(st, i, p)), playSong: () => playSong(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
@@ -851,7 +891,8 @@ function partViews(): PartView[] {
   const labels = partLabels(st.song, doc.extras);
   return st.song.parts.map((p, k) => {
     const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : ""].filter(Boolean);
-    return { id: p.id, name: labels[k], empty: (activeInstrument(doc.extras, p.role)?.engine ?? "unknown") === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges };
+    const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown";
+    return { id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont" };
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */

@@ -1,7 +1,7 @@
 // score-view.ts —— 谱面板：画谱、指针、光标跟随、就地写歌词。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改；2026-10-08 多声部多纸（Claude Fable 5.1）
 // 选中 = 改，光标 = 写（user「智能识别，选中音符就是改，光标就是写 对」）：
 //   2026-10-08 改的手感（user「长按一个音 = 选中它、进选区态。轻点永远不选中，只放光标 + 出声…同意，笔也长按」「带子 + 棒棒糖把手 和我想的一样」）：
-//   **轻点音符 = 光标放到它后面 + 响一下（手指 / 笔 / 鼠标都一样）；长按（0.42 s 不动）= 选中它、进选区态，不抬手接着拖 = 扩选；选区两端各一个棒棒糖把手（拖 = 扩 / 缩）；
+//   **轻点音符 = 光标放到它后面（不响、不选中；手指 / 笔 / 鼠标都一样）；长按（0.42 s 不动）= 选中它、进选区态，不抬手接着拖 = 扩选；选区两端各一个棒棒糖把手（拖 = 扩 / 缩）；
 //   Shift+点 = 把选中扩到它（笔 / 鼠标）；点别处 = 放光标（选区消失）。笔 / 鼠标按住音符立刻拖 = 改音高 / 时值（和长按用时间分开：0.42 s 内动了就是拖）。
 //   点歌词那一行 = 在那个音下面打开歌词框；
 //   点谱面写音 2026-10-07 拿掉（user「先去掉触碰加音符的功能，以后用专门的toolstate做」）——指针现在只选、只拖、只放光标；
@@ -252,8 +252,7 @@ export class ScoreView {
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t = tr(this.host.get())[hit.index] as NoteTok;
       this.drag = { index: hit.index, d0: hit.d, dur0: t.dur, x0: p.x, y0: p.y, axis: "", pid: e.pointerId, heard: hit.d };
-      this.el.setPointerCapture(e.pointerId);
-      this.host.audition?.(hit.index, true);
+      this.el.setPointerCapture(e.pointerId);   // 按下不响（轻点 = 光标，不预览；user 2026-10-08「光标点选不标蓝音的话那么也不用 preview 吧」）；开始拖音高才响
       this.armPress(e, p, hit);
       return;
     }
@@ -403,7 +402,7 @@ export class ScoreView {
     if (!g.axis) {
       if (Math.hypot(dx, dy) < 6) return;
       g.axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
-      if (g.axis === "x") this.host.release?.();   // 改时长不出声
+      if (g.axis === "y") this.host.audition?.(g.index, true);   // 拖音高：从这一下起一直响、换到新音高就换（改时长不出声）
     }
     const st = this.host.get();
     if (g.axis === "y") {
@@ -428,10 +427,8 @@ export class ScoreView {
       if (pr.fired || extended) { this.finger = null; if (this.drag) { this.host.release?.(); this.drag = null; } this.box = null; this.boxEl.hidden = true; return; }   // 长按选过了：抬手到此为止
       if (pr.hit && !pr.moved) {   // 轻点在音上
         this.finger = null; this.box = null;
-        const heard = !!this.drag;   // 笔 / 鼠标按下时已经响过
         if (this.drag) { this.host.release?.(); this.drag = null; }
-        this.tapNote(pr.hit, pr.shift);   // 先把焦点换到那条 track（别的声部的音：索引是那条的），再响
-        if (!heard) this.host.audition?.(pr.hit.index);
+        this.tapNote(pr.hit, pr.shift);   // 轻点 = 光标到它后面，不响、不选中
         return;
       }
     }

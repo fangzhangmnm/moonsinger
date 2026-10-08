@@ -89,7 +89,10 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     const parts = song.parts.flatMap((part, k) => (p.tracks[part.id] ? [{ info: infos[k], tokens: p.tracks[part.id] }] : []));
     const w = writeMusicXml({ title: song.title, movementTitle: p.name || undefined, paper: song.paper, credits: song.credits, parts }, meta);
     files[paperFile(p.id)] = strToU8(w.xml);
-    return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...(p.hidden ? { hidden: true } : {}) };
+    // 句号（不算打谱符号，不进 MusicXML）：每个声部里「句号跟在哪个 token 后面」（那个 token 的 id）
+    const phrases: Record<string, number[]> = {};
+    for (const [pid, toks] of Object.entries(p.tracks)) { const ids = toks.flatMap((t, k) => (t.kind === "phrase" && k > 0 ? [toks[k - 1].id] : [])); if (ids.length) phrases[pid] = ids; }
+    return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...(Object.keys(phrases).length ? { phrases } : {}), ...(p.hidden ? { hidden: true } : {}) };
   });
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, padMeasures: true, parts: song.parts.map((part, k) => {
@@ -326,6 +329,8 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     const r = readMusicXml(strFromU8(b), { manualBars: (p.manualBars as Record<string, number[]> | undefined) ?? {}, unwritten: (p.unwritten as string[] | undefined) ?? [] });
     reads.push(r);
     const seg = paperOfRead(String(p.id), r); if (p.hidden === true) seg.hidden = true;
+    const ph = p.phrases as Record<string, number[]> | undefined;   // 句号：插回那些 token 后面（id 读的时候保留着；句号 token 本身 id 0 = 之后重编）
+    if (ph) for (const [pid, ids] of Object.entries(ph)) { const toks = seg.tracks[pid]; if (!toks) continue; for (const id of ids) { const k = toks.findIndex((t) => t.id === id); if (k >= 0 && toks[k + 1]?.kind !== "phrase") toks.splice(k + 1, 0, { kind: "phrase", id: 0 }); } }
     papers.push(seg);
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;

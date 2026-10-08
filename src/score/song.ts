@@ -33,11 +33,13 @@ export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
 /** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[] }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+//   chord（2026-10-08 polyphony）= 叠音：pitch 之外的音高，都比 pitch 低、从高到低；pitch = 最高的那个 = 旋律线（唱的人只读它：user「一个 Polyphony 换月读…应该是只读上面的旋律线」）。MusicXML = <chord/>。
 export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
 export interface BarTok { kind: "bar"; id: number }
-/** 句（2026-10-08，Claude Fable 5.1；user「现在 || 没有这个我碰到稍微长一点的曲子都快疯了」「歌词的句号可能需要这个」）：这一句到这儿 = 换气记号 + 「合」挪字的边界。
- *  **不换行**（user「不应该按照句换行，打谱软件没这么干的」）、不是小节线（不参与数拍、弱起照旧）。连按两次「|」或歌词里打句读插入。存 MusicXML = 前一个音的 <breath-mark/>。 */
+/** 句号（2026-10-08，Claude Fable 5.1；user「现在 || 没有这个我碰到稍微长一点的曲子都快疯了」「歌词的句号可能需要这个」「呼吸就是呼吸，然后句号另外算，不自动呼吸，没有语义，或者只提示月读，不算打谱符号」）：
+ *  这一句到这儿。**没有语义**：不换行（「不应该按照句换行，打谱软件没这么干的」）、不换气、不是小节线（不数拍、弱起照旧）；只给「合」挪字当边界，画成歌词行上一个小「。」。
+ *  pad 符号层的「句号」键 / Shift+Enter / 歌词里打句读插入。**不进 MusicXML**（不算打谱符号），存 .moonsinger/score.json（papers[].phrases）。 */
 export interface PhraseTok { kind: "phrase"; id: number }
 export interface KeyTok { kind: "key"; id: number; fifths: number }
 export interface TimeTok { kind: "time"; id: number; beats: number; beatType: number }
@@ -86,7 +88,6 @@ export interface InputState {
   accAt: number;                      // 上一次点 Shift 的时刻（ms，判连点）
   inputFifths: number;                // 「1=」= 输入设备（pad / 电脑键盘）自己的调，默认 C；不跟谱上的调号（2026-10-07 user「把pad想成一个独立的medo式的输入设备，假设没有谱」「如果一个谱有好几个调怎么算」）
   inputScale: string;                 // pad 的调式（src/score/scales.ts 的 id），默认大调；只管 pad 上排哪些音（user「1=F能不能也做成两个的滚轮，右边可以换调性」）
-  barAt: number;                      // 上一次按「|」的时刻（ms；0 = 没按过）：450 ms 内再按一下 = 刚插的小节线换成「句」
 }
 
 /** 本次输入记录：退格撤回最后一笔（写字头在，记录就在）。 */
@@ -123,7 +124,7 @@ export function emptySong(m: { fifths?: number; beats?: number; beatType?: numbe
 export function songOf(tokens: Token[], rest: Partial<Omit<Song, "parts" | "papers">> = {}): Song {
   return { hum: "n", ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
 }
-export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", barAt: 0 }; }
+export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major" }; }
 /** 整首歌最大的 token id（新 id 从它后面编；所有纸、所有声部一起算，id 全歌唯一）。 */
 export function maxId(song: Song): number { let m = 0; for (const p of song.papers) for (const ts of Object.values(p.tracks)) for (const t of ts) m = Math.max(m, t.id); return m; }
 /** 第一条有内容的 track（第一张纸上第一个在场的声部）。 */
@@ -175,6 +176,34 @@ export function effectivePitch(tokens: Token[], i: number): Pitch {
   if (t.kind === "note" && t.pitch) return t.pitch;
   return prevPitch(tokens, i) ?? HOME;
 }
+// ── 叠音（polyphony，2026-10-08；user「同时按同意」「叠 = 又一个 shift lock 键…开的时候就往前一个音上面叠，然后是 xor 的叠（但是不会删最后一个音）」） ──
+/** 这个音上的全部音高（最高的在前 = pitch）；没音高 = []。 */
+export const allPitches = (t: NoteTok): Pitch[] => (t.pitch ? [t.pitch, ...(t.chord ?? [])] : []);
+/** 一组音高 → 规范形：按 midi 从高到低、同 midi 去重；最高的 = pitch，其余 = chord（只有一个 = 不带 chord）。 */
+export function withPitches(t: NoteTok, ps: Pitch[]): NoteTok {
+  const seen = new Set<number>(), sorted = [...ps].sort((a, b) => midiOf(b) - midiOf(a)).filter((p) => { const m = midiOf(p); if (seen.has(m)) return false; seen.add(m); return true; });
+  const { chord: _chord, ...rest } = t; void _chord;
+  if (!sorted.length) return { ...rest, pitch: null };
+  return sorted.length > 1 ? { ...rest, pitch: sorted[0], chord: sorted.slice(1) } : { ...rest, pitch: sorted[0] };
+}
+/** 叠 / 拿掉一个音高（XOR；最后一个永远留着）。 */
+export function toggleChordPitch(st: EditorState, i: number, p: Pitch): EditorState {
+  const t = tr(st)[i]; if (!t || t.kind !== "note" || !t.pitch) return st;
+  const ps = allPitches(t), m = midiOf(p), has = ps.some((q) => midiOf(q) === m);
+  if (has && ps.length <= 1) return st;
+  const nt = tr(st).slice(); nt[i] = withPitches(t, has ? ps.filter((q) => midiOf(q) !== m) : [...ps, p]);
+  return next(st, nt);
+}
+/** pad 的「叠」：往前一个音（有选中 = 选中的第一个音）上叠（挂着的升降一样用掉）。 */
+export function stackPitch(st: EditorState, pitch0: Pitch): EditorState {
+  const pitch = applyAcc(pitch0, st.input), input = consumeAcc(st.input);
+  const i = st.sel ? firstNoteIn(st) : currentIndex(st);
+  if (i < 0 || tr(st)[i].kind !== "note") return { ...st, input };
+  return toggleChordPitch({ ...st, input }, i, pitch);
+}
+/** 只有这一张纸的歌（本段视图的播放范围；user 2026-10-08「为什么在本段视图下播放还是播放全部了？」）。 */
+export const songOnlyPaper = (song: Song, paperId: string): Song => ({ ...song, papers: song.papers.filter((p) => p.id === paperId) });
+
 /** 下标 i 处（i 之前最近的那个记号）生效的调号 / 拍号 / 速度（一条 track 内）。 */
 export function keyAt(tokens: Token[], i: number): number {
   let f = DEFAULT_KEY;
@@ -289,16 +318,18 @@ export function writeRest(st: EditorState): EditorState {
   return next(st, tokens, { caret: st.caret + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur }] });
 }
 
-export function writeBar(st: EditorState, now = 0): EditorState {
-  const at = st.sel ? st.sel.to : st.caret, tokens = tr(st).slice(), prev = tokens[at - 1];
-  // 连按两次「|」（450 ms 内，和升降键的连点一个判法）= 句：刚插的小节线换成句（弱起的句尾也行：句不是小节线）。不带时刻的调用（测试 / 程序）永远只插小节线。
-  if (now > 0 && st.input.barAt > 0 && now - st.input.barAt < 450 && prev && prev.kind === "bar" && at - 1 >= headLen(tokens)) {
-    tokens[at - 1] = { kind: "phrase", id: prev.id };
-    return next({ ...st, input: { ...st.input, barAt: 0 } }, tokens, { caret: at, sel: null, log: [] });
-  }
-  const id = st.nextId;
+export function writeBar(st: EditorState): EditorState {
+  const at = st.sel ? st.sel.to : st.caret, id = st.nextId, tokens = tr(st).slice();
   tokens.splice(at, 0, { kind: "bar", id });
-  return next({ ...st, input: { ...st.input, barAt: now } }, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+  return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+}
+/** 句（pad 符号层 / Shift+Enter）：插在光标处（有选中 = 选中后面）；前面已经是句 = 原样。断句常在小节中间，所以不绑小节线（user 2026-10-08「断句可能在非小节线处，建议不要用小节线」）。 */
+export function writePhrase(st: EditorState): EditorState {
+  const at = st.sel ? st.sel.to : st.caret, tokens = tr(st).slice();
+  if (tokens[at - 1]?.kind === "phrase" || at <= headLen(tokens)) return st;
+  const id = st.nextId;
+  tokens.splice(at, 0, { kind: "phrase", id });
+  return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
 }
 /** 在下标 i 的 token 后面插一个句（歌词里打了句号）；后面已经是句 = 原样。光标 / 选中在它后面的往后挪一格。 */
 export function insertPhraseAfter(st: EditorState, i: number): EditorState {
@@ -447,7 +478,7 @@ function nextNoteAfter(tokens: Token[], i: number): number {
 function overwritePitch(st: EditorState, pitch: Pitch): EditorState {
   const i = firstNoteIn(st);
   if (i < 0) return st;
-  const nt = tr(st).slice(); nt[i] = { ...(nt[i] as NoteTok), pitch };
+  const nt = tr(st).slice(); nt[i] = withPitches(nt[i] as NoteTok, [pitch]);   // 重打 = 整个叠音换成这一个音
   const j = nextNoteAfter(nt, i);
   return j >= 0 ? next(st, nt, { sel: { from: j, to: j + 1 }, caret: j + 1 }) : next(st, nt, { sel: null, caret: nt.length, log: [] });
 }
@@ -460,7 +491,7 @@ function mapSelDur(st: EditorState, f: (d: number) => number): EditorState {
 function mapSelPitch(st: EditorState, f: (p: Pitch) => Pitch): EditorState {
   if (!st.sel) return st;
   const nt = tr(st).slice();
-  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note") nt[i] = { ...t, pitch: f(effectivePitch(nt, i)) }; }
+  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note") nt[i] = withPitches(t, (t.pitch ? allPitches(t) : [effectivePitch(nt, i)]).map(f)); }
   return next(st, nt);
 }
 function deleteSel(st: EditorState): EditorState {
@@ -474,7 +505,7 @@ function mapTargetPitch(st: EditorState, f: (p: Pitch, fifths: number) => Pitch)
   if (st.sel) { const from = st.sel.from; return mapSelPitch(st, (p) => f(p, keyAt(tr(st), from))); }
   const i = currentIndex(st);
   if (i < 0 || tr(st)[i].kind !== "note") return st;
-  const nt = tr(st).slice(); nt[i] = { ...(nt[i] as NoteTok), pitch: f(effectivePitch(nt, i), keyAt(tr(st), i)) };
+  const nt = tr(st).slice(), t = nt[i] as NoteTok; nt[i] = withPitches(t, (t.pitch ? allPitches(t) : [effectivePitch(nt, i)]).map((p) => f(p, keyAt(tr(st), i))));
   return next(st, nt);
 }
 export const stepTarget = (st: EditorState, steps: number) => mapTargetPitch(st, (p, k) => stepBy(p, steps, k));
@@ -488,7 +519,7 @@ export const octaveTarget = (st: EditorState, d: number) => mapTargetPitch(st, (
 export function transposeSel(st: EditorState, semis: number): EditorState {
   if (!st.sel || !semis) return st;
   const nt = tr(st).slice();
-  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note" && t.pitch) nt[i] = { ...t, pitch: transposeSemis(t.pitch, semis, keyAt(tr(st), i)) }; }
+  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note" && t.pitch) nt[i] = withPitches(t, allPitches(t).map((p) => transposeSemis(p, semis, keyAt(tr(st), i)))); }
   return next(st, nt);
 }
 /** 转调：选中的一段从开头生效的调转到 toFifths——音按两个主音之间的音程挪（就近方向，拼写关系不变），
@@ -503,7 +534,7 @@ export function modulateSel(st: EditorState, toFifths: number): EditorState {
   const nt = old.slice();
   for (let i = from; i < to; i++) {
     const t = nt[i];
-    if (t.kind === "note" && t.pitch) nt[i] = { ...t, pitch: transposeInterval(t.pitch, steps, semis) };
+    if (t.kind === "note" && t.pitch) nt[i] = withPitches(t, allPitches(t).map((p) => transposeInterval(p, steps, semis)));
     else if (t.kind === "key") nt[i] = { ...t, fifths: wrap(t.fifths + df) };
   }
   let nextId = st.nextId;
@@ -563,7 +594,8 @@ export function escape(st: EditorState): EditorState {
 export function setNote(st: EditorState, i: number, patch: Partial<Pick<NoteTok, "pitch" | "dur" | "lyric" | "hyph">>): EditorState {
   const t = tr(st)[i];
   if (!t || t.kind !== "note") return st;
-  const nt = tr(st).slice(); nt[i] = { ...t, ...patch };
+  const nt = tr(st).slice(), merged: NoteTok = { ...t, ...patch };
+  nt[i] = patch.pitch !== undefined && merged.pitch ? withPitches(merged, [merged.pitch, ...(t.chord ?? [])]) : merged;   // 拖旋律音越过叠音里的音：重新排高低
   return next(st, nt);
 }
 export function setDur(st: EditorState, i: number, dur: number): EditorState {
