@@ -29,6 +29,7 @@ import "./pack.test.ts";
 import "./credits.test.ts";
 import "./credit-translations.test.ts";
 import "./articulation.test.ts";
+import "./honors.test.ts";
 import "./part-name.test.ts";
 import "./id3.test.ts";
 import "./sf-key.test.ts";

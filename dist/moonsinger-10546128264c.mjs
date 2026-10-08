@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.24-2026-10-08";
+var APP_VERSION = "v0.6.25-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5067,6 +5067,7 @@ function engrave(song, o10) {
           }
         }
       }
+      const ign = new Set(q2.p.ignores ?? []);
       for (const c10 of units) {
         if (c10.kind !== "chunk" || !c10.note || !c10.art.length && !c10.breath) continue;
         const row = RW(c10), cls = clsOf(c10), cx2 = nhX(c10) + nhW(c10) / 2;
@@ -5078,10 +5079,10 @@ function engrave(song, o10) {
           if (a10 === "accent") d3 = below ? Math.min(d3, BOTTOM_LINE - 2) : Math.max(d3, TOP_LINE + 2);
           else if (inStaff(d3) && d3 % 2 === 0) d3 += sgn;
           const m2 = ART_GLYPH[a10], g3 = below ? m2.below : m2.above;
-          prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yOf(row, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: cls ? `art ${cls}` : "art" });
+          prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yOf(row, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: ["art", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
           d3 += sgn * (a10 === "accent" ? 3 : 2);
         }
-        if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: cls ? `breath ${cls}` : "breath" });
+        if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
       const tieBetween = (a10, b3) => {
         if (a10.system !== b3.system || a10.staff !== b3.staff || !a10.pitch || !b3.pitch) return;
@@ -6852,7 +6853,7 @@ var Pad = class {
       };
       for (const t10 of ["pointerup", "pointercancel", "lostpointercapture"]) ak2.addEventListener(t10, (e10) => akUp(e10));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) {
       if (this.symbols !== "off") this.buildSymbols();
       else this.buildGrid(f2, base3, rows);
@@ -6969,7 +6970,11 @@ var Pad = class {
    *  和音键一样大的格子，多了往下滚；点一个 = 做那件事、回到音键（一次性）。 */
   buildSymbols() {
     const grid = this.el.querySelector(".pad-grid");
-    const cell = (id2, big, label, title) => `<button class="pad-key sym${id2.startsWith("art:") ? " art" : ""}" data-sym="${id2}" title="${title}">${big}<small>${label}</small></button>`;
+    const ign = new Set(this.host.ignoredArts?.() ?? []);
+    const cell = (id2, big, label, title) => {
+      const off = id2.startsWith("art:") && ign.has(id2.slice(4));
+      return `<button class="pad-key sym${id2.startsWith("art:") ? " art" : ""}${off ? " ignored" : ""}" data-sym="${id2}" title="${title}${off ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</small></button>`;
+    };
     const items = [
       cell("phrase", `<span class="big">\u3002</span>`, "\u53E5\u53F7", "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09"),
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "\u8DF3\u97F3", "\u8DF3\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u5F97\u77ED\u4FC3\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
@@ -17755,6 +17760,16 @@ function noteEnd(t02, t12, art, o10) {
   if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(0.16, 0.25 * (t12 - t02)));
   return end;
 }
+var HONORS = {
+  tsukuyomi: ["staccato", "accent", "breath"],
+  "vowel-sampler": ["staccato", "accent", "breath"],
+  soundfont: ["staccato", "accent"]
+};
+var ALL_ARTS = ["staccato", "accent", "tenuto", "breath"];
+function ignoredArts(engine) {
+  const h2 = engine ? HONORS[engine] : void 0;
+  return h2 ? ALL_ARTS.filter((a10) => !h2.includes(a10)) : [];
+}
 
 // src/gm/sound-cache.ts
 var CACHE = "pwa-sounds";
@@ -25667,7 +25682,7 @@ var SelBar = class {
     }
     const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
     if (sel && fix) {
-      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span></button>`).join("") + `<span class="sel-gap"></span>` + DYNS.map((d3) => `<button type="button" class="btn fix-dyn${fix.dyn === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u653E\u5728\u9009\u533A\u5F00\u5934\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6"><span class="smufl">${DYN_GLYPH2[d3]}</span></button>`).join("") + (fix.dyn ? b3("dyn:none", "\u53BB\u6389\u529B\u5EA6") : "") + b3("fixdone", "\u5B8C\u6210", "", "primary");
+      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<span class="sel-gap"></span>` + DYNS.map((d3) => `<button type="button" class="btn fix-dyn${fix.dyn === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u653E\u5728\u9009\u533A\u5F00\u5934\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6"><span class="smufl">${DYN_GLYPH2[d3]}</span></button>`).join("") + (fix.dyn ? b3("dyn:none", "\u53BB\u6389\u529B\u5EA6") : "") + b3("fixdone", "\u5B8C\u6210", "", "primary");
       this.el.hidden = false;
       return;
     }
@@ -25695,6 +25710,13 @@ var coverRev = 0;
 var loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), doc.extras.studio?.mics ?? []]);
 doc.saved.lounge = loungeKey();
 var curPart = () => st2.song.parts.find((p2) => p2.id === st2.at.part) ?? st2.song.parts[0];
+var ignoredHere = () => ignoredArts(activeInstrument(doc.extras, curPart().role)?.engine);
+function discloseArt(prev, a10) {
+  if (!ignoredHere().includes(a10)) return;
+  const n10 = (s10) => tr(s10).filter((t10) => t10.kind === "note" && (t10.art ?? []).includes(a10)).length;
+  if (n10(st2) <= n10(prev)) return;
+  info(`${activeCandidateName(doc.extras, curPart().role) || "\u53F0\u4E0A\u8FD9\u4F4D"}\u4E0D\u8BA4${ART_NAME[a10]}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD`);
+}
 var curRole = () => curPart().role;
 var partView = /* @__PURE__ */ new Map();
 var pv = (id2) => partView.get(id2) ?? { hidden: false, only: false, muted: false, solo: false };
@@ -25755,7 +25777,7 @@ function updateChrome() {
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
   if (!n10) selFix = false;
-  const fix = selFix ? { art: artStateSel(st2), dyn: dynMarkSel(st2) } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const fix = selFix ? { art: artStateSel(st2), dyn: dynMarkSel(st2), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) {
     selSig = sig;
     selBar.update(n10, !!clip, over || studio.isOpen, fix);
@@ -25784,7 +25806,9 @@ async function pasteNow() {
 }
 async function selVerb(v) {
   if (v.startsWith("art:")) {
-    update(toggleArtSel(st2, v.slice(4)));
+    const prev = st2, a10 = v.slice(4);
+    update(toggleArtSel(st2, a10));
+    discloseArt(prev, a10);
     return;
   }
   if (v.startsWith("dyn:")) {
@@ -26159,8 +26183,10 @@ var pad3 = new Pad(padEl, {
       info(`${ART_NAME[c10.a]}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
       return;
     }
+    const prev = st2;
     update(nx2);
     if (c10.k === "rest" || c10.k === "extend") afterWrite();
+    if (c10.k === "art") discloseArt(prev, c10.a);
   },
   onUnit: (u2) => {
     if (half === "once") {
@@ -26177,6 +26203,7 @@ var pad3 = new Pad(padEl, {
   onInputScale: (id2) => update(setInputScale(st2, id2)),
   autoBars: () => autoBars,
   staves: () => curPart().staves ?? 1,
+  ignoredArts: () => ignoredHere(),
   hintRange: () => padHint(),
   onAutoBars: (on2) => {
     autoBars = on2;
@@ -26821,7 +26848,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "b295a6604cda",
+  cssHash: "bbaddc6b02cd",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -27225,7 +27252,7 @@ function partViews() {
   return st2.song.parts.map((p2, k2) => {
     const v = pv(p2.id), badges = [v.muted ? "\u9759\u97F3" : "", v.solo ? "\u72EC\u594F" : "", v.only ? "\u53EA\u770B\u5B83" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p2.role)?.engine ?? "unknown";
-    return { id: p2.id, name: labels[k2], empty: eng === "unknown", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {} };
+    return { id: p2.id, name: labels[k2], empty: eng === "unknown", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ignores: ignoredArts(eng) };
   });
 }
 function afterViewChange() {
@@ -29015,4 +29042,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-263ed0e33a35.mjs.map
+//# sourceMappingURL=moonsinger-10546128264c.mjs.map

@@ -33,7 +33,7 @@ import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { mixTracks, applyGain } from "../audio/mix.ts";
-import { gainSegments, noteEnd } from "../score/perform.ts";
+import { gainSegments, noteEnd, ignoredArts } from "../score/perform.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
 import { GmSynth } from "../gm/synth.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
@@ -81,6 +81,15 @@ const loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.loun
 doc.saved.lounge = loungeKey();
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => st.song.parts.find((p) => p.id === st.at.part) ?? st.song.parts[0];
+/** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
+const ignoredHere = (): Art[] => ignoredArts(activeInstrument(doc.extras, curPart().role)?.engine) as Art[];
+/** 刚写上了一个台上那位不认的记号 → 明说（照样写进谱、画灰，出声不受影响）。 */
+function discloseArt(prev: EditorState, a: Art): void {
+  if (!ignoredHere().includes(a)) return;
+  const n = (s: EditorState) => tr(s).filter((t) => t.kind === "note" && (t.art ?? []).includes(a)).length;
+  if (n(st) <= n(prev)) return;
+  info(`${activeCandidateName(doc.extras, curPart().role) || "台上这位"}不认${ART_NAME[a]}：写在谱上了（画灰），出声不受影响`);
+}
 const curRole = (): string => curPart().role;
 /** 声部的显示 / 出声状态：隐藏（不画）、静音、独奏——这次打开里有效，不进文件（user 2026-10-08「不同的声部视图和出声应该分别可以solo和hide」）。 */
 //   两根轴同一套语法（user 2026-10-08「display有hide 和show only， play有mute和solo。这两个的逻辑关系你理一个好的」）：每根轴 = 一个「关掉」旗（隐藏 / 静音）+ 一个「只要这些」集合（只看它 / 独奏）；
@@ -147,7 +156,7 @@ function updateChrome(): void {
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n = st.sel ? st.sel.to - st.sel.from : 0;
   if (!n) selFix = false;
-  const fix = selFix ? { art: artStateSel(st), dyn: dynMarkSel(st) } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const fix = selFix ? { art: artStateSel(st), dyn: dynMarkSel(st), ignores: ignoredHere() } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen, fix); }
 }
 function setClip(t: Token[]): void {
@@ -165,7 +174,7 @@ async function pasteNow(): Promise<void> {
 }
 async function selVerb(v: SelVerb): Promise<void> {
   // 修（2026-10-08）：演奏法 / 力度只改选中的那几个音（选区留着接着改）；都走 update() = 在撤销里
-  if (v.startsWith("art:")) { update(toggleArtSel(st, v.slice(4) as Art)); return; }
+  if (v.startsWith("art:")) { const prev = st, a = v.slice(4) as Art; update(toggleArtSel(st, a)); discloseArt(prev, a); return; }
   if (v.startsWith("dyn:")) { update(setDynSel(st, v === "dyn:none" ? null : (v.slice(4) as Dyn))); return; }
   switch (v) {
     case "fix": selFix = true; updateChrome(); return;
@@ -439,7 +448,8 @@ const pad = new Pad(padEl, {
     if (c.k === "caret" && half === "once") setHalf("off");   // 挪光标 = 取消「凑满一份」
     const nx = apply(st, withHalf(c), performance.now());
     if (c.k === "art" && nx === st) { info(`${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
-    update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
+    const prev = st; update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
+    if (c.k === "art") discloseArt(prev, c.a);
   },
   onUnit: (u) => { if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n) => update(setTuplet(st, n)),
@@ -447,6 +457,7 @@ const pad = new Pad(padEl, {
   onInputScale: (id) => update(setInputScale(st, id)),
   autoBars: () => autoBars,
   staves: () => curPart().staves ?? 1,
+  ignoredArts: () => ignoredHere(),
   hintRange: () => padHint(),
   onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); },
   onHide: () => showPad(false),
@@ -1158,7 +1169,7 @@ function partViews(): PartView[] {
   return st.song.parts.map((p, k) => {
     const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown";
-    return { id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
+    return { id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredArts(eng) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */

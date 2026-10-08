@@ -518,6 +518,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 
 /* 叠音（polyphony，2026-10-08）：单声乐器的声部里下面的音灰掉 */
 .staff-svg .note.chord-mute { fill: var(--muted); stroke: var(--muted); }
+.staff-svg .art-mute { fill: var(--muted); opacity: .5; }   /* 台上那位不认的记号：照画、画灰（出声不受影响；写的时候会说一声） */
 /* pad：叠音键（Shift 逻辑同 /2）；单声乐器的声部叠不了 = 灰 */
 .pad-tools .btn.stack.off { opacity: .3; pointer-events: none; }
 @container (max-width: 520px) { .pad-tools.writes .btn.stack { display: none; } }
@@ -611,3 +612,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .ctx-menu .ctx-head span { font-size: 11px; color: var(--muted); line-height: 1.4; }
 .ctx-menu.main-menu .ctx-item { gap: 10px; }
 .ctx-menu.main-menu .ctx-item .ico { width: 18px; height: 18px; flex: none; }
+/* 修 / 符号层：现在这位不认的记号——照样能写，钮上标「不认」 */
+.ign-tag { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 4px; font-size: 10px; line-height: 15px; color: var(--muted); border: 1px dashed var(--line); vertical-align: middle; }
+.pad-key.sym.ignored { background: #f7f5f0; }
+.pad-key.sym.ignored .smufl { opacity: .45; }

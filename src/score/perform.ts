@@ -46,3 +46,19 @@ export function noteEnd(t0: number, t1: number, art: readonly string[], o: { sta
   if (o.breath && art.includes("breath")) end = Math.min(end, t1 - Math.min(0.16, 0.25 * (t1 - t0)));
   return end;
 }
+
+/** 谁认哪些记号（2026-10-08 Opus 5.5；user 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。
+ *  这张表必须和上面真做的事一致——跳音：月读 = gainSegments 后半段收声，元音版 / SoundFont = noteEnd 截短；重音、力度：所有引擎走 gainSegments；
+ *  呼吸：月读 = 唱法核心换气（lab-score），元音版 = noteEnd 收短，SoundFont 不管；保持：谁都不管（普通音本来就满长）。test/honors.test.ts 守着。
+ *  不在表里的引擎（没人上场 / 认不出的）= null：整个声部本来就不出声，不再逐个记号画灰。 */
+const HONORS: Record<string, readonly string[]> = {
+  tsukuyomi: ["staccato", "accent", "breath"],
+  "vowel-sampler": ["staccato", "accent", "breath"],
+  soundfont: ["staccato", "accent"],
+};
+const ALL_ARTS = ["staccato", "accent", "tenuto", "breath"] as const;
+/** 这个引擎不认的演奏法（写在谱上照画、画灰，出声不受影响）。 */
+export function ignoredArts(engine: string | null | undefined): (typeof ALL_ARTS)[number][] {
+  const h = engine ? HONORS[engine] : undefined;
+  return h ? ALL_ARTS.filter((a) => !h.includes(a)) : [];
+}

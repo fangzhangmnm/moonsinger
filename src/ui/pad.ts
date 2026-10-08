@@ -103,6 +103,7 @@ export interface PadHost {
   onInputScale(id: string): void;
   autoBars(): boolean;                     // 谱面按拍号自动画小节线开着没有
   staves(): number;                        // 光标所在声部几张谱表（2 = 大谱表：「⋯」里多一个「换谱表」）
+  ignoredArts?(): readonly Art[];          // 光标所在声部台上那位不认的记号（符号层的格子标「不认」，照样能写）
   onAutoBars(on: boolean): void;
   onHide(): void;                          // 收起键盘（pad）
   onHalf(down: boolean): void;             // /2 按下 / 松开：写的音临时减半
@@ -250,7 +251,7 @@ export class Pad {
       const akUp = (e: PointerEvent) => { if (!akDrag || e.pointerId !== akDrag.pid) return; akDrag = null; this.host.onAccShift("up", this.accSel); };
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) ak.addEventListener(t, (e) => akUp(e as PointerEvent));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) { if (this.symbols !== "off") this.buildSymbols(); else this.buildGrid(f, base, rows); this.gridFor = gridSig; }
     const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st)) : ""}`;
     if (toolSig !== this.toolsFor) { this.buildHead(selKey, rows); this.toolsFor = toolSig; }
@@ -346,7 +347,11 @@ export class Pad {
    *  和音键一样大的格子，多了往下滚；点一个 = 做那件事、回到音键（一次性）。 */
   private buildSymbols(): void {
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
-    const cell = (id: string, big: string, label: string, title: string) => `<button class="pad-key sym${id.startsWith("art:") ? " art" : ""}" data-sym="${id}" title="${title}">${big}<small>${label}</small></button>`;
+    const ign = new Set(this.host.ignoredArts?.() ?? []);
+    const cell = (id: string, big: string, label: string, title: string) => {
+      const off = id.startsWith("art:") && ign.has(id.slice(4) as Art);   // 台上这位不认：照样能写，格子标出来（不静默失效）
+      return `<button class="pad-key sym${id.startsWith("art:") ? " art" : ""}${off ? " ignored" : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
+    };
     const items = [
       cell("phrase", `<span class="big">。</span>`, "句号", "句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）"),
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "跳音", "跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉"),

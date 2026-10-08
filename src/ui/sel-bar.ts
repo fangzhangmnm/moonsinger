@@ -6,7 +6,7 @@ import { ARTS, DYNS, type Art, type Dyn } from "../score/song.ts";
 
 export type SelVerb = "all" | "copy" | "cut" | "paste" | "transpose" | "delete" | "clear" | "forget" | "fix" | "fixdone" | `art:${Art}` | `dyn:${Dyn}` | "dyn:none";
 /** 「修」（2026-10-08 by Claude Opus 5.5；user 拍「挂在音上 + 选区条」）：选区条原地换成一排开关——演奏法（选中的音都有 = 亮；有的有 = 半亮）+ 力度（选区开头那儿写着的亮）。 */
-export interface FixState { art: Record<Art, "all" | "some" | "none">; dyn: Dyn | null }
+export interface FixState { art: Record<Art, "all" | "some" | "none">; dyn: Dyn | null; ignores?: readonly Art[] }   // ignores = 台上那位不认的（钮上标「不认」，照样能写）
 const ART_LABEL: Record<Art, [string, string]> = { staccato: ["\u{E4A2}", "跳音"], accent: ["\u{E4A0}", "重音"], tenuto: ["\u{E4A4}", "保持"], breath: ["\u{E4CE}", "呼吸"] };
 const DYN_GLYPH: Record<Dyn, string> = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" };
 export interface SelBarHost { verb(v: SelVerb): void }
@@ -25,7 +25,7 @@ export class SelBar {
     const b = (v: SelVerb, label: string, icon?: string, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml(icon) : ""}<span>${label}</span></button>`;
     if (sel && fix) {
       this.el.innerHTML = `<span class="sel-n">修</span>` +
-        ARTS.map((a) => `<button type="button" class="btn fix-art${fix.art[a] === "all" ? " is-on" : fix.art[a] === "some" ? " is-some" : ""}" data-v="art:${a}" title="${ART_LABEL[a][1]}：选中的音都有 = 去掉，否则都加上"><span class="smufl">${ART_LABEL[a][0]}</span><span>${ART_LABEL[a][1]}</span></button>`).join("") +
+        ARTS.map((a) => `<button type="button" class="btn fix-art${fix.art[a] === "all" ? " is-on" : fix.art[a] === "some" ? " is-some" : ""}" data-v="art:${a}" title="${ART_LABEL[a][1]}：选中的音都有 = 去掉，否则都加上${fix.ignores?.includes(a) ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}"><span class="smufl">${ART_LABEL[a][0]}</span><span>${ART_LABEL[a][1]}</span>${fix.ignores?.includes(a) ? `<span class="ign-tag">不认</span>` : ""}</button>`).join("") +
         `<span class="sel-gap"></span>` +
         DYNS.map((d) => `<button type="button" class="btn fix-dyn${fix.dyn === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：放在选区开头，管到下一个力度"><span class="smufl">${DYN_GLYPH[d]}</span></button>`).join("") +
         (fix.dyn ? b("dyn:none", "去掉力度") : "") + b("fixdone", "完成", "", "primary");

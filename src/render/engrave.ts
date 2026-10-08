@@ -32,7 +32,7 @@ export type Prim =
   | { t: "icon"; id: string; x: number; y: number; size: number; cls?: string; title?: string };   // 家族图标库的一个图标（页面里内联的 sprite，<use href="#id">）
 
 /** 要画的一个声部（顺序 = 总谱从上到下；隐藏的不在这里）。 */
-export interface PartView { id: string; name: string; empty?: boolean; first?: boolean; clef?: "G" | "F"; staves?: 2; hidden?: boolean; badges?: string[]; mono?: boolean; xHead?: boolean }   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
+export interface PartView { id: string; name: string; empty?: boolean; first?: boolean; clef?: "G" | "F"; staves?: 2; hidden?: boolean; badges?: string[]; mono?: boolean; xHead?: boolean; ignores?: readonly string[] }   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
 //   empty = 还没人上场（名字画淡色）；first = 歌里第一个声部（速度画在它上面）；clef = 谱号；hidden = 隐藏的：不画谱、缩成一条细行（点它开歌手牌）；badges = 名字下面的角标（静 / 独 / 只看它）
 export interface EngraveOpts {
   width: number;                         // px，谱面板宽
@@ -706,6 +706,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         }
       }
       // 7½. 修（2026-10-08）：跳音 / 保持在符头外一格（谱内落在间里），重音再往外、出了谱；符干朝上 = 画在下面，朝下 / 没有符干 = 上面。呼吸 = 音后面、谱线上方一个逗号
+      const ign = new Set(q.p.ignores ?? []);   // 台上那位不认的记号：照画、画灰（user「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）
       for (const c of units) {
         if (c.kind !== "chunk" || !c.note || (!c.art.length && !c.breath)) continue;
         const row = RW(c), cls = clsOf(c), cx = nhX(c) + nhW(c) / 2;
@@ -717,10 +718,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           if (a === "accent") d = below ? Math.min(d, BOTTOM_LINE - 2) : Math.max(d, TOP_LINE + 2);   // 重音在最外层、出谱
           else if (inStaff(d) && d % 2 === 0) d += sgn;                                                 // 跳音 / 保持在谱内落在间里
           const m = ART_GLYPH[a], g = below ? m.below : m.above;
-          prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: cls ? `art ${cls}` : "art" });
+          prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
           d += sgn * (a === "accent" ? 3 : 2);
         }
-        if (c.breath) prims.push({ t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: cls ? `breath ${cls}` : "breath" });
+        if (c.breath) prims.push({ t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
       // 8. 连音线：同一个 token 拆开的几段之间 + 数据里的 tie（连着前一个音）。跨行的第一版不画
       const tieBetween = (a: Chunk, b: Chunk) => {
