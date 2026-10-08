@@ -40,6 +40,8 @@ export type HintRange = { lo: number; hi: number; who: string; title?: string } 
 /** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
 const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone");
 /** 布局里行 / 列能调的范围（加减号到头就灰）。 */
+/** 符号层「连线」格子：一道弧（SMuFL 没有单个连线字形）。 */
+const SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 const ROWS_MIN = 3, ROWS_MAX = 8, COLS_MIN = 3, COLS_MAX = 7;
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
 const KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } } as const;
@@ -103,7 +105,7 @@ export interface PadHost {
   onInputScale(id: string): void;
   autoBars(): boolean;                     // 谱面按拍号自动画小节线开着没有
   staves(): number;                        // 光标所在声部几张谱表（2 = 大谱表：「⋯」里多一个「换谱表」）
-  ignoredArts?(): readonly Art[];          // 光标所在声部台上那位不认的记号（符号层的格子标「不认」，照样能写）
+  ignoredArts?(): readonly string[];          // 光标所在声部台上那位不认的记号（符号层的格子标「不认」，照样能写）
   onAutoBars(on: boolean): void;
   onHide(): void;                          // 收起键盘（pad）
   onHalf(down: boolean): void;             // /2 按下 / 松开：写的音临时减半
@@ -349,14 +351,15 @@ export class Pad {
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
     const ign = new Set(this.host.ignoredArts?.() ?? []);
     const cell = (id: string, big: string, label: string, title: string) => {
-      const off = id.startsWith("art:") && ign.has(id.slice(4) as Art);   // 台上这位不认：照样能写，格子标出来（不静默失效）
-      return `<button class="pad-key sym${id.startsWith("art:") ? " art" : ""}${off ? " ignored" : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
+      const mk = id.startsWith("art:") ? id.slice(4) : id === "slur" ? "slur" : null, off = !!mk && ign.has(mk);   // 台上这位不认：照样能写，格子标出来（不静默失效）
+      return `<button class="pad-key sym${mk ? " art" : ""}${off ? " ignored" : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
     };
     const items = [
       cell("phrase", `<span class="big">。</span>`, "句号", "句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）"),
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "跳音", "跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉"),
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "重音", "重音：光标前那个音（有选区 = 选中的）加重；再点一次去掉"),
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "保持", "保持：光标前那个音（有选区 = 选中的）唱 / 弹满；再点一次去掉"),
+      cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；和呼吸相反——呼吸 = 这里断开；有选区 = 选中的连起来；再点一次去掉）"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；再点一次去掉）"),
       cell("bar", `<span class="big">|</span>`, "小节线", "小节线（弱起 = 写完弱起的音按一下）"),
       cell("rest", `<span class="big">0</span>`, "休止", "休止（长短同基线）"),
@@ -387,6 +390,7 @@ export class Pad {
       if (id === "key" || id === "time" || id === "tempo") this.host.onInsertMark(id);
       else if (id === "staff") this.host.onCommand({ k: "staff" });
       else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
+      else if (id === "slur") this.host.onCommand({ k: "slur" });
       else this.host.onCommand({ k: id as "phrase" | "bar" | "rest" | "extend" });
       this.render();
     };

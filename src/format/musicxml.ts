@@ -113,6 +113,10 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
   const syllabic = (t: NoteTok) => { const s = t.hyph ? (prevHyph ? "middle" : "begin") : (prevHyph ? "end" : "single"); prevHyph = !!t.hyph; return s; };
   const unwritten: string[] = [];
   const nextTimed = (i: number) => { for (let j = i + 1; j < toks.length; j++) { const t = toks[j]; if (t.kind === "note" || t.kind === "rest") return t; } return null; };
+  // 连线（2026-10-08）：一串「连到下一个」的音 = 一条 <slur>：头一个音 start，被连到的那个音 stop（后面没有音的那个标记不写，免得 start 没有 stop）
+  const noteAt = (i: number, d: 1 | -1) => { for (let j = i + d; j >= 0 && j < toks.length; j += d) if (toks[j].kind === "note") return toks[j] as NoteTok; return null; };
+  const slurs = (i: number, t: NoteTok) => { const pv = noteAt(i, -1), nx = noteAt(i, 1), out = !!t.slur && !!nx, into = !!pv?.slur;
+    return `${into && !out ? `<slur type="stop" number="1"/>` : ""}${out && !into ? `<slur type="start" number="1"/>` : ""}`; };
   for (let i = head; i < toks.length; i++) {
     const t = toks[i];
     const br = breaks?.get(i);
@@ -157,7 +161,8 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
         // 演奏法：跳音 / 重音 / 保持挂在第一段，呼吸挂在最后一段（音被小节线拆开时）
         const arts = (t.art ?? []).filter((a) => (a === "breath" ? last : firstPiece));
         const artXml = arts.length ? `<articulations>${arts.map((a) => `<${ART_XML[a]}/>`).join("")}</articulations>` : "";
-        if (tieIn || tieOn || artXml) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${artXml}</notations>`;
+        const slurXml = firstPiece ? slurs(i, t) : "";
+        if (tieIn || tieOn || artXml || slurXml) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}</notations>`;
         // 叠音：跟在后面的 <chord/> 音（同时值、同连音线；歌词、演奏法只在第一个上）
         for (const [ci, cp] of (t.chord ?? []).entries()) {
           chordXml.push(`<note id="${id}c${ci + 1}"><chord/>` + pitchXml(cp) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` +
@@ -243,6 +248,12 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     const art = (["staccato", "accent", "tenuto", "breath"] as Art[]).filter((a) => set.has(a));
     if (art.length) tok.art = art;
   };
+  /** <notations><slur> → 这一串音「连到下一个」（start 的那个起、stop 的那个前一个止；按 number 分开数，有一条开着就算连着）。 */
+  const slurEvents = (note: El, open: Set<string>) => {
+    const sl = kids(note, "notations").flatMap((nn) => kids(nn, "slur"));
+    for (const e of sl) if (e.attrs.type === "stop") open.delete(e.attrs.number ?? "1");
+    for (const e of sl) if (e.attrs.type === "start") open.add(e.attrs.number ?? "1");
+  };
   const tempoOf = (el: El): number | null => { const s = el.name === "sound" ? el : kid(el, "sound"); const v = s?.attrs.tempo; return v ? Math.round(Number(v)) : null; };
   const parts = partEls.map((pe, pi) => {
     const pid = pe.attrs.id ?? `P${pi + 1}`, info: ReadPart = infos.find((x) => x.id === pid) ?? { id: pid, name: "" };
@@ -251,6 +262,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     // 谱头 = 第一个音之前、每种记号第一次出现的那个；同一种再出现（谱头后面紧跟着插的）= 记号 token
     const body: Token[] = [], langRead = new Map<Token, string>();
     let headPhase = true, divisions = TPQ, voice: string | null = null;
+    const openSlurs = new Set<string>();
     const mark = (t: Token) => { body.push(t); };
     const measures = kids(pe, "measure");
     measures.forEach((m, mi) => {
@@ -280,6 +292,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
               const ps = allPitches(prevN);
               if (!ps.some((q) => midiOf(q) === midiOf(pp))) { const w = withPitches(prevN, [...ps, pp]); prevN.pitch = w.pitch; if (w.chord) prevN.chord = w.chord; else delete prevN.chord; }
               addArts(prevN, c);   // 别家谱常给和弦里每个音都标演奏法：并到这个音上
+              slurEvents(c, openSlurs); if (openSlurs.size) prevN.slur = true; else delete prevN.slur;
             } else drop("叠音（前面没有能叠的音）");
             continue;
           }
@@ -298,6 +311,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           const tok: NoteTok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null, ...staffOf };
           if (kids(c, "tie").some((t) => t.attrs.type === "stop")) tok.tie = true;
           addArts(tok, c);
+          slurEvents(c, openSlurs); if (openSlurs.size) tok.slur = true;
           const lyrics = kids(c, "lyric"), ly = lyrics.find((l) => (l.attrs.number ?? "1") === "1") ?? lyrics[0];
           if (lyrics.length > 1) drop("第二段及以后的歌词");
           if (ly) {

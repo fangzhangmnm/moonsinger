@@ -90,7 +90,8 @@ export interface CandidateV2 {
   transpose?: number;
   defaults: Record<string, number>;    // 一个音没画曲线时用的默认数（by value）：参数名 → 值，单位同 curves.json 的 units
   dynamicsDb: Record<Dynamic, number>; // 谱上记号 ↔ 曲线的换算表（by value）：力度字母 → dB
-  articulation: { staccatoGate: number; tenutoGate: number; accentDb: number };   // 跳音 / 保持吃掉多长（0–1）；重音加多少 dB
+  articulation: { staccatoGate: number; tenutoGate: number; accentDb: number; gapSec?: number };   // 跳音 / 保持吃掉多长（0–1）；重音加多少 dB；
+  //   gapSec（2026-10-08 加，可选，不升版本；Claude Opus 5.5）= 连断的底色：不写记号的音之间留多大缝（秒）；连线 / 保持 = 不留；没写 = 0
   chain: FxV2[];                       // 跟着演奏者走的效果（琴箱 / 音箱 / 琶音器；留位，现在空）
   credit: Credit;                      // 署名 / 许可证快照 by value（署名义务跟音源走）
   spec: Spec;                          // §10.6 vault：这个乐器怎么出声——标准格式只写名字版本；我们写的指向源码出处 + README 章节

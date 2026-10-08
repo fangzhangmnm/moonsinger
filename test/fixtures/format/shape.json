@@ -68,6 +68,7 @@
         {
           "articulation": {
             "accentDb": "number",
+            "gapSec": "number",
             "staccatoGate": "number",
             "tenutoGate": "number"
           },

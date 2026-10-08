@@ -41,28 +41,40 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
 }
 
 /** 轻量版 / SoundFont 一个音的结束时刻（秒）：跳音截到 staccatoGate；呼吸（只给元音版）= 收短一口气的空当（同唱法核心的 v：至多 0.16 s / 25%）。 */
-export function noteEnd(t0: number, t1: number, art: readonly string[], o: { staccatoGate: number; breath: boolean }): number {
+export function noteEnd(t0: number, t1: number, art: readonly string[], o: { staccatoGate: number; breath: boolean; gapSec?: number }, slur = false): number {
   let end = t1;
   if (art.includes("staccato")) end = t0 + (t1 - t0) * o.staccatoGate;
+  // 连断的底色：不写记号的音留 gapSec 的缝（最多吃掉这个音的 1/4，短音不被吃光）；连线（连到下一个）/ 保持 = 不留（2026-10-08，user「连断 预设 都同意」）
+  else if (!slur && !art.includes("tenuto") && (o.gapSec ?? 0) > 0) end = t1 - Math.min(o.gapSec!, 0.25 * (t1 - t0));
   if (o.breath && art.includes("breath")) end = Math.min(end, t1 - Math.min(0.16, 0.25 * (t1 - t0)));
   return end;
 }
 
 /** 谁认哪些记号（2026-10-08 Opus 5.5；user 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。
  *  这张表必须和上面真做的事一致——跳音：月读 = gainSegments 后半段收声，元音版 / SoundFont = noteEnd 截短；重音、力度：所有引擎走 gainSegments；
- *  呼吸：月读 = 唱法核心换气（lab-score），元音版 / SoundFont = noteEnd 收短（lightMarks）；保持：谁都不管（普通音本来就满长）。test/honors.test.ts 守着。
+ *  呼吸：月读 = 唱法核心换气（lab-score），元音版 / SoundFont = noteEnd 收短（lightMarks）；
+ *  保持 / 连线：元音版 / SoundFont = 这个音不留底色的缝（gapSec > 0 才有区别），月读还不认（连断第 3 步）。test/honors.test.ts 守着。
  *  不在表里的引擎（没人上场 / 认不出的）= null：整个声部本来就不出声，不再逐个记号画灰。 */
 const HONORS: Record<string, readonly string[]> = {
-  tsukuyomi: ["staccato", "accent", "breath"],
-  "vowel-sampler": ["staccato", "accent", "breath"],
-  soundfont: ["staccato", "accent", "breath"],
+  tsukuyomi: ["staccato", "accent", "breath"],                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
+  "vowel-sampler": ["staccato", "accent", "breath", "tenuto", "slur"],
+  soundfont: ["staccato", "accent", "breath", "tenuto", "slur"],
 };
-const ALL_ARTS = ["staccato", "accent", "tenuto", "breath"] as const;
-/** 这个引擎不认的演奏法（写在谱上照画、画灰，出声不受影响）。 */
-export function ignoredArts(engine: string | null | undefined): (typeof ALL_ARTS)[number][] {
+/** 连线 / 保持只改「留不留缝」：这位底色本来就不留缝（gapSec = 0）= 写了也不变 → 一样画灰、明说。 */
+const GAP_ONLY = ["tenuto", "slur"];
+export const ALL_MARKS = ["staccato", "accent", "tenuto", "breath", "slur"] as const;
+export type Mark = (typeof ALL_MARKS)[number];
+/** 这位不认的记号（写在谱上照画、画灰，出声不受影响）：引擎没实现的 + 底色不留缝时的连线 / 保持。 */
+export function ignoredArts(engine: string | null | undefined, gapSec = 0): Mark[] {
   const h = engine ? HONORS[engine] : undefined;
-  return h ? ALL_ARTS.filter((a) => !h.includes(a)) : [];
+  return h ? ALL_MARKS.filter((a) => !h.includes(a) || (GAP_ONLY.includes(a) && !(gapSec > 0))) : [];
+}
+/** 为什么不认（明说用）：引擎没实现 = "engine"；底色不留缝 = "gap"；月读的连线 / 保持 = "sung"——她本来就连着唱，连线 / 保持对她不改变什么，
+ *  断句用呼吸（连线和呼吸是同一件事的两头：音和下一个音之间连还是断；2026-10-08 user「连线vs呼吸这两个干的是不是一件事…月读是最需要断句的」）。 */
+export function whyIgnored(engine: string | null | undefined, m: Mark): "engine" | "gap" | "sung" {
+  if (engine === "tsukuyomi" && GAP_ONLY.includes(m)) return "sung";
+  return engine && HONORS[engine]?.includes(m) ? "gap" : "engine";
 }
 /** 元音版 / SoundFont 这一路（lightNotes）怎么落修的记号：跳音截到 staccatoGate、呼吸收短一口气（两种引擎一样；月读不走这条，走唱谱 + 音量曲线）。
  *  main.ts 的出声和 test/honors.test.ts 都从这里取，不各写一份。 */
-export function lightMarks(spec: { staccatoGate: number }): { staccatoGate: number; breath: boolean } { return { staccatoGate: spec.staccatoGate, breath: true }; }
+export function lightMarks(spec: { staccatoGate: number; gapSec?: number }): { staccatoGate: number; breath: boolean; gapSec: number } { return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0 }; }

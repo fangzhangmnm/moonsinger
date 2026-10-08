@@ -736,6 +736,28 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         if (!a.note || !b.note) continue;
         if ((b.j > 0 && a.index === b.index) || (b.tie && a.last)) tieBetween(a, b);
       }
+      // 8½. 连线（2026-10-08 连断）：一串「连到下一个」的音 = 一条弧，从第一个音的符头到被连到的那个音的符头；画在符干的另一侧、越过中间的音；
+      //   跨行 = 每行一段（行尾 / 行头开口）。台上那位不认（月读还没接 / 本来就不留缝）= 画灰（user「演奏者不认的记号也变灰」）
+      const headOf = new Map<number, Chunk>();
+      for (const c of realChunks) if (c.note && c.j === 0 && !headOf.has(c.index)) headOf.set(c.index, c);
+      const noteIdx = [...headOf.keys()].sort((x, y) => x - y), slurOf = (k: number) => !!(tokens[noteIdx[k]] as NoteTok).slur;
+      const ext = (c: Chunk, below: boolean) => { const ds = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff)); return yOf(RW(c), below ? Math.min(...ds) : Math.max(...ds)); };
+      for (let k = 0; k < noteIdx.length; k++) {
+        if (!slurOf(k) || (k > 0 && slurOf(k - 1))) continue;   // 一串的头
+        let e = k; while (e < noteIdx.length - 1 && slurOf(e)) e++;
+        if (e === k) continue;                                  // 后面没有音可连
+        const run = noteIdx.slice(k, e + 1).map((x) => headOf.get(x)!).filter((c) => c.pitch), below = upOf.get(run[0]) ?? false, sgn = below ? 1 : -1;
+        const groups: Chunk[][] = [];
+        for (const c of run) { const g = groups[groups.length - 1]; if (g && g[0].system === c.system) g.push(c); else groups.push([c]); }
+        groups.forEach((g, gi) => {
+          const f = g[0], l = g[g.length - 1], openL = gi > 0, openR = gi < groups.length - 1;
+          const xa = openL ? nhX(f) - P(2) : nhX(f) + nhW(f) / 2, xb = openR ? nhX(l) + nhW(l) + P(2) : nhX(l) + nhW(l) / 2;
+          if (xb - xa < P(1)) return;
+          const ya = ext(f, below) + sgn * P(1.2), yb = ext(l, below) + sgn * P(1.2);
+          const peak = g.map((c) => ext(c, below) + sgn * P(2.2)), cy = below ? Math.max(ya, yb, ...peak) + P(0.6) : Math.min(ya, yb, ...peak) - P(0.6);
+          prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy} ${xb - (xb - xa) * 0.2},${cy} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
+        });
+      }
       // 9. 歌词连字符（英文断开的音节）：画在两个歌词中间
       for (let n = 0; n < partLyrics.length; n++) {
         const L = partLyrics[n], tok = tokens[L.index] as NoteTok;

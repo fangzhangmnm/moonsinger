@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, ART_NAME, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { type Art, ART_NAME, type Dyn, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -21,7 +21,7 @@ import { Pad, HER_RANGE, type HintRange } from "../ui/pad.ts";
 import { toLabScore, type SingLang } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
-import { DEFAULT_CALIBRATION_DB } from "../format/performance.ts";
+import { DEFAULT_CALIBRATION_DB, GAP_CLASS_SEC, GAP_CLASS_LABEL, gapClassOf } from "../format/performance.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
@@ -30,10 +30,10 @@ import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { mixTracks, applyGain } from "../audio/mix.ts";
-import { gainSegments, noteEnd, ignoredArts, lightMarks } from "../score/perform.ts";
+import { gainSegments, noteEnd, ignoredArts, whyIgnored, lightMarks, type Mark } from "../score/perform.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
 import { GmSynth } from "../gm/synth.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
@@ -82,13 +82,20 @@ doc.saved.lounge = loungeKey();
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => st.song.parts.find((p) => p.id === st.at.part) ?? st.song.parts[0];
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
-const ignoredHere = (): Art[] => ignoredArts(activeInstrument(doc.extras, curPart().role)?.engine) as Art[];
-/** 刚写上了一个台上那位不认的记号 → 明说（照样写进谱、画灰，出声不受影响）。 */
-function discloseArt(prev: EditorState, a: Art): void {
+const ignoredFor = (role: string): Mark[] => ignoredArts(activeInstrument(doc.extras, role)?.engine, activePerfSpec(doc.extras, role).gapSec);
+const ignoredHere = (): Mark[] => ignoredFor(curPart().role);
+const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: "连线" };
+/** 刚写上了一个台上那位不认的记号 → 明说（照样写进谱、画灰，出声不受影响）。连线 / 保持在「本来就不留缝」的人那里也是这样（连断，2026-10-08）。 */
+function discloseArt(prev: EditorState, a: Mark): void {
   if (!ignoredHere().includes(a)) return;
-  const n = (s: EditorState) => tr(s).filter((t) => t.kind === "note" && (t.art ?? []).includes(a)).length;
+  const has = (t: Token) => t.kind === "note" && (a === "slur" ? !!t.slur : (t.art ?? []).includes(a as Art));
+  const n = (s: EditorState) => tr(s).filter(has).length;
   if (n(st) <= n(prev)) return;
-  info(`${activeCandidateName(doc.extras, curPart().role) || "台上这位"}不认${ART_NAME[a]}：写在谱上了（画灰），出声不受影响`);
+  const role = curPart().role, who = activeCandidateName(doc.extras, role) || "台上这位";
+  const why = whyIgnored(activeInstrument(doc.extras, role)?.engine, a);
+  info(why === "sung" ? `${who}本来就连着唱：${MARK_NAME[a]}写在谱上了（画灰），出声不变；要断句用呼吸`
+    : why === "gap" ? `${who}本来就不留缝（乐器页「音和音之间」= 0）：${MARK_NAME[a]}写在谱上了（画灰），出声不变`
+    : `${who}不认${MARK_NAME[a]}：写在谱上了（画灰），出声不受影响`);
 }
 const curRole = (): string => curPart().role;
 /** 声部的显示 / 出声状态：隐藏（不画）、静音、独奏——这次打开里有效，不进文件（user 2026-10-08「不同的声部视图和出声应该分别可以solo和hide」）。 */
@@ -156,7 +163,7 @@ function updateChrome(): void {
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n = st.sel ? st.sel.to - st.sel.from : 0;
   if (!n) selFix = false;
-  const fix = selFix ? { art: artStateSel(st), dyn: dynMarkSel(st), ignores: ignoredHere() } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const fix = selFix ? { art: artStateSel(st), slur: slurStateSel(st), dyn: dynMarkSel(st), ignores: ignoredHere() } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen, fix); }
 }
 function setClip(t: Token[]): void {
@@ -175,6 +182,7 @@ async function pasteNow(): Promise<void> {
 async function selVerb(v: SelVerb): Promise<void> {
   // 修（2026-10-08）：演奏法 / 力度只改选中的那几个音（选区留着接着改）；都走 update() = 在撤销里
   if (v.startsWith("art:")) { const prev = st, a = v.slice(4) as Art; update(toggleArtSel(st, a)); discloseArt(prev, a); return; }
+  if (v === "slur") { const prev = st; update(toggleSlurSel(st)); discloseArt(prev, "slur"); return; }
   if (v.startsWith("dyn:")) { update(setDynSel(st, v === "dyn:none" ? null : (v.slice(4) as Dyn))); return; }
   switch (v) {
     case "fix": selFix = true; updateChrome(); return;
@@ -448,8 +456,10 @@ const pad = new Pad(padEl, {
     if (c.k === "caret" && half === "once") setHalf("off");   // 挪光标 = 取消「凑满一份」
     const nx = apply(st, withHalf(c), performance.now());
     if (c.k === "art" && nx === st) { info(`${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
+    if (c.k === "slur" && nx === st) { info("连线从一个音连到下一个音（光标前面是休止或者还没有音）"); return; }
     const prev = st; update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
     if (c.k === "art") discloseArt(prev, c.a);
+    if (c.k === "slur") discloseArt(prev, "slur");
   },
   onUnit: (u) => { if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n) => update(setTuplet(st, n)),
@@ -569,7 +579,7 @@ const LEAD_IN = 0.5;   // 月读核心 OPT.leadIn（sing-core.mjs）：第一个
 const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。tempoMap = 第一个声部的速度表（别的声部按它算秒数）。 */
 /** marks = 修的记号怎么落到这一路上（跳音截短到 staccatoGate；breath = 元音版在呼吸处收短一口气）；不给 = 照谱满长（试听 / 听开头）。 */
-function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean }): { midi: number; t0: number; t1: number }[] {
+function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean; gapSec: number }): { midi: number; t0: number; t1: number }[] {
   const notes: { midi: number; t0: number; t1: number }[] = [];
   let open = new Map<number, { midi: number; t0: number; t1: number }>();   // 上一个音正在响的各音高（连音线按音高接）
   for (const { index, tok, t0, t1 } of timeline(tokens, tempoMap)) {   // 秒数按速度记号一段一段算好了
@@ -578,8 +588,8 @@ function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: {
     const nextOpen = new Map<number, { midi: number; t0: number; t1: number }>();
     for (const p of ps) {
       const midi = midiOf(p), prev = tok.tie ? open.get(midi) : undefined;
-      if (prev) { prev.t1 = t1; nextOpen.set(midi, prev); continue; }
-      const n = { midi, t0, t1: marks && tok.art ? noteEnd(t0, t1, tok.art, marks) : t1 }; notes.push(n); nextOpen.set(midi, n);
+      if (prev) { prev.t1 = marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1; nextOpen.set(midi, prev); continue; }   // 连音线接着的：缝 / 跳音按最后这一段算
+      const n = { midi, t0, t1: marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1 }; notes.push(n); nextOpen.set(midi, n);
     }
     open = nextOpen;
   }
@@ -1169,7 +1179,7 @@ function partViews(): PartView[] {
   return st.song.parts.map((p, k) => {
     const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown";
-    return { id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredArts(eng) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
+    return { id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -1502,6 +1512,12 @@ function drawInst(): void {
   const how =
     (eng !== "unknown" ? row("响度", `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="这位演奏者小声 1 dB">−1 dB</button><button class="btn" data-v="cal:1" title="大声 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="回到默认 ${fmtDb(DEFAULT_CALIBRATION_DB)}">默认</button>` : ""}`,
       `这位演奏者自己的音量：默认都是 ${fmtDb(DEFAULT_CALIBRATION_DB)}（月读也是），几个声部叠在一起才不顶到天花板、不把声音压变样；录音室的推子另算`) : "") +
+    // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
+    //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
+    ((eng === "soundfont" || eng === "vowel-sampler") ? ((gap, cls) => row("音和音之间", `<b class="ip-val">${Math.round(gap * 1000)} ms</b>` +
+      `<button class="btn" data-v="gap:-0.01" title="缝小 10 ms（更连）">−10</button><button class="btn" data-v="gap:0.01" title="缝大 10 ms（更断）">+10</button>` +
+      (gap !== GAP_CLASS_SEC[cls] ? `<button class="btn" data-v="gap:def" title="回到默认 ${Math.round(GAP_CLASS_SEC[cls] * 1000)} ms">默认</button>` : ""),
+      `不写记号的音和下一个音之间留的缝：0 = 连着。${GAP_CLASS_LABEL[cls]}默认 ${Math.round(GAP_CLASS_SEC[cls] * 1000)} ms。连线（连奏）、保持的音不留缝；呼吸 = 这里断开；跳音另算`))(activePerfSpec(doc.extras, role).gapSec, active ? gapClassOf(active.bank, active.program) : "none") : "") +
     // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
     //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
     (active?.sfx ? ((fixed, al) => row("音效", chip("sfx:fixed", "固定原速", fixed, "每个音都敲原速键：写谱按键、播放都是原来的样子；谱上写的音高照留，只是不拿来出声") +
@@ -1553,6 +1569,7 @@ instEl.addEventListener("click", (e) => {
   else if (v === "sfx:fixed") { const on = activeGm(doc.extras, role)?.note === undefined; updateExtras(withSfxFixed(doc.extras, role, on, st.song.hum), { kind: "lounge", label: `「${rn}」${on ? "固定原速" : "不固定原速（按写的音变调）"}` }); synth.allOff(); gmHeld.clear(); }
   else if (v === "sfx:align") { const on = !activeGm(doc.extras, role)?.sfx?.align; updateExtras(withSfxAlign(doc.extras, role, on, st.song.hum), { kind: "lounge", label: `「${rn}」音高对齐${on ? "开" : "关"}` }); synth.allOff(); gmHeld.clear(); }
   else if (v.startsWith("tr:")) { const d = Number(v.slice(3)), next = d === 0 ? 0 : activeTranspose(doc.extras, role) + d; updateExtras(withTranspose(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」修八度 / 移调 ${next} 半音` }, "transpose"); synth.allOff(); gmHeld.clear(); }
+  else if (v.startsWith("gap:")) { const g = activeGm(doc.extras, role), def = GAP_CLASS_SEC[g ? gapClassOf(g.bank, g.program) : "none"], next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4)))); updateExtras(withGapSec(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」音和音之间 ${Math.round(next * 1000)} ms` }, "gap"); }
   else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d)); updateExtras(withCalibration(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
   else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
   else return;

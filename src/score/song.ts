@@ -33,7 +33,9 @@ export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
 /** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[] }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+//   slur（2026-10-08 连断，Claude Opus 5.5）= 连线：这个音连到下一个音（不留缝）；一串连着的 = 一条连线。MusicXML <slur type="start/stop"> 原生。
+//     user「连和断，嗯就是我想的，能做吗」「连断 预设 都同意」：底色归演奏者（articulation.gapSec），谱上的连线只改局部。
 //   chord（2026-10-08 polyphony）= 叠音：pitch 之外的音高，都比 pitch 低、从高到低；pitch = 最高的那个 = 旋律线（唱的人只读它：user「一个 Polyphony 换月读…应该是只读上面的旋律线」）。MusicXML = <chord/>。
 export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
 export interface BarTok { kind: "bar"; id: number }
@@ -403,6 +405,33 @@ export function toggleArtBefore(st: EditorState, a: Art): EditorState | null {
   return null;
 }
 export const toggleBreath = (st: EditorState): EditorState | null => toggleArtBefore(st, "breath");
+/** 连线（选区）：选中的音连起来——前 n−1 个标「连到下一个」；只选了一个 = 它连到下一个音。都连着 = 都去掉。没选音 = 原样。 */
+export function toggleSlurSel(st: EditorState): EditorState {
+  const idx = selNoteIdx(st); if (!idx.length) return st;
+  const on = idx.length === 1 ? idx : idx.slice(0, -1), toks = tr(st), nt = toks.slice();
+  const all = on.every((i) => (toks[i] as NoteTok).slur);
+  for (const i of on) nt[i] = withSlur(nt[i] as NoteTok, !all);
+  return next(st, nt);
+}
+/** 连线（pad 符号层）：有选区 = 选区那样；没有 = 光标前最近的那个音连到下一个音（再点 = 去掉）；前面是休止 / 没有音 = null。 */
+export function toggleSlurBefore(st: EditorState): EditorState | null {
+  if (st.sel) { const nx = toggleSlurSel(st); return nx === st ? null : nx; }
+  const toks = tr(st);
+  for (let i = st.caret - 1; i >= headLen(toks); i--) {
+    const t = toks[i];
+    if (t.kind === "rest") return null;
+    if (t.kind !== "note") continue;
+    const nt = toks.slice(); nt[i] = withSlur(t, !t.slur); return next(st, nt);
+  }
+  return null;
+}
+/** 选区里的连线状态（「修」那一排的开关）：都连着 / 有些 / 没有。目标 = 同 toggleSlurSel（前 n−1 个；只选一个 = 它自己）。 */
+export function slurStateSel(st: EditorState): "all" | "some" | "none" {
+  const idx = selNoteIdx(st); if (!idx.length) return "none";
+  const on = idx.length === 1 ? idx : idx.slice(0, -1), n = on.filter((i) => (tr(st)[i] as NoteTok).slur).length;
+  return n === 0 ? "none" : n === on.length ? "all" : "some";
+}
+export function withSlur(t: NoteTok, on: boolean): NoteTok { if (on) return { ...t, slur: true }; const { slur: _s, ...rest } = t; return rest; }
 /** 第 i 个 token 那儿生效的力度（往前找最近的力度记号；没有 = mf）。 */
 export function dynAt(tokens: Token[], i: number): Dyn {
   for (let j = Math.min(i, tokens.length) - 1; j >= 0; j--) { const t = tokens[j]; if (t.kind === "dyn") return t.value; }

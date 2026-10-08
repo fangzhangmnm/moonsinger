@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.26-2026-10-08";
+var APP_VERSION = "v0.6.27-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3125,6 +3125,41 @@ function toggleArtBefore(st3, a10) {
     return next(st3, nt2);
   }
   return null;
+}
+function toggleSlurSel(st3) {
+  const idx = selNoteIdx(st3);
+  if (!idx.length) return st3;
+  const on2 = idx.length === 1 ? idx : idx.slice(0, -1), toks = tr(st3), nt2 = toks.slice();
+  const all = on2.every((i10) => toks[i10].slur);
+  for (const i10 of on2) nt2[i10] = withSlur(nt2[i10], !all);
+  return next(st3, nt2);
+}
+function toggleSlurBefore(st3) {
+  if (st3.sel) {
+    const nx2 = toggleSlurSel(st3);
+    return nx2 === st3 ? null : nx2;
+  }
+  const toks = tr(st3);
+  for (let i10 = st3.caret - 1; i10 >= headLen(toks); i10--) {
+    const t10 = toks[i10];
+    if (t10.kind === "rest") return null;
+    if (t10.kind !== "note") continue;
+    const nt2 = toks.slice();
+    nt2[i10] = withSlur(t10, !t10.slur);
+    return next(st3, nt2);
+  }
+  return null;
+}
+function slurStateSel(st3) {
+  const idx = selNoteIdx(st3);
+  if (!idx.length) return "none";
+  const on2 = idx.length === 1 ? idx : idx.slice(0, -1), n10 = on2.filter((i10) => tr(st3)[i10].slur).length;
+  return n10 === 0 ? "none" : n10 === on2.length ? "all" : "some";
+}
+function withSlur(t10, on2) {
+  if (on2) return { ...t10, slur: true };
+  const { slur: _s, ...rest } = t10;
+  return rest;
 }
 function dynAt(tokens, i10) {
   for (let j2 = Math.min(i10, tokens.length) - 1; j2 >= 0; j2--) {
@@ -3790,6 +3825,9 @@ function apply(st3, c10, now = Date.now()) {
       return writePhrase(st3);
     case "art":
       return toggleArtBefore(st3, c10.a) ?? st3;
+    case "slur":
+      return toggleSlurBefore(st3) ?? st3;
+    // 光标前那个音连到下一个（有选区 = 选区那样）
     case "shorter":
       return shorter(st3);
     case "longer":
@@ -5095,6 +5133,34 @@ function engrave(song, o10) {
         const a10 = realChunks[n10 - 1], b3 = realChunks[n10];
         if (!a10.note || !b3.note) continue;
         if (b3.j > 0 && a10.index === b3.index || b3.tie && a10.last) tieBetween(a10, b3);
+      }
+      const headOf = /* @__PURE__ */ new Map();
+      for (const c10 of realChunks) if (c10.note && c10.j === 0 && !headOf.has(c10.index)) headOf.set(c10.index, c10);
+      const noteIdx = [...headOf.keys()].sort((x3, y2) => x3 - y2), slurOf = (k2) => !!tokens[noteIdx[k2]].slur;
+      const ext = (c10, below) => {
+        const ds = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff));
+        return yOf(RW(c10), below ? Math.min(...ds) : Math.max(...ds));
+      };
+      for (let k2 = 0; k2 < noteIdx.length; k2++) {
+        if (!slurOf(k2) || k2 > 0 && slurOf(k2 - 1)) continue;
+        let e10 = k2;
+        while (e10 < noteIdx.length - 1 && slurOf(e10)) e10++;
+        if (e10 === k2) continue;
+        const run3 = noteIdx.slice(k2, e10 + 1).map((x3) => headOf.get(x3)).filter((c10) => c10.pitch), below = upOf.get(run3[0]) ?? false, sgn = below ? 1 : -1;
+        const groups = [];
+        for (const c10 of run3) {
+          const g3 = groups[groups.length - 1];
+          if (g3 && g3[0].system === c10.system) g3.push(c10);
+          else groups.push([c10]);
+        }
+        groups.forEach((g3, gi) => {
+          const f2 = g3[0], l10 = g3[g3.length - 1], openL = gi > 0, openR = gi < groups.length - 1;
+          const xa = openL ? nhX(f2) - P2(2) : nhX(f2) + nhW(f2) / 2, xb = openR ? nhX(l10) + nhW(l10) + P2(2) : nhX(l10) + nhW(l10) / 2;
+          if (xb - xa < P2(1)) return;
+          const ya = ext(f2, below) + sgn * P2(1.2), yb = ext(l10, below) + sgn * P2(1.2);
+          const peak = g3.map((c10) => ext(c10, below) + sgn * P2(2.2)), cy2 = below ? Math.max(ya, yb, ...peak) + P2(0.6) : Math.min(ya, yb, ...peak) - P2(0.6);
+          prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy2} ${xb - (xb - xa) * 0.2},${cy2} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
+        });
       }
       for (let n10 = 0; n10 < partLyrics.length; n10++) {
         const L2 = partLyrics[n10], tok = tokens[L2.index];
@@ -6643,6 +6709,7 @@ var degLabel = (g3) => `${g3.alt > 0 ? "\u266F" : g3.alt < 0 ? "\u266D" : ""}${g
 // src/ui/pad.ts
 var HER_RANGE = { lo: 57, hi: 76, who: "\u6708\u8BFB" };
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
+var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var ROWS_MIN = 3;
 var ROWS_MAX = 8;
 var COLS_MIN = 3;
@@ -6972,14 +7039,15 @@ var Pad = class {
     const grid = this.el.querySelector(".pad-grid");
     const ign = new Set(this.host.ignoredArts?.() ?? []);
     const cell = (id2, big, label, title) => {
-      const off = id2.startsWith("art:") && ign.has(id2.slice(4));
-      return `<button class="pad-key sym${id2.startsWith("art:") ? " art" : ""}${off ? " ignored" : ""}" data-sym="${id2}" title="${title}${off ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</small></button>`;
+      const mk2 = id2.startsWith("art:") ? id2.slice(4) : id2 === "slur" ? "slur" : null, off = !!mk2 && ign.has(mk2);
+      return `<button class="pad-key sym${mk2 ? " art" : ""}${off ? " ignored" : ""}" data-sym="${id2}" title="${title}${off ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</small></button>`;
     };
     const items = [
       cell("phrase", `<span class="big">\u3002</span>`, "\u53E5\u53F7", "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09"),
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "\u8DF3\u97F3", "\u8DF3\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u5F97\u77ED\u4FC3\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "\u91CD\u97F3", "\u91CD\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u52A0\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "\u4FDD\u6301", "\u4FDD\u6301\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u6EE1\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
+      cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u548C\u547C\u5438\u76F8\u53CD\u2014\u2014\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("bar", `<span class="big">|</span>`, "\u5C0F\u8282\u7EBF", "\u5C0F\u8282\u7EBF\uFF08\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\uFF09"),
       cell("rest", `<span class="big">0</span>`, "\u4F11\u6B62", "\u4F11\u6B62\uFF08\u957F\u77ED\u540C\u57FA\u7EBF\uFF09"),
@@ -7014,6 +7082,7 @@ var Pad = class {
       if (id2 === "key" || id2 === "time" || id2 === "tempo") this.host.onInsertMark(id2);
       else if (id2 === "staff") this.host.onCommand({ k: "staff" });
       else if (id2.startsWith("art:")) this.host.onCommand({ k: "art", a: id2.slice(4) });
+      else if (id2 === "slur") this.host.onCommand({ k: "slur" });
       else this.host.onCommand({ k: id2 });
       this.render();
     };
@@ -15780,6 +15849,14 @@ var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3
 // src/format/performance.ts
 var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
 var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
+var GAP_CLASS_SEC = { bowed: 0.02, blown: 0.04, none: 0 };
+var GAP_CLASS_LABEL = { bowed: "\u64E6\u5F26\uFF08\u65AD\u594F\uFF1A\u6BCF\u4E2A\u97F3\u6362\u5F13\uFF09", blown: "\u5439\u594F\uFF08\u5410\u97F3\uFF09", none: "\u4E0D\u7559\u7F1D" };
+function gapClassOf(bank, program) {
+  if (bank === 128) return "none";
+  if (program >= 40 && program <= 44 || program === 48 || program === 49 || program === 110) return "bowed";
+  if (program >= 56 && program <= 61 || program >= 64 && program <= 79 || program === 109 || program === 111) return "blown";
+  return "none";
+}
 var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
 var SOUNDFONT_CALIBRATION_DB = -6;
 var DEFAULT_CALIBRATION_DB = -6;
@@ -16722,6 +16799,14 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
     }
     return null;
   };
+  const noteAt = (i10, d3) => {
+    for (let j2 = i10 + d3; j2 >= 0 && j2 < toks.length; j2 += d3) if (toks[j2].kind === "note") return toks[j2];
+    return null;
+  };
+  const slurs = (i10, t10) => {
+    const pv2 = noteAt(i10, -1), nx2 = noteAt(i10, 1), out = !!t10.slur && !!nx2, into = !!pv2?.slur;
+    return `${into && !out ? `<slur type="stop" number="1"/>` : ""}${out && !into ? `<slur type="start" number="1"/>` : ""}`;
+  };
   for (let i10 = head; i10 < toks.length; i10++) {
     const t10 = toks[i10];
     const br = breaks?.get(i10);
@@ -16773,7 +16858,8 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
         const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
         const arts = (t10.art ?? []).filter((a10) => a10 === "breath" ? last : firstPiece);
         const artXml = arts.length ? `<articulations>${arts.map((a10) => `<${ART_XML[a10]}/>`).join("")}</articulations>` : "";
-        if (tieIn || tieOn || artXml) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${artXml}</notations>`;
+        const slurXml = firstPiece ? slurs(i10, t10) : "";
+        if (tieIn || tieOn || artXml || slurXml) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}</notations>`;
         for (const [ci2, cp2] of (t10.chord ?? []).entries()) {
           chordXml.push(`<note id="${id2}c${ci2 + 1}"><chord/>` + pitchXml(cp2) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + typeXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
         }
@@ -16875,6 +16961,11 @@ function readMusicXml(xml, hints) {
     const art = ["staccato", "accent", "tenuto", "breath"].filter((a10) => set.has(a10));
     if (art.length) tok.art = art;
   };
+  const slurEvents = (note2, open) => {
+    const sl2 = kids(note2, "notations").flatMap((nn2) => kids(nn2, "slur"));
+    for (const e10 of sl2) if (e10.attrs.type === "stop") open.delete(e10.attrs.number ?? "1");
+    for (const e10 of sl2) if (e10.attrs.type === "start") open.add(e10.attrs.number ?? "1");
+  };
   const tempoOf = (el2) => {
     const s10 = el2.name === "sound" ? el2 : kid(el2, "sound");
     const v = s10?.attrs.tempo;
@@ -16886,6 +16977,7 @@ function readMusicXml(xml, hints) {
     const H2 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
     const body2 = [], langRead = /* @__PURE__ */ new Map();
     let headPhase = true, divisions = TPQ, voice = null;
+    const openSlurs = /* @__PURE__ */ new Set();
     const mark = (t10) => {
       body2.push(t10);
     };
@@ -16954,6 +17046,9 @@ function readMusicXml(xml, hints) {
                 else delete prevN.chord;
               }
               addArts(prevN, c10);
+              slurEvents(c10, openSlurs);
+              if (openSlurs.size) prevN.slur = true;
+              else delete prevN.slur;
             } else drop("\u53E0\u97F3\uFF08\u524D\u9762\u6CA1\u6709\u80FD\u53E0\u7684\u97F3\uFF09");
             continue;
           }
@@ -16982,6 +17077,8 @@ function readMusicXml(xml, hints) {
           const tok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null, ...staffOf };
           if (kids(c10, "tie").some((t10) => t10.attrs.type === "stop")) tok.tie = true;
           addArts(tok, c10);
+          slurEvents(c10, openSlurs);
+          if (openSlurs.size) tok.slur = true;
           const lyrics = kids(c10, "lyric"), ly2 = lyrics.find((l10) => (l10.attrs.number ?? "1") === "1") ?? lyrics[0];
           if (lyrics.length > 1) drop("\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD");
           if (ly2) {
@@ -17090,7 +17187,7 @@ var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], t
 var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
 var CANDIDATE_ID = { full: "c1", light: "c2" };
-var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } });
+var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0 } });
 function defaultRole(hum, id2) {
   return { version: FORMAT.lounge, id: id2, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
     { id: CANDIDATE_ID.full, name: "\u6708\u8BFB", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
@@ -17306,7 +17403,7 @@ function withSf2Candidate(extras, role, c10, hum) {
   const n10 = Math.max(0, ...list.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
   const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
   const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, ...c10.sfx ? { sfx: { ...c10.sfx } } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
-  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: GAP_CLASS_SEC[gapClassOf(c10.bank, c10.program)] }, calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r10.candidates = list;
   r10.active = id2;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 }, sounds: path ? { ...extras.sounds, [path]: c10.subset } : extras.sounds };
@@ -17389,7 +17486,14 @@ function activePerfSpec(extras, role) {
   const c10 = activeCandidate(extras, role), d3 = c10?.dynamicsDb ?? {}, a10 = c10?.articulation ?? {};
   const num = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
   const dynamicsDb = Object.fromEntries(Object.keys(DYNAMICS_DB).map((k2) => [k2, num(d3[k2], DYNAMICS_DB[k2])]));
-  return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a10.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a10.accentDb, ARTICULATION.accentDb) };
+  return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a10.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a10.accentDb, ARTICULATION.accentDb), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a10.gapSec, 0))) };
+}
+var GAP_MAX_SEC = 0.2;
+function withGapSec(extras, role, sec, hum) {
+  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
+  if (!c10) return extras;
+  c10.articulation = { ...c10.articulation ?? {}, gapSec: Math.round(Math.max(0, Math.min(GAP_MAX_SEC, sec)) * 1e3) / 1e3 };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
 function activeCalibrationDb(extras, role) {
   const c10 = activeCandidate(extras, role);
@@ -17754,24 +17858,31 @@ function gainSegments(tokens, map, spec, gateStaccato) {
   }
   return any ? segs : null;
 }
-function noteEnd(t02, t12, art, o10) {
+function noteEnd(t02, t12, art, o10, slur = false) {
   let end = t12;
   if (art.includes("staccato")) end = t02 + (t12 - t02) * o10.staccatoGate;
+  else if (!slur && !art.includes("tenuto") && (o10.gapSec ?? 0) > 0) end = t12 - Math.min(o10.gapSec, 0.25 * (t12 - t02));
   if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(0.16, 0.25 * (t12 - t02)));
   return end;
 }
 var HONORS = {
   tsukuyomi: ["staccato", "accent", "breath"],
-  "vowel-sampler": ["staccato", "accent", "breath"],
-  soundfont: ["staccato", "accent", "breath"]
+  // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
+  "vowel-sampler": ["staccato", "accent", "breath", "tenuto", "slur"],
+  soundfont: ["staccato", "accent", "breath", "tenuto", "slur"]
 };
-var ALL_ARTS = ["staccato", "accent", "tenuto", "breath"];
-function ignoredArts(engine) {
+var GAP_ONLY = ["tenuto", "slur"];
+var ALL_MARKS = ["staccato", "accent", "tenuto", "breath", "slur"];
+function ignoredArts(engine, gapSec = 0) {
   const h2 = engine ? HONORS[engine] : void 0;
-  return h2 ? ALL_ARTS.filter((a10) => !h2.includes(a10)) : [];
+  return h2 ? ALL_MARKS.filter((a10) => !h2.includes(a10) || GAP_ONLY.includes(a10) && !(gapSec > 0)) : [];
+}
+function whyIgnored(engine, m2) {
+  if (engine === "tsukuyomi" && GAP_ONLY.includes(m2)) return "sung";
+  return engine && HONORS[engine]?.includes(m2) ? "gap" : "engine";
 }
 function lightMarks(spec) {
-  return { staccatoGate: spec.staccatoGate, breath: true };
+  return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0 };
 }
 
 // src/gm/sound-cache.ts
@@ -25662,6 +25773,7 @@ function unserializeDesk(json) {
 }
 
 // src/ui/sel-bar.ts
+var SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var ART_LABEL = { staccato: ["\uE4A2", "\u8DF3\u97F3"], accent: ["\uE4A0", "\u91CD\u97F3"], tenuto: ["\uE4A4", "\u4FDD\u6301"], breath: ["\uE4CE", "\u547C\u5438"] };
 var DYN_GLYPH2 = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
 var SelBar = class {
@@ -25685,7 +25797,7 @@ var SelBar = class {
     }
     const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
     if (sel && fix) {
-      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<span class="sel-gap"></span>` + DYNS.map((d3) => `<button type="button" class="btn fix-dyn${fix.dyn === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u653E\u5728\u9009\u533A\u5F00\u5934\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6"><span class="smufl">${DYN_GLYPH2[d3]}</span></button>`).join("") + (fix.dyn ? b3("dyn:none", "\u53BB\u6389\u529B\u5EA6") : "") + b3("fixdone", "\u5B8C\u6210", "", "primary");
+      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<button type="button" class="btn fix-art fix-slur${fix.slur === "all" ? " is-on" : fix.slur === "some" ? " is-some" : ""}" data-v="slur" title="\u8FDE\u7EBF\uFF1A\u9009\u4E2D\u7684\u97F3\u8FDE\u8D77\u6765\uFF08\u4E0D\u7559\u7F1D\uFF09\uFF1B\u90FD\u8FDE\u7740 = \u53BB\u6389${fix.ignores?.includes("slur") ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u73B0\u5728\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF09" : ""}">${SLUR_SVG}<span>\u8FDE\u7EBF</span>${fix.ignores?.includes("slur") ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button><span class="sel-gap"></span>` + DYNS.map((d3) => `<button type="button" class="btn fix-dyn${fix.dyn === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u653E\u5728\u9009\u533A\u5F00\u5934\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6"><span class="smufl">${DYN_GLYPH2[d3]}</span></button>`).join("") + (fix.dyn ? b3("dyn:none", "\u53BB\u6389\u529B\u5EA6") : "") + b3("fixdone", "\u5B8C\u6210", "", "primary");
       this.el.hidden = false;
       return;
     }
@@ -25713,12 +25825,17 @@ var coverRev = 0;
 var loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), doc.extras.studio?.mics ?? []]);
 doc.saved.lounge = loungeKey();
 var curPart = () => st2.song.parts.find((p2) => p2.id === st2.at.part) ?? st2.song.parts[0];
-var ignoredHere = () => ignoredArts(activeInstrument(doc.extras, curPart().role)?.engine);
+var ignoredFor = (role) => ignoredArts(activeInstrument(doc.extras, role)?.engine, activePerfSpec(doc.extras, role).gapSec);
+var ignoredHere = () => ignoredFor(curPart().role);
+var MARK_NAME = { ...ART_NAME, slur: "\u8FDE\u7EBF" };
 function discloseArt(prev, a10) {
   if (!ignoredHere().includes(a10)) return;
-  const n10 = (s10) => tr(s10).filter((t10) => t10.kind === "note" && (t10.art ?? []).includes(a10)).length;
+  const has = (t10) => t10.kind === "note" && (a10 === "slur" ? !!t10.slur : (t10.art ?? []).includes(a10));
+  const n10 = (s10) => tr(s10).filter(has).length;
   if (n10(st2) <= n10(prev)) return;
-  info(`${activeCandidateName(doc.extras, curPart().role) || "\u53F0\u4E0A\u8FD9\u4F4D"}\u4E0D\u8BA4${ART_NAME[a10]}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD`);
+  const role = curPart().role, who = activeCandidateName(doc.extras, role) || "\u53F0\u4E0A\u8FD9\u4F4D";
+  const why = whyIgnored(activeInstrument(doc.extras, role)?.engine, a10);
+  info(why === "sung" ? `${who}\u672C\u6765\u5C31\u8FDE\u7740\u5531\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u8981\u65AD\u53E5\u7528\u547C\u5438` : why === "gap" ? `${who}\u672C\u6765\u5C31\u4E0D\u7559\u7F1D\uFF08\u4E50\u5668\u9875\u300C\u97F3\u548C\u97F3\u4E4B\u95F4\u300D= 0\uFF09\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8` : `${who}\u4E0D\u8BA4${MARK_NAME[a10]}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD`);
 }
 var curRole = () => curPart().role;
 var partView = /* @__PURE__ */ new Map();
@@ -25780,7 +25897,7 @@ function updateChrome() {
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
   if (!n10) selFix = false;
-  const fix = selFix ? { art: artStateSel(st2), dyn: dynMarkSel(st2), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const fix = selFix ? { art: artStateSel(st2), slur: slurStateSel(st2), dyn: dynMarkSel(st2), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) {
     selSig = sig;
     selBar.update(n10, !!clip, over || studio.isOpen, fix);
@@ -25812,6 +25929,12 @@ async function selVerb(v) {
     const prev = st2, a10 = v.slice(4);
     update(toggleArtSel(st2, a10));
     discloseArt(prev, a10);
+    return;
+  }
+  if (v === "slur") {
+    const prev = st2;
+    update(toggleSlurSel(st2));
+    discloseArt(prev, "slur");
     return;
   }
   if (v.startsWith("dyn:")) {
@@ -26186,10 +26309,15 @@ var pad3 = new Pad(padEl, {
       info(`${ART_NAME[c10.a]}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
       return;
     }
+    if (c10.k === "slur" && nx2 === st2) {
+      info("\u8FDE\u7EBF\u4ECE\u4E00\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
+      return;
+    }
     const prev = st2;
     update(nx2);
     if (c10.k === "rest" || c10.k === "extend") afterWrite();
     if (c10.k === "art") discloseArt(prev, c10.a);
+    if (c10.k === "slur") discloseArt(prev, "slur");
   },
   onUnit: (u2) => {
     if (half === "once") {
@@ -26384,11 +26512,11 @@ function lightNotes(tokens, tempoMap, poly = false, marks) {
     for (const p2 of ps) {
       const midi = midiOf(p2), prev = tok.tie ? open.get(midi) : void 0;
       if (prev) {
-        prev.t1 = t12;
+        prev.t1 = marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12;
         nextOpen.set(midi, prev);
         continue;
       }
-      const n10 = { midi, t0: t02, t1: marks && tok.art ? noteEnd(t02, t12, tok.art, marks) : t12 };
+      const n10 = { midi, t0: t02, t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12 };
       notes.push(n10);
       nextOpen.set(midi, n10);
     }
@@ -26851,7 +26979,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "bbaddc6b02cd",
+  cssHash: "e6b92b454376",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -27255,7 +27383,7 @@ function partViews() {
   return st2.song.parts.map((p2, k2) => {
     const v = pv(p2.id), badges = [v.muted ? "\u9759\u97F3" : "", v.solo ? "\u72EC\u594F" : "", v.only ? "\u53EA\u770B\u5B83" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p2.role)?.engine ?? "unknown";
-    return { id: p2.id, name: labels[k2], empty: eng === "unknown", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ignores: ignoredArts(eng) };
+    return { id: p2.id, name: labels[k2], empty: eng === "unknown", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ignores: ignoredFor(p2.role) };
   });
 }
 function afterViewChange() {
@@ -27722,7 +27850,13 @@ function drawInst() {
     "\u54CD\u5EA6",
     `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="\u56DE\u5230\u9ED8\u8BA4 ${fmtDb(DEFAULT_CALIBRATION_DB)}">\u9ED8\u8BA4</button>` : ""}`,
     `\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F ${fmtDb(DEFAULT_CALIBRATION_DB)}\uFF08\u6708\u8BFB\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u5F55\u97F3\u5BA4\u7684\u63A8\u5B50\u53E6\u7B97`
-  ) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
+  ) : "") + // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
+  //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
+  (eng === "soundfont" || eng === "vowel-sampler" ? ((gap, cls) => row(
+    "\u97F3\u548C\u97F3\u4E4B\u95F4",
+    `<b class="ip-val">${Math.round(gap * 1e3)} ms</b><button class="btn" data-v="gap:-0.01" title="\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09">\u221210</button><button class="btn" data-v="gap:0.01" title="\u7F1D\u5927 10 ms\uFF08\u66F4\u65AD\uFF09">+10</button>` + (gap !== GAP_CLASS_SEC[cls] ? `<button class="btn" data-v="gap:def" title="\u56DE\u5230\u9ED8\u8BA4 ${Math.round(GAP_CLASS_SEC[cls] * 1e3)} ms">\u9ED8\u8BA4</button>` : ""),
+    `\u4E0D\u5199\u8BB0\u53F7\u7684\u97F3\u548C\u4E0B\u4E00\u4E2A\u97F3\u4E4B\u95F4\u7559\u7684\u7F1D\uFF1A0 = \u8FDE\u7740\u3002${GAP_CLASS_LABEL[cls]}\u9ED8\u8BA4 ${Math.round(GAP_CLASS_SEC[cls] * 1e3)} ms\u3002\u8FDE\u7EBF\uFF08\u8FDE\u594F\uFF09\u3001\u4FDD\u6301\u7684\u97F3\u4E0D\u7559\u7F1D\uFF1B\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u8DF3\u97F3\u53E6\u7B97`
+  ))(activePerfSpec(doc.extras, role).gapSec, active ? gapClassOf(active.bank, active.program) : "none") : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
   //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
   (active?.sfx ? ((fixed, al2) => row(
     "\u97F3\u6548",
@@ -27825,6 +27959,9 @@ instEl.addEventListener("click", (e10) => {
     updateExtras(withTranspose(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u4FEE\u516B\u5EA6 / \u79FB\u8C03 ${next2} \u534A\u97F3` }, "transpose");
     synth.allOff();
     gmHeld.clear();
+  } else if (v.startsWith("gap:")) {
+    const g3 = activeGm(doc.extras, role), def = GAP_CLASS_SEC[g3 ? gapClassOf(g3.bank, g3.program) : "none"], next2 = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4))));
+    updateExtras(withGapSec(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 ${Math.round(next2 * 1e3)} ms` }, "gap");
   } else if (v.startsWith("cal:")) {
     const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d3));
     updateExtras(withCalibration(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u54CD\u5EA6\u6821\u51C6 ${next2} dB` }, "cal");
@@ -29045,4 +29182,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-4cc2381e8766.mjs.map
+//# sourceMappingURL=moonsinger-0b5f557230dc.mjs.map
