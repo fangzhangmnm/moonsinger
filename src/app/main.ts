@@ -20,6 +20,8 @@ import { installPlatformGuards } from "../ui/platform-guards.ts";
 import { Pad, HER_RANGE, type HintRange } from "../ui/pad.ts";
 import { toLabScore, type SingLang } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
+import { holdAudio, releaseAudio } from "../singer/audio.ts";
+import { DEFAULT_CALIBRATION_DB } from "../format/performance.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
@@ -564,10 +566,14 @@ function micOf(part: PartDef): { gainDb: number; pan: number } {
  *  哪个声部响不了 = 那个声部不出声、报错，其余照出（user「不是显示自动上，而是就是不出声，报错，人类手动换」）。roles = 真出了声的声部的角色（署名推演用）。 */
 async function renderMix(scope: RenderScope = "view"): Promise<{ left: Float32Array; right: Float32Array; sr: number; roles: string[] } | null> {
   const parts = audibleParts(), got: { part: PartDef; r: Rendered }[] = [], errs: string[] = [];
-  for (const part of parts) {
+  // 月读本人先唱：她的引擎（onnxruntime 的 wasm 堆）要一大块内存，先起好再让 SoundFont 的库进 worker（iPad 上反过来容易「Out of memory」；
+  //   user 2026-10-08「感觉是没有gc」）。混音 / 署名照原来的声部顺序
+  const heavyFirst = [...parts].sort((a, b) => Number(activeInstrument(doc.extras, b.role)?.engine === "tsukuyomi") - Number(activeInstrument(doc.extras, a.role)?.engine === "tsukuyomi"));
+  for (const part of heavyFirst) {
     try { const r = await renderPart(part, scope); if (r) got.push({ part, r }); }
     catch (e) { errs.push(`「${roleName(doc.extras, part.role)}」：${(e as Error).message}`); }
   }
+  got.sort((a, b) => parts.indexOf(a.part) - parts.indexOf(b.part));
   if (errs.length) showError(`${errs.join("；")}。${got.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
   if (!got.length) return null;
   const m = mixTracks(got.map(({ part, r }) => { const { gainDb, pan } = micOf(part), segs = partGain(part, scope); return { samples: segs ? applyGain(r.samples, r.sr, r.at, segs) : r.samples, sr: r.sr, at: r.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; }), GM_SR);
@@ -628,6 +634,7 @@ async function togglePlay(): Promise<void> {
   if (singer.playing || sampler.songPlaying) { singer.stop(); sampler.stopSong(); playIcon(false); return; }
   if (singing) return;
   singer.unlock();   // 在用户手势里先把声音打开（iPad）
+  holdAudio();       // 准备（第一次唱要几十秒）期间让声音一直醒着，准备完才开播也有声（src/singer/audio.ts）
   singing = true; $("playBtn").classList.add("is-on");
   try {
     const t0 = performance.now(), m = await renderMix();
@@ -639,7 +646,7 @@ async function togglePlay(): Promise<void> {
   } catch (e) {
     showError(`放不了：${(e as Error).message}`);
     progress("");
-  } finally { singing = false; $("playBtn").classList.remove("is-on"); }
+  } finally { releaseAudio(); singing = false; $("playBtn").classList.remove("is-on"); }
 }
 $("playBtn").addEventListener("click", () => { void togglePlay(); });
 
@@ -1316,8 +1323,8 @@ function drawInst(): void {
   const row = (k: string, v: string, note = "") => `<span class="ip-k">${k}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note ? `<div class="ip-note">${note}</div>` : ""}</div>`;
   // 这位怎么演：响度（契约「看得见、能调的默认，不偷偷自动」）/ 音效的固定原速与音高对齐 / 修八度（兜底）/ 月读没写歌词的音
   const how =
-    (eng !== "unknown" ? row("响度", `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="这位演奏者小声 1 dB">−1 dB</button><button class="btn" data-v="cal:1" title="大声 1 dB">+1 dB</button>${cal !== 0 ? `<button class="btn" data-v="cal:0" title="回到 0（和月读一样的基准）">归零</button>` : ""}`,
-      "这位演奏者自己的音量：月读 = 0 当基准，新加的乐器默认 −6；录音室的推子另算") : "") +
+    (eng !== "unknown" ? row("响度", `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="这位演奏者小声 1 dB">−1 dB</button><button class="btn" data-v="cal:1" title="大声 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="回到默认 ${fmtDb(DEFAULT_CALIBRATION_DB)}">默认</button>` : ""}`,
+      `这位演奏者自己的音量：默认都是 ${fmtDb(DEFAULT_CALIBRATION_DB)}（月读也是），几个声部叠在一起才不顶到天花板、不把声音压变样；录音室的推子另算`) : "") +
     // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
     //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
     (active?.sfx ? ((fixed, al) => row("音效", chip("sfx:fixed", "固定原速", fixed, "每个音都敲原速键：写谱按键、播放都是原来的样子；谱上写的音高照留，只是不拿来出声") +
@@ -1369,7 +1376,7 @@ instEl.addEventListener("click", (e) => {
   else if (v === "sfx:fixed") { const on = activeGm(doc.extras, role)?.note === undefined; updateExtras(withSfxFixed(doc.extras, role, on, st.song.hum), { kind: "lounge", label: `「${rn}」${on ? "固定原速" : "不固定原速（按写的音变调）"}` }); synth.allOff(); gmHeld.clear(); }
   else if (v === "sfx:align") { const on = !activeGm(doc.extras, role)?.sfx?.align; updateExtras(withSfxAlign(doc.extras, role, on, st.song.hum), { kind: "lounge", label: `「${rn}」音高对齐${on ? "开" : "关"}` }); synth.allOff(); gmHeld.clear(); }
   else if (v.startsWith("tr:")) { const d = Number(v.slice(3)), next = d === 0 ? 0 : activeTranspose(doc.extras, role) + d; updateExtras(withTranspose(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」修八度 / 移调 ${next} 半音` }, "transpose"); synth.allOff(); gmHeld.clear(); }
-  else if (v.startsWith("cal:")) { const d = Number(v.slice(4)), next = Math.max(-30, Math.min(12, d === 0 ? 0 : activeCalibrationDb(doc.extras, role) + d)); updateExtras(withCalibration(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
+  else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d)); updateExtras(withCalibration(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
   else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
   else return;
   drawInst();

@@ -157,8 +157,12 @@ export class ScoreView {
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
-    this.follow();
+    // 只在光标 / 选区 / 编辑框挪了的时候才把视图拉过去；别的重画（静音 / 独奏的角标、隐藏、换纸设置…）不动人家滚到哪
+    //   （user 2026-10-08「toggle mute solo的时候页面滚动会变」：原来每次重画都 follow，滚开了光标那行再点静音 = 被拽回去）
+    const st2 = this.host.get(), fk = `${st2.at.paper}|${st2.at.part}|${st2.caret}|${st2.sel ? `${st2.sel.from}-${st2.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}|${this.el.clientWidth}x${this.el.clientHeight}`;   // 窗口变了（pad 弹出把谱挤矮）照样跟
+    if (fk !== this.followKey) { this.followKey = fk; this.follow(); }
   }
+  private followKey = "";
 
   /** 这个命中记录是不是光标所在那条 track 的。 */
   private onTrack(h: { system: number }): boolean {
@@ -175,7 +179,7 @@ export class ScoreView {
     Object.assign(this.handles.end.style, { left: `${b.x + b.w + sp * 0.3}px`, top: `${L.lyricY(b.system) + sp * 0.9}px` }); this.handles.end.hidden = false;
   }
   /** 光标那一行滚进视野（软键盘弹出 / 收起时宿主调）。 */
-  followNow(): void { this.follow(); }
+  followNow(): void { this.follow(); }   // 明着要（撤销把视图带过去等）= 照拉
   /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
   private follow(): void {
     const L = this.layout, st = this.host.get(); if (!L) return;

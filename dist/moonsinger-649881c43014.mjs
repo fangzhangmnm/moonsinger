@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.15-2026-10-08";
+var APP_VERSION = "v0.6.16-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3161,13 +3161,25 @@ function writeMark(st3, v) {
   for (let i10 = a10; i10 < b3; i10++) if (tokens[i10].kind === v.kind) return { st: setMark({ ...leave(st3), sel: null }, i10, v), index: i10, fresh: false };
   const id2 = st3.nextId, nt2 = tokens.slice();
   nt2.splice(at2, 0, { ...v, id: id2 });
+  if (v.kind === "key") respellFrom(nt2, at2);
   return { st: next(st3, nt2, { caret: at2 + 1, sel: null, nextId: id2 + 1, log: [] }), index: at2, fresh: true };
+}
+function respellFrom(nt2, i10) {
+  const k2 = nt2[i10];
+  if (k2?.kind !== "key") return;
+  for (let j2 = i10 + 1; j2 < nt2.length && nt2[j2].kind !== "key"; j2++) {
+    const t10 = nt2[j2];
+    if (t10.kind !== "note" || !t10.pitch) continue;
+    const ps = allPitches(t10), qs = ps.map((q2) => keySpell(q2, k2.fifths));
+    if (qs.some((q2, n10) => q2 !== ps[n10])) nt2[j2] = withPitches(t10, qs);
+  }
 }
 function setMark(st3, i10, v) {
   const t10 = tr(st3)[i10];
   if (!t10 || t10.kind !== v.kind) return st3;
   const nt2 = tr(st3).slice();
   nt2[i10] = { ...v, id: t10.id };
+  if (v.kind === "key") respellFrom(nt2, i10);
   return next(st3, nt2, {});
 }
 function deleteMark(st3, i10) {
@@ -3398,6 +3410,12 @@ function modulateSel(st3, toFifths) {
     shift = 1;
   }
   const sel = { from: from + shift, to: to2 + shift };
+  for (let i10 = sel.from; i10 < sel.to; i10++) {
+    const t10 = nt2[i10];
+    if (t10.kind !== "note" || !t10.pitch) continue;
+    const k2 = keyAt(nt2, i10), ps = allPitches(t10), qs = ps.map((q2) => keySpell(q2, k2));
+    if (qs.some((q2, n10) => q2 !== ps[n10])) nt2[i10] = withPitches(t10, qs);
+  }
   return next({ ...st3, nextId }, nt2, { sel, caret: sel.to });
 }
 var setCaret = (st3, caret) => ({ ...leave(st3), sel: null, caret: Math.max(headLen(tr(st3)), Math.min(tr(st3).length, caret)) });
@@ -4721,6 +4739,12 @@ function engrave(song, o10) {
       }
       yCur += P2(SYS_GAP);
     }
+    const staffEnd = Array.from({ length: nSys }, (_2, s10) => {
+      const row = placedCols.filter((c10) => c10.system === s10);
+      if (!row.length) return right;
+      const last = row.reduce((a10, c10) => c10.x > a10.x || c10.x === a10.x && (c10.slot > a10.slot || c10.slot === a10.slot && c10.n > a10.n) ? c10 : a10);
+      return last.bar ? Math.min(right, last.x + 0.7) : right;
+    });
     for (let s10 = 0; s10 < nSys; s10++) {
       const ind = s10 === 0 ? ind0 : 0;
       per.forEach((q2, r10) => {
@@ -4729,7 +4753,7 @@ function engrave(song, o10) {
           const row = rowOf(s10, r10, k2), clef = q2.staves === 2 ? k2 ? "F" : "G" : q2.p.clef ?? "G";
           for (let L2 = 0; L2 < 5; L2++) {
             const y2 = yOf(row, BOTTOM_LINE + 2 * L2);
-            prims.push({ t: "line", x1: P2(MARGIN + ind), y1: y2, x2: P2(right), y2, w: P2(ENGRAVE.staffLine), cls: "staff" });
+            prims.push({ t: "line", x1: P2(MARGIN + ind), y1: y2, x2: P2(staffEnd[s10]), y2, w: P2(ENGRAVE.staffLine), cls: "staff" });
           }
           let hx = MARGIN + ind + 0.6;
           prims.push({ t: "glyph", x: P2(hx), y: yOf(row, clef === "F" ? 36 : 32), ch: clef === "F" ? GLYPH.fClef : GLYPH.gClef, cls: "clef" });
@@ -5927,8 +5951,13 @@ var ScoreView = class {
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
-    this.follow();
+    const st22 = this.host.get(), fk = `${st22.at.paper}|${st22.at.part}|${st22.caret}|${st22.sel ? `${st22.sel.from}-${st22.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}|${this.el.clientWidth}x${this.el.clientHeight}`;
+    if (fk !== this.followKey) {
+      this.followKey = fk;
+      this.follow();
+    }
   }
+  followKey = "";
   /** 这个命中记录是不是光标所在那条 track 的。 */
   onTrack(h2) {
     const L2 = this.layout, st3 = this.host.get(), row = L2.systems[h2.system];
@@ -5953,6 +5982,7 @@ var ScoreView = class {
   followNow() {
     this.follow();
   }
+  // 明着要（撤销把视图带过去等）= 照拉
   /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
   follow() {
     const L2 = this.layout, st3 = this.host.get();
@@ -7131,550 +7161,24 @@ function audioCtx() {
   if (ctx.state === "suspended") void ctx.resume();
   return ctx;
 }
-
-// src/singer/client.ts
-var Singer = class {
-  w = null;
-  seq = 0;
-  pending = /* @__PURE__ */ new Map();
-  src = null;
-  sent = /* @__PURE__ */ new Set();
-  // worker 里已经载过的音色库（sha256）；worker 重建就清
-  worker() {
-    if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-a270f74bfc54.mjs"}`, import.meta.url), { type: "module" });
-    this.sent.clear();
-    this.w.onmessage = (ev2) => {
-      const m2 = ev2.data, p2 = this.pending.get(m2.id);
-      if (!p2) return;
-      if (m2.type === "progress") p2.progress(m2.stage);
-      else if (m2.type === "done") {
-        this.pending.delete(m2.id);
-        p2.ok({ samples: m2.samples, sr: m2.sr, ms: m2.ms });
-      } else {
-        this.pending.delete(m2.id);
-        p2.fail(new Error(m2.message));
-      }
-    };
-    this.w.onerror = (e10) => {
-      this.w?.terminate();
-      this.w = null;
-      for (const p2 of this.pending.values()) p2.fail(new Error(e10.message || "\u6708\u8BFB\u7684 worker \u51FA\u9519"));
-      this.pending.clear();
-    };
-    return this.w;
-  }
-  sing(s10, progress2 = () => {
-  }, extra = {}) {
-    const id2 = ++this.seq;
-    const req = { type: "sing", id: id2, score: s10.SCORE, text: s10.TEXT, tempo: s10.TEMPO_QUARTER, lang: s10.LANG, ...extra };
-    return new Promise((ok2, fail) => {
-      this.pending.set(id2, { ok: ok2, fail, progress: progress2 });
-      this.worker().postMessage(req);
-    });
-  }
-  /** GM 候选按谱出声（契约 §10）：字节只第一次发，之后只发哈希；worker 说没载过就带字节再发一次。 */
-  async gm(sf2, sha256, notes, sampleRate = 44100, tail = 2) {
-    const ask = (bytes) => {
-      const id2 = ++this.seq, w2 = this.worker();
-      const req = { type: "gm", id: id2, sha256, sampleRate, tail, notes, ...bytes ? { sf2: sf2.slice() } : {} };
-      return new Promise((ok2, fail) => {
-        this.pending.set(id2, { ok: ok2, fail, progress: () => {
-        } });
-        w2.postMessage(req);
-      });
-    };
-    try {
-      const r10 = await ask(!this.sent.has(sha256));
-      this.sent.add(sha256);
-      return r10;
-    } catch (e10) {
-      if (!/bank not loaded/.test(e10.message)) throw e10;
-      this.sent.delete(sha256);
-      const r10 = await ask(true);
-      this.sent.add(sha256);
-      return r10;
-    }
-  }
-  /** 播放（必须在用户手势里先调过 unlock()，iPad 才放声）。播完回调 onEnd。 */
-  play(r10, onEnd) {
-    this.stop();
-    const ctx2 = this.unlock();
-    const buf = ctx2.createBuffer(r10.right ? 2 : 1, r10.samples.length, r10.sr);
-    buf.copyToChannel(r10.samples, 0);
-    if (r10.right) buf.copyToChannel(r10.right, 1);
-    const src = ctx2.createBufferSource();
-    src.buffer = buf;
-    src.connect(ctx2.destination);
-    src.onended = () => {
-      if (this.src === src) {
-        this.src = null;
-        onEnd();
-      }
-    };
-    src.start();
-    this.src = src;
-  }
-  stop() {
-    const s10 = this.src;
-    this.src = null;
-    if (s10) {
-      s10.onended = null;
-      try {
-        s10.stop();
-      } catch {
-      }
-    }
-  }
-  get playing() {
-    return this.src !== null;
-  }
-  unlock() {
-    return audioCtx();
-  }
-  // 全 app 共用一个（audio.ts）
-};
-
-// src/export/mp3.ts
-var MP3_QUALITY = {
-  standard: { label: "\u6807\u51C6", note: "\u7ACB\u4F53\u58F0 128k\uFF0C\u7EA6 1 MB / \u5206\u949F", stereo: true, kbps: 128 },
-  small: { label: "\u5C0F\u6587\u4EF6", note: "\u5355\u58F0\u9053 64k\uFF0C\u7EA6 0.5 MB / \u5206\u949F", stereo: false, kbps: 64 }
-};
-function encodeMp3(left, right, sr2, kbps = 64) {
-  return new Promise((ok2, fail) => {
-    const w2 = new Worker(new URL(`./${"mp3-worker-b681ea012d1c.mjs"}`, import.meta.url), { type: "module" });
-    w2.onmessage = (ev2) => {
-      w2.terminate();
-      if (ev2.data.ok) ok2(ev2.data.bytes);
-      else fail(new Error(ev2.data.message));
-    };
-    w2.onerror = (e10) => {
-      w2.terminate();
-      fail(new Error(e10.message || "mp3 \u7F16\u7801 worker \u51FA\u9519"));
-    };
-    const req = { left: left.slice(), ...right ? { right: right.slice() } : {}, sr: sr2, kbps };
-    w2.postMessage(req, [req.left.buffer, ...req.right ? [req.right.buffer] : []]);
-  });
+var keep = null;
+function holdAudio() {
+  if (keep) return;
+  const c10 = audioCtx(), s10 = c10.createConstantSource();
+  s10.offset.value = 0;
+  s10.connect(c10.destination);
+  s10.start();
+  keep = s10;
 }
-
-// src/export/id3.ts
-var enc = (s10) => {
-  const out = new Uint8Array(2 + s10.length * 2);
-  out[0] = 255;
-  out[1] = 254;
-  for (let i10 = 0; i10 < s10.length; i10++) {
-    const c10 = s10.charCodeAt(i10);
-    out[2 + i10 * 2] = c10 & 255;
-    out[3 + i10 * 2] = c10 >> 8;
+function releaseAudio() {
+  const s10 = keep;
+  keep = null;
+  if (!s10) return;
+  try {
+    s10.stop();
+  } catch {
   }
-  return out;
-};
-var cat = (...xs) => {
-  const n10 = xs.reduce((a10, x2) => a10 + x2.length, 0), out = new Uint8Array(n10);
-  let o10 = 0;
-  for (const x2 of xs) {
-    out.set(x2, o10);
-    o10 += x2.length;
-  }
-  return out;
-};
-var ascii = (s10) => Uint8Array.from([...s10].map((c10) => c10.charCodeAt(0) & 127));
-function frame(id2, body2) {
-  const h2 = new Uint8Array(10);
-  h2.set(ascii(id2), 0);
-  const n10 = body2.length;
-  h2[4] = n10 >>> 24 & 255;
-  h2[5] = n10 >>> 16 & 255;
-  h2[6] = n10 >>> 8 & 255;
-  h2[7] = n10 & 255;
-  return cat(h2, body2);
-}
-var textFrame = (id2, s10) => frame(id2, cat(Uint8Array.of(1), enc(s10)));
-function id3v2(f2) {
-  const frames = [];
-  if (f2.title) frames.push(textFrame("TIT2", f2.title));
-  if (f2.artist) frames.push(textFrame("TPE1", f2.artist));
-  if (f2.copyright) frames.push(textFrame("TCOP", f2.copyright));
-  if (f2.copyrightUrl && /^https?:\/\/[\x21-\x7e]+$/.test(f2.copyrightUrl)) frames.push(frame("WCOP", ascii(f2.copyrightUrl)));
-  if (f2.comment) frames.push(frame("COMM", cat(Uint8Array.of(1), ascii("chi"), enc(""), Uint8Array.of(0, 0), enc(f2.comment))));
-  if (f2.software) frames.push(textFrame("TSSE", f2.software));
-  if (!frames.length) return new Uint8Array(0);
-  const body2 = cat(...frames), n10 = body2.length, h2 = new Uint8Array(10);
-  h2.set(ascii("ID3"), 0);
-  h2[3] = 3;
-  h2[4] = 0;
-  h2[5] = 0;
-  h2[6] = n10 >>> 21 & 127;
-  h2[7] = n10 >>> 14 & 127;
-  h2[8] = n10 >>> 7 & 127;
-  h2[9] = n10 & 127;
-  return cat(h2, body2);
-}
-var firstUrl = (s10) => s10 ? /https?:\/\/[\x21-\x7e]+/.exec(s10)?.[0] : void 0;
-
-// node_modules/@internal/model-packs/dist/sha256.js
-var K = new Uint32Array([
-  1116352408,
-  1899447441,
-  3049323471,
-  3921009573,
-  961987163,
-  1508970993,
-  2453635748,
-  2870763221,
-  3624381080,
-  310598401,
-  607225278,
-  1426881987,
-  1925078388,
-  2162078206,
-  2614888103,
-  3248222580,
-  3835390401,
-  4022224774,
-  264347078,
-  604807628,
-  770255983,
-  1249150122,
-  1555081692,
-  1996064986,
-  2554220882,
-  2821834349,
-  2952996808,
-  3210313671,
-  3336571891,
-  3584528711,
-  113926993,
-  338241895,
-  666307205,
-  773529912,
-  1294757372,
-  1396182291,
-  1695183700,
-  1986661051,
-  2177026350,
-  2456956037,
-  2730485921,
-  2820302411,
-  3259730800,
-  3345764771,
-  3516065817,
-  3600352804,
-  4094571909,
-  275423344,
-  430227734,
-  506948616,
-  659060556,
-  883997877,
-  958139571,
-  1322822218,
-  1537002063,
-  1747873779,
-  1955562222,
-  2024104815,
-  2227730452,
-  2361852424,
-  2428436474,
-  2756734187,
-  3204031479,
-  3329325298
-]);
-var Sha256 = class {
-  h = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
-  buf = new Uint8Array(64);
-  bufLen = 0;
-  total = 0;
-  w = new Uint32Array(64);
-  done = false;
-  update(bytes) {
-    if (this.done)
-      throw new Error("Sha256: update after hex()");
-    let i10 = 0;
-    this.total += bytes.length;
-    if (this.bufLen) {
-      const take = Math.min(64 - this.bufLen, bytes.length);
-      this.buf.set(bytes.subarray(0, take), this.bufLen);
-      this.bufLen += take;
-      i10 = take;
-      if (this.bufLen === 64) {
-        this.block(this.buf, 0);
-        this.bufLen = 0;
-      }
-    }
-    for (; i10 + 64 <= bytes.length; i10 += 64)
-      this.block(bytes, i10);
-    if (i10 < bytes.length) {
-      this.buf.set(bytes.subarray(i10), 0);
-      this.bufLen = bytes.length - i10;
-    }
-    return this;
-  }
-  block(p2, o10) {
-    const w2 = this.w, H2 = this.h;
-    for (let t10 = 0; t10 < 16; t10++, o10 += 4)
-      w2[t10] = p2[o10] << 24 | p2[o10 + 1] << 16 | p2[o10 + 2] << 8 | p2[o10 + 3];
-    for (let t10 = 16; t10 < 64; t10++) {
-      const x2 = w2[t10 - 15], y2 = w2[t10 - 2];
-      const s02 = (x2 >>> 7 | x2 << 25) ^ (x2 >>> 18 | x2 << 14) ^ x2 >>> 3;
-      const s12 = (y2 >>> 17 | y2 << 15) ^ (y2 >>> 19 | y2 << 13) ^ y2 >>> 10;
-      w2[t10] = w2[t10 - 16] + s02 + w2[t10 - 7] + s12 | 0;
-    }
-    let a10 = H2[0], b3 = H2[1], c10 = H2[2], d3 = H2[3], e10 = H2[4], f2 = H2[5], g3 = H2[6], h2 = H2[7];
-    for (let t10 = 0; t10 < 64; t10++) {
-      const S1 = (e10 >>> 6 | e10 << 26) ^ (e10 >>> 11 | e10 << 21) ^ (e10 >>> 25 | e10 << 7);
-      const ch2 = e10 & f2 ^ ~e10 & g3;
-      const t12 = h2 + S1 + ch2 + K[t10] + w2[t10] | 0;
-      const S0 = (a10 >>> 2 | a10 << 30) ^ (a10 >>> 13 | a10 << 19) ^ (a10 >>> 22 | a10 << 10);
-      const maj = a10 & b3 ^ a10 & c10 ^ b3 & c10;
-      const t23 = S0 + maj | 0;
-      h2 = g3;
-      g3 = f2;
-      f2 = e10;
-      e10 = d3 + t12 | 0;
-      d3 = c10;
-      c10 = b3;
-      b3 = a10;
-      a10 = t12 + t23 | 0;
-    }
-    H2[0] += a10;
-    H2[1] += b3;
-    H2[2] += c10;
-    H2[3] += d3;
-    H2[4] += e10;
-    H2[5] += f2;
-    H2[6] += g3;
-    H2[7] += h2;
-  }
-  hex() {
-    if (this.done)
-      throw new Error("Sha256: hex() twice");
-    const total = this.total;
-    const padLen = (this.bufLen < 56 ? 56 - this.bufLen : 120 - this.bufLen) + 8;
-    const pad4 = new Uint8Array(padLen);
-    pad4[0] = 128;
-    const bits2 = total * 8, hi = Math.floor(bits2 / 4294967296), lo2 = bits2 >>> 0, n10 = padLen;
-    pad4[n10 - 8] = hi >>> 24;
-    pad4[n10 - 7] = hi >>> 16;
-    pad4[n10 - 6] = hi >>> 8;
-    pad4[n10 - 5] = hi;
-    pad4[n10 - 4] = lo2 >>> 24;
-    pad4[n10 - 3] = lo2 >>> 16;
-    pad4[n10 - 2] = lo2 >>> 8;
-    pad4[n10 - 1] = lo2;
-    this.total -= padLen;
-    this.update(pad4);
-    this.done = true;
-    return Array.from(this.h, (x2) => x2.toString(16).padStart(8, "0")).join("");
-  }
-};
-
-// node_modules/@internal/model-packs/dist/pack-store.js
-var SLICE = 1 << 20;
-function createPackStore(deps) {
-  const cacheName = deps.cacheName ?? "pwa-models";
-  const keyOf2 = (slug, name) => `${location.origin}/__pwa-models__/${slug}/${name}`;
-  function manifestOf(slug) {
-    const p2 = deps.packs[slug];
-    if (!p2)
-      throw new Error(`unknown pack: ${slug}`);
-    return p2;
-  }
-  const openCache = () => caches.open(cacheName);
-  async function hashBlob(b3) {
-    const sha = new Sha256();
-    for (let o10 = 0; o10 < b3.size; o10 += SLICE)
-      sha.update(new Uint8Array(await b3.slice(o10, Math.min(o10 + SLICE, b3.size)).arrayBuffer()));
-    return sha.hex();
-  }
-  async function cachedChunkSizes(slug, m2) {
-    const cache = await openCache();
-    const sizes = [];
-    for (const c10 of m2.chunks) {
-      const r10 = await cache.match(keyOf2(slug, c10.name));
-      sizes.push(r10 ? Number(r10.headers.get("content-length") ?? 0) : 0);
-    }
-    return sizes;
-  }
-  async function putChunk(slug, name, bytes) {
-    const cache = await openCache();
-    const size = bytes instanceof Blob ? bytes.size : bytes.length;
-    await cache.put(keyOf2(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
-  }
-  async function markVerified(slug, packId) {
-    const cache = await openCache();
-    await cache.put(keyOf2(slug, "verified.json"), new Response(JSON.stringify({ packId, at: (/* @__PURE__ */ new Date()).toISOString() }), { headers: { "content-type": "application/json" } }));
-  }
-  async function status(slug) {
-    const { packId, manifest: m2 } = manifestOf(slug);
-    const cache = await openCache();
-    const sizes = await cachedChunkSizes(slug, m2);
-    const complete = sizes.every((n10, i10) => n10 === m2.chunks[i10].bytes);
-    const marker = await cache.match(keyOf2(slug, "verified.json"));
-    const verified = marker ? (await marker.json()).packId === packId : false;
-    return { slug, ready: complete && verified, bytesCached: sizes.reduce((a10, b3) => a10 + b3, 0), bytesTotal: m2.totalBytes };
-  }
-  async function dropIfStale(slug) {
-    const { packId, manifest: m2 } = manifestOf(slug);
-    const cache = await openCache();
-    const marker = await cache.match(keyOf2(slug, "verified.json"));
-    if (!marker || (await marker.json()).packId === packId)
-      return;
-    for (const c10 of m2.chunks)
-      await cache.delete(keyOf2(slug, c10.name));
-    await cache.delete(keyOf2(slug, "verified.json"));
-  }
-  async function sealIfComplete(slug, fresh) {
-    const { packId, manifest: m2 } = manifestOf(slug);
-    const sizes = await cachedChunkSizes(slug, m2);
-    if (!sizes.every((n10, i10) => n10 === m2.chunks[i10].bytes))
-      return;
-    const cache = await openCache();
-    for (const c10 of m2.chunks) {
-      if (fresh.has(c10.name))
-        continue;
-      const r10 = await cache.match(keyOf2(slug, c10.name));
-      const ok2 = !!r10 && await hashBlob(await r10.blob()) === c10.sha256;
-      if (!ok2) {
-        await cache.delete(keyOf2(slug, c10.name));
-        return;
-      }
-    }
-    await markVerified(slug, packId);
-  }
-  async function download(slug, base3, progress2) {
-    const { packId, manifest: m2 } = manifestOf(slug);
-    await dropIfStale(slug);
-    const sizes = await cachedChunkSizes(slug, m2);
-    let done = sizes.reduce((a10, n10, i10) => a10 + (n10 === m2.chunks[i10].bytes ? n10 : 0), 0);
-    progress2({ done, total: m2.totalBytes });
-    const root = base3.replace(/\/+$/, "");
-    for (let i10 = 0; i10 < m2.chunks.length; i10++) {
-      const c10 = m2.chunks[i10];
-      if (sizes[i10] === c10.bytes)
-        continue;
-      const res = await fetch(`${root}/packs/${slug}/${c10.name}`, { cache: "no-store" });
-      if (!res.ok || !res.body)
-        throw new Error(`fetch ${c10.name}: HTTP ${res.status}`);
-      const reader = res.body.getReader();
-      const sha = new Sha256();
-      const buf = new Uint8Array(c10.bytes);
-      let got = 0, lastReported = 0;
-      for (; ; ) {
-        const { value, done: end } = await reader.read();
-        if (end)
-          break;
-        if (got + value.length > c10.bytes)
-          throw new Error(`${c10.name}: larger than manifest says`);
-        sha.update(value);
-        buf.set(value, got);
-        got += value.length;
-        if (got - lastReported >= 1048576 || got === c10.bytes) {
-          lastReported = got;
-          progress2({ done: done + got, total: m2.totalBytes });
-        }
-      }
-      if (got !== c10.bytes)
-        throw new Error(`${c10.name}: got ${got} bytes, expected ${c10.bytes}`);
-      if (sha.hex() !== c10.sha256)
-        throw new Error(`${c10.name}: sha256 mismatch (source tampered or corrupted)`);
-      await putChunk(slug, c10.name, buf);
-      done += got;
-    }
-    await markVerified(slug, packId);
-    return status(slug);
-  }
-  async function importFiles(slugs, files, progress2) {
-    const packs = slugs.map((slug) => ({ slug, m: manifestOf(slug).manifest }));
-    for (const p2 of packs)
-      await dropIfStale(p2.slug);
-    const fresh = new Map(packs.map((p2) => [p2.slug, /* @__PURE__ */ new Set()]));
-    const total = files.reduce((a10, f2) => a10 + f2.size, 0);
-    let done = 0, matched = 0;
-    const bad = [];
-    for (const f2 of files) {
-      const whole = packs.find((p2) => p2.m.chunks.length > 1 && p2.m.totalBytes === f2.size);
-      if (whole) {
-        let offset = 0;
-        for (const c10 of whole.m.chunks) {
-          const piece = f2.slice(offset, offset + c10.bytes);
-          if (await hashBlob(piece) !== c10.sha256)
-            throw new Error(`${f2.name}: sha256 mismatch at ${c10.name} (wrong or corrupted file)`);
-          await putChunk(whole.slug, c10.name, piece);
-          fresh.get(whole.slug).add(c10.name);
-          offset += c10.bytes;
-          progress2({ done: done + offset, total });
-        }
-        matched++;
-      } else {
-        const sameSize = packs.flatMap((p2) => p2.m.chunks.filter((c10) => c10.bytes === f2.size).map((c10) => ({ slug: p2.slug, c: c10 })));
-        if (sameSize.length) {
-          const hex = await hashBlob(f2);
-          const hits = sameSize.filter((x2) => x2.c.sha256 === hex);
-          if (!hits.length)
-            bad.push(f2.name);
-          for (const h2 of hits) {
-            await putChunk(h2.slug, h2.c.name, f2);
-            fresh.get(h2.slug).add(h2.c.name);
-          }
-          if (hits.length)
-            matched++;
-        }
-      }
-      done += f2.size;
-      progress2({ done, total });
-    }
-    for (const p2 of packs)
-      await sealIfComplete(p2.slug, fresh.get(p2.slug));
-    if (bad.length)
-      throw new Error(`${bad[0]}: sha256 mismatch (wrong or corrupted file)`);
-    if (!matched)
-      throw new Error("no-matching-file");
-    return Promise.all(slugs.map(status));
-  }
-  async function downloadAll(slugs, base3, progress2) {
-    const total = slugs.reduce((a10, s10) => a10 + manifestOf(s10).manifest.totalBytes, 0);
-    const have = (await Promise.all(slugs.map(status))).map((st3) => st3.bytesCached);
-    const report = () => progress2({ done: have.reduce((a10, b3) => a10 + b3, 0), total });
-    report();
-    for (let i10 = 0; i10 < slugs.length; i10++)
-      await download(slugs[i10], base3, (p2) => {
-        have[i10] = p2.done;
-        report();
-      });
-    return Promise.all(slugs.map(status));
-  }
-  async function deletePack(slug) {
-    const { manifest: m2 } = manifestOf(slug);
-    const cache = await openCache();
-    for (const c10 of m2.chunks)
-      await cache.delete(keyOf2(slug, c10.name));
-    await cache.delete(keyOf2(slug, "verified.json"));
-  }
-  const noop = () => {
-  };
-  return {
-    status: (slugs) => Promise.all(slugs.map(status)),
-    download: (slugs, base3, onProgress) => downloadAll(slugs, base3, onProgress ?? noop),
-    importFiles: (slugs, files, onProgress) => importFiles(slugs, files, onProgress ?? noop),
-    async delete(slugs) {
-      for (const slug of slugs)
-        await deletePack(slug);
-    },
-    async chunks(slug) {
-      if (!(await status(slug)).ready)
-        throw new Error("pack-missing");
-      const { manifest: m2 } = manifestOf(slug);
-      const cache = await openCache();
-      const out = [];
-      for (const c10 of m2.chunks) {
-        const r10 = await cache.match(keyOf2(slug, c10.name));
-        if (!r10)
-          throw new Error("pack-missing");
-        out.push(await r10.blob());
-      }
-      return out;
-    }
-  };
+  s10.disconnect();
 }
 
 // node_modules/@internal/workbench-elements/dist/host-floors.js
@@ -8013,2541 +7517,371 @@ function showNotice(opts) {
   return handle;
 }
 
-// src/singer/packs.gen.ts
-var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
-var PACKS = {
-  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
-  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
-  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
-  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
-  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
+// node_modules/@internal/gallery/dist/core/text.js
+var GALLERY_TEXT = {
+  "bk.andMore": { zh: "\u2026\u2026\u7B49 {n} \u4EF6\uFF08\u5168\u91CF\u540D\u5355\u5728\u5305\u5185 backup-manifest.txt\uFF09", en: "\u2026and {n} more (full list in backup-manifest.txt inside the zip)", ja: "\u2026\u307B\u304B {n} \u4EF6\uFF08\u5168\u30EA\u30B9\u30C8\u306F zip \u5185\u306E backup-manifest.txt\uFF09" },
+  "bk.done": { zh: "\u5DF2\u4E0B\u8F7D\u5907\u4EFD {name}\uFF08{n} \u4EF6\uFF09", en: "Backup downloaded: {name} ({n} files)", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F\uFF1A{name}\uFF08{n} \u4EF6\uFF09" },
+  "bk.empty": { zh: "\u56FE\u5E93\u91CC\u6CA1\u6709\u53EF\u5907\u4EFD\u7684\u6587\u4EF6", en: "Nothing in this gallery to back up", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u304D\u308B\u30D5\u30A1\u30A4\u30EB\u304C\u3042\u308A\u307E\u305B\u3093" },
+  "bk.failed": { zh: "\u5907\u4EFD\u5931\u8D25\uFF1A{err}", en: "Backup failed: {err}", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u5931\u6557\u3057\u307E\u3057\u305F\uFF1A{err}" },
+  "bk.failedDetail": { zh: "\u53D6\u4E0D\u5230\u3001\u4E0D\u5728\u672C\u6B21\u5907\u4EFD\u91CC\u7684 {n} \u4EF6\uFF08\u79BB\u7EBF\u7684\u7EAF\u4E91\u7AEF\u4EF6/\u9501\u5B9A\u7684\u52A0\u5BC6\u4EF6\u7B49\uFF09\uFF1A", en: "{n} file(s) could NOT be read and are NOT in this backup (cloud-only while offline, locked encrypted, \u2026):", ja: "\u53D6\u5F97\u3067\u304D\u305A\u4ECA\u56DE\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u542B\u307E\u308C\u306A\u3044 {n} \u4EF6\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\u306E\u30AF\u30E9\u30A6\u30C9\u5C02\u7528\u30FB\u30ED\u30C3\u30AF\u4E2D\u306E\u6697\u53F7\u5316\u306A\u3069\uFF09\uFF1A" },
+  "bk.failedN": { zh: "{n} \u4EF6\u672A\u80FD\u53D6\u5230\uFF08\u7EAF\u4E91\u7AEF\u4E14\u79BB\u7EBF\uFF1F\u7A0D\u540E\u91CD\u8BD5\uFF09", en: "{n} files could not be read (cloud-only while offline? try again later)", ja: "{n} \u4EF6\u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\uFF08\u30AF\u30E9\u30A6\u30C9\u306E\u307F\u30FB\u30AA\u30D5\u30E9\u30A4\u30F3\uFF1F\u5F8C\u3067\u518D\u8A66\u884C\u3057\u3066\u304F\u3060\u3055\u3044\uFF09" },
+  "bk.msg": { zh: "\u628A\u8FD9\u4E2A\u56FE\u5E93\u91CC\u7684\u5168\u90E8\u6587\u4EF6\u6253\u5305\u6210\u4E00\u4E2A zip \u4E0B\u8F7D\u5230\u672C\u673A\u3002\u53EA\u8BFB\u53D6\uFF0C\u4E0D\u6539\u52A8\u56FE\u5E93\u3002\u52A0\u5BC6\u4F5C\u54C1\u4FDD\u6301\u5BC6\u6587\u539F\u6837\uFF08\u5907\u4EFD\u91CC\u6CA1\u6709\u660E\u6587\uFF09\u3002\u8D85\u8FC7 {size} \u7684\u90E8\u5206\u6539\u4E3A\u9010\u4EF6\u4E0B\u8F7D\u3002", en: "Packs every file in this gallery into one zip and downloads it. Read-only \u2014 the gallery is not modified. Encrypted artworks stay as ciphertext (no plaintext in the backup). Anything beyond {size} is downloaded file by file instead.", ja: "\u3053\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u5168\u30D5\u30A1\u30A4\u30EB\u3092 1 \u3064\u306E zip \u306B\u307E\u3068\u3081\u3066\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3059\u3002\u8AAD\u307F\u53D6\u308A\u306E\u307F\u3067\u3001\u30AE\u30E3\u30E9\u30EA\u30FC\u306F\u5909\u66F4\u3057\u307E\u305B\u3093\u3002\u6697\u53F7\u5316\u3055\u308C\u305F\u4F5C\u54C1\u306F\u6697\u53F7\u6587\u306E\u307E\u307E\uFF08\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u5E73\u6587\u306F\u5165\u308A\u307E\u305B\u3093\uFF09\u3002{size} \u3092\u8D85\u3048\u305F\u5206\u306F 1 \u30D5\u30A1\u30A4\u30EB\u305A\u3064\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3059\u3002" },
+  "bk.packing": { zh: "\u6B63\u5728\u5907\u4EFD\u2026\uFF08{done} / {total}\uFF09", en: "Backing up\u2026 ({done} / {total})", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u4E2D\u2026\uFF08{done} / {total}\uFF09" },
+  "bk.partialN": { zh: "{n} \u4E2A\u6587\u4EF6\u5939\u672A\u80FD\u5B8C\u6574\u5217\u4E3E\uFF0C\u5907\u4EFD\u53EF\u80FD\u4E0D\u5168", en: "{n} folders could not be listed in full \u2014 the backup may be incomplete", ja: "{n} \u500B\u306E\u30D5\u30A9\u30EB\u30C0\u30FC\u3092\u5B8C\u5168\u306B\u4E00\u89A7\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u304C\u4E0D\u5B8C\u5168\u306A\u53EF\u80FD\u6027\u304C\u3042\u308A\u307E\u3059" },
+  "bk.scanning": { zh: "\u6B63\u5728\u6E05\u70B9\u56FE\u5E93\u2026", en: "Scanning the gallery\u2026", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u78BA\u8A8D\u4E2D\u2026" },
+  "bk.scanningFolders": { zh: "\u6B63\u5728\u6E05\u70B9\u56FE\u5E93\u2026\uFF08\u5DF2\u626B {n} \u4E2A\u6587\u4EF6\u5939\uFF09", en: "Scanning the gallery\u2026 ({n} folders)", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u78BA\u8A8D\u4E2D\u2026\uFF08{n} \u30D5\u30A9\u30EB\u30C0\u30FC\uFF09" },
+  "bk.spilled": { zh: "\u5E93\u592A\u5927\uFF0C\u53E6\u6709 {n} \u4EF6\u6539\u4E3A\u9010\u4EF6\u4E0B\u8F7D", en: "Library too large \u2014 {n} more files downloaded individually", ja: "\u30E9\u30A4\u30D6\u30E9\u30EA\u304C\u5927\u304D\u3044\u305F\u3081\u3001\u4ED6\u306E {n} \u4EF6\u306F\u500B\u5225\u306B\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F" },
+  "bk.spilledDetail": { zh: "\u8D85\u51FA zip \u9884\u7B97\u3001\u5DF2\u6539\u4E3A\u9010\u4EF6\u4E0B\u8F7D\u7684 {n} \u4EF6\uFF08\u4E00\u4EF6\u4E0D\u4E22\uFF0C\u6CE8\u610F\u6D4F\u89C8\u5668\u591A\u6587\u4EF6\u4E0B\u8F7D\u786E\u8BA4\uFF09\uFF1A", en: "{n} file(s) over the zip budget were delivered as individual downloads (nothing dropped \u2014 watch for the browser multi-download prompt):", ja: "zip \u4E88\u7B97\u8D85\u904E\u306E\u305F\u3081\u500B\u5225\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u306B\u306A\u3063\u305F {n} \u4EF6\uFF08\u6B20\u843D\u306A\u3057\u3002\u30D6\u30E9\u30A6\u30B6\u306E\u8907\u6570\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u78BA\u8A8D\u306B\u6CE8\u610F\uFF09\uFF1A" },
+  "bk.title": { zh: "\u4E0B\u8F7D\u5168\u5E93\u5907\u4EFD", en: "Download full backup", ja: "\u30E9\u30A4\u30D6\u30E9\u30EA\u5168\u4F53\u3092\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7" },
+  "bk.truncated": { zh: "\u6587\u4EF6\u5939\u592A\u591A\uFF0C\u53EA\u626B\u5230\u524D {n} \u4E2A\uFF0C\u5907\u4EFD\u4E0D\u5168", en: "Too many folders \u2014 only the first {n} were scanned; the backup is incomplete", ja: "\u30D5\u30A9\u30EB\u30C0\u30FC\u304C\u591A\u3059\u304E\u307E\u3059\u3002\u6700\u521D\u306E {n} \u500B\u306E\u307F\u3092\u8D70\u67FB\u3057\u307E\u3057\u305F\u3002\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306F\u4E0D\u5B8C\u5168\u3067\u3059" },
+  "cf.act.cloudWins": { zh: "\u4E91\u7AEF\u8986\u76D6\u672C\u5730", en: "Cloud overwrites local", ja: "\u30AF\u30E9\u30A6\u30C9\u3067\u30ED\u30FC\u30AB\u30EB\u3092\u4E0A\u66F8\u304D" },
+  "cf.act.localWins": { zh: "\u672C\u5730\u8986\u76D6\u4E91\u7AEF", en: "Local overwrites cloud", ja: "\u30ED\u30FC\u30AB\u30EB\u3067\u30AF\u30E9\u30A6\u30C9\u3092\u4E0A\u66F8\u304D" },
+  "cf.act.openLocal": { zh: "\u6253\u5F00\u672C\u5730", en: "Open local", ja: "\u30ED\u30FC\u30AB\u30EB\u3092\u958B\u304F" },
+  "cf.body.open": { zh: "\u300C{name}\u300D\u672C\u673A\u8FD8\u6709\u672A\u4E0A\u4F20\u7684\u6539\u52A8\u3002", en: "\u201C{name}\u201D has changes on this device that were not uploaded yet.", ja: "\u300C{name}\u300D\u306B\u306F\u307E\u3060\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u3057\u3066\u3044\u306A\u3044\u5909\u66F4\u304C\u3053\u306E\u7AEF\u672B\u306B\u3042\u308A\u307E\u3059\u3002" },
+  "cf.body.push": { zh: "\u300C{name}\u300D\u5728\u4E91\u7AEF\u548C\u672C\u673A\u5404\u6709\u4E00\u7248\u65B0\u6539\u52A8\u3002", en: "\u201C{name}\u201D has new changes both in the cloud and on this device.", ja: "\u300C{name}\u300D\u306F\u30AF\u30E9\u30A6\u30C9\u3068\u3053\u306E\u7AEF\u672B\u306E\u4E21\u65B9\u306B\u65B0\u3057\u3044\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u3002" },
+  "cf.checkingCloud": { zh: "\u68C0\u67E5\u4E91\u7AEF", en: "Checking cloud", ja: "\u30AF\u30E9\u30A6\u30C9\u3092\u78BA\u8A8D\u4E2D" },
+  "cf.cloudAccountInfo": { zh: "\u4E91\u7AEF\uFF1A{who}", en: "Cloud: {who}", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}" },
+  "cf.cloudAccountOfflineInfo": { zh: "\u4E91\u7AEF\uFF1A{who}\uFF08\u79BB\u7EBF\uFF09", en: "Cloud: {who} (offline)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\uFF09" },
+  "cf.cloudAccountOfflineTitle": { zh: "\u4E91\u7AEF\uFF1A{who}\uFF08\u79BB\u7EBF\uFF0C\u65E0\u6CD5\u63A8 / \u62C9\uFF09", en: "Cloud: {who} (offline, cannot push / pull)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\u3001push / pull \u4E0D\u53EF\uFF09" },
+  "cf.cloudAccountTitle": { zh: "\u4E91\u7AEF\uFF1A{who}\uFF08\u70B9\u5F00\u8D26\u53F7\u83DC\u5355\uFF09", en: "Cloud: {who} (tap to open account menu)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}\uFF08\u30A2\u30AB\u30A6\u30F3\u30C8\u30E1\u30CB\u30E5\u30FC\u3092\u958B\u304F\uFF09" },
+  "cf.cloudNewerTitle": { zh: "\u4E91\u7AEF\u6709\u65B0\u7248\u672C", en: "A newer version exists in the cloud", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u65B0\u3057\u3044\u30D0\u30FC\u30B8\u30E7\u30F3\u304C\u3042\u308A\u307E\u3059" },
+  "cf.cloudNotConfigured": { zh: "\u4E91\u7AEF\uFF1A\u672A\u914D\u7F6E", en: "Cloud: not configured", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u672A\u8A2D\u5B9A" },
+  "cf.cloudNotSignedIn": { zh: "\u4E91\u7AEF\uFF1A\u672A\u767B\u5F55", en: "Cloud: not signed in", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u672A\u30ED\u30B0\u30A4\u30F3" },
+  "cf.cloudNotSignedInTitle": { zh: "\u4E91\u7AEF\uFF1A\u672A\u767B\u5F55\uFF08\u70B9\u5F00\u767B\u5F55\uFF09", en: "Cloud: not signed in (tap to sign in)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u672A\u30ED\u30B0\u30A4\u30F3\uFF08\u30BF\u30C3\u30D7\u3057\u3066\u30ED\u30B0\u30A4\u30F3\uFF09" },
+  "cf.cloudOffline": { zh: "\u4E91\u7AEF\uFF1A\u79BB\u7EBF", en: "Cloud: offline", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u30AA\u30D5\u30E9\u30A4\u30F3" },
+  "cf.note.keptSafe": { zh: "\u88AB\u66FF\u6362\u7684\u7248\u672C\u4F1A\u81EA\u52A8\u7559\u5E95\uFF0C\u4E0D\u4F1A\u4E22\u5931", en: "The replaced version is kept automatically \u2014 nothing is lost", ja: "\u7F6E\u304D\u63DB\u3048\u3089\u308C\u305F\u30D0\u30FC\u30B8\u30E7\u30F3\u306F\u81EA\u52D5\u7684\u306B\u4FDD\u7BA1\u3055\u308C\u3001\u5931\u308F\u308C\u307E\u305B\u3093" },
+  "cf.signedIn": { zh: "\u5DF2\u767B\u5F55", en: "Signed in", ja: "\u30ED\u30B0\u30A4\u30F3\u6E08\u307F" },
+  "cf.skipToOffline": { zh: "\u8DF3\u8FC7\u5230\u79BB\u7EBF", en: "Skip to offline", ja: "\u30B9\u30AD\u30C3\u30D7\u3057\u3066\u30AA\u30D5\u30E9\u30A4\u30F3" },
+  "common.cancel": { zh: "\u53D6\u6D88", en: "Cancel", ja: "\u30AD\u30E3\u30F3\u30BB\u30EB" },
+  "cp.downloadFailed": { zh: "\u62FF\u4E0D\u5230 {name}\uFF08\u79BB\u7EBF\u4E14\u672C\u5730\u65E0\u7F13\u5B58\uFF1F\uFF09", en: "Could not fetch {name} (offline with no local copy?)", ja: "{name} \u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\u3067\u30ED\u30FC\u30AB\u30EB\u30B3\u30D4\u30FC\u306A\u3057\uFF1F\uFF09" },
+  "cp.downloading": { zh: "\u6B63\u5728\u4E0B\u8F7D {name}\u2026", en: "Downloading {name}\u2026", ja: "{name} \u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u4E2D\u2026" },
+  "cp.importFailed": { zh: "\u4E91\u76D8\u5BFC\u5165\u5931\u8D25\uFF1A{err}", en: "Cloud import failed: {err}", ja: "\u30AF\u30E9\u30A6\u30C9\u304B\u3089\u306E\u8AAD\u307F\u8FBC\u307F\u306B\u5931\u6557\uFF1A{err}" },
+  "enc.confirmMsg": { zh: "\u4E24\u6B21\u8F93\u5165\u9700\u4E00\u81F4", en: "Both entries must match", ja: "\u540C\u3058\u3082\u306E\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044" },
+  "enc.confirmTitle": { zh: "\u518D\u8F93\u4E00\u904D\u786E\u8BA4", en: "Confirm password", ja: "\u3082\u3046\u4E00\u5EA6\u5165\u529B\u3057\u3066\u78BA\u8A8D" },
+  "enc.enterGalleryPw": { zh: "\u8F93\u5165\u56FE\u5E93\u5BC6\u7801\u3002\u5BC6\u7801\u53EA\u5B58\u5728\u5185\u5B58\u91CC\uFF0C\u5173\u9875\u5373\u5FD8\u3002", en: "Enter the gallery password. It lives only in memory and is forgotten when the page closes.", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3002\u30E1\u30E2\u30EA\u306B\u306E\u307F\u4FDD\u6301\u3055\u308C\u3001\u30DA\u30FC\u30B8\u3092\u9589\u3058\u308B\u3068\u6D88\u3048\u307E\u3059\u3002" },
+  "enc.enterPwMsg": { zh: "\u56FE\u5E93\u5DF2\u8BBE\u8FC7\u5BC6\u7801\uFF08\u8DDF\u8D26\u53F7\u8D70\uFF09\u3002\u8F93\u5165\u539F\u5BC6\u7801\uFF1B\u5FD8\u8BB0 = \u5185\u5BB9\u6C38\u4E45\u627E\u4E0D\u56DE\u3002", en: "This gallery already has a password (tied to your account). Enter it \u2014 if forgotten, the content is permanently unrecoverable.", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306B\u306F\u65E2\u306B\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u3059\uFF08\u30A2\u30AB\u30A6\u30F3\u30C8\u306B\u7D10\u4ED8\u304D\uFF09\u3002\u5FD8\u308C\u305F\u5834\u5408\u3001\u5185\u5BB9\u306F\u6C38\u4E45\u306B\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3002" },
+  "enc.enterPwTitle": { zh: "\u8F93\u5165\u56FE\u5E93\u5BC6\u7801", en: "Enter gallery password", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B" },
+  "enc.importPrompt": { zh: "\u8FD9\u662F\u52A0\u5BC6\u6587\u4EF6\u3002\u8F93\u5165\u5B83\u7684\u5BC6\u7801\u3002", en: "This file is encrypted. Enter its password.", ja: "\u3053\u308C\u306F\u6697\u53F7\u5316\u30D5\u30A1\u30A4\u30EB\u3067\u3059\u3002\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002" },
+  "enc.locked.aria": { zh: "\u5DF2\u52A0\u5BC6", en: "Encrypted", ja: "\u6697\u53F7\u5316\u6E08\u307F" },
+  "enc.setPwMismatch": { zh: "\u4E24\u6B21\u8F93\u5165\u4E0D\u4E00\u81F4\uFF0C\u91CD\u65B0\u8BBE\u7F6E", en: "Entries don't match \u2014 try again", ja: "\u5165\u529B\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002\u3084\u308A\u76F4\u3057\u3066\u304F\u3060\u3055\u3044" },
+  "enc.setPwMsg": { zh: "\u6574\u4E2A\u56FE\u5E93\u5171\u7528\u8FD9\u4E00\u4E2A\u5BC6\u7801\u3002\u5FD8\u8BB0 = \u5185\u5BB9\u6C38\u4E45\u627E\u4E0D\u56DE\uFF08\u6CA1\u6709\u4EFB\u4F55\u540E\u95E8\uFF09\uFF1B\u592A\u77ED\u7684\u5BC6\u7801\u53EF\u88AB\u66B4\u529B\u7834\u89E3\u3002\u52A0\u5BC6\u6587\u4EF6\u7528 7-Zip \u8F93\u6B64\u5BC6\u7801\u4E5F\u80FD\u6253\u5F00\u3002", en: "One password for the whole gallery. If forgotten, content is permanently unrecoverable (there is no backdoor); short passwords can be brute-forced. Encrypted files also open in 7-Zip with this password.", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u5168\u4F53\u30671\u3064\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5171\u6709\u3057\u307E\u3059\u3002\u5FD8\u308C\u308B\u3068\u5185\u5BB9\u306F\u6C38\u4E45\u306B\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\uFF08\u30D0\u30C3\u30AF\u30C9\u30A2\u306A\u3057\uFF09\u3002\u77ED\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u7DCF\u5F53\u305F\u308A\u306B\u5F31\u3044\u3067\u3059\u3002\u6697\u53F7\u5316\u30D5\u30A1\u30A4\u30EB\u306F 7-Zip \u3067\u3082\u540C\u3058\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u958B\u3051\u307E\u3059\u3002" },
+  "enc.setPwTitle": { zh: "\u8BBE\u7F6E\u56FE\u5E93\u5BC6\u7801", en: "Set gallery password", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A" },
+  "enc.unlockImportTitle": { zh: "\u89E3\u9501\u5BFC\u5165\u7684\u52A0\u5BC6\u6587\u4EF6", en: "Unlock imported encrypted file", ja: "\u30A4\u30F3\u30DD\u30FC\u30C8\u3057\u305F\u6697\u53F7\u5316\u30D5\u30A1\u30A4\u30EB\u306E\u30ED\u30C3\u30AF\u89E3\u9664" },
+  "enc.unlockTitle": { zh: "\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1", en: "Unlock encrypted artwork", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u306E\u30ED\u30C3\u30AF\u89E3\u9664" },
+  "enc.wrongRetry": { zh: "\u5BC6\u7801\u4E0D\u5BF9\uFF0C\u518D\u8BD5\u4E00\u6B21", en: "Wrong password \u2014 try again", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u9055\u3044\u307E\u3059\u3002\u3082\u3046\u4E00\u5EA6" },
+  "err.cloudNetwork": { zh: "\u7F51\u7EDC\u4E0D\u901A\uFF1A\u6682\u65F6\u8FDE\u4E0D\u4E0A\u4E91\u7AEF\u3002\u4F60\u7684\u753B\u90FD\u8FD8\u5728\u672C\u5730\uFF0C\u7A0D\u540E\u53EF\u91CD\u8BD5\u3002", en: "Network unreachable: could not reach the cloud. Your work is safe locally \u2014 try again later.", ja: "\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u306B\u63A5\u7D9A\u3067\u304D\u307E\u305B\u3093\u3002\u4F5C\u54C1\u306F\u30ED\u30FC\u30AB\u30EB\u306B\u4FDD\u5B58\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u5F8C\u3067\u518D\u8A66\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002" },
+  "gal.busy.copy": { zh: "\u6B63\u5728\u521B\u5EFA\u526F\u672C {base}\u2026", en: "Duplicating {base}\u2026", ja: "\u8907\u88FD\u4E2D {base}\u2026" },
+  "gal.busy.del": { zh: "\u6B63\u5728\u5220\u9664 {name}\u2026", en: "Deleting {name}\u2026", ja: "\u524A\u9664\u4E2D {name}\u2026" },
+  "gal.busy.emptyBackup": { zh: "\u6B63\u5728\u6E05\u7A7A{label}\u5907\u4EFD\u7BB1\u2026", en: "Emptying {label} backups\u2026", ja: "{label}\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u7A7A\u306B\u2026" },
+  "gal.busy.emptyTrash": { zh: "\u6B63\u5728\u6E05\u7A7A{label}\u56DE\u6536\u7AD9\u2026", en: "Emptying {label} trash\u2026", ja: "{label}\u306E\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\u2026" },
+  "gal.busy.keepOffline": { zh: "\u6B63\u5728\u4E0B\u8F7D\u300C{name}\u300D\u2026", en: "Downloading \u201C{name}\u201D\u2026", ja: "\u300C{name}\u300D\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u4E2D\u2026" },
+  "gal.busy.move": { zh: "\u6B63\u5728\u79FB\u52A8 {base} \u2192 {target}\u2026", en: "Moving {base} \u2192 {target}\u2026", ja: "\u79FB\u52D5\u4E2D {base} \u2192 {target}\u2026" },
+  "gal.busy.purge": { zh: "\u6B63\u5728\u6C38\u4E45\u5220\u9664 {name}\u2026", en: "Deleting {name} forever\u2026", ja: "\u5B8C\u5168\u306B\u524A\u9664\u4E2D {name}\u2026" },
+  "gal.busy.rename": { zh: "\u6B63\u5728\u91CD\u547D\u540D {name} \u2192 {to}\u2026", en: "Renaming {name} \u2192 {to}\u2026", ja: "\u540D\u524D\u5909\u66F4\u4E2D {name} \u2192 {to}\u2026" },
+  "gal.busy.restore": { zh: "\u6B63\u5728\u6062\u590D {name}\u2026", en: "Restoring {name}\u2026", ja: "\u5FA9\u5143\u4E2D {name}\u2026" },
+  "gal.busy.reupload": { zh: "\u91CD\u65B0\u4E0A\u4F20\u4E2D\u2026", en: "Re-uploading\u2026", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u4E2D\u2026" },
+  "gal.copy": { zh: "\u521B\u5EFA\u526F\u672C", en: "Duplicate", ja: "\u8907\u88FD\u3092\u4F5C\u6210" },
+  "gal.del.activeSuffix": { zh: " \u5F53\u524D\u753B\u5E03\u4F1A\u5173\u95ED\u3002", en: " The current canvas will close.", ja: " \u73FE\u5728\u306E\u30AD\u30E3\u30F3\u30D0\u30B9\u306F\u9589\u3058\u3089\u308C\u307E\u3059\u3002" },
+  "gal.del.cloudDetail": { zh: "\u4F1A\u8FDB\u4E91\u7AEF\u56DE\u6536\u7AD9\uFF0C\u53EF\u6062\u590D\u3002", en: "Goes to cloud trash; can be restored.", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u3001\u5FA9\u5143\u53EF\u80FD\u3067\u3059\u3002" },
+  "gal.del.dirtyDetail": { zh: "\u672C\u5730\u6709**\u672A\u63A8\u9001\u5230\u4E91\u7AEF\u7684\u4FEE\u6539**\uFF0C\u5220\u9664\u4F1A\u4E22\u8FD9\u4E9B\u6539\u52A8\u3002\u4E91\u7AEF\u5907\u4EFD\u8FDB\u56DE\u6536\u7AD9\u53EF\u6062\u590D\u3002", en: "Local has **unpushed changes**; deleting loses them. The cloud backup goes to trash and can be restored.", ja: "\u30ED\u30FC\u30AB\u30EB\u306B**\u672A\u9001\u4FE1\u306E\u5909\u66F4**\u304C\u3042\u308A\u3001\u524A\u9664\u3059\u308B\u3068\u5931\u308F\u308C\u307E\u3059\u3002\u30AF\u30E9\u30A6\u30C9\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306F\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u5FA9\u5143\u53EF\u80FD\u3067\u3059\u3002" },
+  "gal.del.imageDetail": { zh: "\u79FB\u5230\u56DE\u6536\u7AD9\uFF08\u53EF\u6062\u590D\uFF09\u3002\u8FD9\u662F\u56FE\u7247\u7D20\u6750\uFF0C\u4E0D\u662F\u753B\u4F5C\u3002", en: "Move to trash (recoverable). This is an image file, not an artwork.", ja: "\u30B4\u30DF\u7BB1\u3078\u79FB\u52D5\uFF08\u5FA9\u5143\u53EF\uFF09\u3002\u3053\u308C\u306F\u753B\u50CF\u30D5\u30A1\u30A4\u30EB\u3067\u3001\u4F5C\u54C1\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002" },
+  "gal.del.localDetail": { zh: "\u4F1A\u8FDB\u672C\u5730\u56DE\u6536\u7AD9\uFF0C\u53EF\u6062\u590D\u3002", en: "Goes to local trash; can be restored.", ja: "\u30ED\u30FC\u30AB\u30EB\u306E\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u3001\u5FA9\u5143\u53EF\u80FD\u3067\u3059\u3002" },
+  "gal.del.syncedDetail": { zh: "\u672C\u5730\u526F\u672C\u4F1A\u4E00\u8D77\u5220\uFF0C\u4E91\u7AEF\u8FDB\u56DE\u6536\u7AD9\u53EF\u6062\u590D\u3002", en: "The local copy is deleted too; the cloud copy goes to trash and can be restored.", ja: "\u30ED\u30FC\u30AB\u30EB\u3082\u524A\u9664\u3055\u308C\u3001\u30AF\u30E9\u30A6\u30C9\u306F\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u5FA9\u5143\u53EF\u80FD\u3067\u3059\u3002" },
+  "gal.delEmptyFolder": { zh: "\u5220\u9664\u7A7A\u6587\u4EF6\u5939", en: "Delete empty folder", ja: "\u7A7A\u306E\u30D5\u30A9\u30EB\u30C0\u3092\u524A\u9664" },
+  "gal.delFolderNonEmpty": { zh: "\u5220\u9664\uFF08\u8BF7\u5148\u6E05\u7A7A\u91CC\u9762\uFF09", en: "Delete (empty it first)", ja: "\u524A\u9664\uFF08\u5148\u306B\u4E2D\u3092\u7A7A\u306B\uFF09" },
+  "gal.deleted": { zh: "\u5220\u9664", en: "deleted", ja: "\u524A\u9664" },
+  "gal.discardToTrash": { zh: "\u4E22\u5F03\uFF08\u9001\u56DE\u6536\u7AD9\uFF09", en: "Discard (to trash)", ja: "\u7834\u68C4\uFF08\u30B4\u30DF\u7BB1\u3078\uFF09" },
+  "gal.divergedNote": { zh: "\u4E91\u7AEF\u526F\u672C\u5DF2\u88AB\u522B\u7684\u8BBE\u5907\u79FB\u52A8\u6216\u5220\u9664\uFF1B\u672C\u5730\u8FD9\u4EFD\u6709\u672A\u63A8\u9001\u7684\u4FEE\u6539\u3002", en: "The cloud copy was moved or deleted by another device; this local copy has unpushed changes.", ja: "\u30AF\u30E9\u30A6\u30C9\u5074\u306F\u5225\u7AEF\u672B\u3067\u79FB\u52D5/\u524A\u9664\u3055\u308C\u307E\u3057\u305F\u3002\u30ED\u30FC\u30AB\u30EB\u306B\u306F\u672A\u9001\u4FE1\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u3002" },
+  "gal.dlg.decryptMsg": { zh: "\u5185\u5BB9\u5C06\u4EE5\u660E\u6587\u5B58\u653E\u5728\u672C\u673A\u4E0E\u4E91\u7AEF\uFF0C\u4EFB\u4F55\u80FD\u8BBF\u95EE\u6B64\u8BBE\u5907\u6216\u4E91\u8D26\u53F7\u7684\u4EBA\u90FD\u80FD\u67E5\u770B\u3002", en: "Contents will be stored as plaintext locally and in the cloud; anyone with access to this device or cloud account can view them.", ja: "\u5185\u5BB9\u306F\u30ED\u30FC\u30AB\u30EB\u3068\u30AF\u30E9\u30A6\u30C9\u306B\u5E73\u6587\u3067\u4FDD\u5B58\u3055\u308C\u3001\u3053\u306E\u7AEF\u672B\u3084\u30AF\u30E9\u30A6\u30C9\u306B\u30A2\u30AF\u30BB\u30B9\u3067\u304D\u308B\u4EBA\u306F\u8AB0\u3067\u3082\u95B2\u89A7\u3067\u304D\u307E\u3059\u3002" },
+  "gal.dlg.decryptTitle": { zh: "\u89E3\u9664\u300C{base}\u300D\u7684\u52A0\u5BC6\uFF1F", en: "Decrypt \u201C{base}\u201D?", ja: "\u300C{base}\u300D\u306E\u6697\u53F7\u5316\u3092\u89E3\u9664\uFF1F" },
+  "gal.dlg.delTitle": { zh: '\u5220\u9664 "{name}"\uFF1F', en: "Delete \u201C{name}\u201D?", ja: "\u300C{name}\u300D\u3092\u524A\u9664\uFF1F" },
+  "gal.dlg.emptyBackupMsg": { zh: "{label}\u5907\u4EFD\u7BB1\u91CC\u7559\u5E95\u7684\u7248\u672C\u4F1A\u88AB\u5F7B\u5E95\u5220\u9664\uFF0C\u4E0D\u53EF\u64A4\u9500\u3002", en: "Versions kept in the {label} backups will be permanently deleted. Cannot be undone.", ja: "{label}\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u4FDD\u7BA1\u3055\u308C\u305F\u30D0\u30FC\u30B8\u30E7\u30F3\u3092\u5B8C\u5168\u306B\u524A\u9664\u3057\u307E\u3059\u3002\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002" },
+  "gal.dlg.emptyBackupTitle": { zh: "\u6E05\u7A7A{label}\u5907\u4EFD\u7BB1\uFF1F", en: "Empty {label} backups?", ja: "{label}\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u7A7A\u306B\uFF1F" },
+  "gal.dlg.emptyTrashMsg": { zh: "{label}\u56DE\u6536\u7AD9\u4F1A\u88AB\u5F7B\u5E95\u6E05\u7A7A\uFF0C\u4E0D\u53EF\u64A4\u9500\u3002", en: "The {label} trash will be permanently emptied. Cannot be undone.", ja: "{label}\u306E\u30B4\u30DF\u7BB1\u3092\u5B8C\u5168\u306B\u7A7A\u306B\u3057\u307E\u3059\u3002\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002" },
+  "gal.dlg.emptyTrashTitle": { zh: "\u6E05\u7A7A{label}\u56DE\u6536\u7AD9\uFF1F", en: "Empty {label} trash?", ja: "{label}\u306E\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\uFF1F" },
+  "gal.dlg.moveMsg": { zh: "\u9009\u62E9\u76EE\u6807\u6587\u4EF6\u5939", en: "Choose target folder", ja: "\u79FB\u52D5\u5148\u30D5\u30A9\u30EB\u30C0\u3092\u9078\u629E" },
+  "gal.dlg.moveTitle": { zh: "\u79FB\u52A8\u300C{base}\u300D\u5230\u2026", en: "Move \u201C{base}\u201D to\u2026", ja: "\u300C{base}\u300D\u3092\u79FB\u52D5\u2026" },
+  "gal.dlg.purgeMsg": { zh: "\u4E0D\u53EF\u64A4\u9500\u3002", en: "Cannot be undone.", ja: "\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002" },
+  "gal.dlg.purgeTitle": { zh: '\u6C38\u4E45\u5220\u9664 "{name}"\uFF1F', en: "Delete \u201C{name}\u201D forever?", ja: "\u300C{name}\u300D\u3092\u5B8C\u5168\u306B\u524A\u9664\uFF1F" },
+  "gal.dlg.rename": { zh: "\u91CD\u547D\u540D", en: "Rename", ja: "\u540D\u524D\u3092\u5909\u66F4" },
+  "gal.dlg.renameNote": { zh: "\u91CD\u547D\u540D\uFF08{note}\uFF09", en: "Rename ({note})", ja: "\u540D\u524D\u3092\u5909\u66F4\uFF08{note}\uFF09" },
+  "gal.empty.backup": { zh: "\u5907\u4EFD\u7BB1\u662F\u7A7A\u7684\u3002\u540C\u6B65\u51B2\u7A81\u91CC\u88AB\u6362\u4E0B\u7684\u90A3\u4E00\u7248\u4F1A\u7559\u5728\u8FD9\u91CC\u3002", en: "No backups. When a sync conflict replaces a version, the replaced one is kept here.", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306F\u3042\u308A\u307E\u305B\u3093\u3002\u540C\u671F\u306E\u7AF6\u5408\u3067\u7F6E\u304D\u63DB\u3048\u3089\u308C\u305F\u30D0\u30FC\u30B8\u30E7\u30F3\u306F\u3053\u3053\u306B\u4FDD\u7BA1\u3055\u308C\u307E\u3059\u3002" },
+  "gal.empty.folder": { zh: '\u6587\u4EF6\u5939 "{f}" \u662F\u7A7A\u7684', en: "Folder \u201C{f}\u201D is empty", ja: "\u30D5\u30A9\u30EB\u30C0\u300C{f}\u300D\u306F\u7A7A\u3067\u3059" },
+  "gal.empty.none": { zh: "\u8FD8\u6CA1\u6709\u4FDD\u5B58\u7684\u4F5C\u54C1\u3002\u70B9\u53F3\u4E0A\u52A0\u53F7\u65B0\u5EFA\u4E00\u4E2A\uFF0C\u6216\u5148\u5728 PC \u4E0A\u753B\u4E00\u7B14\u3002", en: "No saved artwork yet. Tap + at top-right to create one, or draw on PC first.", ja: "\u4FDD\u5B58\u3055\u308C\u305F\u4F5C\u54C1\u304C\u3042\u308A\u307E\u305B\u3093\u3002\u53F3\u4E0A\u306E\uFF0B\u3067\u65B0\u898F\u4F5C\u6210\u3001\u307E\u305F\u306FPC\u3067\u63CF\u3044\u3066\u304F\u3060\u3055\u3044\u3002" },
+  "gal.empty.trash": { zh: "\u56DE\u6536\u7AD9\u662F\u7A7A\u7684\u3002", en: "Trash is empty.", ja: "\u30B4\u30DF\u7BB1\u306F\u7A7A\u3067\u3059\u3002" },
+  "gal.emptyFolder": { zh: "\u7A7A\u6587\u4EF6\u5939", en: "Empty folder", ja: "\u7A7A\u306E\u30D5\u30A9\u30EB\u30C0" },
+  "gal.firstFrameFailed": { zh: "\u56FE\u5E93\u8BFB\u53D6\u5931\u8D25\uFF08\u8BE6\u89C1\u8BCA\u65AD\u65E5\u5FD7\uFF09", en: "Gallery listing failed (see the diagnostic log)", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u8AAD\u307F\u8FBC\u307F\u306B\u5931\u6557\u3057\u307E\u3057\u305F\uFF08\u8A3A\u65AD\u30ED\u30B0\u53C2\u7167\uFF09" },
+  "gal.firstFrameTimeout": { zh: "\u56FE\u5E93\u8BFB\u53D6\u8D85\u65F6\uFF1A\u672C\u5730\u5B58\u50A8\u6CA1\u6709\u54CD\u5E94", en: "Gallery listing timed out: local storage did not respond", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u8AAD\u307F\u8FBC\u307F\u304C\u30BF\u30A4\u30E0\u30A2\u30A6\u30C8\u3057\u307E\u3057\u305F\uFF1A\u30ED\u30FC\u30AB\u30EB\u30B9\u30C8\u30EC\u30FC\u30B8\u304C\u5FDC\u7B54\u3057\u307E\u305B\u3093" },
+  "gal.folder": { zh: "\u6587\u4EF6\u5939", en: "Folder", ja: "\u30D5\u30A9\u30EB\u30C0" },
+  "gal.imageFile": { zh: "\u56FE\u7247", en: "Image", ja: "\u753B\u50CF" },
+  "gal.keepOffline": { zh: "\u7559\u4E00\u4EFD\u79BB\u7EBF", en: "Keep offline", ja: "\u30AA\u30D5\u30E9\u30A4\u30F3\u7528\u306B\u4FDD\u5B58" },
+  "gal.keptAside": { zh: "\u7559\u5E95", en: "kept", ja: "\u4FDD\u7BA1" },
+  "gal.loading": { zh: "\u52A0\u8F7D\u4E2D\u2026", en: "Loading\u2026", ja: "\u8AAD\u307F\u8FBC\u307F\u4E2D\u2026" },
+  "gal.loc.cloud": { zh: "\u4E91\u7AEF", en: "Cloud", ja: "\u30AF\u30E9\u30A6\u30C9" },
+  "gal.loc.local": { zh: "\u672C\u5730", en: "Local", ja: "\u30ED\u30FC\u30AB\u30EB" },
+  "gal.lockedThumb": { zh: "\u5DF2\u52A0\u5BC6 \u2014\u2014 \u70B9\u9501\u89E3\u9501\u9884\u89C8", en: "Encrypted \u2014 tap lock to unlock preview", ja: "\u6697\u53F7\u5316\u6E08\u307F \u2014 \u30ED\u30C3\u30AF\u3092\u30BF\u30C3\u30D7\u3057\u3066\u30D7\u30EC\u30D3\u30E5\u30FC" },
+  "gal.tile.active": { zh: "\u7F16\u8F91\u4E2D", en: "Editing", ja: "\u7DE8\u96C6\u4E2D" },
+  "gal.marker.unread": { zh: "\u672A\u8BFB", en: "Unread", ja: "\u672A\u8AAD" },
+  "gal.more": { zh: "\u66F4\u591A\u64CD\u4F5C", en: "More actions", ja: "\u305D\u306E\u4ED6\u306E\u64CD\u4F5C" },
+  "gal.moveTo": { zh: "\u79FB\u52A8\u5230\u2026", en: "Move to\u2026", ja: "\u79FB\u52D5\u2026" },
+  "gal.note.empty": { zh: "\u540D\u5B57\u4E0D\u80FD\u7A7A", en: "Name can\u2019t be empty", ja: "\u540D\u524D\u306F\u7A7A\u306B\u3067\u304D\u307E\u305B\u3093" },
+  "gal.note.fail": { zh: "\u5931\u8D25\uFF1A{e}", en: "Failed: {e}", ja: "\u5931\u6557\uFF1A{e}" },
+  "gal.note.taken": { zh: "{loc}\u5DF2\u6709\u540C\u540D\uFF0C\u6362\u4E00\u4E2A", en: "{loc} already has this name, pick another", ja: "{loc}\u306B\u540C\u540D\u3042\u308A\u3001\u5225\u540D\u306B" },
+  "gal.openDiag": { zh: "\u8BCA\u65AD\u65E5\u5FD7", en: "Diagnostic log", ja: "\u8A3A\u65AD\u30ED\u30B0" },
+  "gal.otherFile": { zh: "\u6587\u4EF6\uFF08\u5728 WeebPaint \u5916\u7BA1\u7406\uFF09", en: "File (managed outside WeebPaint)", ja: "\u30D5\u30A1\u30A4\u30EB\uFF08WeebPaint \u5916\u3067\u7BA1\u7406\uFF09" },
+  "gal.ph.newName": { zh: "\u65B0\u540D\u5B57", en: "New name", ja: "\u65B0\u3057\u3044\u540D\u524D" },
+  "gal.pullLocal": { zh: "\u62C9\u53D6\u5230\u672C\u5730", en: "Pull to local", ja: "\u30ED\u30FC\u30AB\u30EB\u306B\u53D6\u5F97" },
+  "gal.purge": { zh: "\u6C38\u4E45\u5220\u9664", en: "Delete forever", ja: "\u5B8C\u5168\u306B\u524A\u9664" },
+  "gal.pushCloud": { zh: "\u63A8\u9001\u5230\u4E91\u7AEF", en: "Push to cloud", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u9001\u4FE1" },
+  "gal.reload": { zh: "\u91CD\u65B0\u8F7D\u5165\u5E94\u7528", en: "Reload app", ja: "\u30A2\u30D7\u30EA\u3092\u518D\u8AAD\u307F\u8FBC\u307F" },
+  "gal.rename": { zh: "\u91CD\u547D\u540D", en: "Rename", ja: "\u540D\u524D\u3092\u5909\u66F4" },
+  "gal.renameKeep": { zh: "\u91CD\u547D\u540D\u7559\u5B58", en: "Rename & keep", ja: "\u540D\u524D\u3092\u5909\u3048\u3066\u4FDD\u6301" },
+  "gal.restore": { zh: "\u6062\u590D", en: "Restore", ja: "\u5FA9\u5143" },
+  "gal.retry": { zh: "\u91CD\u8BD5", en: "Retry", ja: "\u518D\u8A66\u884C" },
+  "gal.reupload": { zh: "\u91CD\u65B0\u4E0A\u4F20", en: "Re-upload", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9" },
+  "gal.root": { zh: "\u6839\u76EE\u5F55", en: "root", ja: "\u30EB\u30FC\u30C8" },
+  "gal.rootFolder": { zh: "/ \u6839\u76EE\u5F55", en: "/ root", ja: "/ \u30EB\u30FC\u30C8" },
+  "gal.scope.both": { zh: "\u672C\u5730\u548C\u4E91\u7AEF", en: "local and cloud", ja: "\u30ED\u30FC\u30AB\u30EB\u3068\u30AF\u30E9\u30A6\u30C9" },
+  "gal.scope.cloud": { zh: "\u4E91\u7AEF", en: "cloud", ja: "\u30AF\u30E9\u30A6\u30C9" },
+  "gal.scope.local": { zh: "\u672C\u5730", en: "local", ja: "\u30ED\u30FC\u30AB\u30EB" },
+  "gal.st.alreadyEnc": { zh: "\u5DF2\u662F\u52A0\u5BC6\u4F5C\u54C1", en: "Already encrypted", ja: "\u65E2\u306B\u6697\u53F7\u5316\u6E08\u307F\u3067\u3059" },
+  "gal.st.alreadyInFolder": { zh: "\u5DF2\u5728\u8BE5\u6587\u4EF6\u5939", en: "Already in that folder", ja: "\u65E2\u306B\u305D\u306E\u30D5\u30A9\u30EB\u30C0\u5185\u3067\u3059" },
+  "gal.st.cancelled": { zh: "\u5DF2\u53D6\u6D88", en: "Cancelled", ja: "\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F" },
+  "gal.st.cancelledPw": { zh: "\u5DF2\u53D6\u6D88\uFF08\u9700\u8981\u5BC6\u7801\uFF09", en: "Cancelled (password required)", ja: "\u30AD\u30E3\u30F3\u30BB\u30EB\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u5FC5\u8981\uFF09" },
+  "gal.st.cloudPullFirst": { zh: "\u7EAF\u4E91\u7AEF\u4F5C\u54C1\u5148\u62C9\u53D6\u5230\u672C\u5730\u518D{verb}", en: "Pull the cloud-only artwork to local first to {verb}", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u307F\u306E\u4F5C\u54C1\u306F\u5148\u306B\u30ED\u30FC\u30AB\u30EB\u3078\u53D6\u5F97\u3057\u3066\u304B\u3089{verb}" },
+  "gal.st.keepOfflineFail": { zh: "\u7559\u79BB\u7EBF\u5931\u8D25\uFF1A{e}", en: "Keep offline failed: {e}", ja: "\u30AA\u30D5\u30E9\u30A4\u30F3\u4FDD\u5B58\u306B\u5931\u6557\uFF1A{e}" },
+  "gal.st.keptOffline": { zh: "\u5DF2\u7559\u79BB\u7EBF\uFF1A{name}", en: "Kept offline: {name}", ja: "\u30AA\u30D5\u30E9\u30A4\u30F3\u4FDD\u5B58\u6E08\u307F\uFF1A{name}" },
+  "gal.st.copied": { zh: "\u5DF2\u521B\u5EFA\u526F\u672C\uFF1A{name}", en: "Duplicated: {name}", ja: "\u8907\u88FD\uFF1A{name}" },
+  "gal.st.copyFail": { zh: "\u521B\u5EFA\u526F\u672C\u5931\u8D25\uFF1A{e}", en: "Duplicate failed: {e}", ja: "\u8907\u88FD\u5931\u6557\uFF1A{e}" },
+  "gal.st.copyNoBytes": { zh: "\u627E\u4E0D\u5230\u6E90\u4F5C\u54C1\u7684\u5B57\u8282\uFF0C\u590D\u5236\u5931\u8D25", en: "Source artwork bytes not found; duplicate failed", ja: "\u5143\u4F5C\u54C1\u306E\u30C7\u30FC\u30BF\u304C\u898B\u3064\u304B\u3089\u305A\u8907\u88FD\u5931\u6557" },
+  "gal.st.decryptFail": { zh: "\u89E3\u9664\u52A0\u5BC6\u5931\u8D25\uFF1A{e}", en: "Decryption failed: {e}", ja: "\u6697\u53F7\u5316\u89E3\u9664\u5931\u6557\uFF1A{e}" },
+  "gal.st.decrypted": { zh: "\u5DF2\u89E3\u9664\u52A0\u5BC6\uFF1A{name}", en: "Decrypted: {name}", ja: "\u6697\u53F7\u5316\u89E3\u9664\uFF1A{name}" },
+  "gal.st.delCancelled": { zh: "\u5DF2\u53D6\u6D88\uFF0C\u6CA1\u6709\u5220\u9664\u300C{name}\u300D", en: 'Cancelled \u2014 "{name}" was not deleted', ja: "\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002\u300C{name}\u300D\u306F\u524A\u9664\u3057\u3066\u3044\u307E\u305B\u3093" },
+  "gal.st.delFail": { zh: "\u5220\u9664\u5931\u8D25\uFF1A{e}", en: "Delete failed: {e}", ja: "\u524A\u9664\u5931\u6557\uFF1A{e}" },
+  "gal.st.delLocalOnly": { zh: "\u300C{name}\u300D\u5DF2\u4ECE\u672C\u5730\u79FB\u5165\u56DE\u6536\u7AD9\uFF0C\u4F46\u4E91\u7AEF\u90A3\u4EFD\u8FD8\u5728\uFF08\u79BB\u7EBF\u6216\u6765\u5386\u4E0D\u660E\uFF0C\u6CA1\u6562\u5220\uFF09", en: '"{name}" was moved to the local recycle bin, but the cloud copy remains (offline or unknown lineage)', ja: "\u300C{name}\u300D\u3092\u30ED\u30FC\u30AB\u30EB\u306E\u3054\u307F\u7BB1\u306B\u79FB\u52D5\u3057\u307E\u3057\u305F\u304C\u3001\u30AF\u30E9\u30A6\u30C9\u5074\u306F\u6B8B\u3063\u3066\u3044\u307E\u3059\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\u307E\u305F\u306F\u7531\u6765\u4E0D\u660E\uFF09" },
+  "gal.st.delNothing": { zh: "\u300C{name}\u300D\u672C\u5730\u548C\u4E91\u7AEF\u90FD\u6CA1\u6709\uFF0C\u65E0\u4E8B\u53EF\u5220", en: '"{name}" exists neither locally nor in the cloud \u2014 nothing to delete', ja: "\u300C{name}\u300D\u306F\u30ED\u30FC\u30AB\u30EB\u306B\u3082\u30AF\u30E9\u30A6\u30C9\u306B\u3082\u5B58\u5728\u3057\u307E\u305B\u3093" },
+  "gal.st.deleted": { zh: "\u5DF2\u5220\u9664\uFF1A{name}", en: "Deleted: {name}", ja: "\u524A\u9664\uFF1A{name}" },
+  "gal.st.emptyBackupCloudFail": { zh: "{n} \u9879\u4E91\u7AEF\u6CA1\u6E05\uFF08\u53EF\u80FD\u79BB\u7EBF\uFF09\uFF0C\u56DE\u7EBF\u518D\u6E05", en: "{n} cloud item(s) not cleared (maybe offline); retry when online", ja: "{n} \u4EF6\u304C\u30AF\u30E9\u30A6\u30C9\u3067\u672A\u524A\u9664\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\uFF1F\uFF09\u3002\u30AA\u30F3\u30E9\u30A4\u30F3\u5FA9\u5E30\u5F8C\u306B\u518D\u8A66\u884C" },
+  "gal.st.emptyBackupCloudNeedLogin": { zh: "\u6E05\u7A7A\u4E91\u7AEF\u5907\u4EFD\u7BB1\u9700\u5148\u767B\u5F55\u5E76\u8054\u7F51", en: "Emptying cloud backups requires sign-in and network", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u7A7A\u306B\u3059\u308B\u306B\u306F\u30B5\u30A4\u30F3\u30A4\u30F3\u3068\u63A5\u7D9A\u304C\u5FC5\u8981\u3067\u3059" },
+  "gal.st.emptyBackupDone": { zh: "\u5DF2\u6E05\u7A7A{label}\u5907\u4EFD\u7BB1", en: "Emptied {label} backups", ja: "{label}\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u7A7A\u306B\u3057\u307E\u3057\u305F" },
+  "gal.st.emptyBackupPartial": { zh: "\u6E05\u7A7A\u65F6\u90E8\u5206\u5931\u8D25", en: "Some items failed to clear", ja: "\u4E00\u90E8\u306E\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F" },
+  "gal.st.emptyTrashCloudFail": { zh: "{n} \u9879\u4E91\u7AEF\u6CA1\u6E05\uFF08\u53EF\u80FD\u79BB\u7EBF\uFF09\uFF0C\u56DE\u7EBF\u518D\u6E05", en: "{n} cloud item(s) not cleared (maybe offline); retry when online", ja: "{n} \u4EF6\u304C\u30AF\u30E9\u30A6\u30C9\u3067\u672A\u524A\u9664\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\uFF1F\uFF09\u3002\u30AA\u30F3\u30E9\u30A4\u30F3\u5FA9\u5E30\u5F8C\u306B\u518D\u8A66\u884C" },
+  "gal.st.emptyTrashCloudNeedLogin": { zh: "\u6E05\u7A7A\u4E91\u7AEF\u56DE\u6536\u7AD9\u9700\u5148\u767B\u5F55\u5E76\u8054\u7F51", en: "Emptying cloud trash requires sign-in and network", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\u3059\u308B\u306B\u306F\u30B5\u30A4\u30F3\u30A4\u30F3\u3068\u63A5\u7D9A\u304C\u5FC5\u8981\u3067\u3059" },
+  "gal.st.emptyTrashDone": { zh: "\u5DF2\u6E05\u7A7A{label}\u56DE\u6536\u7AD9", en: "Emptied {label} trash", ja: "{label}\u306E\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\u3057\u307E\u3057\u305F" },
+  "gal.st.emptyTrashPartial": { zh: "\u6E05\u7A7A\u65F6\u90E8\u5206\u5931\u8D25", en: "Some items failed to clear", ja: "\u4E00\u90E8\u306E\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F" },
+  "gal.st.encConflict": { zh: "\u4E91\u7AEF\u6709\u66F4\u65B0\u7248\u672C\uFF1A{name} \u2014\u2014 \u672C\u5730\u5DF2\u6362\u3001\u5DF2\u6807\u672A\u63A8\u9001\uFF1B\u6253\u5F00\u540E\u6309\u51B2\u7A81\u6D41\u7A0B\u5904\u7406", en: "Newer version in cloud: {name} \u2014 local swapped and marked unpushed; resolve conflict after opening", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u65B0\u3057\u3044\u7248\uFF1A{name} \u2014 \u30ED\u30FC\u30AB\u30EB\u306F\u5909\u66F4\u30FB\u672A\u9001\u4FE1\u6E08\u307F\u3002\u958B\u3044\u3066\u304B\u3089\u7AF6\u5408\u3092\u89E3\u6C7A" },
+  "gal.st.encDeferred": { zh: "{okMsg}\uFF08\u672C\u5730\u5B8C\u6210\uFF1B\u4E91\u7AEF\u6682\u672A\u8DDF\u4E0A\uFF0C\u5DF2\u6807\u672A\u63A8\u9001\uFF0C\u56DE\u7EBF\u540E\u63A8\u9001\u5373\u540C\u6B65\uFF09", en: "{okMsg} (local done; cloud not yet, marked unpushed; push when back online)", ja: "{okMsg}\uFF08\u30ED\u30FC\u30AB\u30EB\u5B8C\u4E86\uFF1B\u30AF\u30E9\u30A6\u30C9\u672A\u8FFD\u5F93\u3001\u672A\u9001\u4FE1\u3002\u30AA\u30F3\u30E9\u30A4\u30F3\u5FA9\u5E30\u5F8C\u306B\u9001\u4FE1\u3067\u540C\u671F\uFF09" },
+  "gal.st.encFail": { zh: "\u52A0\u5BC6\u5931\u8D25\uFF1A{e}", en: "Encryption failed: {e}", ja: "\u6697\u53F7\u5316\u5931\u6557\uFF1A{e}" },
+  "gal.st.encNeedOnline": { zh: "\u5DF2\u540C\u6B65\u8FC7\u4E91\u7AEF\u7684\u4F5C\u54C1\u9700\u5728\u7EBF\u64CD\u4F5C\uFF08\u672C\u5730\u4E0E\u4E91\u7AEF\u8981\u4E00\u8D77\u6362\uFF09", en: "Cloud-synced artwork needs to be online (local and cloud swap together)", ja: "\u30AF\u30E9\u30A6\u30C9\u540C\u671F\u6E08\u307F\u306E\u4F5C\u54C1\u306F\u30AA\u30F3\u30E9\u30A4\u30F3\u3067\u64CD\u4F5C\uFF08\u30ED\u30FC\u30AB\u30EB\u3068\u30AF\u30E9\u30A6\u30C9\u3092\u540C\u6642\u306B\uFF09" },
+  "gal.st.encryptedOk": { zh: "\u5DF2\u52A0\u5BC6\uFF1A{name}\uFF087-Zip \u8F93\u6B64\u5BC6\u7801\u53EF\u6062\u590D\uFF1B\u5FD8\u8BB0\u5BC6\u7801\u5185\u5BB9\u6C38\u4E45\u627E\u4E0D\u56DE\uFF09", en: "Encrypted: {name} (7-Zip with this password can recover; forgotten password = permanently lost)", ja: "\u6697\u53F7\u5316\uFF1A{name}\uFF08\u3053\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u30677-Zip\u5FA9\u5143\u53EF\uFF1B\u5FD8\u308C\u308B\u3068\u5185\u5BB9\u306F\u6C38\u4E45\u306B\u5931\u308F\u308C\u307E\u3059\uFF09" },
+  "gal.st.folderDelFail": { zh: "\u5220\u9664\u6587\u4EF6\u5939\u5931\u8D25\uFF1A{e}", en: "Folder delete failed: {e}", ja: "\u30D5\u30A9\u30EB\u30C0\u524A\u9664\u5931\u6557\uFF1A{e}" },
+  "gal.st.folderDeleted": { zh: "\u5DF2\u5220\u9664\u7A7A\u6587\u4EF6\u5939\uFF1A{name}", en: "Deleted empty folder: {name}", ja: "\u7A7A\u306E\u30D5\u30A9\u30EB\u30C0\u3092\u524A\u9664\uFF1A{name}" },
+  "gal.st.moveFail": { zh: "\u79FB\u52A8\u5931\u8D25\uFF1A{e}", en: "Move failed: {e}", ja: "\u79FB\u52D5\u5931\u6557\uFF1A{e}" },
+  "gal.st.moved": { zh: "\u5DF2\u79FB\u52A8\u5230\uFF1A{target}", en: "Moved to: {target}", ja: "\u79FB\u52D5\u5148\uFF1A{target}" },
+  "gal.st.nameTakenTarget": { zh: "{loc}\u76EE\u6807\u5DF2\u6709\u540C\u540D\u300C{base}\u300D", en: "{loc} target already has \u201C{base}\u201D", ja: "{loc}\u306E\u79FB\u52D5\u5148\u306B\u540C\u540D\u300C{base}\u300D\u3042\u308A" },
+  "gal.st.nameUnchanged": { zh: "\u540D\u5B57\u672A\u53D8", en: "Name unchanged", ja: "\u540D\u524D\u306F\u5909\u308F\u3063\u3066\u3044\u307E\u305B\u3093" },
+  "gal.st.noLocalBytes": { zh: "\u672C\u5730\u5B57\u8282\u7F3A\u5931", en: "Local bytes missing", ja: "\u30ED\u30FC\u30AB\u30EB\u30C7\u30FC\u30BF\u304C\u3042\u308A\u307E\u305B\u3093" },
+  "gal.st.noOtherFolder": { zh: "\u6CA1\u6709\u522B\u7684\u6587\u4EF6\u5939\u53EF\u79FB\uFF08\u5148\u65B0\u5EFA\u4E00\u4E2A\uFF09", en: "No other folder to move to (create one first)", ja: "\u79FB\u52D5\u5148\u306E\u30D5\u30A9\u30EB\u30C0\u304C\u3042\u308A\u307E\u305B\u3093\uFF08\u5148\u306B\u4F5C\u6210\uFF09" },
+  "gal.st.notEnc": { zh: "\u8FD9\u4E0D\u662F\u52A0\u5BC6\u4F5C\u54C1", en: "This artwork isn\u2019t encrypted", ja: "\u3053\u308C\u306F\u6697\u53F7\u5316\u4F5C\u54C1\u3067\u306F\u3042\u308A\u307E\u305B\u3093" },
+  "gal.st.openActive": { zh: "\u8FD9\u753B\u6B63\u5F00\u7740 \u2014\u2014 \u5148\u9000\u51FA\u5230\u56FE\u5E93\u518D{verb}", en: "This artwork is open \u2014 exit to gallery first to {verb}", ja: "\u3053\u306E\u4F5C\u54C1\u306F\u958B\u3044\u3066\u3044\u307E\u3059 \u2014 \u5148\u306B\u30AE\u30E3\u30E9\u30EA\u30FC\u306B\u623B\u3063\u3066{verb}" },
+  "gal.st.purgeFail": { zh: "\u6C38\u4E45\u5220\u9664\u5931\u8D25\uFF1A{e}", en: "Permanent delete failed: {e}", ja: "\u5B8C\u5168\u524A\u9664\u5931\u6557\uFF1A{e}" },
+  "gal.st.purged": { zh: "\u5DF2\u6C38\u4E45\u5220\u9664\uFF1A{name}", en: "Permanently deleted: {name}", ja: "\u5B8C\u5168\u306B\u524A\u9664\uFF1A{name}" },
+  "gal.st.renamed": { zh: "\u5DF2\u91CD\u547D\u540D\uFF1A{to}", en: "Renamed: {to}", ja: "\u540D\u524D\u5909\u66F4\uFF1A{to}" },
+  "gal.st.renamed2": { zh: "\u5DF2\u91CD\u547D\u540D\uFF1A{from} \u2192 {to}", en: "Renamed: {from} \u2192 {to}", ja: "\u540D\u524D\u5909\u66F4\uFF1A{from} \u2192 {to}" },
+  "gal.st.restoreFail": { zh: "\u6062\u590D\u5931\u8D25\uFF1A{e}", en: "Restore failed: {e}", ja: "\u5FA9\u5143\u5931\u6557\uFF1A{e}" },
+  "gal.st.restored": { zh: "\u5DF2\u6062\u590D\uFF1A{name}", en: "Restored: {name}", ja: "\u5FA9\u5143\uFF1A{name}" },
+  "gal.st.restoredRenamed": { zh: "\u5DF2\u6062\u590D\uFF1A{name}\uFF08\u539F\u540D {orig} \u5DF2\u88AB\u5360\u7528\uFF09", en: "Restored: {name} (original name {orig} was taken)", ja: "\u5FA9\u5143\uFF1A{name}\uFF08\u5143\u306E\u540D\u524D {orig} \u306F\u4F7F\u7528\u4E2D\uFF09" },
+  "gal.st.reuploadConflict": { zh: "\u4E91\u7AEF\u5DF2\u5B58\u5728\u540C\u540D\u6587\u4EF6\uFF0C\u672A\u8986\u76D6\uFF1A{name}\uFF08\u8BF7\u6539\u540D\u6216\u4ECE\u4E91\u7AEF\u62C9\u53D6\uFF09", en: "A file with that name already exists on cloud; not overwritten: {name}", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u540C\u540D\u30D5\u30A1\u30A4\u30EB\u304C\u65E2\u306B\u5B58\u5728\u3057\u307E\u3059\u3002\u4E0A\u66F8\u304D\u3057\u307E\u305B\u3093\uFF1A{name}" },
+  "gal.st.reuploadFail": { zh: "\u91CD\u65B0\u4E0A\u4F20\u5931\u8D25\uFF1A{e}", en: "Re-upload failed: {e}", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u5931\u6557\uFF1A{e}" },
+  "gal.st.reuploaded": { zh: "\u5DF2\u91CD\u65B0\u4E0A\u4F20\uFF1A{name}", en: "Re-uploaded: {name}", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u5B8C\u4E86\uFF1A{name}" },
+  "gal.st.unlocked": { zh: "\u5DF2\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1\uFF08\u5BC6\u7801\u53EA\u5728\u5185\u5B58\uFF0C\u5173\u9875\u5373\u5FD8\uFF09", en: "Unlocked (password kept in memory only, forgotten on close)", ja: "\u30ED\u30C3\u30AF\u89E3\u9664\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u30E1\u30E2\u30EA\u306E\u307F\u3001\u9589\u3058\u308B\u3068\u7834\u68C4\uFF09" },
+  "gal.toTrash": { zh: "\u9001\u5230\u56DE\u6536\u7AD9", en: "Move to trash", ja: "\u30B4\u30DF\u7BB1\u3078" },
+  "gal.unloadLocal": { zh: "\u5378\u8F7D\u672C\u5730", en: "Unload local", ja: "\u30ED\u30FC\u30AB\u30EB\u3092\u89E3\u653E" },
+  "gal.verb.decrypt": { zh: "\u89E3\u9664\u52A0\u5BC6", en: "decrypt", ja: "\u6697\u53F7\u5316\u89E3\u9664" },
+  "gal.verb.encrypt": { zh: "\u52A0\u5BC6", en: "encrypt", ja: "\u6697\u53F7\u5316" },
+  "gc.redirectReadyMsg": { zh: "\u5DF2\u4FDD\u5B58\u5230\u672C\u673A\u3002\u63A5\u4E0B\u6765\u4F1A\u8DF3\u5230\u5FAE\u8F6F\u767B\u5F55\u9875\uFF0C\u767B\u5F55\u540E\u81EA\u52A8\u56DE\u6765\u3002", en: "Saved on this device. Next you'll go to the Microsoft sign-in page and come back automatically.", ja: "\u3053\u306E\u7AEF\u672B\u306B\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002\u6B21\u306B Microsoft \u306E\u30B5\u30A4\u30F3\u30A4\u30F3\u30DA\u30FC\u30B8\u3078\u79FB\u52D5\u3057\u3001\u30B5\u30A4\u30F3\u30A4\u30F3\u5F8C\u306B\u81EA\u52D5\u3067\u623B\u308A\u307E\u3059\u3002" },
+  "gm.alreadyCurrent": { zh: "\u5DF2\u7ECF\u662F\u5F53\u524D\u56FE\u5E93", en: "Already the current gallery", ja: "\u3059\u3067\u306B\u73FE\u5728\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u3067\u3059" },
+  "gm.backupDone": { zh: "\u5DF2\u4E0B\u8F7D {n} \u4EFD\u5907\u4EFD", en: "Downloaded {n} backups", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092 {n} \u4EF6\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F" },
+  "gm.closeDocFirst": { zh: "\u5148\u5173\u95ED\u5F53\u524D\u753B\uFF0C\u518D\u5207\u6362\u6216\u5378\u4E0B\u56FE\u5E93", en: "Close the current painting before switching or detaching the gallery", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u5207\u308A\u66FF\u3048\u308B\u524D\u306B\u3001\u73FE\u5728\u306E\u7D75\u3092\u9589\u3058\u3066\u304F\u3060\u3055\u3044" },
+  "gm.connectFolder": { zh: "\u8FDE\u63A5\u672C\u5730\u6587\u4EF6\u5939\u2026", en: "Connect local folder\u2026", ja: "\u30ED\u30FC\u30AB\u30EB\u30D5\u30A9\u30EB\u30C0\u30FC\u3092\u63A5\u7D9A\u2026" },
+  "gm.connectOneDrive": { zh: "\u8FDE\u63A5 OneDrive\u2026", en: "Connect OneDrive\u2026", ja: "OneDrive \u3092\u63A5\u7D9A\u2026" },
+  "gm.connectTitle": { zh: "\u8FDE\u63A5\u56FE\u5E93", en: "Connect a gallery", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u63A5\u7D9A" },
+  "gm.current": { zh: "\u5F53\u524D\u56FE\u5E93\uFF1A{label}\uFF08{src}\uFF09", en: "Current gallery: {label} ({src})", ja: "\u73FE\u5728\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\uFF1A{label}\uFF08{src}\uFF09" },
+  "gm.dirtyAllPushed": { zh: "\u5DF2\u5168\u90E8\u4E0A\u4F20\uFF0C\u7EE7\u7EED\u5207\u6362", en: "All uploaded \u2014 continuing", ja: "\u3059\u3079\u3066\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F\u3002\u7D9A\u884C\u3057\u307E\u3059" },
+  "gm.dirtyBackup": { zh: "\u4E0B\u8F7D\u5907\u4EFD", en: "Download backups", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9" },
+  "gm.dirtyForce": { zh: "\u4ECD\u8981\u5207\u6362", en: "Switch anyway", ja: "\u305D\u308C\u3067\u3082\u5207\u308A\u66FF\u3048\u308B" },
+  "gm.dirtyMsg": { zh: "\u5207\u6362\u540E\u5B83\u4EEC\u7559\u5728\u672C\u673A\u7F13\u5B58\uFF0C\u56DE\u5230\u6B64\u56FE\u5E93\u65F6\u7EE7\u7EED\u4E0A\u4F20\u3002\u6CE8\u610F\uFF1A\u6D4F\u89C8\u5668\u53EF\u80FD\u6E05\u9664\u672C\u673A\u7F13\u5B58\uFF0C\u7F13\u5B58\u4E0D\u662F\u4FDD\u9669\u7BB1\u2014\u2014\u5EFA\u8BAE\u5148\u4E0B\u8F7D\u5907\u4EFD\u3002", en: "They stay in this device's cache and upload when you return. Note: the browser may evict local cache \u2014 it is not a safe. Consider downloading backups first.", ja: "\u3053\u306E\u7AEF\u672B\u306E\u30AD\u30E3\u30C3\u30B7\u30E5\u306B\u6B8B\u308A\u3001\u623B\u3063\u305F\u3068\u304D\u306B\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u3055\u308C\u307E\u3059\u3002\u6CE8\u610F\uFF1A\u30D6\u30E9\u30A6\u30B6\u306F\u30AD\u30E3\u30C3\u30B7\u30E5\u3092\u524A\u9664\u3059\u308B\u3053\u3068\u304C\u3042\u308A\u307E\u3059\u3002\u5148\u306B\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u304A\u3059\u3059\u3081\u3057\u307E\u3059\u3002" },
+  "gm.dirtyTitle": { zh: "\u6709 {n} \u5F20\u753B\u672A\u4E0A\u4E91", en: "{n} paintings not yet uploaded", ja: "\u672A\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u306E\u7D75\u304C {n} \u679A\u3042\u308A\u307E\u3059" },
+  "gm.disconnected": { zh: "\u5DF2\u65AD\u5F00\u56FE\u5E93\u8FDE\u63A5\uFF08\u753B\u5E03\u4E0E\u56FE\u5E93\u6587\u4EF6\u4E0D\u53D7\u5F71\u54CD\uFF09", en: "Gallery disconnected (canvas and gallery files untouched)", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u63A5\u7D9A\u3092\u89E3\u9664\u3057\u307E\u3057\u305F\uFF08\u30AD\u30E3\u30F3\u30D0\u30B9\u3068\u30D5\u30A1\u30A4\u30EB\u306F\u305D\u306E\u307E\u307E\uFF09" },
+  "gm.dismiss": { zh: "\u5173\u95ED", en: "Dismiss", ja: "\u9589\u3058\u308B" },
+  "gm.fileProtoCloudHelp": { zh: "\u5355\u6587\u4EF6\u76F4\u63A5\u53CC\u51FB\u6253\u5F00\uFF08file://\uFF09\u65F6\uFF0C\u5FAE\u8F6F\u767B\u5F55\u7528\u4E0D\u4E86\u2014\u2014\u9700\u8981\u4E00\u4E2A\u672C\u5730 http \u73AF\u5883\u3002\u9003\u751F\u8231\uFF1A\u5728\u8FD9\u4E2A\u6587\u4EF6\u6240\u5728\u7684\u6587\u4EF6\u5939\u6253\u5F00\u547D\u4EE4\u884C\uFF0C\u8FD0\u884C\n\n    python -m http.server 8000\n\n\u7136\u540E\u7528\u6D4F\u89C8\u5668\u6253\u5F00 http://localhost:8000/{file} \u518D\u8FDE\u63A5 OneDrive\u3002\uFF08\u672C\u5730\u6587\u4EF6\u5939\u56FE\u5E93\u4E0D\u53D7\u5F71\u54CD\uFF0C\u53EF\u4EE5\u76F4\u63A5\u7528\u3002\uFF09", en: "Opened directly from disk (file://), Microsoft sign-in cannot work \u2014 it needs a local http origin. Escape hatch: open a terminal in this file's folder and run\n\n    python -m http.server 8000\n\nthen open http://localhost:8000/{file} in your browser and connect OneDrive there. (Local folder galleries are unaffected.)", ja: "\u30D5\u30A1\u30A4\u30EB\u3092\u76F4\u63A5\u958B\u3044\u305F\u72B6\u614B\uFF08file://\uFF09\u3067\u306F Microsoft \u30B5\u30A4\u30F3\u30A4\u30F3\u306F\u4F7F\u3048\u307E\u305B\u3093\u2014\u2014\u30ED\u30FC\u30AB\u30EB http \u74B0\u5883\u304C\u5FC5\u8981\u3067\u3059\u3002\u3053\u306E\u30D5\u30A1\u30A4\u30EB\u306E\u30D5\u30A9\u30EB\u30C0\u30FC\u3067\u30BF\u30FC\u30DF\u30CA\u30EB\u3092\u958B\u304D\u3001\n\n    python -m http.server 8000\n\n\u3092\u5B9F\u884C\u3057\u3001\u30D6\u30E9\u30A6\u30B6\u3067 http://localhost:8000/{file} \u3092\u958B\u3044\u3066\u304B\u3089 OneDrive \u306B\u63A5\u7D9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002\uFF08\u30ED\u30FC\u30AB\u30EB\u30D5\u30A9\u30EB\u30C0\u30FC\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u306F\u305D\u306E\u307E\u307E\u4F7F\u3048\u307E\u3059\u3002\uFF09" },
+  "gm.forgetDirtyWarn": { zh: "\u26A0 \u8BE5\u56FE\u5E93\u8FD8\u6709 {n} \u5F20\u753B\u672A\u4E0A\u4E91\uFF08\u7F13\u5B58\u7559\u5728\u672C\u673A\uFF0C\u91CD\u65B0\u8FDE\u63A5\u540E\u53EF\u7EE7\u7EED\u4E0A\u4F20\uFF09\u3002", en: "\u26A0 {n} paintings in that gallery are not yet uploaded (cache stays on this device; reconnect later to resume uploading).", ja: "\u26A0 \u305D\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u306B\u306F\u672A\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u306E\u7D75\u304C {n} \u679A\u3042\u308A\u307E\u3059\uFF08\u30AD\u30E3\u30C3\u30B7\u30E5\u306F\u7AEF\u672B\u306B\u6B8B\u308A\u3001\u518D\u63A5\u7D9A\u3067\u518D\u958B\u3067\u304D\u307E\u3059\uFF09\u3002" },
+  "gm.forgetHint": { zh: "\u5FD8\u8BB0\uFF08\u4E0D\u52A8\u6587\u4EF6\uFF09", en: "Forget (files untouched)", ja: "\u4E00\u89A7\u304B\u3089\u524A\u9664\uFF08\u30D5\u30A1\u30A4\u30EB\u306F\u305D\u306E\u307E\u307E\uFF09" },
+  "gm.forgetMsg": { zh: "\u53EA\u4ECE\u8FD9\u53F0\u8BBE\u5907\u7684\u540D\u518C\u79FB\u9664\uFF0C\u4E0D\u52A8\u56FE\u5E93\u672C\u8EAB\u7684\u6587\u4EF6\u3002", en: "Removes it from this device's list only; gallery files are untouched.", ja: "\u3053\u306E\u7AEF\u672B\u306E\u4E00\u89A7\u304B\u3089\u524A\u9664\u3059\u308B\u3060\u3051\u3067\u3001\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D5\u30A1\u30A4\u30EB\u306B\u306F\u89E6\u308C\u307E\u305B\u3093\u3002" },
+  "gm.forgetTitle": { zh: "\u5FD8\u8BB0\u300C{label}\u300D\uFF1F", en: 'Forget "{label}"?', ja: "\u300C{label}\u300D\u3092\u4E00\u89A7\u304B\u3089\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F" },
+  "gm.forgotten": { zh: "\u5DF2\u5FD8\u8BB0 {label}", en: "Forgot {label}", ja: "{label} \u3092\u4E00\u89A7\u304B\u3089\u524A\u9664\u3057\u307E\u3057\u305F" },
+  "gm.historyCaption": { zh: "\u6700\u8FD1\u8FDE\u63A5\u8FC7\u7684\uFF1A", en: "Recently connected:", ja: "\u6700\u8FD1\u63A5\u7D9A\u3057\u305F\u3082\u306E\uFF1A" },
+  "gm.offlineBanner": { zh: "\u56FE\u5E93\u300C{label}\u300D\u5DF2\u79BB\u7EBF\u2014\u2014\u753B\u7167\u5E38\uFF0C\u540C\u6B65\u6682\u505C", en: 'Gallery "{label}" is offline \u2014 keep painting, sync paused', ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u300C{label}\u300D\u306F\u30AA\u30D5\u30E9\u30A4\u30F3\u2014\u2014\u63CF\u753B\u306F\u901A\u5E38\u3069\u304A\u308A\u3001\u540C\u671F\u306F\u4E00\u6642\u505C\u6B62" },
+  "gm.offlineSuffix": { zh: " \xB7 \u5DF2\u79BB\u7EBF", en: " \xB7 offline", ja: " \xB7 \u30AA\u30D5\u30E9\u30A4\u30F3" },
+  "gm.reconnect": { zh: "\u91CD\u65B0\u8FDE\u63A5", en: "Reconnect", ja: "\u518D\u63A5\u7D9A" },
+  "gm.reconnected": { zh: "\u5DF2\u91CD\u65B0\u8FDE\u63A5", en: "Reconnected", ja: "\u518D\u63A5\u7D9A\u3057\u307E\u3057\u305F" },
+  "gm.seedFresh": { zh: "\u51FA\u5382\u5168\u65B0", en: "Factory fresh", ja: "\u65B0\u898F\uFF08\u30C7\u30D5\u30A9\u30EB\u30C8\uFF09" },
+  "gm.seedInherit": { zh: "\u7EE7\u627F\u5F53\u524D\u7B14\u5237\u4E0E\u8BBE\u7F6E", en: "Inherit current brushes & settings", ja: "\u73FE\u5728\u306E\u30D6\u30E9\u30B7\u3068\u8A2D\u5B9A\u3092\u5F15\u304D\u7D99\u3050" },
+  "gm.seedMsg": { zh: "\u300C\u7EE7\u627F\u300D\u62F7\u8D1D\u4E00\u4EFD\u5F53\u524D\u7B14\u5237\u4E0E\u8BBE\u7F6E\uFF0C\u6B64\u540E\u5404\u81EA\u72EC\u7ACB\uFF1B\u300C\u51FA\u5382\u5168\u65B0\u300D\u4ECE\u5185\u7F6E\u9ED8\u8BA4\u8D77\u6B65\u3002", en: '"Inherit" copies your current brushes & settings (independent afterwards); "factory fresh" starts from built-in defaults.', ja: "\u300C\u5F15\u304D\u7D99\u3050\u300D\u306F\u73FE\u5728\u306E\u30D6\u30E9\u30B7\u3068\u8A2D\u5B9A\u3092\u30B3\u30D4\u30FC\uFF08\u4EE5\u5F8C\u306F\u72EC\u7ACB\uFF09\u3002\u300C\u65B0\u898F\u300D\u306F\u5185\u8535\u30C7\u30D5\u30A9\u30EB\u30C8\u304B\u3089\u59CB\u3081\u307E\u3059\u3002" },
+  "gm.seedTitle": { zh: "\u65B0\u56FE\u5E93\u7684\u7B14\u5237\u4E0E\u8BBE\u7F6E", en: "Brushes & settings for the new gallery", ja: "\u65B0\u3057\u3044\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D6\u30E9\u30B7\u3068\u8A2D\u5B9A" },
+  "gm.srcFolder": { zh: "\u672C\u5730\u6587\u4EF6\u5939", en: "Local folder", ja: "\u30ED\u30FC\u30AB\u30EB\u30D5\u30A9\u30EB\u30C0\u30FC" },
+  "gm.srcOneDrive": { zh: "OneDrive", en: "OneDrive", ja: "OneDrive" },
+  "gm.switchEntry": { zh: "\u5207\u6362\u56FE\u5E93\u2026", en: "Switch gallery\u2026", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u5207\u308A\u66FF\u3048\u2026" },
+  "gm.switched": { zh: "\u5DF2\u5207\u6362\u5230 {label}", en: "Switched to {label}", ja: "{label} \u306B\u5207\u308A\u66FF\u3048\u307E\u3057\u305F" },
+  "gm.transientAdopted": { zh: "\u5DF2\u8FDE\u63A5\u56FE\u5E93\uFF0C\u8FD9\u5E45\u753B\u5DF2\u81EA\u52A8\u4FDD\u5B58\u4E3A\u300C{name}\u300D", en: 'Gallery connected \u2014 this artwork was saved as "{name}"', ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306B\u63A5\u7D9A\u3057\u307E\u3057\u305F\u3002\u3053\u306E\u4F5C\u54C1\u306F\u300C{name}\u300D\u3068\u3057\u3066\u4FDD\u5B58\u3055\u308C\u307E\u3057\u305F" },
+  "gs.changePwBusy": { zh: "\u6B63\u5728\u66F4\u6539\u5BC6\u7801 {n}/{total}\u2026", en: "Changing password {n}/{total}\u2026", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u5909\u66F4\u4E2D {n}/{total}\u2026" },
+  "gs.changePwConfirmMsg": { zh: "\u672C\u673A\u6709\u5B57\u8282\u7684\u52A0\u5BC6\u4F5C\u54C1\u4F1A\u7528\u65B0\u5BC6\u7801\u91CD\u5C01\uFF08\u4E91\u7AEF\u53EA\u89C1\u5BC6\u6587\uFF09\u3002\u4E91\u7AEF\u672A\u7F13\u5B58\u3001\u79BB\u7EBF\u6216\u5931\u8D25\u7684\u4F5C\u54C1\u4ECD\u7528\u65E7\u5BC6\u7801\uFF0C\u6253\u5F00\u65F6\u4F1A\u5355\u72EC\u95EE\u3002", en: "Encrypted artworks cached here are re-sealed with the new password (the cloud only ever sees ciphertext). Artworks not cached, offline, or failing stay on the old password and will ask for it when opened.", ja: "\u3053\u306E\u7AEF\u672B\u306B\u3042\u308B\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u518D\u5C01\u5370\u3057\u307E\u3059\uFF08\u30AF\u30E9\u30A6\u30C9\u306B\u306F\u6697\u53F7\u6587\u3057\u304B\u6E21\u308A\u307E\u305B\u3093\uFF09\u3002\u672A\u30AD\u30E3\u30C3\u30B7\u30E5\u30FB\u30AA\u30D5\u30E9\u30A4\u30F3\u30FB\u5931\u6557\u3057\u305F\u4F5C\u54C1\u306F\u65E7\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u307E\u307E\u3067\u3001\u958B\u304F\u3068\u304D\u306B\u805E\u304B\u308C\u307E\u3059\u3002" },
+  "gs.changePwConfirmTitle": { zh: "\u66F4\u6539\u5BC6\u7801\uFF1F", en: "Change password?", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4\u3057\u307E\u3059\u304B\uFF1F" },
+  "gs.changePwDone": { zh: "\u5BC6\u7801\u5DF2\u66F4\u6539\uFF1A{n} \u4EF6\u5DF2\u7528\u65B0\u5BC6\u7801\u91CD\u5C01", en: "Password changed: {n} re-sealed", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4\u3057\u307E\u3057\u305F\uFF1A{n} \u4EF6\u3092\u518D\u5C01\u5370" },
+  "gs.changePwDoneKept": { zh: "\u5BC6\u7801\u5DF2\u66F4\u6539\uFF1A{n} \u4EF6\u5DF2\u91CD\u5C01\uFF0C{m} \u4EF6\u4ECD\u7528\u65E7\u5BC6\u7801\uFF08{k} \u4E2A\u6587\u4EF6\u5939\u6E05\u5355\u4E0D\u5B8C\u6574\uFF09", en: "Password changed: {n} re-sealed, {m} still on the old password ({k} folders listed incompletely)", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4\uFF1A{n} \u4EF6\u3092\u518D\u5C01\u5370\u3001{m} \u4EF6\u306F\u65E7\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u307E\u307E\uFF08{k} \u30D5\u30A9\u30EB\u30C0\u306F\u4E00\u89A7\u304C\u4E0D\u5B8C\u5168\uFF09" },
+  "gs.changePwNewMsg": { zh: "\u8F93\u5165\u65B0\u5BC6\u7801\u3002\u672C\u673A\u6709\u5B57\u8282\u7684\u52A0\u5BC6\u4F5C\u54C1\u4F1A\u9010\u4EF6\u7528\u65B0\u5BC6\u7801\u91CD\u5C01\uFF0C\u4E0D\u7ECF\u660E\u6587\u3002", en: "Enter the new password. Encrypted artworks cached on this device are re-sealed one by one, never through plaintext.", ja: "\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3002\u3053\u306E\u7AEF\u672B\u306B\u3042\u308B\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u3001\u5E73\u6587\u3092\u7D4C\u305A\u306B\u9806\u306B\u518D\u5C01\u5370\u3057\u307E\u3059\u3002" },
+  "gs.changePwNoVerifier": { zh: "\u8FD8\u6CA1\u8BBE\u8FC7\u56FE\u5E93\u5BC6\u7801\uFF1B\u7B2C\u4E00\u6B21\u52A0\u5BC6\u4F5C\u54C1\u65F6\u4F1A\u8BBE\u7F6E\u3002", en: "No gallery password yet \u2014 you set it when you first encrypt an artwork.", ja: "\u307E\u3060\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u3042\u308A\u307E\u305B\u3093\u3002\u4F5C\u54C1\u3092\u521D\u3081\u3066\u6697\u53F7\u5316\u3059\u308B\u3068\u304D\u306B\u8A2D\u5B9A\u3057\u307E\u3059\u3002" },
+  "gs.changePwOldMsg": { zh: "\u5148\u9A8C\u8BC1\u5F53\u524D\u7684\u56FE\u5E93\u5BC6\u7801\u3002", en: "Verify the current gallery password first.", ja: "\u307E\u305A\u73FE\u5728\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002" },
+  "gs.changePwOldTitle": { zh: "\u8F93\u5165\u5F53\u524D\u5BC6\u7801", en: "Enter current password", ja: "\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B" },
+  "gs.changePwSame": { zh: "\u65B0\u5BC6\u7801\u4E0E\u5F53\u524D\u5BC6\u7801\u76F8\u540C\uFF0C\u6CA1\u6709\u66F4\u6539\u3002", en: "Same as the current password \u2014 nothing changed.", ja: "\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3068\u540C\u3058\u3067\u3059\u3002\u5909\u66F4\u306F\u3042\u308A\u307E\u305B\u3093\u3002" },
+  "gs.changePwScanning": { zh: "\u6B63\u5728\u6E05\u70B9\u52A0\u5BC6\u4F5C\u54C1\u2026", en: "Listing encrypted artworks\u2026", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u78BA\u8A8D\u4E2D\u2026" },
+  "gs.clipboardNewFailed": { zh: "\u4ECE\u526A\u5207\u677F\u65B0\u5EFA\u5931\u8D25\uFF1A{err}", en: "Failed to create from clipboard: {err}", ja: "\u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u304B\u3089\u306E\u65B0\u898F\u4F5C\u6210\u306B\u5931\u6557\u3057\u307E\u3057\u305F\uFF1A{err}" },
+  "gs.clipboardNoImage": { zh: "\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u56FE\u7247", en: "No image in the clipboard", ja: "\u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u306B\u753B\u50CF\u304C\u3042\u308A\u307E\u305B\u3093" },
+  "gs.cloudDisabledNoGallery": { zh: "\u4E91\u7AEF\u529F\u80FD\u5DF2\u505C\u7528\uFF0C\u56FE\u5E93\u4E0D\u53EF\u7528\uFF08\u53EF\u5728\u8BBE\u7F6E\u91CC\u91CD\u65B0\u5F00\u542F\uFF09", en: "Cloud features are disabled; the gallery is unavailable (re-enable in settings)", ja: "\u30AF\u30E9\u30A6\u30C9\u6A5F\u80FD\u304C\u7121\u52B9\u306E\u305F\u3081\u3001\u30AE\u30E3\u30E9\u30EA\u30FC\u306F\u5229\u7528\u3067\u304D\u307E\u305B\u3093\uFF08\u8A2D\u5B9A\u3067\u518D\u5EA6\u6709\u52B9\u5316\u3067\u304D\u307E\u3059\uFF09" },
+  "gs.created": { zh: "\u65B0\u5EFA\uFF1A{name}\uFF08{w}\xD7{h}\uFF09", en: "Created: {name} ({w}\xD7{h})", ja: "\u65B0\u898F\u4F5C\u6210\uFF1A{name}\uFF08{w}\xD7{h}\uFF09" },
+  "gs.createdTransient": { zh: "\u5DF2\u65B0\u5EFA\u753B\u5E03 {w}\xD7{h}\uFF08\u672A\u4FDD\u5B58\xB7\u65E0\u5BB6\u2014\u2014\u4FDD\u5B58\u65F6\u9009\u62E9\u53BB\u5904\uFF09", en: "New canvas {w}\xD7{h} (unsaved, no home \u2014 choose where to save it later)", ja: "\u65B0\u3057\u3044\u30AD\u30E3\u30F3\u30D0\u30B9 {w}\xD7{h}\uFF08\u672A\u4FDD\u5B58\u30FB\u4FDD\u5B58\u6642\u306B\u4FDD\u5B58\u5148\u3092\u9078\u629E\uFF09" },
+  "gs.creatingFolder": { zh: "\u6B63\u5728\u521B\u5EFA\u6587\u4EF6\u5939 {name}\u2026", en: "Creating folder {name}\u2026", ja: "\u30D5\u30A9\u30EB\u30C0 {name} \u3092\u4F5C\u6210\u4E2D\u2026" },
+  "gs.folderCreateFailed": { zh: "\u5EFA\u6587\u4EF6\u5939\u5931\u8D25\uFF1A{err}", en: "Failed to create folder: {err}", ja: "\u30D5\u30A9\u30EB\u30C0\u306E\u4F5C\u6210\u306B\u5931\u6557\u3057\u307E\u3057\u305F\uFF1A{err}" },
+  "gs.folderCreated": { zh: "\u5DF2\u5EFA\u6587\u4EF6\u5939\uFF1A{name}", en: "Folder created: {name}", ja: "\u30D5\u30A9\u30EB\u30C0\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F\uFF1A{name}" },
+  "gs.folderExists": { zh: '\u6587\u4EF6\u5939 "{name}" \u5DF2\u5B58\u5728', en: 'Folder "{name}" already exists', ja: "\u30D5\u30A9\u30EB\u30C0\u300C{name}\u300D\u306F\u65E2\u306B\u5B58\u5728\u3057\u307E\u3059" },
+  "gs.folderNameEmpty": { zh: "\u6587\u4EF6\u5939\u540D\u4E0D\u80FD\u7A7A", en: "Folder name cannot be empty", ja: "\u30D5\u30A9\u30EB\u30C0\u540D\u3092\u7A7A\u306B\u3067\u304D\u307E\u305B\u3093" },
+  "gs.folderNameNoSlash": { zh: "\u6587\u4EF6\u5939\u540D\u4E0D\u80FD\u542B /\uFF08\u8981\u5EFA\u5D4C\u5957\u8BF7\u8FDB\u5BF9\u5E94\u6587\u4EF6\u5939\u518D\u70B9\u65B0\u5EFA\uFF09", en: "Folder name cannot contain / (to nest, enter the target folder first, then create)", ja: "\u30D5\u30A9\u30EB\u30C0\u540D\u306B / \u3092\u542B\u3081\u3089\u308C\u307E\u305B\u3093\uFF08\u5165\u308C\u5B50\u3092\u4F5C\u308B\u306B\u306F\u5BFE\u8C61\u30D5\u30A9\u30EB\u30C0\u306B\u5165\u3063\u3066\u304B\u3089\u4F5C\u6210\u3057\u3066\u304F\u3060\u3055\u3044\uFF09" },
+  "gs.folderNamePlaceholder": { zh: "\u6587\u4EF6\u5939\u540D", en: "Folder name", ja: "\u30D5\u30A9\u30EB\u30C0\u540D" },
+  "gs.folderNeedSignin": { zh: "\u56FE\u5E93\u79BB\u7EBF\uFF08\u672A\u767B\u5F55\u6216\u6743\u9650\u5931\u6548\uFF09\uFF0C\u65E0\u6CD5\u65B0\u5EFA\u6587\u4EF6\u5939", en: "Gallery is offline (not signed in / permission lost) \u2014 can't create a folder", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u304C\u30AA\u30D5\u30E9\u30A4\u30F3\uFF08\u672A\u30ED\u30B0\u30A4\u30F3\uFF0F\u6A29\u9650\u5207\u308C\uFF09\u306E\u305F\u3081\u30D5\u30A9\u30EB\u30C0\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093" },
+  "gs.footUsage": { zh: "\u4F5C\u54C1\u5360\u7528\uFF1A{size}\uFF08{count} \u4EF6\uFF09", en: "Artwork usage: {size} ({count} items)", ja: "\u4F5C\u54C1\u306E\u4F7F\u7528\u91CF\uFF1A{size}\uFF08{count} \u4EF6\uFF09" },
+  "gs.footUsageTitle": { zh: "\u6D4F\u89C8\u5668\u5206\u914D\u4E0A\u9650\u7EA6 {size}\uFF1B\u5F53\u524D {pct}% \u5DF2\u7528\uFF08\u542B SW \u7F13\u5B58\u7B49\uFF09", en: "Browser allocation cap ~{size}; {pct}% used now (incl. SW cache, etc.)", ja: "\u30D6\u30E9\u30A6\u30B6\u5272\u308A\u5F53\u3066\u4E0A\u9650\u306F\u7D04 {size}\uFF1B\u73FE\u5728 {pct}% \u4F7F\u7528\u4E2D\uFF08SW \u30AD\u30E3\u30C3\u30B7\u30E5\u7B49\u3092\u542B\u3080\uFF09" },
+  "gs.lockLabel": { zh: "\u9501\u5B9A\u52A0\u5BC6\u4F5C\u54C1\uFF08\u5FD8\u6389\u5BC6\u7801\uFF09", en: "Lock encrypted works (forget password)", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u30ED\u30C3\u30AF\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u7834\u68C4\uFF09" },
+  "gs.locked": { zh: "\u5DF2\u9501\u5B9A\u52A0\u5BC6\u4F5C\u54C1\uFF08\u5BC6\u7801\u5DF2\u4ECE\u5185\u5B58\u6E05\u9664\uFF09", en: "Encrypted works locked (password cleared from memory)", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u30ED\u30C3\u30AF\u3057\u307E\u3057\u305F\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u30E1\u30E2\u30EA\u304B\u3089\u6D88\u53BB\uFF09" },
+  "gs.newFolderDefault": { zh: "\u65B0\u6587\u4EF6\u5939", en: "New folder", ja: "\u65B0\u3057\u3044\u30D5\u30A9\u30EB\u30C0" },
+  "gs.newFolderTitle": { zh: "\u65B0\u5EFA\u6587\u4EF6\u5939", en: "New folder", ja: "\u65B0\u3057\u3044\u30D5\u30A9\u30EB\u30C0" },
+  "gs.pwRecorded": { zh: "\u5DF2\u8BB0\u4E0B\u5BC6\u7801\uFF08\u6253\u5F00\u52A0\u5BC6\u4F5C\u54C1\u65F6\u9A8C\u8BC1\uFF09", en: "Password recorded (verified when opening an encrypted work)", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A18\u9332\u3057\u307E\u3057\u305F\uFF08\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u958B\u304F\u3068\u304D\u306B\u691C\u8A3C\uFF09" },
+  "gs.pwResetDone": { zh: "\u5DF2\u91CD\u7F6E\u3002\u4E0B\u6B21\u52A0\u5BC6\u65F6\u8BBE\u7F6E\u65B0\u5BC6\u7801", en: "Reset done. Set a new password next time you encrypt", ja: "\u30EA\u30BB\u30C3\u30C8\u3057\u307E\u3057\u305F\u3002\u6B21\u56DE\u306E\u6697\u53F7\u5316\u6642\u306B\u65B0\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3057\u307E\u3059" },
+  "gs.pwWrongRetry": { zh: "\u5BC6\u7801\u4E0D\u5BF9\uFF0C\u518D\u8BD5\u4E00\u6B21", en: "Wrong password, try again", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u9055\u3044\u307E\u3059\u3002\u3082\u3046\u4E00\u5EA6" },
+  "gs.quotaCritical": { zh: "\u672C\u5730\u5B58\u50A8 {pct}% \u5DF2\u6EE1 \u2014 \u7ACB\u5373\u53BB\u56FE\u5E93\u5378\u8F7D\u4E0D\u5E38\u7528\u7684\u4F5C\u54C1", en: "Local storage {pct}% full \u2014 go to the gallery now and offload works you rarely use", ja: "\u30ED\u30FC\u30AB\u30EB\u30B9\u30C8\u30EC\u30FC\u30B8\u304C {pct}% \u4F7F\u7528\u6E08\u307F \u2014 \u4ECA\u3059\u3050\u30AE\u30E3\u30E9\u30EA\u30FC\u3067\u4F7F\u308F\u306A\u3044\u4F5C\u54C1\u3092\u9000\u907F\u3057\u3066\u304F\u3060\u3055\u3044" },
+  "gs.quotaWarn": { zh: "\u672C\u5730\u5B58\u50A8 {pct}% \u5DF2\u7528 \u2014 \u5EFA\u8BAE\u5728\u56FE\u5E93\u6574\u7406", en: "Local storage {pct}% used \u2014 consider tidying up in the gallery", ja: "\u30ED\u30FC\u30AB\u30EB\u30B9\u30C8\u30EC\u30FC\u30B8\u304C {pct}% \u4F7F\u7528\u6E08\u307F \u2014 \u30AE\u30E3\u30E9\u30EA\u30FC\u3067\u6574\u7406\u3059\u308B\u3053\u3068\u3092\u304A\u3059\u3059\u3081\u3057\u307E\u3059" },
+  "gs.resetPwMsg": { zh: "\u91CD\u7F6E\u540E\u4E0B\u6B21\u52A0\u5BC6\u53EF\u8BBE\u65B0\u5BC6\u7801\uFF1B\u4F46\u5DF2\u6709\u52A0\u5BC6\u4F5C\u54C1\u4ECD\u662F\u65E7\u5BC6\u7801\uFF0C\u65E0\u6CD5\u7528\u65B0\u5BC6\u7801\u89E3\u9501\u3002\u786E\u5B9A\u91CD\u7F6E\uFF1F", en: "After reset you can set a new password for future encryption; existing encrypted works keep the old password and cannot be unlocked with the new one. Reset?", ja: "\u30EA\u30BB\u30C3\u30C8\u5F8C\u306F\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3067\u304D\u307E\u3059\u304C\u3001\u65E2\u5B58\u306E\u6697\u53F7\u5316\u4F5C\u54C1\u306F\u65E7\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u307E\u307E\u3067\u3059\u3002\u30EA\u30BB\u30C3\u30C8\u3057\u307E\u3059\u304B\uFF1F" },
+  "gs.resetPwTitle": { zh: "\u91CD\u7F6E\u56FE\u5E93\u5BC6\u7801\uFF1F", en: "Reset gallery password?", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u30EA\u30BB\u30C3\u30C8\uFF1F" },
+  "gs.unlockLabel": { zh: "\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1\u2026", en: "Unlock encrypted works\u2026", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u306E\u30ED\u30C3\u30AF\u89E3\u9664\u2026" },
+  "gs.unlockNoLocalMsg": { zh: "\u672C\u5730\u6682\u65E0\u52A0\u5BC6\u4F5C\u54C1\u53EF\u9A8C\u8BC1\u2014\u2014\u5BC6\u7801\u5148\u6536\u4E0B\uFF0C\u7528\u5230\u65F6\u81EA\u52A8\u9A8C\u8BC1", en: "No local encrypted work to verify against \u2014 the password is saved for now and verified automatically when needed", ja: "\u30ED\u30FC\u30AB\u30EB\u306B\u691C\u8A3C\u3067\u304D\u308B\u6697\u53F7\u5316\u4F5C\u54C1\u304C\u3042\u308A\u307E\u305B\u3093\u2014\u2014\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u5148\u306B\u4FDD\u5B58\u3057\u3001\u4F7F\u7528\u6642\u306B\u81EA\u52D5\u3067\u691C\u8A3C\u3057\u307E\u3059" },
+  "gs.unlockTitle": { zh: "\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1", en: "Unlock encrypted works", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u306E\u30ED\u30C3\u30AF\u89E3\u9664" },
+  "gs.unlockVerifierMsg": { zh: "\u8F93\u5165\u56FE\u5E93\u5BC6\u7801\uFF08\u8DDF\u8D26\u53F7\u8D70\uFF09\u3002\u5FD8\u8BB0 = \u5185\u5BB9\u6C38\u4E45\u627E\u4E0D\u56DE\uFF0C\u6CA1\u6709\u540E\u95E8", en: "Enter the gallery password (tied to your account). If forgotten, content is unrecoverable \u2014 there is no backdoor", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\uFF08\u30A2\u30AB\u30A6\u30F3\u30C8\u306B\u7D10\u3065\u304F\uFF09\u3002\u5FD8\u308C\u305F\u5834\u5408\u3001\u5185\u5BB9\u306F\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093" },
+  "gs.unlocked": { zh: "\u5DF2\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1\uFF08\u5BC6\u7801\u53EA\u5728\u5185\u5B58\uFF0C\u5173\u9875\u5373\u5FD8\uFF09", en: "Encrypted works unlocked (password stays in memory only, forgotten on page close)", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u306E\u30ED\u30C3\u30AF\u3092\u89E3\u9664\u3057\u307E\u3057\u305F\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u30E1\u30E2\u30EA\u306E\u307F\u3001\u30DA\u30FC\u30B8\u3092\u9589\u3058\u308B\u3068\u6D88\u53BB\uFF09" },
+  "gs.usageUnknown": { zh: "\u5360\u7528\uFF1A\u672A\u77E5", en: "Usage: unknown", ja: "\u4F7F\u7528\u91CF\uFF1A\u4E0D\u660E" },
+  "gs.usedSuffix": { zh: " \xB7 \u5DF2\u7528 {pct}%", en: " \xB7 {pct}% used", ja: " \xB7 {pct}% \u4F7F\u7528" },
+  "gv.badge.cloudOnly": { zh: "\u7EAF\u4E91\u7AEF\uFF08\u672A\u62C9\u5230\u672C\u5730\uFF09", en: "Cloud only (not downloaded)", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u307F\uFF08\u672A\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\uFF09" },
+  "gv.badge.conflictBoth": { zh: "\u4E91\u7AEF\u4E0E\u672C\u673A\u5404\u6709\u65B0\u6539\u52A8 \u2014\u2014 \u6253\u5F00\u6216\u63A8\u9001\u65F6\u4F1A\u8BF7\u4F60\u88C1\u51B3", en: "New changes both in the cloud and on this device \u2014 you'll be asked to resolve on open or push", ja: "\u30AF\u30E9\u30A6\u30C9\u3068\u3053\u306E\u7AEF\u672B\u306E\u4E21\u65B9\u306B\u65B0\u3057\u3044\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u958B\u304F\u304B\u30D7\u30C3\u30B7\u30E5\u6642\u306B\u9078\u629E\u3092\u6C42\u3081\u3089\u308C\u307E\u3059" },
+  "gv.badge.dirtyBoth": { zh: "\u672C\u5730+\u4E91\u7AEF \xB7 \u672C\u5730\u6709\u672A\u63A8\u6539\u52A8", en: "Local+cloud \xB7 unpushed local edits", ja: "\u30ED\u30FC\u30AB\u30EB+\u30AF\u30E9\u30A6\u30C9 \xB7 \u672A\u30D7\u30C3\u30B7\u30E5\u306E\u5909\u66F4\u3042\u308A" },
+  "gv.badge.float": { zh: "\u4EC5\u672C\u5730 \xB7 \u6709\u672A\u4E0A\u4F20\u7684\u6539\u52A8\uFF08\u4ECE\u672A\u540C\u6B65\uFF09", en: "Local only \xB7 unsynced edits (never uploaded)" },
+  "gv.badge.ghost": { zh: "\u4E91\u7AEF\u526F\u672C\u5DF2\u88AB\u79FB\u52A8\u6216\u5220\u9664\uFF0C\u672C\u5730\u6709\u672A\u63A8\u9001\u7684\u4FEE\u6539 \u2014\u2014 \u53EF\u300C\u91CD\u547D\u540D\u7559\u5B58\u300D\u6216\u300C\u4E22\u5F03\u300D", en: "Cloud copy was moved or deleted while local has unpushed edits \u2014 \u201Crename & keep\u201D or \u201Cdiscard\u201D", ja: "\u30AF\u30E9\u30A6\u30C9\u5074\u304C\u79FB\u52D5/\u524A\u9664\u3055\u308C\u3001\u30ED\u30FC\u30AB\u30EB\u306B\u672A\u30D7\u30C3\u30B7\u30E5\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u300C\u6539\u540D\u3057\u3066\u4FDD\u6301\u300D\u304B\u300C\u7834\u68C4\u300D\u3092" },
+  "gv.badge.localOnly": { zh: "\u4EC5\u672C\u5730\uFF08\u672A\u4E0A\u4F20\u4E91\u7AEF\uFF09", en: "Local only (not uploaded)", ja: "\u30ED\u30FC\u30AB\u30EB\u306E\u307F\uFF08\u672A\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\uFF09" },
+  "gv.badge.localPlain": { zh: "\u672C\u5730", en: "Local", ja: "\u30ED\u30FC\u30AB\u30EB" },
+  "gv.badge.newerOnCloud": { zh: "\u4E91\u7AEF\u6709\u65B0\u7248\u672C \u2014\u2014 \u6253\u5F00\u4F1A\u81EA\u52A8\u66F4\u65B0\u5230\u4E91\u7AEF\u7248", en: "A newer version exists in the cloud \u2014 opening will update to it", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u65B0\u3057\u3044\u30D0\u30FC\u30B8\u30E7\u30F3\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u958B\u304F\u3068\u81EA\u52D5\u7684\u306B\u66F4\u65B0\u3055\u308C\u307E\u3059" },
+  "gv.badge.pendingGone": { zh: "\u4E91\u7AEF\u526F\u672C\u5DF2\u6D88\u5931\uFF0C\u672C\u5730\u5E72\u51C0\u526F\u672C\u5F85\u5904\u7406 \u2014\u2014 \u53EF\u300C\u91CD\u65B0\u4E0A\u4F20\u300D\u63A8\u56DE\u4E91\u7AEF\uFF0C\u6216\u300C\u5220\u9664\u300D\uFF1B\u5BBD\u9650\u671F\u540E\u81EA\u52A8\u79FB\u5165\u56DE\u6536\u7AD9", en: "Cloud copy is gone; clean local copy pending \u2014 \u201Cre-upload\u201D to push it back, or \u201Cdelete\u201D; auto-trashed after the grace period", ja: "\u30AF\u30E9\u30A6\u30C9\u5074\u304C\u6D88\u5931\u3001\u30ED\u30FC\u30AB\u30EB\u306E\u30AF\u30EA\u30FC\u30F3\u306A\u8907\u88FD\u304C\u4FDD\u7559\u4E2D\u2014\u2014\u300C\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u300D\u304B\u300C\u524A\u9664\u300D\u3092\u3002\u7336\u4E88\u671F\u9593\u5F8C\u306F\u81EA\u52D5\u3067\u30B4\u30DF\u7BB1\u3078" },
+  "gv.badge.syncedBoth": { zh: "\u672C\u5730+\u4E91\u7AEF\uFF08\u5DF2\u540C\u6B65\uFF09", en: "Local+cloud (synced)", ja: "\u30ED\u30FC\u30AB\u30EB+\u30AF\u30E9\u30A6\u30C9\uFF08\u540C\u671F\u6E08\u307F\uFF09" },
+  "gv.rootDir": { zh: "/ \u6839\u76EE\u5F55", en: "/ Root", ja: "/ \u30EB\u30FC\u30C8" },
+  "gv.src.both": { zh: "\u672C\u5730+\u4E91\u7AEF", en: "Local+cloud", ja: "\u30ED\u30FC\u30AB\u30EB+\u30AF\u30E9\u30A6\u30C9" },
+  "gv.src.cloud": { zh: "\u4E91\u7AEF", en: "Cloud", ja: "\u30AF\u30E9\u30A6\u30C9" },
+  "gv.src.cloudStillAlive": { zh: "{base}\uFF08\u4E91\u7AEF\u4ECD\u5728\uFF09", en: "{base} (still in cloud)", ja: "{base}\uFF08\u30AF\u30E9\u30A6\u30C9\u306B\u6B8B\u5B58\uFF09" },
+  "gv.src.local": { zh: "\u672C\u5730", en: "Local", ja: "\u30ED\u30FC\u30AB\u30EB" },
+  "gv.time.dayAgo": { zh: "{n} \u5929\u524D", en: "{n} d ago", ja: "{n} \u65E5\u524D" },
+  "gv.time.hourAgo": { zh: "{n} \u5C0F\u65F6\u524D", en: "{n} h ago", ja: "{n} \u6642\u9593\u524D" },
+  "gv.time.justNow": { zh: "\u521A\u521A", en: "Just now", ja: "\u305F\u3063\u305F\u4ECA" },
+  "gv.time.minAgo": { zh: "{n} \u5206\u949F\u524D", en: "{n} min ago", ja: "{n} \u5206\u524D" },
+  "gv.time.unknown": { zh: "\u672A\u77E5", en: "Unknown", ja: "\u4E0D\u660E" },
+  "menu.decrypt": { zh: "\u89E3\u9664\u52A0\u5BC6\u2026", en: "Decrypt\u2026", ja: "\u6697\u53F7\u5316\u3092\u89E3\u9664\u2026" },
+  "menu.encrypt": { zh: "\u52A0\u5BC6\u4FDD\u62A4\u2026", en: "Encrypt\u2026", ja: "\u6697\u53F7\u5316\u2026" },
+  "name.copySuffix": { zh: "\u526F\u672C", en: "copy", ja: "\u30B3\u30D4\u30FC" },
+  "nd.custom": { zh: "\u81EA\u5B9A\u4E49\u2026", en: "Custom\u2026", ja: "\u30AB\u30B9\u30BF\u30E0\u2026" },
+  "save.signInLater": { zh: "\u6682\u4E0D", en: "Not now", ja: "\u4ECA\u306F\u3057\u306A\u3044" },
+  "save.signInNow": { zh: "\u767B\u5F55", en: "Sign in", ja: "\u30ED\u30B0\u30A4\u30F3" },
+  "save.signInPromptTitle": { zh: "\u5DF2\u4FDD\u5B58\u5230\u672C\u673A", en: "Saved on this device", ja: "\u3053\u306E\u7AEF\u672B\u306B\u4FDD\u5B58\u3057\u307E\u3057\u305F" },
+  // store busy 文案（st.*，WeebPaint store-ui 的映射表引用，非 t() 字面量，机器抄漏 → 手补 2026-09-09）
+  "st.syncPushing": { zh: "\u6B63\u5728\u540C\u6B65\u2026", en: "Syncing\u2026", ja: "\u540C\u671F\u4E2D\u2026" },
+  "st.fileRenaming": { zh: "\u91CD\u547D\u540D\u2026", en: "Renaming\u2026", ja: "\u540D\u524D\u5909\u66F4\u4E2D\u2026" },
+  "st.filePulling": { zh: "\u62C9\u53D6\u4E2D\u2026", en: "Pulling\u2026", ja: "\u53D6\u5F97\u4E2D\u2026" },
+  "st.cloudChecking": { zh: "\u68C0\u67E5\u4E91\u7AEF\u2026", en: "Checking cloud\u2026", ja: "\u30AF\u30E9\u30A6\u30C9\u3092\u78BA\u8A8D\u4E2D\u2026" },
+  "st.fileDeleting": { zh: "\u5220\u9664\u4E2D\u2026", en: "Deleting\u2026", ja: "\u524A\u9664\u4E2D\u2026" },
+  "st.trashRestoring": { zh: "\u6062\u590D\u4E2D\u2026", en: "Restoring\u2026", ja: "\u5FA9\u5143\u4E2D\u2026" },
+  "st.trashPurging": { zh: "\u5F7B\u5E95\u5220\u9664\u2026", en: "Deleting permanently\u2026", ja: "\u5B8C\u5168\u306B\u524A\u9664\u4E2D\u2026" },
+  "st.trashEmptyTrash": { zh: "\u6E05\u7A7A\u56DE\u6536\u7AD9\u2026", en: "Emptying trash\u2026", ja: "\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\u3057\u3066\u3044\u307E\u3059\u2026" },
+  "st.trashEmptyBackups": { zh: "\u6E05\u7A7A\u5907\u4EFD\u7BB1\u2026", en: "Emptying backup box\u2026", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u30DC\u30C3\u30AF\u30B9\u3092\u7A7A\u306B\u3057\u3066\u3044\u307E\u3059\u2026" },
+  "st.fileEncrypting": { zh: "\u6B63\u5728\u52A0\u5BC6 {name}\u2026", en: "Encrypting {name}\u2026", ja: "\u6697\u53F7\u5316\u4E2D {name}\u2026" },
+  "st.fileDecrypting": { zh: "\u6B63\u5728\u89E3\u9664\u52A0\u5BC6 {name}\u2026", en: "Decrypting {name}\u2026", ja: "\u6697\u53F7\u5316\u89E3\u9664\u4E2D {name}\u2026" },
+  "st.fileRekeying": { zh: "\u6B63\u5728\u6362\u5BC6\u7801\u91CD\u5C01 {name}\u2026", en: "Re-keying {name}\u2026", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u5909\u66F4\u4E2D {name}\u2026" },
+  "st.fileReuploading": { zh: "\u91CD\u65B0\u4E0A\u4F20\u2026", en: "Re-uploading\u2026", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u4E2D\u2026" },
+  "st.folderCreating": { zh: "\u65B0\u5EFA\u6587\u4EF6\u5939\u2026", en: "Creating folder\u2026", ja: "\u30D5\u30A9\u30EB\u30C0\u4F5C\u6210\u4E2D\u2026" },
+  "st.folderDeleting": { zh: "\u5220\u9664\u6587\u4EF6\u5939\u2026", en: "Deleting folder\u2026", ja: "\u30D5\u30A9\u30EB\u30C0\u524A\u9664\u4E2D\u2026" },
+  // tLatin() 引用的 key（机器抄漏 → 手补 2026-09-10）
+  "cf.cloudOfflineTitle": { zh: "\u4E91\u7AEF\uFF1A\u79BB\u7EBF\uFF08\u65E0\u6CD5\u767B\u5F55 / \u540C\u6B65\uFF1B\u672C\u5730\u56FE\u5E93\u6B63\u5E38\uFF09", en: "Cloud: offline (cannot sign in / sync; local gallery works normally)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u30AA\u30D5\u30E9\u30A4\u30F3\uFF08\u30ED\u30B0\u30A4\u30F3 / \u540C\u671F\u4E0D\u53EF\uFF1B\u30ED\u30FC\u30AB\u30EB\u30AE\u30E3\u30E9\u30EA\u30FC\u306F\u6B63\u5E38\uFF09" }
 };
-var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
-
-// src/singer/credit-translations.ts
-var CREDIT_TRANSLATIONS = {
-  /** 译自的原文（sha256）。 */
-  of: {
-    credit: "5c233b5c7f4d890be860df437d6f5d258bc530f39e0577295651b67ae8072f1f",
-    terms: "6c04cd4680d210e6eb189cdc1e5a81b2c65c65510a46eb5708076b612b930887"
-  },
-  zh: {
-    credit: "\u672C\u8F6F\u4EF6\u7684\u8BED\u97F3\u5408\u6210\u4F7F\u7528\u4E86\u514D\u8D39\u7D20\u6750\u89D2\u8272\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\u6708\u8BFB\uFF1B\xA9 Rei Yumesaki\uFF09\u514D\u8D39\u516C\u5F00\u7684\u8BED\u97F3\u6570\u636E\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u8BED\u6599\u5E93\uFF08CV. \u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/",
-    terms: "\u4F7F\u7528\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u7684\u58F0\u7EBF\u65F6\uFF0C\u7981\u6B62\u628A\u751F\u6210\u51FA\u6765\u7684\u58F0\u97F3\u7528\u4E8E\u4EE5\u4E0B\u76EE\u7684\u3002\n\u3010\u7981\u6B62\u4E8B\u9879\u3011\n\u25A0\u6279\u8BC4\u3001\u653B\u51FB\u4ED6\u4EBA\u3002\uFF08\u300C\u6279\u8BC4\u3001\u653B\u51FB\u300D\u7684\u5B9A\u4E49\u4EE5\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u89D2\u8272\u8BB8\u53EF\uFF08\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\uFF09\u4E3A\u51C6\uFF09\n\u25A0\u53F7\u53EC\u4EBA\u4EEC\u8D5E\u540C\u6216\u53CD\u5BF9\u7279\u5B9A\u7684\u653F\u6CBB\u7ACB\u573A\u3001\u5B97\u6559\u3001\u601D\u60F3\u3002\n\u25A0\u4E0D\u505A\u533A\u9694\uFF08\u30BE\u30FC\u30CB\u30F3\u30B0\uFF09\u5C31\u516C\u5F00\u523A\u6FC0\u6027\u5F3A\u7684\u5185\u5BB9\u3002\uFF08\u8BD1\u6CE8\uFF1A\u533A\u9694 = \u5206\u7EA7\u3001\u52A0\u63D0\u793A\u3001\u653E\u8FDB\u5355\u72EC\u7684\u5730\u65B9\u7B49\uFF0C\u8BA9\u4E0D\u60F3\u770B\u7684\u4EBA\u78B0\u4E0D\u5230\uFF09\n\u25A0\u4EE5\u5141\u8BB8\u4ED6\u4EBA\u4E8C\u6B21\u5229\u7528\uFF08\u5F53\u4F5C\u7D20\u6750\u4F7F\u7528\uFF09\u7684\u5F62\u5F0F\u516C\u5F00\u3002"
-  },
-  en: {
-    credit: 'The voice synthesis in this software uses voice data released free of charge by the free-material character "Tsukuyomi-chan" (\xA9 Rei Yumesaki).\n\u25A0 Tsukuyomi-chan Corpus (CV: Rei Yumesaki)\nhttps://tyc.rei-yumesaki.net/material/corpus/',
-    terms: `When using Tsukuyomi-chan's voice, you must not use the generated audio for the following purposes.
-[Prohibited]
-\u25A0 Criticizing or attacking people. (What counts as "criticizing or attacking" follows the Tsukuyomi-chan Character License.)
-\u25A0 Calling on people to support or oppose a particular political position, religion, or ideology.
-\u25A0 Publishing intense or provocative content without zoning. (Translator's note: zoning = age gates, content warnings, separate spaces, so that people who don't want to see it don't run into it.)
-\u25A0 Publishing it in a form that permits others to reuse it (as material for their own works).`
-  }
+var _lang = "zh";
+var _host = null;
+function interpolate(s10, params) {
+  return params ? s10.replace(/\{(\w+)\}/g, (m2, k2) => k2 in params ? String(params[k2]) : m2) : s10;
+}
+var defaultT = (key, params) => {
+  const e10 = GALLERY_TEXT[key];
+  return interpolate(e10?.[_lang] ?? e10?.zh ?? key, params);
 };
-
-// src/gm/sounds.gen.ts
-var SOUNDS_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-sounds";
-var SOUNDS = {
-  "generaluser-gs-2.0.3": {
-    "id": "generaluser-gs-2.0.3",
-    "kind": "instrument",
-    "name": "GeneralUser GS 2.0.3",
-    "description": "GM / GS \u901A\u7528\u97F3\u8272\u5E93\uFF1A287 \u4EF6\u4E50\u5668\uFF08bank 0 \u7684 128 \u4EF6 + GS \u53D8\u4F53\uFF09\u542B 13 \u5957\u9F13\u7EC4\uFF08bank 128\uFF09",
-    "file": "generaluser-gs-2.0.3/GeneralUser-GS.sf2",
-    "format": "SoundFont 2",
-    "bytes": 32319396,
-    "sha256": "9575028c7a1f589f5770fccc8cff2734566af40cd26ed836944e9a5152688cfe",
-    "license": {
-      "name": "GeneralUser GS License v2.0",
-      "summary": "\u79C1\u7528\u5546\u7528\u968F\u4FBF\u7528\uFF1B\u53EF\u653E\u8FDB\u8F6F\u4EF6\u9879\u76EE\u3001\u53EF\u6539\u5305\u88C5\uFF1B\u522B\u76F4\u94FE\u4F5C\u8005\u7684\u4E0B\u8F7D\u6587\u4EF6\uFF08\u8981\u4E48\u94FE\u4ED6\u7F51\u7AD9\uFF0C\u8981\u4E48\u81EA\u5DF1\u653E\u4E00\u4EFD\uFF09\uFF1B\u4E0D\u5F3A\u5236\u7F72\u540D",
-      "file": "generaluser-gs-2.0.3/LICENSE.txt",
-      "bytes": 2317,
-      "sha256": "7b32efefdf95ce38a043799f0659853ddc00fbaa14d8c50f0aca16b9b8b405be"
-    },
-    "attribution": "GeneralUser GS 2.0.3 by S. Christian Collins",
-    "homepage": "https://www.schristiancollins.com/generaluser.php",
-    "source": "https://github.com/mrbumpy409/GeneralUser-GS",
-    "date": "2026-02-22",
-    "notes": "\u5B57\u8282 = \u4E0A\u6E38\u4ED3\u539F\u6837\uFF08\u6587\u4EF6\u5185 INAM \u5199\u7684\u662F\u300C2.0.3 BETA\u300D\uFF0C2.0.3 \u6B63\u5F0F\u7248\u91CC\u5C31\u662F\u8FD9\u4E2A\u5B57\u4E32\uFF09\u3002\u6B8B\u4F59\u98CE\u9669\u6309\u4F5C\u8005\u539F\u8BDD\uFF1A\u90E8\u5206\u91C7\u6837\u6765\u6E90\u4ED6\u4E0D\u80FD 100% \u786E\u5B9A\uFF0C2000 \u5E74\u81F3\u4ECA\u6CA1\u4EBA\u6295\u8BC9\u3002"
-  }
-};
-
-// src/singer/sampler.ts
-var ENV = { attack: 0.01, cut: 6e-3, cutStop: 0.06, rel: 0.04, relStop: 0.25 };
-var GLIDE_TC = 0.012;
-var GLIDE_SPAN = 3;
-var XFADE = 0.03;
-var KANA = { la: "\u3089", n: "\u3093", u: "\u3046", o: "\u304A", a: "\u3042" };
-var MAX_VOICES = 8;
-var base = new URL("../assets/preview/", import.meta.url);
-async function fetchTable() {
-  const [idx, pcm] = await Promise.all([
-    // no-cache = 每次跟服务器核对（重新生成过的表不吃浏览器缓存）
-    fetch(new URL("vowels.json", base), { cache: "no-cache" }).then((r10) => {
-      if (!r10.ok) throw new Error(`\u8BD5\u542C\u5143\u97F3\u8868\uFF1AHTTP ${r10.status}\uFF08\u5148\u8DD1 node scripts/gen-preview-vowels.mjs\uFF1F\uFF09`);
-      return r10.json();
-    }),
-    fetch(new URL("vowels.pcm16", base), { cache: "no-cache" }).then((r10) => r10.arrayBuffer())
-  ]);
-  const all = new Int16Array(pcm), entries2 = idx.entries;
-  for (const e10 of entries2) {
-    const f2 = new Float32Array(e10.len);
-    for (let k2 = 0; k2 < e10.len; k2++) f2[k2] = all[e10.start + k2] / 32768;
-    const b3 = new AudioBuffer({ length: e10.len, numberOfChannels: 1, sampleRate: idx.sr });
-    b3.copyToChannel(f2, 0);
-    e10.buf = b3;
-  }
-  return { sr: idx.sr, entries: entries2 };
-}
-var Sampler = class {
-  loading = null;
-  table = null;
-  voices = /* @__PURE__ */ new Map();
-  // 来源 id → 正在响的声音（Map 保持按下的先后）
-  song = [];
-  songTimer = 0;
-  /** 开始加载（不挡任何东西）；重复调用只加载一次，失败了下次重试。 */
-  load() {
-    if (!this.loading) {
-      const p2 = fetchTable();
-      this.loading = p2;
-      p2.then((t10) => {
-        this.table = t10;
-      }, () => {
-        this.loading = null;
-      });
-    }
-    return this.loading.then(() => void 0);
-  }
-  get ready() {
-    return this.table !== null;
-  }
-  pick(midi, hum) {
-    const es3 = this.table?.entries.filter((e10) => e10.kana === KANA[hum]) ?? [];
-    if (!es3.length) return null;
-    return es3.reduce((a10, b3) => Math.abs(b3.midi - midi) < Math.abs(a10.midi - midi) ? b3 : a10);
-  }
-  /** 起一个声音；offset > 0 = 从样本中间（循环段）开始，不带起音（滑音换样本时用）。 */
-  start(midi, hum, when, ctx2 = audioCtx(), offset = 0, attack = ENV.attack) {
-    const e10 = this.pick(midi, hum), sr2 = this.table?.sr ?? 22050;
-    if (!e10?.buf) return null;
-    const src = ctx2.createBufferSource(), gain = ctx2.createGain();
-    src.buffer = e10.buf;
-    src.loop = true;
-    src.loopStart = e10.loopStart / sr2;
-    src.loopEnd = e10.loopEnd / sr2;
-    src.playbackRate.value = 2 ** ((midi - e10.midi) / 12);
-    gain.gain.setValueAtTime(0, when);
-    gain.gain.linearRampToValueAtTime(1, when + attack);
-    src.connect(gain).connect(ctx2.destination);
-    src.start(when, offset);
-    return { src, gain, entry: e10 };
-  }
-  fade(v, when, tc2, stopAfter) {
-    v.gain.gain.cancelScheduledValues(when);
-    v.gain.gain.setTargetAtTime(0, when, tc2);
-    v.src.stop(when + stopAfter);
-  }
-  /** 按下：响（同一来源的旧音先停掉）。还没加载好 = 不响（加载在后台）。 */
-  down(midi, hum, id2 = "main") {
-    if (!this.ready) {
-      void this.load();
-      return;
-    }
-    const ctx2 = audioCtx(), now = ctx2.currentTime, old = this.voices.get(id2);
-    if (old) {
-      this.fade(old, now, ENV.cut, ENV.cutStop);
-      this.voices.delete(id2);
-    }
-    while (this.voices.size >= MAX_VOICES) {
-      const [k2, v2] = this.voices.entries().next().value;
-      this.fade(v2, now, ENV.cut, ENV.cutStop);
-      this.voices.delete(k2);
-    }
-    const v = this.start(midi, hum, now);
-    if (v) this.voices.set(id2, v);
-  }
-  /** 拖音高：新的顶掉旧的——同一个声音滑过去（离样本太远就交叉淡到另一份的循环段，不带起音）。 */
-  glide(midi, hum, id2 = "main") {
-    const v = this.voices.get(id2);
-    if (!v || !this.ready) {
-      this.down(midi, hum, id2);
-      return;
-    }
-    const ctx2 = audioCtx(), now = ctx2.currentTime, sr2 = this.table.sr;
-    if (Math.abs(midi - v.entry.midi) <= GLIDE_SPAN) {
-      v.src.playbackRate.setTargetAtTime(2 ** ((midi - v.entry.midi) / 12), now, GLIDE_TC);
-      return;
-    }
-    const e10 = this.pick(midi, hum);
-    if (!e10) return;
-    const nv2 = this.start(midi, hum, now, ctx2, e10.loopStart / sr2, XFADE);
-    this.fade(v, now, XFADE / 3, XFADE * 3);
-    if (nv2) this.voices.set(id2, nv2);
-    else this.voices.delete(id2);
-  }
-  /** 松开：这个来源的声音淡出。 */
-  up(id2 = "main") {
-    const v = this.voices.get(id2);
-    if (v) {
-      this.fade(v, audioCtx().currentTime, ENV.rel, ENV.relStop);
-      this.voices.delete(id2);
-    }
-  }
-  /** 全部松开（切走 app / 失焦：抬手的事件可能收不到，别让音卡着响）。 */
-  upAll() {
-    for (const id2 of [...this.voices.keys()]) this.up(id2);
-  }
-  /** 轻量版整首：notes = [{ midi, t0, t1 }]（秒），全唱 hum 那个字。返回总时长；播完调 onEnd。 */
-  playSong(notes, hum, onEnd) {
-    this.stopSong();
-    const ctx2 = audioCtx(), t10 = ctx2.currentTime + 0.1;
-    for (const n10 of notes) {
-      const v = this.start(n10.midi, hum, t10 + n10.t0);
-      if (v) {
-        this.fade(v, t10 + n10.t1, ENV.rel, ENV.relStop);
-        this.song.push(v);
-      }
-    }
-    const total = notes.length ? notes[notes.length - 1].t1 : 0;
-    this.songTimer = window.setTimeout(() => {
-      this.song = [];
-      onEnd();
-    }, (total + 0.4) * 1e3);
-    return total;
-  }
-  /** 轻量版整首离线渲染（导出用）：同 playSong 的排法，不出声，直接拿样本。 */
-  async renderSong(notes, hum) {
-    if (!this.ready) await this.load();
-    const sr2 = this.table.sr, lead = 0.1, total = (notes.length ? notes[notes.length - 1].t1 : 0) + lead + 0.4;
-    const ctx2 = new OfflineAudioContext(1, Math.ceil(total * sr2), sr2);
-    for (const n10 of notes) {
-      const v = this.start(n10.midi, hum, lead + n10.t0, ctx2);
-      if (v) this.fade(v, lead + n10.t1, ENV.rel, ENV.relStop);
-    }
-    const buf = await ctx2.startRendering();
-    return { samples: buf.getChannelData(0), sr: sr2 };
-  }
-  stopSong() {
-    clearTimeout(this.songTimer);
-    const now = audioCtx().currentTime;
-    for (const v of this.song) {
-      try {
-        this.fade(v, now, ENV.cut, ENV.cutStop);
-      } catch {
-      }
-    }
-    this.song = [];
-  }
-  get songPlaying() {
-    return this.song.length > 0;
-  }
-};
-
-// src/score/roles.ts
-var ROLE_GROUPS = [
-  { group: "\u4EBA\u58F0", items: [
-    { sound: "voice.vocals", name: "Vocals", zh: "\u4E3B\u5531" },
-    { sound: "voice.vocals", name: "Backing Vocals", zh: "\u548C\u58F0" },
-    { sound: "voice.soprano", name: "Soprano", zh: "\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09" },
-    { sound: "voice.alto", name: "Alto", zh: "\u5973\u4F4E\u97F3\uFF08\u5408\u5531\uFF09" },
-    { sound: "voice.tenor", name: "Tenor", zh: "\u7537\u9AD8\u97F3\uFF08\u5408\u5531\uFF09" },
-    { sound: "voice.bass", name: "Bass", zh: "\u7537\u4F4E\u97F3\uFF08\u5408\u5531\uFF09" }
-  ] },
-  { group: "\u4E50\u961F", items: [
-    { sound: "keyboard.piano", name: "Piano", zh: "\u94A2\u7434 / \u952E\u76D8" },
-    { sound: "pluck.guitar", name: "Guitar", zh: "\u5409\u4ED6" },
-    { sound: "pluck.bass", name: "Bass", zh: "\u8D1D\u65AF" },
-    { sound: "drum.group.set", name: "Drums", zh: "\u9F13" },
-    { sound: "strings.group", name: "Strings", zh: "\u5F26\u4E50" },
-    { sound: "synth.pad", name: "Synth Pad", zh: "\u5408\u6210\u94FA\u5E95" },
-    { sound: "synth.tone.sawtooth", name: "Synth Lead", zh: "\u5408\u6210\u4E3B\u97F3" }
-  ] }
-];
-var ROLE_PRESETS = ROLE_GROUPS.flatMap((g3) => g3.items);
-var DEFAULT_ROLE = ROLE_PRESETS[0];
-function numberParts(parts) {
-  const key = (p2) => `${p2.name}\0${p2.sound}`;
-  const total = /* @__PURE__ */ new Map();
-  for (const p2 of parts) total.set(key(p2), (total.get(key(p2)) ?? 0) + 1);
-  const seen = /* @__PURE__ */ new Map();
-  return parts.map((p2) => {
-    const k2 = key(p2);
-    if ((total.get(k2) ?? 0) < 2) return p2.name;
-    const n10 = (seen.get(k2) ?? 0) + 1;
-    seen.set(k2, n10);
-    return `${p2.name} ${n10}`;
-  });
-}
-
-// src/format/project.ts
-init_fflate_esm();
-
-// src/score/lang.ts
-var KANA2 = /[぀-ヿㇰ-ㇿｦ-ﾟ]/;
-var HAN = /\p{Script=Han}/u;
-var LATIN = /[A-Za-z]/;
-function partDefaultLang(tokens) {
-  const ls2 = tokens.flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
-  if (KANA2.test(ls2)) return "ja";
-  if (HAN.test(ls2)) return "zh";
-  if (LATIN.test(ls2)) return "en";
-  return "ja";
-}
-function syllableLangs(tokens, override = true) {
-  const def = partDefaultLang(tokens);
-  let prev = def;
-  return tokens.map((t10) => {
-    if (t10.kind !== "note" || !t10.lyric || t10.lyric === MELISMA_MARK) return null;
-    let l10 = KANA2.test(t10.lyric) ? "ja" : HAN.test(t10.lyric) ? prev : LATIN.test(t10.lyric) ? "en" : prev;
-    if (override && t10.lang) l10 = t10.lang;
-    prev = l10;
-    return l10;
-  });
-}
-function keepOnlyOverrides(tokens, read) {
-  const def = partDefaultLang(tokens);
-  let prev = def;
-  tokens.forEach((t10, i10) => {
-    if (t10.kind !== "note" || !t10.lyric || t10.lyric === MELISMA_MARK) return;
-    const auto = KANA2.test(t10.lyric) ? "ja" : HAN.test(t10.lyric) ? prev : LATIN.test(t10.lyric) ? "en" : prev;
-    const got = read[i10];
-    if (got && got !== auto) t10.lang = got;
-    else delete t10.lang;
-    prev = got ?? auto;
-  });
-}
-
-// src/format/xml.ts
-var ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
-function decode(s10) {
-  return s10.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, (m2, e10) => e10[0] === "#" ? String.fromCodePoint(e10[1] === "x" ? parseInt(e10.slice(2), 16) : parseInt(e10.slice(1), 10)) : ENT[e10] ?? m2);
-}
-var esc2 = (s10) => s10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
-function parseXml(src) {
-  let i10 = 0;
-  const fail = (what) => {
-    throw new Error(`XML \u8BFB\u4E0D\u61C2\uFF08\u7B2C ${src.slice(0, i10).split("\n").length} \u884C\uFF09\uFF1A${what}`);
-  };
-  const stack2 = [{ name: "#doc", attrs: {}, children: [] }];
-  while (i10 < src.length) {
-    const lt2 = src.indexOf("<", i10);
-    const text2 = src.slice(i10, lt2 < 0 ? src.length : lt2);
-    if (text2 && stack2.length > 1) stack2[stack2.length - 1].children.push(decode(text2));
-    if (lt2 < 0) break;
-    i10 = lt2;
-    if (src.startsWith("<!--", i10)) {
-      const e10 = src.indexOf("-->", i10);
-      if (e10 < 0) fail("\u6CE8\u91CA\u6CA1\u6536\u5C3E");
-      i10 = e10 + 3;
-      continue;
-    }
-    if (src.startsWith("<![CDATA[", i10)) {
-      const e10 = src.indexOf("]]>", i10);
-      if (e10 < 0) fail("CDATA \u6CA1\u6536\u5C3E");
-      stack2[stack2.length - 1].children.push(src.slice(i10 + 9, e10));
-      i10 = e10 + 3;
-      continue;
-    }
-    if (src.startsWith("<?", i10)) {
-      const e10 = src.indexOf("?>", i10);
-      if (e10 < 0) fail("\u5904\u7406\u6307\u4EE4\u6CA1\u6536\u5C3E");
-      i10 = e10 + 2;
-      continue;
-    }
-    if (src.startsWith("<!", i10)) {
-      let depth = 0, j2 = i10;
-      for (; j2 < src.length; j2++) {
-        const c10 = src[j2];
-        if (c10 === "[") depth++;
-        else if (c10 === "]") depth--;
-        else if (c10 === ">" && depth === 0) break;
-      }
-      i10 = j2 + 1;
-      continue;
-    }
-    if (src[i10 + 1] === "/") {
-      const e10 = src.indexOf(">", i10);
-      if (e10 < 0) fail("\u7ED3\u675F\u6807\u7B7E\u6CA1\u6536\u5C3E");
-      const name = src.slice(i10 + 2, e10).trim(), top = stack2.pop();
-      if (!top || top.name !== name) fail(`\u7ED3\u675F\u6807\u7B7E </${name}> \u5BF9\u4E0D\u4E0A <${top?.name}>`);
-      i10 = e10 + 1;
-      continue;
-    }
-    const m2 = /^<([^\s/>]+)/.exec(src.slice(i10, i10 + 200));
-    if (!m2) fail("\u6807\u7B7E\u540D");
-    const el2 = { name: m2[1], attrs: {}, children: [] };
-    i10 += m2[0].length;
-    const attrRe = /\s*([^\s=/>]+)\s*=\s*("([^"]*)"|'([^']*)')/y;
-    for (; ; ) {
-      attrRe.lastIndex = i10;
-      const a10 = attrRe.exec(src);
-      if (!a10) break;
-      el2.attrs[a10[1]] = decode(a10[3] ?? a10[4] ?? "");
-      i10 = attrRe.lastIndex;
-    }
-    while (/\s/.test(src[i10] ?? "")) i10++;
-    stack2[stack2.length - 1].children.push(el2);
-    if (src.startsWith("/>", i10)) {
-      i10 += 2;
-      continue;
-    }
-    if (src[i10] !== ">") fail(`<${el2.name}> \u91CC\u6709\u8BFB\u4E0D\u61C2\u7684\u4E1C\u897F`);
-    i10++;
-    stack2.push(el2);
-  }
-  if (stack2.length !== 1) fail(`<${stack2[stack2.length - 1].name}> \u6CA1\u6709\u7ED3\u675F`);
-  const root = stack2[0].children.find((c10) => typeof c10 !== "string");
-  if (!root) fail("\u6CA1\u6709\u6839\u5143\u7D20");
-  return root;
-}
-var kids = (el2, name) => (el2?.children ?? []).filter((c10) => typeof c10 !== "string" && (name === void 0 || c10.name === name));
-var kid = (el2, name) => kids(el2, name)[0];
-var text = (el2) => (el2?.children ?? []).map((c10) => typeof c10 === "string" ? c10 : text(c10)).join("");
-var childText = (el2, name) => {
-  const k2 = kid(el2, name);
-  return k2 ? text(k2).trim() : void 0;
-};
-
-// src/format/musicxml.ts
-var measureLen = (beats, beatType) => beats * WHOLE / beatType;
-var TYPES = [["whole", WHOLE], ["half", WHOLE / 2], ["quarter", TPQ], ["eighth", TPQ / 2], ["16th", TPQ / 4], ["32nd", TPQ / 8], ["64th", TPQ / 16]];
-var TUPLETS = [[1, 1], [3, 2], [5, 4], [6, 4], [7, 4]];
-function noteType(dur) {
-  for (const [act, norm] of TUPLETS) for (const [type, base3] of TYPES) for (let dots = 0; dots <= 2; dots++) {
-    if (Math.abs(base3 * (2 - 1 / 2 ** dots) * (norm / act) - dur) < 0.5) return { type, dots, tuplet: act === 1 ? null : [act, norm] };
-  }
-  return null;
-}
-var pitchXml = (p2) => `<pitch><step>${p2.step}</step>${p2.alter ? `<alter>${p2.alter}</alter>` : ""}<octave>${p2.octave}</octave></pitch>`;
-var LAYOUT_TENTHS = { cozy: { system: 110, staff: 80 }, compact: { system: 60, staff: 50 } };
-var tenthsPerMm = (p2) => 40 / staffMmOf(p2);
-function defaultsXml(p2) {
-  const t10 = (mm) => +(mm * tenthsPerMm(p2)).toFixed(2), m2 = p2.marginMm;
-  const compact = densityOf(p2) === "compact";
-  return `<defaults><scaling><millimeters>${staffMmOf(p2)}</millimeters><tenths>40</tenths></scaling><page-layout><page-height>${t10(p2.heightMm)}</page-height><page-width>${t10(p2.widthMm)}</page-width><page-margins type="both"><left-margin>${t10(m2.l)}</left-margin><right-margin>${t10(m2.r)}</right-margin><top-margin>${t10(m2.t)}</top-margin><bottom-margin>${t10(m2.b)}</bottom-margin></page-margins></page-layout><system-layout><system-distance>${compact ? LAYOUT_TENTHS.compact.system : LAYOUT_TENTHS.cozy.system}</system-distance></system-layout><staff-layout><staff-distance>${compact ? LAYOUT_TENTHS.compact.staff : LAYOUT_TENTHS.cozy.staff}</staff-distance></staff-layout></defaults>`;
-}
-function readPaper(root) {
-  const d3 = kid(root, "defaults"), pl = kid(d3, "page-layout");
-  const n10 = (el2, name) => {
-    const v = childText(el2, name);
-    return v === void 0 ? NaN : Number(v);
-  };
-  const mm = n10(kid(d3, "scaling"), "millimeters"), tn2 = n10(kid(d3, "scaling"), "tenths"), w2 = n10(pl, "page-width"), h2 = n10(pl, "page-height");
-  if (!(mm > 0 && tn2 > 0 && w2 > 0 && h2 > 0)) return void 0;
-  const k2 = mm / tn2, pm = kid(pl, "page-margins"), mg = (name) => {
-    const v = n10(pm, name);
-    return v >= 0 ? v * k2 : 15;
-  };
-  const sd2 = n10(kid(d3, "staff-layout"), "staff-distance"), density = sd2 > 0 && sd2 < 65 ? "compact" : "cozy";
-  const p2 = detectPaper(w2 * k2, h2 * k2, { l: mg("left-margin"), r: mg("right-margin"), t: mg("top-margin"), b: mg("bottom-margin") }, k2 * 40, density);
-  const def = paperOf(DEFAULT_PAPER), same = (a10, b3) => Math.abs(a10 - b3) < 0.05;
-  if (p2.kind === DEFAULT_PAPER && p2.staffMm === void 0 && !p2.density && same(p2.marginMm.l, def.marginMm.l) && same(p2.marginMm.r, def.marginMm.r) && same(p2.marginMm.t, def.marginMm.t) && same(p2.marginMm.b, def.marginMm.b)) return void 0;
-  return p2;
-}
-function creditXml(text2, p2) {
-  const t10 = (mm) => +(mm * tenthsPerMm(p2)).toFixed(1);
-  return `<credit page="1"><credit-words default-x="${t10(p2.widthMm - p2.marginMm.r)}" default-y="${t10(p2.heightMm - p2.marginMm.t - 12)}" justify="right" valign="top">${esc2(text2)}</credit-words></credit>`;
-}
-function readCredits(root, title) {
-  const skip = /* @__PURE__ */ new Set(["title", "subtitle", "page number", "part name"]);
-  const blocks = kids(root, "credit").filter((c10) => !kids(c10, "credit-type").some((ct2) => skip.has(text(ct2).trim()))).map((c10) => kids(c10, "credit-words").map((w2) => text(w2)).join("\n").trim()).filter((s10) => s10 && s10 !== title);
-  if (blocks.length) return blocks.join("\n");
-  const cr2 = kids(kid(root, "identification"), "creator"), by = (...types) => cr2.filter((c10) => types.includes(c10.attrs.type ?? "")).map((c10) => text(c10).trim()).filter(Boolean);
-  const ly2 = by("lyricist", "poet")[0], co2 = by("composer")[0], lines = [];
-  if (ly2 && co2 && ly2 === co2) lines.push(`${ly2} \u8BCD\u66F2`);
-  else {
-    if (ly2) lines.push(`${ly2} \u8BCD`);
-    if (co2) lines.push(`${co2} \u66F2`);
-  }
-  for (const a10 of by("arranger")) lines.push(`${a10} \u7F16\u66F2`);
-  for (const c10 of cr2) {
-    const ty2 = c10.attrs.type ?? "";
-    if (!["lyricist", "poet", "composer", "arranger"].includes(ty2) && text(c10).trim()) lines.push(`${ty2 ? `${ty2}\uFF1A` : ""}${text(c10).trim()}`);
-  }
-  return lines.length ? lines.join("\n") : void 0;
-}
-var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
-var ART_XML = { accent: "accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
-var XML_ART = { accent: "accent", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
-var XML_DYN = (name) => ["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? name : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null;
-var tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
-function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
-  const staffs = staffOfTokens(toks, staves);
-  const head = headLen(toks);
-  const H2 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
-  for (let i10 = 0; i10 < head; i10++) {
-    const t10 = toks[i10];
-    if (t10.kind === "key") H2.fifths = t10.fifths;
-    else if (t10.kind === "time") {
-      H2.beats = t10.beats;
-      H2.beatType = t10.beatType;
-    } else if (t10.kind === "tempo") H2.bpm = t10.bpm;
-  }
-  const langs = syllableLangs(toks);
-  const measures = [];
-  let cur = [], ticks = 0, len = measureLen(H2.beats, H2.beatType);
-  const close = (manual) => {
-    measures.push({ body: cur, manual });
-    cur = [];
-    ticks = 0;
-  };
-  const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : `<clef><sign>${clef}</sign><line>${clef === "F" ? 4 : 2}</line></clef>`;
-  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H2.fifths}</fifths></key><time><beats>${H2.beats}</beats><beat-type>${H2.beatType}</beat-type></time>${clefs}</attributes>`);
-  if (first) cur.push(tempoXml(H2.bpm));
-  let prevHyph = false;
-  const syllabic = (t10) => {
-    const s10 = t10.hyph ? prevHyph ? "middle" : "begin" : prevHyph ? "end" : "single";
-    prevHyph = !!t10.hyph;
-    return s10;
-  };
-  const unwritten = [];
-  const nextTimed = (i10) => {
-    for (let j2 = i10 + 1; j2 < toks.length; j2++) {
-      const t10 = toks[j2];
-      if (t10.kind === "note" || t10.kind === "rest") return t10;
-    }
-    return null;
-  };
-  for (let i10 = head; i10 < toks.length; i10++) {
-    const t10 = toks[i10];
-    const br = breaks?.get(i10);
-    if (br !== void 0) {
-      if (ticks > 0) close(false);
-      cur.push(`<print new-page="yes"/>`);
-      if (first && br) cur.push(`<direction placement="above"><direction-type><rehearsal>${esc2(br)}</rehearsal></direction-type></direction>`);
-    }
-    if (t10.kind === "bar") {
-      close(true);
-      continue;
-    }
-    if (t10.kind === "phrase") continue;
-    if (t10.kind === "key" || t10.kind === "time" || t10.kind === "tempo") {
-      if (ticks >= len || t10.kind === "time" && ticks > 0) close(false);
-      if (t10.kind === "key") cur.push(`<attributes><key><fifths>${t10.fifths}</fifths></key></attributes>`);
-      else if (t10.kind === "time") {
-        cur.push(`<attributes><time><beats>${t10.beats}</beats><beat-type>${t10.beatType}</beat-type></time></attributes>`);
-        len = measureLen(t10.beats, t10.beatType);
-      } else if (first) cur.push(tempoXml(t10.bpm));
-      continue;
-    }
-    if (t10.kind === "dyn") {
-      if (ticks >= len) close(false);
-      cur.push(dynXml(t10.value));
-      continue;
-    }
-    if (t10.kind !== "note" && t10.kind !== "rest") continue;
-    let left = t10.dur, k2 = 0;
-    const tieOut = t10.kind === "note" && nextTimed(i10)?.kind === "note" && nextTimed(i10).tie;
-    let lyricDone = false;
-    while (left > 0.5) {
-      if (ticks >= len) close(false);
-      const piece = Math.min(left, len - ticks), firstPiece = k2 === 0, last = left - piece <= 0.5;
-      const ty2 = noteType(piece);
-      const id2 = `${t10.kind === "note" ? "n" : "r"}${t10.id}${firstPiece ? "" : `-${k2 + 1}`}`;
-      let x2 = `<note id="${id2}">`;
-      if (t10.kind === "rest") x2 += `<rest/><duration>${Math.round(piece)}</duration>`;
-      else {
-        const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
-        x2 += pitchXml(effectivePitch(toks, i10)) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "");
-      }
-      x2 += `<voice>1</voice>`;
-      const typeXml = ty2 ? `<type>${ty2.type}</type>` + "<dot/>".repeat(ty2.dots) + (ty2.tuplet ? `<time-modification><actual-notes>${ty2.tuplet[0]}</actual-notes><normal-notes>${ty2.tuplet[1]}</normal-notes></time-modification>` : "") : "";
-      const staffXml = staves === 2 ? `<staff>${staffs[i10]}</staff>` : "";
-      x2 += typeXml + staffXml;
-      const chordXml = [];
-      if (t10.kind === "note") {
-        const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
-        const arts = (t10.art ?? []).filter((a10) => a10 === "breath" ? last : firstPiece);
-        const artXml = arts.length ? `<articulations>${arts.map((a10) => `<${ART_XML[a10]}/>`).join("")}</articulations>` : "";
-        if (tieIn || tieOn || artXml) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${artXml}</notations>`;
-        for (const [ci2, cp2] of (t10.chord ?? []).entries()) {
-          chordXml.push(`<note id="${id2}c${ci2 + 1}"><chord/>` + pitchXml(cp2) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + typeXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
-        }
-        if (!lyricDone && t10.lyric) {
-          if (t10.lyric === MELISMA_MARK) x2 += `<lyric number="1"><extend/></lyric>`;
-          else {
-            const lang = esc2(langs[i10] ?? "ja"), parts = t10.lyric.split(ELISION);
-            x2 += `<lyric number="1"><syllabic>${syllabic(t10)}</syllabic><text xml:lang="${lang}">${esc2(parts[0])}</text>` + parts.slice(1).map((p2) => `<elision/><syllabic>single</syllabic><text xml:lang="${lang}">${esc2(p2)}</text>`).join("") + `</lyric>`;
-          }
-        }
-        lyricDone = true;
-      }
-      x2 += `</note>`;
-      cur.push(x2);
-      for (const cx2 of chordXml) cur.push(cx2);
-      ticks += piece;
-      left -= piece;
-      k2++;
-    }
-    if (t10.kind === "note" && !t10.pitch) unwritten.push(`n${t10.id}`);
-  }
-  if (cur.length || !measures.length) close(false);
-  return { measures, unwritten, lastLen: len };
-}
-function writeMusicXml(doc2, meta) {
-  const paper = doc2.paper ?? paperOf(DEFAULT_PAPER);
-  const built = doc2.parts.map((p2, k2) => ({ p: p2, ...partMeasures(p2.tokens, p2.breaks, k2 === 0, p2.info.clef ?? "G", p2.info.staves === 2 ? 2 : 1) }));
-  const nMeas = Math.max(0, ...built.map((b3) => b3.measures.length));
-  const manualBars = {}, unwritten = [];
-  const bodies = built.map((b3) => {
-    const mb = [];
-    const ms = b3.measures.map((m2, n10) => {
-      if (m2.manual) mb.push(n10 + 1);
-      return `<measure number="${n10 + 1}">${m2.body.join("")}</measure>`;
-    });
-    if (doc2.padMeasures) for (let n10 = b3.measures.length; n10 < nMeas; n10++) ms.push(`<measure number="${n10 + 1}"><note><rest measure="yes"/><duration>${Math.round(b3.lastLen)}</duration><voice>1</voice></note></measure>`);
-    manualBars[b3.p.info.id] = mb;
-    unwritten.push(...b3.unwritten);
-    return `<part id="${b3.p.info.id}">
-${ms.join("\n")}
-</part>`;
-  });
-  const partList = doc2.parts.map(({ info: P2 }) => `<score-part id="${P2.id}"><part-name>${esc2(P2.name)}</part-name><score-instrument id="${P2.id}-I1"><instrument-name>${esc2(P2.instrumentName)}</instrument-name><instrument-sound>${esc2(P2.sound)}</instrument-sound>${P2.variant ? `<virtual-instrument><virtual-library>${esc2(P2.variant.library)}</virtual-library><virtual-name>${esc2(P2.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P2.id}-I1"><midi-program>${P2.program}</midi-program>${P2.volume !== void 0 ? `<volume>${P2.volume}</volume>` : ""}${P2.pan !== void 0 ? `<pan>${P2.pan}</pan>` : ""}</midi-instrument></score-part>`).join("");
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
-<score-partwise version="4.0">
-${doc2.title ? `<work><work-title>${esc2(doc2.title)}</work-title></work>
-` : ""}${doc2.movementTitle ? `<movement-title>${esc2(doc2.movementTitle)}</movement-title>
-` : ""}<identification>${doc2.rights ? `<rights>${esc2(doc2.rights)}</rights>` : ""}<encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
-${defaultsXml(paper)}
-${doc2.credits ? creditXml(doc2.credits, paper) + "\n" : ""}<part-list>${partList}</part-list>
-${bodies.join("\n")}
-</score-partwise>
-`;
-  return { xml, manualBars, unwritten };
-}
-function readMusicXml(xml, hints) {
-  const root = parseXml(xml);
-  if (root.name === "score-timewise") throw new Error("\u8FD9\u4EFD MusicXML \u662F timewise \u6392\u6CD5\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BFB partwise");
-  if (root.name !== "score-partwise") throw new Error(`\u8FD9\u4E0D\u662F MusicXML \u4E50\u8C31\uFF08\u6839\u5143\u7D20\u662F <${root.name}>\uFF09`);
-  const dropped = {};
-  const drop = (what) => {
-    dropped[what] = (dropped[what] ?? 0) + 1;
-  };
-  const infos = kids(kid(root, "part-list"), "score-part").map((sp2) => {
-    const si2 = kid(sp2, "score-instrument"), mi = kid(sp2, "midi-instrument"), vi = kid(si2, "virtual-instrument");
-    const num = (s10) => s10 === void 0 || s10 === "" ? void 0 : Number(s10);
-    return {
-      id: sp2.attrs.id,
-      name: childText(sp2, "part-name") ?? "",
-      instrumentName: childText(si2, "instrument-name"),
-      sound: childText(si2, "instrument-sound"),
-      program: num(childText(mi, "midi-program")),
-      variant: childText(vi, "virtual-name"),
-      volume: num(childText(mi, "volume")),
-      pan: num(childText(mi, "pan"))
+function configureText(opts) {
+  if (opts.lang)
+    _lang = opts.lang;
+  if (opts.t) {
+    const h2 = opts.t;
+    _host = (k2, p2) => {
+      const v = h2(k2, p2);
+      return v ? v : defaultT(k2, p2);
     };
-  });
-  const partEls = kids(root, "part");
-  if (!partEls.length) throw new Error("\u8FD9\u4EFD MusicXML \u91CC\u6CA1\u6709\u58F0\u90E8");
-  const title = childText(kid(root, "work"), "work-title") ?? "", movementTitle = childText(root, "movement-title") ?? "";
-  const unwritten = new Set(hints?.unwritten ?? []);
-  const usedIds = /* @__PURE__ */ new Set();
-  const takeId = (s10) => {
-    const m2 = s10 ? /^[nr](\d+)$/.exec(s10) : null;
-    if (!m2) return null;
-    const n10 = +m2[1];
-    if (usedIds.has(n10)) return null;
-    usedIds.add(n10);
-    return n10;
-  };
-  const addArts = (tok, note2) => {
-    const set = new Set(tok.art ?? []);
-    for (const nn2 of kids(note2, "notations")) for (const ar2 of kids(nn2, "articulations")) for (const e10 of kids(ar2)) {
-      const a10 = XML_ART[e10.name];
-      if (a10) set.add(a10);
-      else drop("\u6F14\u594F\u6CD5\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF09");
-    }
-    const art = ["staccato", "accent", "tenuto", "breath"].filter((a10) => set.has(a10));
-    if (art.length) tok.art = art;
-  };
-  const tempoOf = (el2) => {
-    const s10 = el2.name === "sound" ? el2 : kid(el2, "sound");
-    const v = s10?.attrs.tempo;
-    return v ? Math.round(Number(v)) : null;
-  };
-  const parts = partEls.map((pe, pi) => {
-    const pid = pe.attrs.id ?? `P${pi + 1}`, info2 = infos.find((x2) => x2.id === pid) ?? { id: pid, name: "" };
-    const manual = hints?.manualBars ? new Set(hints.manualBars[pid] ?? []) : null;
-    const H2 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
-    const body2 = [], langRead = /* @__PURE__ */ new Map();
-    let headPhase = true, divisions = TPQ, voice = null;
-    const mark = (t10) => {
-      body2.push(t10);
-    };
-    const measures = kids(pe, "measure");
-    measures.forEach((m2, mi) => {
-      for (const c10 of kids(m2)) {
-        if (c10.name === "attributes") {
-          const d3 = childText(c10, "divisions");
-          if (d3) divisions = Number(d3);
-          const cl2 = kid(c10, "clef");
-          if (cl2 && info2.clef === void 0) info2.clef = childText(cl2, "sign") === "F" ? "F" : "G";
-          if (Number(childText(c10, "staves") ?? "1") >= 2) info2.staves = 2;
-          const key = kid(c10, "key"), time = kid(c10, "time");
-          if (key && childText(key, "fifths") !== void 0) {
-            const f2 = Number(childText(key, "fifths"));
-            if (headPhase && !H2.gotKey) {
-              H2.fifths = f2;
-              H2.gotKey = true;
-            } else mark({ kind: "key", id: 0, fifths: f2 });
-          }
-          if (time && childText(time, "beats")) {
-            const b3 = Number(childText(time, "beats")), bt = Number(childText(time, "beat-type"));
-            if (headPhase && !H2.gotTime) {
-              H2.beats = b3;
-              H2.beatType = bt;
-              H2.gotTime = true;
-            } else mark({ kind: "time", id: 0, beats: b3, beatType: bt });
-          }
-        } else if (c10.name === "direction" || c10.name === "sound") {
-          const bpm = tempoOf(c10);
-          if (bpm) {
-            if (headPhase && !H2.gotTempo) {
-              H2.bpm = bpm;
-              H2.gotTempo = true;
-            } else mark({ kind: "tempo", id: 0, bpm });
-          }
-          for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const dy of kids(dt, "dynamics")) for (const e10 of kids(dy)) {
-            const v = XML_DYN(e10.name);
-            if (v) mark({ kind: "dyn", id: 0, value: v });
-            else drop("\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09");
-          }
-        } else if (c10.name === "note") {
-          if (kid(c10, "grace")) {
-            drop("\u88C5\u9970\u97F3");
-            continue;
-          }
-          if (kid(c10, "cue")) {
-            drop("\u63D0\u793A\u97F3\u7B26");
-            continue;
-          }
-          const v = childText(c10, "voice") ?? "1";
-          if (voice === null) voice = v;
-          if (v !== voice) {
-            drop("\u540C\u4E00\u58F0\u90E8\u91CC\u7684\u7B2C\u4E8C\u6761\u65CB\u5F8B");
-            continue;
-          }
-          if (kid(c10, "chord")) {
-            const prevN = body2[body2.length - 1], pch = kid(c10, "pitch");
-            if (prevN && prevN.kind === "note" && prevN.pitch && pch) {
-              const pp = { step: childText(pch, "step") ?? "C", alter: Number(childText(pch, "alter") ?? "0"), octave: Number(childText(pch, "octave") ?? "4") };
-              const ps = allPitches(prevN);
-              if (!ps.some((q2) => midiOf(q2) === midiOf(pp))) {
-                const w2 = withPitches(prevN, [...ps, pp]);
-                prevN.pitch = w2.pitch;
-                if (w2.chord) prevN.chord = w2.chord;
-                else delete prevN.chord;
-              }
-              addArts(prevN, c10);
-            } else drop("\u53E0\u97F3\uFF08\u524D\u9762\u6CA1\u6709\u80FD\u53E0\u7684\u97F3\uFF09");
-            continue;
-          }
-          headPhase = false;
-          const dur = Math.round(Number(childText(c10, "duration") ?? "0") * TPQ / divisions);
-          if (dur <= 0) continue;
-          const idAttr = c10.attrs.id, cont = idAttr ? /^([nr])(\d+)-\d+$/.exec(idAttr) : null;
-          const prev = body2[body2.length - 1];
-          if (cont && prev && (prev.kind === "note" || prev.kind === "rest") && prev.id === +cont[2] && cont[1] === "n" === (prev.kind === "note")) {
-            prev.dur += dur;
-            if (prev.kind === "note") addArts(prev, c10);
-            continue;
-          }
-          const isRest = !!kid(c10, "rest");
-          const stf = childText(c10, "staff"), staffOf = stf === "2" ? { staff: 2 } : stf === "1" ? { staff: 1 } : {};
-          if (isRest) {
-            mark({ kind: "rest", id: takeId(idAttr) ?? 0, dur, ...staffOf });
-            continue;
-          }
-          const p2 = kid(c10, "pitch");
-          if (!p2) {
-            drop("\u6CA1\u6709\u97F3\u9AD8\u7684\u97F3\uFF08\u6253\u51FB\u4E50\uFF09");
-            continue;
-          }
-          const pitch = { step: childText(p2, "step") ?? "C", alter: Number(childText(p2, "alter") ?? "0"), octave: Number(childText(p2, "octave") ?? "4") };
-          const tok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null, ...staffOf };
-          if (kids(c10, "tie").some((t10) => t10.attrs.type === "stop")) tok.tie = true;
-          addArts(tok, c10);
-          const lyrics = kids(c10, "lyric"), ly2 = lyrics.find((l10) => (l10.attrs.number ?? "1") === "1") ?? lyrics[0];
-          if (lyrics.length > 1) drop("\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD");
-          if (ly2) {
-            const tx2 = kid(ly2, "text");
-            if (tx2) {
-              tok.lyric = kids(ly2, "text").map((e10) => text(e10)).filter(Boolean).join(ELISION);
-              const syl = childText(ly2, "syllabic");
-              if (syl === "begin" || syl === "middle") tok.hyph = true;
-              if (tx2.attrs["xml:lang"]) langRead.set(tok, tx2.attrs["xml:lang"]);
-            } else if (kid(ly2, "extend")) tok.lyric = MELISMA_MARK;
-          }
-          mark(tok);
-        } else if (c10.name === "backup" || c10.name === "forward") {
-        } else if (c10.name === "harmony") drop("\u548C\u5F26\u8BB0\u53F7");
-      }
-      const n10 = Number(m2.attrs.number ?? mi + 1);
-      if (manual ? manual.has(n10) : mi < measures.length - 1) body2.push({ kind: "bar", id: 0 });
-    });
-    const tokens = [{ kind: "key", id: 0, fifths: H2.fifths }, { kind: "time", id: 0, beats: H2.beats, beatType: H2.beatType }, { kind: "tempo", id: 0, bpm: H2.bpm }, ...body2];
-    keepOnlyOverrides(tokens, tokens.map((t10) => langRead.get(t10) ?? null));
-    if (info2.staves === 2) {
-      const auto = autoStaffs(tokens, 2);
-      tokens.forEach((t10, i10) => {
-        if ((t10.kind === "note" || t10.kind === "rest") && t10.staff !== void 0) {
-          const keep = t10.kind === "note" ? t10.staff !== auto[i10] : t10.staff !== staffOfTokens(tokens.map((x2, j2) => j2 === i10 ? { ...x2, staff: void 0 } : x2), 2)[i10];
-          if (!keep) delete t10.staff;
-        }
-      });
-    } else for (const t10 of tokens) if ((t10.kind === "note" || t10.kind === "rest") && t10.staff !== void 0) delete t10.staff;
-    return { info: info2, tokens, gotTempo: H2.gotTempo };
-  });
-  const bpm0 = parts[0].tokens[2].bpm;
-  for (const p2 of parts.slice(1)) if (!p2.gotTempo) p2.tokens[2].bpm = bpm0;
-  let next2 = Math.max(0, ...usedIds) + 1;
-  for (const p2 of parts) for (const t10 of p2.tokens) if (!t10.id) t10.id = next2++;
-  const paper = readPaper(root);
-  const credits = readCredits(root, title);
-  const rights = kids(kid(root, "identification"), "rights").map((e10) => text(e10).trim()).filter(Boolean).join("\n");
-  return { title, movementTitle, ...paper ? { paper } : {}, ...credits ? { credits } : {}, ...rights ? { rights } : {}, parts: parts.map(({ info: info2, tokens }) => ({ info: info2, tokens })), dropped };
+  }
 }
+var t = (key, params) => (_host ?? defaultT)(key, params);
 
-// src/format/contract.ts
-var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 1 };
-
-// src/format/performance.ts
-var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
-var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
-var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
-var SOUNDFONT_CALIBRATION_DB = -6;
-var TSUKUYOMI_DEFAULTS = {};
-var REPO = "https://github.com/fangzhangmnm/moonsinger";
-var TSUKUYOMI_CREDIT = {
-  attribution: [CREDIT.credit, ...CREDIT.attribution],
-  license: { name: "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09", url: CREDIT.termsUrl, text: CREDIT.terms }
-};
-var TSUKUYOMI_SPEC = { kind: "ours", doc: "#tsukuyomi", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sing-core.mjs" } };
-var VOWEL_SAMPLER_SPEC = { kind: "ours", doc: "#vowel-sampler", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sampler.ts" } };
-var SOUNDFONT_SPEC = { kind: "standard", name: "SoundFont", version: "2.04" };
-var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
-
-// src/format/migrate/index.ts
-var HUMS = /* @__PURE__ */ new Set(["la", "n", "u", "o", "a"]);
-function loungeV1toV2(json) {
-  const cands3 = (json.candidates ?? []).map((c02) => {
-    const c10 = { ...c02 }, gm = c10.gm ?? {}, src = c10.source, engines = c10.engines ?? {};
-    const hum = HUMS.has(String(c10.hum)) ? String(c10.hum) : "n";
-    delete c10.hum;
-    delete c10.source;
-    delete c10.engines;
-    delete c10.credit;
-    delete c10.spec;
-    const common2 = { calibrationDb: Number(c02.calibrationDb ?? 0), chain: c02.chain ?? [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } };
-    if (gm.variant === "tsukuyomi") return { ...c10, ...common2, instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC), ...Object.keys(engines).length ? { engines } : {} };
-    if (gm.variant === "tsukuyomi-vowels") return { ...c10, ...common2, instrument: { engine: "vowel-sampler", table: "builtin", hum }, defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC), ...Object.keys(engines).length ? { engines } : {} };
-    if (src?.kind === "sf2") {
-      const embedded = typeof src.embedded === "string" ? src.embedded : null;
-      const subsetSha256 = typeof src.subsetSha256 === "string" ? src.subsetSha256 : embedded ? embedded.slice(embedded.lastIndexOf("/") + 1).replace(/\.sf2$/, "") : "";
-      return {
-        ...c10,
-        ...common2,
-        instrument: { engine: "soundfont", bank: Number(src.bank), program: Number(src.program), source: { embedded, subsetBytes: Number(src.subsetBytes ?? 0), subsetSha256, origin: src.origin ?? { name: "", fileSha256: "", bytes: 0 } } },
-        defaults: { ...SOUNDFONT_DEFAULTS },
-        credit: c02.credit ?? { attribution: [], license: { name: "unknown" } },
-        spec: c02.spec ?? structuredClone(SOUNDFONT_SPEC),
-        ...Object.keys(engines).length ? { engines } : {}
-      };
-    }
-    return { ...c10, ...common2, instrument: { engine: "unknown", engines }, defaults: {}, credit: c02.credit ?? { attribution: [], license: { name: "unknown" } }, spec: c02.spec ?? { kind: "unknown" } };
-  });
-  return { ...json, candidates: cands3 };
+// node_modules/@internal/gallery/dist/core/device-kv.js
+var _mem = /* @__PURE__ */ new Map();
+var _kv = { get: (k2) => _mem.get(k2) ?? null, set: (k2, v) => {
+  if (v == null)
+    _mem.delete(k2);
+  else
+    _mem.set(k2, v);
+} };
+function configureDeviceKv(kv) {
+  _kv = kv;
 }
-var manifestV1toV2 = (json) => ({ ...json, derived: [] });
-function scoreV1toV2(json) {
-  const parts = (json.parts ?? []).map((p2, k2) => ({ id: String(p2.id ?? `P${k2 + 1}`), role: String(p2.role ?? `r${k2 + 1}`), mic: String(p2.mic ?? `m${k2 + 1}`), kind: "pitched" }));
-  const manualBars = json.manualBars ?? {};
-  return { papers: [{ id: "p1", file: ".moonsinger/papers/p1.musicxml", manualBars: { ...manualBars }, unwritten: [...json.unwritten ?? []] }], parts };
-}
-var MIGRATIONS = {
-  manifest: [manifestV1toV2],
-  score: [scoreV1toV2],
-  lounge: [loungeV1toV2],
-  studio: []
-};
-function migrate(kind, json) {
-  let v = Number(json.version ?? 1), out = json;
-  while (v < FORMAT[kind]) {
-    const step = MIGRATIONS[kind][v - 1];
-    if (!step) throw new Error(`[format] no migration for ${kind} v${v} -> v${v + 1}`);
-    out = { ...step(out), version: v + 1 };
-    v++;
-  }
-  return out;
-}
-
-// src/format/project.ts
-var MIMETYPE = "application/vnd.recordare.musicxml";
-var DIR = ".moonsinger/";
-var SOUNDS2 = `${DIR}sounds/`;
-var PAPERS = `${DIR}papers/`;
-var paperFile = (id2) => `${PAPERS}${id2}.musicxml`;
-var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], thumbnail: null });
-var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
-var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
-var CANDIDATE_ID = { full: "c1", light: "c2" };
-var common = () => ({ calibrationDb: 0, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } });
-function defaultRole(hum, id2) {
-  return { version: FORMAT.lounge, id: id2, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
-    { id: CANDIDATE_ID.full, name: "\u6708\u8BFB", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
-    { id: CANDIDATE_ID.light, name: "\u6708\u8BFB\uFF08\u5143\u97F3\uFF09", instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) }
-  ] };
-}
-var cands = (role) => role?.candidates ?? [];
-var instrumentOf = (c10) => c10 && c10.instrument && typeof c10.instrument === "object" ? c10.instrument : null;
-var isVoice = (i10) => !!i10 && (i10.engine === "tsukuyomi" || i10.engine === "vowel-sampler");
-var roleOf = (extras, role, hum) => structuredClone(extras.lounge[role] ?? defaultRole(hum, role));
-var nextKey2 = (ids, prefix) => `${prefix}${Math.max(0, ...ids.map((x2) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x2)?.[1] ?? 0))) + 1}`;
-function saveMxl(a10) {
-  const song = a10.song;
-  const lounge = { ...a10.extras.lounge };
-  for (const part of song.parts) {
-    const role = roleOf(a10.extras, part.role, a10.hum);
-    for (const c10 of cands(role)) {
-      const i10 = instrumentOf(c10);
-      if (isVoice(i10)) i10.hum = a10.hum;
-    }
-    lounge[part.role] = role;
-  }
-  const studio2 = structuredClone(a10.extras.studio ?? { version: FORMAT.studio, mics: [] });
-  const mics = (studio2.mics ?? []).slice();
-  for (const part of song.parts) if (!mics.some((m2) => m2.id === part.mic)) mics.push({ id: part.mic, name: `\u9EA6\u514B\u98CE ${mics.length + 1}`, gainDb: 0, pan: 0 });
-  studio2.mics = mics;
-  const labels = partLabels(song, { ...a10.extras, lounge });
-  const infoOf = (part, k2) => {
-    const role = lounge[part.role], active = cands(role).find((c10) => c10.id === role.active), mic = mics.find((m2) => m2.id === part.mic);
-    return {
-      id: part.id,
-      name: labels[k2],
-      ...part.clef && part.clef !== "G" ? { clef: part.clef } : {},
-      ...part.staves === 2 ? { staves: 2 } : {},
-      instrumentName: String(active?.name ?? "\u6708\u8BFB"),
-      sound: String(role.sound ?? DEFAULT_ROLE.sound),
-      program: Number(active?.gm?.program ?? 55),
-      variant: typeof active?.gm?.variant === "string" ? { library: "MoonSinger", name: String(active.gm.variant) } : void 0,
-      pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : void 0
-    };
-  };
-  const infos = song.parts.map(infoOf), meta = { software: `MoonSinger ${a10.app}`, date: a10.date };
-  const files = {};
-  const papers = song.papers.map((p2) => {
-    const parts = song.parts.flatMap((part, k2) => p2.tracks[part.id] ? [{ info: infos[k2], tokens: p2.tracks[part.id] }] : []);
-    const w2 = writeMusicXml({ title: song.title, movementTitle: p2.name || void 0, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
-    files[paperFile(p2.id)] = strToU8(w2.xml);
-    const phrases = {};
-    for (const [pid, toks] of Object.entries(p2.tracks)) {
-      const ids = toks.flatMap((t10, k2) => t10.kind === "phrase" && k2 > 0 ? [toks[k2 - 1].id] : []);
-      if (ids.length) phrases[pid] = ids;
-    }
-    return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, ...Object.keys(phrases).length ? { phrases } : {}, ...p2.hidden ? { hidden: true } : {} };
-  });
-  const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k2) => {
-    const f2 = flattenPart(song, part.id);
-    return { info: infos[k2], tokens: f2.tokens, breaks: new Map(f2.starts.slice(1).map((s10) => [s10.index, s10.paper.name])) };
-  }) }, meta);
-  const scoreExt = {
-    version: FORMAT.score,
-    papers,
-    parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched" })),
-    ...a10.view && Object.keys(a10.view).length ? { view: a10.view } : {}
-  };
-  const referenced = referencedSounds(lounge);
-  const sounds = Object.entries(a10.extras.sounds).filter(([p2]) => referenced.has(p2)).sort(([x2], [y2]) => x2 < y2 ? -1 : 1);
-  const manifest = {
-    ...a10.extras.manifest ?? {},
-    format: "moonsinger",
-    version: FORMAT.manifest,
-    app: a10.app,
-    saved: a10.date,
-    files: {
-      "score.json": FORMAT.score,
-      "studio.json": FORMAT.studio,
-      ...Object.fromEntries(Object.entries(lounge).map(([id2, r10]) => [`lounge/${id2}.json`, Number(r10.version ?? 1)])),
-      ...Object.fromEntries(papers.map((p2) => [`papers/${p2.id}.musicxml`, 0]))
-    },
-    // 0 = 标准件（MusicXML），不是我们的版本号
-    derived: ["score.musicxml"],
-    sounds: sounds.map(([path, b3]) => ({ path, sha256: path.slice(SOUNDS2.length).replace(/\.sf2$/, ""), bytes: b3.length }))
-  };
-  const json = (o10) => strToU8(JSON.stringify(o10, null, 2) + "\n");
-  const rootfiles = [
-    `<rootfile full-path="score.musicxml" media-type="application/vnd.recordare.musicxml+xml"/>`,
-    ...a10.extras.rootfiles.map((r10) => `<rootfile full-path="${r10.path}" media-type="${r10.mediaType}"/>`)
-  ].join("\n    ");
-  const out = {};
-  out["mimetype"] = strToU8(MIMETYPE);
-  out["META-INF/container.xml"] = strToU8(`<?xml version="1.0" encoding="UTF-8"?>
-<container>
-  <rootfiles>
-    ${rootfiles}
-  </rootfiles>
-</container>
-`);
-  out["score.musicxml"] = strToU8(flat.xml);
-  out[`${DIR}manifest.json`] = json(manifest);
-  out[`${DIR}score.json`] = json(scoreExt);
-  for (const [path, bytes] of Object.entries(files)) out[path] = bytes;
-  for (const [id2, r10] of Object.entries(lounge)) out[`${DIR}lounge/${id2}.json`] = json(r10);
-  out[`${DIR}studio.json`] = json(studio2);
-  for (const [path, bytes] of sounds) out[path] = bytes;
-  for (const [path, bytes] of Object.entries(a10.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY) out[path] = bytes;
-  if (a10.extras.thumbnail) out[THUMBNAIL_ENTRY] = a10.extras.thumbnail;
-  const entries2 = {};
-  for (const [path, bytes] of Object.entries(out)) entries2[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY ? 0 : path.startsWith(SOUNDS2) ? 1 : 6 }];
-  return zipSync(entries2);
-}
-function roleName(extras, role) {
-  return String(extras.lounge[role]?.name ?? DEFAULT_ROLE.name);
-}
-function roleSound(extras, role) {
-  return String(extras.lounge[role]?.sound ?? DEFAULT_ROLE.sound);
-}
-function partLabels(song, extras) {
-  return numberParts(song.parts.map((p2) => ({ name: roleName(extras, p2.role), sound: roleSound(extras, p2.role) })));
-}
-function withRoleName(extras, role, name, hum, sound2) {
-  const r10 = roleOf(extras, role, hum);
-  r10.name = name;
-  if (sound2) r10.sound = sound2;
-  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
-}
-function withRoleConcept(extras, role, c10, hum) {
-  const r10 = roleOf(extras, role, hum);
-  r10.name = c10.name;
-  if (c10.sound) r10.sound = c10.sound;
-  r10.concept = c10.concept;
-  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
-}
-function newRoleId(extras, song) {
-  return nextKey2([...Object.keys(extras.lounge), ...song.parts.map((p2) => p2.role)], "r");
-}
-function newMicId(extras, song) {
-  return nextKey2([...(extras.studio?.mics ?? []).map((m2) => String(m2.id)), ...song.parts.map((p2) => p2.mic)], "m");
-}
-function withNewRole(extras, role, hum, name, sound2) {
-  if (extras.lounge[role]) return extras;
-  const r10 = defaultRole(hum, role);
-  if (name) r10.name = name;
-  if (sound2) r10.sound = sound2;
-  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
-}
-function withoutRole(extras, role) {
-  const lounge = { ...extras.lounge };
-  delete lounge[role];
-  return pruneSounds({ ...extras, lounge });
-}
-function withMic(extras, micId, patch) {
-  const studio2 = structuredClone(extras.studio ?? { version: FORMAT.studio, mics: [] });
-  const mics = (studio2.mics ?? []).slice();
-  let m2 = mics.find((x2) => x2.id === micId);
-  if (!m2) {
-    m2 = { id: micId, name: `\u9EA6\u514B\u98CE ${mics.length + 1}`, gainDb: 0, pan: 0 };
-    mics.push(m2);
-  }
-  if (patch.gainDb !== void 0) m2.gainDb = patch.gainDb;
-  if (patch.pan !== void 0) m2.pan = patch.pan;
-  studio2.mics = mics;
-  return { ...extras, studio: studio2 };
-}
-function candidates(extras, role) {
-  return cands(extras.lounge[role] ?? defaultRole("n", role)).map((c10) => ({ id: String(c10.id), name: String(c10.name ?? ""), engine: instrumentOf(c10)?.engine ?? "unknown" }));
-}
-function activeId(extras, role) {
-  return String(extras.lounge[role]?.active ?? CANDIDATE_ID.full);
-}
-function activeCandidate(extras, role) {
-  const r10 = extras.lounge[role];
-  if (!r10) return null;
-  return cands(r10).find((x2) => x2.id === r10.active) ?? null;
-}
-function activeOrDefaultCandidate(extras, role) {
-  const r10 = extras.lounge[role] ?? defaultRole("n", role);
-  return cands(r10).find((x2) => x2.id === r10.active) ?? null;
-}
-function activeCandidateName(extras, role) {
-  const c10 = activeOrDefaultCandidate(extras, role);
-  return c10 ? String(c10.name ?? "") : null;
-}
-function activeInstrument(extras, role) {
-  if (!extras.lounge[role]) return { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum: "n" };
-  return instrumentOf(activeCandidate(extras, role));
-}
-function humOf(extras) {
-  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands(r10)) {
-    const i10 = instrumentOf(c10);
-    if (isVoice(i10)) return i10.hum;
-  }
-  return "n";
-}
-function withActive(extras, role, id2, hum) {
-  const r10 = roleOf(extras, role, hum);
-  r10.active = id2;
-  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
-}
-function gmCandidates(extras, role) {
-  return cands(extras.lounge[role]).flatMap((c10) => {
-    const i10 = instrumentOf(c10);
-    if (i10?.engine !== "soundfont") return [];
-    const s10 = i10.source;
-    return [{ id: String(c10.id), name: String(c10.name ?? ""), bank: i10.bank, program: i10.program, ...i10.note !== void 0 ? { note: i10.note } : {}, ...i10.sfx ? { sfx: i10.sfx } : {}, path: s10.embedded, bytes: s10.embedded ? extras.sounds[s10.embedded] ?? null : null, origin: s10.origin, subsetSha256: s10.subsetSha256 }];
-  });
-}
-function activeGm(extras, role) {
-  const id2 = activeId(extras, role);
-  return gmCandidates(extras, role).find((c10) => c10.id === id2) ?? null;
-}
-function withSf2Candidate(extras, role, c10, hum) {
-  const r10 = roleOf(extras, role, hum);
-  const list = cands(r10);
-  const n10 = Math.max(0, ...list.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
-  const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
-  const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, ...c10.sfx ? { sfx: { ...c10.sfx } } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
-  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
-  r10.candidates = list;
-  r10.active = id2;
-  return { ...extras, lounge: { ...extras.lounge, [role]: r10 }, sounds: path ? { ...extras.sounds, [path]: c10.subset } : extras.sounds };
-}
-function referencedSounds(lounge) {
-  const refs = /* @__PURE__ */ new Set();
-  for (const r10 of Object.values(lounge)) for (const c10 of cands(r10)) {
-    const i10 = instrumentOf(c10);
-    if (i10?.engine === "soundfont" && typeof i10.source?.embedded === "string") refs.add(i10.source.embedded);
-  }
-  return refs;
-}
-function pruneSounds(extras) {
-  const refs = referencedSounds(extras.lounge), keep = Object.entries(extras.sounds).filter(([p2]) => refs.has(p2));
-  return keep.length === Object.keys(extras.sounds).length ? extras : { ...extras, sounds: Object.fromEntries(keep) };
-}
-function withoutCandidate(extras, role, id2) {
-  const r10 = structuredClone(extras.lounge[role]);
-  if (!r10) return extras;
-  if (r10.active === id2) throw new Error("\u4E0A\u573A\u7684\u5019\u9009\u4E0D\u80FD\u5220\uFF0C\u5148\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D");
-  r10.candidates = cands(r10).filter((c10) => c10.id !== id2);
-  return pruneSounds({ ...extras, lounge: { ...extras.lounge, [role]: r10 } });
-}
-function soundUses(extras) {
-  const out = /* @__PURE__ */ new Map();
-  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands(r10)) {
-    const i10 = instrumentOf(c10);
-    if (i10?.engine !== "soundfont") continue;
-    const s10 = i10.source, had = out.get(s10.subsetSha256), packed = !!(s10.embedded && extras.sounds[s10.embedded]);
-    if (had) {
-      had.packed ||= packed;
-      if (!had.names.includes(String(c10.name ?? ""))) had.names.push(String(c10.name ?? ""));
-      continue;
-    }
-    out.set(s10.subsetSha256, { subsetSha256: s10.subsetSha256, packed, bytes: Number(s10.subsetBytes ?? 0), origin: s10.origin, names: [String(c10.name ?? "")] });
-  }
-  return [...out.values()];
-}
-var soundPath = (sha256) => `${SOUNDS2}${sha256}.sf2`;
-function withPacked(extras, have) {
-  const lounge = {}, sounds = { ...extras.sounds }, packed = /* @__PURE__ */ new Set(), missing = /* @__PURE__ */ new Set();
-  for (const [id2, r02] of Object.entries(extras.lounge)) {
-    const r10 = structuredClone(r02);
-    for (const c10 of cands(r10)) {
-      const i10 = instrumentOf(c10);
-      if (i10?.engine !== "soundfont") continue;
-      const s10 = i10.source;
-      if (s10.embedded && sounds[s10.embedded]) continue;
-      const path = soundPath(s10.subsetSha256), b3 = sounds[path] ?? have(s10.subsetSha256);
-      if (!b3) {
-        missing.add(s10.subsetSha256);
-        continue;
-      }
-      sounds[path] = b3;
-      s10.embedded = path;
-      packed.add(s10.subsetSha256);
-    }
-    lounge[id2] = r10;
-  }
-  return packed.size ? { extras: { ...extras, lounge, sounds }, packed: [...packed], missing: [...missing] } : { extras, packed: [], missing: [...missing] };
-}
-function withUnpacked(extras, only) {
-  const lounge = {}, removed = /* @__PURE__ */ new Map();
-  let changed2 = false;
-  for (const [id2, r02] of Object.entries(extras.lounge)) {
-    const r10 = structuredClone(r02);
-    for (const c10 of cands(r10)) {
-      const i10 = instrumentOf(c10);
-      if (i10?.engine !== "soundfont" || !i10.source.embedded || only && !only(i10.source.subsetSha256)) continue;
-      const b3 = extras.sounds[i10.source.embedded];
-      if (b3) removed.set(i10.source.subsetSha256, b3);
-      i10.source.embedded = null;
-      changed2 = true;
-    }
-    lounge[id2] = r10;
-  }
-  return changed2 ? { extras: pruneSounds({ ...extras, lounge }), removed } : { extras, removed };
-}
-function activePerfSpec(extras, role) {
-  const c10 = activeCandidate(extras, role), d3 = c10?.dynamicsDb ?? {}, a10 = c10?.articulation ?? {};
-  const num = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
-  const dynamicsDb = Object.fromEntries(Object.keys(DYNAMICS_DB).map((k2) => [k2, num(d3[k2], DYNAMICS_DB[k2])]));
-  return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a10.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a10.accentDb, ARTICULATION.accentDb) };
-}
-function activeCalibrationDb(extras, role) {
-  const c10 = activeCandidate(extras, role);
-  const v = Number(c10?.calibrationDb ?? 0);
-  return Number.isFinite(v) ? v : 0;
-}
-function withCalibration(extras, role, dB, hum) {
-  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
-  if (!c10) return extras;
-  c10.calibrationDb = Math.round(dB * 10) / 10;
-  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
-}
-function withSfxFixed(extras, role, on2, hum) {
-  const r10 = roleOf(extras, role, hum), i10 = instrumentOf(cands(r10).find((x2) => x2.id === r10.active));
-  if (i10?.engine !== "soundfont" || !i10.sfx) return extras;
-  if (on2) i10.note = i10.sfx.key;
-  else delete i10.note;
-  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
-}
-function withSfxAlign(extras, role, on2, hum) {
-  const r10 = roleOf(extras, role, hum), i10 = instrumentOf(cands(r10).find((x2) => x2.id === r10.active));
-  if (i10?.engine !== "soundfont" || !i10.sfx) return extras;
-  if (on2) i10.sfx.align = true;
-  else delete i10.sfx.align;
-  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
-}
-function activeTranspose(extras, role) {
-  const v = Number(activeCandidate(extras, role)?.transpose ?? 0);
-  return Number.isInteger(v) ? v : 0;
-}
-function withTranspose(extras, role, semis, hum) {
-  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
-  if (!c10) return extras;
-  const t10 = Math.max(-48, Math.min(48, Math.round(semis)));
-  if (t10) c10.transpose = t10;
-  else delete c10.transpose;
-  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
-}
-var foreign = (r10) => r10.title || !r10.movementTitle ? r10 : { ...r10, title: r10.movementTitle, movementTitle: "" };
-function paperOfRead(id2, r10) {
-  const tracks = {};
-  for (const p2 of r10.parts) tracks[p2.info.id] = p2.tokens;
-  return { id: id2, name: r10.movementTitle, tracks };
-}
-function openBytes(name, bytes) {
-  const isZip = bytes[0] === 80 && bytes[1] === 75;
-  if (!isZip) {
-    const r10 = foreign(readMusicXml(new TextDecoder().decode(bytes)));
-    return finish([r10], songFromReads([r10], null), emptyExtras(), false, name);
-  }
-  let files;
+function deviceKvGet(key) {
   try {
-    files = unzipSync(bytes);
-  } catch (e10) {
-    throw new Error(`\u8FD9\u4E2A\u6587\u4EF6\u89E3\u4E0D\u5F00\uFF08\u4E0D\u662F\u5B8C\u6574\u7684 .mxl\uFF1F\uFF09\uFF1A${e10.message}`);
-  }
-  const container = files["META-INF/container.xml"];
-  if (!container) throw new Error("\u8FD9\u4E2A\u538B\u7F29\u5305\u91CC\u6CA1\u6709 META-INF/container.xml\uFF0C\u4E0D\u662F .mxl");
-  const paths = [...strFromU8(container).matchAll(/<rootfile\b[^>]*full-path="([^"]+)"[^>]*?(?:media-type="([^"]*)")?[^>]*\/?>/g)].map((m2) => ({ path: m2[1], mediaType: m2[2] ?? "" }));
-  const main = paths[0]?.path;
-  if (!main || !files[main]) throw new Error("container.xml \u6307\u7684\u4E3B\u4E50\u8C31\u5728\u5305\u91CC\u627E\u4E0D\u5230");
-  const extras = emptyExtras();
-  extras.rootfiles = paths.slice(1);
-  const known = /* @__PURE__ */ new Set(["mimetype", "META-INF/container.xml", main]);
-  if (files[THUMBNAIL_ENTRY]) {
-    extras.thumbnail = files[THUMBNAIL_ENTRY];
-    known.add(THUMBNAIL_ENTRY);
-  }
-  const manifestBytes = files[`${DIR}manifest.json`];
-  const ours = !!manifestBytes;
-  if (!ours) {
-    for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
-    const r10 = foreign(readMusicXml(strFromU8(files[main])));
-    return finish([r10], songFromReads([r10], null), extras, false, name);
-  }
-  const parse2 = (p2) => {
-    try {
-      return JSON.parse(strFromU8(files[p2]));
-    } catch {
-      throw new Error(`${p2} \u8BFB\u4E0D\u61C2\uFF08\u6587\u4EF6\u574F\u4E86\uFF1F\uFF09`);
-    }
-  };
-  const manifest = parse2(`${DIR}manifest.json`);
-  known.add(`${DIR}manifest.json`);
-  const newer = (what, v, mine) => {
-    if (Number(v) > mine) throw new Error(`\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08${what} \u7B2C ${v} \u7248\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BA4\u5230\u7B2C ${mine} \u7248\uFF09\uFF0C\u6253\u5F00\u518D\u5B58\u4F1A\u4E22\u4E1C\u897F\uFF0C\u6240\u4EE5\u6CA1\u6709\u6253\u5F00\u3002\u8BF7\u5148\u66F4\u65B0 app\u3002`);
-  };
-  newer("\u603B\u76EE\u5F55", manifest.version, FORMAT.manifest);
-  extras.manifest = migrate("manifest", manifest);
-  let scoreExt = null;
-  if (files[`${DIR}score.json`]) {
-    const s02 = parse2(`${DIR}score.json`);
-    known.add(`${DIR}score.json`);
-    newer("\u8C31\u7684\u6269\u5C55", s02.version, FORMAT.score);
-    scoreExt = migrate("score", s02);
-    extras.scoreExt = scoreExt;
-  }
-  for (const p2 of Object.keys(files)) {
-    const m2 = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p2);
-    if (m2) {
-      const r10 = parse2(p2);
-      newer(`\u4F11\u606F\u5BA4\u300C${r10.name ?? m2[1]}\u300D`, r10.version, FORMAT.lounge);
-      extras.lounge[m2[1]] = migrate("lounge", r10);
-      known.add(p2);
-    }
-  }
-  if (files[`${DIR}studio.json`]) {
-    const s10 = parse2(`${DIR}studio.json`);
-    known.add(`${DIR}studio.json`);
-    newer("\u5F55\u97F3\u623F", s10.version, FORMAT.studio);
-    extras.studio = migrate("studio", s10);
-  }
-  for (const p2 of Object.keys(files)) if (p2.startsWith(SOUNDS2) && !p2.endsWith("/")) {
-    extras.sounds[p2] = files[p2];
-    known.add(p2);
-  }
-  const list = scoreExt?.papers ?? [{ id: "p1", file: paperFile("p1"), manualBars: {}, unwritten: [] }];
-  const reads = [];
-  const papers = [];
-  list.forEach((p2, k2) => {
-    const file = String(p2.file ?? paperFile(String(p2.id)));
-    const b3 = files[file] ?? (k2 === 0 ? files[main] : void 0);
-    if (!b3) throw new Error(`\u7EB8\u300C${p2.id}\u300D\u7684\u8C31\uFF08${file}\uFF09\u5728\u5305\u91CC\u627E\u4E0D\u5230`);
-    known.add(file);
-    const r10 = readMusicXml(strFromU8(b3), { manualBars: p2.manualBars ?? {}, unwritten: p2.unwritten ?? [] });
-    reads.push(r10);
-    const seg = paperOfRead(String(p2.id), r10);
-    if (p2.hidden === true) seg.hidden = true;
-    const ph = p2.phrases;
-    if (ph) for (const [pid, ids] of Object.entries(ph)) {
-      const toks = seg.tracks[pid];
-      if (!toks) continue;
-      for (const id2 of ids) {
-        const k3 = toks.findIndex((t10) => t10.id === id2);
-        if (k3 >= 0 && toks[k3 + 1]?.kind !== "phrase") toks.splice(k3 + 1, 0, { kind: "phrase", id: 0 });
-      }
-    }
-    papers.push(seg);
-  });
-  for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
-  const song = songFromReads(reads, papers, scoreExt?.parts ?? null);
-  return finish(reads, song, pruneSounds(extras), ours, name);
-}
-function songFromReads(reads, papers, partList = null) {
-  const ps = papers ?? [paperOfRead("p1", reads[0])];
-  const seen = /* @__PURE__ */ new Map();
-  for (const p2 of partList ?? []) seen.set(String(p2.id), { id: String(p2.id), role: String(p2.role ?? `r${seen.size + 1}`), mic: String(p2.mic ?? `m${seen.size + 1}`) });
-  for (const p2 of ps) for (const id3 of Object.keys(p2.tracks)) if (!seen.has(id3)) seen.set(id3, { id: id3, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
-  for (const r10 of reads) for (const p2 of r10.parts) {
-    const d3 = seen.get(p2.info.id);
-    if (!d3) continue;
-    if (p2.info.clef === "F" && !d3.clef) d3.clef = "F";
-    if (p2.info.staves === 2) d3.staves = 2;
-  }
-  const parts = [...seen.values()];
-  let id2 = 1;
-  const renumbered = ps.map((p2) => ({ ...p2, tracks: Object.fromEntries(parts.flatMap((part) => p2.tracks[part.id] ? [[part.id, p2.tracks[part.id].map((t10) => ({ ...t10, id: id2++ }))]] : [])) }));
-  const r02 = reads[0];
-  return { ...r02.title ? { title: r02.title } : {}, ...r02.paper ? { paper: r02.paper } : {}, ...r02.credits ? { credits: r02.credits } : {}, ...r02.rights ? { rights: r02.rights } : {}, hum: "n", parts, papers: renumbered };
-}
-function finish(reads, song0, extras, ours, name) {
-  const notices = [];
-  const dropped = {};
-  for (const r10 of reads) for (const [k2, n10] of Object.entries(r10.dropped)) dropped[k2] = (dropped[k2] ?? 0) + n10;
-  const dl = Object.entries(dropped);
-  if (dl.length) notices.push(`\u8FD9\u4EFD\u8C31\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u4E0D\u652F\u6301\u7684\u4E1C\u897F\uFF0C\u6CA1\u6709\u8BFB\u8FDB\u6765\uFF1A${dl.map(([k2, n10]) => `${k2} ${n10} \u5904`).join("\u3001")}\u3002\u5B58\u7684\u65F6\u5019\u5B83\u4EEC\u4E0D\u4F1A\u5728\u65B0\u6587\u4EF6\u91CC\u2014\u2014\u8981\u7559\u539F\u6837\uFF0C\u8BF7\u300C\u53E6\u5B58\u4E3A\u300D\u65B0\u6587\u4EF6\u3002`);
-  const infos = /* @__PURE__ */ new Map();
-  for (const r10 of reads) for (const p2 of r10.parts) if (!infos.has(p2.info.id)) infos.set(p2.info.id, p2.info);
-  for (const part of song0.parts) {
-    if (extras.lounge[part.role] || ours) continue;
-    const p2 = infos.get(part.id);
-    const was = p2?.instrumentName || p2?.name || "\u539F\u6765\u7684\u4E50\u5668";
-    const gm = p2?.program;
-    const role = defaultRole("n", part.role);
-    role.name = p2?.name || DEFAULT_ROLE.name;
-    if (p2?.sound) role.sound = p2.sound;
-    role.active = "c0";
-    cands(role).unshift({ id: "c0", name: was, instrument: { engine: "unknown", midi: { program: gm ?? null, variant: p2?.variant ?? null } }, gm: { program: gm ?? null, variant: p2?.variant ?? null }, ...common(), defaults: {}, credit: { attribution: [], license: { name: "unknown" } }, spec: { kind: "unknown" } });
-    extras.lounge[part.role] = role;
-    notices.push(`\u58F0\u90E8\u300C${role.name}\u300D\u539F\u6765\u662F${was}${gm ? `\uFF08GM ${gm} \u53F7\uFF09` : ""}\uFF1B\u8FD9\u4E00\u7248\u6CA1\u6709\u8FD9\u4EF6\u4E50\u5668\uFF0C\u6240\u4EE5\u8FD8\u6CA1\u4EBA\u4E0A\u573A\u3002\u8981\u6708\u8BFB\u6765\u5531\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C${role.name}\u300D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u9009\u6708\u8BFB\u3002`);
-  }
-  for (const part of song0.parts) {
-    const role = extras.lounge[part.role];
-    if (!role) continue;
-    const gm = activeGm(extras, part.role);
-    if (gm && gm.path && !gm.bytes) notices.push(`\u300C${gm.name}\u300D\u7684\u58F0\u97F3\uFF08${gm.path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${role.name ?? ""}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
-  }
-  const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
-  const hum = humOf(extras);
-  return { song: { ...song0, hum }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null };
-}
-
-// src/format/credits.ts
-var cands2 = (r10) => r10?.candidates ?? [];
-var creditOf = (c10) => {
-  const k2 = c10.credit;
-  return k2 && Array.isArray(k2.attribution) ? k2 : null;
-};
-function group(items) {
-  const out = /* @__PURE__ */ new Map();
-  for (const { name, credit } of items) {
-    const attribution = credit.attribution.map((s10) => String(s10).trim()).filter(Boolean);
-    const license = { name: String(credit.license?.name ?? "unknown"), ...credit.license?.url ? { url: String(credit.license.url) } : {} };
-    if (!attribution.length && license.name === "unknown") {
-      const k3 = `?${name}`;
-      out.set(k3, { who: [name], attribution: [], license });
-      continue;
-    }
-    const k2 = JSON.stringify([attribution, license]), had = out.get(k2);
-    if (had) {
-      if (!had.who.includes(name)) had.who.push(name);
-    } else out.set(k2, { who: [name], attribution, license });
-  }
-  return [...out.values()];
-}
-function performerCredits(extras, roles) {
-  const items = [];
-  for (const role of new Set(roles)) {
-    const c10 = activeOrDefaultCandidate(extras, role);
-    if (!c10) continue;
-    if (c10.instrument?.engine === "unknown") continue;
-    const credit = creditOf(c10);
-    if (credit) items.push({ name: String(c10.name ?? ""), credit });
-  }
-  return group(items);
-}
-function packedLicenses(extras) {
-  const items = [];
-  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands2(r10)) {
-    const i10 = c10.instrument;
-    if (i10?.engine !== "soundfont" || !i10.source?.embedded || !extras.sounds[i10.source.embedded]) continue;
-    const credit = creditOf(c10);
-    if (credit) items.push({ name: String(c10.name ?? ""), credit });
-  }
-  return group(items);
-}
-function songCreditLine(song) {
-  if (!song.credits?.trim() && !song.rights?.trim()) return null;
-  return { who: [song.title?.trim() ? `\u300C${song.title.trim()}\u300D` : "\u8FD9\u9996\u6B4C"], attribution: (song.credits ?? "").split("\n").map((s10) => s10.trim()).filter(Boolean), license: { name: song.rights?.trim() || "\uFF08\u6CA1\u58F0\u660E\u8BB8\u53EF\uFF09" } };
-}
-var RIGHTS_PRESETS = [
-  { label: "\u4FDD\u7559\u6240\u6709\u6743\u5229", note: "\u4EC0\u4E48\u90FD\u8981\u5148\u95EE\u4F60\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u8FD9\u6837\uFF0C\u8FD9\u91CC\u53EA\u662F\u5199\u660E\uFF09", text: (y2) => `\xA9 ${y2} \u4FDD\u7559\u6240\u6709\u6743\u5229` },
-  { label: "\u4EC5\u4F9B\u6B23\u8D4F", note: "\u542C\u53EF\u4EE5\uFF1B\u8F6C\u8F7D\u3001\u6539\u7F16\u3001\u5546\u7528\u90FD\u8981\u5148\u95EE\u4F60", text: (y2) => `\xA9 ${y2} \u4FDD\u7559\u6240\u6709\u6743\u5229\u3002\u4EC5\u4F9B\u4E2A\u4EBA\u6B23\u8D4F\uFF0C\u7981\u6B62\u8F6C\u8F7D\u3001\u6539\u7F16\u3001\u5546\u7528\u3002` },
-  { label: "\u5546\u7528\u8BF7\u8054\u7CFB", note: "\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF0C\u5E76\u544A\u8BC9\u522B\u4EBA\u5546\u7528\u600E\u4E48\u627E\u4F60", text: (y2) => `\xA9 ${y2} \u4FDD\u7559\u6240\u6709\u6743\u5229\u3002\u5546\u7528\u8BF7\u8054\u7CFB\u4F5C\u8005\u3002` },
-  { label: "CC BY-NC-ND 4.0", note: "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u539F\u6837\u8F6C\u53D1\uFF1B\u4E0D\u8BB8\u6539\u3001\u4E0D\u8BB8\u5546\u7528\uFF08\u6700\u7D27\u7684 CC\uFF09", text: () => "CC BY-NC-ND 4.0 https://creativecommons.org/licenses/by-nc-nd/4.0/" },
-  { label: "CC BY-NC 4.0", note: "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u6539\uFF1B\u4E0D\u8BB8\u5546\u7528", text: () => "CC BY-NC 4.0 https://creativecommons.org/licenses/by-nc/4.0/" },
-  { label: "CC BY-SA 4.0", note: "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u6539\u3001\u53EF\u4EE5\u5546\u7528\uFF1B\u6539\u4E86\u7684\u8981\u7528\u540C\u6837\u7684\u8BB8\u53EF", text: () => "CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/" },
-  { label: "CC BY 4.0", note: "\u6CE8\u660E\u51FA\u5904\u968F\u4FBF\u7528", text: () => "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" },
-  { label: "CC0", note: "\u653E\u5F03\u6743\u5229\uFF0C\u8C01\u90FD\u80FD\u968F\u4FBF\u7528\uFF08\u53D1\u51FA\u53BB\u6536\u4E0D\u56DE\uFF09", text: () => "CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/" }
-];
-function licenseHints(rights, performers) {
-  const reusable = !!rights && (/CC0|public ?domain|公有领域|publicdomain\/zero/i.test(rights) || /CC[ -]?BY/i.test(rights) && !/\bND\b|-nd\//i.test(rights));
-  const tsukuyomi = performers.some((l10) => l10.license.name.includes("\u3064\u304F\u3088\u307F\u3061\u3083\u3093"));
-  return reusable && tsukuyomi ? ["\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16 / \u5F53\u7D20\u6750\u518D\u7528\uFF0C\u53EF\u91CC\u9762\u6709\u6708\u8BFB\u7684\u58F0\u97F3\uFF0C\u6708\u8BFB\u7684\u6761\u6B3E\u4E0D\u8BB8\u8FD9\u6837\u516C\u5F00\uFF08\u8BBE\u7F6E\u91CC\u6709\u539F\u6587\u548C\u8BD1\u6587\uFF09\uFF0C\u6240\u4EE5\u5BFC\u51FA\u65F6\u8BB8\u53EF\u90A3\u4E00\u9879\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\uFF1B\u4F60\u5728\u8FD9\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\u3002"] : [];
-}
-function creditsText(lines) {
-  return lines.map((l10) => {
-    const lic = l10.license.name === "unknown" ? "\u8BB8\u53EF\u8BC1\u4E0D\u660E" : `${l10.license.name}${l10.license.url ? ` ${l10.license.url}` : ""}`;
-    return [`${l10.who.join("\u3001")} \u2014 ${lic}`, ...l10.attribution.length ? l10.attribution : ["\uFF08\u6CA1\u6709\u7F72\u540D\u4FE1\u606F\uFF09"]].join("\n");
-  }).join("\n\n");
-}
-
-// src/audio/mix.ts
-var CEILING = 0.98;
-function sumTracks(tracks, sr2, tailSec = 0.3) {
-  const start = Math.min(0, ...tracks.map((t10) => t10.at));
-  const end = tracks.length ? Math.max(...tracks.map((t10) => t10.at + t10.samples.length / t10.sr)) + tailSec : 0;
-  const n10 = Math.max(0, Math.ceil((end - start) * sr2)), left = new Float32Array(n10), right = new Float32Array(n10);
-  for (const t10 of tracks) {
-    const g3 = 10 ** (t10.gainDb / 20), pan = Math.max(-1, Math.min(1, t10.pan));
-    const gl = g3 * Math.cos((pan + 1) * Math.PI / 4), gr = g3 * Math.sin((pan + 1) * Math.PI / 4);
-    const off = Math.round((t10.at - start) * sr2), ratio = t10.sr / sr2, len = Math.floor(t10.samples.length / ratio);
-    for (let i10 = 0; i10 < len; i10++) {
-      const p2 = i10 * ratio, k2 = Math.floor(p2), f2 = p2 - k2, v = t10.samples[k2] * (1 - f2) + (t10.samples[k2 + 1] ?? 0) * f2;
-      left[off + i10] += v * gl;
-      right[off + i10] += v * gr;
-    }
-  }
-  return { left, right, sr: sr2, start };
-}
-function limitBus(left, right, sr2, o10 = {}) {
-  const c10 = o10.ceiling ?? CEILING, n10 = left.length;
-  const g3 = new Float64Array(n10);
-  let any = false;
-  for (let i10 = 0; i10 < n10; i10++) {
-    const p2 = Math.max(Math.abs(left[i10]), Math.abs(right[i10]));
-    g3[i10] = p2 > c10 ? c10 / p2 : 1;
-    if (p2 > c10) any = true;
-  }
-  if (!any) return 0;
-  const aRel = Math.exp(-1 / ((o10.releaseSec ?? 0.15) * sr2)), aAtt = Math.exp(-1 / ((o10.attackSec ?? 3e-3) * sr2));
-  for (let i10 = 1; i10 < n10; i10++) g3[i10] = Math.min(g3[i10], 1 - (1 - g3[i10 - 1]) * aRel);
-  for (let i10 = n10 - 2; i10 >= 0; i10--) g3[i10] = Math.min(g3[i10], 1 - (1 - g3[i10 + 1]) * aAtt);
-  let min = 1;
-  for (let i10 = 0; i10 < n10; i10++) {
-    const k2 = g3[i10];
-    if (k2 >= 1) continue;
-    if (k2 < min) min = k2;
-    left[i10] *= k2;
-    right[i10] *= k2;
-    if (left[i10] > c10) left[i10] = c10;
-    else if (left[i10] < -c10) left[i10] = -c10;
-    if (right[i10] > c10) right[i10] = c10;
-    else if (right[i10] < -c10) right[i10] = -c10;
-  }
-  return 20 * Math.log10(min);
-}
-function applyGain(samples, sr2, at2, segs, smoothSec = 4e-3) {
-  const out = new Float32Array(samples.length);
-  if (!segs.length) {
-    out.set(samples);
-    return out;
-  }
-  const lin = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
-  const a10 = 1 - Math.exp(-1 / (smoothSec * sr2));
-  let k2 = 0, y2 = lin(segs[0].dB);
-  for (let i10 = 0; i10 < samples.length; i10++) {
-    const t10 = at2 + i10 / sr2;
-    while (k2 < segs.length - 1 && t10 >= segs[k2].t1) k2++;
-    y2 += (lin(segs[k2].dB) - y2) * a10;
-    out[i10] = samples[i10] * y2;
-  }
-  return out;
-}
-function mixTracks(tracks, sr2, tailSec = 0.3) {
-  const m2 = sumTracks(tracks, sr2, tailSec);
-  return { ...m2, limitedDb: limitBus(m2.left, m2.right, sr2) };
-}
-
-// src/score/perform.ts
-var ACCENT_SEC = 0.12;
-var CONS_ROOM = 0.06;
-var MIN_GATE = 0.04;
-function gainSegments(tokens, map, spec, gateStaccato) {
-  const segs = [];
-  let any = false;
-  for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
-    const base3 = spec.dynamicsDb[dynAt(tokens, index)] ?? 0;
-    if (base3 !== 0) any = true;
-    if (tok.kind !== "note") {
-      segs.push({ t0: t02, t1: t12, dB: base3 });
-      continue;
-    }
-    const art = artOf(tok);
-    let cur = t02;
-    if (art.includes("accent") && spec.accentDb) {
-      const e10 = Math.min(t12, t02 + ACCENT_SEC);
-      segs.push({ t0: t02, t1: e10, dB: base3 + spec.accentDb });
-      cur = e10;
-      any = true;
-    }
-    if (gateStaccato && art.includes("staccato")) {
-      const g3 = Math.max(cur, t02 + (t12 - t02) * spec.staccatoGate), off1 = t12 - CONS_ROOM;
-      if (off1 - g3 > MIN_GATE) {
-        if (g3 > cur) segs.push({ t0: cur, t1: g3, dB: base3 });
-        segs.push({ t0: g3, t1: off1, dB: -Infinity }, { t0: off1, t1: t12, dB: base3 });
-        any = true;
-        continue;
-      }
-    }
-    if (t12 > cur) segs.push({ t0: cur, t1: t12, dB: base3 });
-  }
-  return any ? segs : null;
-}
-function noteEnd(t02, t12, art, o10) {
-  let end = t12;
-  if (art.includes("staccato")) end = t02 + (t12 - t02) * o10.staccatoGate;
-  if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(0.16, 0.25 * (t12 - t02)));
-  return end;
-}
-
-// src/gm/sound-cache.ts
-var CACHE = "pwa-sounds";
-var keyOf = (sha256) => `${location.origin}/__pwa-sounds__/${sha256}`;
-var MEM_MAX = 2;
-var memory = /* @__PURE__ */ new Map();
-var hasCaches = () => typeof caches !== "undefined";
-var sha256Hex = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
-function rememberInMemory(sha256, bytes) {
-  memory.delete(sha256);
-  memory.set(sha256, bytes);
-  while (memory.size > MEM_MAX) memory.delete(memory.keys().next().value);
-}
-async function cachedSound(sha256) {
-  const m2 = memory.get(sha256);
-  if (m2) {
-    rememberInMemory(sha256, m2);
-    return m2;
-  }
-  if (!hasCaches()) return null;
-  try {
-    const c10 = await caches.open(CACHE), r10 = await c10.match(keyOf(sha256));
-    if (!r10) return null;
-    const bytes = new Uint8Array(await r10.arrayBuffer());
-    if (await sha256Hex(bytes) !== sha256) {
-      await c10.delete(keyOf(sha256));
-      return null;
-    }
-    rememberInMemory(sha256, bytes);
-    return bytes;
+    return _kv.get(key);
   } catch {
     return null;
   }
 }
-async function rememberSound(sha256, bytes, persist) {
-  rememberInMemory(sha256, bytes);
-  if (!persist || !hasCaches()) return;
+function deviceKvSet(key, v) {
   try {
-    const c10 = await caches.open(CACHE);
-    await c10.put(keyOf(sha256), new Response(bytes, { headers: { "Content-Type": "application/octet-stream", "Content-Length": String(bytes.length) } }));
+    _kv.set(key, v);
   } catch {
   }
 }
-async function listCachedSounds() {
-  if (!hasCaches()) return [];
+function deviceKvGetJson(key, fallback) {
+  const raw = deviceKvGet(key);
+  if (raw == null)
+    return fallback;
   try {
-    const c10 = await caches.open(CACHE), keys = await c10.keys(), out = [];
-    for (const k2 of keys) {
-      const sha256 = k2.url.slice(k2.url.lastIndexOf("/") + 1), r10 = await c10.match(k2);
-      out.push({ sha256, bytes: Number(r10?.headers.get("Content-Length") ?? 0) });
-    }
-    return out;
+    return JSON.parse(raw);
   } catch {
-    return [];
+    return fallback;
   }
 }
-async function isSoundPersisted(sha256) {
-  if (!hasCaches()) return false;
-  try {
-    return !!await (await caches.open(CACHE)).match(keyOf(sha256));
-  } catch {
-    return false;
-  }
-}
-async function forgetSound(sha256) {
-  memory.delete(sha256);
-  if (!hasCaches()) return;
-  try {
-    await (await caches.open(CACHE)).delete(keyOf(sha256));
-  } catch {
-  }
-}
-function releaseSoundMemory() {
-  memory.clear();
-}
-function soundMemoryBytes() {
-  let n10 = 0;
-  for (const b3 of memory.values()) n10 += b3.length;
-  return n10;
-}
-async function siteStorageEstimate() {
-  try {
-    const est = await navigator.storage?.estimate?.();
-    return est?.usage !== void 0 && est.quota ? { usage: est.usage, quota: est.quota } : null;
-  } catch {
-    return null;
-  }
-}
-
-// src/gm/synth.ts
-var GmSynth = class {
-  node = null;
-  moduleAdded = null;
-  wasm = null;
-  readyP = null;
-  seq = 0;
-  pending = /* @__PURE__ */ new Map();
-  loadedSha = "";
-  loading = null;
-  presets = /* @__PURE__ */ new Map();
-  // "bank:program" → 预设下标
-  meterCb = null;
-  ctx;
-  moduleUrl;
-  wasmUrl;
-  constructor(ctx2, moduleUrl, wasmUrl) {
-    this.ctx = ctx2;
-    this.moduleUrl = moduleUrl;
-    this.wasmUrl = wasmUrl;
-  }
-  /** 装好 worklet + WASM（第一次用才做；AudioContext 可以还没解锁）。 */
-  ensure() {
-    if (this.readyP) return this.readyP;
-    this.readyP = (async () => {
-      const ctx2 = this.ctx();
-      this.moduleAdded ??= ctx2.audioWorklet.addModule(this.moduleUrl.href);
-      this.wasm ??= fetch(this.wasmUrl).then(async (r10) => {
-        if (!r10.ok) throw new Error(`TinySoundFont (standalone): HTTP ${r10.status}`);
-        return WebAssembly.compile(await r10.arrayBuffer());
-      });
-      const [, module] = await Promise.all([this.moduleAdded, this.wasm]);
-      const node = new AudioWorkletNode(ctx2, "gm-synth", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: { module } });
-      await new Promise((ok2, fail) => {
-        node.port.onmessage = (e10) => {
-          const m2 = e10.data;
-          if (m2.type === "ready") ok2();
-          else if (m2.type === "loaded") {
-            this.pending.get(m2.id)?.ok();
-            this.pending.delete(m2.id);
-            this.presets = new Map(m2.presets.map(([b3, p2], i10) => [`${b3}:${p2}`, i10]));
-          } else if (m2.type === "error") {
-            if (m2.id !== void 0) {
-              this.pending.get(m2.id)?.fail(new Error(m2.message));
-              this.pending.delete(m2.id);
-            } else fail(new Error(m2.message));
-          } else if (m2.type === "meter") this.meterCb?.(m2.peak, m2.active);
-        };
-      });
-      node.connect(ctx2.destination);
-      this.node = node;
-    })().catch((e10) => {
-      this.readyP = null;
-      throw e10;
-    });
-    return this.readyP;
-  }
-  post(m2, transfer = []) {
-    this.node?.port.postMessage(m2, transfer);
-  }
-  /** 载一份子集（同一份不重载）。 */
-  async load(sha, bytes) {
-    if (this.loadedSha === sha) return;
-    if (this.loading) await this.loading.catch(() => {
-    });
-    if (this.loadedSha === sha) return;
-    this.loading = (async () => {
-      await this.ensure();
-      const id2 = ++this.seq, copy = bytes.slice();
-      await new Promise((ok2, fail) => {
-        this.pending.set(id2, { ok: ok2, fail });
-        this.post({ type: "load", id: id2, sha, bytes: copy }, [copy.buffer]);
-      });
-      this.loadedSha = sha;
-    })().finally(() => {
-      this.loading = null;
-    });
-    return this.loading;
-  }
-  get loaded() {
-    return this.loadedSha;
-  }
-  /** 预设下标（载好的子集里按 bank:program 找；没有 = −1）。 */
-  presetIndex(bank, program) {
-    return this.presets.get(`${bank}:${program}`) ?? -1;
-  }
-  /** 按下 / 松开（t = AudioContext 的秒，不给 = 立刻）。 */
-  noteOn(bank, program, key, vel, t10) {
-    const p2 = this.presetIndex(bank, program);
-    if (p2 >= 0) this.post({ type: "noteOn", preset: p2, key, vel, t: t10 });
-  }
-  noteOff(bank, program, key, t10) {
-    const p2 = this.presetIndex(bank, program);
-    if (p2 >= 0) this.post({ type: "noteOff", preset: p2, key, t: t10 });
-  }
-  allOff() {
-    this.post({ type: "allOff" });
-  }
-  unload() {
-    this.post({ type: "unload" });
-    this.loadedSha = "";
-    this.presets.clear();
-  }
-  /** 电平表（e2e / 调试用）：每 1024 帧回报峰值和正在发声的 voice 数。 */
-  meter(cb2) {
-    this.meterCb = cb2;
-    this.post({ type: "meter", on: !!cb2 });
-  }
-  get now() {
-    return this.ctx().currentTime;
-  }
-};
-
-// src/gm/sf-key.ts
-function sfKey(written, inst, transpose = 0) {
-  if (inst.note !== void 0) return inst.note;
-  const s10 = inst.sfx, w2 = written + transpose;
-  const k2 = s10?.align && s10.midi !== void 0 && s10.centsPerKey ? Math.round(s10.key + (w2 - s10.midi) * 100 / s10.centsPerKey) : w2;
-  return Math.max(0, Math.min(127, k2));
-}
-var canAlign = (s10) => !!s10 && s10.midi !== void 0 && !!s10.centsPerKey;
-
-// src/gm/instruments.gen.ts
-var INSTRUMENT_FILES = {
-  "concepts": {
-    "file": "vendor/instruments/instruments-v10.json",
-    "bytes": 228355,
-    "sha256": "df1c5185b540e751ff1a071aa22bd35f5f0b578c01e00cfb93be59d10503cc6e"
-  },
-  "gmMap": {
-    "file": "vendor/instruments/gm-map-v10.json",
-    "bytes": 121391,
-    "sha256": "c959b6aaeea7419c081b67b827e04dab03ca217eec5ec540390e8609464a1f32"
-  },
-  "icons": {
-    "file": "vendor/instruments/instrument-icons-20261008-v10.svg",
-    "bytes": 139014,
-    "sha256": "964f057af8aa54e0075478931f5fdae5c79cddd3228189c604f8bd1cb078b5f3"
-  },
-  "iconCredits": {
-    "file": "vendor/instruments/icon-credits-v10.json",
-    "bytes": 20670,
-    "sha256": "64e36d0f5fcc1c2377357b5851f341205f6c9c5bcd0f716e830a742e059ca6a0"
-  },
-  "licenses": {
-    "file": "vendor/instruments/LICENSES-chosen-v10.md",
-    "bytes": 145790,
-    "sha256": "562d15a988fd1c6d7d2f0b09d93081880424162ef0d42381c14b171bf1439497"
-  }
-};
-var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
-
-// src/gm/catalog.ts
-var gmKey = (g3) => `${g3.bank}:${g3.program}${g3.note !== void 0 ? `:${g3.note}` : ""}`;
-function loadCatalogFromJson(concepts, gmMap) {
-  const rows = gmMap.rows, gmSelf = /* @__PURE__ */ new Map();
-  for (const r10 of rows) if (r10.relation === "self" && (r10.primary !== false || !gmSelf.has(gmKey(r10)))) gmSelf.set(gmKey(r10), r10);
-  const list = concepts.concepts;
-  return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c10) => [c10.id, c10])), gmSelf, rows, defs: concepts.defs };
-}
-var cached = null;
-var sha256Hex2 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
-async function fetchChecked(base3, k2) {
-  const e10 = INSTRUMENT_FILES[k2], r10 = await fetch(new URL(`../${e10.file}`, base3));
-  if (!r10.ok) throw new Error(`${e10.file}: HTTP ${r10.status}`);
-  const b3 = new Uint8Array(await r10.arrayBuffer());
-  if (b3.length !== e10.bytes || await sha256Hex2(b3) !== e10.sha256) throw new Error(`${e10.file} \u548C app \u5185\u5D4C\u7684\u4E0D\u4E00\u6837\uFF08\u88AB\u6539\u8FC7\uFF1F\uFF09`);
-  return b3;
-}
-function loadCatalog(base3) {
-  return cached ??= (async () => {
-    const [c10, g3] = await Promise.all([fetchChecked(base3, "concepts"), fetchChecked(base3, "gmMap")]);
-    const dec = new TextDecoder();
-    return loadCatalogFromJson(JSON.parse(dec.decode(c10)), JSON.parse(dec.decode(g3)));
-  })().catch((e10) => {
-    cached = null;
-    throw e10;
-  });
-}
-async function loadIconSprite(base3) {
-  return new TextDecoder().decode(await fetchChecked(base3, "icons"));
-}
-function providersOf(cat2, c10) {
-  const self2 = (c10.ids.gm ?? []).map((g3) => {
-    const r10 = cat2.gmSelf.get(gmKey(g3));
-    return { kind: "self", bank: g3.bank, program: g3.program, ...g3.note !== void 0 ? { note: g3.note } : {}, gmName: r10?.gmName ?? (g3.note !== void 0 ? `\u9F13\u4EF6 ${g3.note}` : `GM ${g3.program + 1}`), sound: r10?.musicxmlSound ?? c10.ids.musicxml };
-  });
-  if (self2.length) return self2;
-  return (c10.substitutes ?? []).map((s10) => ({ kind: "substitute", bank: s10.bank, program: s10.program, ...s10.note !== void 0 ? { note: s10.note } : {}, gmName: s10.gmName, sound: c10.ids.musicxml, basis: s10.basis, reason: s10.reason }));
-}
-function rangeOf(c10) {
-  const r10 = c10?.range;
-  if (r10 && Number.isFinite(r10.low) && Number.isFinite(r10.high) && r10.low <= r10.high) return { lo: r10.low, hi: r10.high, title: `${c10.names.zh}\u7684\u5E38\u7528\u97F3\u57DF${r10.basis ? `\uFF08\u4F9D\u636E\uFF1A${r10.basis}\uFF09` : ""}` };
-  return null;
-}
-function sampleKeyOf(cat2, bank, program) {
-  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === void 0 && r10.sampleKey);
-  const k2 = row?.sampleKey;
-  if (!k2 || !Number.isFinite(k2.recommended)) return null;
-  const covers = (r10) => {
-    const m2 = /^(\d+)\s*[–-]\s*(\d+)$/.exec(r10 ?? "");
-    return !m2 || k2.recommended >= +m2[1] && k2.recommended <= +m2[2];
-  };
-  const ls2 = (k2.layers ?? []).filter((l10) => covers(l10.keyRange) && l10.peakAtRecommended?.pitched && l10.centsPerKey);
-  const main = ls2.find((l10) => Math.round(l10.originalSpeedKey ?? NaN) === k2.recommended) ?? ls2[0];
-  return {
-    key: k2.recommended,
-    title: `\u539F\u901F\u952E\uFF1A\u6309\u8FD9\u4E2A\u952E\uFF0C\u91C7\u6837\u4E0D\u62C9\u4F38\u4E0D\u538B\u7F29${k2.recommendedBasis ? `\uFF08${k2.recommendedBasis}\uFF09` : ""}`,
-    ...main ? { midi: Math.round(main.peakAtRecommended.midi * 100) / 100, centsPerKey: main.centsPerKey } : {}
-  };
-}
-var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
-var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
-var roleSoundOf = (cat2, c10) => c10.ids.musicxml ?? providersOf(cat2, c10)[0]?.sound ?? null;
-var SORT_LABEL = { style: "\u6309\u66F2\u98CE", family: "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09", year: "\u6309\u5E74\u4EE3", hs: "\u6309\u53D1\u58F0\u65B9\u5F0F" };
-var HS_CLASS = { "1": "\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09", "2": "\u819C\u9E23\uFF08\u6572\u76AE\uFF09", "3": "\u5F26\u9E23\uFF08\u5F26\uFF09", "4": "\u6C14\u9E23\uFF08\u6C14\uFF09", "5": "\u7535\u9E23\uFF08\u7535\uFF09" };
-function groupConcepts(cat2, mode, query = "") {
-  const q2 = query.trim().toLowerCase();
-  const hit = (c10) => !q2 || [c10.names.zh, c10.names.en, c10.names.ja ?? ""].some((n10) => n10.toLowerCase().includes(q2));
-  const list = cat2.concepts.filter(hit);
-  const byGm = (a10, b3) => ((a10.ids.gm ?? [])[0]?.program ?? 999) - ((b3.ids.gm ?? [])[0]?.program ?? 999) || a10.names.zh.localeCompare(b3.names.zh, "zh");
-  const groups = /* @__PURE__ */ new Map();
-  const put = (id2, label, c10) => {
-    let g3 = groups.get(id2);
-    if (!g3) {
-      g3 = { id: id2, label, concepts: [] };
-      groups.set(id2, g3);
-    }
-    g3.concepts.push(c10);
-  };
-  const asItems = (gs) => gs.map((g3) => ({ id: g3.id, label: g3.label, items: g3.concepts.map((concept) => ({ concept })) }));
-  if (mode === "family") {
-    const order = new Map(cat2.defs.families.map((f2, i10) => [f2.id, i10]));
-    for (const c10 of list) {
-      const f2 = (c10.family ?? [])[0] ?? "other";
-      put(f2, cat2.defs.families.find((x2) => x2.id === f2)?.zh ?? (c10.kind === "voice" ? "\u4EBA\u58F0" : c10.kind === "sound" ? "\u97F3\u6548" : "\u5176\u4ED6"), c10);
-    }
-    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort(byGm) })));
-  }
-  if (mode === "year") {
-    const eras = cat2.defs.eras;
-    for (const c10 of list) {
-      const e10 = eras.find((x2) => x2.id === c10.era);
-      put(e10?.id ?? "unknown", e10 ? `${e10.zh}${e10.from !== null ? `\uFF08${fmtYear(e10.from)} \u8D77\uFF09` : ""}` : "\u5E74\u4EE3\u4E0D\u8BE6", c10);
-    }
-    const order = new Map(eras.map((e10, i10) => [e10.id, i10]));
-    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.year ?? 1e9) - (b3.year ?? 1e9)) })));
-  }
-  if (mode === "hs") {
-    for (const c10 of list) {
-      const k2 = c10.ids.hs?.[0] ?? "?";
-      put(k2, HS_CLASS[k2] ?? "\u5206\u7C7B\u4E0D\u8BE6", c10);
-    }
-    return asItems([...groups.values()].sort((a10, b3) => a10.id.localeCompare(b3.id)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.ids.hs ?? "~").localeCompare(b3.ids.hs ?? "~")) })));
-  }
-  return styleGroups(cat2, q2, hit);
-}
-function styleGroups(cat2, q2, hit) {
-  const groups = /* @__PURE__ */ new Map();
-  const put = (tag2, e10) => {
-    let g3 = groups.get(tag2);
-    if (!g3) {
-      g3 = { id: tag2, label: tag2 === "none" ? "\u6CA1\u8D34\u98CE\u683C" : styleLabel(cat2, tag2), items: [] };
-      groups.set(tag2, g3);
-    }
-    g3.items.push(e10);
-  };
-  const self2 = [...cat2.gmSelf.values()];
-  const styled = new Set(self2.filter((r10) => r10.styles?.length).map((r10) => r10.concept));
-  for (const r10 of self2) {
-    const c10 = cat2.byId.get(r10.concept);
-    if (!c10 || !styled.has(c10.id)) continue;
-    if (!hit(c10) && !(q2 && r10.gmName.toLowerCase().includes(q2))) continue;
-    if (!r10.styles?.length) {
-      put("none", { concept: c10, preset: r10 });
-      continue;
-    }
-    for (const s10 of r10.styles) put(s10.tag, { concept: c10, preset: r10, weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
-  }
-  for (const c10 of cat2.concepts) {
-    if (styled.has(c10.id) || !hit(c10)) continue;
-    const tags = /* @__PURE__ */ new Map();
-    for (const s10 of c10.styles ?? []) {
-      const was = tags.get(s10.tag);
-      if (!was || (s10.weight ?? 0) > was.weight) tags.set(s10.tag, { weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
-    }
-    if (!tags.size) put("none", { concept: c10 });
-    for (const [t10, w2] of tags) put(t10, { concept: c10, ...w2 });
-  }
-  const yearOf = (e10) => e10.preset?.year ?? e10.concept.year ?? 1e9, gmOf = (e10) => e10.preset?.gmNumber ?? 999;
-  return [...groups.values()].sort((a10, b3) => a10.id === "none" ? 1 : b3.id === "none" ? -1 : a10.label.localeCompare(b3.label, "zh")).map((g3) => ({ ...g3, items: g3.items.sort((a10, b3) => (b3.weight ?? 0) - (a10.weight ?? 0) || yearOf(a10) - yearOf(b3) || gmOf(a10) - gmOf(b3) || a10.concept.names.zh.localeCompare(b3.concept.names.zh, "zh")) }));
-}
-var weightLabel = (cat2, w2) => cat2.defs.weights?.find((x2) => x2.id === w2)?.zh ?? "";
-function styleLabel(cat2, tag2) {
-  const s10 = cat2.defs.styles?.find((x2) => (x2.id ?? x2.tag) === tag2);
-  return s10?.zh ?? s10?.en ?? tag2;
-}
-var fmtYear = (y2) => y2 < 0 ? `\u516C\u5143\u524D ${-y2}` : String(y2);
-var eraLabel = (cat2, c10) => cat2.defs.eras.find((e10) => e10.id === c10.era)?.zh ?? "";
-
-// src/ui/finder.ts
-var HINT = "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u4E0A\u573A\u300D\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002";
-var esc3 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
-var Finder = class {
-  el;
-  cat = null;
-  mode = "style";
-  // 默认按〇〇风（user 2026-10-08「然后音色排序默认还是画风吧。年代好玩但其实每次都要多点一次哈哈」；此前 10-07「默认按年代排哈哈哈」）
-  q = "";
-  opened = null;
-  // 展开的那一行 = 「组 id::概念 id」（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）。
-  // 记组：按曲风排时同一件乐器在好几个组里都有，只记概念 = 每个组里的它都展开、滚去第一个（user 2026-10-08「在一个category里面选择一个乐器，会跳到第一个出现这个乐器的category」）
-  selected = "";
-  // 试听台上的提供者（`${概念 id}|${bank}:${program}` / `${概念 id}|voice`）
-  loading = null;
-  playOnly = false;
-  // 从歌库进的 = 只弹着玩：不出「上场」，返回回歌库
-  host;
-  constructor(parent, host) {
-    this.host = host;
-    this.el = document.createElement("div");
-    this.el.className = "finder";
-    this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select><button class="btn finder-pad" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="finder-hint">${HINT}</div><div class="finder-jump" hidden><span>\u8DF3\u5230</span><select class="finder-jump-sel" title="\u5217\u8868\u6EDA\u5230\u8FD9\u4E00\u7EC4"></select></div><div class="finder-list"><div class="finder-empty">\u52A0\u8F7D\u76EE\u5F55\u2026</div></div>`;
-    parent.append(this.el);
-    this.el.querySelector(".finder-q").addEventListener("input", (e10) => {
-      this.q = e10.target.value;
-      this.render();
-    });
-    this.el.querySelector(".finder-sort").addEventListener("change", (e10) => {
-      this.mode = e10.target.value;
-      this.render();
-    });
-    this.el.querySelector(".finder-jump-sel").addEventListener("change", (e10) => this.jumpTo(Number(e10.target.value)));
-    this.el.addEventListener("click", (e10) => void this.onClick(e10));
-    let raf = 0;
-    this.el.querySelector(".finder-list").addEventListener("scroll", () => {
-      if (!raf) raf = requestAnimationFrame(() => {
-        raf = 0;
-        this.markJump();
-      });
-    }, { passive: true });
-  }
-  get isOpen() {
-    return !this.el.hidden;
-  }
-  /** 顶条「键盘」钮亮不亮（宿主在键盘开 / 关时告诉它）。 */
-  setPadShown(on2) {
-    this.el.querySelector(".finder-pad")?.classList.toggle("is-on", on2);
-  }
-  async show(o10 = {}) {
-    this.el.hidden = false;
-    this.playOnly = !!o10.playOnly;
-    this.el.querySelector(".finder-title").textContent = this.playOnly ? "\u4E50\u5668\u76EE\u5F55\uFF08\u5F39\u7740\u73A9\uFF09" : `\u627E\u4EBA\u7ED9\u300C${this.host.roleName()}\u300D`;
-    this.el.querySelector('[data-v="back"]').textContent = this.playOnly ? "\u2190 \u6B4C\u5E93" : "\u2190 \u8C31";
-    this.el.querySelector(".finder-hint").textContent = this.playOnly ? "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u952E\u76D8\u5F39\u7740\u73A9\u3002\u8981\u7ED9\u6B4C\u91CC\u7684\u58F0\u90E8\u9009\u4E50\u5668\uFF1A\u5F00\u4E00\u9996\u6B4C\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u3002" : HINT;
-    this.el.querySelector(".finder-sort").value = this.mode;
-    if (!this.cat) {
-      this.loading ??= (async () => {
-        const [cat2, sprite] = await Promise.all([loadCatalog(this.host.base), loadIconSprite(this.host.base)]);
-        const doc2 = new DOMParser().parseFromString(sprite, "image/svg+xml"), svg = doc2.documentElement;
-        if (svg.tagName.toLowerCase() === "svg") {
-          const node = document.importNode(svg, true);
-          node.setAttribute("style", "display:none");
-          this.el.prepend(node);
-        }
-        this.cat = cat2;
-      })().catch((e10) => {
-        this.el.querySelector(".finder-list").innerHTML = `<div class="finder-empty">\u76EE\u5F55\u52A0\u8F7D\u4E0D\u4E86\uFF1A${esc3(e10.message)}</div>`;
-        throw e10;
-      }).finally(() => {
-        this.loading = null;
-      });
-      await this.loading;
-    }
-    this.render();
-  }
-  hide() {
-    this.el.hidden = true;
-  }
-  pickOf(key) {
-    if (!this.cat) return null;
-    const [cid, rest] = key.split("|"), c10 = this.cat.byId.get(cid);
-    if (!c10) return null;
-    if (rest === "voice") return { kind: "voice", concept: c10 };
-    const p2 = providersOf(this.cat, c10).find((x2) => gmKey(x2) === rest);
-    return p2 ? { kind: "gs", concept: c10, provider: p2 } : null;
-  }
-  async onClick(e10) {
-    const t10 = e10.target, btn = t10.closest("[data-v]"), row = t10.closest(".inst-row"), prov = t10.closest(".prov");
-    const rowOf = (el2) => el2.closest(".inst-prov")?.previousElementSibling?.dataset.o ?? "";
-    const v = btn?.dataset.v;
-    if (v === "back") {
-      this.host.close();
-      return;
-    }
-    if (v === "pad") {
-      this.host.togglePad();
-      return;
-    }
-    if (v && btn) {
-      const key = btn.closest("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key);
-      if (!pick) return;
-      if (v === "play") {
-        await this.host.playHead(pick);
-        return;
-      }
-      if (v === "cast") {
-        await this.host.cast(pick);
-        return;
-      }
-    }
-    if (prov) {
-      const key = prov.dataset.p;
-      if (this.selected !== key) {
-        this.selected = key;
-        this.renderAnchored(rowOf(prov));
-        await this.host.audition(this.pickOf(key));
-      }
-      return;
-    }
-    if (row) {
-      const id2 = row.dataset.c, o10 = row.dataset.o;
-      if (this.opened === o10) this.opened = null;
-      else {
-        this.opened = o10;
-        const c10 = this.cat.byId.get(id2), pk = row.dataset.k, first = providersOf(this.cat, c10).find((x2) => !pk || gmKey(x2) === pk);
-        const key = first ? `${id2}|${gmKey(first)}` : c10.kind === "voice" ? `${id2}|voice` : "";
-        this.selected = key;
-        this.renderAnchored(o10, true);
-        if (key) await this.host.audition(this.pickOf(key));
-        return;
-      }
-      this.renderAnchored(o10);
-    }
-  }
-  render() {
-    const list = this.el.querySelector(".finder-list");
-    if (!this.cat) return;
-    const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector(".finder-jump");
-    jump.hidden = groups.length < 2;
-    jump.querySelector("select").innerHTML = groups.map((g3, k2) => `<option value="${k2}">${esc3(g3.label)} \xB7 ${g3.items.length} \u4EF6</option>`).join("");
-    if (!groups.length) {
-      list.innerHTML = `<div class="finder-empty">\u6CA1\u6709\u53EB\u300C${esc3(this.q)}\u300D\u7684</div>`;
-      return;
-    }
-    list.innerHTML = groups.map((g3, k2) => `<div class="finder-group" data-g="${k2}"><div class="finder-group-h">${esc3(g3.label)}<span>${g3.items.length}</span></div>${g3.items.map((e10) => this.rowHtml(e10, g3.id)).join("")}</div>`).join("");
-    this.markJump();
-  }
-  /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
-   *  点另一件 = 上面展开的那件收起，整张列表往上缩，原来又用 scrollIntoView 去追选中项、在 iPad 上还会连外层一起滚——手指底下那行就跑了）。
-   *  reveal = 刚展开的：它的「谁能演」露不全就往上挪一点，但这一行不挪到组头底下。只滚列表自己。 */
-  renderAnchored(anchor, reveal = false) {
-    const list = this.el.querySelector(".finder-list"), sel = `.inst-row[data-o="${CSS.escape(anchor)}"]`;
-    const before = list.querySelector(sel)?.getBoundingClientRect().top;
-    this.render();
-    const row = list.querySelector(sel);
-    if (!row || before === void 0) return;
-    list.scrollTop += row.getBoundingClientRect().top - before;
-    if (!reveal) return;
-    const body2 = row.nextElementSibling;
-    if (!body2?.classList.contains("inst-prov")) return;
-    const lr2 = list.getBoundingClientRect(), hdr = row.closest(".finder-group")?.querySelector(".finder-group-h")?.offsetHeight ?? 0;
-    const over = body2.getBoundingClientRect().bottom - lr2.bottom, room = row.getBoundingClientRect().top - (lr2.top + hdr);
-    if (over > 0 && room > 0) list.scrollTop += Math.min(over, room);
-    this.markJump();
-  }
-  /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）。 */
-  jumpTo(k2) {
-    const list = this.el.querySelector(".finder-list"), g3 = list.querySelector(`[data-g="${k2}"]`);
-    if (!g3) return;
-    list.scrollTop += g3.getBoundingClientRect().top - list.getBoundingClientRect().top;
-    this.markJump();
-  }
-  /** 跳转下拉显示「现在在哪一组」（组头顶到列表顶的最后一组）。滚到底时：最后几组短、组头顶不到列表顶——人刚选的那组比算出来的靠后就留着它，不往回弹。 */
-  markJump() {
-    const list = this.el.querySelector(".finder-list"), jump = this.el.querySelector(".finder-jump");
-    if (jump.hidden) return;
-    const sel = jump.querySelector("select"), top = list.getBoundingClientRect().top + 1;
-    let cur = 0;
-    for (const g3 of list.querySelectorAll("[data-g]")) {
-      if (g3.getBoundingClientRect().top <= top) cur = Number(g3.dataset.g);
-      else break;
-    }
-    const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
-    if (atBottom && Number(sel.value) > cur) return;
-    if (sel.value !== String(cur)) sel.value = String(cur);
-  }
-  rowHtml(e10, groupId) {
-    const cat2 = this.cat, c10 = e10.concept, pk = e10.preset ? gmKey(e10.preset) : "", o10 = `${groupId}::${c10.id}${pk ? `::${pk}` : ""}`, open = this.opened === o10, icon = c10.icon?.id;
-    const w2 = e10.weight ?? 0, stars = w2 ? `<span class="inst-w" title="${esc3(weightLabel(cat2, w2))}">${"\u2605".repeat(w2)}</span>` : "";
-    const asName = e10.as ? cat2.byId.get(e10.as)?.names.zh ?? e10.as : "", asTag = asName ? `<span class="inst-as" title="\u5728\u8FD9\u79CD\u98CE\u91CC\u9876\u66FF\u300C${esc3(asName)}\u300D">\u9876 ${esc3(asName)}</span>` : "";
-    const year = e10.preset?.year ?? c10.year, approx = e10.preset ? !!e10.preset.yearApprox : c10.yearApprox;
-    const meta = [eraLabel(cat2, c10), year !== null && year !== void 0 ? `${approx ? "\u7EA6 " : ""}${fmtYear(year)}` : ""].filter(Boolean).join(" \xB7 ");
-    let body2 = "";
-    if (open) {
-      const provs = providersOf(cat2, c10).filter((x2) => !pk || gmKey(x2) === pk), pitched = c10.kind === "voice";
-      const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast">\u4E0A\u573A</button>`}</div></div>`;
-      body2 = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? `\u9F13\u4EF6 \xB7 ${esc3(p2.gmName)}\uFF08Standard \u9F13\u7EC4\u7684 ${p2.note} \u53F7\u952E\uFF09` : p2.bank === 128 ? `\u9F13\u7EC4 \xB7 ${esc3(p2.gmName)}` : `GeneralUser GS \xB7 ${esc3(p2.gmName)}`}`, p2.kind === "substitute" ? `\u9876\u66FF${p2.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p2.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p2.basis === "imitation" ? "\uFF08\u4EFF\u58F0\uFF09" : p2.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p2.reason ? `\uFF1A${esc3(p2.reason)}` : ""}` : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
-    }
-    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}"${pk ? ` data-k="${esc3(pk)}"` : ""}>` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c10.names.zh)}${e10.preset ? `<span class="inst-preset"> \xB7 ${esc3(e10.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body2;
-  }
-};
-
-// src/ui/studio.ts
-var esc4 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
-var panText = (p2) => Math.abs(p2) < 0.025 ? "\u4E2D" : p2 < 0 ? `\u5DE6 ${Math.round(-p2 * 100)}` : `\u53F3 ${Math.round(p2 * 100)}`;
-var dbText = (d3) => `${d3 > 0 ? "+" : ""}${d3.toFixed(1)} dB`;
-var Studio = class {
-  constructor(parent, host) {
-    this.host = host;
-    this.el = document.createElement("div");
-    this.el.className = "studio";
-    this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title">\u5F55\u97F3\u5BA4</span><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="finder-hint">\u6BCF\u4E2A\u58F0\u90E8\u4E00\u6761\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\u3002\u589E\u76CA\u548C\u58F0\u50CF\u5B58\u8FDB\u6B4C\uFF08\u5F55\u97F3\u623F\uFF09\uFF1B\u9759\u97F3 / \u72EC\u594F\u53EA\u662F\u8FD9\u6B21\u3002\u8C31\u4E0A\u4F1A\u7ED9\u9759\u97F3 / \u72EC\u594F\u6253\u89D2\u6807\u3002</div><div class="studio-strips"></div>`;
-    parent.append(this.el);
-    this.el.addEventListener("click", (e10) => {
-      const t10 = e10.target, v = t10.closest("[data-v]")?.dataset.v, strip = t10.closest(".strip")?.dataset.id;
-      if (v === "back") this.host.close();
-      else if (v === "play") this.host.play();
-      else if (v === "mute" && strip) {
-        this.host.toggleMute(strip);
-        this.render();
-      } else if (v === "solo" && strip) {
-        this.host.toggleSolo(strip);
-        this.render();
-      }
-    });
-    this.el.addEventListener("input", (e10) => {
-      const t10 = e10.target, strip = t10.closest(".strip");
-      if (!strip) return;
-      const id2 = strip.dataset.id, out = t10.parentElement?.querySelector("output");
-      if (t10.dataset.gain !== void 0) {
-        this.host.setGain(id2, Number(t10.value));
-        if (out) out.textContent = dbText(Number(t10.value));
-      } else if (t10.dataset.pan !== void 0) {
-        this.host.setPan(id2, Number(t10.value));
-        if (out) out.textContent = panText(Number(t10.value));
-      }
-    });
-    this.el.addEventListener("dblclick", (e10) => {
-      const t10 = e10.target, strip = t10.closest(".strip");
-      if (!strip || t10.tagName !== "INPUT") return;
-      if (t10.dataset.gain !== void 0) this.host.setGain(strip.dataset.id, 0);
-      else if (t10.dataset.pan !== void 0) this.host.setPan(strip.dataset.id, 0);
-      this.render();
-    });
-  }
-  el;
-  get isOpen() {
-    return !this.el.hidden;
-  }
-  show() {
-    this.el.hidden = false;
-    this.render();
-  }
-  hide() {
-    this.el.hidden = true;
-  }
-  render() {
-    const box = this.el.querySelector(".studio-strips");
-    box.innerHTML = this.host.strips().map((s10) => `<div class="strip" data-id="${esc4(s10.id)}"><div class="strip-name">${esc4(s10.name)}</div><div class="strip-who">${esc4(s10.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s10.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s10.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label><div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div></div>`).join("");
-  }
-};
-
-// src/gm/sf2-subset.ts
-var REC = { phdr: 38, pbag: 4, pmod: 10, pgen: 4, inst: 22, ibag: 4, imod: 10, igen: 4, shdr: 46 };
-var GEN_INSTRUMENT = 41;
-var GEN_SAMPLE_ID = 53;
-var ZERO_TAIL = 46;
-var tag = (b3, o10) => String.fromCharCode(b3[o10], b3[o10 + 1], b3[o10 + 2], b3[o10 + 3]);
-var plain = (b3) => b3.constructor === Uint8Array ? b3 : new Uint8Array(b3.buffer, b3.byteOffset, b3.byteLength);
-function parse(b3) {
-  const dv = new DataView(b3.buffer, b3.byteOffset, b3.byteLength);
-  if (tag(b3, 0) !== "RIFF" || tag(b3, 8) !== "sfbk") throw new Error("sf2: not a SoundFont 2 file");
-  let info2 = null, smpl = null;
-  const pdta = {};
-  let o10 = 12;
-  while (o10 + 8 <= b3.length) {
-    const id2 = tag(b3, o10), size = dv.getUint32(o10 + 4, true), data = o10 + 8;
-    if (id2 === "LIST") {
-      const kind = tag(b3, data);
-      if (kind === "INFO") info2 = b3.subarray(o10, data + size);
-      else {
-        let p2 = data + 4;
-        while (p2 + 8 <= data + size) {
-          const sid = tag(b3, p2), ssize = dv.getUint32(p2 + 4, true);
-          if (kind === "sdta" && sid === "smpl") smpl = { off: p2 + 8, size: ssize };
-          if (kind === "pdta" && sid in REC) pdta[sid] = { off: p2 + 8, size: ssize };
-          p2 += 8 + ssize + (ssize & 1);
-        }
-      }
-    }
-    o10 = data + size + (size & 1);
-  }
-  if (!info2 || !smpl) throw new Error("sf2: missing INFO or sample data");
-  for (const k2 of Object.keys(REC)) if (!pdta[k2]) throw new Error(`sf2: missing ${k2}`);
-  return { info: info2, smpl, pdta };
-}
-var nameOf = (b3, o10) => {
-  let s10 = "";
-  for (let i10 = 0; i10 < 20 && b3[o10 + i10]; i10++) s10 += String.fromCharCode(b3[o10 + i10]);
-  return s10;
-};
-function listSf2Presets(input) {
-  const bytes = plain(input);
-  const { pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const n10 = pdta.phdr.size / REC.phdr - 1, out = [];
-  for (let i10 = 0; i10 < n10; i10++) {
-    const o10 = pdta.phdr.off + i10 * REC.phdr;
-    out.push({ name: nameOf(bytes, o10), program: dv.getUint16(o10 + 20, true), bank: dv.getUint16(o10 + 22, true) });
-  }
-  return out;
-}
-function subsetSf2(input, want) {
-  const bytes = plain(input);
-  const { info: info2, smpl, pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const count = (k2) => pdta[k2].size / REC[k2];
-  const at2 = (k2, i10) => pdta[k2].off + i10 * REC[k2];
-  const u162 = (k2, i10, field) => dv.getUint16(at2(k2, i10) + field, true);
-  const nP2 = count("phdr") - 1;
-  const wantKey = new Set(want.map((w2) => `${w2.bank}:${w2.program}`));
-  const presets = [];
-  for (let i10 = 0; i10 < nP2; i10++) if (wantKey.has(`${u162("phdr", i10, 22)}:${u162("phdr", i10, 20)}`)) presets.push(i10);
-  const found = new Set(presets.map((i10) => `${u162("phdr", i10, 22)}:${u162("phdr", i10, 20)}`));
-  const missing = [...wantKey].filter((k2) => !found.has(k2));
-  if (missing.length) throw new Error(`sf2: presets not in this bank: ${missing.join(", ")}`);
-  const instSet = /* @__PURE__ */ new Set();
-  for (const i10 of presets) for (let b3 = u162("phdr", i10, 24); b3 < u162("phdr", i10 + 1, 24); b3++)
-    for (let g3 = u162("pbag", b3, 0); g3 < u162("pbag", b3 + 1, 0); g3++) if (u162("pgen", g3, 0) === GEN_INSTRUMENT) instSet.add(u162("pgen", g3, 2));
-  const insts = [...instSet].sort((a10, b3) => a10 - b3), instMap = new Map(insts.map((v, i10) => [v, i10]));
-  const nS2 = count("shdr") - 1, sampleSet = /* @__PURE__ */ new Set();
-  for (const j2 of insts) for (let b3 = u162("inst", j2, 20); b3 < u162("inst", j2 + 1, 20); b3++)
-    for (let g3 = u162("ibag", b3, 0); g3 < u162("ibag", b3 + 1, 0); g3++) if (u162("igen", g3, 0) === GEN_SAMPLE_ID) sampleSet.add(u162("igen", g3, 2));
-  for (const s10 of [...sampleSet]) {
-    const type = u162("shdr", s10, 44), link = u162("shdr", s10, 42);
-    if (type & 14 && link < nS2) sampleSet.add(link);
-  }
-  const samples = [...sampleSet].sort((a10, b3) => a10 - b3), sampleMap = new Map(samples.map((v, i10) => [v, i10]));
-  const out = { phdr: [], pbag: [], pmod: [], pgen: [], inst: [], ibag: [], imod: [], igen: [], shdr: [] };
-  const copy = (k2, i10, patch) => {
-    const rec = bytes.slice(at2(k2, i10), at2(k2, i10) + REC[k2]);
-    patch?.(rec);
-    out[k2].push(...rec);
-  };
-  const w16 = (rec, o10, v) => {
-    rec[o10] = v & 255;
-    rec[o10 + 1] = v >> 8 & 255;
-  };
-  const w32 = (rec, o10, v) => {
-    w16(rec, o10, v & 65535);
-    w16(rec, o10 + 2, v >>> 16 & 65535);
-  };
-  let nBag = 0, nGen = 0, nMod = 0;
-  for (const i10 of presets) {
-    copy("phdr", i10, (r10) => w16(r10, 24, nBag));
-    for (let b3 = u162("phdr", i10, 24); b3 < u162("phdr", i10 + 1, 24); b3++) {
-      copy("pbag", b3, (r10) => {
-        w16(r10, 0, nGen);
-        w16(r10, 2, nMod);
-      });
-      nBag++;
-      for (let g3 = u162("pbag", b3, 0); g3 < u162("pbag", b3 + 1, 0); g3++) {
-        copy("pgen", g3, (r10) => {
-          if (u162("pgen", g3, 0) === GEN_INSTRUMENT) w16(r10, 2, instMap.get(u162("pgen", g3, 2)));
-        });
-        nGen++;
-      }
-      for (let m2 = u162("pbag", b3, 2); m2 < u162("pbag", b3 + 1, 2); m2++) {
-        copy("pmod", m2);
-        nMod++;
-      }
-    }
-  }
-  copy("phdr", nP2, (r10) => w16(r10, 24, nBag));
-  out.pbag.push(...new Uint8Array(REC.pbag));
-  const pb = out.pbag.length - REC.pbag;
-  out.pbag[pb] = nGen & 255;
-  out.pbag[pb + 1] = nGen >> 8;
-  out.pbag[pb + 2] = nMod & 255;
-  out.pbag[pb + 3] = nMod >> 8;
-  out.pgen.push(...new Uint8Array(REC.pgen));
-  out.pmod.push(...new Uint8Array(REC.pmod));
-  nBag = 0;
-  nGen = 0;
-  nMod = 0;
-  for (const j2 of insts) {
-    copy("inst", j2, (r10) => w16(r10, 20, nBag));
-    for (let b3 = u162("inst", j2, 20); b3 < u162("inst", j2 + 1, 20); b3++) {
-      copy("ibag", b3, (r10) => {
-        w16(r10, 0, nGen);
-        w16(r10, 2, nMod);
-      });
-      nBag++;
-      for (let g3 = u162("ibag", b3, 0); g3 < u162("ibag", b3 + 1, 0); g3++) {
-        copy("igen", g3, (r10) => {
-          if (u162("igen", g3, 0) === GEN_SAMPLE_ID) w16(r10, 2, sampleMap.get(u162("igen", g3, 2)));
-        });
-        nGen++;
-      }
-      for (let m2 = u162("ibag", b3, 2); m2 < u162("ibag", b3 + 1, 2); m2++) {
-        copy("imod", m2);
-        nMod++;
-      }
-    }
-  }
-  copy("inst", count("inst") - 1, (r10) => w16(r10, 20, nBag));
-  out.ibag.push(...new Uint8Array(REC.ibag));
-  const ib2 = out.ibag.length - REC.ibag;
-  out.ibag[ib2] = nGen & 255;
-  out.ibag[ib2 + 1] = nGen >> 8;
-  out.ibag[ib2 + 2] = nMod & 255;
-  out.ibag[ib2 + 3] = nMod >> 8;
-  out.igen.push(...new Uint8Array(REC.igen));
-  out.imod.push(...new Uint8Array(REC.imod));
-  const pieces = [];
-  let pos = 0;
-  const u32 = (k2, i10, field) => dv.getUint32(at2(k2, i10) + field, true);
-  for (const s10 of samples) {
-    const start = u32("shdr", s10, 20), end = u32("shdr", s10, 24), len = end - start;
-    copy("shdr", s10, (r10) => {
-      w32(r10, 20, pos);
-      w32(r10, 24, pos + len);
-      w32(r10, 28, pos + (u32("shdr", s10, 28) - start));
-      w32(r10, 32, pos + (u32("shdr", s10, 32) - start));
-      const link = u162("shdr", s10, 42), ns2 = sampleMap.get(link);
-      if (ns2 === void 0) {
-        w16(r10, 42, 0);
-        w16(r10, 44, 1);
-      } else w16(r10, 42, ns2);
-    });
-    pieces.push(bytes.subarray(smpl.off + start * 2, smpl.off + end * 2), new Uint8Array(ZERO_TAIL * 2));
-    pos += len + ZERO_TAIL;
-  }
-  copy("shdr", nS2);
-  const chunk = (id2, data) => {
-    const d3 = data instanceof Uint8Array ? data : Uint8Array.from(data), pad4 = d3.length & 1;
-    const r10 = new Uint8Array(8 + d3.length + pad4);
-    r10.set([...id2].map((c10) => c10.charCodeAt(0)), 0);
-    new DataView(r10.buffer).setUint32(4, d3.length, true);
-    r10.set(d3, 8);
-    return r10;
-  };
-  const list = (kind, parts) => chunk("LIST", concat([Uint8Array.from([...kind].map((c10) => c10.charCodeAt(0))), ...parts]));
-  const sdta = list("sdta", [chunk("smpl", concat(pieces))]);
-  const pdtaOut = list("pdta", Object.keys(REC).map((k2) => chunk(k2, out[k2])));
-  const body2 = concat([Uint8Array.from([..."sfbk"].map((c10) => c10.charCodeAt(0))), info2, sdta, pdtaOut]);
-  return chunk("RIFF", body2);
-}
-function concat(parts) {
-  const n10 = parts.reduce((s10, p2) => s10 + p2.length, 0), r10 = new Uint8Array(n10);
-  let o10 = 0;
-  for (const p2 of parts) {
-    r10.set(p2, o10);
-    o10 += p2.length;
-  }
-  return r10;
-}
-function sf2Info(input) {
-  const bytes = plain(input), { info: info2 } = parse(bytes), dv = new DataView(info2.buffer, info2.byteOffset, info2.byteLength);
-  const out = {}, map = { INAM: "name", IENG: "engineer", ICOP: "copyright", ICMT: "comment", IPRD: "product" };
-  let p2 = 12;
-  while (p2 + 8 <= info2.length) {
-    const id2 = tag(info2, p2), size = dv.getUint32(p2 + 4, true), key = map[id2];
-    if (key) {
-      let s10 = "";
-      for (let i10 = 0; i10 < size && info2[p2 + 8 + i10]; i10++) s10 += String.fromCharCode(info2[p2 + 8 + i10]);
-      out[key] = s10.trim();
-    }
-    p2 += 8 + size + (size & 1);
-  }
-  return out;
-}
-
-// src/app/doc-file.ts
-var TYPES2 = [{ description: "MusicXML \u4E50\u8C31\uFF08MoonSinger \u5B58\u6210 .mxl\uFF09", accept: {
-  "application/vnd.recordare.musicxml": [".mxl"],
-  "application/vnd.recordare.musicxml+xml": [".musicxml", ".xml"]
-} }];
-var ACCEPT = ".mxl,.musicxml,.xml";
-var accepts = (name) => /\.(mxl|musicxml|xml)$/i.test(name);
-var g = globalThis;
-var topLevel = () => {
-  try {
-    return window.self === window.top;
-  } catch {
-    return false;
-  }
-};
-var canPickOpen = () => topLevel() && typeof g.showOpenFilePicker === "function";
-var canPickSave = () => topLevel() && typeof g.showSaveFilePicker === "function";
-var aborted = (e10) => e10.name === "AbortError";
-async function fromFile(f2, handle) {
-  return { name: f2.name, bytes: new Uint8Array(await f2.arrayBuffer()), handle, mtime: f2.lastModified };
-}
-async function pickOpen() {
-  if (canPickOpen()) {
-    let hs;
-    try {
-      hs = await g.showOpenFilePicker({ types: TYPES2, multiple: false, excludeAcceptAllOption: false });
-    } catch (e10) {
-      if (aborted(e10)) return null;
-      throw e10;
-    }
-    return readHandle(hs[0]);
-  }
-  return new Promise((resolve, reject) => {
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = ACCEPT;
-    inp.hidden = true;
-    inp.addEventListener("change", async () => {
-      const f2 = inp.files?.[0];
-      inp.remove();
-      if (!f2) {
-        resolve(null);
-        return;
-      }
-      try {
-        resolve(await fromFile(f2, null));
-      } catch (e10) {
-        reject(e10);
-      }
-    }, { once: true });
-    document.body.append(inp);
-    inp.click();
-  });
-}
-async function readHandle(h2) {
-  return fromFile(await h2.getFile(), h2);
-}
-async function pickSave(suggestedName) {
-  try {
-    return await g.showSaveFilePicker({ suggestedName, types: TYPES2 });
-  } catch (e10) {
-    if (aborted(e10)) return null;
-    throw e10;
-  }
-}
-async function writeTo(h2, bytes) {
-  const w2 = await h2.createWritable();
-  await w2.write(bytes);
-  await w2.close();
-}
-async function mtime(h2) {
-  try {
-    return (await h2.getFile()).lastModified;
-  } catch {
-    return null;
-  }
-}
-var isStale = (seen, now) => seen != null && now != null && seen !== now;
-function grabDrop(dt) {
-  for (const it2 of [...dt.items ?? []]) {
-    if (it2.kind !== "file") continue;
-    const file = it2.getAsFile();
-    if (!file || !accepts(file.name)) continue;
-    const handle = it2.getAsFileSystemHandle ? it2.getAsFileSystemHandle().then((h2) => h2 && h2.kind === "file" ? h2 : null, () => null) : Promise.resolve(null);
-    return { file, handle };
-  }
-  for (const file of [...dt.files ?? []]) if (accepts(file.name)) return { file, handle: Promise.resolve(null) };
-  return null;
-}
-async function fromGrab(gr) {
-  return fromFile(gr.file, await gr.handle);
-}
-function consumeLaunchFiles(cb2) {
-  const lq2 = globalThis.launchQueue;
-  if (!lq2) return;
-  lq2.setConsumer((p2) => {
-    for (const f2 of p2.files ?? []) {
-      const h2 = f2;
-      if (accepts(h2.name)) cb2(h2);
-    }
-  });
-}
-
-// src/app/main.ts
-init_fflate_esm();
-
-// src/app/names.ts
-function defaultStem(now = /* @__PURE__ */ new Date()) {
-  const z2 = (n10) => String(n10).padStart(2, "0");
-  let r10;
-  try {
-    r10 = crypto.getRandomValues(new Uint16Array(1))[0];
-  } catch {
-    r10 = Math.floor(Math.random() * 65536);
-  }
-  return `${now.getFullYear()}${z2(now.getMonth() + 1)}${z2(now.getDate())}-${r10.toString(16).padStart(4, "0")}`;
-}
-var fileSafe = (s10) => s10.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim();
-function stampedCopy(stem, now = /* @__PURE__ */ new Date()) {
-  const z2 = (n10) => String(n10).padStart(2, "0");
-  return `${stem}-${now.getFullYear()}${z2(now.getMonth() + 1)}${z2(now.getDate())}-${z2(now.getHours())}${z2(now.getMinutes())}`;
+function deviceKvSetJson(key, v) {
+  deviceKvSet(key, v === void 0 ? null : JSON.stringify(v));
 }
 
 // node_modules/@internal/store/dist/substrate.js
@@ -12303,7 +9637,7 @@ function collectionLocalKey(name) {
 }
 var SEED_UAT = 1;
 var encode = (f2) => new TextEncoder().encode(JSON.stringify(f2));
-var decode2 = (text2) => parseFolderBlob(text2);
+var decode = (text2) => parseFolderBlob(text2);
 function emptyCollectionBytes() {
   return encode(emptyFolder());
 }
@@ -12313,7 +9647,7 @@ var valueOf = (e10) => e10.value;
 var isTombstone = (e10) => valueOf(e10) === null;
 function createCollection(cfg) {
   const { cloud, name, isOnline, syncDelayMs = 1500, now = () => Date.now(), manual = false, local, localWriteDelayMs = 400, getInitData } = cfg;
-  const flow = createFolderFlow({ cloud, name, encode, decode: decode2, isOnline });
+  const flow = createFolderFlow({ cloud, name, encode, decode, isOnline });
   let env2 = emptyFolder();
   let timer = null;
   let ready = false;
@@ -13605,8 +10939,8 @@ function storeNamespace(appId, databaseId) {
   const root = `${appId}.${databaseId}`;
   return { root, dbName: root, schemaKey: "database-version" };
 }
-var MIGRATIONS2 = [];
-async function runMigrations(ctx2, migrations = MIGRATIONS2) {
+var MIGRATIONS = [];
+async function runMigrations(ctx2, migrations = MIGRATIONS) {
   for (const m2 of migrations) {
     if (!needsMigration(ctx2.kv.get(ctx2.ns.schemaKey), m2.version))
       continue;
@@ -13771,7 +11105,7 @@ var STORE_TEXT_EN = {
   "folder.creating": "Creating folder\u2026",
   "folder.deleting": "Deleting folder\u2026"
 };
-function interpolate(s10, params) {
+function interpolate2(s10, params) {
   if (!params)
     return s10;
   return s10.replace(/\{(\w+)\}/g, (m2, k2) => k2 in params ? params[k2] : m2);
@@ -13781,7 +11115,7 @@ function resolveStoreText(custom, key, params) {
   if (fromHost != null)
     return fromHost;
   const base3 = STORE_TEXT_EN[key];
-  return base3 != null ? interpolate(base3, params) : String(key);
+  return base3 != null ? interpolate2(base3, params) : String(key);
 }
 
 // node_modules/@internal/store/dist/create-store.js
@@ -13940,11 +11274,11 @@ function createStore(config) {
   const dequeueFolderDel = (p2) => writeFolderDel(readFolderDel().filter((x2) => x2 !== p2));
   function cancelFolderDeletionForDescendant(path) {
     const q2 = readFolderDel();
-    const keep = q2.filter((f2) => !(path === f2 || path.startsWith(`${f2}/`)));
-    if (keep.length !== q2.length) {
-      writeFolderDel(keep);
+    const keep2 = q2.filter((f2) => !(path === f2 || path.startsWith(`${f2}/`)));
+    if (keep2.length !== q2.length) {
+      writeFolderDel(keep2);
       for (const f2 of q2)
-        if (!keep.includes(f2))
+        if (!keep2.includes(f2))
           notifyFolderOf(f2);
     }
   }
@@ -15727,391 +13061,6 @@ function createOneDriveProvider(config = {}) {
     // CloudProvider（喂 createCloudSync）
     auth: { isAuthConfigured, initAuth, signIn, signOut, getToken, isSignedIn, getActiveAccount, retrySilentSignIn, onAuthChanged, getAuthState }
   };
-}
-
-// src/config.ts
-var APP_ID = "moonsinger";
-var CLIENT_ID2 = "ce612efe-ea39-4a52-872d-550cd9f7d71b";
-var AUTHORITY2 = "https://login.microsoftonline.com/consumers";
-var SCOPES2 = ["Files.ReadWrite.AppFolder", "offline_access"];
-var MSAL_URL2 = "./vendor/msal/msal-browser.min.js";
-var SONG_SUFFIX = ".mxl";
-var LOCAL_SAVE_DEBOUNCE_MS = 2e3;
-var PUSH_DEBOUNCE_MS = 15e3;
-var PUSH_HEARTBEAT_MS = 3e4;
-
-// src/identifiers.ts
-var SONG_KIND = "song";
-var DOC_KINDS = Object.freeze([
-  { kind: SONG_KIND, suffix: SONG_SUFFIX, container: "zip" }
-]);
-var identifiers = createIdentifiers(DOC_KINDS);
-
-// node_modules/@internal/gallery/dist/core/text.js
-var GALLERY_TEXT = {
-  "bk.andMore": { zh: "\u2026\u2026\u7B49 {n} \u4EF6\uFF08\u5168\u91CF\u540D\u5355\u5728\u5305\u5185 backup-manifest.txt\uFF09", en: "\u2026and {n} more (full list in backup-manifest.txt inside the zip)", ja: "\u2026\u307B\u304B {n} \u4EF6\uFF08\u5168\u30EA\u30B9\u30C8\u306F zip \u5185\u306E backup-manifest.txt\uFF09" },
-  "bk.done": { zh: "\u5DF2\u4E0B\u8F7D\u5907\u4EFD {name}\uFF08{n} \u4EF6\uFF09", en: "Backup downloaded: {name} ({n} files)", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F\uFF1A{name}\uFF08{n} \u4EF6\uFF09" },
-  "bk.empty": { zh: "\u56FE\u5E93\u91CC\u6CA1\u6709\u53EF\u5907\u4EFD\u7684\u6587\u4EF6", en: "Nothing in this gallery to back up", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3067\u304D\u308B\u30D5\u30A1\u30A4\u30EB\u304C\u3042\u308A\u307E\u305B\u3093" },
-  "bk.failed": { zh: "\u5907\u4EFD\u5931\u8D25\uFF1A{err}", en: "Backup failed: {err}", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u5931\u6557\u3057\u307E\u3057\u305F\uFF1A{err}" },
-  "bk.failedDetail": { zh: "\u53D6\u4E0D\u5230\u3001\u4E0D\u5728\u672C\u6B21\u5907\u4EFD\u91CC\u7684 {n} \u4EF6\uFF08\u79BB\u7EBF\u7684\u7EAF\u4E91\u7AEF\u4EF6/\u9501\u5B9A\u7684\u52A0\u5BC6\u4EF6\u7B49\uFF09\uFF1A", en: "{n} file(s) could NOT be read and are NOT in this backup (cloud-only while offline, locked encrypted, \u2026):", ja: "\u53D6\u5F97\u3067\u304D\u305A\u4ECA\u56DE\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u542B\u307E\u308C\u306A\u3044 {n} \u4EF6\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\u306E\u30AF\u30E9\u30A6\u30C9\u5C02\u7528\u30FB\u30ED\u30C3\u30AF\u4E2D\u306E\u6697\u53F7\u5316\u306A\u3069\uFF09\uFF1A" },
-  "bk.failedN": { zh: "{n} \u4EF6\u672A\u80FD\u53D6\u5230\uFF08\u7EAF\u4E91\u7AEF\u4E14\u79BB\u7EBF\uFF1F\u7A0D\u540E\u91CD\u8BD5\uFF09", en: "{n} files could not be read (cloud-only while offline? try again later)", ja: "{n} \u4EF6\u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\uFF08\u30AF\u30E9\u30A6\u30C9\u306E\u307F\u30FB\u30AA\u30D5\u30E9\u30A4\u30F3\uFF1F\u5F8C\u3067\u518D\u8A66\u884C\u3057\u3066\u304F\u3060\u3055\u3044\uFF09" },
-  "bk.msg": { zh: "\u628A\u8FD9\u4E2A\u56FE\u5E93\u91CC\u7684\u5168\u90E8\u6587\u4EF6\u6253\u5305\u6210\u4E00\u4E2A zip \u4E0B\u8F7D\u5230\u672C\u673A\u3002\u53EA\u8BFB\u53D6\uFF0C\u4E0D\u6539\u52A8\u56FE\u5E93\u3002\u52A0\u5BC6\u4F5C\u54C1\u4FDD\u6301\u5BC6\u6587\u539F\u6837\uFF08\u5907\u4EFD\u91CC\u6CA1\u6709\u660E\u6587\uFF09\u3002\u8D85\u8FC7 {size} \u7684\u90E8\u5206\u6539\u4E3A\u9010\u4EF6\u4E0B\u8F7D\u3002", en: "Packs every file in this gallery into one zip and downloads it. Read-only \u2014 the gallery is not modified. Encrypted artworks stay as ciphertext (no plaintext in the backup). Anything beyond {size} is downloaded file by file instead.", ja: "\u3053\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u5168\u30D5\u30A1\u30A4\u30EB\u3092 1 \u3064\u306E zip \u306B\u307E\u3068\u3081\u3066\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3059\u3002\u8AAD\u307F\u53D6\u308A\u306E\u307F\u3067\u3001\u30AE\u30E3\u30E9\u30EA\u30FC\u306F\u5909\u66F4\u3057\u307E\u305B\u3093\u3002\u6697\u53F7\u5316\u3055\u308C\u305F\u4F5C\u54C1\u306F\u6697\u53F7\u6587\u306E\u307E\u307E\uFF08\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u5E73\u6587\u306F\u5165\u308A\u307E\u305B\u3093\uFF09\u3002{size} \u3092\u8D85\u3048\u305F\u5206\u306F 1 \u30D5\u30A1\u30A4\u30EB\u305A\u3064\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3059\u3002" },
-  "bk.packing": { zh: "\u6B63\u5728\u5907\u4EFD\u2026\uFF08{done} / {total}\uFF09", en: "Backing up\u2026 ({done} / {total})", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u4E2D\u2026\uFF08{done} / {total}\uFF09" },
-  "bk.partialN": { zh: "{n} \u4E2A\u6587\u4EF6\u5939\u672A\u80FD\u5B8C\u6574\u5217\u4E3E\uFF0C\u5907\u4EFD\u53EF\u80FD\u4E0D\u5168", en: "{n} folders could not be listed in full \u2014 the backup may be incomplete", ja: "{n} \u500B\u306E\u30D5\u30A9\u30EB\u30C0\u30FC\u3092\u5B8C\u5168\u306B\u4E00\u89A7\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\u3002\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u304C\u4E0D\u5B8C\u5168\u306A\u53EF\u80FD\u6027\u304C\u3042\u308A\u307E\u3059" },
-  "bk.scanning": { zh: "\u6B63\u5728\u6E05\u70B9\u56FE\u5E93\u2026", en: "Scanning the gallery\u2026", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u78BA\u8A8D\u4E2D\u2026" },
-  "bk.scanningFolders": { zh: "\u6B63\u5728\u6E05\u70B9\u56FE\u5E93\u2026\uFF08\u5DF2\u626B {n} \u4E2A\u6587\u4EF6\u5939\uFF09", en: "Scanning the gallery\u2026 ({n} folders)", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u78BA\u8A8D\u4E2D\u2026\uFF08{n} \u30D5\u30A9\u30EB\u30C0\u30FC\uFF09" },
-  "bk.spilled": { zh: "\u5E93\u592A\u5927\uFF0C\u53E6\u6709 {n} \u4EF6\u6539\u4E3A\u9010\u4EF6\u4E0B\u8F7D", en: "Library too large \u2014 {n} more files downloaded individually", ja: "\u30E9\u30A4\u30D6\u30E9\u30EA\u304C\u5927\u304D\u3044\u305F\u3081\u3001\u4ED6\u306E {n} \u4EF6\u306F\u500B\u5225\u306B\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F" },
-  "bk.spilledDetail": { zh: "\u8D85\u51FA zip \u9884\u7B97\u3001\u5DF2\u6539\u4E3A\u9010\u4EF6\u4E0B\u8F7D\u7684 {n} \u4EF6\uFF08\u4E00\u4EF6\u4E0D\u4E22\uFF0C\u6CE8\u610F\u6D4F\u89C8\u5668\u591A\u6587\u4EF6\u4E0B\u8F7D\u786E\u8BA4\uFF09\uFF1A", en: "{n} file(s) over the zip budget were delivered as individual downloads (nothing dropped \u2014 watch for the browser multi-download prompt):", ja: "zip \u4E88\u7B97\u8D85\u904E\u306E\u305F\u3081\u500B\u5225\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u306B\u306A\u3063\u305F {n} \u4EF6\uFF08\u6B20\u843D\u306A\u3057\u3002\u30D6\u30E9\u30A6\u30B6\u306E\u8907\u6570\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u78BA\u8A8D\u306B\u6CE8\u610F\uFF09\uFF1A" },
-  "bk.title": { zh: "\u4E0B\u8F7D\u5168\u5E93\u5907\u4EFD", en: "Download full backup", ja: "\u30E9\u30A4\u30D6\u30E9\u30EA\u5168\u4F53\u3092\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7" },
-  "bk.truncated": { zh: "\u6587\u4EF6\u5939\u592A\u591A\uFF0C\u53EA\u626B\u5230\u524D {n} \u4E2A\uFF0C\u5907\u4EFD\u4E0D\u5168", en: "Too many folders \u2014 only the first {n} were scanned; the backup is incomplete", ja: "\u30D5\u30A9\u30EB\u30C0\u30FC\u304C\u591A\u3059\u304E\u307E\u3059\u3002\u6700\u521D\u306E {n} \u500B\u306E\u307F\u3092\u8D70\u67FB\u3057\u307E\u3057\u305F\u3002\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306F\u4E0D\u5B8C\u5168\u3067\u3059" },
-  "cf.act.cloudWins": { zh: "\u4E91\u7AEF\u8986\u76D6\u672C\u5730", en: "Cloud overwrites local", ja: "\u30AF\u30E9\u30A6\u30C9\u3067\u30ED\u30FC\u30AB\u30EB\u3092\u4E0A\u66F8\u304D" },
-  "cf.act.localWins": { zh: "\u672C\u5730\u8986\u76D6\u4E91\u7AEF", en: "Local overwrites cloud", ja: "\u30ED\u30FC\u30AB\u30EB\u3067\u30AF\u30E9\u30A6\u30C9\u3092\u4E0A\u66F8\u304D" },
-  "cf.act.openLocal": { zh: "\u6253\u5F00\u672C\u5730", en: "Open local", ja: "\u30ED\u30FC\u30AB\u30EB\u3092\u958B\u304F" },
-  "cf.body.open": { zh: "\u300C{name}\u300D\u672C\u673A\u8FD8\u6709\u672A\u4E0A\u4F20\u7684\u6539\u52A8\u3002", en: "\u201C{name}\u201D has changes on this device that were not uploaded yet.", ja: "\u300C{name}\u300D\u306B\u306F\u307E\u3060\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u3057\u3066\u3044\u306A\u3044\u5909\u66F4\u304C\u3053\u306E\u7AEF\u672B\u306B\u3042\u308A\u307E\u3059\u3002" },
-  "cf.body.push": { zh: "\u300C{name}\u300D\u5728\u4E91\u7AEF\u548C\u672C\u673A\u5404\u6709\u4E00\u7248\u65B0\u6539\u52A8\u3002", en: "\u201C{name}\u201D has new changes both in the cloud and on this device.", ja: "\u300C{name}\u300D\u306F\u30AF\u30E9\u30A6\u30C9\u3068\u3053\u306E\u7AEF\u672B\u306E\u4E21\u65B9\u306B\u65B0\u3057\u3044\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u3002" },
-  "cf.checkingCloud": { zh: "\u68C0\u67E5\u4E91\u7AEF", en: "Checking cloud", ja: "\u30AF\u30E9\u30A6\u30C9\u3092\u78BA\u8A8D\u4E2D" },
-  "cf.cloudAccountInfo": { zh: "\u4E91\u7AEF\uFF1A{who}", en: "Cloud: {who}", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}" },
-  "cf.cloudAccountOfflineInfo": { zh: "\u4E91\u7AEF\uFF1A{who}\uFF08\u79BB\u7EBF\uFF09", en: "Cloud: {who} (offline)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\uFF09" },
-  "cf.cloudAccountOfflineTitle": { zh: "\u4E91\u7AEF\uFF1A{who}\uFF08\u79BB\u7EBF\uFF0C\u65E0\u6CD5\u63A8 / \u62C9\uFF09", en: "Cloud: {who} (offline, cannot push / pull)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\u3001push / pull \u4E0D\u53EF\uFF09" },
-  "cf.cloudAccountTitle": { zh: "\u4E91\u7AEF\uFF1A{who}\uFF08\u70B9\u5F00\u8D26\u53F7\u83DC\u5355\uFF09", en: "Cloud: {who} (tap to open account menu)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}\uFF08\u30A2\u30AB\u30A6\u30F3\u30C8\u30E1\u30CB\u30E5\u30FC\u3092\u958B\u304F\uFF09" },
-  "cf.cloudNewerTitle": { zh: "\u4E91\u7AEF\u6709\u65B0\u7248\u672C", en: "A newer version exists in the cloud", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u65B0\u3057\u3044\u30D0\u30FC\u30B8\u30E7\u30F3\u304C\u3042\u308A\u307E\u3059" },
-  "cf.cloudNotConfigured": { zh: "\u4E91\u7AEF\uFF1A\u672A\u914D\u7F6E", en: "Cloud: not configured", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u672A\u8A2D\u5B9A" },
-  "cf.cloudNotSignedIn": { zh: "\u4E91\u7AEF\uFF1A\u672A\u767B\u5F55", en: "Cloud: not signed in", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u672A\u30ED\u30B0\u30A4\u30F3" },
-  "cf.cloudNotSignedInTitle": { zh: "\u4E91\u7AEF\uFF1A\u672A\u767B\u5F55\uFF08\u70B9\u5F00\u767B\u5F55\uFF09", en: "Cloud: not signed in (tap to sign in)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u672A\u30ED\u30B0\u30A4\u30F3\uFF08\u30BF\u30C3\u30D7\u3057\u3066\u30ED\u30B0\u30A4\u30F3\uFF09" },
-  "cf.cloudOffline": { zh: "\u4E91\u7AEF\uFF1A\u79BB\u7EBF", en: "Cloud: offline", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u30AA\u30D5\u30E9\u30A4\u30F3" },
-  "cf.note.keptSafe": { zh: "\u88AB\u66FF\u6362\u7684\u7248\u672C\u4F1A\u81EA\u52A8\u7559\u5E95\uFF0C\u4E0D\u4F1A\u4E22\u5931", en: "The replaced version is kept automatically \u2014 nothing is lost", ja: "\u7F6E\u304D\u63DB\u3048\u3089\u308C\u305F\u30D0\u30FC\u30B8\u30E7\u30F3\u306F\u81EA\u52D5\u7684\u306B\u4FDD\u7BA1\u3055\u308C\u3001\u5931\u308F\u308C\u307E\u305B\u3093" },
-  "cf.signedIn": { zh: "\u5DF2\u767B\u5F55", en: "Signed in", ja: "\u30ED\u30B0\u30A4\u30F3\u6E08\u307F" },
-  "cf.skipToOffline": { zh: "\u8DF3\u8FC7\u5230\u79BB\u7EBF", en: "Skip to offline", ja: "\u30B9\u30AD\u30C3\u30D7\u3057\u3066\u30AA\u30D5\u30E9\u30A4\u30F3" },
-  "common.cancel": { zh: "\u53D6\u6D88", en: "Cancel", ja: "\u30AD\u30E3\u30F3\u30BB\u30EB" },
-  "cp.downloadFailed": { zh: "\u62FF\u4E0D\u5230 {name}\uFF08\u79BB\u7EBF\u4E14\u672C\u5730\u65E0\u7F13\u5B58\uFF1F\uFF09", en: "Could not fetch {name} (offline with no local copy?)", ja: "{name} \u3092\u53D6\u5F97\u3067\u304D\u307E\u305B\u3093\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\u3067\u30ED\u30FC\u30AB\u30EB\u30B3\u30D4\u30FC\u306A\u3057\uFF1F\uFF09" },
-  "cp.downloading": { zh: "\u6B63\u5728\u4E0B\u8F7D {name}\u2026", en: "Downloading {name}\u2026", ja: "{name} \u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u4E2D\u2026" },
-  "cp.importFailed": { zh: "\u4E91\u76D8\u5BFC\u5165\u5931\u8D25\uFF1A{err}", en: "Cloud import failed: {err}", ja: "\u30AF\u30E9\u30A6\u30C9\u304B\u3089\u306E\u8AAD\u307F\u8FBC\u307F\u306B\u5931\u6557\uFF1A{err}" },
-  "enc.confirmMsg": { zh: "\u4E24\u6B21\u8F93\u5165\u9700\u4E00\u81F4", en: "Both entries must match", ja: "\u540C\u3058\u3082\u306E\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044" },
-  "enc.confirmTitle": { zh: "\u518D\u8F93\u4E00\u904D\u786E\u8BA4", en: "Confirm password", ja: "\u3082\u3046\u4E00\u5EA6\u5165\u529B\u3057\u3066\u78BA\u8A8D" },
-  "enc.enterGalleryPw": { zh: "\u8F93\u5165\u56FE\u5E93\u5BC6\u7801\u3002\u5BC6\u7801\u53EA\u5B58\u5728\u5185\u5B58\u91CC\uFF0C\u5173\u9875\u5373\u5FD8\u3002", en: "Enter the gallery password. It lives only in memory and is forgotten when the page closes.", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3002\u30E1\u30E2\u30EA\u306B\u306E\u307F\u4FDD\u6301\u3055\u308C\u3001\u30DA\u30FC\u30B8\u3092\u9589\u3058\u308B\u3068\u6D88\u3048\u307E\u3059\u3002" },
-  "enc.enterPwMsg": { zh: "\u56FE\u5E93\u5DF2\u8BBE\u8FC7\u5BC6\u7801\uFF08\u8DDF\u8D26\u53F7\u8D70\uFF09\u3002\u8F93\u5165\u539F\u5BC6\u7801\uFF1B\u5FD8\u8BB0 = \u5185\u5BB9\u6C38\u4E45\u627E\u4E0D\u56DE\u3002", en: "This gallery already has a password (tied to your account). Enter it \u2014 if forgotten, the content is permanently unrecoverable.", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306B\u306F\u65E2\u306B\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u8A2D\u5B9A\u3055\u308C\u3066\u3044\u307E\u3059\uFF08\u30A2\u30AB\u30A6\u30F3\u30C8\u306B\u7D10\u4ED8\u304D\uFF09\u3002\u5FD8\u308C\u305F\u5834\u5408\u3001\u5185\u5BB9\u306F\u6C38\u4E45\u306B\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\u3002" },
-  "enc.enterPwTitle": { zh: "\u8F93\u5165\u56FE\u5E93\u5BC6\u7801", en: "Enter gallery password", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B" },
-  "enc.importPrompt": { zh: "\u8FD9\u662F\u52A0\u5BC6\u6587\u4EF6\u3002\u8F93\u5165\u5B83\u7684\u5BC6\u7801\u3002", en: "This file is encrypted. Enter its password.", ja: "\u3053\u308C\u306F\u6697\u53F7\u5316\u30D5\u30A1\u30A4\u30EB\u3067\u3059\u3002\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044\u3002" },
-  "enc.locked.aria": { zh: "\u5DF2\u52A0\u5BC6", en: "Encrypted", ja: "\u6697\u53F7\u5316\u6E08\u307F" },
-  "enc.setPwMismatch": { zh: "\u4E24\u6B21\u8F93\u5165\u4E0D\u4E00\u81F4\uFF0C\u91CD\u65B0\u8BBE\u7F6E", en: "Entries don't match \u2014 try again", ja: "\u5165\u529B\u304C\u4E00\u81F4\u3057\u307E\u305B\u3093\u3002\u3084\u308A\u76F4\u3057\u3066\u304F\u3060\u3055\u3044" },
-  "enc.setPwMsg": { zh: "\u6574\u4E2A\u56FE\u5E93\u5171\u7528\u8FD9\u4E00\u4E2A\u5BC6\u7801\u3002\u5FD8\u8BB0 = \u5185\u5BB9\u6C38\u4E45\u627E\u4E0D\u56DE\uFF08\u6CA1\u6709\u4EFB\u4F55\u540E\u95E8\uFF09\uFF1B\u592A\u77ED\u7684\u5BC6\u7801\u53EF\u88AB\u66B4\u529B\u7834\u89E3\u3002\u52A0\u5BC6\u6587\u4EF6\u7528 7-Zip \u8F93\u6B64\u5BC6\u7801\u4E5F\u80FD\u6253\u5F00\u3002", en: "One password for the whole gallery. If forgotten, content is permanently unrecoverable (there is no backdoor); short passwords can be brute-forced. Encrypted files also open in 7-Zip with this password.", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u5168\u4F53\u30671\u3064\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5171\u6709\u3057\u307E\u3059\u3002\u5FD8\u308C\u308B\u3068\u5185\u5BB9\u306F\u6C38\u4E45\u306B\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093\uFF08\u30D0\u30C3\u30AF\u30C9\u30A2\u306A\u3057\uFF09\u3002\u77ED\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u7DCF\u5F53\u305F\u308A\u306B\u5F31\u3044\u3067\u3059\u3002\u6697\u53F7\u5316\u30D5\u30A1\u30A4\u30EB\u306F 7-Zip \u3067\u3082\u540C\u3058\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u958B\u3051\u307E\u3059\u3002" },
-  "enc.setPwTitle": { zh: "\u8BBE\u7F6E\u56FE\u5E93\u5BC6\u7801", en: "Set gallery password", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A" },
-  "enc.unlockImportTitle": { zh: "\u89E3\u9501\u5BFC\u5165\u7684\u52A0\u5BC6\u6587\u4EF6", en: "Unlock imported encrypted file", ja: "\u30A4\u30F3\u30DD\u30FC\u30C8\u3057\u305F\u6697\u53F7\u5316\u30D5\u30A1\u30A4\u30EB\u306E\u30ED\u30C3\u30AF\u89E3\u9664" },
-  "enc.unlockTitle": { zh: "\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1", en: "Unlock encrypted artwork", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u306E\u30ED\u30C3\u30AF\u89E3\u9664" },
-  "enc.wrongRetry": { zh: "\u5BC6\u7801\u4E0D\u5BF9\uFF0C\u518D\u8BD5\u4E00\u6B21", en: "Wrong password \u2014 try again", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u9055\u3044\u307E\u3059\u3002\u3082\u3046\u4E00\u5EA6" },
-  "err.cloudNetwork": { zh: "\u7F51\u7EDC\u4E0D\u901A\uFF1A\u6682\u65F6\u8FDE\u4E0D\u4E0A\u4E91\u7AEF\u3002\u4F60\u7684\u753B\u90FD\u8FD8\u5728\u672C\u5730\uFF0C\u7A0D\u540E\u53EF\u91CD\u8BD5\u3002", en: "Network unreachable: could not reach the cloud. Your work is safe locally \u2014 try again later.", ja: "\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u306B\u63A5\u7D9A\u3067\u304D\u307E\u305B\u3093\u3002\u4F5C\u54C1\u306F\u30ED\u30FC\u30AB\u30EB\u306B\u4FDD\u5B58\u3055\u308C\u3066\u3044\u307E\u3059\u3002\u5F8C\u3067\u518D\u8A66\u884C\u3057\u3066\u304F\u3060\u3055\u3044\u3002" },
-  "gal.busy.copy": { zh: "\u6B63\u5728\u521B\u5EFA\u526F\u672C {base}\u2026", en: "Duplicating {base}\u2026", ja: "\u8907\u88FD\u4E2D {base}\u2026" },
-  "gal.busy.del": { zh: "\u6B63\u5728\u5220\u9664 {name}\u2026", en: "Deleting {name}\u2026", ja: "\u524A\u9664\u4E2D {name}\u2026" },
-  "gal.busy.emptyBackup": { zh: "\u6B63\u5728\u6E05\u7A7A{label}\u5907\u4EFD\u7BB1\u2026", en: "Emptying {label} backups\u2026", ja: "{label}\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u7A7A\u306B\u2026" },
-  "gal.busy.emptyTrash": { zh: "\u6B63\u5728\u6E05\u7A7A{label}\u56DE\u6536\u7AD9\u2026", en: "Emptying {label} trash\u2026", ja: "{label}\u306E\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\u2026" },
-  "gal.busy.keepOffline": { zh: "\u6B63\u5728\u4E0B\u8F7D\u300C{name}\u300D\u2026", en: "Downloading \u201C{name}\u201D\u2026", ja: "\u300C{name}\u300D\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u4E2D\u2026" },
-  "gal.busy.move": { zh: "\u6B63\u5728\u79FB\u52A8 {base} \u2192 {target}\u2026", en: "Moving {base} \u2192 {target}\u2026", ja: "\u79FB\u52D5\u4E2D {base} \u2192 {target}\u2026" },
-  "gal.busy.purge": { zh: "\u6B63\u5728\u6C38\u4E45\u5220\u9664 {name}\u2026", en: "Deleting {name} forever\u2026", ja: "\u5B8C\u5168\u306B\u524A\u9664\u4E2D {name}\u2026" },
-  "gal.busy.rename": { zh: "\u6B63\u5728\u91CD\u547D\u540D {name} \u2192 {to}\u2026", en: "Renaming {name} \u2192 {to}\u2026", ja: "\u540D\u524D\u5909\u66F4\u4E2D {name} \u2192 {to}\u2026" },
-  "gal.busy.restore": { zh: "\u6B63\u5728\u6062\u590D {name}\u2026", en: "Restoring {name}\u2026", ja: "\u5FA9\u5143\u4E2D {name}\u2026" },
-  "gal.busy.reupload": { zh: "\u91CD\u65B0\u4E0A\u4F20\u4E2D\u2026", en: "Re-uploading\u2026", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u4E2D\u2026" },
-  "gal.copy": { zh: "\u521B\u5EFA\u526F\u672C", en: "Duplicate", ja: "\u8907\u88FD\u3092\u4F5C\u6210" },
-  "gal.del.activeSuffix": { zh: " \u5F53\u524D\u753B\u5E03\u4F1A\u5173\u95ED\u3002", en: " The current canvas will close.", ja: " \u73FE\u5728\u306E\u30AD\u30E3\u30F3\u30D0\u30B9\u306F\u9589\u3058\u3089\u308C\u307E\u3059\u3002" },
-  "gal.del.cloudDetail": { zh: "\u4F1A\u8FDB\u4E91\u7AEF\u56DE\u6536\u7AD9\uFF0C\u53EF\u6062\u590D\u3002", en: "Goes to cloud trash; can be restored.", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u3001\u5FA9\u5143\u53EF\u80FD\u3067\u3059\u3002" },
-  "gal.del.dirtyDetail": { zh: "\u672C\u5730\u6709**\u672A\u63A8\u9001\u5230\u4E91\u7AEF\u7684\u4FEE\u6539**\uFF0C\u5220\u9664\u4F1A\u4E22\u8FD9\u4E9B\u6539\u52A8\u3002\u4E91\u7AEF\u5907\u4EFD\u8FDB\u56DE\u6536\u7AD9\u53EF\u6062\u590D\u3002", en: "Local has **unpushed changes**; deleting loses them. The cloud backup goes to trash and can be restored.", ja: "\u30ED\u30FC\u30AB\u30EB\u306B**\u672A\u9001\u4FE1\u306E\u5909\u66F4**\u304C\u3042\u308A\u3001\u524A\u9664\u3059\u308B\u3068\u5931\u308F\u308C\u307E\u3059\u3002\u30AF\u30E9\u30A6\u30C9\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306F\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u5FA9\u5143\u53EF\u80FD\u3067\u3059\u3002" },
-  "gal.del.imageDetail": { zh: "\u79FB\u5230\u56DE\u6536\u7AD9\uFF08\u53EF\u6062\u590D\uFF09\u3002\u8FD9\u662F\u56FE\u7247\u7D20\u6750\uFF0C\u4E0D\u662F\u753B\u4F5C\u3002", en: "Move to trash (recoverable). This is an image file, not an artwork.", ja: "\u30B4\u30DF\u7BB1\u3078\u79FB\u52D5\uFF08\u5FA9\u5143\u53EF\uFF09\u3002\u3053\u308C\u306F\u753B\u50CF\u30D5\u30A1\u30A4\u30EB\u3067\u3001\u4F5C\u54C1\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002" },
-  "gal.del.localDetail": { zh: "\u4F1A\u8FDB\u672C\u5730\u56DE\u6536\u7AD9\uFF0C\u53EF\u6062\u590D\u3002", en: "Goes to local trash; can be restored.", ja: "\u30ED\u30FC\u30AB\u30EB\u306E\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u3001\u5FA9\u5143\u53EF\u80FD\u3067\u3059\u3002" },
-  "gal.del.syncedDetail": { zh: "\u672C\u5730\u526F\u672C\u4F1A\u4E00\u8D77\u5220\uFF0C\u4E91\u7AEF\u8FDB\u56DE\u6536\u7AD9\u53EF\u6062\u590D\u3002", en: "The local copy is deleted too; the cloud copy goes to trash and can be restored.", ja: "\u30ED\u30FC\u30AB\u30EB\u3082\u524A\u9664\u3055\u308C\u3001\u30AF\u30E9\u30A6\u30C9\u306F\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u5FA9\u5143\u53EF\u80FD\u3067\u3059\u3002" },
-  "gal.delEmptyFolder": { zh: "\u5220\u9664\u7A7A\u6587\u4EF6\u5939", en: "Delete empty folder", ja: "\u7A7A\u306E\u30D5\u30A9\u30EB\u30C0\u3092\u524A\u9664" },
-  "gal.delFolderNonEmpty": { zh: "\u5220\u9664\uFF08\u8BF7\u5148\u6E05\u7A7A\u91CC\u9762\uFF09", en: "Delete (empty it first)", ja: "\u524A\u9664\uFF08\u5148\u306B\u4E2D\u3092\u7A7A\u306B\uFF09" },
-  "gal.deleted": { zh: "\u5220\u9664", en: "deleted", ja: "\u524A\u9664" },
-  "gal.discardToTrash": { zh: "\u4E22\u5F03\uFF08\u9001\u56DE\u6536\u7AD9\uFF09", en: "Discard (to trash)", ja: "\u7834\u68C4\uFF08\u30B4\u30DF\u7BB1\u3078\uFF09" },
-  "gal.divergedNote": { zh: "\u4E91\u7AEF\u526F\u672C\u5DF2\u88AB\u522B\u7684\u8BBE\u5907\u79FB\u52A8\u6216\u5220\u9664\uFF1B\u672C\u5730\u8FD9\u4EFD\u6709\u672A\u63A8\u9001\u7684\u4FEE\u6539\u3002", en: "The cloud copy was moved or deleted by another device; this local copy has unpushed changes.", ja: "\u30AF\u30E9\u30A6\u30C9\u5074\u306F\u5225\u7AEF\u672B\u3067\u79FB\u52D5/\u524A\u9664\u3055\u308C\u307E\u3057\u305F\u3002\u30ED\u30FC\u30AB\u30EB\u306B\u306F\u672A\u9001\u4FE1\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u3002" },
-  "gal.dlg.decryptMsg": { zh: "\u5185\u5BB9\u5C06\u4EE5\u660E\u6587\u5B58\u653E\u5728\u672C\u673A\u4E0E\u4E91\u7AEF\uFF0C\u4EFB\u4F55\u80FD\u8BBF\u95EE\u6B64\u8BBE\u5907\u6216\u4E91\u8D26\u53F7\u7684\u4EBA\u90FD\u80FD\u67E5\u770B\u3002", en: "Contents will be stored as plaintext locally and in the cloud; anyone with access to this device or cloud account can view them.", ja: "\u5185\u5BB9\u306F\u30ED\u30FC\u30AB\u30EB\u3068\u30AF\u30E9\u30A6\u30C9\u306B\u5E73\u6587\u3067\u4FDD\u5B58\u3055\u308C\u3001\u3053\u306E\u7AEF\u672B\u3084\u30AF\u30E9\u30A6\u30C9\u306B\u30A2\u30AF\u30BB\u30B9\u3067\u304D\u308B\u4EBA\u306F\u8AB0\u3067\u3082\u95B2\u89A7\u3067\u304D\u307E\u3059\u3002" },
-  "gal.dlg.decryptTitle": { zh: "\u89E3\u9664\u300C{base}\u300D\u7684\u52A0\u5BC6\uFF1F", en: "Decrypt \u201C{base}\u201D?", ja: "\u300C{base}\u300D\u306E\u6697\u53F7\u5316\u3092\u89E3\u9664\uFF1F" },
-  "gal.dlg.delTitle": { zh: '\u5220\u9664 "{name}"\uFF1F', en: "Delete \u201C{name}\u201D?", ja: "\u300C{name}\u300D\u3092\u524A\u9664\uFF1F" },
-  "gal.dlg.emptyBackupMsg": { zh: "{label}\u5907\u4EFD\u7BB1\u91CC\u7559\u5E95\u7684\u7248\u672C\u4F1A\u88AB\u5F7B\u5E95\u5220\u9664\uFF0C\u4E0D\u53EF\u64A4\u9500\u3002", en: "Versions kept in the {label} backups will be permanently deleted. Cannot be undone.", ja: "{label}\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306B\u4FDD\u7BA1\u3055\u308C\u305F\u30D0\u30FC\u30B8\u30E7\u30F3\u3092\u5B8C\u5168\u306B\u524A\u9664\u3057\u307E\u3059\u3002\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002" },
-  "gal.dlg.emptyBackupTitle": { zh: "\u6E05\u7A7A{label}\u5907\u4EFD\u7BB1\uFF1F", en: "Empty {label} backups?", ja: "{label}\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u7A7A\u306B\uFF1F" },
-  "gal.dlg.emptyTrashMsg": { zh: "{label}\u56DE\u6536\u7AD9\u4F1A\u88AB\u5F7B\u5E95\u6E05\u7A7A\uFF0C\u4E0D\u53EF\u64A4\u9500\u3002", en: "The {label} trash will be permanently emptied. Cannot be undone.", ja: "{label}\u306E\u30B4\u30DF\u7BB1\u3092\u5B8C\u5168\u306B\u7A7A\u306B\u3057\u307E\u3059\u3002\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002" },
-  "gal.dlg.emptyTrashTitle": { zh: "\u6E05\u7A7A{label}\u56DE\u6536\u7AD9\uFF1F", en: "Empty {label} trash?", ja: "{label}\u306E\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\uFF1F" },
-  "gal.dlg.moveMsg": { zh: "\u9009\u62E9\u76EE\u6807\u6587\u4EF6\u5939", en: "Choose target folder", ja: "\u79FB\u52D5\u5148\u30D5\u30A9\u30EB\u30C0\u3092\u9078\u629E" },
-  "gal.dlg.moveTitle": { zh: "\u79FB\u52A8\u300C{base}\u300D\u5230\u2026", en: "Move \u201C{base}\u201D to\u2026", ja: "\u300C{base}\u300D\u3092\u79FB\u52D5\u2026" },
-  "gal.dlg.purgeMsg": { zh: "\u4E0D\u53EF\u64A4\u9500\u3002", en: "Cannot be undone.", ja: "\u5143\u306B\u623B\u305B\u307E\u305B\u3093\u3002" },
-  "gal.dlg.purgeTitle": { zh: '\u6C38\u4E45\u5220\u9664 "{name}"\uFF1F', en: "Delete \u201C{name}\u201D forever?", ja: "\u300C{name}\u300D\u3092\u5B8C\u5168\u306B\u524A\u9664\uFF1F" },
-  "gal.dlg.rename": { zh: "\u91CD\u547D\u540D", en: "Rename", ja: "\u540D\u524D\u3092\u5909\u66F4" },
-  "gal.dlg.renameNote": { zh: "\u91CD\u547D\u540D\uFF08{note}\uFF09", en: "Rename ({note})", ja: "\u540D\u524D\u3092\u5909\u66F4\uFF08{note}\uFF09" },
-  "gal.empty.backup": { zh: "\u5907\u4EFD\u7BB1\u662F\u7A7A\u7684\u3002\u540C\u6B65\u51B2\u7A81\u91CC\u88AB\u6362\u4E0B\u7684\u90A3\u4E00\u7248\u4F1A\u7559\u5728\u8FD9\u91CC\u3002", en: "No backups. When a sync conflict replaces a version, the replaced one is kept here.", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306F\u3042\u308A\u307E\u305B\u3093\u3002\u540C\u671F\u306E\u7AF6\u5408\u3067\u7F6E\u304D\u63DB\u3048\u3089\u308C\u305F\u30D0\u30FC\u30B8\u30E7\u30F3\u306F\u3053\u3053\u306B\u4FDD\u7BA1\u3055\u308C\u307E\u3059\u3002" },
-  "gal.empty.folder": { zh: '\u6587\u4EF6\u5939 "{f}" \u662F\u7A7A\u7684', en: "Folder \u201C{f}\u201D is empty", ja: "\u30D5\u30A9\u30EB\u30C0\u300C{f}\u300D\u306F\u7A7A\u3067\u3059" },
-  "gal.empty.none": { zh: "\u8FD8\u6CA1\u6709\u4FDD\u5B58\u7684\u4F5C\u54C1\u3002\u70B9\u53F3\u4E0A\u52A0\u53F7\u65B0\u5EFA\u4E00\u4E2A\uFF0C\u6216\u5148\u5728 PC \u4E0A\u753B\u4E00\u7B14\u3002", en: "No saved artwork yet. Tap + at top-right to create one, or draw on PC first.", ja: "\u4FDD\u5B58\u3055\u308C\u305F\u4F5C\u54C1\u304C\u3042\u308A\u307E\u305B\u3093\u3002\u53F3\u4E0A\u306E\uFF0B\u3067\u65B0\u898F\u4F5C\u6210\u3001\u307E\u305F\u306FPC\u3067\u63CF\u3044\u3066\u304F\u3060\u3055\u3044\u3002" },
-  "gal.empty.trash": { zh: "\u56DE\u6536\u7AD9\u662F\u7A7A\u7684\u3002", en: "Trash is empty.", ja: "\u30B4\u30DF\u7BB1\u306F\u7A7A\u3067\u3059\u3002" },
-  "gal.emptyFolder": { zh: "\u7A7A\u6587\u4EF6\u5939", en: "Empty folder", ja: "\u7A7A\u306E\u30D5\u30A9\u30EB\u30C0" },
-  "gal.firstFrameFailed": { zh: "\u56FE\u5E93\u8BFB\u53D6\u5931\u8D25\uFF08\u8BE6\u89C1\u8BCA\u65AD\u65E5\u5FD7\uFF09", en: "Gallery listing failed (see the diagnostic log)", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u8AAD\u307F\u8FBC\u307F\u306B\u5931\u6557\u3057\u307E\u3057\u305F\uFF08\u8A3A\u65AD\u30ED\u30B0\u53C2\u7167\uFF09" },
-  "gal.firstFrameTimeout": { zh: "\u56FE\u5E93\u8BFB\u53D6\u8D85\u65F6\uFF1A\u672C\u5730\u5B58\u50A8\u6CA1\u6709\u54CD\u5E94", en: "Gallery listing timed out: local storage did not respond", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u8AAD\u307F\u8FBC\u307F\u304C\u30BF\u30A4\u30E0\u30A2\u30A6\u30C8\u3057\u307E\u3057\u305F\uFF1A\u30ED\u30FC\u30AB\u30EB\u30B9\u30C8\u30EC\u30FC\u30B8\u304C\u5FDC\u7B54\u3057\u307E\u305B\u3093" },
-  "gal.folder": { zh: "\u6587\u4EF6\u5939", en: "Folder", ja: "\u30D5\u30A9\u30EB\u30C0" },
-  "gal.imageFile": { zh: "\u56FE\u7247", en: "Image", ja: "\u753B\u50CF" },
-  "gal.keepOffline": { zh: "\u7559\u4E00\u4EFD\u79BB\u7EBF", en: "Keep offline", ja: "\u30AA\u30D5\u30E9\u30A4\u30F3\u7528\u306B\u4FDD\u5B58" },
-  "gal.keptAside": { zh: "\u7559\u5E95", en: "kept", ja: "\u4FDD\u7BA1" },
-  "gal.loading": { zh: "\u52A0\u8F7D\u4E2D\u2026", en: "Loading\u2026", ja: "\u8AAD\u307F\u8FBC\u307F\u4E2D\u2026" },
-  "gal.loc.cloud": { zh: "\u4E91\u7AEF", en: "Cloud", ja: "\u30AF\u30E9\u30A6\u30C9" },
-  "gal.loc.local": { zh: "\u672C\u5730", en: "Local", ja: "\u30ED\u30FC\u30AB\u30EB" },
-  "gal.lockedThumb": { zh: "\u5DF2\u52A0\u5BC6 \u2014\u2014 \u70B9\u9501\u89E3\u9501\u9884\u89C8", en: "Encrypted \u2014 tap lock to unlock preview", ja: "\u6697\u53F7\u5316\u6E08\u307F \u2014 \u30ED\u30C3\u30AF\u3092\u30BF\u30C3\u30D7\u3057\u3066\u30D7\u30EC\u30D3\u30E5\u30FC" },
-  "gal.tile.active": { zh: "\u7F16\u8F91\u4E2D", en: "Editing", ja: "\u7DE8\u96C6\u4E2D" },
-  "gal.marker.unread": { zh: "\u672A\u8BFB", en: "Unread", ja: "\u672A\u8AAD" },
-  "gal.more": { zh: "\u66F4\u591A\u64CD\u4F5C", en: "More actions", ja: "\u305D\u306E\u4ED6\u306E\u64CD\u4F5C" },
-  "gal.moveTo": { zh: "\u79FB\u52A8\u5230\u2026", en: "Move to\u2026", ja: "\u79FB\u52D5\u2026" },
-  "gal.note.empty": { zh: "\u540D\u5B57\u4E0D\u80FD\u7A7A", en: "Name can\u2019t be empty", ja: "\u540D\u524D\u306F\u7A7A\u306B\u3067\u304D\u307E\u305B\u3093" },
-  "gal.note.fail": { zh: "\u5931\u8D25\uFF1A{e}", en: "Failed: {e}", ja: "\u5931\u6557\uFF1A{e}" },
-  "gal.note.taken": { zh: "{loc}\u5DF2\u6709\u540C\u540D\uFF0C\u6362\u4E00\u4E2A", en: "{loc} already has this name, pick another", ja: "{loc}\u306B\u540C\u540D\u3042\u308A\u3001\u5225\u540D\u306B" },
-  "gal.openDiag": { zh: "\u8BCA\u65AD\u65E5\u5FD7", en: "Diagnostic log", ja: "\u8A3A\u65AD\u30ED\u30B0" },
-  "gal.otherFile": { zh: "\u6587\u4EF6\uFF08\u5728 WeebPaint \u5916\u7BA1\u7406\uFF09", en: "File (managed outside WeebPaint)", ja: "\u30D5\u30A1\u30A4\u30EB\uFF08WeebPaint \u5916\u3067\u7BA1\u7406\uFF09" },
-  "gal.ph.newName": { zh: "\u65B0\u540D\u5B57", en: "New name", ja: "\u65B0\u3057\u3044\u540D\u524D" },
-  "gal.pullLocal": { zh: "\u62C9\u53D6\u5230\u672C\u5730", en: "Pull to local", ja: "\u30ED\u30FC\u30AB\u30EB\u306B\u53D6\u5F97" },
-  "gal.purge": { zh: "\u6C38\u4E45\u5220\u9664", en: "Delete forever", ja: "\u5B8C\u5168\u306B\u524A\u9664" },
-  "gal.pushCloud": { zh: "\u63A8\u9001\u5230\u4E91\u7AEF", en: "Push to cloud", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u9001\u4FE1" },
-  "gal.reload": { zh: "\u91CD\u65B0\u8F7D\u5165\u5E94\u7528", en: "Reload app", ja: "\u30A2\u30D7\u30EA\u3092\u518D\u8AAD\u307F\u8FBC\u307F" },
-  "gal.rename": { zh: "\u91CD\u547D\u540D", en: "Rename", ja: "\u540D\u524D\u3092\u5909\u66F4" },
-  "gal.renameKeep": { zh: "\u91CD\u547D\u540D\u7559\u5B58", en: "Rename & keep", ja: "\u540D\u524D\u3092\u5909\u3048\u3066\u4FDD\u6301" },
-  "gal.restore": { zh: "\u6062\u590D", en: "Restore", ja: "\u5FA9\u5143" },
-  "gal.retry": { zh: "\u91CD\u8BD5", en: "Retry", ja: "\u518D\u8A66\u884C" },
-  "gal.reupload": { zh: "\u91CD\u65B0\u4E0A\u4F20", en: "Re-upload", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9" },
-  "gal.root": { zh: "\u6839\u76EE\u5F55", en: "root", ja: "\u30EB\u30FC\u30C8" },
-  "gal.rootFolder": { zh: "/ \u6839\u76EE\u5F55", en: "/ root", ja: "/ \u30EB\u30FC\u30C8" },
-  "gal.scope.both": { zh: "\u672C\u5730\u548C\u4E91\u7AEF", en: "local and cloud", ja: "\u30ED\u30FC\u30AB\u30EB\u3068\u30AF\u30E9\u30A6\u30C9" },
-  "gal.scope.cloud": { zh: "\u4E91\u7AEF", en: "cloud", ja: "\u30AF\u30E9\u30A6\u30C9" },
-  "gal.scope.local": { zh: "\u672C\u5730", en: "local", ja: "\u30ED\u30FC\u30AB\u30EB" },
-  "gal.st.alreadyEnc": { zh: "\u5DF2\u662F\u52A0\u5BC6\u4F5C\u54C1", en: "Already encrypted", ja: "\u65E2\u306B\u6697\u53F7\u5316\u6E08\u307F\u3067\u3059" },
-  "gal.st.alreadyInFolder": { zh: "\u5DF2\u5728\u8BE5\u6587\u4EF6\u5939", en: "Already in that folder", ja: "\u65E2\u306B\u305D\u306E\u30D5\u30A9\u30EB\u30C0\u5185\u3067\u3059" },
-  "gal.st.cancelled": { zh: "\u5DF2\u53D6\u6D88", en: "Cancelled", ja: "\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F" },
-  "gal.st.cancelledPw": { zh: "\u5DF2\u53D6\u6D88\uFF08\u9700\u8981\u5BC6\u7801\uFF09", en: "Cancelled (password required)", ja: "\u30AD\u30E3\u30F3\u30BB\u30EB\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u5FC5\u8981\uFF09" },
-  "gal.st.cloudPullFirst": { zh: "\u7EAF\u4E91\u7AEF\u4F5C\u54C1\u5148\u62C9\u53D6\u5230\u672C\u5730\u518D{verb}", en: "Pull the cloud-only artwork to local first to {verb}", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u307F\u306E\u4F5C\u54C1\u306F\u5148\u306B\u30ED\u30FC\u30AB\u30EB\u3078\u53D6\u5F97\u3057\u3066\u304B\u3089{verb}" },
-  "gal.st.keepOfflineFail": { zh: "\u7559\u79BB\u7EBF\u5931\u8D25\uFF1A{e}", en: "Keep offline failed: {e}", ja: "\u30AA\u30D5\u30E9\u30A4\u30F3\u4FDD\u5B58\u306B\u5931\u6557\uFF1A{e}" },
-  "gal.st.keptOffline": { zh: "\u5DF2\u7559\u79BB\u7EBF\uFF1A{name}", en: "Kept offline: {name}", ja: "\u30AA\u30D5\u30E9\u30A4\u30F3\u4FDD\u5B58\u6E08\u307F\uFF1A{name}" },
-  "gal.st.copied": { zh: "\u5DF2\u521B\u5EFA\u526F\u672C\uFF1A{name}", en: "Duplicated: {name}", ja: "\u8907\u88FD\uFF1A{name}" },
-  "gal.st.copyFail": { zh: "\u521B\u5EFA\u526F\u672C\u5931\u8D25\uFF1A{e}", en: "Duplicate failed: {e}", ja: "\u8907\u88FD\u5931\u6557\uFF1A{e}" },
-  "gal.st.copyNoBytes": { zh: "\u627E\u4E0D\u5230\u6E90\u4F5C\u54C1\u7684\u5B57\u8282\uFF0C\u590D\u5236\u5931\u8D25", en: "Source artwork bytes not found; duplicate failed", ja: "\u5143\u4F5C\u54C1\u306E\u30C7\u30FC\u30BF\u304C\u898B\u3064\u304B\u3089\u305A\u8907\u88FD\u5931\u6557" },
-  "gal.st.decryptFail": { zh: "\u89E3\u9664\u52A0\u5BC6\u5931\u8D25\uFF1A{e}", en: "Decryption failed: {e}", ja: "\u6697\u53F7\u5316\u89E3\u9664\u5931\u6557\uFF1A{e}" },
-  "gal.st.decrypted": { zh: "\u5DF2\u89E3\u9664\u52A0\u5BC6\uFF1A{name}", en: "Decrypted: {name}", ja: "\u6697\u53F7\u5316\u89E3\u9664\uFF1A{name}" },
-  "gal.st.delCancelled": { zh: "\u5DF2\u53D6\u6D88\uFF0C\u6CA1\u6709\u5220\u9664\u300C{name}\u300D", en: 'Cancelled \u2014 "{name}" was not deleted', ja: "\u30AD\u30E3\u30F3\u30BB\u30EB\u3057\u307E\u3057\u305F\u3002\u300C{name}\u300D\u306F\u524A\u9664\u3057\u3066\u3044\u307E\u305B\u3093" },
-  "gal.st.delFail": { zh: "\u5220\u9664\u5931\u8D25\uFF1A{e}", en: "Delete failed: {e}", ja: "\u524A\u9664\u5931\u6557\uFF1A{e}" },
-  "gal.st.delLocalOnly": { zh: "\u300C{name}\u300D\u5DF2\u4ECE\u672C\u5730\u79FB\u5165\u56DE\u6536\u7AD9\uFF0C\u4F46\u4E91\u7AEF\u90A3\u4EFD\u8FD8\u5728\uFF08\u79BB\u7EBF\u6216\u6765\u5386\u4E0D\u660E\uFF0C\u6CA1\u6562\u5220\uFF09", en: '"{name}" was moved to the local recycle bin, but the cloud copy remains (offline or unknown lineage)', ja: "\u300C{name}\u300D\u3092\u30ED\u30FC\u30AB\u30EB\u306E\u3054\u307F\u7BB1\u306B\u79FB\u52D5\u3057\u307E\u3057\u305F\u304C\u3001\u30AF\u30E9\u30A6\u30C9\u5074\u306F\u6B8B\u3063\u3066\u3044\u307E\u3059\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\u307E\u305F\u306F\u7531\u6765\u4E0D\u660E\uFF09" },
-  "gal.st.delNothing": { zh: "\u300C{name}\u300D\u672C\u5730\u548C\u4E91\u7AEF\u90FD\u6CA1\u6709\uFF0C\u65E0\u4E8B\u53EF\u5220", en: '"{name}" exists neither locally nor in the cloud \u2014 nothing to delete', ja: "\u300C{name}\u300D\u306F\u30ED\u30FC\u30AB\u30EB\u306B\u3082\u30AF\u30E9\u30A6\u30C9\u306B\u3082\u5B58\u5728\u3057\u307E\u305B\u3093" },
-  "gal.st.deleted": { zh: "\u5DF2\u5220\u9664\uFF1A{name}", en: "Deleted: {name}", ja: "\u524A\u9664\uFF1A{name}" },
-  "gal.st.emptyBackupCloudFail": { zh: "{n} \u9879\u4E91\u7AEF\u6CA1\u6E05\uFF08\u53EF\u80FD\u79BB\u7EBF\uFF09\uFF0C\u56DE\u7EBF\u518D\u6E05", en: "{n} cloud item(s) not cleared (maybe offline); retry when online", ja: "{n} \u4EF6\u304C\u30AF\u30E9\u30A6\u30C9\u3067\u672A\u524A\u9664\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\uFF1F\uFF09\u3002\u30AA\u30F3\u30E9\u30A4\u30F3\u5FA9\u5E30\u5F8C\u306B\u518D\u8A66\u884C" },
-  "gal.st.emptyBackupCloudNeedLogin": { zh: "\u6E05\u7A7A\u4E91\u7AEF\u5907\u4EFD\u7BB1\u9700\u5148\u767B\u5F55\u5E76\u8054\u7F51", en: "Emptying cloud backups requires sign-in and network", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u7A7A\u306B\u3059\u308B\u306B\u306F\u30B5\u30A4\u30F3\u30A4\u30F3\u3068\u63A5\u7D9A\u304C\u5FC5\u8981\u3067\u3059" },
-  "gal.st.emptyBackupDone": { zh: "\u5DF2\u6E05\u7A7A{label}\u5907\u4EFD\u7BB1", en: "Emptied {label} backups", ja: "{label}\u306E\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u7A7A\u306B\u3057\u307E\u3057\u305F" },
-  "gal.st.emptyBackupPartial": { zh: "\u6E05\u7A7A\u65F6\u90E8\u5206\u5931\u8D25", en: "Some items failed to clear", ja: "\u4E00\u90E8\u306E\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F" },
-  "gal.st.emptyTrashCloudFail": { zh: "{n} \u9879\u4E91\u7AEF\u6CA1\u6E05\uFF08\u53EF\u80FD\u79BB\u7EBF\uFF09\uFF0C\u56DE\u7EBF\u518D\u6E05", en: "{n} cloud item(s) not cleared (maybe offline); retry when online", ja: "{n} \u4EF6\u304C\u30AF\u30E9\u30A6\u30C9\u3067\u672A\u524A\u9664\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\uFF1F\uFF09\u3002\u30AA\u30F3\u30E9\u30A4\u30F3\u5FA9\u5E30\u5F8C\u306B\u518D\u8A66\u884C" },
-  "gal.st.emptyTrashCloudNeedLogin": { zh: "\u6E05\u7A7A\u4E91\u7AEF\u56DE\u6536\u7AD9\u9700\u5148\u767B\u5F55\u5E76\u8054\u7F51", en: "Emptying cloud trash requires sign-in and network", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\u3059\u308B\u306B\u306F\u30B5\u30A4\u30F3\u30A4\u30F3\u3068\u63A5\u7D9A\u304C\u5FC5\u8981\u3067\u3059" },
-  "gal.st.emptyTrashDone": { zh: "\u5DF2\u6E05\u7A7A{label}\u56DE\u6536\u7AD9", en: "Emptied {label} trash", ja: "{label}\u306E\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\u3057\u307E\u3057\u305F" },
-  "gal.st.emptyTrashPartial": { zh: "\u6E05\u7A7A\u65F6\u90E8\u5206\u5931\u8D25", en: "Some items failed to clear", ja: "\u4E00\u90E8\u306E\u524A\u9664\u306B\u5931\u6557\u3057\u307E\u3057\u305F" },
-  "gal.st.encConflict": { zh: "\u4E91\u7AEF\u6709\u66F4\u65B0\u7248\u672C\uFF1A{name} \u2014\u2014 \u672C\u5730\u5DF2\u6362\u3001\u5DF2\u6807\u672A\u63A8\u9001\uFF1B\u6253\u5F00\u540E\u6309\u51B2\u7A81\u6D41\u7A0B\u5904\u7406", en: "Newer version in cloud: {name} \u2014 local swapped and marked unpushed; resolve conflict after opening", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u65B0\u3057\u3044\u7248\uFF1A{name} \u2014 \u30ED\u30FC\u30AB\u30EB\u306F\u5909\u66F4\u30FB\u672A\u9001\u4FE1\u6E08\u307F\u3002\u958B\u3044\u3066\u304B\u3089\u7AF6\u5408\u3092\u89E3\u6C7A" },
-  "gal.st.encDeferred": { zh: "{okMsg}\uFF08\u672C\u5730\u5B8C\u6210\uFF1B\u4E91\u7AEF\u6682\u672A\u8DDF\u4E0A\uFF0C\u5DF2\u6807\u672A\u63A8\u9001\uFF0C\u56DE\u7EBF\u540E\u63A8\u9001\u5373\u540C\u6B65\uFF09", en: "{okMsg} (local done; cloud not yet, marked unpushed; push when back online)", ja: "{okMsg}\uFF08\u30ED\u30FC\u30AB\u30EB\u5B8C\u4E86\uFF1B\u30AF\u30E9\u30A6\u30C9\u672A\u8FFD\u5F93\u3001\u672A\u9001\u4FE1\u3002\u30AA\u30F3\u30E9\u30A4\u30F3\u5FA9\u5E30\u5F8C\u306B\u9001\u4FE1\u3067\u540C\u671F\uFF09" },
-  "gal.st.encFail": { zh: "\u52A0\u5BC6\u5931\u8D25\uFF1A{e}", en: "Encryption failed: {e}", ja: "\u6697\u53F7\u5316\u5931\u6557\uFF1A{e}" },
-  "gal.st.encNeedOnline": { zh: "\u5DF2\u540C\u6B65\u8FC7\u4E91\u7AEF\u7684\u4F5C\u54C1\u9700\u5728\u7EBF\u64CD\u4F5C\uFF08\u672C\u5730\u4E0E\u4E91\u7AEF\u8981\u4E00\u8D77\u6362\uFF09", en: "Cloud-synced artwork needs to be online (local and cloud swap together)", ja: "\u30AF\u30E9\u30A6\u30C9\u540C\u671F\u6E08\u307F\u306E\u4F5C\u54C1\u306F\u30AA\u30F3\u30E9\u30A4\u30F3\u3067\u64CD\u4F5C\uFF08\u30ED\u30FC\u30AB\u30EB\u3068\u30AF\u30E9\u30A6\u30C9\u3092\u540C\u6642\u306B\uFF09" },
-  "gal.st.encryptedOk": { zh: "\u5DF2\u52A0\u5BC6\uFF1A{name}\uFF087-Zip \u8F93\u6B64\u5BC6\u7801\u53EF\u6062\u590D\uFF1B\u5FD8\u8BB0\u5BC6\u7801\u5185\u5BB9\u6C38\u4E45\u627E\u4E0D\u56DE\uFF09", en: "Encrypted: {name} (7-Zip with this password can recover; forgotten password = permanently lost)", ja: "\u6697\u53F7\u5316\uFF1A{name}\uFF08\u3053\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u30677-Zip\u5FA9\u5143\u53EF\uFF1B\u5FD8\u308C\u308B\u3068\u5185\u5BB9\u306F\u6C38\u4E45\u306B\u5931\u308F\u308C\u307E\u3059\uFF09" },
-  "gal.st.folderDelFail": { zh: "\u5220\u9664\u6587\u4EF6\u5939\u5931\u8D25\uFF1A{e}", en: "Folder delete failed: {e}", ja: "\u30D5\u30A9\u30EB\u30C0\u524A\u9664\u5931\u6557\uFF1A{e}" },
-  "gal.st.folderDeleted": { zh: "\u5DF2\u5220\u9664\u7A7A\u6587\u4EF6\u5939\uFF1A{name}", en: "Deleted empty folder: {name}", ja: "\u7A7A\u306E\u30D5\u30A9\u30EB\u30C0\u3092\u524A\u9664\uFF1A{name}" },
-  "gal.st.moveFail": { zh: "\u79FB\u52A8\u5931\u8D25\uFF1A{e}", en: "Move failed: {e}", ja: "\u79FB\u52D5\u5931\u6557\uFF1A{e}" },
-  "gal.st.moved": { zh: "\u5DF2\u79FB\u52A8\u5230\uFF1A{target}", en: "Moved to: {target}", ja: "\u79FB\u52D5\u5148\uFF1A{target}" },
-  "gal.st.nameTakenTarget": { zh: "{loc}\u76EE\u6807\u5DF2\u6709\u540C\u540D\u300C{base}\u300D", en: "{loc} target already has \u201C{base}\u201D", ja: "{loc}\u306E\u79FB\u52D5\u5148\u306B\u540C\u540D\u300C{base}\u300D\u3042\u308A" },
-  "gal.st.nameUnchanged": { zh: "\u540D\u5B57\u672A\u53D8", en: "Name unchanged", ja: "\u540D\u524D\u306F\u5909\u308F\u3063\u3066\u3044\u307E\u305B\u3093" },
-  "gal.st.noLocalBytes": { zh: "\u672C\u5730\u5B57\u8282\u7F3A\u5931", en: "Local bytes missing", ja: "\u30ED\u30FC\u30AB\u30EB\u30C7\u30FC\u30BF\u304C\u3042\u308A\u307E\u305B\u3093" },
-  "gal.st.noOtherFolder": { zh: "\u6CA1\u6709\u522B\u7684\u6587\u4EF6\u5939\u53EF\u79FB\uFF08\u5148\u65B0\u5EFA\u4E00\u4E2A\uFF09", en: "No other folder to move to (create one first)", ja: "\u79FB\u52D5\u5148\u306E\u30D5\u30A9\u30EB\u30C0\u304C\u3042\u308A\u307E\u305B\u3093\uFF08\u5148\u306B\u4F5C\u6210\uFF09" },
-  "gal.st.notEnc": { zh: "\u8FD9\u4E0D\u662F\u52A0\u5BC6\u4F5C\u54C1", en: "This artwork isn\u2019t encrypted", ja: "\u3053\u308C\u306F\u6697\u53F7\u5316\u4F5C\u54C1\u3067\u306F\u3042\u308A\u307E\u305B\u3093" },
-  "gal.st.openActive": { zh: "\u8FD9\u753B\u6B63\u5F00\u7740 \u2014\u2014 \u5148\u9000\u51FA\u5230\u56FE\u5E93\u518D{verb}", en: "This artwork is open \u2014 exit to gallery first to {verb}", ja: "\u3053\u306E\u4F5C\u54C1\u306F\u958B\u3044\u3066\u3044\u307E\u3059 \u2014 \u5148\u306B\u30AE\u30E3\u30E9\u30EA\u30FC\u306B\u623B\u3063\u3066{verb}" },
-  "gal.st.purgeFail": { zh: "\u6C38\u4E45\u5220\u9664\u5931\u8D25\uFF1A{e}", en: "Permanent delete failed: {e}", ja: "\u5B8C\u5168\u524A\u9664\u5931\u6557\uFF1A{e}" },
-  "gal.st.purged": { zh: "\u5DF2\u6C38\u4E45\u5220\u9664\uFF1A{name}", en: "Permanently deleted: {name}", ja: "\u5B8C\u5168\u306B\u524A\u9664\uFF1A{name}" },
-  "gal.st.renamed": { zh: "\u5DF2\u91CD\u547D\u540D\uFF1A{to}", en: "Renamed: {to}", ja: "\u540D\u524D\u5909\u66F4\uFF1A{to}" },
-  "gal.st.renamed2": { zh: "\u5DF2\u91CD\u547D\u540D\uFF1A{from} \u2192 {to}", en: "Renamed: {from} \u2192 {to}", ja: "\u540D\u524D\u5909\u66F4\uFF1A{from} \u2192 {to}" },
-  "gal.st.restoreFail": { zh: "\u6062\u590D\u5931\u8D25\uFF1A{e}", en: "Restore failed: {e}", ja: "\u5FA9\u5143\u5931\u6557\uFF1A{e}" },
-  "gal.st.restored": { zh: "\u5DF2\u6062\u590D\uFF1A{name}", en: "Restored: {name}", ja: "\u5FA9\u5143\uFF1A{name}" },
-  "gal.st.restoredRenamed": { zh: "\u5DF2\u6062\u590D\uFF1A{name}\uFF08\u539F\u540D {orig} \u5DF2\u88AB\u5360\u7528\uFF09", en: "Restored: {name} (original name {orig} was taken)", ja: "\u5FA9\u5143\uFF1A{name}\uFF08\u5143\u306E\u540D\u524D {orig} \u306F\u4F7F\u7528\u4E2D\uFF09" },
-  "gal.st.reuploadConflict": { zh: "\u4E91\u7AEF\u5DF2\u5B58\u5728\u540C\u540D\u6587\u4EF6\uFF0C\u672A\u8986\u76D6\uFF1A{name}\uFF08\u8BF7\u6539\u540D\u6216\u4ECE\u4E91\u7AEF\u62C9\u53D6\uFF09", en: "A file with that name already exists on cloud; not overwritten: {name}", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u540C\u540D\u30D5\u30A1\u30A4\u30EB\u304C\u65E2\u306B\u5B58\u5728\u3057\u307E\u3059\u3002\u4E0A\u66F8\u304D\u3057\u307E\u305B\u3093\uFF1A{name}" },
-  "gal.st.reuploadFail": { zh: "\u91CD\u65B0\u4E0A\u4F20\u5931\u8D25\uFF1A{e}", en: "Re-upload failed: {e}", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u5931\u6557\uFF1A{e}" },
-  "gal.st.reuploaded": { zh: "\u5DF2\u91CD\u65B0\u4E0A\u4F20\uFF1A{name}", en: "Re-uploaded: {name}", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u5B8C\u4E86\uFF1A{name}" },
-  "gal.st.unlocked": { zh: "\u5DF2\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1\uFF08\u5BC6\u7801\u53EA\u5728\u5185\u5B58\uFF0C\u5173\u9875\u5373\u5FD8\uFF09", en: "Unlocked (password kept in memory only, forgotten on close)", ja: "\u30ED\u30C3\u30AF\u89E3\u9664\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u30E1\u30E2\u30EA\u306E\u307F\u3001\u9589\u3058\u308B\u3068\u7834\u68C4\uFF09" },
-  "gal.toTrash": { zh: "\u9001\u5230\u56DE\u6536\u7AD9", en: "Move to trash", ja: "\u30B4\u30DF\u7BB1\u3078" },
-  "gal.unloadLocal": { zh: "\u5378\u8F7D\u672C\u5730", en: "Unload local", ja: "\u30ED\u30FC\u30AB\u30EB\u3092\u89E3\u653E" },
-  "gal.verb.decrypt": { zh: "\u89E3\u9664\u52A0\u5BC6", en: "decrypt", ja: "\u6697\u53F7\u5316\u89E3\u9664" },
-  "gal.verb.encrypt": { zh: "\u52A0\u5BC6", en: "encrypt", ja: "\u6697\u53F7\u5316" },
-  "gc.redirectReadyMsg": { zh: "\u5DF2\u4FDD\u5B58\u5230\u672C\u673A\u3002\u63A5\u4E0B\u6765\u4F1A\u8DF3\u5230\u5FAE\u8F6F\u767B\u5F55\u9875\uFF0C\u767B\u5F55\u540E\u81EA\u52A8\u56DE\u6765\u3002", en: "Saved on this device. Next you'll go to the Microsoft sign-in page and come back automatically.", ja: "\u3053\u306E\u7AEF\u672B\u306B\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002\u6B21\u306B Microsoft \u306E\u30B5\u30A4\u30F3\u30A4\u30F3\u30DA\u30FC\u30B8\u3078\u79FB\u52D5\u3057\u3001\u30B5\u30A4\u30F3\u30A4\u30F3\u5F8C\u306B\u81EA\u52D5\u3067\u623B\u308A\u307E\u3059\u3002" },
-  "gm.alreadyCurrent": { zh: "\u5DF2\u7ECF\u662F\u5F53\u524D\u56FE\u5E93", en: "Already the current gallery", ja: "\u3059\u3067\u306B\u73FE\u5728\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u3067\u3059" },
-  "gm.backupDone": { zh: "\u5DF2\u4E0B\u8F7D {n} \u4EFD\u5907\u4EFD", en: "Downloaded {n} backups", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092 {n} \u4EF6\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F" },
-  "gm.closeDocFirst": { zh: "\u5148\u5173\u95ED\u5F53\u524D\u753B\uFF0C\u518D\u5207\u6362\u6216\u5378\u4E0B\u56FE\u5E93", en: "Close the current painting before switching or detaching the gallery", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u5207\u308A\u66FF\u3048\u308B\u524D\u306B\u3001\u73FE\u5728\u306E\u7D75\u3092\u9589\u3058\u3066\u304F\u3060\u3055\u3044" },
-  "gm.connectFolder": { zh: "\u8FDE\u63A5\u672C\u5730\u6587\u4EF6\u5939\u2026", en: "Connect local folder\u2026", ja: "\u30ED\u30FC\u30AB\u30EB\u30D5\u30A9\u30EB\u30C0\u30FC\u3092\u63A5\u7D9A\u2026" },
-  "gm.connectOneDrive": { zh: "\u8FDE\u63A5 OneDrive\u2026", en: "Connect OneDrive\u2026", ja: "OneDrive \u3092\u63A5\u7D9A\u2026" },
-  "gm.connectTitle": { zh: "\u8FDE\u63A5\u56FE\u5E93", en: "Connect a gallery", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u63A5\u7D9A" },
-  "gm.current": { zh: "\u5F53\u524D\u56FE\u5E93\uFF1A{label}\uFF08{src}\uFF09", en: "Current gallery: {label} ({src})", ja: "\u73FE\u5728\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\uFF1A{label}\uFF08{src}\uFF09" },
-  "gm.dirtyAllPushed": { zh: "\u5DF2\u5168\u90E8\u4E0A\u4F20\uFF0C\u7EE7\u7EED\u5207\u6362", en: "All uploaded \u2014 continuing", ja: "\u3059\u3079\u3066\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F\u3002\u7D9A\u884C\u3057\u307E\u3059" },
-  "gm.dirtyBackup": { zh: "\u4E0B\u8F7D\u5907\u4EFD", en: "Download backups", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9" },
-  "gm.dirtyForce": { zh: "\u4ECD\u8981\u5207\u6362", en: "Switch anyway", ja: "\u305D\u308C\u3067\u3082\u5207\u308A\u66FF\u3048\u308B" },
-  "gm.dirtyMsg": { zh: "\u5207\u6362\u540E\u5B83\u4EEC\u7559\u5728\u672C\u673A\u7F13\u5B58\uFF0C\u56DE\u5230\u6B64\u56FE\u5E93\u65F6\u7EE7\u7EED\u4E0A\u4F20\u3002\u6CE8\u610F\uFF1A\u6D4F\u89C8\u5668\u53EF\u80FD\u6E05\u9664\u672C\u673A\u7F13\u5B58\uFF0C\u7F13\u5B58\u4E0D\u662F\u4FDD\u9669\u7BB1\u2014\u2014\u5EFA\u8BAE\u5148\u4E0B\u8F7D\u5907\u4EFD\u3002", en: "They stay in this device's cache and upload when you return. Note: the browser may evict local cache \u2014 it is not a safe. Consider downloading backups first.", ja: "\u3053\u306E\u7AEF\u672B\u306E\u30AD\u30E3\u30C3\u30B7\u30E5\u306B\u6B8B\u308A\u3001\u623B\u3063\u305F\u3068\u304D\u306B\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u3055\u308C\u307E\u3059\u3002\u6CE8\u610F\uFF1A\u30D6\u30E9\u30A6\u30B6\u306F\u30AD\u30E3\u30C3\u30B7\u30E5\u3092\u524A\u9664\u3059\u308B\u3053\u3068\u304C\u3042\u308A\u307E\u3059\u3002\u5148\u306B\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u306E\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3092\u304A\u3059\u3059\u3081\u3057\u307E\u3059\u3002" },
-  "gm.dirtyTitle": { zh: "\u6709 {n} \u5F20\u753B\u672A\u4E0A\u4E91", en: "{n} paintings not yet uploaded", ja: "\u672A\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u306E\u7D75\u304C {n} \u679A\u3042\u308A\u307E\u3059" },
-  "gm.disconnected": { zh: "\u5DF2\u65AD\u5F00\u56FE\u5E93\u8FDE\u63A5\uFF08\u753B\u5E03\u4E0E\u56FE\u5E93\u6587\u4EF6\u4E0D\u53D7\u5F71\u54CD\uFF09", en: "Gallery disconnected (canvas and gallery files untouched)", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u63A5\u7D9A\u3092\u89E3\u9664\u3057\u307E\u3057\u305F\uFF08\u30AD\u30E3\u30F3\u30D0\u30B9\u3068\u30D5\u30A1\u30A4\u30EB\u306F\u305D\u306E\u307E\u307E\uFF09" },
-  "gm.dismiss": { zh: "\u5173\u95ED", en: "Dismiss", ja: "\u9589\u3058\u308B" },
-  "gm.fileProtoCloudHelp": { zh: "\u5355\u6587\u4EF6\u76F4\u63A5\u53CC\u51FB\u6253\u5F00\uFF08file://\uFF09\u65F6\uFF0C\u5FAE\u8F6F\u767B\u5F55\u7528\u4E0D\u4E86\u2014\u2014\u9700\u8981\u4E00\u4E2A\u672C\u5730 http \u73AF\u5883\u3002\u9003\u751F\u8231\uFF1A\u5728\u8FD9\u4E2A\u6587\u4EF6\u6240\u5728\u7684\u6587\u4EF6\u5939\u6253\u5F00\u547D\u4EE4\u884C\uFF0C\u8FD0\u884C\n\n    python -m http.server 8000\n\n\u7136\u540E\u7528\u6D4F\u89C8\u5668\u6253\u5F00 http://localhost:8000/{file} \u518D\u8FDE\u63A5 OneDrive\u3002\uFF08\u672C\u5730\u6587\u4EF6\u5939\u56FE\u5E93\u4E0D\u53D7\u5F71\u54CD\uFF0C\u53EF\u4EE5\u76F4\u63A5\u7528\u3002\uFF09", en: "Opened directly from disk (file://), Microsoft sign-in cannot work \u2014 it needs a local http origin. Escape hatch: open a terminal in this file's folder and run\n\n    python -m http.server 8000\n\nthen open http://localhost:8000/{file} in your browser and connect OneDrive there. (Local folder galleries are unaffected.)", ja: "\u30D5\u30A1\u30A4\u30EB\u3092\u76F4\u63A5\u958B\u3044\u305F\u72B6\u614B\uFF08file://\uFF09\u3067\u306F Microsoft \u30B5\u30A4\u30F3\u30A4\u30F3\u306F\u4F7F\u3048\u307E\u305B\u3093\u2014\u2014\u30ED\u30FC\u30AB\u30EB http \u74B0\u5883\u304C\u5FC5\u8981\u3067\u3059\u3002\u3053\u306E\u30D5\u30A1\u30A4\u30EB\u306E\u30D5\u30A9\u30EB\u30C0\u30FC\u3067\u30BF\u30FC\u30DF\u30CA\u30EB\u3092\u958B\u304D\u3001\n\n    python -m http.server 8000\n\n\u3092\u5B9F\u884C\u3057\u3001\u30D6\u30E9\u30A6\u30B6\u3067 http://localhost:8000/{file} \u3092\u958B\u3044\u3066\u304B\u3089 OneDrive \u306B\u63A5\u7D9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002\uFF08\u30ED\u30FC\u30AB\u30EB\u30D5\u30A9\u30EB\u30C0\u30FC\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u306F\u305D\u306E\u307E\u307E\u4F7F\u3048\u307E\u3059\u3002\uFF09" },
-  "gm.forgetDirtyWarn": { zh: "\u26A0 \u8BE5\u56FE\u5E93\u8FD8\u6709 {n} \u5F20\u753B\u672A\u4E0A\u4E91\uFF08\u7F13\u5B58\u7559\u5728\u672C\u673A\uFF0C\u91CD\u65B0\u8FDE\u63A5\u540E\u53EF\u7EE7\u7EED\u4E0A\u4F20\uFF09\u3002", en: "\u26A0 {n} paintings in that gallery are not yet uploaded (cache stays on this device; reconnect later to resume uploading).", ja: "\u26A0 \u305D\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u306B\u306F\u672A\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u306E\u7D75\u304C {n} \u679A\u3042\u308A\u307E\u3059\uFF08\u30AD\u30E3\u30C3\u30B7\u30E5\u306F\u7AEF\u672B\u306B\u6B8B\u308A\u3001\u518D\u63A5\u7D9A\u3067\u518D\u958B\u3067\u304D\u307E\u3059\uFF09\u3002" },
-  "gm.forgetHint": { zh: "\u5FD8\u8BB0\uFF08\u4E0D\u52A8\u6587\u4EF6\uFF09", en: "Forget (files untouched)", ja: "\u4E00\u89A7\u304B\u3089\u524A\u9664\uFF08\u30D5\u30A1\u30A4\u30EB\u306F\u305D\u306E\u307E\u307E\uFF09" },
-  "gm.forgetMsg": { zh: "\u53EA\u4ECE\u8FD9\u53F0\u8BBE\u5907\u7684\u540D\u518C\u79FB\u9664\uFF0C\u4E0D\u52A8\u56FE\u5E93\u672C\u8EAB\u7684\u6587\u4EF6\u3002", en: "Removes it from this device's list only; gallery files are untouched.", ja: "\u3053\u306E\u7AEF\u672B\u306E\u4E00\u89A7\u304B\u3089\u524A\u9664\u3059\u308B\u3060\u3051\u3067\u3001\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D5\u30A1\u30A4\u30EB\u306B\u306F\u89E6\u308C\u307E\u305B\u3093\u3002" },
-  "gm.forgetTitle": { zh: "\u5FD8\u8BB0\u300C{label}\u300D\uFF1F", en: 'Forget "{label}"?', ja: "\u300C{label}\u300D\u3092\u4E00\u89A7\u304B\u3089\u524A\u9664\u3057\u307E\u3059\u304B\uFF1F" },
-  "gm.forgotten": { zh: "\u5DF2\u5FD8\u8BB0 {label}", en: "Forgot {label}", ja: "{label} \u3092\u4E00\u89A7\u304B\u3089\u524A\u9664\u3057\u307E\u3057\u305F" },
-  "gm.historyCaption": { zh: "\u6700\u8FD1\u8FDE\u63A5\u8FC7\u7684\uFF1A", en: "Recently connected:", ja: "\u6700\u8FD1\u63A5\u7D9A\u3057\u305F\u3082\u306E\uFF1A" },
-  "gm.offlineBanner": { zh: "\u56FE\u5E93\u300C{label}\u300D\u5DF2\u79BB\u7EBF\u2014\u2014\u753B\u7167\u5E38\uFF0C\u540C\u6B65\u6682\u505C", en: 'Gallery "{label}" is offline \u2014 keep painting, sync paused', ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u300C{label}\u300D\u306F\u30AA\u30D5\u30E9\u30A4\u30F3\u2014\u2014\u63CF\u753B\u306F\u901A\u5E38\u3069\u304A\u308A\u3001\u540C\u671F\u306F\u4E00\u6642\u505C\u6B62" },
-  "gm.offlineSuffix": { zh: " \xB7 \u5DF2\u79BB\u7EBF", en: " \xB7 offline", ja: " \xB7 \u30AA\u30D5\u30E9\u30A4\u30F3" },
-  "gm.reconnect": { zh: "\u91CD\u65B0\u8FDE\u63A5", en: "Reconnect", ja: "\u518D\u63A5\u7D9A" },
-  "gm.reconnected": { zh: "\u5DF2\u91CD\u65B0\u8FDE\u63A5", en: "Reconnected", ja: "\u518D\u63A5\u7D9A\u3057\u307E\u3057\u305F" },
-  "gm.seedFresh": { zh: "\u51FA\u5382\u5168\u65B0", en: "Factory fresh", ja: "\u65B0\u898F\uFF08\u30C7\u30D5\u30A9\u30EB\u30C8\uFF09" },
-  "gm.seedInherit": { zh: "\u7EE7\u627F\u5F53\u524D\u7B14\u5237\u4E0E\u8BBE\u7F6E", en: "Inherit current brushes & settings", ja: "\u73FE\u5728\u306E\u30D6\u30E9\u30B7\u3068\u8A2D\u5B9A\u3092\u5F15\u304D\u7D99\u3050" },
-  "gm.seedMsg": { zh: "\u300C\u7EE7\u627F\u300D\u62F7\u8D1D\u4E00\u4EFD\u5F53\u524D\u7B14\u5237\u4E0E\u8BBE\u7F6E\uFF0C\u6B64\u540E\u5404\u81EA\u72EC\u7ACB\uFF1B\u300C\u51FA\u5382\u5168\u65B0\u300D\u4ECE\u5185\u7F6E\u9ED8\u8BA4\u8D77\u6B65\u3002", en: '"Inherit" copies your current brushes & settings (independent afterwards); "factory fresh" starts from built-in defaults.', ja: "\u300C\u5F15\u304D\u7D99\u3050\u300D\u306F\u73FE\u5728\u306E\u30D6\u30E9\u30B7\u3068\u8A2D\u5B9A\u3092\u30B3\u30D4\u30FC\uFF08\u4EE5\u5F8C\u306F\u72EC\u7ACB\uFF09\u3002\u300C\u65B0\u898F\u300D\u306F\u5185\u8535\u30C7\u30D5\u30A9\u30EB\u30C8\u304B\u3089\u59CB\u3081\u307E\u3059\u3002" },
-  "gm.seedTitle": { zh: "\u65B0\u56FE\u5E93\u7684\u7B14\u5237\u4E0E\u8BBE\u7F6E", en: "Brushes & settings for the new gallery", ja: "\u65B0\u3057\u3044\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D6\u30E9\u30B7\u3068\u8A2D\u5B9A" },
-  "gm.srcFolder": { zh: "\u672C\u5730\u6587\u4EF6\u5939", en: "Local folder", ja: "\u30ED\u30FC\u30AB\u30EB\u30D5\u30A9\u30EB\u30C0\u30FC" },
-  "gm.srcOneDrive": { zh: "OneDrive", en: "OneDrive", ja: "OneDrive" },
-  "gm.switchEntry": { zh: "\u5207\u6362\u56FE\u5E93\u2026", en: "Switch gallery\u2026", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u3092\u5207\u308A\u66FF\u3048\u2026" },
-  "gm.switched": { zh: "\u5DF2\u5207\u6362\u5230 {label}", en: "Switched to {label}", ja: "{label} \u306B\u5207\u308A\u66FF\u3048\u307E\u3057\u305F" },
-  "gm.transientAdopted": { zh: "\u5DF2\u8FDE\u63A5\u56FE\u5E93\uFF0C\u8FD9\u5E45\u753B\u5DF2\u81EA\u52A8\u4FDD\u5B58\u4E3A\u300C{name}\u300D", en: 'Gallery connected \u2014 this artwork was saved as "{name}"', ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306B\u63A5\u7D9A\u3057\u307E\u3057\u305F\u3002\u3053\u306E\u4F5C\u54C1\u306F\u300C{name}\u300D\u3068\u3057\u3066\u4FDD\u5B58\u3055\u308C\u307E\u3057\u305F" },
-  "gs.changePwBusy": { zh: "\u6B63\u5728\u66F4\u6539\u5BC6\u7801 {n}/{total}\u2026", en: "Changing password {n}/{total}\u2026", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u5909\u66F4\u4E2D {n}/{total}\u2026" },
-  "gs.changePwConfirmMsg": { zh: "\u672C\u673A\u6709\u5B57\u8282\u7684\u52A0\u5BC6\u4F5C\u54C1\u4F1A\u7528\u65B0\u5BC6\u7801\u91CD\u5C01\uFF08\u4E91\u7AEF\u53EA\u89C1\u5BC6\u6587\uFF09\u3002\u4E91\u7AEF\u672A\u7F13\u5B58\u3001\u79BB\u7EBF\u6216\u5931\u8D25\u7684\u4F5C\u54C1\u4ECD\u7528\u65E7\u5BC6\u7801\uFF0C\u6253\u5F00\u65F6\u4F1A\u5355\u72EC\u95EE\u3002", en: "Encrypted artworks cached here are re-sealed with the new password (the cloud only ever sees ciphertext). Artworks not cached, offline, or failing stay on the old password and will ask for it when opened.", ja: "\u3053\u306E\u7AEF\u672B\u306B\u3042\u308B\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u3067\u518D\u5C01\u5370\u3057\u307E\u3059\uFF08\u30AF\u30E9\u30A6\u30C9\u306B\u306F\u6697\u53F7\u6587\u3057\u304B\u6E21\u308A\u307E\u305B\u3093\uFF09\u3002\u672A\u30AD\u30E3\u30C3\u30B7\u30E5\u30FB\u30AA\u30D5\u30E9\u30A4\u30F3\u30FB\u5931\u6557\u3057\u305F\u4F5C\u54C1\u306F\u65E7\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u307E\u307E\u3067\u3001\u958B\u304F\u3068\u304D\u306B\u805E\u304B\u308C\u307E\u3059\u3002" },
-  "gs.changePwConfirmTitle": { zh: "\u66F4\u6539\u5BC6\u7801\uFF1F", en: "Change password?", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4\u3057\u307E\u3059\u304B\uFF1F" },
-  "gs.changePwDone": { zh: "\u5BC6\u7801\u5DF2\u66F4\u6539\uFF1A{n} \u4EF6\u5DF2\u7528\u65B0\u5BC6\u7801\u91CD\u5C01", en: "Password changed: {n} re-sealed", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4\u3057\u307E\u3057\u305F\uFF1A{n} \u4EF6\u3092\u518D\u5C01\u5370" },
-  "gs.changePwDoneKept": { zh: "\u5BC6\u7801\u5DF2\u66F4\u6539\uFF1A{n} \u4EF6\u5DF2\u91CD\u5C01\uFF0C{m} \u4EF6\u4ECD\u7528\u65E7\u5BC6\u7801\uFF08{k} \u4E2A\u6587\u4EF6\u5939\u6E05\u5355\u4E0D\u5B8C\u6574\uFF09", en: "Password changed: {n} re-sealed, {m} still on the old password ({k} folders listed incompletely)", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5909\u66F4\uFF1A{n} \u4EF6\u3092\u518D\u5C01\u5370\u3001{m} \u4EF6\u306F\u65E7\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u307E\u307E\uFF08{k} \u30D5\u30A9\u30EB\u30C0\u306F\u4E00\u89A7\u304C\u4E0D\u5B8C\u5168\uFF09" },
-  "gs.changePwNewMsg": { zh: "\u8F93\u5165\u65B0\u5BC6\u7801\u3002\u672C\u673A\u6709\u5B57\u8282\u7684\u52A0\u5BC6\u4F5C\u54C1\u4F1A\u9010\u4EF6\u7528\u65B0\u5BC6\u7801\u91CD\u5C01\uFF0C\u4E0D\u7ECF\u660E\u6587\u3002", en: "Enter the new password. Encrypted artworks cached on this device are re-sealed one by one, never through plaintext.", ja: "\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\u3002\u3053\u306E\u7AEF\u672B\u306B\u3042\u308B\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u3001\u5E73\u6587\u3092\u7D4C\u305A\u306B\u9806\u306B\u518D\u5C01\u5370\u3057\u307E\u3059\u3002" },
-  "gs.changePwNoVerifier": { zh: "\u8FD8\u6CA1\u8BBE\u8FC7\u56FE\u5E93\u5BC6\u7801\uFF1B\u7B2C\u4E00\u6B21\u52A0\u5BC6\u4F5C\u54C1\u65F6\u4F1A\u8BBE\u7F6E\u3002", en: "No gallery password yet \u2014 you set it when you first encrypt an artwork.", ja: "\u307E\u3060\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u3042\u308A\u307E\u305B\u3093\u3002\u4F5C\u54C1\u3092\u521D\u3081\u3066\u6697\u53F7\u5316\u3059\u308B\u3068\u304D\u306B\u8A2D\u5B9A\u3057\u307E\u3059\u3002" },
-  "gs.changePwOldMsg": { zh: "\u5148\u9A8C\u8BC1\u5F53\u524D\u7684\u56FE\u5E93\u5BC6\u7801\u3002", en: "Verify the current gallery password first.", ja: "\u307E\u305A\u73FE\u5728\u306E\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002" },
-  "gs.changePwOldTitle": { zh: "\u8F93\u5165\u5F53\u524D\u5BC6\u7801", en: "Enter current password", ja: "\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B" },
-  "gs.changePwSame": { zh: "\u65B0\u5BC6\u7801\u4E0E\u5F53\u524D\u5BC6\u7801\u76F8\u540C\uFF0C\u6CA1\u6709\u66F4\u6539\u3002", en: "Same as the current password \u2014 nothing changed.", ja: "\u73FE\u5728\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3068\u540C\u3058\u3067\u3059\u3002\u5909\u66F4\u306F\u3042\u308A\u307E\u305B\u3093\u3002" },
-  "gs.changePwScanning": { zh: "\u6B63\u5728\u6E05\u70B9\u52A0\u5BC6\u4F5C\u54C1\u2026", en: "Listing encrypted artworks\u2026", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u78BA\u8A8D\u4E2D\u2026" },
-  "gs.clipboardNewFailed": { zh: "\u4ECE\u526A\u5207\u677F\u65B0\u5EFA\u5931\u8D25\uFF1A{err}", en: "Failed to create from clipboard: {err}", ja: "\u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u304B\u3089\u306E\u65B0\u898F\u4F5C\u6210\u306B\u5931\u6557\u3057\u307E\u3057\u305F\uFF1A{err}" },
-  "gs.clipboardNoImage": { zh: "\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u56FE\u7247", en: "No image in the clipboard", ja: "\u30AF\u30EA\u30C3\u30D7\u30DC\u30FC\u30C9\u306B\u753B\u50CF\u304C\u3042\u308A\u307E\u305B\u3093" },
-  "gs.cloudDisabledNoGallery": { zh: "\u4E91\u7AEF\u529F\u80FD\u5DF2\u505C\u7528\uFF0C\u56FE\u5E93\u4E0D\u53EF\u7528\uFF08\u53EF\u5728\u8BBE\u7F6E\u91CC\u91CD\u65B0\u5F00\u542F\uFF09", en: "Cloud features are disabled; the gallery is unavailable (re-enable in settings)", ja: "\u30AF\u30E9\u30A6\u30C9\u6A5F\u80FD\u304C\u7121\u52B9\u306E\u305F\u3081\u3001\u30AE\u30E3\u30E9\u30EA\u30FC\u306F\u5229\u7528\u3067\u304D\u307E\u305B\u3093\uFF08\u8A2D\u5B9A\u3067\u518D\u5EA6\u6709\u52B9\u5316\u3067\u304D\u307E\u3059\uFF09" },
-  "gs.created": { zh: "\u65B0\u5EFA\uFF1A{name}\uFF08{w}\xD7{h}\uFF09", en: "Created: {name} ({w}\xD7{h})", ja: "\u65B0\u898F\u4F5C\u6210\uFF1A{name}\uFF08{w}\xD7{h}\uFF09" },
-  "gs.createdTransient": { zh: "\u5DF2\u65B0\u5EFA\u753B\u5E03 {w}\xD7{h}\uFF08\u672A\u4FDD\u5B58\xB7\u65E0\u5BB6\u2014\u2014\u4FDD\u5B58\u65F6\u9009\u62E9\u53BB\u5904\uFF09", en: "New canvas {w}\xD7{h} (unsaved, no home \u2014 choose where to save it later)", ja: "\u65B0\u3057\u3044\u30AD\u30E3\u30F3\u30D0\u30B9 {w}\xD7{h}\uFF08\u672A\u4FDD\u5B58\u30FB\u4FDD\u5B58\u6642\u306B\u4FDD\u5B58\u5148\u3092\u9078\u629E\uFF09" },
-  "gs.creatingFolder": { zh: "\u6B63\u5728\u521B\u5EFA\u6587\u4EF6\u5939 {name}\u2026", en: "Creating folder {name}\u2026", ja: "\u30D5\u30A9\u30EB\u30C0 {name} \u3092\u4F5C\u6210\u4E2D\u2026" },
-  "gs.folderCreateFailed": { zh: "\u5EFA\u6587\u4EF6\u5939\u5931\u8D25\uFF1A{err}", en: "Failed to create folder: {err}", ja: "\u30D5\u30A9\u30EB\u30C0\u306E\u4F5C\u6210\u306B\u5931\u6557\u3057\u307E\u3057\u305F\uFF1A{err}" },
-  "gs.folderCreated": { zh: "\u5DF2\u5EFA\u6587\u4EF6\u5939\uFF1A{name}", en: "Folder created: {name}", ja: "\u30D5\u30A9\u30EB\u30C0\u3092\u4F5C\u6210\u3057\u307E\u3057\u305F\uFF1A{name}" },
-  "gs.folderExists": { zh: '\u6587\u4EF6\u5939 "{name}" \u5DF2\u5B58\u5728', en: 'Folder "{name}" already exists', ja: "\u30D5\u30A9\u30EB\u30C0\u300C{name}\u300D\u306F\u65E2\u306B\u5B58\u5728\u3057\u307E\u3059" },
-  "gs.folderNameEmpty": { zh: "\u6587\u4EF6\u5939\u540D\u4E0D\u80FD\u7A7A", en: "Folder name cannot be empty", ja: "\u30D5\u30A9\u30EB\u30C0\u540D\u3092\u7A7A\u306B\u3067\u304D\u307E\u305B\u3093" },
-  "gs.folderNameNoSlash": { zh: "\u6587\u4EF6\u5939\u540D\u4E0D\u80FD\u542B /\uFF08\u8981\u5EFA\u5D4C\u5957\u8BF7\u8FDB\u5BF9\u5E94\u6587\u4EF6\u5939\u518D\u70B9\u65B0\u5EFA\uFF09", en: "Folder name cannot contain / (to nest, enter the target folder first, then create)", ja: "\u30D5\u30A9\u30EB\u30C0\u540D\u306B / \u3092\u542B\u3081\u3089\u308C\u307E\u305B\u3093\uFF08\u5165\u308C\u5B50\u3092\u4F5C\u308B\u306B\u306F\u5BFE\u8C61\u30D5\u30A9\u30EB\u30C0\u306B\u5165\u3063\u3066\u304B\u3089\u4F5C\u6210\u3057\u3066\u304F\u3060\u3055\u3044\uFF09" },
-  "gs.folderNamePlaceholder": { zh: "\u6587\u4EF6\u5939\u540D", en: "Folder name", ja: "\u30D5\u30A9\u30EB\u30C0\u540D" },
-  "gs.folderNeedSignin": { zh: "\u56FE\u5E93\u79BB\u7EBF\uFF08\u672A\u767B\u5F55\u6216\u6743\u9650\u5931\u6548\uFF09\uFF0C\u65E0\u6CD5\u65B0\u5EFA\u6587\u4EF6\u5939", en: "Gallery is offline (not signed in / permission lost) \u2014 can't create a folder", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u304C\u30AA\u30D5\u30E9\u30A4\u30F3\uFF08\u672A\u30ED\u30B0\u30A4\u30F3\uFF0F\u6A29\u9650\u5207\u308C\uFF09\u306E\u305F\u3081\u30D5\u30A9\u30EB\u30C0\u3092\u4F5C\u6210\u3067\u304D\u307E\u305B\u3093" },
-  "gs.footUsage": { zh: "\u4F5C\u54C1\u5360\u7528\uFF1A{size}\uFF08{count} \u4EF6\uFF09", en: "Artwork usage: {size} ({count} items)", ja: "\u4F5C\u54C1\u306E\u4F7F\u7528\u91CF\uFF1A{size}\uFF08{count} \u4EF6\uFF09" },
-  "gs.footUsageTitle": { zh: "\u6D4F\u89C8\u5668\u5206\u914D\u4E0A\u9650\u7EA6 {size}\uFF1B\u5F53\u524D {pct}% \u5DF2\u7528\uFF08\u542B SW \u7F13\u5B58\u7B49\uFF09", en: "Browser allocation cap ~{size}; {pct}% used now (incl. SW cache, etc.)", ja: "\u30D6\u30E9\u30A6\u30B6\u5272\u308A\u5F53\u3066\u4E0A\u9650\u306F\u7D04 {size}\uFF1B\u73FE\u5728 {pct}% \u4F7F\u7528\u4E2D\uFF08SW \u30AD\u30E3\u30C3\u30B7\u30E5\u7B49\u3092\u542B\u3080\uFF09" },
-  "gs.lockLabel": { zh: "\u9501\u5B9A\u52A0\u5BC6\u4F5C\u54C1\uFF08\u5FD8\u6389\u5BC6\u7801\uFF09", en: "Lock encrypted works (forget password)", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u30ED\u30C3\u30AF\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u7834\u68C4\uFF09" },
-  "gs.locked": { zh: "\u5DF2\u9501\u5B9A\u52A0\u5BC6\u4F5C\u54C1\uFF08\u5BC6\u7801\u5DF2\u4ECE\u5185\u5B58\u6E05\u9664\uFF09", en: "Encrypted works locked (password cleared from memory)", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u30ED\u30C3\u30AF\u3057\u307E\u3057\u305F\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u30E1\u30E2\u30EA\u304B\u3089\u6D88\u53BB\uFF09" },
-  "gs.newFolderDefault": { zh: "\u65B0\u6587\u4EF6\u5939", en: "New folder", ja: "\u65B0\u3057\u3044\u30D5\u30A9\u30EB\u30C0" },
-  "gs.newFolderTitle": { zh: "\u65B0\u5EFA\u6587\u4EF6\u5939", en: "New folder", ja: "\u65B0\u3057\u3044\u30D5\u30A9\u30EB\u30C0" },
-  "gs.pwRecorded": { zh: "\u5DF2\u8BB0\u4E0B\u5BC6\u7801\uFF08\u6253\u5F00\u52A0\u5BC6\u4F5C\u54C1\u65F6\u9A8C\u8BC1\uFF09", en: "Password recorded (verified when opening an encrypted work)", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A18\u9332\u3057\u307E\u3057\u305F\uFF08\u6697\u53F7\u5316\u4F5C\u54C1\u3092\u958B\u304F\u3068\u304D\u306B\u691C\u8A3C\uFF09" },
-  "gs.pwResetDone": { zh: "\u5DF2\u91CD\u7F6E\u3002\u4E0B\u6B21\u52A0\u5BC6\u65F6\u8BBE\u7F6E\u65B0\u5BC6\u7801", en: "Reset done. Set a new password next time you encrypt", ja: "\u30EA\u30BB\u30C3\u30C8\u3057\u307E\u3057\u305F\u3002\u6B21\u56DE\u306E\u6697\u53F7\u5316\u6642\u306B\u65B0\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3057\u307E\u3059" },
-  "gs.pwWrongRetry": { zh: "\u5BC6\u7801\u4E0D\u5BF9\uFF0C\u518D\u8BD5\u4E00\u6B21", en: "Wrong password, try again", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u304C\u9055\u3044\u307E\u3059\u3002\u3082\u3046\u4E00\u5EA6" },
-  "gs.quotaCritical": { zh: "\u672C\u5730\u5B58\u50A8 {pct}% \u5DF2\u6EE1 \u2014 \u7ACB\u5373\u53BB\u56FE\u5E93\u5378\u8F7D\u4E0D\u5E38\u7528\u7684\u4F5C\u54C1", en: "Local storage {pct}% full \u2014 go to the gallery now and offload works you rarely use", ja: "\u30ED\u30FC\u30AB\u30EB\u30B9\u30C8\u30EC\u30FC\u30B8\u304C {pct}% \u4F7F\u7528\u6E08\u307F \u2014 \u4ECA\u3059\u3050\u30AE\u30E3\u30E9\u30EA\u30FC\u3067\u4F7F\u308F\u306A\u3044\u4F5C\u54C1\u3092\u9000\u907F\u3057\u3066\u304F\u3060\u3055\u3044" },
-  "gs.quotaWarn": { zh: "\u672C\u5730\u5B58\u50A8 {pct}% \u5DF2\u7528 \u2014 \u5EFA\u8BAE\u5728\u56FE\u5E93\u6574\u7406", en: "Local storage {pct}% used \u2014 consider tidying up in the gallery", ja: "\u30ED\u30FC\u30AB\u30EB\u30B9\u30C8\u30EC\u30FC\u30B8\u304C {pct}% \u4F7F\u7528\u6E08\u307F \u2014 \u30AE\u30E3\u30E9\u30EA\u30FC\u3067\u6574\u7406\u3059\u308B\u3053\u3068\u3092\u304A\u3059\u3059\u3081\u3057\u307E\u3059" },
-  "gs.resetPwMsg": { zh: "\u91CD\u7F6E\u540E\u4E0B\u6B21\u52A0\u5BC6\u53EF\u8BBE\u65B0\u5BC6\u7801\uFF1B\u4F46\u5DF2\u6709\u52A0\u5BC6\u4F5C\u54C1\u4ECD\u662F\u65E7\u5BC6\u7801\uFF0C\u65E0\u6CD5\u7528\u65B0\u5BC6\u7801\u89E3\u9501\u3002\u786E\u5B9A\u91CD\u7F6E\uFF1F", en: "After reset you can set a new password for future encryption; existing encrypted works keep the old password and cannot be unlocked with the new one. Reset?", ja: "\u30EA\u30BB\u30C3\u30C8\u5F8C\u306F\u65B0\u3057\u3044\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u8A2D\u5B9A\u3067\u304D\u307E\u3059\u304C\u3001\u65E2\u5B58\u306E\u6697\u53F7\u5316\u4F5C\u54C1\u306F\u65E7\u30D1\u30B9\u30EF\u30FC\u30C9\u306E\u307E\u307E\u3067\u3059\u3002\u30EA\u30BB\u30C3\u30C8\u3057\u307E\u3059\u304B\uFF1F" },
-  "gs.resetPwTitle": { zh: "\u91CD\u7F6E\u56FE\u5E93\u5BC6\u7801\uFF1F", en: "Reset gallery password?", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u30EA\u30BB\u30C3\u30C8\uFF1F" },
-  "gs.unlockLabel": { zh: "\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1\u2026", en: "Unlock encrypted works\u2026", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u306E\u30ED\u30C3\u30AF\u89E3\u9664\u2026" },
-  "gs.unlockNoLocalMsg": { zh: "\u672C\u5730\u6682\u65E0\u52A0\u5BC6\u4F5C\u54C1\u53EF\u9A8C\u8BC1\u2014\u2014\u5BC6\u7801\u5148\u6536\u4E0B\uFF0C\u7528\u5230\u65F6\u81EA\u52A8\u9A8C\u8BC1", en: "No local encrypted work to verify against \u2014 the password is saved for now and verified automatically when needed", ja: "\u30ED\u30FC\u30AB\u30EB\u306B\u691C\u8A3C\u3067\u304D\u308B\u6697\u53F7\u5316\u4F5C\u54C1\u304C\u3042\u308A\u307E\u305B\u3093\u2014\u2014\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u5148\u306B\u4FDD\u5B58\u3057\u3001\u4F7F\u7528\u6642\u306B\u81EA\u52D5\u3067\u691C\u8A3C\u3057\u307E\u3059" },
-  "gs.unlockTitle": { zh: "\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1", en: "Unlock encrypted works", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u306E\u30ED\u30C3\u30AF\u89E3\u9664" },
-  "gs.unlockVerifierMsg": { zh: "\u8F93\u5165\u56FE\u5E93\u5BC6\u7801\uFF08\u8DDF\u8D26\u53F7\u8D70\uFF09\u3002\u5FD8\u8BB0 = \u5185\u5BB9\u6C38\u4E45\u627E\u4E0D\u56DE\uFF0C\u6CA1\u6709\u540E\u95E8", en: "Enter the gallery password (tied to your account). If forgotten, content is unrecoverable \u2014 there is no backdoor", ja: "\u30AE\u30E3\u30E9\u30EA\u30FC\u306E\u30D1\u30B9\u30EF\u30FC\u30C9\u3092\u5165\u529B\uFF08\u30A2\u30AB\u30A6\u30F3\u30C8\u306B\u7D10\u3065\u304F\uFF09\u3002\u5FD8\u308C\u305F\u5834\u5408\u3001\u5185\u5BB9\u306F\u5FA9\u5143\u3067\u304D\u307E\u305B\u3093" },
-  "gs.unlocked": { zh: "\u5DF2\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1\uFF08\u5BC6\u7801\u53EA\u5728\u5185\u5B58\uFF0C\u5173\u9875\u5373\u5FD8\uFF09", en: "Encrypted works unlocked (password stays in memory only, forgotten on page close)", ja: "\u6697\u53F7\u5316\u4F5C\u54C1\u306E\u30ED\u30C3\u30AF\u3092\u89E3\u9664\u3057\u307E\u3057\u305F\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u30E1\u30E2\u30EA\u306E\u307F\u3001\u30DA\u30FC\u30B8\u3092\u9589\u3058\u308B\u3068\u6D88\u53BB\uFF09" },
-  "gs.usageUnknown": { zh: "\u5360\u7528\uFF1A\u672A\u77E5", en: "Usage: unknown", ja: "\u4F7F\u7528\u91CF\uFF1A\u4E0D\u660E" },
-  "gs.usedSuffix": { zh: " \xB7 \u5DF2\u7528 {pct}%", en: " \xB7 {pct}% used", ja: " \xB7 {pct}% \u4F7F\u7528" },
-  "gv.badge.cloudOnly": { zh: "\u7EAF\u4E91\u7AEF\uFF08\u672A\u62C9\u5230\u672C\u5730\uFF09", en: "Cloud only (not downloaded)", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u307F\uFF08\u672A\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\uFF09" },
-  "gv.badge.conflictBoth": { zh: "\u4E91\u7AEF\u4E0E\u672C\u673A\u5404\u6709\u65B0\u6539\u52A8 \u2014\u2014 \u6253\u5F00\u6216\u63A8\u9001\u65F6\u4F1A\u8BF7\u4F60\u88C1\u51B3", en: "New changes both in the cloud and on this device \u2014 you'll be asked to resolve on open or push", ja: "\u30AF\u30E9\u30A6\u30C9\u3068\u3053\u306E\u7AEF\u672B\u306E\u4E21\u65B9\u306B\u65B0\u3057\u3044\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u958B\u304F\u304B\u30D7\u30C3\u30B7\u30E5\u6642\u306B\u9078\u629E\u3092\u6C42\u3081\u3089\u308C\u307E\u3059" },
-  "gv.badge.dirtyBoth": { zh: "\u672C\u5730+\u4E91\u7AEF \xB7 \u672C\u5730\u6709\u672A\u63A8\u6539\u52A8", en: "Local+cloud \xB7 unpushed local edits", ja: "\u30ED\u30FC\u30AB\u30EB+\u30AF\u30E9\u30A6\u30C9 \xB7 \u672A\u30D7\u30C3\u30B7\u30E5\u306E\u5909\u66F4\u3042\u308A" },
-  "gv.badge.float": { zh: "\u4EC5\u672C\u5730 \xB7 \u6709\u672A\u4E0A\u4F20\u7684\u6539\u52A8\uFF08\u4ECE\u672A\u540C\u6B65\uFF09", en: "Local only \xB7 unsynced edits (never uploaded)" },
-  "gv.badge.ghost": { zh: "\u4E91\u7AEF\u526F\u672C\u5DF2\u88AB\u79FB\u52A8\u6216\u5220\u9664\uFF0C\u672C\u5730\u6709\u672A\u63A8\u9001\u7684\u4FEE\u6539 \u2014\u2014 \u53EF\u300C\u91CD\u547D\u540D\u7559\u5B58\u300D\u6216\u300C\u4E22\u5F03\u300D", en: "Cloud copy was moved or deleted while local has unpushed edits \u2014 \u201Crename & keep\u201D or \u201Cdiscard\u201D", ja: "\u30AF\u30E9\u30A6\u30C9\u5074\u304C\u79FB\u52D5/\u524A\u9664\u3055\u308C\u3001\u30ED\u30FC\u30AB\u30EB\u306B\u672A\u30D7\u30C3\u30B7\u30E5\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u300C\u6539\u540D\u3057\u3066\u4FDD\u6301\u300D\u304B\u300C\u7834\u68C4\u300D\u3092" },
-  "gv.badge.localOnly": { zh: "\u4EC5\u672C\u5730\uFF08\u672A\u4E0A\u4F20\u4E91\u7AEF\uFF09", en: "Local only (not uploaded)", ja: "\u30ED\u30FC\u30AB\u30EB\u306E\u307F\uFF08\u672A\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\uFF09" },
-  "gv.badge.localPlain": { zh: "\u672C\u5730", en: "Local", ja: "\u30ED\u30FC\u30AB\u30EB" },
-  "gv.badge.newerOnCloud": { zh: "\u4E91\u7AEF\u6709\u65B0\u7248\u672C \u2014\u2014 \u6253\u5F00\u4F1A\u81EA\u52A8\u66F4\u65B0\u5230\u4E91\u7AEF\u7248", en: "A newer version exists in the cloud \u2014 opening will update to it", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u65B0\u3057\u3044\u30D0\u30FC\u30B8\u30E7\u30F3\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u958B\u304F\u3068\u81EA\u52D5\u7684\u306B\u66F4\u65B0\u3055\u308C\u307E\u3059" },
-  "gv.badge.pendingGone": { zh: "\u4E91\u7AEF\u526F\u672C\u5DF2\u6D88\u5931\uFF0C\u672C\u5730\u5E72\u51C0\u526F\u672C\u5F85\u5904\u7406 \u2014\u2014 \u53EF\u300C\u91CD\u65B0\u4E0A\u4F20\u300D\u63A8\u56DE\u4E91\u7AEF\uFF0C\u6216\u300C\u5220\u9664\u300D\uFF1B\u5BBD\u9650\u671F\u540E\u81EA\u52A8\u79FB\u5165\u56DE\u6536\u7AD9", en: "Cloud copy is gone; clean local copy pending \u2014 \u201Cre-upload\u201D to push it back, or \u201Cdelete\u201D; auto-trashed after the grace period", ja: "\u30AF\u30E9\u30A6\u30C9\u5074\u304C\u6D88\u5931\u3001\u30ED\u30FC\u30AB\u30EB\u306E\u30AF\u30EA\u30FC\u30F3\u306A\u8907\u88FD\u304C\u4FDD\u7559\u4E2D\u2014\u2014\u300C\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u300D\u304B\u300C\u524A\u9664\u300D\u3092\u3002\u7336\u4E88\u671F\u9593\u5F8C\u306F\u81EA\u52D5\u3067\u30B4\u30DF\u7BB1\u3078" },
-  "gv.badge.syncedBoth": { zh: "\u672C\u5730+\u4E91\u7AEF\uFF08\u5DF2\u540C\u6B65\uFF09", en: "Local+cloud (synced)", ja: "\u30ED\u30FC\u30AB\u30EB+\u30AF\u30E9\u30A6\u30C9\uFF08\u540C\u671F\u6E08\u307F\uFF09" },
-  "gv.rootDir": { zh: "/ \u6839\u76EE\u5F55", en: "/ Root", ja: "/ \u30EB\u30FC\u30C8" },
-  "gv.src.both": { zh: "\u672C\u5730+\u4E91\u7AEF", en: "Local+cloud", ja: "\u30ED\u30FC\u30AB\u30EB+\u30AF\u30E9\u30A6\u30C9" },
-  "gv.src.cloud": { zh: "\u4E91\u7AEF", en: "Cloud", ja: "\u30AF\u30E9\u30A6\u30C9" },
-  "gv.src.cloudStillAlive": { zh: "{base}\uFF08\u4E91\u7AEF\u4ECD\u5728\uFF09", en: "{base} (still in cloud)", ja: "{base}\uFF08\u30AF\u30E9\u30A6\u30C9\u306B\u6B8B\u5B58\uFF09" },
-  "gv.src.local": { zh: "\u672C\u5730", en: "Local", ja: "\u30ED\u30FC\u30AB\u30EB" },
-  "gv.time.dayAgo": { zh: "{n} \u5929\u524D", en: "{n} d ago", ja: "{n} \u65E5\u524D" },
-  "gv.time.hourAgo": { zh: "{n} \u5C0F\u65F6\u524D", en: "{n} h ago", ja: "{n} \u6642\u9593\u524D" },
-  "gv.time.justNow": { zh: "\u521A\u521A", en: "Just now", ja: "\u305F\u3063\u305F\u4ECA" },
-  "gv.time.minAgo": { zh: "{n} \u5206\u949F\u524D", en: "{n} min ago", ja: "{n} \u5206\u524D" },
-  "gv.time.unknown": { zh: "\u672A\u77E5", en: "Unknown", ja: "\u4E0D\u660E" },
-  "menu.decrypt": { zh: "\u89E3\u9664\u52A0\u5BC6\u2026", en: "Decrypt\u2026", ja: "\u6697\u53F7\u5316\u3092\u89E3\u9664\u2026" },
-  "menu.encrypt": { zh: "\u52A0\u5BC6\u4FDD\u62A4\u2026", en: "Encrypt\u2026", ja: "\u6697\u53F7\u5316\u2026" },
-  "name.copySuffix": { zh: "\u526F\u672C", en: "copy", ja: "\u30B3\u30D4\u30FC" },
-  "nd.custom": { zh: "\u81EA\u5B9A\u4E49\u2026", en: "Custom\u2026", ja: "\u30AB\u30B9\u30BF\u30E0\u2026" },
-  "save.signInLater": { zh: "\u6682\u4E0D", en: "Not now", ja: "\u4ECA\u306F\u3057\u306A\u3044" },
-  "save.signInNow": { zh: "\u767B\u5F55", en: "Sign in", ja: "\u30ED\u30B0\u30A4\u30F3" },
-  "save.signInPromptTitle": { zh: "\u5DF2\u4FDD\u5B58\u5230\u672C\u673A", en: "Saved on this device", ja: "\u3053\u306E\u7AEF\u672B\u306B\u4FDD\u5B58\u3057\u307E\u3057\u305F" },
-  // store busy 文案（st.*，WeebPaint store-ui 的映射表引用，非 t() 字面量，机器抄漏 → 手补 2026-09-09）
-  "st.syncPushing": { zh: "\u6B63\u5728\u540C\u6B65\u2026", en: "Syncing\u2026", ja: "\u540C\u671F\u4E2D\u2026" },
-  "st.fileRenaming": { zh: "\u91CD\u547D\u540D\u2026", en: "Renaming\u2026", ja: "\u540D\u524D\u5909\u66F4\u4E2D\u2026" },
-  "st.filePulling": { zh: "\u62C9\u53D6\u4E2D\u2026", en: "Pulling\u2026", ja: "\u53D6\u5F97\u4E2D\u2026" },
-  "st.cloudChecking": { zh: "\u68C0\u67E5\u4E91\u7AEF\u2026", en: "Checking cloud\u2026", ja: "\u30AF\u30E9\u30A6\u30C9\u3092\u78BA\u8A8D\u4E2D\u2026" },
-  "st.fileDeleting": { zh: "\u5220\u9664\u4E2D\u2026", en: "Deleting\u2026", ja: "\u524A\u9664\u4E2D\u2026" },
-  "st.trashRestoring": { zh: "\u6062\u590D\u4E2D\u2026", en: "Restoring\u2026", ja: "\u5FA9\u5143\u4E2D\u2026" },
-  "st.trashPurging": { zh: "\u5F7B\u5E95\u5220\u9664\u2026", en: "Deleting permanently\u2026", ja: "\u5B8C\u5168\u306B\u524A\u9664\u4E2D\u2026" },
-  "st.trashEmptyTrash": { zh: "\u6E05\u7A7A\u56DE\u6536\u7AD9\u2026", en: "Emptying trash\u2026", ja: "\u30B4\u30DF\u7BB1\u3092\u7A7A\u306B\u3057\u3066\u3044\u307E\u3059\u2026" },
-  "st.trashEmptyBackups": { zh: "\u6E05\u7A7A\u5907\u4EFD\u7BB1\u2026", en: "Emptying backup box\u2026", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u30DC\u30C3\u30AF\u30B9\u3092\u7A7A\u306B\u3057\u3066\u3044\u307E\u3059\u2026" },
-  "st.fileEncrypting": { zh: "\u6B63\u5728\u52A0\u5BC6 {name}\u2026", en: "Encrypting {name}\u2026", ja: "\u6697\u53F7\u5316\u4E2D {name}\u2026" },
-  "st.fileDecrypting": { zh: "\u6B63\u5728\u89E3\u9664\u52A0\u5BC6 {name}\u2026", en: "Decrypting {name}\u2026", ja: "\u6697\u53F7\u5316\u89E3\u9664\u4E2D {name}\u2026" },
-  "st.fileRekeying": { zh: "\u6B63\u5728\u6362\u5BC6\u7801\u91CD\u5C01 {name}\u2026", en: "Re-keying {name}\u2026", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u5909\u66F4\u4E2D {name}\u2026" },
-  "st.fileReuploading": { zh: "\u91CD\u65B0\u4E0A\u4F20\u2026", en: "Re-uploading\u2026", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u4E2D\u2026" },
-  "st.folderCreating": { zh: "\u65B0\u5EFA\u6587\u4EF6\u5939\u2026", en: "Creating folder\u2026", ja: "\u30D5\u30A9\u30EB\u30C0\u4F5C\u6210\u4E2D\u2026" },
-  "st.folderDeleting": { zh: "\u5220\u9664\u6587\u4EF6\u5939\u2026", en: "Deleting folder\u2026", ja: "\u30D5\u30A9\u30EB\u30C0\u524A\u9664\u4E2D\u2026" },
-  // tLatin() 引用的 key（机器抄漏 → 手补 2026-09-10）
-  "cf.cloudOfflineTitle": { zh: "\u4E91\u7AEF\uFF1A\u79BB\u7EBF\uFF08\u65E0\u6CD5\u767B\u5F55 / \u540C\u6B65\uFF1B\u672C\u5730\u56FE\u5E93\u6B63\u5E38\uFF09", en: "Cloud: offline (cannot sign in / sync; local gallery works normally)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u30AA\u30D5\u30E9\u30A4\u30F3\uFF08\u30ED\u30B0\u30A4\u30F3 / \u540C\u671F\u4E0D\u53EF\uFF1B\u30ED\u30FC\u30AB\u30EB\u30AE\u30E3\u30E9\u30EA\u30FC\u306F\u6B63\u5E38\uFF09" }
-};
-var _lang = "zh";
-var _host = null;
-function interpolate2(s10, params) {
-  return params ? s10.replace(/\{(\w+)\}/g, (m2, k2) => k2 in params ? String(params[k2]) : m2) : s10;
-}
-var defaultT = (key, params) => {
-  const e10 = GALLERY_TEXT[key];
-  return interpolate2(e10?.[_lang] ?? e10?.zh ?? key, params);
-};
-function configureText(opts) {
-  if (opts.lang)
-    _lang = opts.lang;
-  if (opts.t) {
-    const h2 = opts.t;
-    _host = (k2, p2) => {
-      const v = h2(k2, p2);
-      return v ? v : defaultT(k2, p2);
-    };
-  }
-}
-var t = (key, params) => (_host ?? defaultT)(key, params);
-
-// node_modules/@internal/gallery/dist/core/device-kv.js
-var _mem = /* @__PURE__ */ new Map();
-var _kv = { get: (k2) => _mem.get(k2) ?? null, set: (k2, v) => {
-  if (v == null)
-    _mem.delete(k2);
-  else
-    _mem.set(k2, v);
-} };
-function configureDeviceKv(kv) {
-  _kv = kv;
-}
-function deviceKvGet(key) {
-  try {
-    return _kv.get(key);
-  } catch {
-    return null;
-  }
-}
-function deviceKvSet(key, v) {
-  try {
-    _kv.set(key, v);
-  } catch {
-  }
-}
-function deviceKvGetJson(key, fallback) {
-  const raw = deviceKvGet(key);
-  if (raw == null)
-    return fallback;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-}
-function deviceKvSetJson(key, v) {
-  deviceKvSet(key, v === void 0 ? null : JSON.stringify(v));
 }
 
 // node_modules/@internal/gallery/dist/core/model/gallery-model.js
@@ -18360,6 +15309,3247 @@ function createGallery(el2, deps) {
   return { handle, data, thumbs };
 }
 
+// src/device-kv.ts
+var PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
+var _mem2 = /* @__PURE__ */ new Map();
+function _ls() {
+  try {
+    const ls2 = globalThis.localStorage;
+    ls2.getItem(PREFIX + "__probe");
+    return ls2;
+  } catch {
+    return null;
+  }
+}
+function deviceKvGet2(key) {
+  const k2 = PREFIX + key;
+  const ls2 = _ls();
+  if (ls2) {
+    try {
+      return ls2.getItem(k2);
+    } catch {
+    }
+  }
+  return _mem2.get(k2) ?? null;
+}
+function deviceKvSet2(key, v) {
+  const k2 = PREFIX + key;
+  const ls2 = _ls();
+  if (ls2) {
+    try {
+      if (v == null) ls2.removeItem(k2);
+      else ls2.setItem(k2, v);
+      _mem2.delete(k2);
+      return;
+    } catch {
+    }
+  }
+  if (v == null) _mem2.delete(k2);
+  else _mem2.set(k2, v);
+}
+
+// src/app/report-error.ts
+var msgOf = (e10) => e10 instanceof Error ? `${e10.name === "Error" ? "" : e10.name + ": "}${e10.message}` : typeof e10 === "string" ? e10 : String(e10);
+function reportError(err2, level = "error") {
+  const m2 = msgOf(err2);
+  try {
+    diag_log_exports.record(level, m2);
+  } catch {
+  }
+  if (level === "error") {
+    console.error(err2);
+    showNotice({ id: "err", level: "error", text: m2 });
+  } else if (level === "warning") {
+    console.warn(err2);
+    showNotice({ id: "warn", level: "warning", text: m2, autoHideMs: 6e3 });
+  } else if (level === "info") {
+    console.info(m2);
+    showNotice({ id: "info", level: "info", text: m2, autoHideMs: 3e3 });
+  } else console.log(m2);
+}
+var diagNote = (tag2, msg) => {
+  try {
+    diag_log_exports.note(tag2, msg);
+  } catch {
+  }
+};
+var diagText = () => {
+  try {
+    return diag_log_exports.toText();
+  } catch {
+    return "";
+  }
+};
+var diagCount = () => {
+  try {
+    return diag_log_exports.entries().length;
+  } catch {
+    return 0;
+  }
+};
+var diagClear = () => {
+  try {
+    diag_log_exports.clear();
+  } catch {
+  }
+};
+function initBlackBox(version) {
+  configureDeviceKv({ get: deviceKvGet2, set: deviceKvSet2 });
+  diag_log_exports.initDiagLog({ app: "MoonSinger", version });
+  const w2 = window;
+  const early = w2.__msEarlyErrors;
+  if (Array.isArray(early)) for (const e10 of early.splice(0)) diag_log_exports.record("error", `[early] ${e10.m}`);
+  w2.__msEarlyErrors = { push: (e10) => {
+    try {
+      diag_log_exports.record("error", `[early] ${e10.m}`);
+    } catch {
+    }
+  } };
+  window.addEventListener("error", (e10) => {
+    try {
+      diag_log_exports.record("error", `[window] ${e10.message} @${(e10.filename ?? "").split("/").pop()}:${e10.lineno}`);
+    } catch {
+    }
+  });
+  window.addEventListener("unhandledrejection", (e10) => {
+    try {
+      diag_log_exports.record("error", `[unhandledrejection] ${msgOf(e10.reason)}`);
+    } catch {
+    }
+  });
+}
+
+// src/singer/client.ts
+var OOM = /out of memory|no available backend/i;
+var Singer = class {
+  w = null;
+  seq = 0;
+  pending = /* @__PURE__ */ new Map();
+  src = null;
+  sent = /* @__PURE__ */ new Set();
+  // worker 里已经载过的音色库（sha256）；worker 重建就清
+  worker() {
+    if (this.w) return this.w;
+    this.w = new Worker(new URL(`./${"singer-worker-8faa7537f23a.mjs"}`, import.meta.url), { type: "module" });
+    this.sent.clear();
+    this.w.onmessage = (ev2) => {
+      const m2 = ev2.data, p2 = this.pending.get(m2.id);
+      if (!p2) return;
+      if (m2.type === "progress") p2.progress(m2.stage);
+      else if (m2.type === "done") {
+        this.pending.delete(m2.id);
+        p2.ok({ samples: m2.samples, sr: m2.sr, ms: m2.ms });
+      } else {
+        this.pending.delete(m2.id);
+        p2.fail(new Error(m2.message));
+      }
+    };
+    this.w.onerror = (e10) => {
+      this.w?.terminate();
+      this.w = null;
+      for (const p2 of this.pending.values()) p2.fail(new Error(e10.message || "\u6708\u8BFB\u7684 worker \u51FA\u9519"));
+      this.pending.clear();
+    };
+    return this.w;
+  }
+  /** 重开 worker：wasm 的内存只涨不落，只有整个 worker 关掉才真还回去。 */
+  restart() {
+    this.w?.terminate();
+    this.w = null;
+    this.sent.clear();
+    for (const p2 of this.pending.values()) p2.fail(new Error("\u6708\u8BFB\u7684 worker \u91CD\u5F00\u4E86"));
+    this.pending.clear();
+  }
+  /** 唱。内存不够（换着试很多音色之后，SoundFont 的库把 worker 的 wasm 堆撑大了，月读的引擎起不来——user 2026-10-08 iPad「Out of memory」
+   *  「感觉是没有gc」）= 重开 worker（全部还回去）再试一次；还不行才报错。同一位演奏者重来，不是换人（不自动替补）。 */
+  async sing(s10, progress2 = () => {
+  }, extra = {}) {
+    try {
+      return await this.singOnce(s10, progress2, extra);
+    } catch (e10) {
+      const msg = e10.message ?? "";
+      if (!OOM.test(msg)) throw e10;
+      diagNote("singer", `out of memory, restarting worker and retrying once: ${msg}`);
+      this.restart();
+      progress2("\u5185\u5B58\u4E0D\u591F\uFF1A\u91CD\u5F00\u6708\u8BFB\u7684\u5F15\u64CE\u518D\u8BD5\u4E00\u6B21");
+      try {
+        return await this.singOnce(s10, progress2, extra);
+      } catch (e22) {
+        const m2 = e22.message ?? "";
+        diagNote("singer", `retry after restart failed: ${m2}`);
+        if (OOM.test(m2)) throw new Error("\u8FD9\u53F0\u8BBE\u5907\u7684\u5185\u5B58\u4E0D\u591F\uFF0C\u6708\u8BFB\u7684\u5F15\u64CE\u8D77\u4E0D\u6765\uFF08\u5DF2\u7ECF\u91CD\u5F00\u8FC7\u4E00\u6B21\u5F15\u64CE\uFF09\u3002\u53EF\u4EE5\u628A\u522B\u7684\u4E50\u5668\u58F0\u90E8\u9759\u97F3\u518D\u653E\uFF0C\u6216\u8005\u5173\u6389 app \u91CD\u65B0\u6253\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u300C\u6708\u8BFB\uFF08\u5143\u97F3\uFF09\u300D");
+        throw e22;
+      }
+    }
+  }
+  singOnce(s10, progress2, extra) {
+    const id2 = ++this.seq;
+    const req = { type: "sing", id: id2, score: s10.SCORE, text: s10.TEXT, tempo: s10.TEMPO_QUARTER, lang: s10.LANG, ...extra };
+    return new Promise((ok2, fail) => {
+      this.pending.set(id2, { ok: ok2, fail, progress: progress2 });
+      this.worker().postMessage(req);
+    });
+  }
+  /** GM 候选按谱出声（契约 §10）：字节只第一次发，之后只发哈希；worker 说没载过就带字节再发一次。 */
+  async gm(sf2, sha256, notes, sampleRate = 44100, tail = 2) {
+    const ask = (bytes) => {
+      const id2 = ++this.seq, w2 = this.worker();
+      const req = { type: "gm", id: id2, sha256, sampleRate, tail, notes, ...bytes ? { sf2: sf2.slice() } : {} };
+      return new Promise((ok2, fail) => {
+        this.pending.set(id2, { ok: ok2, fail, progress: () => {
+        } });
+        w2.postMessage(req);
+      });
+    };
+    try {
+      const r10 = await ask(!this.sent.has(sha256));
+      this.sent.add(sha256);
+      return r10;
+    } catch (e10) {
+      if (!/bank not loaded/.test(e10.message)) throw e10;
+      this.sent.delete(sha256);
+      const r10 = await ask(true);
+      this.sent.add(sha256);
+      return r10;
+    }
+  }
+  /** 播放（必须在用户手势里先调过 unlock()，iPad 才放声）。播完回调 onEnd。 */
+  play(r10, onEnd) {
+    this.stop();
+    const ctx2 = this.unlock();
+    const buf = ctx2.createBuffer(r10.right ? 2 : 1, r10.samples.length, r10.sr);
+    buf.copyToChannel(r10.samples, 0);
+    if (r10.right) buf.copyToChannel(r10.right, 1);
+    const src = ctx2.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx2.destination);
+    src.onended = () => {
+      if (this.src === src) {
+        this.src = null;
+        onEnd();
+      }
+    };
+    src.start();
+    this.src = src;
+  }
+  stop() {
+    const s10 = this.src;
+    this.src = null;
+    if (s10) {
+      s10.onended = null;
+      try {
+        s10.stop();
+      } catch {
+      }
+    }
+  }
+  get playing() {
+    return this.src !== null;
+  }
+  unlock() {
+    return audioCtx();
+  }
+  // 全 app 共用一个（audio.ts）
+};
+
+// src/singer/packs.gen.ts
+var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
+var PACKS = {
+  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
+  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
+  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
+  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
+  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
+};
+var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
+
+// src/format/performance.ts
+var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
+var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
+var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
+var SOUNDFONT_CALIBRATION_DB = -6;
+var DEFAULT_CALIBRATION_DB = -6;
+var TSUKUYOMI_DEFAULTS = {};
+var REPO = "https://github.com/fangzhangmnm/moonsinger";
+var TSUKUYOMI_CREDIT = {
+  attribution: [CREDIT.credit, ...CREDIT.attribution],
+  license: { name: "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09", url: CREDIT.termsUrl, text: CREDIT.terms }
+};
+var TSUKUYOMI_SPEC = { kind: "ours", doc: "#tsukuyomi", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sing-core.mjs" } };
+var VOWEL_SAMPLER_SPEC = { kind: "ours", doc: "#vowel-sampler", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sampler.ts" } };
+var SOUNDFONT_SPEC = { kind: "standard", name: "SoundFont", version: "2.04" };
+var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
+
+// src/export/mp3.ts
+var MP3_QUALITY = {
+  standard: { label: "\u6807\u51C6", note: "\u7ACB\u4F53\u58F0 128k\uFF0C\u7EA6 1 MB / \u5206\u949F", stereo: true, kbps: 128 },
+  small: { label: "\u5C0F\u6587\u4EF6", note: "\u5355\u58F0\u9053 64k\uFF0C\u7EA6 0.5 MB / \u5206\u949F", stereo: false, kbps: 64 }
+};
+function encodeMp3(left, right, sr2, kbps = 64) {
+  return new Promise((ok2, fail) => {
+    const w2 = new Worker(new URL(`./${"mp3-worker-b681ea012d1c.mjs"}`, import.meta.url), { type: "module" });
+    w2.onmessage = (ev2) => {
+      w2.terminate();
+      if (ev2.data.ok) ok2(ev2.data.bytes);
+      else fail(new Error(ev2.data.message));
+    };
+    w2.onerror = (e10) => {
+      w2.terminate();
+      fail(new Error(e10.message || "mp3 \u7F16\u7801 worker \u51FA\u9519"));
+    };
+    const req = { left: left.slice(), ...right ? { right: right.slice() } : {}, sr: sr2, kbps };
+    w2.postMessage(req, [req.left.buffer, ...req.right ? [req.right.buffer] : []]);
+  });
+}
+
+// src/export/id3.ts
+var enc = (s10) => {
+  const out = new Uint8Array(2 + s10.length * 2);
+  out[0] = 255;
+  out[1] = 254;
+  for (let i10 = 0; i10 < s10.length; i10++) {
+    const c10 = s10.charCodeAt(i10);
+    out[2 + i10 * 2] = c10 & 255;
+    out[3 + i10 * 2] = c10 >> 8;
+  }
+  return out;
+};
+var cat = (...xs) => {
+  const n10 = xs.reduce((a10, x2) => a10 + x2.length, 0), out = new Uint8Array(n10);
+  let o10 = 0;
+  for (const x2 of xs) {
+    out.set(x2, o10);
+    o10 += x2.length;
+  }
+  return out;
+};
+var ascii = (s10) => Uint8Array.from([...s10].map((c10) => c10.charCodeAt(0) & 127));
+function frame(id2, body2) {
+  const h2 = new Uint8Array(10);
+  h2.set(ascii(id2), 0);
+  const n10 = body2.length;
+  h2[4] = n10 >>> 24 & 255;
+  h2[5] = n10 >>> 16 & 255;
+  h2[6] = n10 >>> 8 & 255;
+  h2[7] = n10 & 255;
+  return cat(h2, body2);
+}
+var textFrame = (id2, s10) => frame(id2, cat(Uint8Array.of(1), enc(s10)));
+function id3v2(f2) {
+  const frames = [];
+  if (f2.title) frames.push(textFrame("TIT2", f2.title));
+  if (f2.artist) frames.push(textFrame("TPE1", f2.artist));
+  if (f2.copyright) frames.push(textFrame("TCOP", f2.copyright));
+  if (f2.copyrightUrl && /^https?:\/\/[\x21-\x7e]+$/.test(f2.copyrightUrl)) frames.push(frame("WCOP", ascii(f2.copyrightUrl)));
+  if (f2.comment) frames.push(frame("COMM", cat(Uint8Array.of(1), ascii("chi"), enc(""), Uint8Array.of(0, 0), enc(f2.comment))));
+  if (f2.software) frames.push(textFrame("TSSE", f2.software));
+  if (!frames.length) return new Uint8Array(0);
+  const body2 = cat(...frames), n10 = body2.length, h2 = new Uint8Array(10);
+  h2.set(ascii("ID3"), 0);
+  h2[3] = 3;
+  h2[4] = 0;
+  h2[5] = 0;
+  h2[6] = n10 >>> 21 & 127;
+  h2[7] = n10 >>> 14 & 127;
+  h2[8] = n10 >>> 7 & 127;
+  h2[9] = n10 & 127;
+  return cat(h2, body2);
+}
+var firstUrl = (s10) => s10 ? /https?:\/\/[\x21-\x7e]+/.exec(s10)?.[0] : void 0;
+
+// node_modules/@internal/model-packs/dist/sha256.js
+var K = new Uint32Array([
+  1116352408,
+  1899447441,
+  3049323471,
+  3921009573,
+  961987163,
+  1508970993,
+  2453635748,
+  2870763221,
+  3624381080,
+  310598401,
+  607225278,
+  1426881987,
+  1925078388,
+  2162078206,
+  2614888103,
+  3248222580,
+  3835390401,
+  4022224774,
+  264347078,
+  604807628,
+  770255983,
+  1249150122,
+  1555081692,
+  1996064986,
+  2554220882,
+  2821834349,
+  2952996808,
+  3210313671,
+  3336571891,
+  3584528711,
+  113926993,
+  338241895,
+  666307205,
+  773529912,
+  1294757372,
+  1396182291,
+  1695183700,
+  1986661051,
+  2177026350,
+  2456956037,
+  2730485921,
+  2820302411,
+  3259730800,
+  3345764771,
+  3516065817,
+  3600352804,
+  4094571909,
+  275423344,
+  430227734,
+  506948616,
+  659060556,
+  883997877,
+  958139571,
+  1322822218,
+  1537002063,
+  1747873779,
+  1955562222,
+  2024104815,
+  2227730452,
+  2361852424,
+  2428436474,
+  2756734187,
+  3204031479,
+  3329325298
+]);
+var Sha256 = class {
+  h = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
+  buf = new Uint8Array(64);
+  bufLen = 0;
+  total = 0;
+  w = new Uint32Array(64);
+  done = false;
+  update(bytes) {
+    if (this.done)
+      throw new Error("Sha256: update after hex()");
+    let i10 = 0;
+    this.total += bytes.length;
+    if (this.bufLen) {
+      const take = Math.min(64 - this.bufLen, bytes.length);
+      this.buf.set(bytes.subarray(0, take), this.bufLen);
+      this.bufLen += take;
+      i10 = take;
+      if (this.bufLen === 64) {
+        this.block(this.buf, 0);
+        this.bufLen = 0;
+      }
+    }
+    for (; i10 + 64 <= bytes.length; i10 += 64)
+      this.block(bytes, i10);
+    if (i10 < bytes.length) {
+      this.buf.set(bytes.subarray(i10), 0);
+      this.bufLen = bytes.length - i10;
+    }
+    return this;
+  }
+  block(p2, o10) {
+    const w2 = this.w, H2 = this.h;
+    for (let t10 = 0; t10 < 16; t10++, o10 += 4)
+      w2[t10] = p2[o10] << 24 | p2[o10 + 1] << 16 | p2[o10 + 2] << 8 | p2[o10 + 3];
+    for (let t10 = 16; t10 < 64; t10++) {
+      const x2 = w2[t10 - 15], y2 = w2[t10 - 2];
+      const s02 = (x2 >>> 7 | x2 << 25) ^ (x2 >>> 18 | x2 << 14) ^ x2 >>> 3;
+      const s12 = (y2 >>> 17 | y2 << 15) ^ (y2 >>> 19 | y2 << 13) ^ y2 >>> 10;
+      w2[t10] = w2[t10 - 16] + s02 + w2[t10 - 7] + s12 | 0;
+    }
+    let a10 = H2[0], b3 = H2[1], c10 = H2[2], d3 = H2[3], e10 = H2[4], f2 = H2[5], g3 = H2[6], h2 = H2[7];
+    for (let t10 = 0; t10 < 64; t10++) {
+      const S1 = (e10 >>> 6 | e10 << 26) ^ (e10 >>> 11 | e10 << 21) ^ (e10 >>> 25 | e10 << 7);
+      const ch2 = e10 & f2 ^ ~e10 & g3;
+      const t12 = h2 + S1 + ch2 + K[t10] + w2[t10] | 0;
+      const S0 = (a10 >>> 2 | a10 << 30) ^ (a10 >>> 13 | a10 << 19) ^ (a10 >>> 22 | a10 << 10);
+      const maj = a10 & b3 ^ a10 & c10 ^ b3 & c10;
+      const t23 = S0 + maj | 0;
+      h2 = g3;
+      g3 = f2;
+      f2 = e10;
+      e10 = d3 + t12 | 0;
+      d3 = c10;
+      c10 = b3;
+      b3 = a10;
+      a10 = t12 + t23 | 0;
+    }
+    H2[0] += a10;
+    H2[1] += b3;
+    H2[2] += c10;
+    H2[3] += d3;
+    H2[4] += e10;
+    H2[5] += f2;
+    H2[6] += g3;
+    H2[7] += h2;
+  }
+  hex() {
+    if (this.done)
+      throw new Error("Sha256: hex() twice");
+    const total = this.total;
+    const padLen = (this.bufLen < 56 ? 56 - this.bufLen : 120 - this.bufLen) + 8;
+    const pad4 = new Uint8Array(padLen);
+    pad4[0] = 128;
+    const bits2 = total * 8, hi = Math.floor(bits2 / 4294967296), lo2 = bits2 >>> 0, n10 = padLen;
+    pad4[n10 - 8] = hi >>> 24;
+    pad4[n10 - 7] = hi >>> 16;
+    pad4[n10 - 6] = hi >>> 8;
+    pad4[n10 - 5] = hi;
+    pad4[n10 - 4] = lo2 >>> 24;
+    pad4[n10 - 3] = lo2 >>> 16;
+    pad4[n10 - 2] = lo2 >>> 8;
+    pad4[n10 - 1] = lo2;
+    this.total -= padLen;
+    this.update(pad4);
+    this.done = true;
+    return Array.from(this.h, (x2) => x2.toString(16).padStart(8, "0")).join("");
+  }
+};
+
+// node_modules/@internal/model-packs/dist/pack-store.js
+var SLICE = 1 << 20;
+function createPackStore(deps) {
+  const cacheName = deps.cacheName ?? "pwa-models";
+  const keyOf2 = (slug, name) => `${location.origin}/__pwa-models__/${slug}/${name}`;
+  function manifestOf(slug) {
+    const p2 = deps.packs[slug];
+    if (!p2)
+      throw new Error(`unknown pack: ${slug}`);
+    return p2;
+  }
+  const openCache = () => caches.open(cacheName);
+  async function hashBlob(b3) {
+    const sha = new Sha256();
+    for (let o10 = 0; o10 < b3.size; o10 += SLICE)
+      sha.update(new Uint8Array(await b3.slice(o10, Math.min(o10 + SLICE, b3.size)).arrayBuffer()));
+    return sha.hex();
+  }
+  async function cachedChunkSizes(slug, m2) {
+    const cache = await openCache();
+    const sizes = [];
+    for (const c10 of m2.chunks) {
+      const r10 = await cache.match(keyOf2(slug, c10.name));
+      sizes.push(r10 ? Number(r10.headers.get("content-length") ?? 0) : 0);
+    }
+    return sizes;
+  }
+  async function putChunk(slug, name, bytes) {
+    const cache = await openCache();
+    const size = bytes instanceof Blob ? bytes.size : bytes.length;
+    await cache.put(keyOf2(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
+  }
+  async function markVerified(slug, packId) {
+    const cache = await openCache();
+    await cache.put(keyOf2(slug, "verified.json"), new Response(JSON.stringify({ packId, at: (/* @__PURE__ */ new Date()).toISOString() }), { headers: { "content-type": "application/json" } }));
+  }
+  async function status(slug) {
+    const { packId, manifest: m2 } = manifestOf(slug);
+    const cache = await openCache();
+    const sizes = await cachedChunkSizes(slug, m2);
+    const complete = sizes.every((n10, i10) => n10 === m2.chunks[i10].bytes);
+    const marker = await cache.match(keyOf2(slug, "verified.json"));
+    const verified = marker ? (await marker.json()).packId === packId : false;
+    return { slug, ready: complete && verified, bytesCached: sizes.reduce((a10, b3) => a10 + b3, 0), bytesTotal: m2.totalBytes };
+  }
+  async function dropIfStale(slug) {
+    const { packId, manifest: m2 } = manifestOf(slug);
+    const cache = await openCache();
+    const marker = await cache.match(keyOf2(slug, "verified.json"));
+    if (!marker || (await marker.json()).packId === packId)
+      return;
+    for (const c10 of m2.chunks)
+      await cache.delete(keyOf2(slug, c10.name));
+    await cache.delete(keyOf2(slug, "verified.json"));
+  }
+  async function sealIfComplete(slug, fresh) {
+    const { packId, manifest: m2 } = manifestOf(slug);
+    const sizes = await cachedChunkSizes(slug, m2);
+    if (!sizes.every((n10, i10) => n10 === m2.chunks[i10].bytes))
+      return;
+    const cache = await openCache();
+    for (const c10 of m2.chunks) {
+      if (fresh.has(c10.name))
+        continue;
+      const r10 = await cache.match(keyOf2(slug, c10.name));
+      const ok2 = !!r10 && await hashBlob(await r10.blob()) === c10.sha256;
+      if (!ok2) {
+        await cache.delete(keyOf2(slug, c10.name));
+        return;
+      }
+    }
+    await markVerified(slug, packId);
+  }
+  async function download(slug, base3, progress2) {
+    const { packId, manifest: m2 } = manifestOf(slug);
+    await dropIfStale(slug);
+    const sizes = await cachedChunkSizes(slug, m2);
+    let done = sizes.reduce((a10, n10, i10) => a10 + (n10 === m2.chunks[i10].bytes ? n10 : 0), 0);
+    progress2({ done, total: m2.totalBytes });
+    const root = base3.replace(/\/+$/, "");
+    for (let i10 = 0; i10 < m2.chunks.length; i10++) {
+      const c10 = m2.chunks[i10];
+      if (sizes[i10] === c10.bytes)
+        continue;
+      const res = await fetch(`${root}/packs/${slug}/${c10.name}`, { cache: "no-store" });
+      if (!res.ok || !res.body)
+        throw new Error(`fetch ${c10.name}: HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const sha = new Sha256();
+      const buf = new Uint8Array(c10.bytes);
+      let got = 0, lastReported = 0;
+      for (; ; ) {
+        const { value, done: end } = await reader.read();
+        if (end)
+          break;
+        if (got + value.length > c10.bytes)
+          throw new Error(`${c10.name}: larger than manifest says`);
+        sha.update(value);
+        buf.set(value, got);
+        got += value.length;
+        if (got - lastReported >= 1048576 || got === c10.bytes) {
+          lastReported = got;
+          progress2({ done: done + got, total: m2.totalBytes });
+        }
+      }
+      if (got !== c10.bytes)
+        throw new Error(`${c10.name}: got ${got} bytes, expected ${c10.bytes}`);
+      if (sha.hex() !== c10.sha256)
+        throw new Error(`${c10.name}: sha256 mismatch (source tampered or corrupted)`);
+      await putChunk(slug, c10.name, buf);
+      done += got;
+    }
+    await markVerified(slug, packId);
+    return status(slug);
+  }
+  async function importFiles(slugs, files, progress2) {
+    const packs = slugs.map((slug) => ({ slug, m: manifestOf(slug).manifest }));
+    for (const p2 of packs)
+      await dropIfStale(p2.slug);
+    const fresh = new Map(packs.map((p2) => [p2.slug, /* @__PURE__ */ new Set()]));
+    const total = files.reduce((a10, f2) => a10 + f2.size, 0);
+    let done = 0, matched = 0;
+    const bad = [];
+    for (const f2 of files) {
+      const whole = packs.find((p2) => p2.m.chunks.length > 1 && p2.m.totalBytes === f2.size);
+      if (whole) {
+        let offset = 0;
+        for (const c10 of whole.m.chunks) {
+          const piece = f2.slice(offset, offset + c10.bytes);
+          if (await hashBlob(piece) !== c10.sha256)
+            throw new Error(`${f2.name}: sha256 mismatch at ${c10.name} (wrong or corrupted file)`);
+          await putChunk(whole.slug, c10.name, piece);
+          fresh.get(whole.slug).add(c10.name);
+          offset += c10.bytes;
+          progress2({ done: done + offset, total });
+        }
+        matched++;
+      } else {
+        const sameSize = packs.flatMap((p2) => p2.m.chunks.filter((c10) => c10.bytes === f2.size).map((c10) => ({ slug: p2.slug, c: c10 })));
+        if (sameSize.length) {
+          const hex = await hashBlob(f2);
+          const hits = sameSize.filter((x2) => x2.c.sha256 === hex);
+          if (!hits.length)
+            bad.push(f2.name);
+          for (const h2 of hits) {
+            await putChunk(h2.slug, h2.c.name, f2);
+            fresh.get(h2.slug).add(h2.c.name);
+          }
+          if (hits.length)
+            matched++;
+        }
+      }
+      done += f2.size;
+      progress2({ done, total });
+    }
+    for (const p2 of packs)
+      await sealIfComplete(p2.slug, fresh.get(p2.slug));
+    if (bad.length)
+      throw new Error(`${bad[0]}: sha256 mismatch (wrong or corrupted file)`);
+    if (!matched)
+      throw new Error("no-matching-file");
+    return Promise.all(slugs.map(status));
+  }
+  async function downloadAll(slugs, base3, progress2) {
+    const total = slugs.reduce((a10, s10) => a10 + manifestOf(s10).manifest.totalBytes, 0);
+    const have = (await Promise.all(slugs.map(status))).map((st3) => st3.bytesCached);
+    const report = () => progress2({ done: have.reduce((a10, b3) => a10 + b3, 0), total });
+    report();
+    for (let i10 = 0; i10 < slugs.length; i10++)
+      await download(slugs[i10], base3, (p2) => {
+        have[i10] = p2.done;
+        report();
+      });
+    return Promise.all(slugs.map(status));
+  }
+  async function deletePack(slug) {
+    const { manifest: m2 } = manifestOf(slug);
+    const cache = await openCache();
+    for (const c10 of m2.chunks)
+      await cache.delete(keyOf2(slug, c10.name));
+    await cache.delete(keyOf2(slug, "verified.json"));
+  }
+  const noop = () => {
+  };
+  return {
+    status: (slugs) => Promise.all(slugs.map(status)),
+    download: (slugs, base3, onProgress) => downloadAll(slugs, base3, onProgress ?? noop),
+    importFiles: (slugs, files, onProgress) => importFiles(slugs, files, onProgress ?? noop),
+    async delete(slugs) {
+      for (const slug of slugs)
+        await deletePack(slug);
+    },
+    async chunks(slug) {
+      if (!(await status(slug)).ready)
+        throw new Error("pack-missing");
+      const { manifest: m2 } = manifestOf(slug);
+      const cache = await openCache();
+      const out = [];
+      for (const c10 of m2.chunks) {
+        const r10 = await cache.match(keyOf2(slug, c10.name));
+        if (!r10)
+          throw new Error("pack-missing");
+        out.push(await r10.blob());
+      }
+      return out;
+    }
+  };
+}
+
+// src/singer/credit-translations.ts
+var CREDIT_TRANSLATIONS = {
+  /** 译自的原文（sha256）。 */
+  of: {
+    credit: "5c233b5c7f4d890be860df437d6f5d258bc530f39e0577295651b67ae8072f1f",
+    terms: "6c04cd4680d210e6eb189cdc1e5a81b2c65c65510a46eb5708076b612b930887"
+  },
+  zh: {
+    credit: "\u672C\u8F6F\u4EF6\u7684\u8BED\u97F3\u5408\u6210\u4F7F\u7528\u4E86\u514D\u8D39\u7D20\u6750\u89D2\u8272\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\u6708\u8BFB\uFF1B\xA9 Rei Yumesaki\uFF09\u514D\u8D39\u516C\u5F00\u7684\u8BED\u97F3\u6570\u636E\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u8BED\u6599\u5E93\uFF08CV. \u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/",
+    terms: "\u4F7F\u7528\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u7684\u58F0\u7EBF\u65F6\uFF0C\u7981\u6B62\u628A\u751F\u6210\u51FA\u6765\u7684\u58F0\u97F3\u7528\u4E8E\u4EE5\u4E0B\u76EE\u7684\u3002\n\u3010\u7981\u6B62\u4E8B\u9879\u3011\n\u25A0\u6279\u8BC4\u3001\u653B\u51FB\u4ED6\u4EBA\u3002\uFF08\u300C\u6279\u8BC4\u3001\u653B\u51FB\u300D\u7684\u5B9A\u4E49\u4EE5\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u89D2\u8272\u8BB8\u53EF\uFF08\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\uFF09\u4E3A\u51C6\uFF09\n\u25A0\u53F7\u53EC\u4EBA\u4EEC\u8D5E\u540C\u6216\u53CD\u5BF9\u7279\u5B9A\u7684\u653F\u6CBB\u7ACB\u573A\u3001\u5B97\u6559\u3001\u601D\u60F3\u3002\n\u25A0\u4E0D\u505A\u533A\u9694\uFF08\u30BE\u30FC\u30CB\u30F3\u30B0\uFF09\u5C31\u516C\u5F00\u523A\u6FC0\u6027\u5F3A\u7684\u5185\u5BB9\u3002\uFF08\u8BD1\u6CE8\uFF1A\u533A\u9694 = \u5206\u7EA7\u3001\u52A0\u63D0\u793A\u3001\u653E\u8FDB\u5355\u72EC\u7684\u5730\u65B9\u7B49\uFF0C\u8BA9\u4E0D\u60F3\u770B\u7684\u4EBA\u78B0\u4E0D\u5230\uFF09\n\u25A0\u4EE5\u5141\u8BB8\u4ED6\u4EBA\u4E8C\u6B21\u5229\u7528\uFF08\u5F53\u4F5C\u7D20\u6750\u4F7F\u7528\uFF09\u7684\u5F62\u5F0F\u516C\u5F00\u3002"
+  },
+  en: {
+    credit: 'The voice synthesis in this software uses voice data released free of charge by the free-material character "Tsukuyomi-chan" (\xA9 Rei Yumesaki).\n\u25A0 Tsukuyomi-chan Corpus (CV: Rei Yumesaki)\nhttps://tyc.rei-yumesaki.net/material/corpus/',
+    terms: `When using Tsukuyomi-chan's voice, you must not use the generated audio for the following purposes.
+[Prohibited]
+\u25A0 Criticizing or attacking people. (What counts as "criticizing or attacking" follows the Tsukuyomi-chan Character License.)
+\u25A0 Calling on people to support or oppose a particular political position, religion, or ideology.
+\u25A0 Publishing intense or provocative content without zoning. (Translator's note: zoning = age gates, content warnings, separate spaces, so that people who don't want to see it don't run into it.)
+\u25A0 Publishing it in a form that permits others to reuse it (as material for their own works).`
+  }
+};
+
+// src/gm/sounds.gen.ts
+var SOUNDS_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-sounds";
+var SOUNDS = {
+  "generaluser-gs-2.0.3": {
+    "id": "generaluser-gs-2.0.3",
+    "kind": "instrument",
+    "name": "GeneralUser GS 2.0.3",
+    "description": "GM / GS \u901A\u7528\u97F3\u8272\u5E93\uFF1A287 \u4EF6\u4E50\u5668\uFF08bank 0 \u7684 128 \u4EF6 + GS \u53D8\u4F53\uFF09\u542B 13 \u5957\u9F13\u7EC4\uFF08bank 128\uFF09",
+    "file": "generaluser-gs-2.0.3/GeneralUser-GS.sf2",
+    "format": "SoundFont 2",
+    "bytes": 32319396,
+    "sha256": "9575028c7a1f589f5770fccc8cff2734566af40cd26ed836944e9a5152688cfe",
+    "license": {
+      "name": "GeneralUser GS License v2.0",
+      "summary": "\u79C1\u7528\u5546\u7528\u968F\u4FBF\u7528\uFF1B\u53EF\u653E\u8FDB\u8F6F\u4EF6\u9879\u76EE\u3001\u53EF\u6539\u5305\u88C5\uFF1B\u522B\u76F4\u94FE\u4F5C\u8005\u7684\u4E0B\u8F7D\u6587\u4EF6\uFF08\u8981\u4E48\u94FE\u4ED6\u7F51\u7AD9\uFF0C\u8981\u4E48\u81EA\u5DF1\u653E\u4E00\u4EFD\uFF09\uFF1B\u4E0D\u5F3A\u5236\u7F72\u540D",
+      "file": "generaluser-gs-2.0.3/LICENSE.txt",
+      "bytes": 2317,
+      "sha256": "7b32efefdf95ce38a043799f0659853ddc00fbaa14d8c50f0aca16b9b8b405be"
+    },
+    "attribution": "GeneralUser GS 2.0.3 by S. Christian Collins",
+    "homepage": "https://www.schristiancollins.com/generaluser.php",
+    "source": "https://github.com/mrbumpy409/GeneralUser-GS",
+    "date": "2026-02-22",
+    "notes": "\u5B57\u8282 = \u4E0A\u6E38\u4ED3\u539F\u6837\uFF08\u6587\u4EF6\u5185 INAM \u5199\u7684\u662F\u300C2.0.3 BETA\u300D\uFF0C2.0.3 \u6B63\u5F0F\u7248\u91CC\u5C31\u662F\u8FD9\u4E2A\u5B57\u4E32\uFF09\u3002\u6B8B\u4F59\u98CE\u9669\u6309\u4F5C\u8005\u539F\u8BDD\uFF1A\u90E8\u5206\u91C7\u6837\u6765\u6E90\u4ED6\u4E0D\u80FD 100% \u786E\u5B9A\uFF0C2000 \u5E74\u81F3\u4ECA\u6CA1\u4EBA\u6295\u8BC9\u3002"
+  }
+};
+
+// src/singer/sampler.ts
+var ENV = { attack: 0.01, cut: 6e-3, cutStop: 0.06, rel: 0.04, relStop: 0.25 };
+var GLIDE_TC = 0.012;
+var GLIDE_SPAN = 3;
+var XFADE = 0.03;
+var KANA = { la: "\u3089", n: "\u3093", u: "\u3046", o: "\u304A", a: "\u3042" };
+var MAX_VOICES = 8;
+var base = new URL("../assets/preview/", import.meta.url);
+async function fetchTable() {
+  const [idx, pcm] = await Promise.all([
+    // no-cache = 每次跟服务器核对（重新生成过的表不吃浏览器缓存）
+    fetch(new URL("vowels.json", base), { cache: "no-cache" }).then((r10) => {
+      if (!r10.ok) throw new Error(`\u8BD5\u542C\u5143\u97F3\u8868\uFF1AHTTP ${r10.status}\uFF08\u5148\u8DD1 node scripts/gen-preview-vowels.mjs\uFF1F\uFF09`);
+      return r10.json();
+    }),
+    fetch(new URL("vowels.pcm16", base), { cache: "no-cache" }).then((r10) => r10.arrayBuffer())
+  ]);
+  const all = new Int16Array(pcm), entries2 = idx.entries;
+  for (const e10 of entries2) {
+    const f2 = new Float32Array(e10.len);
+    for (let k2 = 0; k2 < e10.len; k2++) f2[k2] = all[e10.start + k2] / 32768;
+    const b3 = new AudioBuffer({ length: e10.len, numberOfChannels: 1, sampleRate: idx.sr });
+    b3.copyToChannel(f2, 0);
+    e10.buf = b3;
+  }
+  return { sr: idx.sr, entries: entries2 };
+}
+var Sampler = class {
+  loading = null;
+  table = null;
+  voices = /* @__PURE__ */ new Map();
+  // 来源 id → 正在响的声音（Map 保持按下的先后）
+  song = [];
+  songTimer = 0;
+  /** 开始加载（不挡任何东西）；重复调用只加载一次，失败了下次重试。 */
+  load() {
+    if (!this.loading) {
+      const p2 = fetchTable();
+      this.loading = p2;
+      p2.then((t10) => {
+        this.table = t10;
+      }, () => {
+        this.loading = null;
+      });
+    }
+    return this.loading.then(() => void 0);
+  }
+  get ready() {
+    return this.table !== null;
+  }
+  pick(midi, hum) {
+    const es3 = this.table?.entries.filter((e10) => e10.kana === KANA[hum]) ?? [];
+    if (!es3.length) return null;
+    return es3.reduce((a10, b3) => Math.abs(b3.midi - midi) < Math.abs(a10.midi - midi) ? b3 : a10);
+  }
+  /** 起一个声音；offset > 0 = 从样本中间（循环段）开始，不带起音（滑音换样本时用）。 */
+  start(midi, hum, when, ctx2 = audioCtx(), offset = 0, attack = ENV.attack) {
+    const e10 = this.pick(midi, hum), sr2 = this.table?.sr ?? 22050;
+    if (!e10?.buf) return null;
+    const src = ctx2.createBufferSource(), gain = ctx2.createGain();
+    src.buffer = e10.buf;
+    src.loop = true;
+    src.loopStart = e10.loopStart / sr2;
+    src.loopEnd = e10.loopEnd / sr2;
+    src.playbackRate.value = 2 ** ((midi - e10.midi) / 12);
+    gain.gain.setValueAtTime(0, when);
+    gain.gain.linearRampToValueAtTime(1, when + attack);
+    src.connect(gain).connect(ctx2.destination);
+    src.start(when, offset);
+    return { src, gain, entry: e10 };
+  }
+  fade(v, when, tc2, stopAfter) {
+    v.gain.gain.cancelScheduledValues(when);
+    v.gain.gain.setTargetAtTime(0, when, tc2);
+    v.src.stop(when + stopAfter);
+  }
+  /** 按下：响（同一来源的旧音先停掉）。还没加载好 = 不响（加载在后台）。 */
+  down(midi, hum, id2 = "main") {
+    if (!this.ready) {
+      void this.load();
+      return;
+    }
+    const ctx2 = audioCtx(), now = ctx2.currentTime, old = this.voices.get(id2);
+    if (old) {
+      this.fade(old, now, ENV.cut, ENV.cutStop);
+      this.voices.delete(id2);
+    }
+    while (this.voices.size >= MAX_VOICES) {
+      const [k2, v2] = this.voices.entries().next().value;
+      this.fade(v2, now, ENV.cut, ENV.cutStop);
+      this.voices.delete(k2);
+    }
+    const v = this.start(midi, hum, now);
+    if (v) this.voices.set(id2, v);
+  }
+  /** 拖音高：新的顶掉旧的——同一个声音滑过去（离样本太远就交叉淡到另一份的循环段，不带起音）。 */
+  glide(midi, hum, id2 = "main") {
+    const v = this.voices.get(id2);
+    if (!v || !this.ready) {
+      this.down(midi, hum, id2);
+      return;
+    }
+    const ctx2 = audioCtx(), now = ctx2.currentTime, sr2 = this.table.sr;
+    if (Math.abs(midi - v.entry.midi) <= GLIDE_SPAN) {
+      v.src.playbackRate.setTargetAtTime(2 ** ((midi - v.entry.midi) / 12), now, GLIDE_TC);
+      return;
+    }
+    const e10 = this.pick(midi, hum);
+    if (!e10) return;
+    const nv2 = this.start(midi, hum, now, ctx2, e10.loopStart / sr2, XFADE);
+    this.fade(v, now, XFADE / 3, XFADE * 3);
+    if (nv2) this.voices.set(id2, nv2);
+    else this.voices.delete(id2);
+  }
+  /** 松开：这个来源的声音淡出。 */
+  up(id2 = "main") {
+    const v = this.voices.get(id2);
+    if (v) {
+      this.fade(v, audioCtx().currentTime, ENV.rel, ENV.relStop);
+      this.voices.delete(id2);
+    }
+  }
+  /** 全部松开（切走 app / 失焦：抬手的事件可能收不到，别让音卡着响）。 */
+  upAll() {
+    for (const id2 of [...this.voices.keys()]) this.up(id2);
+  }
+  /** 轻量版整首：notes = [{ midi, t0, t1 }]（秒），全唱 hum 那个字。返回总时长；播完调 onEnd。 */
+  playSong(notes, hum, onEnd) {
+    this.stopSong();
+    const ctx2 = audioCtx(), t10 = ctx2.currentTime + 0.1;
+    for (const n10 of notes) {
+      const v = this.start(n10.midi, hum, t10 + n10.t0);
+      if (v) {
+        this.fade(v, t10 + n10.t1, ENV.rel, ENV.relStop);
+        this.song.push(v);
+      }
+    }
+    const total = notes.length ? notes[notes.length - 1].t1 : 0;
+    this.songTimer = window.setTimeout(() => {
+      this.song = [];
+      onEnd();
+    }, (total + 0.4) * 1e3);
+    return total;
+  }
+  /** 轻量版整首离线渲染（导出用）：同 playSong 的排法，不出声，直接拿样本。 */
+  async renderSong(notes, hum) {
+    if (!this.ready) await this.load();
+    const sr2 = this.table.sr, lead = 0.1, total = (notes.length ? notes[notes.length - 1].t1 : 0) + lead + 0.4;
+    const ctx2 = new OfflineAudioContext(1, Math.ceil(total * sr2), sr2);
+    for (const n10 of notes) {
+      const v = this.start(n10.midi, hum, lead + n10.t0, ctx2);
+      if (v) this.fade(v, lead + n10.t1, ENV.rel, ENV.relStop);
+    }
+    const buf = await ctx2.startRendering();
+    return { samples: buf.getChannelData(0), sr: sr2 };
+  }
+  stopSong() {
+    clearTimeout(this.songTimer);
+    const now = audioCtx().currentTime;
+    for (const v of this.song) {
+      try {
+        this.fade(v, now, ENV.cut, ENV.cutStop);
+      } catch {
+      }
+    }
+    this.song = [];
+  }
+  get songPlaying() {
+    return this.song.length > 0;
+  }
+};
+
+// src/score/roles.ts
+var ROLE_GROUPS = [
+  { group: "\u4EBA\u58F0", items: [
+    { sound: "voice.vocals", name: "Vocals", zh: "\u4E3B\u5531" },
+    { sound: "voice.vocals", name: "Backing Vocals", zh: "\u548C\u58F0" },
+    { sound: "voice.soprano", name: "Soprano", zh: "\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09" },
+    { sound: "voice.alto", name: "Alto", zh: "\u5973\u4F4E\u97F3\uFF08\u5408\u5531\uFF09" },
+    { sound: "voice.tenor", name: "Tenor", zh: "\u7537\u9AD8\u97F3\uFF08\u5408\u5531\uFF09" },
+    { sound: "voice.bass", name: "Bass", zh: "\u7537\u4F4E\u97F3\uFF08\u5408\u5531\uFF09" }
+  ] },
+  { group: "\u4E50\u961F", items: [
+    { sound: "keyboard.piano", name: "Piano", zh: "\u94A2\u7434 / \u952E\u76D8" },
+    { sound: "pluck.guitar", name: "Guitar", zh: "\u5409\u4ED6" },
+    { sound: "pluck.bass", name: "Bass", zh: "\u8D1D\u65AF" },
+    { sound: "drum.group.set", name: "Drums", zh: "\u9F13" },
+    { sound: "strings.group", name: "Strings", zh: "\u5F26\u4E50" },
+    { sound: "synth.pad", name: "Synth Pad", zh: "\u5408\u6210\u94FA\u5E95" },
+    { sound: "synth.tone.sawtooth", name: "Synth Lead", zh: "\u5408\u6210\u4E3B\u97F3" }
+  ] }
+];
+var ROLE_PRESETS = ROLE_GROUPS.flatMap((g3) => g3.items);
+var DEFAULT_ROLE = ROLE_PRESETS[0];
+function numberParts(parts) {
+  const key = (p2) => `${p2.name}\0${p2.sound}`;
+  const total = /* @__PURE__ */ new Map();
+  for (const p2 of parts) total.set(key(p2), (total.get(key(p2)) ?? 0) + 1);
+  const seen = /* @__PURE__ */ new Map();
+  return parts.map((p2) => {
+    const k2 = key(p2);
+    if ((total.get(k2) ?? 0) < 2) return p2.name;
+    const n10 = (seen.get(k2) ?? 0) + 1;
+    seen.set(k2, n10);
+    return `${p2.name} ${n10}`;
+  });
+}
+
+// src/format/project.ts
+init_fflate_esm();
+
+// src/score/lang.ts
+var KANA2 = /[぀-ヿㇰ-ㇿｦ-ﾟ]/;
+var HAN = /\p{Script=Han}/u;
+var LATIN = /[A-Za-z]/;
+function partDefaultLang(tokens) {
+  const ls2 = tokens.flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
+  if (KANA2.test(ls2)) return "ja";
+  if (HAN.test(ls2)) return "zh";
+  if (LATIN.test(ls2)) return "en";
+  return "ja";
+}
+function syllableLangs(tokens, override = true) {
+  const def = partDefaultLang(tokens);
+  let prev = def;
+  return tokens.map((t10) => {
+    if (t10.kind !== "note" || !t10.lyric || t10.lyric === MELISMA_MARK) return null;
+    let l10 = KANA2.test(t10.lyric) ? "ja" : HAN.test(t10.lyric) ? prev : LATIN.test(t10.lyric) ? "en" : prev;
+    if (override && t10.lang) l10 = t10.lang;
+    prev = l10;
+    return l10;
+  });
+}
+function keepOnlyOverrides(tokens, read) {
+  const def = partDefaultLang(tokens);
+  let prev = def;
+  tokens.forEach((t10, i10) => {
+    if (t10.kind !== "note" || !t10.lyric || t10.lyric === MELISMA_MARK) return;
+    const auto = KANA2.test(t10.lyric) ? "ja" : HAN.test(t10.lyric) ? prev : LATIN.test(t10.lyric) ? "en" : prev;
+    const got = read[i10];
+    if (got && got !== auto) t10.lang = got;
+    else delete t10.lang;
+    prev = got ?? auto;
+  });
+}
+
+// src/format/xml.ts
+var ENT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+function decode2(s10) {
+  return s10.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);/g, (m2, e10) => e10[0] === "#" ? String.fromCodePoint(e10[1] === "x" ? parseInt(e10.slice(2), 16) : parseInt(e10.slice(1), 10)) : ENT[e10] ?? m2);
+}
+var esc2 = (s10) => s10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
+function parseXml(src) {
+  let i10 = 0;
+  const fail = (what) => {
+    throw new Error(`XML \u8BFB\u4E0D\u61C2\uFF08\u7B2C ${src.slice(0, i10).split("\n").length} \u884C\uFF09\uFF1A${what}`);
+  };
+  const stack2 = [{ name: "#doc", attrs: {}, children: [] }];
+  while (i10 < src.length) {
+    const lt2 = src.indexOf("<", i10);
+    const text2 = src.slice(i10, lt2 < 0 ? src.length : lt2);
+    if (text2 && stack2.length > 1) stack2[stack2.length - 1].children.push(decode2(text2));
+    if (lt2 < 0) break;
+    i10 = lt2;
+    if (src.startsWith("<!--", i10)) {
+      const e10 = src.indexOf("-->", i10);
+      if (e10 < 0) fail("\u6CE8\u91CA\u6CA1\u6536\u5C3E");
+      i10 = e10 + 3;
+      continue;
+    }
+    if (src.startsWith("<![CDATA[", i10)) {
+      const e10 = src.indexOf("]]>", i10);
+      if (e10 < 0) fail("CDATA \u6CA1\u6536\u5C3E");
+      stack2[stack2.length - 1].children.push(src.slice(i10 + 9, e10));
+      i10 = e10 + 3;
+      continue;
+    }
+    if (src.startsWith("<?", i10)) {
+      const e10 = src.indexOf("?>", i10);
+      if (e10 < 0) fail("\u5904\u7406\u6307\u4EE4\u6CA1\u6536\u5C3E");
+      i10 = e10 + 2;
+      continue;
+    }
+    if (src.startsWith("<!", i10)) {
+      let depth = 0, j2 = i10;
+      for (; j2 < src.length; j2++) {
+        const c10 = src[j2];
+        if (c10 === "[") depth++;
+        else if (c10 === "]") depth--;
+        else if (c10 === ">" && depth === 0) break;
+      }
+      i10 = j2 + 1;
+      continue;
+    }
+    if (src[i10 + 1] === "/") {
+      const e10 = src.indexOf(">", i10);
+      if (e10 < 0) fail("\u7ED3\u675F\u6807\u7B7E\u6CA1\u6536\u5C3E");
+      const name = src.slice(i10 + 2, e10).trim(), top = stack2.pop();
+      if (!top || top.name !== name) fail(`\u7ED3\u675F\u6807\u7B7E </${name}> \u5BF9\u4E0D\u4E0A <${top?.name}>`);
+      i10 = e10 + 1;
+      continue;
+    }
+    const m2 = /^<([^\s/>]+)/.exec(src.slice(i10, i10 + 200));
+    if (!m2) fail("\u6807\u7B7E\u540D");
+    const el2 = { name: m2[1], attrs: {}, children: [] };
+    i10 += m2[0].length;
+    const attrRe = /\s*([^\s=/>]+)\s*=\s*("([^"]*)"|'([^']*)')/y;
+    for (; ; ) {
+      attrRe.lastIndex = i10;
+      const a10 = attrRe.exec(src);
+      if (!a10) break;
+      el2.attrs[a10[1]] = decode2(a10[3] ?? a10[4] ?? "");
+      i10 = attrRe.lastIndex;
+    }
+    while (/\s/.test(src[i10] ?? "")) i10++;
+    stack2[stack2.length - 1].children.push(el2);
+    if (src.startsWith("/>", i10)) {
+      i10 += 2;
+      continue;
+    }
+    if (src[i10] !== ">") fail(`<${el2.name}> \u91CC\u6709\u8BFB\u4E0D\u61C2\u7684\u4E1C\u897F`);
+    i10++;
+    stack2.push(el2);
+  }
+  if (stack2.length !== 1) fail(`<${stack2[stack2.length - 1].name}> \u6CA1\u6709\u7ED3\u675F`);
+  const root = stack2[0].children.find((c10) => typeof c10 !== "string");
+  if (!root) fail("\u6CA1\u6709\u6839\u5143\u7D20");
+  return root;
+}
+var kids = (el2, name) => (el2?.children ?? []).filter((c10) => typeof c10 !== "string" && (name === void 0 || c10.name === name));
+var kid = (el2, name) => kids(el2, name)[0];
+var text = (el2) => (el2?.children ?? []).map((c10) => typeof c10 === "string" ? c10 : text(c10)).join("");
+var childText = (el2, name) => {
+  const k2 = kid(el2, name);
+  return k2 ? text(k2).trim() : void 0;
+};
+
+// src/format/musicxml.ts
+var measureLen = (beats, beatType) => beats * WHOLE / beatType;
+var TYPES = [["whole", WHOLE], ["half", WHOLE / 2], ["quarter", TPQ], ["eighth", TPQ / 2], ["16th", TPQ / 4], ["32nd", TPQ / 8], ["64th", TPQ / 16]];
+var TUPLETS = [[1, 1], [3, 2], [5, 4], [6, 4], [7, 4]];
+function noteType(dur) {
+  for (const [act, norm] of TUPLETS) for (const [type, base3] of TYPES) for (let dots = 0; dots <= 2; dots++) {
+    if (Math.abs(base3 * (2 - 1 / 2 ** dots) * (norm / act) - dur) < 0.5) return { type, dots, tuplet: act === 1 ? null : [act, norm] };
+  }
+  return null;
+}
+var pitchXml = (p2) => `<pitch><step>${p2.step}</step>${p2.alter ? `<alter>${p2.alter}</alter>` : ""}<octave>${p2.octave}</octave></pitch>`;
+var LAYOUT_TENTHS = { cozy: { system: 110, staff: 80 }, compact: { system: 60, staff: 50 } };
+var tenthsPerMm = (p2) => 40 / staffMmOf(p2);
+function defaultsXml(p2) {
+  const t10 = (mm) => +(mm * tenthsPerMm(p2)).toFixed(2), m2 = p2.marginMm;
+  const compact = densityOf(p2) === "compact";
+  return `<defaults><scaling><millimeters>${staffMmOf(p2)}</millimeters><tenths>40</tenths></scaling><page-layout><page-height>${t10(p2.heightMm)}</page-height><page-width>${t10(p2.widthMm)}</page-width><page-margins type="both"><left-margin>${t10(m2.l)}</left-margin><right-margin>${t10(m2.r)}</right-margin><top-margin>${t10(m2.t)}</top-margin><bottom-margin>${t10(m2.b)}</bottom-margin></page-margins></page-layout><system-layout><system-distance>${compact ? LAYOUT_TENTHS.compact.system : LAYOUT_TENTHS.cozy.system}</system-distance></system-layout><staff-layout><staff-distance>${compact ? LAYOUT_TENTHS.compact.staff : LAYOUT_TENTHS.cozy.staff}</staff-distance></staff-layout></defaults>`;
+}
+function readPaper(root) {
+  const d3 = kid(root, "defaults"), pl = kid(d3, "page-layout");
+  const n10 = (el2, name) => {
+    const v = childText(el2, name);
+    return v === void 0 ? NaN : Number(v);
+  };
+  const mm = n10(kid(d3, "scaling"), "millimeters"), tn2 = n10(kid(d3, "scaling"), "tenths"), w2 = n10(pl, "page-width"), h2 = n10(pl, "page-height");
+  if (!(mm > 0 && tn2 > 0 && w2 > 0 && h2 > 0)) return void 0;
+  const k2 = mm / tn2, pm = kid(pl, "page-margins"), mg = (name) => {
+    const v = n10(pm, name);
+    return v >= 0 ? v * k2 : 15;
+  };
+  const sd2 = n10(kid(d3, "staff-layout"), "staff-distance"), density = sd2 > 0 && sd2 < 65 ? "compact" : "cozy";
+  const p2 = detectPaper(w2 * k2, h2 * k2, { l: mg("left-margin"), r: mg("right-margin"), t: mg("top-margin"), b: mg("bottom-margin") }, k2 * 40, density);
+  const def = paperOf(DEFAULT_PAPER), same = (a10, b3) => Math.abs(a10 - b3) < 0.05;
+  if (p2.kind === DEFAULT_PAPER && p2.staffMm === void 0 && !p2.density && same(p2.marginMm.l, def.marginMm.l) && same(p2.marginMm.r, def.marginMm.r) && same(p2.marginMm.t, def.marginMm.t) && same(p2.marginMm.b, def.marginMm.b)) return void 0;
+  return p2;
+}
+function creditXml(text2, p2) {
+  const t10 = (mm) => +(mm * tenthsPerMm(p2)).toFixed(1);
+  return `<credit page="1"><credit-words default-x="${t10(p2.widthMm - p2.marginMm.r)}" default-y="${t10(p2.heightMm - p2.marginMm.t - 12)}" justify="right" valign="top">${esc2(text2)}</credit-words></credit>`;
+}
+function readCredits(root, title) {
+  const skip = /* @__PURE__ */ new Set(["title", "subtitle", "page number", "part name"]);
+  const blocks = kids(root, "credit").filter((c10) => !kids(c10, "credit-type").some((ct2) => skip.has(text(ct2).trim()))).map((c10) => kids(c10, "credit-words").map((w2) => text(w2)).join("\n").trim()).filter((s10) => s10 && s10 !== title);
+  if (blocks.length) return blocks.join("\n");
+  const cr2 = kids(kid(root, "identification"), "creator"), by = (...types) => cr2.filter((c10) => types.includes(c10.attrs.type ?? "")).map((c10) => text(c10).trim()).filter(Boolean);
+  const ly2 = by("lyricist", "poet")[0], co2 = by("composer")[0], lines = [];
+  if (ly2 && co2 && ly2 === co2) lines.push(`${ly2} \u8BCD\u66F2`);
+  else {
+    if (ly2) lines.push(`${ly2} \u8BCD`);
+    if (co2) lines.push(`${co2} \u66F2`);
+  }
+  for (const a10 of by("arranger")) lines.push(`${a10} \u7F16\u66F2`);
+  for (const c10 of cr2) {
+    const ty2 = c10.attrs.type ?? "";
+    if (!["lyricist", "poet", "composer", "arranger"].includes(ty2) && text(c10).trim()) lines.push(`${ty2 ? `${ty2}\uFF1A` : ""}${text(c10).trim()}`);
+  }
+  return lines.length ? lines.join("\n") : void 0;
+}
+var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
+var ART_XML = { accent: "accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
+var XML_ART = { accent: "accent", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
+var XML_DYN = (name) => ["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? name : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null;
+var tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
+function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
+  const staffs = staffOfTokens(toks, staves);
+  const head = headLen(toks);
+  const H2 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
+  for (let i10 = 0; i10 < head; i10++) {
+    const t10 = toks[i10];
+    if (t10.kind === "key") H2.fifths = t10.fifths;
+    else if (t10.kind === "time") {
+      H2.beats = t10.beats;
+      H2.beatType = t10.beatType;
+    } else if (t10.kind === "tempo") H2.bpm = t10.bpm;
+  }
+  const langs = syllableLangs(toks);
+  const measures = [];
+  let cur = [], ticks = 0, len = measureLen(H2.beats, H2.beatType);
+  const close = (manual) => {
+    measures.push({ body: cur, manual });
+    cur = [];
+    ticks = 0;
+  };
+  const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : `<clef><sign>${clef}</sign><line>${clef === "F" ? 4 : 2}</line></clef>`;
+  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H2.fifths}</fifths></key><time><beats>${H2.beats}</beats><beat-type>${H2.beatType}</beat-type></time>${clefs}</attributes>`);
+  if (first) cur.push(tempoXml(H2.bpm));
+  let prevHyph = false;
+  const syllabic = (t10) => {
+    const s10 = t10.hyph ? prevHyph ? "middle" : "begin" : prevHyph ? "end" : "single";
+    prevHyph = !!t10.hyph;
+    return s10;
+  };
+  const unwritten = [];
+  const nextTimed = (i10) => {
+    for (let j2 = i10 + 1; j2 < toks.length; j2++) {
+      const t10 = toks[j2];
+      if (t10.kind === "note" || t10.kind === "rest") return t10;
+    }
+    return null;
+  };
+  for (let i10 = head; i10 < toks.length; i10++) {
+    const t10 = toks[i10];
+    const br = breaks?.get(i10);
+    if (br !== void 0) {
+      if (ticks > 0) close(false);
+      cur.push(`<print new-page="yes"/>`);
+      if (first && br) cur.push(`<direction placement="above"><direction-type><rehearsal>${esc2(br)}</rehearsal></direction-type></direction>`);
+    }
+    if (t10.kind === "bar") {
+      close(true);
+      continue;
+    }
+    if (t10.kind === "phrase") continue;
+    if (t10.kind === "key" || t10.kind === "time" || t10.kind === "tempo") {
+      if (ticks >= len || t10.kind === "time" && ticks > 0) close(false);
+      if (t10.kind === "key") cur.push(`<attributes><key><fifths>${t10.fifths}</fifths></key></attributes>`);
+      else if (t10.kind === "time") {
+        cur.push(`<attributes><time><beats>${t10.beats}</beats><beat-type>${t10.beatType}</beat-type></time></attributes>`);
+        len = measureLen(t10.beats, t10.beatType);
+      } else if (first) cur.push(tempoXml(t10.bpm));
+      continue;
+    }
+    if (t10.kind === "dyn") {
+      if (ticks >= len) close(false);
+      cur.push(dynXml(t10.value));
+      continue;
+    }
+    if (t10.kind !== "note" && t10.kind !== "rest") continue;
+    let left = t10.dur, k2 = 0;
+    const tieOut = t10.kind === "note" && nextTimed(i10)?.kind === "note" && nextTimed(i10).tie;
+    let lyricDone = false;
+    while (left > 0.5) {
+      if (ticks >= len) close(false);
+      const piece = Math.min(left, len - ticks), firstPiece = k2 === 0, last = left - piece <= 0.5;
+      const ty2 = noteType(piece);
+      const id2 = `${t10.kind === "note" ? "n" : "r"}${t10.id}${firstPiece ? "" : `-${k2 + 1}`}`;
+      let x2 = `<note id="${id2}">`;
+      if (t10.kind === "rest") x2 += `<rest/><duration>${Math.round(piece)}</duration>`;
+      else {
+        const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
+        x2 += pitchXml(effectivePitch(toks, i10)) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "");
+      }
+      x2 += `<voice>1</voice>`;
+      const typeXml = ty2 ? `<type>${ty2.type}</type>` + "<dot/>".repeat(ty2.dots) + (ty2.tuplet ? `<time-modification><actual-notes>${ty2.tuplet[0]}</actual-notes><normal-notes>${ty2.tuplet[1]}</normal-notes></time-modification>` : "") : "";
+      const staffXml = staves === 2 ? `<staff>${staffs[i10]}</staff>` : "";
+      x2 += typeXml + staffXml;
+      const chordXml = [];
+      if (t10.kind === "note") {
+        const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
+        const arts = (t10.art ?? []).filter((a10) => a10 === "breath" ? last : firstPiece);
+        const artXml = arts.length ? `<articulations>${arts.map((a10) => `<${ART_XML[a10]}/>`).join("")}</articulations>` : "";
+        if (tieIn || tieOn || artXml) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${artXml}</notations>`;
+        for (const [ci2, cp2] of (t10.chord ?? []).entries()) {
+          chordXml.push(`<note id="${id2}c${ci2 + 1}"><chord/>` + pitchXml(cp2) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + typeXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
+        }
+        if (!lyricDone && t10.lyric) {
+          if (t10.lyric === MELISMA_MARK) x2 += `<lyric number="1"><extend/></lyric>`;
+          else {
+            const lang = esc2(langs[i10] ?? "ja"), parts = t10.lyric.split(ELISION);
+            x2 += `<lyric number="1"><syllabic>${syllabic(t10)}</syllabic><text xml:lang="${lang}">${esc2(parts[0])}</text>` + parts.slice(1).map((p2) => `<elision/><syllabic>single</syllabic><text xml:lang="${lang}">${esc2(p2)}</text>`).join("") + `</lyric>`;
+          }
+        }
+        lyricDone = true;
+      }
+      x2 += `</note>`;
+      cur.push(x2);
+      for (const cx2 of chordXml) cur.push(cx2);
+      ticks += piece;
+      left -= piece;
+      k2++;
+    }
+    if (t10.kind === "note" && !t10.pitch) unwritten.push(`n${t10.id}`);
+  }
+  if (cur.length || !measures.length) close(false);
+  return { measures, unwritten, lastLen: len };
+}
+function writeMusicXml(doc2, meta) {
+  const paper = doc2.paper ?? paperOf(DEFAULT_PAPER);
+  const built = doc2.parts.map((p2, k2) => ({ p: p2, ...partMeasures(p2.tokens, p2.breaks, k2 === 0, p2.info.clef ?? "G", p2.info.staves === 2 ? 2 : 1) }));
+  const nMeas = Math.max(0, ...built.map((b3) => b3.measures.length));
+  const manualBars = {}, unwritten = [];
+  const bodies = built.map((b3) => {
+    const mb = [];
+    const ms = b3.measures.map((m2, n10) => {
+      if (m2.manual) mb.push(n10 + 1);
+      return `<measure number="${n10 + 1}">${m2.body.join("")}</measure>`;
+    });
+    if (doc2.padMeasures) for (let n10 = b3.measures.length; n10 < nMeas; n10++) ms.push(`<measure number="${n10 + 1}"><note><rest measure="yes"/><duration>${Math.round(b3.lastLen)}</duration><voice>1</voice></note></measure>`);
+    manualBars[b3.p.info.id] = mb;
+    unwritten.push(...b3.unwritten);
+    return `<part id="${b3.p.info.id}">
+${ms.join("\n")}
+</part>`;
+  });
+  const partList = doc2.parts.map(({ info: P2 }) => `<score-part id="${P2.id}"><part-name>${esc2(P2.name)}</part-name><score-instrument id="${P2.id}-I1"><instrument-name>${esc2(P2.instrumentName)}</instrument-name><instrument-sound>${esc2(P2.sound)}</instrument-sound>${P2.variant ? `<virtual-instrument><virtual-library>${esc2(P2.variant.library)}</virtual-library><virtual-name>${esc2(P2.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P2.id}-I1"><midi-program>${P2.program}</midi-program>${P2.volume !== void 0 ? `<volume>${P2.volume}</volume>` : ""}${P2.pan !== void 0 ? `<pan>${P2.pan}</pan>` : ""}</midi-instrument></score-part>`).join("");
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="4.0">
+${doc2.title ? `<work><work-title>${esc2(doc2.title)}</work-title></work>
+` : ""}${doc2.movementTitle ? `<movement-title>${esc2(doc2.movementTitle)}</movement-title>
+` : ""}<identification>${doc2.rights ? `<rights>${esc2(doc2.rights)}</rights>` : ""}<encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
+${defaultsXml(paper)}
+${doc2.credits ? creditXml(doc2.credits, paper) + "\n" : ""}<part-list>${partList}</part-list>
+${bodies.join("\n")}
+</score-partwise>
+`;
+  return { xml, manualBars, unwritten };
+}
+function readMusicXml(xml, hints) {
+  const root = parseXml(xml);
+  if (root.name === "score-timewise") throw new Error("\u8FD9\u4EFD MusicXML \u662F timewise \u6392\u6CD5\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BFB partwise");
+  if (root.name !== "score-partwise") throw new Error(`\u8FD9\u4E0D\u662F MusicXML \u4E50\u8C31\uFF08\u6839\u5143\u7D20\u662F <${root.name}>\uFF09`);
+  const dropped = {};
+  const drop = (what) => {
+    dropped[what] = (dropped[what] ?? 0) + 1;
+  };
+  const infos = kids(kid(root, "part-list"), "score-part").map((sp2) => {
+    const si2 = kid(sp2, "score-instrument"), mi = kid(sp2, "midi-instrument"), vi = kid(si2, "virtual-instrument");
+    const num = (s10) => s10 === void 0 || s10 === "" ? void 0 : Number(s10);
+    return {
+      id: sp2.attrs.id,
+      name: childText(sp2, "part-name") ?? "",
+      instrumentName: childText(si2, "instrument-name"),
+      sound: childText(si2, "instrument-sound"),
+      program: num(childText(mi, "midi-program")),
+      variant: childText(vi, "virtual-name"),
+      volume: num(childText(mi, "volume")),
+      pan: num(childText(mi, "pan"))
+    };
+  });
+  const partEls = kids(root, "part");
+  if (!partEls.length) throw new Error("\u8FD9\u4EFD MusicXML \u91CC\u6CA1\u6709\u58F0\u90E8");
+  const title = childText(kid(root, "work"), "work-title") ?? "", movementTitle = childText(root, "movement-title") ?? "";
+  const unwritten = new Set(hints?.unwritten ?? []);
+  const usedIds = /* @__PURE__ */ new Set();
+  const takeId = (s10) => {
+    const m2 = s10 ? /^[nr](\d+)$/.exec(s10) : null;
+    if (!m2) return null;
+    const n10 = +m2[1];
+    if (usedIds.has(n10)) return null;
+    usedIds.add(n10);
+    return n10;
+  };
+  const addArts = (tok, note2) => {
+    const set = new Set(tok.art ?? []);
+    for (const nn2 of kids(note2, "notations")) for (const ar2 of kids(nn2, "articulations")) for (const e10 of kids(ar2)) {
+      const a10 = XML_ART[e10.name];
+      if (a10) set.add(a10);
+      else drop("\u6F14\u594F\u6CD5\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF09");
+    }
+    const art = ["staccato", "accent", "tenuto", "breath"].filter((a10) => set.has(a10));
+    if (art.length) tok.art = art;
+  };
+  const tempoOf = (el2) => {
+    const s10 = el2.name === "sound" ? el2 : kid(el2, "sound");
+    const v = s10?.attrs.tempo;
+    return v ? Math.round(Number(v)) : null;
+  };
+  const parts = partEls.map((pe, pi) => {
+    const pid = pe.attrs.id ?? `P${pi + 1}`, info2 = infos.find((x2) => x2.id === pid) ?? { id: pid, name: "" };
+    const manual = hints?.manualBars ? new Set(hints.manualBars[pid] ?? []) : null;
+    const H2 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
+    const body2 = [], langRead = /* @__PURE__ */ new Map();
+    let headPhase = true, divisions = TPQ, voice = null;
+    const mark = (t10) => {
+      body2.push(t10);
+    };
+    const measures = kids(pe, "measure");
+    measures.forEach((m2, mi) => {
+      for (const c10 of kids(m2)) {
+        if (c10.name === "attributes") {
+          const d3 = childText(c10, "divisions");
+          if (d3) divisions = Number(d3);
+          const cl2 = kid(c10, "clef");
+          if (cl2 && info2.clef === void 0) info2.clef = childText(cl2, "sign") === "F" ? "F" : "G";
+          if (Number(childText(c10, "staves") ?? "1") >= 2) info2.staves = 2;
+          const key = kid(c10, "key"), time = kid(c10, "time");
+          if (key && childText(key, "fifths") !== void 0) {
+            const f2 = Number(childText(key, "fifths"));
+            if (headPhase && !H2.gotKey) {
+              H2.fifths = f2;
+              H2.gotKey = true;
+            } else mark({ kind: "key", id: 0, fifths: f2 });
+          }
+          if (time && childText(time, "beats")) {
+            const b3 = Number(childText(time, "beats")), bt = Number(childText(time, "beat-type"));
+            if (headPhase && !H2.gotTime) {
+              H2.beats = b3;
+              H2.beatType = bt;
+              H2.gotTime = true;
+            } else mark({ kind: "time", id: 0, beats: b3, beatType: bt });
+          }
+        } else if (c10.name === "direction" || c10.name === "sound") {
+          const bpm = tempoOf(c10);
+          if (bpm) {
+            if (headPhase && !H2.gotTempo) {
+              H2.bpm = bpm;
+              H2.gotTempo = true;
+            } else mark({ kind: "tempo", id: 0, bpm });
+          }
+          for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const dy of kids(dt, "dynamics")) for (const e10 of kids(dy)) {
+            const v = XML_DYN(e10.name);
+            if (v) mark({ kind: "dyn", id: 0, value: v });
+            else drop("\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09");
+          }
+        } else if (c10.name === "note") {
+          if (kid(c10, "grace")) {
+            drop("\u88C5\u9970\u97F3");
+            continue;
+          }
+          if (kid(c10, "cue")) {
+            drop("\u63D0\u793A\u97F3\u7B26");
+            continue;
+          }
+          const v = childText(c10, "voice") ?? "1";
+          if (voice === null) voice = v;
+          if (v !== voice) {
+            drop("\u540C\u4E00\u58F0\u90E8\u91CC\u7684\u7B2C\u4E8C\u6761\u65CB\u5F8B");
+            continue;
+          }
+          if (kid(c10, "chord")) {
+            const prevN = body2[body2.length - 1], pch = kid(c10, "pitch");
+            if (prevN && prevN.kind === "note" && prevN.pitch && pch) {
+              const pp = { step: childText(pch, "step") ?? "C", alter: Number(childText(pch, "alter") ?? "0"), octave: Number(childText(pch, "octave") ?? "4") };
+              const ps = allPitches(prevN);
+              if (!ps.some((q2) => midiOf(q2) === midiOf(pp))) {
+                const w2 = withPitches(prevN, [...ps, pp]);
+                prevN.pitch = w2.pitch;
+                if (w2.chord) prevN.chord = w2.chord;
+                else delete prevN.chord;
+              }
+              addArts(prevN, c10);
+            } else drop("\u53E0\u97F3\uFF08\u524D\u9762\u6CA1\u6709\u80FD\u53E0\u7684\u97F3\uFF09");
+            continue;
+          }
+          headPhase = false;
+          const dur = Math.round(Number(childText(c10, "duration") ?? "0") * TPQ / divisions);
+          if (dur <= 0) continue;
+          const idAttr = c10.attrs.id, cont = idAttr ? /^([nr])(\d+)-\d+$/.exec(idAttr) : null;
+          const prev = body2[body2.length - 1];
+          if (cont && prev && (prev.kind === "note" || prev.kind === "rest") && prev.id === +cont[2] && cont[1] === "n" === (prev.kind === "note")) {
+            prev.dur += dur;
+            if (prev.kind === "note") addArts(prev, c10);
+            continue;
+          }
+          const isRest = !!kid(c10, "rest");
+          const stf = childText(c10, "staff"), staffOf = stf === "2" ? { staff: 2 } : stf === "1" ? { staff: 1 } : {};
+          if (isRest) {
+            mark({ kind: "rest", id: takeId(idAttr) ?? 0, dur, ...staffOf });
+            continue;
+          }
+          const p2 = kid(c10, "pitch");
+          if (!p2) {
+            drop("\u6CA1\u6709\u97F3\u9AD8\u7684\u97F3\uFF08\u6253\u51FB\u4E50\uFF09");
+            continue;
+          }
+          const pitch = { step: childText(p2, "step") ?? "C", alter: Number(childText(p2, "alter") ?? "0"), octave: Number(childText(p2, "octave") ?? "4") };
+          const tok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null, ...staffOf };
+          if (kids(c10, "tie").some((t10) => t10.attrs.type === "stop")) tok.tie = true;
+          addArts(tok, c10);
+          const lyrics = kids(c10, "lyric"), ly2 = lyrics.find((l10) => (l10.attrs.number ?? "1") === "1") ?? lyrics[0];
+          if (lyrics.length > 1) drop("\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD");
+          if (ly2) {
+            const tx2 = kid(ly2, "text");
+            if (tx2) {
+              tok.lyric = kids(ly2, "text").map((e10) => text(e10)).filter(Boolean).join(ELISION);
+              const syl = childText(ly2, "syllabic");
+              if (syl === "begin" || syl === "middle") tok.hyph = true;
+              if (tx2.attrs["xml:lang"]) langRead.set(tok, tx2.attrs["xml:lang"]);
+            } else if (kid(ly2, "extend")) tok.lyric = MELISMA_MARK;
+          }
+          mark(tok);
+        } else if (c10.name === "backup" || c10.name === "forward") {
+        } else if (c10.name === "harmony") drop("\u548C\u5F26\u8BB0\u53F7");
+      }
+      const n10 = Number(m2.attrs.number ?? mi + 1);
+      if (manual ? manual.has(n10) : mi < measures.length - 1) body2.push({ kind: "bar", id: 0 });
+    });
+    const tokens = [{ kind: "key", id: 0, fifths: H2.fifths }, { kind: "time", id: 0, beats: H2.beats, beatType: H2.beatType }, { kind: "tempo", id: 0, bpm: H2.bpm }, ...body2];
+    keepOnlyOverrides(tokens, tokens.map((t10) => langRead.get(t10) ?? null));
+    if (info2.staves === 2) {
+      const auto = autoStaffs(tokens, 2);
+      tokens.forEach((t10, i10) => {
+        if ((t10.kind === "note" || t10.kind === "rest") && t10.staff !== void 0) {
+          const keep2 = t10.kind === "note" ? t10.staff !== auto[i10] : t10.staff !== staffOfTokens(tokens.map((x2, j2) => j2 === i10 ? { ...x2, staff: void 0 } : x2), 2)[i10];
+          if (!keep2) delete t10.staff;
+        }
+      });
+    } else for (const t10 of tokens) if ((t10.kind === "note" || t10.kind === "rest") && t10.staff !== void 0) delete t10.staff;
+    return { info: info2, tokens, gotTempo: H2.gotTempo };
+  });
+  const bpm0 = parts[0].tokens[2].bpm;
+  for (const p2 of parts.slice(1)) if (!p2.gotTempo) p2.tokens[2].bpm = bpm0;
+  let next2 = Math.max(0, ...usedIds) + 1;
+  for (const p2 of parts) for (const t10 of p2.tokens) if (!t10.id) t10.id = next2++;
+  const paper = readPaper(root);
+  const credits = readCredits(root, title);
+  const rights = kids(kid(root, "identification"), "rights").map((e10) => text(e10).trim()).filter(Boolean).join("\n");
+  return { title, movementTitle, ...paper ? { paper } : {}, ...credits ? { credits } : {}, ...rights ? { rights } : {}, parts: parts.map(({ info: info2, tokens }) => ({ info: info2, tokens })), dropped };
+}
+
+// src/format/contract.ts
+var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 1 };
+
+// src/format/migrate/index.ts
+var HUMS = /* @__PURE__ */ new Set(["la", "n", "u", "o", "a"]);
+function loungeV1toV2(json) {
+  const cands3 = (json.candidates ?? []).map((c02) => {
+    const c10 = { ...c02 }, gm = c10.gm ?? {}, src = c10.source, engines = c10.engines ?? {};
+    const hum = HUMS.has(String(c10.hum)) ? String(c10.hum) : "n";
+    delete c10.hum;
+    delete c10.source;
+    delete c10.engines;
+    delete c10.credit;
+    delete c10.spec;
+    const common2 = { calibrationDb: Number(c02.calibrationDb ?? 0), chain: c02.chain ?? [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } };
+    if (gm.variant === "tsukuyomi") return { ...c10, ...common2, instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC), ...Object.keys(engines).length ? { engines } : {} };
+    if (gm.variant === "tsukuyomi-vowels") return { ...c10, ...common2, instrument: { engine: "vowel-sampler", table: "builtin", hum }, defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC), ...Object.keys(engines).length ? { engines } : {} };
+    if (src?.kind === "sf2") {
+      const embedded = typeof src.embedded === "string" ? src.embedded : null;
+      const subsetSha256 = typeof src.subsetSha256 === "string" ? src.subsetSha256 : embedded ? embedded.slice(embedded.lastIndexOf("/") + 1).replace(/\.sf2$/, "") : "";
+      return {
+        ...c10,
+        ...common2,
+        instrument: { engine: "soundfont", bank: Number(src.bank), program: Number(src.program), source: { embedded, subsetBytes: Number(src.subsetBytes ?? 0), subsetSha256, origin: src.origin ?? { name: "", fileSha256: "", bytes: 0 } } },
+        defaults: { ...SOUNDFONT_DEFAULTS },
+        credit: c02.credit ?? { attribution: [], license: { name: "unknown" } },
+        spec: c02.spec ?? structuredClone(SOUNDFONT_SPEC),
+        ...Object.keys(engines).length ? { engines } : {}
+      };
+    }
+    return { ...c10, ...common2, instrument: { engine: "unknown", engines }, defaults: {}, credit: c02.credit ?? { attribution: [], license: { name: "unknown" } }, spec: c02.spec ?? { kind: "unknown" } };
+  });
+  return { ...json, candidates: cands3 };
+}
+var manifestV1toV2 = (json) => ({ ...json, derived: [] });
+function scoreV1toV2(json) {
+  const parts = (json.parts ?? []).map((p2, k2) => ({ id: String(p2.id ?? `P${k2 + 1}`), role: String(p2.role ?? `r${k2 + 1}`), mic: String(p2.mic ?? `m${k2 + 1}`), kind: "pitched" }));
+  const manualBars = json.manualBars ?? {};
+  return { papers: [{ id: "p1", file: ".moonsinger/papers/p1.musicxml", manualBars: { ...manualBars }, unwritten: [...json.unwritten ?? []] }], parts };
+}
+var MIGRATIONS2 = {
+  manifest: [manifestV1toV2],
+  score: [scoreV1toV2],
+  lounge: [loungeV1toV2],
+  studio: []
+};
+function migrate(kind, json) {
+  let v = Number(json.version ?? 1), out = json;
+  while (v < FORMAT[kind]) {
+    const step = MIGRATIONS2[kind][v - 1];
+    if (!step) throw new Error(`[format] no migration for ${kind} v${v} -> v${v + 1}`);
+    out = { ...step(out), version: v + 1 };
+    v++;
+  }
+  return out;
+}
+
+// src/format/project.ts
+var MIMETYPE = "application/vnd.recordare.musicxml";
+var DIR = ".moonsinger/";
+var SOUNDS2 = `${DIR}sounds/`;
+var PAPERS = `${DIR}papers/`;
+var paperFile = (id2) => `${PAPERS}${id2}.musicxml`;
+var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], thumbnail: null });
+var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
+var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
+var CANDIDATE_ID = { full: "c1", light: "c2" };
+var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } });
+function defaultRole(hum, id2) {
+  return { version: FORMAT.lounge, id: id2, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
+    { id: CANDIDATE_ID.full, name: "\u6708\u8BFB", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
+    { id: CANDIDATE_ID.light, name: "\u6708\u8BFB\uFF08\u5143\u97F3\uFF09", instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) }
+  ] };
+}
+var cands = (role) => role?.candidates ?? [];
+var instrumentOf = (c10) => c10 && c10.instrument && typeof c10.instrument === "object" ? c10.instrument : null;
+var isVoice = (i10) => !!i10 && (i10.engine === "tsukuyomi" || i10.engine === "vowel-sampler");
+var roleOf = (extras, role, hum) => structuredClone(extras.lounge[role] ?? defaultRole(hum, role));
+var nextKey2 = (ids, prefix) => `${prefix}${Math.max(0, ...ids.map((x2) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x2)?.[1] ?? 0))) + 1}`;
+function saveMxl(a10) {
+  const song = a10.song;
+  const lounge = { ...a10.extras.lounge };
+  for (const part of song.parts) {
+    const role = roleOf(a10.extras, part.role, a10.hum);
+    for (const c10 of cands(role)) {
+      const i10 = instrumentOf(c10);
+      if (isVoice(i10)) i10.hum = a10.hum;
+    }
+    lounge[part.role] = role;
+  }
+  const studio2 = structuredClone(a10.extras.studio ?? { version: FORMAT.studio, mics: [] });
+  const mics = (studio2.mics ?? []).slice();
+  for (const part of song.parts) if (!mics.some((m2) => m2.id === part.mic)) mics.push({ id: part.mic, name: `\u9EA6\u514B\u98CE ${mics.length + 1}`, gainDb: 0, pan: 0 });
+  studio2.mics = mics;
+  const labels = partLabels(song, { ...a10.extras, lounge });
+  const infoOf = (part, k2) => {
+    const role = lounge[part.role], active = cands(role).find((c10) => c10.id === role.active), mic = mics.find((m2) => m2.id === part.mic);
+    return {
+      id: part.id,
+      name: labels[k2],
+      ...part.clef && part.clef !== "G" ? { clef: part.clef } : {},
+      ...part.staves === 2 ? { staves: 2 } : {},
+      instrumentName: String(active?.name ?? "\u6708\u8BFB"),
+      sound: String(role.sound ?? DEFAULT_ROLE.sound),
+      program: Number(active?.gm?.program ?? 55),
+      variant: typeof active?.gm?.variant === "string" ? { library: "MoonSinger", name: String(active.gm.variant) } : void 0,
+      pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : void 0
+    };
+  };
+  const infos = song.parts.map(infoOf), meta = { software: `MoonSinger ${a10.app}`, date: a10.date };
+  const files = {};
+  const papers = song.papers.map((p2) => {
+    const parts = song.parts.flatMap((part, k2) => p2.tracks[part.id] ? [{ info: infos[k2], tokens: p2.tracks[part.id] }] : []);
+    const w2 = writeMusicXml({ title: song.title, movementTitle: p2.name || void 0, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
+    files[paperFile(p2.id)] = strToU8(w2.xml);
+    const phrases = {};
+    for (const [pid, toks] of Object.entries(p2.tracks)) {
+      const ids = toks.flatMap((t10, k2) => t10.kind === "phrase" && k2 > 0 ? [toks[k2 - 1].id] : []);
+      if (ids.length) phrases[pid] = ids;
+    }
+    return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, ...Object.keys(phrases).length ? { phrases } : {}, ...p2.hidden ? { hidden: true } : {} };
+  });
+  const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k2) => {
+    const f2 = flattenPart(song, part.id);
+    return { info: infos[k2], tokens: f2.tokens, breaks: new Map(f2.starts.slice(1).map((s10) => [s10.index, s10.paper.name])) };
+  }) }, meta);
+  const scoreExt = {
+    version: FORMAT.score,
+    papers,
+    parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched" })),
+    ...a10.view && Object.keys(a10.view).length ? { view: a10.view } : {}
+  };
+  const referenced = referencedSounds(lounge);
+  const sounds = Object.entries(a10.extras.sounds).filter(([p2]) => referenced.has(p2)).sort(([x2], [y2]) => x2 < y2 ? -1 : 1);
+  const manifest = {
+    ...a10.extras.manifest ?? {},
+    format: "moonsinger",
+    version: FORMAT.manifest,
+    app: a10.app,
+    saved: a10.date,
+    files: {
+      "score.json": FORMAT.score,
+      "studio.json": FORMAT.studio,
+      ...Object.fromEntries(Object.entries(lounge).map(([id2, r10]) => [`lounge/${id2}.json`, Number(r10.version ?? 1)])),
+      ...Object.fromEntries(papers.map((p2) => [`papers/${p2.id}.musicxml`, 0]))
+    },
+    // 0 = 标准件（MusicXML），不是我们的版本号
+    derived: ["score.musicxml"],
+    sounds: sounds.map(([path, b3]) => ({ path, sha256: path.slice(SOUNDS2.length).replace(/\.sf2$/, ""), bytes: b3.length }))
+  };
+  const json = (o10) => strToU8(JSON.stringify(o10, null, 2) + "\n");
+  const rootfiles = [
+    `<rootfile full-path="score.musicxml" media-type="application/vnd.recordare.musicxml+xml"/>`,
+    ...a10.extras.rootfiles.map((r10) => `<rootfile full-path="${r10.path}" media-type="${r10.mediaType}"/>`)
+  ].join("\n    ");
+  const out = {};
+  out["mimetype"] = strToU8(MIMETYPE);
+  out["META-INF/container.xml"] = strToU8(`<?xml version="1.0" encoding="UTF-8"?>
+<container>
+  <rootfiles>
+    ${rootfiles}
+  </rootfiles>
+</container>
+`);
+  out["score.musicxml"] = strToU8(flat.xml);
+  out[`${DIR}manifest.json`] = json(manifest);
+  out[`${DIR}score.json`] = json(scoreExt);
+  for (const [path, bytes] of Object.entries(files)) out[path] = bytes;
+  for (const [id2, r10] of Object.entries(lounge)) out[`${DIR}lounge/${id2}.json`] = json(r10);
+  out[`${DIR}studio.json`] = json(studio2);
+  for (const [path, bytes] of sounds) out[path] = bytes;
+  for (const [path, bytes] of Object.entries(a10.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY) out[path] = bytes;
+  if (a10.extras.thumbnail) out[THUMBNAIL_ENTRY] = a10.extras.thumbnail;
+  const entries2 = {};
+  for (const [path, bytes] of Object.entries(out)) entries2[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY ? 0 : path.startsWith(SOUNDS2) ? 1 : 6 }];
+  return zipSync(entries2);
+}
+function roleName(extras, role) {
+  return String(extras.lounge[role]?.name ?? DEFAULT_ROLE.name);
+}
+function roleSound(extras, role) {
+  return String(extras.lounge[role]?.sound ?? DEFAULT_ROLE.sound);
+}
+function partLabels(song, extras) {
+  return numberParts(song.parts.map((p2) => ({ name: roleName(extras, p2.role), sound: roleSound(extras, p2.role) })));
+}
+function withRoleName(extras, role, name, hum, sound2) {
+  const r10 = roleOf(extras, role, hum);
+  r10.name = name;
+  if (sound2) r10.sound = sound2;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function withRoleConcept(extras, role, c10, hum) {
+  const r10 = roleOf(extras, role, hum);
+  r10.name = c10.name;
+  if (c10.sound) r10.sound = c10.sound;
+  r10.concept = c10.concept;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function newRoleId(extras, song) {
+  return nextKey2([...Object.keys(extras.lounge), ...song.parts.map((p2) => p2.role)], "r");
+}
+function newMicId(extras, song) {
+  return nextKey2([...(extras.studio?.mics ?? []).map((m2) => String(m2.id)), ...song.parts.map((p2) => p2.mic)], "m");
+}
+function withNewRole(extras, role, hum, name, sound2) {
+  if (extras.lounge[role]) return extras;
+  const r10 = defaultRole(hum, role);
+  if (name) r10.name = name;
+  if (sound2) r10.sound = sound2;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function withoutRole(extras, role) {
+  const lounge = { ...extras.lounge };
+  delete lounge[role];
+  return pruneSounds({ ...extras, lounge });
+}
+function withMic(extras, micId, patch) {
+  const studio2 = structuredClone(extras.studio ?? { version: FORMAT.studio, mics: [] });
+  const mics = (studio2.mics ?? []).slice();
+  let m2 = mics.find((x2) => x2.id === micId);
+  if (!m2) {
+    m2 = { id: micId, name: `\u9EA6\u514B\u98CE ${mics.length + 1}`, gainDb: 0, pan: 0 };
+    mics.push(m2);
+  }
+  if (patch.gainDb !== void 0) m2.gainDb = patch.gainDb;
+  if (patch.pan !== void 0) m2.pan = patch.pan;
+  studio2.mics = mics;
+  return { ...extras, studio: studio2 };
+}
+function candidates(extras, role) {
+  return cands(extras.lounge[role] ?? defaultRole("n", role)).map((c10) => ({ id: String(c10.id), name: String(c10.name ?? ""), engine: instrumentOf(c10)?.engine ?? "unknown" }));
+}
+function activeId(extras, role) {
+  return String(extras.lounge[role]?.active ?? CANDIDATE_ID.full);
+}
+function activeCandidate(extras, role) {
+  const r10 = extras.lounge[role];
+  if (!r10) return null;
+  return cands(r10).find((x2) => x2.id === r10.active) ?? null;
+}
+function activeOrDefaultCandidate(extras, role) {
+  const r10 = extras.lounge[role] ?? defaultRole("n", role);
+  return cands(r10).find((x2) => x2.id === r10.active) ?? null;
+}
+function activeCandidateName(extras, role) {
+  const c10 = activeOrDefaultCandidate(extras, role);
+  return c10 ? String(c10.name ?? "") : null;
+}
+function activeInstrument(extras, role) {
+  if (!extras.lounge[role]) return { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum: "n" };
+  return instrumentOf(activeCandidate(extras, role));
+}
+function humOf(extras) {
+  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands(r10)) {
+    const i10 = instrumentOf(c10);
+    if (isVoice(i10)) return i10.hum;
+  }
+  return "n";
+}
+function withActive(extras, role, id2, hum) {
+  const r10 = roleOf(extras, role, hum);
+  r10.active = id2;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function gmCandidates(extras, role) {
+  return cands(extras.lounge[role]).flatMap((c10) => {
+    const i10 = instrumentOf(c10);
+    if (i10?.engine !== "soundfont") return [];
+    const s10 = i10.source;
+    return [{ id: String(c10.id), name: String(c10.name ?? ""), bank: i10.bank, program: i10.program, ...i10.note !== void 0 ? { note: i10.note } : {}, ...i10.sfx ? { sfx: i10.sfx } : {}, path: s10.embedded, bytes: s10.embedded ? extras.sounds[s10.embedded] ?? null : null, origin: s10.origin, subsetSha256: s10.subsetSha256 }];
+  });
+}
+function activeGm(extras, role) {
+  const id2 = activeId(extras, role);
+  return gmCandidates(extras, role).find((c10) => c10.id === id2) ?? null;
+}
+function withSf2Candidate(extras, role, c10, hum) {
+  const r10 = roleOf(extras, role, hum);
+  const list = cands(r10);
+  const n10 = Math.max(0, ...list.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
+  const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
+  const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, ...c10.sfx ? { sfx: { ...c10.sfx } } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
+  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  r10.candidates = list;
+  r10.active = id2;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 }, sounds: path ? { ...extras.sounds, [path]: c10.subset } : extras.sounds };
+}
+function referencedSounds(lounge) {
+  const refs = /* @__PURE__ */ new Set();
+  for (const r10 of Object.values(lounge)) for (const c10 of cands(r10)) {
+    const i10 = instrumentOf(c10);
+    if (i10?.engine === "soundfont" && typeof i10.source?.embedded === "string") refs.add(i10.source.embedded);
+  }
+  return refs;
+}
+function pruneSounds(extras) {
+  const refs = referencedSounds(extras.lounge), keep2 = Object.entries(extras.sounds).filter(([p2]) => refs.has(p2));
+  return keep2.length === Object.keys(extras.sounds).length ? extras : { ...extras, sounds: Object.fromEntries(keep2) };
+}
+function withoutCandidate(extras, role, id2) {
+  const r10 = structuredClone(extras.lounge[role]);
+  if (!r10) return extras;
+  if (r10.active === id2) throw new Error("\u4E0A\u573A\u7684\u5019\u9009\u4E0D\u80FD\u5220\uFF0C\u5148\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D");
+  r10.candidates = cands(r10).filter((c10) => c10.id !== id2);
+  return pruneSounds({ ...extras, lounge: { ...extras.lounge, [role]: r10 } });
+}
+function soundUses(extras) {
+  const out = /* @__PURE__ */ new Map();
+  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands(r10)) {
+    const i10 = instrumentOf(c10);
+    if (i10?.engine !== "soundfont") continue;
+    const s10 = i10.source, had = out.get(s10.subsetSha256), packed = !!(s10.embedded && extras.sounds[s10.embedded]);
+    if (had) {
+      had.packed ||= packed;
+      if (!had.names.includes(String(c10.name ?? ""))) had.names.push(String(c10.name ?? ""));
+      continue;
+    }
+    out.set(s10.subsetSha256, { subsetSha256: s10.subsetSha256, packed, bytes: Number(s10.subsetBytes ?? 0), origin: s10.origin, names: [String(c10.name ?? "")] });
+  }
+  return [...out.values()];
+}
+var soundPath = (sha256) => `${SOUNDS2}${sha256}.sf2`;
+function withPacked(extras, have) {
+  const lounge = {}, sounds = { ...extras.sounds }, packed = /* @__PURE__ */ new Set(), missing = /* @__PURE__ */ new Set();
+  for (const [id2, r02] of Object.entries(extras.lounge)) {
+    const r10 = structuredClone(r02);
+    for (const c10 of cands(r10)) {
+      const i10 = instrumentOf(c10);
+      if (i10?.engine !== "soundfont") continue;
+      const s10 = i10.source;
+      if (s10.embedded && sounds[s10.embedded]) continue;
+      const path = soundPath(s10.subsetSha256), b3 = sounds[path] ?? have(s10.subsetSha256);
+      if (!b3) {
+        missing.add(s10.subsetSha256);
+        continue;
+      }
+      sounds[path] = b3;
+      s10.embedded = path;
+      packed.add(s10.subsetSha256);
+    }
+    lounge[id2] = r10;
+  }
+  return packed.size ? { extras: { ...extras, lounge, sounds }, packed: [...packed], missing: [...missing] } : { extras, packed: [], missing: [...missing] };
+}
+function withUnpacked(extras, only) {
+  const lounge = {}, removed = /* @__PURE__ */ new Map();
+  let changed2 = false;
+  for (const [id2, r02] of Object.entries(extras.lounge)) {
+    const r10 = structuredClone(r02);
+    for (const c10 of cands(r10)) {
+      const i10 = instrumentOf(c10);
+      if (i10?.engine !== "soundfont" || !i10.source.embedded || only && !only(i10.source.subsetSha256)) continue;
+      const b3 = extras.sounds[i10.source.embedded];
+      if (b3) removed.set(i10.source.subsetSha256, b3);
+      i10.source.embedded = null;
+      changed2 = true;
+    }
+    lounge[id2] = r10;
+  }
+  return changed2 ? { extras: pruneSounds({ ...extras, lounge }), removed } : { extras, removed };
+}
+function activePerfSpec(extras, role) {
+  const c10 = activeCandidate(extras, role), d3 = c10?.dynamicsDb ?? {}, a10 = c10?.articulation ?? {};
+  const num = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
+  const dynamicsDb = Object.fromEntries(Object.keys(DYNAMICS_DB).map((k2) => [k2, num(d3[k2], DYNAMICS_DB[k2])]));
+  return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a10.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a10.accentDb, ARTICULATION.accentDb) };
+}
+function activeCalibrationDb(extras, role) {
+  const c10 = activeCandidate(extras, role);
+  const v = Number(c10?.calibrationDb ?? DEFAULT_CALIBRATION_DB);
+  return Number.isFinite(v) ? v : DEFAULT_CALIBRATION_DB;
+}
+function withCalibration(extras, role, dB, hum) {
+  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
+  if (!c10) return extras;
+  c10.calibrationDb = Math.round(dB * 10) / 10;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function withSfxFixed(extras, role, on2, hum) {
+  const r10 = roleOf(extras, role, hum), i10 = instrumentOf(cands(r10).find((x2) => x2.id === r10.active));
+  if (i10?.engine !== "soundfont" || !i10.sfx) return extras;
+  if (on2) i10.note = i10.sfx.key;
+  else delete i10.note;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function withSfxAlign(extras, role, on2, hum) {
+  const r10 = roleOf(extras, role, hum), i10 = instrumentOf(cands(r10).find((x2) => x2.id === r10.active));
+  if (i10?.engine !== "soundfont" || !i10.sfx) return extras;
+  if (on2) i10.sfx.align = true;
+  else delete i10.sfx.align;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function activeTranspose(extras, role) {
+  const v = Number(activeCandidate(extras, role)?.transpose ?? 0);
+  return Number.isInteger(v) ? v : 0;
+}
+function withTranspose(extras, role, semis, hum) {
+  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
+  if (!c10) return extras;
+  const t10 = Math.max(-48, Math.min(48, Math.round(semis)));
+  if (t10) c10.transpose = t10;
+  else delete c10.transpose;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+var foreign = (r10) => r10.title || !r10.movementTitle ? r10 : { ...r10, title: r10.movementTitle, movementTitle: "" };
+function paperOfRead(id2, r10) {
+  const tracks = {};
+  for (const p2 of r10.parts) tracks[p2.info.id] = p2.tokens;
+  return { id: id2, name: r10.movementTitle, tracks };
+}
+function openBytes(name, bytes) {
+  const isZip = bytes[0] === 80 && bytes[1] === 75;
+  if (!isZip) {
+    const r10 = foreign(readMusicXml(new TextDecoder().decode(bytes)));
+    return finish([r10], songFromReads([r10], null), emptyExtras(), false, name);
+  }
+  let files;
+  try {
+    files = unzipSync(bytes);
+  } catch (e10) {
+    throw new Error(`\u8FD9\u4E2A\u6587\u4EF6\u89E3\u4E0D\u5F00\uFF08\u4E0D\u662F\u5B8C\u6574\u7684 .mxl\uFF1F\uFF09\uFF1A${e10.message}`);
+  }
+  const container = files["META-INF/container.xml"];
+  if (!container) throw new Error("\u8FD9\u4E2A\u538B\u7F29\u5305\u91CC\u6CA1\u6709 META-INF/container.xml\uFF0C\u4E0D\u662F .mxl");
+  const paths = [...strFromU8(container).matchAll(/<rootfile\b[^>]*full-path="([^"]+)"[^>]*?(?:media-type="([^"]*)")?[^>]*\/?>/g)].map((m2) => ({ path: m2[1], mediaType: m2[2] ?? "" }));
+  const main = paths[0]?.path;
+  if (!main || !files[main]) throw new Error("container.xml \u6307\u7684\u4E3B\u4E50\u8C31\u5728\u5305\u91CC\u627E\u4E0D\u5230");
+  const extras = emptyExtras();
+  extras.rootfiles = paths.slice(1);
+  const known = /* @__PURE__ */ new Set(["mimetype", "META-INF/container.xml", main]);
+  if (files[THUMBNAIL_ENTRY]) {
+    extras.thumbnail = files[THUMBNAIL_ENTRY];
+    known.add(THUMBNAIL_ENTRY);
+  }
+  const manifestBytes = files[`${DIR}manifest.json`];
+  const ours = !!manifestBytes;
+  if (!ours) {
+    for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
+    const r10 = foreign(readMusicXml(strFromU8(files[main])));
+    return finish([r10], songFromReads([r10], null), extras, false, name);
+  }
+  const parse2 = (p2) => {
+    try {
+      return JSON.parse(strFromU8(files[p2]));
+    } catch {
+      throw new Error(`${p2} \u8BFB\u4E0D\u61C2\uFF08\u6587\u4EF6\u574F\u4E86\uFF1F\uFF09`);
+    }
+  };
+  const manifest = parse2(`${DIR}manifest.json`);
+  known.add(`${DIR}manifest.json`);
+  const newer = (what, v, mine) => {
+    if (Number(v) > mine) throw new Error(`\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08${what} \u7B2C ${v} \u7248\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BA4\u5230\u7B2C ${mine} \u7248\uFF09\uFF0C\u6253\u5F00\u518D\u5B58\u4F1A\u4E22\u4E1C\u897F\uFF0C\u6240\u4EE5\u6CA1\u6709\u6253\u5F00\u3002\u8BF7\u5148\u66F4\u65B0 app\u3002`);
+  };
+  newer("\u603B\u76EE\u5F55", manifest.version, FORMAT.manifest);
+  extras.manifest = migrate("manifest", manifest);
+  let scoreExt = null;
+  if (files[`${DIR}score.json`]) {
+    const s02 = parse2(`${DIR}score.json`);
+    known.add(`${DIR}score.json`);
+    newer("\u8C31\u7684\u6269\u5C55", s02.version, FORMAT.score);
+    scoreExt = migrate("score", s02);
+    extras.scoreExt = scoreExt;
+  }
+  for (const p2 of Object.keys(files)) {
+    const m2 = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p2);
+    if (m2) {
+      const r10 = parse2(p2);
+      newer(`\u4F11\u606F\u5BA4\u300C${r10.name ?? m2[1]}\u300D`, r10.version, FORMAT.lounge);
+      extras.lounge[m2[1]] = migrate("lounge", r10);
+      known.add(p2);
+    }
+  }
+  if (files[`${DIR}studio.json`]) {
+    const s10 = parse2(`${DIR}studio.json`);
+    known.add(`${DIR}studio.json`);
+    newer("\u5F55\u97F3\u623F", s10.version, FORMAT.studio);
+    extras.studio = migrate("studio", s10);
+  }
+  for (const p2 of Object.keys(files)) if (p2.startsWith(SOUNDS2) && !p2.endsWith("/")) {
+    extras.sounds[p2] = files[p2];
+    known.add(p2);
+  }
+  const list = scoreExt?.papers ?? [{ id: "p1", file: paperFile("p1"), manualBars: {}, unwritten: [] }];
+  const reads = [];
+  const papers = [];
+  list.forEach((p2, k2) => {
+    const file = String(p2.file ?? paperFile(String(p2.id)));
+    const b3 = files[file] ?? (k2 === 0 ? files[main] : void 0);
+    if (!b3) throw new Error(`\u7EB8\u300C${p2.id}\u300D\u7684\u8C31\uFF08${file}\uFF09\u5728\u5305\u91CC\u627E\u4E0D\u5230`);
+    known.add(file);
+    const r10 = readMusicXml(strFromU8(b3), { manualBars: p2.manualBars ?? {}, unwritten: p2.unwritten ?? [] });
+    reads.push(r10);
+    const seg = paperOfRead(String(p2.id), r10);
+    if (p2.hidden === true) seg.hidden = true;
+    const ph = p2.phrases;
+    if (ph) for (const [pid, ids] of Object.entries(ph)) {
+      const toks = seg.tracks[pid];
+      if (!toks) continue;
+      for (const id2 of ids) {
+        const k3 = toks.findIndex((t10) => t10.id === id2);
+        if (k3 >= 0 && toks[k3 + 1]?.kind !== "phrase") toks.splice(k3 + 1, 0, { kind: "phrase", id: 0 });
+      }
+    }
+    papers.push(seg);
+  });
+  for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
+  const song = songFromReads(reads, papers, scoreExt?.parts ?? null);
+  return finish(reads, song, pruneSounds(extras), ours, name);
+}
+function songFromReads(reads, papers, partList = null) {
+  const ps = papers ?? [paperOfRead("p1", reads[0])];
+  const seen = /* @__PURE__ */ new Map();
+  for (const p2 of partList ?? []) seen.set(String(p2.id), { id: String(p2.id), role: String(p2.role ?? `r${seen.size + 1}`), mic: String(p2.mic ?? `m${seen.size + 1}`) });
+  for (const p2 of ps) for (const id3 of Object.keys(p2.tracks)) if (!seen.has(id3)) seen.set(id3, { id: id3, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
+  for (const r10 of reads) for (const p2 of r10.parts) {
+    const d3 = seen.get(p2.info.id);
+    if (!d3) continue;
+    if (p2.info.clef === "F" && !d3.clef) d3.clef = "F";
+    if (p2.info.staves === 2) d3.staves = 2;
+  }
+  const parts = [...seen.values()];
+  let id2 = 1;
+  const renumbered = ps.map((p2) => ({ ...p2, tracks: Object.fromEntries(parts.flatMap((part) => p2.tracks[part.id] ? [[part.id, p2.tracks[part.id].map((t10) => ({ ...t10, id: id2++ }))]] : [])) }));
+  const r02 = reads[0];
+  return { ...r02.title ? { title: r02.title } : {}, ...r02.paper ? { paper: r02.paper } : {}, ...r02.credits ? { credits: r02.credits } : {}, ...r02.rights ? { rights: r02.rights } : {}, hum: "n", parts, papers: renumbered };
+}
+function finish(reads, song0, extras, ours, name) {
+  const notices = [];
+  const dropped = {};
+  for (const r10 of reads) for (const [k2, n10] of Object.entries(r10.dropped)) dropped[k2] = (dropped[k2] ?? 0) + n10;
+  const dl = Object.entries(dropped);
+  if (dl.length) notices.push(`\u8FD9\u4EFD\u8C31\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u4E0D\u652F\u6301\u7684\u4E1C\u897F\uFF0C\u6CA1\u6709\u8BFB\u8FDB\u6765\uFF1A${dl.map(([k2, n10]) => `${k2} ${n10} \u5904`).join("\u3001")}\u3002\u5B58\u7684\u65F6\u5019\u5B83\u4EEC\u4E0D\u4F1A\u5728\u65B0\u6587\u4EF6\u91CC\u2014\u2014\u8981\u7559\u539F\u6837\uFF0C\u8BF7\u300C\u53E6\u5B58\u4E3A\u300D\u65B0\u6587\u4EF6\u3002`);
+  const infos = /* @__PURE__ */ new Map();
+  for (const r10 of reads) for (const p2 of r10.parts) if (!infos.has(p2.info.id)) infos.set(p2.info.id, p2.info);
+  for (const part of song0.parts) {
+    if (extras.lounge[part.role] || ours) continue;
+    const p2 = infos.get(part.id);
+    const was = p2?.instrumentName || p2?.name || "\u539F\u6765\u7684\u4E50\u5668";
+    const gm = p2?.program;
+    const role = defaultRole("n", part.role);
+    role.name = p2?.name || DEFAULT_ROLE.name;
+    if (p2?.sound) role.sound = p2.sound;
+    role.active = "c0";
+    cands(role).unshift({ id: "c0", name: was, instrument: { engine: "unknown", midi: { program: gm ?? null, variant: p2?.variant ?? null } }, gm: { program: gm ?? null, variant: p2?.variant ?? null }, ...common(), defaults: {}, credit: { attribution: [], license: { name: "unknown" } }, spec: { kind: "unknown" } });
+    extras.lounge[part.role] = role;
+    notices.push(`\u58F0\u90E8\u300C${role.name}\u300D\u539F\u6765\u662F${was}${gm ? `\uFF08GM ${gm} \u53F7\uFF09` : ""}\uFF1B\u8FD9\u4E00\u7248\u6CA1\u6709\u8FD9\u4EF6\u4E50\u5668\uFF0C\u6240\u4EE5\u8FD8\u6CA1\u4EBA\u4E0A\u573A\u3002\u8981\u6708\u8BFB\u6765\u5531\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C${role.name}\u300D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u9009\u6708\u8BFB\u3002`);
+  }
+  for (const part of song0.parts) {
+    const role = extras.lounge[part.role];
+    if (!role) continue;
+    const gm = activeGm(extras, part.role);
+    if (gm && gm.path && !gm.bytes) notices.push(`\u300C${gm.name}\u300D\u7684\u58F0\u97F3\uFF08${gm.path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${role.name ?? ""}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
+  }
+  const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
+  const hum = humOf(extras);
+  return { song: { ...song0, hum }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null };
+}
+
+// src/format/credits.ts
+var cands2 = (r10) => r10?.candidates ?? [];
+var creditOf = (c10) => {
+  const k2 = c10.credit;
+  return k2 && Array.isArray(k2.attribution) ? k2 : null;
+};
+function group(items) {
+  const out = /* @__PURE__ */ new Map();
+  for (const { name, credit } of items) {
+    const attribution = credit.attribution.map((s10) => String(s10).trim()).filter(Boolean);
+    const license = { name: String(credit.license?.name ?? "unknown"), ...credit.license?.url ? { url: String(credit.license.url) } : {} };
+    if (!attribution.length && license.name === "unknown") {
+      const k3 = `?${name}`;
+      out.set(k3, { who: [name], attribution: [], license });
+      continue;
+    }
+    const k2 = JSON.stringify([attribution, license]), had = out.get(k2);
+    if (had) {
+      if (!had.who.includes(name)) had.who.push(name);
+    } else out.set(k2, { who: [name], attribution, license });
+  }
+  return [...out.values()];
+}
+function performerCredits(extras, roles) {
+  const items = [];
+  for (const role of new Set(roles)) {
+    const c10 = activeOrDefaultCandidate(extras, role);
+    if (!c10) continue;
+    if (c10.instrument?.engine === "unknown") continue;
+    const credit = creditOf(c10);
+    if (credit) items.push({ name: String(c10.name ?? ""), credit });
+  }
+  return group(items);
+}
+function packedLicenses(extras) {
+  const items = [];
+  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands2(r10)) {
+    const i10 = c10.instrument;
+    if (i10?.engine !== "soundfont" || !i10.source?.embedded || !extras.sounds[i10.source.embedded]) continue;
+    const credit = creditOf(c10);
+    if (credit) items.push({ name: String(c10.name ?? ""), credit });
+  }
+  return group(items);
+}
+function songCreditLine(song) {
+  if (!song.credits?.trim() && !song.rights?.trim()) return null;
+  return { who: [song.title?.trim() ? `\u300C${song.title.trim()}\u300D` : "\u8FD9\u9996\u6B4C"], attribution: (song.credits ?? "").split("\n").map((s10) => s10.trim()).filter(Boolean), license: { name: song.rights?.trim() || "\uFF08\u6CA1\u58F0\u660E\u8BB8\u53EF\uFF09" } };
+}
+var RIGHTS_PRESETS = [
+  { label: "\u4FDD\u7559\u6240\u6709\u6743\u5229", note: "\u4EC0\u4E48\u90FD\u8981\u5148\u95EE\u4F60\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u8FD9\u6837\uFF0C\u8FD9\u91CC\u53EA\u662F\u5199\u660E\uFF09", text: (y2) => `\xA9 ${y2} \u4FDD\u7559\u6240\u6709\u6743\u5229` },
+  { label: "\u4EC5\u4F9B\u6B23\u8D4F", note: "\u542C\u53EF\u4EE5\uFF1B\u8F6C\u8F7D\u3001\u6539\u7F16\u3001\u5546\u7528\u90FD\u8981\u5148\u95EE\u4F60", text: (y2) => `\xA9 ${y2} \u4FDD\u7559\u6240\u6709\u6743\u5229\u3002\u4EC5\u4F9B\u4E2A\u4EBA\u6B23\u8D4F\uFF0C\u7981\u6B62\u8F6C\u8F7D\u3001\u6539\u7F16\u3001\u5546\u7528\u3002` },
+  { label: "\u5546\u7528\u8BF7\u8054\u7CFB", note: "\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF0C\u5E76\u544A\u8BC9\u522B\u4EBA\u5546\u7528\u600E\u4E48\u627E\u4F60", text: (y2) => `\xA9 ${y2} \u4FDD\u7559\u6240\u6709\u6743\u5229\u3002\u5546\u7528\u8BF7\u8054\u7CFB\u4F5C\u8005\u3002` },
+  { label: "CC BY-NC-ND 4.0", note: "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u539F\u6837\u8F6C\u53D1\uFF1B\u4E0D\u8BB8\u6539\u3001\u4E0D\u8BB8\u5546\u7528\uFF08\u6700\u7D27\u7684 CC\uFF09", text: () => "CC BY-NC-ND 4.0 https://creativecommons.org/licenses/by-nc-nd/4.0/" },
+  { label: "CC BY-NC 4.0", note: "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u6539\uFF1B\u4E0D\u8BB8\u5546\u7528", text: () => "CC BY-NC 4.0 https://creativecommons.org/licenses/by-nc/4.0/" },
+  { label: "CC BY-SA 4.0", note: "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u6539\u3001\u53EF\u4EE5\u5546\u7528\uFF1B\u6539\u4E86\u7684\u8981\u7528\u540C\u6837\u7684\u8BB8\u53EF", text: () => "CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/" },
+  { label: "CC BY 4.0", note: "\u6CE8\u660E\u51FA\u5904\u968F\u4FBF\u7528", text: () => "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" },
+  { label: "CC0", note: "\u653E\u5F03\u6743\u5229\uFF0C\u8C01\u90FD\u80FD\u968F\u4FBF\u7528\uFF08\u53D1\u51FA\u53BB\u6536\u4E0D\u56DE\uFF09", text: () => "CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/" }
+];
+function licenseHints(rights, performers) {
+  const reusable = !!rights && (/CC0|public ?domain|公有领域|publicdomain\/zero/i.test(rights) || /CC[ -]?BY/i.test(rights) && !/\bND\b|-nd\//i.test(rights));
+  const tsukuyomi = performers.some((l10) => l10.license.name.includes("\u3064\u304F\u3088\u307F\u3061\u3083\u3093"));
+  return reusable && tsukuyomi ? ["\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16 / \u5F53\u7D20\u6750\u518D\u7528\uFF0C\u53EF\u91CC\u9762\u6709\u6708\u8BFB\u7684\u58F0\u97F3\uFF0C\u6708\u8BFB\u7684\u6761\u6B3E\u4E0D\u8BB8\u8FD9\u6837\u516C\u5F00\uFF08\u8BBE\u7F6E\u91CC\u6709\u539F\u6587\u548C\u8BD1\u6587\uFF09\uFF0C\u6240\u4EE5\u5BFC\u51FA\u65F6\u8BB8\u53EF\u90A3\u4E00\u9879\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\uFF1B\u4F60\u5728\u8FD9\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\u3002"] : [];
+}
+function creditsText(lines) {
+  return lines.map((l10) => {
+    const lic = l10.license.name === "unknown" ? "\u8BB8\u53EF\u8BC1\u4E0D\u660E" : `${l10.license.name}${l10.license.url ? ` ${l10.license.url}` : ""}`;
+    return [`${l10.who.join("\u3001")} \u2014 ${lic}`, ...l10.attribution.length ? l10.attribution : ["\uFF08\u6CA1\u6709\u7F72\u540D\u4FE1\u606F\uFF09"]].join("\n");
+  }).join("\n\n");
+}
+
+// src/audio/mix.ts
+var CEILING = 0.98;
+function sumTracks(tracks, sr2, tailSec = 0.3) {
+  const start = Math.min(0, ...tracks.map((t10) => t10.at));
+  const end = tracks.length ? Math.max(...tracks.map((t10) => t10.at + t10.samples.length / t10.sr)) + tailSec : 0;
+  const n10 = Math.max(0, Math.ceil((end - start) * sr2)), left = new Float32Array(n10), right = new Float32Array(n10);
+  for (const t10 of tracks) {
+    const g3 = 10 ** (t10.gainDb / 20), pan = Math.max(-1, Math.min(1, t10.pan));
+    const gl = g3 * Math.cos((pan + 1) * Math.PI / 4), gr = g3 * Math.sin((pan + 1) * Math.PI / 4);
+    const off = Math.round((t10.at - start) * sr2), ratio = t10.sr / sr2, len = Math.floor(t10.samples.length / ratio);
+    for (let i10 = 0; i10 < len; i10++) {
+      const p2 = i10 * ratio, k2 = Math.floor(p2), f2 = p2 - k2, v = t10.samples[k2] * (1 - f2) + (t10.samples[k2 + 1] ?? 0) * f2;
+      left[off + i10] += v * gl;
+      right[off + i10] += v * gr;
+    }
+  }
+  return { left, right, sr: sr2, start };
+}
+function limitBus(left, right, sr2, o10 = {}) {
+  const c10 = o10.ceiling ?? CEILING, n10 = left.length;
+  const g3 = new Float64Array(n10);
+  let any = false;
+  for (let i10 = 0; i10 < n10; i10++) {
+    const p2 = Math.max(Math.abs(left[i10]), Math.abs(right[i10]));
+    g3[i10] = p2 > c10 ? c10 / p2 : 1;
+    if (p2 > c10) any = true;
+  }
+  if (!any) return 0;
+  const aRel = Math.exp(-1 / ((o10.releaseSec ?? 0.15) * sr2)), aAtt = Math.exp(-1 / ((o10.attackSec ?? 3e-3) * sr2));
+  for (let i10 = 1; i10 < n10; i10++) g3[i10] = Math.min(g3[i10], 1 - (1 - g3[i10 - 1]) * aRel);
+  for (let i10 = n10 - 2; i10 >= 0; i10--) g3[i10] = Math.min(g3[i10], 1 - (1 - g3[i10 + 1]) * aAtt);
+  let min = 1;
+  for (let i10 = 0; i10 < n10; i10++) {
+    const k2 = g3[i10];
+    if (k2 >= 1) continue;
+    if (k2 < min) min = k2;
+    left[i10] *= k2;
+    right[i10] *= k2;
+    if (left[i10] > c10) left[i10] = c10;
+    else if (left[i10] < -c10) left[i10] = -c10;
+    if (right[i10] > c10) right[i10] = c10;
+    else if (right[i10] < -c10) right[i10] = -c10;
+  }
+  return 20 * Math.log10(min);
+}
+function applyGain(samples, sr2, at2, segs, smoothSec = 4e-3) {
+  const out = new Float32Array(samples.length);
+  if (!segs.length) {
+    out.set(samples);
+    return out;
+  }
+  const lin = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
+  const a10 = 1 - Math.exp(-1 / (smoothSec * sr2));
+  let k2 = 0, y2 = lin(segs[0].dB);
+  for (let i10 = 0; i10 < samples.length; i10++) {
+    const t10 = at2 + i10 / sr2;
+    while (k2 < segs.length - 1 && t10 >= segs[k2].t1) k2++;
+    y2 += (lin(segs[k2].dB) - y2) * a10;
+    out[i10] = samples[i10] * y2;
+  }
+  return out;
+}
+function mixTracks(tracks, sr2, tailSec = 0.3) {
+  const m2 = sumTracks(tracks, sr2, tailSec);
+  return { ...m2, limitedDb: limitBus(m2.left, m2.right, sr2) };
+}
+
+// src/score/perform.ts
+var ACCENT_SEC = 0.12;
+var CONS_ROOM = 0.06;
+var MIN_GATE = 0.04;
+function gainSegments(tokens, map, spec, gateStaccato) {
+  const segs = [];
+  let any = false;
+  for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
+    const base3 = spec.dynamicsDb[dynAt(tokens, index)] ?? 0;
+    if (base3 !== 0) any = true;
+    if (tok.kind !== "note") {
+      segs.push({ t0: t02, t1: t12, dB: base3 });
+      continue;
+    }
+    const art = artOf(tok);
+    let cur = t02;
+    if (art.includes("accent") && spec.accentDb) {
+      const e10 = Math.min(t12, t02 + ACCENT_SEC);
+      segs.push({ t0: t02, t1: e10, dB: base3 + spec.accentDb });
+      cur = e10;
+      any = true;
+    }
+    if (gateStaccato && art.includes("staccato")) {
+      const g3 = Math.max(cur, t02 + (t12 - t02) * spec.staccatoGate), off1 = t12 - CONS_ROOM;
+      if (off1 - g3 > MIN_GATE) {
+        if (g3 > cur) segs.push({ t0: cur, t1: g3, dB: base3 });
+        segs.push({ t0: g3, t1: off1, dB: -Infinity }, { t0: off1, t1: t12, dB: base3 });
+        any = true;
+        continue;
+      }
+    }
+    if (t12 > cur) segs.push({ t0: cur, t1: t12, dB: base3 });
+  }
+  return any ? segs : null;
+}
+function noteEnd(t02, t12, art, o10) {
+  let end = t12;
+  if (art.includes("staccato")) end = t02 + (t12 - t02) * o10.staccatoGate;
+  if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(0.16, 0.25 * (t12 - t02)));
+  return end;
+}
+
+// src/gm/sound-cache.ts
+var CACHE = "pwa-sounds";
+var keyOf = (sha256) => `${location.origin}/__pwa-sounds__/${sha256}`;
+var MEM_MAX = 2;
+var memory = /* @__PURE__ */ new Map();
+var hasCaches = () => typeof caches !== "undefined";
+var sha256Hex = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+function rememberInMemory(sha256, bytes) {
+  memory.delete(sha256);
+  memory.set(sha256, bytes);
+  while (memory.size > MEM_MAX) memory.delete(memory.keys().next().value);
+}
+async function cachedSound(sha256) {
+  const m2 = memory.get(sha256);
+  if (m2) {
+    rememberInMemory(sha256, m2);
+    return m2;
+  }
+  if (!hasCaches()) return null;
+  try {
+    const c10 = await caches.open(CACHE), r10 = await c10.match(keyOf(sha256));
+    if (!r10) return null;
+    const bytes = new Uint8Array(await r10.arrayBuffer());
+    if (await sha256Hex(bytes) !== sha256) {
+      await c10.delete(keyOf(sha256));
+      return null;
+    }
+    rememberInMemory(sha256, bytes);
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+async function rememberSound(sha256, bytes, persist) {
+  rememberInMemory(sha256, bytes);
+  if (!persist || !hasCaches()) return;
+  try {
+    const c10 = await caches.open(CACHE);
+    await c10.put(keyOf(sha256), new Response(bytes, { headers: { "Content-Type": "application/octet-stream", "Content-Length": String(bytes.length) } }));
+  } catch {
+  }
+}
+async function listCachedSounds() {
+  if (!hasCaches()) return [];
+  try {
+    const c10 = await caches.open(CACHE), keys = await c10.keys(), out = [];
+    for (const k2 of keys) {
+      const sha256 = k2.url.slice(k2.url.lastIndexOf("/") + 1), r10 = await c10.match(k2);
+      out.push({ sha256, bytes: Number(r10?.headers.get("Content-Length") ?? 0) });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+async function isSoundPersisted(sha256) {
+  if (!hasCaches()) return false;
+  try {
+    return !!await (await caches.open(CACHE)).match(keyOf(sha256));
+  } catch {
+    return false;
+  }
+}
+async function forgetSound(sha256) {
+  memory.delete(sha256);
+  if (!hasCaches()) return;
+  try {
+    await (await caches.open(CACHE)).delete(keyOf(sha256));
+  } catch {
+  }
+}
+function releaseSoundMemory() {
+  memory.clear();
+}
+function soundMemoryBytes() {
+  let n10 = 0;
+  for (const b3 of memory.values()) n10 += b3.length;
+  return n10;
+}
+async function siteStorageEstimate() {
+  try {
+    const est = await navigator.storage?.estimate?.();
+    return est?.usage !== void 0 && est.quota ? { usage: est.usage, quota: est.quota } : null;
+  } catch {
+    return null;
+  }
+}
+
+// src/gm/synth.ts
+var GmSynth = class {
+  node = null;
+  moduleAdded = null;
+  wasm = null;
+  readyP = null;
+  seq = 0;
+  pending = /* @__PURE__ */ new Map();
+  loadedSha = "";
+  loading = null;
+  presets = /* @__PURE__ */ new Map();
+  // "bank:program" → 预设下标
+  meterCb = null;
+  ctx;
+  moduleUrl;
+  wasmUrl;
+  constructor(ctx2, moduleUrl, wasmUrl) {
+    this.ctx = ctx2;
+    this.moduleUrl = moduleUrl;
+    this.wasmUrl = wasmUrl;
+  }
+  /** 装好 worklet + WASM（第一次用才做；AudioContext 可以还没解锁）。 */
+  ensure() {
+    if (this.readyP) return this.readyP;
+    this.readyP = (async () => {
+      const ctx2 = this.ctx();
+      this.moduleAdded ??= ctx2.audioWorklet.addModule(this.moduleUrl.href);
+      this.wasm ??= fetch(this.wasmUrl).then(async (r10) => {
+        if (!r10.ok) throw new Error(`TinySoundFont (standalone): HTTP ${r10.status}`);
+        return WebAssembly.compile(await r10.arrayBuffer());
+      });
+      const [, module] = await Promise.all([this.moduleAdded, this.wasm]);
+      const node = new AudioWorkletNode(ctx2, "gm-synth", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1], processorOptions: { module } });
+      await new Promise((ok2, fail) => {
+        node.port.onmessage = (e10) => {
+          const m2 = e10.data;
+          if (m2.type === "ready") ok2();
+          else if (m2.type === "loaded") {
+            this.pending.get(m2.id)?.ok();
+            this.pending.delete(m2.id);
+            this.presets = new Map(m2.presets.map(([b3, p2], i10) => [`${b3}:${p2}`, i10]));
+          } else if (m2.type === "error") {
+            if (m2.id !== void 0) {
+              this.pending.get(m2.id)?.fail(new Error(m2.message));
+              this.pending.delete(m2.id);
+            } else fail(new Error(m2.message));
+          } else if (m2.type === "meter") this.meterCb?.(m2.peak, m2.active);
+        };
+      });
+      node.connect(ctx2.destination);
+      this.node = node;
+    })().catch((e10) => {
+      this.readyP = null;
+      throw e10;
+    });
+    return this.readyP;
+  }
+  post(m2, transfer = []) {
+    this.node?.port.postMessage(m2, transfer);
+  }
+  /** 载一份子集（同一份不重载）。 */
+  async load(sha, bytes) {
+    if (this.loadedSha === sha) return;
+    if (this.loading) await this.loading.catch(() => {
+    });
+    if (this.loadedSha === sha) return;
+    this.loading = (async () => {
+      await this.ensure();
+      const id2 = ++this.seq, copy = bytes.slice();
+      await new Promise((ok2, fail) => {
+        this.pending.set(id2, { ok: ok2, fail });
+        this.post({ type: "load", id: id2, sha, bytes: copy }, [copy.buffer]);
+      });
+      this.loadedSha = sha;
+    })().finally(() => {
+      this.loading = null;
+    });
+    return this.loading;
+  }
+  get loaded() {
+    return this.loadedSha;
+  }
+  /** 预设下标（载好的子集里按 bank:program 找；没有 = −1）。 */
+  presetIndex(bank, program) {
+    return this.presets.get(`${bank}:${program}`) ?? -1;
+  }
+  /** 按下 / 松开（t = AudioContext 的秒，不给 = 立刻）。 */
+  noteOn(bank, program, key, vel, t10) {
+    const p2 = this.presetIndex(bank, program);
+    if (p2 >= 0) this.post({ type: "noteOn", preset: p2, key, vel, t: t10 });
+  }
+  noteOff(bank, program, key, t10) {
+    const p2 = this.presetIndex(bank, program);
+    if (p2 >= 0) this.post({ type: "noteOff", preset: p2, key, t: t10 });
+  }
+  allOff() {
+    this.post({ type: "allOff" });
+  }
+  unload() {
+    this.post({ type: "unload" });
+    this.loadedSha = "";
+    this.presets.clear();
+  }
+  /** 电平表（e2e / 调试用）：每 1024 帧回报峰值和正在发声的 voice 数。 */
+  meter(cb2) {
+    this.meterCb = cb2;
+    this.post({ type: "meter", on: !!cb2 });
+  }
+  get now() {
+    return this.ctx().currentTime;
+  }
+};
+
+// src/gm/sf-key.ts
+function sfKey(written, inst, transpose = 0) {
+  if (inst.note !== void 0) return inst.note;
+  const s10 = inst.sfx, w2 = written + transpose;
+  const k2 = s10?.align && s10.midi !== void 0 && s10.centsPerKey ? Math.round(s10.key + (w2 - s10.midi) * 100 / s10.centsPerKey) : w2;
+  return Math.max(0, Math.min(127, k2));
+}
+var canAlign = (s10) => !!s10 && s10.midi !== void 0 && !!s10.centsPerKey;
+
+// src/gm/instruments.gen.ts
+var INSTRUMENT_FILES = {
+  "concepts": {
+    "file": "vendor/instruments/instruments-v10.json",
+    "bytes": 228355,
+    "sha256": "df1c5185b540e751ff1a071aa22bd35f5f0b578c01e00cfb93be59d10503cc6e"
+  },
+  "gmMap": {
+    "file": "vendor/instruments/gm-map-v10.json",
+    "bytes": 121391,
+    "sha256": "c959b6aaeea7419c081b67b827e04dab03ca217eec5ec540390e8609464a1f32"
+  },
+  "icons": {
+    "file": "vendor/instruments/instrument-icons-20261008-v10.svg",
+    "bytes": 139014,
+    "sha256": "964f057af8aa54e0075478931f5fdae5c79cddd3228189c604f8bd1cb078b5f3"
+  },
+  "iconCredits": {
+    "file": "vendor/instruments/icon-credits-v10.json",
+    "bytes": 20670,
+    "sha256": "64e36d0f5fcc1c2377357b5851f341205f6c9c5bcd0f716e830a742e059ca6a0"
+  },
+  "licenses": {
+    "file": "vendor/instruments/LICENSES-chosen-v10.md",
+    "bytes": 145790,
+    "sha256": "562d15a988fd1c6d7d2f0b09d93081880424162ef0d42381c14b171bf1439497"
+  }
+};
+var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
+
+// src/gm/catalog.ts
+var gmKey = (g3) => `${g3.bank}:${g3.program}${g3.note !== void 0 ? `:${g3.note}` : ""}`;
+function loadCatalogFromJson(concepts, gmMap) {
+  const rows = gmMap.rows, gmSelf = /* @__PURE__ */ new Map();
+  for (const r10 of rows) if (r10.relation === "self" && (r10.primary !== false || !gmSelf.has(gmKey(r10)))) gmSelf.set(gmKey(r10), r10);
+  const list = concepts.concepts;
+  return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c10) => [c10.id, c10])), gmSelf, rows, defs: concepts.defs };
+}
+var cached = null;
+var sha256Hex2 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+async function fetchChecked(base3, k2) {
+  const e10 = INSTRUMENT_FILES[k2], r10 = await fetch(new URL(`../${e10.file}`, base3));
+  if (!r10.ok) throw new Error(`${e10.file}: HTTP ${r10.status}`);
+  const b3 = new Uint8Array(await r10.arrayBuffer());
+  if (b3.length !== e10.bytes || await sha256Hex2(b3) !== e10.sha256) throw new Error(`${e10.file} \u548C app \u5185\u5D4C\u7684\u4E0D\u4E00\u6837\uFF08\u88AB\u6539\u8FC7\uFF1F\uFF09`);
+  return b3;
+}
+function loadCatalog(base3) {
+  return cached ??= (async () => {
+    const [c10, g3] = await Promise.all([fetchChecked(base3, "concepts"), fetchChecked(base3, "gmMap")]);
+    const dec = new TextDecoder();
+    return loadCatalogFromJson(JSON.parse(dec.decode(c10)), JSON.parse(dec.decode(g3)));
+  })().catch((e10) => {
+    cached = null;
+    throw e10;
+  });
+}
+async function loadIconSprite(base3) {
+  return new TextDecoder().decode(await fetchChecked(base3, "icons"));
+}
+function providersOf(cat2, c10) {
+  const self2 = (c10.ids.gm ?? []).map((g3) => {
+    const r10 = cat2.gmSelf.get(gmKey(g3));
+    return { kind: "self", bank: g3.bank, program: g3.program, ...g3.note !== void 0 ? { note: g3.note } : {}, gmName: r10?.gmName ?? (g3.note !== void 0 ? `\u9F13\u4EF6 ${g3.note}` : `GM ${g3.program + 1}`), sound: r10?.musicxmlSound ?? c10.ids.musicxml };
+  });
+  if (self2.length) return self2;
+  return (c10.substitutes ?? []).map((s10) => ({ kind: "substitute", bank: s10.bank, program: s10.program, ...s10.note !== void 0 ? { note: s10.note } : {}, gmName: s10.gmName, sound: c10.ids.musicxml, basis: s10.basis, reason: s10.reason }));
+}
+function rangeOf(c10) {
+  const r10 = c10?.range;
+  if (r10 && Number.isFinite(r10.low) && Number.isFinite(r10.high) && r10.low <= r10.high) return { lo: r10.low, hi: r10.high, title: `${c10.names.zh}\u7684\u5E38\u7528\u97F3\u57DF${r10.basis ? `\uFF08\u4F9D\u636E\uFF1A${r10.basis}\uFF09` : ""}` };
+  return null;
+}
+function sampleKeyOf(cat2, bank, program) {
+  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === void 0 && r10.sampleKey);
+  const k2 = row?.sampleKey;
+  if (!k2 || !Number.isFinite(k2.recommended)) return null;
+  const covers = (r10) => {
+    const m2 = /^(\d+)\s*[–-]\s*(\d+)$/.exec(r10 ?? "");
+    return !m2 || k2.recommended >= +m2[1] && k2.recommended <= +m2[2];
+  };
+  const ls2 = (k2.layers ?? []).filter((l10) => covers(l10.keyRange) && l10.peakAtRecommended?.pitched && l10.centsPerKey);
+  const main = ls2.find((l10) => Math.round(l10.originalSpeedKey ?? NaN) === k2.recommended) ?? ls2[0];
+  return {
+    key: k2.recommended,
+    title: `\u539F\u901F\u952E\uFF1A\u6309\u8FD9\u4E2A\u952E\uFF0C\u91C7\u6837\u4E0D\u62C9\u4F38\u4E0D\u538B\u7F29${k2.recommendedBasis ? `\uFF08${k2.recommendedBasis}\uFF09` : ""}`,
+    ...main ? { midi: Math.round(main.peakAtRecommended.midi * 100) / 100, centsPerKey: main.centsPerKey } : {}
+  };
+}
+var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
+var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
+var roleSoundOf = (cat2, c10) => c10.ids.musicxml ?? providersOf(cat2, c10)[0]?.sound ?? null;
+var SORT_LABEL = { style: "\u6309\u66F2\u98CE", family: "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09", year: "\u6309\u5E74\u4EE3", hs: "\u6309\u53D1\u58F0\u65B9\u5F0F" };
+var HS_CLASS = { "1": "\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09", "2": "\u819C\u9E23\uFF08\u6572\u76AE\uFF09", "3": "\u5F26\u9E23\uFF08\u5F26\uFF09", "4": "\u6C14\u9E23\uFF08\u6C14\uFF09", "5": "\u7535\u9E23\uFF08\u7535\uFF09" };
+function groupConcepts(cat2, mode, query = "") {
+  const q2 = query.trim().toLowerCase();
+  const hit = (c10) => !q2 || [c10.names.zh, c10.names.en, c10.names.ja ?? ""].some((n10) => n10.toLowerCase().includes(q2));
+  const list = cat2.concepts.filter(hit);
+  const byGm = (a10, b3) => ((a10.ids.gm ?? [])[0]?.program ?? 999) - ((b3.ids.gm ?? [])[0]?.program ?? 999) || a10.names.zh.localeCompare(b3.names.zh, "zh");
+  const groups = /* @__PURE__ */ new Map();
+  const put = (id2, label, c10) => {
+    let g3 = groups.get(id2);
+    if (!g3) {
+      g3 = { id: id2, label, concepts: [] };
+      groups.set(id2, g3);
+    }
+    g3.concepts.push(c10);
+  };
+  const asItems = (gs) => gs.map((g3) => ({ id: g3.id, label: g3.label, items: g3.concepts.map((concept) => ({ concept })) }));
+  if (mode === "family") {
+    const order = new Map(cat2.defs.families.map((f2, i10) => [f2.id, i10]));
+    for (const c10 of list) {
+      const f2 = (c10.family ?? [])[0] ?? "other";
+      put(f2, cat2.defs.families.find((x2) => x2.id === f2)?.zh ?? (c10.kind === "voice" ? "\u4EBA\u58F0" : c10.kind === "sound" ? "\u97F3\u6548" : "\u5176\u4ED6"), c10);
+    }
+    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort(byGm) })));
+  }
+  if (mode === "year") {
+    const eras = cat2.defs.eras;
+    for (const c10 of list) {
+      const e10 = eras.find((x2) => x2.id === c10.era);
+      put(e10?.id ?? "unknown", e10 ? `${e10.zh}${e10.from !== null ? `\uFF08${fmtYear(e10.from)} \u8D77\uFF09` : ""}` : "\u5E74\u4EE3\u4E0D\u8BE6", c10);
+    }
+    const order = new Map(eras.map((e10, i10) => [e10.id, i10]));
+    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.year ?? 1e9) - (b3.year ?? 1e9)) })));
+  }
+  if (mode === "hs") {
+    for (const c10 of list) {
+      const k2 = c10.ids.hs?.[0] ?? "?";
+      put(k2, HS_CLASS[k2] ?? "\u5206\u7C7B\u4E0D\u8BE6", c10);
+    }
+    return asItems([...groups.values()].sort((a10, b3) => a10.id.localeCompare(b3.id)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.ids.hs ?? "~").localeCompare(b3.ids.hs ?? "~")) })));
+  }
+  return styleGroups(cat2, q2, hit);
+}
+function styleGroups(cat2, q2, hit) {
+  const groups = /* @__PURE__ */ new Map();
+  const put = (tag2, e10) => {
+    let g3 = groups.get(tag2);
+    if (!g3) {
+      g3 = { id: tag2, label: tag2 === "none" ? "\u6CA1\u8D34\u98CE\u683C" : styleLabel(cat2, tag2), items: [] };
+      groups.set(tag2, g3);
+    }
+    g3.items.push(e10);
+  };
+  const self2 = [...cat2.gmSelf.values()];
+  const styled = new Set(self2.filter((r10) => r10.styles?.length).map((r10) => r10.concept));
+  for (const r10 of self2) {
+    const c10 = cat2.byId.get(r10.concept);
+    if (!c10 || !styled.has(c10.id)) continue;
+    if (!hit(c10) && !(q2 && r10.gmName.toLowerCase().includes(q2))) continue;
+    if (!r10.styles?.length) {
+      put("none", { concept: c10, preset: r10 });
+      continue;
+    }
+    for (const s10 of r10.styles) put(s10.tag, { concept: c10, preset: r10, weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
+  }
+  for (const c10 of cat2.concepts) {
+    if (styled.has(c10.id) || !hit(c10)) continue;
+    const tags = /* @__PURE__ */ new Map();
+    for (const s10 of c10.styles ?? []) {
+      const was = tags.get(s10.tag);
+      if (!was || (s10.weight ?? 0) > was.weight) tags.set(s10.tag, { weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
+    }
+    if (!tags.size) put("none", { concept: c10 });
+    for (const [t10, w2] of tags) put(t10, { concept: c10, ...w2 });
+  }
+  const yearOf = (e10) => e10.preset?.year ?? e10.concept.year ?? 1e9, gmOf = (e10) => e10.preset?.gmNumber ?? 999;
+  return [...groups.values()].sort((a10, b3) => a10.id === "none" ? 1 : b3.id === "none" ? -1 : a10.label.localeCompare(b3.label, "zh")).map((g3) => ({ ...g3, items: g3.items.sort((a10, b3) => (b3.weight ?? 0) - (a10.weight ?? 0) || yearOf(a10) - yearOf(b3) || gmOf(a10) - gmOf(b3) || a10.concept.names.zh.localeCompare(b3.concept.names.zh, "zh")) }));
+}
+var weightLabel = (cat2, w2) => cat2.defs.weights?.find((x2) => x2.id === w2)?.zh ?? "";
+function styleLabel(cat2, tag2) {
+  const s10 = cat2.defs.styles?.find((x2) => (x2.id ?? x2.tag) === tag2);
+  return s10?.zh ?? s10?.en ?? tag2;
+}
+var fmtYear = (y2) => y2 < 0 ? `\u516C\u5143\u524D ${-y2}` : String(y2);
+var eraLabel = (cat2, c10) => cat2.defs.eras.find((e10) => e10.id === c10.era)?.zh ?? "";
+
+// src/ui/finder.ts
+var HINT = "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u4E0A\u573A\u300D\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002";
+var esc3 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
+var Finder = class {
+  el;
+  cat = null;
+  mode = "style";
+  // 默认按〇〇风（user 2026-10-08「然后音色排序默认还是画风吧。年代好玩但其实每次都要多点一次哈哈」；此前 10-07「默认按年代排哈哈哈」）
+  q = "";
+  opened = null;
+  // 展开的那一行 = 「组 id::概念 id」（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）。
+  // 记组：按曲风排时同一件乐器在好几个组里都有，只记概念 = 每个组里的它都展开、滚去第一个（user 2026-10-08「在一个category里面选择一个乐器，会跳到第一个出现这个乐器的category」）
+  selected = "";
+  // 试听台上的提供者（`${概念 id}|${bank}:${program}` / `${概念 id}|voice`）
+  loading = null;
+  playOnly = false;
+  // 从歌库进的 = 只弹着玩：不出「上场」，返回回歌库
+  host;
+  constructor(parent, host) {
+    this.host = host;
+    this.el = document.createElement("div");
+    this.el.className = "finder";
+    this.el.hidden = true;
+    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select><button class="btn finder-pad" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="finder-hint">${HINT}</div><div class="finder-jump" hidden><span>\u8DF3\u5230</span><select class="finder-jump-sel" title="\u5217\u8868\u6EDA\u5230\u8FD9\u4E00\u7EC4"></select></div><div class="finder-list"><div class="finder-empty">\u52A0\u8F7D\u76EE\u5F55\u2026</div></div>`;
+    parent.append(this.el);
+    this.el.querySelector(".finder-q").addEventListener("input", (e10) => {
+      this.q = e10.target.value;
+      this.render();
+    });
+    this.el.querySelector(".finder-sort").addEventListener("change", (e10) => {
+      this.mode = e10.target.value;
+      this.render();
+    });
+    this.el.querySelector(".finder-jump-sel").addEventListener("change", (e10) => this.jumpTo(Number(e10.target.value)));
+    this.el.addEventListener("click", (e10) => void this.onClick(e10));
+    let raf = 0;
+    this.el.querySelector(".finder-list").addEventListener("scroll", () => {
+      if (!raf) raf = requestAnimationFrame(() => {
+        raf = 0;
+        this.markJump();
+      });
+    }, { passive: true });
+  }
+  get isOpen() {
+    return !this.el.hidden;
+  }
+  /** 顶条「键盘」钮亮不亮（宿主在键盘开 / 关时告诉它）。 */
+  setPadShown(on2) {
+    this.el.querySelector(".finder-pad")?.classList.toggle("is-on", on2);
+  }
+  async show(o10 = {}) {
+    this.el.hidden = false;
+    this.playOnly = !!o10.playOnly;
+    this.el.querySelector(".finder-title").textContent = this.playOnly ? "\u4E50\u5668\u76EE\u5F55\uFF08\u5F39\u7740\u73A9\uFF09" : `\u627E\u4EBA\u7ED9\u300C${this.host.roleName()}\u300D`;
+    this.el.querySelector('[data-v="back"]').textContent = this.playOnly ? "\u2190 \u6B4C\u5E93" : "\u2190 \u8C31";
+    this.el.querySelector(".finder-hint").textContent = this.playOnly ? "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u952E\u76D8\u5F39\u7740\u73A9\u3002\u8981\u7ED9\u6B4C\u91CC\u7684\u58F0\u90E8\u9009\u4E50\u5668\uFF1A\u5F00\u4E00\u9996\u6B4C\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u3002" : HINT;
+    this.el.querySelector(".finder-sort").value = this.mode;
+    if (!this.cat) {
+      this.loading ??= (async () => {
+        const [cat2, sprite] = await Promise.all([loadCatalog(this.host.base), loadIconSprite(this.host.base)]);
+        const doc2 = new DOMParser().parseFromString(sprite, "image/svg+xml"), svg = doc2.documentElement;
+        if (svg.tagName.toLowerCase() === "svg") {
+          const node = document.importNode(svg, true);
+          node.setAttribute("style", "display:none");
+          this.el.prepend(node);
+        }
+        this.cat = cat2;
+      })().catch((e10) => {
+        this.el.querySelector(".finder-list").innerHTML = `<div class="finder-empty">\u76EE\u5F55\u52A0\u8F7D\u4E0D\u4E86\uFF1A${esc3(e10.message)}</div>`;
+        throw e10;
+      }).finally(() => {
+        this.loading = null;
+      });
+      await this.loading;
+    }
+    this.render();
+  }
+  hide() {
+    this.el.hidden = true;
+  }
+  pickOf(key) {
+    if (!this.cat) return null;
+    const [cid, rest] = key.split("|"), c10 = this.cat.byId.get(cid);
+    if (!c10) return null;
+    if (rest === "voice") return { kind: "voice", concept: c10 };
+    const p2 = providersOf(this.cat, c10).find((x2) => gmKey(x2) === rest);
+    return p2 ? { kind: "gs", concept: c10, provider: p2 } : null;
+  }
+  async onClick(e10) {
+    const t10 = e10.target, btn = t10.closest("[data-v]"), row = t10.closest(".inst-row"), prov = t10.closest(".prov");
+    const rowOf = (el2) => el2.closest(".inst-prov")?.previousElementSibling?.dataset.o ?? "";
+    const v = btn?.dataset.v;
+    if (v === "back") {
+      this.host.close();
+      return;
+    }
+    if (v === "pad") {
+      this.host.togglePad();
+      return;
+    }
+    if (v && btn) {
+      const key = btn.closest("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key);
+      if (!pick) return;
+      if (v === "play") {
+        await this.host.playHead(pick);
+        return;
+      }
+      if (v === "cast") {
+        await this.host.cast(pick);
+        return;
+      }
+    }
+    if (prov) {
+      const key = prov.dataset.p;
+      if (this.selected !== key) {
+        this.selected = key;
+        this.renderAnchored(rowOf(prov));
+        await this.host.audition(this.pickOf(key));
+      }
+      return;
+    }
+    if (row) {
+      const id2 = row.dataset.c, o10 = row.dataset.o;
+      if (this.opened === o10) this.opened = null;
+      else {
+        this.opened = o10;
+        const c10 = this.cat.byId.get(id2), pk = row.dataset.k, first = providersOf(this.cat, c10).find((x2) => !pk || gmKey(x2) === pk);
+        const key = first ? `${id2}|${gmKey(first)}` : c10.kind === "voice" ? `${id2}|voice` : "";
+        this.selected = key;
+        this.renderAnchored(o10, true);
+        if (key) await this.host.audition(this.pickOf(key));
+        return;
+      }
+      this.renderAnchored(o10);
+    }
+  }
+  render() {
+    const list = this.el.querySelector(".finder-list");
+    if (!this.cat) return;
+    const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector(".finder-jump");
+    jump.hidden = groups.length < 2;
+    jump.querySelector("select").innerHTML = groups.map((g3, k2) => `<option value="${k2}">${esc3(g3.label)} \xB7 ${g3.items.length} \u4EF6</option>`).join("");
+    if (!groups.length) {
+      list.innerHTML = `<div class="finder-empty">\u6CA1\u6709\u53EB\u300C${esc3(this.q)}\u300D\u7684</div>`;
+      return;
+    }
+    list.innerHTML = groups.map((g3, k2) => `<div class="finder-group" data-g="${k2}"><div class="finder-group-h">${esc3(g3.label)}<span>${g3.items.length}</span></div>${g3.items.map((e10) => this.rowHtml(e10, g3.id)).join("")}</div>`).join("");
+    this.markJump();
+  }
+  /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
+   *  点另一件 = 上面展开的那件收起，整张列表往上缩，原来又用 scrollIntoView 去追选中项、在 iPad 上还会连外层一起滚——手指底下那行就跑了）。
+   *  reveal = 刚展开的：它的「谁能演」露不全就往上挪一点，但这一行不挪到组头底下。只滚列表自己。 */
+  renderAnchored(anchor, reveal = false) {
+    const list = this.el.querySelector(".finder-list"), sel = `.inst-row[data-o="${CSS.escape(anchor)}"]`;
+    const before = list.querySelector(sel)?.getBoundingClientRect().top;
+    this.render();
+    const row = list.querySelector(sel);
+    if (!row || before === void 0) return;
+    list.scrollTop += row.getBoundingClientRect().top - before;
+    if (!reveal) return;
+    const body2 = row.nextElementSibling;
+    if (!body2?.classList.contains("inst-prov")) return;
+    const lr2 = list.getBoundingClientRect(), hdr = row.closest(".finder-group")?.querySelector(".finder-group-h")?.offsetHeight ?? 0;
+    const over = body2.getBoundingClientRect().bottom - lr2.bottom, room = row.getBoundingClientRect().top - (lr2.top + hdr);
+    if (over > 0 && room > 0) list.scrollTop += Math.min(over, room);
+    this.markJump();
+  }
+  /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）。 */
+  jumpTo(k2) {
+    const list = this.el.querySelector(".finder-list"), g3 = list.querySelector(`[data-g="${k2}"]`);
+    if (!g3) return;
+    list.scrollTop += g3.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    this.markJump();
+  }
+  /** 跳转下拉显示「现在在哪一组」（组头顶到列表顶的最后一组）。滚到底时：最后几组短、组头顶不到列表顶——人刚选的那组比算出来的靠后就留着它，不往回弹。 */
+  markJump() {
+    const list = this.el.querySelector(".finder-list"), jump = this.el.querySelector(".finder-jump");
+    if (jump.hidden) return;
+    const sel = jump.querySelector("select"), top = list.getBoundingClientRect().top + 1;
+    let cur = 0;
+    for (const g3 of list.querySelectorAll("[data-g]")) {
+      if (g3.getBoundingClientRect().top <= top) cur = Number(g3.dataset.g);
+      else break;
+    }
+    const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
+    if (atBottom && Number(sel.value) > cur) return;
+    if (sel.value !== String(cur)) sel.value = String(cur);
+  }
+  rowHtml(e10, groupId) {
+    const cat2 = this.cat, c10 = e10.concept, pk = e10.preset ? gmKey(e10.preset) : "", o10 = `${groupId}::${c10.id}${pk ? `::${pk}` : ""}`, open = this.opened === o10, icon = c10.icon?.id;
+    const w2 = e10.weight ?? 0, stars = w2 ? `<span class="inst-w" title="${esc3(weightLabel(cat2, w2))}">${"\u2605".repeat(w2)}</span>` : "";
+    const asName = e10.as ? cat2.byId.get(e10.as)?.names.zh ?? e10.as : "", asTag = asName ? `<span class="inst-as" title="\u5728\u8FD9\u79CD\u98CE\u91CC\u9876\u66FF\u300C${esc3(asName)}\u300D">\u9876 ${esc3(asName)}</span>` : "";
+    const year = e10.preset?.year ?? c10.year, approx = e10.preset ? !!e10.preset.yearApprox : c10.yearApprox;
+    const meta = [eraLabel(cat2, c10), year !== null && year !== void 0 ? `${approx ? "\u7EA6 " : ""}${fmtYear(year)}` : ""].filter(Boolean).join(" \xB7 ");
+    let body2 = "";
+    if (open) {
+      const provs = providersOf(cat2, c10).filter((x2) => !pk || gmKey(x2) === pk), pitched = c10.kind === "voice";
+      const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast">\u4E0A\u573A</button>`}</div></div>`;
+      body2 = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? `\u9F13\u4EF6 \xB7 ${esc3(p2.gmName)}\uFF08Standard \u9F13\u7EC4\u7684 ${p2.note} \u53F7\u952E\uFF09` : p2.bank === 128 ? `\u9F13\u7EC4 \xB7 ${esc3(p2.gmName)}` : `GeneralUser GS \xB7 ${esc3(p2.gmName)}`}`, p2.kind === "substitute" ? `\u9876\u66FF${p2.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p2.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p2.basis === "imitation" ? "\uFF08\u4EFF\u58F0\uFF09" : p2.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p2.reason ? `\uFF1A${esc3(p2.reason)}` : ""}` : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
+    }
+    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}"${pk ? ` data-k="${esc3(pk)}"` : ""}>` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c10.names.zh)}${e10.preset ? `<span class="inst-preset"> \xB7 ${esc3(e10.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body2;
+  }
+};
+
+// src/ui/studio.ts
+var esc4 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
+var panText = (p2) => Math.abs(p2) < 0.025 ? "\u4E2D" : p2 < 0 ? `\u5DE6 ${Math.round(-p2 * 100)}` : `\u53F3 ${Math.round(p2 * 100)}`;
+var dbText = (d3) => `${d3 > 0 ? "+" : ""}${d3.toFixed(1)} dB`;
+var Studio = class {
+  constructor(parent, host) {
+    this.host = host;
+    this.el = document.createElement("div");
+    this.el.className = "studio";
+    this.el.hidden = true;
+    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title">\u5F55\u97F3\u5BA4</span><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="finder-hint">\u6BCF\u4E2A\u58F0\u90E8\u4E00\u6761\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\u3002\u589E\u76CA\u548C\u58F0\u50CF\u5B58\u8FDB\u6B4C\uFF08\u5F55\u97F3\u623F\uFF09\uFF1B\u9759\u97F3 / \u72EC\u594F\u53EA\u662F\u8FD9\u6B21\u3002\u8C31\u4E0A\u4F1A\u7ED9\u9759\u97F3 / \u72EC\u594F\u6253\u89D2\u6807\u3002</div><div class="studio-strips"></div>`;
+    parent.append(this.el);
+    this.el.addEventListener("click", (e10) => {
+      const t10 = e10.target, v = t10.closest("[data-v]")?.dataset.v, strip = t10.closest(".strip")?.dataset.id;
+      if (v === "back") this.host.close();
+      else if (v === "play") this.host.play();
+      else if (v === "mute" && strip) {
+        this.host.toggleMute(strip);
+        this.render();
+      } else if (v === "solo" && strip) {
+        this.host.toggleSolo(strip);
+        this.render();
+      }
+    });
+    this.el.addEventListener("input", (e10) => {
+      const t10 = e10.target, strip = t10.closest(".strip");
+      if (!strip) return;
+      const id2 = strip.dataset.id, out = t10.parentElement?.querySelector("output");
+      if (t10.dataset.gain !== void 0) {
+        this.host.setGain(id2, Number(t10.value));
+        if (out) out.textContent = dbText(Number(t10.value));
+      } else if (t10.dataset.pan !== void 0) {
+        this.host.setPan(id2, Number(t10.value));
+        if (out) out.textContent = panText(Number(t10.value));
+      }
+    });
+    this.el.addEventListener("dblclick", (e10) => {
+      const t10 = e10.target, strip = t10.closest(".strip");
+      if (!strip || t10.tagName !== "INPUT") return;
+      if (t10.dataset.gain !== void 0) this.host.setGain(strip.dataset.id, 0);
+      else if (t10.dataset.pan !== void 0) this.host.setPan(strip.dataset.id, 0);
+      this.render();
+    });
+  }
+  el;
+  get isOpen() {
+    return !this.el.hidden;
+  }
+  show() {
+    this.el.hidden = false;
+    this.render();
+  }
+  hide() {
+    this.el.hidden = true;
+  }
+  render() {
+    const box = this.el.querySelector(".studio-strips");
+    box.innerHTML = this.host.strips().map((s10) => `<div class="strip" data-id="${esc4(s10.id)}"><div class="strip-name">${esc4(s10.name)}</div><div class="strip-who">${esc4(s10.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s10.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s10.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label><div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div></div>`).join("");
+  }
+};
+
+// src/gm/sf2-subset.ts
+var REC = { phdr: 38, pbag: 4, pmod: 10, pgen: 4, inst: 22, ibag: 4, imod: 10, igen: 4, shdr: 46 };
+var GEN_INSTRUMENT = 41;
+var GEN_SAMPLE_ID = 53;
+var ZERO_TAIL = 46;
+var tag = (b3, o10) => String.fromCharCode(b3[o10], b3[o10 + 1], b3[o10 + 2], b3[o10 + 3]);
+var plain = (b3) => b3.constructor === Uint8Array ? b3 : new Uint8Array(b3.buffer, b3.byteOffset, b3.byteLength);
+function parse(b3) {
+  const dv = new DataView(b3.buffer, b3.byteOffset, b3.byteLength);
+  if (tag(b3, 0) !== "RIFF" || tag(b3, 8) !== "sfbk") throw new Error("sf2: not a SoundFont 2 file");
+  let info2 = null, smpl = null;
+  const pdta = {};
+  let o10 = 12;
+  while (o10 + 8 <= b3.length) {
+    const id2 = tag(b3, o10), size = dv.getUint32(o10 + 4, true), data = o10 + 8;
+    if (id2 === "LIST") {
+      const kind = tag(b3, data);
+      if (kind === "INFO") info2 = b3.subarray(o10, data + size);
+      else {
+        let p2 = data + 4;
+        while (p2 + 8 <= data + size) {
+          const sid = tag(b3, p2), ssize = dv.getUint32(p2 + 4, true);
+          if (kind === "sdta" && sid === "smpl") smpl = { off: p2 + 8, size: ssize };
+          if (kind === "pdta" && sid in REC) pdta[sid] = { off: p2 + 8, size: ssize };
+          p2 += 8 + ssize + (ssize & 1);
+        }
+      }
+    }
+    o10 = data + size + (size & 1);
+  }
+  if (!info2 || !smpl) throw new Error("sf2: missing INFO or sample data");
+  for (const k2 of Object.keys(REC)) if (!pdta[k2]) throw new Error(`sf2: missing ${k2}`);
+  return { info: info2, smpl, pdta };
+}
+var nameOf = (b3, o10) => {
+  let s10 = "";
+  for (let i10 = 0; i10 < 20 && b3[o10 + i10]; i10++) s10 += String.fromCharCode(b3[o10 + i10]);
+  return s10;
+};
+function listSf2Presets(input) {
+  const bytes = plain(input);
+  const { pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const n10 = pdta.phdr.size / REC.phdr - 1, out = [];
+  for (let i10 = 0; i10 < n10; i10++) {
+    const o10 = pdta.phdr.off + i10 * REC.phdr;
+    out.push({ name: nameOf(bytes, o10), program: dv.getUint16(o10 + 20, true), bank: dv.getUint16(o10 + 22, true) });
+  }
+  return out;
+}
+function subsetSf2(input, want) {
+  const bytes = plain(input);
+  const { info: info2, smpl, pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const count = (k2) => pdta[k2].size / REC[k2];
+  const at2 = (k2, i10) => pdta[k2].off + i10 * REC[k2];
+  const u162 = (k2, i10, field) => dv.getUint16(at2(k2, i10) + field, true);
+  const nP2 = count("phdr") - 1;
+  const wantKey = new Set(want.map((w2) => `${w2.bank}:${w2.program}`));
+  const presets = [];
+  for (let i10 = 0; i10 < nP2; i10++) if (wantKey.has(`${u162("phdr", i10, 22)}:${u162("phdr", i10, 20)}`)) presets.push(i10);
+  const found = new Set(presets.map((i10) => `${u162("phdr", i10, 22)}:${u162("phdr", i10, 20)}`));
+  const missing = [...wantKey].filter((k2) => !found.has(k2));
+  if (missing.length) throw new Error(`sf2: presets not in this bank: ${missing.join(", ")}`);
+  const instSet = /* @__PURE__ */ new Set();
+  for (const i10 of presets) for (let b3 = u162("phdr", i10, 24); b3 < u162("phdr", i10 + 1, 24); b3++)
+    for (let g3 = u162("pbag", b3, 0); g3 < u162("pbag", b3 + 1, 0); g3++) if (u162("pgen", g3, 0) === GEN_INSTRUMENT) instSet.add(u162("pgen", g3, 2));
+  const insts = [...instSet].sort((a10, b3) => a10 - b3), instMap = new Map(insts.map((v, i10) => [v, i10]));
+  const nS2 = count("shdr") - 1, sampleSet = /* @__PURE__ */ new Set();
+  for (const j2 of insts) for (let b3 = u162("inst", j2, 20); b3 < u162("inst", j2 + 1, 20); b3++)
+    for (let g3 = u162("ibag", b3, 0); g3 < u162("ibag", b3 + 1, 0); g3++) if (u162("igen", g3, 0) === GEN_SAMPLE_ID) sampleSet.add(u162("igen", g3, 2));
+  for (const s10 of [...sampleSet]) {
+    const type = u162("shdr", s10, 44), link = u162("shdr", s10, 42);
+    if (type & 14 && link < nS2) sampleSet.add(link);
+  }
+  const samples = [...sampleSet].sort((a10, b3) => a10 - b3), sampleMap = new Map(samples.map((v, i10) => [v, i10]));
+  const out = { phdr: [], pbag: [], pmod: [], pgen: [], inst: [], ibag: [], imod: [], igen: [], shdr: [] };
+  const copy = (k2, i10, patch) => {
+    const rec = bytes.slice(at2(k2, i10), at2(k2, i10) + REC[k2]);
+    patch?.(rec);
+    out[k2].push(...rec);
+  };
+  const w16 = (rec, o10, v) => {
+    rec[o10] = v & 255;
+    rec[o10 + 1] = v >> 8 & 255;
+  };
+  const w32 = (rec, o10, v) => {
+    w16(rec, o10, v & 65535);
+    w16(rec, o10 + 2, v >>> 16 & 65535);
+  };
+  let nBag = 0, nGen = 0, nMod = 0;
+  for (const i10 of presets) {
+    copy("phdr", i10, (r10) => w16(r10, 24, nBag));
+    for (let b3 = u162("phdr", i10, 24); b3 < u162("phdr", i10 + 1, 24); b3++) {
+      copy("pbag", b3, (r10) => {
+        w16(r10, 0, nGen);
+        w16(r10, 2, nMod);
+      });
+      nBag++;
+      for (let g3 = u162("pbag", b3, 0); g3 < u162("pbag", b3 + 1, 0); g3++) {
+        copy("pgen", g3, (r10) => {
+          if (u162("pgen", g3, 0) === GEN_INSTRUMENT) w16(r10, 2, instMap.get(u162("pgen", g3, 2)));
+        });
+        nGen++;
+      }
+      for (let m2 = u162("pbag", b3, 2); m2 < u162("pbag", b3 + 1, 2); m2++) {
+        copy("pmod", m2);
+        nMod++;
+      }
+    }
+  }
+  copy("phdr", nP2, (r10) => w16(r10, 24, nBag));
+  out.pbag.push(...new Uint8Array(REC.pbag));
+  const pb = out.pbag.length - REC.pbag;
+  out.pbag[pb] = nGen & 255;
+  out.pbag[pb + 1] = nGen >> 8;
+  out.pbag[pb + 2] = nMod & 255;
+  out.pbag[pb + 3] = nMod >> 8;
+  out.pgen.push(...new Uint8Array(REC.pgen));
+  out.pmod.push(...new Uint8Array(REC.pmod));
+  nBag = 0;
+  nGen = 0;
+  nMod = 0;
+  for (const j2 of insts) {
+    copy("inst", j2, (r10) => w16(r10, 20, nBag));
+    for (let b3 = u162("inst", j2, 20); b3 < u162("inst", j2 + 1, 20); b3++) {
+      copy("ibag", b3, (r10) => {
+        w16(r10, 0, nGen);
+        w16(r10, 2, nMod);
+      });
+      nBag++;
+      for (let g3 = u162("ibag", b3, 0); g3 < u162("ibag", b3 + 1, 0); g3++) {
+        copy("igen", g3, (r10) => {
+          if (u162("igen", g3, 0) === GEN_SAMPLE_ID) w16(r10, 2, sampleMap.get(u162("igen", g3, 2)));
+        });
+        nGen++;
+      }
+      for (let m2 = u162("ibag", b3, 2); m2 < u162("ibag", b3 + 1, 2); m2++) {
+        copy("imod", m2);
+        nMod++;
+      }
+    }
+  }
+  copy("inst", count("inst") - 1, (r10) => w16(r10, 20, nBag));
+  out.ibag.push(...new Uint8Array(REC.ibag));
+  const ib2 = out.ibag.length - REC.ibag;
+  out.ibag[ib2] = nGen & 255;
+  out.ibag[ib2 + 1] = nGen >> 8;
+  out.ibag[ib2 + 2] = nMod & 255;
+  out.ibag[ib2 + 3] = nMod >> 8;
+  out.igen.push(...new Uint8Array(REC.igen));
+  out.imod.push(...new Uint8Array(REC.imod));
+  const pieces = [];
+  let pos = 0;
+  const u32 = (k2, i10, field) => dv.getUint32(at2(k2, i10) + field, true);
+  for (const s10 of samples) {
+    const start = u32("shdr", s10, 20), end = u32("shdr", s10, 24), len = end - start;
+    copy("shdr", s10, (r10) => {
+      w32(r10, 20, pos);
+      w32(r10, 24, pos + len);
+      w32(r10, 28, pos + (u32("shdr", s10, 28) - start));
+      w32(r10, 32, pos + (u32("shdr", s10, 32) - start));
+      const link = u162("shdr", s10, 42), ns2 = sampleMap.get(link);
+      if (ns2 === void 0) {
+        w16(r10, 42, 0);
+        w16(r10, 44, 1);
+      } else w16(r10, 42, ns2);
+    });
+    pieces.push(bytes.subarray(smpl.off + start * 2, smpl.off + end * 2), new Uint8Array(ZERO_TAIL * 2));
+    pos += len + ZERO_TAIL;
+  }
+  copy("shdr", nS2);
+  const chunk = (id2, data) => {
+    const d3 = data instanceof Uint8Array ? data : Uint8Array.from(data), pad4 = d3.length & 1;
+    const r10 = new Uint8Array(8 + d3.length + pad4);
+    r10.set([...id2].map((c10) => c10.charCodeAt(0)), 0);
+    new DataView(r10.buffer).setUint32(4, d3.length, true);
+    r10.set(d3, 8);
+    return r10;
+  };
+  const list = (kind, parts) => chunk("LIST", concat([Uint8Array.from([...kind].map((c10) => c10.charCodeAt(0))), ...parts]));
+  const sdta = list("sdta", [chunk("smpl", concat(pieces))]);
+  const pdtaOut = list("pdta", Object.keys(REC).map((k2) => chunk(k2, out[k2])));
+  const body2 = concat([Uint8Array.from([..."sfbk"].map((c10) => c10.charCodeAt(0))), info2, sdta, pdtaOut]);
+  return chunk("RIFF", body2);
+}
+function concat(parts) {
+  const n10 = parts.reduce((s10, p2) => s10 + p2.length, 0), r10 = new Uint8Array(n10);
+  let o10 = 0;
+  for (const p2 of parts) {
+    r10.set(p2, o10);
+    o10 += p2.length;
+  }
+  return r10;
+}
+function sf2Info(input) {
+  const bytes = plain(input), { info: info2 } = parse(bytes), dv = new DataView(info2.buffer, info2.byteOffset, info2.byteLength);
+  const out = {}, map = { INAM: "name", IENG: "engineer", ICOP: "copyright", ICMT: "comment", IPRD: "product" };
+  let p2 = 12;
+  while (p2 + 8 <= info2.length) {
+    const id2 = tag(info2, p2), size = dv.getUint32(p2 + 4, true), key = map[id2];
+    if (key) {
+      let s10 = "";
+      for (let i10 = 0; i10 < size && info2[p2 + 8 + i10]; i10++) s10 += String.fromCharCode(info2[p2 + 8 + i10]);
+      out[key] = s10.trim();
+    }
+    p2 += 8 + size + (size & 1);
+  }
+  return out;
+}
+
+// src/app/doc-file.ts
+var TYPES2 = [{ description: "MusicXML \u4E50\u8C31\uFF08MoonSinger \u5B58\u6210 .mxl\uFF09", accept: {
+  "application/vnd.recordare.musicxml": [".mxl"],
+  "application/vnd.recordare.musicxml+xml": [".musicxml", ".xml"]
+} }];
+var ACCEPT = ".mxl,.musicxml,.xml";
+var accepts = (name) => /\.(mxl|musicxml|xml)$/i.test(name);
+var g = globalThis;
+var topLevel = () => {
+  try {
+    return window.self === window.top;
+  } catch {
+    return false;
+  }
+};
+var canPickOpen = () => topLevel() && typeof g.showOpenFilePicker === "function";
+var canPickSave = () => topLevel() && typeof g.showSaveFilePicker === "function";
+var aborted = (e10) => e10.name === "AbortError";
+async function fromFile(f2, handle) {
+  return { name: f2.name, bytes: new Uint8Array(await f2.arrayBuffer()), handle, mtime: f2.lastModified };
+}
+async function pickOpen() {
+  if (canPickOpen()) {
+    let hs;
+    try {
+      hs = await g.showOpenFilePicker({ types: TYPES2, multiple: false, excludeAcceptAllOption: false });
+    } catch (e10) {
+      if (aborted(e10)) return null;
+      throw e10;
+    }
+    return readHandle(hs[0]);
+  }
+  return new Promise((resolve, reject) => {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ACCEPT;
+    inp.hidden = true;
+    inp.addEventListener("change", async () => {
+      const f2 = inp.files?.[0];
+      inp.remove();
+      if (!f2) {
+        resolve(null);
+        return;
+      }
+      try {
+        resolve(await fromFile(f2, null));
+      } catch (e10) {
+        reject(e10);
+      }
+    }, { once: true });
+    document.body.append(inp);
+    inp.click();
+  });
+}
+async function readHandle(h2) {
+  return fromFile(await h2.getFile(), h2);
+}
+async function pickSave(suggestedName) {
+  try {
+    return await g.showSaveFilePicker({ suggestedName, types: TYPES2 });
+  } catch (e10) {
+    if (aborted(e10)) return null;
+    throw e10;
+  }
+}
+async function writeTo(h2, bytes) {
+  const w2 = await h2.createWritable();
+  await w2.write(bytes);
+  await w2.close();
+}
+async function mtime(h2) {
+  try {
+    return (await h2.getFile()).lastModified;
+  } catch {
+    return null;
+  }
+}
+var isStale = (seen, now) => seen != null && now != null && seen !== now;
+function grabDrop(dt) {
+  for (const it2 of [...dt.items ?? []]) {
+    if (it2.kind !== "file") continue;
+    const file = it2.getAsFile();
+    if (!file || !accepts(file.name)) continue;
+    const handle = it2.getAsFileSystemHandle ? it2.getAsFileSystemHandle().then((h2) => h2 && h2.kind === "file" ? h2 : null, () => null) : Promise.resolve(null);
+    return { file, handle };
+  }
+  for (const file of [...dt.files ?? []]) if (accepts(file.name)) return { file, handle: Promise.resolve(null) };
+  return null;
+}
+async function fromGrab(gr) {
+  return fromFile(gr.file, await gr.handle);
+}
+function consumeLaunchFiles(cb2) {
+  const lq2 = globalThis.launchQueue;
+  if (!lq2) return;
+  lq2.setConsumer((p2) => {
+    for (const f2 of p2.files ?? []) {
+      const h2 = f2;
+      if (accepts(h2.name)) cb2(h2);
+    }
+  });
+}
+
+// src/app/main.ts
+init_fflate_esm();
+
+// src/app/names.ts
+function defaultStem(now = /* @__PURE__ */ new Date()) {
+  const z2 = (n10) => String(n10).padStart(2, "0");
+  let r10;
+  try {
+    r10 = crypto.getRandomValues(new Uint16Array(1))[0];
+  } catch {
+    r10 = Math.floor(Math.random() * 65536);
+  }
+  return `${now.getFullYear()}${z2(now.getMonth() + 1)}${z2(now.getDate())}-${r10.toString(16).padStart(4, "0")}`;
+}
+var fileSafe = (s10) => s10.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim();
+function stampedCopy(stem, now = /* @__PURE__ */ new Date()) {
+  const z2 = (n10) => String(n10).padStart(2, "0");
+  return `${stem}-${now.getFullYear()}${z2(now.getMonth() + 1)}${z2(now.getDate())}-${z2(now.getHours())}${z2(now.getMinutes())}`;
+}
+
+// src/config.ts
+var APP_ID = "moonsinger";
+var CLIENT_ID2 = "ce612efe-ea39-4a52-872d-550cd9f7d71b";
+var AUTHORITY2 = "https://login.microsoftonline.com/consumers";
+var SCOPES2 = ["Files.ReadWrite.AppFolder", "offline_access"];
+var MSAL_URL2 = "./vendor/msal/msal-browser.min.js";
+var SONG_SUFFIX = ".mxl";
+var LOCAL_SAVE_DEBOUNCE_MS = 2e3;
+var PUSH_DEBOUNCE_MS = 15e3;
+var PUSH_HEARTBEAT_MS = 3e4;
+
+// src/identifiers.ts
+var SONG_KIND = "song";
+var DOC_KINDS = Object.freeze([
+  { kind: SONG_KIND, suffix: SONG_SUFFIX, container: "zip" }
+]);
+var identifiers = createIdentifiers(DOC_KINDS);
+
 // src/ui/sheets.ts
 var esc5 = (s10) => s10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
 var busyEl = null;
@@ -18547,116 +18737,6 @@ function openChoiceSheet(title, message, choices) {
         done(c10.value);
       } else if (t10.closest("[data-v]")?.dataset.v === "no") done(null);
     });
-  });
-}
-
-// src/device-kv.ts
-var PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
-var _mem2 = /* @__PURE__ */ new Map();
-function _ls() {
-  try {
-    const ls2 = globalThis.localStorage;
-    ls2.getItem(PREFIX + "__probe");
-    return ls2;
-  } catch {
-    return null;
-  }
-}
-function deviceKvGet2(key) {
-  const k2 = PREFIX + key;
-  const ls2 = _ls();
-  if (ls2) {
-    try {
-      return ls2.getItem(k2);
-    } catch {
-    }
-  }
-  return _mem2.get(k2) ?? null;
-}
-function deviceKvSet2(key, v) {
-  const k2 = PREFIX + key;
-  const ls2 = _ls();
-  if (ls2) {
-    try {
-      if (v == null) ls2.removeItem(k2);
-      else ls2.setItem(k2, v);
-      _mem2.delete(k2);
-      return;
-    } catch {
-    }
-  }
-  if (v == null) _mem2.delete(k2);
-  else _mem2.set(k2, v);
-}
-
-// src/app/report-error.ts
-var msgOf = (e10) => e10 instanceof Error ? `${e10.name === "Error" ? "" : e10.name + ": "}${e10.message}` : typeof e10 === "string" ? e10 : String(e10);
-function reportError(err2, level = "error") {
-  const m2 = msgOf(err2);
-  try {
-    diag_log_exports.record(level, m2);
-  } catch {
-  }
-  if (level === "error") {
-    console.error(err2);
-    showNotice({ id: "err", level: "error", text: m2 });
-  } else if (level === "warning") {
-    console.warn(err2);
-    showNotice({ id: "warn", level: "warning", text: m2, autoHideMs: 6e3 });
-  } else if (level === "info") {
-    console.info(m2);
-    showNotice({ id: "info", level: "info", text: m2, autoHideMs: 3e3 });
-  } else console.log(m2);
-}
-var diagNote = (tag2, msg) => {
-  try {
-    diag_log_exports.note(tag2, msg);
-  } catch {
-  }
-};
-var diagText = () => {
-  try {
-    return diag_log_exports.toText();
-  } catch {
-    return "";
-  }
-};
-var diagCount = () => {
-  try {
-    return diag_log_exports.entries().length;
-  } catch {
-    return 0;
-  }
-};
-var diagClear = () => {
-  try {
-    diag_log_exports.clear();
-  } catch {
-  }
-};
-function initBlackBox(version) {
-  configureDeviceKv({ get: deviceKvGet2, set: deviceKvSet2 });
-  diag_log_exports.initDiagLog({ app: "MoonSinger", version });
-  const w2 = window;
-  const early = w2.__msEarlyErrors;
-  if (Array.isArray(early)) for (const e10 of early.splice(0)) diag_log_exports.record("error", `[early] ${e10.m}`);
-  w2.__msEarlyErrors = { push: (e10) => {
-    try {
-      diag_log_exports.record("error", `[early] ${e10.m}`);
-    } catch {
-    }
-  } };
-  window.addEventListener("error", (e10) => {
-    try {
-      diag_log_exports.record("error", `[window] ${e10.message} @${(e10.filename ?? "").split("/").pop()}:${e10.lineno}`);
-    } catch {
-    }
-  });
-  window.addEventListener("unhandledrejection", (e10) => {
-    try {
-      diag_log_exports.record("error", `[unhandledrejection] ${msgOf(e10.reason)}`);
-    } catch {
-    }
   });
 }
 
@@ -26050,7 +26130,8 @@ function micOf(part) {
 }
 async function renderMix(scope = "view") {
   const parts = audibleParts(), got = [], errs = [];
-  for (const part of parts) {
+  const heavyFirst = [...parts].sort((a10, b3) => Number(activeInstrument(doc.extras, b3.role)?.engine === "tsukuyomi") - Number(activeInstrument(doc.extras, a10.role)?.engine === "tsukuyomi"));
+  for (const part of heavyFirst) {
     try {
       const r10 = await renderPart(part, scope);
       if (r10) got.push({ part, r: r10 });
@@ -26058,6 +26139,7 @@ async function renderMix(scope = "view") {
       errs.push(`\u300C${roleName(doc.extras, part.role)}\u300D\uFF1A${e10.message}`);
     }
   }
+  got.sort((a10, b3) => parts.indexOf(a10.part) - parts.indexOf(b3.part));
   if (errs.length) showError(`${errs.join("\uFF1B")}\u3002${got.length ? "\u8FD9\u4E9B\u58F0\u90E8\u6CA1\u6709\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\u3002" : "\u6CA1\u6709\u51FA\u58F0\u3002"}\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
   if (!got.length) return null;
   const m2 = mixTracks(got.map(({ part, r: r10 }) => {
@@ -26156,6 +26238,7 @@ async function togglePlay() {
   }
   if (singing) return;
   singer.unlock();
+  holdAudio();
   singing = true;
   $2("playBtn").classList.add("is-on");
   try {
@@ -26174,6 +26257,7 @@ async function togglePlay() {
     showError(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`);
     progress("");
   } finally {
+    releaseAudio();
     singing = false;
     $2("playBtn").classList.remove("is-on");
   }
@@ -27184,8 +27268,8 @@ function drawInst() {
   const row = (k2, v, note2 = "") => `<span class="ip-k">${k2}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note2 ? `<div class="ip-note">${note2}</div>` : ""}</div>`;
   const how = (eng !== "unknown" ? row(
     "\u54CD\u5EA6",
-    `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>${cal !== 0 ? `<button class="btn" data-v="cal:0" title="\u56DE\u5230 0\uFF08\u548C\u6708\u8BFB\u4E00\u6837\u7684\u57FA\u51C6\uFF09">\u5F52\u96F6</button>` : ""}`,
-    "\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u6708\u8BFB = 0 \u5F53\u57FA\u51C6\uFF0C\u65B0\u52A0\u7684\u4E50\u5668\u9ED8\u8BA4 \u22126\uFF1B\u5F55\u97F3\u5BA4\u7684\u63A8\u5B50\u53E6\u7B97"
+    `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="\u56DE\u5230\u9ED8\u8BA4 ${fmtDb(DEFAULT_CALIBRATION_DB)}">\u9ED8\u8BA4</button>` : ""}`,
+    `\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F ${fmtDb(DEFAULT_CALIBRATION_DB)}\uFF08\u6708\u8BFB\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u5F55\u97F3\u5BA4\u7684\u63A8\u5B50\u53E6\u7B97`
   ) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
   //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
   (active?.sfx ? ((fixed, al2) => row(
@@ -27290,7 +27374,7 @@ instEl.addEventListener("click", (e10) => {
     synth.allOff();
     gmHeld.clear();
   } else if (v.startsWith("cal:")) {
-    const d3 = Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, d3 === 0 ? 0 : activeCalibrationDb(doc.extras, role) + d3));
+    const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d3));
     updateExtras(withCalibration(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u54CD\u5EA6\u6821\u51C6 ${next2} dB` }, "cal");
   } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
   else return;
@@ -28377,4 +28461,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f02b59d23ee0.mjs.map
+//# sourceMappingURL=moonsinger-649881c43014.mjs.map

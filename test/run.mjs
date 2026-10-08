@@ -34,6 +34,7 @@ import "./id3.test.ts";
 import "./sf-key.test.ts";
 import "./sfx-fixed.test.ts";
 import "./xhead.test.ts";
+import "./staff-end.test.ts";
 import "./redline-guard.test.mjs";
 import "./storage-whitelist.test.mjs";
 import "./store-wiring.test.mjs";

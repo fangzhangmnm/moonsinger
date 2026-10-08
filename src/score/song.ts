@@ -441,7 +441,19 @@ export function writeMark(st: EditorState, v: MarkVal): { st: EditorState; index
   for (let i = a; i < b; i++) if (tokens[i].kind === v.kind) return { st: setMark({ ...leave(st), sel: null }, i, v), index: i, fresh: false };
   const id = st.nextId, nt = tokens.slice();
   nt.splice(at, 0, { ...v, id } as MarkTok);
+  if (v.kind === "key") respellFrom(nt, at);   // 插调号：它管的音跟着按调号拼写
   return { st: next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] }), index: at, fresh: true };
+}
+/** 调号 i 管的那一段音（到下一个调号为止）按它简化拼写（音高不动；调外音、𝄪 / 𝄫 照写）。原地改 nt。
+ *  user 2026-10-08「刚才那个是我移调之后没有自动匹配…因为我移了好几个调找听的对的」：半音移调不动调号（音按旧调拼成一片 ♭），
+ *  再把调号改成听着对的那个调——音还是旧拼法、满篇临时记号。现在改 / 插调号时它管的音顺手换成调号里的写法。 */
+function respellFrom(nt: Token[], i: number): void {
+  const k = nt[i]; if (k?.kind !== "key") return;
+  for (let j = i + 1; j < nt.length && nt[j].kind !== "key"; j++) {
+    const t = nt[j]; if (t.kind !== "note" || !t.pitch) continue;
+    const ps = allPitches(t), qs = ps.map((q) => keySpell(q, k.fifths));
+    if (qs.some((q, n) => q !== ps[n])) nt[j] = withPitches(t, qs);
+  }
 }
 /** 换调号（插一个调号记号）。 */
 export const writeKey = (st: EditorState, fifths: number): EditorState => writeMark(st, { kind: "key", fifths }).st;
@@ -450,6 +462,7 @@ export function setMark(st: EditorState, i: number, v: MarkVal): EditorState {
   const t = tr(st)[i];
   if (!t || t.kind !== v.kind) return st;
   const nt = tr(st).slice(); nt[i] = { ...v, id: t.id } as MarkTok;
+  if (v.kind === "key") respellFrom(nt, i);   // 改调号：它管的音跟着按调号拼写（同一步，能撤销）
   return next(st, nt, {});
 }
 /** 删一个中途的记号（谱头的删不掉）。 */
@@ -651,6 +664,12 @@ export function modulateSel(st: EditorState, toFifths: number): EditorState {
   if (keyIdx >= 0 && keyIdx < from) nt[keyIdx] = { ...(nt[keyIdx] as KeyTok), fifths: toFifths };
   else if (keyIdx < 0) { nt.splice(from, 0, { kind: "key", id: nextId++, fifths: toFifths }); shift = 1; }
   const sel = { from: from + shift, to: to + shift };
+  // 收尾：按挪完之后各自所在的调简化拼写（选中里的调号会被换成等音调，按音程挪的拼法可能和它对不上）
+  for (let i = sel.from; i < sel.to; i++) {
+    const t = nt[i]; if (t.kind !== "note" || !t.pitch) continue;
+    const k = keyAt(nt, i), ps = allPitches(t), qs = ps.map((q) => keySpell(q, k));
+    if (qs.some((q, n) => q !== ps[n])) nt[i] = withPitches(t, qs);
+  }
   return next({ ...st, nextId }, nt, { sel, caret: sel.to });
 }
 

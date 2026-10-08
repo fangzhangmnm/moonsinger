@@ -3,7 +3,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
 import { saveMxl, openBytes, emptyExtras, withSf2Candidate, withActive, activeGm, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, CANDIDATE_ID, type Extras } from "../src/format/project.ts";
-import { SOUNDFONT_CALIBRATION_DB } from "../src/format/performance.ts";
+import { SOUNDFONT_CALIBRATION_DB, DEFAULT_CALIBRATION_DB } from "../src/format/performance.ts";
 import { unzipSync } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong } from "./fixtures/format/sample-song.ts";
 import { subsetSf2 } from "../src/gm/sf2-subset.ts";
@@ -88,8 +88,8 @@ describe("响度校准（候选 calibrationDb）", () => {
   it("新的 SoundFont 候选 = SOUNDFONT_CALIBRATION_DB；月读 = 0；改了进歌、存 → 开还在", async () => {
     const { extras } = await twoWeak();
     eq(activeCalibrationDb(extras, "r1"), SOUNDFONT_CALIBRATION_DB);
-    const voice = withActive(extras, "r1", CANDIDATE_ID.full, "n"); eq(activeCalibrationDb(voice, "r1"), 0);
-    eq(activeCalibrationDb(emptyExtras(), "r9"), 0, "没有角色快照 = 0");
+    const voice = withActive(extras, "r1", CANDIDATE_ID.full, "n"); eq(activeCalibrationDb(voice, "r1"), DEFAULT_CALIBRATION_DB, "新建的月读也是 −6（user「月读也得-6db」）");
+    eq(activeCalibrationDb(emptyExtras(), "r9"), DEFAULT_CALIBRATION_DB, "没有角色快照 = 默认 −6");
     const ch = withCalibration(extras, "r1", -3.26, "n"); eq(activeCalibrationDb(ch, "r1"), -3.3);
     eq(activeCalibrationDb(ch, "r2"), SOUNDFONT_CALIBRATION_DB, "只改这个角色上场的那位");
     eq(activeCalibrationDb(openBytes("x.mxl", save(ch)).extras, "r1"), -3.3);

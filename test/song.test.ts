@@ -188,13 +188,29 @@ describe("按调号拼写", () => {
     st = _setAcc(st, 2, "once"); st = writeDegree(st, 4, "near");   // 𝄪 + 4 = F𝄪（有意的导音）→ 不动
     eq(spelled(st), "G#3 G3 D#3 F##3");
   });
-  it("「按调号拼写」收拾已经写下的：选中的调内音换写法、音高不变，调外的和重升降不动", () => {
-    let st = initState(); st = _tapAcc(st, -1, 0); st = writeDegree(st, 6, "near"); st = writeDegree(st, 7, "near"); st = _tapAcc(st, -1, 0); st = writeDegree(st, 2, "near");
-    eq(spelled(st), "Ab3 B3 Db4");   // C 大调里写的：A♭ / D♭ 是调外音，照写
-    st = setMark(st, 0, { kind: "key", fifths: 5 });   // 后来把调号改成五个升号
-    eq(spelled(st), "Ab3 B3 Db4", "改调号不动音");
-    st = _respell(_select(st, H, H + 3));
-    eq(spelled(st), "G#3 B3 C#4");
-    eq(_respell(st), st, "没选中 = 原样");
+  // user 2026-10-08「刚才那个是我移调之后没有自动匹配，不是写的时候出问题。因为我移了好几个调找听的对的」：
+  //   半音移调不动调号（C 里往下移 = 一片 ♭）→ 再把调号改成听着对的调 → 音照旧拼法。现在改调号时它管的音跟着拼
+  it("半音移调之后把调号改成听着对的那个：它管的音跟着按调号拼写（音高不变；调外的不动）", () => {
+    let st = initState(); for (const d of [6, 7, 2, 5]) st = writeDegree(st, d, "near");   // C 里写 A B D G
+    st = transposeSel(_select(st, H, H + 4), -1); st = escape(st);
+    eq(spelled(st), "Ab3 Bb3 Db4 Gb4", "C 大调里往下移半音 = 调外音，按方向拼成 ♭");
+    st = setMark(st, 0, { kind: "key", fifths: 5 });   // 听着对了：调号改成五个升号
+    eq(spelled(st), "G#3 A#3 C#4 F#4");
+    st = setMark(st, 0, { kind: "key", fifths: 0 });   // 改回 C：都是调外音 = 照现在的写法（不来回翻）
+    eq(spelled(st), "G#3 A#3 C#4 F#4");
+  });
+  it("插一个调号：只管它后面到下一个调号为止的音", () => {
+    let st = initState(); for (const d of [6, 6]) { st = _tapAcc(st, -1, 0); st = writeDegree(st, d, "near"); }   // A♭ A♭（C 里，调外照写）
+    st = setCaret(st, H + 1); st = writeKey(st, 5);
+    eq(spelled(st), "Ab3 G#3");
+  });
+  it("「按调号拼写」收拾别处来的：调号早就是五个升号、音却写成降号（旧文件 / 粘贴进来的）", () => {
+    const ab = { kind: "note", pitch: { step: "A", alter: -1, octave: 4 }, dur: E, lyric: null }, d = { kind: "note", pitch: { step: "D", alter: -1, octave: 5 }, dur: E, lyric: null };
+    const song = songOf([{ kind: "key", fifths: 5, id: 1 }, { kind: "time", beats: 4, beatType: 4, id: 2 }, { kind: "tempo", bpm: 90, id: 3 }, { ...ab, id: 4 }, { ...d, id: 5 }] as never, { title: "" });
+    let st = initState(song);
+    eq(spelled(st), "Ab4 Db5");
+    st = _respell(_select(st, H, H + 2));
+    eq(spelled(st), "G#4 C#5");
+    eq(_respell(escape(st)), escape(st), "没选中 = 原样");
   });
 });

@@ -15,7 +15,7 @@ import { type Song, type PartDef, type PaperSeg, type Token, flattenPart } from 
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
 import { FORMAT, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
 import { migrate } from "./migrate/index.ts";
-import { DYNAMICS_DB, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
+import { DYNAMICS_DB, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
 export type { Hum, InstrumentV2 };
 const MIMETYPE = "application/vnd.recordare.musicxml";
@@ -46,7 +46,7 @@ export const withThumbnail = (extras: Extras, png: Uint8Array | null): Extras =>
 /** 新歌默认的两个候选：月读完整 / 月读元音版（轻量）。 */
 export const CANDIDATE_ID = { full: "c1", light: "c2" } as const;
 export type Engine = InstrumentV2["engine"];
-const common = () => ({ calibrationDb: 0, chain: [] as unknown[], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } });
+const common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [] as unknown[], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } });
 /** 新建角色：从 app 内置预设 by value 拷进歌（契约 §8；之后 app 升级改了预设也不影响这首歌）。 */
 function defaultRole(hum: Hum, id: string): Json {
   return { version: FORMAT.lounge, id, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
@@ -338,7 +338,7 @@ export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Reco
 
 // ── 响度校准（候选的 calibrationDb：契约「看得见、能调的默认，不偷偷自动」；user「不太建议自动校准，除非是可调的默认。不然就是不透明了」）──
 /** 上场那位的校准（dB；没有角色快照 / 没写 = 0）。渲染时乘在这个声部上，和录音室推子相加（推子 = 混音决定，校准 = 演奏者自己的响度）。 */
-export function activeCalibrationDb(extras: Extras, role: string): number { const c = activeCandidate(extras, role); const v = Number(c?.calibrationDb ?? 0); return Number.isFinite(v) ? v : 0; }
+export function activeCalibrationDb(extras: Extras, role: string): number { const c = activeCandidate(extras, role); const v = Number(c?.calibrationDb ?? DEFAULT_CALIBRATION_DB); return Number.isFinite(v) ? v : DEFAULT_CALIBRATION_DB; }   // 没写 = 默认（−6）；旧歌里存的数照旧
 /** 改上场那位的校准。 */
 export function withCalibration(extras: Extras, role: string, dB: number, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;

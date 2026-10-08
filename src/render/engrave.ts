@@ -490,6 +490,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       for (let r = 0; r < nR; r++) for (let k = 0; k < per[r].staves; k++) { const top = yCur; rowTop.set(rowOf(s, r, k), top); rows.push({ top, staffTop: top + P(STAFF_ABOVE), bottom: top + P(rowH[r][k]), paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff }); yCur += P(rowH[r][k]); }
       yCur += P(SYS_GAP);
     }
+    // 每行五线画到哪：这一行最后一列是小节线 = 到那根小节线为止（不出头；user 2026-10-08「每行五线谱最好过了最后一个小节线能不能不出头」）；
+    //   后面还有音 / 写字头（光标停在最后一根小节线后面）= 照旧画到右边（写的地方）。小节线画在列的 x + 0.7（见下面第 6 步）
+    const staffEnd = Array.from({ length: nSys }, (_, s) => {
+      const row = placedCols.filter((c) => c.system === s); if (!row.length) return right;
+      const last = row.reduce((a, c) => (c.x > a.x || (c.x === a.x && (c.slot > a.slot || (c.slot === a.slot && c.n > a.n))) ? c : a));
+      return last.bar ? Math.min(right, last.x + 0.7) : right;
+    });
     // 5. 每条谱：五线、谱号、调号、拍号（第一行）、速度（第一个声部）、歌手牌（第一行）；几条谱左边一根竖线连着
     for (let s = 0; s < nSys; s++) {
       const ind = s === 0 ? ind0 : 0;
@@ -497,7 +504,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const f = sysKeys[s].get(q.p.id) ?? q.head.key;
         for (let k = 0; k < q.staves; k++) {
           const row = rowOf(s, r, k), clef = q.staves === 2 ? (k ? "F" : "G") : (q.p.clef ?? "G");
-          for (let L = 0; L < 5; L++) { const y = yOf(row, BOTTOM_LINE + 2 * L); prims.push({ t: "line", x1: P(MARGIN + ind), y1: y, x2: P(right), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" }); }
+          for (let L = 0; L < 5; L++) { const y = yOf(row, BOTTOM_LINE + 2 * L); prims.push({ t: "line", x1: P(MARGIN + ind), y1: y, x2: P(staffEnd[s]), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" }); }
           let hx = MARGIN + ind + 0.6;
           prims.push({ t: "glyph", x: P(hx), y: yOf(row, clef === "F" ? 36 : 32), ch: clef === "F" ? GLYPH.fClef : GLYPH.gClef, cls: "clef" });   // 高音谱号挂 G 线（第 2 线）、低音谱号挂 F 线（第 4 线）
           hx += clefW(q.p) + 1.0;

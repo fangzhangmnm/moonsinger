@@ -7703,6 +7703,7 @@ async function loadEngine(say) {
 var TSF = new URL("../vendor/tsf/", import.meta.url);
 var tsf = null;
 var banks = /* @__PURE__ */ new Map();
+var MAX_BANKS = 4;
 async function renderGm(q2) {
   if (!tsf) tsf = (async () => {
     const { default: createTsf } = await import(
@@ -7721,9 +7722,16 @@ async function renderGm(q2) {
   if (!bank || bank.sampleRate !== q2.sampleRate) {
     if (!q2.sf2) throw new Error("gm: bank not loaded");
     bank?.close();
+    banks.delete(q2.sha256);
+    while (banks.size >= MAX_BANKS) {
+      const [old, b2] = banks.entries().next().value;
+      b2.close();
+      banks.delete(old);
+    }
     bank = T.load(q2.sf2, q2.sampleRate);
-    banks.set(q2.sha256, bank);
   }
+  banks.delete(q2.sha256);
+  banks.set(q2.sha256, bank);
   const b = bank;
   const notes = q2.notes.map((n) => {
     const preset = b.presetIndex(n.preset[0], n.preset[1]);
@@ -7749,7 +7757,10 @@ self.onmessage = async (ev) => {
   try {
     const t0 = performance.now();
     if (q2.models?.length) bases = q2.models;
-    if (!engine) engine = loadEngine(say);
+    if (!engine) engine = loadEngine(say).catch((e2) => {
+      engine = null;
+      throw e2;
+    });
     const e = await engine;
     if (q2.lang === "zh") await e.ensureZh(say);
     if (q2.lang === "en") await e.ensureEn(say);
@@ -7774,4 +7785,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-a270f74bfc54.mjs.map
+//# sourceMappingURL=singer-worker-8faa7537f23a.mjs.map

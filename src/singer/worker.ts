@@ -135,7 +135,10 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
 
 const TSF = new URL("../vendor/tsf/", import.meta.url);   // 相对 dist/singer-worker.mjs（同 WORLD 的载法）
 let tsf: Promise<ReturnType<typeof wrapTsf>> | null = null;
-const banks = new Map<string, SfBank>();   // sha256 → 载好的音色库（子集很小，整首歌几个）
+const banks = new Map<string, SfBank>();   // sha256 → 载好的音色库（子集很小，整首歌几个）；Map 的顺序 = 最近用过的在后面
+/** 最多留几个音色库：换着试很多音色时旧的不放 = wasm 堆只涨不落，月读的引擎再起不来（iPad：「Out of memory」；
+ *  user 2026-10-08「感觉是没有gc」「对我刚才试了很多不同的音色」）。被放掉的下次用时客户端会带字节重发（gm: bank not loaded）。 */
+const MAX_BANKS = 4;
 async function renderGm(q: GmRequest): Promise<Float32Array> {
   if (!tsf) tsf = (async () => {
     const { default: createTsf } = await import(/* @vite-ignore */ new URL("tsf.mjs", TSF).href);
@@ -146,8 +149,11 @@ async function renderGm(q: GmRequest): Promise<Float32Array> {
   let bank = banks.get(q.sha256);
   if (!bank || bank.sampleRate !== q.sampleRate) {
     if (!q.sf2) throw new Error("gm: bank not loaded");   // 客户端看到这条会带上字节重发
-    bank?.close(); bank = T.load(q.sf2, q.sampleRate); banks.set(q.sha256, bank);
+    bank?.close(); banks.delete(q.sha256);
+    while (banks.size >= MAX_BANKS) { const [old, b] = banks.entries().next().value as [string, SfBank]; b.close(); banks.delete(old); }   // 放掉最久没用的
+    bank = T.load(q.sf2, q.sampleRate);
   }
+  banks.delete(q.sha256); banks.set(q.sha256, bank);   // 挪到最后 = 刚用过
   const b = bank;
   const notes = q.notes.map((n) => { const preset = b.presetIndex(n.preset[0], n.preset[1]); if (preset < 0) throw new Error(`gm: preset ${n.preset[0]}:${n.preset[1]} not in this bank`); return { preset, key: n.key, vel: n.vel, t0: n.t0, t1: n.t1 }; });
   return b.render(notes, q.tail);
@@ -166,7 +172,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | GmRequest>) => {
   try {
     const t0 = performance.now();
     if (q.models?.length) bases = q.models;
-    if (!engine) engine = loadEngine(say);
+    if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; });   // 起不来不缓存失败（原来缓存了被拒的 promise = 之后每次播放都报同一个错，直到重开 app）
     const e = await engine;
     if (q.lang === "zh") await e.ensureZh(say);
     if (q.lang === "en") await e.ensureEn(say);

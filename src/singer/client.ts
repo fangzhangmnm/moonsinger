@@ -3,6 +3,10 @@
 import type { LabScore } from "../score/lab-score.ts";
 import type { SingReply, SingRequest, GmRequest } from "./worker.ts";
 import { audioCtx } from "./audio.ts";
+import { diagNote } from "../app/report-error.ts";
+
+/** 内存不够的样子（onnxruntime-web 起不来时报「no available backend found. ERR: [wasm] RangeError: Out of memory」）。 */
+const OOM = /out of memory|no available backend/i;
 
 export interface SingResult { samples: Float32Array; sr: number; ms: { load: number; sing: number } }
 
@@ -30,7 +34,30 @@ export class Singer {
     return this.w;
   }
 
-  sing(s: LabScore, progress: (stage: string) => void = () => {}, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models">> = {}): Promise<SingResult> {
+  /** 重开 worker：wasm 的内存只涨不落，只有整个 worker 关掉才真还回去。 */
+  restart(): void {
+    this.w?.terminate(); this.w = null; this.sent.clear();
+    for (const p of this.pending.values()) p.fail(new Error("月读的 worker 重开了")); this.pending.clear();
+  }
+  /** 唱。内存不够（换着试很多音色之后，SoundFont 的库把 worker 的 wasm 堆撑大了，月读的引擎起不来——user 2026-10-08 iPad「Out of memory」
+   *  「感觉是没有gc」）= 重开 worker（全部还回去）再试一次；还不行才报错。同一位演奏者重来，不是换人（不自动替补）。 */
+  async sing(s: LabScore, progress: (stage: string) => void = () => {}, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models">> = {}): Promise<SingResult> {
+    try { return await this.singOnce(s, progress, extra); }
+    catch (e) {
+      const msg = (e as Error).message ?? "";
+      if (!OOM.test(msg)) throw e;
+      diagNote("singer", `out of memory, restarting worker and retrying once: ${msg}`);
+      this.restart(); progress("内存不够：重开月读的引擎再试一次");
+      try { return await this.singOnce(s, progress, extra); }
+      catch (e2) {
+        const m2 = (e2 as Error).message ?? "";
+        diagNote("singer", `retry after restart failed: ${m2}`);
+        if (OOM.test(m2)) throw new Error("这台设备的内存不够，月读的引擎起不来（已经重开过一次引擎）。可以把别的乐器声部静音再放，或者关掉 app 重新打开；也可以给这个声部换「月读（元音）」");
+        throw e2;
+      }
+    }
+  }
+  private singOnce(s: LabScore, progress: (stage: string) => void, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models">>): Promise<SingResult> {
     const id = ++this.seq;
     const req: SingRequest = { type: "sing", id, score: s.SCORE, text: s.TEXT, tempo: s.TEMPO_QUARTER, lang: s.LANG, ...extra };
     return new Promise((ok, fail) => { this.pending.set(id, { ok, fail, progress }); this.worker().postMessage(req); });

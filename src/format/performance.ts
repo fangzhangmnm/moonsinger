@@ -14,6 +14,10 @@ export const SOUNDFONT_DEFAULTS: Record<string, number> = { velocity: 0.8 };
 /** 新建 SoundFont 候选的响度校准（dB）：月读当基准（0），乐器默认让一点（2026-10-08 by Claude Opus 5.5；user「感觉乐器进来之后好像月读变轻了」）。
  *  只是起点：好不好听归 user 耳朵，歌手牌上看得见、能调（契约「校准 = 看得见、能调的默认，不偷偷自动」）；进歌 by value，以后改这个数动不到旧歌。 */
 export const SOUNDFONT_CALIBRATION_DB = -6;
+/** 新建的演奏者（月读也是）默认的响度校准，也是「没写」时的值（2026-10-08 by Claude Opus 5.5；user「月读也得-6db，不然一和别的乐器在一起，
+ *  就会音色变成另外一个人」）：几个声部相加超过母线天花板时限幅器（src/audio/mix.ts，起压 3 ms）压的是整条混音——月读最响，压的主要是她的峰，
+ *  3 ms 只够她一两个声门周期，等于掰弯她的波形；先让 6 dB = 叠在一起也很少顶到天花板。只管新建的：旧歌里存的 0 照旧（不偷偷改，人能调）。 */
+export const DEFAULT_CALIBRATION_DB = -6;
 export const TSUKUYOMI_DEFAULTS: Record<string, number> = {};   // 月读的旋钮（气息 / 张力 / 实声…）的物理定义表 = 契约 §7.3，还没定；定了之后新建时抄进来
 
 const REPO = "https://github.com/fangzhangmnm/moonsinger";
