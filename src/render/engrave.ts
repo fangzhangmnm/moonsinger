@@ -66,12 +66,14 @@ export interface Slot { caret: number; system: number; x: number }
 export interface LyricHit { index: number; system: number; x: number; y: number }   // x = 歌词中心，y = 基线
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
+/** 力度记号 / 渐强渐弱的点击区域（px）：点 = 小菜单（改 / 删），长按拖 = 挪到别的音上（2026-10-08 Opus 5.5）。渐强渐弱跨行 = 每行一块。 */
+export interface DynHit { index: number; kind: "dyn" | "hairpin"; system: number; x: number; y: number; w: number; h: number }
 /** 纸面最上面的歌名那一条（点了就地改）。 */
 export interface TitleHit { x: number; y: number; w: number; h: number; baseline: number; size: number }
 export interface Box { x: number; y: number; w: number; h: number }
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
-  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; title: TitleHit;
+  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; title: TitleHit;
   credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
   head: { system: number; x: number } | null;    // 光标在哪（画面跟随用；改的时候没有）
   parts: (Box & { paper: string; part: string })[];   // 歌手牌（每张纸第一行各条谱左边的声部名）的点击区域
@@ -108,6 +110,13 @@ const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp">, { above: string; 
 };
 const GLYPH_BREATH = "\u{E4CE}";   // breathMarkComma
 const DYN_GLYPH: Record<Dyn, string> = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" };     // F5 / B4 / E4 的五线谱位置
+/** 力度字的墨迹（sp，相对字的原点：左、右、基线以上、基线以下）：浏览器里 canvas measureText 量的 Bravura（2026-10-08 Opus 5.5；此前估的宽度小了一截，渐强渐弱压到字上）。
+ *  渐强渐弱和两头的字之间留 PIN_GAP；点击区域按它。 */
+const DYN_INK: Record<string, [number, number, number, number]> = { pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
+const PIN_GAP = 0.7;
+/** 渐强渐弱比一整行还长 = 不画发夹，写「cresc. - - -」/「dim. - - -」（user 2026-10-08「如果一个超级长的<号不要让它太awkward」；
+ *  记谱的老规矩：长的渐变用文字加虚线，发夹留给短的）。字号 / 大概字宽（sp）、虚线一节多长 / 隔多远。 */
+const PIN_WORD = { size: 2.0, w: { cresc: 4.7, dim: 3.5 } } as const, DASH = { len: 0.6, gap: 1.0 } as const;
 const SHARP_POS = [38, 35, 39, 36, 33, 37, 34], FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 const GLYPH_TUPLET = (n: number) => [...String(n)].map((d) => String.fromCodePoint(0xe880 + Number(d))).join("");
 
@@ -322,7 +331,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   /** 分页：这一块（高 h px）在这页放不下 = 翻页（页顶上什么都还没放时不翻）。 */
   const ensure = (h: number) => { if (PG && yCur + h > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) { pageNo++; yCur = contentTop(pageNo); } };
 
-  const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [];
+  const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [];
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
   let head: Layout["head"] = null, shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
@@ -668,7 +677,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           continue;
         }
         if (u.kind === "dyn") {   // 力度：谱上方（声乐谱的下面是歌词），和后面那个音左对齐；基线在第五线上方 1.2 个间距——再高就撞开头的速度记号（它的基线约 2.9）
-          prims.push({ t: "glyph", x: P(u.x + 0.3), y: dynYAt.get(rowOf(u.system, r, 0)) ?? yOf(row, TOP_LINE + 2.4), ch: DYN_GLYPH[u.value], cls: inSel(u.index) ? "dyn sel" : "dyn" });
+          const dr = rowOf(u.system, r, 0), dy = dynYAt.get(dr) ?? yOf(row, TOP_LINE + 2.4);
+          prims.push({ t: "glyph", x: P(u.x + 0.3), y: dy, ch: DYN_GLYPH[u.value], cls: inSel(u.index) ? "dyn sel" : "dyn" });
+          const [il, ir, iu, id] = DYN_INK[u.value];
+          dyns.push({ index: u.index, kind: "dyn", system: dr, x: P(u.x + 0.3 + il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
           continue;
         }
         if (u.kind === "head") {
@@ -835,36 +847,52 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         });
       }
       // 8¾. 渐强渐弱（记号，2026-10-08）：从这个记号画到终点——下一个力度记号（让开它的字）/ 下一个渐强渐弱；都没有 = 画到这张纸最后一个音，
-      //   后面灰字「(f)」= 走一档推定的终点（user「走一档也行，更合理，需要向用户披露」）。跨行 = 每行画它那一份开口（按横向长度分）
+      //   后面灰字「(f)」= 走一档推定的终点（user「走一档也行，更合理，需要向用户披露」）。跨行 = 每行画它那一份开口（按横向长度分）。
+      //   和两头的力度字之间留空（user 2026-10-08「< 号不用靠着一点空隙都没有」：按量过的墨迹让开 PIN_GAP）；比一整行还长 = 写成「cresc. - - -」（PIN_WORD）。
       const LEVELS = ["pp", "p", "mp", "mf", "f", "ff"] as const;
       const lastChunk = [...units].reverse().find((u): u is Chunk => u.kind === "chunk");
       units.forEach((h, hi) => {
         if (h.kind !== "hairpin" || !lastChunk) return;
-        // 紧挨在前面的力度记号（mp < 这种）：从它的字后面起画，别压在字上（字宽按 Bravura 量的大概：sp）
-        const prevU = units[hi - 1], DYN_W: Record<string, number> = { pp: 2.2, p: 1.2, mp: 2.4, mf: 2.3, f: 1.1, ff: 1.9 };
+        // 紧挨在前面的力度记号（mp < 这种）：从它的字后面起画，别压在字上
+        const prevU = units[hi - 1];
         const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
-        const startX = Math.max(P(h.x + 0.3), dynBefore ? P(dynBefore.x + 0.3) + P(DYN_W[dynBefore.value] ?? 2) + P(0.4) : 0), s0 = h.system;
+        const startX = Math.max(P(h.x + 0.3), dynBefore ? P(dynBefore.x + 0.3 + DYN_INK[dynBefore.value][1] + PIN_GAP) : 0), s0 = h.system;
         const endU = units.slice(hi + 1).find((u) => u.kind === "dyn" || u.kind === "hairpin");
-        const implied = !endU || endU.kind === "hairpin";
-        const endX = endU ? P(endU.x + 0.3) - P(0.5) : nhX(lastChunk) + nhW(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;   // 终点的字画在 x + 0.3
+        const endX = endU ? P(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP) : nhX(lastChunk) + nhW(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;   // 终点的字画在 x + 0.3
         if (s1 < s0 || (s1 === s0 && endX - startX < P(1))) return;
         const leftOf = (sy: number) => Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((c) => nhX(c)), P(right)) - P(1);
         const segs: [number, number, number][] = [];
         for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf(sy), sy === s1 ? endX : P(right) - P(0.3)]);
         const total = segs.reduce((n, [, a, b]) => n + Math.max(0, b - a), 0) || 1, H = P(0.5);
-        let acc = 0;
-        for (const [sy, a, b] of segs) {
-          if (b - a < P(0.3)) continue;
-          const f0 = acc / total, f1 = (acc + b - a) / total; acc += b - a;
-          const [h0, h1] = h.dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)], y = (dynYAt.get(rowOf(sy, r, 0)) ?? yOf(rowOf(sy, r, 0), TOP_LINE + 2.4)) - P(0.5);
-          prims.push({ t: "path", d: `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`, cls: "hairpin" });
+        const midY = (sy: number) => (dynYAt.get(rowOf(sy, r, 0)) ?? yOf(rowOf(sy, r, 0), TOP_LINE + 2.4)) - P(0.5);   // 发夹 / 虚线的中线：力度字的半腰
+        if (total > P(right - MARGIN)) {   // 太长：「cresc.」+ 虚线，跨行接着画虚线
+          const word = h.dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[h.dir === "cresc" ? "cresc" : "dim"]);
+          let said = false;
+          for (const [sy, a0, b] of segs) {
+            if (b - a0 < P(0.3)) continue;
+            let a = a0;
+            if (!said && b - a >= ww + P(1)) {   // 第一段放得下字才写（行尾剩一点点 = 字挪到下一行开头）
+              prims.push({ t: "text", x: a, y: midY(sy) + P(0.5), s: word, cls: "dyn-word", size: P(PIN_WORD.size), anchor: "start" });
+              a += ww + P(0.6); said = true;
+            }
+            for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY(sy), x2: x + P(DASH.len), y2: midY(sy), w: P(0.12), cls: "dyn-dash" });
+            dyns.push({ index: h.index, kind: "hairpin", system: rowOf(sy, r, 0), x: a0, y: midY(sy) - P(1.4), w: b - a0, h: P(2.8) });
+          }
+        } else {
+          let acc = 0;
+          for (const [sy, a, b] of segs) {
+            if (b - a < P(0.3)) continue;
+            const f0 = acc / total, f1 = (acc + b - a) / total; acc += b - a;
+            const [h0, h1] = h.dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)], y = midY(sy);
+            prims.push({ t: "path", d: `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`, cls: "hairpin" });
+            dyns.push({ index: h.index, kind: "hairpin", system: rowOf(sy, r, 0), x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
+          }
         }
         if (!endU) {   // 推定的终点：现在的力度往上 / 往下一档
           let cur: string = "mf"; for (let j = h.index - 1; j >= 0; j--) { const u = tokens[j]; if (u.kind === "dyn") { cur = u.value; break; } }
           const k = Math.max(0, Math.min(LEVELS.length - 1, LEVELS.indexOf(cur as (typeof LEVELS)[number]) + (h.dir === "cresc" ? 1 : -1)));
           prims.push({ t: "text", x: endX + P(0.4), y: (dynYAt.get(rowOf(s1, r, 0)) ?? yOf(rowOf(s1, r, 0), TOP_LINE + 2.4)) + P(0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied", size: P(1.3), anchor: "start" });
         }
-        void implied;
       });
       // 9. 歌词连字符（英文断开的音节）：画在两个歌词中间
       for (let n = 0; n < partLyrics.length; n++) {
@@ -923,7 +951,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, title, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, dyns, title, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

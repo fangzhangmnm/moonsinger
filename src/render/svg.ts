@@ -47,4 +47,6 @@ export const STANDALONE_CSS = `
 .staff-svg path.tuplet-bracket{fill:none;stroke:#2a2a2a;stroke-width:1}
 .staff-svg text.tempo-word{font-weight:600;font-family:system-ui,sans-serif}
 .staff-svg text.tempo-num,.staff-svg text.key-label{font-family:system-ui,sans-serif}
+.staff-svg path.hairpin{fill:none;stroke:#2a2a2a;stroke-width:1.1}
+.staff-svg text.dyn-word{font-style:italic;font-family:"Times New Roman",Georgia,serif}
 `;

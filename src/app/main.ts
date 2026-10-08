@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, ART_NAME, type Dyn, dynMarkAt, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { type Art, ART_NAME, type Dyn, dynMarkAt, editMarkAt, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -230,6 +230,8 @@ const view = new ScoreView(scoreEl, {
   onPart: (_paper, _part, at) => openTrackCard(at),
   onBlankPress: (at, row) => openScoreMenu(at, row),
   onSelPress: (at) => openSelMenu(at),
+  onMarkPress: (i, at) => openMarkMenu(i, at),
+  notice: (s) => info(s),
   onPaperMenu: (id) => openPaperMenu(id),
   onAddPaper: () => { update(addPaper(st)); info("新的一张纸"); },
   onNav: (dir) => navPaper(dir),
@@ -1381,6 +1383,37 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
     else if (v.startsWith("dyn:")) update(apply(st, { k: "dyn", v: v.slice(4) as Dyn }, performance.now()));
     else if (v === "row" && row) { update(select(st, row.from, row.to)); updateChrome(); }
     else if (v === "all") { update(selectAll(st)); updateChrome(); }
+    scoreEl.focus();
+  });
+}
+/** 点力度记号 / 渐强渐弱（或长按原地松手 / 右键）的小菜单（2026-10-08 Opus 5.5，长按拖那一轮）：力度 = 换成别的力度，渐强渐弱 = 换方向；都能删。拖 = 挪，在 score-view 里。 */
+const WEDGE_MENU = { cresc: `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  dim: `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>` } as const;
+function openMarkMenu(i: number, at: { x: number; y: number }): void {
+  const t = tr(st)[i]; if (!t || (t.kind !== "dyn" && t.kind !== "hairpin")) return;
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
+  const row = t.kind === "dyn"
+    ? (["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => `<button class="btn ctx-chip${t.value === d ? " is-on" : ""}" data-v="dyn:${d}" title="改成 ${d}"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")
+    : (["cresc", "dim"] as const).map((d) => `<button class="btn ctx-chip${t.dir === d ? " is-on" : ""}" data-v="dir:${d}" title="${d === "cresc" ? "渐强" : "渐弱"}">${WEDGE_MENU[d]}</button>`).join("");
+  box.innerHTML = `<div class="ctx-row ctx-dyn">${row}</div><div class="ctx-sep"></div>` +
+    `<button class="btn ctx-item danger" data-v="del" title="${t.kind === "dyn" ? "去掉这个力度记号（后面的音回到前一个力度记号）" : "去掉这个渐强 / 渐弱"}">删除</button>` +
+    `<div class="ctx-hint">长按拖 = 挪到别的音上</div>`;
+  document.body.append(box);
+  const w = box.offsetWidth, h = box.offsetHeight, m = 8;
+  let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
+  box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
+    close();
+    if (v === "del") update(editMarkAt(st, i, null));
+    else if (v.startsWith("dyn:")) update(editMarkAt(st, i, { value: v.slice(4) as Dyn }));
+    else if (v.startsWith("dir:")) update(editMarkAt(st, i, { dir: v.slice(4) as "cresc" | "dim" }));
     scoreEl.focus();
   });
 }

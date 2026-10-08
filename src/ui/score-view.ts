@@ -13,13 +13,17 @@
 //   空白处不拖 = 放光标（松开时才放）；手指拖照旧是滚动。
 // 触屏缩放（2026-10-08 user「手机之类你可以放大pan pinch」「默认开」）：双指捏合 = 放大 / 缩小这张纸（视图状态，CSS zoom，不进文件、和「谱的大小」是两回事），
 //   双指拖 = 平移；放大后单指拖也能横着滚；角上「1:1」复位。只有两根手指才触发，不碰单指滚动 / 轻点 / 笔。
+// 长按拖（2026-10-08 Opus 5.5；user「歌词的合能不能也改成长按拖动。不然每次点文本框是超级麻烦的」，AI 提的整套手势 user 说开工）：
+//   歌词：长按一个字（笔 / 鼠标按住直接拖）往左拖到前一个音 = 合 / 早一个音起，往右 = 晚一个音起（空出来的音变成拖腔）；原地松手 = 选中这个音。轻点照旧开歌词框。
+//   力度记号 / 渐强渐弱：轻点 = 小菜单（改 / 删）；长按拖 = 挪到别的音上（从那个音起）；原地松手 = 小菜单。拖的时候谱上实时就是挪过去的样子（undo 一步）。
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL } from "../score/paper.ts";
-import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ } from "../score/song.ts";
+import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf } from "../score/song.ts";
+import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic } from "../score/pitch.ts";
-import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote } from "../render/engrave.ts";
+import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
@@ -55,6 +59,10 @@ export interface ScoreViewHost {
   onScopeOf?(paper: string): void;
   /** 纸右上角的小钮（纸张）点了。 */
   onPaper?(): void;
+  /** 力度记号 / 渐强渐弱点了（或长按原地松手）：开小菜单（at = 屏幕坐标；那条 track 已经是光标所在的了）。 */
+  onMarkPress?(index: number, at: { x: number; y: number }): void;
+  /** 说一声（拖歌词挪不动、挪力度记号顶掉了原来的）。 */
+  notice?(text: string): void;
   /** 标题下面靠右的作词 / 作曲点了。 */
   onCredits?(): void;
   /** 空白处长按 / 电脑右键（光标已经放到那里了）：at = 屏幕坐标（小菜单开在那）；row = 这一行里光标所在 track 的音的下标范围（全选这一行用；这行没音 = null）。 */
@@ -69,6 +77,9 @@ export interface ScoreViewHost {
   scope?(): "all" | "segment";
 }
 
+/** 按下去的是能拿起来拖的东西：歌词的一个字 / 力度记号 / 渐强渐弱（index = token 下标，system = 那一行）。 */
+type Grab = { kind: "lyric" | "mark"; index: number; system: number };
+
 export class ScoreView {
   layout: Layout | null = null;
   private sheet: HTMLDivElement;
@@ -79,7 +90,10 @@ export class ScoreView {
   private box: null | { pid: number; x0: number; y0: number; moved: boolean; st0: EditorState; row: number } = null;
   private boxEl: HTMLDivElement;
   /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
-  private press: null | { pid: number; type: string; x: number; y: number; cx: number; cy: number; hit: HitNote | null; timer: number; shift: boolean; moved: boolean; fired: boolean } = null;
+  private press: null | { pid: number; type: string; x: number; y: number; cx: number; cy: number; hit: HitNote | null; grab: Grab | null; timer: number; shift: boolean; moved: boolean; fired: boolean } = null;
+  /** 拿起来拖着的字 / 记号：st0 = 拿起来之前（每一下都从它重算，谱上实时是挪过去的样子）；targets = 拿起来时这条 track 上能落的音（下标 + 位置，拖的时候不跟着重排跳）；
+   *  src / cur = 原来 / 现在落在第几个；moved = 指针动过（没动 = 原地松手）。 */
+  private lift: null | { pid: number; grab: Grab; st0: EditorState; targets: { idx: number; x: number; system: number }[]; src: number; cur: number; x0: number; y0: number; cx: number; cy: number; moved: boolean; short: boolean; removed: number; dx: number } = null;
   private selDrag: null | { pid: number; anchor: number; menu?: boolean } = null;   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）；menu = 长按的是选区里的音、还没动：抬手 = 选区菜单，动了 = 照常扩选
   private handles: { start: HTMLDivElement; end: HTMLDivElement };
   private handleDrag: null | { pid: number; which: "start" | "end"; other: number } = null;
@@ -130,6 +144,8 @@ export class ScoreView {
       if (!this.layout || (e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
       e.preventDefault();
       const p = this.local(e); this.cancelPress();
+      const dh = this.dynHitAt(p.x, p.y, false);
+      if (dh) { this.lyrics.commitAndClose(); this.marks.commitAndClose(); this.markMenu(dh); return; }   // 力度记号 / 渐强渐弱上右键 = 它的小菜单
       const hit = this.noteAt(p.x, p.y);
       if (!hit) { this.blankPress(p.x, p.y, e.clientX, e.clientY); return; }
       // 音上右键：在选区里 = 选区菜单；不在 = 先选中它（同长按）再开菜单
@@ -141,7 +157,7 @@ export class ScoreView {
       this.host.focus?.("staff");
       this.host.onSelPress?.({ x: e.clientX, y: e.clientY });
     });
-    el.addEventListener("pointercancel", (e) => { if (this.drag) this.host.release?.(); this.drag = null; this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
+    el.addEventListener("pointercancel", (e) => { if (this.drag) this.host.release?.(); this.drag = null; this.lift = null; el.classList.remove("lifting"); this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
     new ResizeObserver(() => this.render()).observe(el);
   }
 
@@ -282,10 +298,17 @@ export class ScoreView {
       }
       if (this.touches.size > 2) return;
       this.finger = { pid: e.pointerId, y0: e.clientY, top0: this.el.scrollTop, x: p.x, y: p.y, moved: false, shift: e.shiftKey, x0: e.clientX, left0: this.el.scrollLeft };
-      this.armPress(e, p, this.noteAt(p.x, p.y, true));   // 手指：按指尖大小找音
+      const grab = this.grabAt(p.x, p.y, true);   // 按在字 / 力度记号上：长按 = 拿起来拖（之前动了照旧是滚动）
+      this.armPress(e, p, grab ? null : this.noteAt(p.x, p.y, true), grab);   // 手指：按指尖大小找音
       return;
     }
     e.preventDefault();
+    const grab = this.grabAt(p.x, p.y, false);
+    if (grab) {   // 笔 / 鼠标按在字 / 力度记号上：动了 = 直接拖（同拖音）；原地松手 = 轻点（歌词框 / 小菜单）；按住不动到点 = 拿起来
+      this.el.setPointerCapture(e.pointerId);
+      this.armPress(e, p, null, grab);
+      return;
+    }
     if (this.tap(p.x, p.y, e.shiftKey, e.pointerId)) return;   // 记号 / 歌词行 / 纸上的小钮（不含音符）
     const hit = this.noteAt(p.x, p.y);
     if (hit) {   // 笔 / 鼠标按在音上：按住就响；0.42 s 内动了 = 拖（改音高 / 时值）；不动到点 = 长按选中；抬手不动 = 轻点（光标到它后面）
@@ -304,9 +327,9 @@ export class ScoreView {
     this.armPress(e, p, null);
   }
   /** 按下：开长按计时（0.42 s 不动 = 长按）。 */
-  private armPress(e: PointerEvent, p: { x: number; y: number }, hit: HitNote | null): void {
+  private armPress(e: PointerEvent, p: { x: number; y: number }, hit: HitNote | null, grab: Grab | null = null): void {
     this.cancelPress();
-    const pr = { pid: e.pointerId, type: e.pointerType, x: p.x, y: p.y, cx: e.clientX, cy: e.clientY, hit, timer: 0, shift: e.shiftKey, moved: false, fired: false };
+    const pr = { pid: e.pointerId, type: e.pointerType, x: p.x, y: p.y, cx: e.clientX, cy: e.clientY, hit, grab, timer: 0, shift: e.shiftKey, moved: false, fired: false };
     pr.timer = window.setTimeout(() => this.longPress(), 420);
     this.press = pr;
   }
@@ -315,6 +338,7 @@ export class ScoreView {
   private longPress(): void {
     const pr = this.press; if (!pr || pr.moved) return;
     pr.fired = true;
+    if (pr.grab) { this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, pr.type === "touch"); return; }
     if (!pr.hit) { this.blankPress(pr.x, pr.y, pr.cx, pr.cy); return; }
     const cur = this.host.get().sel;
     if (cur && this.onTrack(pr.hit) && pr.hit.index >= cur.from && pr.hit.index < cur.to) {   // 长按已经选中的音：不抬手拖 = 照常从它扩选；原地抬手 = 选区菜单（不重选）
@@ -339,6 +363,96 @@ export class ScoreView {
     const range = mine.length ? { from: Math.min(...mine.map((n) => n.index)), to: Math.max(...mine.map((n) => n.index)) + 1 } : null;
     this.host.focus?.("staff");
     this.host.onBlankPress?.({ x: cx, y: cy }, range);
+  }
+  /** 按在能拿起来拖的东西上：力度记号 / 渐强渐弱（在它的框里）先；歌词的字（不在音上时，同轻点的判法）。记号框开着 = 这一下是收框，不拿。 */
+  private grabAt(x: number, y: number, finger: boolean): Grab | null {
+    if (!this.layout || this.marks.open) return null;
+    const dh = this.dynHitAt(x, y, finger);
+    if (dh) return { kind: "mark", index: dh.index, system: dh.system };
+    if (this.noteAt(x, y)) return null;
+    const ly = this.lyricAt(x, y), row = ly ? this.layout.systems[ly.system] : null;
+    if (!ly || !row) return null;
+    const t = trackOf(this.host.get().song, row.paper, row.part)[ly.index];   // 只拿有字的（空着的歌词位 / 拖腔 = 照旧：轻点开歌词框，长按 = 空白处的小菜单）
+    return t?.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? { kind: "lyric", index: ly.index, system: ly.system } : null;
+  }
+  /** 歌词那一行上点中的字：按每一行自己的歌词基线找（没写歌词的行比歌词基线矮，光看 rowAt 会落到下一行——2026-10-08 E2E 抓到）。
+   *  命中带往下放宽一点：手指点在字下面也算；离最近的字 4 个间距以内。 */
+  private lyricAt(x: number, y: number): LyricHit | null {
+    const L = this.layout!, sp = L.sp;
+    for (let r = 0; r < L.systems.length; r++) {
+      const ly = L.lyricY(r);
+      if (!(y > ly - sp * 2.2 && y < ly + sp * 2.4)) continue;
+      const cands = L.lyrics.filter((h) => h.system === r);
+      if (!cands.length) return null;
+      const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a));
+      return Math.abs(best.x - x) < sp * 4 ? best : null;
+    }
+    return null;
+  }
+  /** 点中的力度记号 / 渐强渐弱（手指放宽几个像素）。 */
+  private dynHitAt(x: number, y: number, finger: boolean): DynHit | null {
+    const L = this.layout; if (!L) return null;
+    const pad = finger ? 6 / this.zoom : 0;
+    return L.dyns.find((b) => x >= b.x - pad && x <= b.x + b.w + pad && y >= b.y - pad && y <= b.y + b.h + pad) ?? null;
+  }
+  /** 力度记号 / 渐强渐弱的小菜单：先把光标换到那条 track，再告诉宿主（开在记号下面）。 */
+  private markMenu(h: DynHit): void {
+    if (!this.onTrack(h)) this.host.set(this.focusRow(this.host.get(), h.system, this.host.get().caret));
+    const b = this.clientBox(h);
+    this.host.focus?.("staff");
+    this.host.onMarkPress?.(h.index, { x: (b.left + b.right) / 2, y: b.bottom });
+  }
+  /** 拿起来（长按到点 / 笔鼠标按住动了）：收起编辑框、停掉滚动，记下这条 track 上能落的音。编辑框收起时可能改了谱（贴字 / 插句号）= 按原位置重新找一次。 */
+  private startLift(grab0: Grab, pid: number, x: number, y: number, cx: number, cy: number, finger: boolean): void {
+    const hadEditor = this.lyrics.open || this.marks.open;
+    this.lyrics.commitAndClose(); this.marks.commitAndClose();
+    this.finger = null; this.box = null; this.boxEl.hidden = true;
+    if (this.drag) { this.host.release?.(); this.drag = null; }
+    const grab = hadEditor ? this.grabAt(x, y, finger) : grab0;
+    if (!grab || !this.layout) return;
+    if (!this.onTrack(grab)) this.host.set(this.focusRow(this.host.get(), grab.system));
+    const L = this.layout, st0 = this.host.get(), toks = tr(st0), seen = new Set<number>();
+    const targets = L.notes.filter((n) => this.onTrack(n) && (grab.kind === "mark" || lyricSlot(toks[n.index])) && !seen.has(n.index) && (seen.add(n.index), true))
+      .map((n) => ({ idx: n.index, x: grab.kind === "lyric" ? n.x + n.w / 2 : n.x, system: n.system })).sort((a, b) => a.idx - b.idx);
+    let src: number;
+    if (grab.kind === "lyric") src = targets.findIndex((t) => t.idx === grab.index);
+    else { let a = grab.index + 1; while (a < toks.length && toks[a].kind !== "note" && toks[a].kind !== "rest") a++; src = targets.findIndex((t) => t.idx >= a); }
+    if (grab.kind === "lyric" && src < 0) return;
+    this.lift = { pid, grab, st0, targets, src, cur: src, x0: x, y0: y, cx, cy, moved: false, short: false, removed: 0, dx: src >= 0 ? x - targets[src].x : 0 };
+    this.el.classList.add("lifting");
+    this.host.focus?.("staff");
+  }
+  /** 拖着走：指针（减去拿起来时和那个音的错位）最近的那个音 = 落点；换了落点就从拿起来之前的谱重算一次（谱上实时是挪过去的样子）。 */
+  private dragLift(p: { x: number; y: number }): void {
+    const f = this.lift!;
+    if (!f.moved && Math.hypot(p.x - f.x0, p.y - f.y0) < 6) return;
+    f.moved = true;
+    if (!f.targets.length) return;
+    const rows = [...new Set(f.targets.map((t) => t.system))], row = this.rowAt(p.y), sys = rows.includes(row) ? row : rows.reduce((a, b) => (Math.abs(b - row) < Math.abs(a - row) ? b : a));
+    let best = -1, bd = Infinity;
+    f.targets.forEach((t, k) => { if (t.system !== sys) return; const d = Math.abs(t.x - (p.x - f.dx)); if (d < bd) { bd = d; best = k; } });
+    if (best < 0 || best === f.cur) return;
+    f.cur = best;
+    if (f.grab.kind === "lyric") {
+      const want = best - f.src, r = moveSyllable(f.st0, f.grab.index, want);
+      f.short = want > 0 ? r.done < want : r.done === 0 && want < 0;
+      this.host.set(r.st, { gesture: "lift" });
+    } else {
+      const r = moveMark(f.st0, f.grab.index, f.targets[best].idx);
+      f.removed = r.removed;
+      this.host.set(r.st, { gesture: "lift" });
+    }
+  }
+  /** 松手：没动 = 歌词 → 选中这个音（同长按音；再拖把手扩选），记号 → 小菜单；动了 = 已经挪好了，挪不动 / 顶掉了别的说一声。 */
+  private endLift(): void {
+    const f = this.lift!; this.lift = null; this.el.classList.remove("lifting");
+    if (!f.moved) {
+      if (f.grab.kind === "lyric") this.host.set(select(this.host.get(), f.grab.index, f.grab.index + 1));
+      else this.host.onMarkPress?.(f.grab.index, { x: f.cx, y: f.cy });
+      return;
+    }
+    if (f.grab.kind === "lyric" && f.short) this.host.notice?.(f.cur > f.src ? "这一句后面没有空着的音了（句号是边界），字只能挪到这儿" : "前面隔着句号（或者没有音了），字挪不过去");
+    if (f.grab.kind === "mark" && f.removed) this.host.notice?.(`顺手去掉了 ${f.removed} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）`);
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
   private noteAt(x: number, y: number, finger = false): HitNote | null {
@@ -405,15 +519,13 @@ export class ScoreView {
     // 0½. 记号（调号 / 拍号 / 速度）：换到那条 track 再开框
     const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
     if (mk) { this.host.set(this.focusRow(this.host.get(), mk.system, this.host.get().caret)); this.marks.openAt(mk.index); return true; }
-    // 1. 歌词那一行：按每一行自己的歌词基线找（没写歌词的行比歌词基线矮，光看 rowAt 会落到下一行——2026-10-08 E2E 抓到；音符优先，别抢下一行高音的点）。命中带往下放宽一点：手指点在字底下也算
+    // 0¾. 力度记号 / 渐强渐弱：小菜单（改 / 删）
+    const dh = this.dynHitAt(x, y, pid === null);
+    if (dh) { this.markMenu(dh); return true; }
+    // 1. 歌词那一行（音符优先，别抢下一行高音的点）
     if (!this.noteAt(x, y)) {
-      for (let r = 0; r < L.systems.length; r++) {
-        const ly = L.lyricY(r);
-        if (!(y > ly - sp * 2.2 && y < ly + sp * 2.4)) continue;
-        const cands = L.lyrics.filter((h) => h.system === r);
-        if (cands.length) { const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)); if (Math.abs(best.x - x) < sp * 4) { this.host.set(this.focusRow(this.host.get(), r, this.host.get().caret)); this.lyrics.openAt(best.index); this.host.focus?.("text"); return true; } }
-        break;
-      }
+      const ly = this.lyricAt(x, y);
+      if (ly) { this.host.set(this.focusRow(this.host.get(), ly.system, this.host.get().caret)); this.lyrics.openAt(ly.index); this.host.focus?.("text"); return true; }
     }
     // 2. 音符：不在这里（轻点 / 长按 / 拖在 down / up / longPress 里分）
     void shift; void pid;
@@ -448,6 +560,8 @@ export class ScoreView {
   private move(e: PointerEvent): void {
     const pr = this.press;
     if (pr && e.pointerId === pr.pid && !pr.moved && !pr.fired) { const p = this.local(e); if (Math.hypot(p.x - pr.x, p.y - pr.y) > (pr.type === "touch" ? 10 : 6)) { pr.moved = true; clearTimeout(pr.timer); } }   // 手指抖一点也算轻点
+    if (pr && pr.grab && e.pointerId === pr.pid && pr.moved && !pr.fired && pr.type !== "touch") { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); }   // 笔 / 鼠标按住字 / 记号动了 = 直接拖（手指动了 = 滚动）
+    if (this.lift && e.pointerId === this.lift.pid) { this.dragLift(this.local(e)); return; }
     if (this.selDrag && e.pointerId === this.selDrag.pid) {   // 长按之后接着拖 = 扩选到指针下面的音
       const idx = this.noteNear(this.local(e)); if (idx < 0) return;
       if (this.selDrag.menu) { if (idx === this.selDrag.anchor) return; this.selDrag.menu = false; this.lyrics.commitAndClose(); this.marks.commitAndClose(); }   // 选区里长按后拖到别的音 = 从长按的那个重新扩选
@@ -499,10 +613,12 @@ export class ScoreView {
 
   private up(e: PointerEvent): void {
     if (this.touches.delete(e.pointerId) && this.pinch && this.touches.size < 2) { this.pinch = null; this.finger = null; this.cancelPress(); return; }   // 捏合结束：剩下那根手指不接着当滚动（会跳）
+    if (this.lift && e.pointerId === this.lift.pid) { this.cancelPress(); this.finger = null; this.endLift(); return; }
     const pr = this.press;
     if (pr && e.pointerId === pr.pid) {
       this.press = null; clearTimeout(pr.timer);
       const extended = !!this.selDrag, menu = !!this.selDrag?.menu; this.selDrag = null;
+      if (pr.grab && pr.type !== "touch") { if (!pr.moved && !pr.fired) this.tap(pr.x, pr.y, pr.shift, pr.pid); return; }   // 笔 / 鼠标轻点字 / 记号 = 歌词框 / 小菜单（手指走下面 finger 那条）
       if (menu) { this.finger = null; this.box = null; this.boxEl.hidden = true; this.host.focus?.("staff"); this.host.onSelPress?.({ x: pr.cx, y: pr.cy }); return; }
       if (pr.fired || extended) { this.finger = null; if (this.drag) { this.host.release?.(); this.drag = null; } this.box = null; this.boxEl.hidden = true; return; }   // 长按选过了：抬手到此为止
       if (pr.hit && !pr.moved) {   // 轻点在音上

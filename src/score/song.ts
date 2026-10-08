@@ -893,6 +893,30 @@ function afterDelete(st: EditorState, nt: Token[], over: Partial<EditorState>): 
   const a = annihilate(nt), caret = (over.caret ?? st.caret) - a.removed.filter((k) => k < (over.caret ?? st.caret)).length;
   return next(st, a.tokens, { ...over, caret });
 }
+/** 长按拖力度记号 / 渐强渐弱（2026-10-08 Opus 5.5；user 批「力度和渐强渐弱能长按拖动」）：下标 from 的记号挪到下标 before 那个音（或休止）前面 = 从那个音起。
+ *  力度放在那儿已有的渐强渐弱前面（「mp <」的顺序），渐强渐弱放最后；挪完湮灭——落到已经有力度记号的音上 = 挪过去的那个算数、原来那个去掉。
+ *  removed = 湮灭掉了几个（调用方说一声）。没挪动（同一个音 / 不是这两种记号）= 原样。选区收掉，光标跟着同一个音。 */
+export function moveMark(st: EditorState, from: number, before: number): { st: EditorState; removed: number } {
+  const toks = tr(st), m = toks[from];
+  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin") || !toks[before] || !isTimed(toks[before])) return { st, removed: 0 };
+  const nt = toks.slice(); nt.splice(from, 1);
+  let at = before - (before > from ? 1 : 0);   // 那个音现在的下标
+  if (m.kind === "dyn") { let a = at; while (a > headLen(nt) && !isTimed(nt[a - 1]) && nt[a - 1].kind !== "bar") a--; for (let k = a; k < at; k++) if (nt[k].kind === "hairpin") { at = k; break; } }
+  nt.splice(at, 0, m);
+  if (nt.every((t, k) => t === toks[k])) return { st, removed: 0 };
+  const c1 = st.caret - (st.caret > from ? 1 : 0), c2 = c1 + (c1 > at ? 1 : 0), a = annihilate(nt);
+  return { st: next(st, a.tokens, { caret: c2 - a.removed.filter((k) => k < c2).length, sel: null }), removed: a.removed.length };
+}
+/** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
+export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | null): EditorState {
+  const toks = tr(st), m = toks[i];
+  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin")) return st;
+  const nt = toks.slice();
+  if (change === null) { nt.splice(i, 1); return next(st, nt, { caret: st.caret - (i < st.caret ? 1 : 0), sel: null }); }
+  if (m.kind === "dyn" && "value" in change) { if (m.value === change.value) return st; nt[i] = { ...m, value: change.value }; return next(st, nt); }
+  if (m.kind === "hairpin" && "dir" in change) { if (m.dir === change.dir) return st; nt[i] = { ...m, dir: change.dir }; return next(st, nt); }
+  return st;
+}
 /** 符号模式的退格（2026-10-08，user「退格只删符号或者没符号的时候退一步，不删音符」）：
  *  ① 光标前面紧挨着的不占时值的记号（力度 / 渐强渐弱 / 句号 / 中途的调号拍号速度）→ 删最后一个；
  *  ② 没有 = 光标前那个音身上的装饰，一次一个、从最外层开始：音内起伏 → 音头（强音 / 重音 / 突强 / 强后即弱）→ 保持 → 跳音 → 呼吸 → 连线；

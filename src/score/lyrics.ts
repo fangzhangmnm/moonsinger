@@ -116,6 +116,55 @@ export function mergeIntoPrev(st: EditorState, i: number): EditorState {
   });
   return { ...st, song: withTrack(st.song, st.at.paper, st.at.part, tokens) };
 }
+/** 一个音上的「一颗字」：字 + 词没完 + 手动改过的语言（挪的时候一起走）。 */
+interface Bead { lyric: string | null; hyph?: boolean; lang?: string }
+const beadOf = (t: NoteTok): Bead => ({ lyric: t.lyric, hyph: t.hyph, lang: t.lang });
+function put(t: NoteTok, b: Bead): NoteTok {
+  const o: NoteTok = { ...t, lyric: b.lyric };
+  if (b.hyph) o.hyph = true; else delete o.hyph;
+  if (b.lang) o.lang = b.lang; else delete o.lang;
+  return o;
+}
+const hasText = (t: Token | undefined): boolean => !!t && t.kind === "note" && !!t.lyric && t.lyric !== MELISMA_MARK;
+/** 这一句里 i 后面的歌词位（到「句」为止）/ i 前面最近的那个（隔着「句」= -1）。 */
+function slotsAfter(toks: Token[], i: number): number[] { const out: number[] = []; for (let j = i + 1; j < toks.length; j++) { if (toks[j].kind === "phrase") break; if (lyricSlot(toks[j])) out.push(j); } return out; }
+function slotBefore(toks: Token[], i: number): number { for (let j = i - 1; j >= 0; j--) { if (toks[j].kind === "phrase") return -1; if (lyricSlot(toks[j])) return j; } return -1; }
+/** 往后一个音：这个字晚一个音起。后面的字被推着走，推到第一个空着的音（没字 / 拖腔）为止，那个空位被吃掉；
+ *  空出来的音 = 拖腔（前面这一句里有字可拖），否则空着。一个音上几个字（合过的）= 只拿最后一个字往后挪（「合」的反操作）。推不动（后面没空位 / 是句尾）= null。 */
+function stepRight(st: EditorState, i: number): { st: EditorState; at: number } | null {
+  const toks = tr(st), cur = toks[i];
+  if (!cur || !lyricSlot(cur) || !hasText(cur)) return null;
+  const after = slotsAfter(toks, i), g = after.findIndex((j) => !hasText(toks[j]));
+  if (g < 0) return null;
+  const tokens = toks.slice(), parts = cur.lyric!.split(ELISION);
+  let carry: Bead;
+  if (parts.length > 1) { carry = { lyric: parts[parts.length - 1], hyph: cur.hyph, lang: cur.lang }; tokens[i] = put(cur, { lyric: parts.slice(0, -1).join(ELISION), lang: cur.lang }); }
+  else { carry = beadOf(cur); const p = slotBefore(toks, i); tokens[i] = put(cur, { lyric: p >= 0 && (toks[p] as NoteTok).lyric !== null ? MELISMA_MARK : null }); }
+  for (let n = 0; n <= g; n++) { const t = tokens[after[n]] as NoteTok, was = beadOf(t); tokens[after[n]] = put(t, carry); carry = was; }
+  return { st: { ...st, song: withTrack(st.song, st.at.paper, st.at.part, tokens) }, at: after[0] };
+}
+/** 往前一个音：那个音有字 =「合」（mergeIntoPrev：并成一个音上几个字，这一句后面的字往前挪）；空着 / 拖腔 = 这个字早一个音起，原来那个音变成它的拖腔。 */
+function stepLeft(st: EditorState, i: number): { st: EditorState; at: number; merged: boolean } | null {
+  const toks = tr(st), cur = toks[i];
+  if (!cur || !lyricSlot(cur) || !hasText(cur)) return null;
+  const p = slotBefore(toks, i);
+  if (p < 0) return null;
+  if (hasText(toks[p])) { const n = mergeIntoPrev(st, i); return n === st ? null : { st: n, at: p, merged: true }; }
+  const tokens = toks.slice();
+  tokens[p] = put(toks[p] as NoteTok, beadOf(cur)); tokens[i] = put(cur, { lyric: MELISMA_MARK });
+  return { st: { ...st, song: withTrack(st.song, st.at.paper, st.at.part, tokens) }, at: p, merged: false };
+}
+/** 长按一个字拖（2026-10-08 Opus 5.5；user「歌词的合能不能也改成长按拖动。不然每次点文本框是超级麻烦的」）：下标 i 那个音上的字挪 k 个音（k > 0 往后、k < 0 往前），
+ *  一步一步走（见 stepRight / stepLeft），都只在这一句里（句号是边界）。「合」了就停（字已经不单独在一个音上了）；推不动也停。
+ *  返回 at = 字现在在哪个音、done = 实际走了几步（< |k| = 没走完，调用方说一声）。 */
+export function moveSyllable(st: EditorState, i: number, k: number): { st: EditorState; at: number; done: number } {
+  let cur = st, at = i, done = 0;
+  for (; done < Math.abs(k); done++) {
+    if (k > 0) { const r = stepRight(cur, at); if (!r) break; cur = r.st; at = r.at; }
+    else { const r = stepLeft(cur, at); if (!r) break; cur = r.st; at = r.at; if (r.merged) { done++; break; } }
+  }
+  return { st: cur, at, done };
+}
 /** 下一个能放歌词的音（跳过休止、小节线、调号、tie 音）；没有 = -1。 */
 export function nextLyricSlot(tokens: Token[], i: number): number { for (let j = i + 1; j < tokens.length; j++) if (lyricSlot(tokens[j])) return j; return -1; }
 export function prevLyricSlot(tokens: Token[], i: number): number { for (let j = i - 1; j >= 0; j--) if (lyricSlot(tokens[j])) return j; return -1; }
