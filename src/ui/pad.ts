@@ -392,6 +392,8 @@ export class Pad {
     root.querySelectorAll<HTMLElement>(sel).forEach((b) => b.addEventListener("pointerdown", (e) => { e.preventDefault(); fn(b); }));
   }
   private back(): void { this.mode = "normal"; this.render(); }
+  /** 选区条上的「移调」：打开和「1=」旋钮同一个候选面板（有选中时那个旋钮本来就是它）。 */
+  openTranspose(): void { if (this.host.state().sel) { this.mode = "transpose"; this.render(); } }
 
   /** 值旋钮的一串值，大的在上（升号多 / 长的 / 音域高的在上）+ 现在是第几个 + 选第 i 个（立刻生效）。 */
   private knobList(knob: string, narrow = this.rangeNarrow()): { items: string[]; index: number; title: string; set(i: number): void; loop?: boolean } {

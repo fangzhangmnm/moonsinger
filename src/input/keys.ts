@@ -27,6 +27,7 @@ export type Action =
   | { k: "audition"; degree: number; dir: Dir }     // 弹：只唱这一级，不写
   | { k: "play" } | { k: "impro" }
   | { k: "file"; a: "open" | "save" | "export" }   // 无地逃生口（打开 / 存 .mxl / 导出 hub；另存为住导出里，user 2026-08-20「另存为也变成导出」）
+  | { k: "clip"; a: "copy" | "cut" | "paste" | "all" }   // 选区条的键盘入口（2026-10-08；user「快捷键其实现在我都没用过」，触屏优先）
   | { k: "lyric"; a: "commit" | "cancel" | "next" | "prev" | "hyphen" | "back" }
   | { k: "mark"; a: "commit" | "cancel" }
   | { k: "sheet"; a: "close" };
@@ -109,6 +110,11 @@ export const BINDINGS: Binding[] = [
     does: { write: "导出…（歌声 mp3 / 存一份 .mxl 副本；原来的「另存为」住这里）", edit: "导出…", impro: "导出…", lyric: "导出…", mark: "导出…" } },
   { id: "file.open", group: "文件", keys: [{ code: "KeyO", mod: true }], show: "Ctrl / ⌘+O", act: () => ({ k: "file", a: "open" }),
     does: { write: "打开…（.mxl / .musicxml）", edit: "打开…", impro: "打开…", lyric: "打开…", mark: "打开…" } },
+  // ── 选区（2026-10-08 改的手感：长按选、选区条上的动词；这里只是键盘入口） ──
+  { id: "clip.copy", group: "选区", keys: [{ code: "KeyC", mod: true }], show: "Ctrl / ⌘+C", act: () => ({ k: "clip", a: "copy" }), does: { edit: "复制选中（app 内原样 + 系统剪贴板一行简谱）" } },
+  { id: "clip.cut", group: "选区", keys: [{ code: "KeyX", mod: true }], show: "Ctrl / ⌘+X", act: () => ({ k: "clip", a: "cut" }), does: { edit: "剪切选中" } },
+  { id: "clip.paste", group: "选区", keys: [{ code: "KeyV", mod: true }], show: "Ctrl / ⌘+V", act: () => ({ k: "clip", a: "paste" }), does: { write: "贴在光标处（app 内复制过的；没有就试着读系统剪贴板里的简谱文字）", edit: "贴 = 替换选中" } },
+  { id: "clip.all", group: "选区", keys: [{ code: "KeyA", mod: true }], show: "Ctrl / ⌘+A", act: () => ({ k: "clip", a: "all" }), does: { write: "全选（这张纸上这个声部）", edit: "全选" } },
   // ── 歌词框（点谱下面打开；输入法照常用，中文 / 日文选定一段字就按字往后贴） ──
   { id: "lyric.next", group: "歌词框", keys: [{ code: "Space" }, { code: "Tab" }], show: "空格 / Tab", act: () => ({ k: "lyric", a: "next" }),
     does: { lyric: "这个词完了：贴上、跳下一个音（框是空的 = 只跳）" } },

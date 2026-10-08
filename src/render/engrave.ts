@@ -46,6 +46,8 @@ export interface EngraveOpts {
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
   /** 分页排法（user 2026-10-08「显示法还加一个分页？可以预览打印，要求和之后生成的pdf wysiwyg」）：按纸高分页、画页框 + 页码；h = 整页高、l r t b = 四边边距（sp）。没有 = 连续（一张长纸）。 */
   page?: { h: number; l: number; r: number; t: number; b: number };
+  /** 只画这一张纸（曲段）：连续排法下一次只看一张、‹ › 翻（user 2026-10-08「不同曲段应该是不同页，而不是一起显示」）；分页排法不传（打印预览要全部）。 */
+  onlyPaper?: string;
   paperLabel?: string;                   // 纸右上角的小钮（扳手；这里的字只进悬停提示「纸：A5」）；点了 = 纸的设置（user「这种应该是纸的右上角有一个可以设置纸的属性吧。加图片的入口以后也可以放那里」；
                                          //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
@@ -313,8 +315,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   };
 
   const showPaperLine = song.papers.length > 1 || song.papers.some((p) => p.name);
-  song.papers.forEach((paper, pk) => {
-    if (pk > 0) yCur += P(PAPER_GAP);
+  let drawn = 0;
+  song.papers.forEach((paper) => {
+    if (o.onlyPaper && paper.id !== o.onlyPaper) return;   // 一次只看一张纸（曲段）
+    if (drawn++ > 0) yCur += P(PAPER_GAP);
     const paperTop = yCur;
     // 曲段名那一条（多于一张纸或填了名字才画；空着画浅色提示；右边「⋯」= 纸的菜单）。分页时和第一行谱一起挪，所以等算完行高再画
     const pSize = P(1.6);

@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.1-2026-10-08";
+var APP_VERSION = "v0.6.2-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3734,6 +3734,11 @@ var BINDINGS = [
     act: () => ({ k: "file", a: "open" }),
     does: { write: "\u6253\u5F00\u2026\uFF08.mxl / .musicxml\uFF09", edit: "\u6253\u5F00\u2026", impro: "\u6253\u5F00\u2026", lyric: "\u6253\u5F00\u2026", mark: "\u6253\u5F00\u2026" }
   },
+  // ── 选区（2026-10-08 改的手感：长按选、选区条上的动词；这里只是键盘入口） ──
+  { id: "clip.copy", group: "\u9009\u533A", keys: [{ code: "KeyC", mod: true }], show: "Ctrl / \u2318+C", act: () => ({ k: "clip", a: "copy" }), does: { edit: "\u590D\u5236\u9009\u4E2D\uFF08app \u5185\u539F\u6837 + \u7CFB\u7EDF\u526A\u8D34\u677F\u4E00\u884C\u7B80\u8C31\uFF09" } },
+  { id: "clip.cut", group: "\u9009\u533A", keys: [{ code: "KeyX", mod: true }], show: "Ctrl / \u2318+X", act: () => ({ k: "clip", a: "cut" }), does: { edit: "\u526A\u5207\u9009\u4E2D" } },
+  { id: "clip.paste", group: "\u9009\u533A", keys: [{ code: "KeyV", mod: true }], show: "Ctrl / \u2318+V", act: () => ({ k: "clip", a: "paste" }), does: { write: "\u8D34\u5728\u5149\u6807\u5904\uFF08app \u5185\u590D\u5236\u8FC7\u7684\uFF1B\u6CA1\u6709\u5C31\u8BD5\u7740\u8BFB\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF09", edit: "\u8D34 = \u66FF\u6362\u9009\u4E2D" } },
+  { id: "clip.all", group: "\u9009\u533A", keys: [{ code: "KeyA", mod: true }], show: "Ctrl / \u2318+A", act: () => ({ k: "clip", a: "all" }), does: { write: "\u5168\u9009\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E2A\u58F0\u90E8\uFF09", edit: "\u5168\u9009" } },
   // ── 歌词框（点谱下面打开；输入法照常用，中文 / 日文选定一段字就按字往后贴） ──
   {
     id: "lyric.next",
@@ -4278,8 +4283,10 @@ function engrave(song, o10) {
     for (let k2 = 0; k2 < Math.abs(f2); k2++) prims.push({ t: "glyph", x: P2(x0 + k2 * 1.05), y: yOf(r10, pos[k2] + off), ch: ch2, cls });
   };
   const showPaperLine = song.papers.length > 1 || song.papers.some((p2) => p2.name);
-  song.papers.forEach((paper, pk) => {
-    if (pk > 0) yCur += P2(PAPER_GAP);
+  let drawn = 0;
+  song.papers.forEach((paper) => {
+    if (o10.onlyPaper && paper.id !== o10.onlyPaper) return;
+    if (drawn++ > 0) yCur += P2(PAPER_GAP);
     const paperTop = yCur;
     const pSize = P2(1.6);
     let menu = null;
@@ -5456,6 +5463,38 @@ var ScoreView = class {
       this.setZoom(1, null);
     });
     el2.appendChild(this.zoomBtn);
+    const mkHandle = (which) => {
+      const h2 = document.createElement("div");
+      h2.className = `sel-handle ${which}`;
+      h2.hidden = true;
+      h2.addEventListener("pointerdown", (e10) => {
+        e10.preventDefault();
+        e10.stopPropagation();
+        const st3 = this.host.get();
+        if (!st3.sel) return;
+        this.handleDrag = { pid: e10.pointerId, which, other: which === "start" ? st3.sel.to - 1 : st3.sel.from };
+        try {
+          h2.setPointerCapture(e10.pointerId);
+        } catch {
+        }
+      });
+      h2.addEventListener("pointermove", (e10) => {
+        const g3 = this.handleDrag;
+        if (!g3 || e10.pointerId !== g3.pid) return;
+        const idx = this.noteNear(this.local(e10));
+        if (idx < 0) return;
+        const st3 = this.host.get(), a10 = Math.min(idx, g3.other), b3 = Math.max(idx, g3.other) + 1;
+        if (!st3.sel || st3.sel.from !== a10 || st3.sel.to !== b3) this.host.set(select(st3, a10, b3));
+      });
+      const done = (e10) => {
+        if (this.handleDrag && e10.pointerId === this.handleDrag.pid) this.handleDrag = null;
+      };
+      h2.addEventListener("pointerup", done);
+      h2.addEventListener("pointercancel", done);
+      this.ink.appendChild(h2);
+      return h2;
+    };
+    this.handles = { start: mkHandle("start"), end: mkHandle("end") };
     this.lyrics = new LyricEditor(this.ink, host, () => this.layout, () => this.render());
     this.marks = new MarkEditor(this.ink, host, () => this.layout, () => this.render());
     this.title = new TitleEditor(this.ink, host, () => this.layout);
@@ -5468,6 +5507,7 @@ var ScoreView = class {
       this.finger = null;
       this.box = null;
       this.boxEl.hidden = true;
+      this.cancelPress();
       this.touches.delete(e10.pointerId);
       if (this.touches.size < 2) this.pinch = null;
     });
@@ -5482,6 +5522,12 @@ var ScoreView = class {
   finger = null;
   box = null;
   boxEl;
+  /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
+  press = null;
+  selDrag = null;
+  // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）
+  handles;
+  handleDrag = null;
   touches = /* @__PURE__ */ new Map();
   // 现在按着的手指（触屏缩放用）
   pinch = null;
@@ -5525,7 +5571,7 @@ var ScoreView = class {
       titlePlaceholder: true,
       autoBars: this.host.autoBars?.() ?? true,
       paperLabel: paper.kind === "other" ? "\u5176\u4ED6\u7EB8" : PAPER_LABEL[paper.kind],
-      ...page ? { page } : {}
+      ...page ? { page } : { onlyPaper: st3.at.paper }
     });
     this.ink.style.left = `${this.layout.pageX.left}px`;
     const svg = toSvg(this.layout);
@@ -5533,6 +5579,7 @@ var ScoreView = class {
     if (old) old.outerHTML = svg;
     else this.sheet.insertAdjacentHTML("afterbegin", svg);
     if (!this.boxEl.isConnected) this.ink.appendChild(this.boxEl);
+    this.placeHandles();
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
@@ -5542,6 +5589,25 @@ var ScoreView = class {
   onTrack(h2) {
     const L2 = this.layout, st3 = this.host.get(), row = L2.systems[h2.system];
     return !!row && row.paper === st3.at.paper && row.part === st3.at.part;
+  }
+  /** 选区两端的棒棒糖把手：第一个 / 最后一个选中的音的下面（歌词行再往下一点）。 */
+  placeHandles() {
+    const L2 = this.layout, st3 = this.host.get();
+    const inSel = L2 && st3.sel ? L2.notes.filter((n10) => this.onTrack(n10) && n10.index >= st3.sel.from && n10.index < st3.sel.to) : [];
+    if (!L2 || !inSel.length) {
+      this.handles.start.hidden = true;
+      this.handles.end.hidden = true;
+      return;
+    }
+    const a10 = inSel.reduce((p2, n10) => n10.index < p2.index ? n10 : p2), b3 = inSel.reduce((p2, n10) => n10.index > p2.index ? n10 : p2), sp2 = L2.sp;
+    Object.assign(this.handles.start.style, { left: `${a10.x - sp2 * 0.3}px`, top: `${L2.lyricY(a10.system) + sp2 * 0.9}px` });
+    this.handles.start.hidden = false;
+    Object.assign(this.handles.end.style, { left: `${b3.x + b3.w + sp2 * 0.3}px`, top: `${L2.lyricY(b3.system) + sp2 * 0.9}px` });
+    this.handles.end.hidden = false;
+  }
+  /** 光标那一行滚进视野（软键盘弹出 / 收起时宿主调）。 */
+  followNow() {
+    this.follow();
   }
   /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
   follow() {
@@ -5602,7 +5668,7 @@ var ScoreView = class {
     return setFocus(st3, r10.paper, r10.part, caret);
   }
   down(e10) {
-    if (e10.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input")) return;
+    if (e10.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
     const L2 = this.layout;
     if (!L2) return;
     const p2 = this.local(e10);
@@ -5612,18 +5678,81 @@ var ScoreView = class {
       this.el.setPointerCapture(e10.pointerId);
       if (this.touches.size === 2) {
         this.finger = null;
+        this.cancelPress();
         const [a10, b3] = [...this.touches.values()], mid = this.local({ clientX: (a10.x + b3.x) / 2, clientY: (a10.y + b3.y) / 2 });
         this.pinch = { d0: Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y)), z0: this.zoom, cx: mid.x, cy: mid.y };
         return;
       }
       if (this.touches.size > 2) return;
       this.finger = { pid: e10.pointerId, y0: e10.clientY, top0: this.el.scrollTop, x: p2.x, y: p2.y, moved: false, shift: e10.shiftKey, x0: e10.clientX, left0: this.el.scrollLeft };
+      this.armPress(e10, p2, this.noteAt(p2.x, p2.y));
       return;
     }
     e10.preventDefault();
     if (this.tap(p2.x, p2.y, e10.shiftKey, e10.pointerId)) return;
+    const hit = this.noteAt(p2.x, p2.y);
+    if (hit) {
+      this.host.focus?.("staff");
+      const st0 = this.host.get();
+      if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
+      const t10 = tr(this.host.get())[hit.index];
+      this.drag = { index: hit.index, d0: hit.d, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: hit.d };
+      this.el.setPointerCapture(e10.pointerId);
+      this.host.audition?.(hit.index, true);
+      this.armPress(e10, p2, hit);
+      return;
+    }
     this.box = { pid: e10.pointerId, x0: p2.x, y0: p2.y, moved: false, st0: this.host.get(), row: this.rowAt(p2.y) };
     this.el.setPointerCapture(e10.pointerId);
+    this.armPress(e10, p2, null);
+  }
+  /** 按下：开长按计时（0.42 s 不动 = 长按）。 */
+  armPress(e10, p2, hit) {
+    this.cancelPress();
+    const pr = { pid: e10.pointerId, type: e10.pointerType, x: p2.x, y: p2.y, hit, timer: 0, shift: e10.shiftKey, moved: false, fired: false };
+    pr.timer = window.setTimeout(() => this.longPress(), 420);
+    this.press = pr;
+  }
+  cancelPress() {
+    if (this.press) {
+      clearTimeout(this.press.timer);
+      this.press = null;
+    }
+    this.selDrag = null;
+  }
+  /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 没事（以后放「粘贴」）。 */
+  longPress() {
+    const pr = this.press;
+    if (!pr || pr.moved) return;
+    pr.fired = true;
+    if (!pr.hit) return;
+    this.lyrics.commitAndClose();
+    this.marks.commitAndClose();
+    this.finger = null;
+    if (this.drag) {
+      this.host.release?.();
+      this.drag = null;
+    }
+    const st0 = this.host.get(), st3 = this.onTrack(pr.hit) ? st0 : this.focusRow(st0, pr.hit.system);
+    this.host.set(select(st3, pr.hit.index, pr.hit.index + 1));
+    this.selDrag = { pid: pr.pid, anchor: pr.hit.index };
+    this.host.focus?.("staff");
+  }
+  /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
+  noteAt(x2, y2) {
+    const L2 = this.layout, row = this.rowAt(y2);
+    if (row < 0) return null;
+    const sp2 = L2.sp;
+    return L2.notes.find((n10) => n10.system === row && x2 >= n10.x - sp2 * 0.5 && x2 <= n10.x + n10.w + sp2 * 0.5 && Math.abs(y2 - n10.y) <= sp2 * 0.9) ?? null;
+  }
+  /** 离指针最近的、光标所在 track 上的音（扩选用）：先按行（指针所在行；不是这条 track 的行就取最近的一行），再按 x。 */
+  noteNear(p2) {
+    const L2 = this.layout, mine = L2.notes.filter((n10) => this.onTrack(n10));
+    if (!mine.length) return -1;
+    const row = this.rowAt(p2.y);
+    const rows = [...new Set(mine.map((n10) => n10.system))], sys = rows.includes(row) ? row : rows.reduce((a10, b3) => Math.abs(b3 - row) < Math.abs(a10 - row) ? b3 : a10);
+    const cands2 = mine.filter((n10) => n10.system === sys);
+    return cands2.reduce((a10, b3) => Math.abs(b3.x + b3.w / 2 - p2.x) < Math.abs(a10.x + a10.w / 2 - p2.x) ? b3 : a10).index;
   }
   inBox(b3, x2, y2) {
     return !!b3 && x2 >= b3.x && x2 <= b3.x + b3.w && y2 >= b3.y && y2 <= b3.y + b3.h;
@@ -5706,21 +5835,16 @@ var ScoreView = class {
         }
       }
     }
-    const hit = L2.notes.find((n10) => n10.system === row && x2 >= n10.x - sp2 * 0.5 && x2 <= n10.x + n10.w + sp2 * 0.5 && Math.abs(y2 - n10.y) <= sp2 * 0.9);
-    if (hit) {
-      this.host.focus?.("staff");
-      const sameTrack = this.onTrack(hit), st3 = sameTrack ? this.host.get() : this.focusRow(this.host.get(), row);
-      const cur = sameTrack ? st3.sel : null;
-      this.host.set(shift && cur ? select(st3, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : select(st3, hit.index, hit.index + 1));
-      if (pid !== null) {
-        const t10 = tr(this.host.get())[hit.index];
-        this.drag = { index: hit.index, d0: hit.d, dur0: t10.dur, x0: x2, y0: y2, axis: "", pid, heard: hit.d };
-        this.el.setPointerCapture(pid);
-        this.host.audition?.(hit.index, true);
-      } else this.host.audition?.(hit.index);
-      return true;
-    }
     return false;
+  }
+  /** 轻点在音上（手指 / 笔 / 鼠标）：光标放到它后面（Shift = 把选中扩到它）。 */
+  tapNote(hit, shift) {
+    this.lyrics.commitAndClose();
+    this.marks.commitAndClose();
+    const st0 = this.host.get(), st3 = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
+    const cur = this.onTrack(hit) ? st3.sel : null;
+    this.host.set(shift && cur ? select(st3, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : setCaret(st3, hit.index + 1));
+    this.host.focus?.("staff");
   }
   /** 空白处 → 那条谱最近的光标落点（= 写；点哪条谱光标就到哪条）。 */
   caretAt(x2, y2, st3 = this.host.get()) {
@@ -5746,6 +5870,21 @@ var ScoreView = class {
     this.host.set(select(st3, Math.min(...inside), Math.max(...inside) + 1));
   }
   move(e10) {
+    const pr = this.press;
+    if (pr && e10.pointerId === pr.pid && !pr.moved && !pr.fired) {
+      const p3 = this.local(e10);
+      if (Math.hypot(p3.x - pr.x, p3.y - pr.y) > 6) {
+        pr.moved = true;
+        clearTimeout(pr.timer);
+      }
+    }
+    if (this.selDrag && e10.pointerId === this.selDrag.pid) {
+      const idx = this.noteNear(this.local(e10));
+      if (idx < 0) return;
+      const st4 = this.host.get(), a10 = Math.min(idx, this.selDrag.anchor), b3 = Math.max(idx, this.selDrag.anchor) + 1;
+      if (!st4.sel || st4.sel.from !== a10 || st4.sel.to !== b3) this.host.set(select(st4, a10, b3));
+      return;
+    }
     if (this.touches.has(e10.pointerId)) {
       this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
       if (this.pinch && this.touches.size === 2) {
@@ -5799,7 +5938,35 @@ var ScoreView = class {
     if (this.touches.delete(e10.pointerId) && this.pinch && this.touches.size < 2) {
       this.pinch = null;
       this.finger = null;
+      this.cancelPress();
       return;
+    }
+    const pr = this.press;
+    if (pr && e10.pointerId === pr.pid) {
+      this.press = null;
+      clearTimeout(pr.timer);
+      const extended = !!this.selDrag;
+      this.selDrag = null;
+      if (pr.fired || extended) {
+        this.finger = null;
+        if (this.drag) {
+          this.host.release?.();
+          this.drag = null;
+        }
+        this.box = null;
+        this.boxEl.hidden = true;
+        return;
+      }
+      if (pr.hit && !pr.moved) {
+        this.finger = null;
+        this.box = null;
+        if (this.drag) {
+          this.host.release?.();
+          this.drag = null;
+        } else this.host.audition?.(pr.hit.index);
+        this.tapNote(pr.hit, pr.shift);
+        return;
+      }
     }
     if (this.finger && e10.pointerId === this.finger.pid) {
       const f2 = this.finger;
@@ -6325,6 +6492,13 @@ var Pad = class {
   back() {
     this.mode = "normal";
     this.render();
+  }
+  /** 选区条上的「移调」：打开和「1=」旋钮同一个候选面板（有选中时那个旋钮本来就是它）。 */
+  openTranspose() {
+    if (this.host.state().sel) {
+      this.mode = "transpose";
+      this.render();
+    }
   }
   /** 值旋钮的一串值，大的在上（升号多 / 长的 / 音域高的在上）+ 现在是第几个 + 选第 i 个（立刻生效）。 */
   knobList(knob, narrow = this.rangeNarrow()) {
@@ -23904,6 +24078,174 @@ async function makeCoverPng(bytes, blurb = null) {
 }
 var coverWithBlurb = (png, blurb) => withPngText(png, PNG_BLURB_KEYWORD, blurb && blurb.trim() ? blurb.trim() : null);
 
+// src/score/clipboard.ts
+function copyTokens(st3) {
+  if (!st3.sel) return null;
+  return tr(st3).slice(st3.sel.from, st3.sel.to).map((t10) => ({ ...t10 }));
+}
+function pasteTokens(st3, toks) {
+  if (!toks.length) return st3;
+  const tokens = tr(st3).slice();
+  let nextId = st3.nextId;
+  const fresh = toks.filter((t10) => !isMark(t10) || true).map((t10) => ({ ...t10, id: nextId++ }));
+  const from = st3.sel ? st3.sel.from : st3.caret, to2 = st3.sel ? st3.sel.to : st3.caret;
+  const at2 = Math.max(headLen(tokens), from);
+  tokens.splice(at2, Math.max(0, to2 - at2), ...fresh);
+  return { ...st3, song: withTrack(st3.song, st3.at.paper, st3.at.part, tokens), sel: null, caret: at2 + fresh.length, nextId, log: [] };
+}
+function cutTokens(st3) {
+  const toks = copyTokens(st3);
+  if (!toks || !st3.sel) return null;
+  const tokens = tr(st3).slice();
+  tokens.splice(st3.sel.from, st3.sel.to - st3.sel.from);
+  return { st: { ...st3, song: withTrack(st3.song, st3.at.paper, st3.at.part, tokens), sel: null, caret: st3.sel.from, log: [] }, toks };
+}
+function selectAll(st3) {
+  const tokens = tr(st3), a10 = headLen(tokens), b3 = tokens.length;
+  if (b3 <= a10) return st3;
+  return { ...st3, sel: { from: a10, to: b3 }, caret: b3, log: [] };
+}
+function toDegree(p2, fifths) {
+  const tonicD = 4 * 7 + tonicStepIndex(fifths), d3 = diatonicIndex(p2) - tonicD;
+  return { degree: (d3 % 7 + 7) % 7 + 1, shift: Math.floor(d3 / 7), acc: p2.alter - keyAlter(p2.step, fifths) };
+}
+function fromDegree(degree2, shift, acc, fifths) {
+  const n10 = tonicStepIndex(fifths) + degree2 - 1, s10 = n10 % 7, step = STEPS[s10];
+  return { step, alter: keyAlter(step, fifths) + acc, octave: 4 + Math.floor(n10 / 7) + shift };
+}
+var DUR_SUFFIX = [[TPQ * 4, " - - -"], [TPQ * 3, " - -"], [TPQ * 2, " -"], [TPQ * 1.5, "."], [TPQ, ""], [TPQ * 0.75, "_."], [TPQ / 2, "_"], [TPQ / 4, "__"], [TPQ / 8, "___"]];
+function durText(dur) {
+  const hit = DUR_SUFFIX.find(([d3]) => d3 === dur);
+  return hit ? hit[1] : `(${dur})`;
+}
+var accText = (a10) => a10 > 0 ? "#".repeat(a10) : "b".repeat(-a10);
+var octText = (s10) => s10 > 0 ? "'".repeat(s10) : ",".repeat(-s10);
+function toJianpu(toks, fifths) {
+  const out = [];
+  let f2 = fifths;
+  for (const t10 of toks) {
+    if (t10.kind === "bar") {
+      out.push("|");
+      continue;
+    }
+    if (t10.kind === "key") {
+      f2 = t10.fifths;
+      out.push(`[1=${KEY_LABEL[t10.fifths] ?? t10.fifths}]`);
+      continue;
+    }
+    if (t10.kind === "time") {
+      out.push(`[${t10.beats}/${t10.beatType}]`);
+      continue;
+    }
+    if (t10.kind === "tempo") {
+      out.push(`[T=${t10.bpm}]`);
+      continue;
+    }
+    const suf = durText(t10.dur), lead = suf.startsWith(" -") ? "" : suf, tail = suf.startsWith(" -") ? suf : "";
+    if (t10.kind === "rest") {
+      out.push(`0${lead}${tail}`);
+      continue;
+    }
+    const body = t10.pitch ? (() => {
+      const { degree: degree2, shift, acc } = toDegree(t10.pitch, f2);
+      return `${accText(acc)}${degree2}${octText(shift)}`;
+    })() : "x";
+    const ly2 = t10.lyric ? `/${t10.lyric.replace(/\s+/g, "")}${t10.hyph ? "-" : ""}` : "";
+    out.push(`${t10.tie ? "^" : ""}${body}${lead}${ly2}${tail}`);
+  }
+  return out.join(" ");
+}
+var KEY_BY_LABEL = Object.fromEntries(Object.entries(KEY_LABEL).map(([k2, v]) => [v.replace("\u266D", "b").replace("\u266F", "#"), Number(k2)]));
+function fromJianpu(text2, fifths) {
+  const words = text2.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return null;
+  const out = [];
+  let f2 = fifths, id2 = 0, n10 = 0;
+  const lastTimed = () => {
+    for (let i10 = out.length - 1; i10 >= 0; i10--) {
+      const t10 = out[i10];
+      if (t10.kind === "note" || t10.kind === "rest") return t10;
+    }
+    return null;
+  };
+  for (const w2 of words) {
+    if (w2 === "|") {
+      out.push({ kind: "bar", id: id2++ });
+      continue;
+    }
+    if (w2 === "-") {
+      const t11 = lastTimed();
+      if (!t11) return null;
+      t11.dur += TPQ;
+      continue;
+    }
+    let m2 = /^\[1=([A-G][b#]?)\]$/.exec(w2);
+    if (m2) {
+      const k2 = KEY_BY_LABEL[m2[1]];
+      if (k2 === void 0) return null;
+      f2 = k2;
+      out.push({ kind: "key", id: id2++, fifths: k2 });
+      continue;
+    }
+    m2 = /^\[(\d+)\/(\d+)\]$/.exec(w2);
+    if (m2) {
+      out.push({ kind: "time", id: id2++, beats: Number(m2[1]), beatType: Number(m2[2]) });
+      continue;
+    }
+    m2 = /^\[T=(\d+)\]$/.exec(w2);
+    if (m2) {
+      out.push({ kind: "tempo", id: id2++, bpm: Number(m2[1]) });
+      continue;
+    }
+    m2 = /^(\^?)([#b]*)([0-7x])(['’,]*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w2);
+    if (!m2) return null;
+    const [, tie, accS, deg, oct, unders, dot, ticks, lyric, hyph] = m2;
+    let dur = ticks ? Number(ticks) : TPQ / 2 ** unders.length;
+    if (dot && !ticks) dur *= 1.5;
+    if (deg === "0") {
+      out.push({ kind: "rest", id: id2++, dur });
+      n10++;
+      continue;
+    }
+    const acc = accS ? accS[0] === "#" ? accS.length : -accS.length : 0;
+    const shift = [...oct].reduce((a10, c10) => a10 + (c10 === "," ? -1 : 1), 0);
+    const pitch = deg === "x" ? null : fromDegree(Number(deg), shift, acc, f2);
+    const t10 = { kind: "note", id: id2++, pitch, dur, lyric: lyric ?? null };
+    if (hyph) t10.hyph = true;
+    if (tie) t10.tie = true;
+    out.push(t10);
+    n10++;
+  }
+  return n10 ? out : null;
+}
+var fifthsAtSel = (st3) => keyAt(tr(st3), st3.sel ? st3.sel.from : Math.max(0, st3.caret - 1));
+
+// src/ui/sel-bar.ts
+var SelBar = class {
+  el;
+  constructor(parent, host) {
+    this.el = document.createElement("div");
+    this.el.className = "sel-bar";
+    this.el.hidden = true;
+    parent.append(this.el);
+    this.el.addEventListener("pointerdown", (e10) => e10.stopPropagation());
+    this.el.addEventListener("click", (e10) => {
+      const v = e10.target.closest("[data-v]")?.dataset.v;
+      if (v) host.verb(v);
+    });
+  }
+  /** 画：sel = 有没有选区（几个 token）；clip = 剪贴板里有没有东西；over = 别的全屏视图盖着（藏）。 */
+  update(sel, clip2, over) {
+    if (over || !sel && !clip2) {
+      this.el.hidden = true;
+      return;
+    }
+    const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
+    this.el.innerHTML = sel ? `<span class="sel-n">${sel} \u4E2A</span>` + b3("all", "\u5168\u9009") + b3("copy", "\u590D\u5236") + b3("cut", "\u526A\u5207") + (clip2 ? b3("paste", "\u7C98\u8D34") : "") + b3("transpose", "\u79FB\u8C03") + b3("delete", "\u5220", "trash-can", "danger") + b3("clear", "", "x") : b3("paste", "\u7C98\u8D34\u5230\u5149\u6807\u5904") + b3("forget", "", "x");
+    this.el.hidden = false;
+  }
+};
+
 // src/app/main.ts
 initBlackBox(APP_VERSION);
 var st2 = initState();
@@ -23970,12 +24312,89 @@ padTab.title = "\u952E\u76D8\uFF08pad\uFF09";
 padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span>`;
 stageEl.append(padTab);
 padTab.addEventListener("click", () => showPad(true));
+var selBar = new SelBar(stageEl, { verb: (v) => {
+  void selVerb(v);
+} });
+var clip = null;
+var clipText = "";
+var selSig = "";
 var chromeReady = false;
 function updateChrome() {
   if (!chromeReady) return;
   const over = finder.isOpen || (gallery?.isOpen() ?? false);
   transport.hidden = over;
   padTab.hidden = !padEl.hidden || over || studio.isOpen;
+  const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0, sig = `${n10}|${!!clip}|${over || studio.isOpen}`;
+  if (sig !== selSig) {
+    selSig = sig;
+    selBar.update(n10, !!clip, over || studio.isOpen);
+  }
+}
+function setClip(t10) {
+  clip = t10;
+  clipText = toJianpu(t10, fifthsAtSel(st2));
+  void navigator.clipboard?.writeText?.(clipText).catch(() => void 0);
+  updateChrome();
+}
+async function pasteNow() {
+  let sys = "";
+  try {
+    sys = await navigator.clipboard?.readText?.() ?? "";
+  } catch {
+  }
+  let toks = sys && sys.trim() !== clipText.trim() ? fromJianpu(sys, fifthsAtSel(st2)) : null;
+  if (!toks) toks = clip;
+  if (!toks) {
+    info(sys ? "\u526A\u8D34\u677F\u91CC\u7684\u4E0D\u662F\u7B80\u8C31\uFF08\u50CF 1 2 3 | 5 - - \u8FD9\u6837\u7684\u624D\u8BA4\uFF09" : "\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u4E1C\u897F");
+    return;
+  }
+  update(pasteTokens(st2, toks));
+  info(`\u8D34\u4E86 ${toks.length} \u4E2A`);
+}
+async function selVerb(v) {
+  switch (v) {
+    case "all":
+      update(selectAll(st2));
+      break;
+    case "copy": {
+      const t10 = copyTokens(st2);
+      if (t10) {
+        setClip(t10);
+        info(`\u590D\u5236\u4E86 ${t10.length} \u4E2A`);
+      }
+      break;
+    }
+    case "cut": {
+      const r10 = cutTokens(st2);
+      if (r10) {
+        setClip(r10.toks);
+        update(r10.st);
+        info(`\u526A\u5207\u4E86 ${r10.toks.length} \u4E2A`);
+      }
+      break;
+    }
+    case "paste":
+      await pasteNow();
+      break;
+    case "transpose":
+      if (st2.sel) {
+        showPad(true);
+        pad3.openTranspose();
+      }
+      break;
+    case "delete":
+      if (st2.sel) update(apply(st2, { k: "delete" }));
+      break;
+    case "clear":
+      if (st2.sel) update(setCaret(st2, st2.sel.to));
+      break;
+    case "forget":
+      clip = null;
+      clipText = "";
+      updateChrome();
+      break;
+  }
+  if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 var sampler = new Sampler();
@@ -24231,6 +24650,7 @@ function update(next2) {
   pad3.render();
   renderTitle();
   changed();
+  updateChrome();
 }
 var singer = new Singer();
 var singing = false;
@@ -24675,7 +25095,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "014eaf0c2574",
+  cssHash: "6357c0986dab",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -24688,6 +25108,8 @@ window.__moonsinger = {
   zipList: (bytes) => Object.keys(unzipSync(bytes)),
   zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]),
   load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null }),
+  set: (n10) => update(n10),
+  addPaper: () => update(addPaper(st2)),
   store: () => hasStore() ? requireStore() : null,
   es: () => es2,
   gallery: () => gallery,
@@ -26046,6 +26468,22 @@ $2("saveBtn").addEventListener("click", () => {
   void smartSave();
 });
 $2("lockBtn").addEventListener("click", () => info("\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\u3002MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF08\u8981\u7684\u8BDD\u544A\u8BC9\u5F00\u53D1\u8005\uFF1A\u7167 WXHW \u63A5 zip.js + 7z \u5C31\u80FD\u5F00\uFF09\u3002"));
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const upd = () => {
+    const textFocused = document.activeElement instanceof HTMLElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+    if (vv.offsetTop > 0 && textFocused) window.scrollTo(0, 0);
+    const next2 = `${Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))}px`;
+    if (document.documentElement.style.getPropertyValue("--kb-offset") === next2) return;
+    document.documentElement.style.setProperty("--kb-offset", next2);
+    diagNote("viewport", `kb-offset=${next2} inner=${window.innerHeight} vv=${Math.round(vv.height)}+${Math.round(vv.offsetTop)}`);
+    requestAnimationFrame(() => view.followNow());
+  };
+  vv.addEventListener("resize", upd);
+  vv.addEventListener("scroll", upd);
+  document.addEventListener("focusin", () => setTimeout(upd, 60));
+  document.addEventListener("focusout", () => setTimeout(upd, 60));
+}
 window.addEventListener("online", () => {
   renderTitle();
   if (!hasStore()) return;
@@ -26104,6 +26542,9 @@ function run(a10, repeat, code) {
       if (a10.a === "open") void fileOpen();
       else if (a10.a === "save") void fileSave();
       else openExportHub();
+      return true;
+    case "clip":
+      void selVerb(a10.a);
       return true;
   }
 }
@@ -26178,4 +26619,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-76107611198a.mjs.map
+//# sourceMappingURL=moonsinger-a2222f1b43d5.mjs.map

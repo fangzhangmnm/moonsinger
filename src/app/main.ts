@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
+import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -50,6 +50,8 @@ import { reportError, diagNote, diagText, initBlackBox } from "./report-error.ts
 import { copyDiag, shareDiag, clearDiag, canShareDiag } from "./diag-ui.ts";
 import { deviceKvGet, deviceKvSet } from "../device-kv.ts";
 import { makeCoverPng, coverWithBlurb } from "../image/cover.ts";
+import { copyTokens, cutTokens, pasteTokens, selectAll, toJianpu, fromJianpu, fifthsAtSel } from "../score/clipboard.ts";
+import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
 
 initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
 let st: EditorState = initState();
@@ -118,13 +120,44 @@ const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.cl
 padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>键盘</span>`;
 stageEl.append(padTab);
 padTab.addEventListener("click", () => showPad(true));
+// 选区条（2026-10-08 改的手感；src/ui/sel-bar.ts）：有选区时挂在胶囊下面；剪贴板两层 = app 内 token（clip）+ 系统剪贴板一行简谱文字（clipText）
+const selBar = new SelBar(stageEl, { verb: (v) => { void selVerb(v); } });
+let clip: Token[] | null = null, clipText = "", selSig = "";
 let chromeReady = false;
-/** 胶囊 / 键盘 tab 跟着谁在最上面走：歌库 / 找人视图开着都藏；录音室里胶囊留着（▶ / 空格都能播）、tab 藏。 */
+/** 胶囊 / 键盘 tab / 选区条跟着谁在最上面走：歌库 / 找人视图开着都藏；录音室里胶囊留着（▶ / 空格都能播）、tab 藏。 */
 function updateChrome(): void {
   if (!chromeReady) return;
   const over = finder.isOpen || (gallery?.isOpen() ?? false);
   transport.hidden = over;
   padTab.hidden = !padEl.hidden || over || studio.isOpen;
+  const n = st.sel ? st.sel.to - st.sel.from : 0, sig = `${n}|${!!clip}|${over || studio.isOpen}`;
+  if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen); }
+}
+function setClip(t: Token[]): void {
+  clip = t; clipText = toJianpu(t, fifthsAtSel(st));
+  void navigator.clipboard?.writeText?.(clipText).catch(() => undefined);   // 系统剪贴板那一层：能贴进聊天；不给写就只有 app 内那层
+  updateChrome();
+}
+/** 贴：系统剪贴板里有别处来的简谱文字就用它（和自己刚写的一样 = app 内那份原 token，连歌词 / 连音都在）；读不到 / 读不懂 = app 内的。 */
+async function pasteNow(): Promise<void> {
+  let sys = ""; try { sys = (await navigator.clipboard?.readText?.()) ?? ""; } catch { /* 浏览器不给读：用 app 内的 */ }
+  let toks: Token[] | null = sys && sys.trim() !== clipText.trim() ? fromJianpu(sys, fifthsAtSel(st)) : null;
+  if (!toks) toks = clip;
+  if (!toks) { info(sys ? "剪贴板里的不是简谱（像 1 2 3 | 5 - - 这样的才认）" : "剪贴板里没有东西"); return; }
+  update(pasteTokens(st, toks)); info(`贴了 ${toks.length} 个`);
+}
+async function selVerb(v: SelVerb): Promise<void> {
+  switch (v) {
+    case "all": update(selectAll(st)); break;
+    case "copy": { const t = copyTokens(st); if (t) { setClip(t); info(`复制了 ${t.length} 个`); } break; }
+    case "cut": { const r = cutTokens(st); if (r) { setClip(r.toks); update(r.st); info(`剪切了 ${r.toks.length} 个`); } break; }
+    case "paste": await pasteNow(); break;
+    case "transpose": if (st.sel) { showPad(true); pad.openTranspose(); } break;
+    case "delete": if (st.sel) update(apply(st, { k: "delete" })); break;
+    case "clear": if (st.sel) update(setCaret(st, st.sel.to)); break;
+    case "forget": clip = null; clipText = ""; updateChrome(); break;
+  }
+  if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 
@@ -298,6 +331,7 @@ function update(next: EditorState): void {
   pad.render();
   renderTitle();
   changed();
+  updateChrome();
 }
 
 // ── 播放：月读唱（第一次要加载引擎，之后复用） ─────────────────────────
@@ -622,7 +656,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null }),
-  store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
+  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
@@ -1493,6 +1527,22 @@ async function smartSaveStore(): Promise<void> {
 async function smartSave(): Promise<void> { if (doc.identifier) await smartSaveStore(); else await fileSave(); }
 $("saveBtn").addEventListener("click", () => { void smartSave(); });
 $("lockBtn").addEventListener("click", () => info("这首歌没加密。MoonSinger 这一版还不加密（要的话告诉开发者：照 WXHW 接 zip.js + 7z 就能开）。"));
+// iOS 软键盘（user 2026-10-08「弹软键盘的时候最下面滚动不上去」）：visualViewport 矮了多少 = --kb-offset，整个 app 缩到键盘上面（styles #app），谱的最底下才滚得到；
+//   iOS 把视口顶上去时拉回 0（固定的顶栏别被推出屏）；键盘露 / 收之后光标那行滚进视野。照 WXHW app.ts 的做法。
+if (window.visualViewport) {
+  const vv = window.visualViewport;
+  const upd = () => {
+    const textFocused = document.activeElement instanceof HTMLElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+    if (vv.offsetTop > 0 && textFocused) window.scrollTo(0, 0);
+    const next = `${Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))}px`;
+    if (document.documentElement.style.getPropertyValue("--kb-offset") === next) return;
+    document.documentElement.style.setProperty("--kb-offset", next);
+    diagNote("viewport", `kb-offset=${next} inner=${window.innerHeight} vv=${Math.round(vv.height)}+${Math.round(vv.offsetTop)}`);
+    requestAnimationFrame(() => view.followNow());
+  };
+  vv.addEventListener("resize", upd); vv.addEventListener("scroll", upd);
+  document.addEventListener("focusin", () => setTimeout(upd, 60)); document.addEventListener("focusout", () => setTimeout(upd, 60));
+}
 window.addEventListener("online", () => { renderTitle(); if (!hasStore()) return; if (auth.isSignedIn()) void afterSignIn(); else retrySilent(); });
 window.addEventListener("offline", () => renderTitle());
 document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible" || !hasStore()) return; if (auth.isSignedIn()) void refreshOpenDoc(); else retrySilent(); });
@@ -1529,6 +1579,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "mark": view.marks.act(a.a); return true;
     case "sheet": closeOffer?.(); closeSheet(); return true;
     case "file": if (a.a === "open") void fileOpen(); else if (a.a === "save") void fileSave(); else openExportHub(); return true;
+    case "clip": void selVerb(a.a); return true;
   }
 }
 window.addEventListener("keydown", (e) => {

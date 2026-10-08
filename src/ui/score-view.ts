@@ -1,6 +1,9 @@
 // score-view.ts —— 谱面板：画谱、指针、光标跟随、就地写歌词。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改；2026-10-08 多声部多纸（Claude Fable 5.1）
 // 选中 = 改，光标 = 写（user「智能识别，选中音符就是改，光标就是写 对」）：
-//   点音符 = 选中它（Shift+点 = 把选中扩到它）；点歌词那一行 = 在那个音下面打开歌词框；
+//   2026-10-08 改的手感（user「长按一个音 = 选中它、进选区态。轻点永远不选中，只放光标 + 出声…同意，笔也长按」「带子 + 棒棒糖把手 和我想的一样」）：
+//   **轻点音符 = 光标放到它后面 + 响一下（手指 / 笔 / 鼠标都一样）；长按（0.42 s 不动）= 选中它、进选区态，不抬手接着拖 = 扩选；选区两端各一个棒棒糖把手（拖 = 扩 / 缩）；
+//   Shift+点 = 把选中扩到它（笔 / 鼠标）；点别处 = 放光标（选区消失）。笔 / 鼠标按住音符立刻拖 = 改音高 / 时值（和长按用时间分开：0.42 s 内动了就是拖）。
+//   点歌词那一行 = 在那个音下面打开歌词框；
 //   点谱面写音 2026-10-07 拿掉（user「先去掉触碰加音符的功能，以后用专门的toolstate做」）——指针现在只选、只拖、只放光标；
 //   点别处 = 放光标。笔 / 鼠标拖符头：上下改音高（按五线谱一级一级吸附）、左右改时值（离散阶梯）；手指拖 = 滚动，手指轻点和笔一样。
 // 多声部（总谱式）：点哪条谱，光标 / 选中就到那条 track（那张纸 × 那个声部）——不另做切换器；pad 往光标所在的那条写。
@@ -16,7 +19,7 @@
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL } from "../score/paper.ts";
 import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ } from "../score/song.ts";
 import { fromDiatonic } from "../score/pitch.ts";
-import { engrave, LYRIC_EM, type Layout, type PartView } from "../render/engrave.ts";
+import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
@@ -64,6 +67,11 @@ export class ScoreView {
   private finger: null | { pid: number; y0: number; top0: number; x: number; y: number; moved: boolean; shift: boolean; x0: number; left0: number } = null;
   private box: null | { pid: number; x0: number; y0: number; moved: boolean; st0: EditorState; row: number } = null;
   private boxEl: HTMLDivElement;
+  /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
+  private press: null | { pid: number; type: string; x: number; y: number; hit: HitNote | null; timer: number; shift: boolean; moved: boolean; fired: boolean } = null;
+  private selDrag: null | { pid: number; anchor: number } = null;   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）
+  private handles: { start: HTMLDivElement; end: HTMLDivElement };
+  private handleDrag: null | { pid: number; which: "start" | "end"; other: number } = null;
   private touches = new Map<number, { x: number; y: number }>();   // 现在按着的手指（触屏缩放用）
   private pinch: null | { d0: number; z0: number; cx: number; cy: number } = null;   // 捏合起点：两指距离、当时的 zoom、两指中点下面那个纸面点（纸面坐标）
   private zoom = 1;
@@ -80,13 +88,33 @@ export class ScoreView {
     this.zoomBtn = document.createElement("button"); this.zoomBtn.className = "btn zoom-reset"; this.zoomBtn.type = "button"; this.zoomBtn.textContent = "1:1"; this.zoomBtn.title = "回到原大"; this.zoomBtn.hidden = true;
     this.zoomBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); this.setZoom(1, null); });
     el.appendChild(this.zoomBtn);
+    const mkHandle = (which: "start" | "end") => {
+      const h = document.createElement("div"); h.className = `sel-handle ${which}`; h.hidden = true;
+      h.addEventListener("pointerdown", (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const st = this.host.get(); if (!st.sel) return;
+        this.handleDrag = { pid: e.pointerId, which, other: which === "start" ? st.sel.to - 1 : st.sel.from };
+        try { h.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      });
+      h.addEventListener("pointermove", (e) => {
+        const g = this.handleDrag; if (!g || e.pointerId !== g.pid) return;
+        const idx = this.noteNear(this.local(e)); if (idx < 0) return;
+        const st = this.host.get(), a = Math.min(idx, g.other), b = Math.max(idx, g.other) + 1;
+        if (!st.sel || st.sel.from !== a || st.sel.to !== b) this.host.set(select(st, a, b));
+      });
+      const done = (e: PointerEvent) => { if (this.handleDrag && e.pointerId === this.handleDrag.pid) this.handleDrag = null; };
+      h.addEventListener("pointerup", done); h.addEventListener("pointercancel", done);
+      this.ink.appendChild(h);
+      return h;
+    };
+    this.handles = { start: mkHandle("start"), end: mkHandle("end") };
     this.lyrics = new LyricEditor(this.ink, host, () => this.layout, () => this.render());
     this.marks = new MarkEditor(this.ink, host, () => this.layout, () => this.render());
     this.title = new TitleEditor(this.ink, host, () => this.layout);
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("pointerup", (e) => this.up(e));
-    el.addEventListener("pointercancel", (e) => { if (this.drag) this.host.release?.(); this.drag = null; this.finger = null; this.box = null; this.boxEl.hidden = true; this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
+    el.addEventListener("pointercancel", (e) => { if (this.drag) this.host.release?.(); this.drag = null; this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
     new ResizeObserver(() => this.render()).observe(el);
   }
 
@@ -115,12 +143,13 @@ export class ScoreView {
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true,
-      autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], ...(page ? { page } : {}) });
+      autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], ...(page ? { page } : { onlyPaper: st.at.paper }) });   // 连续排法：一次只看光标所在的那张纸（曲段）；分页 = 全部
     this.ink.style.left = `${this.layout.pageX.left}px`;
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
     if (!this.boxEl.isConnected) this.ink.appendChild(this.boxEl);
+    this.placeHandles();
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
@@ -132,6 +161,17 @@ export class ScoreView {
     const L = this.layout!, st = this.host.get(), row = L.systems[h.system];
     return !!row && row.paper === st.at.paper && row.part === st.at.part;
   }
+  /** 选区两端的棒棒糖把手：第一个 / 最后一个选中的音的下面（歌词行再往下一点）。 */
+  private placeHandles(): void {
+    const L = this.layout, st = this.host.get();
+    const inSel = L && st.sel ? L.notes.filter((n) => this.onTrack(n) && n.index >= st.sel!.from && n.index < st.sel!.to) : [];
+    if (!L || !inSel.length) { this.handles.start.hidden = true; this.handles.end.hidden = true; return; }
+    const a = inSel.reduce((p, n) => (n.index < p.index ? n : p)), b = inSel.reduce((p, n) => (n.index > p.index ? n : p)), sp = L.sp;
+    Object.assign(this.handles.start.style, { left: `${a.x - sp * 0.3}px`, top: `${L.lyricY(a.system) + sp * 0.9}px` }); this.handles.start.hidden = false;
+    Object.assign(this.handles.end.style, { left: `${b.x + b.w + sp * 0.3}px`, top: `${L.lyricY(b.system) + sp * 0.9}px` }); this.handles.end.hidden = false;
+  }
+  /** 光标那一行滚进视野（软键盘弹出 / 收起时宿主调）。 */
+  followNow(): void { this.follow(); }
   /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
   private follow(): void {
     const L = this.layout, st = this.host.get(); if (!L) return;
@@ -181,28 +221,77 @@ export class ScoreView {
   }
 
   private down(e: PointerEvent): void {
-    if ((e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input")) return;   // 在歌词框 / 记号框里点：交给它们
+    if ((e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;   // 在歌词框 / 记号框 / 把手上点：交给它们
     const L = this.layout; if (!L) return;
     const p = this.local(e);   // 先算纸面坐标再拿焦点：focus 可能连带滚一下（分页时光标那行在页外），坐标就错了（2026-10-08 E2E 抓到）
     this.el.focus({ preventScroll: true });   // 点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）
-    if (e.pointerType === "touch") {   // 手指：拖 = 滚动；不动 = 和笔一样的轻点；第二根手指落下 = 捏合缩放 / 双指平移
+    if (e.pointerType === "touch") {   // 手指：拖 = 滚动；不动 = 轻点；按住不动 = 长按选区；第二根手指落下 = 捏合缩放 / 双指平移
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       this.el.setPointerCapture(e.pointerId);
       if (this.touches.size === 2) {
-        this.finger = null;
+        this.finger = null; this.cancelPress();
         const [a, b] = [...this.touches.values()], mid = this.local({ clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 });
         this.pinch = { d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), z0: this.zoom, cx: mid.x, cy: mid.y };
         return;
       }
       if (this.touches.size > 2) return;
       this.finger = { pid: e.pointerId, y0: e.clientY, top0: this.el.scrollTop, x: p.x, y: p.y, moved: false, shift: e.shiftKey, x0: e.clientX, left0: this.el.scrollLeft };
+      this.armPress(e, p, this.noteAt(p.x, p.y));
       return;
     }
     e.preventDefault();
-    if (this.tap(p.x, p.y, e.shiftKey, e.pointerId)) return;
+    if (this.tap(p.x, p.y, e.shiftKey, e.pointerId)) return;   // 记号 / 歌词行 / 纸上的小钮（不含音符）
+    const hit = this.noteAt(p.x, p.y);
+    if (hit) {   // 笔 / 鼠标按在音上：按住就响；0.42 s 内动了 = 拖（改音高 / 时值）；不动到点 = 长按选中；抬手不动 = 轻点（光标到它后面）
+      this.host.focus?.("staff");
+      const st0 = this.host.get();
+      if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
+      const t = tr(this.host.get())[hit.index] as NoteTok;
+      this.drag = { index: hit.index, d0: hit.d, dur0: t.dur, x0: p.x, y0: p.y, axis: "", pid: e.pointerId, heard: hit.d };
+      this.el.setPointerCapture(e.pointerId);
+      this.host.audition?.(hit.index, true);
+      this.armPress(e, p, hit);
+      return;
+    }
     // 空白处：先不放光标——拖了就是框选，没拖（松开）才放光标
     this.box = { pid: e.pointerId, x0: p.x, y0: p.y, moved: false, st0: this.host.get(), row: this.rowAt(p.y) };
     this.el.setPointerCapture(e.pointerId);
+    this.armPress(e, p, null);
+  }
+  /** 按下：开长按计时（0.42 s 不动 = 长按）。 */
+  private armPress(e: PointerEvent, p: { x: number; y: number }, hit: HitNote | null): void {
+    this.cancelPress();
+    const pr = { pid: e.pointerId, type: e.pointerType, x: p.x, y: p.y, hit, timer: 0, shift: e.shiftKey, moved: false, fired: false };
+    pr.timer = window.setTimeout(() => this.longPress(), 420);
+    this.press = pr;
+  }
+  private cancelPress(): void { if (this.press) { clearTimeout(this.press.timer); this.press = null; } this.selDrag = null; }
+  /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 没事（以后放「粘贴」）。 */
+  private longPress(): void {
+    const pr = this.press; if (!pr || pr.moved) return;
+    pr.fired = true;
+    if (!pr.hit) return;
+    this.lyrics.commitAndClose(); this.marks.commitAndClose();
+    this.finger = null;   // 手指：长按之后不再当滚动
+    if (this.drag) { this.host.release?.(); this.drag = null; }   // 笔：按住出声到此为止
+    const st0 = this.host.get(), st = this.onTrack(pr.hit) ? st0 : this.focusRow(st0, pr.hit.system);
+    this.host.set(select(st, pr.hit.index, pr.hit.index + 1));
+    this.selDrag = { pid: pr.pid, anchor: pr.hit.index };
+    this.host.focus?.("staff");
+  }
+  /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
+  private noteAt(x: number, y: number): HitNote | null {
+    const L = this.layout!, row = this.rowAt(y); if (row < 0) return null;
+    const sp = L.sp;
+    return L.notes.find((n) => n.system === row && x >= n.x - sp * 0.5 && x <= n.x + n.w + sp * 0.5 && Math.abs(y - n.y) <= sp * 0.9) ?? null;
+  }
+  /** 离指针最近的、光标所在 track 上的音（扩选用）：先按行（指针所在行；不是这条 track 的行就取最近的一行），再按 x。 */
+  private noteNear(p: { x: number; y: number }): number {
+    const L = this.layout!, mine = L.notes.filter((n) => this.onTrack(n)); if (!mine.length) return -1;
+    const row = this.rowAt(p.y);
+    const rows = [...new Set(mine.map((n) => n.system))], sys = rows.includes(row) ? row : rows.reduce((a, b) => (Math.abs(b - row) < Math.abs(a - row) ? b : a));
+    const cands = mine.filter((n) => n.system === sys);
+    return cands.reduce((a, b) => (Math.abs(b.x + b.w / 2 - p.x) < Math.abs(a.x + a.w / 2 - p.x) ? b : a)).index;
   }
 
   private inBox(b: { x: number; y: number; w: number; h: number } | null | undefined, x: number, y: number): boolean { return !!b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; }
@@ -241,22 +330,17 @@ export class ScoreView {
       const cands = L.lyrics.filter((h) => h.system === row);
       if (cands.length) { const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)); if (Math.abs(best.x - x) < sp * 4) { this.host.set(this.focusRow(this.host.get(), row, this.host.get().caret)); this.lyrics.openAt(best.index); this.host.focus?.("text"); return true; } }
     }
-    // 2. 音符
-    const hit = L.notes.find((n) => n.system === row && x >= n.x - sp * 0.5 && x <= n.x + n.w + sp * 0.5 && Math.abs(y - n.y) <= sp * 0.9);
-    if (hit) {
-      this.host.focus?.("staff");
-      const sameTrack = this.onTrack(hit), st = sameTrack ? this.host.get() : this.focusRow(this.host.get(), row);
-      const cur = sameTrack ? st.sel : null;
-      this.host.set(shift && cur ? select(st, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : select(st, hit.index, hit.index + 1));
-      if (pid !== null) {   // 笔 / 鼠标：按住一直响，拖音高换音，松手停
-        const t = tr(this.host.get())[hit.index] as NoteTok;
-        this.drag = { index: hit.index, d0: hit.d, dur0: t.dur, x0: x, y0: y, axis: "", pid, heard: hit.d };
-        this.el.setPointerCapture(pid);
-        this.host.audition?.(hit.index, true);
-      } else this.host.audition?.(hit.index);
-      return true;
-    }
+    // 2. 音符：不在这里（轻点 / 长按 / 拖在 down / up / longPress 里分）
+    void shift; void pid;
     return false;
+  }
+  /** 轻点在音上（手指 / 笔 / 鼠标）：光标放到它后面（Shift = 把选中扩到它）。 */
+  private tapNote(hit: HitNote, shift: boolean): void {
+    this.lyrics.commitAndClose(); this.marks.commitAndClose();
+    const st0 = this.host.get(), st = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
+    const cur = this.onTrack(hit) ? st.sel : null;
+    this.host.set(shift && cur ? select(st, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : setCaret(st, hit.index + 1));
+    this.host.focus?.("staff");
   }
   /** 空白处 → 那条谱最近的光标落点（= 写；点哪条谱光标就到哪条）。 */
   private caretAt(x: number, y: number, st = this.host.get()): EditorState {
@@ -277,6 +361,14 @@ export class ScoreView {
   }
 
   private move(e: PointerEvent): void {
+    const pr = this.press;
+    if (pr && e.pointerId === pr.pid && !pr.moved && !pr.fired) { const p = this.local(e); if (Math.hypot(p.x - pr.x, p.y - pr.y) > 6) { pr.moved = true; clearTimeout(pr.timer); } }
+    if (this.selDrag && e.pointerId === this.selDrag.pid) {   // 长按之后接着拖 = 扩选到指针下面的音
+      const idx = this.noteNear(this.local(e)); if (idx < 0) return;
+      const st = this.host.get(), a = Math.min(idx, this.selDrag.anchor), b = Math.max(idx, this.selDrag.anchor) + 1;
+      if (!st.sel || st.sel.from !== a || st.sel.to !== b) this.host.set(select(st, a, b));
+      return;
+    }
     if (this.touches.has(e.pointerId)) {
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (this.pinch && this.touches.size === 2) {
@@ -320,7 +412,19 @@ export class ScoreView {
   }
 
   private up(e: PointerEvent): void {
-    if (this.touches.delete(e.pointerId) && this.pinch && this.touches.size < 2) { this.pinch = null; this.finger = null; return; }   // 捏合结束：剩下那根手指不接着当滚动（会跳）
+    if (this.touches.delete(e.pointerId) && this.pinch && this.touches.size < 2) { this.pinch = null; this.finger = null; this.cancelPress(); return; }   // 捏合结束：剩下那根手指不接着当滚动（会跳）
+    const pr = this.press;
+    if (pr && e.pointerId === pr.pid) {
+      this.press = null; clearTimeout(pr.timer);
+      const extended = !!this.selDrag; this.selDrag = null;
+      if (pr.fired || extended) { this.finger = null; if (this.drag) { this.host.release?.(); this.drag = null; } this.box = null; this.boxEl.hidden = true; return; }   // 长按选过了：抬手到此为止
+      if (pr.hit && !pr.moved) {   // 轻点在音上
+        this.finger = null; this.box = null;
+        if (this.drag) { this.host.release?.(); this.drag = null; } else this.host.audition?.(pr.hit.index);   // 笔 / 鼠标按下时已经响过；手指现在响一下
+        this.tapNote(pr.hit, pr.shift);
+        return;
+      }
+    }
     if (this.finger && e.pointerId === this.finger.pid) {
       const f = this.finger; this.finger = null;
       if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) { this.host.set(this.caretAt(f.x, f.y)); this.host.focus?.("staff"); }

@@ -46,7 +46,7 @@ button, input, select { font: inherit; color: inherit; }
 
 /* 列宽 minmax(0, 1fr)：里面的内容（谱面 SVG 按上一次的宽度画的）不许把整页撑宽——转屏 / PWA 启动时会卡在宽的那次（2026-10-07 user 截图「pwa的时候好像宽度超了」）；
    border-box：安全区的内边距算在 100% 里面（PWA 全屏时不再多出一截） */
-#app { height: 100%; box-sizing: border-box; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
+#app { height: calc(100% - var(--kb-offset, 0px)); box-sizing: border-box;   /* --kb-offset = iOS 软键盘占掉的高度（main.ts visualViewport）：整个 app 缩到键盘上面，谱的最底下才滚得到 */ display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
 
 /* 顶栏 */
@@ -109,7 +109,8 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg line.caret { stroke: var(--accent); }
 .staff-svg rect.warn { fill: #d9a23a; }
 .staff-svg text.lyric { font-family: system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif; }
-.staff-svg .sel { fill: #1d5fa8; stroke: #1d5fa8; }
+/* 选中 = 底下那条淡蓝带子（rect.selbox）就够了，音不涂蓝（user 2026-10-08「选区画成一条淡蓝的带子盖住那几个音（不是把音涂蓝）」） */
+.staff-svg .sel { }
 .staff-svg rect.selbox { fill: var(--accent-soft); opacity: .8; }
 .staff-svg path.tuplet-bracket { fill: none; stroke: var(--ink); stroke-width: 1; }
 /* 谱面板：svg 一层 + 歌词输入框一层（就地写歌词，不随重画消失） */
@@ -484,3 +485,12 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 /* 键盘 tab：pad 收起后屏幕最下面一粒，点了弹出来 */
 .pad-tab { position: absolute; bottom: max(8px, var(--safe-bottom)); left: 50%; transform: translateX(-50%); z-index: 40; border-radius: 999px; padding: 0 14px; gap: 6px; background: color-mix(in srgb, var(--panel) 94%, transparent); box-shadow: 0 2px 10px rgba(0, 0, 0, .1); }
 .diag-log { max-height: 40vh; overflow: auto; font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+
+/* ═══ 改的手感（2026-10-08 Claude Fable 5.1）：长按选区的两个棒棒糖把手 + 选区条 ═══ */
+.sel-handle { position: absolute; z-index: 6; width: 28px; height: 36px; margin-left: -14px; touch-action: none; cursor: grab; }
+.sel-handle::before { content: ""; position: absolute; left: 13px; top: 0; width: 2px; height: 16px; background: var(--accent); }
+.sel-handle::after { content: ""; position: absolute; left: 5px; top: 14px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+.sel-handle.start::before { left: 13px; }
+.sel-bar { position: absolute; top: 56px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0, 0, 0, .08); white-space: nowrap; max-width: calc(100% - 16px); overflow-x: auto; }
+.sel-bar .btn { height: 30px; min-width: 30px; padding: 0 8px; font-size: 13px; }
+.sel-bar .sel-n { color: var(--muted); font-size: 12px; padding: 0 4px; }
