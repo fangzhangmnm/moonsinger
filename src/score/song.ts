@@ -210,7 +210,16 @@ export function toggleChordPitch(st: EditorState, i: number, p: Pitch): EditorSt
 /** pad 的「叠」：往前一个音（有选中 = 选中的第一个音）上叠（挂着的升降一样用掉）。 */
 export function stackPitch(st: EditorState, pitch0: Pitch): EditorState {
   const input = consumeAcc(st.input);
-  const i = st.sel ? firstNoteIn(st) : currentIndex(st);
+  if (st.sel) {   // 有选中 = 选中的每个音都叠这个音（XOR；user 2026-10-08「其他键用 C（整组）没问题」）；选区留着
+    let s: EditorState = { ...st, input }, changed = false;
+    for (let i = st.sel.from; i < st.sel.to; i++) {
+      const t = tr(s)[i]; if (t.kind !== "note" || !t.pitch) continue;
+      const n = toggleChordPitch(s, i, keySpell(applyAcc(pitch0, st.input), keyAt(tr(s), i)));
+      if (n !== s) { s = { ...n, sel: st.sel, caret: st.caret }; changed = true; }
+    }
+    return changed ? s : { ...st, input };
+  }
+  const i = currentIndex(st);
   if (i < 0 || tr(st)[i].kind !== "note") return { ...st, input };
   const pitch = keySpell(applyAcc(pitch0, st.input), keyAt(tr(st), i));   // 按谱上的调号简化拼写（同 writePitch）
   return toggleChordPitch({ ...st, input }, i, pitch);
@@ -328,7 +337,7 @@ export function writeDegree(st: EditorState, degree: number, dir: Dir): EditorSt
 }
 
 export function writeRest(st: EditorState): EditorState {
-  if (st.sel) return st;
+  if (st.sel) return restSel(st);   // 有选中 = 选中的音都变成同样长的休止（C：整组）
   const dur = unitDur(st.input), id = st.nextId, tokens = tr(st).slice();
   tokens.splice(st.caret, 0, { kind: "rest", id, dur });
   return next(st, tokens, { caret: st.caret + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur }] });
@@ -581,6 +590,29 @@ function overwritePitch(st: EditorState, pitch: Pitch): EditorState {
   const nt = tr(st).slice(); nt[i] = withPitches(nt[i] as NoteTok, [pitch]);   // 重打 = 整个叠音换成这一个音
   const j = nextNoteAfter(nt, i);
   return j >= 0 ? next(st, nt, { sel: { from: j, to: j + 1 }, caret: j + 1 }) : next(st, nt, { sel: null, caret: nt.length, log: [] });
+}
+/** 选中的音 / 休止全部改成这一档（pad 长短旋钮拨的那一档；连音跟 pad 现在的连音设置）。user 2026-10-08「其他键用 C（整组）没问题」。 */
+export function setSelDur(st: EditorState, unit: number): EditorState {
+  const d = unitDur({ ...st.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) });
+  return mapSelDur(st, () => d);
+}
+/** 选中的音 / 休止现在是哪一档（都一样才有；长短不一 / 不是整档 / 没选 = null）：pad 的长短旋钮显示用。 */
+export function selUnit(st: EditorState): number | null {
+  if (!st.sel) return null;
+  let u: number | null = null;
+  for (let i = st.sel.from; i < st.sel.to; i++) {
+    const t = tr(st)[i]; if (!isTimed(t)) continue;
+    const k = LADDER.indexOf(t.dur as (typeof LADDER)[number]); if (k < 0) return null;
+    if (u === null) u = k; else if (u !== k) return null;
+  }
+  return u;
+}
+/** 「0」有选中 = 选中的音都变成同样长的休止（叠音 / 歌词 / 记号一起没了；能撤销）。 */
+export function restSel(st: EditorState): EditorState {
+  if (!st.sel) return st;
+  const nt = tr(st).slice(); let changed = false;
+  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note") { nt[i] = { kind: "rest", id: t.id, dur: t.dur } as Token; changed = true; } }
+  return changed ? next(st, nt, { sel: st.sel, caret: st.caret }) : st;
 }
 function mapSelDur(st: EditorState, f: (d: number) => number): EditorState {
   if (!st.sel) return st;

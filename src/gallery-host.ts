@@ -50,12 +50,12 @@ const TEXT: Partial<Record<Parameters<NonNullable<NonNullable<CreateGalleryDeps[
 
 export function initGalleryHost(d: GalleryHostDeps) {
   const vue = { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } as unknown as VueRuntime;   // Teleport：gallery 0.6.2 卡片 ⋯ 菜单搬出卡片
-  // 一屏容器 + chrome（不进 index.html：歌库是懒的，没进过歌库的设备连 DOM 都不长）
+  // 一屏容器 + chrome（不进 index.html：歌库是懒的，没进过歌库的设备连 DOM 都不长）。没有「回到谱」：进歌库 = 放下手里的歌（gallery-first，同 WeebPaint；user 2026-10-08「7 和weebpaint对齐」），出口 = 打开一首 / 新建
   const fullEl = document.createElement("div");
   fullEl.id = "galleryFull"; fullEl.className = "gallery-full"; fullEl.hidden = true;
   fullEl.setAttribute("role", "dialog"); fullEl.setAttribute("aria-modal", "true"); fullEl.setAttribute("aria-label", "歌库");
   fullEl.innerHTML = `<div class="gallery-chrome">` +
-    `<button type="button" class="btn" data-v="back" title="回到谱">${iconHtml("back")}</button><div class="gallery-chrome-title">歌库</div><span class="spacer"></span>` +
+    `<div class="gallery-chrome-title">歌库</div><span class="spacer"></span>` +
     `<button type="button" class="btn" data-v="cloud" title="云端：登录 / 退出">${iconHtml("cloud")}</button>` +
     `<button type="button" class="btn" data-v="refresh" title="刷新云端" hidden>${iconHtml("refresh")}</button>` +
     `<button type="button" class="btn gallery-inst" data-v="instruments" title="乐器目录：浏览、试听、用键盘弹着玩（不写进哪首歌）"><span>乐器</span></button>` +
@@ -125,8 +125,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
   fullEl.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (!v) return;
-    if (v === "back") close();
-    else if (v === "cloud") d.openCloudMenu(cloudBtn);
+    if (v === "cloud") d.openCloudMenu(cloudBtn);
     else if (v === "refresh") gallery?.handle.refresh();
     else if (v === "new") void d.newSong();
     else if (v === "instruments") d.openInstruments();

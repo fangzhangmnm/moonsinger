@@ -62,7 +62,7 @@ export const BINDINGS: Binding[] = [
   { id: "degree.down", group: "写音", keys: range(DOWN_ROW), show: "Q W E R T Y U", sound: true, act: degree("down"),
     does: { write: "同上，往下找（数字正下方那一排）", edit: "同上，往下找", impro: "只唱不写（往下找）" } },
   { id: "rest", group: "写音", keys: [{ code: "Digit0" }, { code: "Numpad0" }], act: cmd({ k: "rest" }),
-    does: { write: "休止" } },
+    does: { write: "休止", edit: "选中的音都变成同样长的休止（整组；2026-10-08 user「其他键用C」）" } },
   { id: "bar", group: "写音", keys: [{ code: "Enter" }, { code: "NumpadEnter" }, { code: "Backslash", shift: true }], show: "Enter / |", act: cmd({ k: "bar" }),
     does: { write: "小节线", edit: "在选中后面插小节线" } },
   { id: "phrase", group: "写音", keys: [{ code: "Enter", shift: true }, { code: "NumpadEnter", shift: true }], show: "Shift+Enter", act: cmd({ k: "phrase" }),

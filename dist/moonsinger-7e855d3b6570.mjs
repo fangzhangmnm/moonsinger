@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.20-2026-10-08";
+var APP_VERSION = "v0.6.21-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2937,7 +2937,20 @@ function toggleChordPitch(st3, i10, p2) {
 }
 function stackPitch(st3, pitch0) {
   const input = consumeAcc(st3.input);
-  const i10 = st3.sel ? firstNoteIn(st3) : currentIndex(st3);
+  if (st3.sel) {
+    let s10 = { ...st3, input }, changed2 = false;
+    for (let i11 = st3.sel.from; i11 < st3.sel.to; i11++) {
+      const t10 = tr(s10)[i11];
+      if (t10.kind !== "note" || !t10.pitch) continue;
+      const n10 = toggleChordPitch(s10, i11, keySpell(applyAcc(pitch0, st3.input), keyAt(tr(s10), i11)));
+      if (n10 !== s10) {
+        s10 = { ...n10, sel: st3.sel, caret: st3.caret };
+        changed2 = true;
+      }
+    }
+    return changed2 ? s10 : { ...st3, input };
+  }
+  const i10 = currentIndex(st3);
   if (i10 < 0 || tr(st3)[i10].kind !== "note") return { ...st3, input };
   const pitch = keySpell(applyAcc(pitch0, st3.input), keyAt(tr(st3), i10));
   return toggleChordPitch({ ...st3, input }, i10, pitch);
@@ -3045,7 +3058,7 @@ function writeDegree(st3, degree2, dir) {
   return writePitch(st3, placeDegree(degree2, inputKey(st3), prevPitch(tr(st3), at2), dir));
 }
 function writeRest(st3) {
-  if (st3.sel) return st3;
+  if (st3.sel) return restSel(st3);
   const dur = unitDur(st3.input), id2 = st3.nextId, tokens = tr(st3).slice();
   tokens.splice(st3.caret, 0, { kind: "rest", id: id2, dur });
   return next(st3, tokens, { caret: st3.caret + 1, nextId: id2 + 1, log: [...st3.log, { k: "ins", id: id2, unit: dur }] });
@@ -3305,6 +3318,36 @@ function overwritePitch(st3, pitch) {
   nt2[i10] = withPitches(nt2[i10], [pitch]);
   const j2 = nextNoteAfter(nt2, i10);
   return j2 >= 0 ? next(st3, nt2, { sel: { from: j2, to: j2 + 1 }, caret: j2 + 1 }) : next(st3, nt2, { sel: null, caret: nt2.length, log: [] });
+}
+function setSelDur(st3, unit) {
+  const d3 = unitDur({ ...st3.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) });
+  return mapSelDur(st3, () => d3);
+}
+function selUnit(st3) {
+  if (!st3.sel) return null;
+  let u2 = null;
+  for (let i10 = st3.sel.from; i10 < st3.sel.to; i10++) {
+    const t10 = tr(st3)[i10];
+    if (!isTimed(t10)) continue;
+    const k2 = LADDER.indexOf(t10.dur);
+    if (k2 < 0) return null;
+    if (u2 === null) u2 = k2;
+    else if (u2 !== k2) return null;
+  }
+  return u2;
+}
+function restSel(st3) {
+  if (!st3.sel) return st3;
+  const nt2 = tr(st3).slice();
+  let changed2 = false;
+  for (let i10 = st3.sel.from; i10 < st3.sel.to; i10++) {
+    const t10 = nt2[i10];
+    if (t10.kind === "note") {
+      nt2[i10] = { kind: "rest", id: t10.id, dur: t10.dur };
+      changed2 = true;
+    }
+  }
+  return changed2 ? next(st3, nt2, { sel: st3.sel, caret: st3.caret }) : st3;
 }
 function mapSelDur(st3, f2) {
   if (!st3.sel) return st3;
@@ -3804,7 +3847,7 @@ var BINDINGS = [
     group: "\u5199\u97F3",
     keys: [{ code: "Digit0" }, { code: "Numpad0" }],
     act: cmd({ k: "rest" }),
-    does: { write: "\u4F11\u6B62" }
+    does: { write: "\u4F11\u6B62", edit: "\u9009\u4E2D\u7684\u97F3\u90FD\u53D8\u6210\u540C\u6837\u957F\u7684\u4F11\u6B62\uFF08\u6574\u7EC4\uFF1B2026-10-08 user\u300C\u5176\u4ED6\u952E\u7528C\u300D\uFF09" }
   },
   {
     id: "bar",
@@ -5873,6 +5916,14 @@ var ScoreView = class {
     el2.addEventListener("pointerdown", (e10) => this.down(e10));
     el2.addEventListener("pointermove", (e10) => this.move(e10));
     el2.addEventListener("pointerup", (e10) => this.up(e10));
+    el2.addEventListener("contextmenu", (e10) => {
+      if (!this.layout || e10.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
+      e10.preventDefault();
+      const p2 = this.local(e10);
+      this.cancelPress();
+      if (this.noteAt(p2.x, p2.y)) return;
+      this.blankPress(p2.x, p2.y, e10.clientX, e10.clientY);
+    });
     el2.addEventListener("pointercancel", (e10) => {
       if (this.drag) this.host.release?.();
       this.drag = null;
@@ -6069,7 +6120,7 @@ var ScoreView = class {
   down(e10) {
     if (e10.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
     const L2 = this.layout;
-    if (!L2) return;
+    if (!L2 || e10.button === 2) return;
     const p2 = this.local(e10);
     this.el.focus({ preventScroll: true });
     if (e10.pointerType === "touch") {
@@ -6107,7 +6158,7 @@ var ScoreView = class {
   /** 按下：开长按计时（0.42 s 不动 = 长按）。 */
   armPress(e10, p2, hit) {
     this.cancelPress();
-    const pr = { pid: e10.pointerId, type: e10.pointerType, x: p2.x, y: p2.y, hit, timer: 0, shift: e10.shiftKey, moved: false, fired: false };
+    const pr = { pid: e10.pointerId, type: e10.pointerType, x: p2.x, y: p2.y, cx: e10.clientX, cy: e10.clientY, hit, timer: 0, shift: e10.shiftKey, moved: false, fired: false };
     pr.timer = window.setTimeout(() => this.longPress(), 420);
     this.press = pr;
   }
@@ -6118,12 +6169,15 @@ var ScoreView = class {
     }
     this.selDrag = null;
   }
-  /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 没事（以后放「粘贴」）。 */
+  /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 光标放到那里 + 小菜单（粘贴 / 插记号 / 全选…；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」）。 */
   longPress() {
     const pr = this.press;
     if (!pr || pr.moved) return;
     pr.fired = true;
-    if (!pr.hit) return;
+    if (!pr.hit) {
+      this.blankPress(pr.x, pr.y, pr.cx, pr.cy);
+      return;
+    }
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
     this.finger = null;
@@ -6135,6 +6189,23 @@ var ScoreView = class {
     this.host.set(select(st3, pr.hit.index, pr.hit.index + 1));
     this.selDrag = { pid: pr.pid, anchor: pr.hit.index };
     this.host.focus?.("staff");
+  }
+  /** 空白处长按 / 右键：收起编辑框、光标放到那里（同轻点空白），再告诉宿主开小菜单。row = 这一行里光标所在 track 的音的下标范围。 */
+  blankPress(x2, y2, cx2, cy2) {
+    this.lyrics.commitAndClose();
+    this.marks.commitAndClose();
+    this.finger = null;
+    this.box = null;
+    this.boxEl.hidden = true;
+    if (this.drag) {
+      this.host.release?.();
+      this.drag = null;
+    }
+    this.host.set(this.caretAt(x2, y2));
+    const L2 = this.layout, row = this.rowAt(y2), mine = L2.notes.filter((n10) => n10.system === row && this.onTrack(n10));
+    const range2 = mine.length ? { from: Math.min(...mine.map((n10) => n10.index)), to: Math.max(...mine.map((n10) => n10.index)) + 1 } : null;
+    this.host.focus?.("staff");
+    this.host.onBlankPress?.({ x: cx2, y: cy2 }, range2);
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
   noteAt(x2, y2, finger = false) {
@@ -6947,8 +7018,14 @@ var Pad = class {
     }
     const u2 = q2(".k-unit .kl");
     if (u2) {
-      u2.innerHTML = `<span class="smufl">${UNIT_GLYPH[i10.unit]}</span>${i10.tuplet ? `<sup>${i10.tuplet}</sup>` : ""}`;
-      u2.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i10.unit]}${i10.tuplet ? `\uFF08${i10.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009`;
+      if (st3.sel) {
+        const su2 = selUnit(st3);
+        u2.innerHTML = su2 === null ? `<span class="mixed">\u2026</span>` : `<span class="smufl">${UNIT_GLYPH[su2]}</span>`;
+        u2.parentElement.title = su2 === null ? "\u9009\u4E2D\u7684\u97F3\u957F\u77ED\u4E0D\u4E00\uFF1A\u62E8 = \u90FD\u6539\u6210\u62E8\u5230\u7684\u90A3\u4E00\u6863" : `\u9009\u4E2D\u7684\u97F3\uFF1A${UNIT_NAME[su2]}\uFF08\u62E8 = \u6574\u7EC4\u6539\uFF09`;
+      } else {
+        u2.innerHTML = `<span class="smufl">${UNIT_GLYPH[i10.unit]}</span>${i10.tuplet ? `<sup>${i10.tuplet}</sup>` : ""}`;
+        u2.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i10.unit]}${i10.tuplet ? `\uFF08${i10.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009`;
+      }
     }
     q2(".impro-pad")?.classList.toggle("is-on", this.host.isImpro());
     const r10 = q2(".k-range .kl");
@@ -7009,7 +7086,7 @@ var Pad = class {
       const sc2 = this.scale();
       return { items: K3.map((k2) => keyLabel(k2, sc2)), index: Math.max(0, K3.indexOf(f2)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i10) => this.host.onInputKey(K3[i10]), loop: true };
     }
-    if (knob === "unit") return { items: UNITS.map((u2) => `<span class="smufl">${UNIT_GLYPH[u2]}</span>`), index: Math.max(0, UNITS.indexOf(st3.input.unit)), title: "\u957F\u77ED\u57FA\u7EBF", set: (i10) => this.host.onUnit(UNITS[i10]) };
+    if (knob === "unit") return { items: UNITS.map((u2) => `<span class="smufl">${UNIT_GLYPH[u2]}</span>`), index: Math.max(0, UNITS.indexOf(st3.sel ? selUnit(st3) ?? st3.input.unit : st3.input.unit)), title: st3.sel ? "\u9009\u4E2D\u7684\u97F3\u7684\u65F6\u503C\uFF08\u6574\u7EC4\u6539\uFF09" : "\u957F\u77ED\u57FA\u7EBF", set: (i10) => this.host.onUnit(UNITS[i10]) };
     const rows = this.rows();
     return {
       items: SHIFTS.map((sh2) => this.spanHtml(sh2, f2, rows, narrow)),
@@ -18576,8 +18653,6 @@ var SCOPES2 = ["Files.ReadWrite.AppFolder", "offline_access"];
 var MSAL_URL2 = "./vendor/msal/msal-browser.min.js";
 var SONG_SUFFIX = ".mxl";
 var LOCAL_SAVE_DEBOUNCE_MS = 2e3;
-var PUSH_DEBOUNCE_MS = 15e3;
-var PUSH_HEARTBEAT_MS = 3e4;
 
 // src/identifiers.ts
 var SONG_KIND = "song";
@@ -19062,6 +19137,15 @@ var hasStore = () => _store != null;
 function requireStore() {
   if (!_store) throw new Error("store not attached yet (call attachStore() first)");
   return _store;
+}
+async function disposeStore() {
+  const s10 = _store;
+  _store = null;
+  if (s10) await s10.dispose();
+}
+async function detachStore() {
+  await disposeStore();
+  deviceKvSet2(KV_ATTACHED, null);
 }
 
 // vendor/vue/vue.esm-browser.prod.js
@@ -24772,7 +24856,7 @@ function initGalleryHost(d3) {
   fullEl.setAttribute("role", "dialog");
   fullEl.setAttribute("aria-modal", "true");
   fullEl.setAttribute("aria-label", "\u6B4C\u5E93");
-  fullEl.innerHTML = `<div class="gallery-chrome"><button type="button" class="btn" data-v="back" title="\u56DE\u5230\u8C31">${iconHtml2("back")}</button><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button><button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u4E50\u5668\u76EE\u5F55\uFF1A\u6D4F\u89C8\u3001\u8BD5\u542C\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u4E50\u5668</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\u4E00\u9996">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
+  fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button><button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u4E50\u5668\u76EE\u5F55\uFF1A\u6D4F\u89C8\u3001\u8BD5\u542C\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u4E50\u5668</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\u4E00\u9996">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector(".gallery-mount"), asideBar = fullEl.querySelector(".gallery-asidebar");
   const cloudBtn = fullEl.querySelector('[data-v="cloud"]'), refreshBtn = fullEl.querySelector('[data-v="refresh"]');
@@ -24851,8 +24935,7 @@ function initGalleryHost(d3) {
   fullEl.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
-    if (v === "back") close();
-    else if (v === "cloud") d3.openCloudMenu(cloudBtn);
+    if (v === "cloud") d3.openCloudMenu(cloudBtn);
     else if (v === "refresh") gallery2?.handle.refresh();
     else if (v === "new") void d3.newSong();
     else if (v === "instruments") d3.openInstruments();
@@ -25729,6 +25812,7 @@ var view = new ScoreView(scoreEl, {
   parts: () => partViews(),
   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at2) => openTrackCard(at2),
+  onBlankPress: (at2, row) => openScoreMenu(at2, row),
   onPaperMenu: (id2) => openPaperMenu(id2),
   onAddPaper: () => {
     update(addPaper(st2));
@@ -25859,6 +25943,13 @@ var finderBackToInst = false;
 var trackRedraw = null;
 var finderShown = false;
 var finderPlayOnly = false;
+function insertMarkHere(kind) {
+  const at2 = st2.sel ? st2.sel.from : st2.caret;
+  const v = kind === "key" ? { kind, fifths: keyAt(tr(st2), at2) } : kind === "time" ? { kind, ...timeAt(tr(st2), at2) } : { kind, bpm: tempoAt(tr(st2), at2) };
+  const r10 = writeMark(st2, v);
+  update(r10.st);
+  view.marks.openAt(r10.index, r10.fresh);
+}
 var pad3 = new Pad(padEl, {
   state: () => st2,
   isImpro: () => impro || finderShown || instShown,
@@ -25905,6 +25996,10 @@ var pad3 = new Pad(padEl, {
     if (c10.k === "rest" || c10.k === "extend") afterWrite();
   },
   onUnit: (u2) => {
+    if (st2.sel) {
+      update(setSelDur(st2, u2));
+      return;
+    }
     if (half === "once") {
       half = "off";
       halfShifted = false;
@@ -25933,12 +26028,7 @@ var pad3 = new Pad(padEl, {
   onAccShift: (phase, acc) => accKey(phase, acc),
   // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
   onInsertMark: (kind) => {
-    if (finder.isOpen) return;
-    const at2 = st2.sel ? st2.sel.from : st2.caret;
-    const v = kind === "key" ? { kind, fifths: keyAt(tr(st2), at2) } : kind === "time" ? { kind, ...timeAt(tr(st2), at2) } : { kind, bpm: tempoAt(tr(st2), at2) };
-    const r10 = writeMark(st2, v);
-    update(r10.st);
-    view.marks.openAt(r10.index, r10.fresh);
+    if (!finder.isOpen) insertMarkHere(kind);
   },
   onSoundDown: (p2, id2) => {
     const n10 = padNotes.get(id2);
@@ -26580,7 +26670,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "81fdcd5e64b3",
+  cssHash: "7bcf50a34dc5",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -27160,6 +27250,49 @@ function openTrackCard(at2) {
       return;
     } else return;
     draw();
+  });
+}
+function openScoreMenu(at2, row) {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu";
+  box.setAttribute("role", "menu");
+  const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
+  box.innerHTML = item("paste", "\u7C98\u8D34", "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09") + `<div class="ctx-sep"></div>` + item("bar", "\u5C0F\u8282\u7EBF |", "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09") + item("phrase", "\u53E5\u53F7", "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09") + item("mark:key", "\u8C03\u53F7\u2026") + item("mark:time", "\u62CD\u53F7\u2026") + item("mark:tempo", "\u901F\u5EA6\u2026") + `<div class="ctx-sep"></div>` + item("row", "\u5168\u9009\u8FD9\u4E00\u884C", "", !row) + item("all", "\u5168\u9009");
+  document.body.append(box);
+  const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
+  let x2 = at2.x + 6, y2 = at2.y + 10;
+  if (y2 + h2 > innerHeight - m2) y2 = at2.y - h2 - 10;
+  box.style.left = `${Math.max(m2, Math.min(x2, innerWidth - w2 - m2))}px`;
+  box.style.top = `${Math.max(m2, Math.min(y2, innerHeight - h2 - m2))}px`;
+  const outside = (e10) => {
+    if (!box.contains(e10.target)) close();
+  };
+  const close = () => {
+    document.removeEventListener("pointerdown", outside, true);
+    box.remove();
+    if (closeOffer === close) closeOffer = null;
+  };
+  setTimeout(() => {
+    if (box.isConnected) document.addEventListener("pointerdown", outside, true);
+  }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (!v) return;
+    close();
+    if (v === "paste") void pasteNow();
+    else if (v === "bar") update(apply(st2, { k: "bar" }, performance.now()));
+    else if (v === "phrase") update(apply(st2, { k: "phrase" }, performance.now()));
+    else if (v.startsWith("mark:")) insertMarkHere(v.slice(5));
+    else if (v === "row" && row) {
+      update(select(st2, row.from, row.to));
+      updateChrome();
+    } else if (v === "all") {
+      update(selectAll(st2));
+      updateChrome();
+    }
+    scoreEl.focus();
   });
 }
 var instEl = document.createElement("div");
@@ -27814,14 +27947,10 @@ function askSheet(title, msg, okLabel) {
   });
 }
 window.addEventListener("beforeunload", (e10) => {
-  if (doc.identifier) {
-    if (dirty()) void es2.flushLocal().catch(() => void 0);
-    return;
-  }
-  if (dirty() && !navigatingForAuth) {
-    e10.preventDefault();
-    e10.returnValue = "";
-  }
+  if (navigatingForAuth || !dirty()) return;
+  e10.preventDefault();
+  e10.returnValue = "";
+  if (doc.identifier) void es2.flushLocal().catch(() => void 0);
 });
 window.addEventListener("dragover", (e10) => {
   if (e10.dataTransfer?.types.includes("Files")) {
@@ -27897,7 +28026,8 @@ var es2 = createEditorSession({
     }
   },
   isZip: true,
-  policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS, pushOn: ["exit", "blur", "idle"], idleMs: PUSH_DEBOUNCE_MS }
+  policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS, pushOn: ["exit"] }
+  // consent 制（同 WeebPaint）：推云只在换歌 / 退出 / 按「存」/ 进歌库；失焦只落本机
 });
 function changed() {
   if (doc.identifier && dirty()) es2.markDirty();
@@ -27940,9 +28070,6 @@ setInterval(() => {
   changed();
   if (doc.identifier) renderTitle();
 }, 1e3);
-setInterval(() => {
-  if (doc.identifier && es2.isPushPending() && isSignedIn2() && navigator.onLine) void es2.flushAndPush().catch((e10) => reportError(e10, "warning"));
-}, PUSH_HEARTBEAT_MS);
 function adoptStoreBytes(id2, bytes) {
   const o10 = openBytes(id2, bytes);
   loadDoc(o10.song, { stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, handle: null, identifier: id2, view: o10.view });
@@ -28158,6 +28285,14 @@ async function afterGalleryClosed() {
 }
 async function openGallery() {
   attachForUser();
+  if (!await leaveCurrent("\u8FDB\u6B4C\u5E93")) return;
+  if (doc.identifier) {
+    es2.release();
+    doc.identifier = null;
+    setActiveIdentifier(null);
+  }
+  deviceKvSet2(KV_LAST_DOC, null);
+  renderTitle();
   await gallery.open();
 }
 $2("libBtn").addEventListener("click", () => {
@@ -28177,17 +28312,75 @@ async function openCloudMenu() {
     signed ? [{ label: "\u5237\u65B0\u4E91\u7AEF", value: "refresh" }, { label: "\u628A\u6CA1\u4E0A\u4E91\u7684\u90FD\u63A8\u4E0A\u53BB", value: "pushAll" }, { label: "\u9000\u51FA\u767B\u5F55", value: "out", danger: true, hint: "\u6B4C\u8FD8\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A" }] : [{ label: "\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7", value: "in", primary: true }]
   );
   if (v === "in") await signInFlow();
-  else if (v === "out") {
-    try {
-      await auth.signOut();
-      info("\u9000\u51FA\u4E86\uFF08\u6B4C\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09");
-    } catch (e10) {
-      reportError(e10);
-    }
-    gallery?.renderCloud();
-    renderTitle();
-  } else if (v === "refresh") gallery?.refresh();
+  else if (v === "out") await signOutFlow();
+  else if (v === "refresh") gallery?.refresh();
   else if (v === "pushAll") await pushDirtyAll({ verbose: true });
+}
+async function signOutFlow() {
+  const store = requireStore();
+  for (; ; ) {
+    let n10 = 0;
+    try {
+      n10 = await store.files.dirty.count();
+    } catch (e10) {
+      reportError(e10, "warning");
+    }
+    if (n10 === 0) break;
+    const v = await openChoiceSheet(
+      `\u8FD8\u6709 ${n10} \u9996\u6CA1\u4E0A\u4E91`,
+      "\u9000\u51FA\u540E\u8FD9\u4E9B\u6539\u52A8\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002\u53EF\u4EE5\u5148\u63A8\u4E0A\u53BB\uFF08\u63A8\u4E0D\u4E0A\u53BB\u7684\u9010\u9996\u4E0B\u8F7D\u5907\u4EFD\uFF09\uFF0C\u6216\u8005\u7167\u6837\u9000\u51FA\u3002",
+      [{ label: "\u5148\u63A8\u4E0A\u53BB / \u4E0B\u8F7D\u5907\u4EFD", value: "backup", primary: true }, { label: "\u7167\u6837\u9000\u51FA", value: "force", danger: true }]
+    );
+    if (v == null) return;
+    if (v === "force") break;
+    await backupDirty();
+  }
+  gallery?.close();
+  es2.release();
+  doc.identifier = null;
+  setActiveIdentifier(null);
+  doc.pendingHome = null;
+  deviceKvSet2(KV_LAST_DOC, null);
+  try {
+    await detachStore();
+  } catch (e10) {
+    reportError(e10, "warning");
+  }
+  try {
+    await auth.signOut();
+  } catch (e10) {
+    reportError(e10);
+  }
+  loadDoc(initState().song, { stem: defaultStem(), named: false, extras: emptyExtras(), handle: null, identifier: null });
+  renderTitle();
+  info("\u9000\u51FA\u4E86\uFF1A\u6B4C\u90FD\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u518D\u8FDB\u6B4C\u5E93\u5C31\u80FD\u63A5\u7740\u7528");
+}
+async function backupDirty() {
+  const store = requireStore();
+  let failed = [];
+  try {
+    failed = (await store.files.dirty.pushAll()).failed;
+  } catch (e10) {
+    reportError(e10, "warning");
+  }
+  for (const id2 of failed) {
+    try {
+      const bl = await store.zip(id2, { mode: "existing" }).open();
+      if (bl) downloadFile(new File([bl], `${stemOfId(id2)}${SONG_SUFFIX}`, { type: "application/vnd.recordare.musicxml" }));
+    } catch (e10) {
+      reportError(e10, "warning");
+    }
+  }
+  info(failed.length ? `\u63A8\u4E0D\u4E0A\u53BB\u7684 ${failed.length} \u9996\u5DF2\u4E0B\u8F7D\u5907\u4EFD` : "\u90FD\u63A8\u4E0A\u53BB\u4E86");
+}
+function downloadFile(file) {
+  const a10 = document.createElement("a"), url = URL.createObjectURL(file);
+  a10.href = url;
+  a10.download = file.name;
+  document.body.append(a10);
+  a10.click();
+  a10.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3e4);
 }
 var navigatingForAuth = false;
 async function signInFlow() {
@@ -28218,8 +28411,16 @@ async function refreshOpenDoc() {
   const id2 = doc.identifier;
   if (!id2 || refreshing || !hasStore() || !isSignedIn2() || !navigator.onLine || dirty() || es2.isPushPending()) return;
   refreshing = true;
+  let froze = false;
   try {
-    const r10 = await requireStore().zip(id2, { mode: "existing" }).pullIfClean({ localDirty: () => dirty() || es2.isPushPending(), onReplaceStart: () => info("\u4E91\u7AEF\u6709\u65B0\u7248\u672C\uFF0C\u6B63\u5728\u62C9\u2026") });
+    const r10 = await requireStore().zip(id2, { mode: "existing" }).pullIfClean({
+      localDirty: () => dirty() || es2.isPushPending(),
+      onReplaceStart: () => {
+        froze = true;
+        diagNote("sync", `replace-start ${stemOfId(id2)}: input frozen`);
+        void lockSyncGate({ title: "\u4E91\u7AEF\u6709\u65B0\u7248\u672C", message: `\u300C${stemOfId(id2)}\u300D\u5728\u522B\u7684\u8BBE\u5907\u4E0A\u6539\u8FC7\u4E86\uFF0C\u6B63\u5728\u6362\u6210\u6700\u65B0\u7684\u2026\u2026\u5148\u522B\u6253\u5B57\u3002`, showSpinner: true, actions: [] });
+      }
+    });
     if (r10?.status === "fast-forwarded" && doc.identifier === id2) {
       pendingOpenId = id2;
       const ok2 = await es2.open(id2).finally(() => {
@@ -28231,6 +28432,7 @@ async function refreshOpenDoc() {
   } catch (e10) {
     reportError(e10, "warning");
   } finally {
+    if (froze) unlockSyncGate();
     refreshing = false;
   }
 }
@@ -28429,13 +28631,7 @@ window.addEventListener("keydown", (e10) => {
     }
     return;
   }
-  if (gallery?.isOpen()) {
-    if (e10.key === "Escape" && !isSheetOpen() && !isGateOpen()) {
-      e10.preventDefault();
-      gallery.close();
-    }
-    return;
-  }
+  if (gallery?.isOpen()) return;
   if (finder.isOpen) {
     if (e10.key === "Escape") {
       e10.preventDefault();
@@ -28514,4 +28710,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-4532aae4c7b2.mjs.map
+//# sourceMappingURL=moonsinger-7e855d3b6570.mjs.map

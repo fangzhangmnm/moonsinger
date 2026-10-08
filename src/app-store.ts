@@ -62,6 +62,8 @@ export function requireStore(): Store {
   return _store;
 }
 export async function disposeStore(): Promise<void> { const s = _store; _store = null; if (s) await s.dispose(); }
+/** 拆库（退出登录时，同 WeebPaint「主动断开 = 卸库 + 退出登录」）：放掉 store 对象 + 这台设备不再开局就建 store。**IDB 里的歌不删**——再进歌库 attachStore 就接上。 */
+export async function detachStore(): Promise<void> { await disposeStore(); deviceKvSet(KV_ATTACHED, null); }
 
 export { requestStoragePersistence, isCached, isDirty, withStemTail };
 export type { Store, OneDriveAuth };

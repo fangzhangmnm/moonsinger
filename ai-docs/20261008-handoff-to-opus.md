@@ -28,6 +28,8 @@
 
 **分工（2026-10-08 晚起，edited by Claude Opus 5.5）**：主目录归 Opus——合并（自己的分支进 main）、构建 dist、推 origin + github 两端、bump patch 都由 Opus 自己做；碰红线（store / 同步引擎 / 加密 / 格式红线区 / OneDrive scope 等家规硬规则）直接 escalate user，由 user 决定要不要叫 Fable。出处：user 在 Fable 会话里说「如果没事让他默认做 merge 吧，这样不会老是用我 fable 的流量，他是主提交，你是碰到红线在管。应该之后我不说大概率用不到你。那边如果有红线我应该会判断的」（Fable 转述）；本会话 user「然后可以推了，我可以看一下」。push prod 照旧必问 user（家规 #5）。
 
+**歌库对账 12 条的裁决（2026-10-08 晚，user 逐条回复；edited by Claude Fable 5.1）**：1 推云 = WeebPaint consent 制（「用weebpaint方案，对付大歌，这不是txt」）；2 「•」= 内存脏 + 云朵另算 + 挽留框（对齐 WeebPaint）；3 撞名后缀 = 本仓保持 -hex4，**WeebPaint 改**（便条 = WeebPaint ai-docs/inbox/20261008-collision-suffix-hex4-handoff.md）；4 退出登录 = 脏门 + 备份 + 拆库 + 退出；5 / 6 / 11 本来就同 WeebPaint；7 进歌库 = 放下手里的歌（gallery-first，没有「回到谱」）；8 首笔安家（早已落）；9 三家登录都没问题、不改；10 拿新版本时锁输入（WXHW 式）；12 只是说明。全部落在 v0.6.21（仓 CLAUDE.md「歌库」节）。同夜另落：有选区时 pad 别的键 = 整组（C）、空白处小菜单；**替换模式（选区 + 音键）和「按住 = 叠」的和弦输入还在讨论，没动**。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |

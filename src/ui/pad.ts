@@ -30,7 +30,7 @@ import { type Pitch, HOME, diatonicIndex, tonicStepIndex, pitchName, alterBy, mi
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
-import { type EditorState, type Acc, inputKey, keyAt, timeAt, tempoAt, tr } from "../score/song.ts";
+import { type EditorState, type Acc, inputKey, keyAt, timeAt, tempoAt, tr, selUnit } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
 
 /** 月读的音域 A3–E5（MIDI）：键底部画细条提示，音域外不拦、不变灰。宿主不给提示音域时（hintRange 没接）用它。 */
@@ -435,7 +435,11 @@ export class Pad {
     const k = q(".k-key .kl");
     if (k && !st.sel) { const sc = this.scale(); k.innerHTML = keyLabel(f, sc); k.parentElement!.classList.toggle("stack", k.parentElement!.clientWidth < STACK); k.parentElement!.title = `1=${KEY_NAMES[f]} ${sc.name}（pad 自己的调和调式）：按住上下滑换调 / 点开选调和调式`; }
     const u = q(".k-unit .kl");
-    if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`; u.parentElement!.title = `长短基线：${UNIT_NAME[i.unit]}${i.tuplet ? `（${i.tuplet} 连音）` : ""}——按住上下滑 / 点开选`; }
+    if (u) {
+      // 有选中：旋钮显示选中的音的时值（都一样才显示，长短不一 = …），拨 = 整组改（user 2026-10-08「其他键用 C（整组）没问题」）
+      if (st.sel) { const su = selUnit(st); u.innerHTML = su === null ? `<span class="mixed">…</span>` : `<span class="smufl">${UNIT_GLYPH[su]}</span>`; u.parentElement!.title = su === null ? "选中的音长短不一：拨 = 都改成拨到的那一档" : `选中的音：${UNIT_NAME[su]}（拨 = 整组改）`; }
+      else { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`; u.parentElement!.title = `长短基线：${UNIT_NAME[i.unit]}${i.tuplet ? `（${i.tuplet} 连音）` : ""}——按住上下滑 / 点开选`; }
+    }
     q(".impro-pad")?.classList.toggle("is-on", this.host.isImpro());   // 「弹」亮不亮（键盘快捷键 / 找人视图也会改它）
     const r = q(".k-range .kl");
     if (r) { const nr = this.rangeNarrow(); r.parentElement!.classList.toggle("narrow", nr); r.parentElement!.classList.toggle("tight", r.parentElement!.clientWidth < TIGHT); r.innerHTML = this.spanHtml(this.rowShift, f, this.rows(), nr); r.parentElement!.title = `音域 ${this.spanText(this.rowShift, f, this.rows())}：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的`; }
@@ -476,7 +480,7 @@ export class Pad {
       const sc = this.scale();
       return { items: K.map((k) => keyLabel(k, sc)), index: Math.max(0, K.indexOf(f)), title: "pad 的调（五度圈）", set: (i) => this.host.onInputKey(K[i]), loop: true };
     }
-    if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st.input.unit)), title: "长短基线", set: (i) => this.host.onUnit(UNITS[i]) };
+    if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st.sel ? (selUnit(st) ?? st.input.unit) : st.input.unit)), title: st.sel ? "选中的音的时值（整组改）" : "长短基线", set: (i) => this.host.onUnit(UNITS[i]) };
     const rows = this.rows();   // 音域：高的在上（一张纸：往上推 = 看下面更低的）
     return { items: SHIFTS.map((sh) => this.spanHtml(sh, f, rows, narrow)), index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), title: "音域窗口",
       set: (i) => { this.rowShift = SHIFTS[i]; this.render(); } };

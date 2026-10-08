@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef } from "../score/song.ts";
+import { type Art, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -48,12 +48,12 @@ import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
-import { attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn } from "../app-store.ts";
+import { attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore } from "../app-store.ts";
 import { identifiers } from "../identifiers.ts";
-import { SONG_SUFFIX, LOCAL_SAVE_DEBOUNCE_MS, PUSH_DEBOUNCE_MS, PUSH_HEARTBEAT_MS } from "../config.ts";
+import { SONG_SUFFIX, LOCAL_SAVE_DEBOUNCE_MS } from "../config.ts";
 import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
 import { createEditorSession } from "../editor-session/index.ts";
-import { openInputSheet, openChoiceSheet, isSheetOpen, closeSheet, isGateOpen } from "../ui/sheets.ts";
+import { openInputSheet, openChoiceSheet, isSheetOpen, closeSheet, isGateOpen, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
 import { reportError, diagNote, diagText, initBlackBox } from "./report-error.ts";
 import { copyDiag, shareDiag, clearDiag, canShareDiag } from "./diag-ui.ts";
 import { deviceKvGet, deviceKvSet } from "../device-kv.ts";
@@ -219,6 +219,7 @@ const view = new ScoreView(scoreEl, {
   autoBars: () => autoBars,
   parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at) => openTrackCard(at),
+  onBlankPress: (at, row) => openScoreMenu(at, row),
   onPaperMenu: (id) => openPaperMenu(id),
   onAddPaper: () => { update(addPaper(st)); info("新的一张纸"); },
   onNav: (dir) => navPaper(dir),
@@ -324,6 +325,14 @@ let finderBackToInst = false;   // 乐器目录是从乐器页开的：关掉（
 let trackRedraw: (() => void) | null = null;   // 轨的小卡开着 = 它的重画（撤销 / 别处改了跟着变）
 let finderShown = false;   // 找人视图开着（openFinder / closeFinder 维护；不在这里读 finder——它比 pad 晚建）
 let finderPlayOnly = false;   // 从歌库进的乐器目录 = 只弹着玩（盖在歌库上面、不出「上场」；user 2026-10-08「库里面不开歌能进乐器目录玩吗」→「做只弹着玩模式」）
+/** 在光标（有选中 = 选区开头）插一个调号 / 拍号 / 速度，开记号框就地改：默认值 = 那里正生效的那个（没改就收起 = 撤掉这次插入）。pad 符号层和空白处小菜单共用。 */
+function insertMarkHere(kind: MarkVal["kind"]): void {
+  const at = st.sel ? st.sel.from : st.caret;
+  const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(tr(st), at) } : kind === "time" ? { kind, ...timeAt(tr(st), at) } : { kind, bpm: tempoAt(tr(st), at) };
+  const r = writeMark(st, v);
+  update(r.st);
+  view.marks.openAt(r.index, r.fresh);
+}
 const pad = new Pad(padEl, {
   state: () => st,
   isImpro: () => impro || finderShown || instShown,   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
@@ -362,7 +371,7 @@ const pad = new Pad(padEl, {
     if (c.k === "breath" && nx === st) { info("呼吸要跟在一个音后面（光标前面是休止或者还没有音）"); return; }
     update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
   },
-  onUnit: (u) => { if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
+  onUnit: (u) => { if (st.sel) { update(setSelDur(st, u)); return; } if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
   onInputScale: (id) => update(setInputScale(st, id)),
@@ -373,14 +382,7 @@ const pad = new Pad(padEl, {
   onHide: () => showPad(false),
   onHalf: (down) => { if (finder.isOpen) return; halfKey(down); },
   onAccShift: (phase, acc) => accKey(phase, acc),   // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
-  onInsertMark: (kind) => {
-    if (finder.isOpen) return;   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
-    const at = st.sel ? st.sel.from : st.caret;
-    const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(tr(st), at) } : kind === "time" ? { kind, ...timeAt(tr(st), at) } : { kind, bpm: tempoAt(tr(st), at) };
-    const r = writeMark(st, v);
-    update(r.st);
-    view.marks.openAt(r.index, r.fresh);
-  },
+  onInsertMark: (kind) => { if (!finder.isOpen) insertMarkHere(kind); },
   onSoundDown: (p, id) => {
     const n = padNotes.get(id);
     if (n && n.index >= 0) soundTok(st, n.index, id);
@@ -1214,6 +1216,41 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   });
 }
 
+/** 空白处的小菜单（长按 / 电脑右键；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」「小菜单同意」）：非模态，开在按的地方，点外面就收。
+ *  光标已经由 score-view 放到按的位置：粘贴 = 贴在那里；插记号 = 插在那里。 */
+function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: number } | null): void {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
+  const item = (v: string, label: string, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
+  box.innerHTML =
+    item("paste", "粘贴", "贴在这里：app 里复制的，或系统剪贴板里的简谱文字（1 2 3 | 5 - -）") +
+    `<div class="ctx-sep"></div>` +
+    item("bar", "小节线 |", "从这里重新数小节（弱起）") + item("phrase", "句号", "这一句到这儿（「合」挪字的边界；不换行不换气）") +
+    item("mark:key", "调号…") + item("mark:time", "拍号…") + item("mark:tempo", "速度…") +
+    `<div class="ctx-sep"></div>` +
+    item("row", "全选这一行", "", !row) + item("all", "全选");
+  document.body.append(box);
+  const w = box.offsetWidth, h = box.offsetHeight, m = 8;
+  let x = at.x + 6, y = at.y + 10;
+  if (y + h > innerHeight - m) y = at.y - h - 10;
+  box.style.left = `${Math.max(m, Math.min(x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
+    close();
+    if (v === "paste") void pasteNow();
+    else if (v === "bar") update(apply(st, { k: "bar" }, performance.now()));
+    else if (v === "phrase") update(apply(st, { k: "phrase" }, performance.now()));
+    else if (v.startsWith("mark:")) insertMarkHere(v.slice(5) as MarkVal["kind"]);
+    else if (v === "row" && row) { update(select(st, row.from, row.to)); updateChrome(); }
+    else if (v === "all") { update(selectAll(st)); updateChrome(); }
+    scoreEl.focus();
+  });
+}
 // 乐器页：占 #stage 的 main 区（和乐器目录 / 录音室同一个位置），pad 留在旁边只弹不写——弹的就是台上这位，改了马上能试。
 const instEl = document.createElement("div");
 instEl.className = "inst-page"; instEl.hidden = true;
@@ -1701,11 +1738,12 @@ function askSheet(title: string, msg: string, okLabel: string): Promise<boolean>
   });
 }
 // 改过没存就关页面 / 刷新：浏览器自己的挽留框（照 WeebPaint；无地不偷偷写盘——静默写用户文件违背文件语义）
-// 退出：歌库里的歌 = 编辑了退出必落盘（本地库永远在，不管登没登录 OneDrive；user 2026-10-08）——pagehide / 页面隐藏那两下 editor-session 会 flush，这里再尽力一次，不弹挽留框；
-//   无地的（本地文件 / 没家）才有浏览器挽留框（没地方可以偷偷写；登录跳转期间不拦）。
+// 退出：挽留框（同 WeebPaint；user 2026-10-08「2 和weebpaint对齐」）——内存里有没落盘的改动就拦一下（对话框内容浏览器自管），歌库里的歌顺手偷存本机
+//   （不 await，让对话框立刻起；无地的没地方可以偷偷写）。pagehide / 页面隐藏那两下 editor-session 照样 flush。登录跳转期间不拦。
 window.addEventListener("beforeunload", (e) => {
-  if (doc.identifier) { if (dirty()) void es.flushLocal().catch(() => undefined); return; }
-  if (dirty() && !navigatingForAuth) { e.preventDefault(); e.returnValue = ""; }
+  if (navigatingForAuth || !dirty()) return;
+  e.preventDefault(); e.returnValue = "";
+  if (doc.identifier) void es.flushLocal().catch(() => undefined);
 });
 // 拖进来打开（.mxl / .musicxml / .xml；桌面 Chromium 还能拿到句柄 = 有家）。⚠ 句柄要在 drop 事件里同步抓（docFile.grabDrop），await 之后 items 就空了。
 window.addEventListener("dragover", (e) => { if (e.dataTransfer?.types.includes("Files")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
@@ -1727,7 +1765,7 @@ docFile.consumeLaunchFiles((h) => { void (async () => {
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：store（接缝 src/app-store.ts）+ 歌库屏（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ───────────
 //   家有三种（互斥）：歌库里的一首（doc.identifier；自动存 + 推云）/ 本地文件（doc.handle；v0.3.0 无地）/ 还没家。
 //   歌库是懒的：没进过歌库的设备 = 无地（不开 IDB、不载 MSAL）；点「歌库」= attach（在手势里顺便 requestStoragePersistence）；进过一次以后开局就建。
-//   节律（user 2026-10-08「「•」和「存」对齐 WXHW」；常量在 src/config.ts）：改了 2 s 自动落本地（「•」= 还没落）；15 s 没再改 / 失焦 / 换歌 / 退出 → 推云；30 s 心跳补推没上云的；
+//   节律（2026-10-08 晚起 = WeebPaint 的 consent 制，user「用weebpaint方案，对付大歌，这不是txt」；常量在 src/config.ts）：改了 2 s 自动落本地（「•」= 还没落）；推云只在换歌 / 退出 / 进歌库 / 按「存」/ 登录后 pushAll；
 //   「存」= 立刻落盘 + 推（不脏也动）。冲突 / 报错 / busy 在建 store 时就接好线（src/store-ui.ts；test/store-wiring.test.mjs 守着）。
 const KV_LAST_DOC = "last-doc";
 let gallery: GalleryHost | null = null;
@@ -1745,7 +1783,7 @@ const es = createEditorSession({
     onSaved: (name) => { if (encodedSnap) { doc.saved = encodedSnap; encodedSnap = null; } if (coverTouched) { coverTouched = false; gallery?.invalidateThumb(name); } renderTitle(); },
   },
   isZip: true,
-  policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS, pushOn: ["exit", "blur", "idle"], idleMs: PUSH_DEBOUNCE_MS },
+  policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS, pushOn: ["exit"] },   // consent 制（同 WeebPaint）：推云只在换歌 / 退出 / 按「存」/ 进歌库；失焦只落本机
 });
 /** 内容变了（谱 / 休息室 / 麦克风 / 封面）→ 歌库里的歌告诉 editor-session（autosave 节律）。幂等；1 s 心跳兜底没经过 update() 的改动（休息室 / 录音室直接改 doc.extras 的那些）。 */
 function changed(): void { if (doc.identifier && dirty()) es.markDirty(); else if (doc.pendingHome && dirty()) void homeNow(); }
@@ -1771,7 +1809,7 @@ function homeNow(): Promise<void> {
 }
 es.start();   // autosave 定时器 + 页面隐藏 / pagehide 落盘 + 失焦推云（editor-session 的通用触发点；不调就没有自动存）
 setInterval(() => { changed(); if (doc.identifier) renderTitle(); }, 1000);
-setInterval(() => { if (doc.identifier && es.isPushPending() && isSignedIn() && navigator.onLine) void es.flushAndPush().catch((e) => reportError(e, "warning")); }, PUSH_HEARTBEAT_MS);
+// （30 s 心跳补推撤了：consent 制，user 2026-10-08「用weebpaint方案」；没上云的在换歌 / 退出 / 按「存」/ 登录后 pushAll 时推）
 /** store 字节 → 编辑器（es.open 与 takeCloud 重载共用的装入段）。 */
 function adoptStoreBytes(id: string, bytes: Uint8Array): void {
   const o = openBytes(id, bytes);
@@ -1815,7 +1853,7 @@ async function newStoreSong(): Promise<void> {
   deviceKvSet(KV_LAST_DOC, null);
   renderTitle(); info("新的一首（第一笔写下去就进歌库）");
 }
-/** 把手里这首无地的歌放进歌库（文件名沿用；撞名加序号）。 */
+/** 把手里这首无地的歌放进歌库（文件名沿用；撞名加 -hex4，不加序号——user 2026-10-08「3 weebpaint写handoff和我们对齐」）。 */
 async function saveIntoGallery(): Promise<void> {
   if (doc.pendingHome) { if (!dirty()) { info("还是空的：写下第一笔就自动进歌库"); return; } await homeNow(); return; }   // 等着安家的空谱：有笔就安家，没笔不塞空壳（WeebPaint「未动过的空白不塞进新库」）
   attachForUser();
@@ -1893,8 +1931,14 @@ async function afterGalleryClosed(): Promise<void> {
     showError(`「${stem}」已经进了回收站；手里这份现在没有家了（「存」会问存到哪，或「存进歌库」）。`);
   } catch (e) { reportError(e, "log"); }
 }
+/** 进歌库 = 放下手里的歌（gallery-first，同 WeebPaint「进图库 = 关闭当前画作」；user 2026-10-08「7 和weebpaint对齐」）：
+ *  歌库里的先落盘 + 推（退出语义）再放下身份；等着安家的空谱有笔先安家；无地的改过没存先问（同「新建」）。歌库没有「回到谱」——出口 = 打开一首 / 新建。 */
 async function openGallery(): Promise<void> {
   attachForUser();
+  if (!(await leaveCurrent("进歌库"))) return;
+  if (doc.identifier) { es.release(); doc.identifier = null; setActiveIdentifier(null); }
+  deviceKvSet(KV_LAST_DOC, null);
+  renderTitle();
   await gallery!.open();
 }
 $("libBtn").addEventListener("click", () => { void openGallery(); });
@@ -1905,9 +1949,46 @@ async function openCloudMenu(): Promise<void> {
     signed ? `已登录${who ? ` ${who}` : ""}。歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。` : "登录微软个人账号后，歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。不登录也能用，歌只在这台设备上。",
     signed ? [{ label: "刷新云端", value: "refresh" }, { label: "把没上云的都推上去", value: "pushAll" }, { label: "退出登录", value: "out", danger: true, hint: "歌还留在这台设备上" }] : [{ label: "登录微软账号", value: "in", primary: true }]);
   if (v === "in") await signInFlow();
-  else if (v === "out") { try { await auth.signOut(); info("退出了（歌还在这台设备上）"); } catch (e) { reportError(e); } gallery?.renderCloud(); renderTitle(); }
+  else if (v === "out") await signOutFlow();
   else if (v === "refresh") gallery?.refresh();
   else if (v === "pushAll") await pushDirtyAll({ verbose: true });
+}
+/** 退出登录 = 脏门 + 备份 + 拆库 + 退出（同 WeebPaint disconnectFlow：先绿灯门卸库，后 signOut；user 2026-10-08「4 和weebpaint对齐」）：
+ *  还有没上云的 → 问：「先推上去 / 推不上的逐首下载备份」（推完重扫再问，数字会变小）或「照样退出」或算了；
+ *  然后放掉 store（这台设备上的歌都还在 IDB 里——再进歌库就接上）、退出微软账号、回到无地的空谱。 */
+async function signOutFlow(): Promise<void> {
+  const store = requireStore();
+  for (;;) {
+    let n = 0; try { n = await store.files.dirty.count(); } catch (e) { reportError(e, "warning"); }
+    if (n === 0) break;
+    const v = await openChoiceSheet<"backup" | "force">(`还有 ${n} 首没上云`, "退出后这些改动只在这台设备上。可以先推上去（推不上去的逐首下载备份），或者照样退出。",
+      [{ label: "先推上去 / 下载备份", value: "backup", primary: true }, { label: "照样退出", value: "force", danger: true }]);
+    if (v == null) return;
+    if (v === "force") break;
+    await backupDirty();
+  }
+  gallery?.close();
+  es.release(); doc.identifier = null; setActiveIdentifier(null); doc.pendingHome = null; deviceKvSet(KV_LAST_DOC, null);
+  try { await detachStore(); } catch (e) { reportError(e, "warning"); }
+  try { await auth.signOut(); } catch (e) { reportError(e); }
+  loadDoc(initState().song, { stem: defaultStem(), named: false, extras: emptyExtras(), handle: null, identifier: null });
+  renderTitle(); info("退出了：歌都还在这台设备上，再进歌库就能接着用");
+}
+/** 下载备份：先 pushAll 尽力推（在线时最好的备份就是云）；推不上去的（failed = 错误报告面）逐首下载 .mxl。 */
+async function backupDirty(): Promise<void> {
+  const store = requireStore();
+  let failed: string[] = [];
+  try { failed = (await store.files.dirty.pushAll()).failed; } catch (e) { reportError(e, "warning"); }
+  for (const id of failed) {
+    try { const bl = await store.zip(id, { mode: "existing" }).open(); if (bl) downloadFile(new File([bl], `${stemOfId(id)}${SONG_SUFFIX}`, { type: "application/vnd.recordare.musicxml" })); }
+    catch (e) { reportError(e, "warning"); }
+  }
+  info(failed.length ? `推不上去的 ${failed.length} 首已下载备份` : "都推上去了");
+}
+function downloadFile(file: File): void {
+  const a = document.createElement("a"), url = URL.createObjectURL(file);
+  a.href = url; a.download = file.name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 /** 登录 = 页面跳去微软再跳回来（redirect；iPad PWA 弹窗不可靠）：先把手里的歌落盘，再在一个点击里**同步**起跳（WeebPaint / WXHW 的两步法；onPick 站在用户手势里）。 */
 let navigatingForAuth = false;
@@ -1923,9 +2004,12 @@ let refreshing = false;
 async function refreshOpenDoc(): Promise<void> {
   const id = doc.identifier;
   if (!id || refreshing || !hasStore() || !isSignedIn() || !navigator.onLine || dirty() || es.isPushPending()) return;
-  refreshing = true;
+  refreshing = true; let froze = false;
   try {
-    const r = await requireStore().zip(id, { mode: "existing" }).pullIfClean({ localDirty: () => dirty() || es.isPushPending(), onReplaceStart: () => info("云端有新版本，正在拉…") });
+    // 库决定替换（onReplaceStart，同步回调）→ 锁同步闸直到新版载入：下载途中打进去的音会被整篇覆盖且不进备份箱（WXHW 2026-09-29 端到端复现；
+    //   user 2026-10-08「我们也要拿新版本时锁输入，感觉wxhw更理想一点」）。闸 = 遮罩 + 没有按钮；重载完（或失败）解锁
+    const r = await requireStore().zip(id, { mode: "existing" }).pullIfClean({ localDirty: () => dirty() || es.isPushPending(),
+      onReplaceStart: () => { froze = true; diagNote("sync", `replace-start ${stemOfId(id)}: input frozen`); void lockSyncGate({ title: "云端有新版本", message: `「${stemOfId(id)}」在别的设备上改过了，正在换成最新的……先别打字。`, showSpinner: true, actions: [] }); } });
     if (r?.status === "fast-forwarded" && doc.identifier === id) {
       // 本地字节已换成云端版本（刚 markSynced）→ 内存里的是旧世界线，必须整体重载（同名 es.open = openInto 管线；不重载 = 下次自动存把旧版写回云端，WeebPaint 2026-08-25 案卷）
       pendingOpenId = id;
@@ -1933,7 +2017,7 @@ async function refreshOpenDoc(): Promise<void> {
       if (ok) info("换成云端的新版本了"); else showError(`「${stemOfId(id)}」云端的新版本拉下来了，但重开失败——请从歌库再打开一次`);
     } else if (r?.status === "ff-failed" || r?.status === "cloud-error") reportError(r.error ?? new Error(`refresh ${r.status}: ${r.reason ?? ""}`), "warning");
   } catch (e) { reportError(e, "warning"); }
-  finally { refreshing = false; }
+  finally { if (froze) unlockSyncGate(); refreshing = false; }
 }
 /** 登录过期 / 回线：没登录着就静默再试一次（不弹任何东西）。 */
 function retrySilent(): void { if (hasStore() && authStarted && !isSignedIn() && auth.isAuthConfigured()) void auth.retrySilentSignIn().catch((e) => reportError(e, "log")); }
@@ -2056,7 +2140,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
 }
 window.addEventListener("keydown", (e) => {
   if (finderShown && gallery?.isOpen()) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } return; }   // 歌库上面的乐器目录（只弹着玩）：Esc 回歌库
-  if (gallery?.isOpen()) { if (e.key === "Escape" && !isSheetOpen() && !isGateOpen()) { e.preventDefault(); gallery.close(); } return; }   // 歌库开着：键盘归它（Esc 回谱）
+  if (gallery?.isOpen()) return;   // 歌库开着：键盘归它。没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建
   if (finder.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } return; }   // 找人视图开着：只认 Esc（pad 的触屏键照常）
   if (instShown) {   // 乐器页：只认 Esc（回谱）和撤销 / 重做；输入框里的照常打字
     const inField = (e.target as HTMLElement | null)?.closest("input, select, textarea");

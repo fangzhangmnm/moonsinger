@@ -91,10 +91,15 @@ try {
   check(await p.$("#galleryFull .gallery-tile .ms-cover.v .ms-cover-title") != null, "汉字歌名竖排（.ms-cover.v）");
   const thumbImg = await p.$("#galleryFull .gallery-tile img.gallery-tile-thumb"); check(thumbImg != null, "卡片底下是封面图（img.gallery-tile-thumb）");
   await p.screenshot({ path: path.join(OUT, "store-gallery.png") });
-  check(/打开中/.test(cards[0]), "卡片标「打开中」");
-  // 回到谱（Esc）
+  // gallery-first（2026-10-08 user「7 和weebpaint对齐」）：进歌库 = 放下手里的歌——卡片不再标「打开中」，没有「回到谱」（Esc 不出去），出口 = 打开一首 / 新建
+  check(!/打开中/.test(cards[0]), "进歌库 = 放下手里的歌：卡片不标「打开中」");
+  check((await p.evaluate(() => window.__moonsinger.identifier())) === null && (await p.evaluate(() => window.__moonsinger.es().currentName())) === null, "进歌库后没有打开中的歌（身份放下了）");
+  check(!(await p.$('#galleryFull [data-v="back"]')), "歌库顶条没有「回到谱」");
   await p.keyboard.press("Escape"); await p.waitForTimeout(300);
-  check(await p.evaluate(() => document.getElementById("galleryFull").hidden), "Esc 回到谱");
+  check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "Esc 不出歌库（没有地方可回）");
+  await p.click("#galleryFull .gallery-tile:has-text('小星星')"); await p.waitForTimeout(800);
+  check(await p.evaluate(() => document.getElementById("galleryFull").hidden) && (await p.evaluate(() => window.__moonsinger.identifier())) === id2, "点卡片 = 打开它、出歌库");
+  check((await tokens()) === toks1, "放下再打开：音符仍相同（进歌库时落盘了）");
   // 刷新在歌库里离开 → 回来在歌库
   await p.click("#libBtn"); await p.waitForTimeout(500); await p.reload(); await p.waitForTimeout(1200);
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "从歌库里刷新 → 回来还在歌库");
@@ -108,16 +113,14 @@ try {
   await p.click("#galleryFull .gallery-tile:has-text('小星星')"); await p.waitForTimeout(800);
   check((await p.evaluate(() => window.__moonsinger.identifier())) === id2, "点卡片切回小星星");
   check((await tokens()) === toks1, "切回来音符仍相同");
-  // 歌库里把「打开中」的那首扔进回收站（模拟歌库动词：直接走 store）→ 回到谱 = 手里这份变无地稿，绝不自动存回去复活
+  // 歌库里把小星星扔进回收站（模拟歌库动词：直接走 store；gallery-first 下它已经不是打开中的）→ 新建再写一笔：绝不把删掉的名字复活
   await p.click("#libBtn"); await p.waitForTimeout(600);
   const del = await p.evaluate(async (id) => (await window.__moonsinger.store().zip(id, { mode: "existing" }).delete()).status, id2);
-  check(typeof del === "string", "删掉打开中的那首（store delete）", del);
-  await p.keyboard.press("Escape"); await p.waitForTimeout(600);
-  check((await p.evaluate(() => window.__moonsinger.identifier())) === null, "回到谱：手里这份不再认那个家");
-  check((await p.evaluate(() => window.__moonsinger.es().currentName())) === null, "editor-session 放下了旧身份（release）");
+  check(typeof del === "string", "删掉小星星（store delete）", del);
+  await p.click('#galleryFull [data-v="new"]'); await p.waitForTimeout(600);
   await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2"); await p.waitForTimeout(3500);
-  check(!(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id2)), "之后再写也不会把删掉的名字复活");
-  check(/•$/.test(await title()), "无地稿改过 = 「•」留着（没有家可存）", await title());
+  check(!(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id2)), "之后新建再写也不会把删掉的名字复活");
+  const id4 = await p.evaluate(() => window.__moonsinger.identifier()); check(!!id4 && id4 !== id2 && id4 !== id3, "新的一首有自己的身份", id4);
   // 冲突面 / 报错 / busy 接线存在（storeUI 对象）
   const ui = await p.evaluate(() => { const s = window.__moonsinger.store(); return !!s; });
   check(ui, "store 活着");

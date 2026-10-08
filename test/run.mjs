@@ -36,6 +36,7 @@ import "./sfx-fixed.test.ts";
 import "./xhead.test.ts";
 import "./staff-end.test.ts";
 import "./move-part.test.ts";
+import "./sel-ops.test.ts";
 import "./redline-guard.test.mjs";
 import "./storage-whitelist.test.mjs";
 import "./store-wiring.test.mjs";

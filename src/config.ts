@@ -11,10 +11,7 @@ export const MSAL_URL = "./vendor/msal/msal-browser.min.js";
 /** 歌的文档种类（store 0.16 docKinds）：一首歌 = 一个 `.mxl`（MusicXML 压缩包，别的乐谱软件也能开；自家的东西在里面的 `.moonsinger/`）。 */
 export const SONG_SUFFIX = ".mxl";
 
-// ── 节律（user 2026-10-08「「•」和「存」对齐 WXHW」；数字 = 本 session 定的，可调）──
-/** 编辑 → 本地落盘（IDB）防抖：正文改了 2 s 后落本机。 */
+// ── 节律（2026-10-08 晚起 = WeebPaint 的 consent 制：推云只在换歌 / 退出 / 按「存」/ 进歌库；平时只落本机。
+//    user「用weebpaint方案，对付大歌，这不是txt」——歌是整个 .mxl（封面、以后还有音源），15 s 一推太勤。原来的 15 s 防抖 / 30 s 心跳（WXHW 制）撤了）──
+/** 编辑 → 本地落盘（IDB）防抖：正文改了 2 s 后落本机（「•」= 还没落）。 */
 export const LOCAL_SAVE_DEBOUNCE_MS = 2_000;
-/** 每次改动重置的推云防抖（「用户停手了」）。 */
-export const PUSH_DEBOUNCE_MS = 15_000;
-/** 首次变脏起最多等这么久必推（「一直改不停」）。 */
-export const PUSH_HEARTBEAT_MS = 30_000;

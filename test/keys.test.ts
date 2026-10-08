@@ -15,9 +15,11 @@ describe("键盘路由", () => {
     eq(r(K("KeyE"), "impro"), '{"k":"audition","degree":3,"dir":"down"}');
     eq(r(K("Digit3", { shiftKey: true }), "write"), '{"k":"cmd","cmd":{"k":"degree","degree":3,"dir":"up"}}');
   });
-  it("弹没写的键照写 / 改走；改没写的键不管", () => {
+  it("弹没写的键照写 / 改走；改没写的键不管；0 在改模式 = 整组休止（2026-10-08 user「其他键用C」）", () => {
     eq(r(K("Digit0"), "impro"), '{"k":"cmd","cmd":{"k":"rest"}}');
-    eq(r(K("Digit0"), "edit"), "null");
+    eq(r(K("Digit0"), "edit"), '{"k":"cmd","cmd":{"k":"rest"}}');
+    const noEdit = BINDINGS.find((b) => b.does.write && !b.does.edit && !b.keys[0].shift && !b.keys[0].mod)!;   // 表里没写改模式的键：改模式不管
+    eq(r(K(noEdit.keys[0].code), "edit"), "null");
     eq(r(K("ArrowLeft"), "impro", "edit"), '{"k":"cmd","cmd":{"k":"caret","d":-1}}');
   });
   it("文本框里：表里写了的键归框，没写的照常打字", () => {

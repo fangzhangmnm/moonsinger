@@ -52,6 +52,8 @@ export interface ScoreViewHost {
   onPaper?(): void;
   /** 标题下面靠右的作词 / 作曲点了。 */
   onCredits?(): void;
+  /** 空白处长按 / 电脑右键（光标已经放到那里了）：at = 屏幕坐标（小菜单开在那）；row = 这一行里光标所在 track 的音的下标范围（全选这一行用；这行没音 = null）。 */
+  onBlankPress?(at: { x: number; y: number }, row: { from: number; to: number } | null): void;
   /** 屏幕放不下纸的时候：true = 按屏宽重新折行；false（默认）= 不折行、整张纸按比例缩小（行和纸上一模一样）。 */
   reflow?(): boolean;
   /** 排法：true = 分页（按纸的真实高度分页、画页框，所见即所得）；false = 连续（同一张纸的几何，只是不断页）。 */
@@ -70,7 +72,7 @@ export class ScoreView {
   private box: null | { pid: number; x0: number; y0: number; moved: boolean; st0: EditorState; row: number } = null;
   private boxEl: HTMLDivElement;
   /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
-  private press: null | { pid: number; type: string; x: number; y: number; hit: HitNote | null; timer: number; shift: boolean; moved: boolean; fired: boolean } = null;
+  private press: null | { pid: number; type: string; x: number; y: number; cx: number; cy: number; hit: HitNote | null; timer: number; shift: boolean; moved: boolean; fired: boolean } = null;
   private selDrag: null | { pid: number; anchor: number } = null;   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）
   private handles: { start: HTMLDivElement; end: HTMLDivElement };
   private handleDrag: null | { pid: number; which: "start" | "end"; other: number } = null;
@@ -116,6 +118,14 @@ export class ScoreView {
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("pointerup", (e) => this.up(e));
+    // 电脑右键 = 空白处的小菜单（手指 / 笔走长按）；音上右键不接（选区条管）。pointerdown 里 button 2 直接不接，免得先放一下光标 / 起框选
+    el.addEventListener("contextmenu", (e) => {
+      if (!this.layout || (e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
+      e.preventDefault();
+      const p = this.local(e); this.cancelPress();
+      if (this.noteAt(p.x, p.y)) return;
+      this.blankPress(p.x, p.y, e.clientX, e.clientY);
+    });
     el.addEventListener("pointercancel", (e) => { if (this.drag) this.host.release?.(); this.drag = null; this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
     new ResizeObserver(() => this.render()).observe(el);
   }
@@ -243,7 +253,7 @@ export class ScoreView {
 
   private down(e: PointerEvent): void {
     if ((e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;   // 在歌词框 / 记号框 / 把手上点：交给它们
-    const L = this.layout; if (!L) return;
+    const L = this.layout; if (!L || e.button === 2) return;   // 右键归 contextmenu
     const p = this.local(e);   // 先算纸面坐标再拿焦点：focus 可能连带滚一下（分页时光标那行在页外），坐标就错了（2026-10-08 E2E 抓到）
     this.el.focus({ preventScroll: true });   // 点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）
     if (e.pointerType === "touch") {   // 手指：拖 = 滚动；不动 = 轻点；按住不动 = 长按选区；第二根手指落下 = 捏合缩放 / 双指平移
@@ -281,16 +291,16 @@ export class ScoreView {
   /** 按下：开长按计时（0.42 s 不动 = 长按）。 */
   private armPress(e: PointerEvent, p: { x: number; y: number }, hit: HitNote | null): void {
     this.cancelPress();
-    const pr = { pid: e.pointerId, type: e.pointerType, x: p.x, y: p.y, hit, timer: 0, shift: e.shiftKey, moved: false, fired: false };
+    const pr = { pid: e.pointerId, type: e.pointerType, x: p.x, y: p.y, cx: e.clientX, cy: e.clientY, hit, timer: 0, shift: e.shiftKey, moved: false, fired: false };
     pr.timer = window.setTimeout(() => this.longPress(), 420);
     this.press = pr;
   }
   private cancelPress(): void { if (this.press) { clearTimeout(this.press.timer); this.press = null; } this.selDrag = null; }
-  /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 没事（以后放「粘贴」）。 */
+  /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 光标放到那里 + 小菜单（粘贴 / 插记号 / 全选…；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」）。 */
   private longPress(): void {
     const pr = this.press; if (!pr || pr.moved) return;
     pr.fired = true;
-    if (!pr.hit) return;
+    if (!pr.hit) { this.blankPress(pr.x, pr.y, pr.cx, pr.cy); return; }
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     this.finger = null;   // 手指：长按之后不再当滚动
     if (this.drag) { this.host.release?.(); this.drag = null; }   // 笔：按住出声到此为止
@@ -298,6 +308,17 @@ export class ScoreView {
     this.host.set(select(st, pr.hit.index, pr.hit.index + 1));
     this.selDrag = { pid: pr.pid, anchor: pr.hit.index };
     this.host.focus?.("staff");
+  }
+  /** 空白处长按 / 右键：收起编辑框、光标放到那里（同轻点空白），再告诉宿主开小菜单。row = 这一行里光标所在 track 的音的下标范围。 */
+  private blankPress(x: number, y: number, cx: number, cy: number): void {
+    this.lyrics.commitAndClose(); this.marks.commitAndClose();
+    this.finger = null; this.box = null; this.boxEl.hidden = true;
+    if (this.drag) { this.host.release?.(); this.drag = null; }
+    this.host.set(this.caretAt(x, y));
+    const L = this.layout!, row = this.rowAt(y), mine = L.notes.filter((n) => n.system === row && this.onTrack(n));
+    const range = mine.length ? { from: Math.min(...mine.map((n) => n.index)), to: Math.max(...mine.map((n) => n.index)) + 1 } : null;
+    this.host.focus?.("staff");
+    this.host.onBlankPress?.({ x: cx, y: cy }, range);
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
   private noteAt(x: number, y: number, finger = false): HitNote | null {
