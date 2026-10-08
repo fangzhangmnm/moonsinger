@@ -21,23 +21,25 @@ export interface LabScore { SCORE: LabEntry[]; TEXT: string; TEMPO_QUARTER: numb
 export const HUM_SYLLABLE: Record<Hum, Record<SingLang, string>> = { la: { ja: "ら", zh: "啦", en: "la" }, n: { ja: "ん", zh: "嗯", en: "hum" }, u: { ja: "う", zh: "呜", en: "ooh" }, o: { ja: "お", zh: "哦", en: "oh" }, a: { ja: "あ", zh: "啊", en: "ah" } };
 
 /** tokens = 一个声部（压平后的一串）；tempoMap = 第一个声部的速度表（这个声部不是第一个时给，自己串里的速度记号不算数）。 */
-export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap, marks?: { staccatoGate: number }): LabScore {
+export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap): LabScore {
   const eighth = TPQ / 2, tl = timeline(tokens, tempoMap), base = tl[0]?.bpm ?? 90;
   const bpmOf = new Map(tl.map((x) => [x.index, x.bpm]));
   const out: LabEntry[] = [];
   // 呼吸（2026-10-08，user 拍「月读在那儿换气」）：挂了 breath 的音 → 下一个字前面一个「v」（唱法核心从这个音末尾偷一口气的空当）
   let breathNext = false;
-  const push = (e: LabEntry) => { if (breathNext) { e.before = "v"; breathNext = false; } out.push(e); };
-  // 跳音（2026-10-08，user「月读的跳音效果很差，不应该是切音频，而是看一下语音引擎后段里面她认什么修饰符号」）：唱法核心认的是谱上的休止（rest，
-  //   核心自己做收尾的淡出、下一个字的辅音照常预备）——跳音 = 这个音唱 staccatoGate 那么长，剩下的变成休止；后面那个音还是同一个字（连音线 / 拖腔）= 不切
+  // 跳音（2026-10-08，user「月读的跳音效果很差，不应该是切音频，而是看一下语音引擎后段里面她认什么修饰符号」「跳音就是顿一下」）：
+  //   唱法核心认的「^」= 下一个字前面顿一下（从这个音尾巴偷一小段静音，不换气）；同一处又有呼吸 = 按呼吸（v 本来就带一个空当）
+  //   重音 / 强音也顿（user「嗯重音也顿」）：这个字自己前面「^」，音头干净；呼吸在同一处 = 按呼吸
+  let liftNext = false, liftThis = false;
+  const push = (e: LabEntry) => { if (breathNext) e.before = "v"; else if (liftNext || liftThis) e.before = "^"; breathNext = liftNext = liftThis = false; out.push(e); };
   const nextTimed = (i: number) => { for (let j = i + 1; j < tokens.length; j++) { const u = tokens[j]; if (isTimed(u)) return u; } return null; };
   tokens.forEach((t, i) => {
     if (!isTimed(t)) return;
-    one(t, i);
+    liftThis = t.kind === "note" && !t.tie && t.lyric !== MELISMA_MARK && (artOf(t).includes("accent") || artOf(t).includes("marcato"));   // 拖着的同一个字顿不了
+    one(t, i); liftThis = false;
     if (t.kind === "note" && artOf(t).includes("breath")) breathNext = true;
-    if (marks && t.kind === "note" && artOf(t).includes("staccato")) {
-      const nx = nextTimed(i), held = nx?.kind === "note" && (nx.tie || nx.lyric === MELISMA_MARK), last = out[out.length - 1], piece = last?.notes[last.notes.length - 1];
-      if (!held && last && piece && !last.rest) { const cut = piece[1] * (1 - Math.max(0.05, Math.min(1, marks.staccatoGate))); if (cut > 0) { piece[1] -= cut; last.rest = cut; } }
+    if (t.kind === "note" && artOf(t).includes("staccato")) {   // 后面还是同一个字（连音线 / 拖腔）= 顿不了
+      const nx = nextTimed(i); if (!(nx?.kind === "note" && (nx.tie || nx.lyric === MELISMA_MARK))) liftNext = true;
     }
   });
   function one(t: Token & { dur: number }, i: number): void {

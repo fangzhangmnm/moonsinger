@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.1-2026-10-08";
+var APP_VERSION = "v0.7.2-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2847,7 +2847,6 @@ var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
 var ARTS = ["staccato", "accent", "marcato", "tenuto", "breath"];
 var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438" };
-var DYNS = ["pp", "p", "mp", "mf", "f", "ff"];
 var DEFAULT_DYN = "mf";
 var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
@@ -3195,6 +3194,13 @@ function withSlur(t10, on2) {
   if (on2) return { ...t10, slur: true };
   const { slur: _s, ...rest } = t10;
   return rest;
+}
+function dynMarkAt(tokens, i10) {
+  for (let j2 = Math.min(i10, tokens.length) - 1; j2 >= 0; j2--) {
+    const t10 = tokens[j2];
+    if (t10.kind === "dyn") return t10.value;
+  }
+  return null;
 }
 function dynRunAt(tokens, at2) {
   let a10 = at2, b3 = at2;
@@ -3857,7 +3863,9 @@ function apply(st3, c10, now = Date.now()) {
       return toggleSlurBefore(st3) ?? st3;
     case "wedge":
       return toggleWedgeBefore(st3, c10.w) ?? st3;
-    // 光标前那个音往下一个音渐强 / 渐弱（有选区 = 选区那样）   // 光标前那个音连到下一个（有选区 = 选区那样）
+    case "dyn":
+      return setDynSel(st3, dynMarkSel(st3) === c10.v ? null : c10.v);
+    // 力度：光标处（有选区 = 选区开头）放这个记号，管到下一个；那儿已经是它 = 去掉   // 光标前那个音往下一个音渐强 / 渐弱（有选区 = 选区那样）   // 光标前那个音连到下一个（有选区 = 选区那样）
     case "shorter":
       return shorter(st3);
     case "longer":
@@ -4654,7 +4662,14 @@ function engrave(song, o10) {
     const x1 = x0 + cw2 + lw2;
     prims.push({ t: "rect", x: x1, y: cy2, w: cw2, h: ch2, cls: k2 < song.papers.length - 1 ? "paper-chip" : "paper-chip off" });
     prims.push({ t: "text", x: x1 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u203A", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
-    nav = { prev: k2 > 0 ? { x: x0 - P2(0.4), y: cy2 - P2(0.4), w: cw2 + P2(0.8), h: ch2 + P2(0.8) } : null, next: k2 < song.papers.length - 1 ? { x: x1 - P2(0.4), y: cy2 - P2(0.4), w: cw2 + P2(0.8), h: ch2 + P2(0.8) } : null };
+    const segOn = o10.onlyPaper !== void 0, sx2 = x1 + cw2 + P2(0.8), sw2 = o10.measureLyric("\u672C\u6BB5") * 1.1 / LYRIC_EM + P2(1.2);
+    prims.push({ t: "rect", x: sx2, y: cy2, w: sw2, h: ch2, cls: segOn ? "paper-chip on" : "paper-chip" });
+    prims.push({ t: "text", x: sx2 + sw2 / 2, y: cy2 + ch2 * 0.7, s: "\u672C\u6BB5", cls: segOn ? "nav-text on" : "nav-text", size: P2(1.1), anchor: "middle" });
+    nav = {
+      prev: k2 > 0 ? { x: x0 - P2(0.4), y: cy2 - P2(0.4), w: cw2 + P2(0.8), h: ch2 + P2(0.8) } : null,
+      next: k2 < song.papers.length - 1 ? { x: x1 - P2(0.4), y: cy2 - P2(0.4), w: cw2 + P2(0.8), h: ch2 + P2(0.8) } : null,
+      scope: { x: sx2 - P2(0.3), y: cy2 - P2(0.4), w: sw2 + P2(0.6), h: ch2 + P2(0.8) }
+    };
   }
   const title = { x: P2(MARGIN), y: TOP + P2(0.3), w: o10.width - P2(2 * MARGIN), h: P2(TITLE_H), baseline: titleBase, size: titleSize };
   const lines = song.credits ? song.credits.split("\n") : [];
@@ -6454,6 +6469,10 @@ var ScoreView = class {
       this.host.onNav?.(1);
       return true;
     }
+    if (this.inBox(L2.nav?.scope, x2, y2)) {
+      this.host.onScopeToggle?.();
+      return true;
+    }
     if (this.inBox(L2.credits, x2, y2)) {
       this.host.focus?.("text");
       this.host.onCredits?.();
@@ -6776,6 +6795,7 @@ var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 70
 var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+var DYN_CELL = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
 var ROWS_MIN = 3;
 var ROWS_MAX = 8;
 var COLS_MIN = 3;
@@ -6986,7 +7006,7 @@ var Pad = class {
       };
       for (const t10 of ["pointerup", "pointercancel", "lostpointercapture"]) ak2.addEventListener(t10, (e10) => akUp(e10));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) {
       if (this.symbols !== "off") this.buildSymbols();
       else this.buildGrid(f2, base3, rows);
@@ -7103,10 +7123,12 @@ var Pad = class {
    *  和音键一样大的格子，多了往下滚；点一个 = 做那件事、回到音键（一次性）。 */
   buildSymbols() {
     const grid = this.el.querySelector(".pad-grid");
-    const ign = new Set(this.host.ignoredArts?.() ?? []);
+    const ign = new Set(this.host.ignoredArts?.() ?? []), dynNow = this.host.dynHere?.() ?? null;
     const cell = (id2, big, label, title) => {
       const mk2 = id2.startsWith("art:") ? id2.slice(4) : id2 === "slur" ? "slur" : null, off = !!mk2 && ign.has(mk2);
-      return `<button class="pad-key sym${mk2 ? " art" : ""}${off ? " ignored" : ""}" data-sym="${id2}" title="${title}${off ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</small></button>`;
+      const on2 = id2.endsWith(":on");
+      id2 = on2 ? id2.slice(0, -3) : id2;
+      return `<button class="pad-key sym${mk2 ? " art" : ""}${off ? " ignored" : ""}${on2 ? " is-on" : ""}" data-sym="${id2}" title="${title}${off ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</small></button>`;
     };
     const items = [
       cell("phrase", `<span class="big">\u3002</span>`, "\u53E5\u53F7", "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09"),
@@ -7116,6 +7138,7 @@ var Pad = class {
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "\u4FDD\u6301", "\u4FDD\u6301\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u6EE1\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("wedge:cresc", CRESC_CELL, "\u6E10\u5F3A", "\u6E10\u5F3A <\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u4E00\u8DEF\u6E10\u5F3A\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF1B\u7EC8\u70B9 = \u90A3\u91CC\u5199\u7684\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("wedge:dim", DIM_CELL, "\u6E10\u5F31", "\u6E10\u5F31 >\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u4E00\u8DEF\u6E10\u5F31\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
+      ...["pp", "p", "mp", "mf", "f", "ff"].map((d3) => cell(`dyn:${d3}${d3 === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d3]}</span>`, "\u529B\u5EA6", `\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u5149\u6807\u8FD9\u91CC\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389\uFF08user 2026-10-08\u300Cmp mf \u5728\u54EA\u91CC\u52A0\u554A\u300D\uFF09`)),
       cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u548C\u547C\u5438\u76F8\u53CD\u2014\u2014\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("bar", `<span class="big">|</span>`, "\u5C0F\u8282\u7EBF", "\u5C0F\u8282\u7EBF\uFF08\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\uFF09"),
@@ -7152,6 +7175,7 @@ var Pad = class {
       else if (id2 === "staff") this.host.onCommand({ k: "staff" });
       else if (id2.startsWith("art:")) this.host.onCommand({ k: "art", a: id2.slice(4) });
       else if (id2 === "slur") this.host.onCommand({ k: "slur" });
+      else if (id2.startsWith("dyn:")) this.host.onCommand({ k: "dyn", v: id2.slice(4) });
       else if (id2 === "wedge:cresc" || id2 === "wedge:dim") this.host.onCommand({ k: "wedge", w: id2 === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: id2 });
       this.render();
@@ -7464,16 +7488,16 @@ var Pad = class {
 
 // src/score/lab-score.ts
 var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
-function toLabScore(tokens, hum, lang = "ja", tempoMap, marks) {
+function toLabScore(tokens, hum, lang = "ja", tempoMap) {
   const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2[0]?.bpm ?? 90;
   const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
   const out = [];
   let breathNext = false;
+  let liftNext = false, liftThis = false;
   const push = (e10) => {
-    if (breathNext) {
-      e10.before = "v";
-      breathNext = false;
-    }
+    if (breathNext) e10.before = "v";
+    else if (liftNext || liftThis) e10.before = "^";
+    breathNext = liftNext = liftThis = false;
     out.push(e10);
   };
   const nextTimed = (i10) => {
@@ -7485,17 +7509,13 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, marks) {
   };
   tokens.forEach((t10, i10) => {
     if (!isTimed(t10)) return;
+    liftThis = t10.kind === "note" && !t10.tie && t10.lyric !== MELISMA_MARK && (artOf(t10).includes("accent") || artOf(t10).includes("marcato"));
     one(t10, i10);
+    liftThis = false;
     if (t10.kind === "note" && artOf(t10).includes("breath")) breathNext = true;
-    if (marks && t10.kind === "note" && artOf(t10).includes("staccato")) {
-      const nx2 = nextTimed(i10), held = nx2?.kind === "note" && (nx2.tie || nx2.lyric === MELISMA_MARK), last = out[out.length - 1], piece = last?.notes[last.notes.length - 1];
-      if (!held && last && piece && !last.rest) {
-        const cut = piece[1] * (1 - Math.max(0.05, Math.min(1, marks.staccatoGate)));
-        if (cut > 0) {
-          piece[1] -= cut;
-          last.rest = cut;
-        }
-      }
+    if (t10.kind === "note" && artOf(t10).includes("staccato")) {
+      const nx2 = nextTimed(i10);
+      if (!(nx2?.kind === "note" && (nx2.tie || nx2.lyric === MELISMA_MARK))) liftNext = true;
     }
   });
   function one(t10, i10) {
@@ -25983,7 +26003,6 @@ var CRESC_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><p
 var DIM_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var ART_LABEL = { staccato: ["\uE4A2", "\u8DF3\u97F3"], accent: ["\uE4A0", "\u91CD\u97F3"], marcato: ["\uE4AC", "\u5F3A\u97F3"], tenuto: ["\uE4A4", "\u4FDD\u6301"], breath: ["\uE4CE", "\u547C\u5438"] };
-var DYN_GLYPH2 = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
 var SelBar = class {
   el;
   constructor(parent, host) {
@@ -26005,7 +26024,7 @@ var SelBar = class {
     }
     const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
     if (sel && fix) {
-      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<button type="button" class="btn fix-art fix-slur${fix.slur === "all" ? " is-on" : fix.slur === "some" ? " is-some" : ""}" data-v="slur" title="\u8FDE\u7EBF\uFF1A\u9009\u4E2D\u7684\u97F3\u8FDE\u8D77\u6765\uFF08\u4E0D\u7559\u7F1D\uFF09\uFF1B\u90FD\u8FDE\u7740 = \u53BB\u6389${fix.ignores?.includes("slur") ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u73B0\u5728\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF09" : ""}">${SLUR_SVG}<span>\u8FDE\u7EBF</span>${fix.ignores?.includes("slur") ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button><span class="sel-gap"></span>` + [["cresc", "\u6E10\u5F3A", CRESC_SVG], ["dim", "\u6E10\u5F31", DIM_SVG]].map(([w2, zh2, ic2]) => `<button type="button" class="btn fix-art fix-wedge${fix[w2] === "all" ? " is-on" : fix[w2] === "some" ? " is-some" : ""}" data-v="wedge:${w2}" title="${zh2}\uFF1A\u9009\u4E2D\u7684\u97F3\u4E00\u8DEF${zh2}\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u7EC8\u70B9 = \u90A3\u91CC\u5199\u7684\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF09\uFF1B\u90FD\u662F = \u53BB\u6389">${ic2}<span>${zh2}</span></button>`).join("") + DYNS.map((d3) => `<button type="button" class="btn fix-dyn${fix.dyn === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u653E\u5728\u9009\u533A\u5F00\u5934\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6"><span class="smufl">${DYN_GLYPH2[d3]}</span></button>`).join("") + (fix.dyn ? b3("dyn:none", "\u53BB\u6389\u529B\u5EA6") : "") + b3("fixdone", "\u5B8C\u6210", "", "primary");
+      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<button type="button" class="btn fix-art fix-slur${fix.slur === "all" ? " is-on" : fix.slur === "some" ? " is-some" : ""}" data-v="slur" title="\u8FDE\u7EBF\uFF1A\u9009\u4E2D\u7684\u97F3\u8FDE\u8D77\u6765\uFF08\u4E0D\u7559\u7F1D\uFF09\uFF1B\u90FD\u8FDE\u7740 = \u53BB\u6389${fix.ignores?.includes("slur") ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u73B0\u5728\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF09" : ""}">${SLUR_SVG}<span>\u8FDE\u7EBF</span>${fix.ignores?.includes("slur") ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button><span class="sel-gap"></span>` + [["cresc", "\u6E10\u5F3A", CRESC_SVG], ["dim", "\u6E10\u5F31", DIM_SVG]].map(([w2, zh2, ic2]) => `<button type="button" class="btn fix-art fix-wedge${fix[w2] === "all" ? " is-on" : fix[w2] === "some" ? " is-some" : ""}" data-v="wedge:${w2}" title="${zh2}\uFF1A\u9009\u4E2D\u7684\u97F3\u4E00\u8DEF${zh2}\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u7EC8\u70B9 = \u90A3\u91CC\u5199\u7684\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF09\uFF1B\u90FD\u662F = \u53BB\u6389">${ic2}<span>${zh2}</span></button>`).join("") + b3("fixdone", "\u5B8C\u6210", "", "primary");
       this.el.hidden = false;
       return;
     }
@@ -26105,7 +26124,7 @@ function updateChrome() {
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
   if (!n10) selFix = false;
-  const fix = selFix ? { art: artStateSel(st2), slur: slurStateSel(st2), cresc: wedgeStateSel(st2, "cresc"), dim: wedgeStateSel(st2, "dim"), dyn: dynMarkSel(st2), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const fix = selFix ? { art: artStateSel(st2), slur: slurStateSel(st2), cresc: wedgeStateSel(st2, "cresc"), dim: wedgeStateSel(st2, "dim"), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) {
     selSig = sig;
     selBar.update(n10, !!clip, over || studio.isOpen, fix);
@@ -26147,10 +26166,6 @@ async function selVerb(v) {
   }
   if (v === "wedge:cresc" || v === "wedge:dim") {
     update(toggleWedgeSel(st2, v === "wedge:cresc" ? "cresc" : "dim"));
-    return;
-  }
-  if (v.startsWith("dyn:")) {
-    update(setDynSel(st2, v === "dyn:none" ? null : v.slice(4)));
     return;
   }
   switch (v) {
@@ -26271,6 +26286,11 @@ var view = new ScoreView(scoreEl, {
     info("\u65B0\u7684\u4E00\u5F20\u7EB8");
   },
   onNav: (dir) => navPaper(dir),
+  onScopeToggle: () => {
+    viewScope = viewScope === "segment" ? "all" : "segment";
+    view.render();
+  },
+  // 「本段」开关在曲段导航旁边（user「…放在和曲段导航在一起」「就一个按钮toggle」「类似solo toggle」）
   onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),
   reflow: () => reflow,
@@ -26551,6 +26571,8 @@ var pad3 = new Pad(padEl, {
   autoBars: () => autoBars,
   staves: () => curPart().staves ?? 1,
   ignoredArts: () => ignoredHere(),
+  dynHere: () => dynMarkAt(tr(st2), st2.sel ? st2.sel.from : st2.caret),
+  // 符号层亮着「现在生效的力度」（状态机）
   hintRange: () => padHint(),
   onAutoBars: (on2) => {
     autoBars = on2;
@@ -26751,7 +26773,7 @@ async function renderPart(part, scope = "view") {
   const song = songIn(scope);
   const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
   if (eng === "tsukuyomi") {
-    const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map, { staccatoGate: activePerfSpec(doc.extras, role).staccatoGate });
+    const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map);
     if (!score.SCORE.length) return null;
     const opt = humOpt(), key2 = JSON.stringify(["tsukuyomi", score, opt]), had2 = lastRender.get(part.id);
     if (had2?.key === key2) return had2.r;
@@ -27197,7 +27219,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "cd9b5c3638b5",
+  cssHash: "f517f46070e8",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -27566,7 +27588,7 @@ function openPaperSheet() {
   box.className = "offer";
   const draw = () => {
     const p2 = st2.song.paper ?? paperOf(DEFAULT_PAPER);
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u7248\u5F0F</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002</div><div class="part-sec">\u7EB8\uFF08\u66F2\u6BB5\uFF09</div>` + st2.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc7(pp.name || "\uFF08\u6CA1\u540D\u5B57\uFF09")}${pp.hidden ? "\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09" : ""}${pp.id === st2.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc7(pp.id)}" title="\u8FD9\u5F20\u7EB8\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u632A / \u52A0\u58F0\u90E8 / \u5220">\u22EF</button></div>`).join("") + `<div class="set-row"><button class="btn" data-v="addpaper">\uFF0B \u65B0\u7684\u7EB8\uFF08\u63A5\u5728\u6700\u540E\uFF09</button></div><div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button></div><div class="part-sec">\u8303\u56F4</div><div class="set-row"><button class="btn cand${viewScope === "segment" ? " is-on" : ""}" data-v="scope:segment">\u672C\u6BB5<small>\u4E00\u6B21\u53EA\u770B\u4E00\u5F20\u7EB8\uFF08\u66F2\u6BB5\uFF09\uFF0C\u2039 \u203A \u7FFB</small></button><button class="btn cand${viewScope === "all" ? " is-on" : ""}" data-v="scope:all">\u5168\u90E8<small>\u6574\u9996\u5F80\u4E0B\u6392\uFF0C\u9690\u85CF\u7684\u7EB8\u6298\u53E0\u7740</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u7248\u5F0F</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002</div><div class="part-sec">\u7EB8\uFF08\u66F2\u6BB5\uFF09</div>` + st2.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc7(pp.name || "\uFF08\u6CA1\u540D\u5B57\uFF09")}${pp.hidden ? "\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09" : ""}${pp.id === st2.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc7(pp.id)}" title="\u8FD9\u5F20\u7EB8\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u632A / \u52A0\u58F0\u90E8 / \u5220">\u22EF</button></div>`).join("") + `<div class="set-row"><button class="btn" data-v="addpaper">\uFF0B \u65B0\u7684\u7EB8\uFF08\u63A5\u5728\u6700\u540E\uFF09</button></div><div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -29427,4 +29449,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-602e7067291d.mjs.map
+//# sourceMappingURL=moonsinger-5ae2f546b314.mjs.map

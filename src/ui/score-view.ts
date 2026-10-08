@@ -48,6 +48,8 @@ export interface ScoreViewHost {
   onPaperMenu?(paper: string): void;
   onAddPaper?(): void;
   onNav?(dir: -1 | 1): void;
+  /** 「‹ 2/3 ›」旁边的「本段」开关点了（视图范围：本段 ⇄ 全部）。 */
+  onScopeToggle?(): void;
   /** 纸右上角的小钮（纸张）点了。 */
   onPaper?(): void;
   /** 标题下面靠右的作词 / 作曲点了。 */
@@ -375,6 +377,7 @@ export class ScoreView {
     if (this.inBox(L.addPaper, x, y)) { this.host.onAddPaper?.(); return true; }
     if (this.inBox(L.nav?.prev, x, y)) { this.host.onNav?.(-1); return true; }
     if (this.inBox(L.nav?.next, x, y)) { this.host.onNav?.(1); return true; }
+    if (this.inBox(L.nav?.scope, x, y)) { this.host.onScopeToggle?.(); return true; }
     // 0⅙. 作词 / 作曲（标题下面靠右）
     if (this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌

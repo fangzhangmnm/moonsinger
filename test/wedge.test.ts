@@ -5,6 +5,7 @@ import { initState, writeDegree, select, tr, toggleWedgeSel, toggleWedgeBefore, 
 import { dynLevels, noteVelocities, gainSegments, WEDGE_STEP_VEL } from "../src/score/perform.ts";
 import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION } from "../src/format/performance.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
+import { apply } from "../src/score/commands.ts";
 
 const meta = { software: "test", date: "2026-10-08" };
 const info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
@@ -66,5 +67,17 @@ describe("渐强渐弱：MusicXML（<wedge>）", () => {
   it("一直渐弱到谱尾：结尾补 stop（不留没收的 <wedge>）", () => {
     const st = toggleWedgeBefore(four(), "dim")!, w = writeMusicXml({ parts: [{ info, tokens: tr(st) }] }, meta);
     eq((w.xml.match(/<wedge type="diminuendo"/g) ?? []).length, 1); eq((w.xml.match(/<wedge type="stop"/g) ?? []).length, 1);
+  });
+});
+
+describe("力度记号（pad 符号层；user「mp mf 在哪里加啊」）", () => {
+  it("光标处放一个 mp，光标挪到它后面（接着写的音归它管）；再点 mp = 去掉", () => {
+    let st = four(); const n0 = tr(st).length;
+    st = apply(st, { k: "dyn", v: "mp" });
+    eq(tr(st).length, n0 + 1); eq(tr(st)[st.caret - 1].kind, "dyn", "光标在力度记号后面");
+    st = writeDegree(st, 5, "near");
+    eq(tr(st).at(-2)!.kind, "dyn", "接着写的音在 mp 后面");
+    st = { ...st, caret: st.caret - 1 }; st = apply(st, { k: "dyn", v: "mp" });
+    eq(tr(st).filter((t) => t.kind === "dyn").length, 0, "那儿已经是 mp = 去掉");
   });
 });

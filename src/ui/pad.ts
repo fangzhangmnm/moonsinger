@@ -44,6 +44,8 @@ const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 
 const SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 const CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+/** 力度记号的 Bravura 字形（同选区条「修」）。 */
+const DYN_CELL = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" } as const;
 const ROWS_MIN = 3, ROWS_MAX = 8, COLS_MIN = 3, COLS_MAX = 7;
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
 const KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } } as const;
@@ -107,7 +109,8 @@ export interface PadHost {
   onInputScale(id: string): void;
   autoBars(): boolean;                     // 谱面按拍号自动画小节线开着没有
   staves(): number;                        // 光标所在声部几张谱表（2 = 大谱表：「⋯」里多一个「换谱表」）
-  ignoredArts?(): readonly string[];          // 光标所在声部台上那位不认的记号（符号层的格子标「不认」，照样能写）
+  ignoredArts?(): readonly string[];
+  dynHere?(): string | null;               // 光标处正生效的力度记号（符号层里亮着它；没有 = 都不亮）          // 光标所在声部台上那位不认的记号（符号层的格子标「不认」，照样能写）
   onAutoBars(on: boolean): void;
   onHide(): void;                          // 收起键盘（pad）
   onHalf(down: boolean): void;             // /2 按下 / 松开：写的音临时减半
@@ -255,7 +258,7 @@ export class Pad {
       const akUp = (e: PointerEvent) => { if (!akDrag || e.pointerId !== akDrag.pid) return; akDrag = null; this.host.onAccShift("up", this.accSel); };
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) ak.addEventListener(t, (e) => akUp(e as PointerEvent));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) { if (this.symbols !== "off") this.buildSymbols(); else this.buildGrid(f, base, rows); this.gridFor = gridSig; }
     const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st)) : ""}`;
     if (toolSig !== this.toolsFor) { this.buildHead(selKey, rows); this.toolsFor = toolSig; }
@@ -351,10 +354,11 @@ export class Pad {
    *  和音键一样大的格子，多了往下滚；点一个 = 做那件事、回到音键（一次性）。 */
   private buildSymbols(): void {
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
-    const ign = new Set(this.host.ignoredArts?.() ?? []);
+    const ign = new Set(this.host.ignoredArts?.() ?? []), dynNow = this.host.dynHere?.() ?? null;
     const cell = (id: string, big: string, label: string, title: string) => {
       const mk = id.startsWith("art:") ? id.slice(4) : id === "slur" ? "slur" : null, off = !!mk && ign.has(mk);   // 台上这位不认：照样能写，格子标出来（不静默失效）
-      return `<button class="pad-key sym${mk ? " art" : ""}${off ? " ignored" : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
+      const on = id.endsWith(":on"); id = on ? id.slice(0, -3) : id;   // 力度：现在生效的那个亮着
+      return `<button class="pad-key sym${mk ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
     };
     const items = [
       cell("phrase", `<span class="big">。</span>`, "句号", "句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）"),
@@ -364,6 +368,7 @@ export class Pad {
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "保持", "保持：光标前那个音（有选区 = 选中的）唱 / 弹满；再点一次去掉"),
       cell("wedge:cresc", CRESC_CELL, "渐强", "渐强 <：光标前那个音一路渐强到下一个音（有选区 = 选中的；终点 = 那里写的力度记号，没写 = 走一档；再点一次去掉）"),
       cell("wedge:dim", DIM_CELL, "渐弱", "渐弱 >：光标前那个音一路渐弱到下一个音（有选区 = 选中的；再点一次去掉）"),
+      ...(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => cell(`dyn:${d}${d === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d]}</span>`, "力度", `力度 ${d}：从光标这里起（有选区 = 选区开头），管到下一个力度记号；那儿已经是它 = 去掉（user 2026-10-08「mp mf 在哪里加啊」）`)),
       cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；和呼吸相反——呼吸 = 这里断开；有选区 = 选中的连起来；再点一次去掉）"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；再点一次去掉）"),
       cell("bar", `<span class="big">|</span>`, "小节线", "小节线（弱起 = 写完弱起的音按一下）"),
@@ -396,6 +401,7 @@ export class Pad {
       else if (id === "staff") this.host.onCommand({ k: "staff" });
       else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
       else if (id === "slur") this.host.onCommand({ k: "slur" });
+      else if (id.startsWith("dyn:")) this.host.onCommand({ k: "dyn", v: id.slice(4) as "pp" | "p" | "mp" | "mf" | "f" | "ff" });
       else if (id === "wedge:cresc" || id === "wedge:dim") this.host.onCommand({ k: "wedge", w: id === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: id as "phrase" | "bar" | "rest" | "extend" });
       this.render();

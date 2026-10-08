@@ -48,6 +48,8 @@
 
 **v0.7.1（2026-10-08 深夜，edited by Claude Opus 5.5）**：渐强渐弱 < >；月读跳音改走唱谱的休止（不切音频）。user 问「参考窗你能做吗还是要 fable」：参考窗的数据契约归 `@internal/reference-window` 库（`.<app>/references/manifest.json` + 每张卡的字节，版本 / 迁移在库里；WeebPaint / WXHW 已接，WXHW `src/reference-host.ts` + `src/project/format.ts` 是样板），本仓只是容器里多一个目录 → Opus 回答「能做，动手前先交一页对齐稿」，等 user 定；要 bump minor（user「2需要bump minor」）。发声 / 混音引擎契约重构 + 算法优化 = Fable（user「3需要fable想一下算法优化这些东西」）。
 
+**v0.7.2（2026-10-08 深夜，edited by Claude Opus 5.5）**：范围开关搬到「‹ 2/3 ›」旁边、一个「本段」开关（亮 = 本段，同独奏；扳手里去掉；user「就一个按钮toggle」「类似solo toggle」）；月读的跳音 = 下一个字前「^」顿一下（user「跳音就是顿一下」「跳音先试试只顿」，不够再加「唱一半 + 休止」）、重音 / 强音 = 这个字前「^」（user「嗯重音也顿」）；力度记号搬进符号层、「修」里去掉（user「p应该是符号里而不是修里面，它应该是状态机吧」），符号层亮着光标处生效的那个。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |

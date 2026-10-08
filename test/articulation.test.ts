@@ -146,13 +146,20 @@ describe("修：出声的数（perform.ts / lab-score / mix）", () => {
     const acc = segs.find((s) => s.dB === DYNAMICS_DB.f + ARTICULATION.accentDb)!;
     assert(!!acc && Math.abs(acc.t1 - acc.t0 - ACCENT_SEC) < 1e-9, "重音段"); eq(segs[segs.length - 1].dB, DYNAMICS_DB.f, "后面的音还是 f");
   });
-  it("月读的跳音（v0.7.1 起）= 唱谱里这个音唱一半、剩下变休止（唱法核心认的休止，自己收尾）；后面是同一个字（连音线）= 不切；不给门限 = 照旧", () => {
+  it("月读的跳音 = 下一个字前「^」顿一下（唱法核心认的记号；user「跳音就是顿一下」）；同一处有呼吸 = 按呼吸；后面是同一个字（连音线）= 不顿", () => {
     let st = four(); const [a, b] = noteIdx(st); st = select(st, a, a + 1); st = toggleArtSel(st, "staccato");
-    const sc = toLabScore(tr(st), "n", "ja", undefined, { staccatoGate: 0.5 }).SCORE;
-    deq(sc[0].notes.map((n) => n[1]), [1]); eq(sc[0].rest, 1, "四分 = 两个八分：唱一个、休一个");
-    eq(toLabScore(tr(st), "n").SCORE[0].rest, undefined, "不给门限（别的调用方）= 唱谱不变");
+    deq(toLabScore(tr(st), "n").SCORE.map((e) => e.before ?? null), [null, "^", null, null]);
+    eq(toLabScore(tr(st), "n").SCORE[0].rest, undefined, "不切时值、不加休止");
+    let both = toggleArtSel(st, "breath"); deq(toLabScore(tr(both), "n").SCORE.map((e) => e.before ?? null), [null, "v", null, null], "跳音 + 呼吸 = 按呼吸");
     const toks = tr(st).slice(); toks[b] = { ...(toks[b] as NoteTok), tie: true };
-    eq(toLabScore(toks, "n", "ja", undefined, { staccatoGate: 0.5 }).SCORE[0].rest, undefined, "连着下一个音 = 不切");
+    assert(!toLabScore(toks, "n").SCORE.some((e) => e.before === "^"), "连着下一个音 = 不顿");
+  });
+  it("月读的重音 / 强音 = 这个字自己前面「^」（user「嗯重音也顿」）；前面一个音有呼吸 = 按呼吸", () => {
+    let st = four(); const [, b, c] = noteIdx(st);
+    st = select(st, b, b + 1); st = toggleArtSel(st, "accent"); st = select(st, c, c + 1); st = toggleArtSel(st, "marcato");
+    deq(toLabScore(tr(st), "n").SCORE.map((e) => e.before ?? null), [null, "^", "^", null]);
+    st = select(st, b, b + 1); st = toggleArtSel(st, "breath");
+    deq(toLabScore(tr(st), "n").SCORE.map((e) => e.before ?? null), [null, "^", "v", null], "第二个音有呼吸 → 第三个字前按呼吸");
   });
   it("（旧路，测试 / 兜底）月读的跳音 = 后半段收声（-Infinity），留辅音的余量；乐器 = 截短", () => {
     let st = four(); const [a] = noteIdx(st); st = select(st, a, a + 1); st = toggleArtSel(st, "staccato");

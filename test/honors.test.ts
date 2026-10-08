@@ -20,10 +20,10 @@ function two(mark?: Mark): EditorState {
   return mark === "slur" ? toggleSlurSel(select(st, i, i + 1)) : toggleArtSel(select(st, i, i + 1), mark);
 }
 const first = (st: EditorState) => tr(st).find((t) => t.kind === "note") as NoteTok;
-/** 每个引擎真走的那几条：月读 = 唱谱（lab-score，跳音 = 休止）+ 音量曲线（力度 / 重音 / 强音）；元音版 / SoundFont = noteEnd（lightMarks，和 main.ts 同一个）+ 音量曲线。 */
+/** 每个引擎真走的那几条：月读 = 唱谱（lab-score，跳音 = 下一个字前「^」顿一下）+ 音量曲线（力度 / 重音 / 强音）；元音版 / SoundFont = noteEnd（lightMarks，和 main.ts 同一个）+ 音量曲线。 */
 const heard = (eng: string, gap: number) => (st: EditorState) => {
   const sp = spec(gap);
-  if (eng === "tsukuyomi") return JSON.stringify([toLabScore(tr(st), "n", "ja", undefined, { staccatoGate: sp.staccatoGate }), gainSegments(tr(st), undefined, sp, false)]);   // 和 main.ts 一样：跳音进唱谱
+  if (eng === "tsukuyomi") return JSON.stringify([toLabScore(tr(st), "n"), gainSegments(tr(st), undefined, sp, false)]);   // 和 main.ts 一样：跳音进唱谱
   const f = first(st);
   if (eng === "soundfont") { const sv = sfSpec(gap), i = tr(st).indexOf(f);
     return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sv), !!f.slur), gainSegments(tr(st), undefined, sv, false), noteVelocity(tr(st), i, f.art ?? [], sv, 80 / 127)]); }

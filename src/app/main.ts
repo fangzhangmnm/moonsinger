@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, ART_NAME, type Dyn, toggleArtSel, toggleSlurSel, slurStateSel, toggleWedgeSel, wedgeStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { type Art, ART_NAME, type Dyn, dynMarkAt, toggleArtSel, toggleSlurSel, slurStateSel, toggleWedgeSel, wedgeStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -163,7 +163,7 @@ function updateChrome(): void {
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n = st.sel ? st.sel.to - st.sel.from : 0;
   if (!n) selFix = false;
-  const fix = selFix ? { art: artStateSel(st), slur: slurStateSel(st), cresc: wedgeStateSel(st, "cresc"), dim: wedgeStateSel(st, "dim"), dyn: dynMarkSel(st), ignores: ignoredHere() } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const fix = selFix ? { art: artStateSel(st), slur: slurStateSel(st), cresc: wedgeStateSel(st, "cresc"), dim: wedgeStateSel(st, "dim"), ignores: ignoredHere() } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen, fix); }
 }
 function setClip(t: Token[]): void {
@@ -184,7 +184,6 @@ async function selVerb(v: SelVerb): Promise<void> {
   if (v.startsWith("art:")) { const prev = st, a = v.slice(4) as Art; update(toggleArtSel(st, a)); discloseArt(prev, a); return; }
   if (v === "slur") { const prev = st; update(toggleSlurSel(st)); discloseArt(prev, "slur"); return; }
   if (v === "wedge:cresc" || v === "wedge:dim") { update(toggleWedgeSel(st, v === "wedge:cresc" ? "cresc" : "dim")); return; }
-  if (v.startsWith("dyn:")) { update(setDynSel(st, v === "dyn:none" ? null : (v.slice(4) as Dyn))); return; }
   switch (v) {
     case "fix": selFix = true; updateChrome(); return;
     case "fixdone": selFix = false; updateChrome(); break;
@@ -241,6 +240,7 @@ const view = new ScoreView(scoreEl, {
   onPaperMenu: (id) => openPaperMenu(id),
   onAddPaper: () => { update(addPaper(st)); info("新的一张纸"); },
   onNav: (dir) => navPaper(dir),
+  onScopeToggle: () => { viewScope = viewScope === "segment" ? "all" : "segment"; view.render(); },   // 「本段」开关在曲段导航旁边（user「…放在和曲段导航在一起」「就一个按钮toggle」「类似solo toggle」）
   onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),
   reflow: () => reflow,
@@ -470,6 +470,7 @@ const pad = new Pad(padEl, {
   autoBars: () => autoBars,
   staves: () => curPart().staves ?? 1,
   ignoredArts: () => ignoredHere(),
+  dynHere: () => dynMarkAt(tr(st), st.sel ? st.sel.from : st.caret),   // 符号层亮着「现在生效的力度」（状态机）
   hintRange: () => padHint(),
   onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); },
   onHide: () => showPad(false),
@@ -616,7 +617,7 @@ async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<R
   const song = songIn(scope);
   const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
   if (eng === "tsukuyomi") {
-    const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map, { staccatoGate: activePerfSpec(doc.extras, role).staccatoGate });   // 跳音进唱谱（核心认的休止），改了就重唱
+    const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map);   // 跳音 / 呼吸都在唱谱里（核心认的 ^ / v），改了就重唱
     if (!score.SCORE.length) return null;
     const opt = humOpt(), key = JSON.stringify(["tsukuyomi", score, opt]), had = lastRender.get(part.id);
     if (had?.key === key) return had.r;
@@ -1159,9 +1160,6 @@ function openPaperSheet(): void {
       `<div class="part-sec">排法</div><div class="set-row">` +
       `<button class="btn cand${pageFlow ? "" : " is-on"}" data-v="flow:cont">连续<small>不断页，每一行和分页一样</small></button>` +
       `<button class="btn cand${pageFlow ? " is-on" : ""}" data-v="flow:pages">分页<small>按纸（A4 / A5）的真实高度断页，预览打印</small></button></div>` +
-      `<div class="part-sec">范围</div><div class="set-row">` +
-      `<button class="btn cand${viewScope === "segment" ? " is-on" : ""}" data-v="scope:segment">本段<small>一次只看一张纸（曲段），‹ › 翻</small></button>` +
-      `<button class="btn cand${viewScope === "all" ? " is-on" : ""}" data-v="scope:all">全部<small>整首往下排，隐藏的纸折叠着</small></button></div>` +
       `<div class="part-sec">屏幕放不下纸的时候</div><div class="set-row">` +
       `<button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">不折行<small>整张纸缩小，行和纸上一样</small></button>` +
       `<button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">折行<small>按屏幕宽排，谱大一点</small></button></div>` +

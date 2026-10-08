@@ -77,7 +77,7 @@ export interface Layout {
   parts: (Box & { paper: string; part: string })[];   // 歌手牌（每张纸第一行各条谱左边的声部名）的点击区域
   papers: { id: string; title: (TitleHit & { shown: boolean }); menu: Box | null; top: number; bottom: number }[];   // 每张纸：曲段名那一条（shown = 画了）、「⋯」、占的竖直范围
   addPaper: Box | null;                          // 扳手旁边的「＋」（新的纸；user「这个很低频的，可以小加号放在扳手旁边」）
-  nav: { prev: Box | null; next: Box | null } | null;   // 歌名左边的「‹ 2/3 ›」（多于一张纸才画）
+  nav: { prev: Box | null; next: Box | null; scope: Box } | null;   // 歌名左边的「‹ 2/3 ›」+ 紧跟着「本段」开关（多于一张纸才画）
   pageX: { left: number; right: number };        // 分页时版心左右的边距（px；svg 的 viewBox 往左扩这么多，页框画在负 x）；连续 = 0
   pages: { top: number; h: number }[];           // 分页时每页占的竖直范围（px）；连续 = []
   paperChip: Box | null;                         // 纸右上角小钮的点击区域（px）
@@ -303,7 +303,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const x1 = x0 + cw + lw;
     prims.push({ t: "rect", x: x1, y: cy, w: cw, h: ch, cls: k < song.papers.length - 1 ? "paper-chip" : "paper-chip off" });
     prims.push({ t: "text", x: x1 + cw / 2, y: cy + ch * 0.72, s: "›", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
-    nav = { prev: k > 0 ? { x: x0 - P(0.4), y: cy - P(0.4), w: cw + P(0.8), h: ch + P(0.8) } : null, next: k < song.papers.length - 1 ? { x: x1 - P(0.4), y: cy - P(0.4), w: cw + P(0.8), h: ch + P(0.8) } : null };
+    // 范围开关跟曲段导航放在一起（2026-10-08 user「页面显示曲段还是全部的toggle能不能放在和曲段导航在一起」「本段全部能不能就一个按钮toggle的按钮」「类似solo toggle」）：
+    //   一个「本段」开关，亮 = 一次只看这一张纸（同独奏：亮 = 只要它）；灭 = 全部
+    const segOn = o.onlyPaper !== undefined, sx = x1 + cw + P(0.8), sw = (o.measureLyric("本段") * 1.1) / LYRIC_EM + P(1.2);
+    prims.push({ t: "rect", x: sx, y: cy, w: sw, h: ch, cls: segOn ? "paper-chip on" : "paper-chip" });
+    prims.push({ t: "text", x: sx + sw / 2, y: cy + ch * 0.7, s: "本段", cls: segOn ? "nav-text on" : "nav-text", size: P(1.1), anchor: "middle" });
+    nav = { prev: k > 0 ? { x: x0 - P(0.4), y: cy - P(0.4), w: cw + P(0.8), h: ch + P(0.8) } : null, next: k < song.papers.length - 1 ? { x: x1 - P(0.4), y: cy - P(0.4), w: cw + P(0.8), h: ch + P(0.8) } : null,
+      scope: { x: sx - P(0.3), y: cy - P(0.4), w: sw + P(0.6), h: ch + P(0.8) } };
   }
   const title: TitleHit = { x: P(MARGIN), y: TOP + P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
   // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）；空着时编辑器里画浅色短提示「作者」
