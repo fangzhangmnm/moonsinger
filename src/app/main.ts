@@ -1858,6 +1858,7 @@ function openMainMenu(): void {
     item("cover", "image", "封面图…", "歌库卡片上的图") +
     item("sounds", "volume", "声音与署名…", "乐器的声音打包 / 解包；这首歌用了谁的声音") +
     `<div class="ctx-sep"></div>` +
+    `<div class="ctx-ver">${esc(APP_VERSION)}</div>` +   // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
     item("settings", "settings", "设置…", "模型 / 音源库来源、缓存、署名与条款、诊断日志、版本");
   document.body.append(box);
   const r = $("setBtn").getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, m = 8;
