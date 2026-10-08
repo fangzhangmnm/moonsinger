@@ -29,6 +29,7 @@ import "./credits.test.ts";
 import "./credit-translations.test.ts";
 import "./articulation.test.ts";
 import "./part-name.test.ts";
+import "./id3.test.ts";
 import "./redline-guard.test.mjs";
 import "./storage-whitelist.test.mjs";
 import "./store-wiring.test.mjs";

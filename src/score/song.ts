@@ -80,6 +80,9 @@ export interface Song {
    *  不自动认「作词：」这类写法（user「你权衡一个plain multiline text vs自动识别（但是这样有hidden convention），你看一下怎么办」→ AI 选纯文本、所见即所得）。
    *  存档 = MusicXML <credit><credit-words>（印在页面上的字）。 */
   credits?: string;
+  /** 这首歌自己（词 / 曲 / 编——用户写的那部分）的许可，一段文字，用户选或自己写；没有 = 没声明（不替用户选）。
+   *  存档 = MusicXML <identification><rights>（标准位置，别的软件也认）；署名推演和 mp3 标签里排第一条（2026-10-08 by Claude Opus 5.5；user「你计算的时候别忘了用户自己写的那一部分，用户可以选」）。 */
+  rights?: string;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表
@@ -709,6 +712,14 @@ export function setCredits(st: EditorState, text: string): EditorState {
   if ((st.song.credits ?? "") === t) return st;
   const song = { ...st.song };
   if (t) song.credits = t; else delete song.credits;
+  return { ...st, song };
+}
+/** 这首歌自己的许可（空 = 不声明）。 */
+export function setRights(st: EditorState, text: string): EditorState {
+  const t = text.replace(/\r/g, "").trim();
+  if ((st.song.rights ?? "") === t) return st;
+  const song = { ...st.song };
+  if (t) song.rights = t; else delete song.rights;
   return { ...st, song };
 }
 export function setTitle(st: EditorState, title: string): EditorState {

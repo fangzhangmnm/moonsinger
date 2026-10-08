@@ -45,6 +45,31 @@ export function packedLicenses(extras: Extras): CreditLine[] {
   }
   return group(items);
 }
+/** 这首歌自己那一条（用户写的那部分：词 / 曲 / 编；user「你计算的时候别忘了用户自己写的那一部分，用户可以选」）：谁 = 歌名、署名 = 作者栏、许可 = 用户选的。
+ *  作者栏和许可都空着 = 不出这一条（作者栏的规矩：不提醒、不替用户写）。 */
+export function songCreditLine(song: { title?: string; credits?: string; rights?: string }): CreditLine | null {
+  if (!song.credits?.trim() && !song.rights?.trim()) return null;
+  return { who: [song.title?.trim() ? `「${song.title.trim()}」` : "这首歌"], attribution: (song.credits ?? "").split("\n").map((s) => s.trim()).filter(Boolean), license: { name: song.rights?.trim() || "（没声明许可）" } };
+}
+/** 这首歌自己的许可的常用选项，从紧到松（文字照抄进 <rights>；选了还能改，也能自己写）。默认 = 未声明 = 法律默认的保留所有权利，不替用户选
+ *  （user 2026-10-08「我建议是默认未知，不然用户想做商业闭园或者自定义的，你帮他静默导出了一个mit就比较恶性」「不要只提供开源的选项…有些人还是想要守的比较紧的吧」）。 */
+export const RIGHTS_PRESETS: { label: string; note: string; text: (year: number) => string }[] = [
+  { label: "保留所有权利", note: "什么都要先问你（法律默认就是这样，这里只是写明）", text: (y) => `© ${y} 保留所有权利` },
+  { label: "仅供欣赏", note: "听可以；转载、改编、商用都要先问你", text: (y) => `© ${y} 保留所有权利。仅供个人欣赏，禁止转载、改编、商用。` },
+  { label: "商用请联系", note: "保留所有权利，并告诉别人商用怎么找你", text: (y) => `© ${y} 保留所有权利。商用请联系作者。` },
+  { label: "CC BY-NC-ND 4.0", note: "注明出处可以原样转发；不许改、不许商用（最紧的 CC）", text: () => "CC BY-NC-ND 4.0 https://creativecommons.org/licenses/by-nc-nd/4.0/" },
+  { label: "CC BY-NC 4.0", note: "注明出处可以改；不许商用", text: () => "CC BY-NC 4.0 https://creativecommons.org/licenses/by-nc/4.0/" },
+  { label: "CC BY-SA 4.0", note: "注明出处可以改、可以商用；改了的要用同样的许可", text: () => "CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/" },
+  { label: "CC BY 4.0", note: "注明出处随便用", text: () => "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" },
+  { label: "CC0", note: "放弃权利，谁都能随便用（发出去收不回）", text: () => "CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/" },
+];
+/** 推演出来的提醒（只提示，不拦）：这首歌选了允许别人改编 / 当素材再用的许可（CC BY / SA / NC、CC0、公有领域；不许改编的 ND 不算），可里面有月读出声——
+ *  月读条款禁止「以允许他人二次利用（当作素材）的形式公开」。是 AI 对条款的理解，不是法律意见：提醒写「可能冲突」。 */
+export function licenseHints(rights: string | undefined, performers: readonly CreditLine[]): string[] {
+  const reusable = !!rights && (/CC0|public ?domain|公有领域|publicdomain\/zero/i.test(rights) || (/CC[ -]?BY/i.test(rights) && !/\bND\b|-nd\//i.test(rights)));
+  const tsukuyomi = performers.some((l) => l.license.name.includes("つくよみちゃん"));
+  return reusable && tsukuyomi ? ["这首歌的许可允许别人改编 / 当素材再用，可里面有月读的声音：月读的条款禁止「以允许他人二次利用（当作素材使用）的形式公开」（设置里有条款原文和译文）。这两样可能冲突，请看清楚再发（这是提示，不是法律意见）。"] : [];
+}
 /** 推成纯文字（可直接贴进作品说明）：每组首行「谁 — 许可证」，下面逐行署名（月读的署名块自带换行，原样保留），组间空一行。空 = ""。 */
 export function creditsText(lines: readonly CreditLine[]): string {
   return lines.map((l) => {

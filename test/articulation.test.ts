@@ -105,6 +105,14 @@ describe("修：MusicXML（musicxml.ts）", () => {
     const n = /<note id="n\d+">[\s\S]*?<\/note>/.exec(w.xml)![0];
     assert(n.indexOf("<type>") < n.indexOf("<staff>"), n);
   });
+  it("这首歌的许可：<identification><rights> 存 → 开原样（user 2026-10-08「用户自己写的那一部分，用户可以选」）", () => {
+    const st = four(), song = { ...st.song, rights: "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" };
+    const bytes = saveMxl({ song, hum: "n", extras: emptyExtras(), app: "test", date: meta.date });
+    eq(openBytes("x.mxl", bytes).song.rights, song.rights);
+    const w = writeMusicXml({ rights: "a & b", parts: [{ info, tokens: tr(st) }] }, meta);
+    assert(/<identification><rights>a &amp; b<\/rights><encoding>/.test(w.xml), "rights 要在 encoding 前面（MusicXML 4.0 顺序）");
+    eq(readMusicXml(w.xml).rights, "a & b");
+  });
   it("存 → 开（.mxl）：art / 力度原样", () => {
     let st = four(); const [a] = noteIdx(st);
     st = select(st, a, a + 1); st = toggleArtSel(st, "tenuto"); st = setDynSel(st, "mp");

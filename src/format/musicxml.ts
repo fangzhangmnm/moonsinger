@@ -29,7 +29,7 @@ export interface PartInfo {
 /** 一条声部：谁 + 一串 token；breaks = 从哪些 token 下标起是新的一页（压平件的纸界：token 下标 → 曲段名，第一个声部写排练记号）。 */
 export interface PartXml { info: PartInfo; tokens: Token[]; breaks?: Map<number, string> }
 /** padMeasures = 各声部小节数不等时补整小节休止（给别的软件看的压平件要；自家正本不补——读回来会多出休止）。 */
-export interface ScoreXml { title?: string; movementTitle?: string; paper?: Paper; credits?: string; parts: PartXml[]; padMeasures?: boolean }
+export interface ScoreXml { title?: string; movementTitle?: string; paper?: Paper; credits?: string; rights?: string; parts: PartXml[]; padMeasures?: boolean }   // rights = 这首歌自己的许可（<identification><rights>）
 export interface WriteMeta { software: string; date: string }
 export interface Written { xml: string; manualBars: Record<string, number[]>; unwritten: string[] }
 
@@ -203,7 +203,7 @@ export function writeMusicXml(doc: ScoreXml, meta: WriteMeta): Written {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
-${doc.title ? `<work><work-title>${esc(doc.title)}</work-title></work>\n` : ""}${doc.movementTitle ? `<movement-title>${esc(doc.movementTitle)}</movement-title>\n` : ""}<identification><encoding><software>${esc(meta.software)}</software><encoding-date>${esc(meta.date)}</encoding-date></encoding></identification>
+${doc.title ? `<work><work-title>${esc(doc.title)}</work-title></work>\n` : ""}${doc.movementTitle ? `<movement-title>${esc(doc.movementTitle)}</movement-title>\n` : ""}<identification>${doc.rights ? `<rights>${esc(doc.rights)}</rights>` : ""}<encoding><software>${esc(meta.software)}</software><encoding-date>${esc(meta.date)}</encoding-date></encoding></identification>
 ${defaultsXml(paper)}
 ${doc.credits ? creditXml(doc.credits, paper) + "\n" : ""}<part-list>${partList}</part-list>
 ${bodies.join("\n")}
@@ -213,7 +213,7 @@ ${bodies.join("\n")}
 }
 
 export interface ReadPart { id: string; name: string; instrumentName?: string; sound?: string; program?: number; variant?: string; volume?: number; pan?: number; clef?: "G" | "F"; staves?: 2 }   // clef = 第一个 <clef>（F = 低音；别的谱号先按高音）；staves = <staves> 2 = 大谱表
-export interface ReadScore { title: string; movementTitle: string; paper?: Paper; credits?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number> }
+export interface ReadScore { title: string; movementTitle: string; paper?: Paper; credits?: string; rights?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number> }
 export interface ReadHints { manualBars?: Record<string, number[]>; unwritten?: string[] }   // 自家文件的 .moonsinger/score.json（这张纸的）；别家文件 = 没有
 
 /** MusicXML → 每个声部一串 token（id 在这份文件里唯一；调用方拼进歌时再错开）。hints 没给（别的软件存的）= 每条小节线都当人插的（编辑器只画人插的小节线）。
@@ -329,5 +329,6 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   for (const p of parts) for (const t of p.tokens) if (!t.id) t.id = next++;
   const paper = readPaper(root);
   const credits = readCredits(root, title);
-  return { title, movementTitle, ...(paper ? { paper } : {}), ...(credits ? { credits } : {}), parts: parts.map(({ info, tokens }) => ({ info, tokens })), dropped };
+  const rights = kids(kid(root, "identification"), "rights").map((e) => text(e).trim()).filter(Boolean).join("\n");   // 别家谱可能有几条 <rights>：拼成一段
+  return { title, movementTitle, ...(paper ? { paper } : {}), ...(credits ? { credits } : {}), ...(rights ? { rights } : {}), parts: parts.map(({ info, tokens }) => ({ info, tokens })), dropped };
 }

@@ -4,7 +4,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
 import { emptyExtras, withSf2Candidate, withActive, withNewRole, withPacked, withUnpacked, CANDIDATE_ID, type Extras } from "../src/format/project.ts";
-import { packedLicenses, performerCredits, creditsText } from "../src/format/credits.ts";
+import { packedLicenses, performerCredits, creditsText, songCreditLine, licenseHints, RIGHTS_PRESETS } from "../src/format/credits.ts";
 import { TSUKUYOMI_CREDIT } from "../src/format/performance.ts";
 import { subsetSf2 } from "../src/gm/sf2-subset.ts";
 
@@ -61,6 +61,30 @@ describe("署名推演：打包分发的许可（packedLicenses）", () => {
     const gs = lines.find((l) => l.license.name === GS.license.name)!;
     eq(JSON.stringify(gs.who), JSON.stringify(["Square Lead", "Castanets"])); eq(JSON.stringify(gs.attribution), JSON.stringify(GS.attribution));
     eq(packedLicenses(withUnpacked(packed).extras).length, 0);
+  });
+});
+
+describe("署名推演：这首歌自己那一条 + 许可提醒", () => {
+  it("作者栏 / 许可都空 = 没有这条（不提醒用户写）；有就排第一条", () => {
+    eq(songCreditLine({ title: "うさぎ" }), null);
+    const l = songCreditLine({ title: "うさぎ", credits: "某某 词\n某某 曲", rights: "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" })!;
+    eq(l.who[0], "「うさぎ」"); eq(JSON.stringify(l.attribution), JSON.stringify(["某某 词", "某某 曲"])); assert(l.license.name.startsWith("CC BY 4.0"), l.license.name);
+    eq(songCreditLine({ credits: "某某" })!.license.name, "（没声明许可）");
+  });
+  it("允许再利用的许可 + 月读出了声 = 提醒；保留所有权利 / 没有月读 = 不提醒", async () => {
+    const { extras } = await band();
+    const withVoice = performerCredits(extras, ["r1"]), noVoice = performerCredits(extras, ["r2"]);
+    eq(licenseHints("CC BY 4.0", withVoice).length, 1); eq(licenseHints("CC0 1.0", withVoice).length, 1);
+    eq(licenseHints("© 2026 保留所有权利", withVoice).length, 0); eq(licenseHints(undefined, withVoice).length, 0);
+    eq(licenseHints("CC BY 4.0", noVoice).length, 0);
+    eq(licenseHints("CC BY-NC-ND 4.0 https://creativecommons.org/licenses/by-nc-nd/4.0/", withVoice).length, 0, "ND = 不许改编、只原样转发：不提醒");
+    eq(licenseHints("© 2026 保留所有权利。仅供个人欣赏，禁止转载、改编、商用。", withVoice).length, 0);
+  });
+  it("预设：从紧到松，前几个是「保留」类（带年份、没有网址），CC 的都带网址", () => {
+    assert(RIGHTS_PRESETS[0].text(2026).includes("2026") && !/https?:/.test(RIGHTS_PRESETS[0].text(2026)), "保留所有权利");
+    const cc = RIGHTS_PRESETS.filter((p) => p.label.startsWith("CC"));
+    assert(cc.length >= 4 && cc.every((p) => /https:\/\//.test(p.text(2026))), "CC 网址");
+    assert(RIGHTS_PRESETS.findIndex((p) => p.label.startsWith("CC")) >= 3, "至少三个不开放的在 CC 前面");
   });
 });
 

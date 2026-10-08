@@ -87,7 +87,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   // 正本：每张纸一份（这张纸上在场的声部）
   const papers = song.papers.map((p) => {
     const parts = song.parts.flatMap((part, k) => (p.tracks[part.id] ? [{ info: infos[k], tokens: p.tracks[part.id] }] : []));
-    const w = writeMusicXml({ title: song.title, movementTitle: p.name || undefined, paper: song.paper, credits: song.credits, parts }, meta);
+    const w = writeMusicXml({ title: song.title, movementTitle: p.name || undefined, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
     files[paperFile(p.id)] = strToU8(w.xml);
     // 句号（不算打谱符号，不进 MusicXML）：每个声部里「句号跟在哪个 token 后面」（那个 token 的 id）
     const phrases: Record<string, number[]> = {};
@@ -95,7 +95,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...(Object.keys(phrases).length ? { phrases } : {}), ...(p.hidden ? { hidden: true } : {}) };
   });
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
-  const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, padMeasures: true, parts: song.parts.map((part, k) => {
+  const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k) => {
     const f = flattenPart(song, part.id);
     return { info: infos[k], tokens: f.tokens, breaks: new Map(f.starts.slice(1).map((s) => [s.index, s.paper.name])) };
   }) }, meta);
@@ -422,7 +422,7 @@ function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: 
   let id = 1;
   const renumbered = ps.map((p) => ({ ...p, tracks: Object.fromEntries(parts.flatMap((part) => (p.tracks[part.id] ? [[part.id, p.tracks[part.id].map((t) => ({ ...t, id: id++ }))]] : []))) }));
   const r0 = reads[0];
-  return { ...(r0.title ? { title: r0.title } : {}), ...(r0.paper ? { paper: r0.paper } : {}), ...(r0.credits ? { credits: r0.credits } : {}), hum: "n", parts, papers: renumbered };
+  return { ...(r0.title ? { title: r0.title } : {}), ...(r0.paper ? { paper: r0.paper } : {}), ...(r0.credits ? { credits: r0.credits } : {}), ...(r0.rights ? { rights: r0.rights } : {}), hum: "n", parts, papers: renumbered };
 }
 
 function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, name: string): Opened {

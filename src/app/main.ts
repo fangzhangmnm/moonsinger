@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
+import { type Art, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -21,6 +21,7 @@ import { Pad, HER_RANGE, type HintRange } from "../ui/pad.ts";
 import { toLabScore, type SingLang } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
 import { encodeMp3 } from "../export/mp3.ts";
+import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
 import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
@@ -28,7 +29,7 @@ import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, activePerfSpec, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
-import { packedLicenses, performerCredits, creditsText, type CreditLine } from "../format/credits.ts";
+import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { mixTracks, applyGain } from "../audio/mix.ts";
 import { gainSegments, noteEnd } from "../score/perform.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
@@ -598,9 +599,14 @@ async function exportSong(): Promise<void> {
     const mono = new Float32Array(m.left.length);   // mp3 这一版单声道（左右平均；声像以后随立体声导出一起做）
     for (let i = 0; i < mono.length; i++) mono[i] = (m.left[i] + m.right[i]) / 2;
     const secs = mono.length / m.sr, bytes = await encodeMp3(mono, m.sr);
-    const file = new File([bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
+    // mp3 标签（user 2026-10-08「mp3能自动生成license吗」）：歌名 / 作者（作者栏第一行，用户自己写的）/ 这首歌的许可（用户选的；未声明 = 不写）/ 整段署名。
+    const { lines } = creditsOf(m.roles), rights = st.song.rights;
+    const tag = id3v2({ title: st.song.title || docName(), artist: (st.song.credits ?? "").split("\n").map((s) => s.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || undefined, software: `MoonSinger ${APP_VERSION}` });
+    const file = new File([tag as unknown as BlobPart, bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
     progress("");
-    offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}${performersBlock(m.roles, "演出署名（这段声音里出了声的声部，上场的那位）")}`);
+    offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` +
+      `<div class="offer-msg">${rights ? "这首歌的许可和下面的署名已经写进 mp3 的标签里。" : "下面的署名已经写进 mp3 的标签里（许可未声明 = 法律默认的保留所有权利；要声明在作者栏里选）。"}</div>` +
+      performersBlock(m.roles, "署名（这首歌 + 这段声音里出了声的声部上场的那位）"));
   } catch (e) {
     progress(""); showError(`导出失败：${(e as Error).message}`);
   } finally { exporting = false; }
@@ -889,13 +895,20 @@ function openCreditsSheet(): void {
   box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">作者栏</div>` +
     `<textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="几行都行，照写的显示在纸上（标题下面靠右）">${esc(st.song.credits ?? "")}</textarea>` +
     `<div class="offer-msg">可不填。存进 MusicXML「印在页面上的字」，别的乐谱软件打开也在纸上。</div>` +
+    // 这首歌自己的许可（user 2026-10-08「你计算的时候别忘了用户自己写的那一部分，用户可以选」）：默认不写、不替用户选；选了照抄进 <rights>，还能改
+    `<div class="part-sec">许可（你写的这部分：词 / 曲 / 编）</div><div class="set-row">` +
+    `<button class="btn cand" data-r="-1" title="不写：法律默认 = 保留所有权利（别人用要先问你）">未声明（默认）</button>` + RIGHTS_PRESETS.map((p, k) => `<button class="btn cand" data-r="${k}" title="${esc(p.note)}">${esc(p.label)}</button>`).join("") + `</div>` +
+    `<input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="空着 = 未声明（法律默认就是保留所有权利）；也可以自己写" value="${esc(st.song.rights ?? "")}" />` +
+    `<div class="offer-msg">从紧到松排；CC 那几个发出去以后对已经发出去的收不回。存进 MusicXML 的 &lt;rights&gt;；导出 mp3 时连同署名写进文件的标签里。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="ok">好</button></div></div>`;
   document.body.append(box);
-  const ta = box.querySelector<HTMLTextAreaElement>("#crIn")!;
-  const close = () => { update(setCredits(st, ta.value)); box.remove(); closeOffer = null; scoreEl.focus(); };
+  const ta = box.querySelector<HTMLTextAreaElement>("#crIn")!, rt = box.querySelector<HTMLInputElement>("#rtIn")!;
+  const close = () => { update(setRights(setCredits(st, ta.value), rt.value)); box.remove(); closeOffer = null; scoreEl.focus(); };
   closeOffer = close;
   box.addEventListener("click", (e) => {
-    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    const t = e.target as HTMLElement, r = t.closest<HTMLElement>("[data-r]")?.dataset.r;
+    if (r !== undefined) { const k = Number(r); rt.value = k < 0 ? "" : RIGHTS_PRESETS[k].text(new Date().getFullYear()); rt.focus(); return; }
+    const v = t.closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "ok") close();
   });
   ta.focus();
@@ -1381,7 +1394,15 @@ function soundsSection(): string {
     creditsBlock(packedLicenses(doc.extras), "打包分发的许可（文件里带着这些源文件，分发这份文件要守的；和演出署名分开算）");
 }
 /** 演出署名（文件菜单 / 导出）：用了谁的声音——出了声的声部上场那位，打包 / 弱引用都算；冷板凳、没出声的声部不算（user 2026-10-08 口径）。 */
-const performersBlock = (roles: readonly string[], title = "演出署名（现在出声的声部，上场的那位；导出 mp3 时按真出了声的算）") => creditsBlock(performerCredits(doc.extras, roles), title);
+/** 署名 = 这首歌自己那一条（作者栏 + 用户选的许可；都空 = 没有这条）+ 演出署名；外加只提示不拦的提醒（licenseHints）。导出 mp3 写进 ID3 也用这一份。 */
+function creditsOf(roles: readonly string[]): { lines: CreditLine[]; hints: string[] } {
+  const perf = performerCredits(doc.extras, roles), own = songCreditLine(st.song);
+  return { lines: own ? [own, ...perf] : perf, hints: licenseHints(st.song.rights, perf) };
+}
+const performersBlock = (roles: readonly string[], title = "署名（这首歌 + 现在出声的声部上场的那位；导出 mp3 时按真出了声的算）") => {
+  const { lines, hints } = creditsOf(roles);
+  return creditsBlock(lines, title) + hints.map((h) => `<div class="offer-msg credits-hint">${esc(h)}</div>`).join("");
+};
 /** 文件菜单（应用内面板）：新建 / 歌库 / 打开本机文件 / 存 / 导出 / 封面；还没有家的（没存过、或 iPad 无地）多一个「改文件名」。
  *  没有「另存为」（它住导出里，user 2026-08-20「open local file 和 save as 一加多了很多会混淆用户的东西」）；
  *  本地文件的不给改文件名——浏览器改不了磁盘上的名字（v0.3.0 撤）；歌库里的改名走 store（tryMove，撞名不覆盖）。 */
