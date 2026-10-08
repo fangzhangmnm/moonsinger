@@ -1,7 +1,7 @@
 // commands.ts —— 键盘 / pad / 按钮条发来的命令 → 编辑器状态。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
 // 键盘怎么变成命令 = src/input/keys.ts（一张表）；这里只管命令做什么。
 import type { Dir } from "./pitch.ts";
-import { type EditorState, type Art, type Dyn, setDynSel, dynMarkSel, toggleSlurBefore, toggleWedgeBefore, writeDegree, writeRest, writeBar, writePhrase, shorter, longer, setTuplet, extend, tapAcc, octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward, transposeSel, respellSel, modulateSel, selectToEdge, tr, toggleStaff, toggleArtBefore, setSelDur, scaleSelDur } from "./song.ts";
+import { type EditorState, type Art, type Dyn, setDynSel, dynMarkSel, toggleSlurBefore, toggleHairpin, writeDegree, writeRest, writeBar, writePhrase, shorter, longer, setTuplet, extend, tapAcc, octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward, transposeSel, respellSel, modulateSel, selectToEdge, tr, toggleStaff, toggleArtBefore, setSelDur, scaleSelDur } from "./song.ts";
 
 export type Command =
   | { k: "degree"; degree: number; dir: Dir }
@@ -23,8 +23,8 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "phrase": return writePhrase(st);
     case "art": return toggleArtBefore(st, c.a) ?? st;
     case "slur": return toggleSlurBefore(st) ?? st;
-    case "wedge": return toggleWedgeBefore(st, c.w) ?? st;
-    case "dyn": return setDynSel(st, dynMarkSel(st) === c.v ? null : c.v);   // 力度：光标处（有选区 = 选区开头）放这个记号，管到下一个；那儿已经是它 = 去掉   // 光标前那个音往下一个音渐强 / 渐弱（有选区 = 选区那样）   // 光标前那个音连到下一个（有选区 = 选区那样）
+    case "wedge": return toggleHairpin(st, c.w);   // 渐强 / 渐弱记号：光标处（有选区 = 选区开头）放一个，从这儿变到下一个力度记号
+    case "dyn": return setDynSel(st, dynMarkSel(st) === c.v ? null : c.v);   // 力度：光标处（有选区 = 选区开头）放这个记号，管到下一个；那儿已经是它 = 去掉   // 光标前那个音连到下一个（有选区 = 选区那样）
     case "shorter": return shorter(st);
     case "longer": return longer(st);
     case "tuplet": return setTuplet(st, st.input.tuplet ? 0 : 3);

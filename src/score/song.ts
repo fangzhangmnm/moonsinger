@@ -33,11 +33,9 @@ export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
 /** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean; wedge?: "cresc" | "dim" }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
 //   slur（2026-10-08 连断，Claude Opus 5.5）= 连线：这个音连到下一个音（不留缝）；一串连着的 = 一条连线。MusicXML <slur type="start/stop"> 原生。
 //     user「连和断，嗯就是我想的，能做吗」「连断 预设 都同意」：底色归演奏者（articulation.gapSec），谱上的连线只改局部。
-//   wedge（2026-10-08 渐强渐弱，Claude Opus 5.5；user「mp mf 大于小于号这种，可以preliminary的控制力度」）= 这个音往下一个音渐强 / 渐弱；一串 = 一个 < 或 >，
-//     终点 = 下一个音前面的力度记号，没写 = 走一档（perform.ts dynLevels）。MusicXML <wedge> 原生。和连线同一个形状（「连到下一个」的标记）。
 //   chord（2026-10-08 polyphony）= 叠音：pitch 之外的音高，都比 pitch 低、从高到低；pitch = 最高的那个 = 旋律线（唱的人只读它：user「一个 Polyphony 换月读…应该是只读上面的旋律线」）。MusicXML = <chord/>。
 export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
 export interface BarTok { kind: "bar"; id: number }
@@ -60,7 +58,10 @@ export type Dyn = "pp" | "p" | "mp" | "mf" | "f" | "ff";
 export const DYNS: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
 export const DEFAULT_DYN: Dyn = "mf";
 export interface DynTok { kind: "dyn"; id: number; value: Dyn }
-export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok;
+/** 渐强 / 渐弱（2026-10-08 改成记号，Claude Opus 5.5；user「所以<>是一个语义，就是从这一刻开始连续变到下一个强度/速度标记？」「大于小于号不用精确指定范围，而是读最近的pf」）：
+ *  状态的过渡——从这儿起连续变到同一张纸里的下一个力度记号；中间又遇到一个渐强渐弱 = 这一段到那儿为止；都没有 = 走一档（演奏者的 wedgeStep），谱上灰字披露。 */
+export interface HairpinTok { kind: "hairpin"; id: number; dir: "cresc" | "dim" }
+export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
 export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;
@@ -304,7 +305,7 @@ function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alter
 function fillTarget(st: EditorState): number {
   for (let i = st.caret; i < tr(st).length; i++) {
     const t = tr(st)[i];
-    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || isMark(t)) continue;
+    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || t.kind === "hairpin" || isMark(t)) continue;
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
   return -1;
@@ -433,33 +434,6 @@ export function slurStateSel(st: EditorState): "all" | "some" | "none" {
   const on = idx.length === 1 ? idx : idx.slice(0, -1), n = on.filter((i) => (tr(st)[i] as NoteTok).slur).length;
   return n === 0 ? "none" : n === on.length ? "all" : "some";
 }
-/** 渐强 / 渐弱（选区）：同连线——选中的前 n−1 个标「往下一个音渐强 / 渐弱」（只选一个 = 它往下一个）；都是这个方向 = 去掉；另一个方向的被换掉。 */
-export function toggleWedgeSel(st: EditorState, w: "cresc" | "dim"): EditorState {
-  const idx = selNoteIdx(st); if (!idx.length) return st;
-  const on = idx.length === 1 ? idx : idx.slice(0, -1), toks = tr(st), nt = toks.slice();
-  const all = on.every((i) => (toks[i] as NoteTok).wedge === w);
-  for (const i of on) nt[i] = withWedge(nt[i] as NoteTok, all ? null : w);
-  return next(st, nt);
-}
-/** 渐强 / 渐弱（pad 符号层）：有选区 = 选区那样；没有 = 光标前最近的那个音往下一个音渐强 / 渐弱（再点 = 去掉）；前面是休止 / 没有音 = null。 */
-export function toggleWedgeBefore(st: EditorState, w: "cresc" | "dim"): EditorState | null {
-  if (st.sel) { const nx = toggleWedgeSel(st, w); return nx === st ? null : nx; }
-  const toks = tr(st);
-  for (let i = st.caret - 1; i >= headLen(toks); i--) {
-    const t = toks[i];
-    if (t.kind === "rest") return null;
-    if (t.kind !== "note") continue;
-    const nt = toks.slice(); nt[i] = withWedge(t, t.wedge === w ? null : w); return next(st, nt);
-  }
-  return null;
-}
-export function withWedge(t: NoteTok, w: "cresc" | "dim" | null): NoteTok { if (w) return { ...t, wedge: w }; const { wedge: _w, ...rest } = t; return rest; }
-/** 选区里的渐强 / 渐弱状态（「修」那一排）：目标同 toggleWedgeSel。 */
-export function wedgeStateSel(st: EditorState, w: "cresc" | "dim"): "all" | "some" | "none" {
-  const idx = selNoteIdx(st); if (!idx.length) return "none";
-  const on = idx.length === 1 ? idx : idx.slice(0, -1), n = on.filter((i) => (tr(st)[i] as NoteTok).wedge === w).length;
-  return n === 0 ? "none" : n === on.length ? "all" : "some";
-}
 export function withSlur(t: NoteTok, on: boolean): NoteTok { if (on) return { ...t, slur: true }; const { slur: _s, ...rest } = t; return rest; }
 /** 第 i 个 token 那儿生效的力度（往前找最近的力度记号；没有 = mf）。 */
 /** 第 i 个 token 那儿生效的力度记号（往前找最近的）；前面一个力度记号都没有 = null（= 用演奏者的默认力度，不当 mf 算）。 */
@@ -474,7 +448,7 @@ export function dynAt(tokens: Token[], i: number): Dyn {
 /** 选区开头（没选区 = 光标处）那一串不占时值的 token 里的力度记号的下标；没有 = -1。 */
 function dynRunAt(tokens: Token[], at: number): { a: number; b: number; k: number } {
   let a = at, b = at;
-  const zero = (t: Token | undefined) => !!t && (t.kind === "dyn" || t.kind === "phrase" || isMark(t));
+  const zero = (t: Token | undefined) => !!t && (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "phrase" || isMark(t));
   while (a > headLen(tokens) && zero(tokens[a - 1])) a--;
   while (b < tokens.length && zero(tokens[b])) b++;
   let k = -1; for (let i = a; i < b; i++) if (tokens[i].kind === "dyn") k = i;
@@ -490,6 +464,22 @@ export function setDynSel(st: EditorState, value: Dyn | null): EditorState {
   }
   if (value === null) return st;
   const id = st.nextId; nt.splice(at, 0, { kind: "dyn", id, value });
+  return next({ ...st, nextId: id + 1 }, nt, shift(1, at));
+}
+/** 渐强 / 渐弱记号：选区开头（没选区 = 光标处）放一个；那儿（紧挨着的不占时值的记号里）已经有同方向的 = 去掉，反方向的 = 换。光标挪到它后面（接着写的音在过渡里）。 */
+export function toggleHairpin(st: EditorState, dir: "cresc" | "dim"): EditorState {
+  const toks = tr(st), at = Math.max(headLen(toks), st.sel ? st.sel.from : st.caret);
+  const zero = (t: Token | undefined) => !!t && (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "phrase" || isMark(t));
+  let k = -1;
+  for (let i = at - 1; i >= headLen(toks) && zero(toks[i]); i--) if (toks[i].kind === "hairpin") { k = i; break; }
+  if (k < 0) for (let i = at; i < toks.length && zero(toks[i]); i++) if (toks[i].kind === "hairpin") { k = i; break; }
+  const nt = toks.slice(), shift = (d: number, pos: number) => ({ sel: st.sel ? { from: st.sel.from + (st.sel.from >= pos ? d : 0), to: st.sel.to + (st.sel.to > pos || (st.sel.to === pos && d > 0) ? d : 0) } : null, caret: st.caret + (st.caret >= pos ? d : 0) });
+  if (k >= 0) {
+    const h = toks[k] as HairpinTok;
+    if (h.dir === dir) { nt.splice(k, 1); return next(st, nt, shift(-1, k)); }
+    nt[k] = { ...h, dir }; return next(st, nt);
+  }
+  const id = st.nextId; nt.splice(at, 0, { kind: "hairpin", id, dir });
   return next({ ...st, nextId: id + 1 }, nt, shift(1, at));
 }
 /** 选区开头（没选区 = 光标处）现在写着的力度记号（没有 = null；选区条上亮哪一个）。 */

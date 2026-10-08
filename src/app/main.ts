@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, ART_NAME, type Dyn, dynMarkAt, toggleArtSel, toggleSlurSel, slurStateSel, toggleWedgeSel, wedgeStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { type Art, ART_NAME, type Dyn, dynMarkAt, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -163,7 +163,7 @@ function updateChrome(): void {
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n = st.sel ? st.sel.to - st.sel.from : 0;
   if (!n) selFix = false;
-  const fix = selFix ? { art: artStateSel(st), slur: slurStateSel(st), cresc: wedgeStateSel(st, "cresc"), dim: wedgeStateSel(st, "dim"), ignores: ignoredHere() } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const fix = selFix ? { art: artStateSel(st), slur: slurStateSel(st), ignores: ignoredHere() } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen, fix); }
 }
 function setClip(t: Token[]): void {
@@ -183,7 +183,6 @@ async function selVerb(v: SelVerb): Promise<void> {
   // 修（2026-10-08）：演奏法 / 力度只改选中的那几个音（选区留着接着改）；都走 update() = 在撤销里
   if (v.startsWith("art:")) { const prev = st, a = v.slice(4) as Art; update(toggleArtSel(st, a)); discloseArt(prev, a); return; }
   if (v === "slur") { const prev = st; update(toggleSlurSel(st)); discloseArt(prev, "slur"); return; }
-  if (v === "wedge:cresc" || v === "wedge:dim") { update(toggleWedgeSel(st, v === "wedge:cresc" ? "cresc" : "dim")); return; }
   switch (v) {
     case "fix": selFix = true; updateChrome(); return;
     case "fixdone": selFix = false; updateChrome(); break;
@@ -617,7 +616,7 @@ async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<R
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`「${roleName(doc.extras, role)}」还没有人上场`);
   const song = songIn(scope);
-  const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
+  const { tokens, starts } = flattenPart(song, part.id), map = tempoMapOf(song), bounds = starts.map((x) => x.index);   // bounds = 纸界（渐强渐弱不跨纸）
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);   // 跳音 / 重音 / 呼吸 → 核心认的 ^ / v（怎么对应 = 这位的配置），改了就重唱
     if (!score.SCORE.length) return null;
@@ -630,7 +629,7 @@ async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<R
   }
   const spec = activePerfSpec(doc.extras, role);
   const defVel = activeVelocity(doc.extras, role);   // 这位的力度旋钮（没写力度记号的音）
-  const vels = noteVelocities(tokens, map, spec, defVel);   // 力度记号 + 渐强渐弱 + 重音 / 强音 → 每个音的 MIDI 力度（一遍算完）
+  const vels = noteVelocities(tokens, map, spec, defVel, bounds);   // 力度记号 + 渐强渐弱 + 重音 / 强音 → 每个音的 MIDI 力度（一遍算完）
   const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec), (i) => vels.get(i) ?? defVel);   // SoundFont 叠音全响；元音采样器只唱最上面那条线；跳音截短、呼吸处收短一口气（乐器也是：稍微断开）
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
@@ -652,8 +651,8 @@ async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<R
 }
 /** 一个声部的音量曲线（力度 + 重音；月读的跳音 = 后半段收声；src/score/perform.ts）：没有力度 / 重音 = null，声音不碰。渲染结果是缓存的，乘在拷贝上。 */
 function partGain(part: PartDef, scope: RenderScope) {
-  const song = songIn(scope), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
-  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role));   // 月读的跳音走唱谱（核心认的 ^），不再切音频
+  const song = songIn(scope), { tokens, starts } = flattenPart(song, part.id);
+  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), starts.map((x) => x.index));   // 月读的跳音走唱谱（核心认的 ^），不再切音频
 }
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
 const audibleParts = (): PartDef[] => { const solo = st.song.parts.some((p) => pv(p.id).solo); return st.song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted)); };

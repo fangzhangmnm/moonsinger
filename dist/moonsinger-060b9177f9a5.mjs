@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.5-2026-10-08";
+var APP_VERSION = "v0.7.6-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3021,7 +3021,7 @@ function applyAcc(p2, input) {
 function fillTarget(st3) {
   for (let i10 = st3.caret; i10 < tr(st3).length; i10++) {
     const t10 = tr(st3)[i10];
-    if (t10.kind === "bar" || t10.kind === "phrase" || t10.kind === "dyn" || isMark(t10)) continue;
+    if (t10.kind === "bar" || t10.kind === "phrase" || t10.kind === "dyn" || t10.kind === "hairpin" || isMark(t10)) continue;
     return t10.kind === "note" && t10.pitch === null ? i10 : -1;
   }
   return -1;
@@ -3155,41 +3155,6 @@ function slurStateSel(st3) {
   const on2 = idx.length === 1 ? idx : idx.slice(0, -1), n10 = on2.filter((i10) => tr(st3)[i10].slur).length;
   return n10 === 0 ? "none" : n10 === on2.length ? "all" : "some";
 }
-function toggleWedgeSel(st3, w2) {
-  const idx = selNoteIdx(st3);
-  if (!idx.length) return st3;
-  const on2 = idx.length === 1 ? idx : idx.slice(0, -1), toks = tr(st3), nt2 = toks.slice();
-  const all = on2.every((i10) => toks[i10].wedge === w2);
-  for (const i10 of on2) nt2[i10] = withWedge(nt2[i10], all ? null : w2);
-  return next(st3, nt2);
-}
-function toggleWedgeBefore(st3, w2) {
-  if (st3.sel) {
-    const nx2 = toggleWedgeSel(st3, w2);
-    return nx2 === st3 ? null : nx2;
-  }
-  const toks = tr(st3);
-  for (let i10 = st3.caret - 1; i10 >= headLen(toks); i10--) {
-    const t10 = toks[i10];
-    if (t10.kind === "rest") return null;
-    if (t10.kind !== "note") continue;
-    const nt2 = toks.slice();
-    nt2[i10] = withWedge(t10, t10.wedge === w2 ? null : w2);
-    return next(st3, nt2);
-  }
-  return null;
-}
-function withWedge(t10, w2) {
-  if (w2) return { ...t10, wedge: w2 };
-  const { wedge: _w, ...rest } = t10;
-  return rest;
-}
-function wedgeStateSel(st3, w2) {
-  const idx = selNoteIdx(st3);
-  if (!idx.length) return "none";
-  const on2 = idx.length === 1 ? idx : idx.slice(0, -1), n10 = on2.filter((i10) => tr(st3)[i10].wedge === w2).length;
-  return n10 === 0 ? "none" : n10 === on2.length ? "all" : "some";
-}
 function withSlur(t10, on2) {
   if (on2) return { ...t10, slur: true };
   const { slur: _s, ...rest } = t10;
@@ -3204,7 +3169,7 @@ function dynMarkAt(tokens, i10) {
 }
 function dynRunAt(tokens, at2) {
   let a10 = at2, b3 = at2;
-  const zero = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "phrase" || isMark(t10));
+  const zero = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "phrase" || isMark(t10));
   while (a10 > headLen(tokens) && zero(tokens[a10 - 1])) a10--;
   while (b3 < tokens.length && zero(tokens[b3])) b3++;
   let k2 = -1;
@@ -3225,6 +3190,34 @@ function setDynSel(st3, value) {
   if (value === null) return st3;
   const id2 = st3.nextId;
   nt2.splice(at2, 0, { kind: "dyn", id: id2, value });
+  return next({ ...st3, nextId: id2 + 1 }, nt2, shift(1, at2));
+}
+function toggleHairpin(st3, dir) {
+  const toks = tr(st3), at2 = Math.max(headLen(toks), st3.sel ? st3.sel.from : st3.caret);
+  const zero = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "phrase" || isMark(t10));
+  let k2 = -1;
+  for (let i10 = at2 - 1; i10 >= headLen(toks) && zero(toks[i10]); i10--) if (toks[i10].kind === "hairpin") {
+    k2 = i10;
+    break;
+  }
+  if (k2 < 0) {
+    for (let i10 = at2; i10 < toks.length && zero(toks[i10]); i10++) if (toks[i10].kind === "hairpin") {
+      k2 = i10;
+      break;
+    }
+  }
+  const nt2 = toks.slice(), shift = (d3, pos) => ({ sel: st3.sel ? { from: st3.sel.from + (st3.sel.from >= pos ? d3 : 0), to: st3.sel.to + (st3.sel.to > pos || st3.sel.to === pos && d3 > 0 ? d3 : 0) } : null, caret: st3.caret + (st3.caret >= pos ? d3 : 0) });
+  if (k2 >= 0) {
+    const h2 = toks[k2];
+    if (h2.dir === dir) {
+      nt2.splice(k2, 1);
+      return next(st3, nt2, shift(-1, k2));
+    }
+    nt2[k2] = { ...h2, dir };
+    return next(st3, nt2);
+  }
+  const id2 = st3.nextId;
+  nt2.splice(at2, 0, { kind: "hairpin", id: id2, dir });
   return next({ ...st3, nextId: id2 + 1 }, nt2, shift(1, at2));
 }
 function dynMarkSel(st3) {
@@ -3862,10 +3855,11 @@ function apply(st3, c10, now = Date.now()) {
     case "slur":
       return toggleSlurBefore(st3) ?? st3;
     case "wedge":
-      return toggleWedgeBefore(st3, c10.w) ?? st3;
+      return toggleHairpin(st3, c10.w);
+    // 渐强 / 渐弱记号：光标处（有选区 = 选区开头）放一个，从这儿变到下一个力度记号
     case "dyn":
       return setDynSel(st3, dynMarkSel(st3) === c10.v ? null : c10.v);
-    // 力度：光标处（有选区 = 选区开头）放这个记号，管到下一个；那儿已经是它 = 去掉   // 光标前那个音往下一个音渐强 / 渐弱（有选区 = 选区那样）   // 光标前那个音连到下一个（有选区 = 选区那样）
+    // 力度：光标处（有选区 = 选区开头）放这个记号，管到下一个；那儿已经是它 = 去掉   // 光标前那个音连到下一个（有选区 = 选区那样）
     case "shorter":
       return shorter(st3);
     case "longer":
@@ -4443,7 +4437,7 @@ function notate(dur) {
 }
 var flagLevel = (base3) => base3 >= TPQ ? 0 : Math.round(Math.log2(TPQ / base3));
 var baseWidth = (base3) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base3 / TPQ));
-var SLOT = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, dyn: 3.5, head: 4, chunk: 5 };
+var SLOT = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, dyn: 3.5, hairpin: 3.7, head: 4, chunk: 5 };
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 function unitsOf(tokens, o10) {
@@ -4512,6 +4506,11 @@ function unitsOf(tokens, o10) {
     if (t10.kind === "dyn") {
       flushFull();
       units.push({ kind: "dyn", index: i10, value: t10.value, w: 0.3, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
+    if (t10.kind === "hairpin") {
+      flushFull();
+      units.push({ kind: "hairpin", index: i10, dir: t10.dir, w: 0.3, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     const isNote = t10.kind === "note", nt2 = t10;
@@ -5069,6 +5068,7 @@ function engrave(song, o10) {
           if (q2.p.first) drawTempo(row, u2.x + 0.3, u2.bpm, inSel(u2.index) ? "tempo sel" : "tempo", u2.index);
           continue;
         }
+        if (u2.kind === "hairpin") continue;
         drawChunk(u2);
       }
       const stemmed = [];
@@ -5216,38 +5216,42 @@ function engrave(song, o10) {
           prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy2} ${xb - (xb - xa) * 0.2},${cy2} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
         });
       }
-      const wedgeOf = (k2) => tokens[noteIdx[k2]].wedge;
-      for (let k2 = 0; k2 < noteIdx.length; k2++) {
-        const w2 = wedgeOf(k2);
-        if (!w2 || k2 > 0 && wedgeOf(k2 - 1) === w2) continue;
-        let e10 = k2;
-        while (e10 < noteIdx.length - 1 && wedgeOf(e10) === w2) e10++;
-        const hasEnd = e10 > k2 && wedgeOf(e10) !== w2, last = hasEnd ? e10 - 1 : e10;
-        const run3 = noteIdx.slice(k2, last + 1).map((x3) => headOf.get(x3)), endC = hasEnd ? headOf.get(noteIdx[e10]) : null, n10 = run3.length;
-        const groups = [];
-        run3.forEach((c10, j2) => {
-          const g3 = groups[groups.length - 1];
-          if (g3 && g3.cs[0].system === c10.system) g3.cs.push(c10);
-          else groups.push({ cs: [c10], from: j2 });
-        });
-        const H3 = P2(0.5), afterDyn = (idx) => {
-          for (let j2 = idx - 1; j2 >= 0; j2--) {
+      const LEVELS = ["pp", "p", "mp", "mf", "f", "ff"];
+      const lastChunk = [...units].reverse().find((u2) => u2.kind === "chunk");
+      units.forEach((h2, hi) => {
+        if (h2.kind !== "hairpin" || !lastChunk) return;
+        const prevU = units[hi - 1], DYN_W = { pp: 2.2, p: 1.2, mp: 2.4, mf: 2.3, f: 1.1, ff: 1.9 };
+        const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h2.system ? prevU : null;
+        const startX = Math.max(P2(h2.x + 0.3), dynBefore ? P2(dynBefore.x + 0.3) + P2(DYN_W[dynBefore.value] ?? 2) + P2(0.4) : 0), s02 = h2.system;
+        const endU = units.slice(hi + 1).find((u2) => u2.kind === "dyn" || u2.kind === "hairpin");
+        const implied = !endU || endU.kind === "hairpin";
+        const endX = endU ? P2(endU.x + 0.3) - P2(0.5) : nhX(lastChunk) + nhW(lastChunk) + P2(0.8), s12 = endU ? endU.system : lastChunk.system;
+        if (s12 < s02 || s12 === s02 && endX - startX < P2(1)) return;
+        const leftOf = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((c10) => nhX(c10)), P2(right)) - P2(1);
+        const segs = [];
+        for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf(sy2), sy2 === s12 ? endX : P2(right) - P2(0.3)]);
+        const total = segs.reduce((n10, [, a10, b3]) => n10 + Math.max(0, b3 - a10), 0) || 1, H3 = P2(0.5);
+        let acc2 = 0;
+        for (const [sy2, a10, b3] of segs) {
+          if (b3 - a10 < P2(0.3)) continue;
+          const f0 = acc2 / total, f1 = (acc2 + b3 - a10) / total;
+          acc2 += b3 - a10;
+          const [h0, h1] = h2.dir === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)], y2 = yOf(rowOf(sy2, r10, 0), TOP_LINE + 3.4);
+          prims.push({ t: "path", d: `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`, cls: "hairpin" });
+        }
+        if (!endU) {
+          let cur = "mf";
+          for (let j2 = h2.index - 1; j2 >= 0; j2--) {
             const u2 = tokens[j2];
-            if (u2.kind === "dyn") return true;
-            if (u2.kind === "note" || u2.kind === "rest") return false;
+            if (u2.kind === "dyn") {
+              cur = u2.value;
+              break;
+            }
           }
-          return false;
-        };
-        groups.forEach((g3, gi) => {
-          const f2 = g3.cs[0], l10 = g3.cs[g3.cs.length - 1], row = rowOf(f2.system, r10, 0), y2 = yOf(row, TOP_LINE + 3.4);
-          const xa = gi === 0 ? nhX(f2) + (afterDyn(f2.index) ? P2(2.6) : 0) : nhX(f2) - P2(1.5);
-          const xb = gi === groups.length - 1 && endC && endC.system === f2.system ? nhX(endC) - P2(0.8) : nhX(l10) + nhW(l10) + P2(1.5);
-          if (xb - xa < P2(1.2)) return;
-          const f0 = g3.from / n10, f1 = gi === groups.length - 1 ? 1 : (g3.from + g3.cs.length) / n10;
-          const [h0, h1] = w2 === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)];
-          prims.push({ t: "path", d: `M${xa},${y2 - h0}L${xb},${y2 - h1}M${xa},${y2 + h0}L${xb},${y2 + h1}`, cls: "hairpin" });
-        });
-      }
+          const k2 = Math.max(0, Math.min(LEVELS.length - 1, LEVELS.indexOf(cur) + (h2.dir === "cresc" ? 1 : -1)));
+          prims.push({ t: "text", x: endX + P2(0.4), y: yOf(rowOf(s12, r10, 0), TOP_LINE + 2.6), s: `(${LEVELS[k2]})`, cls: "dyn-implied", size: P2(1.3), anchor: "start" });
+        }
+      });
       for (let n10 = 0; n10 < partLyrics.length; n10++) {
         const L2 = partLyrics[n10], tok = tokens[L2.index];
         if (!tok.hyph) continue;
@@ -16961,6 +16965,10 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
     const t10 = toks[i10];
     const br = breaks?.get(i10);
     if (br !== void 0) {
+      if (wedgeOpen) {
+        cur.push(wedgeXml("stop"));
+        wedgeOpen = false;
+      }
       if (ticks > 0) close(false);
       cur.push(`<print new-page="yes"/>`);
       if (first && br) cur.push(`<direction placement="above"><direction-type><rehearsal>${esc2(br)}</rehearsal></direction-type></direction>`);
@@ -16981,23 +16989,21 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
     }
     if (t10.kind === "dyn") {
       if (ticks >= len) close(false);
-      cur.push(dynXml(t10.value));
-      continue;
-    }
-    if (t10.kind !== "note" && t10.kind !== "rest") continue;
-    if (t10.kind === "note") {
-      const pv2 = noteAt(i10, -1)?.wedge, w2 = t10.wedge;
-      if (pv2 && pv2 !== w2) {
-        if (ticks >= len) close(false);
+      if (wedgeOpen) {
         cur.push(wedgeXml("stop"));
         wedgeOpen = false;
       }
-      if (w2 && pv2 !== w2) {
-        if (ticks >= len) close(false);
-        cur.push(wedgeXml(w2 === "cresc" ? "crescendo" : "diminuendo"));
-        wedgeOpen = true;
-      }
+      cur.push(dynXml(t10.value));
+      continue;
     }
+    if (t10.kind === "hairpin") {
+      if (ticks >= len) close(false);
+      if (wedgeOpen) cur.push(wedgeXml("stop"));
+      cur.push(wedgeXml(t10.dir === "cresc" ? "crescendo" : "diminuendo"));
+      wedgeOpen = true;
+      continue;
+    }
+    if (t10.kind !== "note" && t10.kind !== "rest") continue;
     let left = t10.dur, k2 = 0;
     const tieOut = t10.kind === "note" && nextTimed(i10)?.kind === "note" && nextTimed(i10).tie;
     let lyricDone = false;
@@ -17142,7 +17148,6 @@ function readMusicXml(xml, hints) {
     const body2 = [], langRead = /* @__PURE__ */ new Map();
     let headPhase = true, divisions = TPQ, voice = null;
     const openSlurs = /* @__PURE__ */ new Set();
-    let wedgeNow = null;
     const mark = (t10) => {
       body2.push(t10);
     };
@@ -17186,9 +17191,7 @@ function readMusicXml(xml, hints) {
           }
           for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const w2 of kids(dt, "wedge")) {
             const ty2 = w2.attrs.type;
-            if (ty2 === "crescendo") wedgeNow = "cresc";
-            else if (ty2 === "diminuendo") wedgeNow = "dim";
-            else if (ty2 === "stop") wedgeNow = null;
+            if (ty2 === "crescendo" || ty2 === "diminuendo") mark({ kind: "hairpin", id: 0, dir: ty2 === "crescendo" ? "cresc" : "dim" });
           }
         } else if (c10.name === "note") {
           if (kid(c10, "grace")) {
@@ -17250,7 +17253,6 @@ function readMusicXml(xml, hints) {
           addArts(tok, c10);
           slurEvents(c10, openSlurs);
           if (openSlurs.size) tok.slur = true;
-          if (wedgeNow) tok.wedge = wedgeNow;
           const lyrics = kids(c10, "lyric"), ly2 = lyrics.find((l10) => (l10.attrs.number ?? "1") === "1") ?? lyrics[0];
           if (lyrics.length > 1) drop("\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD");
           if (ly2) {
@@ -18024,11 +18026,11 @@ function mixTracks(tracks, sr2, tailSec = 0.3) {
 // src/score/perform.ts
 var DEFAULT_DYN_KEY = DEFAULT_DYN;
 var M = MARK_DEFAULTS;
-function gainSegments(tokens, map, spec) {
+function gainSegments(tokens, map, spec, bounds) {
   const segs = [];
   let any = false;
   const vel = !!spec.dynamicsVel;
-  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb);
+  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb, bounds);
   const ramp = (a10, b3, s02, s12) => {
     const n10 = Math.max(1, Math.min(32, Math.ceil((s12 - s02) / 0.03)));
     for (let k2 = 0; k2 < n10; k2++) segs.push({ t0: s02 + (s12 - s02) * k2 / n10, t1: s02 + (s12 - s02) * (k2 + 1) / n10, dB: a10 + (b3 - a10) * (k2 + 0.5) / n10 });
@@ -18064,43 +18066,62 @@ function noteEnd(t02, t12, art, o10, slur = false) {
   if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(o10.breathSec ?? M.breathSec, (o10.breathShare ?? M.breathShare) * (t12 - t02)));
   return end;
 }
-function dynLevels(tokens, map, table, def, step) {
+function hairpinEnd(tokens, i10, bounds) {
+  const pe = paperEndOf(i10, tokens.length, bounds);
+  for (let j2 = i10 + 1; j2 < pe; j2++) {
+    const k2 = tokens[j2].kind;
+    if (k2 === "dyn" || k2 === "hairpin") return { kind: k2, at: j2 };
+  }
+  return { kind: "end", at: pe };
+}
+var paperEndOf = (i10, n10, bounds) => {
+  for (const b3 of bounds ?? []) if (b3 > i10) return b3;
+  return n10;
+};
+function dynLevels(tokens, map, table, def, step, bounds) {
   const out = /* @__PURE__ */ new Map(), tl2 = timeline(tokens, map), at2 = new Map(tl2.map((x2) => [x2.index, x2]));
   const lo2 = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
-  const noteIdx = tl2.filter((x2) => x2.tok.kind === "note").map((x2) => x2.index);
+  const onsetFrom = (j2, stop = tokens.length) => {
+    for (let k2 = j2; k2 < stop; k2++) {
+      const x2 = at2.get(k2);
+      if (x2) return x2;
+    }
+    return null;
+  };
+  const endBefore = (j2) => {
+    for (let k2 = j2 - 1; k2 >= 0; k2--) {
+      const x2 = at2.get(k2);
+      if (x2) return x2.t1;
+    }
+    return 0;
+  };
   let cur = def, ramp = null;
   const lvl = (t10) => ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t10 - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur;
   for (let i10 = 0; i10 < tokens.length; i10++) {
+    if (ramp && i10 >= ramp.end) {
+      cur = ramp.to;
+      ramp = null;
+    }
     const t10 = tokens[i10];
     if (t10.kind === "dyn") {
       if (!ramp) cur = table[t10.value];
       continue;
     }
+    if (t10.kind === "hairpin") {
+      const e10 = hairpinEnd(tokens, i10, bounds), start = onsetFrom(i10 + 1, e10.at);
+      if (!start) continue;
+      const to2 = e10.kind === "dyn" ? table[tokens[e10.at].value] : Math.max(lo2, Math.min(hi, cur + (t10.dir === "cresc" ? step : -step)));
+      const T1 = e10.kind === "end" ? endBefore(e10.at) : onsetFrom(e10.at, paperEndOf(i10, tokens.length, bounds))?.t0 ?? endBefore(e10.at);
+      ramp = { from: cur, to: to2, T0: start.t0, T1, end: e10.at };
+      continue;
+    }
     const x2 = at2.get(i10);
     if (!x2) continue;
-    if (ramp && i10 >= ramp.end) {
-      cur = ramp.to;
-      ramp = null;
-    }
-    if (!ramp && t10.kind === "note" && t10.wedge) {
-      const k2 = noteIdx.indexOf(i10);
-      let e10 = k2;
-      while (e10 < noteIdx.length - 1 && tokens[noteIdx[e10]].wedge === t10.wedge) e10++;
-      const endIdx = e10 > k2 ? noteIdx[e10] : i10 + 1, lastFlag = noteIdx[e10 > k2 ? e10 - 1 : k2];
-      let to2 = null;
-      for (let j2 = lastFlag + 1; j2 < endIdx && j2 < tokens.length; j2++) {
-        const u2 = tokens[j2];
-        if (u2.kind === "dyn") to2 = table[u2.value];
-      }
-      if (to2 === null) to2 = Math.max(lo2, Math.min(hi, cur + (t10.wedge === "cresc" ? step : -step)));
-      const endAt = at2.get(endIdx);
-      ramp = { from: cur, to: to2, T0: x2.t0, T1: endAt ? endAt.t0 : at2.get(lastFlag).t1, end: endAt ? endIdx : lastFlag + 1 };
-    }
     out.set(i10, { at0: lvl(x2.t0), at1: lvl(x2.t1) });
   }
   return out;
 }
-function noteVelocities(tokens, map, spec, defaultVel) {
+function noteVelocities(tokens, map, spec, defaultVel, bounds) {
   const out = /* @__PURE__ */ new Map();
   if (!spec.dynamicsVel) {
     tokens.forEach((t10, i10) => {
@@ -18108,7 +18129,7 @@ function noteVelocities(tokens, map, spec, defaultVel) {
     });
     return out;
   }
-  for (const [i10, l10] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel)) {
+  for (const [i10, l10] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds)) {
     const t10 = tokens[i10];
     if (t10.kind === "note") out.set(i10, noteVel(l10.at0, artOf(t10), spec));
   }
@@ -25864,6 +25885,10 @@ function toJianpu(toks, fifths) {
       out.push(`[${t10.value}]`);
       continue;
     }
+    if (t10.kind === "hairpin") {
+      out.push(t10.dir === "cresc" ? "[<]" : "[>]");
+      continue;
+    }
     const suf = durText(t10.dur), lead = suf.startsWith(" -") ? "" : suf, tail = suf.startsWith(" -") ? suf : "";
     if (t10.kind === "rest") {
       out.push(`0${lead}${tail}`);
@@ -25927,6 +25952,10 @@ function fromJianpu(text2, fifths) {
     m2 = /^\[(pp|p|mp|mf|f|ff)\]$/.exec(w2);
     if (m2) {
       out.push({ kind: "dyn", id: id2++, value: m2[1] });
+      continue;
+    }
+    if (w2 === "[<]" || w2 === "[>]") {
+      out.push({ kind: "hairpin", id: id2++, dir: w2 === "[<]" ? "cresc" : "dim" });
       continue;
     }
     m2 = /^(\^?)((?:[#b]*[0-7x]['’,]*)(?:&[#b]*[1-7]['’,]*)*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w2);
@@ -26038,8 +26067,6 @@ function unserializeDesk(json) {
 }
 
 // src/ui/sel-bar.ts
-var CRESC_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-var DIM_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var ART_LABEL = { staccato: ["\uE4A2", "\u8DF3\u97F3"], accent: ["\uE4A0", "\u91CD\u97F3"], marcato: ["\uE4AC", "\u5F3A\u97F3"], tenuto: ["\uE4A4", "\u4FDD\u6301"], breath: ["\uE4CE", "\u547C\u5438"] };
 var SelBar = class {
@@ -26063,7 +26090,7 @@ var SelBar = class {
     }
     const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
     if (sel && fix) {
-      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<button type="button" class="btn fix-art fix-slur${fix.slur === "all" ? " is-on" : fix.slur === "some" ? " is-some" : ""}" data-v="slur" title="\u8FDE\u7EBF\uFF1A\u9009\u4E2D\u7684\u97F3\u8FDE\u8D77\u6765\uFF08\u4E0D\u7559\u7F1D\uFF09\uFF1B\u90FD\u8FDE\u7740 = \u53BB\u6389${fix.ignores?.includes("slur") ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u73B0\u5728\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF09" : ""}">${SLUR_SVG}<span>\u8FDE\u7EBF</span>${fix.ignores?.includes("slur") ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button><span class="sel-gap"></span>` + [["cresc", "\u6E10\u5F3A", CRESC_SVG], ["dim", "\u6E10\u5F31", DIM_SVG]].map(([w2, zh2, ic2]) => `<button type="button" class="btn fix-art fix-wedge${fix[w2] === "all" ? " is-on" : fix[w2] === "some" ? " is-some" : ""}" data-v="wedge:${w2}" title="${zh2}\uFF1A\u9009\u4E2D\u7684\u97F3\u4E00\u8DEF${zh2}\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u7EC8\u70B9 = \u90A3\u91CC\u5199\u7684\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF09\uFF1B\u90FD\u662F = \u53BB\u6389">${ic2}<span>${zh2}</span></button>`).join("") + b3("fixdone", "\u5B8C\u6210", "", "primary");
+      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<button type="button" class="btn fix-art fix-slur${fix.slur === "all" ? " is-on" : fix.slur === "some" ? " is-some" : ""}" data-v="slur" title="\u8FDE\u7EBF\uFF1A\u9009\u4E2D\u7684\u97F3\u8FDE\u8D77\u6765\uFF08\u4E0D\u7559\u7F1D\uFF09\uFF1B\u90FD\u8FDE\u7740 = \u53BB\u6389${fix.ignores?.includes("slur") ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u73B0\u5728\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF09" : ""}">${SLUR_SVG}<span>\u8FDE\u7EBF</span>${fix.ignores?.includes("slur") ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button><span class="sel-gap"></span>` + b3("fixdone", "\u5B8C\u6210", "", "primary");
       this.el.hidden = false;
       return;
     }
@@ -26163,7 +26190,7 @@ function updateChrome() {
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
   if (!n10) selFix = false;
-  const fix = selFix ? { art: artStateSel(st2), slur: slurStateSel(st2), cresc: wedgeStateSel(st2, "cresc"), dim: wedgeStateSel(st2, "dim"), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const fix = selFix ? { art: artStateSel(st2), slur: slurStateSel(st2), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
   if (sig !== selSig) {
     selSig = sig;
     selBar.update(n10, !!clip, over || studio.isOpen, fix);
@@ -26201,10 +26228,6 @@ async function selVerb(v) {
     const prev = st2;
     update(toggleSlurSel(st2));
     discloseArt(prev, "slur");
-    return;
-  }
-  if (v === "wedge:cresc" || v === "wedge:dim") {
-    update(toggleWedgeSel(st2, v === "wedge:cresc" ? "cresc" : "dim"));
     return;
   }
   switch (v) {
@@ -26819,7 +26842,7 @@ async function renderPart(part, scope = "view") {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`\u300C${roleName(doc.extras, role)}\u300D\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A`);
   const song = songIn(scope);
-  const { tokens } = flattenPart(song, part.id), map = tempoMapOf(song);
+  const { tokens, starts } = flattenPart(song, part.id), map = tempoMapOf(song), bounds = starts.map((x2) => x2.index);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);
     if (!score.SCORE.length) return null;
@@ -26833,7 +26856,7 @@ async function renderPart(part, scope = "view") {
   }
   const spec = activePerfSpec(doc.extras, role);
   const defVel = activeVelocity(doc.extras, role);
-  const vels = noteVelocities(tokens, map, spec, defVel);
+  const vels = noteVelocities(tokens, map, spec, defVel, bounds);
   const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec), (i10) => vels.get(i10) ?? defVel);
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
@@ -26855,8 +26878,8 @@ async function renderPart(part, scope = "view") {
   return out;
 }
 function partGain(part, scope) {
-  const song = songIn(scope), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
-  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role));
+  const song = songIn(scope), { tokens, starts } = flattenPart(song, part.id);
+  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), starts.map((x2) => x2.index));
 }
 var audibleParts = () => {
   const solo = st2.song.parts.some((p2) => pv(p2.id).solo);
@@ -27267,7 +27290,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "1ffb5415f62d",
+  cssHash: "1392789379d5",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -29529,4 +29552,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c053d8377930.mjs.map
+//# sourceMappingURL=moonsinger-060b9177f9a5.mjs.map

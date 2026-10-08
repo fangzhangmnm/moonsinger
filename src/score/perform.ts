@@ -20,11 +20,11 @@ const M = MARK_DEFAULTS;   // 演奏者没写的键用它（= 这一版之前写
 export interface GainSeg { t0: number; t1: number; dB: number }
 
 /** 一个声部的音量曲线。gateStaccato = 跳音靠收声（月读）。全程 0 dB = null。 */
-export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec): GainSeg[] | null {
+export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[]): GainSeg[] | null {
   const segs: GainSeg[] = [];
   let any = false;
   const vel = !!spec.dynamicsVel;   // 力度记号 / 重音 / 强音 / 渐强渐弱走 MIDI 力度（noteVelocities）：这条曲线只剩跳音收声
-  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb);
+  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb, bounds);
   /** 渐强渐弱：一个音里面的 dB 从 a 走到 b（切成小段；月读一个长音也能渐强）。 */
   const ramp = (a: number, b: number, s0: number, s1: number) => { const n = Math.max(1, Math.min(32, Math.ceil((s1 - s0) / 0.03))); for (let k = 0; k < n; k++) segs.push({ t0: s0 + ((s1 - s0) * k) / n, t1: s0 + ((s1 - s0) * (k + 1)) / n, dB: a + ((b - a) * (k + 0.5)) / n }); };
   for (const { index, tok, t0, t1 } of timeline(tokens, map)) {
@@ -50,30 +50,37 @@ export function noteEnd(t0: number, t1: number, art: readonly string[], o: { sta
   return end;
 }
 
-/** 每个有时值的 token（音 / 休止）的力度水平：音头 at0、音尾 at1（单位 = 表的单位：MIDI 力度或 dB）。按力度记号（查 table）+ 渐强渐弱：
- *  一串标了 wedge 的音 = 从第一个的音头到被连到的那个音的音头线性过渡；终点 = 那之间写的力度记号，没写 = 走一档（step，卡在表的最小最大之间）；
- *  过渡完停在终点，直到下一个力度记号。前面一个力度记号都没有 = def（演奏者的默认 / 旋钮）。2026-10-08，user「mp mf 大于小于号这种，可以preliminary的控制力度」。 */
-export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Record<Dyn, number>, def: number, step: number): Map<number, { at0: number; at1: number }> {
+/** 渐强渐弱的终点：同一张纸里（bounds = 每张纸在这一串里从第几个起；不给 = 整串一张），后面第一个力度记号 / 下一个渐强渐弱 / 纸尾。 */
+export function hairpinEnd(tokens: Token[], i: number, bounds?: readonly number[]): { kind: "dyn" | "hairpin" | "end"; at: number } {
+  const pe = paperEndOf(i, tokens.length, bounds);
+  for (let j = i + 1; j < pe; j++) { const k = tokens[j].kind; if (k === "dyn" || k === "hairpin") return { kind: k, at: j }; }
+  return { kind: "end", at: pe };
+}
+const paperEndOf = (i: number, n: number, bounds?: readonly number[]) => { for (const b of bounds ?? []) if (b > i) return b; return n; };
+/** 每个有时值的 token（音 / 休止）的力度水平：音头 at0、音尾 at1（单位 = 表的单位：MIDI 力度或 dB）。力度记号（查 table）= 状态，从这儿起；
+ *  渐强 / 渐弱记号 = 过渡：从它后面第一个音的音头，线性变到同一张纸里下一个力度记号生效的那个音的音头；先遇到另一个渐强渐弱 = 到那儿为止、走一档；
+ *  都没有 = 到纸尾、走一档（step，卡在表的最小最大之间；谱上灰字披露）。前面一个力度记号都没有 = def（演奏者的默认 / 旋钮）。
+ *  2026-10-08，user「所以<>是一个语义，就是从这一刻开始连续变到下一个强度/速度标记？」「过渡到这张纸的结尾…走一档也行，更合理，需要向用户披露」。 */
+export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Record<Dyn, number>, def: number, step: number, bounds?: readonly number[]): Map<number, { at0: number; at1: number }> {
   const out = new Map<number, { at0: number; at1: number }>(), tl = timeline(tokens, map), at = new Map(tl.map((x) => [x.index, x]));
   const lo = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
-  const noteIdx = tl.filter((x) => x.tok.kind === "note").map((x) => x.index);
+  const onsetFrom = (j: number, stop = tokens.length) => { for (let k = j; k < stop; k++) { const x = at.get(k); if (x) return x; } return null; };   // j 起第一个有时值的
+  const endBefore = (j: number) => { for (let k = j - 1; k >= 0; k--) { const x = at.get(k); if (x) return x.t1; } return 0; };
   let cur = def, ramp: { from: number; to: number; T0: number; T1: number; end: number } | null = null;
   const lvl = (t: number) => (ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur);
   for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-    if (t.kind === "dyn") { if (!ramp) cur = table[t.value]; continue; }   // 渐强渐弱当中的力度记号 = 终点（下面已经算进 to 了）
-    const x = at.get(i); if (!x) continue;
     if (ramp && i >= ramp.end) { cur = ramp.to; ramp = null; }
-    if (!ramp && t.kind === "note" && t.wedge) {   // 一串的头：找终点那个音
-      const k = noteIdx.indexOf(i); let e = k;
-      while (e < noteIdx.length - 1 && (tokens[noteIdx[e]] as NoteTok).wedge === t.wedge) e++;
-      const endIdx = e > k ? noteIdx[e] : i + 1, lastFlag = noteIdx[e > k ? e - 1 : k];
-      let to: number | null = null;
-      for (let j = lastFlag + 1; j < endIdx && j < tokens.length; j++) { const u = tokens[j]; if (u.kind === "dyn") to = table[u.value]; }
-      if (to === null) to = Math.max(lo, Math.min(hi, cur + (t.wedge === "cresc" ? step : -step)));
-      const endAt = at.get(endIdx);
-      ramp = { from: cur, to, T0: x.t0, T1: endAt ? endAt.t0 : at.get(lastFlag)!.t1, end: endAt ? endIdx : lastFlag + 1 };
+    const t = tokens[i];
+    if (t.kind === "dyn") { if (!ramp) cur = table[t.value]; continue; }
+    if (t.kind === "hairpin") {
+      const e = hairpinEnd(tokens, i, bounds), start = onsetFrom(i + 1, e.at);
+      if (!start) continue;   // 它和终点之间一个音都没有 = 不起作用
+      const to = e.kind === "dyn" ? table[(tokens[e.at] as Extract<Token, { kind: "dyn" }>).value] : Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
+      const T1 = e.kind === "end" ? endBefore(e.at) : (onsetFrom(e.at, paperEndOf(i, tokens.length, bounds))?.t0 ?? endBefore(e.at));
+      ramp = { from: cur, to, T0: start.t0, T1, end: e.at };
+      continue;
     }
+    const x = at.get(i); if (!x) continue;
     out.set(i, { at0: lvl(x.t0), at1: lvl(x.t1) });
   }
   return out;
@@ -86,10 +93,10 @@ export function noteVelocity(tokens: Token[], index: number, art: readonly strin
   return noteVel(l ? l.at0 : defaultVel * 127, art, spec);
 }
 /** 一整条的每个音的力度（index → 0–1）：力度记号 + 渐强渐弱（dynLevels，取音头）+ 重音 / 强音。没有力度表 = 一律 defaultVel。 */
-export function noteVelocities(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number): Map<number, number> {
+export function noteVelocities(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[]): Map<number, number> {
   const out = new Map<number, number>();
   if (!spec.dynamicsVel) { tokens.forEach((t, i) => { if (t.kind === "note") out.set(i, defaultVel); }); return out; }
-  for (const [i, l] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel)) { const t = tokens[i]; if (t.kind === "note") out.set(i, noteVel(l.at0, artOf(t), spec)); }
+  for (const [i, l] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds)) { const t = tokens[i]; if (t.kind === "note") out.set(i, noteVel(l.at0, artOf(t), spec)); }
   return out;
 }
 const noteVel = (v: number, art: readonly string[], spec: PerfSpec) => {

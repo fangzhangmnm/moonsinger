@@ -155,8 +155,9 @@ interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: numb
 interface HeadU { kind: "head"; index: -1; w: 0; x: number; system: number; tick: number; staff: Staff }   // 光标：零宽
 interface PhraseU { kind: "phrase"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 句号：歌词行上一个小「。」（不换行、不换气）
 interface DynU { kind: "dyn"; index: number; value: Dyn; w: number; x: number; system: number; tick: number; staff: Staff }   // 力度：谱上方一个字（不占地方，和后面那个音对齐）
-type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | PhraseU | DynU;
-const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, dyn: 3.5, head: 4, chunk: 5 };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
+interface HairpinU { kind: "hairpin"; index: number; dir: "cresc" | "dim"; w: number; x: number; system: number; tick: number; staff: Staff }   // 渐强渐弱：力度那一行，从这儿画到终点（不占地方）
+type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | PhraseU | DynU | HairpinU;
+const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, dyn: 3.5, hairpin: 3.7, head: 4, chunk: 5 };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
 const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
@@ -202,6 +203,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
     if (t.kind === "tempo") { flushFull(); units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "phrase") { flushFull(); units.push({ kind: "phrase", index: i, w: 1.0, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "dyn") { flushFull(); units.push({ kind: "dyn", index: i, value: t.value, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "hairpin") { flushFull(); units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
     const isNote = t.kind === "note", nt = t as NoteTok;
     const pitch = isNote ? effectivePitch(tokens, i) : null;
     const pitches = isNote ? (nt.pitch ? allPitches(nt) : [pitch!]) : [];
@@ -649,6 +651,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           continue;
         }
         if (u.kind === "tempo") { if (q.p.first) drawTempo(row, u.x + 0.3, u.bpm, inSel(u.index) ? "tempo sel" : "tempo", u.index); continue; }
+        if (u.kind === "hairpin") continue;   // 渐强渐弱在 8¾ 画（要知道终点）
         drawChunk(u);
       }
       // 7. 符干、符杠、符尾（按拍分组：同一拍里连着的八分及更短的音符共用符杠）
@@ -772,27 +775,38 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy} ${xb - (xb - xa) * 0.2},${cy} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
         });
       }
-      // 8¾. 渐强渐弱（2026-10-08）：一串标了 wedge 的音 = 一个 < 或 >，画在力度那一行（谱上方），从第一个音到被连到的那个音前面；
-      //   前面紧挨着力度记号 = 让开字形；跨行 = 每行画它那一份开口（按音数分）
-      const wedgeOf = (k: number) => (tokens[noteIdx[k]] as NoteTok).wedge;
-      for (let k = 0; k < noteIdx.length; k++) {
-        const w = wedgeOf(k); if (!w || (k > 0 && wedgeOf(k - 1) === w)) continue;
-        let e = k; while (e < noteIdx.length - 1 && wedgeOf(e) === w) e++;
-        const hasEnd = e > k && wedgeOf(e) !== w, last = hasEnd ? e - 1 : e;
-        const run = noteIdx.slice(k, last + 1).map((x) => headOf.get(x)!), endC = hasEnd ? headOf.get(noteIdx[e])! : null, n = run.length;
-        const groups: { cs: Chunk[]; from: number }[] = [];
-        run.forEach((c, j) => { const g = groups[groups.length - 1]; if (g && g.cs[0].system === c.system) g.cs.push(c); else groups.push({ cs: [c], from: j }); });
-        const H = P(0.5), afterDyn = (idx: number) => { for (let j = idx - 1; j >= 0; j--) { const u = tokens[j]; if (u.kind === "dyn") return true; if (u.kind === "note" || u.kind === "rest") return false; } return false; };
-        groups.forEach((g, gi) => {
-          const f = g.cs[0], l = g.cs[g.cs.length - 1], row = rowOf(f.system, r, 0), y = yOf(row, TOP_LINE + 3.4);
-          const xa = gi === 0 ? nhX(f) + (afterDyn(f.index) ? P(2.6) : 0) : nhX(f) - P(1.5);
-          const xb = gi === groups.length - 1 && endC && endC.system === f.system ? nhX(endC) - P(0.8) : nhX(l) + nhW(l) + P(1.5);
-          if (xb - xa < P(1.2)) return;
-          const f0 = g.from / n, f1 = gi === groups.length - 1 ? 1 : (g.from + g.cs.length) / n;   // 这一行占整个开口的哪一段
-          const [h0, h1] = w === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)];
-          prims.push({ t: "path", d: `M${xa},${y - h0}L${xb},${y - h1}M${xa},${y + h0}L${xb},${y + h1}`, cls: "hairpin" });
-        });
-      }
+      // 8¾. 渐强渐弱（记号，2026-10-08）：从这个记号画到终点——下一个力度记号（让开它的字）/ 下一个渐强渐弱；都没有 = 画到这张纸最后一个音，
+      //   后面灰字「(f)」= 走一档推定的终点（user「走一档也行，更合理，需要向用户披露」）。跨行 = 每行画它那一份开口（按横向长度分）
+      const LEVELS = ["pp", "p", "mp", "mf", "f", "ff"] as const;
+      const lastChunk = [...units].reverse().find((u): u is Chunk => u.kind === "chunk");
+      units.forEach((h, hi) => {
+        if (h.kind !== "hairpin" || !lastChunk) return;
+        // 紧挨在前面的力度记号（mp < 这种）：从它的字后面起画，别压在字上（字宽按 Bravura 量的大概：sp）
+        const prevU = units[hi - 1], DYN_W: Record<string, number> = { pp: 2.2, p: 1.2, mp: 2.4, mf: 2.3, f: 1.1, ff: 1.9 };
+        const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
+        const startX = Math.max(P(h.x + 0.3), dynBefore ? P(dynBefore.x + 0.3) + P(DYN_W[dynBefore.value] ?? 2) + P(0.4) : 0), s0 = h.system;
+        const endU = units.slice(hi + 1).find((u) => u.kind === "dyn" || u.kind === "hairpin");
+        const implied = !endU || endU.kind === "hairpin";
+        const endX = endU ? P(endU.x + 0.3) - P(0.5) : nhX(lastChunk) + nhW(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;   // 终点的字画在 x + 0.3
+        if (s1 < s0 || (s1 === s0 && endX - startX < P(1))) return;
+        const leftOf = (sy: number) => Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((c) => nhX(c)), P(right)) - P(1);
+        const segs: [number, number, number][] = [];
+        for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf(sy), sy === s1 ? endX : P(right) - P(0.3)]);
+        const total = segs.reduce((n, [, a, b]) => n + Math.max(0, b - a), 0) || 1, H = P(0.5);
+        let acc = 0;
+        for (const [sy, a, b] of segs) {
+          if (b - a < P(0.3)) continue;
+          const f0 = acc / total, f1 = (acc + b - a) / total; acc += b - a;
+          const [h0, h1] = h.dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)], y = yOf(rowOf(sy, r, 0), TOP_LINE + 3.4);
+          prims.push({ t: "path", d: `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`, cls: "hairpin" });
+        }
+        if (!endU) {   // 推定的终点：现在的力度往上 / 往下一档
+          let cur: string = "mf"; for (let j = h.index - 1; j >= 0; j--) { const u = tokens[j]; if (u.kind === "dyn") { cur = u.value; break; } }
+          const k = Math.max(0, Math.min(LEVELS.length - 1, LEVELS.indexOf(cur as (typeof LEVELS)[number]) + (h.dir === "cresc" ? 1 : -1)));
+          prims.push({ t: "text", x: endX + P(0.4), y: yOf(rowOf(s1, r, 0), TOP_LINE + 2.6), s: `(${LEVELS[k]})`, cls: "dyn-implied", size: P(1.3), anchor: "start" });
+        }
+        void implied;
+      });
       // 9. 歌词连字符（英文断开的音节）：画在两个歌词中间
       for (let n = 0; n < partLyrics.length; n++) {
         const L = partLyrics[n], tok = tokens[L.index] as NoteTok;

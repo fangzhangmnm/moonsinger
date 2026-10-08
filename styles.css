@@ -638,3 +638,4 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .ip-marks th { text-align: left; font-weight: 500; padding: 3px 12px 3px 0; white-space: nowrap; color: var(--ink); vertical-align: top; }
 .ip-marks td { padding: 3px 0; color: var(--ink); }
 .ip-marks tr.ign th, .ip-marks tr.ign td { color: var(--muted); }
+.staff-svg .dyn-implied { fill: var(--muted); font-style: italic; font-weight: 600; }   /* 渐强渐弱没写终点：走一档推定的终点（灰字披露） */
