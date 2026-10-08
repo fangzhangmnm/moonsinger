@@ -1,9 +1,10 @@
-// credits.ts —— 署名 / 许可证推演（纯函数）：这一份东西里用到了谁的声音，推成一段最小的署名文字。created 2026-10-08 by Claude Opus 5.5
-// user 2026-10-08「wishlist：导出和保存（包括pack, unpack）的时候加一个license和credit推演工具，只用最minimal的。reference里面的东西不算」。
-// 两个范围（按「这份东西里实际带着谁的字节」算）：
-//   file  = 歌（.mxl）里带着字节的音源 = 打包进来的 SoundFont 子集（台上 + 候补都算：字节都在文件里）。
-//           弱引用的音源、月读 / 元音版（家族模型包 / app 随带的表，歌里只钉哈希）= 引用，不算（「reference里面的东西不算」）。
-//   audio = 一段混好的声音（mp3）：这次真出了声的声部，上场那位是谁就算谁（月读也算：她的声音在里面）。
+// credits.ts —— 署名 / 许可证推演（纯函数）：用到了谁的声音，推成一段最小的署名文字。created 2026-10-08 by Claude Opus 5.5
+// user 2026-10-08「wishlist：导出和保存（包括pack, unpack）的时候加一个license和credit推演工具，只用最minimal的。reference里面的东西不算」；
+//   口径（user 当天澄清）：「reference 里面的东西不 我说的是未来的参考窗」「我觉得算出来的是你渲染的mp3用了谁的。所以冷板凳的不算。但是参加了演出的不管是打包的还是弱引用都算。
+//   然后打包的关于这个源文件分发的license是另外一回事。可以分开算」「以及有track没出声的不算」。所以两块、分开算：
+//   演出署名（performerCredits）= 渲染出来的声音里用了谁：真出了声的声部，上场那位（打包 / 弱引用一样算；月读也算）；冷板凳（没上场的候选）不算；有声部没出声的不算。
+//   打包分发的许可（packedLicenses）= 文件（.mxl）里带着谁的源文件字节（打包的 SoundFont 子集；冷板凳的打包字节也在文件里，也算）——分发这份文件要守的，和演出署名是两回事。
+//   以后的参考窗里的素材都不算。
 // 来源只看歌里 by value 的署名快照（候选的 credit：音源库条目 / sf2 INFO / 月读 CREDIT 块），**不联网查**；推演是提示，不拦存 / 不拦导出（家规「不许规训用户」）。
 import type { Credit } from "./contract.ts";
 import type { Extras } from "./project.ts";
@@ -24,22 +25,22 @@ function group(items: { name: string; credit: Credit }[]): CreditLine[] {
   }
   return [...out.values()];
 }
-/** 歌（.mxl）里带着字节的音源的署名。 */
-export function fileCredits(extras: Extras): CreditLine[] {
+/** 演出署名：roles = 真出了声的声部的角色 id（调用方给：导出 mp3 = 这次渲染出了声的；预览 = 现在会出声、有音的），各取上场那位；打包 / 弱引用一样算。 */
+export function performerCredits(extras: Extras, roles: readonly string[]): CreditLine[] {
   const items: { name: string; credit: Credit }[] = [];
-  for (const r of Object.values(extras.lounge)) for (const c of cands(r)) {
-    const i = c.instrument as { engine?: string; source?: { embedded?: string | null } } | undefined;
-    if (i?.engine !== "soundfont" || !i.source?.embedded || !extras.sounds[i.source.embedded]) continue;
+  for (const role of new Set(roles)) {
+    const r = extras.lounge[role], c = cands(r).find((x) => x.id === r?.active); if (!c) continue;
+    if ((c.instrument as { engine?: string } | undefined)?.engine === "unknown") continue;   // 没人能演 = 没出声
     const credit = creditOf(c); if (credit) items.push({ name: String(c.name ?? ""), credit });
   }
   return group(items);
 }
-/** 一段混好的声音里的署名：roles = 这次真出了声的声部的角色 id（各取上场那位）。 */
-export function audioCredits(extras: Extras, roles: readonly string[]): CreditLine[] {
+/** 打包分发的许可：歌（.mxl）里带着字节的源文件（打包的 SoundFont 子集；台上 + 冷板凳都算——字节都在文件里）。 */
+export function packedLicenses(extras: Extras): CreditLine[] {
   const items: { name: string; credit: Credit }[] = [];
-  for (const role of new Set(roles)) {
-    const r = extras.lounge[role], c = cands(r).find((x) => x.id === r?.active); if (!c) continue;
-    if ((c.instrument as { engine?: string } | undefined)?.engine === "unknown") continue;
+  for (const r of Object.values(extras.lounge)) for (const c of cands(r)) {
+    const i = c.instrument as { engine?: string; source?: { embedded?: string | null } } | undefined;
+    if (i?.engine !== "soundfont" || !i.source?.embedded || !extras.sounds[i.source.embedded]) continue;
     const credit = creditOf(c); if (credit) items.push({ name: String(c.name ?? ""), credit });
   }
   return group(items);

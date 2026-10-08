@@ -28,7 +28,7 @@ import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, activePerfSpec, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
-import { fileCredits, audioCredits, creditsText, type CreditLine } from "../format/credits.ts";
+import { packedLicenses, performerCredits, creditsText, type CreditLine } from "../format/credits.ts";
 import { mixTracks, applyGain } from "../audio/mix.ts";
 import { gainSegments, noteEnd } from "../score/perform.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
@@ -600,7 +600,7 @@ async function exportSong(): Promise<void> {
     const secs = mono.length / m.sr, bytes = await encodeMp3(mono, m.sr);
     const file = new File([bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
     progress("");
-    offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}${creditsBlock(audioCredits(doc.extras, m.roles), "这段声音里用到的声音的署名")}`);
+    offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}${performersBlock(m.roles, "演出署名（这段声音里出了声的声部，上场的那位）")}`);
   } catch (e) {
     progress(""); showError(`导出失败：${(e as Error).message}`);
   } finally { exporting = false; }
@@ -1280,7 +1280,7 @@ async function exportCopyMxl(packed = false): Promise<void> {
       extras = withPacked(extras, (sha) => got.get(sha)).extras;
       if (missing.length) showError(`这几件找不到声音，副本里没带：${missing.join("、")}。点谱前面的声部名，在「谁来演」里「找文件…」，再导出一次。`);
     }
-    const credits = creditsBlock(fileCredits(extras), "这份文件带着的声音的署名");
+    const credits = performersBlock(soundingRoles()) + creditsBlock(packedLicenses(extras), "打包分发的许可（这份副本里带着这些源文件）");
     if (docFile.canPickSave()) {
       const h = await docFile.pickSave(name); if (!h) return;
       await docFile.writeTo(h, bytesNow(extras)); info(`存了一份：${h.name}`); return;
@@ -1367,15 +1367,21 @@ function openExportHub(): void {
     if (v === "mp3") void exportSong(); else if (v === "mxl") void exportCopyMxl(); else if (v === "mxlPacked") void exportCopyMxl(true);
   });
 }
-/** 文件菜单里「乐器的声音」一节：打包 / 只记来源各几件 + 全部打包 / 全部解包 + 这份文件带着的署名。歌里没有 SoundFont 乐器 = 不画。 */
+/** 现在会出声的声部的角色（预览演出署名用）：出声的（静音 / 独奏照现在的）、整首里有音的；导出 mp3 时按真渲染出了声的算（renderMix 的 roles）。 */
+function soundingRoles(): string[] {
+  return audibleParts().filter((p) => flattenPart(st.song, p.id).tokens.some((t) => t.kind === "note")).map((p) => p.role);
+}
+/** 文件菜单里「乐器的声音」一节：打包 / 只记来源各几件 + 全部打包 / 全部解包 + 打包分发的许可（文件里带着谁的源文件）。歌里没有 SoundFont 乐器 = 不画。 */
 function soundsSection(): string {
   const uses = soundUses(doc.extras); if (!uses.length) return "";
   const packed = uses.filter((u) => u.packed), size = packed.reduce((n, u) => n + u.bytes, 0);
   return `<div class="part-sec">乐器的声音</div>` +
     `<div class="offer-msg">${uses.length} 件：打包在歌里 ${packed.length} 件${packed.length ? `（${sizeText(size)}）` : ""}，只记来源 ${uses.length - packed.length} 件。打包 = 声音跟着歌走（发给别人也能响，文件变大）；只记来源 = 歌小，声音从这台设备 / 家族音源库 / 你的文件里找。月读不打包（她是模型包，歌里只钉哈希）。</div>` +
     `<div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">全部打包进歌</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">全部解包（只记来源）</button>` : ""}</div>` +
-    (creditsBlock(fileCredits(doc.extras), "这首歌文件里带着的声音的署名") || `<div class="offer-msg">署名：文件里没带别人的声音（只记来源的、月读都不算）。导出 mp3 时另算。</div>`);
+    creditsBlock(packedLicenses(doc.extras), "打包分发的许可（文件里带着这些源文件，分发这份文件要守的；和演出署名分开算）");
 }
+/** 演出署名（文件菜单 / 导出）：用了谁的声音——出了声的声部上场那位，打包 / 弱引用都算；冷板凳、没出声的声部不算（user 2026-10-08 口径）。 */
+const performersBlock = (roles: readonly string[], title = "演出署名（现在出声的声部，上场的那位；导出 mp3 时按真出了声的算）") => creditsBlock(performerCredits(doc.extras, roles), title);
 /** 文件菜单（应用内面板）：新建 / 歌库 / 打开本机文件 / 存 / 导出 / 封面；还没有家的（没存过、或 iPad 无地）多一个「改文件名」。
  *  没有「另存为」（它住导出里，user 2026-08-20「open local file 和 save as 一加多了很多会混淆用户的东西」）；
  *  本地文件的不给改文件名——浏览器改不了磁盘上的名字（v0.3.0 撤）；歌库里的改名走 store（tryMove，撞名不覆盖）。 */
@@ -1402,7 +1408,7 @@ function openFileMenu(): void {
     `<div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="封面" />` : `<span class="cover-none">没有封面图</span>`}</span>` +
     `<label class="btn" title="选一张图当封面（缩成 256² 存进歌里；歌库卡片上歌名印在图上面）"><svg class="ico"><use href="#image"/></svg>封面图…<input id="coverIn" type="file" accept="image/*" hidden /></label>` +
     (thumb ? `<button class="btn" data-v="coverOff">去掉封面图</button>` : "") + `</div>` +
-    soundsSection() +
+    soundsSection() + performersBlock(soundingRoles()) +
     `<div class="offer-msg">存成 <code>.mxl</code>（MusicXML 乐谱的压缩包：别的乐谱软件也能打开；MoonSinger 自己的东西放在里面的 <code>.moonsinger/</code>）。${where} 把 .mxl 拖进来也能打开。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);

@@ -1,9 +1,10 @@
 // 署名 / 许可证推演（纯函数）。created 2026-10-08 by Claude Opus 5.5
-// user「导出和保存（包括pack, unpack）的时候加一个license和credit推演工具，只用最minimal的。reference里面的东西不算」。
+// user「导出和保存（包括pack, unpack）的时候加一个license和credit推演工具，只用最minimal的。reference里面的东西不算」；口径（当天澄清）：
+//   「算出来的是你渲染的mp3用了谁的。所以冷板凳的不算。但是参加了演出的不管是打包的还是弱引用都算。然后打包的关于这个源文件分发的license是另外一回事。可以分开算」「以及有track没出声的不算」。
 import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
 import { emptyExtras, withSf2Candidate, withActive, withNewRole, withPacked, withUnpacked, CANDIDATE_ID, type Extras } from "../src/format/project.ts";
-import { fileCredits, audioCredits, creditsText } from "../src/format/credits.ts";
+import { packedLicenses, performerCredits, creditsText } from "../src/format/credits.ts";
 import { TSUKUYOMI_CREDIT } from "../src/format/performance.ts";
 import { subsetSf2 } from "../src/gm/sf2-subset.ts";
 
@@ -25,38 +26,48 @@ async function band(): Promise<{ extras: Extras; have: Map<string, Uint8Array> }
   return { extras: ex, have };
 }
 
-describe("署名推演（credits.ts）", () => {
-  it("文件：全是弱引用 = 什么都不算（引用不算）；月读也不算", async () => {
+describe("署名推演：演出署名（performerCredits）", () => {
+  it("出了声的声部上场那位都算：弱引用的算、月读算", async () => {
     const { extras } = await band();
-    eq(fileCredits(extras).length, 0);
+    const lines = performerCredits(extras, ["r1", "r2"]);
+    eq(lines.length, 2);
+    assert(lines.some((l) => l.license.name === TSUKUYOMI_CREDIT.license.name && l.who[0] === "月读"), "月读没算进来");
+    assert(lines.some((l) => l.who.includes("Square Lead")), "弱引用的 Square 出了声，该算");
   });
-  it("文件：打包之后 = 带着字节的才算；同一份署名 + 许可证并成一组", async () => {
+  it("打包的也一样算（打包 / 弱引用不影响演出署名）", async () => {
     const { extras, have } = await band();
     const packed = withPacked(extras, (s) => have.get(s)).extras;
-    const lines = fileCredits(packed);
+    eq(JSON.stringify(performerCredits(packed, ["r2"])), JSON.stringify(performerCredits(extras, ["r2"])));
+  });
+  it("没出声的声部不算（调用方只给出了声的角色）；冷板凳不算（只取上场那位）", async () => {
+    const { extras } = await band();
+    assert(!performerCredits(extras, ["r1", "r2"]).some((l) => l.who.includes("Castanets")), "r3 没出声");
+    const back = withActive(extras, "r2", CANDIDATE_ID.full, "n");   // r2 换回月读：Square 坐冷板凳
+    const lines = performerCredits(back, ["r2"]);
+    eq(lines.length, 1); eq(lines[0].who[0], "月读");
+  });
+});
+
+describe("署名推演：打包分发的许可（packedLicenses）", () => {
+  it("全是弱引用 = 文件里没带别人的源文件 = 空", async () => {
+    const { extras } = await band();
+    eq(packedLicenses(extras).length, 0);
+  });
+  it("打包之后 = 带着字节的都算（冷板凳的打包字节也在文件里）；同一份署名 + 许可证并成一组；解包回去又空", async () => {
+    const { extras, have } = await band();
+    const packed = withPacked(withActive(extras, "r2", CANDIDATE_ID.full, "n"), (s) => have.get(s)).extras;   // Square 坐冷板凳但字节打包着
+    const lines = packedLicenses(packed);
     eq(lines.length, 2, "GS 两件并一组 + 许可证不明的一组");
     const gs = lines.find((l) => l.license.name === GS.license.name)!;
     eq(JSON.stringify(gs.who), JSON.stringify(["Square Lead", "Castanets"])); eq(JSON.stringify(gs.attribution), JSON.stringify(GS.attribution));
-    // 解包回去 = 又什么都不算
-    eq(fileCredits(withUnpacked(packed).extras).length, 0);
+    eq(packedLicenses(withUnpacked(packed).extras).length, 0);
   });
-  it("音频：只算出了声的声部上场那位；月读在里面", async () => {
+});
+
+describe("署名推演：文字", () => {
+  it("每组首行「谁 — 许可证」，署名逐行；许可证不明照样列出", async () => {
     const { extras } = await band();
-    const lines = audioCredits(extras, ["r1", "r2"]);
-    eq(lines.length, 2);
-    assert(lines.some((l) => l.license.name === TSUKUYOMI_CREDIT.license.name && l.who[0] === "月读"), "月读没算进来");
-    assert(lines.some((l) => l.who.includes("Square Lead")), "Square 没算进来");
-    assert(!lines.some((l) => l.who.includes("Castanets")), "没出声的声部不该算");
-  });
-  it("音频：候补不算（只算上场那位）", async () => {
-    const { extras } = await band();
-    const back = withActive(extras, "r2", CANDIDATE_ID.full, "n");   // r2 换回月读：Square 退到候补
-    const lines = audioCredits(back, ["r2"]);
-    eq(lines.length, 1); eq(lines[0].who[0], "月读");
-  });
-  it("文字：每组首行「谁 — 许可证」，署名逐行；许可证不明照样列出", async () => {
-    const { extras } = await band();
-    const t = creditsText(audioCredits(extras, ["r2", "r4"]));
+    const t = creditsText(performerCredits(extras, ["r2", "r4"]));
     assert(t.startsWith(`Square Lead — ${GS.license.name} ${GS.license.url}\n${GS.attribution[0]}`), t);
     assert(t.includes("我的鼓 — 许可证不明\n（没有署名信息）"), t);
     eq(creditsText([]), "");
