@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.4.6-2026-10-07";
+var APP_VERSION = "v0.4.7-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5756,7 +5756,7 @@ function gmCandidates(extras) {
     const i = instrumentOf(c);
     if (i?.engine !== "soundfont") return [];
     const s = i.source;
-    return [{ id: String(c.id), name: String(c.name ?? ""), bank: i.bank, program: i.program, path: s.embedded, bytes: s.embedded ? extras.sounds[s.embedded] ?? null : null, origin: s.origin, subsetSha256: s.subsetSha256 }];
+    return [{ id: String(c.id), name: String(c.name ?? ""), bank: i.bank, program: i.program, ...i.note !== void 0 ? { note: i.note } : {}, path: s.embedded, bytes: s.embedded ? extras.sounds[s.embedded] ?? null : null, origin: s.origin, subsetSha256: s.subsetSha256 }];
   });
 }
 function activeGm(extras) {
@@ -5768,7 +5768,7 @@ function withSf2Candidate(extras, c, hum) {
   const list = cands(role);
   const n2 = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n2}`;
   const embed = c.embed !== false, path = embed ? `${SOUNDS2}${c.sha256}.sf2` : null;
-  const instrument = { engine: "soundfont", bank: c.bank, program: c.program, source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
+  const instrument = { engine: "soundfont", bank: c.bank, program: c.program, ...c.note !== void 0 ? { note: c.note } : {}, source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
   list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), defaults: { ...SOUNDFONT_DEFAULTS }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   role.candidates = list;
   role.active = id;
@@ -6107,9 +6107,10 @@ var INSTRUMENT_FILES = {
 var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg" }, { "id": "iconmind--speech-synth", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg" }, { "id": "mdi--hand-clap", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg" }, { "id": "mdi--instrument-triangle", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg" }, { "id": "qlementine-icons--clap", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg" }, { "id": "qlementine-icons--cymbal", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg" }, { "id": "qlementine-icons--harmonica", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg" }, { "id": "qlementine-icons--hi-hat", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg" }, { "id": "qlementine-icons--idiophone", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg" }, { "id": "qlementine-icons--shamisen", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg" }, { "id": "qlementine-icons--sitar", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg" }, { "id": "qlementine-icons--woodwind", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg" }, { "id": "twemoji--1f390", "set": "twemoji", "author": "Twitter, Inc and other contributors\uFF08jdecked/twemoji \u7EF4\u62A4\u7684\u5206\u652F\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/jdecked/twemoji/v17.0.3/assets/svg/1f390.svg" }];
 
 // src/gm/catalog.ts
+var gmKey = (g2) => `${g2.bank}:${g2.program}${g2.note !== void 0 ? `:${g2.note}` : ""}`;
 function loadCatalogFromJson(concepts, gmMap) {
   const rows = gmMap.rows, gmSelf = /* @__PURE__ */ new Map();
-  for (const r of rows) if (r.relation === "self") gmSelf.set(`${r.bank}:${r.program}`, r);
+  for (const r of rows) if (r.relation === "self") gmSelf.set(gmKey(r), r);
   const list = concepts.concepts;
   return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c) => [c.id, c])), gmSelf, rows, defs: concepts.defs };
 }
@@ -6137,11 +6138,11 @@ async function loadIconSprite(base2) {
 }
 function providersOf(cat, c) {
   const self = (c.ids.gm ?? []).map((g2) => {
-    const r = cat.gmSelf.get(`${g2.bank}:${g2.program}`);
-    return { kind: "self", bank: g2.bank, program: g2.program, gmName: r?.gmName ?? `GM ${g2.program + 1}`, sound: r?.musicxmlSound ?? c.ids.musicxml };
+    const r = cat.gmSelf.get(gmKey(g2));
+    return { kind: "self", bank: g2.bank, program: g2.program, ...g2.note !== void 0 ? { note: g2.note } : {}, gmName: r?.gmName ?? (g2.note !== void 0 ? `\u9F13\u4EF6 ${g2.note}` : `GM ${g2.program + 1}`), sound: r?.musicxmlSound ?? c.ids.musicxml };
   });
   if (self.length) return self;
-  return (c.substitutes ?? []).map((s) => ({ kind: "substitute", bank: s.bank, program: s.program, gmName: s.gmName, sound: c.ids.musicxml, basis: s.basis, reason: s.reason }));
+  return (c.substitutes ?? []).map((s) => ({ kind: "substitute", bank: s.bank, program: s.program, ...s.note !== void 0 ? { note: s.note } : {}, gmName: s.gmName, sound: c.ids.musicxml, basis: s.basis, reason: s.reason }));
 }
 var roleNameOf = (c) => c.names.en.replace(/^./, (ch) => ch.toUpperCase());
 var roleSoundOf = (cat, c) => c.ids.musicxml ?? providersOf(cat, c)[0]?.sound ?? null;
@@ -6268,7 +6269,7 @@ var Finder = class {
     const [cid, rest] = key.split("|"), c = this.cat.byId.get(cid);
     if (!c) return null;
     if (rest === "voice") return { kind: "voice", concept: c };
-    const [bank, program] = rest.split(":").map(Number), p = providersOf(this.cat, c).find((x) => x.bank === bank && x.program === program);
+    const p = providersOf(this.cat, c).find((x) => gmKey(x) === rest);
     return p ? { kind: "gs", concept: c, provider: p } : null;
   }
   async onClick(e) {
@@ -6315,7 +6316,7 @@ var Finder = class {
         this.opened = id;
         this.over = null;
         const c = this.cat.byId.get(id), first = providersOf(this.cat, c)[0];
-        const key = first ? `${id}|${first.bank}:${first.program}` : c.kind === "voice" ? `${id}|voice` : "";
+        const key = first ? `${id}|${gmKey(first)}` : c.kind === "voice" ? `${id}|voice` : "";
         this.selected = key;
         this.render();
         row.scrollIntoView({ block: "nearest" });
@@ -6342,8 +6343,8 @@ var Finder = class {
     let body = "";
     if (open) {
       const provs = providersOf(cat, c), pitched = c.kind === "voice";
-      const prov = (key, label, note, playable) => `<div class="prov${this.selected === key ? " is-on" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${label}</b>${note ? `<small>${note}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}<button class="btn primary" data-v="cast">\u4E0A\u573A</button></div></div>` + (this.over?.key === key ? `<div class="prov-over">\u300C${esc3(this.over.pick.kind === "gs" ? this.over.pick.provider.gmName : "")}\u300D\u7684\u58F0\u97F3\u8D85\u8FC7\u4E86\u5D4C\u5165\u7684\u8F6F\u4E0A\u9650\uFF1A<button class="btn primary" data-v="embed">\u5D4C\u8FDB\u6B4C</button><button class="btn" data-v="weak">\u4E0D\u5D4C\uFF0C\u53EA\u8BB0\u6765\u6E90</button><button class="btn" data-v="cancel">\u7B97\u4E86</button></div>` : "");
-      body = `<div class="inst-prov">` + provs.map((p) => prov(`${c.id}|${p.bank}:${p.program}`, `${p.bank === 128 ? "\u9F13\u7EC4" : "GeneralUser GS"} \xB7 ${esc3(p.gmName)}`, p.kind === "substitute" ? `\u9876\u66FF${p.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p.reason ? `\uFF1A${esc3(p.reason)}` : ""}` : "", true)).join("") + (pitched ? prov(`${c.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
+      const prov = (key, label, note, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}<button class="btn primary" data-v="cast">\u4E0A\u573A</button></div></div>` + (this.over?.key === key ? `<div class="prov-over">\u300C${esc3(this.over.pick.kind === "gs" ? this.over.pick.provider.gmName : "")}\u300D\u7684\u58F0\u97F3\u8D85\u8FC7\u4E86\u5D4C\u5165\u7684\u8F6F\u4E0A\u9650\uFF1A<button class="btn primary" data-v="embed">\u5D4C\u8FDB\u6B4C</button><button class="btn" data-v="weak">\u4E0D\u5D4C\uFF0C\u53EA\u8BB0\u6765\u6E90</button><button class="btn" data-v="cancel">\u7B97\u4E86</button></div>` : "");
+      body = `<div class="inst-prov">` + provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== void 0 ? `\u9F13\u4EF6 \xB7 ${esc3(p.gmName)}\uFF08Standard \u9F13\u7EC4\u7684 ${p.note} \u53F7\u952E\uFF09` : p.bank === 128 ? `\u9F13\u7EC4 \xB7 ${esc3(p.gmName)}` : `GeneralUser GS \xB7 ${esc3(p.gmName)}`}`, p.kind === "substitute" ? `\u9876\u66FF${p.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p.reason ? `\uFF1A${esc3(p.reason)}` : ""}` : "", true, p.kind === "substitute")).join("") + (pitched ? prov(`${c.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c.id)}">` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c.names.zh)}</b><span>${esc3(roleNameOf(c))}${c.names.ja ? ` \xB7 ${esc3(c.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body;
   }
@@ -7027,7 +7028,7 @@ var lastGm = null;
 async function renderGm() {
   const g2 = activeGm(doc.extras);
   if (!g2) throw new Error("\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668");
-  const notes = lightNotes().map((n2) => ({ preset: [g2.bank, g2.program], key: n2.midi, vel: 0.8, t0: n2.t0, t1: n2.t1 }));
+  const notes = lightNotes().map((n2) => ({ preset: [g2.bank, g2.program], key: g2.note ?? n2.midi, vel: 0.8, t0: n2.t0, t1: n2.t1 }));
   if (!notes.length) return null;
   const key = JSON.stringify([g2.subsetSha256, notes]);
   if (lastGm?.key === key) return lastGm.r;
@@ -7054,16 +7055,17 @@ function prepareSynth() {
 }
 function gmDown(midi, id) {
   const a = finder.isOpen && audition ? audition : null;
-  const g2 = a ? { bank: a.bank, program: a.program, subsetSha256: a.sha256 } : activeGm(doc.extras);
+  const g2 = a ? { bank: a.bank, program: a.program, note: a.note, subsetSha256: a.sha256 } : activeGm(doc.extras);
   if (!g2) return;
   if (synth.loaded !== g2.subsetSha256) {
     if (!a) void prepareSynth();
     return;
   }
   singer.unlock();
+  const key = g2.note ?? midi;
   gmUp(id);
-  synth.noteOn(g2.bank, g2.program, midi, 0.8);
-  gmHeld.set(id, { bank: g2.bank, program: g2.program, key: midi });
+  synth.noteOn(g2.bank, g2.program, key, 0.8);
+  gmHeld.set(id, { bank: g2.bank, program: g2.program, key });
 }
 function gmUp(id) {
   const h = gmHeld.get(id);
@@ -7355,7 +7357,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "bccd2403448d", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "157d836a5aae", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
   embedSoftLimit = n2;
 }, synth };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
@@ -7395,7 +7397,7 @@ async function setAudition(p) {
     const bank = await fetchSound(GS, (done) => progress(`\u4E0B\u8F7D ${GS.name} ${Math.round(done / GS.bytes * 100)}%`));
     progress("");
     const subset = subsetSf2(bank, [{ bank: p.provider.bank, program: p.provider.program }]), sha256 = await sha256Hex3(subset);
-    audition = { bank: p.provider.bank, program: p.provider.program, sha256, subset, label: p.provider.gmName };
+    audition = { bank: p.provider.bank, program: p.provider.program, ...p.provider.note !== void 0 ? { note: p.provider.note } : {}, sha256, subset, label: p.provider.gmName };
     synth.allOff();
     gmHeld.clear();
     await synth.load(sha256, subset);
@@ -7412,7 +7414,7 @@ async function playHeadWith(p) {
   }
   if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
   if (!audition) return;
-  const notes = lightNotes().filter((n2) => n2.t0 < 8).map((n2) => ({ preset: [audition.bank, audition.program], key: n2.midi, vel: 0.8, t0: n2.t0, t1: Math.min(n2.t1, 8) }));
+  const notes = lightNotes().filter((n2) => n2.t0 < 8).map((n2) => ({ preset: [audition.bank, audition.program], key: audition.note ?? n2.midi, vel: 0.8, t0: n2.t0, t1: Math.min(n2.t1, 8) }));
   if (!notes.length) {
     info("\u8C31\u4E0A\u8FD8\u6CA1\u6709\u97F3");
     return;
@@ -7449,6 +7451,7 @@ async function castPick(p, mode) {
     name: p.provider.gmName,
     bank: p.provider.bank,
     program: p.provider.program,
+    ...p.provider.note !== void 0 ? { note: p.provider.note } : {},
     subset,
     sha256,
     embed: mode !== "weak",
@@ -8123,4 +8126,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-4dc1631351ca.mjs.map
+//# sourceMappingURL=moonsinger-2737c31ed603.mjs.map

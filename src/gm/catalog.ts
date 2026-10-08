@@ -20,15 +20,16 @@ export interface GmRow { program: number; bank: number; note?: number; gmNumber:
 export interface Defs { eras: { id: string; zh: string; from: number | null; to: number | null }[]; families: { id: string; en: string; zh: string }[]; kinds: { id: string; zh: string }[]; styles?: { id?: string; tag?: string; zh?: string; en?: string }[] }
 export interface Catalog {
   version: number; concepts: Concept[]; byId: Map<string, Concept>;
-  gmSelf: Map<string, GmRow>;                     // "bank:program" → 本尊行
+  gmSelf: Map<string, GmRow>;                     // gmKey（"bank:program[:note]"）→ 本尊行
   rows: GmRow[]; defs: Defs;
 }
 /** 一个概念的「谁能演」（GM 这边）：本尊预设；没本尊时列平替（写明依据）。bank 128 = 鼓组。 */
-export interface Provider { kind: "self" | "substitute"; bank: number; program: number; gmName: string; sound: string | null; basis?: string; reason?: string }
+export interface Provider { kind: "self" | "substitute"; bank: number; program: number; note?: number; gmName: string; sound: string | null; basis?: string; reason?: string }   // note = 鼓件（bank 128 的鼓组里固定敲这个键）
+export const gmKey = (g: { bank: number; program: number; note?: number }): string => `${g.bank}:${g.program}${g.note !== undefined ? `:${g.note}` : ""}`;
 
 export function loadCatalogFromJson(concepts: { v?: number; defs: Defs; concepts: Concept[] }, gmMap: { rows: GmRow[] }): Catalog {
   const rows = gmMap.rows, gmSelf = new Map<string, GmRow>();
-  for (const r of rows) if (r.relation === "self") gmSelf.set(`${r.bank}:${r.program}`, r);
+  for (const r of rows) if (r.relation === "self") gmSelf.set(gmKey(r), r);   // 鼓件靠 note 区分（47 个鼓件都在 128:0 下）
   const list = concepts.concepts;
   return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c) => [c.id, c])), gmSelf, rows, defs: concepts.defs };
 }
@@ -53,9 +54,9 @@ export function loadCatalog(base: URL): Promise<Catalog> {
 export async function loadIconSprite(base: URL): Promise<string> { return new TextDecoder().decode(await fetchChecked(base, "icons")); }
 
 export function providersOf(cat: Catalog, c: Concept): Provider[] {
-  const self = (c.ids.gm ?? []).map((g) => { const r = cat.gmSelf.get(`${g.bank}:${g.program}`); return { kind: "self" as const, bank: g.bank, program: g.program, gmName: r?.gmName ?? `GM ${g.program + 1}`, sound: r?.musicxmlSound ?? c.ids.musicxml }; });
+  const self = (c.ids.gm ?? []).map((g) => { const r = cat.gmSelf.get(gmKey(g)); return { kind: "self" as const, bank: g.bank, program: g.program, ...(g.note !== undefined ? { note: g.note } : {}), gmName: r?.gmName ?? (g.note !== undefined ? `鼓件 ${g.note}` : `GM ${g.program + 1}`), sound: r?.musicxmlSound ?? c.ids.musicxml }; });
   if (self.length) return self;
-  return (c.substitutes ?? []).map((s) => ({ kind: "substitute" as const, bank: s.bank, program: s.program, gmName: s.gmName, sound: c.ids.musicxml, basis: s.basis, reason: s.reason }));
+  return (c.substitutes ?? []).map((s) => ({ kind: "substitute" as const, bank: s.bank, program: s.program, ...(s.note !== undefined ? { note: s.note } : {}), gmName: s.gmName, sound: c.ids.musicxml, basis: s.basis, reason: s.reason }));
 }
 /** 谱上写的角色名：目录里的英文名首字母大写（打谱惯例；Vocals / Piano 同款）。 */
 export const roleNameOf = (c: Concept): string => c.names.en.replace(/^./, (ch) => ch.toUpperCase());

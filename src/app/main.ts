@@ -310,7 +310,7 @@ let lastGm: { key: string; r: SingResult } | null = null;
 async function renderGm(): Promise<SingResult | null> {
   const g = activeGm(doc.extras);
   if (!g) throw new Error("台上的不是 SoundFont 乐器");
-  const notes = lightNotes().map((n) => ({ preset: [g.bank, g.program] as [number, number], key: n.midi, vel: 0.8, t0: n.t0, t1: n.t1 }));
+  const notes = lightNotes().map((n) => ({ preset: [g.bank, g.program] as [number, number], key: g.note ?? n.midi, vel: 0.8, t0: n.t0, t1: n.t1 }));   // 鼓件：每个音都敲那个键（只剩节奏）
   if (!notes.length) return null;
   const key = JSON.stringify([g.subsetSha256, notes]);
   if (lastGm?.key === key) return lastGm.r;
@@ -331,10 +331,11 @@ function prepareSynth(): Promise<void> {
 }
 function gmDown(midi: number, id: string): void {
   const a = finder.isOpen && audition ? audition : null;
-  const g = a ? { bank: a.bank, program: a.program, subsetSha256: a.sha256 } : activeGm(doc.extras); if (!g) return;
+  const g = a ? { bank: a.bank, program: a.program, note: a.note, subsetSha256: a.sha256 } : activeGm(doc.extras); if (!g) return;
   if (synth.loaded !== g.subsetSha256) { if (!a) void prepareSynth(); return; }
   singer.unlock();
-  gmUp(id); synth.noteOn(g.bank, g.program, midi, 0.8); gmHeld.set(id, { bank: g.bank, program: g.program, key: midi });
+  const key = g.note ?? midi;   // 鼓件：任何键都敲它
+  gmUp(id); synth.noteOn(g.bank, g.program, key, 0.8); gmHeld.set(id, { bank: g.bank, program: g.program, key });
 }
 function gmUp(id: string): void { const h = gmHeld.get(id); if (h) { gmHeld.delete(id); synth.noteOff(h.bank, h.program, h.key); } }
 /** 轻量版：用元音采样器按乐谱唱（全唱「哼」那个字）。 */
@@ -548,7 +549,7 @@ function noCast(what: string): void {
   showError(`「${roleName(doc.extras)}」这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要月读来唱，点谱前面的「${roleName(doc.extras)}」，在「谁来演」选月读。`);
 }
 // ── 找人视图（src/ui/finder.ts）：全屏替掉谱区，pad 当试听键盘；试听台 = 临时的一个槽（不进休息室），「上场」才造演奏者 ──────────
-let audition: { bank: number; program: number; sha256: string; subset: Uint8Array; label: string } | null = null;   // 试听台上的（GS 预设）；null = 月读 / 没选
+let audition: { bank: number; program: number; note?: number; sha256: string; subset: Uint8Array; label: string } | null = null;   // 试听台上的（GS 预设；note = 鼓件，pad 任何键都敲它）；null = 月读 / 没选
 const GS = SOUNDS["generaluser-gs-2.0.3"];
 /** 试听台：从 GS 切出这个预设、载进实时合成器（22 ms + 几 MB）；换到月读 = 清掉。 */
 async function setAudition(p: FinderPick | null): Promise<void> {
@@ -556,7 +557,7 @@ async function setAudition(p: FinderPick | null): Promise<void> {
   try {
     const bank = await fetchSound(GS, (done) => progress(`下载 ${GS.name} ${Math.round((done / GS.bytes) * 100)}%`)); progress("");
     const subset = subsetSf2(bank, [{ bank: p.provider.bank, program: p.provider.program }]), sha256 = await sha256Hex(subset);
-    audition = { bank: p.provider.bank, program: p.provider.program, sha256, subset, label: p.provider.gmName };
+    audition = { bank: p.provider.bank, program: p.provider.program, ...(p.provider.note !== undefined ? { note: p.provider.note } : {}), sha256, subset, label: p.provider.gmName };
     synth.allOff(); gmHeld.clear(); await synth.load(sha256, subset);
   } catch (e) { progress(""); audition = null; showError(`试听不了：${(e as Error).message}`); }
 }
@@ -565,7 +566,7 @@ async function playHeadWith(p: FinderPick): Promise<void> {
   if (p.kind === "voice") { playLight("月读（哼）"); return; }
   if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
   if (!audition) return;
-  const notes = lightNotes().filter((n) => n.t0 < 8).map((n) => ({ preset: [audition!.bank, audition!.program] as [number, number], key: n.midi, vel: 0.8, t0: n.t0, t1: Math.min(n.t1, 8) }));
+  const notes = lightNotes().filter((n) => n.t0 < 8).map((n) => ({ preset: [audition!.bank, audition!.program] as [number, number], key: audition!.note ?? n.midi, vel: 0.8, t0: n.t0, t1: Math.min(n.t1, 8) }));
   if (!notes.length) { info("谱上还没有音"); return; }
   singer.unlock();
   try { const r = await singer.gm(audition.subset, audition.sha256, notes, GM_SR, 1.5); singer.play(r, () => playIcon(false)); playIcon(true); progress(`${audition.label} · 开头 ${(r.samples.length / r.sr).toFixed(1)} 秒`); }
@@ -582,7 +583,7 @@ async function castPick(p: FinderPick, mode: "auto" | "embed" | "weak"): Promise
   const { subset, sha256 } = audition, inf = sf2Info(subset);
   if (mode === "auto" && subset.length > embedSoftLimit) return "over";
   const fileSha256 = GS.sha256;   // 试听台的整包 = 货架上的那份（哈希就是目录钉的）
-  doc.extras = withSf2Candidate(doc.extras, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, subset, sha256, embed: mode !== "weak",
+  doc.extras = withSf2Candidate(doc.extras, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...(p.provider.note !== undefined ? { note: p.provider.note } : {}), subset, sha256, embed: mode !== "weak",
     origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, st.song.hum);
   if (mode === "weak") sessionSubsets.set(sha256, subset);
   closeFinder(); setActive(activeId(doc.extras)); info(`「${roleNameOf(c)}」上场：${p.provider.gmName}`);

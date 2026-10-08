@@ -152,6 +152,7 @@ export function withActive(extras: Extras, id: string, hum: Hum): Extras {
 // ── SoundFont 候选（契约 §10.2：子集 by value 嵌进歌；弱引用 = 只记来源）────────────────────
 export interface GmCandidate {
   id: string; name: string; bank: number; program: number;
+  note?: number;                       // 鼓件：每个音都敲这个键
   path: string | null;                 // 字节在歌里的路径；null = 弱引用（歌里不带声音）
   bytes: Uint8Array | null;            // 歌里带的字节；null = 弱引用，或强引用但文件里少了那块
   origin: Sf2Source["origin"];
@@ -162,13 +163,13 @@ export function gmCandidates(extras: Extras): GmCandidate[] {
   return cands(extras.lounge[ROLE]).flatMap((c) => {
     const i = instrumentOf(c); if (i?.engine !== "soundfont") return [];
     const s = i.source;
-    return [{ id: String(c.id), name: String(c.name ?? ""), bank: i.bank, program: i.program, path: s.embedded, bytes: s.embedded ? extras.sounds[s.embedded] ?? null : null, origin: s.origin, subsetSha256: s.subsetSha256 }];
+    return [{ id: String(c.id), name: String(c.name ?? ""), bank: i.bank, program: i.program, ...(i.note !== undefined ? { note: i.note } : {}), path: s.embedded, bytes: s.embedded ? extras.sounds[s.embedded] ?? null : null, origin: s.origin, subsetSha256: s.subsetSha256 }];
   });
 }
 /** 现在上场的 SoundFont 候选（上场的不是它 = null）。 */
 export function activeGm(extras: Extras): GmCandidate | null { const id = activeId(extras); return gmCandidates(extras).find((c) => c.id === id) ?? null; }
 export interface Sf2CandidateArgs {
-  name: string; bank: number; program: number;
+  name: string; bank: number; program: number; note?: number;
   subset: Uint8Array; sha256: string;                                   // 子集字节 + 它的 sha256（调用方算，crypto.subtle 是异步的）
   embed?: boolean;                                                      // 默认 true = 字节进歌；false = 弱引用（只记来源 + 子集 sha256，歌里不带声音）
   origin: Sf2Source["origin"];                                          // 从哪个整包切的
@@ -180,7 +181,7 @@ export function withSf2Candidate(extras: Extras, c: Sf2CandidateArgs, hum: Hum):
   const list = cands(role);
   const n = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n}`;
   const embed = c.embed !== false, path = embed ? `${SOUNDS}${c.sha256}.sf2` : null;
-  const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
+  const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
   list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), defaults: { ...SOUNDFONT_DEFAULTS }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   role.candidates = list; role.active = id;
   return { ...extras, lounge: { ...extras.lounge, [ROLE]: role }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };

@@ -4,7 +4,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL): Uint8Array; existsSync(p: string): boolean };
 const g = (await import(new URL("../scripts/gen-instruments.mjs", import.meta.url).href)) as { render(): string | null };
 import { INSTRUMENT_FILES } from "../src/gm/instruments.gen.ts";
-import { loadCatalogFromJson, providersOf, type Catalog } from "../src/gm/catalog.ts";
+import { loadCatalogFromJson, providersOf, gmKey, type Catalog } from "../src/gm/catalog.ts";
 
 describe("挑乐器数据", () => {
   it("instruments.gen.ts 是最新的（不是就跑 node scripts/gen-instruments.mjs）", () => {
@@ -20,6 +20,11 @@ describe("挑乐器数据", () => {
     eq(prov.length, 2); eq(prov[0].kind, "self"); eq(prov[0].program, 0); eq(prov[0].gmName, "Acoustic Grand Piano"); eq(prov[0].sound, "keyboard.piano.grand");
     const band = cat.byId.get("Q215032")!, ps = providersOf(cat, band);   // 班东尼琴：本尊 23 + 平替（同一个号）→ 只列本尊
     assert(ps.length >= 1 && ps[0].kind === "self", "班东尼琴该有本尊");
-    for (const c of cat.concepts) for (const gm of c.ids.gm) assert(cat.gmSelf.has(`${gm.bank}:${gm.program}`), `${c.names.zh} 的本尊 ${gm.bank}:${gm.program} 在映射表里没有 self 行`);
+    for (const c of cat.concepts) for (const gm of c.ids.gm ?? []) assert(cat.gmSelf.has(gmKey(gm)), `${c.names.zh} 的本尊 ${gmKey(gm)} 在映射表里没有 self 行`);
+    // 鼓件：47 个都挂在 128:0 下靠 note 区分，名字要各是各的（user「预览的时候有些打击乐会错误」= 以前按 bank:program 建键全被最后一行盖掉）
+    const agogo = cat.concepts.find((c) => c.names.zh === "阿哥哥铃")!, ap = providersOf(cat, agogo);
+    eq(ap.map((p) => `${p.note ?? p.program}:${p.gmName}`).join(","), "113:Agogo,67:High Agogo,68:Low Agogo");   // 旋律 GM 113 Agogo + 鼓组里的两个鼓件
+    const names = new Set(cat.concepts.flatMap((c) => providersOf(cat, c).filter((p) => p.note !== undefined).map((p) => p.gmName)));
+    assert(names.size >= 40, `鼓件名只有 ${names.size} 种，还在张冠李戴`);
   });
 });

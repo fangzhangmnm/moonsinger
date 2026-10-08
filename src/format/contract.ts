@@ -78,7 +78,7 @@ export interface CandidateV2 {
 export type InstrumentV2 =
   | { engine: "tsukuyomi"; model: { pack: string; sha256: string }; hum: Hum }        // 月读完整：piper（时长接管）+ WORLD；model = 家族模型包（packId = manifest 的 sha256）
   | { engine: "vowel-sampler"; table: "builtin"; hum: Hum }                            // 月读元音版（轻量）：app 随带的元音表（assets/preview/）
-  | { engine: "soundfont"; bank: number; program: number; source: Sf2Source }         // SoundFont 2 的一个预设（TinySoundFont 出声）
+  | { engine: "soundfont"; bank: number; program: number; note?: number; source: Sf2Source }   // SoundFont 2 的一个预设（TinySoundFont 出声）；note = 鼓件：这条声部的每个音都敲鼓组里这个键（2026-10-07 加，可选）
   | { engine: "unknown"; [k: string]: unknown };                                        // 别家谱原来的乐器 / 这一版不认识的：整份原样写回，上场 = 没人、不出声
 /** SoundFont 的来源（契约 §10.2 样本类 by value）。
  *  embedded = 子集字节在歌里的路径（强引用，默认）；null = **弱引用**（user 2026-10-07：大的可以不嵌，「允许一个弱引用自己去官方和人的地方拉」）——

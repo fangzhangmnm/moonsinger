@@ -353,3 +353,8 @@ button, input, select { font: inherit; color: inherit; }
 .cand-del { height: 28px; width: 28px; padding: 0; font-size: 13px; color: var(--muted); margin-left: -4px; }
 /* 找人视图开着 = 试听台：pad 只许音键出声，写字那一排和「⋯」灰掉、不响应（宿主回调里还有第二道闸） */
 .pad-panel.is-locked .pad-tools.writes, .pad-panel.is-locked [data-knob="more"] { opacity: .3; pointer-events: none; }
+/* 平替的提供者弱化：虚线框、灰字、「顶替」小标（本尊才是实线黑字） */
+.prov.sub { border-style: dashed; background: transparent; }
+.prov.sub .prov-l b { font-weight: 500; color: var(--muted); }
+.prov.sub.is-on { border-color: var(--accent); }
+.prov-tag { display: inline-block; font-size: 10px; line-height: 1.5; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; margin-right: 5px; color: var(--muted); vertical-align: 1px; }
