@@ -16,12 +16,15 @@ export const MARK_DEFAULTS = {
   breathSec: 0.16, breathShare: 0.25,   // 呼吸：前一个音收短多少（秒），最多占这个音的几分之几（元音版 / 乐器）
   gapShare: 0.25,                   // 连断底色的缝最多吃掉这个音的几分之几
   wedgeStepDb: 6, wedgeStepVel: 16, // 渐强渐弱后面没写力度记号 = 走一档：dB 那一路 / 力度那一路各走多少
+  sfzDb: 9, sfzVel: 32, sfzSec: 0.2,     // 突强：音头比当下高多少（dB 那一路，sfzSec 里落回来）/ 力度那一路加多少
+  fpSec: 0.2,                       // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
 } as const;
 /** 月读：谱上的记号 → 唱法核心认的字前记号（^ = 顿一下、不换气；v = 换气；O = 大口换气）、放在哪个字前（this = 这个字，next = 下一个字）。
  *  user「跳音就是顿一下」「嗯重音也顿」「月读在那儿换气」。同一个字前面有几个：换气优先（v / O 本来就带一个空当）。 */
 export type SingMark = { mark: "^" | "v" | "O"; at: "this" | "next" };
-export const SING_MARKS: Record<"staccato" | "accent" | "marcato" | "breath", SingMark> = {
+export const SING_MARKS: Record<"staccato" | "accent" | "marcato" | "breath" | "sfz" | "fp", SingMark> = {
   staccato: { mark: "^", at: "next" }, accent: { mark: "^", at: "this" }, marcato: { mark: "^", at: "this" }, breath: { mark: "v", at: "next" },
+  sfz: { mark: "^", at: "this" }, fp: { mark: "^", at: "this" },   // 音头那一组都顿一下（同重音，user「嗯重音也顿」）
 };
 /** 力度记号 → MIDI 力度（1–127）：SoundFont 演奏者 by value 带的表（2026-10-08 Claude Opus 5.5；user「应该send的就是velocity！」「力度就是velocity」
  *  「mp mf 大于小于号这种，可以preliminary的控制力度。然后跳音强音重音也应该是这个」）。起点 = MuseScore 的经典默认值，好不好听归 user 耳朵。

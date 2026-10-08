@@ -7,7 +7,7 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { type Token, type NoteTok, type Art, type Dyn, ARTS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches } from "../score/song.ts";
+import { type Token, type NoteTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
@@ -92,7 +92,10 @@ function readCredits(root: El, title: string): string | undefined {
 const dynXml = (v: Dyn) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
 /** 渐强渐弱（2026-10-08）：<wedge> 是一种 direction，和力度记号放在一起（谱上方）。 */
 const wedgeXml = (type: "crescendo" | "diminuendo" | "stop") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"/></direction-type></direction>`;
-const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
+const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };   // sfz / fp 写在 <notations><dynamics> 里
+const NOTE_DYN: readonly Art[] = ["sfz", "fp"];
+/** 别家谱里音上（或音前）的力度形状 → 我们的两个：突强一族 / 强后即弱一族。 */
+const XML_NOTE_DYN: Record<string, Art> = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
 const XML_ART: Record<string, Art> = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
 /** 别家谱的力度归到这一版认的六档（更弱 / 更强的并到两头）；sfz / fp 这类认不了 = null（数出来报给人）。 */
 const XML_DYN = (name: string): Dyn | null => (["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? (name as Dyn) : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null);
@@ -165,8 +168,8 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       if (t.kind === "note") {
         const tieIn = firstPiece ? !!t.tie : true, tieOn = last ? tieOut : true;
         // 演奏法：跳音 / 重音 / 保持挂在第一段，呼吸挂在最后一段（音被小节线拆开时）
-        const arts = (t.art ?? []).filter((a) => (a === "breath" ? last : firstPiece));
-        const artXml = arts.length ? `<articulations>${arts.map((a) => `<${ART_XML[a]}/>`).join("")}</articulations>` : "";
+        const arts = (t.art ?? []).filter((a) => (a === "breath" ? last : firstPiece)), noteDyn = arts.filter((a) => NOTE_DYN.includes(a)), artic = arts.filter((a) => !NOTE_DYN.includes(a));
+        const artXml = (artic.length ? `<articulations>${artic.map((a) => `<${ART_XML[a]}/>`).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a) => `<${ART_XML[a]}/>`).join("")}</dynamics>` : "");
         const slurXml = firstPiece ? slurs(i, t) : "";
         if (tieIn || tieOn || artXml || slurXml) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}</notations>`;
         // 叠音：跟在后面的 <chord/> 音（同时值、同连音线；歌词、演奏法只在第一个上）
@@ -249,9 +252,13 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   const usedIds = new Set<number>();
   const takeId = (s: string | undefined): number | null => { const m = s ? /^[nr](\d+)$/.exec(s) : null; if (!m) return null; const n = +m[1]; if (usedIds.has(n)) return null; usedIds.add(n); return n; };
   /** <notations><articulations> → 音上的演奏法（这一版认跳音 / 重音 / 保持 / 呼吸；别的数出来报）。 */
+  let pendingAttack: Art | null = null;
   const addArts = (tok: NoteTok, note: El) => {
     const set = new Set(tok.art ?? []);
     for (const nn of kids(note, "notations")) for (const ar of kids(nn, "articulations")) for (const e of kids(ar)) { const a = XML_ART[e.name]; if (a) set.add(a); else drop("演奏法记号（这一版不认的）"); }
+    for (const nn of kids(note, "notations")) for (const dy of kids(nn, "dynamics")) for (const e of kids(dy)) { const a = XML_NOTE_DYN[e.name]; if (a) set.add(a); else drop("力度记号（这一版不认的，如 sfz）"); }
+    if (pendingAttack) { set.add(pendingAttack); pendingAttack = null; }   // 音前面那个方向里的 sfz / fp：挂到这个音上
+    const att = ATTACKS.filter((x) => set.has(x)); if (att.length > 1) for (const x of att.slice(0, -1)) set.delete(x);   // 音头那一组只留一个（后来的）
     const art = ARTS.filter((a) => set.has(a));
     if (art.length) tok.art = art;
   };
@@ -285,7 +292,8 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           const bpm = tempoOf(c);
           if (bpm) { if (headPhase && !H.gotTempo) { H.bpm = bpm; H.gotTempo = true; } else mark({ kind: "tempo", id: 0, bpm }); }
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const dy of kids(dt, "dynamics")) for (const e of kids(dy)) {
-            const v = XML_DYN(e.name); if (v) mark({ kind: "dyn", id: 0, value: v }); else drop("力度记号（这一版不认的，如 sfz）");
+            const v = XML_DYN(e.name), na = XML_NOTE_DYN[e.name];
+            if (v) mark({ kind: "dyn", id: 0, value: v }); else if (na) pendingAttack = na; else drop("力度记号（这一版不认的，如 sfz）");   // sfz / fp 写在音前面的方向里 = 挂到下一个音上
           }
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const w of kids(dt, "wedge")) {   // 渐强渐弱：start = 这儿一个记号；stop 不存（终点 = 下一个力度记号）
             const ty = w.attrs.type; if (ty === "crescendo" || ty === "diminuendo") mark({ kind: "hairpin", id: 0, dir: ty === "crescendo" ? "cresc" : "dim" });

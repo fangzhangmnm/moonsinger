@@ -100,7 +100,7 @@ const SPACING: Record<Density, { staffAbove: number; rowH: number; rowHNoLyric: 
 };
 const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;
 // 修的字形（SMuFL；宽 / 高 = staff space，浏览器里量的 Bravura：重音 1.36 × 0.99、跳音点 0.28、保持线 1.35 × 0.17）。Above 的从基线往上长，Below 的往下长
-const ART_GLYPH: Record<Exclude<Art, "breath">, { above: string; below: string; w: number; h: number }> = {
+const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp">, { above: string; below: string; w: number; h: number }> = {
   accent: { above: "\u{E4A0}", below: "\u{E4A1}", w: 1.36, h: 0.99 },
   marcato: { above: "\u{E4AC}", below: "\u{E4AD}", w: 1.0, h: 1.08 },   // 强音（2026-10-08；宽按同字号和重音比着量的）
   staccato: { above: "\u{E4A2}", below: "\u{E4A3}", w: 0.28, h: 0.28 },
@@ -738,6 +738,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
           d += sgn * (a === "accent" || a === "marcato" ? 3 : 2);
         }
+        // 突强 / 强后即弱：音头的力度形状，画在力度那一行、和这个音左对齐（同力度记号的字）
+        for (const a of (["sfz", "fp"] as const).filter((x) => c.art.includes(x)))
+          prims.push({ t: "glyph", x: nhX(c) - P(0.2), y: yOf(RW(c), TOP_LINE + 2.4), ch: a === "sfz" ? "\u{E539}" : "\u{E534}", cls: ["dyn", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         if (c.breath) prims.push({ t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
       // 8. 连音线：同一个 token 拆开的几段之间 + 数据里的 tie（连着前一个音）。跨行的第一版不画

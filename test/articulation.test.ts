@@ -101,15 +101,20 @@ describe("修：MusicXML（musicxml.ts）", () => {
 <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><notations><articulations><staccato/></articulations></notations></note>
 <note><chord/><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><notations><articulations><staccato/><accent/></articulations></notations></note>
 <direction><direction-type><dynamics><fff/></dynamics></direction-type></direction>
-<direction><direction-type><dynamics><sfz/></dynamics></direction-type></direction>
 <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><notations><articulations><strong-accent/></articulations></notations></note>
+<direction><direction-type><dynamics><sfz/></dynamics></direction-type></direction>
 <note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><notations><articulations><spiccato/></articulations></notations></note>
+<direction><direction-type><dynamics><rfz/></dynamics></direction-type></direction>
+<note><pitch><step>F</step><octave>4</octave></pitch><duration>1</duration><notations><dynamics><fp/></dynamics></notations></note>
 </measure></part></score-partwise>`;
     const r = readMusicXml(x), toks = r.parts[0].tokens;
     deq(toks.filter((t) => t.kind === "dyn").map((t) => (t as { value: string }).value), ["pp", "ff"]);
     deq((toks.find((t) => t.kind === "note") as NoteTok).art, ["staccato", "accent"], "和弦音的重音并上来");
-    eq(r.dropped["力度记号（这一版不认的，如 sfz）"], 1); eq(r.dropped["演奏法记号（这一版不认的）"], 1, "spiccato 不认");
-    deq((toks.filter((t) => t.kind === "note")[1] as NoteTok).art, ["marcato"], "strong-accent = 强音（2026-10-08 起认）");
+    eq(r.dropped["力度记号（这一版不认的，如 sfz）"], 1, "rfz 不认"); eq(r.dropped["演奏法记号（这一版不认的）"], 1, "spiccato 不认");
+    const ns = toks.filter((t) => t.kind === "note") as NoteTok[];
+    deq(ns[1].art, ["marcato"], "strong-accent = 强音（2026-10-08 起认）");
+    deq(ns[2].art, ["sfz"], "音前面方向里的 sfz = 挂到这个音上（2026-10-08 起认）");
+    deq(ns[3].art, ["fp"], "音上的 <notations><dynamics><fp/> = 强后即弱");
   });
   it("大谱表：<staff> 写在 <type> 后面（MusicXML 4.0 的元素顺序）", () => {
     const st = four();

@@ -50,9 +50,12 @@ export type MarkTok = KeyTok | TimeTok | TempoTok;
 /** 「修」的记号（2026-10-08 by Claude Opus 5.5；user「呼吸记号 跳音 / 力度这类修的记号进选区条」「flow 还是主旋律，修才管这些」→ 拍「挂在音上 + 选区条」「月读在那儿换气」）：
  *  演奏法 = 挂在音上（art，按 ARTS 的顺序、不重复）；MusicXML <notations><articulations> 原生——呼吸 = <breath-mark/>，挂在呼吸前的那个音上。
  *  出声：跳音 = 截短（候选的 articulation.staccatoGate）、重音 = 音头加 accentDb、保持 = 满长；呼吸 = 月读在下一个字前换一口气（唱法核心的「v」），乐器不受影响。 */
-export type Art = "staccato" | "accent" | "marcato" | "tenuto" | "breath";   // marcato = 强音（^，比重音更重；MusicXML <strong-accent/>；2026-10-08 加）
-export const ARTS: readonly Art[] = ["staccato", "accent", "marcato", "tenuto", "breath"];
-export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", marcato: "强音", tenuto: "保持", breath: "呼吸" };
+export type Art = "staccato" | "accent" | "marcato" | "sfz" | "fp" | "tenuto" | "breath";   // marcato = 强音（^，比重音更重；MusicXML <strong-accent/>；2026-10-08 加）
+//   sfz = 突强、fp = 强后即弱（2026-10-08，user「音头先冲一下，再回落…要，要，我都要」）：音头的力度形状，MusicXML <notations><dynamics>；
+//   音头那一组（重音 / 强音 / sfz / fp）互斥——开一个就关掉别的（ATTACKS）。
+export const ARTS: readonly Art[] = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath"];
+export const ATTACKS: readonly Art[] = ["accent", "marcato", "sfz", "fp"];
+export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", marcato: "强音", sfz: "突强", fp: "强后即弱", tenuto: "保持", breath: "呼吸" };
 /** 力度 = 一个记号 token（不占时值，管到下一个力度为止；一首没写 = mf）。MusicXML <direction><dynamics>。出声 = 候选的 dynamicsDb（mf = 0 dB）。 */
 export type Dyn = "pp" | "p" | "mp" | "mf" | "f" | "ff";
 export const DYNS: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
@@ -373,7 +376,7 @@ export function insertPhraseAfter(st: EditorState, i: number): EditorState {
 export const artOf = (t: NoteTok): Art[] => t.art ?? [];
 /** 开 / 关一种演奏法（空了 = 去掉 art 字段，存档不多出空数组）。 */
 export function withArt(t: NoteTok, a: Art, on: boolean): NoteTok {
-  const set = new Set(artOf(t)); if (on) set.add(a); else set.delete(a);
+  const set = new Set(artOf(t)); if (on) { if (ATTACKS.includes(a)) for (const x of ATTACKS) set.delete(x); set.add(a); } else set.delete(a);   // 音头那一组互斥
   const art = ARTS.filter((x) => set.has(x));
   if (art.length) return { ...t, art };
   const { art: _a, ...rest } = t; return rest;

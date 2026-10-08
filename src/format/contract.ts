@@ -94,7 +94,8 @@ export interface CandidateV2 {
    *  （accentVel / marcatoVel 加在上面），不再走 dB；没有 = 照旧（旧候选）。articulation 同时加了 marcatoDb（强音，dB 那一路）/ accentVel / marcatoVel。 */
   dynamicsVel?: Record<Dynamic, number>;
   articulation: { staccatoGate: number; tenutoGate: number; accentDb: number; gapSec?: number; marcatoDb?: number; accentVel?: number; marcatoVel?: number;
-    accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; wedgeStepDb?: number; wedgeStepVel?: number };
+    accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; wedgeStepDb?: number; wedgeStepVel?: number;
+    sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number };
   //   2026-10-08 加（可选，不升版本；Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）：上面这些 = 记号怎么解读的数，没写 = performance.ts MARK_DEFAULTS
   /** 2026-10-08 加（可选）：月读——谱上的记号变成唱法核心哪个字前记号（^ / v / O）、放在这个字还是下一个字前面；没写 = performance.ts SING_MARKS。 */
   sing?: Record<string, { mark: "^" | "v" | "O"; at: "this" | "next" } | null>;   // 跳音 / 保持吃掉多长（0–1）；重音加多少 dB；

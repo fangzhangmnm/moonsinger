@@ -71,9 +71,13 @@
             "accentSec": "number",
             "breathSec": "number",
             "breathShare": "number",
+            "fpSec": "number",
             "gapSec": "number",
             "gapShare": "number",
             "marcatoDb": "number",
+            "sfzDb": "number",
+            "sfzSec": "number",
+            "sfzVel": "number",
             "staccatoGate": "number",
             "tenutoGate": "number",
             "wedgeStepDb": "number",
@@ -123,7 +127,15 @@
               "at": "string",
               "mark": "string"
             },
+            "fp": {
+              "at": "string",
+              "mark": "string"
+            },
             "marcato": {
+              "at": "string",
+              "mark": "string"
+            },
+            "sfz": {
               "at": "string",
               "mark": "string"
             },

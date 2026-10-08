@@ -365,6 +365,8 @@ export class Pad {
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "跳音", "跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉"),
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "重音", "重音：光标前那个音（有选区 = 选中的）加重；再点一次去掉"),
       cell("art:marcato", `<span class="smufl">\uE4AC</span>`, "强音", "强音：光标前那个音（有选区 = 选中的）比重音更重；再点一次去掉"),
+      cell("art:sfz", `<span class="smufl">\uE539</span>`, "突强", "突强 sfz：光标前那个音（有选区 = 选中的）音头猛地冲一下再落回来；和重音 / 强音 / fp 互斥"),
+      cell("art:fp", `<span class="smufl">\uE534</span>`, "强后即弱", "强后即弱 fp：音头 f，马上落到 p，之后的音都是 p；和重音 / 强音 / sfz 互斥"),
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "保持", "保持：光标前那个音（有选区 = 选中的）唱 / 弹满；再点一次去掉"),
       cell("wedge:cresc", CRESC_CELL, "渐强", "渐强 <：光标前那个音一路渐强到下一个音（有选区 = 选中的；终点 = 那里写的力度记号，没写 = 走一档；再点一次去掉）"),
       cell("wedge:dim", DIM_CELL, "渐弱", "渐弱 >：光标前那个音一路渐弱到下一个音（有选区 = 选中的；再点一次去掉）"),

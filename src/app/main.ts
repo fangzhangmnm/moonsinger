@@ -1061,6 +1061,8 @@ function marksTableHtml(role: string, eng: string): string {
     ["渐强渐弱没写终点", "", vel ? `走一档 = 力度 ${sp.wedgeStepVel}` : `走一档 = ${db(sp.wedgeStepDb)}`],
     ["重音", "accent", vel ? `力度 +${sp.accentVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.accentDb)}${eng === "tsukuyomi" ? `；${singTxt("accent")}` : ""}`],
     ["强音", "marcato", vel ? `力度 +${sp.marcatoVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.marcatoDb)}${eng === "tsukuyomi" ? `；${singTxt("marcato")}` : ""}`],
+    ["突强 sfz", "sfz", vel ? `力度 +${sp.sfzVel}` : `音头 ${db(sp.sfzDb)}，${ms(sp.sfzSec)} 里落回来${eng === "tsukuyomi" ? `；${singTxt("sfz")}` : ""}`],
+    ["强后即弱 fp", "fp", `音头按 f，${ms(sp.fpSec)} 里落到 p，之后都是 p${eng === "tsukuyomi" ? `；${singTxt("fp")}` : ""}`],
     ["跳音", "staccato", eng === "tsukuyomi" ? singTxt("staccato") : `唱 / 弹 ${pct(sp.staccatoGate)} 的长度`],
     ["保持", "tenuto", "这个音不留缝"],
     ["连线", "slur", "连到下一个音、不留缝"],

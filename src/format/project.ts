@@ -332,7 +332,7 @@ export function withUnpacked(extras: Extras, only?: (subsetSha256: string) => bo
 /** 上场那位的力度表（mf = 0 dB）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（DYNAMICS_DB / ARTICULATION）。 */
 export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number>; staccatoGate: number; accentDb: number; gapSec: number;
   marcatoDb: number; dynamicsVel: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number> | null; accentVel: number; marcatoVel: number;
-  accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepDb: number; wedgeStepVel: number; sing: Record<string, SingMark | null> } {
+  accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepDb: number; wedgeStepVel: number; sfzDb: number; sfzVel: number; sfzSec: number; fpSec: number; sing: Record<string, SingMark | null> } {
   const c = activeCandidate(extras, role), d = (c?.dynamicsDb ?? {}) as Partial<Record<string, number>>, a = (c?.articulation ?? {}) as Partial<Record<string, number>>;
   const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
   const dynamicsDb = Object.fromEntries((Object.keys(DYNAMICS_DB) as (keyof typeof DYNAMICS_DB)[]).map((k) => [k, num(d[k], DYNAMICS_DB[k])])) as Record<keyof typeof DYNAMICS_DB, number>;
@@ -340,6 +340,7 @@ export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Reco
     marcatoDb: num(a.marcatoDb, MARCATO_DB), accentVel: num(a.accentVel, ACCENT_VEL), marcatoVel: num(a.marcatoVel, MARCATO_VEL),
     accentSec: Math.max(0, num(a.accentSec, MARK_DEFAULTS.accentSec)), breathSec: Math.max(0, num(a.breathSec, MARK_DEFAULTS.breathSec)), breathShare: Math.max(0, Math.min(1, num(a.breathShare, MARK_DEFAULTS.breathShare))),
     gapShare: Math.max(0, Math.min(1, num(a.gapShare, MARK_DEFAULTS.gapShare))), wedgeStepDb: num(a.wedgeStepDb, MARK_DEFAULTS.wedgeStepDb), wedgeStepVel: num(a.wedgeStepVel, MARK_DEFAULTS.wedgeStepVel),
+    sfzDb: num(a.sfzDb, MARK_DEFAULTS.sfzDb), sfzVel: num(a.sfzVel, MARK_DEFAULTS.sfzVel), sfzSec: Math.max(0.01, num(a.sfzSec, MARK_DEFAULTS.sfzSec)), fpSec: Math.max(0.01, num(a.fpSec, MARK_DEFAULTS.fpSec)),
     sing: { ...SING_MARKS, ...((c?.sing ?? {}) as Record<string, SingMark | null>) },
     dynamicsVel: c?.dynamicsVel ? (Object.fromEntries((Object.keys(DYNAMICS_VEL) as (keyof typeof DYNAMICS_VEL)[]).map((k) => [k, Math.max(1, Math.min(127, num((c.dynamicsVel as Json)[k], DYNAMICS_VEL[k])))])) as Record<keyof typeof DYNAMICS_VEL, number>) : null };
 }
