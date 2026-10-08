@@ -357,7 +357,7 @@ export class Pad {
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "跳音", "跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉"),
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "重音", "重音：光标前那个音（有选区 = 选中的）加重；再点一次去掉"),
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "保持", "保持：光标前那个音（有选区 = 选中的）唱 / 弹满；再点一次去掉"),
-      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器不受影响；再点一次去掉）"),
+      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；再点一次去掉）"),
       cell("bar", `<span class="big">|</span>`, "小节线", "小节线（弱起 = 写完弱起的音按一下）"),
       cell("rest", `<span class="big">0</span>`, "休止", "休止（长短同基线）"),
       cell("extend", `<span class="big">—</span>`, "拉长", "刚写的音加一份"),

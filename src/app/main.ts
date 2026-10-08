@@ -33,7 +33,7 @@ import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { mixTracks, applyGain } from "../audio/mix.ts";
-import { gainSegments, noteEnd, ignoredArts } from "../score/perform.ts";
+import { gainSegments, noteEnd, ignoredArts, lightMarks } from "../score/perform.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
 import { GmSynth } from "../gm/synth.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
@@ -614,7 +614,7 @@ async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<R
     lastRender.set(part.id, { key, r: out }); return out;
   }
   const spec = activePerfSpec(doc.extras, role);
-  const notes = lightNotes(tokens, map, eng === "soundfont", { staccatoGate: spec.staccatoGate, breath: eng === "vowel-sampler" });   // SoundFont 叠音全响；元音采样器只唱最上面那条线；跳音截短、元音版在呼吸处收短
+  const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec));   // SoundFont 叠音全响；元音采样器只唱最上面那条线；跳音截短、呼吸处收短一口气（乐器也是：稍微断开）
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
     const key = JSON.stringify(["vowel", notes, st.song.hum]), had = lastRender.get(part.id);

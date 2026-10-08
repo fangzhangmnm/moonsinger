@@ -4,7 +4,8 @@
 // 怎么出声（各引擎一样的部分在这里，引擎特有的在调用方）：
 //   力度 + 重音 = 一条按时间的音量曲线（谱的时钟，秒），渲染完乘上去（src/audio/mix.ts applyGain）；一个力度 / 重音都没有 = null = 不碰声音（和以前逐样本一样）。
 //   跳音：SoundFont / 元音版把音截短（lightNotes，乐器自己的余音照常收）；月读截不短（唱法核心按谱唱满）→ 曲线在音的后半段收声（gateStaccato）。
-//   呼吸：月读 = 下一个字前「v」（lab-score.ts）；元音版 = 前一个音收短一点（lightNotes）；乐器不受影响。
+//   呼吸：月读 = 下一个字前「v」（lab-score.ts）；元音版和乐器 = 前一个音收短一点（lightNotes；乐器上的逗号 = 稍微断开再进下一个音，管乐 / 人声就是换气；
+//   2026-10-08 user「breath是否应该对大量GS乐器也生效。毕竟不断气一直拖着也不对，fl你还得手动调一下时长」）。
 import { type Token, type TempoMap, type Dyn, timeline, dynAt, artOf } from "./song.ts";
 
 export interface PerfSpec { dynamicsDb: Record<Dyn, number>; staccatoGate: number; accentDb: number }
@@ -49,12 +50,12 @@ export function noteEnd(t0: number, t1: number, art: readonly string[], o: { sta
 
 /** 谁认哪些记号（2026-10-08 Opus 5.5；user 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。
  *  这张表必须和上面真做的事一致——跳音：月读 = gainSegments 后半段收声，元音版 / SoundFont = noteEnd 截短；重音、力度：所有引擎走 gainSegments；
- *  呼吸：月读 = 唱法核心换气（lab-score），元音版 = noteEnd 收短，SoundFont 不管；保持：谁都不管（普通音本来就满长）。test/honors.test.ts 守着。
+ *  呼吸：月读 = 唱法核心换气（lab-score），元音版 / SoundFont = noteEnd 收短（lightMarks）；保持：谁都不管（普通音本来就满长）。test/honors.test.ts 守着。
  *  不在表里的引擎（没人上场 / 认不出的）= null：整个声部本来就不出声，不再逐个记号画灰。 */
 const HONORS: Record<string, readonly string[]> = {
   tsukuyomi: ["staccato", "accent", "breath"],
   "vowel-sampler": ["staccato", "accent", "breath"],
-  soundfont: ["staccato", "accent"],
+  soundfont: ["staccato", "accent", "breath"],
 };
 const ALL_ARTS = ["staccato", "accent", "tenuto", "breath"] as const;
 /** 这个引擎不认的演奏法（写在谱上照画、画灰，出声不受影响）。 */
@@ -62,3 +63,6 @@ export function ignoredArts(engine: string | null | undefined): (typeof ALL_ARTS
   const h = engine ? HONORS[engine] : undefined;
   return h ? ALL_ARTS.filter((a) => !h.includes(a)) : [];
 }
+/** 元音版 / SoundFont 这一路（lightNotes）怎么落修的记号：跳音截到 staccatoGate、呼吸收短一口气（两种引擎一样；月读不走这条，走唱谱 + 音量曲线）。
+ *  main.ts 的出声和 test/honors.test.ts 都从这里取，不各写一份。 */
+export function lightMarks(spec: { staccatoGate: number }): { staccatoGate: number; breath: boolean } { return { staccatoGate: spec.staccatoGate, breath: true }; }

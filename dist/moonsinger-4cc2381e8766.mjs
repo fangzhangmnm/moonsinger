@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.25-2026-10-08";
+var APP_VERSION = "v0.6.26-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6980,7 +6980,7 @@ var Pad = class {
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "\u8DF3\u97F3", "\u8DF3\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u5F97\u77ED\u4FC3\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "\u91CD\u97F3", "\u91CD\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u52A0\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "\u4FDD\u6301", "\u4FDD\u6301\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u6EE1\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
-      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u4E0D\u53D7\u5F71\u54CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
+      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("bar", `<span class="big">|</span>`, "\u5C0F\u8282\u7EBF", "\u5C0F\u8282\u7EBF\uFF08\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\uFF09"),
       cell("rest", `<span class="big">0</span>`, "\u4F11\u6B62", "\u4F11\u6B62\uFF08\u957F\u77ED\u540C\u57FA\u7EBF\uFF09"),
       cell("extend", `<span class="big">\u2014</span>`, "\u62C9\u957F", "\u521A\u5199\u7684\u97F3\u52A0\u4E00\u4EFD"),
@@ -17763,12 +17763,15 @@ function noteEnd(t02, t12, art, o10) {
 var HONORS = {
   tsukuyomi: ["staccato", "accent", "breath"],
   "vowel-sampler": ["staccato", "accent", "breath"],
-  soundfont: ["staccato", "accent"]
+  soundfont: ["staccato", "accent", "breath"]
 };
 var ALL_ARTS = ["staccato", "accent", "tenuto", "breath"];
 function ignoredArts(engine) {
   const h2 = engine ? HONORS[engine] : void 0;
   return h2 ? ALL_ARTS.filter((a10) => !h2.includes(a10)) : [];
+}
+function lightMarks(spec) {
+  return { staccatoGate: spec.staccatoGate, breath: true };
 }
 
 // src/gm/sound-cache.ts
@@ -26415,7 +26418,7 @@ async function renderPart(part, scope = "view") {
     return out2;
   }
   const spec = activePerfSpec(doc.extras, role);
-  const notes = lightNotes(tokens, map, eng === "soundfont", { staccatoGate: spec.staccatoGate, breath: eng === "vowel-sampler" });
+  const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec));
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
     const key2 = JSON.stringify(["vowel", notes, st2.song.hum]), had2 = lastRender.get(part.id);
@@ -29042,4 +29045,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-10546128264c.mjs.map
+//# sourceMappingURL=moonsinger-4cc2381e8766.mjs.map

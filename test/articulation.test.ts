@@ -142,7 +142,7 @@ describe("修：出声的数（perform.ts / lab-score / mix）", () => {
     const beat = 60 / 90;   // 默认 90 bpm 的四分
     assert(Math.abs(mute.t0 - beat * SPEC.staccatoGate) < 1e-9 && Math.abs(mute.t1 - (beat - 0.06)) < 1e-9, JSON.stringify(mute));
     eq(noteEnd(0, 1, ["staccato"], { staccatoGate: 0.5, breath: false }), 0.5);
-    eq(noteEnd(0, 1, ["breath"], { staccatoGate: 0.5, breath: true }), 1 - 0.16); eq(noteEnd(0, 1, ["breath"], { staccatoGate: 0.5, breath: false }), 1, "乐器不管呼吸");
+    eq(noteEnd(0, 1, ["breath"], { staccatoGate: 0.5, breath: true }), 1 - 0.16); eq(noteEnd(0, 1, ["breath"], { staccatoGate: 0.5, breath: false }), 1, "breath 关着（试听 / 听开头不落记号）= 不收短");
   });
   it("月读的呼吸 = 下一个字前「v」；没有呼吸 = 不多任何字段", () => {
     let st = four(); const plain = toLabScore(tr(st), "n");

@@ -38,6 +38,8 @@
 
 **v0.6.25（2026-10-08 深夜，edited by Claude Opus 5.5）**：演奏者不认的记号画灰 + 明说（user 拍）；表 = `perform.ts` `ignoredArts`，`test/honors.test.ts` 守着和出声一致。同一轮 user 还在讨论（没拍）：连 / 断怎么做、确定性偏移、预设按乐器分类还是默认 0、mp / mf 和曲线之争、和 FL / MuseScore 的区别、大音源 vs 物理模拟——讨论内容只在对话里，没写成规矩。
 
+**v0.6.26（2026-10-08 深夜，edited by Claude Opus 5.5）**：呼吸对 SoundFont 乐器也生效（前一个音收短一口气 = 稍微断开；user「毕竟不断气一直拖着也不对」）；元音版 / 乐器共用 `perform.ts` `lightMarks`，honors 测试调同一个函数。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |
