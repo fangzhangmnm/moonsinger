@@ -33,14 +33,21 @@ try {
   check(await p.evaluate(() => document.body.dataset.mode === "gallery"), "body[data-mode=gallery]");
   const emptyText = await p.textContent("#galleryFull"); check(/还没有歌/.test(emptyText), "空歌库文案（歌库口吻）", emptyText.slice(0, 60));
   // 新建一首
-  await p.click('#galleryFull [data-v="new"]'); await p.waitForTimeout(800);
+  await p.click('#galleryFull [data-v="new"]'); await p.waitForTimeout(600);
   check(await p.evaluate(() => document.getElementById("galleryFull").hidden), "新建后回到谱");
-  const id1 = await p.evaluate(() => window.__moonsinger.identifier()); check(/^\d{8}-[0-9a-f]{4}\.mxl$/.test(id1 ?? ""), "新歌有 store 身份", id1);
-  check(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id1), "首存后身份在 store 里（occupied）");
-  const t1 = await title(); check(!/•/.test(t1), "新建刚存完没有「•」", t1);
-  // 写几个音 → 「•」→ 2 s 后自动存
+  // 首笔安家（user 2026-10-08「首笔安家做」）：新建 = 空谱没有家、不落盘；第一笔才铸身份、立刻落本地
+  check((await p.evaluate(() => window.__moonsinger.identifier())) === null, "新建 = 空谱还没有家");
+  check((await p.evaluate(() => document.getElementById("saveBtn").dataset.kind)) === "fresh", "smart save = fresh（新谱没改过）");
+  await p.click("#saveBtn"); await p.waitForTimeout(300);
+  check((await p.evaluate(() => window.__moonsinger.identifier())) === null, "空谱按「存」= 诚实回话，不塞空壳进歌库");
   await p.click("#score", { position: { x: 600, y: 400 } });
-  for (const k of ["Digit1", "Digit3", "Digit5"]) await p.keyboard.press(k);
+  await p.keyboard.press("Digit1");
+  await p.waitForFunction(() => !!window.__moonsinger.identifier()); await p.waitForTimeout(400);
+  const id1 = await p.evaluate(() => window.__moonsinger.identifier()); check(/^\d{8}-[0-9a-f]{4}\.mxl$/.test(id1 ?? ""), "第一笔 → 有了 store 身份", id1);
+  check(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id1), "安家即落本地：身份在 store 里（occupied）");
+  const t1 = await title(); check(!/•/.test(t1), "安家那一笔已经存了，没有「•」", t1);
+  // 再写几个音 → 「•」→ 2 s 后自动存
+  for (const k of ["Digit3", "Digit5"]) await p.keyboard.press(k);
   await p.waitForTimeout(300);
   check(/•$/.test(await title()), "写了之后「•」", await title());
   await p.waitForTimeout(3500);
@@ -87,8 +94,10 @@ try {
   await p.click("#libBtn"); await p.waitForTimeout(500); await p.reload(); await p.waitForTimeout(1200);
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "从歌库里刷新 → 回来还在歌库");
   // 第二首：新建后歌库两张卡，点第一张切回
-  await p.click('#galleryFull [data-v="new"]'); await p.waitForTimeout(800);
-  const id3 = await p.evaluate(() => window.__moonsinger.identifier()); check(id3 !== id2 && /\.mxl$/.test(id3), "第二首身份", id3);
+  await p.click('#galleryFull [data-v="new"]'); await p.waitForTimeout(600);
+  await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2");
+  await p.waitForFunction(() => !!window.__moonsinger.identifier()); await p.waitForTimeout(400);
+  const id3 = await p.evaluate(() => window.__moonsinger.identifier()); check(id3 !== id2 && /\.mxl$/.test(id3), "第二首：第一笔之后有身份", id3);
   await p.click("#libBtn"); await p.waitForTimeout(1200);
   const n2 = await p.$$eval("#galleryFull .gallery-tile", (ts) => ts.length); check(n2 === 2, "两张卡", String(n2));
   await p.click("#galleryFull .gallery-tile:has-text('小星星')"); await p.waitForTimeout(800);

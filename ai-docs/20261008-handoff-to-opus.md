@@ -54,6 +54,8 @@
 - **license + credit 推演（§2.2）**：只看**会出声的**候选（休息室里台上 + 候补都算；参考窗里的素材不算），按（许可证, 署名）去重后推一段最小文字；来源 = 音源库条目快照 / sf2 INFO / 月读 CREDIT 块，**不联网查**。推演是提示，不拦存 / 不拦导出（家规「不许规训用户」）。
 - **混音（§2.3）**：母线上别做「整条按峰值缩」这种会改相对音量的事；要么每声部的增益是人定的（录音室）+ 母线只限峰，要么明说「自动响度」是一个开关。
 - **撤销（0.6.7）**：只盖谱（song）；**休息室（选角 / 候选）、麦克风、封面、纸隐藏不进 undo**（它们改 `doc.extras` 或 `song.papers[].hidden`…hidden 在 song 里所以进了）——要盖的话把那些改动也走 `update()` 或另开一条 extras 的历史。任何新代码直接调 `applyState()` = 绕过 undo（只有 undo / redo 自己能调）。
+  **user 2026-10-08 上午的方向**：「undo 可以参考 weebpaint 的视图 vs 文件。视图会顺手捞进文件」= WeebPaint 的 `desk`（workbench-state.ts：视口 / 工具旋钮 / 调色板等视图态，**存时顺手捞进文件、改了不标脏、不进 undo**；editor-session 注释里还叫它 editor-state.ts，那个文件已经没了）。落到 MoonSinger：判据只有「进不进文件」——进文件的内容（谱、选角 / 候选、麦克风增益声像、封面）走同一条 undo（快照从 `song` 扩成 `{song, extras}`，引用快照不费地方）；视图态（静音 / 独奏 / 只看、当前纸、缩放、排法）像 desk：存时顺手写进 score.json、不标脏、不进 undo。推子拖动当手势合并（同拖音高）。
+  **user 的顾虑（未拍）**：「不同模块用同一个 undo，多按几次会不会静默变你没有监视的页面、曲段和文件」。Fable 建议：每步快照带 **locus**（纸 id / 声部 / 模块：谱 · 休息室 · 录音室），undo 时**视图跟着走**（切到那张纸 / 那条声部，光标已经随快照回去了；休息室 / 录音室的改动就把那块面板带出来或闪一下）+ 每次 undo 出一条短 toast 写明撤了什么（「撤销 · 第 2 段 · 删 3 个音」「撤销 · 录音室 · 二胡 −6 dB」）；更严的可选项 = 「先露再撤」：locus 不在眼前时第一下 ⌘Z 只把它带到眼前、第二下才真撤（IDE 式）。**绝不**跨文件：换歌清栈（已是）。归 user 选一档。
 - **测试钩子 `window.__moonsinger`**：生产页也露着（同源 JS 才摸得到，和 WXHW 的探针一个级别）；别往里放会越过 store 护栏的东西。
 - **诊断日志**：只落设备，只在用户点「复制 / 分享」时离开；里面有文件身份、登录态，没有账号名、没有 token。
 
@@ -86,6 +88,8 @@
 5. WXHW 为什么没撞：它登录后 `pushNowAny()` 把开着的稿**无条件推一次**（推成功 `onPushed` 顺带设 `_base`）；MoonSinger 的 `es.flushAndPush()` 不脏不推。
 
 **复现 + 验证**：`test/e2e/sync.mjs`（mock 云住 node 侧、两个浏览器 context = 两台设备；`test/e2e/cloud-bridge.mjs` 是桥）。mock 的登录态照真机：开局未登录、`signIn()` 之后才算。未修库：3 条「reload 之后推」打成「已知库缺口」（打印 ✗ 但不计失败，exit 0）；把 `freshness.js` 的 `refresh()` in-sync 分支加一行 `head.markSeen(name, meta.etag)`（只在 node_modules 里做实验、已还原）→ 37/37 全绿、零冲突面。
+
+**→ 2026-10-08 上午 user「修」：库 0.16.2 已发（internal-store 20f828a，tag v0.16.2，回归测试在 test/freshness.test.ts），MoonSinger v0.6.9 已收货；sync E2E 37/37 硬检查全绿。下面是当时的提案原文。**
 
 **要 user 拍板的库改动（硬规则：改库先 escalate）**：`20260813 internal-store` `src/freshness.ts` `refresh()`：
 ```ts

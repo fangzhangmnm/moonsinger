@@ -42,9 +42,11 @@ const reloadAndSignIn = async (p) => { await p.reload(); await p.waitForFunction
 try {
   // ① A：进歌库、新建、写、推；再改再推 ×4
   const A = await newPage(ctxA);
-  await A.evaluate(() => window.__moonsinger.attach()); await signIn(A); await A.evaluate(() => window.__moonsinger.newStoreSong()); await A.waitForTimeout(400);
-  const id = await A.evaluate(() => window.__moonsinger.identifier()); check(/\.mxl$/.test(id ?? ""), "A 在 mock 云上新建了一首", id);
-  await typeAtEnd(A, ["Digit1", "Digit2", "Digit3"]); await push(A); await A.waitForTimeout(200);
+  await A.evaluate(() => window.__moonsinger.attach()); await signIn(A); await A.evaluate(() => window.__moonsinger.newStoreSong()); await A.waitForTimeout(300);
+  check((await A.evaluate(() => window.__moonsinger.identifier())) === null, "新建 = 空谱还没有家（首笔安家）");
+  await typeAtEnd(A, ["Digit1", "Digit2", "Digit3"]); await A.waitForFunction(() => !!window.__moonsinger.identifier()); await A.waitForTimeout(200);
+  const id = await A.evaluate(() => window.__moonsinger.identifier()); check(/\.mxl$/.test(id ?? ""), "第一笔之后 A 在歌库里有了身份", id);
+  await push(A); await A.waitForTimeout(200);
   check((await cloudNotes(A, id)) === "C4 D4 E4", "A 推上去了：云端 = C4 D4 E4", await cloudNotes(A, id));
   for (const k of ["Digit5", "Digit6", "Digit5", "Digit3"]) { await typeAtEnd(A, [k]); await push(A); await A.waitForTimeout(120); }
   check((await gate(A)) === null && !(await pending(A)), "连推四次：零冲突、没有待推");
