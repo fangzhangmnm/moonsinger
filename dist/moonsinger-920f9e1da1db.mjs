@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.17-2026-10-08";
+var APP_VERSION = "v0.6.18-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6084,7 +6084,7 @@ var ScoreView = class {
       }
       if (this.touches.size > 2) return;
       this.finger = { pid: e10.pointerId, y0: e10.clientY, top0: this.el.scrollTop, x: p2.x, y: p2.y, moved: false, shift: e10.shiftKey, x0: e10.clientX, left0: this.el.scrollLeft };
-      this.armPress(e10, p2, this.noteAt(p2.x, p2.y));
+      this.armPress(e10, p2, this.noteAt(p2.x, p2.y, true));
       return;
     }
     e10.preventDefault();
@@ -6137,11 +6137,24 @@ var ScoreView = class {
     this.host.focus?.("staff");
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
-  noteAt(x2, y2) {
+  noteAt(x2, y2, finger = false) {
     const L2 = this.layout, row = this.rowAt(y2);
     if (row < 0) return null;
     const sp2 = L2.sp;
-    return L2.notes.find((n10) => n10.system === row && x2 >= n10.x - sp2 * 0.5 && x2 <= n10.x + n10.w + sp2 * 0.5 && Math.abs(y2 - n10.y) <= sp2 * 0.9) ?? null;
+    if (!finger) return L2.notes.find((n10) => n10.system === row && x2 >= n10.x - sp2 * 0.5 && x2 <= n10.x + n10.w + sp2 * 0.5 && Math.abs(y2 - n10.y) <= sp2 * 0.9) ?? null;
+    const tx2 = Math.max(sp2 * 0.5, 22 / this.zoom), ty2 = Math.max(sp2 * 0.9, 26 / this.zoom);
+    let best = null, bd = Infinity;
+    for (const n10 of L2.notes) {
+      if (n10.system !== row) continue;
+      const dx = x2 - Math.max(n10.x, Math.min(x2, n10.x + n10.w)), dy = y2 - n10.y;
+      if (Math.abs(dx) > tx2 || Math.abs(dy) > ty2) continue;
+      const d3 = (dx / tx2) ** 2 + (dy / ty2) ** 2;
+      if (d3 < bd) {
+        bd = d3;
+        best = n10;
+      }
+    }
+    return best;
   }
   /** 离指针最近的、光标所在 track 上的音（扩选用）：先按行（指针所在行；不是这条 track 的行就取最近的一行），再按 x。 */
   noteNear(p2) {
@@ -28501,4 +28514,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ee385b5bbd46.mjs.map
+//# sourceMappingURL=moonsinger-920f9e1da1db.mjs.map

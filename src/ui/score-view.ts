@@ -257,7 +257,7 @@ export class ScoreView {
       }
       if (this.touches.size > 2) return;
       this.finger = { pid: e.pointerId, y0: e.clientY, top0: this.el.scrollTop, x: p.x, y: p.y, moved: false, shift: e.shiftKey, x0: e.clientX, left0: this.el.scrollLeft };
-      this.armPress(e, p, this.noteAt(p.x, p.y));
+      this.armPress(e, p, this.noteAt(p.x, p.y, true));   // 手指：按指尖大小找音
       return;
     }
     e.preventDefault();
@@ -300,10 +300,21 @@ export class ScoreView {
     this.host.focus?.("staff");
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
-  private noteAt(x: number, y: number): HitNote | null {
+  private noteAt(x: number, y: number, finger = false): HitNote | null {
     const L = this.layout!, row = this.rowAt(y); if (row < 0) return null;
     const sp = L.sp;
-    return L.notes.find((n) => n.system === row && x >= n.x - sp * 0.5 && x <= n.x + n.w + sp * 0.5 && Math.abs(y - n.y) <= sp * 0.9) ?? null;
+    if (!finger) return L.notes.find((n) => n.system === row && x >= n.x - sp * 0.5 && x <= n.x + n.w + sp * 0.5 && Math.abs(y - n.y) <= sp * 0.9) ?? null;   // 笔 / 鼠标：准
+    // 手指：指尖比符头大得多（符头 ≈ 1.2 sp，iPad 上十来个像素），原来的碰撞箱贴着符头 = 按偏一点、按在符干上、按叠音下面的音就算空白，长按没反应
+    //   （user 2026-10-08「手指，有时候能选中有时候选不中，是不是你碰撞箱literally贴着音符的图像画了？」）→ 这一行里按指尖大小（屏幕上约 22 × 26 px）找最近的音
+    const tx = Math.max(sp * 0.5, 22 / this.zoom), ty = Math.max(sp * 0.9, 26 / this.zoom);
+    let best: HitNote | null = null, bd = Infinity;
+    for (const n of L.notes) {
+      if (n.system !== row) continue;
+      const dx = x - Math.max(n.x, Math.min(x, n.x + n.w)), dy = y - n.y;
+      if (Math.abs(dx) > tx || Math.abs(dy) > ty) continue;
+      const d = (dx / tx) ** 2 + (dy / ty) ** 2; if (d < bd) { bd = d; best = n; }
+    }
+    return best;
   }
   /** 离指针最近的、光标所在 track 上的音（扩选用）：先按行（指针所在行；不是这条 track 的行就取最近的一行），再按 x。 */
   private noteNear(p: { x: number; y: number }): number {
