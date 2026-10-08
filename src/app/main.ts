@@ -11,7 +11,7 @@ import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { type Art, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
-import { apply } from "../score/commands.ts";
+import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { ScoreView } from "../ui/score-view.ts";
@@ -290,6 +290,8 @@ function accKey(phase: "down" | "slide" | "up", acc: Exclude<Acc, 0>): void {
   }
 }
 /** 写了一个音 / 休止 / 拉长：「只管下一个」的 /2 用掉了（按住的时候不算，松手再回去）；升降键按着的时候记一笔。 */
+/** 「/2」开着时的拉长 = 加半份（附点；user 2026-10-08「除2的时候拉长可以出附点吗」——原来拉长不看 /2、照加一整份，却又算进「凑满一份」的两下里）。 */
+const withHalf = (c: Command): Command => (c.k === "extend" && half !== "off" ? { k: "extend", half: true } : c);
 function afterWrite(): void { if (accPrior) accWrote = true; if (halfHeld) { halfWrote = true; return; } if (half === "once" && --halfLeft <= 0) setHalf("off"); }
 /** 屏幕放不下纸的时候折不折行（默认不折行 = 整张纸按比例缩小；这次打开里有效，不进文件——怎么看，不是谱的内容）。 */
 let reflow = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
@@ -354,7 +356,7 @@ const pad = new Pad(padEl, {
   onCommand: (c) => {
     if (finder.isOpen) return;
     if (c.k === "caret" && half === "once") setHalf("off");   // 挪光标 = 取消「凑满一份」
-    const nx = apply(st, c, performance.now());
+    const nx = apply(st, withHalf(c), performance.now());
     if (c.k === "breath" && nx === st) { info("呼吸要跟在一个音后面（光标前面是休止或者还没有音）"); return; }
     update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
   },
@@ -2016,7 +2018,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
         if (!repeat && monoAccept(`key${code}`)) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); afterWrite(); }   // 先写再取 st（写完才有这个音）
         return true;
       }
-      update(apply(st, a.cmd, performance.now()));
+      update(apply(st, withHalf(a.cmd), performance.now()));
       if (a.cmd.k === "rest" || a.cmd.k === "extend") afterWrite();
       return true;
     case "audition": {   // 弹：在草稿状态上写一下，拿到那个音高就扔

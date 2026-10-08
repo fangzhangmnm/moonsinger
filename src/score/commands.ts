@@ -9,7 +9,7 @@ import {
 export type Command =
   | { k: "degree"; degree: number; dir: Dir }
   | { k: "rest" } | { k: "bar" } | { k: "phrase" } | { k: "breath" }   // breath = 光标前那个音切呼吸（pad 符号层；前面不是音 = 原样）
-  | { k: "shorter" } | { k: "longer" } | { k: "tuplet" } | { k: "extend" }
+  | { k: "shorter" } | { k: "longer" } | { k: "tuplet" } | { k: "extend"; half?: boolean }   // half = pad 的「/2」开着：拉长半份（= 附点）
   | { k: "acc"; acc: 1 | -1 }
   | { k: "octave"; d: number } | { k: "step"; d: number } | { k: "alter"; d: number }
   | { k: "caret"; d: number } | { k: "selext"; d: number } | { k: "home" } | { k: "end" } | { k: "escape" }
@@ -28,7 +28,7 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "shorter": return shorter(st);
     case "longer": return longer(st);
     case "tuplet": return setTuplet(st, st.input.tuplet ? 0 : 3);
-    case "extend": return extend(st);
+    case "extend": return extend(st, !!c.half);
     case "acc": return tapAcc(st, c.acc, now);
     case "octave": return octaveTarget(st, c.d);
     case "step": return stepTarget(st, c.d);

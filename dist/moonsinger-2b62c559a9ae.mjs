@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.13-2026-10-08";
+var APP_VERSION = "v0.6.14-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3171,10 +3171,10 @@ function deleteMark(st3, i10) {
   nt2.splice(i10, 1);
   return next(st3, nt2, { caret: i10 < st3.caret ? st3.caret - 1 : st3.caret, sel: null });
 }
-function extend(st3) {
+function extend(st3, half2 = false) {
   if (st3.sel) return mapSelDur(st3, (d4) => d4 + unitDur(st3.input));
   const tokens = tr(st3);
-  let target = -1, unit = unitDur(st3.input);
+  let target = -1, unit = unitDur(st3.input), fromLog = false;
   for (let k2 = st3.log.length - 1; k2 >= 0 && target < 0; k2--) {
     const e10 = st3.log[k2], i10 = indexOfId(tokens, e10.id);
     if (i10 < 0) continue;
@@ -3183,6 +3183,7 @@ function extend(st3) {
       const f2 = st3.log[q2];
       if (f2.id === e10.id && f2.k !== "ext") {
         unit = f2.unit;
+        fromLog = true;
         break;
       }
     }
@@ -3190,18 +3191,19 @@ function extend(st3) {
   if (target < 0) target = currentIndex(st3);
   if (target < 0) return st3;
   const t10 = tokens[target];
+  const by = half2 && fromLog ? unit / 2 : unit;
   const barBetween = tokens.slice(target + 1, st3.caret).some((x2) => x2.kind === "bar");
   if (barBetween) {
     const id2 = st3.nextId, nt3 = tokens.slice();
-    const tok = t10.kind === "note" ? { kind: "note", id: id2, pitch: t10.pitch, dur: unit, lyric: null, tie: true } : { kind: "rest", id: id2, dur: unit };
+    const tok = t10.kind === "note" ? { kind: "note", id: id2, pitch: t10.pitch, dur: by, lyric: null, tie: true } : { kind: "rest", id: id2, dur: by };
     nt3.splice(st3.caret, 0, tok);
     return next(st3, nt3, { caret: st3.caret + 1, nextId: id2 + 1, log: [...st3.log, { k: "tie", id: id2, unit }] });
   }
-  const d3 = t10.dur + unit;
+  const d3 = t10.dur + by;
   if (!validDur(d3)) return st3;
   const nt2 = tokens.slice();
   nt2[target] = { ...t10, dur: d3 };
-  return next(st3, nt2, { log: [...st3.log, { k: "ext", id: t10.id, by: unit }] });
+  return next(st3, nt2, { log: [...st3.log, { k: "ext", id: t10.id, by }] });
 }
 function backspace(st3) {
   if (st3.sel) return deleteSel(st3);
@@ -3678,7 +3680,7 @@ function apply(st3, c10, now = Date.now()) {
     case "tuplet":
       return setTuplet(st3, st3.input.tuplet ? 0 : 3);
     case "extend":
-      return extend(st3);
+      return extend(st3, !!c10.half);
     case "acc":
       return tapAcc(st3, c10.acc, now);
     case "octave":
@@ -25684,6 +25686,7 @@ function accKey(phase, acc) {
     else update(tapAcc(back, acc, performance.now()));
   }
 }
+var withHalf = (c10) => c10.k === "extend" && half !== "off" ? { k: "extend", half: true } : c10;
 function afterWrite() {
   if (accPrior) accWrote = true;
   if (halfHeld) {
@@ -25752,7 +25755,7 @@ var pad3 = new Pad(padEl, {
   onCommand: (c10) => {
     if (finder.isOpen) return;
     if (c10.k === "caret" && half === "once") setHalf("off");
-    const nx2 = apply(st2, c10, performance.now());
+    const nx2 = apply(st2, withHalf(c10), performance.now());
     if (c10.k === "breath" && nx2 === st2) {
       info("\u547C\u5438\u8981\u8DDF\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
       return;
@@ -28216,7 +28219,7 @@ function run(a10, repeat, code) {
         }
         return true;
       }
-      update(apply(st2, a10.cmd, performance.now()));
+      update(apply(st2, withHalf(a10.cmd), performance.now()));
       if (a10.cmd.k === "rest" || a10.cmd.k === "extend") afterWrite();
       return true;
     case "audition": {
@@ -28350,4 +28353,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f47944f92191.mjs.map
+//# sourceMappingURL=moonsinger-2b62c559a9ae.mjs.map

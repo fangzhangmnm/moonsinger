@@ -24,6 +24,20 @@ describe("song（写）", () => {
     st = longer(st); st = extend(st); eq(show(st), "C4/5");   // 写入时是八分 → 还是加一个八分
     st = writeDegree(st, 2, "near"); eq(show(st), "C4/5 D4/2");
   });
+  // 2026-10-08 Opus：「/2」开着时拉长 = 半份（user「除2的时候拉长可以出附点吗」）；宿主的「/2」= 挪短一档（shorter）+ 拉长带 half
+  it("「/2」+「−」= 加半份 → 附点；再写一个减半的音 = 附点八分 + 十六分；退格撤的是那半份", () => {
+    let st = initState(); st = writeDegree(st, 1, "near"); st = shorter(st);   // 八分，然后「/2」（挪短一档）
+    st = extend(st, true); eq(show(st), "C4/1.5");   // 附点八分
+    st = writeDegree(st, 2, "near"); eq(show(st), "C4/1.5 D4/0.5");   // 接十六分：凑满两份八分
+    st = backspace(st); st = backspace(st); eq(show(st), "C4/1");
+  });
+  it("「/2」+「−」跨小节线 = tie 着的同音是半份", () => {
+    let st = initState(); st = writeDegree(st, 5, "near"); st = writeBar(st); st = shorter(st); st = extend(st, true);
+    eq(show(st), "G4/1 | ~G4/0.5");
+  });
+  it("没有「/2」的「−」照旧加一整份（不受挪过档位影响）", () => {
+    let st = initState(); st = writeDegree(st, 1, "near"); st = shorter(st); st = extend(st); eq(show(st), "C4/2");
+  });
   it("退格一笔一笔撤回：先撤「−」，再删音", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = extend(st); st = extend(st);
     st = backspace(st); eq(show(st), "C4/2"); st = backspace(st); eq(show(st), "C4/1"); st = backspace(st); eq(show(st), "");

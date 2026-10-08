@@ -458,34 +458,36 @@ export function deleteMark(st: EditorState, i: number): EditorState {
 }
 
 /** 「−」：写的时候 = 刚写的那个音加一份它写入时的单位（下一个音不受影响）；中间隔着小节线 = 新开一个 tie 着的同音。
- *  有选中 = 每个选中的音加一份当前单位。 */
-export function extend(st: EditorState): EditorState {
+ *  half = pad 的「/2」开着：加**半份**（八分 + 半份 = 附点八分；接着再写一个减半的音 = 附点八分 + 十六分，凑满两份原来的）。
+ *  有选中 = 每个选中的音加一份当前单位（「/2」已经把当前单位挪短了一档，不再折半）。 */
+export function extend(st: EditorState, half = false): EditorState {
   if (st.sel) return mapSelDur(st, (d) => d + unitDur(st.input));
   const tokens = tr(st);
   // 目标 = 本次输入记录里最后一个音（还在的话），否则光标前最近的音 / 休止
-  let target = -1, unit = unitDur(st.input);
+  let target = -1, unit = unitDur(st.input), fromLog = false;
   for (let k = st.log.length - 1; k >= 0 && target < 0; k--) {
     const e = st.log[k], i = indexOfId(tokens, e.id);
     if (i < 0) continue;
     target = i;
     // 单位 = 这个音写入时的那一笔（ins / fill / tie）记下的；最后一笔是「−」就往回找它
-    for (let q = k; q >= 0; q--) { const f = st.log[q]; if (f.id === e.id && f.k !== "ext") { unit = f.unit; break; } }
+    for (let q = k; q >= 0; q--) { const f = st.log[q]; if (f.id === e.id && f.k !== "ext") { unit = f.unit; fromLog = true; break; } }
   }
   if (target < 0) target = currentIndex(st);
   if (target < 0) return st;
   const t = tokens[target] as Timed;
+  const by = half && fromLog ? unit / 2 : unit;   // 没有记录可查时 unit 已是当前单位（「/2」挪短过），不再折半
   // 目标和光标之间有小节线 → 新开 tie 音（休止跨小节就再写一个休止）
   const barBetween = tokens.slice(target + 1, st.caret).some((x) => x.kind === "bar");
   if (barBetween) {
     const id = st.nextId, nt = tokens.slice();
-    const tok: Token = t.kind === "note" ? { kind: "note", id, pitch: t.pitch, dur: unit, lyric: null, tie: true } : { kind: "rest", id, dur: unit };
+    const tok: Token = t.kind === "note" ? { kind: "note", id, pitch: t.pitch, dur: by, lyric: null, tie: true } : { kind: "rest", id, dur: by };
     nt.splice(st.caret, 0, tok);
     return next(st, nt, { caret: st.caret + 1, nextId: id + 1, log: [...st.log, { k: "tie", id, unit }] });
   }
-  const d = t.dur + unit;
+  const d = t.dur + by;
   if (!validDur(d)) return st;
   const nt = tokens.slice(); nt[target] = { ...t, dur: d };
-  return next(st, nt, { log: [...st.log, { k: "ext", id: t.id, by: unit }] });
+  return next(st, nt, { log: [...st.log, { k: "ext", id: t.id, by }] });
 }
 
 /** 退格：有选中 = 删选中；写的时候 = 撤回本次输入记录的最后一笔，记录空了就删光标前一个 token。 */
