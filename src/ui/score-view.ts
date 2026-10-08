@@ -54,8 +54,10 @@ export interface ScoreViewHost {
   onCredits?(): void;
   /** 屏幕放不下纸的时候：true = 按屏宽重新折行；false（默认）= 不折行、整张纸按比例缩小（行和纸上一模一样）。 */
   reflow?(): boolean;
-  /** 排法：true = 分页（按纸高分页、画页框，所见即所得）；false = 连续。 */
+  /** 排法：true = 分页（按纸的真实高度分页、画页框，所见即所得）；false = 连续（同一张纸的几何，只是不断页）。 */
   pages?(): boolean;
+  /** 范围：segment = 一次只看光标所在的那张纸（曲段），‹ › 翻；all = 全部（隐藏的纸折叠着）。 */
+  scope?(): "all" | "segment";
 }
 
 export class ScoreView {
@@ -121,29 +123,31 @@ export class ScoreView {
   /** 五线谱间距（px）和纸面宽（px）：触屏 11、鼠标 10 一格（× 这张纸的谱大小 / 默认档——谱小了一格就小、纸的宽度不变）；纸的版心放得下 = 严格按纸（纸居中、四周是桌面），
    *  放不下（手机）：默认不折行 = 整张纸按比例缩小；选了「折行」= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
    *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
-  private frame(): { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null } {
+  private frame(): { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null; margins: { l: number; r: number; t: number; b: number } } {
     const st = this.host.get(), paper = st.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
     const base = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
     // 分页：整页（版心 + 左右边距）要放得下；页高 / 边距按这张纸算（sp）
-    const mm = spMm(paper), m = paper.marginMm, page = this.host.pages?.() ? { h: paper.heightMm / mm, l: m.l / mm, r: m.r / mm, t: m.t / mm, b: m.b / mm } : null;
-    const extra = page ? page.l + page.r : 0, want = Math.ceil((lineSp(paper) + extra) * base);
-    if (avail > 0 && want <= avail) return { sp: base, width: Math.ceil(lineSp(paper) * base), strict: true, page };
+    const mm = spMm(paper), m = paper.marginMm, geo = { h: paper.heightMm / mm, l: m.l / mm, r: m.r / mm, t: m.t / mm, b: m.b / mm }, page = this.host.pages?.() ? geo : null;
+    const margins = { l: geo.l, r: geo.r, t: geo.t, b: geo.b };   // 连续 / 分页同一张纸的边距：行宽、每一行一模一样，只差断不断页
+    const extra = geo.l + geo.r, want = Math.ceil((lineSp(paper) + extra) * base);
+    if (avail > 0 && want <= avail) return { sp: base, width: Math.ceil(lineSp(paper) * base), strict: true, page, margins };
     // 放不下、不折行（默认；user「纸能不能toggle不折行预览有多宽和折行的两种选项。我其实还是倾向于不折行」
     //   「我现在发现我基本不点五线谱，都是用键盘输入。这样的话其实五线谱只是让你看你在哪里」）：整张纸按比例缩小，行和纸上一样
-    if (avail > 0 && (page || !(this.host.reflow?.() ?? false))) { const sp = (base * avail) / want; return { sp, width: Math.floor(lineSp(paper) * sp), strict: false, page }; }
-    return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail), strict: false, page: null };
+    if (avail > 0 && (page || !(this.host.reflow?.() ?? false))) { const sp = (base * avail) / want; return { sp, width: Math.floor(lineSp(paper) * sp), strict: false, page, margins }; }
+    return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
   }
 
   render(): void {
-    const st = this.host.get(), { sp, width, strict, page } = this.frame();
-    const totalW = width + (page ? (page.l + page.r) * sp : 0);
+    const st = this.host.get(), { sp, width, strict, page, margins } = this.frame();
+    const totalW = width + (margins.l + margins.r) * sp;
     this.el.classList.toggle("desk", (strict && totalW < this.el.clientWidth - 1) || !!page);
     this.el.classList.toggle("pages", !!page);
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true,
-      autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], ...(page ? { page } : { onlyPaper: st.at.paper }) });   // 连续排法：一次只看光标所在的那张纸（曲段）；分页 = 全部
+      autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
+      ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}) });
     this.ink.style.left = `${this.layout.pageX.left}px`;
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
@@ -324,11 +328,15 @@ export class ScoreView {
     // 0½. 记号（调号 / 拍号 / 速度）：换到那条 track 再开框
     const mk = L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h);
     if (mk) { this.host.set(this.focusRow(this.host.get(), mk.system, this.host.get().caret)); this.marks.openAt(mk.index); return true; }
-    // 1. 歌词那一行
-    const ly = L.lyricY(row);
-    if (y > ly - sp * 2.2 && y < ly + sp * 1.2) {
-      const cands = L.lyrics.filter((h) => h.system === row);
-      if (cands.length) { const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)); if (Math.abs(best.x - x) < sp * 4) { this.host.set(this.focusRow(this.host.get(), row, this.host.get().caret)); this.lyrics.openAt(best.index); this.host.focus?.("text"); return true; } }
+    // 1. 歌词那一行：按每一行自己的歌词基线找（没写歌词的行比歌词基线矮，光看 rowAt 会落到下一行——2026-10-08 E2E 抓到；音符优先，别抢下一行高音的点）。命中带往下放宽一点：手指点在字底下也算
+    if (!this.noteAt(x, y)) {
+      for (let r = 0; r < L.systems.length; r++) {
+        const ly = L.lyricY(r);
+        if (!(y > ly - sp * 2.2 && y < ly + sp * 2.4)) continue;
+        const cands = L.lyrics.filter((h) => h.system === r);
+        if (cands.length) { const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)); if (Math.abs(best.x - x) < sp * 4) { this.host.set(this.focusRow(this.host.get(), r, this.host.get().caret)); this.lyrics.openAt(best.index); this.host.focus?.("text"); return true; } }
+        break;
+      }
     }
     // 2. 音符：不在这里（轻点 / 长按 / 拖在 down / up / longPress 里分）
     void shift; void pid;
@@ -362,7 +370,7 @@ export class ScoreView {
 
   private move(e: PointerEvent): void {
     const pr = this.press;
-    if (pr && e.pointerId === pr.pid && !pr.moved && !pr.fired) { const p = this.local(e); if (Math.hypot(p.x - pr.x, p.y - pr.y) > 6) { pr.moved = true; clearTimeout(pr.timer); } }
+    if (pr && e.pointerId === pr.pid && !pr.moved && !pr.fired) { const p = this.local(e); if (Math.hypot(p.x - pr.x, p.y - pr.y) > (pr.type === "touch" ? 10 : 6)) { pr.moved = true; clearTimeout(pr.timer); } }   // 手指抖一点也算轻点
     if (this.selDrag && e.pointerId === this.selDrag.pid) {   // 长按之后接着拖 = 扩选到指针下面的音
       const idx = this.noteNear(this.local(e)); if (idx < 0) return;
       const st = this.host.get(), a = Math.min(idx, this.selDrag.anchor), b = Math.max(idx, this.selDrag.anchor) + 1;
@@ -379,7 +387,7 @@ export class ScoreView {
     }
     if (this.finger && e.pointerId === this.finger.pid) {
       const dy = e.clientY - this.finger.y0, dx = e.clientX - this.finger.x0;
-      if (Math.hypot(dx, dy) > 6) this.finger.moved = true;
+      if (Math.hypot(dx, dy) > 10) this.finger.moved = true;
       if (this.finger.moved) { this.el.scrollTop = this.finger.top0 - dy; if (this.zoom > 1.001) this.el.scrollLeft = this.finger.left0 - dx; }   // 放大了单指也能横着滚
       return;
     }
@@ -420,8 +428,10 @@ export class ScoreView {
       if (pr.fired || extended) { this.finger = null; if (this.drag) { this.host.release?.(); this.drag = null; } this.box = null; this.boxEl.hidden = true; return; }   // 长按选过了：抬手到此为止
       if (pr.hit && !pr.moved) {   // 轻点在音上
         this.finger = null; this.box = null;
-        if (this.drag) { this.host.release?.(); this.drag = null; } else this.host.audition?.(pr.hit.index);   // 笔 / 鼠标按下时已经响过；手指现在响一下
-        this.tapNote(pr.hit, pr.shift);
+        const heard = !!this.drag;   // 笔 / 鼠标按下时已经响过
+        if (this.drag) { this.host.release?.(); this.drag = null; }
+        this.tapNote(pr.hit, pr.shift);   // 先把焦点换到那条 track（别的声部的音：索引是那条的），再响
+        if (!heard) this.host.audition?.(pr.hit.index);
         return;
       }
     }

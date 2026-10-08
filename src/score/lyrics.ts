@@ -102,8 +102,8 @@ export function joinIntoPrev(st: EditorState, i: number, text: string): EditorSt
 export function mergeIntoPrev(st: EditorState, i: number): EditorState {
   const toks = tr(st), cur = toks[i], p = prevLyricSlot(toks, i), prev = toks[p];
   if (!cur || !lyricSlot(cur) || !cur.lyric || cur.lyric === MELISMA_MARK || !prev || !lyricSlot(prev) || !prev.lyric || prev.lyric === MELISMA_MARK) return st;
-  const slots = [i];   // 这一句后面的歌词位：从 i 往后、到下一个休止为止
-  for (let j = i + 1; j < toks.length; j++) { const t = toks[j]; if (t.kind === "rest") break; if (lyricSlot(t)) slots.push(j); }
+  const slots = [i];   // 这一句后面的歌词位：从 i 往后、到下一个「句」为止（跨休止符；user 2026-10-08「应该跨休止符」；此前到休止为止）
+  for (let j = i + 1; j < toks.length; j++) { const t = toks[j]; if (t.kind === "phrase") break; if (lyricSlot(t)) slots.push(j); }
   const tokens = toks.slice();
   const merged: NoteTok = { ...prev, lyric: prev.lyric + ELISION + cur.lyric };
   if (cur.hyph) merged.hyph = true; else delete merged.hyph;

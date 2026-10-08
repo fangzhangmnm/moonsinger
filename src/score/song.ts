@@ -36,11 +36,14 @@ export const MAX_DUR = WHOLE * 4;
 export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
 export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
 export interface BarTok { kind: "bar"; id: number }
+/** 句（2026-10-08，Claude Fable 5.1；user「现在 || 没有这个我碰到稍微长一点的曲子都快疯了」「歌词的句号可能需要这个」）：这一句到这儿 = 排版换行 + 换气点 + 「合」挪字的边界。
+ *  不是小节线（不参与数拍、弱起照旧）。连按两次「|」或歌词里打句号插入。存 MusicXML = 前一个音的 <breath-mark/>（+ 恰在小节边界时下一小节 <print new-system>）。 */
+export interface PhraseTok { kind: "phrase"; id: number }
 export interface KeyTok { kind: "key"; id: number; fifths: number }
 export interface TimeTok { kind: "time"; id: number; beats: number; beatType: number }
 export interface TempoTok { kind: "tempo"; id: number; bpm: number }   // 每分钟几个四分音符
 export type MarkTok = KeyTok | TimeTok | TempoTok;
-export type Token = NoteTok | RestTok | BarTok | MarkTok;
+export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
 export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;
@@ -55,7 +58,7 @@ export type Staff = 1 | 2;
 /** 大谱表的分界：中央 C 以下自动落到下谱表（音可以手动指定 staff 覆盖；user 2026-10-08「钢琴这种左右手要两个谱号」「musicxml原生支持那就不纠结了直接上」）。 */
 export const SPLIT_MIDI = 60;
 /** 一张纸 = 一个曲段：name = 曲段名（纸顶那一条，可空）；tracks = 声部 id → 这张纸上这个声部的 token 串（开头三个谱头记号）。 */
-export interface PaperSeg { id: string; name: string; tracks: Record<string, Token[]> }
+export interface PaperSeg { id: string; name: string; tracks: Record<string, Token[]>; hidden?: boolean }   // hidden = 不放（压平 / 播放 / 导出的压平件都跳过）；全部视图里折叠着、翻页能进去（user 2026-10-08）
 export interface Song {
   /** 歌名（可不填；纸面最上面那一行，存档 = MusicXML <work-title>；user 2026-10-07「纸张的最上面加一个可选的歌名吧，未来也是文件名」）。 */
   title?: string;
@@ -83,6 +86,7 @@ export interface InputState {
   accAt: number;                      // 上一次点 Shift 的时刻（ms，判连点）
   inputFifths: number;                // 「1=」= 输入设备（pad / 电脑键盘）自己的调，默认 C；不跟谱上的调号（2026-10-07 user「把pad想成一个独立的medo式的输入设备，假设没有谱」「如果一个谱有好几个调怎么算」）
   inputScale: string;                 // pad 的调式（src/score/scales.ts 的 id），默认大调；只管 pad 上排哪些音（user「1=F能不能也做成两个的滚轮，右边可以换调性」）
+  barAt: number;                      // 上一次按「|」的时刻（ms；0 = 没按过）：450 ms 内再按一下 = 刚插的小节线换成「句」
 }
 
 /** 本次输入记录：退格撤回最后一笔（写字头在，记录就在）。 */
@@ -119,7 +123,7 @@ export function emptySong(m: { fifths?: number; beats?: number; beatType?: numbe
 export function songOf(tokens: Token[], rest: Partial<Omit<Song, "parts" | "papers">> = {}): Song {
   return { hum: "n", ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
 }
-export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major" }; }
+export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", barAt: 0 }; }
 /** 整首歌最大的 token id（新 id 从它后面编；所有纸、所有声部一起算，id 全歌唯一）。 */
 export function maxId(song: Song): number { let m = 0; for (const p of song.papers) for (const ts of Object.values(p.tracks)) for (const t of ts) m = Math.max(m, t.id); return m; }
 /** 第一条有内容的 track（第一张纸上第一个在场的声部）。 */
@@ -247,7 +251,7 @@ function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alter
 function fillTarget(st: EditorState): number {
   for (let i = st.caret; i < tr(st).length; i++) {
     const t = tr(st)[i];
-    if (t.kind === "bar" || isMark(t)) continue;
+    if (t.kind === "bar" || t.kind === "phrase" || isMark(t)) continue;
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
   return -1;
@@ -285,10 +289,30 @@ export function writeRest(st: EditorState): EditorState {
   return next(st, tokens, { caret: st.caret + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur }] });
 }
 
-export function writeBar(st: EditorState): EditorState {
-  const at = st.sel ? st.sel.to : st.caret, id = st.nextId, tokens = tr(st).slice();
+export function writeBar(st: EditorState, now = 0): EditorState {
+  const at = st.sel ? st.sel.to : st.caret, tokens = tr(st).slice(), prev = tokens[at - 1];
+  // 连按两次「|」（450 ms 内，和升降键的连点一个判法）= 句：刚插的小节线换成句（弱起的句尾也行：句不是小节线）。不带时刻的调用（测试 / 程序）永远只插小节线。
+  if (now > 0 && st.input.barAt > 0 && now - st.input.barAt < 450 && prev && prev.kind === "bar" && at - 1 >= headLen(tokens)) {
+    tokens[at - 1] = { kind: "phrase", id: prev.id };
+    return next({ ...st, input: { ...st.input, barAt: 0 } }, tokens, { caret: at, sel: null, log: [] });
+  }
+  const id = st.nextId;
   tokens.splice(at, 0, { kind: "bar", id });
-  return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+  return next({ ...st, input: { ...st.input, barAt: now } }, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+}
+/** 在下标 i 的 token 后面插一个句（歌词里打了句号）；后面已经是句 = 原样。光标 / 选中在它后面的往后挪一格。 */
+export function insertPhraseAfter(st: EditorState, i: number): EditorState {
+  const tokens = tr(st).slice();
+  if (!tokens[i] || tokens[i + 1]?.kind === "phrase") return st;
+  const id = st.nextId;
+  tokens.splice(i + 1, 0, { kind: "phrase", id });
+  const sel = st.sel ? { from: st.sel.from > i ? st.sel.from + 1 : st.sel.from, to: st.sel.to > i ? st.sel.to + 1 : st.sel.to } : null;
+  return next({ ...st, nextId: id + 1 }, tokens, { caret: st.caret > i ? st.caret + 1 : st.caret, sel });
+}
+/** 纸隐藏 / 显示（隐藏 = 不放；谱上还在、折叠着）。 */
+export function setPaperHidden(st: EditorState, paperId: string, hidden: boolean): EditorState {
+  const papers = st.song.papers.map((p) => (p.id !== paperId ? p : hidden ? { ...p, hidden: true } : (({ hidden: _h, ...rest }) => rest)(p)));
+  return { ...st, song: { ...st.song, papers } };
 }
 
 /** 在光标处（有选中 = 选中开头）插一个记号。插的地方前后连着的记号里已有同类 → 改它，不再插一个（谱头就是这样被改的）。
@@ -745,7 +769,10 @@ export const paperTicks = (p: PaperSeg): number => Math.max(0, ...Object.values(
 export function flattenPart(song: Song, partId: string): { tokens: Token[]; starts: { index: number; paper: PaperSeg }[] } {
   const out: Token[] = [], starts: { index: number; paper: PaperSeg }[] = [];
   let id = -1;   // 补的休止 / 抄的记号用负 id（不落地，只在这一串里；文件里的 id 由写的那边编）
-  song.papers.forEach((p, k) => {
+  let k = -1;
+  song.papers.forEach((p) => {
+    if (p.hidden) return;   // 隐藏的纸不放、不进压平件
+    k++;
     const have = p.tracks[partId], len = paperTicks(p);
     starts.push({ index: out.length, paper: p });
     let toks: Token[];

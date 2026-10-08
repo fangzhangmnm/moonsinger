@@ -10,6 +10,10 @@
 
 import { type EditorState, type NoteTok, tr, withTrack } from "../score/song.ts";
 import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl, joinIntoPrev, lyricEdit, mergeIntoPrev } from "../score/lyrics.ts";
+import { insertPhraseAfter } from "../score/song.ts";
+/** 歌词里的句读 = 这一句到这儿（插「句」：换行 / 换气 / 「合」的边界；user 2026-10-08「歌词的句号可能需要这个」）。字不进歌词。 */
+const PUNCT = /[。．，、,.!！?？;；:：]+$/;
+const splitPunct = (v: string): { text: string; phrase: boolean } => { const m = PUNCT.exec(v); return m ? { text: v.slice(0, m.index), phrase: true } : { text: v, phrase: false }; };
 import type { Layout } from "../render/engrave.ts";
 
 interface Host { get(): EditorState; set(next: EditorState): void }
@@ -77,21 +81,30 @@ export class LyricEditor {
   }
 
   /** 把框里的字贴到当前这个音（可能一次贴好几个音节，往后挪），并跳到下一个空位。 */
-  private place(text: string, hyphEnd: boolean): void {
+  private place(text: string, hyphEnd: boolean, phraseEnd = false): void {
     let syl: Syl[] = splitSyllables(text);
-    if (!syl.length) return;
+    if (!syl.length) { if (phraseEnd) this.endPhraseHere(); return; }
     if (hyphEnd) syl = syl.map((s, k) => (k === syl.length - 1 ? { ...s, hyph: true } : s));
     if (syl[0].joinPrev) {   // 「+」开头：第一个字并进前一个音（框已经跳到这个音了）；剩下的照常从这个音往后贴
       this.host.set(joinIntoPrev(this.host.get(), this.index, syl[0].text));
       syl = syl.slice(1);
       if (!syl.length) { this.input.value = this.slotText(this.index); this.rerender(); this.input.select(); return; }
     }
-    const { st, last } = distributeFrom(this.host.get(), this.index, syl);
+    const r = distributeFrom(this.host.get(), this.index, syl), st = phraseEnd ? insertPhraseAfter(r.st, r.last) : r.st, last = r.last;
     this.host.set(st);
     const nx = nextLyricSlot(tr(st), last);
     this.input.value = "";
     if (nx >= 0) { this.index = nx; this.input.value = this.slotText(nx); this.rerender(); this.input.select(); }
     else { this.index = -1; this.input.hidden = true; this.merge.hidden = true; this.rerender(); }   // 没有下一个音了：收起（多出来的字已经补成新音）
+  }
+  /** 框是空的、打了个句号：句插在前一个有字位的音后面（框留在原来的音上）。 */
+  private endPhraseHere(): void {
+    const st = this.host.get(), p = prevLyricSlot(tr(st), this.index);
+    if (p < 0) return;
+    const st2 = insertPhraseAfter(st, p);
+    if (st2 === st) return;
+    this.index++;   // 先挪下标再 set：set 会同步重画 → reposition 按下标找框的位置，旧下标现在是「句」那个 token（找不到 = 框会被收掉）
+    this.host.set(st2); this.rerender();
   }
   private slotText(i: number): string {
     const t = tr(this.host.get())[i] as NoteTok;
@@ -104,6 +117,8 @@ export class LyricEditor {
     const v = this.input.value;
     if (!v) return;
     if (/^[~～_＿ー]$/.test(v)) { this.place(v, false); return; }
+    const { text, phrase } = splitPunct(v);
+    if (phrase) { this.input.value = ""; this.place(text, false, true); return; }   // 句读：贴字 + 插「句」（英文的「love,」也在这儿收）
     if (CJK.test(v) && !/[A-Za-z]/.test(v)) { this.place(v, false); return; }
     this.reposition();
   }
@@ -115,7 +130,7 @@ export class LyricEditor {
     switch (a) {
       case "commit": this.commitAndClose(); return true;
       case "cancel": this.close(); return true;
-      case "next": if (v.trim()) this.place(v.trim(), false); else this.step(1); return true;
+      case "next": if (v.trim()) { const { text, phrase } = splitPunct(v.trim()); this.place(text, false, phrase); } else this.step(1); return true;
       case "prev": this.commitOnly(); this.step(-1); return true;
       case "hyphen": if (!/[A-Za-z']$/.test(v)) return false; this.place(v, true); return true;
       case "back": {
@@ -138,8 +153,9 @@ export class LyricEditor {
   /** 框里有字就照原样贴到当前这个音（不往后挪）；空框 = 清掉这个音的字。 */
   private commitOnly(): void {
     if (!this.open) return;
-    const st = this.host.get(), cur = tr(st)[this.index] as NoteTok, v = this.input.value.trim();
+    const st = this.host.get(), cur = tr(st)[this.index] as NoteTok, sp = splitPunct(this.input.value.trim()), v = sp.text;
     if (!cur) return;
+    if (sp.phrase) { if (v) this.host.set(distributeFrom(st, this.index, splitSyllables(v)).st); this.host.set(insertPhraseAfter(this.host.get(), this.index)); return; }
     if (!v) { if (cur.lyric) this.host.set({ ...st, song: withTrack(st.song, st.at.paper, st.at.part, tr(st).map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t))) }); return; }
     if (v === this.slotText(this.index)) return;
     const syl = splitSyllables(v.replace(/-$/, "")).map((s, k, a) => (k === a.length - 1 && /-$/.test(v) ? { ...s, hyph: true } : s));

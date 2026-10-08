@@ -89,7 +89,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     const parts = song.parts.flatMap((part, k) => (p.tracks[part.id] ? [{ info: infos[k], tokens: p.tracks[part.id] }] : []));
     const w = writeMusicXml({ title: song.title, movementTitle: p.name || undefined, paper: song.paper, credits: song.credits, parts }, meta);
     files[paperFile(p.id)] = strToU8(w.xml);
-    return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten };
+    return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...(p.hidden ? { hidden: true } : {}) };
   });
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, padMeasures: true, parts: song.parts.map((part, k) => {
@@ -325,7 +325,8 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     known.add(file);
     const r = readMusicXml(strFromU8(b), { manualBars: (p.manualBars as Record<string, number[]> | undefined) ?? {}, unwritten: (p.unwritten as string[] | undefined) ?? [] });
     reads.push(r);
-    papers.push(paperOfRead(String(p.id), r));
+    const seg = paperOfRead(String(p.id), r); if (p.hidden === true) seg.hidden = true;
+    papers.push(seg);
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
   const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null);

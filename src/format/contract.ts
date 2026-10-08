@@ -34,7 +34,7 @@ export interface ScoreExtV2 {
   version: 2;
   /** 顺序里的纸（纸 = 曲段）：file = 这张纸的 MusicXML 正本（`.moonsinger/papers/<id>.musicxml`）；manualBars = 声部 id → 这张纸里人插的小节线（小节序号，1 起）；
    *  unwritten = 这张纸还没写音高的音（note id）。自动小节线只画不存（0.2.x 现状）。曲段名在那份 MusicXML 的 <movement-title>。 */
-  papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[] }[];
+  papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[]; hidden?: boolean }[];   // hidden（2026-10-08 加，可选）= 这张纸不放、不进压平件
   /** 歌级声部并集（总谱从上到下）：声部 → 角色 id → 麦克风 id；某张纸没有某声部 = 那张纸的 MusicXML 里没那个 part。kind 留给打击乐记谱（现在都是 pitched）。 */
   parts: { id: string; role: string; mic: string; kind: "pitched" | "percussion" }[];
 }

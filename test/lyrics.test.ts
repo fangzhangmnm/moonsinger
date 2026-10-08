@@ -1,7 +1,7 @@
 // created 2026-10-06 by Claude Opus 5.5
 import { describe, it, eq } from "./runner.mjs";
 import { splitSyllables, applyLyricLine } from "../src/score/lyrics.ts";
-import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok, tr, firstTrack } from "../src/score/song.ts";
+import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok, tr, firstTrack, insertPhraseAfter } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
 import { setHum } from "../src/score/song.ts";
@@ -99,8 +99,14 @@ describe("合（并进前一个音，这一句后面的往前挪）", () => {
     return songOf(toks);
   };
   const lyrics = (s: _Song) => firstTrack(s).map((t) => (t.kind === "note" ? t.lyric ?? "·" : t.kind === "rest" ? "|" : "")).filter(Boolean).join(" ");
-  it("だんごだんご（6 个音）在第 5 个音上合 = だ ん ご だ‿ん ご ·；休止后面的不动", () => {
+  it("だんごだんご（6 个音）在第 5 个音上合 = 后面的字跨过休止符往前挪（user 2026-10-08「应该跨休止符」）", () => {
     const st = { ..._init(), song: song(["だ", "ん", "ご", "だ", "ん", "ご", "|rest", "や", "さ"]) };
+    const out = mergeIntoPrev(st, 3 + 4).song;
+    eq(lyrics(out), `だ ん ご だ${ELISION}ん ご や | さ ·`);
+  });
+  it("合：到「句」为止，句后面的字不动", () => {
+    const st0 = { ..._init(), song: song(["だ", "ん", "ご", "だ", "ん", "ご", "|rest", "や", "さ"]) };
+    const st = insertPhraseAfter(st0, 3 + 5);   // ご 后面一个句
     const out = mergeIntoPrev(st, 3 + 4).song;
     eq(lyrics(out), `だ ん ご だ${ELISION}ん ご · | や さ`);
   });

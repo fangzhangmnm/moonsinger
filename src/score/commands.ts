@@ -22,7 +22,7 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
   switch (c.k) {
     case "degree": return writeDegree(st, c.degree, c.dir);
     case "rest": return writeRest(st);
-    case "bar": return writeBar(st);
+    case "bar": return writeBar(st, now);
     case "shorter": return shorter(st);
     case "longer": return longer(st);
     case "tuplet": return setTuplet(st, st.input.tuplet ? 0 : 3);

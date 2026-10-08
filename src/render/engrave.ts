@@ -46,8 +46,12 @@ export interface EngraveOpts {
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
   /** 分页排法（user 2026-10-08「显示法还加一个分页？可以预览打印，要求和之后生成的pdf wysiwyg」）：按纸高分页、画页框 + 页码；h = 整页高、l r t b = 四边边距（sp）。没有 = 连续（一张长纸）。 */
   page?: { h: number; l: number; r: number; t: number; b: number };
-  /** 只画这一张纸（曲段）：连续排法下一次只看一张、‹ › 翻（user 2026-10-08「不同曲段应该是不同页，而不是一起显示」）；分页排法不传（打印预览要全部）。 */
+  /** 只画这一张纸（曲段）：视图范围「本段」（user 2026-10-08「不同曲段应该是不同页，而不是一起显示」「视图里面应该也有个连续和分段」）。 */
   onlyPaper?: string;
+  /** 连续排法的纸边距（sp）：和分页同一张纸的几何，只是不断页（user 2026-10-08「连续和分页看到的行宽应该是一样的」「连续只是没有了断页，但是每一行还是一样的」）。 */
+  margins?: { l: number; r: number; t: number; b: number };
+  /** 刚写过（本次输入记录非空）：光标前那个音画成写字头（「−」/ 退格作用在它上）；挪过光标 / 轻点放的光标 = 不画（user 2026-10-08「如果是光标的话为什么前一个音是蓝的？」）。 */
+  justWrote?: boolean;
   paperLabel?: string;                   // 纸右上角的小钮（扳手；这里的字只进悬停提示「纸：A5」）；点了 = 纸的设置（user「这种应该是纸的右上角有一个可以设置纸的属性吧。加图片的入口以后也可以放那里」；
                                          //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
@@ -136,8 +140,9 @@ interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: nu
 interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface HeadU { kind: "head"; index: -1; w: 0; x: number; system: number; tick: number; staff: Staff }   // 光标：零宽
-type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU;
-const SLOT: Record<Unit["kind"], number> = { bar: 0, key: 1, time: 2, tempo: 3, head: 4, chunk: 5 };   // 同一 tick 上的先后
+interface PhraseU { kind: "phrase"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 句：换气记号 + 这里换行
+type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | PhraseU;
+const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, head: 4, chunk: 5 };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面，换行在小节线后面）
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
 const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
@@ -181,6 +186,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
       beat = beatTicks(t.beats, t.beatType); len = measureLen(t.beats, t.beatType); return;
     }
     if (t.kind === "tempo") { flushFull(); units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "phrase") { flushFull(); units.push({ kind: "phrase", index: i, w: 1.0, x: 0, system: 0, tick, staff: 1 }); return; }
     const isNote = t.kind === "note", nt = t as NoteTok;
     const pitch = isNote ? effectivePitch(tokens, i) : null;
     // 一个音按自动小节线切成几段（不切 = 整个一段，和以前一样记）；每段再拆成能记的时值
@@ -216,17 +222,17 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
 }
 
 /** 一列：同一 tick、同一种东西（小节线 / 记号 / 音）各声部对齐在一起；宽 = 最宽的那个。 */
-interface Col { tick: number; slot: number; n: number; w: number; x: number; system: number; units: Unit[]; bar: boolean; chunk: boolean }
+interface Col { tick: number; slot: number; n: number; w: number; x: number; system: number; units: Unit[]; bar: boolean; chunk: boolean; phrase: boolean }
 
 export function engrave(song: Song, o: EngraveOpts): Layout {
   const sp = o.sp, P = (v: number) => v * sp;
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
   // 分页：第 k 页从 pageTopY(k) 起、高 PG.h；内容只放在上下边距之间；放不下的整块（一行谱 / 曲段名 + 第一行 / 细行）挪到下一页
-  const PG = o.page ?? null, PAGE_GAP = 3;
+  const PG = o.page ?? null, PAGE_GAP = 3, MX = o.page ?? o.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };   // MX = 纸的边距（连续 / 分页同一套）
   const pageTopY = (k: number) => P(k * ((PG?.h ?? 0) + PAGE_GAP));
   const contentTop = (k: number) => pageTopY(k) + P(PG?.t ?? 0), contentBottom = (k: number) => pageTopY(k) + P((PG?.h ?? 0) - (PG?.b ?? 0));
   let pageNo = 0;
-  const TOP = PG ? P(PG.t) : 0;
+  const TOP = P(MX.t);
   const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow, SYS_GAP = SPC.sysGap;
   const prims: Prim[] = [];
   const sel = o.sel ?? null, writing = !sel, autoBars = o.autoBars !== false;
@@ -339,6 +345,16 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       }
       yCur += P(PAPER_H);
     };
+    // 隐藏的纸（不放）：全部视图里折叠成曲段名 + 一条细行（点曲段名进去）；本段视图里照常画、顶上一行说明（user 2026-10-08「要明白的明白这是隐藏的」）
+    if (paper.hidden && !o.onlyPaper) {
+      drawPaperTitle(P(STUB_H));
+      ensure(P(STUB_H));
+      prims.push({ t: "text", x: P(MARGIN), y: yCur + P(STUB_H * 0.7), s: "隐藏 · 不放（点曲段名进去）", cls: "part-stub", size: P(1.1), anchor: "start" });
+      prims.push({ t: "line", x1: P(MARGIN + 0.2) + (o.measureLyric("隐藏 · 不放（点曲段名进去）") * 1.1) / LYRIC_EM + P(0.8), y1: yCur + P(STUB_H * 0.5), x2: P(right), y2: yCur + P(STUB_H * 0.5), w: P(0.08), cls: "part-stub-line" });
+      yCur += P(STUB_H);
+      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur });
+      return;
+    }
     const present = o.parts.filter((p) => paper.tracks[p.id]), parts = present.filter((p) => !p.hidden), hiddenParts = present.filter((p) => p.hidden);
     // 隐藏的声部不消失：缩成一条细行（灰名字 + 「隐藏」），点它开歌手牌（user「hide的track怎么看见」）
     const stubs = () => {
@@ -376,8 +392,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const base = `${u.tick}:${SLOT[u.kind]}`, n = seen.get(base) ?? 0; seen.set(base, n + 1);
         const key = `${base}:${n}`;
         let c = colMap.get(key);
-        if (!c) { c = { tick: u.tick, slot: SLOT[u.kind], n, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false }; colMap.set(key, c); }
-        c.units.push(u); c.w = Math.max(c.w, u.w); if (u.kind === "bar") c.bar = true; if (u.kind === "chunk") c.chunk = true;
+        if (!c) { c = { tick: u.tick, slot: SLOT[u.kind], n, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false, phrase: false }; colMap.set(key, c); }
+        c.units.push(u); c.w = Math.max(c.w, u.w); if (u.kind === "bar") c.bar = true; if (u.kind === "chunk") c.chunk = true; if (u.kind === "phrase") c.phrase = true;
       }
     }
     const cols = [...colMap.values()].sort((a, b) => a.tick - b.tick || a.slot - b.slot || a.n - b.n);
@@ -411,14 +427,23 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       for (const c of seg) { if (x + c.w > right && x > sysStarts[system] + 0.01) newline(); place(c); }
       seg = [];
     };
-    for (const c of cols) { seg.push(c); if (c.bar && breakableAt(c.tick)) flush(); }
+    // 句 = 这里一定换行（同一 tick 上紧跟的小节线留在这一行末尾）；句结尾的行不拉宽（像段尾）
+    const forcedEnd = new Set<number>();
+    const forceNewline = () => { if (x > sysStarts[system] + 0.01) { forcedEnd.add(system); newline(); } };
+    let pendingBreak: number | null = null;
+    for (const c of cols) {
+      if (pendingBreak !== null && !(c.bar && c.tick === pendingBreak)) { flush(); forceNewline(); pendingBreak = null; }
+      seg.push(c);
+      if (c.phrase) { pendingBreak = c.tick; continue; }
+      if (c.bar && breakableAt(c.tick)) { flush(); if (pendingBreak !== null) { forceNewline(); pendingBreak = null; } }
+    }
     flush();
     const nSys = system + 1;
     // 右端对齐：多出来的地方按宽度分给这一行的音 / 休止（小节线、记号不拉宽）；挤进来超出的行（最后一行也算）同样按宽度压回来
     for (let s = 0; s < nSys; s++) {
       const row = cols.filter((c) => c.system === s);
       const end = row.reduce((m, c) => Math.max(m, c.x + c.w), sysStarts[s]), avail = right - sysStarts[s], used = end - sysStarts[s];
-      if (used <= avail + 1e-6 && (s === nSys - 1 || used < avail * 0.6)) continue;
+      if (used <= avail + 1e-6 && (s === nSys - 1 || forcedEnd.has(s) || used < avail * 0.6)) continue;
       const gw = chunkW(row);
       if (!gw) continue;
       const k = (avail - used) / gw;
@@ -432,6 +457,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const rowH = per.map((q) => { const ly = q.tokens.some((t) => t.kind === "note" && t.lyric) ? SPC.rowH : SPC.rowHNoLyric; return q.staves === 2 ? [SPC.graveUpper, ly] : [ly]; });
     const sysH = P(rowH.flat().reduce((a, b) => a + b, 0) + SYS_GAP);
     drawPaperTitle(sysH);
+    if (paper.hidden) { ensure(P(STUB_H)); prims.push({ t: "text", x: P(MARGIN), y: yCur + P(STUB_H * 0.7), s: "这张纸隐藏着：不放、不进压平件（「⋯」里显示）", cls: "part-stub hidden-note", size: P(1.1), anchor: "start" }); yCur += P(STUB_H); }
     for (let s = 0; s < nSys; s++) {
       ensure(sysH);   // 分页：一行谱整块放不下就翻页
       for (let r = 0; r < nR; r++) for (let k = 0; k < per[r].staves; k++) { const top = yCur; rowTop.set(rowOf(s, r, k), top); rows.push({ top, staffTop: top + P(STAFF_ABOVE), bottom: top + P(rowH[r][k]), paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff }); yCur += P(rowH[r][k]); }
@@ -491,7 +517,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         }
         for (const [s, [a, b]] of byS) prims.push({ t: "rect", x: P(a), y: yOf(rowOf(s, r, 0), 44), w: P(b - a), h: lyricY(lyricRow(s)) + P(0.8) - yOf(rowOf(s, r, 0), 44), cls: "selbox" });
       }
-      const curIndex = (() => { if (!focused || !writing) return -1; for (let i = o.caret - 1; i >= 0; i--) if (isTimed(tokens[i])) return i; return -1; })();
+      const curIndex = (() => { if (!focused || !writing || !o.justWrote) return -1; for (let i = o.caret - 1; i >= 0; i--) if (isTimed(tokens[i])) return i; return -1; })();
       const nhX = (c: Chunk) => P(c.x + c.accW + 0.35);
       const nhW = (c: Chunk) => P(c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
       const clsOf = (c: Chunk) => [c.ghost ? "ghost" : "", c.index >= 0 && c.index === curIndex ? "cur" : "", c.index >= 0 && inSel(c.index) ? "sel" : ""].filter(Boolean).join(" ") || undefined;
@@ -526,6 +552,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       };
       for (const u of units) {
         const row = RW(u);
+        if (u.kind === "phrase") {   // 句：换气记号（Bravura breathMarkComma）画在上一个音后面、谱上方
+          prims.push({ t: "glyph", x: P(u.x + 0.15), y: yOf(row, 40), ch: "\uE4CE", cls: "breath", size: P(3.4) });
+          continue;
+        }
         if (u.kind === "head") {
           head = { system: row, x: P(u.x) };
           prims.push({ t: "line", x1: P(u.x + 0.1), y1: yOf(row, 42), x2: P(u.x + 0.1), y2: yOf(row, 26), w: P(0.16), cls: "caret" });
@@ -690,8 +720,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     }
     prims.unshift(...frames);
   }
-  const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(1.5);
-  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, title, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, pageX: { left: P(PG?.l ?? 0), right: P(PG?.r ?? 0) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
+  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, title, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

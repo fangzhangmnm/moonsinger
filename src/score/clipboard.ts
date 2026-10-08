@@ -2,7 +2,7 @@
 // user 2026-10-08「剪贴板两层 同意」：app 内存一份原 token（连歌词、连音、记号）；系统剪贴板放一行简谱文字（能贴进聊天，反过来也能把简谱文字贴进来当输入）。
 // 简谱文字的语法（相对「选区开头生效的调」写，贴的时候相对光标处的调读）：
 //   音 = [升降][音级][八度][时值][/歌词]：升降 # / b（相对调内音）；音级 1–7；八度 ' 高一个 , 低一个（可叠）；时值：不写 = 四分，_ 八分，__ 十六分，___ 三十二分，. 附点；
-//   连音线 / 延音：^ 前缀 = 连着前一个音（tie）；0 = 休止（时值同音）；- = 前一个音 / 休止再加一个四分（简谱的横线）；| = 小节线；
+//   连音线 / 延音：^ 前缀 = 连着前一个音（tie）；0 = 休止（时值同音）；- = 前一个音 / 休止再加一个四分（简谱的横线）；| = 小节线；单独一个 , = 句（换气 / 换行）；
 //   记号：[1=G] 调号、[3/4] 拍号、[T=90] 速度；歌词里的空格 / 斜杠不许（歌词只认到下一个空格）。
 //   写不出的时值（连音 / 奇怪的 tick 数）写成 (tick)：1(560)。
 import { type EditorState, type Token, type NoteTok, type Timed, tr, withTrack, headLen, keyAt, isMark, TPQ } from "./song.ts";
@@ -65,6 +65,7 @@ export function toJianpu(toks: Token[], fifths: number): string {
     if (t.kind === "key") { f = t.fifths; out.push(`[1=${KEY_LABEL[t.fifths] ?? t.fifths}]`); continue; }
     if (t.kind === "time") { out.push(`[${t.beats}/${t.beatType}]`); continue; }
     if (t.kind === "tempo") { out.push(`[T=${t.bpm}]`); continue; }
+    if (t.kind === "phrase") { out.push(","); continue; }   // 句 = 单独一个逗号（换气）
     const suf = durText(t.dur), lead = suf.startsWith(" -") ? "" : suf, tail = suf.startsWith(" -") ? suf : "";
     if (t.kind === "rest") { out.push(`0${lead}${tail}`); continue; }
     const body = t.pitch ? (() => { const { degree, shift, acc } = toDegree(t.pitch, f); return `${accText(acc)}${degree}${octText(shift)}`; })() : "x";
@@ -83,6 +84,7 @@ export function fromJianpu(text: string, fifths: number): Token[] | null {
   for (const w of words) {
     if (w === "|") { out.push({ kind: "bar", id: id++ }); continue; }
     if (w === "-") { const t = lastTimed(); if (!t) return null; t.dur += TPQ; continue; }
+    if (w === ",") { out.push({ kind: "phrase", id: id++ }); continue; }
     let m = /^\[1=([A-G][b#]?)\]$/.exec(w);
     if (m) { const k = KEY_BY_LABEL[m[1]]; if (k === undefined) return null; f = k; out.push({ kind: "key", id: id++, fifths: k }); continue; }
     m = /^\[(\d+)\/(\d+)\]$/.exec(w);
