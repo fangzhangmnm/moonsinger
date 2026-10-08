@@ -23,6 +23,10 @@ export const lyricShow = (s: string): string => s.split(ELISION).reduce((a, b) =
 export const lyricEdit = (s: string): string => s.split(ELISION).join("+");
 
 const SMALL = new Set([..."ゃゅょぁぃぅぇぉゎゕゖャュョァィゥェォヮヵヶ", "っ", "ッ"]);
+/** 整段都是小字（っ / ゃゅょ / ぁぃぅぇぉ…）：唱的时候自己不成拍，归前一个音节（lab-score.ts）。促音 = っ / ッ（唱出来是前一个音节后面的一下停顿）。
+ *  打字照原样（输入法上屏几次、小字落在哪个音上就在哪个音上；user 2026-10-08「我大tsu小tsu大yo小yo确实分不清」——不替人改歌词，唱的那一路兜住）。 */
+export const isSmallKana = (s: string): boolean => !!s && [...s].every((c) => SMALL.has(c));
+export const isSokuon = (s: string): boolean => !!s && [...s].every((c) => c === "っ" || c === "ッ");
 const MELISMA = new Set(["ー", "~", "～", "_", "＿"]);
 const isKana = (c: string) => /[぀-ゟ゠-ヿ]/.test(c);
 const isHan = (c: string) => /\p{Script=Han}/u.test(c);

@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.17-2026-10-08";
+var APP_VERSION = "v0.7.18-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4357,6 +4357,8 @@ var CJK_CHAR = /[぀-ヿ\p{Script=Han}]/u;
 var lyricShow = (s10) => s10.split(ELISION).reduce((a10, b3) => !a10 ? b3 : CJK_CHAR.test(a10.slice(-1)) && CJK_CHAR.test(b3.slice(0, 1)) ? a10 + b3 : `${a10}${ELISION}${b3}`, "");
 var lyricEdit = (s10) => s10.split(ELISION).join("+");
 var SMALL = /* @__PURE__ */ new Set([..."\u3083\u3085\u3087\u3041\u3043\u3045\u3047\u3049\u308E\u3095\u3096\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9\u30EE\u30F5\u30F6", "\u3063", "\u30C3"]);
+var isSmallKana = (s10) => !!s10 && [...s10].every((c10) => SMALL.has(c10));
+var isSokuon = (s10) => !!s10 && [...s10].every((c10) => c10 === "\u3063" || c10 === "\u30C3");
 var MELISMA = /* @__PURE__ */ new Set(["\u30FC", "~", "\uFF5E", "_", "\uFF3F"]);
 var isKana = (c10) => /[぀-ゟ゠-ヿ]/.test(c10);
 var isHan = (c10) => /\p{Script=Han}/u.test(c10);
@@ -8192,7 +8194,21 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS) {
       push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true });
       return;
     }
-    const parts = lyric.split(ELISION).filter(Boolean);
+    if (isSmallKana(lyric)) {
+      if (!last) return;
+      if (isSokuon(lyric)) {
+        last.kana += lyric;
+        last.rest = (last.rest ?? 0) + len;
+        nextMark = nextMark === "v" || nextMark === "O" ? nextMark : "^";
+        return;
+      }
+      if (!last.rest) {
+        last.kana += lyric;
+        last.notes.push([midi, len]);
+        return;
+      }
+    }
+    const parts = lyric.split(ELISION).filter(Boolean).reduce((a10, k2) => a10.length && isSmallKana(k2) ? [...a10.slice(0, -1), a10[a10.length - 1] + k2] : [...a10, k2], []);
     parts.forEach((kana, k2) => push({ kana, notes: [[midi, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {} }));
   }
   const TEXT2 = lang === "en" ? out.map((e10) => e10.kana + (e10.hyph ? "" : " ")).join("").trim() : out.map((e10, k2) => e10.kana + (e10.rest ? "\u3001" : k2 === out.length - 1 ? "\u3002" : "")).join("");
@@ -30306,4 +30322,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f6024ac16b58.mjs.map
+//# sourceMappingURL=moonsinger-846824c1053d.mjs.map

@@ -10,7 +10,7 @@
 
 import { midiOf } from "./pitch.ts";
 import { type Token, type Hum, type TempoMap, TPQ, effectivePitch, isTimed, timeline, artOf } from "./song.ts";
-import { MELISMA_MARK, ELISION } from "./lyrics.ts";
+import { MELISMA_MARK, ELISION, isSmallKana, isSokuon } from "./lyrics.ts";
 import { SING_MARKS, type SingMark } from "../format/performance.ts";
 
 export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean; hyph?: boolean; before?: "^" | "v" | "O" }   // before = 这个字前面的记号（唱法核心：v = 换一口气，从前一个音末尾偷时间）   // hyph = 英文：这个词没完（下一条接着拼）   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
@@ -52,8 +52,16 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
     if ((t.lyric === MELISMA_MARK || t.tie) && last && !last.rest) { last.notes.push([midi, len]); return; }
     const lyric = t.lyric && t.lyric !== MELISMA_MARK ? t.lyric : null;
     if (!lyric) { push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true }); return; }
-    // 一个音上几个音节（「+」连着的，如 だ‿ん）：这个音平分给它们，一个音节一条（user 点头「唱的时候把这个音的时值切成几段，先按平均分」）
-    const parts = lyric.split(ELISION).filter(Boolean);
+    // 小字自己占了一个音（っ / ゃ…；输入法分两次上屏、或者人就这么写）：唱法核心按读音数音节，っ 不是唱出来的音节、ゃ 不单独成拍——
+    //   不并 = 「score 比 text 多几个音节」整段不出声（2026-10-08 user 报「90 sung syllables in the text, 92 in the score」：ふって / でっかい 的 っ 各占了一个音）。
+    //   っ = 前一个音节后面停这么长（一下顿、不换气：下一个字前面「^」）；ゃ… = 前一个音节拖过这个音。前面没有音节（开头）= 当休止。
+    if (isSmallKana(lyric)) {
+      if (!last) return;
+      if (isSokuon(lyric)) { last.kana += lyric; last.rest = (last.rest ?? 0) + len; nextMark = nextMark === "v" || nextMark === "O" ? nextMark : "^"; return; }
+      if (!last.rest) { last.kana += lyric; last.notes.push([midi, len]); return; }
+    }
+    // 一个音上几个音节（「+」连着的，如 だ‿ん）：这个音平分给它们，一个音节一条（user 点头「唱的时候把这个音的时值切成几段，先按平均分」）；连着的小字并进前一个（ふ‿っ = ふっ）
+    const parts = lyric.split(ELISION).filter(Boolean).reduce<string[]>((a, k) => (a.length && isSmallKana(k) ? [...a.slice(0, -1), a[a.length - 1] + k] : [...a, k]), []);
     parts.forEach((kana, k) => push({ kana, notes: [[midi, len / parts.length]], ...(lang === "en" && t.hyph && k === parts.length - 1 ? { hyph: true } : {}) }));
   }
   const TEXT = lang === "en"   // 英文：音节按 hyph 拼回单词、空格隔开（核心自己从 SCORE 拼词，TEXT 只给人看 / 日志）
