@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
+import { type Art, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -27,9 +27,10 @@ import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, activePerfSpec, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { fileCredits, audioCredits, creditsText, type CreditLine } from "../format/credits.ts";
-import { mixTracks } from "../audio/mix.ts";
+import { mixTracks, applyGain } from "../audio/mix.ts";
+import { gainSegments, noteEnd } from "../score/perform.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
 import { GmSynth } from "../gm/synth.ts";
 import { Finder, type FinderPick } from "../ui/finder.ts";
@@ -117,7 +118,7 @@ bar.innerHTML =
   `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="文件：新建 / 打开 / 存 / 导出 / 封面（Ctrl / ⌘+S 存、+O 打开；.mxl 拖进来也能打开）"><span id="docTitle" class="title">未命名</span></button></div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
-  `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button><button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button>` +
+  `<button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button>` +
   `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div>` +
   `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
   `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
@@ -130,6 +131,7 @@ padTab.addEventListener("click", () => showPad(true));
 // 选区条（2026-10-08 改的手感；src/ui/sel-bar.ts）：有选区时挂在胶囊下面；剪贴板两层 = app 内 token（clip）+ 系统剪贴板一行简谱文字（clipText）
 const selBar = new SelBar(stageEl, { verb: (v) => { void selVerb(v); } });
 let clip: Token[] | null = null, clipText = "", selSig = "";
+let selFix = false;   // 选区条「修」开着（选区没了就收）
 let chromeReady = false;
 /** 胶囊 / 键盘 tab / 选区条跟着谁在最上面走：歌库开着都藏；找人视图里键盘 tab 照样露（收起了能叫回来；user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）、
  *  选区条藏；录音室里胶囊留着（▶ / 空格都能播）、tab 藏。 */
@@ -138,8 +140,10 @@ function updateChrome(): void {
   const over = finder.isOpen || (gallery?.isOpen() ?? false);
   padTab.hidden = !padEl.hidden || ((gallery?.isOpen() ?? false) && !finderShown) || studio.isOpen;
   finder.setPadShown(!padEl.hidden);
-  const n = st.sel ? st.sel.to - st.sel.from : 0, sig = `${n}|${!!clip}|${over || studio.isOpen}`;
-  if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen); }
+  const n = st.sel ? st.sel.to - st.sel.from : 0;
+  if (!n) selFix = false;
+  const fix = selFix ? { art: artStateSel(st), dyn: dynMarkSel(st) } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen, fix); }
 }
 function setClip(t: Token[]): void {
   clip = t; clipText = toJianpu(t, fifthsAtSel(st));
@@ -155,7 +159,12 @@ async function pasteNow(): Promise<void> {
   update(pasteTokens(st, toks)); info(`贴了 ${toks.length} 个`);
 }
 async function selVerb(v: SelVerb): Promise<void> {
+  // 修（2026-10-08）：演奏法 / 力度只改选中的那几个音（选区留着接着改）；都走 update() = 在撤销里
+  if (v.startsWith("art:")) { update(toggleArtSel(st, v.slice(4) as Art)); return; }
+  if (v.startsWith("dyn:")) { update(setDynSel(st, v === "dyn:none" ? null : (v.slice(4) as Dyn))); return; }
   switch (v) {
+    case "fix": selFix = true; updateChrome(); return;
+    case "fixdone": selFix = false; updateChrome(); break;
     case "all": update(selectAll(st)); break;
     case "copy": { const t = copyTokens(st); if (t) { setClip(t); info(`复制了 ${t.length} 个`); } break; }
     case "cut": { const r = cutTokens(st); if (r) { setClip(r.toks); update(r.st); info(`剪切了 ${r.toks.length} 个`); } break; }
@@ -307,6 +316,7 @@ let finderPlayOnly = false;   // 从歌库进的乐器目录 = 只弹着玩（�
 const pad = new Pad(padEl, {
   state: () => st,
   isImpro: () => impro || finder.isOpen,   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）
+  onImpro: () => toggleImpro(),
   accept: (id) => (canStack() ? (monoHeld.add(id), true) : monoAccept(id)),   // 能叠音的声部：同时多按都收（80 ms 内 = 叠在一起）；单声乐器照旧只写第一个
   // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
   onPitch: (p, id) => {
@@ -337,7 +347,9 @@ const pad = new Pad(padEl, {
   onCommand: (c) => {
     if (finder.isOpen) return;
     if (c.k === "caret" && half === "once") setHalf("off");   // 挪光标 = 取消「凑满一份」
-    update(apply(st, c, performance.now())); if (c.k === "rest" || c.k === "extend") afterWrite();
+    const nx = apply(st, c, performance.now());
+    if (c.k === "breath" && nx === st) { info("呼吸要跟在一个音后面（光标前面是休止或者还没有音）"); return; }
+    update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
   },
   onUnit: (u) => { if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n) => update(setTuplet(st, n)),
@@ -367,8 +379,8 @@ const pad = new Pad(padEl, {
 });
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
-function toggleImpro(): void { impro = !impro; $("improBtn").classList.toggle("is-on", impro); if (impro) showPad(true); pad.render(); }
-$("improBtn").addEventListener("click", () => toggleImpro());
+/** 弹（只响不写）：开关在 pad 第一排「收起」左边（user 2026-10-08「弹这个锁还是放键盘上吧放在第一row，收起键盘的左边」）；快捷键 ` 照旧。找人视图里一直是弹、拨不动。 */
+function toggleImpro(): void { if (finder.isOpen) return; impro = !impro; if (impro) showPad(true); pad.render(); }
 
 // ── 撤销 / 重做（src/score/history.ts）：song 每变一次记一份改之前的快照（引用，不拷贝）；gesture = 连续动作（拖 / 连打歌词）并成一步；换歌清栈 ──
 let history: History = emptyHistory();
@@ -417,7 +429,8 @@ function songLangOf(tokens: Token[]): SingLang {
 const LEAD_IN = 0.5;   // 月读核心 OPT.leadIn（sing-core.mjs）：第一个元音前留的秒数
 const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。tempoMap = 第一个声部的速度表（别的声部按它算秒数）。 */
-function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false): { midi: number; t0: number; t1: number }[] {
+/** marks = 修的记号怎么落到这一路上（跳音截短到 staccatoGate；breath = 元音版在呼吸处收短一口气）；不给 = 照谱满长（试听 / 听开头）。 */
+function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean }): { midi: number; t0: number; t1: number }[] {
   const notes: { midi: number; t0: number; t1: number }[] = [];
   let open = new Map<number, { midi: number; t0: number; t1: number }>();   // 上一个音正在响的各音高（连音线按音高接）
   for (const { index, tok, t0, t1 } of timeline(tokens, tempoMap)) {   // 秒数按速度记号一段一段算好了
@@ -427,7 +440,7 @@ function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false): { midi: 
     for (const p of ps) {
       const midi = midiOf(p), prev = tok.tie ? open.get(midi) : undefined;
       if (prev) { prev.t1 = t1; nextOpen.set(midi, prev); continue; }
-      const n = { midi, t0, t1 }; notes.push(n); nextOpen.set(midi, n);
+      const n = { midi, t0, t1: marks && tok.art ? noteEnd(t0, t1, tok.art, marks) : t1 }; notes.push(n); nextOpen.set(midi, n);
     }
     open = nextOpen;
   }
@@ -458,7 +471,8 @@ async function renderPart(part: PartDef, whole = false): Promise<Rendered | null
     const out = { samples: r.samples, sr: r.sr, at: first - LEAD_IN };
     lastRender.set(part.id, { key, r: out }); return out;
   }
-  const notes = lightNotes(tokens, map, eng === "soundfont");   // SoundFont 叠音全响；元音采样器只唱最上面那条线
+  const spec = activePerfSpec(doc.extras, role);
+  const notes = lightNotes(tokens, map, eng === "soundfont", { staccatoGate: spec.staccatoGate, breath: eng === "vowel-sampler" });   // SoundFont 叠音全响；元音采样器只唱最上面那条线；跳音截短、元音版在呼吸处收短
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
     const key = JSON.stringify(["vowel", notes, st.song.hum]), had = lastRender.get(part.id);
@@ -474,6 +488,11 @@ async function renderPart(part: PartDef, whole = false): Promise<Rendered | null
   const bytes = await resolveGmBytes(g);
   const r = await singer.gm(bytes, g.subsetSha256, gmNotes, GM_SR, 2), out = { samples: r.samples, sr: r.sr, at: 0 };
   lastRender.set(part.id, { key, r: out }); return out;
+}
+/** 一个声部的音量曲线（力度 + 重音；月读的跳音 = 后半段收声；src/score/perform.ts）：没有力度 / 重音 = null，声音不碰。渲染结果是缓存的，乘在拷贝上。 */
+function partGain(part: PartDef, whole: boolean) {
+  const song = whole ? st.song : playSong(), { tokens } = flattenPart(song, part.id), eng = activeInstrument(doc.extras, part.role)?.engine;
+  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), eng === "tsukuyomi");
 }
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
 const audibleParts = (): PartDef[] => { const solo = st.song.parts.some((p) => pv(p.id).solo); return st.song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted)); };
@@ -493,7 +512,7 @@ async function renderMix(whole = false): Promise<{ left: Float32Array; right: Fl
   }
   if (errs.length) showError(`${errs.join("；")}。${got.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
   if (!got.length) return null;
-  const m = mixTracks(got.map(({ part, r }) => { const { gainDb, pan } = micOf(part); return { samples: r.samples, sr: r.sr, at: r.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; }), GM_SR);
+  const m = mixTracks(got.map(({ part, r }) => { const { gainDb, pan } = micOf(part), segs = partGain(part, whole); return { samples: segs ? applyGain(r.samples, r.sr, r.at, segs) : r.samples, sr: r.sr, at: r.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; }), GM_SR);
   return { left: m.left, right: m.right, sr: m.sr, roles: got.map((x) => x.part.role) };
 }
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */
@@ -856,8 +875,8 @@ $("studioBtn").addEventListener("click", () => { if (studio.isOpen) closeStudio(
 function openFinder(): void {
   finderShown = true; finderPlayOnly = gallery?.isOpen() ?? false;
   document.body.classList.toggle("finder-over-gallery", finderPlayOnly);   // 舞台整层盖到歌库上面（styles.css）
-  closeOffer?.(); scoreEl.hidden = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); $("improBtn").classList.add("is-on"); void finder.show({ playOnly: finderPlayOnly }); updateChrome(); }   // 「弹」亮着 = pad 只弹不写
-function closeFinder(): void { if (!finder.isOpen) return; finderShown = false; if (finderPlayOnly) { finderPlayOnly = false; document.body.classList.remove("finder-over-gallery"); } finder.hide(); audition = null; auditionHint = null; synth.allOff(); gmHeld.clear(); padEl.classList.remove("is-locked"); $("improBtn").classList.toggle("is-on", impro); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); }
+  closeOffer?.(); scoreEl.hidden = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render(); void finder.show({ playOnly: finderPlayOnly }); updateChrome(); }   // 「弹」亮着 = pad 只弹不写
+function closeFinder(): void { if (!finder.isOpen) return; finderShown = false; if (finderPlayOnly) { finderPlayOnly = false; document.body.classList.remove("finder-over-gallery"); } finder.hide(); audition = null; auditionHint = null; synth.allOff(); gmHeld.clear(); padEl.classList.remove("is-locked"); pad.render(); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 function setActive(id: string): void { doc.extras = withActive(doc.extras, curRole(), id, st.song.hum); synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); }
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");
