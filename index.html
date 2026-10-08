@@ -11,9 +11,9 @@
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <title>MoonSinger</title>
-    <link rel="stylesheet" href="./vendor/internal-css/workbench-elements.css?v=86d2cfb87a8c" />
-    <link rel="stylesheet" href="./vendor/internal-css/gallery.css?v=86d2cfb87a8c" />
-    <link rel="stylesheet" href="./styles.css?v=86d2cfb87a8c" />
+    <link rel="stylesheet" href="./vendor/internal-css/workbench-elements.css?v=8234134fe85b" />
+    <link rel="stylesheet" href="./vendor/internal-css/gallery.css?v=8234134fe85b" />
+    <link rel="stylesheet" href="./styles.css?v=8234134fe85b" />
     <script>
       // bundle 加载前的兜底：任何脚本错误糊一张红条（iPad 无 devtools）。抄 CatsUp。
       (function () {
@@ -39,7 +39,7 @@
     <!-- ICON-SPRITE:BEGIN — 由 scripts/inline-sprites.py 生成，勿手改 -->
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
 <!--
-  34 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
+  36 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
   Family SVG Icons — MIT License, Copyright (c) 2026 fangzhangmnm.
   Contains work derived from (per-icon provenance in data-src):
     Feather Icons — MIT License, Copyright (c) 2013-2023 Cole Bemis · https://github.com/feathericons/feather
@@ -48,6 +48,11 @@
   <!-- image-processing -->
   <!-- sliders — 不写类别 -->
   <symbol id="sliders" data-cat="image-processing" data-src="own" data-note="不写类别" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/> <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/> <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/> <circle cx="7" cy="18" r="2" fill="currentColor" stroke="none"/></symbol>
+  <!-- edit -->
+  <!-- arrow-undo — 撤销:向左的直角回勾箭头 -->
+  <symbol id="arrow-undo" data-cat="edit" data-src="feather:corner-up-left" data-note="撤销:向左的直角回勾箭头" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"></polyline> <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></symbol>
+  <!-- arrow-redo — 重做:arrow-undo 的水平镜像 -->
+  <symbol id="arrow-redo" data-cat="edit" data-src="feather:corner-up-right" data-note="重做:arrow-undo 的水平镜像" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 14 20 9 15 4"></polyline> <path d="M4 20v-7a4 4 0 0 1 4-4h12"></path></symbol>
   <!-- media -->
   <!-- play — 播放:实心右向三角 ▶(IEC 60417 磁带机惯例统一实心, 描边同色叠加得圆角); 20260819 media 批入库 -->
   <symbol id="play" data-cat="media" data-src="own" data-note="播放:实心右向三角 ▶(IEC 60417 磁带机惯例统一实心, 描边同色叠加得圆角); 20260819 media 批入库" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.2 5.4 L18.8 12 L8.2 18.6 Z" fill="currentColor"/></symbol>
@@ -128,6 +133,6 @@
         <aside id="padPanel" class="pad-panel"></aside>
       </main>
     </div>
-    <script type="module" src="./dist/moonsinger-62c21432313c.mjs" onerror="window.__msShowError && window.__msShowError(\'主程序没加载下来（刚发了新版本还没到、或网络不通）：等几秒再刷新一次\')"></script>
+    <script type="module" src="./dist/moonsinger-0dde7b887412.mjs" onerror="window.__msShowError && window.__msShowError(\'主程序没加载下来（刚发了新版本还没到、或网络不通）：等几秒再刷新一次\')"></script>
   </body>
 </html>

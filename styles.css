@@ -507,3 +507,6 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .pad-key.sym .smufl { font-family: "Bravura"; font-size: 26px; line-height: 1; display: inline-block; height: 22px; }
 .pad-key.sym small { font-size: 10px; color: var(--muted); }
 .pad-tools .btn.sym-toggle.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* 撤销 / 重做在顶栏中间；窄屏（手机）把录音室钮收进设置（顶栏放不下 10 个钮） */
+@media (max-width: 480px) { #studioBtn { display: none; } }

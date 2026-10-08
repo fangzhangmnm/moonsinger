@@ -28,6 +28,7 @@ export type Action =
   | { k: "play" } | { k: "impro" }
   | { k: "file"; a: "open" | "save" | "export" }   // 无地逃生口（打开 / 存 .mxl / 导出 hub；另存为住导出里，user 2026-08-20「另存为也变成导出」）
   | { k: "clip"; a: "copy" | "cut" | "paste" | "all" }   // 选区条的键盘入口（2026-10-08；user「快捷键其实现在我都没用过」，触屏优先）
+  | { k: "undo" } | { k: "redo" }
   | { k: "lyric"; a: "commit" | "cancel" | "next" | "prev" | "hyphen" | "back" }
   | { k: "mark"; a: "commit" | "cancel" }
   | { k: "sheet"; a: "close" };
@@ -117,6 +118,9 @@ export const BINDINGS: Binding[] = [
   { id: "clip.cut", group: "选区", keys: [{ code: "KeyX", mod: true }], show: "Ctrl / ⌘+X", act: () => ({ k: "clip", a: "cut" }), does: { edit: "剪切选中" } },
   { id: "clip.paste", group: "选区", keys: [{ code: "KeyV", mod: true }], show: "Ctrl / ⌘+V", act: () => ({ k: "clip", a: "paste" }), does: { write: "贴在光标处（app 内复制过的；没有就试着读系统剪贴板里的简谱文字）", edit: "贴 = 替换选中" } },
   { id: "clip.all", group: "选区", keys: [{ code: "KeyA", mod: true }], show: "Ctrl / ⌘+A", act: () => ({ k: "clip", a: "all" }), does: { write: "全选（这张纸上这个声部）", edit: "全选" } },
+  // ── 撤销 / 重做（2026-10-08；顶栏 ↶ ↷ 同一入口） ──
+  { id: "undo", group: "撤销", keys: [{ code: "KeyZ", mod: true }], show: "Ctrl / ⌘+Z", act: () => ({ k: "undo" }), does: { write: "撤销上一步（拖 / 连打歌词算一步）", edit: "撤销", impro: "撤销" } },
+  { id: "redo", group: "撤销", keys: [{ code: "KeyZ", mod: true, shift: true }, { code: "KeyY", mod: true }], show: "Ctrl / ⌘+Shift+Z / Ctrl+Y", act: () => ({ k: "redo" }), does: { write: "重做", edit: "重做", impro: "重做" } },
   // ── 歌词框（点谱下面打开；输入法照常用，中文 / 日文选定一段字就按字往后贴） ──
   { id: "lyric.next", group: "歌词框", keys: [{ code: "Space" }, { code: "Tab" }], show: "空格 / Tab", act: () => ({ k: "lyric", a: "next" }),
     does: { lyric: "这个词完了：贴上、跳下一个音（框是空的 = 只跳）" } },

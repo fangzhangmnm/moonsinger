@@ -51,6 +51,7 @@ import { copyDiag, shareDiag, clearDiag, canShareDiag } from "./diag-ui.ts";
 import { deviceKvGet, deviceKvSet } from "../device-kv.ts";
 import { makeCoverPng, coverWithBlurb } from "../image/cover.ts";
 import { copyTokens, cutTokens, pasteTokens, selectAll, toJianpu, fromJianpu, fifthsAtSel } from "../score/clipboard.ts";
+import { emptyHistory, record, undo, redo, type History } from "../score/history.ts";
 import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
 
 initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
@@ -109,7 +110,8 @@ bar.innerHTML =
   `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="文件：新建 / 打开 / 存 / 导出 / 封面（Ctrl / ⌘+S 存、+O 打开；.mxl 拖进来也能打开）"><span id="docTitle" class="title">未命名</span></button></div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
-  `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button><button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button><span id="singStatus" class="sing-st"></span></div>` +
+  `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button><button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button>` +
+  `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div>` +
   `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
   `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
   `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款、诊断日志、版本"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
@@ -186,7 +188,7 @@ function writeAndLocate(write: (s: EditorState) => EditorState): number {
 let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消旧的（不然会掐掉新音）
 const view = new ScoreView(scoreEl, {
   get: () => st,
-  set: (n) => update(n),
+  set: (n, o) => update(n, o?.gesture),
   audition: (i, hold) => { clearTimeout(upTimer); soundTok(st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
   glide: (i) => { clearTimeout(upTimer); const t = tr(st)[i]; if (t?.kind === "note" && t.pitch) sampler.glide(midiOf(t.pitch), st.song.hum, "score"); },
   release: () => { clearTimeout(upTimer); sound.up("score"); },
@@ -353,7 +355,15 @@ const pad = new Pad(padEl, {
 function toggleImpro(): void { impro = !impro; $("improBtn").classList.toggle("is-on", impro); if (impro) showPad(true); pad.render(); }
 $("improBtn").addEventListener("click", () => toggleImpro());
 
-function update(next: EditorState): void {
+// ── 撤销 / 重做（src/score/history.ts）：song 每变一次记一份改之前的快照（引用，不拷贝）；gesture = 连续动作（拖 / 连打歌词）并成一步；换歌清栈 ──
+let history: History = emptyHistory();
+function update(next: EditorState, gesture?: string): void {
+  if (next === st) return;
+  if (next.song !== st.song) history = record(history, st, gesture ?? null, performance.now());
+  applyState(next);
+}
+/** 换状态（不记 undo）：undo / redo 自己调；别处一律走 update()。 */
+function applyState(next: EditorState): void {
   if (next === st) return;
   const moved = next.at.paper !== st.at.paper || next.at.part !== st.at.part;
   st = next;
@@ -364,6 +374,9 @@ function update(next: EditorState): void {
   changed();
   updateChrome();
 }
+function undoNow(): void { const r = undo(history, st); if (!r) { info("没有可撤销的"); return; } closeOffer?.(); view.lyrics.commitAndClose(); history = r.h; applyState(r.st); renderUndo(); }
+function redoNow(): void { const r = redo(history, st); if (!r) { info("没有可重做的"); return; } history = r.h; applyState(r.st); renderUndo(); }
+function renderUndo(): void { $<HTMLButtonElement>("undoBtn").disabled = !history.past.length; $<HTMLButtonElement>("redoBtn").disabled = !history.future.length; }
 
 // ── 播放：月读唱（第一次要加载引擎，之后复用） ─────────────────────────
 const singer = new Singer();
@@ -622,7 +635,7 @@ function openSettings(): void {
     `<details class="set-credit"><summary>乐器目录的图标（第三方，${ICON_CREDITS.length} 个）</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}`).join("\n"))}</pre></details>` +
     `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre></details>` +
     `<div class="set-row"><button class="btn" data-v="finder" title="全屏的乐器目录：按年代浏览、用 pad 弹着玩；「上场」给当前声部">乐器目录…</button>` +
-    `<button class="btn" data-v="lib">歌库…</button><button class="btn" data-v="cloud">云端（OneDrive）…</button></div>` +
+    `<button class="btn" data-v="lib">歌库…</button><button class="btn" data-v="cloud">云端（OneDrive）…</button><button class="btn" data-v="studio">录音室…</button></div>` +
     `<details class="set-credit"><summary>诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:share">${canShareDiag() ? "分享 .txt" : "下载 .txt"}</button><button class="btn" data-v="diag:clear">清空</button></div></details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的月读模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
@@ -647,6 +660,7 @@ function openSettings(): void {
     if (e.target === box || v === "close") close();
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "lib") { close(); void openGallery(); }
+    else if (v === "studio") { close(); openStudio(); }
     else if (v === "cloud") { close(); ensureAttached(); void openCloudMenu(); }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:share") void shareDiag(info);
@@ -696,7 +710,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null }),
-  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(st, i, p)), playSong: () => playSong(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
+  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(st, i, p)), playSong: () => playSong(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: history.past.length, future: history.future.length }), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
@@ -721,6 +735,7 @@ function renderTitle(): void {
   $("fileBtn").title = `${doc.identifier ? "在歌库里" : doc.handle ? `存在 ${doc.handle.name}` : "还没有家"}（点 = 文件菜单）`;
   document.title = `${d ? "• " : ""}${name} · MoonSinger`;
   renderSaveButton();
+  renderUndo();
 }
 /** smart save 钮的状态（抄 WXHW / WeebPaint「状态即按钮」）：歌库 = saving（2 s 内自动存）/ local（存在设备上，没登录）/ offline / unsynced（没上云）/ clean（云端也最新）；
  *  本地文件 = fileDirty / fileClean；没家 = unsaved / fresh（新谱没改过）。 */
@@ -1114,6 +1129,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   if (impro) toggleImpro();
   doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.mtime = o.handle ? (o.mtime ?? null) : null; doc.extras = o.extras;
   doc.identifier = o.identifier ?? null; setActiveIdentifier(doc.identifier); coverTouched = false;
+  history = emptyHistory();   // 换歌 / 云端覆盖重载 = 另一首的历史
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };   // pad 是独立设备：换歌不换它的「1=」和调式
   doc.saved = { song: st.song, lounge: loungeKey() };
   partView.clear();
@@ -1573,6 +1589,8 @@ async function smartSaveStore(): Promise<void> {
 }
 async function smartSave(): Promise<void> { if (doc.identifier) await smartSaveStore(); else await fileSave(); }
 $("saveBtn").addEventListener("click", () => { void smartSave(); });
+$("undoBtn").addEventListener("click", () => undoNow());
+$("redoBtn").addEventListener("click", () => redoNow());
 $("lockBtn").addEventListener("click", () => info("这首歌没加密。MoonSinger 这一版还不加密（要的话告诉开发者：照 WXHW 接 zip.js + 7z 就能开）。"));
 // iOS 软键盘（user 2026-10-08「弹软键盘的时候最下面滚动不上去」）：visualViewport 矮了多少 = --kb-offset，整个 app 缩到键盘上面（styles #app），谱的最底下才滚得到；
 //   iOS 把视口顶上去时拉回 0（固定的顶栏别被推出屏）；键盘露 / 收之后光标那行滚进视野。照 WXHW app.ts 的做法。
@@ -1627,6 +1645,8 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "sheet": closeOffer?.(); closeSheet(); return true;
     case "file": if (a.a === "open") void fileOpen(); else if (a.a === "save") void fileSave(); else openExportHub(); return true;
     case "clip": void selVerb(a.a); return true;
+    case "undo": undoNow(); return true;
+    case "redo": redoNow(); return true;
   }
 }
 window.addEventListener("keydown", (e) => {

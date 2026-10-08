@@ -16,7 +16,7 @@ const PUNCT = /[。．，、,.!！?？;；:：]+$/;
 const splitPunct = (v: string): { text: string; phrase: boolean } => { const m = PUNCT.exec(v); return m ? { text: v.slice(0, m.index), phrase: true } : { text: v, phrase: false }; };
 import type { Layout } from "../render/engrave.ts";
 
-interface Host { get(): EditorState; set(next: EditorState): void }
+interface Host { get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void }   // gesture "lyric"：连打的歌词在 undo 里是一步
 const CJK = /[\p{Script=Han}぀-ヿ]/u;
 
 export class LyricEditor {
@@ -91,7 +91,7 @@ export class LyricEditor {
       if (!syl.length) { this.input.value = this.slotText(this.index); this.rerender(); this.input.select(); return; }
     }
     const r = distributeFrom(this.host.get(), this.index, syl), st = phraseEnd ? insertPhraseAfter(r.st, r.last) : r.st, last = r.last;
-    this.host.set(st);
+    this.host.set(st, { gesture: "lyric" });
     const nx = nextLyricSlot(tr(st), last);
     this.input.value = "";
     if (nx >= 0) { this.index = nx; this.input.value = this.slotText(nx); this.rerender(); this.input.select(); }

@@ -22,6 +22,7 @@ import "./synth-wasm.test.ts";
 import "./instruments.test.ts";
 import "./clipboard.test.ts";
 import "./chord.test.ts";
+import "./history.test.ts";
 import "./redline-guard.test.mjs";
 import "./storage-whitelist.test.mjs";
 import "./store-wiring.test.mjs";

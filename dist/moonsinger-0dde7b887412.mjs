@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.6-2026-10-08";
+var APP_VERSION = "v0.6.7-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3799,6 +3799,9 @@ var BINDINGS = [
   { id: "clip.cut", group: "\u9009\u533A", keys: [{ code: "KeyX", mod: true }], show: "Ctrl / \u2318+X", act: () => ({ k: "clip", a: "cut" }), does: { edit: "\u526A\u5207\u9009\u4E2D" } },
   { id: "clip.paste", group: "\u9009\u533A", keys: [{ code: "KeyV", mod: true }], show: "Ctrl / \u2318+V", act: () => ({ k: "clip", a: "paste" }), does: { write: "\u8D34\u5728\u5149\u6807\u5904\uFF08app \u5185\u590D\u5236\u8FC7\u7684\uFF1B\u6CA1\u6709\u5C31\u8BD5\u7740\u8BFB\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF09", edit: "\u8D34 = \u66FF\u6362\u9009\u4E2D" } },
   { id: "clip.all", group: "\u9009\u533A", keys: [{ code: "KeyA", mod: true }], show: "Ctrl / \u2318+A", act: () => ({ k: "clip", a: "all" }), does: { write: "\u5168\u9009\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E2A\u58F0\u90E8\uFF09", edit: "\u5168\u9009" } },
+  // ── 撤销 / 重做（2026-10-08；顶栏 ↶ ↷ 同一入口） ──
+  { id: "undo", group: "\u64A4\u9500", keys: [{ code: "KeyZ", mod: true }], show: "Ctrl / \u2318+Z", act: () => ({ k: "undo" }), does: { write: "\u64A4\u9500\u4E0A\u4E00\u6B65\uFF08\u62D6 / \u8FDE\u6253\u6B4C\u8BCD\u7B97\u4E00\u6B65\uFF09", edit: "\u64A4\u9500", impro: "\u64A4\u9500" } },
+  { id: "redo", group: "\u64A4\u9500", keys: [{ code: "KeyZ", mod: true, shift: true }, { code: "KeyY", mod: true }], show: "Ctrl / \u2318+Shift+Z / Ctrl+Y", act: () => ({ k: "redo" }), does: { write: "\u91CD\u505A", edit: "\u91CD\u505A", impro: "\u91CD\u505A" } },
   // ── 歌词框（点谱下面打开；输入法照常用，中文 / 日文选定一段字就按字往后贴） ──
   {
     id: "lyric.next",
@@ -5011,7 +5014,7 @@ var LyricEditor = class {
       }
     }
     const r10 = distributeFrom(this.host.get(), this.index, syl), st3 = phraseEnd ? insertPhraseAfter(r10.st, r10.last) : r10.st, last = r10.last;
-    this.host.set(st3);
+    this.host.set(st3, { gesture: "lyric" });
     const nx2 = nextLyricSlot(tr(st3), last);
     this.input.value = "";
     if (nx2 >= 0) {
@@ -6064,13 +6067,13 @@ var ScoreView = class {
       const d3 = g3.d0 + Math.round(-dy / (L2.sp / 2));
       if (d3 === g3.heard) return;
       g3.heard = d3;
-      this.host.set(setNote(st3, g3.index, { pitch: fromDiatonic(d3, keyAt(tr(st3), g3.index)) }));
+      this.host.set(setNote(st3, g3.index, { pitch: fromDiatonic(d3, keyAt(tr(st3), g3.index)) }), { gesture: "drag" });
       if (this.host.glide) this.host.glide(g3.index);
       else this.host.audition?.(g3.index, true);
     } else {
       const i02 = DUR_LADDER.reduce((bi, v, i11) => Math.abs(v - g3.dur0) < Math.abs(DUR_LADDER[bi] - g3.dur0) ? i11 : bi, 0);
       const i10 = Math.max(0, Math.min(DUR_LADDER.length - 1, i02 + Math.round(dx / (L2.sp * 2.2))));
-      this.host.set(setDur(st3, g3.index, DUR_LADDER[i10]));
+      this.host.set(setDur(st3, g3.index, DUR_LADDER[i10]), { gesture: "drag" });
     }
   }
   up(e10) {
@@ -24469,6 +24472,28 @@ function fromJianpu(text2, fifths) {
 }
 var fifthsAtSel = (st3) => keyAt(tr(st3), st3.sel ? st3.sel.from : Math.max(0, st3.caret - 1));
 
+// src/score/history.ts
+var LIMIT = 200;
+var COALESCE_MS = 1500;
+var emptyHistory = () => ({ past: [], future: [], lastKey: null, lastAt: 0 });
+var snapOf = (st3) => ({ song: st3.song, at: st3.at, caret: st3.caret, sel: st3.sel });
+var applySnap = (st3, s10) => ({ ...st3, song: s10.song, at: s10.at, caret: s10.caret, sel: s10.sel, log: [] });
+function record2(h2, prev, gesture, now) {
+  if (gesture && gesture === h2.lastKey && now - h2.lastAt < COALESCE_MS) return { ...h2, future: [], lastAt: now };
+  const past = h2.past.length >= LIMIT ? [...h2.past.slice(1), snapOf(prev)] : [...h2.past, snapOf(prev)];
+  return { past, future: [], lastKey: gesture, lastAt: now };
+}
+function undo(h2, cur) {
+  if (!h2.past.length) return null;
+  const snap = h2.past[h2.past.length - 1];
+  return { h: { past: h2.past.slice(0, -1), future: [...h2.future, snapOf(cur)], lastKey: null, lastAt: 0 }, st: applySnap(cur, snap) };
+}
+function redo(h2, cur) {
+  if (!h2.future.length) return null;
+  const snap = h2.future[h2.future.length - 1];
+  return { h: { past: [...h2.past, snapOf(cur)], future: h2.future.slice(0, -1), lastKey: null, lastAt: 0 }, st: applySnap(cur, snap) };
+}
+
 // src/ui/sel-bar.ts
 var SelBar = class {
   el;
@@ -24546,7 +24571,7 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA / \u5C01\u9762\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA / \u5C01\u9762\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
 padTab.id = "padTab";
@@ -24683,7 +24708,7 @@ function writeAndLocate(write) {
 var upTimer = 0;
 var view = new ScoreView(scoreEl, {
   get: () => st2,
-  set: (n10) => update(n10),
+  set: (n10, o10) => update(n10, o10?.gesture),
   audition: (i10, hold) => {
     clearTimeout(upTimer);
     soundTok(st2, i10, "score");
@@ -24922,7 +24947,13 @@ function toggleImpro() {
   pad3.render();
 }
 $2("improBtn").addEventListener("click", () => toggleImpro());
-function update(next2) {
+var history = emptyHistory();
+function update(next2, gesture) {
+  if (next2 === st2) return;
+  if (next2.song !== st2.song) history = record2(history, st2, gesture ?? null, performance.now());
+  applyState(next2);
+}
+function applyState(next2) {
   if (next2 === st2) return;
   const moved = next2.at.paper !== st2.at.paper || next2.at.part !== st2.at.part;
   st2 = next2;
@@ -24936,6 +24967,32 @@ function update(next2) {
   renderTitle();
   changed();
   updateChrome();
+}
+function undoNow() {
+  const r10 = undo(history, st2);
+  if (!r10) {
+    info("\u6CA1\u6709\u53EF\u64A4\u9500\u7684");
+    return;
+  }
+  closeOffer?.();
+  view.lyrics.commitAndClose();
+  history = r10.h;
+  applyState(r10.st);
+  renderUndo();
+}
+function redoNow() {
+  const r10 = redo(history, st2);
+  if (!r10) {
+    info("\u6CA1\u6709\u53EF\u91CD\u505A\u7684");
+    return;
+  }
+  history = r10.h;
+  applyState(r10.st);
+  renderUndo();
+}
+function renderUndo() {
+  $2("undoBtn").disabled = !history.past.length;
+  $2("redoBtn").disabled = !history.future.length;
 }
 var singer = new Singer();
 var singing = false;
@@ -25254,7 +25311,7 @@ function openSettings() {
 ${esc7(CREDIT.terms)}
 ${esc7(CREDIT.termsUrl)}
 
-${esc7(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button><button class="btn" data-v="lib">\u6B4C\u5E93\u2026</button><button class="btn" data-v="cloud">\u4E91\u7AEF\uFF08OneDrive\uFF09\u2026</button></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc7(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button><button class="btn" data-v="lib">\u6B4C\u5E93\u2026</button><button class="btn" data-v="cloud">\u4E91\u7AEF\uFF08OneDrive\uFF09\u2026</button><button class="btn" data-v="studio">\u5F55\u97F3\u5BA4\u2026</button></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -25291,6 +25348,9 @@ ${esc7(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><butt
     } else if (v === "lib") {
       close();
       void openGallery();
+    } else if (v === "studio") {
+      close();
+      openStudio();
     } else if (v === "cloud") {
       close();
       ensureAttached();
@@ -25391,7 +25451,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "86d2cfb87a8c",
+  cssHash: "8234134fe85b",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -25408,6 +25468,9 @@ window.__moonsinger = {
   addPaper: () => update(addPaper(st2)),
   toggleChord: (i10, p2) => update(toggleChordPitch(st2, i10, p2)),
   playSong: () => playSong(),
+  undo: () => undoNow(),
+  redo: () => redoNow(),
+  history: () => ({ past: history.past.length, future: history.future.length }),
   setScope: (v) => {
     viewScope = v;
     view.render();
@@ -25449,6 +25512,7 @@ function renderTitle() {
   $2("fileBtn").title = `${doc.identifier ? "\u5728\u6B4C\u5E93\u91CC" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : "\u8FD8\u6CA1\u6709\u5BB6"}\uFF08\u70B9 = \u6587\u4EF6\u83DC\u5355\uFF09`;
   document.title = `${d3 ? "\u2022 " : ""}${name} \xB7 MoonSinger`;
   renderSaveButton();
+  renderUndo();
 }
 function syncKind() {
   if (doc.identifier) {
@@ -26063,6 +26127,7 @@ function loadDoc(song, o10) {
   doc.identifier = o10.identifier ?? null;
   setActiveIdentifier(doc.identifier);
   coverTouched = false;
+  history = emptyHistory();
   st2 = { ...initState(song), input: { ...initState(song).input, inputFifths: st2.input.inputFifths, inputScale: st2.input.inputScale } };
   doc.saved = { song: st2.song, lounge: loungeKey() };
   partView.clear();
@@ -26786,6 +26851,8 @@ async function smartSave() {
 $2("saveBtn").addEventListener("click", () => {
   void smartSave();
 });
+$2("undoBtn").addEventListener("click", () => undoNow());
+$2("redoBtn").addEventListener("click", () => redoNow());
 $2("lockBtn").addEventListener("click", () => info("\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\u3002MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF08\u8981\u7684\u8BDD\u544A\u8BC9\u5F00\u53D1\u8005\uFF1A\u7167 WXHW \u63A5 zip.js + 7z \u5C31\u80FD\u5F00\uFF09\u3002"));
 if (window.visualViewport) {
   const vv = window.visualViewport;
@@ -26865,6 +26932,12 @@ function run(a10, repeat, code) {
     case "clip":
       void selVerb(a10.a);
       return true;
+    case "undo":
+      undoNow();
+      return true;
+    case "redo":
+      redoNow();
+      return true;
   }
 }
 window.addEventListener("keydown", (e10) => {
@@ -26938,4 +27011,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-62c21432313c.mjs.map
+//# sourceMappingURL=moonsinger-0dde7b887412.mjs.map

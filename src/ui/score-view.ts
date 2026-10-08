@@ -29,7 +29,7 @@ import { TitleEditor } from "./title-editor.ts";
 const DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => (v * TPQ) / 48);
 
 export interface ScoreViewHost {
-  get(): EditorState; set(next: EditorState): void;
+  get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void;   // gesture = 连续动作的名字（拖 = "drag"）：宿主的 undo 把它们并成一步
   /** 唱下标 i 那个音（光标所在那条 track 的）：hold = 按住一直响（等 release），否则响一下。 */
   audition?(i: number, hold?: boolean): void;
   /** 拖音高时换到下标 i 的新音高（新的顶掉旧的；怎么顶由采样器定：滑过去或重新起音）。 */
@@ -409,12 +409,12 @@ export class ScoreView {
       const d = g.d0 + Math.round(-dy / (L.sp / 2));
       if (d === g.heard) return;   // 还在同一个音高：不重画、不重新起音
       g.heard = d;
-      this.host.set(setNote(st, g.index, { pitch: fromDiatonic(d, keyAt(tr(st), g.index)) }));
+      this.host.set(setNote(st, g.index, { pitch: fromDiatonic(d, keyAt(tr(st), g.index)) }), { gesture: "drag" });
       if (this.host.glide) this.host.glide(g.index); else this.host.audition?.(g.index, true);   // 新音顶掉旧音
     } else {
       const i0 = DUR_LADDER.reduce((bi, v, i) => (Math.abs(v - g.dur0) < Math.abs(DUR_LADDER[bi] - g.dur0) ? i : bi), 0);
       const i = Math.max(0, Math.min(DUR_LADDER.length - 1, i0 + Math.round(dx / (L.sp * 2.2))));
-      this.host.set(setDur(st, g.index, DUR_LADDER[i]));
+      this.host.set(setDur(st, g.index, DUR_LADDER[i]), { gesture: "drag" });
     }
   }
 
