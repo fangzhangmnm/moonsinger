@@ -454,6 +454,7 @@ function openSettings(): void {
     `<pre id="packSt" class="set-packs">…</pre>` +
     `<details class="set-credit"><summary>乐器目录的图标（第三方，${ICON_CREDITS.length} 个）</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}`).join("\n"))}</pre></details>` +
     `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre></details>` +
+    `<div class="set-row"><button class="btn" data-v="finder" title="全屏的乐器目录：按年代浏览、用 pad 弹着玩；「上场」给当前声部">乐器目录…</button></div>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的月读模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
@@ -482,6 +483,7 @@ function openSettings(): void {
     else if (v === "snd:mem") { releaseSoundMemory(); void refreshSounds(); }
     else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
     else if (v === "reset") void shell.forceReset();
+    else if (v === "finder") { close(); openFinder(); }
   });
   box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
     const files = [...((e.target as HTMLInputElement).files ?? [])]; if (!files.length) return;

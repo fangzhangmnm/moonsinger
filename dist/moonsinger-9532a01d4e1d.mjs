@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.4.9-2026-10-07";
+var APP_VERSION = "v0.4.10-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -1665,10 +1665,7 @@ function engrave(song, o) {
   }
   const titleSize = P(1.9), titleBase = P(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
-  else if (o.titlePlaceholder) {
-    const w = Math.min(P(20), o.width * 0.45), h = P(3);
-    prims.push({ t: "rect", x: o.width / 2 - w / 2, y: titleBase - titleSize * 0.36 - h / 2, w, h, cls: "slot-box" });
-  }
+  else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "\u6B4C\u540D", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
   let paperChip = null;
   if (o.paperLabel) {
     const ch = P(2.2), cw = ch, cx = o.width - P(MARGIN) - cw, cy = P(0.9), is = P(1.5);
@@ -1685,9 +1682,9 @@ function engrave(song, o) {
     const w = Math.max(...lines.map((s) => o.measureLyric(s) * 1.25 / LYRIC_EM)) + P(0.6);
     credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.35 * lines.length + cs * 0.4 };
   } else if (o.titlePlaceholder) {
-    const w = Math.min(P(12), o.width * 0.4), h = cs * 1.7, y = y0 - cs * 0.36 - h / 2;
-    prims.push({ t: "rect", x: rx - w, y, w, h, cls: "slot-box" });
-    credits = { x: rx - w - P(0.3), y: y - P(0.3), w: w + P(0.6), h: h + P(0.6) };
+    prims.push({ t: "text", x: rx, y: y0, s: "\u4F5C\u8005", cls: "credits empty", size: cs, anchor: "end" });
+    const w = o.measureLyric("\u4F5C\u8005") * 1.25 / LYRIC_EM + P(0.6);
+    credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.75 };
   }
   const part = o.partName ? { x: P(MARGIN - 0.4), y: yOf(0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(0, BOTTOM_LINE) - yOf(0, TOP_LINE) + P(2.4) } : null;
   return { prims, width: o.width, height: P(TITLE_H + headExtra + nSys * SYS_H + 1), sp, systems, notes, slots, lyrics, marks, title, credits, head, part, paperChip, shortBars, lyricY, yOf, dOf };
@@ -2676,7 +2673,7 @@ function installPlatformGuards(surfaces) {
       if (!isTextTarget(e.target)) e.preventDefault();
     });
     s.addEventListener("touchstart", (e) => {
-      if (e.touches.length === 1 && !isTextTarget(e.target)) e.preventDefault();
+      if (e.touches.length === 1 && !isTextTarget(e.target) && !e.target.closest?.(".drum-col")) e.preventDefault();
     }, { passive: false });
   }
 }
@@ -2747,7 +2744,7 @@ var MOVE = 6;
 var STACK = 150;
 var NARROW = 96;
 var TIGHT = 130;
-var UNITS = [5, 4, 3, 2, 1, 0];
+var UNITS = [0, 1, 2, 3, 4, 5];
 var TUP = [0, 3, 5, 6, 7];
 var SHIFTS = [4, 3, 2, 1, 0, -1, -2, -3, -4];
 var octDots = (n2) => n2 > 0 ? `<span class="jp-dots">${"<i></i>".repeat(n2)}</span>` : `<span class="jp-dots"></span>`;
@@ -2787,6 +2784,8 @@ var Pad = class {
   // 默认 4 行（user「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
   layoutMode = "absolute";
   // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
+  swipeMode = "scroll";
+  // 音键上上下滑 = 滚键盘（默认）/ 这一个音升降（黏着）（user 2026-10-07「音乐按钮不要上下滑是升降…我想开一个是否黏着还是可以滚键盘的选项。默认滚键盘吧」）
   mode = "normal";
   gridFor = "";
   toolsFor = "";
@@ -2949,6 +2948,8 @@ var Pad = class {
           ...[3, 4, 5, 6, 7].map((n2) => c(`data-cols="${n2}"`, `${n2} \u5217`, this.cols === n2)),
           c(`data-pl="movable"`, "\u9996\u8C03", this.layoutMode === "movable", "\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70"),
           c(`data-pl="absolute"`, "\u7EDD\u5BF9", this.layoutMode === "absolute", "\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09"),
+          c(`data-swipe="scroll"`, "\u6ED1 = \u6EDA\u952E\u76D8", this.swipeMode === "scroll", "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u63A8\u952E\u76D8\u770B\u66F4\u9AD8 / \u66F4\u4F4E\u7684\u97F3\uFF08\u6309\u4E0B\u7684\u90A3\u4E2A\u97F3\u5148\u653E\u5F00\uFF09"),
+          c(`data-swipe="alter"`, "\u6ED1 = \u5347\u964D", this.swipeMode === "alter", "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09"),
           back
         ].join("");
       case "transpose":
@@ -2979,6 +2980,10 @@ var Pad = class {
     });
     this.on(box, "[data-rows]", (b) => {
       this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows);
+      this.render();
+    });
+    this.on(box, "[data-swipe]", (b) => {
+      this.swipeMode = b.dataset.swipe === "alter" ? "alter" : "scroll";
       this.render();
     });
     this.on(box, "[data-cols]", (b) => {
@@ -3030,8 +3035,10 @@ var Pad = class {
         this.showDown(p, id);
         if (!this.host.isImpro()) this.host.onPitch(p, id);
         this.host.onSoundDown(p, id);
+        if (this.swipeMode === "scroll") this.panStart(e, b);
       });
       b.addEventListener("pointermove", (e) => {
+        if (this.swipeMode === "scroll") return;
         const s = this.swipes.get(e.pointerId);
         if (!s) return;
         const dy = s.y0 - e.clientY, alt = dy > SWIPE ? 1 : dy < -SWIPE ? -1 : 0;
@@ -3048,6 +3055,38 @@ var Pad = class {
       b.addEventListener("pointerup", up);
       b.addEventListener("pointercancel", up);
     });
+  }
+  /** 滑 = 滚键盘：按着音键上下走过一格键的高度 = 音域窗口挪一行，像推一张纸（往上推 = 看下面更低的；和音域旋钮原地滚同一个方向）。
+   *  一开始滚就先放开按下的那个音（按下时已经写进谱 / 响过了；网格要重建，键上的指针捕获会丢，所以挪动监听在 window 上）。 */
+  panStart(e, b) {
+    const pid = e.pointerId, y0 = e.clientY, rowH = Math.max(24, b.clientHeight), shift0 = this.rowShift;
+    let applied = 0;
+    const move = (ev) => {
+      if (ev.pointerId !== pid) return;
+      const steps = Math.trunc((ev.clientY - y0) / rowH);
+      if (steps === applied) return;
+      if (!applied) {
+        const id = `pad${pid}`;
+        this.swipes.delete(pid);
+        this.showUp(id);
+        this.host.onSoundUp(id);
+      }
+      applied = steps;
+      const next2 = Math.max(SHIFTS[SHIFTS.length - 1], Math.min(SHIFTS[0], shift0 + steps));
+      if (next2 !== this.rowShift) {
+        this.rowShift = next2;
+        this.render();
+      }
+    };
+    const up = (ev) => {
+      if (ev.pointerId !== pid) return;
+      removeEventListener("pointermove", move);
+      removeEventListener("pointerup", up);
+      removeEventListener("pointercancel", up);
+    };
+    addEventListener("pointermove", move);
+    addEventListener("pointerup", up);
+    addEventListener("pointercancel", up);
   }
   refresh(st2) {
     const q = (s) => this.el.querySelector(s);
@@ -7237,7 +7276,7 @@ function openSettings() {
 ${esc4(CREDIT.terms)}
 ${esc4(CREDIT.termsUrl)}
 
-${esc4(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc4(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button></div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -7298,6 +7337,10 @@ ${esc4(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-ap
       } else info(r === "latest" ? "\u5DF2\u7ECF\u662F\u6700\u65B0\u7248" : "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0");
     });
     else if (v === "reset") void shell.forceReset();
+    else if (v === "finder") {
+      close();
+      openFinder();
+    }
   });
   box.querySelector("#impIn").addEventListener("change", async (e) => {
     const files = [...e.target.files ?? []];
@@ -7354,7 +7397,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "a567b52e7fe6", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "247abfdc5953", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
   embedSoftLimit = n2;
 }, synth };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
@@ -8125,4 +8168,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-52b03f28ad7c.mjs.map
+//# sourceMappingURL=moonsinger-9532a01d4e1d.mjs.map

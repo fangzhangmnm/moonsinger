@@ -48,7 +48,7 @@ const MOVE = 6;         // px：按下旋钮挪过这么远才算「滑」；没
 const STACK = 150;      // px：「1=」旋钮比这窄 = 调和调式名分两行写
 const NARROW = 96;      // px：音域旋钮比这窄 = 一行写不下「F♯3–G♯5」，改两行
 const TIGHT = 130;      // px：音域旋钮比这窄 = 一行字和 ⇅ 挤在一起，这一个不画 ⇅（另外两个旋钮上有，手势一样）
-const UNITS = [5, 4, 3, 2, 1, 0];          // 长短，长的在上：全音符 … 三十二分
+const UNITS = [0, 1, 2, 3, 4, 5];          // 长短，短的在上：三十二分 … 全音符——往上推 = 变长 = 变慢（user 2026-10-07「音符时长的滚动方向翻一下，往上推是变慢」）
 const TUP = [0, 3, 5, 6, 7] as const;      // 连音：不连 / 3 / 5 / 6 / 7
 const SHIFTS = [4, 3, 2, 1, 0, -1, -2, -3, -4];   // 音域窗口，高的在上
 /** 简谱的八度点：真的小圆点（数字上方 = 高八度、下方 = 低八度，多个横排）。 */
@@ -113,6 +113,7 @@ export class Pad {
   private cols = 4;           // 每行几个音（MEDO = 4）
   private rowsSetting: number | "auto" = 4;   // 默认 4 行（user「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
   private layoutMode: "movable" | "absolute" = "absolute";   // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
+  private swipeMode: "scroll" | "alter" = "scroll";          // 音键上上下滑 = 滚键盘（默认）/ 这一个音升降（黏着）（user 2026-10-07「音乐按钮不要上下滑是升降…我想开一个是否黏着还是可以滚键盘的选项。默认滚键盘吧」）
   private mode: Mode = "normal";
   private gridFor = "";
   private toolsFor = "";
@@ -254,7 +255,9 @@ export class Pad {
           ...[3, 4, 5, 6, 7, 8].map((n) => c(`data-rows="${n}"`, `${n} 行`, this.rowsSetting === n)),
           ...[3, 4, 5, 6, 7].map((n) => c(`data-cols="${n}"`, `${n} 列`, this.cols === n)),
           c(`data-pl="movable"`, "首调", this.layoutMode === "movable", "每行从 1 起，跟着「1=」走"),
-          c(`data-pl="absolute"`, "绝对", this.layoutMode === "absolute", "每行从 C 起（不跟着「1=」挪）"), back].join("");
+          c(`data-pl="absolute"`, "绝对", this.layoutMode === "absolute", "每行从 C 起（不跟着「1=」挪）"),
+          c(`data-swipe="scroll"`, "滑 = 滚键盘", this.swipeMode === "scroll", "在音键上上下滑 = 推键盘看更高 / 更低的音（按下的那个音先放开）"),
+          c(`data-swipe="alter"`, "滑 = 升降", this.swipeMode === "alter", "在音键上上下滑 = 这一个音升 / 降（黏着）"), back].join("");
       case "transpose":
         return c(`data-tr="1"`, "↑ 半音") + c(`data-tr="-1"`, "↓ 半音") + c(`data-tr="2"`, "↑ 全音") + c(`data-tr="-2"`, "↓ 全音") +
           c(`data-toct="1"`, "↑ 八度") + c(`data-toct="-1"`, "↓ 八度") + c(`data-open="modulate"`, "转调…", false, "整段转到另一个调：音按两个主音之间的音程挪，调号跟着换") + back;
@@ -282,6 +285,7 @@ export class Pad {
     this.on(box, "[data-mark]", (b) => { this.back(); this.host.onInsertMark(b.dataset.mark as "key" | "time" | "tempo"); });
     // 布局：点了不收（好试），按「返回」回去
     this.on(box, "[data-rows]", (b) => { this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows); this.render(); });
+    this.on(box, "[data-swipe]", (b) => { this.swipeMode = b.dataset.swipe === "alter" ? "alter" : "scroll"; this.render(); });
     this.on(box, "[data-cols]", (b) => { this.cols = Number(b.dataset.cols); this.render(); });
     this.on(box, "[data-pl]", (b) => { this.layoutMode = b.dataset.pl === "absolute" ? "absolute" : "movable"; this.render(); });
     // 移调：点了不收（可以连着点几下）；转调：选了就回去
@@ -308,7 +312,7 @@ export class Pad {
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
     grid.innerHTML = cells.join("");
     this.swipes.clear();   // 键换了：旧键上的滑动作废（声音照常由 pointerup 停）
-    // 音键：按下 = 写（或改）+ 响；弹 = 只响；按着上下滑过门槛 = 这个音升 / 降（键上先显示）；松开 = 停
+    // 音键：按下 = 写（或改）+ 响；弹 = 只响；松开 = 停。按着上下滑：滑 = 滚键盘（默认）走 panStart；滑 = 升降 = 过门槛这个音升 / 降（键上先显示）
     grid.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => {
       b.addEventListener("pointerdown", (e) => {
         e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* 指针已经没了：照样响 */ }
@@ -318,8 +322,10 @@ export class Pad {
         this.showDown(p, id);
         if (!this.host.isImpro()) this.host.onPitch(p, id);
         this.host.onSoundDown(p, id);
+        if (this.swipeMode === "scroll") this.panStart(e, b);
       });
       b.addEventListener("pointermove", (e) => {
+        if (this.swipeMode === "scroll") return;   // 滚键盘：在 panStart 里
         const s = this.swipes.get(e.pointerId); if (!s) return;
         const dy = s.y0 - e.clientY, alt: -1 | 0 | 1 = dy > SWIPE ? 1 : dy < -SWIPE ? -1 : 0;
         if (alt === s.alt) return;
@@ -330,6 +336,24 @@ export class Pad {
       const up = (e: PointerEvent) => { this.swipes.delete(e.pointerId); this.showUp(`pad${e.pointerId}`); this.host.onSoundUp(`pad${e.pointerId}`); };
       b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up);
     });
+  }
+
+  /** 滑 = 滚键盘：按着音键上下走过一格键的高度 = 音域窗口挪一行，像推一张纸（往上推 = 看下面更低的；和音域旋钮原地滚同一个方向）。
+   *  一开始滚就先放开按下的那个音（按下时已经写进谱 / 响过了；网格要重建，键上的指针捕获会丢，所以挪动监听在 window 上）。 */
+  private panStart(e: PointerEvent, b: HTMLElement): void {
+    const pid = e.pointerId, y0 = e.clientY, rowH = Math.max(24, b.clientHeight), shift0 = this.rowShift;
+    let applied = 0;
+    const move = (ev: PointerEvent) => {
+      if (ev.pointerId !== pid) return;
+      const steps = Math.trunc((ev.clientY - y0) / rowH);   // 往下拉 = 正 = 纸往下 = 看上面更高的
+      if (steps === applied) return;
+      if (!applied) { const id = `pad${pid}`; this.swipes.delete(pid); this.showUp(id); this.host.onSoundUp(id); }
+      applied = steps;
+      const next = Math.max(SHIFTS[SHIFTS.length - 1], Math.min(SHIFTS[0], shift0 + steps));
+      if (next !== this.rowShift) { this.rowShift = next; this.render(); }
+    };
+    const up = (ev: PointerEvent) => { if (ev.pointerId !== pid) return; removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); };
+    addEventListener("pointermove", move); addEventListener("pointerup", up); addEventListener("pointercancel", up);
   }
 
   private refresh(st: EditorState): void {

@@ -31,6 +31,7 @@ export function installPlatformGuards(surfaces: HTMLElement[]): void {
   });
   for (const s of surfaces) {
     s.addEventListener("contextmenu", (e) => { if (!isTextTarget(e.target)) e.preventDefault(); });
-    s.addEventListener("touchstart", (e) => { if (e.touches.length === 1 && !isTextTarget(e.target)) e.preventDefault(); }, { passive: false });
+    // 面上嵌着的原生滚动区（速度框里的滚轮 .drum-col）放行：touchstart 一 preventDefault 浏览器就不滚它了（user 2026-10-07「节拍器的滚动选数字好像也坏了」= iPad 上拨不动）
+    s.addEventListener("touchstart", (e) => { if (e.touches.length === 1 && !isTextTarget(e.target) && !(e.target as HTMLElement).closest?.(".drum-col")) e.preventDefault(); }, { passive: false });
   }
 }
