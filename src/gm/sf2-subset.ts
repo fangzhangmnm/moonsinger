@@ -146,3 +146,16 @@ function concat(parts: Uint8Array[]): Uint8Array {
   for (const p of parts) { r.set(p, o); o += p.length; }
   return r;
 }
+
+/** INFO 块里给人看的字（SoundFont 2.04 §5）：INAM 名字、IENG 作者、ICOP 版权、ICMT 注释（GeneralUser GS 把许可证写在这里）。没有的不出现。 */
+export function sf2Info(input: Uint8Array): { name?: string; engineer?: string; copyright?: string; comment?: string; product?: string } {
+  const bytes = plain(input), { info } = parse(bytes), dv = new DataView(info.buffer, info.byteOffset, info.byteLength);
+  const out: Record<string, string> = {}, map: Record<string, string> = { INAM: "name", IENG: "engineer", ICOP: "copyright", ICMT: "comment", IPRD: "product" };
+  let p = 12;   // 跳过 LIST + size + "INFO"
+  while (p + 8 <= info.length) {
+    const id = tag(info, p), size = dv.getUint32(p + 4, true), key = map[id];
+    if (key) { let s = ""; for (let i = 0; i < size && info[p + 8 + i]; i++) s += String.fromCharCode(info[p + 8 + i]); out[key] = s.trim(); }
+    p += 8 + size + (size & 1);
+  }
+  return out;
+}

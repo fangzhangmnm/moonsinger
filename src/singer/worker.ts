@@ -11,11 +11,15 @@
 
 import { singCore } from "./sing-core.mjs";
 import { wrapWorld } from "./world-wrap.mjs";
+import { wrapTsf, type SfBank } from "../gm/soundfont.ts";
 import { makeEnglishFront } from "./en-front.mjs";
 import type { SingLang } from "../score/lab-score.ts";
 import { createPackStore } from "@internal/model-packs";
 import { PACKS, SINGER } from "./packs.gen.ts";
 
+/** GM 候选按谱出声（契约 §10：样本类音源 = 歌里嵌的 SF2 子集；引擎 TinySoundFont 随 app 发，vendor/tsf/）。
+ *  sf2 只在第一次发（worker 按 sha256 缓存载好的音色库；重建 worker 后客户端再发一次）。notes 的 preset = [bank, program]（SoundFont 的 0 起编号）。 */
+export interface GmRequest { type: "gm"; id: number; sha256: string; sf2?: Uint8Array; sampleRate: number; tail: number; notes: { preset: [number, number]; key: number; vel: number; t0: number; t1: number }[] }
 export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: SingLang; opt?: Record<string, unknown>; atlas?: string; breath?: boolean;
   /** 模型源，按顺序试（宿主给：同源 pwa-models/ → 设置里的来源）。不给 = 出厂默认。 */
   models?: string[] }
@@ -129,9 +133,35 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, presetDefault: config.preset_default ?? {} };
 }
 
-self.onmessage = async (ev: MessageEvent<SingRequest>) => {
-  const q = ev.data; if (q.type !== "sing") return;
+const TSF = new URL("../vendor/tsf/", import.meta.url);   // 相对 dist/singer-worker.mjs（同 WORLD 的载法）
+let tsf: Promise<ReturnType<typeof wrapTsf>> | null = null;
+const banks = new Map<string, SfBank>();   // sha256 → 载好的音色库（子集很小，整首歌几个）
+async function renderGm(q: GmRequest): Promise<Float32Array> {
+  if (!tsf) tsf = (async () => {
+    const { default: createTsf } = await import(/* @vite-ignore */ new URL("tsf.mjs", TSF).href);
+    const wasm = await fetch(new URL("tsf.wasm", TSF)); if (!wasm.ok) throw new Error(`TinySoundFont: HTTP ${wasm.status}`);
+    return wrapTsf(await createTsf({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) }));
+  })();
+  const T = await tsf.catch((e) => { tsf = null; throw e; });
+  let bank = banks.get(q.sha256);
+  if (!bank || bank.sampleRate !== q.sampleRate) {
+    if (!q.sf2) throw new Error("gm: bank not loaded");   // 客户端看到这条会带上字节重发
+    bank?.close(); bank = T.load(q.sf2, q.sampleRate); banks.set(q.sha256, bank);
+  }
+  const b = bank;
+  const notes = q.notes.map((n) => { const preset = b.presetIndex(n.preset[0], n.preset[1]); if (preset < 0) throw new Error(`gm: preset ${n.preset[0]}:${n.preset[1]} not in this bank`); return { preset, key: n.key, vel: n.vel, t0: n.t0, t1: n.t1 }; });
+  return b.render(notes, q.tail);
+}
+
+self.onmessage = async (ev: MessageEvent<SingRequest | GmRequest>) => {
+  const q = ev.data;
   const post = (m: SingReply, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(m, transfer);
+  if (q.type === "gm") {
+    try { const t0 = performance.now(), samples = await renderGm(q); post({ type: "done", id: q.id, samples, sr: q.sampleRate, ms: { load: 0, sing: performance.now() - t0 } }, [samples.buffer]); }
+    catch (err) { post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) }); }
+    return;
+  }
+  if (q.type !== "sing") return;
   const say = (stage: string) => post({ type: "progress", id: q.id, stage });
   try {
     const t0 = performance.now();

@@ -16,6 +16,7 @@ import "./roles.test.ts";
 import "./doc-file.test.ts";
 import "./format-guard.test.ts";
 import "./sf2.test.ts";
+import "./gm-format.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

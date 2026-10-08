@@ -15,6 +15,7 @@
       },
       "format": "string",
       "saved": "string",
+      "sounds": [],
       "version": "number"
     },
     "score": {

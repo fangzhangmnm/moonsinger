@@ -245,6 +245,8 @@ user 2026-10-07（看完推荐稿）：「对，因为一般的daw对于音源�
 
 **四问 user 2026-10-07 深夜全拍（编辑器 session 正式问的）**：① 两类划分 = 同意（附加：「引擎类留latex，样本类取决于是否是标准格式，不是的话也要留latex」→ §10.6）；② 超 10 MB = 提示后仍可嵌；③ 不许再分发的 = 提示可取消、归 user；④ 拖进来的默认不留设备 = 「好主意，也许这样就解构了插件库的问题。然后以后可以用户自己在onedrive屯插件可以onedrive导入。但是没有链接，永远by val。不过可以松一点，可以链接，但是只在找音，打开的文件夹这种asset explorer视图层」→ **歌对音源永远 by value、不链接任何库**；「链接」只准出现在找音源的视图层（asset explorer：浏览设备 / OneDrive 文件夹里有什么、从哪拖），不进歌。以后 user 自己在 OneDrive 屯的插件 = 从 OneDrive 导入进歌（仍 by value）。
 
+**落地（v0.4.0，2026-10-07 深夜，Claude Fable 5.1 编辑器 session）**：10.1 / 10.2 的样本类已做——`src/gm/sf2-subset.ts`（子集化纯函数；INFO 原样留；守卫 = 子集 ≡ 整包 ≤ 1e-5）、`vendor/tsf/`（TinySoundFont WASM，tsf_copy = 一次渲染一份发声状态 → 纯函数）、`src/gm/soundfont.ts`、候选 `source / credit / spec` + manifest `sounds`（v1 只加可选字段，shape.json 已更新）、`project.ts` 只写还引用着的音源、声音缺了 = quality none + 报出来、`main.ts` 歌手牌选乐器 / 播放 / 导出 / 试听。还没做：官方 GS 包进模型仓（许可证 user 过目后）、鼓谱与鼓 pad、多声部、10.3「最近用过」、10.6 vault README。
+
 ### 10.5 引擎随 app 发 + 「把音源存一份到本机」（user 2026-10-07 深夜拍：「引擎随 app 发；「把音源存一份到本机」。 同意」）
 - **引擎二进制是代码不是声音，随 app 一起发**（vendored，像 `vendor/world/`）：SoundFont 播放器（TinySoundFont，MIT）、onnxruntime-web（现在是包 `runtime-onnxruntime-web-1.30.0-20261001`，要搬进 app，3.5 MB）。只拿着 app = 谱永远能开、编辑、存、导出 MusicXML，能用元音采样器粗听。**这条修订家族 CLAUDE.md「共享模型库」第 6 条「引擎二进制也可以进包」（2026-10-01）在 MoonSinger 的适用**；JRB 等兄弟不受此条影响，要不要跟归 user 另说。
 - **「把音源存一份到本机」**：引擎类（月读 37.8 MB + 日语词典 23.3 MB）能从 app 导出成文件（夹）留在用户自己手里——补 WeebPaint 单 html / 反弃坑那条线：主机死了、浏览器缓存被清了，用户自己那份照样导回来（按哈希认，同 §9 importFiles）。样本类不需要（已在歌里）。

@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.3.1-2026-10-07";
+var APP_VERSION = "v0.4.0-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -298,10 +298,10 @@ function beatTicks(beats, beatType) {
 }
 var inputKey = (st2) => st2.input.inputFifths;
 function unitDur(input) {
-  const plain = LADDER[input.unit];
-  if (!input.tuplet) return plain;
+  const plain2 = LADDER[input.unit];
+  if (!input.tuplet) return plain2;
   const [m, n2] = TUPLET[input.tuplet];
-  return plain * m / n2;
+  return plain2 * m / n2;
 }
 var indexOfId = (tokens, id) => tokens.findIndex((t) => t.id === id);
 function next(st2, tokens, patch = {}) {
@@ -3283,9 +3283,12 @@ var Singer = class {
   seq = 0;
   pending = /* @__PURE__ */ new Map();
   src = null;
+  sent = /* @__PURE__ */ new Set();
+  // worker 里已经载过的音色库（sha256）；worker 重建就清
   worker() {
     if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-16400ef03270.mjs"}`, import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${"singer-worker-a270f74bfc54.mjs"}`, import.meta.url), { type: "module" });
+    this.sent.clear();
     this.w.onmessage = (ev) => {
       const m = ev.data, p = this.pending.get(m.id);
       if (!p) return;
@@ -3314,6 +3317,29 @@ var Singer = class {
       this.pending.set(id, { ok, fail, progress: progress2 });
       this.worker().postMessage(req);
     });
+  }
+  /** GM 候选按谱出声（契约 §10）：字节只第一次发，之后只发哈希；worker 说没载过就带字节再发一次。 */
+  async gm(sf2, sha256, notes, sampleRate = 44100, tail = 2) {
+    const ask = (bytes) => {
+      const id = ++this.seq, w = this.worker();
+      const req = { type: "gm", id, sha256, sampleRate, tail, notes, ...bytes ? { sf2: sf2.slice() } : {} };
+      return new Promise((ok, fail) => {
+        this.pending.set(id, { ok, fail, progress: () => {
+        } });
+        w.postMessage(req);
+      });
+    };
+    try {
+      const r = await ask(!this.sent.has(sha256));
+      this.sent.add(sha256);
+      return r;
+    } catch (e) {
+      if (!/bank not loaded/.test(e.message)) throw e;
+      this.sent.delete(sha256);
+      const r = await ask(true);
+      this.sent.add(sha256);
+      return r;
+    }
   }
   /** 播放（必须在用户手势里先调过 unlock()，iPad 才放声）。播完回调 onEnd。 */
   play(r, onEnd) {
@@ -5520,11 +5546,13 @@ function migrate(kind, json) {
 // src/format/project.ts
 var MIMETYPE = "application/vnd.recordare.musicxml";
 var DIR = ".moonsinger/";
-var emptyExtras = () => ({ lounge: {}, unknown: {}, rootfiles: [] });
+var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [] });
+var SOUNDS = `${DIR}sounds/`;
 var PART = "P1";
 var ROLE = "r1";
 var MIC = "m1";
 var CAND = { full: "c1", light: "c2" };
+var CANDIDATE_ID = CAND;
 function defaultRole(hum, quality2) {
   return { version: FORMAT.lounge, id: ROLE, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CAND[quality2], candidates: [
     { id: CAND.full, name: "\u6708\u8BFB", gm: { program: 55, variant: "tsukuyomi" }, hum, calibrationDb: 0, chain: [], engines: {} },
@@ -5532,8 +5560,8 @@ function defaultRole(hum, quality2) {
   ] };
 }
 function saveMxl(a) {
-  const role = structuredClone(a.extras.lounge[ROLE] ?? defaultRole(a.hum, a.quality === "none" ? "full" : a.quality));
-  if (a.quality !== "none") role.active = CAND[a.quality];
+  const role = structuredClone(a.extras.lounge[ROLE] ?? defaultRole(a.hum, a.quality === "light" ? "light" : "full"));
+  if (a.quality === "full" || a.quality === "light") role.active = CAND[a.quality];
   const cands = role.candidates ?? [];
   for (const c of cands) if (c.id === CAND.full || c.id === CAND.light) c.hum = a.hum;
   const active = cands.find((c) => c.id === role.active);
@@ -5557,13 +5585,20 @@ function saveMxl(a) {
   };
   const files = {};
   const lounge = { ...a.extras.lounge, [ROLE]: role };
+  const referenced = /* @__PURE__ */ new Set();
+  for (const r of Object.values(lounge)) for (const c of r.candidates ?? []) {
+    const src = c.source;
+    if (src?.kind === "sf2" && typeof src.embedded === "string") referenced.add(src.embedded);
+  }
+  const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => x < y ? -1 : 1);
   const manifest = {
     ...a.extras.manifest ?? {},
     format: "moonsinger",
     version: FORMAT.manifest,
     app: a.app,
     saved: a.date,
-    files: { "score.json": FORMAT.score, "studio.json": FORMAT.studio, ...Object.fromEntries(Object.entries(lounge).map(([id, r]) => [`lounge/${id}.json`, Number(r.version ?? 1)])) }
+    files: { "score.json": FORMAT.score, "studio.json": FORMAT.studio, ...Object.fromEntries(Object.entries(lounge).map(([id, r]) => [`lounge/${id}.json`, Number(r.version ?? 1)])) },
+    sounds: sounds.map(([path, b]) => ({ path, sha256: path.slice(SOUNDS.length).replace(/\.sf2$/, ""), bytes: b.length }))
   };
   const json = (o) => strToU8(JSON.stringify(o, null, 2) + "\n");
   const rootfiles = [
@@ -5583,9 +5618,10 @@ function saveMxl(a) {
   files[`${DIR}score.json`] = json(scoreExt);
   for (const [id, r] of Object.entries(lounge)) files[`${DIR}lounge/${id}.json`] = json(r);
   files[`${DIR}studio.json`] = json(studio);
+  for (const [path, bytes] of sounds) files[path] = bytes;
   for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in files)) files[path] = bytes;
   const entries = {};
-  for (const [path, bytes] of Object.entries(files)) entries[path] = [bytes, { level: path === "mimetype" ? 0 : 6 }];
+  for (const [path, bytes] of Object.entries(files)) entries[path] = [bytes, { level: path === "mimetype" ? 0 : path.startsWith(SOUNDS) ? 1 : 6 }];
   return zipSync(entries);
 }
 function roleName(extras) {
@@ -5598,16 +5634,61 @@ function partLabels(extras) {
   return numberParts([{ name: roleName(extras), sound: roleSound(extras) }]);
 }
 function withRoleName(extras, name, hum, quality2, sound2) {
-  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, quality2 === "none" ? "full" : quality2));
+  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, quality2 === "light" ? "light" : "full"));
   role.name = name;
   if (sound2) role.sound = sound2;
   return { ...extras, lounge: { ...extras.lounge, [ROLE]: role } };
 }
 function activeCandidateName(extras) {
+  const c = activeCandidate(extras);
+  return c ? String(c.name ?? "") : null;
+}
+function activeCandidate(extras) {
   const role = extras.lounge[ROLE];
   if (!role) return null;
-  const c = (role.candidates ?? []).find((x) => x.id === role.active);
-  return c ? String(c.name ?? "") : null;
+  return (role.candidates ?? []).find((x) => x.id === role.active) ?? null;
+}
+function activeId(extras) {
+  return String(extras.lounge[ROLE]?.active ?? CAND.full);
+}
+function gmCandidates(extras) {
+  const role = extras.lounge[ROLE];
+  if (!role) return [];
+  return (role.candidates ?? []).flatMap((c) => {
+    const s = c.source;
+    if (s?.kind !== "sf2") return [];
+    const path = String(s.embedded);
+    return [{ id: String(c.id), name: String(c.name ?? ""), bank: Number(s.bank), program: Number(s.program), path, bytes: extras.sounds[path] ?? null }];
+  });
+}
+function activeGm(extras) {
+  const id = activeId(extras);
+  return gmCandidates(extras).find((c) => c.id === id) ?? null;
+}
+function withActive(extras, id, hum) {
+  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, "full"));
+  role.active = id;
+  return { ...extras, lounge: { ...extras.lounge, [ROLE]: role } };
+}
+function withSf2Candidate(extras, c, hum) {
+  const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, "full"));
+  const cands = role.candidates ?? [];
+  const n2 = Math.max(0, ...cands.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n2}`;
+  const path = `${SOUNDS}${c.sha256}.sf2`;
+  cands.push({
+    id,
+    name: c.name,
+    gm: { program: c.bank === 128 ? null : c.program + 1, variant: null },
+    calibrationDb: 0,
+    chain: [],
+    engines: {},
+    source: { kind: "sf2", embedded: path, bank: c.bank, program: c.program, origin: c.origin, subsetBytes: c.subset.length },
+    credit: c.credit,
+    spec: { kind: "standard", name: "SoundFont", version: "2.04" }
+  });
+  role.candidates = cands;
+  role.active = id;
+  return { ...extras, lounge: { ...extras.lounge, [ROLE]: role }, sounds: { ...extras.sounds, [path]: c.subset } };
 }
 function openBytes(name, bytes) {
   const isZip = bytes[0] === 80 && bytes[1] === 75;
@@ -5633,14 +5714,14 @@ function openBytes(name, bytes) {
   const ours = !!manifestBytes;
   let hints;
   if (ours) {
-    const parse = (p) => {
+    const parse2 = (p) => {
       try {
         return JSON.parse(strFromU8(files[p]));
       } catch {
         throw new Error(`${p} \u8BFB\u4E0D\u61C2\uFF08\u6587\u4EF6\u574F\u4E86\uFF1F\uFF09`);
       }
     };
-    const manifest = parse(`${DIR}manifest.json`);
+    const manifest = parse2(`${DIR}manifest.json`);
     known.add(`${DIR}manifest.json`);
     const newer = (what, v, mine) => {
       if (Number(v) > mine) throw new Error(`\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08${what} \u7B2C ${v} \u7248\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BA4\u5230\u7B2C ${mine} \u7248\uFF09\uFF0C\u6253\u5F00\u518D\u5B58\u4F1A\u4E22\u4E1C\u897F\uFF0C\u6240\u4EE5\u6CA1\u6709\u6253\u5F00\u3002\u8BF7\u5148\u66F4\u65B0 app\u3002`);
@@ -5648,7 +5729,7 @@ function openBytes(name, bytes) {
     newer("\u603B\u76EE\u5F55", manifest.version, FORMAT.manifest);
     extras.manifest = migrate("manifest", manifest);
     if (files[`${DIR}score.json`]) {
-      const s0 = parse(`${DIR}score.json`);
+      const s0 = parse2(`${DIR}score.json`);
       known.add(`${DIR}score.json`);
       newer("\u8C31\u7684\u6269\u5C55", s0.version, FORMAT.score);
       const s = migrate("score", s0);
@@ -5660,17 +5741,21 @@ function openBytes(name, bytes) {
     for (const p of Object.keys(files)) {
       const m = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p);
       if (m) {
-        const r2 = parse(p);
+        const r2 = parse2(p);
         newer(`\u4F11\u606F\u5BA4\u300C${r2.name ?? m[1]}\u300D`, r2.version, FORMAT.lounge);
         extras.lounge[m[1]] = migrate("lounge", r2);
         known.add(p);
       }
     }
     if (files[`${DIR}studio.json`]) {
-      const s = parse(`${DIR}studio.json`);
+      const s = parse2(`${DIR}studio.json`);
       known.add(`${DIR}studio.json`);
       newer("\u5F55\u97F3\u623F", s.version, FORMAT.studio);
       extras.studio = migrate("studio", s);
+    }
+    for (const p of Object.keys(files)) if (p.startsWith(SOUNDS) && !p.endsWith("/")) {
+      extras.sounds[p] = files[p];
+      known.add(p);
     }
   }
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
@@ -5696,13 +5781,227 @@ function finish(r, extras, ours, name) {
   }
   const role = extras.lounge[ROLE];
   if (role) {
-    quality2 = role.active === CAND.full ? "full" : role.active === CAND.light ? "light" : "none";
+    const gm = activeGm(extras);
+    quality2 = role.active === CAND.full ? "full" : role.active === CAND.light ? "light" : gm ? "gm" : "none";
+    if (gm && !gm.bytes) {
+      quality2 = "none";
+      notices.push(`\u300C${gm.name}\u300D\u7684\u58F0\u97F3\uFF08${gm.path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${role.name ?? ""}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
+    }
     const c = (role.candidates ?? []).find((x) => x.id === CAND.full);
     const h = c?.hum;
     if (h === "la" || h === "n" || h === "u" || h === "o" || h === "a") hum = h;
   }
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   return { song: { ...r.song, hum }, stem, hum, quality: quality2, extras, ours, notices };
+}
+
+// src/gm/sf2-subset.ts
+var REC = { phdr: 38, pbag: 4, pmod: 10, pgen: 4, inst: 22, ibag: 4, imod: 10, igen: 4, shdr: 46 };
+var GEN_INSTRUMENT = 41;
+var GEN_SAMPLE_ID = 53;
+var ZERO_TAIL = 46;
+var tag = (b, o) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+var plain = (b) => b.constructor === Uint8Array ? b : new Uint8Array(b.buffer, b.byteOffset, b.byteLength);
+function parse(b) {
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  if (tag(b, 0) !== "RIFF" || tag(b, 8) !== "sfbk") throw new Error("sf2: not a SoundFont 2 file");
+  let info2 = null, smpl = null;
+  const pdta = {};
+  let o = 12;
+  while (o + 8 <= b.length) {
+    const id = tag(b, o), size = dv.getUint32(o + 4, true), data = o + 8;
+    if (id === "LIST") {
+      const kind = tag(b, data);
+      if (kind === "INFO") info2 = b.subarray(o, data + size);
+      else {
+        let p = data + 4;
+        while (p + 8 <= data + size) {
+          const sid = tag(b, p), ssize = dv.getUint32(p + 4, true);
+          if (kind === "sdta" && sid === "smpl") smpl = { off: p + 8, size: ssize };
+          if (kind === "pdta" && sid in REC) pdta[sid] = { off: p + 8, size: ssize };
+          p += 8 + ssize + (ssize & 1);
+        }
+      }
+    }
+    o = data + size + (size & 1);
+  }
+  if (!info2 || !smpl) throw new Error("sf2: missing INFO or sample data");
+  for (const k of Object.keys(REC)) if (!pdta[k]) throw new Error(`sf2: missing ${k}`);
+  return { info: info2, smpl, pdta };
+}
+var nameOf = (b, o) => {
+  let s = "";
+  for (let i = 0; i < 20 && b[o + i]; i++) s += String.fromCharCode(b[o + i]);
+  return s;
+};
+function listSf2Presets(input) {
+  const bytes = plain(input);
+  const { pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const n2 = pdta.phdr.size / REC.phdr - 1, out = [];
+  for (let i = 0; i < n2; i++) {
+    const o = pdta.phdr.off + i * REC.phdr;
+    out.push({ name: nameOf(bytes, o), program: dv.getUint16(o + 20, true), bank: dv.getUint16(o + 22, true) });
+  }
+  return out;
+}
+function subsetSf2(input, want) {
+  const bytes = plain(input);
+  const { info: info2, smpl, pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const count = (k) => pdta[k].size / REC[k];
+  const at = (k, i) => pdta[k].off + i * REC[k];
+  const u162 = (k, i, field) => dv.getUint16(at(k, i) + field, true);
+  const nP = count("phdr") - 1;
+  const wantKey = new Set(want.map((w) => `${w.bank}:${w.program}`));
+  const presets = [];
+  for (let i = 0; i < nP; i++) if (wantKey.has(`${u162("phdr", i, 22)}:${u162("phdr", i, 20)}`)) presets.push(i);
+  const found = new Set(presets.map((i) => `${u162("phdr", i, 22)}:${u162("phdr", i, 20)}`));
+  const missing = [...wantKey].filter((k) => !found.has(k));
+  if (missing.length) throw new Error(`sf2: presets not in this bank: ${missing.join(", ")}`);
+  const instSet = /* @__PURE__ */ new Set();
+  for (const i of presets) for (let b = u162("phdr", i, 24); b < u162("phdr", i + 1, 24); b++)
+    for (let g2 = u162("pbag", b, 0); g2 < u162("pbag", b + 1, 0); g2++) if (u162("pgen", g2, 0) === GEN_INSTRUMENT) instSet.add(u162("pgen", g2, 2));
+  const insts = [...instSet].sort((a, b) => a - b), instMap = new Map(insts.map((v, i) => [v, i]));
+  const nS = count("shdr") - 1, sampleSet = /* @__PURE__ */ new Set();
+  for (const j of insts) for (let b = u162("inst", j, 20); b < u162("inst", j + 1, 20); b++)
+    for (let g2 = u162("ibag", b, 0); g2 < u162("ibag", b + 1, 0); g2++) if (u162("igen", g2, 0) === GEN_SAMPLE_ID) sampleSet.add(u162("igen", g2, 2));
+  for (const s of [...sampleSet]) {
+    const type = u162("shdr", s, 44), link = u162("shdr", s, 42);
+    if (type & 14 && link < nS) sampleSet.add(link);
+  }
+  const samples = [...sampleSet].sort((a, b) => a - b), sampleMap = new Map(samples.map((v, i) => [v, i]));
+  const out = { phdr: [], pbag: [], pmod: [], pgen: [], inst: [], ibag: [], imod: [], igen: [], shdr: [] };
+  const copy = (k, i, patch) => {
+    const rec = bytes.slice(at(k, i), at(k, i) + REC[k]);
+    patch?.(rec);
+    out[k].push(...rec);
+  };
+  const w16 = (rec, o, v) => {
+    rec[o] = v & 255;
+    rec[o + 1] = v >> 8 & 255;
+  };
+  const w32 = (rec, o, v) => {
+    w16(rec, o, v & 65535);
+    w16(rec, o + 2, v >>> 16 & 65535);
+  };
+  let nBag = 0, nGen = 0, nMod = 0;
+  for (const i of presets) {
+    copy("phdr", i, (r) => w16(r, 24, nBag));
+    for (let b = u162("phdr", i, 24); b < u162("phdr", i + 1, 24); b++) {
+      copy("pbag", b, (r) => {
+        w16(r, 0, nGen);
+        w16(r, 2, nMod);
+      });
+      nBag++;
+      for (let g2 = u162("pbag", b, 0); g2 < u162("pbag", b + 1, 0); g2++) {
+        copy("pgen", g2, (r) => {
+          if (u162("pgen", g2, 0) === GEN_INSTRUMENT) w16(r, 2, instMap.get(u162("pgen", g2, 2)));
+        });
+        nGen++;
+      }
+      for (let m = u162("pbag", b, 2); m < u162("pbag", b + 1, 2); m++) {
+        copy("pmod", m);
+        nMod++;
+      }
+    }
+  }
+  copy("phdr", nP, (r) => w16(r, 24, nBag));
+  out.pbag.push(...new Uint8Array(REC.pbag));
+  const pb = out.pbag.length - REC.pbag;
+  out.pbag[pb] = nGen & 255;
+  out.pbag[pb + 1] = nGen >> 8;
+  out.pbag[pb + 2] = nMod & 255;
+  out.pbag[pb + 3] = nMod >> 8;
+  out.pgen.push(...new Uint8Array(REC.pgen));
+  out.pmod.push(...new Uint8Array(REC.pmod));
+  nBag = 0;
+  nGen = 0;
+  nMod = 0;
+  for (const j of insts) {
+    copy("inst", j, (r) => w16(r, 20, nBag));
+    for (let b = u162("inst", j, 20); b < u162("inst", j + 1, 20); b++) {
+      copy("ibag", b, (r) => {
+        w16(r, 0, nGen);
+        w16(r, 2, nMod);
+      });
+      nBag++;
+      for (let g2 = u162("ibag", b, 0); g2 < u162("ibag", b + 1, 0); g2++) {
+        copy("igen", g2, (r) => {
+          if (u162("igen", g2, 0) === GEN_SAMPLE_ID) w16(r, 2, sampleMap.get(u162("igen", g2, 2)));
+        });
+        nGen++;
+      }
+      for (let m = u162("ibag", b, 2); m < u162("ibag", b + 1, 2); m++) {
+        copy("imod", m);
+        nMod++;
+      }
+    }
+  }
+  copy("inst", count("inst") - 1, (r) => w16(r, 20, nBag));
+  out.ibag.push(...new Uint8Array(REC.ibag));
+  const ib = out.ibag.length - REC.ibag;
+  out.ibag[ib] = nGen & 255;
+  out.ibag[ib + 1] = nGen >> 8;
+  out.ibag[ib + 2] = nMod & 255;
+  out.ibag[ib + 3] = nMod >> 8;
+  out.igen.push(...new Uint8Array(REC.igen));
+  out.imod.push(...new Uint8Array(REC.imod));
+  const pieces = [];
+  let pos = 0;
+  const u32 = (k, i, field) => dv.getUint32(at(k, i) + field, true);
+  for (const s of samples) {
+    const start = u32("shdr", s, 20), end = u32("shdr", s, 24), len = end - start;
+    copy("shdr", s, (r) => {
+      w32(r, 20, pos);
+      w32(r, 24, pos + len);
+      w32(r, 28, pos + (u32("shdr", s, 28) - start));
+      w32(r, 32, pos + (u32("shdr", s, 32) - start));
+      const link = u162("shdr", s, 42), ns = sampleMap.get(link);
+      if (ns === void 0) {
+        w16(r, 42, 0);
+        w16(r, 44, 1);
+      } else w16(r, 42, ns);
+    });
+    pieces.push(bytes.subarray(smpl.off + start * 2, smpl.off + end * 2), new Uint8Array(ZERO_TAIL * 2));
+    pos += len + ZERO_TAIL;
+  }
+  copy("shdr", nS);
+  const chunk = (id, data) => {
+    const d2 = data instanceof Uint8Array ? data : Uint8Array.from(data), pad2 = d2.length & 1;
+    const r = new Uint8Array(8 + d2.length + pad2);
+    r.set([...id].map((c) => c.charCodeAt(0)), 0);
+    new DataView(r.buffer).setUint32(4, d2.length, true);
+    r.set(d2, 8);
+    return r;
+  };
+  const list = (kind, parts) => chunk("LIST", concat([Uint8Array.from([...kind].map((c) => c.charCodeAt(0))), ...parts]));
+  const sdta = list("sdta", [chunk("smpl", concat(pieces))]);
+  const pdtaOut = list("pdta", Object.keys(REC).map((k) => chunk(k, out[k])));
+  const body = concat([Uint8Array.from([..."sfbk"].map((c) => c.charCodeAt(0))), info2, sdta, pdtaOut]);
+  return chunk("RIFF", body);
+}
+function concat(parts) {
+  const n2 = parts.reduce((s, p) => s + p.length, 0), r = new Uint8Array(n2);
+  let o = 0;
+  for (const p of parts) {
+    r.set(p, o);
+    o += p.length;
+  }
+  return r;
+}
+function sf2Info(input) {
+  const bytes = plain(input), { info: info2 } = parse(bytes), dv = new DataView(info2.buffer, info2.byteOffset, info2.byteLength);
+  const out = {}, map = { INAM: "name", IENG: "engineer", ICOP: "copyright", ICMT: "comment", IPRD: "product" };
+  let p = 12;
+  while (p + 8 <= info2.length) {
+    const id = tag(info2, p), size = dv.getUint32(p + 4, true), key = map[id];
+    if (key) {
+      let s = "";
+      for (let i = 0; i < size && info2[p + 8 + i]; i++) s += String.fromCharCode(info2[p + 8 + i]);
+      out[key] = s.trim();
+    }
+    p += 8 + size + (size & 1);
+  }
+  return out;
 }
 
 // src/app/doc-file.ts
@@ -5833,7 +6132,7 @@ var doc = {
   handle: null,
   mtime: null,
   extras: emptyExtras(),
-  saved: { song: st.song, quality: "full", role: DEFAULT_ROLE.name }
+  saved: { song: st.song, quality: "full", role: DEFAULT_ROLE.name, active: "c1" }
 };
 var docName = () => {
   const t = fileSafe(st.song.title ?? "");
@@ -5862,8 +6161,17 @@ bar.innerHTML = `<div class="tb-left"><button id="fileBtn" class="btn tb-file" t
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 var sampler = new Sampler();
 var sound = {
-  down: (p, id = "main") => sampler.down(midiOf(p), st.song.hum, id),
-  up: (id = "main") => sampler.up(id)
+  down: (p, id = "main") => {
+    if (quality() === "gm") {
+      void gmDown(midiOf(p));
+      return;
+    }
+    sampler.down(midiOf(p), st.song.hum, id);
+  },
+  up: (id = "main") => {
+    if (quality() !== "gm") sampler.up(id);
+  }
+  // GM 乐器：松键不截断，让它自己收尾（试听是一个固定长度的音）
 };
 var soundTok = (s, i, id = "main") => {
   const t = s.song.tokens[i];
@@ -6118,6 +6426,43 @@ async function singFull() {
   lastFull = { key, r };
   return r;
 }
+var GM_SR = 44100;
+var shaOfPath = (path) => path.slice(path.lastIndexOf("/") + 1).replace(/\.sf2$/, "");
+var lastGm = null;
+async function renderGm() {
+  const g2 = activeGm(doc.extras);
+  if (!g2) throw new Error("\u6CA1\u6709\u4E0A\u573A\u7684\u4E50\u5668");
+  if (!g2.bytes) throw new Error(`\u300C${g2.name}\u300D\u7684\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765`);
+  const notes = lightNotes().map((n2) => ({ preset: [g2.bank, g2.program], key: n2.midi, vel: 0.8, t0: n2.t0, t1: n2.t1 }));
+  if (!notes.length) return null;
+  const key = JSON.stringify([g2.path, notes]);
+  if (lastGm?.key === key) return lastGm.r;
+  const r = await singer.gm(g2.bytes, shaOfPath(g2.path), notes, GM_SR, 2);
+  lastGm = { key, r };
+  return r;
+}
+var gmAudCache = /* @__PURE__ */ new Map();
+async function gmDown(midi) {
+  const g2 = activeGm(doc.extras);
+  if (!g2?.bytes) return;
+  const key = `${g2.path}:${midi}`;
+  let smp = gmAudCache.get(key);
+  if (!smp) {
+    try {
+      smp = (await singer.gm(g2.bytes, shaOfPath(g2.path), [{ preset: [g2.bank, g2.program], key: midi, vel: 0.8, t0: 0, t1: 0.35 }], GM_SR, 1.5)).samples;
+    } catch (e) {
+      showError(`\u300C${g2.name}\u300D\u54CD\u4E0D\u4E86\uFF1A${e.message}`);
+      return;
+    }
+    gmAudCache.set(key, smp);
+  }
+  const ctx2 = singer.unlock(), buf = ctx2.createBuffer(1, smp.length, GM_SR);
+  buf.copyToChannel(smp, 0);
+  const src = ctx2.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx2.destination);
+  src.start();
+}
 function playLight(who = "\u8F7B\u91CF\u7248") {
   const notes = lightNotes();
   if (!notes.length) {
@@ -6152,8 +6497,9 @@ async function togglePlay() {
   }
   singing = true;
   $("playBtn").classList.add("is-on");
+  const gm = quality() === "gm";
   try {
-    const cached = lastFull, r = await singFull();
+    const cached = lastFull, r = gm ? await renderGm() : await singFull();
     if (!r) {
       info("\u8FD8\u6CA1\u6709\u97F3");
       return;
@@ -6164,7 +6510,7 @@ async function togglePlay() {
     });
     playIcon(true);
   } catch (e) {
-    showError(`\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF1A${e.message}\u3002\u6CA1\u6709\u51FA\u58F0\u3002\u8981\u5148\u7528\u5143\u97F3\u7248\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C${roleName(doc.extras)}\u300D\u628A\u300C\u8C01\u6765\u6F14\u300D\u6362\u6210\u300C\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09\u300D\u518D\u64AD\u3002`);
+    showError(gm ? `\u300C${activeCandidateName(doc.extras) ?? "\u4E50\u5668"}\u300D\u54CD\u4E0D\u4E86\uFF1A${e.message}\u3002\u6CA1\u6709\u51FA\u58F0\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${roleName(doc.extras)}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002` : `\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF1A${e.message}\u3002\u6CA1\u6709\u51FA\u58F0\u3002\u8981\u5148\u7528\u5143\u97F3\u7248\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C${roleName(doc.extras)}\u300D\u628A\u300C\u8C01\u6765\u6F14\u300D\u6362\u6210\u300C\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09\u300D\u518D\u64AD\u3002`);
     progress("");
   } finally {
     singing = false;
@@ -6190,6 +6536,15 @@ async function exportSong() {
         how = "\u6708\u8BFB";
       } catch (e) {
         showError(`\u5B8C\u6574\u7248\u6708\u8BFB\u5531\u4E0D\u51FA\u6765\uFF1A${e.message}\u3002\u6CA1\u6709\u5BFC\u51FA\u3002\u8981\u5148\u7528\u5143\u97F3\u7248\u5BFC\u51FA\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C${roleName(doc.extras)}\u300D\u628A\u300C\u8C01\u6765\u6F14\u300D\u6362\u6210\u300C\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09\u300D\u518D\u5BFC\u51FA\u3002`);
+        progress("");
+        return;
+      }
+    } else if (quality() === "gm") {
+      try {
+        r = await renderGm();
+        how = activeCandidateName(doc.extras) ?? "\u4E50\u5668";
+      } catch (e) {
+        showError(`\u300C${activeCandidateName(doc.extras) ?? "\u4E50\u5668"}\u300D\u54CD\u4E0D\u4E86\uFF1A${e.message}\u3002\u6CA1\u6709\u5BFC\u51FA\u3002`);
         progress("");
         return;
       }
@@ -6332,7 +6687,7 @@ var curQuality = "full";
 function quality() {
   return curQuality;
 }
-var dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality || roleName(doc.extras) !== doc.saved.role;
+var dirty = () => st.song !== doc.saved.song || quality() !== doc.saved.quality || roleName(doc.extras) !== doc.saved.role || activeId(doc.extras) !== doc.saved.active;
 function renderTitle() {
   const d2 = dirty(), name = docName();
   $("docTitle").textContent = `${name}${d2 ? " \u2022" : ""}`;
@@ -6343,10 +6698,16 @@ function noCast(what) {
   showError(`\u300C${roleName(doc.extras)}\u300D\u8FD9\u4E2A\u89D2\u8272\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u539F\u6765\u7684\u4E50\u5668\u8FD9\u4E00\u7248\u6CA1\u6709\uFF09\uFF0C\u6240\u4EE5\u6CA1\u6709${what}\u3002\u8981\u6708\u8BFB\u6765\u5531\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C${roleName(doc.extras)}\u300D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u9009\u6708\u8BFB\u3002`);
 }
 function setQuality(q) {
+  if (q === "full" || q === "light") doc.extras = withActive(doc.extras, CANDIDATE_ID[q], st.song.hum);
   curQuality = q;
   view.render();
   renderTitle();
 }
+function setActiveGm(id) {
+  doc.extras = withActive(doc.extras, id, st.song.hum);
+  setQuality("gm");
+}
+var sha256Hex = async (b) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
 function openCreditsSheet() {
   closeOffer?.();
   const box = document.createElement("div");
@@ -6412,9 +6773,64 @@ function openPartSheet() {
     view.render();
     renderTitle();
   };
+  let picked = null;
+  const pickFile = () => {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = ".sf2,audio/x-soundfont";
+    inp.hidden = true;
+    document.body.append(inp);
+    inp.addEventListener("change", async () => {
+      const f = inp.files?.[0];
+      inp.remove();
+      if (!f) return;
+      try {
+        const bytes = new Uint8Array(await f.arrayBuffer()), presets = listSf2Presets(bytes);
+        if (!presets.length) throw new Error("\u91CC\u9762\u6CA1\u6709\u4E50\u5668");
+        const first = presets.find((p) => p.bank === 0) ?? presets[0];
+        picked = { name: f.name, bytes, presets, sel: `${first.bank}:${first.program}` };
+        draw();
+      } catch (e) {
+        showError(`\u8BFB\u4E0D\u4E86\u300C${f.name}\u300D\uFF1A${e.message}`);
+      }
+    });
+    inp.click();
+  };
+  const addPicked = async () => {
+    if (!picked) return;
+    const [bank, program] = picked.sel.split(":").map(Number), preset = picked.presets.find((p) => p.bank === bank && p.program === program);
+    if (!preset) return;
+    const name = box.querySelector("#sfName")?.value.trim() || preset.name;
+    try {
+      const subset = subsetSf2(picked.bytes, [{ bank, program }]), inf = sf2Info(picked.bytes);
+      const [sha256, fileSha256] = await Promise.all([sha256Hex(subset), sha256Hex(picked.bytes)]);
+      if (subset.length > 1e7) info(`\u300C${name}\u300D\u7684\u58F0\u97F3\u6709 ${sizeText(subset.length)}\uFF0C\u5D4C\u8FDB\u6B4C\u91CC\u5B58\u6863\u4F1A\u53D8\u5927\u3001\u53D8\u6162`);
+      doc.extras = withSf2Candidate(doc.extras, {
+        name,
+        bank,
+        program,
+        subset,
+        sha256,
+        origin: { name: picked.name, fileSha256, bytes: picked.bytes.length },
+        credit: { attribution: [inf.name, inf.engineer, inf.copyright].filter((x) => !!x), license: { name: "unknown", text: inf.comment } }
+      }, st.song.hum);
+      picked = null;
+      setQuality("gm");
+      draw();
+    } catch (e) {
+      showError(`\u52A0\u4E0D\u8FDB\u6765\uFF1A${e.message}`);
+    }
+  };
+  const pickerHtml = () => {
+    if (!picked) return "";
+    const banks = [...new Set(picked.presets.map((p) => p.bank))].sort((a, b) => a - b);
+    const label = (b) => b === 128 ? "\u9F13\u7EC4" : b === 0 ? "\u4E50\u5668" : `\u53D8\u4F53\uFF08bank ${b}\uFF09`;
+    const cur = picked.presets.find((p) => `${p.bank}:${p.program}` === picked.sel);
+    return `<div class="part-sec">${esc3(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b) => `<optgroup label="${label(b)}">${picked.presets.filter((p) => p.bank === b).map((p) => `<option value="${p.bank}:${p.program}"${`${p.bank}:${p.program}` === picked.sel ? " selected" : ""}>${String(p.program).padStart(3, "0")} ${esc3(p.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(cur?.name ?? "")}" /></label><div class="set-row"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u4E0A\u573A</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div>`;
+  };
   const draw = () => {
-    const q = quality(), h = st.song.hum, rn = roleName(doc.extras), rs = roleSound(doc.extras);
-    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8</div><div class="part-sec">\u89D2\u8272\uFF08\u6309\u529F\u80FD\u9009\uFF0C\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc3(rn)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g2) => `<optgroup label="${g2.group}">${g2.items.map((r) => `<option value="${esc3(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc3(r.name)} \u2014 ${r.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(rn)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc3(rs)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u4E50\u5668\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + chip("q:full", "\u6708\u8BFB\uFF08\u5B8C\u6574\uFF09", q === "full", "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09") + chip("q:light", "\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09", q === "light", "\u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1") + (q === "none" ? chip("q:none", `${esc3(activeCandidateName(doc.extras) ?? "\u539F\u6765\u7684\u4E50\u5668")}\uFF08\u8FD9\u4E00\u7248\u6CA1\u6709\uFF09`, true, "\u522B\u7684\u8F6F\u4EF6\u5B58\u7684\u8C31\uFF1A\u539F\u6765\u7684\u4E50\u5668\u8FD9\u4E00\u7248\u6CA1\u6709\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A") : "") + `</div><div class="offer-msg">\u4EE5\u540E\u8FD9\u91CC\u80FD\u9009\u4E00\u5927\u5806\u4E50\u5668\uFF1B\u73B0\u5728\u53EA\u6709\u6708\u8BFB\u3002</div>` + (q === "none" ? "" : `<div class="part-sec">\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) + `<div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    const q = quality(), h = st.song.hum, rn = roleName(doc.extras), rs = roleSound(doc.extras), aid = activeId(doc.extras);
+    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8</div><div class="part-sec">\u89D2\u8272\uFF08\u6309\u529F\u80FD\u9009\uFF0C\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc3(rn)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g2) => `<optgroup label="${g2.group}">${g2.items.map((r) => `<option value="${esc3(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc3(r.name)} \u2014 ${r.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(rn)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc3(rs)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u4E50\u5668\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + chip("q:full", "\u6708\u8BFB\uFF08\u5B8C\u6574\uFF09", q === "full", "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09") + chip("q:light", "\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09", q === "light", "\u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1") + gmCandidates(doc.extras).map((c) => chip(`cand:${c.id}`, c.name, q === "gm" && aid === c.id, c.bytes ? `SoundFont ${c.bank}:${c.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(c.bytes.length)}\uFF09` : "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765")).join("") + (q === "none" ? chip("q:none", `${esc3(activeCandidateName(doc.extras) ?? "\u539F\u6765\u7684\u4E50\u5668")}\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09`, true, "\u8FD9\u4EF6\u4E50\u5668\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A") : "") + `</div><div class="set-row"><button class="btn" data-v="sf2:pick">\u4ECE SoundFont\uFF08.sf2\uFF09\u6587\u4EF6\u9009\u4E50\u5668\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u4E50\u5668\u53EA\u628A\u7528\u5230\u7684\u90A3\u4E00\u4EF6\uFF08\u901A\u5E38\u51E0 MB\uFF09\u5D4C\u8FDB\u6B4C\u91CC\uFF0C\u6B4C\u5230\u54EA\u90FD\u54CD\uFF1B.sf2 \u6587\u4EF6\u672C\u8EAB\u4E0D\u7559\u5728\u8BBE\u5907\u4E0A\u3002</div>` + (q === "none" ? "" : `<div class="part-sec">\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) + `<div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
     const inp = box.querySelector("#roleIn"), sel = box.querySelector("#roleSel");
     sel.addEventListener("change", () => {
       const [snd, ...nm] = sel.value.split("|");
@@ -6432,6 +6848,13 @@ function openPartSheet() {
         setRole(inp.value);
         draw();
       }
+    });
+    box.querySelector("#sfSel")?.addEventListener("change", (e) => {
+      if (!picked) return;
+      picked.sel = e.target.value;
+      const p = picked.presets.find((x) => `${x.bank}:${x.program}` === picked.sel);
+      const n2 = box.querySelector("#sfName");
+      if (n2 && p) n2.value = p.name;
     });
   };
   draw();
@@ -6452,6 +6875,14 @@ function openPartSheet() {
     }
     if (!v) return;
     if (v === "q:full" || v === "q:light") setQuality(v.slice(2));
+    else if (v.startsWith("cand:")) setActiveGm(v.slice(5));
+    else if (v === "sf2:pick") {
+      pickFile();
+      return;
+    } else if (v === "sf2:add") {
+      void addPicked();
+      return;
+    } else if (v === "sf2:cancel") picked = null;
     else if (v.startsWith("hum:")) update(setHum(st, v.slice(4)));
     else return;
     draw();
@@ -6466,7 +6897,7 @@ function loadDoc(song, o) {
   doc.mtime = o.handle ? o.mtime ?? null : null;
   doc.extras = o.extras;
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };
-  doc.saved = { song: st.song, quality: o.quality, role: roleName(o.extras) };
+  doc.saved = { song: st.song, quality: o.quality, role: roleName(o.extras), active: activeId(o.extras) };
   lastFull = null;
   view.render();
   pad.render();
@@ -6475,7 +6906,7 @@ function loadDoc(song, o) {
 function markSaved() {
   doc.stem = docName();
   doc.named = true;
-  doc.saved = { song: st.song, quality: quality(), role: roleName(doc.extras) };
+  doc.saved = { song: st.song, quality: quality(), role: roleName(doc.extras), active: activeId(doc.extras) };
   renderTitle();
 }
 function confirmDiscard(what) {
@@ -6820,4 +7251,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-a7589a7d5993.mjs.map
+//# sourceMappingURL=moonsinger-a06c6e2137c0.mjs.map
