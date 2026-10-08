@@ -258,13 +258,13 @@ button, input, select { font: inherit; color: inherit; }
 .pad-tools .btn.impro-pad { height: var(--knob); font-size: 15px; font-weight: 600; padding: 0; }   /* 弹（只响不写）：收起左边 */
 .pad-panel.is-locked .pad-tools .btn.impro-pad { pointer-events: none; }   /* 找人视图里一直是弹 */
 /* 写字键：← → 方块；0 | 升降 /2 — ⌫ 分剩下的宽。pad 窄了依次让位（user「太窄的时候这几个功能怎么办…0和-是必须要的|一般一首歌至少要一次，
-   /2可以用时长平替，#b可能一辈子也用不上」）：先藏升降（单个音照样能在音键上上下滑升降），再藏 /2（长短旋钮能代替） */
+   /2可以用时长平替，#b可能一辈子也用不上」）：先藏升降（单个音照样能在音键上上下滑升降）；/2 一直留着（2026-10-08 user「/2 一直留着」——
+   窄 pad = iPad 横屏 / 电脑侧栏，原来那里根本点不到 /2，也就打不出附点拉长） */
 .pad-panel { container-type: inline-size; }
 .pad-tools.writes { display: flex; gap: 4px; }
 .pad-tools.writes .btn { flex: 1 1 0; min-width: 0; }
 .pad-tools.writes .btn[data-caret] { flex: 0 0 var(--knob); }
 @container (max-width: 440px) { .pad-tools.writes .btn.accshift { display: none; } }
-@container (max-width: 330px) { .pad-tools.writes .btn.half { display: none; } }
 .pad-tools .btn.accshift { touch-action: none; }
 .pad-tools .btn.accshift .smufl { font-family: "Bravura"; font-size: 22px; line-height: 1; display: inline-block; height: 16px; position: relative; top: -2px; }
 .pad-tools.writes .btn { height: var(--knob); }
