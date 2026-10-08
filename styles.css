@@ -264,7 +264,7 @@ button, input, select { font: inherit; color: inherit; }
 .pad-tools.writes { display: flex; gap: 4px; }
 .pad-tools.writes .btn { flex: 1 1 0; min-width: 0; }
 .pad-tools.writes .btn[data-caret] { flex: 0 0 var(--knob); }
-@container (max-width: 440px) { .pad-tools.writes .btn.accshift { display: none; } }
+@container (max-width: 440px) { .pad-tools.writes .btn.accshift { display: none; } .pad-tools.writes .btn[data-caret] { flex: 1 1 0; } }   /* 窄的时候 8 颗一样宽（user 2026-10-08「make those 8 buttons evenly spaced out for that thin width」；宽的时候 ← → 照旧是方块） */
 .pad-tools .btn.accshift { touch-action: none; }
 .pad-tools .btn.accshift .smufl { font-family: "Bravura"; font-size: 22px; line-height: 1; display: inline-block; height: 16px; position: relative; top: -2px; }
 .pad-tools.writes .btn { height: var(--knob); }
