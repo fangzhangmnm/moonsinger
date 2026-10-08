@@ -32,6 +32,9 @@ try {
   const hb = await p.$eval(".sel-handle.end", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height * 0.7 }; });
   await p.mouse.move(hb.x, hb.y); await p.mouse.down(); await p.mouse.move(ns[4].x, hb.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
   s = await S(); check(!!s.sel && s.sel.from === 4 && s.sel.to === 8, "拖右把手：扩到第五个音", JSON.stringify(s.sel));
+  // 长按选区里的音、原地抬手 = 选区菜单（选区不变；拖走 = 照常扩选，上面那条守着）
+  await p.mouse.move(ns[2].x, ns[2].y); await p.mouse.down(); await p.waitForTimeout(600); await p.mouse.up(); await p.waitForTimeout(150);
+  s = await S(); check(!!(await p.$(".sel-menu")) && !!s.sel && s.sel.from === 4 && s.sel.to === 8, "长按选区里的音、原地抬手 = 选区菜单（选区不变）", JSON.stringify(s.sel));
   // 复制 → 系统剪贴板是简谱文字；选区条「复制」
   await p.click('.sel-bar [data-v="copy"]'); await p.waitForTimeout(200);
   const clipText = await p.evaluate(() => navigator.clipboard.readText());

@@ -31,7 +31,8 @@ export function installPlatformGuards(surfaces: HTMLElement[]): void {
   });
   for (const s of surfaces) {
     s.addEventListener("contextmenu", (e) => { if (!isTextTarget(e.target)) e.preventDefault(); });
-    // 面上嵌着的原生滚动区（速度框里的滚轮 .drum-col）放行：touchstart 一 preventDefault 浏览器就不滚它了（user 2026-10-07「节拍器的滚动选数字好像也坏了」= iPad 上拨不动）
-    s.addEventListener("touchstart", (e) => { if (e.touches.length === 1 && !isTextTarget(e.target) && !(e.target as HTMLElement).closest?.(".drum-col")) e.preventDefault(); }, { passive: false });
+    // 面上嵌着的原生滚动区放行：touchstart 一 preventDefault 浏览器就不滚它了——速度框里的滚轮 .drum-col（user 2026-10-07「节拍器的滚动选数字好像也坏了」= iPad 上拨不动）、
+    //   pad 的符号层（高度钉在音键那几排、多了的格子在里面滚；user 2026-10-08「多出来的溢出的可以滚键盘」）
+    s.addEventListener("touchstart", (e) => { if (e.touches.length === 1 && !isTextTarget(e.target) && !(e.target as HTMLElement).closest?.(".drum-col, .pad-grid.symbols")) e.preventDefault(); }, { passive: false });
   }
 }

@@ -54,6 +54,8 @@ export interface ScoreViewHost {
   onCredits?(): void;
   /** 空白处长按 / 电脑右键（光标已经放到那里了）：at = 屏幕坐标（小菜单开在那）；row = 这一行里光标所在 track 的音的下标范围（全选这一行用；这行没音 = null）。 */
   onBlankPress?(at: { x: number; y: number }, row: { from: number; to: number } | null): void;
+  /** 长按 / 右键选区里的音（光标所在 track 的）：开选区菜单（at = 屏幕坐标）。 */
+  onSelPress?(at: { x: number; y: number }): void;
   /** 屏幕放不下纸的时候：true = 按屏宽重新折行；false（默认）= 不折行、整张纸按比例缩小（行和纸上一模一样）。 */
   reflow?(): boolean;
   /** 排法：true = 分页（按纸的真实高度分页、画页框，所见即所得）；false = 连续（同一张纸的几何，只是不断页）。 */
@@ -73,7 +75,7 @@ export class ScoreView {
   private boxEl: HTMLDivElement;
   /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
   private press: null | { pid: number; type: string; x: number; y: number; cx: number; cy: number; hit: HitNote | null; timer: number; shift: boolean; moved: boolean; fired: boolean } = null;
-  private selDrag: null | { pid: number; anchor: number } = null;   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）
+  private selDrag: null | { pid: number; anchor: number; menu?: boolean } = null;   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）；menu = 长按的是选区里的音、还没动：抬手 = 选区菜单，动了 = 照常扩选
   private handles: { start: HTMLDivElement; end: HTMLDivElement };
   private handleDrag: null | { pid: number; which: "start" | "end"; other: number } = null;
   private touches = new Map<number, { x: number; y: number }>();   // 现在按着的手指（触屏缩放用）
@@ -123,8 +125,16 @@ export class ScoreView {
       if (!this.layout || (e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
       e.preventDefault();
       const p = this.local(e); this.cancelPress();
-      if (this.noteAt(p.x, p.y)) return;
-      this.blankPress(p.x, p.y, e.clientX, e.clientY);
+      const hit = this.noteAt(p.x, p.y);
+      if (!hit) { this.blankPress(p.x, p.y, e.clientX, e.clientY); return; }
+      // 音上右键：在选区里 = 选区菜单；不在 = 先选中它（同长按）再开菜单
+      const cur = this.host.get().sel;
+      if (!(cur && this.onTrack(hit) && hit.index >= cur.from && hit.index < cur.to)) {
+        const st0 = this.host.get(), st1 = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
+        this.host.set(select(st1, hit.index, hit.index + 1));
+      }
+      this.host.focus?.("staff");
+      this.host.onSelPress?.({ x: e.clientX, y: e.clientY });
     });
     el.addEventListener("pointercancel", (e) => { if (this.drag) this.host.release?.(); this.drag = null; this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
     new ResizeObserver(() => this.render()).observe(el);
@@ -301,6 +311,11 @@ export class ScoreView {
     const pr = this.press; if (!pr || pr.moved) return;
     pr.fired = true;
     if (!pr.hit) { this.blankPress(pr.x, pr.y, pr.cx, pr.cy); return; }
+    const cur = this.host.get().sel;
+    if (cur && this.onTrack(pr.hit) && pr.hit.index >= cur.from && pr.hit.index < cur.to) {   // 长按已经选中的音：不抬手拖 = 照常从它扩选；原地抬手 = 选区菜单（不重选）
+      this.finger = null; if (this.drag) { this.host.release?.(); this.drag = null; }
+      this.selDrag = { pid: pr.pid, anchor: pr.hit.index, menu: true }; return;
+    }
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     this.finger = null;   // 手指：长按之后不再当滚动
     if (this.drag) { this.host.release?.(); this.drag = null; }   // 笔：按住出声到此为止
@@ -425,6 +440,7 @@ export class ScoreView {
     if (pr && e.pointerId === pr.pid && !pr.moved && !pr.fired) { const p = this.local(e); if (Math.hypot(p.x - pr.x, p.y - pr.y) > (pr.type === "touch" ? 10 : 6)) { pr.moved = true; clearTimeout(pr.timer); } }   // 手指抖一点也算轻点
     if (this.selDrag && e.pointerId === this.selDrag.pid) {   // 长按之后接着拖 = 扩选到指针下面的音
       const idx = this.noteNear(this.local(e)); if (idx < 0) return;
+      if (this.selDrag.menu) { if (idx === this.selDrag.anchor) return; this.selDrag.menu = false; this.lyrics.commitAndClose(); this.marks.commitAndClose(); }   // 选区里长按后拖到别的音 = 从长按的那个重新扩选
       const st = this.host.get(), a = Math.min(idx, this.selDrag.anchor), b = Math.max(idx, this.selDrag.anchor) + 1;
       if (!st.sel || st.sel.from !== a || st.sel.to !== b) this.host.set(select(st, a, b));
       return;
@@ -476,7 +492,8 @@ export class ScoreView {
     const pr = this.press;
     if (pr && e.pointerId === pr.pid) {
       this.press = null; clearTimeout(pr.timer);
-      const extended = !!this.selDrag; this.selDrag = null;
+      const extended = !!this.selDrag, menu = !!this.selDrag?.menu; this.selDrag = null;
+      if (menu) { this.finger = null; this.box = null; this.boxEl.hidden = true; this.host.focus?.("staff"); this.host.onSelPress?.({ x: pr.cx, y: pr.cy }); return; }
       if (pr.fired || extended) { this.finger = null; if (this.drag) { this.host.release?.(); this.drag = null; } this.box = null; this.boxEl.hidden = true; return; }   // 长按选过了：抬手到此为止
       if (pr.hit && !pr.moved) {   // 轻点在音上
         this.finger = null; this.box = null;

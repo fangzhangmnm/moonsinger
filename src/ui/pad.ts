@@ -30,7 +30,7 @@ import { type Pitch, HOME, diatonicIndex, tonicStepIndex, pitchName, alterBy, mi
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
-import { type EditorState, type Acc, inputKey, keyAt, timeAt, tempoAt, tr, selUnit } from "../score/song.ts";
+import { type EditorState, type Acc, type Art, inputKey, keyAt, timeAt, tempoAt, tr } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
 
 /** 月读的音域 A3–E5（MIDI）：键底部画细条提示，音域外不拦、不变灰。宿主不给提示音域时（hintRange 没接）用它。 */
@@ -39,6 +39,8 @@ export const HER_RANGE = { lo: 57, hi: 76, who: "月读" } as const;
 export type HintRange = { lo: number; hi: number; who: string; title?: string } | null;   // title = 键上的提示字（没有 = 「谁的音域里」）
 /** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
 const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone");
+/** 布局里行 / 列能调的范围（加减号到头就灰）。 */
+const ROWS_MIN = 3, ROWS_MAX = 8, COLS_MIN = 3, COLS_MAX = 7;
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
 const KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } } as const;
 const SWIPE = 20;       // px：音键上下滑过这么远才算升 / 降
@@ -115,7 +117,7 @@ export interface PadHost {
   hintRange?(): HintRange;
 }
 
-type Mode = "normal" | "more" | "transpose" | "modulate" | "layout";   // 选调 / 长短 / 音域 = 旋钮（原地滚 / 点开滚轮），不在这里
+type Mode = "normal" | "more" | "layout";   // 有选区时的移调 / 转调 / 时值不在 pad 上（2026-10-08 user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单，键盘只做纯粹的打谱」→ 选区菜单）   // 选调 / 长短 / 音域 = 旋钮（原地滚 / 点开滚轮），不在这里
 
 export class Pad {
   private rowShift = 0;       // 音域窗口挪过几行
@@ -123,7 +125,7 @@ export class Pad {
   private rowsSetting: number | "auto" = 4;   // 默认 4 行（user「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
   private layoutMode: "movable" | "absolute" = "absolute";   // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
   private swipeMode: "glide" | "alter" = "glide";          // 音键上滑 = 滑到下一个键就响下一个（默认；user 2026-10-08「滚键盘的意思是手指在键盘上滑动到下一个音，不说拖动键盘」）/ 上下滑 = 这一个音升降（黏着）
-  private symbols = false;                                   // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
+  private symbols: "off" | "once" | "lock" = "off"; private symAt = 0;   // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
   private mode: Mode = "normal";
   private gridFor = "";
   private toolsFor = "";
@@ -173,12 +175,11 @@ export class Pad {
   render(): void {
     const st = this.host.state(), f = inputKey(st), rows = this.rows(), form = padForm();
     const base = this.baseAt(this.rowShift, f, rows);
-    if ((this.mode === "transpose" || this.mode === "modulate") && !st.sel) this.mode = "normal";   // 选中没了：移调候选收起
     const selKey = st.sel ? keyAt(tr(st), st.sel.from) : null;
-    this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols));
+    this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols)); this.el.style.setProperty("--rows", String(rows));   // --rows：符号层的高 = 音键那几排（几何不变，多了滚）
     if (!this.el.querySelector(".pad-grid")) {
       this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes">` +
-        `<button class="btn wk sym-toggle" data-symbols="1" title="符号层：句 / 换气、小节线、休止、调号 / 拍号 / 速度…（像键盘的 .?123；再点回到音键）"><span>符</span><small>符号</small></button>` +
+        `<button class="btn wk sym-toggle" data-symbols="1" title="符号层：句号、跳音 / 重音 / 保持 / 呼吸、小节线、休止、调号 / 拍号 / 速度…（像键盘的 .?123）。点一下 = 写一个就回音键；连点两下 = 锁住（同 Shift）；再点 = 回音键"><span>符</span><small>符号</small></button>` +
         `<button class="btn" data-caret="-1" title="光标左移（${hint("left")}）">←</button>` +
         `<button class="btn" data-caret="1" title="光标右移（${hint("right")}）">→</button>` +
         `<button class="btn wk" data-cmd="rest" title="休止（${hint("rest")}）"><span>0</span><small>休止</small></button>` +
@@ -227,7 +228,10 @@ export class Pad {
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) stk.addEventListener(t, (e) => stkUp(e as PointerEvent));
       addEventListener("blur", () => { for (const id of [...sholding]) stkUp({ pointerId: id }); });
       // 符号层开关
-      w.querySelector<HTMLElement>("[data-symbols]")!.addEventListener("pointerdown", (e) => { e.preventDefault(); this.symbols = !this.symbols; this.render(); });
+      w.querySelector<HTMLElement>("[data-symbols]")!.addEventListener("pointerdown", (e) => {
+        e.preventDefault(); const t = performance.now();
+        this.symbols = this.symbols === "off" ? "once" : this.symbols === "once" && t - this.symAt < 350 ? "lock" : "off"; this.symAt = t; this.render();
+      });
       // 升降键（user「以及临时升降号的shift好像你也忘了哈哈，要不就是按住是shift，然后也可以上下滑动切换## # b bb，然后按是当作shift，滑动是toggle which shift」）：
       //   按 = Shift（点一下 / 连点两下 / 按住写，逻辑在宿主 main.ts accKey）；按着上下滑过 SWIPE = 换一种（往上 = 更升），键上跟着显示
       const ak = w.querySelector<HTMLElement>("[data-accshift]")!;
@@ -246,8 +250,8 @@ export class Pad {
       const akUp = (e: PointerEvent) => { if (!akDrag || e.pointerId !== akDrag.pid) return; akDrag = null; this.host.onAccShift("up", this.accSel); };
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) ak.addEventListener(t, (e) => akUp(e as PointerEvent));
     }
-    const hr = this.hint(), gridSig = this.symbols ? `symbols|${this.host.staves()}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
-    if (gridSig !== this.gridFor) { if (this.symbols) this.buildSymbols(); else this.buildGrid(f, base, rows); this.gridFor = gridSig; }
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    if (gridSig !== this.gridFor) { if (this.symbols !== "off") this.buildSymbols(); else this.buildGrid(f, base, rows); this.gridFor = gridSig; }
     const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st)) : ""}`;
     if (toolSig !== this.toolsFor) { this.buildHead(selKey, rows); this.toolsFor = toolSig; }
     this.refresh(st);
@@ -275,18 +279,17 @@ export class Pad {
           (this.host.staves() === 2 ? c(`data-staff="1"`, "换谱表", false, "大谱表：刚写的音（或选中的）挪到另一张谱表；再按一次回到按音高自动分") : "") +
           c(`data-open="layout"`, "布局…", false, "几行几列、首调 / 绝对") + back;
       }
-      case "layout":
-        return [c(`data-rows="auto"`, `行 自动（${rows}）`, this.rowsSetting === "auto"),
-          ...[3, 4, 5, 6, 7, 8].map((n) => c(`data-rows="${n}"`, `${n} 行`, this.rowsSetting === n)),
-          ...[3, 4, 5, 6, 7].map((n) => c(`data-cols="${n}"`, `${n} 列`, this.cols === n)),
-          c(`data-pl="movable"`, "首调", this.layoutMode === "movable", "每行从 1 起，跟着「1=」走"),
-          c(`data-pl="absolute"`, "绝对", this.layoutMode === "absolute", "每行从 C 起（不跟着「1=」挪）"),
-          c(`data-swipe="glide"`, "滑 = 滚键盘", this.swipeMode === "glide", "手指按着滑到下一个键 = 响下一个（写的时候一路写）"),
-          c(`data-swipe="alter"`, "滑 = 升降", this.swipeMode === "alter", "在音键上上下滑 = 这一个音升 / 降（黏着）"), back].join("");
-      case "transpose":
-        return c(`data-tr="1"`, "↑ 半音") + c(`data-tr="-1"`, "↓ 半音") + c(`data-tr="2"`, "↑ 全音") + c(`data-tr="-2"`, "↓ 全音") +
-          c(`data-toct="1"`, "↑ 八度") + c(`data-toct="-1"`, "↓ 八度") + c(`data-respell="1"`, "按调号拼写", false, "音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动") + c(`data-open="modulate"`, "转调…", false, "整段转到另一个调：音按两个主音之间的音程挪，调号跟着换") + back;
-      case "modulate": return KEY_CIRCLE.map((k) => c(`data-mod="${k}"`, `转到 1=${KEY_NAMES[k]}`, k === selKey)).join("") + back;
+      case "layout": {
+        // 行 / 列 = 加减号步进（user 2026-10-08「调整键盘高度col数布局的那个优化一下，比如变成加减号」；原来是 3 行…8 行、3 列…7 列一长串 chip）；二选一的 = 一个分段钮
+        const step = (k: "r" | "c", name: string, v: number, lo: number, hi: number) =>
+          `<button class="btn cand lay-step" data-${k}step="-1"${v <= lo ? " disabled" : ""} title="少一${name}">−</button><span class="lay-v">${v}</span>` +
+          `<button class="btn cand lay-step" data-${k}step="1"${v >= hi ? " disabled" : ""} title="多一${name}">+</button>`;
+        const grp = (label: string, inner: string, title = "") => `<span class="lay-grp"${title ? ` title="${title}"` : ""}><span class="lay-k">${label}</span>${inner}</span>`;
+        return grp("行", step("r", "行", rows, ROWS_MIN, ROWS_MAX) + c(`data-rows="auto"`, "自动", this.rowsSetting === "auto", "按屏幕高度自动定几行"), "键盘几行（高度）") +
+          grp("列", step("c", "列", this.cols, COLS_MIN, COLS_MAX), "键盘几列") +
+          grp("键位", c(`data-pl="movable"`, "首调", this.layoutMode === "movable", "每行从 1 起，跟着「1=」走") + c(`data-pl="absolute"`, "绝对", this.layoutMode === "absolute", "每行从 C 起（不跟着「1=」挪）")) +
+          grp("滑", c(`data-swipe="glide"`, "滚键盘", this.swipeMode === "glide", "手指按着滑到下一个键 = 响下一个（写的时候一路写）") + c(`data-swipe="alter"`, "升降", this.swipeMode === "alter", "在音键上上下滑 = 这一个音升 / 降（黏着）")) + back;
+      }
       default: return "";
     }
   }
@@ -297,9 +300,7 @@ export class Pad {
     const box = this.el.querySelector<HTMLElement>(".pad-head")!;
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) :
-      (selKey !== null
-        ? `<button class="btn knob k-key" data-knob="key" title="移调（选中的这段）：点开 = 半音 / 全音 / 八度 / 转调"><span class="kl">移调</span></button>`
-        : `<button class="btn knob k-key" data-knob="key" title="1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）"><span class="kl"></span><span class="kh">⇅</span></button>`) +
+      `<button class="btn knob k-key" data-knob="key" title="1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-unit" data-knob="unit" title="长短基线：按住上下滑 / 点开选（含连音）"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-range" data-knob="range" title="音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="弹：音键只响不写（快捷键 \`）；再点回到写">弹</button>` +
@@ -313,13 +314,9 @@ export class Pad {
     // 布局：点了不收（好试），按「返回」回去
     this.on(box, "[data-rows]", (b) => { this.rowsSetting = b.dataset.rows === "auto" ? "auto" : Number(b.dataset.rows); this.render(); });
     this.on(box, "[data-swipe]", (b) => { this.swipeMode = b.dataset.swipe === "alter" ? "alter" : "glide"; this.render(); });
-    this.on(box, "[data-cols]", (b) => { this.cols = Number(b.dataset.cols); this.render(); });
+    this.on(box, "[data-rstep]", (b) => { this.rowsSetting = Math.max(ROWS_MIN, Math.min(ROWS_MAX, this.rows() + Number(b.dataset.rstep))); this.render(); });
+    this.on(box, "[data-cstep]", (b) => { this.cols = Math.max(COLS_MIN, Math.min(COLS_MAX, this.cols + Number(b.dataset.cstep))); this.render(); });
     this.on(box, "[data-pl]", (b) => { this.layoutMode = b.dataset.pl === "absolute" ? "absolute" : "movable"; this.render(); });
-    // 移调：点了不收（可以连着点几下）；转调：选了就回去
-    this.on(box, "[data-tr]", (b) => this.host.onCommand({ k: "transpose", semis: Number(b.dataset.tr) }));
-    this.on(box, "[data-respell]", () => this.host.onCommand({ k: "respell" }));
-    this.on(box, "[data-toct]", (b) => this.host.onCommand({ k: "octave", d: Number(b.dataset.toct) }));
-    this.on(box, "[data-mod]", (b) => { this.back(); this.host.onCommand({ k: "modulate", fifths: Number(b.dataset.mod) }); });
     this.on(box, "[data-back]", () => this.back());
     this.on(box, "[data-impro]", () => this.host.onImpro());
     this.on(box, "[data-hide]", () => this.host.onHide());   // 「⋯」左边的收起键盘（user「...左边加一个hide keyboard的方形小按钮」）
@@ -330,28 +327,45 @@ export class Pad {
    *  和音键一样大的格子，多了往下滚；点一个 = 做那件事、回到音键（一次性）。 */
   private buildSymbols(): void {
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
-    const cell = (id: string, big: string, label: string, title: string) => `<button class="pad-key sym" data-sym="${id}" title="${title}">${big}<small>${label}</small></button>`;
+    const cell = (id: string, big: string, label: string, title: string) => `<button class="pad-key sym${id.startsWith("art:") ? " art" : ""}" data-sym="${id}" title="${title}">${big}<small>${label}</small></button>`;
     const items = [
       cell("phrase", `<span class="big">。</span>`, "句号", "句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）"),
-      cell("breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器不受影响；再点一次去掉）"),
+      cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "跳音", "跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉"),
+      cell("art:accent", `<span class="smufl">\uE4A0</span>`, "重音", "重音：光标前那个音（有选区 = 选中的）加重；再点一次去掉"),
+      cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "保持", "保持：光标前那个音（有选区 = 选中的）唱 / 弹满；再点一次去掉"),
+      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器不受影响；再点一次去掉）"),
       cell("bar", `<span class="big">|</span>`, "小节线", "小节线（弱起 = 写完弱起的音按一下）"),
       cell("rest", `<span class="big">0</span>`, "休止", "休止（长短同基线）"),
       cell("extend", `<span class="big">—</span>`, "拉长", "刚写的音加一份"),
       cell("key", `<span class="big">1=</span>`, "调号", "插调号（在光标处；先填现在的，插了再改）"),
       cell("time", `<span class="big">4/4</span>`, "拍号", "插拍号（在光标处）"),
-      cell("tempo", `<span class="smufl">\uE1D5</span><span class="big">=</span>`, "速度", "插速度（在光标处）"),
+      cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "速度", "插速度（在光标处）"),
       ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, "换谱表", "大谱表：这个音换到另一张谱表")] : []),
     ];
     grid.innerHTML = items.join("");
     grid.classList.add("symbols");
-    this.on(grid, "[data-sym]", (b) => {
+    // 符号层高度钉在音键那几排（user 2026-10-08「键盘高度能不能和设置的row一样，就是几何形状不改。然后这里多出来的溢出的可以滚键盘」）：
+    //   格子多了在格子里上下滚 → 按下不算数，抬手时没滚过（浏览器开始滚 = pointercancel）才做；按下照旧 preventDefault（焦点不离开谱）。
+    grid.scrollTop = 0;
+    let down: { id: number; b: HTMLElement; y: number; top: number } | null = null;
+    grid.querySelectorAll<HTMLElement>("[data-sym]").forEach((b) => {
+      b.addEventListener("pointerdown", (e) => { e.preventDefault(); down = { id: e.pointerId, b, y: e.clientY, top: grid.scrollTop }; });
+      b.addEventListener("pointercancel", () => { down = null; });
+      b.addEventListener("pointerup", (e) => {
+        const d = down; down = null;
+        if (!d || d.id !== e.pointerId || d.b !== b || Math.abs(e.clientY - d.y) > 10 || Math.abs(grid.scrollTop - d.top) > 4) return;
+        act(b);
+      });
+    });
+    const act = (b: HTMLElement) => {
       const id = b.dataset.sym!;
-      this.symbols = false;   // 一次性：做完回到音键
+      if (this.symbols === "once") this.symbols = "off";   // 点一下 = 一次性：做完回到音键；锁住 = 留在符号层
       if (id === "key" || id === "time" || id === "tempo") this.host.onInsertMark(id);
       else if (id === "staff") this.host.onCommand({ k: "staff" });
-      else this.host.onCommand({ k: id as "phrase" | "breath" | "bar" | "rest" | "extend" });
+      else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
+      else this.host.onCommand({ k: id as "phrase" | "bar" | "rest" | "extend" });
       this.render();
-    });
+    };
   }
   private hint(): HintRange { return this.host.hintRange ? this.host.hintRange() : HER_RANGE; }
   /** 音域窗口挪到最能盖住 [lo, hi] 的那一档（重叠最多；一样多取中心最近的）。试听换了乐器时宿主调（「跟进」）；人自己拨旋钮照旧。 */
@@ -433,13 +447,9 @@ export class Pad {
     const q = <T extends HTMLElement>(s: string) => this.el.querySelector<T>(s);
     const i = st.input, f = inputKey(st);
     const k = q(".k-key .kl");
-    if (k && !st.sel) { const sc = this.scale(); k.innerHTML = keyLabel(f, sc); k.parentElement!.classList.toggle("stack", k.parentElement!.clientWidth < STACK); k.parentElement!.title = `1=${KEY_NAMES[f]} ${sc.name}（pad 自己的调和调式）：按住上下滑换调 / 点开选调和调式`; }
+    if (k) { const sc = this.scale(); k.innerHTML = keyLabel(f, sc); k.parentElement!.classList.toggle("stack", k.parentElement!.clientWidth < STACK); k.parentElement!.title = `1=${KEY_NAMES[f]} ${sc.name}（pad 自己的调和调式）：按住上下滑换调 / 点开选调和调式`; }
     const u = q(".k-unit .kl");
-    if (u) {
-      // 有选中：旋钮显示选中的音的时值（都一样才显示，长短不一 = …），拨 = 整组改（user 2026-10-08「其他键用 C（整组）没问题」）
-      if (st.sel) { const su = selUnit(st); u.innerHTML = su === null ? `<span class="mixed">…</span>` : `<span class="smufl">${UNIT_GLYPH[su]}</span>`; u.parentElement!.title = su === null ? "选中的音长短不一：拨 = 都改成拨到的那一档" : `选中的音：${UNIT_NAME[su]}（拨 = 整组改）`; }
-      else { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`; u.parentElement!.title = `长短基线：${UNIT_NAME[i.unit]}${i.tuplet ? `（${i.tuplet} 连音）` : ""}——按住上下滑 / 点开选`; }
-    }
+    if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[i.unit]}</span>${i.tuplet ? `<sup>${i.tuplet}</sup>` : ""}`; u.parentElement!.title = `长短基线：${UNIT_NAME[i.unit]}${i.tuplet ? `（${i.tuplet} 连音）` : ""}——按住上下滑 / 点开选`; }   // 长短旋钮 = 接下来写的长短（有选区也一样：替换模式按它吃；整组改时值在选区菜单里）
     q(".impro-pad")?.classList.toggle("is-on", this.host.isImpro());   // 「弹」亮不亮（键盘快捷键 / 找人视图也会改它）
     const r = q(".k-range .kl");
     if (r) { const nr = this.rangeNarrow(); r.parentElement!.classList.toggle("narrow", nr); r.parentElement!.classList.toggle("tight", r.parentElement!.clientWidth < TIGHT); r.innerHTML = this.spanHtml(this.rowShift, f, this.rows(), nr); r.parentElement!.title = `音域 ${this.spanText(this.rowShift, f, this.rows())}：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的`; }
@@ -462,7 +472,7 @@ export class Pad {
     const down = new Set(this.held.values());
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => b.classList.toggle("down", down.has(midiOf(this.keys.get(Number(b.dataset.k))!))));
     const stk = this.el.querySelector<HTMLElement>("[data-stack]"); if (stk) stk.classList.toggle("off", !this.host.canStack());   // 单声乐器的声部：叠不了
-    const sy = this.el.querySelector<HTMLElement>("[data-symbols]"); if (sy) { sy.classList.toggle("is-on", this.symbols); sy.querySelector("span")!.textContent = this.symbols ? "音" : "符"; }
+    const sy = this.el.querySelector<HTMLElement>("[data-symbols]"); if (sy) { sy.classList.toggle("once", this.symbols === "once"); sy.classList.toggle("lock", this.symbols === "lock"); sy.querySelector("span")!.textContent = this.symbols !== "off" ? "音" : "符"; }
   }
 
   private on(root: HTMLElement, sel: string, fn: (b: HTMLElement) => void): void {
@@ -470,7 +480,6 @@ export class Pad {
   }
   private back(): void { this.mode = "normal"; this.render(); }
   /** 选区条上的「移调」：打开和「1=」旋钮同一个候选面板（有选中时那个旋钮本来就是它）。 */
-  openTranspose(): void { if (this.host.state().sel) { this.mode = "transpose"; this.render(); } }
 
   /** 值旋钮的一串值，大的在上（升号多 / 长的 / 音域高的在上）+ 现在是第几个 + 选第 i 个（立刻生效）。 */
   private knobList(knob: string, narrow = this.rangeNarrow()): { items: string[]; index: number; title: string; set(i: number): void; loop?: boolean } {
@@ -480,7 +489,7 @@ export class Pad {
       const sc = this.scale();
       return { items: K.map((k) => keyLabel(k, sc)), index: Math.max(0, K.indexOf(f)), title: "pad 的调（五度圈）", set: (i) => this.host.onInputKey(K[i]), loop: true };
     }
-    if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st.sel ? (selUnit(st) ?? st.input.unit) : st.input.unit)), title: st.sel ? "选中的音的时值（整组改）" : "长短基线", set: (i) => this.host.onUnit(UNITS[i]) };
+    if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(st.input.unit)), title: "长短基线", set: (i) => this.host.onUnit(UNITS[i]) };
     const rows = this.rows();   // 音域：高的在上（一张纸：往上推 = 看下面更低的）
     return { items: SHIFTS.map((sh) => this.spanHtml(sh, f, rows, narrow)), index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), title: "音域窗口",
       set: (i) => { this.rowShift = SHIFTS[i]; this.render(); } };
@@ -495,7 +504,7 @@ export class Pad {
    *  · 只是点一下（没滑）= 松手时展开滚轮（drum.ts）点选 / 原生滚动。 */
   private knobDown(b: HTMLElement, e: PointerEvent): void {
     const knob = b.dataset.knob!;
-    if (knob === "more" || (knob === "key" && this.host.state().sel)) { this.mode = knob === "more" ? "more" : "transpose"; this.render(); return; }
+    if (knob === "more") { this.mode = "more"; this.render(); return; }
     try { b.setPointerCapture(e.pointerId); } catch { /* 指针已经没了 */ }
     const v = this.knobList(knob), n = v.items.length, pid = e.pointerId, y0 = e.clientY;
     // 环（五度圈）：滚轮两头各多摆一格（接着另一头），一格就能绕过去

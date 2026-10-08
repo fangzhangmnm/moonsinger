@@ -522,11 +522,16 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .pad-tools .btn.stack.off { opacity: .3; pointer-events: none; }
 @container (max-width: 520px) { .pad-tools.writes .btn.stack { display: none; } }
 /* pad 符号层（像 iOS 键盘的 .?123 翻过去那一页；user 2026-10-08「软键盘里面后面有一个符号模式」「row col 超了可以拖动滚」） */
-.pad-grid.symbols { overflow-y: auto; touch-action: pan-y; align-content: start; grid-auto-rows: var(--key-h); -webkit-overflow-scrolling: touch; }
+.pad-grid.symbols { overflow-y: auto; touch-action: pan-y; align-content: start; grid-auto-rows: var(--key-h); -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  height: calc(var(--rows, 4) * var(--key-h) + (var(--rows, 4) - 1) * var(--kgv)); }   /* 高 = 音键那几排（几何不变），多了的格子在里面滚 */
+.pad-grid.symbols .pad-key { touch-action: pan-y; overflow: hidden; }   /* 放大的演奏法字形别撑出滚动量 */
 .pad-key.sym .big { font-size: 20px; font-weight: 600; line-height: 1; }
 .pad-key.sym .smufl { font-family: "Bravura"; font-size: 26px; line-height: 1; display: inline-block; height: 22px; }
 .pad-key.sym small { font-size: 10px; color: var(--muted); }
-.pad-tools .btn.sym-toggle.is-on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.pad-key.sym .glyphs { display: inline-flex; flex-direction: row; align-items: flex-end; gap: 1px; white-space: nowrap; height: 22px; }   /* 速度格：♩= 一行（pad-key 是竖排 flex，两个 span 会叠成两行） */
+.pad-key.sym .glyphs .smufl { font-size: 22px; height: 22px; position: relative; top: 1px; }
+.pad-key.sym .glyphs .big { font-size: 19px; padding-bottom: 2px; }
+.pad-key.sym.art .smufl { font-size: 34px; }   /* 跳音 / 重音 / 保持 / 呼吸：Bravura 里本来就小 */
 
 /* 撤销 / 重做在顶栏中间；窄屏（手机）把录音室钮收进设置（顶栏放不下 10 个钮） */
 @media (max-width: 480px) { #studioBtn { display: none; } }
@@ -577,3 +582,22 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .ctx-menu .ctx-item:hover, .ctx-menu .ctx-item:active { background: var(--accent-soft); }
 .ctx-menu .ctx-item:disabled { opacity: .4; }
 .ctx-menu .ctx-sep { height: 1px; background: var(--line); margin: 4px 6px; }
+/* 选区菜单（2026-10-08 by Claude Opus 5.5）：一行一组小钮（移调 / 时值）+ 一列项 */
+.sel-menu { max-width: 320px; }
+.ctx-menu .ctx-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 4px 6px; }
+.ctx-menu .ctx-k { font-size: 12px; color: var(--muted); width: 2.6em; flex: none; }
+.ctx-menu .ctx-chip { height: 32px; padding: 0 8px; font-size: 13px; }
+.ctx-menu .ctx-chip .smufl { font-family: "Bravura"; font-size: 20px; line-height: 1; position: relative; top: 4px; }
+.ctx-menu .ctx-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; }
+.ctx-menu .ctx-item.danger { color: var(--danger); }
+/* pad「⋯ → 布局…」：行 / 列 = 加减号步进，二选一 = 分段钮（2026-10-08 Opus 5.5；user「…优化一下，比如变成加减号」） */
+.pad-tools.cands.m-layout { display: flex; flex-wrap: wrap; gap: 6px; }
+.pad-tools.cands.m-layout > .btn.cand { min-width: 64px; height: var(--knob); }
+.lay-grp { display: inline-flex; align-items: stretch; height: var(--knob); border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+.lay-grp .btn.cand { border: 0; border-radius: 0; box-shadow: none; min-width: 52px; height: 100%; padding: 0 10px; }
+.lay-grp > * + * { border-left: 1px solid var(--line) !important; }
+.lay-grp .btn.cand.is-on { background: var(--accent-soft); color: var(--accent); }
+.lay-grp .btn.cand:disabled { opacity: .3; }
+.lay-k { display: flex; align-items: center; padding: 0 10px; font-size: 12px; color: var(--muted); background: var(--bg); }
+.lay-v { display: flex; align-items: center; justify-content: center; min-width: 34px; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lay-step { font-size: 22px !important; line-height: 1; min-width: 46px !important; }

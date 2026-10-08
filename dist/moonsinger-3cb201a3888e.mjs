@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.21-2026-10-08";
+var APP_VERSION = "v0.6.22-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2846,6 +2846,7 @@ var TUPLET = { 3: [2, 3], 5: [4, 5], 6: [4, 6], 7: [4, 7] };
 var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
 var ARTS = ["staccato", "accent", "tenuto", "breath"];
+var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438" };
 var DYNS = ["pp", "p", "mp", "mf", "f", "ff"];
 var DEFAULT_DYN = "mf";
 var SPLIT_MIDI = 60;
@@ -2938,17 +2939,9 @@ function toggleChordPitch(st3, i10, p2) {
 function stackPitch(st3, pitch0) {
   const input = consumeAcc(st3.input);
   if (st3.sel) {
-    let s10 = { ...st3, input }, changed2 = false;
-    for (let i11 = st3.sel.from; i11 < st3.sel.to; i11++) {
-      const t10 = tr(s10)[i11];
-      if (t10.kind !== "note" || !t10.pitch) continue;
-      const n10 = toggleChordPitch(s10, i11, keySpell(applyAcc(pitch0, st3.input), keyAt(tr(s10), i11)));
-      if (n10 !== s10) {
-        s10 = { ...n10, sel: st3.sel, caret: st3.caret };
-        changed2 = true;
-      }
-    }
-    return changed2 ? s10 : { ...st3, input };
+    const i11 = st3.sel.head != null ? lastTimedBefore(tr(st3), st3.sel.head, st3.sel.from) : firstNoteIn(st3);
+    if (i11 < 0 || tr(st3)[i11].kind !== "note") return { ...st3, input };
+    return toggleChordPitch({ ...st3, input }, i11, keySpell(applyAcc(pitch0, st3.input), keyAt(tr(st3), i11)));
   }
   const i10 = currentIndex(st3);
   if (i10 < 0 || tr(st3)[i10].kind !== "note") return { ...st3, input };
@@ -3034,10 +3027,13 @@ function fillTarget(st3) {
   }
   return -1;
 }
-function writePitch(st3, pitch0) {
-  const f2 = fillTarget(st3), at2 = st3.sel ? Math.max(0, firstNoteIn(st3)) : f2 >= 0 ? f2 : st3.caret;
-  const pitch = keySpell(applyAcc(pitch0, st3.input), keyAt(tr(st3), at2)), input = consumeAcc(st3.input);
-  if (st3.sel) return overwritePitch({ ...st3, input }, pitch);
+function writePitch(st3, pitch0, raw = false) {
+  const f2 = fillTarget(st3), at2 = st3.sel ? st3.sel.head ?? st3.sel.from : f2 >= 0 ? f2 : st3.caret;
+  const pitch = keySpell(raw ? pitch0 : applyAcc(pitch0, st3.input), keyAt(tr(st3), at2)), input = raw ? st3.input : consumeAcc(st3.input);
+  if (st3.sel) {
+    const n10 = replaceWrite({ ...st3, input }, { kind: "note", pitch }, unitDur(st3.input));
+    return n10.song === st3.song ? st3 : n10;
+  }
   if (f2 >= 0) {
     const t10 = tr(st3)[f2], tokens2 = tr(st3).slice();
     tokens2[f2] = { ...t10, pitch };
@@ -3049,7 +3045,7 @@ function writePitch(st3, pitch0) {
 }
 function writeDegree(st3, degree2, dir) {
   let at2;
-  if (st3.sel) at2 = firstNoteIn(st3);
+  if (st3.sel) at2 = st3.sel.head ?? st3.sel.from;
   else {
     const f2 = fillTarget(st3);
     at2 = f2 >= 0 ? f2 : st3.caret;
@@ -3058,7 +3054,7 @@ function writeDegree(st3, degree2, dir) {
   return writePitch(st3, placeDegree(degree2, inputKey(st3), prevPitch(tr(st3), at2), dir));
 }
 function writeRest(st3) {
-  if (st3.sel) return restSel(st3);
+  if (st3.sel) return replaceWrite(st3, { kind: "rest" }, unitDur(st3.input));
   const dur = unitDur(st3.input), id2 = st3.nextId, tokens = tr(st3).slice();
   tokens.splice(st3.caret, 0, { kind: "rest", id: id2, dur });
   return next(st3, tokens, { caret: st3.caret + 1, nextId: id2 + 1, log: [...st3.log, { k: "ins", id: id2, unit: dur }] });
@@ -3114,14 +3110,18 @@ function toggleArtSel(st3, a10) {
   for (const i10 of idx) nt2[i10] = withArt(nt2[i10], a10, on2);
   return next(st3, nt2);
 }
-function toggleBreath(st3) {
+function toggleArtBefore(st3, a10) {
+  if (st3.sel) {
+    const nx2 = toggleArtSel(st3, a10);
+    return nx2 === st3 ? null : nx2;
+  }
   const toks = tr(st3);
-  for (let i10 = (st3.sel ? st3.sel.to : st3.caret) - 1; i10 >= headLen(toks); i10--) {
+  for (let i10 = st3.caret - 1; i10 >= headLen(toks); i10--) {
     const t10 = toks[i10];
     if (t10.kind === "rest") return null;
     if (t10.kind !== "note") continue;
     const nt2 = toks.slice();
-    nt2[i10] = withArt(t10, "breath", !artOf(t10).includes("breath"));
+    nt2[i10] = withArt(t10, a10, !artOf(t10).includes(a10));
     return next(st3, nt2);
   }
   return null;
@@ -3203,7 +3203,19 @@ function deleteMark(st3, i10) {
   return next(st3, nt2, { caret: i10 < st3.caret ? st3.caret - 1 : st3.caret, sel: null });
 }
 function extend(st3, half2 = false) {
-  if (st3.sel) return mapSelDur(st3, (d4) => d4 + unitDur(st3.input));
+  if (st3.sel) {
+    const sel = st3.sel;
+    if (sel.head == null) return st3;
+    const tk2 = tr(st3), j2 = lastTimedBefore(tk2, sel.head, sel.from);
+    if (j2 < 0) return st3;
+    let i10 = sel.head;
+    while (i10 < sel.to && !isTimed(tk2[i10]) && tk2[i10].kind !== "bar") i10++;
+    if (i10 >= sel.to || tk2[i10].kind === "bar") return st3;
+    const e10 = eat(tk2, i10, sel.to, unitDur(st3.input)), t11 = tk2[j2];
+    if (!e10.got || !validDur(t11.dur + e10.got)) return st3;
+    const nt3 = [...tk2.slice(0, j2), { ...t11, dur: t11.dur + e10.got }, ...tk2.slice(j2 + 1, i10), ...e10.keep, ...tk2.slice(e10.end)];
+    return next(st3, nt3, { sel: { ...sel, to: sel.to + (nt3.length - tk2.length), head: i10 }, caret: i10 });
+  }
   const tokens = tr(st3);
   let target = -1, unit = unitDur(st3.input), fromLog = false;
   for (let k2 = st3.log.length - 1; k2 >= 0 && target < 0; k2--) {
@@ -3237,6 +3249,13 @@ function extend(st3, half2 = false) {
   return next(st3, nt2, { log: [...st3.log, { k: "ext", id: t10.id, by }] });
 }
 function backspace(st3) {
+  if (st3.sel && st3.sel.head != null) {
+    const tk2 = tr(st3), j2 = lastTimedBefore(tk2, st3.sel.head, st3.sel.from);
+    if (j2 < 0) return st3;
+    const t10 = tk2[j2], nt3 = tk2.slice();
+    if (t10.kind === "note") nt3[j2] = { kind: "rest", id: t10.id, dur: t10.dur };
+    return next(st3, nt3, { sel: { ...st3.sel, head: j2 }, caret: j2 });
+  }
   if (st3.sel) return deleteSel(st3);
   const tokens = tr(st3);
   while (st3.log.length) {
@@ -3275,12 +3294,13 @@ function setUnit(st3, unit) {
   return { ...st3, input: { ...st3.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) } };
 }
 function shorter(st3) {
-  if (st3.sel) return mapSelDur(st3, (d3) => d3 / 2);
   return st3.input.unit > 0 ? { ...st3, input: { ...st3.input, unit: st3.input.unit - 1 } } : st3;
 }
 function longer(st3) {
-  if (st3.sel) return mapSelDur(st3, (d3) => d3 * 2);
   return st3.input.unit < LADDER.length - 1 ? { ...st3, input: { ...st3.input, unit: st3.input.unit + 1 } } : st3;
+}
+function scaleSelDur(st3, f2) {
+  return mapSelDur(st3, (d3) => d3 * f2);
 }
 function setTuplet(st3, n10) {
   return { ...st3, input: { ...st3.input, tuplet: n10 } };
@@ -3307,47 +3327,55 @@ function firstNoteIn(st3) {
   for (let i10 = st3.sel.from; i10 < st3.sel.to; i10++) if (tr(st3)[i10].kind === "note") return i10;
   return -1;
 }
-function nextNoteAfter(tokens, i10) {
-  for (let j2 = i10 + 1; j2 < tokens.length; j2++) if (tokens[j2].kind === "note") return j2;
+function lastTimedBefore(tk2, head, from) {
+  for (let j2 = head - 1; j2 >= from; j2--) if (isTimed(tk2[j2])) return j2;
   return -1;
 }
-function overwritePitch(st3, pitch) {
-  const i10 = firstNoteIn(st3);
-  if (i10 < 0) return st3;
-  const nt2 = tr(st3).slice();
-  nt2[i10] = withPitches(nt2[i10], [pitch]);
-  const j2 = nextNoteAfter(nt2, i10);
-  return j2 >= 0 ? next(st3, nt2, { sel: { from: j2, to: j2 + 1 }, caret: j2 + 1 }) : next(st3, nt2, { sel: null, caret: nt2.length, log: [] });
+function eat(tk2, i10, b3, need) {
+  let got = 0, first = null, j2 = i10;
+  const keep2 = [];
+  while (j2 < b3 && got < need) {
+    const t10 = tk2[j2];
+    if (t10.kind === "bar") break;
+    if (!isTimed(t10)) {
+      keep2.push(t10);
+      j2++;
+      continue;
+    }
+    first ??= t10;
+    const rest = t10.dur - (need - got);
+    if (rest >= MIN_DUR) {
+      const { lyric: _l, hyph: _h, tie: _t, art: _a2, ...base3 } = t10;
+      keep2.push(t10.kind === "note" ? { ...base3, dur: rest, lyric: null } : { ...t10, dur: rest });
+      got = need;
+    } else got += t10.dur;
+    j2++;
+  }
+  return { got, first, end: j2, keep: keep2 };
+}
+function replaceWrite(st3, what, dur) {
+  const sel = st3.sel;
+  if (!sel) return st3;
+  const tk2 = tr(st3);
+  let i10 = sel.head ?? sel.from;
+  while (i10 < sel.to && !isTimed(tk2[i10])) i10++;
+  if (i10 >= sel.to) return st3;
+  const e10 = eat(tk2, i10, sel.to, dur);
+  if (!validDur(e10.got)) return st3;
+  const id2 = st3.nextId, inherit = e10.first?.kind === "note" ? e10.first : null;
+  const tok = what.kind === "note" ? { kind: "note", id: id2, pitch: what.pitch, dur: e10.got, lyric: inherit?.lyric ?? null, ...inherit?.hyph ? { hyph: true } : {} } : { kind: "rest", id: id2, dur: e10.got };
+  const after = tk2.slice(e10.end), nx2 = after[0];
+  if (nx2?.kind === "note" && nx2.tie) {
+    const { tie: _t, ...rest } = nx2;
+    after[0] = rest;
+  }
+  const nt2 = [...tk2.slice(0, i10), tok, ...e10.keep, ...after];
+  const to2 = sel.to + (nt2.length - tk2.length);
+  return next(st3, nt2, { sel: { from: sel.from, to: to2, head: i10 + 1 }, caret: i10 + 1, nextId: id2 + 1 });
 }
 function setSelDur(st3, unit) {
   const d3 = unitDur({ ...st3.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) });
   return mapSelDur(st3, () => d3);
-}
-function selUnit(st3) {
-  if (!st3.sel) return null;
-  let u2 = null;
-  for (let i10 = st3.sel.from; i10 < st3.sel.to; i10++) {
-    const t10 = tr(st3)[i10];
-    if (!isTimed(t10)) continue;
-    const k2 = LADDER.indexOf(t10.dur);
-    if (k2 < 0) return null;
-    if (u2 === null) u2 = k2;
-    else if (u2 !== k2) return null;
-  }
-  return u2;
-}
-function restSel(st3) {
-  if (!st3.sel) return st3;
-  const nt2 = tr(st3).slice();
-  let changed2 = false;
-  for (let i10 = st3.sel.from; i10 < st3.sel.to; i10++) {
-    const t10 = nt2[i10];
-    if (t10.kind === "note") {
-      nt2[i10] = { kind: "rest", id: t10.id, dur: t10.dur };
-      changed2 = true;
-    }
-  }
-  return changed2 ? next(st3, nt2, { sel: st3.sel, caret: st3.caret }) : st3;
 }
 function mapSelDur(st3, f2) {
   if (!st3.sel) return st3;
@@ -3760,8 +3788,8 @@ function apply(st3, c10, now = Date.now()) {
       return writeBar(st3);
     case "phrase":
       return writePhrase(st3);
-    case "breath":
-      return toggleBreath(st3) ?? st3;
+    case "art":
+      return toggleArtBefore(st3, c10.a) ?? st3;
     case "shorter":
       return shorter(st3);
     case "longer":
@@ -3799,6 +3827,12 @@ function apply(st3, c10, now = Date.now()) {
       return transposeSel(st3, c10.semis);
     case "respell":
       return respellSel(st3);
+    case "seldur":
+      return setSelDur(st3, st3.input.unit);
+    // 选区菜单「都改成 ♪」= 长短旋钮现在那一档
+    case "selscale":
+      return scaleSelDur(st3, c10.f);
+    // 选区菜单「÷2 / ×2」
     case "modulate":
       return modulateSel(st3, c10.fifths);
     case "seledge":
@@ -3847,7 +3881,7 @@ var BINDINGS = [
     group: "\u5199\u97F3",
     keys: [{ code: "Digit0" }, { code: "Numpad0" }],
     act: cmd({ k: "rest" }),
-    does: { write: "\u4F11\u6B62", edit: "\u9009\u4E2D\u7684\u97F3\u90FD\u53D8\u6210\u540C\u6837\u957F\u7684\u4F11\u6B62\uFF08\u6574\u7EC4\uFF1B2026-10-08 user\u300C\u5176\u4ED6\u952E\u7528C\u300D\uFF09" }
+    does: { write: "\u4F11\u6B62", edit: "\u9009\u533A\u91CC\u5199\u4E00\u4E2A\u4F11\u6B62\uFF08\u66FF\u6362\u6A21\u5F0F\uFF1A\u6309\u957F\u77ED\u6863\u5403\u6389\u9009\u533A\u91CC\u7684\u97F3\uFF0C\u4E0D\u5199\u51FA\u9009\u533A\uFF09" }
   },
   {
     id: "bar",
@@ -3871,14 +3905,14 @@ var BINDINGS = [
     group: "\u65F6\u503C",
     keys: [{ code: "Digit8" }, { code: "Numpad8" }],
     act: cmd({ k: "shorter" }),
-    does: { write: "\u77ED\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u51CF\u534A\uFF08\u5230\u4E09\u5341\u4E8C\u5206\u4E3A\u6B62\uFF09", edit: "\u9009\u4E2D\u7684\u97F3\u51CF\u534A" }
+    does: { write: "\u77ED\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u51CF\u534A\uFF08\u5230\u4E09\u5341\u4E8C\u5206\u4E3A\u6B62\uFF09", edit: "\u77ED\uFF1A\u63A5\u4E0B\u6765\u5199\u7684\u51CF\u534A\uFF08\u9009\u533A\u91CC\u5199 = \u6309\u8FD9\u4E00\u6863\u66FF\u6362\uFF1B\u6574\u7EC4\u6539\u65F6\u503C\u8D70\u9009\u533A\u83DC\u5355\uFF09" }
   },
   {
     id: "longer",
     group: "\u65F6\u503C",
     keys: [{ code: "Digit9" }, { code: "Numpad9" }],
     act: cmd({ k: "longer" }),
-    does: { write: "\u957F\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u52A0\u500D\uFF08\u5230\u5168\u97F3\u7B26\u4E3A\u6B62\uFF09", edit: "\u9009\u4E2D\u7684\u97F3\u52A0\u500D" }
+    does: { write: "\u957F\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u52A0\u500D\uFF08\u5230\u5168\u97F3\u7B26\u4E3A\u6B62\uFF09", edit: "\u957F\uFF1A\u63A5\u4E0B\u6765\u5199\u7684\u52A0\u500D\uFF08\u9009\u533A\u91CC\u5199 = \u6309\u8FD9\u4E00\u6863\u66FF\u6362\uFF1B\u6574\u7EC4\u6539\u65F6\u503C\u8D70\u9009\u533A\u83DC\u5355\uFF09" }
   },
   {
     id: "tuplet",
@@ -4658,7 +4692,7 @@ function engrave(song, o10) {
     }
     const per = parts.map((p2) => {
       const tokens = paper.tracks[p2.id], focused = o10.at.paper === paper.id && o10.at.part === p2.id, staves = p2.staves === 2 ? 2 : 1;
-      const u2 = unitsOf(tokens, { caret: focused && writing ? o10.caret : null, autoBars: autoBars2, measureLyric: o10.measureLyric, sp: sp2 });
+      const u2 = unitsOf(tokens, { caret: focused && (writing || sel?.head != null) ? o10.caret : null, autoBars: autoBars2, measureLyric: o10.measureLyric, sp: sp2 });
       shortBars += u2.shortBars;
       if (staves === 2) {
         const stf = staffOfTokens(tokens, 2);
@@ -5921,8 +5955,18 @@ var ScoreView = class {
       e10.preventDefault();
       const p2 = this.local(e10);
       this.cancelPress();
-      if (this.noteAt(p2.x, p2.y)) return;
-      this.blankPress(p2.x, p2.y, e10.clientX, e10.clientY);
+      const hit = this.noteAt(p2.x, p2.y);
+      if (!hit) {
+        this.blankPress(p2.x, p2.y, e10.clientX, e10.clientY);
+        return;
+      }
+      const cur = this.host.get().sel;
+      if (!(cur && this.onTrack(hit) && hit.index >= cur.from && hit.index < cur.to)) {
+        const st0 = this.host.get(), st1 = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
+        this.host.set(select(st1, hit.index, hit.index + 1));
+      }
+      this.host.focus?.("staff");
+      this.host.onSelPress?.({ x: e10.clientX, y: e10.clientY });
     });
     el2.addEventListener("pointercancel", (e10) => {
       if (this.drag) this.host.release?.();
@@ -5948,7 +5992,7 @@ var ScoreView = class {
   /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
   press = null;
   selDrag = null;
-  // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）
+  // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）；menu = 长按的是选区里的音、还没动：抬手 = 选区菜单，动了 = 照常扩选
   handles;
   handleDrag = null;
   touches = /* @__PURE__ */ new Map();
@@ -6178,6 +6222,16 @@ var ScoreView = class {
       this.blankPress(pr.x, pr.y, pr.cx, pr.cy);
       return;
     }
+    const cur = this.host.get().sel;
+    if (cur && this.onTrack(pr.hit) && pr.hit.index >= cur.from && pr.hit.index < cur.to) {
+      this.finger = null;
+      if (this.drag) {
+        this.host.release?.();
+        this.drag = null;
+      }
+      this.selDrag = { pid: pr.pid, anchor: pr.hit.index, menu: true };
+      return;
+    }
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
     this.finger = null;
@@ -6371,6 +6425,12 @@ var ScoreView = class {
     if (this.selDrag && e10.pointerId === this.selDrag.pid) {
       const idx = this.noteNear(this.local(e10));
       if (idx < 0) return;
+      if (this.selDrag.menu) {
+        if (idx === this.selDrag.anchor) return;
+        this.selDrag.menu = false;
+        this.lyrics.commitAndClose();
+        this.marks.commitAndClose();
+      }
       const st4 = this.host.get(), a10 = Math.min(idx, this.selDrag.anchor), b3 = Math.max(idx, this.selDrag.anchor) + 1;
       if (!st4.sel || st4.sel.from !== a10 || st4.sel.to !== b3) this.host.set(select(st4, a10, b3));
       return;
@@ -6435,8 +6495,16 @@ var ScoreView = class {
     if (pr && e10.pointerId === pr.pid) {
       this.press = null;
       clearTimeout(pr.timer);
-      const extended = !!this.selDrag;
+      const extended = !!this.selDrag, menu = !!this.selDrag?.menu;
       this.selDrag = null;
+      if (menu) {
+        this.finger = null;
+        this.box = null;
+        this.boxEl.hidden = true;
+        this.host.focus?.("staff");
+        this.host.onSelPress?.({ x: pr.cx, y: pr.cy });
+        return;
+      }
       if (pr.fired || extended) {
         this.finger = null;
         if (this.drag) {
@@ -6514,7 +6582,7 @@ function installPlatformGuards(surfaces) {
       if (!isTextTarget(e10.target)) e10.preventDefault();
     });
     s10.addEventListener("touchstart", (e10) => {
-      if (e10.touches.length === 1 && !isTextTarget(e10.target) && !e10.target.closest?.(".drum-col")) e10.preventDefault();
+      if (e10.touches.length === 1 && !isTextTarget(e10.target) && !e10.target.closest?.(".drum-col, .pad-grid.symbols")) e10.preventDefault();
     }, { passive: false });
   }
 }
@@ -6574,6 +6642,10 @@ var degLabel = (g3) => `${g3.alt > 0 ? "\u266F" : g3.alt < 0 ? "\u266D" : ""}${g
 // src/ui/pad.ts
 var HER_RANGE = { lo: 57, hi: 76, who: "\u6708\u8BFB" };
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
+var ROWS_MIN = 3;
+var ROWS_MAX = 8;
+var COLS_MIN = 3;
+var COLS_MAX = 7;
 var KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } };
 var SWIPE = 20;
 var ACC_ORDER = [2, 1, -1, -2];
@@ -6626,8 +6698,9 @@ var Pad = class {
   // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
   swipeMode = "glide";
   // 音键上滑 = 滑到下一个键就响下一个（默认；user 2026-10-08「滚键盘的意思是手指在键盘上滑动到下一个音，不说拖动键盘」）/ 上下滑 = 这一个音升降（黏着）
-  symbols = false;
-  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
+  symbols = "off";
+  symAt = 0;
+  // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
   mode = "normal";
   gridFor = "";
   toolsFor = "";
@@ -6680,12 +6753,12 @@ var Pad = class {
   render() {
     const st3 = this.host.state(), f2 = inputKey(st3), rows = this.rows(), form = padForm();
     const base3 = this.baseAt(this.rowShift, f2, rows);
-    if ((this.mode === "transpose" || this.mode === "modulate") && !st3.sel) this.mode = "normal";
     const selKey = st3.sel ? keyAt(tr(st3), st3.sel.from) : null;
     this.el.dataset.form = form;
     this.el.style.setProperty("--cols", String(this.cols));
+    this.el.style.setProperty("--rows", String(rows));
     if (!this.el.querySelector(".pad-grid")) {
-      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u53E5 / \u6362\u6C14\u3001\u5C0F\u8282\u7EBF\u3001\u4F11\u6B62\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF1B\u518D\u70B9\u56DE\u5230\u97F3\u952E\uFF09"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
+      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u53E5\u53F7\u3001\u8DF3\u97F3 / \u91CD\u97F3 / \u4FDD\u6301 / \u547C\u5438\u3001\u5C0F\u8282\u7EBF\u3001\u4F11\u6B62\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF09\u3002\u70B9\u4E00\u4E0B = \u5199\u4E00\u4E2A\u5C31\u56DE\u97F3\u952E\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u540C Shift\uFF09\uFF1B\u518D\u70B9 = \u56DE\u97F3\u952E"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
       const w2 = this.el.querySelector(".writes");
       this.on(w2, "[data-caret]", (b3) => this.host.onCommand({ k: "caret", d: Number(b3.dataset.caret) }));
       this.on(w2, "[data-cmd]:not([data-cmd=backspace])", (b3) => this.host.onCommand({ k: b3.dataset.cmd }));
@@ -6746,7 +6819,9 @@ var Pad = class {
       });
       w2.querySelector("[data-symbols]").addEventListener("pointerdown", (e10) => {
         e10.preventDefault();
-        this.symbols = !this.symbols;
+        const t10 = performance.now();
+        this.symbols = this.symbols === "off" ? "once" : this.symbols === "once" && t10 - this.symAt < 350 ? "lock" : "off";
+        this.symAt = t10;
         this.render();
       });
       const ak2 = w2.querySelector("[data-accshift]");
@@ -6777,9 +6852,9 @@ var Pad = class {
       };
       for (const t10 of ["pointerup", "pointercancel", "lostpointercapture"]) ak2.addEventListener(t10, (e10) => akUp(e10));
     }
-    const hr = this.hint(), gridSig = this.symbols ? `symbols|${this.host.staves()}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) {
-      if (this.symbols) this.buildSymbols();
+      if (this.symbols !== "off") this.buildSymbols();
       else this.buildGrid(f2, base3, rows);
       this.gridFor = gridSig;
     }
@@ -6807,21 +6882,11 @@ var Pad = class {
         const digits = (n10) => [...String(n10)].map((ch2) => TS(Number(ch2))).join("");
         return c10(`data-mark="key"`, `${plus}1=${KEY_NAMES[m2.key] ?? "?"}`, false, "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c10(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m2.time.beats)}</span><span>${digits(m2.time.beatType)}</span></span>`, false, "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c10(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m2.bpm}</span>`, false, "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09") + c10(`data-autobars="1"`, "\u81EA\u52A8\u5C0F\u8282\u7EBF", this.host.autoBars(), "\u6309\u62CD\u53F7\u81EA\u52A8\u753B\u5C0F\u8282\u7EBF\uFF08\u53EA\u753B\u3001\u4E0D\u8FDB\u6570\u636E\uFF09\uFF1B\u624B\u63D2\u7684\u300C|\u300D= \u4ECE\u90A3\u91CC\u91CD\u65B0\u6570\uFF0C\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\u300C|\u300D") + (this.host.staves() === 2 ? c10(`data-staff="1"`, "\u6362\u8C31\u8868", false, "\u5927\u8C31\u8868\uFF1A\u521A\u5199\u7684\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u632A\u5230\u53E6\u4E00\u5F20\u8C31\u8868\uFF1B\u518D\u6309\u4E00\u6B21\u56DE\u5230\u6309\u97F3\u9AD8\u81EA\u52A8\u5206") : "") + c10(`data-open="layout"`, "\u5E03\u5C40\u2026", false, "\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9") + back;
       }
-      case "layout":
-        return [
-          c10(`data-rows="auto"`, `\u884C \u81EA\u52A8\uFF08${rows}\uFF09`, this.rowsSetting === "auto"),
-          ...[3, 4, 5, 6, 7, 8].map((n10) => c10(`data-rows="${n10}"`, `${n10} \u884C`, this.rowsSetting === n10)),
-          ...[3, 4, 5, 6, 7].map((n10) => c10(`data-cols="${n10}"`, `${n10} \u5217`, this.cols === n10)),
-          c10(`data-pl="movable"`, "\u9996\u8C03", this.layoutMode === "movable", "\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70"),
-          c10(`data-pl="absolute"`, "\u7EDD\u5BF9", this.layoutMode === "absolute", "\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09"),
-          c10(`data-swipe="glide"`, "\u6ED1 = \u6EDA\u952E\u76D8", this.swipeMode === "glide", "\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09"),
-          c10(`data-swipe="alter"`, "\u6ED1 = \u5347\u964D", this.swipeMode === "alter", "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09"),
-          back
-        ].join("");
-      case "transpose":
-        return c10(`data-tr="1"`, "\u2191 \u534A\u97F3") + c10(`data-tr="-1"`, "\u2193 \u534A\u97F3") + c10(`data-tr="2"`, "\u2191 \u5168\u97F3") + c10(`data-tr="-2"`, "\u2193 \u5168\u97F3") + c10(`data-toct="1"`, "\u2191 \u516B\u5EA6") + c10(`data-toct="-1"`, "\u2193 \u516B\u5EA6") + c10(`data-respell="1"`, "\u6309\u8C03\u53F7\u62FC\u5199", false, "\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8") + c10(`data-open="modulate"`, "\u8F6C\u8C03\u2026", false, "\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362") + back;
-      case "modulate":
-        return KEY_CIRCLE.map((k2) => c10(`data-mod="${k2}"`, `\u8F6C\u5230 1=${KEY_NAMES[k2]}`, k2 === selKey)).join("") + back;
+      case "layout": {
+        const step = (k2, name, v, lo2, hi) => `<button class="btn cand lay-step" data-${k2}step="-1"${v <= lo2 ? " disabled" : ""} title="\u5C11\u4E00${name}">\u2212</button><span class="lay-v">${v}</span><button class="btn cand lay-step" data-${k2}step="1"${v >= hi ? " disabled" : ""} title="\u591A\u4E00${name}">+</button>`;
+        const grp = (label, inner, title = "") => `<span class="lay-grp"${title ? ` title="${title}"` : ""}><span class="lay-k">${label}</span>${inner}</span>`;
+        return grp("\u884C", step("r", "\u884C", rows, ROWS_MIN, ROWS_MAX) + c10(`data-rows="auto"`, "\u81EA\u52A8", this.rowsSetting === "auto", "\u6309\u5C4F\u5E55\u9AD8\u5EA6\u81EA\u52A8\u5B9A\u51E0\u884C"), "\u952E\u76D8\u51E0\u884C\uFF08\u9AD8\u5EA6\uFF09") + grp("\u5217", step("c", "\u5217", this.cols, COLS_MIN, COLS_MAX), "\u952E\u76D8\u51E0\u5217") + grp("\u952E\u4F4D", c10(`data-pl="movable"`, "\u9996\u8C03", this.layoutMode === "movable", "\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70") + c10(`data-pl="absolute"`, "\u7EDD\u5BF9", this.layoutMode === "absolute", "\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09")) + grp("\u6ED1", c10(`data-swipe="glide"`, "\u6EDA\u952E\u76D8", this.swipeMode === "glide", "\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09") + c10(`data-swipe="alter"`, "\u5347\u964D", this.swipeMode === "alter", "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09")) + back;
+      }
       default:
         return "";
     }
@@ -6831,7 +6896,7 @@ var Pad = class {
   buildHead(selKey, rows) {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
-    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : (selKey !== null ? `<button class="btn knob k-key" data-knob="key" title="\u79FB\u8C03\uFF08\u9009\u4E2D\u7684\u8FD9\u6BB5\uFF09\uFF1A\u70B9\u5F00 = \u534A\u97F3 / \u5168\u97F3 / \u516B\u5EA6 / \u8F6C\u8C03"><span class="kl">\u79FB\u8C03</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button>`) + `<button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b3) => b3.addEventListener("pointerdown", (e10) => {
       e10.preventDefault();
       this.knobDown(b3, e10);
@@ -6855,20 +6920,17 @@ var Pad = class {
       this.swipeMode = b3.dataset.swipe === "alter" ? "alter" : "glide";
       this.render();
     });
-    this.on(box, "[data-cols]", (b3) => {
-      this.cols = Number(b3.dataset.cols);
+    this.on(box, "[data-rstep]", (b3) => {
+      this.rowsSetting = Math.max(ROWS_MIN, Math.min(ROWS_MAX, this.rows() + Number(b3.dataset.rstep)));
+      this.render();
+    });
+    this.on(box, "[data-cstep]", (b3) => {
+      this.cols = Math.max(COLS_MIN, Math.min(COLS_MAX, this.cols + Number(b3.dataset.cstep)));
       this.render();
     });
     this.on(box, "[data-pl]", (b3) => {
       this.layoutMode = b3.dataset.pl === "absolute" ? "absolute" : "movable";
       this.render();
-    });
-    this.on(box, "[data-tr]", (b3) => this.host.onCommand({ k: "transpose", semis: Number(b3.dataset.tr) }));
-    this.on(box, "[data-respell]", () => this.host.onCommand({ k: "respell" }));
-    this.on(box, "[data-toct]", (b3) => this.host.onCommand({ k: "octave", d: Number(b3.dataset.toct) }));
-    this.on(box, "[data-mod]", (b3) => {
-      this.back();
-      this.host.onCommand({ k: "modulate", fifths: Number(b3.dataset.mod) });
     });
     this.on(box, "[data-back]", () => this.back());
     this.on(box, "[data-impro]", () => this.host.onImpro());
@@ -6883,28 +6945,49 @@ var Pad = class {
    *  和音键一样大的格子，多了往下滚；点一个 = 做那件事、回到音键（一次性）。 */
   buildSymbols() {
     const grid = this.el.querySelector(".pad-grid");
-    const cell = (id2, big, label, title) => `<button class="pad-key sym" data-sym="${id2}" title="${title}">${big}<small>${label}</small></button>`;
+    const cell = (id2, big, label, title) => `<button class="pad-key sym${id2.startsWith("art:") ? " art" : ""}" data-sym="${id2}" title="${title}">${big}<small>${label}</small></button>`;
     const items = [
       cell("phrase", `<span class="big">\u3002</span>`, "\u53E5\u53F7", "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09"),
-      cell("breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u4E0D\u53D7\u5F71\u54CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
+      cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "\u8DF3\u97F3", "\u8DF3\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u5F97\u77ED\u4FC3\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
+      cell("art:accent", `<span class="smufl">\uE4A0</span>`, "\u91CD\u97F3", "\u91CD\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u52A0\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
+      cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "\u4FDD\u6301", "\u4FDD\u6301\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u6EE1\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
+      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u4E0D\u53D7\u5F71\u54CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("bar", `<span class="big">|</span>`, "\u5C0F\u8282\u7EBF", "\u5C0F\u8282\u7EBF\uFF08\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\uFF09"),
       cell("rest", `<span class="big">0</span>`, "\u4F11\u6B62", "\u4F11\u6B62\uFF08\u957F\u77ED\u540C\u57FA\u7EBF\uFF09"),
       cell("extend", `<span class="big">\u2014</span>`, "\u62C9\u957F", "\u521A\u5199\u7684\u97F3\u52A0\u4E00\u4EFD"),
       cell("key", `<span class="big">1=</span>`, "\u8C03\u53F7", "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09"),
       cell("time", `<span class="big">4/4</span>`, "\u62CD\u53F7", "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF09"),
-      cell("tempo", `<span class="smufl">\uE1D5</span><span class="big">=</span>`, "\u901F\u5EA6", "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF09"),
+      cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "\u901F\u5EA6", "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF09"),
       ...this.host.staves() === 2 ? [cell("staff", `<span class="big">\u21C5</span>`, "\u6362\u8C31\u8868", "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868")] : []
     ];
     grid.innerHTML = items.join("");
     grid.classList.add("symbols");
-    this.on(grid, "[data-sym]", (b3) => {
+    grid.scrollTop = 0;
+    let down = null;
+    grid.querySelectorAll("[data-sym]").forEach((b3) => {
+      b3.addEventListener("pointerdown", (e10) => {
+        e10.preventDefault();
+        down = { id: e10.pointerId, b: b3, y: e10.clientY, top: grid.scrollTop };
+      });
+      b3.addEventListener("pointercancel", () => {
+        down = null;
+      });
+      b3.addEventListener("pointerup", (e10) => {
+        const d3 = down;
+        down = null;
+        if (!d3 || d3.id !== e10.pointerId || d3.b !== b3 || Math.abs(e10.clientY - d3.y) > 10 || Math.abs(grid.scrollTop - d3.top) > 4) return;
+        act(b3);
+      });
+    });
+    const act = (b3) => {
       const id2 = b3.dataset.sym;
-      this.symbols = false;
+      if (this.symbols === "once") this.symbols = "off";
       if (id2 === "key" || id2 === "time" || id2 === "tempo") this.host.onInsertMark(id2);
       else if (id2 === "staff") this.host.onCommand({ k: "staff" });
+      else if (id2.startsWith("art:")) this.host.onCommand({ k: "art", a: id2.slice(4) });
       else this.host.onCommand({ k: id2 });
       this.render();
-    });
+    };
   }
   hint() {
     return this.host.hintRange ? this.host.hintRange() : HER_RANGE;
@@ -7010,7 +7093,7 @@ var Pad = class {
     const q2 = (s10) => this.el.querySelector(s10);
     const i10 = st3.input, f2 = inputKey(st3);
     const k2 = q2(".k-key .kl");
-    if (k2 && !st3.sel) {
+    if (k2) {
       const sc2 = this.scale();
       k2.innerHTML = keyLabel(f2, sc2);
       k2.parentElement.classList.toggle("stack", k2.parentElement.clientWidth < STACK);
@@ -7018,14 +7101,8 @@ var Pad = class {
     }
     const u2 = q2(".k-unit .kl");
     if (u2) {
-      if (st3.sel) {
-        const su2 = selUnit(st3);
-        u2.innerHTML = su2 === null ? `<span class="mixed">\u2026</span>` : `<span class="smufl">${UNIT_GLYPH[su2]}</span>`;
-        u2.parentElement.title = su2 === null ? "\u9009\u4E2D\u7684\u97F3\u957F\u77ED\u4E0D\u4E00\uFF1A\u62E8 = \u90FD\u6539\u6210\u62E8\u5230\u7684\u90A3\u4E00\u6863" : `\u9009\u4E2D\u7684\u97F3\uFF1A${UNIT_NAME[su2]}\uFF08\u62E8 = \u6574\u7EC4\u6539\uFF09`;
-      } else {
-        u2.innerHTML = `<span class="smufl">${UNIT_GLYPH[i10.unit]}</span>${i10.tuplet ? `<sup>${i10.tuplet}</sup>` : ""}`;
-        u2.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i10.unit]}${i10.tuplet ? `\uFF08${i10.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009`;
-      }
+      u2.innerHTML = `<span class="smufl">${UNIT_GLYPH[i10.unit]}</span>${i10.tuplet ? `<sup>${i10.tuplet}</sup>` : ""}`;
+      u2.parentElement.title = `\u957F\u77ED\u57FA\u7EBF\uFF1A${UNIT_NAME[i10.unit]}${i10.tuplet ? `\uFF08${i10.tuplet} \u8FDE\u97F3\uFF09` : ""}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009`;
     }
     q2(".impro-pad")?.classList.toggle("is-on", this.host.isImpro());
     const r10 = q2(".k-range .kl");
@@ -7057,8 +7134,9 @@ var Pad = class {
     if (stk) stk.classList.toggle("off", !this.host.canStack());
     const sy2 = this.el.querySelector("[data-symbols]");
     if (sy2) {
-      sy2.classList.toggle("is-on", this.symbols);
-      sy2.querySelector("span").textContent = this.symbols ? "\u97F3" : "\u7B26";
+      sy2.classList.toggle("once", this.symbols === "once");
+      sy2.classList.toggle("lock", this.symbols === "lock");
+      sy2.querySelector("span").textContent = this.symbols !== "off" ? "\u97F3" : "\u7B26";
     }
   }
   on(root, sel, fn) {
@@ -7072,12 +7150,6 @@ var Pad = class {
     this.render();
   }
   /** 选区条上的「移调」：打开和「1=」旋钮同一个候选面板（有选中时那个旋钮本来就是它）。 */
-  openTranspose() {
-    if (this.host.state().sel) {
-      this.mode = "transpose";
-      this.render();
-    }
-  }
   /** 值旋钮的一串值，大的在上（升号多 / 长的 / 音域高的在上）+ 现在是第几个 + 选第 i 个（立刻生效）。 */
   knobList(knob, narrow = this.rangeNarrow()) {
     const st3 = this.host.state(), f2 = inputKey(st3);
@@ -7086,7 +7158,7 @@ var Pad = class {
       const sc2 = this.scale();
       return { items: K3.map((k2) => keyLabel(k2, sc2)), index: Math.max(0, K3.indexOf(f2)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i10) => this.host.onInputKey(K3[i10]), loop: true };
     }
-    if (knob === "unit") return { items: UNITS.map((u2) => `<span class="smufl">${UNIT_GLYPH[u2]}</span>`), index: Math.max(0, UNITS.indexOf(st3.sel ? selUnit(st3) ?? st3.input.unit : st3.input.unit)), title: st3.sel ? "\u9009\u4E2D\u7684\u97F3\u7684\u65F6\u503C\uFF08\u6574\u7EC4\u6539\uFF09" : "\u957F\u77ED\u57FA\u7EBF", set: (i10) => this.host.onUnit(UNITS[i10]) };
+    if (knob === "unit") return { items: UNITS.map((u2) => `<span class="smufl">${UNIT_GLYPH[u2]}</span>`), index: Math.max(0, UNITS.indexOf(st3.input.unit)), title: "\u957F\u77ED\u57FA\u7EBF", set: (i10) => this.host.onUnit(UNITS[i10]) };
     const rows = this.rows();
     return {
       items: SHIFTS.map((sh2) => this.spanHtml(sh2, f2, rows, narrow)),
@@ -7107,8 +7179,8 @@ var Pad = class {
    *  · 只是点一下（没滑）= 松手时展开滚轮（drum.ts）点选 / 原生滚动。 */
   knobDown(b3, e10) {
     const knob = b3.dataset.knob;
-    if (knob === "more" || knob === "key" && this.host.state().sel) {
-      this.mode = knob === "more" ? "more" : "transpose";
+    if (knob === "more") {
+      this.mode = "more";
       this.render();
       return;
     }
@@ -25575,7 +25647,7 @@ var SelBar = class {
       this.el.hidden = false;
       return;
     }
-    this.el.innerHTML = sel ? `<span class="sel-n">${sel} \u4E2A</span>` + b3("all", "\u5168\u9009") + b3("copy", "\u590D\u5236") + b3("cut", "\u526A\u5207") + (clip2 ? b3("paste", "\u7C98\u8D34") : "") + b3("transpose", "\u79FB\u8C03") + b3("fix", "\u4FEE") + b3("delete", "\u5220", "trash-can", "danger") + b3("clear", "", "x") : b3("paste", "\u7C98\u8D34\u5230\u5149\u6807\u5904") + b3("forget", "", "x");
+    this.el.innerHTML = sel ? `<span class="sel-n">${sel} \u4E2A</span>` + b3("all", "\u5168\u9009") + b3("copy", "\u590D\u5236") + b3("cut", "\u526A\u5207") + (clip2 ? b3("paste", "\u7C98\u8D34") : "") + b3("transpose", "\u64CD\u4F5C\u2026") + b3("fix", "\u4FEE") + b3("delete", "\u5220", "trash-can", "danger") + b3("clear", "", "x") : b3("paste", "\u7C98\u8D34\u5230\u5149\u6807\u5904") + b3("forget", "", "x");
     this.el.hidden = false;
   }
 };
@@ -25728,11 +25800,9 @@ async function selVerb(v) {
       await pasteNow();
       break;
     case "transpose":
-      if (st2.sel) {
-        showPad(true);
-        pad3.openTranspose();
-      }
+      if (st2.sel) openSelMenu(selBarAnchor());
       break;
+    // 选区菜单（移调 / 转调 / 时值…；user「不要用keyboard，而是一个小的上下文菜单」）
     case "delete":
       if (st2.sel) update(apply(st2, { k: "delete" }));
       break;
@@ -25778,15 +25848,10 @@ var keyTok = (s10, i10, code) => {
   if (t10?.kind === "note" && t10.pitch) pad3.showDown(t10.pitch, `key${code}`);
 };
 function writeAndLocate(write) {
-  let target = -1;
-  if (st2.sel) {
-    for (let k2 = st2.sel.from; k2 < st2.sel.to; k2++) if (tr(st2)[k2].kind === "note") {
-      target = k2;
-      break;
-    }
-  }
-  update(write(st2));
-  return target >= 0 ? target : st2.caret - 1;
+  const n10 = write(st2);
+  if (n10 === st2) return -1;
+  update(n10);
+  return st2.caret - 1;
 }
 var upTimer = 0;
 var view = new ScoreView(scoreEl, {
@@ -25813,6 +25878,7 @@ var view = new ScoreView(scoreEl, {
   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at2) => openTrackCard(at2),
   onBlankPress: (at2, row) => openScoreMenu(at2, row),
+  onSelPress: (at2) => openSelMenu(at2),
   onPaperMenu: (id2) => openPaperMenu(id2),
   onAddPaper: () => {
     update(addPaper(st2));
@@ -25943,6 +26009,59 @@ var finderBackToInst = false;
 var trackRedraw = null;
 var finderShown = false;
 var finderPlayOnly = false;
+var chordRoots = /* @__PURE__ */ new Map();
+var chordWaits = [];
+var tokIndex = (tokId) => tr(st2).findIndex((t10) => t10.id === tokId);
+function chordRoot() {
+  let best = null;
+  for (const [keyId, r10] of chordRoots) if (monoHeld.has(keyId) && tokIndex(r10.tokId) >= 0 && (!best || r10.t > best.t)) best = { ...r10, keyId };
+  return best;
+}
+function chordMerge(root, pitch) {
+  const ri2 = tokIndex(root.tokId), t10 = tr(st2)[ri2];
+  if (ri2 < 0 || t10?.kind !== "note" || !t10.pitch) return false;
+  update(toggleChordPitch(st2, ri2, keySpell(pitch, keyAt(tr(st2), ri2))));
+  return true;
+}
+function decideChord(w2, why) {
+  if (w2.done) return;
+  const now = performance.now(), rootHeld = monoHeld.has(w2.root.keyId), keyHeld = monoHeld.has(w2.keyId);
+  let chord;
+  if (why === "rootUp") chord = now - w2.t > w2.t - w2.root.t;
+  else if (why === "keyUp") chord = rootHeld;
+  else if (why === "both") {
+    if (!(rootHeld && keyHeld)) return;
+    chord = true;
+  } else chord = rootHeld;
+  w2.done = true;
+  clearTimeout(w2.timer);
+  chordWaits = chordWaits.filter((x2) => x2 !== w2);
+  if (chord && chordMerge(w2.root, w2.pitch)) return;
+  const i10 = writeAndLocate((s10) => writePitch(s10, w2.pitch, true));
+  if (i10 < 0) {
+    if (st2.sel) info("\u9009\u533A\u5199\u6EE1\u4E86\uFF1A\u5199\u4E0D\u51FA\u9009\u533A\u3002\u8981\u5F80\u540E\u5199\uFF0C\u5148\u70B9\u522B\u5904\u9000\u51FA\u9009\u533A");
+    return;
+  }
+  const t10 = tr(st2)[i10];
+  if (keyHeld && t10) chordRoots.set(w2.keyId, { tokId: t10.id, t: w2.t });
+  lastWrite = { index: i10, at: w2.t };
+  afterWrite();
+}
+function settleChords(why) {
+  for (const w2 of [...chordWaits]) {
+    if (why === "lost") {
+      monoHeld.delete(w2.root.keyId);
+    }
+    decideChord(w2, "force");
+  }
+}
+function chordKeyUp(id2) {
+  for (const w2 of [...chordWaits]) {
+    if (w2.keyId === id2) decideChord(w2, "keyUp");
+    else if (w2.root.keyId === id2) decideChord(w2, "rootUp");
+  }
+  chordRoots.delete(id2);
+}
 function insertMarkHere(kind) {
   const at2 = st2.sel ? st2.sel.from : st2.caret;
   const v = kind === "key" ? { kind, fifths: keyAt(tr(st2), at2) } : kind === "time" ? { kind, ...timeAt(tr(st2), at2) } : { kind, bpm: tempoAt(tr(st2), at2) };
@@ -25961,16 +26080,40 @@ var pad3 = new Pad(padEl, {
   onPitch: (p2, id2) => {
     if (finder.isOpen) return;
     const now = performance.now();
-    if (canStack() && (stack !== "off" || lastWrite.index >= 0 && now - lastWrite.at < CHORD_WIN && monoHeld.size > 1)) {
-      const i11 = stack !== "off" ? -1 : lastWrite.index;
-      update(i11 >= 0 ? toggleChordPitch(st2, i11, soundingPitch(st2, p2).pitch) : stackPitch(st2, p2));
+    if (canStack()) {
+      if (stack !== "off") {
+        update(stackPitch(st2, p2));
+        padNotes.set(id2, { index: -1, base: p2 });
+        if (stack === "once" && !stackHeld) setStack("off");
+        if (stackHeld) stackWrote = true;
+        return;
+      }
+      settleChords("force");
+      const root = chordRoot();
+      if (root) {
+        const sp2 = soundingPitch(st2, p2).pitch;
+        padNotes.set(id2, { index: -1, base: p2 });
+        if (now - root.t < CHORD_WIN) {
+          chordMerge(root, sp2);
+          return;
+        }
+        const w2 = { keyId: id2, pitch: sp2, t: now, root, timer: 0, done: false };
+        w2.timer = window.setTimeout(() => decideChord(w2, "both"), now - root.t + 5);
+        chordWaits.push(w2);
+        return;
+      }
+    } else if (stack !== "off") {
+      setStack("off");
+    }
+    const i10 = writeAndLocate((s10) => writePitch(s10, p2));
+    if (i10 < 0) {
       padNotes.set(id2, { index: -1, base: p2 });
-      if (stack === "once" && !stackHeld) setStack("off");
-      if (stackHeld) stackWrote = true;
+      if (st2.sel) info("\u9009\u533A\u5199\u6EE1\u4E86\uFF1A\u5199\u4E0D\u51FA\u9009\u533A\u3002\u8981\u5F80\u540E\u5199\uFF0C\u5148\u70B9\u522B\u5904\u9000\u51FA\u9009\u533A");
       return;
     }
-    const i10 = writeAndLocate((s10) => writePitch(s10, p2)), t10 = tr(st2)[i10];
+    const t10 = tr(st2)[i10];
     padNotes.set(id2, { index: i10, base: t10?.kind === "note" && t10.pitch ? t10.pitch : p2 });
+    if (canStack() && t10) chordRoots.set(id2, { tokId: t10.id, t: now });
     lastWrite = { index: i10, at: now };
     afterWrite();
   },
@@ -25988,18 +26131,14 @@ var pad3 = new Pad(padEl, {
     if (finder.isOpen) return;
     if (c10.k === "caret" && half === "once") setHalf("off");
     const nx2 = apply(st2, withHalf(c10), performance.now());
-    if (c10.k === "breath" && nx2 === st2) {
-      info("\u547C\u5438\u8981\u8DDF\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
+    if (c10.k === "art" && nx2 === st2) {
+      info(`${ART_NAME[c10.a]}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
       return;
     }
     update(nx2);
     if (c10.k === "rest" || c10.k === "extend") afterWrite();
   },
   onUnit: (u2) => {
-    if (st2.sel) {
-      update(setSelDur(st2, u2));
-      return;
-    }
     if (half === "once") {
       half = "off";
       halfShifted = false;
@@ -26041,10 +26180,12 @@ var pad3 = new Pad(padEl, {
     }
   },
   onSoundUp: (id2) => {
+    chordKeyUp(id2);
     padNotes.delete(id2);
     monoHeld.delete(id2);
     sound.up(id2);
   }
+  // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
 });
 function toggleImpro() {
   if (finder.isOpen) return;
@@ -26670,7 +26811,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "7bcf50a34dc5",
+  cssHash: "fa9e2610ad45",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -27293,6 +27434,91 @@ function openScoreMenu(at2, row) {
       updateChrome();
     }
     scoreEl.focus();
+  });
+}
+var UNIT_SMUFL = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
+var KEY_CIRCLE_MENU = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+function selBarAnchor() {
+  const r10 = document.querySelector('.sel-bar [data-v="transpose"]')?.getBoundingClientRect();
+  return r10 ? { x: r10.left, y: r10.bottom } : { x: innerWidth / 2 - 100, y: 120 };
+}
+function openSelMenu(at2) {
+  if (!st2.sel) return;
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu sel-menu";
+  box.setAttribute("role", "menu");
+  const item = (v, label, title = "", cls = "") => `<button class="btn ctx-item ${cls}" data-v="${v}"${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
+  const chip2 = (v, label, title = "") => `<button class="btn ctx-chip" data-v="${v}"${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
+  const draw = (page) => {
+    if (page === "keys") {
+      const now = keyAt(tr(st2), st2.sel?.from ?? 0);
+      box.innerHTML = item("back", "\u2039 \u8F6C\u8C03\u5230\u2026") + `<div class="ctx-grid">` + KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now ? "\u73B0\u5728\u7684\u8C03" : "")).join("") + `</div>`;
+      return;
+    }
+    box.innerHTML = `<div class="ctx-row"><span class="ctx-k">\u79FB\u8C03</span>${chip2("tr:1", "\u2191 \u534A\u97F3")}${chip2("tr:-1", "\u2193 \u534A\u97F3")}${chip2("tr:2", "\u2191 \u5168\u97F3")}${chip2("tr:-2", "\u2193 \u5168\u97F3")}${chip2("oct:1", "\u2191 \u516B\u5EA6")}${chip2("oct:-1", "\u2193 \u516B\u5EA6")}</div>` + item("keys", "\u8F6C\u8C03\u2026", "\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362") + item("respell", "\u6309\u8C03\u53F7\u62FC\u5199", "\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8") + `<div class="ctx-row"><span class="ctx-k">\u65F6\u503C</span>${chip2("short", "\xF72")}${chip2("long", "\xD72")}${chip2("seldur", `\u90FD\u6539\u6210 <span class="smufl">${UNIT_SMUFL[st2.input.unit]}</span>`, "\u90FD\u6539\u6210\u957F\u77ED\u65CB\u94AE\u73B0\u5728\u90A3\u4E00\u6863")}</div><div class="ctx-sep"></div>` + item("copy", "\u590D\u5236") + item("cut", "\u526A\u5207") + (clip ? item("paste", "\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09") : "") + item("fix", "\u4FEE\uFF08\u8DF3\u97F3 / \u91CD\u97F3 / \u529B\u5EA6\u2026\uFF09") + item("delete", "\u5220\u6389", "", "danger");
+  };
+  draw("main");
+  document.body.append(box);
+  const place = () => {
+    const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
+    let y2 = at2.y + 8;
+    if (y2 + h2 > innerHeight - m2) y2 = at2.y - h2 - 8;
+    box.style.left = `${Math.max(m2, Math.min(at2.x, innerWidth - w2 - m2))}px`;
+    box.style.top = `${Math.max(m2, Math.min(y2, innerHeight - h2 - m2))}px`;
+  };
+  place();
+  const outside = (e10) => {
+    if (!box.contains(e10.target)) close();
+  };
+  const close = () => {
+    document.removeEventListener("pointerdown", outside, true);
+    box.remove();
+    if (closeOffer === close) closeOffer = null;
+  };
+  setTimeout(() => {
+    if (box.isConnected) document.addEventListener("pointerdown", outside, true);
+  }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (!v || !st2.sel) return;
+    const cmd2 = (c10) => update(apply(st2, c10, performance.now()));
+    if (v.startsWith("tr:")) {
+      cmd2({ k: "transpose", semis: Number(v.slice(3)) });
+      return;
+    }
+    if (v.startsWith("oct:")) {
+      cmd2({ k: "octave", d: Number(v.slice(4)) });
+      return;
+    }
+    if (v === "short") {
+      cmd2({ k: "selscale", f: 0.5 });
+      return;
+    }
+    if (v === "long") {
+      cmd2({ k: "selscale", f: 2 });
+      return;
+    }
+    if (v === "seldur") {
+      cmd2({ k: "seldur" });
+      return;
+    }
+    if (v === "keys") {
+      draw("keys");
+      place();
+      return;
+    }
+    if (v === "back") {
+      draw("main");
+      place();
+      return;
+    }
+    close();
+    if (v.startsWith("mod:")) cmd2({ k: "modulate", fifths: Number(v.slice(4)) });
+    else if (v === "respell") cmd2({ k: "respell" });
+    else void selVerb(v);
+    updateChrome();
   });
 }
 var instEl = document.createElement("div");
@@ -28677,12 +28903,16 @@ window.addEventListener("keyup", (e10) => {
   }
 });
 window.addEventListener("blur", () => {
+  settleChords("lost");
+  chordRoots.clear();
   sampler.upAll();
   pad3.clearHeld();
   monoHeld.clear();
 });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
+    settleChords("lost");
+    chordRoots.clear();
     sampler.upAll();
     pad3.clearHeld();
     monoHeld.clear();
@@ -28710,4 +28940,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-7e855d3b6570.mjs.map
+//# sourceMappingURL=moonsinger-3cb201a3888e.mjs.map

@@ -9,8 +9,8 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
-import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
+import { type Art, ART_NAME, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
@@ -174,7 +174,7 @@ async function selVerb(v: SelVerb): Promise<void> {
     case "copy": { const t = copyTokens(st); if (t) { setClip(t); info(`复制了 ${t.length} 个`); } break; }
     case "cut": { const r = cutTokens(st); if (r) { setClip(r.toks); update(r.st); info(`剪切了 ${r.toks.length} 个`); } break; }
     case "paste": await pasteNow(); break;
-    case "transpose": if (st.sel) { showPad(true); pad.openTranspose(); } break;
+    case "transpose": if (st.sel) openSelMenu(selBarAnchor()); break;   // 选区菜单（移调 / 转调 / 时值…；user「不要用keyboard，而是一个小的上下文菜单」）
     case "delete": if (st.sel) update(apply(st, { k: "delete" })); break;
     case "clear": if (st.sel) update(setCaret(st, st.sel.to)); break;
     case "forget": clip = null; clipText = ""; updateChrome(); break;
@@ -202,10 +202,9 @@ const soundTok = (s: EditorState, i: number, id = "main") => { const t = tr(s)[i
 const keyTok = (s: EditorState, i: number, code: string) => { const t = tr(s)[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(t.pitch, `key${code}`); };
 /** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
 function writeAndLocate(write: (s: EditorState) => EditorState): number {
-  let target = -1;
-  if (st.sel) for (let k = st.sel.from; k < st.sel.to; k++) if (tr(st)[k].kind === "note") { target = k; break; }
-  update(write(st));
-  return target >= 0 ? target : st.caret - 1;
+  const n = write(st); if (n === st) return -1;   // 没写成（替换模式的选区写满了 / 没有能填的）
+  update(n);
+  return st.caret - 1;   // 插入 / 填 / 替换写完，光标（写字头）都在刚写的那个音后面
 }
 
 let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消旧的（不然会掐掉新音）
@@ -220,6 +219,7 @@ const view = new ScoreView(scoreEl, {
   parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at) => openTrackCard(at),
   onBlankPress: (at, row) => openScoreMenu(at, row),
+  onSelPress: (at) => openSelMenu(at),
   onPaperMenu: (id) => openPaperMenu(id),
   onAddPaper: () => { update(addPaper(st)); info("新的一张纸"); },
   onNav: (dir) => navPaper(dir),
@@ -325,6 +325,59 @@ let finderBackToInst = false;   // 乐器目录是从乐器页开的：关掉（
 let trackRedraw: (() => void) | null = null;   // 轨的小卡开着 = 它的重画（撤销 / 别处改了跟着变）
 let finderShown = false;   // 找人视图开着（openFinder / closeFinder 维护；不在这里读 finder——它比 pad 晚建）
 let finderPlayOnly = false;   // 从歌库进的乐器目录 = 只弹着玩（盖在歌库上面、不出「上场」；user 2026-10-08「库里面不开歌能进乐器目录玩吗」→「做只弹着玩模式」）
+// ── 叠音的「头 / 尾」判据（2026-10-08 by Claude Opus 5.5；只给能叠音的声部）──
+//   user「之前的判定是ab落的时候相近。现在的判定是b落的时候不在a的尾巴上」「如果ab，b按下去之后a马上松，那么就不应该是和弦」
+//   「尾巴时间规则也需要考虑相对比例，比如如果我快速跳音轻按ab多次的时候」「和弦输入的时候应该支持有长间隔的连按…慢慢按，xor toggle，手指数量不够的时候也能好」
+//   A（根音：写进谱、还按着的那个）按着时按下 B：B 马上响，进不进谱**观望**到分得出来（不先写再撤——撤销栈干净、替换模式不丢时值）：
+//   · 头：B 在 A 落下 CHORD_WIN 内 = 同时按 → 马上叠；
+//   · B 先松（A 还按着）= B 套在 A 里 → 叠（按住根音、一个一个点上去，XOR，手指不够也行）；
+//   · A 先松：A 和 B 一起按着的时间比 A 单独按着的时间长 → 叠；短 = A 的尾巴压在 B 的头上（快速连按 / 跳音 / 连奏）→ 两个音（这时才把 B 写进去）；
+//   · 两个都还按着、一起按着已经比 A 单独的长 → 叠（不用等松手）。比例不是固定毫秒：轻快的跳音和慢慢的连奏都按「尾巴」算。
+interface ChordRoot { tokId: number; t: number; keyId?: string }
+interface ChordWait { keyId: string; pitch: Pitch; t: number; root: ChordRoot & { keyId: string }; timer: number; done: boolean }
+const chordRoots = new Map<string, { tokId: number; t: number }>();   // 按着的键 → 它写进谱的那个音（根音候选）
+let chordWaits: ChordWait[] = [];
+const tokIndex = (tokId: number): number => tr(st).findIndex((t) => t.id === tokId);
+/** 现在的根音 = 最近写进谱、键还按着、音还在的那个。 */
+function chordRoot(): (ChordRoot & { keyId: string }) | null {
+  let best: (ChordRoot & { keyId: string }) | null = null;
+  for (const [keyId, r] of chordRoots) if (monoHeld.has(keyId) && tokIndex(r.tokId) >= 0 && (!best || r.t > best.t)) best = { ...r, keyId };
+  return best;
+}
+/** 叠到根音上（XOR；按谱上的调号拼写）。根音没了 = false。 */
+function chordMerge(root: ChordRoot, pitch: Pitch): boolean {
+  const ri = tokIndex(root.tokId), t = tr(st)[ri];
+  if (ri < 0 || t?.kind !== "note" || !t.pitch) return false;
+  update(toggleChordPitch(st, ri, keySpell(pitch, keyAt(tr(st), ri))));
+  return true;
+}
+/** 定一个观望中的：why = 谁先发生的（B 松 / 根音松 / 两个都按着够久了 / 又按了下一个键）。叠不成 = 现在把 B 当一个音补写进去。 */
+function decideChord(w: ChordWait, why: "keyUp" | "rootUp" | "both" | "force"): void {
+  if (w.done) return;
+  const now = performance.now(), rootHeld = monoHeld.has(w.root.keyId), keyHeld = monoHeld.has(w.keyId);
+  let chord: boolean;
+  if (why === "rootUp") chord = now - w.t > w.t - w.root.t;   // 一起按着的 > 根音单独按着的 = 叠；短 = 尾巴
+  else if (why === "keyUp") chord = rootHeld;                  // B 先松、根音还按着 = 套在里面
+  else if (why === "both") { if (!(rootHeld && keyHeld)) return; chord = true; }
+  else chord = rootHeld;
+  w.done = true; clearTimeout(w.timer); chordWaits = chordWaits.filter((x) => x !== w);
+  if (chord && chordMerge(w.root, w.pitch)) return;
+  const i = writeAndLocate((s) => writePitch(s, w.pitch, true));   // 两个音：现在补写（音高按下时就带好了 ♯ / ♭）
+  if (i < 0) { if (st.sel) info("选区写满了：写不出选区。要往后写，先点别处退出选区"); return; }
+  const t = tr(st)[i];
+  if (keyHeld && t) chordRoots.set(w.keyId, { tokId: t.id, t: w.t });   // B 还按着：它成了下一个的根音
+  lastWrite = { index: i, at: w.t };
+  afterWrite();
+}
+/** 把还在观望的都定下来（又按了一个键 = 按当前的；页面失焦 / 隐藏 = 键都算松了，写成单个的音）。 */
+function settleChords(why: "force" | "lost"): void {
+  for (const w of [...chordWaits]) { if (why === "lost") { monoHeld.delete(w.root.keyId); } decideChord(w, "force"); }
+}
+/** 一个键松开：它是谁的 B / 谁的根音，就按这个定；它不再是根音。 */
+function chordKeyUp(id: string): void {
+  for (const w of [...chordWaits]) { if (w.keyId === id) decideChord(w, "keyUp"); else if (w.root.keyId === id) decideChord(w, "rootUp"); }
+  chordRoots.delete(id);
+}
 /** 在光标（有选中 = 选区开头）插一个调号 / 拍号 / 速度，开记号框就地改：默认值 = 那里正生效的那个（没改就收起 = 撤掉这次插入）。pad 符号层和空白处小菜单共用。 */
 function insertMarkHere(kind: MarkVal["kind"]): void {
   const at = st.sel ? st.sel.from : st.caret;
@@ -342,16 +395,33 @@ const pad = new Pad(padEl, {
   onPitch: (p, id) => {
     if (finder.isOpen) return;
     const now = performance.now();
-    // 叠音：叠键开着（点一下 / 锁住 / 按住）、或两键同时按（前一个 80 ms 内刚写、还按着）→ 叠到前一个音上（XOR，最后一个留着）；单声乐器的声部永远不叠（护栏）
-    if (canStack() && (stack !== "off" || (lastWrite.index >= 0 && now - lastWrite.at < CHORD_WIN && monoHeld.size > 1))) {
-      const i = stack !== "off" ? -1 : lastWrite.index;
-      update(i >= 0 ? toggleChordPitch(st, i, soundingPitch(st, p).pitch) : stackPitch(st, p));
-      padNotes.set(id, { index: -1, base: p });
-      if (stack === "once" && !stackHeld) setStack("off"); if (stackHeld) stackWrote = true;
-      return;
+    if (canStack()) {
+      // 叠键开着（点一下 / 锁住 / 按住）：叠到前一个音上（XOR，最后一个留着）；单声乐器的声部永远不叠（护栏）
+      if (stack !== "off") {
+        update(stackPitch(st, p));
+        padNotes.set(id, { index: -1, base: p });
+        if (stack === "once" && !stackHeld) setStack("off"); if (stackHeld) stackWrote = true;
+        return;
+      }
+      settleChords("force");   // 又按下一个键：还在观望的先定（根音还按着 = 叠）
+      const root = chordRoot();
+      if (root) {
+        const sp = soundingPitch(st, p).pitch;
+        padNotes.set(id, { index: -1, base: p });   // 先响（onSoundDown 按 base 出声），进不进谱、叠不叠，等分出来再定
+        if (now - root.t < CHORD_WIN) { chordMerge(root, sp); return; }   // 头：和根音几乎同时落下 = 马上叠
+        const w: ChordWait = { keyId: id, pitch: sp, t: now, root, timer: 0, done: false };
+        w.timer = window.setTimeout(() => decideChord(w, "both"), now - root.t + 5);   // 重叠一超过根音单独按着的时长 = 叠（不用等松手）
+        chordWaits.push(w);
+        return;
+      }
+    } else if (stack !== "off") {   // 单声乐器：叠键开着也不叠（护栏），照常写
+      setStack("off");
     }
-    const i = writeAndLocate((s) => writePitch(s, p)), t = tr(st)[i];
+    const i = writeAndLocate((s) => writePitch(s, p));
+    if (i < 0) { padNotes.set(id, { index: -1, base: p }); if (st.sel) info("选区写满了：写不出选区。要往后写，先点别处退出选区"); return; }
+    const t = tr(st)[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
+    if (canStack() && t) chordRoots.set(id, { tokId: t.id, t: now });
     lastWrite = { index: i, at: now };
     afterWrite();
   },
@@ -368,10 +438,10 @@ const pad = new Pad(padEl, {
     if (finder.isOpen) return;
     if (c.k === "caret" && half === "once") setHalf("off");   // 挪光标 = 取消「凑满一份」
     const nx = apply(st, withHalf(c), performance.now());
-    if (c.k === "breath" && nx === st) { info("呼吸要跟在一个音后面（光标前面是休止或者还没有音）"); return; }
+    if (c.k === "art" && nx === st) { info(`${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
     update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
   },
-  onUnit: (u) => { if (st.sel) { update(setSelDur(st, u)); return; } if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
+  onUnit: (u) => { if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
   onInputScale: (id) => update(setInputScale(st, id)),
@@ -388,7 +458,7 @@ const pad = new Pad(padEl, {
     if (n && n.index >= 0) soundTok(st, n.index, id);
     else { const r = soundingPitch(st, p); update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); sound.down(r.pitch, id); }   // 弹：带上挂着的 ♯ / ♭
   },
-  onSoundUp: (id) => { padNotes.delete(id); monoHeld.delete(id); sound.up(id); },
+  onSoundUp: (id) => { chordKeyUp(id); padNotes.delete(id); monoHeld.delete(id); sound.up(id); },   // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
 });
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
@@ -1249,6 +1319,63 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
     else if (v === "row" && row) { update(select(st, row.from, row.to)); updateChrome(); }
     else if (v === "all") { update(selectAll(st)); updateChrome(); }
     scoreEl.focus();
+  });
+}
+/** 选区菜单（2026-10-08 by Claude Opus 5.5；user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单，键盘只做纯粹的打谱」）：
+ *  选区条「操作…」/ 长按选区里的音 / 右键选中的音 → 开在那里。移调、时值点了不收（可以连着点）；转调先换成调的列表；其余点了就收。 */
+const UNIT_SMUFL = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];   // 同 pad 的长短旋钮
+const KEY_CIRCLE_MENU = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6];
+function selBarAnchor(): { x: number; y: number } {
+  const r = document.querySelector<HTMLElement>('.sel-bar [data-v="transpose"]')?.getBoundingClientRect();
+  return r ? { x: r.left, y: r.bottom } : { x: innerWidth / 2 - 100, y: 120 };
+}
+function openSelMenu(at: { x: number; y: number }): void {
+  if (!st.sel) return;
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu sel-menu"; box.setAttribute("role", "menu");
+  const item = (v: string, label: string, title = "", cls = "") => `<button class="btn ctx-item ${cls}" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
+  const chip = (v: string, label: string, title = "") => `<button class="btn ctx-chip" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
+  const draw = (page: "main" | "keys") => {
+    if (page === "keys") {
+      const now = keyAt(tr(st), st.sel?.from ?? 0);
+      box.innerHTML = item("back", "‹ 转调到…") + `<div class="ctx-grid">` + KEY_CIRCLE_MENU.map((k) => chip(`mod:${k}`, `1=${KEY_LABEL[k]}`, k === now ? "现在的调" : "")).join("") + `</div>`;
+      return;
+    }
+    box.innerHTML =
+      `<div class="ctx-row"><span class="ctx-k">移调</span>${chip("tr:1", "↑ 半音")}${chip("tr:-1", "↓ 半音")}${chip("tr:2", "↑ 全音")}${chip("tr:-2", "↓ 全音")}${chip("oct:1", "↑ 八度")}${chip("oct:-1", "↓ 八度")}</div>` +
+      item("keys", "转调…", "整段转到另一个调：音按两个主音之间的音程挪，调号跟着换") +
+      item("respell", "按调号拼写", "音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动") +
+      `<div class="ctx-row"><span class="ctx-k">时值</span>${chip("short", "÷2")}${chip("long", "×2")}${chip("seldur", `都改成 <span class="smufl">${UNIT_SMUFL[st.input.unit]}</span>`, "都改成长短旋钮现在那一档")}</div>` +
+      `<div class="ctx-sep"></div>` + item("copy", "复制") + item("cut", "剪切") + (clip ? item("paste", "粘贴（替换选中的）") : "") + item("fix", "修（跳音 / 重音 / 力度…）") + item("delete", "删掉", "", "danger");
+  };
+  draw("main");
+  document.body.append(box);
+  const place = () => {
+    const w = box.offsetWidth, h = box.offsetHeight, m = 8;
+    let y = at.y + 8; if (y + h > innerHeight - m) y = at.y - h - 8;
+    box.style.left = `${Math.max(m, Math.min(at.x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
+  };
+  place();
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v || !st.sel) return;
+    const cmd = (c: Command) => update(apply(st, c, performance.now()));
+    if (v.startsWith("tr:")) { cmd({ k: "transpose", semis: Number(v.slice(3)) }); return; }   // 不收：可以连着点
+    if (v.startsWith("oct:")) { cmd({ k: "octave", d: Number(v.slice(4)) }); return; }
+    if (v === "short") { cmd({ k: "selscale", f: 0.5 }); return; }
+    if (v === "long") { cmd({ k: "selscale", f: 2 }); return; }
+    if (v === "seldur") { cmd({ k: "seldur" }); return; }
+    if (v === "keys") { draw("keys"); place(); return; }
+    if (v === "back") { draw("main"); place(); return; }
+    close();
+    if (v.startsWith("mod:")) cmd({ k: "modulate", fifths: Number(v.slice(4)) });
+    else if (v === "respell") cmd({ k: "respell" });
+    else void selVerb(v as SelVerb);
+    updateChrome();
   });
 }
 // 乐器页：占 #stage 的 main 区（和乐器目录 / 录音室同一个位置），pad 留在旁边只弹不写——弹的就是台上这位，改了马上能试。
@@ -2158,8 +2285,8 @@ window.addEventListener("keydown", (e) => {
 });
 window.addEventListener("keyup", (e) => { monoHeld.delete(`key${e.code}`); if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
 // 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）
-window.addEventListener("blur", () => { sampler.upAll(); pad.clearHeld(); monoHeld.clear(); });
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { sampler.upAll(); pad.clearHeld(); monoHeld.clear(); } });
+window.addEventListener("blur", () => { settleChords("lost"); chordRoots.clear(); sampler.upAll(); pad.clearHeld(); monoHeld.clear(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { settleChords("lost"); chordRoots.clear(); sampler.upAll(); pad.clearHeld(); monoHeld.clear(); } });
 
 await document.fonts.load(`40px Bravura`).catch(() => undefined);
 view.render();

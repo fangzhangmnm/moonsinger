@@ -50,6 +50,7 @@ export type MarkTok = KeyTok | TimeTok | TempoTok;
  *  出声：跳音 = 截短（候选的 articulation.staccatoGate）、重音 = 音头加 accentDb、保持 = 满长；呼吸 = 月读在下一个字前换一口气（唱法核心的「v」），乐器不受影响。 */
 export type Art = "staccato" | "accent" | "tenuto" | "breath";
 export const ARTS: readonly Art[] = ["staccato", "accent", "tenuto", "breath"];
+export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", tenuto: "保持", breath: "呼吸" };
 /** 力度 = 一个记号 token（不占时值，管到下一个力度为止；一首没写 = mf）。MusicXML <direction><dynamics>。出声 = 候选的 dynamicsDb（mf = 0 dB）。 */
 export type Dyn = "pp" | "p" | "mp" | "mf" | "f" | "ff";
 export const DYNS: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
@@ -114,7 +115,7 @@ export interface EditorState {
   song: Song;
   at: Focus;                                        // 正在写 / 改的那条 track
   caret: number;                                    // 插入点 0..tokens.length（sel 为 null 时 = 写）
-  sel: { from: number; to: number } | null;         // 选中范围 [from, to)（= 改）
+  sel: { from: number; to: number; head?: number } | null;   // 选中范围 [from, to)（= 改）；head = 替换模式的写字头（在选区里打过音之后才有；见 replaceWrite）
   nextId: number;
   log: LogEntry[];
   input: InputState;
@@ -210,14 +211,10 @@ export function toggleChordPitch(st: EditorState, i: number, p: Pitch): EditorSt
 /** pad 的「叠」：往前一个音（有选中 = 选中的第一个音）上叠（挂着的升降一样用掉）。 */
 export function stackPitch(st: EditorState, pitch0: Pitch): EditorState {
   const input = consumeAcc(st.input);
-  if (st.sel) {   // 有选中 = 选中的每个音都叠这个音（XOR；user 2026-10-08「其他键用 C（整组）没问题」）；选区留着
-    let s: EditorState = { ...st, input }, changed = false;
-    for (let i = st.sel.from; i < st.sel.to; i++) {
-      const t = tr(s)[i]; if (t.kind !== "note" || !t.pitch) continue;
-      const n = toggleChordPitch(s, i, keySpell(applyAcc(pitch0, st.input), keyAt(tr(s), i)));
-      if (n !== s) { s = { ...n, sel: st.sel, caret: st.caret }; changed = true; }
-    }
-    return changed ? s : { ...st, input };
+  if (st.sel) {   // 有选中 = 叠到「当前那个音」上：替换模式里 = 刚写的那个（写字头前面）；还没写过 = 选区里第一个音（键盘只管打谱，整组的操作在选区菜单里）
+    const i = st.sel.head != null ? lastTimedBefore(tr(st), st.sel.head, st.sel.from) : firstNoteIn(st);
+    if (i < 0 || tr(st)[i].kind !== "note") return { ...st, input };
+    return toggleChordPitch({ ...st, input }, i, keySpell(applyAcc(pitch0, st.input), keyAt(tr(st), i)));
   }
   const i = currentIndex(st);
   if (i < 0 || tr(st)[i].kind !== "note") return { ...st, input };
@@ -311,13 +308,14 @@ function fillTarget(st: EditorState): number {
 
 // ── 写（光标） ──────────────────────────────────────────────────────────
 
-/** 写一个音（给定音高：pad / 指针）。有选中 = 覆盖选中第一个音的音高并跳到下一个音（改）。 */
-export function writePitch(st: EditorState, pitch0: Pitch): EditorState {
-  const f = fillTarget(st), at = st.sel ? Math.max(0, firstNoteIn(st)) : f >= 0 ? f : st.caret;
+/** 写一个音（给定音高：pad / 指针）。有选中 = 替换模式（replaceWrite：按长短档吃掉选区里写字头后面的旧东西，写不出选区）。
+ *  raw = 音高已经带好了 ♯ / ♭（叠音判据「观望」后补写的那一下：按下时就算过一次 Shift 了），不再套、不再用掉 Shift。 */
+export function writePitch(st: EditorState, pitch0: Pitch, raw = false): EditorState {
+  const f = fillTarget(st), at = st.sel ? (st.sel.head ?? st.sel.from) : f >= 0 ? f : st.caret;
   // 按谱上的调号简化拼写：pad 的「1=」是它自己的（user「把pad想成一个独立的medo式的输入设备」），音落进谱时调内的音用谱上调号的写法——
   //   pad 1=C 按 ♭ 写的 A♭ 在五个升号的调里 = G♯（user 2026-10-08「升降号的歧义导致的没有自动简化怎么办」）；调外音照 pad 写的
-  const pitch = keySpell(applyAcc(pitch0, st.input), keyAt(tr(st), at)), input = consumeAcc(st.input);
-  if (st.sel) return overwritePitch({ ...st, input }, pitch);
+  const pitch = keySpell(raw ? pitch0 : applyAcc(pitch0, st.input), keyAt(tr(st), at)), input = raw ? st.input : consumeAcc(st.input);
+  if (st.sel) { const n = replaceWrite({ ...st, input }, { kind: "note", pitch }, unitDur(st.input)); return n.song === st.song ? st : n; }   // 没写成（窗口满了）= 原样，Shift 也不用掉
   if (f >= 0) {
     const t = tr(st)[f] as NoteTok, tokens = tr(st).slice(); tokens[f] = { ...t, pitch };
     return next(st, tokens, { caret: f + 1, input, log: [...st.log, { k: "fill", id: t.id, unit: t.dur }] });
@@ -330,14 +328,14 @@ export function writePitch(st: EditorState, pitch0: Pitch): EditorState {
 /** 写一个音：调里第几级 + 方向（键盘数字 / QWERTYU / Shift；pad 也能走这里）。参照 = 落点前最近一个有音高的音。 */
 export function writeDegree(st: EditorState, degree: number, dir: Dir): EditorState {
   let at: number;
-  if (st.sel) at = firstNoteIn(st);
+  if (st.sel) at = st.sel.head ?? st.sel.from;   // 替换模式：参照 = 写字头前面那个音
   else { const f = fillTarget(st); at = f >= 0 ? f : st.caret; }
   if (at < 0) return st;
   return writePitch(st, placeDegree(degree, inputKey(st), prevPitch(tr(st), at), dir));
 }
 
 export function writeRest(st: EditorState): EditorState {
-  if (st.sel) return restSel(st);   // 有选中 = 选中的音都变成同样长的休止（C：整组）
+  if (st.sel) return replaceWrite(st, { kind: "rest" }, unitDur(st.input));   // 有选中 = 替换模式写一个休止
   const dur = unitDur(st.input), id = st.nextId, tokens = tr(st).slice();
   tokens.splice(st.caret, 0, { kind: "rest", id, dur });
   return next(st, tokens, { caret: st.caret + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur }] });
@@ -390,18 +388,21 @@ export function toggleArtSel(st: EditorState, a: Art): EditorState {
   for (const i of idx) nt[i] = withArt(nt[i] as NoteTok, a, on);
   return next(st, nt);
 }
-/** 呼吸（pad 符号层）：光标前最近的那个音切呼吸（中间只隔着句号 / 力度 / 小节线这类不占时值的也算）；前面是休止或没有音 = 原样（返回 null 让界面说一声）。 */
-export function toggleBreath(st: EditorState): EditorState | null {
+/** 演奏法（pad 符号层：跳音 / 重音 / 保持 / 呼吸）：有选区 = 选中的音整组切（同选区条「修」）；没选区 = 光标前最近的那个音切
+ *  （中间只隔着句号 / 力度 / 小节线这类不占时值的也算）；前面是休止或没有音 = 原样（返回 null 让界面说一声）。 */
+export function toggleArtBefore(st: EditorState, a: Art): EditorState | null {
+  if (st.sel) { const nx = toggleArtSel(st, a); return nx === st ? null : nx; }
   const toks = tr(st);
-  for (let i = (st.sel ? st.sel.to : st.caret) - 1; i >= headLen(toks); i--) {
+  for (let i = st.caret - 1; i >= headLen(toks); i--) {
     const t = toks[i];
     if (t.kind === "rest") return null;
     if (t.kind !== "note") continue;
-    const nt = toks.slice(); nt[i] = withArt(t, "breath", !artOf(t).includes("breath"));
+    const nt = toks.slice(); nt[i] = withArt(t, a, !artOf(t).includes(a));
     return next(st, nt);
   }
   return null;
 }
+export const toggleBreath = (st: EditorState): EditorState | null => toggleArtBefore(st, "breath");
 /** 第 i 个 token 那儿生效的力度（往前找最近的力度记号；没有 = mf）。 */
 export function dynAt(tokens: Token[], i: number): Dyn {
   for (let j = Math.min(i, tokens.length) - 1; j >= 0; j--) { const t = tokens[j]; if (t.kind === "dyn") return t.value; }
@@ -486,7 +487,16 @@ export function deleteMark(st: EditorState, i: number): EditorState {
  *  half = pad 的「/2」开着：加**半份**（八分 + 半份 = 附点八分；接着再写一个减半的音 = 附点八分 + 十六分，凑满两份原来的）。
  *  有选中 = 每个选中的音加一份当前单位（「/2」已经把当前单位挪短了一档，不再折半）。 */
 export function extend(st: EditorState, half = false): EditorState {
-  if (st.sel) return mapSelDur(st, (d) => d + unitDur(st.input));
+  if (st.sel) {   // 替换模式：刚写的那个往后吃一份（写不出选区、不越过「|」）；还没写过 = 不动（键盘只管打谱，整组改时值在选区菜单里）
+    const sel = st.sel; if (sel.head == null) return st;
+    const tk = tr(st), j = lastTimedBefore(tk, sel.head, sel.from); if (j < 0) return st;
+    let i = sel.head; while (i < sel.to && !isTimed(tk[i]) && tk[i].kind !== "bar") i++;
+    if (i >= sel.to || tk[i].kind === "bar") return st;
+    const e = eat(tk, i, sel.to, unitDur(st.input)), t = tk[j] as Timed;
+    if (!e.got || !validDur(t.dur + e.got)) return st;
+    const nt = [...tk.slice(0, j), { ...t, dur: t.dur + e.got } as Token, ...tk.slice(j + 1, i), ...e.keep, ...tk.slice(e.end)];
+    return next(st, nt, { sel: { ...sel, to: sel.to + (nt.length - tk.length), head: i }, caret: i });
+  }
   const tokens = tr(st);
   // 目标 = 本次输入记录里最后一个音（还在的话），否则光标前最近的音 / 休止
   let target = -1, unit = unitDur(st.input), fromLog = false;
@@ -517,6 +527,13 @@ export function extend(st: EditorState, half = false): EditorState {
 
 /** 退格：有选中 = 删选中；写的时候 = 撤回本次输入记录的最后一笔，记录空了就删光标前一个 token。 */
 export function backspace(st: EditorState): EditorState {
+  if (st.sel && st.sel.head != null) {   // 替换模式：刚写的那个变回休止（位置不动、后面不挪）；写字头退回去。要原来的东西 = 撤销
+    const tk = tr(st), j = lastTimedBefore(tk, st.sel.head, st.sel.from);
+    if (j < 0) return st;
+    const t = tk[j], nt = tk.slice();
+    if (t.kind === "note") nt[j] = { kind: "rest", id: t.id, dur: t.dur } as Token;
+    return next(st, nt, { sel: { ...st.sel, head: j }, caret: j });
+  }
   if (st.sel) return deleteSel(st);
   const tokens = tr(st);
   while (st.log.length) {
@@ -543,15 +560,16 @@ export function deleteForward(st: EditorState): EditorState {
 
 /** 长短基线直接设成第几档（pad 的长短旋钮点开选）。 */
 export function setUnit(st: EditorState, unit: number): EditorState { return { ...st, input: { ...st.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) } }; }
-/** 长短：有选中 = 选中的音减半 / 加倍；写的时候 = 输入档位（到头不动）。 */
+/** 长短 = 输入档位（接下来写的长短；到头不动）。有选区也一样——选区里写 = 替换模式按这一档吃（键盘只管打谱；
+ *  整组改时值 = 选区菜单 scaleSelDur / setSelDur；2026-10-08 user「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单」）。 */
 export function shorter(st: EditorState): EditorState {
-  if (st.sel) return mapSelDur(st, (d) => d / 2);
   return st.input.unit > 0 ? { ...st, input: { ...st.input, unit: st.input.unit - 1 } } : st;
 }
 export function longer(st: EditorState): EditorState {
-  if (st.sel) return mapSelDur(st, (d) => d * 2);
   return st.input.unit < LADDER.length - 1 ? { ...st, input: { ...st.input, unit: st.input.unit + 1 } } : st;
 }
+/** 选区菜单「÷2 / ×2」：选中的音 / 休止都乘这个数（超出全音符 / 三十二分的那个不动）。 */
+export function scaleSelDur(st: EditorState, f: 0.5 | 2): EditorState { return mapSelDur(st, (d) => d * f); }
 /** 连音：设成 0 / 3 / 5 / 6 / 7（锁定式；候选由界面弹）。 */
 export function setTuplet(st: EditorState, n: InputState["tuplet"]): EditorState { return { ...st, input: { ...st.input, tuplet: n } }; }
 /** ♯ / ♭ Shift：关 → 一次；一次且 350 ms 内再点 → 锁；其余 → 关。有选中 = 选中的音直接升降半音。 */
@@ -579,24 +597,62 @@ function firstNoteIn(st: EditorState): number {
   for (let i = st.sel.from; i < st.sel.to; i++) if (tr(st)[i].kind === "note") return i;
   return -1;
 }
-function nextNoteAfter(tokens: Token[], i: number): number {
-  for (let j = i + 1; j < tokens.length; j++) if (tokens[j].kind === "note") return j;
+/** 写字头前面最近的那个有时值的 token（不早于 from）；没有 = -1。 */
+function lastTimedBefore(tk: Token[], head: number, from: number): number {
+  for (let j = head - 1; j >= from; j--) if (isTimed(tk[j])) return j;
   return -1;
 }
-/** 覆盖选中第一个音的音高，选中跳到下一个音（没有了 = 末尾的光标，回到写）。节奏不动。 */
-function overwritePitch(st: EditorState, pitch: Pitch): EditorState {
-  const i = firstNoteIn(st);
-  if (i < 0) return st;
-  const nt = tr(st).slice(); nt[i] = withPitches(nt[i] as NoteTok, [pitch]);   // 重打 = 整个叠音换成这一个音
-  const j = nextNoteAfter(nt, i);
-  return j >= 0 ? next(st, nt, { sel: { from: j, to: j + 1 }, caret: j + 1 }) : next(st, nt, { sel: null, caret: nt.length, log: [] });
+/** 从 i 起吃掉 need 那么长的旧东西（替换模式用）：不越过窗口尾 b，也不越过人插的小节线（「|」挡住）。
+ *  吃一半的音 / 休止留下剩的那截（剩的那截不带歌词 / 连音线 / 演奏法）；太短（< 最短时值）的那截一起吃掉，算进 got。中间的力度 / 句号 / 记号原样留着（keep）。
+ *  返回：实际吃了多少（got）、第一个被吃的（继承歌词）、吃到哪（end，不含）、要放回去的（keep）。 */
+function eat(tk: Token[], i: number, b: number, need: number): { got: number; first: Timed | null; end: number; keep: Token[] } {
+  let got = 0, first: Timed | null = null, j = i;
+  const keep: Token[] = [];
+  while (j < b && got < need) {
+    const t = tk[j];
+    if (t.kind === "bar") break;
+    if (!isTimed(t)) { keep.push(t); j++; continue; }
+    first ??= t;
+    const rest = t.dur - (need - got);
+    if (rest >= MIN_DUR) {
+      const { lyric: _l, hyph: _h, tie: _t, art: _a, ...base } = t as NoteTok; void _l; void _h; void _t; void _a;
+      keep.push((t.kind === "note" ? { ...base, dur: rest, lyric: null } : { ...t, dur: rest }) as Token);
+      got = need;
+    } else got += t.dur;
+    j++;
+  }
+  return { got, first, end: j, keep };
 }
-/** 选中的音 / 休止全部改成这一档（pad 长短旋钮拨的那一档；连音跟 pad 现在的连音设置）。user 2026-10-08「其他键用 C（整组）没问题」。 */
+/** 替换模式（有选区时打音 / 休止；2026-10-08 by Claude Opus 5.5；user「加一个时长替换模式，类似override，就像钢琴窗里面你一步一步改monophony线，
+ *  吃掉后面的旋律线。不过还是可以输入polyohonic。然后也许编辑的时候保留选区」「然后不能写出选区边界」「有选区 = 替换、无选区 = 插入」）：
+ *  选区 = 窗口；在写字头（sel.head，第一次 = 选区开头）写一个 dur 长的音，吃掉窗口里写字头后面 dur 那么长的旧东西——后面的东西不挪，永远对齐。
+ *  · 写不出选区：最后一个截短到正好填满；窗口满了 = 原样（调用方提示）。人插的小节线也挡住（写到「|」前为止，下一个从「|」后面接着写）。
+ *  · 新音正好落在旧音的起点上 = 接过那个旧音的歌词（只改音高时歌词不丢）。
+ *  · 选区（窗口）一直留着，写字头挪到新音后面；退格 = 刚写的变回休止（backspace），「−」= 往后吃（extend）。 */
+export function replaceWrite(st: EditorState, what: { kind: "note"; pitch: Pitch } | { kind: "rest" }, dur: number): EditorState {
+  const sel = st.sel; if (!sel) return st;
+  const tk = tr(st);
+  let i = sel.head ?? sel.from;
+  while (i < sel.to && !isTimed(tk[i])) i++;   // 写字头后面的小节线 / 记号留在前面
+  if (i >= sel.to) return st;
+  const e = eat(tk, i, sel.to, dur);
+  if (!validDur(e.got)) return st;
+  const id = st.nextId, inherit = e.first?.kind === "note" ? (e.first as NoteTok) : null;
+  const tok: Token = what.kind === "note"
+    ? ({ kind: "note", id, pitch: what.pitch, dur: e.got, lyric: inherit?.lyric ?? null, ...(inherit?.hyph ? { hyph: true } : {}) } as Token)
+    : ({ kind: "rest", id, dur: e.got } as Token);
+  const after = tk.slice(e.end), nx = after[0];
+  if (nx?.kind === "note" && (nx as NoteTok).tie) { const { tie: _t, ...rest } = nx as NoteTok; void _t; after[0] = rest as Token; }   // 后面那个音原来连着被吃掉的：连音线断开
+  const nt = [...tk.slice(0, i), tok, ...e.keep, ...after];
+  const to = sel.to + (nt.length - tk.length);
+  return next(st, nt, { sel: { from: sel.from, to, head: i + 1 }, caret: i + 1, nextId: id + 1 });
+}
+/** 选中的音 / 休止全部改成这一档（选区菜单「都改成 ♪」= pad 长短旋钮现在那一档；连音跟 pad 现在的连音设置）。 */
 export function setSelDur(st: EditorState, unit: number): EditorState {
   const d = unitDur({ ...st.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) });
   return mapSelDur(st, () => d);
 }
-/** 选中的音 / 休止现在是哪一档（都一样才有；长短不一 / 不是整档 / 没选 = null）：pad 的长短旋钮显示用。 */
+/** 选中的音 / 休止现在是哪一档（都一样才有；长短不一 / 不是整档 / 没选 = null）：选区菜单显示用。 */
 export function selUnit(st: EditorState): number | null {
   if (!st.sel) return null;
   let u: number | null = null;
@@ -606,13 +662,6 @@ export function selUnit(st: EditorState): number | null {
     if (u === null) u = k; else if (u !== k) return null;
   }
   return u;
-}
-/** 「0」有选中 = 选中的音都变成同样长的休止（叠音 / 歌词 / 记号一起没了；能撤销）。 */
-export function restSel(st: EditorState): EditorState {
-  if (!st.sel) return st;
-  const nt = tr(st).slice(); let changed = false;
-  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note") { nt[i] = { kind: "rest", id: t.id, dur: t.dur } as Token; changed = true; } }
-  return changed ? next(st, nt, { sel: st.sel, caret: st.caret }) : st;
 }
 function mapSelDur(st: EditorState, f: (d: number) => number): EditorState {
   if (!st.sel) return st;

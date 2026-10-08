@@ -3,7 +3,7 @@ import { describe, it, eq } from "./runner.mjs";
 import {
   initState, emptySong, writeDegree, writeRest, writeBar, writeKey, extend, backspace, shorter, longer, setTuplet, tapAcc,
   setCaret, select, escape, moveCaret, setInputKey, barFill, keyAt, TPQ, type NoteTok, type EditorState,
-  headLen, writeMark, deleteMark, setMark, timeline, tempoWord, TEMPO_WORDS, transposeSel, modulateSel, selectToEdge, alterTarget, tr, songOf } from "../src/score/song.ts";
+  headLen, writeMark, deleteMark, setMark, timeline, tempoWord, TEMPO_WORDS, transposeSel, modulateSel, selectToEdge, alterTarget, tr, songOf, scaleSelDur } from "../src/score/song.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
 import { parseMark } from "../src/score/marks.ts";
 import { pitchName } from "../src/score/pitch.ts";
@@ -79,12 +79,14 @@ describe("song（写）", () => {
 
 describe("song（改：选中）", () => {
   const base = () => { let st = initState(); for (const d of [1, 2, 3, 4]) st = writeDegree(st, d, "near"); return st; };
-  it("选中一个音按数字 = 覆盖音高、节奏不动、选中跳到下一个音", () => {
+  it("选中一个音按数字 = 替换模式：按长短档换掉它，写不出选区（2026-10-08 起；原来是「覆盖音高、选中跳到下一个音」）", () => {
     let st = select(base(), H + 1, H + 2); st = writeDegree(st, 5, "near"); st = writeDegree(st, 6, "near");
-    eq(show(st), "C4/1 G3/1 A3/1 F4/1"); eq(st.sel?.from, H + 3);   // 就近：C4 → 下面的 G3（3 级）比上面的 G4（4 级）近
+    eq(show(st), "C4/1 G3/1 E4/1 F4/1");   // 就近：C4 → 下面的 G3（3 级）比上面的 G4（4 级）近；第二下窗口满了 = 不写
+    eq(JSON.stringify(st.sel), JSON.stringify({ from: H + 1, to: H + 2, head: H + 2 }), "选区留着、写字头在尾巴上");
   });
-  it("选中改长短 = 选中的音减半 / 加倍；输入档位不变", () => {
-    let st = select(base(), H, H + 2); st = longer(st); eq(show(st), "C4/2 D4/2 E4/1 F4/1"); eq(st.input.unit, 2);
+  it("有选区按长短 = 只改输入档位（谱不动）；整组改时值走选区菜单 scaleSelDur", () => {
+    let st = select(base(), H, H + 2); st = longer(st); eq(show(st), "C4/1 D4/1 E4/1 F4/1"); eq(st.input.unit, 3);
+    st = scaleSelDur(st, 2); eq(show(st), "C4/2 D4/2 E4/1 F4/1"); eq(st.input.unit, 3);
   });
   it("选中按 ♯ = 选中的音直接升半音", () => {
     let st = select(base(), H + 2, H + 3); st = tapAcc(st, 1, 0); eq(show(st), "C4/1 D4/1 E#4/1 F4/1");
