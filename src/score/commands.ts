@@ -1,7 +1,7 @@
 // commands.ts —— 键盘 / pad / 按钮条发来的命令 → 编辑器状态。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
 // 键盘怎么变成命令 = src/input/keys.ts（一张表）；这里只管命令做什么。
 import type { Dir } from "./pitch.ts";
-import { type EditorState, type Art, type Dyn, setDynSel, dynMarkSel, toggleSlurBefore, toggleHairpin, toggleSwell, writeDegree, writeRest, writeBar, writePhrase, shorter, longer, setTuplet, extend, tapAcc, octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward, transposeSel, respellSel, modulateSel, selectToEdge, tr, toggleStaff, toggleArtBefore, setSelDur, scaleSelDur } from "./song.ts";
+import { type EditorState, type Art, type Dyn, setDynSel, dynMarkSel, toggleSlurBefore, toggleHairpin, toggleSwell, symBackspace, writeDegree, writeRest, writeBar, writePhrase, shorter, longer, setTuplet, extend, tapAcc, octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward, transposeSel, respellSel, modulateSel, selectToEdge, tr, toggleStaff, toggleArtBefore, setSelDur, scaleSelDur } from "./song.ts";
 
 export type Command =
   | { k: "degree"; degree: number; dir: Dir }
@@ -10,7 +10,7 @@ export type Command =
   | { k: "acc"; acc: 1 | -1 }
   | { k: "octave"; d: number } | { k: "step"; d: number } | { k: "alter"; d: number }
   | { k: "caret"; d: number } | { k: "selext"; d: number } | { k: "home" } | { k: "end" } | { k: "escape" }
-  | { k: "backspace" } | { k: "delete" }
+  | { k: "backspace" } | { k: "delete" } | { k: "symBackspace" }
   | { k: "transpose"; semis: number } | { k: "respell" } | { k: "seldur" } | { k: "selscale"; f: 0.5 | 2 } | { k: "modulate"; fifths: number } | { k: "seledge"; d: -1 | 1 }
   | { k: "staff" };   // 大谱表：这个音换到另一张谱表
 
@@ -41,6 +41,7 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "staff": return toggleStaff(st, 2);
     case "escape": return escape(st);
     case "backspace": return backspace(st);
+    case "symBackspace": return symBackspace(st);   // 符号模式：只删记号，没有就往回退一步
     case "delete": return deleteForward(st);
     case "transpose": return transposeSel(st, c.semis);
     case "respell": return respellSel(st);

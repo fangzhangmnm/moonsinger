@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.9-2026-10-08";
+var APP_VERSION = "v0.7.10-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3152,12 +3152,6 @@ function toggleSlurBefore(st3) {
   }
   return null;
 }
-function slurStateSel(st3) {
-  const idx = selNoteIdx(st3);
-  if (!idx.length) return "none";
-  const on2 = idx.length === 1 ? idx : idx.slice(0, -1), n10 = on2.filter((i10) => tr(st3)[i10].slur).length;
-  return n10 === 0 ? "none" : n10 === on2.length ? "all" : "some";
-}
 function toggleSwell(st3, w2) {
   const set = (t10, on2) => {
     if (on2) return { ...t10, swell: w2 };
@@ -3348,36 +3342,43 @@ function backspace(st3) {
   if (st3.sel) return deleteSel(st3);
   const tokens = tr(st3);
   while (st3.log.length) {
-    const e10 = st3.log[st3.log.length - 1], log = st3.log.slice(0, -1), i10 = indexOfId(tokens, e10.id);
-    if (i10 < 0) {
+    const e10 = st3.log[st3.log.length - 1], log = st3.log.slice(0, -1), i11 = indexOfId(tokens, e10.id);
+    if (i11 < 0) {
       st3 = { ...st3, log };
       continue;
     }
     const nt3 = tokens.slice();
     if (e10.k === "ext") {
-      const t10 = nt3[i10];
-      nt3[i10] = { ...t10, dur: t10.dur - e10.by };
+      const t10 = nt3[i11];
+      nt3[i11] = { ...t10, dur: t10.dur - e10.by };
       return next(st3, nt3, { log });
     }
     if (e10.k === "fill") {
-      const t10 = nt3[i10];
-      nt3[i10] = { ...t10, pitch: null };
-      return next(st3, nt3, { log, caret: i10 });
+      const t10 = nt3[i11];
+      nt3[i11] = { ...t10, pitch: null };
+      return next(st3, nt3, { log, caret: i11 });
     }
-    nt3.splice(i10, 1);
-    return next(st3, nt3, { log, caret: i10 < st3.caret ? st3.caret - 1 : st3.caret });
+    nt3.splice(i11, 1);
+    return next(st3, nt3, { log, caret: i11 < st3.caret ? st3.caret - 1 : st3.caret });
   }
   if (st3.caret <= headLen(tokens)) return st3;
+  let i10 = st3.caret - 1;
+  while (i10 >= headLen(tokens) && !stopTok(tokens[i10])) i10--;
+  if (i10 < headLen(tokens)) return st3;
   const nt2 = tokens.slice();
-  nt2.splice(st3.caret - 1, 1);
-  return next(st3, nt2, { caret: st3.caret - 1 });
+  nt2.splice(i10, 1);
+  return afterDelete(st3, nt2, { caret: st3.caret - 1 });
 }
 function deleteForward(st3) {
   if (st3.sel) return deleteSel(st3);
   if (st3.caret >= tr(st3).length) return st3;
-  const nt2 = tr(st3).slice();
-  nt2.splice(st3.caret, 1);
-  return next(leave(st3), nt2);
+  const toks = tr(st3);
+  let i10 = st3.caret;
+  while (i10 < toks.length && !stopTok(toks[i10])) i10++;
+  if (i10 >= toks.length) return st3;
+  const nt2 = toks.slice();
+  nt2.splice(i10, 1);
+  return afterDelete(leave(st3), nt2, { caret: st3.caret });
 }
 function setUnit(st3, unit) {
   return { ...st3, input: { ...st3.input, unit: Math.max(0, Math.min(LADDER.length - 1, unit)) } };
@@ -3494,7 +3495,7 @@ function deleteSel(st3) {
   if (!st3.sel) return st3;
   const nt2 = tr(st3).slice();
   nt2.splice(st3.sel.from, st3.sel.to - st3.sel.from);
-  return next(st3, nt2, { sel: null, caret: st3.sel.from, log: [] });
+  return afterDelete(st3, nt2, { sel: null, caret: st3.sel.from, log: [] });
 }
 function mapTargetPitch(st3, f2) {
   if (st3.sel) {
@@ -3584,9 +3585,89 @@ function select(st3, from, to2) {
   if (b3 <= a10) return setCaret(st3, a10);
   return { ...leave(st3), sel: { from: a10, to: b3 }, caret: b3 };
 }
+var stopTok = (t10) => isTimed(t10) || t10.kind === "bar";
 function moveCaret(st3, d3) {
   if (st3.sel) return setCaret(st3, d3 < 0 ? st3.sel.from : st3.sel.to);
-  return setCaret(st3, st3.caret + d3);
+  const toks = tr(st3), h2 = headLen(toks);
+  let c10 = st3.caret;
+  for (let n10 = 0; n10 < Math.abs(d3); n10++) {
+    if (d3 < 0) {
+      let i10 = c10 - 1;
+      while (i10 >= h2 && !stopTok(toks[i10])) i10--;
+      if (i10 < h2) {
+        c10 = h2;
+        break;
+      }
+      let j2 = i10 - 1;
+      while (j2 >= h2 && !stopTok(toks[j2])) j2--;
+      c10 = j2 < h2 ? h2 : j2 + 1;
+    } else {
+      let i10 = c10;
+      while (i10 < toks.length && !stopTok(toks[i10])) i10++;
+      c10 = i10 < toks.length ? i10 + 1 : toks.length;
+    }
+  }
+  return setCaret(st3, c10);
+}
+function annihilate(tokens) {
+  const drop = /* @__PURE__ */ new Set();
+  let lastDyn = -1, timedSince = true;
+  tokens.forEach((t10, i10) => {
+    if (isTimed(t10)) {
+      timedSince = true;
+      return;
+    }
+    if (t10.kind === "dyn") {
+      if (lastDyn >= 0 && !timedSince) drop.add(lastDyn);
+      lastDyn = i10;
+      timedSince = false;
+    }
+  });
+  tokens.forEach((t10, i10) => {
+    if (t10.kind !== "hairpin") return;
+    for (let j2 = i10 + 1; j2 < tokens.length; j2++) {
+      const u2 = tokens[j2];
+      if (isTimed(u2)) return;
+      if (u2.kind === "dyn" || u2.kind === "hairpin") break;
+    }
+    drop.add(i10);
+  });
+  if (!drop.size) return { tokens, removed: [] };
+  return { tokens: tokens.filter((_2, i10) => !drop.has(i10)), removed: [...drop].sort((x2, y2) => x2 - y2) };
+}
+function afterDelete(st3, nt2, over) {
+  const a10 = annihilate(nt2), caret = (over.caret ?? st3.caret) - a10.removed.filter((k2) => k2 < (over.caret ?? st3.caret)).length;
+  return next(st3, a10.tokens, { ...over, caret });
+}
+function symBackspace(st3) {
+  if (st3.sel) return st3;
+  const toks = tr(st3), h2 = headLen(toks), i10 = st3.caret - 1;
+  if (i10 >= h2 && !stopTok(toks[i10])) {
+    const nt2 = toks.slice();
+    nt2.splice(i10, 1);
+    return next(st3, nt2, { caret: st3.caret - 1 });
+  }
+  const t10 = toks[i10];
+  if (i10 >= h2 && t10?.kind === "note") {
+    const nt2 = toks.slice(), art = artOf(t10);
+    const strip = (k2) => {
+      const { [k2]: _x, ...rest } = t10;
+      return rest;
+    };
+    if (t10.swell) {
+      nt2[i10] = strip("swell");
+      return next(st3, nt2);
+    }
+    for (const a10 of ["marcato", "accent", "sfz", "fp", "tenuto", "staccato", "breath"]) if (art.includes(a10)) {
+      nt2[i10] = withArt(t10, a10, false);
+      return next(st3, nt2);
+    }
+    if (t10.slur) {
+      nt2[i10] = strip("slur");
+      return next(st3, nt2);
+    }
+  }
+  return moveCaret(st3, -1);
 }
 function extendSelection(st3, d3) {
   if (!st3.sel) return d3 < 0 ? select(st3, st3.caret - 1, st3.caret) : select(st3, st3.caret, st3.caret + 1);
@@ -3921,6 +4002,9 @@ function apply(st3, c10, now = Date.now()) {
       return escape(st3);
     case "backspace":
       return backspace(st3);
+    case "symBackspace":
+      return symBackspace(st3);
+    // 符号模式：只删记号，没有就往回退一步
     case "delete":
       return deleteForward(st3);
     case "transpose":
@@ -7045,7 +7129,7 @@ var Pad = class {
       this.on(w2, "[data-cmd]:not([data-cmd=backspace])", (b3) => this.host.onCommand({ k: b3.dataset.cmd }));
       const bs = w2.querySelector('[data-cmd="backspace"]');
       let timer = 0;
-      const stop = () => clearTimeout(timer), del = () => this.host.onCommand({ k: "backspace" });
+      const stop = () => clearTimeout(timer), del = () => this.host.onCommand({ k: this.symbols !== "off" ? "symBackspace" : "backspace" });
       bs.addEventListener("pointerdown", (e10) => {
         e10.preventDefault();
         try {
@@ -26252,8 +26336,6 @@ function unserializeDesk(json) {
 }
 
 // src/ui/sel-bar.ts
-var SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
-var ART_LABEL = { staccato: ["\uE4A2", "\u8DF3\u97F3"], accent: ["\uE4A0", "\u91CD\u97F3"], marcato: ["\uE4AC", "\u5F3A\u97F3"], sfz: ["\uE539", "\u7A81\u5F3A"], fp: ["\uE534", "\u5F3A\u540E\u5F31"], tenuto: ["\uE4A4", "\u4FDD\u6301"], breath: ["\uE4CE", "\u547C\u5438"] };
 var SelBar = class {
   el;
   constructor(parent, host) {
@@ -26268,18 +26350,13 @@ var SelBar = class {
     });
   }
   /** 画：sel = 有没有选区（几个 token）；clip = 剪贴板里有没有东西；over = 别的全屏视图盖着（藏）；fix = 「修」开着（那一排开关的状态）。 */
-  update(sel, clip2, over, fix = null) {
+  update(sel, clip2, over) {
     if (over || !sel && !clip2) {
       this.el.hidden = true;
       return;
     }
     const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
-    if (sel && fix) {
-      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A${fix.ignores?.includes(a10) ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span>${fix.ignores?.includes(a10) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button>`).join("") + `<button type="button" class="btn fix-art fix-slur${fix.slur === "all" ? " is-on" : fix.slur === "some" ? " is-some" : ""}" data-v="slur" title="\u8FDE\u7EBF\uFF1A\u9009\u4E2D\u7684\u97F3\u8FDE\u8D77\u6765\uFF08\u4E0D\u7559\u7F1D\uFF09\uFF1B\u90FD\u8FDE\u7740 = \u53BB\u6389${fix.ignores?.includes("slur") ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u73B0\u5728\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF09" : ""}">${SLUR_SVG}<span>\u8FDE\u7EBF</span>${fix.ignores?.includes("slur") ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</button><span class="sel-gap"></span>` + b3("fixdone", "\u5B8C\u6210", "", "primary");
-      this.el.hidden = false;
-      return;
-    }
-    this.el.innerHTML = sel ? `<span class="sel-n">${sel} \u4E2A</span>` + b3("all", "\u5168\u9009") + b3("copy", "\u590D\u5236") + b3("cut", "\u526A\u5207") + (clip2 ? b3("paste", "\u7C98\u8D34") : "") + b3("transpose", "\u64CD\u4F5C\u2026") + b3("fix", "\u4FEE") + b3("delete", "\u5220", "trash-can", "danger") + b3("clear", "", "x") : b3("paste", "\u7C98\u8D34\u5230\u5149\u6807\u5904") + b3("forget", "", "x");
+    this.el.innerHTML = sel ? `<span class="sel-n">${sel} \u4E2A</span>` + b3("all", "\u5168\u9009") + b3("copy", "\u590D\u5236") + b3("cut", "\u526A\u5207") + (clip2 ? b3("paste", "\u7C98\u8D34") : "") + b3("transpose", "\u64CD\u4F5C\u2026") + b3("delete", "\u5220", "trash-can", "danger") + b3("clear", "", "x") : b3("paste", "\u7C98\u8D34\u5230\u5149\u6807\u5904") + b3("forget", "", "x");
     this.el.hidden = false;
   }
 };
@@ -26368,7 +26445,6 @@ var selBar = new SelBar(stageEl, { verb: (v) => {
 var clip = null;
 var clipText = "";
 var selSig = "";
-var selFix = false;
 var chromeReady = false;
 function updateChrome() {
   if (!chromeReady) return;
@@ -26377,11 +26453,10 @@ function updateChrome() {
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
-  if (!n10) selFix = false;
-  const fix = selFix ? { art: artStateSel(st2), slur: slurStateSel(st2), ignores: ignoredHere() } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
+  const sig = `${n10}|${!!clip}|${over || studio.isOpen}`;
   if (sig !== selSig) {
     selSig = sig;
-    selBar.update(n10, !!clip, over || studio.isOpen, fix);
+    selBar.update(n10, !!clip, over || studio.isOpen);
   }
 }
 function setClip(t10) {
@@ -26406,27 +26481,7 @@ async function pasteNow() {
   info(`\u8D34\u4E86 ${toks.length} \u4E2A`);
 }
 async function selVerb(v) {
-  if (v.startsWith("art:")) {
-    const prev = st2, a10 = v.slice(4);
-    update(toggleArtSel(st2, a10));
-    discloseArt(prev, a10);
-    return;
-  }
-  if (v === "slur") {
-    const prev = st2;
-    update(toggleSlurSel(st2));
-    discloseArt(prev, "slur");
-    return;
-  }
   switch (v) {
-    case "fix":
-      selFix = true;
-      updateChrome();
-      return;
-    case "fixdone":
-      selFix = false;
-      updateChrome();
-      break;
     case "all":
       update(selectAll(st2));
       break;
@@ -26815,6 +26870,10 @@ var pad3 = new Pad(padEl, {
     const prev = st2;
     update(nx2);
     if (c10.k === "rest" || c10.k === "extend") afterWrite();
+    if (c10.k === "backspace" || c10.k === "delete") {
+      const marks = (s10) => tr(s10).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length, gone = marks(prev) - marks(st2) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length : 0);
+      if (gone > 0) info(`\u987A\u624B\u53BB\u6389\u4E86 ${gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09`);
+    }
     if (c10.k === "art") discloseArt(prev, c10.a);
     if (c10.k === "slur") discloseArt(prev, "slur");
     if (c10.k === "swell") discloseArt(prev, c10.w === ">" ? "swellFade" : "swellGrow");
@@ -28179,7 +28238,7 @@ function openSelMenu(at2) {
       box.innerHTML = item("back", "\u2039 \u8F6C\u8C03\u5230\u2026") + `<div class="ctx-grid">` + KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now ? "\u73B0\u5728\u7684\u8C03" : "")).join("") + `</div>`;
       return;
     }
-    box.innerHTML = `<div class="ctx-row"><span class="ctx-k">\u79FB\u8C03</span>${chip2("tr:1", "\u2191 \u534A\u97F3")}${chip2("tr:-1", "\u2193 \u534A\u97F3")}${chip2("tr:2", "\u2191 \u5168\u97F3")}${chip2("tr:-2", "\u2193 \u5168\u97F3")}${chip2("oct:1", "\u2191 \u516B\u5EA6")}${chip2("oct:-1", "\u2193 \u516B\u5EA6")}</div>` + item("keys", "\u8F6C\u8C03\u2026", "\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362") + item("respell", "\u6309\u8C03\u53F7\u62FC\u5199", "\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8") + `<div class="ctx-row"><span class="ctx-k">\u65F6\u503C</span>${chip2("short", "\xF72")}${chip2("long", "\xD72")}${chip2("seldur", `\u90FD\u6539\u6210 <span class="smufl">${UNIT_SMUFL[st2.input.unit]}</span>`, "\u90FD\u6539\u6210\u957F\u77ED\u65CB\u94AE\u73B0\u5728\u90A3\u4E00\u6863")}</div><div class="ctx-sep"></div>` + item("copy", "\u590D\u5236") + item("cut", "\u526A\u5207") + (clip ? item("paste", "\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09") : "") + item("fix", "\u4FEE\uFF08\u8DF3\u97F3 / \u91CD\u97F3 / \u529B\u5EA6\u2026\uFF09") + item("delete", "\u5220\u6389", "", "danger");
+    box.innerHTML = `<div class="ctx-row"><span class="ctx-k">\u79FB\u8C03</span>${chip2("tr:1", "\u2191 \u534A\u97F3")}${chip2("tr:-1", "\u2193 \u534A\u97F3")}${chip2("tr:2", "\u2191 \u5168\u97F3")}${chip2("tr:-2", "\u2193 \u5168\u97F3")}${chip2("oct:1", "\u2191 \u516B\u5EA6")}${chip2("oct:-1", "\u2193 \u516B\u5EA6")}</div>` + item("keys", "\u8F6C\u8C03\u2026", "\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362") + item("respell", "\u6309\u8C03\u53F7\u62FC\u5199", "\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8") + `<div class="ctx-row"><span class="ctx-k">\u65F6\u503C</span>${chip2("short", "\xF72")}${chip2("long", "\xD72")}${chip2("seldur", `\u90FD\u6539\u6210 <span class="smufl">${UNIT_SMUFL[st2.input.unit]}</span>`, "\u90FD\u6539\u6210\u957F\u77ED\u65CB\u94AE\u73B0\u5728\u90A3\u4E00\u6863")}</div><div class="ctx-sep"></div>` + item("copy", "\u590D\u5236") + item("cut", "\u526A\u5207") + (clip ? item("paste", "\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09") : "") + item("delete", "\u5220\u6389", "", "danger");
   };
   draw("main");
   document.body.append(box);
@@ -29750,4 +29809,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-00eccede1213.mjs.map
+//# sourceMappingURL=moonsinger-7b81fd3b333e.mjs.map

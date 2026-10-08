@@ -33,6 +33,7 @@ import "./honors.test.ts";
 import "./slur.test.ts";
 import "./wedge.test.ts";
 import "./attack.test.ts";
+import "./caret.test.ts";
 import "./part-name.test.ts";
 import "./id3.test.ts";
 import "./sf-key.test.ts";

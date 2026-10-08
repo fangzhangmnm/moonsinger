@@ -624,14 +624,19 @@ export function backspace(st: EditorState): EditorState {
     return next(st, nt, { log, caret: i < st.caret ? st.caret - 1 : st.caret });
   }
   if (st.caret <= headLen(tokens)) return st;   // 谱头删不掉
-  const nt = tokens.slice(); nt.splice(st.caret - 1, 1);
-  return next(st, nt, { caret: st.caret - 1 });
+  // 写音模式的退格只删音 / 休止 / 手动小节线；中间隔着的不占时值的记号留着（挂到下一个音上）。删完湮灭不再管任何音的力度记号
+  let i = st.caret - 1; while (i >= headLen(tokens) && !stopTok(tokens[i])) i--;
+  if (i < headLen(tokens)) return st;
+  const nt = tokens.slice(); nt.splice(i, 1);
+  return afterDelete(st, nt, { caret: st.caret - 1 });
 }
 export function deleteForward(st: EditorState): EditorState {
   if (st.sel) return deleteSel(st);
   if (st.caret >= tr(st).length) return st;
-  const nt = tr(st).slice(); nt.splice(st.caret, 1);
-  return next(leave(st), nt);
+  const toks = tr(st); let i = st.caret; while (i < toks.length && !stopTok(toks[i])) i++;   // 同退格：只删音 / 休止 / 小节线
+  if (i >= toks.length) return st;
+  const nt = toks.slice(); nt.splice(i, 1);
+  return afterDelete(leave(st), nt, { caret: st.caret });
 }
 
 // ── 输入状态（写的时候改的是下一个音） ────────────────────────────────
@@ -756,7 +761,7 @@ function mapSelPitch(st: EditorState, f: (p: Pitch) => Pitch): EditorState {
 function deleteSel(st: EditorState): EditorState {
   if (!st.sel) return st;
   const nt = tr(st).slice(); nt.splice(st.sel.from, st.sel.to - st.sel.from);
-  return next(st, nt, { sel: null, caret: st.sel.from, log: [] });
+  return afterDelete(st, nt, { sel: null, caret: st.sel.from, log: [] });
 }
 
 /** 改音高（↑↓ 一级 / Shift 半音 / Alt 八度）：有选中 = 全部选中；写的时候 = 光标前那个音。 */
@@ -844,9 +849,67 @@ export function select(st: EditorState, from: number, to: number): EditorState {
   return { ...leave(st), sel: { from: a, to: b }, caret: b };
 }
 /** ←→：有选中 = 收成左 / 右边的光标；没有 = 挪光标。 */
+/** 光标的落脚点（2026-10-08，user「多个非音记号会影响步进吗」「写音和符号：嗯简化的心智模型好」「手动的「|」：属于写音层…同意」）：
+ *  ← → 只停在音 / 休止 / 手动小节线后面（和谱头后面）；不占时值的记号（力度、渐强渐弱、调号 / 拍号 / 速度、句号）挂在后面那个音上，不单独占一步。
+ *  落下来的位置在那些记号前面（在那儿写的新音 = 前一个状态里的，记号还跟着原来那个音）；刚插完记号，光标在记号后面（接着写的音在记号里，flow 照旧）。 */
+const stopTok = (t: Token) => isTimed(t) || t.kind === "bar";
 export function moveCaret(st: EditorState, d: number): EditorState {
   if (st.sel) return setCaret(st, d < 0 ? st.sel.from : st.sel.to);
-  return setCaret(st, st.caret + d);
+  const toks = tr(st), h = headLen(toks);
+  let c = st.caret;
+  for (let n = 0; n < Math.abs(d); n++) {
+    if (d < 0) {
+      let i = c - 1; while (i >= h && !stopTok(toks[i])) i--;   // 光标前最近的音 / 小节线
+      if (i < h) { c = h; break; }
+      let j = i - 1; while (j >= h && !stopTok(toks[j])) j--;   // 再往前一个落脚点
+      c = j < h ? h : j + 1;
+    } else {
+      let i = c; while (i < toks.length && !stopTok(toks[i])) i++;
+      c = i < toks.length ? i + 1 : toks.length;
+    }
+  }
+  return setCaret(st, c);
+}
+/** 删音之后：不再管任何音的力度记号 / 渐强渐弱「湮灭」（2026-10-08，user「大批量删音的时候会不会堆一堆强度符号…p f删第二个音，会变成，你觉得是p还是f?」）：
+ *  两个力度记号之间一个音都没有 = 前面那个不管任何音，去掉，留后面那个（p A f B C 删掉 A、B → 留 f，C 本来就在 f 下面）；
+ *  渐强渐弱和它的终点（下一个力度记号 / 下一个渐强渐弱 / 谱尾）之间一个音都没有 = 去掉。返回去掉了几个、各在哪（下标，按原来的串）。 */
+export function annihilate(tokens: Token[]): { tokens: Token[]; removed: number[] } {
+  const drop = new Set<number>();
+  let lastDyn = -1, timedSince = true;
+  tokens.forEach((t, i) => {
+    if (isTimed(t)) { timedSince = true; return; }
+    if (t.kind === "dyn") { if (lastDyn >= 0 && !timedSince) drop.add(lastDyn); lastDyn = i; timedSince = false; }
+  });
+  tokens.forEach((t, i) => {
+    if (t.kind !== "hairpin") return;
+    for (let j = i + 1; j < tokens.length; j++) { const u = tokens[j]; if (isTimed(u)) return; if (u.kind === "dyn" || u.kind === "hairpin") break; }
+    drop.add(i);
+  });
+  if (!drop.size) return { tokens, removed: [] };
+  return { tokens: tokens.filter((_, i) => !drop.has(i)), removed: [...drop].sort((x, y) => x - y) };
+}
+/** 删了东西之后统一收尾：湮灭 + 光标跟着往回挪（被去掉的在光标前面的那些）。 */
+function afterDelete(st: EditorState, nt: Token[], over: Partial<EditorState>): EditorState {
+  const a = annihilate(nt), caret = (over.caret ?? st.caret) - a.removed.filter((k) => k < (over.caret ?? st.caret)).length;
+  return next(st, a.tokens, { ...over, caret });
+}
+/** 符号模式的退格（2026-10-08，user「退格只删符号或者没符号的时候退一步，不删音符」）：
+ *  ① 光标前面紧挨着的不占时值的记号（力度 / 渐强渐弱 / 句号 / 中途的调号拍号速度）→ 删最后一个；
+ *  ② 没有 = 光标前那个音身上的装饰，一次一个、从最外层开始：音内起伏 → 音头（强音 / 重音 / 突强 / 强后即弱）→ 保持 → 跳音 → 呼吸 → 连线；
+ *  ③ 都没有 = 光标往回一步。永远不删音。 */
+export function symBackspace(st: EditorState): EditorState {
+  if (st.sel) return st;
+  const toks = tr(st), h = headLen(toks), i = st.caret - 1;
+  if (i >= h && !stopTok(toks[i])) { const nt = toks.slice(); nt.splice(i, 1); return next(st, nt, { caret: st.caret - 1 }); }
+  const t = toks[i];
+  if (i >= h && t?.kind === "note") {
+    const nt = toks.slice(), art = artOf(t);
+    const strip = (k: "swell" | "slur") => { const { [k]: _x, ...rest } = t; return rest as NoteTok; };
+    if (t.swell) { nt[i] = strip("swell"); return next(st, nt); }
+    for (const a of ["marcato", "accent", "sfz", "fp", "tenuto", "staccato", "breath"] as Art[]) if (art.includes(a)) { nt[i] = withArt(t, a, false); return next(st, nt); }
+    if (t.slur) { nt[i] = strip("slur"); return next(st, nt); }
+  }
+  return moveCaret(st, -1);
 }
 /** Shift+←→：从光标（或已有选中）往一边扩一个 token。 */
 export function extendSelection(st: EditorState, d: number): EditorState {

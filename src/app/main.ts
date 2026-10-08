@@ -152,7 +152,6 @@ padTab.addEventListener("click", () => showPad(true));
 // 选区条（2026-10-08 改的手感；src/ui/sel-bar.ts）：有选区时挂在胶囊下面；剪贴板两层 = app 内 token（clip）+ 系统剪贴板一行简谱文字（clipText）
 const selBar = new SelBar(stageEl, { verb: (v) => { void selVerb(v); } });
 let clip: Token[] | null = null, clipText = "", selSig = "";
-let selFix = false;   // 选区条「修」开着（选区没了就收）
 let chromeReady = false;
 /** 胶囊 / 键盘 tab / 选区条跟着谁在最上面走：歌库开着都藏；找人视图里键盘 tab 照样露（收起了能叫回来；user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）、
  *  选区条藏；录音室里胶囊留着（▶ / 空格都能播）、tab 藏。 */
@@ -163,9 +162,8 @@ function updateChrome(): void {
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n = st.sel ? st.sel.to - st.sel.from : 0;
-  if (!n) selFix = false;
-  const fix = selFix ? { art: artStateSel(st), slur: slurStateSel(st), ignores: ignoredHere() } : null, sig = `${n}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
-  if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen, fix); }
+  const sig = `${n}|${!!clip}|${over || studio.isOpen}`;
+  if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen); }
 }
 function setClip(t: Token[]): void {
   clip = t; clipText = toJianpu(t, fifthsAtSel(st));
@@ -181,12 +179,7 @@ async function pasteNow(): Promise<void> {
   update(pasteTokens(st, toks)); info(`贴了 ${toks.length} 个`);
 }
 async function selVerb(v: SelVerb): Promise<void> {
-  // 修（2026-10-08）：演奏法 / 力度只改选中的那几个音（选区留着接着改）；都走 update() = 在撤销里
-  if (v.startsWith("art:")) { const prev = st, a = v.slice(4) as Art; update(toggleArtSel(st, a)); discloseArt(prev, a); return; }
-  if (v === "slur") { const prev = st; update(toggleSlurSel(st)); discloseArt(prev, "slur"); return; }
   switch (v) {
-    case "fix": selFix = true; updateChrome(); return;
-    case "fixdone": selFix = false; updateChrome(); break;
     case "all": update(selectAll(st)); break;
     case "copy": { const t = copyTokens(st); if (t) { setClip(t); info(`复制了 ${t.length} 个`); } break; }
     case "cut": { const r = cutTokens(st); if (r) { setClip(r.toks); update(r.st); info(`剪切了 ${r.toks.length} 个`); } break; }
@@ -463,6 +456,10 @@ const pad = new Pad(padEl, {
     if (c.k === "swell" && nx === st) { info("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）"); return; }
     if (c.k === "wedge" && nx === st) { info(`${c.w === "cresc" ? "渐强" : "渐弱"}从一个音到下一个音（光标前面是休止或者还没有音）`); return; }
     const prev = st; update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
+    if (c.k === "backspace" || c.k === "delete") {   // 删音顺手湮灭了不再管任何音的力度记号 / 渐强渐弱：说一声（不静默；撤销能回来）
+      const marks = (s: EditorState) => tr(s).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length, gone = marks(prev) - marks(st) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length : 0);
+      if (gone > 0) info(`顺手去掉了 ${gone} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）`);
+    }
     if (c.k === "art") discloseArt(prev, c.a);
     if (c.k === "slur") discloseArt(prev, "slur");
     if (c.k === "swell") discloseArt(prev, c.w === ">" ? "swellFade" : "swellGrow");
@@ -1413,7 +1410,7 @@ function openSelMenu(at: { x: number; y: number }): void {
       item("keys", "转调…", "整段转到另一个调：音按两个主音之间的音程挪，调号跟着换") +
       item("respell", "按调号拼写", "音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动") +
       `<div class="ctx-row"><span class="ctx-k">时值</span>${chip("short", "÷2")}${chip("long", "×2")}${chip("seldur", `都改成 <span class="smufl">${UNIT_SMUFL[st.input.unit]}</span>`, "都改成长短旋钮现在那一档")}</div>` +
-      `<div class="ctx-sep"></div>` + item("copy", "复制") + item("cut", "剪切") + (clip ? item("paste", "粘贴（替换选中的）") : "") + item("fix", "修（跳音 / 重音 / 力度…）") + item("delete", "删掉", "", "danger");
+      `<div class="ctx-sep"></div>` + item("copy", "复制") + item("cut", "剪切") + (clip ? item("paste", "粘贴（替换选中的）") : "") + item("delete", "删掉", "", "danger");
   };
   draw("main");
   document.body.append(box);

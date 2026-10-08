@@ -207,7 +207,8 @@ export class Pad {
       // 退格：按下删一个，按住 420 ms 后每 70 ms 再删一个，松手停（user「退格长按可以多删」；节奏同 WXHW src/input/soft-keyboard.ts）
       const bs = w.querySelector<HTMLElement>('[data-cmd="backspace"]')!;
       let timer = 0;
-      const stop = () => clearTimeout(timer), del = () => this.host.onCommand({ k: "backspace" });
+      // 符号层开着 = 符号模式的退格：只删记号，没有就往回退一步，不删音（user 2026-10-08「退格只删符号或者没符号的时候退一步，不删音符」）
+      const stop = () => clearTimeout(timer), del = () => this.host.onCommand({ k: this.symbols !== "off" ? "symBackspace" : "backspace" });
       bs.addEventListener("pointerdown", (e) => {
         e.preventDefault(); try { bs.setPointerCapture(e.pointerId); } catch { /* 合成事件：没有捕获也能用 */ }
         stop(); del();
