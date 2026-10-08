@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.8-2026-10-08";
+var APP_VERSION = "v0.6.9-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2840,6 +2840,8 @@ var DEFAULT_UNIT = 2;
 var TUPLET = { 3: [2, 3], 5: [4, 5], 6: [4, 6], 7: [4, 7] };
 var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
+var ARTS = ["staccato", "accent", "tenuto", "breath"];
+var DYNS = ["pp", "p", "mp", "mf", "f", "ff"];
 var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
 var DEFAULT_TIME = { beats: 4, beatType: 4 };
@@ -3007,7 +3009,7 @@ function applyAcc(p2, input) {
 function fillTarget(st3) {
   for (let i10 = st3.caret; i10 < tr(st3).length; i10++) {
     const t10 = tr(st3)[i10];
-    if (t10.kind === "bar" || t10.kind === "phrase" || isMark(t10)) continue;
+    if (t10.kind === "bar" || t10.kind === "phrase" || t10.kind === "dyn" || isMark(t10)) continue;
     return t10.kind === "note" && t10.pitch === null ? i10 : -1;
   }
   return -1;
@@ -3060,6 +3062,28 @@ function insertPhraseAfter(st3, i10) {
   tokens.splice(i10 + 1, 0, { kind: "phrase", id: id2 });
   const sel = st3.sel ? { from: st3.sel.from > i10 ? st3.sel.from + 1 : st3.sel.from, to: st3.sel.to > i10 ? st3.sel.to + 1 : st3.sel.to } : null;
   return next({ ...st3, nextId: id2 + 1 }, tokens, { caret: st3.caret > i10 ? st3.caret + 1 : st3.caret, sel });
+}
+var artOf = (t10) => t10.art ?? [];
+function withArt(t10, a10, on2) {
+  const set = new Set(artOf(t10));
+  if (on2) set.add(a10);
+  else set.delete(a10);
+  const art = ARTS.filter((x2) => set.has(x2));
+  if (art.length) return { ...t10, art };
+  const { art: _a2, ...rest } = t10;
+  return rest;
+}
+function toggleBreath(st3) {
+  const toks = tr(st3);
+  for (let i10 = (st3.sel ? st3.sel.to : st3.caret) - 1; i10 >= headLen(toks); i10--) {
+    const t10 = toks[i10];
+    if (t10.kind === "rest") return null;
+    if (t10.kind !== "note") continue;
+    const nt2 = toks.slice();
+    nt2[i10] = withArt(t10, "breath", !artOf(t10).includes("breath"));
+    return next(st3, nt2);
+  }
+  return null;
 }
 function setPaperHidden(st3, paperId, hidden) {
   const papers = st3.song.papers.map((p2) => p2.id !== paperId ? p2 : hidden ? { ...p2, hidden: true } : (({ hidden: _h, ...rest }) => rest)(p2));
@@ -3579,6 +3603,8 @@ function apply(st3, c10, now = Date.now()) {
       return writeBar(st3);
     case "phrase":
       return writePhrase(st3);
+    case "breath":
+      return toggleBreath(st3) ?? st3;
     case "shorter":
       return shorter(st3);
     case "longer":
@@ -4096,6 +4122,13 @@ var SPACING = {
 var TOP_LINE = 38;
 var MID_LINE = 34;
 var BOTTOM_LINE = 30;
+var ART_GLYPH = {
+  accent: { above: "\uE4A0", below: "\uE4A1", w: 1.36, h: 0.99 },
+  staccato: { above: "\uE4A2", below: "\uE4A3", w: 0.28, h: 0.28 },
+  tenuto: { above: "\uE4A4", below: "\uE4A5", w: 1.35, h: 0.17 }
+};
+var GLYPH_BREATH = "\uE4CE";
+var DYN_GLYPH = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
 var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
 var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 var GLYPH_TUPLET = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(59520 + Number(d3))).join("");
@@ -4130,7 +4163,7 @@ function notate(dur) {
 }
 var flagLevel = (base3) => base3 >= TPQ ? 0 : Math.round(Math.log2(TPQ / base3));
 var baseWidth = (base3) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base3 / TPQ));
-var SLOT = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, head: 4, chunk: 5 };
+var SLOT = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, dyn: 3.5, head: 4, chunk: 5 };
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 function unitsOf(tokens, o10) {
@@ -4196,6 +4229,11 @@ function unitsOf(tokens, o10) {
       units.push({ kind: "phrase", index: i10, w: 1, x: 0, system: 0, tick, staff: 1 });
       return;
     }
+    if (t10.kind === "dyn") {
+      flushFull();
+      units.push({ kind: "dyn", index: i10, value: t10.value, w: 0.3, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
     const isNote = t10.kind === "note", nt2 = t10;
     const pitch = isNote ? effectivePitch(tokens, i10) : null;
     const pitches = isNote ? nt2.pitch ? allPitches(nt2) : [pitch] : [];
@@ -4245,7 +4283,9 @@ function unitsOf(tokens, o10) {
           tick: tick + off,
           staff: 1,
           pitches,
-          accs
+          accs,
+          art: isNote && j2 === 0 ? (nt2.art ?? []).filter((a10) => a10 !== "breath") : [],
+          breath: false
         };
         units.push(u2);
         lastChunk = u2;
@@ -4256,7 +4296,13 @@ function unitsOf(tokens, o10) {
       left -= piece;
       tick += piece;
     }
-    if (lastChunk) lastChunk.last = true;
+    if (lastChunk) {
+      lastChunk.last = true;
+      if (isNote && nt2.art?.includes("breath")) {
+        lastChunk.breath = true;
+        lastChunk.w += 0.8;
+      }
+    }
   });
   flushFull();
   if (o10.caret !== null && o10.caret >= tokens.length) pushHead();
@@ -4650,6 +4696,10 @@ function engrave(song, o10) {
           prims.push({ t: "text", x: P2(u2.x + 0.1), y: lyricY(lyricRow(u2.system)), s: "\u3002", cls: "phrase-mark", size: P2(1.3), anchor: "start" });
           continue;
         }
+        if (u2.kind === "dyn") {
+          prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: yOf(row, TOP_LINE + 2.4), ch: DYN_GLYPH[u2.value], cls: inSel(u2.index) ? "dyn sel" : "dyn" });
+          continue;
+        }
         if (u2.kind === "head") {
           head = { system: row, x: P2(u2.x) };
           prims.push({ t: "line", x1: P2(u2.x + 0.1), y1: yOf(row, 42), x2: P2(u2.x + 0.1), y2: yOf(row, 26), w: P2(0.16), cls: "caret" });
@@ -4716,10 +4766,12 @@ function engrave(song, o10) {
       }
       endGroup();
       const stemCls = (s10) => clsOf(s10.c);
+      const upOf = /* @__PURE__ */ new Map();
       const tipOf = /* @__PURE__ */ new Map();
       for (const g3 of stemmed) {
         const row = RW(g3[0].c), mid = yOf(row, MID_LINE);
         const up = g3.reduce((a10, s10) => a10 + (s10.d + s10.dLow) / 2, 0) / g3.length < MID_LINE;
+        for (const s10 of g3) upOf.set(s10.c, up);
         const sx2 = (s10) => up ? s10.x0 + P2(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s10.x0 + P2(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
         const sy0 = (s10) => up ? s10.yLow - P2(STEM_UP_SE[1]) : s10.y - P2(STEM_DOWN_NW[1]);
         if (g3.length === 1) {
@@ -4769,6 +4821,22 @@ function engrave(song, o10) {
             }
           }
         }
+      }
+      for (const c10 of units) {
+        if (c10.kind !== "chunk" || !c10.note || !c10.art.length && !c10.breath) continue;
+        const row = RW(c10), cls = clsOf(c10), cx2 = nhX(c10) + nhW(c10) / 2;
+        const dsC = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
+        const below = upOf.get(c10) ?? false, sgn = below ? -1 : 1;
+        const inStaff = (d4) => d4 >= BOTTOM_LINE && d4 <= TOP_LINE;
+        let d3 = below ? dLo - 2 : dHi + 2;
+        for (const a10 of ["staccato", "tenuto", "accent"].filter((x3) => c10.art.includes(x3))) {
+          if (a10 === "accent") d3 = below ? Math.min(d3, BOTTOM_LINE - 2) : Math.max(d3, TOP_LINE + 2);
+          else if (inStaff(d3) && d3 % 2 === 0) d3 += sgn;
+          const m2 = ART_GLYPH[a10], g3 = below ? m2.below : m2.above;
+          prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yOf(row, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: cls ? `art ${cls}` : "art" });
+          d3 += sgn * (a10 === "accent" ? 3 : 2);
+        }
+        if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: cls ? `breath ${cls}` : "breath" });
       }
       const tieBetween = (a10, b3) => {
         if (a10.system !== b3.system || a10.staff !== b3.staff || !a10.pitch || !b3.pitch) return;
@@ -6337,7 +6405,7 @@ var Pad = class {
     this.el.dataset.form = form;
     this.el.style.setProperty("--cols", String(this.cols));
     if (!this.el.querySelector(".pad-grid")) {
-      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u53E5 / \u6362\u6C14\u3001\u5C0F\u8282\u7EBF\u3001\u4F11\u6B62\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF1B\u518D\u70B9\u56DE\u5230\u97F3\u952E\uFF09"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
+      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u53E5 / \u6362\u6C14\u3001\u5C0F\u8282\u7EBF\u3001\u4F11\u6B62\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF1B\u518D\u70B9\u56DE\u5230\u97F3\u952E\uFF09"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
       const w2 = this.el.querySelector(".writes");
       this.on(w2, "[data-caret]", (b3) => this.host.onCommand({ k: "caret", d: Number(b3.dataset.caret) }));
       this.on(w2, "[data-cmd]:not([data-cmd=backspace])", (b3) => this.host.onCommand({ k: b3.dataset.cmd }));
@@ -6536,6 +6604,7 @@ var Pad = class {
     const cell = (id2, big, label, title) => `<button class="pad-key sym" data-sym="${id2}" title="${title}">${big}<small>${label}</small></button>`;
     const items = [
       cell("phrase", `<span class="big">\u3002</span>`, "\u53E5\u53F7", "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09"),
+      cell("breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u4E0D\u53D7\u5F71\u54CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("bar", `<span class="big">|</span>`, "\u5C0F\u8282\u7EBF", "\u5C0F\u8282\u7EBF\uFF08\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\uFF09"),
       cell("rest", `<span class="big">0</span>`, "\u4F11\u6B62", "\u4F11\u6B62\uFF08\u957F\u77ED\u540C\u57FA\u7EBF\uFF09"),
       cell("extend", `<span class="big">\u2014</span>`, "\u62C9\u957F", "\u521A\u5199\u7684\u97F3\u52A0\u4E00\u4EFD"),
@@ -6584,7 +6653,7 @@ var Pad = class {
         const k2 = base3 + row * this.cols + col, { pitch: p2, deg, oct } = ladderAt(sc2, k2, ht, f2), m2 = midiOf(p2);
         const inRange = !!hr && m2 >= hr.lo && m2 <= hr.hi;
         this.keys.set(k2, p2);
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k2}" title="${inRange ? `${hr.who}\u7684\u97F3\u57DF\u91CC` : ""}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${degLabel(deg)}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p2)}</span></button>`);
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k2}" title="${inRange ? hr.title ?? `${hr.who}\u7684\u97F3\u57DF\u91CC` : ""}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${degLabel(deg)}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p2)}</span></button>`);
       }
     }
     const grid = this.el.querySelector(".pad-grid");
@@ -6870,14 +6939,27 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap) {
   const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2[0]?.bpm ?? 90;
   const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
   const out = [];
+  let breathNext = false;
+  const push = (e10) => {
+    if (breathNext) {
+      e10.before = "v";
+      breathNext = false;
+    }
+    out.push(e10);
+  };
   tokens.forEach((t10, i10) => {
     if (!isTimed(t10)) return;
+    one(t10, i10);
+    if (t10.kind === "note" && artOf(t10).includes("breath")) breathNext = true;
+  });
+  function one(t10, i10) {
     const len = t10.dur / eighth * (base3 / bpmOf.get(i10));
     if (t10.kind === "rest") {
       const last2 = out[out.length - 1];
       if (last2) last2.rest = (last2.rest ?? 0) + len;
       return;
     }
+    if (t10.kind !== "note") return;
     const midi = midiOf(effectivePitch(tokens, i10));
     const last = out[out.length - 1];
     if ((t10.lyric === MELISMA_MARK || t10.tie) && last && !last.rest) {
@@ -6886,12 +6968,12 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap) {
     }
     const lyric = t10.lyric && t10.lyric !== MELISMA_MARK ? t10.lyric : null;
     if (!lyric) {
-      out.push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true });
+      push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true });
       return;
     }
     const parts = lyric.split(ELISION).filter(Boolean);
-    parts.forEach((kana, k2) => out.push({ kana, notes: [[midi, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {} }));
-  });
+    parts.forEach((kana, k2) => push({ kana, notes: [[midi, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {} }));
+  }
   const TEXT2 = lang === "en" ? out.map((e10) => e10.kana + (e10.hyph ? "" : " ")).join("").trim() : out.map((e10, k2) => e10.kana + (e10.rest ? "\u3001" : k2 === out.length - 1 ? "\u3002" : "")).join("");
   return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base3, LANG: lang };
 }
@@ -6914,7 +6996,7 @@ var Singer = class {
   // worker 里已经载过的音色库（sha256）；worker 重建就清
   worker() {
     if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-a270f74bfc54.mjs"}`, import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${"singer-worker-1d8b2ed6a3ab.mjs"}`, import.meta.url), { type: "module" });
     this.sent.clear();
     this.w.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -7025,7 +7107,7 @@ function encodeMp3(samples, sr2, kbps = 64) {
   });
 }
 
-// node_modules/@internal/model-packs/dist/sha256.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/model-packs/dist/sha256.js
 var K = new Uint32Array([
   1116352408,
   1899447441,
@@ -7181,7 +7263,7 @@ var Sha256 = class {
   }
 };
 
-// node_modules/@internal/model-packs/dist/pack-store.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/model-packs/dist/pack-store.js
 var SLICE = 1 << 20;
 function createPackStore(deps) {
   const cacheName = deps.cacheName ?? "pwa-models";
@@ -7390,7 +7472,7 @@ function createPackStore(deps) {
   };
 }
 
-// node_modules/@internal/workbench-elements/dist/host-floors.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/host-floors.js
 function safeAreaTop() {
   const probe = document.createElement("div");
   probe.style.cssText = "position:fixed;top:0;left:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;";
@@ -7410,7 +7492,7 @@ function configureFloors(f2) {
     _f.floatingTop = () => Math.max(safeAreaTop(), f2.toolbarBottom());
 }
 
-// node_modules/@internal/workbench-elements/dist/anchored-popup.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/anchored-popup.js
 function topToolbarBottom() {
   return floors.toolbarBottom();
 }
@@ -7459,7 +7541,7 @@ function positionPopup(popupEl, opts = {}) {
   popupEl.style.top = top + "px";
 }
 
-// node_modules/@internal/workbench-elements/dist/icon.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/icon.js
 function iconHtml(name, opts = {}) {
   const { size, cls } = opts;
   const attrs = [
@@ -7471,7 +7553,7 @@ function iconHtml(name, opts = {}) {
   return `<svg ${attrs}><use href="#${name}"/></svg>`;
 }
 
-// node_modules/@internal/workbench-elements/dist/popup-menu.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/popup-menu.js
 var _open = [];
 function currentPopupMenu() {
   return _open[_open.length - 1] ?? null;
@@ -7611,7 +7693,7 @@ function _mount(el2, opts, hooks) {
   return handle;
 }
 
-// node_modules/@internal/workbench-elements/dist/notice.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/workbench-elements/dist/notice.js
 var _stack = null;
 var _live = /* @__PURE__ */ new Map();
 var _seq = 0;
@@ -8181,6 +8263,10 @@ function readCredits(root, title) {
   }
   return lines.length ? lines.join("\n") : void 0;
 }
+var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
+var ART_XML = { accent: "accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
+var XML_ART = { accent: "accent", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
+var XML_DYN = (name) => ["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? name : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null;
 var tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
 function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
   const staffs = staffOfTokens(toks, staves);
@@ -8241,6 +8327,11 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       } else if (first) cur.push(tempoXml(t10.bpm));
       continue;
     }
+    if (t10.kind === "dyn") {
+      if (ticks >= len) close(false);
+      cur.push(dynXml(t10.value));
+      continue;
+    }
     if (t10.kind !== "note" && t10.kind !== "rest") continue;
     let left = t10.dur, k2 = 0;
     const tieOut = t10.kind === "note" && nextTimed(i10)?.kind === "note" && nextTimed(i10).tie;
@@ -8257,15 +8348,17 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
         x2 += pitchXml(effectivePitch(toks, i10)) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "");
       }
       x2 += `<voice>1</voice>`;
-      if (staves === 2) x2 += `<staff>${staffs[i10]}</staff>`;
       const typeXml = ty2 ? `<type>${ty2.type}</type>` + "<dot/>".repeat(ty2.dots) + (ty2.tuplet ? `<time-modification><actual-notes>${ty2.tuplet[0]}</actual-notes><normal-notes>${ty2.tuplet[1]}</normal-notes></time-modification>` : "") : "";
-      x2 += typeXml;
+      const staffXml = staves === 2 ? `<staff>${staffs[i10]}</staff>` : "";
+      x2 += typeXml + staffXml;
       const chordXml = [];
       if (t10.kind === "note") {
         const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
-        if (tieIn || tieOn) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>`;
+        const arts = (t10.art ?? []).filter((a10) => a10 === "breath" ? last : firstPiece);
+        const artXml = arts.length ? `<articulations>${arts.map((a10) => `<${ART_XML[a10]}/>`).join("")}</articulations>` : "";
+        if (tieIn || tieOn || artXml) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${artXml}</notations>`;
         for (const [ci2, cp2] of (t10.chord ?? []).entries()) {
-          chordXml.push(`<note id="${id2}c${ci2 + 1}"><chord/>` + pitchXml(cp2) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + (staves === 2 ? `<staff>${staffs[i10]}</staff>` : "") + typeXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
+          chordXml.push(`<note id="${id2}c${ci2 + 1}"><chord/>` + pitchXml(cp2) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + typeXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
         }
         if (!lyricDone && t10.lyric) {
           if (t10.lyric === MELISMA_MARK) x2 += `<lyric number="1"><extend/></lyric>`;
@@ -8355,6 +8448,16 @@ function readMusicXml(xml, hints) {
     usedIds.add(n10);
     return n10;
   };
+  const addArts = (tok, note2) => {
+    const set = new Set(tok.art ?? []);
+    for (const nn2 of kids(note2, "notations")) for (const ar2 of kids(nn2, "articulations")) for (const e10 of kids(ar2)) {
+      const a10 = XML_ART[e10.name];
+      if (a10) set.add(a10);
+      else drop("\u6F14\u594F\u6CD5\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF09");
+    }
+    const art = ["staccato", "accent", "tenuto", "breath"].filter((a10) => set.has(a10));
+    if (art.length) tok.art = art;
+  };
   const tempoOf = (el2) => {
     const s10 = el2.name === "sound" ? el2 : kid(el2, "sound");
     const v = s10?.attrs.tempo;
@@ -8402,6 +8505,11 @@ function readMusicXml(xml, hints) {
               H2.gotTempo = true;
             } else mark({ kind: "tempo", id: 0, bpm });
           }
+          for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const dy of kids(dt, "dynamics")) for (const e10 of kids(dy)) {
+            const v = XML_DYN(e10.name);
+            if (v) mark({ kind: "dyn", id: 0, value: v });
+            else drop("\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09");
+          }
         } else if (c10.name === "note") {
           if (kid(c10, "grace")) {
             drop("\u88C5\u9970\u97F3");
@@ -8428,6 +8536,7 @@ function readMusicXml(xml, hints) {
                 if (w2.chord) prevN.chord = w2.chord;
                 else delete prevN.chord;
               }
+              addArts(prevN, c10);
             } else drop("\u53E0\u97F3\uFF08\u524D\u9762\u6CA1\u6709\u80FD\u53E0\u7684\u97F3\uFF09");
             continue;
           }
@@ -8438,6 +8547,7 @@ function readMusicXml(xml, hints) {
           const prev = body[body.length - 1];
           if (cont && prev && (prev.kind === "note" || prev.kind === "rest") && prev.id === +cont[2] && cont[1] === "n" === (prev.kind === "note")) {
             prev.dur += dur;
+            if (prev.kind === "note") addArts(prev, c10);
             continue;
           }
           const isRest = !!kid(c10, "rest");
@@ -8454,6 +8564,7 @@ function readMusicXml(xml, hints) {
           const pitch = { step: childText(p2, "step") ?? "C", alter: Number(childText(p2, "alter") ?? "0"), octave: Number(childText(p2, "octave") ?? "4") };
           const tok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null, ...staffOf };
           if (kids(c10, "tie").some((t10) => t10.attrs.type === "stop")) tok.tie = true;
+          addArts(tok, c10);
           const lyrics = kids(c10, "lyric"), ly2 = lyrics.find((l10) => (l10.attrs.number ?? "1") === "1") ?? lyrics[0];
           if (lyrics.length > 1) drop("\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD");
           if (ly2) {
@@ -9333,29 +9444,29 @@ var GmSynth = class {
 // src/gm/instruments.gen.ts
 var INSTRUMENT_FILES = {
   "concepts": {
-    "file": "vendor/instruments/instruments-v4.json",
-    "bytes": 216409,
-    "sha256": "bbfb91f12919c5e5b6aad0f9f22316667275ca40612ac19e8b7d954ae5654692"
+    "file": "vendor/instruments/instruments-v5.json",
+    "bytes": 226476,
+    "sha256": "a0ab0a36cfd4f2ae5fbbaf6ae011eb9f3496e8f02aae050bca498788e51ad01b"
   },
   "gmMap": {
-    "file": "vendor/instruments/gm-map-v4.json",
-    "bytes": 108621,
-    "sha256": "6766817f55c202df7b645cbd3df0dd24d0a604d304f090277f5a4be2c9af1fcf"
+    "file": "vendor/instruments/gm-map-v5.json",
+    "bytes": 113199,
+    "sha256": "4655c449f541ecaad3db6ca4a068d4a6e1da58d354ff61c55caae789774e4b0d"
   },
   "icons": {
-    "file": "vendor/instruments/instrument-icons-20261008-v4.svg",
+    "file": "vendor/instruments/instrument-icons-20261008-v5.svg",
     "bytes": 139012,
-    "sha256": "d201bf704ffe6081c868fb45f2d43449b58bbd62efafdcfad9ad89cdd7e98067"
+    "sha256": "f3fac944b3271f4b24b5dbcf34e2f2572304f96537c7e16bb422744e21d22d6c"
   },
   "iconCredits": {
-    "file": "vendor/instruments/icon-credits-v4.json",
+    "file": "vendor/instruments/icon-credits-v5.json",
     "bytes": 20668,
-    "sha256": "bbd85f260d1bf14a9a8d12f8e3235e0a1764b7da820957a5d9807d743c20736e"
+    "sha256": "1af2ac6ea79b62d033014a6732230bf4fd4e4a1cd99d4864da53f4b23ec6e337"
   },
   "licenses": {
-    "file": "vendor/instruments/LICENSES-chosen-v4.md",
+    "file": "vendor/instruments/LICENSES-chosen-v5.md",
     "bytes": 145789,
-    "sha256": "a7a2429eebd6a8b66ff83a9145f43efed4bc85ec61f0fbbfd231f3416ba3784e"
+    "sha256": "437d44979aa792c293c5f7a3c67a6b5cca402a29b8934ce861778c1cfab6f6cd"
   }
 };
 var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
@@ -9400,7 +9511,10 @@ function providersOf(cat, c10) {
 }
 function rangeOf(c10) {
   const r10 = c10?.range;
-  return r10 && Number.isFinite(r10.low) && Number.isFinite(r10.high) && r10.low <= r10.high ? { lo: r10.low, hi: r10.high } : null;
+  if (r10 && Number.isFinite(r10.low) && Number.isFinite(r10.high) && r10.low <= r10.high) return { lo: r10.low, hi: r10.high, title: `${c10.names.zh}\u7684\u5E38\u7528\u97F3\u57DF${r10.basis ? `\uFF08\u4F9D\u636E\uFF1A${r10.basis}\uFF09` : ""}` };
+  const k2 = c10?.naturalKey;
+  if (k2 && Number.isFinite(k2.note)) return { lo: k2.note, hi: k2.note, title: `${c10.names.zh}\u6700\u50CF\u771F\u7684\u90A3\u4E2A\u952E${k2.hz ? `\uFF08\u7EA6 ${Math.round(k2.hz)} Hz\uFF09` : ""}` };
+  return null;
 }
 var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
 var roleSoundOf = (cat, c10) => c10.ids.musicxml ?? providersOf(cat, c10)[0]?.sound ?? null;
@@ -10065,7 +10179,7 @@ function stampedCopy(stem, now = /* @__PURE__ */ new Date()) {
   return `${stem}-${now.getFullYear()}${z2(now.getMonth() + 1)}${z2(now.getDate())}-${z2(now.getHours())}${z2(now.getMinutes())}`;
 }
 
-// node_modules/@internal/store/dist/substrate.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/substrate.js
 async function toU8(x2) {
   if (x2 == null)
     return new Uint8Array(0);
@@ -10178,7 +10292,7 @@ function createSubstrate() {
   return { edits, session, serialize, serialize2, drain };
 }
 
-// node_modules/@internal/store/dist/local-head.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/local-head.js
 var BypassError = class extends Error {
   code = "BYPASS";
   constructor(name) {
@@ -10263,7 +10377,7 @@ function createLocalHead({ kv, getCloudEtag, setCloudEtag, keyPrefix = "head" })
   return { ifMatchFor, seenBase, isDirtyThisTab, isDirtyAnywhere, recordEdit, markSeen, markSynced, onPushed, forget, editCount: (name) => _edits.get(name) ?? 0 };
 }
 
-// node_modules/@internal/store/dist/error-handling.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/error-handling.js
 var reporter = null;
 function setStoreErrorReporter(fn) {
   reporter = fn;
@@ -10274,7 +10388,7 @@ function reportStoreError(err2, level = "error") {
   reporter?.(err2, level);
 }
 
-// node_modules/@internal/store/dist/seal.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/seal.js
 var LockedError = class extends Error {
   code = "LOCKED";
   constructor(name) {
@@ -10336,7 +10450,7 @@ function createSeal(cfg) {
   return { isContainer, sealForWrite, unsealForRead, withPassword };
 }
 
-// node_modules/@internal/store/dist/identifiers.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/identifiers.js
 var SEAL_SUFFIX = ".zip";
 function validateDocKinds(docKinds) {
   if (!Array.isArray(docKinds))
@@ -10415,7 +10529,7 @@ function withStemTail(identifier, tail, ids) {
   return `${slash < 0 ? "" : identifier.slice(0, slash + 1)}${stem}${tail}${rest}`;
 }
 
-// node_modules/@internal/store/dist/safe-resolve.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/safe-resolve.js
 function createSafeResolve(cfg) {
   const { cloud, local, head, localDirty = () => false, validateAdopt, unseal = (_n, blob) => Promise.resolve(blob), onReplacing = () => {
   }, looksEncrypted = () => Promise.resolve(false), serialize = (_n, fn) => fn() } = cfg;
@@ -10507,7 +10621,7 @@ function createSafeResolve(cfg) {
   return { safePull, tryHeal, weakOverride, resolveConflict };
 }
 
-// node_modules/@internal/store/dist/push.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/push.js
 var passBusy = (_l, fn) => fn();
 var isConflict = (e10) => !!e10 && (e10.name === "CloudConflictError" || e10.status === 412);
 function retriable(e10) {
@@ -10569,7 +10683,7 @@ function createPush(cfg) {
   return { push, doPush };
 }
 
-// node_modules/@internal/store/dist/freshness.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/freshness.js
 var passBusy2 = (_l, fn) => fn();
 function createFreshness(cfg) {
   const { cloud, head, safeResolve, busy: _busy = passBusy2 } = cfg;
@@ -10639,8 +10753,10 @@ function createFreshness(cfg) {
       if (!meta)
         return { status: "cloud-absent" };
       const base3 = head.seenBase(name);
-      if (base3 != null && meta.etag === base3)
+      if (base3 != null && meta.etag === base3) {
+        head.markSeen(name, meta.etag);
         return { status: "in-sync" };
+      }
       if (head.isDirtyAnywhere(name) || localDirty && localDirty())
         return { status: "dirty-skip" };
       if (onReplaceStart)
@@ -10663,7 +10779,7 @@ function createFreshness(cfg) {
   return { open, refresh };
 }
 
-// node_modules/@internal/store/dist/move-aside.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/move-aside.js
 function pad(n10, w2 = 2) {
   return String(n10).padStart(w2, "0");
 }
@@ -10708,7 +10824,7 @@ async function restoreTargetName(orig, occupied, stamp14, fallbackMs, ids) {
   return target;
 }
 
-// node_modules/@internal/store/dist/delete.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/delete.js
 var passBusy3 = (_l, fn) => fn();
 var DELQ_KEY = "internal.pending_deletions";
 function createDelete(cfg) {
@@ -10832,7 +10948,7 @@ function createDelete(cfg) {
   return { del, replayDelete, drainDeleteQueue };
 }
 
-// node_modules/@internal/store/dist/is-hidden.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/is-hidden.js
 function isHidden(name) {
   if (!name)
     return false;
@@ -10853,7 +10969,7 @@ function assertValidCollectionName(name) {
   }
 }
 
-// node_modules/@internal/store/dist/errors.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/errors.js
 var CloudNetworkError = class extends Error {
   cause;
   constructor(message, cause) {
@@ -10874,7 +10990,7 @@ var CloudStaleRefError = class extends Error {
   }
 };
 
-// node_modules/@internal/store/dist/cloud-sync.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/cloud-sync.js
 var CloudConflictError = class extends Error {
   sessionName;
   constructor(message, sessionName) {
@@ -11277,7 +11393,7 @@ function createCloudSync(cfg) {
   };
 }
 
-// node_modules/@internal/store/dist/identity.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/identity.js
 var passBusy4 = (_l, fn) => fn();
 function createIdentity(cfg) {
   const { cloud, local, head, doPush, serialize, serialize2, seal, busy: _busy = passBusy4, isOnline, deleteOffline, queueUpload, nameOccupied } = cfg;
@@ -11394,7 +11510,7 @@ function createIdentity(cfg) {
   return { rename, acquire };
 }
 
-// node_modules/@internal/store/dist/trash.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/trash.js
 var passBusy5 = (_l, fn) => fn();
 function createTrash(cfg) {
   const { cloud, local, head, busy: _busy = passBusy5 } = cfg;
@@ -11519,7 +11635,7 @@ function createTrash(cfg) {
   return { restore, purge, emptyTrash, emptyBackup };
 }
 
-// node_modules/@internal/store/dist/offload.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/offload.js
 var OffloadIllegalError = class extends Error {
   code = "OFFLOAD_ILLEGAL";
   reason;
@@ -11559,7 +11675,7 @@ function createOffload(cfg) {
   return { offload };
 }
 
-// node_modules/@internal/store/dist/reconcile.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/reconcile.js
 function classifyCloudGone(localNames, cloudNameSet, opts) {
   const demote = [];
   if (!opts.authoritative)
@@ -11644,7 +11760,7 @@ function createReconcile(cfg) {
   return { reconcile, reconcileFolder };
 }
 
-// node_modules/@internal/store/dist/pending-gone.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/pending-gone.js
 var KEY = "internal.pending_gone";
 function createPendingGone(kv, graceMs) {
   function read() {
@@ -11691,7 +11807,7 @@ function createPendingGone(kv, graceMs) {
   };
 }
 
-// node_modules/@internal/store/dist/folder-merge.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/folder-merge.js
 var lastWinResolve = (x2, y2) => defaultResolve(x2, y2);
 function resolverForPolicy(policy) {
   switch (policy) {
@@ -11748,7 +11864,7 @@ function normalizeFolder(f2) {
   });
 }
 
-// node_modules/@internal/store/dist/folder-flow.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/folder-flow.js
 function withTimeout(p2, ms) {
   if (!ms)
     return p2;
@@ -11810,7 +11926,7 @@ function createFolderFlow(cfg) {
   return { sync };
 }
 
-// node_modules/@internal/store/dist/collection.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/collection.js
 function collectionLocalKey(name) {
   return `collections/${name}`;
 }
@@ -12061,7 +12177,7 @@ function createCollection(cfg) {
   return { init, reconcileWithRemote, setItem, deleteItem, getItem, getEntry, entries: entries2, keys, onChange, flushLocal, isDirty: isDirty2 };
 }
 
-// node_modules/@internal/store/dist/listing.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/listing.js
 function isCached(s10) {
   return s10 !== "cloud-only";
 }
@@ -12236,7 +12352,7 @@ function createListing(cfg) {
   return { listAllItems, listFolder };
 }
 
-// node_modules/@internal/store/dist/upload-queue.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/upload-queue.js
 var UPQ_KEY = "internal.pending_uploads";
 function createUploadReplay(cfg) {
   const { kv, local, head, isOnline, serialize, pushLocal, policy, confirm, onStatus } = cfg;
@@ -12312,7 +12428,7 @@ function createUploadReplay(cfg) {
   return { enqueue, remove, drain, pending: readQueue };
 }
 
-// node_modules/@internal/store/dist/trash-merge.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/trash-merge.js
 var STAMP_RE = /^(.*) \[((\d{14})-[0-9a-fA-F-]+)\](\.zip)?$/;
 var baseNameOf = (n10) => n10.includes("/") ? n10.slice(n10.lastIndexOf("/") + 1) : n10;
 function parseCloudTrashName(cloudName, toName) {
@@ -12379,7 +12495,7 @@ function mergeTrash(localEntries, cloudEntries, liveCloudNames = /* @__PURE__ */
   return out;
 }
 
-// node_modules/@internal/store/dist/idb-store.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/idb-store.js
 var STORE = "blobs";
 var _idbOpTimeoutMs = 3e3;
 var IdbTimeoutError = class extends Error {
@@ -12635,7 +12751,7 @@ function createIdbCache(dbName) {
   };
 }
 
-// node_modules/@internal/store/dist/blob-partition.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/blob-partition.js
 function createPartitionedBlobStore(dbName) {
   const idb = createIdbCache(dbName);
   const key = (p2, name) => `${p2}/${name}`;
@@ -12654,7 +12770,7 @@ function createPartitionedBlobStore(dbName) {
   return { partition: view2, close: () => idb.close() };
 }
 
-// node_modules/@internal/store/dist/local-cache.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/local-cache.js
 var NO_KINDS2 = createIdentifiers([]);
 var stripStamp = (inner) => inner.replace(/^[^:]*:/, "");
 var stamp = () => asideStamp(Date.now());
@@ -12815,7 +12931,7 @@ function createCollectionCache(dbName) {
   };
 }
 
-// node_modules/@internal/store/dist/download-session.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/download-session.js
 var EtagChangedError = class extends Error {
   constructor(name) {
     super(`\u4E91\u7AEF\u6587\u4EF6\u5DF2\u66F4\u65B0\uFF0C\u4E0B\u8F7D\u4F1A\u8BDD\u5931\u6548\uFF1A${name}`);
@@ -13079,7 +13195,7 @@ function createDownloadSessions(cfg) {
   return { open, coverage, promoteFromStaging, purgeName, _enforceCap: enforceCap };
 }
 
-// node_modules/@internal/store/dist/kv-namespace.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/kv-namespace.js
 function namespacedKv(kv, ns2) {
   if (!ns2)
     throw new Error("namespacedKv: ns \u5FC5\u586B\uFF08${appId}.${databaseId}\uFF09");
@@ -13092,7 +13208,7 @@ function namespacedKv(kv, ns2) {
   };
 }
 
-// node_modules/@internal/store/dist/migration.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/migration.js
 function parseSchemaVersion(v) {
   const m2 = /^v(\d{3,})-(\d{8})$/.exec(v);
   if (!m2)
@@ -13145,7 +13261,7 @@ async function runStoreMigrations(appId, databaseId, log) {
   await runMigrations({ kv, ns: ns2, log });
 }
 
-// node_modules/@internal/store/dist/zip-peek.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/zip-peek.js
 var SIG_EOCD = 101010256;
 var SIG_CD = 33639248;
 var SIG_LOCAL = 67324752;
@@ -13243,7 +13359,7 @@ async function readEntryBytes(src, entry) {
   return await inflate(raw, entry.method);
 }
 
-// node_modules/@internal/store/dist/persistence.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/persistence.js
 var globalStorage = () => globalThis.navigator?.storage ?? null;
 async function queryStoragePersistence(sm2 = globalStorage()) {
   if (typeof sm2?.persisted !== "function")
@@ -13266,7 +13382,7 @@ async function requestStoragePersistence(sm2 = globalStorage()) {
   }
 }
 
-// node_modules/@internal/store/dist/ui-text.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/ui-text.js
 var STORE_TEXT_EN = {
   "sync.pushing": "Syncing\u2026",
   "file.renaming": "Renaming\u2026",
@@ -13297,7 +13413,7 @@ function resolveStoreText(custom, key, params) {
   return base3 != null ? interpolate(base3, params) : String(key);
 }
 
-// node_modules/@internal/store/dist/create-store.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/create-store.js
 var ReadOnlyFilesError = class extends Error {
   constructor(op2) {
     super(`\u53EA\u8BFB\u955C\u50CF\uFF1Afiles \u9762\u4E0D\u53EF\u5199\uFF08${op2}\uFF09`);
@@ -14452,7 +14568,7 @@ function createStore(config) {
   };
 }
 
-// node_modules/@internal/store/dist/providers/graph.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/providers/graph.js
 var GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 var SIMPLE_UPLOAD_LIMIT = 4 * 1024 * 1024;
 function encodeSeg(name) {
@@ -14763,7 +14879,7 @@ function createGraph(tokenSource) {
   };
 }
 
-// node_modules/@internal/store/dist/providers/auth.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/providers/auth.js
 var CLIENT_ID = "";
 var AUTHORITY = "https://login.microsoftonline.com/common";
 var SCOPES = ["Files.ReadWrite.AppFolder", "offline_access"];
@@ -15160,7 +15276,7 @@ async function retrySilentSignIn() {
   }
 }
 
-// node_modules/@internal/store/dist/folder-delete.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/folder-delete.js
 async function deleteEmptyFolderVia(getItemByPath, list, deleteById, path) {
   const item = await getItemByPath(path);
   if (!item)
@@ -15179,7 +15295,7 @@ async function deleteEmptyFolderVia(getItemByPath, list, deleteById, path) {
   return { status: "deleted" };
 }
 
-// node_modules/@internal/store/dist/onedrive-provider.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/onedrive-provider.js
 function toItem(it2) {
   if (!it2)
     return null;
@@ -15227,7 +15343,7 @@ function graphToCloudProvider(graph) {
   };
 }
 
-// node_modules/@internal/store/dist/providers/index.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/store/dist/providers/index.js
 function createOneDriveProvider(config = {}) {
   configureOneDriveAuth(config);
   const hid = config.homeAccountId;
@@ -15260,7 +15376,7 @@ var DOC_KINDS = Object.freeze([
 ]);
 var identifiers = createIdentifiers(DOC_KINDS);
 
-// node_modules/@internal/gallery/dist/core/text.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/text.js
 var GALLERY_TEXT = {
   "bk.andMore": { zh: "\u2026\u2026\u7B49 {n} \u4EF6\uFF08\u5168\u91CF\u540D\u5355\u5728\u5305\u5185 backup-manifest.txt\uFF09", en: "\u2026and {n} more (full list in backup-manifest.txt inside the zip)", ja: "\u2026\u307B\u304B {n} \u4EF6\uFF08\u5168\u30EA\u30B9\u30C8\u306F zip \u5185\u306E backup-manifest.txt\uFF09" },
   "bk.done": { zh: "\u5DF2\u4E0B\u8F7D\u5907\u4EFD {name}\uFF08{n} \u4EF6\uFF09", en: "Backup downloaded: {name} ({n} files)", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F\uFF1A{name}\uFF08{n} \u4EF6\uFF09" },
@@ -15589,7 +15705,7 @@ function configureText(opts) {
 }
 var t = (key, params) => (_host ?? defaultT)(key, params);
 
-// node_modules/@internal/gallery/dist/core/device-kv.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/device-kv.js
 var _mem = /* @__PURE__ */ new Map();
 var _kv = { get: (k2) => _mem.get(k2) ?? null, set: (k2, v) => {
   if (v == null)
@@ -15627,7 +15743,7 @@ function deviceKvSetJson(key, v) {
   deviceKvSet(key, v === void 0 ? null : JSON.stringify(v));
 }
 
-// node_modules/@internal/gallery/dist/core/model/gallery-model.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/gallery-model.js
 function copyTargetName(source, taken, ids) {
   const SUF = t("name.copySuffix");
   let candidate = withStemTail(source, ` ${SUF}`, ids);
@@ -15641,7 +15757,7 @@ function copyTargetName(source, taken, ids) {
   return withStemTail(source, ` ${SUF}${Date.now()}`, ids);
 }
 
-// node_modules/@internal/gallery/dist/core/model/gallery-path.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/gallery-path.js
 function pathFolder(name) {
   const i10 = name.lastIndexOf("/");
   return i10 < 0 ? "" : name.slice(0, i10);
@@ -15654,13 +15770,13 @@ function pathJoin(folder, name) {
   return `${folder}/${name}`;
 }
 
-// node_modules/@internal/gallery/dist/core/model/natural-order.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/natural-order.js
 var _collator = new Intl.Collator(void 0, { numeric: true, sensitivity: "base" });
 function naturalCompare(a10, b3) {
   return _collator.compare(a10, b3);
 }
 
-// node_modules/@internal/gallery/dist/core/model/gallery-view-model.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/gallery-view-model.js
 var hasLocalCopy = (s10) => isCached(s10);
 var hasCloudCopy = (s10) => s10 === "cloud-only" || s10 === "synced" || s10 === "unpushed" || s10 === "newer-on-cloud" || s10 === "conflict";
 var hasUnpushed = (s10) => isDirty(s10);
@@ -15748,7 +15864,7 @@ function fullTime(ts2) {
   return ts2 ? new Date(ts2).toLocaleString() : t("gv.time.unknown");
 }
 
-// node_modules/@internal/gallery/dist/core/model/cloud-image-model.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/cloud-image-model.js
 var IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|avif)$/i;
 var isImagePath = (p2) => IMAGE_EXT_RE.test(p2);
 var imageTwinIdentifier = (folder, basename2, docSuffix) => {
@@ -15763,7 +15879,7 @@ function imageThumbToken(it2) {
   return it2.lastModified != null ? `m:${it2.lastModified}` : `s:${it2.size ?? 0}`;
 }
 
-// node_modules/@internal/gallery/dist/core/guards/frame-gate.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/guards/frame-gate.js
 var REAL_TIMERS = {
   set: (fn, ms) => setTimeout(fn, ms),
   clear: (h2) => clearTimeout(h2)
@@ -15833,7 +15949,7 @@ function createFrameGate(apply2, opts) {
   };
 }
 
-// node_modules/@internal/gallery/dist/core/guards/first-frame-watchdog.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/guards/first-frame-watchdog.js
 var REAL_TIMERS2 = {
   set: (fn, ms) => setTimeout(fn, ms),
   clear: (h2) => clearTimeout(h2)
@@ -15876,7 +15992,7 @@ function createFirstFrameWatchdog(onStall, opts) {
   };
 }
 
-// node_modules/@internal/gallery/dist/core/guards/diag-log.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/guards/diag-log.js
 var diag_log_exports = {};
 __export(diag_log_exports, {
   clear: () => clear,
@@ -15983,7 +16099,7 @@ function initDiagLog(opts = {}) {
   g3.addEventListener("offline", () => note("net", "offline"));
 }
 
-// node_modules/@internal/gallery/dist/core/library/gallery-registry.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/library/gallery-registry.js
 var mintId = () => "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 var oneDriveLabel = (username) => "OneDrive \xB7 " + (username || "\u8D26\u53F7");
 var LEGACY_ID = "default";
@@ -16130,10 +16246,10 @@ function idbRegistryKV() {
 }
 var galleryRegistry = createGalleryRegistry(idbRegistryKV());
 
-// node_modules/@internal/gallery/dist/core/backup/library-backup.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/backup/library-backup.js
 var BACKUP_BUDGET_BYTES = 512 * 1024 * 1024;
 
-// node_modules/@internal/gallery/dist/core/model/aside.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/model/aside.js
 var ASIDE = deepFreeze({
   trash: {
     list: (f2) => f2.listTrash(),
@@ -16207,7 +16323,7 @@ function sortAside(items, compareName) {
   return [...items].sort((a10, b3) => b3.at - a10.at || compareName(a10.identifier, b3.identifier) || a10.key.localeCompare(b3.key));
 }
 
-// node_modules/@internal/gallery/dist/core/data-face.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/data-face.js
 var basename = (p2) => p2.slice(p2.lastIndexOf("/") + 1);
 function galleryItemFromStoreItem(it2, ids) {
   const d3 = ids.parse(it2.identifier);
@@ -16260,7 +16376,7 @@ function createGalleryDataFace(deps) {
   };
 }
 
-// node_modules/@internal/gallery/dist/core/verbs.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/verbs.js
 var errMsg = (e10) => String(e10?.message || e10);
 function createGalleryVerbs(d3) {
   const docFile = (identifier, mode = "existing") => d3.store().file(identifier, { mode });
@@ -16611,7 +16727,7 @@ function createGalleryVerbs(d3) {
   return { rename, move, moveTargets, copy, push, unload, keepOffline, reupload, del, deleteImage, folderDelete, asideRestore, asidePurge, emptyAside, encryptItem, decryptItem, unlock, whereLabel };
 }
 
-// node_modules/@internal/gallery/dist/core/thumbs/thumb-store.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/thumbs/thumb-store.js
 function memoryThumbStore() {
   const m2 = /* @__PURE__ */ new Map();
   return { async get(k2) {
@@ -16688,7 +16804,7 @@ function idbThumbStore(opts) {
   };
 }
 
-// node_modules/@internal/gallery/dist/core/thumbs/thumb-cache.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/thumbs/thumb-cache.js
 var thumbKeyFor = (galleryId, fullName) => galleryId === "default" ? fullName : `${galleryId}:${fullName}`;
 function createThumbCache(deps) {
   const now = deps.now ?? (() => Date.now());
@@ -16766,7 +16882,7 @@ function createThumbCache(deps) {
   };
 }
 
-// node_modules/@internal/gallery/dist/core/thumbs/png-text.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/thumbs/png-text.js
 var PNG_BLURB_KEYWORD = "Description";
 var SIG = [137, 80, 78, 71, 13, 10, 26, 10];
 function isPng(bytes) {
@@ -16912,7 +17028,7 @@ function withPngText(png, keyword, text2) {
   return out;
 }
 
-// node_modules/@internal/gallery/dist/core/thumbs/make-thumb.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/core/thumbs/make-thumb.js
 var THUMB_MAX_BYTES = 70 * 1024;
 var THUMB_LADDER = [256, 192, 128];
 var THUMB_PALETTE_COLORS = 256;
@@ -16992,7 +17108,7 @@ function makeThumbAdaptive(src, opts) {
   return last;
 }
 
-// node_modules/@internal/gallery/dist/ui/store-ui.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/ui/store-ui.js
 var STORE_TEXT_KEYS = {
   "sync.pushing": "st.syncPushing",
   "file.renaming": "st.fileRenaming",
@@ -17073,7 +17189,7 @@ function storeUIFor(d3) {
   };
 }
 
-// node_modules/@internal/gallery/dist/ui/gallery-screen.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/ui/gallery-screen.js
 var PIXELATED_THUMB_MAX_EDGE = 128;
 function thumbLoadPixelated(e10) {
   const img = e10.target;
@@ -17856,7 +17972,7 @@ var GALLERY_TEMPLATE = `
       <div class="gallery-empty" v-show="isEmpty && !loading">{{ emptyText }}</div>
 `;
 
-// node_modules/@internal/gallery/dist/create-gallery.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/gallery/dist/create-gallery.js
 function createGallery(el2, deps) {
   if (deps.text)
     configureText(deps.text);
@@ -18208,7 +18324,7 @@ var storeUI = {
   }
 };
 
-// node_modules/@internal/encryption/dist/encryption.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/encryption/dist/encryption.js
 var SEVENZ_MAGIC = [55, 122, 188, 175, 39, 28];
 var ZIP_MAGIC = [80, 75, 3, 4];
 function _startsWith(u82, sig) {
@@ -24683,6 +24799,10 @@ function toJianpu(toks, fifths) {
       out.push(",");
       continue;
     }
+    if (t10.kind === "dyn") {
+      out.push(`[${t10.value}]`);
+      continue;
+    }
     const suf = durText(t10.dur), lead = suf.startsWith(" -") ? "" : suf, tail = suf.startsWith(" -") ? suf : "";
     if (t10.kind === "rest") {
       out.push(`0${lead}${tail}`);
@@ -24743,6 +24863,11 @@ function fromJianpu(text2, fifths) {
       out.push({ kind: "tempo", id: id2++, bpm: Number(m2[1]) });
       continue;
     }
+    m2 = /^\[(pp|p|mp|mf|f|ff)\]$/.exec(w2);
+    if (m2) {
+      out.push({ kind: "dyn", id: id2++, value: m2[1] });
+      continue;
+    }
     m2 = /^(\^?)((?:[#b]*[0-7x]['’,]*)(?:&[#b]*[1-7]['’,]*)*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w2);
     if (!m2) return null;
     const [, tie, body, unders, dot, ticks, lyric, hyph] = m2;
@@ -24793,6 +24918,8 @@ function redo(h2, cur) {
 }
 
 // src/ui/sel-bar.ts
+var ART_LABEL = { staccato: ["\uE4A2", "\u8DF3\u97F3"], accent: ["\uE4A0", "\u91CD\u97F3"], tenuto: ["\uE4A4", "\u4FDD\u6301"], breath: ["\uE4CE", "\u547C\u5438"] };
+var DYN_GLYPH2 = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
 var SelBar = class {
   el;
   constructor(parent, host) {
@@ -24806,14 +24933,19 @@ var SelBar = class {
       if (v) host.verb(v);
     });
   }
-  /** 画：sel = 有没有选区（几个 token）；clip = 剪贴板里有没有东西；over = 别的全屏视图盖着（藏）。 */
-  update(sel, clip2, over) {
+  /** 画：sel = 有没有选区（几个 token）；clip = 剪贴板里有没有东西；over = 别的全屏视图盖着（藏）；fix = 「修」开着（那一排开关的状态）。 */
+  update(sel, clip2, over, fix = null) {
     if (over || !sel && !clip2) {
       this.el.hidden = true;
       return;
     }
     const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
-    this.el.innerHTML = sel ? `<span class="sel-n">${sel} \u4E2A</span>` + b3("all", "\u5168\u9009") + b3("copy", "\u590D\u5236") + b3("cut", "\u526A\u5207") + (clip2 ? b3("paste", "\u7C98\u8D34") : "") + b3("transpose", "\u79FB\u8C03") + b3("delete", "\u5220", "trash-can", "danger") + b3("clear", "", "x") : b3("paste", "\u7C98\u8D34\u5230\u5149\u6807\u5904") + b3("forget", "", "x");
+    if (sel && fix) {
+      this.el.innerHTML = `<span class="sel-n">\u4FEE</span>` + ARTS.map((a10) => `<button type="button" class="btn fix-art${fix.art[a10] === "all" ? " is-on" : fix.art[a10] === "some" ? " is-some" : ""}" data-v="art:${a10}" title="${ART_LABEL[a10][1]}\uFF1A\u9009\u4E2D\u7684\u97F3\u90FD\u6709 = \u53BB\u6389\uFF0C\u5426\u5219\u90FD\u52A0\u4E0A"><span class="smufl">${ART_LABEL[a10][0]}</span><span>${ART_LABEL[a10][1]}</span></button>`).join("") + `<span class="sel-gap"></span>` + DYNS.map((d3) => `<button type="button" class="btn fix-dyn${fix.dyn === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u653E\u5728\u9009\u533A\u5F00\u5934\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6"><span class="smufl">${DYN_GLYPH2[d3]}</span></button>`).join("") + (fix.dyn ? b3("dyn:none", "\u53BB\u6389\u529B\u5EA6") : "") + b3("fixdone", "\u5B8C\u6210", "", "primary");
+      this.el.hidden = false;
+      return;
+    }
+    this.el.innerHTML = sel ? `<span class="sel-n">${sel} \u4E2A</span>` + b3("all", "\u5168\u9009") + b3("copy", "\u590D\u5236") + b3("cut", "\u526A\u5207") + (clip2 ? b3("paste", "\u7C98\u8D34") : "") + b3("transpose", "\u79FB\u8C03") + b3("fix", "\u4FEE") + b3("delete", "\u5220", "trash-can", "danger") + b3("clear", "", "x") : b3("paste", "\u7C98\u8D34\u5230\u5149\u6807\u5904") + b3("forget", "", "x");
     this.el.hidden = false;
   }
 };
@@ -24829,6 +24961,8 @@ var doc = {
   extras: emptyExtras(),
   /** 歌库里的家（v0.6.0）：store 身份（`夹/主干.mxl`）；null = 无地（本地文件句柄 / 还没家）。三种家互斥：identifier 优先于 handle。 */
   identifier: null,
+  /** 首笔安家（v0.6.9，user 2026-10-08「首笔安家做」，照 WeebPaint lazyblank）：歌库里「新建」出来的空谱**没有家、不落盘**，记着要进哪个夹；第一笔编辑才铸身份（homeNow）。空着离开 = 零损失、歌库里不留空壳。 */
+  pendingHome: null,
   saved: { song: st2.song, lounge: "" }
 };
 var coverRev = 0;
@@ -25752,7 +25886,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "f1826df9ea3e",
+  cssHash: "ec6f4ddb1112",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -25815,7 +25949,7 @@ var dirty = () => st2.song !== doc.saved.song || loungeKey() !== doc.saved.loung
 function renderTitle() {
   const d3 = dirty(), name = docName();
   $2("docTitle").textContent = `${name}${d3 ? " \u2022" : ""}`;
-  $2("fileBtn").title = `${doc.identifier ? "\u5728\u6B4C\u5E93\u91CC" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : "\u8FD8\u6CA1\u6709\u5BB6"}\uFF08\u70B9 = \u6587\u4EF6\u83DC\u5355\uFF09`;
+  $2("fileBtn").title = `${doc.identifier ? "\u5728\u6B4C\u5E93\u91CC" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : doc.pendingHome ? "\u65B0\u7684\u4E00\u9996\uFF1A\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93" : "\u8FD8\u6CA1\u6709\u5BB6"}\uFF08\u70B9 = \u6587\u4EF6\u83DC\u5355\uFF09`;
   document.title = `${d3 ? "\u2022 " : ""}${name} \xB7 MoonSinger`;
   renderSaveButton();
   renderUndo();
@@ -26893,6 +27027,39 @@ var es2 = createEditorSession({
 });
 function changed() {
   if (doc.identifier && dirty()) es2.markDirty();
+  else if (doc.pendingHome && dirty()) void homeNow();
+}
+var homeIfEdited = () => doc.pendingHome && dirty() ? homeNow() : Promise.resolve();
+var homing = null;
+function homeNow() {
+  if (homing) return homing;
+  const home = doc.pendingHome;
+  if (!home) return Promise.resolve();
+  homing = (async () => {
+    const store = requireStore(), base3 = docName();
+    let id2 = identifiers.join({ folder: home.folder, stem: base3, suffix: SONG_SUFFIX });
+    for (let n10 = 0; n10 < 50 && await store.files.occupied(id2); n10++) id2 = identifiers.join({ folder: home.folder, stem: `${base3}-${defaultStem().slice(9)}`, suffix: SONG_SUFFIX });
+    if (doc.pendingHome !== home) return;
+    doc.identifier = id2;
+    doc.handle = null;
+    doc.mtime = null;
+    doc.stem = stemOfId(id2);
+    doc.named = true;
+    doc.pendingHome = null;
+    setActiveIdentifier(id2);
+    es2.adopted(id2, { create: true });
+    try {
+      await es2.flushLocal();
+      deviceKvSet2(KV_LAST_DOC, id2);
+      diagNote("doc", `home ${id2}`);
+    } catch (e10) {
+      reportError(e10);
+    }
+    renderTitle();
+  })().finally(() => {
+    homing = null;
+  });
+  return homing;
 }
 es2.start();
 setInterval(() => {
@@ -26910,6 +27077,7 @@ function adoptStoreBytes(id2, bytes) {
 }
 var stemOfId = (id2) => identifiers.parse(id2)?.stem ?? id2;
 async function leaveCurrent(what) {
+  await homeIfEdited();
   if (doc.identifier) {
     try {
       await es2.flushAndPush();
@@ -26921,6 +27089,7 @@ async function leaveCurrent(what) {
   return confirmDiscard(what);
 }
 async function openStoreDoc(id2) {
+  await homeIfEdited();
   if (doc.identifier !== id2 && !doc.identifier && !await confirmDiscard(`\u6253\u5F00\u300C${stemOfId(id2)}\u300D`)) return false;
   if (isSignedIn2() && navigator.onLine) {
     try {
@@ -26948,20 +27117,23 @@ async function openStoreDoc(id2) {
 async function newStoreSong() {
   attachForUser();
   if (!await leaveCurrent("\u65B0\u5EFA")) return;
-  const store = requireStore(), folder = gallery?.currentFolder() ?? "";
-  let id2 = identifiers.join({ folder, stem: defaultStem(), suffix: SONG_SUFFIX });
-  for (let n10 = 0; n10 < 50 && await store.files.occupied(id2); n10++) id2 = identifiers.join({ folder, stem: defaultStem(), suffix: SONG_SUFFIX });
-  loadDoc(initState().song, { stem: stemOfId(id2), named: true, extras: emptyExtras(), handle: null, identifier: id2 });
-  es2.adopted(id2, { create: true });
-  try {
-    await es2.flushLocal();
-    deviceKvSet2(KV_LAST_DOC, id2);
-    info("\u65B0\u7684\u4E00\u9996\uFF08\u5728\u6B4C\u5E93\u91CC\uFF09");
-  } catch (e10) {
-    reportError(e10);
-  }
+  const folder = gallery?.currentFolder() ?? "";
+  es2.release();
+  loadDoc(initState().song, { stem: defaultStem(), named: false, extras: emptyExtras(), handle: null, identifier: null });
+  doc.pendingHome = { folder };
+  deviceKvSet2(KV_LAST_DOC, null);
+  renderTitle();
+  info("\u65B0\u7684\u4E00\u9996\uFF08\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93\uFF09");
 }
 async function saveIntoGallery() {
+  if (doc.pendingHome) {
+    if (!dirty()) {
+      info("\u8FD8\u662F\u7A7A\u7684\uFF1A\u5199\u4E0B\u7B2C\u4E00\u7B14\u5C31\u81EA\u52A8\u8FDB\u6B4C\u5E93");
+      return;
+    }
+    await homeNow();
+    return;
+  }
   attachForUser();
   const store = requireStore(), folder = gallery?.currentFolder() ?? "", base3 = docName();
   let id2 = identifiers.join({ folder, stem: base3, suffix: SONG_SUFFIX });
@@ -27067,8 +27239,9 @@ function ensureGallery() {
     flushLocal: () => doc.identifier ? es2.flushLocal() : Promise.resolve(),
     newSong: async () => {
       await newStoreSong();
-      if (doc.identifier) gallery.close();
+      if (doc.identifier || doc.pendingHome) gallery.close();
     },
+    // 首笔安家：新建出来的空谱还没身份（pendingHome）也回到谱
     openSettings: () => openSettings(),
     openCloudMenu: () => {
       void openCloudMenu();
@@ -27270,6 +27443,13 @@ async function smartSaveStore() {
   info(es2.isPushPending() ? "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u4E91\u7AEF\u7A0D\u540E\u518D\u63A8" : before === "clean" ? "\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684" : "\u5B58\u597D\u4E86\uFF0C\u4E91\u7AEF\u4E5F\u66F4\u65B0\u4E86");
 }
 async function smartSave() {
+  if (doc.pendingHome) {
+    if (!dirty()) {
+      info("\u8FD8\u662F\u7A7A\u7684\uFF0C\u6CA1\u4EC0\u4E48\u53EF\u5B58");
+      return;
+    }
+    await homeNow();
+  }
   if (doc.identifier) await smartSaveStore();
   else await fileSave();
 }
@@ -27443,4 +27623,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3cd6ded12756.mjs.map
+//# sourceMappingURL=moonsinger-2c68c39ee165.mjs.map

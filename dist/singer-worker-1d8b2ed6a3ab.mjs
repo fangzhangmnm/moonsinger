@@ -744,7 +744,7 @@ function wrapTsf(M) {
   };
 }
 
-// node_modules/@internal/model-packs/dist/sha256.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/model-packs/dist/sha256.js
 var K = new Uint32Array([
   1116352408,
   1899447441,
@@ -900,7 +900,7 @@ var Sha256 = class {
   }
 };
 
-// node_modules/@internal/model-packs/dist/pack-store.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/model-packs/dist/pack-store.js
 var SLICE = 1 << 20;
 function createPackStore(deps) {
   const cacheName = deps.cacheName ?? "pwa-models";
@@ -1119,7 +1119,7 @@ var PACKS = {
   "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
 };
 
-// node_modules/@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs
 var ort_wasm_bundle_min_exports = {};
 __export(ort_wasm_bundle_min_exports, {
   InferenceSession: () => rs,
@@ -3791,7 +3791,7 @@ var iu = nn;
 }
 Object.defineProperty(Y.versions, "web", { value: $r, enumerable: true });
 
-// node_modules/@internal/read-aloud/backend/piper-plus/vendor/ojt/ojt.mjs
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/read-aloud/backend/piper-plus/vendor/ojt/ojt.mjs
 async function Module(moduleArg = {}) {
   var Module2 = moduleArg;
   var ENVIRONMENT_IS_WEB = !!globalThis.window;
@@ -6432,7 +6432,7 @@ async function Module(moduleArg = {}) {
 }
 var ojt_default = Module;
 
-// node_modules/@internal/read-aloud/backend/piper-plus/ja-frontend.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/read-aloud/backend/piper-plus/ja-frontend.js
 var FIELDS = ["string", "pos", "pos_group1", "pos_group2", "pos_group3", "ctype", "cform", "orig", "read", "pron", "acc", "mora_size", "chain_rule", "chain_flag"];
 var INT_FIELDS = /* @__PURE__ */ new Set(["acc", "mora_size", "chain_flag"]);
 var cps = (s) => Array.from(s);
@@ -6948,10 +6948,10 @@ function createJaFrontend(Module2, dicDir = "/dic", { naniModel = null, emulateS
   return { cFrontend, runFrontend, extractFullcontext, phonemize };
 }
 
-// node_modules/@internal/read-aloud/backend/piper-plus/pua-map.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/read-aloud/backend/piper-plus/pua-map.js
 var TOKEN2CHAR = { "a:": "\uE000", "i:": "\uE001", "u:": "\uE002", "e:": "\uE003", "o:": "\uE004", "cl": "\uE005", "ky": "\uE006", "kw": "\uE007", "gy": "\uE008", "gw": "\uE009", "ty": "\uE00A", "dy": "\uE00B", "py": "\uE00C", "by": "\uE00D", "ch": "\uE00E", "ts": "\uE00F", "sh": "\uE010", "zy": "\uE011", "hy": "\uE012", "ny": "\uE013", "my": "\uE014", "ry": "\uE015", "?!": "\uE016", "?.": "\uE017", "?~": "\uE018", "N_m": "\uE019", "N_n": "\uE01A", "N_ng": "\uE01B", "N_uvular": "\uE01C", "rr": "\uE01D", "y_vowel": "\uE01E", "p\u02B0": "\uE020", "t\u02B0": "\uE021", "k\u02B0": "\uE022", "t\u0255": "\uE023", "t\u0255\u02B0": "\uE024", "t\u0282": "\uE025", "t\u0282\u02B0": "\uE026", "ts\u02B0": "\uE027", "a\u026A": "\uE028", "e\u026A": "\uE029", "a\u028A": "\uE02A", "o\u028A": "\uE02B", "an": "\uE02C", "\u0259n": "\uE02D", "a\u014B": "\uE02E", "\u0259\u014B": "\uE02F", "u\u014B": "\uE030", "ia": "\uE031", "i\u025B": "\uE032", "iou": "\uE033", "ia\u028A": "\uE034", "i\u025Bn": "\uE035", "in": "\uE036", "ia\u014B": "\uE037", "i\u014B": "\uE038", "iu\u014B": "\uE039", "ua": "\uE03A", "uo": "\uE03B", "ua\u026A": "\uE03C", "ue\u026A": "\uE03D", "uan": "\uE03E", "u\u0259n": "\uE03F", "ua\u014B": "\uE040", "u\u0259\u014B": "\uE041", "y\u025B": "\uE042", "y\u025Bn": "\uE043", "yn": "\uE044", "\u027B\u0329": "\uE045", "tone1": "\uE046", "tone2": "\uE047", "tone3": "\uE048", "tone4": "\uE049", "tone5": "\uE04A", "p\u0348": "\uE04B", "t\u0348": "\uE04C", "k\u0348": "\uE04D", "s\u0348": "\uE04E", "t\u0348\u0255": "\uE04F", "k\u031A": "\uE050", "t\u031A": "\uE051", "p\u031A": "\uE052", "t\u0283": "\uE054", "d\u0292": "\uE055", "\u025B\u0303": "\uE056", "\u0251\u0303": "\uE057", "\u0254\u0303": "\uE058", "i\u02D0": "\uE059", "y\u02D0": "\uE05A", "e\u02D0": "\uE05B", "\u025B\u02D0": "\uE05C", "\xF8\u02D0": "\uE05D", "\u0251\u02D0": "\uE05E", "o\u02D0": "\uE05F", "u\u02D0": "\uE060", "\u0289\u02D0": "\uE061", "\u0254\u026A": "\uE062", "\u0153\u0303": "\uE063", "\u0250\u0303": "\uE064" };
 
-// node_modules/@internal/read-aloud/backend/piper-plus/encode.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/read-aloud/backend/piper-plus/encode.js
 function encodeTokens(tokens, prosody, phonemeIdMap, { quirk = true, pauseAt = null } = {}) {
   const pad = phonemeIdMap["_"][0], ids = [phonemeIdMap["^"][0], pad], pros = [[0, 0, 0], [0, 0, 0]];
   let k = 0;
@@ -6982,10 +6982,10 @@ function encodeTokens(tokens, prosody, phonemeIdMap, { quirk = true, pauseAt = n
   return { ids, pros };
 }
 
-// node_modules/@internal/read-aloud/backend/piper-plus/zh-loanwords.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/read-aloud/backend/piper-plus/zh-loanwords.js
 var zh_loanwords_default = { "acronyms": { "GPS": ["ji4", "pi4", "ai1", "si4"], "USB": ["you1", "ai1", "si4", "bi4"], "CPU": ["si4", "pi4", "you1"], "GPU": ["ji4", "pi4", "you1"], "AI": ["ei1", "ai4"], "API": ["ei1", "pi4", "ai4"], "URL": ["you1", "a4", "er2", "ai1", "er2"], "SDK": ["ai1", "si4", "di4", "kei4"], "HTML": ["ai1", "chi4", "ti4", "ai1", "mu5", "ai1", "er2"], "CSS": ["si4", "ai1", "si4", "ai1", "si4"], "JS": ["jie4", "ai1", "si4"], "CSV": ["si4", "ai1", "si4", "wei1"], "PDF": ["pi4", "di4", "ai1", "fu2"], "XML": ["ai4", "ke4", "si1", "ai1", "mu5", "ai1", "er2"], "SQL": ["ai1", "si4", "kiu1", "ai1", "er2"], "UI": ["you1", "ai4"], "UX": ["you1", "ai4", "ke4", "si1"], "DNS": ["di4", "en1", "ai1", "si4"], "IP": ["ai4", "pi4"], "TCP": ["ti4", "si4", "pi4"], "UDP": ["you1", "di4", "pi4"], "SSH": ["ai1", "si4", "ai1", "si4", "ai1", "chi4"], "SSL": ["ai1", "si4", "ai1", "si4", "ai1", "er2"], "TLS": ["ti4", "ai1", "er2", "ai1", "si4"], "VPN": ["wei1", "pi4", "en1"], "NPC": ["en1", "pi4", "si4"], "RPG": ["a4", "er2", "pi4", "ji4"], "FPS": ["ai1", "fu2", "pi4", "ai1", "si4"], "CEO": ["si4", "yi1", "ou1"], "CFO": ["si4", "ai1", "fu2", "ou1"], "CTO": ["si4", "ti4", "ou1"], "COO": ["si4", "ou1", "ou1"], "PR": ["pi4", "a4", "er2"], "HR": ["ai1", "chi4", "a4", "er2"], "KPI": ["kei4", "pi4", "ai4"], "ROI": ["a4", "er2", "ou1", "ai4"], "OKR": ["ou1", "kei4", "a4", "er2"], "CRM": ["si4", "a4", "er2", "ai1", "mu5"], "ERP": ["yi1", "a4", "er2", "pi4"], "IOT": ["ai4", "ou1", "ti4"], "AR": ["ei1", "a4", "er2"], "VR": ["wei1", "a4", "er2"], "MR": ["ai1", "mu5", "a4", "er2"], "ML": ["ai1", "mu5", "ai1", "er2"], "DL": ["di4", "ai1", "er2"], "NLP": ["en1", "ai1", "er2", "pi4"], "LED": ["ai1", "er2", "yi1", "di4"], "LCD": ["ai1", "er2", "si4", "di4"], "OLED": ["ou1", "ai1", "er2", "yi1", "di4"], "PHP": ["pi4", "ai1", "chi4", "pi4"], "PNG": ["pi4", "en1", "ji4"], "JPG": ["jie4", "pi4", "ji4"], "MP3": ["ai1", "mu5", "pi4", "san1"], "MP4": ["ai1", "mu5", "pi4", "si4"], "FBI": ["ai1", "fu2", "bi4", "ai4"], "CIA": ["si4", "ai4", "ei1"], "NBA": ["en1", "bi4", "ei1"], "UN": ["you1", "en1"], "EU": ["yi1", "you1"], "UK": ["you1", "kei4"], "US": ["you1", "ai1", "si4"], "USA": ["you1", "ai1", "si4", "ei1"], "ATM": ["ei1", "ti4", "ai1", "mu5"], "PIN": ["pi4", "ai4", "en1"], "FAQ": ["ai1", "fu2", "ei1", "kiu1"], "WTO": ["shuang1", "bi3", "you1", "ti4", "ou1"] }, "loanwords": { "Python": ["pai4", "sen1"], "iPhone": ["ai4", "feng1"], "iPad": ["ai4", "pa4"], "ChatGPT": ["chai4", "ti2", "ji4", "pi4", "ti4"], "Java": ["jia3", "wa3"], "Google": ["gu3", "ge1"], "Facebook": ["fei4", "si1", "bu4", "ke4"], "Microsoft": ["wei2", "ruan3"], "Twitter": ["tui1", "te4"], "YouTube": ["you1", "tu4", "bei4"], "WhatsApp": ["hua2", "ci2", "a1", "pu1"], "WeChat": ["wei1", "xin4"], "TikTok": ["ti4", "ke4", "ti4", "ke4"], "Linux": ["li4", "nei4", "ke4", "si1"], "Docker": ["dao4", "ke4"], "Kubernetes": ["ku4", "bo2", "nei4", "ti4", "si1"], "GitHub": ["ji2", "te4", "ha2", "bu4"], "Slack": ["si1", "la1", "ke4"], "Zoom": ["zu4", "mu3"], "Spotify": ["si1", "bo1", "ti4", "fei1"], "Netflix": ["nai4", "fei1"], "Amazon": ["ya4", "ma3", "xun4"], "Tesla": ["te4", "si1", "la1"], "Bitcoin": ["bi3", "te4", "bi4"], "Ethereum": ["yi3", "tai4", "fang1"], "Discord": ["di2", "si1", "ke1", "de2"], "Reddit": ["rui4", "di2", "te4"], "Steam": ["si1", "ti4", "mu3"], "Minecraft": ["mai4", "ke4", "la1", "fu1", "te4"], "Excel": ["yi1", "ke4", "sai1", "er3"], "Word": ["wo4", "de2"], "PowerPoint": ["pao4", "wei4", "pin3", "te4"], "Skype": ["si1", "kai1", "pu3"], "LinkedIn": ["ling3", "ying1"], "Android": ["an1", "zhuo2"], "iOS": ["ai4", "ou1", "ai1", "si4"], "macOS": ["ma3", "ke4", "ou1", "ai1", "si4"], "Windows": ["wen2", "duo1", "si1"], "Apple": ["a1", "pou1"], "Office": ["ao4", "fei1", "si1"] }, "letter_fallback": { "A": ["ei1"], "B": ["bi4"], "C": ["si4"], "D": ["di4"], "E": ["yi1"], "F": ["ai1", "fu2"], "G": ["ji4"], "H": ["ai1", "chi4"], "I": ["ai4"], "J": ["jie4"], "K": ["kei4"], "L": ["ai1", "er2"], "M": ["ai1", "mu5"], "N": ["en1"], "O": ["ou1"], "P": ["pi4"], "Q": ["kiu1"], "R": ["a4", "er2"], "S": ["ai1", "si4"], "T": ["ti4"], "U": ["you1"], "V": ["wei1"], "W": ["shuang1", "bi3", "you1"], "X": ["ai4", "ke4", "si1"], "Y": ["wai4"], "Z": ["zi4"] } };
 
-// node_modules/@internal/read-aloud/backend/piper-plus/zh-g2p.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/read-aloud/backend/piper-plus/zh-g2p.js
 var INITIAL_TO_IPA = {
   b: "p",
   p: "p\u02B0",
@@ -7325,7 +7325,7 @@ function toReferenceLayout(ids, pros) {
   return { ids: oi, pros: op };
 }
 
-// node_modules/@internal/read-aloud/backend/piper-plus/en-g2p.js
+// ../../../../../jupyter/20260601 PWAProjects/20261006 MoonSinger/node_modules/@internal/read-aloud/backend/piper-plus/en-g2p.js
 var ARPA2IPA = {
   AA: "\u0251",
   AE: "\xE6",
@@ -7774,4 +7774,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-a270f74bfc54.mjs.map
+//# sourceMappingURL=singer-worker-1d8b2ed6a3ab.mjs.map
