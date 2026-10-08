@@ -32,7 +32,7 @@ export type Prim =
   | { t: "icon"; id: string; x: number; y: number; size: number; cls?: string; title?: string };   // 家族图标库的一个图标（页面里内联的 sprite，<use href="#id">）
 
 /** 要画的一个声部（顺序 = 总谱从上到下；隐藏的不在这里）。 */
-export interface PartView { id: string; name: string; empty?: boolean; first?: boolean; clef?: "G" | "F"; staves?: 2; hidden?: boolean; badges?: string[]; mono?: boolean }   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
+export interface PartView { id: string; name: string; empty?: boolean; first?: boolean; clef?: "G" | "F"; staves?: 2; hidden?: boolean; badges?: string[]; mono?: boolean; xHead?: boolean }   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
 //   empty = 还没人上场（名字画淡色）；first = 歌里第一个声部（速度画在它上面）；clef = 谱号；hidden = 隐藏的：不画谱、缩成一条细行（点它开歌手牌）；badges = 名字下面的角标（静 / 独 / 只看它）
 export interface EngraveOpts {
   width: number;                         // px，谱面板宽
@@ -548,7 +548,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       }
       const curIndex = (() => { if (!focused || !writing || !o.justWrote) return -1; for (let i = o.caret - 1; i >= 0; i--) if (isTimed(tokens[i])) return i; return -1; })();
       const nhX = (c: Chunk) => P(c.x + c.accW + 0.35);
-      const nhW = (c: Chunk) => P(c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+      // × 符头：这个声部台上那位固定敲一个键（鼓件 / 音效固定原速）——谱上写的音高照留、只是不拿来出声，画成 × 让人一眼看出来（user 2026-10-08「披露就用x」）
+      const xHead = !!q.p.xHead;
+      const nhW = (c: Chunk) => P(xHead ? (c.base >= WHOLE ? W.noteheadXWhole : c.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack) : c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
       const clsOf = (c: Chunk) => [c.ghost ? "ghost" : "", c.index >= 0 && c.index === curIndex ? "cur" : "", c.index >= 0 && inSel(c.index) ? "sel" : ""].filter(Boolean).join(" ") || undefined;
       const partLyrics: LyricHit[] = [];
       const drawChunk = (c: Chunk) => {
@@ -572,7 +574,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const ledgers = new Set<number>();
         for (const dd of ds) { for (let L = 28; L >= dd; L -= 2) ledgers.add(L); for (let L = 40; L <= dd; L += 2) ledgers.add(L); }
         for (const L of ledgers) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(row, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(row, L), w: P(ENGRAVE.ledger), cls: "ledger" });
-        const ng = c.base >= WHOLE ? GLYPH.noteheadWhole : c.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
+        const ng = xHead ? (c.base >= WHOLE ? GLYPH.noteheadXWhole : c.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack) : c.base >= WHOLE ? GLYPH.noteheadWhole : c.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
         let shifted = false;
         ds.forEach((dd, k) => {
           const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted; shifted = second;   // 二度：下面那个符头往右错开（连着的二度交错）

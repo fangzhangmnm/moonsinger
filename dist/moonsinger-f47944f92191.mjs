@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.12-2026-10-08";
+var APP_VERSION = "v0.6.13-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4115,6 +4115,10 @@ var GLYPH = {
   noteheadWhole: "\uE0A2",
   noteheadHalf: "\uE0A3",
   noteheadBlack: "\uE0A4",
+  noteheadXWhole: "\uE0A7",
+  noteheadXHalf: "\uE0A8",
+  noteheadXBlack: "\uE0A9",
+  // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
   augmentationDot: "\uE1E7",
   flag8thUp: "\uE240",
   flag8thDown: "\uE241",
@@ -4139,6 +4143,10 @@ var W = {
   noteheadBlack: 1.18,
   noteheadHalf: 1.18,
   noteheadWhole: 1.688,
+  noteheadXBlack: 1.16,
+  noteheadXHalf: 1.34,
+  noteheadXWhole: 1.51,
+  // 2026-10-08 在浏览器里用 measureText 量的 advance（400px Bravura；黑符头同法量得 1.18 = 上面那行，方法对得上）
   gClef: 2.684,
   fClef: 2.736,
   sharp: 0.996,
@@ -4750,7 +4758,8 @@ function engrave(song, o10) {
         return -1;
       })();
       const nhX = (c10) => P2(c10.x + c10.accW + 0.35);
-      const nhW = (c10) => P2(c10.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+      const xHead = !!q2.p.xHead;
+      const nhW = (c10) => P2(xHead ? c10.base >= WHOLE ? W.noteheadXWhole : c10.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : c10.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
       const clsOf = (c10) => [c10.ghost ? "ghost" : "", c10.index >= 0 && c10.index === curIndex ? "cur" : "", c10.index >= 0 && inSel(c10.index) ? "sel" : ""].filter(Boolean).join(" ") || void 0;
       const partLyrics = [];
       const drawChunk = (c10) => {
@@ -4776,7 +4785,7 @@ function engrave(song, o10) {
           for (let L2 = 40; L2 <= dd; L2 += 2) ledgers.add(L2);
         }
         for (const L2 of ledgers) prims.push({ t: "line", x1: x0 - P2(ENGRAVE.ledgerExt), y1: yOf(row, L2), x2: x0 + nhW(c10) + P2(ENGRAVE.ledgerExt), y2: yOf(row, L2), w: P2(ENGRAVE.ledger), cls: "ledger" });
-        const ng2 = c10.base >= WHOLE ? GLYPH.noteheadWhole : c10.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
+        const ng2 = xHead ? c10.base >= WHOLE ? GLYPH.noteheadXWhole : c10.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack : c10.base >= WHOLE ? GLYPH.noteheadWhole : c10.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
         let shifted = false;
         ds.forEach((dd, k2) => {
           const second = k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1 && !shifted;
@@ -25885,6 +25894,7 @@ function restore(r10, verb) {
       gmHeld.clear();
       void prepareSynth();
       pad3.render();
+      view.render();
     }
   }
   revealPart(r10.st.at.part);
@@ -26826,7 +26836,7 @@ function partViews() {
   return st2.song.parts.map((p2, k2) => {
     const v = pv(p2.id), badges = [v.muted ? "\u9759\u97F3" : "", v.solo ? "\u72EC\u594F" : "", v.only ? "\u53EA\u770B\u5B83" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p2.role)?.engine ?? "unknown";
-    return { id: p2.id, name: labels[k2], empty: eng === "unknown", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont" };
+    return { id: p2.id, name: labels[k2], empty: eng === "unknown", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {} };
   });
 }
 function afterViewChange() {
@@ -28340,4 +28350,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e98aeebcd09f.mjs.map
+//# sourceMappingURL=moonsinger-f47944f92191.mjs.map

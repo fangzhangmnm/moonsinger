@@ -6,6 +6,7 @@ export const GLYPH = {
   metNoteQuarterUp: "\u{ECA5}",   // 速度记号里的四分音符（metronome mark）
   gClef: "", fClef: "\u{E062}",   // 低音谱号（2026-10-08）
   noteheadWhole: "", noteheadHalf: "", noteheadBlack: "",
+  noteheadXWhole: "\u{E0A7}", noteheadXHalf: "\u{E0A8}", noteheadXBlack: "\u{E0A9}",   // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
   augmentationDot: "",
   flag8thUp: "", flag8thDown: "", flag16thUp: "", flag16thDown: "", flag32ndUp: "", flag32ndDown: "",
   accidentalFlat: "", accidentalNatural: "", accidentalSharp: "", accidentalDoubleSharp: "", accidentalDoubleFlat: "",
@@ -17,6 +18,7 @@ export const timeSigDigits = (n: number): string => [...String(n)].map((d) => St
 /** 宽度（sp）。 */
 export const W = {
   noteheadBlack: 1.18, noteheadHalf: 1.18, noteheadWhole: 1.688,
+  noteheadXBlack: 1.16, noteheadXHalf: 1.34, noteheadXWhole: 1.51,   // 2026-10-08 在浏览器里用 measureText 量的 advance（400px Bravura；黑符头同法量得 1.18 = 上面那行，方法对得上）
   gClef: 2.684, fClef: 2.736, sharp: 0.996, flat: 0.904, natural: 0.672, doubleSharp: 1.0, doubleFlat: 1.644,
   dot: 0.4, timeSigDigit: 1.8,
   restWhole: 1.128, restHalf: 1.128, restQuarter: 1.08, rest8th: 0.988, rest16th: 1.28, rest32nd: 1.452,

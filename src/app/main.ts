@@ -432,7 +432,7 @@ function restore(r: Restored, verb: string): void {
   if (r.extras !== doc.extras) {
     if (r.extras.thumbnail !== doc.extras.thumbnail) { coverTouched = true; coverRev++; }
     doc.extras = r.extras;
-    if (r.locus.kind === "lounge") { synth.allOff(); gmHeld.clear(); void prepareSynth(); pad.render(); }
+    if (r.locus.kind === "lounge") { synth.allOff(); gmHeld.clear(); void prepareSynth(); pad.render(); view.render(); }   // 谱上的 × 符头跟着演奏者
   }
   revealPart(r.st.at.part);
   applyState(r.st);
@@ -1083,7 +1083,7 @@ function partViews(): PartView[] {
   return st.song.parts.map((p, k) => {
     const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown";
-    return { id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont" };
+    return { id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
