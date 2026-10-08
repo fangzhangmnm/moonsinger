@@ -27,6 +27,8 @@ export interface GalleryHostDeps {
   /** 「新建」：在歌库里新建一首（空谱）并打开。 */
   newSong: () => Promise<void>;
   openSettings: () => void;
+  /** 「乐器」：歌库上面开乐器目录（只弹着玩，不写进哪首歌；user 2026-10-08「歌库应该有一个专门的乐器目录的入口」）。 */
+  openInstruments: () => void;
   /** 云按钮：登录 / 退出 / 账号（宿主的 auth 菜单）。 */
   openCloudMenu: (anchor: HTMLElement) => void;
   onOpened?: () => void;
@@ -56,6 +58,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
     `<button type="button" class="btn" data-v="back" title="回到谱">${iconHtml("back")}</button><div class="gallery-chrome-title">歌库</div><span class="spacer"></span>` +
     `<button type="button" class="btn" data-v="cloud" title="云端：登录 / 退出">${iconHtml("cloud")}</button>` +
     `<button type="button" class="btn" data-v="refresh" title="刷新云端" hidden>${iconHtml("refresh")}</button>` +
+    `<button type="button" class="btn gallery-inst" data-v="instruments" title="乐器目录：浏览、试听、用键盘弹着玩（不写进哪首歌）"><span>乐器</span></button>` +
     `<button type="button" class="btn" data-v="new" title="新建一首">${iconHtml("new")}<span>新建</span></button>` +
     `<button type="button" class="btn" data-v="aside" title="回收站和备份箱">${iconHtml("trash-can")}</button>` +
     `<button type="button" class="btn" data-v="settings" title="设置">${iconHtml("menu")}</button></div>` +
@@ -126,6 +129,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
     else if (v === "cloud") d.openCloudMenu(cloudBtn);
     else if (v === "refresh") gallery?.handle.refresh();
     else if (v === "new") void d.newSong();
+    else if (v === "instruments") d.openInstruments();
     else if (v === "aside") showAside("trash");
     else if (v === "files") showAside(null);
     else if (v === "trash" || v === "backup") showAside(v);

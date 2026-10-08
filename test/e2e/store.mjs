@@ -32,6 +32,11 @@ try {
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "歌库屏开着");
   check(await p.evaluate(() => document.body.dataset.mode === "gallery"), "body[data-mode=gallery]");
   const emptyText = await p.textContent("#galleryFull"); check(/还没有歌/.test(emptyText), "空歌库文案（歌库口吻）", emptyText.slice(0, 60));
+  // 歌库顶条「乐器」= 只弹着玩的乐器目录，盖在歌库上面；「←」回歌库（2026-10-08 Opus；user「歌库应该有一个专门的乐器目录的入口」）
+  await p.click('#galleryFull [data-v="instruments"]'); await p.waitForSelector(".inst-row");
+  check((await p.textContent(".finder-title")) === "乐器目录（弹着玩）" && !(await p.$('.finder [data-v="cast"]')), "歌库「乐器」= 只弹着玩的目录（没有「上场」）");
+  await p.click('.finder [data-v="back"]'); await p.waitForTimeout(200);
+  check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)) && (await p.$eval(".finder", (f) => f.hidden)), "目录「← 歌库」= 回到歌库");
   // 新建一首
   await p.click('#galleryFull [data-v="new"]'); await p.waitForTimeout(600);
   check(await p.evaluate(() => document.getElementById("galleryFull").hidden), "新建后回到谱");

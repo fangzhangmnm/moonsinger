@@ -1860,8 +1860,9 @@ function ensureGallery(): GalleryHost {
     flushLocal: () => (doc.identifier ? es.flushLocal() : Promise.resolve()),
     newSong: async () => { await newStoreSong(); if (doc.identifier || doc.pendingHome) gallery!.close(); },   // 首笔安家：新建出来的空谱还没身份（pendingHome）也回到谱
     openSettings: () => openSettings(),
+    openInstruments: () => openFinder(),   // 歌库开着 = 只弹着玩的目录，盖在歌库上面
     openCloudMenu: () => { void openCloudMenu(); },
-    onOpened: () => { closeOffer?.(); closeFinder(); closeStudio(); padWas = !padEl.hidden; showPad(false); updateChrome(); },
+    onOpened: () => { closeOffer?.(); finderBackToInst = false; closeFinder(); closeStudio(); closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },
     onClosed: () => { void afterGalleryClosed(); showPad(padWas); updateChrome(); scoreEl.focus(); },
   });
   return gallery;
