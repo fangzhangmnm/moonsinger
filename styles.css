@@ -12,8 +12,17 @@
   --accent-soft: #e3edf9;
   --ghost: #a9b4c2;
   --z-menu: 300;
+  --z-overlay: 250;   /* 歌库一屏（在 menu 之下：图库包的卡片菜单 / 弹层用 --z-menu，要压在屏上面） */
   --z-sheet: 500;
+  --z-busy: 520;      /* busy 遮罩盖住 sheet（互斥护栏：交互 sheet 不许在 busy 里开） */
+  --z-gate: 540;      /* 同步闸（冲突面）盖住一切、不可 dismiss */
   --z-err: 900;
+  /* @internal/gallery 要宿主给的 token（包只用 var()） */
+  --tile-min: 150px;
+  --tile-min-narrow: 112px;
+  --enc: #c98a00;
+  --warn: #d99a20;
+  --info: #4c8bf5;
   /* @internal/workbench-elements 要宿主给的 token（包只用 var()，值归宿主；同 CatsUp styles.css） */
   --bg-soft: #ece9e2;
   --ink-soft: #6b6b66;
@@ -392,3 +401,66 @@ button, input, select { font: inherit; color: inherit; }
 /* 分页：页框 + 页码 */
 .staff-svg rect.page { fill: #fff; stroke: var(--line); stroke-width: 1; }
 .staff-svg .page-no { fill: var(--muted); }
+
+/* ═══ 歌库（v0.6.0，2026-10-08 Claude Fable 5.1；屏 = src/gallery-host.ts，卡片样式在 vendor/internal-css/gallery.css）═══ */
+.gallery-full { position: fixed; inset: 0; z-index: var(--z-overlay); display: flex; flex-direction: column; background: var(--bg); color: var(--ink); }
+.gallery-chrome, .gallery-asidebar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); white-space: nowrap; }
+.gallery-chrome { padding-top: max(var(--safe-top), 6px); }
+.gallery-chrome-title { font-weight: 600; letter-spacing: .02em; }
+.gallery-chrome .spacer, .gallery-asidebar .spacer { flex: 1; }
+.gallery-aside-tabs { display: inline-flex; gap: 4px; }
+.gallery-aside-tab.is-on { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
+.gallery-mount { flex: 1 1 auto; overflow: auto; padding: 0 0 calc(12px + var(--safe-bottom)); -webkit-overflow-scrolling: touch; }
+.gallery-mount .sheet-action { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; color: var(--ink); font: inherit; cursor: pointer; }
+.btn.tb-lib { flex: none; }
+.cloud-st { display: inline-flex; align-items: center; color: var(--muted); margin-left: 2px; }
+.cloud-st:empty { display: none; }
+.ico.ico-sm { width: 14px; height: 14px; }
+
+/* ── busy 遮罩 / 同步闸 / 交互 sheet（src/ui/sheets.ts）── */
+.busy-overlay { position: fixed; inset: 0; z-index: var(--z-busy); display: flex; align-items: center; justify-content: center; background: rgba(40, 38, 34, .28); cursor: default; }
+.busy-card { width: auto; min-width: 200px; text-align: center; }
+.busy-spinner { width: 22px; height: 22px; margin: 2px auto 10px; border: 2px solid rgba(0, 0, 0, .15); border-top-color: var(--accent); border-radius: 50%; animation: ms-spin .9s linear infinite; }
+@keyframes ms-spin { to { transform: rotate(360deg); } }
+.offer.gate-sheet { z-index: var(--z-gate); }
+.gate-actions { flex-wrap: wrap; }
+.gate-note { margin: 10px 0 0; }
+.sheet-choices { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.sheet-choices .btn { justify-content: flex-start; height: auto; min-height: 36px; padding: 8px 12px; white-space: normal; text-align: left; }
+.btn.danger { border-color: #e5a29b; color: var(--danger); }
+.sheet-input { width: 100%; height: 34px; border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 0 8px; color: var(--ink); }
+.cover-row { align-items: center; }
+.cover-thumb img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); display: block; }
+.cover-none { color: var(--muted); font-size: 12px; }
+
+/* ═══ 歌库封面（唱片封面式；排版规则在 src/ui/song-cover.ts；user 2026-10-08「我们这个应该是唱片封面，是矩形的…都是 HTML 排版进 gallery 的两个槽」）═══
+   两层：底下 = 封面图（有）或一块按歌名选的哑色（.ms-cover-bg，占位槽）；上面 = 歌名 / 日期 / 大小（.ms-cover，覆盖槽），有没有图都一样印。 */
+.gallery-tile-thumb.placeholder:has(.ms-cover-bg) { padding: 0; }
+.ms-cover-bg { display: block; width: 100%; height: 100%; background: var(--cover-bg, #d9c7a3); }
+.ms-cover-bg.hue-0 { --cover-bg: #d9c7a3; } .ms-cover-bg.hue-1 { --cover-bg: #b9c9b0; } .ms-cover-bg.hue-2 { --cover-bg: #c9b7c9; } .ms-cover-bg.hue-3 { --cover-bg: #a9bfd0; }
+.ms-cover-bg.hue-4 { --cover-bg: #e0b8a8; } .ms-cover-bg.hue-5 { --cover-bg: #c5c5b4; } .ms-cover-bg.hue-6 { --cover-bg: #d8c2b0; } .ms-cover-bg.hue-7 { --cover-bg: #b0c4c4; }
+.ms-cover { --cover-ink: #2a2a2a; --cover-ink-soft: #5a5750; --cover-paper: #fffdf8; position: absolute; inset: 0; box-sizing: border-box; padding: 7% 7% 20px; display: flex; flex-direction: column; container-type: inline-size; color: var(--cover-ink); }
+.ms-cover.v { align-items: flex-end; justify-content: flex-start; padding-top: 15%; }      /* 汉字：竖排，右上起（顶上让开图库包右上角的同步徽章） */
+.ms-cover.h { align-items: flex-start; justify-content: flex-end; }      /* 拉丁：横排，大字在左下（专辑封面惯例） */
+.ms-cover-title { display: block; max-width: 100%; max-height: 100%; overflow: hidden; font-weight: 700; letter-spacing: .02em; line-height: 1.12; }
+.ms-cover.v .ms-cover-title { writing-mode: vertical-rl; text-orientation: mixed; height: 100%; letter-spacing: .08em; }
+.ms-cover.v .tcy { text-combine-upright: all; -webkit-text-combine: horizontal; letter-spacing: 0; }
+.ms-cover.h .ms-cover-title { overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; }
+.ms-cover.coded .ms-cover-title { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 400; letter-spacing: .04em; color: var(--cover-ink-soft); font-size: clamp(13px, 13cqw, 22px); }
+.ms-cover.v.sz-xl .ms-cover-title { font-size: clamp(16px, 20cqw, 36px); }
+.ms-cover.v.sz-l  .ms-cover-title { font-size: clamp(14px, 15cqw, 27px); }
+.ms-cover.v.sz-m  .ms-cover-title { font-size: clamp(13px, 12cqw, 21px); }
+.ms-cover.v.sz-s  .ms-cover-title { font-size: clamp(12px, 10cqw, 17px); }
+.ms-cover.h.sz-xl .ms-cover-title { font-size: clamp(16px, 18cqw, 32px); }
+.ms-cover.h.sz-l  .ms-cover-title { font-size: clamp(14px, 13cqw, 24px); }
+.ms-cover.h.sz-m  .ms-cover-title { font-size: clamp(12px, 11cqw, 19px); }
+.ms-cover.h.sz-s  .ms-cover-title { font-size: clamp(11px, 9.5cqw, 16px); }
+.ms-cover-artist { display: block; margin-top: .35em; font-size: clamp(10px, 6cqw, 13px); color: var(--cover-ink-soft); }
+.ms-cover.v .ms-cover-artist { writing-mode: vertical-rl; margin: 0 .4em 0 0; }
+/* 底栏：左 yyyymmdd、右 大小（学 WXHW 书架：很窄的一条贴底、半透明垫底、不描边） */
+.ms-cover-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 17px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 6px; font-size: 9px; line-height: 17px; letter-spacing: .02em; color: var(--cover-ink-soft); background: color-mix(in srgb, var(--cover-paper) 72%, transparent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* 底下是封面图：歌名垫一块半透明的纸（学 WXHW 2026-10-01「标题的字下面还是垫一个半透明吧」），不描边 */
+img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-title { background: color-mix(in srgb, var(--cover-paper) 78%, transparent); padding: .18em; border-radius: .22em; box-sizing: border-box; }
+img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover.v .ms-cover-title { height: fit-content; }
+img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover.h .ms-cover-title { width: fit-content; }
+img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: color-mix(in srgb, var(--cover-paper) 78%, transparent); padding: .1em .3em; border-radius: .2em; }

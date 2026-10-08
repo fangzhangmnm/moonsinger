@@ -20,6 +20,9 @@ import "./gm-format.test.ts";
 import "./sounds.test.ts";
 import "./synth-wasm.test.ts";
 import "./instruments.test.ts";
+import "./redline-guard.test.mjs";
+import "./storage-whitelist.test.mjs";
+import "./store-wiring.test.mjs";
 import { run } from "./runner.mjs";
 
 await run();

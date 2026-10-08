@@ -34,8 +34,14 @@ export interface Extras {
   sounds: Record<string, Uint8Array>;    // 歌里嵌的音源字节（zip 路径 `.moonsinger/sounds/<sha256>.sf2` → 字节；契约 §10.2）；存档只写候选还引用着的
   unknown: Record<string, Uint8Array>;   // 不认识的文件
   rootfiles: { path: string; mediaType: string }[];   // container.xml 里除主乐谱外的 rootfile（原样写回）
+  /** 封面 = `Thumbnails/thumbnail.png` 这个 entry 本身（家族既定做法 WXHW ADR-0012 = ORA 同款路径；PNG ≤ 256²、≤ 70 KB；
+   *  **永远最后一个 entry、不压缩**——书架靠 store getPeek 尾读一次命中，不是最后就会被别的东西挤出尾窗）。null = 没有封面（书架画自动封面）。 */
+  thumbnail: Uint8Array | null;
 }
-export const emptyExtras = (): Extras => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [] });
+export const emptyExtras = (): Extras => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], thumbnail: null });
+export const THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
+/** 换封面（null = 去掉）。 */
+export const withThumbnail = (extras: Extras, png: Uint8Array | null): Extras => ({ ...extras, thumbnail: png });
 
 /** 新歌默认的两个候选：月读完整 / 月读元音版（轻量）。 */
 export const CANDIDATE_ID = { full: "c1", light: "c2" } as const;
@@ -112,9 +118,10 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   for (const [id, r] of Object.entries(lounge)) out[`${DIR}lounge/${id}.json`] = json(r);
   out[`${DIR}studio.json`] = json(studio);
   for (const [path, bytes] of sounds) out[path] = bytes;
-  for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in out)) out[path] = bytes;
+  for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY) out[path] = bytes;
+  if (a.extras.thumbnail) out[THUMBNAIL_ENTRY] = a.extras.thumbnail;   // 封面最后一个（尾读）
   const entries: Record<string, [Uint8Array, { level: 0 | 1 | 6 }]> = {};
-  for (const [path, bytes] of Object.entries(out)) entries[path] = [bytes, { level: path === "mimetype" ? 0 : path.startsWith(SOUNDS) ? 1 : 6 }];   // mimetype 必须第一个、不压缩（插入顺序 = zip 里的顺序）；采样大、压不动，level 1 省时间
+  for (const [path, bytes] of Object.entries(out)) entries[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY ? 0 : path.startsWith(SOUNDS) ? 1 : 6 }];   // mimetype 必须第一个、不压缩（插入顺序 = zip 里的顺序）；封面不压缩（尾读按 entry 名抓原始字节）；采样大、压不动，level 1 省时间
   return zipSync(entries);
 }
 
@@ -283,6 +290,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   const extras = emptyExtras();
   extras.rootfiles = paths.slice(1);
   const known = new Set(["mimetype", "META-INF/container.xml", main]);
+  if (files[THUMBNAIL_ENTRY]) { extras.thumbnail = files[THUMBNAIL_ENTRY]; known.add(THUMBNAIL_ENTRY); }   // 封面 entry（别家 zip 里有同名的也照收）
   const manifestBytes = files[`${DIR}manifest.json`];
   const ours = !!manifestBytes;
   if (!ours) {

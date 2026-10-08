@@ -14,6 +14,9 @@ const STATIC_PRECACHE = [
   "./icon-512.png",
   "./styles.css",
   "./vendor/fonts/bravura/Bravura.woff2",
+  "./vendor/internal-css/workbench-elements.css",
+  "./vendor/internal-css/gallery.css",
+  "./vendor/msal/msal-browser.min.js",
 ];
 
 let CACHE_NAME = "moonsinger-boot";

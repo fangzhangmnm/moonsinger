@@ -2,7 +2,7 @@
 // user 2026-10-07「纸张的最上面加一个可选的歌名吧，未来也是文件名，用同样的yyyymmdd hash的默认规范；看一下隔壁怎么做的」。
 // 隔壁：WeebPaint src/naming.ts galleryDefaultName（源头）、CatsUp src/config.ts defaultDocName、WXHW src/doc-model.ts makeDocName
 //   （「有名保名，无名日期」；hex4 用 crypto.getRandomValues）——本地日期 + 半角 - + 4 位小写 hex，不叫「未命名」。
-// 家族共享库 @internal/gallery 有同一个 galleryDefaultName()；MoonSinger 接 gallery（存档接 store）时换成它，这份删掉。
+// 家族共享库 @internal/gallery 有同一个格式的 galleryDefaultName()；2026-10-08 接 gallery 时决定留这份（纯函数、有测试、不让 app 层多一个包的值级 import 点；守卫只放行四个文件拿 @internal/gallery）。
 export function defaultStem(now = new Date()): string {
   const z = (n: number) => String(n).padStart(2, "0");
   let r: number;

@@ -26,8 +26,8 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
-import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes } from "../gm/sound-cache.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate } from "../gm/sound-cache.ts";
 import { GmSynth } from "../gm/synth.ts";
 import { Finder, type FinderPick } from "../ui/finder.ts";
 import { Studio } from "../ui/studio.ts";
@@ -39,14 +39,27 @@ import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DEN
 import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
+// ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
+import { attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence } from "../app-store.ts";
+import { identifiers } from "../identifiers.ts";
+import { SONG_SUFFIX, LOCAL_SAVE_DEBOUNCE_MS, PUSH_DEBOUNCE_MS, PUSH_HEARTBEAT_MS } from "../config.ts";
+import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
+import { createEditorSession } from "../editor-session/index.ts";
+import { openInputSheet, openChoiceSheet, isSheetOpen, closeSheet, isGateOpen } from "../ui/sheets.ts";
+import { reportError, diagNote, diagText, diagClear } from "./report-error.ts";
+import { deviceKvGet, deviceKvSet } from "../device-kv.ts";
+import { makeCoverPng, coverWithBlurb } from "../image/cover.ts";
 
 let st: EditorState = initState();
 /** 这首歌的家（无地逃生口）：文件名主干（新建 = 默认名；打开 = 那个文件的名字）、打开的那个文件（桌面 Chromium）+ 打开 / 上次写回时它的 mtime（写前对表）、
  *  文件里这一版不改动的部分、上次存 / 打开时的样子（判断改过没存）。歌名在谱里（st.song.title，可不填），和文件名分开。 */
 const doc = { stem: defaultStem(), named: false, handle: null as docFile.FileHandle | null, mtime: null as number | null, extras: emptyExtras() as Extras,
+  /** 歌库里的家（v0.6.0）：store 身份（`夹/主干.mxl`）；null = 无地（本地文件句柄 / 还没家）。三种家互斥：identifier 优先于 handle。 */
+  identifier: null as string | null,
   saved: { song: st.song as Song, lounge: "" } };
 /** 歌以外、和「改过没存」有关的部分：各角色的名字、谁上场、候选有哪些（候选增删也算改过）+ 录音房的麦克风（增益 / 声像）。 */
-const loungeKey = () => JSON.stringify([Object.entries(doc.extras.lounge).map(([id, r]) => [id, r.name, r.active, ((r.candidates as { id: string }[] | undefined) ?? []).map((c) => c.id)]).sort(), (doc.extras.studio?.mics as unknown[] | undefined) ?? []]);
+let coverRev = 0;   // 封面图换过几次（封面不在 lounge 里，但也算「改过没存」）
+const loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).map(([id, r]) => [id, r.name, r.active, ((r.candidates as { id: string }[] | undefined) ?? []).map((c) => c.id)]).sort(), (doc.extras.studio?.mics as unknown[] | undefined) ?? []]);
 doc.saved.lounge = loungeKey();
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => st.song.parts.find((p) => p.id === st.at.part) ?? st.song.parts[0];
@@ -88,7 +101,8 @@ function showUpdateBar(): void {
 //   左 = 文件钮 + 文件名（点 = 文件菜单）；中 = 走带条（唱 / 停、弹、唱的进度）；右 = 键盘开关 + 扳手。
 //   音质 / 哼的字 → 谱前面的歌手牌；导出歌声 → 文件菜单；版本号 → 设置；状态细字不要了（user「状态细字可以精简，或者不要也行」）。
 bar.innerHTML =
-  `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="文件：新建 / 打开 / 存 / 导出（Ctrl / ⌘+S 存、+O 打开；.mxl 拖进来也能打开）"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">未命名</span></button></div>` +
+  `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="文件：新建 / 打开 / 存 / 导出（Ctrl / ⌘+S 存、+O 打开；.mxl 拖进来也能打开）"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">未命名</span><span id="cloudSt" class="cloud-st"></span></button>` +
+  `<button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）">歌库</button></div>` +
   `<div class="tb-mid"><button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
   `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button><button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button><span id="singStatus" class="sing-st"></span></div>` +
   `<div class="tb-right"><button id="padBtn" class="btn is-on" title="键盘（pad）"><svg class="ico"><use href="#grid"/></svg></button>` +
@@ -264,6 +278,7 @@ function update(next: EditorState): void {
   view.render();
   pad.render();
   renderTitle();
+  changed();
 }
 
 // ── 播放：月读唱（第一次要加载引擎，之后复用） ─────────────────────────
@@ -513,7 +528,9 @@ function openSettings(): void {
     `<pre id="packSt" class="set-packs">…</pre>` +
     `<details class="set-credit"><summary>乐器目录的图标（第三方，${ICON_CREDITS.length} 个）</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}`).join("\n"))}</pre></details>` +
     `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre></details>` +
-    `<div class="set-row"><button class="btn" data-v="finder" title="全屏的乐器目录：按年代浏览、用 pad 弹着玩；「上场」给当前声部">乐器目录…</button></div>` +
+    `<div class="set-row"><button class="btn" data-v="finder" title="全屏的乐器目录：按年代浏览、用 pad 弹着玩；「上场」给当前声部">乐器目录…</button>` +
+    `<button class="btn" data-v="lib">歌库…</button><button class="btn" data-v="cloud">云端（OneDrive）…</button></div>` +
+    `<details class="set-credit"><summary>诊断日志（黑匣子：登录 / 同步的报错都在这里，出问题拷给开发者）</summary><pre id="diagTxt" class="set-packs">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:clear">清空</button></div></details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的月读模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
@@ -524,7 +541,7 @@ function openSettings(): void {
   const refreshSounds = async () => {
     const cached = await listCachedSounds(), bySha = new Map(cached.map((c) => [c.sha256, c])), known = new Set(Object.values(SOUNDS).map((e) => e.sha256));
     const total = cached.reduce((n, c) => n + c.bytes, 0), mem = soundMemoryBytes();
-    let quota = ""; try { const est = await navigator.storage?.estimate?.(); if (est?.usage !== undefined && est.quota) quota = `；这个站点共用了 ${sizeText(est.usage)} / 配额 ${sizeText(est.quota)}`; } catch { /* 没有就不显示 */ }
+    let quota = ""; const est = await siteStorageEstimate(); if (est) quota = `；这个站点共用了 ${sizeText(est.usage)} / 配额 ${sizeText(est.quota)}`;
     sndCache.innerHTML = `<div class="set-row"><span>设备上留着 ${sizeText(total)}${quota}；内存里现在 ${sizeText(mem)}</span>${mem ? `<button class="btn" data-v="snd:mem" title="放掉内存里的整包（设备上留着的不动，下次用再从设备读）">放掉内存</button>` : ""}</div>` +
       Object.values(SOUNDS).map((e) => { const c = bySha.get(e.sha256); return `<div class="set-row"><span>${esc(e.name)} · ${sizeText(e.bytes)} · ${c ? "已留在设备上" : "没下载"}</span>${c ? `<button class="btn" data-v="snd:del:${esc(e.id)}">删掉</button>` : `<button class="btn" data-v="snd:get:${esc(e.id)}">下载留着</button>`}</div>`; }).join("") +
       cached.filter((c) => !known.has(c.sha256)).map((c) => `<div class="set-row"><span>别的版本 / 别的 app 留的（${c.sha256.slice(0, 8)}…）· ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">删掉</button></div>`).join("") || "（没有）";
@@ -536,6 +553,10 @@ function openSettings(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
+    else if (v === "lib") { close(); void openGallery(); }
+    else if (v === "cloud") { close(); ensureAttached(); void openCloudMenu(); }
+    else if (v === "diag:copy") { void navigator.clipboard?.writeText(diagText()).then(() => info("复制了"), () => showError("复制不了（浏览器不给剪贴板）")); }
+    else if (v === "diag:clear") { diagClear(); box.querySelector("#diagTxt")!.textContent = ""; }
     else if (v?.startsWith("snd:get:")) { const e = SOUNDS[v.slice(8)]; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; void fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`)).then(() => { progress(""); info(`${e.name} 留在设备上了`); }).catch((err) => { progress(""); showError((err as Error).message); }).finally(() => void refreshSounds()); }
     else if (v?.startsWith("snd:del:")) { const e = SOUNDS[v.slice(8)]; void forgetSound(e.sha256).then(refreshSounds); }
     else if (v?.startsWith("snd:delsha:")) void forgetSound(v.slice(11)).then(refreshSounds);
@@ -580,7 +601,8 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   });
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
-(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null }) };   // cssHash：样式表版本（见 scripts/build.sh）
+(window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null }),
+  store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
@@ -599,10 +621,13 @@ bar.addEventListener("pointerdown", (e) => { if (!(e.target as HTMLElement).clos
 /** 台上那位的引擎（= 谁来演、怎么出声）；unknown = 没人能出声（别家谱原来的乐器 / 这一版不认识）。SSoT = 休息室快照（doc.extras），不另存状态。 */
 function engineNow(): Engine { return activeInstrument(doc.extras, curRole())?.engine ?? "unknown"; }
 const dirty = () => st.song !== doc.saved.song || loungeKey() !== doc.saved.lounge;
+/** 顶栏的名字 + 两个状态：「•」= 改过还没落盘（无地 = 没存；歌库 = 2 s 内会自动存）；云朵 = 歌库里的歌在不在云端最新（没上云 / 已同步 / 没登录不画）。 */
 function renderTitle(): void {
-  const d = dirty(), name = docName();
+  const d = dirty(), name = docName(), inStore = doc.identifier != null;
+  const pending = inStore && es.isPushPending(), signed = inStore && auth.isSignedIn();
   $("docTitle").textContent = `${name}${d ? " •" : ""}`;
-  $("docTitle").title = d ? "改过还没存" : doc.handle ? `存在 ${doc.handle.name}` : "";
+  $("docTitle").title = d ? (inStore ? "改过，马上自动存" : "改过还没存") : inStore ? (pending ? (signed ? "存在这台设备上了，还没推上云（稍后自动推）" : "存在这台设备上了（没登录，不上云）") : signed ? "在歌库里，云端也是最新的" : "在歌库里（这台设备上）") : doc.handle ? `存在 ${doc.handle.name}` : "";
+  $("cloudSt").innerHTML = !inStore || !signed ? "" : `<svg class="ico ico-sm"><use href="#${pending || d ? "cloud-upload" : "cloud-synced"}"/></svg>`;
   document.title = `${d ? "• " : ""}${name} · MoonSinger`;
 }
 /** 主唱没人上场（别的软件存的谱，原来的乐器这一版没有）：不出声、报错，人来选（user「不出声，报错，人类手动换」）。 */
@@ -957,9 +982,10 @@ function openPartSheet(): void {
     draw();
   });
 }
-function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; handle: docFile.FileHandle | null; mtime?: number | null }): void {
+function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; handle: docFile.FileHandle | null; mtime?: number | null; identifier?: string | null }): void {
   if (impro) toggleImpro();
   doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.mtime = o.handle ? (o.mtime ?? null) : null; doc.extras = o.extras;
+  doc.identifier = o.identifier ?? null; setActiveIdentifier(doc.identifier); coverTouched = false;
   st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };   // pad 是独立设备：换歌不换它的「1=」和调式
   doc.saved = { song: st.song, lounge: loungeKey() };
   partView.clear();
@@ -989,12 +1015,13 @@ function confirmDiscard(what: string): Promise<boolean> {
   });
 }
 async function fileNew(): Promise<void> {
+  if (hasStore()) { await newStoreSong(); return; }   // 进过歌库 = 新歌生在歌库里
   if (!(await confirmDiscard("新建"))) return;
   loadDoc(initState().song, { stem: defaultStem(), named: false, extras: emptyExtras(), handle: null });
   info("新的一首");
 }
 async function fileOpen(): Promise<void> {
-  if (!(await confirmDiscard("打开别的歌"))) return;
+  if (!(await leaveCurrent("打开别的歌"))) return;
   let picked: docFile.Picked | null;
   try { picked = await docFile.pickOpen(); } catch (e) { showError(`没打开：${(e as Error).message}`); return; }
   if (picked) openPicked(picked);
@@ -1008,7 +1035,9 @@ function openPicked(picked: docFile.Picked): void {
     else info(`打开了 ${picked.name}`);
   } catch (e) { showError(`打不开 ${picked.name}：${(e as Error).message}`); }
 }
-const bytesNow = () => saveMxl({ song: st.song, hum: st.song.hum, extras: doc.extras, app: APP_VERSION, date: new Date().toISOString() });
+/** 封面的腰封 = 作者栏第一行（每次存重写，withPngText 先删旧块）；没有封面图就没有封面 entry。 */
+const extrasForSave = (): Extras => (doc.extras.thumbnail ? withThumbnail(doc.extras, coverWithBlurb(doc.extras.thumbnail, (st.song.credits ?? "").split("\n").map((l) => l.trim()).find(Boolean) ?? null)) : doc.extras);
+const bytesNow = () => saveMxl({ song: st.song, hum: st.song.hum, extras: extrasForSave(), app: APP_VERSION, date: new Date().toISOString() });
 const mxlFile = (name: string) => new File([bytesNow() as unknown as BlobPart], name, { type: "application/vnd.recordare.musicxml" });
 const stemOf = (name: string) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
 const sizeText = (n: number) => (n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} KB` : `${(n / 1e6).toFixed(1)} MB`);
@@ -1019,6 +1048,11 @@ const sizeText = (n: number) => (n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} 
  *    WeebPaint 的「下载不清 dirty」是因为它 iPad 的家在图库——这里没有，「•」留着只会狼来了，0819 §7.2「有真正会丢的字节才拦」）。 */
 async function fileSave(): Promise<void> {
   try {
+    if (doc.identifier) {   // 歌库里的歌：存 = 立刻落盘 + 推云（用户显式按的 save 不脏也动，时间戳要走字）
+      await es.forceSaveAndPush(); renderTitle();
+      info(es.isPushPending() ? (auth.isSignedIn() ? "存好了（这台设备上；云端稍后再推）" : "存好了（这台设备上；没登录，不上云）") : "存好了，云端也更新了");
+      return;
+    }
     if (doc.handle) {
       const h = doc.handle, now = await docFile.mtime(h);
       if (docFile.isStale(doc.mtime, now) && !(await askSheet(`「${h.name}」在外面被改过`, "打开或上次存之后，这个文件被别的程序改过。覆盖 = 外面改的那些会丢。", "覆盖"))) { info("没存"); return; }
@@ -1072,35 +1106,45 @@ function openExportHub(): void {
     if (v === "mp3") void exportSong(); else if (v === "mxl") void exportCopyMxl();
   });
 }
-/** 文件菜单（应用内面板）：新建 / 打开 / 存 / 导出；还没有家的（没存过、或 iPad）多一个「改文件名」。
+/** 文件菜单（应用内面板）：新建 / 歌库 / 打开本机文件 / 存 / 导出 / 封面；还没有家的（没存过、或 iPad 无地）多一个「改文件名」。
  *  没有「另存为」（它住导出里，user 2026-08-20「open local file 和 save as 一加多了很多会混淆用户的东西」）；
- *  有家的不给改文件名——浏览器改不了磁盘上的名字，这里假装改了 = 悄悄把家丢了（v0.2.x 的做法，v0.3.0 撤）。 */
+ *  本地文件的不给改文件名——浏览器改不了磁盘上的名字（v0.3.0 撤）；歌库里的改名走 store（tryMove，撞名不覆盖）。 */
 function openFileMenu(): void {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  const where = doc.handle ? `现在存在 <b>${esc(doc.handle.name)}</b>，「存」= 存回去（文件在外面被改过会先问）。要换名字，在文件管理器里改。`
+  const inStore = doc.identifier != null;
+  const where = inStore ? `在歌库里，自动存（改了 2 秒内落到这台设备；${auth.isSignedIn() ? "登录着，稍后推上 OneDrive" : "没登录，不上云"}）。「存」= 立刻存 + 推。`
+    : doc.handle ? `现在存在 <b>${esc(doc.handle.name)}</b>，「存」= 存回去（文件在外面被改过会先问）。要换名字，在文件管理器里改。`
     : docFile.canPickSave() ? "还没存过：「存」会问存到哪。" : "这台设备上「存」= 下载或分享一个 .mxl 到「文件」里（下载了就算存了）。";
+  const thumb = doc.extras.thumbnail;
+  const coverUrl = thumb ? URL.createObjectURL(new Blob([thumb as unknown as BlobPart], { type: "image/png" })) : null;
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">文件</div>` +
-    `<div class="offer-msg">文件名：<b>${esc(doc.handle ? doc.handle.name : `${docName()}.mxl`)}</b>（没存过 = 年月日-歌名；存过之后和纸上的歌名各管各的）</div>` +
+    `<div class="offer-msg">文件名：<b>${esc(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b>（没存过 = 年月日-歌名；存过之后和纸上的歌名各管各的）</div>` +
     `<div class="set-row file-row">` +
     `<button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>新建</button>` +
-    `<button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>打开…</button>` +
+    `<button class="btn" data-v="lib"><svg class="ico"><use href="#folder"/></svg>歌库…</button>` +
+    `<button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>打开本机文件…</button>` +
     `<button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>存</button>` +
     `<button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>导出…</button>` +
+    (hasStore() && !inStore ? `<button class="btn" data-v="intoLib" title="把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）"><svg class="ico"><use href="#import"/></svg>存进歌库</button>` : "") +
     (doc.handle ? "" : `<button class="btn" data-v="rename">改文件名…</button>`) + `</div>` +
+    `<div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="封面" />` : `<span class="cover-none">没有封面图</span>`}</span>` +
+    `<label class="btn" title="选一张图当封面（缩成 256² 存进歌里；歌库卡片上歌名印在图上面）"><svg class="ico"><use href="#image"/></svg>封面图…<input id="coverIn" type="file" accept="image/*" hidden /></label>` +
+    (thumb ? `<button class="btn" data-v="coverOff">去掉封面图</button>` : "") + `</div>` +
     `<div class="offer-msg">存成 <code>.mxl</code>（MusicXML 乐谱的压缩包：别的乐谱软件也能打开；MoonSinger 自己的东西放在里面的 <code>.moonsinger/</code>）。${where} 把 .mxl 拖进来也能打开。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  const close = () => { box.remove(); closeOffer = null; if (coverUrl) URL.revokeObjectURL(coverUrl); scoreEl.focus(); };
   closeOffer = close;
+  box.querySelector<HTMLInputElement>("#coverIn")!.addEventListener("change", (e) => { const f = (e.target as HTMLInputElement).files?.[0]; close(); if (f) void setCover(f); });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
     if (!v) return;
     close();
-    if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "save") void fileSave(); else if (v === "export") openExportHub();
-    else if (v === "rename") renameFile();
+    if (v === "new") void fileNew(); else if (v === "lib") void openGallery(); else if (v === "open") void fileOpen(); else if (v === "save") void fileSave(); else if (v === "export") openExportHub();
+    else if (v === "rename") void renameActive(); else if (v === "intoLib") void saveIntoGallery(); else if (v === "coverOff") { doc.extras = withThumbnail(doc.extras, null); coverTouched = true; coverRev++; renderTitle(); changed(); info("去掉了封面图"); }
   });
 }
 $("fileBtn").addEventListener("click", () => openFileMenu());
@@ -1145,7 +1189,7 @@ function askSheet(title: string, msg: string, okLabel: string): Promise<boolean>
   });
 }
 // 改过没存就关页面 / 刷新：浏览器自己的挽留框（照 WeebPaint；无地不偷偷写盘——静默写用户文件违背文件语义）
-window.addEventListener("beforeunload", (e) => { if (dirty()) { e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("beforeunload", (e) => { if (dirty() && !navigatingForAuth) { e.preventDefault(); e.returnValue = ""; } });
 // 拖进来打开（.mxl / .musicxml / .xml；桌面 Chromium 还能拿到句柄 = 有家）。⚠ 句柄要在 drop 事件里同步抓（docFile.grabDrop），await 之后 items 就空了。
 window.addEventListener("dragover", (e) => { if (e.dataTransfer?.types.includes("Files")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
 window.addEventListener("drop", (e) => {
@@ -1153,20 +1197,237 @@ window.addEventListener("drop", (e) => {
   if (!gr) return;   // 不是我们认的文件 = 不拦这次 drop
   e.preventDefault();
   void (async () => {
-    if (!(await confirmDiscard(`打开「${gr.file.name}」`))) return;
+    if (!(await leaveCurrent(`打开「${gr.file.name}」`))) return;
     try { openPicked(await docFile.fromGrab(gr)); } catch (err) { showError(`没打开：${(err as Error).message}`); }
   })();
 });
 // 安装成 PWA 后双击 .mxl 用 MoonSinger 打开（manifest file_handlers → launchQueue；照 WeebPaint consumeLaunchFiles）。
 docFile.consumeLaunchFiles((h) => { void (async () => {
-  if (!(await confirmDiscard(`打开「${h.name}」`))) return;
+  if (!(await leaveCurrent(`打开「${h.name}」`))) return;
   try { openPicked(await docFile.readHandle(h)); } catch (err) { showError(`没打开：${(err as Error).message}`); }
 })(); });
+
+// ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：store（接缝 src/app-store.ts）+ 歌库屏（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ───────────
+//   家有三种（互斥）：歌库里的一首（doc.identifier；自动存 + 推云）/ 本地文件（doc.handle；v0.3.0 无地）/ 还没家。
+//   歌库是懒的：没进过歌库的设备 = 无地（不开 IDB、不载 MSAL）；点「歌库」= attach（在手势里顺便 requestStoragePersistence）；进过一次以后开局就建。
+//   节律（user 2026-10-08「「•」和「存」对齐 WXHW」；常量在 src/config.ts）：改了 2 s 自动落本地（「•」= 还没落）；15 s 没再改 / 失焦 / 换歌 / 退出 → 推云；30 s 心跳补推没上云的；
+//   「存」= 立刻落盘 + 推（不脏也动）。冲突 / 报错 / busy 在建 store 时就接好线（src/store-ui.ts；test/store-wiring.test.mjs 守着）。
+const KV_LAST_DOC = "last-doc";
+let gallery: GalleryHost | null = null;
+let pendingOpenId: string | null = null;   // es.open(id) 进行中的那个身份（adapter.adopt 收字节时要知道是谁的）
+let encodedSnap: { song: Song; lounge: string } | null = null;   // encode 那一刻的快照：落盘成功才把它记成「已存」（快照之后的改动继续算脏）
+let coverTouched = false;   // 这次打开里换过封面 → 落盘后让歌库丢掉旧缩略图
+const es = createEditorSession({
+  store: { file: (name, o) => requireStore().zip(name, { mode: o.mode }) },   // store 0.16.1：zip 种类走 store.zip（有 getPeek）；isZip 由种类表说了算
+  editor: {
+    adopt: async (blob) => { const id = pendingOpenId ?? doc.identifier; if (!id) throw new Error("adopt without an identifier"); adoptStoreBytes(id, new Uint8Array(await blob.arrayBuffer())); },
+    onChange: () => { /* 内容变化走 changed()（update() + 1 s 心跳）→ es.markDirty() */ },
+    encode: async () => { encodedSnap = { song: st.song, lounge: loungeKey() }; return { bytes: new Blob([bytesNow() as unknown as BlobPart], { type: "application/vnd.recordare.musicxml" }) }; },
+    onSaved: (name) => { if (encodedSnap) { doc.saved = encodedSnap; encodedSnap = null; } if (coverTouched) { coverTouched = false; gallery?.invalidateThumb(name); } renderTitle(); },
+  },
+  isZip: true,
+  policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS, pushOn: ["exit", "blur", "idle"], idleMs: PUSH_DEBOUNCE_MS },
+});
+/** 内容变了（谱 / 休息室 / 麦克风 / 封面）→ 歌库里的歌告诉 editor-session（autosave 节律）。幂等；1 s 心跳兜底没经过 update() 的改动（休息室 / 录音室直接改 doc.extras 的那些）。 */
+function changed(): void { if (doc.identifier && dirty()) es.markDirty(); }
+es.start();   // autosave 定时器 + 页面隐藏 / pagehide 落盘 + 失焦推云（editor-session 的通用触发点；不调就没有自动存）
+setInterval(() => { changed(); if (doc.identifier) renderTitle(); }, 1000);
+setInterval(() => { if (doc.identifier && es.isPushPending() && auth.isSignedIn() && navigator.onLine) void es.flushAndPush().catch((e) => reportError(e, "warning")); }, PUSH_HEARTBEAT_MS);
+/** store 字节 → 编辑器（es.open 与 takeCloud 重载共用的装入段）。 */
+function adoptStoreBytes(id: string, bytes: Uint8Array): void {
+  const o = openBytes(id, bytes);
+  loadDoc(o.song, { stem: identifiers.parse(id)?.stem ?? o.stem, named: true, extras: o.extras, handle: null, identifier: id });
+  deviceKvSet(KV_LAST_DOC, id);
+  if (o.notices.length) showError(o.notices.join(" "));
+}
+const stemOfId = (id: string) => identifiers.parse(id)?.stem ?? id;
+/** 离开现在这首：歌库里的 = 先落盘 + 推（不问，自动存的东西没什么可丢）；无地的 = 改过没存先问。 */
+async function leaveCurrent(what: string): Promise<boolean> {
+  if (doc.identifier) { try { await es.flushAndPush(); } catch (e) { reportError(e, "warning"); } return true; }
+  return confirmDiscard(what);
+}
+/** 打开歌库里的一首。false = 没切过去（本地没字节 / 读不了 / 用户不走）。 */
+async function openStoreDoc(id: string): Promise<boolean> {
+  if (doc.identifier !== id && !doc.identifier && !(await confirmDiscard(`打开「${stemOfId(id)}」`))) return false;
+  pendingOpenId = id;
+  try {
+    const ok = await es.open(id);   // 切歌前 es 自己先存旧的（退出语义）；open 里含新鲜度检查 / 冲突面 / 崩溃恢复（store 的 ui）
+    if (!ok) { showError(`打不开「${stemOfId(id)}」：这台设备上没有它的字节（离线、或还没从云端拉下来）`); return false; }
+    diagNote("doc", `open ${id}`);
+    return true;
+  } catch (e) { reportError(e); return false; }
+  finally { pendingOpenId = null; }
+}
+/** 在歌库里新建一首（空谱）并切过去；首存 mode:"new"（撞名不覆盖）→ 身份从此存在、歌库里能看见。 */
+async function newStoreSong(): Promise<void> {
+  attachForUser();
+  if (!(await leaveCurrent("新建"))) return;
+  const store = requireStore(), folder = gallery?.currentFolder() ?? "";
+  let id = identifiers.join({ folder, stem: defaultStem(), suffix: SONG_SUFFIX });
+  for (let n = 0; n < 50 && (await store.files.occupied(id)); n++) id = identifiers.join({ folder, stem: defaultStem(), suffix: SONG_SUFFIX });
+  loadDoc(initState().song, { stem: stemOfId(id), named: true, extras: emptyExtras(), handle: null, identifier: id });
+  es.adopted(id, { create: true });
+  try { await es.flushLocal(); deviceKvSet(KV_LAST_DOC, id); info("新的一首（在歌库里）"); }
+  catch (e) { reportError(e); }
+}
+/** 把手里这首无地的歌放进歌库（文件名沿用；撞名加序号）。 */
+async function saveIntoGallery(): Promise<void> {
+  attachForUser();
+  const store = requireStore(), folder = gallery?.currentFolder() ?? "", base = docName();
+  let id = identifiers.join({ folder, stem: base, suffix: SONG_SUFFIX });
+  for (let n = 0; n < 50 && (await store.files.occupied(id)); n++) id = identifiers.join({ folder, stem: `${base}-${defaultStem().slice(9)}`, suffix: SONG_SUFFIX });   // 撞名加 -hex4，不加序号（WXHW user 2026-09-10「我最讨厌 123 这种的序号焦虑」）
+  doc.identifier = id; doc.handle = null; doc.mtime = null; doc.stem = stemOfId(id); doc.named = true; setActiveIdentifier(id);
+  es.adopted(id, { create: true });
+  try { await es.flushLocal(); deviceKvSet(KV_LAST_DOC, id); renderTitle(); info(`进歌库了：${doc.stem}${SONG_SUFFIX}`); }
+  catch (e) { doc.identifier = null; setActiveIdentifier(null); renderTitle(); reportError(e); }
+}
+/** 改当前这首的文件名：歌库里的走 store（tryMove：撞名不覆盖、旧名进回收站）；无地的只改下次存的名字。返回新身份（歌库 VerbDoc.renameActive 的契约）。 */
+async function renameActive(): Promise<string | null> {
+  if (!doc.identifier) { renameFile(); return null; }
+  const p = identifiers.parse(doc.identifier); if (!p) return null;
+  const v = await openInputSheet("改文件名", { defaultValue: p.stem, message: "只改文件名，纸上的歌名不变。", okLabel: "改" });
+  if (v == null) return null;
+  const stem = fileSafe(v); if (!stem || stem === p.stem) return null;
+  const to = identifiers.join({ folder: p.folder, stem, suffix: p.suffix });
+  try {
+    const r = await es.rename(to);
+    if (!r.ok) { showError(`「${stem}」已经有了（${r.where === "cloud" ? "云端" : "这台设备上"}），没改`); return null; }
+    doc.identifier = to; doc.stem = stem; setActiveIdentifier(to); deviceKvSet(KV_LAST_DOC, to); renderTitle();
+    info(r.oldKept ? `文件名改成 ${stem}${SONG_SUFFIX}（旧名的那份谱系不明，原地留着了）` : `文件名改成 ${stem}${SONG_SUFFIX}`);
+    return to;
+  } catch (e) { reportError(e); return null; }
+}
+let authStarted = false, afterSignInInFlight: Promise<void> | null = null;
+/** 建 store + 歌库屏（幂等；不碰登录）。第一次要在用户手势里（persist 申请）。 */
+function ensureAttached(): void {
+  const fresh = !hasStore();
+  attachStore();
+  if (fresh) {
+    void requestStoragePersistence(); diagNote("boot", "store attached");
+    // 按身份记的东西跟着改名走（store 0.14.0 onRenamed：谁发起的改名 / 挪夹都报）——这里只有「上次开着哪首」
+    requireStore().files.onRenamed((from, to) => { if (deviceKvGet(KV_LAST_DOC) === from) deviceKvSet(KV_LAST_DOC, to); });
+  }
+  ensureGallery();
+}
+/** 登录探测（一次）：先建 store（库的报错器在 createStore 时才接上，CatsUp 2026-09-22）、本地恢复完了再调（boot 顺序 = 建 store → 本地恢复 → initAuth）。 */
+function startAuth(): void {
+  if (authStarted) return;
+  authStarted = true;
+  auth.onAuthChanged((s) => { gallery?.renderCloud(); renderTitle(); if (s.signedIn) void afterSignIn(); });
+  void auth.initAuth().then((s) => { diagNote("auth", `initAuth signedIn=${s.signedIn}`); gallery?.renderCloud(); renderTitle(); if (s.signedIn) void afterSignIn(); }).catch((e) => reportError(e, "warning"));
+}
+/** 用户动作进歌库（点「歌库」/ 新建 / 存进歌库）：建 store + 起登录探测。 */
+function attachForUser(): void { ensureAttached(); startAuth(); }
+function ensureGallery(): GalleryHost {
+  if (gallery) return gallery;
+  let padWas = true;
+  gallery = initGalleryHost({
+    activeIdentifier: () => doc.identifier,
+    openAny: (id) => openStoreDoc(id),
+    // 打开中的那首被歌库挪了夹：字节已在新身份下 → 先放下旧身份（不然 es.open 的「切歌前先存旧的」会把旧名字写回去复活），再按新身份重开
+    setIdentifier: (id) => { es.release(); doc.identifier = null; setActiveIdentifier(null); void openStoreDoc(id); },
+    renameActive,
+    pushNow: () => es.forceSaveAndPush().then(renderTitle),
+    flushLocal: () => (doc.identifier ? es.flushLocal() : Promise.resolve()),
+    newSong: async () => { await newStoreSong(); if (doc.identifier) gallery!.close(); },
+    openSettings: () => openSettings(),
+    openCloudMenu: () => { void openCloudMenu(); },
+    onOpened: () => { closeOffer?.(); closeFinder(); closeStudio(); padWas = !padEl.hidden; showPad(false); },
+    onClosed: () => { void afterGalleryClosed(); showPad(padWas); scoreEl.focus(); },
+  });
+  return gallery;
+}
+/** 从歌库回来：手里这首要是在歌库里被扔进了回收站（gallery 的删除动词允许删「打开中」的那首，先问过），就不再认那个家——留在内存里当无地稿，绝不自动存回去把它复活。 */
+async function afterGalleryClosed(): Promise<void> {
+  if (!doc.identifier) return;
+  try {
+    if (await requireStore().files.occupied(doc.identifier)) return;
+    const stem = doc.stem; es.release(); doc.identifier = null; setActiveIdentifier(null); deviceKvSet(KV_LAST_DOC, null); renderTitle();
+    showError(`「${stem}」已经进了回收站；手里这份现在没有家了（「存」会问存到哪，或「存进歌库」）。`);
+  } catch (e) { reportError(e, "log"); }
+}
+async function openGallery(): Promise<void> {
+  attachForUser();
+  await gallery!.open();
+}
+$("libBtn").addEventListener("click", () => { void openGallery(); });
+async function openCloudMenu(): Promise<void> {
+  const signed = auth.isSignedIn();
+  let who = ""; try { const a = auth.getActiveAccount() as { username?: string; name?: string } | null; who = a?.name || a?.username || ""; } catch { /* 没登录 */ }
+  const v = await openChoiceSheet<"in" | "out" | "refresh" | "pushAll">("云端（OneDrive）",
+    signed ? `已登录${who ? ` ${who}` : ""}。歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。` : "登录微软个人账号后，歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。不登录也能用，歌只在这台设备上。",
+    signed ? [{ label: "刷新云端", value: "refresh" }, { label: "把没上云的都推上去", value: "pushAll" }, { label: "退出登录", value: "out", danger: true, hint: "歌还留在这台设备上" }] : [{ label: "登录微软账号", value: "in", primary: true }]);
+  if (v === "in") await signInFlow();
+  else if (v === "out") { try { await auth.signOut(); info("退出了（歌还在这台设备上）"); } catch (e) { reportError(e); } gallery?.renderCloud(); renderTitle(); }
+  else if (v === "refresh") gallery?.refresh();
+  else if (v === "pushAll") await pushDirtyAll({ verbose: true });
+}
+/** 登录 = 页面跳去微软再跳回来（redirect；iPad PWA 弹窗不可靠）：先把手里的歌落盘，再在一个点击里**同步**起跳（WeebPaint / WXHW 的两步法；onPick 站在用户手势里）。 */
+let navigatingForAuth = false;
+async function signInFlow(): Promise<void> {
+  if (doc.identifier) { try { await es.flushLocal(); } catch (e) { reportError(e, "warning"); } }
+  await openChoiceSheet("去微软登录", `页面会跳到微软的登录页（只认个人账号），登录完自动回到这里。${doc.identifier ? "手里的歌已经存在这台设备上了。" : dirty() ? "手里这首无地的歌改过还没存——跳走会丢，先存一下再来。" : ""}`,
+    [{ label: "去登录", value: "go", primary: true, onPick: () => { navigatingForAuth = true; void requestStoragePersistence(); diagNote("auth", "signIn redirect"); auth.signIn({ prompt: "select_account" }).catch((e) => { navigatingForAuth = false; reportError(e); }); } }]);
+}
+/** 回前台 / 回线：干净的歌快进到云端的新版本（另一台设备改过的）；本地脏 / 没上云 = 不动（之后 push 的 412 会 surface 真分叉）。 */
+let refreshing = false;
+async function refreshOpenDoc(): Promise<void> {
+  const id = doc.identifier;
+  if (!id || refreshing || !hasStore() || !auth.isSignedIn() || !navigator.onLine || dirty() || es.isPushPending()) return;
+  refreshing = true;
+  try {
+    const r = await requireStore().zip(id, { mode: "existing" }).pullIfClean({ localDirty: () => dirty() || es.isPushPending(), onReplaceStart: () => info("云端有新版本，正在拉…") });
+    if (r?.status === "fast-forwarded" && doc.identifier === id) {
+      // 本地字节已换成云端版本（刚 markSynced）→ 内存里的是旧世界线，必须整体重载（同名 es.open = openInto 管线；不重载 = 下次自动存把旧版写回云端，WeebPaint 2026-08-25 案卷）
+      pendingOpenId = id;
+      const ok = await es.open(id).finally(() => { pendingOpenId = null; });
+      if (ok) info("换成云端的新版本了"); else showError(`「${stemOfId(id)}」云端的新版本拉下来了，但重开失败——请从歌库再打开一次`);
+    } else if (r?.status === "ff-failed" || r?.status === "cloud-error") reportError(r.error ?? new Error(`refresh ${r.status}: ${r.reason ?? ""}`), "warning");
+  } catch (e) { reportError(e, "warning"); }
+  finally { refreshing = false; }
+}
+/** 登录过期 / 回线：没登录着就静默再试一次（不弹任何东西）。 */
+function retrySilent(): void { if (hasStore() && authStarted && !auth.isSignedIn() && auth.isAuthConfigured()) void auth.retrySilentSignIn().catch((e) => reportError(e, "log")); }
+/** 登录成功后（boot 时 onAuthChanged 与 initAuth.then 会双触发 → 同一时刻只跑一份）：先推开着的、再回放离线队列、再推所有没上云的、刷新歌库。 */
+function afterSignIn(): Promise<void> {
+  if (afterSignInInFlight) return afterSignInInFlight;
+  afterSignInInFlight = (async () => {
+    diagNote("auth", "afterSignIn");
+    if (doc.identifier) { try { await es.flushAndPush(); } catch (e) { reportError(e, "warning"); } }
+    try { await requireStore().files.drainOfflineQueue(); } catch (e) { reportError(e, "log"); }
+    await pushDirtyAll();
+    await refreshOpenDoc();
+    gallery?.refresh(); gallery?.renderCloud(); renderTitle();
+  })().finally(() => { afterSignInInFlight = null; });
+  return afterSignInInFlight;
+}
+let pushAllInFlight: Promise<void> | null = null;
+function pushDirtyAll(opts: { verbose?: boolean } = {}): Promise<void> {
+  if (pushAllInFlight) return pushAllInFlight;
+  pushAllInFlight = (async () => {
+    try {
+      const r = await requireStore().files.dirty.pushAll();
+      if (r.failed.length) showError(`有 ${r.failed.length} 首没推上云：${r.failed.map(stemOfId).join("、")}`);
+      else if (opts.verbose) info(r.pushed ? `推上去了 ${r.pushed} 首` : "没有要推的");
+    } catch (e) { reportError(e, "warning"); }
+  })().finally(() => { pushAllInFlight = null; });
+  return pushAllInFlight;
+}
+/** 选一张图当封面：缩成 ≤ 256²、≤ 70 KB 的 PNG 存进歌（Thumbnails/thumbnail.png，zip 最后一个 entry，歌库尾读）；原图不留。 */
+async function setCover(f: File): Promise<void> {
+  try {
+    const png = await makeCoverPng(new Uint8Array(await f.arrayBuffer()));
+    doc.extras = withThumbnail(doc.extras, png); coverTouched = true; coverRev++; renderTitle(); changed();
+    info(`封面图换好了（${sizeText(png.length)}）`);
+  } catch (e) { showError(`这张图用不了：${(e as Error).message}`); }
+}
+window.addEventListener("online", () => { if (!hasStore()) return; if (auth.isSignedIn()) void afterSignIn(); else retrySilent(); });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible" || !hasStore()) return; if (auth.isSignedIn()) void refreshOpenDoc(); else retrySilent(); });
 
 // ── 键盘：映射是一张表（src/input/keys.ts）；这里只算「键盘现在归谁」，再照路由的结果做 ─────────────
 /** 谁在最上面归谁：导出面板 > 记号框 > 歌词框 > 谱面（弹 / 改 / 写）。 */
 function whereNow(): Where {
-  if (closeOffer) return "sheet";
+  if (closeOffer || isSheetOpen() || isGateOpen()) return "sheet";
   if (view.marks.open) return "mark";
   if (view.lyrics.open) return "lyric";
   return impro ? "impro" : st.sel ? "edit" : "write";
@@ -1193,11 +1454,12 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "impro": toggleImpro(); return true;
     case "lyric": return view.lyrics.act(a.a);
     case "mark": view.marks.act(a.a); return true;
-    case "sheet": closeOffer?.(); return true;
+    case "sheet": closeOffer?.(); closeSheet(); return true;
     case "file": if (a.a === "open") void fileOpen(); else if (a.a === "save") void fileSave(); else openExportHub(); return true;
   }
 }
 window.addEventListener("keydown", (e) => {
+  if (gallery?.isOpen()) { if (e.key === "Escape" && !isSheetOpen() && !isGateOpen()) { e.preventDefault(); gallery.close(); } return; }   // 歌库开着：键盘归它（Esc 回谱）
   if (finder.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } return; }   // 找人视图开着：只认 Esc（pad 的触屏键照常）
   if (studio.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeStudio(); } else if (e.key === " " && !(e.target as HTMLElement)?.closest("input")) { e.preventDefault(); void togglePlay(); } return; }   // 录音室：Esc 回谱、空格播放
   // 别的表单控件（顶栏的下拉框）拿着焦点：不接，它们自己吃方向键 / 空格。歌词框、记号框的输入框照常路由。
@@ -1216,5 +1478,13 @@ view.render();
 pad.render();
 renderTitle();
 scoreEl.focus();
+// 歌库 boot：进过歌库的设备（或带着 OAuth 回跳）开局就建 store（先建再 initAuth），回到上次的地方——上次在歌库里就开歌库，上次开着哪首就开哪首，开不了就进歌库。没进过的 = 无地，照旧。
+if (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash)) {
+  ensureAttached();
+  const last = deviceKvGet(KV_LAST_DOC);
+  if (gallery!.wasInGallery() || !last) await gallery!.open();
+  else if (!(await openStoreDoc(last))) await gallery!.open();
+  startAuth();   // 本地恢复完了再 initAuth（CatsUp 2026-09-22 顺序：建 store → 本地恢复 → 登录探测）
+}
 // 试听元音表（约 3 MB）在画好之后的空闲时下载：选了月读就是意图，第一下就该响（user「选这个乐器就是意图，然后第一下就响」）
 setTimeout(() => { void sampler.load().catch((e) => showError(`试听元音表没下载下来：${(e as Error).message}`)); }, 300);

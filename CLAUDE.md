@@ -44,7 +44,30 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **改格式的规矩**（CatsUp 立宪）：只加可选字段 → `node scripts/freeze-format-sample.mjs` 更新形状快照、审 diff；删 / 改字段 → `contract.ts` 的 FORMAT +1 + `src/format/migrate/index.ts` 加一步纯函数 + 跑 freeze 生成新版样本、**旧版目录不删**。老文件永远能开，只拒开比 app 新的；不认识的字段 / 文件原样写回。
 - **分工（2026-10-07 深夜起：一个 session 管契约 + 编辑器）**：user「你让那个fable把东西都交给你，我现在把你升级成fable，两个agent反而打架」→ 格式 session 交接后不再动仓（交接全文 = `ai-docs/20261007-format-handoff-to-editor-session.md`：等 user 拍的清单、未落档的对话事实、B 落地逐文件改动点、守卫 / freeze 注意）。下面「格式 session」的字样此后指同一个 session，对账 = 自己对着 0.2.x 手感核。此前两次分工：多轨等编辑器活由 user 带别的 session 做。**契约（`contract.ts` v2 + 契约草稿）是推荐稿，不是定稿**（user「fable的任何数据结构契约都只是推荐稿，不对立刻说」「小节线按照我们0.2.x做好的，fable可能不知道我们之前调的手感」）：做多轨的 session 对着 0.2.x 的手感用，哪里不对立刻报 user、同时 SendMessage 格式 session 对账（不是审批）；碰到还没定的格式问题写进契约草稿 §7 再继续。**守卫测试照旧有效**——它防的是丢数据（版本号 / 迁移 / 冻结样本），不定设计。
 
+## 歌库 = @internal/store + @internal/gallery + OneDrive（v0.5.2，2026-10-08，Claude Fable 5.1；READ FIRST before touching storage）
+
+user 2026-10-08「真的需要做store了…要不要硬着头皮进store」「身份走库的……反正严格按照库的护栏干」「冲突面照家规 必须做的非常严格…不要发生没有接线的情况」。起手读 `ai-docs/20261008-store-gallery-wiring-handoff.md`（接了什么、节律、两家对比里要 user 拍的 12 条、还没验的）。家规 `../CLAUDE.md`「云同步 store 库」+ skill `pwa-cloud-store` 全适用：**只准走 createStore()，app 层零 localStorage / IDB / MSAL / fetch 云端**。
+- **接缝**：`src/app-store.ts`（@internal/store 唯一值级 import；store **懒建** `attachStore()`，没进过歌库的设备 = 无地 v0.3.0，不开 IDB 不载 MSAL）· `src/store-ui.ts`（busy / 冲突面 / 报错 / 补推进度 = 图库包 `storeUIFor` + 本仓两条）· `src/identifiers.ts`（种类表：song = `.mxl` zip）· `src/encryption.ts`（零 codec，不加密）· `src/device-kv.ts`（device 层标量唯一器官）· `src/config.ts`（APP_ID / CLIENT_ID / AppFolder scope / consumers authority / 节律常量）· `src/gallery-host.ts`（歌库屏；封面 = `Thumbnails/thumbnail.png` 尾读；派生 IDB `moonsinger-thumbs`）· `src/ui/sheets.ts`（busy 遮罩 / 同步闸 / 问一句 / 输入 / 选一个）· `src/app/report-error.ts`（唯一报错漏斗，每级进黑匣子 diagLog，设置里能看能拷）· `src/editor-session/`（WeebPaint 的生命周期编排者，逐字节同 + 本仓加 `release()`）。
+- **守卫**（`npm test`）：`test/redline-guard.test.mjs`（接缝外零裸存储 / 云 / 语音外发；@internal/* 值级 import 只在登记的文件）· `test/storage-whitelist.test.mjs`（碰持久层的文件必须在白名单表里）· `test/store-wiring.test.mjs`（冲突面 / 报错 / busy / onReplayStatus 接线、scope / authority 家规、validateAdopt 真查魔数）· `scripts/build.sh` 接缝 lint。
+- **家三种互斥**：歌库里（`doc.identifier`）/ 本地文件句柄（`doc.handle`）/ 没家。歌库里的歌：改了 2 s 自动落本地（「•」= 还没落）、15 s 没再改 / 失焦 / 换歌 / 退出推云、30 s 心跳补推、「存」= 立刻落 + 推（不脏也动）；顶栏云朵 = 没上云 / 已同步（没登录不画）。无地的照 v0.3.0。「存进歌库」把无地稿放进歌库（撞名加 -hex4）。进歌库**歌还开着**（不像 WeebPaint / WXHW 关歌）——活动稿被挪夹 / 删掉时先 `es.release()` 再处置，绝不把旧名字写回去复活（E2E 守着）。
+- **boot**：进过歌库（device-kv `storeAttached`）或 URL 带 OAuth 片段 → 建 store → 本地恢复（上次在歌库就开歌库；上次开着哪首就开哪首，开不了进歌库，指针留着）→ 再 initAuth。登录后（单飞）：推开着的 → 回放离线队列 → `pushAll` → 干净的歌 `pullIfClean` 快进 → 刷新歌库。回前台 / 回线：干净快进；没登录着静默重试。登录 = 两步（先落盘，再在点击里同步 redirect）。
+- **封面**：用户选图 → `src/image/cover.ts`（解码 = `src/image/codec.ts` 唯一 canvas 点；居中裁方、≤ 256² ≤ 70 KB PNG = 图库包纯函数）→ `extras.thumbnail` → 存成 zip **最后一个 entry、不压缩**；腰封（作者栏第一行）每次存写进 PNG iTXt。卡片 = 两层（`src/ui/song-cover.ts`：底色 / 歌名竖排 / 日期 + 大小底栏），有图没图字都印。
+- **Azure 注册 MoonSinger**（client id 在 `src/config.ts`）：Personal accounts only；SPA 重定向 URI 要有 `https://fangzhangmnm.github.io/moonsinger/`、`https://fangzhangmnm.github.io/moonsinger/dev/`、`http://localhost:8710/`（MSAL redirectUri = origin + pathname）。真机 / 真云零验证（2026-10-08）。
+
+### 持久层白名单（`test/storage-whitelist.test.mjs` 机械执法；加一处就来这里登记）
+
+| 文件 | 碰什么 | 为什么 |
+|---|---|---|
+| `src/device-kv.ts` | localStorage（前缀 `moonsinger-5b1e7c0a92d34f6e:`） | device 层标量：storeAttached / gallery-folder / last-scene / last-doc / diag-log |
+| `src/app/pwa-shell.ts` | Cache Storage | 清缓存只清自己前缀 `moonsinger-` 的壳缓存 |
+| `src/gm/sound-cache.ts` | Cache Storage `pwa-sounds` | 音源整包按 sha256 留着离线能用（user 2026-10-07 批）；`navigator.storage.estimate` 只读显示 |
+| `service-worker.js` | Cache Storage `moonsinger-<hash>` | app 壳 |
+| `vendor/msal/msal-browser.min.js` | localStorage / sessionStorage | MSAL token 缓存，由 @internal/store 驱动 |
+| （库内）`@internal/store` | IDB `moonsinger.defaultStore` + localStorage `moonsinger.*` | 歌的本地副本 / 同步态 / 回收站（全走库） |
+| （库内）`@internal/gallery` | IDB `moonsinger-thumbs` | 封面缩略图派生缓存，全删可再生（user 2026-10-08「没问题」批） |
+
 ## 黄线区（外接服务白名单）
+**OneDrive** = 家族级白名单 ①（经 `@internal/store`，scope 永远只有 `Files.ReadWrite.AppFolder`、authority `/consumers`；`test/store-wiring.test.mjs` 守着）。
 **音源库** = 家族级白名单 ③（出厂预填 `https://fangzhangmnm.github.io/pwa-sounds`；只读 GET 整文件，到手先对 app 内嵌目录钉的 sha256；点「从 … 选乐器」才下；user 2026-10-07「做。」）。
 **模型源** = 家族级白名单 ②（出厂预填 `https://fangzhangmnm.github.io/pwa-models`，同 JustReadBooks）：只读 GET 包的分片，到手先对 app 内嵌清单的 sha256（`@internal/model-packs`）；第一次整首唱才下（重资源等有意图）。user 2026-10-07「当然a」（月读照家规进 pwa-models）。
 **反弃坑（ADR-0006 ③；user 2026-10-07「i might worry about hardcode my gh link…」）**：查找顺序 = 同源 `pwa-models/`（自建服务器把模型仓拷过去就能用）→ 设置里的「模型来源」（界面上能改、恢复默认）；设置里还能「从本机文件导入模型包」（按内容哈希认分片）。来源只在这次打开里有效（持久化未定）。全家族检查交接 = 家族根 `ai-docs/20261007-anti-abandonware-audit-handoff.md`。

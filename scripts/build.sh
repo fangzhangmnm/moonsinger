@@ -35,6 +35,16 @@ else
   echo "[build] ⚠ 未装 tsc（node_modules 缺）——跳过类型检查。装一下：npm install" >&2
 fi
 
+# ── 接缝 lint（家规 pwa-cloud-store §2；零依赖 grep；test/redline-guard.test.mjs 是同一条线的测试版）──
+#   @internal/store 值级 import 只许在 src/app-store.ts（+ src/identifiers.ts 只拿 createIdentifiers）；@internal/encryption 只许在 src/encryption.ts；深 import 进包内部一律红。
+HITS=$(grep -rnE "(from|import)[[:space:]]*\(?[[:space:]]*['\"]@internal/store['\"]" src --include='*.ts' | grep -v "^src/app-store.ts" | grep -v "^src/identifiers.ts" | grep -v "import type" || true)
+if [ -n "$HITS" ]; then echo "[build] ✗ @internal/store 值级 import 跑出接缝（只许 src/app-store.ts）：" >&2; echo "$HITS" >&2; exit 1; fi
+HITS=$(grep -rnE "(from|import)[[:space:]]*\(?[[:space:]]*['\"]@internal/encryption['\"]" src --include='*.ts' | grep -v "^src/encryption.ts" | grep -v "import type" || true)
+if [ -n "$HITS" ]; then echo "[build] ✗ @internal/encryption 值级 import 跑出 src/encryption.ts：" >&2; echo "$HITS" >&2; exit 1; fi
+HITS=$(grep -rnE "(from|import)[[:space:]]*\(?[[:space:]]*['\"](@internal/(store|encryption|gallery)/[^'\"]+|(\.{1,2}/)+store/[^'\"]*)['\"]" src test --include='*.ts' --include='*.mjs' | grep -vE "@internal/store/testing['\"]" || true)
+if [ -n "$HITS" ]; then echo "[build] ✗ 深 import 进包内部 / 旧 ./store/ 路径：" >&2; echo "$HITS" >&2; exit 1; fi
+echo "[build] ✓ 接缝 lint 通过"
+
 mkdir -p dist
 # 家族 content-hash 形（2026-10-07 出生，抄 JRB / WXHW build.sh）：每个 bundle 文件名带内容哈希 → service worker 的缓存名跟着变，换版本自动失效。
 # 两个 worker 先打（主 bundle 要知道它们的文件名：--define 进去，改 worker = 主 bundle 也变 = 新版本），主 bundle 最后打，index.html 就地改指新哈希。
@@ -64,5 +74,6 @@ sed -i -E "s|src=\"\./dist/moonsinger(-[a-z0-9]+)?\.mjs\"|src=\"./dist/$MAIN\"|"
 grep -q "$MAIN" index.html || { echo "[build] ✗ index.html 没改到主 bundle 的新文件名" >&2; exit 1; }
 sed -i -E "s|href=\"\./styles\.css(\?v=[a-z0-9]+)?\"|href=\"./styles.css?v=$CSS_HASH\"|" index.html
 sed -i -E "s|href=\"\./vendor/internal-css/workbench-elements\.css(\?v=[a-z0-9]+)?\"|href=\"./vendor/internal-css/workbench-elements.css?v=$CSS_HASH\"|" index.html
+sed -i -E "s|href=\"\./vendor/internal-css/gallery\.css(\?v=[a-z0-9]+)?\"|href=\"./vendor/internal-css/gallery.css?v=$CSS_HASH\"|" index.html
 grep -q "styles.css?v=$CSS_HASH" index.html || { echo "[build] ✗ index.html 没改到样式表的新版本号" >&2; exit 1; }
 echo "[build] index.html → ./dist/$MAIN"

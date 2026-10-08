@@ -59,3 +59,8 @@ export async function forgetSound(sha256: string): Promise<void> {
 export function releaseSoundMemory(): void { memory.clear(); }
 /** 内存里现在占着多少字节（整包）。 */
 export function soundMemoryBytes(): number { let n = 0; for (const b of memory.values()) n += b.length; return n; }
+
+/** 站点存储配额（只读显示用；设置「音源库缓存」那行）。没有 API / 失败 = null。 */
+export async function siteStorageEstimate(): Promise<{ usage: number; quota: number } | null> {
+  try { const est = await navigator.storage?.estimate?.(); return est?.usage !== undefined && est.quota ? { usage: est.usage, quota: est.quota } : null; } catch { return null; }
+}
