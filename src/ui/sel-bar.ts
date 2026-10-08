@@ -9,7 +9,7 @@ export type SelVerb = "all" | "copy" | "cut" | "paste" | "transpose" | "delete" 
 export interface FixState { art: Record<Art, "all" | "some" | "none">; slur?: "all" | "some" | "none"; dyn: Dyn | null; ignores?: readonly string[] }   // ignores = 台上那位不认的（钮上标「不认」，照样能写）；slur = 连线（2026-10-08 连断）
 /** 连线的钮面：一道弧（SMuFL 没有单个连线字形）。 */
 export const SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
-const ART_LABEL: Record<Art, [string, string]> = { staccato: ["\u{E4A2}", "跳音"], accent: ["\u{E4A0}", "重音"], tenuto: ["\u{E4A4}", "保持"], breath: ["\u{E4CE}", "呼吸"] };
+const ART_LABEL: Record<Art, [string, string]> = { staccato: ["\u{E4A2}", "跳音"], accent: ["\u{E4A0}", "重音"], marcato: ["\u{E4AC}", "强音"], tenuto: ["\u{E4A4}", "保持"], breath: ["\u{E4CE}", "呼吸"] };
 const DYN_GLYPH: Record<Dyn, string> = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" };
 export interface SelBarHost { verb(v: SelVerb): void }
 

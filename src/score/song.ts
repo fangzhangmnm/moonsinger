@@ -50,9 +50,9 @@ export type MarkTok = KeyTok | TimeTok | TempoTok;
 /** 「修」的记号（2026-10-08 by Claude Opus 5.5；user「呼吸记号 跳音 / 力度这类修的记号进选区条」「flow 还是主旋律，修才管这些」→ 拍「挂在音上 + 选区条」「月读在那儿换气」）：
  *  演奏法 = 挂在音上（art，按 ARTS 的顺序、不重复）；MusicXML <notations><articulations> 原生——呼吸 = <breath-mark/>，挂在呼吸前的那个音上。
  *  出声：跳音 = 截短（候选的 articulation.staccatoGate）、重音 = 音头加 accentDb、保持 = 满长；呼吸 = 月读在下一个字前换一口气（唱法核心的「v」），乐器不受影响。 */
-export type Art = "staccato" | "accent" | "tenuto" | "breath";
-export const ARTS: readonly Art[] = ["staccato", "accent", "tenuto", "breath"];
-export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", tenuto: "保持", breath: "呼吸" };
+export type Art = "staccato" | "accent" | "marcato" | "tenuto" | "breath";   // marcato = 强音（^，比重音更重；MusicXML <strong-accent/>；2026-10-08 加）
+export const ARTS: readonly Art[] = ["staccato", "accent", "marcato", "tenuto", "breath"];
+export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", marcato: "强音", tenuto: "保持", breath: "呼吸" };
 /** 力度 = 一个记号 token（不占时值，管到下一个力度为止；一首没写 = mf）。MusicXML <direction><dynamics>。出声 = 候选的 dynamicsDb（mf = 0 dB）。 */
 export type Dyn = "pp" | "p" | "mp" | "mf" | "f" | "ff";
 export const DYNS: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
@@ -433,6 +433,11 @@ export function slurStateSel(st: EditorState): "all" | "some" | "none" {
 }
 export function withSlur(t: NoteTok, on: boolean): NoteTok { if (on) return { ...t, slur: true }; const { slur: _s, ...rest } = t; return rest; }
 /** 第 i 个 token 那儿生效的力度（往前找最近的力度记号；没有 = mf）。 */
+/** 第 i 个 token 那儿生效的力度记号（往前找最近的）；前面一个力度记号都没有 = null（= 用演奏者的默认力度，不当 mf 算）。 */
+export function dynMarkAt(tokens: Token[], i: number): Dyn | null {
+  for (let j = Math.min(i, tokens.length) - 1; j >= 0; j--) { const t = tokens[j]; if (t.kind === "dyn") return t.value; }
+  return null;
+}
 export function dynAt(tokens: Token[], i: number): Dyn {
   for (let j = Math.min(i, tokens.length) - 1; j >= 0; j--) { const t = tokens[j]; if (t.kind === "dyn") return t.value; }
   return DEFAULT_DYN;

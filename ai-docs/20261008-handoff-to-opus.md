@@ -44,6 +44,8 @@
 
 **v0.6.28（2026-10-08 深夜，edited by Claude Opus 5.5）**：收了仓鼠 v11（gm-map 每行六项演奏元数据，附依据，纯增量）；连断底色改成从目录的 `joint.gapMs` 来（`gapClassOf` 写死表删了），和旧表的差别只有风笛 = 连 0、口琴 = 吐音 40。velLayers 的实测结论（TSF 只用力度挑层、不执行 sf2 调制器；接 velocity 的话 54 个号在 mp→mf 换层）记在仓鼠仓 `ai-docs/20261008-演奏元数据.md`，等 user 定要不要把 mp/mf 接到力度。
 
+**v0.7.0（2026-10-08 深夜，edited by Claude Opus 5.5）= 表情纪元起手**：prod = v0.6.28（user「push prod bump minor」；推法见仓 CLAUDE.md git 节）。力度就是 velocity（力度表 / 重音 / 强音 / 旋钮，旧演奏者照旧）+ 强音记号；细节在仓 CLAUDE.md「0.7.0 = 表情」。**user 同轮排的后续（方向，不是规矩）**：先把「改与演」做好（user「我们先把改与演做好」）——下一刀 = 渐强渐弱 < >；之后的卫生需求 = 参考窗（`@internal/reference-window`）；实时播放 / 从中间播放之前，「让fable好好的重构一下发声和混音引擎契约。最好能设计一个插件式的窄接口，让每一个音源可以热插拔」（user 原话）。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |

@@ -9,6 +9,12 @@ import type { Credit, Spec, Dynamic } from "./contract.ts";
 export const DYNAMICS_DB: Record<Dynamic, number> = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
 /** 演奏法：跳音 / 保持各吃掉时值的多少（0–1）、重音加多少 dB。 */
 export const ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1.0, accentDb: 4 } as const;
+/** 力度记号 → MIDI 力度（1–127）：SoundFont 演奏者 by value 带的表（2026-10-08 Claude Opus 5.5；user「应该send的就是velocity！」「力度就是velocity」
+ *  「mp mf 大于小于号这种，可以preliminary的控制力度。然后跳音强音重音也应该是这个」）。起点 = MuseScore 的经典默认值，好不好听归 user 耳朵。
+ *  只给新建的 SoundFont 候选；旧候选没有这张表 = 照旧（力度记号走 dB、力度 0.8），旧歌逐样本不变。GS 很多音色按力度换录音层（仓鼠 v11 velLayers）。 */
+export const DYNAMICS_VEL: Record<Dynamic, number> = { pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112 };
+/** 重音 / 强音在力度上加多少（MIDI 格；SoundFont 这一路）。月读 / 元音版这一路是音头加 dB：重音 accentDb、强音 MARCATO_DB。 */
+export const ACCENT_VEL = 16, MARCATO_VEL = 28, MARCATO_DB = 7;
 /** 没画曲线的音用的默认数（单位同 curves.json 的 units）：soundfont 的 velocity = MIDI 力度比例 0–1。 */
 export const SOUNDFONT_DEFAULTS: Record<string, number> = { velocity: 0.8 };
 /** 新建 SoundFont 候选的响度校准（dB）：月读当基准（0），乐器默认让一点（2026-10-08 by Claude Opus 5.5；user「感觉乐器进来之后好像月读变轻了」）。

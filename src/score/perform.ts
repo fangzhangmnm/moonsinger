@@ -6,9 +6,11 @@
 //   跳音：SoundFont / 元音版把音截短（lightNotes，乐器自己的余音照常收）；月读截不短（唱法核心按谱唱满）→ 曲线在音的后半段收声（gateStaccato）。
 //   呼吸：月读 = 下一个字前「v」（lab-score.ts）；元音版和乐器 = 前一个音收短一点（lightNotes；乐器上的逗号 = 稍微断开再进下一个音，管乐 / 人声就是换气；
 //   2026-10-08 user「breath是否应该对大量GS乐器也生效。毕竟不断气一直拖着也不对，fl你还得手动调一下时长」）。
-import { type Token, type TempoMap, type Dyn, timeline, dynAt, artOf } from "./song.ts";
+import { type Token, type TempoMap, type Dyn, timeline, dynAt, dynMarkAt, artOf } from "./song.ts";
 
-export interface PerfSpec { dynamicsDb: Record<Dyn, number>; staccatoGate: number; accentDb: number }
+export interface PerfSpec { dynamicsDb: Record<Dyn, number>; staccatoGate: number; accentDb: number; marcatoDb?: number;
+  /** 有 = 力度记号 / 重音 / 强音走 MIDI 力度（SoundFont 新候选），音量曲线就不再管它们；没有 = 走 dB（月读 / 元音版 / 旧候选）。 */
+  dynamicsVel?: Record<Dyn, number> | null; accentVel?: number; marcatoVel?: number }
 /** 重音加在音头多长（秒；短于这个的音整个加）。 */
 export const ACCENT_SEC = 0.12;
 /** 月读的跳音收声：留给下一个字的辅音的余量（秒）——收声段太短（< 40 ms）就不收。 */
@@ -20,13 +22,15 @@ export interface GainSeg { t0: number; t1: number; dB: number }
 export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, gateStaccato: boolean): GainSeg[] | null {
   const segs: GainSeg[] = [];
   let any = false;
+  const vel = !!spec.dynamicsVel;   // 力度记号 / 重音 / 强音走 MIDI 力度（noteVelocity）：这条曲线只剩跳音收声
   for (const { index, tok, t0, t1 } of timeline(tokens, map)) {
-    const base = spec.dynamicsDb[dynAt(tokens, index)] ?? 0;
+    const base = vel ? 0 : spec.dynamicsDb[dynAt(tokens, index)] ?? 0;
     if (base !== 0) any = true;
     if (tok.kind !== "note") { segs.push({ t0, t1, dB: base }); continue; }
     const art = artOf(tok);
     let cur = t0;
-    if (art.includes("accent") && spec.accentDb) { const e = Math.min(t1, t0 + ACCENT_SEC); segs.push({ t0, t1: e, dB: base + spec.accentDb }); cur = e; any = true; }
+    const boost = vel ? 0 : art.includes("marcato") ? (spec.marcatoDb ?? spec.accentDb + 3) : art.includes("accent") ? spec.accentDb : 0;   // 强音比重音重；两个都标 = 按强音
+    if (boost) { const e = Math.min(t1, t0 + ACCENT_SEC); segs.push({ t0, t1: e, dB: base + boost }); cur = e; any = true; }
     if (gateStaccato && art.includes("staccato")) {
       const g = Math.max(cur, t0 + (t1 - t0) * spec.staccatoGate), off1 = t1 - CONS_ROOM;
       if (off1 - g > MIN_GATE) {
@@ -50,19 +54,28 @@ export function noteEnd(t0: number, t1: number, art: readonly string[], o: { sta
   return end;
 }
 
+/** 一个音的 MIDI 力度（0–1，= 力度 ÷ 127；SoundFont 这一路）。有力度表：前面最近的力度记号查表，没有记号 = 演奏者的默认力度（defaultVel，乐器页的旋钮）；
+ *  再加重音 / 强音。没有力度表（旧候选）= 一律 defaultVel（力度记号照旧走 dB）。2026-10-08 user「应该send的就是velocity！」「力度就是velocity」。 */
+export function noteVelocity(tokens: Token[], index: number, art: readonly string[], spec: PerfSpec, defaultVel: number): number {
+  if (!spec.dynamicsVel) return defaultVel;
+  const mark = dynMarkAt(tokens, index);
+  let v = mark ? spec.dynamicsVel[mark] : defaultVel * 127;
+  if (art.includes("marcato")) v += spec.marcatoVel ?? 0; else if (art.includes("accent")) v += spec.accentVel ?? 0;
+  return Math.max(1, Math.min(127, Math.round(v))) / 127;
+}
 /** 谁认哪些记号（2026-10-08 Opus 5.5；user 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。
  *  这张表必须和上面真做的事一致——跳音：月读 = gainSegments 后半段收声，元音版 / SoundFont = noteEnd 截短；重音、力度：所有引擎走 gainSegments；
  *  呼吸：月读 = 唱法核心换气（lab-score），元音版 / SoundFont = noteEnd 收短（lightMarks）；
  *  保持 / 连线：元音版 / SoundFont = 这个音不留底色的缝（gapSec > 0 才有区别），月读还不认（连断第 3 步）。test/honors.test.ts 守着。
  *  不在表里的引擎（没人上场 / 认不出的）= null：整个声部本来就不出声，不再逐个记号画灰。 */
 const HONORS: Record<string, readonly string[]> = {
-  tsukuyomi: ["staccato", "accent", "breath"],                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
-  "vowel-sampler": ["staccato", "accent", "breath", "tenuto", "slur"],
-  soundfont: ["staccato", "accent", "breath", "tenuto", "slur"],
+  tsukuyomi: ["staccato", "accent", "marcato", "breath"],                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
+  "vowel-sampler": ["staccato", "accent", "marcato", "breath", "tenuto", "slur"],
+  soundfont: ["staccato", "accent", "marcato", "breath", "tenuto", "slur"],
 };
 /** 连线 / 保持只改「留不留缝」：这位底色本来就不留缝（gapSec = 0）= 写了也不变 → 一样画灰、明说。 */
 const GAP_ONLY = ["tenuto", "slur"];
-export const ALL_MARKS = ["staccato", "accent", "tenuto", "breath", "slur"] as const;
+export const ALL_MARKS = ["staccato", "accent", "marcato", "tenuto", "breath", "slur"] as const;
 export type Mark = (typeof ALL_MARKS)[number];
 /** 这位不认的记号（写在谱上照画、画灰，出声不受影响）：引擎没实现的 + 底色不留缝时的连线 / 保持。 */
 export function ignoredArts(engine: string | null | undefined, gapSec = 0): Mark[] {

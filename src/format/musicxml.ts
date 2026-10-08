@@ -7,7 +7,7 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { type Token, type NoteTok, type Art, type Dyn, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches } from "../score/song.ts";
+import { type Token, type NoteTok, type Art, type Dyn, ARTS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
@@ -90,8 +90,8 @@ function readCredits(root: El, title: string): string | undefined {
 
 // 修（2026-10-08 by Claude Opus 5.5）：力度 = <direction><dynamics>（声乐谱放谱上方：下面是歌词）；演奏法 = <notations><articulations>（呼吸 = breath-mark，挂在呼吸前那个音上）
 const dynXml = (v: Dyn) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
-const ART_XML: Record<Art, string> = { accent: "accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
-const XML_ART: Record<string, Art> = { accent: "accent", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
+const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
+const XML_ART: Record<string, Art> = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
 /** 别家谱的力度归到这一版认的六档（更弱 / 更强的并到两头）；sfz / fp 这类认不了 = null（数出来报给人）。 */
 const XML_DYN = (name: string): Dyn | null => (["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? (name as Dyn) : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null);
 const tempoXml = (bpm: number) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
@@ -245,7 +245,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   const addArts = (tok: NoteTok, note: El) => {
     const set = new Set(tok.art ?? []);
     for (const nn of kids(note, "notations")) for (const ar of kids(nn, "articulations")) for (const e of kids(ar)) { const a = XML_ART[e.name]; if (a) set.add(a); else drop("演奏法记号（这一版不认的）"); }
-    const art = (["staccato", "accent", "tenuto", "breath"] as Art[]).filter((a) => set.has(a));
+    const art = ARTS.filter((a) => set.has(a));
     if (art.length) tok.art = art;
   };
   /** <notations><slur> → 这一串音「连到下一个」（start 的那个起、stop 的那个前一个止；按 number 分开数，有一条开着就算连着）。 */

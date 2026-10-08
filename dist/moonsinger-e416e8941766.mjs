@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.28-2026-10-08";
+var APP_VERSION = "v0.7.0-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2845,8 +2845,8 @@ var DEFAULT_UNIT = 2;
 var TUPLET = { 3: [2, 3], 5: [4, 5], 6: [4, 6], 7: [4, 7] };
 var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
-var ARTS = ["staccato", "accent", "tenuto", "breath"];
-var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438" };
+var ARTS = ["staccato", "accent", "marcato", "tenuto", "breath"];
+var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438" };
 var DYNS = ["pp", "p", "mp", "mf", "f", "ff"];
 var DEFAULT_DYN = "mf";
 var SPLIT_MIDI = 60;
@@ -3160,6 +3160,13 @@ function withSlur(t10, on2) {
   if (on2) return { ...t10, slur: true };
   const { slur: _s, ...rest } = t10;
   return rest;
+}
+function dynMarkAt(tokens, i10) {
+  for (let j2 = Math.min(i10, tokens.length) - 1; j2 >= 0; j2--) {
+    const t10 = tokens[j2];
+    if (t10.kind === "dyn") return t10.value;
+  }
+  return null;
 }
 function dynAt(tokens, i10) {
   for (let j2 = Math.min(i10, tokens.length) - 1; j2 >= 0; j2--) {
@@ -4364,6 +4371,8 @@ var MID_LINE = 34;
 var BOTTOM_LINE = 30;
 var ART_GLYPH = {
   accent: { above: "\uE4A0", below: "\uE4A1", w: 1.36, h: 0.99 },
+  marcato: { above: "\uE4AC", below: "\uE4AD", w: 1, h: 1.08 },
+  // 强音（2026-10-08；宽按同字号和重音比着量的）
   staccato: { above: "\uE4A2", below: "\uE4A3", w: 0.28, h: 0.28 },
   tenuto: { above: "\uE4A4", below: "\uE4A5", w: 1.35, h: 0.17 }
 };
@@ -5113,12 +5122,12 @@ function engrave(song, o10) {
         const below = upOf.get(c10) ?? false, sgn = below ? -1 : 1;
         const inStaff = (d4) => d4 >= BOTTOM_LINE && d4 <= TOP_LINE;
         let d3 = below ? dLo - 2 : dHi + 2;
-        for (const a10 of ["staccato", "tenuto", "accent"].filter((x3) => c10.art.includes(x3))) {
-          if (a10 === "accent") d3 = below ? Math.min(d3, BOTTOM_LINE - 2) : Math.max(d3, TOP_LINE + 2);
+        for (const a10 of ["staccato", "tenuto", "accent", "marcato"].filter((x3) => c10.art.includes(x3))) {
+          if (a10 === "accent" || a10 === "marcato") d3 = below ? Math.min(d3, BOTTOM_LINE - 2) : Math.max(d3, TOP_LINE + 2);
           else if (inStaff(d3) && d3 % 2 === 0) d3 += sgn;
           const m2 = ART_GLYPH[a10], g3 = below ? m2.below : m2.above;
           prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yOf(row, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: ["art", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-          d3 += sgn * (a10 === "accent" ? 3 : 2);
+          d3 += sgn * (a10 === "accent" || a10 === "marcato" ? 3 : 2);
         }
         if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
@@ -7046,6 +7055,7 @@ var Pad = class {
       cell("phrase", `<span class="big">\u3002</span>`, "\u53E5\u53F7", "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09"),
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "\u8DF3\u97F3", "\u8DF3\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u5F97\u77ED\u4FC3\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "\u91CD\u97F3", "\u91CD\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u52A0\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
+      cell("art:marcato", `<span class="smufl">\uE4AC</span>`, "\u5F3A\u97F3", "\u5F3A\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6BD4\u91CD\u97F3\u66F4\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "\u4FDD\u6301", "\u4FDD\u6301\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u6EE1\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u548C\u547C\u5438\u76F8\u53CD\u2014\u2014\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
@@ -15849,6 +15859,10 @@ var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3
 // src/format/performance.ts
 var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
 var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
+var DYNAMICS_VEL = { pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112 };
+var ACCENT_VEL = 16;
+var MARCATO_VEL = 28;
+var MARCATO_DB = 7;
 var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
 var SOUNDFONT_CALIBRATION_DB = -6;
 var DEFAULT_CALIBRATION_DB = -6;
@@ -16750,8 +16764,8 @@ function readCredits(root, title) {
   return lines.length ? lines.join("\n") : void 0;
 }
 var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
-var ART_XML = { accent: "accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
-var XML_ART = { accent: "accent", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
+var ART_XML = { accent: "accent", marcato: "strong-accent", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
+var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
 var XML_DYN = (name) => ["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? name : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null;
 var tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
 function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
@@ -16950,7 +16964,7 @@ function readMusicXml(xml, hints) {
       if (a10) set.add(a10);
       else drop("\u6F14\u594F\u6CD5\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF09");
     }
-    const art = ["staccato", "accent", "tenuto", "breath"].filter((a10) => set.has(a10));
+    const art = ARTS.filter((a10) => set.has(a10));
     if (art.length) tok.art = art;
   };
   const slurEvents = (note2, open) => {
@@ -17179,7 +17193,7 @@ var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], t
 var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
 var CANDIDATE_ID = { full: "c1", light: "c2" };
-var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0 } });
+var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB } });
 function defaultRole(hum, id2) {
   return { version: FORMAT.lounge, id: id2, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
     { id: CANDIDATE_ID.full, name: "\u6708\u8BFB", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
@@ -17395,7 +17409,7 @@ function withSf2Candidate(extras, role, c10, hum) {
   const n10 = Math.max(0, ...list.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
   const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
   const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, ...c10.sfx ? { sfx: { ...c10.sfx } } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
-  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)) }, calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r10.candidates = list;
   r10.active = id2;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 }, sounds: path ? { ...extras.sounds, [path]: c10.subset } : extras.sounds };
@@ -17478,7 +17492,16 @@ function activePerfSpec(extras, role) {
   const c10 = activeCandidate(extras, role), d3 = c10?.dynamicsDb ?? {}, a10 = c10?.articulation ?? {};
   const num = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
   const dynamicsDb = Object.fromEntries(Object.keys(DYNAMICS_DB).map((k2) => [k2, num(d3[k2], DYNAMICS_DB[k2])]));
-  return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a10.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a10.accentDb, ARTICULATION.accentDb), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a10.gapSec, 0))) };
+  return {
+    dynamicsDb,
+    staccatoGate: Math.max(0.05, Math.min(1, num(a10.staccatoGate, ARTICULATION.staccatoGate))),
+    accentDb: num(a10.accentDb, ARTICULATION.accentDb),
+    gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a10.gapSec, 0))),
+    marcatoDb: num(a10.marcatoDb, MARCATO_DB),
+    accentVel: num(a10.accentVel, ACCENT_VEL),
+    marcatoVel: num(a10.marcatoVel, MARCATO_VEL),
+    dynamicsVel: c10?.dynamicsVel ? Object.fromEntries(Object.keys(DYNAMICS_VEL).map((k2) => [k2, Math.max(1, Math.min(127, num(c10.dynamicsVel[k2], DYNAMICS_VEL[k2])))])) : null
+  };
 }
 var GAP_MAX_SEC = 0.2;
 function withGapSec(extras, role, sec, hum) {
@@ -17491,6 +17514,16 @@ function activeCalibrationDb(extras, role) {
   const c10 = activeCandidate(extras, role);
   const v = Number(c10?.calibrationDb ?? DEFAULT_CALIBRATION_DB);
   return Number.isFinite(v) ? v : DEFAULT_CALIBRATION_DB;
+}
+function activeVelocity(extras, role) {
+  const c10 = activeCandidate(extras, role), v = Number((c10?.defaults ?? {}).velocity ?? SOUNDFONT_DEFAULTS.velocity);
+  return Number.isFinite(v) ? Math.max(1 / 127, Math.min(1, v)) : SOUNDFONT_DEFAULTS.velocity;
+}
+function withVelocity(extras, role, v, hum) {
+  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
+  if (!c10) return extras;
+  c10.defaults = { ...c10.defaults ?? {}, velocity: Math.max(1, Math.min(127, Math.round(v * 127))) / 127 };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
 function withCalibration(extras, role, dB, hum) {
   const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
@@ -17822,8 +17855,9 @@ var MIN_GATE = 0.04;
 function gainSegments(tokens, map, spec, gateStaccato) {
   const segs = [];
   let any = false;
+  const vel = !!spec.dynamicsVel;
   for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
-    const base3 = spec.dynamicsDb[dynAt(tokens, index)] ?? 0;
+    const base3 = vel ? 0 : spec.dynamicsDb[dynAt(tokens, index)] ?? 0;
     if (base3 !== 0) any = true;
     if (tok.kind !== "note") {
       segs.push({ t0: t02, t1: t12, dB: base3 });
@@ -17831,9 +17865,10 @@ function gainSegments(tokens, map, spec, gateStaccato) {
     }
     const art = artOf(tok);
     let cur = t02;
-    if (art.includes("accent") && spec.accentDb) {
+    const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : 0;
+    if (boost) {
       const e10 = Math.min(t12, t02 + ACCENT_SEC);
-      segs.push({ t0: t02, t1: e10, dB: base3 + spec.accentDb });
+      segs.push({ t0: t02, t1: e10, dB: base3 + boost });
       cur = e10;
       any = true;
     }
@@ -17857,14 +17892,22 @@ function noteEnd(t02, t12, art, o10, slur = false) {
   if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(0.16, 0.25 * (t12 - t02)));
   return end;
 }
+function noteVelocity(tokens, index, art, spec, defaultVel) {
+  if (!spec.dynamicsVel) return defaultVel;
+  const mark = dynMarkAt(tokens, index);
+  let v = mark ? spec.dynamicsVel[mark] : defaultVel * 127;
+  if (art.includes("marcato")) v += spec.marcatoVel ?? 0;
+  else if (art.includes("accent")) v += spec.accentVel ?? 0;
+  return Math.max(1, Math.min(127, Math.round(v))) / 127;
+}
 var HONORS = {
-  tsukuyomi: ["staccato", "accent", "breath"],
+  tsukuyomi: ["staccato", "accent", "marcato", "breath"],
   // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
-  "vowel-sampler": ["staccato", "accent", "breath", "tenuto", "slur"],
-  soundfont: ["staccato", "accent", "breath", "tenuto", "slur"]
+  "vowel-sampler": ["staccato", "accent", "marcato", "breath", "tenuto", "slur"],
+  soundfont: ["staccato", "accent", "marcato", "breath", "tenuto", "slur"]
 };
 var GAP_ONLY = ["tenuto", "slur"];
-var ALL_MARKS = ["staccato", "accent", "tenuto", "breath", "slur"];
+var ALL_MARKS = ["staccato", "accent", "marcato", "tenuto", "breath", "slur"];
 function ignoredArts(engine, gapSec = 0) {
   const h2 = engine ? HONORS[engine] : void 0;
   return h2 ? ALL_MARKS.filter((a10) => !h2.includes(a10) || GAP_ONLY.includes(a10) && !(gapSec > 0)) : [];
@@ -18182,6 +18225,10 @@ function jointOf(cat2, bank, program, note2) {
   if (!j2 || j2.id === null || j2.gapMs === null) return null;
   const zh2 = cat2.defs.joints?.find((x2) => x2.id === j2.id)?.zh ?? j2.id;
   return { gapSec: j2.gapMs / 1e3, zh: zh2, basis: j2.basis ?? "" };
+}
+function velLayersOf(cat2, bank, program, note2) {
+  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.velLayers) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.velLayers);
+  return row?.velLayers && row.velLayers.count > 0 ? { count: row.velLayers.count, ranges: row.velLayers.ranges ?? [], key: row.velLayers.key } : null;
 }
 var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
 var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
@@ -25773,7 +25820,7 @@ function unserializeDesk(json) {
 
 // src/ui/sel-bar.ts
 var SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
-var ART_LABEL = { staccato: ["\uE4A2", "\u8DF3\u97F3"], accent: ["\uE4A0", "\u91CD\u97F3"], tenuto: ["\uE4A4", "\u4FDD\u6301"], breath: ["\uE4CE", "\u547C\u5438"] };
+var ART_LABEL = { staccato: ["\uE4A2", "\u8DF3\u97F3"], accent: ["\uE4A0", "\u91CD\u97F3"], marcato: ["\uE4AC", "\u5F3A\u97F3"], tenuto: ["\uE4A4", "\u4FDD\u6301"], breath: ["\uE4CE", "\u547C\u5438"] };
 var DYN_GLYPH2 = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
 var SelBar = class {
   el;
@@ -26501,7 +26548,7 @@ function songLangOf(tokens) {
 }
 var LEAD_IN = 0.5;
 var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
-function lightNotes(tokens, tempoMap, poly = false, marks) {
+function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
   const notes = [];
   let open = /* @__PURE__ */ new Map();
   for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, tempoMap)) {
@@ -26515,7 +26562,7 @@ function lightNotes(tokens, tempoMap, poly = false, marks) {
         nextOpen.set(midi, prev);
         continue;
       }
-      const n10 = { midi, t0: t02, t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12 };
+      const n10 = { midi, t0: t02, t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {} };
       notes.push(n10);
       nextOpen.set(midi, n10);
     }
@@ -26545,7 +26592,8 @@ async function renderPart(part, scope = "view") {
     return out2;
   }
   const spec = activePerfSpec(doc.extras, role);
-  const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec));
+  const defVel = activeVelocity(doc.extras, role);
+  const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec), (i10, art) => noteVelocity(tokens, i10, art, spec, defVel));
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
     const key2 = JSON.stringify(["vowel", notes, st2.song.hum]), had2 = lastRender.get(part.id);
@@ -26557,7 +26605,7 @@ async function renderPart(part, scope = "view") {
   const g3 = activeGm(doc.extras, role);
   if (!g3) throw new Error("\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668");
   const tr3 = activeTranspose(doc.extras, role);
-  const gmNotes = notes.map((n10) => ({ preset: [g3.bank, g3.program], key: sfKey(n10.midi, g3, tr3), vel: 0.8, t0: n10.t0, t1: n10.t1 }));
+  const gmNotes = notes.map((n10) => ({ preset: [g3.bank, g3.program], key: sfKey(n10.midi, g3, tr3), vel: n10.vel ?? defVel, t0: n10.t0, t1: n10.t1 }));
   const key = JSON.stringify(["gm", g3.subsetSha256, gmNotes]), had = lastRender.get(part.id);
   if (had?.key === key) return had.r;
   const bytes = await resolveGmBytes(g3);
@@ -26653,7 +26701,7 @@ function gmDown(midi, id2) {
   singer.unlock();
   const key = sfKey(midi, g3, a10 ? 0 : activeTranspose(doc.extras, curRole()));
   gmUp(id2);
-  synth.noteOn(g3.bank, g3.program, key, 0.8);
+  synth.noteOn(g3.bank, g3.program, key, a10 ? SOUNDFONT_DEFAULTS.velocity : activeVelocity(doc.extras, curRole()));
   gmHeld.set(id2, { bank: g3.bank, program: g3.program, key });
 }
 function gmUp(id2) {
@@ -27870,7 +27918,16 @@ function drawInst() {
     "\u97F3\u548C\u97F3\u4E4B\u95F4",
     `<b class="ip-val">${Math.round(gap * 1e3)} ms</b><button class="btn" data-v="gap:-0.01" title="\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09">\u221210</button><button class="btn" data-v="gap:0.01" title="\u7F1D\u5927 10 ms\uFF08\u66F4\u65AD\uFF09">+10</button>` + (d3 && Math.abs(gap - d3.gapSec) > 1e-9 ? `<button class="btn" data-v="gap:def" title="\u56DE\u5230\u9ED8\u8BA4 ${Math.round(d3.gapSec * 1e3)} ms">\u9ED8\u8BA4</button>` : ""),
     `\u4E0D\u5199\u8BB0\u53F7\u7684\u97F3\u548C\u4E0B\u4E00\u4E2A\u97F3\u4E4B\u95F4\u7559\u7684\u7F1D\uFF1A0 = \u8FDE\u7740\u3002${d3 ? `${esc7(d3.label)}\uFF1A\u9ED8\u8BA4 ${Math.round(d3.gapSec * 1e3)} ms\uFF08\u97F3\u4E50\u76EE\u5F55\u7ED9\u7684\uFF0C\u6309\u97F3\u8272\u9010\u4E2A\uFF09\u3002` : ""}\u8FDE\u7EBF\uFF08\u8FDE\u594F\uFF09\u3001\u4FDD\u6301\u7684\u97F3\u4E0D\u7559\u7F1D\uFF1B\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u8DF3\u97F3\u53E6\u7B97`
-  ))(activePerfSpec(doc.extras, role).gapSec, gapDefaultOf(role)) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
+  ))(activePerfSpec(doc.extras, role).gapSec, gapDefaultOf(role)) : "") + // 力度（2026-10-08，user「应该send的就是velocity！」「力度就是velocity」）：没写力度记号的音按这个；有力度表的演奏者 mp / mf 查表、重音 / 强音往上加
+  (eng === "soundfont" ? ((v, sp2) => {
+    const midi = Math.round(v * 127), def = sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127), g3 = activeGm(doc.extras, role);
+    const L2 = g3 && g3.origin.library === GS_LIBRARY_ID && catalogNow ? velLayersOf(catalogNow, g3.bank, g3.program, g3.note) : null, k2 = L2 ? L2.ranges.findIndex(([lo2, hi]) => midi >= lo2 && midi <= hi) : -1;
+    return row(
+      "\u529B\u5EA6",
+      `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09">\u22128</button><button class="btn" data-v="vel:8" title="\u91CD\u4E00\u70B9\uFF08+8\uFF09">+8</button>` + (midi !== def ? `<button class="btn" data-v="vel:def" title="\u56DE\u5230 ${def}">\u9ED8\u8BA4</button>` : ""),
+      `\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002` + (sp2.dynamicsVel ? `\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF1A${Object.entries(sp2.dynamicsVel).map(([d3, x2]) => `${d3} ${x2}`).join(" \xB7 ")}\uFF1B\u91CD\u97F3 +${sp2.accentVel}\u3001\u5F3A\u97F3 +${sp2.marcatoVel}\u3002` : "\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF08\u65B0\u4E0A\u573A\u7684\u624D\u6309\u529B\u5EA6\u8868\u8D70\u529B\u5EA6\uFF09\u3002") + (L2 ? L2.count > 1 ? `GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 ${L2.count} \u4E2A\u529B\u5EA6\u5C42${k2 >= 0 ? `\uFF0C\u73B0\u5728\u5728\u7B2C ${k2 + 1} \u5C42\uFF08${L2.ranges[k2][0]}\u2013${L2.ranges[k2][1]}\uFF09` : ""}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002` : "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002" : "")
+    );
+  })(activeVelocity(doc.extras, role), activePerfSpec(doc.extras, role)) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
   //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
   (active?.sfx ? ((fixed, al2) => row(
     "\u97F3\u6548",
@@ -27973,6 +28030,9 @@ instEl.addEventListener("click", (e10) => {
     updateExtras(withTranspose(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u4FEE\u516B\u5EA6 / \u79FB\u8C03 ${next2} \u534A\u97F3` }, "transpose");
     synth.allOff();
     gmHeld.clear();
+  } else if (v.startsWith("vel:")) {
+    const sp2 = activePerfSpec(doc.extras, role), def = (sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127)) / 127, next2 = v === "vel:def" ? def : activeVelocity(doc.extras, role) + Number(v.slice(4)) / 127;
+    updateExtras(withVelocity(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u529B\u5EA6 ${Math.max(1, Math.min(127, Math.round(next2 * 127)))}` }, "vel");
   } else if (v.startsWith("gap:")) {
     const def = gapDefaultOf(role)?.gapSec ?? 0, next2 = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4))));
     updateExtras(withGapSec(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 ${Math.round(next2 * 1e3)} ms` }, "gap");
@@ -29196,4 +29256,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-64614018efc4.mjs.map
+//# sourceMappingURL=moonsinger-e416e8941766.mjs.map

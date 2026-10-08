@@ -101,6 +101,7 @@ const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;
 // 修的字形（SMuFL；宽 / 高 = staff space，浏览器里量的 Bravura：重音 1.36 × 0.99、跳音点 0.28、保持线 1.35 × 0.17）。Above 的从基线往上长，Below 的往下长
 const ART_GLYPH: Record<Exclude<Art, "breath">, { above: string; below: string; w: number; h: number }> = {
   accent: { above: "\u{E4A0}", below: "\u{E4A1}", w: 1.36, h: 0.99 },
+  marcato: { above: "\u{E4AC}", below: "\u{E4AD}", w: 1.0, h: 1.08 },   // 强音（2026-10-08；宽按同字号和重音比着量的）
   staccato: { above: "\u{E4A2}", below: "\u{E4A3}", w: 0.28, h: 0.28 },
   tenuto: { above: "\u{E4A4}", below: "\u{E4A5}", w: 1.35, h: 0.17 },
 };
@@ -714,12 +715,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const below = upOf.get(c) ?? false, sgn = below ? -1 : 1;
         const inStaff = (d: number) => d >= BOTTOM_LINE && d <= TOP_LINE;
         let d = below ? dLo - 2 : dHi + 2;
-        for (const a of (["staccato", "tenuto", "accent"] as const).filter((x) => c.art.includes(x))) {
-          if (a === "accent") d = below ? Math.min(d, BOTTOM_LINE - 2) : Math.max(d, TOP_LINE + 2);   // 重音在最外层、出谱
+        for (const a of (["staccato", "tenuto", "accent", "marcato"] as const).filter((x) => c.art.includes(x))) {
+          if (a === "accent" || a === "marcato") d = below ? Math.min(d, BOTTOM_LINE - 2) : Math.max(d, TOP_LINE + 2);   // 重音 / 强音在最外层、出谱
           else if (inStaff(d) && d % 2 === 0) d += sgn;                                                 // 跳音 / 保持在谱内落在间里
           const m = ART_GLYPH[a], g = below ? m.below : m.above;
           prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-          d += sgn * (a === "accent" ? 3 : 2);
+          d += sgn * (a === "accent" || a === "marcato" ? 3 : 2);
         }
         if (c.breath) prims.push({ t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }

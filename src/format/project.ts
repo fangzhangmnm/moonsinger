@@ -15,7 +15,7 @@ import { type Song, type PartDef, type PaperSeg, type Token, flattenPart } from 
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
 import { FORMAT, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
 import { migrate } from "./migrate/index.ts";
-import { DYNAMICS_DB, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
+import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
 export type { Hum, InstrumentV2 };
 const MIMETYPE = "application/vnd.recordare.musicxml";
@@ -46,7 +46,7 @@ export const withThumbnail = (extras: Extras, png: Uint8Array | null): Extras =>
 /** 新歌默认的两个候选：月读完整 / 月读元音版（轻量）。 */
 export const CANDIDATE_ID = { full: "c1", light: "c2" } as const;
 export type Engine = InstrumentV2["engine"];
-const common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [] as unknown[], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0 } });   // gapSec 写明（by value）；迁移出来的旧候选不补
+const common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [] as unknown[], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB } });   // gapSec / marcatoDb 写明（by value）；迁移出来的旧候选不补
 /** 新建角色：从 app 内置预设 by value 拷进歌（契约 §8；之后 app 升级改了预设也不影响这首歌）。 */
 function defaultRole(hum: Hum, id: string): Json {
   return { version: FORMAT.lounge, id, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
@@ -254,7 +254,7 @@ export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateAr
   const n = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n}`;
   const embed = c.embed !== false, path = embed ? `${SOUNDS}${c.sha256}.sf2` : null;
   const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), ...(c.sfx ? { sfx: { ...c.sfx } } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
-  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)) }, calibrationDb: c.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r.candidates = list; r.active = id;
   return { ...extras, lounge: { ...extras.lounge, [role]: r }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };
 }
@@ -330,11 +330,14 @@ export function withUnpacked(extras: Extras, only?: (subsetSha256: string) => bo
 
 // ── 演奏规格（修的记号怎么出声：上场那位 by value 带着的力度表 + 演奏法；src/score/perform.ts 用；2026-10-08 by Claude Opus 5.5）──
 /** 上场那位的力度表（mf = 0 dB）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（DYNAMICS_DB / ARTICULATION）。 */
-export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number>; staccatoGate: number; accentDb: number; gapSec: number } {
+export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number>; staccatoGate: number; accentDb: number; gapSec: number;
+  marcatoDb: number; dynamicsVel: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number> | null; accentVel: number; marcatoVel: number } {
   const c = activeCandidate(extras, role), d = (c?.dynamicsDb ?? {}) as Partial<Record<string, number>>, a = (c?.articulation ?? {}) as Partial<Record<string, number>>;
   const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
   const dynamicsDb = Object.fromEntries((Object.keys(DYNAMICS_DB) as (keyof typeof DYNAMICS_DB)[]).map((k) => [k, num(d[k], DYNAMICS_DB[k])])) as Record<keyof typeof DYNAMICS_DB, number>;
-  return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a.accentDb, ARTICULATION.accentDb), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a.gapSec, 0))) };
+  return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a.accentDb, ARTICULATION.accentDb), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a.gapSec, 0))),
+    marcatoDb: num(a.marcatoDb, MARCATO_DB), accentVel: num(a.accentVel, ACCENT_VEL), marcatoVel: num(a.marcatoVel, MARCATO_VEL),
+    dynamicsVel: c?.dynamicsVel ? (Object.fromEntries((Object.keys(DYNAMICS_VEL) as (keyof typeof DYNAMICS_VEL)[]).map((k) => [k, Math.max(1, Math.min(127, num((c.dynamicsVel as Json)[k], DYNAMICS_VEL[k])))])) as Record<keyof typeof DYNAMICS_VEL, number>) : null };
 }
 /** 连断底色能调到多大（秒）。 */
 export const GAP_MAX_SEC = 0.2;
@@ -348,6 +351,20 @@ export function withGapSec(extras: Extras, role: string, sec: number, hum: Hum):
 // ── 响度校准（候选的 calibrationDb：契约「看得见、能调的默认，不偷偷自动」；user「不太建议自动校准，除非是可调的默认。不然就是不透明了」）──
 /** 上场那位的校准（dB；没有角色快照 / 没写 = 0）。渲染时乘在这个声部上，和录音室推子相加（推子 = 混音决定，校准 = 演奏者自己的响度）。 */
 export function activeCalibrationDb(extras: Extras, role: string): number { const c = activeCandidate(extras, role); const v = Number(c?.calibrationDb ?? DEFAULT_CALIBRATION_DB); return Number.isFinite(v) ? v : DEFAULT_CALIBRATION_DB; }   // 没写 = 默认（−6）；旧歌里存的数照旧
+// ── 力度（候选的 defaults.velocity：没画曲线的音用的默认数，by value；SoundFont = MIDI 力度 ÷ 127）──
+//   2026-10-08 Opus 5.5；user「接啊，但是接的不是mp mf，而就是力度的这个旋钮」：渲染 / pad 试弹读这一个数（原来写死 0.8，候选里存的没人读）。
+//   GS 很多音色按力度换录音层（仓鼠 v11 velLayers 实测）= 音色会变，不只是响度；谱上的 mp / mf 照旧只改音量。
+/** 上场那位的力度（0–1，= MIDI 力度 ÷ 127）；没写 = SOUNDFONT_DEFAULTS.velocity。 */
+export function activeVelocity(extras: Extras, role: string): number {
+  const c = activeCandidate(extras, role), v = Number(((c?.defaults ?? {}) as Json).velocity ?? SOUNDFONT_DEFAULTS.velocity);
+  return Number.isFinite(v) ? Math.max(1 / 127, Math.min(1, v)) : SOUNDFONT_DEFAULTS.velocity;
+}
+/** 改上场那位的力度（记到 MIDI 整数格：k / 127）。没人上场 = 原样。 */
+export function withVelocity(extras: Extras, role: string, v: number, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
+  c.defaults = { ...((c.defaults ?? {}) as Json), velocity: Math.max(1, Math.min(127, Math.round(v * 127))) / 127 };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
 /** 改上场那位的校准。 */
 export function withCalibration(extras: Extras, role: string, dB: number, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;

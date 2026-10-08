@@ -4,11 +4,13 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, select, tr, toggleArtSel, toggleSlurSel, type EditorState, type NoteTok } from "../src/score/song.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
-import { gainSegments, noteEnd, ignoredArts, lightMarks, ALL_MARKS, type Mark } from "../src/score/perform.ts";
-import { DYNAMICS_DB, ARTICULATION } from "../src/format/performance.ts";
+import { gainSegments, noteEnd, noteVelocity, ignoredArts, lightMarks, ALL_MARKS, type Mark } from "../src/score/perform.ts";
+import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION } from "../src/format/performance.ts";
 
 const deq = (a: unknown, b: unknown, msg?: string) => eq(JSON.stringify(a), JSON.stringify(b), msg);
-const spec = (gapSec: number) => ({ dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, gapSec });
+const spec = (gapSec: number) => ({ dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, gapSec });
+/** 新建的 SoundFont 演奏者：带力度表（力度记号 / 重音 / 强音走 MIDI 力度）。 */
+const sfSpec = (gapSec: number) => ({ ...spec(gapSec), dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL });
 /** 两个四分音符；mark = 给第一个音加的记号（连线 = 第一个连到第二个）。 */
 function two(mark?: Mark): EditorState {
   let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } };
@@ -23,6 +25,8 @@ const heard = (eng: string, gap: number) => (st: EditorState) => {
   const sp = spec(gap);
   if (eng === "tsukuyomi") return JSON.stringify([toLabScore(tr(st), "n"), gainSegments(tr(st), undefined, sp, true)]);
   const f = first(st);
+  if (eng === "soundfont") { const sv = sfSpec(gap), i = tr(st).indexOf(f);
+    return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sv), !!f.slur), gainSegments(tr(st), undefined, sv, false), noteVelocity(tr(st), i, f.art ?? [], sv, 80 / 127)]); }
   return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sp), !!f.slur), gainSegments(tr(st), undefined, sp, false)]);
 };
 
@@ -56,5 +60,26 @@ describe("连断的底色（noteEnd）", () => {
     eq(noteEnd(0, 1, ["tenuto"], o(0.04)), 1, "保持 = 不留缝");
     eq(noteEnd(0, 1, ["staccato"], o(0.04)), 0.5);
     eq(noteEnd(0, 1, [], o(0)), 1, "底色 0 = 和以前一样（旧歌逐样本不变）");
+  });
+});
+
+describe("力度 = MIDI velocity（SoundFont；2026-10-08 user「应该send的就是velocity！」「力度就是velocity」）", () => {
+  const dyn = (v: "pp" | "mp" | "ff") => ({ kind: "dyn", id: 99, value: v }) as never;
+  it("有力度表：没写记号 = 旋钮；记号查表；重音 / 强音往上加；顶到 127 为止", () => {
+    const st = two(), toks = tr(st), i = toks.indexOf(first(st)), sv = sfSpec(0);
+    eq(noteVelocity(toks, i, [], sv, 100 / 127), 100 / 127, "没写记号 = 旋钮");
+    const withMp = [...toks.slice(0, i), dyn("mp"), ...toks.slice(i)];
+    eq(noteVelocity(withMp, i + 1, [], sv, 100 / 127), 64 / 127, "mp = 表里的 64");
+    eq(noteVelocity(withMp, i + 1, ["accent"], sv, 1), 80 / 127, "重音 +16");
+    eq(noteVelocity(withMp, i + 1, ["marcato"], sv, 1), 92 / 127, "强音 +28");
+    const withFf = [...toks.slice(0, i), dyn("ff"), ...toks.slice(i)];
+    eq(noteVelocity(withFf, i + 1, ["marcato"], sv, 1), 1, "112 + 28 顶到 127");
+  });
+  it("没有力度表（之前上场的演奏者）= 一律旋钮，力度记号照旧走 dB（旧歌不变）", () => {
+    const st = two(), toks = tr(st), i = toks.indexOf(first(st));
+    const withPp = [...toks.slice(0, i), dyn("pp"), ...toks.slice(i)];
+    eq(noteVelocity(withPp, i + 1, ["accent"], spec(0), 0.8), 0.8);
+    assert(gainSegments(withPp, undefined, spec(0), false) !== null, "旧的：pp 走 dB");
+    eq(gainSegments(withPp, undefined, sfSpec(0), false), null, "有力度表：pp 不再走 dB（不双算）");
   });
 });

@@ -58,6 +58,14 @@ describe("修：编辑（song.ts）", () => {
 });
 
 describe("修：MusicXML（musicxml.ts）", () => {
+  it("强音 = <strong-accent/>，往返原样回来", () => {
+    let st = four(); const [a] = noteIdx(st);
+    st = select(st, a, a + 1); st = toggleArtSel(st, "marcato");
+    const toks = tr(st), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
+    assert(w.xml.includes("<strong-accent/>"), "强音没写");
+    const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.filter((t) => t.kind === "note");
+    deq((back[0] as NoteTok).art, ["marcato"]);
+  });
   it("往返：演奏法 / 力度 / 呼吸都原样回来；力度在谱上方", () => {
     let st = four(); const [a, b, , d] = noteIdx(st);
     st = select(st, a, b + 1); st = toggleArtSel(st, "accent"); st = toggleArtSel(st, "staccato");
@@ -93,11 +101,13 @@ describe("修：MusicXML（musicxml.ts）", () => {
 <direction><direction-type><dynamics><fff/></dynamics></direction-type></direction>
 <direction><direction-type><dynamics><sfz/></dynamics></direction-type></direction>
 <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><notations><articulations><strong-accent/></articulations></notations></note>
+<note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><notations><articulations><spiccato/></articulations></notations></note>
 </measure></part></score-partwise>`;
     const r = readMusicXml(x), toks = r.parts[0].tokens;
     deq(toks.filter((t) => t.kind === "dyn").map((t) => (t as { value: string }).value), ["pp", "ff"]);
     deq((toks.find((t) => t.kind === "note") as NoteTok).art, ["staccato", "accent"], "和弦音的重音并上来");
-    eq(r.dropped["力度记号（这一版不认的，如 sfz）"], 1); eq(r.dropped["演奏法记号（这一版不认的）"], 1);
+    eq(r.dropped["力度记号（这一版不认的，如 sfz）"], 1); eq(r.dropped["演奏法记号（这一版不认的）"], 1, "spiccato 不认");
+    deq((toks.filter((t) => t.kind === "note")[1] as NoteTok).art, ["marcato"], "strong-accent = 强音（2026-10-08 起认）");
   });
   it("大谱表：<staff> 写在 <type> 后面（MusicXML 4.0 的元素顺序）", () => {
     const st = four();
