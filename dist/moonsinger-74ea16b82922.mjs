@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.4.1-2026-10-07";
+var APP_VERSION = "v0.4.2-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3287,7 +3287,7 @@ var Singer = class {
   // worker 里已经载过的音色库（sha256）；worker 重建就清
   worker() {
     if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-a2fdf34d6dba.mjs"}`, import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${"singer-worker-a270f74bfc54.mjs"}`, import.meta.url), { type: "module" });
     this.sent.clear();
     this.w.onmessage = (ev) => {
       const m = ev.data, p = this.pending.get(m.id);
@@ -3910,16 +3910,41 @@ function showNotice(opts) {
 }
 
 // src/singer/packs.gen.ts
-var GM_SOUNDFONT = "sf2-generaluser-gs-2.0.3-20260222";
 var PACKS = {
   "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
   "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
   "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
   "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
-  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } },
-  "sf2-generaluser-gs-2.0.3-20260222": { "packId": "26b4492628369f6d4daa8d04f0b61346d46602829505f75d07d92a4d23e01dd4", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "2df0894a927741390353137f3a6b8a68a282892ed902aaf3e3bf1e35c7d8bfd4" }, { "bytes": 7153572, "name": "chunk-001", "sha256": "07cea109c5a5abccdb6a46072df634427018507c538af597f39b43fb5196ee7d" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "tinysoundfont", "engineConfig": { "drumBank": 128, "format": "SoundFont 2", "ifil": "2.1", "kind": "soundfont", "presets": 287 }, "files": [{ "bytes": 32319396, "offset": 0, "path": "GeneralUser-GS.sf2", "sha256": "9575028c7a1f589f5770fccc8cff2734566af40cd26ed836944e9a5152688cfe" }], "lang": [""], "license": { "attribution": "GeneralUser GS 2.0.3 by S. Christian Collins \u2014 https://www.schristiancollins.com/generaluser.php", "file": "LICENSE.txt", "name": "GeneralUser GS License v2.0 (free for private/commercial music; may be used in software projects, modified and repackaged; do not hotlink the author's download)", "sha256": "88726e4b018fb66050054b6633a2996335b0f8fd4186251c20d0546fa0ab44fc" }, "name": "GeneralUser GS 2.0.3\uFF08GM / GS \u901A\u7528\u97F3\u8272\u5E93\uFF0C287 \u4EF6\u4E50\u5668\u542B 13 \u5957\u9F13\u7EC4\uFF09", "notes": "SoundFont 2 bank. Apps subset the chosen presets into each song (MoonSinger data contract \xA710.2); this pack is the shelf to browse/audition from. Player: TinySoundFont (vendored in the app). Date = upstream release 2026-02-22.", "sha256": "9575028c7a1f589f5770fccc8cff2734566af40cd26ed836944e9a5152688cfe", "slug": "sf2-generaluser-gs-2.0.3-20260222", "source": { "converted": "", "file": "GeneralUser-GS.sf2 (unmodified; INAM says 2.0.3 BETA \u2014 that is the string inside the 2.0.3 release)", "model": "https://github.com/mrbumpy409/GeneralUser-GS" }, "task": "soundfont", "totalBytes": 32319396, "v": 1 } }
+  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
 };
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
+
+// src/gm/sounds.gen.ts
+var SOUNDS_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-sounds";
+var SOUNDS = {
+  "generaluser-gs-2.0.3": {
+    "id": "generaluser-gs-2.0.3",
+    "kind": "instrument",
+    "name": "GeneralUser GS 2.0.3",
+    "description": "GM / GS \u901A\u7528\u97F3\u8272\u5E93\uFF1A287 \u4EF6\u4E50\u5668\uFF08bank 0 \u7684 128 \u4EF6 + GS \u53D8\u4F53\uFF09\u542B 13 \u5957\u9F13\u7EC4\uFF08bank 128\uFF09",
+    "file": "generaluser-gs-2.0.3/GeneralUser-GS.sf2",
+    "format": "SoundFont 2",
+    "bytes": 32319396,
+    "sha256": "9575028c7a1f589f5770fccc8cff2734566af40cd26ed836944e9a5152688cfe",
+    "license": {
+      "name": "GeneralUser GS License v2.0",
+      "summary": "\u79C1\u7528\u5546\u7528\u968F\u4FBF\u7528\uFF1B\u53EF\u653E\u8FDB\u8F6F\u4EF6\u9879\u76EE\u3001\u53EF\u6539\u5305\u88C5\uFF1B\u522B\u76F4\u94FE\u4F5C\u8005\u7684\u4E0B\u8F7D\u6587\u4EF6\uFF08\u8981\u4E48\u94FE\u4ED6\u7F51\u7AD9\uFF0C\u8981\u4E48\u81EA\u5DF1\u653E\u4E00\u4EFD\uFF09\uFF1B\u4E0D\u5F3A\u5236\u7F72\u540D",
+      "file": "generaluser-gs-2.0.3/LICENSE.txt",
+      "bytes": 2317,
+      "sha256": "7b32efefdf95ce38a043799f0659853ddc00fbaa14d8c50f0aca16b9b8b405be"
+    },
+    "attribution": "GeneralUser GS 2.0.3 by S. Christian Collins",
+    "homepage": "https://www.schristiancollins.com/generaluser.php",
+    "source": "https://github.com/mrbumpy409/GeneralUser-GS",
+    "date": "2026-02-22",
+    "notes": "\u5B57\u8282 = \u4E0A\u6E38\u4ED3\u539F\u6837\uFF08\u6587\u4EF6\u5185 INAM \u5199\u7684\u662F\u300C2.0.3 BETA\u300D\uFF0C2.0.3 \u6B63\u5F0F\u7248\u91CC\u5C31\u662F\u8FD9\u4E2A\u5B57\u4E32\uFF09\u3002\u6B8B\u4F59\u98CE\u9669\u6309\u4F5C\u8005\u539F\u8BDD\uFF1A\u90E8\u5206\u91C7\u6837\u6765\u6E90\u4ED6\u4E0D\u80FD 100% \u786E\u5B9A\uFF0C2000 \u5E74\u81F3\u4ECA\u6CA1\u4EBA\u6295\u8BC9\u3002"
+  }
+};
 
 // src/singer/sampler.ts
 var ENV = { attack: 0.01, cut: 6e-3, cutStop: 0.06, rel: 0.04, relStop: 0.25 };
@@ -5549,7 +5574,7 @@ function migrate(kind, json) {
 var MIMETYPE = "application/vnd.recordare.musicxml";
 var DIR = ".moonsinger/";
 var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [] });
-var SOUNDS = `${DIR}sounds/`;
+var SOUNDS2 = `${DIR}sounds/`;
 var PART = "P1";
 var ROLE = "r1";
 var MIC = "m1";
@@ -5600,7 +5625,7 @@ function saveMxl(a) {
     app: a.app,
     saved: a.date,
     files: { "score.json": FORMAT.score, "studio.json": FORMAT.studio, ...Object.fromEntries(Object.entries(lounge).map(([id, r]) => [`lounge/${id}.json`, Number(r.version ?? 1)])) },
-    sounds: sounds.map(([path, b]) => ({ path, sha256: path.slice(SOUNDS.length).replace(/\.sf2$/, ""), bytes: b.length }))
+    sounds: sounds.map(([path, b]) => ({ path, sha256: path.slice(SOUNDS2.length).replace(/\.sf2$/, ""), bytes: b.length }))
   };
   const json = (o) => strToU8(JSON.stringify(o, null, 2) + "\n");
   const rootfiles = [
@@ -5623,7 +5648,7 @@ function saveMxl(a) {
   for (const [path, bytes] of sounds) files[path] = bytes;
   for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in files)) files[path] = bytes;
   const entries = {};
-  for (const [path, bytes] of Object.entries(files)) entries[path] = [bytes, { level: path === "mimetype" ? 0 : path.startsWith(SOUNDS) ? 1 : 6 }];
+  for (const [path, bytes] of Object.entries(files)) entries[path] = [bytes, { level: path === "mimetype" ? 0 : path.startsWith(SOUNDS2) ? 1 : 6 }];
   return zipSync(entries);
 }
 function roleName(extras) {
@@ -5676,7 +5701,7 @@ function withSf2Candidate(extras, c, hum) {
   const role = structuredClone(extras.lounge[ROLE] ?? defaultRole(hum, "full"));
   const cands = role.candidates ?? [];
   const n2 = Math.max(0, ...cands.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n2}`;
-  const path = `${SOUNDS}${c.sha256}.sf2`;
+  const path = `${SOUNDS2}${c.sha256}.sf2`;
   cands.push({
     id,
     name: c.name,
@@ -5755,7 +5780,7 @@ function openBytes(name, bytes) {
       newer("\u5F55\u97F3\u623F", s.version, FORMAT.studio);
       extras.studio = migrate("studio", s);
     }
-    for (const p of Object.keys(files)) if (p.startsWith(SOUNDS) && !p.endsWith("/")) {
+    for (const p of Object.keys(files)) if (p.startsWith(SOUNDS2) && !p.endsWith("/")) {
       extras.sounds[p] = files[p];
       known.add(p);
     }
@@ -6575,6 +6600,40 @@ async function exportSong() {
 }
 var closeOffer = null;
 var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
+var soundsSource = SOUNDS_SOURCE_DEFAULT;
+var soundsBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-sounds", location.href).href, soundsSource.trim().replace(/\/+$/, "") || SOUNDS_SOURCE_DEFAULT])];
+async function fetchSound(e, onProgress) {
+  let last = "";
+  for (const base2 of soundsBases()) {
+    try {
+      const res = await fetch(`${base2}/${e.file}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const out = new Uint8Array(e.bytes);
+      let o = 0;
+      const rd = res.body?.getReader();
+      if (!rd) {
+        const b = new Uint8Array(await res.arrayBuffer());
+        if (b.length !== e.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${b.length} \u2260 ${e.bytes}\uFF09`);
+        out.set(b);
+        o = b.length;
+      } else for (; ; ) {
+        const { done, value } = await rd.read();
+        if (done) break;
+        if (o + value.length > e.bytes) throw new Error("\u6BD4\u76EE\u5F55\u91CC\u8BF4\u7684\u5927");
+        out.set(value, o);
+        o += value.length;
+        onProgress(o);
+      }
+      if (o !== e.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${o} \u2260 ${e.bytes}\uFF09`);
+      const got = await sha256Hex(out);
+      if (got !== e.sha256) throw new Error(`\u5185\u5BB9\u548C\u76EE\u5F55\u91CC\u9489\u7684\u4E0D\u4E00\u6837\uFF08sha256 ${got.slice(0, 12)}\u2026 \u2260 ${e.sha256.slice(0, 12)}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83`);
+      return out;
+    } catch (err2) {
+      last = `${base2}\uFF1A${err2.message}`;
+    }
+  }
+  throw new Error(`\u300C${e.name}\u300D\u62FF\u4E0D\u5230\uFF08\u8BD5\u8FC7 ${soundsBases().join("\u3001")}\uFF09\u3002\u6700\u540E\u4E00\u6B21\uFF1A${last}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u97F3\u6E90\u5E93\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A .sf2 \u6587\u4EF6\u9009\u3002`);
+}
 var modelSource = MODEL_SOURCE_DEFAULT;
 var modelBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-models", location.href).href, modelSource.trim().replace(/\/+$/, "") || MODEL_SOURCE_DEFAULT])];
 var packStore = createPackStore({ packs: PACKS });
@@ -6587,7 +6646,7 @@ function openSettings() {
   if (closeOffer) closeOffer();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc3(modelSource)}" /></label><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc3(CREDIT.credit)}
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc3(modelSource)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc3(soundsSource)}" /></label><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u6708\u8BFB\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><pre>${esc3(CREDIT.credit)}
 
 ${esc3(CREDIT.terms)}
 ${esc3(CREDIT.termsUrl)}
@@ -6599,8 +6658,10 @@ ${esc3(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-ap
     void packStatusText().then((t) => packSt.textContent = t);
   };
   refresh();
+  const sndIn = box.querySelector("#sndIn");
   const close = () => {
     modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT;
+    soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT;
     box.remove();
     closeOffer = null;
     scoreEl.focus();
@@ -6609,8 +6670,10 @@ ${esc3(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row set-ap
   box.addEventListener("click", (e) => {
     const v = e.target.closest("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
-    else if (v === "default") srcIn.value = MODEL_SOURCE_DEFAULT;
-    else if (v === "check") void shell.checkForUpdate().then((r) => {
+    else if (v === "default") {
+      srcIn.value = MODEL_SOURCE_DEFAULT;
+      sndIn.value = SOUNDS_SOURCE_DEFAULT;
+    } else if (v === "check") void shell.checkForUpdate().then((r) => {
       if (r === "found") {
         close();
         showUpdateBar();
@@ -6776,38 +6839,17 @@ function openPartSheet() {
     renderTitle();
   };
   let picked = null;
-  const pickOfficial = async () => {
-    const slug = GM_SOUNDFONT, m = PACKS[slug].manifest;
+  const pickOfficial = async (id) => {
+    const e = SOUNDS[id];
     try {
-      const [st2] = await packStore.status([slug]);
-      if (!st2.ready) {
-        let last = null;
-        for (const base2 of modelBases()) {
-          try {
-            progress(`\u4E0B\u8F7D ${m.name}\u2026`);
-            await packStore.download([slug], base2, (p) => progress(`\u4E0B\u8F7D\u97F3\u8272\u5E93 ${Math.round(p.done / p.total * 100)}%`));
-            last = null;
-            break;
-          } catch (e) {
-            last = e;
-          }
-        }
-        if (last) throw new Error(`\u97F3\u8272\u5E93\u4E0B\u8F7D\u4E0D\u4E0B\u6765\uFF08\u8BD5\u8FC7 ${modelBases().join("\u3001")}\uFF09\uFF1A${last.message}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u6A21\u578B\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A .sf2 \u6587\u4EF6\u9009\u3002`);
-      }
+      const bytes = await fetchSound(e, (done) => progress(`\u4E0B\u8F7D ${e.name} ${Math.round(done / e.bytes * 100)}%`));
       progress("");
-      const blobs = await packStore.chunks(slug), parts = await Promise.all(blobs.map((b) => b.arrayBuffer()));
-      const bytes = new Uint8Array(parts.reduce((s, p) => s + p.byteLength, 0));
-      let o = 0;
-      for (const p of parts) {
-        bytes.set(new Uint8Array(p), o);
-        o += p.byteLength;
-      }
       const presets = listSf2Presets(bytes), first = presets.find((p) => p.bank === 0) ?? presets[0];
-      picked = { name: m.name, bytes, presets, sel: `${first.bank}:${first.program}`, pack: slug };
+      picked = { name: e.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e };
       draw();
-    } catch (e) {
+    } catch (err2) {
       progress("");
-      showError(e.message);
+      showError(err2.message);
     }
   };
   const pickFile = () => {
@@ -6841,9 +6883,9 @@ function openPartSheet() {
       const subset = subsetSf2(picked.bytes, [{ bank, program }]), inf = sf2Info(picked.bytes);
       const [sha256, fileSha256] = await Promise.all([sha256Hex(subset), sha256Hex(picked.bytes)]);
       if (subset.length > 1e7) info(`\u300C${name}\u300D\u7684\u58F0\u97F3\u6709 ${sizeText(subset.length)}\uFF0C\u5D4C\u8FDB\u6B4C\u91CC\u5B58\u6863\u4F1A\u53D8\u5927\u3001\u53D8\u6162`);
-      const lic = picked.pack ? PACKS[picked.pack].manifest : null;
-      const credit = lic ? { attribution: [lic.license.attribution], license: { name: lic.license.name, url: lic.source.model, text: inf.comment } } : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x) => !!x), license: { name: "unknown", text: inf.comment } };
-      doc.extras = withSf2Candidate(doc.extras, { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...picked.pack ? { pack: picked.pack } : {} }, credit }, st.song.hum);
+      const lib = picked.library;
+      const credit = lib ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } } : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x) => !!x), license: { name: "unknown", text: inf.comment } };
+      doc.extras = withSf2Candidate(doc.extras, { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...lib ? { library: lib.id } : {} }, credit }, st.song.hum);
       picked = null;
       setQuality("gm");
       draw();
@@ -6860,7 +6902,7 @@ function openPartSheet() {
   };
   const draw = () => {
     const q = quality(), h = st.song.hum, rn = roleName(doc.extras), rs = roleSound(doc.extras), aid = activeId(doc.extras);
-    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8</div><div class="part-sec">\u89D2\u8272\uFF08\u6309\u529F\u80FD\u9009\uFF0C\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc3(rn)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g2) => `<optgroup label="${g2.group}">${g2.items.map((r) => `<option value="${esc3(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc3(r.name)} \u2014 ${r.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(rn)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc3(rs)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u4E50\u5668\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + chip("q:full", "\u6708\u8BFB\uFF08\u5B8C\u6574\uFF09", q === "full", "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09") + chip("q:light", "\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09", q === "light", "\u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1") + gmCandidates(doc.extras).map((c) => chip(`cand:${c.id}`, c.name, q === "gm" && aid === c.id, c.bytes ? `SoundFont ${c.bank}:${c.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(c.bytes.length)}\uFF09` : "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765")).join("") + (q === "none" ? chip("q:none", `${esc3(activeCandidateName(doc.extras) ?? "\u539F\u6765\u7684\u4E50\u5668")}\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09`, true, "\u8FD9\u4EF6\u4E50\u5668\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A") : "") + `</div><div class="set-row"><button class="btn" data-v="sf2:official" title="\u5BB6\u65CF\u6A21\u578B\u4ED3\u91CC\u7684 GeneralUser GS 2.0.3\uFF08287 \u4EF6\u4E50\u5668\u542B 13 \u5957\u9F13\u7EC4\uFF0C32 MB\uFF1B\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\uFF0C\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF09">\u4ECE\u5B98\u65B9\u97F3\u8272\u5E93\u9009\u4E50\u5668\u2026</button><button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u53EA\u628A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5D4C\u8FDB\u6B4C\uFF0C\u6587\u4EF6\u672C\u8EAB\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u4E50\u5668\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u4E50\u5668\u53EA\u628A\u7528\u5230\u7684\u90A3\u4E00\u4EF6\uFF08\u901A\u5E38\u51E0 MB\uFF09\u5D4C\u8FDB\u6B4C\u91CC\uFF0C\u6B4C\u5230\u54EA\u90FD\u54CD\uFF1B.sf2 \u6587\u4EF6\u672C\u8EAB\u4E0D\u7559\u5728\u8BBE\u5907\u4E0A\u3002</div>` + (q === "none" ? "" : `<div class="part-sec">\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) + `<div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8</div><div class="part-sec">\u89D2\u8272\uFF08\u6309\u529F\u80FD\u9009\uFF0C\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc3(rn)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g2) => `<optgroup label="${g2.group}">${g2.items.map((r) => `<option value="${esc3(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc3(r.name)} \u2014 ${r.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc3(rn)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc3(rs)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u4E50\u5668\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + chip("q:full", "\u6708\u8BFB\uFF08\u5B8C\u6574\uFF09", q === "full", "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09") + chip("q:light", "\u6708\u8BFB\uFF08\u8F7B\u91CF\uFF09", q === "light", "\u5143\u97F3\u91C7\u6837\uFF0C\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1") + gmCandidates(doc.extras).map((c) => chip(`cand:${c.id}`, c.name, q === "gm" && aid === c.id, c.bytes ? `SoundFont ${c.bank}:${c.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(c.bytes.length)}\uFF09` : "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765")).join("") + (q === "none" ? chip("q:none", `${esc3(activeCandidateName(doc.extras) ?? "\u539F\u6765\u7684\u4E50\u5668")}\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09`, true, "\u8FD9\u4EF6\u4E50\u5668\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A") : "") + `</div><div class="set-row">` + Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc3(e.id)}" title="${esc3(`${e.description ?? e.name}\uFF08${sizeText(e.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u70B9\u4E86\u624D\u4E0B\u8F7D\uFF1B${e.license.name}\uFF09`)}">\u4ECE ${esc3(e.name)} \u9009\u4E50\u5668\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u53EA\u628A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5D4C\u8FDB\u6B4C\uFF0C\u6587\u4EF6\u672C\u8EAB\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u4E50\u5668\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u4E50\u5668\u53EA\u628A\u7528\u5230\u7684\u90A3\u4E00\u4EF6\uFF08\u901A\u5E38\u51E0 MB\uFF09\u5D4C\u8FDB\u6B4C\u91CC\uFF0C\u6B4C\u5230\u54EA\u90FD\u54CD\uFF1B.sf2 \u6587\u4EF6\u672C\u8EAB\u4E0D\u7559\u5728\u8BBE\u5907\u4E0A\u3002</div>` + (q === "none" ? "" : `<div class="part-sec">\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) + `<div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
     const inp = box.querySelector("#roleIn"), sel = box.querySelector("#roleSel");
     sel.addEventListener("change", () => {
       const [snd, ...nm] = sel.value.split("|");
@@ -6909,8 +6951,8 @@ function openPartSheet() {
     else if (v === "sf2:pick") {
       pickFile();
       return;
-    } else if (v === "sf2:official") {
-      void pickOfficial();
+    } else if (v.startsWith("sound:")) {
+      void pickOfficial(v.slice(6));
       return;
     } else if (v === "sf2:add") {
       void addPicked();
@@ -7284,4 +7326,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-4baa92267c2f.mjs.map
+//# sourceMappingURL=moonsinger-74ea16b82922.mjs.map

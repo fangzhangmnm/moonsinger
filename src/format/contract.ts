@@ -56,7 +56,7 @@ export interface CandidateV1 {
   engines: Record<string, unknown>;    // 引擎参数按引擎名分组；不认识的原样写回
   /** 2026-10-07 加（可选，不升版本；契约 §10）：样本类音源 = 歌里嵌的 SF2 子集。bank / program 按 SoundFont（0 起；鼓组 bank 128）；
    *  gm.program 仍按 MusicXML（1 起）写给别的软件看。origin = 子集从哪个文件切的（名字、整包 sha256、整包大小）；没有 source 的候选 = 月读 / 别家原来的乐器。 */
-  source?: { kind: "sf2"; embedded: string; bank: number; program: number; origin: { name: string; fileSha256: string; bytes: number; pack?: string }; subsetBytes: number };
+  source?: { kind: "sf2"; embedded: string; bank: number; program: number; origin: { name: string; fileSha256: string; bytes: number; library?: string }; subsetBytes: number };   // library = 家族音源库 pwa-sounds 的目录 id（音源不是 AI 模型，不走 pwa-models）
   /** 署名 / 许可证快照 by value（§10 / cb7a1b9）：官方包从 manifest 抄；用户拖进来的 = INFO 块里有什么抄什么，license.name "unknown"，角色卡可填。 */
   credit?: { attribution: string[]; license: { name: string; url?: string; text?: string; textSha256?: string } };
   /** §10.6 vault：这个候选怎么出声——标准格式只写名字版本；我们写的引擎指向 vault README 的章节 + 源码出处；来路不明 = unknown。 */

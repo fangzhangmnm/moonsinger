@@ -22,7 +22,8 @@ import { Singer, type SingResult } from "../singer/client.ts";
 import { encodeMp3 } from "../export/mp3.ts";
 import { createPackStore } from "@internal/model-packs";
 import { showNotice, configureFloors } from "@internal/workbench-elements";
-import { PACKS, CREDIT, GM_SOUNDFONT } from "../singer/packs.gen.ts";
+import { PACKS, CREDIT } from "../singer/packs.gen.ts";
+import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, activeCandidateName, activeId, activeGm, gmCandidates, withActive, withSf2Candidate, CANDIDATE_ID, type Extras, type Quality } from "../format/project.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
@@ -361,6 +362,28 @@ let closeOffer: (() => void) | null = null;
 //    先找同一个网站下的 pwa-models/（自己搭服务器的人把模型仓拷过来就能用、不用配置），找不到再用这里设的；还能从本机文件导入。
 //    设的值只在这次打开里有效（持久化还没定）。
 const MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
+// 音源库（pwa-sounds）同样一套：先找同源 pwa-sounds/，再用设置里的；只在这次打开里有效
+let soundsSource = SOUNDS_SOURCE_DEFAULT;
+const soundsBases = () => [...new Set([new URL("pwa-sounds", location.href).href, soundsSource.trim().replace(/\/+$/, "") || SOUNDS_SOURCE_DEFAULT])];
+/** 从音源库拿一个文件：逐个地址试，流式读（报进度），到手对目录里钉的 sha256（不对 = 不用、报出来）。 */
+async function fetchSound(e: SoundEntry, onProgress: (done: number) => void): Promise<Uint8Array> {
+  let last = "";
+  for (const base of soundsBases()) {
+    try {
+      const res = await fetch(`${base}/${e.file}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const out = new Uint8Array(e.bytes); let o = 0;
+      const rd = res.body?.getReader();
+      if (!rd) { const b = new Uint8Array(await res.arrayBuffer()); if (b.length !== e.bytes) throw new Error(`大小不对（${b.length} ≠ ${e.bytes}）`); out.set(b); o = b.length; }
+      else for (;;) { const { done, value } = await rd.read(); if (done) break; if (o + value.length > e.bytes) throw new Error("比目录里说的大"); out.set(value, o); o += value.length; onProgress(o); }
+      if (o !== e.bytes) throw new Error(`大小不对（${o} ≠ ${e.bytes}）`);
+      const got = await sha256Hex(out);
+      if (got !== e.sha256) throw new Error(`内容和目录里钉的不一样（sha256 ${got.slice(0, 12)}… ≠ ${e.sha256.slice(0, 12)}…），没有用它`);
+      return out;
+    } catch (err) { last = `${base}：${(err as Error).message}`; }
+  }
+  throw new Error(`「${e.name}」拿不到（试过 ${soundsBases().join("、")}）。最后一次：${last}。可以在设置里换音源库来源，或从本机 .sf2 文件选。`);
+}
 let modelSource = MODEL_SOURCE_DEFAULT;
 const modelBases = () => [...new Set([new URL("pwa-models", location.href).href, modelSource.trim().replace(/\/+$/, "") || MODEL_SOURCE_DEFAULT])];
 const packStore = createPackStore({ packs: PACKS });   // 只用来导入 / 看状态；下载在 worker 里（同一个 Cache Storage pwa-models）
@@ -376,6 +399,7 @@ function openSettings(): void {
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">设置</div>` +
     `<label class="set-field">模型来源<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(modelSource)}" /></label>` +
+    `<label class="set-field">音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(soundsSource)}" /></label>` +
     `<div class="offer-msg">先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。</div>` +
     `<div class="set-row"><button class="btn" data-v="default">恢复默认</button>` +
     `<label class="btn" title="选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包<input id="impIn" type="file" multiple hidden /></label></div>` +
@@ -387,12 +411,13 @@ function openSettings(): void {
   const srcIn = box.querySelector<HTMLInputElement>("#srcIn")!, packSt = box.querySelector<HTMLElement>("#packSt")!;
   const refresh = () => { void packStatusText().then((t) => (packSt.textContent = t)); };
   refresh();
-  const close = () => { modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT; box.remove(); closeOffer = null; scoreEl.focus(); };
+  const sndIn = box.querySelector<HTMLInputElement>("#sndIn")!;
+  const close = () => { modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; box.remove(); closeOffer = null; scoreEl.focus(); };
   closeOffer = close;
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
-    else if (v === "default") srcIn.value = MODEL_SOURCE_DEFAULT;
+    else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
     else if (v === "reset") void shell.forceReset();
   });
@@ -532,26 +557,17 @@ function openPartSheet(): void {
     doc.extras = withRoleName(doc.extras, n, st.song.hum, quality(), sound); view.render(); renderTitle();
   };
   // 从 .sf2 文件选乐器（契约 §10：只把选中的那一件子集化嵌进歌；文件本身不留在设备上——user「拖进来的默认不留」）
-  let picked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel: string; pack?: string } | null = null;
-  // 官方货架：家族模型仓里的 GeneralUser GS 包（32 MB）——点了才下载（有意图才加载）；之后和自己拖进来的文件走同一个面板
-  const pickOfficial = async () => {
-    const slug = GM_SOUNDFONT, m = PACKS[slug].manifest as unknown as { name: string; totalBytes: number };
+  let picked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel: string; library?: SoundEntry } | null = null;
+  // 官方货架：家族音源库（pwa-sounds，不是 AI 模型仓）里的 GeneralUser GS（32 MB 一个文件）——点了才下载（有意图才加载），先对目录里钉的 sha256 再用；
+  //   走浏览器普通 HTTP 缓存，不另开家族缓存（歌自己带声音，货架不承重）；之后和自己拖进来的文件走同一个面板
+  const pickOfficial = async (id: string) => {
+    const e = SOUNDS[id];
     try {
-      const [st] = await packStore.status([slug]);
-      if (!st.ready) {
-        let last: unknown = null;
-        for (const base of modelBases()) {
-          try { progress(`下载 ${m.name}…`); await packStore.download([slug], base, (p) => progress(`下载音色库 ${Math.round((p.done / p.total) * 100)}%`)); last = null; break; }
-          catch (e) { last = e; }
-        }
-        if (last) throw new Error(`音色库下载不下来（试过 ${modelBases().join("、")}）：${(last as Error).message}。可以在设置里换模型来源，或从本机 .sf2 文件选。`);
-      }
+      const bytes = await fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`));
       progress("");
-      const blobs = await packStore.chunks(slug), parts = await Promise.all(blobs.map((b) => b.arrayBuffer()));
-      const bytes = new Uint8Array(parts.reduce((s, p) => s + p.byteLength, 0)); let o = 0; for (const p of parts) { bytes.set(new Uint8Array(p), o); o += p.byteLength; }
       const presets = listSf2Presets(bytes), first = presets.find((p) => p.bank === 0) ?? presets[0];
-      picked = { name: m.name, bytes, presets, sel: `${first.bank}:${first.program}`, pack: slug }; draw();
-    } catch (e) { progress(""); showError((e as Error).message); }
+      picked = { name: e.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e }; draw();
+    } catch (err) { progress(""); showError((err as Error).message); }
   };
   const pickFile = () => {
     const inp = document.createElement("input"); inp.type = "file"; inp.accept = ".sf2,audio/x-soundfont"; inp.hidden = true; document.body.append(inp);
@@ -576,11 +592,11 @@ function openPartSheet(): void {
       const [sha256, fileSha256] = await Promise.all([sha256Hex(subset), sha256Hex(picked.bytes)]);
       if (subset.length > 10e6) info(`「${name}」的声音有 ${sizeText(subset.length)}，嵌进歌里存档会变大、变慢`);   // 提示后仍可嵌（user 2026-10-07）
       // 署名 / 许可证快照 by value：官方包从包清单抄（名字 + 出处 + 许可证名），自己拖进来的只有 INFO 块里的字、许可证 unknown（角色卡可填）
-      const lic = picked.pack ? (PACKS[picked.pack].manifest as unknown as { license: { name: string; attribution: string }; source: { model: string } }) : null;
-      const credit = lic
-        ? { attribution: [lic.license.attribution], license: { name: lic.license.name, url: lic.source.model, text: inf.comment } }
+      const lib = picked.library;
+      const credit = lib
+        ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } }
         : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x): x is string => !!x), license: { name: "unknown", text: inf.comment } };
-      doc.extras = withSf2Candidate(doc.extras, { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...(picked.pack ? { pack: picked.pack } : {}) }, credit }, st.song.hum);
+      doc.extras = withSf2Candidate(doc.extras, { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...(lib ? { library: lib.id } : {}) }, credit }, st.song.hum);
       picked = null; setQuality("gm"); draw();
     } catch (e) { showError(`加不进来：${(e as Error).message}`); }
   };
@@ -607,7 +623,7 @@ function openPartSheet(): void {
       chip("q:light", "月读（轻量）", q === "light", "元音采样，按下即响、任何设备都能跑") +
       gmCandidates(doc.extras).map((c) => chip(`cand:${c.id}`, c.name, q === "gm" && aid === c.id, c.bytes ? `SoundFont ${c.bank}:${c.program}，声音嵌在歌里（${sizeText(c.bytes.length)}）` : "声音没随这首歌带来")).join("") +
       (q === "none" ? chip("q:none", `${esc(activeCandidateName(doc.extras) ?? "原来的乐器")}（没人上场）`, true, "这件乐器这一版出不了声，所以没人上场") : "") + `</div>` +
-      `<div class="set-row"><button class="btn" data-v="sf2:official" title="家族模型仓里的 GeneralUser GS 2.0.3（287 件乐器含 13 套鼓组，32 MB；第一次要下载，之后留在设备上）">从官方音色库选乐器…</button>` +
+      `<div class="set-row">` + Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(`${e.description ?? e.name}（${sizeText(e.bytes)}；家族音源库，点了才下载；${e.license.name}）`)}">从 ${esc(e.name)} 选乐器…</button>`).join("") +
       `<button class="btn" data-v="sf2:pick" title="自己的 .sf2 文件：只把选中的那一件嵌进歌，文件本身不留">从 .sf2 文件选乐器…</button></div>` + pickerHtml() +
       `<div class="offer-msg">选了的乐器只把用到的那一件（通常几 MB）嵌进歌里，歌到哪都响；.sf2 文件本身不留在设备上。</div>` +
       (q === "none" ? "" : `<div class="part-sec">没写歌词的音唱什么</div><div class="set-row">${HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join("")}</div>`) +
@@ -629,7 +645,7 @@ function openPartSheet(): void {
     if (v === "q:full" || v === "q:light") setQuality(v.slice(2) as Quality);
     else if (v.startsWith("cand:")) setActiveGm(v.slice(5));
     else if (v === "sf2:pick") { pickFile(); return; }
-    else if (v === "sf2:official") { void pickOfficial(); return; }
+    else if (v.startsWith("sound:")) { void pickOfficial(v.slice(6)); return; }
     else if (v === "sf2:add") { void addPicked(); return; }
     else if (v === "sf2:cancel") picked = null;
     else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
