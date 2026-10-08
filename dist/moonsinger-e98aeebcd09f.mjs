@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.11-2026-10-08";
+var APP_VERSION = "v0.6.12-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5581,13 +5581,13 @@ var MarkEditor = class {
     }
   }
   fill(t10, deletable) {
-    const chip = (v, label, on2, title = "") => `<button class="btn cand${on2 ? " is-on" : ""}" data-v='${JSON.stringify(v)}' title="${title}">${label}</button>`;
+    const chip2 = (v, label, on2, title = "") => `<button class="btn cand${on2 ? " is-on" : ""}" data-v='${JSON.stringify(v)}' title="${title}">${label}</button>`;
     let h2 = "";
-    if (t10.kind === "key") h2 = KEY_ORDER.map((f2) => chip({ kind: "key", fifths: f2 }, `1=${KEY_LABEL[f2]}`, f2 === t10.fifths, accName(f2))).join("");
-    else if (t10.kind === "time") h2 = TIMES.map(([b3, bt]) => chip({ kind: "time", beats: b3, beatType: bt }, `${b3}/${bt}`, b3 === t10.beats && bt === t10.beatType)).join("");
+    if (t10.kind === "key") h2 = KEY_ORDER.map((f2) => chip2({ kind: "key", fifths: f2 }, `1=${KEY_LABEL[f2]}`, f2 === t10.fifths, accName(f2))).join("");
+    else if (t10.kind === "time") h2 = TIMES.map(([b3, bt]) => chip2({ kind: "time", beats: b3, beatType: bt }, `${b3}/${bt}`, b3 === t10.beats && bt === t10.beatType)).join("");
     else {
       const cur = tempoWord(t10.bpm).it;
-      h2 = TEMPO_WORDS.map((w2) => chip({ kind: "tempo", bpm: w2.typical }, `<b>${w2.it}</b><small>${w2.zh} ${w2.typical}</small>`, w2.it === cur, `${w2.from} \u8D77`)).join("");
+      h2 = TEMPO_WORDS.map((w2) => chip2({ kind: "tempo", bpm: w2.typical }, `<b>${w2.it}</b><small>${w2.zh} ${w2.typical}</small>`, w2.it === cur, `${w2.from} \u8D77`)).join("");
     }
     if (deletable) h2 += `<button class="btn cand danger" data-v="delete">\u5220\u9664</button>`;
     this.list.innerHTML = h2;
@@ -5934,6 +5934,11 @@ var ScoreView = class {
     else if (off + box.bottom * z2 > top + h2) this.el.scrollTop = off + box.bottom * z2 - h2;
   }
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
+  /** 纸面上的框 → 屏幕坐标（local 的反过来）。 */
+  clientBox(b3) {
+    const r10 = this.sheet.getBoundingClientRect(), ox2 = this.layout?.pageX.left ?? 0, z2 = this.zoom;
+    return { left: r10.left + (b3.x + ox2) * z2, top: r10.top + b3.y * z2, right: r10.left + (b3.x + b3.w + ox2) * z2, bottom: r10.top + (b3.y + b3.h) * z2 };
+  }
   local(e10) {
     const r10 = this.sheet.getBoundingClientRect(), ox2 = this.layout?.pageX.left ?? 0;
     return { x: (e10.clientX - r10.left) / this.zoom - ox2, y: (e10.clientY - r10.top) / this.zoom };
@@ -6103,8 +6108,9 @@ var ScoreView = class {
     }
     const pt = L2.parts.find((b3) => this.inBox(b3, x2, y2));
     if (pt) {
+      const at2 = this.clientBox(pt);
       this.host.set(setFocus(this.host.get(), pt.paper, pt.part));
-      this.host.onPart?.(pt.paper, pt.part);
+      this.host.onPart?.(pt.paper, pt.part, at2);
       return true;
     }
     if (this.inBox(L2.title, x2, y2)) {
@@ -9032,7 +9038,7 @@ function activeOrDefaultCandidate(extras, role) {
   return cands(r10).find((x2) => x2.id === r10.active) ?? null;
 }
 function activeCandidateName(extras, role) {
-  const c10 = activeCandidate(extras, role);
+  const c10 = activeOrDefaultCandidate(extras, role);
   return c10 ? String(c10.name ?? "") : null;
 }
 function activeInstrument(extras, role) {
@@ -9056,7 +9062,7 @@ function gmCandidates(extras, role) {
     const i10 = instrumentOf(c10);
     if (i10?.engine !== "soundfont") return [];
     const s10 = i10.source;
-    return [{ id: String(c10.id), name: String(c10.name ?? ""), bank: i10.bank, program: i10.program, ...i10.note !== void 0 ? { note: i10.note } : {}, path: s10.embedded, bytes: s10.embedded ? extras.sounds[s10.embedded] ?? null : null, origin: s10.origin, subsetSha256: s10.subsetSha256 }];
+    return [{ id: String(c10.id), name: String(c10.name ?? ""), bank: i10.bank, program: i10.program, ...i10.note !== void 0 ? { note: i10.note } : {}, ...i10.sfx ? { sfx: i10.sfx } : {}, path: s10.embedded, bytes: s10.embedded ? extras.sounds[s10.embedded] ?? null : null, origin: s10.origin, subsetSha256: s10.subsetSha256 }];
   });
 }
 function activeGm(extras, role) {
@@ -9068,7 +9074,7 @@ function withSf2Candidate(extras, role, c10, hum) {
   const list = cands(r10);
   const n10 = Math.max(0, ...list.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
   const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
-  const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
+  const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, ...c10.sfx ? { sfx: { ...c10.sfx } } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
   list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r10.candidates = list;
   r10.active = id2;
@@ -9163,6 +9169,32 @@ function withCalibration(extras, role, dB, hum) {
   const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
   if (!c10) return extras;
   c10.calibrationDb = Math.round(dB * 10) / 10;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function withSfxFixed(extras, role, on2, hum) {
+  const r10 = roleOf(extras, role, hum), i10 = instrumentOf(cands(r10).find((x2) => x2.id === r10.active));
+  if (i10?.engine !== "soundfont" || !i10.sfx) return extras;
+  if (on2) i10.note = i10.sfx.key;
+  else delete i10.note;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function withSfxAlign(extras, role, on2, hum) {
+  const r10 = roleOf(extras, role, hum), i10 = instrumentOf(cands(r10).find((x2) => x2.id === r10.active));
+  if (i10?.engine !== "soundfont" || !i10.sfx) return extras;
+  if (on2) i10.sfx.align = true;
+  else delete i10.sfx.align;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function activeTranspose(extras, role) {
+  const v = Number(activeCandidate(extras, role)?.transpose ?? 0);
+  return Number.isInteger(v) ? v : 0;
+}
+function withTranspose(extras, role, semis, hum) {
+  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
+  if (!c10) return extras;
+  const t10 = Math.max(-48, Math.min(48, Math.round(semis)));
+  if (t10) c10.transpose = t10;
+  else delete c10.transpose;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
 var foreign = (r10) => r10.title || !r10.movementTitle ? r10 : { ...r10, title: r10.movementTitle, movementTitle: "" };
@@ -9699,32 +9731,41 @@ var GmSynth = class {
   }
 };
 
+// src/gm/sf-key.ts
+function sfKey(written, inst, transpose = 0) {
+  if (inst.note !== void 0) return inst.note;
+  const s10 = inst.sfx, w2 = written + transpose;
+  const k2 = s10?.align && s10.midi !== void 0 && s10.centsPerKey ? Math.round(s10.key + (w2 - s10.midi) * 100 / s10.centsPerKey) : w2;
+  return Math.max(0, Math.min(127, k2));
+}
+var canAlign = (s10) => !!s10 && s10.midi !== void 0 && !!s10.centsPerKey;
+
 // src/gm/instruments.gen.ts
 var INSTRUMENT_FILES = {
   "concepts": {
-    "file": "vendor/instruments/instruments-v7.json",
-    "bytes": 226463,
-    "sha256": "55bfab9f47e3f9cf420eac5f95eb015ffb5677f13d35572103f9679ade695729"
+    "file": "vendor/instruments/instruments-v10.json",
+    "bytes": 228355,
+    "sha256": "df1c5185b540e751ff1a071aa22bd35f5f0b578c01e00cfb93be59d10503cc6e"
   },
   "gmMap": {
-    "file": "vendor/instruments/gm-map-v7.json",
-    "bytes": 114399,
-    "sha256": "df9fa578591507dafe0d4d9648f56c8c028b0df79348afc53544e747a23b383d"
+    "file": "vendor/instruments/gm-map-v10.json",
+    "bytes": 121391,
+    "sha256": "c959b6aaeea7419c081b67b827e04dab03ca217eec5ec540390e8609464a1f32"
   },
   "icons": {
-    "file": "vendor/instruments/instrument-icons-20261008-v7.svg",
-    "bytes": 139012,
-    "sha256": "8298b74bb80b1e8ed36261ed3b429f982f4a9ff79524f9dc5dbc90ed318c1244"
+    "file": "vendor/instruments/instrument-icons-20261008-v10.svg",
+    "bytes": 139014,
+    "sha256": "964f057af8aa54e0075478931f5fdae5c79cddd3228189c604f8bd1cb078b5f3"
   },
   "iconCredits": {
-    "file": "vendor/instruments/icon-credits-v7.json",
-    "bytes": 20668,
-    "sha256": "ee14e53acf2a7416916c10f3f0ffbf8e940b20332cf92b24153f02b5d2ba05d9"
+    "file": "vendor/instruments/icon-credits-v10.json",
+    "bytes": 20670,
+    "sha256": "64e36d0f5fcc1c2377357b5851f341205f6c9c5bcd0f716e830a742e059ca6a0"
   },
   "licenses": {
-    "file": "vendor/instruments/LICENSES-chosen-v7.md",
-    "bytes": 145789,
-    "sha256": "7a2b3a6bdf3ddc5435ad52ba99ed5f769129c369d11c9beed5662485a8c854b2"
+    "file": "vendor/instruments/LICENSES-chosen-v10.md",
+    "bytes": 145790,
+    "sha256": "562d15a988fd1c6d7d2f0b09d93081880424162ef0d42381c14b171bf1439497"
   }
 };
 var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
@@ -9770,10 +9811,25 @@ function providersOf(cat2, c10) {
 function rangeOf(c10) {
   const r10 = c10?.range;
   if (r10 && Number.isFinite(r10.low) && Number.isFinite(r10.high) && r10.low <= r10.high) return { lo: r10.low, hi: r10.high, title: `${c10.names.zh}\u7684\u5E38\u7528\u97F3\u57DF${r10.basis ? `\uFF08\u4F9D\u636E\uFF1A${r10.basis}\uFF09` : ""}` };
-  const k2 = c10?.naturalKey;
-  if (k2 && Number.isFinite(k2.note)) return { lo: k2.note, hi: k2.note, title: `${c10.names.zh}\u6700\u50CF\u771F\u7684\u90A3\u4E2A\u952E${k2.hz ? `\uFF08\u7EA6 ${Math.round(k2.hz)} Hz\uFF09` : ""}` };
   return null;
 }
+function sampleKeyOf(cat2, bank, program) {
+  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === void 0 && r10.sampleKey);
+  const k2 = row?.sampleKey;
+  if (!k2 || !Number.isFinite(k2.recommended)) return null;
+  const covers = (r10) => {
+    const m2 = /^(\d+)\s*[–-]\s*(\d+)$/.exec(r10 ?? "");
+    return !m2 || k2.recommended >= +m2[1] && k2.recommended <= +m2[2];
+  };
+  const ls2 = (k2.layers ?? []).filter((l10) => covers(l10.keyRange) && l10.peakAtRecommended?.pitched && l10.centsPerKey);
+  const main = ls2.find((l10) => Math.round(l10.originalSpeedKey ?? NaN) === k2.recommended) ?? ls2[0];
+  return {
+    key: k2.recommended,
+    title: `\u539F\u901F\u952E\uFF1A\u6309\u8FD9\u4E2A\u952E\uFF0C\u91C7\u6837\u4E0D\u62C9\u4F38\u4E0D\u538B\u7F29${k2.recommendedBasis ? `\uFF08${k2.recommendedBasis}\uFF09` : ""}`,
+    ...main ? { midi: Math.round(main.peakAtRecommended.midi * 100) / 100, centsPerKey: main.centsPerKey } : {}
+  };
+}
+var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
 var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
 var roleSoundOf = (cat2, c10) => c10.ids.musicxml ?? providersOf(cat2, c10)[0]?.sound ?? null;
 var SORT_LABEL = { style: "\u6309\u66F2\u98CE", family: "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09", year: "\u6309\u5E74\u4EE3", hs: "\u6309\u53D1\u58F0\u65B9\u5F0F" };
@@ -9792,13 +9848,14 @@ function groupConcepts(cat2, mode, query = "") {
     }
     g3.concepts.push(c10);
   };
+  const asItems = (gs) => gs.map((g3) => ({ id: g3.id, label: g3.label, items: g3.concepts.map((concept) => ({ concept })) }));
   if (mode === "family") {
     const order = new Map(cat2.defs.families.map((f2, i10) => [f2.id, i10]));
     for (const c10 of list) {
       const f2 = (c10.family ?? [])[0] ?? "other";
       put(f2, cat2.defs.families.find((x2) => x2.id === f2)?.zh ?? (c10.kind === "voice" ? "\u4EBA\u58F0" : c10.kind === "sound" ? "\u97F3\u6548" : "\u5176\u4ED6"), c10);
     }
-    return [...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort(byGm) }));
+    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort(byGm) })));
   }
   if (mode === "year") {
     const eras = cat2.defs.eras;
@@ -9807,23 +9864,52 @@ function groupConcepts(cat2, mode, query = "") {
       put(e10?.id ?? "unknown", e10 ? `${e10.zh}${e10.from !== null ? `\uFF08${fmtYear(e10.from)} \u8D77\uFF09` : ""}` : "\u5E74\u4EE3\u4E0D\u8BE6", c10);
     }
     const order = new Map(eras.map((e10, i10) => [e10.id, i10]));
-    return [...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.year ?? 1e9) - (b3.year ?? 1e9)) }));
+    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.year ?? 1e9) - (b3.year ?? 1e9)) })));
   }
   if (mode === "hs") {
     for (const c10 of list) {
       const k2 = c10.ids.hs?.[0] ?? "?";
       put(k2, HS_CLASS[k2] ?? "\u5206\u7C7B\u4E0D\u8BE6", c10);
     }
-    return [...groups.values()].sort((a10, b3) => a10.id.localeCompare(b3.id)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.ids.hs ?? "~").localeCompare(b3.ids.hs ?? "~")) }));
+    return asItems([...groups.values()].sort((a10, b3) => a10.id.localeCompare(b3.id)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.ids.hs ?? "~").localeCompare(b3.ids.hs ?? "~")) })));
   }
-  for (const c10 of list) {
-    const tags = [...new Set((c10.styles ?? []).map((s10) => s10.tag))];
-    if (!tags.length) put("none", "\u6CA1\u8D34\u98CE\u683C", c10);
-    for (const t10 of tags) put(t10, styleLabel(cat2, t10), c10);
-  }
-  return [...groups.values()].sort((a10, b3) => a10.id === "none" ? 1 : b3.id === "none" ? -1 : a10.label.localeCompare(b3.label, "zh")).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => weightOf(b3, g3.id) - weightOf(a10, g3.id) || byGm(a10, b3)) }));
+  return styleGroups(cat2, q2, hit);
 }
-var weightOf = (c10, tag2) => Math.max(0, ...(c10.styles ?? []).filter((s10) => s10.tag === tag2).map((s10) => s10.weight ?? 0));
+function styleGroups(cat2, q2, hit) {
+  const groups = /* @__PURE__ */ new Map();
+  const put = (tag2, e10) => {
+    let g3 = groups.get(tag2);
+    if (!g3) {
+      g3 = { id: tag2, label: tag2 === "none" ? "\u6CA1\u8D34\u98CE\u683C" : styleLabel(cat2, tag2), items: [] };
+      groups.set(tag2, g3);
+    }
+    g3.items.push(e10);
+  };
+  const self2 = [...cat2.gmSelf.values()];
+  const styled = new Set(self2.filter((r10) => r10.styles?.length).map((r10) => r10.concept));
+  for (const r10 of self2) {
+    const c10 = cat2.byId.get(r10.concept);
+    if (!c10 || !styled.has(c10.id)) continue;
+    if (!hit(c10) && !(q2 && r10.gmName.toLowerCase().includes(q2))) continue;
+    if (!r10.styles?.length) {
+      put("none", { concept: c10, preset: r10 });
+      continue;
+    }
+    for (const s10 of r10.styles) put(s10.tag, { concept: c10, preset: r10, weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
+  }
+  for (const c10 of cat2.concepts) {
+    if (styled.has(c10.id) || !hit(c10)) continue;
+    const tags = /* @__PURE__ */ new Map();
+    for (const s10 of c10.styles ?? []) {
+      const was = tags.get(s10.tag);
+      if (!was || (s10.weight ?? 0) > was.weight) tags.set(s10.tag, { weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
+    }
+    if (!tags.size) put("none", { concept: c10 });
+    for (const [t10, w2] of tags) put(t10, { concept: c10, ...w2 });
+  }
+  const yearOf = (e10) => e10.preset?.year ?? e10.concept.year ?? 1e9, gmOf = (e10) => e10.preset?.gmNumber ?? 999;
+  return [...groups.values()].sort((a10, b3) => a10.id === "none" ? 1 : b3.id === "none" ? -1 : a10.label.localeCompare(b3.label, "zh")).map((g3) => ({ ...g3, items: g3.items.sort((a10, b3) => (b3.weight ?? 0) - (a10.weight ?? 0) || yearOf(a10) - yearOf(b3) || gmOf(a10) - gmOf(b3) || a10.concept.names.zh.localeCompare(b3.concept.names.zh, "zh")) }));
+}
 var weightLabel = (cat2, w2) => cat2.defs.weights?.find((x2) => x2.id === w2)?.zh ?? "";
 function styleLabel(cat2, tag2) {
   const s10 = cat2.defs.styles?.find((x2) => (x2.id ?? x2.tag) === tag2);
@@ -9855,7 +9941,7 @@ var Finder = class {
     this.el = document.createElement("div");
     this.el.className = "finder";
     this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select><button class="btn finder-pad" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="finder-hint">${HINT}</div><div class="finder-jump" hidden></div><div class="finder-list"><div class="finder-empty">\u52A0\u8F7D\u76EE\u5F55\u2026</div></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select><button class="btn finder-pad" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="finder-hint">${HINT}</div><div class="finder-jump" hidden><span>\u8DF3\u5230</span><select class="finder-jump-sel" title="\u5217\u8868\u6EDA\u5230\u8FD9\u4E00\u7EC4"></select></div><div class="finder-list"><div class="finder-empty">\u52A0\u8F7D\u76EE\u5F55\u2026</div></div>`;
     parent.append(this.el);
     this.el.querySelector(".finder-q").addEventListener("input", (e10) => {
       this.q = e10.target.value;
@@ -9865,6 +9951,7 @@ var Finder = class {
       this.mode = e10.target.value;
       this.render();
     });
+    this.el.querySelector(".finder-jump-sel").addEventListener("change", (e10) => this.jumpTo(Number(e10.target.value)));
     this.el.addEventListener("click", (e10) => void this.onClick(e10));
     let raf = 0;
     this.el.querySelector(".finder-list").addEventListener("scroll", () => {
@@ -9922,11 +10009,6 @@ var Finder = class {
   async onClick(e10) {
     const t10 = e10.target, btn = t10.closest("[data-v]"), row = t10.closest(".inst-row"), prov = t10.closest(".prov");
     const rowOf = (el2) => el2.closest(".inst-prov")?.previousElementSibling?.dataset.o ?? "";
-    const jump = t10.closest("[data-j]");
-    if (jump) {
-      this.jumpTo(Number(jump.dataset.j));
-      return;
-    }
     const v = btn?.dataset.v;
     if (v === "back") {
       this.host.close();
@@ -9962,7 +10044,7 @@ var Finder = class {
       if (this.opened === o10) this.opened = null;
       else {
         this.opened = o10;
-        const c10 = this.cat.byId.get(id2), first = providersOf(this.cat, c10)[0];
+        const c10 = this.cat.byId.get(id2), pk = row.dataset.k, first = providersOf(this.cat, c10).find((x2) => !pk || gmKey(x2) === pk);
         const key = first ? `${id2}|${gmKey(first)}` : c10.kind === "voice" ? `${id2}|voice` : "";
         this.selected = key;
         this.renderAnchored(o10, true);
@@ -9977,12 +10059,12 @@ var Finder = class {
     if (!this.cat) return;
     const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector(".finder-jump");
     jump.hidden = groups.length < 2;
-    jump.innerHTML = groups.map((g3, k2) => `<button class="jump-chip" data-j="${k2}" title="${esc3(g3.label)}">${esc3(g3.label.replace(/（[^（）]*起）$/, ""))}<small>${g3.concepts.length}</small></button>`).join("");
+    jump.querySelector("select").innerHTML = groups.map((g3, k2) => `<option value="${k2}">${esc3(g3.label)} \xB7 ${g3.items.length} \u4EF6</option>`).join("");
     if (!groups.length) {
       list.innerHTML = `<div class="finder-empty">\u6CA1\u6709\u53EB\u300C${esc3(this.q)}\u300D\u7684</div>`;
       return;
     }
-    list.innerHTML = groups.map((g3, k2) => `<div class="finder-group" data-g="${k2}"><div class="finder-group-h">${esc3(g3.label)}<span>${g3.concepts.length}</span></div>${g3.concepts.map((c10) => this.rowHtml(c10, g3.id, this.mode === "style" ? g3.id : null)).join("")}</div>`).join("");
+    list.innerHTML = groups.map((g3, k2) => `<div class="finder-group" data-g="${k2}"><div class="finder-group-h">${esc3(g3.label)}<span>${g3.items.length}</span></div>${g3.items.map((e10) => this.rowHtml(e10, g3.id)).join("")}</div>`).join("");
     this.markJump();
   }
   /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
@@ -10010,37 +10092,33 @@ var Finder = class {
     list.scrollTop += g3.getBoundingClientRect().top - list.getBoundingClientRect().top;
     this.markJump();
   }
-  /** 跳转条上亮着「现在在哪一组」（组头顶到列表顶的最后一组），并把那粒横向挪进视野（.finder-jump 是 position: relative，offsetLeft 相对它）。 */
+  /** 跳转下拉显示「现在在哪一组」（组头顶到列表顶的最后一组）。滚到底时：最后几组短、组头顶不到列表顶——人刚选的那组比算出来的靠后就留着它，不往回弹。 */
   markJump() {
     const list = this.el.querySelector(".finder-list"), jump = this.el.querySelector(".finder-jump");
     if (jump.hidden) return;
-    const top = list.getBoundingClientRect().top + 1;
+    const sel = jump.querySelector("select"), top = list.getBoundingClientRect().top + 1;
     let cur = 0;
     for (const g3 of list.querySelectorAll("[data-g]")) {
       if (g3.getBoundingClientRect().top <= top) cur = Number(g3.dataset.g);
       else break;
     }
-    for (const b3 of jump.querySelectorAll("[data-j]")) {
-      const on2 = Number(b3.dataset.j) === cur;
-      b3.classList.toggle("is-on", on2);
-      if (on2) {
-        const l10 = b3.offsetLeft, r10 = l10 + b3.offsetWidth;
-        if (l10 < jump.scrollLeft) jump.scrollLeft = l10 - 8;
-        else if (r10 > jump.scrollLeft + jump.clientWidth) jump.scrollLeft = r10 - jump.clientWidth + 8;
-      }
-    }
+    const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
+    if (atBottom && Number(sel.value) > cur) return;
+    if (sel.value !== String(cur)) sel.value = String(cur);
   }
-  rowHtml(c10, groupId, styleTag = null) {
-    const cat2 = this.cat, o10 = `${groupId}::${c10.id}`, open = this.opened === o10, icon = c10.icon?.id;
-    const w2 = styleTag ? weightOf(c10, styleTag) : 0, stars = w2 ? `<span class="inst-w" title="${esc3(weightLabel(cat2, w2))}">${"\u2605".repeat(w2)}</span>` : "";
-    const meta = [eraLabel(cat2, c10), c10.year !== null ? `${c10.yearApprox ? "\u7EA6 " : ""}${fmtYear(c10.year)}` : ""].filter(Boolean).join(" \xB7 ");
+  rowHtml(e10, groupId) {
+    const cat2 = this.cat, c10 = e10.concept, pk = e10.preset ? gmKey(e10.preset) : "", o10 = `${groupId}::${c10.id}${pk ? `::${pk}` : ""}`, open = this.opened === o10, icon = c10.icon?.id;
+    const w2 = e10.weight ?? 0, stars = w2 ? `<span class="inst-w" title="${esc3(weightLabel(cat2, w2))}">${"\u2605".repeat(w2)}</span>` : "";
+    const asName = e10.as ? cat2.byId.get(e10.as)?.names.zh ?? e10.as : "", asTag = asName ? `<span class="inst-as" title="\u5728\u8FD9\u79CD\u98CE\u91CC\u9876\u66FF\u300C${esc3(asName)}\u300D">\u9876 ${esc3(asName)}</span>` : "";
+    const year = e10.preset?.year ?? c10.year, approx = e10.preset ? !!e10.preset.yearApprox : c10.yearApprox;
+    const meta = [eraLabel(cat2, c10), year !== null && year !== void 0 ? `${approx ? "\u7EA6 " : ""}${fmtYear(year)}` : ""].filter(Boolean).join(" \xB7 ");
     let body2 = "";
     if (open) {
-      const provs = providersOf(cat2, c10), pitched = c10.kind === "voice";
+      const provs = providersOf(cat2, c10).filter((x2) => !pk || gmKey(x2) === pk), pitched = c10.kind === "voice";
       const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast">\u4E0A\u573A</button>`}</div></div>`;
       body2 = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? `\u9F13\u4EF6 \xB7 ${esc3(p2.gmName)}\uFF08Standard \u9F13\u7EC4\u7684 ${p2.note} \u53F7\u952E\uFF09` : p2.bank === 128 ? `\u9F13\u7EC4 \xB7 ${esc3(p2.gmName)}` : `GeneralUser GS \xB7 ${esc3(p2.gmName)}`}`, p2.kind === "substitute" ? `\u9876\u66FF${p2.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p2.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p2.basis === "imitation" ? "\uFF08\u4EFF\u58F0\uFF09" : p2.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p2.reason ? `\uFF1A${esc3(p2.reason)}` : ""}` : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
     }
-    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}">` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c10.names.zh)}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body2;
+    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}"${pk ? ` data-k="${esc3(pk)}"` : ""}>` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c10.names.zh)}${e10.preset ? `<span class="inst-preset"> \xB7 ${esc3(e10.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body2;
   }
 };
 
@@ -24543,7 +24621,7 @@ function initGalleryHost(d3) {
   fullEl.setAttribute("role", "dialog");
   fullEl.setAttribute("aria-modal", "true");
   fullEl.setAttribute("aria-label", "\u6B4C\u5E93");
-  fullEl.innerHTML = `<div class="gallery-chrome"><button type="button" class="btn" data-v="back" title="\u56DE\u5230\u8C31">${iconHtml2("back")}</button><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button><button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\u4E00\u9996">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
+  fullEl.innerHTML = `<div class="gallery-chrome"><button type="button" class="btn" data-v="back" title="\u56DE\u5230\u8C31">${iconHtml2("back")}</button><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button><button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u4E50\u5668\u76EE\u5F55\uFF1A\u6D4F\u89C8\u3001\u8BD5\u542C\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u4E50\u5668</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\u4E00\u9996">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector(".gallery-mount"), asideBar = fullEl.querySelector(".gallery-asidebar");
   const cloudBtn = fullEl.querySelector('[data-v="cloud"]'), refreshBtn = fullEl.querySelector('[data-v="refresh"]');
@@ -24626,6 +24704,7 @@ function initGalleryHost(d3) {
     else if (v === "cloud") d3.openCloudMenu(cloudBtn);
     else if (v === "refresh") gallery2?.handle.refresh();
     else if (v === "new") void d3.newSong();
+    else if (v === "instruments") d3.openInstruments();
     else if (v === "aside") showAside("trash");
     else if (v === "files") showAside(null);
     else if (v === "trash" || v === "backup") showAside(v);
@@ -25342,6 +25421,7 @@ function updateChrome() {
   const over = finder.isOpen || (gallery?.isOpen() ?? false);
   padTab.hidden = !padEl.hidden || (gallery?.isOpen() ?? false) && !finderShown || studio.isOpen;
   finder.setPadShown(!padEl.hidden);
+  document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
   if (!n10) selFix = false;
   const fix = selFix ? { art: artStateSel(st2), dyn: dynMarkSel(st2) } : null, sig = `${n10}|${!!clip}|${over || studio.isOpen}|${JSON.stringify(fix)}`;
@@ -25496,7 +25576,7 @@ var view = new ScoreView(scoreEl, {
   autoBars: () => autoBars,
   parts: () => partViews(),
   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
-  onPart: () => openPartSheet(),
+  onPart: (_paper, _part, at2) => openTrackCard(at2),
   onPaperMenu: (id2) => openPaperMenu(id2),
   onAddPaper: () => {
     update(addPaper(st2));
@@ -25621,11 +25701,14 @@ function monoAccept(id2) {
 }
 var auditionHint = null;
 var catalogNow = null;
+var instShown = false;
+var finderBackToInst = false;
+var trackRedraw = null;
 var finderShown = false;
 var finderPlayOnly = false;
 var pad3 = new Pad(padEl, {
   state: () => st2,
-  isImpro: () => impro || finderShown,
+  isImpro: () => impro || finderShown || instShown,
   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
   onImpro: () => toggleImpro(),
   accept: (id2) => canStack() ? (monoHeld.add(id2), true) : monoAccept(id2),
@@ -25742,6 +25825,9 @@ function updateExtras(next2, locus, gesture) {
   renderTitle();
   changed();
   renderUndo();
+  if (locus.kind === "lounge") pad3.render();
+  drawInst();
+  trackRedraw?.();
 }
 function updateBoth(next2, nextExtras, locus) {
   history = record2(history, st2, doc.extras, null, performance.now(), locus);
@@ -25798,11 +25884,14 @@ function restore(r10, verb) {
       synth.allOff();
       gmHeld.clear();
       void prepareSynth();
+      pad3.render();
     }
   }
   revealPart(r10.st.at.part);
   applyState(r10.st);
   if (studio.isOpen) studio.render();
+  drawInst();
+  trackRedraw?.();
   renderUndo();
   lastUndoText = `${verb} \xB7 ${locusText(r10.st, r10.locus)}`;
   showNotice({ id: "undo", level: "info", text: lastUndoText, autoHideMs: 2500 });
@@ -25901,7 +25990,8 @@ async function renderPart(part, scope = "view") {
   }
   const g3 = activeGm(doc.extras, role);
   if (!g3) throw new Error("\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668");
-  const gmNotes = notes.map((n10) => ({ preset: [g3.bank, g3.program], key: g3.note ?? n10.midi, vel: 0.8, t0: n10.t0, t1: n10.t1 }));
+  const tr3 = activeTranspose(doc.extras, role);
+  const gmNotes = notes.map((n10) => ({ preset: [g3.bank, g3.program], key: sfKey(n10.midi, g3, tr3), vel: 0.8, t0: n10.t0, t1: n10.t1 }));
   const key = JSON.stringify(["gm", g3.subsetSha256, gmNotes]), had = lastRender.get(part.id);
   if (had?.key === key) return had.r;
   const bytes = await resolveGmBytes(g3);
@@ -25986,14 +26076,14 @@ function prepareSynth() {
 }
 function gmDown(midi, id2) {
   const a10 = finder.isOpen && audition ? audition : null;
-  const g3 = a10 ? { bank: a10.bank, program: a10.program, note: a10.note, subsetSha256: a10.sha256 } : activeGm(doc.extras, curRole());
+  const g3 = a10 ? { bank: a10.bank, program: a10.program, note: a10.note, sfx: a10.sfx, subsetSha256: a10.sha256 } : activeGm(doc.extras, curRole());
   if (!g3) return;
   if (synth.loaded !== g3.subsetSha256) {
     if (!a10) void prepareSynth();
     return;
   }
   singer.unlock();
-  const key = g3.note ?? midi;
+  const key = sfKey(midi, g3, a10 ? 0 : activeTranspose(doc.extras, curRole()));
   gmUp(id2);
   synth.noteOn(g3.bank, g3.program, key, 0.8);
   gmHeld.set(id2, { bank: g3.bank, program: g3.program, key });
@@ -26062,9 +26152,9 @@ function openMp3Panel() {
   box.className = "offer";
   const paper = st2.song.papers.find((p2) => p2.id === st2.at.paper), k2 = st2.song.papers.indexOf(paper);
   const draw = () => {
-    const chip = (v, label, note2, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc7(label)}<small>${esc7(note2)}</small></button>`;
+    const chip2 = (v, label, note2, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc7(label)}<small>${esc7(note2)}</small></button>`;
     const er2 = st2.song.rights ? exportRights(soundingRoles()) : null;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09</div><div class="part-sec">\u97F3\u8D28</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (st2.song.papers.length > 1 ? `<div class="part-sec">\u8303\u56F4</div><div class="set-row">${chip("s:all", "\u6574\u9996", "\u9690\u85CF\u7684\u7EB8\u4E0D\u653E", mp3Scope === "all")}${chip("s:segment", "\u8FD9\u4E00\u5F20\u7EB8", paper?.name || `\u7B2C ${k2 + 1} \u5F20`, mp3Scope === "segment")}</div>` : "") + (er2 ? `<div class="offer-msg">\u8BB8\u53EF\uFF1A${er2.fellBack ? `\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u6708\u8BFB\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09` : esc7(er2.rights)}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002</div>` : "") + `<div class="offer-btns"><button class="btn primary" data-v="go">\u5BFC\u51FA</button><button class="btn" data-v="close">\u7B97\u4E86</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09</div><div class="part-sec">\u97F3\u8D28</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (st2.song.papers.length > 1 ? `<div class="part-sec">\u8303\u56F4</div><div class="set-row">${chip2("s:all", "\u6574\u9996", "\u9690\u85CF\u7684\u7EB8\u4E0D\u653E", mp3Scope === "all")}${chip2("s:segment", "\u8FD9\u4E00\u5F20\u7EB8", paper?.name || `\u7B2C ${k2 + 1} \u5F20`, mp3Scope === "segment")}</div>` : "") + (er2 ? `<div class="offer-msg">\u8BB8\u53EF\uFF1A${er2.fellBack ? `\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u6708\u8BFB\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09` : esc7(er2.rights)}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002</div>` : "") + `<div class="offer-btns"><button class="btn primary" data-v="go">\u5BFC\u51FA</button><button class="btn" data-v="close">\u7B97\u4E86</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -26332,7 +26422,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "8a3e3fef8c74",
+  cssHash: "4e43194ee15c",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -26437,9 +26527,6 @@ function padHint() {
   const eng = activeInstrument(doc.extras, curRole())?.engine;
   if (eng === "tsukuyomi" || eng === "vowel-sampler") return HER_RANGE;
   if (eng !== "soundfont") return null;
-  const concept = doc.extras.lounge[curRole()]?.concept;
-  const id2 = concept?.ids?.wikidata ?? concept?.ids?.local;
-  if (!id2) return null;
   if (!catalogNow) {
     void loadCatalog(new URL(import.meta.url)).then((c10) => {
       catalogNow = c10;
@@ -26448,12 +26535,27 @@ function padHint() {
     });
     return null;
   }
+  const g3 = activeGm(doc.extras, curRole());
+  if (g3?.sfx) {
+    if (g3.note !== void 0) return null;
+    const s10 = g3.sfx, al2 = s10.align && canAlign(s10), k2 = al2 ? Math.round(s10.midi) : s10.key;
+    return { lo: k2, hi: k2, who: g3.name, title: al2 ? "\u5199\u8FD9\u4E2A\u97F3 = \u539F\u901F\uFF08\u97F3\u9AD8\u5BF9\u9F50\uFF1A\u5199\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF09" : "\u539F\u901F\u952E\uFF1A\u6309\u8FD9\u4E2A\u952E\uFF0C\u91C7\u6837\u4E0D\u62C9\u4F38\u4E0D\u538B\u7F29" };
+  }
+  if (g3 && g3.note === void 0 && g3.origin.library === GS_LIBRARY_ID) {
+    const sk2 = sampleKeyOf(catalogNow, g3.bank, g3.program);
+    if (sk2) return { lo: sk2.key, hi: sk2.key, who: g3.name, title: sk2.title };
+  }
+  const concept = doc.extras.lounge[curRole()]?.concept;
+  const id2 = concept?.ids?.wikidata ?? concept?.ids?.local;
+  if (!id2) return null;
   const r10 = rangeOf(catalogNow.byId.get(id2));
   return r10 ? { ...r10, who: concept?.name?.zh ?? roleName(doc.extras, curRole()) } : null;
 }
 var GS = SOUNDS["generaluser-gs-2.0.3"];
 async function setAudition(p2) {
-  auditionHint = !p2 ? null : p2.kind === "voice" ? HER_RANGE : ((r10) => r10 ? { ...r10, who: p2.concept.names.zh } : null)(rangeOf(p2.concept));
+  const cat2 = p2?.kind === "gs" ? catalogNow ??= await loadCatalog(new URL(import.meta.url)) : null;
+  const sk2 = cat2 && p2?.kind === "gs" && p2.provider.note === void 0 ? sampleKeyOf(cat2, p2.provider.bank, p2.provider.program) : null;
+  auditionHint = !p2 || sk2 ? null : p2.kind === "voice" ? HER_RANGE : ((r10) => r10 ? { ...r10, who: p2.concept.names.zh } : null)(rangeOf(p2.concept));
   if (auditionHint) pad3.follow(auditionHint.lo, auditionHint.hi);
   else pad3.render();
   if (!p2 || p2.kind === "voice") {
@@ -26466,7 +26568,7 @@ async function setAudition(p2) {
     const bank = await fetchSound(GS, (done) => progress(`\u4E0B\u8F7D ${GS.name} ${Math.round(done / GS.bytes * 100)}%`));
     progress("");
     const subset = subsetSf2(bank, [{ bank: p2.provider.bank, program: p2.provider.program }]), sha256 = await sha256Hex3(subset);
-    audition = { bank: p2.provider.bank, program: p2.provider.program, ...p2.provider.note !== void 0 ? { note: p2.provider.note } : {}, sha256, subset, label: p2.provider.gmName };
+    audition = { bank: p2.provider.bank, program: p2.provider.program, ...cat2 ? gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note) : {}, sha256, subset, label: p2.provider.gmName };
     synth.allOff();
     gmHeld.clear();
     await synth.load(sha256, subset);
@@ -26476,6 +26578,12 @@ async function setAudition(p2) {
     showError(`\u8BD5\u542C\u4E0D\u4E86\uFF1A${e10.message}`);
   }
 }
+function gsKeyArgs(cat2, bank, program, drumNote) {
+  if (drumNote !== void 0) return { note: drumNote };
+  const sk2 = sampleKeyOf(cat2, bank, program);
+  if (!sk2) return {};
+  return { note: sk2.key, sfx: { key: sk2.key, ...sk2.midi !== void 0 ? { midi: sk2.midi } : {}, ...sk2.centsPerKey ? { centsPerKey: sk2.centsPerKey } : {} } };
+}
 async function playHeadWith(p2) {
   if (p2.kind === "voice") {
     playLight("\u6708\u8BFB\uFF08\u54FC\uFF09");
@@ -26484,7 +26592,7 @@ async function playHeadWith(p2) {
   if (!audition || audition.bank !== p2.provider.bank || audition.program !== p2.provider.program) await setAudition(p2);
   if (!audition) return;
   const { tokens, map } = curFlat();
-  const notes = lightNotes(tokens, map).filter((n10) => n10.t0 < 8).map((n10) => ({ preset: [audition.bank, audition.program], key: audition.note ?? n10.midi, vel: 0.8, t0: n10.t0, t1: Math.min(n10.t1, 8) }));
+  const notes = lightNotes(tokens, map).filter((n10) => n10.t0 < 8).map((n10) => ({ preset: [audition.bank, audition.program], key: sfKey(n10.midi, audition), vel: 0.8, t0: n10.t0, t1: Math.min(n10.t1, 8) }));
   if (!notes.length) {
     info("\u8C31\u4E0A\u8FD8\u6CA1\u6709\u97F3");
     return;
@@ -26521,7 +26629,7 @@ async function castPick(p2) {
     name: p2.provider.gmName,
     bank: p2.provider.bank,
     program: p2.provider.program,
-    ...p2.provider.note !== void 0 ? { note: p2.provider.note } : {},
+    ...gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note),
     subset,
     sha256,
     embed: false,
@@ -26566,7 +26674,9 @@ var studio = new Studio($2("stage"), {
 });
 function openStudio() {
   closeOffer?.();
+  finderBackToInst = false;
   closeFinder();
+  closeInstPage();
   scoreEl.hidden = true;
   showPad(false);
   studio.show();
@@ -26584,6 +26694,11 @@ $2("studioBtn").addEventListener("click", () => {
   else openStudio();
 });
 function openFinder() {
+  finderBackToInst = instShown;
+  if (instShown) {
+    instShown = false;
+    instEl.hidden = true;
+  }
   finderShown = true;
   finderPlayOnly = gallery?.isOpen() ?? false;
   document.body.classList.toggle("finder-over-gallery", finderPlayOnly);
@@ -26616,6 +26731,7 @@ function closeFinder() {
   renderTitle();
   updateChrome();
   scoreEl.focus();
+  if (finderBackToInst) openInstPage();
 }
 function setActive(id2) {
   const next2 = withActive(doc.extras, curRole(), id2, st2.song.hum);
@@ -26731,7 +26847,7 @@ function addNewPart() {
   const id2 = `P${Math.max(0, ...st2.song.parts.map((p2) => Number(/^P(\d+)$/.exec(p2.id)?.[1] ?? 0))) + 1}`;
   updateBoth(addPart(st2, { id: id2, role, mic }), withNewRole(doc.extras, role, st2.song.hum), { kind: "score", label: "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8" });
   renderTitle();
-  openPartSheet();
+  openInstPage();
 }
 function openPaperMenu(id2) {
   closeOffer?.();
@@ -26796,216 +26912,61 @@ function openPaperMenu(id2) {
     }
   });
 }
-function openPartSheet() {
+var chip = (v, label, on2, title = "") => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${esc7(v)}"${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
+function openTrackCard(at2) {
   closeOffer?.();
   const box = document.createElement("div");
-  box.className = "offer";
-  const chip = (v, label, on2, title = "") => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${esc7(v)}"${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
-  const setRole = (name, sound2) => {
-    const n10 = name.trim();
-    if (!n10 || n10 === roleName(doc.extras, curRole()) && (!sound2 || sound2 === roleSound(doc.extras, curRole()))) return;
-    updateExtras(withRoleName(doc.extras, curRole(), n10, st2.song.hum, sound2), { kind: "lounge", label: `\u89D2\u8272\u6539\u540D\uFF1A${n10}` });
-    view.render();
-  };
-  let picked = null;
-  const pickOfficial = async (id2) => {
-    const e10 = SOUNDS[id2];
-    try {
-      const bytes = await fetchSound(e10, (done) => progress(`\u4E0B\u8F7D ${e10.name} ${Math.round(done / e10.bytes * 100)}%`));
-      progress("");
-      const presets = listSf2Presets(bytes), first = presets.find((p2) => p2.bank === 0) ?? presets[0];
-      picked = { name: e10.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e10 };
-      draw();
-    } catch (err2) {
-      progress("");
-      showError(err2.message);
-    }
-  };
-  const fileInput = (accept, onFile) => {
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = accept;
-    inp.hidden = true;
-    document.body.append(inp);
-    inp.addEventListener("change", async () => {
-      const f2 = inp.files?.[0];
-      inp.remove();
-      if (f2) await onFile(f2);
-    });
-    inp.click();
-  };
-  const pickFile = () => fileInput(".sf2,audio/x-soundfont", async (f2) => {
-    try {
-      const bytes = new Uint8Array(await f2.arrayBuffer()), presets = listSf2Presets(bytes);
-      if (!presets.length) throw new Error("\u91CC\u9762\u6CA1\u6709\u4E50\u5668");
-      const first = presets.find((p2) => p2.bank === 0) ?? presets[0];
-      picked = { name: f2.name, bytes, presets, sel: `${first.bank}:${first.program}` };
-      draw();
-    } catch (e10) {
-      showError(`\u8BFB\u4E0D\u4E86\u300C${f2.name}\u300D\uFF1A${e10.message}`);
-    }
-  });
-  const findBankFile = (id2) => {
-    const g3 = gmCandidates(doc.extras, curRole()).find((c10) => c10.id === id2);
-    if (!g3) return;
-    fileInput(".sf2,audio/x-soundfont", async (f2) => {
-      try {
-        const bytes = new Uint8Array(await f2.arrayBuffer()), sha = await sha256Hex3(bytes);
-        if (sha !== g3.origin.fileSha256) throw new Error(`\u300C${f2.name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C${g3.origin.name}\u300D\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g3.origin.fileSha256.slice(0, 12)}\u2026\uFF09`);
-        await rememberSound(sha, bytes, true);
-        sessionSubsets.delete(g3.subsetSha256);
-        lastRender.clear();
-        await resolveGmBytes(g3);
-        info(`\u627E\u5230\u4E86\uFF1A\u300C${g3.name}\u300D\u80FD\u54CD\u4E86`);
-        draw();
-      } catch (e10) {
-        showError(e10.message);
-      }
-    });
-  };
-  const finishAdd = async (c10) => {
-    updateExtras(withSf2Candidate(doc.extras, curRole(), { ...c10, embed: false }, st2.song.hum), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u4E0A\u573A\uFF1A${c10.name}` });
-    sessionSubsets.set(c10.sha256, c10.subset);
-    picked = null;
-    synth.allOff();
-    gmHeld.clear();
-    void prepareSynth();
-    view.render();
-    renderTitle();
-    draw();
-    if (!c10.origin.library) {
-      await rememberSound(c10.sha256, c10.subset, true);
-      if (!await isSoundPersisted(c10.sha256)) showError(`\u300C${c10.name}\u300D\u7684\u58F0\u97F3\u6CA1\u80FD\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u91CC\u80FD\u54CD\uFF1B\u4E0B\u6B21\u8981\u4ECE\u300C${c10.origin.name}\u300D\u6587\u4EF6\u627E\u3002\u60F3\u8BA9\u6B4C\u81EA\u5DF1\u5E26\u7740\u5B83\uFF1A\u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\u3002`);
-    }
-  };
-  const addPicked = async () => {
-    if (!picked) return;
-    const [bank, program] = picked.sel.split(":").map(Number), preset = picked.presets.find((p2) => p2.bank === bank && p2.program === program);
-    if (!preset) return;
-    const name = box.querySelector("#sfName")?.value.trim() || preset.name;
-    try {
-      const subset = subsetSf2(picked.bytes, [{ bank, program }]), inf = sf2Info(picked.bytes);
-      const [sha256, fileSha256] = await Promise.all([sha256Hex3(subset), sha256Hex3(picked.bytes)]);
-      const lib = picked.library;
-      const credit = lib ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } } : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x2) => !!x2), license: { name: "unknown", text: inf.comment } };
-      const c10 = { name, bank, program, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...lib ? { library: lib.id } : {} }, credit };
-      await finishAdd(c10);
-    } catch (e10) {
-      showError(`\u52A0\u4E0D\u8FDB\u6765\uFF1A${e10.message}`);
-    }
-  };
-  const pickerHtml = () => {
-    if (!picked) return "";
-    const banks = [...new Set(picked.presets.map((p2) => p2.bank))].sort((a10, b3) => a10 - b3);
-    const label = (b3) => b3 === 128 ? "\u9F13\u7EC4" : b3 === 0 ? "\u4E50\u5668" : `\u53D8\u4F53\uFF08bank ${b3}\uFF09`;
-    const cur = picked.presets.find((p2) => `${p2.bank}:${p2.program}` === picked.sel);
-    return `<div class="part-sec">${esc7(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b3) => `<optgroup label="${label(b3)}">${picked.presets.filter((p2) => p2.bank === b3).map((p2) => `<option value="${p2.bank}:${p2.program}"${`${p2.bank}:${p2.program}` === picked.sel ? " selected" : ""}>${String(p2.program).padStart(3, "0")} ${esc7(p2.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(cur?.name ?? "")}" /></label><div class="set-row"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u4E0A\u573A</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div>`;
-  };
-  const ENGINE_TITLE = { tsukuyomi: "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09", "vowel-sampler": "\u6708\u8BFB\u7684\u5143\u97F3\u91C7\u6837\uFF1A\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1", soundfont: "SoundFont \u4E50\u5668\uFF08TinySoundFont \u51FA\u58F0\uFF09", unknown: "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09" };
+  box.className = "track-card";
+  box.setAttribute("role", "dialog");
   const draw = () => {
-    const eng = engineNow(), h2 = st2.song.hum, rn2 = roleName(doc.extras, curRole()), rs2 = roleSound(doc.extras, curRole()), aid = activeId(doc.extras, curRole());
-    const gms = new Map(gmCandidates(doc.extras, curRole()).map((g3) => [g3.id, g3])), active = gms.get(aid);
-    const chipTitle = (c10) => {
-      const g3 = gms.get(c10.id);
-      if (!g3) return ENGINE_TITLE[c10.engine];
-      return g3.bytes ? `SoundFont ${g3.bank}:${g3.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(g3.bytes.length)}\uFF09` : g3.path ? "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765" : `\u5F31\u5F15\u7528\uFF1A\u58F0\u97F3\u4E0D\u5728\u6B4C\u91CC\uFF0C\u7528\u65F6\u4ECE\u300C${g3.origin.name}\u300D\u627E`;
-    };
-    const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc7(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc7(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc7(active.origin.name)}\u300D\u627E\uFF08${sessionSubsets.has(active.subsetSha256) ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09<button class="btn" data-v="find:${esc7(active.id)}">\u627E\u6587\u4EF6\u2026</button></div>`;
-    const me = curPart(), me_v = pv(me.id), onPaper = Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}).length;
-    box.innerHTML = `<div class="offer-card settings-card part-card"><div class="offer-title">\u58F0\u90E8 ${esc7(partLabels(st2.song, doc.extras)[st2.song.parts.indexOf(me)] ?? "")}</div><div class="part-sec">\u89D2\u8272\uFF08\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\uFF1B\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09</div><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div><div class="part-sec">\u8C01\u6765\u6F14\uFF08\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31\uFF09</div><div class="set-row">` + candidates(doc.extras, curRole()).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + // 响度校准 = 这位演奏者自己的音量（契约「看得见、能调的默认，不偷偷自动」；月读 = 0 当基准，新的乐器默认 −6）；推子在录音室另算
-    (eng !== "unknown" ? `<div class="set-row cal-row"><span>\u54CD\u5EA6\u6821\u51C6 <b>${fmtDb(activeCalibrationDb(doc.extras, curRole()))}</b></span><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>` + (activeCalibrationDb(doc.extras, curRole()) !== 0 ? `<button class="btn" data-v="cal:0" title="\u56DE\u5230 0\uFF08\u548C\u6708\u8BFB\u4E00\u6837\u7684\u57FA\u51C6\uFF09">\u5F52\u96F6</button>` : "") + `<span class="cal-note">\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u6708\u8BFB = 0 \u5F53\u57FA\u51C6\uFF0C\u65B0\u52A0\u7684\u4E50\u5668\u9ED8\u8BA4 \u22126\uFF1B\u5F55\u97F3\u5BA4\u7684\u63A8\u5B50\u53E6\u7B97</span></div>` : "") + `<div class="part-sec">\u627E\u4EBA</div><div class="set-row"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F / \u98CE\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button></div><div class="set-row">` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="offer-msg">\u9009\u4E86\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09= \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div>` + (eng === "tsukuyomi" || eng === "vowel-sampler" ? `<div class="part-sec">\u6708\u8BFB\uFF1A\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48</div><div class="set-row">${HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join("")}</div>` : "") + // 多声部（user「display有hide 和show only， play有mute和solo」）：显示一轴、出声一轴，各自「关掉」+「只要」；谱号
-    `<div class="part-sec">\u663E\u793A\uFF08\u8C31\u4E0A\uFF09</div><div class="set-row">${chip("hide", "\u9690\u85CF", me_v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", me_v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><div class="part-sec">\u51FA\u58F0\uFF08\u64AD\u653E\uFF09</div><div class="set-row">${chip("mute", "\u9759\u97F3", me_v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", me_v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><div class="part-sec">\u8C31\u8868</div><div class="set-row">${chip("staves:1", "\u4E00\u5F20", (me.staves ?? 1) === 1)}${chip("staves:2", "\u5927\u8C31\u8868", me.staves === 2, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}` + ((me.staves ?? 1) === 1 ? `<span class="set-gap"></span>${chip("clef:G", "\u9AD8\u97F3\u8C31\u53F7", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3\u8C31\u53F7", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}` : "") + `</div><div class="set-row"><button class="btn" data-v="addpart" title="\u518D\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF1A\u6BCF\u5F20\u7EB8\u4E0A\u90FD\u7ED9\u5B83\u4E00\u884C\uFF0C\u8C31\u5934\u7167\u6284">\uFF0B \u52A0\u4E00\u4E2A\u58F0\u90E8</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389\u5B83</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn cand danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF09">\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\u2026</button>` : "") + `</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
-    const inp = box.querySelector("#roleIn"), sel = box.querySelector("#roleSel");
-    sel.addEventListener("change", () => {
-      const [snd, ...nm2] = sel.value.split("|");
-      if (snd) {
-        setRole(nm2.join("|"), snd);
-        draw();
-      }
-    });
-    inp.addEventListener("change", () => setRole(inp.value));
-    inp.addEventListener("keydown", (e10) => {
-      if (e10.isComposing) return;
-      if (e10.key === "Enter") {
-        e10.preventDefault();
-        e10.stopPropagation();
-        setRole(inp.value);
-        draw();
-      }
-    });
-    box.querySelector("#sfSel")?.addEventListener("change", (e10) => {
-      if (!picked) return;
-      picked.sel = e10.target.value;
-      const p2 = picked.presets.find((x2) => `${x2.bank}:${x2.program}` === picked.sel);
-      const n10 = box.querySelector("#sfName");
-      if (n10 && p2) n10.value = p2.name;
-    });
+    const me = curPart(), v = pv(me.id), k2 = st2.song.parts.indexOf(me), label = partLabels(st2.song, doc.extras)[k2] ?? "";
+    const onPaper = Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
+    box.innerHTML = `<button class="tc-inst" data-v="inst" title="\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\u3001\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\uFF08\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09"><span class="tc-l"><b>${esc7(label)}</b><small>${((who) => who ? `${esc7(who)} \u5728\u6F14` : "\u6CA1\u4EBA\u4E0A\u573A")(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">\u4E50\u5668 \u203A</span></button><div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:G", "\u9AD8\u97F3", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}</div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="addpart" title="\u518D\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF1A\u6BCF\u5F20\u7EB8\u4E0A\u90FD\u7ED9\u5B83\u4E00\u884C\uFF0C\u8C31\u5934\u7167\u6284">\uFF0B \u52A0\u58F0\u90E8</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u2026</button>` : "") + `</div>`;
   };
   draw();
   document.body.append(box);
-  const close = () => {
-    const inp = box.querySelector("#roleIn");
-    if (inp) setRole(inp.value);
-    box.remove();
-    closeOffer = null;
-    scoreEl.focus();
+  const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
+  const below = at2 ? at2.bottom + 30 : (innerHeight - h2) / 2, y2 = at2 && below + h2 > innerHeight - m2 ? at2.top - h2 - 10 : below, x2 = at2 ? at2.left - 8 : (innerWidth - w2) / 2;
+  box.style.left = `${Math.max(m2, Math.min(x2, innerWidth - w2 - m2))}px`;
+  box.style.top = `${Math.max(m2, Math.min(y2, innerHeight - h2 - m2))}px`;
+  const outside = (e10) => {
+    if (!box.contains(e10.target)) close();
   };
+  const close = () => {
+    document.removeEventListener("pointerdown", outside, true);
+    box.remove();
+    if (closeOffer === close) closeOffer = null;
+    trackRedraw = null;
+  };
+  setTimeout(() => {
+    if (box.isConnected) document.addEventListener("pointerdown", outside, true);
+  }, 0);
   closeOffer = close;
+  trackRedraw = draw;
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
-    if (e10.target === box || v === "close") {
-      close();
-      return;
-    }
     if (!v) return;
-    if (v === "finder") {
+    const me = curPart();
+    if (v === "inst") {
       close();
-      openFinder();
+      openInstPage();
       return;
     }
-    if (v.startsWith("cand:")) setActive(v.slice(5));
-    else if (v.startsWith("del:")) {
-      try {
-        updateExtras(withoutCandidate(doc.extras, curRole(), v.slice(4)), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u9000\u6389\u4E00\u4F4D\u5019\u9009` });
-      } catch (err2) {
-        showError(err2.message);
-      }
-    } else if (v.startsWith("find:")) {
-      findBankFile(v.slice(5));
-      return;
-    } else if (v === "sf2:pick") {
-      pickFile();
-      return;
-    } else if (v.startsWith("sound:")) {
-      void pickOfficial(v.slice(6));
-      return;
-    } else if (v === "sf2:add") {
-      void addPicked();
-      return;
-    } else if (v === "sf2:cancel") {
-      picked = null;
-    } else if (v.startsWith("cal:")) {
-      const d3 = Number(v.slice(4)), next2 = d3 === 0 ? 0 : activeCalibrationDb(doc.extras, curRole()) + d3;
-      updateExtras(withCalibration(doc.extras, curRole(), Math.max(-30, Math.min(12, next2)), st2.song.hum), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u54CD\u5EA6\u6821\u51C6 ${Math.max(-30, Math.min(12, next2))} dB` }, "cal");
-    } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
-    else if (v === "hide") {
-      const id2 = curPart().id;
-      setPv(id2, { hidden: !pv(id2).hidden });
+    if (v === "hide") {
+      setPv(me.id, { hidden: !pv(me.id).hidden });
       afterViewChange();
     } else if (v === "only") {
-      const id2 = curPart().id;
-      setPv(id2, { only: !pv(id2).only });
+      setPv(me.id, { only: !pv(me.id).only });
       afterViewChange();
     } else if (v === "mute") {
-      setPv(curPart().id, { muted: !pv(curPart().id).muted });
+      setPv(me.id, { muted: !pv(me.id).muted });
       view.render();
     } else if (v === "solo") {
-      setPv(curPart().id, { solo: !pv(curPart().id).solo });
+      setPv(me.id, { solo: !pv(me.id).solo });
       view.render();
-    } else if (v.startsWith("clef:")) {
-      update(setPartClef(st2, curPart().id, v.slice(5)));
-    } else if (v.startsWith("staves:")) {
-      update(setPartStaves(st2, curPart().id, v.slice(7) === "2" ? 2 : 1));
+    } else if (v.startsWith("clef:")) update(setPartClef(st2, me.id, v.slice(5)));
+    else if (v.startsWith("staves:")) {
+      update(setPartStaves(st2, me.id, v.slice(7) === "2" ? 2 : 1));
       pad3.render();
     } else if (v === "addpart") {
       close();
@@ -27013,11 +26974,10 @@ function openPartSheet() {
       return;
     } else if (v === "droptrack") {
       close();
-      update(removeTrack(st2, st2.at.paper, curPart().id));
+      update(removeTrack(st2, st2.at.paper, me.id));
       return;
     } else if (v === "delpart") {
       close();
-      const me = curPart();
       void askSheet(`\u5220\u6389\u58F0\u90E8\u300C${roleName(doc.extras, me.role)}\u300D\uFF1F`, "\u6574\u9996\u6B4C\u91CC\u5B83\u5199\u7684\u4E1C\u897F\u90FD\u6CA1\u4E86\uFF0C\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E5F\u4E00\u8D77\u5220\uFF08\u80FD\u64A4\u9500\uFF09\u3002", "\u5220").then((ok2) => {
         if (!ok2) return;
         updateBoth(removePart(st2, me.id), withoutRole(doc.extras, me.role), { kind: "score", label: `\u5220\u4E86\u58F0\u90E8\u300C${roleName(doc.extras, me.role)}\u300D` });
@@ -27028,6 +26988,277 @@ function openPartSheet() {
     draw();
   });
 }
+var instEl = document.createElement("div");
+instEl.className = "inst-page";
+instEl.hidden = true;
+$2("stage").append(instEl);
+var instPicked = null;
+var ENGINE_TITLE = { tsukuyomi: "\u6708\u8BFB\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09", "vowel-sampler": "\u6708\u8BFB\u7684\u5143\u97F3\u91C7\u6837\uFF1A\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1", soundfont: "SoundFont \u4E50\u5668\uFF08TinySoundFont \u51FA\u58F0\uFF09", unknown: "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09" };
+function openInstPage() {
+  closeOffer?.();
+  finderBackToInst = false;
+  if (finder.isOpen) closeFinder();
+  if (studio.isOpen) closeStudio();
+  instShown = true;
+  instPicked = null;
+  scoreEl.hidden = true;
+  instEl.hidden = false;
+  showPad(true);
+  padEl.classList.add("is-locked");
+  pad3.clearHeld();
+  pad3.render();
+  drawInst();
+  updateChrome();
+  instEl.querySelector(".ip-body")?.scrollTo({ top: 0 });
+}
+function closeInstPage() {
+  if (!instShown) return;
+  commitRoleName();
+  instShown = false;
+  instPicked = null;
+  instEl.hidden = true;
+  padEl.classList.remove("is-locked");
+  pad3.clearHeld();
+  pad3.render();
+  scoreEl.hidden = false;
+  view.render();
+  renderTitle();
+  updateChrome();
+  scoreEl.focus();
+}
+var setRole = (name, sound2) => {
+  const n10 = name.trim();
+  if (!n10 || n10 === roleName(doc.extras, curRole()) && (!sound2 || sound2 === roleSound(doc.extras, curRole()))) return;
+  updateExtras(withRoleName(doc.extras, curRole(), n10, st2.song.hum, sound2), { kind: "lounge", label: `\u89D2\u8272\u6539\u540D\uFF1A${n10}` });
+  view.render();
+};
+var commitRoleName = () => {
+  const inp = instEl.querySelector("#roleIn");
+  if (inp && !instEl.hidden) setRole(inp.value);
+};
+var fileInput = (accept, onFile) => {
+  const inp = document.createElement("input");
+  inp.type = "file";
+  inp.accept = accept;
+  inp.hidden = true;
+  document.body.append(inp);
+  inp.addEventListener("change", async () => {
+    const f2 = inp.files?.[0];
+    inp.remove();
+    if (f2) await onFile(f2);
+  });
+  inp.click();
+};
+async function pickOfficial(id2) {
+  const e10 = SOUNDS[id2];
+  try {
+    const bytes = await fetchSound(e10, (done) => progress(`\u4E0B\u8F7D ${e10.name} ${Math.round(done / e10.bytes * 100)}%`));
+    progress("");
+    const presets = listSf2Presets(bytes), first = presets.find((p2) => p2.bank === 0) ?? presets[0];
+    instPicked = { name: e10.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e10 };
+    drawInst();
+  } catch (err2) {
+    progress("");
+    showError(err2.message);
+  }
+}
+var pickFile = () => fileInput(".sf2,audio/x-soundfont", async (f2) => {
+  try {
+    const bytes = new Uint8Array(await f2.arrayBuffer()), presets = listSf2Presets(bytes);
+    if (!presets.length) throw new Error("\u91CC\u9762\u6CA1\u6709\u4E50\u5668");
+    const first = presets.find((p2) => p2.bank === 0) ?? presets[0];
+    instPicked = { name: f2.name, bytes, presets, sel: `${first.bank}:${first.program}` };
+    drawInst();
+  } catch (e10) {
+    showError(`\u8BFB\u4E0D\u4E86\u300C${f2.name}\u300D\uFF1A${e10.message}`);
+  }
+});
+var findBankFile = (id2) => {
+  const g3 = gmCandidates(doc.extras, curRole()).find((c10) => c10.id === id2);
+  if (!g3) return;
+  fileInput(".sf2,audio/x-soundfont", async (f2) => {
+    try {
+      const bytes = new Uint8Array(await f2.arrayBuffer()), sha = await sha256Hex3(bytes);
+      if (sha !== g3.origin.fileSha256) throw new Error(`\u300C${f2.name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C${g3.origin.name}\u300D\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g3.origin.fileSha256.slice(0, 12)}\u2026\uFF09`);
+      await rememberSound(sha, bytes, true);
+      sessionSubsets.delete(g3.subsetSha256);
+      lastRender.clear();
+      await resolveGmBytes(g3);
+      info(`\u627E\u5230\u4E86\uFF1A\u300C${g3.name}\u300D\u80FD\u54CD\u4E86`);
+      drawInst();
+    } catch (e10) {
+      showError(e10.message);
+    }
+  });
+};
+async function finishAdd(c10) {
+  updateExtras(withSf2Candidate(doc.extras, curRole(), { ...c10, embed: false }, st2.song.hum), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u4E0A\u573A\uFF1A${c10.name}` });
+  sessionSubsets.set(c10.sha256, c10.subset);
+  instPicked = null;
+  synth.allOff();
+  gmHeld.clear();
+  void prepareSynth();
+  view.render();
+  renderTitle();
+  drawInst();
+  if (!c10.origin.library) {
+    await rememberSound(c10.sha256, c10.subset, true);
+    if (!await isSoundPersisted(c10.sha256)) showError(`\u300C${c10.name}\u300D\u7684\u58F0\u97F3\u6CA1\u80FD\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u91CC\u80FD\u54CD\uFF1B\u4E0B\u6B21\u8981\u4ECE\u300C${c10.origin.name}\u300D\u6587\u4EF6\u627E\u3002\u60F3\u8BA9\u6B4C\u81EA\u5DF1\u5E26\u7740\u5B83\uFF1A\u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\u3002`);
+  }
+}
+async function addPicked() {
+  const picked = instPicked;
+  if (!picked) return;
+  const [bank, program] = picked.sel.split(":").map(Number), preset = picked.presets.find((p2) => p2.bank === bank && p2.program === program);
+  if (!preset) return;
+  const name = instEl.querySelector("#sfName")?.value.trim() || preset.name;
+  try {
+    const subset = subsetSf2(picked.bytes, [{ bank, program }]), inf = sf2Info(picked.bytes);
+    const [sha256, fileSha256] = await Promise.all([sha256Hex3(subset), sha256Hex3(picked.bytes)]);
+    const lib = picked.library;
+    const credit = lib ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } } : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x2) => !!x2), license: { name: "unknown", text: inf.comment } };
+    const keys = lib?.id === GS_LIBRARY_ID ? gsKeyArgs(catalogNow ??= await loadCatalog(new URL(import.meta.url)), bank, program) : {};
+    await finishAdd({ name, bank, program, ...keys, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...lib ? { library: lib.id } : {} }, credit });
+  } catch (e10) {
+    showError(`\u52A0\u4E0D\u8FDB\u6765\uFF1A${e10.message}`);
+  }
+}
+function pickerHtml() {
+  const picked = instPicked;
+  if (!picked) return "";
+  const banks = [...new Set(picked.presets.map((p2) => p2.bank))].sort((a10, b3) => a10 - b3);
+  const label = (b3) => b3 === 128 ? "\u9F13\u7EC4" : b3 === 0 ? "\u4E50\u5668" : `\u53D8\u4F53\uFF08bank ${b3}\uFF09`;
+  const cur = picked.presets.find((p2) => `${p2.bank}:${p2.program}` === picked.sel);
+  return `<div class="ip-picker"><div class="ip-sub">${esc7(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b3) => `<optgroup label="${label(b3)}">${picked.presets.filter((p2) => p2.bank === b3).map((p2) => `<option value="${p2.bank}:${p2.program}"${`${p2.bank}:${p2.program}` === picked.sel ? " selected" : ""}>${String(p2.program).padStart(3, "0")} ${esc7(p2.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(cur?.name ?? "")}" /></label><div class="ip-btns"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u4E0A\u573A</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div></div>`;
+}
+function drawInst() {
+  if (!instShown) return;
+  const eng = engineNow(), h2 = st2.song.hum, role = curRole(), rn2 = roleName(doc.extras, role), rs2 = roleSound(doc.extras, role), aid = activeId(doc.extras, role);
+  const gms = new Map(gmCandidates(doc.extras, role).map((g3) => [g3.id, g3])), active = gms.get(aid), who = activeCandidateName(doc.extras, role) ?? "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09";
+  const chipTitle = (c10) => {
+    const g3 = gms.get(c10.id);
+    if (!g3) return ENGINE_TITLE[c10.engine];
+    return g3.bytes ? `SoundFont ${g3.bank}:${g3.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(g3.bytes.length)}\uFF09` : g3.path ? "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765" : `\u5F31\u5F15\u7528\uFF1A\u58F0\u97F3\u4E0D\u5728\u6B4C\u91CC\uFF0C\u7528\u65F6\u4ECE\u300C${g3.origin.name}\u300D\u627E`;
+  };
+  const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc7(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc7(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : ((found) => `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc7(active.origin.name)}\u300D\u627E\uFF08${found ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09${found ? "" : `<button class="btn" data-v="find:${esc7(active.id)}">\u627E\u6587\u4EF6\u2026</button>`}</div>`)(sessionSubsets.has(active.subsetSha256));
+  const labels = partLabels(st2.song, doc.extras), onPaper = new Set(Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}));
+  const parts = st2.song.parts.map((p2, k2) => ({ p: p2, label: labels[k2] })).filter((x2) => onPaper.has(x2.p.id));
+  const cal = activeCalibrationDb(doc.extras, role), tr3 = activeTranspose(doc.extras, role);
+  const row = (k2, v, note2 = "") => `<span class="ip-k">${k2}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note2 ? `<div class="ip-note">${note2}</div>` : ""}</div>`;
+  const how = (eng !== "unknown" ? row(
+    "\u54CD\u5EA6",
+    `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>${cal !== 0 ? `<button class="btn" data-v="cal:0" title="\u56DE\u5230 0\uFF08\u548C\u6708\u8BFB\u4E00\u6837\u7684\u57FA\u51C6\uFF09">\u5F52\u96F6</button>` : ""}`,
+    "\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u6708\u8BFB = 0 \u5F53\u57FA\u51C6\uFF0C\u65B0\u52A0\u7684\u4E50\u5668\u9ED8\u8BA4 \u22126\uFF1B\u5F55\u97F3\u5BA4\u7684\u63A8\u5B50\u53E6\u7B97"
+  ) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
+  //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
+  (active?.sfx ? ((fixed, al2) => row(
+    "\u97F3\u6548",
+    chip("sfx:fixed", "\u56FA\u5B9A\u539F\u901F", fixed, "\u6BCF\u4E2A\u97F3\u90FD\u6572\u539F\u901F\u952E\uFF1A\u5199\u8C31\u6309\u952E\u3001\u64AD\u653E\u90FD\u662F\u539F\u6765\u7684\u6837\u5B50\uFF1B\u8C31\u4E0A\u5199\u7684\u97F3\u9AD8\u7167\u7559\uFF0C\u53EA\u662F\u4E0D\u62FF\u6765\u51FA\u58F0") + (fixed ? "" : canAlign(active.sfx) ? chip("sfx:align", "\u97F3\u9AD8\u5BF9\u9F50", al2, "\u6309\u539F\u901F\u65F6\u6700\u5F3A\u7684\u90A3\u4E2A\u9891\u7387\u5927\u81F4\u5BF9\u9F50\uFF0C\u8C31\u4E0A\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF1B\u4E0D\u4E00\u5B9A\u662F\u8033\u6735\u542C\u5230\u7684\u4E3B\u97F3") : ""),
+    fixed ? "\u8C31\u4E0A\u5199\u4E0D\u540C\u7684\u97F3\u4E5F\u90FD\u54CD\u539F\u6765\u7684\u6837\u5B50\uFF08\u97F3\u9AD8\u7559\u5728\u8C31\u4E0A\uFF0C\u5173\u6389\u5C31\u6309\u5B83\u53D8\u8C03\uFF09" : al2 ? "\u5199\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF08\u5927\u81F4\uFF09" : `\u6309\u5199\u7684\u97F3\u53D8\u8C03\u53D8\u901F\uFF1A\u8D8A\u9AD8\u8D8A\u5C16\u8D8A\u5FEB\uFF0C\u8D8A\u4F4E\u8D8A\u6C89\u8D8A\u6162${canAlign(active.sfx) ? "" : "\uFF1B\u8FD9\u4E2A\u97F3\u6548\u539F\u901F\u65F6\u542C\u4E0D\u51FA\u97F3\u9AD8\uFF0C\u6CA1\u6CD5\u5BF9\u9F50"}`
+  ))(active.note !== void 0, !!active.sfx.align) : "") + // 修八度 / 移调（user「修八度和移调的音色级别的选项…大部分情况不应该动，是worst case兜底」）：只给 SoundFont 的（鼓件 / 固定原速按哪个键都一样，不给）；默认 0、不自动套用
+  (active && active.note === void 0 ? row(
+    "\u4FEE\u516B\u5EA6",
+    `<b class="ip-val">${tr3 > 0 ? "+" : tr3 < 0 ? "\u2212" : ""}${Math.abs(tr3)} \u534A\u97F3</b><button class="btn" data-v="tr:-12" title="\u4F4E\u4E00\u4E2A\u516B\u5EA6">\u221212</button><button class="btn" data-v="tr:-1" title="\u4F4E\u534A\u97F3">\u22121</button><button class="btn" data-v="tr:1" title="\u9AD8\u534A\u97F3">+1</button><button class="btn" data-v="tr:12" title="\u9AD8\u4E00\u4E2A\u516B\u5EA6">+12</button>${tr3 ? `<button class="btn" data-v="tr:0" title="\u56DE\u5230 0">\u5F52\u96F6</button>` : ""}`,
+    "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3"
+  ) : "") + (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
+  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc7(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc7(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc7(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div></section></div></div>`;
+  const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
+  sel.addEventListener("change", () => {
+    const [snd, ...nm2] = sel.value.split("|");
+    if (snd) {
+      setRole(nm2.join("|"), snd);
+      drawInst();
+    }
+  });
+  inp.addEventListener("change", () => setRole(inp.value));
+  inp.addEventListener("keydown", (e10) => {
+    if (e10.isComposing) return;
+    if (e10.key === "Enter") {
+      e10.preventDefault();
+      e10.stopPropagation();
+      setRole(inp.value);
+      drawInst();
+    }
+  });
+  instEl.querySelector("#sfSel")?.addEventListener("change", (e10) => {
+    const picked = instPicked;
+    if (!picked) return;
+    picked.sel = e10.target.value;
+    const p2 = picked.presets.find((x2) => `${x2.bank}:${x2.program}` === picked.sel);
+    const n10 = instEl.querySelector("#sfName");
+    if (n10 && p2) n10.value = p2.name;
+  });
+  instEl.querySelector(".ip-part")?.addEventListener("change", (e10) => {
+    commitRoleName();
+    instPicked = null;
+    update(setFocus(st2, st2.at.paper, e10.target.value));
+    synth.allOff();
+    gmHeld.clear();
+    void prepareSynth();
+    pad3.render();
+    drawInst();
+  });
+}
+instEl.addEventListener("click", (e10) => {
+  const v = e10.target.closest("[data-v]")?.dataset.v;
+  if (!v) return;
+  const role = curRole(), rn2 = roleName(doc.extras, role);
+  if (v === "back") {
+    closeInstPage();
+    return;
+  }
+  if (v === "pad") {
+    showPad(padEl.hidden);
+    drawInst();
+    return;
+  }
+  if (v === "finder") {
+    commitRoleName();
+    openFinder();
+    return;
+  }
+  if (v.startsWith("cand:")) setActive(v.slice(5));
+  else if (v.startsWith("del:")) {
+    try {
+      updateExtras(withoutCandidate(doc.extras, role, v.slice(4)), { kind: "lounge", label: `\u300C${rn2}\u300D\u9000\u6389\u4E00\u4F4D\u5019\u9009` });
+    } catch (err2) {
+      showError(err2.message);
+    }
+  } else if (v.startsWith("find:")) {
+    findBankFile(v.slice(5));
+    return;
+  } else if (v === "sf2:pick") {
+    pickFile();
+    return;
+  } else if (v.startsWith("sound:")) {
+    void pickOfficial(v.slice(6));
+    return;
+  } else if (v === "sf2:add") {
+    void addPicked();
+    return;
+  } else if (v === "sf2:cancel") instPicked = null;
+  else if (v === "sfx:fixed") {
+    const on2 = activeGm(doc.extras, role)?.note === void 0;
+    updateExtras(withSfxFixed(doc.extras, role, on2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D${on2 ? "\u56FA\u5B9A\u539F\u901F" : "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09"}` });
+    synth.allOff();
+    gmHeld.clear();
+  } else if (v === "sfx:align") {
+    const on2 = !activeGm(doc.extras, role)?.sfx?.align;
+    updateExtras(withSfxAlign(doc.extras, role, on2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u97F3\u9AD8\u5BF9\u9F50${on2 ? "\u5F00" : "\u5173"}` });
+    synth.allOff();
+    gmHeld.clear();
+  } else if (v.startsWith("tr:")) {
+    const d3 = Number(v.slice(3)), next2 = d3 === 0 ? 0 : activeTranspose(doc.extras, role) + d3;
+    updateExtras(withTranspose(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u4FEE\u516B\u5EA6 / \u79FB\u8C03 ${next2} \u534A\u97F3` }, "transpose");
+    synth.allOff();
+    gmHeld.clear();
+  } else if (v.startsWith("cal:")) {
+    const d3 = Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, d3 === 0 ? 0 : activeCalibrationDb(doc.extras, role) + d3));
+    updateExtras(withCalibration(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u54CD\u5EA6\u6821\u51C6 ${next2} dB` }, "cal");
+  } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
+  else return;
+  drawInst();
+});
 var deskNow = () => ({ scope: viewScope, pageFlow, paper: st2.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality });
 function applyDesk(d3) {
   viewScope = d3.scope;
@@ -27042,6 +27273,8 @@ function applyDesk(d3) {
 }
 function loadDoc(song, o10) {
   if (impro) toggleImpro();
+  closeOffer?.();
+  closeInstPage();
   doc.stem = o10.stem;
   doc.named = o10.named;
   doc.handle = o10.handle;
@@ -27710,13 +27943,17 @@ function ensureGallery() {
     },
     // 首笔安家：新建出来的空谱还没身份（pendingHome）也回到谱
     openSettings: () => openSettings(),
+    openInstruments: () => openFinder(),
+    // 歌库开着 = 只弹着玩的目录，盖在歌库上面
     openCloudMenu: () => {
       void openCloudMenu();
     },
     onOpened: () => {
       closeOffer?.();
+      finderBackToInst = false;
       closeFinder();
       closeStudio();
+      closeInstPage();
       padWas = !padEl.hidden;
       showPad(false);
       updateChrome();
@@ -28032,6 +28269,21 @@ window.addEventListener("keydown", (e10) => {
     }
     return;
   }
+  if (instShown) {
+    const inField = e10.target?.closest("input, select, textarea");
+    if (e10.key === "Escape") {
+      e10.preventDefault();
+      closeInstPage();
+    } else if (!inField && (e10.ctrlKey || e10.metaKey) && e10.key.toLowerCase() === "z") {
+      e10.preventDefault();
+      if (e10.shiftKey) redoNow();
+      else undoNow();
+    } else if (!inField && (e10.ctrlKey || e10.metaKey) && e10.key.toLowerCase() === "y") {
+      e10.preventDefault();
+      redoNow();
+    }
+    return;
+  }
   if (studio.isOpen) {
     if (e10.key === "Escape") {
       e10.preventDefault();
@@ -28088,4 +28340,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8c38d9e60d87.mjs.map
+//# sourceMappingURL=moonsinger-e98aeebcd09f.mjs.map
