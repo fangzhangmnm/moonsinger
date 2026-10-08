@@ -1,12 +1,12 @@
 // test/e2e/store.mjs —— 真浏览器 E2E（先 npm run build，再 npm run serve（8710），再 node test/e2e/store.mjs；借 WeebPaint 的 playwright，同 shell-smoke）。created 2026-10-08 by Claude Fable 5.1
 // 歌库 E2E（真浏览器、真 IDB、不登录云）：无地开局 → 点「歌库」attach → 新建 → 写几个音 → 自动存 → 刷新回到同一首 → 改名 → 封面图 → 歌库卡片 → 删「打开中」→ 回来变无地稿。
-import { chromium } from "../../../20260524 WeebPaint/node_modules/playwright/index.mjs";
+import { chromium } from "./pw.mjs";
 import os from "node:os"; import path from "node:path";
 const OUT = path.join(os.tmpdir(), "moonsinger-e2e"); import { mkdirSync } from "node:fs"; mkdirSync(OUT, { recursive: true });
 import fs from "node:fs"; import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const URL0 = "http://127.0.0.1:8710/";
+const URL0 = process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/";
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 // 一张 64×48 的 PNG（红色）当封面图

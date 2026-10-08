@@ -1,6 +1,6 @@
 // test/e2e/select.mjs —— 真浏览器 E2E（先 npm run build，再 npm run serve（8710），再 node test/e2e/select.mjs；借 WeebPaint 的 playwright，同 shell-smoke）。created 2026-10-08 by Claude Fable 5.1
 // 改的手感 E2E：轻点 = 光标（不选中）；长按 = 选中 + 把手 + 选区条；拖把手扩选；复制 / 粘贴 / 剪切 / 全选 / 删；系统剪贴板简谱文字；一次只看一张纸。
-import { chromium } from "../../../20260524 WeebPaint/node_modules/playwright/index.mjs";
+import { chromium } from "./pw.mjs";
 import os from "node:os"; import path from "node:path";
 const OUT = path.join(os.tmpdir(), "moonsinger-e2e"); import { mkdirSync } from "node:fs"; mkdirSync(OUT, { recursive: true });
 let pass = 0, fail = 0;
@@ -8,7 +8,7 @@ const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.l
 const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 760 }, permissions: ["clipboard-read", "clipboard-write"] });
 try {
   const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
-  await p.goto("http://127.0.0.1:8710/"); await p.waitForTimeout(500);
+  await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(500);
   const S = () => p.evaluate(() => { const s = window.__moonsinger.state(); return { sel: s.sel, caret: s.caret, n: s.song.papers[0].tracks.P1.length }; });
   const notes = () => p.$$eval("#score text.note", (ts) => ts.map((t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
   await p.click("#score", { position: { x: 600, y: 400 } });

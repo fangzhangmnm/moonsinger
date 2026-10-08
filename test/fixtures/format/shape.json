@@ -50,7 +50,17 @@
           "role": "string"
         }
       ],
-      "version": "number"
+      "version": "number",
+      "view": {
+        "pageFlow": "boolean",
+        "paper": "string",
+        "parts": {
+          "P2": {
+            "muted": "boolean"
+          }
+        },
+        "scope": "string"
+      }
     },
     "lounge": {
       "active": "string",

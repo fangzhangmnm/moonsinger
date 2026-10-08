@@ -2,7 +2,7 @@
 // v0.3.0 2026-10-07 edited by Claude Fable 5.1：导出 hub / Ctrl+Shift+S / 拖进来。
 // created 2026-10-07 by Claude Opus 5.5。跑：先 bash scripts/build.sh，再 node test/file-smoke.mjs（同 shell-smoke 借 WeebPaint 的 playwright）。
 // 走 iPad 那条路（把桌面的文件选择框屏蔽掉 → 存 = 下载、打开 = 选文件）：桌面 Chromium 的系统文件框自动化不了，那条路没有自动测。
-import { chromium } from "../../20260524 WeebPaint/node_modules/playwright/index.mjs";
+import { chromium } from "./e2e/pw.mjs";
 import fs from "node:fs"; import os from "node:os"; import path from "node:path"; import { spawn } from "node:child_process"; import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = fs.mkdtempSync(path.join(os.tmpdir(), "moonsinger-file-")), DIR = fs.mkdtempSync(path.join(os.tmpdir(), "moonsinger-dl-"));

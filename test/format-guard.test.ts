@@ -9,7 +9,7 @@ const fs = (await import("node:fs" as string)) as {
 import { saveMxl, openBytes, emptyExtras, activeInstrument, FORMAT } from "../src/format/project.ts";
 import { MIGRATIONS } from "../src/format/migrate/index.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
-import { sampleSong, canonTokens, canonTracks, shapeOf } from "./fixtures/format/sample-song.ts";
+import { sampleSong, sampleView, canonTokens, canonTracks, shapeOf } from "./fixtures/format/sample-song.ts";
 
 const DIR = new URL("./fixtures/format/", import.meta.url);
 const at = (...parts: string[]) => new URL(parts.join("/"), DIR);
@@ -18,7 +18,7 @@ type Json = Record<string, unknown>;
 const KINDS = ["manifest", "score", "lounge", "studio"] as const;
 function writeNow(): Record<(typeof KINDS)[number], Json> {
   const song = sampleSong();
-  const files = unzipSync(saveMxl({ song, hum: song.hum, extras: emptyExtras(), app: "guard", date: "2026-10-07T00:00:00.000Z" }));
+  const files = unzipSync(saveMxl({ song, hum: song.hum, extras: emptyExtras(), app: "guard", date: "2026-10-07T00:00:00.000Z", view: sampleView() }));
   const json = (p: string): Json => JSON.parse(strFromU8(files[p]));
   return { manifest: json(".moonsinger/manifest.json"), score: json(".moonsinger/score.json"), lounge: json(".moonsinger/lounge/r1.json"), studio: json(".moonsinger/studio.json") };
 }

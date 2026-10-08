@@ -6,7 +6,7 @@
 //   ③ **推到一半页面死掉**（上传已落云、回执没回来、页面 reload）→ 回来补推 = 自愈、零冲突
 //   ④ 两台设备交替改：另一台推了、这台干净回前台 = 快进重载，零冲突 ⑤ 真分叉 → 冲突面 → 云端覆盖本地 / 本地覆盖云端 两条路都走一遍，输家进备份箱
 //   ⑥ 离线改了再 reload、对面已推 = 真分叉照样 surface ⑦ 心跳 / 空闲推同时发 = 库串行，零冲突。created 2026-10-08 by Claude Fable 5.1
-import { chromium } from "../../../20260524 WeebPaint/node_modules/playwright/index.mjs";
+import { chromium } from "./pw.mjs";
 import { createMockProvider } from "@internal/store/testing";
 import { installCloud } from "./cloud-bridge.mjs";
 import fs from "node:fs"; import path from "node:path"; import { fileURLToPath } from "node:url";
@@ -24,7 +24,7 @@ const b = await chromium.launch();
 const ctxA = await b.newContext({ viewport: { width: 1100, height: 760 } }), ctxB = await b.newContext({ viewport: { width: 420, height: 800 } });
 await installCloud(ctxA, cloud); await installCloud(ctxB, cloud);
 const errs = [];
-const newPage = async (ctx) => { const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message)); await p.goto("http://127.0.0.1:8710/"); await p.waitForFunction(() => !!window.__moonsinger); await p.waitForTimeout(300); return p; };
+const newPage = async (ctx) => { const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message)); await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForFunction(() => !!window.__moonsinger); await p.waitForTimeout(300); return p; };
 const notes = (p) => p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.pitch.step + t.pitch.octave).join(" "));
 const gate = (p) => p.evaluate(() => { const g = document.querySelector(".gate-sheet"); return g && !g.hidden ? [...g.querySelectorAll(".gate-actions button")].map((b) => b.textContent) : null; });
 const cloudNotes = async (p, id) => { const it = (await cloud.list("")).find((x) => x.name === id); if (!it) return null; const u8 = new Uint8Array(await (await cloud.download(it.ref)).arrayBuffer()); return p.evaluate((b64) => { const u = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)); return window.__moonsinger.open("x.mxl", u).song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.pitch.step + t.pitch.octave).join(" "); }, Buffer.from(u8).toString("base64")); };
