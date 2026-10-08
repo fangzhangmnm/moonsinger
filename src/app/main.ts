@@ -120,13 +120,13 @@ function showUpdateBar(): void {
 //   键盘开关不在顶栏：pad 自己有「收起」，收起后屏幕最下面一粒「键盘」tab 再弹出来；点谱也弹（user「软键盘的 toggle 可以放在屏幕最下面」）。
 bar.innerHTML =
   `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
-  `<button id="fileBtn" class="doc-name" title="文件：新建 / 打开 / 存 / 导出 / 封面（Ctrl / ⌘+S 存、+O 打开；.mxl 拖进来也能打开）"><span id="docTitle" class="title">未命名</span></button></div>` +
+  `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button></div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
   `<button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button>` +
   `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div>` +
   `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
   `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
-  `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款、诊断日志、版本"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
+  `<button id="setBtn" class="btn" title="菜单：新建 / 打开 / 导出 / 封面 / 声音与署名 / 设置"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
 const stageEl = $("stage");   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
 const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = "键盘（pad）";
 padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>键盘</span>`;
@@ -841,8 +841,6 @@ function openSettings(): void {
     `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><div class="part-sec">原文（以此为准）</div><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre>` +
       `<div class="part-sec">中文译文（仅供阅读，以日文原文为准）</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` +
       `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc(CREDIT_TRANSLATIONS.en.credit)}\n\n${esc(CREDIT_TRANSLATIONS.en.terms)}</pre></details>` +
-    `<div class="set-row"><button class="btn" data-v="finder" title="全屏的乐器目录：按年代浏览、用 pad 弹着玩；「上场」给当前声部">乐器目录…</button>` +
-    `<button class="btn" data-v="lib">歌库…</button><button class="btn" data-v="cloud">云端（OneDrive）…</button><button class="btn" data-v="studio">录音室…</button></div>` +
     `<details class="set-credit"><summary>诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:share">${canShareDiag() ? "分享 .txt" : "下载 .txt"}</button><button class="btn" data-v="diag:clear">清空</button></div></details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的月读模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
@@ -867,9 +865,6 @@ function openSettings(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
-    else if (v === "lib") { close(); void openGallery(); }
-    else if (v === "studio") { close(); openStudio(); }
-    else if (v === "cloud") { close(); ensureAttached(); void openCloudMenu(); }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:share") void shareDiag(info);
     else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
@@ -879,7 +874,6 @@ function openSettings(): void {
     else if (v === "snd:mem") { releaseSoundMemory(); void refreshSounds(); }
     else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
     else if (v === "reset") void shell.forceReset();
-    else if (v === "finder") { close(); openFinder(); }
   });
   box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
     const files = [...((e.target as HTMLInputElement).files ?? [])]; if (!files.length) return;
@@ -889,7 +883,7 @@ function openSettings(): void {
     refresh();
   });
 }
-$("setBtn").addEventListener("click", () => openSettings());
+$("setBtn").addEventListener("click", () => openMainMenu());
 /** 「好了」面板（应用内，不用系统弹窗）：分享 / 下载 / 关。 */
 function offerFile(file: File, title: string, msg: string, onDone?: () => void): void {
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
@@ -940,7 +934,7 @@ const dirty = () => st.song !== doc.saved.song || loungeKey() !== doc.saved.loun
 function renderTitle(): void {
   const d = dirty(), name = docName();
   $("docTitle").textContent = `${name}${d ? " •" : ""}`;
-  $("fileBtn").title = `${doc.identifier ? "在歌库里" : doc.handle ? `存在 ${doc.handle.name}` : doc.pendingHome ? "新的一首：第一笔写下去就进歌库" : "还没有家"}（点 = 文件菜单）`;
+  $("fileBtn").title = `文件名（${fileWhere()}）· ${doc.handle ? "本机文件的名字在文件管理器里改" : "点了改名"}`;
   document.title = `${d ? "• " : ""}${name} · MoonSinger`;
   renderSaveButton();
   renderUndo();
@@ -1780,34 +1774,67 @@ const performersBlock = (roles: readonly string[], title = "署名") => {
   const { lines, hints } = creditsOf(roles);
   return creditsBlock(lines, title) + hints.map((h) => `<div class="offer-msg credits-hint">${esc(h)}</div>`).join("");
 };
-/** 文件菜单（应用内面板）：新建 / 歌库 / 打开本机文件 / 存 / 导出 / 封面；还没有家的（没存过、或 iPad 无地）多一个「改文件名」。
- *  没有「另存为」（它住导出里，user 2026-08-20「open local file 和 save as 一加多了很多会混淆用户的东西」）；
- *  本地文件的不给改文件名——浏览器改不了磁盘上的名字（v0.3.0 撤）；歌库里的改名走 store（tryMove，撞名不覆盖）。 */
-function openFileMenu(): void {
+/** 顶栏的菜单（2026-10-08 晚重理，Claude Opus 5.5；user「点了文件名之后弹出的那个菜单也严重obsolete了，三条杠菜单也有obsolete的东西」
+ *  「三条杠里面不应该有乐器目录，云端，歌库 录音室，他们的入口在别的地方，文件菜单也不对，和三条杠混淆了，参考下weebpaint和wxhw的菜单设计」）：
+ *  - 文件名 = 管理用的把手，点了 = 改名（同 WXHW ADR-0007）；本机文件（有句柄）的名字在文件管理器里改，这里只说一声。
+ *  - 三条杠 = 这首歌的低频事务（同 WeebPaint ☰「文件」页）：新建 / 打开本机文件 / 导出 / 存进歌库 / 改文件名 / 封面 / 声音与署名，最后是设置。
+ *    存 = 顶栏的 smart save（状态即按钮）；歌库 = 左上角图标；云端 = 歌库里的云朵；录音室 = 走带里的推子；乐器目录 = 乐器页 / 歌库——都不在这里重复。
+ *  没有「另存为」（它住导出里，user 2026-08-20「open local file 和 save as 一加多了很多会混淆用户的东西」）。 */
+function fileWhere(): string {
+  return doc.identifier ? `在歌库里，自动存${isSignedIn() ? "；换歌 / 退出 / 按「存」时推上 OneDrive" : "（没登录，只在这台设备上）"}`
+    : doc.pendingHome ? "新的一首：第一笔写下去就进歌库"
+    : doc.handle ? `存在本机文件 ${doc.handle.name}，「存」= 存回去`
+    : docFile.canPickSave() ? "还没存过：「存」会问存到哪" : "这台设备上「存」= 下载或分享一个 .mxl";
+}
+function clickFileName(): void {
+  if (doc.handle) { info(`本机文件的名字在文件管理器里改（现在是 ${doc.handle.name}）`); return; }
+  void renameActive();
+}
+$("fileBtn").addEventListener("click", () => clickFileName());
+function openMainMenu(): void {
+  if (closeOffer) { closeOffer(); return; }   // 再点一下三条杠 = 收起
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu main-menu"; box.setAttribute("role", "menu");
+  const inStore = doc.identifier != null;
+  const item = (v: string, icon: string, label: string, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
+  box.innerHTML =
+    `<div class="ctx-head"><b>${esc(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b><span>${esc(fileWhere())}</span></div>` +
+    item("new", "new", "新建") + item("open", "folder-open", "打开本机文件…", "打开 .mxl / .musicxml（拖进来也行；Ctrl / ⌘+O）") +
+    item("export", "export", "导出…", "mp3、.mxl 副本（打包音源）…（Ctrl / ⌘+Shift+S）") +
+    (hasStore() && !inStore && !doc.pendingHome ? item("intoLib", "import", "存进歌库", "把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）") : "") +
+    `<div class="ctx-sep"></div>` +
+    (doc.handle ? "" : item("rename", "rename", "改文件名…", "只改文件名，纸上的歌名不变（点顶栏的文件名也一样）")) +
+    item("cover", "image", "封面图…", "歌库卡片上的图") +
+    item("sounds", "volume", "声音与署名…", "乐器的声音打包 / 解包；这首歌用了谁的声音") +
+    `<div class="ctx-sep"></div>` +
+    item("settings", "settings", "设置…", "模型 / 音源库来源、缓存、署名与条款、诊断日志、版本");
+  document.body.append(box);
+  const r = $("setBtn").getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, m = 8;
+  box.style.left = `${Math.max(m, Math.min(r.right - w, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(r.bottom + 6, innerHeight - h - m))}px`;
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !$("setBtn").contains(e.target as Node)) close(); };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
+    close();
+    if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "export") openExportHub();
+    else if (v === "intoLib") void saveIntoGallery(); else if (v === "rename") void renameActive();
+    else if (v === "cover") openCoverSheet(); else if (v === "sounds") openSoundsSheet(); else if (v === "settings") openSettings();
+  });
+}
+/** 封面图（歌库卡片上的图；缩成 256² 存进歌里）。 */
+function openCoverSheet(): void {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  const inStore = doc.identifier != null;
-  const where = inStore ? `在歌库里，自动存（改了 2 秒内落到这台设备；${isSignedIn() ? "登录着，稍后推上 OneDrive" : "没登录，不上云"}）。「存」= 立刻存 + 推。`
-    : doc.handle ? `现在存在 <b>${esc(doc.handle.name)}</b>，「存」= 存回去（文件在外面被改过会先问）。要换名字，在文件管理器里改。`
-    : docFile.canPickSave() ? "还没存过：「存」会问存到哪。" : "这台设备上「存」= 下载或分享一个 .mxl 到「文件」里（下载了就算存了）。";
   const thumb = doc.extras.thumbnail;
   const coverUrl = thumb ? URL.createObjectURL(new Blob([thumb as unknown as BlobPart], { type: "image/png" })) : null;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">文件</div>` +
-    `<div class="offer-msg">文件名：<b>${esc(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b>（没存过 = 年月日-歌名；存过之后和纸上的歌名各管各的）</div>` +
-    `<div class="set-row file-row">` +
-    `<button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>新建</button>` +
-    `<button class="btn" data-v="lib"><svg class="ico"><use href="#folder"/></svg>歌库…</button>` +
-    `<button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>打开本机文件…</button>` +
-    `<button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>存</button>` +
-    `<button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>导出…</button>` +
-    (hasStore() && !inStore ? `<button class="btn" data-v="intoLib" title="把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）"><svg class="ico"><use href="#import"/></svg>存进歌库</button>` : "") +
-    (doc.handle ? "" : `<button class="btn" data-v="rename">改文件名…</button>`) + `</div>` +
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">封面图</div>` +
     `<div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="封面" />` : `<span class="cover-none">没有封面图</span>`}</span>` +
-    `<label class="btn" title="选一张图当封面（缩成 256² 存进歌里；歌库卡片上歌名印在图上面）"><svg class="ico"><use href="#image"/></svg>封面图…<input id="coverIn" type="file" accept="image/*" hidden /></label>` +
+    `<label class="btn" title="选一张图当封面（缩成 256² 存进歌里；歌库卡片上歌名印在图上面）"><svg class="ico"><use href="#image"/></svg>${thumb ? "换一张…" : "选一张图…"}<input id="coverIn" type="file" accept="image/*" hidden /></label>` +
     (thumb ? `<button class="btn" data-v="coverOff">去掉封面图</button>` : "") + `</div>` +
-    soundsSection() + performersBlock(soundingRoles()) +
-    `<div class="offer-msg">存成 <code>.mxl</code>（MusicXML 乐谱的压缩包：别的乐谱软件也能打开；MoonSinger 自己的东西放在里面的 <code>.moonsinger/</code>）。${where} 把 .mxl 拖进来也能打开。</div>` +
+    `<div class="offer-msg">歌库卡片上的图；歌名和日期照样印在上面。缩成 256² 存进歌里。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
   const close = () => { box.remove(); closeOffer = null; if (coverUrl) URL.revokeObjectURL(coverUrl); scoreEl.focus(); };
@@ -1816,14 +1843,27 @@ function openFileMenu(): void {
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
-    if (!v) return;
-    close();
-    if (v === "new") void fileNew(); else if (v === "lib") void openGallery(); else if (v === "open") void fileOpen(); else if (v === "save") void fileSave(); else if (v === "export") openExportHub();
-    else if (v === "pack" || v === "unpack") void (v === "pack" ? packAll() : unpackAll()).then(() => openFileMenu());   // 做完回到文件菜单：看得见新状态和署名
-    else if (v === "rename") void renameActive(); else if (v === "intoLib") void saveIntoGallery(); else if (v === "coverOff") { coverTouched = true; coverRev++; updateExtras(withThumbnail(doc.extras, null), { kind: "cover", label: "去掉封面图" }); info("去掉了封面图"); }
+    if (v === "coverOff") { close(); coverTouched = true; coverRev++; updateExtras(withThumbnail(doc.extras, null), { kind: "cover", label: "去掉封面图" }); info("去掉了封面图"); }
   });
 }
-$("fileBtn").addEventListener("click", () => openFileMenu());
+/** 声音与署名：乐器的声音打包 / 解包（Blender 式）+ 这首歌用了谁的声音（演出署名，折叠）。 */
+function openSoundsSheet(): void {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  const sounds = soundsSection();
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">声音与署名</div>` +
+    (sounds || `<div class="offer-msg">这首歌没用乐器的声音文件（月读 / 元音版的声音随 app 走，不进歌）。</div>`) + performersBlock(soundingRoles()) +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  document.body.append(box);
+  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (v === "pack" || v === "unpack") { close(); void (v === "pack" ? packAll() : unpackAll()).then(() => openSoundsSheet()); }   // 做完回到这里：看得见新状态和署名
+  });
+}
 /** 改文件名（只给还没有家的：下次存 / 下载用这个名字；纸上的歌名不变；user「之后各管各的同意，但是要有改文件名的规则？」）。
  *  有家的不进这里（菜单不露）：浏览器改不了磁盘上的名字，在文件管理器里改。 */
 function renameFile(): void {

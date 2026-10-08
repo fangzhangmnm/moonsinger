@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.22-2026-10-08";
+var APP_VERSION = "v0.6.23-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -25705,7 +25705,7 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA / \u5C01\u9762\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
 padTab.id = "padTab";
@@ -26667,7 +26667,7 @@ ${esc7(CREDIT.attribution.join("\n"))}</pre><div class="part-sec">\u4E2D\u6587\u
 
 ${esc7(CREDIT_TRANSLATIONS.zh.terms)}</pre><div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc7(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button><button class="btn" data-v="lib">\u6B4C\u5E93\u2026</button><button class="btn" data-v="cloud">\u4E91\u7AEF\uFF08OneDrive\uFF09\u2026</button><button class="btn" data-v="studio">\u5F55\u97F3\u5BA4\u2026</button></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -26705,16 +26705,6 @@ ${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-row"><butto
     else if (v === "default") {
       srcIn.value = MODEL_SOURCE_DEFAULT;
       sndIn.value = SOUNDS_SOURCE_DEFAULT;
-    } else if (v === "lib") {
-      close();
-      void openGallery();
-    } else if (v === "studio") {
-      close();
-      openStudio();
-    } else if (v === "cloud") {
-      close();
-      ensureAttached();
-      void openCloudMenu();
     } else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:share") void shareDiag(info);
     else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
@@ -26742,10 +26732,6 @@ ${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-row"><butto
       } else info(r10 === "latest" ? "\u5DF2\u7ECF\u662F\u6700\u65B0\u7248" : "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0");
     });
     else if (v === "reset") void shell.forceReset();
-    else if (v === "finder") {
-      close();
-      openFinder();
-    }
   });
   box.querySelector("#impIn").addEventListener("change", async (e10) => {
     const files = [...e10.target.files ?? []];
@@ -26759,7 +26745,7 @@ ${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-row"><butto
     refresh();
   });
 }
-$2("setBtn").addEventListener("click", () => openSettings());
+$2("setBtn").addEventListener("click", () => openMainMenu());
 function offerFile(file, title, msg, onDone) {
   const nav = navigator;
   const canShare = typeof navigator.share === "function" && !!nav.canShare?.({ files: [file] });
@@ -26811,7 +26797,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "fa9e2610ad45",
+  cssHash: "49526707d134",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -26876,7 +26862,7 @@ var dirty = () => st2.song !== doc.saved.song || loungeKey() !== doc.saved.loung
 function renderTitle() {
   const d3 = dirty(), name = docName();
   $2("docTitle").textContent = `${name}${d3 ? " \u2022" : ""}`;
-  $2("fileBtn").title = `${doc.identifier ? "\u5728\u6B4C\u5E93\u91CC" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : doc.pendingHome ? "\u65B0\u7684\u4E00\u9996\uFF1A\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93" : "\u8FD8\u6CA1\u6709\u5BB6"}\uFF08\u70B9 = \u6587\u4EF6\u83DC\u5355\uFF09`;
+  $2("fileBtn").title = `\u6587\u4EF6\u540D\uFF08${fileWhere()}\uFF09\xB7 ${doc.handle ? "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539" : "\u70B9\u4E86\u6539\u540D"}`;
   document.title = `${d3 ? "\u2022 " : ""}${name} \xB7 MoonSinger`;
   renderSaveButton();
   renderUndo();
@@ -28060,15 +28046,65 @@ var performersBlock = (roles, title = "\u7F72\u540D") => {
   const { lines, hints } = creditsOf(roles);
   return creditsBlock(lines, title) + hints.map((h2) => `<div class="offer-msg credits-hint">${esc7(h2)}</div>`).join("");
 };
-function openFileMenu() {
+function fileWhere() {
+  return doc.identifier ? `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58${isSignedIn2() ? "\uFF1B\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u65F6\u63A8\u4E0A OneDrive" : "\uFF08\u6CA1\u767B\u5F55\uFF0C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09"}` : doc.pendingHome ? "\u65B0\u7684\u4E00\u9996\uFF1A\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93" : doc.handle ? `\u5B58\u5728\u672C\u673A\u6587\u4EF6 ${doc.handle.name}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB` : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl";
+}
+function clickFileName() {
+  if (doc.handle) {
+    info(`\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F ${doc.handle.name}\uFF09`);
+    return;
+  }
+  void renameActive();
+}
+$2("fileBtn").addEventListener("click", () => clickFileName());
+function openMainMenu() {
+  if (closeOffer) {
+    closeOffer();
+    return;
+  }
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu main-menu";
+  box.setAttribute("role", "menu");
+  const inStore = doc.identifier != null;
+  const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc7(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
+  box.innerHTML = `<div class="ctx-head"><b>${esc7(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b><span>${esc7(fileWhere())}</span></div>` + item("new", "new", "\u65B0\u5EFA") + item("open", "folder-open", "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026", "\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09") + item("export", "export", "\u5BFC\u51FA\u2026", "mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09") + (hasStore() && !inStore && !doc.pendingHome ? item("intoLib", "import", "\u5B58\u8FDB\u6B4C\u5E93", "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : "") + `<div class="ctx-sep"></div>` + (doc.handle ? "" : item("rename", "rename", "\u6539\u6587\u4EF6\u540D\u2026", "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09")) + item("cover", "image", "\u5C01\u9762\u56FE\u2026", "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE") + item("sounds", "volume", "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026", "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3") + `<div class="ctx-sep"></div>` + item("settings", "settings", "\u8BBE\u7F6E\u2026", "\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C");
+  document.body.append(box);
+  const r10 = $2("setBtn").getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
+  box.style.left = `${Math.max(m2, Math.min(r10.right - w2, innerWidth - w2 - m2))}px`;
+  box.style.top = `${Math.max(m2, Math.min(r10.bottom + 6, innerHeight - h2 - m2))}px`;
+  const outside = (e10) => {
+    if (!box.contains(e10.target) && !$2("setBtn").contains(e10.target)) close();
+  };
+  const close = () => {
+    document.removeEventListener("pointerdown", outside, true);
+    box.remove();
+    if (closeOffer === close) closeOffer = null;
+  };
+  setTimeout(() => {
+    if (box.isConnected) document.addEventListener("pointerdown", outside, true);
+  }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (!v) return;
+    close();
+    if (v === "new") void fileNew();
+    else if (v === "open") void fileOpen();
+    else if (v === "export") openExportHub();
+    else if (v === "intoLib") void saveIntoGallery();
+    else if (v === "rename") void renameActive();
+    else if (v === "cover") openCoverSheet();
+    else if (v === "sounds") openSoundsSheet();
+    else if (v === "settings") openSettings();
+  });
+}
+function openCoverSheet() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  const inStore = doc.identifier != null;
-  const where = inStore ? `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58\uFF08\u6539\u4E86 2 \u79D2\u5185\u843D\u5230\u8FD9\u53F0\u8BBE\u5907\uFF1B${isSignedIn2() ? "\u767B\u5F55\u7740\uFF0C\u7A0D\u540E\u63A8\u4E0A OneDrive" : "\u6CA1\u767B\u5F55\uFF0C\u4E0D\u4E0A\u4E91"}\uFF09\u3002\u300C\u5B58\u300D= \u7ACB\u523B\u5B58 + \u63A8\u3002` : doc.handle ? `\u73B0\u5728\u5B58\u5728 <b>${esc7(doc.handle.name)}</b>\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\uFF08\u6587\u4EF6\u5728\u5916\u9762\u88AB\u6539\u8FC7\u4F1A\u5148\u95EE\uFF09\u3002\u8981\u6362\u540D\u5B57\uFF0C\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\u3002` : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF08\u4E0B\u8F7D\u4E86\u5C31\u7B97\u5B58\u4E86\uFF09\u3002";
   const thumb = doc.extras.thumbnail;
   const coverUrl = thumb ? URL.createObjectURL(new Blob([thumb], { type: "image/png" })) : null;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc7(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b>\uFF08\u6CA1\u5B58\u8FC7 = \u5E74\u6708\u65E5-\u6B4C\u540D\uFF1B\u5B58\u8FC7\u4E4B\u540E\u548C\u7EB8\u4E0A\u7684\u6B4C\u540D\u5404\u7BA1\u5404\u7684\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="lib"><svg class="ico"><use href="#folder"/></svg>\u6B4C\u5E93\u2026</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>\u5BFC\u51FA\u2026</button>` + (hasStore() && !inStore ? `<button class="btn" data-v="intoLib" title="\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09"><svg class="ico"><use href="#import"/></svg>\u5B58\u8FDB\u6B4C\u5E93</button>` : "") + (doc.handle ? "" : `<button class="btn" data-v="rename">\u6539\u6587\u4EF6\u540D\u2026</button>`) + `</div><div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="\u5C01\u9762" />` : `<span class="cover-none">\u6CA1\u6709\u5C01\u9762\u56FE</span>`}</span><label class="btn" title="\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09"><svg class="ico"><use href="#image"/></svg>\u5C01\u9762\u56FE\u2026<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">\u53BB\u6389\u5C01\u9762\u56FE</button>` : "") + `</div>` + soundsSection() + performersBlock(soundingRoles()) + `<div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${where} \u628A .mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5C01\u9762\u56FE</div><div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="\u5C01\u9762" />` : `<span class="cover-none">\u6CA1\u6709\u5C01\u9762\u56FE</span>`}</span><label class="btn" title="\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09"><svg class="ico"><use href="#image"/></svg>${thumb ? "\u6362\u4E00\u5F20\u2026" : "\u9009\u4E00\u5F20\u56FE\u2026"}<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">\u53BB\u6389\u5C01\u9762\u56FE</button>` : "") + `</div><div class="offer-msg">\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -28088,17 +28124,8 @@ function openFileMenu() {
       close();
       return;
     }
-    if (!v) return;
-    close();
-    if (v === "new") void fileNew();
-    else if (v === "lib") void openGallery();
-    else if (v === "open") void fileOpen();
-    else if (v === "save") void fileSave();
-    else if (v === "export") openExportHub();
-    else if (v === "pack" || v === "unpack") void (v === "pack" ? packAll() : unpackAll()).then(() => openFileMenu());
-    else if (v === "rename") void renameActive();
-    else if (v === "intoLib") void saveIntoGallery();
-    else if (v === "coverOff") {
+    if (v === "coverOff") {
+      close();
       coverTouched = true;
       coverRev++;
       updateExtras(withThumbnail(doc.extras, null), { kind: "cover", label: "\u53BB\u6389\u5C01\u9762\u56FE" });
@@ -28106,7 +28133,31 @@ function openFileMenu() {
     }
   });
 }
-$2("fileBtn").addEventListener("click", () => openFileMenu());
+function openSoundsSheet() {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  const sounds = soundsSection();
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u58F0\u97F3\u4E0E\u7F72\u540D</div>` + (sounds || `<div class="offer-msg">\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u6708\u8BFB / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002</div>`) + performersBlock(soundingRoles()) + `<div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  document.body.append(box);
+  const close = () => {
+    box.remove();
+    closeOffer = null;
+    scoreEl.focus();
+  };
+  closeOffer = close;
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (e10.target === box || v === "close") {
+      close();
+      return;
+    }
+    if (v === "pack" || v === "unpack") {
+      close();
+      void (v === "pack" ? packAll() : unpackAll()).then(() => openSoundsSheet());
+    }
+  });
+}
 function renameFile() {
   if (doc.handle) return;
   closeOffer?.();
@@ -28940,4 +28991,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3cb201a3888e.mjs.map
+//# sourceMappingURL=moonsinger-416ed1c06613.mjs.map

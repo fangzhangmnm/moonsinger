@@ -53,7 +53,7 @@ try {
 
   // ④ 清缓存重启只动自己的
   await page.evaluate(async () => { await (await caches.open("pwa-models")).put("/__pwa-models__/x/chunk-000", new Response("x")); await (await caches.open("jrb-sibling")).put("/x", new Response("x")); });
-  await page.click("#setBtn"); await page.click('[data-v="reset"]');
+  await page.click("#setBtn"); await page.click('.main-menu [data-v="settings"]'); await page.click('[data-v="reset"]');
   await page.waitForURL(/\?reset=/, { timeout: 10000 }); await page.waitForSelector("#bar #fileBtn");
   const after = await page.evaluate(() => caches.keys());
   check(after.includes("pwa-models") && after.includes("jrb-sibling"), "④「清缓存重启」后共享模型缓存和兄弟 app 的缓存都还在", JSON.stringify(after));

@@ -66,16 +66,19 @@ try {
   check((await p.evaluate(() => window.__moonsinger.identifier())) === id1, "刷新后回到同一首", await p.evaluate(() => window.__moonsinger.identifier()));
   check((await tokens()) === toks1, "音符逐个相同");
   check(await p.evaluate(() => document.getElementById("galleryFull").hidden), "刷新后在谱上（上次在谱上离开的）");
-  // 改名（文件菜单 → 改文件名…）
+  // 三条杠菜单：这首歌的事务 + 设置；歌库 / 云端 / 录音室 / 乐器目录的入口在别处（2026-10-08 user「三条杠里面不应该有乐器目录，云端，歌库 录音室」）
+  await p.click("#setBtn"); await p.waitForTimeout(200);
+  check(await p.isVisible('.main-menu [data-v="export"]') && await p.isVisible('.main-menu [data-v="settings"]') && !(await p.$('.main-menu [data-v="lib"], .main-menu [data-v="cloud"], .main-menu [data-v="studio"], .main-menu [data-v="finder"]')), "三条杠 = 导出 / 设置…，没有歌库 / 云端 / 录音室 / 乐器目录");
+  await p.click("#setBtn"); await p.waitForTimeout(150);
+  check(!(await p.$(".main-menu")), "再点三条杠 = 收起");
+  // 改名（点文件名 = 改名，同 WXHW）
   await p.click("#fileBtn"); await p.waitForTimeout(200);
-  check(await p.isVisible('.offer [data-v="lib"]'), "文件菜单有「歌库…」");
-  await p.click('.offer [data-v="rename"]'); await p.waitForTimeout(200);
   await p.fill(".offer input.sheet-input", "小星星"); await p.keyboard.press("Enter"); await p.waitForTimeout(600);
   const id2 = await p.evaluate(() => window.__moonsinger.identifier()); check(id2 === "小星星.mxl", "改名 = store tryMove 后的新身份", id2);
   check(!(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id1)), "旧身份不再占用");
   check((await title()).startsWith("小星星"), "标题跟着新名", await title());
-  // 封面图
-  await p.click("#fileBtn"); await p.waitForTimeout(200);
+  // 封面图（三条杠 → 封面图…）
+  await p.click("#setBtn"); await p.waitForTimeout(200); await p.click('.main-menu [data-v="cover"]'); await p.waitForTimeout(200);
   const tmp = path.join(OUT, "cover.png"); fs.writeFileSync(tmp, png(64, 48));
   await p.setInputFiles("#coverIn", tmp); await p.waitForTimeout(600);
   const thumbLen = await p.evaluate(() => window.__moonsinger.extras().thumbnail?.length ?? 0); check(thumbLen > 100 && thumbLen < 70 * 1024, "封面图缩成 PNG 进 extras", String(thumbLen));

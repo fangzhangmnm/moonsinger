@@ -46,11 +46,15 @@ check(dl.suggestedFilename() === `${day}-春の歌.mxl` && (await title()) === `
 // 改一下 → 打开 → 先问
 await p.keyboard.press("Digit7");
 check((await title()) === `${day}-春の歌 •`, "又改了");
+// 点文件名 = 改名（同 WXHW：文件名是管理用的把手；2026-10-08 起不再弹文件菜单）
+await p.click("#fileBtn"); await p.waitForSelector(".offer #fnIn");
+check((await p.inputValue(".offer #fnIn")) === `${day}-春の歌`, "点文件名（还没有家）= 改文件名面板，填着现在的名字");
+await p.click('.offer [data-v="cancel"]'); await p.waitForTimeout(100);
 // 导出 hub（v0.3.0）：另存为住这里（user 2026-08-20「另存为也变成导出」）；存一份副本 = 下载、文件名带时刻、「•」不变（导出不清 dirty）
-await p.click("#fileBtn"); await p.waitForSelector(".offer .file-row");
-check(!(await p.$('.offer [data-v="saveAs"]')) && !!(await p.$('.offer [data-v="export"]')) && !!(await p.$('.offer [data-v="rename"]')), "文件菜单：没有「另存为」、有「导出…」；还没有家 = 有「改文件名」");
-await p.click('.offer [data-v="export"]'); await p.waitForFunction(() => document.querySelector(".offer .offer-title")?.textContent === "导出");
-check(!!(await p.$('.offer [data-v="mp3"]')) && !!(await p.$('.offer [data-v="mxl"]')), "文件菜单「导出…」→ 导出 hub：歌声 mp3 / 存一份 .mxl 副本");
+await p.click("#setBtn"); await p.waitForSelector(".main-menu");
+check(!(await p.$('.main-menu [data-v="saveAs"]')) && !!(await p.$('.main-menu [data-v="export"]')) && !!(await p.$('.main-menu [data-v="rename"]')), "三条杠菜单：没有「另存为」、有「导出…」；还没有家 = 有「改文件名」");
+await p.click('.main-menu [data-v="export"]'); await p.waitForFunction(() => document.querySelector(".offer .offer-title")?.textContent === "导出");
+check(!!(await p.$('.offer [data-v="mp3"]')) && !!(await p.$('.offer [data-v="mxl"]')), "三条杠「导出…」→ 导出 hub：歌声 mp3 / 存一份 .mxl 副本");
 await p.click('.offer [data-v="mxl"]'); await p.waitForSelector('.offer [data-v="download"]');
 const [dl2] = await Promise.all([p.waitForEvent("download"), p.click('.offer [data-v="download"]')]);
 check(new RegExp(`^${day}-春の歌-\\d{8}-\\d{4}\\.mxl$`).test(dl2.suggestedFilename()) && (await title()) === `${day}-春の歌 •`, "存一份 .mxl 副本：文件名带时刻、「•」还在（导出不清 dirty）", dl2.suggestedFilename());
@@ -58,7 +62,7 @@ await p.click("#score", { position: { x: 700, y: 400 } });
 await p.keyboard.press("Control+Shift+KeyS"); await p.waitForFunction(() => document.querySelector(".offer .offer-title")?.textContent === "导出");
 check(true, "Ctrl+Shift+S → 导出 hub（原来的另存为键）");
 await p.click('.offer [data-v="close"]'); await p.waitForTimeout(100);
-await p.click("#fileBtn"); await p.click('.offer [data-v="open"]');
+await p.click("#setBtn"); await p.click('.main-menu [data-v="open"]');
 await p.waitForSelector(".offer .offer-title");
 check((await p.textContent(".offer .offer-title")) === `「${day}-春の歌」改过还没存`, "改过没存时「打开」先问");
 const [fc] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="go"]')]);
@@ -67,8 +71,8 @@ const after = await tokens();
 const canon = (j) => JSON.stringify(JSON.parse(j).map((t) => { const o = (t.kind === "note" || t.kind === "rest") ? t : { ...t, id: 0 }; return Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]])); }));
 check(canon(after) === canon(before), "打开存的文件：逐 token 相同（小节线 / 记号的 id 是编辑器自己的，不比）");
 // 别家的谱
-await p.click("#fileBtn");
-const [fc2] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="open"]')]);
+await p.click("#setBtn");
+const [fc2] = await Promise.all([p.waitForEvent("filechooser"), p.click('.main-menu [data-v="open"]')]);
 await fc2.setFiles(`${DIR}/twinkle.musicxml`); await p.waitForTimeout(300);
 const notice = await p.textContent(".notice-error .notice-text"); check(notice.includes("还没人上场") && !notice.includes("叠音"), "别家谱：报出没人上场（叠音 2026-10-08 起读进来，不再算丢）");
 const partName = await p.textContent("#score text.part-name");
