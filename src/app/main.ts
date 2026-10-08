@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, setPartStaves, type Clef } from "../score/song.ts";
+import { type Art, type Dyn, toggleArtSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -1171,6 +1171,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
       `<span class="tc-k">出声</span><div class="tc-v">${chip("mute", "静音", v.muted, "播放时不出声；谱上照画")}${chip("solo", "独奏", v.solo, "播放时只出有独奏的声部")}</div>` +
       `<span class="tc-k">谱表</span><div class="tc-v">${chip("staves:1", "一张", one)}${chip("staves:2", "大谱表", !one, "上高音下低音（钢琴）：中央 C 以下自动落下面，pad「⋯ → 换谱表」能手动挪")}</div>` +
       (one ? `<span class="tc-k">谱号</span><div class="tc-v">${chip("clef:G", "高音", (me.clef ?? "G") === "G")}${chip("clef:F", "低音", me.clef === "F", "低的声部（贝斯 / 大提琴）")}</div>` : "") +
+      (st.song.parts.length > 1 ? `<span class="tc-k">顺序</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="往上挪一格（最上面那个声部的速度记号说了算）">↑ 往上</button><button class="btn" data-v="movedown"${k === st.song.parts.length - 1 ? " disabled" : ""} title="往下挪一格">↓ 往下</button></div>` : "") +
       `</div><div class="tc-foot"><button class="btn" data-v="addpart" title="再加一个声部：每张纸上都给它一行，谱头照抄">＋ 加声部</button>` +
       (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="这张纸上不要这个声部（别的纸照旧）">这张纸上去掉</button>` : "") +
       (st.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="整首歌里删掉这个声部（休息室里它的角色一起删；能撤销）">删掉…</button>` : "") + `</div>`;
@@ -1178,7 +1179,13 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   draw(); document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   // 开在这条谱的下面（右边就是这条谱本身——隐藏 / 谱号一点就要看得见它变）；下面放不下 = 上面
-  const below = at ? at.bottom + 30 : (innerHeight - h) / 2, y = at && below + h > innerHeight - m ? at.top - h - 10 : below, x = at ? at.left - 8 : (innerWidth - w) / 2;
+  let x = (innerWidth - w) / 2, y = (innerHeight - h) / 2;
+  if (at) {
+    const below = at.bottom + 30, above = at.top - h - 10;
+    if (below + h <= innerHeight - m) { x = at.left - 8; y = below; }
+    else if (above >= m) { x = at.left - 8; y = above; }
+    else { x = at.right + 10; y = (at.top + at.bottom) / 2 - h / 2; }   // 上下都放不下（矮窗口）：放名字右边，别把名字本身盖住
+  }
   box.style.left = `${Math.max(m, Math.min(x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };   // 非模态：点外面就收，那一下照常落到谱上
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; trackRedraw = null; };
@@ -1193,6 +1200,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     else if (v === "mute") { setPv(me.id, { muted: !pv(me.id).muted }); view.render(); }
     else if (v === "solo") { setPv(me.id, { solo: !pv(me.id).solo }); view.render(); }
     else if (v.startsWith("clef:")) update(setPartClef(st, me.id, v.slice(5) as Clef));
+    else if (v === "moveup" || v === "movedown") { update(movePart(st, me.id, v === "moveup" ? -1 : 1)); renderTitle(); }
     else if (v.startsWith("staves:")) { update(setPartStaves(st, me.id, v.slice(7) === "2" ? 2 : 1)); pad.render(); }
     else if (v === "addpart") { close(); addNewPart(); return; }
     else if (v === "droptrack") { close(); update(removeTrack(st, st.at.paper, me.id)); return; }

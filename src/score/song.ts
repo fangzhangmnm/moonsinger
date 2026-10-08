@@ -790,6 +790,14 @@ export function removePart(st: EditorState, partId: string): EditorState {
   const at = st.at.part === partId ? { paper: st.at.paper, part: song.parts[0].id } : st.at;
   return setFocus({ ...st, song }, at.paper, at.part, st.at.part === partId ? undefined : st.caret);
 }
+/** 声部上下挪一格（谱上从上到下 = Song.parts 的顺序；user 2026-10-08「声部顺序应该能重排」）。每张纸、每条 track 都不动，只换顺序。
+ *  速度照旧跟最上面那个声部（tempoMapOf）：挪了谁在最上面，速度就看谁的。 */
+export function movePart(st: EditorState, partId: string, d: -1 | 1): EditorState {
+  const ps = st.song.parts, i = ps.findIndex((p) => p.id === partId), j = i + d;
+  if (i < 0 || j < 0 || j >= ps.length) return st;
+  const parts = ps.slice(); [parts[i], parts[j]] = [parts[j], parts[i]];
+  return { ...st, song: { ...st.song, parts } };
+}
 /** 这张纸上加上某个（歌里已有的）声部：一条只有谱头的 track（谱头抄这张纸第一个在场声部的开头）。user 2026-10-08「每个sheet的track数量当然不同」。 */
 export function addTrack(st: EditorState, paperId: string, partId: string): EditorState {
   const p = st.song.papers.find((x) => x.id === paperId);

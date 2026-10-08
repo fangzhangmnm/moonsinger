@@ -159,10 +159,18 @@ export class ScoreView {
     this.title.reposition();
     // 只在光标 / 选区 / 编辑框挪了的时候才把视图拉过去；别的重画（静音 / 独奏的角标、隐藏、换纸设置…）不动人家滚到哪
     //   （user 2026-10-08「toggle mute solo的时候页面滚动会变」：原来每次重画都 follow，滚开了光标那行再点静音 = 被拽回去）
-    const st2 = this.host.get(), fk = `${st2.at.paper}|${st2.at.part}|${st2.caret}|${st2.sel ? `${st2.sel.from}-${st2.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}|${this.el.clientWidth}x${this.el.clientHeight}`;   // 窗口变了（pad 弹出把谱挤矮）照样跟
-    if (fk !== this.followKey) { this.followKey = fk; this.follow(); }
+    const base = this.baseKey(), fk = `${base}|${this.el.clientWidth}x${this.el.clientHeight}`;   // 窗口变了（pad 弹出把谱挤矮）照样跟
+    if (this.holdView) this.heldBase = base;   // 点声部名：这个光标位置不跟，直到光标再挪
+    if (fk !== this.followKey) { this.followKey = fk; if (base !== this.heldBase) { this.heldBase = null; this.follow(); } }
+  }
+  /** 光标 / 选区 / 编辑框在哪（变了才跟）。 */
+  private baseKey(): string {
+    const st = this.host.get();
+    return `${st.at.paper}|${st.at.part}|${st.caret}|${st.sel ? `${st.sel.from}-${st.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}`;
   }
   private followKey = "";
+  private holdView = false;               // 正在点声部名（这一次重画不跟光标）
+  private heldBase: string | null = null; // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
 
   /** 这个命中记录是不是光标所在那条 track 的。 */
   private onTrack(h: { system: number }): boolean {
@@ -324,7 +332,11 @@ export class ScoreView {
     if (this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌
     const pt = L.parts.find((b) => this.inBox(b, x, y));
-    if (pt) { const at = this.clientBox(pt); this.host.set(setFocus(this.host.get(), pt.paper, pt.part)); this.host.onPart?.(pt.paper, pt.part, at); return true; }
+    if (pt) {   // 点声部名 = 开轨的小卡：光标换到那条（setFocus 放在那条的最后），但视图不跟过去（user 2026-10-08「按vocal字弹track窗的时候页面滚动会乱」）
+      const at = this.clientBox(pt); this.holdView = true; this.host.set(setFocus(this.host.get(), pt.paper, pt.part)); this.holdView = false;
+      this.heldBase = this.baseKey();   // 本来就在这条（没重画）也一样：接下来 pad 弹出也不拽
+      this.host.onPart?.(pt.paper, pt.part, at); return true;
+    }
     // 0¼. 纸面最上面的歌名（可不填）
     if (this.inBox(L.title, x, y)) { this.title.openNow(); this.host.focus?.("text"); return true; }
     // 0⅜. 纸顶：「⋯」（纸的菜单）、曲段名（就地改）；最底下「＋ 新的纸」

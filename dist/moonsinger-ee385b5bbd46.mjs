@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.16-2026-10-08";
+var APP_VERSION = "v0.6.17-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3525,6 +3525,13 @@ function removePart(st3, partId) {
   const song = { ...st3.song, parts: st3.song.parts.filter((p2) => p2.id !== partId), papers };
   const at2 = st3.at.part === partId ? { paper: st3.at.paper, part: song.parts[0].id } : st3.at;
   return setFocus({ ...st3, song }, at2.paper, at2.part, st3.at.part === partId ? void 0 : st3.caret);
+}
+function movePart(st3, partId, d3) {
+  const ps = st3.song.parts, i10 = ps.findIndex((p2) => p2.id === partId), j2 = i10 + d3;
+  if (i10 < 0 || j2 < 0 || j2 >= ps.length) return st3;
+  const parts = ps.slice();
+  [parts[i10], parts[j2]] = [parts[j2], parts[i10]];
+  return { ...st3, song: { ...st3.song, parts } };
 }
 function addTrack(st3, paperId, partId) {
   const p2 = st3.song.papers.find((x2) => x2.id === paperId);
@@ -5951,13 +5958,26 @@ var ScoreView = class {
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
-    const st22 = this.host.get(), fk = `${st22.at.paper}|${st22.at.part}|${st22.caret}|${st22.sel ? `${st22.sel.from}-${st22.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}|${this.el.clientWidth}x${this.el.clientHeight}`;
+    const base3 = this.baseKey(), fk = `${base3}|${this.el.clientWidth}x${this.el.clientHeight}`;
+    if (this.holdView) this.heldBase = base3;
     if (fk !== this.followKey) {
       this.followKey = fk;
-      this.follow();
+      if (base3 !== this.heldBase) {
+        this.heldBase = null;
+        this.follow();
+      }
     }
   }
+  /** 光标 / 选区 / 编辑框在哪（变了才跟）。 */
+  baseKey() {
+    const st3 = this.host.get();
+    return `${st3.at.paper}|${st3.at.part}|${st3.caret}|${st3.sel ? `${st3.sel.from}-${st3.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}`;
+  }
   followKey = "";
+  holdView = false;
+  // 正在点声部名（这一次重画不跟光标）
+  heldBase = null;
+  // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
   /** 这个命中记录是不是光标所在那条 track 的。 */
   onTrack(h2) {
     const L2 = this.layout, st3 = this.host.get(), row = L2.systems[h2.system];
@@ -6173,7 +6193,10 @@ var ScoreView = class {
     const pt = L2.parts.find((b3) => this.inBox(b3, x2, y2));
     if (pt) {
       const at2 = this.clientBox(pt);
+      this.holdView = true;
       this.host.set(setFocus(this.host.get(), pt.paper, pt.part));
+      this.holdView = false;
+      this.heldBase = this.baseKey();
       this.host.onPart?.(pt.paper, pt.part, at2);
       return true;
     }
@@ -25377,6 +25400,7 @@ function describeSongChange(prev, next2) {
   const a10 = prev.song, b3 = next2.song;
   if (a10.papers.length !== b3.papers.length) return { kind: "paper", label: b3.papers.length > a10.papers.length ? "\u52A0\u4E86\u4E00\u5F20\u7EB8" : "\u5220\u4E86\u4E00\u5F20\u7EB8" };
   if (a10.parts.length !== b3.parts.length) return { kind: "score", label: b3.parts.length > a10.parts.length ? "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8" : "\u5220\u4E86\u4E00\u4E2A\u58F0\u90E8" };
+  if (a10.parts.some((p2, k2) => p2.id !== b3.parts[k2]?.id)) return { kind: "score", label: "\u632A\u4E86\u58F0\u90E8\u987A\u5E8F" };
   const d3 = body(b3, prev.at).length - body(a10, prev.at).length;
   if (d3 > 0) return { kind: "score", label: `\u5199\u4E86 ${d3} \u4E2A` };
   if (d3 < 0) return { kind: "score", label: `\u5220\u4E86 ${-d3} \u4E2A` };
@@ -27042,12 +27066,25 @@ function openTrackCard(at2) {
   const draw = () => {
     const me = curPart(), v = pv(me.id), k2 = st2.song.parts.indexOf(me), label = partLabels(st2.song, doc.extras)[k2] ?? "";
     const onPaper = Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
-    box.innerHTML = `<button class="tc-inst" data-v="inst" title="\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\u3001\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\uFF08\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09"><span class="tc-l"><b>${esc7(label)}</b><small>${((who) => who ? `${esc7(who)} \u5728\u6F14` : "\u6CA1\u4EBA\u4E0A\u573A")(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">\u4E50\u5668 \u203A</span></button><div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:G", "\u9AD8\u97F3", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}</div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="addpart" title="\u518D\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF1A\u6BCF\u5F20\u7EB8\u4E0A\u90FD\u7ED9\u5B83\u4E00\u884C\uFF0C\u8C31\u5934\u7167\u6284">\uFF0B \u52A0\u58F0\u90E8</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u2026</button>` : "") + `</div>`;
+    box.innerHTML = `<button class="tc-inst" data-v="inst" title="\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\u3001\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\uFF08\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09"><span class="tc-l"><b>${esc7(label)}</b><small>${((who) => who ? `${esc7(who)} \u5728\u6F14` : "\u6CA1\u4EBA\u4E0A\u573A")(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">\u4E50\u5668 \u203A</span></button><div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:G", "\u9AD8\u97F3", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="addpart" title="\u518D\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF1A\u6BCF\u5F20\u7EB8\u4E0A\u90FD\u7ED9\u5B83\u4E00\u884C\uFF0C\u8C31\u5934\u7167\u6284">\uFF0B \u52A0\u58F0\u90E8</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u2026</button>` : "") + `</div>`;
   };
   draw();
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
-  const below = at2 ? at2.bottom + 30 : (innerHeight - h2) / 2, y2 = at2 && below + h2 > innerHeight - m2 ? at2.top - h2 - 10 : below, x2 = at2 ? at2.left - 8 : (innerWidth - w2) / 2;
+  let x2 = (innerWidth - w2) / 2, y2 = (innerHeight - h2) / 2;
+  if (at2) {
+    const below = at2.bottom + 30, above = at2.top - h2 - 10;
+    if (below + h2 <= innerHeight - m2) {
+      x2 = at2.left - 8;
+      y2 = below;
+    } else if (above >= m2) {
+      x2 = at2.left - 8;
+      y2 = above;
+    } else {
+      x2 = at2.right + 10;
+      y2 = (at2.top + at2.bottom) / 2 - h2 / 2;
+    }
+  }
   box.style.left = `${Math.max(m2, Math.min(x2, innerWidth - w2 - m2))}px`;
   box.style.top = `${Math.max(m2, Math.min(y2, innerHeight - h2 - m2))}px`;
   const outside = (e10) => {
@@ -27086,7 +27123,10 @@ function openTrackCard(at2) {
       setPv(me.id, { solo: !pv(me.id).solo });
       view.render();
     } else if (v.startsWith("clef:")) update(setPartClef(st2, me.id, v.slice(5)));
-    else if (v.startsWith("staves:")) {
+    else if (v === "moveup" || v === "movedown") {
+      update(movePart(st2, me.id, v === "moveup" ? -1 : 1));
+      renderTitle();
+    } else if (v.startsWith("staves:")) {
       update(setPartStaves(st2, me.id, v.slice(7) === "2" ? 2 : 1));
       pad3.render();
     } else if (v === "addpart") {
@@ -28461,4 +28501,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-649881c43014.mjs.map
+//# sourceMappingURL=moonsinger-ee385b5bbd46.mjs.map

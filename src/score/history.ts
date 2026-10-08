@@ -53,6 +53,7 @@ export function describeSongChange(prev: EditorState, next: EditorState): Locus 
   const a = prev.song, b = next.song;
   if (a.papers.length !== b.papers.length) return { kind: "paper", label: b.papers.length > a.papers.length ? "加了一张纸" : "删了一张纸" };
   if (a.parts.length !== b.parts.length) return { kind: "score", label: b.parts.length > a.parts.length ? "加了一个声部" : "删了一个声部" };
+  if (a.parts.some((p, k) => p.id !== b.parts[k]?.id)) return { kind: "score", label: "挪了声部顺序" };
   const d = body(b, prev.at).length - body(a, prev.at).length;
   if (d > 0) return { kind: "score", label: `写了 ${d} 个` };
   if (d < 0) return { kind: "score", label: `删了 ${-d} 个` };
