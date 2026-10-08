@@ -207,6 +207,8 @@ export class Pad {
         `<button class="btn" data-caret="1" title="光标右移（${hint("right")}）">→</button>` +
         `<button class="btn wk" data-cmd="rest" title="休止（${hint("rest")}）"><span>0</span><small>休止</small></button>` +
         `<button class="btn wk" data-cmd="bar" title="小节线（${hint("bar")}）"><span>|</span><small>小节线</small></button>` +
+        // 呼吸放在写音那一排（user 2026-10-08「呼吸应该是我在first pass 旋律flow的时候非常高频会用到的符号」）：和符号层「演奏法」页那一格同一件事——光标前那个音后面换气，再点去掉；符号层开着也能按
+        `<button class="btn wk breath" data-breath="1" title="呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"><span class="smufl">\uE4CE</span><small>呼吸</small></button>` +
         `<button class="btn wk accshift" data-accshift="1" title="升降（和 Shift 一样）：点一下 = 下一个音；连点两下 = 锁住，再点解开；按住写 = 按住期间。在键上上下滑换 𝄪 / ♯ / ♭ / 𝄫"><span class="ag"></span><small>升降</small></button>` +
         `<button class="btn wk stack" data-stack="1" title="叠音（和 Shift 一样）：点一下 = 下一个按的音叠到前一个音上；连点两下 = 锁住（叠着写：按已有的音 = 拿掉，最后一个留着）；按住写 = 按住期间。单声乐器的声部叠不了"><span>叠</span><small>叠音</small></button>` +
         `<button class="btn wk half" data-half="1" title="减半（长短基线短一档）：点一下 = 下一个音；连点两下 = 锁住，再点解开；也可以按住写"><span>/2</span><small>减半</small></button>` +
@@ -216,6 +218,7 @@ export class Pad {
       const w = this.el.querySelector<HTMLElement>(".writes")!;
       this.on(w, "[data-caret]", (b) => this.host.onCommand({ k: "caret", d: Number(b.dataset.caret) }));
       this.on(w, "[data-cmd]:not([data-cmd=backspace])", (b) => this.host.onCommand({ k: b.dataset.cmd } as Command));
+      this.on(w, "[data-breath]", () => { this.host.onCommand({ k: "art", a: "breath" }); this.render(); });
       // 退格：按下删一个，按住 420 ms 后每 70 ms 再删一个，松手停（user「退格长按可以多删」；节奏同 WXHW src/input/soft-keyboard.ts）
       const bs = w.querySelector<HTMLElement>('[data-cmd="backspace"]')!;
       let timer = 0;
@@ -435,6 +438,18 @@ export class Pad {
     };
   }
   private hint(): HintRange { return this.host.hintRange ? this.host.hintRange() : HER_RANGE; }
+  /** 音域窗口最低那个键的 MIDI（存进歌的 desk）；默认那一档 = null。 */
+  rangeLow(): number | null {
+    if (this.rowShift === 0) return null;
+    const f = inputKey(this.host.state());
+    return midiOf(this.pitchAt(this.baseAt(this.rowShift, f, this.rows()), f));
+  }
+  /** 开歌：按存的最低键挑最近的那一档（null = 默认那一档）。不重画（宿主接着 render）。 */
+  setRangeLow(low: number | null): void {
+    if (low === null) { this.rowShift = 0; return; }
+    const f = inputKey(this.host.state()), rows = this.rows();
+    this.rowShift = SHIFTS.reduce((best, sh) => (Math.abs(midiOf(this.pitchAt(this.baseAt(sh, f, rows), f)) - low) < Math.abs(midiOf(this.pitchAt(this.baseAt(best, f, rows), f)) - low) ? sh : best), 0);
+  }
   /** 音域窗口挪到最能盖住 [lo, hi] 的那一档（重叠最多；一样多取中心最近的）。试听换了乐器时宿主调（「跟进」）；人自己拨旋钮照旧。 */
   follow(lo: number, hi: number): void {
     const f = inputKey(this.host.state()), rows = this.rows(), mid = (lo + hi) / 2;

@@ -52,6 +52,13 @@
       ],
       "version": "number",
       "view": {
+        "pad": {
+          "fifths": "number",
+          "low": "number",
+          "scale": "string",
+          "tuplet": "number",
+          "unit": "string"
+        },
         "pageFlow": "boolean",
         "paper": "string",
         "parts": {

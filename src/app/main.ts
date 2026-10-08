@@ -60,7 +60,7 @@ import { deviceKvGet, deviceKvSet } from "../device-kv.ts";
 import { makeCoverPng, coverWithBlurb } from "../image/cover.ts";
 import { copyTokens, cutTokens, pasteTokens, selectAll, toJianpu, fromJianpu, fifthsAtSel } from "../score/clipboard.ts";
 import { emptyHistory, record, undo, redo, describeSongChange, type History, type Locus, type Restored } from "../score/history.ts";
-import { freshDesk, freshPartView, serializeDesk, unserializeDesk, type Desk, type PartViewState } from "../score/desk.ts";
+import { freshDesk, freshPartView, serializeDesk, unserializeDesk, PAD_UNITS, type Desk, type PartViewState } from "../score/desk.ts";
 import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
 
 initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
@@ -1666,9 +1666,11 @@ instEl.addEventListener("click", (e) => {
   drawInst();
 });
 /** 视图态（desk，src/score/desk.ts）：存时聚一下（bytesNow）、开歌时散回去（loadDoc）。变量本身仍住这里（viewScope / pageFlow / partView）。 */
-const deskNow = (): Desk => ({ scope: viewScope, pageFlow, paper: st.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality });
+const deskNow = (): Desk => ({ scope: viewScope, pageFlow, paper: st.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality,
+  pad: { fifths: st.input.inputFifths, scale: st.input.inputScale, unit: PAD_UNITS[st.input.unit], tuplet: st.input.tuplet, low: pad.rangeLow() } });   // pad 的状态跟着歌走（同 WeebPaint editor-state）
 function applyDesk(d: Desk): void {
   viewScope = d.scope; pageFlow = d.pageFlow; mp3Quality = d.mp3;
+  st = { ...st, input: { ...st.input, inputFifths: d.pad.fifths, inputScale: d.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d.pad.unit)), tuplet: d.pad.tuplet } };
   partView.clear(); for (const [id, p] of Object.entries(d.parts)) partView.set(id, { ...freshPartView(), ...p });
   if (d.paper && d.paper !== st.at.paper) {
     const paper = st.song.papers.find((p) => p.id === d.paper), part = paper?.tracks[st.at.part] ? st.at.part : st.song.parts.find((p) => paper?.tracks[p.id])?.id;
@@ -1681,9 +1683,11 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.mtime = o.handle ? (o.mtime ?? null) : null; doc.extras = o.extras;
   doc.identifier = o.identifier ?? null; setActiveIdentifier(doc.identifier); coverTouched = false;
   history = emptyHistory();   // 换歌 / 云端覆盖重载 = 另一首的历史
-  st = { ...initState(song), input: { ...initState(song).input, inputFifths: st.input.inputFifths, inputScale: st.input.inputScale } };   // pad 是独立设备：换歌不换它的「1=」和调式
+  st = initState(song);
   doc.saved = { song: st.song, lounge: loungeKey() };
-  applyDesk(o.view ? unserializeDesk(o.view) : freshDesk());   // 视图态随歌回来（没有 = 默认）；改它不标脏
+  const d = o.view ? unserializeDesk(o.view) : freshDesk();
+  applyDesk(d);   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
+  pad.setRangeLow(d.pad.low);
   lastRender.clear(); synth.allOff(); gmHeld.clear(); void prepareSynth();
   view.render(); pad.render(); renderTitle();
 }

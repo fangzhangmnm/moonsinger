@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.14-2026-10-08";
+var APP_VERSION = "v0.7.15-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7429,10 +7429,14 @@ var Pad = class {
     this.el.style.setProperty("--cols", String(this.cols));
     this.el.style.setProperty("--rows", String(rows));
     if (!this.el.querySelector(".pad-grid")) {
-      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u8868\u60C5\u8BB0\u53F7\u2014\u2014\u53E5\u53F7\u3001\u8DF3\u97F3 / \u91CD\u97F3 / \u4FDD\u6301 / \u547C\u5438 / \u8FDE\u7EBF\u3001\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF1B\u5199\u97F3\u90A3\u4E00\u5C42\u7684\u952E\u5F00\u7740\u65F6\u7070\u6389\uFF09\u3002\u70B9\u4E00\u4E0B = \u5199\u4E00\u4E2A\u5C31\u56DE\u97F3\u952E\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u540C Shift\uFF09\uFF1B\u518D\u70B9 = \u56DE\u97F3\u952E"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
+      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u8868\u60C5\u8BB0\u53F7\u2014\u2014\u53E5\u53F7\u3001\u8DF3\u97F3 / \u91CD\u97F3 / \u4FDD\u6301 / \u547C\u5438 / \u8FDE\u7EBF\u3001\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF1B\u5199\u97F3\u90A3\u4E00\u5C42\u7684\u952E\u5F00\u7740\u65F6\u7070\u6389\uFF09\u3002\u70B9\u4E00\u4E0B = \u5199\u4E00\u4E2A\u5C31\u56DE\u97F3\u952E\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u540C Shift\uFF09\uFF1B\u518D\u70B9 = \u56DE\u97F3\u952E"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk breath" data-breath="1" title="\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"><span class="smufl">\uE4CE</span><small>\u547C\u5438</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
       const w2 = this.el.querySelector(".writes");
       this.on(w2, "[data-caret]", (b3) => this.host.onCommand({ k: "caret", d: Number(b3.dataset.caret) }));
       this.on(w2, "[data-cmd]:not([data-cmd=backspace])", (b3) => this.host.onCommand({ k: b3.dataset.cmd }));
+      this.on(w2, "[data-breath]", () => {
+        this.host.onCommand({ k: "art", a: "breath" });
+        this.render();
+      });
       const bs = w2.querySelector('[data-cmd="backspace"]');
       let timer = 0;
       const stop = () => clearTimeout(timer), del = () => this.host.onCommand({ k: this.symbols !== "off" ? "symBackspace" : "backspace" });
@@ -7710,6 +7714,21 @@ var Pad = class {
   }
   hint() {
     return this.host.hintRange ? this.host.hintRange() : HER_RANGE;
+  }
+  /** 音域窗口最低那个键的 MIDI（存进歌的 desk）；默认那一档 = null。 */
+  rangeLow() {
+    if (this.rowShift === 0) return null;
+    const f2 = inputKey(this.host.state());
+    return midiOf(this.pitchAt(this.baseAt(this.rowShift, f2, this.rows()), f2));
+  }
+  /** 开歌：按存的最低键挑最近的那一档（null = 默认那一档）。不重画（宿主接着 render）。 */
+  setRangeLow(low) {
+    if (low === null) {
+      this.rowShift = 0;
+      return;
+    }
+    const f2 = inputKey(this.host.state()), rows = this.rows();
+    this.rowShift = SHIFTS.reduce((best, sh2) => Math.abs(midiOf(this.pitchAt(this.baseAt(sh2, f2, rows), f2)) - low) < Math.abs(midiOf(this.pitchAt(this.baseAt(best, f2, rows), f2)) - low) ? sh2 : best, 0);
   }
   /** 音域窗口挪到最能盖住 [lo, hi] 的那一档（重叠最多；一样多取中心最近的）。试听换了乐器时宿主调（「跟进」）；人自己拨旋钮照旧。 */
   follow(lo2, hi) {
@@ -26615,8 +26634,10 @@ function describeSongChange(prev, next2) {
 }
 
 // src/score/desk.ts
+var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
+var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
 var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
-var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard" });
+var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad() });
 function serializeDesk(d3) {
   const out = {};
   if (d3.scope === "all") out.scope = "all";
@@ -26633,6 +26654,13 @@ function serializeDesk(d3) {
     if (Object.keys(v).length) parts[id2] = v;
   }
   if (Object.keys(parts).length) out.parts = parts;
+  const pd = d3.pad, def = freshPad(), pj = {};
+  if (pd.fifths !== def.fifths) pj.fifths = pd.fifths;
+  if (pd.scale !== def.scale) pj.scale = pd.scale;
+  if (pd.unit !== def.unit) pj.unit = pd.unit;
+  if (pd.tuplet) pj.tuplet = pd.tuplet;
+  if (pd.low !== null) pj.low = pd.low;
+  if (Object.keys(pj).length) out.pad = pj;
   return Object.keys(out).length ? out : null;
 }
 function unserializeDesk(json) {
@@ -26649,6 +26677,14 @@ function unserializeDesk(json) {
       const p2 = v;
       d3.parts[id2] = { hidden: p2.hidden === true, only: p2.only === true, muted: p2.muted === true, solo: p2.solo === true };
     }
+  }
+  if (j2.pad && typeof j2.pad === "object") {
+    const q2 = j2.pad;
+    if (Number.isInteger(q2.fifths) && Math.abs(q2.fifths) <= 7) d3.pad.fifths = q2.fifths;
+    if (typeof q2.scale === "string" && SCALES.some((sc2) => sc2.id === q2.scale)) d3.pad.scale = q2.scale;
+    if (PAD_UNITS.includes(q2.unit)) d3.pad.unit = q2.unit;
+    if (q2.tuplet === 3 || q2.tuplet === 5 || q2.tuplet === 6 || q2.tuplet === 7) d3.pad.tuplet = q2.tuplet;
+    if (Number.isInteger(q2.low) && q2.low >= 0 && q2.low <= 127) d3.pad.low = q2.low;
   }
   return d3;
 }
@@ -27862,7 +27898,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "111f4a536ed8",
+  cssHash: "6d703432c84b",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -28956,11 +28992,19 @@ instEl.addEventListener("click", (e10) => {
   else return;
   drawInst();
 });
-var deskNow = () => ({ scope: viewScope, pageFlow, paper: st2.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality });
+var deskNow = () => ({
+  scope: viewScope,
+  pageFlow,
+  paper: st2.at.paper,
+  parts: Object.fromEntries(partView),
+  mp3: mp3Quality,
+  pad: { fifths: st2.input.inputFifths, scale: st2.input.inputScale, unit: PAD_UNITS[st2.input.unit], tuplet: st2.input.tuplet, low: pad3.rangeLow() }
+});
 function applyDesk(d3) {
   viewScope = d3.scope;
   pageFlow = d3.pageFlow;
   mp3Quality = d3.mp3;
+  st2 = { ...st2, input: { ...st2.input, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d3.pad.unit)), tuplet: d3.pad.tuplet } };
   partView.clear();
   for (const [id2, p2] of Object.entries(d3.parts)) partView.set(id2, { ...freshPartView(), ...p2 });
   if (d3.paper && d3.paper !== st2.at.paper) {
@@ -28981,9 +29025,11 @@ function loadDoc(song, o10) {
   setActiveIdentifier(doc.identifier);
   coverTouched = false;
   history = emptyHistory();
-  st2 = { ...initState(song), input: { ...initState(song).input, inputFifths: st2.input.inputFifths, inputScale: st2.input.inputScale } };
+  st2 = initState(song);
   doc.saved = { song: st2.song, lounge: loungeKey() };
-  applyDesk(o10.view ? unserializeDesk(o10.view) : freshDesk());
+  const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
+  applyDesk(d3);
+  pad3.setRangeLow(d3.pad.low);
   lastRender.clear();
   synth.allOff();
   gmHeld.clear();
@@ -30170,4 +30216,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-01b85bd98820.mjs.map
+//# sourceMappingURL=moonsinger-bc58eacf6a51.mjs.map

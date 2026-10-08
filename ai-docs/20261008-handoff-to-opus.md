@@ -66,6 +66,8 @@
 
 **v0.7.14（2026-10-08 深夜，edited by Claude Opus 5.5）**：符号层分三页（演奏法 / 力度 / 记号），pad 头那一排在符号层里换成标签（user「可以」）；记住在哪一页（修「切换符号键盘的时候翻页会乱」）。
 
+**v0.7.15（2026-10-08 深夜，edited by Claude Opus 5.5）**：pad 的状态（1= / 调式 / 时值 / 连音 / 音域）跟着歌走（score.json `view.pad`，同 WeebPaint editor-state）；写音那一排加呼吸键。下一件：user 报「一个大bug，每一个sheet有独立的歌手组合，而不是一个track在不同sheet对应同一个歌手」「然后跨sheet的连接按歌手认领」。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |

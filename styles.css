@@ -276,6 +276,7 @@ button, input, select { font: inherit; color: inherit; }
 .pad-tools.writes .btn[data-caret] { flex: 0 0 var(--knob); }
 @container (max-width: 440px) { .pad-tools.writes .btn.accshift { display: none; } .pad-tools.writes .btn[data-caret] { flex: 1 1 0; } }   /* 窄的时候 8 颗一样宽（user 2026-10-08「make those 8 buttons evenly spaced out for that thin width」；宽的时候 ← → 照旧是方块） */
 .pad-tools .btn.accshift { touch-action: none; }
+.pad-tools .btn.breath .smufl { font-family: "Bravura"; font-size: 30px; line-height: 1; display: inline-block; height: 16px; position: relative; top: -4px; }   /* 写音那一排的呼吸（Bravura 的逗号本来就小） */
 .pad-tools .btn.accshift .smufl { font-family: "Bravura"; font-size: 22px; line-height: 1; display: inline-block; height: 16px; position: relative; top: -2px; }
 .pad-tools.writes .btn { height: var(--knob); }
 .pad-tools .btn.knob { position: relative; touch-action: none; gap: 2px; height: var(--knob); }
@@ -532,6 +533,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 /* pad：叠音键（Shift 逻辑同 /2）；单声乐器的声部叠不了 = 灰 */
 .pad-tools .btn.stack.off { opacity: .3; pointer-events: none; }
 @container (max-width: 520px) { .pad-tools.writes .btn.stack { display: none; } }
+@container (max-width: 440px) { .pad-tools.writes .btn small { font-size: 9px; white-space: nowrap; letter-spacing: -0.3px; } }   /* 窄 pad 多了呼吸键（9 颗 ≈ 32 px）：小字不折行（「小节线」原来折成两行） */
 /* pad 符号层（像 iOS 键盘的 .?123 翻过去那一页；user 2026-10-08「软键盘里面后面有一个符号模式」「row col 超了可以拖动滚」） */
 .pad-grid.symbols { overflow-y: auto; touch-action: pan-y; align-content: start; grid-auto-rows: var(--key-h); -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   height: calc(var(--rows, 4) * var(--key-h) + (var(--rows, 4) - 1) * var(--kgv)); }   /* 高 = 音键那几排（几何不变），多了的格子在里面滚 */
