@@ -210,7 +210,7 @@ const pad = new Pad(padEl, {
   onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); },
   onHide: () => showPad(false),
   onHalf: (down) => { if (finder.isOpen) return; halfKey(down); },
-  onAccShift: (phase, acc) => { if (finder.isOpen) return; accKey(phase, acc); },
+  onAccShift: (phase, acc) => accKey(phase, acc),   // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
   onInsertMark: (kind) => {
     if (finder.isOpen) return;   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
     const at = st.sel ? st.sel.from : st.caret;
@@ -590,8 +590,8 @@ async function castPick(p: FinderPick, mode: "auto" | "embed" | "weak"): Promise
   return "done";
 }
 const finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder() });
-function openFinder(): void { closeOffer?.(); scoreEl.hidden = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); void finder.show(); }
-function closeFinder(): void { if (!finder.isOpen) return; finder.hide(); audition = null; synth.allOff(); gmHeld.clear(); padEl.classList.remove("is-locked"); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); scoreEl.focus(); }
+function openFinder(): void { closeOffer?.(); scoreEl.hidden = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); $("improBtn").classList.add("is-on"); void finder.show(); }   // 「弹」亮着 = pad 只弹不写
+function closeFinder(): void { if (!finder.isOpen) return; finder.hide(); audition = null; synth.allOff(); gmHeld.clear(); padEl.classList.remove("is-locked"); $("improBtn").classList.toggle("is-on", impro); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); scoreEl.focus(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 function setActive(id: string): void { doc.extras = withActive(doc.extras, id, st.song.hum); synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); }
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");

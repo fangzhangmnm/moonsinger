@@ -352,7 +352,7 @@ button, input, select { font: inherit; color: inherit; }
 .cand-status { font-size: 12px; color: var(--muted); margin: -2px 0 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .cand-del { height: 28px; width: 28px; padding: 0; font-size: 13px; color: var(--muted); margin-left: -4px; }
 /* 找人视图开着 = 试听台：pad 只许音键出声，写字那一排和「⋯」灰掉、不响应（宿主回调里还有第二道闸） */
-.pad-panel.is-locked .pad-tools.writes, .pad-panel.is-locked [data-knob="more"] { opacity: .3; pointer-events: none; }
+.pad-panel.is-locked .pad-tools.writes .btn:not(.accshift), .pad-panel.is-locked [data-knob="more"] { opacity: .3; pointer-events: none; }   /* 升降留着：弹着玩要用，它只改弹出来的音高（user「为什么禁用了」） */
 /* 平替的提供者弱化：虚线框、灰字、「顶替」小标（本尊才是实线黑字） */
 .prov.sub { border-style: dashed; background: transparent; }
 .prov.sub .prov-l b { font-weight: 500; color: var(--muted); }

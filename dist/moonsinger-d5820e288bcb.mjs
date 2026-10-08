@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.4.7-2026-10-07";
+var APP_VERSION = "v0.4.8-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6912,10 +6912,8 @@ var pad = new Pad(padEl, {
     if (finder.isOpen) return;
     halfKey(down);
   },
-  onAccShift: (phase, acc) => {
-    if (finder.isOpen) return;
-    accKey(phase, acc);
-  },
+  onAccShift: (phase, acc) => accKey(phase, acc),
+  // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
   onInsertMark: (kind) => {
     if (finder.isOpen) return;
     const at = st.sel ? st.sel.from : st.caret;
@@ -7357,7 +7355,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "157d836a5aae", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "4422f7fcb841", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
   embedSoftLimit = n2;
 }, synth };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
@@ -7471,6 +7469,7 @@ function openFinder() {
   showPad(true);
   padEl.classList.add("is-locked");
   pad.clearHeld();
+  $("improBtn").classList.add("is-on");
   void finder.show();
 }
 function closeFinder() {
@@ -7480,6 +7479,7 @@ function closeFinder() {
   synth.allOff();
   gmHeld.clear();
   padEl.classList.remove("is-locked");
+  $("improBtn").classList.toggle("is-on", impro);
   scoreEl.hidden = false;
   void prepareSynth();
   view.render();
@@ -8126,4 +8126,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-2737c31ed603.mjs.map
+//# sourceMappingURL=moonsinger-d5820e288bcb.mjs.map
