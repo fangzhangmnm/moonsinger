@@ -55,3 +55,23 @@ describe("音头：MusicXML", () => {
     eq(JSON.stringify(back.map((t) => t.art)), `[["sfz"],["fp"]]`);
   });
 });
+
+describe("音内的起伏（< / > / <>）", () => {
+  it("存 → 开：存在 .moonsinger/score.json（按音的 id），原样回来", async () => {
+    const { saveMxl, openBytes, emptyExtras } = await import("../src/format/project.ts");
+    const { toggleSwell, writeDegree } = await import("../src/score/song.ts");
+    let st = initState(); for (const d of [1, 2, 3]) st = writeDegree(st, d, "near");
+    st = toggleSwell(st, "<>")!;
+    const o = openBytes("x.mxl", saveMxl({ song: st.song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08" }));
+    const back = o.song.papers[0].tracks[o.song.parts[0].id].filter((t) => t.kind === "note") as NoteTok[];
+    eq(JSON.stringify(back.map((t) => t.swell ?? null)), `[null,null,"<>"]`);
+  });
+  it("dB 那一路：< 一路往上到 +swellDb；<> 中间最高再回来；能和 fp 叠（fp 之后再往上）", () => {
+    const up = gainSegments(line([note()].map((t) => ({ ...(t as NoteTok), swell: "<" as const }))), undefined, db)!;
+    assert(up[0].dB < 1 && up.at(-1)!.dB > MARK_DEFAULTS.swellDb - 0.5, `< ${up[0].dB} → ${up.at(-1)!.dB}`);
+    const bump = gainSegments(line([{ ...(note() as NoteTok), swell: "<>" as const }]), undefined, db)!, mid = bump[Math.floor(bump.length / 2)].dB;
+    assert(mid > bump[0].dB + 3 && mid > bump.at(-1)!.dB + 3, "<> 中间高");
+    const fpUp = gainSegments(line([{ ...(note(["fp"]) as NoteTok), swell: "<" as const }]), undefined, db)!;
+    assert(fpUp.at(-1)!.dB > DYNAMICS_DB.p + 3, "fp 之后再往上");
+  });
+});

@@ -79,6 +79,7 @@
             "sfzSec": "number",
             "sfzVel": "number",
             "staccatoGate": "number",
+            "swellDb": "number",
             "tenutoGate": "number",
             "wedgeStepDb": "number",
             "wedgeStepVel": "number"

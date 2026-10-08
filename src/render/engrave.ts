@@ -516,7 +516,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       }
       return { top, bot };
     };
-    const dynIn = (q: (typeof per)[number], s: number) => q.units.some((u) => u.system === s && (u.kind === "dyn" || u.kind === "hairpin" || (u.kind === "chunk" && u.note && (u.art.includes("sfz") || u.art.includes("fp")))));
+    const dynIn = (q: (typeof per)[number], s: number) => q.units.some((u) => u.system === s && (u.kind === "dyn" || u.kind === "hairpin" || (u.kind === "chunk" && u.note && (u.art.includes("sfz") || u.art.includes("fp") || !!(q.tokens[u.index] as NoteTok).swell))));
     /** 第 s 行：每个声部每张谱表的「上面留多少 / 下面留多少 / 歌词基线」（sp）+ 力度字基线的位置（谱上的级数；中间那种放好了再算）。 */
     const geoOf = (s: number) => per.map((q, r) => {
       const ex = Array.from({ length: q.staves }, (_, k) => extentOf(q, s, k)), dyn = dynIn(q, s), mode = dynMode[r];
@@ -773,7 +773,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       // 7½. 修（2026-10-08）：跳音 / 保持在符头外一格（谱内落在间里），重音再往外、出了谱；符干朝上 = 画在下面，朝下 / 没有符干 = 上面。呼吸 = 音后面、谱线上方一个逗号
       const ign = new Set(q.p.ignores ?? []);   // 台上那位不认的记号：照画、画灰（user「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）
       for (const c of units) {
-        if (c.kind !== "chunk" || !c.note || (!c.art.length && !c.breath)) continue;
+        if (c.kind !== "chunk" || !c.note || (!c.art.length && !c.breath && !(c.j === 0 && (tokens[c.index] as NoteTok).swell))) continue;
         const row = RW(c), cls = clsOf(c), cx = nhX(c) + nhW(c) / 2;
         const dsC = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
         const below = upOf.get(c) ?? false, sgn = below ? -1 : 1;
@@ -785,6 +785,14 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           const m = ART_GLYPH[a], g = below ? m.below : m.above;
           prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
           d += sgn * (a === "accent" || a === "marcato" ? 3 : 2);
+        }
+        // 音内的起伏（< / > / <>）：力度那一行，这个音自己的宽度里一个小发夹；做不到的（canSwell = false 的 < / <>）画灰
+        const swl = c.j === 0 ? (tokens[c.index] as NoteTok).swell : undefined;
+        if (swl) {
+          const y = (dynYAt.get(rowOf(c.system, r, 0)) ?? yOf(RW(c), TOP_LINE + 2.4)) - P(0.5), xa = nhX(c) + (c.art.some((a) => a === "sfz" || a === "fp") ? P(2.4) : 0), xb = Math.max(xa + P(1.6), nhX(c) + P(c.w) - P(0.8)), H = P(0.35);
+          const cl = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
+          const d = swl === "<" ? `M${xb},${y - H}L${xa},${y}L${xb},${y + H}` : swl === ">" ? `M${xa},${y - H}L${xb},${y}L${xa},${y + H}` : `M${xa},${y}L${mx},${y - H}L${xb},${y}M${xa},${y}L${mx},${y + H}L${xb},${y}`;
+          prims.push({ t: "path", d, cls: cl });
         }
         // 突强 / 强后即弱：音头的力度形状，画在力度那一行、和这个音左对齐（同力度记号的字）
         for (const a of (["sfz", "fp"] as const).filter((x) => c.art.includes(x)))

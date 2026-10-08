@@ -25,6 +25,7 @@ export interface GmRow { program: number; bank: number; note?: number; gmNumber:
   styles?: { tag: string; ear: string; weight?: number; as?: string }[]; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string;   // primary = 一个号多重认领时的主本尊（v3）
   /** GM 116–128 音效：在 GS + TinySoundFont 里按哪个键是采样原速（v8 按 TSF 的音高公式重算；换音色库 / 引擎就不算数）。 */
   joint?: RowJoint; excitation?: { id: string; basis?: string }; breath?: { id: string; basis?: string };
+  sustain?: { id: string; attackMs?: number; noteOffCuts?: boolean; basis?: string };   // 仓鼠 v11：sustained / decaying / oneshot（实测）
   velLayers?: { soundfont?: string; key?: number; count: number; ranges: [number, number][]; mpMfSwitchesLayer?: boolean; basis?: string };   // 仓鼠 v11：GS 里这个预设的力度层（实测）
   sampleKey?: { soundfont: string; engine?: string; recommended: number; recommendedBasis?: string;
     layers?: { sample?: string; originalSpeedKey?: number; centsPerKey?: number; keyRange?: string; peakAtRecommended?: { hz: number; midi: number; pitched: boolean } | null }[] } }
@@ -100,6 +101,11 @@ export function jointOf(cat: Catalog, bank: number, program: number, note?: numb
   const j = row?.joint; if (!j || j.id === null || j.gapMs === null) return null;
   const zh = (cat.defs as Defs & { joints?: { id: string; zh: string }[] }).joints?.find((x) => x.id === j.id)?.zh ?? j.id;
   return { gapSec: j.gapMs / 1000, zh, basis: j.basis ?? "" };
+}
+/** 这个预设能不能一直响（仓鼠 v11 实测）："sustained" / "decaying" / "oneshot"；没有 = null。 */
+export function sustainOf(cat: Catalog, bank: number, program: number, note?: number): string | null {
+  const row = cat.rows.find((r) => r.bank === bank && r.program === program && r.note === note && r.sustain) ?? cat.rows.find((r) => r.bank === bank && r.program === program && r.sustain);
+  return row?.sustain?.id ?? null;
 }
 /** 这个预设在 GS 里的力度层（仓鼠 v11 实测；在 key 那个键上测的）。没有 = null。 */
 export function velLayersOf(cat: Catalog, bank: number, program: number, note?: number): { count: number; ranges: [number, number][]; key?: number } | null {

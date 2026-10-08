@@ -11,7 +11,7 @@
 // 无地逃生口（user 2026-10-07「先不急着store。可以先按照无地规范导入导出做逃生口」）：这里只管字节 ↔ 歌，打开 / 存的界面在 app 里。
 import { DEFAULT_ROLE, numberParts } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
-import { type Song, type PartDef, type PaperSeg, type Token, flattenPart } from "../score/song.ts";
+import { type Song, type PartDef, type PaperSeg, type Token, type NoteTok, flattenPart } from "../score/song.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
 import { FORMAT, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
 import { migrate } from "./migrate/index.ts";
@@ -92,7 +92,10 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     // 句号（不算打谱符号，不进 MusicXML）：每个声部里「句号跟在哪个 token 后面」（那个 token 的 id）
     const phrases: Record<string, number[]> = {};
     for (const [pid, toks] of Object.entries(p.tracks)) { const ids = toks.flatMap((t, k) => (t.kind === "phrase" && k > 0 ? [toks[k - 1].id] : [])); if (ids.length) phrases[pid] = ids; }
-    return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...(Object.keys(phrases).length ? { phrases } : {}), ...(p.hidden ? { hidden: true } : {}) };
+    // 音内的力度起伏（MusicXML 表达不了音内的发夹）：声部 → 音的 id → 哪一种
+    const swells: Record<string, Record<string, "<" | ">" | "<>">> = {};
+    for (const [pid, toks] of Object.entries(p.tracks)) for (const t of toks) if (t.kind === "note" && t.swell) (swells[pid] ??= {})[String(t.id)] = t.swell;
+    return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...(Object.keys(phrases).length ? { phrases } : {}), ...(Object.keys(swells).length ? { swells } : {}), ...(p.hidden ? { hidden: true } : {}) };
   });
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k) => {
@@ -246,6 +249,7 @@ export interface Sf2CandidateArgs {
   credit: Credit;
   calibrationDb?: number;                                               // 响度校准；默认 SOUNDFONT_CALIBRATION_DB（performance.ts；歌手牌上看得见、能调）
   gapSec?: number;                                                      // 连断的底色（秒）：调用方从目录（仓鼠 v11 的 joint，按 GM 号逐个）按值给；没给 = 0（不留缝）
+  canSwell?: boolean;                                                   // 能不能在一个音里面变强（仓鼠 v11 的 sustain = sustained）；没给 = 能
 }
 /** 加一个 SoundFont 候选并让它上场。同一份字节（同 sha256）只存一份。 */
 export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateArgs, hum: Hum): Extras {
@@ -254,7 +258,7 @@ export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateAr
   const n = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n}`;
   const embed = c.embed !== false, path = embed ? `${SOUNDS}${c.sha256}.sf2` : null;
   const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), ...(c.sfx ? { sfx: { ...c.sfx } } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
-  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, ...(c.canSwell === false ? { canSwell: false } : {}) }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r.candidates = list; r.active = id;
   return { ...extras, lounge: { ...extras.lounge, [role]: r }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };
 }
@@ -332,7 +336,7 @@ export function withUnpacked(extras: Extras, only?: (subsetSha256: string) => bo
 /** 上场那位的力度表（mf = 0 dB）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（DYNAMICS_DB / ARTICULATION）。 */
 export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number>; staccatoGate: number; accentDb: number; gapSec: number;
   marcatoDb: number; dynamicsVel: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number> | null; accentVel: number; marcatoVel: number;
-  accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepDb: number; wedgeStepVel: number; sfzDb: number; sfzVel: number; sfzSec: number; fpSec: number; sing: Record<string, SingMark | null> } {
+  accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepDb: number; wedgeStepVel: number; sfzDb: number; sfzVel: number; sfzSec: number; fpSec: number; swellDb: number; canSwell: boolean; sing: Record<string, SingMark | null> } {
   const c = activeCandidate(extras, role), d = (c?.dynamicsDb ?? {}) as Partial<Record<string, number>>, a = (c?.articulation ?? {}) as Partial<Record<string, number>>;
   const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
   const dynamicsDb = Object.fromEntries((Object.keys(DYNAMICS_DB) as (keyof typeof DYNAMICS_DB)[]).map((k) => [k, num(d[k], DYNAMICS_DB[k])])) as Record<keyof typeof DYNAMICS_DB, number>;
@@ -341,6 +345,7 @@ export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Reco
     accentSec: Math.max(0, num(a.accentSec, MARK_DEFAULTS.accentSec)), breathSec: Math.max(0, num(a.breathSec, MARK_DEFAULTS.breathSec)), breathShare: Math.max(0, Math.min(1, num(a.breathShare, MARK_DEFAULTS.breathShare))),
     gapShare: Math.max(0, Math.min(1, num(a.gapShare, MARK_DEFAULTS.gapShare))), wedgeStepDb: num(a.wedgeStepDb, MARK_DEFAULTS.wedgeStepDb), wedgeStepVel: num(a.wedgeStepVel, MARK_DEFAULTS.wedgeStepVel),
     sfzDb: num(a.sfzDb, MARK_DEFAULTS.sfzDb), sfzVel: num(a.sfzVel, MARK_DEFAULTS.sfzVel), sfzSec: Math.max(0.01, num(a.sfzSec, MARK_DEFAULTS.sfzSec)), fpSec: Math.max(0.01, num(a.fpSec, MARK_DEFAULTS.fpSec)),
+    swellDb: num(a.swellDb, MARK_DEFAULTS.swellDb), canSwell: (a as Json).canSwell !== false,
     sing: { ...SING_MARKS, ...((c?.sing ?? {}) as Record<string, SingMark | null>) },
     dynamicsVel: c?.dynamicsVel ? (Object.fromEntries((Object.keys(DYNAMICS_VEL) as (keyof typeof DYNAMICS_VEL)[]).map((k) => [k, Math.max(1, Math.min(127, num((c.dynamicsVel as Json)[k], DYNAMICS_VEL[k])))])) as Record<keyof typeof DYNAMICS_VEL, number>) : null };
 }
@@ -466,6 +471,8 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     const seg = paperOfRead(String(p.id), r); if (p.hidden === true) seg.hidden = true;
     const ph = p.phrases as Record<string, number[]> | undefined;   // 句号：插回那些 token 后面（id 读的时候保留着；句号 token 本身 id 0 = 之后重编）
     if (ph) for (const [pid, ids] of Object.entries(ph)) { const toks = seg.tracks[pid]; if (!toks) continue; for (const id of ids) { const k = toks.findIndex((t) => t.id === id); if (k >= 0 && toks[k + 1]?.kind !== "phrase") toks.splice(k + 1, 0, { kind: "phrase", id: 0 }); } }
+    const sw = p.swells as Record<string, Record<string, string>> | undefined;   // 音内的力度起伏：按音的 id 挂回去（认不出的种类不挂）
+    if (sw) for (const [pid, m] of Object.entries(sw)) { const toks = seg.tracks[pid]; if (!toks) continue; for (const [id, v] of Object.entries(m)) { if (v !== "<" && v !== ">" && v !== "<>") continue; const k = toks.findIndex((t) => t.kind === "note" && t.id === Number(id)); if (k >= 0) toks[k] = { ...(toks[k] as NoteTok), swell: v }; } }
     papers.push(seg);
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;

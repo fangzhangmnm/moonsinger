@@ -46,6 +46,9 @@ const CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"
 const DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 /** 力度记号的 Bravura 字形（同选区条「修」）。 */
 const DYN_CELL = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" } as const;
+/** 音内起伏的格子：一个符头上面一个小发夹。 */
+const swellSvg = (d: string) => `<svg class="slur-ico" viewBox="0 0 22 16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="11" cy="13" rx="3.2" ry="2.3" fill="currentColor"/></svg>`;
+const SWELL_CELL = { "<": swellSvg("M19,2 L4,5.5 L19,9"), ">": swellSvg("M3,2 L18,5.5 L3,9"), "<>": swellSvg("M2,5.5 L11,2 L20,5.5 M2,5.5 L11,9 L20,5.5") } as const;
 const ROWS_MIN = 3, ROWS_MAX = 8, COLS_MIN = 3, COLS_MAX = 7;
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
 const KEY_METRIC = { tablet: { h: 55.5, gap: 9 }, phone: { h: 46, gap: 6 } } as const;
@@ -356,7 +359,7 @@ export class Pad {
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
     const ign = new Set(this.host.ignoredArts?.() ?? []), dynNow = this.host.dynHere?.() ?? null;
     const cell = (id: string, big: string, label: string, title: string) => {
-      const mk = id.startsWith("art:") ? id.slice(4) : id === "slur" ? "slur" : null, off = !!mk && ign.has(mk);   // 台上这位不认：照样能写，格子标出来（不静默失效）
+      const mk = id.startsWith("art:") ? id.slice(4) : id === "slur" ? "slur" : id === "swell:>" ? "swellFade" : id.startsWith("swell:") ? "swellGrow" : null, off = !!mk && ign.has(mk);   // 台上这位不认：照样能写，格子标出来（不静默失效）
       const on = id.endsWith(":on"); id = on ? id.slice(0, -3) : id;   // 力度：现在生效的那个亮着
       return `<button class="pad-key sym${mk ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
     };
@@ -371,6 +374,7 @@ export class Pad {
       cell("wedge:cresc", CRESC_CELL, "渐强", "渐强 <：光标前那个音一路渐强到下一个音（有选区 = 选中的；终点 = 那里写的力度记号，没写 = 走一档；再点一次去掉）"),
       cell("wedge:dim", DIM_CELL, "渐弱", "渐弱 >：光标前那个音一路渐弱到下一个音（有选区 = 选中的；再点一次去掉）"),
       ...(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => cell(`dyn:${d}${d === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d]}</span>`, "力度", `力度 ${d}：从光标这里起（有选区 = 选区开头），管到下一个力度记号；那儿已经是它 = 去掉（user 2026-10-08「mp mf 在哪里加啊」）`)),
+      ...(["<", ">", "<>"] as const).map((w) => cell(`swell:${w}`, SWELL_CELL[w], w === "<" ? "音内渐强" : w === ">" ? "音内渐弱" : "音内鼓起", `${w === "<" ? "音内渐强" : w === ">" ? "音内渐弱（锯齿）" : "音内鼓起（messa di voce）"}：光标前那个音（有选区 = 选中的）自己里面的起伏；和段落的渐强渐弱是两层，可以叠；再点 = 去掉`)),
       cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；和呼吸相反——呼吸 = 这里断开；有选区 = 选中的连起来；再点一次去掉）"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；再点一次去掉）"),
       cell("bar", `<span class="big">|</span>`, "小节线", "小节线（弱起 = 写完弱起的音按一下）"),
@@ -403,6 +407,7 @@ export class Pad {
       else if (id === "staff") this.host.onCommand({ k: "staff" });
       else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
       else if (id === "slur") this.host.onCommand({ k: "slur" });
+      else if (id.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id.slice(6) as "<" | ">" | "<>" });
       else if (id.startsWith("dyn:")) this.host.onCommand({ k: "dyn", v: id.slice(4) as "pp" | "p" | "mp" | "mf" | "f" | "ff" });
       else if (id === "wedge:cresc" || id === "wedge:dim") this.host.onCommand({ k: "wedge", w: id === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: id as "phrase" | "bar" | "rest" | "extend" });

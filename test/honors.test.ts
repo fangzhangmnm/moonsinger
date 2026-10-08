@@ -17,6 +17,7 @@ function two(mark?: Mark): EditorState {
   for (const d of [1, 2]) st = writeDegree(st, d, "near");
   if (!mark) return st;
   const i = tr(st).findIndex((t) => t.kind === "note");
+  if (mark === "swellGrow" || mark === "swellFade") { const toks = tr(st).slice(); toks[i] = { ...(toks[i] as NoteTok), swell: mark === "swellGrow" ? "<" : ">" }; return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }
   return mark === "slur" ? toggleSlurSel(select(st, i, i + 1)) : toggleArtSel(select(st, i, i + 1), mark);
 }
 const first = (st: EditorState) => tr(st).find((t) => t.kind === "note") as NoteTok;
@@ -81,5 +82,14 @@ describe("力度 = MIDI velocity（SoundFont；2026-10-08 user「应该send的�
     eq(noteVelocity(withPp, i + 1, ["accent"], spec(0), 0.8), 0.8);
     assert(gainSegments(withPp, undefined, spec(0)) !== null, "旧的：pp 走 dB");
     eq(gainSegments(withPp, undefined, sfSpec(0)), null, "有力度表：pp 不再走 dB（不双算）");
+  });
+});
+
+describe("音内的起伏：按下去就自然衰减的乐器（canSwell = false）", () => {
+  it("< / <> 不认（画灰、明说）、出声不变；> 照做", () => {
+    deq(ignoredArts("soundfont", 0.02, false), ["swellGrow"]);
+    const piano = { ...sfSpec(0.02), canSwell: false }, h = (st: EditorState) => JSON.stringify(gainSegments(tr(st), undefined, piano));
+    eq(h(two("swellGrow")), h(two()), "< 做不到 = 出声不变");
+    assert(h(two("swellFade")) !== h(two()), "> 照做");
   });
 });

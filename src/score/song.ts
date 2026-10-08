@@ -33,9 +33,11 @@ export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
 /** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean; swell?: Swell }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
 //   slur（2026-10-08 连断，Claude Opus 5.5）= 连线：这个音连到下一个音（不留缝）；一串连着的 = 一条连线。MusicXML <slur type="start/stop"> 原生。
 //     user「连和断，嗯就是我想的，能做吗」「连断 预设 都同意」：底色归演奏者（articulation.gapSec），谱上的连线只改局部。
+//   swell（2026-10-08，Claude Opus 5.5；user「一个音里面的发展…要要我都要」）= 音内的力度起伏：< 越来越强、> 越来越弱（锯齿）、<> 鼓起来再落（messa di voce）；
+//     音自己的事（和段落级的渐强渐弱记号是两层，可以叠）。存在 .moonsinger/score.json（MusicXML 里表达不了音内的发夹）。
 //   chord（2026-10-08 polyphony）= 叠音：pitch 之外的音高，都比 pitch 低、从高到低；pitch = 最高的那个 = 旋律线（唱的人只读它：user「一个 Polyphony 换月读…应该是只读上面的旋律线」）。MusicXML = <chord/>。
 export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
 export interface BarTok { kind: "bar"; id: number }
@@ -50,6 +52,8 @@ export type MarkTok = KeyTok | TimeTok | TempoTok;
 /** 「修」的记号（2026-10-08 by Claude Opus 5.5；user「呼吸记号 跳音 / 力度这类修的记号进选区条」「flow 还是主旋律，修才管这些」→ 拍「挂在音上 + 选区条」「月读在那儿换气」）：
  *  演奏法 = 挂在音上（art，按 ARTS 的顺序、不重复）；MusicXML <notations><articulations> 原生——呼吸 = <breath-mark/>，挂在呼吸前的那个音上。
  *  出声：跳音 = 截短（候选的 articulation.staccatoGate）、重音 = 音头加 accentDb、保持 = 满长；呼吸 = 月读在下一个字前换一口气（唱法核心的「v」），乐器不受影响。 */
+export type Swell = "<" | ">" | "<>";
+export const SWELL_NAME: Record<Swell, string> = { "<": "音内渐强", ">": "音内渐弱", "<>": "音内鼓起" };
 export type Art = "staccato" | "accent" | "marcato" | "sfz" | "fp" | "tenuto" | "breath";   // marcato = 强音（^，比重音更重；MusicXML <strong-accent/>；2026-10-08 加）
 //   sfz = 突强、fp = 强后即弱（2026-10-08，user「音头先冲一下，再回落…要，要，我都要」）：音头的力度形状，MusicXML <notations><dynamics>；
 //   音头那一组（重音 / 强音 / sfz / fp）互斥——开一个就关掉别的（ATTACKS）。
@@ -436,6 +440,24 @@ export function slurStateSel(st: EditorState): "all" | "some" | "none" {
   const idx = selNoteIdx(st); if (!idx.length) return "none";
   const on = idx.length === 1 ? idx : idx.slice(0, -1), n = on.filter((i) => (tr(st)[i] as NoteTok).slur).length;
   return n === 0 ? "none" : n === on.length ? "all" : "some";
+}
+/** 音内的力度起伏（pad 符号层）：有选区 = 选中的音都切成这个（都是 = 去掉）；没有 = 光标前最近的那个音切（再点 = 去掉，换一种 = 换）；前面是休止 / 没音 = null。 */
+export function toggleSwell(st: EditorState, w: Swell): EditorState | null {
+  const set = (t: NoteTok, on: boolean): NoteTok => { if (on) return { ...t, swell: w }; const { swell: _s, ...rest } = t; return rest; };
+  if (st.sel) {
+    const idx = selNoteIdx(st); if (!idx.length) return null;
+    const toks = tr(st), all = idx.every((i) => (toks[i] as NoteTok).swell === w), nt = toks.slice();
+    for (const i of idx) nt[i] = set(nt[i] as NoteTok, !all);
+    return next(st, nt);
+  }
+  const toks = tr(st);
+  for (let i = st.caret - 1; i >= headLen(toks); i--) {
+    const t = toks[i];
+    if (t.kind === "rest") return null;
+    if (t.kind !== "note") continue;
+    const nt = toks.slice(); nt[i] = set(t, t.swell !== w); return next(st, nt);
+  }
+  return null;
 }
 export function withSlur(t: NoteTok, on: boolean): NoteTok { if (on) return { ...t, slur: true }; const { slur: _s, ...rest } = t; return rest; }
 /** 第 i 个 token 那儿生效的力度（往前找最近的力度记号；没有 = mf）。 */

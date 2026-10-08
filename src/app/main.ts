@@ -39,7 +39,7 @@ import { GmSynth } from "../gm/synth.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
 import { Finder, type FinderPick } from "../ui/finder.ts";
 import { Studio } from "../ui/studio.ts";
-import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, velLayersOf, GS_LIBRARY_ID, type Catalog } from "../gm/catalog.ts";
+import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, velLayersOf, sustainOf, GS_LIBRARY_ID, type Catalog } from "../gm/catalog.ts";
 import { ICON_CREDITS } from "../gm/instruments.gen.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
@@ -82,18 +82,19 @@ doc.saved.lounge = loungeKey();
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => st.song.parts.find((p) => p.id === st.at.part) ?? st.song.parts[0];
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
-const ignoredFor = (role: string): Mark[] => ignoredArts(activeInstrument(doc.extras, role)?.engine, activePerfSpec(doc.extras, role).gapSec);
+const ignoredFor = (role: string): Mark[] => { const sp = activePerfSpec(doc.extras, role); return ignoredArts(activeInstrument(doc.extras, role)?.engine, sp.gapSec, sp.canSwell); };
 const ignoredHere = (): Mark[] => ignoredFor(curPart().role);
-const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: "连线" };
+const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: "连线", swellGrow: "音内渐强 / 鼓起", swellFade: "音内渐弱" };
 /** 刚写上了一个台上那位不认的记号 → 明说（照样写进谱、画灰，出声不受影响）。连线 / 保持在「本来就不留缝」的人那里也是这样（连断，2026-10-08）。 */
 function discloseArt(prev: EditorState, a: Mark): void {
   if (!ignoredHere().includes(a)) return;
-  const has = (t: Token) => t.kind === "note" && (a === "slur" ? !!t.slur : (t.art ?? []).includes(a as Art));
+  const has = (t: Token) => t.kind === "note" && (a === "slur" ? !!t.slur : a === "swellGrow" ? t.swell === "<" || t.swell === "<>" : a === "swellFade" ? t.swell === ">" : (t.art ?? []).includes(a as Art));
   const n = (s: EditorState) => tr(s).filter(has).length;
   if (n(st) <= n(prev)) return;
   const role = curPart().role, who = activeCandidateName(doc.extras, role) || "台上这位";
   const why = whyIgnored(activeInstrument(doc.extras, role)?.engine, a);
-  info(why === "sung" ? `${who}本来就连着唱：${MARK_NAME[a]}写在谱上了（画灰），出声不变；要断句用呼吸`
+  info(why === "decay" ? `${who}的音按下去就自然衰减，${MARK_NAME[a]}做不到：写在谱上了（画灰），出声不变；音内渐弱照做`
+    : why === "sung" ? `${who}本来就连着唱：${MARK_NAME[a]}写在谱上了（画灰），出声不变；要断句用呼吸`
     : why === "gap" ? `${who}本来就不留缝（乐器页「音和音之间」= 0）：${MARK_NAME[a]}写在谱上了（画灰），出声不变`
     : `${who}不认${MARK_NAME[a]}：写在谱上了（画灰），出声不受影响`);
 }
@@ -459,10 +460,12 @@ const pad = new Pad(padEl, {
     const nx = apply(st, withHalf(c), performance.now());
     if (c.k === "art" && nx === st) { info(`${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
     if (c.k === "slur" && nx === st) { info("连线从一个音连到下一个音（光标前面是休止或者还没有音）"); return; }
+    if (c.k === "swell" && nx === st) { info("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）"); return; }
     if (c.k === "wedge" && nx === st) { info(`${c.w === "cresc" ? "渐强" : "渐弱"}从一个音到下一个音（光标前面是休止或者还没有音）`); return; }
     const prev = st; update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
     if (c.k === "art") discloseArt(prev, c.a);
     if (c.k === "slur") discloseArt(prev, "slur");
+    if (c.k === "swell") discloseArt(prev, c.w === ">" ? "swellFade" : "swellGrow");
   },
   onUnit: (u) => { if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n) => update(setTuplet(st, n)),
@@ -1043,9 +1046,10 @@ async function setAudition(p: FinderPick | null): Promise<void> {
 }
 /** GS 预设上场 / 试听时带的键设置：鼓件 = 固定那个键；音效（GM 116–128，仓鼠 v8 的 sampleKey）= **默认固定原速**（note = 原速键）+ 按值抄原速键和音高锚点（sfx）；
  *  其余不带（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）。 */
-function gsKeyArgs(cat: Catalog, bank: number, program: number, drumNote?: number): { note?: number; sfx?: { key: number; midi?: number; centsPerKey?: number }; gapSec?: number } {
+function gsKeyArgs(cat: Catalog, bank: number, program: number, drumNote?: number): { note?: number; sfx?: { key: number; midi?: number; centsPerKey?: number }; gapSec?: number; canSwell?: boolean } {
   // 连断的底色也是目录（仓鼠 v11 的 joint，按 GM 号逐个）按值给的；没有 = 不写 = 0（user「你不能按乐器一刀切」「让音乐仓鼠准备一下分类用的元数据」）
-  const gap = jointOf(cat, bank, program, drumNote)?.gapSec, g = gap ? { gapSec: gap } : {};
+  const gap = jointOf(cat, bank, program, drumNote)?.gapSec, sus = sustainOf(cat, bank, program, drumNote);
+  const g = { ...(gap ? { gapSec: gap } : {}), ...(sus && sus !== "sustained" ? { canSwell: false } : {}) };   // 仓鼠 v11 实测：不是一直能持续的 = 音内变强做不到
   if (drumNote !== undefined) return { note: drumNote, ...g };
   const sk = sampleKeyOf(cat, bank, program); if (!sk) return g;
   return { note: sk.key, sfx: { key: sk.key, ...(sk.midi !== undefined ? { midi: sk.midi } : {}), ...(sk.centsPerKey ? { centsPerKey: sk.centsPerKey } : {}) }, ...g };
@@ -1063,6 +1067,8 @@ function marksTableHtml(role: string, eng: string): string {
     ["强音", "marcato", vel ? `力度 +${sp.marcatoVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.marcatoDb)}${eng === "tsukuyomi" ? `；${singTxt("marcato")}` : ""}`],
     ["突强 sfz", "sfz", vel ? `力度 +${sp.sfzVel}` : `音头 ${db(sp.sfzDb)}，${ms(sp.sfzSec)} 里落回来${eng === "tsukuyomi" ? `；${singTxt("sfz")}` : ""}`],
     ["强后即弱 fp", "fp", `音头按 f，${ms(sp.fpSec)} 里落到 p，之后都是 p${eng === "tsukuyomi" ? `；${singTxt("fp")}` : ""}`],
+    ["音内渐强 / 鼓起", "swellGrow", sp.canSwell ? `最多 +${sp.swellDb} dB（< 一路往上；<> 中间最高再回来）` : "做不到：这件乐器按下去就自然衰减"],
+    ["音内渐弱", "swellFade", `一路往下到 −${sp.swellDb} dB`],
     ["跳音", "staccato", eng === "tsukuyomi" ? singTxt("staccato") : `唱 / 弹 ${pct(sp.staccatoGate)} 的长度`],
     ["保持", "tenuto", "这个音不留缝"],
     ["连线", "slur", "连到下一个音、不留缝"],

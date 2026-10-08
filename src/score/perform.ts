@@ -13,7 +13,7 @@ const DEFAULT_DYN_KEY: Dyn = DEFAULT_DYN;
 export interface PerfSpec { dynamicsDb: Record<Dyn, number>; staccatoGate: number; accentDb: number; marcatoDb?: number;
   /** 记号怎么解读的其余的数（候选 articulation by value；没给 = MARK_DEFAULTS）。 */
   accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; wedgeStepDb?: number; wedgeStepVel?: number;
-  sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number;
+  sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number; swellDb?: number; canSwell?: boolean;
   /** 有 = 力度记号 / 重音 / 强音走 MIDI 力度（SoundFont 新候选），音量曲线就不再管它们；没有 = 走 dB（月读 / 元音版 / 旧候选）。 */
   dynamicsVel?: Record<Dyn, number> | null; accentVel?: number; marcatoVel?: number }
 const M = MARK_DEFAULTS;   // 演奏者没写的键用它（= 这一版之前写死的数）
@@ -35,16 +35,28 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
     const art = artOf(tok);
     let cur = t0;
     // 音头那一组（互斥）：重音 / 强音 = 音头一小段加 dB；突强 = 冲高 sfzDb、sfzSec 里落回当下；强后即弱 = 音头这位的 f、fpSec 里落到 p（之后都是 p，dynLevels 管）
+    // 音内的力度起伏（< / > / <>，音自己的事；swellDb 由演奏者配置）：做不到在一个音里变强的（canSwell = false：钢琴、拨弦…）只做 >
+    const sw = tok.swell && !(spec.canSwell === false && tok.swell !== ">") ? tok.swell : null, D = spec.swellDb ?? M.swellDb;
+    const swOff = (fr: number) => (sw === "<" ? D * fr : sw === ">" ? -D * fr : sw === "<>" ? D * (1 - Math.abs(2 * fr - 1)) : 0);
+    const shaped = (a0: number, a1: number, s0: number, s1: number) => {   // s0–s1 这段：底下的水平从 a0 走到 a1（按整个音的进度），再叠上音内起伏
+      const n = Math.max(2, Math.min(48, Math.ceil((s1 - s0) / 0.03)));
+      for (let k = 0; k < n; k++) { const a = s0 + ((s1 - s0) * k) / n, b = s0 + ((s1 - s0) * (k + 1)) / n, m = (a + b) / 2, fr = (m - t0) / Math.max(1e-9, t1 - t0), fs = (m - s0) / Math.max(1e-9, s1 - s0);
+        segs.push({ t0: a, t1: b, dB: a0 + (a1 - a0) * fs + swOff(fr) }); }
+      any = true;
+    };
     if (art.includes("fp")) {
       const f = spec.dynamicsDb.f ?? 6, p = spec.dynamicsDb.p ?? -12, e = Math.min(t1, t0 + (spec.fpSec ?? M.fpSec));
       if (vel) ramp(0, p - f, t0, e); else ramp(f, p, t0, e);   // 力度那一路：音头已经按 f 的力度弹了，这里只把它压到 p
-      if (t1 > e) segs.push({ t0: e, t1, dB: vel ? p - f : p });
+      if (t1 > e) { if (sw) shaped(vel ? p - f : p, vel ? p - f : p, e, t1); else segs.push({ t0: e, t1, dB: vel ? p - f : p }); }   // fp 之后再 <（贝多芬常用）
       any = true; continue;
     }
     if (art.includes("sfz") && !vel) { const e = Math.min(t1, t0 + (spec.sfzSec ?? M.sfzSec)), b = spec.sfzDb ?? M.sfzDb; ramp(base + b, baseEnd === base ? base : base + ((baseEnd - base) * (e - t0)) / Math.max(1e-9, t1 - t0), t0, e); cur = e; any = true; }
     const boost = vel ? 0 : art.includes("marcato") ? (spec.marcatoDb ?? spec.accentDb + 3) : art.includes("accent") ? spec.accentDb : 0;   // 强音比重音重
     if (boost) { const e = Math.min(t1, t0 + (spec.accentSec ?? M.accentSec)); segs.push({ t0, t1: e, dB: base + boost }); cur = e; any = true; }
-    if (t1 > cur) { if (baseEnd !== base) ramp(base + ((baseEnd - base) * (cur - t0)) / Math.max(1e-9, t1 - t0), baseEnd, cur, t1); else segs.push({ t0: cur, t1, dB: base }); }
+    if (t1 > cur) {
+      const a0 = base + ((baseEnd - base) * (cur - t0)) / Math.max(1e-9, t1 - t0);
+      if (sw) shaped(a0, baseEnd, cur, t1); else if (baseEnd !== base) ramp(a0, baseEnd, cur, t1); else segs.push({ t0: cur, t1, dB: base });
+    }
   }
   return any ? segs : null;
 }
@@ -121,22 +133,23 @@ const noteVel = (v: number, art: readonly string[], spec: PerfSpec) => {
  *  保持 / 连线：元音版 / SoundFont = 这个音不留底色的缝（gapSec > 0 才有区别），月读还不认（连断第 3 步）。test/honors.test.ts 守着。
  *  不在表里的引擎（没人上场 / 认不出的）= null：整个声部本来就不出声，不再逐个记号画灰。 */
 const HONORS: Record<string, readonly string[]> = {
-  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath"],                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
-  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur"],
-  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur"],
+  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade"],                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
+  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade"],
+  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade"],
 };
 /** 连线 / 保持只改「留不留缝」：这位底色本来就不留缝（gapSec = 0）= 写了也不变 → 一样画灰、明说。 */
 const GAP_ONLY = ["tenuto", "slur"];
-export const ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur"] as const;
+export const ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade"] as const;   // swellGrow = 音内 < / <>，swellFade = 音内 >
 export type Mark = (typeof ALL_MARKS)[number];
 /** 这位不认的记号（写在谱上照画、画灰，出声不受影响）：引擎没实现的 + 底色不留缝时的连线 / 保持。 */
-export function ignoredArts(engine: string | null | undefined, gapSec = 0): Mark[] {
+export function ignoredArts(engine: string | null | undefined, gapSec = 0, canSwell = true): Mark[] {
   const h = engine ? HONORS[engine] : undefined;
-  return h ? ALL_MARKS.filter((a) => !h.includes(a) || (GAP_ONLY.includes(a) && !(gapSec > 0))) : [];
+  return h ? ALL_MARKS.filter((a) => !h.includes(a) || (GAP_ONLY.includes(a) && !(gapSec > 0)) || (a === "swellGrow" && !canSwell)) : [];
 }
 /** 为什么不认（明说用）：引擎没实现 = "engine"；底色不留缝 = "gap"；月读的连线 / 保持 = "sung"——她本来就连着唱，连线 / 保持对她不改变什么，
  *  断句用呼吸（连线和呼吸是同一件事的两头：音和下一个音之间连还是断；2026-10-08 user「连线vs呼吸这两个干的是不是一件事…月读是最需要断句的」）。 */
-export function whyIgnored(engine: string | null | undefined, m: Mark): "engine" | "gap" | "sung" {
+export function whyIgnored(engine: string | null | undefined, m: Mark): "engine" | "gap" | "sung" | "decay" {
+  if (m === "swellGrow" && engine && HONORS[engine]?.includes(m)) return "decay";   // 按下去就自然衰减的乐器：音内变强做不到
   if (engine === "tsukuyomi" && GAP_ONLY.includes(m)) return "sung";
   return engine && HONORS[engine]?.includes(m) ? "gap" : "engine";
 }

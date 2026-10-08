@@ -103,6 +103,7 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg path.tie { fill: none; stroke: var(--ink); stroke-width: 1.4; }
 .staff-svg path.slur { fill: none; stroke: var(--ink); stroke-width: 1.3; }   /* 连线（2026-10-08 连断） */
 .staff-svg path.hairpin { fill: none; stroke: var(--ink); stroke-width: 1.1; }   /* 渐强渐弱（2026-10-08） */
+.staff-svg path.hairpin.art-mute { stroke: var(--muted); opacity: .5; }
 .staff-svg path.slur.art-mute { fill: none; stroke: var(--muted); opacity: .5; }
 .staff-svg .ghost { fill: var(--ghost); stroke: var(--ghost); }
 .staff-svg path.tie.ghost { fill: none; }
