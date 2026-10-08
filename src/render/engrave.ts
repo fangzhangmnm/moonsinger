@@ -56,6 +56,7 @@ export interface EngraveOpts {
                                          //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
 export const LYRIC_EM = 1.6;
+const NAME_MAX = 6.5;   // sp：谱前声部名一列最宽（再长折行；engrave() 里 nameLines）
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
 
 /** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。 */
@@ -254,6 +255,25 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const right = o.width / sp - MARGIN;
   const PART_EM = LYRIC_EM * 0.85;
   const nameW = (s: string) => (o.measureLyric(s) * PART_EM) / LYRIC_EM / sp;
+  /** 声部名一列最宽 NAME_MAX（sp），再长就折行，不占五线谱的地方（user 2026-10-08「谱子前面的乐器名字如果很长的话应该换行而不是占用五线谱的空间」）。
+   *  英文按词折、汉字按字折、一个词本身太长再按字母折；单谱表最多 3 行、大谱表 5 行，再多末尾「…」（全名在歌手牌里）。 */
+  const nameLines = (name: string, staves: number): string[] => {
+    if (nameW(name) <= NAME_MAX) return [name];
+    const toks = name.match(/[A-Za-z0-9'’.\-()&]+\s*|\s+|./gu) ?? [name], lines: string[] = [];
+    let cur = "";
+    for (const t of toks) { if (!cur.trim() || nameW((cur + t).trimEnd()) <= NAME_MAX) cur += t; else { lines.push(cur.trimEnd()); cur = t.trimStart(); } }
+    if (cur.trim()) lines.push(cur.trimEnd());
+    const out = lines.flatMap((l) => {
+      if (nameW(l) <= NAME_MAX) return [l];
+      const ps: string[] = []; let c = "";
+      for (const ch of [...l]) { if (c && nameW(c + ch) > NAME_MAX) { ps.push(c); c = ch; } else c += ch; }
+      if (c) ps.push(c);
+      return ps;
+    });
+    const max = staves === 2 ? 5 : 3;
+    if (out.length > max) { out.length = max; let last = out[max - 1]; while (last && nameW(`${last}…`) > NAME_MAX) last = [...last].slice(0, -1).join(""); out[max - 1] = `${last}…`; }
+    return out;
+  };
 
   // 纸面最上面：歌名 + 作者栏 + 纸的小钮
   const titleSize = P(1.9), titleBase = TOP + P(TITLE_H * 0.62);
@@ -416,7 +436,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const spans = per.flatMap((q) => q.units.filter((u): u is Chunk => u.kind === "chunk").map((u) => [u.tick, u.tick + u.ticks] as const));
     const breakableAt = (tick: number) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
     // 3. 折行（像文字：优先在小节线后折；一个小节都放不下就逐列折）。每行开头的调号 = 各声部那里生效的调号；行首宽 = 最宽的那个声部
-    const ind0 = Math.max(...parts.map((p) => nameW(p.name))) + 1.4;   // 第一行让给声部名的缩进（sp）
+    const ind0 = Math.max(...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4;   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
     const keyNow = new Map<string, number>(per.map((q) => [q.p.id, q.head.key]));
     const clefW = (p: PartView) => (p.clef === "F" || p.staves === 2 ? W.fClef : W.gClef);
     const headerOf = (first: boolean) => Math.max(...per.map((q) => {
@@ -493,9 +513,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         }
         if (s === 0) {
           // 歌手牌：声部名在第一行谱号左边、竖着居中（大谱表 = 两条谱表之间）（user「歌手牌同意，和打谱软件对齐」「乐器名可以选择一大堆乐器，然后下面可以in place改」）
-          const r0 = rowOf(s, r, 0), r1 = rowOf(s, r, q.staves - 1), ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM);
-          prims.push({ t: "text", x: P(MARGIN), y: ny, s: q.p.name, cls: q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name", size: PART_EM * sp, anchor: "start" });
-          if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
+          const r0 = rowOf(s, r, 0), r1 = rowOf(s, r, q.staves - 1), lines = nameLines(q.p.name, q.staves), LH = PART_EM * 1.15;
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (lines.length - 1)) / 2);   // 几行一起竖着居中
+          const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
+          lines.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
+          if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines.length - 1)) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
           partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
         }
         if (q.staves === 2) {   // 大谱表的花括号：两条谱表左边一根粗线 + 两头小钩

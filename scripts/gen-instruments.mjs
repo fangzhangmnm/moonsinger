@@ -10,10 +10,11 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-export const SRC = join(ROOT, "..", "..", "20260813 MyLlamaReborn", "20261007 音乐史", "export", "moonsinger");   // ~/jupyter/20260813 MyLlamaReborn（不在 PWAProjects 里）
+// INSTRUMENTS_SRC = 源目录（在 worktree 里跑时仓的位置不同，往上数两级找不到；2026-10-08 by Claude Opus 5.5）
+export const SRC = process.env.INSTRUMENTS_SRC ?? join(ROOT, "..", "..", "20260813 MyLlamaReborn", "20261007 音乐史", "export", "moonsinger");   // ~/jupyter/20260813 MyLlamaReborn（不在 PWAProjects 里）
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
-export const VERSION = 5;   // v5 = 2026-10-08 收货（仓鼠：概念加 range（实际发声的常用音域，MIDI）/ naturalKey（音效最像的键）、GM 行加 sampleKey；只加字段）。v4 = 161 个概念、--tile 派生图标、AI 估算年份
+export const VERSION = 6;   // v6 = 2026-10-08（仓鼠：user 澄清电话铃 = 老式机械铃 → 电话 naturalKey 102 → 100、GS 推荐键 90 → 86；GM 行 sampleKey 加 recommendedBasis）。v5 = 概念 range / naturalKey、GM 行 sampleKey。v4 = 161 个概念、--tile 派生图标、AI 估算年份
 export const FILES = {
   concepts: `instruments-v${VERSION}.json`,
   gmMap: `gm-map-v${VERSION}.json`,

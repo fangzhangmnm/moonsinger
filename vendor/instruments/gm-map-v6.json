@@ -1,5 +1,5 @@
 {
- "v": 5,
+ "v": 6,
  "date": "2026-10-08",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ② GM 映射：一行 = 一个 GM 号 → 一个概念。relation = self（本尊：这个号就是这个概念，175 个号每个恰好一条 primary: true；多重认领的另加 primary: false）/ substitute（平替：这个号能拿来顶这个概念，basis 见 defs）。program 从 0 起；鼓件 bank 128、program 0、note = MIDI 键号。musicxmlSound = 这个号自己最贴的 sound id。",
@@ -3795,6 +3795,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 64,
+    "recommendedBasis": "原速键（Wood Block Hard 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Wood Block Med",
@@ -3840,6 +3841,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 60,
+    "recommendedBasis": "原速键（Taiko Drum 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Taiko Drum",
@@ -3873,6 +3875,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 72,
+    "recommendedBasis": "原速键（Standard Tom 1 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Standard Tom 1",
@@ -3936,6 +3939,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 60,
+    "recommendedBasis": "原速键（Electric Tom 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Electric Tom",
@@ -3970,6 +3974,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 60,
+    "recommendedBasis": "原速键（Reverse Cymbal 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Reverse Cymbal",
@@ -4004,6 +4009,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 69,
+    "recommendedBasis": "原速键（Fret Slide 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Fret Slide",
@@ -4042,6 +4048,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 61,
+    "recommendedBasis": "原速键（Breath Noise-1 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Breath Noise-1",
@@ -4091,6 +4098,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 64,
+    "recommendedBasis": "原速键（Seashore 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Seashore",
@@ -4145,6 +4153,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 58,
+    "recommendedBasis": "原速键（Birds 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Birds",
@@ -4189,7 +4198,8 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 90,
+    "recommended": 86,
+    "recommendedBasis": "老式话机的 25 Hz 振铃（中国 / 欧洲）：原速 90 键每秒颤约 28 下，86 键约 25 下；北美 20 Hz 约 79 键",
     "layers": [
      {
       "sample": "LeFone",
@@ -4241,6 +4251,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 86,
+    "recommendedBasis": "原速键（Helicopter 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Helicopter",
@@ -4304,6 +4315,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 80,
+    "recommendedBasis": "原速键（Applause 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Applause",
@@ -4354,6 +4366,7 @@
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
     "recommended": 88,
+    "recommendedBasis": "原速键（Gun Shot 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Gun Shot",
