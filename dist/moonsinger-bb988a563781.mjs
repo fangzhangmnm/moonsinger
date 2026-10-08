@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.10-2026-10-08";
+var APP_VERSION = "v0.6.11-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3444,6 +3444,14 @@ function setCredits(st3, text2) {
   const song = { ...st3.song };
   if (t10) song.credits = t10;
   else delete song.credits;
+  return { ...st3, song };
+}
+function setRights(st3, text2) {
+  const t10 = text2.replace(/\r/g, "").trim();
+  if ((st3.song.rights ?? "") === t10) return st3;
+  const song = { ...st3.song };
+  if (t10) song.rights = t10;
+  else delete song.rights;
   return { ...st3, song };
 }
 function setTitle(st3, title) {
@@ -7204,6 +7212,61 @@ function encodeMp3(samples, sr2, kbps = 64) {
   });
 }
 
+// src/export/id3.ts
+var enc = (s10) => {
+  const out = new Uint8Array(2 + s10.length * 2);
+  out[0] = 255;
+  out[1] = 254;
+  for (let i10 = 0; i10 < s10.length; i10++) {
+    const c10 = s10.charCodeAt(i10);
+    out[2 + i10 * 2] = c10 & 255;
+    out[3 + i10 * 2] = c10 >> 8;
+  }
+  return out;
+};
+var cat = (...xs) => {
+  const n10 = xs.reduce((a10, x2) => a10 + x2.length, 0), out = new Uint8Array(n10);
+  let o10 = 0;
+  for (const x2 of xs) {
+    out.set(x2, o10);
+    o10 += x2.length;
+  }
+  return out;
+};
+var ascii = (s10) => Uint8Array.from([...s10].map((c10) => c10.charCodeAt(0) & 127));
+function frame(id2, body2) {
+  const h2 = new Uint8Array(10);
+  h2.set(ascii(id2), 0);
+  const n10 = body2.length;
+  h2[4] = n10 >>> 24 & 255;
+  h2[5] = n10 >>> 16 & 255;
+  h2[6] = n10 >>> 8 & 255;
+  h2[7] = n10 & 255;
+  return cat(h2, body2);
+}
+var textFrame = (id2, s10) => frame(id2, cat(Uint8Array.of(1), enc(s10)));
+function id3v2(f2) {
+  const frames = [];
+  if (f2.title) frames.push(textFrame("TIT2", f2.title));
+  if (f2.artist) frames.push(textFrame("TPE1", f2.artist));
+  if (f2.copyright) frames.push(textFrame("TCOP", f2.copyright));
+  if (f2.copyrightUrl && /^https?:\/\/[\x21-\x7e]+$/.test(f2.copyrightUrl)) frames.push(frame("WCOP", ascii(f2.copyrightUrl)));
+  if (f2.comment) frames.push(frame("COMM", cat(Uint8Array.of(1), ascii("chi"), enc(""), Uint8Array.of(0, 0), enc(f2.comment))));
+  if (f2.software) frames.push(textFrame("TSSE", f2.software));
+  if (!frames.length) return new Uint8Array(0);
+  const body2 = cat(...frames), n10 = body2.length, h2 = new Uint8Array(10);
+  h2.set(ascii("ID3"), 0);
+  h2[3] = 3;
+  h2[4] = 0;
+  h2[5] = 0;
+  h2[6] = n10 >>> 21 & 127;
+  h2[7] = n10 >>> 14 & 127;
+  h2[8] = n10 >>> 7 & 127;
+  h2[9] = n10 & 127;
+  return cat(h2, body2);
+}
+var firstUrl = (s10) => s10 ? /https?:\/\/[\x21-\x7e]+/.exec(s10)?.[0] : void 0;
+
 // node_modules/@internal/model-packs/dist/sha256.js
 var K = new Uint32Array([
   1116352408,
@@ -8502,7 +8565,7 @@ ${ms.join("\n")}
 <score-partwise version="4.0">
 ${doc2.title ? `<work><work-title>${esc2(doc2.title)}</work-title></work>
 ` : ""}${doc2.movementTitle ? `<movement-title>${esc2(doc2.movementTitle)}</movement-title>
-` : ""}<identification><encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
+` : ""}<identification>${doc2.rights ? `<rights>${esc2(doc2.rights)}</rights>` : ""}<encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
 ${defaultsXml(paper)}
 ${doc2.credits ? creditXml(doc2.credits, paper) + "\n" : ""}<part-list>${partList}</part-list>
 ${bodies.join("\n")}
@@ -8564,10 +8627,10 @@ function readMusicXml(xml, hints) {
     const pid = pe.attrs.id ?? `P${pi + 1}`, info2 = infos.find((x2) => x2.id === pid) ?? { id: pid, name: "" };
     const manual = hints?.manualBars ? new Set(hints.manualBars[pid] ?? []) : null;
     const H2 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
-    const body = [], langRead = /* @__PURE__ */ new Map();
+    const body2 = [], langRead = /* @__PURE__ */ new Map();
     let headPhase = true, divisions = TPQ, voice = null;
     const mark = (t10) => {
-      body.push(t10);
+      body2.push(t10);
     };
     const measures = kids(pe, "measure");
     measures.forEach((m2, mi) => {
@@ -8623,7 +8686,7 @@ function readMusicXml(xml, hints) {
             continue;
           }
           if (kid(c10, "chord")) {
-            const prevN = body[body.length - 1], pch = kid(c10, "pitch");
+            const prevN = body2[body2.length - 1], pch = kid(c10, "pitch");
             if (prevN && prevN.kind === "note" && prevN.pitch && pch) {
               const pp = { step: childText(pch, "step") ?? "C", alter: Number(childText(pch, "alter") ?? "0"), octave: Number(childText(pch, "octave") ?? "4") };
               const ps = allPitches(prevN);
@@ -8641,7 +8704,7 @@ function readMusicXml(xml, hints) {
           const dur = Math.round(Number(childText(c10, "duration") ?? "0") * TPQ / divisions);
           if (dur <= 0) continue;
           const idAttr = c10.attrs.id, cont = idAttr ? /^([nr])(\d+)-\d+$/.exec(idAttr) : null;
-          const prev = body[body.length - 1];
+          const prev = body2[body2.length - 1];
           if (cont && prev && (prev.kind === "note" || prev.kind === "rest") && prev.id === +cont[2] && cont[1] === "n" === (prev.kind === "note")) {
             prev.dur += dur;
             if (prev.kind === "note") addArts(prev, c10);
@@ -8678,9 +8741,9 @@ function readMusicXml(xml, hints) {
         } else if (c10.name === "harmony") drop("\u548C\u5F26\u8BB0\u53F7");
       }
       const n10 = Number(m2.attrs.number ?? mi + 1);
-      if (manual ? manual.has(n10) : mi < measures.length - 1) body.push({ kind: "bar", id: 0 });
+      if (manual ? manual.has(n10) : mi < measures.length - 1) body2.push({ kind: "bar", id: 0 });
     });
-    const tokens = [{ kind: "key", id: 0, fifths: H2.fifths }, { kind: "time", id: 0, beats: H2.beats, beatType: H2.beatType }, { kind: "tempo", id: 0, bpm: H2.bpm }, ...body];
+    const tokens = [{ kind: "key", id: 0, fifths: H2.fifths }, { kind: "time", id: 0, beats: H2.beats, beatType: H2.beatType }, { kind: "tempo", id: 0, bpm: H2.bpm }, ...body2];
     keepOnlyOverrides(tokens, tokens.map((t10) => langRead.get(t10) ?? null));
     if (info2.staves === 2) {
       const auto = autoStaffs(tokens, 2);
@@ -8699,7 +8762,8 @@ function readMusicXml(xml, hints) {
   for (const p2 of parts) for (const t10 of p2.tokens) if (!t10.id) t10.id = next2++;
   const paper = readPaper(root);
   const credits = readCredits(root, title);
-  return { title, movementTitle, ...paper ? { paper } : {}, ...credits ? { credits } : {}, parts: parts.map(({ info: info2, tokens }) => ({ info: info2, tokens })), dropped };
+  const rights = kids(kid(root, "identification"), "rights").map((e10) => text(e10).trim()).filter(Boolean).join("\n");
+  return { title, movementTitle, ...paper ? { paper } : {}, ...credits ? { credits } : {}, ...rights ? { rights } : {}, parts: parts.map(({ info: info2, tokens }) => ({ info: info2, tokens })), dropped };
 }
 
 // src/format/contract.ts
@@ -8831,7 +8895,7 @@ function saveMxl(a10) {
   const files = {};
   const papers = song.papers.map((p2) => {
     const parts = song.parts.flatMap((part, k2) => p2.tracks[part.id] ? [{ info: infos[k2], tokens: p2.tracks[part.id] }] : []);
-    const w2 = writeMusicXml({ title: song.title, movementTitle: p2.name || void 0, paper: song.paper, credits: song.credits, parts }, meta);
+    const w2 = writeMusicXml({ title: song.title, movementTitle: p2.name || void 0, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
     files[paperFile(p2.id)] = strToU8(w2.xml);
     const phrases = {};
     for (const [pid, toks] of Object.entries(p2.tracks)) {
@@ -8840,11 +8904,16 @@ function saveMxl(a10) {
     }
     return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, ...Object.keys(phrases).length ? { phrases } : {}, ...p2.hidden ? { hidden: true } : {} };
   });
-  const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, padMeasures: true, parts: song.parts.map((part, k2) => {
+  const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k2) => {
     const f2 = flattenPart(song, part.id);
     return { info: infos[k2], tokens: f2.tokens, breaks: new Map(f2.starts.slice(1).map((s10) => [s10.index, s10.paper.name])) };
   }) }, meta);
-  const scoreExt = { version: FORMAT.score, papers, parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched" })) };
+  const scoreExt = {
+    version: FORMAT.score,
+    papers,
+    parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched" })),
+    ...a10.view && Object.keys(a10.view).length ? { view: a10.view } : {}
+  };
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a10.extras.sounds).filter(([p2]) => referenced.has(p2)).sort(([x2], [y2]) => x2 < y2 ? -1 : 1);
   const manifest = {
@@ -9208,7 +9277,7 @@ function songFromReads(reads, papers, partList = null) {
   let id2 = 1;
   const renumbered = ps.map((p2) => ({ ...p2, tracks: Object.fromEntries(parts.flatMap((part) => p2.tracks[part.id] ? [[part.id, p2.tracks[part.id].map((t10) => ({ ...t10, id: id2++ }))]] : [])) }));
   const r02 = reads[0];
-  return { ...r02.title ? { title: r02.title } : {}, ...r02.paper ? { paper: r02.paper } : {}, ...r02.credits ? { credits: r02.credits } : {}, hum: "n", parts, papers: renumbered };
+  return { ...r02.title ? { title: r02.title } : {}, ...r02.paper ? { paper: r02.paper } : {}, ...r02.credits ? { credits: r02.credits } : {}, ...r02.rights ? { rights: r02.rights } : {}, hum: "n", parts, papers: renumbered };
 }
 function finish(reads, song0, extras, ours, name) {
   const notices = [];
@@ -9239,7 +9308,7 @@ function finish(reads, song0, extras, ours, name) {
   }
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
-  return { song: { ...song0, hum }, stem, hum, extras, ours, notices };
+  return { song: { ...song0, hum }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null };
 }
 
 // src/format/credits.ts
@@ -9265,17 +9334,7 @@ function group(items) {
   }
   return [...out.values()];
 }
-function fileCredits(extras) {
-  const items = [];
-  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands2(r10)) {
-    const i10 = c10.instrument;
-    if (i10?.engine !== "soundfont" || !i10.source?.embedded || !extras.sounds[i10.source.embedded]) continue;
-    const credit = creditOf(c10);
-    if (credit) items.push({ name: String(c10.name ?? ""), credit });
-  }
-  return group(items);
-}
-function audioCredits(extras, roles) {
+function performerCredits(extras, roles) {
   const items = [];
   for (const role of new Set(roles)) {
     const r10 = extras.lounge[role], c10 = cands2(r10).find((x2) => x2.id === r10?.active);
@@ -9285,6 +9344,35 @@ function audioCredits(extras, roles) {
     if (credit) items.push({ name: String(c10.name ?? ""), credit });
   }
   return group(items);
+}
+function packedLicenses(extras) {
+  const items = [];
+  for (const r10 of Object.values(extras.lounge)) for (const c10 of cands2(r10)) {
+    const i10 = c10.instrument;
+    if (i10?.engine !== "soundfont" || !i10.source?.embedded || !extras.sounds[i10.source.embedded]) continue;
+    const credit = creditOf(c10);
+    if (credit) items.push({ name: String(c10.name ?? ""), credit });
+  }
+  return group(items);
+}
+function songCreditLine(song) {
+  if (!song.credits?.trim() && !song.rights?.trim()) return null;
+  return { who: [song.title?.trim() ? `\u300C${song.title.trim()}\u300D` : "\u8FD9\u9996\u6B4C"], attribution: (song.credits ?? "").split("\n").map((s10) => s10.trim()).filter(Boolean), license: { name: song.rights?.trim() || "\uFF08\u6CA1\u58F0\u660E\u8BB8\u53EF\uFF09" } };
+}
+var RIGHTS_PRESETS = [
+  { label: "\u4FDD\u7559\u6240\u6709\u6743\u5229", note: "\u4EC0\u4E48\u90FD\u8981\u5148\u95EE\u4F60\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u8FD9\u6837\uFF0C\u8FD9\u91CC\u53EA\u662F\u5199\u660E\uFF09", text: (y2) => `\xA9 ${y2} \u4FDD\u7559\u6240\u6709\u6743\u5229` },
+  { label: "\u4EC5\u4F9B\u6B23\u8D4F", note: "\u542C\u53EF\u4EE5\uFF1B\u8F6C\u8F7D\u3001\u6539\u7F16\u3001\u5546\u7528\u90FD\u8981\u5148\u95EE\u4F60", text: (y2) => `\xA9 ${y2} \u4FDD\u7559\u6240\u6709\u6743\u5229\u3002\u4EC5\u4F9B\u4E2A\u4EBA\u6B23\u8D4F\uFF0C\u7981\u6B62\u8F6C\u8F7D\u3001\u6539\u7F16\u3001\u5546\u7528\u3002` },
+  { label: "\u5546\u7528\u8BF7\u8054\u7CFB", note: "\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF0C\u5E76\u544A\u8BC9\u522B\u4EBA\u5546\u7528\u600E\u4E48\u627E\u4F60", text: (y2) => `\xA9 ${y2} \u4FDD\u7559\u6240\u6709\u6743\u5229\u3002\u5546\u7528\u8BF7\u8054\u7CFB\u4F5C\u8005\u3002` },
+  { label: "CC BY-NC-ND 4.0", note: "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u539F\u6837\u8F6C\u53D1\uFF1B\u4E0D\u8BB8\u6539\u3001\u4E0D\u8BB8\u5546\u7528\uFF08\u6700\u7D27\u7684 CC\uFF09", text: () => "CC BY-NC-ND 4.0 https://creativecommons.org/licenses/by-nc-nd/4.0/" },
+  { label: "CC BY-NC 4.0", note: "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u6539\uFF1B\u4E0D\u8BB8\u5546\u7528", text: () => "CC BY-NC 4.0 https://creativecommons.org/licenses/by-nc/4.0/" },
+  { label: "CC BY-SA 4.0", note: "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u6539\u3001\u53EF\u4EE5\u5546\u7528\uFF1B\u6539\u4E86\u7684\u8981\u7528\u540C\u6837\u7684\u8BB8\u53EF", text: () => "CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/" },
+  { label: "CC BY 4.0", note: "\u6CE8\u660E\u51FA\u5904\u968F\u4FBF\u7528", text: () => "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" },
+  { label: "CC0", note: "\u653E\u5F03\u6743\u5229\uFF0C\u8C01\u90FD\u80FD\u968F\u4FBF\u7528\uFF08\u53D1\u51FA\u53BB\u6536\u4E0D\u56DE\uFF09", text: () => "CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/" }
+];
+function licenseHints(rights, performers) {
+  const reusable = !!rights && (/CC0|public ?domain|公有领域|publicdomain\/zero/i.test(rights) || /CC[ -]?BY/i.test(rights) && !/\bND\b|-nd\//i.test(rights));
+  const tsukuyomi = performers.some((l10) => l10.license.name.includes("\u3064\u304F\u3088\u307F\u3061\u3083\u3093"));
+  return reusable && tsukuyomi ? ["\u8FD9\u9996\u6B4C\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16 / \u5F53\u7D20\u6750\u518D\u7528\uFF0C\u53EF\u91CC\u9762\u6709\u6708\u8BFB\u7684\u58F0\u97F3\uFF1A\u6708\u8BFB\u7684\u6761\u6B3E\u7981\u6B62\u300C\u4EE5\u5141\u8BB8\u4ED6\u4EBA\u4E8C\u6B21\u5229\u7528\uFF08\u5F53\u4F5C\u7D20\u6750\u4F7F\u7528\uFF09\u7684\u5F62\u5F0F\u516C\u5F00\u300D\uFF08\u8BBE\u7F6E\u91CC\u6709\u6761\u6B3E\u539F\u6587\u548C\u8BD1\u6587\uFF09\u3002\u8FD9\u4E24\u6837\u53EF\u80FD\u51B2\u7A81\uFF0C\u8BF7\u770B\u6E05\u695A\u518D\u53D1\uFF08\u8FD9\u662F\u63D0\u793A\uFF0C\u4E0D\u662F\u6CD5\u5F8B\u610F\u89C1\uFF09\u3002"] : [];
 }
 function creditsText(lines) {
   return lines.map((l10) => {
@@ -9606,29 +9694,29 @@ var GmSynth = class {
 // src/gm/instruments.gen.ts
 var INSTRUMENT_FILES = {
   "concepts": {
-    "file": "vendor/instruments/instruments-v6.json",
-    "bytes": 226464,
-    "sha256": "a2d9fc2e9a14988ae7fa142c4ce8af1a6fac536c0df887e787dcf6a9ce308555"
+    "file": "vendor/instruments/instruments-v7.json",
+    "bytes": 226463,
+    "sha256": "55bfab9f47e3f9cf420eac5f95eb015ffb5677f13d35572103f9679ade695729"
   },
   "gmMap": {
-    "file": "vendor/instruments/gm-map-v6.json",
-    "bytes": 114300,
-    "sha256": "ad54151cf854ead00b62b4fe5ec0c46bee3ca28e032b76f6bb1637b2925a3c6d"
+    "file": "vendor/instruments/gm-map-v7.json",
+    "bytes": 114399,
+    "sha256": "df9fa578591507dafe0d4d9648f56c8c028b0df79348afc53544e747a23b383d"
   },
   "icons": {
-    "file": "vendor/instruments/instrument-icons-20261008-v6.svg",
+    "file": "vendor/instruments/instrument-icons-20261008-v7.svg",
     "bytes": 139012,
-    "sha256": "59e6f047a42d22b7209859ef3a4ceb9760093a42ce04e66bbe6d0b4859b76f38"
+    "sha256": "8298b74bb80b1e8ed36261ed3b429f982f4a9ff79524f9dc5dbc90ed318c1244"
   },
   "iconCredits": {
-    "file": "vendor/instruments/icon-credits-v6.json",
+    "file": "vendor/instruments/icon-credits-v7.json",
     "bytes": 20668,
-    "sha256": "a2248b286b7e5eebe2cee891fcf9782bb5ef77bba4807db2a03437c463c3adb8"
+    "sha256": "ee14e53acf2a7416916c10f3f0ffbf8e940b20332cf92b24153f02b5d2ba05d9"
   },
   "licenses": {
-    "file": "vendor/instruments/LICENSES-chosen-v6.md",
+    "file": "vendor/instruments/LICENSES-chosen-v7.md",
     "bytes": 145789,
-    "sha256": "3b97d16095fa4cfb305fdb112013512d1d1eb6b0c7e209ebb0798eb1fbe497dc"
+    "sha256": "7a2b3a6bdf3ddc5435ad52ba99ed5f769129c369d11c9beed5662485a8c854b2"
   }
 };
 var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
@@ -9663,9 +9751,9 @@ function loadCatalog(base3) {
 async function loadIconSprite(base3) {
   return new TextDecoder().decode(await fetchChecked(base3, "icons"));
 }
-function providersOf(cat, c10) {
+function providersOf(cat2, c10) {
   const self2 = (c10.ids.gm ?? []).map((g3) => {
-    const r10 = cat.gmSelf.get(gmKey(g3));
+    const r10 = cat2.gmSelf.get(gmKey(g3));
     return { kind: "self", bank: g3.bank, program: g3.program, ...g3.note !== void 0 ? { note: g3.note } : {}, gmName: r10?.gmName ?? (g3.note !== void 0 ? `\u9F13\u4EF6 ${g3.note}` : `GM ${g3.program + 1}`), sound: r10?.musicxmlSound ?? c10.ids.musicxml };
   });
   if (self2.length) return self2;
@@ -9679,13 +9767,13 @@ function rangeOf(c10) {
   return null;
 }
 var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
-var roleSoundOf = (cat, c10) => c10.ids.musicxml ?? providersOf(cat, c10)[0]?.sound ?? null;
+var roleSoundOf = (cat2, c10) => c10.ids.musicxml ?? providersOf(cat2, c10)[0]?.sound ?? null;
 var SORT_LABEL = { style: "\u6309\u66F2\u98CE", family: "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09", year: "\u6309\u5E74\u4EE3", hs: "\u6309\u53D1\u58F0\u65B9\u5F0F" };
 var HS_CLASS = { "1": "\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09", "2": "\u819C\u9E23\uFF08\u6572\u76AE\uFF09", "3": "\u5F26\u9E23\uFF08\u5F26\uFF09", "4": "\u6C14\u9E23\uFF08\u6C14\uFF09", "5": "\u7535\u9E23\uFF08\u7535\uFF09" };
-function groupConcepts(cat, mode, query = "") {
+function groupConcepts(cat2, mode, query = "") {
   const q2 = query.trim().toLowerCase();
   const hit = (c10) => !q2 || [c10.names.zh, c10.names.en, c10.names.ja ?? ""].some((n10) => n10.toLowerCase().includes(q2));
-  const list = cat.concepts.filter(hit);
+  const list = cat2.concepts.filter(hit);
   const byGm = (a10, b3) => ((a10.ids.gm ?? [])[0]?.program ?? 999) - ((b3.ids.gm ?? [])[0]?.program ?? 999) || a10.names.zh.localeCompare(b3.names.zh, "zh");
   const groups = /* @__PURE__ */ new Map();
   const put = (id2, label, c10) => {
@@ -9697,15 +9785,15 @@ function groupConcepts(cat, mode, query = "") {
     g3.concepts.push(c10);
   };
   if (mode === "family") {
-    const order = new Map(cat.defs.families.map((f2, i10) => [f2.id, i10]));
+    const order = new Map(cat2.defs.families.map((f2, i10) => [f2.id, i10]));
     for (const c10 of list) {
       const f2 = (c10.family ?? [])[0] ?? "other";
-      put(f2, cat.defs.families.find((x2) => x2.id === f2)?.zh ?? (c10.kind === "voice" ? "\u4EBA\u58F0" : c10.kind === "sound" ? "\u97F3\u6548" : "\u5176\u4ED6"), c10);
+      put(f2, cat2.defs.families.find((x2) => x2.id === f2)?.zh ?? (c10.kind === "voice" ? "\u4EBA\u58F0" : c10.kind === "sound" ? "\u97F3\u6548" : "\u5176\u4ED6"), c10);
     }
     return [...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort(byGm) }));
   }
   if (mode === "year") {
-    const eras = cat.defs.eras;
+    const eras = cat2.defs.eras;
     for (const c10 of list) {
       const e10 = eras.find((x2) => x2.id === c10.era);
       put(e10?.id ?? "unknown", e10 ? `${e10.zh}${e10.from !== null ? `\uFF08${fmtYear(e10.from)} \u8D77\uFF09` : ""}` : "\u5E74\u4EE3\u4E0D\u8BE6", c10);
@@ -9723,18 +9811,18 @@ function groupConcepts(cat, mode, query = "") {
   for (const c10 of list) {
     const tags = [...new Set((c10.styles ?? []).map((s10) => s10.tag))];
     if (!tags.length) put("none", "\u6CA1\u8D34\u98CE\u683C", c10);
-    for (const t10 of tags) put(t10, styleLabel(cat, t10), c10);
+    for (const t10 of tags) put(t10, styleLabel(cat2, t10), c10);
   }
   return [...groups.values()].sort((a10, b3) => a10.id === "none" ? 1 : b3.id === "none" ? -1 : a10.label.localeCompare(b3.label, "zh")).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => weightOf(b3, g3.id) - weightOf(a10, g3.id) || byGm(a10, b3)) }));
 }
 var weightOf = (c10, tag2) => Math.max(0, ...(c10.styles ?? []).filter((s10) => s10.tag === tag2).map((s10) => s10.weight ?? 0));
-var weightLabel = (cat, w2) => cat.defs.weights?.find((x2) => x2.id === w2)?.zh ?? "";
-function styleLabel(cat, tag2) {
-  const s10 = cat.defs.styles?.find((x2) => (x2.id ?? x2.tag) === tag2);
+var weightLabel = (cat2, w2) => cat2.defs.weights?.find((x2) => x2.id === w2)?.zh ?? "";
+function styleLabel(cat2, tag2) {
+  const s10 = cat2.defs.styles?.find((x2) => (x2.id ?? x2.tag) === tag2);
   return s10?.zh ?? s10?.en ?? tag2;
 }
 var fmtYear = (y2) => y2 < 0 ? `\u516C\u5143\u524D ${-y2}` : String(y2);
-var eraLabel = (cat, c10) => cat.defs.eras.find((e10) => e10.id === c10.era)?.zh ?? "";
+var eraLabel = (cat2, c10) => cat2.defs.eras.find((e10) => e10.id === c10.era)?.zh ?? "";
 
 // src/ui/finder.ts
 var HINT = "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u4E0A\u573A\u300D\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002";
@@ -9794,14 +9882,14 @@ var Finder = class {
     this.el.querySelector(".finder-sort").value = this.mode;
     if (!this.cat) {
       this.loading ??= (async () => {
-        const [cat, sprite] = await Promise.all([loadCatalog(this.host.base), loadIconSprite(this.host.base)]);
+        const [cat2, sprite] = await Promise.all([loadCatalog(this.host.base), loadIconSprite(this.host.base)]);
         const doc2 = new DOMParser().parseFromString(sprite, "image/svg+xml"), svg = doc2.documentElement;
         if (svg.tagName.toLowerCase() === "svg") {
           const node = document.importNode(svg, true);
           node.setAttribute("style", "display:none");
           this.el.prepend(node);
         }
-        this.cat = cat;
+        this.cat = cat2;
       })().catch((e10) => {
         this.el.querySelector(".finder-list").innerHTML = `<div class="finder-empty">\u76EE\u5F55\u52A0\u8F7D\u4E0D\u4E86\uFF1A${esc3(e10.message)}</div>`;
         throw e10;
@@ -9900,10 +9988,10 @@ var Finder = class {
     if (!row || before === void 0) return;
     list.scrollTop += row.getBoundingClientRect().top - before;
     if (!reveal) return;
-    const body = row.nextElementSibling;
-    if (!body?.classList.contains("inst-prov")) return;
+    const body2 = row.nextElementSibling;
+    if (!body2?.classList.contains("inst-prov")) return;
     const lr2 = list.getBoundingClientRect(), hdr = row.closest(".finder-group")?.querySelector(".finder-group-h")?.offsetHeight ?? 0;
-    const over = body.getBoundingClientRect().bottom - lr2.bottom, room = row.getBoundingClientRect().top - (lr2.top + hdr);
+    const over = body2.getBoundingClientRect().bottom - lr2.bottom, room = row.getBoundingClientRect().top - (lr2.top + hdr);
     if (over > 0 && room > 0) list.scrollTop += Math.min(over, room);
     this.markJump();
   }
@@ -9935,16 +10023,16 @@ var Finder = class {
     }
   }
   rowHtml(c10, groupId, styleTag = null) {
-    const cat = this.cat, o10 = `${groupId}::${c10.id}`, open = this.opened === o10, icon = c10.icon?.id;
-    const w2 = styleTag ? weightOf(c10, styleTag) : 0, stars = w2 ? `<span class="inst-w" title="${esc3(weightLabel(cat, w2))}">${"\u2605".repeat(w2)}</span>` : "";
-    const meta = [eraLabel(cat, c10), c10.year !== null ? `${c10.yearApprox ? "\u7EA6 " : ""}${fmtYear(c10.year)}` : ""].filter(Boolean).join(" \xB7 ");
-    let body = "";
+    const cat2 = this.cat, o10 = `${groupId}::${c10.id}`, open = this.opened === o10, icon = c10.icon?.id;
+    const w2 = styleTag ? weightOf(c10, styleTag) : 0, stars = w2 ? `<span class="inst-w" title="${esc3(weightLabel(cat2, w2))}">${"\u2605".repeat(w2)}</span>` : "";
+    const meta = [eraLabel(cat2, c10), c10.year !== null ? `${c10.yearApprox ? "\u7EA6 " : ""}${fmtYear(c10.year)}` : ""].filter(Boolean).join(" \xB7 ");
+    let body2 = "";
     if (open) {
-      const provs = providersOf(cat, c10), pitched = c10.kind === "voice";
+      const provs = providersOf(cat2, c10), pitched = c10.kind === "voice";
       const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast">\u4E0A\u573A</button>`}</div></div>`;
-      body = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? `\u9F13\u4EF6 \xB7 ${esc3(p2.gmName)}\uFF08Standard \u9F13\u7EC4\u7684 ${p2.note} \u53F7\u952E\uFF09` : p2.bank === 128 ? `\u9F13\u7EC4 \xB7 ${esc3(p2.gmName)}` : `GeneralUser GS \xB7 ${esc3(p2.gmName)}`}`, p2.kind === "substitute" ? `\u9876\u66FF${p2.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p2.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p2.basis === "imitation" ? "\uFF08\u4EFF\u58F0\uFF09" : p2.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p2.reason ? `\uFF1A${esc3(p2.reason)}` : ""}` : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
+      body2 = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? `\u9F13\u4EF6 \xB7 ${esc3(p2.gmName)}\uFF08Standard \u9F13\u7EC4\u7684 ${p2.note} \u53F7\u952E\uFF09` : p2.bank === 128 ? `\u9F13\u7EC4 \xB7 ${esc3(p2.gmName)}` : `GeneralUser GS \xB7 ${esc3(p2.gmName)}`}`, p2.kind === "substitute" ? `\u9876\u66FF${p2.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p2.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p2.basis === "imitation" ? "\uFF08\u4EFF\u58F0\uFF09" : p2.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p2.reason ? `\uFF1A${esc3(p2.reason)}` : ""}` : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
     }
-    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}">` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c10.names.zh)}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body;
+    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}">` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c10.names.zh)}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body2;
   }
 };
 
@@ -10190,8 +10278,8 @@ function subsetSf2(input, want) {
   const list = (kind, parts) => chunk("LIST", concat([Uint8Array.from([...kind].map((c10) => c10.charCodeAt(0))), ...parts]));
   const sdta = list("sdta", [chunk("smpl", concat(pieces))]);
   const pdtaOut = list("pdta", Object.keys(REC).map((k2) => chunk(k2, out[k2])));
-  const body = concat([Uint8Array.from([..."sfbk"].map((c10) => c10.charCodeAt(0))), info2, sdta, pdtaOut]);
-  return chunk("RIFF", body);
+  const body2 = concat([Uint8Array.from([..."sfbk"].map((c10) => c10.charCodeAt(0))), info2, sdta, pdtaOut]);
+  return chunk("RIFF", body2);
 }
 function concat(parts) {
   const n10 = parts.reduce((s10, p2) => s10 + p2.length, 0), r10 = new Uint8Array(n10);
@@ -11199,7 +11287,7 @@ function createCloudSync(cfg) {
   const etagKey = (n10) => `${appKey}.etag:${n10}`;
   const dirtyKey = (n10) => `${appKey}.dirty:${n10}`;
   const baseName = (n10) => n10.includes("/") ? n10.slice(n10.lastIndexOf("/") + 1) : n10;
-  const stampedName = (n10, enc = false, stamp2 = asideStamp(now())) => (enc && encFileName ? encFileName : fileName)(`${baseName(n10)} [${stamp2}]`);
+  const stampedName = (n10, enc2 = false, stamp2 = asideStamp(now())) => (enc2 && encFileName ? encFileName : fileName)(`${baseName(n10)} [${stamp2}]`);
   function getETag(name) {
     return kv.get(etagKey(name)) || null;
   }
@@ -11260,11 +11348,11 @@ function createCloudSync(cfg) {
     }
   }
   async function push(name, bytes, opts = {}) {
-    const enc = !!(encFileName && opts.encrypted);
-    const path = enc ? encFileName(name) : fileName(name);
+    const enc2 = !!(encFileName && opts.encrypted);
+    const path = enc2 ? encFileName(name) : fileName(name);
     let baseEtag = "baseEtag" in opts ? opts.baseEtag : getETag(name);
     if (encFileName && baseEtag) {
-      const otherPath = enc ? fileName(name) : encFileName(name);
+      const otherPath = enc2 ? fileName(name) : encFileName(name);
       const target = await provider.getItemByPath(path).catch((e10) => {
         reportStoreError(e10, "log");
         return null;
@@ -11328,40 +11416,40 @@ function createCloudSync(cfg) {
     return { etag: item.eTag, lastModified: item.lastModifiedDateTime, size: item.size, item };
   }
   async function pullTail(name, n10) {
-    const { item, enc } = await _find(name);
+    const { item, enc: enc2 } = await _find(name);
     if (!item)
       return null;
     const offset = Math.max(0, (item.size || 0) - n10);
     const raw = await provider.downloadRange(item.ref, offset, Math.min(n10, item.size || n10));
     const bytes = raw instanceof Uint8Array ? raw : raw instanceof ArrayBuffer ? new Uint8Array(raw) : new Uint8Array(await raw.arrayBuffer());
-    return { bytes, item, encrypted: enc };
+    return { bytes, item, encrypted: enc2 };
   }
   async function pullRange(name, offset, length) {
-    const { item, enc } = await _find(name);
+    const { item, enc: enc2 } = await _find(name);
     if (!item)
       return null;
     const size = item.size || 0;
     const off = Math.max(0, Math.min(offset, size));
     const len = Math.max(0, Math.min(length, size - off));
     if (len === 0)
-      return { bytes: new Uint8Array(0), item, encrypted: enc };
+      return { bytes: new Uint8Array(0), item, encrypted: enc2 };
     const raw = await provider.downloadRange(item.ref, off, len);
     const bytes = raw instanceof Uint8Array ? raw : raw instanceof ArrayBuffer ? new Uint8Array(raw) : new Uint8Array(await raw.arrayBuffer());
-    return { bytes, item, encrypted: enc };
+    return { bytes, item, encrypted: enc2 };
   }
   async function trash(name, deleteEventId, opts = {}) {
-    const { item, enc } = await _find(name);
+    const { item, enc: enc2 } = await _find(name);
     if (!item) {
       clearState(name);
       return null;
     }
     const folderId = await provider.ensureFolder(trashFolder);
-    const stamped = stampedName(name, enc, deleteEventId);
+    const stamped = stampedName(name, enc2, deleteEventId);
     const moved = await provider.move(item.ref, folderId, { newName: stamped, conflictBehavior: "fail", eTag: opts.baseEtag ?? item.eTag });
     clearState(name);
     return moved;
   }
-  async function restore(cloudRef, targetName, opts = {}) {
+  async function restore2(cloudRef, targetName, opts = {}) {
     const clean = targetName;
     const folder = clean.includes("/") ? clean.slice(0, clean.lastIndexOf("/")) : "";
     const base3 = baseName(clean);
@@ -11536,7 +11624,7 @@ function createCloudSync(cfg) {
     pullRange,
     weakOverride,
     trash,
-    restore,
+    restore: restore2,
     purge,
     list,
     listAll,
@@ -11676,7 +11764,7 @@ function createIdentity(cfg) {
 var passBusy5 = (_l, fn) => fn();
 function createTrash(cfg) {
   const { cloud, local, head, busy: _busy = passBusy5 } = cfg;
-  async function restore(opts = {}) {
+  async function restore2(opts = {}) {
     const { fromCloud, cloudRef, targetName, trashKey, encrypted, busy = _busy } = opts;
     return busy("trash.restoring", async () => {
       let name = targetName || null, restoredLocal = false, restoredCloud = false;
@@ -11794,7 +11882,7 @@ function createTrash(cfg) {
       return { status: "emptied", purged, failed };
     });
   }
-  return { restore, purge, emptyTrash, emptyBackup };
+  return { restore: restore2, purge, emptyTrash, emptyBackup };
 }
 
 // node_modules/@internal/store/dist/offload.js
@@ -13635,7 +13723,7 @@ function createStore(config) {
     throw new Error("createStore: config.encryption is required (pass createEncryption(), codec-less is fine) \u2014 no substitutes");
   if (config.reconcilePolicy !== "app-driven" && config.reconcilePolicy !== "none")
     throw new Error('createStore: config.reconcilePolicy is required ("app-driven" | "none") \u2014 declare who drives periodic reconcile');
-  const enc = config.encryption;
+  const enc2 = config.encryption;
   const toName = (cloudName) => ids.fromCloud(cloudName).identifier;
   const cloud = createCloudSync({ provider, kv, fileName: (n10) => n10, encFileName: (n10) => ids.sealed(n10), toName, appKey: "files", manageDirty: false, hidden: config.hidden, identifiers: ids });
   const collectionsCloud = createCloudSync({ provider, kv, fileName: (n10) => `.${appId}/${n10}.json`, appKey: "collections" });
@@ -13928,9 +14016,9 @@ function createStore(config) {
     return null;
   }
   const seal = createSeal({
-    looksContainer: (b3) => enc.looksEncryptedContainer(b3),
-    pack: (o10) => enc.packContainer({ dataBytes: o10.dataBytes, fileName: o10.fileName, ext: o10.ext, peek: o10.peek, password: o10.password }),
-    unpack: (blob, pw) => enc.unpackContainer(blob, pw),
+    looksContainer: (b3) => enc2.looksEncryptedContainer(b3),
+    pack: (o10) => enc2.packContainer({ dataBytes: o10.dataBytes, fileName: o10.fileName, ext: o10.ext, peek: o10.peek, password: o10.password }),
+    unpack: (blob, pw) => enc2.unpackContainer(blob, pw),
     getPassword,
     getPrev: (n10) => local.get(n10),
     makePeek: config.crypt?.makePeek
@@ -13946,7 +14034,7 @@ function createStore(config) {
     validateAdopt,
     unseal: (n10, blob) => seal.unsealForRead(n10, blob),
     // 返明文；加密但锁定 → null（safePull 退验封套）
-    looksEncrypted: (b3) => enc.looksEncryptedContainer(b3)
+    looksEncrypted: (b3) => enc2.looksEncryptedContainer(b3)
   });
   const busyT = (label, fn) => ui2.busy(resolveStoreText(ui2.text, label), fn, label);
   const busyK = (key, params, fn) => ui2.busy(resolveStoreText(ui2.text, key, params), fn, key);
@@ -14089,23 +14177,23 @@ function createStore(config) {
     return null;
   }
   async function decryptEncPeek(name, encPeek) {
-    if (encPeek.type !== enc.ENC_PEEK_MIME)
+    if (encPeek.type !== enc2.ENC_PEEK_MIME)
       return encPeek;
-    const parsed = enc.scanEncPeekFromEnd(new Uint8Array(await encPeek.arrayBuffer()));
+    const parsed = enc2.scanEncPeekFromEnd(new Uint8Array(await encPeek.arrayBuffer()));
     if (!parsed)
       return null;
-    const plain2 = await seal.withPassword(name, (pw) => enc.decryptPeek(parsed, pw));
+    const plain2 = await seal.withPassword(name, (pw) => enc2.decryptPeek(parsed, pw));
     return plain2 ? new Blob([plain2]) : null;
   }
   async function encVerify(name, pw) {
     if (!pw)
       return false;
-    const tail = await encTailBytes(name, enc.PEEK_TAIL_WINDOW, true);
+    const tail = await encTailBytes(name, enc2.PEEK_TAIL_WINDOW, true);
     if (tail) {
-      const p2 = enc.scanEncPeekFromEnd(new Uint8Array(await tail.arrayBuffer()));
+      const p2 = enc2.scanEncPeekFromEnd(new Uint8Array(await tail.arrayBuffer()));
       if (p2) {
         try {
-          await enc.decryptPeek(p2, pw);
+          await enc2.decryptPeek(p2, pw);
           return true;
         } catch {
           return false;
@@ -14116,7 +14204,7 @@ function createStore(config) {
     if (!full)
       return false;
     try {
-      await enc.unpackContainer(full instanceof Blob ? full : new Blob([full]), pw);
+      await enc2.unpackContainer(full instanceof Blob ? full : new Blob([full]), pw);
       return true;
     } catch {
       return false;
@@ -14124,7 +14212,7 @@ function createStore(config) {
   }
   async function encIsEncrypted(name) {
     const blob = await local.get(name);
-    return blob ? enc.looksEncryptedContainer(blob instanceof Blob ? blob : new Blob([blob])) : false;
+    return blob ? enc2.looksEncryptedContainer(blob instanceof Blob ? blob : new Blob([blob])) : false;
   }
   async function encSwap(name, bytes, online, encrypted) {
     const prevEtag = cloud.getETag(name);
@@ -14153,7 +14241,7 @@ function createStore(config) {
       if (!blob)
         return { status: "no-local" };
       const asBlob = blob instanceof Blob ? blob : new Blob([blob]);
-      if (await enc.looksEncryptedContainer(asBlob))
+      if (await enc2.looksEncryptedContainer(asBlob))
         return { status: "already" };
       if (cloud.getETag(name) != null && !online())
         return { status: "offline" };
@@ -14168,7 +14256,7 @@ function createStore(config) {
           peek = null;
         }
       }
-      const container = await enc.packContainer({ dataBytes: await toU8(asBlob), fileName: name, ext: cryptExtFor(name), peek, password: pw });
+      const container = await enc2.packContainer({ dataBytes: await toU8(asBlob), fileName: name, ext: cryptExtFor(name), peek, password: pw });
       return await encSwap(name, await toU8(container), online, true);
     }));
   }
@@ -14178,11 +14266,11 @@ function createStore(config) {
       if (!blob)
         return { status: "no-local" };
       const asBlob = blob instanceof Blob ? blob : new Blob([blob]);
-      if (!await enc.looksEncryptedContainer(asBlob))
+      if (!await enc2.looksEncryptedContainer(asBlob))
         return { status: "not-encrypted" };
       if (cloud.getETag(name) != null && !online())
         return { status: "offline" };
-      const res = await seal.withPassword(name, (pw) => enc.unpackContainer(asBlob, pw));
+      const res = await seal.withPassword(name, (pw) => enc2.unpackContainer(asBlob, pw));
       if (!res)
         return { status: "locked" };
       return await encSwap(name, await toU8(res.dataBlob), online, false);
@@ -14196,11 +14284,11 @@ function createStore(config) {
       if (!blob)
         return { status: "no-local" };
       const asBlob = blob instanceof Blob ? blob : new Blob([blob]);
-      if (!await enc.looksEncryptedContainer(asBlob))
+      if (!await enc2.looksEncryptedContainer(asBlob))
         return { status: "not-encrypted" };
       if (cloud.getETag(name) != null && !online())
         return { status: "offline" };
-      const res = await seal.withPassword(name, (pw) => enc.unpackContainer(asBlob, pw));
+      const res = await seal.withPassword(name, (pw) => enc2.unpackContainer(asBlob, pw));
       if (!res)
         return { status: "locked" };
       let peek = null;
@@ -14211,7 +14299,7 @@ function createStore(config) {
           peek = null;
         }
       }
-      const container = await enc.packContainer({ dataBytes: await toU8(res.dataBlob), fileName: name, ext: cryptExtFor(name), peek, password: newPassword });
+      const container = await enc2.packContainer({ dataBytes: await toU8(res.dataBlob), fileName: name, ext: cryptExtFor(name), peek, password: newPassword });
       return await encSwap(name, await toU8(container), online, true);
     }));
   }
@@ -14307,7 +14395,7 @@ function createStore(config) {
           const blob = await local.get(name);
           if (blob) {
             const b3 = blob instanceof Blob ? blob : new Blob([blob]);
-            if (await enc.looksEncryptedContainer(b3))
+            if (await enc2.looksEncryptedContainer(b3))
               return null;
             return b3.slice(0, Math.min(n10, b3.size));
           }
@@ -14458,7 +14546,7 @@ function createStore(config) {
         if (!blob)
           return null;
         const asBlob = blob instanceof Blob ? blob : new Blob([blob]);
-        if (!await enc.looksEncryptedContainer(asBlob))
+        if (!await enc2.looksEncryptedContainer(asBlob))
           return null;
         return asBlob;
       },
@@ -14491,10 +14579,10 @@ function createStore(config) {
       const entries2 = await readCentralDirectory(src);
       if (!entries2)
         return null;
-      const encEntry = entries2.find((e10) => enc.CONTAINER_PEEK_ENTRIES.includes(e10.name));
+      const encEntry = entries2.find((e10) => enc2.CONTAINER_PEEK_ENTRIES.includes(e10.name));
       if (encEntry) {
         const bytes2 = await readEntryBytes(src, encEntry);
-        return bytes2 ? new Blob([bytes2], { type: enc.ENC_PEEK_MIME }) : null;
+        return bytes2 ? new Blob([bytes2], { type: enc2.ENC_PEEK_MIME }) : null;
       }
       const target = entries2.find((e10) => e10.name === o10.zipEntry);
       if (!target)
@@ -14757,15 +14845,15 @@ function createGraph(tokenSource) {
       throw new Error("graph token source missing (page: createOneDriveProvider; SW: createGraph(createBridgeTokenSource(dbName)))");
     return tokenSource();
   };
-  async function graphFetch(method, pathOrUrl, { headers = {}, body = null } = {}) {
+  async function graphFetch(method, pathOrUrl, { headers = {}, body: body2 = null } = {}) {
     const token = await getToken2();
     const url = pathOrUrl.startsWith("http") ? pathOrUrl : `${GRAPH_BASE}${pathOrUrl}`;
     const init = { method, headers: { Authorization: `Bearer ${token}`, ...headers } };
-    if (body != null) {
-      if (typeof body === "string" || body instanceof ArrayBuffer || ArrayBuffer.isView(body) || body instanceof Blob) {
-        init.body = body;
+    if (body2 != null) {
+      if (typeof body2 === "string" || body2 instanceof ArrayBuffer || ArrayBuffer.isView(body2) || body2 instanceof Blob) {
+        init.body = body2;
       } else {
-        init.body = JSON.stringify(body);
+        init.body = JSON.stringify(body2);
         if (!init.headers["Content-Type"])
           init.headers["Content-Type"] = "application/json";
       }
@@ -14976,13 +15064,13 @@ function createGraph(tokenSource) {
     const headers = {};
     if (eTag)
       headers["If-Match"] = eTag;
-    const body = {
+    const body2 = {
       parentReference: { id: targetFolderId },
       "@microsoft.graph.conflictBehavior": conflictBehavior
     };
     if (newName)
-      body.name = newName;
-    const r10 = await graphFetch("PATCH", `/me/drive/items/${itemId}`, { headers, body });
+      body2.name = newName;
+    const r10 = await graphFetch("PATCH", `/me/drive/items/${itemId}`, { headers, body: body2 });
     return r10.json();
   }
   async function copyItemToFolder(itemId, targetFolderId, newName) {
@@ -15489,8 +15577,8 @@ function graphToCloudProvider(graph) {
     // 必须在这道接缝转回 Blob——Uint8Array.size===undefined → undefined<=4MB 为 false → 永远走分块、
     // while(0<undefined) 一个 chunk 都不传 → 上传 0 字节占位还回 etag（postmortem 2026-06-05 根因）。
     upload: (path, blob, { contentType = "application/octet-stream", eTag = null, conflictBehavior = "replace" } = {}) => {
-      const body = blob instanceof Blob ? blob : new Blob([blob], { type: contentType });
-      return graph.uploadFileToApproot(path, body, contentType, { conflictBehavior, eTag }).then(toItem);
+      const body2 = blob instanceof Blob ? blob : new Blob([blob], { type: contentType });
+      return graph.uploadFileToApproot(path, body2, contentType, { conflictBehavior, eTag }).then(toItem);
     },
     // 文件硬删。⚠ 2026-08-25 修：旧版 `(id) => graph.deleteItem(id)` 把 eTag 吞了——purge 的 If-Match
     //   （v435 立的硬删守卫）从没到过 Graph，mock 比真机严（mock 校验 If-Match、真机根本没收到）。透传。
@@ -16080,12 +16168,12 @@ function createFrameGate(apply2, opts) {
     }
   }
   return {
-    push(frame) {
+    push(frame2) {
       if (held) {
-        pending = frame;
+        pending = frame2;
         hasPending = true;
       } else
-        apply2(frame);
+        apply2(frame2);
     },
     pointerDown() {
       pointers++;
@@ -16828,18 +16916,18 @@ function createGalleryVerbs(d3) {
     return true;
   }
   async function encryptItem(item) {
-    const enc = d3.encryption;
-    if (!enc)
+    const enc2 = d3.encryption;
+    if (!enc2)
       return;
     if (!_encPrecheck(item, t("gal.verb.encrypt")))
       return;
-    const fresh = enc.isFreshPasswordSetup();
-    const pw = await enc.ensureNewPassword();
+    const fresh = enc2.isFreshPasswordSetup();
+    const pw = await enc2.ensureNewPassword();
     if (pw == null) {
       d3.host.status(t("gal.st.cancelled"));
       return;
     }
-    enc.setPassword(pw);
+    enc2.setPassword(pw);
     let ok2 = false;
     try {
       const res = await docFile(item.identifier).encrypt({ isOnline: cloudOn });
@@ -16854,18 +16942,18 @@ function createGalleryVerbs(d3) {
       d3.host.status(t("gal.st.encFail", { e: errMsg(e10) }), true);
     } finally {
       if (fresh && !ok2)
-        enc.rollbackFreshPassword();
+        enc2.rollbackFreshPassword();
     }
   }
   async function decryptItem(item) {
-    const enc = d3.encryption;
-    if (!enc)
+    const enc2 = d3.encryption;
+    if (!enc2)
       return;
     if (!_encPrecheck(item, t("gal.verb.decrypt")))
       return;
     if (!await d3.host.confirm(t("gal.dlg.decryptTitle", { base: item.stem }), t("gal.dlg.decryptMsg")))
       return;
-    if (!await enc.ensureUnlocked(item.identifier)) {
+    if (!await enc2.ensureUnlocked(item.identifier)) {
       d3.host.status(t("gal.st.cancelledPw"), true);
       return;
     }
@@ -17165,15 +17253,15 @@ function withPngText(png, keyword, text2) {
       const kw = new Uint8Array(keyword.length);
       for (let i10 = 0; i10 < keyword.length; i10++)
         kw[i10] = keyword.charCodeAt(i10);
-      const body = new TextEncoder().encode(text2);
-      const data = new Uint8Array(kw.length + 1 + 2 + 1 + 1 + body.length);
+      const body2 = new TextEncoder().encode(text2);
+      const data = new Uint8Array(kw.length + 1 + 2 + 1 + 1 + body2.length);
       data.set(kw, 0);
       data[kw.length] = 0;
       data[kw.length + 1] = 0;
       data[kw.length + 2] = 0;
       data[kw.length + 3] = 0;
       data[kw.length + 4] = 0;
-      data.set(body, kw.length + 5);
+      data.set(body2, kw.length + 5);
       parts.push(makeChunk("iTXt", data));
     }
     parts.push(png.subarray(c10.start, c10.end));
@@ -17389,9 +17477,9 @@ function mountGalleryScreen(el2, d3) {
     image: icon("image"),
     file: icon("file")
   };
-  const enc = d3.encryption;
-  const _lockState = reactive({ unlocked: enc?.isUnlocked() ?? true });
-  enc?.onLockChange((u2) => {
+  const enc2 = d3.encryption;
+  const _lockState = reactive({ unlocked: enc2?.isUnlocked() ?? true });
+  enc2?.onLockChange((u2) => {
     _lockState.unlocked = u2;
   });
   const _thumbRev = reactive(/* @__PURE__ */ new Map());
@@ -17423,19 +17511,19 @@ function mountGalleryScreen(el2, d3) {
         readBlurb(blob);
       };
       const tryDecrypt = async () => {
-        if (!enc) {
+        if (!enc2) {
           locked.value = true;
           return;
         }
         let png = null;
         if (props.encName)
-          png = await enc.localPeekThumb(props.encName);
+          png = await enc2.localPeekThumb(props.encName);
         else if (cloudEncBlob)
-          png = await enc.decryptCloudPeekThumb(props.alt, cloudEncBlob);
+          png = await enc2.decryptCloudPeekThumb(props.alt, cloudEncBlob);
         if (png && png.size > 0) {
           locked.value = false;
           setBlob(png);
-        } else if (enc.isUnlocked())
+        } else if (enc2.isUnlocked())
           locked.value = false;
         else
           locked.value = true;
@@ -17451,7 +17539,7 @@ function mountGalleryScreen(el2, d3) {
           showCloud.value = false;
           if (!blob)
             return;
-          if (enc?.isEncryptedPeekBlob(blob)) {
+          if (enc2?.isEncryptedPeekBlob(blob)) {
             cloudEncBlob = blob;
             return tryDecrypt();
           }
@@ -17699,13 +17787,13 @@ function mountGalleryScreen(el2, d3) {
       document.addEventListener("pointercancel", _onGatePtrUp, true);
       const encByName = reactive({});
       async function probeEncrypted() {
-        if (!enc)
+        if (!enc2)
           return;
         for (const nm2 of data.files.filter((it2) => hasLocalCopy(it2.syncState)).map((it2) => it2.identifier)) {
           if (nm2 in encByName)
             continue;
           try {
-            encByName[nm2] = await enc.isEncrypted(nm2);
+            encByName[nm2] = await enc2.isEncrypted(nm2);
           } catch {
             encByName[nm2] = false;
           }
@@ -17824,7 +17912,7 @@ function mountGalleryScreen(el2, d3) {
         if (!s10)
           throw new Error("gallery: no library attached");
         return s10;
-      }, host: d3.host, doc: d3.doc, thumbs: d3.thumbs, onEncryptionChanged: invalidateEncrypted, encryption: enc });
+      }, host: d3.host, doc: d3.doc, thumbs: d3.thumbs, onEncryptionChanged: invalidateEncrypted, encryption: enc2 });
       const wrap = (fn) => async (...a10) => {
         closeMenu();
         await fn(...a10);
@@ -17984,7 +18072,7 @@ function mountGalleryScreen(el2, d3) {
         decryptItem,
         onUnlock,
         requestUnlock,
-        hasEncryption: !!enc,
+        hasEncryption: !!enc2,
         reload,
         setView: (v) => {
           view2.value = v;
@@ -24970,12 +25058,12 @@ function toJianpu(toks, fifths) {
       out.push(`0${lead}${tail}`);
       continue;
     }
-    const body = t10.pitch ? allPitches(t10).map((pp) => {
+    const body2 = t10.pitch ? allPitches(t10).map((pp) => {
       const { degree: degree2, shift, acc } = toDegree(pp, f2);
       return `${accText(acc)}${degree2}${octText(shift)}`;
     }).join("&") : "x";
     const ly2 = t10.lyric ? `/${t10.lyric.replace(/\s+/g, "")}${t10.hyph ? "-" : ""}` : "";
-    out.push(`${t10.tie ? "^" : ""}${body}${lead}${ly2}${tail}`);
+    out.push(`${t10.tie ? "^" : ""}${body2}${lead}${ly2}${tail}`);
   }
   return out.join(" ");
 }
@@ -25032,15 +25120,15 @@ function fromJianpu(text2, fifths) {
     }
     m2 = /^(\^?)((?:[#b]*[0-7x]['’,]*)(?:&[#b]*[1-7]['’,]*)*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w2);
     if (!m2) return null;
-    const [, tie, body, unders, dot, ticks, lyric, hyph] = m2;
+    const [, tie, body2, unders, dot, ticks, lyric, hyph] = m2;
     let dur = ticks ? Number(ticks) : TPQ / 2 ** unders.length;
     if (dot && !ticks) dur *= 1.5;
-    if (body === "0") {
+    if (body2 === "0") {
       out.push({ kind: "rest", id: id2++, dur });
       n10++;
       continue;
     }
-    const heads = body.split("&").map((h2) => {
+    const heads = body2.split("&").map((h2) => {
       const hm = /^([#b]*)([0-7x])(['’,]*)$/.exec(h2);
       const acc = hm[1] ? hm[1][0] === "#" ? hm[1].length : -hm[1].length : 0;
       const shift = [...hm[3]].reduce((a10, c10) => a10 + (c10 === "," ? -1 : 1), 0);
@@ -25061,22 +25149,78 @@ var fifthsAtSel = (st3) => keyAt(tr(st3), st3.sel ? st3.sel.from : Math.max(0, s
 var LIMIT = 200;
 var COALESCE_MS = 1500;
 var emptyHistory = () => ({ past: [], future: [], lastKey: null, lastAt: 0 });
-var snapOf = (st3) => ({ song: st3.song, at: st3.at, caret: st3.caret, sel: st3.sel });
+var snapOf = (st3, extras, locus) => ({ song: st3.song, extras, at: st3.at, caret: st3.caret, sel: st3.sel, locus });
 var applySnap = (st3, s10) => ({ ...st3, song: s10.song, at: s10.at, caret: s10.caret, sel: s10.sel, log: [] });
-function record2(h2, prev, gesture, now) {
-  if (gesture && gesture === h2.lastKey && now - h2.lastAt < COALESCE_MS) return { ...h2, future: [], lastAt: now };
-  const past = h2.past.length >= LIMIT ? [...h2.past.slice(1), snapOf(prev)] : [...h2.past, snapOf(prev)];
+function record2(h2, prev, prevExtras, gesture, now, locus) {
+  if (gesture && gesture === h2.lastKey && now - h2.lastAt < COALESCE_MS && h2.past.length) {
+    const last = h2.past[h2.past.length - 1];
+    return { ...h2, past: [...h2.past.slice(0, -1), { ...last, locus }], future: [], lastAt: now };
+  }
+  const snap = snapOf(prev, prevExtras, locus);
+  const past = h2.past.length >= LIMIT ? [...h2.past.slice(1), snap] : [...h2.past, snap];
   return { past, future: [], lastKey: gesture, lastAt: now };
 }
-function undo(h2, cur) {
+function undo(h2, cur, curExtras) {
   if (!h2.past.length) return null;
   const snap = h2.past[h2.past.length - 1];
-  return { h: { past: h2.past.slice(0, -1), future: [...h2.future, snapOf(cur)], lastKey: null, lastAt: 0 }, st: applySnap(cur, snap) };
+  return { h: { past: h2.past.slice(0, -1), future: [...h2.future, snapOf(cur, curExtras, snap.locus)], lastKey: null, lastAt: 0 }, st: applySnap(cur, snap), extras: snap.extras, locus: snap.locus };
 }
-function redo(h2, cur) {
+function redo(h2, cur, curExtras) {
   if (!h2.future.length) return null;
   const snap = h2.future[h2.future.length - 1];
-  return { h: { past: [...h2.past, snapOf(cur)], future: h2.future.slice(0, -1), lastKey: null, lastAt: 0 }, st: applySnap(cur, snap) };
+  return { h: { past: [...h2.past, snapOf(cur, curExtras, snap.locus)], future: h2.future.slice(0, -1), lastKey: null, lastAt: 0 }, st: applySnap(cur, snap), extras: snap.extras, locus: snap.locus };
+}
+var body = (song, at2) => trackOf(song, at2.paper, at2.part).filter((t10) => t10.kind !== "key" && t10.kind !== "time" && t10.kind !== "tempo");
+function describeSongChange(prev, next2) {
+  const a10 = prev.song, b3 = next2.song;
+  if (a10.papers.length !== b3.papers.length) return { kind: "paper", label: b3.papers.length > a10.papers.length ? "\u52A0\u4E86\u4E00\u5F20\u7EB8" : "\u5220\u4E86\u4E00\u5F20\u7EB8" };
+  if (a10.parts.length !== b3.parts.length) return { kind: "score", label: b3.parts.length > a10.parts.length ? "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8" : "\u5220\u4E86\u4E00\u4E2A\u58F0\u90E8" };
+  const d3 = body(b3, prev.at).length - body(a10, prev.at).length;
+  if (d3 > 0) return { kind: "score", label: `\u5199\u4E86 ${d3} \u4E2A` };
+  if (d3 < 0) return { kind: "score", label: `\u5220\u4E86 ${-d3} \u4E2A` };
+  if ((a10.title ?? "") !== (b3.title ?? "")) return { kind: "score", label: "\u6539\u6B4C\u540D" };
+  if ((a10.credits ?? "") !== (b3.credits ?? "")) return { kind: "score", label: "\u6539\u4F5C\u8005\u680F" };
+  const pa = a10.papers.find((p2) => p2.id === prev.at.paper), pb = b3.papers.find((p2) => p2.id === prev.at.paper);
+  if (pa && pb && !!pa.hidden !== !!pb.hidden) return { kind: "paper", label: pb.hidden ? "\u9690\u85CF\u4E86\u8FD9\u5F20\u7EB8" : "\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8" };
+  if (pa && pb && pa.name !== pb.name) return { kind: "paper", label: "\u6539\u66F2\u6BB5\u540D" };
+  return { kind: "score", label: "\u6539" };
+}
+
+// src/score/desk.ts
+var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
+var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {} });
+function serializeDesk(d3) {
+  const out = {};
+  if (d3.scope === "all") out.scope = "all";
+  if (d3.pageFlow) out.pageFlow = true;
+  if (d3.paper) out.paper = d3.paper;
+  const parts = {};
+  for (const [id2, p2] of Object.entries(d3.parts)) {
+    const v = {};
+    if (p2.hidden) v.hidden = true;
+    if (p2.only) v.only = true;
+    if (p2.muted) v.muted = true;
+    if (p2.solo) v.solo = true;
+    if (Object.keys(v).length) parts[id2] = v;
+  }
+  if (Object.keys(parts).length) out.parts = parts;
+  return Object.keys(out).length ? out : null;
+}
+function unserializeDesk(json) {
+  const d3 = freshDesk();
+  if (!json || typeof json !== "object") return d3;
+  const j2 = json;
+  if (j2.scope === "all") d3.scope = "all";
+  if (j2.pageFlow === true) d3.pageFlow = true;
+  if (typeof j2.paper === "string" && j2.paper) d3.paper = j2.paper;
+  if (j2.parts && typeof j2.parts === "object") {
+    for (const [id2, v] of Object.entries(j2.parts)) {
+      if (!v || typeof v !== "object") continue;
+      const p2 = v;
+      d3.parts[id2] = { hidden: p2.hidden === true, only: p2.only === true, muted: p2.muted === true, solo: p2.solo === true };
+    }
+  }
+  return d3;
 }
 
 // src/ui/sel-bar.ts
@@ -25574,8 +25718,26 @@ function toggleImpro() {
 var history = emptyHistory();
 function update(next2, gesture) {
   if (next2 === st2) return;
-  if (next2.song !== st2.song) history = record2(history, st2, gesture ?? null, performance.now());
+  if (next2.song !== st2.song) {
+    history = record2(history, st2, doc.extras, gesture ?? null, performance.now(), describeSongChange(st2, next2));
+    renderUndo();
+  }
   applyState(next2);
+}
+function updateExtras(next2, locus, gesture) {
+  if (next2 === doc.extras) return;
+  history = record2(history, st2, doc.extras, gesture ?? null, performance.now(), locus);
+  doc.extras = next2;
+  renderTitle();
+  changed();
+  renderUndo();
+}
+function updateBoth(next2, nextExtras, locus) {
+  history = record2(history, st2, doc.extras, null, performance.now(), locus);
+  doc.extras = nextExtras;
+  applyState(next2);
+  renderTitle();
+  renderUndo();
 }
 function applyState(next2) {
   if (next2 === st2) return;
@@ -25593,26 +25755,58 @@ function applyState(next2) {
   updateChrome();
 }
 function undoNow() {
-  const r10 = undo(history, st2);
+  const r10 = undo(history, st2, doc.extras);
   if (!r10) {
     info("\u6CA1\u6709\u53EF\u64A4\u9500\u7684");
     return;
   }
   closeOffer?.();
   view.lyrics.commitAndClose();
-  history = r10.h;
-  applyState(r10.st);
-  renderUndo();
+  restore(r10, "\u64A4\u9500");
 }
 function redoNow() {
-  const r10 = redo(history, st2);
+  const r10 = redo(history, st2, doc.extras);
   if (!r10) {
     info("\u6CA1\u6709\u53EF\u91CD\u505A\u7684");
     return;
   }
+  closeOffer?.();
+  view.lyrics.commitAndClose();
+  restore(r10, "\u91CD\u505A");
+}
+var lastUndoText = "";
+function restore(r10, verb) {
   history = r10.h;
+  if (r10.extras !== doc.extras) {
+    if (r10.extras.thumbnail !== doc.extras.thumbnail) {
+      coverTouched = true;
+      coverRev++;
+    }
+    doc.extras = r10.extras;
+    if (r10.locus.kind === "lounge") {
+      synth.allOff();
+      gmHeld.clear();
+      void prepareSynth();
+    }
+  }
+  revealPart(r10.st.at.part);
   applyState(r10.st);
+  if (studio.isOpen) studio.render();
   renderUndo();
+  lastUndoText = `${verb} \xB7 ${locusText(r10.st, r10.locus)}`;
+  showNotice({ id: "undo", level: "info", text: lastUndoText, autoHideMs: 2500 });
+}
+function revealPart(id2) {
+  if (isShown(id2)) return;
+  if (st2.song.parts.some((p2) => pv(p2.id).only)) setPv(id2, { only: true });
+  else setPv(id2, { hidden: false });
+}
+function locusText(at2, l10) {
+  const k2 = at2.song.papers.findIndex((p2) => p2.id === at2.at.paper), paperName = at2.song.papers[k2]?.name || `\u7B2C ${k2 + 1} \u6BB5`;
+  const part = at2.song.parts.find((p2) => p2.id === at2.at.part), partName = part ? roleName(doc.extras, part.role) : "";
+  if (l10.kind === "score") return `${at2.song.papers.length > 1 ? paperName + " \xB7 " : ""}${at2.song.parts.length > 1 ? partName + " \xB7 " : ""}${l10.label}`;
+  if (l10.kind === "paper") return `${paperName} \xB7 ${l10.label}`;
+  return `${l10.kind === "lounge" ? "\u4F11\u606F\u5BA4" : l10.kind === "studio" ? "\u5F55\u97F3\u5BA4" : "\u5C01\u9762"} \xB7 ${l10.label}`;
 }
 function renderUndo() {
   $2("undoBtn").disabled = !history.past.length;
@@ -25862,9 +26056,11 @@ async function exportSong() {
     const mono = new Float32Array(m2.left.length);
     for (let i10 = 0; i10 < mono.length; i10++) mono[i10] = (m2.left[i10] + m2.right[i10]) / 2;
     const secs = mono.length / m2.sr, bytes = await encodeMp3(mono, m2.sr);
-    const file = new File([bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
+    const { lines } = creditsOf(m2.roles), rights = st2.song.rights;
+    const tag2 = id3v2({ title: st2.song.title || docName(), artist: (st2.song.credits ?? "").split("\n").map((s10) => s10.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || void 0, software: `MoonSinger ${APP_VERSION}` });
+    const file = new File([tag2, bytes], `${docName()}.mp3`, { type: "audio/mpeg" });
     progress("");
-    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}${creditsBlock(audioCredits(doc.extras, m2.roles), "\u8FD9\u6BB5\u58F0\u97F3\u91CC\u7528\u5230\u7684\u58F0\u97F3\u7684\u7F72\u540D")}`);
+    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${secs.toFixed(1)} \u79D2 \xB7 mp3 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}<div class="offer-msg">${rights ? "\u8FD9\u9996\u6B4C\u7684\u8BB8\u53EF\u548C\u4E0B\u9762\u7684\u7F72\u540D\u5DF2\u7ECF\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u91CC\u3002" : "\u4E0B\u9762\u7684\u7F72\u540D\u5DF2\u7ECF\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u91CC\uFF08\u8BB8\u53EF\u672A\u58F0\u660E = \u6CD5\u5F8B\u9ED8\u8BA4\u7684\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF1B\u8981\u58F0\u660E\u5728\u4F5C\u8005\u680F\u91CC\u9009\uFF09\u3002"}</div>` + performersBlock(m2.roles, "\u7F72\u540D\uFF08\u8FD9\u9996\u6B4C + \u8FD9\u6BB5\u58F0\u97F3\u91CC\u51FA\u4E86\u58F0\u7684\u58F0\u90E8\u4E0A\u573A\u7684\u90A3\u4F4D\uFF09"));
   } catch (e10) {
     progress("");
     showError(`\u5BFC\u51FA\u5931\u8D25\uFF1A${e10.message}`);
@@ -26089,7 +26285,7 @@ window.__moonsinger = {
   view,
   zipList: (bytes) => Object.keys(unzipSync(bytes)),
   zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]),
-  load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null }),
+  load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null, view: o10.view }),
   set: (n10) => update(n10),
   addPaper: () => update(addPaper(st2)),
   toggleChord: (i10, p2) => update(toggleChordPitch(st2, i10, p2)),
@@ -26102,6 +26298,8 @@ window.__moonsinger = {
   undo: () => undoNow(),
   redo: () => redoNow(),
   history: () => ({ past: history.past.length, future: history.future.length }),
+  undoText: () => lastUndoText,
+  desk: () => deskNow(),
   setScope: (v) => {
     viewScope = v;
     view.render();
@@ -26244,9 +26442,9 @@ async function playHeadWith(p2) {
 }
 async function castPick(p2) {
   if (finderPlayOnly) return;
-  const cat = await loadCatalog(new URL(import.meta.url)), c10 = p2.concept;
-  const sound2 = p2.kind === "gs" ? p2.provider.sound ?? roleSoundOf(cat, c10) : roleSoundOf(cat, c10);
-  doc.extras = withRoleConcept(doc.extras, curRole(), { name: roleNameOf(c10), sound: sound2, concept: { ids: { wikidata: c10.ids.wikidata, local: c10.ids.local, musicxml: c10.ids.musicxml, gm: c10.ids.gm.map((g3) => ({ program: g3.program, bank: g3.bank })), hs: c10.ids.hs }, name: { zh: c10.names.zh, en: c10.names.en, ...c10.names.ja ? { ja: c10.names.ja } : {} } } }, st2.song.hum);
+  const cat2 = await loadCatalog(new URL(import.meta.url)), c10 = p2.concept;
+  const sound2 = p2.kind === "gs" ? p2.provider.sound ?? roleSoundOf(cat2, c10) : roleSoundOf(cat2, c10);
+  updateExtras(withRoleConcept(doc.extras, curRole(), { name: roleNameOf(c10), sound: sound2, concept: { ids: { wikidata: c10.ids.wikidata, local: c10.ids.local, musicxml: c10.ids.musicxml, gm: c10.ids.gm.map((g3) => ({ program: g3.program, bank: g3.bank })), hs: c10.ids.hs }, name: { zh: c10.names.zh, en: c10.names.en, ...c10.names.ja ? { ja: c10.names.ja } : {} } } }, st2.song.hum), { kind: "lounge", label: `\u300C${roleNameOf(c10)}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668` }, "cast");
   if (p2.kind === "voice") {
     setActive(CANDIDATE_ID.full);
     closeFinder();
@@ -26260,7 +26458,7 @@ async function castPick(p2) {
   }
   const { subset, sha256 } = audition, inf = sf2Info(subset);
   const fileSha256 = GS.sha256;
-  doc.extras = withSf2Candidate(doc.extras, curRole(), {
+  updateExtras(withSf2Candidate(doc.extras, curRole(), {
     name: p2.provider.gmName,
     bank: p2.provider.bank,
     program: p2.provider.program,
@@ -26270,13 +26468,17 @@ async function castPick(p2) {
     embed: false,
     origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id },
     credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } }
-  }, st2.song.hum);
+  }, st2.song.hum), { kind: "lounge", label: `\u300C${roleNameOf(c10)}\u300D\u4E0A\u573A\uFF1A${p2.provider.gmName}` }, "cast");
   sessionSubsets.set(sha256, subset);
   closeFinder();
   setActive(activeId(doc.extras, curRole()));
   info(`\u300C${roleNameOf(c10)}\u300D\u4E0A\u573A\uFF1A${p2.provider.gmName}`);
 }
 var finder = new Finder($2("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
+var partLabel = (id2) => {
+  const k2 = st2.song.parts.findIndex((p2) => p2.id === id2);
+  return k2 < 0 ? id2 : partLabels(st2.song, doc.extras)[k2];
+};
 var studio = new Studio($2("stage"), {
   strips: () => {
     const labels = partLabels(st2.song, doc.extras);
@@ -26284,17 +26486,11 @@ var studio = new Studio($2("stage"), {
   },
   setGain: (id2, dB) => {
     const p2 = st2.song.parts.find((x2) => x2.id === id2);
-    if (p2) {
-      doc.extras = withMic(doc.extras, p2.mic, { gainDb: dB });
-      renderTitle();
-    }
+    if (p2) updateExtras(withMic(doc.extras, p2.mic, { gainDb: dB }), { kind: "studio", label: `${partLabel(id2)} \u589E\u76CA ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id2}`);
   },
   setPan: (id2, pan) => {
     const p2 = st2.song.parts.find((x2) => x2.id === id2);
-    if (p2) {
-      doc.extras = withMic(doc.extras, p2.mic, { pan });
-      renderTitle();
-    }
+    if (p2) updateExtras(withMic(doc.extras, p2.mic, { pan }), { kind: "studio", label: `${partLabel(id2)} \u58F0\u50CF ${Math.abs(pan) < 0.025 ? "\u4E2D" : pan < 0 ? `\u5DE6 ${Math.round(-pan * 100)}` : `\u53F3 ${Math.round(pan * 100)}`}` }, `mix:pan:${id2}`);
   },
   toggleMute: (id2) => {
     setPv(id2, { muted: !pv(id2).muted });
@@ -26363,7 +26559,8 @@ function closeFinder() {
   scoreEl.focus();
 }
 function setActive(id2) {
-  doc.extras = withActive(doc.extras, curRole(), id2, st2.song.hum);
+  const next2 = withActive(doc.extras, curRole(), id2, st2.song.hum);
+  updateExtras(next2, { kind: "lounge", label: `\u300C${roleName(next2, curRole())}\u300D\u6362\u4EBA\uFF1A${activeCandidateName(next2, curRole()) ?? id2}` });
   synth.allOff();
   gmHeld.clear();
   void prepareSynth();
@@ -26375,18 +26572,25 @@ function openCreditsSheet() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">\u4F5C\u8005\u680F</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09">${esc7(st2.song.credits ?? "")}</textarea><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002</div><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">\u4F5C\u8005\u680F</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09">${esc7(st2.song.credits ?? "")}</textarea><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002</div><div class="part-sec">\u8BB8\u53EF\uFF08\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09</div><div class="set-row"><button class="btn cand" data-r="-1" title="\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09">\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc7(p2.note)}">${esc7(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199" value="${esc7(st2.song.rights ?? "")}" /><div class="offer-msg">\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
   document.body.append(box);
-  const ta2 = box.querySelector("#crIn");
+  const ta2 = box.querySelector("#crIn"), rt2 = box.querySelector("#rtIn");
   const close = () => {
-    update(setCredits(st2, ta2.value));
+    update(setRights(setCredits(st2, ta2.value), rt2.value));
     box.remove();
     closeOffer = null;
     scoreEl.focus();
   };
   closeOffer = close;
   box.addEventListener("click", (e10) => {
-    const v = e10.target.closest("[data-v]")?.dataset.v;
+    const t10 = e10.target, r10 = t10.closest("[data-r]")?.dataset.r;
+    if (r10 !== void 0) {
+      const k2 = Number(r10);
+      rt2.value = k2 < 0 ? "" : RIGHTS_PRESETS[k2].text((/* @__PURE__ */ new Date()).getFullYear());
+      rt2.focus();
+      return;
+    }
+    const v = t10.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "ok") close();
   });
   ta2.focus();
@@ -26466,8 +26670,7 @@ function navPaper(dir) {
 function addNewPart() {
   const role = newRoleId(doc.extras, st2.song), mic = newMicId(doc.extras, st2.song);
   const id2 = `P${Math.max(0, ...st2.song.parts.map((p2) => Number(/^P(\d+)$/.exec(p2.id)?.[1] ?? 0))) + 1}`;
-  doc.extras = withNewRole(doc.extras, role, st2.song.hum);
-  update(addPart(st2, { id: id2, role, mic }));
+  updateBoth(addPart(st2, { id: id2, role, mic }), withNewRole(doc.extras, role, st2.song.hum), { kind: "score", label: "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8" });
   renderTitle();
   openPartSheet();
 }
@@ -26542,9 +26745,8 @@ function openPartSheet() {
   const setRole = (name, sound2) => {
     const n10 = name.trim();
     if (!n10 || n10 === roleName(doc.extras, curRole()) && (!sound2 || sound2 === roleSound(doc.extras, curRole()))) return;
-    doc.extras = withRoleName(doc.extras, curRole(), n10, st2.song.hum, sound2);
+    updateExtras(withRoleName(doc.extras, curRole(), n10, st2.song.hum, sound2), { kind: "lounge", label: `\u89D2\u8272\u6539\u540D\uFF1A${n10}` });
     view.render();
-    renderTitle();
   };
   let picked = null;
   const pickOfficial = async (id2) => {
@@ -26603,7 +26805,7 @@ function openPartSheet() {
     });
   };
   const finishAdd = async (c10) => {
-    doc.extras = withSf2Candidate(doc.extras, curRole(), { ...c10, embed: false }, st2.song.hum);
+    updateExtras(withSf2Candidate(doc.extras, curRole(), { ...c10, embed: false }, st2.song.hum), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u4E0A\u573A\uFF1A${c10.name}` });
     sessionSubsets.set(c10.sha256, c10.subset);
     picked = null;
     synth.allOff();
@@ -26705,8 +26907,7 @@ function openPartSheet() {
     if (v.startsWith("cand:")) setActive(v.slice(5));
     else if (v.startsWith("del:")) {
       try {
-        doc.extras = withoutCandidate(doc.extras, curRole(), v.slice(4));
-        renderTitle();
+        updateExtras(withoutCandidate(doc.extras, curRole(), v.slice(4)), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u9000\u6389\u4E00\u4F4D\u5019\u9009` });
       } catch (err2) {
         showError(err2.message);
       }
@@ -26726,8 +26927,7 @@ function openPartSheet() {
       picked = null;
     } else if (v.startsWith("cal:")) {
       const d3 = Number(v.slice(4)), next2 = d3 === 0 ? 0 : activeCalibrationDb(doc.extras, curRole()) + d3;
-      doc.extras = withCalibration(doc.extras, curRole(), Math.max(-30, Math.min(12, next2)), st2.song.hum);
-      renderTitle();
+      updateExtras(withCalibration(doc.extras, curRole(), Math.max(-30, Math.min(12, next2)), st2.song.hum), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u54CD\u5EA6\u6821\u51C6 ${Math.max(-30, Math.min(12, next2))} dB` }, "cal");
     } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
     else if (v === "hide") {
       const id2 = curPart().id;
@@ -26759,17 +26959,26 @@ function openPartSheet() {
     } else if (v === "delpart") {
       close();
       const me = curPart();
-      void askSheet(`\u5220\u6389\u58F0\u90E8\u300C${roleName(doc.extras, me.role)}\u300D\uFF1F`, "\u6574\u9996\u6B4C\u91CC\u5B83\u5199\u7684\u4E1C\u897F\u90FD\u6CA1\u4E86\uFF08\u6CA1\u6709\u64A4\u9500\uFF09\uFF0C\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E5F\u4E00\u8D77\u5220\u3002", "\u5220").then((ok2) => {
+      void askSheet(`\u5220\u6389\u58F0\u90E8\u300C${roleName(doc.extras, me.role)}\u300D\uFF1F`, "\u6574\u9996\u6B4C\u91CC\u5B83\u5199\u7684\u4E1C\u897F\u90FD\u6CA1\u4E86\uFF0C\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E5F\u4E00\u8D77\u5220\uFF08\u80FD\u64A4\u9500\uFF09\u3002", "\u5220").then((ok2) => {
         if (!ok2) return;
-        update(removePart(st2, me.id));
-        doc.extras = withoutRole(doc.extras, me.role);
-        renderTitle();
+        updateBoth(removePart(st2, me.id), withoutRole(doc.extras, me.role), { kind: "score", label: `\u5220\u4E86\u58F0\u90E8\u300C${roleName(doc.extras, me.role)}\u300D` });
         view.render();
       });
       return;
     } else return;
     draw();
   });
+}
+var deskNow = () => ({ scope: viewScope, pageFlow, paper: st2.at.paper, parts: Object.fromEntries(partView) });
+function applyDesk(d3) {
+  viewScope = d3.scope;
+  pageFlow = d3.pageFlow;
+  partView.clear();
+  for (const [id2, p2] of Object.entries(d3.parts)) partView.set(id2, { ...freshPartView(), ...p2 });
+  if (d3.paper && d3.paper !== st2.at.paper) {
+    const paper = st2.song.papers.find((p2) => p2.id === d3.paper), part = paper?.tracks[st2.at.part] ? st2.at.part : st2.song.parts.find((p2) => paper?.tracks[p2.id])?.id;
+    if (paper && part) st2 = setFocus(st2, paper.id, part);
+  }
 }
 function loadDoc(song, o10) {
   if (impro) toggleImpro();
@@ -26784,7 +26993,7 @@ function loadDoc(song, o10) {
   history = emptyHistory();
   st2 = { ...initState(song), input: { ...initState(song).input, inputFifths: st2.input.inputFifths, inputScale: st2.input.inputScale } };
   doc.saved = { song: st2.song, lounge: loungeKey() };
-  partView.clear();
+  applyDesk(o10.view ? unserializeDesk(o10.view) : freshDesk());
   lastRender.clear();
   synth.allOff();
   gmHeld.clear();
@@ -26847,7 +27056,7 @@ async function fileOpen() {
 function openPicked(picked) {
   try {
     const o10 = openBytes(picked.name, picked.bytes), own = o10.ours && !o10.notices.length;
-    loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: own ? picked.handle : null, mtime: own ? picked.mtime : null });
+    loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: own ? picked.handle : null, mtime: own ? picked.mtime : null, view: o10.view });
     if (o10.notices.length) showError(o10.notices.join(" "));
     else info(`\u6253\u5F00\u4E86 ${picked.name}`);
   } catch (e10) {
@@ -26855,7 +27064,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = doc.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (st2.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var bytesNow = (extras) => saveMxl({ song: st2.song, hum: st2.song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
+var bytesNow = (extras) => saveMxl({ view: serializeDesk(deskNow()), song: st2.song, hum: st2.song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
 var mxlFile = (name, extras) => new File([bytesNow(extras)], name, { type: "application/vnd.recordare.musicxml" });
 var stemOf2 = (name) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
 var sizeText = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -26909,7 +27118,7 @@ async function exportCopyMxl(packed = false) {
       extras = withPacked(extras, (sha) => got.get(sha)).extras;
       if (missing.length) showError(`\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u526F\u672C\u91CC\u6CA1\u5E26\uFF1A${missing.join("\u3001")}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u518D\u5BFC\u51FA\u4E00\u6B21\u3002`);
     }
-    const credits = creditsBlock(fileCredits(extras), "\u8FD9\u4EFD\u6587\u4EF6\u5E26\u7740\u7684\u58F0\u97F3\u7684\u7F72\u540D");
+    const credits = performersBlock(soundingRoles()) + creditsBlock(packedLicenses(extras), "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u8FD9\u4EFD\u526F\u672C\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09");
     if (canPickSave()) {
       const h2 = await pickSave(name);
       if (!h2) return;
@@ -26940,9 +27149,7 @@ async function packAll() {
   const { got, missing } = await gatherSubsets(doc.extras);
   const r10 = withPacked(doc.extras, (sha) => got.get(sha));
   if (r10.packed.length) {
-    doc.extras = r10.extras;
-    renderTitle();
-    changed();
+    updateExtras(r10.extras, { kind: "lounge", label: `\u6253\u5305\u4E86 ${r10.packed.length} \u4EF6\u58F0\u97F3` });
     const size = Object.values(doc.extras.sounds).reduce((n10, b3) => n10 + b3.length, 0);
     info(`\u6253\u5305\u4E86 ${r10.packed.length} \u4EF6\u58F0\u97F3\u8FDB\u6B4C\uFF1A\u73B0\u5728\u6B4C\u91CC\u5E26\u7740 ${sizeText(size)}${size > embedSoftLimit ? `\uFF08\u8D85\u8FC7 ${sizeText(embedSoftLimit)}\uFF1A\u5B58 / \u540C\u6B65\u4F1A\u6162\u4E00\u70B9\uFF09` : ""}\uFF0C\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD`);
   }
@@ -26967,9 +27174,7 @@ async function unpackAll() {
   }
   const r10 = withUnpacked(doc.extras, (sha) => ok2.has(sha));
   if (r10.removed.size) {
-    doc.extras = r10.extras;
-    renderTitle();
-    changed();
+    updateExtras(r10.extras, { kind: "lounge", label: `\u89E3\u5305\u4E86 ${r10.removed.size} \u4EF6\u58F0\u97F3` });
     info(`\u89E3\u5305\u4E86 ${r10.removed.size} \u4EF6\uFF1A\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u5C0F\u4E86 ${sizeText([...r10.removed.values()].reduce((n10, b3) => n10 + b3.length, 0))}\uFF09\uFF1B\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u7740\uFF0C\u7167\u6837\u80FD\u54CD\u3002\u522B\u7684\u8BBE\u5907\u4E0A\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u539F\u6587\u4EF6\u627E`);
   }
   if (stuck.length) showError(`\u8FD9\u51E0\u4EF6\u6CA1\u89E3\u5305\uFF1A${stuck.join("\uFF1B")}\u2014\u2014\u8FD9\u53F0\u8BBE\u5907\u7559\u4E0D\u4F4F\u5B83\u7684\u58F0\u97F3\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF0C\u5BB6\u65CF\u97F3\u6E90\u5E93\u91CC\u4E5F\u6CA1\u6709\uFF0C\u89E3\u4E86\u5C31\u627E\u4E0D\u56DE\u6765\u3002`);
@@ -27010,12 +27215,23 @@ function openExportHub() {
     else if (v === "mxlPacked") void exportCopyMxl(true);
   });
 }
+function soundingRoles() {
+  return audibleParts().filter((p2) => flattenPart(st2.song, p2.id).tokens.some((t10) => t10.kind === "note")).map((p2) => p2.role);
+}
 function soundsSection() {
   const uses = soundUses(doc.extras);
   if (!uses.length) return "";
   const packed = uses.filter((u2) => u2.packed), size = packed.reduce((n10, u2) => n10 + u2.bytes, 0);
-  return `<div class="part-sec">\u4E50\u5668\u7684\u58F0\u97F3</div><div class="offer-msg">${uses.length} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC ${packed.length} \u4EF6${packed.length ? `\uFF08${sizeText(size)}\uFF09` : ""}\uFF0C\u53EA\u8BB0\u6765\u6E90 ${uses.length - packed.length} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u6708\u8BFB\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002</div><div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">\u5168\u90E8\u6253\u5305\u8FDB\u6B4C</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09</button>` : ""}</div>` + (creditsBlock(fileCredits(doc.extras), "\u8FD9\u9996\u6B4C\u6587\u4EF6\u91CC\u5E26\u7740\u7684\u58F0\u97F3\u7684\u7F72\u540D") || `<div class="offer-msg">\u7F72\u540D\uFF1A\u6587\u4EF6\u91CC\u6CA1\u5E26\u522B\u4EBA\u7684\u58F0\u97F3\uFF08\u53EA\u8BB0\u6765\u6E90\u7684\u3001\u6708\u8BFB\u90FD\u4E0D\u7B97\uFF09\u3002\u5BFC\u51FA mp3 \u65F6\u53E6\u7B97\u3002</div>`);
+  return `<div class="part-sec">\u4E50\u5668\u7684\u58F0\u97F3</div><div class="offer-msg">${uses.length} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC ${packed.length} \u4EF6${packed.length ? `\uFF08${sizeText(size)}\uFF09` : ""}\uFF0C\u53EA\u8BB0\u6765\u6E90 ${uses.length - packed.length} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u6708\u8BFB\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002</div><div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">\u5168\u90E8\u6253\u5305\u8FDB\u6B4C</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09</button>` : ""}</div>` + creditsBlock(packedLicenses(doc.extras), "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u6587\u4EF6\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF0C\u5206\u53D1\u8FD9\u4EFD\u6587\u4EF6\u8981\u5B88\u7684\uFF1B\u548C\u6F14\u51FA\u7F72\u540D\u5206\u5F00\u7B97\uFF09");
 }
+function creditsOf(roles) {
+  const perf = performerCredits(doc.extras, roles), own = songCreditLine(st2.song);
+  return { lines: own ? [own, ...perf] : perf, hints: licenseHints(st2.song.rights, perf) };
+}
+var performersBlock = (roles, title = "\u7F72\u540D\uFF08\u8FD9\u9996\u6B4C + \u73B0\u5728\u51FA\u58F0\u7684\u58F0\u90E8\u4E0A\u573A\u7684\u90A3\u4F4D\uFF1B\u5BFC\u51FA mp3 \u65F6\u6309\u771F\u51FA\u4E86\u58F0\u7684\u7B97\uFF09") => {
+  const { lines, hints } = creditsOf(roles);
+  return creditsBlock(lines, title) + hints.map((h2) => `<div class="offer-msg credits-hint">${esc7(h2)}</div>`).join("");
+};
 function openFileMenu() {
   closeOffer?.();
   const box = document.createElement("div");
@@ -27024,7 +27240,7 @@ function openFileMenu() {
   const where = inStore ? `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58\uFF08\u6539\u4E86 2 \u79D2\u5185\u843D\u5230\u8FD9\u53F0\u8BBE\u5907\uFF1B${isSignedIn2() ? "\u767B\u5F55\u7740\uFF0C\u7A0D\u540E\u63A8\u4E0A OneDrive" : "\u6CA1\u767B\u5F55\uFF0C\u4E0D\u4E0A\u4E91"}\uFF09\u3002\u300C\u5B58\u300D= \u7ACB\u523B\u5B58 + \u63A8\u3002` : doc.handle ? `\u73B0\u5728\u5B58\u5728 <b>${esc7(doc.handle.name)}</b>\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB\uFF08\u6587\u4EF6\u5728\u5916\u9762\u88AB\u6539\u8FC7\u4F1A\u5148\u95EE\uFF09\u3002\u8981\u6362\u540D\u5B57\uFF0C\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\u3002` : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl \u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF08\u4E0B\u8F7D\u4E86\u5C31\u7B97\u5B58\u4E86\uFF09\u3002";
   const thumb = doc.extras.thumbnail;
   const coverUrl = thumb ? URL.createObjectURL(new Blob([thumb], { type: "image/png" })) : null;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc7(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b>\uFF08\u6CA1\u5B58\u8FC7 = \u5E74\u6708\u65E5-\u6B4C\u540D\uFF1B\u5B58\u8FC7\u4E4B\u540E\u548C\u7EB8\u4E0A\u7684\u6B4C\u540D\u5404\u7BA1\u5404\u7684\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="lib"><svg class="ico"><use href="#folder"/></svg>\u6B4C\u5E93\u2026</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>\u5BFC\u51FA\u2026</button>` + (hasStore() && !inStore ? `<button class="btn" data-v="intoLib" title="\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09"><svg class="ico"><use href="#import"/></svg>\u5B58\u8FDB\u6B4C\u5E93</button>` : "") + (doc.handle ? "" : `<button class="btn" data-v="rename">\u6539\u6587\u4EF6\u540D\u2026</button>`) + `</div><div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="\u5C01\u9762" />` : `<span class="cover-none">\u6CA1\u6709\u5C01\u9762\u56FE</span>`}</span><label class="btn" title="\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09"><svg class="ico"><use href="#image"/></svg>\u5C01\u9762\u56FE\u2026<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">\u53BB\u6389\u5C01\u9762\u56FE</button>` : "") + `</div>` + soundsSection() + `<div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${where} \u628A .mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u6587\u4EF6</div><div class="offer-msg">\u6587\u4EF6\u540D\uFF1A<b>${esc7(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b>\uFF08\u6CA1\u5B58\u8FC7 = \u5E74\u6708\u65E5-\u6B4C\u540D\uFF1B\u5B58\u8FC7\u4E4B\u540E\u548C\u7EB8\u4E0A\u7684\u6B4C\u540D\u5404\u7BA1\u5404\u7684\uFF09</div><div class="set-row file-row"><button class="btn" data-v="new"><svg class="ico"><use href="#new"/></svg>\u65B0\u5EFA</button><button class="btn" data-v="lib"><svg class="ico"><use href="#folder"/></svg>\u6B4C\u5E93\u2026</button><button class="btn" data-v="open"><svg class="ico"><use href="#folder-open"/></svg>\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026</button><button class="btn" data-v="save"><svg class="ico"><use href="#floppy-disk"/></svg>\u5B58</button><button class="btn" data-v="export"><svg class="ico"><use href="#export"/></svg>\u5BFC\u51FA\u2026</button>` + (hasStore() && !inStore ? `<button class="btn" data-v="intoLib" title="\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09"><svg class="ico"><use href="#import"/></svg>\u5B58\u8FDB\u6B4C\u5E93</button>` : "") + (doc.handle ? "" : `<button class="btn" data-v="rename">\u6539\u6587\u4EF6\u540D\u2026</button>`) + `</div><div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="\u5C01\u9762" />` : `<span class="cover-none">\u6CA1\u6709\u5C01\u9762\u56FE</span>`}</span><label class="btn" title="\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09"><svg class="ico"><use href="#image"/></svg>\u5C01\u9762\u56FE\u2026<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">\u53BB\u6389\u5C01\u9762\u56FE</button>` : "") + `</div>` + soundsSection() + performersBlock(soundingRoles()) + `<div class="offer-msg">\u5B58\u6210 <code>.mxl</code>\uFF08MusicXML \u4E50\u8C31\u7684\u538B\u7F29\u5305\uFF1A\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u4E5F\u80FD\u6253\u5F00\uFF1BMoonSinger \u81EA\u5DF1\u7684\u4E1C\u897F\u653E\u5728\u91CC\u9762\u7684 <code>.moonsinger/</code>\uFF09\u3002${where} \u628A .mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -27055,11 +27271,9 @@ function openFileMenu() {
     else if (v === "rename") void renameActive();
     else if (v === "intoLib") void saveIntoGallery();
     else if (v === "coverOff") {
-      doc.extras = withThumbnail(doc.extras, null);
       coverTouched = true;
       coverRev++;
-      renderTitle();
-      changed();
+      updateExtras(withThumbnail(doc.extras, null), { kind: "cover", label: "\u53BB\u6389\u5C01\u9762\u56FE" });
       info("\u53BB\u6389\u4E86\u5C01\u9762\u56FE");
     }
   });
@@ -27262,7 +27476,7 @@ setInterval(() => {
 }, PUSH_HEARTBEAT_MS);
 function adoptStoreBytes(id2, bytes) {
   const o10 = openBytes(id2, bytes);
-  loadDoc(o10.song, { stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, handle: null, identifier: id2 });
+  loadDoc(o10.song, { stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, handle: null, identifier: id2, view: o10.view });
   deviceKvSet2(KV_LAST_DOC, id2);
   if (o10.notices.length) showError(o10.notices.join(" "));
 }
@@ -27596,11 +27810,9 @@ function pushDirtyAll(opts = {}) {
 async function setCover(f2) {
   try {
     const png = await makeCoverPng(new Uint8Array(await f2.arrayBuffer()));
-    doc.extras = withThumbnail(doc.extras, png);
     coverTouched = true;
     coverRev++;
-    renderTitle();
-    changed();
+    updateExtras(withThumbnail(doc.extras, png), { kind: "cover", label: "\u6362\u5C01\u9762\u56FE" });
     info(`\u5C01\u9762\u56FE\u6362\u597D\u4E86\uFF08${sizeText(png.length)}\uFF09`);
   } catch (e10) {
     showError(`\u8FD9\u5F20\u56FE\u7528\u4E0D\u4E86\uFF1A${e10.message}`);
@@ -27814,4 +28026,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-55acd872a072.mjs.map
+//# sourceMappingURL=moonsinger-bb988a563781.mjs.map
