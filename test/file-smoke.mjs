@@ -29,7 +29,7 @@ await p.mouse.click(n0.x, staffBottom + 52); await p.keyboard.type("さくら");
 await p.click("#score", { position: { x: 700, y: 400 } });
 check((await title()) === `${stem0} •`, "写了之后标题带「•」（改过没存）");
 // 纸面最上面点歌名、填上
-const tb = await p.evaluate(() => { const r = document.querySelector("#score").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + 18 }; });
+const tb = await p.evaluate(() => { const r = document.querySelector("#score .sheet").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + 18 }; });   // 纸（不是谱区：纸上面留了走带胶囊的边距，2026-10-08）
 await p.mouse.click(tb.x, tb.y); await p.waitForSelector(".title-input:not([hidden])");
 await p.keyboard.type("春の歌"); await p.keyboard.press("Enter");
 const day = stem0.slice(0, 8);   // 文件名 = 年月日-歌名（没存过时跟着歌名；user「用歌名可以，然后也要yyyymmdd规则」）

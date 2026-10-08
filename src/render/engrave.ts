@@ -84,10 +84,11 @@ export interface Layout {
 const SQUEEZE = 0.15;   // 一行最多压紧多少（音符总宽的比例）
 const MARGIN = 1.2, BAR_W = 1.6, TITLE_H = 4.6;   // TITLE_H = 纸面最上面歌名那一条
 const PAPER_H = 3.4, PAPER_GAP = 1.6, STUB_H = 2.4;   // 曲段名那一条；纸与纸之间多空的；隐藏声部的细行
-/** 版式（sp）：舒适 = 0.2.x 的尺寸；紧凑 = 谱上面 / 歌词下面都收、行与行之间不留、没歌词的那条谱更矮（user「紧凑你可以多帮我优化一些，包括字号，行距之类的」）。 */
+/** 版式（sp）：舒适 = 谱 7 mm、行距用原来紧凑那一档（user 2026-10-08「舒适的行距太宽了，反而不舒适。和紧凑的对齐」；0.2.x 的 17 sp 退役）；
+ *  紧凑 = 谱 5 mm、再卷一点（「紧凑也许可以再卷一点」）：谱上面 / 歌词下面都收、行与行之间不留、没歌词的那条谱更矮。 */
 const SPACING: Record<Density, { staffAbove: number; rowH: number; rowHNoLyric: number; graveUpper: number; lyricBelow: number; sysGap: number }> = {
-  cozy: { staffAbove: 6, rowH: 17, rowHNoLyric: 17, graveUpper: 11.5, lyricBelow: 5.2, sysGap: 1.5 },   // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
-  compact: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },
+  cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },   // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
+  compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 },
 };
 const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;     // F5 / B4 / E4 的五线谱位置
 const SHARP_POS = [38, 35, 39, 36, 33, 37, 34], FLAT_POS = [34, 37, 33, 36, 32, 35, 31];

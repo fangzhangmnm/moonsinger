@@ -11,9 +11,9 @@
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <title>MoonSinger</title>
-    <link rel="stylesheet" href="./vendor/internal-css/workbench-elements.css?v=fca86ba6db9d" />
-    <link rel="stylesheet" href="./vendor/internal-css/gallery.css?v=fca86ba6db9d" />
-    <link rel="stylesheet" href="./styles.css?v=fca86ba6db9d" />
+    <link rel="stylesheet" href="./vendor/internal-css/workbench-elements.css?v=014eaf0c2574" />
+    <link rel="stylesheet" href="./vendor/internal-css/gallery.css?v=014eaf0c2574" />
+    <link rel="stylesheet" href="./styles.css?v=014eaf0c2574" />
     <script>
       // bundle 加载前的兜底：任何脚本错误糊一张红条（iPad 无 devtools）。抄 CatsUp。
       (function () {
@@ -27,6 +27,7 @@
           }
           bar.hidden = false;
           bar.textContent = text + "  (点击关闭)";
+          try { (window.__msEarlyErrors = window.__msEarlyErrors || []).push({ t: Date.now(), m: text }); } catch (e) {}   // 进黑匣子（bundle 起来后 src/app/report-error.ts 收走）
         }
         window.addEventListener("error", function (e) { show("脚本错误：" + (e.message || e.error || e)); });
         window.addEventListener("unhandledrejection", function (e) { show("未处理的 Promise 错误：" + (e.reason && (e.reason.message || e.reason))); });
@@ -37,7 +38,7 @@
     <!-- ICON-SPRITE:BEGIN — 由 scripts/inline-sprites.py 生成，勿手改 -->
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
 <!--
-  32 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
+  34 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
   Family SVG Icons — MIT License, Copyright (c) 2026 fangzhangmnm.
   Contains work derived from (per-icon provenance in data-src):
     Feather Icons — MIT License, Copyright (c) 2013-2023 Cole Bemis · https://github.com/feathericons/feather
@@ -72,9 +73,13 @@
   <symbol id="folder" data-cat="file" data-src="lucide:folder" data-note="文件夹:左边 tab + 矩形主体" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><!-- 文件夹：左边 tab + 矩形主体 --> <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
   <!-- trash-can — 垃圾桶:桶身收口(feather 是直筒);与 fluent(圆提手/更低)、heroicons(弧形透视)亦不同 — own -->
   <symbol id="trash-can" data-cat="file" data-src="own" data-note="垃圾桶:桶身收口(feather 是直筒);与 fluent(圆提手/更低)、heroicons(弧形透视)亦不同 — own" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 9.5v9"/><path d="M14 9.5v9"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol>
+  <!-- album — 专辑/唱片:左边一个方形唱片封套(圆角矩形) + 右侧从封套后露出半张唱片(大圆弧 + 中心小孔)；与 bookshelf(书库) / gallery(图库) 分工 = 歌库【MoonSinger 顶栏最左「歌库」钮（回歌库）+ 文件菜单「歌库…」；2026-10-08 Claude Fable 5.1 自画未过目】 -->
+  <symbol id="album" data-cat="file" data-src="own" data-note="专辑/唱片:左边一个方形唱片封套(圆角矩形) + 右侧从封套后露出半张唱片(大圆弧 + 中心小孔)；与 bookshelf(书库) / gallery(图库) 分工 = 歌库【MoonSinger 顶栏最左「歌库」钮（回歌库）+ 文件菜单「歌库…」；2026-10-08 Claude Fable 5.1 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="11" height="15" rx="1.6"/><path d="M14 7.2 A5.2 5.2 0 1 1 14 16.8"/><circle cx="16" cy="12" r="1.2"/></symbol>
   <!-- hierarchy -->
   <!-- lock — 锁:体 13x11+锁梁抬高(腿3.5),整体居中 -->
   <symbol id="lock" data-cat="hierarchy" data-src="own" data-note="锁:体 13x11+锁梁抬高(腿3.5),整体居中" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="10" width="13" height="11"/><path d="M8.8 10 V6.5 a3.2 3.2 0 0 1 6.4 0 V10"/></symbol>
+  <!-- unlock — 开锁:同 lock 体型+锁梁弹开 -->
+  <symbol id="unlock" data-cat="hierarchy" data-src="own" data-note="开锁:同 lock 体型+锁梁弹开" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="10" width="13" height="11"/><path d="M8.8 10 V6.5 a3.2 3.2 0 0 1 6.3 -1.1"/></symbol>
   <!-- common -->
   <!-- caret-up — 上调 ▲:圆角实心扁三角(数字框旁上下叠放的小转盘用,12–16px)；与带竿的 chevron-up(上移)分工【JustReadBooks 朗读控制条预设框右侧小转盘「预设加一」；2026-10-02 Claude Opus 5.5 自画未过目】 -->
   <symbol id="caret-up" data-cat="common" data-src="own" data-note="上调 ▲:圆角实心扁三角(数字框旁上下叠放的小转盘用,12–16px)；与带竿的 chevron-up(上移)分工【JustReadBooks 朗读控制条预设框右侧小转盘「预设加一」；2026-10-02 Claude Opus 5.5 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 15.5 L12 8 L18.5 15.5 Z" fill="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
@@ -122,6 +127,6 @@
         <aside id="padPanel" class="pad-panel"></aside>
       </main>
     </div>
-    <script type="module" src="./dist/moonsinger-9ef07a47a7f4.mjs"></script>
+    <script type="module" src="./dist/moonsinger-76107611198a.mjs"></script>
   </body>
 </html>

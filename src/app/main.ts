@@ -46,10 +46,12 @@ import { SONG_SUFFIX, LOCAL_SAVE_DEBOUNCE_MS, PUSH_DEBOUNCE_MS, PUSH_HEARTBEAT_M
 import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
 import { createEditorSession } from "../editor-session/index.ts";
 import { openInputSheet, openChoiceSheet, isSheetOpen, closeSheet, isGateOpen } from "../ui/sheets.ts";
-import { reportError, diagNote, diagText, diagClear } from "./report-error.ts";
+import { reportError, diagNote, diagText, initBlackBox } from "./report-error.ts";
+import { copyDiag, shareDiag, clearDiag, canShareDiag } from "./diag-ui.ts";
 import { deviceKvGet, deviceKvSet } from "../device-kv.ts";
 import { makeCoverPng, coverWithBlurb } from "../image/cover.ts";
 
+initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
 let st: EditorState = initState();
 /** 这首歌的家（无地逃生口）：文件名主干（新建 = 默认名；打开 = 那个文件的名字）、打开的那个文件（桌面 Chromium）+ 打开 / 上次写回时它的 mtime（写前对表）、
  *  文件里这一版不改动的部分、上次存 / 打开时的样子（判断改过没存）。歌名在谱里（st.song.title，可不填），和文件名分开。 */
@@ -83,7 +85,7 @@ const bar = $("bar"), scoreEl = $("score"), padEl = $("padPanel");
 installPlatformGuards([scoreEl, padEl]);   // iPad：长按放大镜 / 系统菜单 / 双击缩放（照 WeebPaint）
 
 // ── PWA 壳（2026-10-07 出生）：service worker + 四路更新检测；有新版不强刷，顶上出一条「有新版本 · 刷新」（不用系统弹窗） ─────
-const shell = initPwaShell({ onUpdateAvailable: () => showUpdateBar() });
+const shell = initPwaShell({ onUpdateAvailable: () => { diagNote("sw", "update available"); showUpdateBar(); } });
 function showUpdateBar(): void {
   if (document.getElementById("updateBar")) return;
   const el = document.createElement("div");
@@ -97,16 +99,33 @@ function showUpdateBar(): void {
 }
 
 
-// 顶栏只有一行（user 2026-10-07「顶栏应该只有一行」「顶栏同意」「浮动走带条 感觉要不放在顶端居中？」）：
-//   左 = 文件钮 + 文件名（点 = 文件菜单）；中 = 走带条（唱 / 停、弹、唱的进度）；右 = 键盘开关 + 扳手。
-//   音质 / 哼的字 → 谱前面的歌手牌；导出歌声 → 文件菜单；版本号 → 设置；状态细字不要了（user「状态细字可以精简，或者不要也行」）。
+// 顶栏只有一行（2026-10-07 立；2026-10-08 重理，user「看一下 weebpaint 和 wxhw，wxhw 就是左边一个库的图标，然后是文件名非按钮就是一个能按的字…最右边是加密，smart save 和三条杠」
+//   「加密和 smart save button 的 status 必须永远可见」）：左 = 歌库图标 + 文件名（能按的字 = 文件菜单）；右 = 加密状态 / smart save（状态即按钮）/ 三条杠。
+//   走带（唱 / 弹 / 录音室 / 进度）不在顶栏：挂在顶栏下面的一粒胶囊（#transport，不随谱滚；纸的上面留边距，滚下去被遮无所谓——照 WeebPaint 的浮动 toolbar）。
+//   键盘开关不在顶栏：pad 自己有「收起」，收起后屏幕最下面一粒「键盘」tab 再弹出来；点谱也弹（user「软键盘的 toggle 可以放在屏幕最下面」）。
 bar.innerHTML =
-  `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="文件：新建 / 打开 / 存 / 导出（Ctrl / ⌘+S 存、+O 打开；.mxl 拖进来也能打开）"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">未命名</span><span id="cloudSt" class="cloud-st"></span></button>` +
-  `<button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）">歌库</button></div>` +
-  `<div class="tb-mid"><button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
-  `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button><button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button><span id="singStatus" class="sing-st"></span></div>` +
-  `<div class="tb-right"><button id="padBtn" class="btn is-on" title="键盘（pad）"><svg class="ico"><use href="#grid"/></svg></button>` +
-  `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款、版本"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
+  `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
+  `<button id="fileBtn" class="doc-name" title="文件：新建 / 打开 / 存 / 导出 / 封面（Ctrl / ⌘+S 存、+O 打开；.mxl 拖进来也能打开）"><span id="docTitle" class="title">未命名</span></button></div>` +
+  `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
+  `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
+  `<button id="setBtn" class="btn" title="设置：模型来源、导入模型包、月读的署名与使用条款、诊断日志、版本"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
+const stageEl = $("stage");
+const transport = document.createElement("div"); transport.id = "transport"; transport.className = "transport";
+transport.innerHTML = `<button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
+  `<button id="improBtn" class="btn" title="弹：音符只唱不写（\`）">弹</button><button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button><span id="singStatus" class="sing-st"></span>`;
+stageEl.append(transport);
+const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = "键盘（pad）";
+padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>键盘</span>`;
+stageEl.append(padTab);
+padTab.addEventListener("click", () => showPad(true));
+let chromeReady = false;
+/** 胶囊 / 键盘 tab 跟着谁在最上面走：歌库 / 找人视图开着都藏；录音室里胶囊留着（▶ / 空格都能播）、tab 藏。 */
+function updateChrome(): void {
+  if (!chromeReady) return;
+  const over = finder.isOpen || (gallery?.isOpen() ?? false);
+  transport.hidden = over;
+  padTab.hidden = !padEl.hidden || over || studio.isOpen;
+}
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 
 // ── 试听：月读的元音采样器（出一个音就响；只唱「哼」那一个字，不看歌词——user「还是单一元音更适合当blueprint」） ─────
@@ -290,7 +309,7 @@ const progress = (s: string) => { $("singStatus").textContent = s; };
 const info = (s: string) => { showNotice({ id: "info", level: "info", text: s, autoHideMs: 3000 }); };
 /** 报错：红色 toast，带完整原因，点了才收（家族四级 notice 的 error）。user 2026-10-07「替补不能静默替补，需要显示报错」→ 订正「不是显示自动上，而是就是不出声，报错，人类手动换」：
  *  成员上不了场就不出声、报错，换谁由人来（选角是窄接口；谱子不受影响）。 */
-function showError(text: string): void { showNotice({ id: "err", level: "error", text }); }
+function showError(text: string): void { reportError(text, "error"); }   // 唯一漏斗（notice + 黑匣子）
 const playIcon = (stop: boolean) => { $("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`; if (!stop) progress(""); };
 /** 歌词里有汉字、没有假名 → 按中文唱；其余（含没有歌词）按日语唱。按一个声部（压平后的一串）判。 */
 function songLangOf(tokens: Token[]): SingLang {
@@ -530,7 +549,7 @@ function openSettings(): void {
     `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre></details>` +
     `<div class="set-row"><button class="btn" data-v="finder" title="全屏的乐器目录：按年代浏览、用 pad 弹着玩；「上场」给当前声部">乐器目录…</button>` +
     `<button class="btn" data-v="lib">歌库…</button><button class="btn" data-v="cloud">云端（OneDrive）…</button></div>` +
-    `<details class="set-credit"><summary>诊断日志（黑匣子：登录 / 同步的报错都在这里，出问题拷给开发者）</summary><pre id="diagTxt" class="set-packs">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:clear">清空</button></div></details>` +
+    `<details class="set-credit"><summary>诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:share">${canShareDiag() ? "分享 .txt" : "下载 .txt"}</button><button class="btn" data-v="diag:clear">清空</button></div></details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的月读模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
@@ -555,8 +574,9 @@ function openSettings(): void {
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "lib") { close(); void openGallery(); }
     else if (v === "cloud") { close(); ensureAttached(); void openCloudMenu(); }
-    else if (v === "diag:copy") { void navigator.clipboard?.writeText(diagText()).then(() => info("复制了"), () => showError("复制不了（浏览器不给剪贴板）")); }
-    else if (v === "diag:clear") { diagClear(); box.querySelector("#diagTxt")!.textContent = ""; }
+    else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
+    else if (v === "diag:share") void shareDiag(info);
+    else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
     else if (v?.startsWith("snd:get:")) { const e = SOUNDS[v.slice(8)]; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; void fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`)).then(() => { progress(""); info(`${e.name} 留在设备上了`); }).catch((err) => { progress(""); showError((err as Error).message); }).finally(() => void refreshSounds()); }
     else if (v?.startsWith("snd:del:")) { const e = SOUNDS[v.slice(8)]; void forgetSound(e.sha256).then(refreshSounds); }
     else if (v?.startsWith("snd:delsha:")) void forgetSound(v.slice(11)).then(refreshSounds);
@@ -605,13 +625,12 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
-$("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
  *  点谱 = 弹出；打开歌词 / 歌名框（系统键盘要上来）= 收起；点顶栏空白处 = 收起。开局是弹出的（光标就在谱上）。
  *  横屏 / 桌面也一样（纸宽固定了，收起旁边的 pad 不会让谱重排）。顶栏的 pad 钮照旧手动开关；开「弹」= 弹出。 */
 function showPad(on: boolean): void {
   if (padEl.hidden === !on) return;
-  padEl.hidden = !on; $("padBtn").classList.toggle("is-on", on);
+  padEl.hidden = !on; updateChrome();
   if (!on) pad.clearHeld();
   view.render();
 }
@@ -621,14 +640,42 @@ bar.addEventListener("pointerdown", (e) => { if (!(e.target as HTMLElement).clos
 /** 台上那位的引擎（= 谁来演、怎么出声）；unknown = 没人能出声（别家谱原来的乐器 / 这一版不认识）。SSoT = 休息室快照（doc.extras），不另存状态。 */
 function engineNow(): Engine { return activeInstrument(doc.extras, curRole())?.engine ?? "unknown"; }
 const dirty = () => st.song !== doc.saved.song || loungeKey() !== doc.saved.lounge;
-/** 顶栏的名字 + 两个状态：「•」= 改过还没落盘（无地 = 没存；歌库 = 2 s 内会自动存）；云朵 = 歌库里的歌在不在云端最新（没上云 / 已同步 / 没登录不画）。 */
+/** 顶栏的名字（「•」= 改过还没落盘：无地 = 没存；歌库 = 2 s 内会自动存）+ 右边 smart save 钮的状态（永远可见，user 2026-10-08「数据安全红线」）。 */
 function renderTitle(): void {
-  const d = dirty(), name = docName(), inStore = doc.identifier != null;
-  const pending = inStore && es.isPushPending(), signed = inStore && auth.isSignedIn();
+  const d = dirty(), name = docName();
   $("docTitle").textContent = `${name}${d ? " •" : ""}`;
-  $("docTitle").title = d ? (inStore ? "改过，马上自动存" : "改过还没存") : inStore ? (pending ? (signed ? "存在这台设备上了，还没推上云（稍后自动推）" : "存在这台设备上了（没登录，不上云）") : signed ? "在歌库里，云端也是最新的" : "在歌库里（这台设备上）") : doc.handle ? `存在 ${doc.handle.name}` : "";
-  $("cloudSt").innerHTML = !inStore || !signed ? "" : `<svg class="ico ico-sm"><use href="#${pending || d ? "cloud-upload" : "cloud-synced"}"/></svg>`;
+  $("fileBtn").title = `${doc.identifier ? "在歌库里" : doc.handle ? `存在 ${doc.handle.name}` : "还没有家"}（点 = 文件菜单）`;
   document.title = `${d ? "• " : ""}${name} · MoonSinger`;
+  renderSaveButton();
+}
+/** smart save 钮的状态（抄 WXHW / WeebPaint「状态即按钮」）：歌库 = saving（2 s 内自动存）/ local（存在设备上，没登录）/ offline / unsynced（没上云）/ clean（云端也最新）；
+ *  本地文件 = fileDirty / fileClean；没家 = unsaved / fresh（新谱没改过）。 */
+type SyncKind = "saving" | "unsynced" | "local" | "offline" | "clean" | "fileDirty" | "fileClean" | "unsaved" | "fresh";
+function syncKind(): SyncKind {
+  if (doc.identifier) {
+    if (dirty()) return "saving";
+    if (!auth.isSignedIn()) return "local";
+    if (!navigator.onLine) return "offline";
+    return es.isPushPending() ? "unsynced" : "clean";
+  }
+  if (doc.handle) return dirty() ? "fileDirty" : "fileClean";
+  return dirty() ? "unsaved" : "fresh";
+}
+const SAVE_SPEC: Record<SyncKind, { icon: string; cls: string; title: string }> = {
+  saving: { icon: "database", cls: "s-saving", title: "改了，马上自动存到这台设备（点 = 现在存 + 推）" },
+  local: { icon: "database", cls: "s-local", title: "存在这台设备上（没登录 OneDrive，不上云；点 = 存 + 去登录）" },
+  offline: { icon: "cloud-unavailable", cls: "s-offline", title: "离线：存在这台设备上，回线再推上云" },
+  unsynced: { icon: "cloud-upload", cls: "s-unsynced", title: "存在这台设备上了，还没推上云（点 = 现在推）" },
+  clean: { icon: "cloud-synced", cls: "s-clean", title: "云端也是最新的（点 = 复查云端）" },
+  fileDirty: { icon: "floppy-disk", cls: "s-unsynced", title: "改过还没存回文件（点 = 存）" },
+  fileClean: { icon: "floppy-disk", cls: "s-fileClean", title: "存在本地文件里了" },
+  unsaved: { icon: "floppy-disk", cls: "s-unsynced", title: "还没存（点 = 存）" },
+  fresh: { icon: "floppy-disk", cls: "s-fresh", title: "新的一首，还没存" },
+};
+function renderSaveButton(): void {
+  const k = syncKind(), spec = SAVE_SPEC[k], b = $("saveBtn");
+  b.innerHTML = `<svg class="ico"><use href="#${spec.icon}"/></svg>`;
+  b.className = `btn save-btn ${spec.cls}`; b.title = spec.title; b.dataset.kind = k;
 }
 /** 主唱没人上场（别的软件存的谱，原来的乐器这一版没有）：不出声、报错，人来选（user「不出声，报错，人类手动换」）。 */
 function noCast(what: string): void {
@@ -687,11 +734,11 @@ const studio = new Studio($("stage"), {
   play: () => { void togglePlay(); },
   close: () => closeStudio(),
 });
-function openStudio(): void { closeOffer?.(); closeFinder(); scoreEl.hidden = true; showPad(false); studio.show(); }
-function closeStudio(): void { if (!studio.isOpen) return; studio.hide(); scoreEl.hidden = false; scoreEl.focus(); }
+function openStudio(): void { closeOffer?.(); closeFinder(); scoreEl.hidden = true; showPad(false); studio.show(); updateChrome(); }
+function closeStudio(): void { if (!studio.isOpen) return; studio.hide(); scoreEl.hidden = false; updateChrome(); scoreEl.focus(); }
 $("studioBtn").addEventListener("click", () => { if (studio.isOpen) closeStudio(); else openStudio(); });
-function openFinder(): void { closeOffer?.(); scoreEl.hidden = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); $("improBtn").classList.add("is-on"); void finder.show(); }   // 「弹」亮着 = pad 只弹不写
-function closeFinder(): void { if (!finder.isOpen) return; finder.hide(); audition = null; synth.allOff(); gmHeld.clear(); padEl.classList.remove("is-locked"); $("improBtn").classList.toggle("is-on", impro); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); scoreEl.focus(); }
+function openFinder(): void { closeOffer?.(); scoreEl.hidden = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); $("improBtn").classList.add("is-on"); void finder.show(); updateChrome(); }   // 「弹」亮着 = pad 只弹不写
+function closeFinder(): void { if (!finder.isOpen) return; finder.hide(); audition = null; synth.allOff(); gmHeld.clear(); padEl.classList.remove("is-locked"); $("improBtn").classList.toggle("is-on", impro); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 function setActive(id: string): void { doc.extras = withActive(doc.extras, curRole(), id, st.song.hum); synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); }
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");
@@ -1048,11 +1095,7 @@ const sizeText = (n: number) => (n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} 
  *    WeebPaint 的「下载不清 dirty」是因为它 iPad 的家在图库——这里没有，「•」留着只会狼来了，0819 §7.2「有真正会丢的字节才拦」）。 */
 async function fileSave(): Promise<void> {
   try {
-    if (doc.identifier) {   // 歌库里的歌：存 = 立刻落盘 + 推云（用户显式按的 save 不脏也动，时间戳要走字）
-      await es.forceSaveAndPush(); renderTitle();
-      info(es.isPushPending() ? (auth.isSignedIn() ? "存好了（这台设备上；云端稍后再推）" : "存好了（这台设备上；没登录，不上云）") : "存好了，云端也更新了");
-      return;
-    }
+    if (doc.identifier) { await smartSaveStore(); return; }   // 歌库里的歌：smart save
     if (doc.handle) {
       const h = doc.handle, now = await docFile.mtime(h);
       if (docFile.isStale(doc.mtime, now) && !(await askSheet(`「${h.name}」在外面被改过`, "打开或上次存之后，这个文件被别的程序改过。覆盖 = 外面改的那些会丢。", "覆盖"))) { info("没存"); return; }
@@ -1189,7 +1232,12 @@ function askSheet(title: string, msg: string, okLabel: string): Promise<boolean>
   });
 }
 // 改过没存就关页面 / 刷新：浏览器自己的挽留框（照 WeebPaint；无地不偷偷写盘——静默写用户文件违背文件语义）
-window.addEventListener("beforeunload", (e) => { if (dirty() && !navigatingForAuth) { e.preventDefault(); e.returnValue = ""; } });
+// 退出：歌库里的歌 = 编辑了退出必落盘（本地库永远在，不管登没登录 OneDrive；user 2026-10-08）——pagehide / 页面隐藏那两下 editor-session 会 flush，这里再尽力一次，不弹挽留框；
+//   无地的（本地文件 / 没家）才有浏览器挽留框（没地方可以偷偷写；登录跳转期间不拦）。
+window.addEventListener("beforeunload", (e) => {
+  if (doc.identifier) { if (dirty()) void es.flushLocal().catch(() => undefined); return; }
+  if (dirty() && !navigatingForAuth) { e.preventDefault(); e.returnValue = ""; }
+});
 // 拖进来打开（.mxl / .musicxml / .xml；桌面 Chromium 还能拿到句柄 = 有家）。⚠ 句柄要在 drop 事件里同步抓（docFile.grabDrop），await 之后 items 就空了。
 window.addEventListener("dragover", (e) => { if (e.dataTransfer?.types.includes("Files")) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
 window.addEventListener("drop", (e) => {
@@ -1313,7 +1361,7 @@ function ensureAttached(): void {
 function startAuth(): void {
   if (authStarted) return;
   authStarted = true;
-  auth.onAuthChanged((s) => { gallery?.renderCloud(); renderTitle(); if (s.signedIn) void afterSignIn(); });
+  auth.onAuthChanged((s) => { diagNote("auth", `changed signedIn=${String(s.signedIn)}`); gallery?.renderCloud(); renderTitle(); if (s.signedIn) void afterSignIn(); });
   void auth.initAuth().then((s) => { diagNote("auth", `initAuth signedIn=${s.signedIn}`); gallery?.renderCloud(); renderTitle(); if (s.signedIn) void afterSignIn(); }).catch((e) => reportError(e, "warning"));
 }
 /** 用户动作进歌库（点「歌库」/ 新建 / 存进歌库）：建 store + 起登录探测。 */
@@ -1332,8 +1380,8 @@ function ensureGallery(): GalleryHost {
     newSong: async () => { await newStoreSong(); if (doc.identifier) gallery!.close(); },
     openSettings: () => openSettings(),
     openCloudMenu: () => { void openCloudMenu(); },
-    onOpened: () => { closeOffer?.(); closeFinder(); closeStudio(); padWas = !padEl.hidden; showPad(false); },
-    onClosed: () => { void afterGalleryClosed(); showPad(padWas); scoreEl.focus(); },
+    onOpened: () => { closeOffer?.(); closeFinder(); closeStudio(); padWas = !padEl.hidden; showPad(false); updateChrome(); },
+    onClosed: () => { void afterGalleryClosed(); showPad(padWas); updateChrome(); scoreEl.focus(); },
   });
   return gallery;
 }
@@ -1367,8 +1415,10 @@ let navigatingForAuth = false;
 async function signInFlow(): Promise<void> {
   if (doc.identifier) { try { await es.flushLocal(); } catch (e) { reportError(e, "warning"); } }
   await openChoiceSheet("去微软登录", `页面会跳到微软的登录页（只认个人账号），登录完自动回到这里。${doc.identifier ? "手里的歌已经存在这台设备上了。" : dirty() ? "手里这首无地的歌改过还没存——跳走会丢，先存一下再来。" : ""}`,
-    [{ label: "去登录", value: "go", primary: true, onPick: () => { navigatingForAuth = true; void requestStoragePersistence(); diagNote("auth", "signIn redirect"); auth.signIn({ prompt: "select_account" }).catch((e) => { navigatingForAuth = false; reportError(e); }); } }]);
+    [{ label: "去登录", value: "go", primary: true, onPick: redirectToSignIn }]);
 }
+/** 在点击里同步起跳（redirect）；跳走期间不拦 beforeunload。 */
+function redirectToSignIn(): void { navigatingForAuth = true; void requestStoragePersistence(); diagNote("auth", "signIn redirect"); auth.signIn({ prompt: "select_account" }).catch((e) => { navigatingForAuth = false; reportError(e); }); }
 /** 回前台 / 回线：干净的歌快进到云端的新版本（另一台设备改过的）；本地脏 / 没上云 = 不动（之后 push 的 412 会 surface 真分叉）。 */
 let refreshing = false;
 async function refreshOpenDoc(): Promise<void> {
@@ -1407,6 +1457,7 @@ function pushDirtyAll(opts: { verbose?: boolean } = {}): Promise<void> {
   pushAllInFlight = (async () => {
     try {
       const r = await requireStore().files.dirty.pushAll();
+      if (r.pushed || r.failed.length) diagNote("sync", `dirty.pushAll: pushed=${r.pushed} failed=${r.failed.length}${r.failed.length ? " [" + r.failed.join(", ") + "]" : ""}`);
       if (r.failed.length) showError(`有 ${r.failed.length} 首没推上云：${r.failed.map(stemOfId).join("、")}`);
       else if (opts.verbose) info(r.pushed ? `推上去了 ${r.pushed} 首` : "没有要推的");
     } catch (e) { reportError(e, "warning"); }
@@ -1421,7 +1472,29 @@ async function setCover(f: File): Promise<void> {
     info(`封面图换好了（${sizeText(png.length)}）`);
   } catch (e) { showError(`这张图用不了：${(e as Error).message}`); }
 }
-window.addEventListener("online", () => { if (!hasStore()) return; if (auth.isSignedIn()) void afterSignIn(); else retrySilent(); });
+/** smart save（歌库里的歌；顶栏钮 / Ctrl+S / 文件菜单「存」同一入口）：脏 → 立刻落盘 + 推；干净且登录着 → 复查云端再 force 推一次（时间戳走字）；
+ *  没登录 → 落本地 + 问一次「去登录？」（同一 session 点过「暂不」就不再弹，只提示）。 */
+let signInDeclined = false;
+async function smartSaveStore(): Promise<void> {
+  const b = $("saveBtn"); b.classList.add("flash"); setTimeout(() => b.classList.remove("flash"), 500);
+  void requestStoragePersistence();
+  const before = syncKind();
+  if (before === "clean") { await refreshOpenDoc(); }
+  await es.forceSaveAndPush(); renderTitle();
+  if (!auth.isSignedIn()) {
+    if (signInDeclined || navigator.onLine === false || !auth.isAuthConfigured()) { info("存在这台设备上了"); return; }
+    const v = await openChoiceSheet("存在这台设备上了", "要同步到 OneDrive 吗？登录微软个人账号后，歌库同步到你 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹）。",
+      [{ label: "去登录", value: "go", primary: true, onPick: redirectToSignIn }, { label: "暂不", value: "later" }]);
+    if (v === "later") signInDeclined = true;
+    return;
+  }
+  info(es.isPushPending() ? "存在这台设备上了，云端稍后再推" : before === "clean" ? "云端也是最新的" : "存好了，云端也更新了");
+}
+async function smartSave(): Promise<void> { if (doc.identifier) await smartSaveStore(); else await fileSave(); }
+$("saveBtn").addEventListener("click", () => { void smartSave(); });
+$("lockBtn").addEventListener("click", () => info("这首歌没加密。MoonSinger 这一版还不加密（要的话告诉开发者：照 WXHW 接 zip.js + 7z 就能开）。"));
+window.addEventListener("online", () => { renderTitle(); if (!hasStore()) return; if (auth.isSignedIn()) void afterSignIn(); else retrySilent(); });
+window.addEventListener("offline", () => renderTitle());
 document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible" || !hasStore()) return; if (auth.isSignedIn()) void refreshOpenDoc(); else retrySilent(); });
 
 // ── 键盘：映射是一张表（src/input/keys.ts）；这里只算「键盘现在归谁」，再照路由的结果做 ─────────────
@@ -1477,6 +1550,7 @@ await document.fonts.load(`40px Bravura`).catch(() => undefined);
 view.render();
 pad.render();
 renderTitle();
+chromeReady = true; updateChrome();
 scoreEl.focus();
 // 歌库 boot：进过歌库的设备（或带着 OAuth 回跳）开局就建 store（先建再 initAuth），回到上次的地方——上次在歌库里就开歌库，上次开着哪首就开哪首，开不了就进歌库。没进过的 = 无地，照旧。
 if (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash)) {

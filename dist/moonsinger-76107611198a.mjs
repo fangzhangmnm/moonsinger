@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.0-2026-10-08";
+var APP_VERSION = "v0.6.1-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2734,7 +2734,7 @@ function initPwaShell(opts) {
 // src/score/paper.ts
 var STAFF_MM = 7;
 var STAFF_MM_COMPACT = 5;
-var DENSITIES = [{ id: "cozy", label: "\u8212\u9002", note: "\u8C31\u5927\u3001\u884C\u8DDD\u5BBD" }, { id: "compact", label: "\u7D27\u51D1", note: "\u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u6536\u7D27\uFF1B\u603B\u8C31\u58F0\u90E8\u591A\u7528\u8FD9\u4E2A" }];
+var DENSITIES = [{ id: "cozy", label: "\u8212\u9002", note: "\u8C31\u5927" }, { id: "compact", label: "\u7D27\u51D1", note: "\u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1B\u603B\u8C31\u58F0\u90E8\u591A\u7528\u8FD9\u4E2A" }];
 var densityOf = (p2) => p2.density ?? "cozy";
 var staffMmOf = (p2) => p2.staffMm ?? (densityOf(p2) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
 var spMm = (p2) => staffMmOf(p2) / 4;
@@ -4021,9 +4021,9 @@ var PAPER_H = 3.4;
 var PAPER_GAP = 1.6;
 var STUB_H = 2.4;
 var SPACING = {
-  cozy: { staffAbove: 6, rowH: 17, rowHNoLyric: 17, graveUpper: 11.5, lyricBelow: 5.2, sysGap: 1.5 },
+  cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },
   // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
-  compact: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 }
+  compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 }
 };
 var TOP_LINE = 38;
 var MID_LINE = 34;
@@ -5553,9 +5553,9 @@ var ScoreView = class {
     if (this.marks.open) sys = this.marks.system;
     const box = L2.systems[sys];
     if (!box) return;
-    const top = this.el.scrollTop, h2 = this.el.clientHeight, z2 = this.zoom;
-    if (box.top * z2 < top) this.el.scrollTop = box.top * z2;
-    else if (box.bottom * z2 > top + h2) this.el.scrollTop = box.bottom * z2 - h2;
+    const top = this.el.scrollTop, h2 = this.el.clientHeight, z2 = this.zoom, off = this.sheet.offsetTop;
+    if (off + box.top * z2 < top) this.el.scrollTop = off + box.top * z2;
+    else if (off + box.bottom * z2 > top + h2) this.el.scrollTop = off + box.bottom * z2 - h2;
   }
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
   local(e10) {
@@ -5630,10 +5630,14 @@ var ScoreView = class {
   }
   /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）。点中了东西返回 true；落在空白处返回 false（调用方决定放光标还是框选）。 */
   tap(x2, y2, shift, pid) {
-    const L0 = this.layout, wasMark = this.marks.open;
+    const L0 = this.layout, wasMark = this.marks.open, wasLyric = this.lyrics.open;
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
     if (wasMark) {
+      this.host.focus?.("staff");
+      return true;
+    }
+    if (wasLyric && pid === null) {
       this.host.focus?.("staff");
       return true;
     }
@@ -17362,8 +17366,47 @@ function openChoiceSheet(title, message, choices) {
   });
 }
 
+// src/device-kv.ts
+var PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
+var _mem2 = /* @__PURE__ */ new Map();
+function _ls() {
+  try {
+    const ls2 = globalThis.localStorage;
+    ls2.getItem(PREFIX + "__probe");
+    return ls2;
+  } catch {
+    return null;
+  }
+}
+function deviceKvGet2(key) {
+  const k2 = PREFIX + key;
+  const ls2 = _ls();
+  if (ls2) {
+    try {
+      return ls2.getItem(k2);
+    } catch {
+    }
+  }
+  return _mem2.get(k2) ?? null;
+}
+function deviceKvSet2(key, v) {
+  const k2 = PREFIX + key;
+  const ls2 = _ls();
+  if (ls2) {
+    try {
+      if (v == null) ls2.removeItem(k2);
+      else ls2.setItem(k2, v);
+      _mem2.delete(k2);
+      return;
+    } catch {
+    }
+  }
+  if (v == null) _mem2.delete(k2);
+  else _mem2.set(k2, v);
+}
+
 // src/app/report-error.ts
-var msgOf = (e10) => e10 instanceof Error ? e10.message : typeof e10 === "string" ? e10 : String(e10);
+var msgOf = (e10) => e10 instanceof Error ? `${e10.name === "Error" ? "" : e10.name + ": "}${e10.message}` : typeof e10 === "string" ? e10 : String(e10);
 function reportError(err2, level = "error") {
   const m2 = msgOf(err2);
   try {
@@ -17394,12 +17437,44 @@ var diagText = () => {
     return "";
   }
 };
+var diagCount = () => {
+  try {
+    return diag_log_exports.entries().length;
+  } catch {
+    return 0;
+  }
+};
 var diagClear = () => {
   try {
     diag_log_exports.clear();
   } catch {
   }
 };
+function initBlackBox(version) {
+  configureDeviceKv({ get: deviceKvGet2, set: deviceKvSet2 });
+  diag_log_exports.initDiagLog({ app: "MoonSinger", version });
+  const w2 = window;
+  const early = w2.__msEarlyErrors;
+  if (Array.isArray(early)) for (const e10 of early.splice(0)) diag_log_exports.record("error", `[early] ${e10.m}`);
+  w2.__msEarlyErrors = { push: (e10) => {
+    try {
+      diag_log_exports.record("error", `[early] ${e10.m}`);
+    } catch {
+    }
+  } };
+  window.addEventListener("error", (e10) => {
+    try {
+      diag_log_exports.record("error", `[window] ${e10.message} @${(e10.filename ?? "").split("/").pop()}:${e10.lineno}`);
+    } catch {
+    }
+  });
+  window.addEventListener("unhandledrejection", (e10) => {
+    try {
+      diag_log_exports.record("error", `[unhandledrejection] ${msgOf(e10.reason)}`);
+    } catch {
+    }
+  });
+}
 
 // src/store-ui.ts
 var stemOf = (id2) => identifiers.parse(id2)?.stem ?? id2;
@@ -17628,45 +17703,6 @@ function createEncryption(opts = {}) {
 
 // src/encryption.ts
 var appEncryption = createEncryption();
-
-// src/device-kv.ts
-var PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
-var _mem2 = /* @__PURE__ */ new Map();
-function _ls() {
-  try {
-    const ls2 = globalThis.localStorage;
-    ls2.getItem(PREFIX + "__probe");
-    return ls2;
-  } catch {
-    return null;
-  }
-}
-function deviceKvGet2(key) {
-  const k2 = PREFIX + key;
-  const ls2 = _ls();
-  if (ls2) {
-    try {
-      return ls2.getItem(k2);
-    } catch {
-    }
-  }
-  return _mem2.get(k2) ?? null;
-}
-function deviceKvSet2(key, v) {
-  const k2 = PREFIX + key;
-  const ls2 = _ls();
-  if (ls2) {
-    try {
-      if (v == null) ls2.removeItem(k2);
-      else ls2.setItem(k2, v);
-      _mem2.delete(k2);
-      return;
-    } catch {
-    }
-  }
-  if (v == null) _mem2.delete(k2);
-  else _mem2.set(k2, v);
-}
 
 // src/app-store.ts
 var od = createOneDriveProvider({ clientId: CLIENT_ID2, scopes: SCOPES2, authority: AUTHORITY2, msalUrl: MSAL_URL2 });
@@ -23721,6 +23757,88 @@ function createEditorSession(config) {
   };
 }
 
+// src/app/diag-ui.ts
+function copyViaTextarea(text2) {
+  const ta2 = document.createElement("textarea");
+  ta2.value = text2;
+  ta2.setAttribute("readonly", "");
+  ta2.style.position = "fixed";
+  ta2.style.left = "-9999px";
+  ta2.style.top = "0";
+  document.body.appendChild(ta2);
+  ta2.focus();
+  ta2.select();
+  ta2.setSelectionRange(0, text2.length);
+  let ok2 = false;
+  try {
+    ok2 = document.execCommand("copy");
+  } catch {
+    ok2 = false;
+  }
+  ta2.remove();
+  return ok2;
+}
+async function copyDiag(pre, status) {
+  const text2 = diagText(), n10 = diagCount();
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("navigator.clipboard.writeText unavailable");
+    await navigator.clipboard.writeText(text2);
+    status(`\u590D\u5236\u4E86 ${n10} \u6761`);
+    return;
+  } catch (e10) {
+    reportError(new Error("[diag-log] clipboard.writeText failed: " + String(e10)), "log");
+  }
+  if (copyViaTextarea(text2)) {
+    status(`\u590D\u5236\u4E86 ${n10} \u6761`);
+    return;
+  }
+  try {
+    if (pre) {
+      const range2 = document.createRange();
+      range2.selectNodeContents(pre);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range2);
+    }
+  } catch {
+  }
+  reportError(new Error("[diag-log] execCommand copy failed too"), "log");
+  status("\u590D\u5236\u4E0D\u4E86\uFF08\u6D4F\u89C8\u5668\u4E0D\u7ED9\u526A\u8D34\u677F\uFF09\uFF1A\u5DF2\u9009\u4E2D\uFF0C\u957F\u6309\u590D\u5236");
+}
+var logFile = () => new File([diagText()], `moonsinger-diag-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace(/[:T]/g, "-")}.txt`, { type: "text/plain" });
+var canShareDiag = () => typeof navigator.share === "function";
+async function shareDiag(status) {
+  const f2 = logFile();
+  if (!canShareDiag()) {
+    const url = URL.createObjectURL(f2);
+    const a10 = document.createElement("a");
+    a10.href = url;
+    a10.download = f2.name;
+    a10.style.display = "none";
+    document.body.appendChild(a10);
+    a10.click();
+    a10.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1e4);
+    status(`\u4E0B\u8F7D\u4E86 ${f2.name}`);
+    return;
+  }
+  try {
+    const nav = navigator;
+    if (nav.canShare?.({ files: [f2] })) await navigator.share({ title: "MoonSinger \u8BCA\u65AD\u65E5\u5FD7", files: [f2] });
+    else await navigator.share({ title: "MoonSinger \u8BCA\u65AD\u65E5\u5FD7", text: diagText() });
+  } catch (e10) {
+    if (e10?.name !== "AbortError") {
+      reportError(new Error("[diag-log] share failed: " + String(e10)), "log");
+      status("\u5206\u4EAB\u6CA1\u6210");
+    }
+  }
+}
+function clearDiag(pre, status) {
+  diagClear();
+  if (pre) pre.textContent = "\uFF08\u7A7A\uFF09";
+  status("\u6E05\u7A7A\u4E86");
+}
+
 // src/image/codec.ts
 function makeCanvas(w2, h2) {
   w2 = Math.max(1, w2 | 0);
@@ -23787,6 +23905,7 @@ async function makeCoverPng(bytes, blurb = null) {
 var coverWithBlurb = (png, blurb) => withPngText(png, PNG_BLURB_KEYWORD, blurb && blurb.trim() ? blurb.trim() : null);
 
 // src/app/main.ts
+initBlackBox(APP_VERSION);
 var st2 = initState();
 var doc = {
   stem: defaultStem(),
@@ -23819,7 +23938,10 @@ var bar = $2("bar");
 var scoreEl = $2("score");
 var padEl = $2("padPanel");
 installPlatformGuards([scoreEl, padEl]);
-var shell = initPwaShell({ onUpdateAvailable: () => showUpdateBar() });
+var shell = initPwaShell({ onUpdateAvailable: () => {
+  diagNote("sw", "update available");
+  showUpdateBar();
+} });
 function showUpdateBar() {
   if (document.getElementById("updateBar")) return;
   const el2 = document.createElement("div");
@@ -23833,7 +23955,28 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="fileBtn" class="btn tb-file" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><svg class="ico"><use href="#file"/></svg><span id="docTitle" class="title">\u672A\u547D\u540D</span><span id="cloudSt" class="cloud-st"></span></button><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09">\u6B4C\u5E93</button></div><div class="tb-mid"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="padBtn" class="btn is-on" title="\u952E\u76D8\uFF08pad\uFF09"><svg class="ico"><use href="#grid"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5B58 / \u5BFC\u51FA / \u5C01\u9762\uFF08Ctrl / \u2318+S \u5B58\u3001+O \u6253\u5F00\uFF1B.mxl \u62D6\u8FDB\u6765\u4E5F\u80FD\u6253\u5F00\uFF09"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u8BBE\u7F6E\uFF1A\u6A21\u578B\u6765\u6E90\u3001\u5BFC\u5165\u6A21\u578B\u5305\u3001\u6708\u8BFB\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+var stageEl = $2("stage");
+var transport = document.createElement("div");
+transport.id = "transport";
+transport.className = "transport";
+transport.innerHTML = `<button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="improBtn" class="btn" title="\u5F39\uFF1A\u97F3\u7B26\u53EA\u5531\u4E0D\u5199\uFF08\`\uFF09">\u5F39</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><span id="singStatus" class="sing-st"></span>`;
+stageEl.append(transport);
+var padTab = document.createElement("button");
+padTab.id = "padTab";
+padTab.className = "btn pad-tab";
+padTab.hidden = true;
+padTab.title = "\u952E\u76D8\uFF08pad\uFF09";
+padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span>`;
+stageEl.append(padTab);
+padTab.addEventListener("click", () => showPad(true));
+var chromeReady = false;
+function updateChrome() {
+  if (!chromeReady) return;
+  const over = finder.isOpen || (gallery?.isOpen() ?? false);
+  transport.hidden = over;
+  padTab.hidden = !padEl.hidden || over || studio.isOpen;
+}
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 var sampler = new Sampler();
 var synth = new GmSynth(() => singer.unlock(), new URL(`./${"synth-worklet-70420f49185f.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
@@ -24098,7 +24241,7 @@ var info = (s10) => {
   showNotice({ id: "info", level: "info", text: s10, autoHideMs: 3e3 });
 };
 function showError(text2) {
-  showNotice({ id: "err", level: "error", text: text2 });
+  reportError(text2, "error");
 }
 var playIcon = (stop) => {
   $2("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`;
@@ -24395,7 +24538,7 @@ function openSettings() {
 ${esc7(CREDIT.terms)}
 ${esc7(CREDIT.termsUrl)}
 
-${esc7(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button><button class="btn" data-v="lib">\u6B4C\u5E93\u2026</button><button class="btn" data-v="cloud">\u4E91\u7AEF\uFF08OneDrive\uFF09\u2026</button></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u767B\u5F55 / \u540C\u6B65\u7684\u62A5\u9519\u90FD\u5728\u8FD9\u91CC\uFF0C\u51FA\u95EE\u9898\u62F7\u7ED9\u5F00\u53D1\u8005\uFF09</summary><pre id="diagTxt" class="set-packs">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc7(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><button class="btn" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u5E74\u4EE3\u6D4F\u89C8\u3001\u7528 pad \u5F39\u7740\u73A9\uFF1B\u300C\u4E0A\u573A\u300D\u7ED9\u5F53\u524D\u58F0\u90E8">\u4E50\u5668\u76EE\u5F55\u2026</button><button class="btn" data-v="lib">\u6B4C\u5E93\u2026</button><button class="btn" data-v="cloud">\u4E91\u7AEF\uFF08OneDrive\uFF09\u2026</button></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -24436,12 +24579,10 @@ ${esc7(CREDIT.attribution.join("\n"))}</pre></details><div class="set-row"><butt
       close();
       ensureAttached();
       void openCloudMenu();
-    } else if (v === "diag:copy") {
-      void navigator.clipboard?.writeText(diagText()).then(() => info("\u590D\u5236\u4E86"), () => showError("\u590D\u5236\u4E0D\u4E86\uFF08\u6D4F\u89C8\u5668\u4E0D\u7ED9\u526A\u8D34\u677F\uFF09"));
-    } else if (v === "diag:clear") {
-      diagClear();
-      box.querySelector("#diagTxt").textContent = "";
-    } else if (v?.startsWith("snd:get:")) {
+    } else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
+    else if (v === "diag:share") void shareDiag(info);
+    else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
+    else if (v?.startsWith("snd:get:")) {
       const e11 = SOUNDS[v.slice(8)];
       soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT;
       void fetchSound(e11, (done) => progress(`\u4E0B\u8F7D ${e11.name} ${Math.round(done / e11.bytes * 100)}%`)).then(() => {
@@ -24534,7 +24675,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "fca86ba6db9d",
+  cssHash: "014eaf0c2574",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -24558,11 +24699,10 @@ window.__moonsinger = {
   dirty: () => dirty(),
   auth
 };
-$2("padBtn").addEventListener("click", () => showPad(padEl.hidden));
 function showPad(on2) {
   if (padEl.hidden === !on2) return;
   padEl.hidden = !on2;
-  $2("padBtn").classList.toggle("is-on", on2);
+  updateChrome();
   if (!on2) pad3.clearHeld();
   view.render();
 }
@@ -24574,12 +24714,39 @@ function engineNow() {
 }
 var dirty = () => st2.song !== doc.saved.song || loungeKey() !== doc.saved.lounge;
 function renderTitle() {
-  const d3 = dirty(), name = docName(), inStore = doc.identifier != null;
-  const pending = inStore && es2.isPushPending(), signed = inStore && auth.isSignedIn();
+  const d3 = dirty(), name = docName();
   $2("docTitle").textContent = `${name}${d3 ? " \u2022" : ""}`;
-  $2("docTitle").title = d3 ? inStore ? "\u6539\u8FC7\uFF0C\u9A6C\u4E0A\u81EA\u52A8\u5B58" : "\u6539\u8FC7\u8FD8\u6CA1\u5B58" : inStore ? pending ? signed ? "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u63A8\u4E0A\u4E91\uFF08\u7A0D\u540E\u81EA\u52A8\u63A8\uFF09" : "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF08\u6CA1\u767B\u5F55\uFF0C\u4E0D\u4E0A\u4E91\uFF09" : signed ? "\u5728\u6B4C\u5E93\u91CC\uFF0C\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684" : "\u5728\u6B4C\u5E93\u91CC\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : "";
-  $2("cloudSt").innerHTML = !inStore || !signed ? "" : `<svg class="ico ico-sm"><use href="#${pending || d3 ? "cloud-upload" : "cloud-synced"}"/></svg>`;
+  $2("fileBtn").title = `${doc.identifier ? "\u5728\u6B4C\u5E93\u91CC" : doc.handle ? `\u5B58\u5728 ${doc.handle.name}` : "\u8FD8\u6CA1\u6709\u5BB6"}\uFF08\u70B9 = \u6587\u4EF6\u83DC\u5355\uFF09`;
   document.title = `${d3 ? "\u2022 " : ""}${name} \xB7 MoonSinger`;
+  renderSaveButton();
+}
+function syncKind() {
+  if (doc.identifier) {
+    if (dirty()) return "saving";
+    if (!auth.isSignedIn()) return "local";
+    if (!navigator.onLine) return "offline";
+    return es2.isPushPending() ? "unsynced" : "clean";
+  }
+  if (doc.handle) return dirty() ? "fileDirty" : "fileClean";
+  return dirty() ? "unsaved" : "fresh";
+}
+var SAVE_SPEC = {
+  saving: { icon: "database", cls: "s-saving", title: "\u6539\u4E86\uFF0C\u9A6C\u4E0A\u81EA\u52A8\u5B58\u5230\u8FD9\u53F0\u8BBE\u5907\uFF08\u70B9 = \u73B0\u5728\u5B58 + \u63A8\uFF09" },
+  local: { icon: "database", cls: "s-local", title: "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u6CA1\u767B\u5F55 OneDrive\uFF0C\u4E0D\u4E0A\u4E91\uFF1B\u70B9 = \u5B58 + \u53BB\u767B\u5F55\uFF09" },
+  offline: { icon: "cloud-unavailable", cls: "s-offline", title: "\u79BB\u7EBF\uFF1A\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u56DE\u7EBF\u518D\u63A8\u4E0A\u4E91" },
+  unsynced: { icon: "cloud-upload", cls: "s-unsynced", title: "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u63A8\u4E0A\u4E91\uFF08\u70B9 = \u73B0\u5728\u63A8\uFF09" },
+  clean: { icon: "cloud-synced", cls: "s-clean", title: "\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684\uFF08\u70B9 = \u590D\u67E5\u4E91\u7AEF\uFF09" },
+  fileDirty: { icon: "floppy-disk", cls: "s-unsynced", title: "\u6539\u8FC7\u8FD8\u6CA1\u5B58\u56DE\u6587\u4EF6\uFF08\u70B9 = \u5B58\uFF09" },
+  fileClean: { icon: "floppy-disk", cls: "s-fileClean", title: "\u5B58\u5728\u672C\u5730\u6587\u4EF6\u91CC\u4E86" },
+  unsaved: { icon: "floppy-disk", cls: "s-unsynced", title: "\u8FD8\u6CA1\u5B58\uFF08\u70B9 = \u5B58\uFF09" },
+  fresh: { icon: "floppy-disk", cls: "s-fresh", title: "\u65B0\u7684\u4E00\u9996\uFF0C\u8FD8\u6CA1\u5B58" }
+};
+function renderSaveButton() {
+  const k2 = syncKind(), spec = SAVE_SPEC[k2], b3 = $2("saveBtn");
+  b3.innerHTML = `<svg class="ico"><use href="#${spec.icon}"/></svg>`;
+  b3.className = `btn save-btn ${spec.cls}`;
+  b3.title = spec.title;
+  b3.dataset.kind = k2;
 }
 var audition = null;
 var GS = SOUNDS["generaluser-gs-2.0.3"];
@@ -24701,11 +24868,13 @@ function openStudio() {
   scoreEl.hidden = true;
   showPad(false);
   studio.show();
+  updateChrome();
 }
 function closeStudio() {
   if (!studio.isOpen) return;
   studio.hide();
   scoreEl.hidden = false;
+  updateChrome();
   scoreEl.focus();
 }
 $2("studioBtn").addEventListener("click", () => {
@@ -24720,6 +24889,7 @@ function openFinder() {
   pad3.clearHeld();
   $2("improBtn").classList.add("is-on");
   void finder.show();
+  updateChrome();
 }
 function closeFinder() {
   if (!finder.isOpen) return;
@@ -24733,6 +24903,7 @@ function closeFinder() {
   void prepareSynth();
   view.render();
   renderTitle();
+  updateChrome();
   scoreEl.focus();
 }
 function setActive(id2) {
@@ -25231,9 +25402,7 @@ var sizeText = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` :
 async function fileSave() {
   try {
     if (doc.identifier) {
-      await es2.forceSaveAndPush();
-      renderTitle();
-      info(es2.isPushPending() ? auth.isSignedIn() ? "\u5B58\u597D\u4E86\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF1B\u4E91\u7AEF\u7A0D\u540E\u518D\u63A8\uFF09" : "\u5B58\u597D\u4E86\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF1B\u6CA1\u767B\u5F55\uFF0C\u4E0D\u4E0A\u4E91\uFF09" : "\u5B58\u597D\u4E86\uFF0C\u4E91\u7AEF\u4E5F\u66F4\u65B0\u4E86");
+      await smartSaveStore();
       return;
     }
     if (doc.handle) {
@@ -25425,6 +25594,10 @@ function askSheet(title, msg, okLabel) {
   });
 }
 window.addEventListener("beforeunload", (e10) => {
+  if (doc.identifier) {
+    if (dirty()) void es2.flushLocal().catch(() => void 0);
+    return;
+  }
   if (dirty() && !navigatingForAuth) {
     e10.preventDefault();
     e10.returnValue = "";
@@ -25629,6 +25802,7 @@ function startAuth() {
   if (authStarted) return;
   authStarted = true;
   auth.onAuthChanged((s10) => {
+    diagNote("auth", `changed signedIn=${String(s10.signedIn)}`);
     gallery?.renderCloud();
     renderTitle();
     if (s10.signedIn) void afterSignIn();
@@ -25674,10 +25848,12 @@ function ensureGallery() {
       closeStudio();
       padWas = !padEl.hidden;
       showPad(false);
+      updateChrome();
     },
     onClosed: () => {
       void afterGalleryClosed();
       showPad(padWas);
+      updateChrome();
       scoreEl.focus();
     }
   });
@@ -25743,16 +25919,17 @@ async function signInFlow() {
   await openChoiceSheet(
     "\u53BB\u5FAE\u8F6F\u767B\u5F55",
     `\u9875\u9762\u4F1A\u8DF3\u5230\u5FAE\u8F6F\u7684\u767B\u5F55\u9875\uFF08\u53EA\u8BA4\u4E2A\u4EBA\u8D26\u53F7\uFF09\uFF0C\u767B\u5F55\u5B8C\u81EA\u52A8\u56DE\u5230\u8FD9\u91CC\u3002${doc.identifier ? "\u624B\u91CC\u7684\u6B4C\u5DF2\u7ECF\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\u3002" : dirty() ? "\u624B\u91CC\u8FD9\u9996\u65E0\u5730\u7684\u6B4C\u6539\u8FC7\u8FD8\u6CA1\u5B58\u2014\u2014\u8DF3\u8D70\u4F1A\u4E22\uFF0C\u5148\u5B58\u4E00\u4E0B\u518D\u6765\u3002" : ""}`,
-    [{ label: "\u53BB\u767B\u5F55", value: "go", primary: true, onPick: () => {
-      navigatingForAuth = true;
-      void requestStoragePersistence();
-      diagNote("auth", "signIn redirect");
-      auth.signIn({ prompt: "select_account" }).catch((e10) => {
-        navigatingForAuth = false;
-        reportError(e10);
-      });
-    } }]
+    [{ label: "\u53BB\u767B\u5F55", value: "go", primary: true, onPick: redirectToSignIn }]
   );
+}
+function redirectToSignIn() {
+  navigatingForAuth = true;
+  void requestStoragePersistence();
+  diagNote("auth", "signIn redirect");
+  auth.signIn({ prompt: "select_account" }).catch((e10) => {
+    navigatingForAuth = false;
+    reportError(e10);
+  });
 }
 var refreshing = false;
 async function refreshOpenDoc() {
@@ -25810,6 +25987,7 @@ function pushDirtyAll(opts = {}) {
   pushAllInFlight = (async () => {
     try {
       const r10 = await requireStore().files.dirty.pushAll();
+      if (r10.pushed || r10.failed.length) diagNote("sync", `dirty.pushAll: pushed=${r10.pushed} failed=${r10.failed.length}${r10.failed.length ? " [" + r10.failed.join(", ") + "]" : ""}`);
       if (r10.failed.length) showError(`\u6709 ${r10.failed.length} \u9996\u6CA1\u63A8\u4E0A\u4E91\uFF1A${r10.failed.map(stemOfId).join("\u3001")}`);
       else if (opts.verbose) info(r10.pushed ? `\u63A8\u4E0A\u53BB\u4E86 ${r10.pushed} \u9996` : "\u6CA1\u6709\u8981\u63A8\u7684");
     } catch (e10) {
@@ -25833,11 +26011,48 @@ async function setCover(f2) {
     showError(`\u8FD9\u5F20\u56FE\u7528\u4E0D\u4E86\uFF1A${e10.message}`);
   }
 }
+var signInDeclined = false;
+async function smartSaveStore() {
+  const b3 = $2("saveBtn");
+  b3.classList.add("flash");
+  setTimeout(() => b3.classList.remove("flash"), 500);
+  void requestStoragePersistence();
+  const before = syncKind();
+  if (before === "clean") {
+    await refreshOpenDoc();
+  }
+  await es2.forceSaveAndPush();
+  renderTitle();
+  if (!auth.isSignedIn()) {
+    if (signInDeclined || navigator.onLine === false || !auth.isAuthConfigured()) {
+      info("\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86");
+      return;
+    }
+    const v = await openChoiceSheet(
+      "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86",
+      "\u8981\u540C\u6B65\u5230 OneDrive \u5417\uFF1F\u767B\u5F55\u5FAE\u8F6F\u4E2A\u4EBA\u8D26\u53F7\u540E\uFF0C\u6B4C\u5E93\u540C\u6B65\u5230\u4F60 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF08\u8FD9\u4E2A app \u53EA\u80FD\u770B\u81EA\u5DF1\u7684\u90A3\u4E2A\u5939\uFF09\u3002",
+      [{ label: "\u53BB\u767B\u5F55", value: "go", primary: true, onPick: redirectToSignIn }, { label: "\u6682\u4E0D", value: "later" }]
+    );
+    if (v === "later") signInDeclined = true;
+    return;
+  }
+  info(es2.isPushPending() ? "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u4E91\u7AEF\u7A0D\u540E\u518D\u63A8" : before === "clean" ? "\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684" : "\u5B58\u597D\u4E86\uFF0C\u4E91\u7AEF\u4E5F\u66F4\u65B0\u4E86");
+}
+async function smartSave() {
+  if (doc.identifier) await smartSaveStore();
+  else await fileSave();
+}
+$2("saveBtn").addEventListener("click", () => {
+  void smartSave();
+});
+$2("lockBtn").addEventListener("click", () => info("\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\u3002MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF08\u8981\u7684\u8BDD\u544A\u8BC9\u5F00\u53D1\u8005\uFF1A\u7167 WXHW \u63A5 zip.js + 7z \u5C31\u80FD\u5F00\uFF09\u3002"));
 window.addEventListener("online", () => {
+  renderTitle();
   if (!hasStore()) return;
   if (auth.isSignedIn()) void afterSignIn();
   else retrySilent();
 });
+window.addEventListener("offline", () => renderTitle());
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible" || !hasStore()) return;
   if (auth.isSignedIn()) void refreshOpenDoc();
@@ -25945,6 +26160,8 @@ await document.fonts.load(`40px Bravura`).catch(() => void 0);
 view.render();
 pad3.render();
 renderTitle();
+chromeReady = true;
+updateChrome();
 scoreEl.focus();
 if (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash)) {
   ensureAttached();
@@ -25961,4 +26178,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-9ef07a47a7f4.mjs.map
+//# sourceMappingURL=moonsinger-76107611198a.mjs.map

@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-32 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+34 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -12,7 +12,7 @@
 <svg width="24" height="24"><use href="#sliders"/></svg>
 ```
 
-> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`caret-up`、`caret-down`、`backspace`
+> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`album`、`caret-up`、`caret-down`、`backspace`
 > 见库 `index.html` 的「待过目」栏；过目后进库/打回归库 session。
 
 
@@ -43,12 +43,14 @@
 | `image` | 从图片新建:相框+山+太阳 |
 | `folder` | 文件夹:左边 tab + 矩形主体 |
 | `trash-can` | 垃圾桶:桶身收口(feather 是直筒);与 fluent(圆提手/更低)、heroicons(弧形透视)亦不同 — own |
+| `album` 👁待过目 | 专辑/唱片:左边一个方形唱片封套(圆角矩形) + 右侧从封套后露出半张唱片(大圆弧 + 中心小孔)；与 bookshelf(书库) / gallery(图库) 分工 = 歌库【MoonSinger 顶栏最左「歌库」钮（回歌库）+ 文件菜单「歌库…」；2026-10-08 Claude Fable 5.1 自画未过目】 |
 
 ## hierarchy
 
 | name | 说明 |
 |------|------|
 | `lock` | 锁:体 13x11+锁梁抬高(腿3.5),整体居中 |
+| `unlock` | 开锁:同 lock 体型+锁梁弹开 |
 
 ## common
 

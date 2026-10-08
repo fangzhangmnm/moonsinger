@@ -140,9 +140,9 @@ export class ScoreView {
     if (this.lyrics.open) sys = this.lyrics.system;
     if (this.marks.open) sys = this.marks.system;
     const box = L.systems[sys]; if (!box) return;
-    const top = this.el.scrollTop, h = this.el.clientHeight, z = this.zoom;
-    if (box.top * z < top) this.el.scrollTop = box.top * z;
-    else if (box.bottom * z > top + h) this.el.scrollTop = box.bottom * z - h;
+    const top = this.el.scrollTop, h = this.el.clientHeight, z = this.zoom, off = this.sheet.offsetTop;   // off = 纸上面留给走带胶囊的边距（styles.css .sheet margin-top）
+    if (off + box.top * z < top) this.el.scrollTop = off + box.top * z;
+    else if (off + box.bottom * z > top + h) this.el.scrollTop = off + box.bottom * z - h;
   }
 
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
@@ -208,9 +208,11 @@ export class ScoreView {
   private inBox(b: { x: number; y: number; w: number; h: number } | null | undefined, x: number, y: number): boolean { return !!b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; }
   /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）。点中了东西返回 true；落在空白处返回 false（调用方决定放光标还是框选）。 */
   private tap(x: number, y: number, shift: boolean, pid: number | null): boolean {
-    const L0 = this.layout!, wasMark = this.marks.open;
+    const L0 = this.layout!, wasMark = this.marks.open, wasLyric = this.lyrics.open;
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     if (wasMark) { this.host.focus?.("staff"); return true; }   // 点别处 = 先收起记号框（这一下不另做事）
+    // 手指（pid === null）：歌词框开着时点谱面 = 只收框、不选中（user 2026-10-08 截图：打歌词时误触把一个音选成蓝的）；笔 / 鼠标照旧可以直接点选
+    if (wasLyric && pid === null) { this.host.focus?.("staff"); return true; }
     const L = this.layout ?? L0, sp = L.sp;
     // 0. 纸右上角的小钮（纸张）、旁边的「＋」、歌名左边的「‹ ›」——都在歌名那一条里，先于歌名判
     if (this.inBox(L.paperChip, x, y)) { this.host.onPaper?.(); return true; }
