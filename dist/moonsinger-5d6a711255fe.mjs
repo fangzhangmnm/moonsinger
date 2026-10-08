@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.11-2026-10-08";
+var APP_VERSION = "v0.7.12-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7410,6 +7410,7 @@ var Pad = class {
    *  三块各管各的：最上面一排旋钮或候选（模式 / 有没有选中变了才重建）、写字键一排（只建一次）、音键网格（调 / 音域 / 布局变了才重建）——
    *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render() {
+    if (this.symbols !== "off" && this.host.isImpro()) this.symbols = "off";
     const st3 = this.host.state(), f2 = inputKey(st3), rows = this.rows(), form = padForm();
     const base3 = this.baseAt(this.rowShift, f2, rows);
     const selKey = st3.sel ? keyAt(tr(st3), st3.sel.from) : null;
@@ -7417,7 +7418,7 @@ var Pad = class {
     this.el.style.setProperty("--cols", String(this.cols));
     this.el.style.setProperty("--rows", String(rows));
     if (!this.el.querySelector(".pad-grid")) {
-      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u53E5\u53F7\u3001\u8DF3\u97F3 / \u91CD\u97F3 / \u4FDD\u6301 / \u547C\u5438\u3001\u5C0F\u8282\u7EBF\u3001\u4F11\u6B62\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF09\u3002\u70B9\u4E00\u4E0B = \u5199\u4E00\u4E2A\u5C31\u56DE\u97F3\u952E\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u540C Shift\uFF09\uFF1B\u518D\u70B9 = \u56DE\u97F3\u952E"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
+      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u8868\u60C5\u8BB0\u53F7\u2014\u2014\u53E5\u53F7\u3001\u8DF3\u97F3 / \u91CD\u97F3 / \u4FDD\u6301 / \u547C\u5438 / \u8FDE\u7EBF\u3001\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF1B\u5199\u97F3\u90A3\u4E00\u5C42\u7684\u952E\u5F00\u7740\u65F6\u7070\u6389\uFF09\u3002\u70B9\u4E00\u4E0B = \u5199\u4E00\u4E2A\u5C31\u56DE\u97F3\u952E\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u540C Shift\uFF09\uFF1B\u518D\u70B9 = \u56DE\u97F3\u952E"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
       const w2 = this.el.querySelector(".writes");
       this.on(w2, "[data-caret]", (b3) => this.host.onCommand({ k: "caret", d: Number(b3.dataset.caret) }));
       this.on(w2, "[data-cmd]:not([data-cmd=backspace])", (b3) => this.host.onCommand({ k: b3.dataset.cmd }));
@@ -7478,6 +7479,7 @@ var Pad = class {
       });
       w2.querySelector("[data-symbols]").addEventListener("pointerdown", (e10) => {
         e10.preventDefault();
+        if (this.host.isImpro()) return;
         const t10 = performance.now();
         this.symbols = this.symbols === "off" ? "once" : this.symbols === "once" && t10 - this.symAt < 350 ? "lock" : "off";
         this.symAt = t10;
@@ -7647,11 +7649,8 @@ var Pad = class {
       cell("wedge:dim", DIM_CELL, "\u6E10\u5F31", "\u6E10\u5F31 >\uFF1A\u4ECE\u5149\u6807\u8FD9\u513F\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F31\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       ...["pp", "p", "mp", "mf", "f", "ff"].map((d3) => cell(`dyn:${d3}${d3 === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d3]}</span>`, "\u529B\u5EA6", `\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u5149\u6807\u8FD9\u91CC\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389\uFF08user 2026-10-08\u300Cmp mf \u5728\u54EA\u91CC\u52A0\u554A\u300D\uFF09`)),
       ...["<", ">", "<>"].map((w2) => cell(`swell:${w2}`, SWELL_CELL[w2], w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31" : "\u97F3\u5185\u9F13\u8D77", `${w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31\uFF08\u952F\u9F7F\uFF09" : "\u97F3\u5185\u9F13\u8D77\uFF08messa di voce\uFF09"}\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u81EA\u5DF1\u91CC\u9762\u7684\u8D77\u4F0F\uFF1B\u548C\u6BB5\u843D\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u4E24\u5C42\uFF0C\u53EF\u4EE5\u53E0\uFF1B\u518D\u70B9 = \u53BB\u6389`)),
-      cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u548C\u547C\u5438\u76F8\u53CD\u2014\u2014\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
-      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
-      cell("bar", `<span class="big">|</span>`, "\u5C0F\u8282\u7EBF", "\u5C0F\u8282\u7EBF\uFF08\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\uFF09"),
-      cell("rest", `<span class="big">0</span>`, "\u4F11\u6B62", "\u4F11\u6B62\uFF08\u957F\u77ED\u540C\u57FA\u7EBF\uFF09"),
-      cell("extend", `<span class="big">\u2014</span>`, "\u62C9\u957F", "\u521A\u5199\u7684\u97F3\u52A0\u4E00\u4EFD"),
+      cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09\u3002\u540C\u4E00\u4E2A\u97F3\u4E0A\u53C8\u6709\u547C\u5438 = \u547C\u5438\u7B97\u6570\uFF1A\u90A3\u91CC\u7167\u6837\u65AD\u5F00\u6362\u6C14\uFF0C\u8FDE\u7EBF\u7167\u753B"),
+      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
       cell("key", `<span class="big">1=</span>`, "\u8C03\u53F7", "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09"),
       cell("time", `<span class="big">4/4</span>`, "\u62CD\u53F7", "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF09"),
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "\u901F\u5EA6", "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF09"),
@@ -7686,7 +7685,7 @@ var Pad = class {
       else if (id2.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id2.slice(6) });
       else if (id2.startsWith("dyn:")) this.host.onCommand({ k: "dyn", v: id2.slice(4) });
       else if (id2 === "wedge:cresc" || id2 === "wedge:dim") this.host.onCommand({ k: "wedge", w: id2 === "wedge:cresc" ? "cresc" : "dim" });
-      else this.host.onCommand({ k: id2 });
+      else this.host.onCommand({ k: "phrase" });
       this.render();
     };
   }
@@ -7833,6 +7832,12 @@ var Pad = class {
     this.el.querySelectorAll(".pad-key[data-k]").forEach((b3) => b3.classList.toggle("down", down.has(midiOf(this.keys.get(Number(b3.dataset.k))))));
     const stk = this.el.querySelector("[data-stack]");
     if (stk) stk.classList.toggle("off", !this.host.canStack());
+    const symOn = this.symbols !== "off";
+    this.el.querySelectorAll('.writes [data-cmd="rest"], .writes [data-cmd="bar"], .writes [data-cmd="extend"], .writes [data-accshift], .writes [data-stack], .writes [data-half], .pad-head [data-knob="key"], .pad-head [data-knob="unit"], .pad-head [data-knob="range"]').forEach((b3) => {
+      b3.disabled = symOn;
+    });
+    const syb = this.el.querySelector("[data-symbols]");
+    if (syb) syb.disabled = this.host.isImpro();
     const sy2 = this.el.querySelector("[data-symbols]");
     if (sy2) {
       sy2.classList.toggle("once", this.symbols === "once");
@@ -27838,7 +27843,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "0cc8cca63a93",
+  cssHash: "303d2c0075fe",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -30146,4 +30151,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6f2888eaa620.mjs.map
+//# sourceMappingURL=moonsinger-5d6a711255fe.mjs.map

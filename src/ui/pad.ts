@@ -184,13 +184,14 @@ export class Pad {
    *  三块各管各的：最上面一排旋钮或候选（模式 / 有没有选中变了才重建）、写字键一排（只建一次）、音键网格（调 / 音域 / 布局变了才重建）——
    *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render(): void {
+    if (this.symbols !== "off" && this.host.isImpro()) this.symbols = "off";   // 进了「弹」= 回音键（符号层会写进谱）
     const st = this.host.state(), f = inputKey(st), rows = this.rows(), form = padForm();
     const base = this.baseAt(this.rowShift, f, rows);
     const selKey = st.sel ? keyAt(tr(st), st.sel.from) : null;
     this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols)); this.el.style.setProperty("--rows", String(rows));   // --rows：符号层的高 = 音键那几排（几何不变，多了滚）
     if (!this.el.querySelector(".pad-grid")) {
       this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes">` +
-        `<button class="btn wk sym-toggle" data-symbols="1" title="符号层：句号、跳音 / 重音 / 保持 / 呼吸、小节线、休止、调号 / 拍号 / 速度…（像键盘的 .?123）。点一下 = 写一个就回音键；连点两下 = 锁住（同 Shift）；再点 = 回音键"><span>符</span><small>符号</small></button>` +
+        `<button class="btn wk sym-toggle" data-symbols="1" title="符号层：表情记号——句号、跳音 / 重音 / 保持 / 呼吸 / 连线、力度、渐强渐弱、调号 / 拍号 / 速度…（像键盘的 .?123；写音那一层的键开着时灰掉）。点一下 = 写一个就回音键；连点两下 = 锁住（同 Shift）；再点 = 回音键"><span>符</span><small>符号</small></button>` +
         `<button class="btn" data-caret="-1" title="光标左移（${hint("left")}）">←</button>` +
         `<button class="btn" data-caret="1" title="光标右移（${hint("right")}）">→</button>` +
         `<button class="btn wk" data-cmd="rest" title="休止（${hint("rest")}）"><span>0</span><small>休止</small></button>` +
@@ -241,7 +242,8 @@ export class Pad {
       addEventListener("blur", () => { for (const id of [...sholding]) stkUp({ pointerId: id }); });
       // 符号层开关
       w.querySelector<HTMLElement>("[data-symbols]")!.addEventListener("pointerdown", (e) => {
-        e.preventDefault(); const t = performance.now();
+        e.preventDefault(); if (this.host.isImpro()) return;   // 弹 = 只弹不写：符号层会写进谱，弹的时候不开
+        const t = performance.now();
         this.symbols = this.symbols === "off" ? "once" : this.symbols === "once" && t - this.symAt < 350 ? "lock" : "off"; this.symAt = t; this.render();
       });
       // 升降键（user「以及临时升降号的shift好像你也忘了哈哈，要不就是按住是shift，然后也可以上下滑动切换## # b bb，然后按是当作shift，滑动是toggle which shift」）：
@@ -376,11 +378,8 @@ export class Pad {
       cell("wedge:dim", DIM_CELL, "渐弱", "渐弱 >：从光标这儿（有选区 = 选区开头）起，一路渐弱到这张纸里下一个力度记号；没写 = 走一档（谱上灰字标出推定的终点）；再点一次去掉"),
       ...(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => cell(`dyn:${d}${d === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d]}</span>`, "力度", `力度 ${d}：从光标这里起（有选区 = 选区开头），管到下一个力度记号；那儿已经是它 = 去掉（user 2026-10-08「mp mf 在哪里加啊」）`)),
       ...(["<", ">", "<>"] as const).map((w) => cell(`swell:${w}`, SWELL_CELL[w], w === "<" ? "音内渐强" : w === ">" ? "音内渐弱" : "音内鼓起", `${w === "<" ? "音内渐强" : w === ">" ? "音内渐弱（锯齿）" : "音内鼓起（messa di voce）"}：光标前那个音（有选区 = 选中的）自己里面的起伏；和段落的渐强渐弱是两层，可以叠；再点 = 去掉`)),
-      cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；和呼吸相反——呼吸 = 这里断开；有选区 = 选中的连起来；再点一次去掉）"),
-      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；再点一次去掉）"),
-      cell("bar", `<span class="big">|</span>`, "小节线", "小节线（弱起 = 写完弱起的音按一下）"),
-      cell("rest", `<span class="big">0</span>`, "休止", "休止（长短同基线）"),
-      cell("extend", `<span class="big">—</span>`, "拉长", "刚写的音加一份"),
+      cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；有选区 = 选中的连起来；再点一次去掉）。同一个音上又有呼吸 = 呼吸算数：那里照样断开换气，连线照画"),
+      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"),
       cell("key", `<span class="big">1=</span>`, "调号", "插调号（在光标处；先填现在的，插了再改）"),
       cell("time", `<span class="big">4/4</span>`, "拍号", "插拍号（在光标处）"),
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "速度", "插速度（在光标处）"),
@@ -411,7 +410,7 @@ export class Pad {
       else if (id.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id.slice(6) as "<" | ">" | "<>" });
       else if (id.startsWith("dyn:")) this.host.onCommand({ k: "dyn", v: id.slice(4) as "pp" | "p" | "mp" | "mf" | "f" | "ff" });
       else if (id === "wedge:cresc" || id === "wedge:dim") this.host.onCommand({ k: "wedge", w: id === "wedge:cresc" ? "cresc" : "dim" });
-      else this.host.onCommand({ k: id as "phrase" | "bar" | "rest" | "extend" });
+      else this.host.onCommand({ k: "phrase" });
       this.render();
     };
   }
@@ -520,6 +519,11 @@ export class Pad {
     const down = new Set(this.held.values());
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => b.classList.toggle("down", down.has(midiOf(this.keys.get(Number(b.dataset.k))!))));
     const stk = this.el.querySelector<HTMLElement>("[data-stack]"); if (stk) stk.classList.toggle("off", !this.host.canStack());   // 单声乐器的声部：叠不了
+    // 符号层开着 = 只写记号（user 2026-10-08「符号键盘的时候该禁用的东西都禁用」）：写音那一层的键（休止 / 小节线 / 升降 / 叠 / 减半 / 拉长）和管音键的旋钮（1= / 长短 / 音域）都灰掉、按不动；
+    //   ← → / 退格（符号模式的退格）/ 弹 / 收起 / ⋯ 照旧。「弹」的时候「符」灰掉（弹 = 只弹不写）
+    const symOn = this.symbols !== "off";
+    this.el.querySelectorAll<HTMLButtonElement>('.writes [data-cmd="rest"], .writes [data-cmd="bar"], .writes [data-cmd="extend"], .writes [data-accshift], .writes [data-stack], .writes [data-half], .pad-head [data-knob="key"], .pad-head [data-knob="unit"], .pad-head [data-knob="range"]').forEach((b) => { b.disabled = symOn; });
+    const syb = this.el.querySelector<HTMLButtonElement>("[data-symbols]"); if (syb) syb.disabled = this.host.isImpro();
     const sy = this.el.querySelector<HTMLElement>("[data-symbols]"); if (sy) { sy.classList.toggle("once", this.symbols === "once"); sy.classList.toggle("lock", this.symbols === "lock"); sy.querySelector("span")!.textContent = this.symbols !== "off" ? "音" : "符"; }
   }
 

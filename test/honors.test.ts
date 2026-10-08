@@ -93,3 +93,18 @@ describe("音内的起伏：按下去就自然衰减的乐器（canSwell = false
     assert(h(two("swellFade")) !== h(two()), "> 照做");
   });
 });
+
+describe("同一道缝上连线 + 呼吸 = 呼吸算数（2026-10-08，user「我觉得应该呼吸会override连线」，两个选项里 AI 选了 2：两个都留着，出声呼吸算数）", () => {
+  const o = { staccatoGate: 0.5, breath: true, gapSec: 0.04, breathSec: 0.12, breathShare: 0.5 };
+  it("SoundFont / 元音版（noteEnd）：连线 + 呼吸 = 和只有呼吸一样断开", () => {
+    eq(noteEnd(0, 1, ["breath"], o, true), noteEnd(0, 1, ["breath"], o, false));
+    assert(noteEnd(0, 1, ["breath"], o, true) < 1, "连线没把呼吸吃掉");
+    eq(noteEnd(0, 1, [], o, true), 1, "只有连线 = 不断");
+  });
+  it("月读（唱谱）：连线 + 呼吸 = 照样换气（和只有呼吸一样）", () => {
+    const st0 = two(), i0 = tr(st0).indexOf(first(st0)), br = toggleArtSel(select(st0, i0, i0 + 1), "breath");
+    const i = tr(br).indexOf(first(br)), both = toggleSlurSel(select(br, i, i + 1));
+    assert(!!first(both).slur && (first(both).art ?? []).includes("breath"), "两个都在谱上");
+    deq(toLabScore(tr(both), "n"), toLabScore(tr(br), "n"));
+  });
+});

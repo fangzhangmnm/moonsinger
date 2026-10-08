@@ -75,6 +75,7 @@ button, input, select { font: inherit; color: inherit; }
 @media (hover: hover) { .btn:hover { background: #f7f6f2; } }   /* 只给真的会悬停的（鼠标）：iPad 点过的钮会一直粘着 hover 变灰（user「点了之后按下的灰色没有自动消失」；同 gallery 0.6.3） */
 .btn.is-on { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
 .btn:disabled { opacity: .35; cursor: default; }
+.pad-tools .btn:disabled, .pad-head .btn:disabled { pointer-events: none; }   /* 符号层开着时写音那一层的键 / 旋钮：灰掉也按不动（2026-10-08 Opus 5.5） */
 .ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
 /* 舞台：谱面板（内部滚）+ pad 面板 */
