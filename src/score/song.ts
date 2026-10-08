@@ -33,7 +33,7 @@ export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
 /** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[] }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[] }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
 //   chord（2026-10-08 polyphony）= 叠音：pitch 之外的音高，都比 pitch 低、从高到低；pitch = 最高的那个 = 旋律线（唱的人只读它：user「一个 Polyphony 换月读…应该是只读上面的旋律线」）。MusicXML = <chord/>。
 export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
 export interface BarTok { kind: "bar"; id: number }
@@ -45,7 +45,17 @@ export interface KeyTok { kind: "key"; id: number; fifths: number }
 export interface TimeTok { kind: "time"; id: number; beats: number; beatType: number }
 export interface TempoTok { kind: "tempo"; id: number; bpm: number }   // 每分钟几个四分音符
 export type MarkTok = KeyTok | TimeTok | TempoTok;
-export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok;
+/** 「修」的记号（2026-10-08 by Claude Opus 5.5；user「呼吸记号 跳音 / 力度这类修的记号进选区条」「flow 还是主旋律，修才管这些」→ 拍「挂在音上 + 选区条」「月读在那儿换气」）：
+ *  演奏法 = 挂在音上（art，按 ARTS 的顺序、不重复）；MusicXML <notations><articulations> 原生——呼吸 = <breath-mark/>，挂在呼吸前的那个音上。
+ *  出声：跳音 = 截短（候选的 articulation.staccatoGate）、重音 = 音头加 accentDb、保持 = 满长；呼吸 = 月读在下一个字前换一口气（唱法核心的「v」），乐器不受影响。 */
+export type Art = "staccato" | "accent" | "tenuto" | "breath";
+export const ARTS: readonly Art[] = ["staccato", "accent", "tenuto", "breath"];
+/** 力度 = 一个记号 token（不占时值，管到下一个力度为止；一首没写 = mf）。MusicXML <direction><dynamics>。出声 = 候选的 dynamicsDb（mf = 0 dB）。 */
+export type Dyn = "pp" | "p" | "mp" | "mf" | "f" | "ff";
+export const DYNS: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
+export const DEFAULT_DYN: Dyn = "mf";
+export interface DynTok { kind: "dyn"; id: number; value: Dyn }
+export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
 export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;
@@ -280,7 +290,7 @@ function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alter
 function fillTarget(st: EditorState): number {
   for (let i = st.caret; i < tr(st).length; i++) {
     const t = tr(st)[i];
-    if (t.kind === "bar" || t.kind === "phrase" || isMark(t)) continue;
+    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || isMark(t)) continue;
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
   return -1;
@@ -340,6 +350,75 @@ export function insertPhraseAfter(st: EditorState, i: number): EditorState {
   const sel = st.sel ? { from: st.sel.from > i ? st.sel.from + 1 : st.sel.from, to: st.sel.to > i ? st.sel.to + 1 : st.sel.to } : null;
   return next({ ...st, nextId: id + 1 }, tokens, { caret: st.caret > i ? st.caret + 1 : st.caret, sel });
 }
+// ── 修：演奏法 / 力度 / 呼吸（2026-10-08 by Claude Opus 5.5）────────────────────────────
+/** 一个音的演奏法（按 ARTS 的顺序）。 */
+export const artOf = (t: NoteTok): Art[] => t.art ?? [];
+/** 开 / 关一种演奏法（空了 = 去掉 art 字段，存档不多出空数组）。 */
+export function withArt(t: NoteTok, a: Art, on: boolean): NoteTok {
+  const set = new Set(artOf(t)); if (on) set.add(a); else set.delete(a);
+  const art = ARTS.filter((x) => set.has(x));
+  if (art.length) return { ...t, art };
+  const { art: _a, ...rest } = t; return rest;
+}
+/** 选区里的音的下标。 */
+const selNoteIdx = (st: EditorState): number[] => { if (!st.sel) return []; const out: number[] = []; for (let i = st.sel.from; i < st.sel.to; i++) if (tr(st)[i]?.kind === "note") out.push(i); return out; };
+/** 选区里每种演奏法：都有 / 有的有 / 都没有（选区条的开关亮不亮）。 */
+export function artStateSel(st: EditorState): Record<Art, "all" | "some" | "none"> {
+  const idx = selNoteIdx(st), toks = tr(st), out = {} as Record<Art, "all" | "some" | "none">;
+  for (const a of ARTS) { const n = idx.filter((i) => artOf(toks[i] as NoteTok).includes(a)).length; out[a] = !idx.length || n === 0 ? "none" : n === idx.length ? "all" : "some"; }
+  return out;
+}
+/** 选区里的音切一种演奏法：都有 = 都去掉，否则都加上（选区留着，接着改别的）。 */
+export function toggleArtSel(st: EditorState, a: Art): EditorState {
+  const idx = selNoteIdx(st); if (!idx.length) return st;
+  const on = artStateSel(st)[a] !== "all", nt = tr(st).slice();
+  for (const i of idx) nt[i] = withArt(nt[i] as NoteTok, a, on);
+  return next(st, nt);
+}
+/** 呼吸（pad 符号层）：光标前最近的那个音切呼吸（中间只隔着句号 / 力度 / 小节线这类不占时值的也算）；前面是休止或没有音 = 原样（返回 null 让界面说一声）。 */
+export function toggleBreath(st: EditorState): EditorState | null {
+  const toks = tr(st);
+  for (let i = (st.sel ? st.sel.to : st.caret) - 1; i >= headLen(toks); i--) {
+    const t = toks[i];
+    if (t.kind === "rest") return null;
+    if (t.kind !== "note") continue;
+    const nt = toks.slice(); nt[i] = withArt(t, "breath", !artOf(t).includes("breath"));
+    return next(st, nt);
+  }
+  return null;
+}
+/** 第 i 个 token 那儿生效的力度（往前找最近的力度记号；没有 = mf）。 */
+export function dynAt(tokens: Token[], i: number): Dyn {
+  for (let j = Math.min(i, tokens.length) - 1; j >= 0; j--) { const t = tokens[j]; if (t.kind === "dyn") return t.value; }
+  return DEFAULT_DYN;
+}
+/** 选区开头（没选区 = 光标处）那一串不占时值的 token 里的力度记号的下标；没有 = -1。 */
+function dynRunAt(tokens: Token[], at: number): { a: number; b: number; k: number } {
+  let a = at, b = at;
+  const zero = (t: Token | undefined) => !!t && (t.kind === "dyn" || t.kind === "phrase" || isMark(t));
+  while (a > headLen(tokens) && zero(tokens[a - 1])) a--;
+  while (b < tokens.length && zero(tokens[b])) b++;
+  let k = -1; for (let i = a; i < b; i++) if (tokens[i].kind === "dyn") k = i;
+  return { a, b, k };
+}
+/** 选区开头（没选区 = 光标处）放力度：那儿已经有力度记号 = 改它；value null = 去掉。选区跟着挪，还盖着同样那几个音。 */
+export function setDynSel(st: EditorState, value: Dyn | null): EditorState {
+  const toks = tr(st), at = Math.max(headLen(toks), st.sel ? st.sel.from : st.caret), { k } = dynRunAt(toks, at), nt = toks.slice();
+  const shift = (d: number, pos: number) => ({ sel: st.sel ? { from: st.sel.from + (st.sel.from >= pos ? d : 0), to: st.sel.to + (st.sel.to > pos || (st.sel.to === pos && d > 0) ? d : 0) } : null, caret: st.caret + (st.caret >= pos ? d : 0) });
+  if (k >= 0) {
+    if (value === null) { nt.splice(k, 1); return next(st, nt, shift(-1, k)); }
+    nt[k] = { ...(nt[k] as DynTok), value }; return next(st, nt);
+  }
+  if (value === null) return st;
+  const id = st.nextId; nt.splice(at, 0, { kind: "dyn", id, value });
+  return next({ ...st, nextId: id + 1 }, nt, shift(1, at));
+}
+/** 选区开头（没选区 = 光标处）现在写着的力度记号（没有 = null；选区条上亮哪一个）。 */
+export function dynMarkSel(st: EditorState): Dyn | null {
+  const toks = tr(st), { k } = dynRunAt(toks, Math.max(headLen(toks), st.sel ? st.sel.from : st.caret));
+  return k >= 0 ? (toks[k] as DynTok).value : null;
+}
+
 /** 纸隐藏 / 显示（隐藏 = 不放；谱上还在、折叠着）。 */
 export function setPaperHidden(st: EditorState, paperId: string, hidden: boolean): EditorState {
   const papers = st.song.papers.map((p) => (p.id !== paperId ? p : hidden ? { ...p, hidden: true } : (({ hidden: _h, ...rest }) => rest)(p)));

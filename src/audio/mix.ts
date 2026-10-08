@@ -54,6 +54,23 @@ export function limitBus(left: Float32Array, right: Float32Array, sr: number, o:
   return 20 * Math.log10(min);
 }
 
+/** 按音量曲线给一条声音乘增益（返回新的，原样本不动——渲染结果是缓存着的）。samples[0] 对应谱上第 at 秒；segs 按时间排好（src/score/perform.ts）；
+ *  曲线外 = 最近一段的值；增益走一阶平滑（τ = smoothSec）免得段与段之间咔哒。 */
+export function applyGain(samples: Float32Array, sr: number, at: number, segs: readonly { t0: number; t1: number; dB: number }[], smoothSec = 0.004): Float32Array {
+  const out = new Float32Array(samples.length);
+  if (!segs.length) { out.set(samples); return out; }
+  const lin = (dB: number) => (dB === -Infinity ? 0 : 10 ** (dB / 20));
+  const a = 1 - Math.exp(-1 / (smoothSec * sr));
+  let k = 0, y = lin(segs[0].dB);
+  for (let i = 0; i < samples.length; i++) {
+    const t = at + i / sr;
+    while (k < segs.length - 1 && t >= segs[k].t1) k++;
+    y += (lin(segs[k].dB) - y) * a;
+    out[i] = samples[i] * y;
+  }
+  return out;
+}
+
 /** 整条：相加 + 母线限幅。 */
 export function mixTracks(tracks: readonly MixTrack[], sr: number, tailSec = 0.3): Mixed & { limitedDb: number } {
   const m = sumTracks(tracks, sr, tailSec);

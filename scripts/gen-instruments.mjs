@@ -13,7 +13,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const SRC = join(ROOT, "..", "..", "20260813 MyLlamaReborn", "20261007 音乐史", "export", "moonsinger");   // ~/jupyter/20260813 MyLlamaReborn（不在 PWAProjects 里）
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
-export const VERSION = 4;   // v4 = 2026-10-08 收货（仓鼠 099fd3e：161 个概念、--tile 派生图标、AI 估算年份 yearSource；没删 / 改名字段）
+export const VERSION = 5;   // v5 = 2026-10-08 收货（仓鼠：概念加 range（实际发声的常用音域，MIDI）/ naturalKey（音效最像的键）、GM 行加 sampleKey；只加字段）。v4 = 161 个概念、--tile 派生图标、AI 估算年份
 export const FILES = {
   concepts: `instruments-v${VERSION}.json`,
   gmMap: `gm-map-v${VERSION}.json`,

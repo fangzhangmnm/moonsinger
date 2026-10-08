@@ -15,8 +15,10 @@ export interface Concept {
   substitutes?: { program: number; bank: number; note?: number; gmNumber: number; gmName: string; basis: "official" | "lineage" | "imitation" | "family" | "name-only"; hsCommon?: string; reason?: string }[];
   icon?: { id: string | null; candidates?: string[]; license?: string; borrowedFrom?: string } | null;
   fundamentalRank: number | null;
-  /** 常用音域（MIDI，实际发声）：v5 起由仓鼠的百科表给（2026-10-08 请的，形状待对账）；没有 = 不画提示。 */
+  /** 常用音域（MIDI，实际发声，移调乐器已换算）：v5 起由仓鼠的百科表给（user 2026-10-08「让仓鼠调查」）；没有 = 不画提示。basis = 依据（「原文（Violin）」「AI 常识」…）。 */
   range?: { low: number; high: number; basis?: string } | null;
+  /** 音效在现实里最像的那个键（v5；电话 = 102，GS 采样实测 2951 Hz；user「电话铃感觉就是老实的，以你听到的为准」）。 */
+  naturalKey?: { note: number; hz?: number; basis?: string } | null;
 }
 export interface GmRow { program: number; bank: number; note?: number; gmNumber: number; gmName: string; family?: string; concept: string; relation: "self" | "substitute"; primary?: boolean; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string }   // primary = 一个号多重认领时的主本尊（v3）
 export interface Defs { eras: { id: string; zh: string; from: number | null; to: number | null }[]; families: { id: string; en: string; zh: string }[]; kinds: { id: string; zh: string }[]; styles?: { id?: string; tag?: string; zh?: string; en?: string }[]; weights?: { id: number; zh: string }[] }
@@ -60,9 +62,13 @@ export function providersOf(cat: Catalog, c: Concept): Provider[] {
   if (self.length) return self;
   return (c.substitutes ?? []).map((s) => ({ kind: "substitute" as const, bank: s.bank, program: s.program, ...(s.note !== undefined ? { note: s.note } : {}), gmName: s.gmName, sound: c.ids.musicxml, basis: s.basis, reason: s.reason }));
 }
-/** 这个概念的常用音域（pad 的提示条 / 试听时窗口跟进用）；表里没有 = null。 */
-export function rangeOf(c: Concept | undefined): { lo: number; hi: number } | null {
-  const r = c?.range; return r && Number.isFinite(r.low) && Number.isFinite(r.high) && r.low <= r.high ? { lo: r.low, hi: r.high } : null;
+/** 这个概念在 pad 上提示哪几个键（提示条 / 试听时窗口跟进用）：有常用音域 = 那一段；音效有「最像的键」= 就那一个；都没有 = null。 */
+export function rangeOf(c: Concept | undefined): { lo: number; hi: number; title: string } | null {
+  const r = c?.range;
+  if (r && Number.isFinite(r.low) && Number.isFinite(r.high) && r.low <= r.high) return { lo: r.low, hi: r.high, title: `${c!.names.zh}的常用音域${r.basis ? `（依据：${r.basis}）` : ""}` };
+  const k = c?.naturalKey;
+  if (k && Number.isFinite(k.note)) return { lo: k.note, hi: k.note, title: `${c!.names.zh}最像真的那个键${k.hz ? `（约 ${Math.round(k.hz)} Hz）` : ""}` };
+  return null;
 }
 /** 谱上写的角色名：目录里的英文名首字母大写（打谱惯例；Vocals / Piano 同款）。 */
 export const roleNameOf = (c: Concept): string => c.names.en.replace(/^./, (ch) => ch.toUpperCase());

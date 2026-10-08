@@ -16,7 +16,7 @@
 //   小节线、调号、拍号是各声部自己的画法（契约 §7.8）；速度只画在第一个声部上面；歌手牌（声部名）在每张纸第一行各条谱的左边。
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
-import { type Song, type NoteTok, type Token, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches } from "../score/song.ts";
+import { type Song, type NoteTok, type Token, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches } from "../score/song.ts";
 import { densityOf, type Density } from "../score/paper.ts";
 import { type Pitch, diatonicIndex, keyAlter } from "../score/pitch.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
@@ -96,7 +96,15 @@ const SPACING: Record<Density, { staffAbove: number; rowH: number; rowHNoLyric: 
   cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },   // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
   compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 },
 };
-const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;     // F5 / B4 / E4 的五线谱位置
+const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;
+// 修的字形（SMuFL；宽 / 高 = staff space，浏览器里量的 Bravura：重音 1.36 × 0.99、跳音点 0.28、保持线 1.35 × 0.17）。Above 的从基线往上长，Below 的往下长
+const ART_GLYPH: Record<Exclude<Art, "breath">, { above: string; below: string; w: number; h: number }> = {
+  accent: { above: "\u{E4A0}", below: "\u{E4A1}", w: 1.36, h: 0.99 },
+  staccato: { above: "\u{E4A2}", below: "\u{E4A3}", w: 0.28, h: 0.28 },
+  tenuto: { above: "\u{E4A4}", below: "\u{E4A5}", w: 1.35, h: 0.17 },
+};
+const GLYPH_BREATH = "\u{E4CE}";   // breathMarkComma
+const DYN_GLYPH: Record<Dyn, string> = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" };     // F5 / B4 / E4 的五线谱位置
 const SHARP_POS = [38, 35, 39, 36, 33, 37, 34], FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 const GLYPH_TUPLET = (n: number) => [...String(n)].map((d) => String.fromCodePoint(0xe880 + Number(d))).join("");
 
@@ -134,6 +142,7 @@ interface Chunk {
   kind: "chunk"; index: number; j: number; last: boolean; base: number; dotted: boolean; note: boolean; ratio: [number, number] | null; ticks: number;
   pitch: Pitch | null; ghost: boolean; tie: boolean; lyric: string | null; hyph: boolean; inBar: number; beat: number; acc: number | null; w: number; accW: number;
   pitches: Pitch[]; accs: (number | null)[];   // 叠音：全部符头（从高到低，第一个 = pitch）+ 各自的临时记号
+  art: Art[]; breath: boolean;                 // 修：第一段画跳音 / 重音 / 保持，最后一段后面画呼吸（2026-10-08）
   x: number; system: number; tick: number; staff: Staff;   // staff = 大谱表里在上还是下（单谱表 = 1）
 }
 interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean }   // auto = 按拍号自动画的（index = -1，不是 token）
@@ -142,8 +151,9 @@ interface TimeU { kind: "time"; index: number; beats: number; beatType: number; 
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface HeadU { kind: "head"; index: -1; w: 0; x: number; system: number; tick: number; staff: Staff }   // 光标：零宽
 interface PhraseU { kind: "phrase"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 句号：歌词行上一个小「。」（不换行、不换气）
-type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | PhraseU;
-const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, head: 4, chunk: 5 };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
+interface DynU { kind: "dyn"; index: number; value: Dyn; w: number; x: number; system: number; tick: number; staff: Staff }   // 力度：谱上方一个字（不占地方，和后面那个音对齐）
+type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | PhraseU | DynU;
+const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, dyn: 3.5, head: 4, chunk: 5 };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
 const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
@@ -188,6 +198,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
     }
     if (t.kind === "tempo") { flushFull(); units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "phrase") { flushFull(); units.push({ kind: "phrase", index: i, w: 1.0, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "dyn") { flushFull(); units.push({ kind: "dyn", index: i, value: t.value, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
     const isNote = t.kind === "note", nt = t as NoteTok;
     const pitch = isNote ? effectivePitch(tokens, i) : null;
     const pitches = isNote ? (nt.pitch ? allPitches(nt) : [pitch!]) : [];
@@ -211,13 +222,14 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
         let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
         if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyricShow(lyric)) / o.sp + (nt.hyph ? 1.4 : 0.7));
         const u: Chunk = { kind: "chunk", index: i, j, last: false, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
-          ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs };
+          ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs,
+          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [], breath: false };
         units.push(u); lastChunk = u;
         off += c.ticks; j++;
       }
       inBar += piece; left -= piece; tick += piece;
     }
-    if (lastChunk) lastChunk.last = true;
+    if (lastChunk) { lastChunk.last = true; if (isNote && nt.art?.includes("breath")) { lastChunk.breath = true; lastChunk.w += 0.8; } }   // 呼吸逗号画在这个音后面：留一点地方
   });
   flushFull();   // 曲尾正好写满：画上这一条小节线
   if (o.caret !== null && o.caret >= tokens.length) pushHead();
@@ -560,6 +572,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           prims.push({ t: "text", x: P(u.x + 0.1), y: lyricY(lyricRow(u.system)), s: "。", cls: "phrase-mark", size: P(1.3), anchor: "start" });
           continue;
         }
+        if (u.kind === "dyn") {   // 力度：谱上方（声乐谱的下面是歌词），和后面那个音左对齐；基线在第五线上方 1.2 个间距——再高就撞开头的速度记号（它的基线约 2.9）
+          prims.push({ t: "glyph", x: P(u.x + 0.3), y: yOf(row, TOP_LINE + 2.4), ch: DYN_GLYPH[u.value], cls: inSel(u.index) ? "dyn sel" : "dyn" });
+          continue;
+        }
         if (u.kind === "head") {
           head = { system: row, x: P(u.x) };
           prims.push({ t: "line", x1: P(u.x + 0.1), y1: yOf(row, 42), x2: P(u.x + 0.1), y2: yOf(row, 26), w: P(0.16), cls: "caret" });
@@ -608,10 +624,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       }
       endGroup();
       const stemCls = (s: Stemmed) => clsOf(s.c);
+      const upOf = new Map<Chunk, boolean>();   // 符干朝上？（演奏法画在另一侧）
       const tipOf = new Map<Chunk, number>();
       for (const g of stemmed) {
         const row = RW(g[0].c), mid = yOf(row, MID_LINE);
         const up = g.reduce((a, s) => a + (s.d + s.dLow) / 2, 0) / g.length < MID_LINE;
+        for (const s of g) upOf.set(s.c, up);
         const sx = (s: Stemmed) => (up ? s.x0 + P(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s.x0 + P(STEM_DOWN_NW[0] + ENGRAVE.stem / 2));
         const sy0 = (s: Stemmed) => (up ? s.yLow - P(STEM_UP_SE[1]) : s.y - P(STEM_DOWN_NW[1]));   // 符干从远端的那个符头起
         if (g.length === 1) {
@@ -655,6 +673,23 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             }
           }
         }
+      }
+      // 7½. 修（2026-10-08）：跳音 / 保持在符头外一格（谱内落在间里），重音再往外、出了谱；符干朝上 = 画在下面，朝下 / 没有符干 = 上面。呼吸 = 音后面、谱线上方一个逗号
+      for (const c of units) {
+        if (c.kind !== "chunk" || !c.note || (!c.art.length && !c.breath)) continue;
+        const row = RW(c), cls = clsOf(c), cx = nhX(c) + nhW(c) / 2;
+        const dsC = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
+        const below = upOf.get(c) ?? false, sgn = below ? -1 : 1;
+        const inStaff = (d: number) => d >= BOTTOM_LINE && d <= TOP_LINE;
+        let d = below ? dLo - 2 : dHi + 2;
+        for (const a of (["staccato", "tenuto", "accent"] as const).filter((x) => c.art.includes(x))) {
+          if (a === "accent") d = below ? Math.min(d, BOTTOM_LINE - 2) : Math.max(d, TOP_LINE + 2);   // 重音在最外层、出谱
+          else if (inStaff(d) && d % 2 === 0) d += sgn;                                                 // 跳音 / 保持在谱内落在间里
+          const m = ART_GLYPH[a], g = below ? m.below : m.above;
+          prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: cls ? `art ${cls}` : "art" });
+          d += sgn * (a === "accent" ? 3 : 2);
+        }
+        if (c.breath) prims.push({ t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: cls ? `breath ${cls}` : "breath" });
       }
       // 8. 连音线：同一个 token 拆开的几段之间 + 数据里的 tie（连着前一个音）。跨行的第一版不画
       const tieBetween = (a: Chunk, b: Chunk) => {

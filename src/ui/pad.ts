@@ -36,7 +36,7 @@ import { openDrum, type DrumHandle } from "./drum.ts";
 /** 月读的音域 A3–E5（MIDI）：键底部画细条提示，音域外不拦、不变灰。宿主不给提示音域时（hintRange 没接）用它。 */
 export const HER_RANGE = { lo: 57, hi: 76, who: "月读" } as const;
 /** 提示音域：谁在弹（宿主说）+ 她 / 它的音域（MIDI，含两端）。null = 不画提示。 */
-export type HintRange = { lo: number; hi: number; who: string } | null;
+export type HintRange = { lo: number; hi: number; who: string; title?: string } | null;   // title = 键上的提示字（没有 = 「谁的音域里」）
 /** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
 const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone");
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
@@ -183,8 +183,8 @@ export class Pad {
         `<button class="btn wk" data-cmd="rest" title="休止（${hint("rest")}）"><span>0</span><small>休止</small></button>` +
         `<button class="btn wk" data-cmd="bar" title="小节线（${hint("bar")}）"><span>|</span><small>小节线</small></button>` +
         `<button class="btn wk accshift" data-accshift="1" title="升降（和 Shift 一样）：点一下 = 下一个音；连点两下 = 锁住，再点解开；按住写 = 按住期间。在键上上下滑换 𝄪 / ♯ / ♭ / 𝄫"><span class="ag"></span><small>升降</small></button>` +
-        `<button class="btn wk half" data-half="1" title="减半（长短基线短一档）：点一下 = 下一个音；连点两下 = 锁住，再点解开；也可以按住写"><span>/2</span><small>减半</small></button>` +
         `<button class="btn wk stack" data-stack="1" title="叠音（和 Shift 一样）：点一下 = 下一个按的音叠到前一个音上；连点两下 = 锁住（叠着写：按已有的音 = 拿掉，最后一个留着）；按住写 = 按住期间。单声乐器的声部叠不了"><span>叠</span><small>叠音</small></button>` +
+        `<button class="btn wk half" data-half="1" title="减半（长短基线短一档）：点一下 = 下一个音；连点两下 = 锁住，再点解开；也可以按住写"><span>/2</span><small>减半</small></button>` +
         `<button class="btn wk" data-cmd="extend" title="拉长一份（${hint("extend")}）"><span>—</span><small>拉长</small></button>` +
         `<button class="btn" data-cmd="backspace" title="退格（${hint("backspace")}）"><svg class="ico"><use href="#backspace"/></svg></button></div>` +
         `<div class="pad-grid"></div>`;
@@ -329,6 +329,7 @@ export class Pad {
     const cell = (id: string, big: string, label: string, title: string) => `<button class="pad-key sym" data-sym="${id}" title="${title}">${big}<small>${label}</small></button>`;
     const items = [
       cell("phrase", `<span class="big">。</span>`, "句号", "句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）"),
+      cell("breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器不受影响；再点一次去掉）"),
       cell("bar", `<span class="big">|</span>`, "小节线", "小节线（弱起 = 写完弱起的音按一下）"),
       cell("rest", `<span class="big">0</span>`, "休止", "休止（长短同基线）"),
       cell("extend", `<span class="big">—</span>`, "拉长", "刚写的音加一份"),
@@ -344,7 +345,7 @@ export class Pad {
       this.symbols = false;   // 一次性：做完回到音键
       if (id === "key" || id === "time" || id === "tempo") this.host.onInsertMark(id);
       else if (id === "staff") this.host.onCommand({ k: "staff" });
-      else this.host.onCommand({ k: id as "phrase" | "bar" | "rest" | "extend" });
+      else this.host.onCommand({ k: id as "phrase" | "breath" | "bar" | "rest" | "extend" });
       this.render();
     });
   }
@@ -368,7 +369,7 @@ export class Pad {
         const k = base + row * this.cols + col, { pitch: p, deg, oct } = ladderAt(sc, k, ht, f), m = midiOf(p);
         const inRange = !!hr && m >= hr.lo && m <= hr.hi;
         this.keys.set(k, p);
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k}" title="${inRange ? `${hr.who}的音域里` : ""}">` +
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k}" title="${inRange ? hr.title ?? `${hr.who}的音域里` : ""}">` +
           `<span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${degLabel(deg)}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p)}</span></button>`);
       }
     }

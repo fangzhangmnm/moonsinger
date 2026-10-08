@@ -64,6 +64,8 @@ let st: EditorState = initState();
 const doc = { stem: defaultStem(), named: false, handle: null as docFile.FileHandle | null, mtime: null as number | null, extras: emptyExtras() as Extras,
   /** 歌库里的家（v0.6.0）：store 身份（`夹/主干.mxl`）；null = 无地（本地文件句柄 / 还没家）。三种家互斥：identifier 优先于 handle。 */
   identifier: null as string | null,
+  /** 首笔安家（v0.6.9，user 2026-10-08「首笔安家做」，照 WeebPaint lazyblank）：歌库里「新建」出来的空谱**没有家、不落盘**，记着要进哪个夹；第一笔编辑才铸身份（homeNow）。空着离开 = 零损失、歌库里不留空壳。 */
+  pendingHome: null as { folder: string } | null,
   saved: { song: st.song as Song, lounge: "" } };
 /** 歌以外、和「改过没存」有关的部分：各角色的名字、谁上场、候选有哪些（候选增删也算改过）+ 录音房的麦克风（增益 / 声像）。 */
 let coverRev = 0;   // 封面图换过几次（封面不在 lounge 里，但也算「改过没存」）
@@ -740,7 +742,7 @@ const dirty = () => st.song !== doc.saved.song || loungeKey() !== doc.saved.loun
 function renderTitle(): void {
   const d = dirty(), name = docName();
   $("docTitle").textContent = `${name}${d ? " •" : ""}`;
-  $("fileBtn").title = `${doc.identifier ? "在歌库里" : doc.handle ? `存在 ${doc.handle.name}` : "还没有家"}（点 = 文件菜单）`;
+  $("fileBtn").title = `${doc.identifier ? "在歌库里" : doc.handle ? `存在 ${doc.handle.name}` : doc.pendingHome ? "新的一首：第一笔写下去就进歌库" : "还没有家"}（点 = 文件菜单）`;
   document.title = `${d ? "• " : ""}${name} · MoonSinger`;
   renderSaveButton();
   renderUndo();
@@ -1487,7 +1489,27 @@ const es = createEditorSession({
   policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS, pushOn: ["exit", "blur", "idle"], idleMs: PUSH_DEBOUNCE_MS },
 });
 /** 内容变了（谱 / 休息室 / 麦克风 / 封面）→ 歌库里的歌告诉 editor-session（autosave 节律）。幂等；1 s 心跳兜底没经过 update() 的改动（休息室 / 录音室直接改 doc.extras 的那些）。 */
-function changed(): void { if (doc.identifier && dirty()) es.markDirty(); }
+function changed(): void { if (doc.identifier && dirty()) es.markDirty(); else if (doc.pendingHome && dirty()) void homeNow(); }
+/** 等着安家的空谱已经有了第一笔 → 先安家再做别的（切歌 / 存 / 新建之前；不然那几笔会当无地稿被问「丢掉？」）。 */
+const homeIfEdited = (): Promise<void> => (doc.pendingHome && dirty() ? homeNow() : Promise.resolve());
+let homing: Promise<void> | null = null;
+/** 首笔安家：铸身份（文件名 = 歌名或默认名，撞名加 -hex4）→ es 接管（首存 mode:"new"）→ 立刻落本地（歌库里马上看得见）。单飞；途中换了歌就作罢。 */
+function homeNow(): Promise<void> {
+  if (homing) return homing;
+  const home = doc.pendingHome; if (!home) return Promise.resolve();
+  homing = (async () => {
+    const store = requireStore(), base = docName();
+    let id = identifiers.join({ folder: home.folder, stem: base, suffix: SONG_SUFFIX });
+    for (let n = 0; n < 50 && (await store.files.occupied(id)); n++) id = identifiers.join({ folder: home.folder, stem: `${base}-${defaultStem().slice(9)}`, suffix: SONG_SUFFIX });
+    if (doc.pendingHome !== home) return;
+    doc.identifier = id; doc.handle = null; doc.mtime = null; doc.stem = stemOfId(id); doc.named = true; doc.pendingHome = null; setActiveIdentifier(id);
+    es.adopted(id, { create: true });
+    try { await es.flushLocal(); deviceKvSet(KV_LAST_DOC, id); diagNote("doc", `home ${id}`); }
+    catch (e) { reportError(e); }   // 身份留着，es 还脏：下一轮 autosave 再试
+    renderTitle();
+  })().finally(() => { homing = null; });
+  return homing;
+}
 es.start();   // autosave 定时器 + 页面隐藏 / pagehide 落盘 + 失焦推云（editor-session 的通用触发点；不调就没有自动存）
 setInterval(() => { changed(); if (doc.identifier) renderTitle(); }, 1000);
 setInterval(() => { if (doc.identifier && es.isPushPending() && isSignedIn() && navigator.onLine) void es.flushAndPush().catch((e) => reportError(e, "warning")); }, PUSH_HEARTBEAT_MS);
@@ -1501,6 +1523,7 @@ function adoptStoreBytes(id: string, bytes: Uint8Array): void {
 const stemOfId = (id: string) => identifiers.parse(id)?.stem ?? id;
 /** 离开现在这首：歌库里的 = 先落盘 + 推（不问，自动存的东西没什么可丢）；无地的 = 改过没存先问。 */
 async function leaveCurrent(what: string): Promise<boolean> {
+  await homeIfEdited();
   if (doc.identifier) { try { await es.flushAndPush(); } catch (e) { reportError(e, "warning"); } return true; }
   return confirmDiscard(what);
 }
@@ -1509,6 +1532,7 @@ async function leaveCurrent(what: string): Promise<boolean> {
  *  库的推路径会拿云端字节和本地字节比对、相同就自愈（lost-response heal），而 open 的新鲜度检查不比字节、直接弹「打开本地 / 云端覆盖本地」——
  *  两边其实一样，白问一次（2026-10-08 user「一直会遇到云端冲突的提示」；test/e2e/sync.mjs ③b 复现）。真分叉 pushAll 不弹面、留脏，照旧由 open 的冲突面问人。 */
 async function openStoreDoc(id: string): Promise<boolean> {
+  await homeIfEdited();
   if (doc.identifier !== id && !doc.identifier && !(await confirmDiscard(`打开「${stemOfId(id)}」`))) return false;
   if (isSignedIn() && navigator.onLine) { try { if ((await requireStore().files.dirty.count()) > 0) await pushDirtyAll(); } catch (e) { reportError(e, "log"); } }
   pendingOpenId = id;
@@ -1520,20 +1544,21 @@ async function openStoreDoc(id: string): Promise<boolean> {
   } catch (e) { reportError(e); return false; }
   finally { pendingOpenId = null; }
 }
-/** 在歌库里新建一首（空谱）并切过去；首存 mode:"new"（撞名不覆盖）→ 身份从此存在、歌库里能看见。 */
+/** 在歌库里新建一首：一张空谱、**不落盘**（首笔安家，照 WeebPaint lazyblank；user 2026-10-08「首笔安家做」）——第一笔编辑才铸身份进歌库（homeNow；首存 mode:"new" 撞名不覆盖）。
+ *  空着离开 = 零损失、歌库里不留空壳；空谱不算「上次开着的歌」（reload 回歌库）。 */
 async function newStoreSong(): Promise<void> {
   attachForUser();
   if (!(await leaveCurrent("新建"))) return;
-  const store = requireStore(), folder = gallery?.currentFolder() ?? "";
-  let id = identifiers.join({ folder, stem: defaultStem(), suffix: SONG_SUFFIX });
-  for (let n = 0; n < 50 && (await store.files.occupied(id)); n++) id = identifiers.join({ folder, stem: defaultStem(), suffix: SONG_SUFFIX });
-  loadDoc(initState().song, { stem: stemOfId(id), named: true, extras: emptyExtras(), handle: null, identifier: id });
-  es.adopted(id, { create: true });
-  try { await es.flushLocal(); deviceKvSet(KV_LAST_DOC, id); info("新的一首（在歌库里）"); }
-  catch (e) { reportError(e); }
+  const folder = gallery?.currentFolder() ?? "";
+  es.release();   // 放下旧身份：空谱没有家，autosave 绝不能把它写进上一首
+  loadDoc(initState().song, { stem: defaultStem(), named: false, extras: emptyExtras(), handle: null, identifier: null });
+  doc.pendingHome = { folder };
+  deviceKvSet(KV_LAST_DOC, null);
+  renderTitle(); info("新的一首（第一笔写下去就进歌库）");
 }
 /** 把手里这首无地的歌放进歌库（文件名沿用；撞名加序号）。 */
 async function saveIntoGallery(): Promise<void> {
+  if (doc.pendingHome) { if (!dirty()) { info("还是空的：写下第一笔就自动进歌库"); return; } await homeNow(); return; }   // 等着安家的空谱：有笔就安家，没笔不塞空壳（WeebPaint「未动过的空白不塞进新库」）
   attachForUser();
   const store = requireStore(), folder = gallery?.currentFolder() ?? "", base = docName();
   let id = identifiers.join({ folder, stem: base, suffix: SONG_SUFFIX });
@@ -1591,7 +1616,7 @@ function ensureGallery(): GalleryHost {
     renameActive,
     pushNow: () => es.forceSaveAndPush().then(renderTitle),
     flushLocal: () => (doc.identifier ? es.flushLocal() : Promise.resolve()),
-    newSong: async () => { await newStoreSong(); if (doc.identifier) gallery!.close(); },
+    newSong: async () => { await newStoreSong(); if (doc.identifier || doc.pendingHome) gallery!.close(); },   // 首笔安家：新建出来的空谱还没身份（pendingHome）也回到谱
     openSettings: () => openSettings(),
     openCloudMenu: () => { void openCloudMenu(); },
     onOpened: () => { closeOffer?.(); closeFinder(); closeStudio(); padWas = !padEl.hidden; showPad(false); updateChrome(); },
@@ -1704,7 +1729,10 @@ async function smartSaveStore(): Promise<void> {
   }
   info(es.isPushPending() ? "存在这台设备上了，云端稍后再推" : before === "clean" ? "云端也是最新的" : "存好了，云端也更新了");
 }
-async function smartSave(): Promise<void> { if (doc.identifier) await smartSaveStore(); else await fileSave(); }
+async function smartSave(): Promise<void> {
+  if (doc.pendingHome) { if (!dirty()) { info("还是空的，没什么可存"); return; } await homeNow(); }   // 空谱诚实回话（WeebPaint blankNothingToSave）；有笔先安家再走歌库的存
+  if (doc.identifier) await smartSaveStore(); else await fileSave();
+}
 $("saveBtn").addEventListener("click", () => { void smartSave(); });
 $("undoBtn").addEventListener("click", () => undoNow());
 $("redoBtn").addEventListener("click", () => redoNow());

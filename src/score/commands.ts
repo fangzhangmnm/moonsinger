@@ -4,11 +4,11 @@ import type { Dir } from "./pitch.ts";
 import {
   type EditorState, writeDegree, writeRest, writeBar, writePhrase, shorter, longer, setTuplet, extend, tapAcc,
   octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward,
-  transposeSel, modulateSel, selectToEdge, tr, toggleStaff } from "./song.ts";
+  transposeSel, modulateSel, selectToEdge, tr, toggleStaff, toggleBreath } from "./song.ts";
 
 export type Command =
   | { k: "degree"; degree: number; dir: Dir }
-  | { k: "rest" } | { k: "bar" } | { k: "phrase" }
+  | { k: "rest" } | { k: "bar" } | { k: "phrase" } | { k: "breath" }   // breath = 光标前那个音切呼吸（pad 符号层；前面不是音 = 原样）
   | { k: "shorter" } | { k: "longer" } | { k: "tuplet" } | { k: "extend" }
   | { k: "acc"; acc: 1 | -1 }
   | { k: "octave"; d: number } | { k: "step"; d: number } | { k: "alter"; d: number }
@@ -24,6 +24,7 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "rest": return writeRest(st);
     case "bar": return writeBar(st);
     case "phrase": return writePhrase(st);
+    case "breath": return toggleBreath(st) ?? st;
     case "shorter": return shorter(st);
     case "longer": return longer(st);
     case "tuplet": return setTuplet(st, st.input.tuplet ? 0 : 3);

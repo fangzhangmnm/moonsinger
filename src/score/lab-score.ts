@@ -9,10 +9,10 @@
 // 开头的休止 Lab 格式表达不了（它有固定的 leadIn），第一版直接丢掉。
 
 import { midiOf } from "./pitch.ts";
-import { type Token, type Hum, type TempoMap, TPQ, effectivePitch, isTimed, timeline } from "./song.ts";
+import { type Token, type Hum, type TempoMap, TPQ, effectivePitch, isTimed, timeline, artOf } from "./song.ts";
 import { MELISMA_MARK, ELISION } from "./lyrics.ts";
 
-export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean; hyph?: boolean }   // hyph = 英文：这个词没完（下一条接着拼）   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
+export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean; hyph?: boolean; before?: "^" | "v" | "O" }   // before = 这个字前面的记号（唱法核心：v = 换一口气，从前一个音末尾偷时间）   // hyph = 英文：这个词没完（下一条接着拼）   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
 export type SingLang = "ja" | "zh" | "en";
 export interface LabScore { SCORE: LabEntry[]; TEXT: string; TEMPO_QUARTER: number; LANG: SingLang }
 
@@ -25,20 +25,28 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
   const eighth = TPQ / 2, tl = timeline(tokens, tempoMap), base = tl[0]?.bpm ?? 90;
   const bpmOf = new Map(tl.map((x) => [x.index, x.bpm]));
   const out: LabEntry[] = [];
+  // 呼吸（2026-10-08，user 拍「月读在那儿换气」）：挂了 breath 的音 → 下一个字前面一个「v」（唱法核心从这个音末尾偷一口气的空当）
+  let breathNext = false;
+  const push = (e: LabEntry) => { if (breathNext) { e.before = "v"; breathNext = false; } out.push(e); };
   tokens.forEach((t, i) => {
     if (!isTimed(t)) return;
+    one(t, i);
+    if (t.kind === "note" && artOf(t).includes("breath")) breathNext = true;
+  });
+  function one(t: Token & { dur: number }, i: number): void {
     const len = (t.dur / eighth) * (base / bpmOf.get(i)!);
     if (t.kind === "rest") { const last = out[out.length - 1]; if (last) last.rest = (last.rest ?? 0) + len; return; }
+    if (t.kind !== "note") return;
     const midi = midiOf(effectivePitch(tokens, i));
     const last = out[out.length - 1];
     // 拖腔（ー / ~）和连音线连着的音（tie）都并进上一个音节：同一个字唱过几个音 / 同一个音连下去
     if ((t.lyric === MELISMA_MARK || t.tie) && last && !last.rest) { last.notes.push([midi, len]); return; }
     const lyric = t.lyric && t.lyric !== MELISMA_MARK ? t.lyric : null;
-    if (!lyric) { out.push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true }); return; }
+    if (!lyric) { push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true }); return; }
     // 一个音上几个音节（「+」连着的，如 だ‿ん）：这个音平分给它们，一个音节一条（user 点头「唱的时候把这个音的时值切成几段，先按平均分」）
     const parts = lyric.split(ELISION).filter(Boolean);
-    parts.forEach((kana, k) => out.push({ kana, notes: [[midi, len / parts.length]], ...(lang === "en" && t.hyph && k === parts.length - 1 ? { hyph: true } : {}) }));
-  });
+    parts.forEach((kana, k) => push({ kana, notes: [[midi, len / parts.length]], ...(lang === "en" && t.hyph && k === parts.length - 1 ? { hyph: true } : {}) }));
+  }
   const TEXT = lang === "en"   // 英文：音节按 hyph 拼回单词、空格隔开（核心自己从 SCORE 拼词，TEXT 只给人看 / 日志）
     ? out.map((e) => e.kana + (e.hyph ? "" : " ")).join("").trim()
     : out.map((e, k) => e.kana + (e.rest ? "、" : k === out.length - 1 ? "。" : "")).join("");

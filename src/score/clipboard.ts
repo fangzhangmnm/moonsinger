@@ -5,7 +5,7 @@
 //   连音线 / 延音：^ 前缀 = 连着前一个音（tie）；0 = 休止（时值同音）；- = 前一个音 / 休止再加一个四分（简谱的横线）；| = 小节线；单独一个 , = 句（换气 / 换行）；
 //   记号：[1=G] 调号、[3/4] 拍号、[T=90] 速度；歌词里的空格 / 斜杠不许（歌词只认到下一个空格）。
 //   写不出的时值（连音 / 奇怪的 tick 数）写成 (tick)：1(560)。
-import { type EditorState, type Token, type NoteTok, type Timed, tr, withTrack, headLen, keyAt, isMark, TPQ, allPitches, withPitches } from "./song.ts";
+import { type Dyn, type EditorState, type Token, type NoteTok, type Timed, tr, withTrack, headLen, keyAt, isMark, TPQ, allPitches, withPitches } from "./song.ts";
 import { type Pitch, STEPS, type Step, stepIndex, diatonicIndex, tonicStepIndex, keyAlter, KEY_LABEL } from "./pitch.ts";
 
 /** 选中的那一段（没选中 = null）。原样切片，id 原样（贴的时候重编）。 */
@@ -66,6 +66,7 @@ export function toJianpu(toks: Token[], fifths: number): string {
     if (t.kind === "time") { out.push(`[${t.beats}/${t.beatType}]`); continue; }
     if (t.kind === "tempo") { out.push(`[T=${t.bpm}]`); continue; }
     if (t.kind === "phrase") { out.push(","); continue; }   // 句 = 单独一个逗号（换气）
+    if (t.kind === "dyn") { out.push(`[${t.value}]`); continue; }   // 力度 = [mf]（演奏法不进简谱文字；app 内剪贴板带着原 token）
     const suf = durText(t.dur), lead = suf.startsWith(" -") ? "" : suf, tail = suf.startsWith(" -") ? suf : "";
     if (t.kind === "rest") { out.push(`0${lead}${tail}`); continue; }
     const body = t.pitch ? allPitches(t).map((pp) => { const { degree, shift, acc } = toDegree(pp, f); return `${accText(acc)}${degree}${octText(shift)}`; }).join("&") : "x";   // 叠音 = 1&3&5（从高到低）
@@ -91,6 +92,8 @@ export function fromJianpu(text: string, fifths: number): Token[] | null {
     if (m) { out.push({ kind: "time", id: id++, beats: Number(m[1]), beatType: Number(m[2]) }); continue; }
     m = /^\[T=(\d+)\]$/.exec(w);
     if (m) { out.push({ kind: "tempo", id: id++, bpm: Number(m[1]) }); continue; }
+    m = /^\[(pp|p|mp|mf|f|ff)\]$/.exec(w);
+    if (m) { out.push({ kind: "dyn", id: id++, value: m[1] as Dyn }); continue; }
     m = /^(\^?)((?:[#b]*[0-7x]['’,]*)(?:&[#b]*[1-7]['’,]*)*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w);
     if (!m) return null;
     const [, tie, body, unders, dot, ticks, lyric, hyph] = m;

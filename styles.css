@@ -505,6 +505,13 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .sel-bar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0, 0, 0, .08); white-space: nowrap; max-width: calc(100% - 16px); overflow-x: auto; }
 .sel-bar .btn { height: 30px; min-width: 30px; padding: 0 8px; font-size: 13px; }
 .sel-bar .sel-n { color: var(--muted); font-size: 12px; padding: 0 4px; }
+/* 修（2026-10-08）：演奏法开关（都有 = 亮，有的有 = 虚线半亮）+ 力度字（Bravura 字形） */
+.sel-bar .smufl { font-family: Bravura; font-size: 20px; line-height: 1; display: inline-block; transform: translateY(2px); }
+.sel-bar .fix-art { gap: 4px; }
+.sel-bar .fix-art.is-some { border-style: dashed; border-color: #b8cde8; color: var(--accent); }
+.sel-bar .fix-dyn { padding: 0 6px; }
+.sel-bar .fix-dyn .smufl { font-size: 26px; transform: translateY(6px); }
+.sel-bar .sel-gap { flex: none; width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 
 /* 句（换气记号）、隐藏的纸 */
 .staff-svg .phrase-mark { fill: var(--muted); }
