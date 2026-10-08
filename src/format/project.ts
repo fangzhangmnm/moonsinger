@@ -199,7 +199,7 @@ export function activeOrDefaultCandidate(extras: Extras, role: string): Json | n
   return cands(r).find((x) => x.id === r.active) ?? null;
 }
 /** 现在上场的候选（乐器）叫什么——只给角色卡里看，不上谱。 */
-export function activeCandidateName(extras: Extras, role: string): string | null { const c = activeCandidate(extras, role); return c ? String(c.name ?? "") : null; }
+export function activeCandidateName(extras: Extras, role: string): string | null { const c = activeOrDefaultCandidate(extras, role); return c ? String(c.name ?? "") : null; }   // 没有角色快照 = 默认的月读（和 activeInstrument 一致；新歌的歌手牌 / 录音室别写「没人上场」）
 /** 上场的那位的乐器（按引擎分）；没有角色快照 = 默认的月读完整版。 */
 export function activeInstrument(extras: Extras, role: string): InstrumentV2 | null {
   if (!extras.lounge[role]) return { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum: "n" };

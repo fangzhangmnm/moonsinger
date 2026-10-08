@@ -1,16 +1,33 @@
 # MoonSinger 挑乐器数据（2026-10-07）
 
-**现行版本 = v8**（2026-10-08）。v1–v7 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v9。
+**现行版本 = v10**（2026-10-08）。v1–v9 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v11。
 
 > 由 `scripts/build_export.py` 生成，别手改；改数据改 `data/` 再重跑。规格 = PWAProjects 的 webpaint editor v1 prototyping 会话转述的 user 拍板 + 本仓会话 user 原话（见脚本头注释）。
 
 | 文件 | 是什么 |
 |---|---|
-| `instruments-v8.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
-| `gm-map-v8.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
-| `instrument-icons-20261008-v8.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
-| `icon-credits-v8.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
-| `LICENSES-chosen-v8.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+| `instruments-v10.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
+| `gm-map-v10.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
+| `instrument-icons-20261008-v10.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
+| `icon-credits-v10.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
+| `LICENSES-chosen-v10.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+
+## v9 → v10 改了什么（只改风的认领数据，结构不变）
+
+起因：user「鼓啊吉他啊不同音色和演奏方法也都分开了评分可以吗，会不会和G编号冲突？」。不冲突：认领表的键 = 类（音色 / 鼓件）+ 号，导出里是 (bank, program, note)；GM 给了单独号的音色 / 演奏法（29 闷音、32 泛音、45 震音、46 拨弦、37 / 38 击勾贝斯、42 / 46 闭开踩镲、37 鼓边、80 / 81 闷开三角铁……）本来就各是一个单位。GM 没单独号的演奏法（扫弦 / 指弹、鼓刷、808 鼓组）没有单位，要评得走 GS 的别的 bank / 鼓组。
+- 吉他 / 贝斯逐个重判（AI 判）：26 钢弦木吉他进 🎸 摇滚流行、🧸 童话治愈 ★；28 清音电吉他进 ⚡ 电音动漫、🤠 西部 ★；33 原声贝斯进 🤠 西部 ★；34 指弹电贝斯进 🧸 童话治愈、⚡ 电音动漫 ★；35 拨片贝斯进 🤘 交响金属 ★★；36 无品贝斯进 🎷 爵士 ★。
+- 鼓件逐个重判：🎷 爵士风补鼓（51 Ride ★★★、44 Pedal Hi-Hat ★★、38 Acoustic Snare ★★，35 / 37 / 53 / 59 ★）；💃 拉丁风 37 Side Stick ★★（波萨诺瓦）；💾 合成器风 36 / 39 / 42 ★★、56 Cowbell ★（鼓机）；⚡ 电音动漫 40 / 46 ★★、49 ★；🎮 8-bit 40 ★；🤘 交响金属 52 ★；🎻 贝多风（交响乐）35 / 49 ★；🎸 摇滚流行的筒鼓拉开档次：48 / 47 / 43 留 ★★，50 / 45 / 41 降 ★。
+
+## v8 → v9 改了什么（只改风的认领数据，结构不变）
+
+起因：user「评级和是否入选能不能精确到合成器里面的子音色」「每个不同的音色都单列单评级」「音色为单位而不是家族一把捞」。**风认领的单位是 GM 音色**：gm-map 本尊行的 `styles[]` 就是这个音色自己的入选和承重；instruments 里概念的 `styles` 是聚合出来的（同一概念几个号取最大），只说明「这个乐器属于哪些风」，**列风的成员要用 gm-map 行**，不要按概念展开全部提供者。
+- 合成器类音色逐个重判（AI 判，理由写在源仓 `data/〇〇风_AI.tsv`）：
+  - 💾 合成器风：6 EP2、63 SynthBrass 1 → ★★★；90 Pad 2 (warm) ★★★ → ★★；99 FX 3 (crystal) ★ → ★★；移出 97 FX 1 (rain)、102 FX 6 (goblins)。
+  - 🌿 新世纪风：新增 95 Pad 7 (halo)、99 FX 3 (crystal)、100 FX 4 (atmosphere) ★★；84 Lead 4 (chiff)、51 SynthStrings 1、64 SynthBrass 2、93 Pad 5 (bowed)、97 FX 1 (rain)、98 FX 2 (soundtrack)、101 FX 5 (brightness) ★。89 Pad 1 (new age)、90 Pad 2 (warm) 不变（★★★）。
+  - 🌌 太空风：新增 64 SynthBrass 2 ★★；51 SynthStrings 1、86 Lead 6 (voice)、93 Pad 5 (bowed) ★。
+  - 🧸 童话治愈风：新增 99 FX 3 (crystal) ★★；89 Pad 1 (new age)、93 Pad 5 (bowed) ★。
+  - ⚡ 电音动漫歌风：新增 63 SynthBrass 1、85 Lead 5 (charang)、96 Pad 8 (sweep)、104 FX 8 (sci-fi)、120 Reverse Cymbal ★。
+- 风里排序（建议）：承重降序 → 这个音色的 `year` → GM 号（user「每个风里面按照承重排」）。
 
 ## v7 → v8 改了什么（修 sampleKey 的值、加两个字段；概念、图标和 v7 一样）
 

@@ -1,5 +1,5 @@
 {
- "v": 8,
+ "v": 10,
  "date": "2026-10-08",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效）。id = Wikidata QID（没有用 x: 本地 id）；ids 束里 gm 只放本尊，平替在 substitutes[]（按 basis 强弱 + 分类号同到的位数排）。year = 这个概念的声音第一次能被听见；lineageYear = 算上原文点名的前身。fundamentalRank 一律 null，归 user。AI 判的字段：musicxml、styles、技法号挂母乐器、平替 family / 自动、部分 hs 和中日名。",
@@ -741,12 +741,12 @@
    ],
    "styles": [
     {
-     "tag": "jazz",
+     "tag": "synth",
      "ear": "common",
-     "weight": 2
+     "weight": 3
     },
     {
-     "tag": "synth",
+     "tag": "jazz",
      "ear": "common",
      "weight": 2
     }
@@ -2076,6 +2076,11 @@
      "weight": 2
     },
     {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "hawaii",
      "ear": "common",
      "weight": 1
@@ -2083,6 +2088,11 @@
     {
      "tag": "celtic",
      "ear": "western",
+     "weight": 1
+    },
+    {
+     "tag": "rock-pop",
+     "ear": "common",
      "weight": 1
     }
    ],
@@ -2251,6 +2261,11 @@
      "tag": "anime-electro",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "western",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2334,6 +2349,11 @@
      "tag": "beethoven",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "western",
+     "ear": "common",
+     "weight": 1
     },
     {
      "tag": "paris",
@@ -2435,6 +2455,16 @@
      "tag": "symphonic-metal",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -2492,6 +2522,11 @@
    "styles": [
     {
      "tag": "rock-pop",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "jazz",
      "ear": "common",
      "weight": 1
     }
@@ -3121,6 +3156,16 @@
      "tag": "synth",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -3997,17 +4042,7 @@
      "weight": 3
     },
     {
-     "tag": "eight-bit",
-     "ear": "common",
-     "weight": 3
-    },
-    {
      "tag": "anime-electro",
-     "ear": "common",
-     "weight": 3
-    },
-    {
-     "tag": "fairground",
      "ear": "common",
      "weight": 3
     },
@@ -4022,9 +4057,19 @@
      "weight": 3
     },
     {
+     "tag": "eight-bit",
+     "ear": "common",
+     "weight": 3
+    },
+    {
+     "tag": "fairground",
+     "ear": "common",
+     "weight": 3
+    },
+    {
      "tag": "fairytale",
      "ear": "common",
-     "weight": 1
+     "weight": 2
     }
    ],
    "icon": {
@@ -6233,6 +6278,11 @@
      "tag": "synth",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -6879,8 +6929,23 @@
      "weight": 2
     },
     {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "andes",
      "ear": "western",
+     "weight": 1
+    },
+    {
+     "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "jazz",
+     "ear": "common",
      "weight": 1
     }
    ],
@@ -6959,6 +7024,16 @@
      "weight": 3
     },
     {
+     "tag": "latin",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "jazz",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "beethoven-band",
      "ear": "common",
      "weight": 2
@@ -6974,8 +7049,18 @@
      "weight": 2
     },
     {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "soviet",
      "ear": "zh",
+     "weight": 1
+    },
+    {
+     "tag": "eight-bit",
+     "ear": "common",
      "weight": 1
     }
    ],
@@ -7033,6 +7118,11 @@
     "percussion"
    ],
    "styles": [
+    {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 2
+    },
     {
      "tag": "rock-pop",
      "ear": "common",
@@ -7184,7 +7274,17 @@
      "weight": 3
     },
     {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "anime-electro",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "jazz",
      "ear": "common",
      "weight": 2
     }
@@ -7263,6 +7363,16 @@
      "tag": "symphonic-metal",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -7324,6 +7434,11 @@
     "percussion"
    ],
    "styles": [
+    {
+     "tag": "jazz",
+     "ear": "common",
+     "weight": 3
+    },
     {
      "tag": "rock-pop",
      "ear": "common",
@@ -7389,6 +7504,11 @@
      "ear": "name",
      "weight": 1,
      "as": "Q7206087"
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {
@@ -7555,6 +7675,11 @@
      "tag": "latin",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 1
     }
    ],
    "icon": {

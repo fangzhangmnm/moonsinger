@@ -43,7 +43,7 @@ export interface ScoreViewHost {
   /** 要画的声部（隐藏的不在里面；顺序 = 总谱从上到下）。 */
   parts(): PartView[];
   /** 歌手牌：某张纸第一行某条谱左边的声部名点了（那条已经成了光标所在的 track）。 */
-  onPart?(paper: string, part: string): void;
+  onPart?(paper: string, part: string, at?: { left: number; top: number; right: number; bottom: number }): void;   // at = 歌手牌在屏幕上的框（轨的小卡挨着它开）
   /** 纸顶「⋯」点了（纸的菜单）；扳手旁的「＋」点了（新的纸）；歌名左边「‹ ›」点了（上一张 / 下一张纸）。 */
   onPaperMenu?(paper: string): void;
   onAddPaper?(): void;
@@ -190,6 +190,11 @@ export class ScoreView {
   }
 
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
+  /** 纸面上的框 → 屏幕坐标（local 的反过来）。 */
+  private clientBox(b: { x: number; y: number; w: number; h: number }): { left: number; top: number; right: number; bottom: number } {
+    const r = this.sheet.getBoundingClientRect(), ox = this.layout?.pageX.left ?? 0, z = this.zoom;
+    return { left: r.left + (b.x + ox) * z, top: r.top + b.y * z, right: r.left + (b.x + b.w + ox) * z, bottom: r.top + (b.y + b.h) * z };
+  }
   private local(e: { clientX: number; clientY: number }): { x: number; y: number } {
     const r = this.sheet.getBoundingClientRect(), ox = this.layout?.pageX.left ?? 0;
     return { x: (e.clientX - r.left) / this.zoom - ox, y: (e.clientY - r.top) / this.zoom };
@@ -315,7 +320,7 @@ export class ScoreView {
     if (this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌
     const pt = L.parts.find((b) => this.inBox(b, x, y));
-    if (pt) { this.host.set(setFocus(this.host.get(), pt.paper, pt.part)); this.host.onPart?.(pt.paper, pt.part); return true; }
+    if (pt) { const at = this.clientBox(pt); this.host.set(setFocus(this.host.get(), pt.paper, pt.part)); this.host.onPart?.(pt.paper, pt.part, at); return true; }
     // 0¼. 纸面最上面的歌名（可不填）
     if (this.inBox(L.title, x, y)) { this.title.openNow(); this.host.focus?.("text"); return true; }
     // 0⅜. 纸顶：「⋯」（纸的菜单）、曲段名（就地改）；最底下「＋ 新的纸」

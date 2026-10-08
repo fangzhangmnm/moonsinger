@@ -1,31 +1,31 @@
 // 生成物：node scripts/gen-instruments.mjs（源 = ../20260813 MyLlamaReborn/20261007 音乐史/export/moonsinger/，拷在 vendor/instruments/）。勿手改。
 // 找人视图的目录：乐器概念（百科，id 束）+ GM 映射 + 图标。打开视图时才 fetch，到手先对这里钉的 sha256。
-export const INSTRUMENTS_VERSION = 8;
+export const INSTRUMENTS_VERSION = 10;
 export const INSTRUMENT_FILES = {
  "concepts": {
-  "file": "vendor/instruments/instruments-v8.json",
-  "bytes": 226463,
-  "sha256": "a7e8916def4c21bfd6e0a4521b74d27eff1b705637544bb8ba4449a46dd3b195"
+  "file": "vendor/instruments/instruments-v10.json",
+  "bytes": 228355,
+  "sha256": "df1c5185b540e751ff1a071aa22bd35f5f0b578c01e00cfb93be59d10503cc6e"
  },
  "gmMap": {
-  "file": "vendor/instruments/gm-map-v8.json",
-  "bytes": 117735,
-  "sha256": "aa1bd69273f6680686a02373187c7840595cfe820de936cdd1ba10d9092f1df9"
+  "file": "vendor/instruments/gm-map-v10.json",
+  "bytes": 121391,
+  "sha256": "c959b6aaeea7419c081b67b827e04dab03ca217eec5ec540390e8609464a1f32"
  },
  "icons": {
-  "file": "vendor/instruments/instrument-icons-20261008-v8.svg",
-  "bytes": 139012,
-  "sha256": "c5a330a21e577f6b944f58ed4a994c99fa70f4ab3ef31f3d44bcdb769aa580e2"
+  "file": "vendor/instruments/instrument-icons-20261008-v10.svg",
+  "bytes": 139014,
+  "sha256": "964f057af8aa54e0075478931f5fdae5c79cddd3228189c604f8bd1cb078b5f3"
  },
  "iconCredits": {
-  "file": "vendor/instruments/icon-credits-v8.json",
-  "bytes": 20668,
-  "sha256": "25df29051c595a3e05ecb8a29b93b4216cf96f6401c985b03571dcc60a3d0c9c"
+  "file": "vendor/instruments/icon-credits-v10.json",
+  "bytes": 20670,
+  "sha256": "64e36d0f5fcc1c2377357b5851f341205f6c9c5bcd0f716e830a742e059ca6a0"
  },
  "licenses": {
-  "file": "vendor/instruments/LICENSES-chosen-v8.md",
-  "bytes": 145789,
-  "sha256": "b7d00354e3f354dfa1e660b41c8895bf50b8e9b54326401c831ba0649f1e8ee0"
+  "file": "vendor/instruments/LICENSES-chosen-v10.md",
+  "bytes": 145790,
+  "sha256": "562d15a988fd1c6d7d2f0b09d93081880424162ef0d42381c14b171bf1439497"
  }
 } as const;
 /** 图标署名（第三方图标，随 app vendor；设置里显示）。modified = 派生图标（--tile）改了什么（CC-BY 要求注明改动；v4 起）。 */

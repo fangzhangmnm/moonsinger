@@ -38,8 +38,11 @@ describe("按曲风：成员 / 星级按音色", () => {
     const na = groups.find((g) => g.id === "new-age")!;
     const synthId = na.items.find((x) => x.preset?.gmNumber === 89)!.concept.id;
     const synth = na.items.filter((e) => e.concept.id === synthId);
-    eq(synth.map((e) => e.preset?.gmNumber).join(","), "90,89", "同是 ★★★：Pad 2（warm，1974）比 Pad 1（new age，1987）早");
-    assert(synth.every((e) => e.weight === 3), "Pad 1 / Pad 2 在新世纪风都是 ★★★");
+    const claims = [...cat.gmSelf.values()].filter((r) => r.concept === synthId && r.styles?.some((s) => s.tag === "new-age"));
+    eq(synth.map((e) => e.preset?.gmNumber).sort().join(","), claims.map((r) => r.gmNumber).sort().join(","), "合成器名下 = 只有认领了新世纪风的那几个音色");
+    assert(synth.length < [...cat.gmSelf.values()].filter((r) => r.concept === synthId).length, "不是合成器名下全部音色");
+    assert(synth.every((e) => e.weight === e.preset!.styles!.find((s) => s.tag === "new-age")!.weight), "星级 = 这个音色自己的");
+    eq(synth.filter((e) => e.weight === 3).map((e) => e.preset?.gmNumber).join(","), "90,89", "同是 ★★★：Pad 2（warm，1974）比 Pad 1（new age，1987）早");
     const rowsClaiming = [...cat.gmSelf.values()].filter((r) => r.styles?.some((s) => s.tag === "new-age")).length;
     eq(na.items.filter((e) => e.preset).length, rowsClaiming, "音色行数 = 认领了这种风的本尊行数");
   });

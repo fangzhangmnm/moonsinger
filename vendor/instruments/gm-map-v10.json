@@ -1,5 +1,5 @@
 {
- "v": 8,
+ "v": 10,
  "date": "2026-10-08",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ② GM 映射：一行 = 一个 GM 号 → 一个概念。relation = self（本尊：这个号就是这个概念，175 个号每个恰好一条 primary: true；多重认领的另加 primary: false）/ substitute（平替：这个号能拿来顶这个概念，basis 见 defs）。program 从 0 起；鼓件 bank 128、program 0、note = MIDI 键号。musicxmlSound = 这个号自己最贴的 sound id。",
@@ -607,7 +607,7 @@
     {
      "tag": "synth",
      "ear": "common",
-     "weight": 2
+     "weight": 3
     }
    ]
   },
@@ -1190,6 +1190,11 @@
      "weight": 3
     },
     {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "paris",
      "ear": "western",
      "weight": 2
@@ -1202,6 +1207,11 @@
     {
      "tag": "celtic",
      "ear": "western",
+     "weight": 1
+    },
+    {
+     "tag": "rock-pop",
+     "ear": "common",
      "weight": 1
     },
     {
@@ -1257,6 +1267,16 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "western",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -1385,6 +1405,11 @@
      "weight": 3
     },
     {
+     "tag": "western",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "paris",
      "ear": "western",
      "weight": 1
@@ -1423,6 +1448,16 @@
      "weight": 3
     },
     {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "symphonic-metal",
      "ear": "common",
      "weight": 2
@@ -1454,6 +1489,11 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 2
     }
    ]
   },
@@ -1473,6 +1513,11 @@
    "styles": [
     {
      "tag": "rock-pop",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "jazz",
      "ear": "common",
      "weight": 1
     }
@@ -1920,6 +1965,16 @@
      "tag": "synth",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -2317,7 +2372,12 @@
     {
      "tag": "synth",
      "ear": "common",
-     "weight": 2
+     "weight": 3
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -2348,6 +2408,16 @@
    "styles": [
     {
      "tag": "synth",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "space",
      "ear": "common",
      "weight": 2
     }
@@ -2941,6 +3011,11 @@
      "tag": "synth",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -2964,6 +3039,11 @@
      "tag": "synth",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -2985,6 +3065,11 @@
    "styles": [
     {
      "tag": "synth",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "space",
      "ear": "common",
      "weight": 1
     }
@@ -3073,6 +3158,11 @@
      "tag": "anime-electro",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -3094,7 +3184,7 @@
     {
      "tag": "synth",
      "ear": "common",
-     "weight": 3
+     "weight": 2
     },
     {
      "tag": "new-age",
@@ -3193,6 +3283,21 @@
      "tag": "synth",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "space",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "fairytale",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -3246,6 +3351,11 @@
      "weight": 1
     },
     {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "space",
      "ear": "common",
      "weight": 3
@@ -3276,6 +3386,11 @@
      "tag": "space",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -3296,7 +3411,7 @@
    "imitates": "磁带延迟（回声）",
    "styles": [
     {
-     "tag": "synth",
+     "tag": "new-age",
      "ear": "common",
      "weight": 1
     }
@@ -3320,6 +3435,11 @@
    "styles": [
     {
      "tag": "synth",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "new-age",
      "ear": "common",
      "weight": 1
     },
@@ -3349,10 +3469,20 @@
     {
      "tag": "synth",
      "ear": "common",
-     "weight": 1
+     "weight": 2
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "space",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "fairytale",
      "ear": "common",
      "weight": 2
     }
@@ -3378,6 +3508,11 @@
      "tag": "synth",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "space",
@@ -3406,6 +3541,11 @@
      "tag": "synth",
      "ear": "common",
      "weight": 1
+    },
+    {
+     "tag": "new-age",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -3424,11 +3564,6 @@
    "musicxmlSound": "synth.effects.goblins",
    "lineageYear": 1955,
    "styles": [
-    {
-     "tag": "synth",
-     "ear": "common",
-     "weight": 1
-    },
     {
      "tag": "space",
      "ear": "common",
@@ -3487,6 +3622,11 @@
      "tag": "space",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -4000,6 +4140,11 @@
    "styles": [
     {
      "tag": "synth",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "anime-electro",
      "ear": "common",
      "weight": 1
     }
@@ -4527,6 +4672,16 @@
      "weight": 1
     },
     {
+     "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "jazz",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "symphonic-metal",
      "ear": "common",
      "weight": 3
@@ -4552,6 +4707,11 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "anime-electro",
@@ -4583,6 +4743,16 @@
    "styles": [
     {
      "tag": "rock-pop",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "latin",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "jazz",
      "ear": "common",
      "weight": 1
     }
@@ -4625,6 +4795,11 @@
      "weight": 1
     },
     {
+     "tag": "jazz",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "symphonic-metal",
      "ear": "common",
      "weight": 2
@@ -4652,6 +4827,11 @@
      "weight": 1
     },
     {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "anime-electro",
      "ear": "common",
      "weight": 1
@@ -4677,6 +4857,16 @@
      "tag": "synth",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "eight-bit",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -4698,7 +4888,7 @@
     {
      "tag": "rock-pop",
      "ear": "common",
-     "weight": 2
+     "weight": 1
     }
    ]
   },
@@ -4721,6 +4911,11 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 3
+    },
+    {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 2
     },
     {
      "tag": "anime-electro",
@@ -4770,6 +4965,11 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "jazz",
+     "ear": "common",
+     "weight": 2
     }
    ]
   },
@@ -4791,7 +4991,7 @@
     {
      "tag": "rock-pop",
      "ear": "common",
-     "weight": 2
+     "weight": 1
     }
    ]
   },
@@ -4812,6 +5012,11 @@
    "styles": [
     {
      "tag": "rock-pop",
+     "ear": "common",
+     "weight": 2
+    },
+    {
+     "tag": "anime-electro",
      "ear": "common",
      "weight": 2
     }
@@ -4892,6 +5097,16 @@
      "weight": 2
     },
     {
+     "tag": "anime-electro",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "beethoven",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "symphonic-metal",
      "ear": "common",
      "weight": 2
@@ -4916,7 +5131,7 @@
     {
      "tag": "rock-pop",
      "ear": "common",
-     "weight": 2
+     "weight": 1
     }
    ]
   },
@@ -4939,6 +5154,11 @@
      "tag": "rock-pop",
      "ear": "common",
      "weight": 2
+    },
+    {
+     "tag": "jazz",
+     "ear": "common",
+     "weight": 3
     }
    ]
   },
@@ -4967,6 +5187,11 @@
      "ear": "name",
      "weight": 1,
      "as": "Q7206087"
+    },
+    {
+     "tag": "symphonic-metal",
+     "ear": "common",
+     "weight": 1
     }
    ]
   },
@@ -4987,6 +5212,11 @@
    "styles": [
     {
      "tag": "rock-pop",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "jazz",
      "ear": "common",
      "weight": 1
     }
@@ -5057,6 +5287,11 @@
    "musicxmlSound": "metal.bells.cowbell",
    "styles": [
     {
+     "tag": "synth",
+     "ear": "common",
+     "weight": 1
+    },
+    {
      "tag": "latin",
      "ear": "common",
      "weight": 2
@@ -5124,6 +5359,11 @@
    "styles": [
     {
      "tag": "rock-pop",
+     "ear": "common",
+     "weight": 1
+    },
+    {
+     "tag": "jazz",
      "ear": "common",
      "weight": 1
     }

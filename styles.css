@@ -64,7 +64,6 @@ button, input, select { font: inherit; color: inherit; }
 /* 歌手牌：第一行谱号左边的声部名 */
 .staff-svg .part-name { fill: var(--ink); font-weight: 600; cursor: pointer; }
 .staff-svg .part-name.empty { fill: var(--muted); font-weight: 400; }
-.part-card .part-sec { font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
 .bar .title { font-weight: 600; letter-spacing: .02em; }
 .bar .ver { color: var(--muted); font-size: 12px; }
 .bar .spacer { flex: 1; }
@@ -83,7 +82,7 @@ button, input, select { font: inherit; color: inherit; }
    谱区 / 找人视图都占 main，pad 永远占 pad；节点顺序随便，位置由这里钉死。横屏 main | pad，竖屏 main 上 pad 下；pad 收起 = 那一列 / 行消失。 */
 #stage { min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr); grid-template-areas: "main pad"; }
 #stage:has(.pad-panel[hidden]) { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main"; }
-.score, .finder, .studio { grid-area: main; }
+.score, .finder, .studio, .inst-page { grid-area: main; }
 .pad-panel { grid-area: pad; }
 .score { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; outline: none; background: var(--panel);
   -webkit-overflow-scrolling: touch; touch-action: pan-y; }
@@ -344,11 +343,10 @@ button, input, select { font: inherit; color: inherit; }
 .settings-card .btn.cand:has(small) { flex-direction: column; height: auto; padding: 6px 12px; gap: 2px; }
 .pad-tools .btn.lock small { color: rgba(255, 255, 255, .85); }   /* /2 锁住时小字也看得见 */
 /* 角色卡：按功能的下拉 + 谱上写的名字（可改） */
-.part-card .role-sel { width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 0 8px; font-size: 15px; color: var(--ink); margin-bottom: 6px; }
-.part-card .role-name { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
-.part-card .role-in { flex: 1; min-width: 0; height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 10px; font-size: 15px; color: var(--ink); -webkit-user-select: text; user-select: text; }
-.part-card { max-height: calc(100dvh - 40px); overflow-y: auto; }
-.part-card .role-sound { font-size: 11px; color: var(--muted); margin: -2px 0 6px; }
+.inst-page .role-sel { width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 0 8px; font-size: 15px; color: var(--ink); margin-bottom: 6px; }
+.inst-page .role-name { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.inst-page .role-in { flex: 1; min-width: 0; height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 10px; font-size: 15px; color: var(--ink); -webkit-user-select: text; user-select: text; }
+.inst-page .role-sound { font-size: 11px; color: var(--muted); margin: -2px 0 6px; }
 /* 作词 / 作曲：标题下面靠右 */
 .staff-svg .credits { fill: var(--ink); cursor: pointer; }
 /* 歌词框左边的「合」：这个字并进前一个音（回头改用） */
@@ -532,3 +530,44 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 
 /* 撤销 / 重做在顶栏中间；窄屏（手机）把录音室钮收进设置（顶栏放不下 10 个钮） */
 @media (max-width: 480px) { #studioBtn { display: none; } }
+
+/* 声部的设置分两处（2026-10-08 by Claude Opus 5.5；user「乐器设置和轨设置视觉上分开来…是否是弹窗的模态。还是别的更好？你判断一下」）：
+   轨 = 歌手牌旁边的非模态小卡（没有遮罩、谱照常看得见）；乐器 = 全屏一页（占 #stage 的 main，pad 留在旁边只弹不写，改了马上能试） */
+.track-card { position: fixed; z-index: var(--z-sheet); width: min(300px, calc(100vw - 16px)); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, .16); padding: 8px; }
+.tc-inst { display: flex; align-items: center; gap: 8px; width: 100%; border: 1px solid #b8cde8; background: var(--accent-soft); border-radius: 9px; padding: 8px 10px; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
+.tc-inst .tc-l { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tc-inst b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tc-inst small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tc-inst .tc-go { flex: none; font-size: 13px; font-weight: 600; color: var(--accent); }
+.tc-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: center; padding: 10px 4px 8px; }
+.tc-k { font-size: 12px; color: var(--muted); }
+.tc-v { display: flex; flex-wrap: wrap; gap: 6px; }
+.tc-v .btn { height: 32px; padding: 0 12px; }
+.tc-foot { display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid var(--line); padding: 8px 4px 2px; }
+.tc-foot .btn { height: 32px; padding: 0 10px; font-size: 13px; }
+.inst-page { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
+.inst-page[hidden] { display: none; }
+.ip-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
+.ip-title { font-weight: 600; white-space: nowrap; }
+.ip-part { min-width: 0; max-width: 50%; height: 32px; border: 1px solid var(--line); border-radius: 7px; background: #fff; font-size: 14px; color: var(--ink); }
+.ip-part-one { min-width: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ip-gap { flex: 1; }
+@media (max-width: 560px) { .ip-pad span { display: none; } }
+.ip-body { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 12px; }
+.ip-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 12px; align-items: start; max-width: 1100px; margin: 0 auto; }
+.ip-card { min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; }
+.ip-card h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.ip-card h3 small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.ip-how { grid-column: 1 / -1; }
+.ip-cands { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ip-sub { font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+.ip-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.ip-note { font-size: 12px; line-height: 1.45; color: var(--muted); margin-top: 8px; }
+.ip-picker { margin-top: 10px; padding: 10px; border: 1px dashed var(--line); border-radius: 9px; }
+.ip-picker .ip-sub { margin-top: 0; }
+.ip-picker .ip-btns { margin-top: 8px; }
+.ip-grid { display: grid; grid-template-columns: 4.5em minmax(0, 1fr); gap: 14px 12px; align-items: start; }
+.ip-k { font-size: 13px; color: var(--muted); padding-top: 9px; }
+.ip-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ip-val { min-width: 4.2em; font-size: 15px; }
+.ip-v .ip-note { margin-top: 4px; }

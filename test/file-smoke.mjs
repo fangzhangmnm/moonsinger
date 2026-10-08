@@ -79,8 +79,13 @@ check((await p.textContent(".notice-error .notice-text")).includes("还没有人
 // 歌手牌：点了选月读 → 不再是未选角
 await p.click(".notice-error .dismiss");
 const pn = await p.$eval("#score text.part-name", (t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
-await p.mouse.click(pn.x, pn.y); await p.waitForSelector(".offer .part-card");
-await p.click('.offer [data-v="cand:c1"]'); await p.selectOption("#roleSel", "voice.soprano|Soprano"); await p.click('.offer [data-v="close"]');
+await p.mouse.click(pn.x, pn.y); await p.waitForSelector(".track-card");
+// 2026-10-08 声部设置分两处：轨 = 歌手牌旁边的非模态小卡（没有遮罩、谱照常看得见）；乐器 = 全屏一页（pad 留着只弹不写）
+check(!(await p.$(".offer")) && !!(await p.$('.track-card [data-v="hide"]')) && !(await p.$('.track-card [data-v^="cand:"]')), "点角色名 = 轨的小卡（非模态，只有显示 / 出声 / 谱表；乐器的东西不在这）");
+await p.click('.track-card [data-v="inst"]'); await p.waitForSelector(".inst-page:not([hidden])");
+check(!(await p.$(".track-card")) && (await p.$eval("#score", (s) => s.closest("[hidden]") !== null || s.hidden)), "小卡里「乐器 ›」= 全屏的乐器页（谱藏起来、小卡收了）");
+await p.click('.inst-page [data-v="cand:c1"]'); await p.selectOption("#roleSel", "voice.soprano|Soprano"); await p.click('.inst-page [data-v="back"]');
+check(await p.$eval(".inst-page", (e) => e.hidden), "乐器页「← 谱」回谱");
 check(!(await p.$eval("#score text.part-name", (t) => t.classList.contains("empty"))) && (await p.textContent("#score text.part-name")) === "Soprano" && !!(await p.$("#score text.part-name.empty")),
   "点角色名：谁来演选月读、角色选 Soprano → 谱前写「Soprano」、不再淡色；第二个声部（Bass）还没人上场、仍淡色（0.5.0 起别家谱的声部都读进来）");
 // 拖进来打开（v0.3.0；DataTransfer 里放一个 .musicxml；改过没存先问）
