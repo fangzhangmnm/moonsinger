@@ -563,6 +563,12 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .tc-v .btn { height: 32px; padding: 0 12px; }
 .tc-foot { display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid var(--line); padding: 8px 4px 2px; }
 .tc-foot .btn { height: 32px; padding: 0 10px; font-size: 13px; }
+/* 轨小卡的两页（2026-10-08 Opus 5.5）：「交给…」换绑 / 「＋ 加歌手…」——只改这张纸 */
+.tc-sub .btn { height: 32px; padding: 0 10px; font-size: 13px; border-color: transparent; background: transparent; }
+.tc-list { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 4px; }
+.tc-list .btn { height: 34px; padding: 0 12px; font-size: 13px; }
+.tc-list .btn small { font-size: 11px; color: var(--muted); margin-left: 2px; }
+.tc-hint { font-size: 12px; color: var(--muted); padding: 2px 6px 6px; max-width: 280px; line-height: 1.45; }
 .inst-page { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
 .inst-page[hidden] { display: none; }
 .ip-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }

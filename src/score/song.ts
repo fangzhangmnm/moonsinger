@@ -1014,19 +1014,33 @@ export function setTitle(st: EditorState, title: string): EditorState {
 const nextKey = (ids: string[], prefix: string) => `${prefix}${Math.max(0, ...ids.map((x) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x)?.[1] ?? 0))) + 1}`;
 /** 一条 track 末尾生效的调号 / 拍号 / 速度（新纸 / 新声部的谱头照抄它）。 */
 const endMarks = (toks: Token[]) => ({ fifths: keyAt(toks, toks.length), ...timeAt(toks, toks.length), bpm: tempoAt(toks, toks.length) });
-/** 加一个声部（歌级）：每张纸上给它一条只有谱头的 track（谱头抄那张纸第一个在场声部的开头）；光标跳到当前纸上它那条。
+/** 加一个声部 = 加一位歌手（**声部就是歌手**：一个声部绑一个角色、一个麦克风，跨纸按它连起来；2026-10-08 user「嗯声部就是歌手」）。
+ *  只在 onPaper 这张纸上给它一条只有谱头的 track（谱头抄那张纸第一个在场声部的开头；user「新歌手只出现在当前这张纸嗯」——此前是每张纸都给）；
+ *  onPaper = null = 哪张纸都还没有它（「交给新歌手」：接着 rebindTrack 把一条交给它）。在全曲的顺序里排最后。光标跳到它那条（有的话）。
  *  role / mic 的 id 由调用方（休息室 / 录音房）配好。 */
-export function addPart(st: EditorState, part: PartDef): EditorState {
+export function addPart(st: EditorState, part: PartDef, onPaper: string | null = st.at.paper): EditorState {
   if (st.song.parts.some((p) => p.id === part.id)) return st;
   let id = st.nextId;
   const papers = st.song.papers.map((p) => {
+    if (p.id !== onPaper) return p;
     const src = st.song.parts.map((x) => p.tracks[x.id]).find((x) => x) ?? [];
     const h = src.slice(0, headLen(src));
     const toks = h.length ? h.map((t) => ({ ...t, id: id++ })) : headTokens({}, (id += 3) - 3);
     return { ...p, tracks: { ...p.tracks, [part.id]: toks } };
   });
   const song = { ...st.song, parts: [...st.song.parts, part], papers };
-  return setFocus({ ...st, song, nextId: id }, st.at.paper, part.id);
+  return onPaper && papers.some((p) => p.id === onPaper) ? setFocus({ ...st, song, nextId: id }, onPaper, part.id) : { ...st, song, nextId: id };
+}
+/** 换绑：这张纸上 from 那一行交给 to 这位歌手（音、歌词、记号原样，只换主人；只改这一张纸。user 2026-10-08「已有的track绑换不同的声部」）。
+ *  to 在这张纸上已经有一行 = 两行对调主人（一张纸上一位歌手最多一行；什么都不丢）。光标跟着那一行走（同一个位置）。 */
+export function rebindTrack(st: EditorState, paperId: string, from: string, to: string): EditorState {
+  const p = st.song.papers.find((x) => x.id === paperId);
+  if (!p || from === to || !p.tracks[from] || !st.song.parts.some((x) => x.id === to)) return st;
+  const tracks = { ...p.tracks }, mine = tracks[from], theirs = tracks[to];
+  if (theirs) { tracks[from] = theirs; tracks[to] = mine; } else { delete tracks[from]; tracks[to] = mine; }
+  const song = { ...st.song, papers: st.song.papers.map((x) => (x.id === paperId ? { ...x, tracks } : x)) };
+  const followMe = st.at.paper === paperId && st.at.part === from;
+  return followMe ? setFocus({ ...st, song }, paperId, to, st.caret) : { ...st, song };
 }
 /** 删一个声部（最后一个不能删）：所有纸上它那条一起没了。 */
 export function removePart(st: EditorState, partId: string): EditorState {
@@ -1177,7 +1191,7 @@ export const trackTicks = (tokens: Token[]): number => tokens.reduce((a, t) => a
 export const paperTicks = (p: PaperSeg): number => Math.max(0, ...Object.values(p.tracks).map(trackTicks));
 /** 一个声部压平成一串（播放 / 派生的 score.musicxml 用）：各纸按序接起来，后面纸的谱头记号变成中途的记号；
  *  某张纸没这个声部 = 只有谱头（抄这张纸第一个在场声部的）+ 整纸休止；短的补休止到纸的长度。starts = 每张纸在这串里从哪个下标起。 */
-export function flattenPart(song: Song, partId: string): { tokens: Token[]; starts: { index: number; paper: PaperSeg }[] } {
+export function flattenPart(song: Song, partId: string, opts: { tempo?: boolean } = {}): { tokens: Token[]; starts: { index: number; paper: PaperSeg }[] } {
   const out: Token[] = [], starts: { index: number; paper: PaperSeg }[] = [];
   let id = -1;   // 补的休止 / 抄的记号用负 id（不落地，只在这一串里；文件里的 id 由写的那边编）
   let k = -1;
@@ -1191,6 +1205,16 @@ export function flattenPart(song: Song, partId: string): { tokens: Token[]; star
     else {
       const src = song.parts.map((x) => p.tracks[x.id]).find((x) => x) ?? [];
       toks = src.slice(0, headLen(src)).map((t) => ({ ...t, id: id-- }));
+      // tempo：这张纸上没这位歌手，但要它带着速度（速度表 / 压平件的第一个声部）——照这张纸最上面那位在场歌手的中途速度记号，补的休止在那几处断开
+      //   （2026-10-08 Opus 5.5：新歌手只出现在当前纸以后，最上面那位常常不在某张纸上，原来只抄谱头会丢掉那张纸中途的变速）
+      if (opts.tempo) {
+        let t = 0, at = 0;
+        for (const u of src.slice(headLen(src))) {
+          if (u.kind === "tempo") { if (t > at) toks.push({ kind: "rest", id: id--, dur: t - at }); toks.push({ ...u, id: id-- }); at = t; }
+          else if (isTimed(u)) t += u.dur;
+        }
+        if (at > 0 && len > at) { toks.push({ kind: "rest", id: id--, dur: len - at }); }
+      }
     }
     if (k === 0) out.push(...toks);
     else { const h = headLen(toks); out.push(...toks.slice(0, h).map((t) => ({ ...t, id: id-- })), ...toks.slice(h)); }   // 后面纸的谱头：抄一份当中途记号（id 不撞）
@@ -1202,7 +1226,7 @@ export function flattenPart(song: Song, partId: string): { tokens: Token[]; star
 /** 第一个声部的速度表（压平后的速度记号按 tick 列出来；别的声部按它算秒数）。 */
 export function tempoMapOf(song: Song): TempoMap {
   const first = song.parts[0]; if (!first) return [];
-  const { tokens } = flattenPart(song, first.id), map: TempoMap = [];
+  const { tokens } = flattenPart(song, first.id, { tempo: true }), map: TempoMap = [];
   let t = 0;
   for (const tok of tokens) { if (tok.kind === "tempo") map.push({ tick: t, bpm: tok.bpm }); else if (isTimed(tok)) t += tok.dur; }
   return map;

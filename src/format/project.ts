@@ -99,7 +99,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   });
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k) => {
-    const f = flattenPart(song, part.id);
+    const f = flattenPart(song, part.id, { tempo: k === 0 });   // 第一个声部带速度：它不在的纸上照那张纸最上面在场的歌手补变速（新歌手只在当前纸以后常见）
     return { info: infos[k], tokens: f.tokens, breaks: new Map(f.starts.slice(1).map((s) => [s.index, s.paper.name])) };
   }) }, meta);
   const scoreExt: Json = { version: FORMAT.score, papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched" })),
@@ -498,6 +498,16 @@ function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: 
 
 function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, name: string): Opened {
   const notices: string[] = [];
+  // 声部就是歌手（2026-10-08，user「嗯声部就是歌手」）：一个角色只归一个声部（跨纸按声部连、麦克风由歌手认领）。两个声部共用一个角色（手改过的文件）=
+  //   后面那个拆成一位新歌手：休息室那份原样复制给它（谁来演、怎么演都一样），麦克风照旧共用（几位歌手可以认领同一个麦克风）。什么都不丢，说一声。
+  const usedRoles = new Set<string>();
+  song0 = { ...song0, parts: song0.parts.map((part) => {
+    if (!usedRoles.has(part.role)) { usedRoles.add(part.role); return part; }
+    const nr = newRoleId(extras, { ...song0, parts: [...song0.parts, ...[...usedRoles].map((r) => ({ id: "", role: r, mic: "" }))] });   // 这一轮已经分出去的也算占用
+    if (extras.lounge[part.role]) { extras.lounge[nr] = structuredClone(extras.lounge[part.role]); notices.push(`声部「${String(extras.lounge[part.role].name ?? part.id)}」和别的声部共用一位歌手；一个声部就是一位歌手，所以拆成了两位（谁来演、怎么演都照抄）。`); }
+    usedRoles.add(nr);
+    return { ...part, role: nr };
+  }) };
   const dropped: Record<string, number> = {};
   for (const r of reads) for (const [k, n] of Object.entries(r.dropped)) dropped[k] = (dropped[k] ?? 0) + n;
   const dl = Object.entries(dropped);

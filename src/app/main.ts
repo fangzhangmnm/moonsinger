@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, ART_NAME, type Dyn, dynMarkAt, editMarkAt, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { type Art, ART_NAME, type Dyn, dynMarkAt, editMarkAt, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -1242,13 +1242,17 @@ function navPaperTo(id: string): void {
   const part = to.tracks[st.at.part] ? st.at.part : st.song.parts.find((p) => to.tracks[p.id])?.id ?? st.at.part;
   update(setFocus(st, to.id, part));
 }
-/** 新声部：休息室里建一份默认角色（月读两个候选）+ 录音房一个麦克风，每张纸上给它一条只有谱头的 track；光标跳过去、开它的歌手牌。 */
-function addNewPart(): void {
+/** 新歌手（声部就是歌手；2026-10-08 user「嗯声部就是歌手」）：休息室里建一份默认角色（月读两个候选）+ 录音房一个麦克风（歌手认领麦克风）。
+ *  只在 paper 这张纸上给它一行（user「新歌手只出现在当前这张纸嗯」）；giveFrom = 「交给新歌手」：这张纸上 giveFrom 那一行直接交给它（不另起空行）。
+ *  光标跳过去、开它的乐器页挑乐器。 */
+function addNewPart(paper = st.at.paper, giveFrom?: string): void {
   const role = newRoleId(doc.extras, st.song), mic = newMicId(doc.extras, st.song);
   const id = `P${Math.max(0, ...st.song.parts.map((p) => Number(/^P(\d+)$/.exec(p.id)?.[1] ?? 0))) + 1}`;
-  updateBoth(addPart(st, { id, role, mic }), withNewRole(doc.extras, role, st.song.hum), { kind: "score", label: "加了一个声部" });
+  let next = addPart(st, { id, role, mic }, giveFrom ? null : paper);
+  if (giveFrom) next = rebindTrack(next, paper, giveFrom, id);
+  updateBoth(next, withNewRole(doc.extras, role, st.song.hum), { kind: "score", label: giveFrom ? "这一行交给了新歌手" : "加了一位歌手" });
   renderTitle();
-  openInstPage();   // 新声部：先给它挑乐器
+  openInstPage();   // 新歌手：先给它挑乐器
 }
 /** 纸的菜单（纸顶「⋯」）：改曲段名、挪、在后面加一张、这张纸上加 / 不加某个声部、删这张纸。 */
 function openPaperMenu(id: string): void {
@@ -1261,8 +1265,8 @@ function openPaperMenu(id: string): void {
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc(paper.name || `第 ${k + 1} 张纸`)}</div>` +
     `<div class="set-row"><button class="btn" data-v="name">改曲段名…</button><button class="btn" data-v="up"${k === 0 ? " disabled" : ""}>上移</button><button class="btn" data-v="down"${k === st.song.papers.length - 1 ? " disabled" : ""}>下移</button><button class="btn" data-v="add">在它后面加一张纸</button>` +
     `<button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="隐藏 = 不放、不进压平件；谱上折叠着，翻页能进去">${paper.hidden ? "显示（现在隐藏着）" : "隐藏（不放）"}</button></div>` +
-    (absent.length ? `<div class="part-sec">这张纸上加上声部</div><div class="set-row">${absent.map((a) => `<button class="btn cand" data-v="track:${esc(a.id)}">${esc(a.name)}</button>`).join("")}</div>` : "") +
-    `<div class="set-row"><button class="btn" data-v="newpart">＋ 新声部…</button>${st.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">删这张纸…</button>` : ""}</div>` +
+    (absent.length ? `<div class="part-sec">这张纸上加歌手</div><div class="set-row">${absent.map((a) => `<button class="btn cand" data-v="track:${esc(a.id)}">${esc(a.name)}</button>`).join("")}</div>` : "") +
+    `<div class="set-row"><button class="btn" data-v="newpart" title="新的一位歌手，只出现在这张纸上">＋ 新歌手…</button>${st.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">删这张纸…</button>` : ""}</div>` +
     `<div class="offer-msg">纸 = 曲段：每张纸是一个新的开始，各声部在这里重新对齐；一张纸上要哪些声部随它。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
@@ -1277,7 +1281,7 @@ function openPaperMenu(id: string): void {
     if (v === "add") { update(addPaper(st, id)); close(); info("新的一张纸"); return; }
     if (v === "hide") { update(setPaperHidden(st, id, !paper.hidden)); close(); info(paper.hidden ? "这张纸显示了（会放）" : "这张纸隐藏了（不放）"); return; }
     if (v.startsWith("track:")) { update(addTrack(st, id, v.slice(6))); close(); return; }
-    if (v === "newpart") { close(); addNewPart(); return; }
+    if (v === "newpart") { close(); addNewPart(id); return; }
     if (v === "del") {
       close();
       void askSheet(`删掉「${paper.name || `第 ${k + 1} 张纸`}」？`, "这张纸上所有声部写的东西都没了（没有撤销）。", "删").then((ok) => { if (ok) update(removePaper(st, id)); });
@@ -1294,8 +1298,19 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "track-card"; box.setAttribute("role", "dialog");
+  let page: "main" | "give" | "add" = "main";   // give = 这一行交给…（换绑）；add = 这张纸上加歌手
   const draw = () => {
-    const me = curPart(), v = pv(me.id), k = st.song.parts.indexOf(me), label = partLabels(st.song, doc.extras)[k] ?? "";
+    const me = curPart(), v = pv(me.id), k = st.song.parts.indexOf(me), labels = partLabels(st.song, doc.extras), label = labels[k] ?? "";
+    const here = st.song.papers.find((p) => p.id === st.at.paper)?.tracks ?? {};
+    // 换绑 / 加歌手（2026-10-08，user「已有的track绑换不同的声部」「这一段交给别的歌手 就是我刚才说的换绑」「新歌手只出现在当前这张纸嗯」）：只改这一张纸
+    if (page !== "main") {
+      const list = page === "give" ? st.song.parts.filter((p) => p.id !== me.id) : st.song.parts.filter((p) => !here[p.id]);
+      box.innerHTML = `<div class="tc-sub"><button class="btn" data-v="back">‹ ${page === "give" ? `「${esc(label)}」这一行交给…` : "这张纸上加歌手"}</button></div>` +
+        `<div class="tc-list">${list.map((p) => `<button class="btn cand" data-v="${page}:${esc(p.id)}">${esc(labels[st.song.parts.indexOf(p)] ?? p.id)}${page === "give" && here[p.id] ? "<small>（对调）</small>" : ""}</button>`).join("")}` +
+        `<button class="btn cand" data-v="${page}new">＋ 新歌手…</button></div>` +
+        `<div class="tc-hint">${page === "give" ? "只改这张纸：音、歌词、记号都不动，换一位歌手唱；跨纸按歌手接起来。对方在这张纸上已经有一行 = 两行对调。" : "只加在这张纸上（别的纸照旧）。"}</div>`;
+      return;
+    }
     const onPaper = Object.keys(st.song.papers.find((p) => p.id === st.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
     box.innerHTML =
       `<button class="tc-inst" data-v="inst" title="这个声部是什么、谁来演、怎么演（全屏一页，右边的键盘能试）"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? `${esc(who)} 在演` : "没人上场"))(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">乐器 ›</span></button>` +
@@ -1305,7 +1320,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
       `<span class="tc-k">谱表</span><div class="tc-v">${chip("staves:1", "一张", one)}${chip("staves:2", "大谱表", !one, "上高音下低音（钢琴）：中央 C 以下自动落下面，pad「⋯ → 换谱表」能手动挪")}</div>` +
       (one ? `<span class="tc-k">谱号</span><div class="tc-v">${chip("clef:G", "高音", (me.clef ?? "G") === "G")}${chip("clef:F", "低音", me.clef === "F", "低的声部（贝斯 / 大提琴）")}</div>` : "") +
       (st.song.parts.length > 1 ? `<span class="tc-k">顺序</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="往上挪一格（最上面那个声部的速度记号说了算）">↑ 往上</button><button class="btn" data-v="movedown"${k === st.song.parts.length - 1 ? " disabled" : ""} title="往下挪一格">↓ 往下</button></div>` : "") +
-      `</div><div class="tc-foot"><button class="btn" data-v="addpart" title="再加一个声部：每张纸上都给它一行，谱头照抄">＋ 加声部</button>` +
+      `</div><div class="tc-foot"><button class="btn" data-v="give" title="这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）">交给…</button><button class="btn" data-v="add" title="这张纸上再加一位歌手（已有的或新的；只加在这张纸上）">＋ 加歌手…</button>` +
       (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="这张纸上不要这个声部（别的纸照旧）">这张纸上去掉</button>` : "") +
       (st.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="整首歌里删掉这个声部（休息室里它的角色一起删；能撤销）">删掉…</button>` : "") + `</div>`;
   };
@@ -1328,6 +1343,12 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     const me = curPart();
     if (v === "inst") { close(); openInstPage(); return; }
+    if (v === "give" || v === "add") { page = v; draw(); return; }
+    if (v === "back") { page = "main"; draw(); return; }
+    if (v.startsWith("give:")) { const to = v.slice(5), name = partLabels(st.song, doc.extras)[st.song.parts.findIndex((p) => p.id === to)] ?? ""; close(); update(rebindTrack(st, st.at.paper, me.id, to)); renderTitle(); info(`这张纸上这一行交给了「${name}」`); return; }
+    if (v === "givenew") { close(); addNewPart(st.at.paper, me.id); return; }
+    if (v.startsWith("add:")) { close(); update(addTrack(st, st.at.paper, v.slice(4))); return; }
+    if (v === "addnew") { close(); addNewPart(st.at.paper); return; }
     if (v === "hide") { setPv(me.id, { hidden: !pv(me.id).hidden }); afterViewChange(); }
     else if (v === "only") { setPv(me.id, { only: !pv(me.id).only }); afterViewChange(); }
     else if (v === "mute") { setPv(me.id, { muted: !pv(me.id).muted }); view.render(); }
@@ -1335,7 +1356,6 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     else if (v.startsWith("clef:")) update(setPartClef(st, me.id, v.slice(5) as Clef));
     else if (v === "moveup" || v === "movedown") { update(movePart(st, me.id, v === "moveup" ? -1 : 1)); renderTitle(); }
     else if (v.startsWith("staves:")) { update(setPartStaves(st, me.id, v.slice(7) === "2" ? 2 : 1)); pad.render(); }
-    else if (v === "addpart") { close(); addNewPart(); return; }
     else if (v === "droptrack") { close(); update(removeTrack(st, st.at.paper, me.id)); return; }
     else if (v === "delpart") {
       close();

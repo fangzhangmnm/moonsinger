@@ -35,6 +35,7 @@ import "./wedge.test.ts";
 import "./attack.test.ts";
 import "./caret.test.ts";
 import "./drag.test.ts";
+import "./singer.test.ts";
 import "./part-name.test.ts";
 import "./id3.test.ts";
 import "./sf-key.test.ts";

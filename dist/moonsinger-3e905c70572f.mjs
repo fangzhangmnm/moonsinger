@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.15-2026-10-08";
+var APP_VERSION = "v0.7.16-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3783,17 +3783,33 @@ function setTitle(st3, title) {
 }
 var nextKey = (ids, prefix) => `${prefix}${Math.max(0, ...ids.map((x2) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x2)?.[1] ?? 0))) + 1}`;
 var endMarks = (toks) => ({ fifths: keyAt(toks, toks.length), ...timeAt(toks, toks.length), bpm: tempoAt(toks, toks.length) });
-function addPart(st3, part) {
+function addPart(st3, part, onPaper = st3.at.paper) {
   if (st3.song.parts.some((p2) => p2.id === part.id)) return st3;
   let id2 = st3.nextId;
   const papers = st3.song.papers.map((p2) => {
+    if (p2.id !== onPaper) return p2;
     const src = st3.song.parts.map((x2) => p2.tracks[x2.id]).find((x2) => x2) ?? [];
     const h2 = src.slice(0, headLen(src));
     const toks = h2.length ? h2.map((t10) => ({ ...t10, id: id2++ })) : headTokens({}, (id2 += 3) - 3);
     return { ...p2, tracks: { ...p2.tracks, [part.id]: toks } };
   });
   const song = { ...st3.song, parts: [...st3.song.parts, part], papers };
-  return setFocus({ ...st3, song, nextId: id2 }, st3.at.paper, part.id);
+  return onPaper && papers.some((p2) => p2.id === onPaper) ? setFocus({ ...st3, song, nextId: id2 }, onPaper, part.id) : { ...st3, song, nextId: id2 };
+}
+function rebindTrack(st3, paperId, from, to2) {
+  const p2 = st3.song.papers.find((x2) => x2.id === paperId);
+  if (!p2 || from === to2 || !p2.tracks[from] || !st3.song.parts.some((x2) => x2.id === to2)) return st3;
+  const tracks = { ...p2.tracks }, mine = tracks[from], theirs = tracks[to2];
+  if (theirs) {
+    tracks[from] = theirs;
+    tracks[to2] = mine;
+  } else {
+    delete tracks[from];
+    tracks[to2] = mine;
+  }
+  const song = { ...st3.song, papers: st3.song.papers.map((x2) => x2.id === paperId ? { ...x2, tracks } : x2) };
+  const followMe = st3.at.paper === paperId && st3.at.part === from;
+  return followMe ? setFocus({ ...st3, song }, paperId, to2, st3.caret) : { ...st3, song };
 }
 function removePart(st3, partId) {
   if (st3.song.parts.length <= 1 || !st3.song.parts.some((p2) => p2.id === partId)) return st3;
@@ -3949,7 +3965,7 @@ function timeline(tokens, tempoMap) {
 }
 var trackTicks = (tokens) => tokens.reduce((a10, t10) => a10 + (isTimed(t10) ? t10.dur : 0), 0);
 var paperTicks = (p2) => Math.max(0, ...Object.values(p2.tracks).map(trackTicks));
-function flattenPart(song, partId) {
+function flattenPart(song, partId, opts = {}) {
   const out = [], starts = [];
   let id2 = -1;
   let k2 = -1;
@@ -3963,6 +3979,19 @@ function flattenPart(song, partId) {
     else {
       const src = song.parts.map((x2) => p2.tracks[x2.id]).find((x2) => x2) ?? [];
       toks = src.slice(0, headLen(src)).map((t10) => ({ ...t10, id: id2-- }));
+      if (opts.tempo) {
+        let t10 = 0, at2 = 0;
+        for (const u2 of src.slice(headLen(src))) {
+          if (u2.kind === "tempo") {
+            if (t10 > at2) toks.push({ kind: "rest", id: id2--, dur: t10 - at2 });
+            toks.push({ ...u2, id: id2-- });
+            at2 = t10;
+          } else if (isTimed(u2)) t10 += u2.dur;
+        }
+        if (at2 > 0 && len > at2) {
+          toks.push({ kind: "rest", id: id2--, dur: len - at2 });
+        }
+      }
     }
     if (k2 === 0) out.push(...toks);
     else {
@@ -3977,7 +4006,7 @@ function flattenPart(song, partId) {
 function tempoMapOf(song) {
   const first = song.parts[0];
   if (!first) return [];
-  const { tokens } = flattenPart(song, first.id), map = [];
+  const { tokens } = flattenPart(song, first.id, { tempo: true }), map = [];
   let t10 = 0;
   for (const tok of tokens) {
     if (tok.kind === "tempo") map.push({ tick: t10, bpm: tok.bpm });
@@ -17970,7 +17999,7 @@ function saveMxl(a10) {
     return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, ...Object.keys(phrases).length ? { phrases } : {}, ...Object.keys(swells).length ? { swells } : {}, ...p2.hidden ? { hidden: true } : {} };
   });
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k2) => {
-    const f2 = flattenPart(song, part.id);
+    const f2 = flattenPart(song, part.id, { tempo: k2 === 0 });
     return { info: infos[k2], tokens: f2.tokens, breaks: new Map(f2.starts.slice(1).map((s10) => [s10.index, s10.paper.name])) };
   }) }, meta);
   const scoreExt = {
@@ -18425,6 +18454,20 @@ function songFromReads(reads, papers, partList = null) {
 }
 function finish(reads, song0, extras, ours, name) {
   const notices = [];
+  const usedRoles = /* @__PURE__ */ new Set();
+  song0 = { ...song0, parts: song0.parts.map((part) => {
+    if (!usedRoles.has(part.role)) {
+      usedRoles.add(part.role);
+      return part;
+    }
+    const nr2 = newRoleId(extras, { ...song0, parts: [...song0.parts, ...[...usedRoles].map((r10) => ({ id: "", role: r10, mic: "" }))] });
+    if (extras.lounge[part.role]) {
+      extras.lounge[nr2] = structuredClone(extras.lounge[part.role]);
+      notices.push(`\u58F0\u90E8\u300C${String(extras.lounge[part.role].name ?? part.id)}\u300D\u548C\u522B\u7684\u58F0\u90E8\u5171\u7528\u4E00\u4F4D\u6B4C\u624B\uFF1B\u4E00\u4E2A\u58F0\u90E8\u5C31\u662F\u4E00\u4F4D\u6B4C\u624B\uFF0C\u6240\u4EE5\u62C6\u6210\u4E86\u4E24\u4F4D\uFF08\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\u90FD\u7167\u6284\uFF09\u3002`);
+    }
+    usedRoles.add(nr2);
+    return { ...part, role: nr2 };
+  }) };
   const dropped = {};
   for (const r10 of reads) for (const [k2, n10] of Object.entries(r10.dropped)) dropped[k2] = (dropped[k2] ?? 0) + n10;
   const dl = Object.entries(dropped);
@@ -27898,7 +27941,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "6d703432c84b",
+  cssHash: "7b580770c5e3",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -28366,10 +28409,12 @@ function navPaperTo(id2) {
   const part = to2.tracks[st2.at.part] ? st2.at.part : st2.song.parts.find((p2) => to2.tracks[p2.id])?.id ?? st2.at.part;
   update(setFocus(st2, to2.id, part));
 }
-function addNewPart() {
+function addNewPart(paper = st2.at.paper, giveFrom) {
   const role = newRoleId(doc.extras, st2.song), mic = newMicId(doc.extras, st2.song);
   const id2 = `P${Math.max(0, ...st2.song.parts.map((p2) => Number(/^P(\d+)$/.exec(p2.id)?.[1] ?? 0))) + 1}`;
-  updateBoth(addPart(st2, { id: id2, role, mic }), withNewRole(doc.extras, role, st2.song.hum), { kind: "score", label: "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8" });
+  let next2 = addPart(st2, { id: id2, role, mic }, giveFrom ? null : paper);
+  if (giveFrom) next2 = rebindTrack(next2, paper, giveFrom, id2);
+  updateBoth(next2, withNewRole(doc.extras, role, st2.song.hum), { kind: "score", label: giveFrom ? "\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u65B0\u6B4C\u624B" : "\u52A0\u4E86\u4E00\u4F4D\u6B4C\u624B" });
   renderTitle();
   openInstPage();
 }
@@ -28381,7 +28426,7 @@ function openPaperMenu(id2) {
   const absent = st2.song.parts.flatMap((p2, i10) => paper.tracks[p2.id] ? [] : [{ id: p2.id, name: labels[i10] }]);
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc7(paper.name || `\u7B2C ${k2 + 1} \u5F20\u7EB8`)}</div><div class="set-row"><button class="btn" data-v="name">\u6539\u66F2\u6BB5\u540D\u2026</button><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>\u4E0A\u79FB</button><button class="btn" data-v="down"${k2 === st2.song.papers.length - 1 ? " disabled" : ""}>\u4E0B\u79FB</button><button class="btn" data-v="add">\u5728\u5B83\u540E\u9762\u52A0\u4E00\u5F20\u7EB8</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB">${paper.hidden ? "\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09" : "\u9690\u85CF\uFF08\u4E0D\u653E\uFF09"}</button></div>` + (absent.length ? `<div class="part-sec">\u8FD9\u5F20\u7EB8\u4E0A\u52A0\u4E0A\u58F0\u90E8</div><div class="set-row">${absent.map((a10) => `<button class="btn cand" data-v="track:${esc7(a10.id)}">${esc7(a10.name)}</button>`).join("")}</div>` : "") + `<div class="set-row"><button class="btn" data-v="newpart">\uFF0B \u65B0\u58F0\u90E8\u2026</button>${st2.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">\u5220\u8FD9\u5F20\u7EB8\u2026</button>` : ""}</div><div class="offer-msg">\u7EB8 = \u66F2\u6BB5\uFF1A\u6BCF\u5F20\u7EB8\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u5F20\u7EB8\u4E0A\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc7(paper.name || `\u7B2C ${k2 + 1} \u5F20\u7EB8`)}</div><div class="set-row"><button class="btn" data-v="name">\u6539\u66F2\u6BB5\u540D\u2026</button><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>\u4E0A\u79FB</button><button class="btn" data-v="down"${k2 === st2.song.papers.length - 1 ? " disabled" : ""}>\u4E0B\u79FB</button><button class="btn" data-v="add">\u5728\u5B83\u540E\u9762\u52A0\u4E00\u5F20\u7EB8</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB">${paper.hidden ? "\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09" : "\u9690\u85CF\uFF08\u4E0D\u653E\uFF09"}</button></div>` + (absent.length ? `<div class="part-sec">\u8FD9\u5F20\u7EB8\u4E0A\u52A0\u6B4C\u624B</div><div class="set-row">${absent.map((a10) => `<button class="btn cand" data-v="track:${esc7(a10.id)}">${esc7(a10.name)}</button>`).join("")}</div>` : "") + `<div class="set-row"><button class="btn" data-v="newpart" title="\u65B0\u7684\u4E00\u4F4D\u6B4C\u624B\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u5F20\u7EB8\u4E0A">\uFF0B \u65B0\u6B4C\u624B\u2026</button>${st2.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">\u5220\u8FD9\u5F20\u7EB8\u2026</button>` : ""}</div><div class="offer-msg">\u7EB8 = \u66F2\u6BB5\uFF1A\u6BCF\u5F20\u7EB8\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u5F20\u7EB8\u4E0A\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -28425,7 +28470,7 @@ function openPaperMenu(id2) {
     }
     if (v === "newpart") {
       close();
-      addNewPart();
+      addNewPart(id2);
       return;
     }
     if (v === "del") {
@@ -28442,10 +28487,17 @@ function openTrackCard(at2) {
   const box = document.createElement("div");
   box.className = "track-card";
   box.setAttribute("role", "dialog");
+  let page = "main";
   const draw = () => {
-    const me = curPart(), v = pv(me.id), k2 = st2.song.parts.indexOf(me), label = partLabels(st2.song, doc.extras)[k2] ?? "";
+    const me = curPart(), v = pv(me.id), k2 = st2.song.parts.indexOf(me), labels = partLabels(st2.song, doc.extras), label = labels[k2] ?? "";
+    const here = st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {};
+    if (page !== "main") {
+      const list = page === "give" ? st2.song.parts.filter((p2) => p2.id !== me.id) : st2.song.parts.filter((p2) => !here[p2.id]);
+      box.innerHTML = `<div class="tc-sub"><button class="btn" data-v="back">\u2039 ${page === "give" ? `\u300C${esc7(label)}\u300D\u8FD9\u4E00\u884C\u4EA4\u7ED9\u2026` : "\u8FD9\u5F20\u7EB8\u4E0A\u52A0\u6B4C\u624B"}</button></div><div class="tc-list">${list.map((p2) => `<button class="btn cand" data-v="${page}:${esc7(p2.id)}">${esc7(labels[st2.song.parts.indexOf(p2)] ?? p2.id)}${page === "give" && here[p2.id] ? "<small>\uFF08\u5BF9\u8C03\uFF09</small>" : ""}</button>`).join("")}<button class="btn cand" data-v="${page}new">\uFF0B \u65B0\u6B4C\u624B\u2026</button></div><div class="tc-hint">${page === "give" ? "\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1A\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u90FD\u4E0D\u52A8\uFF0C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF1B\u8DE8\u7EB8\u6309\u6B4C\u624B\u63A5\u8D77\u6765\u3002\u5BF9\u65B9\u5728\u8FD9\u5F20\u7EB8\u4E0A\u5DF2\u7ECF\u6709\u4E00\u884C = \u4E24\u884C\u5BF9\u8C03\u3002" : "\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09\u3002"}</div>`;
+      return;
+    }
     const onPaper = Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
-    box.innerHTML = `<button class="tc-inst" data-v="inst" title="\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\u3001\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\uFF08\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09"><span class="tc-l"><b>${esc7(label)}</b><small>${((who) => who ? `${esc7(who)} \u5728\u6F14` : "\u6CA1\u4EBA\u4E0A\u573A")(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">\u4E50\u5668 \u203A</span></button><div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:G", "\u9AD8\u97F3", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="addpart" title="\u518D\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF1A\u6BCF\u5F20\u7EB8\u4E0A\u90FD\u7ED9\u5B83\u4E00\u884C\uFF0C\u8C31\u5934\u7167\u6284">\uFF0B \u52A0\u58F0\u90E8</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u2026</button>` : "") + `</div>`;
+    box.innerHTML = `<button class="tc-inst" data-v="inst" title="\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\u3001\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\uFF08\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09"><span class="tc-l"><b>${esc7(label)}</b><small>${((who) => who ? `${esc7(who)} \u5728\u6F14` : "\u6CA1\u4EBA\u4E0A\u573A")(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">\u4E50\u5668 \u203A</span></button><div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:G", "\u9AD8\u97F3", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09">\u4EA4\u7ED9\u2026</button><button class="btn" data-v="add" title="\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09">\uFF0B \u52A0\u6B4C\u624B\u2026</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u2026</button>` : "") + `</div>`;
   };
   draw();
   document.body.append(box);
@@ -28489,6 +28541,39 @@ function openTrackCard(at2) {
       openInstPage();
       return;
     }
+    if (v === "give" || v === "add") {
+      page = v;
+      draw();
+      return;
+    }
+    if (v === "back") {
+      page = "main";
+      draw();
+      return;
+    }
+    if (v.startsWith("give:")) {
+      const to2 = v.slice(5), name = partLabels(st2.song, doc.extras)[st2.song.parts.findIndex((p2) => p2.id === to2)] ?? "";
+      close();
+      update(rebindTrack(st2, st2.at.paper, me.id, to2));
+      renderTitle();
+      info(`\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u300C${name}\u300D`);
+      return;
+    }
+    if (v === "givenew") {
+      close();
+      addNewPart(st2.at.paper, me.id);
+      return;
+    }
+    if (v.startsWith("add:")) {
+      close();
+      update(addTrack(st2, st2.at.paper, v.slice(4)));
+      return;
+    }
+    if (v === "addnew") {
+      close();
+      addNewPart(st2.at.paper);
+      return;
+    }
     if (v === "hide") {
       setPv(me.id, { hidden: !pv(me.id).hidden });
       afterViewChange();
@@ -28508,10 +28593,6 @@ function openTrackCard(at2) {
     } else if (v.startsWith("staves:")) {
       update(setPartStaves(st2, me.id, v.slice(7) === "2" ? 2 : 1));
       pad3.render();
-    } else if (v === "addpart") {
-      close();
-      addNewPart();
-      return;
     } else if (v === "droptrack") {
       close();
       update(removeTrack(st2, st2.at.paper, me.id));
@@ -30216,4 +30297,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-bc58eacf6a51.mjs.map
+//# sourceMappingURL=moonsinger-3e905c70572f.mjs.map
