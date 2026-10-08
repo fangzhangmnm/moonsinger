@@ -264,7 +264,8 @@ button, input, select { font: inherit; color: inherit; }
 /* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
 .pad-tools.knobs { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--knob) var(--knob) var(--knob); }   /* 1= / 长短 / 音域 分宽度；弹、收起、⋯ = 方块（2026-10-08 Opus：加「弹」时漏加一列，「⋯」被挤到第二排） */
 .pad-tools .btn.hide-pad { height: var(--knob); font-size: 13px; color: var(--muted); padding: 0; }
-.pad-tools .btn.impro-pad { height: var(--knob); font-size: 15px; font-weight: 600; padding: 0; }   /* 弹（只响不写）：收起左边 */
+.pad-tools .btn.impro-pad { height: var(--knob); font-size: 15px; font-weight: 600; padding: 0; }
+.pad-tools .btn.sym-tab { height: var(--knob); font-size: 14px; padding: 0 4px; }   /* 符号层的三页标签（占 1= / 长短 / 音域 的位置；亮 = 现在这页） */   /* 弹（只响不写）：收起左边 */
 .pad-panel.is-locked .pad-tools .btn.impro-pad { pointer-events: none; }   /* 找人视图里一直是弹 */
 /* 写字键：← → 方块；0 | 升降 /2 — ⌫ 分剩下的宽。pad 窄了依次让位（user「太窄的时候这几个功能怎么办…0和-是必须要的|一般一首歌至少要一次，
    /2可以用时长平替，#b可能一辈子也用不上」）：先藏升降（单个音照样能在音键上上下滑升降）；/2 一直留着（2026-10-08 user「/2 一直留着」——

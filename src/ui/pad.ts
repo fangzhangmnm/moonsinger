@@ -42,6 +42,15 @@ const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 
 /** 布局里行 / 列能调的范围（加减号到头就灰）。 */
 /** 符号层「连线」格子：一道弧（SMuFL 没有单个连线字形）。 */
 const SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+/** 符号层三页（2026-10-08 Opus 5.5 提、user「可以」）：一页一般放得下（4 列 3 排 = 12），位置固定好记。演奏法 = 上一排音头、下一排长短 / 连断；力度 = 力度、渐强渐弱、音内起伏；记号 = 句号、调号 / 拍号 / 速度（大谱表多换谱表）。 */
+type SymPage = "art" | "dyn" | "mark";
+const SYM_PAGES: Record<SymPage, readonly string[]> = {
+  art: ["art:accent", "art:marcato", "art:sfz", "art:fp", "art:staccato", "art:tenuto", "slur", "art:breath"],
+  dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>"],
+  mark: ["phrase", "key", "time", "tempo", "staff"],
+};
+const SYM_PAGE_NAME: Record<SymPage, string> = { art: "演奏法", dyn: "力度", mark: "记号" };
+const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "重音 / 强音 / 突强 / 强后即弱、跳音 / 保持 / 连线 / 呼吸", dyn: "pp…ff、渐强 / 渐弱、音内起伏", mark: "句号、调号 / 拍号 / 速度" };
 const CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 /** 力度记号的 Bravura 字形（同选区条「修」）。 */
@@ -136,7 +145,9 @@ export class Pad {
   private rowsSetting: number | "auto" = 4;   // 默认 4 行（user「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
   private layoutMode: "movable" | "absolute" = "absolute";   // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
   private swipeMode: "glide" | "alter" = "glide";          // 音键上滑 = 滑到下一个键就响下一个（默认；user 2026-10-08「滚键盘的意思是手指在键盘上滑动到下一个音，不说拖动键盘」）/ 上下滑 = 这一个音升降（黏着）
-  private symbols: "off" | "once" | "lock" = "off"; private symAt = 0;   // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
+  private symbols: "off" | "once" | "lock" = "off"; private symAt = 0;
+  /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
+  private symPage: SymPage = "art"; private symBuilt: SymPage | null = null;   // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
   private mode: Mode = "normal";
   private gridFor = "";
   private toolsFor = "";
@@ -264,9 +275,9 @@ export class Pad {
       const akUp = (e: PointerEvent) => { if (!akDrag || e.pointerId !== akDrag.pid) return; akDrag = null; this.host.onAccShift("up", this.accSel); };
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) ak.addEventListener(t, (e) => akUp(e as PointerEvent));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) { if (this.symbols !== "off") this.buildSymbols(); else this.buildGrid(f, base, rows); this.gridFor = gridSig; }
-    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st)) : ""}`;
+    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}|${this.symbols !== "off" ? this.symPage : ""}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st)) : ""}`;
     if (toolSig !== this.toolsFor) { this.buildHead(selKey, rows); this.toolsFor = toolSig; }
     this.refresh(st);
   }
@@ -302,7 +313,12 @@ export class Pad {
   private buildHead(selKey: number | null, rows: number): void {
     const box = this.el.querySelector<HTMLElement>(".pad-head")!;
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
-    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) :
+    const tabs = this.symbols !== "off" && this.mode === "normal";   // 符号层：1= / 长短 / 音域（只管音键）换成三页的标签，位置 / 大小不变
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ?
+      (Object.keys(SYM_PAGES) as SymPage[]).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}</button>`).join("") +
+      `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="弹：音键只响不写（快捷键 \`）；再点回到写">弹</button>` +
+      `<button class="btn hide-pad" data-hide="1" title="收起键盘（点五线谱再弹出来）">收起</button>` +
+      `<button class="btn knob k-more" data-knob="more" title="更多：布局、插记号"><span class="kl">⋯</span></button>` :
       `<button class="btn knob k-key" data-knob="key" title="1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-unit" data-knob="unit" title="长短基线：按住上下滑 / 点开选（含连音）"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-range" data-knob="range" title="音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的"><span class="kl"></span><span class="kh">⇅</span></button>` +
@@ -316,6 +332,7 @@ export class Pad {
     this.on(box, "[data-staff]", () => { this.host.onCommand({ k: "staff" }); });
     this.on(box, "[data-back]", () => this.back());
     this.on(box, "[data-impro]", () => this.host.onImpro());
+    this.on(box, "[data-sympage]", (b) => { this.symPage = b.dataset.sympage as SymPage; this.render(); });
     this.on(box, "[data-hide]", () => this.host.onHide());   // 「⋯」左边的收起键盘（user「...左边加一个hide keyboard的方形小按钮」）
     this.on(box, "[data-autobars]", () => { this.host.onAutoBars(!this.host.autoBars()); this.toolsFor = ""; this.render(); });   // 开关：点了不收，钮上亮 / 灭
   }
@@ -385,11 +402,14 @@ export class Pad {
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "速度", "插速度（在光标处）"),
       ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, "换谱表", "大谱表：这个音换到另一张谱表")] : []),
     ];
-    grid.innerHTML = items.join("");
+    const byId = new Map(items.map((h) => [/data-sym="([^"]+)"/.exec(h)![1], h]));
+    grid.innerHTML = SYM_PAGES[this.symPage].flatMap((id) => byId.get(id) ?? []).join("");
     grid.classList.add("symbols");
     // 符号层高度钉在音键那几排（user 2026-10-08「键盘高度能不能和设置的row一样，就是几何形状不改。然后这里多出来的溢出的可以滚键盘」）：
     //   格子多了在格子里上下滚 → 按下不算数，抬手时没滚过（浏览器开始滚 = pointercancel）才做；按下照旧 preventDefault（焦点不离开谱）。
-    grid.scrollTop = 0;
+    //   分页以后一页一般放得下；放不下（行列调得很少）照旧在这一页里滚，同一页重画不滚回顶上
+    const keep = this.symBuilt === this.symPage ? grid.scrollTop : 0;
+    grid.scrollTop = keep; this.symBuilt = this.symPage;
     let down: { id: number; b: HTMLElement; y: number; top: number } | null = null;
     grid.querySelectorAll<HTMLElement>("[data-sym]").forEach((b) => {
       b.addEventListener("pointerdown", (e) => { e.preventDefault(); down = { id: e.pointerId, b, y: e.clientY, top: grid.scrollTop }; });
@@ -519,10 +539,10 @@ export class Pad {
     const down = new Set(this.held.values());
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => b.classList.toggle("down", down.has(midiOf(this.keys.get(Number(b.dataset.k))!))));
     const stk = this.el.querySelector<HTMLElement>("[data-stack]"); if (stk) stk.classList.toggle("off", !this.host.canStack());   // 单声乐器的声部：叠不了
-    // 符号层开着 = 只写记号（user 2026-10-08「符号键盘的时候该禁用的东西都禁用」）：写音那一层的键（休止 / 小节线 / 升降 / 叠 / 减半 / 拉长）和管音键的旋钮（1= / 长短 / 音域）都灰掉、按不动；
+    // 符号层开着 = 只写记号（user 2026-10-08「符号键盘的时候该禁用的东西都禁用」）：写音那一层的键（休止 / 小节线 / 升降 / 叠 / 减半 / 拉长）灰掉、按不动（管音键的旋钮 1= / 长短 / 音域 换成了分页标签）；
     //   ← → / 退格（符号模式的退格）/ 弹 / 收起 / ⋯ 照旧。「弹」的时候「符」灰掉（弹 = 只弹不写）
     const symOn = this.symbols !== "off";
-    this.el.querySelectorAll<HTMLButtonElement>('.writes [data-cmd="rest"], .writes [data-cmd="bar"], .writes [data-cmd="extend"], .writes [data-accshift], .writes [data-stack], .writes [data-half], .pad-head [data-knob="key"], .pad-head [data-knob="unit"], .pad-head [data-knob="range"]').forEach((b) => { b.disabled = symOn; });
+    this.el.querySelectorAll<HTMLButtonElement>('.writes [data-cmd="rest"], .writes [data-cmd="bar"], .writes [data-cmd="extend"], .writes [data-accshift], .writes [data-stack], .writes [data-half]').forEach((b) => { b.disabled = symOn; });
     const syb = this.el.querySelector<HTMLButtonElement>("[data-symbols]"); if (syb) syb.disabled = this.host.isImpro();
     const sy = this.el.querySelector<HTMLElement>("[data-symbols]"); if (sy) { sy.classList.toggle("once", this.symbols === "once"); sy.classList.toggle("lock", this.symbols === "lock"); sy.querySelector("span")!.textContent = this.symbols !== "off" ? "音" : "符"; }
   }
