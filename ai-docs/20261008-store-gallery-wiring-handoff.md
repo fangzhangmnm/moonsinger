@@ -1,6 +1,6 @@
 # 歌库接线交接：@internal/store 0.16.1 + @internal/gallery 0.7.0 + OneDrive（MSAL）
 
-> created 20261008 by Claude Fable 5.1 · as-of v0.5.2 / 2026-10-08
+> created 20261008 by Claude Fable 5.1 · as-of v0.6.0 / 2026-10-08（v0.5.2 commit 4f198c2 接线落地，user 当晚「应该bump」→ 0.6.0 歌库纪元）
 > 读者 = 下一个要碰存档 / 同步 / 歌库的 session。家规 `../../CLAUDE.md`「云同步 store 库」、skill `pwa-cloud-store`、`20260601 MyPWAPatterns/docs/MASTER.md` §A 红线全在前面；本文只写 MoonSinger 自己的接法、取舍、还没验的。
 
 ## 0. user 这轮的原话（出处 = 2026-10-08 本 session）
