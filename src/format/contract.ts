@@ -85,6 +85,9 @@ export interface CandidateV2 {
   instrument: InstrumentV2;            // 谁来演、怎么出声（按引擎分；不认识的引擎原样写回）
   gm: { program: number | null; variant: string | null };   // 写给别的软件看的（MusicXML <midi-program> 1 起 / <virtual-instrument>）
   calibrationDb: number;               // 响度校准（看得见、能调的默认，不偷偷自动）
+  /** 2026-10-08 加（可选，不升版本；Claude Opus 5.5）：修八度 / 移调（半音）——SoundFont 出声时敲「写的音 + transpose」。默认没有 = 0；
+   *  只给少数本身就差八度的音色兜底（GS 32 Guitar Harmonics 高两个八度、18 / 19 风琴听着低一个八度），不自动套用（user「大部分情况不应该动，是worst case兜底」）。 */
+  transpose?: number;
   defaults: Record<string, number>;    // 一个音没画曲线时用的默认数（by value）：参数名 → 值，单位同 curves.json 的 units
   dynamicsDb: Record<Dynamic, number>; // 谱上记号 ↔ 曲线的换算表（by value）：力度字母 → dB
   articulation: { staccatoGate: number; tenutoGate: number; accentDb: number };   // 跳音 / 保持吃掉多长（0–1）；重音加多少 dB
@@ -97,7 +100,10 @@ export interface CandidateV2 {
 export type InstrumentV2 =
   | { engine: "tsukuyomi"; model: { pack: string; sha256: string }; hum: Hum }        // 月读完整：piper（时长接管）+ WORLD；model = 家族模型包（packId = manifest 的 sha256）
   | { engine: "vowel-sampler"; table: "builtin"; hum: Hum }                            // 月读元音版（轻量）：app 随带的元音表（assets/preview/）
-  | { engine: "soundfont"; bank: number; program: number; note?: number; source: Sf2Source }   // SoundFont 2 的一个预设（TinySoundFont 出声）；note = 鼓件：这条声部的每个音都敲鼓组里这个键（2026-10-07 加，可选）
+  | { engine: "soundfont"; bank: number; program: number; note?: number; source: Sf2Source;   // SoundFont 2 的一个预设（TinySoundFont 出声）；note = 每个音都敲这个键：鼓件（2026-10-07 加，可选）/ 音效固定原速（2026-10-08）
+      /** 2026-10-08 加（可选，不升版本；Claude Opus 5.5）：音效（GS GM 116–128）上场时从目录按值抄的——key = 原速键、midi = 原速时听到的最强频率（有音高才有）、
+       *  centsPerKey = 每键几音分；align = 关掉固定原速后按写的音反算键（src/gm/sf-key.ts）。user「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」。 */
+      sfx?: { key: number; midi?: number; centsPerKey?: number; align?: boolean } }
   | { engine: "unknown"; [k: string]: unknown };                                        // 别家谱原来的乐器 / 这一版不认识的：整份原样写回，上场 = 没人、不出声
 /** SoundFont 的来源（契约 §10.2 样本类 by value）。
  *  embedded = 子集字节在歌里的路径（强引用，默认）；null = **弱引用**（user 2026-10-07：大的可以不嵌，「允许一个弱引用自己去官方和人的地方拉」）——

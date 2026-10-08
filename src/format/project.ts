@@ -220,7 +220,8 @@ export function withActive(extras: Extras, role: string, id: string, hum: Hum): 
 // ── SoundFont 候选（契约 §10.2：子集 by value 嵌进歌；弱引用 = 只记来源）────────────────────
 export interface GmCandidate {
   id: string; name: string; bank: number; program: number;
-  note?: number;                       // 鼓件：每个音都敲这个键
+  note?: number;                       // 每个音都敲这个键：鼓件 / 音效固定原速
+  sfx?: { key: number; midi?: number; centsPerKey?: number; align?: boolean };   // 音效（上场时从目录按值抄的原速键 / 音高锚点；src/gm/sf-key.ts）
   path: string | null;                 // 字节在歌里的路径；null = 弱引用（歌里不带声音）
   bytes: Uint8Array | null;            // 歌里带的字节；null = 弱引用，或强引用但文件里少了那块
   origin: Sf2Source["origin"];
@@ -231,13 +232,14 @@ export function gmCandidates(extras: Extras, role: string): GmCandidate[] {
   return cands(extras.lounge[role]).flatMap((c) => {
     const i = instrumentOf(c); if (i?.engine !== "soundfont") return [];
     const s = i.source;
-    return [{ id: String(c.id), name: String(c.name ?? ""), bank: i.bank, program: i.program, ...(i.note !== undefined ? { note: i.note } : {}), path: s.embedded, bytes: s.embedded ? extras.sounds[s.embedded] ?? null : null, origin: s.origin, subsetSha256: s.subsetSha256 }];
+    return [{ id: String(c.id), name: String(c.name ?? ""), bank: i.bank, program: i.program, ...(i.note !== undefined ? { note: i.note } : {}), ...(i.sfx ? { sfx: i.sfx } : {}), path: s.embedded, bytes: s.embedded ? extras.sounds[s.embedded] ?? null : null, origin: s.origin, subsetSha256: s.subsetSha256 }];
   });
 }
 /** 现在上场的 SoundFont 候选（上场的不是它 = null）。 */
 export function activeGm(extras: Extras, role: string): GmCandidate | null { const id = activeId(extras, role); return gmCandidates(extras, role).find((c) => c.id === id) ?? null; }
 export interface Sf2CandidateArgs {
   name: string; bank: number; program: number; note?: number;
+  sfx?: { key: number; midi?: number; centsPerKey?: number; align?: boolean };   // 音效：原速键 / 音高锚点（从目录按值抄；note 设成 sfx.key = 固定原速，默认）
   subset: Uint8Array; sha256: string;                                   // 子集字节 + 它的 sha256（调用方算，crypto.subtle 是异步的）
   embed?: boolean;                                                      // 默认 true = 字节进歌；false = 弱引用（只记来源 + 子集 sha256，歌里不带声音）
   origin: Sf2Source["origin"];                                          // 从哪个整包切的
@@ -250,7 +252,7 @@ export function withSf2Candidate(extras: Extras, role: string, c: Sf2CandidateAr
   const list = cands(r);
   const n = Math.max(0, ...list.map((x) => Number(/^c(\d+)$/.exec(String(x.id))?.[1] ?? 0))) + 1, id = `c${n}`;
   const embed = c.embed !== false, path = embed ? `${SOUNDS}${c.sha256}.sf2` : null;
-  const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
+  const instrument: InstrumentV2 = { engine: "soundfont", bank: c.bank, program: c.program, ...(c.note !== undefined ? { note: c.note } : {}), ...(c.sfx ? { sfx: { ...c.sfx } } : {}), source: { embedded: path, subsetBytes: c.subset.length, subsetSha256: c.sha256, origin: c.origin } };
   list.push({ id, name: c.name, instrument, gm: { program: c.bank === 128 ? null : c.program + 1, variant: null }, ...common(), calibrationDb: c.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS }, credit: c.credit, spec: structuredClone(SOUNDFONT_SPEC) });
   r.candidates = list; r.active = id;
   return { ...extras, lounge: { ...extras.lounge, [role]: r }, sounds: path ? { ...extras.sounds, [path]: c.subset } : extras.sounds };
@@ -341,6 +343,31 @@ export function activeCalibrationDb(extras: Extras, role: string): number { cons
 export function withCalibration(extras: Extras, role: string, dB: number, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
   c.calibrationDb = Math.round(dB * 10) / 10;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
+// ── 音效：固定原速 / 音高对齐（上场那位的 instrument.note / sfx.align；2026-10-08 by Claude Opus 5.5；user「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）──
+/** 固定原速开 / 关：开 = 每个音都敲原速键（note = sfx.key）；关 = 按写的音敲（可再开音高对齐）。不是音效 = 原样。 */
+export function withSfxFixed(extras: Extras, role: string, on: boolean, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), i = instrumentOf(cands(r).find((x) => x.id === r.active));
+  if (i?.engine !== "soundfont" || !i.sfx) return extras;
+  if (on) i.note = i.sfx.key; else delete i.note;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
+/** 音高对齐开 / 关（只在没固定原速、原速时听得出音高时有意义）。 */
+export function withSfxAlign(extras: Extras, role: string, on: boolean, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), i = instrumentOf(cands(r).find((x) => x.id === r.active));
+  if (i?.engine !== "soundfont" || !i.sfx) return extras;
+  if (on) i.sfx.align = true; else delete i.sfx.align;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
+// ── 修八度 / 移调（候选的 transpose，半音；2026-10-08 by Claude Opus 5.5；user「修八度和移调的音色级别的选项…大部分情况不应该动，是worst case兜底」）──
+/** 上场那位的移调（半音；没写 = 0）。 */
+export function activeTranspose(extras: Extras, role: string): number { const v = Number(activeCandidate(extras, role)?.transpose ?? 0); return Number.isInteger(v) ? v : 0; }
+/** 改上场那位的移调（夹在 ±48；0 = 去掉字段，存档不多出 0）。 */
+export function withTranspose(extras: Extras, role: string, semis: number, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
+  const t = Math.max(-48, Math.min(48, Math.round(semis)));
+  if (t) c.transpose = t; else delete c.transpose;
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
 

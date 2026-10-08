@@ -20,7 +20,10 @@ export interface Concept {
   /** 音效在现实里最像的那个键（v5；电话 = 102，GS 采样实测 2951 Hz；user「电话铃感觉就是老实的，以你听到的为准」）。 */
   naturalKey?: { note: number; hz?: number; basis?: string } | null;
 }
-export interface GmRow { program: number; bank: number; note?: number; gmNumber: number; gmName: string; family?: string; concept: string; relation: "self" | "substitute"; primary?: boolean; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string }   // primary = 一个号多重认领时的主本尊（v3）
+export interface GmRow { program: number; bank: number; note?: number; gmNumber: number; gmName: string; family?: string; concept: string; relation: "self" | "substitute"; primary?: boolean; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string;   // primary = 一个号多重认领时的主本尊（v3）
+  /** GM 116–128 音效：在 GS + TinySoundFont 里按哪个键是采样原速（v8 按 TSF 的音高公式重算；换音色库 / 引擎就不算数）。 */
+  sampleKey?: { soundfont: string; engine?: string; recommended: number; recommendedBasis?: string;
+    layers?: { sample?: string; originalSpeedKey?: number; centsPerKey?: number; keyRange?: string; peakAtRecommended?: { hz: number; midi: number; pitched: boolean } | null }[] } }
 export interface Defs { eras: { id: string; zh: string; from: number | null; to: number | null }[]; families: { id: string; en: string; zh: string }[]; kinds: { id: string; zh: string }[]; styles?: { id?: string; tag?: string; zh?: string; en?: string }[]; weights?: { id: number; zh: string }[] }
 export interface Catalog {
   version: number; concepts: Concept[]; byId: Map<string, Concept>;
@@ -66,10 +69,24 @@ export function providersOf(cat: Catalog, c: Concept): Provider[] {
 export function rangeOf(c: Concept | undefined): { lo: number; hi: number; title: string } | null {
   const r = c?.range;
   if (r && Number.isFinite(r.low) && Number.isFinite(r.high) && r.low <= r.high) return { lo: r.low, hi: r.high, title: `${c!.names.zh}的常用音域${r.basis ? `（依据：${r.basis}）` : ""}` };
-  const k = c?.naturalKey;
-  if (k && Number.isFinite(k.note)) return { lo: k.note, hi: k.note, title: `${c!.names.zh}最像真的那个键${k.hz ? `（约 ${Math.round(k.hz)} Hz）` : ""}` };
+  // naturalKey（「听起来像哪个音高」）不拿来当提示键：音效的键名 ≠ 听到的音高（仓鼠 v8：电话原速键 64，听到的最强频率在 C7 附近）。按哪个键 = sampleKeyOf
   return null;
 }
+/** GS 的音效预设在 TinySoundFont 里的原速键（按它采样不拉伸不压缩；仓鼠 v8）；不是 GS 的音效 = null。
+ *  只对家族音源库的 GeneralUser GS 成立——调用方确认演奏者用的就是它（origin.library）。 */
+export function sampleKeyOf(cat: Catalog, bank: number, program: number): { key: number; title: string; midi?: number; centsPerKey?: number } | null {
+  const row = cat.rows.find((r) => r.bank === bank && r.program === program && r.note === undefined && r.sampleKey);
+  const k = row?.sampleKey;
+  if (!k || !Number.isFinite(k.recommended)) return null;
+  // 音高对齐的锚点（sf-key.ts）：「原速键 = 推荐键」的那层（仓鼠定推荐键时的主层）；没有就取第一个覆盖推荐键、听得出音高的层。宽带噪声 = 没有锚点（不能对齐）
+  const covers = (r?: string) => { const m = /^(\d+)\s*[–-]\s*(\d+)$/.exec(r ?? ""); return !m || (k.recommended >= +m[1] && k.recommended <= +m[2]); };
+  const ls = (k.layers ?? []).filter((l) => covers(l.keyRange) && l.peakAtRecommended?.pitched && l.centsPerKey);
+  const main = ls.find((l) => Math.round(l.originalSpeedKey ?? NaN) === k.recommended) ?? ls[0];
+  return { key: k.recommended, title: `原速键：按这个键，采样不拉伸不压缩${k.recommendedBasis ? `（${k.recommendedBasis}）` : ""}`,
+    ...(main ? { midi: Math.round(main.peakAtRecommended!.midi * 100) / 100, centsPerKey: main.centsPerKey } : {}) };
+}
+/** GS 在家族音源库里的 id（sampleKey 只对它成立）。 */
+export const GS_LIBRARY_ID = "generaluser-gs-2.0.3";
 /** 谱上写的角色名：目录里的英文名首字母大写（打谱惯例；Vocals / Piano 同款）。 */
 export const roleNameOf = (c: Concept): string => c.names.en.replace(/^./, (ch) => ch.toUpperCase());
 /** 角色的官方乐器语义 id：概念自己的；没有就用本尊预设的；再没有 = null（角色沿用原来的）。 */

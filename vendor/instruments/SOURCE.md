@@ -1,16 +1,35 @@
 # MoonSinger 挑乐器数据（2026-10-07）
 
-**现行版本 = v7**（2026-10-08）。v1–v6 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v8。
+**现行版本 = v8**（2026-10-08）。v1–v7 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v9。
 
 > 由 `scripts/build_export.py` 生成，别手改；改数据改 `data/` 再重跑。规格 = PWAProjects 的 webpaint editor v1 prototyping 会话转述的 user 拍板 + 本仓会话 user 原话（见脚本头注释）。
 
 | 文件 | 是什么 |
 |---|---|
-| `instruments-v7.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
-| `gm-map-v7.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
-| `instrument-icons-20261008-v7.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
-| `icon-credits-v7.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
-| `LICENSES-chosen-v7.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+| `instruments-v8.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
+| `gm-map-v8.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
+| `instrument-icons-20261008-v8.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
+| `icon-credits-v8.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
+| `LICENSES-chosen-v8.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+
+## v7 → v8 改了什么（修 sampleKey 的值、加两个字段；概念、图标和 v7 一样）
+
+起因：user「键和主音不对齐这件事怎么办，有哪些有这个问题」。查下去发现 **v5–v7 的 `sampleKey` 是按另一种读法算的，在 MoonSinger 里不对**。
+- **原速键改按 TinySoundFont（MoonSinger 的引擎，`vendor/tsf` 的 tsf.h v0.9）的读法**：TSF 把粗调 / 微调当成键偏移、跟着每键音分（scaleTuning）一起缩放——音高 = 根音 +（键 + coarse + fine/100 − 根音）× scaleTuning/100；v5–v7 按「粗调不缩放」算，scaleTuning 50 的音效差出 2–14 个键。直升机另算上 GU 用调制包络加的 +94 音分（稳态）。用 TSF 渲染逐个核过：按新键弹，谱和采样原速重合（差 ≤ 0.5 半音）。
+  | GM | 音色 | v7 推荐键 | **v8 推荐键** |
+  |---|---|---|---|
+  | 116 | Woodblock | 64 | **62** |
+  | 118 | Melodic Tom | 72 | **58** |
+  | 123 | Seashore | 64 | **62** |
+  | 124 | Bird Tweet | 58 | **60** |
+  | 125 | Telephone Ring | 79 | **64**（还是北美 20 Hz 振铃；v7 的 79 在 TSF 里是每秒 31 下） |
+  | 126 | Helicopter | 86 | **71** |
+  | 127 | Applause | 80 | **62** |
+  | 128 | Gunshot | 88 | **74** |
+  | 117 / 119 / 120 / 121 / 122 | Taiko / Synth Drum / Reverse Cymbal / Fret Noise / Breath | 不变 | 60 / 60 / 60 / 69 / 61 |
+  `layers[].originalSpeedKey` 全部按 TSF 重算。几层叠着响（木鱼两层同时响）时 `recommended` 取原速键落在自己键位范围里、离 60 键（GU 作者的约定键）最近的那层。电话备选：中国 / 欧洲 25 Hz ≈ 71，日本约 16 Hz ≈ 56。**换引擎要重算**（规范没写死这一点，各播放器读法不同）。
+- **`sampleKey.engine`**（新字段，字符串）：这些键号是按哪个引擎的读法算的，现在是 `TinySoundFont（tsf.h v0.9，MoonSinger 内置）`。
+- **`layers[].peakAtRecommended: {hz, midi, pitched} | null`**（新字段）：按 `recommended` 键弹时，这层采样 100 Hz–8 kHz 的**最强谱峰**（不一定是人耳听到的主音）；`pitched: false` = 宽带噪声，峰不算音高；这层在推荐键上不响 = null。用途：音效的键名和听到的对不上（电话 64 键名 E4，听到的峰约 2148 Hz ≈ C7），界面上别拿键名当音高。各音色明细和「哪些有这个问题」见源仓 `ai-docs/20261008-键和主音对不齐.md`。
 
 ## v6 → v7 改了什么（只改两个值）
 
@@ -26,7 +45,7 @@
 MoonSinger 要的（起因：user「试弹的时候键盘上的音域没有跟进」；user「嗯让仓鼠调查。我特别好奇电话应该用哪个音高」）。
 - **`range: {low, high, basis} | null`**（表 ①）：实际发声的常用音域，MIDI 号（中央 C = 60）；移调 / 移八度乐器已换算成实际响的音；专业演奏者的极限不算。94 个概念有，其余（打击乐、鼓件、音效、编制、变体太多的）为 null。`basis` = 依据类型（原文 / 原文换算 / AI 常识）+ 出处条目；**34 个是 AI 常识**。
 - **`naturalKey: {note, hz, basis}`**（表 ①，只在有的概念上出现）：音效在现实里最像的音高——电话 102（GeneralUser GS 采样实测 2951 Hz）、鸟 97、哔声 83（BBC 报时 1 kHz）、猫 74、狗 71、汽车 40、蟋蟀 109（后四个是 AI 常识）。雨、风、海等宽带噪声没有。
-- **`sampleKey: {soundfont, recommended, layers[]}`**（表 ②，音效类 GM 号 116–128）：在 GeneralUser GS 2.0.3 里按哪个键采样不拉伸不压缩（user「没有音高的pad也应该有一个推荐的key吧，不然也会拉伸压缩」）。`recommended` = 第一个原速键落在自己键位范围里的那层，四舍五入到整数；`layers[]` 每层 `{sample, originalSpeedKey, centsPerKey, keyRange}`（`centsPerKey` 50 = 两个键才升一个半音）。**注意**：GU 作者给很多音效设了负的粗调，按 60 键时采样被放慢，所以「原速键」不一定是 GU 作者想让人按的键（作者那套约定是 60）；user 定的是「老实的，以你听到的为准」。电话的完整答案见源仓 `ai-docs/20261008-电话该用哪个音高.md`。
+- **`sampleKey: {soundfont, recommended, layers[]}`**（表 ②，音效类 GM 号 116–128）：在 GeneralUser GS 2.0.3 里按哪个键采样不拉伸不压缩（user「没有音高的pad也应该有一个推荐的key吧，不然也会拉伸压缩」）。`recommended` = 第一个原速键落在自己键位范围里的那层，四舍五入到整数；`layers[]` 每层 `{sample, originalSpeedKey, centsPerKey, keyRange}`（`centsPerKey` 50 = 两个键才升一个半音）。**注意**：GU 作者给很多音效设了负的粗调，按 60 键时采样被放慢，所以「原速键」不一定是 GU 作者想让人按的键（作者那套约定是 60）；user 定的是「老实的，以你听到的为准」。电话的完整答案见源仓 `ai-docs/20261008-电话该用哪个音高.md`。**（v8 勘误：v5–v7 的原速键按「粗调不缩放」算，MoonSinger 的 TSF 不是这么读的，见上面 v7 → v8。）**
 
 ## v3 → v4 改了什么（都向后兼容：只加字段、加取值，没删、没改名的字段；v3 的概念 id 一个没少）
 

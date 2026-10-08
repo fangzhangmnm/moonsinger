@@ -367,13 +367,10 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .finder-pad { flex: none; display: inline-flex; align-items: center; gap: 4px; }   /* 试听键盘开关（收起了也叫得回来） */
 @media (max-width: 560px) { .finder-pad span, .finder-title { display: none; } }
 .finder-hint { flex: none; padding: 6px 12px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
-/* 类级跳转条：一组一粒，横向滑；滚动时亮着现在所在的组 */
-.finder-jump { position: relative; flex: none; display: flex; gap: 6px; overflow-x: auto; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-.finder-jump::-webkit-scrollbar { display: none; }
+/* 类级跳转：一组一项的下拉；滚动时跟着显示现在所在的组 */
+.finder-jump { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); font-size: 13px; color: var(--muted); }   /* 类级跳转 = 下拉（user「category选项能做成下拉而不是滑动吗」） */
 .finder-jump[hidden] { display: none; }
-.jump-chip { flex: none; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 15px; background: #fff; color: var(--ink); font: inherit; font-size: 13px; white-space: nowrap; cursor: pointer; }
-.jump-chip small { margin-left: 4px; font-size: 11px; color: var(--muted); }
-.jump-chip.is-on { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
+.finder-jump-sel { flex: 1; min-width: 0; max-width: 420px; height: 32px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; }
 .finder-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 0 0 24px; }   /* 顶上不留内边距：组标题粘在顶上时和边对齐，不留一条透字的缝（user 2026-10-08「category条没对齐，有缝隙」） */
 .finder-empty { padding: 24px; color: var(--muted); text-align: center; }
 .finder-group-h { position: sticky; top: 0; z-index: 1; background: var(--bg); padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }

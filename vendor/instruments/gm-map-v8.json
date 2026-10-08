@@ -1,5 +1,5 @@
 {
- "v": 7,
+ "v": 8,
  "date": "2026-10-08",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ② GM 映射：一行 = 一个 GM 号 → 一个概念。relation = self（本尊：这个号就是这个概念，175 个号每个恰好一条 primary: true；多重认领的另加 primary: false）/ substitute（平替：这个号能拿来顶这个概念，basis 见 defs）。program 从 0 起；鼓件 bank 128、program 0、note = MIDI 键号。musicxmlSound = 这个号自己最贴的 sound id。",
@@ -3794,20 +3794,31 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 64,
-    "recommendedBasis": "原速键（Wood Block Hard 这层不拉伸不压缩）",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
+    "recommended": 62,
+    "recommendedBasis": "原速键（Wood Block Hard 这层不拉伸不压缩；几层叠着响，取原速键离 60 键最近的那层）",
     "layers": [
      {
       "sample": "Wood Block Med",
-      "originalSpeedKey": 113.76,
+      "originalSpeedKey": 86.88,
       "centsPerKey": 50,
-      "keyRange": "0–108"
+      "keyRange": "0–108",
+      "peakAtRecommended": {
+       "hz": 1171.7,
+       "midi": 85.96,
+       "pitched": true
+      }
      },
      {
       "sample": "Wood Block Hard",
-      "originalSpeedKey": 64.0,
+      "originalSpeedKey": 62.0,
       "centsPerKey": 50,
-      "keyRange": "0–127"
+      "keyRange": "0–127",
+      "peakAtRecommended": {
+       "hz": 627.3,
+       "midi": 75.14,
+       "pitched": true
+      }
      }
     ]
    }
@@ -3840,14 +3851,20 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
     "recommended": 60,
     "recommendedBasis": "原速键（Taiko Drum 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Taiko Drum",
-      "originalSpeedKey": 60.46,
+      "originalSpeedKey": 60.23,
       "centsPerKey": 50,
-      "keyRange": "0–108"
+      "keyRange": "0–108",
+      "peakAtRecommended": {
+       "hz": 267.6,
+       "midi": 60.39,
+       "pitched": false
+      }
      }
     ]
    }
@@ -3874,38 +3891,48 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 72,
-    "recommendedBasis": "原速键（Standard Tom 1 这层不拉伸不压缩）",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
+    "recommended": 58,
+    "recommendedBasis": "原速键（Standard Tom 3 这层不拉伸不压缩；几层叠着响，取原速键离 60 键最近的那层）",
     "layers": [
      {
       "sample": "Standard Tom 1",
-      "originalSpeedKey": 72.0,
+      "originalSpeedKey": 66.0,
       "centsPerKey": 50,
-      "keyRange": "70–127"
+      "keyRange": "70–127",
+      "peakAtRecommended": null
      },
      {
       "sample": "Standard Tom 2",
-      "originalSpeedKey": 66.0,
+      "originalSpeedKey": 63.0,
       "centsPerKey": 50,
-      "keyRange": "61–69"
+      "keyRange": "61–69",
+      "peakAtRecommended": null
      },
      {
       "sample": "Standard Tom 5",
-      "originalSpeedKey": 38.0,
+      "originalSpeedKey": 49.0,
       "centsPerKey": 50,
-      "keyRange": "0–42"
+      "keyRange": "0–42",
+      "peakAtRecommended": null
      },
      {
       "sample": "Standard Tom 3",
-      "originalSpeedKey": 56.0,
+      "originalSpeedKey": 58.0,
       "centsPerKey": 50,
-      "keyRange": "53–60"
+      "keyRange": "53–60",
+      "peakAtRecommended": {
+       "hz": 104.9,
+       "midi": 44.18,
+       "pitched": true
+      }
      },
      {
       "sample": "Standard Tom 4",
-      "originalSpeedKey": 48.0,
+      "originalSpeedKey": 54.0,
       "centsPerKey": 50,
-      "keyRange": "43–52"
+      "keyRange": "43–52",
+      "peakAtRecommended": null
      }
     ]
    }
@@ -3938,6 +3965,7 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
     "recommended": 60,
     "recommendedBasis": "原速键（Electric Tom 这层不拉伸不压缩）",
     "layers": [
@@ -3945,7 +3973,12 @@
       "sample": "Electric Tom",
       "originalSpeedKey": 60.0,
       "centsPerKey": 50,
-      "keyRange": "0–127"
+      "keyRange": "0–127",
+      "peakAtRecommended": {
+       "hz": 141.1,
+       "midi": 49.31,
+       "pitched": true
+      }
      }
     ]
    }
@@ -3973,6 +4006,7 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
     "recommended": 60,
     "recommendedBasis": "原速键（Reverse Cymbal 这层不拉伸不压缩）",
     "layers": [
@@ -3980,7 +4014,12 @@
       "sample": "Reverse Cymbal",
       "originalSpeedKey": 60.0,
       "centsPerKey": 50,
-      "keyRange": "0–127"
+      "keyRange": "0–127",
+      "peakAtRecommended": {
+       "hz": 3780.7,
+       "midi": 106.24,
+       "pitched": false
+      }
      }
     ]
    }
@@ -4008,14 +4047,20 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
     "recommended": 69,
     "recommendedBasis": "原速键（Fret Slide 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Fret Slide",
-      "originalSpeedKey": 68.82,
+      "originalSpeedKey": 68.91,
       "centsPerKey": 50,
-      "keyRange": "0–108"
+      "keyRange": "0–108",
+      "peakAtRecommended": {
+       "hz": 4607.3,
+       "midi": 109.66,
+       "pitched": false
+      }
      }
     ]
    }
@@ -4047,6 +4092,7 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
     "recommended": 61,
     "recommendedBasis": "原速键（Breath Noise-1 这层不拉伸不压缩）",
     "layers": [
@@ -4054,13 +4100,19 @@
       "sample": "Breath Noise-1",
       "originalSpeedKey": 61.25,
       "centsPerKey": 100,
-      "keyRange": "0–78"
+      "keyRange": "0–78",
+      "peakAtRecommended": {
+       "hz": 841.0,
+       "midi": 80.21,
+       "pitched": true
+      }
      },
      {
       "sample": "Breath Noise-2",
       "originalSpeedKey": 61.25,
       "centsPerKey": 100,
-      "keyRange": "79–108"
+      "keyRange": "79–108",
+      "peakAtRecommended": null
      }
     ]
    }
@@ -4097,20 +4149,31 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 64,
-    "recommendedBasis": "原速键（Seashore 这层不拉伸不压缩）",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
+    "recommended": 62,
+    "recommendedBasis": "原速键（Seashore 这层不拉伸不压缩；几层叠着响，取原速键离 60 键最近的那层）",
     "layers": [
      {
       "sample": "Seashore",
-      "originalSpeedKey": 63.54,
+      "originalSpeedKey": 61.77,
       "centsPerKey": 50,
-      "keyRange": "0–108"
+      "keyRange": "0–108",
+      "peakAtRecommended": {
+       "hz": 2468.7,
+       "midi": 98.86,
+       "pitched": false
+      }
      },
      {
       "sample": "Seashore",
-      "originalSpeedKey": 75.54,
+      "originalSpeedKey": 67.77,
       "centsPerKey": 50,
-      "keyRange": "0–108"
+      "keyRange": "0–108",
+      "peakAtRecommended": {
+       "hz": 2076.0,
+       "midi": 95.86,
+       "pitched": false
+      }
      }
     ]
    }
@@ -4152,20 +4215,31 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 58,
-    "recommendedBasis": "原速键（Birds 这层不拉伸不压缩）",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
+    "recommended": 60,
+    "recommendedBasis": "原速键（Birds 这层不拉伸不压缩；几层叠着响，取原速键离 60 键最近的那层）",
     "layers": [
      {
       "sample": "Birds",
-      "originalSpeedKey": 58.37,
+      "originalSpeedKey": 59.51,
       "centsPerKey": 30,
-      "keyRange": "0–127"
+      "keyRange": "0–127",
+      "peakAtRecommended": {
+       "hz": 2101.0,
+       "midi": 96.07,
+       "pitched": false
+      }
      },
      {
       "sample": "Birds",
-      "originalSpeedKey": 62.1,
+      "originalSpeedKey": 60.63,
       "centsPerKey": 30,
-      "keyRange": "0–127"
+      "keyRange": "0–127",
+      "peakAtRecommended": {
+       "hz": 2167.9,
+       "midi": 96.61,
+       "pitched": false
+      }
      }
     ]
    }
@@ -4198,26 +4272,42 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 79,
-    "recommendedBasis": "按 GS 作者可能拆样的那台电话推：最可能是北美老式话机 20 Hz 振铃，79 键时 35.9 ms 的循环每秒约 20 遍（原速 90 键约 28 遍）；中国 / 欧洲 25 Hz 约 86 键，日本约 16 Hz 约 72 键",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
+    "recommended": 64,
+    "recommendedBasis": "按 GS 作者可能拆样的那台电话推：最可能是北美老式话机 20 Hz 振铃，64 键时 35.9 ms 的循环每秒约 20.3 遍（原速 75 键约 27.9 遍）；中国 / 欧洲 25 Hz 约 71 键，日本约 16 Hz 约 56 键（TinySoundFont 的读法）",
     "layers": [
      {
       "sample": "LeFone",
-      "originalSpeedKey": 90.0,
+      "originalSpeedKey": 75.0,
       "centsPerKey": 50,
-      "keyRange": "0–127"
+      "keyRange": "0–127",
+      "peakAtRecommended": {
+       "hz": 2147.9,
+       "midi": 96.45,
+       "pitched": true
+      }
      },
      {
       "sample": "ColdGlass7Wave",
-      "originalSpeedKey": 79.86,
+      "originalSpeedKey": 69.93,
       "centsPerKey": 50,
-      "keyRange": "0–127"
+      "keyRange": "0–127",
+      "peakAtRecommended": {
+       "hz": 2322.4,
+       "midi": 97.8,
+       "pitched": true
+      }
      },
      {
       "sample": "ColdGlass7Wave",
-      "originalSpeedKey": 87.86,
+      "originalSpeedKey": 73.93,
       "centsPerKey": 50,
-      "keyRange": "0–127"
+      "keyRange": "0–127",
+      "peakAtRecommended": {
+       "hz": 2069.0,
+       "midi": 95.8,
+       "pitched": true
+      }
      }
     ]
    }
@@ -4250,14 +4340,20 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 86,
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
+    "recommended": 71,
     "recommendedBasis": "原速键（Helicopter 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Helicopter",
-      "originalSpeedKey": 85.96,
+      "originalSpeedKey": 71.1,
       "centsPerKey": 50,
-      "keyRange": "0–108"
+      "keyRange": "0–108",
+      "peakAtRecommended": {
+       "hz": 361.4,
+       "midi": 65.59,
+       "pitched": false
+      }
      }
     ]
    }
@@ -4314,20 +4410,31 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 80,
-    "recommendedBasis": "原速键（Applause 这层不拉伸不压缩）",
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
+    "recommended": 62,
+    "recommendedBasis": "原速键（Applause 这层不拉伸不压缩；几层叠着响，取原速键离 60 键最近的那层）",
     "layers": [
      {
       "sample": "Applause",
-      "originalSpeedKey": 80.0,
+      "originalSpeedKey": 62.0,
       "centsPerKey": 10,
-      "keyRange": "0–108"
+      "keyRange": "0–108",
+      "peakAtRecommended": {
+       "hz": 1586.4,
+       "midi": 91.2,
+       "pitched": false
+      }
      },
      {
       "sample": "Applause",
-      "originalSpeedKey": 40.0,
+      "originalSpeedKey": 58.0,
       "centsPerKey": 10,
-      "keyRange": "0–108"
+      "keyRange": "0–108",
+      "peakAtRecommended": {
+       "hz": 1623.5,
+       "midi": 91.6,
+       "pitched": false
+      }
      }
     ]
    }
@@ -4365,14 +4472,20 @@
    ],
    "sampleKey": {
     "soundfont": "GeneralUser GS 2.0.3",
-    "recommended": 88,
+    "engine": "TinySoundFont（tsf.h v0.9，MoonSinger 内置）",
+    "recommended": 74,
     "recommendedBasis": "原速键（Gun Shot 这层不拉伸不压缩）",
     "layers": [
      {
       "sample": "Gun Shot",
-      "originalSpeedKey": 88.0,
+      "originalSpeedKey": 74.0,
       "centsPerKey": 50,
-      "keyRange": "0–127"
+      "keyRange": "0–127",
+      "peakAtRecommended": {
+       "hz": 588.3,
+       "midi": 74.03,
+       "pitched": false
+      }
      }
     ]
    }
