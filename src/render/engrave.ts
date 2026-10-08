@@ -427,7 +427,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       for (const c of seg) { if (x + c.w > right && x > sysStarts[system] + 0.01) newline(); place(c); }
       seg = [];
     };
-    // 句 = 这里一定换行（同一 tick 上紧跟的小节线留在这一行末尾）；句结尾的行不拉宽（像段尾）
+    // 句 = 这里一定换行（同一 tick 上紧跟的小节线留在这一行末尾）
     const forcedEnd = new Set<number>();
     const forceNewline = () => { if (x > sysStarts[system] + 0.01) { forcedEnd.add(system); newline(); } };
     let pendingBreak: number | null = null;
@@ -443,7 +443,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     for (let s = 0; s < nSys; s++) {
       const row = cols.filter((c) => c.system === s);
       const end = row.reduce((m, c) => Math.max(m, c.x + c.w), sysStarts[s]), avail = right - sysStarts[s], used = end - sysStarts[s];
-      if (used <= avail + 1e-6 && (s === nSys - 1 || forcedEnd.has(s) || used < avail * 0.6)) continue;
+      if (used <= avail + 1e-6 && (s === nSys - 1 || used < avail * 0.6)) continue;   // 句尾的行也和别的行一样右端拉齐（user 2026-10-08「换行感觉不规整」）；太短的（< 60%）不拉
       const gw = chunkW(row);
       if (!gw) continue;
       const k = (avail - used) / gw;

@@ -494,4 +494,4 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 
 /* 句（换气记号）、隐藏的纸 */
 .staff-svg .breath { fill: var(--ink); }
-.staff-svg .part-stub.hidden-note { fill: var(--danger); }
+.staff-svg .part-stub.hidden-note { fill: var(--muted); }   /* 灰字（user「红字：应该用灰字」） */

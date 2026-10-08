@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.6.3-2026-10-08";
+var APP_VERSION = "v0.6.4-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4478,7 +4478,7 @@ function engrave(song, o10) {
     for (let s10 = 0; s10 < nSys; s10++) {
       const row = cols.filter((c10) => c10.system === s10);
       const end = row.reduce((m2, c10) => Math.max(m2, c10.x + c10.w), sysStarts[s10]), avail = right - sysStarts[s10], used = end - sysStarts[s10];
-      if (used <= avail + 1e-6 && (s10 === nSys - 1 || forcedEnd.has(s10) || used < avail * 0.6)) continue;
+      if (used <= avail + 1e-6 && (s10 === nSys - 1 || used < avail * 0.6)) continue;
       const gw = chunkW(row);
       if (!gw) continue;
       const k2 = (avail - used) / gw;
@@ -25224,7 +25224,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "1bb8e8e45dde",
+  cssHash: "4c83eaad2430",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -26768,4 +26768,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-caa433b0412d.mjs.map
+//# sourceMappingURL=moonsinger-c2285ff8bebc.mjs.map
