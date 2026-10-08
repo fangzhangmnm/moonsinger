@@ -66,6 +66,16 @@ describe("音源打包 / 解包（project.ts）", () => {
     const back = withPacked(r.extras, (s) => r.removed.get(s)).extras;
     eq(JSON.stringify(Object.keys(back.sounds).sort()), JSON.stringify(Object.keys(packed.sounds).sort()));
   });
+  it("只解一部分（only）：没选中的照旧打包着", async () => {
+    const { extras, a, b } = await twoWeak();
+    const have = new Map([[a.sha256, a.subset], [b.sha256, b.subset]]);
+    const packed = withPacked(extras, (s) => have.get(s)).extras;
+    const r = withUnpacked(packed, (s) => s === a.sha256);
+    eq(JSON.stringify([...r.removed.keys()]), JSON.stringify([a.sha256]));
+    eq(activeGm(r.extras, "r1")!.path, null); eq(activeGm(r.extras, "r2")!.path, `.moonsinger/sounds/${b.sha256}.sf2`, "没选中的被解了");
+    eq(Object.keys(r.extras.sounds).length, 1);
+    eq(withUnpacked(packed, () => false).extras, packed, "一个都不解 = 原样");
+  });
   it("没有嵌的 = 解包原样返回；只有月读的歌 = 打包 / 解包都不动", async () => {
     const { extras } = await twoWeak();
     eq(withUnpacked(extras).extras, extras);

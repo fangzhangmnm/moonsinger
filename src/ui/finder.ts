@@ -10,19 +10,20 @@ export interface FinderHost {
   roleName(): string;                                          // 现在的角色名（顶条写「找人给「X」」）
   audition(p: FinderPick | null): Promise<void>;                     // 试听台：载进实时合成器（pad 弹它）；null = 停
   playHead(p: FinderPick): Promise<void>;                            // 用它放本声部开头
-  cast(p: FinderPick, mode: "auto" | "embed" | "weak"): Promise<"done" | "over">;   // 上场；"over" = 超软上限，视图显示三选一
+  cast(p: FinderPick): Promise<void>;                                // 上场（声音默认弱引用：歌里只记来源，要带着走 = 文件菜单「全部打包进歌」）
   close(): void;
+  togglePad(): void;                                                 // 顶条「键盘」：开 / 关试听键盘（user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）
 }
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export class Finder {
   readonly el: HTMLDivElement;
   private cat: Catalog | null = null;
-  private mode: SortMode = "year";          // user「默认按年代排哈哈哈」
+  private mode: SortMode = "style";         // 默认按〇〇风（user 2026-10-08「然后音色排序默认还是画风吧。年代好玩但其实每次都要多点一次哈哈」；此前 10-07「默认按年代排哈哈哈」）
   private q = "";
-  private opened: string | null = null;     // 展开的概念（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）
+  private opened: string | null = null;     // 展开的那一行 = 「组 id::概念 id」（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）。
+                                            // 记组：按曲风排时同一件乐器在好几个组里都有，只记概念 = 每个组里的它都展开、滚去第一个（user 2026-10-08「在一个category里面选择一个乐器，会跳到第一个出现这个乐器的category」）
   private selected = "";                    // 试听台上的提供者（`${概念 id}|${bank}:${program}` / `${概念 id}|voice`）
-  private over: { key: string; pick: FinderPick } | null = null;   // 超软上限等三选一
   private loading: Promise<void> | null = null;
   private host: FinderHost;
   constructor(parent: HTMLElement, host: FinderHost) {
@@ -30,7 +31,8 @@ export class Finder {
     this.el = document.createElement("div"); this.el.className = "finder"; this.el.hidden = true;
     this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="finder-title"></span>` +
       `<input class="finder-q" type="search" placeholder="搜乐器（中 / 英 / 日）" spellcheck="false" autocomplete="off" />` +
-      `<select class="finder-sort">${(Object.keys(SORT_LABEL) as SortMode[]).map((m) => `<option value="${m}">${SORT_LABEL[m]}</option>`).join("")}</select></div>` +
+      `<select class="finder-sort">${(Object.keys(SORT_LABEL) as SortMode[]).map((m) => `<option value="${m}">${SORT_LABEL[m]}</option>`).join("")}</select>` +
+      `<button class="btn finder-pad" data-v="pad" title="试听键盘：开 / 关"><svg class="ico"><use href="#grid"/></svg><span>键盘</span></button></div>` +
       `<div class="finder-hint">点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「上场」。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。</div>` +
       `<div class="finder-jump" hidden></div>` +
       `<div class="finder-list"><div class="finder-empty">加载目录…</div></div>`;
@@ -43,6 +45,8 @@ export class Finder {
     this.el.querySelector(".finder-list")!.addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; this.markJump(); }); }, { passive: true });
   }
   get isOpen(): boolean { return !this.el.hidden; }
+  /** 顶条「键盘」钮亮不亮（宿主在键盘开 / 关时告诉它）。 */
+  setPadShown(on: boolean): void { this.el.querySelector(".finder-pad")?.classList.toggle("is-on", on); }
   async show(): Promise<void> {
     this.el.hidden = false;
     this.el.querySelector(".finder-title")!.textContent = `找人给「${this.host.roleName()}」`;
@@ -58,7 +62,7 @@ export class Finder {
     }
     this.render();
   }
-  hide(): void { this.el.hidden = true; this.over = null; }
+  hide(): void { this.el.hidden = true; }
   private pickOf(key: string): FinderPick | null {
     if (!this.cat) return null;
     const [cid, rest] = key.split("|"), c = this.cat.byId.get(cid); if (!c) return null;
@@ -68,27 +72,23 @@ export class Finder {
   }
   private async onClick(e: Event): Promise<void> {
     const t = e.target as HTMLElement, btn = t.closest<HTMLElement>("[data-v]"), row = t.closest<HTMLElement>(".inst-row"), prov = t.closest<HTMLElement>(".prov");
+    const rowOf = (el: HTMLElement) => (el.closest(".inst-prov")?.previousElementSibling as HTMLElement | null)?.dataset.o ?? "";   // 提供者所在的那一行（组::概念）
     const jump = t.closest<HTMLElement>("[data-j]");
     if (jump) { this.jumpTo(Number(jump.dataset.j)); return; }
     const v = btn?.dataset.v;
     if (v === "back") { this.host.close(); return; }
+    if (v === "pad") { this.host.togglePad(); return; }
     if (v && btn) {
-      const key = btn.closest<HTMLElement>("[data-p]")?.dataset.p ?? this.over?.key ?? "", pick = this.pickOf(key); if (!pick) return;
+      const key = btn.closest<HTMLElement>("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key); if (!pick) return;
       if (v === "play") { await this.host.playHead(pick); return; }
-      if (v === "cast" || v === "embed" || v === "weak") {
-        const r = await this.host.cast(pick, v === "cast" ? "auto" : v);
-        if (r === "over") { this.over = { key, pick }; this.render(); }
-        else this.over = null;
-        return;
-      }
-      if (v === "cancel") { this.over = null; this.render(); return; }
+      if (v === "cast") { await this.host.cast(pick); return; }
     }
-    if (prov) { const key = prov.dataset.p!; if (this.selected !== key) { this.selected = key; this.render(); await this.host.audition(this.pickOf(key)); } return; }
+    if (prov) { const key = prov.dataset.p!; if (this.selected !== key) { this.selected = key; this.renderAnchored(rowOf(prov)); await this.host.audition(this.pickOf(key)); } return; }
     if (row) {
-      const id = row.dataset.c!;
-      if (this.opened === id) this.opened = null;
-      else { this.opened = id; this.over = null; const c = this.cat!.byId.get(id)!, first = providersOf(this.cat!, c)[0]; const key = first ? `${id}|${gmKey(first)}` : c.kind === "voice" ? `${id}|voice` : ""; this.selected = key; this.render(); row.scrollIntoView({ block: "nearest" }); if (key) await this.host.audition(this.pickOf(key)); return; }
-      this.render();
+      const id = row.dataset.c!, o = row.dataset.o!;
+      if (this.opened === o) this.opened = null;
+      else { this.opened = o; const c = this.cat!.byId.get(id)!, first = providersOf(this.cat!, c)[0]; const key = first ? `${id}|${gmKey(first)}` : c.kind === "voice" ? `${id}|voice` : ""; this.selected = key; this.renderAnchored(o, true); if (key) await this.host.audition(this.pickOf(key)); return; }
+      this.renderAnchored(o);
     }
   }
   render(): void {
@@ -99,8 +99,23 @@ export class Finder {
     jump.hidden = groups.length < 2;
     jump.innerHTML = groups.map((g, k) => `<button class="jump-chip" data-j="${k}" title="${esc(g.label)}">${esc(g.label.replace(/（[^（）]*起）$/, ""))}<small>${g.concepts.length}</small></button>`).join("");
     if (!groups.length) { list.innerHTML = `<div class="finder-empty">没有叫「${esc(this.q)}」的</div>`; return; }
-    list.innerHTML = groups.map((g, k) => `<div class="finder-group" data-g="${k}"><div class="finder-group-h">${esc(g.label)}<span>${g.concepts.length}</span></div>${g.concepts.map((c) => this.rowHtml(c, this.mode === "style" ? g.id : null)).join("")}</div>`).join("");
-    list.querySelector(".prov.is-on")?.scrollIntoView({ block: "nearest" });
+    list.innerHTML = groups.map((g, k) => `<div class="finder-group" data-g="${k}"><div class="finder-group-h">${esc(g.label)}<span>${g.concepts.length}</span></div>${g.concepts.map((c) => this.rowHtml(c, g.id, this.mode === "style" ? g.id : null)).join("")}</div>`).join("");
+    this.markJump();
+  }
+  /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
+   *  点另一件 = 上面展开的那件收起，整张列表往上缩，原来又用 scrollIntoView 去追选中项、在 iPad 上还会连外层一起滚——手指底下那行就跑了）。
+   *  reveal = 刚展开的：它的「谁能演」露不全就往上挪一点，但这一行不挪到组头底下。只滚列表自己。 */
+  private renderAnchored(anchor: string, reveal = false): void {
+    const list = this.el.querySelector<HTMLElement>(".finder-list")!, sel = `.inst-row[data-o="${CSS.escape(anchor)}"]`;
+    const before = list.querySelector<HTMLElement>(sel)?.getBoundingClientRect().top;
+    this.render();
+    const row = list.querySelector<HTMLElement>(sel); if (!row || before === undefined) return;
+    list.scrollTop += row.getBoundingClientRect().top - before;
+    if (!reveal) return;
+    const body = row.nextElementSibling as HTMLElement | null; if (!body?.classList.contains("inst-prov")) return;
+    const lr = list.getBoundingClientRect(), hdr = (row.closest(".finder-group")?.querySelector<HTMLElement>(".finder-group-h")?.offsetHeight ?? 0);
+    const over = body.getBoundingClientRect().bottom - lr.bottom, room = row.getBoundingClientRect().top - (lr.top + hdr);
+    if (over > 0 && room > 0) list.scrollTop += Math.min(over, room);
     this.markJump();
   }
   /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）。 */
@@ -120,8 +135,8 @@ export class Finder {
       if (on) { const l = b.offsetLeft, r = l + b.offsetWidth; if (l < jump.scrollLeft) jump.scrollLeft = l - 8; else if (r > jump.scrollLeft + jump.clientWidth) jump.scrollLeft = r - jump.clientWidth + 8; }
     }
   }
-  private rowHtml(c: Concept, styleTag: string | null = null): string {
-    const cat = this.cat!, open = this.opened === c.id, icon = c.icon?.id;
+  private rowHtml(c: Concept, groupId: string, styleTag: string | null = null): string {
+    const cat = this.cat!, o = `${groupId}::${c.id}`, open = this.opened === o, icon = c.icon?.id;
     // 〇〇风里显示承重：★★★ 承重 / ★★ 常用 / ★ 点缀（仓鼠 v3；user「每个风里面按照承重排…让他ui里面显示出来」）
     const w = styleTag ? weightOf(c, styleTag) : 0, stars = w ? `<span class="inst-w" title="${esc(weightLabel(cat, w))}">${"★".repeat(w)}</span>` : "";
     const meta = [eraLabel(cat, c), c.year !== null ? `${c.yearApprox ? "约 " : ""}${fmtYear(c.year)}` : ""].filter(Boolean).join(" · ");
@@ -132,14 +147,13 @@ export class Finder {
       const provs = providersOf(cat, c), pitched = c.kind === "voice";
       // 平替弱化显示（user「平替换的ui也需要弄出区别」「也许需要弱化显示」）：虚线框、灰字、「顶替」标
       const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">顶替</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
-        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}<button class="btn primary" data-v="cast">上场</button></div></div>` +
-        (this.over?.key === key ? `<div class="prov-over">「${esc(this.over.pick.kind === "gs" ? this.over.pick.provider.gmName : "")}」的声音超过了嵌入的软上限：<button class="btn primary" data-v="embed">嵌进歌</button><button class="btn" data-v="weak">不嵌，只记来源</button><button class="btn" data-v="cancel">算了</button></div>` : "");
+        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}<button class="btn primary" data-v="cast">上场</button></div></div>`;
       body = `<div class="inst-prov">` +
         provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? `鼓件 · ${esc(p.gmName)}（Standard 鼓组的 ${p.note} 号键）` : p.bank === 128 ? `鼓组 · ${esc(p.gmName)}` : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? `顶替${p.basis === "official" ? "（GM 原文认可）" : p.basis === "lineage" ? "（前身）" : p.basis === "imitation" ? "（仿声）" : p.basis === "family" ? "（同类）" : "（只是同名）"}${p.reason ? `：${esc(p.reason)}` : ""}` : "", true, p.kind === "substitute")).join("") +
         (pitched ? prov(`${c.id}|voice`, "月读", "唱歌词；没写歌词的音按「哼的字」唱", false) : "") +
         (!provs.length && !pitched ? `<div class="prov-none">目录里还没有谁能演它</div>` : "") + `</div>`;
     }
-    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc(c.id)}">` +
+    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc(c.id)}" data-o="${esc(o)}">` +
       (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc(icon)}"/></svg>` : `<span class="inst-ico none">${esc(c.names.zh.slice(0, 1))}</span>`) +
       `<div class="inst-name"><b>${esc(c.names.zh)}</b>${stars}<span>${esc(roleNameOf(c))}${c.names.ja ? ` · ${esc(c.names.ja)}` : ""}</span></div><div class="inst-meta">${esc(meta)}</div></div>` + body;
   }

@@ -15,6 +15,8 @@ export interface Concept {
   substitutes?: { program: number; bank: number; note?: number; gmNumber: number; gmName: string; basis: "official" | "lineage" | "imitation" | "family" | "name-only"; hsCommon?: string; reason?: string }[];
   icon?: { id: string | null; candidates?: string[]; license?: string; borrowedFrom?: string } | null;
   fundamentalRank: number | null;
+  /** 常用音域（MIDI，实际发声）：v5 起由仓鼠的百科表给（2026-10-08 请的，形状待对账）；没有 = 不画提示。 */
+  range?: { low: number; high: number; basis?: string } | null;
 }
 export interface GmRow { program: number; bank: number; note?: number; gmNumber: number; gmName: string; family?: string; concept: string; relation: "self" | "substitute"; primary?: boolean; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string }   // primary = 一个号多重认领时的主本尊（v3）
 export interface Defs { eras: { id: string; zh: string; from: number | null; to: number | null }[]; families: { id: string; en: string; zh: string }[]; kinds: { id: string; zh: string }[]; styles?: { id?: string; tag?: string; zh?: string; en?: string }[]; weights?: { id: number; zh: string }[] }
@@ -58,13 +60,18 @@ export function providersOf(cat: Catalog, c: Concept): Provider[] {
   if (self.length) return self;
   return (c.substitutes ?? []).map((s) => ({ kind: "substitute" as const, bank: s.bank, program: s.program, ...(s.note !== undefined ? { note: s.note } : {}), gmName: s.gmName, sound: c.ids.musicxml, basis: s.basis, reason: s.reason }));
 }
+/** 这个概念的常用音域（pad 的提示条 / 试听时窗口跟进用）；表里没有 = null。 */
+export function rangeOf(c: Concept | undefined): { lo: number; hi: number } | null {
+  const r = c?.range; return r && Number.isFinite(r.low) && Number.isFinite(r.high) && r.low <= r.high ? { lo: r.low, hi: r.high } : null;
+}
 /** 谱上写的角色名：目录里的英文名首字母大写（打谱惯例；Vocals / Piano 同款）。 */
 export const roleNameOf = (c: Concept): string => c.names.en.replace(/^./, (ch) => ch.toUpperCase());
 /** 角色的官方乐器语义 id：概念自己的；没有就用本尊预设的；再没有 = null（角色沿用原来的）。 */
 export const roleSoundOf = (cat: Catalog, c: Concept): string | null => c.ids.musicxml ?? providersOf(cat, c)[0]?.sound ?? null;
 
 export type SortMode = "family" | "year" | "hs" | "style";
-export const SORT_LABEL: Record<SortMode, string> = { family: "按族（GM 的顺序）", year: "按年代", hs: "按发声方式", style: "按〇〇风" };
+// 「按曲风」= 原「按〇〇风」（user 2026-10-08「按OO风换一个更正式好懂的名字」）；组名（和风 / 中华风 / 贝多风…）照旧用仓鼠表里的
+export const SORT_LABEL: Record<SortMode, string> = { style: "按曲风", family: "按族（GM 的顺序）", year: "按年代", hs: "按发声方式" };   // 下拉的顺序 = 这里的顺序（默认的排第一）
 const HS_CLASS: Record<string, string> = { "1": "体鸣（敲它自己）", "2": "膜鸣（敲皮）", "3": "弦鸣（弦）", "4": "气鸣（气）", "5": "电鸣（电）" };
 export interface Group { id: string; label: string; concepts: Concept[] }
 /** 分组 + 组内排序。搜索词按中 / 英 / 日名子串过滤。 */

@@ -33,7 +33,10 @@ import { hint } from "../input/keys.ts";
 import { type EditorState, type Acc, inputKey, keyAt, timeAt, tempoAt, tr } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
 
-const HER_LOW = 57, HER_HIGH = 76;   // A3 / E5（MIDI；月读音域：键底部画细条提示，音域外不拦、不变灰）
+/** 月读的音域 A3–E5（MIDI）：键底部画细条提示，音域外不拦、不变灰。宿主不给提示音域时（hintRange 没接）用它。 */
+export const HER_RANGE = { lo: 57, hi: 76, who: "月读" } as const;
+/** 提示音域：谁在弹（宿主说）+ 她 / 它的音域（MIDI，含两端）。null = 不画提示。 */
+export type HintRange = { lo: number; hi: number; who: string } | null;
 /** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
 const padForm = (): "tablet" | "phone" => (Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone");
 /** 键高 + 上下缝（px）= styles.css 的 --key-h / --kgv（照 WXHW 量的 iOS 键盘）。 */
@@ -107,6 +110,8 @@ export interface PadHost {
   onInsertMark(kind: "key" | "time" | "tempo"): void;
   onSoundDown(p: Pitch, id: string): void;   // 试听 / 弹：按下响（复音：每根手指一个声音）
   onSoundUp(id: string): void;
+  /** 键底部细条提示的音域 = 现在谁在弹（2026-10-08 by Claude Opus 5.5；user「试弹的时候键盘上的音域没有跟进」）：月读 / 元音版 = 她的；乐器 = 目录里它的音域；不知道 = null 不画。不接 = 月读。 */
+  hintRange?(): HintRange;
 }
 
 type Mode = "normal" | "more" | "transpose" | "modulate" | "layout";   // 选调 / 长短 / 音域 = 旋钮（原地滚 / 点开滚轮），不在这里
@@ -240,7 +245,7 @@ export class Pad {
       const akUp = (e: PointerEvent) => { if (!akDrag || e.pointerId !== akDrag.pid) return; akDrag = null; this.host.onAccShift("up", this.accSel); };
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) ak.addEventListener(t, (e) => akUp(e as PointerEvent));
     }
-    const gridSig = this.symbols ? `symbols|${this.host.staves()}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}`;
+    const hr = this.hint(), gridSig = this.symbols ? `symbols|${this.host.staves()}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) { if (this.symbols) this.buildSymbols(); else this.buildGrid(f, base, rows); this.gridFor = gridSig; }
     const toolSig = this.mode === "normal" ? `normal|${selKey !== null}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st)) : ""}`;
     if (toolSig !== this.toolsFor) { this.buildHead(selKey, rows); this.toolsFor = toolSig; }
@@ -343,15 +348,27 @@ export class Pad {
       this.render();
     });
   }
+  private hint(): HintRange { return this.host.hintRange ? this.host.hintRange() : HER_RANGE; }
+  /** 音域窗口挪到最能盖住 [lo, hi] 的那一档（重叠最多；一样多取中心最近的）。试听换了乐器时宿主调（「跟进」）；人自己拨旋钮照旧。 */
+  follow(lo: number, hi: number): void {
+    const f = inputKey(this.host.state()), rows = this.rows(), mid = (lo + hi) / 2;
+    let best = this.rowShift, bestOv = -Infinity, bestD = Infinity;
+    for (const sh of SHIFTS) {
+      const k0 = this.baseAt(sh, f, rows), wlo = midiOf(this.pitchAt(k0, f)), whi = midiOf(this.pitchAt(k0 + rows * this.cols - 1, f));
+      const ov = Math.min(hi, whi) - Math.max(lo, wlo), d = Math.abs((wlo + whi) / 2 - mid);
+      if (ov > bestOv || (ov === bestOv && d < bestD)) { best = sh; bestOv = ov; bestD = d; }
+    }
+    if (best !== this.rowShift) { this.rowShift = best; this.render(); }
+  }
   private buildGrid(f: number, base: number, rows: number): void {
-    const cells: string[] = [], sc = this.scale(), ht = homeTonic(f);
+    const cells: string[] = [], sc = this.scale(), ht = homeTonic(f), hr = this.hint();
     this.keys.clear();
     for (let row = rows - 1; row >= 0; row--) {
       for (let col = 0; col < this.cols; col++) {
         const k = base + row * this.cols + col, { pitch: p, deg, oct } = ladderAt(sc, k, ht, f), m = midiOf(p);
-        const inRange = m >= HER_LOW && m <= HER_HIGH;
+        const inRange = !!hr && m >= hr.lo && m <= hr.hi;
         this.keys.set(k, p);
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k}" title="${inRange ? "月读的音域里" : ""}">` +
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k}" title="${inRange ? `${hr.who}的音域里` : ""}">` +
           `<span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${degLabel(deg)}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p)}</span></button>`);
       }
     }

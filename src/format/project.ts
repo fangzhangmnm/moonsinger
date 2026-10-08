@@ -302,15 +302,15 @@ export function withPacked(extras: Extras, have: (subsetSha256: string) => Uint8
   }
   return packed.size ? { extras: { ...extras, lounge, sounds }, packed: [...packed], missing: [...missing] } : { extras, packed: [], missing: [...missing] };
 }
-/** 解包：嵌着的 SoundFont 候选全部改弱引用（embedded = null），字节从歌里拿掉。
+/** 解包：嵌着的 SoundFont 候选改弱引用（embedded = null），字节从歌里拿掉；only = 只解这些子集（调用方先确认字节留得住，留不住的别解——解了就找不回来）。
  *  返回拿掉的字节（子集 sha256 → 字节）：调用方留到设备上，这台设备照样能响（Blender 的 unpack = 写到旁边的文件，这里 = 设备的音源缓存）。 */
-export function withUnpacked(extras: Extras): { extras: Extras; removed: Map<string, Uint8Array> } {
+export function withUnpacked(extras: Extras, only?: (subsetSha256: string) => boolean): { extras: Extras; removed: Map<string, Uint8Array> } {
   const lounge: Record<string, Json> = {}, removed = new Map<string, Uint8Array>();
   let changed = false;
   for (const [id, r0] of Object.entries(extras.lounge)) {
     const r = structuredClone(r0);
     for (const c of cands(r)) {
-      const i = instrumentOf(c); if (i?.engine !== "soundfont" || !i.source.embedded) continue;
+      const i = instrumentOf(c); if (i?.engine !== "soundfont" || !i.source.embedded || (only && !only(i.source.subsetSha256))) continue;
       const b = extras.sounds[i.source.embedded]; if (b) removed.set(i.source.subsetSha256, b);
       i.source.embedded = null; changed = true;
     }
