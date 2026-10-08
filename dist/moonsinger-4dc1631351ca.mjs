@@ -1,5 +1,5 @@
 // src/version.ts
-var APP_VERSION = "v0.4.5-2026-10-07";
+var APP_VERSION = "v0.4.6-2026-10-07";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3129,6 +3129,7 @@ var Pad = class {
    *  · 只是点一下（没滑）= 松手时展开滚轮（drum.ts）点选 / 原生滚动。 */
   knobDown(b, e) {
     const knob = b.dataset.knob;
+    if (knob === "more" && b.closest(".pad-panel")?.classList.contains("is-locked")) return;
     if (knob === "more" || knob === "key" && this.host.state().sel) {
       this.mode = knob === "more" ? "more" : "transpose";
       this.render();
@@ -6206,8 +6207,8 @@ var Finder = class {
   mode = "year";
   // user「默认按年代排哈哈哈」
   q = "";
-  opened = /* @__PURE__ */ new Set();
-  // 展开的概念
+  opened = null;
+  // 展开的概念（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）
   selected = "";
   // 试听台上的提供者（`${概念 id}|${bank}:${program}` / `${概念 id}|voice`）
   over = null;
@@ -6309,14 +6310,16 @@ var Finder = class {
     }
     if (row) {
       const id = row.dataset.c;
-      if (this.opened.has(id)) this.opened.delete(id);
+      if (this.opened === id) this.opened = null;
       else {
-        this.opened.add(id);
+        this.opened = id;
+        this.over = null;
         const c = this.cat.byId.get(id), first = providersOf(this.cat, c)[0];
-        const key = first ? `${id}|${first.bank}:${first.program}` : `${id}|voice`;
+        const key = first ? `${id}|${first.bank}:${first.program}` : c.kind === "voice" ? `${id}|voice` : "";
         this.selected = key;
         this.render();
-        await this.host.audition(this.pickOf(key));
+        row.scrollIntoView({ block: "nearest" });
+        if (key) await this.host.audition(this.pickOf(key));
         return;
       }
       this.render();
@@ -6334,13 +6337,13 @@ var Finder = class {
     list.querySelector(".prov.is-on")?.scrollIntoView({ block: "nearest" });
   }
   rowHtml(c) {
-    const cat = this.cat, open = this.opened.has(c.id), icon = c.icon?.id;
+    const cat = this.cat, open = this.opened === c.id, icon = c.icon?.id;
     const meta = [eraLabel(cat, c), c.year !== null ? `${c.yearApprox ? "\u7EA6 " : ""}${fmtYear(c.year)}` : ""].filter(Boolean).join(" \xB7 ");
     let body = "";
     if (open) {
-      const provs = providersOf(cat, c), pitched = c.kind !== "sound" && !(c.ids.gm ?? []).some((g2) => g2.bank === 128);
+      const provs = providersOf(cat, c), pitched = c.kind === "voice";
       const prov = (key, label, note, playable) => `<div class="prov${this.selected === key ? " is-on" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${label}</b>${note ? `<small>${note}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}<button class="btn primary" data-v="cast">\u4E0A\u573A</button></div></div>` + (this.over?.key === key ? `<div class="prov-over">\u300C${esc3(this.over.pick.kind === "gs" ? this.over.pick.provider.gmName : "")}\u300D\u7684\u58F0\u97F3\u8D85\u8FC7\u4E86\u5D4C\u5165\u7684\u8F6F\u4E0A\u9650\uFF1A<button class="btn primary" data-v="embed">\u5D4C\u8FDB\u6B4C</button><button class="btn" data-v="weak">\u4E0D\u5D4C\uFF0C\u53EA\u8BB0\u6765\u6E90</button><button class="btn" data-v="cancel">\u7B97\u4E86</button></div>` : "");
-      body = `<div class="inst-prov">` + provs.map((p) => prov(`${c.id}|${p.bank}:${p.program}`, `${p.bank === 128 ? "\u9F13\u7EC4" : "GeneralUser GS"} \xB7 ${esc3(p.gmName)}`, p.kind === "substitute" ? `\u9876\u66FF${p.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p.reason ? `\uFF1A${esc3(p.reason)}` : ""}` : "", true)).join("") + (pitched ? prov(`${c.id}|voice`, "\u6708\u8BFB\uFF08\u54FC\uFF09", "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531\uFF1B\u5199\u4E86\u6B4C\u8BCD\u5C31\u5531\u6B4C\u8BCD", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
+      body = `<div class="inst-prov">` + provs.map((p) => prov(`${c.id}|${p.bank}:${p.program}`, `${p.bank === 128 ? "\u9F13\u7EC4" : "GeneralUser GS"} \xB7 ${esc3(p.gmName)}`, p.kind === "substitute" ? `\u9876\u66FF${p.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p.reason ? `\uFF1A${esc3(p.reason)}` : ""}` : "", true)).join("") + (pitched ? prov(`${c.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c.id)}">` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b>${esc3(c.names.zh)}</b><span>${esc3(roleNameOf(c))}${c.names.ja ? ` \xB7 ${esc3(c.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body;
   }
@@ -6863,12 +6866,15 @@ var pad = new Pad(padEl, {
   isImpro: () => impro || finder.isOpen,
   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）
   accept: (id) => monoAccept(id),
+  // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
   onPitch: (p, id) => {
+    if (finder.isOpen) return;
     const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
     afterWrite();
   },
   onAlter: (id, alt) => {
+    if (finder.isOpen) return;
     const n2 = padNotes.get(id);
     if (!n2) return;
     const np = alt ? alterBy(n2.base, alt) : n2.base;
@@ -6876,6 +6882,7 @@ var pad = new Pad(padEl, {
     sound.down(np, id);
   },
   onCommand: (c) => {
+    if (finder.isOpen) return;
     if (c.k === "caret" && half === "once") setHalf("off");
     update(apply(st, c, performance.now()));
     if (c.k === "rest" || c.k === "extend") afterWrite();
@@ -6900,9 +6907,16 @@ var pad = new Pad(padEl, {
     pad.render();
   },
   onHide: () => showPad(false),
-  onHalf: (down) => halfKey(down),
-  onAccShift: (phase, acc) => accKey(phase, acc),
+  onHalf: (down) => {
+    if (finder.isOpen) return;
+    halfKey(down);
+  },
+  onAccShift: (phase, acc) => {
+    if (finder.isOpen) return;
+    accKey(phase, acc);
+  },
   onInsertMark: (kind) => {
+    if (finder.isOpen) return;
     const at = st.sel ? st.sel.from : st.caret;
     const v = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
     const r = writeMark(st, v);
@@ -7341,7 +7355,7 @@ function offerFile(file, title, msg, onDone) {
     }
   });
 }
-window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "a315ec223e1a", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
+window.__moonsinger = { singer, sampler, exportSong, labScore: () => toLabScore(st.song, songLang()), state: () => st, cssHash: "bccd2403448d", extras: () => doc.extras, setEmbedSoftLimit: (n2) => {
   embedSoftLimit = n2;
 }, synth };
 $("padBtn").addEventListener("click", () => showPad(padEl.hidden));
@@ -7452,6 +7466,8 @@ function openFinder() {
   closeOffer?.();
   scoreEl.hidden = true;
   showPad(true);
+  padEl.classList.add("is-locked");
+  pad.clearHeld();
   void finder.show();
 }
 function closeFinder() {
@@ -7460,6 +7476,7 @@ function closeFinder() {
   audition = null;
   synth.allOff();
   gmHeld.clear();
+  padEl.classList.remove("is-locked");
   scoreEl.hidden = false;
   void prepareSynth();
   view.render();
@@ -8106,4 +8123,4 @@ scoreEl.focus();
 setTimeout(() => {
   void sampler.load().catch((e) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e.message}`));
 }, 300);
-//# sourceMappingURL=moonsinger-abaee39091af.mjs.map
+//# sourceMappingURL=moonsinger-4dc1631351ca.mjs.map

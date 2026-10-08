@@ -389,6 +389,7 @@ export class Pad {
    *  · 只是点一下（没滑）= 松手时展开滚轮（drum.ts）点选 / 原生滚动。 */
   private knobDown(b: HTMLElement, e: PointerEvent): void {
     const knob = b.dataset.knob!;
+    if (knob === "more" && b.closest(".pad-panel")?.classList.contains("is-locked")) return;   // 试听台开着（找人视图）：「⋯」里全是碰谱的，不开（CSS 已拦真手指，这是第二道）
     if (knob === "more" || (knob === "key" && this.host.state().sel)) { this.mode = knob === "more" ? "more" : "transpose"; this.render(); return; }
     try { b.setPointerCapture(e.pointerId); } catch { /* 指针已经没了 */ }
     const v = this.knobList(knob), n = v.items.length, pid = e.pointerId, y0 = e.clientY;

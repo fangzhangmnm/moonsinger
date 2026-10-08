@@ -183,18 +183,22 @@ const pad = new Pad(padEl, {
   state: () => st,
   isImpro: () => impro || finder.isOpen,   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）
   accept: (id) => monoAccept(id),
+  // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
   onPitch: (p, id) => {
+    if (finder.isOpen) return;
     const i = writeAndLocate((s) => writePitch(s, p)), t = st.song.tokens[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
     afterWrite();
   },
-  onAlter: (id, alt) => {   // 临时离调：只管这一个音（滑回中间 = 还原）；重新唱一下让人听见
+  onAlter: (id, alt) => {
+    if (finder.isOpen) return;   // 临时离调：只管这一个音（滑回中间 = 还原）；重新唱一下让人听见
     const n = padNotes.get(id); if (!n) return;
     const np = alt ? alterBy(n.base, alt) : n.base;
     if (n.index >= 0) update(setNote(st, n.index, { pitch: np }));
     sound.down(np, id);
   },
   onCommand: (c) => {
+    if (finder.isOpen) return;
     if (c.k === "caret" && half === "once") setHalf("off");   // 挪光标 = 取消「凑满一份」
     update(apply(st, c, performance.now())); if (c.k === "rest" || c.k === "extend") afterWrite();
   },
@@ -205,9 +209,10 @@ const pad = new Pad(padEl, {
   autoBars: () => autoBars,
   onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); },
   onHide: () => showPad(false),
-  onHalf: (down) => halfKey(down),
-  onAccShift: (phase, acc) => accKey(phase, acc),
-  onInsertMark: (kind) => {   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
+  onHalf: (down) => { if (finder.isOpen) return; halfKey(down); },
+  onAccShift: (phase, acc) => { if (finder.isOpen) return; accKey(phase, acc); },
+  onInsertMark: (kind) => {
+    if (finder.isOpen) return;   // 默认值 = 光标处正生效的那个（没改就收起 = 撤掉这次插入）
     const at = st.sel ? st.sel.from : st.caret;
     const v: MarkVal = kind === "key" ? { kind, fifths: keyAt(st.song, at) } : kind === "time" ? { kind, ...timeAt(st.song, at) } : { kind, bpm: tempoAt(st.song, at) };
     const r = writeMark(st, v);
@@ -584,8 +589,8 @@ async function castPick(p: FinderPick, mode: "auto" | "embed" | "weak"): Promise
   return "done";
 }
 const finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder() });
-function openFinder(): void { closeOffer?.(); scoreEl.hidden = true; showPad(true); void finder.show(); }
-function closeFinder(): void { if (!finder.isOpen) return; finder.hide(); audition = null; synth.allOff(); gmHeld.clear(); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); scoreEl.focus(); }
+function openFinder(): void { closeOffer?.(); scoreEl.hidden = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); void finder.show(); }
+function closeFinder(): void { if (!finder.isOpen) return; finder.hide(); audition = null; synth.allOff(); gmHeld.clear(); padEl.classList.remove("is-locked"); scoreEl.hidden = false; void prepareSynth(); view.render(); renderTitle(); scoreEl.focus(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 function setActive(id: string): void { doc.extras = withActive(doc.extras, id, st.song.hum); synth.allOff(); gmHeld.clear(); void prepareSynth(); view.render(); renderTitle(); }
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");

@@ -70,11 +70,16 @@ button, input, select { font: inherit; color: inherit; }
 .ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: block; }
 
 /* 舞台：谱面板（内部滚）+ pad 面板 */
-#stage { min-height: 0; min-width: 0; display: flex; }
+/* 舞台 = 命名区域的 grid，不是 flex 流（user 2026-10-07「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）：
+   谱区 / 找人视图都占 main，pad 永远占 pad；节点顺序随便，位置由这里钉死。横屏 main | pad，竖屏 main 上 pad 下；pad 收起 = 那一列 / 行消失。 */
+#stage { min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr); grid-template-areas: "main pad"; }
+#stage:has(.pad-panel[hidden]) { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main"; }
+.score, .finder { grid-area: main; }
+.pad-panel { grid-area: pad; }
 .score { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; outline: none; background: var(--panel);
   -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .score svg { display: block; }
-.pad-panel { flex: none; width: 300px; border-left: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; padding: 10px; gap: 8px; }
+.pad-panel { min-width: 0; min-height: 0; border-left: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; padding: 10px; gap: 8px; }   /* 宽度由 #stage 的 grid 列定 */
 
 .err-banner { position: fixed; left: 8px; right: 8px; bottom: calc(8px + var(--safe-bottom)); z-index: var(--z-err); background: #c0392b; color: #fff;
   padding: 10px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
@@ -126,8 +131,9 @@ button, input, select { font: inherit; color: inherit; }
 
 /* 竖屏（iPad mini 竖着拿）：像 iPad 软键盘贴底——全宽，不是正方形；键高按手指定 */
 @media (max-aspect-ratio: 1/1) {
-  #stage { flex-direction: column; }
-  .pad-panel { width: auto; min-width: 0; border-left: 0; border-top: 1px solid var(--line); padding: 6px 8px 8px; gap: 6px; }
+  #stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "main" "pad"; }
+  #stage:has(.pad-panel[hidden]) { grid-template-rows: minmax(0, 1fr); grid-template-areas: "main"; }
+  .pad-panel { border-left: 0; border-top: 1px solid var(--line); padding: 6px 8px 8px; gap: 6px; }
   .pad-tools .btn { height: 44px; }
 }
 
@@ -146,7 +152,7 @@ button, input, select { font: inherit; color: inherit; }
 .pad-tools .t-unit sup { font-size: 10px; color: var(--accent); }
 .pad-tools .btn.cand { font-size: 13px; }
 /* 横屏侧栏 300 宽：工具条折成两行 */
-@media (min-aspect-ratio: 1/1) { .pad-panel { width: 340px; } .pad-tools .btn { height: 36px; font-size: 15px; } }
+@media (min-aspect-ratio: 1/1) { #stage { grid-template-columns: minmax(0, 1fr) 340px; } .pad-tools .btn { height: 36px; font-size: 15px; } }
 
 /* 「好了」面板（导出歌声后：分享 / 下载 / 关；应用内，不用系统弹窗） */
 .offer { position: fixed; inset: 0; z-index: var(--z-sheet); display: flex; align-items: center; justify-content: center; background: rgba(40, 38, 34, .28); padding: 16px; }
@@ -315,7 +321,7 @@ button, input, select { font: inherit; color: inherit; }
 .credits-card .credits-in { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font: inherit; font-size: 15px; line-height: 1.5; color: var(--ink); resize: vertical; -webkit-user-select: text; user-select: text; }
 
 /* 找人视图（src/ui/finder.ts）：全屏替掉谱区，pad 留着当试听键盘；按概念列，展开 = 谁能演 */
-.finder { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--panel); min-height: 0; }
+.finder { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--panel); }   /* 占 #stage 的 main 区（grid-area 在上面）*/
 .finder[hidden] { display: none; }
 .finder-bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); flex: none; }
 .finder-title { font-weight: 600; white-space: nowrap; }
@@ -345,3 +351,5 @@ button, input, select { font: inherit; color: inherit; }
 .prov-none { font-size: 12px; color: var(--muted); padding: 4px; }
 .cand-status { font-size: 12px; color: var(--muted); margin: -2px 0 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .cand-del { height: 28px; width: 28px; padding: 0; font-size: 13px; color: var(--muted); margin-left: -4px; }
+/* 找人视图开着 = 试听台：pad 只许音键出声，写字那一排和「⋯」灰掉、不响应（宿主回调里还有第二道闸） */
+.pad-panel.is-locked .pad-tools.writes, .pad-panel.is-locked [data-knob="more"] { opacity: .3; pointer-events: none; }

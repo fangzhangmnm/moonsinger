@@ -20,7 +20,7 @@ export class Finder {
   private cat: Catalog | null = null;
   private mode: SortMode = "year";          // user「默认按年代排哈哈哈」
   private q = "";
-  private opened = new Set<string>();       // 展开的概念
+  private opened: string | null = null;     // 展开的概念（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）
   private selected = "";                    // 试听台上的提供者（`${概念 id}|${bank}:${program}` / `${概念 id}|voice`）
   private over: { key: string; pick: FinderPick } | null = null;   // 超软上限等三选一
   private loading: Promise<void> | null = null;
@@ -33,7 +33,7 @@ export class Finder {
       `<select class="finder-sort">${(Object.keys(SORT_LABEL) as SortMode[]).map((m) => `<option value="${m}">${SORT_LABEL[m]}</option>`).join("")}</select></div>` +
       `<div class="finder-hint">点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「上场」。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。</div>` +
       `<div class="finder-list"><div class="finder-empty">加载目录…</div></div>`;
-    parent.append(this.el);
+    parent.append(this.el);   // 位置由 #stage 的 grid 命名区域钉死（.finder 占 main、pad 占 pad），和节点顺序无关（user「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）
     this.el.querySelector<HTMLInputElement>(".finder-q")!.addEventListener("input", (e) => { this.q = (e.target as HTMLInputElement).value; this.render(); });
     this.el.querySelector<HTMLSelectElement>(".finder-sort")!.addEventListener("change", (e) => { this.mode = (e.target as HTMLSelectElement).value as SortMode; this.render(); });
     this.el.addEventListener("click", (e) => void this.onClick(e));
@@ -80,8 +80,8 @@ export class Finder {
     if (prov) { const key = prov.dataset.p!; if (this.selected !== key) { this.selected = key; this.render(); await this.host.audition(this.pickOf(key)); } return; }
     if (row) {
       const id = row.dataset.c!;
-      if (this.opened.has(id)) this.opened.delete(id);
-      else { this.opened.add(id); const c = this.cat!.byId.get(id)!, first = providersOf(this.cat!, c)[0]; const key = first ? `${id}|${first.bank}:${first.program}` : `${id}|voice`; this.selected = key; this.render(); await this.host.audition(this.pickOf(key)); return; }
+      if (this.opened === id) this.opened = null;
+      else { this.opened = id; this.over = null; const c = this.cat!.byId.get(id)!, first = providersOf(this.cat!, c)[0]; const key = first ? `${id}|${first.bank}:${first.program}` : c.kind === "voice" ? `${id}|voice` : ""; this.selected = key; this.render(); row.scrollIntoView({ block: "nearest" }); if (key) await this.host.audition(this.pickOf(key)); return; }
       this.render();
     }
   }
@@ -93,17 +93,19 @@ export class Finder {
     list.querySelector(".prov.is-on")?.scrollIntoView({ block: "nearest" });
   }
   private rowHtml(c: Concept): string {
-    const cat = this.cat!, open = this.opened.has(c.id), icon = c.icon?.id;
+    const cat = this.cat!, open = this.opened === c.id, icon = c.icon?.id;
     const meta = [eraLabel(cat, c), c.year !== null ? `${c.yearApprox ? "约 " : ""}${fmtYear(c.year)}` : ""].filter(Boolean).join(" · ");
     let body = "";
     if (open) {
-      const provs = providersOf(cat, c), pitched = c.kind !== "sound" && !(c.ids.gm ?? []).some((g) => g.bank === 128);
+      // 月读只在人声类概念下面（user 2026-10-07「为什么月读可以全量平替所有乐器…也许不大合适」：她实现的是人声，不是小提琴；
+      //   「让她哼一下这条线听听」归监听方式（草稿听，契约 §1），不是选角）
+      const provs = providersOf(cat, c), pitched = c.kind === "voice";
       const prov = (key: string, label: string, note: string, playable: boolean) => `<div class="prov${this.selected === key ? " is-on" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
         `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}<button class="btn primary" data-v="cast">上场</button></div></div>` +
         (this.over?.key === key ? `<div class="prov-over">「${esc(this.over.pick.kind === "gs" ? this.over.pick.provider.gmName : "")}」的声音超过了嵌入的软上限：<button class="btn primary" data-v="embed">嵌进歌</button><button class="btn" data-v="weak">不嵌，只记来源</button><button class="btn" data-v="cancel">算了</button></div>` : "");
       body = `<div class="inst-prov">` +
         provs.map((p) => prov(`${c.id}|${p.bank}:${p.program}`, `${p.bank === 128 ? "鼓组" : "GeneralUser GS"} · ${esc(p.gmName)}`, p.kind === "substitute" ? `顶替${p.basis === "official" ? "（GM 原文认可）" : p.basis === "lineage" ? "（前身）" : p.basis === "family" ? "（同类）" : "（只是同名）"}${p.reason ? `：${esc(p.reason)}` : ""}` : "", true)).join("") +
-        (pitched ? prov(`${c.id}|voice`, "月读（哼）", "没写歌词的音按「哼的字」唱；写了歌词就唱歌词", false) : "") +
+        (pitched ? prov(`${c.id}|voice`, "月读", "唱歌词；没写歌词的音按「哼的字」唱", false) : "") +
         (!provs.length && !pitched ? `<div class="prov-none">目录里还没有谁能演它</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc(c.id)}">` +
