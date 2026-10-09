@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.2-2026-10-08";
+var APP_VERSION = "v0.8.3-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4823,10 +4823,45 @@ var GROOVE_STYLES = [
 
 // src/score/groove.ts
 var grooveStyle = (id2) => GROOVE_STYLES.find((s10) => s10.id === id2) ?? null;
-var grooveLabel = (t10) => {
-  const s10 = grooveStyle(t10.style), name = t10.style === "none" ? "\u4E0D\u52A0\u8F7B\u91CD" : s10 ? s10.name.zh : t10.style;
-  return t10.amount !== void 0 && t10.amount !== 1 && t10.style !== "none" ? `${name} \xD7${t10.amount}` : name;
+var grooveName = (style) => {
+  const s10 = grooveStyle(style);
+  return style === "none" ? "\u4E0D\u52A0\u8F7B\u91CD" : s10 ? s10.name.zh : style;
 };
+var grooveLabel = (t10) => `\u98CE\u683C\uFF1A${grooveName(t10.style)}${t10.amount !== void 0 && t10.amount !== 1 && t10.style !== "none" ? ` \xD7${t10.amount}` : ""}`;
+function beatGroups(beats, beatType) {
+  if (!Number.isInteger(beats * 16 / beatType)) return null;
+  if (beatType === 8 && beats > 3 && beats % 3 === 0) return { groups: Array(beats / 3).fill(6), sub: 2 };
+  if (beatType === 8 && beats > 3) {
+    const n10 = Math.floor(beats / 2), g3 = Array(n10).fill(4);
+    if (beats % 2) g3[n10 - 1] = 6;
+    return { groups: g3, sub: 2 };
+  }
+  const L2 = 16 / beatType;
+  return { groups: Array(beats).fill(L2), sub: L2 / 2 };
+}
+var WORD = (w2) => w2 >= 0.95 ? "\u6700\u91CD" : w2 >= 0.7 ? "\u5F88\u91CD" : w2 >= 0.45 ? "\u91CD" : w2 > 0.05 ? "\u7A0D\u91CD" : w2 > -0.05 ? "\u4E0D\u53D8" : w2 > -0.35 ? "\u7A0D\u8F7B" : "\u8F7B";
+var BEAT_NO = ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u4E03", "\u516B", "\u4E5D", "\u5341", "\u5341\u4E00", "\u5341\u4E8C"];
+function describeGroove(s10, beats, beatType) {
+  const tb2 = grooveTable(s10, beats, beatType), bg = beatGroups(beats, beatType);
+  if (!tb2 || !bg) return null;
+  const starts = [];
+  let at2 = 0;
+  for (const g3 of bg.groups) {
+    starts.push(at2);
+    at2 += g3;
+  }
+  const beatsTxt = starts.map((st3, k2) => `${BEAT_NO[k2] ?? k2 + 1}\u62CD ${WORD(tb2.weights[st3])}`).join(" \xB7 ");
+  const subs = [], finer = [];
+  starts.forEach((st3, k2) => {
+    for (let q2 = 1; q2 < bg.groups[k2]; q2++) (bg.sub >= 1 && Number.isInteger(bg.sub) && q2 % bg.sub === 0 ? subs : finer).push(tb2.weights[st3 + q2]);
+  });
+  const one = (xs) => {
+    const ws = [...new Set(xs.map(WORD))];
+    return ws.length === 1 ? ws[0] : ws.join(" / ");
+  };
+  const subName = bg.groups.some((g3) => g3 === 6) ? "\u62CD\u91CC\u7684\u516B\u5206" : "\u534A\u62CD";
+  return `${beatsTxt}${subs.length ? `\uFF1B${subName} ${one(subs)}` : ""}${finer.length ? `\uFF1B\u66F4\u7EC6\u7684 ${one(finer)}` : ""}`;
+}
 function classicalWeights(beats, beatType) {
   const grid = beats * 16 / beatType;
   if (!Number.isInteger(grid) || grid <= 0) return null;
@@ -5659,6 +5694,8 @@ var ART_GLYPH = {
   tenuto: { above: "\uE4A4", below: "\uE4A5", w: 1.35, h: 0.17 }
 };
 var GLYPH_BREATH = "\uE4CE";
+var GROOVE_LANE = 3.4;
+var isStrength = (a10) => a10 === "accent" || a10 === "marcato" || a10 === "stress" || a10 === "unstress";
 var DYN_GLYPH = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
 var DYN_INK = { pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
 var PIN_GAP = 0.7;
@@ -6202,10 +6239,11 @@ function engrave(song, o10) {
         const hi = Math.max(...ds), lo2 = Math.min(...ds), stem = u2.base < WHOLE, up = (hi + lo2) / 2 < MID_LINE;
         top = Math.max(top, hi + (stem && up ? 7 : 1));
         bot = Math.min(bot, lo2 - (stem && !up ? 7 : 1));
-        if (u2.art.some((a10) => a10 !== "sfz" && a10 !== "fp")) {
+        if (u2.art.some((a10) => a10 === "staccato" || a10 === "tenuto")) {
           if (up) bot = Math.min(bot, lo2 - 3);
           else top = Math.max(top, hi + 3);
         }
+        if (u2.art.some(isStrength)) top = Math.max(top, (stem && up ? hi + 7 : hi + 3) + 4, TOP_LINE + 5);
       }
       return { top, bot };
     };
@@ -6236,10 +6274,11 @@ function engrave(song, o10) {
         g3[0].tempoD = t10;
         g3[0].above = Math.max(g3[0].above, (t10 - TOP_LINE) / 2 + 1.6);
       }
-      if (q2.units.some((u2) => u2.system === s10 && u2.kind === "groove")) {
+      const nGroove = q2.units.filter((u2) => u2.system === s10 && u2.kind === "groove").length;
+      if (nGroove) {
         const t10 = g3[0].tempoD !== null ? g3[0].tempoD + 4.6 : Math.max(TOP_LINE + 4.8, ex2[0].top + 3, g3[0].dynD !== null ? g3[0].dynD + 4.6 : 0);
         g3[0].grooveD = t10;
-        g3[0].above = Math.max(g3[0].above, (t10 - TOP_LINE) / 2 + 1.6);
+        g3[0].above = Math.max(g3[0].above, (t10 + (nGroove > 1 ? GROOVE_LANE : 0) - TOP_LINE) / 2 + 1.6);
       }
       if (dyn && mode === "between") {
         g3[0].below = Math.max(g3[0].below, (BOTTOM_LINE - ex2[0].bot) / 2 + 1.6);
@@ -6326,6 +6365,7 @@ function engrave(song, o10) {
       const dIdx = (p2, staff) => diatonicIndex(p2) + shOf(staff);
       const inSel = (i10) => focused && !!sel && i10 >= sel.from && i10 < sel.to;
       const dynRight = /* @__PURE__ */ new Map();
+      const grooveRight = /* @__PURE__ */ new Map();
       const RW = (u2) => rowOf(u2.system, r10, u2.staff - 1);
       const lyricRow = (s10) => rowOf(s10, r10, q2.staves - 1);
       if (focused && sel) {
@@ -6412,9 +6452,13 @@ function engrave(song, o10) {
           continue;
         }
         if (u2.kind === "groove") {
-          const gt = tokens[u2.index], gr = rowOf(u2.system, r10, 0), gy = grooveYAt.get(gr) ?? staffTop(gr) - P2(2.4), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
-          const fs = TEMPO_EM * sp2, gw = o10.measureLyric(label) * TEMPO_EM / LYRIC_EM;
-          prims.push({ t: "text", x: P2(u2.x + 0.3), y: gy, s: label, cls: ["groove-mark", known ? "" : "groove-unknown", o10.hot?.has(gt.id) ? "hot" : inSel(u2.index) ? "sel" : ""].filter(Boolean).join(" "), size: fs, anchor: "start" });
+          const gt = tokens[u2.index], gr = rowOf(u2.system, r10, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
+          const fs = TEMPO_EM * sp2, gw = o10.measureLyric(label) * TEMPO_EM / LYRIC_EM, gx = P2(u2.x + 0.3);
+          const lanes = grooveRight.get(gr) ?? [-Infinity, -Infinity], lane = gx >= lanes[0] + P2(0.8) ? 0 : 1;
+          lanes[lane] = gx + gw;
+          grooveRight.set(gr, lanes);
+          const gy = (grooveYAt.get(gr) ?? staffTop(gr) - P2(2.4)) - lane * P2(GROOVE_LANE / 2);
+          prims.push({ t: "text", x: gx, y: gy, s: label, cls: ["groove-mark", known ? "" : "groove-unknown", o10.hot?.has(gt.id) ? "hot" : inSel(u2.index) ? "sel" : ""].filter(Boolean).join(" "), size: fs, anchor: "start" });
           dyns.push({ index: u2.index, kind: "groove", system: gr, x: P2(u2.x), y: gy - P2(TEMPO_EM * 1.1), w: gw + P2(0.6), h: P2(TEMPO_EM * 1.5) });
           continue;
         }
@@ -6549,13 +6593,18 @@ function engrave(song, o10) {
         const below = upOf.get(c10) ?? false, sgn = below ? -1 : 1;
         const inStaff = (d4) => d4 >= BOTTOM_LINE && d4 <= TOP_LINE;
         let d3 = below ? dLo - 2 : dHi + 2;
-        const OUTER = (a10) => a10 === "accent" || a10 === "marcato" || a10 === "stress" || a10 === "unstress";
-        for (const a10 of ["staccato", "tenuto", "accent", "marcato", "stress", "unstress"].filter((x3) => c10.art.includes(x3))) {
-          if (OUTER(a10)) d3 = below ? Math.min(d3, BOTTOM_LINE - 2) : Math.max(d3, TOP_LINE + 2);
-          else if (inStaff(d3) && d3 % 2 === 0) d3 += sgn;
+        const artCls = (a10) => ["art", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ");
+        for (const a10 of ["staccato", "tenuto"].filter((x3) => c10.art.includes(x3))) {
+          if (inStaff(d3) && d3 % 2 === 0) d3 += sgn;
           const m2 = ART_GLYPH[a10], g3 = below ? m2.below : m2.above;
-          prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yOf(row, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: ["art", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-          d3 += sgn * (OUTER(a10) ? 3 : 2);
+          prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yOf(row, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: artCls(a10) });
+          d3 += sgn * 2;
+        }
+        let yS = Math.min(yOf(row, TOP_LINE + 2), below ? (tipOf.get(c10) ?? yOf(row, dHi + 7)) - P2(1.1) : yOf(row, d3));
+        for (const a10 of ["accent", "marcato", "stress", "unstress"].filter((x3) => c10.art.includes(x3))) {
+          const m2 = ART_GLYPH[a10];
+          prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yS + P2(m2.h / 2), ch: m2.above, cls: artCls(a10) });
+          yS -= P2(1.5);
         }
         const swl = c10.j === 0 ? tokens[c10.index].swell : void 0;
         if (swl) {
@@ -31497,7 +31546,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "64dda32ab4f0",
+  cssHash: "aa0c478d3024",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -32283,6 +32332,10 @@ function openGrooveMenu(i10, at2) {
   }
   const hints = [];
   if (!style && t10.style !== "none") hints.push(`\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u300C${t10.style}\u300D\uFF1A\u4E0D\u52A0\u8F7B\u91CD\uFF08\u6362\u4E00\u4E2A\u98CE\u683C\u5C31\u597D\uFF09`);
+  if (style && t10.style !== "none") for (const m3 of meters) {
+    const [b3, bt] = m3.split("/").map(Number), d3 = describeGroove(style, b3, bt);
+    if (d3) hints.push(`${grooveName(t10.style)} ${m3}\uFF1A${d3}`);
+  }
   if (style && t10.style !== "none") {
     const derived = [...meters].filter((m3) => {
       const [b3, bt] = m3.split("/").map(Number);
@@ -32307,7 +32360,7 @@ function openGrooveMenu(i10, at2) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu groove-menu";
   box.setAttribute("role", "menu");
-  box.innerHTML = `<div class="ctx-row ctx-groove">${chips}</div>` + (t10.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") + hints.map((h3) => `<div class="ctx-hint">${esc7(h3)}</div>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09">\u5220\u9664</button><div class="ctx-hint">\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
+  box.innerHTML = `<div class="ctx-hint ctx-what">\u98CE\u683C = \u62CD\u5B50\u8F7B\u91CD\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u843D\u5728\u5C0F\u8282\u91CC\u7684\u54EA\u4E00\u62CD\u8F7B\u4E00\u70B9\u6216\u91CD\u4E00\u70B9\uFF08\u50CF\u9F13\u624B\u7684\u5F8B\u52A8\uFF09\uFF1B\u5199\u4E86\u91CD\u97F3 / \u5F31\u5316\u7684\u97F3\u7167\u5199\u7684\u6765\u3002</div><div class="ctx-row ctx-groove">${chips}</div>` + (t10.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") + hints.map((h3) => `<div class="ctx-hint">${esc7(h3)}</div>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09">\u5220\u9664</button><div class="ctx-hint">\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at2.y + 6;
@@ -34001,4 +34054,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b22de7ac6f78.mjs.map
+//# sourceMappingURL=moonsinger-7c4038de04b8.mjs.map

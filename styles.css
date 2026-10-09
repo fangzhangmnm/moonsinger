@@ -671,6 +671,7 @@ span.smufl { pointer-events: none; }
 .staff-svg text.groove-mark.sel { fill: var(--accent); }
 .ctx-menu.groove-menu { max-width: min(360px, calc(100vw - 16px)); }
 .ctx-menu.groove-menu .ctx-hint { white-space: normal; }
+.ctx-menu.groove-menu .ctx-what { color: var(--ink); padding-top: 6px; }
 .pad-key.sym .big.it { font-style: italic; font-size: 16px; }
 .ctx-menu .ctx-chip.is-on { background: var(--accent-soft); border-color: var(--accent); }
 /* 乐器页「记号怎么演」：这位 by value 的解读表（只读） */

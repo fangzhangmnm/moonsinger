@@ -120,6 +120,10 @@ const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp" | "ghost">, { above
   tenuto: { above: "\u{E4A4}", below: "\u{E4A5}", w: 1.35, h: 0.17 },
 };
 const GLYPH_BREATH = "\u{E4CE}";   // breathMarkComma
+/** 风格记号挤了往上错开一条道：一条道多高（谱上的级数，2 级 = 1 个间距）。 */
+const GROOVE_LANE = 3.4;
+/** 强度那一组（重音 / 强音 / 次重音 / 弱化）：一律画在谱上方（user「强度记号统一放上面吧，不然容易misleading」）。 */
+const isStrength = (a: string) => a === "accent" || a === "marcato" || a === "stress" || a === "unstress";
 const DYN_GLYPH: Record<Dyn, string> = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" };     // F5 / B4 / E4 的五线谱位置
 /** 力度字的墨迹（sp，相对字的原点：左、右、基线以上、基线以下）：浏览器里 canvas measureText 量的 Bravura（2026-10-08 Opus 5.5；此前估的宽度小了一截，渐强渐弱压到字上）。
  *  渐强渐弱和两头的字之间留 PIN_GAP；点击区域按它。 */
@@ -572,7 +576,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const ds = (u.pitches.length ? u.pitches : u.pitch ? [u.pitch] : []).map((pp) => diatonicIndex(pp) + clefShift(q, k)); if (!ds.length) continue;
         const hi = Math.max(...ds), lo = Math.min(...ds), stem = u.base < WHOLE, up = (hi + lo) / 2 < MID_LINE;
         top = Math.max(top, hi + (stem && up ? 7 : 1)); bot = Math.min(bot, lo - (stem && !up ? 7 : 1));
-        if (u.art.some((a) => a !== "sfz" && a !== "fp")) { if (up) bot = Math.min(bot, lo - 3); else top = Math.max(top, hi + 3); }   // 演奏法在符干另一侧
+        if (u.art.some((a) => a === "staccato" || a === "tenuto")) { if (up) bot = Math.min(bot, lo - 3); else top = Math.max(top, hi + 3); }   // 跳音 / 保持在符干另一侧
+        if (u.art.some(isStrength)) top = Math.max(top, (stem && up ? hi + 7 : hi + 3) + 4, TOP_LINE + 5);   // 强度那一组一律在上面（越过朝上的符干）
       }
       return { top, bot };
     };
@@ -591,8 +596,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       if (q.p.id === owner) {   // 速度记号（这张纸最上面那位在场的歌手上面）：在最高的音和写在上面的力度字之上
         const t = Math.max(TOP_LINE + 4.8, ex[0].top + 3, g[0].dynD !== null ? g[0].dynD + 4.6 : 0); g[0].tempoD = t; g[0].above = Math.max(g[0].above, (t - TOP_LINE) / 2 + 1.6);
       }
-      if (q.units.some((u) => u.system === s && u.kind === "groove")) {   // 风格记号：速度记号那一行再上面一行；没有速度记号 = 和速度记号一样的高度
-        const t = g[0].tempoD !== null ? g[0].tempoD + 4.6 : Math.max(TOP_LINE + 4.8, ex[0].top + 3, g[0].dynD !== null ? g[0].dynD + 4.6 : 0); g[0].grooveD = t; g[0].above = Math.max(g[0].above, (t - TOP_LINE) / 2 + 1.6);
+      const nGroove = q.units.filter((u) => u.system === s && u.kind === "groove").length;
+      if (nGroove) {   // 风格记号：速度记号那一行再上面一行；没有速度记号 = 和速度记号一样的高度；一行谱里两个以上 = 多留一行（挤了错开，见下面画的地方）
+        const t = g[0].tempoD !== null ? g[0].tempoD + 4.6 : Math.max(TOP_LINE + 4.8, ex[0].top + 3, g[0].dynD !== null ? g[0].dynD + 4.6 : 0); g[0].grooveD = t; g[0].above = Math.max(g[0].above, (t + (nGroove > 1 ? GROOVE_LANE : 0) - TOP_LINE) / 2 + 1.6);
       }
       if (dyn && mode === "between") { g[0].below = Math.max(g[0].below, (BOTTOM_LINE - ex[0].bot) / 2 + 1.6); g[1].above = Math.max(g[1].above, (ex[1].top - TOP_LINE) / 2 + 1.6); }
       return { g, ex, dyn, mode };
@@ -670,6 +676,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const dIdx = (p: Pitch, staff: Staff) => diatonicIndex(p) + shOf(staff);
       const inSel = (i: number) => focused && !!sel && i >= sel.from && i < sel.to;
       const dynRight = new Map<number, number>();   // 每一行上一个力度字的右边（px）：防叠
+      const grooveRight = new Map<number, number[]>();   // 每一行风格记号两条道各自写到哪（px）：防叠
       const RW = (u: Unit) => rowOf(u.system, r, u.staff - 1);
       const lyricRow = (s: number) => rowOf(s, r, q.staves - 1);   // 歌词在最下面那条谱表下面
       // 选中的底色（先画，压在最下面）
@@ -751,9 +758,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           continue;
         }
         if (u.kind === "groove") {   // 风格记号（拍子轻重）：斜体字、和后面那个音左对齐；不认识的预设（以后的版本写的）= 灰字 + 说明（纪律）
-          const gt = tokens[u.index] as GrooveTok, gr = rowOf(u.system, r, 0), gy = grooveYAt.get(gr) ?? staffTop(gr) - P(2.4), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
-          const fs = TEMPO_EM * sp, gw = (o.measureLyric(label) * TEMPO_EM) / LYRIC_EM;
-          prims.push({ t: "text", x: P(u.x + 0.3), y: gy, s: label, cls: ["groove-mark", known ? "" : "groove-unknown", o.hot?.has(gt.id) ? "hot" : inSel(u.index) ? "sel" : ""].filter(Boolean).join(" "), size: fs, anchor: "start" });
+          const gt = tokens[u.index] as GrooveTok, gr = rowOf(u.system, r, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
+          const fs = TEMPO_EM * sp, gw = (o.measureLyric(label) * TEMPO_EM) / LYRIC_EM, gx = P(u.x + 0.3);
+          // 不占横向地方 → 挨得近的两个会叠：先放下面那条道，挤了放上面那条道（还和自己的音对齐；同力度字的错开）
+          const lanes = grooveRight.get(gr) ?? [-Infinity, -Infinity], lane = gx >= lanes[0] + P(0.8) ? 0 : 1;
+          lanes[lane] = gx + gw; grooveRight.set(gr, lanes);
+          const gy = (grooveYAt.get(gr) ?? staffTop(gr) - P(2.4)) - lane * P(GROOVE_LANE / 2);
+          prims.push({ t: "text", x: gx, y: gy, s: label, cls: ["groove-mark", known ? "" : "groove-unknown", o.hot?.has(gt.id) ? "hot" : inSel(u.index) ? "sel" : ""].filter(Boolean).join(" "), size: fs, anchor: "start" });
           dyns.push({ index: u.index, kind: "groove", system: gr, x: P(u.x), y: gy - P(TEMPO_EM * 1.1), w: gw + P(0.6), h: P(TEMPO_EM * 1.5) });
           continue;
         }
@@ -857,7 +868,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           }
         }
       }
-      // 7½. 修（2026-10-08）：跳音 / 保持在符头外一格（谱内落在间里），重音再往外、出了谱；符干朝上 = 画在下面，朝下 / 没有符干 = 上面。呼吸 = 音后面、谱线上方一个逗号
+      // 7½. 修（2026-10-08）：跳音 / 保持在符头外一格（谱内落在间里）；符干朝上 = 画在下面，朝下 / 没有符干 = 上面。呼吸 = 音后面、谱线上方一个逗号。
+      //   强度那一组（重音 / 强音 / 次重音 / 弱化）**一律画在谱上方**（2026-10-08 深夜 Opus 5.5，user「强度记号统一放上面吧，不然容易misleading」）：
+      //   符干朝上 = 越过符干尖再往上；都出了谱（第五线上面）
       const ign = new Set(q.p.ignores ?? []);   // 台上那位不认的记号：照画、画灰（user「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）
       for (const c of units) {
         if (c.kind !== "chunk" || !c.note || (!c.art.length && !c.breath && !(c.j === 0 && (tokens[c.index] as NoteTok).swell))) continue;
@@ -866,13 +879,19 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const below = upOf.get(c) ?? false, sgn = below ? -1 : 1;
         const inStaff = (d: number) => d >= BOTTOM_LINE && d <= TOP_LINE;
         let d = below ? dLo - 2 : dHi + 2;
-        const OUTER = (a: string) => a === "accent" || a === "marcato" || a === "stress" || a === "unstress";   // 强度那一组（重音 / 强音 / 次重音 / 弱化）在最外层、出谱
-        for (const a of (["staccato", "tenuto", "accent", "marcato", "stress", "unstress"] as const).filter((x) => c.art.includes(x))) {
-          if (OUTER(a)) d = below ? Math.min(d, BOTTOM_LINE - 2) : Math.max(d, TOP_LINE + 2);
-          else if (inStaff(d) && d % 2 === 0) d += sgn;                                                 // 跳音 / 保持在谱内落在间里
+        const artCls = (a: string) => ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ");
+        for (const a of (["staccato", "tenuto"] as const).filter((x) => c.art.includes(x))) {   // 跳音 / 保持：符头外一格，跟着符干的另一侧
+          if (inStaff(d) && d % 2 === 0) d += sgn;                                                   // 谱内落在间里
           const m = ART_GLYPH[a], g = below ? m.below : m.above;
-          prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-          d += sgn * (OUTER(a) ? 3 : 2);
+          prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: artCls(a) });
+          d += sgn * 2;
+        }
+        // 强度那一组：一律上面。起点（字形中心，px）= 第五线上一格，和「上面已经占了的」（朝上的符干尖 / 朝下时跳音保持之上）取更高的
+        let yS = Math.min(yOf(row, TOP_LINE + 2), below ? (tipOf.get(c) ?? yOf(row, dHi + 7)) - P(1.1) : yOf(row, d));
+        for (const a of (["accent", "marcato", "stress", "unstress"] as const).filter((x) => c.art.includes(x))) {
+          const m = ART_GLYPH[a];
+          prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yS + P(m.h / 2), ch: m.above, cls: artCls(a) });
+          yS -= P(1.5);
         }
         // 音内的起伏（< / > / <>）：力度那一行，这个音自己的宽度里一个小发夹；做不到的（canSwell = false 的 < / <>）画灰
         const swl = c.j === 0 ? (tokens[c.index] as NoteTok).swell : undefined;

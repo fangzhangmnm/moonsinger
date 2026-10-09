@@ -16,7 +16,7 @@ await p.click('[data-sym="groove"]'); await p.waitForTimeout(250);
 const grooves = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "groove").map((t) => `${t.style}${t.amount ? "×" + t.amount : ""}`).join(","); });
 check(await grooves() === "classical", "放了一个风格记号（先放古典）", await grooves());
 check(!!(await p.$(".groove-menu")), "马上开了它的小菜单");
-check(await p.$$eval("#score text.groove-mark", (e) => e.map((x) => x.textContent).join()) === "古典", "谱上画「古典」");
+check(await p.$$eval("#score text.groove-mark", (e) => e.map((x) => x.textContent).join()) === "风格：古典", "谱上画「风格：古典」");
 await p.click('.groove-menu [data-v="style:pop"]'); await p.waitForTimeout(250);
 check(await grooves() === "pop", "换成流行");
 check(!!(await p.$(".groove-menu")) && (await p.$eval('.groove-menu [data-v="style:pop"]', (e) => e.classList.contains("is-on"))), "换了接着开着（看说明）");
@@ -24,7 +24,7 @@ const hints = await p.$$eval(".groove-menu .ctx-hint", (e) => e.map((x) => x.tex
 check(/这张纸上：.*跟 30%/.test(hints), "明说这张纸上的歌手跟多少（月读 = 人声 30%）", hints);
 await p.click('.groove-menu [data-v="amount:2"]'); await p.waitForTimeout(250);
 check(await grooves() === "pop×2", "幅度 ×2");
-check(await p.$$eval("#score text.groove-mark", (e) => e.map((x) => x.textContent).join()) === "流行 ×2", "谱上「流行 ×2」");
+check(await p.$$eval("#score text.groove-mark", (e) => e.map((x) => x.textContent).join()) === "风格：流行 ×2", "谱上「风格：流行 ×2」");
 await p.click('.groove-menu [data-v="style:swing"]'); await p.waitForTimeout(250);
 check(/摇摆.*还没接/.test(await p.$$eval(".groove-menu .ctx-hint", (e) => e.map((x) => x.textContent).join(" | "))), "Swing：明说摇摆（时值）还没接");
 await p.click('.groove-menu [data-v="style:pop"]'); await p.waitForTimeout(250);

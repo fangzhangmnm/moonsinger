@@ -10,11 +10,32 @@ import { GROOVE_STYLES, type GrooveStyle } from "./grooves.gen.ts";
 
 export { GROOVE_STYLES, type GrooveStyle };
 export const grooveStyle = (id: string): GrooveStyle | null => GROOVE_STYLES.find((s) => s.id === id) ?? null;
-/** 谱上 / 菜单里显示的名字（"none" = 「不加轻重」，比预设名「无」好懂）；不认识的预设（以后的版本写的）= 原样显示 id。 */
-export const grooveLabel = (t: Pick<GrooveTok, "style" | "amount">): string => {
-  const s = grooveStyle(t.style), name = t.style === "none" ? "不加轻重" : s ? s.name.zh : t.style;
-  return t.amount !== undefined && t.amount !== 1 && t.style !== "none" ? `${name} ×${t.amount}` : name;
-};
+/** 预设的名字（"none" = 「不加轻重」，比预设名「无」好懂）；不认识的预设（以后的版本写的）= 原样显示 id。 */
+export const grooveName = (style: string): string => { const s = grooveStyle(style); return style === "none" ? "不加轻重" : s ? s.name.zh : style; };
+/** 谱上 / MusicXML 里写的字：「风格：古典」（光写「古典」像谜语；user「光说一个古典比较谜语人，说风格：古典」）。 */
+export const grooveLabel = (t: Pick<GrooveTok, "style" | "amount">): string =>
+  `风格：${grooveName(t.style)}${t.amount !== undefined && t.amount !== 1 && t.style !== "none" ? ` ×${t.amount}` : ""}`;
+/** 一拍拍分组（同 classicalWeights）：每拍几个十六分 + 拍里第一层细分的步长。 */
+function beatGroups(beats: number, beatType: number): { groups: number[]; sub: number } | null {
+  if (!Number.isInteger((beats * 16) / beatType)) return null;
+  if (beatType === 8 && beats > 3 && beats % 3 === 0) return { groups: Array(beats / 3).fill(6), sub: 2 };
+  if (beatType === 8 && beats > 3) { const n = Math.floor(beats / 2), g = Array(n).fill(4); if (beats % 2) g[n - 1] = 6; return { groups: g, sub: 2 }; }
+  const L = 16 / beatType; return { groups: Array(beats).fill(L), sub: L / 2 };
+}
+const WORD = (w: number) => (w >= 0.95 ? "最重" : w >= 0.7 ? "很重" : w >= 0.45 ? "重" : w > 0.05 ? "稍重" : w > -0.05 ? "不变" : w > -0.35 ? "稍轻" : "轻");
+const BEAT_NO = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
+/** 人话说这个风格在这个拍号下怎么轻重（从数据现算，数据变了说明跟着变）：「一拍 最重 · 二拍 不变 · …；半拍 稍轻；更细的 轻」。 */
+export function describeGroove(s: GrooveStyle, beats: number, beatType: number): string | null {
+  const tb = grooveTable(s, beats, beatType), bg = beatGroups(beats, beatType);
+  if (!tb || !bg) return null;
+  const starts: number[] = []; let at = 0; for (const g of bg.groups) { starts.push(at); at += g; }
+  const beatsTxt = starts.map((st, k) => `${BEAT_NO[k] ?? k + 1}拍 ${WORD(tb.weights[st])}`).join(" · ");
+  const subs: number[] = [], finer: number[] = [];
+  starts.forEach((st, k) => { for (let q = 1; q < bg.groups[k]; q++) (bg.sub >= 1 && Number.isInteger(bg.sub) && q % bg.sub === 0 ? subs : finer).push(tb.weights[st + q]); });
+  const one = (xs: number[]) => { const ws = [...new Set(xs.map(WORD))]; return ws.length === 1 ? ws[0] : ws.join(" / "); };
+  const subName = bg.groups.some((g) => g === 6) ? "拍里的八分" : "半拍";
+  return `${beatsTxt}${subs.length ? `；${subName} ${one(subs)}` : ""}${finer.length ? `；更细的 ${one(finer)}` : ""}`;
+}
 
 /** 没列的拍号按古典层级推（仓鼠 meterFallback.rule = "classical" 的说法）：小节第一拍 1；四拍的第三拍 0.5；其余拍 0；
  *  拍里第一层细分 −0.25、再往下 −0.5。复拍子（6/8 9/8 12/8）一拍 = 三个八分，每个八分是第一层细分；

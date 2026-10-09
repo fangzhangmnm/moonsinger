@@ -11,7 +11,7 @@ import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { type Art, ART_NAME, setGroove, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, loopPlan, loopWindow } from "../score/arrange.ts";
-import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, GROOVE_STYLES } from "../score/groove.ts";
+import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -1515,6 +1515,7 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
   for (let j = i + 1; j < end; j++) { const u = toks[j]; if (u.kind === "time") meters.add(`${u.beats}/${u.beatType}`); }
   const hints: string[] = [];
   if (!style && t.style !== "none") hints.push(`这一版不认识「${t.style}」：不加轻重（换一个风格就好）`);
+  if (style && t.style !== "none") for (const m of meters) { const [b, bt] = m.split("/").map(Number), d = describeGroove(style, b, bt); if (d) hints.push(`${grooveName(t.style)} ${m}：${d}`); }   // 这个风格在这儿怎么轻重（从数据现算）
   if (style && t.style !== "none") {
     const derived = [...meters].filter((m) => { const [b, bt] = m.split("/").map(Number); return grooveTable(style, b, bt)?.derived; });
     const none = [...meters].filter((m) => { const [b, bt] = m.split("/").map(Number); return !grooveTable(style, b, bt); });
@@ -1533,7 +1534,8 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
   const amounts = [0.5, 1, 1.5, 2].map((a) => `<button class="btn ctx-chip${Math.abs(amount - a) < 1e-9 ? " is-on" : ""}" data-v="amount:${a}" title="幅度：预设的 ${a} 倍">×${a}</button>`).join("");
   const box = document.createElement("div");
   box.className = "track-card ctx-menu groove-menu"; box.setAttribute("role", "menu");
-  box.innerHTML = `<div class="ctx-row ctx-groove">${chips}</div>` + (t.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") +
+  box.innerHTML = `<div class="ctx-hint ctx-what">风格 = 拍子轻重：从这个音起到这张纸结尾，每个音按它落在小节里的哪一拍轻一点或重一点（像鼓手的律动）；写了重音 / 弱化的音照写的来。</div>` +
+    `<div class="ctx-row ctx-groove">${chips}</div>` + (t.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") +
     hints.map((h) => `<div class="ctx-hint">${esc(h)}</div>`).join("") + `<div class="ctx-sep"></div>` +
     `<button class="btn ctx-item danger" data-v="del" title="去掉这个风格记号（这儿起回到前一个风格；这张纸开头 = 不加）">删除</button>` +
     `<div class="ctx-hint">只管这张纸：从这个音到这张纸结尾（或下一个风格记号）。长按拖 = 挪到别的音上</div>`;
