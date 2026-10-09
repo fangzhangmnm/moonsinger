@@ -30,6 +30,7 @@ try {
   await p.keyboard.press("Digit5"); await p.waitForTimeout(80);
   check((await n()) === 3 && (await hist()).future === 0, "撤销后再写 = 分叉，重做没了");
   // 连打歌词 = 一步
+  await p.evaluate(() => window.__moonsinger.setMode("lyrics"));   // v0.9.19：歌词框只在「词」模式里点得开
   const ly = await p.evaluate(() => { const L = window.__moonsinger.layout(), sh = document.querySelector("#score .sheet").getBoundingClientRect(); const h = L.lyrics[0]; return { x: sh.left + L.pageX.left + h.x, y: sh.top + h.y - L.sp * 0.5 }; });
   await p.mouse.click(ly.x, ly.y); await p.waitForTimeout(120);
   const before = (await hist()).past;
@@ -37,6 +38,7 @@ try {
   await p.keyboard.press("Escape"); await p.waitForTimeout(100);
   check((await lyrics()) === "さ く ら", "歌词打上了", await lyrics());
   check((await hist()).past === before + 1, "连打三个字 = 一步", JSON.stringify(await hist()));
+  await p.evaluate(() => window.__moonsinger.setMode("notes"));
   await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("Control+z"); await p.waitForTimeout(80);
   check((await lyrics()) === "· · ·", "⌘Z 一下三个字全回去", await lyrics());
   // 歌库里：undo 之后 2 s 自动存

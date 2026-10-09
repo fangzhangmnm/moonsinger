@@ -16,6 +16,7 @@ const cdp = await ctx.newCDPSession(p);
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
 await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML);
 await p.waitForTimeout(300);
+await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTimeout(200);   // v0.9.19：歌词框只在「词」模式里点得开（先切：键盘收起谱面变高会跟光标滚一下）
 await p.evaluate(() => { document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(200);
 // 点第 3 个音下面（歌词那一行）开歌词框
 const n3 = await p.$$eval("#score text.note", (ts) => { const r = ts[2].getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y }; });
@@ -36,13 +37,16 @@ await p.waitForTimeout(500);
 const top2 = await p.$eval("#score", (e) => e.scrollTop);
 check(Math.abs(top2 - top1) < 2, "滚了不被拽回去（不白滚）", `${top1} → ${top2}`);
 check(await p.$eval(".lyric-input", (e) => !e.hidden && document.activeElement === e), "滚的时候歌词框还开着、焦点还在（键盘不收）");
-// 轻点谱面空白 = 收框（原有规矩）
-await p.touchscreen.tap(700, 400); await p.waitForTimeout(300);
+// 轻点谱面空白 = 收框（原有规矩）。「词」里点在音上 = 开那个音的歌词框（v0.9.19），所以点纸左边的空白
+const blank = await p.$eval("#score .sheet", (e) => { const r = e.getBoundingClientRect(); return { x: r.left + 4, y: 400 }; });
+await p.touchscreen.tap(blank.x, blank.y); await p.waitForTimeout(300);
 check(await p.$eval(".lyric-input", (e) => e.hidden), "轻点谱面 = 收起歌词框");
 // 一整页白：能滚到内容下面一整屏
 const g = await p.$eval("#score", (e) => ({ sh: e.scrollHeight, ch: e.clientHeight, sheet: e.querySelector(".sheet").getBoundingClientRect().height }));
 check(g.sh >= g.sheet + g.ch * 0.75 - 2 && g.sh <= g.sheet + g.ch * 0.75 + 40, "下面留 ¾ 屏的空白", JSON.stringify(g));
 // 跟随光标不贴着最下面：光标一路往右挪（写音模式的 →），每次看光标那一行下面留没留出大约一行
+await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(200);   // 写字头只在「音」里画
+await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: 3 }); });   // 从开头往右挪
 await p.evaluate(() => { document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(200);
 let worst = Infinity, moved = 0;
 for (let k = 0; k < 90; k++) {

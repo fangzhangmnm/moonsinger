@@ -21,7 +21,7 @@ await p.evaluate(() => {
   m.singer.sing = async (score, prog, extra = {}) => { window.__sings.push({ n: score.SCORE.length, raw: !!extra.raw, kana: score.SCORE.map((e) => e.kana).join("") }); return { samples: new Float32Array(22050).fill(0.05 * window.__sings.length), sr: 22050 }; };
 });
 // 放 = 块都喂进录音房、走带在放（2026-10-09 实时试听刀 1：不再有「拼成一条」）；放起来就停
-const play = async () => { await p.evaluate(() => { window.__sings = []; }); await p.click("#rewindBtn");   // ⟲ = 从起点放（v0.9.18 起 ▶ 是续播 / 暂停）
+const play = async () => { await p.evaluate(() => { window.__sings = []; }); await p.click("#playBtn");   // 主键 |▶ = 从起点放（v0.9.19）
   let played = false; for (let i = 0; i < 60; i++) { if (await p.evaluate(() => window.__moonsinger.engine.playing)) { played = true; break; } await p.waitForTimeout(100); } await p.waitForTimeout(150); await p.click("#playBtn").catch(() => {}); await p.waitForTimeout(100); return p.evaluate((played) => ({ sings: window.__sings, played }), played); };
 let r1 = await play();
 check(r1.sings.length === 3 && r1.sings.every((s) => s.raw), "每句：かな ｜ しいうたかな（跨纸一句）｜ しい = 唱 3 次（重复的内容不再唱），都带 raw", JSON.stringify(r1.sings));
@@ -47,7 +47,7 @@ await p.evaluate(() => {
 });
 await p.waitForTimeout(900);   // 预唱会先唱光标附近（quiet）；等它过去再按播放，看的是播放的预卷
 await p.evaluate(() => { window.__sings = []; window.__sungAt = []; });
-await p.click("#rewindBtn");   // 从起点（开头）放，不是接着上次暂停的地方
+await p.click("#playBtn");   // 主键 |▶ = 从起点（开头）放
 let startedAt = -1, sungWhenStarted = -1;
 for (let i = 0; i < 80; i++) { if (await p.evaluate(() => window.__moonsinger.engine.playing)) { startedAt = Date.now(); sungWhenStarted = await p.evaluate(() => window.__sings.length); break; } await p.waitForTimeout(50); }
 check(startedAt > 0, "放起来了");

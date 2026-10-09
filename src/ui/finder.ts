@@ -14,7 +14,7 @@ export interface FinderHost {
   close(): void;
   togglePad(): void;                                                 // 顶条「键盘」：开 / 关试听键盘（user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）
 }
-const HINT = "点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「上场」。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。";
+const HINT = "点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「选这个」（回到乐器页）。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。";   // 不叫「上场」：user 2026-10-10「选乐器不要用上场这个词不然让会让人以为直接跳回主界面，但是实际上我们还是回到乐器配置界面」
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export class Finder {
@@ -153,7 +153,7 @@ export class Finder {
       const provs = providersOf(cat, c).filter((x) => !pk || gmKey(x) === pk), pitched = c.kind === "voice";   // 音色行 = 只列它自己
       // 平替弱化显示（user「平替换的ui也需要弄出区别」「也许需要弱化显示」）：虚线框、灰字、「顶替」标
       const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">顶替</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
-        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast">上场</button>`}</div></div>`;
+        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="选它来演这个声部，回到乐器页">选这个</button>`}</div></div>`;
       body = `<div class="inst-prov">` +
         provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? `鼓件 · ${esc(p.gmName)}（Standard 鼓组的 ${p.note} 号键）` : p.bank === 128 ? `鼓组 · ${esc(p.gmName)}` : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? `顶替${p.basis === "official" ? "（GM 原文认可）" : p.basis === "lineage" ? "（前身）" : p.basis === "imitation" ? "（仿声）" : p.basis === "family" ? "（同类）" : "（只是同名）"}${p.reason ? `：${esc(p.reason)}` : ""}` : "", true, p.kind === "substitute")).join("") +
         (pitched ? prov(`${c.id}|voice`, "月读", "唱歌词；没写歌词的音按「哼的字」唱", false) : "") +

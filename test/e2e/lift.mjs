@@ -34,6 +34,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   const p = await page(false); await load(p);
   check(await lyr(p) === "我 爱 你 _ _ _ _ _", "载入", await lyr(p));
   check(await marks(p) === "p n < n n f n n n n n", "记号载入", await marks(p));
+  await p.evaluate(() => window.__moonsinger.setMode("lyrics"));   // v0.9.19：歌词框只在「词」模式里点得开
   // 1. 拖「爱」往右一个音
   let a = await center(p, "#score text.lyric", 1), h = await heads(p);
   await p.mouse.move(a.x, a.y); await p.mouse.down(); await p.mouse.move(h[2].x, a.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
@@ -58,6 +59,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   check(!!sel && sel.from === t2 && sel.to === t2 + 1, "长按字原地松手 = 选中它那个音", JSON.stringify(sel));
   check(await p.$eval(".lyric-input", (e) => e.hidden), "长按不开歌词框");
   await p.keyboard.press("Escape"); await p.waitForTimeout(100);
+  await p.evaluate(() => window.__moonsinger.setMode("symbols"));   // v0.9.19：记号只在「符」模式里点得到 / 拿得起
   // 5. 点力度记号 = 小菜单；点 f = 改
   const dyns = await p.$$eval("#score text.dyn", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
   check(dyns.length === 2, "两个力度字", String(dyns.length));
@@ -103,6 +105,7 @@ const undo = (p) => p.keyboard.press("Control+z");
     void last;
   };
   const path = (a, bx, n = 8) => Array.from({ length: n + 1 }, (_, k) => ({ x: a.x + ((bx - a.x) * k) / n, y: a.y }));
+  await p.evaluate(() => window.__moonsinger.setMode("lyrics"));   // v0.9.19：字只在「词」里拿得起
   // 9. 手指不长按就拖 = 滚动，不改谱
   let a = await center(p, "#score text.lyric", 1), h = await heads(p);
   await touch(path(a, h[2].x), 30);
@@ -115,6 +118,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   a = await p.$$eval("#score text.lyric", (es) => { const e = es.find((x) => x.textContent === "爱"); const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }); h = await heads(p);
   await touch(path(a, h[1].x), 600);
   check(await lyr(p) === "我 爱 ー 你 _ _ _ _", "往左拖回拖腔那个音 = 早一个音起，原来的变成它的拖腔", await lyr(p));
+  await p.evaluate(() => window.__moonsinger.setMode("symbols"));   // v0.9.19：记号只在「符」里点得到 / 拿得起
   // 12. 轻点力度字 = 小菜单
   const d0 = await center(p, "#score text.dyn", 0);
   await touch([d0], 40);
@@ -138,6 +142,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   await p.waitForTimeout(300);
   const seq = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].slice(3).map((t) => (t.kind === "note" ? "n" : t.kind === "rest" ? "r" : t.kind === "dyn" ? t.value : t.kind)).join(" "); });
   check(await seq() === "p n n r n", "载入", await seq());
+  await p.evaluate(() => window.__moonsinger.setMode("symbols"));   // v0.9.19：记号只在「符」里点得到 / 拿得起
   const d = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, l: r.x }; });
   const rest = await p.$eval("#score text.rest", (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y }; });
   const head0 = await p.$eval("#score text.note", (e) => e.getBoundingClientRect().x);
@@ -154,6 +159,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "长按到点就亮");
   await p.mouse.up(); await p.waitForTimeout(200);
   await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu")?.remove());
+  await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTimeout(250);   // v0.9.19：字只在「词」里拿得起（切完等重排 / 滚完再量）
   // 歌词拖：字跟着亮
   const ly = await p.$$eval("#score text.lyric", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
   const heads = await p.$$eval("#score text.note", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return r.x + r.width / 2; }));

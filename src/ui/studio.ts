@@ -1,4 +1,4 @@
-// studio.ts —— 录音室：全屏混音台，和谱分开（user 2026-10-08「麦克风增益 / 声像没界面 对。这个可以把第一版录音室给逼出来。我建议是和谱子分开来」「录音室 可以做一个看看」）。
+// studio.ts —— 录音室：混音台。2026-10-10 起住在底座里（键盘那个位子，和键盘互斥；user「录音室的键盘位化」），谱留着能看；之前是全屏页，和谱分开（user 2026-10-08「麦克风增益 / 声像没界面 对。这个可以把第一版录音室给逼出来。我建议是和谱子分开来」「录音室 可以做一个看看」）。
 // created 2026-10-08 by Claude Fable 5.1。一个声部一条：名字 / 谁来演 / 增益 dB / 声像 / 静音 / 独奏。数据 = 录音房 studio.json 的 mics（增益 / 声像进文件；静音 / 独奏是这次打开里的）。
 // 出声的事归这里（静音 / 独奏），显示的事归谱上的歌手牌（隐藏 / 只看它）；谱上给出声状态打角标。总线 / 效果器 / 电平表以后。
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number }   // refs = 在几张纸上（0 = 能删）
@@ -25,7 +25,7 @@ export class Studio {
   readonly el: HTMLDivElement;
   constructor(parent: HTMLElement, private host: StudioHost) {
     this.el = document.createElement("div"); this.el.className = "studio"; this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="finder-title">录音室</span><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button></div>` +
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">录音室</span><button class="btn" data-v="back" title="收起录音室（Esc）：底座回到键盘">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button></div>` +
       `<div class="finder-hint">每个声部一条：增益、声像、静音 / 独奏。增益和声像存进歌（录音房）；静音 / 独奏只是这次。谱上会给静音 / 独奏打角标。</div><div class="studio-strips"></div>`;
     parent.append(this.el);
     this.el.addEventListener("click", (e) => {

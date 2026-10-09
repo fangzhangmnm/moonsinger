@@ -21,6 +21,7 @@ await p.click("#score text.part-name"); await p.waitForTimeout(200);
 const warn = await p.$eval(".track-card .tc-warn", (e) => e.textContent).catch(() => "");
 check(!!warn, "歌手牌小卡里说了", warn);
 await p.keyboard.press("Escape"); await p.mouse.click(1050, 700); await p.waitForTimeout(150);
+await p.evaluate(() => window.__moonsinger.setMode("lyrics"));   // v0.9.19：歌词框只在「词」模式里点得开
 // 点「星」那个字 = 歌词框 + 上面的小字
 const star = await p.$$eval("#score text.lyric", (es) => { const e = es.find((x) => x.textContent === "星"); const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await p.mouse.click(star.x, star.y); await p.waitForTimeout(250);

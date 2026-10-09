@@ -33,13 +33,14 @@ try {
   // 歌词里打句号 = 句
   await p.keyboard.press("Backspace"); await p.keyboard.press("Backspace"); await p.waitForTimeout(100);
   const ns2 = await p.$$eval("#score text.note", (ts) => ts.map((t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
+  await p.evaluate(() => window.__moonsinger.setMode("lyrics"));   // v0.9.19：歌词框只在「词」模式里点得开
   const ly = await p.evaluate(() => { const L = window.__moonsinger.layout(), sh = document.querySelector("#score .sheet").getBoundingClientRect(); const h = L.lyrics[0]; return { x: sh.left + L.pageX.left + h.x, y: sh.top + h.y - L.sp * 0.5 }; });
   await p.mouse.click(ly.x, ly.y); await p.waitForTimeout(150);
   console.log("    [dbg] lyric open:", await p.evaluate(() => window.__moonsinger.view.lyrics.open), "click", JSON.stringify(ly), "kinds", await kinds());
   for (const ch of ["さ", "く", "ら", "。"]) { await p.keyboard.type(ch); await p.waitForTimeout(80); }
   await p.waitForTimeout(200);
   const k2 = await kinds(); check(k2.startsWith("n n n ,"), "歌词「さくら。」：第三个音后面插了句", k2);
-  await p.keyboard.press("Escape");
+  await p.keyboard.press("Escape"); await p.evaluate(() => window.__moonsinger.setMode("notes"));
   // 存 → 开：句来回（breath-mark）
   const bytes = await p.evaluate(() => Array.from(window.__moonsinger.bytes()));
   const back = await p.evaluate((arr) => { const o = window.__moonsinger.open("x.mxl", new Uint8Array(arr)); return o.song.papers[0].tracks.P1.slice(3).map((t) => t.kind === "phrase" ? "," : t.kind === "note" ? "n" : t.kind === "bar" ? "|" : t.kind).join(" "); }, bytes);
@@ -49,14 +50,14 @@ try {
   check(!/breath-mark/.test(xml) && /"phrases"/.test(sj), "句号不进 MusicXML，在 score.json 里");
   // pad 符号层：点「符」翻页、点「句号」插一个；符号层留着，再点一下回音键
   await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("End"); await p.waitForTimeout(100);   // 点谱 = pad 弹出来（歌词框收起时 pad 是藏着的）
-  await p.click(".pad-tools [data-symbols]"); await p.waitForTimeout(100);
+  await p.click('.mode-seg [data-mode="symbols"]'); await p.waitForTimeout(100);   // v0.9.19：符号层 = 顶栏「符」模式（pad 上的「符」键摘掉了）
   await p.click('.pad-head [data-sympage="mark"]'); await p.waitForTimeout(100);   // 句号在「记号」那一页（2026-10-08 符号层分页）
   check(await p.$(".pad-grid.symbols [data-sym=\"phrase\"]") != null, "pad 翻到符号层");
   await p.click(".pad-grid.symbols [data-sym=\"phrase\"]"); await p.waitForTimeout(150);
   check((await kinds()).endsWith(","), "符号层点「句号」= 插了一个", await kinds());
   check(await p.$(".pad-grid.symbols") != null, "插完符号层还开着（只有 caps；user「符号键盘应该只有caps模式没有shift模式」）");
-  await p.click(".pad-tools [data-symbols]"); await p.waitForTimeout(100);
-  check(await p.$(".pad-grid.symbols") == null, "再点「符」（现在写着「音」）= 回音键");
+  await p.click('.mode-seg [data-mode="notes"]'); await p.waitForTimeout(100);
+  check(await p.$(".pad-grid.symbols") == null, "切回「音」模式 = 回音键");
   // 纸：加第二张，隐藏它；本段视图默认 → 翻到它有说明；全部视图折叠
   await p.evaluate(() => window.__moonsinger.addPaper()); await p.waitForTimeout(100);
   const p2 = await p.evaluate(() => window.__moonsinger.state().song.papers[1].id);

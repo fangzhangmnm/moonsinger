@@ -10,8 +10,8 @@ await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitF
 const key = async (i) => { await toNotes(); await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); };
 // 符号层只有 caps（2026-10-09 user「符号键盘应该只有caps模式没有shift模式」）：开着就一直开着，要回音键再点「符」
 const symOpen = () => p.$$eval(".pad-grid.symbols", (g) => g.length > 0);
-const toNotes = async () => { if (await symOpen()) { await p.click("[data-symbols]"); await p.waitForTimeout(80); } };
-const toSyms = async () => { if (!(await symOpen())) { await p.click("[data-symbols]"); await p.waitForTimeout(80); } await p.click('.pad-head [data-sympage="dyn"]'); await p.waitForTimeout(80); };
+const toNotes = async () => { if (await symOpen()) { await p.click('.mode-seg [data-mode="notes"]'); await p.waitForTimeout(80); } };   // v0.9.19：模式在顶栏
+const toSyms = async () => { if (!(await symOpen())) { await p.click('.mode-seg [data-mode="symbols"]'); await p.waitForTimeout(80); } await p.click('.pad-head [data-sympage="dyn"]'); await p.waitForTimeout(80); };
 // 写一个音，符号层力度页按 p；再写三个音，「渐到」+ f
 await key(0);
 await toSyms();

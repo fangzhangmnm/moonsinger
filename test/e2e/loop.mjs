@@ -47,7 +47,7 @@ const sp = await pos();
 check(sp >= Math.max(a.from, a.to - 4) - 0.05, "接缝：位置跳到循环尾前 4 秒附近", `${sp} vs ${Math.max(a.from, a.to - 4)}`);
 await p.click("#playBtn"); await p.waitForTimeout(150);
 // 从头：没在放 = 从范围头放
-await p.click("#rewindBtn"); check(await waitPlaying(), "⟲ = 从起点放起来（没设起点 = 开头）");
+await p.click("#playBtn"); check(await waitPlaying(), "主键 |▶ = 从起点放起来（没设起点 = 开头）");
 await p.waitForTimeout(120);
 check((await pos()) < secOf(t1) + 0.3, "从范围头放（不是从光标）", String(await pos()));
 await p.click("#playBtn"); await p.waitForTimeout(150);

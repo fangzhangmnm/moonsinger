@@ -1040,7 +1040,7 @@ export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | 
 }
 /** 符号模式的退格（2026-10-08，user「退格只删符号或者没符号的时候退一步，不删音符」）：
  *  ① 光标前面紧挨着的不占时值的记号（力度 / 渐强渐弱 / 句号 / 中途的调号拍号速度）→ 删最后一个；
- *  ② 没有 = 光标前那个音身上的装饰，一次一个、从最外层开始：音内起伏 → 音头（强音 / 重音 / 突强 / 强后即弱）→ 保持 → 跳音 → 气声 → 出声的换气 → 呼吸 → 连线；
+ *  ② 没有 = 挂在光标前那个音上的力度 / 渐强渐弱 / 风格（紧挨在它前面），再是那个音身上的装饰，一次一个、从最外层开始：音内起伏 → 音头（强音 / 重音 / 突强 / 强后即弱）→ 保持 → 跳音 → 气声 → 出声的换气 → 呼吸 → 连线；
  *  ③ 都没有 = 光标往回一步。永远不删音。 */
 export function symBackspace(st: EditorState): EditorState {
   if (st.sel) return st;
@@ -1049,6 +1049,9 @@ export function symBackspace(st: EditorState): EditorState {
   const t = toks[i];
   if (i >= h && t?.kind === "note") {
     const nt = toks.slice(), art = artOf(t);
+    // 挂在这个音上的力度 / 渐强渐弱 / 风格（v0.7.27 起记号落在「光标前那个音」= 插在它前面）先删——user 2026-10-10「我早就想用退格删强度曲线了」
+    const j = i - 1, mk = toks[j];
+    if (j >= h && (mk?.kind === "dyn" || mk?.kind === "hairpin" || mk?.kind === "groove")) { nt.splice(j, 1); return next(st, nt, { caret: st.caret - 1 }); }
     const strip = (k: "swell" | "slur") => { const { [k]: _x, ...rest } = t; return rest as NoteTok; };
     if (t.swell) { nt[i] = strip("swell"); return next(st, nt); }
     for (const a of ["marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "whisper"] as Art[]) if (art.includes(a)) { nt[i] = withArt(t, a, false); return next(st, nt); }

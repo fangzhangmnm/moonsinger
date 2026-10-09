@@ -23,9 +23,11 @@ await p.goto(`http://127.0.0.1:${PORT}/`); await p.waitForTimeout(400);
 const stem0 = await title(); check(/^\d{8}-[0-9a-f]{4}$/.test(stem0), "开局 = 默认名 yyyymmdd-hex4、没改过", stem0);
 await p.click("#score", { position: { x: 600, y: 400 } });
 for (const k of ["Digit1", "Digit2", "Digit3", "Enter", "Digit5", "Minus", "Digit6"]) await p.keyboard.press(k);
+await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTimeout(200);   // v0.9.19：歌词框只在「词」里点得开
 const n0 = await p.$eval("#score text.note", (t) => { const b = t.getBoundingClientRect(); return { x: b.x + b.width / 2 }; });
 const staffBottom = await p.$$eval("#score line.staff", (ls) => Math.max(...ls.slice(0, 5).map((l) => l.getBoundingClientRect().y)));
 await p.mouse.click(n0.x, staffBottom + 52); await p.keyboard.type("さくら"); await p.keyboard.press("Enter");
+await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(150);
 await p.click("#score", { position: { x: 700, y: 400 } });
 check((await title()) === `${stem0} •`, "写了之后标题带「•」（改过没存）");
 // 纸面最上面点歌名、填上

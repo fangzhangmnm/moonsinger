@@ -15,7 +15,7 @@ await p.evaluate(() => {
 const shape = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].slice(3).map((t) => t.kind === "note" ? (t.lyric ?? "n") : t.kind === "bar" ? (t.repeat ?? "|") + (t.times ? "x" + t.times : "") : t.kind === "nav" ? (t.what === "ending" ? `[${t.nums.join(".")}]` : t.what) : t.kind).join(" "); });
 const order = () => p.evaluate(() => window.__moonsinger.flatten().tokens.filter((t) => t.kind === "note" && t.lyric).map((t) => t.lyric).join(" "));
 const menu = async (v) => {
-  if (!(await p.$(".pad-grid.symbols"))) { await p.click("[data-symbols]"); await p.waitForTimeout(80); }
+  if (!(await p.$(".pad-grid.symbols"))) { await p.click('.mode-seg [data-mode="symbols"]'); await p.waitForTimeout(80); }
   await p.click('.pad-head [data-sympage="mark"]'); await p.waitForTimeout(80);
   await p.click('[data-sym="repeat"]'); await p.waitForTimeout(150);
   await p.click(`.repeat-menu [data-v="${v}"]`); await p.waitForTimeout(150);

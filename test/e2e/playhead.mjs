@@ -18,12 +18,13 @@ const s = await p.evaluate(() => { const e = window.__moonsinger.engine; return 
 check(s.heard !== null && s.heard <= s.at + 1e-6, "听到的位置不超过算到的位置", JSON.stringify(s));
 check(s.lat !== null && s.lat >= 0 && s.lat < 1000, "输出延迟有数（浏览器报的）", `${s.lat?.toFixed(1)} ms`);
 check(s.heard !== null && s.at - s.heard < (s.lat ?? 0) / 1000 + 0.06, "两者之差 ≈ 输出延迟（+ 位置报告的间隔）", `${((s.at - s.heard) * 1000).toFixed(1)} ms`);
-const ph1 = await p.evaluate(() => { const e = document.querySelector(".playhead"); return e ? parseFloat(e.style.left) : null; });
-await p.waitForTimeout(700);
-const ph2 = await p.evaluate(() => { const e = document.querySelector(".playhead"); return e ? parseFloat(e.style.left) : null; });
-check(ph1 !== null && ph2 !== null && ph2 > ph1, "播放头画出来了、往右走", `${ph1} → ${ph2}`);
+// 播放线先不画（user「先试试不用线」）：正在响的音高亮，跟着走
+const hl = () => p.evaluate(() => { const e = document.querySelector(".play-hl"); return e ? parseFloat(e.style.left) : null; });
+const ph1 = await hl(); await p.waitForTimeout(700); const ph2 = await hl();
+check(ph1 !== null && ph2 !== null && ph2 > ph1, "正在响的音高亮了、往右走（没有播放线）", `${ph1} → ${ph2}`);
+check(!(await p.$(".playhead")), "不画播放线");
 await p.click("#playBtn"); await p.waitForTimeout(200);
-check(!!(await p.$(".playhead")) && !(await p.evaluate(() => window.__moonsinger.engine.playing)), "暂停 = 播放线留在停下的地方（续播从这儿）");
+check(!!(await p.$(".play-hl")) && !(await p.evaluate(() => window.__moonsinger.engine.playing)), "暂停 = 高亮留在停下的那个音（续播从这儿）");
 check(!errs.length, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nplayhead: ${pass} passed, ${fail} failed`);

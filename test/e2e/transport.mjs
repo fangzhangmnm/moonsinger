@@ -30,40 +30,49 @@ check(!!(await p.$(".start-mark")), "谱上画了起点的小旗");
 await p.waitForTimeout(400);
 const p1 = await pos();
 check(p1 > BAR - 0.3 && p1 < BAR + 1.2, "从第二小节放起", `${p1.toFixed(2)} s（小节 ${BAR.toFixed(2)} s）`);
-// 2. 暂停 → 续播：接着放、不回起点；起点不变
+// 2. 主键 = 停（停的地方记下来）→ ⋯「接着放」：从那儿接着放、不回起点；起点不变（v0.9.19：只有一个主键 |▶，续播在 ⋯ 里）
 await p.click("#playBtn"); await p.waitForTimeout(150);
 t = await T();
-check(!(await playing()) && !!t.paused && !!(await p.$(".playhead")), "▶ 再点 = 暂停（记住位置、播放线留着）", JSON.stringify(t.paused));
+check(!(await playing()) && !!t.paused && !!(await p.$(".play-hl")), "主键再按 = 停（记住位置、高亮留着）", JSON.stringify(t.paused));
+check((await p.$eval("#playBtn use", (e) => e.getAttribute("href"))) === "#play-from-start", "停了 = 主键是 |▶");
 const pausedAt = t.paused.sec;
-await p.click("#playBtn"); check(await waitPlaying(), "▶ = 续播");
+await p.click("#transportMore"); await p.waitForTimeout(80);
+check(!!(await p.$('.ctx-menu [data-v="resume"]')), "停过 = ⋯ 里有「接着放」");
+check(!!(await p.$('.ctx-menu [data-v="follow"]')) && (await p.$eval('.ctx-menu [data-v="follow"]', (e) => e.textContent.startsWith("✓"))), "⋯ 里有「自动翻」，默认开");
+await p.click('.ctx-menu [data-v="resume"]'); check(await waitPlaying(), "接着放 = 放起来");
 await p.waitForTimeout(120);
 const p2 = await pos();
-check(p2 >= pausedAt - 0.15, "续播从暂停的地方接着放（不回起点）", `${p2.toFixed(2)} vs 暂停 ${pausedAt.toFixed(2)}`);
-check((await T()).startMark?.tick === BAR2, "续播不动起点");
-// 3. ⟲ = 回起点重放
+check(p2 >= pausedAt - 0.15, "接着放 = 从停下的地方（不回起点）", `${p2.toFixed(2)} vs 停在 ${pausedAt.toFixed(2)}`);
+check((await T()).startMark?.tick === BAR2, "接着放不动起点");
+// 3. 主键（停着）= 从起点放
 await p.waitForTimeout(400);
-await p.click("#rewindBtn"); await p.waitForTimeout(250);
+await p.click("#playBtn"); await p.waitForTimeout(150);
+await p.click("#playBtn"); check(await waitPlaying(), "主键 = 从起点放"); await p.waitForTimeout(200);
 const p3 = await pos();
-check(p3 < BAR + 0.6 && p3 > BAR - 0.4, "⟲ = 回到起点重放", `${p3.toFixed(2)} s`);
+check(p3 < BAR + 0.6 && p3 > BAR - 0.4, "从起点（第二小节）放", `${p3.toFixed(2)} s`);
 await p.click("#playBtn"); await p.waitForTimeout(150);
 // 4. 编辑（挪光标）不动起点
 await p.keyboard.press("ArrowLeft"); await p.keyboard.press("ArrowLeft"); await p.waitForTimeout(80);
 check((await T()).startMark?.tick === BAR2, "挪光标不动起点");
-// 5. 听模式：锁写谱，点谱 = 从那个小节放；Esc 回到写
-await p.click("#listenBtn"); await p.waitForTimeout(150);
+// 5. 听模式：锁写谱；轻点不跳播（防误触）；长按 / 右键 = 小菜单「从这儿放」；Esc 回到写
+await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(150);
 check((await T()).listen && (await p.evaluate(() => document.body.classList.contains("listen-mode"))), "听模式开了");
 const n0 = await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks[window.__moonsinger.state().at.part].filter((x) => x.kind === "note").length);
 await p.keyboard.press("Digit3"); await p.waitForTimeout(80);
 const n1 = await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks[window.__moonsinger.state().at.part].filter((x) => x.kind === "note").length);
 check(n1 === n0, "听模式里键盘写不了音", `${n0} → ${n1}`);
 const third = await p.locator(".staff-svg .note").nth(2 * PER + 1).boundingBox();
-await p.mouse.click(third.x + third.width / 2, third.y + third.height / 2);
-check(await waitPlaying(), "听模式里点谱 = 放起来");
+await p.mouse.click(third.x + third.width / 2, third.y + third.height / 2); await p.waitForTimeout(300);
+check(!(await playing()) && (await T()).startMark?.tick === BAR2, "听模式里轻点音 = 不跳播、起点不动（防误触）");
+await p.mouse.click(third.x + third.width / 2, third.y + third.height / 2, { button: "right" }); await p.waitForTimeout(150);
+check(!!(await p.$('.ctx-menu [data-v="here"]')), "右键 = 小菜单「从这儿放」");
+await p.click('.ctx-menu [data-v="here"]');
+check(await waitPlaying(), "从这儿放 = 放起来");
 t = await T();
 check(t.startMark?.tick === BAR3, "点的是第三小节的音 = 起点挪到第三小节的头", JSON.stringify(t.startMark));
-check(n1 === (await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks[window.__moonsinger.state().at.part].filter((x) => x.kind === "note").length)), "点谱没改谱");
+check(n1 === (await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks[window.__moonsinger.state().at.part].filter((x) => x.kind === "note").length)), "没改谱");
 await p.keyboard.press(" "); await p.waitForTimeout(150);
-check(!(await playing()), "听模式里空格 = 暂停");
+check(!(await playing()), "听模式里空格 = 停");
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 check(!(await T()).listen, "Esc = 回到写");
 // 6. ⋯ 里「从头放」= 起点回到开头

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.18-2026-10-10";
+var APP_VERSION = "v0.9.19-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4057,6 +4057,11 @@ function symBackspace(st3) {
   const t10 = toks[i10];
   if (i10 >= h2 && t10?.kind === "note") {
     const nt2 = toks.slice(), art = artOf(t10);
+    const j2 = i10 - 1, mk2 = toks[j2];
+    if (j2 >= h2 && (mk2?.kind === "dyn" || mk2?.kind === "hairpin" || mk2?.kind === "groove")) {
+      nt2.splice(j2, 1);
+      return next(st3, nt2, { caret: st3.caret - 1 });
+    }
     const strip = (k2) => {
       const { [k2]: _x, ...rest } = t10;
       return rest;
@@ -4455,7 +4460,7 @@ function parseArrangement(text2, papers) {
   if (!src) return { order: papers.filter((p2) => !p2.hidden).map((p2) => p2.id), loop: null, issues: [], explicit: false };
   const issues = [];
   let i10 = 0;
-  const ws = () => {
+  const ws2 = () => {
     while (i10 < src.length && /[\s、,，→]/.test(src[i10])) i10++;
   };
   const findPaper = (name) => {
@@ -4481,7 +4486,7 @@ function parseArrangement(text2, papers) {
   const seq = (close) => {
     const out = [];
     for (; ; ) {
-      ws();
+      ws2();
       if (i10 >= src.length) {
         if (close) issues.push({ at: src.length, len: 0, why: `\u5C11\u4E86\u300C${close}\u300D` });
         return out;
@@ -4526,13 +4531,13 @@ function parseArrangement(text2, papers) {
   };
   const main = seq(null);
   let loopNodes = null;
-  ws();
+  ws2();
   if (i10 < src.length && src[i10] === "[") {
     const at2 = i10;
     i10++;
     loopNodes = seq("]");
     if (!loopNodes.length) issues.push({ at: at2, len: i10 - at2, why: "\u5FAA\u73AF\u6BB5\u662F\u7A7A\u7684" });
-    ws();
+    ws2();
     if (i10 < src.length) {
       issues.push({ at: i10, len: src.length - i10, why: "\u5FAA\u73AF\u6BB5\u53EA\u80FD\u653E\u5728\u6700\u540E\uFF1A\u540E\u9762\u7684\u6C38\u8FDC\u653E\u4E0D\u5230" });
     }
@@ -5450,8 +5455,8 @@ function describeGroove(s10, beats, beatType) {
     for (let q2 = 1; q2 < bg.groups[k2]; q2++) (bg.sub >= 1 && Number.isInteger(bg.sub) && q2 % bg.sub === 0 ? subs : finer).push(tb2.weights[st3 + q2]);
   });
   const one = (xs) => {
-    const ws = [...new Set(xs.map(WORD))];
-    return ws.length === 1 ? ws[0] : ws.join(" / ");
+    const ws2 = [...new Set(xs.map(WORD))];
+    return ws2.length === 1 ? ws2[0] : ws2.join(" / ");
   };
   const subName = bg.groups.some((g3) => g3 === 6) ? "\u62CD\u91CC\u7684\u516B\u5206" : "\u534A\u62CD";
   return `${beatsTxt}${subs.length ? `\uFF1B${subName} ${one(subs)}` : ""}${finer.length ? `\uFF1B\u66F4\u7EC6\u7684 ${one(finer)}` : ""}`;
@@ -8519,6 +8524,29 @@ var TitleEditor = class {
   }
 };
 
+// src/app/workspace.ts
+var MODES = ["notes", "lyrics", "symbols", "listen"];
+var MODE_LABEL = { notes: "\u97F3", lyrics: "\u8BCD", symbols: "\u7B26", listen: "\u542C" };
+var MODE_TITLE = {
+  notes: "\u97F3\uFF1A\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF08\u952E\u76D8 = \u97F3\u952E\uFF09\uFF1B\u70B9\u97F3 = \u5149\u6807\uFF0C\u7B14 / \u9F20\u6807\u62D6\u97F3 = \u6539\u97F3\u9AD8 / \u65F6\u503C\uFF1B\u9000\u683C = \u5220\u97F3",
+  lyrics: "\u8BCD\uFF1A\u70B9\u97F3\u6216\u5B83\u4E0B\u9762 = \u5199\u8FD9\u4E2A\u97F3\u7684\u6B4C\u8BCD\uFF1B\u6309\u4F4F\u5B57\u62D6 = \u632A / \u5408\uFF1B\u9000\u683C = \u5220\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u7684\u5B57",
+  symbols: "\u7B26\uFF1A\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF08\u952E\u76D8 = \u7B26\u53F7\u683C\uFF09\uFF1B\u70B9\u8BB0\u53F7 = \u5B83\u7684\u83DC\u5355\u3001\u6309\u4F4F\u62D6 = \u632A\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7",
+  listen: "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\uFF0C\u70B9\u8C31 = \u4ECE\u90A3\u4E2A\u5C0F\u8282\u653E\uFF1B\u5F55\u97F3\u5BA4\u7167\u6837\u80FD\u8C03\uFF08Esc \u56DE\u5230\u5199\uFF09"
+};
+var RULES = {
+  notes: { edit: true, noteDrag: true, lyrics: false, symbols: false, backspace: "notes" },
+  lyrics: { edit: true, noteDrag: false, lyrics: true, symbols: false, backspace: "lyrics" },
+  symbols: { edit: true, noteDrag: false, lyrics: false, symbols: true, backspace: "symbols" },
+  listen: { edit: false, noteDrag: false, lyrics: false, symbols: false, backspace: null }
+};
+function dockOf(s10) {
+  if (s10.studio) return "studio";
+  if (s10.tryout) return "keys";
+  if (s10.collapsed) return "none";
+  return s10.mode === "notes" ? "keys" : s10.mode === "symbols" ? "symbols" : "none";
+}
+var hasKeys = (m2) => m2 === "notes" || m2 === "symbols";
+
 // src/ui/score-view.ts
 var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
@@ -8588,17 +8616,28 @@ var ScoreView = class {
     this.title = new TitleEditor(this.ink, host, () => this.layout);
     el2.addEventListener("pointerdown", (e10) => this.down(e10));
     el2.addEventListener("pointermove", (e10) => this.move(e10));
+    el2.addEventListener("wheel", () => {
+      this.userScrollAt = performance.now();
+    }, { passive: true });
     el2.addEventListener("pointerup", (e10) => this.up(e10));
     el2.addEventListener("contextmenu", (e10) => {
-      if (this.locked) {
+      if (this.layout && this.openPartAt(this.local(e10).x, this.local(e10).y)) {
         e10.preventDefault();
+        this.cancelPress();
+        return;
+      }
+      if (!this.rules.edit) {
+        e10.preventDefault();
+        const p3 = this.local(e10);
+        this.cancelPress();
+        this.listenMenu(p3.x, p3.y, e10.clientX, e10.clientY);
         return;
       }
       if (!this.layout || e10.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
       e10.preventDefault();
       const p2 = this.local(e10);
       this.cancelPress();
-      const dh = this.dynHitAt(p2.x, p2.y, false);
+      const dh = this.rules.symbols ? this.dynHitAt(p2.x, p2.y, false) : null;
       if (dh) {
         this.lyrics.commitAndClose();
         this.marks.commitAndClose();
@@ -8711,6 +8750,7 @@ var ScoreView = class {
   render() {
     const st3 = this.host.get(), { sp: sp2, width, strict, page, margins } = this.frame();
     const totalW = width + (margins.l + margins.r) * sp2;
+    this.paperW = totalW;
     this.el.classList.toggle("desk", strict && totalW < this.el.clientWidth - 1 || !!page);
     this.el.classList.toggle("pages", !!page);
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
@@ -8764,8 +8804,14 @@ var ScoreView = class {
   startP = null;
   // 起点
   startEl = null;
-  /** 听模式（2026-10-10 user「播放模式，锁写谱，但是可以调录音室」「我蛮需要播放欣赏的时候防误触的哈哈」）：谱面不写——轻点 = 告诉宿主「从这儿放」，拖 = 滚动，别的手势都不接。 */
-  locked = false;
+  /** 这一下点的是哪一层（模式的规则表，src/app/workspace.ts；2026-10-10 user「模式！音，歌词，强度和articulation！」→ 音 / 词 / 符 + 听）。
+   *  听（edit = false）：谱面不写——轻点 = 告诉宿主「从这儿放」，拖 = 滚动，别的手势都不接。 */
+  rules = RULES.notes;
+  /** 自动翻（2026-10-10 user「...里面加自动滚动，你思考下怎么对齐不会觉得别扭」「自动滚动默认开」）：放着的时候谱跟着正在放的那一行滚。
+   *  不逐帧跟：只在那一行换行、并且出了舒服区（屏幕上沿往下 5% 到 80%）时，平滑滚到让它落在上方两成处（下面能看见接下来几行）；你刚自己滚过（滚轮 / 手指）4 秒内不跟，不抢。 */
+  autoFollow = true;
+  playSysKey = "";
+  userScrollAt = -1e9;
   lockTap = null;
   holdPid = null;
   // 按住一个音在出声（长按 = 预览；抬手停）
@@ -8785,6 +8831,7 @@ var ScoreView = class {
     };
     if (!p2 || !L2) {
       clear2();
+      this.playSysKey = "";
       return;
     }
     const found = this.soundingAt(p2.paperId, p2.tick);
@@ -8795,16 +8842,11 @@ var ScoreView = class {
     const lead = found.reduce((a10, b3) => b3.start > a10.start ? b3 : a10), h0 = lead.hits[0], sys = L2.systems[h0.system].sys;
     const rows = L2.systems.filter((r10) => r10.paper === p2.paperId && r10.sys === sys);
     const top = Math.min(...rows.map((r10) => r10.top)), bottom = Math.max(...rows.map((r10) => r10.bottom)), x2 = h0.x + h0.w / 2;
-    let el2 = this.playheadEl;
-    if (!el2 || !el2.isConnected) {
-      el2 = document.createElement("div");
-      el2.className = "playhead";
-      this.ink.appendChild(el2);
-      this.playheadEl = el2;
+    const sysKey = `${p2.paperId}:${sys}`;
+    if (sysKey !== this.playSysKey) {
+      this.playSysKey = sysKey;
+      if (this.autoFollow) this.followPlay(top, bottom);
     }
-    el2.style.left = `${x2 - 1}px`;
-    el2.style.top = `${top}px`;
-    el2.style.height = `${Math.max(1, bottom - top)}px`;
     const spots = found.filter((f2) => f2.note).flatMap((f2) => f2.hits);
     while (this.hlEls.length > spots.length) this.hlEls.pop().remove();
     spots.forEach((h2, k2) => {
@@ -8820,6 +8862,14 @@ var ScoreView = class {
       d3.style.top = `${h2.y - r10}px`;
       d3.style.width = d3.style.height = `${2 * r10}px`;
     });
+  }
+  /** 自动翻：正在放的那一行（纸面坐标 top..bottom）出了舒服区 = 平滑滚到它在屏幕上方两成处。 */
+  followPlay(top, bottom) {
+    if (performance.now() - this.userScrollAt < 4e3) return;
+    const z2 = this.zoom, off = this.sheet.offsetTop, vt = this.el.scrollTop, vh = this.el.clientHeight;
+    const y0 = off + top * z2, y1 = off + bottom * z2;
+    if (y0 >= vt + vh * 0.05 && y1 <= vt + vh * 0.8) return;
+    this.el.scrollTo({ top: Math.max(0, y0 - vh * 0.2), behavior: "smooth" });
   }
   /** 这张纸 tick 那一刻每个声部（排出来的每一行）正在放的 token：下标、开始的 tick、画出来的位置（音 / 休止）。 */
   soundingAt(paperId, tick) {
@@ -8950,9 +9000,14 @@ var ScoreView = class {
     const r10 = this.sheet.getBoundingClientRect(), ox2 = this.layout?.pageX.left ?? 0;
     return { x: (e10.clientX - r10.left) / this.zoom - ox2, y: (e10.clientY - r10.top) / this.zoom };
   }
-  /** 放大 / 缩小到 z（1 = 原大，最多 5 倍）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
+  /** 原大时纸（含边距）有多宽（px，render 里记）：捏合最多放到它和屏幕一样宽。 */
+  paperW = 0;
+  maxZoom() {
+    return Math.max(1, (this.el.clientWidth - 4) / Math.max(1, this.paperW));
+  }
+  /** 放大 / 缩小到 z（1 = 原大，最多到纸和屏幕一样宽）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
   setZoom(z2, anchor) {
-    z2 = Math.max(1, Math.min(5, z2));
+    z2 = Math.max(1, Math.min(this.maxZoom(), z2));
     const r10 = this.el.getBoundingClientRect();
     this.zoom = z2;
     this.sheet.style.zoom = z2 === 1 ? "" : String(z2);
@@ -8994,23 +9049,26 @@ var ScoreView = class {
     const L2 = this.layout;
     if (!L2 || e10.button === 2) return;
     const p2 = this.local(e10);
-    if (this.locked) {
+    if (!this.rules.edit) {
       if (e10.pointerType === "touch") {
         this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
         this.el.setPointerCapture(e10.pointerId);
         if (this.touches.size === 2) {
           this.finger = null;
+          this.cancelPress();
           const [a10, b3] = [...this.touches.values()], mid = this.local({ clientX: (a10.x + b3.x) / 2, clientY: (a10.y + b3.y) / 2 });
           this.pinch = { d0: Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y)), z0: this.zoom, cx: mid.x, cy: mid.y };
           return;
         }
         if (this.touches.size > 2) return;
         this.finger = { pid: e10.pointerId, y0: e10.clientY, top0: this.el.scrollTop, x: p2.x, y: p2.y, moved: false, shift: false, x0: e10.clientX, left0: this.el.scrollLeft };
+        this.armPress(e10, p2, null);
         return;
       }
       e10.preventDefault();
       this.el.setPointerCapture(e10.pointerId);
       this.lockTap = { pid: e10.pointerId, x: p2.x, y: p2.y, moved: false };
+      this.armPress(e10, p2, null);
       return;
     }
     if (e10.pointerType !== "touch") this.el.focus({ preventScroll: true });
@@ -9044,7 +9102,7 @@ var ScoreView = class {
       const st0 = this.host.get();
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t10 = tr(this.host.get())[hit.index];
-      this.drag = { index: hit.index, d0: hit.d, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: hit.d };
+      if (this.rules.noteDrag) this.drag = { index: hit.index, d0: hit.d, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: hit.d };
       this.el.setPointerCapture(e10.pointerId);
       this.armPress(e10, p2, hit);
       return;
@@ -9072,6 +9130,12 @@ var ScoreView = class {
     const pr = this.press;
     if (!pr || pr.moved) return;
     pr.fired = true;
+    if (!this.rules.edit) {
+      this.finger = null;
+      this.lockTap = null;
+      this.listenMenu(pr.x, pr.y, pr.cx, pr.cy);
+      return;
+    }
     if (pr.type === "touch") this.el.focus({ preventScroll: true });
     if (pr.grab) {
       this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, pr.type === "touch");
@@ -9107,20 +9171,43 @@ var ScoreView = class {
     this.host.audition?.(pr.hit.index, true);
     this.holdPid = pr.pid;
   }
-  /** 听模式的轻点：点在音 / 休止上 = 它；空白 = 那一行光标会落的位置。不改光标、不改谱。 */
-  listenTap(x2, y2) {
+  /** 歌手牌（每张纸第一行各条谱左边的声部名）：开轨的小卡——光标换到那条（setFocus 放在那条的最后），但视图不跟过去
+   *  （user 2026-10-08「按vocal字弹track窗的时候页面滚动会乱」）。左键 / 右键（2026-10-10 user「右键歌手名应该也是弹歌手选项，和左键一样」）/ 听模式都走这里。 */
+  openPartAt(x2, y2) {
+    const L2 = this.layout;
+    if (!L2) return false;
+    const pt = L2.parts.find((b3) => this.inBox(b3, x2, y2));
+    if (!pt) return false;
+    const at2 = this.clientBox(pt);
+    this.holdView = true;
+    this.host.set(setFocus(this.host.get(), pt.paper, pt.part));
+    this.holdView = false;
+    this.heldBase = this.baseKey();
+    this.host.onPart?.(pt.paper, pt.part, at2);
+    return true;
+  }
+  /** 「词」里点了一个音：开它的歌词框（休止没有歌词 = false，照常放光标）。 */
+  openLyricOn(hit) {
+    const L2 = this.layout, row = L2?.systems[hit.system];
+    if (!L2 || !row) return false;
+    const t10 = trackOf(this.host.get().song, row.paper, row.part)[hit.index];
+    if (t10?.kind !== "note") return false;
+    this.host.set(this.focusRow(this.host.get(), hit.system, this.host.get().caret));
+    this.lyrics.openAt(hit.index);
+    this.host.focus?.("text");
+    return true;
+  }
+  /** 听模式的长按 / 右键：点在音 / 休止上 = 它；空白 = 那一行光标会落的位置。不改光标、不改谱，只告诉宿主开小菜单。 */
+  listenMenu(x2, y2, cx2, cy2) {
     const L2 = this.layout;
     if (!L2) return;
-    const hit = this.noteAt(x2, y2, true);
-    if (hit) {
-      const r10 = L2.systems[hit.system];
-      if (r10) {
-        this.host.onListenTap?.({ paper: r10.paper, part: r10.part, index: hit.index, caret: hit.index });
-        return;
-      }
+    const hit = this.noteAt(x2, y2, true), r10 = hit ? L2.systems[hit.system] : null;
+    if (hit && r10) {
+      this.host.onListenMenu?.({ x: cx2, y: cy2 }, { paper: r10.paper, part: r10.part, index: hit.index, caret: hit.index });
+      return;
     }
     const s10 = this.caretAt(x2, y2);
-    this.host.onListenTap?.({ paper: s10.at.paper, part: s10.at.part, index: null, caret: s10.caret });
+    this.host.onListenMenu?.({ x: cx2, y: cy2 }, { paper: s10.at.paper, part: s10.at.part, index: null, caret: s10.caret });
   }
   /** 空白处长按 / 右键：收起编辑框、光标放到那里（同轻点空白），再告诉宿主开小菜单。row = 这一行里光标所在 track 的音的下标范围。 */
   blankPress(x2, y2, cx2, cy2) {
@@ -9142,9 +9229,9 @@ var ScoreView = class {
   /** 按在能拿起来拖的东西上：力度记号 / 渐强渐弱（在它的框里）先；歌词的字（不在音上时，同轻点的判法）。记号框开着 = 这一下是收框，不拿。 */
   grabAt(x2, y2, finger) {
     if (!this.layout || this.marks.open) return null;
-    const dh = this.dynHitAt(x2, y2, finger);
+    const dh = this.rules.symbols ? this.dynHitAt(x2, y2, finger) : null;
     if (dh) return { kind: "mark", index: dh.index, system: dh.system };
-    if (this.noteAt(x2, y2)) return null;
+    if (!this.rules.lyrics || this.noteAt(x2, y2)) return null;
     const ly2 = this.lyricAt(x2, y2), row = ly2 ? this.layout.systems[ly2.system] : null;
     if (!ly2 || !row) return null;
     const t10 = trackOf(this.host.get().song, row.paper, row.part)[ly2.index];
@@ -9287,7 +9374,8 @@ var ScoreView = class {
     return !!b3 && x2 >= b3.x && x2 <= b3.x + b3.w && y2 >= b3.y && y2 <= b3.y + b3.h;
   }
   /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）。点中了东西返回 true；落在空白处返回 false（调用方决定放光标还是框选）。 */
-  tap(x2, y2, shift, pid) {
+  /** view = 听模式：只认看谱的那些（纸的设置 / 翻纸 / 本段 / 歌手牌），写谱的（歌名 / 作者栏 / 编排 / 曲段名 / 纸的菜单 / 新纸）不接。 */
+  tap(x2, y2, shift, pid, view2 = false) {
     const L0 = this.layout, wasMark = this.marks.open, wasLyric = this.lyrics.open;
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
@@ -9304,7 +9392,7 @@ var ScoreView = class {
       this.host.onPaper?.();
       return true;
     }
-    if (this.inBox(L2.addPaper, x2, y2)) {
+    if (!view2 && this.inBox(L2.addPaper, x2, y2)) {
       this.host.onAddPaper?.();
       return true;
     }
@@ -9320,24 +9408,32 @@ var ScoreView = class {
       this.host.onScopeToggle?.();
       return true;
     }
-    if (this.inBox(L2.paperMenu, x2, y2)) {
+    if (!view2 && this.inBox(L2.paperMenu, x2, y2)) {
       this.host.onPaperMenu?.(this.host.get().at.paper);
       return true;
     }
-    if (this.inBox(L2.credits, x2, y2)) {
+    if (!view2 && this.inBox(L2.credits, x2, y2)) {
       this.host.focus?.("text");
       this.host.onCredits?.();
       return true;
     }
-    const pt = L2.parts.find((b3) => this.inBox(b3, x2, y2));
-    if (pt) {
-      const at2 = this.clientBox(pt);
-      this.holdView = true;
-      this.host.set(setFocus(this.host.get(), pt.paper, pt.part));
-      this.holdView = false;
-      this.heldBase = this.baseKey();
-      this.host.onPart?.(pt.paper, pt.part, at2);
-      return true;
+    if (this.openPartAt(x2, y2)) return true;
+    if (view2) {
+      for (const pp of L2.papers) {
+        if (this.inBox(pp.prev ?? null, x2, y2)) {
+          this.host.onNavFrom?.(pp.id, -1);
+          return true;
+        }
+        if (this.inBox(pp.next ?? null, x2, y2)) {
+          this.host.onNavFrom?.(pp.id, 1);
+          return true;
+        }
+        if (this.inBox(pp.scope, x2, y2)) {
+          this.host.onScopeOf?.(pp.id);
+          return true;
+        }
+      }
+      return false;
     }
     if (this.inBox(L2.title, x2, y2)) {
       this.title.openNow();
@@ -9374,18 +9470,18 @@ var ScoreView = class {
     }
     const row = this.rowAt(y2);
     if (row < 0) return false;
-    const mk2 = L2.marks.find((m2) => x2 >= m2.x && x2 <= m2.x + m2.w && y2 >= m2.y && y2 <= m2.y + m2.h);
+    const mk2 = this.rules.symbols ? L2.marks.find((m2) => x2 >= m2.x && x2 <= m2.x + m2.w && y2 >= m2.y && y2 <= m2.y + m2.h) : void 0;
     if (mk2) {
       this.host.set(this.focusRow(this.host.get(), mk2.system, this.host.get().caret));
       this.marks.openAt(mk2.index);
       return true;
     }
-    const dh = this.dynHitAt(x2, y2, pid === null);
+    const dh = this.rules.symbols ? this.dynHitAt(x2, y2, pid === null) : null;
     if (dh) {
       this.markMenu(dh);
       return true;
     }
-    if (!this.noteAt(x2, y2)) {
+    if (this.rules.lyrics && !this.noteAt(x2, y2)) {
       const ly2 = this.lyricAt(x2, y2);
       if (ly2) {
         this.host.set(this.focusRow(this.host.get(), ly2.system, this.host.get().caret));
@@ -9431,7 +9527,13 @@ var ScoreView = class {
   move(e10) {
     if (this.lockTap && e10.pointerId === this.lockTap.pid) {
       const p3 = this.local(e10);
-      if (Math.hypot(p3.x - this.lockTap.x, p3.y - this.lockTap.y) > 6) this.lockTap.moved = true;
+      if (Math.hypot(p3.x - this.lockTap.x, p3.y - this.lockTap.y) > 6) {
+        this.lockTap.moved = true;
+        if (this.press?.pid === e10.pointerId) {
+          this.press.moved = true;
+          clearTimeout(this.press.timer);
+        }
+      }
       return;
     }
     const pr = this.press;
@@ -9475,6 +9577,7 @@ var ScoreView = class {
       const dy2 = e10.clientY - this.finger.y0, dx2 = e10.clientX - this.finger.x0;
       if (Math.hypot(dx2, dy2) > 10) this.finger.moved = true;
       if (this.finger.moved) {
+        this.userScrollAt = performance.now();
         this.el.scrollTop = this.finger.top0 - dy2;
         if (this.zoom > 1.001) this.el.scrollLeft = this.finger.left0 - dx2;
       }
@@ -9524,16 +9627,20 @@ var ScoreView = class {
       this.holdPid = null;
       this.host.release?.();
     }
-    if (this.locked) {
-      const lt2 = this.lockTap, f2 = this.finger;
+    if (!this.rules.edit) {
+      const lt2 = this.lockTap, f2 = this.finger, pr2 = this.press, fired = !!(pr2 && pr2.pid === e10.pointerId && pr2.fired);
+      if (pr2 && pr2.pid === e10.pointerId) {
+        this.press = null;
+        clearTimeout(pr2.timer);
+      }
       if (lt2 && e10.pointerId === lt2.pid) {
         this.lockTap = null;
-        if (!lt2.moved) this.listenTap(lt2.x, lt2.y);
+        if (!lt2.moved && !fired) this.tap(lt2.x, lt2.y, false, e10.pointerId, true);
         return;
       }
       if (f2 && e10.pointerId === f2.pid) {
         this.finger = null;
-        if (!f2.moved) this.listenTap(f2.x, f2.y);
+        if (!f2.moved && !fired) this.tap(f2.x, f2.y, false, null, true);
         return;
       }
       return;
@@ -9579,6 +9686,7 @@ var ScoreView = class {
           this.host.release?.();
           this.drag = null;
         }
+        if (this.rules.lyrics && !pr.shift && this.openLyricOn(pr.hit)) return;
         this.tapNote(pr.hit, pr.shift);
         return;
       }
@@ -9772,7 +9880,17 @@ var Pad = class {
   // 音键上滑 = 滑到下一个键就响下一个（默认；user 2026-10-08「滚键盘的意思是手指在键盘上滑动到下一个音，不说拖动键盘」）/ 上下滑 = 这一个音升降（黏着）
   /** 符号层开着（像 iOS 键盘翻到 .?123 那一页：表情记号）。只有 caps：点「符」进来就一直留着，再点（键上写「音」）回音键
    *  （2026-10-09 user「符号键盘应该只有caps模式没有shift模式」；10-08 起是 Shift 逻辑——点一下写一个就回音键、连点两下锁住，user 那时说「符号输入也应该有capslock」）。 */
-  symbols = "off";
+  /** 符号层开没开 = 底座在不在「符」（2026-10-10 起由宿主的模式定，src/app/workspace.ts；pad 上的「符」键摘掉了——user「键盘的模式键是不是能摘下来」）。「弹」开着 = 照样是音键。 */
+  symWanted = false;
+  get symbols() {
+    return this.symWanted && !this.host.isImpro() ? "lock" : "off";
+  }
+  /** 宿主（模式）开 / 关符号层。 */
+  setSymbols(on2) {
+    if (this.symWanted === on2) return;
+    this.symWanted = on2;
+    this.render();
+  }
   /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
   symPage = "art";
   symBuilt = null;
@@ -9830,7 +9948,6 @@ var Pad = class {
    *  三块各管各的：最上面一排旋钮或候选（模式 / 有没有选中变了才重建）、写字键一排（只建一次）、音键网格（调 / 音域 / 布局变了才重建）——
    *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render() {
-    if (this.symbols !== "off" && this.host.isImpro()) this.symbols = "off";
     const st3 = this.host.state(), f2 = inputKey(st3), rows = this.rows(), form = padForm();
     const base3 = this.baseAt(this.rowShift, f2, rows);
     const selKey = st3.sel ? keyAt(tr(st3), st3.sel.from) : null;
@@ -9838,7 +9955,7 @@ var Pad = class {
     this.el.style.setProperty("--cols", String(this.cols));
     this.el.style.setProperty("--rows", String(rows));
     if (!this.el.querySelector(".pad-grid")) {
-      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u8868\u60C5\u8BB0\u53F7\u2014\u2014\u53E5\u53F7\u3001\u8DF3\u97F3 / \u91CD\u97F3 / \u4FDD\u6301 / \u547C\u5438 / \u8FDE\u7EBF\u3001\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF1B\u5199\u97F3\u90A3\u4E00\u5C42\u7684\u952E\u5F00\u7740\u65F6\u7070\u6389\uFF09\u3002\u70B9\u4E00\u4E0B\u8FDB\u6765\uFF0C\u4E00\u76F4\u7559\u7740\uFF08\u540C Caps Lock\uFF09\uFF1B\u518D\u70B9\uFF08\u952E\u4E0A\u5199\u300C\u97F3\u300D\uFF09\u56DE\u97F3\u952E"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk breath" data-breath="1" title="\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"><span class="smufl">\uE4CE</span><small>\u547C\u5438</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
+      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk breath" data-breath="1" title="\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"><span class="smufl">\uE4CE</span><small>\u547C\u5438</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
       const w2 = this.el.querySelector(".writes");
       this.on(w2, "[data-caret]", (b3) => this.host.onCommand({ k: "caret", d: Number(b3.dataset.caret) }));
       this.on(w2, "[data-cmd]:not([data-cmd=backspace])", (b3) => this.host.onCommand({ k: b3.dataset.cmd }));
@@ -9900,12 +10017,6 @@ var Pad = class {
       for (const t10 of ["pointerup", "pointercancel", "lostpointercapture"]) stk.addEventListener(t10, (e10) => stkUp(e10));
       addEventListener("blur", () => {
         for (const id2 of [...sholding]) stkUp({ pointerId: id2 });
-      });
-      w2.querySelector("[data-symbols]").addEventListener("pointerdown", (e10) => {
-        e10.preventDefault();
-        if (this.host.isImpro()) return;
-        this.symbols = this.symbols === "off" ? "lock" : "off";
-        this.render();
       });
       const ak2 = w2.querySelector("[data-accshift]");
       let akDrag = null;
@@ -9976,10 +10087,13 @@ var Pad = class {
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     const tabs = this.symbols !== "off" && this.mode === "normal";
     box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp !== "off" ? `<small class="ramp-tag${this.ramp === "lock" ? " lock" : ""}">\u6E10\u5230</small>` : ""}</button>`).join("") + `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
-    box.querySelectorAll("[data-knob]").forEach((b3) => b3.addEventListener("pointerdown", (e10) => {
-      e10.preventDefault();
-      this.knobDown(b3, e10);
-    }));
+    box.querySelectorAll("[data-knob]").forEach((b3) => {
+      b3.addEventListener("pointerdown", (e10) => {
+        e10.preventDefault();
+        this.knobDown(b3, e10);
+      });
+      b3.addEventListener("wheel", (e10) => this.knobWheel(b3, e10), { passive: false });
+    });
     this.on(box, "[data-open]", () => {
       this.back();
       this.openLayout();
@@ -10301,13 +10415,6 @@ var Pad = class {
     this.el.querySelectorAll('.writes [data-cmd="rest"], .writes [data-cmd="bar"], .writes [data-cmd="extend"], .writes [data-accshift], .writes [data-stack], .writes [data-half]').forEach((b3) => {
       b3.disabled = symOn;
     });
-    const syb = this.el.querySelector("[data-symbols]");
-    if (syb) syb.disabled = this.host.isImpro();
-    const sy2 = this.el.querySelector("[data-symbols]");
-    if (sy2) {
-      sy2.classList.toggle("lock", this.symbols === "lock");
-      sy2.querySelector("span").textContent = this.symbols !== "off" ? "\u97F3" : "\u7B26";
-    }
   }
   on(root, sel, fn) {
     root.querySelectorAll(sel).forEach((b3) => b3.addEventListener("pointerdown", (e10) => {
@@ -10347,6 +10454,20 @@ var Pad = class {
    *    （user「我希望手指松了立刻停，不要顿一下，这是快速输入。要不还是做成in place 滑动只在窗格里面预览？」
    *     「in place滚的时候应该是原来的钮变成一个窗，滚轮藏在下面，就像汽车里程表一样」）。
    *  · 只是点一下（没滑）= 松手时展开滚轮（drum.ts）点选 / 原生滚动。 */
+  /** 鼠标滚轮拨旋钮（2026-10-10 user「键盘上面那些可以滚的东西的鼠标滚轮操作也做一下」）：往下滚 = 同手指往上推一格；触控板的小 delta 攒够一格才动。 */
+  wheelAcc = /* @__PURE__ */ new Map();
+  knobWheel(b3, e10) {
+    const knob = b3.dataset.knob;
+    if (knob === "more") return;
+    e10.preventDefault();
+    const px = e10.deltaMode === 1 ? e10.deltaY * 16 : e10.deltaMode === 2 ? e10.deltaY * 400 : e10.deltaY, acc = (this.wheelAcc.get(knob) ?? 0) + px, STEP_PX = 40;
+    const steps = Math.trunc(acc / STEP_PX);
+    this.wheelAcc.set(knob, acc - steps * STEP_PX);
+    if (!steps) return;
+    const v = this.knobList(knob), n10 = v.items.length;
+    const i10 = v.loop ? ((v.index + steps) % n10 + n10) % n10 : Math.max(0, Math.min(n10 - 1, v.index + steps));
+    if (i10 !== v.index) v.set(i10);
+  }
   knobDown(b3, e10) {
     const knob = b3.dataset.knob;
     if (knob === "more") {
@@ -10420,10 +10541,10 @@ var Pad = class {
     }
     if (knob === "key") {
       const st3 = this.host.state(), K3 = [...KEY_CIRCLE].reverse();
-      const [wk, ws] = w2 >= 210 ? [Math.round(w2 * 0.36), w2 - Math.round(w2 * 0.36) - 2] : [72, 136];
+      const [wk, ws2] = w2 >= 210 ? [Math.round(w2 * 0.36), w2 - Math.round(w2 * 0.36) - 2] : [72, 136];
       openDrum(anchor, [
         { items: K3.map((k2) => `1=${KEY_NAMES[k2]}`), index: Math.max(0, K3.indexOf(inputKey(st3))), width: wk, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", loop: true },
-        { items: SCALES.map(scaleItem), index: Math.max(0, SCALES.findIndex((x2) => x2.id === st3.input.inputScale)), width: ws, title: "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3" }
+        { items: SCALES.map(scaleItem), index: Math.max(0, SCALES.findIndex((x2) => x2.id === st3.input.inputScale)), width: ws2, title: "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3" }
       ], { onChange: (c10, i10) => {
         if (c10 === 0) this.host.onInputKey(K3[i10]);
         else this.host.onInputScale(SCALES[i10].id);
@@ -14150,9 +14271,9 @@ function createDownloadSessions(cfg) {
   function playbackDone() {
     playbackBusy--;
     if (playbackBusy === 0) {
-      const ws = playbackIdleWaiters;
+      const ws2 = playbackIdleWaiters;
       playbackIdleWaiters = [];
-      for (const w2 of ws)
+      for (const w2 of ws2)
         w2();
     }
   }
@@ -22889,7 +23010,7 @@ var StudioClient = class {
             }
             case "error": {
               fail(new Error(m2.message));
-              for (const ws of this.bankWait.values()) for (const w2 of ws) w2.fail(new Error(m2.message));
+              for (const ws2 of this.bankWait.values()) for (const w2 of ws2) w2.fail(new Error(m2.message));
               this.bankWait.clear();
               return;
             }
@@ -22955,9 +23076,9 @@ var StudioClient = class {
     await this.ensure();
     if (this.presets.has(sha)) return;
     const p2 = new Promise((ok2, fail) => {
-      const ws = this.bankWait.get(sha) ?? [];
-      ws.push({ ok: ok2, fail });
-      this.bankWait.set(sha, ws);
+      const ws2 = this.bankWait.get(sha) ?? [];
+      ws2.push({ ok: ok2, fail });
+      this.bankWait.set(sha, ws2);
     });
     if (first || !this.bankWait.get(sha)?.length) {
     }
@@ -23547,7 +23668,7 @@ var fmtYear = (y2) => y2 < 0 ? `\u516C\u5143\u524D ${-y2}` : String(y2);
 var eraLabel = (cat2, c10) => cat2.defs.eras.find((e10) => e10.id === c10.era)?.zh ?? "";
 
 // src/ui/finder.ts
-var HINT = "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u4E0A\u573A\u300D\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002";
+var HINT = "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u9009\u8FD9\u4E2A\u300D\uFF08\u56DE\u5230\u4E50\u5668\u9875\uFF09\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002";
 var esc3 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 var Finder = class {
   el;
@@ -23743,7 +23864,7 @@ var Finder = class {
     let body2 = "";
     if (open) {
       const provs = providersOf(cat2, c10).filter((x2) => !pk || gmKey(x2) === pk), pitched = c10.kind === "voice";
-      const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast">\u4E0A\u573A</button>`}</div></div>`;
+      const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF0C\u56DE\u5230\u4E50\u5668\u9875">\u9009\u8FD9\u4E2A</button>`}</div></div>`;
       body2 = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? `\u9F13\u4EF6 \xB7 ${esc3(p2.gmName)}\uFF08Standard \u9F13\u7EC4\u7684 ${p2.note} \u53F7\u952E\uFF09` : p2.bank === 128 ? `\u9F13\u7EC4 \xB7 ${esc3(p2.gmName)}` : `GeneralUser GS \xB7 ${esc3(p2.gmName)}`}`, p2.kind === "substitute" ? `\u9876\u66FF${p2.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p2.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p2.basis === "imitation" ? "\uFF08\u4EFF\u58F0\uFF09" : p2.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p2.reason ? `\uFF1A${esc3(p2.reason)}` : ""}` : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, "\u6708\u8BFB", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}"${pk ? ` data-k="${esc3(pk)}"` : ""}>` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b><span class="zh">${esc3(c10.names.zh)}</span>${e10.preset ? `<span class="inst-preset"> \xB7 ${esc3(e10.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body2;
@@ -23760,7 +23881,7 @@ var Studio2 = class {
     this.el = document.createElement("div");
     this.el.className = "studio";
     this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="finder-title">\u5F55\u97F3\u5BA4</span><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="finder-hint">\u6BCF\u4E2A\u58F0\u90E8\u4E00\u6761\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\u3002\u589E\u76CA\u548C\u58F0\u50CF\u5B58\u8FDB\u6B4C\uFF08\u5F55\u97F3\u623F\uFF09\uFF1B\u9759\u97F3 / \u72EC\u594F\u53EA\u662F\u8FD9\u6B21\u3002\u8C31\u4E0A\u4F1A\u7ED9\u9759\u97F3 / \u72EC\u594F\u6253\u89D2\u6807\u3002</div><div class="studio-strips"></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">\u5F55\u97F3\u5BA4</span><button class="btn" data-v="back" title="\u6536\u8D77\u5F55\u97F3\u5BA4\uFF08Esc\uFF09\uFF1A\u5E95\u5EA7\u56DE\u5230\u952E\u76D8">\u6536\u8D77</button><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="finder-hint">\u6BCF\u4E2A\u58F0\u90E8\u4E00\u6761\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\u3002\u589E\u76CA\u548C\u58F0\u50CF\u5B58\u8FDB\u6B4C\uFF08\u5F55\u97F3\u623F\uFF09\uFF1B\u9759\u97F3 / \u72EC\u594F\u53EA\u662F\u8FD9\u6B21\u3002\u8C31\u4E0A\u4F1A\u7ED9\u9759\u97F3 / \u72EC\u594F\u6253\u89D2\u6807\u3002</div><div class="studio-strips"></div>`;
     parent.append(this.el);
     this.el.addEventListener("click", (e10) => {
       const t10 = e10.target, v = t10.closest("[data-v]")?.dataset.v, strip = t10.closest(".strip")?.dataset.id;
@@ -33445,12 +33566,12 @@ stream
   let W3 = "";
   for (let i10 = 0; i10 < gids.length; ) {
     let j2 = i10;
-    const ws = [];
+    const ws2 = [];
     while (j2 < gids.length && gids[j2] === gids[i10] + (j2 - i10)) {
-      ws.push(sc2(font.advance(gids[j2])));
+      ws2.push(sc2(font.advance(gids[j2])));
       j2++;
     }
-    W3 += `${gids[i10]} [${ws.join(" ")}] `;
+    W3 += `${gids[i10]} [${ws2.join(" ")}] `;
     i10 = j2;
   }
   stream(fileObj, `/Length1 ${sub.length}`, sub);
@@ -34635,7 +34756,7 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u653E / \u6682\u505C\uFF08\u7A7A\u683C\uFF09\uFF1A\u6682\u505C\u7740\u518D\u70B9 = \u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="rewindBtn" class="btn" title="\u56DE\u5230\u8D77\u70B9\u91CD\u653E\uFF08\u4E00\u904D\u4E00\u904D\u542C\u540C\u4E00\u4E2A\u5C0F\u8282\uFF09\u3002\u8D77\u70B9 = \u957F\u6309\u7A7A\u767D\u5904\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#refresh"/></svg></button><button id="transportMore" class="btn" title="\u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><button id="listenBtn" class="btn" title="\u542C\uFF1A\u9501\u4F4F\u8C31\uFF08\u9632\u8BEF\u89E6\uFF09\uFF0C\u70B9\u8C31 = \u4ECE\u90A3\u4E2A\u5C0F\u8282\u653E\uFF1B\u5F55\u97F3\u5BA4\u7167\u6837\u80FD\u8C03\u3002\u518D\u70B9 = \u56DE\u5230\u5199\uFF08Esc\uFF09">\u542C</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="transportMore" class="btn" title="\u63A5\u7740\u653E\uFF08\u505C\u8FC7\u624D\u6709\uFF09/ \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><span class="mode-seg" role="tablist" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${MODE_TITLE[m2]}">${MODE_LABEL[m2]}</button>`).join("")}</span><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
@@ -34656,7 +34777,7 @@ var chromeReady = false;
 function updateChrome() {
   if (!chromeReady) return;
   const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);
-  padTab.hidden = !padEl.hidden || (gallery?.isOpen() ?? false) && !finderShown || studio.isOpen;
+  padTab.hidden = !padEl.hidden || (gallery?.isOpen() ?? false) && !finderShown || studio.isOpen || !hasKeys(ws.mode);
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
@@ -34898,8 +35019,8 @@ var view = new ScoreView(scoreEl, {
   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at2) => openTrackCard(at2),
   onBlankPress: (at2, row) => openScoreMenu(at2, row),
-  onListenTap: (a10) => playFromHere(a10.paper, a10.part, a10.index !== null ? tickOfCaret(a10.paper, a10.part, a10.index) : tickOfCaret(a10.paper, a10.part, a10.caret)),
-  // 听模式：点哪个小节就从那儿放
+  onListenMenu: (at2, a10) => openListenMenu(at2, a10),
+  // 听模式：长按 / 右键 = 从这儿放 / 接着放 / 从头放
   onSelPress: (at2) => openSelMenu(at2),
   onMarkPress: (i10, at2) => openMarkMenu(i10, at2),
   lyricHint: (i10) => lyricHintAt(i10),
@@ -35388,7 +35509,7 @@ function showError(text2) {
   reportError(text2, "error");
 }
 var playIcon = (playing) => {
-  $2("playBtn").innerHTML = `<svg class="ico"><use href="#${playing ? "pause" : "play"}"/></svg>`;
+  $2("playBtn").innerHTML = `<svg class="ico"><use href="#${playing ? "stop" : "play-from-start"}"/></svg>`;
   $2("playBtn").classList.toggle("is-on", playing);
   if (!playing) progress("");
 };
@@ -35761,7 +35882,10 @@ function playPause() {
     pausePlay();
     return;
   }
-  void startPlayback(paused ? "resume" : "start");
+  void startPlayback("start");
+}
+function resumePlay() {
+  if (!engine.playing && paused) void startPlayback("resume");
 }
 function pausePlay() {
   const sec = engine.audibleSec() ?? engine.position, at2 = playTl?.locate(sec) ?? null;
@@ -35812,23 +35936,79 @@ engine.on("ended", () => {
   phKey = "";
   paused = null;
 });
-var listenMode = false;
-var padBeforeListen = false;
-function setListen(on2) {
-  if (on2 === listenMode) return;
-  listenMode = on2;
-  view.locked = on2;
-  document.body.classList.toggle("listen-mode", on2);
-  $2("listenBtn").classList.toggle("is-on", on2);
-  if (on2) {
-    closeOffer?.();
-    view.lyrics.commitAndClose();
-    view.marks.commitAndClose();
-    padBeforeListen = !padEl.hidden;
-    showPad(false);
-  } else if (padBeforeListen) showPad(true);
+var ws = { mode: "notes", studio: false, collapsed: false, tryout: false };
+var lastEditMode = "notes";
+var listenOn = () => ws.mode === "listen";
+function applyWorkspace() {
+  const d3 = dockOf(ws), padOn = d3 === "keys" || d3 === "symbols";
+  view.rules = RULES[ws.mode];
+  document.body.dataset.wmode = ws.mode;
+  document.body.classList.toggle("listen-mode", ws.mode === "listen");
+  scoreEl.dataset.mode = ws.mode;
+  document.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.mode === ws.mode));
+  const changed2 = padEl.hidden === padOn || stageEl.dataset.dock !== d3;
+  stageEl.dataset.dock = d3;
+  padEl.hidden = !padOn;
+  pad3.setSymbols(d3 === "symbols");
+  if (!padOn) pad3.clearHeld();
+  if (d3 === "studio" && !studio.isOpen) {
+    studio.show();
+    void engine.ensure().then(() => engine.meter(true)).catch(() => void 0);
+  } else if (d3 !== "studio" && studio.isOpen) {
+    studio.hide();
+    engine.meter(false);
+  }
+  $2("studioBtn").classList.toggle("is-on", d3 === "studio");
   updateChrome();
-  info(on2 ? "\u542C\uFF1A\u8C31\u9501\u4F4F\u4E86\uFF08\u4E0D\u80FD\u5199\uFF09\uFF0C\u70B9\u8C31 = \u4ECE\u90A3\u4E2A\u5C0F\u8282\u653E\uFF1B\u518D\u70B9\u300C\u542C\u300D\u6216 Esc \u56DE\u5230\u5199" : "\u56DE\u5230\u5199");
+  if (changed2) view.render();
+}
+function setMode(m2) {
+  if (m2 === ws.mode) return;
+  closeOffer?.();
+  view.lyrics.commitAndClose();
+  view.marks.commitAndClose();
+  if (m2 !== "listen") lastEditMode = m2;
+  const wasListen = ws.mode === "listen";
+  ws.mode = m2;
+  if (hasKeys(m2)) ws.collapsed = false;
+  applyWorkspace();
+  if (m2 === "listen") info("\u542C\uFF1A\u8C31\u9501\u4F4F\u4E86\uFF08\u4E0D\u80FD\u5199\uFF09\uFF0C\u70B9\u8C31 = \u4ECE\u90A3\u4E2A\u5C0F\u8282\u653E\uFF1B\u5F55\u97F3\u5BA4\u7167\u6837\u80FD\u8C03\u3002Esc / \u70B9\u522B\u7684\u6A21\u5F0F\u56DE\u5230\u5199");
+  else if (wasListen) info("\u56DE\u5230\u5199");
+}
+var setListen = (on2) => setMode(on2 ? "listen" : lastEditMode);
+function openListenMenu(at2, a10) {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu";
+  box.setAttribute("role", "menu");
+  const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc7(title)}">${label}</button>`;
+  box.innerHTML = item("here", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E") + (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E") : "") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E");
+  document.body.append(box);
+  const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
+  let y2 = at2.y + 10;
+  if (y2 + h2 > innerHeight - m2) y2 = at2.y - h2 - 10;
+  box.style.left = `${Math.max(m2, Math.min(at2.x + 6, innerWidth - w2 - m2))}px`;
+  box.style.top = `${Math.max(m2, y2)}px`;
+  const outside = (e10) => {
+    if (!box.contains(e10.target)) close();
+  };
+  const close = () => {
+    document.removeEventListener("pointerdown", outside, true);
+    box.remove();
+    if (closeOffer === close) closeOffer = null;
+  };
+  setTimeout(() => {
+    if (box.isConnected) document.addEventListener("pointerdown", outside, true);
+  }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (!v) return;
+    close();
+    if (v === "here") playFromHere(a10.paper, a10.part, tickOfCaret(a10.paper, a10.part, a10.index ?? a10.caret));
+    else if (v === "resume") resumePlay();
+    else if (v === "head") playFromHead();
+  });
 }
 function openTransportMenu() {
   closeOffer?.();
@@ -35836,7 +36016,7 @@ function openTransportMenu() {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc7(title)}">${label}</button>`;
-  box.innerHTML = item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
+  box.innerHTML = (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
   document.body.append(box);
   const b3 = btn.getBoundingClientRect(), w2 = box.offsetWidth, m2 = 8;
   box.style.left = `${Math.max(m2, Math.min(b3.left, innerWidth - w2 - m2))}px`;
@@ -35857,7 +36037,11 @@ function openTransportMenu() {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
     close();
-    if (v === "loop") setLoop(!loopOn);
+    if (v === "resume") resumePlay();
+    else if (v === "follow") {
+      view.autoFollow = !view.autoFollow;
+      info(view.autoFollow ? "\u81EA\u52A8\u7FFB\uFF1A\u5F00" : "\u81EA\u52A8\u7FFB\uFF1A\u5173");
+    } else if (v === "loop") setLoop(!loopOn);
     else if (v === "head") playFromHead();
     else if (v === "seam") playSeam();
   });
@@ -35949,9 +36133,8 @@ function schedulePrewarm() {
   }, 700);
 }
 $2("playBtn").addEventListener("click", () => playPause());
-$2("rewindBtn").addEventListener("click", () => replay());
 $2("transportMore").addEventListener("click", () => openTransportMenu());
-$2("listenBtn").addEventListener("click", () => setListen(!listenMode));
+document.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.addEventListener("click", () => setMode(b3.dataset.mode)));
 var embedSoftLimit = 1e7;
 var sessionSubsets = /* @__PURE__ */ new Map();
 async function resolveGmBytes(g3) {
@@ -36287,8 +36470,11 @@ window.__moonsinger = {
   engine,
   exportSong,
   renderMix: () => renderMixForTest(),
-  transport: () => ({ startMark, paused, listen: listenMode, loop: loopOn }),
+  transport: () => ({ startMark, paused, listen: listenOn(), loop: loopOn }),
   // 走带的状态（E2E 用）
+  workspace: () => ({ ...ws, dock: dockOf(ws) }),
+  setMode: (m2) => setMode(m2),
+  // 模式 / 底座（E2E 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describe(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
   speechCache: (op2) => singer.cache(op2, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
@@ -36308,7 +36494,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "f2f93a57232c",
+  cssHash: "bbc7c5dc48d8",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -36371,11 +36557,8 @@ window.__moonsinger = {
   auth
 };
 function showPad(on2) {
-  if (padEl.hidden === !on2) return;
-  padEl.hidden = !on2;
-  updateChrome();
-  if (!on2) pad3.clearHeld();
-  view.render();
+  ws.collapsed = !on2;
+  applyWorkspace();
 }
 bar.addEventListener("pointerdown", (e10) => {
   if (!e10.target.closest("button, select, label, input, a")) showPad(false);
@@ -36594,7 +36777,7 @@ async function castPick(p2) {
   sessionSubsets.set(sha256, subset);
   closeFinder();
   setActive(activeId(doc.extras, curRole()));
-  info(`\u300C${roleNameOf(c10)}\u300D\u4E0A\u573A\uFF1A${p2.provider.gmName}`);
+  info(`\u300C${roleNameOf(c10)}\u300D\u6362\u6210\uFF1A${p2.provider.gmName}`);
 }
 var finder = new Finder($2("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
 var partLabel = (id2) => {
@@ -36646,19 +36829,14 @@ function openStudio() {
   finderBackToInst = false;
   closeFinder();
   closeInstPage();
-  scoreEl.hidden = true;
-  showPad(false);
-  studio.show();
-  updateChrome();
-  void engine.ensure().then(() => engine.meter(true)).catch(() => void 0);
+  ws.studio = true;
+  applyWorkspace();
 }
 function closeStudio() {
-  if (!studio.isOpen) return;
-  studio.hide();
-  scoreEl.hidden = false;
-  updateChrome();
+  if (!ws.studio) return;
+  ws.studio = false;
+  applyWorkspace();
   scoreEl.focus();
-  engine.meter(false);
 }
 engine.on("meter", (peak) => {
   if (studio.isOpen) studio.meter(peak);
@@ -36678,6 +36856,7 @@ function openFinder() {
   document.body.classList.toggle("finder-over-gallery", finderPlayOnly);
   closeOffer?.();
   scoreEl.hidden = true;
+  ws.tryout = true;
   showPad(true);
   padEl.classList.add("is-locked");
   pad3.clearHeld();
@@ -36697,6 +36876,8 @@ function closeFinder() {
   auditionHint = null;
   sound.allOff();
   padEl.classList.remove("is-locked");
+  ws.tryout = instShown || finderBackToInst;
+  applyWorkspace();
   pad3.render();
   scoreEl.hidden = false;
   void prepareBank();
@@ -37456,6 +37637,7 @@ function openInstPage() {
   instPicked = null;
   scoreEl.hidden = true;
   instEl.hidden = false;
+  ws.tryout = true;
   showPad(true);
   padEl.classList.add("is-locked");
   pad3.clearHeld();
@@ -37470,6 +37652,8 @@ function closeInstPage() {
   instShown = false;
   instPicked = null;
   instEl.hidden = true;
+  ws.tryout = finder.isOpen;
+  applyWorkspace();
   padEl.classList.remove("is-locked");
   pad3.clearHeld();
   pad3.render();
@@ -37544,7 +37728,7 @@ var findBankFile = (id2) => {
   });
 };
 async function finishAdd(c10) {
-  updateExtras(withSf2Candidate(doc.extras, curRole(), { ...c10, embed: false }, st2.song.hum), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u4E0A\u573A\uFF1A${c10.name}` });
+  updateExtras(withSf2Candidate(doc.extras, curRole(), { ...c10, embed: false }, st2.song.hum), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u6362\u6210\uFF1A${c10.name}` });
   sessionSubsets.set(c10.sha256, c10.subset);
   instPicked = null;
   sound.allOff();
@@ -37580,7 +37764,7 @@ function pickerHtml() {
   const banks = [...new Set(picked.presets.map((p2) => p2.bank))].sort((a10, b3) => a10 - b3);
   const label = (b3) => b3 === 128 ? "\u9F13\u7EC4" : b3 === 0 ? "\u4E50\u5668" : `\u53D8\u4F53\uFF08bank ${b3}\uFF09`;
   const cur = picked.presets.find((p2) => `${p2.bank}:${p2.program}` === picked.sel);
-  return `<div class="ip-picker"><div class="ip-sub">${esc7(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b3) => `<optgroup label="${label(b3)}">${picked.presets.filter((p2) => p2.bank === b3).map((p2) => `<option value="${p2.bank}:${p2.program}"${`${p2.bank}:${p2.program}` === picked.sel ? " selected" : ""}>${String(p2.program).padStart(3, "0")} ${esc7(p2.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(cur?.name ?? "")}" /></label><div class="ip-btns"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u4E0A\u573A</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div></div>`;
+  return `<div class="ip-picker"><div class="ip-sub">${esc7(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b3) => `<optgroup label="${label(b3)}">${picked.presets.filter((p2) => p2.bank === b3).map((p2) => `<option value="${p2.bank}:${p2.program}"${`${p2.bank}:${p2.program}` === picked.sel ? " selected" : ""}>${String(p2.program).padStart(3, "0")} ${esc7(p2.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(cur?.name ?? "")}" /></label><div class="ip-btns"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u9009\u5B83</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div></div>`;
 }
 function drawInst() {
   if (!instShown) return;
@@ -38908,9 +39092,35 @@ function whereNow() {
   if (view.lyrics.open) return "lyric";
   return impro ? "impro" : st2.sel ? "edit" : "write";
 }
+var NOTE_EDIT = /* @__PURE__ */ new Set(["degree", "rest", "bar", "shorter", "longer", "tuplet", "extend", "acc", "octave", "step", "alter", "delete", "transpose", "respell", "seldur", "selscale", "modulate", "staff"]);
+var modeHintShown = null;
+function lyricBackspace() {
+  const toks = tr(st2);
+  for (let i10 = st2.caret - 1; i10 >= 0; i10--) {
+    const t10 = toks[i10];
+    if (t10.kind !== "note") continue;
+    update(setCaret(t10.lyric ? setNote(st2, i10, { lyric: null }) : st2, i10));
+    return;
+  }
+}
 function run(a10, repeat, code) {
   switch (a10.k) {
     case "cmd":
+      if (ws.mode !== "notes" && NOTE_EDIT.has(a10.cmd.k)) {
+        if (modeHintShown !== ws.mode) {
+          modeHintShown = ws.mode;
+          info(`\u300C${MODE_LABEL[ws.mode]}\u300D\u91CC\u952E\u76D8\u4E0D\u5199\u97F3\uFF08\u5207\u5230\u300C\u97F3\u300D\u518D\u5199\uFF09`);
+        }
+        return true;
+      }
+      if (a10.cmd.k === "backspace" && ws.mode === "symbols") {
+        update(apply(st2, { k: "symBackspace" }, performance.now()));
+        return true;
+      }
+      if (a10.cmd.k === "backspace" && ws.mode === "lyrics") {
+        lyricBackspace();
+        return true;
+      }
       if (a10.cmd.k === "degree") {
         if (!repeat && monoAccept(`key${code}`)) {
           const c10 = a10.cmd, i10 = writeAndLocate((s10) => apply(s10, c10, performance.now()));
@@ -38993,7 +39203,12 @@ window.addEventListener("keydown", (e10) => {
     return;
   }
   if (e10.target?.closest?.("wp-reference-window")) return;
-  if (studio.isOpen) {
+  if (studio.isOpen && e10.key === "Escape" && !st2.sel && !view.lyrics.open && !view.marks.open && !closeOffer) {
+    e10.preventDefault();
+    closeStudio();
+    return;
+  }
+  if (studio.isOpen && e10.target?.closest?.(".studio")) {
     if (e10.key === "Escape") {
       e10.preventDefault();
       closeStudio();
@@ -39003,7 +39218,7 @@ window.addEventListener("keydown", (e10) => {
     }
     return;
   }
-  if (listenMode) {
+  if (listenOn()) {
     if (e10.key === " ") {
       e10.preventDefault();
       playPause();
@@ -39056,7 +39271,7 @@ view.render();
 pad3.render();
 renderTitle();
 chromeReady = true;
-updateChrome();
+applyWorkspace();
 scoreEl.focus();
 if (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash)) {
   ensureAttached();
@@ -39075,4 +39290,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-9cc78a791530.mjs.map
+//# sourceMappingURL=moonsinger-f40948566daf.mjs.map
