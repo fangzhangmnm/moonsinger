@@ -430,6 +430,70 @@ var Reverb = class {
     }
   }
 };
+var CHORUS = {
+  kind: "chorus",
+  name: "\u5408\u5531",
+  formula: "v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v\u3002",
+  params: [
+    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: "\u51E0\u6761" },
+    { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: "\u5EF6\u8FDF" },
+    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: "\u6296\u52A8\u6DF1\u5EA6" },
+    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: "\u6296\u52A8\u5FEB\u6162" },
+    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: "\u5DE6\u53F3\u94FA\u5F00" },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u6E7F" }
+  ]
+};
+var Chorus = class {
+  kind = "chorus";
+  on = true;
+  id;
+  sr;
+  buf;
+  wr = 0;
+  phase = 0;
+  voices = 3;
+  delay = 0;
+  depth = 0;
+  rate = 0.6;
+  spread = 0.8;
+  mix = 0.5;
+  constructor(id, sr, p) {
+    this.id = id;
+    this.sr = sr;
+    this.buf = new Float32Array(Math.ceil(0.06 * sr) + 2);
+    this.setParams(p);
+  }
+  setParams(p) {
+    const g = (k) => p[k] ?? CHORUS.params.find((d) => d.id === k).default;
+    this.voices = clamp(Math.round(g("voices")), 1, 4);
+    this.delay = clamp(g("delayMs"), 5, 40) / 1e3 * this.sr;
+    this.depth = clamp(g("depthMs"), 0, 10) / 1e3 * this.sr;
+    this.rate = clamp(g("rateHz"), 0.05, 5);
+    this.spread = clamp(g("spread"), 0, 1);
+    this.mix = clamp(g("mix"), 0, 1);
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    const len = this.buf.length, v = this.voices, mix = this.mix, dphi = 2 * Math.PI * this.rate / this.sr;
+    for (let i = 0; i < n; i++) {
+      const x = R ? (L[i] + R[i]) * 0.5 : L[i];
+      this.buf[this.wr] = x;
+      let wl = 0, wr = 0;
+      for (let k = 0; k < v; k++) {
+        const d = this.delay + this.depth * Math.sin(this.phase + 2 * Math.PI * k / v), rp = this.wr - d, ri = Math.floor(rp), f = rp - ri;
+        const a = this.buf[(ri % len + len) % len], b = this.buf[((ri + 1) % len + len) % len], y = (a * (1 - f) + b * f) / v;
+        const pan = v === 1 ? 0 : this.spread * (2 * k / (v - 1) - 1), gl = Math.cos((pan + 1) * Math.PI / 4) * Math.SQRT2, gr = Math.sin((pan + 1) * Math.PI / 4) * Math.SQRT2;
+        wl += y * gl;
+        wr += y * gr;
+      }
+      this.phase += dphi;
+      if (this.phase > 2 * Math.PI) this.phase -= 2 * Math.PI;
+      this.wr = (this.wr + 1) % len;
+      L[i] = L[i] * (1 - mix) + wl * mix;
+      if (R) R[i] = R[i] * (1 - mix) + wr * mix;
+    }
+  }
+};
 var Gain = class {
   kind = "gain";
   on = true;
@@ -465,6 +529,9 @@ function createFx(spec, sr) {
       break;
     case "reverb":
       fx = new Reverb(spec.id, sr, p);
+      break;
+    case "chorus":
+      fx = new Chorus(spec.id, sr, p);
       break;
     case "gain":
       fx = new Gain(spec.id, sr, p);
@@ -1319,4 +1386,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-0c70d9794a98.mjs.map
+//# sourceMappingURL=studio-worklet-94ab89cd752f.mjs.map

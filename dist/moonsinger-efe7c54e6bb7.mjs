@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.9-2026-10-10";
+var APP_VERSION = "v0.9.10-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -21337,6 +21337,70 @@ var Reverb = class {
     }
   }
 };
+var CHORUS = {
+  kind: "chorus",
+  name: "\u5408\u5531",
+  formula: "v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v\u3002",
+  params: [
+    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: "\u51E0\u6761" },
+    { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: "\u5EF6\u8FDF" },
+    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: "\u6296\u52A8\u6DF1\u5EA6" },
+    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: "\u6296\u52A8\u5FEB\u6162" },
+    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: "\u5DE6\u53F3\u94FA\u5F00" },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u6E7F" }
+  ]
+};
+var Chorus = class {
+  kind = "chorus";
+  on = true;
+  id;
+  sr;
+  buf;
+  wr = 0;
+  phase = 0;
+  voices = 3;
+  delay = 0;
+  depth = 0;
+  rate = 0.6;
+  spread = 0.8;
+  mix = 0.5;
+  constructor(id2, sr2, p2) {
+    this.id = id2;
+    this.sr = sr2;
+    this.buf = new Float32Array(Math.ceil(0.06 * sr2) + 2);
+    this.setParams(p2);
+  }
+  setParams(p2) {
+    const g3 = (k2) => p2[k2] ?? CHORUS.params.find((d3) => d3.id === k2).default;
+    this.voices = clamp(Math.round(g3("voices")), 1, 4);
+    this.delay = clamp(g3("delayMs"), 5, 40) / 1e3 * this.sr;
+    this.depth = clamp(g3("depthMs"), 0, 10) / 1e3 * this.sr;
+    this.rate = clamp(g3("rateHz"), 0.05, 5);
+    this.spread = clamp(g3("spread"), 0, 1);
+    this.mix = clamp(g3("mix"), 0, 1);
+  }
+  process(L2, R2, n10) {
+    if (!this.on) return;
+    const len = this.buf.length, v = this.voices, mix = this.mix, dphi = 2 * Math.PI * this.rate / this.sr;
+    for (let i10 = 0; i10 < n10; i10++) {
+      const x2 = R2 ? (L2[i10] + R2[i10]) * 0.5 : L2[i10];
+      this.buf[this.wr] = x2;
+      let wl = 0, wr = 0;
+      for (let k2 = 0; k2 < v; k2++) {
+        const d3 = this.delay + this.depth * Math.sin(this.phase + 2 * Math.PI * k2 / v), rp2 = this.wr - d3, ri2 = Math.floor(rp2), f2 = rp2 - ri2;
+        const a10 = this.buf[(ri2 % len + len) % len], b3 = this.buf[((ri2 + 1) % len + len) % len], y2 = (a10 * (1 - f2) + b3 * f2) / v;
+        const pan = v === 1 ? 0 : this.spread * (2 * k2 / (v - 1) - 1), gl = Math.cos((pan + 1) * Math.PI / 4) * Math.SQRT2, gr = Math.sin((pan + 1) * Math.PI / 4) * Math.SQRT2;
+        wl += y2 * gl;
+        wr += y2 * gr;
+      }
+      this.phase += dphi;
+      if (this.phase > 2 * Math.PI) this.phase -= 2 * Math.PI;
+      this.wr = (this.wr + 1) % len;
+      L2[i10] = L2[i10] * (1 - mix) + wl * mix;
+      if (R2) R2[i10] = R2[i10] * (1 - mix) + wr * mix;
+    }
+  }
+};
 var Gain = class {
   kind = "gain";
   on = true;
@@ -21372,6 +21436,9 @@ function createFx(spec, sr2) {
       break;
     case "reverb":
       fx = new Reverb(spec.id, sr2, p2);
+      break;
+    case "chorus":
+      fx = new Chorus(spec.id, sr2, p2);
       break;
     case "gain":
       fx = new Gain(spec.id, sr2, p2);
@@ -34045,7 +34112,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-0c70d9794a98.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-94ab89cd752f.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -38080,4 +38147,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e65986a845b6.mjs.map
+//# sourceMappingURL=moonsinger-efe7c54e6bb7.mjs.map

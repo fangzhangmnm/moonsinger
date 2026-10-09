@@ -177,6 +177,44 @@ class Reverb implements FxInstance {
   }
 }
 
+// ── 合唱 / 加倍（user 2026-10-10「齐唱 我想的是用混音效果做，clannad也只有茶太一名歌手啊」）：几条短延迟各自被低频抖动（= 轻微的音高抖动），分到左右，和干声叠在一起 ──
+const CHORUS: FxKindDef = { kind: "chorus", name: "合唱", formula: "v 条延迟 d_k(t) = delayMs + depthMs · sin(2π · rateHz · t + 2πk/v)（线性插值读），第 k 条摆在 pan_k = spread · (2k/(v-1) - 1)；y = x·(1-mix) + mix · Σ_k d_k / v。",
+  params: [
+    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: "几条" }, { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: "延迟" },
+    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: "抖动深度" }, { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: "抖动快慢" },
+    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: "左右铺开" }, { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: "湿" },
+  ] };
+class Chorus implements FxInstance {
+  readonly kind = "chorus"; on = true;
+  readonly id: string; private sr: number;
+  private buf: Float32Array; private wr = 0; private phase = 0;
+  private voices = 3; private delay = 0; private depth = 0; private rate = 0.6; private spread = 0.8; private mix = 0.5;
+  constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; this.buf = new Float32Array(Math.ceil(0.06 * sr) + 2); this.setParams(p); }
+  setParams(p: Record<string, number>): void {
+    const g = (k: string) => p[k] ?? CHORUS.params.find((d) => d.id === k)!.default;
+    this.voices = clamp(Math.round(g("voices")), 1, 4); this.delay = (clamp(g("delayMs"), 5, 40) / 1000) * this.sr; this.depth = (clamp(g("depthMs"), 0, 10) / 1000) * this.sr;
+    this.rate = clamp(g("rateHz"), 0.05, 5); this.spread = clamp(g("spread"), 0, 1); this.mix = clamp(g("mix"), 0, 1);
+  }
+  process(L: Float32Array, R: Float32Array | null, n: number): void {
+    if (!this.on) return;
+    const len = this.buf.length, v = this.voices, mix = this.mix, dphi = (2 * Math.PI * this.rate) / this.sr;
+    for (let i = 0; i < n; i++) {
+      const x = R ? (L[i] + R[i]) * 0.5 : L[i];
+      this.buf[this.wr] = x;
+      let wl = 0, wr = 0;
+      for (let k = 0; k < v; k++) {
+        const d = this.delay + this.depth * Math.sin(this.phase + (2 * Math.PI * k) / v), rp = this.wr - d, ri = Math.floor(rp), f = rp - ri;
+        const a = this.buf[((ri % len) + len) % len], b = this.buf[(((ri + 1) % len) + len) % len], y = (a * (1 - f) + b * f) / v;
+        const pan = v === 1 ? 0 : this.spread * ((2 * k) / (v - 1) - 1), gl = Math.cos(((pan + 1) * Math.PI) / 4) * Math.SQRT2, gr = Math.sin(((pan + 1) * Math.PI) / 4) * Math.SQRT2;
+        wl += y * gl; wr += y * gr;
+      }
+      this.phase += dphi; if (this.phase > 2 * Math.PI) this.phase -= 2 * Math.PI;
+      this.wr = (this.wr + 1) % len;
+      L[i] = L[i] * (1 - mix) + wl * mix; if (R) R[i] = R[i] * (1 - mix) + wr * mix;
+    }
+  }
+}
+
 // ── 增益 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 const GAIN: FxKindDef = { kind: "gain", name: "增益", formula: "y = x · 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: "增益" }] };
 class Gain implements FxInstance {
@@ -187,7 +225,7 @@ class Gain implements FxInstance {
   process(L: Float32Array, R: Float32Array | null, n: number): void { if (!this.on || this.g === 1) return; for (let i = 0; i < n; i++) { L[i] *= this.g; if (R) R[i] *= this.g; } }
 }
 
-export const FX_KINDS: Record<string, FxKindDef> = { eq: EQ, comp: COMP, delay: DELAY, reverb: REVERB, gain: GAIN };
+export const FX_KINDS: Record<string, FxKindDef> = { eq: EQ, comp: COMP, delay: DELAY, reverb: REVERB, chorus: CHORUS, gain: GAIN };
 /** 按 FxV2 建实例；不认识的 kind = null（不出声、原样带着）。 */
 export function createFx(spec: FxV2, sr: number): FxInstance | null {
   const p = Object.fromEntries(Object.entries(spec.params ?? {}).filter(([, v]) => typeof v === "number" && Number.isFinite(v))) as Record<string, number>;
@@ -197,6 +235,7 @@ export function createFx(spec: FxV2, sr: number): FxInstance | null {
     case "comp": fx = new Comp(spec.id, sr, p); break;
     case "delay": fx = new Delay(spec.id, sr, p); break;
     case "reverb": fx = new Reverb(spec.id, sr, p); break;
+    case "chorus": fx = new Chorus(spec.id, sr, p); break;
     case "gain": fx = new Gain(spec.id, sr, p); break;
   }
   if (fx) fx.on = spec.on !== false;

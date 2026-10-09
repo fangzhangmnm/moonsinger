@@ -50,6 +50,16 @@ describe("效果原语", () => {
     const L2 = x.slice(), R2 = x.slice(); const r2 = mk(); for (let i = 0; i < L2.length; i += 128) r2.process(L2.subarray(i, i + 128), R2.subarray(i, i + 128), 128, null);
     assert(L.every((v, i) => v === L2[i]), "确定性");
   });
+  it("合唱：单声道进去左右不一样（铺开了）、和干声不同、mix 0 = 原样、确定性", () => {
+    const mk = () => createFx({ id: "ch", kind: "chorus", params: { voices: 3, mix: 0.5, spread: 0.8 } }, SR)!;
+    const x = sine(440, 0.5), L = x.slice(), R = x.slice(), c = mk();
+    for (let i = 0; i < L.length; i += 128) c.process(L.subarray(i, i + 128), R.subarray(i, i + 128), 128, null);
+    let diffLR = 0, diffX = 0; for (let i = SR / 4; i < L.length; i++) { diffLR = Math.max(diffLR, Math.abs(L[i] - R[i])); diffX = Math.max(diffX, Math.abs(L[i] - x[i])); }
+    assert(diffLR > 0.01, `左右不一样（${diffLR.toFixed(3)}）`); assert(diffX > 0.01, "和干声不同");
+    const L2 = x.slice(), R2 = x.slice(), c2 = mk(); for (let i = 0; i < L2.length; i += 128) c2.process(L2.subarray(i, i + 128), R2.subarray(i, i + 128), 128, null);
+    assert(L.every((v, i) => v === L2[i]), "确定性");
+    const dry = run(createFx({ id: "ch", kind: "chorus", params: { mix: 0 } }, SR), x); assert(Math.abs(peak(dry) - 0.5) < 1e-6, "mix 0 = 原样");
+  });
   it("buildChain：同 id 同 kind 的实例留着（状态不丢）、只换参数；不认识的跳过；on: false 旁通", () => {
     const a = buildChain([{ id: "1", kind: "gain", params: { dB: -6 } }, { id: "2", kind: "nope", params: {} }], [], SR);
     eq(a.length, 1);
