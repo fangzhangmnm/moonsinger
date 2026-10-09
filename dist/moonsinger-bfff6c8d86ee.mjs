@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.21-2026-10-08";
+var APP_VERSION = "v0.7.22-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2948,7 +2948,7 @@ function stackPitch(st3, pitch0) {
   const pitch = keySpell(applyAcc(pitch0, st3.input), keyAt(tr(st3), i10));
   return toggleChordPitch({ ...st3, input }, i10, pitch);
 }
-var songOnlyPaper = (song, paperId) => ({ ...song, papers: song.papers.filter((p2) => p2.id === paperId) });
+var songOnlyPaper = (song, paperId) => ({ ...song, papers: song.papers.filter((p2) => p2.id === paperId).map(({ hidden: _h, ...p2 }) => p2) });
 function keyAt(tokens, i10) {
   let f2 = DEFAULT_KEY;
   for (let j2 = 0; j2 < i10 && j2 < tokens.length; j2++) {
@@ -30348,4 +30348,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-4b25f3ec15ff.mjs.map
+//# sourceMappingURL=moonsinger-bfff6c8d86ee.mjs.map

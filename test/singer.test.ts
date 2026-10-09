@@ -88,3 +88,15 @@ describe("读到两个声部共用一位歌手 = 拆成两位", () => {
     eq(tr({ ...st, song: o.song }).length > 0, true);
   });
 });
+
+describe("隐藏的纸：点名放这一张（本段）照样放", () => {
+  it("songOnlyPaper 去掉隐藏；整首照旧跳过它", async () => {
+    const { songOnlyPaper, setPaperHidden } = await import("../src/score/song.ts");
+    let st = twoPapers(); const p2 = st.song.papers[1].id;
+    st = { ...st, song: { ...st.song, papers: st.song.papers.map((p, k) => (k === 1 ? { ...p, tracks: { P1: [...p.tracks.P1, n()] } } : p)) } };
+    st = setPaperHidden(st, p2, true);
+    const notesIn = (song: Song) => flattenPart(song, "P1").tokens.filter((t) => t.kind === "note").length;
+    eq(notesIn(st.song), 0, "整首：隐藏的纸跳过");
+    eq(notesIn(songOnlyPaper(st.song, p2)), 1, "本段：点名放它 = 照样放");
+  });
+});

@@ -234,7 +234,8 @@ export function stackPitch(st: EditorState, pitch0: Pitch): EditorState {
   return toggleChordPitch({ ...st, input }, i, pitch);
 }
 /** 只有这一张纸的歌（本段视图的播放范围；user 2026-10-08「为什么在本段视图下播放还是播放全部了？」）。 */
-export const songOnlyPaper = (song: Song, paperId: string): Song => ({ ...song, papers: song.papers.filter((p) => p.id === paperId) });
+/** 只要这一张纸（「本段」放 / 导出这一段）。点名要它 = 隐藏的也放（user 2026-10-08「隐藏的歌段在solo预览的时候还是应该可以放的」）：隐藏只管整首放 / 压平件跳过它。 */
+export const songOnlyPaper = (song: Song, paperId: string): Song => ({ ...song, papers: song.papers.filter((p) => p.id === paperId).map(({ hidden: _h, ...p }) => p) });
 
 /** 下标 i 处（i 之前最近的那个记号）生效的调号 / 拍号 / 速度（一条 track 内）。 */
 export function keyAt(tokens: Token[], i: number): number {
