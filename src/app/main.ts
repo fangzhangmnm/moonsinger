@@ -32,7 +32,7 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
@@ -710,7 +710,7 @@ function micOf(part: PartDef): { gainDb: number; pan: number } {
 /** 这条通道 = 麦克风增益 + 上场那位的响度校准（三层不连乘：音符力度 = 意图；校准 = 看得见能调的默认；推子 = dB）。 */
 const channelOf = (part: PartDef): { gainDb: number; pan: number } => { const { gainDb, pan } = micOf(part); return { gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; };
 /** 通道参数推进录音房（播放时才乘 → 边放边调立刻听见；静音 / 独奏在 audibleParts 里筛，不在通道上）。 */
-function pushChannels(): void { for (const p of st.song.parts) engine.channel(p.id, { ...channelOf(p), mute: false, solo: false }); }
+function pushChannels(): void { for (const p of st.song.parts) engine.channel(p.id, { ...channelOf(p), mute: false, solo: false }); engine.master(activeMaster(doc.extras)); }
 /** 上场那位的出声参数（时间线不碰 Extras；src/engine/timeline.ts）。SoundFont 的预设下标要库先进录音房（prepareBanks）。 */
 function performerInfo(part: PartDef): PerformerInfo {
   const role = part.role, eng = (activeInstrument(doc.extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], g = activeGm(doc.extras, role), cat = grooveCategory(eng, g);
@@ -1347,6 +1347,9 @@ const studio = new Studio($("stage"), {
   toggleSolo: (id) => { setPv(id, { solo: !pv(id).solo }); view.render(); },
   play: () => { void togglePlay(); },
   close: () => closeStudio(),
+  master: () => activeMaster(doc.extras),
+  setMasterGain: (dB) => updateExtras(withMaster(doc.extras, { gainDb: dB }), { kind: "studio", label: `总轨增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
+  toggleLimiter: () => { const on = !activeMaster(doc.extras).limiter; updateExtras(withMaster(doc.extras, { limiter: on }), { kind: "studio", label: `母线限幅${on ? "开" : "关"}` }); },
   /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
   deletePart: (id) => {
     const p = st.song.parts.find((x) => x.id === id); if (!p || st.song.papers.some((pp) => pp.tracks[id])) return;
@@ -1355,8 +1358,9 @@ const studio = new Studio($("stage"), {
     studio.render(); renderTitle(); info(`删掉了「${name}」（撤销能找回来）`);
   },
 });
-function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); scoreEl.hidden = true; showPad(false); studio.show(); updateChrome(); }
-function closeStudio(): void { if (!studio.isOpen) return; studio.hide(); scoreEl.hidden = false; updateChrome(); scoreEl.focus(); }
+function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); scoreEl.hidden = true; showPad(false); studio.show(); updateChrome(); void engine.ensure().then(() => engine.meter(true)).catch(() => undefined); }   // 峰值表：页开着才要
+function closeStudio(): void { if (!studio.isOpen) return; studio.hide(); scoreEl.hidden = false; updateChrome(); scoreEl.focus(); engine.meter(false); }
+engine.on("meter", (peak) => { if (studio.isOpen) studio.meter(peak); });
 $("studioBtn").addEventListener("click", () => { if (studio.isOpen) closeStudio(); else openStudio(); });
 function openFinder(): void {
   finderBackToInst = instShown; if (instShown) { instShown = false; instEl.hidden = true; }

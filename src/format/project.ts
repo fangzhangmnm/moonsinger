@@ -169,6 +169,17 @@ export function withRoleConcept(extras: Extras, role: string, c: { name: string;
 /** 新声部要的角色 id（休息室里没用过的「r<n>」）。 */
 export function newRoleId(extras: Extras, song: Song): string { return nextKey([...Object.keys(extras.lounge), ...song.parts.map((p) => p.role)], "r"); }
 /** 新声部要的麦克风 id。 */
+/** 总轨（studio.json master；没写 = 0 dB + 限幅开）。 */
+export function activeMaster(extras: Extras): { gainDb: number; limiter: boolean } {
+  const m = extras.studio?.master as { gainDb?: unknown; limiter?: unknown } | undefined;
+  const g = Number(m?.gainDb ?? 0);
+  return { gainDb: Number.isFinite(g) ? Math.max(-24, Math.min(12, g)) : 0, limiter: m?.limiter === undefined ? true : !!m.limiter };
+}
+export function withMaster(extras: Extras, patch: { gainDb?: number; limiter?: boolean }): Extras {
+  const studio: Json = structuredClone(extras.studio ?? { version: FORMAT.studio, mics: [] });
+  studio.master = { ...activeMaster(extras), ...patch };
+  return { ...extras, studio };
+}
 export function newMicId(extras: Extras, song: Song): string { return nextKey([...((extras.studio?.mics as Json[] | undefined) ?? []).map((m) => String(m.id)), ...song.parts.map((p) => p.mic)], "m"); }
 /** 给新声部在休息室里建一份默认角色（月读两个候选；名字可给）。 */
 export function withNewRole(extras: Extras, role: string, hum: Hum, name?: string, sound?: string): Extras {

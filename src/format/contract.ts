@@ -77,6 +77,8 @@ export interface ScoreExtV1 {
 export interface StudioV1 {
   version: 1;
   mics: { id: string; name: string; gainDb: number; pan: number }[];   // pan −1…1（写 MusicXML 时 ×90）
+  /** 总轨（2026-10-10 刀 3；可选、老文件没有 = 默认 0 dB + 限幅开）：增益 dB、母线前瞻限幅开关（关 = 可能削波，界面明说）。按键试听不走限幅（user「限幅嗯」）。 */
+  master?: { gainDb: number; limiter: boolean };
 }
 
 // ─── 休息室 v2（现役）：角色 = 谱上的功能位；候选 = 谁来演 + 怎么出声 ─────────────────────────

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.5-2026-10-10";
+var APP_VERSION = "v0.9.6-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -20259,6 +20259,16 @@ function withRoleConcept(extras, role, c10, hum) {
 function newRoleId(extras, song) {
   return nextKey2([...Object.keys(extras.lounge), ...song.parts.map((p2) => p2.role)], "r");
 }
+function activeMaster(extras) {
+  const m2 = extras.studio?.master;
+  const g3 = Number(m2?.gainDb ?? 0);
+  return { gainDb: Number.isFinite(g3) ? Math.max(-24, Math.min(12, g3)) : 0, limiter: m2?.limiter === void 0 ? true : !!m2.limiter };
+}
+function withMaster(extras, patch) {
+  const studio2 = structuredClone(extras.studio ?? { version: FORMAT.studio, mics: [] });
+  studio2.master = { ...activeMaster(extras), ...patch };
+  return { ...extras, studio: studio2 };
+}
 function newMicId(extras, song) {
   return nextKey2([...(extras.studio?.mics ?? []).map((m2) => String(m2.id)), ...song.parts.map((p2) => p2.mic)], "m");
 }
@@ -22541,12 +22551,19 @@ var Studio2 = class {
         this.host.toggleSolo(strip);
         this.render();
       } else if (v === "delpart" && strip) this.host.deletePart(strip);
+      else if (v === "limiter") {
+        this.host.toggleLimiter();
+        this.render();
+      }
     });
     this.el.addEventListener("input", (e10) => {
       const t10 = e10.target, strip = t10.closest(".strip");
       if (!strip) return;
       const id2 = strip.dataset.id, out = t10.parentElement?.querySelector("output");
-      if (t10.dataset.gain !== void 0) {
+      if (t10.dataset.master !== void 0) {
+        this.host.setMasterGain(Number(t10.value));
+        if (out) out.textContent = dbText(Number(t10.value));
+      } else if (t10.dataset.gain !== void 0) {
         this.host.setGain(id2, Number(t10.value));
         if (out) out.textContent = dbText(Number(t10.value));
       } else if (t10.dataset.pan !== void 0) {
@@ -22557,7 +22574,8 @@ var Studio2 = class {
     this.el.addEventListener("dblclick", (e10) => {
       const t10 = e10.target, strip = t10.closest(".strip");
       if (!strip || t10.tagName !== "INPUT") return;
-      if (t10.dataset.gain !== void 0) this.host.setGain(strip.dataset.id, 0);
+      if (t10.dataset.master !== void 0) this.host.setMasterGain(0);
+      else if (t10.dataset.gain !== void 0) this.host.setGain(strip.dataset.id, 0);
       else if (t10.dataset.pan !== void 0) this.host.setPan(strip.dataset.id, 0);
       this.render();
     });
@@ -22573,9 +22591,19 @@ var Studio2 = class {
   hide() {
     this.el.hidden = true;
   }
+  /** 峰值表（播放 / 试听时录音房每 1024 帧报一次；0–1）。 */
+  meter(peak) {
+    const bar2 = this.el.querySelector(".meter-fill"), val = this.el.querySelector(".meter-val");
+    if (!bar2) return;
+    const db = peak > 1e-5 ? 20 * Math.log10(peak) : -60, w2 = Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+    bar2.style.width = `${w2}%`;
+    bar2.classList.toggle("hot", peak >= 0.98);
+    if (val) val.textContent = db <= -59 ? "\u2014" : `${db.toFixed(1)} dB`;
+  }
   render() {
-    const box = this.el.querySelector(".studio-strips");
-    box.innerHTML = this.host.strips().map((s10) => `<div class="strip" data-id="${esc4(s10.id)}"><div class="strip-name">${esc4(s10.name)}</div><div class="strip-who">${esc4(s10.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s10.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s10.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label><div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+    const box = this.el.querySelector(".studio-strips"), m2 = this.host.master();
+    const master = `<div class="strip master" data-id="__master"><div class="strip-name">\u603B\u8F68</div><div class="strip-who">\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E</div><label class="strip-row">\u589E\u76CA <output>${dbText(m2.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${m2.gainDb}" data-master title="\u53CC\u51FB\u56DE 0" /></label><div class="strip-btns"><button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter" title="\u6BCD\u7EBF\u9650\u5E45\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E0D\u52A8\uFF1B\u5173\u6389 = \u53EF\u80FD\u524A\u6CE2">\u9650\u5E45${m2.limiter ? "" : "\uFF08\u5173\uFF1A\u53EF\u80FD\u524A\u6CE2\uFF09"}</button></div><div class="strip-row meter"><span>\u5CF0\u503C <span class="meter-val">\u2014</span></span><div class="meter-bar"><div class="meter-fill"></div></div></div></div>`;
+    box.innerHTML = master + this.host.strips().map((s10) => `<div class="strip" data-id="${esc4(s10.id)}"><div class="strip-name">${esc4(s10.name)}</div><div class="strip-who">${esc4(s10.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s10.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s10.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label><div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
     (s10.refs ? `<div class="strip-refs">\u5728 ${s10.refs} \u5F20\u7EB8\u4E0A</div>` : `<div class="strip-refs">\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709 <button class="btn cand danger" data-v="delpart" title="\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B</button></div>`) + `</div>`).join("");
   }
 };
@@ -34140,6 +34168,7 @@ var channelOf = (part) => {
 };
 function pushChannels() {
   for (const p2 of st2.song.parts) engine.channel(p2.id, { ...channelOf(p2), mute: false, solo: false });
+  engine.master(activeMaster(doc.extras));
 }
 function performerInfo(part) {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown", g3 = activeGm(doc.extras, role), cat2 = grooveCategory(eng, g3);
@@ -34759,7 +34788,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "71446966f24f",
+  cssHash: "5d72221b7b6b",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -35075,6 +35104,12 @@ var studio = new Studio2($2("stage"), {
     void togglePlay();
   },
   close: () => closeStudio(),
+  master: () => activeMaster(doc.extras),
+  setMasterGain: (dB) => updateExtras(withMaster(doc.extras, { gainDb: dB }), { kind: "studio", label: `\u603B\u8F68\u589E\u76CA ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
+  toggleLimiter: () => {
+    const on2 = !activeMaster(doc.extras).limiter;
+    updateExtras(withMaster(doc.extras, { limiter: on2 }), { kind: "studio", label: `\u6BCD\u7EBF\u9650\u5E45${on2 ? "\u5F00" : "\u5173"}` });
+  },
   /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
   deletePart: (id2) => {
     const p2 = st2.song.parts.find((x2) => x2.id === id2);
@@ -35095,6 +35130,7 @@ function openStudio() {
   showPad(false);
   studio.show();
   updateChrome();
+  void engine.ensure().then(() => engine.meter(true)).catch(() => void 0);
 }
 function closeStudio() {
   if (!studio.isOpen) return;
@@ -35102,7 +35138,11 @@ function closeStudio() {
   scoreEl.hidden = false;
   updateChrome();
   scoreEl.focus();
+  engine.meter(false);
 }
+engine.on("meter", (peak) => {
+  if (studio.isOpen) studio.meter(peak);
+});
 $2("studioBtn").addEventListener("click", () => {
   if (studio.isOpen) closeStudio();
   else openStudio();
@@ -37485,4 +37525,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-350a6776a283.mjs.map
+//# sourceMappingURL=moonsinger-fac437a43e91.mjs.map
