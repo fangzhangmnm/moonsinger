@@ -13,6 +13,7 @@
   --ghost: #a9b4c2;
   --z-menu: 300;
   --z-overlay: 250;   /* 歌库一屏（在 menu 之下：图库包的卡片菜单 / 弹层用 --z-menu，要压在屏上面） */
+  --z-window: 200;    /* 参考窗（@internal/reference-window 读这个名字）：谱 / pad 之上，歌库一屏和菜单之下（2026-10-08 深夜 v0.8） */
   --z-sheet: 500;
   --z-busy: 520;      /* busy 遮罩盖住 sheet（互斥护栏：交互 sheet 不许在 busy 里开） */
   --z-gate: 540;      /* 同步闸（冲突面）盖住一切、不可 dismiss */

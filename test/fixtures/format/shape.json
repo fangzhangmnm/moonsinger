@@ -67,6 +67,13 @@
             "muted": "boolean"
           }
         },
+        "ref": {
+          "height": "number",
+          "left": "number",
+          "open": "boolean",
+          "top": "number",
+          "width": "number"
+        },
         "scope": "string"
       }
     },

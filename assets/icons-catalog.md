@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-36 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+46 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -12,7 +12,7 @@
 <svg width="24" height="24"><use href="#sliders"/></svg>
 ```
 
-> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`album`、`caret-up`、`caret-down`、`backspace`
+> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`album`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
 > 见库 `index.html` 的「待过目」栏；过目后进库/打回归库 session。
 
 
@@ -28,6 +28,7 @@
 |------|------|
 | `arrow-undo` | 撤销:向左的直角回勾箭头 |
 | `arrow-redo` | 重做:arrow-undo 的水平镜像 |
+| `paste` | 粘贴:剪贴板不缩(库尺寸)+文档探出右下角, 按 copy 的前后件比例 |
 
 ## media
 
@@ -35,6 +36,7 @@
 |------|------|
 | `play` | 播放:实心右向三角 ▶(IEC 60417 磁带机惯例统一实心, 描边同色叠加得圆角); 20260819 media 批入库 |
 | `stop` | 停止:实心圆角方块 ⏹; WebPaint timelapse「暂停录制」也用它(record-pause 已驳回, stop 停段+record 续录=磁带机语义); 20260819 media 批入库 |
+| `volume` | 音量(BR 音量条旁标识): 实心喇叭(箱体+锥单路径)+双声波弧(内 r3.4 ±42°, 外 r6.1 ±52°, 弧间留白 1.0); media 批统一实心, 弧留描边=声波不是实体。20260821 甲方拍板紧凑版+第二道声波入库(空心喇叭版/单弧版落选) |
 
 ## file
 
@@ -51,6 +53,7 @@
 | `folder` | 文件夹:左边 tab + 矩形主体 |
 | `trash-can` | 垃圾桶:桶身收口(feather 是直筒);与 fluent(圆提手/更低)、heroicons(弧形透视)亦不同 — own |
 | `album` 👁待过目 | 专辑/唱片:左边一个方形唱片封套(圆角矩形) + 右侧从封套后露出半张唱片(大圆弧 + 中心小孔)；与 bookshelf(书库) / gallery(图库) 分工 = 歌库【MoonSinger 顶栏最左「歌库」钮（回歌库）+ 文件菜单「歌库…」；2026-10-08 Claude Fable 5.1 自画未过目】 |
+| `rename` | 重命名:文字光标+铅笔 |
 
 ## hierarchy
 
@@ -67,6 +70,10 @@
 | `caret-down` 👁待过目 | 下调 ▼:caret-up 的精确上下镜像【JustReadBooks 朗读控制条预设框右侧小转盘「预设减一」；2026-10-02 Claude Opus 5.5 自画未过目】 |
 | `x` | 叉 |
 | `back` | 返回:左向整箭头(带杆;裸 chevron-left 曾因小尺寸渲染差被 sunset) |
+| `chevron-left` 👁待过目 | ‹ 小尺寸优化裸 chevron:描边 2.4、臂短(14px chip 用)；库里带杆的 back 是另一语义【WeebPaint 参考窗多图时窗底翻页 chip；fable 自画未过目】 |
+| `chevron-right` 👁待过目 | › chevron-left 的精确镜像【WeebPaint 参考窗翻页 chip；fable 自画未过目】 |
+| `forward` 👁待过目 | 前进:back 的精确镜像(右向整箭头带杆;与 chevron-right 裸 chevron 分工)【WebXiaoHeiWu 侧栏页头「回退」右邻的「前进」钮（回退之后再回去）；2026-09-10 fable 自画未过目】 |
+| `check` | 勾 |
 
 ## cloud
 
@@ -86,6 +93,8 @@
 | name | 说明 |
 |------|------|
 | `grid` | 网格:直角外框 1.2 与内网格线同宽(20260725 甲方定稿; 原 rx1.6 圆角粗框版退役), 内部 4x4 细网格 |
+| `picture-in-picture` | 画中画:大框(主画布) + 右下角内嵌小窗(参考小窗自己) |
+| `one-to-one` 👁待过目 | 1:1 像素:四角括号 + 中心一颗实心像素=「一图像素对一屏像素」(不写 1:1 文字)【WeebPaint 参考窗 ＋ 菜单「1:1 像素」项；fable 自画未过目】 |
 
 ## ui
 
@@ -96,3 +105,4 @@
 | `menu` | 汉堡菜单:三条等长横线(y=7/12/17) |
 | `database` | — |
 | `archive-box` | 归档箱:顶盖条 + 箱体 + 中间把手横线(与 collection 同形, 均出自 lucide:archive) |
+| `settings` 👁待过目 | 设置:齿轮=内圆+外圆+8 根短齿(圆帽)；家族里 sliders 是「调整」别撞【WebXiaoHeiWu 抽屉底栏「设置」入口；fable 自画未过目】 |

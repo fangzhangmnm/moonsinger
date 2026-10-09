@@ -16,11 +16,13 @@ export const freshPad = (): PadDesk => ({ fifths: 0, scale: "major", unit: "eigh
 export interface PartViewState { hidden: boolean; only: boolean; muted: boolean; solo: boolean }
 export const freshPartView = (): PartViewState => ({ hidden: false, only: false, muted: false, solo: false });
 /** mp3 = 导出歌声的音质（导出面板里选的；2026-10-08 by Claude Opus 5.5，user「音质配置就是应该也跟着吧」——跟这首歌走、存时顺手带、不标脏、不进 undo）。 */
-export interface Desk { scope: "all" | "segment"; pageFlow: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk }
-export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad() });
+/** ref = 参考窗的窗（开着没有 + 位置 / 大小，CSS 像素；2026-10-08 深夜 Opus 5.5，v0.8；同 WXHW 的 refPanel）——这首歌里开过窗才有；里面的卡不在这里（进文件、标脏，见 src/app/reference-host.ts）。 */
+export interface RefPanelDesk { open: boolean; left: number; top: number; width: number; height: number }
+export interface Desk { scope: "all" | "segment"; pageFlow: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null }
+export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null });
 
 /** 文件里的形状（只写非默认值；全默认 = 不写这个字段）。 */
-export interface DeskJson { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson }
+export interface DeskJson { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number } }
 /** pad 在文件里的形状：只写不是默认的；全默认 = 不写。 */
 export interface PadJson { fifths?: number; scale?: string; unit?: PadUnit; tuplet?: 3 | 5 | 6 | 7; low?: number }
 export function serializeDesk(d: Desk): DeskJson | null {
@@ -43,6 +45,7 @@ export function serializeDesk(d: Desk): DeskJson | null {
   if (pd.tuplet) pj.tuplet = pd.tuplet;
   if (pd.low !== null) pj.low = pd.low;
   if (Object.keys(pj).length) out.pad = pj;
+  if (d.ref) { const { open, left, top, width, height } = d.ref; out.ref = { ...(open ? { open: true as const } : {}), left, top, width, height }; }
   return Object.keys(out).length ? out : null;
 }
 /** 读文件里的（宽容：不是对象 / 字段不认识 = 当默认；别家 / 更新版写的多余字段不管）。 */
@@ -68,6 +71,10 @@ export function unserializeDesk(json: unknown): Desk {
     if (PAD_UNITS.includes(q.unit as PadUnit)) d.pad.unit = q.unit as PadUnit;
     if (q.tuplet === 3 || q.tuplet === 5 || q.tuplet === 6 || q.tuplet === 7) d.pad.tuplet = q.tuplet;
     if (Number.isInteger(q.low) && (q.low as number) >= 0 && (q.low as number) <= 127) d.pad.low = q.low as number;
+  }
+  if (j.ref && typeof j.ref === "object") {   // 参考窗的窗：四个数都得是有限的数，不然整个当没有（窗按库的默认位置开）
+    const r = j.ref as Record<string, unknown>, n = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+    if (n(r.left) && n(r.top) && n(r.width) && n(r.height)) d.ref = { open: r.open === true, left: r.left as number, top: r.top as number, width: r.width as number, height: r.height as number };
   }
   return d;
 }

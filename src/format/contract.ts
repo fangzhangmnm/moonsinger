@@ -8,6 +8,9 @@
 //   · 只加可选字段 = 不升版本（WXHW ADR-0012 修订同款「加法」），但写出来的键集合变了 → 守卫测试红，跑 node scripts/freeze-format-sample.mjs 更新形状快照、审 diff。
 //   · 老文件永远能开（读时链式升级），只拒开比 app 新的；不认识的字段 / 文件原样写回。
 //   · 守卫 = test/format-guard.test.ts：形状快照、迁移链完整、冻结样本能开。
+//   · 参考窗目录 `.moonsinger/references/`（v0.8，2026-10-08 深夜 Opus 5.5；对齐稿 ai-docs/20261008-reference-window-alignment.md）：
+//     整个目录归 @internal/reference-window（manifest.json 自带版本号和迁移 + 每张卡一个 r<i>.<ext>），这一层零知识、原样进出（project.ts REFERENCES_DIR）；
+//     不列进我们的 manifest、不升 FORMAT；窗的位置在 score.json view.ref（ViewV1 可选字段）。老版本 app 读到 = 当不认识的文件原样写回。
 
 /** 这一版能读写的各份文件的版本号（改格式 = 这里 +1 + migrate + 冻结样本；守卫测试盯着）。
  *  lounge 2（2026-10-07 深夜，user「现在开始好好做乐器这个数据结构，不要偷懒」）：候选从「月读形状 + 贴字段」改成按引擎分的乐器。

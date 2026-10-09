@@ -22,6 +22,9 @@ export type { Hum, InstrumentV2 };
 const MIMETYPE = "application/vnd.recordare.musicxml";
 const DIR = ".moonsinger/";
 const SOUNDS = `${DIR}sounds/`;
+/** 参考窗（v0.8，2026-10-08 深夜 Opus 5.5；对齐稿 ai-docs/20261008-reference-window-alignment.md）：整个目录归 @internal/reference-window
+ *  （manifest.json 自带版本号和迁移 + 每张卡的字节）；这里零知识、原样进出。不放 extras（extras 进撤销，参考窗不进）。 */
+export const REFERENCES_DIR = `${DIR}references/`;
 const PAPERS = `${DIR}papers/`;
 const paperFile = (id: string) => `${PAPERS}${id}.musicxml`;
 
@@ -61,7 +64,7 @@ const isVoice = (i: InstrumentV2 | null): i is Extract<InstrumentV2, { hum: Hum 
 const roleOf = (extras: Extras, role: string, hum: Hum): Json => structuredClone(extras.lounge[role] ?? defaultRole(hum, role));
 const nextKey = (ids: string[], prefix: string) => `${prefix}${Math.max(0, ...ids.map((x) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x)?.[1] ?? 0))) + 1}`;
 
-export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; date: string; view?: Record<string, unknown> | null }   // 歌名 = song.title（可不填）；hum = 编辑器里的哼的字（写进月读候选的乐器配置）
+export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; date: string; view?: Record<string, unknown> | null; references?: Record<string, Uint8Array> }   // references = 参考窗目录（路径都在 REFERENCES_DIR 下）   // 歌名 = song.title（可不填）；hum = 编辑器里的哼的字（写进月读候选的乐器配置）
 /** 歌 → .mxl 的字节。 */
 export function saveMxl(a: SaveArgs): Uint8Array {
   const song = a.song;
@@ -127,15 +130,19 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   for (const [id, r] of Object.entries(lounge)) out[`${DIR}lounge/${id}.json`] = json(r);
   out[`${DIR}studio.json`] = json(studio);
   for (const [path, bytes] of sounds) out[path] = bytes;
+  for (const [path, bytes] of Object.entries(a.references ?? {})) {
+    if (!path.startsWith(REFERENCES_DIR)) throw new Error(`参考窗的文件不在 ${REFERENCES_DIR} 下：${path}`);
+    out[path] = bytes;
+  }
   for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY) out[path] = bytes;
   if (a.extras.thumbnail) out[THUMBNAIL_ENTRY] = a.extras.thumbnail;   // 封面最后一个（尾读）
   const entries: Record<string, [Uint8Array, { level: 0 | 1 | 6 }]> = {};
-  for (const [path, bytes] of Object.entries(out)) entries[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY ? 0 : path.startsWith(SOUNDS) ? 1 : 6 }];   // mimetype 必须第一个、不压缩（插入顺序 = zip 里的顺序）；封面不压缩（尾读按 entry 名抓原始字节）；采样大、压不动，level 1 省时间
+  for (const [path, bytes] of Object.entries(out)) entries[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY ? 0 : path.startsWith(SOUNDS) ? 1 : path.startsWith(REFERENCES_DIR) && !path.endsWith(".json") ? 0 : 6 }];   // 参考图本来就压过了：不再压   // mimetype 必须第一个、不压缩（插入顺序 = zip 里的顺序）；封面不压缩（尾读按 entry 名抓原始字节）；采样大、压不动，level 1 省时间
   return zipSync(entries);
 }
 
 /** stem = 打开的文件叫什么（去掉扩展名；文件名和歌名分开：歌名在 song.title，可不填）。 */
-export interface Opened { song: Song; stem: string; hum: Hum; extras: Extras; ours: boolean; notices: string[]; view: Record<string, unknown> | null }   // view = score.json 里的视图态（没有 = null；desk.ts 宽容读）
+export interface Opened { song: Song; stem: string; hum: Hum; extras: Extras; ours: boolean; notices: string[]; view: Record<string, unknown> | null; references: Record<string, Uint8Array> }   // references = 参考窗目录的原样字节（没有 = {}）   // view = score.json 里的视图态（没有 = null；desk.ts 宽容读）
 
 // ── 角色（谱上的功能位；一个声部一个角色 id）────────────────────────────────────────────
 /** 这个角色谱上写的名字 = MusicXML 的 <part-name>（user「谱上面显示的不应跟是月读，而是人声，女声 lead bass violin之类功能的东西，
@@ -448,6 +455,8 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   }
   const parse = (p: string): Json => { try { return JSON.parse(strFromU8(files[p])) as Json; } catch { throw new Error(`${p} 读不懂（文件坏了？）`); } };
   const manifest = parse(`${DIR}manifest.json`); known.add(`${DIR}manifest.json`);
+  const references: Record<string, Uint8Array> = {};   // 参考窗：整个目录原样拿出来（库去解）
+  for (const [p, b] of Object.entries(files)) if (p.startsWith(REFERENCES_DIR) && !p.endsWith("/")) { references[p] = b; known.add(p); }
   const newer = (what: string, v: unknown, mine: number) => { if (Number(v) > mine) throw new Error(`这首歌是更新版本的 MoonSinger 存的（${what} 第 ${v} 版，这一版只认到第 ${mine} 版），打开再存会丢东西，所以没有打开。请先更新 app。`); };
   newer("总目录", manifest.version, FORMAT.manifest);
   extras.manifest = migrate("manifest", manifest);
@@ -482,7 +491,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
   const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null);
-  return finish(reads, song, pruneSounds(extras), ours, name);
+  return { ...finish(reads, song, pruneSounds(extras), ours, name), references };
 }
 
 /** 读进来的几张纸 → 歌。parts = score.json 的声部并集（没有 = 按纸里出现的声部 P1…）。
@@ -541,5 +550,5 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;   // 编排那一行（只有我们自己的文件有）
-  return { song: { ...song0, hum, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}) }, stem, hum, extras, ours, notices, view: (extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null };
+  return { song: { ...song0, hum, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}) }, stem, hum, extras, ours, notices, view: (extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null, references: {} };
 }

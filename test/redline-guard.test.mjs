@@ -73,6 +73,17 @@ describe("redline-guard", () => {
     }
     assert(hits.length === 0, "seam violations:\n" + hits.join("\n"));
   });
+  it("参考窗库（@internal/reference-window，含 /deck）只准 src/app/reference-host.ts 碰（唯一接缝，同 WXHW；2026-10-08 深夜 Opus 5.5）", () => {
+    const hits = [];
+    for (const p of walk("src")) {
+      const rel = p.replace(/\\/g, "/");
+      if (rel === "src/app/reference-host.ts") continue;
+      const src = readFileSync(p, "utf8");
+      for (const m of src.matchAll(/^import\s+(type\s+)?[^;]*?["']@internal\/reference-window(\/[^"']*)?["']/gm)) if (!m[1]) hits.push(`${rel}: ${m[0].slice(0, 100)}`);
+      for (const m of src.matchAll(/^import\s+["']@internal\/reference-window[^"']*["']/gm)) hits.push(`${rel}: ${m[0]}`);   // 裸 import（注册 custom element）也算
+    }
+    assert(hits.length === 0, "reference-window seam violations:\n" + hits.join("\n"));
+  });
   it("src/ 里没有 getRegistrations()；caches.delete 都带自己前缀的筛子", () => {
     const hits = [];
     for (const p of walk("src")) readFileSync(p, "utf8").split("\n").forEach((l, i) => {

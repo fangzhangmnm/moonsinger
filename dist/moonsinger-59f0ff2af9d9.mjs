@@ -23,17 +23,17 @@ function zlibSync(data, opts) {
   var d3 = dopt(data, opts, opts.dictionary ? 6 : 2, 4);
   return zlh(d3, opts), wbytes(d3, d3.length - 4, a10.d()), d3;
 }
-function strToU8(str, latin12) {
+function strToU8(str2, latin12) {
   if (latin12) {
-    var ar_1 = new u8(str.length);
-    for (var i10 = 0; i10 < str.length; ++i10)
-      ar_1[i10] = str.charCodeAt(i10);
+    var ar_1 = new u8(str2.length);
+    for (var i10 = 0; i10 < str2.length; ++i10)
+      ar_1[i10] = str2.charCodeAt(i10);
     return ar_1;
   }
   if (te)
-    return te.encode(str);
-  var l10 = str.length;
-  var ar2 = new u8(str.length + (str.length >> 1));
+    return te.encode(str2);
+  var l10 = str2.length;
+  var ar2 = new u8(str2.length + (str2.length >> 1));
   var ai2 = 0;
   var w2 = function(v) {
     ar2[ai2++] = v;
@@ -44,13 +44,13 @@ function strToU8(str, latin12) {
       n10.set(ar2);
       ar2 = n10;
     }
-    var c10 = str.charCodeAt(i10);
+    var c10 = str2.charCodeAt(i10);
     if (c10 < 128 || latin12)
       w2(c10);
     else if (c10 < 2048)
       w2(192 | c10 >> 6), w2(128 | c10 & 63);
     else if (c10 > 55295 && c10 < 57344)
-      c10 = 65536 + (c10 & 1023 << 10) | str.charCodeAt(++i10) & 1023, w2(240 | c10 >> 18), w2(128 | c10 >> 12 & 63), w2(128 | c10 >> 6 & 63), w2(128 | c10 & 63);
+      c10 = 65536 + (c10 & 1023 << 10) | str2.charCodeAt(++i10) & 1023, w2(240 | c10 >> 18), w2(128 | c10 >> 12 & 63), w2(128 | c10 >> 6 & 63), w2(128 | c10 & 63);
     else
       w2(224 | c10 >> 12), w2(128 | c10 >> 6 & 63), w2(128 | c10 & 63);
   }
@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.0-2026-10-08";
+var APP_VERSION = "v0.8.1-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -9518,6 +9518,14 @@ var _open = [];
 function currentPopupMenu() {
   return _open[_open.length - 1] ?? null;
 }
+function togglePopupMenu(opts) {
+  const cur = _open.find((x2) => x2.anchor === opts.anchor);
+  if (cur) {
+    cur.close();
+    return null;
+  }
+  return openPopupMenu(opts);
+}
 function toggleAdoptedPopup(el2, opts) {
   const cur = _open.find((x2) => x2.el === el2);
   if (cur) {
@@ -9525,6 +9533,57 @@ function toggleAdoptedPopup(el2, opts) {
     return null;
   }
   return openAdoptedPopup(el2, opts);
+}
+function openPopupMenu(opts) {
+  const variant = opts.variant ?? "list";
+  const band = opts.band ?? "menu";
+  const el2 = document.createElement("div");
+  el2.className = (variant === "compact" ? "lasso-icon-menu lasso-icon-list " : "menu-panel ") + `popup-menu popup-menu--${variant}` + (band === "css" ? "" : ` band-${band}`);
+  el2.setAttribute("role", "menu");
+  const render = () => {
+    const items = opts.items().filter((it2) => !it2.hidden);
+    const anyIcon = items.some((it2) => !!it2.icon);
+    let html = "";
+    for (const it2 of items) {
+      if (it2.separatorBefore)
+        html += `<hr class="popup-menu-sep">`;
+      if (it2.header) {
+        html += `<div class="popup-menu-group">${escapeHtml(it2.label)}</div>`;
+        continue;
+      }
+      const cls = variant === "compact" ? "lasso-tool-btn popup-menu-item" : "menu-item popup-menu-item" + (anyIcon ? " menu-item-with-icon" : "") + (it2.danger ? " danger" : "");
+      const role = it2.checked != null ? "menuitemradio" : "menuitem";
+      const checkAttr = it2.checked != null ? variant === "compact" ? ` aria-pressed="${it2.checked}"` : ` aria-checked="${it2.checked}"` : "";
+      const icon = anyIcon ? it2.icon ? iconHtml(it2.icon) : `<span class="menu-item-icon-blank"></span>` : "";
+      html += `<button type="button" class="${cls}" role="${role}" data-id="${escapeHtml(it2.id)}"${checkAttr}${it2.disabled ? " disabled" : ""}>` + icon + `<span class="menu-item-label">${escapeHtml(it2.label)}</span></button>`;
+    }
+    el2.innerHTML = html;
+  };
+  render();
+  document.body.appendChild(el2);
+  const handle = _mount(el2, opts, {
+    reposition: true,
+    onRefresh: render,
+    onClosed: () => el2.remove()
+  });
+  el2.addEventListener("click", (e10) => {
+    const b3 = e10.target.closest("[data-id]");
+    if (!b3 || b3.disabled)
+      return;
+    e10.stopPropagation();
+    const id2 = b3.dataset.id;
+    const item = opts.items().find((it2) => it2.id === id2);
+    if (!item)
+      return;
+    const r10 = opts.onPick(id2, item);
+    if (r10 === "keep") {
+      if (handle.isOpen)
+        handle.refresh();
+      return;
+    }
+    handle.close();
+  });
+  return handle;
 }
 function openAdoptedPopup(el2, opts) {
   const cur = _open.find((x2) => x2.el === el2);
@@ -9651,6 +9710,9 @@ function _mount(el2, opts, hooks) {
   }, 0);
   _open.push(handle);
   return handle;
+}
+function escapeHtml(s10) {
+  return s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 }
 
 // node_modules/@internal/workbench-elements/dist/notice.js
@@ -10971,11 +11033,11 @@ function createIdentifiersNoKinds() {
 }
 var defaultCloudToName = (cloudName) => cloudName.endsWith(".zip") ? cloudName.slice(0, -4) : cloudName;
 function createCloudSync(cfg) {
-  const { provider, kv, fileName, encFileName = null, contentType = "application/octet-stream", trashFolder = ".trash", backupFolder = ".backup", appKey = "sync", manageDirty = true } = cfg;
+  const { provider, kv, fileName: fileName2, encFileName = null, contentType = "application/octet-stream", trashFolder = ".trash", backupFolder = ".backup", appKey = "sync", manageDirty = true } = cfg;
   const now = cfg.now || (() => Date.now());
   const isHiddenAny = (n10) => isHidden(n10) || !!cfg.hidden?.(n10);
   async function _find(name) {
-    const p2 = fileName(name);
+    const p2 = fileName2(name);
     let item = await provider.getItemByPath(p2);
     if (item)
       return { item, path: p2, enc: false };
@@ -10993,7 +11055,7 @@ function createCloudSync(cfg) {
   const etagKey = (n10) => `${appKey}.etag:${n10}`;
   const dirtyKey = (n10) => `${appKey}.dirty:${n10}`;
   const baseName = (n10) => n10.includes("/") ? n10.slice(n10.lastIndexOf("/") + 1) : n10;
-  const stampedName = (n10, enc2 = false, stamp2 = asideStamp(now())) => (enc2 && encFileName ? encFileName : fileName)(`${baseName(n10)} [${stamp2}]`);
+  const stampedName = (n10, enc2 = false, stamp2 = asideStamp(now())) => (enc2 && encFileName ? encFileName : fileName2)(`${baseName(n10)} [${stamp2}]`);
   function getETag(name) {
     return kv.get(etagKey(name)) || null;
   }
@@ -11055,10 +11117,10 @@ function createCloudSync(cfg) {
   }
   async function push(name, bytes, opts = {}) {
     const enc2 = !!(encFileName && opts.encrypted);
-    const path = enc2 ? encFileName(name) : fileName(name);
+    const path = enc2 ? encFileName(name) : fileName2(name);
     let baseEtag = "baseEtag" in opts ? opts.baseEtag : getETag(name);
     if (encFileName && baseEtag) {
-      const otherPath = enc2 ? fileName(name) : encFileName(name);
+      const otherPath = enc2 ? fileName2(name) : encFileName(name);
       const target = await provider.getItemByPath(path).catch((e10) => {
         reportStoreError(e10, "log");
         return null;
@@ -11159,7 +11221,7 @@ function createCloudSync(cfg) {
     const clean = targetName;
     const folder = clean.includes("/") ? clean.slice(0, clean.lastIndexOf("/")) : "";
     const base3 = baseName(clean);
-    const mkName = opts.encrypted && encFileName ? encFileName : fileName;
+    const mkName = opts.encrypted && encFileName ? encFileName : fileName2;
     const folderId = await provider.ensureFolder(folder);
     const disp = restoreStampDisplay(opts.snapshotStamp, now());
     const stamped = (suf) => withStemTail(base3, ` [${suf}]`, ids);
@@ -11188,7 +11250,7 @@ function createCloudSync(cfg) {
     }
   }
   async function weakOverride(name, bytes, opts = {}) {
-    const path = encFileName && opts.encrypted ? encFileName(name) : fileName(name);
+    const path = encFileName && opts.encrypted ? encFileName(name) : fileName2(name);
     const cur = await _find(name);
     let backedUp = null;
     let item;
@@ -11302,7 +11364,7 @@ function createCloudSync(cfg) {
       throw new Error(`\u4E91\u7AEF\u627E\u4E0D\u5230\uFF1A${oldName}`);
     const oldFolder = oldName.includes("/") ? oldName.slice(0, oldName.lastIndexOf("/")) : "";
     const newFolder = newName.includes("/") ? newName.slice(0, newName.lastIndexOf("/")) : "";
-    const mkName = found.enc && encFileName ? encFileName : fileName;
+    const mkName = found.enc && encFileName ? encFileName : fileName2;
     const newBase = mkName(newName.includes("/") ? newName.slice(newName.lastIndexOf("/") + 1) : newName);
     let moved;
     if (oldFolder === newFolder) {
@@ -19189,6 +19251,7 @@ function migrate(kind, json) {
 var MIMETYPE = "application/vnd.recordare.musicxml";
 var DIR = ".moonsinger/";
 var SOUNDS2 = `${DIR}sounds/`;
+var REFERENCES_DIR = `${DIR}references/`;
 var PAPERS = `${DIR}papers/`;
 var paperFile = (id2) => `${PAPERS}${id2}.musicxml`;
 var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], thumbnail: null });
@@ -19303,10 +19366,14 @@ function saveMxl(a10) {
   for (const [id2, r10] of Object.entries(lounge)) out[`${DIR}lounge/${id2}.json`] = json(r10);
   out[`${DIR}studio.json`] = json(studio2);
   for (const [path, bytes] of sounds) out[path] = bytes;
+  for (const [path, bytes] of Object.entries(a10.references ?? {})) {
+    if (!path.startsWith(REFERENCES_DIR)) throw new Error(`\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 ${REFERENCES_DIR} \u4E0B\uFF1A${path}`);
+    out[path] = bytes;
+  }
   for (const [path, bytes] of Object.entries(a10.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY) out[path] = bytes;
   if (a10.extras.thumbnail) out[THUMBNAIL_ENTRY] = a10.extras.thumbnail;
   const entries2 = {};
-  for (const [path, bytes] of Object.entries(out)) entries2[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY ? 0 : path.startsWith(SOUNDS2) ? 1 : 6 }];
+  for (const [path, bytes] of Object.entries(out)) entries2[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY ? 0 : path.startsWith(SOUNDS2) ? 1 : path.startsWith(REFERENCES_DIR) && !path.endsWith(".json") ? 0 : 6 }];
   return zipSync(entries2);
 }
 function roleName(extras, role) {
@@ -19628,6 +19695,11 @@ function openBytes(name, bytes) {
   };
   const manifest = parse2(`${DIR}manifest.json`);
   known.add(`${DIR}manifest.json`);
+  const references = {};
+  for (const [p2, b3] of Object.entries(files)) if (p2.startsWith(REFERENCES_DIR) && !p2.endsWith("/")) {
+    references[p2] = b3;
+    known.add(p2);
+  }
   const newer = (what, v, mine) => {
     if (Number(v) > mine) throw new Error(`\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08${what} \u7B2C ${v} \u7248\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BA4\u5230\u7B2C ${mine} \u7248\uFF09\uFF0C\u6253\u5F00\u518D\u5B58\u4F1A\u4E22\u4E1C\u897F\uFF0C\u6240\u4EE5\u6CA1\u6709\u6253\u5F00\u3002\u8BF7\u5148\u66F4\u65B0 app\u3002`);
   };
@@ -19695,7 +19767,7 @@ function openBytes(name, bytes) {
   });
   for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
   const song = songFromReads(reads, papers, scoreExt?.parts ?? null);
-  return finish(reads, song, pruneSounds(extras), ours, name);
+  return { ...finish(reads, song, pruneSounds(extras), ours, name), references };
 }
 function songFromReads(reads, papers, partList = null) {
   const ps = papers ?? [paperOfRead("p1", reads[0])];
@@ -19758,7 +19830,7 @@ function finish(reads, song0, extras, ours, name) {
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;
-  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null };
+  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null, references: {} };
 }
 
 // src/format/credits.ts
@@ -21438,10 +21510,10 @@ function createEncryption(opts = {}) {
       return false;
     }
   }
-  async function packContainer({ dataBytes, fileName, ext = "bin", guid: guid2, peek = null, password }) {
+  async function packContainer({ dataBytes, fileName: fileName2, ext = "bin", guid: guid2, peek = null, password }) {
     if (!password)
       throw new Error("cannot encrypt without a password");
-    const metaJson = JSON.stringify({ v: 1, name: fileName || null, ext });
+    const metaJson = JSON.stringify({ v: 1, name: fileName2 || null, ext });
     const payloadBytes = await codec().pack7z([
       { path: "data.bin", data: dataBytes },
       { path: "meta.bin", data: META_MAGIC + metaJson }
@@ -27590,6 +27662,2119 @@ function createEditorSession(config) {
   };
 }
 
+// node_modules/@internal/reference-window/dist/pointer-gesture.js
+function pinchScaleRot(start, dist, angle, minScale, maxScale) {
+  const scale = Math.max(minScale, Math.min(maxScale, start.vp.scale * (dist / start.dist)));
+  let dRot = angle - start.angle;
+  if (dRot > Math.PI)
+    dRot -= 2 * Math.PI;
+  if (dRot < -Math.PI)
+    dRot += 2 * Math.PI;
+  return { scale, rot: start.vp.rot + dRot };
+}
+function solveAnchorTranslation(modelPt, scale, rot, screenX, screenY) {
+  const c10 = Math.cos(rot), s10 = Math.sin(rot);
+  return {
+    tx: screenX - (modelPt.x * scale * c10 - modelPt.y * scale * s10),
+    ty: screenY - (modelPt.x * scale * s10 + modelPt.y * scale * c10)
+  };
+}
+
+// node_modules/@internal/reference-window/dist/deck/deck.js
+function cloneView(v) {
+  if (!v)
+    return null;
+  const ok2 = Number.isFinite(v.tx) && Number.isFinite(v.ty) && Number.isFinite(v.scale) && Number.isFinite(v.rot);
+  return ok2 ? { tx: v.tx, ty: v.ty, scale: v.scale, rot: v.rot } : null;
+}
+function clonePlay(p2) {
+  if (!p2 || !Number.isFinite(p2.t))
+    return null;
+  return { t: p2.t, loop: !!p2.loop };
+}
+function cloneCarried(c10) {
+  return { at: c10.at, item: JSON.parse(JSON.stringify(c10.item)), files: { ...c10.files } };
+}
+function clampIndex(i10, n10) {
+  if (n10 <= 0)
+    return 0;
+  if (!Number.isFinite(i10))
+    return 0;
+  return Math.max(0, Math.min(n10 - 1, Math.trunc(i10)));
+}
+function createDeck() {
+  let cards = [];
+  let carried = [];
+  let index = 0;
+  let seq = 0;
+  const listeners = /* @__PURE__ */ new Set();
+  const emit = (what) => {
+    let first = null, threw = false;
+    for (const fn of [...listeners]) {
+      try {
+        fn(what);
+      } catch (e10) {
+        if (!threw) {
+          threw = true;
+          first = e10;
+        }
+      }
+    }
+    if (threw)
+      throw first;
+  };
+  const make = (c10) => ({
+    id: `c${++seq}`,
+    kind: c10.kind,
+    name: c10.name ?? "",
+    bytes: c10.bytes ?? null,
+    mime: c10.mime ?? (c10.bytes?.type || ""),
+    target: c10.target ?? null,
+    vp: cloneView(c10.vp),
+    play: clonePlay(c10.play),
+    origin: c10.origin ?? null
+  });
+  const copy = (c10) => ({ ...c10, vp: cloneView(c10.vp), play: clonePlay(c10.play) });
+  const deck = {
+    get size() {
+      return cards.length;
+    },
+    get index() {
+      return index;
+    },
+    get current() {
+      return cards[index] ?? null;
+    },
+    cards: () => cards,
+    get: (id2) => cards.find((c10) => c10.id === id2) ?? null,
+    indexOf: (id2) => cards.findIndex((c10) => c10.id === id2),
+    snapshot: () => ({ index, cards: cards.map(copy), carried: carried.map(cloneCarried) }),
+    restore(s10) {
+      if (!s10 || !Array.isArray(s10.cards))
+        throw new TypeError("Deck.restore expects { cards: [...] }");
+      cards = s10.cards.map((c10) => {
+        if (!c10 || typeof c10.kind !== "string" || !c10.kind)
+          throw new TypeError("Deck.restore: every card needs a non-empty string kind");
+        return make(c10);
+      });
+      carried = (s10.carried ?? []).map(cloneCarried);
+      index = clampIndex(s10.index ?? 0, cards.length);
+      emit({ type: "reset" });
+      return cards.map((c10) => c10.id);
+    },
+    clear() {
+      cards = [];
+      carried = [];
+      index = 0;
+      emit({ type: "reset" });
+    },
+    add(card, opts) {
+      if (!card || typeof card.kind !== "string" || !card.kind)
+        throw new TypeError("Deck.add: card needs a non-empty string kind");
+      const c10 = make(card);
+      cards.push(c10);
+      if (opts?.select ?? true)
+        index = cards.length - 1;
+      emit({ type: "cards" });
+      return c10.id;
+    },
+    remove(id2) {
+      const i10 = deck.indexOf(id2);
+      if (i10 < 0)
+        return;
+      cards.splice(i10, 1);
+      if (i10 < index)
+        index -= 1;
+      index = clampIndex(index, cards.length);
+      emit({ type: "cards" });
+    },
+    move(id2, toIndex) {
+      const from = deck.indexOf(id2);
+      if (from < 0)
+        return;
+      const to2 = clampIndex(toIndex, cards.length);
+      if (to2 === from)
+        return;
+      const viewing = cards[index]?.id ?? null;
+      const [c10] = cards.splice(from, 1);
+      cards.splice(to2, 0, c10);
+      if (viewing)
+        index = deck.indexOf(viewing);
+      emit({ type: "cards" });
+    },
+    select(i10) {
+      const next2 = clampIndex(i10, cards.length);
+      if (next2 === index)
+        return;
+      index = next2;
+      emit({ type: "view" });
+    },
+    setView(id2, vp) {
+      const c10 = deck.get(id2);
+      const v = cloneView(vp);
+      if (!c10 || !v)
+        return;
+      const o10 = c10.vp;
+      if (o10 && o10.tx === v.tx && o10.ty === v.ty && o10.scale === v.scale && o10.rot === v.rot)
+        return;
+      c10.vp = v;
+      emit({ type: "view" });
+    },
+    setPlay(id2, play) {
+      const c10 = deck.get(id2);
+      const p2 = clonePlay(play);
+      if (!c10 || !p2)
+        return;
+      if (c10.play && c10.play.t === p2.t && c10.play.loop === p2.loop)
+        return;
+      c10.play = p2;
+      emit({ type: "view" });
+    },
+    setTarget(id2, target) {
+      const c10 = deck.get(id2);
+      if (!c10 || c10.target === target)
+        return;
+      c10.target = target;
+      emit({ type: "cards" });
+      emit({ type: "invalidate", id: id2 });
+    },
+    invalidate(id2) {
+      if (deck.indexOf(id2) < 0)
+        return;
+      emit({ type: "invalidate", id: id2 });
+    },
+    onChange(fn) {
+      listeners.add(fn);
+      return () => {
+        listeners.delete(fn);
+      };
+    }
+  };
+  return deck;
+}
+
+// node_modules/@internal/reference-window/dist/reference-window.js
+var REF_LONG_PRESS_MS = 450;
+var REF_LONG_PRESS_CANCEL_SQ = 64;
+var LIVE_THROTTLE_MS = 300;
+var IDLE_DIM_MS = 2500;
+var NEAREST_MIN_SCALE = 2;
+var MAX_SCALE = 50;
+var MIN_VISIBLE_PX = 16;
+var PAN_KEEP_PX = 24;
+var SPAWN_LEFT = 112;
+var SPAWN_TOP = 104;
+var CLAMP_MIN_LEFT = 96;
+var CLAMP_MIN_TOP = 96;
+var DRAG_TOP_FLOOR = 60;
+var MIN_EDGE = 96;
+var TEXT_SCALE_MIN = 0.5;
+var TEXT_SCALE_MAX = 4;
+var REF_ICON_IDS = {
+  folder: "folder",
+  paste: "paste",
+  cloud: "cloud",
+  pip: "picture-in-picture",
+  oneToOne: "one-to-one",
+  trash: "trash-can",
+  x: "x",
+  plus: "new",
+  prev: "chevron-left",
+  next: "chevron-right",
+  // 2026-09-29：挪动顺序 / 跳转列表。都是库里现成的图标（带杆的左右箭头、勾），没有新画。
+  earlier: "back",
+  later: "forward",
+  current: "check"
+};
+function iconMarkup(id2) {
+  const sym = typeof document !== "undefined" ? document.querySelector(`svg symbol[id="${id2}"]`) : null;
+  if (!sym) {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2" aria-hidden="true" data-icon-missing="${id2}"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`;
+  }
+  const attrs = ["viewBox", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin"].map((a10) => {
+    const v = sym.getAttribute(a10);
+    return v != null ? `${a10}="${v}"` : "";
+  }).filter(Boolean).join(" ");
+  return `<svg ${attrs} aria-hidden="true" data-icon="${id2}">${sym.innerHTML}</svg>`;
+}
+function buildTemplate() {
+  return `<style>
+:host {
+  position: fixed;
+  top: 60px; left: 16px;
+  display: block;
+  width: 280px; height: 320px;
+  min-width: ${MIN_EDGE}px; min-height: ${MIN_EDGE}px;
+  resize: both;              /* \u684C\u9762\u9F20\u6807\u62D6\u53F3\u4E0B\u89D2\uFF1Btouch \u8D70 .grip */
+  overflow: hidden;
+  border: 1px solid var(--line, #3c4043);
+  border-radius: var(--radius, 10px);
+  outline: none;
+  box-shadow: var(--shadow, 0 8px 24px rgba(0, 0, 0, 0.4));
+  z-index: var(--z-window, 100);
+  -webkit-tap-highlight-color: transparent;
+  font-size: 13px;
+  /* \u5E95 = \u7EAF\u8272 --void\uFF080.3.1\uFF0Cuser 2026-09-30\u300C\u80CC\u666F\u4E5F\u4E0D\u9700\u8981\u52A0\u70B9\uFF0C\u5C31\u7EAF\u8272\u300D\uFF09\u3002\u60F3\u8981\u548C\u81EA\u5DF1\u753B\u5E03\u540C\u6B3E\u70B9\u9635\u7684\u5BBF\u4E3B
+     \uFF08WeebPaint 0830\u300C\u5E95=editor \u753B\u5E03 void \u540C\u6B3E\u300D\uFF09\u5728\u5BBF\u4E3B CSS \u91CC\u5BF9 wp-reference-window \u5199 background-image\u2014\u2014
+     \u5916\u90E8\u6837\u5F0F\u76D6\u5F97\u8FC7 :host\u3002 */
+  background-color: var(--void, #e6e2d6);
+}
+:host(:not([open])) { display: none; }
+canvas {
+  position: absolute; inset: 0; display: block;
+  width: 100%; height: 100%;
+  touch-action: none; cursor: grab;
+}
+canvas:active { cursor: grabbing; }
+:host([pick]) canvas, :host([pick]) canvas:active { cursor: crosshair; }
+/* gizmo \u5C3A\u5BF8 = \u5BB6\u65CF\u6D6E\u7A97\u6807\u51C6\u4EF6\uFF08user 0830\u300C\u6309 Layers \u7684\u5927\u5C0F\u6765\u300D\uFF09\uFF1A\u628A\u624B 22\xD722 \u6EE1\u94FA\uFF08\u540C styles.css
+   .float-panel-resize \u7684\u53CC\u659C\u7EB9\u6E10\u53D8\uFF09\uFF0C\uFF0B 28\uFF0Cchips 14px \u56FE\u6807\u3002 */
+/* \u53F3\u4E0A\u89D2\u4E24\u9897\u5706\u94AE\uFF1A\uFF0B\uFF08\u83DC\u5355\uFF09\u5728\u5DE6\u3001\xD7\uFF08\u5173\u7A97\uFF09\u5728\u6700\u53F3\u2014\u2014\u5173\u95ED\u4ECE\u83DC\u5355\u91CC\u63D0\u51FA\u6765\uFF082026-09-11 user\u300C\u53C2\u8003\u7A97\u7684\u5173\u95ED\u6309\u94AE\u63D0\u51FA\u6765\u653E\u5728\u2026\u53F3\u8FB9\u3002\u4E0D\u7136\u627E\u4E0D\u5230\u300D\uFF09 */
+.plus, .close {
+  position: absolute; top: 4px; z-index: 3;
+  width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--bg, #202124) 72%, transparent);
+  color: var(--ink, #e8eaed); cursor: pointer;   /* \u7EAF\u83DC\u5355\u94AE\uFF080830 user\uFF1A\uFF0B\u517C\u62D6\u628A\u5F88\u5947\u602A\uFF0C\u62D6\u5F52\u5DE6\u4E0A\u89D2\u70B9\u9635\u628A\u624B\uFF09 */
+  user-select: none; -webkit-user-select: none;
+  transition: opacity 0.35s;
+}
+.close { right: 4px; }
+.plus { right: 36px; }
+.plus svg, .close svg { width: 16px; height: 16px; pointer-events: none; }
+.plus:hover, .close:hover { background: color-mix(in srgb, var(--bg, #202124) 90%, transparent); }
+/* \u62D6\u52A8\u628A\u624B\uFF08user 0830\u300C\u5DE6\u4E0A\u89D2\u52A0\u4E00\u70B9\u5C0F\u70B9\u4E00\u6837\u7684\u62D6\u52A8\u533A\u57DF\u2026\u4E09\u89D2\u5F62\u5E03\u5C40\uFF0C\u6CA1\u6709\u6309\u94AE\u5F0F\u9AD8\u4EAE\uFF0C\u53C2\u8003 resize\u300D\uFF09\uFF1A
+   \u4E0E\u53F3\u4E0B resize \u628A\u624B\u540C\u5F62\u5236\u540C\u5C3A\u5BF8\u2014\u2014\u70B9\u9635\u88C1\u6210\u5DE6\u4E0A\u4E09\u89D2\u3001\u65E0\u5E95\u65E0\u6846\uFF0C\u53EA\u9760 opacity \u547C\u5438\u3002gizmo \u7EB9\u7406\u975E icon\u3002 */
+/* \u4E24\u628A\u624B\u5728\u6697\u56FE\uFF08\u4E09\u6B21\u5143\u76F8\u7247\uFF09\u4E0A\u770B\u4E0D\u6E05\uFF08user 0830\uFF09\u2192 \u4E0E \uFF0B \u540C\u6B3E\u300C\u534A\u900F\u660E\u4E3B\u9898\u5E95 + \u4E3B\u8272 gizmo\u300D\uFF1A
+   \u5143\u7D20\u672C\u8EAB\u88C1\u6210\u4E09\u89D2\u5F62\u5E95\u677F\uFF08clip-path\uFF09\uFF0C\u7EB9\u7406\u8D70 ::after \u7528 currentColor=--ink\u3002\u6D45\u4E3B\u9898=\u767D\u5E95\u9ED1\u70B9\u3001\u6697\u4E3B\u9898=\u9ED1\u5E95\u767D\u70B9\u3002 */
+.move {
+  position: absolute; left: 0; top: 0; width: 22px; height: 22px; z-index: 3;
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  color: var(--ink, #e8eaed); opacity: 0.85;
+  background: color-mix(in srgb, var(--bg, #202124) 72%, transparent);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  transition: opacity 0.35s;
+}
+.move:hover { opacity: 1; }
+.move:active { cursor: grabbing; }
+/* \u663E\u5F0F 6 \u70B9\uFF083-2-1 \u4E09\u89D2\u6392\u5E03\uFF0Cpitch 5.5\uFF09\uFF1A\u79BB\u5E95\u677F\u659C\u8FB9 \u22653px\uFF0C\u4E0D\u51FA\u534A\u9897\u70B9\uFF08user 0830\u300C\u767D\u7684\u5E94\u8BE5\u8D85\u8FC7\u88C1\u5207\u4E00\u70B9\u300D\uFF09 */
+.move::after {
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 4px 4px,     currentColor 1.2px, transparent 1.7px),
+    radial-gradient(circle at 9.5px 4px,   currentColor 1.2px, transparent 1.7px),
+    radial-gradient(circle at 15px 4px,    currentColor 1.2px, transparent 1.7px),
+    radial-gradient(circle at 4px 9.5px,   currentColor 1.2px, transparent 1.7px),
+    radial-gradient(circle at 9.5px 9.5px, currentColor 1.2px, transparent 1.7px),
+    radial-gradient(circle at 4px 15px,    currentColor 1.2px, transparent 1.7px);
+}
+/* resize \u628A\u624B\uFF1A\u659C\u7EB9\u6CBF styles.css .float-panel-resize \u5BB6\u65CF\u6807\u51C6\u4EF6\uFF1B19\uFF08user 0830\uFF1A\u89C6\u89C9\u4E0A\u659C\u7EB9\u6BD4\u70B9\u9635\u663E\u5927\uFF0C\u7A0D\u5C0F\u4E00\u70B9\uFF09 */
+.grip {
+  position: absolute; right: 0; bottom: 0; width: 19px; height: 19px;
+  cursor: nwse-resize; touch-action: none; z-index: 2;
+  color: var(--ink, #e8eaed); opacity: 0.85;
+  background: color-mix(in srgb, var(--bg, #202124) 72%, transparent);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  transition: opacity 0.35s;
+}
+.grip:hover { opacity: 1; }
+/* \u659C\u7EB9\u4F4D\u7F6E\uFF1A\u6807\u51C6\u4EF6\u662F 45\u201352 / 66\u201373%\uFF0C\u4F46\u672C\u628A\u624B\u88C1\u6210\u4E09\u89D2\u540E\u659C\u8FB9\u6B63\u843D\u5728 135\xB0 \u6E10\u53D8\u7EBF\u7684 50% \u4F4D\u2014\u2014\u7B2C\u4E00\u9053\u7EB9\u4F1A\u88AB
+   \u8170\u65A9\u6210\u7EC6\u4E1D\uFF08user 0830 \u6293\u5230\uFF09\u3002\u6574\u4F53\u5F80\u89D2\u843D\u632A 13%\uFF1A58\u201365 / 79\u201386%\uFF0C\u659C\u8FB9\u5916\u7559 ~2px \u5E95\u677F\u767D\u8FB9\u3002 */
+.grip::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(135deg,
+    transparent 0 58%, currentColor 58% 65%,
+    transparent 65% 79%, currentColor 79% 86%,
+    transparent 86%);
+}
+.chips {
+  position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); z-index: 2;
+  display: flex; align-items: center; gap: 2px;
+  background: color-mix(in srgb, var(--bg, #202124) 72%, transparent);
+  border-radius: 12px; padding: 1px 4px;
+  color: var(--ink, #e8eaed);
+  cursor: default;   /* \u8BA1\u6570\u6587\u672C\u4E0D\u51FA I-beam\uFF1B\u6309\u94AE\u5404\u81EA pointer */
+  transition: opacity 0.35s;
+}
+.chips.hidden { display: none; }
+.chip { background: transparent; border: none; color: inherit; padding: 2px; cursor: pointer; display: flex; }
+.chip svg { width: 14px; height: 14px; }
+.chip-count { font-size: 11px; min-width: 26px; text-align: center; color: var(--ink-soft, #9aa0a6); font-family: inherit; justify-content: center; }
+/* gizmo \u663E\u9690\u4E24\u6863\uFF08user 0830\u300C\u9F20\u6807\u79FB\u8D70\u65F6 gizmos \u90FD\u9690\u85CF\u300D\uFF1B\u300C12.12 iPad \u770B\u8D77\u6765\u8FD8\u884C\u4E0D\u5E72\u6270\u300D\u2192 \u89E6\u5C4F\u6863\u7EF4\u6301\uFF09\uFF1A
+   .away = \u80FD\u60AC\u505C\u7684\u8BBE\u5907\u6307\u9488\u79BB\u7A97 \u2192 \u5168\u9690\uFF08\u8FDB\u7A97\u5373\u73B0\uFF09\uFF1B.idle = \u95F2\u7F6E 2.5s \u6DE1\u81F3 .35\uFF08\u89E6\u5C4F\u65E0\u60AC\u505C\u53EA\u6709\u8FD9\u6863\uFF0C
+   \u5168\u9690\u4F1A\u8BA9 chips \u53D8\u76F2\u64CD\u4F5C\uFF09\u3002\u83DC\u5355\u5F39\u5C42\u4E0D\u5728\u5176\u5217\u3002 */
+:host(.idle) .plus, :host(.idle) .close, :host(.idle) .grip, :host(.idle) .chips, :host(.idle) .move { opacity: 0.35; }
+:host(.away) .plus, :host(.away) .close, :host(.away) .grip, :host(.away) .chips, :host(.away) .move { opacity: 0; }
+/* \u83DC\u5355\u4E0D\u5728 shadow \u91CC\uFF082026-09-02\uFF09\uFF1A\u6302 body \u8D70 ui/popup-menu\u2014\u2014absolute \u5B50\u8282\u70B9\u4F1A\u88AB :host overflow:hidden \u88C1\u3001
+   \u4E5F\u56F0\u5728 :host \u7684 stacking context \u91CC\u88AB\u522B\u7684\u6D6E\u7A97\u76D6\uFF08\u8001\u9519\u8BEF\u590D\u53D1\u6839\u56E0\uFF09\u3002 */
+/* \u6587\u5B57\u5361\uFF1A\u53EA\u8BFB\u3001\u53EF\u9009\u4E2D\u3001\u53EF\u6EDA\u52A8\u3002\u5355\u6307\u6EDA\u52A8\u4EA4\u7ED9\u6D4F\u89C8\u5668\uFF08touch-action: pan-y\uFF09\uFF0C\u53CC\u6307\u634F\u5408\u8C03\u5B57\u53F7\u7531\u7EC4\u4EF6\u63A5\u3002
+   \u5E95\u8272\u7528\u4E3B\u9898\u5E95\u800C\u4E0D\u662F\u70B9\u9635\uFF1A\u5B57\u8981\u80FD\u8BFB\u3002\u9009\u4E2D\u6587\u5B57\u9700\u8981\u628A\u7126\u70B9\u62FF\u8FC7\u6765 \u2192 data-takes-focus \u653E\u884C\uFF08\u5176\u4F59 gizmo \u4E0D\u62A2\u7126\u70B9\uFF09\u3002 */
+.text {
+  position: absolute; inset: 0; display: none; overflow: auto; z-index: 1;
+  box-sizing: border-box; padding: 10px 12px 30px 12px;
+  color: var(--ink, #e8eaed);
+  background: color-mix(in srgb, var(--bg, #202124) 94%, transparent);
+  font-size: calc(13px * var(--ref-text-scale, 1)); line-height: 1.55;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+  user-select: text; -webkit-user-select: text;
+  touch-action: pan-y; cursor: text;
+  -webkit-overflow-scrolling: touch;
+}
+.text.shown { display: block; }
+.text.missing { color: var(--ink-soft, #9aa0a6); font-style: italic; }
+.empty {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; text-align: center; color: var(--ink-soft, #9aa0a6);
+  pointer-events: none; padding: 12px; font-size: 12px;
+}
+.empty.hidden { display: none; }
+.empty ::slotted(*), .empty p { margin: 0; }
+:host(:focus) { box-shadow: var(--shadow, 0 8px 24px rgba(0, 0, 0, 0.4)), inset 0 0 0 2px color-mix(in srgb, var(--ink, #e8eaed) 45%, transparent); }   /* \u6709\u7126\u70B9 = \u7C98\u8D34\u843D\u8FD9\u91CC\uFF1A\u4E00\u5708\u7EC6\u63CF\u8FB9 */
+</style>
+<canvas></canvas>
+<div class="text" part="text" data-takes-focus></div>
+<div class="empty"><slot name="empty"><p>\uFF0B \u5BFC\u5165\u53C2\u8003</p></slot></div>
+<div class="move" part="move"></div>
+<button class="plus" part="plus" type="button" aria-haspopup="true">${iconMarkup(REF_ICON_IDS.plus)}</button>
+<button class="close" part="close" type="button">${iconMarkup(REF_ICON_IDS.x)}</button>
+<div class="grip" part="grip"></div>
+<div class="chips hidden">
+  <button class="chip" data-page="-1" type="button">${iconMarkup(REF_ICON_IDS.prev)}</button>
+  <button class="chip chip-count" data-jump type="button">1/1</button>
+  <button class="chip" data-page="1" type="button">${iconMarkup(REF_ICON_IDS.next)}</button>
+</div>
+`;
+}
+var WpReferenceWindow = class extends HTMLElement {
+  static get observedAttributes() {
+    return ["open", "no-cloud"];
+  }
+  /** 0.3.1：窗身可拿焦点（粘贴归焦点）。属性只能在这里加（自定义元素构造器里加属性 = createElement 直接炸）；宿主可自定 tabindex。 */
+  connectedCallback() {
+    if (!this.hasAttribute("tabindex"))
+      this.tabIndex = 0;
+  }
+  // no-cloud：宿主云功能关 → 藏云盘选图项
+  // 宿主端口：live 合成 provider（一次性 set；组件在当前页 kind=live 时消费）。null = 这个宿主没有画面可出。
+  liveProvider = null;
+  /** 两帧之间至少隔多久（毫秒）。归宿主定：只有宿主知道自己出一帧多贵。缺省 300 = WeebPaint 现值。 */
+  liveMinIntervalMs = LIVE_THROTTLE_MS;
+  /** ＋ 菜单里列哪些画面（多台相机的宿主用）。null = 只列一项。 */
+  liveTargets = null;
+  /** 链接卡的内容端口（0.3.0）：bytes 为空、有 target 的非 live 卡从这里要内容。null = 这个宿主没有可链接的东西。 */
+  linkProvider = null;
+  // 宿主端口：＋ 菜单（一次性 set = ui/popup-menu 的 togglePopupMenu）。null = 没菜单（裸挂时 ＋ 无反应）。
+  menuPort = null;
+  /** 拖把地板（宿主注入 = ui/floating-window 运行时量的「顶栏下缘」；缺省 60 = 旧常数，裸挂可用）。
+   *  拖 / 恢复 / 视口钳制三条路都吃它——出血区规则只准一个出处（2026-09-02 C2）。 */
+  topFloor = DRAG_TOP_FLOOR;
+  /** 底边地板（宿主注入 = 屏底被占掉的高度：app 内软键盘、iOS 键盘那一块……；缺省 0）。拖 / resize / 视口钳制都吃它——
+   *  否则右下角的 resize 把手会被键盘盖住（user 2026-09-30「参考窗或者任何浮窗需要保证 move 和 resize 能点到」）。改了之后宿主调 reclamp()。 */
+  bottomFloor = 0;
+  _canvas;
+  _cctx;
+  _textEl;
+  _emptyEl;
+  _plusEl;
+  _menu = null;
+  // 菜单句柄（开着才非 null）
+  _delArmed = false;
+  // 删除二段确认 armed（菜单关即复位）
+  _chipsEl;
+  _chipCountEl;
+  _menuAnchor = null;
+  // 现在开着的菜单挂在谁身上（＋ 或计数钮）
+  // ---- 多参考模型：卡片归牌组；这里只留画它们要用的东西 ----
+  _deck = createDeck();
+  _offDeck = null;
+  _muted = false;
+  // 自己改牌组的那一下不听自己的回声（同步的重入守卫，不是时间窗）
+  _shownId = null;
+  // 现在画着的是哪张卡
+  _bitmaps = /* @__PURE__ */ new Map();
+  // 解好的位图，按卡 id
+  _decoding = /* @__PURE__ */ new Set();
+  // 正在解的卡
+  _texts = /* @__PURE__ */ new Map();
+  // 解好的文字，按卡 id
+  _linked = /* @__PURE__ */ new Map();
+  // 链接卡取回来的字节（只显示不存）
+  _linkMissing = /* @__PURE__ */ new Set();
+  // 链接卡这次取不到（页删了…）
+  _resolving = /* @__PURE__ */ new Set();
+  // 正在向宿主要内容的链接卡
+  _textPinch = [];
+  // 文字层上的指针（捏合调字号）
+  _textPinchStart = null;
+  _textScrollRaf = null;
+  _labels = {};
+  _liveSource = null;
+  _liveSize = null;
+  // 这张卡「本来多大」（宿主没说 = 画面的像素尺寸）
+  _liveOf = null;
+  // 手上这一帧是哪张卡的
+  _liveDirty = false;
+  _lastLiveComposeT;
+  _liveThrottle = null;
+  _vp = { tx: 0, ty: 0, scale: 1, rot: 0 };
+  _raf = null;
+  _panelDrag = null;
+  _resizeDrag = null;
+  _pointers = /* @__PURE__ */ new Map();
+  _gestureStart = null;
+  _picking = false;
+  _longPressTimer = null;
+  _lpStart = null;
+  _lpEvent = null;
+  _idleTimer = null;
+  constructor() {
+    super();
+    window.addEventListener?.("resize", () => {
+      if (!this.open)
+        return;
+      if (this._clampIntoViewport())
+        this._emitRect();
+    });
+    const root = this.attachShadow({ mode: "open" });
+    root.innerHTML = buildTemplate();
+    this._canvas = root.querySelector("canvas");
+    this._textEl = root.querySelector(".text");
+    this._emptyEl = root.querySelector(".empty");
+    this._plusEl = root.querySelector(".plus");
+    this._chipsEl = root.querySelector(".chips");
+    this._chipCountEl = root.querySelector(".chip-count");
+    this._cctx = this._canvas.getContext("2d");
+    this._bind(root);
+    this._offDeck = this._deck.onChange((what) => this._onDeckChange(what));
+  }
+  // ---- 牌组（宿主可以直接用；也可以换成自己的，比如和 VR 视图共用一副）----
+  get deck() {
+    return this._deck;
+  }
+  set deck(d3) {
+    if (!d3 || d3 === this._deck)
+      return;
+    this._offDeck?.();
+    this._closeAllBitmaps();
+    this._deck = d3;
+    this._shownId = null;
+    this._offDeck = d3.onChange((what) => this._onDeckChange(what));
+    this._syncFromDeck();
+  }
+  // ---- 属性面（入向；程序性 set 不发事件）----
+  /** 键盘焦点在参考窗上（含窗内文字卡）= 宿主的 Ctrl+V 应落到这里（0.3.1，user「看 focus」）。 */
+  get hasFocus() {
+    return document.activeElement === this;
+  }
+  get open() {
+    return this.hasAttribute("open");
+  }
+  set open(v) {
+    this.toggleAttribute("open", !!v);
+    if (!v)
+      this._menu?.close();
+  }
+  // 关窗 = 菜单一并收（菜单挂 body，不随窗隐）
+  attributeChangedCallback(name, oldV, newV) {
+    if (name === "no-cloud") {
+      this._menu?.refresh();
+      return;
+    }
+    if (name === "open" && oldV !== newV && newV != null)
+      this._afterShow();
+  }
+  close() {
+    this.open = false;
+  }
+  // 程序性关（不发事件）
+  get live() {
+    return this._deck.current?.kind === "live";
+  }
+  isLive() {
+    return this.live;
+  }
+  get viewport() {
+    return { ...this._vp };
+  }
+  set viewport(v) {
+    if (!v)
+      return;
+    if (Number.isFinite(v.tx))
+      this._vp.tx = v.tx;
+    if (Number.isFinite(v.ty))
+      this._vp.ty = v.ty;
+    if (Number.isFinite(v.scale))
+      this._vp.scale = v.scale;
+    if (Number.isFinite(v.rot))
+      this._vp.rot = v.rot;
+    this._saveCurrentVp();
+    this._invalidate();
+  }
+  get rect() {
+    const r10 = this.getBoundingClientRect();
+    return { left: r10.left, top: r10.top, width: r10.width, height: r10.height };
+  }
+  set rect(o10) {
+    if (o10 && o10.left != null && o10.top != null) {
+      this.style.left = Math.max(CLAMP_MIN_LEFT, o10.left) + "px";
+      this.style.top = Math.max(CLAMP_MIN_TOP, this.topFloor, o10.top) + "px";
+      if (o10.width)
+        this.style.width = o10.width + "px";
+      if (o10.height)
+        this.style.height = o10.height + "px";
+      this._clampIntoViewport();
+    } else if (!this.style.left || !this.style.top) {
+      this.style.left = SPAWN_LEFT + "px";
+      this.style.top = SPAWN_TOP + "px";
+    }
+  }
+  set labels(l10) {
+    this._labels = { ...this._labels, ...l10 };
+    this._menu?.refresh();
+    const setTitle2 = (sel, title, aria) => {
+      const b3 = this.shadowRoot.querySelector(sel);
+      if (!b3)
+        return;
+      if (title)
+        b3.title = title;
+      if (aria || title)
+        b3.setAttribute("aria-label", aria || title);
+    };
+    setTitle2(".plus", l10.menu);
+    setTitle2(".close", l10.closeWin);
+    setTitle2(".move", l10.move);
+    setTitle2('[data-page="-1"]', l10.prev);
+    setTitle2('[data-page="1"]', l10.next);
+    setTitle2("[data-jump]", l10.jump);
+    setTitle2(".grip", l10.resize, l10.resizeAria);
+  }
+  // ---- 多参考内容 API（宿主灌注；程序性，不发事件）----
+  /** 整表替换（load 恢复用）。旧 image bitmap 全部释放。 */
+  setItems(items, index = 0) {
+    this._closeAllBitmaps();
+    const ids = this._mute(() => this._deck.restore({
+      index,
+      cards: items.map((it2) => it2.kind === "image" ? { kind: "image", bytes: it2.blob, mime: it2.blob?.type ?? "", vp: it2.vp } : { kind: "live", vp: it2.vp })
+    }));
+    items.forEach((it2, i10) => {
+      if (it2.kind === "image")
+        this._bitmaps.set(ids[i10], it2.bitmap);
+    });
+    this._shownId = this._deck.current?.id ?? null;
+    this._loadCurrentVp({ fitIfMissing: true });
+    this._afterItemsChanged();
+  }
+  /** 追加一张图并翻到它（导入漏斗尾）。 */
+  addImage(bitmap, blob, opts) {
+    this._saveCurrentVp();
+    const id2 = this._mute(() => this._deck.add({ kind: "image", bytes: blob, mime: blob?.type ?? "", name: opts?.name ?? "", origin: opts?.origin ?? null }));
+    this._bitmaps.set(id2, bitmap);
+    this._shownId = id2;
+    this._loadCurrentVp({ fitIfMissing: true });
+    this._afterItemsChanged();
+  }
+  /** 追加一张文字卡并翻到它（0.3.0）。name 缺省取首行。 */
+  addText(text2, opts) {
+    this._saveCurrentVp();
+    const mime = opts?.mime ?? "text/plain";
+    const id2 = this._mute(() => this._deck.add({ kind: "text", bytes: new Blob([text2], { type: mime }), mime, name: opts?.name ?? "", origin: opts?.origin ?? null }));
+    this._texts.set(id2, text2);
+    this._shownId = id2;
+    this._loadCurrentVp({ fitIfMissing: true });
+    this._afterItemsChanged();
+  }
+  /** 画布镜像页：已有 → 翻过去；没有 → 追加并翻到（liveProvider 缺席 = no-op）。 */
+  showLive(target = null, name = "") {
+    if (!this.liveProvider)
+      return;
+    const i10 = this._deck.cards().findIndex((c10) => c10.kind === "live" && (c10.target ?? null) === target);
+    this._saveCurrentVp();
+    this._mute(() => {
+      if (i10 >= 0)
+        this._deck.select(i10);
+      else
+        this._deck.add({ kind: "live", target, name });
+    });
+    this._shownId = this._deck.current?.id ?? null;
+    this._liveDirty = true;
+    this._loadCurrentVp({ fitIfMissing: true });
+    this._afterItemsChanged();
+  }
+  /** 清空（换画/重置）。 */
+  clearAll() {
+    this._closeAllBitmaps();
+    this._mute(() => this._deck.clear());
+    this._shownId = null;
+    this._stopLiveTimer();
+    this._afterItemsChanged();
+  }
+  /** 宿主读走全部状态（desk 同步 + 保存收集）。当前页 vp 先回写。 */
+  getRefState() {
+    this._saveCurrentVp();
+    return {
+      index: this._deck.index,
+      items: this._deck.cards().map((c10) => c10.kind === "live" ? { kind: "live", vp: c10.vp ? { ...c10.vp } : null } : { kind: "image", blob: c10.bytes, vp: c10.vp ? { ...c10.vp } : null })
+    };
+  }
+  get itemCount() {
+    return this._deck.size;
+  }
+  fitToPanel() {
+    const src = this._sourceSize();
+    if (!src)
+      return;
+    const bw = this._canvas.width / (window.devicePixelRatio || 1);
+    const bh = this._canvas.height / (window.devicePixelRatio || 1);
+    if (src.w <= 0 || src.h <= 0 || bw <= 0 || bh <= 0)
+      return;
+    const s10 = Math.min(bw / src.w, bh / src.h) * 0.95;
+    this._vp = { tx: bw / 2, ty: bh / 2, scale: s10, rot: 0 };
+    this._saveCurrentVp();
+    this._emitViewport();
+    this._invalidate();
+  }
+  /** 1:1 像素（user 0830）：1 图像素 = 1 **设备**像素（像素图标真面目；scale=1/dpr）、摆正（rot=0）、
+   *  当前画布中心的图点保持锚定。菜单项触发 = 用户交互 → 发事件。 */
+  oneToOne() {
+    const src = this._sourceSize();
+    if (!src)
+      return;
+    const dpr = window.devicePixelRatio || 1;
+    const bw = this._canvas.width / dpr, bh = this._canvas.height / dpr;
+    const ip2 = screenToImg(bw / 2, bh / 2, this._vp);
+    const scale = 1 / dpr;
+    const t10 = solveAnchorTranslation(ip2, scale, 0, bw / 2, bh / 2);
+    this._vp = { tx: t10.tx, ty: t10.ty, scale, rot: 0 };
+    this._containVp();
+    this._saveCurrentVp();
+    this._emitViewport();
+    this._invalidate();
+  }
+  // 缩放界限：放大顶 MAX_SCALE；缩小到长边显示 ≥ MIN_VISIBLE_PX 即止（小图不设限到 1:1 之上）。
+  _scaleBounds() {
+    const src = this._sourceSize();
+    const lo2 = src ? Math.min(1, MIN_VISIBLE_PX / Math.max(src.w, src.h)) : 0.02;
+    return { lo: lo2, hi: MAX_SCALE };
+  }
+  // 平移护栏：图的（旋转后）bbox 与画布保 ≥keep 重叠——图永远找得回来；keep 对小图/小窗自适应收缩。
+  _containVp() {
+    const src = this._sourceSize();
+    if (!src)
+      return;
+    const dpr = window.devicePixelRatio || 1;
+    const cw2 = this._canvas.width / dpr, ch2 = this._canvas.height / dpr;
+    if (!(cw2 > 0) || !(ch2 > 0))
+      return;
+    const v = this._vp;
+    const c10 = Math.abs(Math.cos(v.rot)), s10 = Math.abs(Math.sin(v.rot));
+    const halfW = (src.w * c10 + src.h * s10) / 2 * v.scale;
+    const halfH = (src.w * s10 + src.h * c10) / 2 * v.scale;
+    const keepX = Math.min(PAN_KEEP_PX, halfW, cw2 / 2);
+    const keepY = Math.min(PAN_KEEP_PX, halfH, ch2 / 2);
+    v.tx = clamp(v.tx, keepX - halfW, cw2 - keepX + halfW);
+    v.ty = clamp(v.ty, keepY - halfH, ch2 - keepY + halfH);
+  }
+  // 宿主在 doc 像素/结构变化时调（组件不监听宿主全局事件）。真合成在 _render 里按脏标+节流做。
+  //   target 不给 = 「有东西变了」（WeebPaint 现有用法）；给了 = 只有那一个画面变了，当前看的不是它就不理。
+  markLiveDirty(target) {
+    if (!this.live)
+      return;
+    if (target !== void 0 && (this._deck.current?.target ?? null) !== target)
+      return;
+    this._liveDirty = true;
+    this._invalidate();
+  }
+  // ---- 出向事件 ----
+  _emit(name, detail) {
+    this.dispatchEvent(new CustomEvent(name, { detail }));
+  }
+  _emitViewport() {
+    this._emit("viewportchange", { ...this._vp });
+  }
+  _emitRect() {
+    this._emit("rectchange", this.rect);
+  }
+  _emitItems() {
+    this._emit("itemschange", { index: this._deck.index, count: this._deck.size });
+  }
+  // ---- 内部：item 切换 ----
+  _saveCurrentVp() {
+    const cur = this._deck.current;
+    if (cur)
+      this._mute(() => this._deck.setView(cur.id, this._vp));
+  }
+  _loadCurrentVp(opts) {
+    const cur = this._deck.current;
+    if (!cur)
+      return;
+    if (cur.vp)
+      this._vp = { ...cur.vp };
+    else if (opts.fitIfMissing) {
+      this._vp = { tx: 0, ty: 0, scale: 1, rot: 0 };
+      queueMicrotask(() => {
+        if (!this._deck.current?.vp)
+          this.fitToPanelSilent();
+      });
+    }
+  }
+  /** fit 但不发事件（程序性初始适应；用户双击走 fitToPanel）。 */
+  fitToPanelSilent() {
+    if (this._deck.current?.kind === "text") {
+      this._vp = { tx: 0, ty: 0, scale: 1, rot: 0 };
+      this._saveCurrentVp();
+      this._updateTextLayer();
+      return;
+    }
+    const src = this._sourceSize();
+    if (!src)
+      return;
+    const bw = this._canvas.width / (window.devicePixelRatio || 1);
+    const bh = this._canvas.height / (window.devicePixelRatio || 1);
+    if (src.w <= 0 || src.h <= 0 || bw <= 0 || bh <= 0)
+      return;
+    const s10 = Math.min(bw / src.w, bh / src.h) * 0.95;
+    this._vp = { tx: bw / 2, ty: bh / 2, scale: s10, rot: 0 };
+    this._saveCurrentVp();
+    this._invalidate();
+  }
+  _page(delta) {
+    const n10 = this._deck.size;
+    if (n10 < 2)
+      return;
+    this._saveCurrentVp();
+    this._mute(() => this._deck.select((this._deck.index + delta + n10) % n10));
+    this._shownId = this._deck.current?.id ?? null;
+    if (this.live)
+      this._liveDirty = true;
+    this._loadCurrentVp({ fitIfMissing: true });
+    this._afterItemsChanged();
+    this._emitItems();
+  }
+  /** 用户把当前这张卡挪一位。还在看这张卡，只是它排的位置变了。 */
+  _moveCurrent(delta) {
+    const cur = this._deck.current;
+    const to2 = this._deck.index + delta;
+    if (!cur || to2 < 0 || to2 >= this._deck.size)
+      return;
+    this._saveCurrentVp();
+    this._mute(() => this._deck.move(cur.id, to2));
+    this._afterItemsChanged();
+    this._emitItems();
+  }
+  /** 用户从跳转列表里点了第 i 张。 */
+  _jumpTo(i10) {
+    if (i10 === this._deck.index || i10 < 0 || i10 >= this._deck.size)
+      return;
+    this._saveCurrentVp();
+    this._mute(() => this._deck.select(i10));
+    this._shownId = this._deck.current?.id ?? null;
+    if (this.live)
+      this._liveDirty = true;
+    this._loadCurrentVp({ fitIfMissing: true });
+    this._afterItemsChanged();
+    this._emitItems();
+  }
+  _cardLabel(c10, i10) {
+    const firstLine = c10.kind === "text" ? (this._texts.get(c10.id) ?? "").split("\n").find((l10) => l10.trim())?.trim().slice(0, 24) : "";
+    const name = c10.name || firstLine || this._labels.kindNames?.[c10.kind] || c10.kind;
+    return `${i10 + 1}  ${name}`;
+  }
+  _deleteCurrent() {
+    const cur = this._deck.current;
+    if (!cur)
+      return;
+    this._bitmaps.get(cur.id)?.close?.();
+    this._bitmaps.delete(cur.id);
+    this._mute(() => this._deck.remove(cur.id));
+    this._shownId = this._deck.current?.id ?? null;
+    if (this.live)
+      this._liveDirty = true;
+    this._loadCurrentVp({ fitIfMissing: true });
+    this._afterItemsChanged();
+    this._emitItems();
+  }
+  // ---- 牌组 ⇄ 视图 ----
+  /** 自己改牌组的那一下不听自己的回声。别的监听者（宿主、VR 视图）照常收到。 */
+  _mute(fn) {
+    const was = this._muted;
+    this._muted = true;
+    try {
+      return fn();
+    } finally {
+      this._muted = was;
+    }
+  }
+  _closeAllBitmaps() {
+    for (const bm of this._bitmaps.values())
+      bm.close?.();
+    this._bitmaps.clear();
+    this._texts.clear();
+    this._linked.clear();
+    this._linkMissing.clear();
+  }
+  /** 别人（宿主直接用 .deck、或共用这副牌的另一个视图）改了牌组。 */
+  _onDeckChange(what) {
+    if (this._muted)
+      return;
+    if (what.type === "invalidate") {
+      const c10 = this._deck.get(what.id);
+      if (c10?.kind === "live") {
+        if (this._deck.current?.id === what.id)
+          this.markLiveDirty();
+        return;
+      }
+      if (c10 && !c10.bytes && c10.target) {
+        this._linked.delete(c10.id);
+        this._linkMissing.delete(c10.id);
+        this._texts.delete(c10.id);
+        this._bitmaps.get(c10.id)?.close?.();
+        this._bitmaps.delete(c10.id);
+      }
+    }
+    this._syncFromDeck();
+  }
+  /** 把视图对齐到牌组现状。幂等：牌组没变就什么都不做。 */
+  _syncFromDeck() {
+    for (const [id2, bm] of this._bitmaps) {
+      if (this._deck.indexOf(id2) < 0) {
+        bm.close?.();
+        this._bitmaps.delete(id2);
+      }
+    }
+    for (const m2 of [this._texts, this._linked])
+      for (const id2 of [...m2.keys()])
+        if (this._deck.indexOf(id2) < 0)
+          m2.delete(id2);
+    for (const id2 of [...this._linkMissing])
+      if (this._deck.indexOf(id2) < 0)
+        this._linkMissing.delete(id2);
+    for (const c10 of this._deck.cards()) {
+      if (c10.kind === "live")
+        continue;
+      const bytes = c10.bytes ?? this._linked.get(c10.id) ?? null;
+      if (!bytes) {
+        if (c10.target && !this._linkMissing.has(c10.id) && !this._resolving.has(c10.id))
+          this._resolveLink(c10);
+        continue;
+      }
+      if (c10.kind === "image" && !this._bitmaps.has(c10.id) && !this._decoding.has(c10.id))
+        this._decode(c10, bytes);
+      else if (c10.kind === "text" && !this._texts.has(c10.id) && !this._decoding.has(c10.id))
+        this._decodeText(c10, bytes);
+    }
+    const cur = this._deck.current;
+    if ((cur?.id ?? null) !== this._shownId) {
+      this._shownId = cur?.id ?? null;
+      if (cur?.kind === "live")
+        this._liveDirty = true;
+      this._loadCurrentVp({ fitIfMissing: true });
+    } else if (cur?.vp) {
+      const a10 = cur.vp, b3 = this._vp;
+      if (a10.tx !== b3.tx || a10.ty !== b3.ty || a10.scale !== b3.scale || a10.rot !== b3.rot)
+        this._vp = { ...a10 };
+    }
+    this._afterItemsChanged();
+  }
+  /** 只给了字节没给位图的图片卡（宿主直接往牌组里加的）：这里解。解不出来要说，不许装没事。 */
+  _decode(c10, bytes) {
+    if (typeof createImageBitmap !== "function")
+      return;
+    this._decoding.add(c10.id);
+    createImageBitmap(bytes).then((bm) => {
+      this._decoding.delete(c10.id);
+      if (this._deck.indexOf(c10.id) < 0 || this._bitmaps.has(c10.id)) {
+        bm.close?.();
+        return;
+      }
+      this._bitmaps.set(c10.id, bm);
+      if (this._deck.current?.id === c10.id) {
+        if (!this._deck.current.vp)
+          this.fitToPanelSilent();
+        this._invalidate();
+      }
+    }, (e10) => {
+      this._decoding.delete(c10.id);
+      this._emit("notice", { level: "error", code: "decode-failed", id: c10.id, name: c10.name, message: String(e10?.message ?? e10) });
+    });
+  }
+  _decodeText(c10, bytes) {
+    this._decoding.add(c10.id);
+    bytes.text().then((text2) => {
+      this._decoding.delete(c10.id);
+      if (this._deck.indexOf(c10.id) < 0)
+        return;
+      this._texts.set(c10.id, text2);
+      if (this._deck.current?.id === c10.id)
+        this._afterItemsChanged();
+    }, (e10) => {
+      this._decoding.delete(c10.id);
+      this._emit("notice", { level: "error", code: "decode-failed", id: c10.id, name: c10.name, message: String(e10?.message ?? e10) });
+    });
+  }
+  /** 链接卡：向宿主要内容。要不到 → 记下「缺」，卡上如实写；宿主 invalidate 后再要。 */
+  _resolveLink(c10) {
+    if (!this.linkProvider || !c10.target) {
+      this._linkMissing.add(c10.id);
+      if (this._deck.current?.id === c10.id)
+        this._afterItemsChanged();
+      return;
+    }
+    this._resolving.add(c10.id);
+    Promise.resolve().then(() => this.linkProvider(c10.target, c10.kind)).then((blob) => {
+      this._resolving.delete(c10.id);
+      if (this._deck.indexOf(c10.id) < 0)
+        return;
+      if (blob)
+        this._linked.set(c10.id, blob);
+      else
+        this._linkMissing.add(c10.id);
+      this._syncFromDeck();
+    }, (e10) => {
+      this._resolving.delete(c10.id);
+      this._linkMissing.add(c10.id);
+      this._emit("notice", { level: "error", code: "link-failed", id: c10.id, name: c10.name, target: c10.target, message: String(e10?.message ?? e10) });
+      this._syncFromDeck();
+    });
+  }
+  _afterItemsChanged() {
+    if (!this.live)
+      this._stopLiveTimer();
+    this._updateEmptyHint();
+    this._updateChips();
+    this._updateTextLayer();
+    this._invalidate();
+  }
+  /** 文字卡：内容层显示 / 隐藏 + 灌内容 + 字号 + 滚动位置。 */
+  _updateTextLayer() {
+    const cur = this._deck.current;
+    const isText = cur?.kind === "text";
+    this._textEl.classList.toggle("shown", isText);
+    this._canvas.style.visibility = isText ? "hidden" : "";
+    if (!isText || !cur)
+      return;
+    const text2 = this._texts.get(cur.id);
+    const missing = text2 === void 0 && this._linkMissing.has(cur.id);
+    this._textEl.classList.toggle("missing", missing);
+    const content = text2 ?? (missing ? this._labels.linkMissing ?? "Content unavailable" : "");
+    if (this._textEl.textContent !== content)
+      this._textEl.textContent = content;
+    this._textEl.style.setProperty("--ref-text-scale", String(this._vp.scale));
+    const ty2 = this._vp.ty;
+    if (Math.abs(this._textEl.scrollTop - ty2) > 0.5)
+      requestAnimationFrame(() => {
+        if (this._deck.current?.id === cur.id)
+          this._textEl.scrollTop = ty2;
+      });
+  }
+  _updateChips() {
+    const n10 = this._deck.size;
+    this._chipsEl.classList.toggle("hidden", n10 < 2);
+    if (n10 >= 2)
+      this._chipCountEl.textContent = `${this._deck.index + 1}/${n10}`;
+  }
+  _sourceSize() {
+    const cur = this._deck.current;
+    if (!cur)
+      return null;
+    if (cur.kind === "live") {
+      this._dropLiveIfOther(cur);
+      if (!this._liveSource && this.liveProvider)
+        this._takeLiveFrame(cur);
+      return this._liveSource ? this._liveSize : null;
+    }
+    const bm = this._bitmaps.get(cur.id);
+    return bm ? { w: bm.width, h: bm.height } : null;
+  }
+  // ---- 内部：显示/绑定 ----
+  _afterShow() {
+    if (!this.style.left || !this.style.top) {
+      this.style.left = SPAWN_LEFT + "px";
+      this.style.top = SPAWN_TOP + "px";
+    }
+    this._clampIntoViewport();
+    this._resizeCanvasToBody();
+    this._updateEmptyHint();
+    this._updateChips();
+    if (this.live)
+      this._liveDirty = true;
+    if (this._deck.current && !this._deck.current.vp)
+      this.fitToPanelSilent();
+    this._pokeIdle();
+    this._invalidate();
+  }
+  _bind(root) {
+    this._plusEl.addEventListener("click", () => this._toggleMenu());
+    root.querySelector(".close").addEventListener("click", () => {
+      this.open = false;
+      this._emit("openchange", { open: false });
+    });
+    const move = root.querySelector(".move");
+    move.addEventListener("pointerdown", (e10) => {
+      const r10 = this.getBoundingClientRect();
+      this._panelDrag = { id: e10.pointerId, sx: e10.clientX, sy: e10.clientY, ol: r10.left, ot: r10.top, moved: false };
+      try {
+        move.setPointerCapture(e10.pointerId);
+      } catch {
+      }
+      e10.preventDefault();
+    });
+    move.addEventListener("pointermove", (e10) => {
+      const d3 = this._panelDrag;
+      if (!d3 || e10.pointerId !== d3.id)
+        return;
+      d3.moved = true;
+      const w2 = this.offsetWidth, h2 = this.offsetHeight;
+      const left = clamp(d3.ol + (e10.clientX - d3.sx), 0, window.innerWidth - w2);
+      const top = clamp(d3.ot + (e10.clientY - d3.sy), this.topFloor, Math.max(this.topFloor, window.innerHeight - this.bottomFloor - h2));
+      this.style.left = left + "px";
+      this.style.top = top + "px";
+      this._emitRect();
+    });
+    const endMove = (e10) => {
+      if (this._panelDrag && e10.pointerId === this._panelDrag.id) {
+        try {
+          move.releasePointerCapture(e10.pointerId);
+        } catch {
+        }
+        this._panelDrag = null;
+      }
+    };
+    move.addEventListener("pointerup", endMove);
+    move.addEventListener("pointercancel", endMove);
+    root.addEventListener("pointerdown", () => this._pokeIdle(), { capture: true });
+    root.addEventListener("pointermove", () => this._pokeIdle(), { capture: true, passive: true });
+    const hoverCapable = typeof matchMedia === "function" && matchMedia("(hover: hover)").matches;
+    if (hoverCapable) {
+      this.addEventListener("pointerenter", () => this.classList.remove("away"));
+      this.addEventListener("pointerleave", () => {
+        if (this._panelDrag || this._resizeDrag || this._pointers.size > 0)
+          return;
+        this.classList.add("away");
+      });
+    }
+    this._chipsEl.addEventListener("click", (e10) => {
+      const t10 = e10.target;
+      if (t10.closest("[data-jump]")) {
+        this._toggleJump();
+        return;
+      }
+      const b3 = t10.closest("[data-page]");
+      if (b3)
+        this._page(parseInt(b3.dataset.page, 10));
+    });
+    const keepHostFocus = (e10) => {
+      const t10 = e10.target;
+      if (!t10?.closest?.("button"))
+        return;
+      e10.preventDefault();
+    };
+    root.addEventListener("pointerdown", keepHostFocus);
+    root.addEventListener("mousedown", keepHostFocus);
+    const grip = root.querySelector(".grip");
+    grip.addEventListener("pointerdown", (e10) => {
+      e10.preventDefault();
+      e10.stopPropagation();
+      try {
+        grip.setPointerCapture(e10.pointerId);
+      } catch {
+      }
+      const r10 = this.getBoundingClientRect();
+      this._resizeDrag = { id: e10.pointerId, sx: e10.clientX, sy: e10.clientY, w0: r10.width, h0: r10.height, l0: r10.left, t0: r10.top };
+    });
+    grip.addEventListener("pointermove", (e10) => {
+      if (!this._resizeDrag || e10.pointerId !== this._resizeDrag.id)
+        return;
+      const w2 = Math.max(MIN_EDGE, Math.min(window.innerWidth - 8 - this._resizeDrag.l0, this._resizeDrag.w0 + (e10.clientX - this._resizeDrag.sx)));
+      const h2 = Math.max(MIN_EDGE, Math.min(window.innerHeight - this.bottomFloor - 8 - this._resizeDrag.t0, this._resizeDrag.h0 + (e10.clientY - this._resizeDrag.sy)));
+      this.style.width = w2 + "px";
+      this.style.height = h2 + "px";
+      this._emitRect();
+    });
+    const endResize = (e10) => {
+      if (this._resizeDrag && e10.pointerId === this._resizeDrag.id) {
+        try {
+          grip.releasePointerCapture(e10.pointerId);
+        } catch {
+        }
+        this._resizeDrag = null;
+      }
+    };
+    grip.addEventListener("pointerup", endResize);
+    grip.addEventListener("pointercancel", endResize);
+    const tx2 = this._textEl;
+    tx2.addEventListener("scroll", () => {
+      if (this._textScrollRaf != null)
+        return;
+      this._textScrollRaf = requestAnimationFrame(() => {
+        this._textScrollRaf = null;
+        if (this._deck.current?.kind !== "text")
+          return;
+        this._vp.ty = tx2.scrollTop;
+        this._saveCurrentVp();
+        this._emitViewport();
+      });
+    }, { passive: true });
+    tx2.addEventListener("pointerdown", (e10) => {
+      this._textPinch.push({ id: e10.pointerId, x: e10.clientX, y: e10.clientY });
+      if (this._textPinch.length === 2) {
+        const [a10, b3] = this._textPinch;
+        this._textPinchStart = { dist: Math.hypot(b3.x - a10.x, b3.y - a10.y) || 1, scale: this._vp.scale };
+        try {
+          tx2.setPointerCapture(e10.pointerId);
+        } catch {
+        }
+        e10.preventDefault();
+      }
+    });
+    tx2.addEventListener("pointermove", (e10) => {
+      const p2 = this._textPinch.find((q2) => q2.id === e10.pointerId);
+      if (!p2)
+        return;
+      p2.x = e10.clientX;
+      p2.y = e10.clientY;
+      if (this._textPinch.length >= 2 && this._textPinchStart) {
+        const [a10, b3] = this._textPinch;
+        const dist = Math.hypot(b3.x - a10.x, b3.y - a10.y) || 1;
+        this._setTextScale(this._textPinchStart.scale * (dist / this._textPinchStart.dist));
+        e10.preventDefault();
+      }
+    });
+    const endTextPointer = (e10) => {
+      this._textPinch = this._textPinch.filter((q2) => q2.id !== e10.pointerId);
+      if (this._textPinch.length < 2)
+        this._textPinchStart = null;
+    };
+    tx2.addEventListener("pointerup", endTextPointer);
+    tx2.addEventListener("pointercancel", endTextPointer);
+    tx2.addEventListener("wheel", (e10) => {
+      if (!(e10.ctrlKey || e10.metaKey))
+        return;
+      e10.preventDefault();
+      this._setTextScale(this._vp.scale * Math.exp(-e10.deltaY * 5e-3));
+    }, { passive: false });
+    this._canvas.addEventListener("pointerdown", (e10) => this._onDown(e10), { passive: false });
+    this._canvas.addEventListener("pointermove", (e10) => this._onMove(e10), { passive: false });
+    this._canvas.addEventListener("pointerup", (e10) => this._onUp(e10), { passive: false });
+    this._canvas.addEventListener("pointercancel", (e10) => this._onUp(e10), { passive: false });
+    this._canvas.addEventListener("wheel", (e10) => this._onWheel(e10), { passive: false });
+    this._canvas.addEventListener("dblclick", () => this.fitToPanel());
+    const ro2 = new ResizeObserver(() => {
+      this._clampIntoViewport();
+      this._resizeCanvasToBody();
+      if (this._raf) {
+        cancelAnimationFrame(this._raf);
+        this._raf = null;
+      }
+      this._render();
+      this._emitRect();
+    });
+    ro2.observe(this);
+  }
+  _menuItems() {
+    const l10 = this._labels;
+    return [
+      { id: "load", label: l10.load ?? "Load image", icon: REF_ICON_IDS.folder },
+      { id: "paste", label: l10.paste ?? "Paste", icon: REF_ICON_IDS.paste },
+      { id: "cloud", label: l10.cloud ?? "From cloud", icon: REF_ICON_IDS.cloud, hidden: this.hasAttribute("no-cloud") },
+      // 宿主出画面的卡：宿主没给 provider 就不列（写作 app 没有画布可镜像）；多台相机的宿主经 liveTargets 列多项
+      ...this._liveMenuItems(),
+      { id: "onetoone", label: l10.oneToOne ?? "1:1", icon: REF_ICON_IDS.oneToOne },
+      // 挪动顺序的逃生口（user 2026-09-29「reorder也需要有逃生口」）：点完菜单不关，可以连点；到头的那一项藏起来
+      {
+        id: "earlier",
+        label: l10.moveEarlier ?? "Move earlier",
+        icon: REF_ICON_IDS.earlier,
+        hidden: this._deck.size < 2 || this._deck.index === 0,
+        separatorBefore: true
+      },
+      {
+        id: "later",
+        label: l10.moveLater ?? "Move later",
+        icon: REF_ICON_IDS.later,
+        hidden: this._deck.size < 2 || this._deck.index === this._deck.size - 1,
+        separatorBefore: this._deck.size >= 2 && this._deck.index === 0
+      },
+      // 删除 = 二段确认（防误碰，user 0830）：第一下 arm（文案换 delConfirm 变红），第二下才删；没有可删的页时藏。
+      {
+        id: "delete",
+        label: this._delArmed ? l10.delConfirm ?? l10.del ?? "Delete" : l10.del ?? "Delete",
+        icon: REF_ICON_IDS.trash,
+        danger: this._delArmed,
+        hidden: this._deck.size === 0,
+        separatorBefore: true
+      }
+      // 「关闭」2026-09-11 从菜单提出成窗右上角 × 钮（user「不然找不到」）
+    ];
+  }
+  _liveMenuId(target) {
+    return target == null ? "live" : "live:" + target;
+  }
+  _liveMenuTargets() {
+    if (!this.liveProvider)
+      return [];
+    const list = this.liveTargets?.();
+    return list && list.length ? list : [{ target: null, label: this._labels.live ?? "Live mirror" }];
+  }
+  _liveMenuItems() {
+    return this._liveMenuTargets().map((t10) => ({ id: this._liveMenuId(t10.target), label: t10.label, icon: REF_ICON_IDS.pip }));
+  }
+  /** 跳转列表：点计数钮弹出，一张卡一行，点哪个跳哪个。复用同一个菜单端口，不加新 gizmo。 */
+  _toggleJump() {
+    if (!this.menuPort || this._deck.size < 2)
+      return;
+    this._swapMenuAnchor(this._chipCountEl);
+    this._menu = this.menuPort({
+      anchor: this._chipCountEl,
+      items: () => this._deck.cards().map((c10, i10) => ({
+        id: "jump:" + i10,
+        label: this._cardLabel(c10, i10),
+        ...i10 === this._deck.index ? { icon: REF_ICON_IDS.current } : {}
+      })),
+      align: "left",
+      band: "menu",
+      swallowOutsideTap: true,
+      ariaLabel: this._labels.jump,
+      onClose: () => {
+        this._menu = null;
+        this._menuAnchor = null;
+      },
+      onPick: (id2) => {
+        this._jumpTo(parseInt(id2.slice(5), 10));
+      }
+    });
+    this._menuAnchor = this._menu ? this._chipCountEl : null;
+  }
+  /** 两个菜单共用一个端口：要开的和正开着的不是同一个锚 → 先把开着的收掉（同一个锚则交给端口自己的 toggle 语义）。 */
+  _swapMenuAnchor(next2) {
+    if (this._menu && this._menuAnchor !== next2)
+      this._menu.close();
+  }
+  _toggleMenu() {
+    if (!this.menuPort)
+      return;
+    this._swapMenuAnchor(this._plusEl);
+    this._delArmed = false;
+    this._menu = this.menuPort({
+      anchor: this._plusEl,
+      items: () => this._menuItems(),
+      align: "right",
+      band: "menu",
+      swallowOutsideTap: true,
+      // 菜单开着时点别处 = 只关菜单，那一击不落到画布/主画布（原 shadow 内行为保留并推广）
+      ariaLabel: this._labels.menu,
+      onClose: () => {
+        this._menu = null;
+        this._menuAnchor = null;
+        this._delArmed = false;
+      },
+      onPick: (id2) => {
+        if (id2 === "delete") {
+          if (!this._delArmed) {
+            this._delArmed = true;
+            return "keep";
+          }
+          this._deleteCurrent();
+          return;
+        }
+        if (id2 === "earlier" || id2 === "later") {
+          this._delArmed = false;
+          this._moveCurrent(id2 === "earlier" ? -1 : 1);
+          return "keep";
+        }
+        if (id2 === "load")
+          this._emit("requestload");
+        else if (id2 === "paste")
+          this._emit("requestpaste");
+        else if (id2 === "cloud")
+          this._emit("requestcloudload");
+        else if (id2 === "live" || id2.startsWith("live:")) {
+          const t10 = this._liveMenuTargets().find((x2) => this._liveMenuId(x2.target) === id2);
+          this.showLive(t10?.target ?? null, t10?.target == null ? "" : t10.label);
+          this._emitItems();
+        } else if (id2 === "onetoone")
+          this.oneToOne();
+      }
+    });
+    this._menuAnchor = this._menu ? this._plusEl : null;
+  }
+  _pokeIdle() {
+    this.classList.remove("idle");
+    if (this._idleTimer)
+      clearTimeout(this._idleTimer);
+    this._idleTimer = setTimeout(() => {
+      this.classList.add("idle");
+    }, IDLE_DIM_MS);
+  }
+  _onDown(e10) {
+    if (!this.hasAttribute("pick"))
+      this.focus({ preventScroll: true });
+    try {
+      this._canvas.setPointerCapture?.(e10.pointerId);
+    } catch {
+    }
+    this._pointers.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
+    if (this._pointers.size === 1) {
+      if (this.hasAttribute("pick")) {
+        this._beginPick(e10);
+        e10.preventDefault();
+        return;
+      }
+      if (e10.pointerType === "touch") {
+        this._lpStart = { x: e10.clientX, y: e10.clientY };
+        this._lpEvent = e10;
+        this._longPressTimer = setTimeout(() => {
+          this._longPressTimer = null;
+          if (this._lpEvent)
+            this._beginPick(this._lpEvent);
+        }, REF_LONG_PRESS_MS);
+      }
+    }
+    if (this._pointers.size === 2) {
+      this._cancelLongPress();
+      this._endPick();
+      const arr = [...this._pointers.values()];
+      const dx = arr[1].x - arr[0].x, dy = arr[1].y - arr[0].y;
+      this._gestureStart = {
+        midX: (arr[0].x + arr[1].x) / 2,
+        midY: (arr[0].y + arr[1].y) / 2,
+        dist: Math.hypot(dx, dy) || 1,
+        angle: Math.atan2(dy, dx),
+        vp: { ...this._vp }
+      };
+    }
+    e10.preventDefault();
+  }
+  _onMove(e10) {
+    const p2 = this._pointers.get(e10.pointerId);
+    if (!p2)
+      return;
+    const px = p2.x, py = p2.y;
+    p2.x = e10.clientX;
+    p2.y = e10.clientY;
+    if (this._longPressTimer && this._lpStart) {
+      const ddx = e10.clientX - this._lpStart.x, ddy = e10.clientY - this._lpStart.y;
+      if (ddx * ddx + ddy * ddy > REF_LONG_PRESS_CANCEL_SQ)
+        this._cancelLongPress();
+    }
+    if (this._picking && this._pointers.size === 1) {
+      this._pickAt(e10.clientX, e10.clientY);
+      e10.preventDefault();
+      return;
+    }
+    if (this._pointers.size === 1) {
+      this._vp.tx += e10.clientX - px;
+      this._vp.ty += e10.clientY - py;
+      this._containVp();
+      this._saveCurrentVp();
+      this._emitViewport();
+      this._invalidate();
+    } else if (this._pointers.size >= 2 && this._gestureStart) {
+      const arr = [...this._pointers.values()];
+      const dx = arr[1].x - arr[0].x, dy = arr[1].y - arr[0].y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const midX = (arr[0].x + arr[1].x) / 2;
+      const midY = (arr[0].y + arr[1].y) / 2;
+      const angle = Math.atan2(dy, dx);
+      const g3 = this._gestureStart;
+      const b3 = this._scaleBounds();
+      const { scale, rot } = pinchScaleRot(g3, dist, angle, b3.lo, b3.hi);
+      const rect = this._canvas.getBoundingClientRect();
+      const ip2 = screenToImg(g3.midX - rect.left, g3.midY - rect.top, g3.vp);
+      const t10 = solveAnchorTranslation(ip2, scale, rot, midX - rect.left, midY - rect.top);
+      this._vp = { tx: t10.tx, ty: t10.ty, scale, rot };
+      this._containVp();
+      this._saveCurrentVp();
+      this._emitViewport();
+      this._invalidate();
+    }
+    e10.preventDefault();
+  }
+  _onUp(e10) {
+    this._pointers.delete(e10.pointerId);
+    this._cancelLongPress();
+    if (this._pointers.size === 0)
+      this._endPick();
+    if (this._pointers.size < 2)
+      this._gestureStart = null;
+    e10.preventDefault?.();
+  }
+  _onWheel(e10) {
+    e10.preventDefault();
+    const rect = this._canvas.getBoundingClientRect();
+    const sx2 = e10.clientX - rect.left;
+    const sy2 = e10.clientY - rect.top;
+    const ip2 = screenToImg(sx2, sy2, this._vp);
+    const factor = e10.ctrlKey || e10.metaKey ? Math.exp(-e10.deltaY * 0.01) : Math.exp(-e10.deltaY * 5e-3);
+    const b3 = this._scaleBounds();
+    const newScale = clamp(this._vp.scale * factor, b3.lo, b3.hi);
+    const t10 = solveAnchorTranslation(ip2, newScale, this._vp.rot, sx2, sy2);
+    this._vp.tx = t10.tx;
+    this._vp.ty = t10.ty;
+    this._vp.scale = newScale;
+    this._containVp();
+    this._saveCurrentVp();
+    this._emitViewport();
+    this._invalidate();
+  }
+  _setTextScale(scale) {
+    const s10 = clamp(scale, TEXT_SCALE_MIN, TEXT_SCALE_MAX);
+    if (s10 === this._vp.scale)
+      return;
+    this._vp.scale = s10;
+    this._textEl.style.setProperty("--ref-text-scale", String(s10));
+    this._saveCurrentVp();
+    this._emitViewport();
+  }
+  // ---- 吸色（v154；宿主拿事件接主吸色 setColor + pin）----
+  _cancelLongPress() {
+    if (this._longPressTimer) {
+      clearTimeout(this._longPressTimer);
+      this._longPressTimer = null;
+    }
+    this._lpStart = null;
+    this._lpEvent = null;
+  }
+  _beginPick(e10) {
+    this._picking = true;
+    this._cancelLongPress();
+    this._emit("colorpickstart");
+    this._pickAt(e10.clientX, e10.clientY);
+  }
+  _endPick() {
+    if (!this._picking)
+      return;
+    this._picking = false;
+    this._emit("colorpickend");
+  }
+  // 读自家 canvas 像素（所见即所吸）。透明区 hex=null（宿主收 pin）。半透明合成到白底。
+  _pickAt(clientX, clientY) {
+    const rect = this._canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    let px = Math.round((clientX - rect.left) * dpr);
+    let py = Math.round((clientY - rect.top) * dpr);
+    px = Math.max(0, Math.min(this._canvas.width - 1, px));
+    py = Math.max(0, Math.min(this._canvas.height - 1, py));
+    let d3;
+    try {
+      d3 = this._cctx.getImageData(px, py, 1, 1).data;
+    } catch {
+      return;
+    }
+    let r10 = d3[0], g3 = d3[1], b3 = d3[2];
+    const a10 = d3[3];
+    if (a10 === 0) {
+      this._emit("colorpick", { hex: null, screenX: clientX, screenY: clientY });
+      return;
+    }
+    if (a10 < 255) {
+      const f2 = a10 / 255;
+      r10 = Math.round(r10 * f2 + 255 * (1 - f2));
+      g3 = Math.round(g3 * f2 + 255 * (1 - f2));
+      b3 = Math.round(b3 * f2 + 255 * (1 - f2));
+    }
+    const hex = "#" + [r10, g3, b3].map((v) => v.toString(16).padStart(2, "0")).join("");
+    this._emit("colorpick", { hex, screenX: clientX, screenY: clientY });
+  }
+  // ---- 渲染 ----
+  _resizeCanvasToBody() {
+    const dpr = window.devicePixelRatio || 1;
+    const w2 = this.clientWidth;
+    const h2 = this.clientHeight;
+    if (w2 <= 0 || h2 <= 0)
+      return;
+    this._canvas.width = Math.round(w2 * dpr);
+    this._canvas.height = Math.round(h2 * dpr);
+    this._canvas.style.width = w2 + "px";
+    this._canvas.style.height = h2 + "px";
+  }
+  _invalidate() {
+    if (this._raf)
+      return;
+    this._raf = requestAnimationFrame(() => {
+      this._raf = null;
+      this._render();
+    });
+  }
+  _stopLiveTimer() {
+    this._liveSource = null;
+    this._liveSize = null;
+    this._liveOf = null;
+    this._liveDirty = false;
+    if (this._liveThrottle != null) {
+      clearTimeout(this._liveThrottle);
+      this._liveThrottle = null;
+    }
+  }
+  /** 手上的帧是另一张卡的（多台相机之间翻页）→ 扔掉，连节流的计时一起清：新卡的第一帧要立刻出，不许先画一下别人的画面。 */
+  _dropLiveIfOther(cur) {
+    if (this._liveOf === cur.id)
+      return;
+    this._liveSource = null;
+    this._liveSize = null;
+    this._liveOf = cur.id;
+    this._lastLiveComposeT = void 0;
+    if (this._liveThrottle != null) {
+      clearTimeout(this._liveThrottle);
+      this._liveThrottle = null;
+    }
+  }
+  /** 向宿主要一帧。要到了返回 true。 */
+  _takeLiveFrame(cur) {
+    if (!this.liveProvider)
+      return false;
+    const want = { width: this._canvas.width, height: this._canvas.height };
+    const got = this.liveProvider(want, cur.target ?? null);
+    if (!got)
+      return false;
+    const wrapped = "source" in got;
+    const src = wrapped ? got.source : got;
+    this._liveSource = src;
+    this._liveSize = wrapped ? { w: got.width, h: got.height } : { w: src.width, h: src.height };
+    this._liveOf = cur.id;
+    this._lastLiveComposeT = performance.now();
+    return true;
+  }
+  // live 合成：只在脏标真起时问 provider；节流内保留脏标等 timer 补帧（S9）。
+  _recomposeLive() {
+    const cur = this._deck.current;
+    if (!this.liveProvider || !cur)
+      return true;
+    this._dropLiveIfOther(cur);
+    const gap = Math.max(0, this.liveMinIntervalMs);
+    const now = performance.now();
+    const since = now - (this._lastLiveComposeT ?? -Infinity);
+    if (since < gap) {
+      if (this._liveThrottle == null) {
+        this._liveThrottle = setTimeout(() => {
+          this._liveThrottle = null;
+          this._invalidate();
+        }, gap + 20 - since);
+      }
+      return false;
+    }
+    this._takeLiveFrame(cur);
+    return true;
+  }
+  _render() {
+    const cur = this._deck.current;
+    if (cur?.kind === "live" && this._liveDirty) {
+      if (this._recomposeLive())
+        this._liveDirty = false;
+    }
+    const dpr = window.devicePixelRatio || 1;
+    const W3 = this._canvas.width, H2 = this._canvas.height;
+    const ctx2 = this._cctx;
+    ctx2.setTransform(1, 0, 0, 1, 0, 0);
+    ctx2.clearRect(0, 0, W3, H2);
+    let source = null;
+    if (cur?.kind === "live") {
+      if (!this._liveSource)
+        this._recomposeLive();
+      source = this._liveSource;
+    } else if (cur)
+      source = this._bitmaps.get(cur.id) ?? null;
+    if (!source)
+      return;
+    const nearest = this._vp.scale >= NEAREST_MIN_SCALE;
+    ctx2.imageSmoothingEnabled = !nearest;
+    if (!nearest)
+      ctx2.imageSmoothingQuality = "high";
+    const v = this._vp;
+    const c10 = Math.cos(v.rot), s10 = Math.sin(v.rot);
+    ctx2.setTransform(v.scale * c10 * dpr, v.scale * s10 * dpr, -v.scale * s10 * dpr, v.scale * c10 * dpr, v.tx * dpr, v.ty * dpr);
+    const size = cur?.kind === "live" && this._liveSize ? this._liveSize : { w: source.width, h: source.height };
+    ctx2.drawImage(source, -size.w / 2, -size.h / 2, size.w, size.h);
+  }
+  _updateEmptyHint() {
+    this._emptyEl.classList.toggle("hidden", this._deck.size > 0);
+  }
+  /** 视口护栏：尺寸不超视口预算、位置不落屏外（拖已自钳；这里兜 restore/open/浏览器窗口 resize/
+   *  native CSS resize 四条路）。返回是否有修正。 */
+  /** 地板变了（键盘露 / 收、顶栏高度变）之后宿主调：整窗钳回可见区，动了就发 rectchange。 */
+  reclamp() {
+    if (this._clampIntoViewport())
+      this._emitRect();
+  }
+  _clampIntoViewport() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    if (!(vw > 0) || !(vh > 0))
+      return false;
+    let w2 = this.offsetWidth, h2 = this.offsetHeight;
+    if (!(w2 > 0) || !(h2 > 0))
+      return false;
+    let changed2 = false;
+    const maxW = Math.max(MIN_EDGE, vw - 8), maxH = Math.max(MIN_EDGE, vh - this.topFloor - this.bottomFloor - 8);
+    if (w2 > maxW || h2 > maxH) {
+      const cs2 = getComputedStyle(this), bw = w2 - parseFloat(cs2.width), bh = h2 - parseFloat(cs2.height);
+      if (w2 > maxW) {
+        this.style.width = Math.max(0, maxW - (bw > 0 ? bw : 0)) + "px";
+        changed2 = true;
+      }
+      if (h2 > maxH) {
+        this.style.height = Math.max(0, maxH - (bh > 0 ? bh : 0)) + "px";
+        changed2 = true;
+      }
+      w2 = this.offsetWidth;
+      h2 = this.offsetHeight;
+    }
+    const r10 = this.getBoundingClientRect();
+    const left = clamp(r10.left, 0, vw - w2);
+    const top = clamp(r10.top, this.topFloor, Math.max(this.topFloor, vh - this.bottomFloor - h2));
+    if (Math.abs(left - r10.left) > 0.5) {
+      this.style.left = left + "px";
+      changed2 = true;
+    }
+    if (Math.abs(top - r10.top) > 0.5) {
+      this.style.top = top + "px";
+      changed2 = true;
+    }
+    return changed2;
+  }
+};
+function clamp(x2, lo2, hi) {
+  return Math.max(lo2, Math.min(hi, x2));
+}
+function screenToImg(sx2, sy2, vp) {
+  const c10 = Math.cos(-vp.rot), s10 = Math.sin(-vp.rot);
+  const dx = sx2 - vp.tx, dy = sy2 - vp.ty;
+  return { x: (dx * c10 - dy * s10) / vp.scale, y: (dx * s10 + dy * c10) / vp.scale };
+}
+var WP_REFERENCE_WINDOW_TAG = "wp-reference-window";
+if (!customElements.get(WP_REFERENCE_WINDOW_TAG)) {
+  customElements.define(WP_REFERENCE_WINDOW_TAG, WpReferenceWindow);
+}
+
+// node_modules/@internal/reference-window/dist/deck/manifest.js
+var DECK_MANIFEST_VERSION = 1;
+var DECK_MANIFEST_NAME = "manifest.json";
+function deckDir(app) {
+  if (!/^[a-z][a-z0-9-]*$/.test(app))
+    throw new Error(`deckDir: app name must be lowercase [a-z0-9-], got "${app}"`);
+  return `.${app}/references`;
+}
+var DeckManifestTooNewError = class extends Error {
+  fileVersion;
+  libVersion;
+  constructor(fileVersion, libVersion) {
+    super(`reference manifest version ${fileVersion} is newer than this library supports (${libVersion}); refusing to read`);
+    this.name = "DeckManifestTooNewError";
+    this.fileVersion = fileVersion;
+    this.libVersion = libVersion;
+  }
+};
+var EXT_BY_MIME = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "text/plain": "txt",
+  "text/markdown": "md",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "audio/mpeg": "mp3",
+  "audio/mp4": "m4a",
+  "audio/ogg": "ogg",
+  "audio/opus": "opus",
+  "audio/webm": "weba"
+};
+var MIME_BY_EXT = Object.fromEntries(Object.entries(EXT_BY_MIME).map(([m2, e10]) => [e10, m2]));
+function extForMime(mime) {
+  const base3 = (mime || "").split(";")[0].trim().toLowerCase();
+  return EXT_BY_MIME[base3] ?? (base3.startsWith("image/") ? "img" : "bin");
+}
+function mimeForName(name) {
+  const m2 = /\.([A-Za-z0-9]+)$/.exec(name || "");
+  return m2 ? MIME_BY_EXT[m2[1].toLowerCase()] ?? "" : "";
+}
+function extOfName(name) {
+  const m2 = /\.([A-Za-z0-9]+)$/.exec(name || "");
+  return m2 ? m2[1].toLowerCase() : "bin";
+}
+var fileName = (dir, position, ext) => `${dir}/r${position}.${ext}`;
+var STEPS2 = {};
+function isObj(x2) {
+  return !!x2 && typeof x2 === "object" && !Array.isArray(x2);
+}
+function migrateDeckManifest(json) {
+  const src = isObj(json) ? json : {};
+  let v = typeof src.version === "number" && Number.isFinite(src.version) ? Math.trunc(src.version) : 1;
+  if (v > DECK_MANIFEST_VERSION)
+    throw new DeckManifestTooNewError(v, DECK_MANIFEST_VERSION);
+  let cur = src;
+  while (v < DECK_MANIFEST_VERSION) {
+    const step = STEPS2[v];
+    if (!step)
+      throw new Error(`migrateDeckManifest: no step registered for v${v} \u2192 v${v + 1}`);
+    cur = step(cur);
+    v++;
+    if (cur.version !== v)
+      throw new Error(`migrateDeckManifest: step v${v - 1}\u2192v${v} did not set version`);
+  }
+  const items = Array.isArray(cur.items) ? cur.items.filter((it2) => isObj(it2) && typeof it2.kind === "string" && !!it2.kind) : [];
+  const index = typeof cur.index === "number" && Number.isFinite(cur.index) ? Math.trunc(cur.index) : 0;
+  return { version: DECK_MANIFEST_VERSION, index, items };
+}
+function readView(x2) {
+  if (!isObj(x2))
+    return null;
+  const { tx: tx2, ty: ty2, scale, rot } = x2;
+  const ok2 = [tx2, ty2, scale, rot].every((n10) => typeof n10 === "number" && Number.isFinite(n10));
+  return ok2 ? { tx: tx2, ty: ty2, scale, rot } : null;
+}
+function readPlay(x2) {
+  if (!isObj(x2) || typeof x2.t !== "number" || !Number.isFinite(x2.t))
+    return null;
+  return { t: x2.t, loop: !!x2.loop };
+}
+var str = (x2) => typeof x2 === "string" ? x2 : "";
+async function decodeDeck(o10) {
+  const dir = deckDir(o10.app);
+  const blob = o10.getFile(`${dir}/${DECK_MANIFEST_NAME}`);
+  if (!blob)
+    return { index: 0, cards: [], carried: [] };
+  let json;
+  try {
+    json = JSON.parse(await blob.text());
+  } catch (e10) {
+    throw new Error(`decodeDeck: ${dir}/${DECK_MANIFEST_NAME} is not valid JSON: ${String(e10.message)}`);
+  }
+  return decodeDeckFromJson(json, o10);
+}
+function decodeDeckFromJson(manifestJson, o10) {
+  const m2 = migrateDeckManifest(manifestJson);
+  const known = new Set(o10.knownKinds);
+  const cards = [];
+  const carried = [];
+  let index = 0, indexSet = false;
+  m2.items.forEach((raw, at2) => {
+    if (!known.has(raw.kind)) {
+      const files = {};
+      const s10 = str(raw.src) ? o10.getFile(str(raw.src)) : null;
+      if (s10)
+        files.src = s10;
+      carried.push({ at: at2, item: JSON.parse(JSON.stringify(raw)), files });
+      return;
+    }
+    const src = str(raw.src);
+    const bytes = src ? o10.getFile(src) : null;
+    if (at2 === m2.index) {
+      index = cards.length;
+      indexSet = true;
+    }
+    cards.push({
+      kind: raw.kind,
+      name: str(raw.name),
+      bytes,
+      mime: str(raw.mime) || bytes?.type || mimeForName(src),
+      target: str(raw.target) || null,
+      vp: readView(raw.vp),
+      play: readPlay(raw.play),
+      origin: str(raw.origin) || null
+    });
+  });
+  if (!indexSet)
+    index = Math.max(0, Math.min(cards.length - 1, m2.index));
+  return { index, cards, carried };
+}
+function encodeDeck(s10, o10) {
+  const dir = deckDir(o10.app);
+  const slots = s10.cards.map((card) => ({ card }));
+  for (const c10 of [...s10.carried].sort((a10, b3) => a10.at - b3.at)) {
+    const at2 = Math.max(0, Math.min(slots.length, Math.trunc(c10.at) || 0));
+    slots.splice(at2, 0, { carried: c10 });
+  }
+  const files = /* @__PURE__ */ new Map();
+  const items = [];
+  let index = 0;
+  const viewing = s10.cards[s10.index] ?? null;
+  slots.forEach((slot, position) => {
+    if ("carried" in slot) {
+      const item2 = JSON.parse(JSON.stringify(slot.carried.item));
+      const src = slot.carried.files.src;
+      if (src) {
+        const n10 = fileName(dir, position, extOfName(str(item2.src)));
+        files.set(n10, src);
+        item2.src = n10;
+      } else
+        delete item2.src;
+      items.push(item2);
+      return;
+    }
+    const c10 = slot.card;
+    if (c10 === viewing)
+      index = position;
+    const item = { kind: c10.kind };
+    if (c10.bytes) {
+      const n10 = fileName(dir, position, extForMime(c10.mime || c10.bytes.type));
+      files.set(n10, c10.bytes);
+      item.src = n10;
+    }
+    item.vp = c10.vp ? { tx: c10.vp.tx, ty: c10.vp.ty, scale: c10.vp.scale, rot: c10.vp.rot } : null;
+    if (c10.name)
+      item.name = c10.name;
+    if (c10.mime && (!item.src || mimeForName(item.src) !== c10.mime.split(";")[0].trim().toLowerCase()))
+      item.mime = c10.mime;
+    if (c10.target)
+      item.target = c10.target;
+    if (c10.origin)
+      item.origin = c10.origin;
+    if (c10.play)
+      item.play = { t: c10.play.t, loop: c10.play.loop };
+    items.push(item);
+  });
+  const manifest = { version: DECK_MANIFEST_VERSION, index, items };
+  const out = /* @__PURE__ */ new Map();
+  out.set(`${dir}/${DECK_MANIFEST_NAME}`, new Blob([JSON.stringify(manifest)], { type: "application/json" }));
+  for (const [n10, b3] of files)
+    out.set(n10, b3);
+  return out;
+}
+
+// src/app/reference-host.ts
+var APP = "moonsinger";
+var KINDS = ["image", "text"];
+var BIG_BYTES = 4 * 1024 * 1024;
+function createReferenceHost(d3) {
+  const el2 = document.createElement("wp-reference-window");
+  el2.className = "ref-window";
+  const fileInput2 = document.createElement("input");
+  fileInput2.type = "file";
+  fileInput2.multiple = true;
+  fileInput2.hidden = true;
+  fileInput2.accept = "image/*,.txt,.md,text/plain,text/markdown";
+  document.body.append(el2, fileInput2);
+  let encoded = {};
+  let rev2 = 0;
+  let seq = 0;
+  let carried = false;
+  let applying = false;
+  let placed = false;
+  let pending = Promise.resolve();
+  el2.menuPort = (o10) => togglePopupMenu(o10);
+  el2.setAttribute("no-cloud", "");
+  el2.labels = {
+    load: "\u5BFC\u5165\u56FE\u7247 / \u6587\u5B57\u2026",
+    paste: "\u7C98\u8D34",
+    oneToOne: "\u539F\u5C3A\u5BF8",
+    del: "\u5220\u6389\u8FD9\u5F20",
+    delConfirm: "\u518D\u70B9\u4E00\u6B21\u5220\u6389",
+    closeWin: "\u6536\u8D77\u53C2\u8003\u7A97",
+    prev: "\u4E0A\u4E00\u5F20",
+    next: "\u4E0B\u4E00\u5F20",
+    menu: "\u53C2\u8003\u7A97\u83DC\u5355",
+    move: "\u62D6\u52A8",
+    resize: "\u6539\u5927\u5C0F",
+    resizeAria: "\u6539\u5927\u5C0F",
+    moveEarlier: "\u5F80\u524D\u632A",
+    moveLater: "\u5F80\u540E\u632A",
+    jump: "\u8DF3\u5230\u2026",
+    kindNames: { image: "\u56FE\u7247", text: "\u6587\u5B57" },
+    linkMissing: "\u5185\u5BB9\u4E0D\u5728\u4E86"
+  };
+  const syncFloor = () => {
+    el2.topFloor = d3.topFloor();
+    el2.bottomFloor = d3.bottomFloor();
+    if (el2.open) el2.reclamp();
+  };
+  window.addEventListener("resize", syncFloor);
+  const reencode = () => {
+    const my = ++seq;
+    pending = (async () => {
+      const out = {};
+      for (const [path, blob] of encodeDeck(el2.deck.snapshot(), { app: APP })) out[path] = new Uint8Array(await blob.arrayBuffer());
+      if (my !== seq) return;
+      encoded = out;
+      carried = false;
+      rev2++;
+      d3.onCards();
+    })();
+  };
+  el2.deck.onChange((what) => {
+    if (!applying && what.type === "cards") reencode();
+  });
+  el2.addEventListener("openchange", () => {
+    if (el2.open) {
+      placed = true;
+      syncFloor();
+    }
+  });
+  el2.addEventListener("rectchange", () => {
+    placed = true;
+  });
+  el2.addEventListener("requestload", () => {
+    fileInput2.value = "";
+    fileInput2.click();
+  });
+  fileInput2.addEventListener("change", () => {
+    const files = [...fileInput2.files ?? []];
+    if (files.length) void importFiles(files);
+  });
+  el2.addEventListener("requestpaste", () => {
+    void pasteFromClipboard();
+  });
+  window.addEventListener("paste", (e10) => {
+    if (!el2.hasFocus) return;
+    const cd2 = e10.clipboardData;
+    if (!cd2) return;
+    e10.preventDefault();
+    e10.stopPropagation();
+    const files = [...cd2.files];
+    if (files.length) {
+      void importFiles(files);
+      return;
+    }
+    const text2 = cd2.getData("text/plain");
+    if (text2.trim()) {
+      el2.addText(text2, { name: "" });
+      el2.open = true;
+      return;
+    }
+    d3.error("\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u56FE\u7247\u6216\u6587\u5B57");
+  }, true);
+  el2.addEventListener("dragover", (e10) => {
+    if (e10.dataTransfer && Array.from(e10.dataTransfer.types).includes("Files")) {
+      e10.preventDefault();
+      e10.stopPropagation();
+      e10.dataTransfer.dropEffect = "copy";
+    }
+  });
+  el2.addEventListener("drop", (e10) => {
+    const files = [...e10.dataTransfer?.files ?? []];
+    if (!files.length) return;
+    e10.preventDefault();
+    e10.stopPropagation();
+    void importFiles(files);
+  });
+  el2.addEventListener("notice", (e10) => {
+    const n10 = e10.detail;
+    d3.error(n10.code === "decode-failed" ? `\u8FD9\u5F20\u56FE\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6253\u4E0D\u5F00${n10.name ? `\uFF1A${n10.name}` : ""}` : `\u53C2\u8003\u7A97\uFF1A${n10.message}`);
+  });
+  el2.addEventListener("keydown", (e10) => {
+    if (e10.key === "Escape") {
+      e10.preventDefault();
+      d3.focusScore();
+    }
+  });
+  async function importFiles(files) {
+    let added = 0;
+    for (const f2 of files) {
+      if (f2.type.startsWith("text/") || /\.(txt|md)$/i.test(f2.name)) {
+        el2.addText(await f2.text(), { name: f2.name });
+        added++;
+        continue;
+      }
+      if (!f2.type.startsWith("image/")) {
+        d3.error(`\u8BA4\u4E0D\u51FA\uFF1A${f2.name}\uFF08\u53C2\u8003\u7A97\u6536\u56FE\u7247\u548C\u6587\u5B57\uFF09`);
+        continue;
+      }
+      if (f2.size > BIG_BYTES && !await d3.confirmBig(f2.name, f2.size)) continue;
+      el2.deck.add({ kind: "image", bytes: f2, mime: f2.type, name: f2.name });
+      added++;
+    }
+    if (added) {
+      el2.open = true;
+      el2.focus({ preventScroll: true });
+      d3.info(`\u53C2\u8003\u7A97\uFF1A\u52A0\u4E86 ${added} \u5F20`);
+    }
+  }
+  async function pasteFromClipboard() {
+    try {
+      for (const it2 of await navigator.clipboard.read()) {
+        const img = it2.types.find((x2) => x2.startsWith("image/"));
+        if (img) {
+          await importFiles([new File([await it2.getType(img)], `\u7C98\u8D34.${img.split("/")[1] ?? "png"}`, { type: img })]);
+          return;
+        }
+        if (it2.types.includes("text/plain")) {
+          const text2 = await (await it2.getType("text/plain")).text();
+          if (text2.trim()) {
+            el2.addText(text2, { name: "" });
+            el2.open = true;
+            return;
+          }
+        }
+      }
+      d3.error("\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u56FE\u7247\u6216\u6587\u5B57");
+    } catch {
+      try {
+        const text2 = await navigator.clipboard.readText();
+        if (text2.trim()) {
+          el2.addText(text2, { name: "" });
+          el2.open = true;
+          return;
+        }
+      } catch {
+      }
+      d3.error("\u8BFB\u4E0D\u4E86\u526A\u8D34\u677F\uFF1A\u70B9\u4E00\u4E0B\u53C2\u8003\u7A97\uFF0C\u518D\u6309 Ctrl / \u2318+V");
+    }
+  }
+  return {
+    /** 现在要存的字节（路径 → 字节）。 */
+    files: () => encoded,
+    /** 卡片改动的修订号。 */
+    rev: () => rev2,
+    /** 编码还在跑的话等它（存之前调，免得刚加的卡没赶上）。 */
+    settled: () => pending,
+    /** 开一首歌：files = 歌里 `.moonsinger/references/` 下的全部字节；panel = 视图态里记的窗（没有 = 收着）。 */
+    async apply(files, panel) {
+      seq++;
+      applying = true;
+      carried = false;
+      encoded = { ...files };
+      placed = !!panel;
+      try {
+        if (!Object.keys(files).length) el2.deck.clear();
+        else el2.deck.restore(await decodeDeck({ app: APP, knownKinds: KINDS, getFile: (p2) => {
+          const b3 = files[p2];
+          return b3 ? new Blob([b3], { type: mimeForName(p2) }) : null;
+        } }));
+      } catch (e10) {
+        el2.deck.clear();
+        if (e10 instanceof DeckManifestTooNewError) {
+          carried = true;
+          d3.error(`\u8FD9\u9996\u6B4C\u7684\u53C2\u8003\u7A97\u662F\u66F4\u65B0\u7248\u672C\u7684 app \u5B58\u7684\uFF08\u53C2\u8003\u6E05\u5355\u7B2C ${e10.fileVersion} \u7248\uFF0C\u8FD9\u4E00\u7248\u8BA4\u5230\u7B2C ${e10.libVersion} \u7248\uFF09\uFF1A\u539F\u6837\u7559\u7740\u3001\u5B58\u7684\u65F6\u5019\u539F\u6837\u5199\u56DE\uFF0C\u8FD9\u91CC\u5148\u4E0D\u663E\u793A`);
+        } else {
+          carried = true;
+          d3.error(`\u53C2\u8003\u7A97\u8BFB\u4E0D\u51FA\u6765\uFF1A${e10.message}\uFF08\u5B57\u8282\u539F\u6837\u7559\u7740\u3001\u5B58\u7684\u65F6\u5019\u539F\u6837\u5199\u56DE\uFF09`);
+        }
+      } finally {
+        applying = false;
+      }
+      if (panel) el2.rect = { left: panel.left, top: panel.top, width: panel.width, height: panel.height };
+      el2.open = !!panel?.open && !carried;
+      if (el2.open) syncFloor();
+    },
+    /** 视图态：开过窗才有。 */
+    panel() {
+      if (!placed) return null;
+      const r10 = el2.rect;
+      return { open: el2.open, left: Math.round(r10.left), top: Math.round(r10.top), width: Math.round(r10.width), height: Math.round(r10.height) };
+    },
+    /** 菜单入口：开 = 顺手给焦点（开窗 → Ctrl+V 一步到位）；关 = 焦点回谱。 */
+    toggle() {
+      if (carried) {
+        d3.error("\u8FD9\u9996\u6B4C\u7684\u53C2\u8003\u7A97\u662F\u66F4\u65B0\u7248\u672C\u7684 app \u5B58\u7684\uFF0C\u8FD9\u4E00\u7248\u5148\u4E0D\u663E\u793A\uFF08\u539F\u6837\u7559\u7740\uFF09");
+        return;
+      }
+      el2.open = !el2.open;
+      if (el2.open) {
+        placed = true;
+        syncFloor();
+        el2.focus({ preventScroll: true });
+      } else d3.focusScore();
+    },
+    isOpen: () => el2.open,
+    hasFocus: () => el2.hasFocus,
+    count: () => el2.deck.cards().length,
+    /** pad 露 / 收、视口变了之后宿主调。 */
+    relayout: syncFloor,
+    /** 测试用：导入（同菜单那条路）。 */
+    importFiles,
+    el: el2
+  };
+}
+
 // src/app/diag-ui.ts
 function copyViaTextarea(text2) {
   const ta2 = document.createElement("textarea");
@@ -27964,7 +30149,7 @@ function describeSongChange(prev, next2) {
 var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
 var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
-var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad() });
+var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null });
 function serializeDesk(d3) {
   const out = {};
   if (d3.scope === "all") out.scope = "all";
@@ -27988,6 +30173,10 @@ function serializeDesk(d3) {
   if (pd.tuplet) pj.tuplet = pd.tuplet;
   if (pd.low !== null) pj.low = pd.low;
   if (Object.keys(pj).length) out.pad = pj;
+  if (d3.ref) {
+    const { open, left, top, width, height } = d3.ref;
+    out.ref = { ...open ? { open: true } : {}, left, top, width, height };
+  }
   return Object.keys(out).length ? out : null;
 }
 function unserializeDesk(json) {
@@ -28012,6 +30201,10 @@ function unserializeDesk(json) {
     if (PAD_UNITS.includes(q2.unit)) d3.pad.unit = q2.unit;
     if (q2.tuplet === 3 || q2.tuplet === 5 || q2.tuplet === 6 || q2.tuplet === 7) d3.pad.tuplet = q2.tuplet;
     if (Number.isInteger(q2.low) && q2.low >= 0 && q2.low <= 127) d3.pad.low = q2.low;
+  }
+  if (j2.ref && typeof j2.ref === "object") {
+    const r10 = j2.ref, n10 = (v) => typeof v === "number" && Number.isFinite(v);
+    if (n10(r10.left) && n10(r10.top) && n10(r10.width) && n10(r10.height)) d3.ref = { open: r10.open === true, left: r10.left, top: r10.top, width: r10.width, height: r10.height };
   }
   return d3;
 }
@@ -28055,7 +30248,7 @@ var doc = {
   identifier: null,
   /** 首笔安家（v0.6.9，user 2026-10-08「首笔安家做」，照 WeebPaint lazyblank）：歌库里「新建」出来的空谱**没有家、不落盘**，记着要进哪个夹；第一笔编辑才铸身份（homeNow）。空着离开 = 零损失、歌库里不留空壳。 */
   pendingHome: null,
-  saved: { song: st2.song, lounge: "" }
+  saved: { song: st2.song, lounge: "", refs: 0 }
 };
 var coverRev = 0;
 var loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), doc.extras.studio?.mics ?? []]);
@@ -28092,6 +30285,23 @@ var $2 = (id2) => document.getElementById(id2);
 var bar = $2("bar");
 var scoreEl = $2("score");
 var padEl = $2("padPanel");
+var refHost = createReferenceHost({
+  info: (t10) => info(t10),
+  error: (t10) => showError(t10),
+  topFloor: () => Math.round(bar.getBoundingClientRect().bottom),
+  bottomFloor: () => {
+    const r10 = padEl.getBoundingClientRect();
+    return !padEl.hidden && r10.width > innerWidth * 0.6 && r10.top > innerHeight * 0.3 ? Math.max(0, Math.round(innerHeight - r10.top)) : 0;
+  },
+  focusScore: () => scoreEl.focus({ preventScroll: true }),
+  confirmBig: (name, n10) => openConfirmSheet("\u8FD9\u5F20\u56FE\u5F88\u5927", `\u300C${name}\u300D${(n10 / 1024 / 1024).toFixed(1)} MB\u3002\u53C2\u8003\u56FE\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58\u3001\u4E00\u8D77\u540C\u6B65\uFF0C\u5B58\u8FDB\u53BB\u8FD9\u9996\u6B4C\u4F1A\u5927\u8FD9\u4E48\u591A\u3002`, { okLabel: "\u5B58\u8FDB\u6B4C\u91CC", cancelLabel: "\u7B97\u4E86" }),
+  onCards: () => {
+    renderTitle();
+    changed();
+  }
+});
+new ResizeObserver(() => refHost.relayout()).observe(padEl);
+new ResizeObserver(() => refHost.relayout()).observe(bar);
 installPlatformGuards([scoreEl, padEl]);
 var shell = initPwaShell({ onUpdateAvailable: () => {
   diagNote("sw", "update available");
@@ -29287,7 +31497,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "823e4d8fb425",
+  cssHash: "64dda32ab4f0",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -29299,7 +31509,8 @@ window.__moonsinger = {
   view,
   zipList: (bytes) => Object.keys(unzipSync(bytes)),
   zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]),
-  load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null, view: o10.view }),
+  load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null, view: o10.view, references: o10.references }),
+  refHost,
   set: (n10) => update(n10),
   addPaper: () => update(addPaper(st2)),
   toggleChord: (i10, p2) => update(toggleChordPitch(st2, i10, p2)),
@@ -29348,7 +31559,7 @@ bar.addEventListener("pointerdown", (e10) => {
 function engineNow() {
   return activeInstrument(doc.extras, curRole())?.engine ?? "unknown";
 }
-var dirty = () => st2.song !== doc.saved.song || loungeKey() !== doc.saved.lounge;
+var dirty = () => st2.song !== doc.saved.song || loungeKey() !== doc.saved.lounge || refHost.rev() !== doc.saved.refs;
 function renderTitle() {
   const d3 = dirty(), name = docName();
   $2("docTitle").textContent = `${name}${d3 ? " \u2022" : ""}`;
@@ -30565,7 +32776,8 @@ var deskNow = () => ({
   paper: st2.at.paper,
   parts: Object.fromEntries(partView),
   mp3: mp3Quality,
-  pad: { fifths: st2.input.inputFifths, scale: st2.input.inputScale, unit: PAD_UNITS[st2.input.unit], tuplet: st2.input.tuplet, low: pad3.rangeLow() }
+  pad: { fifths: st2.input.inputFifths, scale: st2.input.inputScale, unit: PAD_UNITS[st2.input.unit], tuplet: st2.input.tuplet, low: pad3.rangeLow() },
+  ref: refHost.panel()
 });
 function applyDesk(d3) {
   viewScope = d3.scope;
@@ -30593,9 +32805,10 @@ function loadDoc(song, o10) {
   coverTouched = false;
   history = emptyHistory();
   st2 = initState(song);
-  doc.saved = { song: st2.song, lounge: loungeKey() };
+  doc.saved = { song: st2.song, lounge: loungeKey(), refs: refHost.rev() };
   const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
   applyDesk(d3);
+  void refHost.apply(o10.references ?? {}, d3.ref);
   pad3.setRangeLow(d3.pad.low);
   lastRender.clear();
   synth.allOff();
@@ -30608,7 +32821,7 @@ function loadDoc(song, o10) {
 function markSaved() {
   doc.stem = docName();
   doc.named = true;
-  doc.saved = { song: st2.song, lounge: loungeKey() };
+  doc.saved = { song: st2.song, lounge: loungeKey(), refs: refHost.rev() };
   renderTitle();
 }
 function confirmDiscard(what) {
@@ -30659,7 +32872,7 @@ async function fileOpen() {
 function openPicked(picked) {
   try {
     const o10 = openBytes(picked.name, picked.bytes), own = o10.ours && !o10.notices.length;
-    loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: own ? picked.handle : null, mtime: own ? picked.mtime : null, view: o10.view });
+    loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: own ? picked.handle : null, mtime: own ? picked.mtime : null, view: o10.view, references: o10.references });
     if (o10.notices.length) showError(o10.notices.join(" "));
     else info(`\u6253\u5F00\u4E86 ${picked.name}`);
   } catch (e10) {
@@ -30667,7 +32880,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = doc.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (st2.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var bytesNow = (extras, song = st2.song) => saveMxl({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString() });
+var bytesNow = (extras, song = st2.song) => saveMxl({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), references: refHost.files() });
 var mxlFile = (name, extras, song) => new File([bytesNow(extras, song)], name, { type: "application/vnd.recordare.musicxml" });
 var stemOf2 = (name) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
 var sizeText = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -30858,7 +33071,7 @@ function openMainMenu() {
   box.setAttribute("role", "menu");
   const inStore = doc.identifier != null;
   const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc7(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
-  box.innerHTML = `<div class="ctx-head"><b>${esc7(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b><span>${esc7(fileWhere())}</span></div>` + item("new", "new", "\u65B0\u5EFA") + item("open", "folder-open", "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026", "\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09") + item("export", "export", "\u5BFC\u51FA\u2026", "mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09") + (hasStore() && !inStore && !doc.pendingHome ? item("intoLib", "import", "\u5B58\u8FDB\u6B4C\u5E93", "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : "") + `<div class="ctx-sep"></div>` + (doc.handle ? "" : item("rename", "rename", "\u6539\u6587\u4EF6\u540D\u2026", "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09")) + item("cover", "image", "\u5C01\u9762\u56FE\u2026", "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE") + item("sounds", "volume", "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026", "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3") + `<div class="ctx-sep"></div><div class="ctx-ver">${esc7(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
+  box.innerHTML = `<div class="ctx-head"><b>${esc7(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b><span>${esc7(fileWhere())}</span></div>` + item("new", "new", "\u65B0\u5EFA") + item("open", "folder-open", "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026", "\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09") + item("export", "export", "\u5BFC\u51FA\u2026", "mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09") + (hasStore() && !inStore && !doc.pendingHome ? item("intoLib", "import", "\u5B58\u8FDB\u6B4C\u5E93", "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : "") + `<div class="ctx-sep"></div>` + (doc.handle ? "" : item("rename", "rename", "\u6539\u6587\u4EF6\u540D\u2026", "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09")) + item("cover", "image", "\u5C01\u9762\u56FE\u2026", "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE") + item("sounds", "volume", "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026", "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3") + item("ref", "picture-in-picture", refHost.isOpen() ? "\u6536\u8D77\u53C2\u8003\u7A97" : `\u53C2\u8003\u7A97${refHost.count() ? `\uFF08${refHost.count()} \u5F20\uFF09` : ""}`, "\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58") + `<div class="ctx-sep"></div><div class="ctx-ver">${esc7(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
   item("settings", "settings", "\u8BBE\u7F6E\u2026", "\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C");
   document.body.append(box);
   const r10 = $2("setBtn").getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -30888,6 +33101,7 @@ function openMainMenu() {
     else if (v === "cover") openCoverSheet();
     else if (v === "sounds") openSoundsSheet();
     else if (v === "settings") openSettings();
+    else if (v === "ref") refHost.toggle();
   });
 }
 function openCoverSheet() {
@@ -31079,7 +33293,8 @@ var es2 = createEditorSession({
     onChange: () => {
     },
     encode: async () => {
-      encodedSnap = { song: st2.song, lounge: loungeKey() };
+      await refHost.settled();
+      encodedSnap = { song: st2.song, lounge: loungeKey(), refs: refHost.rev() };
       return { bytes: new Blob([bytesNow()], { type: "application/vnd.recordare.musicxml" }) };
     },
     onSaved: (name) => {
@@ -31141,7 +33356,7 @@ setInterval(() => {
 }, 1e3);
 function adoptStoreBytes(id2, bytes) {
   const o10 = openBytes(id2, bytes);
-  loadDoc(o10.song, { stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, handle: null, identifier: id2, view: o10.view });
+  loadDoc(o10.song, { stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, handle: null, identifier: id2, view: o10.view, references: o10.references });
   deviceKvSet2(KV_LAST_DOC, id2);
   if (o10.notices.length) showError(o10.notices.join(" "));
 }
@@ -31723,6 +33938,7 @@ window.addEventListener("keydown", (e10) => {
     }
     return;
   }
+  if (e10.target?.closest?.("wp-reference-window")) return;
   if (studio.isOpen) {
     if (e10.key === "Escape") {
       e10.preventDefault();
@@ -31783,4 +33999,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3074a8653cd4.mjs.map
+//# sourceMappingURL=moonsinger-59f0ff2af9d9.mjs.map
