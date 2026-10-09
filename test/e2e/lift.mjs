@@ -126,5 +126,42 @@ const undo = (p) => p.keyboard.press("Control+z");
   check(await marks(p) === "n p < n n f n n n n n", "手指长按 p 拖到第二个音（排在渐强前面）", await marks(p));
   check(p.errs.length === 0, "手指：没有页面错误", p.errs.join(" | "));
 }
+// ── 力度记号拖到休止上 + 拖的时候强调色（2026-10-08 Opus 5.5；user「力度符号应该能拖动到休止符上」「然后拖动能不能给一点视觉反馈」）──
+{
+  const N3 = (s, o, lyr) => `<note><pitch><step>${s}</step><octave>${o}</octave></pitch><duration>1</duration><type>quarter</type>${lyr ? `<lyric><text>${lyr}</text></lyric>` : ""}</note>`;
+  const R3 = `<note><rest/><duration>1</duration><type>quarter</type></note>`;
+  const D3 = (inner) => `<direction placement="below"><direction-type>${inner}</direction-type></direction>`;
+  const XML3 = `<?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>V</part-name></score-part></part-list><part id="P1"><measure number="1"><attributes><divisions>1</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>${D3("<dynamics><p/></dynamics>")}${N3("C", 5, "あ")}${N3("D", 5, "い")}${R3}${N3("E", 5, "う")}</measure></part></score-partwise>`;
+  const p = await (await b.newContext({ viewport: { width: 1100, height: 800 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
+  await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
+  await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML3);
+  await p.waitForTimeout(300);
+  const seq = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].slice(3).map((t) => (t.kind === "note" ? "n" : t.kind === "rest" ? "r" : t.kind === "dyn" ? t.value : t.kind)).join(" "); });
+  check(await seq() === "p n n r n", "载入", await seq());
+  const d = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, l: r.x }; });
+  const rest = await p.$eval("#score text.rest", (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y }; });
+  const head0 = await p.$eval("#score text.note", (e) => e.getBoundingClientRect().x);
+  await p.mouse.move(d.x, d.y); await p.mouse.down(); await p.mouse.move(d.x + 8, d.y, { steps: 2 }); await p.waitForTimeout(100);
+  check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "拿起来就亮（强调色）");
+  await p.mouse.move(d.x + (rest.x - head0), d.y, { steps: 8 }); await p.waitForTimeout(100);
+  check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "拖着的时候一直亮");
+  await p.mouse.up(); await p.waitForTimeout(200);
+  check(await seq() === "n n p r n", "拖到休止上 = 从休止起", await seq());
+  check(await p.$$eval("#score .hot", (e) => e.length) === 0, "松手就不亮了");
+  // 长按原地（不动）也亮
+  const d2 = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await p.mouse.move(d2.x, d2.y); await p.mouse.down(); await p.waitForTimeout(600);
+  check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "长按到点就亮");
+  await p.mouse.up(); await p.waitForTimeout(200);
+  await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu")?.remove());
+  // 歌词拖：字跟着亮
+  const ly = await p.$$eval("#score text.lyric", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
+  const heads = await p.$$eval("#score text.note", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return r.x + r.width / 2; }));
+  await p.mouse.move(ly[1].x, ly[1].y); await p.mouse.down(); await p.mouse.move(heads[2], ly[1].y, { steps: 8 }); await p.waitForTimeout(100);
+  const hotLyric = await p.$$eval("#score text.lyric.hot", (es) => es.map((e) => e.textContent).join(","));
+  check(hotLyric === "い", "拖字：亮的是被拖的那个字（跟着走）", hotLyric);
+  await p.mouse.up(); await p.waitForTimeout(200);
+  check(errs.length === 0, "没有页面错误", errs.join(" | "));
+}
 console.log(`\n  ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);

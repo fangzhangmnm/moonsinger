@@ -48,6 +48,8 @@ export interface EngraveOpts {
   page?: { h: number; l: number; r: number; t: number; b: number };
   /** 只画这一张纸（曲段）：视图范围「本段」（user 2026-10-08「不同曲段应该是不同页，而不是一起显示」「视图里面应该也有个连续和分段」）。 */
   onlyPaper?: string;
+  /** 正拿在手里拖的东西（token id：力度记号 / 渐强渐弱 / 字所在的音）：画成强调色（2026-10-08 user「然后拖动能不能给一点视觉反馈」）。 */
+  hot?: ReadonlySet<number>;
   /** 连续排法的纸边距（sp）：和分页同一张纸的几何，只是不断页（user 2026-10-08「连续和分页看到的行宽应该是一样的」「连续只是没有了断页，但是每一行还是一样的」）。 */
   margins?: { l: number; r: number; t: number; b: number };
   /** 刚写过（本次输入记录非空）：光标前那个音画成写字头（「−」/ 退格作用在它上）；挪过光标 / 轻点放的光标 = 不画（user 2026-10-08「如果是光标的话为什么前一个音是蓝的？」）。 */
@@ -68,12 +70,14 @@ export interface LyricHit { index: number; system: number; x: number; y: number 
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
 /** 力度记号 / 渐强渐弱的点击区域（px）：点 = 小菜单（改 / 删），长按拖 = 挪到别的音上（2026-10-08 Opus 5.5）。渐强渐弱跨行 = 每行一块。 */
 export interface DynHit { index: number; kind: "dyn" | "hairpin"; system: number; x: number; y: number; w: number; h: number }
+/** 休止的位置（px）：力度记号 / 渐强渐弱能拖到休止上（2026-10-08 user「力度符号应该能拖动到休止符上」）。 */
+export interface RestHit { index: number; system: number; x: number; w: number }
 /** 纸面最上面的歌名那一条（点了就地改）。 */
 export interface TitleHit { x: number; y: number; w: number; h: number; baseline: number; size: number }
 export interface Box { x: number; y: number; w: number; h: number }
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
-  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; title: TitleHit;
+  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; rests: RestHit[]; title: TitleHit;
   credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
   head: { system: number; x: number } | null;    // 光标在哪（画面跟随用；改的时候没有）
   parts: (Box & { paper: string; part: string })[];   // 歌手牌（每张纸第一行各条谱左边的声部名）的点击区域
@@ -331,7 +335,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   /** 分页：这一块（高 h px）在这页放不下 = 翻页（页顶上什么都还没放时不翻）。 */
   const ensure = (h: number) => { if (PG && yCur + h > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) { pageNo++; yCur = contentTop(pageNo); } };
 
-  const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [];
+  const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [];
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
   let head: Layout["head"] = null, shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
@@ -640,6 +644,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
           const ry = c.base >= WHOLE ? yOf(row, 36) : yOf(row, MID_LINE);
           prims.push({ t: "glyph", x: P(c.x + 0.35), y: ry, ch: g, cls: cls ? `rest ${cls}` : "rest" });
+          if (c.j === 0 && c.index >= 0) rests.push({ index: c.index, system: row, x: P(c.x + 0.35), w: P(1.2) });
           if (c.dotted) prims.push({ t: "glyph", x: P(c.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
           return;
         }
@@ -667,7 +672,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           const ly = lyricY(lyricRow(c.system)), cx = x0 + nhW(c) / 2;
           partLyrics.push({ index: c.index, system: row, x: cx, y: ly });
           if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly, x2: x0 + nhW(c) + P(0.4), y2: ly, w: P(0.12), cls: "melisma" });
-          else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: lyricShow(c.lyric), cls: cls ? `lyric ${cls}` : "lyric" });
+          else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: lyricShow(c.lyric), cls: [o.hot?.has(tokens[c.index]?.id ?? -1) ? "lyric hot" : "lyric", cls ?? ""].filter(Boolean).join(" ") });
         }
       };
       for (const u of units) {
@@ -678,7 +683,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         }
         if (u.kind === "dyn") {   // 力度：谱上方（声乐谱的下面是歌词），和后面那个音左对齐；基线在第五线上方 1.2 个间距——再高就撞开头的速度记号（它的基线约 2.9）
           const dr = rowOf(u.system, r, 0), dy = dynYAt.get(dr) ?? yOf(row, TOP_LINE + 2.4);
-          prims.push({ t: "glyph", x: P(u.x + 0.3), y: dy, ch: DYN_GLYPH[u.value], cls: inSel(u.index) ? "dyn sel" : "dyn" });
+          prims.push({ t: "glyph", x: P(u.x + 0.3), y: dy, ch: DYN_GLYPH[u.value], cls: o.hot?.has(tokens[u.index].id) ? "dyn hot" : inSel(u.index) ? "dyn sel" : "dyn" });
           const [il, ir, iu, id] = DYN_INK[u.value];
           dyns.push({ index: u.index, kind: "dyn", system: dr, x: P(u.x + 0.3 + il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
           continue;
@@ -876,7 +881,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             if (b - a0 < P(0.3)) continue;
             let a = a0;
             if (!said && b - a >= ww + P(1)) {   // 第一段放得下字才写（行尾剩一点点 = 字挪到下一行开头）
-              prims.push({ t: "text", x: a, y: midY(sy) + P(0.5), s: word, cls: "dyn-word", size: P(PIN_WORD.size), anchor: "start" });
+              prims.push({ t: "text", x: a, y: midY(sy) + P(0.5), s: word, cls: o.hot?.has(tokens[h.index].id) ? "dyn-word hot" : "dyn-word", size: P(PIN_WORD.size), anchor: "start" });
               a += ww + P(0.6); said = true;
             }
             for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY(sy), x2: x + P(DASH.len), y2: midY(sy), w: P(0.12), cls: "dyn-dash" });
@@ -888,7 +893,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             if (b - a < P(0.3)) continue;
             const f0 = acc / total, f1 = (acc + b - a) / total; acc += b - a;
             const [h0, h1] = h.dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)], y = midY(sy);
-            prims.push({ t: "path", d: `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`, cls: "hairpin" });
+            prims.push({ t: "path", d: `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`, cls: o.hot?.has(tokens[h.index].id) ? "hairpin hot" : "hairpin" });
             dyns.push({ index: h.index, kind: "hairpin", system: rowOf(sy, r, 0), x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
           }
         }
@@ -954,7 +959,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, dyns, title, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

@@ -612,6 +612,9 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 /* 力度记号 / 渐强渐弱的小菜单（2026-10-08 Opus 5.5）：底下一行灰字说「长按拖 = 挪」；拿起来拖着的时候指针是抓手 */
 .ctx-menu .ctx-hint { font-size: 11px; color: var(--muted); padding: 2px 12px 4px; }
 .score.lifting { cursor: grabbing; }
+/* 正拖着的力度记号 / 渐强渐弱 / 字：强调色（2026-10-08 user「然后拖动能不能给一点视觉反馈」） */
+.staff-svg text.hot { fill: var(--accent); }
+.staff-svg path.hairpin.hot { stroke: var(--accent); stroke-width: 1.6; }
 /* pad「⋯ → 布局…」= 对话框（2026-10-08 Opus 5.5；user「…比如变成加减号」「要不键盘layout还是一个模态对话框，不会破坏键盘的尺寸」）：
    行 / 列 = 加减号步进，二选一 = 分段钮；卡片靠上，键盘在下面看得见、点了马上变 */
 .offer.pad-layout { align-items: flex-start; padding-top: 64px; }

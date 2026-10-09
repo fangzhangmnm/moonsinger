@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.19-2026-10-08";
+var APP_VERSION = "v0.7.20-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4948,7 +4948,7 @@ function engrave(song, o10) {
       yCur = contentTop(pageNo);
     }
   };
-  const rows = [], notes = [], slots = [], lyrics = [], marks = [], dyns = [];
+  const rows = [], notes = [], slots = [], lyrics = [], marks = [], dyns = [], rests = [];
   const partsHit = [], papersHit = [];
   let head = null, shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
@@ -5321,6 +5321,7 @@ function engrave(song, o10) {
           const g3 = c10.base >= WHOLE ? GLYPH.restWhole : c10.base >= TPQ * 2 ? GLYPH.restHalf : c10.base >= TPQ ? GLYPH.restQuarter : c10.base >= TPQ / 2 ? GLYPH.rest8th : c10.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
           const ry2 = c10.base >= WHOLE ? yOf(row, 36) : yOf(row, MID_LINE);
           prims.push({ t: "glyph", x: P2(c10.x + 0.35), y: ry2, ch: g3, cls: cls ? `rest ${cls}` : "rest" });
+          if (c10.j === 0 && c10.index >= 0) rests.push({ index: c10.index, system: row, x: P2(c10.x + 0.35), w: P2(1.2) });
           if (c10.dotted) prims.push({ t: "glyph", x: P2(c10.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
           return;
         }
@@ -5352,7 +5353,7 @@ function engrave(song, o10) {
           const ly2 = lyricY(lyricRow(c10.system)), cx2 = x0 + nhW(c10) / 2;
           partLyrics.push({ index: c10.index, system: row, x: cx2, y: ly2 });
           if (c10.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P2(0.6), y1: ly2, x2: x0 + nhW(c10) + P2(0.4), y2: ly2, w: P2(0.12), cls: "melisma" });
-          else if (c10.lyric) prims.push({ t: "text", x: cx2, y: ly2, s: lyricShow(c10.lyric), cls: cls ? `lyric ${cls}` : "lyric" });
+          else if (c10.lyric) prims.push({ t: "text", x: cx2, y: ly2, s: lyricShow(c10.lyric), cls: [o10.hot?.has(tokens[c10.index]?.id ?? -1) ? "lyric hot" : "lyric", cls ?? ""].filter(Boolean).join(" ") });
         }
       };
       for (const u2 of units) {
@@ -5363,7 +5364,7 @@ function engrave(song, o10) {
         }
         if (u2.kind === "dyn") {
           const dr = rowOf(u2.system, r10, 0), dy = dynYAt.get(dr) ?? yOf(row, TOP_LINE + 2.4);
-          prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: dy, ch: DYN_GLYPH[u2.value], cls: inSel(u2.index) ? "dyn sel" : "dyn" });
+          prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: dy, ch: DYN_GLYPH[u2.value], cls: o10.hot?.has(tokens[u2.index].id) ? "dyn hot" : inSel(u2.index) ? "dyn sel" : "dyn" });
           const [il2, ir2, iu2, id2] = DYN_INK[u2.value];
           dyns.push({ index: u2.index, kind: "dyn", system: dr, x: P2(u2.x + 0.3 + il2 - 0.3), y: dy - P2(iu2 + 0.4), w: P2(ir2 - il2 + 0.6), h: P2(iu2 + id2 + 0.8) });
           continue;
@@ -5589,7 +5590,7 @@ function engrave(song, o10) {
             if (b3 - a02 < P2(0.3)) continue;
             let a10 = a02;
             if (!said && b3 - a10 >= ww + P2(1)) {
-              prims.push({ t: "text", x: a10, y: midY(sy2) + P2(0.5), s: word, cls: "dyn-word", size: P2(PIN_WORD.size), anchor: "start" });
+              prims.push({ t: "text", x: a10, y: midY(sy2) + P2(0.5), s: word, cls: o10.hot?.has(tokens[h2.index].id) ? "dyn-word hot" : "dyn-word", size: P2(PIN_WORD.size), anchor: "start" });
               a10 += ww + P2(0.6);
               said = true;
             }
@@ -5603,7 +5604,7 @@ function engrave(song, o10) {
             const f0 = acc2 / total, f1 = (acc2 + b3 - a10) / total;
             acc2 += b3 - a10;
             const [h0, h1] = h2.dir === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)], y2 = midY(sy2);
-            prims.push({ t: "path", d: `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`, cls: "hairpin" });
+            prims.push({ t: "path", d: `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`, cls: o10.hot?.has(tokens[h2.index].id) ? "hairpin hot" : "hairpin" });
             dyns.push({ index: h2.index, kind: "hairpin", system: rowOf(sy2, r10, 0), x: a10, y: y2 - P2(1.4), w: b3 - a10, h: P2(2.8) });
           }
         }
@@ -5671,7 +5672,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P2(PG.h) : yCur + P2(MX.b);
-  return { prims, width: o10.width, height, sp: sp2, systems: rows, notes, slots, lyrics, marks, dyns, title, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o10.width, height, sp: sp2, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -6502,7 +6503,11 @@ var ScoreView = class {
     el2.addEventListener("pointercancel", (e10) => {
       if (this.drag) this.host.release?.();
       this.drag = null;
-      this.lift = null;
+      if (this.lift) {
+        this.lift = null;
+        this.hot = null;
+        this.render();
+      }
       el2.classList.remove("lifting");
       this.finger = null;
       this.box = null;
@@ -6527,6 +6532,8 @@ var ScoreView = class {
   press = null;
   /** 拿起来拖着的字 / 记号：st0 = 拿起来之前（每一下都从它重算，谱上实时是挪过去的样子）；targets = 拿起来时这条 track 上能落的音（下标 + 位置，拖的时候不跟着重排跳）；
    *  src / cur = 原来 / 现在落在第几个；moved = 指针动过（没动 = 原地松手）。 */
+  /** 正拖着的东西的 token id（画成强调色；拿起来那一刻就亮）。 */
+  hot = null;
   lift = null;
   selDrag = null;
   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）；menu = 长按的是选区里的音、还没动：抬手 = 选区菜单，动了 = 照常扩选
@@ -6578,7 +6585,8 @@ var ScoreView = class {
       paperLabel: paper.kind === "other" ? "\u5176\u4ED6\u7EB8" : PAPER_LABEL[paper.kind],
       justWrote: st3.log.length > 0,
       ...page ? { page } : { margins },
-      ...(this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st3.at.paper } : {}
+      ...(this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st3.at.paper } : {},
+      ...this.hot ? { hot: this.hot } : {}
     });
     this.ink.style.left = `${this.layout.pageX.left}px`;
     this.tail.style.height = `${this.el.clientHeight}px`;
@@ -6867,7 +6875,8 @@ var ScoreView = class {
     if (!grab || !this.layout) return;
     if (!this.onTrack(grab)) this.host.set(this.focusRow(this.host.get(), grab.system));
     const L2 = this.layout, st0 = this.host.get(), toks = tr(st0), seen = /* @__PURE__ */ new Set();
-    const targets = L2.notes.filter((n10) => this.onTrack(n10) && (grab.kind === "mark" || lyricSlot(toks[n10.index])) && !seen.has(n10.index) && (seen.add(n10.index), true)).map((n10) => ({ idx: n10.index, x: grab.kind === "lyric" ? n10.x + n10.w / 2 : n10.x, system: n10.system })).sort((a10, b3) => a10.idx - b3.idx);
+    const spots = [...L2.notes.map((n10) => ({ ...n10, rest: false })), ...grab.kind === "mark" ? L2.rests.map((r10) => ({ ...r10, rest: true })) : []];
+    const targets = spots.filter((n10) => this.onTrack(n10) && (grab.kind === "mark" || lyricSlot(toks[n10.index])) && !seen.has(n10.index) && (seen.add(n10.index), true)).map((n10) => ({ idx: n10.index, x: grab.kind === "lyric" ? n10.x + n10.w / 2 : n10.x, system: n10.system })).sort((a10, b3) => a10.idx - b3.idx);
     let src;
     if (grab.kind === "lyric") src = targets.findIndex((t10) => t10.idx === grab.index);
     else {
@@ -6878,6 +6887,8 @@ var ScoreView = class {
     if (grab.kind === "lyric" && src < 0) return;
     this.lift = { pid, grab, st0, targets, src, cur: src, x0: x2, y0: y2, cx: cx2, cy: cy2, moved: false, short: false, removed: 0, dx: src >= 0 ? x2 - targets[src].x : 0 };
     this.el.classList.add("lifting");
+    this.hot = /* @__PURE__ */ new Set([toks[grab.index].id]);
+    this.render();
     this.host.focus?.("staff");
   }
   /** 拖着走：指针（减去拿起来时和那个音的错位）最近的那个音 = 落点；换了落点就从拿起来之前的谱重算一次（谱上实时是挪过去的样子）。 */
@@ -6901,6 +6912,7 @@ var ScoreView = class {
     if (f2.grab.kind === "lyric") {
       const want = best - f2.src, r10 = moveSyllable(f2.st0, f2.grab.index, want);
       f2.short = want > 0 ? r10.done < want : r10.done === 0 && want < 0;
+      this.hot = /* @__PURE__ */ new Set([tr(r10.st)[r10.at].id]);
       this.host.set(r10.st, { gesture: "lift" });
     } else {
       const r10 = moveMark(f2.st0, f2.grab.index, f2.targets[best].idx);
@@ -6913,6 +6925,8 @@ var ScoreView = class {
     const f2 = this.lift;
     this.lift = null;
     this.el.classList.remove("lifting");
+    this.hot = null;
+    this.render();
     if (!f2.moved) {
       if (f2.grab.kind === "lyric") this.host.set(select(this.host.get(), f2.grab.index, f2.grab.index + 1));
       else this.host.onMarkPress?.(f2.grab.index, { x: f2.cx, y: f2.cy });
@@ -27970,7 +27984,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "7b580770c5e3",
+  cssHash: "afa65b1a0d27",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -30326,4 +30340,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-9b922016ef38.mjs.map
+//# sourceMappingURL=moonsinger-5e6ddf1f24b8.mjs.map

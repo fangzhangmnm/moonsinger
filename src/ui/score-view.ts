@@ -96,6 +96,8 @@ export class ScoreView {
   private press: null | { pid: number; type: string; x: number; y: number; cx: number; cy: number; hit: HitNote | null; grab: Grab | null; timer: number; shift: boolean; moved: boolean; fired: boolean } = null;
   /** 拿起来拖着的字 / 记号：st0 = 拿起来之前（每一下都从它重算，谱上实时是挪过去的样子）；targets = 拿起来时这条 track 上能落的音（下标 + 位置，拖的时候不跟着重排跳）；
    *  src / cur = 原来 / 现在落在第几个；moved = 指针动过（没动 = 原地松手）。 */
+  /** 正拖着的东西的 token id（画成强调色；拿起来那一刻就亮）。 */
+  private hot: Set<number> | null = null;
   private lift: null | { pid: number; grab: Grab; st0: EditorState; targets: { idx: number; x: number; system: number }[]; src: number; cur: number; x0: number; y0: number; cx: number; cy: number; moved: boolean; short: boolean; removed: number; dx: number } = null;
   private selDrag: null | { pid: number; anchor: number; menu?: boolean } = null;   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）；menu = 长按的是选区里的音、还没动：抬手 = 选区菜单，动了 = 照常扩选
   private handles: { start: HTMLDivElement; end: HTMLDivElement };
@@ -164,7 +166,7 @@ export class ScoreView {
       this.host.focus?.("staff");
       this.host.onSelPress?.({ x: e.clientX, y: e.clientY });
     });
-    el.addEventListener("pointercancel", (e) => { if (this.drag) this.host.release?.(); this.drag = null; this.lift = null; el.classList.remove("lifting"); this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
+    el.addEventListener("pointercancel", (e) => { if (this.drag) this.host.release?.(); this.drag = null; if (this.lift) { this.lift = null; this.hot = null; this.render(); } el.classList.remove("lifting"); this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
     new ResizeObserver(() => this.render()).observe(el);
   }
 
@@ -197,7 +199,7 @@ export class ScoreView {
     this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true,
       autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
-      ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}) });
+      ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}), ...(this.hot ? { hot: this.hot } : {}) });
     this.ink.style.left = `${this.layout.pageX.left}px`;
     this.tail.style.height = `${this.el.clientHeight}px`;
     const svg = toSvg(this.layout);
@@ -429,7 +431,9 @@ export class ScoreView {
     if (!grab || !this.layout) return;
     if (!this.onTrack(grab)) this.host.set(this.focusRow(this.host.get(), grab.system));
     const L = this.layout, st0 = this.host.get(), toks = tr(st0), seen = new Set<number>();
-    const targets = L.notes.filter((n) => this.onTrack(n) && (grab.kind === "mark" || lyricSlot(toks[n.index])) && !seen.has(n.index) && (seen.add(n.index), true))
+    // 落点：歌词 = 能放字的音；记号 = 音和休止（user 2026-10-08「力度符号应该能拖动到休止符上」）
+    const spots = [...L.notes.map((n) => ({ ...n, rest: false })), ...(grab.kind === "mark" ? L.rests.map((r) => ({ ...r, rest: true })) : [])];
+    const targets = spots.filter((n) => this.onTrack(n) && (grab.kind === "mark" || lyricSlot(toks[n.index])) && !seen.has(n.index) && (seen.add(n.index), true))
       .map((n) => ({ idx: n.index, x: grab.kind === "lyric" ? n.x + n.w / 2 : n.x, system: n.system })).sort((a, b) => a.idx - b.idx);
     let src: number;
     if (grab.kind === "lyric") src = targets.findIndex((t) => t.idx === grab.index);
@@ -437,6 +441,7 @@ export class ScoreView {
     if (grab.kind === "lyric" && src < 0) return;
     this.lift = { pid, grab, st0, targets, src, cur: src, x0: x, y0: y, cx, cy, moved: false, short: false, removed: 0, dx: src >= 0 ? x - targets[src].x : 0 };
     this.el.classList.add("lifting");
+    this.hot = new Set([toks[grab.index].id]); this.render();   // 拿起来那一刻就亮（强调色）：知道抓住了
     this.host.focus?.("staff");
   }
   /** 拖着走：指针（减去拿起来时和那个音的错位）最近的那个音 = 落点；换了落点就从拿起来之前的谱重算一次（谱上实时是挪过去的样子）。 */
@@ -453,6 +458,7 @@ export class ScoreView {
     if (f.grab.kind === "lyric") {
       const want = best - f.src, r = moveSyllable(f.st0, f.grab.index, want);
       f.short = want > 0 ? r.done < want : r.done === 0 && want < 0;
+      this.hot = new Set([tr(r.st)[r.at].id]);   // 字挪到哪个音，亮的就跟到哪个音
       this.host.set(r.st, { gesture: "lift" });
     } else {
       const r = moveMark(f.st0, f.grab.index, f.targets[best].idx);
@@ -462,7 +468,7 @@ export class ScoreView {
   }
   /** 松手：没动 = 歌词 → 选中这个音（同长按音；再拖把手扩选），记号 → 小菜单；动了 = 已经挪好了，挪不动 / 顶掉了别的说一声。 */
   private endLift(): void {
-    const f = this.lift!; this.lift = null; this.el.classList.remove("lifting");
+    const f = this.lift!; this.lift = null; this.el.classList.remove("lifting"); this.hot = null; this.render();
     if (!f.moved) {
       if (f.grab.kind === "lyric") this.host.set(select(this.host.get(), f.grab.index, f.grab.index + 1));
       else this.host.onMarkPress?.(f.grab.index, { x: f.cx, y: f.cy });
