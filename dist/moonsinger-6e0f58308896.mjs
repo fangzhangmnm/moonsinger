@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.16-2026-10-10";
+var APP_VERSION = "v0.9.17-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -10438,7 +10438,7 @@ function singChunks(tokens, tempoMap, bounds, mode) {
 var ctx = null;
 function audioCtx() {
   if (!ctx) ctx = new AudioContext();
-  if (ctx.state === "suspended") void ctx.resume();
+  if (ctx.state === "suspended" || ctx.state === "interrupted") void ctx.resume();
   return ctx;
 }
 var keep = null;
@@ -21691,6 +21691,7 @@ var TAIL_MAX = 2;
 var CLIP_FADE_OUT = 0.03;
 var CLIP_FADE_IN = 0.01;
 var GAIN_TAU = 4e-3;
+var POS_EVERY = 8 * BLOCK;
 var MAX_VOWEL_VOICES = 24;
 var V_ATTACK = 0.01;
 var V_RELEASE = 0.04;
@@ -21780,6 +21781,8 @@ var Studio = class {
   chunkBytes = 0;
   // 负载 / 内存监控（刀 6）
   posFrames = 0;
+  /** 宿主的音频时钟：这一块开头的 AudioContext 时间（worklet 每块前设 = currentTime；离线 / 测试不设）。位置报告带上「块尾的时钟」。 */
+  clock = null;
   missingSent = /* @__PURE__ */ new Set();
   constructor(sampleRate, tsf, post) {
     this.sr = sampleRate;
@@ -22015,7 +22018,7 @@ var Studio = class {
     this.draining = false;
     this.tail = -1;
     this.waiting = null;
-    this.posFrames = 0;
+    this.posFrames = POS_EVERY;
     for (const t10 of this.tracks.values()) {
       this.killAll(t10);
       this.endHold(t10);
@@ -22040,6 +22043,7 @@ var Studio = class {
   }
   seek(at2) {
     this.pos = at2;
+    this.posFrames = POS_EVERY;
     if (this.playing) {
       this.tail = -1;
       this.waiting = null;
@@ -22287,6 +22291,7 @@ var Studio = class {
       }
       if (this.pos >= this.range.to - 0.5 / sr2) {
         if (this.loop) {
+          this.posFrames = POS_EVERY;
           this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
           for (const t10 of this.tracks.values()) this.endHold(t10);
           this.resetCursors(false);
@@ -22312,9 +22317,9 @@ var Studio = class {
       }
     }
     this.posFrames += n10;
-    if (this.posFrames >= 16 * BLOCK) {
+    if (this.posFrames >= POS_EVERY) {
       this.posFrames = 0;
-      this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen });
+      this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen, ...this.clock !== null ? { at: this.clock + n10 / sr2 } : {} });
     }
   }
   /** 停了之后：尾巴（释放中的音、淡出中的块）照响到静或 TAIL_MAX；播放头不动，块按自己的钟走。 */
@@ -22635,6 +22640,14 @@ var Studio = class {
 };
 
 // src/engine/studio-client.ts
+function audibleAt(hist, T2) {
+  if (!hist.length) return null;
+  let i10 = hist.length - 1;
+  while (i10 > 0 && hist[i10].at > T2) i10--;
+  const s10 = hist[i10];
+  if (s10.at > T2) return s10.sec;
+  return s10.run ? s10.sec + (T2 - s10.at) : s10.sec;
+}
 var StudioClient = class {
   node = null;
   readyP = null;
@@ -22659,7 +22672,8 @@ var StudioClient = class {
   _pos = 0;
   _waiting = null;
   gen = 0;
-  // 走带代号：play / stop 各加一；录音房的位置报告带着发出时的代号，旧代号的（停了之后还在路上的）扔掉——不然「停」之后一条迟到的 pos 会把 playing 翻回 true
+  hist = [];
+  // 最近 3 s 的位置报告（音频时钟 → 走带位置）：播放头按扬声器的时钟查这张表（2026-10-10 Opus 5.5；user「ipad后台唤起后音频和动画错位」）   // 走带代号：play / stop 各加一；录音房的位置报告带着发出时的代号，旧代号的（停了之后还在路上的）扔掉——不然「停」之后一条迟到的 pos 会把 playing 翻回 true
   ctx;
   moduleUrl;
   wasmUrl;
@@ -22729,13 +22743,19 @@ var StudioClient = class {
               this.bankWait.clear();
               return;
             }
-            case "pos":
+            case "pos": {
               if (m2.gen !== this.gen) return;
               this._pos = m2.sec;
               this._playing = m2.playing;
               this._waiting = m2.waiting;
+              if (m2.at !== void 0) {
+                const h2 = this.hist;
+                h2.push({ at: m2.at, sec: m2.sec, run: m2.playing && !m2.waiting });
+                while (h2.length > 2 && h2[0].at < m2.at - 3) h2.shift();
+              }
               this.emit("pos", m2.sec, m2.playing, m2.waiting);
               return;
+            }
             case "ended":
               if (m2.gen !== this.gen) return;
               this._playing = false;
@@ -22858,6 +22878,7 @@ var StudioClient = class {
     this.gen++;
     this._playing = true;
     this._waiting = null;
+    this.hist = [];
     if (at2 !== void 0) this._pos = at2;
     this.post({ type: "play", at: at2, gen: this.gen });
   }
@@ -22865,7 +22886,24 @@ var StudioClient = class {
     this.gen++;
     this._playing = false;
     this._waiting = null;
+    this.hist = [];
     this.post({ type: "stop" });
+  }
+  /** 扬声器此刻在放音频时钟的哪一刻（getOutputTimestamp：浏览器按硬件的输出缓冲报的；没有就用 currentTime − 两个延迟估）。 */
+  outputTime() {
+    const ctx2 = this.ctx(), ts2 = typeof ctx2.getOutputTimestamp === "function" ? ctx2.getOutputTimestamp() : null;
+    if (ts2 && ts2.contextTime && ts2.performanceTime) return ts2.contextTime + Math.max(0, performance.now() - ts2.performanceTime) / 1e3;
+    return ctx2.currentTime ? ctx2.currentTime - (ctx2.baseLatency || 0) - (ctx2.outputLatency || 0) : null;
+  }
+  /** 输出延迟（ms）：录音房算到的 vs 扬声器放到的（诊断 / 设置页看）。 */
+  latencyMs() {
+    const T2 = this.outputTime();
+    return T2 === null ? null : Math.max(0, (this.ctx().currentTime - T2) * 1e3);
+  }
+  /** 现在**听到的**是走带的哪儿（播放头画这里）；没有报告 = null（退回 position）。 */
+  audibleSec() {
+    const T2 = this.outputTime();
+    return T2 === null ? null : audibleAt(this.hist, T2);
   }
   seek(at2) {
     this._pos = at2;
@@ -34543,7 +34581,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-8b6fc5041f9a.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-81edd2d6affc.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -35516,6 +35554,7 @@ function stopPlay() {
   engine.stop();
   playIcon(false);
   view.setPlayhead(null);
+  phKey = "";
   cancelPrepare = true;
   chunkKeysWanted = [];
   singer.cancelPending();
@@ -35525,11 +35564,35 @@ function stopPlay() {
 engine.on("ended", () => {
   playIcon(false);
   view.setPlayhead(null);
+  phKey = "";
 });
 var lastReorder = 0;
+var phRaf = 0;
+var phKey = "";
+var latLogged = null;
+var latAt = 0;
+function playheadFrame() {
+  phRaf = 0;
+  if (!engine.playing || !playTl) return;
+  const sec = engine.audibleSec() ?? engine.position, loc = playTl.locate(sec), k2 = loc ? `${loc.paperId}:${loc.tick}` : "";
+  if (k2 !== phKey) {
+    phKey = k2;
+    view.setPlayhead(loc);
+  }
+  const now2 = performance.now();
+  if (now2 - latAt > 2e3) {
+    latAt = now2;
+    const lat = engine.latencyMs();
+    if (lat !== null && (latLogged === null || Math.abs(lat - latLogged) > 25)) {
+      latLogged = lat;
+      diagNote("audio", `output latency ${Math.round(lat)} ms (ctx ${singer.unlock().state}, ${typeof singer.unlock().getOutputTimestamp === "function" ? "getOutputTimestamp" : "estimate"})`);
+    }
+  }
+  phRaf = requestAnimationFrame(playheadFrame);
+}
 engine.on("pos", (sec, playing, waiting) => {
   if (!playing) return;
-  if (playTl) view.setPlayhead(playTl.locate(sec));
+  if (playTl && !phRaf) phRaf = requestAnimationFrame(playheadFrame);
   if (waiting) progress("\u7B49\u6708\u8BFB\u5531\u597D\u8FD9\u4E00\u53E5\u2026");
   if (playTl && performance.now() - lastReorder > 1e3) {
     lastReorder = performance.now();
@@ -35792,7 +35855,8 @@ ${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u67
   refresh();
   const engRes = box.querySelector("#engRes");
   const refreshRes = () => {
-    engRes.textContent = `${describe(resourceSnapshot(), BUDGET)} \u6708\u8BFB ${singer.parallelism} \u6761\u9053\uFF08\u8BBE\u5907\u9884\u7B97 ${BUDGET.lanes}\uFF09\u3002`;
+    const lat = engine.latencyMs();
+    engRes.textContent = `${describe(resourceSnapshot(), BUDGET)} \u6708\u8BFB ${singer.parallelism} \u6761\u9053\uFF08\u8BBE\u5907\u9884\u7B97 ${BUDGET.lanes}\uFF09\u3002${lat !== null ? `\u58F0\u97F3\u7684\u8F93\u51FA\u5EF6\u8FDF\uFF08\u6D4F\u89C8\u5668\u62A5\u7684\uFF09${Math.round(lat)} ms\u3002` : ""}`;
   };
   refreshRes();
   const resTimer = window.setInterval(refreshRes, 1e3);
@@ -38682,6 +38746,13 @@ document.addEventListener("visibilitychange", () => {
     monoHeld.clear();
   }
 });
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  const c10 = singer.unlock();
+  latLogged = null;
+  latAt = 0;
+  diagNote("audio", `visible again: ctx ${c10.state}, playing ${engine.playing}`);
+});
 await document.fonts.load(`40px Bravura`).catch(() => void 0);
 view.render();
 pad3.render();
@@ -38706,4 +38777,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8341559cf027.mjs.map
+//# sourceMappingURL=moonsinger-6e0f58308896.mjs.map

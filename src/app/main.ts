@@ -934,15 +934,31 @@ async function togglePlay(o: { fromStart?: boolean; seam?: boolean } = {}): Prom
   finally { releaseAudio(); preparing = false; if (!engine.playing) $("playBtn").classList.remove("is-on"); }
 }
 function stopPlay(): void {
-  engine.stop(); playIcon(false); view.setPlayhead(null); cancelPrepare = true;
+  engine.stop(); playIcon(false); view.setPlayhead(null); phKey = ""; cancelPrepare = true;
   // 停 = 月读也停：正在念的那句中途取消、后面排着的不念了（user 2026-10-10「按停之后月读不应该把长句念完」）；只留安静的预唱（光标附近几句，改谱那套）
   chunkKeysWanted = []; singer.cancelPending(); singer.cancelInflight(); schedulePrewarm();
 }
-engine.on("ended", () => { playIcon(false); view.setPlayhead(null); });
+engine.on("ended", () => { playIcon(false); view.setPlayhead(null); phKey = ""; });
 let lastReorder = 0;
+// 播放头 = 现在**听到的**地方（2026-10-10 Opus 5.5；user「ipad后台唤起后音频和动画错位。以及你有没有办法实际测音频播到哪里了来好好对齐？」）：
+//   原来画的是录音房「正在算」的位置（每 43 ms 一报），声音还要过系统的输出缓冲才到扬声器 → 画面一直早一个输出延迟；iPad 切后台回来系统可能换了更大的缓冲 = 早得更多。
+//   现在每一帧问浏览器扬声器此刻放到音频时钟的哪一刻（getOutputTimestamp），去录音房报的「音频时钟 → 走带位置」对照表里查（StudioClient.audibleSec）。
+let phRaf = 0, phKey = "", latLogged: number | null = null, latAt = 0;
+function playheadFrame(): void {
+  phRaf = 0;
+  if (!engine.playing || !playTl) return;
+  const sec = engine.audibleSec() ?? engine.position, loc = playTl.locate(sec), k = loc ? `${loc.paperId}:${loc.tick}` : "";
+  if (k !== phKey) { phKey = k; view.setPlayhead(loc); }
+  const now = performance.now();
+  if (now - latAt > 2000) {   // 输出延迟变了（换耳机 / 切后台回来）记进黑匣子：错位再报时有数可查
+    latAt = now; const lat = engine.latencyMs();
+    if (lat !== null && (latLogged === null || Math.abs(lat - latLogged) > 25)) { latLogged = lat; diagNote("audio", `output latency ${Math.round(lat)} ms (ctx ${singer.unlock().state}, ${typeof singer.unlock().getOutputTimestamp === "function" ? "getOutputTimestamp" : "estimate"})`); }
+  }
+  phRaf = requestAnimationFrame(playheadFrame);
+}
 engine.on("pos", (sec, playing, waiting) => {
   if (!playing) return;
-  if (playTl) view.setPlayhead(playTl.locate(sec));
+  if (playTl && !phRaf) phRaf = requestAnimationFrame(playheadFrame);
   if (waiting) progress("等月读唱好这一句…");
   if (playTl && performance.now() - lastReorder > 1000) { lastReorder = performance.now(); const r = playRange(playTl); setChunkOrder(playTl, sec, loopOn ? { from: r.loopFrom, to: r.to } : null); }   // 顺序跟着播放头走
 });
@@ -1151,7 +1167,7 @@ function openSettings(): void {
   const refresh = () => { void packStatusText().then((t) => (packSt.textContent = t)); };
   refresh();
   const engRes = box.querySelector<HTMLElement>("#engRes")!;
-  const refreshRes = () => { engRes.textContent = `${describeResources(resourceSnapshot(), BUDGET)} 月读 ${singer.parallelism} 条道（设备预算 ${BUDGET.lanes}）。`; };
+  const refreshRes = () => { const lat = engine.latencyMs(); engRes.textContent = `${describeResources(resourceSnapshot(), BUDGET)} 月读 ${singer.parallelism} 条道（设备预算 ${BUDGET.lanes}）。${lat !== null ? `声音的输出延迟（浏览器报的）${Math.round(lat)} ms。` : ""}`; };
   refreshRes(); const resTimer = window.setInterval(refreshRes, 1000);
   const spCache = box.querySelector<HTMLElement>("#spCache")!;
   const refreshSpeech = () => { void singer.cache("info", BUDGET.speechDisk).then((d) => { spCache.textContent = d ? `${sizeText(d.bytes)} / 预算 ${sizeText(d.budget)}，${d.entries} 条` : "这个浏览器没有 IndexedDB：只用内存"; }).catch((e) => { spCache.textContent = `读不到：${(e as Error).message}`; }); };
@@ -3033,6 +3049,12 @@ window.addEventListener("keyup", (e) => { monoHeld.delete(`key${e.code}`); if (i
 // 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）
 window.addEventListener("blur", () => { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); });
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); } });
+// 切后台回来：声音被系统收起来了（iPad = interrupted）就叫醒；记一笔延迟（回来后系统可能换了缓冲大小——播放头按扬声器的时钟走，会自己跟上）
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible") return;
+  const c = singer.unlock(); latLogged = null; latAt = 0;
+  diagNote("audio", `visible again: ctx ${c.state}, playing ${engine.playing}`);
+});
 
 await document.fonts.load(`40px Bravura`).catch(() => undefined);
 view.render();

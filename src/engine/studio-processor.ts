@@ -5,6 +5,7 @@ import { instantiateTsf } from "../gm/tsf-standalone.ts";
 import { Studio, type StudioIn, type StudioOut } from "./studio.ts";
 
 declare const sampleRate: number;
+declare const currentTime: number;   // 这一块开头的 AudioContext 时间（AudioWorkletGlobalScope）
 declare class AudioWorkletProcessor { readonly port: MessagePort; constructor(options?: unknown) }
 declare function registerProcessor(name: string, ctor: new (options: { processorOptions: { module: WebAssembly.Module } }) => AudioWorkletProcessor): void;
 
@@ -24,6 +25,7 @@ class StudioProcessor extends AudioWorkletProcessor {
     const out = outputs[0]; if (!out || !out.length) return true;
     const L = out[0], R = out[1] ?? out[0];
     if (!this.studio) { for (const c of out) c.fill(0); return true; }
+    this.studio.clock = currentTime;   // 位置报告带上音频时钟：主线程按扬声器的时钟对齐播放头
     this.studio.render(L, R, L.length);
     return true;
   }

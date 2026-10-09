@@ -6,6 +6,16 @@ import { Studio, BLOCK, toInt16, type StudioIn, type StudioOut, type TimelineMsg
 
 export interface VowelTableMsg { sr: number; entries: VowelEntry[]; pcm: Int16Array }
 export interface LoadInfo { busy: number; chunkBytes: number; chunks: number; voices: number }
+/** 一条位置报告：音频时钟 at 那一刻，走带在 sec；run = 正在往前走（放着、没在等块）。 */
+export interface PosSample { at: number; sec: number; run: boolean }
+/** 扬声器此刻（音频时钟 T）放的是走带的哪儿：找 T 之前最近的一条报告，往前推 T − at（在等块 / 停着 = 不推）。T 比最早一条还早 = 那一条的位置。纯函数（测试用）。 */
+export function audibleAt(hist: readonly PosSample[], T: number): number | null {
+  if (!hist.length) return null;
+  let i = hist.length - 1; while (i > 0 && hist[i].at > T) i--;
+  const s = hist[i];
+  if (s.at > T) return s.sec;
+  return s.run ? s.sec + (T - s.at) : s.sec;
+}
 export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number) => void; load: (info: LoadInfo) => void }
 
 export class StudioClient {
@@ -25,7 +35,8 @@ export class StudioClient {
   private busesP: BusSpec[] = [];
   private listeners = new Map<keyof StudioEvents, Set<(...a: never[]) => void>>();
   private _playing = false; private _pos = 0; private _waiting: string | null = null;
-  private gen = 0;   // 走带代号：play / stop 各加一；录音房的位置报告带着发出时的代号，旧代号的（停了之后还在路上的）扔掉——不然「停」之后一条迟到的 pos 会把 playing 翻回 true
+  private gen = 0;
+  private hist: PosSample[] = [];   // 最近 3 s 的位置报告（音频时钟 → 走带位置）：播放头按扬声器的时钟查这张表（2026-10-10 Opus 5.5；user「ipad后台唤起后音频和动画错位」）   // 走带代号：play / stop 各加一；录音房的位置报告带着发出时的代号，旧代号的（停了之后还在路上的）扔掉——不然「停」之后一条迟到的 pos 会把 playing 翻回 true
 
   private ctx: () => AudioContext; private moduleUrl: URL; private wasmUrl: URL;
   constructor(ctx: () => AudioContext, moduleUrl: URL, wasmUrl: URL) { this.ctx = ctx; this.moduleUrl = moduleUrl; this.wasmUrl = wasmUrl; }
@@ -59,7 +70,11 @@ export class StudioClient {
             case "ready": ok(); return;
             case "banked": { this.presets.set(m.sha, new Map(m.presets.map(([b, p], i) => [`${b}:${p}`, i]))); for (const w of this.bankWait.get(m.sha) ?? []) w.ok(); this.bankWait.delete(m.sha); return; }
             case "error": { fail(new Error(m.message)); for (const ws of this.bankWait.values()) for (const w of ws) w.fail(new Error(m.message)); this.bankWait.clear(); return; }
-            case "pos": if (m.gen !== this.gen) return; this._pos = m.sec; this._playing = m.playing; this._waiting = m.waiting; this.emit("pos", m.sec, m.playing, m.waiting); return;
+            case "pos": {
+              if (m.gen !== this.gen) return; this._pos = m.sec; this._playing = m.playing; this._waiting = m.waiting;
+              if (m.at !== undefined) { const h = this.hist; h.push({ at: m.at, sec: m.sec, run: m.playing && !m.waiting }); while (h.length > 2 && h[0].at < m.at - 3) h.shift(); }
+              this.emit("pos", m.sec, m.playing, m.waiting); return;
+            }
             case "ended": if (m.gen !== this.gen) return; this._playing = false; this.emit("ended"); return;
             case "missing": this.emit("missing", m.keys); return;
             case "meter": this.emit("meter", m.peak, m.active); return;
@@ -120,8 +135,18 @@ export class StudioClient {
   buses(b: BusSpec[]): void { this.busesP = b; this.post({ type: "buses", buses: b }); }
 
   /** 从 at 秒放起（不给 = 从范围头 / 上次位置）。要先在用户手势里解锁过 AudioContext（iPad）。 */
-  async play(at?: number): Promise<void> { await this.ensure(); this.gen++; this._playing = true; this._waiting = null; if (at !== undefined) this._pos = at; this.post({ type: "play", at, gen: this.gen }); }
-  stop(): void { this.gen++; this._playing = false; this._waiting = null; this.post({ type: "stop" }); }
+  async play(at?: number): Promise<void> { await this.ensure(); this.gen++; this._playing = true; this._waiting = null; this.hist = []; if (at !== undefined) this._pos = at; this.post({ type: "play", at, gen: this.gen }); }
+  stop(): void { this.gen++; this._playing = false; this._waiting = null; this.hist = []; this.post({ type: "stop" }); }
+  /** 扬声器此刻在放音频时钟的哪一刻（getOutputTimestamp：浏览器按硬件的输出缓冲报的；没有就用 currentTime − 两个延迟估）。 */
+  outputTime(): number | null {
+    const ctx = this.ctx(), ts = typeof ctx.getOutputTimestamp === "function" ? ctx.getOutputTimestamp() : null;
+    if (ts && ts.contextTime && ts.performanceTime) return ts.contextTime + Math.max(0, performance.now() - ts.performanceTime) / 1000;
+    return ctx.currentTime ? ctx.currentTime - (ctx.baseLatency || 0) - ((ctx as unknown as { outputLatency?: number }).outputLatency || 0) : null;
+  }
+  /** 输出延迟（ms）：录音房算到的 vs 扬声器放到的（诊断 / 设置页看）。 */
+  latencyMs(): number | null { const T = this.outputTime(); return T === null ? null : Math.max(0, (this.ctx().currentTime - T) * 1000); }
+  /** 现在**听到的**是走带的哪儿（播放头画这里）；没有报告 = null（退回 position）。 */
+  audibleSec(): number | null { const T = this.outputTime(); return T === null ? null : audibleAt(this.hist, T); }
   seek(at: number): void { this._pos = at; this.post({ type: "seek", at }); }
   /** 按键试听（要先 ensure 过；没装好的这一下丢掉——试听要即时，迟到的音更烦）。 */
   audition(m: Omit<Extract<StudioIn, { type: "audition" }>, "type">): void { if (this.node) this.post({ type: "audition", ...m }); }

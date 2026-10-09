@@ -20,6 +20,8 @@ export const CEILING = 0.98;
 const LIM_ATTACK = 0.003, LIM_RELEASE = 0.15, LIM_LOOK_TAUS = 3;
 /** 范围尾最多等尾巴响多久（秒）；块淡出 / 起放淡入（秒）；表情曲线的一阶平滑 τ（同原 applyGain）。 */
 const TAIL_MAX = 2, CLIP_FADE_OUT = 0.03, CLIP_FADE_IN = 0.01, GAIN_TAU = 0.004;
+/** 位置报告的间隔（采样）：8 块 ≈ 21 ms @48k（主线程按扬声器的时钟在报告之间往前推，跳 / 循环 / 起放时另外立刻报）。 */
+const POS_EVERY = 8 * BLOCK;
 /** 元音采样器：一池最多几声；包络（秒）同原 src/singer/sampler.ts。 */
 const MAX_VOWEL_VOICES = 24, V_ATTACK = 0.01, V_RELEASE = 0.04, V_CUT = 0.006, V_GLIDE = 0.012;
 /** 块到齐检查看多远（秒）。 */
@@ -70,7 +72,8 @@ export type StudioOut =
   | { type: "ready" }
   | { type: "banked"; sha: string; presets: [number, number][] }
   | { type: "error"; message: string }
-  | { type: "pos"; sec: number; playing: boolean; waiting: string | null; gen: number }
+  /** at = 这个位置对应的音频时钟（AudioContext 的秒；宿主给了 clock 才有）：主线程拿扬声器此刻的时钟（getOutputTimestamp）来查「现在听到的是走带的哪儿」。 */
+  | { type: "pos"; sec: number; playing: boolean; waiting: string | null; gen: number; at?: number }
   | { type: "ended"; gen: number }
   | { type: "missing"; keys: string[] }
   | { type: "chunks"; items: { key: string; sr: number; samples: Int16Array }[] }
@@ -152,6 +155,8 @@ export class Studio {
   private meterOn = false; private meterPeak = 0; private meterFrames = 0;
   private loadBusy = 0; private loadFrames = 0; private chunkBytes = 0;   // 负载 / 内存监控（刀 6）
   private posFrames = 0;
+  /** 宿主的音频时钟：这一块开头的 AudioContext 时间（worklet 每块前设 = currentTime；离线 / 测试不设）。位置报告带上「块尾的时钟」。 */
+  clock: number | null = null;
   private missingSent = new Set<string>();
 
   constructor(sampleRate: number, tsf: Tsf, post: (m: StudioOut, transfer?: Transferable[]) => void) {
@@ -278,7 +283,7 @@ export class Studio {
   private play(at?: number): void {
     if (at !== undefined) this.pos = at;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
-    this.playing = true; this.draining = false; this.tail = -1; this.waiting = null; this.posFrames = 0;
+    this.playing = true; this.draining = false; this.tail = -1; this.waiting = null; this.posFrames = POS_EVERY;   // 起放那一块就报（主线程的对照表从这儿开始）
     for (const t of this.tracks.values()) { this.killAll(t); this.endHold(t); }   // 上次停下来还没响完的尾巴快速收掉，别漏进这一次
     this.resetCursors(true);
     this.checkMissing();
@@ -291,7 +296,7 @@ export class Studio {
     this.sweepForget();
   }
   private seek(at: number): void {
-    this.pos = at;
+    this.pos = at; this.posFrames = POS_EVERY;   // 跳了 = 这一块就报（对照表别拿跳之前的位置往后推）
     if (this.playing) { this.tail = -1; this.waiting = null; for (const t of this.tracks.values()) this.endHold(t); this.resetCursors(true); this.checkMissing(); }
   }
   /** 旧块响完 / 不要了：撤 hold；主线程早就说要放掉的这时才真删。 */
@@ -436,7 +441,7 @@ export class Studio {
       const cnt = Math.min(left, Math.max(0, Math.round((stop - this.pos) * sr)));
       if (cnt > 0) { this.renderTracks(done, cnt, true, true); this.pos += cnt / sr; done += cnt; }
       if (this.pos >= this.range.to - 0.5 / sr) {   // 到范围尾
-        if (this.loop) { this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to)); for (const t of this.tracks.values()) this.endHold(t); this.resetCursors(false); this.chaseAtLoop(); this.checkMissing(); }   // 跳回去：正在响的照响，不松
+        if (this.loop) { this.posFrames = POS_EVERY; this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to)); for (const t of this.tracks.values()) this.endHold(t); this.resetCursors(false); this.chaseAtLoop(); this.checkMissing(); }   // 跳回去：正在响的照响，不松
         else { this.tail = 0; for (const t of this.tracks.values()) { this.releaseAll(t); t.envTarget = 0; } }
         continue;
       }
@@ -447,7 +452,7 @@ export class Studio {
       }
     }
     this.posFrames += n;
-    if (this.posFrames >= 16 * BLOCK) { this.posFrames = 0; this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen }); }
+    if (this.posFrames >= POS_EVERY) { this.posFrames = 0; this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen, ...(this.clock !== null ? { at: this.clock + n / sr } : {}) }); }
   }
   /** 停了之后：尾巴（释放中的音、淡出中的块）照响到静或 TAIL_MAX；播放头不动，块按自己的钟走。 */
   private renderDrain(n: number): void {

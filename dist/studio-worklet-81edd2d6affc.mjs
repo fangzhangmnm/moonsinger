@@ -570,6 +570,7 @@ var TAIL_MAX = 2;
 var CLIP_FADE_OUT = 0.03;
 var CLIP_FADE_IN = 0.01;
 var GAIN_TAU = 4e-3;
+var POS_EVERY = 8 * BLOCK;
 var MAX_VOWEL_VOICES = 24;
 var V_ATTACK = 0.01;
 var V_RELEASE = 0.04;
@@ -659,6 +660,8 @@ var Studio = class {
   chunkBytes = 0;
   // 负载 / 内存监控（刀 6）
   posFrames = 0;
+  /** 宿主的音频时钟：这一块开头的 AudioContext 时间（worklet 每块前设 = currentTime；离线 / 测试不设）。位置报告带上「块尾的时钟」。 */
+  clock = null;
   missingSent = /* @__PURE__ */ new Set();
   constructor(sampleRate2, tsf, post) {
     this.sr = sampleRate2;
@@ -894,7 +897,7 @@ var Studio = class {
     this.draining = false;
     this.tail = -1;
     this.waiting = null;
-    this.posFrames = 0;
+    this.posFrames = POS_EVERY;
     for (const t of this.tracks.values()) {
       this.killAll(t);
       this.endHold(t);
@@ -919,6 +922,7 @@ var Studio = class {
   }
   seek(at) {
     this.pos = at;
+    this.posFrames = POS_EVERY;
     if (this.playing) {
       this.tail = -1;
       this.waiting = null;
@@ -1166,6 +1170,7 @@ var Studio = class {
       }
       if (this.pos >= this.range.to - 0.5 / sr) {
         if (this.loop) {
+          this.posFrames = POS_EVERY;
           this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
           for (const t of this.tracks.values()) this.endHold(t);
           this.resetCursors(false);
@@ -1191,9 +1196,9 @@ var Studio = class {
       }
     }
     this.posFrames += n;
-    if (this.posFrames >= 16 * BLOCK) {
+    if (this.posFrames >= POS_EVERY) {
       this.posFrames = 0;
-      this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen });
+      this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen, ...this.clock !== null ? { at: this.clock + n / sr } : {} });
     }
   }
   /** 停了之后：尾巴（释放中的音、淡出中的块）照响到静或 TAIL_MAX；播放头不动，块按自己的钟走。 */
@@ -1538,9 +1543,10 @@ var StudioProcessor = class extends AudioWorkletProcessor {
       for (const c of out) c.fill(0);
       return true;
     }
+    this.studio.clock = currentTime;
     this.studio.render(L, R, L.length);
     return true;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-8b6fc5041f9a.mjs.map
+//# sourceMappingURL=studio-worklet-81edd2d6affc.mjs.map

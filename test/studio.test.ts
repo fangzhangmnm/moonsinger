@@ -4,6 +4,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { instantiateTsf } from "../src/gm/tsf-standalone.ts";
 import { Studio, BLOCK, CEILING, type StudioOut, type TimelineMsg, type TrackSpec } from "../src/engine/studio.ts";
+import { audibleAt } from "../src/engine/studio-client.ts";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL | string): Uint8Array };
 
 const SR = 48000;
@@ -121,6 +122,29 @@ describe("录音房：停 / 再放 / 放着的时候换时间线（2026-10-10）
     assert(Math.abs(s.position - 0.8) < 1e-3, `0.3 + 0.5 = ${s.position}`);
     const a = run(s, 0.3);
     assert(peak(a.L, 0, sec(0.1)) > 0.01, "正在响的音接着响（没被当成已过去）");
+  });
+});
+
+describe("播放头 = 听到的地方（2026-10-10，user「ipad后台唤起后音频和动画错位」）", () => {
+  it("位置报告带音频时钟：起放那一块就报（at = 块尾的时钟）；之后约 21 ms 一报；跳（seek）那一块立刻报", async () => {
+    const { s, out } = await studio();
+    s.handle({ type: "timeline", tl: tl([sfTrack("p", [{ t0: 0, t1: 3, key: 60 }])], { from: 0, to: 3 }) }); s.handle({ type: "play" });
+    const bl = new Float32Array(BLOCK), br = new Float32Array(BLOCK); let clock = 5;
+    const step = () => { s.clock = clock; s.render(bl, br, BLOCK); clock += BLOCK / SR; };
+    step();
+    const p0 = out.filter((m) => m.type === "pos");
+    assert(p0.length === 1 && p0[0].type === "pos" && Math.abs((p0[0].at ?? 0) - (5 + BLOCK / SR)) < 1e-9 && Math.abs(p0[0].sec - BLOCK / SR) < 1e-9, `起放就报：${JSON.stringify(p0)}`);
+    for (let i = 0; i < 16; i++) step();
+    eq(out.filter((m) => m.type === "pos").length, 3, "之后每 8 块一报");
+    s.handle({ type: "seek", at: 2 }); out.length = 0; step();
+    const p1 = out.find((m) => m.type === "pos"); assert(p1 && p1.type === "pos" && Math.abs(p1.sec - (2 + BLOCK / SR)) < 1e-9, "跳了那一块就报");
+  });
+  it("audibleAt：扬声器的时钟 T 落在两条报告之间 = 从前一条往前推；在等块 = 不推；比最早一条还早 = 那一条", () => {
+    const h = [{ at: 10, sec: 0, run: true }, { at: 10.021, sec: 0.021, run: true }, { at: 10.042, sec: 0.03, run: false }];
+    assert(Math.abs(audibleAt(h, 10.01)! - 0.01) < 1e-12, "推 10 ms");
+    eq(audibleAt(h, 10.06), 0.03, "在等块：停在那儿");
+    eq(audibleAt(h, 9.9), 0, "还没到第一条");
+    eq(audibleAt([], 1), null);
   });
 });
 

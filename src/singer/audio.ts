@@ -2,7 +2,7 @@
 let ctx: AudioContext | null = null;
 export function audioCtx(): AudioContext {
   if (!ctx) ctx = new AudioContext();
-  if (ctx.state === "suspended") void ctx.resume();
+  if (ctx.state === "suspended" || (ctx.state as string) === "interrupted") void ctx.resume();   // iPad 切后台回来 = interrupted（Safari 的非标准状态）
   return ctx;
 }
 
