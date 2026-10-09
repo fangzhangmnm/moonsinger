@@ -47,14 +47,16 @@ try {
   const xml = await p.evaluate((arr) => window.__moonsinger.zipText(new Uint8Array(arr), ".moonsinger/papers/p1.musicxml"), bytes);
   const sj = await p.evaluate((arr) => window.__moonsinger.zipText(new Uint8Array(arr), ".moonsinger/score.json"), bytes);
   check(!/breath-mark/.test(xml) && /"phrases"/.test(sj), "句号不进 MusicXML，在 score.json 里");
-  // pad 符号层：点「符」翻页、点「句号」插一个、自动翻回音键
+  // pad 符号层：点「符」翻页、点「句号」插一个；符号层留着，再点一下回音键
   await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("End"); await p.waitForTimeout(100);   // 点谱 = pad 弹出来（歌词框收起时 pad 是藏着的）
   await p.click(".pad-tools [data-symbols]"); await p.waitForTimeout(100);
   await p.click('.pad-head [data-sympage="mark"]'); await p.waitForTimeout(100);   // 句号在「记号」那一页（2026-10-08 符号层分页）
   check(await p.$(".pad-grid.symbols [data-sym=\"phrase\"]") != null, "pad 翻到符号层");
   await p.click(".pad-grid.symbols [data-sym=\"phrase\"]"); await p.waitForTimeout(150);
   check((await kinds()).endsWith(","), "符号层点「句号」= 插了一个", await kinds());
-  check(await p.$(".pad-grid.symbols") == null, "插完翻回音键");
+  check(await p.$(".pad-grid.symbols") != null, "插完符号层还开着（只有 caps；user「符号键盘应该只有caps模式没有shift模式」）");
+  await p.click(".pad-tools [data-symbols]"); await p.waitForTimeout(100);
+  check(await p.$(".pad-grid.symbols") == null, "再点「符」（现在写着「音」）= 回音键");
   // 纸：加第二张，隐藏它；本段视图默认 → 翻到它有说明；全部视图折叠
   await p.evaluate(() => window.__moonsinger.addPaper()); await p.waitForTimeout(100);
   const p2 = await p.evaluate(() => window.__moonsinger.state().song.papers[1].id);

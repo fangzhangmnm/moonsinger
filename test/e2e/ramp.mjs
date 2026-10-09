@@ -7,16 +7,21 @@ const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.l
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 }, deviceScaleFactor: 2 })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
-const key = async (i) => { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); };
+const key = async (i) => { await toNotes(); await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); };
+// 符号层只有 caps（2026-10-09 user「符号键盘应该只有caps模式没有shift模式」）：开着就一直开着，要回音键再点「符」
+const symOpen = () => p.$$eval(".pad-grid.symbols", (g) => g.length > 0);
+const toNotes = async () => { if (await symOpen()) { await p.click("[data-symbols]"); await p.waitForTimeout(80); } };
+const toSyms = async () => { if (!(await symOpen())) { await p.click("[data-symbols]"); await p.waitForTimeout(80); } await p.click('.pad-head [data-sympage="dyn"]'); await p.waitForTimeout(80); };
 // 写一个音，符号层力度页按 p；再写三个音，「渐到」+ f
 await key(0);
-await p.click("[data-symbols]"); await p.waitForTimeout(100); await p.click('.pad-head [data-sympage="dyn"]'); await p.waitForTimeout(100);
+await toSyms();
 await p.click('[data-sym="dyn:p"]'); await p.waitForTimeout(120);
+check(await symOpen(), "写了一个力度，符号层还开着（只有 caps）");
 for (const i of [1, 2, 3]) await key(i);
-await p.click("[data-symbols]"); await p.waitForTimeout(100);
+await toSyms();
 await p.click('[data-sym="dyn:ramp"]'); await p.waitForTimeout(100);
 check(await p.$eval('[data-sym="dyn:ramp"]', (e) => e.classList.contains("once")), "渐到键亮着（点一下 = 等下一个力度）");
-check(await p.$$eval(".pad-grid.symbols", (g) => g.length) === 1, "点渐到不算用掉一次性");
+check(await symOpen(), "点渐到：符号层还开着");
 await p.click('[data-sym="dyn:f"]'); await p.waitForTimeout(150);
 const seq = await p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].slice(3).map((t) => (t.kind === "note" ? "n" : t.kind === "dyn" ? t.value + (t.ramp ? "~" : "") : t.kind)).join(" "); });
 check(seq === "p n n n f~ n", "谱：p 在第一个音、渐到 f 在最后一个音", seq);
@@ -33,17 +38,17 @@ check(await p.$$eval("#score text.note.in-span", (e) => e.length) === 0, "菜单
 // 渐到锁住（2026-10-09，user「然后软键盘到时候加一个toggle渐进到的标签，这样可以快速键盘输入」）：连点两下 = 锁，之后写的力度都是渐到；再点 = 关
 const dyns = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "dyn").map((t) => t.value + (t.ramp ? "~" : "")).join(" "); });
 await key(4);
-await p.click("[data-symbols]"); await p.waitForTimeout(100);
+await toSyms();
 await p.click('[data-sym="dyn:ramp"]'); await p.waitForTimeout(40); await p.click('[data-sym="dyn:ramp"]'); await p.waitForTimeout(100);
 check(await p.$eval('[data-sym="dyn:ramp"]', (e) => e.classList.contains("lock")), "连点两下 = 锁住");
 check(await p.$$eval('.pad-head [data-sympage="dyn"] .ramp-tag.lock', (e) => e.length) === 1, "「力度」标签上挂着「渐到」");
 await p.click('[data-sym="dyn:mf"]'); await p.waitForTimeout(150);
 await key(5);
-await p.click("[data-symbols]"); await p.waitForTimeout(100);
+await toSyms();
 check(await p.$eval('[data-sym="dyn:ramp"]', (e) => e.classList.contains("lock")), "写过一个力度、回音键再翻回来 = 还锁着");
 await p.click('[data-sym="dyn:ff"]'); await p.waitForTimeout(150);
 check(await dyns() === "p f mf~ ff~", "锁着写的两个力度都是渐到", await dyns());
-await p.click("[data-symbols]"); await p.waitForTimeout(100);
+await toSyms();
 await p.click('[data-sym="dyn:ramp"]'); await p.waitForTimeout(100);
 check(await p.$eval('[data-sym="dyn:ramp"]', (e) => !e.classList.contains("lock") && !e.classList.contains("once")), "锁着再点 = 关");
 check(await p.$$eval('.pad-head [data-sympage="dyn"] .ramp-tag', (e) => e.length) === 0, "标签上的「渐到」没了");

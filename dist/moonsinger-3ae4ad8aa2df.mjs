@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.13-2026-10-09";
+var APP_VERSION = "v0.8.14-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -8934,8 +8934,9 @@ var Pad = class {
   // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
   swipeMode = "glide";
   // 音键上滑 = 滑到下一个键就响下一个（默认；user 2026-10-08「滚键盘的意思是手指在键盘上滑动到下一个音，不说拖动键盘」）/ 上下滑 = 这一个音升降（黏着）
+  /** 符号层开着（像 iOS 键盘翻到 .?123 那一页：表情记号）。只有 caps：点「符」进来就一直留着，再点（键上写「音」）回音键
+   *  （2026-10-09 user「符号键盘应该只有caps模式没有shift模式」；10-08 起是 Shift 逻辑——点一下写一个就回音键、连点两下锁住，user 那时说「符号输入也应该有capslock」）。 */
   symbols = "off";
-  symAt = 0;
   /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
   symPage = "art";
   symBuilt = null;
@@ -8943,7 +8944,6 @@ var Pad = class {
    *  点一下 = 下一个力度是渐到；连点两下 = 锁住（之后写的力度都是渐到，「力度」标签上挂着「渐到」）；再点 = 关。 */
   ramp = "off";
   rampAt = 0;
-  // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
   mode = "normal";
   gridFor = "";
   toolsFor = "";
@@ -9002,7 +9002,7 @@ var Pad = class {
     this.el.style.setProperty("--cols", String(this.cols));
     this.el.style.setProperty("--rows", String(rows));
     if (!this.el.querySelector(".pad-grid")) {
-      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u8868\u60C5\u8BB0\u53F7\u2014\u2014\u53E5\u53F7\u3001\u8DF3\u97F3 / \u91CD\u97F3 / \u4FDD\u6301 / \u547C\u5438 / \u8FDE\u7EBF\u3001\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF1B\u5199\u97F3\u90A3\u4E00\u5C42\u7684\u952E\u5F00\u7740\u65F6\u7070\u6389\uFF09\u3002\u70B9\u4E00\u4E0B = \u5199\u4E00\u4E2A\u5C31\u56DE\u97F3\u952E\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u540C Shift\uFF09\uFF1B\u518D\u70B9 = \u56DE\u97F3\u952E"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk breath" data-breath="1" title="\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"><span class="smufl">\uE4CE</span><small>\u547C\u5438</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
+      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn wk sym-toggle" data-symbols="1" title="\u7B26\u53F7\u5C42\uFF1A\u8868\u60C5\u8BB0\u53F7\u2014\u2014\u53E5\u53F7\u3001\u8DF3\u97F3 / \u91CD\u97F3 / \u4FDD\u6301 / \u547C\u5438 / \u8FDE\u7EBF\u3001\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u2026\uFF08\u50CF\u952E\u76D8\u7684 .?123\uFF1B\u5199\u97F3\u90A3\u4E00\u5C42\u7684\u952E\u5F00\u7740\u65F6\u7070\u6389\uFF09\u3002\u70B9\u4E00\u4E0B\u8FDB\u6765\uFF0C\u4E00\u76F4\u7559\u7740\uFF08\u540C Caps Lock\uFF09\uFF1B\u518D\u70B9\uFF08\u952E\u4E0A\u5199\u300C\u97F3\u300D\uFF09\u56DE\u97F3\u952E"><span>\u7B26</span><small>\u7B26\u53F7</small></button><button class="btn" data-caret="-1" title="\u5149\u6807\u5DE6\u79FB\uFF08${hint("left")}\uFF09">\u2190</button><button class="btn" data-caret="1" title="\u5149\u6807\u53F3\u79FB\uFF08${hint("right")}\uFF09">\u2192</button><button class="btn wk" data-cmd="rest" title="\u4F11\u6B62\uFF08${hint("rest")}\uFF09"><span>0</span><small>\u4F11\u6B62</small></button><button class="btn wk" data-cmd="bar" title="\u5C0F\u8282\u7EBF\uFF08${hint("bar")}\uFF09"><span>|</span><small>\u5C0F\u8282\u7EBF</small></button><button class="btn wk breath" data-breath="1" title="\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"><span class="smufl">\uE4CE</span><small>\u547C\u5438</small></button><button class="btn wk accshift" data-accshift="1" title="\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}"><span class="ag"></span><small>\u5347\u964D</small></button><button class="btn wk stack" data-stack="1" title="\u53E0\u97F3\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u6309\u7684\u97F3\u53E0\u5230\u524D\u4E00\u4E2A\u97F3\u4E0A\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF08\u53E0\u7740\u5199\uFF1A\u6309\u5DF2\u6709\u7684\u97F3 = \u62FF\u6389\uFF0C\u6700\u540E\u4E00\u4E2A\u7559\u7740\uFF09\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86"><span>\u53E0</span><small>\u53E0\u97F3</small></button><button class="btn wk half" data-half="1" title="\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199"><span>/2</span><small>\u51CF\u534A</small></button><button class="btn wk" data-cmd="extend" title="\u62C9\u957F\u4E00\u4EFD\uFF08${hint("extend")}\uFF09"><span>\u2014</span><small>\u62C9\u957F</small></button><button class="btn" data-cmd="backspace" title="\u9000\u683C\uFF08${hint("backspace")}\uFF09"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
       const w2 = this.el.querySelector(".writes");
       this.on(w2, "[data-caret]", (b3) => this.host.onCommand({ k: "caret", d: Number(b3.dataset.caret) }));
       this.on(w2, "[data-cmd]:not([data-cmd=backspace])", (b3) => this.host.onCommand({ k: b3.dataset.cmd }));
@@ -9068,9 +9068,7 @@ var Pad = class {
       w2.querySelector("[data-symbols]").addEventListener("pointerdown", (e10) => {
         e10.preventDefault();
         if (this.host.isImpro()) return;
-        const t10 = performance.now();
-        this.symbols = this.symbols === "off" ? "once" : this.symbols === "once" && t10 - this.symAt < 350 ? "lock" : "off";
-        this.symAt = t10;
+        this.symbols = this.symbols === "off" ? "lock" : "off";
         this.render();
       });
       const ak2 = w2.querySelector("[data-accshift]");
@@ -9220,7 +9218,7 @@ var Pad = class {
     });
   }
   /** 符号层（user 2026-10-08「呼吸的话我建议就是特殊符号吧，专门的特殊符号，软键盘里面后面有一个符号模式」「速度符号调号符号也都在里面…row col 超了可以拖动滚」）：
-   *  和音键一样大的格子，多了往下滚；点一个 = 做那件事、回到音键（一次性）。 */
+   *  和音键一样大的格子，多了往下滚；点一个 = 做那件事，符号层留着（只有 caps，2026-10-09）。 */
   buildSymbols() {
     const grid = this.el.querySelector(".pad-grid");
     const ign = new Set(this.host.ignoredArts?.() ?? []), dynNow = this.host.dynHere?.() ?? null;
@@ -9285,7 +9283,6 @@ var Pad = class {
         this.render();
         return;
       }
-      if (this.symbols === "once") this.symbols = "off";
       if (id2 === "key" || id2 === "time" || id2 === "tempo") this.host.onInsertMark(id2);
       else if (id2 === "groove") this.host.onGroove?.();
       else if (id2 === "staff") this.host.onCommand({ k: "staff" });
@@ -9466,7 +9463,6 @@ var Pad = class {
     if (syb) syb.disabled = this.host.isImpro();
     const sy2 = this.el.querySelector("[data-symbols]");
     if (sy2) {
-      sy2.classList.toggle("once", this.symbols === "once");
       sy2.classList.toggle("lock", this.symbols === "lock");
       sy2.querySelector("span").textContent = this.symbols !== "off" ? "\u97F3" : "\u7B26";
     }
@@ -35594,4 +35590,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-284ffab5b330.mjs.map
+//# sourceMappingURL=moonsinger-3ae4ad8aa2df.mjs.map

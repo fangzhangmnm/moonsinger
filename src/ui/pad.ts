@@ -148,12 +148,14 @@ export class Pad {
   private rowsSetting: number | "auto" = 4;   // 默认 4 行（user「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
   private layoutMode: "movable" | "absolute" = "absolute";   // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
   private swipeMode: "glide" | "alter" = "glide";          // 音键上滑 = 滑到下一个键就响下一个（默认；user 2026-10-08「滚键盘的意思是手指在键盘上滑动到下一个音，不说拖动键盘」）/ 上下滑 = 这一个音升降（黏着）
-  private symbols: "off" | "once" | "lock" = "off"; private symAt = 0;
+  /** 符号层开着（像 iOS 键盘翻到 .?123 那一页：表情记号）。只有 caps：点「符」进来就一直留着，再点（键上写「音」）回音键
+   *  （2026-10-09 user「符号键盘应该只有caps模式没有shift模式」；10-08 起是 Shift 逻辑——点一下写一个就回音键、连点两下锁住，user 那时说「符号输入也应该有capslock」）。 */
+  private symbols: "off" | "lock" = "off";
   /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
   private symPage: SymPage = "art"; private symBuilt: SymPage | null = null;
   /** 「渐到」先点它、再点一个力度 = 这个力度从上一个力度记号渐变过来（2026-10-08 深夜，user「渐到 做」）。Shift 逻辑（2026-10-09，user「然后软键盘到时候加一个toggle渐进到的标签，这样可以快速键盘输入」）：
    *  点一下 = 下一个力度是渐到；连点两下 = 锁住（之后写的力度都是渐到，「力度」标签上挂着「渐到」）；再点 = 关。 */
-  private ramp: "off" | "once" | "lock" = "off"; private rampAt = 0;   // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
+  private ramp: "off" | "once" | "lock" = "off"; private rampAt = 0;
   private mode: Mode = "normal";
   private gridFor = "";
   private toolsFor = "";
@@ -208,7 +210,7 @@ export class Pad {
     this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols)); this.el.style.setProperty("--rows", String(rows));   // --rows：符号层的高 = 音键那几排（几何不变，多了滚）
     if (!this.el.querySelector(".pad-grid")) {
       this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes">` +
-        `<button class="btn wk sym-toggle" data-symbols="1" title="符号层：表情记号——句号、跳音 / 重音 / 保持 / 呼吸 / 连线、力度、渐强渐弱、调号 / 拍号 / 速度…（像键盘的 .?123；写音那一层的键开着时灰掉）。点一下 = 写一个就回音键；连点两下 = 锁住（同 Shift）；再点 = 回音键"><span>符</span><small>符号</small></button>` +
+        `<button class="btn wk sym-toggle" data-symbols="1" title="符号层：表情记号——句号、跳音 / 重音 / 保持 / 呼吸 / 连线、力度、渐强渐弱、调号 / 拍号 / 速度…（像键盘的 .?123；写音那一层的键开着时灰掉）。点一下进来，一直留着（同 Caps Lock）；再点（键上写「音」）回音键"><span>符</span><small>符号</small></button>` +
         `<button class="btn" data-caret="-1" title="光标左移（${hint("left")}）">←</button>` +
         `<button class="btn" data-caret="1" title="光标右移（${hint("right")}）">→</button>` +
         `<button class="btn wk" data-cmd="rest" title="休止（${hint("rest")}）"><span>0</span><small>休止</small></button>` +
@@ -263,8 +265,7 @@ export class Pad {
       // 符号层开关
       w.querySelector<HTMLElement>("[data-symbols]")!.addEventListener("pointerdown", (e) => {
         e.preventDefault(); if (this.host.isImpro()) return;   // 弹 = 只弹不写：符号层会写进谱，弹的时候不开
-        const t = performance.now();
-        this.symbols = this.symbols === "off" ? "once" : this.symbols === "once" && t - this.symAt < 350 ? "lock" : "off"; this.symAt = t; this.render();
+        this.symbols = this.symbols === "off" ? "lock" : "off"; this.render();   // caps：开 / 关
       });
       // 升降键（user「以及临时升降号的shift好像你也忘了哈哈，要不就是按住是shift，然后也可以上下滑动切换## # b bb，然后按是当作shift，滑动是toggle which shift」）：
       //   按 = Shift（点一下 / 连点两下 / 按住写，逻辑在宿主 main.ts accKey）；按着上下滑过 SWIPE = 换一种（往上 = 更升），键上跟着显示
@@ -383,7 +384,7 @@ export class Pad {
     });
   }
   /** 符号层（user 2026-10-08「呼吸的话我建议就是特殊符号吧，专门的特殊符号，软键盘里面后面有一个符号模式」「速度符号调号符号也都在里面…row col 超了可以拖动滚」）：
-   *  和音键一样大的格子，多了往下滚；点一个 = 做那件事、回到音键（一次性）。 */
+   *  和音键一样大的格子，多了往下滚；点一个 = 做那件事，符号层留着（只有 caps，2026-10-09）。 */
   private buildSymbols(): void {
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
     const ign = new Set(this.host.ignoredArts?.() ?? []), dynNow = this.host.dynHere?.() ?? null;
@@ -436,11 +437,10 @@ export class Pad {
     });
     const act = (b: HTMLElement) => {
       const id = b.dataset.sym!;
-      if (id === "dyn:ramp") {   // 修饰键：不算用掉「一次性」；点一下 = 下一个，连点两下 = 锁，再点 = 关（同「符」）
+      if (id === "dyn:ramp") {   // 修饰键（只改下一个 / 之后的力度）：点一下 = 下一个，连点两下 = 锁，再点 = 关（同 /2、升降）
         const t = performance.now();
         this.ramp = this.ramp === "off" ? "once" : this.ramp === "once" && t - this.rampAt < 350 ? "lock" : "off"; this.rampAt = t; this.render(); return;
       }
-      if (this.symbols === "once") this.symbols = "off";   // 点一下 = 一次性：做完回到音键；锁住 = 留在符号层
       if (id === "key" || id === "time" || id === "tempo") this.host.onInsertMark(id);
       else if (id === "groove") this.host.onGroove?.();
       else if (id === "staff") this.host.onCommand({ k: "staff" });
@@ -575,7 +575,7 @@ export class Pad {
     const symOn = this.symbols !== "off";
     this.el.querySelectorAll<HTMLButtonElement>('.writes [data-cmd="rest"], .writes [data-cmd="bar"], .writes [data-cmd="extend"], .writes [data-accshift], .writes [data-stack], .writes [data-half]').forEach((b) => { b.disabled = symOn; });
     const syb = this.el.querySelector<HTMLButtonElement>("[data-symbols]"); if (syb) syb.disabled = this.host.isImpro();
-    const sy = this.el.querySelector<HTMLElement>("[data-symbols]"); if (sy) { sy.classList.toggle("once", this.symbols === "once"); sy.classList.toggle("lock", this.symbols === "lock"); sy.querySelector("span")!.textContent = this.symbols !== "off" ? "音" : "符"; }
+    const sy = this.el.querySelector<HTMLElement>("[data-symbols]"); if (sy) { sy.classList.toggle("lock", this.symbols === "lock"); sy.querySelector("span")!.textContent = this.symbols !== "off" ? "音" : "符"; }
   }
 
   private on(root: HTMLElement, sel: string, fn: (b: HTMLElement) => void): void {
