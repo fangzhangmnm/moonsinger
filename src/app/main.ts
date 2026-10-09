@@ -1384,7 +1384,7 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
     item("bar", "小节线 |", "从这里重新数小节（弱起）") + item("phrase", "句号", "这一句到这儿（「合」挪字的边界；不换行不换气）") +
     item("mark:key", "调号…") + item("mark:time", "拍号…") + item("mark:tempo", "速度…") +
     // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
-    `<div class="ctx-row ctx-dyn">${(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(st), st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：从这儿起"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
+    `<div class="ctx-row ctx-dyn">${(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(st), st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：从这儿前面那个音起"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
     `<div class="ctx-sep"></div>` +
     item("row", "全选这一行", "", !row) + item("all", "全选");
   document.body.append(box);

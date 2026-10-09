@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.26-2026-10-08";
+var APP_VERSION = "v0.7.27-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3188,62 +3188,77 @@ function dynMarkAt(tokens, i10) {
   }
   return null;
 }
-function dynRunAt(tokens, at2) {
-  let a10 = at2, b3 = at2;
-  const zero = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "phrase" || isMark(t10));
-  while (a10 > headLen(tokens) && zero(tokens[a10 - 1])) a10--;
-  while (b3 < tokens.length && zero(tokens[b3])) b3++;
-  let k2 = -1;
-  for (let i10 = a10; i10 < b3; i10++) if (tokens[i10].kind === "dyn") k2 = i10;
-  return { a: a10, b: b3, k: k2 };
+function markAnchor(st3) {
+  const toks = tr(st3), h2 = headLen(toks);
+  if (st3.sel) {
+    for (let i10 = Math.max(h2, st3.sel.from); i10 < Math.min(toks.length, st3.sel.to); i10++) if (isTimed(toks[i10])) return i10;
+    return -1;
+  }
+  for (let i10 = Math.min(st3.caret, toks.length) - 1; i10 >= h2; i10--) if (isTimed(toks[i10])) return i10;
+  for (let i10 = Math.max(h2, st3.caret); i10 < toks.length; i10++) if (isTimed(toks[i10])) return i10;
+  return -1;
 }
+function runBefore(toks, anchor) {
+  let a10 = anchor;
+  while (a10 > headLen(toks) && !isTimed(toks[a10 - 1]) && toks[a10 - 1].kind !== "bar") a10--;
+  return a10;
+}
+var shiftAt = (st3, d3, pos) => ({ sel: st3.sel ? { from: st3.sel.from + (st3.sel.from >= pos ? d3 : 0), to: st3.sel.to + (st3.sel.to > pos || st3.sel.to === pos && d3 > 0 ? d3 : 0) } : null, caret: st3.caret + (st3.caret >= pos ? d3 : 0) });
 function setDynSel(st3, value) {
-  const toks = tr(st3), at2 = Math.max(headLen(toks), st3.sel ? st3.sel.from : st3.caret), { k: k2 } = dynRunAt(toks, at2), nt2 = toks.slice();
-  const shift = (d3, pos) => ({ sel: st3.sel ? { from: st3.sel.from + (st3.sel.from >= pos ? d3 : 0), to: st3.sel.to + (st3.sel.to > pos || st3.sel.to === pos && d3 > 0 ? d3 : 0) } : null, caret: st3.caret + (st3.caret >= pos ? d3 : 0) });
+  const toks = tr(st3), an2 = markAnchor(st3);
+  if (an2 < 0) return st3;
+  const a10 = runBefore(toks, an2), nt2 = toks.slice();
+  let k2 = -1;
+  for (let i10 = a10; i10 < an2; i10++) if (toks[i10].kind === "dyn") k2 = i10;
   if (k2 >= 0) {
     if (value === null) {
       nt2.splice(k2, 1);
-      return next(st3, nt2, shift(-1, k2));
+      return next(st3, nt2, shiftAt(st3, -1, k2));
     }
     nt2[k2] = { ...nt2[k2], value };
     return next(st3, nt2);
   }
   if (value === null) return st3;
+  let at2 = an2;
+  for (let i10 = a10; i10 < an2; i10++) if (toks[i10].kind === "hairpin") {
+    at2 = i10;
+    break;
+  }
   const id2 = st3.nextId;
   nt2.splice(at2, 0, { kind: "dyn", id: id2, value });
-  return next({ ...st3, nextId: id2 + 1 }, nt2, shift(1, at2));
+  return next({ ...st3, nextId: id2 + 1 }, nt2, shiftAt(st3, 1, at2));
 }
 function toggleHairpin(st3, dir) {
-  const toks = tr(st3), at2 = Math.max(headLen(toks), st3.sel ? st3.sel.from : st3.caret);
-  const zero = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "phrase" || isMark(t10));
+  const toks = tr(st3), an2 = markAnchor(st3);
+  if (an2 < 0) return st3;
+  const a10 = runBefore(toks, an2), nt2 = toks.slice();
   let k2 = -1;
-  for (let i10 = at2 - 1; i10 >= headLen(toks) && zero(toks[i10]); i10--) if (toks[i10].kind === "hairpin") {
+  for (let i10 = a10; i10 < an2; i10++) if (toks[i10].kind === "hairpin") {
     k2 = i10;
     break;
   }
-  if (k2 < 0) {
-    for (let i10 = at2; i10 < toks.length && zero(toks[i10]); i10++) if (toks[i10].kind === "hairpin") {
-      k2 = i10;
-      break;
-    }
-  }
-  const nt2 = toks.slice(), shift = (d3, pos) => ({ sel: st3.sel ? { from: st3.sel.from + (st3.sel.from >= pos ? d3 : 0), to: st3.sel.to + (st3.sel.to > pos || st3.sel.to === pos && d3 > 0 ? d3 : 0) } : null, caret: st3.caret + (st3.caret >= pos ? d3 : 0) });
   if (k2 >= 0) {
     const h2 = toks[k2];
     if (h2.dir === dir) {
       nt2.splice(k2, 1);
-      return next(st3, nt2, shift(-1, k2));
+      return next(st3, nt2, shiftAt(st3, -1, k2));
     }
     nt2[k2] = { ...h2, dir };
     return next(st3, nt2);
   }
   const id2 = st3.nextId;
-  nt2.splice(at2, 0, { kind: "hairpin", id: id2, dir });
-  return next({ ...st3, nextId: id2 + 1 }, nt2, shift(1, at2));
+  nt2.splice(an2, 0, { kind: "hairpin", id: id2, dir });
+  return next({ ...st3, nextId: id2 + 1 }, nt2, shiftAt(st3, 1, an2));
 }
 function dynMarkSel(st3) {
-  const toks = tr(st3), { k: k2 } = dynRunAt(toks, Math.max(headLen(toks), st3.sel ? st3.sel.from : st3.caret));
-  return k2 >= 0 ? toks[k2].value : null;
+  const toks = tr(st3), an2 = markAnchor(st3);
+  if (an2 < 0) return null;
+  let v = null;
+  for (let i10 = runBefore(toks, an2); i10 < an2; i10++) {
+    const t10 = toks[i10];
+    if (t10.kind === "dyn") v = t10.value;
+  }
+  return v;
 }
 function setPaperHidden(st3, paperId, hidden) {
   const papers = st3.song.papers.map((p2) => p2.id !== paperId ? p2 : hidden ? { ...p2, hidden: true } : (({ hidden: _h, ...rest }) => rest)(p2));
@@ -7807,9 +7822,9 @@ var Pad = class {
       cell("art:sfz", `<span class="smufl">\uE539</span>`, "\u7A81\u5F3A", "\u7A81\u5F3A sfz\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u97F3\u5934\u731B\u5730\u51B2\u4E00\u4E0B\u518D\u843D\u56DE\u6765\uFF1B\u548C\u91CD\u97F3 / \u5F3A\u97F3 / fp \u4E92\u65A5"),
       cell("art:fp", `<span class="smufl">\uE534</span>`, "\u5F3A\u540E\u5373\u5F31", "\u5F3A\u540E\u5373\u5F31 fp\uFF1A\u97F3\u5934 f\uFF0C\u9A6C\u4E0A\u843D\u5230 p\uFF0C\u4E4B\u540E\u7684\u97F3\u90FD\u662F p\uFF1B\u548C\u91CD\u97F3 / \u5F3A\u97F3 / sfz \u4E92\u65A5"),
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "\u4FDD\u6301", "\u4FDD\u6301\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u6EE1\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
-      cell("wedge:cresc", CRESC_CELL, "\u6E10\u5F3A", "\u6E10\u5F3A <\uFF1A\u4ECE\u5149\u6807\u8FD9\u513F\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F3A\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
-      cell("wedge:dim", DIM_CELL, "\u6E10\u5F31", "\u6E10\u5F31 >\uFF1A\u4ECE\u5149\u6807\u8FD9\u513F\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F31\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
-      ...["pp", "p", "mp", "mf", "f", "ff"].map((d3) => cell(`dyn:${d3}${d3 === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d3]}</span>`, "\u529B\u5EA6", `\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u5149\u6807\u8FD9\u91CC\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389\uFF08user 2026-10-08\u300Cmp mf \u5728\u54EA\u91CC\u52A0\u554A\u300D\uFF09`)),
+      cell("wedge:cresc", CRESC_CELL, "\u6E10\u5F3A", "\u6E10\u5F3A <\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F3A\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
+      cell("wedge:dim", DIM_CELL, "\u6E10\u5F31", "\u6E10\u5F31 >\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F31\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
+      ...["pp", "p", "mp", "mf", "f", "ff"].map((d3) => cell(`dyn:${d3}${d3 === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d3]}</span>`, "\u529B\u5EA6", `\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389\uFF08user 2026-10-08\u300Cmp mf \u5728\u54EA\u91CC\u52A0\u554A\u300D\uFF09`)),
       ...["<", ">", "<>"].map((w2) => cell(`swell:${w2}`, SWELL_CELL[w2], w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31" : "\u97F3\u5185\u9F13\u8D77", `${w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31\uFF08\u952F\u9F7F\uFF09" : "\u97F3\u5185\u9F13\u8D77\uFF08messa di voce\uFF09"}\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u81EA\u5DF1\u91CC\u9762\u7684\u8D77\u4F0F\uFF1B\u548C\u6BB5\u843D\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u4E24\u5C42\uFF0C\u53EF\u4EE5\u53E0\uFF1B\u518D\u70B9 = \u53BB\u6389`)),
       cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09\u3002\u540C\u4E00\u4E2A\u97F3\u4E0A\u53C8\u6709\u547C\u5438 = \u547C\u5438\u7B97\u6570\uFF1A\u90A3\u91CC\u7167\u6837\u65AD\u5F00\u6362\u6C14\uFF0C\u8FDE\u7EBF\u7167\u753B"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
@@ -28768,7 +28783,7 @@ function openScoreMenu(at2, row) {
   box.setAttribute("role", "menu");
   const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
   box.innerHTML = item("paste", "\u7C98\u8D34", "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09") + `<div class="ctx-sep"></div>` + item("bar", "\u5C0F\u8282\u7EBF |", "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09") + item("phrase", "\u53E5\u53F7", "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09") + item("mark:key", "\u8C03\u53F7\u2026") + item("mark:time", "\u62CD\u53F7\u2026") + item("mark:tempo", "\u901F\u5EA6\u2026") + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
-  `<div class="ctx-row ctx-dyn">${["pp", "p", "mp", "mf", "f", "ff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(st2), st2.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u8FD9\u513F\u8D77"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("row", "\u5168\u9009\u8FD9\u4E00\u884C", "", !row) + item("all", "\u5168\u9009");
+  `<div class="ctx-row ctx-dyn">${["pp", "p", "mp", "mf", "f", "ff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(st2), st2.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("row", "\u5168\u9009\u8FD9\u4E00\u884C", "", !row) + item("all", "\u5168\u9009");
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let x2 = at2.x + 6, y2 = at2.y + 10;
@@ -30448,4 +30463,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f37ce24b9f27.mjs.map
+//# sourceMappingURL=moonsinger-97133e260cec.mjs.map

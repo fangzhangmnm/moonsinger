@@ -474,47 +474,56 @@ export function dynAt(tokens: Token[], i: number): Dyn {
   for (let j = Math.min(i, tokens.length) - 1; j >= 0; j--) { const t = tokens[j]; if (t.kind === "dyn") return t.value; }
   return DEFAULT_DYN;
 }
-/** 选区开头（没选区 = 光标处）那一串不占时值的 token 里的力度记号的下标；没有 = -1。 */
-function dynRunAt(tokens: Token[], at: number): { a: number; b: number; k: number } {
-  let a = at, b = at;
-  const zero = (t: Token | undefined) => !!t && (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "phrase" || isMark(t));
-  while (a > headLen(tokens) && zero(tokens[a - 1])) a--;
-  while (b < tokens.length && zero(tokens[b])) b++;
-  let k = -1; for (let i = a; i < b; i++) if (tokens[i].kind === "dyn") k = i;
-  return { a, b, k };
+/** 符号层的力度记号 / 渐强渐弱挂在哪个音（或休止）上（2026-10-08 深夜 Opus 5.5；AI 提「力度改成落在光标前那个音（和音头记号一样）」，user「做」）：
+ *  有选区 = 选区里第一个音；没选区 = **光标前那个音**（写完一个音按 f = 这个音起是 f，同跳音 / 重音）；光标在最前面（前面没有音）= 后面第一个音。没有音 = -1。 */
+export function markAnchor(st: EditorState): number {
+  const toks = tr(st), h = headLen(toks);
+  if (st.sel) { for (let i = Math.max(h, st.sel.from); i < Math.min(toks.length, st.sel.to); i++) if (isTimed(toks[i])) return i; return -1; }
+  for (let i = Math.min(st.caret, toks.length) - 1; i >= h; i--) if (isTimed(toks[i])) return i;
+  for (let i = Math.max(h, st.caret); i < toks.length; i++) if (isTimed(toks[i])) return i;
+  return -1;
 }
-/** 选区开头（没选区 = 光标处）放力度：那儿已经有力度记号 = 改它；value null = 去掉。选区跟着挪，还盖着同样那几个音。 */
+/** 那个音前面紧挨着的一串不占时值的 token（力度 / 渐强渐弱 / 句号 / 中途记号）= [a, anchor)；不过小节线。 */
+function runBefore(toks: Token[], anchor: number): number {
+  let a = anchor; while (a > headLen(toks) && !isTimed(toks[a - 1]) && toks[a - 1].kind !== "bar") a--;
+  return a;
+}
+/** 删 / 插一个 token 之后光标和选区跟着挪（pos = 插 / 删的位置，d = ±1）。 */
+const shiftAt = (st: EditorState, d: number, pos: number) => ({ sel: st.sel ? { from: st.sel.from + (st.sel.from >= pos ? d : 0), to: st.sel.to + (st.sel.to > pos || (st.sel.to === pos && d > 0) ? d : 0) } : null, caret: st.caret + (st.caret >= pos ? d : 0) });
+/** 力度记号放在 markAnchor 那个音上：那儿已经有力度记号 = 改它；value null = 去掉。排在那儿的渐强渐弱前面（「mp <」的顺序）。 */
 export function setDynSel(st: EditorState, value: Dyn | null): EditorState {
-  const toks = tr(st), at = Math.max(headLen(toks), st.sel ? st.sel.from : st.caret), { k } = dynRunAt(toks, at), nt = toks.slice();
-  const shift = (d: number, pos: number) => ({ sel: st.sel ? { from: st.sel.from + (st.sel.from >= pos ? d : 0), to: st.sel.to + (st.sel.to > pos || (st.sel.to === pos && d > 0) ? d : 0) } : null, caret: st.caret + (st.caret >= pos ? d : 0) });
+  const toks = tr(st), an = markAnchor(st);
+  if (an < 0) return st;
+  const a = runBefore(toks, an), nt = toks.slice();
+  let k = -1; for (let i = a; i < an; i++) if (toks[i].kind === "dyn") k = i;
   if (k >= 0) {
-    if (value === null) { nt.splice(k, 1); return next(st, nt, shift(-1, k)); }
+    if (value === null) { nt.splice(k, 1); return next(st, nt, shiftAt(st, -1, k)); }
     nt[k] = { ...(nt[k] as DynTok), value }; return next(st, nt);
   }
   if (value === null) return st;
+  let at = an; for (let i = a; i < an; i++) if (toks[i].kind === "hairpin") { at = i; break; }
   const id = st.nextId; nt.splice(at, 0, { kind: "dyn", id, value });
-  return next({ ...st, nextId: id + 1 }, nt, shift(1, at));
+  return next({ ...st, nextId: id + 1 }, nt, shiftAt(st, 1, at));
 }
-/** 渐强 / 渐弱记号：选区开头（没选区 = 光标处）放一个；那儿（紧挨着的不占时值的记号里）已经有同方向的 = 去掉，反方向的 = 换。光标挪到它后面（接着写的音在过渡里）。 */
+/** 渐强 / 渐弱记号放在 markAnchor 那个音上（从这个音起）：那儿已经有同方向的 = 去掉，反方向的 = 换。 */
 export function toggleHairpin(st: EditorState, dir: "cresc" | "dim"): EditorState {
-  const toks = tr(st), at = Math.max(headLen(toks), st.sel ? st.sel.from : st.caret);
-  const zero = (t: Token | undefined) => !!t && (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "phrase" || isMark(t));
-  let k = -1;
-  for (let i = at - 1; i >= headLen(toks) && zero(toks[i]); i--) if (toks[i].kind === "hairpin") { k = i; break; }
-  if (k < 0) for (let i = at; i < toks.length && zero(toks[i]); i++) if (toks[i].kind === "hairpin") { k = i; break; }
-  const nt = toks.slice(), shift = (d: number, pos: number) => ({ sel: st.sel ? { from: st.sel.from + (st.sel.from >= pos ? d : 0), to: st.sel.to + (st.sel.to > pos || (st.sel.to === pos && d > 0) ? d : 0) } : null, caret: st.caret + (st.caret >= pos ? d : 0) });
+  const toks = tr(st), an = markAnchor(st);
+  if (an < 0) return st;
+  const a = runBefore(toks, an), nt = toks.slice();
+  let k = -1; for (let i = a; i < an; i++) if (toks[i].kind === "hairpin") { k = i; break; }
   if (k >= 0) {
     const h = toks[k] as HairpinTok;
-    if (h.dir === dir) { nt.splice(k, 1); return next(st, nt, shift(-1, k)); }
+    if (h.dir === dir) { nt.splice(k, 1); return next(st, nt, shiftAt(st, -1, k)); }
     nt[k] = { ...h, dir }; return next(st, nt);
   }
-  const id = st.nextId; nt.splice(at, 0, { kind: "hairpin", id, dir });
-  return next({ ...st, nextId: id + 1 }, nt, shift(1, at));
+  const id = st.nextId; nt.splice(an, 0, { kind: "hairpin", id, dir });
+  return next({ ...st, nextId: id + 1 }, nt, shiftAt(st, 1, an));
 }
-/** 选区开头（没选区 = 光标处）现在写着的力度记号（没有 = null；选区条上亮哪一个）。 */
+/** markAnchor 那个音上写着的力度记号（没有 = null；选区条 / 符号层上亮哪一个）。 */
 export function dynMarkSel(st: EditorState): Dyn | null {
-  const toks = tr(st), { k } = dynRunAt(toks, Math.max(headLen(toks), st.sel ? st.sel.from : st.caret));
-  return k >= 0 ? (toks[k] as DynTok).value : null;
+  const toks = tr(st), an = markAnchor(st); if (an < 0) return null;
+  let v: Dyn | null = null; for (let i = runBefore(toks, an); i < an; i++) { const t = toks[i]; if (t.kind === "dyn") v = t.value; }
+  return v;
 }
 
 /** 纸隐藏 / 显示（隐藏 = 不放；谱上还在、折叠着）。 */

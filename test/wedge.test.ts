@@ -22,13 +22,13 @@ const notes = (toks: Token[]) => toks.flatMap((t, i) => (t.kind === "note" ? [i]
 const sv = { dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL };
 
 describe("渐强渐弱：编辑（记号）", () => {
-  it("光标处放一个；再点同方向 = 去掉；反方向 = 换；光标挪到它后面", () => {
+  it("放在光标前那个音上（从这个音起；2026-10-08 user「做」）；再点同方向 = 去掉；反方向 = 换；光标还在那个音后面", () => {
     let st: EditorState = initState(); st = writeDegree(st, 1, "near");
     const n0 = tr(st).length;
-    st = toggleHairpin(st, "cresc"); eq(tr(st).length, n0 + 1); eq(tr(st)[st.caret - 1].kind, "hairpin");
-    st = toggleHairpin(st, "dim"); eq((tr(st)[st.caret - 1] as { dir: string }).dir, "dim", "反方向 = 换");
+    st = toggleHairpin(st, "cresc"); eq(tr(st).length, n0 + 1); eq(tr(st)[st.caret - 2].kind, "hairpin"); eq(tr(st)[st.caret - 1].kind, "note", "光标还在音后面");
+    st = toggleHairpin(st, "dim"); eq((tr(st)[st.caret - 2] as { dir: string }).dir, "dim", "反方向 = 换");
     st = toggleHairpin(st, "dim"); eq(tr(st).length, n0, "同方向 = 去掉");
-    st = apply(st, { k: "wedge", w: "cresc" }); eq(tr(st).at(-1)!.kind, "hairpin", "符号层命令走同一个");
+    st = apply(st, { k: "wedge", w: "cresc" }); eq(tr(st).at(-2)!.kind, "hairpin", "符号层命令走同一个");
   });
 });
 
@@ -92,5 +92,19 @@ describe("渐强渐弱：MusicXML / 简谱文字", () => {
     const toks = line(["n", pin("cresc"), "n"]), txt = toJianpu(toks.slice(3), 0);
     assert(txt.includes("[<]"), txt);
     eq(fromJianpu(txt, 0)!.filter((t) => t.kind === "hairpin").length, 1);
+  });
+});
+
+describe("力度记号落在光标前那个音（2026-10-08 深夜，user「力度改成落在光标前那个音（和音头记号一样） 做」）", () => {
+  it("写完一个音按 f = 这个音起是 f；再按 f = 去掉；光标在最前面 = 后面第一个音", async () => {
+    const { setDynSel, dynMarkSel, setCaret } = await import("../src/score/song.ts");
+    let st: EditorState = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near");
+    const n2 = tr(st).length - 1;
+    st = apply(st, { k: "dyn", v: "f" });
+    eq(tr(st)[st.caret - 2].kind, "dyn", "f 在第二个音前面"); eq(st.caret, tr(st).length, "光标还在最后");
+    eq(dynMarkSel(st), "f");
+    st = apply(st, { k: "dyn", v: "f" }); eq(tr(st).some((t) => t.kind === "dyn"), false, "再按 = 去掉");
+    st = setCaret(st, 3); st = setDynSel(st, "p");
+    eq(tr(st)[3].kind, "dyn", "最前面 = 第一个音前面"); void n2;
   });
 });
