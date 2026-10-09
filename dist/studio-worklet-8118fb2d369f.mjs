@@ -115,6 +115,7 @@ var Studio = class {
   auditions = /* @__PURE__ */ new Map();
   // src → 正在按着的
   auditionVowels = [];
+  auditionClips = [];
   lastAud = /* @__PURE__ */ new Map();
   // sha → 最后一次试听的增益 / 声像（松开后尾巴照这个）
   // 缓冲（零分配）
@@ -243,6 +244,14 @@ var Studio = class {
       case "audition":
         this.audition(m);
         return;
+      case "auditionClip": {
+        for (const v of this.auditionClips) if (v.src === m.src) v.state = "cut";
+        const [gl, gr] = panGains(m.gainDb ?? 0, m.pan ?? 0);
+        while (this.auditionClips.length >= 8) this.auditionClips.shift();
+        this.auditionClips.push({ src: m.src, data: m.samples, ratio: m.sr / this.sr, pos: 0, env: 0, state: "attack", gl, gr });
+        this.auditions.set(m.src, { inst: { kind: "clip" }, key: 0, gl, gr });
+        return;
+      }
       case "meter":
         this.meterOn = m.on;
         this.meterPeak = 0;
@@ -666,6 +675,7 @@ var Studio = class {
     if (m.ev === "alloff") {
       for (const src of [...this.auditions.keys()]) this.auditionOff(src);
       for (const v of this.auditionVowels) v.state = "cut";
+      for (const v of this.auditionClips) v.state = "cut";
       return;
     }
     if (m.ev === "off") {
@@ -703,10 +713,10 @@ var Studio = class {
       }
       this.tsf.noteOn(p.player, m.inst.preset, m.key, vel);
       this.lastAud.set(m.inst.sha, [gl, gr]);
-    } else {
+    } else if (m.inst.kind === "vowel") {
       for (const v of this.auditionVowels) if (v.src === m.src) v.state = "cut";
       this.vowelOn(this.auditionVowels, m.src, m.inst.kana, m.key, gl, gr);
-    }
+    } else return;
     this.auditions.set(m.src, { inst: m.inst, key: m.key, gl, gr });
   }
   auditionOff(src) {
@@ -716,10 +726,13 @@ var Studio = class {
     if (au.inst.kind === "sf") {
       const p = this.auditionSf.get(au.inst.sha);
       if (p) this.tsf.noteOff(p.player, au.inst.preset, au.key);
+    } else if (au.inst.kind === "clip") {
+      for (const v of this.auditionClips) if (v.src === src && v.state !== "cut") v.state = "release";
     } else for (const v of this.auditionVowels) if (v.src === src && v.state !== "cut") v.state = "release";
   }
   renderAuditions(n) {
     if (this.auditionVowels.length) this.renderVowels(this.auditionVowels, null, this.audL, this.audR, 0, n);
+    if (this.auditionClips.length) this.renderClipVoices(n);
     for (const [sha, p] of this.auditionSf) {
       if (this.tsf.active(p.player) === 0) continue;
       this.tsf.render(p.player, this.mono, 0, n);
@@ -727,6 +740,37 @@ var Studio = class {
       for (let i = 0; i < n; i++) {
         this.audL[i] += this.mono[i] * gl;
         this.audR[i] += this.mono[i] * gr;
+      }
+    }
+  }
+  /** 试听的一段声音：线性重采样放一遍（不循环），起 5 ms、松开 40 ms 淡出、被顶掉 6 ms。 */
+  renderClipVoices(n) {
+    const sr = this.sr, attack = 1 / (5e-3 * sr), relK = Math.exp(-1 / (0.04 * sr)), cutK = Math.exp(-1 / (6e-3 * sr));
+    for (let vi = this.auditionClips.length - 1; vi >= 0; vi--) {
+      const v = this.auditionClips[vi], d = v.data, len = d.length;
+      for (let i = 0; i < n; i++) {
+        if (v.state === "attack") {
+          v.env += attack;
+          if (v.env >= 1) {
+            v.env = 1;
+            v.state = "hold";
+          }
+        } else if (v.state === "release") v.env *= relK;
+        else if (v.state === "cut") v.env *= cutK;
+        const k = v.pos | 0;
+        if (k >= len - 1) {
+          v.env = 0;
+          v.state = "cut";
+          break;
+        }
+        const f = v.pos - k, y = (d[k] * (1 - f) + d[k + 1] * f) * v.env;
+        this.audL[i] += y * v.gl;
+        this.audR[i] += y * v.gr;
+        v.pos += v.ratio;
+      }
+      if ((v.state === "release" || v.state === "cut") && v.env < 1e-4) {
+        this.auditionClips.splice(vi, 1);
+        if (this.auditions.get(v.src)?.inst.kind === "clip") this.auditions.delete(v.src);
       }
     }
   }
@@ -788,4 +832,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-b5a38636a6b0.mjs.map
+//# sourceMappingURL=studio-worklet-8118fb2d369f.mjs.map

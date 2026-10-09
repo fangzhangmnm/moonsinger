@@ -23,7 +23,9 @@ export interface SingRequest { type: "sing"; id: number; score: unknown[]; text:
   /** 模型源，按顺序试（宿主给：同源 pwa-models/ → 设置里的来源）。不给 = 出厂默认。 */
   models?: string[];
   /** 「念」缓存的预算（字节；src/singer/speech-cache.ts）。不给 = 不动。 */
-  cacheBytes?: number }
+  cacheBytes?: number;
+  /** 只唱第 entry 个字（按键试听，刀 3）：按下的 midi、唱 secs 秒；回原样（raw）。 */
+  only?: { entry: number; midi: number; secs: number } }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number } }
@@ -154,8 +156,8 @@ self.onmessage = async (ev: MessageEvent<SingRequest>) => {
     // 元音图谱默认关（user 2026-10-06「元音图谱一般般，先不做」）；断气随图谱（和 Lab 命令行的规则一样）。要试图谱就传 atlas: "normal"。
     const atlas = q.atlas ?? "off", breath = q.breath ?? atlas !== "off";
     const preset = e.presetDefault[q.lang] ?? 0;   // 模型配置的 preset_default（中 3、英 9；日语没写 = 0 = 原版），同 Lab piper-node.mjs
-    const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q.opt ?? {} });
-    const samples: Float32Array = q.raw ? Float32Array.from(r.y as ArrayLike<number>) : r.sung;
+    const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q.opt ?? {}, only: q.only ?? null });
+    const samples: Float32Array = q.raw || q.only ? Float32Array.from(r.y as ArrayLike<number>) : r.sung;
     post({ type: "done", id: q.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1 } }, [samples.buffer]);
   } catch (err) {
     engine = engine && (await engine.catch(() => null)) ? engine : null;   // 加载失败就允许下次重试

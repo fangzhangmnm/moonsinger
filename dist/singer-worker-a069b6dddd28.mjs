@@ -182,7 +182,8 @@ async function singCore({
   loadAtlas = null,
   opt = {},
   log = () => {
-  }
+  },
+  only = null
 }) {
   const OPT = { ...DEFAULT_OPT, ...opt };
   if (ATLAS !== "off" && !loadAtlas) throw new Error(`atlas=${ATLAS} needs loadAtlas`);
@@ -191,6 +192,8 @@ async function singCore({
     EN = pn2.phonemizeEnWords(wordsOf(SCORE_IN));
     ({ entries: SRC, leadRest } = alignEnglish(SCORE_IN, EN.nuclei));
   }
+  const EIGHTH0 = 60 / TEMPO_QUARTER / 2;
+  if (only) SRC = SRC.map((e, k) => k === only.entry ? { ...e, notes: [[only.midi - TRANSPOSE, Math.max(0.25, only.secs / EIGHTH0)]], rest: 0 } : e);
   const SCORE = SRC.map((e) => ({ ...e, notes: e.notes.map(([m, l]) => [m + TRANSPOSE, l]) })).flatMap((e) => {
     const n = e.moras || 1;
     if (n === 1) return [e];
@@ -544,7 +547,10 @@ async function singCore({
   const sp = new Float64Array(N2 * bins), ap = new Float64Array(N2 * bins), f0 = new Float64Array(N2);
   let repaired = 0, vowelFrames = 0, atlasFrames = 0, holdFrames = 0, breaths = /* @__PURE__ */ new Map();
   const breathSp = /* @__PURE__ */ new Map();
-  for (let j = 0; j < N2; j++) {
+  const onlyK = only ? SRC.slice(0, only.entry).reduce((a, e) => a + (e.moras || 1), 0) : -1;
+  const onlyM = only ? moras[Math.min(onlyK, moras.length - 1)] : null;
+  const J0 = onlyM ? Math.max(0, Math.floor(onlyM.preStart / FPS)) : 0, J1 = onlyM ? Math.min(N2, Math.ceil(onlyM.end / FPS) + 1) : N2;
+  for (let j = J0; j < J1; j++) {
     const tt = j * FPS, s = segs.find((q2) => tt >= q2.s0 && tt < q2.s1) ?? (tt >= songEnd ? segs[segs.length - 1] : null);
     if (!s) continue;
     const c = s.c0 + (Math.min(tt, s.s1) - s.s0) / (s.s1 - s.s0) * (s.c1 - s.c0), fi = Math.min(an2.frames - 1, c / FPS);
@@ -619,7 +625,7 @@ async function singCore({
       for (let q2 = 0; q2 < bins; q2++) sp[j * bins + q2] *= gg;
     } else if (s.kind === "cons" && sung && srcVoiced && noisiness(a) <= 0.5 && noisiness(b) <= 0.5) f0[j] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
   }
-  const y = W.synth({ f0, sp, ap, fft: an2.fft, fs: SR2, framePeriod: FP });
+  const y = only ? W.synth({ f0: f0.subarray(J0, J1), sp: sp.subarray(J0 * bins, J1 * bins), ap: ap.subarray(J0 * bins, J1 * bins), fft: an2.fft, fs: SR2, framePeriod: FP }) : W.synth({ f0, sp, ap, fft: an2.fft, fs: SR2, framePeriod: FP });
   const worldMs = performance.now() - t0;
   function finish(sig) {
     const fade = Math.round(0.03 * SR2), n = sig.length, out = new Float32Array(n + Math.round(OPT.tail * SR2));
@@ -7747,8 +7753,8 @@ self.onmessage = async (ev) => {
     say("\u6708\u8BFB\u5728\u5531");
     const atlas = q2.atlas ?? "off", breath = q2.breath ?? atlas !== "off";
     const preset = e.presetDefault[q2.lang] ?? 0;
-    const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q2.opt ?? {} });
-    const samples = q2.raw ? Float32Array.from(r.y) : r.sung;
+    const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q2.opt ?? {}, only: q2.only ?? null });
+    const samples = q2.raw || q2.only ? Float32Array.from(r.y) : r.sung;
     post({ type: "done", id: q2.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1 } }, [samples.buffer]);
   } catch (err) {
     engine = engine && await engine.catch(() => null) ? engine : null;
@@ -7764,4 +7770,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-fca7ff557499.mjs.map
+//# sourceMappingURL=singer-worker-a069b6dddd28.mjs.map

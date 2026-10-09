@@ -54,8 +54,11 @@ import { wordsOf, alignEnglish } from "./en-front.mjs";   // 英文：音节拼�
 const VOWEL = new Set(["a", "i", "u", "e", "o", "N"])   /* cl (っ) is not a sung syllable: it joins the next consonant */, VOICED_FOR = { A: "a", I: "i", U: "u", E: "e", O: "o" };
 const isMark = (t) => "[]#?!".includes(t) || /^tone\d$/.test(t);   // zh: the tone token after each final is a one-frame mark
 
+// only = 只唱第 entry 个字（2026-10-10 Claude Fable 5.1，实时试听刀 3：按键试听 = 念好的那句里光标那个字按下的音高唱 secs 秒；user「可以争取一下实时」）：
+//   整句照常念（piper 两遍 + 分析——念缓存命中时几毫秒）、照常算断句 / 辅音 / 稳态，只把这个字的音换成按下的、长度换成 secs，
+//   然后只重建、只合成它自己那几帧（辅音起、到它的末尾）。不走 only 的那条路一行不动（冻结样本不变）。
 export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUARTER, lang: LANG = "ja", transpose: TRANSPOSE = 0, phrasing: PHRASING = "score",
-  atlas: ATLAS = "off", mix: MIX = 1, breath: BREATH = false, preset: PRESET = 0, piper: pn, world: W, loadAtlas = null, opt = {}, log = () => {} }) {
+  atlas: ATLAS = "off", mix: MIX = 1, breath: BREATH = false, preset: PRESET = 0, piper: pn, world: W, loadAtlas = null, opt = {}, log = () => {}, only = null }) {
   const OPT = { ...DEFAULT_OPT, ...opt };
   if (ATLAS !== "off" && !loadAtlas) throw new Error(`atlas=${ATLAS} needs loadAtlas`);
   // English (2026-10-07, Claude Opus 5.5; user「好吧英文先做完」): the score has one entry per WRITTEN syllable (hyph = the word goes on);
@@ -63,6 +66,8 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   let EN = null, leadRest = 0, SRC = SCORE_IN;
   if (LANG === "en") { EN = pn.phonemizeEnWords(wordsOf(SCORE_IN)); ({ entries: SRC, leadRest } = alignEnglish(SCORE_IN, EN.nuclei)); }
   // an entry sung on several kana (しい) becomes one entry per kana sharing its single note evenly
+  const EIGHTH0 = 60 / TEMPO_QUARTER / 2;
+  if (only) SRC = SRC.map((e, k) => (k === only.entry ? { ...e, notes: [[only.midi - TRANSPOSE, Math.max(0.25, only.secs / EIGHTH0)]], rest: 0 } : e));   // 这个字：按下的音高、唱 secs 秒
   const SCORE = SRC.map((e) => ({ ...e, notes: e.notes.map(([m, l]) => [m + TRANSPOSE, l]) })).flatMap((e) => { const n = e.moras || 1; if (n === 1) return [e]; if (e.notes.length !== 1) throw new Error(`${e.kana}: moras > 1 needs one note`);
     const [midi, len] = e.notes[0]; return Array.from({ length: n }, (_, i) => ({ kana: [...e.kana][i] ?? e.kana, notes: [[midi, len / n]], rest: i === n - 1 ? e.rest : 0, before: i === 0 ? e.before : undefined })); });
   const SR = pn.SR, HOP = pn.HOP, FR = SR / HOP, EIGHTH = 60 / TEMPO_QUARTER / 2, FP = 5, FPS = FP / 1000;
@@ -276,7 +281,11 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   // rebuild frames
   const sp = new Float64Array(N * bins), ap = new Float64Array(N * bins), f0 = new Float64Array(N); let repaired = 0, vowelFrames = 0, atlasFrames = 0, holdFrames = 0, breaths = new Map();   // mora k -> "v" | "O"
   const breathSp = new Map();   // mora k -> breath template (built once)
-  for (let j = 0; j < N; j++) {
+  // only：只重建这个字自己的帧（辅音起 → 它的末尾）；别的帧不算
+  const onlyK = only ? SRC.slice(0, only.entry).reduce((a, e) => a + (e.moras || 1), 0) : -1;   // SRC 的条目 → SCORE / moras 的下标（几个假名一条的拆开过）
+  const onlyM = only ? moras[Math.min(onlyK, moras.length - 1)] : null;
+  const J0 = onlyM ? Math.max(0, Math.floor(onlyM.preStart / FPS)) : 0, J1 = onlyM ? Math.min(N, Math.ceil(onlyM.end / FPS) + 1) : N;
+  for (let j = J0; j < J1; j++) {
     const tt = j * FPS, s = segs.find((q) => tt >= q.s0 && tt < q.s1) ?? (tt >= songEnd ? segs[segs.length - 1] : null);
     if (!s) continue;
     const c = s.c0 + ((Math.min(tt, s.s1) - s.s0) / (s.s1 - s.s0)) * (s.c1 - s.c0), fi = Math.min(an.frames - 1, c / FPS);
@@ -329,7 +338,9 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
     //   and a pitched hiss is a buzz (user, take 5/6「有时候还有电锯声」)
   }
 
-  const y = W.synth({ f0, sp, ap, fft: an.fft, fs: SR, framePeriod: FP });
+  const y = only
+    ? W.synth({ f0: f0.subarray(J0, J1), sp: sp.subarray(J0 * bins, J1 * bins), ap: ap.subarray(J0 * bins, J1 * bins), fft: an.fft, fs: SR, framePeriod: FP })
+    : W.synth({ f0, sp, ap, fft: an.fft, fs: SR, framePeriod: FP });
   const worldMs = performance.now() - t0;
 
   function finish(sig) {

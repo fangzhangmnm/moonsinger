@@ -11,7 +11,7 @@ import { diagNote } from "../app/report-error.ts";
 const OOM = /out of memory|no available backend/i;
 
 export interface SingResult { samples: Float32Array; sr: number; ms: { load: number; sing: number } }
-type Extra = Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw" | "cacheBytes">>;
+type Extra = Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw" | "cacheBytes" | "only">>;
 interface Job { s: LabScore; progress: (stage: string) => void; extra: Extra; ok: (r: SingResult) => void; fail: (e: Error) => void }
 
 export class Singer {
@@ -86,6 +86,10 @@ export class Singer {
     const id = ++this.seq;
     const req: SingRequest = { type: "sing", id, score: s.SCORE, text: s.TEXT, tempo: s.TEMPO_QUARTER, lang: s.LANG, ...extra };
     return new Promise((ok, fail) => { this.pending.set(id, { ok, fail, progress }); this.worker().postMessage(req); });
+  }
+  /** 只唱一个字（按键试听，刀 3）：不排队、直接给 worker（排在整句后面 = 迟到的音更烦）；念缓存命中时几毫秒。 */
+  singOnly(s: LabScore, only: { entry: number; midi: number; secs: number }, extra: Omit<Extra, "only" | "raw"> = {}): Promise<SingResult> {
+    return this.singOnce(s, () => {}, { ...extra, only, raw: true });
   }
   /** 全 app 共用的 AudioContext（必须在用户手势里先调过一次，iPad 才放声）。 */
   unlock(): AudioContext { return audioCtx(); }

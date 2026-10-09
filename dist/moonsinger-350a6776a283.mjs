@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.4-2026-10-09";
+var APP_VERSION = "v0.9.5-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -10280,7 +10280,7 @@ var Pad = class {
 
 // src/score/lab-score.ts
 var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
-function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range2) {
+function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range2, tokenEntry) {
   const inRange = (i10) => !range2 || i10 >= range2[0] && i10 < range2[1];
   const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2.find((x2) => inRange(x2.index))?.bpm ?? 90;
   const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
@@ -10316,6 +10316,11 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
     }
   });
   function one(t10, i10) {
+    const n02 = out.length;
+    one0(t10, i10);
+    if (tokenEntry && t10.kind === "note" && out.length) tokenEntry.set(i10, out.length > n02 ? n02 : out.length - 1);
+  }
+  function one0(t10, i10) {
     const len = t10.dur / eighth * (base3 / bpmOf.get(i10));
     if (t10.kind === "rest") {
       const last2 = out[out.length - 1];
@@ -18710,7 +18715,7 @@ var Singer = class {
   inflight = false;
   worker() {
     if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-fca7ff557499.mjs"}`, import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${"singer-worker-a069b6dddd28.mjs"}`, import.meta.url), { type: "module" });
     this.w.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
       if (!p2) return;
@@ -18802,6 +18807,11 @@ var Singer = class {
       this.pending.set(id2, { ok: ok2, fail, progress: progress2 });
       this.worker().postMessage(req);
     });
+  }
+  /** 只唱一个字（按键试听，刀 3）：不排队、直接给 worker（排在整句后面 = 迟到的音更烦）；念缓存命中时几毫秒。 */
+  singOnly(s10, only, extra = {}) {
+    return this.singOnce(s10, () => {
+    }, { ...extra, only, raw: true });
   }
   /** 全 app 共用的 AudioContext（必须在用户手势里先调过一次，iPad 才放声）。 */
   unlock() {
@@ -20967,6 +20977,7 @@ var Studio = class {
   auditions = /* @__PURE__ */ new Map();
   // src → 正在按着的
   auditionVowels = [];
+  auditionClips = [];
   lastAud = /* @__PURE__ */ new Map();
   // sha → 最后一次试听的增益 / 声像（松开后尾巴照这个）
   // 缓冲（零分配）
@@ -21095,6 +21106,14 @@ var Studio = class {
       case "audition":
         this.audition(m2);
         return;
+      case "auditionClip": {
+        for (const v of this.auditionClips) if (v.src === m2.src) v.state = "cut";
+        const [gl, gr] = panGains(m2.gainDb ?? 0, m2.pan ?? 0);
+        while (this.auditionClips.length >= 8) this.auditionClips.shift();
+        this.auditionClips.push({ src: m2.src, data: m2.samples, ratio: m2.sr / this.sr, pos: 0, env: 0, state: "attack", gl, gr });
+        this.auditions.set(m2.src, { inst: { kind: "clip" }, key: 0, gl, gr });
+        return;
+      }
       case "meter":
         this.meterOn = m2.on;
         this.meterPeak = 0;
@@ -21518,6 +21537,7 @@ var Studio = class {
     if (m2.ev === "alloff") {
       for (const src of [...this.auditions.keys()]) this.auditionOff(src);
       for (const v of this.auditionVowels) v.state = "cut";
+      for (const v of this.auditionClips) v.state = "cut";
       return;
     }
     if (m2.ev === "off") {
@@ -21555,10 +21575,10 @@ var Studio = class {
       }
       this.tsf.noteOn(p2.player, m2.inst.preset, m2.key, vel);
       this.lastAud.set(m2.inst.sha, [gl, gr]);
-    } else {
+    } else if (m2.inst.kind === "vowel") {
       for (const v of this.auditionVowels) if (v.src === m2.src) v.state = "cut";
       this.vowelOn(this.auditionVowels, m2.src, m2.inst.kana, m2.key, gl, gr);
-    }
+    } else return;
     this.auditions.set(m2.src, { inst: m2.inst, key: m2.key, gl, gr });
   }
   auditionOff(src) {
@@ -21568,10 +21588,13 @@ var Studio = class {
     if (au2.inst.kind === "sf") {
       const p2 = this.auditionSf.get(au2.inst.sha);
       if (p2) this.tsf.noteOff(p2.player, au2.inst.preset, au2.key);
+    } else if (au2.inst.kind === "clip") {
+      for (const v of this.auditionClips) if (v.src === src && v.state !== "cut") v.state = "release";
     } else for (const v of this.auditionVowels) if (v.src === src && v.state !== "cut") v.state = "release";
   }
   renderAuditions(n10) {
     if (this.auditionVowels.length) this.renderVowels(this.auditionVowels, null, this.audL, this.audR, 0, n10);
+    if (this.auditionClips.length) this.renderClipVoices(n10);
     for (const [sha, p2] of this.auditionSf) {
       if (this.tsf.active(p2.player) === 0) continue;
       this.tsf.render(p2.player, this.mono, 0, n10);
@@ -21579,6 +21602,37 @@ var Studio = class {
       for (let i10 = 0; i10 < n10; i10++) {
         this.audL[i10] += this.mono[i10] * gl;
         this.audR[i10] += this.mono[i10] * gr;
+      }
+    }
+  }
+  /** 试听的一段声音：线性重采样放一遍（不循环），起 5 ms、松开 40 ms 淡出、被顶掉 6 ms。 */
+  renderClipVoices(n10) {
+    const sr2 = this.sr, attack = 1 / (5e-3 * sr2), relK = Math.exp(-1 / (0.04 * sr2)), cutK = Math.exp(-1 / (6e-3 * sr2));
+    for (let vi = this.auditionClips.length - 1; vi >= 0; vi--) {
+      const v = this.auditionClips[vi], d3 = v.data, len = d3.length;
+      for (let i10 = 0; i10 < n10; i10++) {
+        if (v.state === "attack") {
+          v.env += attack;
+          if (v.env >= 1) {
+            v.env = 1;
+            v.state = "hold";
+          }
+        } else if (v.state === "release") v.env *= relK;
+        else if (v.state === "cut") v.env *= cutK;
+        const k2 = v.pos | 0;
+        if (k2 >= len - 1) {
+          v.env = 0;
+          v.state = "cut";
+          break;
+        }
+        const f2 = v.pos - k2, y2 = (d3[k2] * (1 - f2) + d3[k2 + 1] * f2) * v.env;
+        this.audL[i10] += y2 * v.gl;
+        this.audR[i10] += y2 * v.gr;
+        v.pos += v.ratio;
+      }
+      if ((v.state === "release" || v.state === "cut") && v.env < 1e-4) {
+        this.auditionClips.splice(vi, 1);
+        if (this.auditions.get(v.src)?.inst.kind === "clip") this.auditions.delete(v.src);
       }
     }
   }
@@ -21822,6 +21876,12 @@ var StudioClient = class {
   auditionAllOff() {
     this.audition({ src: "", ev: "alloff" });
   }
+  /** 放一段现成的声音当试听（月读唱的一个字；samples 转移过去）。 */
+  auditionClip(src, sr2, samples, gainDb, pan) {
+    if (!this.node) return;
+    const copy = samples.slice();
+    this.post({ type: "auditionClip", src, sr: sr2, samples: copy, gainDb, pan }, [copy.buffer]);
+  }
   meter(on2) {
     this.post({ type: "meter", on: on2 });
   }
@@ -21938,12 +21998,14 @@ function buildTimeline(inp) {
       const ranges = singChunks(tokens, map, mode === "sheet" ? bounds : [], mode);
       const clips = { id: part.id, kind: "clips", clips: [], gain };
       for (const [a10, b3] of ranges) {
-        const score = toLabScore(tokens, hum, lang, map, info2.spec.sing, [a10, b3]);
+        const te3 = /* @__PURE__ */ new Map(), score = toLabScore(tokens, hum, lang, map, info2.spec.sing, [a10, b3], te3);
         if (!score.SCORE.length) continue;
+        const entryOf = /* @__PURE__ */ new Map();
+        for (const [i10, e10] of te3) entryOf.set(tokens[i10].id, e10);
         const first = noteAt(a10), last = tl2.filter((x2) => x2.index >= a10 && x2.index < b3 && x2.tok.kind === "note").reduce((m2, x2) => Math.max(m2, x2.t1), first);
         const key = JSON.stringify(["tsukuyomi-chunk", score, inp.singOpt]), t02 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
         clips.clips.push({ key, t0: t02, dur, gain: SUNG_GAIN });
-        chunks2.push({ part: part.id, key, score, lang, t0: t02, dur });
+        chunks2.push({ part: part.id, key, score, lang, t0: t02, dur, entryOf });
         from = Math.min(from, t02);
         to2 = Math.max(to2, t02 + dur);
       }
@@ -33419,7 +33481,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-b5a38636a6b0.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-8118fb2d369f.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -33431,6 +33493,23 @@ function ensureVowels() {
     throw e10;
   });
 }
+function dynAtCursor(role) {
+  const tokens = tr(st2), i10 = st2.sel ? st2.sel.from : st2.caret, sp2 = activePerfSpec(doc.extras, role);
+  const pick = (m2) => {
+    for (let k2 = i10; k2 < tokens.length; k2++) {
+      const l10 = m2.get(k2);
+      if (l10) return l10.at0;
+    }
+    for (let k2 = Math.min(i10, tokens.length) - 1; k2 >= 0; k2--) {
+      const l10 = m2.get(k2);
+      if (l10) return l10.at1;
+    }
+    return null;
+  };
+  const dB = pick(dynLevels(tokens, void 0, sp2.dynamicsDb, sp2.dynamicsDb.mf ?? 0, sp2.wedgeStepDb ?? MARK_DEFAULTS.wedgeStepDb)) ?? 0;
+  const vel = sp2.dynamicsVel ? pick(dynLevels(tokens, void 0, sp2.dynamicsVel, activeVelocity(doc.extras, role) * 127, sp2.wedgeStepVel ?? MARK_DEFAULTS.wedgeStepVel)) : null;
+  return { vel: vel === null ? null : Math.max(1, Math.min(127, vel)) / 127, dB };
+}
 function auditionTarget() {
   const kana = HUM_KANA[st2.song.hum ?? "n"];
   if (finder.isOpen) {
@@ -33438,7 +33517,7 @@ function auditionTarget() {
     if (a10) return { inst: { kind: "sf", sha: a10.sha256, preset: engine.presetIndex(a10.sha256, a10.bank, a10.program) }, key: (m2) => sfKey(m2, a10), vel: SOUNDFONT_DEFAULTS.velocity, gainDb: 0, pan: 0 };
     return { inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: 0, pan: 0 };
   }
-  const part = st2.song.parts.find((p2) => p2.id === st2.at.part), ch2 = part ? channelOf(part) : { gainDb: 0, pan: 0 };
+  const part = st2.song.parts.find((p2) => p2.id === st2.at.part), ch2 = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
   if (engineNow() === "soundfont") {
     const g3 = activeGm(doc.extras, curRole());
     if (!g3) return null;
@@ -33446,12 +33525,46 @@ function auditionTarget() {
       void prepareBank();
       return null;
     }
-    return { inst: { kind: "sf", sha: g3.subsetSha256, preset: engine.presetIndex(g3.subsetSha256, g3.bank, g3.program) }, key: (m2) => sfKey(m2, g3, activeTranspose(doc.extras, curRole())), vel: activeVelocity(doc.extras, curRole()), ...ch2 };
+    return { inst: { kind: "sf", sha: g3.subsetSha256, preset: engine.presetIndex(g3.subsetSha256, g3.bank, g3.program) }, key: (m2) => sfKey(m2, g3, activeTranspose(doc.extras, curRole())), vel: dyn.vel ?? activeVelocity(doc.extras, curRole()), gainDb: ch2.gainDb + (dyn.vel === null ? dyn.dB : 0), pan: ch2.pan };
   }
-  return { inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, ...ch2 };
+  return { inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: ch2.gainDb + dyn.dB, pan: ch2.pan };
+}
+var SUNG_SECS = 1;
+var SUNG_GAIN_DB = 20 * Math.log10(SUNG_GAIN);
+var sungSeq = 0;
+var sungHeld = /* @__PURE__ */ new Map();
+function sungPlanAt() {
+  const tok = tr(st2)[st2.sel ? st2.sel.from : st2.caret];
+  if (!tok || tok.kind !== "note") return null;
+  let plan = [...chunkPlans.values()].find((c10) => c10.part === st2.at.part && c10.entryOf.has(tok.id)) ?? null;
+  if (!plan) {
+    const song = songIn("view"), part = st2.song.parts.find((x2) => x2.id === st2.at.part);
+    if (!part) return null;
+    const tl2 = buildTimeline({ song, order: songPlayOrder(song), parts: [part], info: performerInfo, hum: st2.song.hum, singOpt: humOpt() });
+    plan = tl2.chunks.find((c10) => c10.entryOf.has(tok.id)) ?? null;
+    if (plan) chunkPlans.set(plan.key, plan);
+  }
+  return plan ? { plan, entry: plan.entryOf.get(tok.id) } : null;
+}
+function sungDown(p2, id2) {
+  const at2 = sungPlanAt();
+  if (!at2) return;
+  const seq = ++sungSeq;
+  sungHeld.set(id2, seq);
+  const part = st2.song.parts.find((x2) => x2.id === st2.at.part), ch2 = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
+  singer.unlock();
+  void engine.ensure().catch(() => void 0);
+  void singer.singOnly(at2.plan.score, { entry: at2.entry, midi: midiOf(p2), secs: SUNG_SECS }, { opt: humOpt(), models: modelBases() }).then((r10) => {
+    if (sungHeld.get(id2) !== seq) return;
+    engine.auditionClip(id2, r10.sr, r10.samples, ch2.gainDb + dyn.dB + SUNG_GAIN_DB, ch2.pan);
+  }).catch(() => void 0);
 }
 var sound = {
   down: (p2, id2 = "main") => {
+    if (!finder.isOpen && engineNow() === "tsukuyomi") {
+      sungDown(p2, id2);
+      return;
+    }
     const t10 = auditionTarget();
     if (!t10) return;
     if (t10.inst.kind === "vowel" && !vowelsReady) {
@@ -33462,11 +33575,21 @@ var sound = {
     engine.auditionOn(id2, t10.inst, t10.key(midiOf(p2)), t10.vel, t10.gainDb, t10.pan);
   },
   glide: (p2, id2 = "main") => {
+    if (!finder.isOpen && engineNow() === "tsukuyomi") {
+      sungDown(p2, id2);
+      return;
+    }
     const t10 = auditionTarget();
     if (t10) engine.auditionGlide(id2, t10.key(midiOf(p2)));
   },
-  up: (id2 = "main") => engine.auditionOff(id2),
-  allOff: () => engine.auditionAllOff()
+  up: (id2 = "main") => {
+    sungHeld.delete(id2);
+    engine.auditionOff(id2);
+  },
+  allOff: () => {
+    sungHeld.clear();
+    engine.auditionAllOff();
+  }
 };
 var soundTok = (s10, i10, id2 = "main") => {
   const t10 = tr(s10)[i10];
@@ -37362,4 +37485,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8b9012a55b66.mjs.map
+//# sourceMappingURL=moonsinger-350a6776a283.mjs.map

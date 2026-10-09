@@ -23,7 +23,8 @@ export const HUM_SYLLABLE: Record<Hum, Record<SingLang, string>> = { la: { ja: "
 
 /** tokens = 一个声部（压平后的一串）；tempoMap = 第一个声部的速度表（这个声部不是第一个时给，自己串里的速度记号不算数）。 */
 /** range = 只出这一段的 token（下标 [from, to)；月读分段唱用，见 singChunks）——速度、没写音高的音照样按整串的上下文算。不给 = 整串。 */
-export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap, sing: Record<string, SingMark | null> = SING_MARKS, range?: readonly [number, number]): LabScore {
+/** tokenEntry = 顺手记下「token 下标 → 它唱成第几条」（拖腔 / 连音线并进前一条的也记前一条；按键试听用）。 */
+export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap, sing: Record<string, SingMark | null> = SING_MARKS, range?: readonly [number, number], tokenEntry?: Map<number, number>): LabScore {
   const inRange = (i: number) => !range || (i >= range[0] && i < range[1]);
   const eighth = TPQ / 2, tl = timeline(tokens, tempoMap), base = tl.find((x) => inRange(x.index))?.bpm ?? 90;
   const bpmOf = new Map(tl.map((x) => [x.index, x.bpm]));
@@ -45,6 +46,10 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
     if (t.kind === "note" && !held(nextTimed(i))) for (const a of arts) { const s = sing[a]; if (s && s.at === "next") nextMark = pick(nextMark, s.mark); }
   });
   function one(t: Token & { dur: number }, i: number): void {
+    const n0 = out.length; one0(t, i);
+    if (tokenEntry && t.kind === "note" && out.length) tokenEntry.set(i, out.length > n0 ? n0 : out.length - 1);   // 新出了条目 = 第一条；并进前一条的 = 前一条
+  }
+  function one0(t: Token & { dur: number }, i: number): void {
     const len = (t.dur / eighth) * (base / bpmOf.get(i)!);
     if (t.kind === "rest") { const last = out[out.length - 1]; if (last) last.rest = (last.rest ?? 0) + len; return; }
     if (t.kind !== "note") return;

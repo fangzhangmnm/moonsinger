@@ -112,6 +112,8 @@ export class StudioClient {
   auditionOff(src: string): void { this.audition({ src, ev: "off" }); }
   auditionGlide(src: string, key: number): void { this.audition({ src, ev: "glide", key }); }
   auditionAllOff(): void { this.audition({ src: "", ev: "alloff" }); }
+  /** 放一段现成的声音当试听（月读唱的一个字；samples 转移过去）。 */
+  auditionClip(src: string, sr: number, samples: Float32Array, gainDb: number, pan: number): void { if (!this.node) return; const copy = samples.slice(); this.post({ type: "auditionClip", src, sr, samples: copy, gainDb, pan }, [copy.buffer]); }
   meter(on: boolean): void { this.post({ type: "meter", on }); }
   get now(): number { return this.ctx().currentTime; }
 

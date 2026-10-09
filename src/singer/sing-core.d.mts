@@ -19,4 +19,6 @@ export declare function singCore(a: {
   score: ScoreEntry[] | unknown[]; text: string; tempo: number; lang?: "ja" | "zh" | "en"; transpose?: number; phrasing?: "score" | "punct" | "none";
   atlas?: string; mix?: number; breath?: boolean; preset?: number; piper: PiperLike; world: WorldLike;
   loadAtlas?: ((id: string) => Promise<AtlasSet>) | null; opt?: Record<string, unknown>; log?: (s: string) => void;
+  /** 只唱第 entry 个字：按下的 midi、唱 secs 秒（按键试听）；返回的 y 只有这个字那几帧。 */
+  only?: { entry: number; midi: number; secs: number } | null;
 }): Promise<{ sung: Float32Array; y: Float64Array; x: Float32Array; SR: number; finish: (sig: ArrayLike<number>) => Float32Array; internals: Record<string, unknown> }>;
