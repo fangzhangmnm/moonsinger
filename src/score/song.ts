@@ -71,7 +71,12 @@ export interface DynTok { kind: "dyn"; id: number; value: Dyn; ramp?: true }   /
 /** 渐强 / 渐弱（2026-10-08 改成记号，Claude Opus 5.5；user「所以<>是一个语义，就是从这一刻开始连续变到下一个强度/速度标记？」「大于小于号不用精确指定范围，而是读最近的pf」）：
  *  状态的过渡——从这儿起连续变到同一张纸里的下一个力度记号；中间又遇到一个渐强渐弱 = 这一段到那儿为止；都没有 = 走一档（演奏者的 wedgeStep），谱上灰字披露。 */
 export interface HairpinTok { kind: "hairpin"; id: number; dir: "cresc" | "dim" }
-export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok;
+/** 风格记号 = 拍子轻重（2026-10-08 深夜 Opus 5.5；user「先讨论清楚再做，不同的流派会不一样」→ 风格是一个像速度一样的文字记号、「只对当前sheet有用」「中间换同意」
+ *  「点开之后可以设置具体的细节」「预设可以…做成数据驱动的」）：从这儿起到这张纸结尾（或下一个风格记号），每个音按它在小节里的位置轻一点 / 重一点
+ *  （预设 = 音乐仓鼠的 grooves-vN.json，src/score/groove.ts）。整张纸一起听（写在哪一行都管全部歌手；同一时刻两行都写了 = 上面那行算）。
+ *  style = 预设 id（"pop"…；"none" = 这儿起不加）；amount = 幅度（1 = 预设本身；不写 = 1）。不占时值、不占横向地方。MusicXML <direction><words id="groove.…">。 */
+export interface GrooveTok { kind: "groove"; id: number; style: string; amount?: number }
+export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok | GrooveTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
 export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;
@@ -319,7 +324,7 @@ function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alter
 function fillTarget(st: EditorState): number {
   for (let i = st.caret; i < tr(st).length; i++) {
     const t = tr(st)[i];
-    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || t.kind === "hairpin" || isMark(t)) continue;
+    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove" || isMark(t)) continue;
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
   return -1;
@@ -522,6 +527,21 @@ export function toggleHairpin(st: EditorState, dir: "cresc" | "dim"): EditorStat
   }
   const id = st.nextId; nt.splice(an, 0, { kind: "hairpin", id, dir });
   return next({ ...st, nextId: id + 1 }, nt, shiftAt(st, 1, an));
+}
+/** 风格记号（拍子轻重；2026-10-08 深夜 Opus 5.5）：放在光标前那个音上（同力度记号 / 渐强渐弱，markAnchor）——从这个音起到这张纸结尾（或下一个风格记号）。
+ *  那儿已经有一个：同一个风格 = 去掉，别的 = 换（幅度留着）。 */
+export function setGroove(st: EditorState, style: string): EditorState {
+  const toks = tr(st), an = markAnchor(st);
+  if (an < 0) return st;
+  const a = runBefore(toks, an), nt = toks.slice();
+  let k = -1; for (let i = a; i < an; i++) if (toks[i].kind === "groove") { k = i; break; }
+  if (k >= 0) {
+    const g = toks[k] as GrooveTok;
+    if (g.style === style) { nt.splice(k, 1); return next(st, nt, shiftAt(st, -1, k)); }
+    nt[k] = { ...g, style }; return next(st, nt);
+  }
+  const id = st.nextId; nt.splice(a, 0, { kind: "groove", id, style });   // 排在这串记号最前面（力度字 / 发夹在它后面，挨着音）
+  return next({ ...st, nextId: id + 1 }, nt, shiftAt(st, 1, a));
 }
 /** 渐到（2026-10-08 深夜 Opus 5.5）：下标 i 那个力度记号后面，这张纸里（到 end 为止）下一个力度记号写着渐到、中间没有手写的渐强渐弱 = 它的下标；否则 -1。 */
 export function rampTarget(tokens: Token[], i: number, end = tokens.length): number {
@@ -931,7 +951,7 @@ function afterDelete(st: EditorState, nt: Token[], over: Partial<EditorState>): 
  *  removed = 湮灭掉了几个（调用方说一声）。没挪动（同一个音 / 不是这两种记号）= 原样。选区收掉，光标跟着同一个音。 */
 export function moveMark(st: EditorState, from: number, before: number): { st: EditorState; removed: number } {
   const toks = tr(st), m = toks[from];
-  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin") || !toks[before] || !isTimed(toks[before])) return { st, removed: 0 };
+  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin" && m.kind !== "groove") || !toks[before] || !isTimed(toks[before])) return { st, removed: 0 };
   const nt = toks.slice(); nt.splice(from, 1);
   let at = before - (before > from ? 1 : 0);   // 那个音现在的下标
   if (m.kind === "dyn") { let a = at; while (a > headLen(nt) && !isTimed(nt[a - 1]) && nt[a - 1].kind !== "bar") a--; for (let k = a; k < at; k++) if (nt[k].kind === "hairpin") { at = k; break; } }
@@ -941,14 +961,16 @@ export function moveMark(st: EditorState, from: number, before: number): { st: E
   return { st: next(st, a.tokens, { caret: c2 - a.removed.filter((k) => k < c2).length, sel: null }), removed: a.removed.length };
 }
 /** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
-export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | null): EditorState {
+export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | { style: string } | { amount: number } | null): EditorState {
   const toks = tr(st), m = toks[i];
-  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin")) return st;
+  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin" && m.kind !== "groove")) return st;
   const nt = toks.slice();
   if (change === null) { nt.splice(i, 1); return next(st, nt, { caret: st.caret - (i < st.caret ? 1 : 0), sel: null }); }
   if (m.kind === "dyn" && "value" in change) { if (m.value === change.value) return st; nt[i] = { ...m, value: change.value }; return next(st, nt); }
   if (m.kind === "dyn" && "ramp" in change) { if (!!m.ramp === change.ramp) return st; const { ramp: _r, ...rest } = m; nt[i] = change.ramp ? { ...rest, ramp: true } : rest; return next(st, nt); }
   if (m.kind === "hairpin" && "dir" in change) { if (m.dir === change.dir) return st; nt[i] = { ...m, dir: change.dir }; return next(st, nt); }
+  if (m.kind === "groove" && "style" in change) { if (m.style === change.style) return st; nt[i] = { ...m, style: change.style }; return next(st, nt); }
+  if (m.kind === "groove" && "amount" in change) { const a = Math.round(change.amount * 100) / 100; if ((m.amount ?? 1) === a) return st; const { amount: _a, ...rest } = m; nt[i] = a === 1 ? rest : { ...rest, amount: a }; return next(st, nt); }
   return st;
 }
 /** 符号模式的退格（2026-10-08，user「退格只删符号或者没符号的时候退一步，不删音符」）：

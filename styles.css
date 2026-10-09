@@ -664,6 +664,13 @@ span.smufl { pointer-events: none; }
 .ctx-menu .ctx-dyn { flex-wrap: nowrap; }
 .ctx-menu .ctx-dyn .ctx-chip { min-width: 34px; padding: 0 4px; }
 .ctx-menu .ctx-dyn .ctx-chip .smufl { font-family: "Bravura"; font-size: 24px; line-height: 1; position: relative; top: 5px; }
+/* 风格记号（拍子轻重；2026-10-08 深夜 Opus 5.5）：谱上一行斜体字；不认识的预设 = 灰；小菜单宽一点、说明可以折行 */
+.staff-svg text.groove-mark { font-style: italic; font-weight: 600; font-family: system-ui, sans-serif; }
+.staff-svg text.groove-mark.groove-unknown { fill: var(--muted); }
+.staff-svg text.groove-mark.sel { fill: var(--accent); }
+.ctx-menu.groove-menu { max-width: min(360px, calc(100vw - 16px)); }
+.ctx-menu.groove-menu .ctx-hint { white-space: normal; }
+.pad-key.sym .big.it { font-style: italic; font-size: 16px; }
 .ctx-menu .ctx-chip.is-on { background: var(--accent-soft); border-color: var(--accent); }
 /* 乐器页「记号怎么演」：这位 by value 的解读表（只读） */
 .ip-marks { margin-top: 10px; font-size: 13px; }

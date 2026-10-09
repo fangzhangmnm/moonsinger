@@ -33,7 +33,10 @@ export interface ManifestV2 {
 export interface ScoreExtV2 {
   version: 2;
   /** 顺序里的纸（纸 = 曲段）：file = 这张纸的 MusicXML 正本（`.moonsinger/papers/<id>.musicxml`）；manualBars = 声部 id → 这张纸里人插的小节线（小节序号，1 起）；
-   *  unwritten = 这张纸还没写音高的音（note id）。自动小节线只画不存（0.2.x 现状）。曲段名在那份 MusicXML 的 <movement-title>。 */
+   *  unwritten = 这张纸还没写音高的音（note id）。自动小节线只画不存（0.2.x 现状）。曲段名在那份 MusicXML 的 <movement-title>。
+   *  MusicXML 正本里我们自己认 id 的两样（别的软件照常显示；自家读回来按 id 认出来，不加 JSON 字段、不升版本）：
+   *  渐到 = 虚线 <wedge id="ramp-…">；风格记号（拍子轻重，2026-10-08 深夜 Opus 5.5）= <direction><words id="groove.<预设 id>.<幅度百分数>.<token id>">名字</words>。
+   *  老版本的 app 读到它们 = 当普通的发夹 / 文字忽略（风格记号会丢——老版本本来就不会放拍子轻重）。 */
   papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[]; hidden?: boolean; phrases?: Record<string, number[]>;
     /** 音内的力度起伏（2026-10-08 加，可选；MusicXML 里表达不了音内的发夹）：声部 id → 音的 id → "<" / ">" / "<>"。 */
     swells?: Record<string, Record<string, "<" | ">" | "<>">> }[];   // hidden（2026-10-08 加，可选）= 这张纸不放、不进压平件；phrases（同日加，可选）= 声部 id → 句号跟在哪些 token（id）后面（句号不算打谱符号，不进 MusicXML）

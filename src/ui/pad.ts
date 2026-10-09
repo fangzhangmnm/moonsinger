@@ -47,10 +47,10 @@ type SymPage = "art" | "dyn" | "mark";
 const SYM_PAGES: Record<SymPage, readonly string[]> = {
   art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath"],   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>", "dyn:ramp"],
-  mark: ["phrase", "key", "time", "tempo", "staff"],
+  mark: ["phrase", "key", "time", "tempo", "groove", "staff"],
 };
 const SYM_PAGE_NAME: Record<SymPage, string> = { art: "演奏法", dyn: "力度", mark: "记号" };
-const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸", dyn: "pp…ff、渐强 / 渐弱、音内起伏", mark: "句号、调号 / 拍号 / 速度" };
+const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸", dyn: "pp…ff、渐强 / 渐弱、音内起伏", mark: "句号、调号 / 拍号 / 速度、风格（拍子轻重）" };
 const RAMP_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;   // 渐到 = 虚线发夹
 const CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -131,6 +131,8 @@ export interface PadHost {
   canStack(): boolean;                     // 光标所在声部的乐器能叠音吗（单声乐器 = 不能，键灰掉）
   onAccShift(phase: "down" | "slide" | "up", acc: Exclude<Acc, 0>): void;   // 升降键：按下 / 滑着换 / 松开
   onInsertMark(kind: "key" | "time" | "tempo"): void;
+  /** 风格记号（拍子轻重）：放在光标前那个音上、开它的小菜单。 */
+  onGroove?(): void;
   onSoundDown(p: Pitch, id: string): void;   // 试听 / 弹：按下响（复音：每根手指一个声音）
   onSoundUp(id: string): void;
   onImpro(): void;                         // 「弹」开关（第一排「收起」左边）：只响不写
@@ -410,6 +412,7 @@ export class Pad {
       cell("key", `<span class="big">1=</span>`, "调号", "插调号（在光标处；先填现在的，插了再改）"),
       cell("time", `<span class="big">4/4</span>`, "拍号", "插拍号（在光标处）"),
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "速度", "插速度（在光标处）"),
+      cell("groove", `<span class="big it">风格</span>`, "拍子轻重", "风格记号：从光标前那个音起到这张纸结尾，每个音按它在小节里的位置轻一点 / 重一点（古典 / 流行 / 华尔兹 / 进行曲…点开选）；整张纸的歌手一起听，各人跟多少按乐器"),
       ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, "换谱表", "大谱表：这个音换到另一张谱表")] : []),
     ];
     const byId = new Map(items.map((h) => [/data-sym="([^"]+)"/.exec(h)![1], h]));
@@ -435,6 +438,7 @@ export class Pad {
       if (id === "dyn:ramp") { this.rampNext = !this.rampNext; this.render(); return; }   // 修饰键：不算用掉「一次性」
       if (this.symbols === "once") this.symbols = "off";   // 点一下 = 一次性：做完回到音键；锁住 = 留在符号层
       if (id === "key" || id === "time" || id === "tempo") this.host.onInsertMark(id);
+      else if (id === "groove") this.host.onGroove?.();
       else if (id === "staff") this.host.onCommand({ k: "staff" });
       else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
       else if (id === "slur") this.host.onCommand({ k: "slur" });

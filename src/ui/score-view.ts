@@ -103,6 +103,8 @@ export class ScoreView {
   /** 点开的记号管的那一段音（染强调色；小菜单收起就清）。 */
   private span: { from: number; to: number } | null = null;
   setSpan(sp: { from: number; to: number } | null): void { this.span = sp; this.render(); }
+  /** 开这条 track 上第 index 个 token（力度 / 渐强渐弱 / 风格记号）的小菜单（刚插进去的风格记号用）；谱上没画出来 = false。 */
+  menuFor(index: number): boolean { const h = this.layout?.dyns.find((d) => d.index === index && this.onTrack(d)); if (!h) return false; this.markMenu(h); return true; }
   private lift: null | { pid: number; grab: Grab; st0: EditorState; targets: { idx: number; x: number; system: number }[]; src: number; cur: number; x0: number; y0: number; cx: number; cy: number; moved: boolean; short: boolean; removed: number; dx: number } = null;
   private selDrag: null | { pid: number; anchor: number; menu?: boolean } = null;   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）；menu = 长按的是选区里的音、还没动：抬手 = 选区菜单，动了 = 照常扩选
   private handles: { start: HTMLDivElement; end: HTMLDivElement };

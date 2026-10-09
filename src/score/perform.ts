@@ -21,8 +21,9 @@ const M = MARK_DEFAULTS;   // 演奏者没写的键用它（= 这一版之前写
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */
 export interface GainSeg { t0: number; t1: number; dB: number }
 
-/** 一个声部的音量曲线。gateStaccato = 跳音靠收声（月读）。全程 0 dB = null。 */
-export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[]): GainSeg[] | null {
+/** 一个声部的音量曲线。gateStaccato = 跳音靠收声（月读）。全程 0 dB = null。
+ *  groove = 拍子轻重（下标 → 权重，src/score/groove.ts；已乘过幅度和跟多少）：正的 = 按次重音的量在音头加，负的 = 按弱化的量整个音轻下去（写了音头记号的音不在里面）。 */
+export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>): GainSeg[] | null {
   const segs: GainSeg[] = [];
   let any = false;
   const vel = !!spec.dynamicsVel;   // 力度记号 / 重音 / 强音 / 渐强渐弱走 MIDI 力度（noteVelocities）：这条曲线只剩跳音收声
@@ -30,7 +31,8 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
   /** 渐强渐弱：一个音里面的 dB 从 a 走到 b（切成小段；月读一个长音也能渐强）。 */
   const ramp = (a: number, b: number, s0: number, s1: number) => { const n = Math.max(1, Math.min(32, Math.ceil((s1 - s0) / 0.03))); for (let k = 0; k < n; k++) segs.push({ t0: s0 + ((s1 - s0) * k) / n, t1: s0 + ((s1 - s0) * (k + 1)) / n, dB: a + ((b - a) * (k + 0.5)) / n }); };
   for (const { index, tok, t0, t1 } of timeline(tokens, map)) {
-    const L = levels?.get(index), soft = tok.kind === "note" && !vel ? (artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : 0) : 0;
+    const gw = vel ? 0 : groove?.get(index) ?? 0;   // 拍子轻重（dB 那一路；力度那一路在 noteVel）
+    const L = levels?.get(index), soft = tok.kind === "note" && !vel ? (artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : gw < 0 ? -gw * (spec.unstressDb ?? M.unstressDb) : 0) : 0;
     const base = (L ? L.at0 : 0) + soft, baseEnd = (L ? L.at1 : 0) + soft;   // 弱化 / 幽灵音：整个音轻下去（dB 那一路；力度那一路在 noteVel）
     if (base !== 0 || baseEnd !== 0) any = true;
     if (tok.kind !== "note") { if (baseEnd !== base) ramp(base, baseEnd, t0, t1); else segs.push({ t0, t1, dB: base }); continue; }
@@ -53,7 +55,7 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
       any = true; continue;
     }
     if (art.includes("sfz") && !vel) { const e = Math.min(t1, t0 + (spec.sfzSec ?? M.sfzSec)), b = spec.sfzDb ?? M.sfzDb; ramp(base + b, baseEnd === base ? base : base + ((baseEnd - base) * (e - t0)) / Math.max(1e-9, t1 - t0), t0, e); cur = e; any = true; }
-    const boost = vel ? 0 : art.includes("marcato") ? (spec.marcatoDb ?? spec.accentDb + 3) : art.includes("accent") ? spec.accentDb : art.includes("stress") ? (spec.stressDb ?? M.stressDb) : 0;   // 强音比重音重、次重音比重音轻
+    const boost = vel ? 0 : art.includes("marcato") ? (spec.marcatoDb ?? spec.accentDb + 3) : art.includes("accent") ? spec.accentDb : art.includes("stress") ? (spec.stressDb ?? M.stressDb) : gw > 0 ? gw * (spec.stressDb ?? M.stressDb) : 0;   // 强音比重音重、次重音比重音轻；拍子轻重 = 次重音的几分之几
     if (boost) { const e = Math.min(t1, t0 + (spec.accentSec ?? M.accentSec)); segs.push({ t0, t1: e, dB: base + boost }); cur = e; any = true; }
     if (t1 > cur) {
       const a0 = base + ((baseEnd - base) * (cur - t0)) / Math.max(1e-9, t1 - t0);
@@ -127,18 +129,19 @@ export function noteVelocity(tokens: Token[], index: number, art: readonly strin
   const l = dynLevels(tokens, undefined, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel).get(index);
   return noteVel(l ? l.at0 : defaultVel * 127, art, spec);
 }
-/** 一整条的每个音的力度（index → 0–1）：力度记号 + 渐强渐弱（dynLevels，取音头）+ 重音 / 强音。没有力度表 = 一律 defaultVel。 */
-export function noteVelocities(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[]): Map<number, number> {
+/** 一整条的每个音的力度（index → 0–1）：力度记号 + 渐强渐弱（dynLevels，取音头）+ 重音 / 强音 + 拍子轻重（groove，同 gainSegments）。没有力度表 = 一律 defaultVel（拍子轻重走 dB）。 */
+export function noteVelocities(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, defaultVel: number, bounds?: readonly number[], groove?: ReadonlyMap<number, number>): Map<number, number> {
   const out = new Map<number, number>();
   if (!spec.dynamicsVel) { tokens.forEach((t, i) => { if (t.kind === "note") out.set(i, defaultVel); }); return out; }
-  for (const [i, l] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds)) { const t = tokens[i]; if (t.kind === "note") out.set(i, noteVel(l.at0, artOf(t), spec)); }
+  for (const [i, l] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds)) { const t = tokens[i]; if (t.kind === "note") out.set(i, noteVel(l.at0, artOf(t), spec, groove?.get(i) ?? 0)); }
   return out;
 }
-const noteVel = (v: number, art: readonly string[], spec: PerfSpec) => {
+const noteVel = (v: number, art: readonly string[], spec: PerfSpec, gw = 0) => {
   if (art.includes("fp")) v = spec.dynamicsVel?.f ?? v;   // 强后即弱：音头按 f 弹（之后 gainSegments 压到 p）
   else if (art.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
   else if (art.includes("marcato")) v += spec.marcatoVel ?? 0; else if (art.includes("accent")) v += spec.accentVel ?? 0;
   else if (art.includes("stress")) v += spec.stressVel ?? M.stressVel; else if (art.includes("unstress")) v += spec.unstressVel ?? M.unstressVel; else if (art.includes("ghost")) v += spec.ghostVel ?? M.ghostVel;
+  else if (gw > 0) v += gw * (spec.stressVel ?? M.stressVel); else if (gw < 0) v += -gw * (spec.unstressVel ?? M.unstressVel);   // 拍子轻重：w = 1 一个次重音、w = −1 一个弱化
   return Math.max(1, Math.min(127, Math.round(v))) / 127;
 };
 /** 谁认哪些记号（2026-10-08 Opus 5.5；user 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。

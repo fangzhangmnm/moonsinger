@@ -1,0 +1,1018 @@
+{
+ "version": 1,
+ "date": "2026-10-08",
+ "producer": "MyLlamaReborn / 20261007 音乐史（scripts/build_grooves.py）",
+ "license": {
+  "data": "数值和判断是 AI（Claude Opus 5.5）写的；引文（sources[].quote）是英文维基百科原文，CC BY-SA 4.0，署名见 article / url / revid"
+ },
+ "conventions": {
+  "grid": "一小节有几个十六分音符（4/4 = 16、3/4 = 12、6/8 = 12、12/8 = 24、2/2 = 16）；weights[i] = 第 i 个十六分位置上开始的音的相对轻重",
+  "weights": "−1…1，0 = 不变、1 = 最重、负数 = 刻意轻；只是相对数，app 再乘演奏者自己的幅度；谱上写的重音 / 弱化等盖掉这个音的拍子轻重（app 管）",
+  "levels": "古典的层级（原文）→ 数值（AI 取）：小节第一拍 1 / 四拍子第三拍 0.5 / 其余拍 0 / 拍与拍之间的第一层细分 −0.25 / 再往下 −0.5",
+  "basis.order": "sourced = 强弱的先后照原文；derived = 从原文的规律推到这个拍号；values = ai-scaled：具体数值是 AI 按层级取的，原文不给数",
+  "follow": "这个风格里各类乐器默认跟多少（0–1，AI 判）；键 = gm-map 的 family（defs.families 的 id），另加 voice = 人声类概念（kind: voice，月读、合唱、人声），优先于 family",
+  "swing": "摇摆是时值不是轻重：{unit, ratio = 一对音里前一个占的比例, range}；null = 不摇"
+ },
+ "sources": {
+  "beat-hierarchy": {
+   "article": "Beat (music)",
+   "revid": 1356459319,
+   "url": "https://en.wikipedia.org/wiki/Beat_(music)",
+   "retrieved": "2026-05-27T22:04:48Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "== On-beat and off-beat == In typical Western music 44 time, counted as \"1 2 3 4, 1 2 3 4...\", the first beat of the bar (downbeat) is usually the strongest accent in the melody and the likeliest place for a chord change, the third is the next strongest: these are \"on\" beats."
+  },
+  "beat-weak24": {
+   "article": "Beat (music)",
+   "revid": 1356459319,
+   "url": "https://en.wikipedia.org/wiki/Beat_(music)",
+   "retrieved": "2026-05-27T22:04:48Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "The second and fourth are weaker—the \"off-beats\"."
+  },
+  "beat-subdiv": {
+   "article": "Beat (music)",
+   "revid": 1356459319,
+   "url": "https://en.wikipedia.org/wiki/Beat_(music)",
+   "retrieved": "2026-05-27T22:04:48Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Subdivisions (like eighth notes) that fall between the pulse beats are even weaker and these, if used frequently in a rhythm, can also make it \"off-beat\"."
+  },
+  "ts-legend": {
+   "article": "Time signature",
+   "revid": null,
+   "url": "https://en.wikipedia.org/wiki/Time_signature",
+   "retrieved": "2026-10-08",
+   "license": "CC BY-SA 4.0",
+   "format": "wikitext",
+   "quote": "In the examples below, '''bold''' denotes the primary stress of the measure, and ''italics'' denote a secondary stress. Syllables such as \"and\" are frequently used for pulsing in between numbers."
+  },
+  "ts-34": {
+   "article": "Time signature",
+   "revid": null,
+   "url": "https://en.wikipedia.org/wiki/Time_signature",
+   "retrieved": "2026-10-08",
+   "license": "CC BY-SA 4.0",
+   "format": "wikitext",
+   "quote": "{{block indent|<big>{{music|time|3|4}}</big>: '''one''' and ''two'' and ''three'' and ...}}"
+  },
+  "ts-68": {
+   "article": "Time signature",
+   "revid": null,
+   "url": "https://en.wikipedia.org/wiki/Time_signature",
+   "retrieved": "2026-10-08",
+   "license": "CC BY-SA 4.0",
+   "format": "wikitext",
+   "quote": "{{block indent|<big>{{music|time|6|8}}</big>: '''one''' two three ''four'' five six ...}}"
+  },
+  "ts-additive": {
+   "article": "Time signature",
+   "revid": 1379206623,
+   "url": "https://en.wikipedia.org/wiki/Time_signature",
+   "retrieved": "2026-10-08T15:32:19Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "For example, the time signature 3+2+38 means that there are 8 quaver beats in the bar, divided as the first of a group of three eighth notes (quavers) that are stressed, then the first of a group of two, then first of a group of three again."
+  },
+  "accent-13": {
+   "article": "Accent (music)",
+   "revid": 1371353253,
+   "url": "https://en.wikipedia.org/wiki/Accent_(music)",
+   "retrieved": "2026-08-26T01:50:20Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "For example, in common time, also called 44, the most common metre in popular music, the stressed beats are one and three."
+  },
+  "backbeat-def": {
+   "article": "Beat (music)",
+   "revid": 1356459319,
+   "url": "https://en.wikipedia.org/wiki/Beat_(music)",
+   "retrieved": "2026-05-27T22:04:48Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "== Backbeat == A back beat, or backbeat, is a syncopated accentuation on the \"off\" beat."
+  },
+  "backbeat-24": {
+   "article": "Beat (music)",
+   "revid": 1356459319,
+   "url": "https://en.wikipedia.org/wiki/Beat_(music)",
+   "retrieved": "2026-05-27T22:04:48Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "In a simple 44 rhythm these are beats 2 and 4."
+  },
+  "backbeat-snare": {
+   "article": "Beat (music)",
+   "revid": 1356459319,
+   "url": "https://en.wikipedia.org/wiki/Beat_(music)",
+   "retrieved": "2026-05-27T22:04:48Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "In today's popular music the snare drum is typically used to play the backbeat pattern."
+  },
+  "offbeat-rock": {
+   "article": "Beat (music)",
+   "revid": 1356459319,
+   "url": "https://en.wikipedia.org/wiki/Beat_(music)",
+   "retrieved": "2026-05-27T22:04:48Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Certain genres tend to emphasize the off-beat, where this is a defining characteristic of rock'n'roll and ska music."
+  },
+  "waltz-34": {
+   "article": "Waltz",
+   "revid": 1360223344,
+   "url": "https://en.wikipedia.org/wiki/Waltz",
+   "retrieved": "2026-06-20T01:15:53Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "The waltz (from German Walzer [ˈvaltsɐ] , meaning \"to roll or revolve\") is a ballroom and folk dance, in triple ( 34 ) time, performed primarily in closed position, originating from German-speaking regions of Europe in the 18th century."
+  },
+  "waltz-weight": {
+   "article": "Waltz",
+   "revid": 1360223344,
+   "url": "https://en.wikipedia.org/wiki/Waltz",
+   "retrieved": "2026-06-20T01:15:53Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Kunz Haas (of approximately the same period) wrote, \"Now they are dancing the godless Weller or Spinner.\" \"The vigorous peasant dancer, following an instinctive knowledge of the weight of fall, uses his surplus energy to press all his strength into the proper beat of the bar, thus intensifying his personal enjoyment in dancing.\" Around 1750, the lower classes in the regions of Bavaria, Tyrol, and Styria began dancing a couples dance called Walzer."
+  },
+  "march-meters": {
+   "article": "March (music)",
+   "revid": 1375863731,
+   "url": "https://en.wikipedia.org/wiki/March_(music)",
+   "retrieved": "2026-09-20T15:18:34Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "== Characteristics == Marches can be written in any time signature, but the most common time signatures are 44, 22 (alla breve , although this may refer to 2 time of Johannes Brahms, or cut time), or 68."
+  },
+  "march-beat": {
+   "article": "March (music)",
+   "revid": 1375863731,
+   "url": "https://en.wikipedia.org/wiki/March_(music)",
+   "retrieved": "2026-09-20T15:18:34Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Most importantly, a march consists of a strong and steady percussive beat reminiscent of military field drums."
+  },
+  "swing-ratio": {
+   "article": "Swing time",
+   "revid": 1368051468,
+   "url": "https://en.wikipedia.org/wiki/Swing_time",
+   "retrieved": "2026-08-06T18:56:37Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "In swing rhythm, the ratio of the first note's duration to the second note's duration can range: The first note of each pair is often understood to be twice as long as the second, implying a triplet feel, but in practice the ratio is less definitive and often much more subtle."
+  },
+  "swing-range": {
+   "article": "Swing time",
+   "revid": 1368051468,
+   "url": "https://en.wikipedia.org/wiki/Swing_time",
+   "retrieved": "2026-08-06T18:56:37Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "≈2:1 = triplet quarter note + triplet eighth, triple meter; ≈3:1 = dotted eighth note + sixteenth note."
+  },
+  "hihat-24": {
+   "article": "Hi-hat",
+   "revid": 1376838206,
+   "url": "https://en.wikipedia.org/wiki/Hi-hat",
+   "retrieved": "2026-09-26T15:08:19Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "It can also be played just by lifting and lowering the foot to clash the cymbals together, a style commonly used to accent beats 2 and 4 in jazz music."
+  },
+  "fotf-def": {
+   "article": "Four on the floor (music)",
+   "revid": 1370208493,
+   "url": "https://en.wikipedia.org/wiki/Four_on_the_floor_(music)",
+   "retrieved": "2026-08-19T19:25:01Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "It is a steady, uniformly accented beat in 44 time in which the bass drum is hit on every beat (1, 2, 3, 4)."
+  },
+  "disco-offbeat": {
+   "article": "Disco",
+   "revid": 1378842478,
+   "url": "https://en.wikipedia.org/wiki/Disco",
+   "retrieved": "2026-10-06T12:40:57Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Most disco songs have a steady four-on-the-floor beat set by a bass drum, a quaver or semi-quaver hi-hat pattern with an open hissing hi-hat on the off-beat, and a heavy, syncopated bass line."
+  },
+  "bossa-clave": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Style: Samba-Reggae or Bossanova 3:2; O..O..O.|..O..O.."
+  }
+ },
+ "styles": [
+  {
+   "id": "none",
+   "name": {
+    "zh": "无",
+    "en": "None",
+    "ja": "なし"
+   },
+   "aliases": [
+    "无风格",
+    "Off"
+   ],
+   "meters": {},
+   "meterFallback": {
+    "rule": "none",
+    "zh": "不加拍子轻重"
+   },
+   "follow": {
+    "piano": 0.0,
+    "chromatic-percussion": 0.0,
+    "organ": 0.0,
+    "guitar": 0.0,
+    "bass": 0.0,
+    "strings": 0.0,
+    "ensemble": 0.0,
+    "brass": 0.0,
+    "reed": 0.0,
+    "pipe": 0.0,
+    "synth-lead": 0.0,
+    "synth-pad": 0.0,
+    "synth-effects": 0.0,
+    "ethnic": 0.0,
+    "percussive": 0.0,
+    "sound-effects": 0.0,
+    "percussion": 0.0,
+    "voice": 0.0
+   },
+   "swing": null,
+   "sources": [],
+   "notes": "什么都不加；谱上写的重音、力度照常。"
+  },
+  {
+   "id": "classical",
+   "name": {
+    "zh": "古典",
+    "en": "Classical",
+    "ja": "クラシック"
+   },
+   "aliases": [
+    "Classic",
+    "古典派"
+   ],
+   "meters": {
+    "4/4": {
+     "grid": 16,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "beat-hierarchy",
+       "beat-weak24",
+       "beat-subdiv"
+      ],
+      "zh": "原文：4/4 第一拍最强、第三拍次强、二四拍较弱、拍与拍之间的细分更弱。层级照原文；数值是 AI 按层级取的（1 / 0.5 / 0 / −0.25 / −0.5）。"
+     }
+    },
+    "3/4": {
+     "grid": 12,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "ts-legend",
+       "ts-34",
+       "beat-subdiv"
+      ],
+      "zh": "原文：3/4 念作「**一** and *二* and *三* and」（粗体主重音、斜体次重音，and 不重）。第一拍 1、二三拍 0、细分更轻；数值 AI 取。"
+     }
+    },
+    "2/4": {
+     "grid": 8,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "derived",
+      "values": "ai-scaled",
+      "sources": [
+       "beat-hierarchy",
+       "beat-subdiv"
+      ],
+      "zh": "推算：原文只给了 4/4 和 3/4；二拍子按「第一拍最强、其余拍弱、细分更弱」推。"
+     }
+    },
+    "2/2": {
+     "grid": 16,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.5,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.5,
+      -0.5
+     ],
+     "basis": {
+      "order": "derived",
+      "values": "ai-scaled",
+      "sources": [
+       "beat-hierarchy",
+       "beat-subdiv"
+      ],
+      "zh": "推算：二二拍（cut time）= 两个二分音符拍，按二拍子推；拍内的四分是第一层细分（−0.25），再往下 −0.5。"
+     }
+    },
+    "6/8": {
+     "grid": 12,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "ts-legend",
+       "ts-68"
+      ],
+      "zh": "原文：6/8 念作「**一** 二 三 *四* 五 六」——两拍、每拍三个八分。第一个八分 1、第四个 0、其余八分 −0.25；数值 AI 取。"
+     }
+    },
+    "12/8": {
+     "grid": 24,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "derived",
+      "values": "ai-scaled",
+      "sources": [
+       "beat-hierarchy",
+       "ts-68"
+      ],
+      "zh": "推算：四组三连八分 = 4/4 的层级（第一组最强、第三组次强）× 6/8 的三分。"
+     }
+    }
+   },
+   "meterFallback": {
+    "rule": "classical",
+    "zh": "没列的拍号按古典的层级推：第一拍 1；单拍子其余的拍 0、四拍子第三拍 0.5；复拍子（x/8）每组第一个八分 0；拍与拍之间的八分细分 −0.25、十六分细分 −0.5。加法拍子（5/8、7/8……）按记号上的分组（如 3+2+3/8），每组第一个八分算一拍。"
+   },
+   "follow": {
+    "piano": 0.5,
+    "chromatic-percussion": 0.6,
+    "organ": 0.2,
+    "guitar": 0.6,
+    "bass": 0.6,
+    "strings": 0.5,
+    "ensemble": 0.3,
+    "brass": 0.5,
+    "reed": 0.4,
+    "pipe": 0.4,
+    "synth-lead": 0.4,
+    "synth-pad": 0.0,
+    "synth-effects": 0.0,
+    "ethnic": 0.5,
+    "percussive": 1,
+    "sound-effects": 0.0,
+    "percussion": 1,
+    "voice": 0.3
+   },
+   "followBasis": "AI 判：节拍层级是所有人都感觉得到的，但旋律声部更多按乐句走，所以打击 / 低音跟得多、旋律和人声少跟；风琴按键不分轻重（真乐器靠音栓），只给一点；铺底、音效不跟。",
+   "swing": null,
+   "sources": [
+    "beat-hierarchy",
+    "beat-weak24",
+    "beat-subdiv",
+    "ts-legend",
+    "ts-34",
+    "ts-68"
+   ],
+   "notes": "这是「拍号自带的强弱」——其他风格没列的拍号都退回这一套。"
+  },
+  {
+   "id": "pop",
+   "name": {
+    "zh": "流行",
+    "en": "Pop",
+    "ja": "ポップス"
+   },
+   "aliases": [
+    "Rock",
+    "摇滚",
+    "ロック",
+    "R&B",
+    "Backbeat",
+    "反拍"
+   ],
+   "meters": {
+    "4/4": {
+     "grid": 16,
+     "weights": [
+      0.5,
+      -0.25,
+      0.0,
+      -0.25,
+      1.0,
+      -0.25,
+      0.0,
+      -0.25,
+      0.5,
+      -0.25,
+      0.0,
+      -0.25,
+      1.0,
+      -0.25,
+      0.0,
+      -0.25
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "backbeat-def",
+       "backbeat-24",
+       "backbeat-snare",
+       "accent-13"
+      ],
+      "zh": "原文：反拍 = 二、四拍上的重音，今天的流行乐由军鼓打；同时 4/4 的拍子重音在一、三拍。所以二四拍 1、一三拍 0.5、八分 0（踩镲平均打）、十六分 −0.25。一三拍比二四拍轻多少、八分给 0 是 AI 取的。"
+     }
+    },
+    "12/8": {
+     "grid": 24,
+     "weights": [
+      0.5,
+      -0.25,
+      0.0,
+      -0.25,
+      0.0,
+      -0.25,
+      1.0,
+      -0.25,
+      0.0,
+      -0.25,
+      0.0,
+      -0.25,
+      0.5,
+      -0.25,
+      0.0,
+      -0.25,
+      0.0,
+      -0.25,
+      1.0,
+      -0.25,
+      0.0,
+      -0.25,
+      0.0,
+      -0.25
+     ],
+     "basis": {
+      "order": "derived",
+      "values": "ai-scaled",
+      "sources": [
+       "backbeat-24"
+      ],
+      "zh": "推算：12/8 慢歌 = 4/4 的四拍各分三份，反拍落在第二、四组的第一个八分。原文没直接写 12/8，拿不准。"
+     }
+    }
+   },
+   "meterFallback": {
+    "rule": "classical",
+    "zh": "没列的拍号按古典的层级推：第一拍 1；单拍子其余的拍 0、四拍子第三拍 0.5；复拍子（x/8）每组第一个八分 0；拍与拍之间的八分细分 −0.25、十六分细分 −0.5。加法拍子（5/8、7/8……）按记号上的分组（如 3+2+3/8），每组第一个八分算一拍。"
+   },
+   "follow": {
+    "piano": 0.6,
+    "chromatic-percussion": 0.5,
+    "organ": 0.3,
+    "guitar": 0.8,
+    "bass": 1,
+    "strings": 0.2,
+    "ensemble": 0.1,
+    "brass": 0.6,
+    "reed": 0.3,
+    "pipe": 0.2,
+    "synth-lead": 0.3,
+    "synth-pad": 0.0,
+    "synth-effects": 0.0,
+    "ethnic": 0.5,
+    "percussive": 0.8,
+    "sound-effects": 0.0,
+    "percussion": 1,
+    "voice": 0.3
+   },
+   "followBasis": "AI 判：反拍主要靠节奏组（鼓、贝斯、节奏吉他、钢琴伴奏）；铜管齐奏短音常跟；人声、旋律少跟；铺底不跟（和 MoonSinger 工单里的例子一致）。",
+   "swing": null,
+   "sources": [
+    "backbeat-def",
+    "backbeat-24",
+    "backbeat-snare",
+    "accent-13",
+    "offbeat-rock"
+   ],
+   "notes": "摇滚和流行用同一套反拍（原文：强调反拍是摇滚乐的标志），所以「摇滚 / Rock」做成别名，不另开；要更硬就把演奏者的跟随调高。"
+  },
+  {
+   "id": "waltz",
+   "name": {
+    "zh": "华尔兹",
+    "en": "Waltz",
+    "ja": "ワルツ"
+   },
+   "aliases": [
+    "圆舞曲",
+    "Valse",
+    "Walzer"
+   ],
+   "meters": {
+    "3/4": {
+     "grid": 12,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.5,
+      -0.5
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "waltz-34",
+       "ts-34",
+       "waltz-weight"
+      ],
+      "zh": "原文：华尔兹是三拍子（3/4）；第一拍是主重音（拍号例子），老记载说跳舞的人「把全身力气压在小节的正拍上」。二、三拍压到 −0.25（比古典的 0 轻）是 AI 按「嘭–嚓–嚓」伴奏的常识判的，原文没写，拿不准。"
+     }
+    }
+   },
+   "meterFallback": {
+    "rule": "classical",
+    "zh": "没列的拍号按古典的层级推：第一拍 1；单拍子其余的拍 0、四拍子第三拍 0.5；复拍子（x/8）每组第一个八分 0；拍与拍之间的八分细分 −0.25、十六分细分 −0.5。加法拍子（5/8、7/8……）按记号上的分组（如 3+2+3/8），每组第一个八分算一拍。"
+   },
+   "follow": {
+    "piano": 0.8,
+    "chromatic-percussion": 0.6,
+    "organ": 0.3,
+    "guitar": 0.8,
+    "bass": 1,
+    "strings": 0.5,
+    "ensemble": 0.3,
+    "brass": 0.5,
+    "reed": 0.3,
+    "pipe": 0.3,
+    "synth-lead": 0.3,
+    "synth-pad": 0.0,
+    "synth-effects": 0.0,
+    "ethnic": 0.5,
+    "percussive": 0.8,
+    "sound-effects": 0.0,
+    "percussion": 1,
+    "voice": 0.3
+   },
+   "followBasis": "AI 判：「嘭–嚓–嚓」是低音和伴奏的活，跟满；旋律和人声少跟。",
+   "swing": null,
+   "sources": [
+    "waltz-34",
+    "waltz-weight",
+    "ts-34"
+   ],
+   "notes": "只定义了 3/4（原文：华尔兹也有 3/8、6/8 的变体，这一版没列，走古典的推法）。维也纳华尔兹第二拍略早是时值问题，不在这张表里。"
+  },
+  {
+   "id": "march",
+   "name": {
+    "zh": "进行曲",
+    "en": "March",
+    "ja": "マーチ"
+   },
+   "aliases": [
+    "行进曲",
+    "Marcia",
+    "行進曲"
+   ],
+   "meters": {
+    "2/4": {
+     "grid": 8,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "derived",
+      "values": "ai-scaled",
+      "sources": [
+       "march-beat"
+      ],
+      "zh": "原文：进行曲 = 强而稳定的打击乐拍子（像军鼓）。所以每一拍都比古典实（第二拍 0.5 而不是 0），细分照古典；数值 AI 取。"
+     }
+    },
+    "2/2": {
+     "grid": 16,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.5,
+      -0.5
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "march-meters",
+       "march-beat"
+      ],
+      "zh": "原文：进行曲最常见的拍号是 4/4、2/2（cut time）、6/8；拍子强而稳定。2/2 两拍：1、0.5；拍内细分照古典；数值 AI 取。"
+     }
+    },
+    "4/4": {
+     "grid": 16,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "march-meters",
+       "march-beat",
+       "beat-hierarchy"
+      ],
+      "zh": "原文：进行曲常用 4/4、拍子强而稳定；4/4 的层级（一最强、三次强）照古典，但每拍都抬高（二四拍 0.5、三拍 0.75）；数值 AI 取。"
+     }
+    },
+    "6/8": {
+     "grid": 12,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "march-meters",
+       "march-beat",
+       "ts-68"
+      ],
+      "zh": "原文：进行曲常用 6/8；6/8 两拍（一、四），第二拍抬到 0.5；数值 AI 取。"
+     }
+    }
+   },
+   "meterFallback": {
+    "rule": "classical",
+    "zh": "没列的拍号按古典的层级推：第一拍 1；单拍子其余的拍 0、四拍子第三拍 0.5；复拍子（x/8）每组第一个八分 0；拍与拍之间的八分细分 −0.25、十六分细分 −0.5。加法拍子（5/8、7/8……）按记号上的分组（如 3+2+3/8），每组第一个八分算一拍。"
+   },
+   "follow": {
+    "piano": 0.6,
+    "chromatic-percussion": 0.6,
+    "organ": 0.3,
+    "guitar": 0.6,
+    "bass": 1,
+    "strings": 0.5,
+    "ensemble": 0.3,
+    "brass": 0.8,
+    "reed": 0.6,
+    "pipe": 0.6,
+    "synth-lead": 0.4,
+    "synth-pad": 0.0,
+    "synth-effects": 0.0,
+    "ethnic": 0.5,
+    "percussive": 1,
+    "sound-effects": 0.0,
+    "percussion": 1,
+    "voice": 0.4
+   },
+   "followBasis": "AI 判：军乐队的鼓和低音（大号）扛拍子，跟满；铜管木管齐奏也常跟；铺底不跟。",
+   "swing": null,
+   "sources": [
+    "march-meters",
+    "march-beat"
+   ],
+   "notes": "原文还说现代进行曲速度约每分钟 120 拍（= 行军步数），速度不在这张表里。"
+  },
+  {
+   "id": "swing",
+   "name": {
+    "zh": "Swing",
+    "en": "Swing",
+    "ja": "スウィング"
+   },
+   "aliases": [
+    "摇摆",
+    "爵士",
+    "Jazz",
+    "ジャズ"
+   ],
+   "meters": {
+    "4/4": {
+     "grid": 16,
+     "weights": [
+      0.25,
+      -0.25,
+      0.0,
+      -0.25,
+      1.0,
+      -0.25,
+      0.0,
+      -0.25,
+      0.25,
+      -0.25,
+      0.0,
+      -0.25,
+      1.0,
+      -0.25,
+      0.0,
+      -0.25
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "hihat-24"
+      ],
+      "zh": "原文：爵士里踩镲开合常用来强调第二、四拍。二四拍 1；一三拍 0.25、八分 0 是 AI 取的（摇摆八分的后半个常被乐句重音，但原文说只是「偶尔」，这里不加）。"
+     }
+    }
+   },
+   "meterFallback": {
+    "rule": "classical",
+    "zh": "没列的拍号按古典的层级推：第一拍 1；单拍子其余的拍 0、四拍子第三拍 0.5；复拍子（x/8）每组第一个八分 0；拍与拍之间的八分细分 −0.25、十六分细分 −0.5。加法拍子（5/8、7/8……）按记号上的分组（如 3+2+3/8），每组第一个八分算一拍。"
+   },
+   "follow": {
+    "piano": 0.5,
+    "chromatic-percussion": 0.4,
+    "organ": 0.3,
+    "guitar": 0.6,
+    "bass": 0.4,
+    "strings": 0.2,
+    "ensemble": 0.1,
+    "brass": 0.5,
+    "reed": 0.5,
+    "pipe": 0.3,
+    "synth-lead": 0.3,
+    "synth-pad": 0.0,
+    "synth-effects": 0.0,
+    "ethnic": 0.4,
+    "percussive": 0.6,
+    "sound-effects": 0.0,
+    "percussion": 1,
+    "voice": 0.2
+   },
+   "followBasis": "AI 判：二四拍主要是鼓（踩镲）的事；行走贝斯四拍走得平，只跟一点；管乐、钢琴伴奏中等；人声少跟。",
+   "swing": {
+    "unit": "8th",
+    "ratio": 0.667,
+    "range": [
+     0.5,
+     0.75
+    ],
+    "basis": {
+     "sources": [
+      "swing-ratio",
+      "swing-range"
+     ],
+     "zh": "原文：一对八分里前一个常被理解成后一个的两倍长（= 三连音感觉，前一个占 2/3 ≈ 0.667），但实际比例没那么确定、常常更含蓄；原文列的近似从 1:1（平八分）到 3:1（附点八分 + 十六分），所以给 range 0.5–0.75。随速度变的规律原文没给，不编。"
+    }
+   },
+   "sources": [
+    "hihat-24",
+    "swing-ratio",
+    "swing-range"
+   ],
+   "notes": "摇摆是时值（swing 字段），二四拍是轻重（meters），两样分开。"
+  },
+  {
+   "id": "four-on-the-floor",
+   "name": {
+    "zh": "四拍底鼓",
+    "en": "Four on the floor",
+    "ja": "4つ打ち"
+   },
+   "aliases": [
+    "电子",
+    "迪斯科",
+    "Disco",
+    "EDM",
+    "House",
+    "ディスコ"
+   ],
+   "meters": {
+    "4/4": {
+     "grid": 16,
+     "weights": [
+      1.0,
+      0.0,
+      0.5,
+      0.0,
+      1.0,
+      0.0,
+      0.5,
+      0.0,
+      1.0,
+      0.0,
+      0.5,
+      0.0,
+      1.0,
+      0.0,
+      0.5,
+      0.0
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "fotf-def",
+       "disco-offbeat"
+      ],
+      "zh": "原文：四拍底鼓 = 4/4 每一拍都踩底鼓、重音均匀；迪斯科的踩镲打八分或十六分，反拍上是开镲。所以四拍都 1、反拍八分 0.5、其余十六分 0；数值 AI 取。"
+     }
+    }
+   },
+   "meterFallback": {
+    "rule": "classical",
+    "zh": "没列的拍号按古典的层级推：第一拍 1；单拍子其余的拍 0、四拍子第三拍 0.5；复拍子（x/8）每组第一个八分 0；拍与拍之间的八分细分 −0.25、十六分细分 −0.5。加法拍子（5/8、7/8……）按记号上的分组（如 3+2+3/8），每组第一个八分算一拍。"
+   },
+   "follow": {
+    "piano": 0.6,
+    "chromatic-percussion": 0.4,
+    "organ": 0.3,
+    "guitar": 0.6,
+    "bass": 0.8,
+    "strings": 0.2,
+    "ensemble": 0.1,
+    "brass": 0.5,
+    "reed": 0.3,
+    "pipe": 0.2,
+    "synth-lead": 0.5,
+    "synth-pad": 0.0,
+    "synth-effects": 0.0,
+    "ethnic": 0.4,
+    "percussive": 0.8,
+    "sound-effects": 0.0,
+    "percussion": 1,
+    "voice": 0.2
+   },
+   "followBasis": "AI 判：底鼓和踩镲（鼓组）扛，跟满；贝斯、合成器短音常跟；铺底、人声少跟或不跟。",
+   "swing": null,
+   "sources": [
+    "fotf-def",
+    "disco-offbeat"
+   ],
+   "notes": "只定义了 4/4（原文就是按 4/4 定义的）。"
+  }
+ ],
+ "deferred": [
+  {
+   "id": "bossa-nova",
+   "zh": "波萨：原文有节奏型（Bossanova 3:2; O..O..O.|..O..O..，克拉维一轮 16 个脉冲），但一轮跨两小节（2/4 记谱）或要按两小节 4/4 的八分来数，「一小节一组 weights」装不下；要做得给 meters 加 bars: 2 一类的字段，等 MoonSinger 定",
+   "sources": [
+    "bossa-clave"
+   ]
+  },
+  {
+   "id": "latin",
+   "zh": "拉丁（son clave）：同上，克拉维跨两小节"
+  },
+  {
+   "id": "ballad",
+   "zh": "慢歌：没找到和流行反拍不同的可靠依据；12/8 慢歌已放进流行的 12/8"
+  }
+ ]
+}

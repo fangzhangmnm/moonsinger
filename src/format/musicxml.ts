@@ -7,12 +7,13 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { type Token, type NoteTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
+import { type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
 import { syllableLangs, keepOnlyOverrides } from "../score/lang.ts";
 import { type El, esc, parseXml, kids, kid, childText, text } from "./xml.ts";
+import { grooveLabel } from "../score/groove.ts";
 
 export interface PartInfo {
   id: string;               // "P1"
@@ -102,6 +103,10 @@ const XML_NOTE_DYN: Record<string, Art> = { sfz: "sfz", sf: "sfz", sffz: "sfz", 
 const XML_ART: Record<string, Art> = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
 /** 别家谱的力度归到这一版认的六档（更弱 / 更强的并到两头）；sfz / fp 这类认不了 = null（数出来报给人）。 */
 const XML_DYN = (name: string): Dyn | null => (["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? (name as Dyn) : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null);
+/** 风格记号（拍子轻重；2026-10-08 深夜 Opus 5.5）：<direction><words>（别的软件照样显示那个字），id = groove.<预设>.<幅度百分数>.<token id>——
+ *  我们自己读回来认 id 变回风格记号；别家谱里普通的 <words>（rit. / dolce…）照旧不读。 */
+const GROOVE_ID = "groove.";
+const grooveXml = (t: GrooveTok) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t.style}.${Math.round((t.amount ?? 1) * 100)}.${t.id}">${esc(grooveLabel(t))}</words></direction-type></direction>`;
 const tempoXml = (bpm: number) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
 /** 一条声部 → 它的小节们（body = 每小节里的 XML 片段，manual = 这小节后面那条小节线是人插的）+ 还没写音高的音。first = 第一个声部（才写速度 / 排练记号）。 */
 function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, first: boolean, clef: "G" | "F" = "G", staves: 1 | 2 = 1): { measures: { body: string[]; manual: boolean }[]; unwritten: string[]; lastLen: number } {
@@ -154,6 +159,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       continue;
     }
     if (t.kind === "hairpin") { if (ticks >= len) close(false); if (wedgeOpen) cur.push(wedgeXml("stop")); cur.push(wedgeXml(t.dir === "cresc" ? "crescendo" : "diminuendo")); wedgeOpen = true; continue; }
+    if (t.kind === "groove") { if (ticks >= len) close(false); cur.push(grooveXml(t)); continue; }
     if (t.kind !== "note" && t.kind !== "rest") continue;
     let left = t.dur, k = 0;
     const tieOut = t.kind === "note" && nextTimed(i)?.kind === "note" && (nextTimed(i) as NoteTok).tie;
@@ -312,6 +318,10 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
             const ty = w.attrs.type;
             if ((ty === "crescendo" || ty === "diminuendo") && (w.attrs.id ?? "").startsWith(RAMP_ID)) pendingRamp = true;   // 渐到：不变成手写的渐强渐弱
             else if (ty === "crescendo" || ty === "diminuendo") mark({ kind: "hairpin", id: 0, dir: ty === "crescendo" ? "cresc" : "dim" });
+          }
+          for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const w of kids(dt, "words")) {   // 风格记号：只认我们自己写的（id 打头 groove.）
+            const g = /^groove\.([a-z][a-z0-9-]*)\.(\d+)\./.exec(w.attrs.id ?? "");
+            if (g) { const a = Number(g[2]) / 100; mark({ kind: "groove", id: 0, style: g[1], ...(a !== 1 ? { amount: a } : {}) }); }
           }
         } else if (c.name === "note") {
           if (kid(c, "grace")) { drop("装饰音"); continue; }

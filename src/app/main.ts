@@ -9,8 +9,9 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, ART_NAME, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { type Art, ART_NAME, setGroove, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, loopPlan, loopWindow } from "../score/arrange.ts";
+import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -485,6 +486,7 @@ const pad = new Pad(padEl, {
   onHalf: (down) => { if (finder.isOpen) return; halfKey(down); },
   onAccShift: (phase, acc) => accKey(phase, acc),   // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
   onInsertMark: (kind) => { if (!finder.isOpen) insertMarkHere(kind); },
+  onGroove: () => { if (!finder.isOpen) insertGrooveHere(); },
   onSoundDown: (p, id) => {
     const n = padNotes.get(id);
     if (n && n.index >= 0) soundTok(st, n.index, id);
@@ -621,16 +623,21 @@ type RenderScope = "view" | "all" | "segment";
 const songIn = (s: RenderScope): Song => (s === "all" ? st.song : s === "segment" ? songOnlyPaper(st.song, st.at.paper) : playSong());
 /** 一个声部照放的顺序压平 + **同一个顺序**的速度表 + 纸界（渐强渐弱不跨纸）。出声和音量曲线都走这一个：v0.7.34 音量曲线的速度表用了默认顺序，
  *  写了编排、各段速度不一样时，力度 / 重音落的时刻和音对不上（v0.7.35 修）。 */
-function flatFor(song: Song, partId: string, order?: string[]) {
-  const ord = order ?? songPlayOrder(song), f = flattenPart(song, partId, { order: ord });
-  return { tokens: f.tokens, map: tempoMapOf(song, ord), bounds: f.starts.map((x) => x.index) };
+function flatFor(song: Song, part: PartDef, order?: string[]) {
+  const ord = order ?? songPlayOrder(song), f = flattenPart(song, part.id, { order: ord }), bounds = f.starts.map((x) => x.index);
+  return { tokens: f.tokens, map: tempoMapOf(song, ord), bounds, groove: grooveOfPart(song, part, ord, f.tokens, bounds) };
+}
+/** 拍子轻重（风格记号；src/score/groove.ts）：这张纸的风格 × 记号的幅度 × 这位演奏者跟多少（预设按乐器类别：月读 / 元音版 = 人声，SoundFont = GM 家族）。 */
+function grooveOfPart(song: Song, part: PartDef, order: string[], tokens: Token[], bounds: number[]): Map<number, number> {
+  const cat = grooveCategory(activeInstrument(doc.extras, part.role)?.engine ?? null, activeGm(doc.extras, part.role));
+  return grooveWeights(tokens, bounds, grooveMapOf(song, order), (s) => followOf(s, cat));
 }
 /** order = 放哪几张纸、什么顺序（没给 = 照编排那一行，arrange.ts；本段 = 只这一张）；循环放给的是「前面 + 循环段两遍」（loopPlan）。 */
 async function renderPart(part: PartDef, scope: RenderScope = "view", order?: string[]): Promise<Rendered | null> {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`「${roleName(doc.extras, role)}」还没有人上场`);
   const song = songIn(scope);
-  const { tokens, map, bounds } = flatFor(song, part.id, order);
+  const { tokens, map, bounds, groove } = flatFor(song, part, order);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);   // 跳音 / 重音 / 呼吸 → 核心认的 ^ / v（怎么对应 = 这位的配置），改了就重唱
     if (!score.SCORE.length) return null;
@@ -643,7 +650,7 @@ async function renderPart(part: PartDef, scope: RenderScope = "view", order?: st
   }
   const spec = activePerfSpec(doc.extras, role);
   const defVel = activeVelocity(doc.extras, role);   // 这位的力度旋钮（没写力度记号的音）
-  const vels = noteVelocities(tokens, map, spec, defVel, bounds);   // 力度记号 + 渐强渐弱 + 重音 / 强音 → 每个音的 MIDI 力度（一遍算完）
+  const vels = noteVelocities(tokens, map, spec, defVel, bounds, groove);   // 力度记号 + 渐强渐弱 + 重音 / 强音 + 拍子轻重 → 每个音的 MIDI 力度（一遍算完）
   const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec), (i) => vels.get(i) ?? defVel);   // SoundFont 叠音全响；元音采样器只唱最上面那条线；跳音截短、呼吸处收短一口气（乐器也是：稍微断开）
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
@@ -665,8 +672,8 @@ async function renderPart(part: PartDef, scope: RenderScope = "view", order?: st
 }
 /** 一个声部的音量曲线（力度 + 重音；月读的跳音 = 后半段收声；src/score/perform.ts）：没有力度 / 重音 = null，声音不碰。渲染结果是缓存的，乘在拷贝上。 */
 function partGain(part: PartDef, scope: RenderScope, order?: string[]) {
-  const { tokens, map, bounds } = flatFor(songIn(scope), part.id, order);
-  return gainSegments(tokens, map, activePerfSpec(doc.extras, part.role), bounds);   // 月读的跳音走唱谱（核心认的 ^），不再切音频
+  const { tokens, map, bounds, groove } = flatFor(songIn(scope), part, order);
+  return gainSegments(tokens, map, activePerfSpec(doc.extras, part.role), bounds, groove);   // 月读的跳音走唱谱（核心认的 ^），不再切音频
 }
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
 const audibleParts = (): PartDef[] => { const solo = st.song.parts.some((p) => pv(p.id).solo); return st.song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted)); };
@@ -1469,7 +1476,67 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
 /** 点力度记号 / 渐强渐弱（或长按原地松手 / 右键）的小菜单（2026-10-08 Opus 5.5，长按拖那一轮）：力度 = 换成别的力度，渐强渐弱 = 换方向；都能删。拖 = 挪，在 score-view 里。 */
 const WEDGE_MENU = { cresc: `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   dim: `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>` } as const;
+/** 风格记号（拍子轻重）：放在光标前那个音上（先放「古典」= 拍号自带的强弱，最不挑人），马上开它的小菜单换风格 / 幅度。 */
+function insertGrooveHere(): void {
+  const nx = setGroove(st, "classical");
+  if (nx === st) { info("风格记号要放在一个音上（这张纸里还没有音）"); return; }
+  update(nx);
+  const toks = tr(st), an = markAnchor(st);
+  let k = -1; for (let j = an - 1; j >= 0 && !isTimed(toks[j]) && toks[j].kind !== "bar"; j--) if (toks[j].kind === "groove") { k = j; break; }
+  if (k >= 0) view.menuFor(k);
+}
+/** 风格记号的小菜单：换风格 / 幅度 / 删；下面明说——这张纸的拍号预设里没列（按古典层级推）、摇摆还没接、这张纸上的歌手各跟多少（纪律：做不到的明说）。 */
+function openGrooveMenu(i: number, at: { x: number; y: number }): void {
+  const toks = tr(st), t = toks[i]; if (!t || t.kind !== "groove") return;
+  closeOffer?.();
+  let end = toks.length; for (let j = i + 1; j < toks.length; j++) if (toks[j].kind === "groove") { end = j; break; }
+  view.setSpan({ from: i + 1, to: end });   // 它管的音染色（到下一个风格记号 / 这张纸结尾）
+  const style = grooveStyle(t.style), amount = t.amount ?? 1;
+  const meters = new Set([`${timeAt(toks, i).beats}/${timeAt(toks, i).beatType}`]);
+  for (let j = i + 1; j < end; j++) { const u = toks[j]; if (u.kind === "time") meters.add(`${u.beats}/${u.beatType}`); }
+  const hints: string[] = [];
+  if (!style && t.style !== "none") hints.push(`这一版不认识「${t.style}」：不加轻重（换一个风格就好）`);
+  if (style && t.style !== "none") {
+    const derived = [...meters].filter((m) => { const [b, bt] = m.split("/").map(Number); return grooveTable(style, b, bt)?.derived; });
+    const none = [...meters].filter((m) => { const [b, bt] = m.split("/").map(Number); return !grooveTable(style, b, bt); });
+    if (derived.length) hints.push(`${derived.join("、")} 这个预设没列：按古典的强弱推${derived.some((m) => m.endsWith("/8") && Number(m.split("/")[0]) % 3 !== 0 && Number(m.split("/")[0]) > 3) ? "（几个八分一组谱上没记，按 2 + 2 + … + 3 推）" : ""}`);
+    if (none.length) hints.push(`${none.join("、")}：这个预设不加轻重`);
+    if (style.swing) hints.push("摇摆（前长后短的时值）这一版还没接：现在只有轻重");
+    const paper = st.song.papers.find((p) => p.id === st.at.paper);
+    const who = st.song.parts.filter((p) => paper?.tracks[p.id]).map((p) => {
+      const f = followOf(style, grooveCategory(activeInstrument(doc.extras, p.role)?.engine ?? null, activeGm(doc.extras, p.role)));
+      return `${roleName(doc.extras, p.role)} ${f > 0 ? `跟 ${Math.round(f * 100)}%` : "不跟"}`;
+    });
+    if (who.length) hints.push(`这张纸上：${who.join(" · ")}（按乐器类别，预设给的）`);
+  }
+  const chips = GROOVE_STYLES.filter((x) => x.id !== "none").map((x) => `<button class="btn ctx-chip${t.style === x.id ? " is-on" : ""}" data-v="style:${x.id}" title="${esc(x.aliases.length ? `也叫 ${x.aliases.join(" / ")}` : x.name.zh)}">${esc(x.name.zh)}</button>`).join("") +
+    `<button class="btn ctx-chip${t.style === "none" ? " is-on" : ""}" data-v="style:none" title="从这儿起不加拍子轻重">不加轻重</button>`;
+  const amounts = [0.5, 1, 1.5, 2].map((a) => `<button class="btn ctx-chip${Math.abs(amount - a) < 1e-9 ? " is-on" : ""}" data-v="amount:${a}" title="幅度：预设的 ${a} 倍">×${a}</button>`).join("");
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu groove-menu"; box.setAttribute("role", "menu");
+  box.innerHTML = `<div class="ctx-row ctx-groove">${chips}</div>` + (t.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") +
+    hints.map((h) => `<div class="ctx-hint">${esc(h)}</div>`).join("") + `<div class="ctx-sep"></div>` +
+    `<button class="btn ctx-item danger" data-v="del" title="去掉这个风格记号（这儿起回到前一个风格；这张纸开头 = 不加）">删除</button>` +
+    `<div class="ctx-hint">只管这张纸：从这个音到这张纸结尾（或下一个风格记号）。长按拖 = 挪到别的音上</div>`;
+  document.body.append(box);
+  const w = box.offsetWidth, h = box.offsetHeight, m = 8;
+  let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
+  box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; view.setSpan(null); };
+  setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
+    close();
+    if (v === "del") update(editMarkAt(st, i, null));
+    else if (v.startsWith("style:")) { update(editMarkAt(st, i, { style: v.slice(6) })); view.menuFor(i); return; }   // 换了接着看（说明会跟着变）
+    else if (v.startsWith("amount:")) { update(editMarkAt(st, i, { amount: Number(v.slice(7)) })); view.menuFor(i); return; }
+    scoreEl.focus();
+  });
+}
 function openMarkMenu(i: number, at: { x: number; y: number }): void {
+  if (tr(st)[i]?.kind === "groove") { openGrooveMenu(i, at); return; }
   const t = tr(st)[i]; if (!t || (t.kind !== "dyn" && t.kind !== "hairpin")) return;
   closeOffer?.();
   // 它管哪几个音（染强调色，菜单收起就清；user「如何不混淆的搞清楚<到底是哪里开始的？」）：渐强渐弱 = 到终点为止；渐到 = 从上一个力度记号后面到这儿；

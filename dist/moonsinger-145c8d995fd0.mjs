@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.35-2026-10-08";
+var APP_VERSION = "v0.7.36-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3025,7 +3025,7 @@ function applyAcc(p2, input) {
 function fillTarget(st3) {
   for (let i10 = st3.caret; i10 < tr(st3).length; i10++) {
     const t10 = tr(st3)[i10];
-    if (t10.kind === "bar" || t10.kind === "phrase" || t10.kind === "dyn" || t10.kind === "hairpin" || isMark(t10)) continue;
+    if (t10.kind === "bar" || t10.kind === "phrase" || t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove" || isMark(t10)) continue;
     return t10.kind === "note" && t10.pitch === null ? i10 : -1;
   }
   return -1;
@@ -3255,6 +3255,28 @@ function toggleHairpin(st3, dir) {
   const id2 = st3.nextId;
   nt2.splice(an2, 0, { kind: "hairpin", id: id2, dir });
   return next({ ...st3, nextId: id2 + 1 }, nt2, shiftAt(st3, 1, an2));
+}
+function setGroove(st3, style) {
+  const toks = tr(st3), an2 = markAnchor(st3);
+  if (an2 < 0) return st3;
+  const a10 = runBefore(toks, an2), nt2 = toks.slice();
+  let k2 = -1;
+  for (let i10 = a10; i10 < an2; i10++) if (toks[i10].kind === "groove") {
+    k2 = i10;
+    break;
+  }
+  if (k2 >= 0) {
+    const g3 = toks[k2];
+    if (g3.style === style) {
+      nt2.splice(k2, 1);
+      return next(st3, nt2, shiftAt(st3, -1, k2));
+    }
+    nt2[k2] = { ...g3, style };
+    return next(st3, nt2);
+  }
+  const id2 = st3.nextId;
+  nt2.splice(a10, 0, { kind: "groove", id: id2, style });
+  return next({ ...st3, nextId: id2 + 1 }, nt2, shiftAt(st3, 1, a10));
 }
 function rampTarget(tokens, i10, end = tokens.length) {
   for (let j2 = i10 + 1; j2 < end; j2++) {
@@ -3683,7 +3705,7 @@ function afterDelete(st3, nt2, over) {
 }
 function moveMark(st3, from, before) {
   const toks = tr(st3), m2 = toks[from];
-  if (!m2 || m2.kind !== "dyn" && m2.kind !== "hairpin" || !toks[before] || !isTimed(toks[before])) return { st: st3, removed: 0 };
+  if (!m2 || m2.kind !== "dyn" && m2.kind !== "hairpin" && m2.kind !== "groove" || !toks[before] || !isTimed(toks[before])) return { st: st3, removed: 0 };
   const nt2 = toks.slice();
   nt2.splice(from, 1);
   let at2 = before - (before > from ? 1 : 0);
@@ -3702,7 +3724,7 @@ function moveMark(st3, from, before) {
 }
 function editMarkAt(st3, i10, change) {
   const toks = tr(st3), m2 = toks[i10];
-  if (!m2 || m2.kind !== "dyn" && m2.kind !== "hairpin") return st3;
+  if (!m2 || m2.kind !== "dyn" && m2.kind !== "hairpin" && m2.kind !== "groove") return st3;
   const nt2 = toks.slice();
   if (change === null) {
     nt2.splice(i10, 1);
@@ -3722,6 +3744,18 @@ function editMarkAt(st3, i10, change) {
   if (m2.kind === "hairpin" && "dir" in change) {
     if (m2.dir === change.dir) return st3;
     nt2[i10] = { ...m2, dir: change.dir };
+    return next(st3, nt2);
+  }
+  if (m2.kind === "groove" && "style" in change) {
+    if (m2.style === change.style) return st3;
+    nt2[i10] = { ...m2, style: change.style };
+    return next(st3, nt2);
+  }
+  if (m2.kind === "groove" && "amount" in change) {
+    const a10 = Math.round(change.amount * 100) / 100;
+    if ((m2.amount ?? 1) === a10) return st3;
+    const { amount: _a2, ...rest } = m2;
+    nt2[i10] = a10 === 1 ? rest : { ...rest, amount: a10 };
     return next(st3, nt2);
   }
   return st3;
@@ -4213,6 +4247,705 @@ function loopWindow(tokens, map, starts, plan) {
   const start = tl2.find((x2) => x2.index >= from)?.t0 ?? end;
   return end - start > 0.05 ? { start, end } : null;
 }
+
+// src/score/grooves.gen.ts
+var GROOVE_STYLES = [
+  {
+    "id": "none",
+    "name": {
+      "zh": "\u65E0",
+      "en": "None",
+      "ja": "\u306A\u3057"
+    },
+    "aliases": [
+      "\u65E0\u98CE\u683C",
+      "Off"
+    ],
+    "meters": {},
+    "fallback": "none",
+    "follow": {
+      "piano": 0,
+      "chromatic-percussion": 0,
+      "organ": 0,
+      "guitar": 0,
+      "bass": 0,
+      "strings": 0,
+      "ensemble": 0,
+      "brass": 0,
+      "reed": 0,
+      "pipe": 0,
+      "synth-lead": 0,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0,
+      "percussive": 0,
+      "sound-effects": 0,
+      "percussion": 0,
+      "voice": 0
+    },
+    "swing": null
+  },
+  {
+    "id": "classical",
+    "name": {
+      "zh": "\u53E4\u5178",
+      "en": "Classical",
+      "ja": "\u30AF\u30E9\u30B7\u30C3\u30AF"
+    },
+    "aliases": [
+      "Classic",
+      "\u53E4\u5178\u6D3E"
+    ],
+    "meters": {
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "3/4": {
+        "grid": 12,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "2/4": {
+        "grid": 8,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "2/2": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5,
+          0,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5
+        ]
+      },
+      "6/8": {
+        "grid": 12,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "12/8": {
+        "grid": 24,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      }
+    },
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.5,
+      "chromatic-percussion": 0.6,
+      "organ": 0.2,
+      "guitar": 0.6,
+      "bass": 0.6,
+      "strings": 0.5,
+      "ensemble": 0.3,
+      "brass": 0.5,
+      "reed": 0.4,
+      "pipe": 0.4,
+      "synth-lead": 0.4,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 1,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.3
+    },
+    "swing": null
+  },
+  {
+    "id": "pop",
+    "name": {
+      "zh": "\u6D41\u884C",
+      "en": "Pop",
+      "ja": "\u30DD\u30C3\u30D7\u30B9"
+    },
+    "aliases": [
+      "Rock",
+      "\u6447\u6EDA",
+      "\u30ED\u30C3\u30AF",
+      "R&B",
+      "Backbeat",
+      "\u53CD\u62CD"
+    ],
+    "meters": {
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          0.5,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25,
+          0.5,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25
+        ]
+      },
+      "12/8": {
+        "grid": 24,
+        "weights": [
+          0.5,
+          -0.25,
+          0,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25,
+          0,
+          -0.25,
+          0.5,
+          -0.25,
+          0,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25,
+          0,
+          -0.25
+        ]
+      }
+    },
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.6,
+      "chromatic-percussion": 0.5,
+      "organ": 0.3,
+      "guitar": 0.8,
+      "bass": 1,
+      "strings": 0.2,
+      "ensemble": 0.1,
+      "brass": 0.6,
+      "reed": 0.3,
+      "pipe": 0.2,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 0.8,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.3
+    },
+    "swing": null
+  },
+  {
+    "id": "waltz",
+    "name": {
+      "zh": "\u534E\u5C14\u5179",
+      "en": "Waltz",
+      "ja": "\u30EF\u30EB\u30C4"
+    },
+    "aliases": [
+      "\u5706\u821E\u66F2",
+      "Valse",
+      "Walzer"
+    ],
+    "meters": {
+      "3/4": {
+        "grid": 12,
+        "weights": [
+          1,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5
+        ]
+      }
+    },
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.8,
+      "chromatic-percussion": 0.6,
+      "organ": 0.3,
+      "guitar": 0.8,
+      "bass": 1,
+      "strings": 0.5,
+      "ensemble": 0.3,
+      "brass": 0.5,
+      "reed": 0.3,
+      "pipe": 0.3,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 0.8,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.3
+    },
+    "swing": null
+  },
+  {
+    "id": "march",
+    "name": {
+      "zh": "\u8FDB\u884C\u66F2",
+      "en": "March",
+      "ja": "\u30DE\u30FC\u30C1"
+    },
+    "aliases": [
+      "\u884C\u8FDB\u66F2",
+      "Marcia",
+      "\u884C\u9032\u66F2"
+    ],
+    "meters": {
+      "2/4": {
+        "grid": 8,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "2/2": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5
+        ]
+      },
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "6/8": {
+        "grid": 12,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      }
+    },
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.6,
+      "chromatic-percussion": 0.6,
+      "organ": 0.3,
+      "guitar": 0.6,
+      "bass": 1,
+      "strings": 0.5,
+      "ensemble": 0.3,
+      "brass": 0.8,
+      "reed": 0.6,
+      "pipe": 0.6,
+      "synth-lead": 0.4,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 1,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.4
+    },
+    "swing": null
+  },
+  {
+    "id": "swing",
+    "name": {
+      "zh": "Swing",
+      "en": "Swing",
+      "ja": "\u30B9\u30A6\u30A3\u30F3\u30B0"
+    },
+    "aliases": [
+      "\u6447\u6446",
+      "\u7235\u58EB",
+      "Jazz",
+      "\u30B8\u30E3\u30BA"
+    ],
+    "meters": {
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          0.25,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25,
+          0.25,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25
+        ]
+      }
+    },
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.5,
+      "chromatic-percussion": 0.4,
+      "organ": 0.3,
+      "guitar": 0.6,
+      "bass": 0.4,
+      "strings": 0.2,
+      "ensemble": 0.1,
+      "brass": 0.5,
+      "reed": 0.5,
+      "pipe": 0.3,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.4,
+      "percussive": 0.6,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.2
+    },
+    "swing": {
+      "unit": "8th",
+      "ratio": 0.667,
+      "range": [
+        0.5,
+        0.75
+      ]
+    }
+  },
+  {
+    "id": "four-on-the-floor",
+    "name": {
+      "zh": "\u56DB\u62CD\u5E95\u9F13",
+      "en": "Four on the floor",
+      "ja": "4\u3064\u6253\u3061"
+    },
+    "aliases": [
+      "\u7535\u5B50",
+      "\u8FEA\u65AF\u79D1",
+      "Disco",
+      "EDM",
+      "House",
+      "\u30C7\u30A3\u30B9\u30B3"
+    ],
+    "meters": {
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          0,
+          0.5,
+          0,
+          1,
+          0,
+          0.5,
+          0,
+          1,
+          0,
+          0.5,
+          0,
+          1,
+          0,
+          0.5,
+          0
+        ]
+      }
+    },
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.6,
+      "chromatic-percussion": 0.4,
+      "organ": 0.3,
+      "guitar": 0.6,
+      "bass": 0.8,
+      "strings": 0.2,
+      "ensemble": 0.1,
+      "brass": 0.5,
+      "reed": 0.3,
+      "pipe": 0.2,
+      "synth-lead": 0.5,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.4,
+      "percussive": 0.8,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.2
+    },
+    "swing": null
+  }
+];
+
+// src/score/groove.ts
+var grooveStyle = (id2) => GROOVE_STYLES.find((s10) => s10.id === id2) ?? null;
+var grooveLabel = (t10) => {
+  const s10 = grooveStyle(t10.style), name = t10.style === "none" ? "\u4E0D\u52A0\u8F7B\u91CD" : s10 ? s10.name.zh : t10.style;
+  return t10.amount !== void 0 && t10.amount !== 1 && t10.style !== "none" ? `${name} \xD7${t10.amount}` : name;
+};
+function classicalWeights(beats, beatType) {
+  const grid = beats * 16 / beatType;
+  if (!Number.isInteger(grid) || grid <= 0) return null;
+  let groups;
+  let sub;
+  if (beatType === 8 && beats > 3 && beats % 3 === 0) {
+    groups = Array(beats / 3).fill(6);
+    sub = () => 2;
+  } else if (beatType === 8 && beats > 3) {
+    const n10 = Math.floor(beats / 2);
+    groups = Array(n10).fill(4);
+    if (beats % 2) groups[n10 - 1] = 6;
+    sub = () => 2;
+  } else {
+    const L2 = 16 / beatType;
+    groups = Array(beats).fill(L2);
+    sub = (len) => len / 2;
+  }
+  const weights = [];
+  groups.forEach((len, b3) => {
+    const step = sub(len);
+    for (let p2 = 0; p2 < len; p2++) weights.push(p2 === 0 ? b3 === 0 ? 1 : groups.length === 4 && b3 === 2 ? 0.5 : 0 : step >= 1 && Number.isInteger(step) && p2 % step === 0 ? -0.25 : -0.5);
+  });
+  return { grid, weights };
+}
+function grooveTable(s10, beats, beatType) {
+  const m2 = s10.meters[`${beats}/${beatType}`];
+  if (m2) return { ...m2, derived: false };
+  const c10 = s10.fallback === "classical" ? classicalWeights(beats, beatType) : null;
+  return c10 ? { ...c10, derived: true } : null;
+}
+function meterPositions(tokens, bounds = [0]) {
+  const out = /* @__PURE__ */ new Map(), starts = new Set(bounds);
+  let time = { ...DEFAULT_TIME }, len = time.beats * WHOLE / time.beatType, inBar = 0, measureNo = 0, first = [];
+  tokens.forEach((t10, i10) => {
+    if (starts.has(i10)) {
+      inBar = 0;
+      measureNo = 0;
+      first = [];
+    }
+    if (t10.kind === "bar") {
+      if (measureNo === 0 && inBar > 0 && inBar < len) for (const k2 of first) out.get(k2).pos += len - inBar;
+      inBar = 0;
+      measureNo++;
+      first = [];
+      return;
+    }
+    if (t10.kind === "time") {
+      if (inBar > 0) {
+        inBar = 0;
+        measureNo++;
+      }
+      time = { beats: t10.beats, beatType: t10.beatType };
+      len = t10.beats * WHOLE / t10.beatType;
+      return;
+    }
+    if (!isTimed(t10)) return;
+    while (inBar >= len && inBar > 0) {
+      inBar -= len;
+      measureNo++;
+    }
+    if (t10.kind === "note" && !t10.tie) {
+      out.set(i10, { pos: inBar, ...time });
+      if (measureNo === 0) first.push(i10);
+    }
+    inBar += t10.dur;
+  });
+  return out;
+}
+function grooveMapOf(song, order) {
+  const seq = order ? order.flatMap((id2) => song.papers.filter((p2) => p2.id === id2)) : song.papers.filter((p2) => !p2.hidden);
+  const out = [];
+  let at2 = 0;
+  for (const p2 of seq) {
+    out.push({ tick: at2, style: null, amount: 1 });
+    const here = [];
+    song.parts.forEach((part, row) => {
+      let t10 = 0;
+      for (const tok of p2.tracks[part.id] ?? []) {
+        if (tok.kind === "groove") here.push({ tick: at2 + t10, style: tok.style, amount: tok.amount ?? 1, row });
+        else if (isTimed(tok)) t10 += tok.dur;
+      }
+    });
+    here.sort((a10, b3) => a10.tick - b3.tick || b3.row - a10.row);
+    for (const g3 of here) out.push({ tick: g3.tick, style: g3.style === "none" ? null : g3.style, amount: g3.amount });
+    at2 += paperTicks(p2);
+  }
+  return out;
+}
+function grooveWeights(tokens, bounds, map, follow) {
+  const out = /* @__PURE__ */ new Map();
+  if (!map.some((g3) => g3.style)) return out;
+  const pos = meterPositions(tokens, bounds);
+  let tick = 0, k2 = -1;
+  tokens.forEach((t10, i10) => {
+    if (!isTimed(t10)) return;
+    while (k2 + 1 < map.length && map[k2 + 1].tick <= tick) k2++;
+    const g3 = k2 >= 0 ? map[k2] : null;
+    tick += t10.dur;
+    if (!g3?.style || t10.kind !== "note") return;
+    const p2 = pos.get(i10), s10 = grooveStyle(g3.style);
+    if (!p2 || !s10) return;
+    if (artOf(t10).some((a10) => ATTACKS.includes(a10))) return;
+    const tb2 = grooveTable(s10, p2.beats, p2.beatType);
+    if (!tb2) return;
+    const slot = p2.pos * tb2.grid / (p2.beats * WHOLE / p2.beatType), on2 = Math.abs(slot - Math.round(slot)) < 1e-6;
+    const w2 = on2 ? tb2.weights[Math.round(slot) % tb2.grid] : Math.min(...tb2.weights);
+    const v = w2 * g3.amount * follow(s10);
+    if (v) out.set(i10, v);
+  });
+  return out;
+}
+var GM_FAMILIES = ["piano", "chromatic-percussion", "organ", "guitar", "bass", "strings", "ensemble", "brass", "reed", "pipe", "synth-lead", "synth-pad", "synth-effects", "ethnic", "percussive", "sound-effects"];
+function grooveCategory(engine, gm) {
+  if (engine === "tsukuyomi" || engine === "vowel-sampler") return "voice";
+  if (engine === "soundfont" && gm) return gm.bank === 128 ? "percussion" : GM_FAMILIES[Math.max(0, Math.min(127, gm.program)) >> 3];
+  return null;
+}
+var followOf = (s10, category) => category ? s10.follow[category] ?? 0 : 0;
 
 // src/score/commands.ts
 function apply(st3, c10, now = Date.now()) {
@@ -4965,7 +5698,7 @@ function notate(dur) {
 }
 var flagLevel = (base3) => base3 >= TPQ ? 0 : Math.round(Math.log2(TPQ / base3));
 var baseWidth = (base3) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base3 / TPQ));
-var SLOT = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, dyn: 3.5, hairpin: 3.7, head: 4, chunk: 5 };
+var SLOT = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, hairpin: 3.7, head: 4, chunk: 5 };
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 function unitsOf(tokens, o10) {
@@ -5039,6 +5772,11 @@ function unitsOf(tokens, o10) {
     if (t10.kind === "hairpin") {
       flushFull();
       units.push({ kind: "hairpin", index: i10, dir: t10.dir, w: 0, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
+    if (t10.kind === "groove") {
+      flushFull();
+      units.push({ kind: "groove", index: i10, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     const isNote = t10.kind === "note", nt2 = t10;
@@ -5230,7 +5968,7 @@ function engrave(song, o10) {
   const partsHit = [], papersHit = [];
   let head = null, shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
-  const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map(), dynYAt = /* @__PURE__ */ new Map(), tempoYAt = /* @__PURE__ */ new Map();
+  const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map(), dynYAt = /* @__PURE__ */ new Map(), tempoYAt = /* @__PURE__ */ new Map(), grooveYAt = /* @__PURE__ */ new Map();
   const staffTop = (r10) => rowTop.get(r10) + P2(rowAbove.get(r10) ?? STAFF_ABOVE);
   const yOf = (r10, d3) => staffTop(r10) + (TOP_LINE - d3) * P2(0.5);
   const dOf = (r10, y2) => Math.round(TOP_LINE - (y2 - staffTop(r10)) / P2(0.5));
@@ -5481,7 +6219,7 @@ function engrave(song, o10) {
           lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e10.bot) / 2 + 2);
           below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW));
         }
-        return { above, below, lyric, dynD: null, tempoD: null };
+        return { above, below, lyric, dynD: null, tempoD: null, grooveD: null };
       });
       if (dyn && mode === "above") {
         const d3 = Math.max(TOP_LINE + 2.4, ex2[0].top + 3);
@@ -5496,6 +6234,11 @@ function engrave(song, o10) {
       if (q2.p.id === owner) {
         const t10 = Math.max(TOP_LINE + 4.8, ex2[0].top + 3, g3[0].dynD !== null ? g3[0].dynD + 4.6 : 0);
         g3[0].tempoD = t10;
+        g3[0].above = Math.max(g3[0].above, (t10 - TOP_LINE) / 2 + 1.6);
+      }
+      if (q2.units.some((u2) => u2.system === s10 && u2.kind === "groove")) {
+        const t10 = g3[0].tempoD !== null ? g3[0].tempoD + 4.6 : Math.max(TOP_LINE + 4.8, ex2[0].top + 3, g3[0].dynD !== null ? g3[0].dynD + 4.6 : 0);
+        g3[0].grooveD = t10;
         g3[0].above = Math.max(g3[0].above, (t10 - TOP_LINE) / 2 + 1.6);
       }
       if (dyn && mode === "between") {
@@ -5526,6 +6269,7 @@ function engrave(song, o10) {
       for (let r10 = 0; r10 < nR2; r10++) {
         const x3 = G2[r10], r02 = rowOf(s10, r10, 0);
         if (x3.g[0].tempoD !== null) tempoYAt.set(r02, yOf(r02, x3.g[0].tempoD));
+        if (x3.g[0].grooveD !== null) grooveYAt.set(r02, yOf(r02, x3.g[0].grooveD));
         if (x3.mode === "between" && per[r10].staves === 2) dynYAt.set(r02, (yOf(r02, Math.min(BOTTOM_LINE, x3.ex[0].bot - 1)) + yOf(rowOf(s10, r10, 1), Math.max(TOP_LINE, x3.ex[1].top + 1))) / 2 + P2(0.7));
         else dynYAt.set(r02, yOf(r02, x3.g[0].dynD ?? (x3.mode === "below" ? BOTTOM_LINE - 5 : TOP_LINE + 2.4)));
       }
@@ -5665,6 +6409,13 @@ function engrave(song, o10) {
           prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: dy, ch: DYN_GLYPH[u2.value], cls: o10.hot?.has(tokens[u2.index].id) ? "dyn hot" : inSel(u2.index) ? "dyn sel" : "dyn" });
           const [il2, ir2, iu2, id2] = DYN_INK[u2.value];
           dyns.push({ index: u2.index, kind: "dyn", system: dr, x: P2(u2.x + 0.3 + il2 - 0.3), y: dy - P2(iu2 + 0.4), w: P2(ir2 - il2 + 0.6), h: P2(iu2 + id2 + 0.8) });
+          continue;
+        }
+        if (u2.kind === "groove") {
+          const gt = tokens[u2.index], gr = rowOf(u2.system, r10, 0), gy = grooveYAt.get(gr) ?? staffTop(gr) - P2(2.4), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
+          const fs = TEMPO_EM * sp2, gw = o10.measureLyric(label) * TEMPO_EM / LYRIC_EM;
+          prims.push({ t: "text", x: P2(u2.x + 0.3), y: gy, s: label, cls: ["groove-mark", known ? "" : "groove-unknown", o10.hot?.has(gt.id) ? "hot" : inSel(u2.index) ? "sel" : ""].filter(Boolean).join(" "), size: fs, anchor: "start" });
+          dyns.push({ index: u2.index, kind: "groove", system: gr, x: P2(u2.x), y: gy - P2(TEMPO_EM * 1.1), w: gw + P2(0.6), h: P2(TEMPO_EM * 1.5) });
           continue;
         }
         if (u2.kind === "head") {
@@ -6913,6 +7664,13 @@ var ScoreView = class {
     this.span = sp2;
     this.render();
   }
+  /** 开这条 track 上第 index 个 token（力度 / 渐强渐弱 / 风格记号）的小菜单（刚插进去的风格记号用）；谱上没画出来 = false。 */
+  menuFor(index) {
+    const h2 = this.layout?.dyns.find((d3) => d3.index === index && this.onTrack(d3));
+    if (!h2) return false;
+    this.markMenu(h2);
+    return true;
+  }
   lift = null;
   selDrag = null;
   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）；menu = 长按的是选区里的音、还没动：抬手 = 选区菜单，动了 = 照常扩选
@@ -7749,10 +8507,10 @@ var SYM_PAGES = {
   art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath"],
   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>", "dyn:ramp"],
-  mark: ["phrase", "key", "time", "tempo", "staff"]
+  mark: ["phrase", "key", "time", "tempo", "groove", "staff"]
 };
 var SYM_PAGE_NAME = { art: "\u6F14\u594F\u6CD5", dyn: "\u529B\u5EA6", mark: "\u8BB0\u53F7" };
-var SYM_PAGE_TITLE = { art: "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438", dyn: "pp\u2026ff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u97F3\u5185\u8D77\u4F0F", mark: "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6" };
+var SYM_PAGE_TITLE = { art: "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438", dyn: "pp\u2026ff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u97F3\u5185\u8D77\u4F0F", mark: "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09" };
 var RAMP_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -8130,6 +8888,7 @@ var Pad = class {
       cell("key", `<span class="big">1=</span>`, "\u8C03\u53F7", "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09"),
       cell("time", `<span class="big">4/4</span>`, "\u62CD\u53F7", "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF09"),
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "\u901F\u5EA6", "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF09"),
+      cell("groove", `<span class="big it">\u98CE\u683C</span>`, "\u62CD\u5B50\u8F7B\u91CD", "\u98CE\u683C\u8BB0\u53F7\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u5728\u5C0F\u8282\u91CC\u7684\u4F4D\u7F6E\u8F7B\u4E00\u70B9 / \u91CD\u4E00\u70B9\uFF08\u53E4\u5178 / \u6D41\u884C / \u534E\u5C14\u5179 / \u8FDB\u884C\u66F2\u2026\u70B9\u5F00\u9009\uFF09\uFF1B\u6574\u5F20\u7EB8\u7684\u6B4C\u624B\u4E00\u8D77\u542C\uFF0C\u5404\u4EBA\u8DDF\u591A\u5C11\u6309\u4E50\u5668"),
       ...this.host.staves() === 2 ? [cell("staff", `<span class="big">\u21C5</span>`, "\u6362\u8C31\u8868", "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868")] : []
     ];
     const byId = new Map(items.map((h2) => [/data-sym="([^"]+)"/.exec(h2)[1], h2]));
@@ -8163,6 +8922,7 @@ var Pad = class {
       }
       if (this.symbols === "once") this.symbols = "off";
       if (id2 === "key" || id2 === "time" || id2 === "tempo") this.host.onInsertMark(id2);
+      else if (id2 === "groove") this.host.onGroove?.();
       else if (id2 === "staff") this.host.onCommand({ k: "staff" });
       else if (id2.startsWith("art:")) this.host.onCommand({ k: "art", a: id2.slice(4) });
       else if (id2 === "slur") this.host.onCommand({ k: "slur" });
@@ -17945,6 +18705,8 @@ var NOTE_DYN = ["sfz", "fp"];
 var XML_NOTE_DYN = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
 var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
 var XML_DYN = (name) => ["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? name : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null;
+var GROOVE_ID = "groove.";
+var grooveXml = (t10) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t10.style}.${Math.round((t10.amount ?? 1) * 100)}.${t10.id}">${esc2(grooveLabel(t10))}</words></direction-type></direction>`;
 var tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
 function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
   const staffs = staffOfTokens(toks, staves);
@@ -18042,6 +18804,11 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       if (wedgeOpen) cur.push(wedgeXml("stop"));
       cur.push(wedgeXml(t10.dir === "cresc" ? "crescendo" : "diminuendo"));
       wedgeOpen = true;
+      continue;
+    }
+    if (t10.kind === "groove") {
+      if (ticks >= len) close(false);
+      cur.push(grooveXml(t10));
       continue;
     }
     if (t10.kind !== "note" && t10.kind !== "rest") continue;
@@ -18252,6 +19019,13 @@ function readMusicXml(xml, hints) {
             const ty2 = w2.attrs.type;
             if ((ty2 === "crescendo" || ty2 === "diminuendo") && (w2.attrs.id ?? "").startsWith(RAMP_ID)) pendingRamp = true;
             else if (ty2 === "crescendo" || ty2 === "diminuendo") mark({ kind: "hairpin", id: 0, dir: ty2 === "crescendo" ? "cresc" : "dim" });
+          }
+          for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const w2 of kids(dt, "words")) {
+            const g3 = /^groove\.([a-z][a-z0-9-]*)\.(\d+)\./.exec(w2.attrs.id ?? "");
+            if (g3) {
+              const a10 = Number(g3[2]) / 100;
+              mark({ kind: "groove", id: 0, style: g3[1], ...a10 !== 1 ? { amount: a10 } : {} });
+            }
           }
         } else if (c10.name === "note") {
           if (kid(c10, "grace")) {
@@ -19127,7 +19901,7 @@ function mixTracks(tracks, sr2, tailSec = 0.3) {
 // src/score/perform.ts
 var DEFAULT_DYN_KEY = DEFAULT_DYN;
 var M = MARK_DEFAULTS;
-function gainSegments(tokens, map, spec, bounds) {
+function gainSegments(tokens, map, spec, bounds, groove) {
   const segs = [];
   let any = false;
   const vel = !!spec.dynamicsVel;
@@ -19137,7 +19911,8 @@ function gainSegments(tokens, map, spec, bounds) {
     for (let k2 = 0; k2 < n10; k2++) segs.push({ t0: s02 + (s12 - s02) * k2 / n10, t1: s02 + (s12 - s02) * (k2 + 1) / n10, dB: a10 + (b3 - a10) * (k2 + 0.5) / n10 });
   };
   for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
-    const L2 = levels?.get(index), soft = tok.kind === "note" && !vel ? artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : 0 : 0;
+    const gw = vel ? 0 : groove?.get(index) ?? 0;
+    const L2 = levels?.get(index), soft = tok.kind === "note" && !vel ? artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : gw < 0 ? -gw * (spec.unstressDb ?? M.unstressDb) : 0 : 0;
     const base3 = (L2 ? L2.at0 : 0) + soft, baseEnd = (L2 ? L2.at1 : 0) + soft;
     if (base3 !== 0 || baseEnd !== 0) any = true;
     if (tok.kind !== "note") {
@@ -19174,7 +19949,7 @@ function gainSegments(tokens, map, spec, bounds) {
       cur = e10;
       any = true;
     }
-    const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : art.includes("stress") ? spec.stressDb ?? M.stressDb : 0;
+    const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : art.includes("stress") ? spec.stressDb ?? M.stressDb : gw > 0 ? gw * (spec.stressDb ?? M.stressDb) : 0;
     if (boost) {
       const e10 = Math.min(t12, t02 + (spec.accentSec ?? M.accentSec));
       segs.push({ t0: t02, t1: e10, dB: base3 + boost });
@@ -19257,7 +20032,7 @@ function dynLevels(tokens, map, table, def, step, bounds) {
   }
   return out;
 }
-function noteVelocities(tokens, map, spec, defaultVel, bounds) {
+function noteVelocities(tokens, map, spec, defaultVel, bounds, groove) {
   const out = /* @__PURE__ */ new Map();
   if (!spec.dynamicsVel) {
     tokens.forEach((t10, i10) => {
@@ -19267,11 +20042,11 @@ function noteVelocities(tokens, map, spec, defaultVel, bounds) {
   }
   for (const [i10, l10] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds)) {
     const t10 = tokens[i10];
-    if (t10.kind === "note") out.set(i10, noteVel(l10.at0, artOf(t10), spec));
+    if (t10.kind === "note") out.set(i10, noteVel(l10.at0, artOf(t10), spec, groove?.get(i10) ?? 0));
   }
   return out;
 }
-var noteVel = (v, art, spec) => {
+var noteVel = (v, art, spec, gw = 0) => {
   if (art.includes("fp")) v = spec.dynamicsVel?.f ?? v;
   else if (art.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
   else if (art.includes("marcato")) v += spec.marcatoVel ?? 0;
@@ -19279,6 +20054,8 @@ var noteVel = (v, art, spec) => {
   else if (art.includes("stress")) v += spec.stressVel ?? M.stressVel;
   else if (art.includes("unstress")) v += spec.unstressVel ?? M.unstressVel;
   else if (art.includes("ghost")) v += spec.ghostVel ?? M.ghostVel;
+  else if (gw > 0) v += gw * (spec.stressVel ?? M.stressVel);
+  else if (gw < 0) v += -gw * (spec.unstressVel ?? M.unstressVel);
   return Math.max(1, Math.min(127, Math.round(v))) / 127;
 };
 var HONORS = {
@@ -27035,6 +27812,10 @@ function toJianpu(toks, fifths) {
       out.push(t10.dir === "cresc" ? "[<]" : "[>]");
       continue;
     }
+    if (t10.kind === "groove") {
+      out.push(`[G=${t10.style}${t10.amount !== void 0 && t10.amount !== 1 ? `:${Math.round(t10.amount * 100)}` : ""}]`);
+      continue;
+    }
     const suf = durText(t10.dur), lead = suf.startsWith(" -") ? "" : suf, tail = suf.startsWith(" -") ? suf : "";
     if (t10.kind === "rest") {
       out.push(`0${lead}${tail}`);
@@ -27102,6 +27883,12 @@ function fromJianpu(text2, fifths) {
     }
     if (w2 === "[<]" || w2 === "[>]") {
       out.push({ kind: "hairpin", id: id2++, dir: w2 === "[<]" ? "cresc" : "dim" });
+      continue;
+    }
+    m2 = /^\[G=([a-z][a-z0-9-]*)(?::(\d+))?\]$/.exec(w2);
+    if (m2) {
+      const a10 = m2[2] ? Number(m2[2]) / 100 : 1;
+      out.push({ kind: "groove", id: id2++, style: m2[1], ...a10 !== 1 ? { amount: a10 } : {} });
       continue;
     }
     m2 = /^(\^?)((?:[#b]*[0-7x]['’,]*)(?:&[#b]*[1-7]['’,]*)*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w2);
@@ -27809,6 +28596,9 @@ var pad3 = new Pad(padEl, {
   onInsertMark: (kind) => {
     if (!finder.isOpen) insertMarkHere(kind);
   },
+  onGroove: () => {
+    if (!finder.isOpen) insertGrooveHere();
+  },
   onSoundDown: (p2, id2) => {
     const n10 = padNotes.get(id2);
     if (n10 && n10.index >= 0) soundTok(st2, n10.index, id2);
@@ -27990,15 +28780,19 @@ var curFlat = () => {
 var lastRender = /* @__PURE__ */ new Map();
 var GM_SR = 44100;
 var songIn = (s10) => s10 === "all" ? st2.song : s10 === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : playSong();
-function flatFor(song, partId, order) {
-  const ord = order ?? songPlayOrder(song), f2 = flattenPart(song, partId, { order: ord });
-  return { tokens: f2.tokens, map: tempoMapOf(song, ord), bounds: f2.starts.map((x2) => x2.index) };
+function flatFor(song, part, order) {
+  const ord = order ?? songPlayOrder(song), f2 = flattenPart(song, part.id, { order: ord }), bounds = f2.starts.map((x2) => x2.index);
+  return { tokens: f2.tokens, map: tempoMapOf(song, ord), bounds, groove: grooveOfPart(song, part, ord, f2.tokens, bounds) };
+}
+function grooveOfPart(song, part, order, tokens, bounds) {
+  const cat2 = grooveCategory(activeInstrument(doc.extras, part.role)?.engine ?? null, activeGm(doc.extras, part.role));
+  return grooveWeights(tokens, bounds, grooveMapOf(song, order), (s10) => followOf(s10, cat2));
 }
 async function renderPart(part, scope = "view", order) {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`\u300C${roleName(doc.extras, role)}\u300D\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A`);
   const song = songIn(scope);
-  const { tokens, map, bounds } = flatFor(song, part.id, order);
+  const { tokens, map, bounds, groove } = flatFor(song, part, order);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);
     if (!score.SCORE.length) return null;
@@ -28012,7 +28806,7 @@ async function renderPart(part, scope = "view", order) {
   }
   const spec = activePerfSpec(doc.extras, role);
   const defVel = activeVelocity(doc.extras, role);
-  const vels = noteVelocities(tokens, map, spec, defVel, bounds);
+  const vels = noteVelocities(tokens, map, spec, defVel, bounds, groove);
   const notes = lightNotes(tokens, map, eng === "soundfont", lightMarks(spec), (i10) => vels.get(i10) ?? defVel);
   if (!notes.length) return null;
   if (eng === "vowel-sampler") {
@@ -28034,8 +28828,8 @@ async function renderPart(part, scope = "view", order) {
   return out;
 }
 function partGain(part, scope, order) {
-  const { tokens, map, bounds } = flatFor(songIn(scope), part.id, order);
-  return gainSegments(tokens, map, activePerfSpec(doc.extras, part.role), bounds);
+  const { tokens, map, bounds, groove } = flatFor(songIn(scope), part, order);
+  return gainSegments(tokens, map, activePerfSpec(doc.extras, part.role), bounds, groove);
 }
 var audibleParts = () => {
   const solo = st2.song.parts.some((p2) => pv(p2.id).solo);
@@ -28493,7 +29287,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "f6717ddba77e",
+  cssHash: "823e4d8fb425",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -29243,7 +30037,105 @@ var WEDGE_MENU = {
   cresc: `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   dim: `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 };
+function insertGrooveHere() {
+  const nx2 = setGroove(st2, "classical");
+  if (nx2 === st2) {
+    info("\u98CE\u683C\u8BB0\u53F7\u8981\u653E\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u8FD9\u5F20\u7EB8\u91CC\u8FD8\u6CA1\u6709\u97F3\uFF09");
+    return;
+  }
+  update(nx2);
+  const toks = tr(st2), an2 = markAnchor(st2);
+  let k2 = -1;
+  for (let j2 = an2 - 1; j2 >= 0 && !isTimed(toks[j2]) && toks[j2].kind !== "bar"; j2--) if (toks[j2].kind === "groove") {
+    k2 = j2;
+    break;
+  }
+  if (k2 >= 0) view.menuFor(k2);
+}
+function openGrooveMenu(i10, at2) {
+  const toks = tr(st2), t10 = toks[i10];
+  if (!t10 || t10.kind !== "groove") return;
+  closeOffer?.();
+  let end = toks.length;
+  for (let j2 = i10 + 1; j2 < toks.length; j2++) if (toks[j2].kind === "groove") {
+    end = j2;
+    break;
+  }
+  view.setSpan({ from: i10 + 1, to: end });
+  const style = grooveStyle(t10.style), amount = t10.amount ?? 1;
+  const meters = /* @__PURE__ */ new Set([`${timeAt(toks, i10).beats}/${timeAt(toks, i10).beatType}`]);
+  for (let j2 = i10 + 1; j2 < end; j2++) {
+    const u2 = toks[j2];
+    if (u2.kind === "time") meters.add(`${u2.beats}/${u2.beatType}`);
+  }
+  const hints = [];
+  if (!style && t10.style !== "none") hints.push(`\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u300C${t10.style}\u300D\uFF1A\u4E0D\u52A0\u8F7B\u91CD\uFF08\u6362\u4E00\u4E2A\u98CE\u683C\u5C31\u597D\uFF09`);
+  if (style && t10.style !== "none") {
+    const derived = [...meters].filter((m3) => {
+      const [b3, bt] = m3.split("/").map(Number);
+      return grooveTable(style, b3, bt)?.derived;
+    });
+    const none = [...meters].filter((m3) => {
+      const [b3, bt] = m3.split("/").map(Number);
+      return !grooveTable(style, b3, bt);
+    });
+    if (derived.length) hints.push(`${derived.join("\u3001")} \u8FD9\u4E2A\u9884\u8BBE\u6CA1\u5217\uFF1A\u6309\u53E4\u5178\u7684\u5F3A\u5F31\u63A8${derived.some((m3) => m3.endsWith("/8") && Number(m3.split("/")[0]) % 3 !== 0 && Number(m3.split("/")[0]) > 3) ? "\uFF08\u51E0\u4E2A\u516B\u5206\u4E00\u7EC4\u8C31\u4E0A\u6CA1\u8BB0\uFF0C\u6309 2 + 2 + \u2026 + 3 \u63A8\uFF09" : ""}`);
+    if (none.length) hints.push(`${none.join("\u3001")}\uFF1A\u8FD9\u4E2A\u9884\u8BBE\u4E0D\u52A0\u8F7B\u91CD`);
+    if (style.swing) hints.push("\u6447\u6446\uFF08\u524D\u957F\u540E\u77ED\u7684\u65F6\u503C\uFF09\u8FD9\u4E00\u7248\u8FD8\u6CA1\u63A5\uFF1A\u73B0\u5728\u53EA\u6709\u8F7B\u91CD");
+    const paper = st2.song.papers.find((p2) => p2.id === st2.at.paper);
+    const who = st2.song.parts.filter((p2) => paper?.tracks[p2.id]).map((p2) => {
+      const f2 = followOf(style, grooveCategory(activeInstrument(doc.extras, p2.role)?.engine ?? null, activeGm(doc.extras, p2.role)));
+      return `${roleName(doc.extras, p2.role)} ${f2 > 0 ? `\u8DDF ${Math.round(f2 * 100)}%` : "\u4E0D\u8DDF"}`;
+    });
+    if (who.length) hints.push(`\u8FD9\u5F20\u7EB8\u4E0A\uFF1A${who.join(" \xB7 ")}\uFF08\u6309\u4E50\u5668\u7C7B\u522B\uFF0C\u9884\u8BBE\u7ED9\u7684\uFF09`);
+  }
+  const chips = GROOVE_STYLES.filter((x2) => x2.id !== "none").map((x2) => `<button class="btn ctx-chip${t10.style === x2.id ? " is-on" : ""}" data-v="style:${x2.id}" title="${esc7(x2.aliases.length ? `\u4E5F\u53EB ${x2.aliases.join(" / ")}` : x2.name.zh)}">${esc7(x2.name.zh)}</button>`).join("") + `<button class="btn ctx-chip${t10.style === "none" ? " is-on" : ""}" data-v="style:none" title="\u4ECE\u8FD9\u513F\u8D77\u4E0D\u52A0\u62CD\u5B50\u8F7B\u91CD">\u4E0D\u52A0\u8F7B\u91CD</button>`;
+  const amounts = [0.5, 1, 1.5, 2].map((a10) => `<button class="btn ctx-chip${Math.abs(amount - a10) < 1e-9 ? " is-on" : ""}" data-v="amount:${a10}" title="\u5E45\u5EA6\uFF1A\u9884\u8BBE\u7684 ${a10} \u500D">\xD7${a10}</button>`).join("");
+  const box = document.createElement("div");
+  box.className = "track-card ctx-menu groove-menu";
+  box.setAttribute("role", "menu");
+  box.innerHTML = `<div class="ctx-row ctx-groove">${chips}</div>` + (t10.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") + hints.map((h3) => `<div class="ctx-hint">${esc7(h3)}</div>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09">\u5220\u9664</button><div class="ctx-hint">\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
+  document.body.append(box);
+  const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
+  let y2 = at2.y + 6;
+  if (y2 + h2 > innerHeight - m2) y2 = at2.y - h2 - 30;
+  box.style.left = `${Math.max(m2, Math.min(at2.x - w2 / 2, innerWidth - w2 - m2))}px`;
+  box.style.top = `${Math.max(m2, Math.min(y2, innerHeight - h2 - m2))}px`;
+  const outside = (e10) => {
+    if (!box.contains(e10.target)) close();
+  };
+  const close = () => {
+    document.removeEventListener("pointerdown", outside, true);
+    box.remove();
+    if (closeOffer === close) closeOffer = null;
+    view.setSpan(null);
+  };
+  setTimeout(() => {
+    if (box.isConnected) document.addEventListener("pointerdown", outside, true);
+  }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (!v) return;
+    close();
+    if (v === "del") update(editMarkAt(st2, i10, null));
+    else if (v.startsWith("style:")) {
+      update(editMarkAt(st2, i10, { style: v.slice(6) }));
+      view.menuFor(i10);
+      return;
+    } else if (v.startsWith("amount:")) {
+      update(editMarkAt(st2, i10, { amount: Number(v.slice(7)) }));
+      view.menuFor(i10);
+      return;
+    }
+    scoreEl.focus();
+  });
+}
 function openMarkMenu(i10, at2) {
+  if (tr(st2)[i10]?.kind === "groove") {
+    openGrooveMenu(i10, at2);
+    return;
+  }
   const t10 = tr(st2)[i10];
   if (!t10 || t10.kind !== "dyn" && t10.kind !== "hairpin") return;
   closeOffer?.();
@@ -30891,4 +31783,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1a3689b262d6.mjs.map
+//# sourceMappingURL=moonsinger-145c8d995fd0.mjs.map
