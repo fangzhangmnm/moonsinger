@@ -67,7 +67,7 @@ export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重�
 export type Dyn = "pp" | "p" | "mp" | "mf" | "f" | "ff";
 export const DYNS: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
 export const DEFAULT_DYN: Dyn = "mf";
-export interface DynTok { kind: "dyn"; id: number; value: Dyn }
+export interface DynTok { kind: "dyn"; id: number; value: Dyn; ramp?: true }   // ramp = 渐到：从这张纸里上一个力度记号那儿一路渐变到这里（关键帧的线性插值；2026-10-08 深夜 Opus 5.5，user「渐到 做」）
 /** 渐强 / 渐弱（2026-10-08 改成记号，Claude Opus 5.5；user「所以<>是一个语义，就是从这一刻开始连续变到下一个强度/速度标记？」「大于小于号不用精确指定范围，而是读最近的pf」）：
  *  状态的过渡——从这儿起连续变到同一张纸里的下一个力度记号；中间又遇到一个渐强渐弱 = 这一段到那儿为止；都没有 = 走一档（演奏者的 wedgeStep），谱上灰字披露。 */
 export interface HairpinTok { kind: "hairpin"; id: number; dir: "cresc" | "dim" }
@@ -491,18 +491,19 @@ function runBefore(toks: Token[], anchor: number): number {
 /** 删 / 插一个 token 之后光标和选区跟着挪（pos = 插 / 删的位置，d = ±1）。 */
 const shiftAt = (st: EditorState, d: number, pos: number) => ({ sel: st.sel ? { from: st.sel.from + (st.sel.from >= pos ? d : 0), to: st.sel.to + (st.sel.to > pos || (st.sel.to === pos && d > 0) ? d : 0) } : null, caret: st.caret + (st.caret >= pos ? d : 0) });
 /** 力度记号放在 markAnchor 那个音上：那儿已经有力度记号 = 改它；value null = 去掉。排在那儿的渐强渐弱前面（「mp <」的顺序）。 */
-export function setDynSel(st: EditorState, value: Dyn | null): EditorState {
+export function setDynSel(st: EditorState, value: Dyn | null, ramp?: boolean): EditorState {
   const toks = tr(st), an = markAnchor(st);
   if (an < 0) return st;
   const a = runBefore(toks, an), nt = toks.slice();
   let k = -1; for (let i = a; i < an; i++) if (toks[i].kind === "dyn") k = i;
   if (k >= 0) {
     if (value === null) { nt.splice(k, 1); return next(st, nt, shiftAt(st, -1, k)); }
-    nt[k] = { ...(nt[k] as DynTok), value }; return next(st, nt);
+    const d = { ...(nt[k] as DynTok), value }; if (ramp === true) d.ramp = true; else if (ramp === false) delete d.ramp;
+    nt[k] = d; return next(st, nt);
   }
   if (value === null) return st;
   let at = an; for (let i = a; i < an; i++) if (toks[i].kind === "hairpin") { at = i; break; }
-  const id = st.nextId; nt.splice(at, 0, { kind: "dyn", id, value });
+  const id = st.nextId; nt.splice(at, 0, { kind: "dyn", id, value, ...(ramp ? { ramp: true as const } : {}) });
   return next({ ...st, nextId: id + 1 }, nt, shiftAt(st, 1, at));
 }
 /** 渐强 / 渐弱记号放在 markAnchor 那个音上（从这个音起）：那儿已经有同方向的 = 去掉，反方向的 = 换。 */
@@ -518,6 +519,17 @@ export function toggleHairpin(st: EditorState, dir: "cresc" | "dim"): EditorStat
   }
   const id = st.nextId; nt.splice(an, 0, { kind: "hairpin", id, dir });
   return next({ ...st, nextId: id + 1 }, nt, shiftAt(st, 1, an));
+}
+/** 渐到（2026-10-08 深夜 Opus 5.5）：下标 i 那个力度记号后面，这张纸里（到 end 为止）下一个力度记号写着渐到、中间没有手写的渐强渐弱 = 它的下标；否则 -1。 */
+export function rampTarget(tokens: Token[], i: number, end = tokens.length): number {
+  for (let j = i + 1; j < end; j++) { const t = tokens[j]; if (t.kind === "hairpin") return -1; if (t.kind === "dyn") return t.ramp ? j : -1; }
+  return -1;
+}
+/** 渐到的起点：下标 j 那个（写着渐到的）力度记号前面，这张纸里（从 start 起）上一个力度记号的下标。
+ *  没有 = "none"（前面没有力度记号，渐到不起作用）；中间隔着手写的渐强渐弱 = "hairpin"（手写的说了算，渐到不起作用）。 */
+export function rampSource(tokens: Token[], j: number, start = 0): number | "none" | "hairpin" {
+  for (let k = j - 1; k >= start; k--) { const t = tokens[k]; if (t.kind === "hairpin") return "hairpin"; if (t.kind === "dyn") return k; }
+  return "none";
 }
 /** markAnchor 那个音上写着的力度记号（没有 = null；选区条 / 符号层上亮哪一个）。 */
 export function dynMarkSel(st: EditorState): Dyn | null {
@@ -926,12 +938,13 @@ export function moveMark(st: EditorState, from: number, before: number): { st: E
   return { st: next(st, a.tokens, { caret: c2 - a.removed.filter((k) => k < c2).length, sel: null }), removed: a.removed.length };
 }
 /** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
-export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | null): EditorState {
+export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | null): EditorState {
   const toks = tr(st), m = toks[i];
   if (!m || (m.kind !== "dyn" && m.kind !== "hairpin")) return st;
   const nt = toks.slice();
   if (change === null) { nt.splice(i, 1); return next(st, nt, { caret: st.caret - (i < st.caret ? 1 : 0), sel: null }); }
   if (m.kind === "dyn" && "value" in change) { if (m.value === change.value) return st; nt[i] = { ...m, value: change.value }; return next(st, nt); }
+  if (m.kind === "dyn" && "ramp" in change) { if (!!m.ramp === change.ramp) return st; const { ramp: _r, ...rest } = m; nt[i] = change.ramp ? { ...rest, ramp: true } : rest; return next(st, nt); }
   if (m.kind === "hairpin" && "dir" in change) { if (m.dir === change.dir) return st; nt[i] = { ...m, dir: change.dir }; return next(st, nt); }
   return st;
 }

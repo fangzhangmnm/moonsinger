@@ -16,7 +16,7 @@
 //   小节线、调号、拍号是各声部自己的画法（契约 §7.8）；速度只画在第一个声部上面；歌手牌（声部名）在每张纸第一行各条谱的左边。
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
-import { type Song, type NoteTok, type Token, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm } from "../score/song.ts";
+import { type Song, type NoteTok, type Token, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
 import { densityOf, type Density } from "../score/paper.ts";
 import { type Pitch, diatonicIndex, keyAlter } from "../score/pitch.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
@@ -50,6 +50,8 @@ export interface EngraveOpts {
   onlyPaper?: string;
   /** 正拿在手里拖的东西（token id：力度记号 / 渐强渐弱 / 字所在的音）：画成强调色（2026-10-08 user「然后拖动能不能给一点视觉反馈」）。 */
   hot?: ReadonlySet<number>;
+  /** 光标所在那条 track 上这一段音（下标 [from, to)）染强调色：点开力度记号 / 渐强渐弱 / 渐到的小菜单时，看它管哪几个音、从哪里开始（2026-10-08 深夜 Opus 5.5，user「如何不混淆的搞清楚<到底是哪里开始的？」）。 */
+  span?: { from: number; to: number } | null;
   /** 连续排法的纸边距（sp）：和分页同一张纸的几何，只是不断页（user 2026-10-08「连续和分页看到的行宽应该是一样的」「连续只是没有了断页，但是每一行还是一样的」）。 */
   margins?: { l: number; r: number; t: number; b: number };
   /** 刚写过（本次输入记录非空）：光标前那个音画成写字头（「−」/ 退格作用在它上）；挪过光标 / 轻点放的光标 = 不画（user 2026-10-08「如果是光标的话为什么前一个音是蓝的？」）。 */
@@ -683,7 +685,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         ds.forEach((dd, k) => {
           const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted; shifted = second;   // 二度：下面那个符头往右错开（连着的二度交错）
           const mute = k > 0 && !!q.p.mono;   // 单声乐器的声部：下面的音灰掉、只唱最上面（user「叠音声部换单声乐器时下方音数据结构上保留，但是变灰」）
-          prims.push({ t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: ng, cls: ["note", cls ?? "", mute ? "chord-mute" : ""].filter(Boolean).join(" ") });
+          prims.push({ t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: ng, cls: ["note", cls ?? "", mute ? "chord-mute" : "", focused && o.span && c.index >= o.span.from && c.index < o.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c.art.includes("ghost")) {   // 幽灵音 = 符头两边一对括号（SMuFL noteheadParenthesisLeft / Right；墨迹按 canvas 量的）
             const hx = second ? x0 + nhW(c) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
             prims.push({ t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\u{E0F5}", cls: pc });
@@ -893,6 +895,38 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       //   和两头的力度字之间留空（user 2026-10-08「< 号不用靠着一点空隙都没有」：按量过的墨迹让开 PIN_GAP）；比一整行还长 = 写成「cresc. - - -」（PIN_WORD）。
       const LEVELS = ["pp", "p", "mp", "mf", "f", "ff"] as const;
       const lastChunk = [...units].reverse().find((u): u is Chunk => u.kind === "chunk");
+      // 发夹（或太长时的「cresc. - - -」）从 (s0, startX) 画到 (s1, endX)：跨行每行一段（按横向长度分开口）；index = 点它开哪个记号的小菜单；
+      //   ramp = 渐到画的（虚线；2026-10-08 深夜 Opus 5.5，user「渐到…和手动加的可以分开来」「如何不混淆的搞清楚<到底是哪里开始的」——手写的实线、渐到虚线，都从看得见的记号起）
+      const drawWedge = (index: number, dir: "cresc" | "dim", s0: number, startX: number, s1: number, endX: number, ramp: boolean) => {
+        const leftOf = (sy: number) => Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((c) => nhX(c)), P(right)) - P(1);
+        const segs: [number, number, number][] = [];
+        for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf(sy), sy === s1 ? endX : P(right) - P(0.3)]);
+        const total = segs.reduce((n, [, a, b]) => n + Math.max(0, b - a), 0) || 1, H = P(0.5);
+        const midY = (sy: number) => (dynYAt.get(rowOf(sy, r, 0)) ?? yOf(rowOf(sy, r, 0), TOP_LINE + 2.4)) - P(0.5);   // 发夹 / 虚线的中线：力度字的半腰
+        if (total > P(right - MARGIN)) {   // 太长：「cresc.」+ 虚线，跨行接着画虚线
+          const word = dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
+          let said = false;
+          for (const [sy, a0, b] of segs) {
+            if (b - a0 < P(0.3)) continue;
+            let a = a0;
+            if (!said && b - a >= ww + P(1)) {   // 第一段放得下字才写（行尾剩一点点 = 字挪到下一行开头）
+              prims.push({ t: "text", x: a, y: midY(sy) + P(0.5), s: word, cls: ["dyn-word", ramp ? "ramp" : "", o.hot?.has(tokens[index].id) ? "hot" : ""].filter(Boolean).join(" "), size: P(PIN_WORD.size), anchor: "start" });
+              a += ww + P(0.6); said = true;
+            }
+            for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY(sy), x2: x + P(DASH.len), y2: midY(sy), w: P(0.12), cls: "dyn-dash" });
+            dyns.push({ index, kind: "hairpin", system: rowOf(sy, r, 0), x: a0, y: midY(sy) - P(1.4), w: b - a0, h: P(2.8) });
+          }
+        } else {
+          let acc = 0;
+          for (const [sy, a, b] of segs) {
+            if (b - a < P(0.3)) continue;
+            const f0 = acc / total, f1 = (acc + b - a) / total; acc += b - a;
+            const [h0, h1] = dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)], y = midY(sy);
+            prims.push({ t: "path", d: `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`, cls: ["hairpin", ramp ? "ramp" : "", o.hot?.has(tokens[index].id) ? "hot" : ""].filter(Boolean).join(" ") });
+            dyns.push({ index, kind: "hairpin", system: rowOf(sy, r, 0), x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
+          }
+        }
+      };
       units.forEach((h, hi) => {
         if (h.kind !== "hairpin" || !lastChunk) return;
         // 紧挨在前面的力度记号（mp < 这种）：从它的字后面起画，别压在字上
@@ -914,39 +948,25 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           if (against) labelAbove = true;
           endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
         }
-        const leftOf = (sy: number) => Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((c) => nhX(c)), P(right)) - P(1);
-        const segs: [number, number, number][] = [];
-        for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf(sy), sy === s1 ? endXd : P(right) - P(0.3)]);
-        const total = segs.reduce((n, [, a, b]) => n + Math.max(0, b - a), 0) || 1, H = P(0.5);
-        const midY = (sy: number) => (dynYAt.get(rowOf(sy, r, 0)) ?? yOf(rowOf(sy, r, 0), TOP_LINE + 2.4)) - P(0.5);   // 发夹 / 虚线的中线：力度字的半腰
-        if (total > P(right - MARGIN)) {   // 太长：「cresc.」+ 虚线，跨行接着画虚线
-          const word = h.dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[h.dir === "cresc" ? "cresc" : "dim"]);
-          let said = false;
-          for (const [sy, a0, b] of segs) {
-            if (b - a0 < P(0.3)) continue;
-            let a = a0;
-            if (!said && b - a >= ww + P(1)) {   // 第一段放得下字才写（行尾剩一点点 = 字挪到下一行开头）
-              prims.push({ t: "text", x: a, y: midY(sy) + P(0.5), s: word, cls: o.hot?.has(tokens[h.index].id) ? "dyn-word hot" : "dyn-word", size: P(PIN_WORD.size), anchor: "start" });
-              a += ww + P(0.6); said = true;
-            }
-            for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY(sy), x2: x + P(DASH.len), y2: midY(sy), w: P(0.12), cls: "dyn-dash" });
-            dyns.push({ index: h.index, kind: "hairpin", system: rowOf(sy, r, 0), x: a0, y: midY(sy) - P(1.4), w: b - a0, h: P(2.8) });
-          }
-        } else {
-          let acc = 0;
-          for (const [sy, a, b] of segs) {
-            if (b - a < P(0.3)) continue;
-            const f0 = acc / total, f1 = (acc + b - a) / total; acc += b - a;
-            const [h0, h1] = h.dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)], y = midY(sy);
-            prims.push({ t: "path", d: `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`, cls: o.hot?.has(tokens[h.index].id) ? "hairpin hot" : "hairpin" });
-            dyns.push({ index: h.index, kind: "hairpin", system: rowOf(sy, r, 0), x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
-          }
-        }
+        drawWedge(h.index, h.dir, s0, startX, s1, endXd, false);
         if (!endU || against) {   // 推定的终点：现在的力度往上 / 往下一档（没有终点 / 终点和方向反着）
           const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
           prims.push({ t: "text", x: labelAbove ? endXd - P(1.2) : endXd + P(0.4), y: (dynYAt.get(rowOf(s1, r, 0)) ?? yOf(rowOf(s1, r, 0), TOP_LINE + 2.4)) + P(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied", size: P(1.3), anchor: "start" });
         }
       });
+      // 8⅞. 渐到：写着「从上一个渐变过来」的力度记号 = 从上一个力度字后面画一条虚线发夹到它前面（方向按两个力度的高低；一样高 = 不画，渐到不起作用）。
+      //   前面没有力度记号 / 中间隔着手写的渐强渐弱 = 不画（手写的说了算；小菜单里那个开关画灰、说为什么——perform.ts 也不渐）
+      for (const u of units) {
+        if (u.kind !== "dyn" || !(tokens[u.index] as { ramp?: true }).ramp) continue;
+        const src = rampSource(tokens, u.index); if (typeof src !== "number") continue;
+        const pu = units.find((x): x is DynU => x.kind === "dyn" && x.index === src); if (!pu) continue;
+        const a = LEVELS.indexOf(pu.value as (typeof LEVELS)[number]), b = LEVELS.indexOf(u.value as (typeof LEVELS)[number]); if (a === b) continue;
+        const sx = P(pu.x + 0.3 + DYN_INK[pu.value][1] + PIN_GAP);
+        let ex = P(u.x + 0.3 + DYN_INK[u.value][0] - PIN_GAP);
+        if (u.system === pu.system && ex - sx < P(1.4)) ex = sx + P(1.4);
+        if (u.system < pu.system) continue;
+        drawWedge(u.index, b > a ? "cresc" : "dim", pu.system, sx, u.system, ex, true);
+      }
       // 9. 歌词连字符（英文断开的音节）：画在两个歌词中间
       for (let n = 0; n < partLyrics.length; n++) {
         const L = partLyrics[n], tok = tokens[L.index] as NoteTok;

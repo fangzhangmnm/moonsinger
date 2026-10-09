@@ -5,7 +5,7 @@ import { type EditorState, type Art, type Dyn, setDynSel, dynMarkSel, toggleSlur
 
 export type Command =
   | { k: "degree"; degree: number; dir: Dir }
-  | { k: "rest" } | { k: "bar" } | { k: "phrase" } | { k: "art"; a: Art } | { k: "slur" } | { k: "wedge"; w: "cresc" | "dim" } | { k: "dyn"; v: Dyn } | { k: "swell"; w: "<" | ">" | "<>" }   // art = 光标前那个音（有选区 = 选中的）切演奏法（pad 符号层；前面不是音 = 原样）
+  | { k: "rest" } | { k: "bar" } | { k: "phrase" } | { k: "art"; a: Art } | { k: "slur" } | { k: "wedge"; w: "cresc" | "dim" } | { k: "dyn"; v: Dyn; ramp?: boolean } | { k: "swell"; w: "<" | ">" | "<>" }   // art = 光标前那个音（有选区 = 选中的）切演奏法（pad 符号层；前面不是音 = 原样）
   | { k: "shorter" } | { k: "longer" } | { k: "tuplet" } | { k: "extend"; half?: boolean }   // half = pad 的「/2」开着：拉长半份（= 附点）
   | { k: "acc"; acc: 1 | -1 }
   | { k: "octave"; d: number } | { k: "step"; d: number } | { k: "alter"; d: number }
@@ -25,7 +25,7 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "slur": return toggleSlurBefore(st) ?? st;
     case "swell": return toggleSwell(st, c.w) ?? st;   // 音内的起伏：光标前那个音（有选区 = 选中的）
     case "wedge": return toggleHairpin(st, c.w);   // 渐强 / 渐弱记号：光标处（有选区 = 选区开头）放一个，从这儿变到下一个力度记号
-    case "dyn": return setDynSel(st, dynMarkSel(st) === c.v ? null : c.v);   // 力度：光标处（有选区 = 选区开头）放这个记号，管到下一个；那儿已经是它 = 去掉   // 光标前那个音连到下一个（有选区 = 选区那样）
+    case "dyn": return c.ramp ? setDynSel(st, c.v, true) : setDynSel(st, dynMarkSel(st) === c.v ? null : c.v);   // 渐到 = 放 / 改成这个力度并且从上一个渐变过来（不当「再按一次去掉」）   // 力度：光标处（有选区 = 选区开头）放这个记号，管到下一个；那儿已经是它 = 去掉   // 光标前那个音连到下一个（有选区 = 选区那样）
     case "shorter": return shorter(st);
     case "longer": return longer(st);
     case "tuplet": return setTuplet(st, st.input.tuplet ? 0 : 3);

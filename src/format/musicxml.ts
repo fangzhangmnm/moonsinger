@@ -7,7 +7,7 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { type Token, type NoteTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches } from "../score/song.ts";
+import { type Token, type NoteTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
@@ -91,7 +91,10 @@ function readCredits(root: El, title: string): string | undefined {
 // 修（2026-10-08 by Claude Opus 5.5）：力度 = <direction><dynamics>（声乐谱放谱上方：下面是歌词）；演奏法 = <notations><articulations>（呼吸 = breath-mark，挂在呼吸前那个音上）
 const dynXml = (v: Dyn) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
 /** 渐强渐弱（2026-10-08）：<wedge> 是一种 direction，和力度记号放在一起（谱上方）。 */
-const wedgeXml = (type: "crescendo" | "diminuendo" | "stop") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"/></direction-type></direction>`;
+const wedgeXml = (type: "crescendo" | "diminuendo" | "stop", extra = "") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"${extra}/></direction-type></direction>`;
+/** 渐到（2026-10-08 深夜 Opus 5.5）：写成从上一个力度记号起的虚线 <wedge line-type="dashed">（别的软件照样渐变、照样画虚线），id 以 ramp- 开头 = 我们自己读回来时认出它是渐到、不变成手写的渐强渐弱。 */
+const RAMP_ID = "ramp-";
+const DYN_ORDER: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
 const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "" };   // ghost = 括号符头（<notehead parentheses="yes">），不在 <articulations> 里   // sfz / fp 写在 <notations><dynamics> 里
 const NOTE_DYN: readonly Art[] = ["sfz", "fp"];
 /** 别家谱里音上（或音前）的力度形状 → 我们的两个：突强一族 / 强后即弱一族。 */
@@ -142,7 +145,14 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       continue;
     }
     // 渐强渐弱（记号）：这儿 <wedge> start；下一个力度记号 / 下一个渐强渐弱 / 纸界 / 谱尾 = stop（终点就是那个力度记号）
-    if (t.kind === "dyn") { if (ticks >= len) close(false); if (wedgeOpen) { cur.push(wedgeXml("stop")); wedgeOpen = false; } cur.push(dynXml(t.value)); continue; }
+    if (t.kind === "dyn") {
+      if (ticks >= len) close(false); if (wedgeOpen) { cur.push(wedgeXml("stop")); wedgeOpen = false; } cur.push(dynXml(t.value));
+      let end = toks.length; for (const b of breaks?.keys() ?? []) if (b > i && b < end) end = b;   // 渐到不跨纸
+      const j = rampTarget(toks, i, end);
+      if (j >= 0) { const a = DYN_ORDER.indexOf(t.value), b = DYN_ORDER.indexOf((toks[j] as Extract<Token, { kind: "dyn" }>).value);
+        if (a !== b) { cur.push(wedgeXml(b > a ? "crescendo" : "diminuendo", ` line-type="dashed" id="${RAMP_ID}${toks[j].id}"`)); wedgeOpen = true; } }
+      continue;
+    }
     if (t.kind === "hairpin") { if (ticks >= len) close(false); if (wedgeOpen) cur.push(wedgeXml("stop")); cur.push(wedgeXml(t.dir === "cresc" ? "crescendo" : "diminuendo")); wedgeOpen = true; continue; }
     if (t.kind !== "note" && t.kind !== "rest") continue;
     let left = t.dur, k = 0;
@@ -254,6 +264,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   const takeId = (s: string | undefined): number | null => { const m = s ? /^[nr](\d+)$/.exec(s) : null; if (!m) return null; const n = +m[1]; if (usedIds.has(n)) return null; usedIds.add(n); return n; };
   /** <notations><articulations> → 音上的演奏法（这一版认跳音 / 重音 / 保持 / 呼吸；别的数出来报）。 */
   let pendingAttack: Art | null = null;
+  let pendingRamp = false;   // 读到我们写的渐到虚线 wedge（id ramp-…）= 下一个力度记号是渐到
   const addArts = (tok: NoteTok, note: El) => {
     const set = new Set(tok.art ?? []);
     for (const nn of kids(note, "notations")) for (const ar of kids(nn, "articulations")) for (const e of kids(ar)) { const a = XML_ART[e.name]; if (a) set.add(a); else drop("演奏法记号（这一版不认的）"); }
@@ -295,10 +306,12 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           if (bpm) { if (headPhase && !H.gotTempo) { H.bpm = bpm; H.gotTempo = true; } else mark({ kind: "tempo", id: 0, bpm }); }
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const dy of kids(dt, "dynamics")) for (const e of kids(dy)) {
             const v = XML_DYN(e.name), na = XML_NOTE_DYN[e.name];
-            if (v) mark({ kind: "dyn", id: 0, value: v }); else if (na) pendingAttack = na; else drop("力度记号（这一版不认的，如 sfz）");   // sfz / fp 写在音前面的方向里 = 挂到下一个音上
+            if (v) { mark({ kind: "dyn", id: 0, value: v, ...(pendingRamp ? { ramp: true as const } : {}) }); pendingRamp = false; } else if (na) pendingAttack = na; else drop("力度记号（这一版不认的，如 sfz）");   // sfz / fp 写在音前面的方向里 = 挂到下一个音上
           }
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const w of kids(dt, "wedge")) {   // 渐强渐弱：start = 这儿一个记号；stop 不存（终点 = 下一个力度记号）
-            const ty = w.attrs.type; if (ty === "crescendo" || ty === "diminuendo") mark({ kind: "hairpin", id: 0, dir: ty === "crescendo" ? "cresc" : "dim" });
+            const ty = w.attrs.type;
+            if ((ty === "crescendo" || ty === "diminuendo") && (w.attrs.id ?? "").startsWith(RAMP_ID)) pendingRamp = true;   // 渐到：不变成手写的渐强渐弱
+            else if (ty === "crescendo" || ty === "diminuendo") mark({ kind: "hairpin", id: 0, dir: ty === "crescendo" ? "cresc" : "dim" });
           }
         } else if (c.name === "note") {
           if (kid(c, "grace")) { drop("装饰音"); continue; }

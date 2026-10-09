@@ -6,7 +6,7 @@
 //   跳音：SoundFont / 元音版把音截短（lightNotes，乐器自己的余音照常收）；月读截不短（唱法核心按谱唱满）→ 曲线在音的后半段收声（gateStaccato）。
 //   呼吸：月读 = 下一个字前「v」（lab-score.ts）；元音版和乐器 = 前一个音收短一点（lightNotes；乐器上的逗号 = 稍微断开再进下一个音，管乐 / 人声就是换气；
 //   2026-10-08 user「breath是否应该对大量GS乐器也生效。毕竟不断气一直拖着也不对，fl你还得手动调一下时长」）。
-import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, DEFAULT_DYN } from "./song.ts";
+import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, DEFAULT_DYN, rampTarget } from "./song.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
 const DEFAULT_DYN_KEY: Dyn = DEFAULT_DYN;
 
@@ -94,7 +94,14 @@ export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Rec
   for (let i = 0; i < tokens.length; i++) {
     if (ramp && i >= ramp.end) { cur = ramp.to; ramp = null; }
     const t = tokens[i];
-    if (t.kind === "dyn") { if (!ramp) cur = table[t.value]; continue; }
+    if (t.kind === "dyn") {
+      if (!ramp) cur = table[t.value];
+      // 渐到：这张纸里下一个力度记号写着「从上一个渐变过来」、中间没有手写的渐强渐弱 = 从这儿后面第一个音一路变到它那个音的音头（关键帧线性插值；
+      //   user「渐到 同意…其实就是有一个start位置和一开始就均匀插值的问题」；dB / 力度本来就是对数的量，线性插就是听感上均匀）
+      const pe = paperEndOf(i, tokens.length, bounds), j: number = ramp ? -1 : rampTarget(tokens, i, pe), start = j >= 0 ? onsetFrom(i + 1, j) : null;
+      if (j >= 0 && start) ramp = { from: cur, to: table[(tokens[j] as Extract<Token, { kind: "dyn" }>).value], T0: start.t0, T1: onsetFrom(j, pe)?.t0 ?? endBefore(j), end: j };
+      continue;
+    }
     if (t.kind === "hairpin") {
       const e = hairpinEnd(tokens, i, bounds), start = onsetFrom(i + 1, e.at);
       if (!start) continue;   // 它和终点之间一个音都没有 = 不起作用

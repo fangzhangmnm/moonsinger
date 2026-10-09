@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.31-2026-10-08";
+var APP_VERSION = "v0.7.32-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3204,7 +3204,7 @@ function runBefore(toks, anchor) {
   return a10;
 }
 var shiftAt = (st3, d3, pos) => ({ sel: st3.sel ? { from: st3.sel.from + (st3.sel.from >= pos ? d3 : 0), to: st3.sel.to + (st3.sel.to > pos || st3.sel.to === pos && d3 > 0 ? d3 : 0) } : null, caret: st3.caret + (st3.caret >= pos ? d3 : 0) });
-function setDynSel(st3, value) {
+function setDynSel(st3, value, ramp) {
   const toks = tr(st3), an2 = markAnchor(st3);
   if (an2 < 0) return st3;
   const a10 = runBefore(toks, an2), nt2 = toks.slice();
@@ -3215,7 +3215,10 @@ function setDynSel(st3, value) {
       nt2.splice(k2, 1);
       return next(st3, nt2, shiftAt(st3, -1, k2));
     }
-    nt2[k2] = { ...nt2[k2], value };
+    const d3 = { ...nt2[k2], value };
+    if (ramp === true) d3.ramp = true;
+    else if (ramp === false) delete d3.ramp;
+    nt2[k2] = d3;
     return next(st3, nt2);
   }
   if (value === null) return st3;
@@ -3225,7 +3228,7 @@ function setDynSel(st3, value) {
     break;
   }
   const id2 = st3.nextId;
-  nt2.splice(at2, 0, { kind: "dyn", id: id2, value });
+  nt2.splice(at2, 0, { kind: "dyn", id: id2, value, ...ramp ? { ramp: true } : {} });
   return next({ ...st3, nextId: id2 + 1 }, nt2, shiftAt(st3, 1, at2));
 }
 function toggleHairpin(st3, dir) {
@@ -3249,6 +3252,22 @@ function toggleHairpin(st3, dir) {
   const id2 = st3.nextId;
   nt2.splice(an2, 0, { kind: "hairpin", id: id2, dir });
   return next({ ...st3, nextId: id2 + 1 }, nt2, shiftAt(st3, 1, an2));
+}
+function rampTarget(tokens, i10, end = tokens.length) {
+  for (let j2 = i10 + 1; j2 < end; j2++) {
+    const t10 = tokens[j2];
+    if (t10.kind === "hairpin") return -1;
+    if (t10.kind === "dyn") return t10.ramp ? j2 : -1;
+  }
+  return -1;
+}
+function rampSource(tokens, j2, start = 0) {
+  for (let k2 = j2 - 1; k2 >= start; k2--) {
+    const t10 = tokens[k2];
+    if (t10.kind === "hairpin") return "hairpin";
+    if (t10.kind === "dyn") return k2;
+  }
+  return "none";
 }
 function dynMarkSel(st3) {
   const toks = tr(st3), an2 = markAnchor(st3);
@@ -3691,6 +3710,12 @@ function editMarkAt(st3, i10, change) {
     nt2[i10] = { ...m2, value: change.value };
     return next(st3, nt2);
   }
+  if (m2.kind === "dyn" && "ramp" in change) {
+    if (!!m2.ramp === change.ramp) return st3;
+    const { ramp: _r, ...rest } = m2;
+    nt2[i10] = change.ramp ? { ...rest, ramp: true } : rest;
+    return next(st3, nt2);
+  }
   if (m2.kind === "hairpin" && "dir" in change) {
     if (m2.dir === change.dir) return st3;
     nt2[i10] = { ...m2, dir: change.dir };
@@ -4091,8 +4116,8 @@ function apply(st3, c10, now = Date.now()) {
       return toggleHairpin(st3, c10.w);
     // 渐强 / 渐弱记号：光标处（有选区 = 选区开头）放一个，从这儿变到下一个力度记号
     case "dyn":
-      return setDynSel(st3, dynMarkSel(st3) === c10.v ? null : c10.v);
-    // 力度：光标处（有选区 = 选区开头）放这个记号，管到下一个；那儿已经是它 = 去掉   // 光标前那个音连到下一个（有选区 = 选区那样）
+      return c10.ramp ? setDynSel(st3, c10.v, true) : setDynSel(st3, dynMarkSel(st3) === c10.v ? null : c10.v);
+    // 渐到 = 放 / 改成这个力度并且从上一个渐变过来（不当「再按一次去掉」）   // 力度：光标处（有选区 = 选区开头）放这个记号，管到下一个；那儿已经是它 = 去掉   // 光标前那个音连到下一个（有选区 = 选区那样）
     case "shorter":
       return shorter(st3);
     case "longer":
@@ -5469,7 +5494,7 @@ function engrave(song, o10) {
           const second = k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1 && !shifted;
           shifted = second;
           const mute = k2 > 0 && !!q2.p.mono;
-          prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row, dd), ch: ng2, cls: ["note", cls ?? "", mute ? "chord-mute" : ""].filter(Boolean).join(" ") });
+          prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row, dd), ch: ng2, cls: ["note", cls ?? "", mute ? "chord-mute" : "", focused && o10.span && c10.index >= o10.span.from && c10.index < o10.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c10.art.includes("ghost")) {
             const hx = second ? x0 + nhW(c10) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
             prims.push({ t: "glyph", x: hx - P2(0.6), y: yOf(row, dd), ch: "\uE0F5", cls: pc });
@@ -5702,6 +5727,38 @@ function engrave(song, o10) {
       }
       const LEVELS = ["pp", "p", "mp", "mf", "f", "ff"];
       const lastChunk = [...units].reverse().find((u2) => u2.kind === "chunk");
+      const drawWedge = (index, dir, s02, startX, s12, endX, ramp) => {
+        const leftOf = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((c10) => nhX(c10)), P2(right)) - P2(1);
+        const segs = [];
+        for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf(sy2), sy2 === s12 ? endX : P2(right) - P2(0.3)]);
+        const total = segs.reduce((n10, [, a10, b3]) => n10 + Math.max(0, b3 - a10), 0) || 1, H3 = P2(0.5);
+        const midY = (sy2) => (dynYAt.get(rowOf(sy2, r10, 0)) ?? yOf(rowOf(sy2, r10, 0), TOP_LINE + 2.4)) - P2(0.5);
+        if (total > P2(right - MARGIN)) {
+          const word = dir === "cresc" ? "cresc." : "dim.", ww = P2(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
+          let said = false;
+          for (const [sy2, a02, b3] of segs) {
+            if (b3 - a02 < P2(0.3)) continue;
+            let a10 = a02;
+            if (!said && b3 - a10 >= ww + P2(1)) {
+              prims.push({ t: "text", x: a10, y: midY(sy2) + P2(0.5), s: word, cls: ["dyn-word", ramp ? "ramp" : "", o10.hot?.has(tokens[index].id) ? "hot" : ""].filter(Boolean).join(" "), size: P2(PIN_WORD.size), anchor: "start" });
+              a10 += ww + P2(0.6);
+              said = true;
+            }
+            for (let x3 = a10; x3 + P2(DASH.len) <= b3; x3 += P2(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x3, y1: midY(sy2), x2: x3 + P2(DASH.len), y2: midY(sy2), w: P2(0.12), cls: "dyn-dash" });
+            dyns.push({ index, kind: "hairpin", system: rowOf(sy2, r10, 0), x: a02, y: midY(sy2) - P2(1.4), w: b3 - a02, h: P2(2.8) });
+          }
+        } else {
+          let acc2 = 0;
+          for (const [sy2, a10, b3] of segs) {
+            if (b3 - a10 < P2(0.3)) continue;
+            const f0 = acc2 / total, f1 = (acc2 + b3 - a10) / total;
+            acc2 += b3 - a10;
+            const [h0, h1] = dir === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)], y2 = midY(sy2);
+            prims.push({ t: "path", d: `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`, cls: ["hairpin", ramp ? "ramp" : "", o10.hot?.has(tokens[index].id) ? "hot" : ""].filter(Boolean).join(" ") });
+            dyns.push({ index, kind: "hairpin", system: rowOf(sy2, r10, 0), x: a10, y: y2 - P2(1.4), w: b3 - a10, h: P2(2.8) });
+          }
+        }
+      };
       units.forEach((h2, hi) => {
         if (h2.kind !== "hairpin" || !lastChunk) return;
         const prevU = units[hi - 1];
@@ -5727,41 +5784,26 @@ function engrave(song, o10) {
           if (against) labelAbove = true;
           endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
         }
-        const leftOf = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((c10) => nhX(c10)), P2(right)) - P2(1);
-        const segs = [];
-        for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf(sy2), sy2 === s12 ? endXd : P2(right) - P2(0.3)]);
-        const total = segs.reduce((n10, [, a10, b3]) => n10 + Math.max(0, b3 - a10), 0) || 1, H3 = P2(0.5);
-        const midY = (sy2) => (dynYAt.get(rowOf(sy2, r10, 0)) ?? yOf(rowOf(sy2, r10, 0), TOP_LINE + 2.4)) - P2(0.5);
-        if (total > P2(right - MARGIN)) {
-          const word = h2.dir === "cresc" ? "cresc." : "dim.", ww = P2(PIN_WORD.w[h2.dir === "cresc" ? "cresc" : "dim"]);
-          let said = false;
-          for (const [sy2, a02, b3] of segs) {
-            if (b3 - a02 < P2(0.3)) continue;
-            let a10 = a02;
-            if (!said && b3 - a10 >= ww + P2(1)) {
-              prims.push({ t: "text", x: a10, y: midY(sy2) + P2(0.5), s: word, cls: o10.hot?.has(tokens[h2.index].id) ? "dyn-word hot" : "dyn-word", size: P2(PIN_WORD.size), anchor: "start" });
-              a10 += ww + P2(0.6);
-              said = true;
-            }
-            for (let x3 = a10; x3 + P2(DASH.len) <= b3; x3 += P2(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x3, y1: midY(sy2), x2: x3 + P2(DASH.len), y2: midY(sy2), w: P2(0.12), cls: "dyn-dash" });
-            dyns.push({ index: h2.index, kind: "hairpin", system: rowOf(sy2, r10, 0), x: a02, y: midY(sy2) - P2(1.4), w: b3 - a02, h: P2(2.8) });
-          }
-        } else {
-          let acc2 = 0;
-          for (const [sy2, a10, b3] of segs) {
-            if (b3 - a10 < P2(0.3)) continue;
-            const f0 = acc2 / total, f1 = (acc2 + b3 - a10) / total;
-            acc2 += b3 - a10;
-            const [h0, h1] = h2.dir === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)], y2 = midY(sy2);
-            prims.push({ t: "path", d: `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`, cls: o10.hot?.has(tokens[h2.index].id) ? "hairpin hot" : "hairpin" });
-            dyns.push({ index: h2.index, kind: "hairpin", system: rowOf(sy2, r10, 0), x: a10, y: y2 - P2(1.4), w: b3 - a10, h: P2(2.8) });
-          }
-        }
+        drawWedge(h2.index, h2.dir, s02, startX, s12, endXd, false);
         if (!endU || against) {
           const k2 = Math.max(0, Math.min(LEVELS.length - 1, ci2 + (h2.dir === "cresc" ? 1 : -1)));
           prims.push({ t: "text", x: labelAbove ? endXd - P2(1.2) : endXd + P2(0.4), y: (dynYAt.get(rowOf(s12, r10, 0)) ?? yOf(rowOf(s12, r10, 0), TOP_LINE + 2.4)) + P2(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k2]})`, cls: "dyn-implied", size: P2(1.3), anchor: "start" });
         }
       });
+      for (const u2 of units) {
+        if (u2.kind !== "dyn" || !tokens[u2.index].ramp) continue;
+        const src = rampSource(tokens, u2.index);
+        if (typeof src !== "number") continue;
+        const pu = units.find((x3) => x3.kind === "dyn" && x3.index === src);
+        if (!pu) continue;
+        const a10 = LEVELS.indexOf(pu.value), b3 = LEVELS.indexOf(u2.value);
+        if (a10 === b3) continue;
+        const sx2 = P2(pu.x + 0.3 + DYN_INK[pu.value][1] + PIN_GAP);
+        let ex2 = P2(u2.x + 0.3 + DYN_INK[u2.value][0] - PIN_GAP);
+        if (u2.system === pu.system && ex2 - sx2 < P2(1.4)) ex2 = sx2 + P2(1.4);
+        if (u2.system < pu.system) continue;
+        drawWedge(u2.index, b3 > a10 ? "cresc" : "dim", pu.system, sx2, u2.system, ex2, true);
+      }
       for (let n10 = 0; n10 < partLyrics.length; n10++) {
         const L2 = partLyrics[n10], tok = tokens[L2.index];
         if (!tok.hyph) continue;
@@ -6708,6 +6750,12 @@ var ScoreView = class {
    *  src / cur = 原来 / 现在落在第几个；moved = 指针动过（没动 = 原地松手）。 */
   /** 正拖着的东西的 token id（画成强调色；拿起来那一刻就亮）。 */
   hot = null;
+  /** 点开的记号管的那一段音（染强调色；小菜单收起就清）。 */
+  span = null;
+  setSpan(sp2) {
+    this.span = sp2;
+    this.render();
+  }
   lift = null;
   selDrag = null;
   // 长按之后没抬手接着拖 = 扩选（anchor = 长按的那个音）；menu = 长按的是选区里的音、还没动：抬手 = 选区菜单，动了 = 照常扩选
@@ -6760,7 +6808,8 @@ var ScoreView = class {
       justWrote: st3.log.length > 0,
       ...page ? { page } : { margins },
       ...(this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st3.at.paper } : {},
-      ...this.hot ? { hot: this.hot } : {}
+      ...this.hot ? { hot: this.hot } : {},
+      ...this.span ? { span: this.span } : {}
     });
     this.ink.style.left = `${this.layout.pageX.left}px`;
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;
@@ -7537,11 +7586,12 @@ var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><p
 var SYM_PAGES = {
   art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath"],
   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
-  dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>"],
+  dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>", "dyn:ramp"],
   mark: ["phrase", "key", "time", "tempo", "staff"]
 };
 var SYM_PAGE_NAME = { art: "\u6F14\u594F\u6CD5", dyn: "\u529B\u5EA6", mark: "\u8BB0\u53F7" };
 var SYM_PAGE_TITLE = { art: "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438", dyn: "pp\u2026ff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u97F3\u5185\u8D77\u4F0F", mark: "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6" };
+var RAMP_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var DYN_CELL = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
@@ -7608,6 +7658,8 @@ var Pad = class {
   /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
   symPage = "art";
   symBuilt = null;
+  /** 「渐到」先点它、再点一个力度 = 这个力度从上一个力度记号渐变过来（一次性，同 Shift；2026-10-08 深夜，user「渐到 做」）。 */
+  rampNext = false;
   // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
   mode = "normal";
   gridFor = "";
@@ -7766,7 +7818,7 @@ var Pad = class {
       };
       for (const t10 of ["pointerup", "pointercancel", "lostpointercapture"]) ak2.addEventListener(t10, (e10) => akUp(e10));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.rampNext}|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) {
       if (this.symbols !== "off") this.buildSymbols();
       else this.buildGrid(f2, base3, rows);
@@ -7909,6 +7961,7 @@ var Pad = class {
       cell("wedge:cresc", CRESC_CELL, "\u6E10\u5F3A", "\u6E10\u5F3A <\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F3A\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("wedge:dim", DIM_CELL, "\u6E10\u5F31", "\u6E10\u5F31 >\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F31\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       ...["pp", "p", "mp", "mf", "f", "ff"].map((d3) => cell(`dyn:${d3}${d3 === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d3]}</span>`, "\u529B\u5EA6", `\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389\uFF08user 2026-10-08\u300Cmp mf \u5728\u54EA\u91CC\u52A0\u554A\u300D\uFF09`)),
+      cell(`dyn:ramp${this.rampNext ? ":on" : ""}`, RAMP_CELL, "\u6E10\u5230", "\u6E10\u5230\uFF1A\u5148\u70B9\u5B83\uFF0C\u518D\u70B9\u4E00\u4E2A\u529B\u5EA6 = \u8FD9\u4E2A\u529B\u5EA6\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u8FC7\u6765\uFF08\u8C31\u4E0A\u753B\u865A\u7EBF\u53D1\u5939\uFF1B\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u5B9E\u7EBF\uFF09\uFF1B\u4E0D\u70B9 = \u5230\u90A3\u513F\u7A81\u53D8"),
       ...["<", ">", "<>"].map((w2) => cell(`swell:${w2}`, SWELL_CELL[w2], w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31" : "\u97F3\u5185\u9F13\u8D77", `${w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31\uFF08\u952F\u9F7F\uFF09" : "\u97F3\u5185\u9F13\u8D77\uFF08messa di voce\uFF09"}\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u81EA\u5DF1\u91CC\u9762\u7684\u8D77\u4F0F\uFF1B\u548C\u6BB5\u843D\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u4E24\u5C42\uFF0C\u53EF\u4EE5\u53E0\uFF1B\u518D\u70B9 = \u53BB\u6389`)),
       cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09\u3002\u540C\u4E00\u4E2A\u97F3\u4E0A\u53C8\u6709\u547C\u5438 = \u547C\u5438\u7B97\u6570\uFF1A\u90A3\u91CC\u7167\u6837\u65AD\u5F00\u6362\u6C14\uFF0C\u8FDE\u7EBF\u7167\u753B"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
@@ -7941,14 +7994,21 @@ var Pad = class {
     });
     const act = (b3) => {
       const id2 = b3.dataset.sym;
+      if (id2 === "dyn:ramp") {
+        this.rampNext = !this.rampNext;
+        this.render();
+        return;
+      }
       if (this.symbols === "once") this.symbols = "off";
       if (id2 === "key" || id2 === "time" || id2 === "tempo") this.host.onInsertMark(id2);
       else if (id2 === "staff") this.host.onCommand({ k: "staff" });
       else if (id2.startsWith("art:")) this.host.onCommand({ k: "art", a: id2.slice(4) });
       else if (id2 === "slur") this.host.onCommand({ k: "slur" });
       else if (id2.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id2.slice(6) });
-      else if (id2.startsWith("dyn:")) this.host.onCommand({ k: "dyn", v: id2.slice(4) });
-      else if (id2 === "wedge:cresc" || id2 === "wedge:dim") this.host.onCommand({ k: "wedge", w: id2 === "wedge:cresc" ? "cresc" : "dim" });
+      else if (id2.startsWith("dyn:")) {
+        this.host.onCommand({ k: "dyn", v: id2.slice(4), ...this.rampNext ? { ramp: true } : {} });
+        this.rampNext = false;
+      } else if (id2 === "wedge:cresc" || id2 === "wedge:dim") this.host.onCommand({ k: "wedge", w: id2 === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: "phrase" });
       this.render();
     };
@@ -17708,7 +17768,9 @@ function readCredits(root, title) {
   return lines.length ? lines.join("\n") : void 0;
 }
 var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
-var wedgeXml = (type) => `<direction placement="above"><direction-type><wedge type="${type}" number="1"/></direction-type></direction>`;
+var wedgeXml = (type, extra = "") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"${extra}/></direction-type></direction>`;
+var RAMP_ID = "ramp-";
+var DYN_ORDER = ["pp", "p", "mp", "mf", "f", "ff"];
 var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "" };
 var NOTE_DYN = ["sfz", "fp"];
 var XML_NOTE_DYN = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
@@ -17794,6 +17856,16 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
         wedgeOpen = false;
       }
       cur.push(dynXml(t10.value));
+      let end = toks.length;
+      for (const b3 of breaks?.keys() ?? []) if (b3 > i10 && b3 < end) end = b3;
+      const j2 = rampTarget(toks, i10, end);
+      if (j2 >= 0) {
+        const a10 = DYN_ORDER.indexOf(t10.value), b3 = DYN_ORDER.indexOf(toks[j2].value);
+        if (a10 !== b3) {
+          cur.push(wedgeXml(b3 > a10 ? "crescendo" : "diminuendo", ` line-type="dashed" id="${RAMP_ID}${toks[j2].id}"`));
+          wedgeOpen = true;
+        }
+      }
       continue;
     }
     if (t10.kind === "hairpin") {
@@ -17923,6 +17995,7 @@ function readMusicXml(xml, hints) {
     return n10;
   };
   let pendingAttack = null;
+  let pendingRamp = false;
   const addArts = (tok, note2) => {
     const set = new Set(tok.art ?? []);
     for (const nn2 of kids(note2, "notations")) for (const ar2 of kids(nn2, "articulations")) for (const e10 of kids(ar2)) {
@@ -18000,13 +18073,16 @@ function readMusicXml(xml, hints) {
           }
           for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const dy of kids(dt, "dynamics")) for (const e10 of kids(dy)) {
             const v = XML_DYN(e10.name), na2 = XML_NOTE_DYN[e10.name];
-            if (v) mark({ kind: "dyn", id: 0, value: v });
-            else if (na2) pendingAttack = na2;
+            if (v) {
+              mark({ kind: "dyn", id: 0, value: v, ...pendingRamp ? { ramp: true } : {} });
+              pendingRamp = false;
+            } else if (na2) pendingAttack = na2;
             else drop("\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09");
           }
           for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const w2 of kids(dt, "wedge")) {
             const ty2 = w2.attrs.type;
-            if (ty2 === "crescendo" || ty2 === "diminuendo") mark({ kind: "hairpin", id: 0, dir: ty2 === "crescendo" ? "cresc" : "dim" });
+            if ((ty2 === "crescendo" || ty2 === "diminuendo") && (w2.attrs.id ?? "").startsWith(RAMP_ID)) pendingRamp = true;
+            else if (ty2 === "crescendo" || ty2 === "diminuendo") mark({ kind: "hairpin", id: 0, dir: ty2 === "crescendo" ? "cresc" : "dim" });
           }
         } else if (c10.name === "note") {
           if (kid(c10, "grace")) {
@@ -18988,6 +19064,8 @@ function dynLevels(tokens, map, table, def, step, bounds) {
     const t10 = tokens[i10];
     if (t10.kind === "dyn") {
       if (!ramp) cur = table[t10.value];
+      const pe = paperEndOf(i10, tokens.length, bounds), j2 = ramp ? -1 : rampTarget(tokens, i10, pe), start = j2 >= 0 ? onsetFrom(i10 + 1, j2) : null;
+      if (j2 >= 0 && start) ramp = { from: cur, to: table[tokens[j2].value], T0: start.t0, T1: onsetFrom(j2, pe)?.t0 ?? endBefore(j2), end: j2 };
       continue;
     }
     if (t10.kind === "hairpin") {
@@ -28189,7 +28267,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "75fec2aa05c8",
+  cssHash: "4870985cf038",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -28943,11 +29021,19 @@ function openMarkMenu(i10, at2) {
   const t10 = tr(st2)[i10];
   if (!t10 || t10.kind !== "dyn" && t10.kind !== "hairpin") return;
   closeOffer?.();
+  const toks = tr(st2), src = t10.kind === "dyn" ? rampSource(toks, i10) : "none";
+  const nextMark = (k2) => {
+    for (let j2 = k2 + 1; j2 < toks.length; j2++) if (toks[j2].kind === "dyn" || toks[j2].kind === "hairpin") return j2;
+    return toks.length;
+  };
+  view.setSpan(t10.kind === "hairpin" ? { from: i10 + 1, to: nextMark(i10) } : t10.ramp && typeof src === "number" ? { from: src + 1, to: i10 } : { from: i10 + 1, to: nextMark(i10) });
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const row = t10.kind === "dyn" ? ["pp", "p", "mp", "mf", "f", "ff"].map((d3) => `<button class="btn ctx-chip${t10.value === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u6539\u6210 ${d3}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("") : ["cresc", "dim"].map((d3) => `<button class="btn ctx-chip${t10.dir === d3 ? " is-on" : ""}" data-v="dir:${d3}" title="${d3 === "cresc" ? "\u6E10\u5F3A" : "\u6E10\u5F31"}">${WEDGE_MENU[d3]}</button>`).join("");
-  box.innerHTML = `<div class="ctx-row ctx-dyn">${row}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? "\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09" : "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31"}">\u5220\u9664</button><div class="ctx-hint">\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
+  const rampWhy = src === "none" ? "\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765" : src === "hairpin" ? "\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70" : "";
+  const rampRow = t10.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t10.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t10.ramp ? " disabled" : ""} title="\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8">${t10.ramp ? "\u2713 " : ""}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09</button>` + (rampWhy ? `<div class="ctx-hint">${t10.ramp ? "\u4E0D\u8D77\u4F5C\u7528\uFF1A" : ""}${esc7(rampWhy)}</div>` : "");
+  box.innerHTML = `<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? "\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09" : "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31"}">\u5220\u9664</button><div class="ctx-hint">\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at2.y + 6;
@@ -28961,6 +29047,7 @@ function openMarkMenu(i10, at2) {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
     if (closeOffer === close) closeOffer = null;
+    view.setSpan(null);
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
@@ -28970,7 +29057,8 @@ function openMarkMenu(i10, at2) {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
     close();
-    if (v === "del") update(editMarkAt(st2, i10, null));
+    if (v === "ramp" && t10.kind === "dyn") update(editMarkAt(st2, i10, { ramp: !t10.ramp }));
+    else if (v === "del") update(editMarkAt(st2, i10, null));
     else if (v.startsWith("dyn:")) update(editMarkAt(st2, i10, { value: v.slice(4) }));
     else if (v.startsWith("dir:")) update(editMarkAt(st2, i10, { dir: v.slice(4) }));
     scoreEl.focus();
@@ -30577,4 +30665,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-85959611dcbd.mjs.map
+//# sourceMappingURL=moonsinger-e94b8c9c2dfb.mjs.map
