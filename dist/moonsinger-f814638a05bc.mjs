@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.6-2026-10-08";
+var APP_VERSION = "v0.8.7-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4838,7 +4838,11 @@ var grooveName = (style) => {
   const s10 = grooveStyle(style);
   return style === "none" ? "\u4E0D\u52A0\u8F7B\u91CD" : s10 ? s10.name.zh : style;
 };
-var grooveLabel = (t10) => `\u98CE\u683C\uFF1A${grooveName(t10.style)}${t10.amount !== void 0 && t10.amount !== 1 && t10.style !== "none" ? ` \xD7${t10.amount}` : ""}`;
+var grooveNameEn = (style) => {
+  const s10 = grooveStyle(style);
+  return style === "none" ? "none" : s10 ? s10.name.en : style;
+};
+var grooveLabel = (t10) => `Style: ${grooveNameEn(t10.style)}${t10.amount !== void 0 && t10.amount !== 1 && t10.style !== "none" ? ` \xD7${t10.amount}` : ""}`;
 function beatGroups(beats, beatType) {
   if (!Number.isInteger(beats * 16 / beatType)) return null;
   if (beatType === 8 && beats > 3 && beats % 3 === 0) return { groups: Array(beats / 3).fill(6), sub: 2 };
@@ -32529,7 +32533,8 @@ function openGrooveMenu(i10, at2) {
     });
     if (who.length) hints.push(`\u8FD9\u5F20\u7EB8\u4E0A\uFF1A${who.join(" \xB7 ")}\uFF08\u6309\u4E50\u5668\u7C7B\u522B\uFF0C\u9884\u8BBE\u7ED9\u7684\uFF09`);
   }
-  const chips = GROOVE_STYLES.filter((x2) => x2.id !== "none").map((x2) => `<button class="btn ctx-chip${t10.style === x2.id ? " is-on" : ""}" data-v="style:${x2.id}" title="${esc7(x2.aliases.length ? `\u4E5F\u53EB ${x2.aliases.join(" / ")}` : x2.name.zh)}">${esc7(x2.name.zh)}</button>`).join("") + `<button class="btn ctx-chip${t10.style === "none" ? " is-on" : ""}" data-v="style:none" title="\u4ECE\u8FD9\u513F\u8D77\u4E0D\u52A0\u62CD\u5B50\u8F7B\u91CD">\u4E0D\u52A0\u8F7B\u91CD</button>`;
+  const chips = GROOVE_STYLES.filter((x2) => x2.id !== "none").map((x2) => `<button class="btn ctx-chip${t10.style === x2.id ? " is-on" : ""}" data-v="style:${x2.id}" title="${esc7(x2.aliases.length ? `\u4E5F\u53EB ${x2.aliases.join(" / ")}` : x2.name.zh)}">${esc7(x2.name.en)}<small> \xB7 ${esc7(x2.name.zh)}</small></button>`).join("") + // 谱上写英文（user「风格名用英文」），按钮带中文
+  `<button class="btn ctx-chip${t10.style === "none" ? " is-on" : ""}" data-v="style:none" title="\u4ECE\u8FD9\u513F\u8D77\u4E0D\u52A0\u62CD\u5B50\u8F7B\u91CD">\u4E0D\u52A0\u8F7B\u91CD</button>`;
   const amounts = [0.5, 1, 1.5, 2].map((a10) => `<button class="btn ctx-chip${Math.abs(amount - a10) < 1e-9 ? " is-on" : ""}" data-v="amount:${a10}" title="\u5E45\u5EA6\uFF1A\u9884\u8BBE\u7684 ${a10} \u500D">\xD7${a10}</button>`).join("");
   const box = document.createElement("div");
   box.className = "track-card ctx-menu groove-menu";
@@ -34237,4 +34242,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-677ef21caddb.mjs.map
+//# sourceMappingURL=moonsinger-f814638a05bc.mjs.map

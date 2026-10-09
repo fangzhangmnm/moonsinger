@@ -12,9 +12,12 @@ export { GROOVE_STYLES, type GrooveStyle };
 export const grooveStyle = (id: string): GrooveStyle | null => GROOVE_STYLES.find((s) => s.id === id) ?? null;
 /** 预设的名字（"none" = 「不加轻重」，比预设名「无」好懂）；不认识的预设（以后的版本写的）= 原样显示 id。 */
 export const grooveName = (style: string): string => { const s = grooveStyle(style); return style === "none" ? "不加轻重" : s ? s.name.zh : style; };
-/** 谱上 / MusicXML 里写的字：「风格：古典」（光写「古典」像谜语；user「光说一个古典比较谜语人，说风格：古典」）。 */
+/** 预设的英文名（谱面语言，同速度的 Andante；user「风格名用英文」）："none" = none；不认识的预设 = 原样 id。 */
+export const grooveNameEn = (style: string): string => { const s = grooveStyle(style); return style === "none" ? "none" : s ? s.name.en : style; };
+/** 谱上 / MusicXML 里写的字：「Style: Classical」（光写名字像谜语，user「光说一个古典比较谜语人，说风格：古典」；
+ *  语言对齐记谱：拉丁不用于演奏指示，古典传统是意大利文、流行 / 爵士谱的风格写英文——user「风格名用英文」）。 */
 export const grooveLabel = (t: Pick<GrooveTok, "style" | "amount">): string =>
-  `风格：${grooveName(t.style)}${t.amount !== undefined && t.amount !== 1 && t.style !== "none" ? ` ×${t.amount}` : ""}`;
+  `Style: ${grooveNameEn(t.style)}${t.amount !== undefined && t.amount !== 1 && t.style !== "none" ? ` ×${t.amount}` : ""}`;
 /** 一拍拍分组（同 classicalWeights）：每拍几个十六分 + 拍里第一层细分的步长。 */
 function beatGroups(beats: number, beatType: number): { groups: number[]; sub: number } | null {
   if (!Number.isInteger((beats * 16) / beatType)) return null;

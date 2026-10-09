@@ -1581,7 +1581,7 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
     });
     if (who.length) hints.push(`这张纸上：${who.join(" · ")}（按乐器类别，预设给的）`);
   }
-  const chips = GROOVE_STYLES.filter((x) => x.id !== "none").map((x) => `<button class="btn ctx-chip${t.style === x.id ? " is-on" : ""}" data-v="style:${x.id}" title="${esc(x.aliases.length ? `也叫 ${x.aliases.join(" / ")}` : x.name.zh)}">${esc(x.name.zh)}</button>`).join("") +
+  const chips = GROOVE_STYLES.filter((x) => x.id !== "none").map((x) => `<button class="btn ctx-chip${t.style === x.id ? " is-on" : ""}" data-v="style:${x.id}" title="${esc(x.aliases.length ? `也叫 ${x.aliases.join(" / ")}` : x.name.zh)}">${esc(x.name.en)}<small> · ${esc(x.name.zh)}</small></button>`).join("") +   // 谱上写英文（user「风格名用英文」），按钮带中文
     `<button class="btn ctx-chip${t.style === "none" ? " is-on" : ""}" data-v="style:none" title="从这儿起不加拍子轻重">不加轻重</button>`;
   const amounts = [0.5, 1, 1.5, 2].map((a) => `<button class="btn ctx-chip${Math.abs(amount - a) < 1e-9 ? " is-on" : ""}" data-v="amount:${a}" title="幅度：预设的 ${a} 倍">×${a}</button>`).join("");
   const box = document.createElement("div");

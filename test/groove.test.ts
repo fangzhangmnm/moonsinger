@@ -107,7 +107,7 @@ describe("拍子轻重：存档 / 简谱文字", () => {
   const meta = { software: "test", date: "2026-10-08" }, info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
   it("MusicXML：<words> 写名字、id 带预设和幅度；读回来是同一个记号；别家普通的 <words> 不认", () => {
     const toks = [...head(), gr("pop", 1.5), n(), n()], w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta);
-    assert(/<words font-style="italic" id="groove\.pop\.150\.\d+">风格：流行 ×1\.5<\/words>/.test(w.xml), "MusicXML 里写「风格：流行 ×1.5」");
+    assert(/<words font-style="italic" id="groove\.pop\.150\.\d+">Style: Pop ×1\.5<\/words>/.test(w.xml), "MusicXML 里写「Style: Pop ×1.5」");
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.find((t) => t.kind === "groove");
     eq(JSON.stringify(back && { s: (back as { style: string }).style, a: (back as { amount?: number }).amount }), JSON.stringify({ s: "pop", a: 1.5 }));
     const plain = w.xml.replace(/ id="groove[^"]*"/, "");
