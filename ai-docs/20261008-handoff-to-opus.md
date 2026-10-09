@@ -151,6 +151,11 @@
 ## 0¾. 实时试听刀 1（v0.9.1，2026-10-09 晚，Claude Fable 5.1）
 - 做了什么 = 仓 CLAUDE.md v0.9.1 那条；设计 = `ai-docs/20261009-realtime-preview-engine-proposal.md`（§1–§12 提案、§13 user 三轮回复与修订、§14 刀 0 量的代价）；原话全集 = `ai-docs/20261009-sound-engine-user-vision.md`。
 - **接口面**（给接着做的人）：`src/engine/studio.ts` 的 `StudioIn / StudioOut / TimelineMsg / TrackSpec / ClipRef`；`src/engine/timeline.ts` 的 `buildTimeline(TimelineInput) → Timeline`、`PerformerInfo`；`src/engine/studio-client.ts` 的 `StudioClient`（bank / vowels / setTimeline / chunk / channel / master / play / stop / seek / audition* / renderOffline / on(pos | ended | missing | meter)）。main.ts 里：`prepare(scope)`（库 → 时间线 → 块）、`playRange(tl)`、`cursorSeconds(tl)`、`togglePlay`、`schedulePlaybackRefresh`、`auditionTarget()`。
+- **刀 5 = 性能收尾（2026-10-10 user 问「还有什么性能和底层架构以及模型优化的东西你没做吗，冷启动优化怎么办。几个不同精度你做了吗」；Claude Fable 5.1 的清单）**：
+  ① 精度分级（没做）：唱的块 Float32 → **Int16**（音频线程转回来放）、主线程那份拷贝去掉（现在块存两份：主线程留着给离线导出 + 音频线程一份）、念缓存的分析 Float64 → bf16 / 8 bit、WORLD 单精度（后两样改冻结样本 → 重定基线 + user 听）。
+  ② 冷启动（没专门做）：分段计时（ort 实例化 / 建 session / 词典 gunzip + 挂载 / WORLD）→ 词典解压后缓存、建 session 选项量一下、启动就起引擎；**念缓存持久化到 IDB（可再生派生缓存，MoonSinger 自己前缀，不进 store）= 逐案问 user**。
+  ③ 设备画像（只按量到的速度定预卷）、WORLD 内部进度回调、正在算的那句中途取消、按键 58 ms → 断句 / 稳态那几步也按句缓存、两个 worker 并行唱（PC）、音频线程负载自报。
+  ④ 模型层归 MyLlamaReborn：piper int8、前端减肥、英文前端重做。
 - **刀 4 架构已落（v0.9.9，2026-10-10）**：仓 CLAUDE.md v0.9.9 那条 = 全部接口。**Opus 接着做的 = 录音室界面**：每轨的效果链（EQ / 压缩 / 延迟 / 混响 / 增益，参数表 `FX_KINDS`，`comp.key` 选别的轨 = 侧链）、发送量、去向、加删总线、总轨链；user 的 wishlist 一起看（录音室做在键盘位、卡片上的监视可视化、总谱上的 solo / mute widget、换乐器 + 图标）。**空间 / 距离旋钮**（user「物理量摆位置」）= 内容层：距离 → 推子 + 高架衰减 + 发送到共用混响的量，三样绑一个旋钮，Opus 定映射、user 听。**侧链**的 key 现在只能指轨（mic 轨）不能指总线；总线不能串总线（避免环）。
 - **刀 3 收尾（v0.9.6，2026-10-10）**：总轨 UI 落了（仓 CLAUDE.md v0.9.6）。**刀 4 = 效果器 / 空间**，开工前先 nudge user 讲混音基础（user 2026-10-10「很快我就会开始需要空间感和混音了，不过我不知道reverb和delay是不是正确的还是我只知道滥用这个单其实思路错，有一些更基础的东西我反而不知道要用。到时候一定要nudge我」）——顺序：平衡（推子 / 校准）→ 摆位（声像 + 距离）→ 频率互相遮（EQ / 高切低切）→ 动态（压缩）→ 最后才是空间（一间共用的混响 + 发送量、延迟当节奏用）；提案 §12 的「跟谁走」分法（跟演奏者的链 vs 留在屋里的总线）。
 - **刀 3 引擎部分已落（v0.9.5，2026-10-10）**：按键走光标处力度；月读按键只唱一个字（`sing-core.mjs only`）。剩下 = 总轨 UI（master 增益 / 限幅开关 / 表，`StudioClient.master()` 已通、`StudioIn master` 已有，缺界面）+ 即兴模式 UX；按键 58 ms 还能再快：步骤 1–3（断句 / 辅音 / 稳态分析的 JS）也可以按句缓存，只剩合成。
