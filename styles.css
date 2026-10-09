@@ -409,6 +409,11 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .inst-name b .inst-preset { font-size: 13px; font-weight: 400; color: var(--ink); }   /* 按曲风：音色行的 GM 名（星级 / 入选按音色） */
 .inst-name b .inst-as { display: inline-block; font-size: 10px; font-weight: 400; line-height: 1.5; border: 1px dashed var(--line); border-radius: 4px; padding: 0 4px; margin-left: 6px; color: var(--muted); vertical-align: 1px; }   /* 在这种风里顶替某个概念 */
 .inst-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
+/* 乐器目录多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）：每格至少 320 px（手机一列、iPad 竖 2 列、横 3 列）；
+   点开的「谁能演」横跨整行、落在那件乐器那一行下面（dense：同一行别的格子留在原地） */
+.finder-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); grid-auto-flow: row dense; }
+.finder-items > .inst-prov { grid-column: 1 / -1; }
+@media (min-width: 680px) { .finder-items > .inst-row { border-right: 1px solid var(--line); } }
 .inst-prov { padding: 4px 12px 10px 48px; background: var(--accent-soft); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
 .prov { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; }
 .prov.is-on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }

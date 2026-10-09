@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.11-2026-10-09";
+var APP_VERSION = "v0.8.12-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -20846,7 +20846,7 @@ var Finder = class {
       list.innerHTML = `<div class="finder-empty">\u6CA1\u6709\u53EB\u300C${esc3(this.q)}\u300D\u7684</div>`;
       return;
     }
-    list.innerHTML = groups.map((g3, k2) => `<div class="finder-group" data-g="${k2}"><div class="finder-group-h">${esc3(g3.label)}<span>${g3.items.length}</span></div>${g3.items.map((e10) => this.rowHtml(e10, g3.id)).join("")}</div>`).join("");
+    list.innerHTML = groups.map((g3, k2) => `<div class="finder-group" data-g="${k2}"><div class="finder-group-h">${esc3(g3.label)}<span>${g3.items.length}</span></div><div class="finder-items">${g3.items.map((e10) => this.rowHtml(e10, g3.id)).join("")}</div></div>`).join("");
     this.markJump();
   }
   /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
@@ -32992,7 +32992,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "b0ce749755f4",
+  cssHash: "f8982a7c7df1",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -35594,4 +35594,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0562df23f4e0.mjs.map
+//# sourceMappingURL=moonsinger-b39cf6d65766.mjs.map

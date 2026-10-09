@@ -35,6 +35,11 @@ try {
   // 歌库顶条「乐器」= 只弹着玩的乐器目录，盖在歌库上面；「←」回歌库（2026-10-08 Opus；user「歌库应该有一个专门的乐器目录的入口」）
   await p.click('#galleryFull [data-v="instruments"]'); await p.waitForSelector(".inst-row");
   check((await p.textContent(".finder-title")) === "乐器目录（弹着玩）" && !(await p.$('.finder [data-v="cast"]')), "歌库「乐器」= 只弹着玩的目录（没有「上场」）");
+  {   // 屏幕够宽 = 多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）
+    const fw = await p.$eval(".finder-list", (e) => e.clientWidth), cols = await p.$eval(".finder-items", (e) => getComputedStyle(e).gridTemplateColumns.split(" ").length);
+    check(cols === Math.max(1, Math.floor(fw / 320)), `目录 ${fw}px 宽 = ${cols} 列（每格至少 320 px）`);
+    // （点开一件 = 自动选中提供者、去拉 32 MB 的 GS 音源，本地服务器没有 → 不在这里点；点开后「谁能演」横跨整行在下面，靠 CSS .finder-items > .inst-prov，10-09 截图核过）
+  }
   await p.click('.finder [data-v="back"]'); await p.waitForTimeout(200);
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)) && (await p.$eval(".finder", (f) => f.hidden)), "目录「← 歌库」= 回到歌库");
   // 新建一首

@@ -102,7 +102,9 @@ export class Finder {
     jump.hidden = groups.length < 2;
     jump.querySelector("select")!.innerHTML = groups.map((g, k) => `<option value="${k}">${esc(g.label)} · ${g.items.length} 件</option>`).join("");
     if (!groups.length) { list.innerHTML = `<div class="finder-empty">没有叫「${esc(this.q)}」的</div>`; return; }
-    list.innerHTML = groups.map((g, k) => `<div class="finder-group" data-g="${k}"><div class="finder-group-h">${esc(g.label)}<span>${g.items.length}</span></div>${g.items.map((e) => this.rowHtml(e, g.id)).join("")}</div>`).join("");
+    // 多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）：每组里的行放进自适应网格（styles.css .finder-items：每格至少 320 px，窄屏一列）；
+    //   点开的「谁能演」紧跟在行后面（DOM 顺序不变），横跨整行、落在那件乐器所在那一行的下面（grid dense，同一行别的格子不被挤走）
+    list.innerHTML = groups.map((g, k) => `<div class="finder-group" data-g="${k}"><div class="finder-group-h">${esc(g.label)}<span>${g.items.length}</span></div><div class="finder-items">${g.items.map((e) => this.rowHtml(e, g.id)).join("")}</div></div>`).join("");
     this.markJump();
   }
   /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
