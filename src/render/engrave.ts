@@ -559,15 +559,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       let xx = sysStarts[s];
       for (const c of row) { c.x = xx; if (c.chunk) c.w *= 1 + k; xx += c.w; for (const u of c.units) { u.x = c.x; if (u.kind === "chunk") u.w = c.w; } }
     }
-    // 3½. 光标在一行的最前面（这一行里它前面还没有音 / 休止）= 画在上一行的末尾（user 2026-10-08「然后到行末的时候光标应该在行末而不是下一行开头？」——
-    //   同文本编辑器：打完一行最后一个字，光标留在行末；下一个音写出来照样排到下一行）。只挪画的位置，光标在串里的位置不变
-    for (const q of per) for (const u of q.units) {
-      if (u.kind !== "head" || u.system === 0) continue;
-      if (cols.some((c) => c.system === u.system && c.chunk && c.x < u.x - 1e-6)) continue;
-      const prevRow = cols.filter((c) => c.system === u.system - 1);
-      if (!prevRow.length) continue;
-      u.system -= 1; u.x = Math.max(...prevRow.map((c) => c.x + c.w));
-    }
+    // 3½. 光标在一行的最前面 = 就画在这一行的开头（2026-10-10 user「记账：光标应该在每行的开头而不是上一行的末尾」「能不能顺便把光标在行开头给修一下，很影响工作」）。
+    //   2026-10-08 曾按 user 当时的问法「到行末的时候光标应该在行末而不是下一行开头？」把它挪到上一行末尾画（同文本编辑器）；10-10 user 改了主意，不挪了。
     // 4. 行号与坐标：这张纸第 s 行第 r 个声部的第 k 张谱表 = 一条谱行（大谱表两条；紧凑版式里这张纸上没写歌词的声部那条更矮）
     const rowBase = rows.length, nR = parts.length;
     const rowStart = per.map((_, i) => per.slice(0, i).reduce((a, q) => a + q.staves, 0)), nRowsSys = per.reduce((a, q) => a + q.staves, 0);

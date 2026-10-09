@@ -2109,6 +2109,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   pad.setRangeLow(d.pad.low);
   engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; singer.cancelPending(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了
   view.render(); pad.render(); renderTitle();
+  schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }
 /** 存好了：文件名从此定下来（之后和歌名各管各的；user「之后各管各的同意」）。 */
 function markSaved(): void { doc.stem = docName(); doc.named = true; doc.saved = { song: st.song, lounge: loungeKey(), refs: refHost.rev() }; renderTitle(); }
@@ -2956,4 +2957,5 @@ if (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash)) {
   startAuth();   // 本地恢复完了再 initAuth（CatsUp 2026-09-22 顺序：建 store → 本地恢复 → 登录探测）
 }
 // 试听元音表（约 3 MB）在画好之后的空闲时下载：选了月读就是意图，第一下就该响（user「选这个乐器就是意图，然后第一下就响」）
-setTimeout(() => { void ensureVowels().catch((e) => showError(`试听元音表没下载下来：${(e as Error).message}`)); void engine.ensure().catch(() => undefined); }, 300);   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响
+setTimeout(() => { void ensureVowels().catch((e) => showError(`试听元音表没下载下来：${(e as Error).message}`)); void engine.ensure().catch(() => undefined); }, 300);
+setTimeout(() => schedulePrewarm(), 1200);   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响

@@ -158,7 +158,9 @@ export type Spec =
   | { kind: "standard"; name: string; version: string }
   | { kind: "ours"; doc: string; source: { repo: string; ref: string; path: string } }   // ref = 版本号 / commit；doc = vault README 的章节锚
   | { kind: "unknown" };
-export interface FxV2 { id: string; kind: string; engine: string; params: Record<string, unknown>; owner: string }   // owner = 设备主人（候选 id / 总线 id）
+/** 一个效果（2026-10-10 刀 4 定形；原草稿的 engine / owner 去掉——引擎随 app 发、主人就是它在哪条链上）：kind 见 src/engine/fx.ts FX_KINDS（eq / comp / delay / reverb / gain…；
+ *  不认识的 = 不出声、原样带着、界面画灰）；params 按 kind 的参数表（量纲 / 公式在那张表里，vault 自描述）；on = false 旁通；key = 压缩器的侧链来源（轨 id）。 */
+export interface FxV2 { id: string; kind: string; on?: boolean; params: Record<string, number>; key?: string; note?: string }
 
 // ─── 休息室 v1（只给迁移对照；migrate/index.ts loungeV1toV2）─────────────────────────────────
 export interface LoungeRoleV1 { version: 1; id: string; name: string; sound: string; active: string; candidates: CandidateV1[] }

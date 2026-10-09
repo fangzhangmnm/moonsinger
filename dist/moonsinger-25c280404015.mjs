@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.7-2026-10-10";
+var APP_VERSION = "v0.9.8-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7069,14 +7069,6 @@ function engrave(song, o10) {
           if (u2.kind === "chunk") u2.w = c10.w;
         }
       }
-    }
-    for (const q2 of per) for (const u2 of q2.units) {
-      if (u2.kind !== "head" || u2.system === 0) continue;
-      if (cols.some((c10) => c10.system === u2.system && c10.chunk && c10.x < u2.x - 1e-6)) continue;
-      const prevRow = cols.filter((c10) => c10.system === u2.system - 1);
-      if (!prevRow.length) continue;
-      u2.system -= 1;
-      u2.x = Math.max(...prevRow.map((c10) => c10.x + c10.w));
     }
     const rowBase = rows.length, nR2 = parts.length;
     const rowStart = per.map((_2, i10) => per.slice(0, i10).reduce((a10, q2) => a10 + q2.staves, 0)), nRowsSys = per.reduce((a10, q2) => a10 + q2.staves, 0);
@@ -36269,6 +36261,7 @@ function loadDoc(song, o10) {
   view.render();
   pad3.render();
   renderTitle();
+  schedulePrewarm();
 }
 function markSaved() {
   doc.stem = docName();
@@ -37529,9 +37522,10 @@ setTimeout(() => {
   void ensureVowels().catch((e10) => showError(`\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A${e10.message}`));
   void engine.ensure().catch(() => void 0);
 }, 300);
+setTimeout(() => schedulePrewarm(), 1200);
 /**
 * vue v3.5.35
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-4f039286868b.mjs.map
+//# sourceMappingURL=moonsinger-25c280404015.mjs.map
