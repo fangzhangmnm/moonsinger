@@ -14,6 +14,7 @@ import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
+import { lyricIssues, lyricWhyText, type LyricIssue } from "../score/lyric-check.ts";
 import { ScoreView } from "../ui/score-view.ts";
 import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
@@ -231,6 +232,7 @@ const view = new ScoreView(scoreEl, {
   onBlankPress: (at, row) => openScoreMenu(at, row),
   onSelPress: (at) => openSelMenu(at),
   onMarkPress: (i, at) => openMarkMenu(i, at),
+  lyricHint: (i) => lyricHintAt(i),
   notice: (s) => info(s),
   onPaperMenu: (id) => openPaperMenu(id),
   onAddPaper: () => { update(addPaper(st)); info("新的一张纸"); },
@@ -1218,12 +1220,32 @@ function openPaperSheet(): void {
  *  现在一个声部、乐器只有月读（完整 / 轻量）= 多乐器的占位（数据契约「每个声部在谱号前面选角色和麦克风」）。 */
 const HUMS: [Hum, string][] = [["n", "ん / 嗯"], ["a", "あ / 啊"], ["o", "お / 哦"], ["u", "う / 呜"], ["la", "ら / 啦"]];
 /** 要画的声部：谱上写角色名（同名同种带号）、没人上场的画淡色、第一个声部上面画速度；隐藏的缩成细行；名字下面打出声 / 显示的角标。 */
+/** 每个声部唱不出来的歌词（token id → 为什么；纪律「做不到的一律画灰 + 明说」）。按歌 + 休息室缓存（每次重画都要，别每次重算）。 */
+let lyricMuteKey: unknown[] = [], lyricMuteVal = new Map<string, Map<number, LyricIssue>>();
+function lyricMutes(): Map<string, Map<number, LyricIssue>> {
+  if (lyricMuteKey[0] === st.song && lyricMuteKey[1] === doc.extras) return lyricMuteVal;
+  const out = new Map<string, Map<number, LyricIssue>>();
+  for (const p of st.song.parts) {
+    const eng = activeInstrument(doc.extras, p.role)?.engine ?? null, lang = songLangOf(flattenPart(st.song, p.id).tokens), m = new Map<number, LyricIssue>();
+    for (const paper of st.song.papers) { const toks = paper.tracks[p.id]; if (toks) for (const [i, x] of lyricIssues(toks, eng, lang)) m.set(toks[i].id, x); }
+    out.set(p.id, m);
+  }
+  lyricMuteKey = [st.song, doc.extras]; lyricMuteVal = out;
+  return out;
+}
+/** 光标所在声部、下标 i 那个音的歌词唱不出来的那句话（歌词框底下的提示）；唱得出来 = null。 */
+function lyricHintAt(i: number): string | null {
+  const t = tr(st)[i], p = st.song.parts.find((x) => x.id === st.at.part); if (!t || !p) return null;
+  const x = lyricMutes().get(p.id)?.get(t.id); if (!x) return null;
+  return lyricWhyText(x, roleName(doc.extras, p.role), songLangOf(flattenPart(st.song, p.id).tokens));
+}
 function partViews(): PartView[] {
-  const labels = partLabels(st.song, doc.extras);
+  const labels = partLabels(st.song, doc.extras), mutes = lyricMutes();
   return st.song.parts.map((p, k) => {
     const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown";
-    return { id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
+    const lm = mutes.get(p.id);
+    return { ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -1317,6 +1339,8 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     const onPaper = Object.keys(st.song.papers.find((p) => p.id === st.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
     box.innerHTML =
       `<button class="tc-inst" data-v="inst" title="这个声部是什么、谁来演、怎么演（全屏一页，右边的键盘能试）"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? `${esc(who)} 在演` : "没人上场"))(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">乐器 ›</span></button>` +
+      ((m) => { if (!m || !m.size) return ""; const xs = [...m.values()], first = xs[0], lang = songLangOf(flattenPart(st.song, me.id).tokens);   // 唱不出来的歌词：几个、为什么（纪律：画灰 + 明说）
+        return `<div class="tc-warn">${first.why === "notSung" ? esc(lyricWhyText(first, roleName(doc.extras, me.role), lang)) : `有 ${xs.length} 个字唱不出来（谱上画灰）：${esc(lyricWhyText(first, roleName(doc.extras, me.role), lang))}${xs.some((x) => x.why !== first.why) ? " 等" : ""}`}</div>`; })(lyricMutes().get(me.id)) +
       `<div class="tc-grid">` +
       `<span class="tc-k">显示</span><div class="tc-v">${chip("hide", "隐藏", v.hidden, "谱上缩成一条细行（点细行再放出来）；照样出声")}${chip("only", "只看它", v.only, "其余声部都缩成细行（可以几个一起「只看」）")}</div>` +
       `<span class="tc-k">出声</span><div class="tc-v">${chip("mute", "静音", v.muted, "播放时不出声；谱上照画")}${chip("solo", "独奏", v.solo, "播放时只出有独奏的声部")}</div>` +

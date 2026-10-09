@@ -16,13 +16,15 @@ const PUNCT = /[。．，、,.!！?？;；:：]+$/;
 const splitPunct = (v: string): { text: string; phrase: boolean } => { const m = PUNCT.exec(v); return m ? { text: v.slice(0, m.index), phrase: true } : { text: v, phrase: false }; };
 import type { Layout } from "../render/engrave.ts";
 
-interface Host { get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void }   // gesture "lyric"：连打的歌词在 undo 里是一步
+interface Host { get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void; lyricHint?(i: number): string | null }   // gesture "lyric"：连打的歌词在 undo 里是一步
 const CJK = /[\p{Script=Han}぀-ヿ]/u;
 
 export class LyricEditor {
   private input: HTMLInputElement;
   /** 「合」：这个字并进前一个音（回头改用；打字的时候框在空的音上，它不出来）。 */
   private merge: HTMLButtonElement;
+  /** 框上面的小字：这个音的字台上这位唱不出来的那句话（纪律「做不到的一律画灰 + 明说」；2026-10-08 Opus 5.5）。 */
+  private hint: HTMLDivElement;
   private index = -1;
   system = 0;
 
@@ -38,6 +40,7 @@ export class LyricEditor {
     m.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); this.mergeNow(); });   // 不抢焦点：框照常开着
     parent.appendChild(m);
     this.merge = m;
+    const h = document.createElement("div"); h.className = "lyric-hint"; h.hidden = true; parent.appendChild(h); this.hint = h;
     i.addEventListener("compositionend", () => this.absorb());
     i.addEventListener("input", (e) => { if (!(e as InputEvent).isComposing) this.absorb(); });
     i.addEventListener("blur", () => { if (this.open) setTimeout(() => { if (document.activeElement !== this.input) this.commitAndClose(); }, 0); });
@@ -59,12 +62,18 @@ export class LyricEditor {
 
   /** 重画之后把框挪回那个音下面。 */
   reposition(): void {
-    if (!this.open) { this.merge.hidden = true; return; }   // 框收了（包括打完最后一个字自己收的）=「合」也收
+    if (!this.open) { this.merge.hidden = true; this.hint.hidden = true; return; }   // 框收了（包括打完最后一个字自己收的）=「合」也收
     const L = this.layout(), at = this.host.get().at, h = L?.lyrics.find((x) => x.index === this.index && L.systems[x.system]?.paper === at.paper && L.systems[x.system]?.part === at.part);
     if (!L || !h) { this.close(); return; }
     this.system = h.system;
     const w = Math.max(48, this.input.value.length * L.sp * 1.6 + 24);
     Object.assign(this.input.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1}px`, width: `${w}px`, fontSize: `${L.sp * 1.6}px` });
+    const hint = this.host.lyricHint?.(this.index) ?? null;
+    this.hint.hidden = !hint;
+    if (hint) {   // 框上面：先放字再量高，底边贴着框的上沿
+      this.hint.textContent = hint; this.hint.style.left = `${h.x - w / 2}px`;
+      this.hint.style.top = `${h.y - L.sp * 2.1 - this.hint.offsetHeight - 4}px`;
+    }
     const can = mergeIntoPrev(this.host.get(), this.index) !== this.host.get(), mh = L.sp * 1.6 * 2;
     this.merge.hidden = !can;
     // 放在框的正下方（不挡前面那几个字——要合的就是它们）
@@ -163,5 +172,5 @@ export class LyricEditor {
   }
 
   commitAndClose(): void { if (!this.open) return; this.commitOnly(); this.close(); }
-  close(): void { this.index = -1; this.input.value = ""; this.input.hidden = true; this.merge.hidden = true; this.rerender(); }
+  close(): void { this.index = -1; this.input.value = ""; this.input.hidden = true; this.merge.hidden = true; this.hint.hidden = true; this.rerender(); }
 }

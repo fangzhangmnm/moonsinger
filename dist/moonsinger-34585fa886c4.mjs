@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.29-2026-10-08";
+var APP_VERSION = "v0.7.30-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4622,6 +4622,61 @@ function prevLyricSlot(tokens, i10) {
   return -1;
 }
 
+// src/score/lyric-check.ts
+var HAN = /\p{Script=Han}/u;
+var KANA = /[぀-ヿ]/;
+var LATIN = /[A-Za-z]/;
+var kanaBeats = (s10) => [...s10].filter((c10) => !isSmallKana(c10)).length;
+function lyricIssues(tokens, engine, lang) {
+  const out = /* @__PURE__ */ new Map();
+  if (engine !== "tsukuyomi" && engine !== "vowel-sampler" && engine !== "soundfont") return out;
+  tokens.forEach((t10, i10) => {
+    if (t10.kind !== "note" || t10.tie || !t10.lyric || t10.lyric === MELISMA_MARK) return;
+    if (engine !== "tsukuyomi") {
+      out.set(i10, { why: "notSung" });
+      return;
+    }
+    for (const part of t10.lyric.split(ELISION).filter(Boolean)) {
+      if (lang === "ja") {
+        if (isSmallKana(part)) continue;
+        if (HAN.test(part)) {
+          out.set(i10, { why: "kanji" });
+          return;
+        }
+        if (!/^[぀-ヿー]+$/.test(part)) {
+          out.set(i10, { why: "script" });
+          return;
+        }
+        const b3 = kanaBeats(part);
+        if (b3 !== 1) {
+          out.set(i10, { why: "beats", beats: b3 });
+          return;
+        }
+      } else if (lang === "zh") {
+        if (KANA.test(part) || LATIN.test(part) || !HAN.test(part)) {
+          out.set(i10, { why: "script" });
+          return;
+        }
+        const b3 = [...part].filter((c10) => HAN.test(c10)).length;
+        if (b3 !== 1) {
+          out.set(i10, { why: "beats", beats: b3 });
+          return;
+        }
+      } else if (HAN.test(part) || KANA.test(part) || !LATIN.test(part)) {
+        out.set(i10, { why: "script" });
+        return;
+      }
+    }
+  });
+  return out;
+}
+function lyricWhyText(x2, engineName, lang) {
+  if (x2.why === "notSung") return `${engineName}\u4E0D\u5531\u6B4C\u8BCD\uFF08\u53EA\u54FC / \u53EA\u5F39\uFF09\uFF1B\u6B4C\u8BCD\u7167\u5199\u7167\u5B58`;
+  if (x2.why === "kanji") return "\u6C49\u5B57\uFF1A\u6708\u8BFB\u6309\u8BFB\u97F3\u6570\u62CD\uFF0C\u4E00\u4E2A\u5B57\u53EF\u80FD\u597D\u51E0\u62CD\u3001\u5BF9\u4E0D\u4E0A\u97F3\u2014\u2014\u5199\u6210\u5047\u540D";
+  if (x2.why === "beats") return `\u4E00\u4E2A\u97F3\u4E0A ${x2.beats} \u62CD\uFF1A\u6708\u8BFB\u4E00\u4E2A\u97F3\u5531\u4E00\u62CD\u2014\u2014\u62C6\u6210 ${x2.beats} \u4E2A\u97F3\uFF0C\u6216\u8005\u7528\u300C+\u300D\u8FDE\u7740\u5199`;
+  return lang === "ja" ? "\u8FD9\u6761\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D" : lang === "zh" ? "\u8FD9\u6761\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57" : "\u8FD9\u6761\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD";
+}
+
 // src/render/smufl.ts
 var GLYPH = {
   metNoteQuarterUp: "\uECA5",
@@ -5426,7 +5481,7 @@ function engrave(song, o10) {
           const ly2 = lyricY(lyricRow(c10.system)), cx2 = x0 + nhW(c10) / 2;
           partLyrics.push({ index: c10.index, system: row, x: cx2, y: ly2 });
           if (c10.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P2(0.6), y1: ly2, x2: x0 + nhW(c10) + P2(0.4), y2: ly2, w: P2(0.12), cls: "melisma" });
-          else if (c10.lyric) prims.push({ t: "text", x: cx2, y: ly2, s: lyricShow(c10.lyric), cls: [o10.hot?.has(tokens[c10.index]?.id ?? -1) ? "lyric hot" : "lyric", cls ?? ""].filter(Boolean).join(" ") });
+          else if (c10.lyric) prims.push({ t: "text", x: cx2, y: ly2, s: lyricShow(c10.lyric), cls: [o10.hot?.has(tokens[c10.index]?.id ?? -1) ? "lyric hot" : "lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) ? "lyric-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         }
       };
       for (const u2 of units) {
@@ -5872,6 +5927,11 @@ var LyricEditor = class {
     });
     parent.appendChild(m2);
     this.merge = m2;
+    const h2 = document.createElement("div");
+    h2.className = "lyric-hint";
+    h2.hidden = true;
+    parent.appendChild(h2);
+    this.hint = h2;
     i10.addEventListener("compositionend", () => this.absorb());
     i10.addEventListener("input", (e10) => {
       if (!e10.isComposing) this.absorb();
@@ -5885,6 +5945,8 @@ var LyricEditor = class {
   input;
   /** 「合」：这个字并进前一个音（回头改用；打字的时候框在空的音上，它不出来）。 */
   merge;
+  /** 框上面的小字：这个音的字台上这位唱不出来的那句话（纪律「做不到的一律画灰 + 明说」；2026-10-08 Opus 5.5）。 */
+  hint;
   index = -1;
   system = 0;
   get open() {
@@ -5905,6 +5967,7 @@ var LyricEditor = class {
   reposition() {
     if (!this.open) {
       this.merge.hidden = true;
+      this.hint.hidden = true;
       return;
     }
     const L2 = this.layout(), at2 = this.host.get().at, h2 = L2?.lyrics.find((x2) => x2.index === this.index && L2.systems[x2.system]?.paper === at2.paper && L2.systems[x2.system]?.part === at2.part);
@@ -5915,6 +5978,13 @@ var LyricEditor = class {
     this.system = h2.system;
     const w2 = Math.max(48, this.input.value.length * L2.sp * 1.6 + 24);
     Object.assign(this.input.style, { left: `${h2.x - w2 / 2}px`, top: `${h2.y - L2.sp * 2.1}px`, width: `${w2}px`, fontSize: `${L2.sp * 1.6}px` });
+    const hint2 = this.host.lyricHint?.(this.index) ?? null;
+    this.hint.hidden = !hint2;
+    if (hint2) {
+      this.hint.textContent = hint2;
+      this.hint.style.left = `${h2.x - w2 / 2}px`;
+      this.hint.style.top = `${h2.y - L2.sp * 2.1 - this.hint.offsetHeight - 4}px`;
+    }
     const can = mergeIntoPrev(this.host.get(), this.index) !== this.host.get(), mh = L2.sp * 1.6 * 2;
     this.merge.hidden = !can;
     if (can) Object.assign(this.merge.style, { left: `${h2.x - w2 / 2}px`, top: `${h2.y - L2.sp * 2.1 + L2.sp * 1.6 * 2 + 4}px`, width: `${mh}px`, height: `${mh * 0.8}px` });
@@ -6074,6 +6144,7 @@ var LyricEditor = class {
     this.input.value = "";
     this.input.hidden = true;
     this.merge.hidden = true;
+    this.hint.hidden = true;
     this.rerender();
   }
 };
@@ -17245,7 +17316,7 @@ var ENV = { attack: 0.01, cut: 6e-3, cutStop: 0.06, rel: 0.04, relStop: 0.25 };
 var GLIDE_TC = 0.012;
 var GLIDE_SPAN = 3;
 var XFADE = 0.03;
-var KANA = { la: "\u3089", n: "\u3093", u: "\u3046", o: "\u304A", a: "\u3042" };
+var KANA2 = { la: "\u3089", n: "\u3093", u: "\u3046", o: "\u304A", a: "\u3042" };
 var MAX_VOICES = 8;
 var base = new URL("../assets/preview/", import.meta.url);
 async function fetchTable() {
@@ -17291,7 +17362,7 @@ var Sampler = class {
     return this.table !== null;
   }
   pick(midi, hum) {
-    const es3 = this.table?.entries.filter((e10) => e10.kana === KANA[hum]) ?? [];
+    const es3 = this.table?.entries.filter((e10) => e10.kana === KANA2[hum]) ?? [];
     if (!es3.length) return null;
     return es3.reduce((a10, b3) => Math.abs(b3.midi - midi) < Math.abs(a10.midi - midi) ? b3 : a10);
   }
@@ -17452,14 +17523,14 @@ function numberParts(parts) {
 init_fflate_esm();
 
 // src/score/lang.ts
-var KANA2 = /[぀-ヿㇰ-ㇿｦ-ﾟ]/;
-var HAN = /\p{Script=Han}/u;
-var LATIN = /[A-Za-z]/;
+var KANA3 = /[぀-ヿㇰ-ㇿｦ-ﾟ]/;
+var HAN2 = /\p{Script=Han}/u;
+var LATIN2 = /[A-Za-z]/;
 function partDefaultLang(tokens) {
   const ls2 = tokens.flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
-  if (KANA2.test(ls2)) return "ja";
-  if (HAN.test(ls2)) return "zh";
-  if (LATIN.test(ls2)) return "en";
+  if (KANA3.test(ls2)) return "ja";
+  if (HAN2.test(ls2)) return "zh";
+  if (LATIN2.test(ls2)) return "en";
   return "ja";
 }
 function syllableLangs(tokens, override = true) {
@@ -17467,7 +17538,7 @@ function syllableLangs(tokens, override = true) {
   let prev = def;
   return tokens.map((t10) => {
     if (t10.kind !== "note" || !t10.lyric || t10.lyric === MELISMA_MARK) return null;
-    let l10 = KANA2.test(t10.lyric) ? "ja" : HAN.test(t10.lyric) ? prev : LATIN.test(t10.lyric) ? "en" : prev;
+    let l10 = KANA3.test(t10.lyric) ? "ja" : HAN2.test(t10.lyric) ? prev : LATIN2.test(t10.lyric) ? "en" : prev;
     if (override && t10.lang) l10 = t10.lang;
     prev = l10;
     return l10;
@@ -17478,7 +17549,7 @@ function keepOnlyOverrides(tokens, read) {
   let prev = def;
   tokens.forEach((t10, i10) => {
     if (t10.kind !== "note" || !t10.lyric || t10.lyric === MELISMA_MARK) return;
-    const auto = KANA2.test(t10.lyric) ? "ja" : HAN.test(t10.lyric) ? prev : LATIN.test(t10.lyric) ? "en" : prev;
+    const auto = KANA3.test(t10.lyric) ? "ja" : HAN2.test(t10.lyric) ? prev : LATIN2.test(t10.lyric) ? "en" : prev;
     const got = read[i10];
     if (got && got !== auto) t10.lang = got;
     else delete t10.lang;
@@ -27158,6 +27229,7 @@ var view = new ScoreView(scoreEl, {
   onBlankPress: (at2, row) => openScoreMenu(at2, row),
   onSelPress: (at2) => openSelMenu(at2),
   onMarkPress: (i10, at2) => openMarkMenu(i10, at2),
+  lyricHint: (i10) => lyricHintAt(i10),
   notice: (s10) => info(s10),
   onPaperMenu: (id2) => openPaperMenu(id2),
   onAddPaper: () => {
@@ -28116,7 +28188,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "42ff70423cdb",
+  cssHash: "2e012bcc24ef",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -28559,12 +28631,37 @@ function openPaperSheet() {
   });
 }
 var HUMS2 = [["n", "\u3093 / \u55EF"], ["a", "\u3042 / \u554A"], ["o", "\u304A / \u54E6"], ["u", "\u3046 / \u545C"], ["la", "\u3089 / \u5566"]];
+var lyricMuteKey = [];
+var lyricMuteVal = /* @__PURE__ */ new Map();
+function lyricMutes() {
+  if (lyricMuteKey[0] === st2.song && lyricMuteKey[1] === doc.extras) return lyricMuteVal;
+  const out = /* @__PURE__ */ new Map();
+  for (const p2 of st2.song.parts) {
+    const eng = activeInstrument(doc.extras, p2.role)?.engine ?? null, lang = songLangOf(flattenPart(st2.song, p2.id).tokens), m2 = /* @__PURE__ */ new Map();
+    for (const paper of st2.song.papers) {
+      const toks = paper.tracks[p2.id];
+      if (toks) for (const [i10, x2] of lyricIssues(toks, eng, lang)) m2.set(toks[i10].id, x2);
+    }
+    out.set(p2.id, m2);
+  }
+  lyricMuteKey = [st2.song, doc.extras];
+  lyricMuteVal = out;
+  return out;
+}
+function lyricHintAt(i10) {
+  const t10 = tr(st2)[i10], p2 = st2.song.parts.find((x3) => x3.id === st2.at.part);
+  if (!t10 || !p2) return null;
+  const x2 = lyricMutes().get(p2.id)?.get(t10.id);
+  if (!x2) return null;
+  return lyricWhyText(x2, roleName(doc.extras, p2.role), songLangOf(flattenPart(st2.song, p2.id).tokens));
+}
 function partViews() {
-  const labels = partLabels(st2.song, doc.extras);
+  const labels = partLabels(st2.song, doc.extras), mutes = lyricMutes();
   return st2.song.parts.map((p2, k2) => {
     const v = pv(p2.id), badges = [v.muted ? "\u9759\u97F3" : "", v.solo ? "\u72EC\u594F" : "", v.only ? "\u53EA\u770B\u5B83" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p2.role)?.engine ?? "unknown";
-    return { id: p2.id, name: labels[k2], empty: eng === "unknown", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ignores: ignoredFor(p2.role) };
+    const lm2 = mutes.get(p2.id);
+    return { ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], empty: eng === "unknown", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ignores: ignoredFor(p2.role) };
   });
 }
 function afterViewChange() {
@@ -28675,7 +28772,11 @@ function openTrackCard(at2) {
       return;
     }
     const onPaper = Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
-    box.innerHTML = `<button class="tc-inst" data-v="inst" title="\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\u3001\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\uFF08\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09"><span class="tc-l"><b>${esc7(label)}</b><small>${((who) => who ? `${esc7(who)} \u5728\u6F14` : "\u6CA1\u4EBA\u4E0A\u573A")(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">\u4E50\u5668 \u203A</span></button><div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:G", "\u9AD8\u97F3", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09">\u4EA4\u7ED9\u2026</button><button class="btn" data-v="add" title="\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09">\uFF0B \u52A0\u6B4C\u624B\u2026</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u2026</button>` : "") + `</div>`;
+    box.innerHTML = `<button class="tc-inst" data-v="inst" title="\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\u3001\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\uFF08\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09"><span class="tc-l"><b>${esc7(label)}</b><small>${((who) => who ? `${esc7(who)} \u5728\u6F14` : "\u6CA1\u4EBA\u4E0A\u573A")(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">\u4E50\u5668 \u203A</span></button>` + ((m3) => {
+      if (!m3 || !m3.size) return "";
+      const xs = [...m3.values()], first = xs[0], lang = songLangOf(flattenPart(st2.song, me.id).tokens);
+      return `<div class="tc-warn">${first.why === "notSung" ? esc7(lyricWhyText(first, roleName(doc.extras, me.role), lang)) : `\u6709 ${xs.length} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A${esc7(lyricWhyText(first, roleName(doc.extras, me.role), lang))}${xs.some((x3) => x3.why !== first.why) ? " \u7B49" : ""}`}</div>`;
+    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:G", "\u9AD8\u97F3", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09">\u4EA4\u7ED9\u2026</button><button class="btn" data-v="add" title="\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09">\uFF0B \u52A0\u6B4C\u624B\u2026</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u2026</button>` : "") + `</div>`;
   };
   draw();
   document.body.append(box);
@@ -30475,4 +30576,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-641ce6c251af.mjs.map
+//# sourceMappingURL=moonsinger-34585fa886c4.mjs.map

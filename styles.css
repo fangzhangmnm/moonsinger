@@ -615,6 +615,10 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .score.lifting { cursor: grabbing; }
 /* 正拖着的力度记号 / 渐强渐弱 / 字：强调色（2026-10-08 user「然后拖动能不能给一点视觉反馈」） */
 .staff-svg text.hot { fill: var(--accent); }
+/* 台上这位唱不出来的歌词：画灰（纪律「做不到的一律画灰 + 明说」；说明在歌手牌小卡 / 歌词框上面的小字） */
+.staff-svg text.lyric.lyric-mute { fill: var(--muted); opacity: .55; }
+.lyric-hint { position: absolute; z-index: 6; width: max-content; max-width: 280px; font-size: 12px; line-height: 1.35; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; pointer-events: none; }
+.tc-warn { font-size: 12px; color: var(--muted); padding: 6px 4px 0; line-height: 1.45; max-width: 300px; }
 .staff-svg path.hairpin.hot { stroke: var(--accent); stroke-width: 1.6; }
 /* pad「⋯ → 布局…」= 对话框（2026-10-08 Opus 5.5；user「…比如变成加减号」「要不键盘layout还是一个模态对话框，不会破坏键盘的尺寸」）：
    行 / 列 = 加减号步进，二选一 = 分段钮；卡片靠上，键盘在下面看得见、点了马上变 */
