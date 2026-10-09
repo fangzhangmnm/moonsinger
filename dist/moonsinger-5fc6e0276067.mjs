@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.12-2026-10-10";
+var APP_VERSION = "v0.9.13-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -35162,16 +35162,9 @@ var playTl = null;
 var preparing = false;
 var cancelPrepare = false;
 var SEAM_LEAD = 4;
-var paperSpan = (tl2, paperId) => tl2.papers.find((p2) => p2.paper.id === paperId) ?? null;
 function playRange(tl2) {
-  let from = tl2.range.from, to2 = tl2.range.to, loopFrom = from;
-  const track = tr(st2);
-  if (st2.sel) {
-    const a11 = track[st2.sel.from] ? tl2.secondsOfToken(st2.at.part, track[st2.sel.from].id) : null, bTok = track[st2.sel.to], b3 = bTok ? tl2.secondsOfToken(st2.at.part, bTok.id) : paperSpan(tl2, st2.at.paper)?.t1 ?? null;
-    if (a11 !== null) from = Math.max(from, a11 - PRE_ROLL);
-    if (b3 !== null) to2 = Math.max(from + 0.05, Math.min(to2, b3));
-    return { from, to: to2, loopFrom: from };
-  }
+  const from = tl2.range.from, to2 = tl2.range.to;
+  let loopFrom = from;
   const song = playSong(), a10 = parseArrangement(song.arrangement, song.papers);
   if (viewScope === "all" && a10.loop && tl2.papers[a10.order.length]) loopFrom = tl2.papers[a10.order.length].t0;
   return { from, to: to2, loopFrom };
@@ -38377,4 +38370,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ffcf3d35dcf2.mjs.map
+//# sourceMappingURL=moonsinger-5fc6e0276067.mjs.map

@@ -832,18 +832,11 @@ let playTl: Timeline | null = null;   // 现在放的时间线（播放头 / 改
 let preparing = false, cancelPrepare = false;
 const SEAM_LEAD = 4;                  // 接缝：从循环尾前几秒放起
 /** 这张纸（第一次出现）的秒区间。 */
-const paperSpan = (tl: Timeline, paperId: string) => tl.papers.find((p) => p.paper.id === paperId) ?? null;
-/** 范围 + 循环起点：选区 = 选中的音的范围（user「可以先这样，我会快速吃书」）；没选 = 本段 / 全部（视图）；
- *  循环 = 编排的 [循环段]（前面放一遍、再从循环段头跳回；只在全部视图）或整个范围。 */
+/** 范围 + 循环起点：本段 / 全部（视图）；循环 = 编排的 [循环段]（前面放一遍、再从循环段头跳回；只在全部视图）或整个范围。
+ *  选区**不再**当播放区间（v0.9.13 sunset；user 2026-10-10「播放过程中的选区操作不应该改变播放区间，这样，先不用选区当播放区间了，sunset这个设定，以后慢慢想办法。其实这个功能没啥实用性」——
+ *  放着的时候选 / 扩 / 清选区曾把范围一起换掉）。从光标放照旧（有选区 = 选区头）。 */
 function playRange(tl: Timeline): { from: number; to: number; loopFrom: number } {
-  let from = tl.range.from, to = tl.range.to, loopFrom = from;
-  const track = tr(st);
-  if (st.sel) {
-    const a = track[st.sel.from] ? tl.secondsOfToken(st.at.part, track[st.sel.from].id) : null, bTok = track[st.sel.to], b = bTok ? tl.secondsOfToken(st.at.part, bTok.id) : paperSpan(tl, st.at.paper)?.t1 ?? null;
-    if (a !== null) from = Math.max(from, a - PRE_ROLL);
-    if (b !== null) to = Math.max(from + 0.05, Math.min(to, b));
-    return { from, to, loopFrom: from };
-  }
+  const from = tl.range.from, to = tl.range.to; let loopFrom = from;
   const song = playSong(), a = parseArrangement(song.arrangement, song.papers);
   if (viewScope === "all" && a.loop && tl.papers[a.order.length]) loopFrom = tl.papers[a.order.length].t0;
   return { from, to, loopFrom };
