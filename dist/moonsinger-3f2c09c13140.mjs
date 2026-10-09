@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.4-2026-10-08";
+var APP_VERSION = "v0.8.5-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -29836,6 +29836,58 @@ function createReferenceHost(d3) {
   };
 }
 
+// src/ui/render-progress.ts
+var RenderProgress = class {
+  el;
+  fill;
+  cur;
+  total = 0;
+  done = 0;
+  constructor(parent) {
+    this.el = document.createElement("div");
+    this.el.className = "render-bar";
+    this.el.hidden = true;
+    this.el.setAttribute("role", "progressbar");
+    this.fill = document.createElement("div");
+    this.fill.className = "rb-fill";
+    this.cur = document.createElement("div");
+    this.cur.className = "rb-cur";
+    this.el.append(this.fill, this.cur);
+    parent.append(this.el);
+  }
+  /** 开始：一共几格。 */
+  start(units) {
+    this.total = Math.max(1, units);
+    this.done = 0;
+    this.el.hidden = false;
+    this.draw(null);
+  }
+  /** 当前这一格知道百分比了（0–1；下载）。null = 不知道（条纹）。 */
+  frac(f2) {
+    if (!this.el.hidden) this.draw(f2);
+  }
+  /** 这一格做完。 */
+  next() {
+    this.done = Math.min(this.total, this.done + 1);
+    this.draw(null);
+  }
+  /** 收起。 */
+  end() {
+    this.el.hidden = true;
+  }
+  get running() {
+    return !this.el.hidden;
+  }
+  draw(f2) {
+    const w2 = 100 / this.total, left = this.done * w2;
+    this.fill.style.width = `${left + (f2 !== null ? f2 * w2 : 0)}%`;
+    this.cur.style.left = `${left}%`;
+    this.cur.style.width = `${this.done < this.total ? w2 : 0}%`;
+    this.cur.classList.toggle("known", f2 !== null);
+    this.el.setAttribute("aria-valuenow", String(Math.round(left + (f2 ?? 0) * w2)));
+  }
+};
+
 // src/app/diag-ui.ts
 function copyViaTextarea(text2) {
   const ta2 = document.createElement("textarea");
@@ -29986,7 +30038,13 @@ var coverWithBlurb = (png, blurb) => withPngText(png, PNG_BLURB_KEYWORD, blurb &
 // src/score/clipboard.ts
 function copyTokens(st3) {
   if (!st3.sel) return null;
-  return tr(st3).slice(st3.sel.from, st3.sel.to).map((t10) => ({ ...t10 }));
+  return tr(st3).slice(clipFrom(st3), st3.sel.to).map((t10) => ({ ...t10 }));
+}
+function clipFrom(st3) {
+  const toks = tr(st3), h2 = headLen(toks);
+  let a10 = st3.sel.from;
+  while (a10 > h2 && (toks[a10 - 1].kind === "dyn" || toks[a10 - 1].kind === "hairpin" || toks[a10 - 1].kind === "groove")) a10--;
+  return a10;
 }
 function pasteTokens(st3, toks) {
   if (!toks.length) return st3;
@@ -30001,9 +30059,9 @@ function pasteTokens(st3, toks) {
 function cutTokens(st3) {
   const toks = copyTokens(st3);
   if (!toks || !st3.sel) return null;
-  const tokens = tr(st3).slice();
-  tokens.splice(st3.sel.from, st3.sel.to - st3.sel.from);
-  return { st: { ...st3, song: withTrack(st3.song, st3.at.paper, st3.at.part, tokens), sel: null, caret: st3.sel.from, log: [] }, toks };
+  const from = clipFrom(st3), tokens = tr(st3).slice();
+  tokens.splice(from, st3.sel.to - from);
+  return { st: { ...st3, song: withTrack(st3.song, st3.at.paper, st3.at.part, tokens), sel: null, caret: from, log: [] }, toks };
 }
 function selectAll(st3) {
   const tokens = tr(st3), a10 = headLen(tokens), b3 = tokens.length;
@@ -30382,6 +30440,7 @@ function showUpdateBar() {
   document.body.append(el2);
 }
 bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="loopBtn" class="btn" title="\u5FAA\u73AF\uFF1A\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF">\u5FAA\u73AF</button><button id="seamBtn" class="btn" hidden title="\u542C\u63A5\u7F1D\uFF1A\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C">\u63A5\u7F1D</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
 padTab.id = "padTab";
@@ -31070,7 +31129,11 @@ async function renderPart(part, scope = "view", order) {
     const opt = humOpt(), key2 = JSON.stringify(["tsukuyomi", score, opt]), had2 = lastRender.get(part.id);
     if (had2?.key === key2) return had2.r;
     const first = timeline(tokens, map).find((x2) => x2.tok.kind === "note")?.t0 ?? 0;
-    const r11 = await singer.sing(score, (stage) => progress(`${roleName(doc.extras, role)}\uFF1A${stage}\u2026`), { opt, models: modelBases() });
+    const r11 = await singer.sing(score, (stage) => {
+      progress(`${roleName(doc.extras, role)}\uFF1A${stage}\u2026`);
+      const pc = /(\d+)%$/.exec(stage);
+      renderBar.frac(pc ? Number(pc[1]) / 100 : null);
+    }, { opt, models: modelBases() });
     const out2 = { samples: r11.samples, sr: r11.sr, at: first - LEAD_IN };
     lastRender.set(part.id, { key: key2, r: out2 });
     return out2;
@@ -31113,21 +31176,34 @@ function micOf(part) {
 async function renderMix(scope = "view", order) {
   const parts = audibleParts(), got = [], errs = [];
   const heavyFirst = [...parts].sort((a10, b3) => Number(activeInstrument(doc.extras, b3.role)?.engine === "tsukuyomi") - Number(activeInstrument(doc.extras, a10.role)?.engine === "tsukuyomi"));
-  for (const part of heavyFirst) {
-    try {
-      const r10 = await renderPart(part, scope, order);
-      if (r10) got.push({ part, r: r10 });
-    } catch (e10) {
-      errs.push(`\u300C${roleName(doc.extras, part.role)}\u300D\uFF1A${e10.message}`);
+  renderBar.start(heavyFirst.length + 1);
+  try {
+    for (const part of heavyFirst) {
+      progress(`${roleName(doc.extras, part.role)}\u2026`);
+      try {
+        const r10 = await renderPart(part, scope, order);
+        if (r10) got.push({ part, r: r10 });
+      } catch (e10) {
+        errs.push(`\u300C${roleName(doc.extras, part.role)}\u300D\uFF1A${e10.message}`);
+      }
+      renderBar.next();
     }
+  } catch (e10) {
+    renderBar.end();
+    throw e10;
   }
   got.sort((a10, b3) => parts.indexOf(a10.part) - parts.indexOf(b3.part));
   if (errs.length) showError(`${errs.join("\uFF1B")}\u3002${got.length ? "\u8FD9\u4E9B\u58F0\u90E8\u6CA1\u6709\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\u3002" : "\u6CA1\u6709\u51FA\u58F0\u3002"}\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
-  if (!got.length) return null;
+  if (!got.length) {
+    renderBar.end();
+    return null;
+  }
+  progress("\u6DF7\u97F3\u2026");
   const m2 = mixTracks(got.map(({ part, r: r10 }) => {
     const { gainDb, pan } = micOf(part), segs = partGain(part, scope, order);
     return { samples: segs ? applyGain(r10.samples, r10.sr, r10.at, segs) : r10.samples, sr: r10.sr, at: r10.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan };
   }), GM_SR);
+  renderBar.end();
   return { left: m2.left, right: m2.right, sr: m2.sr, start: m2.start, roles: got.map((x2) => x2.part.role) };
 }
 var embedSoftLimit = 1e7;
@@ -31558,7 +31634,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "503cc54f63e7",
+  cssHash: "067f574a172b",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -34073,4 +34149,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-67ff85e84daa.mjs.map
+//# sourceMappingURL=moonsinger-3f2c09c13140.mjs.map

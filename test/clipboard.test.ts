@@ -62,3 +62,20 @@ describe("clipboard", () => {
     eq(fromJianpu("hello world", 0), null); eq(fromJianpu("", 0), null); eq(fromJianpu("1 2 wat", 0), null);
   });
 });
+
+describe("复制 / 剪切带上第一个音身上的记号（2026-10-08 深夜，user「复制一段歌的时候第一个音头上的力度符号没被选进来」）", () => {
+  it("选区从第一个音开始：它前面紧挨着的力度 / 渐强渐弱跟着进剪贴板；剪切也一起走；前面的小节线不带", async () => {
+    const { initState, writeDegree, tr, select } = await import("../src/score/song.ts");
+    const { apply } = await import("../src/score/commands.ts");
+    const { copyTokens, cutTokens } = await import("../src/score/clipboard.ts");
+    let st = initState(); for (const d of [1, 2, 3]) st = writeDegree(st, d, "near");
+    st = apply(st, { k: "dyn", v: "f" });   // f 落在第三个音前面
+    const toks = tr(st), third = toks.length - 1;
+    eq(toks[third - 1].kind, "dyn");
+    const sel = select(st, third, third + 1);
+    eq(JSON.stringify(copyTokens(sel)!.map((t) => t.kind)), JSON.stringify(["dyn", "note"]));
+    const cut = cutTokens(sel)!;
+    eq(tr(cut.st).some((t) => t.kind === "dyn"), false, "剪切 = 力度记号一起走");
+    eq(JSON.stringify(cut.toks.map((t) => t.kind)), JSON.stringify(["dyn", "note"]));
+  });
+});

@@ -58,6 +58,7 @@ import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
 import { createEditorSession } from "../editor-session/index.ts";
 import { openInputSheet, openChoiceSheet, openConfirmSheet, isSheetOpen, closeSheet, isGateOpen, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
 import { createReferenceHost } from "./reference-host.ts";
+import { RenderProgress } from "../ui/render-progress.ts";
 import { reportError, diagNote, diagText, initBlackBox } from "./report-error.ts";
 import { copyDiag, shareDiag, clearDiag, canShareDiag } from "./diag-ui.ts";
 import { deviceKvGet, deviceKvSet } from "../device-kv.ts";
@@ -129,6 +130,7 @@ const refHost = createReferenceHost({
   onCards: () => { renderTitle(); changed(); },
 });
 new ResizeObserver(() => refHost.relayout()).observe(padEl);
+
 new ResizeObserver(() => refHost.relayout()).observe(bar);
 installPlatformGuards([scoreEl, padEl]);   // iPad：长按放大镜 / 系统菜单 / 双击缩放（照 WeebPaint）
 
@@ -162,6 +164,8 @@ bar.innerHTML =
   `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
   `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
   `<button id="setBtn" class="btn" title="菜单：新建 / 打开 / 导出 / 封面 / 声音与署名 / 设置"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
+/** 渲染进度条（顶栏底边；播放的准备和 mp3 导出共用 renderMix 这一条路）。顶栏的 HTML 写好之后再挂（上面 bar.innerHTML = … 会冲掉先挂的）。 */
+const renderBar = new RenderProgress(bar);
 const stageEl = $("stage");   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
 const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = "键盘（pad）";
 padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>键盘</span>`;
@@ -657,7 +661,7 @@ async function renderPart(part: PartDef, scope: RenderScope = "view", order?: st
     const opt = humOpt(), key = JSON.stringify(["tsukuyomi", score, opt]), had = lastRender.get(part.id);
     if (had?.key === key) return had.r;
     const first = timeline(tokens, map).find((x) => x.tok.kind === "note")?.t0 ?? 0;   // 开头的休止 Lab 格式表达不了（lab-score.ts）：按第一个音的时刻摆
-    const r = await singer.sing(score, (stage) => progress(`${roleName(doc.extras, role)}：${stage}…`), { opt, models: modelBases() });
+    const r = await singer.sing(score, (stage) => { progress(`${roleName(doc.extras, role)}：${stage}…`); const pc = /(\d+)%$/.exec(stage); renderBar.frac(pc ? Number(pc[1]) / 100 : null); }, { opt, models: modelBases() });   // 下载有百分比就按比例，别的阶段 = 条纹
     const out = { samples: r.samples, sr: r.sr, at: first - LEAD_IN };
     lastRender.set(part.id, { key, r: out }); return out;
   }
@@ -703,14 +707,21 @@ async function renderMix(scope: RenderScope = "view", order?: string[]): Promise
   // 月读本人先唱：她的引擎（onnxruntime 的 wasm 堆）要一大块内存，先起好再让 SoundFont 的库进 worker（iPad 上反过来容易「Out of memory」；
   //   user 2026-10-08「感觉是没有gc」）。混音 / 署名照原来的声部顺序
   const heavyFirst = [...parts].sort((a, b) => Number(activeInstrument(doc.extras, b.role)?.engine === "tsukuyomi") - Number(activeInstrument(doc.extras, a.role)?.engine === "tsukuyomi"));
-  for (const part of heavyFirst) {
-    try { const r = await renderPart(part, scope, order); if (r) got.push({ part, r }); }
-    catch (e) { errs.push(`「${roleName(doc.extras, part.role)}」：${(e as Error).message}`); }
-  }
+  renderBar.start(heavyFirst.length + 1);   // 每个声部一格 + 混音一格
+  try {
+    for (const part of heavyFirst) {
+      progress(`${roleName(doc.extras, part.role)}…`);
+      try { const r = await renderPart(part, scope, order); if (r) got.push({ part, r }); }
+      catch (e) { errs.push(`「${roleName(doc.extras, part.role)}」：${(e as Error).message}`); }
+      renderBar.next();
+    }
+  } catch (e) { renderBar.end(); throw e; }
   got.sort((a, b) => parts.indexOf(a.part) - parts.indexOf(b.part));
   if (errs.length) showError(`${errs.join("；")}。${got.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
-  if (!got.length) return null;
+  if (!got.length) { renderBar.end(); return null; }
+  progress("混音…");
   const m = mixTracks(got.map(({ part, r }) => { const { gainDb, pan } = micOf(part), segs = partGain(part, scope, order); return { samples: segs ? applyGain(r.samples, r.sr, r.at, segs) : r.samples, sr: r.sr, at: r.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; }), GM_SR);
+  renderBar.end();
   return { left: m.left, right: m.right, sr: m.sr, start: m.start, roles: got.map((x) => x.part.role) };
 }
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */

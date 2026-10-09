@@ -53,6 +53,13 @@ button, input, select { font: inherit; color: inherit; }
 /* 顶栏 */
 /* 顶栏只有一行（2026-10-07）：左 = 文件钮 + 文件名，中 = 走带条（居中），右 = 键盘 + 扳手；文件名太长省略号 */
 .bar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; white-space: nowrap; }
+.bar { position: relative; }   /* 渲染进度条贴在顶栏底边（2026-10-08 深夜） */
+.render-bar { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; pointer-events: none; overflow: hidden; }
+.render-bar .rb-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); transition: width .2s; }
+.render-bar .rb-cur { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(-45deg, var(--accent) 0 6px, var(--accent-soft) 6px 12px); background-size: 17px 100%; animation: rb-stripe .6s linear infinite; opacity: .8; }
+.render-bar .rb-cur.known { animation: none; background: var(--accent-soft); }
+@keyframes rb-stripe { to { background-position: 17px 0; } }
+@media (prefers-reduced-motion: reduce) { .render-bar .rb-cur { animation: none; } }
 .bar .tb-left { display: flex; align-items: center; min-width: 0; }
 .bar .tb-mid { display: flex; align-items: center; gap: 6px; }
 .bar .tb-right { display: flex; align-items: center; gap: 6px; justify-self: end; }
