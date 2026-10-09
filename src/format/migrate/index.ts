@@ -40,11 +40,20 @@ function scoreV1toV2(json: Json): Json {
   return { papers: [{ id: "p1", file: ".moonsinger/papers/p1.musicxml", manualBars: { ...manualBars }, unwritten: [...((json.unwritten as string[] | undefined) ?? [])] }], parts };
 }
 
+/** 录音房 1 → 2（2026-10-10 刀 4）：每个麦克风 → 一条 mic 轨（空链、不发送、直通总轨）；总轨补上链（v1 的 master 可选字段照搬）。 */
+function studioV1toV2(json: Json): Json {
+  const mics = (json.mics as Json[] | undefined) ?? [], m = (json.master as Json | undefined) ?? {};
+  return {
+    tracks: mics.map((x) => ({ id: String(x.id), kind: "mic", name: String(x.name ?? ""), gainDb: Number(x.gainDb ?? 0), pan: Number(x.pan ?? 0), chain: [], sends: [], to: "master" })),
+    master: { gainDb: Number(m.gainDb ?? 0), limiter: m.limiter === undefined ? true : !!m.limiter, chain: [] },
+  };
+}
+
 export const MIGRATIONS: Record<FormatFile, Migration[]> = {
   manifest: [manifestV1toV2],
   score: [scoreV1toV2],
   lounge: [loungeV1toV2],
-  studio: [],
+  studio: [studioV1toV2],
 };
 
 /** 读进来的一份 json 升到这一版。比这一版新的不归这里（调用方先拒开）；没有 version 当第 1 版。 */

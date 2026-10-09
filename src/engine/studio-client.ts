@@ -2,7 +2,7 @@
 // 收位置 / 结束 / 缺块。离线导出 = 同一个 Studio 类在这边的循环里跑（同一份数学；提案 §5）。created 2026-10-09 by Claude Fable 5.1
 // 一个 app 一个实例；AudioContext 全 app 共用（src/singer/audio.ts）。装 worklet 第一次用才做（家规：重资源要等用户有意图才加载）。
 import { instantiateTsf } from "../gm/tsf-standalone.ts";
-import { Studio, BLOCK, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type VowelEntry, type AuditionInst } from "./studio.ts";
+import { Studio, BLOCK, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
 
 export interface VowelTableMsg { sr: number; entries: VowelEntry[]; pcm: Int16Array }
 export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number) => void }
@@ -19,6 +19,7 @@ export class StudioClient {
   private chunks = new Map<string, { sr: number; samples: Float32Array }>();
   private channels = new Map<string, Partial<ChannelParams>>();
   private masterP: Partial<MasterParams> = {};
+  private busesP: BusSpec[] = [];
   private listeners = new Map<keyof StudioEvents, Set<(...a: never[]) => void>>();
   private _playing = false; private _pos = 0; private _waiting: string | null = null;
   private gen = 0;   // 走带代号：play / stop 各加一；录音房的位置报告带着发出时的代号，旧代号的（停了之后还在路上的）扔掉——不然「停」之后一条迟到的 pos 会把 playing 翻回 true
@@ -68,6 +69,7 @@ export class StudioClient {
       if (this.vowelTable) this.post({ type: "vowels", ...this.vowelTable });
       for (const [sha, bytes] of this.bankBytes) this.post({ type: "bank", sha, bytes: bytes.slice() });
       for (const [id, p] of this.channels) this.post({ type: "channel", id, p });
+      if (this.busesP.length) this.post({ type: "buses", buses: this.busesP });
       if (Object.keys(this.masterP).length) this.post({ type: "master", p: this.masterP });
       if (this.tl) this.post({ type: "timeline", tl: this.tl });
       for (const [key, c] of this.chunks) this.post({ type: "chunk", key, sr: c.sr, samples: c.samples });
@@ -102,6 +104,8 @@ export class StudioClient {
   forget(keys: string[]): void { for (const k of keys) this.chunks.delete(k); this.post({ type: "forget", keys }); }
   channel(id: string, p: Partial<ChannelParams>): void { this.channels.set(id, { ...this.channels.get(id), ...p }); this.post({ type: "channel", id, p }); }
   master(p: Partial<MasterParams>): void { this.masterP = { ...this.masterP, ...p }; this.post({ type: "master", p }); }
+  /** 总线（混响 / 延迟这类「留在屋里的」）：整张表一起给。 */
+  buses(b: BusSpec[]): void { this.busesP = b; this.post({ type: "buses", buses: b }); }
 
   /** 从 at 秒放起（不给 = 从范围头 / 上次位置）。要先在用户手势里解锁过 AudioContext（iPad）。 */
   async play(at?: number): Promise<void> { await this.ensure(); this.gen++; this._playing = true; this._waiting = null; if (at !== undefined) this._pos = at; this.post({ type: "play", at, gen: this.gen }); }
@@ -128,6 +132,7 @@ export class StudioClient {
     if (this.vowelTable) s.handle({ type: "vowels", ...this.vowelTable });
     for (const [sha, bytes] of this.bankBytes) s.handle({ type: "bank", sha, bytes });
     for (const [id, p] of this.channels) s.handle({ type: "channel", id, p });
+    s.handle({ type: "buses", buses: this.busesP });
     s.handle({ type: "master", p: this.masterP });
     s.handle({ type: "timeline", tl: { ...tl, loop: false } });
     for (const [key, c] of this.chunks) s.handle({ type: "chunk", key, sr: c.sr, samples: c.samples });

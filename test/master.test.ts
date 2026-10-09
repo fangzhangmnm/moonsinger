@@ -9,7 +9,7 @@ describe("总轨", () => {
     let x = withMaster(emptyExtras(), { gainDb: -3 }); eq(activeMaster(x).gainDb, -3); eq(activeMaster(x).limiter, true);
     x = withMaster(x, { limiter: false }); eq(activeMaster(x).limiter, false); eq(activeMaster(x).gainDb, -3);
     eq(activeMaster(withMaster(x, { gainDb: 99 })).gainDb, 12); eq(activeMaster(withMaster(x, { gainDb: -99 })).gainDb, -24);
-    eq(Array.isArray((x.studio as { mics: unknown[] }).mics), true);
+    eq(Array.isArray((x.studio as { tracks: unknown[] }).tracks), true);
   });
   it("存进 .mxl 再读回来：总轨还在", () => {
     const st = initState(), x = withMaster(emptyExtras(), { gainDb: -6, limiter: false });

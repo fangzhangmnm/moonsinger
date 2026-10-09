@@ -32,7 +32,7 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
@@ -704,19 +704,23 @@ const GM_SR = 44100;   // 导出的采样率
 const audibleParts = (): PartDef[] => { const solo = st.song.parts.some((p) => pv(p.id).solo); return st.song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted)); };
 /** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；没有 = 0 / 0。 */
 function micOf(part: PartDef): { gainDb: number; pan: number } {
-  const m = ((doc.extras.studio?.mics as { id: string; gainDb?: number; pan?: number }[] | undefined) ?? []).find((x) => x.id === part.mic);
-  return { gainDb: Number(m?.gainDb ?? 0), pan: Math.max(-1, Math.min(1, Number(m?.pan ?? 0))) };
+  const m = studioTrack(doc.extras, part.mic);
+  return { gainDb: m?.gainDb ?? 0, pan: m?.pan ?? 0 };
 }
 /** 这条通道 = 麦克风增益 + 上场那位的响度校准（三层不连乘：音符力度 = 意图；校准 = 看得见能调的默认；推子 = dB）。 */
 const channelOf = (part: PartDef): { gainDb: number; pan: number } => { const { gainDb, pan } = micOf(part); return { gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; };
 /** 通道参数推进录音房（播放时才乘 → 边放边调立刻听见；静音 / 独奏在 audibleParts 里筛，不在通道上）。 */
-function pushChannels(): void { for (const p of st.song.parts) engine.channel(p.id, { ...channelOf(p), mute: false, solo: false }); engine.master(activeMaster(doc.extras)); }
+function pushChannels(): void {
+  for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: false, solo: false, chain: t?.chain ?? [], sends: t?.sends ?? [], to: t?.to ?? "master" }); }
+  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: b.chain })));
+  engine.master(activeMaster(doc.extras));
+}
 /** 上场那位的出声参数（时间线不碰 Extras；src/engine/timeline.ts）。SoundFont 的预设下标要库先进录音房（prepareBanks）。 */
 function performerInfo(part: PartDef): PerformerInfo {
   const role = part.role, eng = (activeInstrument(doc.extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], g = activeGm(doc.extras, role), cat = grooveCategory(eng, g);
   return { engine: eng, spec: activePerfSpec(doc.extras, role), velocity: activeVelocity(doc.extras, role), transpose: activeTranspose(doc.extras, role),
     gm: g ? { sha: g.subsetSha256, presetIndex: engine.presetIndex(g.subsetSha256, g.bank, g.program), note: g.note, sfx: g.sfx } : null,
-    chunk: activeSingChunk(doc.extras, role), follow: (s) => followOf(s, cat) };
+    chunk: activeSingChunk(doc.extras, role), follow: (s) => followOf(s, cat), chain: activeChain(doc.extras, role) };
 }
 /** 这些声部要用的 SoundFont 子集进录音房（弱引用去找整包 → 切子集；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 async function prepareBanks(parts: readonly PartDef[]): Promise<string[]> {
@@ -1144,7 +1148,13 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   });
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
-(window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, renderMix: () => renderMixForTest(), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens, st.song.hum), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
+(window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, renderMix: () => renderMixForTest(),
+  // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
+  setTrack: (id: string, patch: Record<string, unknown>) => { updateExtras(withTrack(doc.extras, id, patch as never), { kind: "studio", label: `轨「${id}」` }); },
+  addBus: (name = "总线") => { const id = newBusId(doc.extras); updateExtras(withTrack(doc.extras, id, { kind: "bus", name }), { kind: "studio", label: `加总线「${name}」` }); return id; },
+  removeBus: (id: string) => updateExtras(withoutBus(doc.extras, id), { kind: "studio", label: `删总线「${id}」` }),
+  setMaster: (patch: Record<string, unknown>) => updateExtras(withMaster(doc.extras, patch as never), { kind: "studio", label: "总轨" }),
+  studioTracks: () => studioTracks(doc.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens, st.song.hum), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
   setChunk: (v: "phrase" | "sheet" | "whole") => { const role = st.song.parts.find((x) => x.id === st.at.part)?.role; if (role) updateExtras(withSingChunk(doc.extras, role, v, st.song.hum), { kind: "lounge", label: `分段唱：${v}` }); },
   set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: history.past.length, future: history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 

@@ -3,7 +3,7 @@
     "manifest": 2,
     "score": 2,
     "lounge": 2,
-    "studio": 1
+    "studio": 2
   },
   "shapes": {
     "manifest": {
@@ -184,12 +184,21 @@
       "version": "number"
     },
     "studio": {
-      "mics": [
+      "master": {
+        "chain": [],
+        "gainDb": "number",
+        "limiter": "boolean"
+      },
+      "tracks": [
         {
+          "chain": [],
           "gainDb": "number",
           "id": "string",
+          "kind": "string",
           "name": "string",
-          "pan": "number"
+          "pan": "number",
+          "sends": [],
+          "to": "string"
         }
       ],
       "version": "number"

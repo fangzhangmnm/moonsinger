@@ -10,6 +10,8 @@
 //   · 慢引擎的块没到 = 走带冻住等（A，user「倾向于这个」）：全体同一个采样停，续放时该响的音重新按下（note chase）。绝不自动替补。
 //   · 按键试听（audition）走通道的增益 / 声像，绕过静音 / 独奏和总轨限幅（user「按键不管solomute同意」「限幅嗯」）。
 import type { Tsf, TsfBank } from "../gm/tsf-standalone.ts";
+import type { FxV2 } from "../format/contract.ts";
+import { buildChain, type FxInstance } from "./fx.ts";
 
 export const BLOCK = 128;
 /** 母线天花板（−0.18 dBFS；原 src/audio/mix.ts 的 0.98）。 */
@@ -29,13 +31,17 @@ export interface NoteEv { t0: number; t1: number; key: number; vel: number; pres
 /** 慢引擎的一块：key = 内容键（主线程按 key 喂 samples）；t0 = 这块第 0 个采样对应时间线的第几秒（含提前量）；dur = 预计几秒（没到时判断「站在它上面」）；gain = 乘多少。 */
 export interface ClipRef { key: string; t0: number; dur: number; gain: number }
 export interface GainSeg { t0: number; t1: number; dB: number }
+/** chain = 跟着演奏者走的效果（琴箱 / 音箱…；CandidateV2.chain），在表情曲线之后、通道条之前。 */
 export type TrackSpec =
-  | { id: string; kind: "sf"; sha: string; notes: NoteEv[]; gain: GainSeg[] | null }
-  | { id: string; kind: "vowel"; kana: string; notes: NoteEv[]; gain: GainSeg[] | null }
-  | { id: string; kind: "clips"; clips: ClipRef[]; gain: GainSeg[] | null };
+  | { id: string; kind: "sf"; sha: string; notes: NoteEv[]; gain: GainSeg[] | null; chain?: FxV2[] }
+  | { id: string; kind: "vowel"; kana: string; notes: NoteEv[]; gain: GainSeg[] | null; chain?: FxV2[] }
+  | { id: string; kind: "clips"; clips: ClipRef[]; gain: GainSeg[] | null; chain?: FxV2[] };
 export interface TimelineMsg { tracks: TrackSpec[]; range: { from: number; to: number }; loop: boolean; /** 循环从哪儿跳回（不给 = 范围头）：编排「前面放一遍、括住的一直循环」。 */ loopFrom?: number }
-export interface ChannelParams { gainDb: number; pan: number; mute: boolean; solo: boolean }
-export interface MasterParams { gainDb: number; limiter: boolean }
+/** 一条通道（轨 ≠ 乐手：乐手的通道、总线、以后的素材轨都是这个形状；user 2026-10-10「轨还是和乐手是两个概念」）：
+ *  chain = 通道条上的效果（EQ / 压缩（可侧链 key = 别的轨 id）…）；sends = 推子之后发到总线多少；to = 去哪（"master" / 总线 id）。 */
+export interface ChannelParams { gainDb: number; pan: number; mute: boolean; solo: boolean; chain?: FxV2[]; sends?: { to: string; gainDb: number }[]; to?: string }
+export interface BusSpec { id: string; gainDb: number; pan: number; chain: FxV2[] }
+export interface MasterParams { gainDb: number; limiter: boolean; chain?: FxV2[] }
 /** 元音表（assets/preview/vowels.json + .pcm16 的形状）。 */
 export interface VowelEntry { kana: string; midi: number; start: number; len: number; loopStart: number; loopEnd: number }
 export type AuditionInst = { kind: "sf"; sha: string; preset: number } | { kind: "vowel"; kana: string } | { kind: "clip" };
@@ -47,6 +53,7 @@ export type StudioIn =
   | { type: "chunk"; key: string; sr: number; samples: Float32Array }
   | { type: "forget"; keys: string[] }
   | { type: "channel"; id: string; p: Partial<ChannelParams> }
+  | { type: "buses"; buses: BusSpec[] }
   | { type: "master"; p: Partial<MasterParams> }
   | { type: "play"; at?: number; gen?: number }   // gen = 主线程的走带代号：位置报告带着它，停了之后迟到的报告主线程能认出来扔掉
   | { type: "stop" }
@@ -80,7 +87,10 @@ interface TrackState {
   sf: SfPlayer | null;
   vowels: VowelVoice[];
   env: number; envTarget: number;         // 块轨的淡入淡出（起放 / seek / 范围尾）
+  src: Float32Array; out: Float32Array;   // 第一趟（出声 + 曲线 + 演奏者链）/ 第二趟（通道链）的这一段；src 给别的轨当侧链 key
+  perfFx: FxInstance[]; chFx: FxInstance[];
 }
+interface Bus { id: string; gainDb: number; pan: number; gl: number; gr: number; fx: FxInstance[]; L: Float32Array; R: Float32Array }
 interface Audition { inst: AuditionInst; key: number; gl: number; gr: number }
 interface ClipVoice { src: string; data: Float32Array; ratio: number; pos: number; env: number; state: "attack" | "hold" | "release" | "cut"; gl: number; gr: number }
 
@@ -98,8 +108,10 @@ export class Studio {
   private tracks = new Map<string, TrackState>();
   private order: string[] = [];
   private channels = new Map<string, ChannelParams>();   // 时间线换了也留着（边放边调不丢）
+  private buses = new Map<string, Bus>();
   private master: MasterParams = { gainDb: 0, limiter: true };
   private masterLin = 1;
+  private masterFx: FxInstance[] = [];
   // 走带
   private playing = false;
   private pos = 0;                         // 秒（时间线）
@@ -174,10 +186,15 @@ export class Studio {
       case "channel": {
         const cur = this.channels.get(m.id) ?? { ...DEFAULT_CH }, next = { ...cur, ...m.p };
         this.channels.set(m.id, next);
-        const t = this.tracks.get(m.id); if (t) t.ch = next;
+        const t = this.tracks.get(m.id); if (t) { t.ch = next; if (m.p.chain !== undefined) t.chFx = buildChain(m.p.chain, t.chFx, this.sr); }
         return;
       }
-      case "master": this.master = { ...this.master, ...m.p }; this.masterLin = dbToLin(this.master.gainDb); return;
+      case "buses": {
+        const old = this.buses; this.buses = new Map();
+        for (const b of m.buses) { const had = old.get(b.id); this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK) }); }
+        return;
+      }
+      case "master": this.master = { ...this.master, ...m.p }; this.masterLin = dbToLin(this.master.gainDb); if (m.p.chain !== undefined) this.masterFx = buildChain(m.p.chain, this.masterFx, this.sr); return;
       case "play": if (m.gen !== undefined) this.gen = m.gen; this.play(m.at); return;
       case "stop": this.stop(); return;
       case "seek": this.seek(m.at); return;
@@ -202,8 +219,10 @@ export class Studio {
     const old = this.tracks; this.tracks = new Map(); this.order = [];
     for (const spec of tl.tracks) {
       const prev = old.get(spec.id);
-      const t: TrackState = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1 };
+      const t: TrackState = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
       t.spec = spec; t.ch = this.channels.get(spec.id) ?? t.ch;
+      t.perfFx = buildChain(spec.chain ?? [], t.perfFx, this.sr);
+      if (!prev) t.chFx = buildChain(t.ch.chain ?? [], [], this.sr);
       if (spec.kind === "sf") {
         const bank = this.banks.get(spec.sha) ?? null;
         if (t.sf && t.sf.bank !== bank) { this.tsf.close(t.sf.player); t.sf = null; }
@@ -297,7 +316,16 @@ export class Studio {
   /** 出一块：outL / outR 长 n（≤ BLOCK）。 */
   render(outL: Float32Array, outR: Float32Array, n: number): void {
     this.busL.fill(0, 0, n); this.busR.fill(0, 0, n); this.audL.fill(0, 0, n); this.audR.fill(0, 0, n);
+    for (const b of this.buses.values()) { b.L.fill(0, 0, n); b.R.fill(0, 0, n); }
     if (this.playing) this.renderTransport(n);
+    // 总线：各轨送来的 → 这条总线的链（混响 / 延迟…）→ 增益 / 平衡 → 总轨
+    for (const b of this.buses.values()) {
+      for (const fx of b.fx) fx.process(b.L, b.R, n, null);
+      const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;
+      for (let i = 0; i < n; i++) { cl += dl; cr += dr; this.busL[i] += b.L[i] * cl * Math.SQRT2; this.busR[i] += b.R[i] * cr * Math.SQRT2; }   // 立体声的平衡：正中 = 原样
+      b.gl = gl; b.gr = gr;
+    }
+    for (const fx of this.masterFx) fx.process(this.busL, this.busR, n, null);   // 总轨链（母带 EQ / 压缩…），限幅在最后
     this.renderAuditions(n);
     // 总轨：增益 → 限幅（只管走带来的声）→ 加上试听（绕过限幅）
     const g = this.masterLin;
@@ -354,37 +382,50 @@ export class Studio {
     for (const t of this.tracks.values()) { if (t.sf && this.tsf.active(t.sf.player) > 0) return false; if (t.vowels.length) return false; if (t.spec.kind === "clips" && t.env > 1e-4) return false; }
     return true;
   }
-  /** 各声部出 cnt 个采样进母线（从 off 起）。notesOn = 排新音；clipsOn = 块前进（false = 冻着，块不出声）。 */
+  /** 各声部出 cnt 个采样进母线 / 总线（从 off 起）。notesOn = 排新音；clipsOn = 块前进（false = 冻着，块不出声）。
+   *  两趟（侧链要先看到别的轨的声）：① 每轨 出声 → 表情曲线 → 块淡入淡出 → 演奏者的链 → src；② 每轨 src → 通道链（压缩器的 key 读别的轨的 src）→ 静音 / 独奏 → 推子 / 声像 → 去总轨或总线，再按发送量发到总线。 */
   private renderTracks(off: number, cnt: number, notesOn: boolean, clipsOn: boolean): void {
     const solo = this.order.some((id) => this.tracks.get(id)!.ch.solo);
     const t0 = this.pos, sr = this.sr;
-    for (const id of this.order) {
-      const t = this.tracks.get(id)!, mono = this.mono; mono.fill(0, 0, cnt);
-      // 1. 引擎的声音
+    for (const id of this.order) {   // ── 第一趟
+      const t = this.tracks.get(id)!, mono = t.src; mono.fill(0, 0, cnt);
       if (t.spec.kind === "clips") { if (clipsOn) this.renderClips(t, mono, cnt, t0); }
       else this.renderNotes(t, mono, cnt, t0, notesOn);
-      // 2. 表情曲线（dB 段，一阶平滑；同原 applyGain）
       const segs = t.spec.gain;
-      if (segs && segs.length) {
+      if (segs && segs.length) {   // 表情曲线（dB 段，一阶平滑；同原 applyGain）
         const a = 1 - Math.exp(-1 / (GAIN_TAU * sr));
         for (let i = 0; i < cnt; i++) {
           const tt = t0 + i / sr; while (t.gk < segs.length - 1 && tt >= segs[t.gk].t1) t.gk++;
           t.y += (dbToLin(segs[t.gk].dB) - t.y) * a; mono[i] *= t.y;
         }
       }
-      // 3. 块轨的淡入 / 淡出（起放 / seek / 范围尾）
-      if (t.spec.kind === "clips" && t.env !== t.envTarget) {
+      if (t.spec.kind === "clips" && t.env !== t.envTarget) {   // 块轨的淡入 / 淡出（起放 / seek / 范围尾）
         const step = t.envTarget > t.env ? 1 / (CLIP_FADE_IN * sr) : -1 / (CLIP_FADE_OUT * sr);
         for (let i = 0; i < cnt; i++) { if (t.env !== t.envTarget) { t.env += step; if ((step > 0 && t.env >= t.envTarget) || (step < 0 && t.env <= t.envTarget)) t.env = t.envTarget; } mono[i] *= t.env; }
       }
-      // 4. 通道：静音 / 独奏（只管走带的声）、推子 + 声像（去拉链：一块内线性走到目标）
+      for (const fx of t.perfFx) fx.process(mono, null, cnt, null);   // 跟着演奏者走的链
+    }
+    for (const id of this.order) {   // ── 第二趟
+      const t = this.tracks.get(id)!, out = t.out; out.set(t.src.subarray(0, cnt));
+      for (const fx of t.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t, fx.id) : null);
       const audible = solo ? t.ch.solo : !t.ch.mute;
       const [gl, gr] = audible ? panGains(t.ch.gainDb, t.ch.pan) : [0, 0];
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
+      const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : undefined, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr;
-      for (let i = 0; i < cnt; i++) { cl += dl; cr += dr; this.busL[off + i] += mono[i] * cl; this.busR[off + i] += mono[i] * cr; }
+      for (let i = 0; i < cnt; i++) { cl += dl; cr += dr; L[off + i] += out[i] * cl; R[off + i] += out[i] * cr; }
+      if (t.ch.sends) for (const sd of t.ch.sends) {   // 发送（推子之后）
+        const b = this.buses.get(sd.to); if (!b) continue;
+        const g = dbToLin(sd.gainDb), sl = gl * g, sr2 = gr * g;
+        for (let i = 0; i < cnt; i++) { b.L[off + i] += out[i] * sl; b.R[off + i] += out[i] * sr2; }
+      }
       t.gl = gl; t.gr = gr;
     }
+  }
+  /** 压缩器的侧链：通道条上 id 是 fxId 的那台写了 key = 别的轨 id → 那条轨这一段的第一趟输出；没写 / 找不到 = null（听自己）。 */
+  private keyOf(t: TrackState, fxId: string): Float32Array | null {
+    const spec = t.ch.chain?.find((f) => f.id === fxId); if (!spec?.key || spec.key === t.spec.id) return null;
+    return this.tracks.get(spec.key)?.src ?? null;
   }
   private renderClips(t: TrackState, mono: Float32Array, cnt: number, t0: number): void {
     if (t.spec.kind !== "clips") return;

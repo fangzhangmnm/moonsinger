@@ -1,0 +1,462 @@
+{
+  "versions": {
+    "manifest": 2,
+    "score": 2,
+    "lounge": 2,
+    "studio": 2
+  },
+  "title": "冻结样本",
+  "hum": "u",
+  "engine": "vowel-sampler",
+  "tokens": [
+    {
+      "fifths": 2,
+      "id": 0,
+      "kind": "key"
+    },
+    {
+      "beatType": 4,
+      "beats": 3,
+      "id": 0,
+      "kind": "time"
+    },
+    {
+      "bpm": 96,
+      "id": 0,
+      "kind": "tempo"
+    },
+    {
+      "dur": 1680,
+      "id": 4,
+      "kind": "note",
+      "lyric": "う",
+      "pitch": {
+        "alter": 1,
+        "octave": 4,
+        "step": "F"
+      }
+    },
+    {
+      "dur": 840,
+      "id": 5,
+      "kind": "note",
+      "lyric": "さ",
+      "pitch": {
+        "alter": 0,
+        "octave": 4,
+        "step": "A"
+      }
+    },
+    {
+      "dur": 840,
+      "id": 6,
+      "kind": "note",
+      "lyric": null,
+      "pitch": {
+        "alter": 0,
+        "octave": 4,
+        "step": "A"
+      },
+      "tie": true
+    },
+    {
+      "dur": 1680,
+      "id": 7,
+      "kind": "note",
+      "lyric": "ー",
+      "pitch": {
+        "alter": 0,
+        "octave": 4,
+        "step": "B"
+      }
+    },
+    {
+      "id": 0,
+      "kind": "bar"
+    },
+    {
+      "dur": 560,
+      "hyph": true,
+      "id": 9,
+      "kind": "note",
+      "lyric": "hap",
+      "pitch": {
+        "alter": 0,
+        "octave": 5,
+        "step": "D"
+      }
+    },
+    {
+      "dur": 560,
+      "id": 10,
+      "kind": "note",
+      "lyric": "py",
+      "pitch": {
+        "alter": 1,
+        "octave": 5,
+        "step": "C"
+      }
+    },
+    {
+      "dur": 560,
+      "id": 11,
+      "kind": "note",
+      "lang": "zh",
+      "lyric": "爱",
+      "pitch": null
+    },
+    {
+      "dur": 2520,
+      "id": 12,
+      "kind": "note",
+      "lyric": "你",
+      "pitch": {
+        "alter": 0,
+        "octave": 4,
+        "step": "B"
+      }
+    },
+    {
+      "fifths": -1,
+      "id": 0,
+      "kind": "key"
+    },
+    {
+      "dur": 1680,
+      "id": 14,
+      "kind": "rest"
+    },
+    {
+      "dur": 5040,
+      "id": 15,
+      "kind": "note",
+      "lyric": "ね",
+      "pitch": {
+        "alter": 0,
+        "octave": 4,
+        "step": "F"
+      }
+    },
+    {
+      "bpm": 72,
+      "id": 0,
+      "kind": "tempo"
+    },
+    {
+      "beatType": 4,
+      "beats": 4,
+      "id": 0,
+      "kind": "time"
+    },
+    {
+      "dur": 1680,
+      "id": 18,
+      "kind": "note",
+      "lyric": "る",
+      "pitch": {
+        "alter": 0,
+        "octave": 4,
+        "step": "G"
+      }
+    },
+    {
+      "dur": 5040,
+      "id": 19,
+      "kind": "rest"
+    },
+    {
+      "id": 0,
+      "kind": "bar"
+    }
+  ],
+  "tracks": {
+    "p1/P1": [
+      {
+        "fifths": 2,
+        "id": 0,
+        "kind": "key"
+      },
+      {
+        "beatType": 4,
+        "beats": 3,
+        "id": 0,
+        "kind": "time"
+      },
+      {
+        "bpm": 96,
+        "id": 0,
+        "kind": "tempo"
+      },
+      {
+        "dur": 1680,
+        "id": 4,
+        "kind": "note",
+        "lyric": "う",
+        "pitch": {
+          "alter": 1,
+          "octave": 4,
+          "step": "F"
+        }
+      },
+      {
+        "dur": 840,
+        "id": 5,
+        "kind": "note",
+        "lyric": "さ",
+        "pitch": {
+          "alter": 0,
+          "octave": 4,
+          "step": "A"
+        }
+      },
+      {
+        "dur": 840,
+        "id": 6,
+        "kind": "note",
+        "lyric": null,
+        "pitch": {
+          "alter": 0,
+          "octave": 4,
+          "step": "A"
+        },
+        "tie": true
+      },
+      {
+        "dur": 1680,
+        "id": 7,
+        "kind": "note",
+        "lyric": "ー",
+        "pitch": {
+          "alter": 0,
+          "octave": 4,
+          "step": "B"
+        }
+      },
+      {
+        "id": 0,
+        "kind": "bar"
+      },
+      {
+        "dur": 560,
+        "hyph": true,
+        "id": 9,
+        "kind": "note",
+        "lyric": "hap",
+        "pitch": {
+          "alter": 0,
+          "octave": 5,
+          "step": "D"
+        }
+      },
+      {
+        "dur": 560,
+        "id": 10,
+        "kind": "note",
+        "lyric": "py",
+        "pitch": {
+          "alter": 1,
+          "octave": 5,
+          "step": "C"
+        }
+      },
+      {
+        "dur": 560,
+        "id": 11,
+        "kind": "note",
+        "lang": "zh",
+        "lyric": "爱",
+        "pitch": null
+      },
+      {
+        "dur": 2520,
+        "id": 12,
+        "kind": "note",
+        "lyric": "你",
+        "pitch": {
+          "alter": 0,
+          "octave": 4,
+          "step": "B"
+        }
+      },
+      {
+        "fifths": -1,
+        "id": 0,
+        "kind": "key"
+      },
+      {
+        "dur": 1680,
+        "id": 14,
+        "kind": "rest"
+      },
+      {
+        "dur": 5040,
+        "id": 15,
+        "kind": "note",
+        "lyric": "ね",
+        "pitch": {
+          "alter": 0,
+          "octave": 4,
+          "step": "F"
+        }
+      },
+      {
+        "bpm": 72,
+        "id": 0,
+        "kind": "tempo"
+      },
+      {
+        "beatType": 4,
+        "beats": 4,
+        "id": 0,
+        "kind": "time"
+      },
+      {
+        "dur": 1680,
+        "id": 18,
+        "kind": "note",
+        "lyric": "る",
+        "pitch": {
+          "alter": 0,
+          "octave": 4,
+          "step": "G"
+        }
+      },
+      {
+        "dur": 5040,
+        "id": 19,
+        "kind": "rest"
+      },
+      {
+        "id": 0,
+        "kind": "bar"
+      }
+    ],
+    "p1/P2": [
+      {
+        "fifths": 2,
+        "id": 0,
+        "kind": "key"
+      },
+      {
+        "beatType": 4,
+        "beats": 3,
+        "id": 0,
+        "kind": "time"
+      },
+      {
+        "bpm": 96,
+        "id": 0,
+        "kind": "tempo"
+      },
+      {
+        "dur": 3360,
+        "id": 24,
+        "kind": "note",
+        "lyric": null,
+        "pitch": {
+          "alter": 0,
+          "octave": 3,
+          "step": "D"
+        }
+      },
+      {
+        "dur": 1680,
+        "id": 25,
+        "kind": "note",
+        "lyric": null,
+        "pitch": {
+          "alter": 0,
+          "octave": 2,
+          "step": "A"
+        }
+      },
+      {
+        "id": 0,
+        "kind": "bar"
+      },
+      {
+        "dur": 5040,
+        "id": 27,
+        "kind": "note",
+        "lyric": null,
+        "pitch": {
+          "alter": 0,
+          "octave": 2,
+          "step": "G"
+        }
+      }
+    ],
+    "p2/P1": [
+      {
+        "fifths": -1,
+        "id": 0,
+        "kind": "key"
+      },
+      {
+        "beatType": 4,
+        "beats": 4,
+        "id": 0,
+        "kind": "time"
+      },
+      {
+        "bpm": 72,
+        "id": 0,
+        "kind": "tempo"
+      },
+      {
+        "dur": 1680,
+        "id": 31,
+        "kind": "note",
+        "lyric": "la",
+        "pitch": {
+          "alter": 0,
+          "octave": 5,
+          "step": "C"
+        }
+      },
+      {
+        "dur": 1680,
+        "id": 32,
+        "kind": "note",
+        "lyric": "la",
+        "pitch": {
+          "alter": 0,
+          "octave": 4,
+          "step": "B"
+        }
+      },
+      {
+        "dur": 3360,
+        "id": 33,
+        "kind": "rest"
+      }
+    ]
+  },
+  "papers": [
+    {
+      "id": "p1",
+      "name": ""
+    },
+    {
+      "id": "p2",
+      "name": "副歌"
+    }
+  ],
+  "parts": [
+    "P1",
+    "P2"
+  ],
+  "role": {
+    "name": "Vocals",
+    "sound": "voice.vocals",
+    "active": "c2",
+    "candidates": [
+      "c1",
+      "c2"
+    ]
+  },
+  "mics": [
+    "m1",
+    "m2"
+  ]
+}

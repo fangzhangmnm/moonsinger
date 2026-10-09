@@ -14,7 +14,7 @@ import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/ffla
 import { type Song, type PartDef, type PaperSeg, type Token, type NoteTok, flattenPart } from "../score/song.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
-import { FORMAT, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
+import { FORMAT, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
 import { migrate } from "./migrate/index.ts";
 import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
@@ -74,10 +74,11 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     for (const c of cands(role)) { const i = instrumentOf(c); if (isVoice(i)) i.hum = a.hum; }   // 哼的字 = 月读候选共用的一个设置
     lounge[part.role] = role;
   }
-  const studio: Json = structuredClone(a.extras.studio ?? { version: FORMAT.studio, mics: [] });
-  const mics = ((studio.mics as Json[] | undefined) ?? []).slice();
-  for (const part of song.parts) if (!mics.some((m) => m.id === part.mic)) mics.push({ id: part.mic, name: `麦克风 ${mics.length + 1}`, gainDb: 0, pan: 0 });
-  studio.mics = mics;
+  const studio: Json = structuredClone(a.extras.studio ?? emptyStudio());
+  const tracks = ((studio.tracks as Json[] | undefined) ?? []).slice();
+  for (const part of song.parts) if (!tracks.some((m) => m.id === part.mic)) tracks.push(micTrack(part.mic, `麦克风 ${tracks.filter((t) => t.kind === "mic").length + 1}`));   // 每个声部的麦克风一条轨
+  studio.tracks = tracks; if (!studio.master) studio.master = { gainDb: 0, limiter: true, chain: [] };
+  const mics = tracks.filter((t) => t.kind === "mic");
   const labels = partLabels(song, { ...a.extras, lounge });
   const infoOf = (part: PartDef, k: number): PartInfo => {
     const role = lounge[part.role], active = cands(role).find((c) => c.id === role.active), mic = mics.find((m) => m.id === part.mic);
@@ -169,18 +170,46 @@ export function withRoleConcept(extras: Extras, role: string, c: { name: string;
 /** 新声部要的角色 id（休息室里没用过的「r<n>」）。 */
 export function newRoleId(extras: Extras, song: Song): string { return nextKey([...Object.keys(extras.lounge), ...song.parts.map((p) => p.role)], "r"); }
 /** 新声部要的麦克风 id。 */
-/** 总轨（studio.json master；没写 = 0 dB + 限幅开）。 */
-export function activeMaster(extras: Extras): { gainDb: number; limiter: boolean } {
-  const m = extras.studio?.master as { gainDb?: unknown; limiter?: unknown } | undefined;
-  const g = Number(m?.gainDb ?? 0);
-  return { gainDb: Number.isFinite(g) ? Math.max(-24, Math.min(12, g)) : 0, limiter: m?.limiter === undefined ? true : !!m.limiter };
-}
-export function withMaster(extras: Extras, patch: { gainDb?: number; limiter?: boolean }): Extras {
-  const studio: Json = structuredClone(extras.studio ?? { version: FORMAT.studio, mics: [] });
-  studio.master = { ...activeMaster(extras), ...patch };
+// ── 录音房 v2：轨（mic / bus）+ 总轨（契约 StudioV2；2026-10-10 刀 4）──────────────────────────────────────────────
+export type StudioTrack = { id: string; kind: "mic" | "bus"; name: string; gainDb: number; pan: number; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string };
+const emptyStudio = (): Json => ({ version: FORMAT.studio, tracks: [], master: { gainDb: 0, limiter: true, chain: [] } });
+const micTrack = (id: string, name: string): Json => ({ id, kind: "mic", name, gainDb: 0, pan: 0, chain: [], sends: [], to: "master" });
+const normTrack = (t: Json): StudioTrack => ({ id: String(t.id), kind: t.kind === "bus" ? "bus" : "mic", name: String(t.name ?? ""), gainDb: Number(t.gainDb ?? 0) || 0, pan: Math.max(-1, Math.min(1, Number(t.pan ?? 0) || 0)),
+  chain: Array.isArray(t.chain) ? (t.chain as FxV2[]) : [], sends: Array.isArray(t.sends) ? (t.sends as { to: string; gainDb: number }[]) : [], to: typeof t.to === "string" ? t.to : "master" });
+/** 录音房里的轨（原样读出；没有录音房 = 空）。 */
+export function studioTracks(extras: Extras): StudioTrack[] { return ((extras.studio?.tracks as Json[] | undefined) ?? []).map(normTrack); }
+export function studioTrack(extras: Extras, id: string): StudioTrack | null { const t = ((extras.studio?.tracks as Json[] | undefined) ?? []).find((x) => x.id === id); return t ? normTrack(t) : null; }
+/** 改一条轨（没有录音房 / 没有这条 = 先建一条 mic 轨）：增益 / 声像 / 名字 / 效果链 / 发送 / 去哪。 */
+export function withTrack(extras: Extras, id: string, patch: Partial<Omit<StudioTrack, "id" | "kind">> & { kind?: "mic" | "bus" }): Extras {
+  const studio: Json = structuredClone(extras.studio ?? emptyStudio());
+  const tracks = ((studio.tracks as Json[] | undefined) ?? []).slice();
+  let t = tracks.find((x) => x.id === id);
+  if (!t) { t = patch.kind === "bus" ? { ...micTrack(id, patch.name ?? "总线"), kind: "bus" } : micTrack(id, patch.name ?? `麦克风 ${tracks.filter((x) => x.kind === "mic").length + 1}`); tracks.push(t); }
+  const { kind: _k, ...rest } = patch; Object.assign(t, structuredClone(rest));
+  studio.tracks = tracks;
   return { ...extras, studio };
 }
-export function newMicId(extras: Extras, song: Song): string { return nextKey([...((extras.studio?.mics as Json[] | undefined) ?? []).map((m) => String(m.id)), ...song.parts.map((p) => p.mic)], "m"); }
+/** 删一条总线（mic 轨跟着声部走，这里不删）；指着它的发送 / 去向回总轨。 */
+export function withoutBus(extras: Extras, id: string): Extras {
+  const studio: Json = structuredClone(extras.studio ?? emptyStudio());
+  studio.tracks = ((studio.tracks as Json[] | undefined) ?? []).filter((x) => !(x.id === id && x.kind === "bus")).map((x) => ({ ...x, to: x.to === id ? "master" : x.to, sends: ((x.sends as Json[] | undefined) ?? []).filter((sd) => sd.to !== id) }));
+  return { ...extras, studio };
+}
+export function newBusId(extras: Extras): string { return nextKey(studioTracks(extras).map((t) => t.id), "b"); }
+/** 总轨（studio.json master；没写 = 0 dB + 限幅开 + 空链）。 */
+export function activeMaster(extras: Extras): { gainDb: number; limiter: boolean; chain: FxV2[] } {
+  const m = extras.studio?.master as { gainDb?: unknown; limiter?: unknown; chain?: unknown } | undefined;
+  const g = Number(m?.gainDb ?? 0);
+  return { gainDb: Number.isFinite(g) ? Math.max(-24, Math.min(12, g)) : 0, limiter: m?.limiter === undefined ? true : !!m.limiter, chain: Array.isArray(m?.chain) ? (m!.chain as FxV2[]) : [] };
+}
+export function withMaster(extras: Extras, patch: { gainDb?: number; limiter?: boolean; chain?: FxV2[] }): Extras {
+  const studio: Json = structuredClone(extras.studio ?? emptyStudio());
+  studio.master = { ...activeMaster(extras), ...structuredClone(patch) };
+  return { ...extras, studio };
+}
+/** 跟着演奏者走的效果链（CandidateV2.chain；没有 = 空）。 */
+export function activeChain(extras: Extras, role: string): FxV2[] { const c = activeCandidate(extras, role); return Array.isArray(c?.chain) ? (c!.chain as FxV2[]) : []; }
+export function newMicId(extras: Extras, song: Song): string { return nextKey([...studioTracks(extras).map((m) => m.id), ...song.parts.map((p) => p.mic)], "m"); }
 /** 给新声部在休息室里建一份默认角色（月读两个候选；名字可给）。 */
 export function withNewRole(extras: Extras, role: string, hum: Hum, name?: string, sound?: string): Extras {
   if (extras.lounge[role]) return extras;
@@ -194,15 +223,7 @@ export function withoutRole(extras: Extras, role: string): Extras {
 }
 // ── 录音房（麦克风）────────────────────────────────────────────────────────────────────────
 /** 改一个麦克风的增益 / 声像（没有录音房 / 没有这个麦克风 = 先建）。 */
-export function withMic(extras: Extras, micId: string, patch: { gainDb?: number; pan?: number }): Extras {
-  const studio: Json = structuredClone(extras.studio ?? { version: FORMAT.studio, mics: [] });
-  const mics = ((studio.mics as Json[] | undefined) ?? []).slice();
-  let m = mics.find((x) => x.id === micId);
-  if (!m) { m = { id: micId, name: `麦克风 ${mics.length + 1}`, gainDb: 0, pan: 0 }; mics.push(m); }
-  if (patch.gainDb !== undefined) m.gainDb = patch.gainDb; if (patch.pan !== undefined) m.pan = patch.pan;
-  studio.mics = mics;
-  return { ...extras, studio };
-}
+export function withMic(extras: Extras, micId: string, patch: { gainDb?: number; pan?: number }): Extras { return withTrack(extras, micId, patch); }
 // ── 候选（谁来演；休息室）────────────────────────────────────────────────────────────────
 export interface CandidateInfo { id: string; name: string; engine: Engine }
 /** 角色的候选们（顺序 = 文件里的顺序）。没有角色快照 = 默认的两个月读。 */

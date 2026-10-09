@@ -55,7 +55,7 @@ try {
   await p.click("#studioBtn"); await p.waitForTimeout(300);
   check(await p.isVisible(".studio"), "录音室开了");
   const slide = (v) => p.$eval(".studio .strip input[data-gain]", (el, v) => { el.value = String(v); el.dispatchEvent(new Event("input", { bubbles: true })); }, v);
-  const gain = () => p.evaluate(() => { const m = window.__moonsinger.extras().studio?.mics ?? []; return m.length ? m[0].gainDb : null; });
+  const gain = () => p.evaluate(() => { const m = (window.__moonsinger.extras().studio?.tracks ?? []).filter((t) => t.kind === "mic"); return m.length ? m[0].gainDb : null; });   // studio.json v2（2026-10-10）：mics → tracks（kind mic）
   await slide(-6); await p.waitForTimeout(100);
   check((await gain()) === -6, "推子 → 麦克风增益 −6 dB", String(await gain()));
   const before2 = (await hist()).past;

@@ -65,7 +65,7 @@ describe("持久化守卫", () => {
       const role = o.extras.lounge["r1"] as Json;
       eq(role.name, exp.role.name, `${d}：角色名`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);
       eq(JSON.stringify((role.candidates as Json[]).map((c) => c.id)), JSON.stringify(exp.role.candidates), `${d}：候选 id`);
-      eq(JSON.stringify(((o.extras.studio as Json).mics as Json[]).map((m) => m.id)), JSON.stringify(exp.mics), `${d}：麦克风 id`);
+      eq(JSON.stringify(((o.extras.studio as Json).tracks as Json[]).filter((t) => t.kind === "mic").map((m) => m.id)), JSON.stringify(exp.mics), `${d}：麦克风 id（v2 起 = tracks 里 kind mic 的）`);
       // 读进来的都已升到这一版（migrate 链跑过）
       eq((o.extras.manifest as Json).version, FORMAT.manifest, `${d}：manifest 升到当前版`);
       eq((o.extras.scoreExt as Json).version, FORMAT.score, `${d}：score 升到当前版`);

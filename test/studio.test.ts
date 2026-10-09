@@ -161,3 +161,51 @@ describe("录音房：按键试听 + 元音采样器", () => {
     const r2 = run(s, 0.2); assert(peak(r2.L) > 0.3, "试听也响");
   });
 });
+
+describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / 总轨链）", () => {
+  const clipS = async (specs: { id: string; v: number }[]) => {
+    const { s, out } = await studio();
+    for (const c of specs) s.handle({ type: "chunk", key: c.id, sr: SR, samples: flat(1, c.v) });
+    s.handle({ type: "timeline", tl: tl(specs.map((c) => clipTrack(c.id, c.id, 0, 1)), { from: 0, to: 1 }) });
+    return { s, out };
+  };
+  it("通道链：EQ 低切把 100 Hz 的轨压掉；总轨链：增益 −6 dB 整体减半", async () => {
+    const { s } = await studio();
+    const x = Float32Array.from({ length: SR }, (_, i) => 0.3 * Math.sin((2 * Math.PI * 100 * i) / SR));
+    s.handle({ type: "chunk", key: "A", sr: SR, samples: x });
+    s.handle({ type: "timeline", tl: tl([clipTrack("a", "A", 0, 1)], { from: 0, to: 1 }) });
+    s.handle({ type: "channel", id: "a", p: { chain: [{ id: "e", kind: "eq", params: { hpHz: 2000 } }] } });
+    s.handle({ type: "play" });
+    const r = run(s, 1);
+    assert(peak(r.L, sec(0.5), sec(0.9)) < 0.3 * PAN0 * 0.1, `低切后 ${peak(r.L, sec(0.5), sec(0.9))}`);
+    const { s: s2 } = await clipS([{ id: "A", v: 0.4 }]);
+    s2.handle({ type: "master", p: { chain: [{ id: "g", kind: "gain", params: { dB: -6.0206 } }] } }); s2.handle({ type: "play" });
+    assert(Math.abs(peak(run(s2, 1).L, sec(0.5), sec(0.9)) - 0.4 * PAN0 * 0.5) < 1e-3, "总轨链 −6 dB");
+  });
+  it("侧链：B 轨很响时 A 轨上的压缩器（key = B）把 A 压下去；没有 key 时 A 自己很轻不压", async () => {
+    const mk = async (key: string | undefined) => {
+      const { s } = await clipS([{ id: "A", v: 0.05 }, { id: "B", v: 0.8 }]);
+      s.handle({ type: "channel", id: "A", p: { chain: [{ id: "c", kind: "comp", params: { thresholdDb: -20, ratio: 8, attackMs: 1, releaseMs: 50, kneeDb: 0 }, ...(key ? { key } : {}) }] } });
+      s.handle({ type: "channel", id: "B", p: { mute: true } });   // B 自己不出声，只当 key
+      s.handle({ type: "play" }); return peak(run(s, 1).L, sec(0.5), sec(0.9));
+    };
+    const ducked = await mk("B"), plain = await mk(undefined);
+    assert(Math.abs(plain - 0.05 * PAN0) < 1e-3, `不侧链 = 原样（${plain}）`); assert(ducked < plain * 0.3, `侧链压下去（${ducked} vs ${plain}）`);
+  });
+  it("发送到混响总线：块停了之后总线上还有尾巴；总线增益 / 删了总线 = 发送落空不出声", async () => {
+    const { s } = await clipS([{ id: "A", v: 0.3 }]);
+    s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [{ id: "r", kind: "reverb", params: { room: 0.7, damp: 0.2, mix: 1, preDelayMs: 0 } }] }] });
+    s.handle({ type: "channel", id: "A", p: { sends: [{ to: "b1", gainDb: 0 }] } });
+    s.handle({ type: "play" });
+    const r = run(s, 2.5);
+    assert(peak(r.L, sec(1.3), sec(1.6)) > 1e-3, `块 1 s 就完了，1.3–1.6 s 还有混响尾巴（${peak(r.L, sec(1.3), sec(1.6))}）`);
+    const { s: s2 } = await clipS([{ id: "A", v: 0.3 }]);
+    s2.handle({ type: "channel", id: "A", p: { to: "nope", sends: [] } }); s2.handle({ type: "play" });
+    assert(Math.abs(peak(run(s2, 1).L, sec(0.5), sec(0.9)) - 0.3 * PAN0) < 1e-3, "去向找不到的总线 = 照旧进总轨（不丢声）");
+  });
+  it("演奏者的链（时间线 chain）在通道链之前；两趟都确定性", async () => {
+    const mk = async () => { const { s } = await clipS([{ id: "A", v: 0.4 }]); s.handle({ type: "timeline", tl: tl([{ ...clipTrack("A", "A", 0, 1), chain: [{ id: "g", kind: "gain", params: { dB: -6.0206 } }] }], { from: 0, to: 1 }) }); s.handle({ type: "play" }); return run(s, 1).L; };
+    const a = await mk(), b = await mk();
+    assert(Math.abs(peak(a, sec(0.5), sec(0.9)) - 0.4 * PAN0 * 0.5) < 1e-3, "演奏者链 −6 dB"); assert(same(a, b), "确定性");
+  });
+});

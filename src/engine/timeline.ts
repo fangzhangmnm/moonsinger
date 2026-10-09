@@ -12,6 +12,7 @@ import { toLabScore, singChunks, type LabScore, type SingLang, type SingChunkMod
 import { playSegments } from "../score/repeats.ts";
 import { sfKey, type SfxInfo } from "../gm/sf-key.ts";
 import type { SingMark } from "../format/performance.ts";
+import type { FxV2 } from "../format/contract.ts";
 import type { TrackSpec, NoteEv, GainSeg } from "./studio.ts";
 
 /** 月读核心 OPT.leadIn（sing-core.mjs）：第一个元音前留的秒数；块的第 0 个采样 = 第一个音的时刻 − 它。 */
@@ -34,6 +35,8 @@ export interface PerformerInfo {
   chunk: SingChunkMode;
   /** 拍子轻重：这位跟多少（按乐器类别，src/score/groove.ts followOf）。 */
   follow: (s: GrooveStyle) => number;
+  /** 跟着演奏者走的效果链（CandidateV2.chain；刀 4）。 */
+  chain?: FxV2[];
 }
 export interface TimelineInput {
   song: Song;
@@ -112,7 +115,7 @@ export function buildTimeline(inp: TimelineInput): Timeline {
       const lang = songLangOf(tokens, hum), mode = info.chunk;
       const noteAt = (a: number) => tl.find((x) => x.index >= a && x.tok.kind === "note")?.t0 ?? 0;
       const ranges = singChunks(tokens, map, mode === "sheet" ? bounds : [], mode);   // 每句：只看休止，不看纸界
-      const clips: TrackSpec & { kind: "clips" } = { id: part.id, kind: "clips", clips: [], gain };
+      const clips: TrackSpec & { kind: "clips" } = { id: part.id, kind: "clips", clips: [], gain, ...(info.chain?.length ? { chain: info.chain } : {}) };
       for (const [a, b] of ranges) {
         const te = new Map<number, number>(), score = toLabScore(tokens, hum, lang, map, info.spec.sing, [a, b], te);
         if (!score.SCORE.length) continue;
@@ -129,12 +132,12 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const vels = noteVelocities(tokens, map, info.spec, info.velocity, bounds, groove);
     const notes = lightNotes(tokens, map, info.engine === "soundfont", lightMarks(info.spec), (i) => vels.get(i) ?? info.velocity);
     if (info.engine === "vowel-sampler") {
-      tracks.push({ id: part.id, kind: "vowel", kana: HUM_KANA[hum ?? "n"], notes: notes.map((n): NoteEv => ({ t0: n.t0, t1: n.t1, key: n.midi, vel: n.vel ?? info.velocity, preset: 0 })), gain });
+      tracks.push({ id: part.id, kind: "vowel", kana: HUM_KANA[hum ?? "n"], notes: notes.map((n): NoteEv => ({ t0: n.t0, t1: n.t1, key: n.midi, vel: n.vel ?? info.velocity, preset: 0 })), gain, ...(info.chain?.length ? { chain: info.chain } : {}) });
       continue;
     }
     const g = info.gm;
     if (!g) { unplayable.push({ part: part.id, why: "台上的不是 SoundFont 乐器" }); continue; }
-    tracks.push({ id: part.id, kind: "sf", sha: g.sha, notes: notes.map((n): NoteEv => ({ t0: n.t0, t1: n.t1, key: sfKey(n.midi, g, info.transpose), vel: n.vel ?? info.velocity, preset: g.presetIndex })), gain });
+    tracks.push({ id: part.id, kind: "sf", sha: g.sha, notes: notes.map((n): NoteEv => ({ t0: n.t0, t1: n.t1, key: sfKey(n.midi, g, info.transpose), vel: n.vel ?? info.velocity, preset: g.presetIndex })), gain, ...(info.chain?.length ? { chain: info.chain } : {}) });
   }
   to = Math.max(to, total);
   // 纸的秒区间（所有声部压平后的纸序列一样：缺这个声部的纸补了休止）

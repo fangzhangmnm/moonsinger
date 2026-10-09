@@ -15,7 +15,7 @@
 /** 这一版能读写的各份文件的版本号（改格式 = 这里 +1 + migrate + 冻结样本；守卫测试盯着）。
  *  lounge 2（2026-10-07 深夜，user「现在开始好好做乐器这个数据结构，不要偷懒」）：候选从「月读形状 + 贴字段」改成按引擎分的乐器。
  *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。 */
-export const FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 1 } as const;
+export const FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 } as const;
 export type FormatFile = keyof typeof FORMAT;
 
 // ═══ 现役（project.ts 写的就是这些）═══════════════════════════════════════════════════════
@@ -74,11 +74,19 @@ export interface ScoreExtV1 {
 }
 
 /** `.moonsinger/studio.json`：录音房。 */
+/** 录音房 v1（只给迁移对照；migrate/index.ts studioV1toV2）。 */
 export interface StudioV1 {
   version: 1;
   mics: { id: string; name: string; gainDb: number; pan: number }[];   // pan −1…1（写 MusicXML 时 ×90）
-  /** 总轨（2026-10-10 刀 3；可选、老文件没有 = 默认 0 dB + 限幅开）：增益 dB、母线前瞻限幅开关（关 = 可能削波，界面明说）。按键试听不走限幅（user「限幅嗯」）。 */
-  master?: { gainDb: number; limiter: boolean };
+  master?: { gainDb: number; limiter: boolean };   // v0.9.6 加的可选字段
+}
+/** 录音房 v2（2026-10-10 刀 4；user「轨还是和乐手是两个概念」）：轨是通用的条——乐手的通道（kind mic，谱上声部 `part.mic` 指着它）、总线（kind bus，没有乐手；混响 / 延迟这类「留在屋里的」）、
+ *  以后的素材轨。每条：增益 / 声像 / 效果链 / 发送（推子之后发到哪条总线多少）/ 去哪（"master" 或总线 id）。总轨：增益 / 限幅 / 链。老文件（v1）读进来 = 每个麦克风一条 mic 轨、空链、直通总轨。 */
+export interface StudioTrackV2 { id: string; kind: "mic" | "bus"; name: string; gainDb: number; pan: number; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string }
+export interface StudioV2 {
+  version: 2;
+  tracks: StudioTrackV2[];
+  master: { gainDb: number; limiter: boolean; chain: FxV2[] };
 }
 
 // ─── 休息室 v2（现役）：角色 = 谱上的功能位；候选 = 谁来演 + 怎么出声 ─────────────────────────
@@ -194,11 +202,3 @@ export interface CurvesV1 {
 export type CurveUnit = "dB" | "cent" | "knob" | (string & {});
 
 /** studio.json 第 2 版：麦克风 → 总线 → 总输出；侧链；人录的音频（§8，非破坏性）。时间线自动化（按小节:拍）以后加。 */
-export interface StudioV2 {
-  version: 2;
-  mics: { id: string; name: string; gainDb: number; pan: number; to: string }[];          // to = 总线 id 或 "master"
-  buses: { id: string; name: string; gainDb: number; pan: number; chain: FxV2[]; to: string }[];
-  master: { gainDb: number; chain: FxV2[] };
-  sidechains?: { from: string; to: string; fx: string }[];
-  recordings?: { id: string; audio: string; startSec: number; inSec: number; outSec: number; gainDb: number }[];   // audio = attachments/audio/<id>.<ext>
-}

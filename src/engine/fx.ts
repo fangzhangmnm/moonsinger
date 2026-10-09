@@ -52,7 +52,8 @@ class Eq implements FxInstance {
   readonly kind = "eq"; on = true;
   private sec: [Biquad, Biquad][] = Array.from({ length: 5 }, () => [new Biquad(), new Biquad()]);
   private use = [false, false, false, false, false];
-  constructor(readonly id: string, private sr: number, p: Record<string, number>) { this.setParams(p); }
+  readonly id: string; private sr: number;
+  constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; this.setParams(p); }   // 不用参数属性：Node 的 strip-only TS 不认
   setParams(p: Record<string, number>): void {
     const g = (k: string) => p[k] ?? EQ.params.find((d) => d.id === k)!.default;
     const defs: [boolean, "hp" | "lp" | "lowshelf" | "peak" | "highshelf", number, number, number][] = [
@@ -78,7 +79,8 @@ class Comp implements FxInstance {
   readonly kind = "comp"; on = true;
   private env = 0; private aAtt = 0; private aRel = 0; private T = -18; private R = 3; private K = 6; private makeup = 1;
   gainReductionDb = 0;   // 表用（最近一块压了多少）
-  constructor(readonly id: string, private sr: number, p: Record<string, number>) { this.setParams(p); }
+  readonly id: string; private sr: number;
+  constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; this.setParams(p); }
   setParams(p: Record<string, number>): void {
     const g = (k: string) => p[k] ?? COMP.params.find((d) => d.id === k)!.default;
     this.T = g("thresholdDb"); this.R = Math.max(1, g("ratio")); this.K = Math.max(0, g("kneeDb")); this.makeup = dbToLin(g("makeupDb"));
@@ -112,7 +114,8 @@ const DELAY: FxKindDef = { kind: "delay", name: "延迟", formula: "y[n] = x[n]�
 class Delay implements FxInstance {
   readonly kind = "delay"; on = true;
   private bufL: Float32Array; private bufR: Float32Array; private wr = 0; private D = 1; private fb = 0.35; private mix = 0.3; private lpK = 0.5; private lpL = 0; private lpR = 0;
-  constructor(readonly id: string, private sr: number, p: Record<string, number>) { const max = Math.ceil(2 * sr) + 1; this.bufL = new Float32Array(max); this.bufR = new Float32Array(max); this.setParams(p); }
+  readonly id: string; private sr: number;
+  constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; const max = Math.ceil(2 * sr) + 1; this.bufL = new Float32Array(max); this.bufR = new Float32Array(max); this.setParams(p); }
   setParams(p: Record<string, number>): void {
     const g = (k: string) => p[k] ?? DELAY.params.find((d) => d.id === k)!.default;
     this.D = clamp(Math.round((g("timeMs") / 1000) * this.sr), 1, this.bufL.length - 1); this.fb = clamp(g("feedback"), 0, 0.95); this.mix = clamp(g("mix"), 0, 1);
@@ -146,7 +149,9 @@ class Reverb implements FxInstance {
   private cL: Comb[]; private cR: Comb[]; private aL: Allpass[]; private aR: Allpass[];
   private pre: Float32Array; private preW = 0; private preD = 0;
   private fb = 0.84; private damp = 0.5; private mix = 0.3; private width = 1;
-  constructor(readonly id: string, private sr: number, p: Record<string, number>) {
+  readonly id: string; private sr: number;
+  constructor(id: string, sr: number, p: Record<string, number>) {
+    this.id = id; this.sr = sr;
     const s = sr / 44100, len = (n: number) => Math.max(2, Math.round(n * s));
     this.cL = COMBS.map((n) => new Comb(len(n))); this.cR = COMBS.map((n) => new Comb(len(n + SPREAD)));
     this.aL = ALLPASS.map((n) => new Allpass(len(n))); this.aR = ALLPASS.map((n) => new Allpass(len(n + SPREAD)));
@@ -176,7 +181,8 @@ class Reverb implements FxInstance {
 const GAIN: FxKindDef = { kind: "gain", name: "增益", formula: "y = x · 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: "增益" }] };
 class Gain implements FxInstance {
   readonly kind = "gain"; on = true; private g = 1;
-  constructor(readonly id: string, _sr: number, p: Record<string, number>) { this.setParams(p); }
+  readonly id: string;
+  constructor(id: string, _sr: number, p: Record<string, number>) { this.id = id; this.setParams(p); }
   setParams(p: Record<string, number>): void { this.g = dbToLin(clamp(p.dB ?? 0, -60, 24)); }
   process(L: Float32Array, R: Float32Array | null, n: number): void { if (!this.on || this.g === 1) return; for (let i = 0; i < n; i++) { L[i] *= this.g; if (R) R[i] *= this.g; } }
 }

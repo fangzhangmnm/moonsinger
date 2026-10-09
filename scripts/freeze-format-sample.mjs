@@ -27,7 +27,7 @@ const expected = {
   versions: FORMAT, title: song.title, hum: o.hum, engine: activeInstrument(o.extras, "r1")?.engine ?? "unknown", tokens: canonTokens(song),
   tracks: canonTracks(song), papers: song.papers.map((p) => ({ id: p.id, name: p.name })), parts: song.parts.map((p) => p.id),   // 0.5.0 起：所有纸 × 声部
   role: { name: role.name, sound: role.sound, active: role.active, candidates: role.candidates.map((c) => c.id) },
-  mics: studio.mics.map((m) => m.id),
+  mics: (studio.tracks ?? studio.mics).filter((t) => (t.kind ?? "mic") === "mic").map((m) => m.id),   // v2 起是 tracks（kind mic）；记的还是麦克风 id
 };
 // 已有的版本目录不碰（zip 里有时间戳，重写只会给 diff 添噪音——编辑器 session 2026-10-07 指出）；要重生成加 --force。
 if (!exists || force) {

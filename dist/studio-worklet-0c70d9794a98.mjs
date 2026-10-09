@@ -63,6 +63,432 @@ var Tsf = class {
   }
 };
 
+// src/engine/fx.ts
+var clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+var dbToLin = (dB) => 10 ** (dB / 20);
+var Biquad = class {
+  b0 = 1;
+  b1 = 0;
+  b2 = 0;
+  a1 = 0;
+  a2 = 0;
+  z1 = 0;
+  z2 = 0;
+  // 直接 II 型转置
+  set(type, f, Q, gainDb, sr) {
+    f = clamp(f, 10, sr * 0.45);
+    Q = clamp(Q, 0.1, 20);
+    const w = 2 * Math.PI * f / sr, cs = Math.cos(w), sn = Math.sin(w), A = 10 ** (gainDb / 40), alpha = sn / (2 * Q);
+    let b0 = 1, b1 = 0, b2 = 0, a0 = 1, a1 = 0, a2 = 0;
+    switch (type) {
+      case "lp":
+        b0 = (1 - cs) / 2;
+        b1 = 1 - cs;
+        b2 = (1 - cs) / 2;
+        a0 = 1 + alpha;
+        a1 = -2 * cs;
+        a2 = 1 - alpha;
+        break;
+      case "hp":
+        b0 = (1 + cs) / 2;
+        b1 = -(1 + cs);
+        b2 = (1 + cs) / 2;
+        a0 = 1 + alpha;
+        a1 = -2 * cs;
+        a2 = 1 - alpha;
+        break;
+      case "peak":
+        b0 = 1 + alpha * A;
+        b1 = -2 * cs;
+        b2 = 1 - alpha * A;
+        a0 = 1 + alpha / A;
+        a1 = -2 * cs;
+        a2 = 1 - alpha / A;
+        break;
+      case "lowshelf": {
+        const s = 2 * Math.sqrt(A) * alpha;
+        b0 = A * (A + 1 - (A - 1) * cs + s);
+        b1 = 2 * A * (A - 1 - (A + 1) * cs);
+        b2 = A * (A + 1 - (A - 1) * cs - s);
+        a0 = A + 1 + (A - 1) * cs + s;
+        a1 = -2 * (A - 1 + (A + 1) * cs);
+        a2 = A + 1 + (A - 1) * cs - s;
+        break;
+      }
+      case "highshelf": {
+        const s = 2 * Math.sqrt(A) * alpha;
+        b0 = A * (A + 1 + (A - 1) * cs + s);
+        b1 = -2 * A * (A - 1 + (A + 1) * cs);
+        b2 = A * (A + 1 + (A - 1) * cs - s);
+        a0 = A + 1 - (A - 1) * cs + s;
+        a1 = 2 * (A - 1 - (A + 1) * cs);
+        a2 = A + 1 - (A - 1) * cs - s;
+        break;
+      }
+    }
+    this.b0 = b0 / a0;
+    this.b1 = b1 / a0;
+    this.b2 = b2 / a0;
+    this.a1 = a1 / a0;
+    this.a2 = a2 / a0;
+  }
+  bypass() {
+    this.b0 = 1;
+    this.b1 = 0;
+    this.b2 = 0;
+    this.a1 = 0;
+    this.a2 = 0;
+  }
+  process(x, n) {
+    const { b0, b1, b2, a1, a2 } = this;
+    let z1 = this.z1, z2 = this.z2;
+    for (let i = 0; i < n; i++) {
+      const v = x[i], y = b0 * v + z1;
+      z1 = b1 * v - a1 * y + z2;
+      z2 = b2 * v - a2 * y;
+      x[i] = y;
+    }
+    this.z1 = z1;
+    this.z2 = z2;
+  }
+};
+var EQ = {
+  kind: "eq",
+  name: "\u5747\u8861",
+  formula: "\u6BCF\u6BB5\u4E00\u4E2A\u53CC\u4E8C\u9636 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)\uFF0C\u7CFB\u6570\u6309 RBJ Audio EQ Cookbook\uFF08hp / lp Q = 0.707\uFF1B\u67B6\u5B50 Q = 0.707\uFF1B\u5CF0 Q \u53EF\u8C03\uFF09\u3002hpHz / lpHz = 0 \u5173\u3002",
+  params: [
+    { id: "hpHz", unit: "Hz", min: 0, max: 2e3, default: 0, label: "\u4F4E\u5207" },
+    { id: "lpHz", unit: "Hz", min: 0, max: 2e4, default: 0, label: "\u9AD8\u5207" },
+    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: "\u4F4E\u67B6" },
+    { id: "lowHz", unit: "Hz", min: 40, max: 1e3, default: 200, label: "\u4F4E\u67B6\u9891\u7387" },
+    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: "\u4E2D\u5CF0" },
+    { id: "midHz", unit: "Hz", min: 100, max: 1e4, default: 1500, label: "\u4E2D\u5CF0\u9891\u7387" },
+    { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: "\u4E2D\u5CF0\u5BBD" },
+    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: "\u9AD8\u67B6" },
+    { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, default: 5e3, label: "\u9AD8\u67B6\u9891\u7387" }
+  ]
+};
+var Eq = class {
+  kind = "eq";
+  on = true;
+  sec = Array.from({ length: 5 }, () => [new Biquad(), new Biquad()]);
+  use = [false, false, false, false, false];
+  id;
+  sr;
+  constructor(id, sr, p) {
+    this.id = id;
+    this.sr = sr;
+    this.setParams(p);
+  }
+  // 不用参数属性：Node 的 strip-only TS 不认
+  setParams(p) {
+    const g = (k) => p[k] ?? EQ.params.find((d) => d.id === k).default;
+    const defs = [
+      [g("hpHz") > 0, "hp", g("hpHz"), 0.707, 0],
+      [g("lpHz") > 0, "lp", g("lpHz"), 0.707, 0],
+      [g("lowDb") !== 0, "lowshelf", g("lowHz"), 0.707, g("lowDb")],
+      [g("midDb") !== 0, "peak", g("midHz"), g("midQ"), g("midDb")],
+      [g("highDb") !== 0, "highshelf", g("highHz"), 0.707, g("highDb")]
+    ];
+    defs.forEach(([on, type, f, q, db], k) => {
+      this.use[k] = on;
+      for (const b of this.sec[k]) if (on) b.set(type, f, q, db, this.sr);
+      else b.bypass();
+    });
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    for (let k = 0; k < 5; k++) {
+      if (!this.use[k]) continue;
+      this.sec[k][0].process(L, n);
+      if (R) this.sec[k][1].process(R, n);
+    }
+  }
+};
+var COMP = {
+  kind: "comp",
+  name: "\u538B\u7F29",
+  formula: "\u5305\u7EDC e[n] = max(|x|, e[n-1]\xB7r) \u8D77\uFF08attack\uFF09\u843D\uFF08release\uFF09\u5404\u4E00\u4E2A\u65F6\u95F4\u5E38\u6570\uFF1B\u8D85\u8FC7 threshold \u7684\u90E8\u5206\u6309 ratio \u538B\uFF08kneeDb \u5185\u8F6F\u62D0\u70B9\uFF1Ag = -(x - T + K/2)^2 \xB7 (1 - 1/R) / (2K)\uFF09\uFF1B\u589E\u76CA = 10^(g/20) \xD7 10^(makeup/20)\u3002key \u7ED9\u4E86 = \u542C\u522B\u7684\u8F68\uFF08\u4FA7\u94FE\uFF09\uFF0C\u4E0D\u7ED9 = \u542C\u81EA\u5DF1\u3002",
+  params: [
+    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: "\u9608\u503C" },
+    { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: "\u6BD4\u4F8B" },
+    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: "\u8D77" },
+    { id: "releaseMs", unit: "ms", min: 5, max: 2e3, default: 120, label: "\u843D" },
+    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: "\u62D0\u70B9" },
+    { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: "\u8865\u507F" }
+  ]
+};
+var Comp = class {
+  kind = "comp";
+  on = true;
+  env = 0;
+  aAtt = 0;
+  aRel = 0;
+  T = -18;
+  R = 3;
+  K = 6;
+  makeup = 1;
+  gainReductionDb = 0;
+  // 表用（最近一块压了多少）
+  id;
+  sr;
+  constructor(id, sr, p) {
+    this.id = id;
+    this.sr = sr;
+    this.setParams(p);
+  }
+  setParams(p) {
+    const g = (k) => p[k] ?? COMP.params.find((d) => d.id === k).default;
+    this.T = g("thresholdDb");
+    this.R = Math.max(1, g("ratio"));
+    this.K = Math.max(0, g("kneeDb"));
+    this.makeup = dbToLin(g("makeupDb"));
+    this.aAtt = Math.exp(-1 / (Math.max(1e-4, g("attackMs") / 1e3) * this.sr));
+    this.aRel = Math.exp(-1 / (Math.max(1e-3, g("releaseMs") / 1e3) * this.sr));
+  }
+  gainDb(levelDb) {
+    const { T, R, K } = this, over = levelDb - T;
+    if (K > 0 && over > -K / 2 && over < K / 2) {
+      const t = over + K / 2;
+      return -(t * t * (1 - 1 / R)) / (2 * K);
+    }
+    return over <= 0 ? 0 : -over * (1 - 1 / R);
+  }
+  process(L, R, n, key) {
+    if (!this.on) return;
+    let env = this.env, minG = 0;
+    for (let i = 0; i < n; i++) {
+      const k = key ? Math.abs(key[i]) : Math.max(Math.abs(L[i]), R ? Math.abs(R[i]) : 0);
+      env = k > env ? k + (env - k) * this.aAtt : k + (env - k) * this.aRel;
+      const lvl = env > 1e-7 ? 20 * Math.log10(env) : -140, gdb = this.gainDb(lvl), g = dbToLin(gdb) * this.makeup;
+      if (gdb < minG) minG = gdb;
+      L[i] *= g;
+      if (R) R[i] *= g;
+    }
+    this.env = env;
+    this.gainReductionDb = minG;
+  }
+};
+var DELAY = {
+  kind: "delay",
+  name: "\u5EF6\u8FDF",
+  formula: "y[n] = x[n]\xB7(1-mix) + d[n]\xB7mix\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002",
+  params: [
+    { id: "timeMs", unit: "ms", min: 1, max: 2e3, default: 375, label: "\u65F6\u95F4" },
+    { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: "\u53CD\u9988" },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "\u6E7F" },
+    { id: "dampHz", unit: "Hz", min: 500, max: 2e4, default: 6e3, label: "\u53CD\u9988\u9AD8\u5207" }
+  ]
+};
+var Delay = class {
+  kind = "delay";
+  on = true;
+  bufL;
+  bufR;
+  wr = 0;
+  D = 1;
+  fb = 0.35;
+  mix = 0.3;
+  lpK = 0.5;
+  lpL = 0;
+  lpR = 0;
+  id;
+  sr;
+  constructor(id, sr, p) {
+    this.id = id;
+    this.sr = sr;
+    const max = Math.ceil(2 * sr) + 1;
+    this.bufL = new Float32Array(max);
+    this.bufR = new Float32Array(max);
+    this.setParams(p);
+  }
+  setParams(p) {
+    const g = (k) => p[k] ?? DELAY.params.find((d) => d.id === k).default;
+    this.D = clamp(Math.round(g("timeMs") / 1e3 * this.sr), 1, this.bufL.length - 1);
+    this.fb = clamp(g("feedback"), 0, 0.95);
+    this.mix = clamp(g("mix"), 0, 1);
+    this.lpK = 1 - Math.exp(-2 * Math.PI * clamp(g("dampHz"), 100, this.sr * 0.45) / this.sr);
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    const len = this.bufL.length, D = this.D, fb = this.fb, mix = this.mix, k = this.lpK;
+    for (let i = 0; i < n; i++) {
+      const rd = (this.wr - D + len) % len;
+      const dl = this.bufL[rd];
+      this.lpL += (dl - this.lpL) * k;
+      this.bufL[this.wr] = L[i] + this.lpL * fb;
+      L[i] = L[i] * (1 - mix) + dl * mix;
+      if (R) {
+        const dr = this.bufR[rd];
+        this.lpR += (dr - this.lpR) * k;
+        this.bufR[this.wr] = R[i] + this.lpR * fb;
+        R[i] = R[i] * (1 - mix) + dr * mix;
+      }
+      this.wr = (this.wr + 1) % len;
+    }
+  }
+};
+var REVERB = {
+  kind: "reverb",
+  name: "\u6DF7\u54CD",
+  formula: "Freeverb\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7(1-mix) + wet\xB7mix\u3002",
+  params: [
+    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u623F\u95F4\u5927\u5C0F" },
+    { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u9AD8\u9891\u5438\u6536" },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "\u6E7F" },
+    { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: "\u9884\u5EF6\u8FDF" },
+    { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: "\u5BBD\u5EA6" }
+  ],
+  stereoOnly: true
+};
+var COMBS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617];
+var ALLPASS = [556, 441, 341, 225];
+var SPREAD = 23;
+var Comb = class {
+  buf;
+  idx = 0;
+  store = 0;
+  constructor(n) {
+    this.buf = new Float32Array(n);
+  }
+  tick(x, fb, damp) {
+    const out = this.buf[this.idx];
+    this.store = out * (1 - damp) + this.store * damp;
+    this.buf[this.idx] = x + this.store * fb;
+    this.idx = (this.idx + 1) % this.buf.length;
+    return out;
+  }
+};
+var Allpass = class {
+  buf;
+  idx = 0;
+  constructor(n) {
+    this.buf = new Float32Array(n);
+  }
+  tick(x) {
+    const b = this.buf[this.idx], out = -x + b;
+    this.buf[this.idx] = x + b * 0.5;
+    this.idx = (this.idx + 1) % this.buf.length;
+    return out;
+  }
+};
+var Reverb = class {
+  kind = "reverb";
+  on = true;
+  cL;
+  cR;
+  aL;
+  aR;
+  pre;
+  preW = 0;
+  preD = 0;
+  fb = 0.84;
+  damp = 0.5;
+  mix = 0.3;
+  width = 1;
+  id;
+  sr;
+  constructor(id, sr, p) {
+    this.id = id;
+    this.sr = sr;
+    const s = sr / 44100, len = (n) => Math.max(2, Math.round(n * s));
+    this.cL = COMBS.map((n) => new Comb(len(n)));
+    this.cR = COMBS.map((n) => new Comb(len(n + SPREAD)));
+    this.aL = ALLPASS.map((n) => new Allpass(len(n)));
+    this.aR = ALLPASS.map((n) => new Allpass(len(n + SPREAD)));
+    this.pre = new Float32Array(Math.ceil(0.2 * sr) + 1);
+    this.setParams(p);
+  }
+  setParams(p) {
+    const g = (k) => p[k] ?? REVERB.params.find((d) => d.id === k).default;
+    this.fb = 0.7 + 0.28 * clamp(g("room"), 0, 1);
+    this.damp = clamp(g("damp"), 0, 1) * 0.4;
+    this.mix = clamp(g("mix"), 0, 1);
+    this.width = clamp(g("width"), 0, 1);
+    this.preD = clamp(Math.round(g("preDelayMs") / 1e3 * this.sr), 0, this.pre.length - 1);
+  }
+  process(L, R, n) {
+    if (!this.on) return;
+    const Rr = R ?? L, mix = this.mix, w1 = (1 + this.width) / 2, w2 = (1 - this.width) / 2, plen = this.pre.length;
+    for (let i = 0; i < n; i++) {
+      const inp = (L[i] + Rr[i]) * 0.015;
+      this.pre[this.preW] = inp;
+      const x = this.pre[(this.preW - this.preD + plen) % plen];
+      this.preW = (this.preW + 1) % plen;
+      let oL = 0, oR = 0;
+      for (let c = 0; c < 8; c++) {
+        oL += this.cL[c].tick(x, this.fb, this.damp);
+        oR += this.cR[c].tick(x, this.fb, this.damp);
+      }
+      for (let a = 0; a < 4; a++) {
+        oL = this.aL[a].tick(oL);
+        oR = this.aR[a].tick(oR);
+      }
+      const wl = oL * w1 + oR * w2, wr = oR * w1 + oL * w2;
+      L[i] = L[i] * (1 - mix) + wl * mix;
+      if (R) R[i] = R[i] * (1 - mix) + wr * mix;
+    }
+  }
+};
+var Gain = class {
+  kind = "gain";
+  on = true;
+  g = 1;
+  id;
+  constructor(id, _sr, p) {
+    this.id = id;
+    this.setParams(p);
+  }
+  setParams(p) {
+    this.g = dbToLin(clamp(p.dB ?? 0, -60, 24));
+  }
+  process(L, R, n) {
+    if (!this.on || this.g === 1) return;
+    for (let i = 0; i < n; i++) {
+      L[i] *= this.g;
+      if (R) R[i] *= this.g;
+    }
+  }
+};
+function createFx(spec, sr) {
+  const p = Object.fromEntries(Object.entries(spec.params ?? {}).filter(([, v]) => typeof v === "number" && Number.isFinite(v)));
+  let fx = null;
+  switch (spec.kind) {
+    case "eq":
+      fx = new Eq(spec.id, sr, p);
+      break;
+    case "comp":
+      fx = new Comp(spec.id, sr, p);
+      break;
+    case "delay":
+      fx = new Delay(spec.id, sr, p);
+      break;
+    case "reverb":
+      fx = new Reverb(spec.id, sr, p);
+      break;
+    case "gain":
+      fx = new Gain(spec.id, sr, p);
+      break;
+  }
+  if (fx) fx.on = spec.on !== false;
+  return fx;
+}
+function buildChain(specs, prev, sr) {
+  const out = [];
+  for (const s of specs) {
+    const had = prev.find((f) => f.id === s.id && f.kind === s.kind);
+    if (had) {
+      had.setParams(Object.fromEntries(Object.entries(s.params ?? {}).filter(([, v]) => typeof v === "number")));
+      had.on = s.on !== false;
+      out.push(had);
+      continue;
+    }
+    const fx = createFx(s, sr);
+    if (fx) out.push(fx);
+  }
+  return out;
+}
+
 // src/engine/studio.ts
 var BLOCK = 128;
 var CEILING = 0.98;
@@ -79,9 +505,9 @@ var V_RELEASE = 0.04;
 var V_CUT = 6e-3;
 var V_GLIDE = 0.012;
 var LOOKAHEAD = 30;
-var dbToLin = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
+var dbToLin2 = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
 var panGains = (gainDb, pan) => {
-  const g = dbToLin(gainDb), p = Math.max(-1, Math.min(1, pan));
+  const g = dbToLin2(gainDb), p = Math.max(-1, Math.min(1, pan));
   return [g * Math.cos((p + 1) * Math.PI / 4), g * Math.sin((p + 1) * Math.PI / 4)];
 };
 var DEFAULT_CH = { gainDb: 0, pan: 0, mute: false, solo: false };
@@ -96,8 +522,10 @@ var Studio = class {
   order = [];
   channels = /* @__PURE__ */ new Map();
   // 时间线换了也留着（边放边调不丢）
+  buses = /* @__PURE__ */ new Map();
   master = { gainDb: 0, limiter: true };
   masterLin = 1;
+  masterFx = [];
   // 走带
   playing = false;
   pos = 0;
@@ -227,12 +655,25 @@ var Studio = class {
         const cur = this.channels.get(m.id) ?? { ...DEFAULT_CH }, next = { ...cur, ...m.p };
         this.channels.set(m.id, next);
         const t = this.tracks.get(m.id);
-        if (t) t.ch = next;
+        if (t) {
+          t.ch = next;
+          if (m.p.chain !== void 0) t.chFx = buildChain(m.p.chain, t.chFx, this.sr);
+        }
+        return;
+      }
+      case "buses": {
+        const old = this.buses;
+        this.buses = /* @__PURE__ */ new Map();
+        for (const b of m.buses) {
+          const had = old.get(b.id);
+          this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK) });
+        }
         return;
       }
       case "master":
         this.master = { ...this.master, ...m.p };
-        this.masterLin = dbToLin(this.master.gainDb);
+        this.masterLin = dbToLin2(this.master.gainDb);
+        if (m.p.chain !== void 0) this.masterFx = buildChain(m.p.chain, this.masterFx, this.sr);
         return;
       case "play":
         if (m.gen !== void 0) this.gen = m.gen;
@@ -273,9 +714,11 @@ var Studio = class {
     this.order = [];
     for (const spec of tl.tracks) {
       const prev = old.get(spec.id);
-      const t = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1 };
+      const t = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
       t.spec = spec;
       t.ch = this.channels.get(spec.id) ?? t.ch;
+      t.perfFx = buildChain(spec.chain ?? [], t.perfFx, this.sr);
+      if (!prev) t.chFx = buildChain(t.ch.chain ?? [], [], this.sr);
       if (spec.kind === "sf") {
         const bank = this.banks.get(spec.sha) ?? null;
         if (t.sf && t.sf.bank !== bank) {
@@ -342,7 +785,7 @@ var Studio = class {
         let k = 0;
         while (k < segs.length - 1 && this.pos >= segs[k].t1) k++;
         t.gk = k;
-        if (chase) t.y = dbToLin(segs[k].dB);
+        if (chase) t.y = dbToLin2(segs[k].dB);
       }
       if (t.spec.kind === "clips") continue;
       const notes = t.spec.notes;
@@ -420,7 +863,25 @@ var Studio = class {
     this.busR.fill(0, 0, n);
     this.audL.fill(0, 0, n);
     this.audR.fill(0, 0, n);
+    for (const b of this.buses.values()) {
+      b.L.fill(0, 0, n);
+      b.R.fill(0, 0, n);
+    }
     if (this.playing) this.renderTransport(n);
+    for (const b of this.buses.values()) {
+      for (const fx of b.fx) fx.process(b.L, b.R, n, null);
+      const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n;
+      let cl = b.gl, cr = b.gr;
+      for (let i = 0; i < n; i++) {
+        cl += dl;
+        cr += dr;
+        this.busL[i] += b.L[i] * cl * Math.SQRT2;
+        this.busR[i] += b.R[i] * cr * Math.SQRT2;
+      }
+      b.gl = gl;
+      b.gr = gr;
+    }
+    for (const fx of this.masterFx) fx.process(this.busL, this.busR, n, null);
     this.renderAuditions(n);
     const g = this.masterLin;
     if (this.master.limiter) this.limit(n, g);
@@ -537,12 +998,13 @@ var Studio = class {
     }
     return true;
   }
-  /** 各声部出 cnt 个采样进母线（从 off 起）。notesOn = 排新音；clipsOn = 块前进（false = 冻着，块不出声）。 */
+  /** 各声部出 cnt 个采样进母线 / 总线（从 off 起）。notesOn = 排新音；clipsOn = 块前进（false = 冻着，块不出声）。
+   *  两趟（侧链要先看到别的轨的声）：① 每轨 出声 → 表情曲线 → 块淡入淡出 → 演奏者的链 → src；② 每轨 src → 通道链（压缩器的 key 读别的轨的 src）→ 静音 / 独奏 → 推子 / 声像 → 去总轨或总线，再按发送量发到总线。 */
   renderTracks(off, cnt, notesOn, clipsOn) {
     const solo = this.order.some((id) => this.tracks.get(id).ch.solo);
     const t0 = this.pos, sr = this.sr;
     for (const id of this.order) {
-      const t = this.tracks.get(id), mono = this.mono;
+      const t = this.tracks.get(id), mono = t.src;
       mono.fill(0, 0, cnt);
       if (t.spec.kind === "clips") {
         if (clipsOn) this.renderClips(t, mono, cnt, t0);
@@ -553,7 +1015,7 @@ var Studio = class {
         for (let i = 0; i < cnt; i++) {
           const tt = t0 + i / sr;
           while (t.gk < segs.length - 1 && tt >= segs[t.gk].t1) t.gk++;
-          t.y += (dbToLin(segs[t.gk].dB) - t.y) * a;
+          t.y += (dbToLin2(segs[t.gk].dB) - t.y) * a;
           mono[i] *= t.y;
         }
       }
@@ -567,19 +1029,41 @@ var Studio = class {
           mono[i] *= t.env;
         }
       }
+      for (const fx of t.perfFx) fx.process(mono, null, cnt, null);
+    }
+    for (const id of this.order) {
+      const t = this.tracks.get(id), out = t.out;
+      out.set(t.src.subarray(0, cnt));
+      for (const fx of t.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t, fx.id) : null);
       const audible = solo ? t.ch.solo : !t.ch.mute;
       const [gl, gr] = audible ? panGains(t.ch.gainDb, t.ch.pan) : [0, 0];
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
+      const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : void 0, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr;
       for (let i = 0; i < cnt; i++) {
         cl += dl;
         cr += dr;
-        this.busL[off + i] += mono[i] * cl;
-        this.busR[off + i] += mono[i] * cr;
+        L[off + i] += out[i] * cl;
+        R[off + i] += out[i] * cr;
+      }
+      if (t.ch.sends) for (const sd of t.ch.sends) {
+        const b = this.buses.get(sd.to);
+        if (!b) continue;
+        const g = dbToLin2(sd.gainDb), sl = gl * g, sr2 = gr * g;
+        for (let i = 0; i < cnt; i++) {
+          b.L[off + i] += out[i] * sl;
+          b.R[off + i] += out[i] * sr2;
+        }
       }
       t.gl = gl;
       t.gr = gr;
     }
+  }
+  /** 压缩器的侧链：通道条上 id 是 fxId 的那台写了 key = 别的轨 id → 那条轨这一段的第一趟输出；没写 / 找不到 = null（听自己）。 */
+  keyOf(t, fxId) {
+    const spec = t.ch.chain?.find((f) => f.id === fxId);
+    if (!spec?.key || spec.key === t.spec.id) return null;
+    return this.tracks.get(spec.key)?.src ?? null;
   }
   renderClips(t, mono, cnt, t0) {
     if (t.spec.kind !== "clips") return;
@@ -835,4 +1319,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-6f9247d21a39.mjs.map
+//# sourceMappingURL=studio-worklet-0c70d9794a98.mjs.map
