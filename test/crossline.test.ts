@@ -49,3 +49,13 @@ describe("符杠：力度记号 / 渐强渐弱 / 句号夹在中间不打断（2
     eq(beams(marked), plain);
   });
 });
+
+describe("力度记号 / 渐强渐弱不占地方（2026-10-08，user「移动力度标识的时候最好音符的渲染布局一点也不改…不要被力度标识的插入影响」）", () => {
+  it("插几个力度记号 / 渐强渐弱：每个音的 x、在哪一行都不变", () => {
+    const base = Array.from({ length: 24 }, (_, k) => n(k % 3 ? TPQ / 2 : TPQ, k));
+    const marked: Token[] = [];
+    base.forEach((t, k) => { if (k % 5 === 2) marked.push({ kind: "dyn", id: id++, value: k % 2 ? "f" : "p" } as Token); if (k % 7 === 3) marked.push({ kind: "hairpin", id: id++, dir: "cresc" } as Token); marked.push(t); });
+    const pos = (items: Token[]) => { const L = lay(song(items), 420); return items.flatMap((t, i) => (t.kind === "note" ? [L.notes.find((x) => x.index === i + 3)!] : [])).map((x) => `${x.system}:${x.x.toFixed(2)}`).join(" "); };
+    eq(pos(marked), pos(base));
+  });
+});

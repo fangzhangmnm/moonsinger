@@ -217,8 +217,10 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
     }
     if (t.kind === "tempo") { flushFull(); units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "phrase") { flushFull(); units.push({ kind: "phrase", index: i, w: 1.0, x: 0, system: 0, tick, staff: 1 }); return; }
-    if (t.kind === "dyn") { flushFull(); units.push({ kind: "dyn", index: i, value: t.value, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
-    if (t.kind === "hairpin") { flushFull(); units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
+    // 力度记号 / 渐强渐弱不占横向的地方（画在谱上下，不在音和音之间）：插 / 挪 / 删它们，音的位置、间距、折行一点都不变
+    //   （2026-10-08 Opus 5.5，user「移动力度标识的时候最好音符的渲染布局一点也不改…尤其是间隔之类的，不要被力度标识的插入影响」；以前各占 0.3 个间距）
+    if (t.kind === "dyn") { flushFull(); units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
+    if (t.kind === "hairpin") { flushFull(); units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
     const isNote = t.kind === "note", nt = t as NoteTok;
     const pitch = isNote ? effectivePitch(tokens, i) : null;
     const pitches = isNote ? (nt.pitch ? allPitches(nt) : [pitch!]) : [];
@@ -632,6 +634,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const shOf = (staff: Staff) => (clefOf(staff) === "F" ? 12 : 0);   // 低音谱号：同一个音在谱上高 12 级（高音谱号顶线 F5 = 38，低音谱号顶线 A3 = 26）
       const dIdx = (p: Pitch, staff: Staff) => diatonicIndex(p) + shOf(staff);
       const inSel = (i: number) => focused && !!sel && i >= sel.from && i < sel.to;
+      const dynRight = new Map<number, number>();   // 每一行上一个力度字的右边（px）：防叠
       const RW = (u: Unit) => rowOf(u.system, r, u.staff - 1);
       const lyricRow = (s: number) => rowOf(s, r, q.staves - 1);   // 歌词在最下面那条谱表下面
       // 选中的底色（先画，压在最下面）
@@ -701,7 +704,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           continue;
         }
         if (u.kind === "dyn") {   // 力度：谱上方（声乐谱的下面是歌词），和后面那个音左对齐；基线在第五线上方 1.2 个间距——再高就撞开头的速度记号（它的基线约 2.9）
-          const dr = rowOf(u.system, r, 0), dy = dynYAt.get(dr) ?? yOf(row, TOP_LINE + 2.4);
+          const dr = rowOf(u.system, r, 0), [cl0, cr0] = DYN_INK[u.value];
+          let dy = dynYAt.get(dr) ?? yOf(row, TOP_LINE + 2.4);
+          // 力度记号不占横向的地方（音的间距不因它变）→ 挨得太近的两个（相邻的短音上）会叠在一起：后一个往离谱远的那边挪一行，还和自己的音对齐
+          const lx = P(u.x + 0.3 + cl0), prev = dynRight.get(dr);
+          if (prev !== undefined && lx < prev + P(0.3)) dy += dy < yOf(dr, MID_LINE) ? -P(1.9) : P(1.9);
+          else dynRight.set(dr, P(u.x + 0.3 + cr0));
           prims.push({ t: "glyph", x: P(u.x + 0.3), y: dy, ch: DYN_GLYPH[u.value], cls: o.hot?.has(tokens[u.index].id) ? "dyn hot" : inSel(u.index) ? "dyn sel" : "dyn" });
           const [il, ir, iu, id] = DYN_INK[u.value];
           dyns.push({ index: u.index, kind: "dyn", system: dr, x: P(u.x + 0.3 + il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
@@ -895,10 +903,18 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const ci = LEVELS.indexOf(curDyn as (typeof LEVELS)[number]), against = !!endU && endU.kind === "dyn" && (h.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci : LEVELS.indexOf(endU.value) >= ci);
         const IMPLIED_W = 3;   // 灰字「(mp)」大概多宽（sp，1.3 号斜体）
         const endX = endU ? P(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : nhX(lastChunk) + nhW(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;   // 终点的字画在 x + 0.3
-        if (s1 < s0 || (s1 === s0 && endX - startX < P(1))) return;
+        if (s1 < s0) return;
+        // 太短也照样画（以前不到 1 个间距就整条不画 = 静默没了）：至少 MIN_PIN；灰字放不下就挪到发夹末端上面
+        let endXd = endX, labelAbove = false;
+        const MIN_PIN = P(1.4);
+        if (s1 === s0 && endXd - startX < MIN_PIN) {
+          const roomy = against ? endXd + P(IMPLIED_W + 0.4) : endXd;   // 不让灰字占地方时能有多长
+          if (against) labelAbove = true;
+          endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
+        }
         const leftOf = (sy: number) => Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((c) => nhX(c)), P(right)) - P(1);
         const segs: [number, number, number][] = [];
-        for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf(sy), sy === s1 ? endX : P(right) - P(0.3)]);
+        for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf(sy), sy === s1 ? endXd : P(right) - P(0.3)]);
         const total = segs.reduce((n, [, a, b]) => n + Math.max(0, b - a), 0) || 1, H = P(0.5);
         const midY = (sy: number) => (dynYAt.get(rowOf(sy, r, 0)) ?? yOf(rowOf(sy, r, 0), TOP_LINE + 2.4)) - P(0.5);   // 发夹 / 虚线的中线：力度字的半腰
         if (total > P(right - MARGIN)) {   // 太长：「cresc.」+ 虚线，跨行接着画虚线
@@ -926,7 +942,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         }
         if (!endU || against) {   // 推定的终点：现在的力度往上 / 往下一档（没有终点 / 终点和方向反着）
           const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
-          prims.push({ t: "text", x: endX + P(0.4), y: (dynYAt.get(rowOf(s1, r, 0)) ?? yOf(rowOf(s1, r, 0), TOP_LINE + 2.4)) + P(0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied", size: P(1.3), anchor: "start" });
+          prims.push({ t: "text", x: labelAbove ? endXd - P(1.2) : endXd + P(0.4), y: (dynYAt.get(rowOf(s1, r, 0)) ?? yOf(rowOf(s1, r, 0), TOP_LINE + 2.4)) + P(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied", size: P(1.3), anchor: "start" });
         }
       });
       // 9. 歌词连字符（英文断开的音节）：画在两个歌词中间

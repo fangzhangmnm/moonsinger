@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.28-2026-10-08";
+var APP_VERSION = "v0.7.29-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4833,12 +4833,12 @@ function unitsOf(tokens, o10) {
     }
     if (t10.kind === "dyn") {
       flushFull();
-      units.push({ kind: "dyn", index: i10, value: t10.value, w: 0.3, x: 0, system: 0, tick, staff: 1 });
+      units.push({ kind: "dyn", index: i10, value: t10.value, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t10.kind === "hairpin") {
       flushFull();
-      units.push({ kind: "hairpin", index: i10, dir: t10.dir, w: 0.3, x: 0, system: 0, tick, staff: 1 });
+      units.push({ kind: "hairpin", index: i10, dir: t10.dir, w: 0, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     const isNote = t10.kind === "note", nt2 = t10;
@@ -5360,6 +5360,7 @@ function engrave(song, o10) {
       const shOf = (staff) => clefOf(staff) === "F" ? 12 : 0;
       const dIdx = (p2, staff) => diatonicIndex(p2) + shOf(staff);
       const inSel = (i10) => focused && !!sel && i10 >= sel.from && i10 < sel.to;
+      const dynRight = /* @__PURE__ */ new Map();
       const RW = (u2) => rowOf(u2.system, r10, u2.staff - 1);
       const lyricRow = (s10) => rowOf(s10, r10, q2.staves - 1);
       if (focused && sel) {
@@ -5435,7 +5436,11 @@ function engrave(song, o10) {
           continue;
         }
         if (u2.kind === "dyn") {
-          const dr = rowOf(u2.system, r10, 0), dy = dynYAt.get(dr) ?? yOf(row, TOP_LINE + 2.4);
+          const dr = rowOf(u2.system, r10, 0), [cl0, cr0] = DYN_INK[u2.value];
+          let dy = dynYAt.get(dr) ?? yOf(row, TOP_LINE + 2.4);
+          const lx2 = P2(u2.x + 0.3 + cl0), prev = dynRight.get(dr);
+          if (prev !== void 0 && lx2 < prev + P2(0.3)) dy += dy < yOf(dr, MID_LINE) ? -P2(1.9) : P2(1.9);
+          else dynRight.set(dr, P2(u2.x + 0.3 + cr0));
           prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: dy, ch: DYN_GLYPH[u2.value], cls: o10.hot?.has(tokens[u2.index].id) ? "dyn hot" : inSel(u2.index) ? "dyn sel" : "dyn" });
           const [il2, ir2, iu2, id2] = DYN_INK[u2.value];
           dyns.push({ index: u2.index, kind: "dyn", system: dr, x: P2(u2.x + 0.3 + il2 - 0.3), y: dy - P2(iu2 + 0.4), w: P2(ir2 - il2 + 0.6), h: P2(iu2 + id2 + 0.8) });
@@ -5658,10 +5663,17 @@ function engrave(song, o10) {
         const ci2 = LEVELS.indexOf(curDyn), against = !!endU && endU.kind === "dyn" && (h2.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci2 : LEVELS.indexOf(endU.value) >= ci2);
         const IMPLIED_W = 3;
         const endX = endU ? P2(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : nhX(lastChunk) + nhW(lastChunk) + P2(0.8), s12 = endU ? endU.system : lastChunk.system;
-        if (s12 < s02 || s12 === s02 && endX - startX < P2(1)) return;
+        if (s12 < s02) return;
+        let endXd = endX, labelAbove = false;
+        const MIN_PIN = P2(1.4);
+        if (s12 === s02 && endXd - startX < MIN_PIN) {
+          const roomy = against ? endXd + P2(IMPLIED_W + 0.4) : endXd;
+          if (against) labelAbove = true;
+          endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
+        }
         const leftOf = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((c10) => nhX(c10)), P2(right)) - P2(1);
         const segs = [];
-        for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf(sy2), sy2 === s12 ? endX : P2(right) - P2(0.3)]);
+        for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf(sy2), sy2 === s12 ? endXd : P2(right) - P2(0.3)]);
         const total = segs.reduce((n10, [, a10, b3]) => n10 + Math.max(0, b3 - a10), 0) || 1, H3 = P2(0.5);
         const midY = (sy2) => (dynYAt.get(rowOf(sy2, r10, 0)) ?? yOf(rowOf(sy2, r10, 0), TOP_LINE + 2.4)) - P2(0.5);
         if (total > P2(right - MARGIN)) {
@@ -5691,7 +5703,7 @@ function engrave(song, o10) {
         }
         if (!endU || against) {
           const k2 = Math.max(0, Math.min(LEVELS.length - 1, ci2 + (h2.dir === "cresc" ? 1 : -1)));
-          prims.push({ t: "text", x: endX + P2(0.4), y: (dynYAt.get(rowOf(s12, r10, 0)) ?? yOf(rowOf(s12, r10, 0), TOP_LINE + 2.4)) + P2(0.1), s: `(${LEVELS[k2]})`, cls: "dyn-implied", size: P2(1.3), anchor: "start" });
+          prims.push({ t: "text", x: labelAbove ? endXd - P2(1.2) : endXd + P2(0.4), y: (dynYAt.get(rowOf(s12, r10, 0)) ?? yOf(rowOf(s12, r10, 0), TOP_LINE + 2.4)) + P2(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k2]})`, cls: "dyn-implied", size: P2(1.3), anchor: "start" });
         }
       });
       for (let n10 = 0; n10 < partLyrics.length; n10++) {
@@ -30463,4 +30475,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c714c8d77962.mjs.map
+//# sourceMappingURL=moonsinger-641ce6c251af.mjs.map
