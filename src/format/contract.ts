@@ -39,6 +39,10 @@ export interface ScoreExtV2 {
    *  unwritten = 这张纸还没写音高的音（note id）。自动小节线只画不存（0.2.x 现状）。曲段名在那份 MusicXML 的 <movement-title>。
    *  MusicXML 正本里我们自己认 id 的两样（别的软件照常显示；自家读回来按 id 认出来，不加 JSON 字段、不升版本）：
    *  渐到 = 虚线 <wedge id="ramp-…">；风格记号（拍子轻重，2026-10-08 深夜 Opus 5.5）= <direction><words id="groove.<预设 id>.<幅度百分数>.<token id>">名字</words>。
+   *  谱内反复 / 跳转（2026-10-09 Opus 5.5；不升版本：MusicXML 原生、老版本 app 读到 = 不认的元素）：|: / :| / :|: = <barline location="left|right"> 的
+   *  <repeat direction="forward|backward" times>（纸头的 |: 不开空小节）；房子 = <barline location="left"><ending number="1, 2" type="start">，被 :| 收 = stop、最后一个 = discontinue；
+   *  Segno / Coda = <direction><direction-type><segno|coda id="nav.<种类>.<token id>"/></direction-type><sound segno|coda/>；Fine / To Coda / D.C.… / D.S.… = <words id="nav.…">字</words> +
+   *  <sound fine | tocoda | dacapo | dalsegno>。纸的正本里是记号；派生的压平件 score.musicxml 已经按结构展开（没有这些记号）。
    *  老版本的 app 读到它们 = 当普通的发夹 / 文字忽略（风格记号会丢——老版本本来就不会放拍子轻重）。 */
   papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[]; hidden?: boolean; phrases?: Record<string, number[]>;
     /** 音内的力度起伏（2026-10-08 加，可选；MusicXML 里表达不了音内的发夹）：声部 id → 音的 id → "<" / ">" / "<>"。 */

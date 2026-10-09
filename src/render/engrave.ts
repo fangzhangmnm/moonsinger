@@ -16,9 +16,10 @@
 //   小节线、调号、拍号是各声部自己的画法（契约 §7.8）；速度只画在第一个声部上面；歌手牌（声部名）在每张纸第一行各条谱的左边。
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
-import { type Song, type NoteTok, type Token, type GrooveTok, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
+import { type Song, type NoteTok, type Token, type GrooveTok, type BarTok, type NavTok, type Repeat, NAV_LABEL, endingLabel, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
 import { grooveLabel, grooveStyle } from "../score/groove.ts";
 import { dynOverridden } from "../score/perform.ts";
+import { navWhy } from "../score/repeats.ts";
 import { parseArrangement } from "../score/arrange.ts";
 import { densityOf, type Density } from "../score/paper.ts";
 import { type Pitch, diatonicIndex, keyAlter } from "../score/pitch.ts";
@@ -76,7 +77,7 @@ export interface LyricHit { index: number; system: number; x: number; y: number 
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
 /** 力度记号 / 渐强渐弱的点击区域（px）：点 = 小菜单（改 / 删），长按拖 = 挪到别的音上（2026-10-08 Opus 5.5）。渐强渐弱跨行 = 每行一块。 */
-export interface DynHit { index: number; kind: "dyn" | "hairpin" | "groove"; system: number; x: number; y: number; w: number; h: number }   // groove = 风格记号（拍子轻重；点了同一个小菜单、长按拖）
+export interface DynHit { index: number; kind: "dyn" | "hairpin" | "groove" | "nav"; system: number; x: number; y: number; w: number; h: number }   // groove = 风格记号（拍子轻重；点了同一个小菜单、长按拖）
 /** 休止的位置（px）：力度记号 / 渐强渐弱能拖到休止上（2026-10-08 user「力度符号应该能拖动到休止符上」）。 */
 export interface RestHit { index: number; system: number; x: number; y: number; w: number }   // y = 谱的中线（点 / 框选用）
 /** 纸面最上面的歌名那一条（点了就地改）。 */
@@ -176,7 +177,7 @@ interface Chunk {
   art: Art[]; breath: boolean;                 // 修：第一段画跳音 / 重音 / 保持，最后一段后面画呼吸（2026-10-08）
   x: number; system: number; tick: number; staff: Staff;   // staff = 大谱表里在上还是下（单谱表 = 1）
 }
-interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean }   // auto = 按拍号自动画的（index = -1，不是 token）
+interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean; repeat?: Repeat; times?: number }   // repeat = 反复小节线（Bravura 的反复记号字形，比细线宽）   // auto = 按拍号自动画的（index = -1，不是 token）
 interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number; tick: number; staff: Staff }
@@ -185,8 +186,9 @@ interface PhraseU { kind: "phrase"; index: number; w: number; x: number; system:
 interface DynU { kind: "dyn"; index: number; value: Dyn; w: number; x: number; system: number; tick: number; staff: Staff }   // 力度：谱上方一个字（不占地方，和后面那个音对齐）
 interface HairpinU { kind: "hairpin"; index: number; dir: "cresc" | "dim"; w: number; x: number; system: number; tick: number; staff: Staff }   // 渐强渐弱：力度那一行，从这儿画到终点（不占地方）
 interface GrooveU { kind: "groove"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 风格记号：谱上方一行斜体字（不占地方，和后面那个音对齐）
-type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | PhraseU | DynU | HairpinU | GrooveU;
-const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, hairpin: 3.7, head: 4, chunk: 5 };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
+interface NavU { kind: "nav"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; slot: number }   // slot：D.C. / D.S. / Fine / To Coda 在小节线前（这小节尾），房子 / Segno / Coda 在后（下一小节头）   // 房子 / 跳转记号（谱内反复）：画在谱上方的反复那一道，不占地方
+type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | PhraseU | DynU | HairpinU | GrooveU | NavU;
+const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, nav: 0.5, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, hairpin: 3.7, head: 4, chunk: 5 };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
 const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
@@ -209,10 +211,13 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
   let beat = beatTicks(time.beats, time.beatType), len = measureLen(time.beats, time.beatType);
   const pushHead = () => { units.push({ kind: "head", index: -1, w: 0, x: 0, system: 0, tick, staff: 1 }); };
   const pushBar = (index: number, auto: boolean) => {
-    const warn = inBar !== len && measureNo > 0;   // 第一小节 = 弱起，不标
+    const rb = index >= 0 ? (tokens[index] as BarTok) : null, repeat = rb?.repeat;
+    const warn = inBar !== len && measureNo > 0 && !(repeat === "start" && inBar === 0);   // 第一小节 = 弱起，不标；开头的 |: 不算一个小节
     if (warn) shortBars++;
-    units.push({ kind: "bar", index, w: BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto });
-    accState = new Map(); inBar = 0; measureNo++;
+    // 反复小节线：字形宽 1.47（:|: 2.43）+ 两边留一点（Bravura repeatLeft / repeatRight / repeatRightLeft）
+    units.push({ kind: "bar", index, w: repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto, ...(repeat ? { repeat, ...(rb?.times ? { times: rb.times } : {}) } : {}) });
+    const empty = inBar === 0;
+    accState = new Map(); inBar = 0; if (!(repeat === "start" && empty)) measureNo++;   // 小节开头的 |:（前面那条小节线之后紧跟着 / 纸头）不多数一个小节
   };
   const flushFull = () => { if (o.autoBars && inBar >= len && inBar > 0) pushBar(-1, true); };
   tokens.forEach((t, i) => {
@@ -236,6 +241,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
     if (t.kind === "dyn") { flushFull(); units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "hairpin") { flushFull(); units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
     if (t.kind === "groove") { flushFull(); units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }   // 风格记号（拍子轻重）：同力度字，不占横向地方
+    if (t.kind === "nav") { const head = t.what === "ending" || t.what === "segno" || t.what === "coda"; if (head) flushFull(); units.push({ kind: "nav", index: i, w: 0, x: 0, system: 0, tick, staff: 1, slot: head ? 0.5 : -0.5 }); return; }   // 房子 / 跳转：谱上方，不占地方（房子从下一小节开头起：满了的小节先画小节线）
     const isNote = t.kind === "note", nt = t as NoteTok;
     const pitch = isNote ? effectivePitch(tokens, i) : null;
     const pitches = isNote ? (nt.pitch ? allPitches(nt) : [pitch!]) : [];
@@ -380,7 +386,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
   let head: Layout["head"] = null, shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
-  const rowAbove = new Map<number, number>(), lyricOff = new Map<number, number>(), dynYAt = new Map<number, number>(), noteDynYAt = new Map<number, number>(), tempoYAt = new Map<number, number>(), grooveYAt = new Map<number, number>();   // + 速度记号的基线（px；第一个声部）   // 行号 → 谱上面留多少（sp）/ 歌词基线在第一线下多少（sp）；声部第一条谱行号 → 力度字基线（px）
+  const rowAbove = new Map<number, number>(), lyricOff = new Map<number, number>(), dynYAt = new Map<number, number>(), noteDynYAt = new Map<number, number>(), navYAt = new Map<number, number>(), tempoYAt = new Map<number, number>(), grooveYAt = new Map<number, number>();   // + 速度记号的基线（px；第一个声部）   // 行号 → 谱上面留多少（sp）/ 歌词基线在第一线下多少（sp）；声部第一条谱行号 → 力度字基线（px）
   const staffTop = (r: number) => rowTop.get(r)! + P(rowAbove.get(r) ?? STAFF_ABOVE);
   const yOf = (r: number, d: number) => staffTop(r) + (TOP_LINE - d) * P(0.5);
   const dOf = (r: number, y: number) => Math.round(TOP_LINE - (y - staffTop(r)) / P(0.5));
@@ -500,10 +506,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     for (const q of per) {
       const seen = new Map<string, number>();
       for (const u of q.units) {
-        const base = `${u.tick}:${SLOT[u.kind]}`, n = seen.get(base) ?? 0; seen.set(base, n + 1);
+        const sl = u.kind === "nav" ? u.slot : SLOT[u.kind], base = `${u.tick}:${sl}`, n = seen.get(base) ?? 0; seen.set(base, n + 1);
         const key = `${base}:${n}`;
         let c = colMap.get(key);
-        if (!c) { c = { tick: u.tick, slot: SLOT[u.kind], n, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false, phrase: false }; colMap.set(key, c); }
+        if (!c) { c = { tick: u.tick, slot: sl, n, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false, phrase: false }; colMap.set(key, c); }
         c.units.push(u); c.w = Math.max(c.w, u.w); if (u.kind === "bar") c.bar = true; if (u.kind === "chunk") c.chunk = true; if (u.kind === "phrase") c.phrase = true;
       }
     }
@@ -597,12 +603,14 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
         let above = Math.max(STAFF_ABOVE, (e.top - TOP_LINE) / 2 + 0.8), below = Math.max(minBelow, (BOTTOM_LINE - e.bot) / 2 + 0.8), lyric: number | null = null;
         if (lyricsOf[r] && k === q.staves - 1) { lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e.bot) / 2 + 2.0) + (o.lyricRaise ?? 0); below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW)); }
-        return { above, below, lyric, dynD: null as number | null, noteDynD: null as number | null, tempoD: null as number | null, grooveD: null as number | null };
+        return { above, below, lyric, dynD: null as number | null, noteDynD: null as number | null, navD: null as number | null, tempoD: null as number | null, grooveD: null as number | null };
       });
       const lane0 = Math.max(TOP_LINE + 2.4, ex[0].top + 3);   // 最靠谱的那一道（f 这种字有下伸：离音远一点）
       if (own) g[0].noteDynD = lane0;
       if (big) g[0].dynD = own ? lane0 + DYN_LANE : lane0;
-      const topDyn = g[0].dynD ?? g[0].noteDynD;   // 最上面那一道（速度 / 风格记号在它上面）
+      // 谱内反复那一道（房子 / Segno / Coda / D.C.… / ×3）：力度外道上面；这一行真有才留地方
+      if (q.units.some((u) => u.system === s && (u.kind === "nav" || (u.kind === "bar" && !!u.times && u.times > 2)))) g[0].navD = Math.max(TOP_LINE + 5.4, ex[0].top + 4, (g[0].dynD ?? g[0].noteDynD ?? -99) + 5.2);
+      const topDyn = g[0].navD ?? g[0].dynD ?? g[0].noteDynD;   // 最上面那一道（速度 / 风格记号在它上面）
       if (topDyn !== null) g[0].above = Math.max(g[0].above, (topDyn - TOP_LINE) / 2 + 2.2);
       if (q.p.id === owner) {   // 速度记号（这张纸最上面那位在场的歌手上面）：在最高的音和写在上面的力度字之上
         const t = Math.max(TOP_LINE + 4.8, ex[0].top + 3, topDyn !== null ? topDyn + 4.6 : 0); g[0].tempoD = t; g[0].above = Math.max(g[0].above, (t - TOP_LINE) / 2 + 1.6);
@@ -631,6 +639,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         if (x.g[0].grooveD !== null) grooveYAt.set(r0, yOf(r0, x.g[0].grooveD));
         dynYAt.set(r0, yOf(r0, x.g[0].dynD ?? TOP_LINE + 2.4));
         noteDynYAt.set(r0, yOf(r0, x.g[0].noteDynD ?? TOP_LINE + 2.4));
+        if (x.g[0].navD !== null) navYAt.set(r0, yOf(r0, x.g[0].navD));
       }
       yCur += P(SYS_GAP);
     }
@@ -690,6 +699,47 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const grooveRight = new Map<number, number[]>();   // 每一行风格记号两条道各自写到哪（px）：防叠
       const RW = (u: Unit) => rowOf(u.system, r, u.staff - 1);
       const lyricRow = (s: number) => rowOf(s, r, q.staves - 1);   // 歌词在最下面那条谱表下面
+      // 谱内反复 / 跳转（2026-10-09）：画在反复那一道（力度外道上面）；不起作用的（不是最上面那位的行 / D.S. 没 Segno…）画灰，点开说为什么（repeats.ts navWhy）
+      const navY = (s: number) => navYAt.get(rowOf(s, r, 0)) ?? yOf(rowOf(s, r, 0), TOP_LINE + 6);
+      const navMute = (i: number) => (navWhy(song, paper, q.p.id, tokens[i]) ? " art-mute" : "");
+      const drawNav = (u: NavU) => {
+        const t = tokens[u.index] as NavTok, y = navY(u.system), cls = (o.hot?.has(t.id) ? "nav-mark hot" : inSel(u.index) ? "nav-mark sel" : "nav-mark") + navMute(u.index);
+        const fs = P(TEMPO_EM * 1.05), x = P(u.x + 0.4);
+        if (t.what === "ending") {   // 房子：左边一道竖钩 + 横线 + 「1.」；到它的尽头——下一条 :|（右边也钩下来）/ 下一个房子 / 最后一个房子到下一条小节线（右边开口）
+          const ui = units.indexOf(u);
+          let end: Unit | null = null, closed = false, fallback: Unit | null = null, sawNote = false;
+          for (let k = ui + 1; k < units.length; k++) {
+            const v = units[k];
+            if (v.kind === "chunk") sawNote = true;
+            if (v.kind === "bar" && (v.repeat === "end" || v.repeat === "both")) { end = v; closed = true; break; }
+            if (v.kind === "nav" && (tokens[v.index] as NavTok).what === "ending") { end = v; closed = true; break; }
+            if (v.kind === "bar" && v.repeat === "start") { if (!fallback) fallback = v; break; }   // 新的 |: = 这个房子到此为止（开口）
+            if (v.kind === "bar" && sawNote && !fallback) fallback = v;   // 最后一个房子：到它后面第一条小节线
+          }
+          if (!end) end = fallback;
+          const top = y - P(1.5), h = P(1.6);
+          const endX = (v: Unit | null, sys: number) => (v && v.system === sys ? (v.kind === "bar" ? P(v.x + (v.repeat ? 0.4 + (v.repeat === "both" ? 1.2 : 1.47) : 0.7)) : P(v.x) - P(0.3)) : P(right));
+          const seg = (sys: number, xa: number, openL: boolean, xb: number, hookR: boolean) => {
+            const yy = sys === u.system ? top : navY(sys) - P(1.5);
+            prims.push({ t: "path", d: `${openL ? `M${xa},${yy}` : `M${xa},${yy + h}L${xa},${yy}`}L${xb},${yy}${hookR ? `L${xb},${yy + h}` : ""}`, cls: "volta" + navMute(u.index) });
+          };
+          const endSys = end ? end.system : u.system;
+          seg(u.system, x - P(0.2), false, endX(endSys === u.system ? end : null, u.system), closed && endSys === u.system);
+          for (let s2 = u.system + 1; s2 <= endSys; s2++) { const first = units.find((w) => w.system === s2); seg(s2, P((first?.x ?? MARGIN) - 0.3), true, endX(s2 === endSys ? end : null, s2), closed && s2 === endSys); }
+          prims.push({ t: "text", x: x + P(0.3), y: top + P(1.25), s: endingLabel(t.nums), cls, size: fs, anchor: "start" });
+          dyns.push({ index: u.index, kind: "nav", system: rowOf(u.system, r, 0), x: x - P(0.4), y: top - P(0.4), w: P(3), h: h + P(0.8) });
+          return;
+        }
+        if (t.what === "segno" || t.what === "coda") {   // Segno / Coda：Bravura 字形（缩到 0.7）
+          const gs = 4 * sp * 0.7;
+          prims.push({ t: "glyph", x, y, ch: t.what === "segno" ? "\u{E047}" : "\u{E048}", cls: cls.replace("nav-mark", "nav-sign"), size: gs });
+          dyns.push({ index: u.index, kind: "nav", system: rowOf(u.system, r, 0), x: x - P(0.3), y: y - gs * 0.8, w: gs * (t.what === "segno" ? 0.6 : 1.0), h: gs * 0.95 });
+          return;
+        }
+        const label = NAV_LABEL[t.what], tw = (o.measureLyric(label) * TEMPO_EM * 1.05) / LYRIC_EM, atEnd = x - tw > P(MARGIN + 6);   // 它排在小节线前面：x ≈ 小节线   // D.C. / Fine / To Coda…：斜体字，靠右对齐在它的位置（小节尾）；前面放不下就靠左
+        prims.push({ t: "text", x: atEnd ? x : x - P(0.2), y, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
+        dyns.push({ index: u.index, kind: "nav", system: rowOf(u.system, r, 0), x: atEnd ? x - tw - P(0.3) : x - P(0.5), y: y - P(TEMPO_EM * 1.1), w: tw + P(0.8), h: P(TEMPO_EM * 1.5) });
+      };
       // 选中的底色（先画，压在最下面）
       if (focused && sel) {
         const byS = new Map<number, [number, number]>();
@@ -787,7 +837,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         if (u.kind === "bar" || u.kind === "key" || u.kind === "time") {   // 小节线 / 调号 / 拍号：每张谱表各画一份
           for (let k = 0; k < q.staves; k++) {
             const rr = rowOf(u.system, r, k), clef = clefOf((k + 1) as Staff), sh = shOf((k + 1) as Staff);
-            if (u.kind === "bar") {
+            if (u.kind === "bar" && u.repeat) {   // 反复小节线：Bravura 字形（|: = E040、:| = E041、:|: = E042；一条谱高）；:| 一共放几遍 > 2 = 上面写「×3」
+              prims.push({ t: "glyph", x: P(u.x + 0.4), y: yOf(rr, BOTTOM_LINE), ch: u.repeat === "start" ? "\u{E040}" : u.repeat === "end" ? "\u{E041}" : "\u{E042}", cls: (inSel(u.index) ? "repeat-bar sel" : "repeat-bar") + navMute(u.index) });
+              if (u.times && u.times > 2 && k === 0) prims.push({ t: "text", x: P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), y: navY(u.system), s: `×${u.times}`, cls: "nav-mark" + navMute(u.index), size: P(TEMPO_EM * 1.05), anchor: "end" });
+            } else if (u.kind === "bar") {
               const bx = P(u.x + 0.7);
               prims.push({ t: "line", x1: bx, y1: yOf(rr, TOP_LINE), x2: bx, y2: yOf(rr, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: u.auto ? "bar auto" : inSel(u.index) ? "bar sel" : "bar" });
               if (u.warn && k === 0) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn" });
@@ -808,6 +861,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         }
         if (u.kind === "tempo") { if (q.p.id === owner) drawTempo(row, u.x + 0.3, u.bpm, inSel(u.index) ? "tempo sel" : "tempo", u.index); continue; }
         if (u.kind === "hairpin") continue;   // 渐强渐弱在 8¾ 画（要知道终点）
+        if (u.kind === "nav") { drawNav(u); continue; }
         drawChunk(u);
       }
       // 7. 符干、符杠、符尾（按拍分组：同一拍里连着的八分及更短的音符共用符杠）

@@ -47,7 +47,7 @@ type SymPage = "art" | "dyn" | "mark";
 const SYM_PAGES: Record<SymPage, readonly string[]> = {
   art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath"],   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>", "dyn:ramp"],
-  mark: ["phrase", "key", "time", "tempo", "groove", "staff"],
+  mark: ["phrase", "key", "time", "tempo", "groove", "repeat", "staff"],
 };
 const SYM_PAGE_NAME: Record<SymPage, string> = { art: "演奏法", dyn: "力度", mark: "记号" };
 const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸", dyn: "pp…ff、渐强 / 渐弱、音内起伏", mark: "句号、调号 / 拍号 / 速度、风格（拍子轻重）" };
@@ -133,6 +133,8 @@ export interface PadHost {
   onInsertMark(kind: "key" | "time" | "tempo"): void;
   /** 风格记号（拍子轻重）：放在光标前那个音上、开它的小菜单。 */
   onGroove?(): void;
+  /** 符号层「反复」：开谱内反复 / 跳转的小菜单（2026-10-09）。 */
+  onRepeat?(): void;
   onSoundDown(p: Pitch, id: string): void;   // 试听 / 弹：按下响（复音：每根手指一个声音）
   onSoundUp(id: string): void;
   onImpro(): void;                         // 「弹」开关（第一排「收起」左边）：只响不写
@@ -415,6 +417,7 @@ export class Pad {
       cell("time", `<span class="big">4/4</span>`, "拍号", "插拍号（在光标处）"),
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "速度", "插速度（在光标处）"),
       cell("groove", `<span class="big it">风格</span>`, "拍子轻重", "风格记号：从光标前那个音起到这张纸结尾，每个音按它在小节里的位置轻一点 / 重一点（古典 / 流行 / 华尔兹 / 进行曲…点开选）；整张纸的歌手一起听，各人跟多少按乐器"),
+      cell("repeat", `<span class="big">:|</span>`, "反复", "谱内反复 / 跳转：|: :|、房子 1. 2.、Segno / Coda / D.C. / D.S. / Fine…（点开选；插在光标处，挨着小节线 = 把那条改成反复的）。不跨纸；放的时候只看这张纸最上面那位歌手那一行"),
       ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, "换谱表", "大谱表：这个音换到另一张谱表")] : []),
     ];
     const byId = new Map(items.map((h) => [/data-sym="([^"]+)"/.exec(h)![1], h]));
@@ -443,6 +446,7 @@ export class Pad {
       }
       if (id === "key" || id === "time" || id === "tempo") this.host.onInsertMark(id);
       else if (id === "groove") this.host.onGroove?.();
+      else if (id === "repeat") this.host.onRepeat?.();
       else if (id === "staff") this.host.onCommand({ k: "staff" });
       else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
       else if (id === "slur") this.host.onCommand({ k: "slur" });

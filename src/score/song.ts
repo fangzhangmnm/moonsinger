@@ -17,6 +17,7 @@
 
 import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
 import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell } from "./pitch.ts";
+import { expandPaper } from "./repeats.ts";   // 谱内反复（循环 import：repeats.ts 只在函数里用 song.ts 的东西，加载顺序无所谓）
 
 /** 一个四分音符的 tick 数。 */
 export const TPQ = 1680;
@@ -40,7 +41,17 @@ export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: n
 //     音自己的事（和段落级的渐强渐弱记号是两层，可以叠）。存在 .moonsinger/score.json（MusicXML 里表达不了音内的发夹）。
 //   chord（2026-10-08 polyphony）= 叠音：pitch 之外的音高，都比 pitch 低、从高到低；pitch = 最高的那个 = 旋律线（唱的人只读它：user「一个 Polyphony 换月读…应该是只读上面的旋律线」）。MusicXML = <chord/>。
 export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
-export interface BarTok { kind: "bar"; id: number }
+export interface BarTok { kind: "bar"; id: number; repeat?: Repeat; times?: number }   // repeat = 反复小节线（|: / :| / :|:）；times = :| 这一段一共放几遍（没写 = 2）
+/** 谱内反复 / 跳转（2026-10-09 Opus 5.5；user「顺便一提谱内的循环和标准的dc这种是不是支持下也不难？…不然遇到弱起什么其实AAABBB不是很方便」
+ *  「就是普通记谱软件支持的那种。这样，不超过sheet边界。等参考窗好了当小东西加」）：不跨纸；放的时候按这张纸最上面那位在场歌手那一行的结构展开（src/score/repeats.ts），
+ *  别的声部按 tick 跟；MusicXML 原生（<repeat> / <ending> / segno / coda / D.C. / Fine）。 */
+export type Repeat = "start" | "end" | "both";
+/** ending = 房子（第几遍走这个括号，nums）；其余 = 跳转记号：segno / coda = 位置；fine / toCoda = 跳回来之后在这儿停 / 去 Coda；dc / ds = 在这儿跳回开头 / Segno（al Fine / al Coda = 跳回来之后在 Fine 停 / 在 To Coda 去 Coda）。 */
+export type NavWhat = "ending" | "segno" | "coda" | "fine" | "toCoda" | "dc" | "dcFine" | "dcCoda" | "ds" | "dsFine" | "dsCoda";
+export interface NavTok { kind: "nav"; id: number; what: NavWhat; nums?: number[] }
+export const NAV_LABEL: Record<Exclude<NavWhat, "ending">, string> = { segno: "Segno", coda: "Coda", fine: "Fine", toCoda: "To Coda", dc: "D.C.", dcFine: "D.C. al Fine", dcCoda: "D.C. al Coda", ds: "D.S.", dsFine: "D.S. al Fine", dsCoda: "D.S. al Coda" };
+/** 房子上写的字：[1] → 「1.」，[1, 2] → 「1. 2.」。 */
+export const endingLabel = (nums: readonly number[] | undefined): string => (nums && nums.length ? nums.map((n) => `${n}.`).join(" ") : "1.");
 /** 句号（2026-10-08，Claude Fable 5.1；user「现在 || 没有这个我碰到稍微长一点的曲子都快疯了」「歌词的句号可能需要这个」「呼吸就是呼吸，然后句号另外算，不自动呼吸，没有语义，或者只提示月读，不算打谱符号」）：
  *  这一句到这儿。**没有语义**：不换行（「不应该按照句换行，打谱软件没这么干的」）、不换气、不是小节线（不数拍、弱起照旧）；只给「合」挪字当边界，画成歌词行上一个小「。」。
  *  pad 符号层的「句号」键 / Shift+Enter / 歌词里打句读插入。**不进 MusicXML**（不算打谱符号），存 .moonsinger/score.json（papers[].phrases）。 */
@@ -76,7 +87,7 @@ export interface HairpinTok { kind: "hairpin"; id: number; dir: "cresc" | "dim" 
  *  （预设 = 音乐仓鼠的 grooves-vN.json，src/score/groove.ts）。整张纸一起听（写在哪一行都管全部歌手；同一时刻两行都写了 = 上面那行算）。
  *  style = 预设 id（"pop"…；"none" = 这儿起不加）；amount = 幅度（1 = 预设本身；不写 = 1）。不占时值、不占横向地方。MusicXML <direction><words id="groove.…">。 */
 export interface GrooveTok { kind: "groove"; id: number; style: string; amount?: number }
-export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok | GrooveTok;
+export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
 export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;
@@ -324,7 +335,7 @@ function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alter
 function fillTarget(st: EditorState): number {
   for (let i = st.caret; i < tr(st).length; i++) {
     const t = tr(st)[i];
-    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove" || isMark(t)) continue;
+    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove" || t.kind === "nav" || isMark(t)) continue;
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
   return -1;
@@ -365,6 +376,33 @@ export function writeRest(st: EditorState): EditorState {
   return next(st, tokens, { caret: st.caret + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur }] });
 }
 
+/** 反复小节线（pad 符号层「反复」菜单）：光标紧挨着一条小节线（前面或后面）= 把它改成反复的（|: 和 :| 撞在同一条上 = :|:）；否则在光标处插一条。
+ *  repeat = null = 改回普通小节线。times 只给 :|（一共放几遍，2 = 不写）。 */
+export function setRepeatBar(st: EditorState, repeat: Repeat | null, times?: number): EditorState {
+  const toks = tr(st), at = st.sel ? st.sel.to : st.caret, h = headLen(toks);
+  const near = toks[at - 1]?.kind === "bar" && at - 1 >= h ? at - 1 : toks[at]?.kind === "bar" ? at : -1;
+  const mk = (b: BarTok): BarTok => {
+    let r: Repeat | null = repeat;
+    if (repeat && b.repeat && b.repeat !== repeat) r = "both";   // |: + :| 同一条 = :|:
+    const { repeat: _r, times: _t, ...rest } = b;
+    const tm = r === "end" || r === "both" ? (times ?? b.times) : undefined;
+    return { ...rest, ...(r ? { repeat: r } : {}), ...(tm && tm > 2 ? { times: tm } : {}) };
+  };
+  const nt = toks.slice();
+  if (near >= 0) { nt[near] = mk(toks[near] as BarTok); return next(st, nt, { sel: null }); }
+  if (!repeat) return st;
+  const id = st.nextId;
+  nt.splice(at, 0, mk({ kind: "bar", id }));
+  return next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+}
+/** 房子 / 跳转记号：插在光标处（同调号 / 拍号 / 速度，是结构不是表情）。光标后面紧挨着小节线 = 插在小节线后面（房子从下一小节开头起）。 */
+export function insertNav(st: EditorState, what: NavWhat, nums?: number[]): EditorState {
+  const toks = tr(st); let at = st.sel ? st.sel.from : st.caret;
+  if (what === "ending" && toks[at]?.kind === "bar") at++;
+  const id = st.nextId, nt = toks.slice();
+  nt.splice(at, 0, { kind: "nav", id, what, ...(what === "ending" ? { nums: nums && nums.length ? [...nums].sort((a, b) => a - b) : [1] } : {}) });
+  return next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+}
 export function writeBar(st: EditorState): EditorState {
   const at = st.sel ? st.sel.to : st.caret, id = st.nextId, tokens = tr(st).slice();
   tokens.splice(at, 0, { kind: "bar", id });
@@ -961,14 +999,16 @@ export function moveMark(st: EditorState, from: number, before: number): { st: E
   return { st: next(st, a.tokens, { caret: c2 - a.removed.filter((k) => k < c2).length, sel: null }), removed: a.removed.length };
 }
 /** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
-export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | { style: string } | { amount: number } | null): EditorState {
+export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | { style: string } | { amount: number } | { nav: Exclude<NavWhat, "ending"> } | { nums: number[] } | null): EditorState {
   const toks = tr(st), m = toks[i];
-  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin" && m.kind !== "groove")) return st;
+  if (!m || (m.kind !== "dyn" && m.kind !== "hairpin" && m.kind !== "groove" && m.kind !== "nav")) return st;
   const nt = toks.slice();
   if (change === null) { nt.splice(i, 1); return next(st, nt, { caret: st.caret - (i < st.caret ? 1 : 0), sel: null }); }
   if (m.kind === "dyn" && "value" in change) { if (m.value === change.value) return st; nt[i] = { ...m, value: change.value }; return next(st, nt); }
   if (m.kind === "dyn" && "ramp" in change) { if (!!m.ramp === change.ramp) return st; const { ramp: _r, ...rest } = m; nt[i] = change.ramp ? { ...rest, ramp: true } : rest; return next(st, nt); }
   if (m.kind === "hairpin" && "dir" in change) { if (m.dir === change.dir) return st; nt[i] = { ...m, dir: change.dir }; return next(st, nt); }
+  if (m.kind === "nav" && "nav" in change && m.what !== "ending") { if (m.what === change.nav) return st; nt[i] = { ...m, what: change.nav }; return next(st, nt); }
+  if (m.kind === "nav" && "nums" in change && m.what === "ending") { const nums = [...new Set(change.nums)].sort((a, b) => a - b); if (!nums.length || nums.join() === (m.nums ?? [1]).join()) return st; nt[i] = { ...m, nums }; return next(st, nt); }
   if (m.kind === "groove" && "style" in change) { if (m.style === change.style) return st; nt[i] = { ...m, style: change.style }; return next(st, nt); }
   if (m.kind === "groove" && "amount" in change) { const a = Math.round(change.amount * 100) / 100; if ((m.amount ?? 1) === a) return st; const { amount: _a, ...rest } = m; nt[i] = a === 1 ? rest : { ...rest, amount: a }; return next(st, nt); }
   return st;
@@ -1292,8 +1332,9 @@ export function flattenPart(song: Song, partId: string, opts: { tempo?: boolean;
   let k = -1;
   const seq = opts.order ? opts.order.flatMap((pid) => song.papers.filter((p) => p.id === pid)) : song.papers.filter((p) => !p.hidden);   // 编排里点名的照放（隐藏的也放）
   const seen = new Set<string>();
-  seq.forEach((p0) => {
-    const again = seen.has(p0.id); seen.add(p0.id);
+  seq.forEach((p00) => {
+    const again = seen.has(p00.id); seen.add(p00.id);
+    const p0 = expandPaper(song, p00, () => id--);   // 谱内反复 / 跳转：这张纸先按它的结构展开成直线（src/score/repeats.ts；2026-10-09）
     const p: PaperSeg = again ? { ...p0, tracks: Object.fromEntries(Object.entries(p0.tracks).map(([k2, t]) => [k2, t.map((x) => ({ ...x, id: id-- }))])) } : p0;
     k++;
     const have = p.tracks[partId], len = paperTicks(p);

@@ -6,6 +6,7 @@
 //   谱上写了音头记号（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）的音 = 写的说了算，拍子轻重不叠上去（「音的强度只能有一种」）。
 //   连过来的音（tie）不是新的音头，不算。摇摆（时值）这一版不接，面板里明说。
 import { type Token, type NoteTok, type Song, type PaperSeg, type GrooveTok, WHOLE, ATTACKS, DEFAULT_TIME, artOf, isTimed, paperTicks } from "./song.ts";
+import { expandPaper } from "./repeats.ts";
 import { GROOVE_STYLES, type GrooveStyle } from "./grooves.gen.ts";
 
 export { GROOVE_STYLES, type GrooveStyle };
@@ -94,7 +95,8 @@ export function grooveMapOf(song: Song, order?: readonly string[]): GrooveMap {
   const seq: PaperSeg[] = order ? order.flatMap((id) => song.papers.filter((p) => p.id === id)) : song.papers.filter((p) => !p.hidden);
   const out: GrooveMap = [];
   let at = 0;
-  for (const p of seq) {
+  for (const p0 of seq) {
+    const p = expandPaper(song, p0, () => -1);   // 谱内反复：和压平（flattenPart）同一个展开，tick 才对得上
     out.push({ tick: at, style: null, amount: 1 });
     const here: { tick: number; style: string; amount: number; row: number }[] = [];
     song.parts.forEach((part, row) => {

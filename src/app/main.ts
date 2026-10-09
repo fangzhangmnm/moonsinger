@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, ART_NAME, setGroove, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, loopPlan, loopWindow } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -37,6 +37,7 @@ import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withR
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { mixTracks, applyGain } from "../audio/mix.ts";
 import { gainSegments, noteEnd, noteVelocities, ignoredArts, whyIgnored, lightMarks, dynOverridden, type Mark } from "../score/perform.ts";
+import { navWhy } from "../score/repeats.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
 import { GmSynth } from "../gm/synth.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
@@ -531,6 +532,7 @@ const pad = new Pad(padEl, {
   onAccShift: (phase, acc) => accKey(phase, acc),   // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
   onInsertMark: (kind) => { if (!finder.isOpen) insertMarkHere(kind); },
   onGroove: () => { if (!finder.isOpen) insertGrooveHere(); },
+  onRepeat: () => { if (!finder.isOpen) openRepeatMenu(); },
   onSoundDown: (p, id) => {
     const n = padNotes.get(id);
     if (n && n.index >= 0) soundTok(st, n.index, id);
@@ -1584,6 +1586,70 @@ function insertGrooveHere(): void {
   if (k >= 0) view.menuFor(k);
 }
 /** 风格记号的小菜单：换风格 / 幅度 / 删；下面明说——这张纸的拍号预设里没列（按古典层级推）、摇摆还没接、这张纸上的歌手各跟多少（纪律：做不到的明说）。 */
+// ── 谱内反复 / 跳转（2026-10-09 Opus 5.5；user「…谱内的循环和标准的dc这种是不是支持下也不难？…就是普通记谱软件支持的那种。这样，不超过sheet边界」「你先把三个小件做了」）──
+const JUMPS: Exclude<NavWhat, "ending">[] = ["segno", "coda", "fine", "toCoda", "dc", "dcFine", "dcCoda", "ds", "dsFine", "dsCoda"];
+const ENDINGS: number[][] = [[1], [2], [3], [1, 2], [2, 3]];
+/** 小菜单的壳（同风格 / 力度记号的小菜单）：at = 屏幕坐标；pick(v) 返回 true = 点了不收。 */
+function ctxMenu(cls: string, html: string, at: { x: number; y: number }, pick: (v: string) => boolean | void): void {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = `track-card ctx-menu ${cls}`; box.setAttribute("role", "menu"); box.innerHTML = html;
+  document.body.append(box);
+  const w = box.offsetWidth, h = box.offsetHeight, m = 8;
+  let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
+  box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e) => { const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return; if (!pick(v)) close(); scoreEl.focus({ preventScroll: true }); });
+}
+/** 写了反复 / 跳转之后：光标所在这一行不是这张纸最上面那位 = 明说（谱上画灰；纪律「做不到的一律画灰 + 明说」）。 */
+function discloseNav(): void {
+  const paper = st.song.papers.find((p) => p.id === st.at.paper), owner = paper ? tempoOwner(st.song, paper) : null;
+  if (owner && owner !== st.at.part) info(`反复 / 跳转只看这张纸最上面那位（${roleName(doc.extras, st.song.parts.find((p) => p.id === owner)?.role ?? "")}）那一行：这一行写的画灰、不起作用`);
+}
+/** pad 符号层「反复」：插在光标处（挨着小节线 = 把那条改成反复的）。 */
+function openRepeatMenu(): void {
+  const r = padEl.getBoundingClientRect();
+  const chip = (v: string, label: string, title: string) => `<button class="btn ctx-chip" data-v="${v}" title="${esc(title)}">${esc(label)}</button>`;
+  ctxMenu("repeat-menu",
+    `<div class="ctx-hint ctx-what">谱内反复：插在光标处；光标挨着小节线 = 把那条改成反复的。放的时候按这张纸最上面那位歌手那一行展开，别的声部跟着；不跨纸。跳回来（D.C. / D.S.）之后反复不再反复。</div>` +
+    `<div class="ctx-row">${chip("bar:start", "|:", "反复开始")}${chip("bar:end", ":|", "反复结束：回到 |:（没有 = 这张纸开头）再放一遍")}${chip("bar:both", ":|:", "前一段反复结束、后一段反复开始")}${chip("bar:end:3", ":| ×3", "一共放三遍")}${chip("bar:end:4", ":| ×4", "一共放四遍")}${chip("bar:plain", "|", "改回普通小节线")}</div>` +
+    `<div class="ctx-row">${ENDINGS.map((n) => chip(`end:${n.join(",")}`, endingLabel(n), `房子：第 ${n.join("、")} 遍走这里`)).join("")}</div>` +
+    `<div class="ctx-row">${JUMPS.slice(0, 4).map((w) => chip(`nav:${w}`, NAV_LABEL[w], NAV_HELP[w])).join("")}</div>` +
+    `<div class="ctx-row">${JUMPS.slice(4).map((w) => chip(`nav:${w}`, NAV_LABEL[w], NAV_HELP[w])).join("")}</div>`,
+    { x: r.left + r.width / 2, y: r.top - 4 },
+    (v) => {
+      if (v.startsWith("bar:")) { const [, k, tm] = v.split(":"); update(setRepeatBar(st, k === "plain" ? null : (k as Repeat), tm ? Number(tm) : undefined)); }
+      else if (v.startsWith("end:")) update(insertNav(st, "ending", v.slice(4).split(",").map(Number)));
+      else if (v.startsWith("nav:")) update(insertNav(st, v.slice(4) as NavWhat));
+      discloseNav();
+    });
+}
+const NAV_HELP: Record<Exclude<NavWhat, "ending">, string> = {
+  segno: "Segno：D.S. 跳回到这儿", coda: "Coda：To Coda 跳到这儿", fine: "Fine：跳回来（al Fine）之后在这儿停", toCoda: "To Coda：跳回来（al Coda）之后从这儿去 Coda",
+  dc: "D.C.：跳回这张纸开头，放到纸尾", dcFine: "D.C. al Fine：跳回开头，放到 Fine", dcCoda: "D.C. al Coda：跳回开头，到 To Coda 去 Coda",
+  ds: "D.S.：跳回 Segno，放到纸尾", dsFine: "D.S. al Fine：跳回 Segno，放到 Fine", dsCoda: "D.S. al Coda：跳回 Segno，到 To Coda 去 Coda",
+};
+/** 点谱上的房子 / 跳转记号：换成别的 / 删；不起作用的说为什么。 */
+function openNavMenu(i: number, at: { x: number; y: number }): void {
+  const t = tr(st)[i]; if (!t || t.kind !== "nav") return;
+  const paper = st.song.papers.find((p) => p.id === st.at.paper), why = paper ? navWhy(st.song, paper, st.at.part, t) : null;
+  const chips = t.what === "ending"
+    ? ENDINGS.map((n) => `<button class="btn ctx-chip${n.join() === (t.nums ?? [1]).join() ? " is-on" : ""}" data-v="nums:${n.join(",")}">${esc(endingLabel(n))}</button>`).join("")
+    : JUMPS.map((w) => `<button class="btn ctx-chip${t.what === w ? " is-on" : ""}" data-v="nav:${w}" title="${esc(NAV_HELP[w])}">${esc(NAV_LABEL[w])}</button>`).join("");
+  ctxMenu("nav-menu",
+    (why ? `<div class="ctx-hint">不起作用（画灰）：${esc(why)}</div>` : "") +
+    `<div class="ctx-hint ctx-what">${esc(t.what === "ending" ? `房子：第 ${(t.nums ?? [1]).join("、")} 遍走这个括号，别的遍跳过` : NAV_HELP[t.what])}</div>` +
+    `<div class="ctx-row">${chips}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">删除</button>`,
+    at,
+    (v) => {
+      if (v === "del") { update(editMarkAt(st, i, null)); return; }
+      if (v.startsWith("nums:")) { update(editMarkAt(st, i, { nums: v.slice(5).split(",").map(Number) })); return true; }
+      if (v.startsWith("nav:")) { update(editMarkAt(st, i, { nav: v.slice(4) as Exclude<NavWhat, "ending"> })); return true; }
+    });
+}
 function openGrooveMenu(i: number, at: { x: number; y: number }): void {
   const toks = tr(st), t = toks[i]; if (!t || t.kind !== "groove") return;
   closeOffer?.();
@@ -1637,6 +1703,7 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
 }
 function openMarkMenu(i: number, at: { x: number; y: number }): void {
   if (tr(st)[i]?.kind === "groove") { openGrooveMenu(i, at); return; }
+  if (tr(st)[i]?.kind === "nav") { openNavMenu(i, at); return; }
   const t = tr(st)[i]; if (!t || (t.kind !== "dyn" && t.kind !== "hairpin")) return;
   closeOffer?.();
   // 它管哪几个音（染强调色，菜单收起就清；user「如何不混淆的搞清楚<到底是哪里开始的？」）：渐强渐弱 = 到终点为止；渐到 = 从上一个力度记号后面到这儿；

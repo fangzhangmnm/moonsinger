@@ -7,7 +7,7 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
+import { type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
@@ -107,6 +107,17 @@ const XML_DYN = (name: string): Dyn | null => (["pp", "p", "mp", "mf", "f", "ff"
  *  我们自己读回来认 id 变回风格记号；别家谱里普通的 <words>（rit. / dolce…）照旧不读。 */
 const GROOVE_ID = "groove.";
 const grooveXml = (t: GrooveTok) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t.style}.${Math.round((t.amount ?? 1) * 100)}.${t.id}">${esc(grooveLabel(t))}</words></direction-type></direction>`;
+/** 谱内反复 / 跳转（2026-10-09 Opus 5.5；MusicXML 原生：<barline> 的 <repeat> / <ending>，<direction> 的 segno / coda / words + <sound dacapo / dalsegno / fine / tocoda>）。
+ *  我们自己写的带 id = nav.<种类>.<token id>（读回来认种类；别家谱按 sound 的属性 / 字认）。 */
+const NAV_ID = "nav.";
+const navXml = (t: NavTok): string => {
+  const id = `${NAV_ID}${t.what}.${t.id}`;
+  if (t.what === "segno") return `<direction placement="above"><direction-type><segno id="${id}"/></direction-type><sound segno="segno"/></direction>`;
+  if (t.what === "coda") return `<direction placement="above"><direction-type><coda id="${id}"/></direction-type><sound coda="coda"/></direction>`;
+  if (t.what === "ending") return "";
+  const snd = t.what === "fine" ? `fine="yes"` : t.what === "toCoda" ? `tocoda="coda"` : t.what.startsWith("dc") ? `dacapo="yes"` : `dalsegno="segno"`;
+  return `<direction placement="above"><direction-type><words id="${id}" font-style="italic">${esc(NAV_LABEL[t.what])}</words></direction-type><sound ${snd}/></direction>`;
+};
 const tempoXml = (bpm: number) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
 /** 一条声部 → 它的小节们（body = 每小节里的 XML 片段，manual = 这小节后面那条小节线是人插的）+ 还没写音高的音。first = 第一个声部（才写速度 / 排练记号）。 */
 function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, first: boolean, clef: "G" | "F" = "G", staves: 1 | 2 = 1): { measures: { body: string[]; manual: boolean }[]; unwritten: string[]; lastLen: number } {
@@ -117,7 +128,14 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
   const langs = syllableLangs(toks);
   const measures: { body: string[]; manual: boolean }[] = [];
   let cur: string[] = [], ticks = 0, len = measureLen(H.beats, H.beatType);
-  const close = (manual: boolean) => { measures.push({ body: cur, manual }); cur = []; ticks = 0; };
+  // 房子：开着的那一个（number 属性）；它后面有没有 :| 收（没有 = 最后一个房子，到这小节尾 discontinue）
+  let ending: { num: string; closedByRepeat: boolean } | null = null;
+  const endingCloses = (i: number) => { for (let j = i + 1; j < toks.length; j++) { const u = toks[j]; if (u.kind === "bar" && (u.repeat === "end" || u.repeat === "both")) return true; if ((u.kind === "nav" && u.what === "ending") || (u.kind === "bar" && u.repeat === "start")) return false; } return false; };   // 先遇到新的 |: = 没被 :| 收
+  const close = (manual: boolean, right = "") => {
+    if (ending && !ending.closedByRepeat && !right) { cur.push(`<barline location="right"><ending number="${ending.num}" type="discontinue"/></barline>`); ending = null; }
+    if (right) cur.push(right);
+    measures.push({ body: cur, manual }); cur = []; ticks = 0;
+  };
   const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : `<clef><sign>${clef}</sign><line>${clef === "F" ? 4 : 2}</line></clef>`;
   cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time>${clefs}</attributes>`);
   if (first) cur.push(tempoXml(H.bpm));
@@ -140,7 +158,33 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       cur.push(`<print new-page="yes"/>`);
       if (first && br) cur.push(`<direction placement="above"><direction-type><rehearsal>${esc(br)}</rehearsal></direction-type></direction>`);
     }
+    if (t.kind === "bar" && t.repeat) {
+      const fwd = `<barline location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>`;
+      const noteIn = cur.some((x) => x.startsWith("<note"));
+      if (t.repeat === "start" && ticks === 0 && !noteIn) { cur.push(fwd); continue; }   // 小节开头（纸头）的 |:：不开一个空小节
+      let right = "";
+      if (t.repeat === "end" || t.repeat === "both") {
+        const stop = ending && ending.closedByRepeat ? `<ending number="${ending.num}" type="stop"/>` : "";
+        right = `<barline location="right"><bar-style>light-heavy</bar-style>${stop}<repeat direction="backward"${t.times && t.times > 2 ? ` times="${t.times}"` : ""}/></barline>`;
+        if (stop) ending = null;
+      }
+      close(true, right);
+      if (t.repeat === "start" || t.repeat === "both") cur.push(fwd);
+      continue;
+    }
     if (t.kind === "bar") { close(true); continue; }
+    if (t.kind === "nav") {
+      if (t.what === "ending") {
+        if (ticks >= len) close(false);
+        const num = (t.nums ?? [1]).join(", ");
+        cur.push(`<barline location="left"><ending number="${num}" type="start">${esc(endingLabel(t.nums))}</ending></barline>`);
+        ending = { num, closedByRepeat: endingCloses(i) };
+      } else {
+        if ((t.what === "segno" || t.what === "coda") && ticks >= len) close(false);   // Segno / Coda 在下一小节开头；D.C. / Fine / To Coda 在这小节尾（满了也不开新的）
+        cur.push(navXml(t));
+      }
+      continue;
+    }
     if (t.kind === "phrase") continue;   // 句号不算打谱符号（user 2026-10-08）：不进 MusicXML，存 .moonsinger/score.json（project.ts）
     if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") {
       if (ticks >= len || (t.kind === "time" && ticks > 0)) close(false);   // 满了的小节先断开；拍号变了从新小节开始
@@ -299,7 +343,22 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     const mark = (t: Token) => { body.push(t); };
     const measures = kids(pe, "measure");
     measures.forEach((m, mi) => {
+      let rightRepeat: { times: number } | null = null;   // 这小节右边的 :|（读完这小节补小节线时用）
       for (const c of kids(m)) {
+        if (c.name === "barline") {   // 谱内反复：|: 挂在前面那条小节线上（纸头 = 补一条）；房子 = 这小节开头一个记号；:| 等这小节读完
+          const loc = c.attrs.location ?? "right", rp = kid(c, "repeat"), en = kid(c, "ending");
+          if (loc === "left" && rp?.attrs.direction === "forward") {
+            const last = body[body.length - 1];
+            if (last && last.kind === "bar") last.repeat = last.repeat === "end" || last.repeat === "both" ? "both" : "start";
+            else body.push({ kind: "bar", id: 0, repeat: "start" });
+          }
+          if (loc === "left" && en && en.attrs.type === "start") {
+            const nums = (en.attrs.number ?? "1").split(/[,\s]+/).map(Number).filter((x) => Number.isInteger(x) && x > 0);
+            body.push({ kind: "nav", id: 0, what: "ending", nums: nums.length ? nums : [1] });
+          }
+          if (loc !== "left" && rp?.attrs.direction === "backward") rightRepeat = { times: Math.max(2, Number(rp.attrs.times ?? "2") || 2) };
+          continue;
+        }
         if (c.name === "attributes") {
           const d = childText(c, "divisions"); if (d) divisions = Number(d);
           const cl = kid(c, "clef"); if (cl && info.clef === undefined) info.clef = childText(cl, "sign") === "F" ? "F" : "G";
@@ -322,6 +381,23 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const w of kids(dt, "words")) {   // 风格记号：只认我们自己写的（id 打头 groove.）
             const g = /^groove\.([a-z][a-z0-9-]*)\.(\d+)\./.exec(w.attrs.id ?? "");
             if (g) { const a = Number(g[2]) / 100; mark({ kind: "groove", id: 0, style: g[1], ...(a !== 1 ? { amount: a } : {}) }); }
+          }
+          // 谱内反复 / 跳转：自家写的认 id（nav.<种类>.）；别家谱认 <segno/> <coda/> 和 <sound> 的 dacapo / dalsegno / fine / tocoda（字里有 Fine / Coda = al Fine / al Coda）
+          {
+            const dts = c.name === "direction" ? kids(c, "direction-type") : [], words = dts.flatMap((dt) => kids(dt, "words"));
+            const own = words.map((w) => /^nav\.([a-zA-Z]+)\./.exec(w.attrs.id ?? "")?.[1]).find((x): x is string => !!x && x in NAV_LABEL);
+            const snd = c.name === "sound" ? c : kid(c, "sound"), wt = words.map((w) => text(w)).join(" ");
+            let what: Exclude<NavWhat, "ending"> | null = own ? (own as Exclude<NavWhat, "ending">) : null;
+            if (!what && dts.some((dt) => kid(dt, "segno"))) what = "segno";
+            else if (!what && dts.some((dt) => kid(dt, "coda"))) what = "coda";
+            else if (!what && snd) {
+              const al = /fine/i.test(wt) ? "Fine" : /coda/i.test(wt) ? "Coda" : "";
+              if (snd.attrs.dacapo === "yes") what = al === "Fine" ? "dcFine" : al === "Coda" ? "dcCoda" : "dc";
+              else if (snd.attrs.dalsegno) what = al === "Fine" ? "dsFine" : al === "Coda" ? "dsCoda" : "ds";
+              else if (snd.attrs.tocoda) what = "toCoda";
+              else if (snd.attrs.fine) what = "fine";
+            }
+            if (what) mark({ kind: "nav", id: 0, what });
           }
         } else if (c.name === "note") {
           if (kid(c, "grace")) { drop("装饰音"); continue; }
@@ -370,7 +446,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
         else if (c.name === "harmony") drop("和弦记号");
       }
       const n = Number(m.attrs.number ?? mi + 1);
-      if (manual ? manual.has(n) : mi < measures.length - 1) body.push({ kind: "bar", id: 0 });
+      if (rightRepeat || (manual ? manual.has(n) : mi < measures.length - 1)) body.push({ kind: "bar", id: 0, ...(rightRepeat ? { repeat: "end" as Repeat, ...(rightRepeat.times > 2 ? { times: rightRepeat.times } : {}) } : {}) });
     });
     const tokens: Token[] = [{ kind: "key", id: 0, fifths: H.fifths }, { kind: "time", id: 0, beats: H.beats, beatType: H.beatType }, { kind: "tempo", id: 0, bpm: H.bpm }, ...body];
     keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));

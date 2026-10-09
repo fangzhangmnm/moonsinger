@@ -694,6 +694,12 @@ span.smufl { pointer-events: none; }
 .staff-svg text.groove-mark { font-style: italic; font-weight: 600; font-family: system-ui, sans-serif; }
 .staff-svg text.groove-mark.groove-unknown { fill: var(--muted); }
 .staff-svg text.groove-mark.sel { fill: var(--accent); }
+/* 谱内反复 / 跳转（2026-10-09）：房子括号、Segno / Coda、D.C. / Fine…；不起作用的画灰（.art-mute，通用规则） */
+.staff-svg path.volta { fill: none; stroke: var(--ink); stroke-width: 1.1; }
+.staff-svg path.volta.art-mute { stroke: var(--muted); opacity: .5; }
+.staff-svg text.nav-mark { font-family: system-ui, sans-serif; font-weight: 600; }
+.staff-svg text.nav-word { font-style: italic; }
+.staff-svg .nav-mark.sel, .staff-svg .nav-sign.sel, .staff-svg .repeat-bar.sel, .staff-svg .nav-sign.hot { fill: var(--accent); }
 .ctx-menu.groove-menu { max-width: min(360px, calc(100vw - 16px)); }
 .ctx-menu.groove-menu .ctx-hint { white-space: normal; }
 .ctx-menu.groove-menu .ctx-what { color: var(--ink); padding-top: 6px; }
