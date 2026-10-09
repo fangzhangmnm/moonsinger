@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.24-2026-10-08";
+var APP_VERSION = "v0.7.25-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5566,11 +5566,19 @@ function engrave(song, o10) {
           prims.push({ t: "glyph", x: nhX(c10) - P2(0.2), y: dynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4), ch: a10 === "sfz" ? "\uE539" : "\uE534", cls: ["dyn", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
+      const tieArc = (row, d3, x1, x22, ghost) => {
+        const sgn = d3 < MID_LINE ? 1 : -1, y2 = yOf(row, d3) + sgn * P2(0.8), h2 = Math.min(P2(1), Math.abs(x22 - x1) * 0.25);
+        prims.push({ t: "path", d: `M${x1},${y2}Q${(x1 + x22) / 2},${y2 + sgn * h2} ${x22},${y2}`, cls: ghost ? "tie ghost" : "tie" });
+      };
       const tieBetween = (a10, b3) => {
-        if (a10.system !== b3.system || a10.staff !== b3.staff || !a10.pitch || !b3.pitch) return;
-        const row = RW(b3), d3 = dIdx(b3.pitch, b3.staff), below = d3 < MID_LINE, sgn = below ? 1 : -1;
-        const y2 = yOf(row, d3) + sgn * P2(0.8), xa2 = nhX(a10) + nhW(a10) * 0.8, xb2 = nhX(b3) + nhW(b3) * 0.2;
-        prims.push({ t: "path", d: `M${xa2},${y2}Q${(xa2 + xb2) / 2},${y2 + sgn * P2(1)} ${xb2},${y2}`, cls: b3.ghost ? "tie ghost" : "tie" });
+        if (a10.staff !== b3.staff || !a10.pitch || !b3.pitch) return;
+        const da = dIdx(a10.pitch, a10.staff), db = dIdx(b3.pitch, b3.staff);
+        if (a10.system === b3.system) {
+          tieArc(RW(b3), db, nhX(a10) + nhW(a10) * 0.8, nhX(b3) + nhW(b3) * 0.2, b3.ghost);
+          return;
+        }
+        tieArc(RW(a10), da, nhX(a10) + nhW(a10) * 0.8, Math.max(nhX(a10) + nhW(a10) * 0.8 + P2(2), P2(right) - P2(0.3)), b3.ghost);
+        tieArc(RW(b3), db, Math.max(P2((sysStarts[b3.system] ?? 0) - 1.6), nhX(b3) - P2(3)), nhX(b3) + nhW(b3) * 0.2, b3.ghost);
       };
       const realChunks = units.filter((u2) => u2.kind === "chunk");
       for (let n10 = 1; n10 < realChunks.length; n10++) {
@@ -5669,24 +5677,33 @@ function engrave(song, o10) {
         prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen" });
       }
       lyrics.push(...partLyrics);
-      let run2 = [], runRatio = null, acc = 0, minBase = Infinity;
+      const bracket = (cs3, openL, openR, num) => {
+        const row = RW(cs3[0]), n10 = cs3[0].ratio[0];
+        const xa = openL ? Math.min(nhX(cs3[0]) - P2(1.2), nhX(cs3[0])) : nhX(cs3[0]), last = cs3[cs3.length - 1], xb = openR ? nhX(last) + nhW(last) + P2(1.2) : nhX(last) + nhW(last);
+        const top = Math.min(...cs3.map((c10) => Math.min(c10.pitch ? yOf(row, dIdx(c10.pitch, c10.staff)) : yOf(row, MID_LINE), tipOf.get(c10) ?? Infinity)), yOf(row, TOP_LINE)) - P2(1.6);
+        const mid = (xa + xb) / 2, gap = num ? P2(1) : 0;
+        const left = openL ? `M${xa},${top}` : `M${xa},${top + P2(0.6)}L${xa},${top}`, right2 = openR ? `L${xb},${top}` : `L${xb},${top}L${xb},${top + P2(0.6)}`;
+        prims.push({ t: "path", d: num ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right2}` : `${left}${right2}`, cls: "tuplet-bracket" });
+        if (num) prims.push({ t: "glyph", x: mid - P2(0.55), y: top + P2(0.55), ch: GLYPH_TUPLET(n10), cls: "tuplet" });
+      };
+      let run2 = [], runRatio = null, acc = 0, minBase = Infinity, segStart = 0;
+      const flushSeg = (openR) => {
+        const cs3 = run2.slice(segStart);
+        if (cs3.length && cs3[0].ratio) bracket(cs3, segStart > 0, openR, segStart === 0);
+        segStart = run2.length;
+      };
       const closeRun = () => {
-        if (run2.length && run2[0].ratio) {
-          const row = RW(run2[0]), n10 = run2[0].ratio[0];
-          const xa = nhX(run2[0]), xb = nhX(run2[run2.length - 1]) + nhW(run2[run2.length - 1]);
-          const top = Math.min(...run2.map((c10) => Math.min(c10.pitch ? yOf(row, dIdx(c10.pitch, c10.staff)) : yOf(row, MID_LINE), tipOf.get(c10) ?? Infinity)), yOf(row, TOP_LINE)) - P2(1.6);
-          const mid = (xa + xb) / 2, gap = P2(1);
-          prims.push({ t: "path", d: `M${xa},${top + P2(0.6)}L${xa},${top}L${mid - gap},${top}M${mid + gap},${top}L${xb},${top}L${xb},${top + P2(0.6)}`, cls: "tuplet-bracket" });
-          prims.push({ t: "glyph", x: mid - P2(0.55), y: top + P2(0.55), ch: GLYPH_TUPLET(n10), cls: "tuplet" });
-        }
+        if (run2.length) flushSeg(false);
         run2 = [];
         runRatio = null;
         acc = 0;
         minBase = Infinity;
+        segStart = 0;
       };
       for (const c10 of realChunks) {
         const rr2 = c10.ratio ? c10.ratio.join(":") : null;
-        if (rr2 !== runRatio || run2.length && (c10.system !== run2[0].system || c10.staff !== run2[0].staff)) closeRun();
+        if (rr2 !== runRatio || run2.length && c10.staff !== run2[0].staff) closeRun();
+        else if (run2.length && c10.system !== run2[run2.length - 1].system) flushSeg(true);
         if (!rr2) continue;
         run2.push(c10);
         runRatio = rr2;
@@ -30395,4 +30412,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ebe3a2064973.mjs.map
+//# sourceMappingURL=moonsinger-b6a3428395b4.mjs.map

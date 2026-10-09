@@ -828,12 +828,18 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           prims.push({ t: "glyph", x: nhX(c) - P(0.2), y: dynYAt.get(rowOf(c.system, r, 0)) ?? yOf(RW(c), TOP_LINE + 2.4), ch: a === "sfz" ? "\u{E539}" : "\u{E534}", cls: ["dyn", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         if (c.breath) prims.push({ t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
-      // 8. 连音线：同一个 token 拆开的几段之间 + 数据里的 tie（连着前一个音）。跨行的第一版不画
+      // 8. 连音线：同一个 token 拆开的几段之间 + 数据里的 tie（连着前一个音）。跨行 = 两半：这一行从音到行尾、下一行从行头到音
+      //   （2026-10-08 Opus 5.5，user「跨行的连音符显示不正常」——以前跨行的整条不画）
+      const tieArc = (row: number, d: number, x1: number, x2: number, ghost: boolean) => {
+        const sgn = d < MID_LINE ? 1 : -1, y = yOf(row, d) + sgn * P(0.8), h = Math.min(P(1.0), Math.abs(x2 - x1) * 0.25);   // 短的（行头那半截）压扁一点，别像个「^」
+        prims.push({ t: "path", d: `M${x1},${y}Q${(x1 + x2) / 2},${y + sgn * h} ${x2},${y}`, cls: ghost ? "tie ghost" : "tie" });
+      };
       const tieBetween = (a: Chunk, b: Chunk) => {
-        if (a.system !== b.system || a.staff !== b.staff || !a.pitch || !b.pitch) return;
-        const row = RW(b), d = dIdx(b.pitch, b.staff), below = d < MID_LINE, sgn = below ? 1 : -1;
-        const y = yOf(row, d) + sgn * P(0.8), xa2 = nhX(a) + nhW(a) * 0.8, xb2 = nhX(b) + nhW(b) * 0.2;
-        prims.push({ t: "path", d: `M${xa2},${y}Q${(xa2 + xb2) / 2},${y + sgn * P(1.0)} ${xb2},${y}`, cls: b.ghost ? "tie ghost" : "tie" });
+        if (a.staff !== b.staff || !a.pitch || !b.pitch) return;
+        const da = dIdx(a.pitch, a.staff), db = dIdx(b.pitch, b.staff);
+        if (a.system === b.system) { tieArc(RW(b), db, nhX(a) + nhW(a) * 0.8, nhX(b) + nhW(b) * 0.2, b.ghost); return; }
+        tieArc(RW(a), da, nhX(a) + nhW(a) * 0.8, Math.max(nhX(a) + nhW(a) * 0.8 + P(2), P(right) - P(0.3)), b.ghost);   // 行尾开口
+        tieArc(RW(b), db, Math.max(P((sysStarts[b.system] ?? 0) - 1.6), nhX(b) - P(3)), nhX(b) + nhW(b) * 0.2, b.ghost);      // 行头开口（从调号那儿起）
       };
       const realChunks = units.filter((u): u is Chunk => u.kind === "chunk");
       for (let n = 1; n < realChunks.length; n++) {
@@ -923,22 +929,24 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         prims.push({ t: "text", x: xx, y: L.y, s: "-", cls: "lyric hyphen" });
       }
       lyrics.push(...partLyrics);
-      // 10. 连音括号：同一比例连着的一串，凑满「m 个最小写出单位」就收一组
-      let run: Chunk[] = [], runRatio: string | null = null, acc = 0, minBase = Infinity;
-      const closeRun = () => {
-        if (run.length && run[0].ratio) {
-          const row = RW(run[0]), n = run[0].ratio[0];
-          const xa = nhX(run[0]), xb = nhX(run[run.length - 1]) + nhW(run[run.length - 1]);
-          const top = Math.min(...run.map((c) => Math.min(c.pitch ? yOf(row, dIdx(c.pitch, c.staff)) : yOf(row, MID_LINE), tipOf.get(c) ?? Infinity)), yOf(row, TOP_LINE)) - P(1.6);
-          const mid = (xa + xb) / 2, gap = P(1.0);
-          prims.push({ t: "path", d: `M${xa},${top + P(0.6)}L${xa},${top}L${mid - gap},${top}M${mid + gap},${top}L${xb},${top}L${xb},${top + P(0.6)}`, cls: "tuplet-bracket" });
-          prims.push({ t: "glyph", x: mid - P(0.55), y: top + P(0.55), ch: GLYPH_TUPLET(n), cls: "tuplet" });
-        }
-        run = []; runRatio = null; acc = 0; minBase = Infinity;
+      // 10. 连音括号：同一比例连着的一串，凑满「m 个最小写出单位」就收一组。一组跨行（2026-10-08 Opus 5.5，user「跨行的连音符显示不正常」）=
+      //   照样接着数（以前到行尾就收组、下一行从头数，后面的组全错位），每行画一段括号：这一行右边开口、带数字，下一行左边开口
+      const bracket = (cs: Chunk[], openL: boolean, openR: boolean, num: boolean) => {
+        const row = RW(cs[0]), n = cs[0].ratio![0];
+        const xa = openL ? Math.min(nhX(cs[0]) - P(1.2), nhX(cs[0])) : nhX(cs[0]), last = cs[cs.length - 1], xb = openR ? nhX(last) + nhW(last) + P(1.2) : nhX(last) + nhW(last);
+        const top = Math.min(...cs.map((c) => Math.min(c.pitch ? yOf(row, dIdx(c.pitch, c.staff)) : yOf(row, MID_LINE), tipOf.get(c) ?? Infinity)), yOf(row, TOP_LINE)) - P(1.6);
+        const mid = (xa + xb) / 2, gap = num ? P(1.0) : 0;
+        const left = openL ? `M${xa},${top}` : `M${xa},${top + P(0.6)}L${xa},${top}`, right = openR ? `L${xb},${top}` : `L${xb},${top}L${xb},${top + P(0.6)}`;
+        prims.push({ t: "path", d: num ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right}` : `${left}${right}`, cls: "tuplet-bracket" });
+        if (num) prims.push({ t: "glyph", x: mid - P(0.55), y: top + P(0.55), ch: GLYPH_TUPLET(n), cls: "tuplet" });
       };
+      let run: Chunk[] = [], runRatio: string | null = null, acc = 0, minBase = Infinity, segStart = 0;
+      const flushSeg = (openR: boolean) => { const cs = run.slice(segStart); if (cs.length && cs[0].ratio) bracket(cs, segStart > 0, openR, segStart === 0); segStart = run.length; };
+      const closeRun = () => { if (run.length) flushSeg(false); run = []; runRatio = null; acc = 0; minBase = Infinity; segStart = 0; };
       for (const c of realChunks) {
         const rr = c.ratio ? c.ratio.join(":") : null;
-        if (rr !== runRatio || (run.length && (c.system !== run[0].system || c.staff !== run[0].staff))) closeRun();
+        if (rr !== runRatio || (run.length && c.staff !== run[0].staff)) closeRun();
+        else if (run.length && c.system !== run[run.length - 1].system) flushSeg(true);   // 跨行：这一行先画到行尾（右边开口），组接着数
         if (!rr) continue;
         run.push(c); runRatio = rr; acc += c.ticks; minBase = Math.min(minBase, c.base);
         if (acc >= c.ratio![1] * minBase - 1e-6) closeRun();
