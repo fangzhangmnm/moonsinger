@@ -1,5 +1,6 @@
 // 「念」缓存（src/singer/speech-cache.ts）：同样的歌词 = 第二次不再跑 piper / WORLD 分析，交回去的数一样（拷贝，不共享）；预算 LRU。created 2026-10-09 by Claude Fable 5.1
 import { describe, it, eq, assert } from "./runner.mjs";
+import { memorySpeechStore } from "../src/singer/speech-store.ts";
 import { SpeechCache } from "../src/singer/speech-cache.ts";
 
 function fakes() {
@@ -37,5 +38,40 @@ describe("念缓存：分析是共享的只读对象", () => {
     const src = fs.readFileSync(new URL("../src/singer/sing-core.mjs", import.meta.url), "utf8");
     const writes = src.match(/\ban\.(?:sp|ap|f0)(?:\[[^\]]*\]\s*[-+*/]?=[^=]|\.(?:set|fill|copyWithin|reverse|sort)\()/g) ?? [];
     eq(writes.length, 0, `sing-core.mjs 里不许写分析数组：${writes.join(" | ")}`);
+  });
+});
+
+// 持久层 = 全局池（2026-10-10，user「建议一个全局池by key and model config hash而不是每首歌」）：内存没有去盘上拿；念回来那一刻把同一句的分析预取进内存（analyze 是同步的）；
+//   未命中后台写盘；模型标签不同 = 另一组键；预算按最久没用淘汰；清空。
+describe("念缓存：持久层（全局池）", () => {
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+  const sing = async (c: SpeechCache, f: ReturnType<typeof fakes>) => { const P = c.wrapPiper(f.piper), W = c.wrapWorld(f.world); const pred = await P.run([1, 2, 3], [[0]], { noiseScale: 0 }); const said = await P.run([1, 2, 3], [[0]], { override: [1, 1, 1] }); return { pred, an: W.analyze(said.audio, 22050, { framePeriod: 5 }) }; };
+  it("第二个 cache 实例（内存空）+ 同一个池：念从盘上来、分析预取进内存 = 一次都不算", async () => {
+    const pool = memorySpeechStore(1e9), f = fakes();
+    const a = new SpeechCache(1e9); a.attachStore(pool, "m1");
+    const r1 = await sing(a, f); eq(f.n().runs, 2); eq(f.n().analyses, 1);
+    for (let i = 0; i < 5; i++) await settle();   // 后台写盘
+    eq((await pool.info()).entries, 3, "两遍念 + 一份分析都进了池");
+    const b = new SpeechCache(1e9); b.attachStore(pool, "m1");
+    const r2 = await sing(b, f);
+    eq(f.n().runs, 2, "念没再跑"); eq(f.n().analyses, 1, "分析没再跑（预取命中）");
+    eq([...r2.an.sp].join(), [...r1.an.sp].join()); eq([...r2.pred.durations!].join(), [...r1.pred.durations!].join());
+    assert(b.diskHits >= 3, `盘上命中 ${b.diskHits}`);
+  });
+  it("模型标签不同 = 另一组键（旧模型的不命中）；清空后重算", async () => {
+    const pool = memorySpeechStore(1e9), f = fakes();
+    const a = new SpeechCache(1e9); a.attachStore(pool, "m1"); await sing(a, f); for (let i = 0; i < 5; i++) await settle();
+    const b = new SpeechCache(1e9); b.attachStore(pool, "m2"); await sing(b, f);
+    eq(f.n().runs, 4, "换了模型标签 = 重念"); eq(f.n().analyses, 2);
+    for (let i = 0; i < 5; i++) await settle();
+    eq((await pool.info()).entries, 6);
+    await pool.clear(); eq((await pool.info()).entries, 0); eq((await pool.info()).bytes, 0);
+    const c = new SpeechCache(1e9); c.attachStore(pool, "m1"); await sing(c, f); eq(f.n().runs, 6, "清空了 = 重念");
+  });
+  it("池的预算：超了按最久没用淘汰、刚写的留着；总字节对得上", async () => {
+    const pool = memorySpeechStore(100);
+    await pool.put("k1", { kind: "p", k: "a", bytes: 60, audio: new Float32Array(15) });
+    await pool.put("k2", { kind: "p", k: "b", bytes: 60, audio: new Float32Array(15) });
+    const i = await pool.info(); eq(i.entries, 1); eq(i.bytes, 60); eq(await pool.get("k1"), null); assert((await pool.get("k2")) !== null, "刚写的留着");
   });
 });

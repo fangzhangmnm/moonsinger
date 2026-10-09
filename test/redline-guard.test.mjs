@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, assert } from "./runner.mjs";
 
-const SEAM = new Set(["src/app-store.ts", "src/device-kv.ts", "src/config.ts"]);
+const SEAM = new Set(["src/app-store.ts", "src/device-kv.ts", "src/config.ts", "src/singer/speech-store.ts"]);   // speech-store = 念缓存全局池（可再生派生 IDB，user 2026-10-10 批）
 // @internal/gallery 的值级 import 点（图库屏 / 纯函数缩图 / store 的 ui 接线器 storeUIFor / 黑匣子 diagLog）
 const GALLERY_OK = new Set(["src/gallery-host.ts", "src/image/cover.ts", "src/image/shrink.ts", "src/store-ui.ts", "src/app/report-error.ts"]);   // shrink.ts = 参考窗「压一下」的缩图（纯函数），2026-10-09 Opus 5.5
 const BAD = [

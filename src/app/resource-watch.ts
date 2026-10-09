@@ -15,6 +15,8 @@ export interface Budget {
   perWorker: number;
   /** 录音房里留的块（Int16）超过这个 = 放远处的。 */
   chunkBytes: number;
+  /** 念缓存持久层（全局池，IndexedDB）的字节预算（user 2026-10-10「代价约每首32MB」：小设备约 4 首、桌面约 16 首）。 */
+  speechDisk: number;
 }
 export interface LaneMem { wasm: number; cache: number }
 export interface Snapshot {
@@ -34,9 +36,9 @@ const MB = 1e6;
 /** 设备预算：iPad / 手机按「别被系统杀」来；桌面宽松。cores / deviceMemory 浏览器不给就按保守的算。 */
 export function budgetFor(d: DeviceInfo): Budget {
   const small = d.ios || (d.deviceMemoryGB !== null && d.deviceMemoryGB <= 4);
-  if (small) return { lanes: 1, total: 600 * MB, perWorker: 420 * MB, chunkBytes: 24 * MB };
+  if (small) return { lanes: 1, total: 600 * MB, perWorker: 420 * MB, chunkBytes: 24 * MB, speechDisk: 128 * MB };
   const mid = d.deviceMemoryGB !== null && d.deviceMemoryGB < 8;
-  return { lanes: !mid && d.cores >= 4 ? 2 : 1, total: mid ? 1200 * MB : 2500 * MB, perWorker: mid ? 700 * MB : 1400 * MB, chunkBytes: mid ? 64 * MB : 160 * MB };
+  return { lanes: !mid && d.cores >= 4 ? 2 : 1, total: mid ? 1200 * MB : 2500 * MB, perWorker: mid ? 700 * MB : 1400 * MB, chunkBytes: mid ? 64 * MB : 160 * MB, speechDisk: 512 * MB };
 }
 export const totalBytes = (s: Snapshot): number => s.lanes.reduce((n, l) => n + l.wasm + l.cache, 0) + s.chunkBytes + s.soundMem;
 

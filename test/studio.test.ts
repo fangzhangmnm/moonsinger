@@ -85,6 +85,16 @@ describe("录音房：停 / 再放 / 放着的时候换时间线（2026-10-10）
     const b = run(s, 0.15);
     assert(peak(b.L, sec(0.02), sec(0.15)) < 1e-4, `再放：上次的音不漏（${peak(b.L, sec(0.02), sec(0.15))}）`);
   });
+  it("停：月读的块 30 ms 淡出之后就不出声（原来淡完又全音量放出来；user「按停之后月读不应该把长句念完」）", async () => {
+    const { s } = await studio();
+    s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(3, 0.5) });
+    s.handle({ type: "timeline", tl: tl([clipTrack("v", "A", 0, 3)], { from: 0, to: 3 }) }); s.handle({ type: "play" });
+    run(s, 0.5);
+    s.handle({ type: "stop" });
+    const a = run(s, 0.5);
+    assert(peak(a.L, 0, sec(0.01)) > 0.1, "停的一瞬还有声（淡出中）");
+    assert(peak(a.L, sec(0.05), sec(0.5)) < 1e-4, `淡完之后安静（${peak(a.L, sec(0.05), sec(0.5))}）`);
+  });
   it("放着的时候正在唱的那句换了唱谱：旧块留到响完、走带不冻；响完新块没到才等（user「正在响的那句不换、响完换新」）", async () => {
     const { s, out } = await studio();
     s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(1, 0.5) });

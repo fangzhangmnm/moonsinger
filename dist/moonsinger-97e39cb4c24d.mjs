@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.14-2026-10-10";
+var APP_VERSION = "v0.9.15-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -18748,7 +18748,7 @@ var Singer = class {
   }
   worker(l10) {
     if (l10.w) return l10.w;
-    const w2 = new Worker(new URL(`./${"singer-worker-3628b83d65e1.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"singer-worker-5c0832b1fa6d.mjs"}`, import.meta.url), { type: "module" });
     l10.w = w2;
     w2.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -18758,6 +18758,10 @@ var Singer = class {
         return;
       }
       this.pending.delete(m2.id);
+      if (m2.type === "cache") {
+        p2.cache?.(m2.disk);
+        return;
+      }
       if (m2.type === "done") {
         if (m2.mem) {
           l10.mem = m2.mem;
@@ -18817,15 +18821,24 @@ var Singer = class {
     }
   }
   /** 只把引擎起起来（打开歌就起；user 10-10「冷启动做」）：第一条道。别的道第一次用到才起（起在并行里，不另花等待）。失败不抛（第一次真唱会再报）。 */
-  warm(models) {
+  warm(models, diskBytes) {
     const l10 = this.lanes[0];
     return l10.warming ??= new Promise((ok2) => {
-      const id2 = ++this.seq, req = { type: "warm", id: id2, models };
+      const id2 = ++this.seq, req = { type: "warm", id: id2, models, diskBytes };
       this.pending.set(id2, { ok: () => ok2(), fail: () => ok2(), progress: () => {
       }, lane: l10 });
       this.worker(l10).postMessage(req);
     }).finally(() => {
       l10.warming = null;
+    });
+  }
+  /** 念缓存持久层（全局池）：看大小 / 清空。走第一条道（不起引擎）。 */
+  cache(op2, diskBytes) {
+    const l10 = this.lanes[0], id2 = ++this.seq, req = { type: "cache", id: id2, op: op2, diskBytes };
+    return new Promise((ok2, fail) => {
+      this.pending.set(id2, { ok: () => ok2(null), fail, progress: () => {
+      }, lane: l10, cache: ok2 });
+      this.worker(l10).postMessage(req);
     });
   }
   get busy() {
@@ -18908,9 +18921,9 @@ var Singer = class {
 var MB = 1e6;
 function budgetFor(d3) {
   const small = d3.ios || d3.deviceMemoryGB !== null && d3.deviceMemoryGB <= 4;
-  if (small) return { lanes: 1, total: 600 * MB, perWorker: 420 * MB, chunkBytes: 24 * MB };
+  if (small) return { lanes: 1, total: 600 * MB, perWorker: 420 * MB, chunkBytes: 24 * MB, speechDisk: 128 * MB };
   const mid = d3.deviceMemoryGB !== null && d3.deviceMemoryGB < 8;
-  return { lanes: !mid && d3.cores >= 4 ? 2 : 1, total: mid ? 1200 * MB : 2500 * MB, perWorker: mid ? 700 * MB : 1400 * MB, chunkBytes: mid ? 64 * MB : 160 * MB };
+  return { lanes: !mid && d3.cores >= 4 ? 2 : 1, total: mid ? 1200 * MB : 2500 * MB, perWorker: mid ? 700 * MB : 1400 * MB, chunkBytes: mid ? 64 * MB : 160 * MB, speechDisk: 512 * MB };
 }
 var totalBytes = (s10) => s10.lanes.reduce((n10, l10) => n10 + l10.wasm + l10.cache, 0) + s10.chunkBytes + s10.soundMem;
 var AUDIO_HOT = 0.85;
@@ -22259,7 +22272,7 @@ var Studio = class {
       const t10 = this.tracks.get(id2), mono = t10.src;
       mono.fill(0, 0, cnt);
       if (t10.spec.kind === "clips") {
-        if (clipsOn) this.renderClips(t10, mono, cnt, t02);
+        if (clipsOn && !(t10.env === 0 && t10.envTarget === 0)) this.renderClips(t10, mono, cnt, t02);
       } else this.renderNotes(t10, mono, cnt, t02, notesOn);
       const segs = t10.spec.gain;
       if (segs && segs.length) {
@@ -34274,7 +34287,7 @@ var doc = {
   saved: { song: st2.song, lounge: "", refs: 0 }
 };
 var coverRev = 0;
-var loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), doc.extras.studio?.mics ?? []]);
+var loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), doc.extras.studio ?? null]);
 doc.saved.lounge = loungeKey();
 var curPart = () => st2.song.parts.find((p2) => p2.id === st2.at.part) ?? st2.song.parts[0];
 var ignoredFor = (role) => {
@@ -34455,7 +34468,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-c543ee86b1c6.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-8b6fc5041f9a.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -34528,7 +34541,7 @@ function sungDown(p2, id2) {
   const part = st2.song.parts.find((x2) => x2.id === st2.at.part), ch2 = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
   singer.unlock();
   void engine.ensure().catch(() => void 0);
-  void singer.singOnly(at2.plan.score, { entry: at2.entry, midi: midiOf(p2), secs: SUNG_SECS }, { opt: humOpt(), models: modelBases() }).then((r10) => {
+  void singer.singOnly(at2.plan.score, { entry: at2.entry, midi: midiOf(p2), secs: SUNG_SECS }, { opt: humOpt(), models: modelBases(), diskBytes: BUDGET.speechDisk }).then((r10) => {
     if (sungHeld.get(id2) !== seq) return;
     engine.auditionClip(id2, r10.sr, r10.samples, ch2.gainDb + dyn.dB + SUNG_GAIN_DB, ch2.pan);
   }).catch(() => void 0);
@@ -35222,7 +35235,7 @@ async function singOne(key, c10, who) {
       const pc = /(\d+)%$/.exec(stage);
       if (pc) renderBar.frac(Number(pc[1]) / 100);
       else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]);
-    }, { opt: humOpt(), models: modelBases(), raw: true, tag: key });
+    }, { opt: humOpt(), models: modelBases(), raw: true, tag: key, diskBytes: BUDGET.speechDisk });
     if (engine.hasChunk(key) || !chunkPlans.has(key)) {
       renderBar.next();
       return;
@@ -35249,10 +35262,14 @@ async function waitChunksReady(tl2, pos, stop) {
   }
 }
 async function awaitAllChunks(tl2) {
+  const want = [...new Set(tl2.chunks.map((c10) => c10.key))];
   setChunkOrder(tl2, tl2.range.from, null);
-  while (pumping || pendingChunks() > 0) {
+  for (; ; ) {
+    const missing = want.filter((k2) => !engine.hasChunk(k2));
+    if (!missing.length) return;
+    if (!missing.some((k2) => chunkKeysWanted.includes(k2) || inflightKeys.has(k2))) setChunkOrder(tl2, tl2.range.from, null);
+    else if (!pumping) void pump();
     await new Promise((r10) => setTimeout(r10, 80));
-    if (!pumping && pendingChunks() > 0) void pump();
   }
 }
 var MAX_CHUNKS = 64;
@@ -35274,6 +35291,7 @@ function pruneChunks(tl2) {
 }
 var DEVICE = { ios: /iPad|iPhone|iPod/.test(navigator.platform) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1, cores: navigator.hardwareConcurrency ?? 2, deviceMemoryGB: navigator.deviceMemory ?? null };
 var BUDGET = budgetFor(DEVICE);
+if (new URLSearchParams(location.search).has("nodisk")) BUDGET.speechDisk = 0;
 singer.setLanes(BUDGET.lanes);
 diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB \u2192 lanes ${BUDGET.lanes}, budget ${Math.round(BUDGET.total / 1e6)} MB (worker ${Math.round(BUDGET.perWorker / 1e6)}, chunks ${Math.round(BUDGET.chunkBytes / 1e6)})`);
 var watch = { load: null, hot: 0, lanesCut: false, said: /* @__PURE__ */ new Map() };
@@ -35418,6 +35436,10 @@ function stopPlay() {
   playIcon(false);
   view.setPlayhead(null);
   cancelPrepare = true;
+  chunkKeysWanted = [];
+  singer.cancelPending();
+  singer.cancelInflight();
+  schedulePrewarm();
 }
 engine.on("ended", () => {
   playIcon(false);
@@ -35680,7 +35702,7 @@ ${esc7(CREDIT.attribution.join("\n"))}</pre><div class="part-sec">\u4E2D\u6587\u
 
 ${esc7(CREDIT_TRANSLATIONS.zh.terms)}</pre><div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc7(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="\u6708\u8BFB\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5">\u91CD\u5F00\u6708\u8BFB\u5F15\u64CE</button></div></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u6708\u8BFB\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">\u6E05\u7A7A\u5FF5\u7F13\u5B58</button></div></div><div class="set-field">\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="\u6708\u8BFB\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5">\u91CD\u5F00\u6708\u8BFB\u5F15\u64CE</button></div></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -35693,6 +35715,15 @@ ${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5F
   };
   refreshRes();
   const resTimer = window.setInterval(refreshRes, 1e3);
+  const spCache = box.querySelector("#spCache");
+  const refreshSpeech = () => {
+    void singer.cache("info", BUDGET.speechDisk).then((d3) => {
+      spCache.textContent = d3 ? `${sizeText2(d3.bytes)} / \u9884\u7B97 ${sizeText2(d3.budget)}\uFF0C${d3.entries} \u6761` : "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6CA1\u6709 IndexedDB\uFF1A\u53EA\u7528\u5185\u5B58";
+    }).catch((e10) => {
+      spCache.textContent = `\u8BFB\u4E0D\u5230\uFF1A${e10.message}`;
+    });
+  };
+  refreshSpeech();
   const sndIn = box.querySelector("#sndIn"), sndCache = box.querySelector("#sndCache");
   const refreshSounds = async () => {
     const cached2 = await listCachedSounds(), bySha = new Map(cached2.map((c10) => [c10.sha256, c10])), known = new Set(Object.values(SOUNDS).map((e10) => e10.sha256)), uses = new Map(soundUses(doc.extras).map((u2) => [u2.subsetSha256, u2]));
@@ -35752,6 +35783,10 @@ ${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5F
       } else info(r10 === "latest" ? "\u5DF2\u7ECF\u662F\u6700\u65B0\u7248" : "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0");
     });
     else if (v === "reset") void shell.forceReset();
+    else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => {
+      refreshSpeech();
+      info("\u5FF5\u7F13\u5B58\u6E05\u7A7A\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5\uFF09");
+    });
     else if (v === "eng:restart") {
       singer.restart();
       diagNote("resource", "manual restart of singer lanes");
@@ -35820,6 +35855,7 @@ window.__moonsinger = {
   exportSong,
   renderMix: () => renderMixForTest(),
   resource: () => ({ snapshot: resourceSnapshot(), text: describe(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
+  speechCache: (op2) => singer.cache(op2, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
   setTrack: (id2, patch) => {
     updateExtras(withTrack2(doc.extras, id2, patch), { kind: "studio", label: `\u8F68\u300C${id2}\u300D` });
@@ -37309,7 +37345,7 @@ function loadDoc(song, o10) {
   view.render();
   pad3.render();
   renderTitle();
-  if (st2.song.parts.some((p2) => activeInstrument(doc.extras, p2.role)?.engine === "tsukuyomi")) void singer.warm(modelBases());
+  if (st2.song.parts.some((p2) => activeInstrument(doc.extras, p2.role)?.engine === "tsukuyomi")) void singer.warm(modelBases(), BUDGET.speechDisk);
   schedulePrewarm();
 }
 function markSaved() {
@@ -38577,4 +38613,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-55414a176db4.mjs.map
+//# sourceMappingURL=moonsinger-97e39cb4c24d.mjs.map

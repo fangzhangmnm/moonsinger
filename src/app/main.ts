@@ -91,7 +91,7 @@ const doc = { stem: defaultStem(), named: false, handle: null as docFile.FileHan
 let coverRev = 0;   // 封面图换过几次（封面不在 lounge 里，但也算「改过没存」）
 // 整份休息室参与比较（2026-10-08 by Claude Opus 5.5）：原来只看 id / 名字 / 上场 / 候选 id，候选里面的东西变了（打包 / 解包、响度校准）不算脏 = 不自动存、不出「•」。
 // 休息室 JSON 很小（字节在 extras.sounds，不在这里），每秒一次 stringify 无所谓。
-const loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)), (doc.extras.studio?.mics as unknown[] | undefined) ?? []]);
+const loungeKey = () => JSON.stringify([coverRev, Object.entries(doc.extras.lounge).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)), doc.extras.studio ?? null]);   // 录音房整份参与（v0.9.9 升 v2 后原来只看 v1 的 mics = 录音房改了不标脏；user 2026-10-10「录音房没有mark dirty」）
 doc.saved.lounge = loungeKey();
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => st.song.parts.find((p) => p.id === st.at.part) ?? st.song.parts[0];
@@ -301,7 +301,7 @@ function sungDown(p: Pitch, id: string): void {
   const seq = ++sungSeq; sungHeld.set(id, seq);
   const part = st.song.parts.find((x) => x.id === st.at.part), ch = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
   singer.unlock(); void engine.ensure().catch(() => undefined);
-  void singer.singOnly(at.plan.score, { entry: at.entry, midi: midiOf(p), secs: SUNG_SECS }, { opt: humOpt(), models: modelBases() })
+  void singer.singOnly(at.plan.score, { entry: at.entry, midi: midiOf(p), secs: SUNG_SECS }, { opt: humOpt(), models: modelBases(), diskBytes: BUDGET.speechDisk })
     .then((r) => { if (sungHeld.get(id) !== seq) return; engine.auditionClip(id, r.sr, r.samples, ch.gainDb + dyn.dB + SUNG_GAIN_DB, ch.pan); })
     .catch(() => undefined);   // 唱不了（歌词和音数对不上…）：这一下不出声；真播放时会报出来
 }
@@ -784,7 +784,7 @@ async function pump(): Promise<void> {
 async function singOne(key: string, c: ChunkPlan, who: string): Promise<void> {
   const t = performance.now();
   try {
-    const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]); }, { opt: humOpt(), models: modelBases(), raw: true, tag: key });
+    const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]); }, { opt: humOpt(), models: modelBases(), raw: true, tag: key, diskBytes: BUDGET.speechDisk });
     if (engine.hasChunk(key) || !chunkPlans.has(key)) { renderBar.next(); return; }   // 期间换了歌 / 顺序：照样留着（键对就不浪费），但别再算进度
     engine.chunk(key, r.sr, r.samples);
     if (r.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r.ms.boot)}`);   // 冷启动各段（刀 5）：诊断页看（测试里的假唱没有 ms）
@@ -805,10 +805,17 @@ async function waitChunksReady(tl: Timeline, pos: number, stop: () => boolean): 
     await new Promise<void>((r) => setTimeout(r, 80));
   }
 }
-/** 全部块到齐（导出 / 测试钩子用）。 */
+/** 全部块到齐（导出 / 测试钩子用）：盯着**这条时间线自己的全部键**，不盯 chunkKeysWanted——那个会被预唱定时器 / 改谱刷新换成别的子集，原来一被插队就提前返回、导出报「chunk … missing for export」（2026-10-10 真引擎 probe 抓到）。 */
 async function awaitAllChunks(tl: Timeline): Promise<void> {
+  const want = [...new Set(tl.chunks.map((c) => c.key))];
   setChunkOrder(tl, tl.range.from, null);
-  while (pumping || pendingChunks() > 0) { await new Promise<void>((r) => setTimeout(r, 80)); if (!pumping && pendingChunks() > 0) void pump(); }
+  for (;;) {
+    const missing = want.filter((k) => !engine.hasChunk(k));
+    if (!missing.length) return;
+    if (!missing.some((k) => chunkKeysWanted.includes(k) || inflightKeys.has(k))) setChunkOrder(tl, tl.range.from, null);   // 被别人换了顺序 = 把我们的重新排上
+    else if (!pumping) void pump();
+    await new Promise<void>((r) => setTimeout(r, 80));
+  }
 }
 /** 录音房里只留最近用到的块（内容键；按代价 / 预算留归刀 2）。 */
 const MAX_CHUNKS = 64, chunkKeys: string[] = [];   // 最近用过的在后面
@@ -823,6 +830,7 @@ function pruneChunks(tl: Timeline): void {
 //   能算到的 = 每条月读 worker 的 WASM 堆 + 念缓存（worker 每次回话带着）、录音房里的块（音频线程每秒报）、音源在内存里的整包；音频线程每秒报忙闲。
 const DEVICE: DeviceInfo = { ios: /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), cores: navigator.hardwareConcurrency ?? 2, deviceMemoryGB: (navigator as { deviceMemory?: number }).deviceMemory ?? null };
 const BUDGET = budgetFor(DEVICE);
+if (new URLSearchParams(location.search).has("nodisk")) BUDGET.speechDisk = 0;   // 查案开关：?nodisk=1 = 念缓存不落盘（只用内存）
 singer.setLanes(BUDGET.lanes);
 diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB → lanes ${BUDGET.lanes}, budget ${Math.round(BUDGET.total / 1e6)} MB (worker ${Math.round(BUDGET.perWorker / 1e6)}, chunks ${Math.round(BUDGET.chunkBytes / 1e6)})`);
 const watch = { load: null as LoadInfo | null, hot: 0, lanesCut: false, said: new Map<string, number>() };
@@ -920,7 +928,11 @@ async function togglePlay(o: { fromStart?: boolean; seam?: boolean } = {}): Prom
   } catch (e) { showError(`放不了：${(e as Error).message}`); progress(""); playIcon(false); }
   finally { releaseAudio(); preparing = false; if (!engine.playing) $("playBtn").classList.remove("is-on"); }
 }
-function stopPlay(): void { engine.stop(); playIcon(false); view.setPlayhead(null); cancelPrepare = true; }
+function stopPlay(): void {
+  engine.stop(); playIcon(false); view.setPlayhead(null); cancelPrepare = true;
+  // 停 = 月读也停：正在念的那句中途取消、后面排着的不念了（user 2026-10-10「按停之后月读不应该把长句念完」）；只留安静的预唱（光标附近几句，改谱那套）
+  chunkKeysWanted = []; singer.cancelPending(); singer.cancelInflight(); schedulePrewarm();
+}
 engine.on("ended", () => { playIcon(false); view.setPlayhead(null); });
 let lastReorder = 0;
 engine.on("pos", (sec, playing, waiting) => {
@@ -1124,6 +1136,7 @@ function openSettings(): void {
     `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><div class="part-sec">原文（以此为准）</div><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre>` +
       `<div class="part-sec">中文译文（仅供阅读，以日文原文为准）</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` +
       `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc(CREDIT_TRANSLATIONS.en.credit)}\n\n${esc(CREDIT_TRANSLATIONS.en.terms)}</pre></details>` +
+    `<div class="set-field">月读的念缓存（设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念）<div id="spCache" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="sp:clear">清空念缓存</button></div></div>` +
     `<div class="set-field">引擎负载与内存（能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说）<div id="engRes" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="eng:restart" title="月读引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念">重开月读引擎</button></div></div>` +
     `<details class="set-credit"><summary>诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:share">${canShareDiag() ? "分享 .txt" : "下载 .txt"}</button><button class="btn" data-v="diag:clear">清空</button></div></details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的月读模型包不删">清缓存重启</button></div>` +
@@ -1135,6 +1148,9 @@ function openSettings(): void {
   const engRes = box.querySelector<HTMLElement>("#engRes")!;
   const refreshRes = () => { engRes.textContent = `${describeResources(resourceSnapshot(), BUDGET)} 月读 ${singer.parallelism} 条道（设备预算 ${BUDGET.lanes}）。`; };
   refreshRes(); const resTimer = window.setInterval(refreshRes, 1000);
+  const spCache = box.querySelector<HTMLElement>("#spCache")!;
+  const refreshSpeech = () => { void singer.cache("info", BUDGET.speechDisk).then((d) => { spCache.textContent = d ? `${sizeText(d.bytes)} / 预算 ${sizeText(d.budget)}，${d.entries} 条` : "这个浏览器没有 IndexedDB：只用内存"; }).catch((e) => { spCache.textContent = `读不到：${(e as Error).message}`; }); };
+  refreshSpeech();
   const sndIn = box.querySelector<HTMLInputElement>("#sndIn")!, sndCache = box.querySelector<HTMLElement>("#sndCache")!;
   const refreshSounds = async () => {
     const cached = await listCachedSounds(), bySha = new Map(cached.map((c) => [c.sha256, c])), known = new Set(Object.values(SOUNDS).map((e) => e.sha256)), uses = new Map(soundUses(doc.extras).map((u) => [u.subsetSha256, u]));
@@ -1161,6 +1177,7 @@ function openSettings(): void {
     else if (v === "snd:mem") { releaseSoundMemory(); void refreshSounds(); }
     else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
     else if (v === "reset") void shell.forceReset();
+    else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => { refreshSpeech(); info("念缓存清空了（念过的句子要重念）"); });
     else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info("月读引擎重开了（内存还回去了；念过的句子要重念）"); }
   });
   box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
@@ -1201,6 +1218,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, renderMix: () => renderMixForTest(),
   resource: () => ({ snapshot: resourceSnapshot(), text: describeResources(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
+  speechCache: (op: "info" | "clear") => singer.cache(op, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
   setTrack: (id: string, patch: Record<string, unknown>) => { updateExtras(withTrack(doc.extras, id, patch as never), { kind: "studio", label: `轨「${id}」` }); },
   addBus: (name = "总线") => { const id = newBusId(doc.extras); updateExtras(withTrack(doc.extras, id, { kind: "bus", name }), { kind: "studio", label: `加总线「${name}」` }); return id; },
@@ -2171,7 +2189,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   pad.setRangeLow(d.pad.low);
   engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; singer.cancelPending(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了
   view.render(); pad.render(); renderTitle();
-  if (st.song.parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "tsukuyomi")) void singer.warm(modelBases());   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
+  if (st.song.parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "tsukuyomi")) void singer.warm(modelBases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }
 /** 存好了：文件名从此定下来（之后和歌名各管各的；user「之后各管各的同意」）。 */

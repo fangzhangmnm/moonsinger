@@ -10,6 +10,7 @@ const ALLOW = {
   "src/app/pwa-shell.ts": "Cache Storage：forceReset 只清自己前缀（moonsinger-）的壳缓存；兄弟 app 的缓存和 pwa-models / pwa-sounds 不碰",
   "src/gm/sound-cache.ts": "Cache Storage `pwa-sounds`（家族共享名）：音源整包按 sha256 留着离线能用（可再生派生缓存，user 2026-10-07 批）",
   "service-worker.js": "Cache Storage `moonsinger-<hash>`：app 壳预缓存 + 运行时缓存",
+  "src/singer/speech-store.ts": "IDB `moonsinger-speech`：月读念缓存的全局池（可再生派生缓存，住在 worker；user 2026-10-10「建议一个全局池by key and model config hash」批）",
   "vendor/msal/msal-browser.min.js": "MSAL token 缓存（IDB / localStorage / sessionStorage）：由 @internal/store 的 auth 配置驱动，app 不直接调",
 };
 const TOKEN = /\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b|\bIDBFS\b|\bcaches\.(open|keys|delete|match)\b|navigator\.storage\b/;

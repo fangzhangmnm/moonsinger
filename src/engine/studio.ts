@@ -467,7 +467,7 @@ export class Studio {
     const sr = this.sr;
     for (const id of this.order) {   // ── 第一趟
       const t = this.tracks.get(id)!, mono = t.src; mono.fill(0, 0, cnt);
-      if (t.spec.kind === "clips") { if (clipsOn) this.renderClips(t, mono, cnt, t0); }
+      if (t.spec.kind === "clips") { if (clipsOn && !(t.env === 0 && t.envTarget === 0)) this.renderClips(t, mono, cnt, t0); }   // 淡完了（停 / 范围尾）= 不出声（原来 env 到 0 之后不再乘、块又全音量放出来：user「按停之后月读不应该把长句念完」）
       else this.renderNotes(t, mono, cnt, t0, notesOn);
       const segs = t.spec.gain;
       if (segs && segs.length) {   // 表情曲线（dB 段，一阶平滑；同原 applyGain）

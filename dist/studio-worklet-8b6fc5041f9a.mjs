@@ -1226,7 +1226,7 @@ var Studio = class {
       const t = this.tracks.get(id), mono = t.src;
       mono.fill(0, 0, cnt);
       if (t.spec.kind === "clips") {
-        if (clipsOn) this.renderClips(t, mono, cnt, t0);
+        if (clipsOn && !(t.env === 0 && t.envTarget === 0)) this.renderClips(t, mono, cnt, t0);
       } else this.renderNotes(t, mono, cnt, t0, notesOn);
       const segs = t.spec.gain;
       if (segs && segs.length) {
@@ -1543,4 +1543,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-c543ee86b1c6.mjs.map
+//# sourceMappingURL=studio-worklet-8b6fc5041f9a.mjs.map

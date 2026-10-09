@@ -12,6 +12,7 @@
 import { singCore } from "./sing-core.mjs";
 import { wrapWorld } from "./world-wrap.mjs";
 import { SpeechCache } from "./speech-cache.ts";
+import { openSpeechStore, type SpeechStore } from "./speech-store.ts";
 import { makeEnglishFront } from "./en-front.mjs";
 import type { SingLang } from "../score/lab-score.ts";
 import { createPackStore } from "@internal/model-packs";
@@ -24,17 +25,22 @@ export interface SingRequest { type: "sing"; id: number; score: unknown[]; text:
   models?: string[];
   /** 「念」缓存的预算（字节；src/singer/speech-cache.ts）。不给 = 不动。 */
   cacheBytes?: number;
+  /** 念缓存持久层（全局池，IndexedDB）的预算（字节）。不给 = 不动。 */
+  diskBytes?: number;
   /** 只唱第 entry 个字（按键试听，刀 3）：按下的 midi、唱 secs 秒；回原样（raw）。 */
   only?: { entry: number; midi: number; secs: number } }
 /** 只把引擎起起来（打开歌就起，不等第一句）/ 中途取消某一句（在段与段之间认：两遍 piper 之间、分析三段之间、合成前；正在跑的那一段跑完才停）。 */
-export interface WarmRequest { type: "warm"; id: number; models?: string[] }
+export interface WarmRequest { type: "warm"; id: number; models?: string[]; diskBytes?: number }
 export interface CancelRequest { type: "cancel"; id: number }
+/** 念缓存持久层：看大小 / 清空（设置页）。不用起引擎。 */
+export interface CacheRequest { type: "cache"; id: number; op: "info" | "clear"; diskBytes?: number }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> };
       /** 这条 worker 现在占多少（刀 6 内存监控）：wasm = 三块 WASM 堆（ort / OpenJTalk / WORLD，只涨不落）；cache = 念缓存的字节。 */
       mem: { wasm: number; cache: number } }
-  | { type: "error"; id: number; message: string };
+  | { type: "error"; id: number; message: string }
+  | { type: "cache"; id: number; disk: { bytes: number; entries: number; budget: number } | null };
 
 import * as ortLib from "@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs";
 import createOjt from "@internal/read-aloud/backend/piper-plus/vendor/ojt/ojt.mjs";
@@ -98,12 +104,21 @@ interface Engine { piper: any; world: any; loadAtlas: ((id: string) => Promise<a
 let engine: Promise<Engine> | null = null;
 /** 「念」缓存（两遍 piper + WORLD 分析，只依赖歌词 / 语言 / 哼的参数；刀 2）：命中时只剩按谱重建 + 合成。预算宿主可改（cacheBytes）。 */
 const speech = new SpeechCache(32e6);
+/** 念缓存的持久层（全局池 `moonsinger-speech`；src/singer/speech-store.ts）。
+ *  盘键里的「引擎标签」= 语音包 packId + 运行时包 packId + WORLD wasm 的 sha256（前 16 位各）+ 存法版本——发声引擎哪一块修了（换模型 / 换 ORT / 重编 WORLD）旧键自然不命中、按 LRU 走，不用手动版本号
+ *  （user 2026-10-10「修了发声引擎后语音cache应该invalid，你看一下用什么版本号来invalid」）。前端（日 / 中 / 英）的改动已经在内容键里（音素 id / 韵律是键的一部分）。
+ *  只有缓存**存法**变了（bf16 → 别的）才手动 bump SPEECH_FORMAT。唱法核心（重建 / 合成）在缓存之后，改它不用失效。 */
+const SPEECH_DB = "moonsinger-speech", SPEECH_FORMAT = 1;
+let diskBudget = 512e6, storeP: Promise<SpeechStore | null> | null = null;
+const speechStore = () => (storeP ??= (diskBudget <= 0 ? Promise.resolve<SpeechStore | null>(null) : openSpeechStore(SPEECH_DB, diskBudget)).then((st) => { st?.setBudget(diskBudget); return st; }).catch(() => null));
+const hex16 = async (bytes: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
 
 let bootMs: Record<string, number> = {};   // 冷启动各段多久（刀 5；诊断用）
 async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const V = SINGER.voice, JA = SINGER.lang.ja;
   let tk = performance.now(); const lap = (name: string) => { const t = performance.now(); bootMs[name] = Math.round(t - tk); tk = t; };
   await ensurePacks([V, SINGER.runtime, JA], "月读", say); lap("packs");
+  const store = await speechStore();   // 持久层（没有 IndexedDB = 只用内存）；引擎标签等 WORLD 的字节到手再算
   say("加载 piper 引擎");
   const ort: any = ortLib;
   ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
@@ -154,7 +169,9 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   say("加载 WORLD");
   const { default: createWorld } = await import(/* @vite-ignore */ new URL("world.mjs", WORLD).href);   // emscripten 产物带 node 分支，不进打包，运行时按地址载
   const wasm = await fetch(new URL("world.wasm", WORLD)); if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
-  const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) })));   // 「念」缓存：分析按它来自哪段 piper 输出记
+  const worldBytes = new Uint8Array(await wasm.arrayBuffer());
+  if (store) speech.attachStore(store, `${PACKS[V].packId.slice(0, 16)}:${PACKS[SINGER.runtime].packId.slice(0, 16)}:w${await hex16(worldBytes)}:v${SPEECH_FORMAT}`);
+  const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: worldBytes })));   // 「念」缓存：分析按它来自哪段 piper 输出记
   lap("world");
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id: string) => { const meta = await json(`atlas/${id}.json`); const raw = await bytes(`atlas/${id}.f32`);
@@ -163,13 +180,18 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
 }
 
 const cancelled = new Set<number>();
-self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelRequest>) => {
+self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelRequest | CacheRequest>) => {
   const q = ev.data;
   const post = (m: SingReply, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(m, transfer);
   if (q.type === "cancel") { cancelled.add(q.id); return; }
+  if (q.type === "cache") {
+    try { if (q.diskBytes !== undefined) { diskBudget = q.diskBytes; (await storeP)?.setBudget(diskBudget); } const st = await speechStore(); if (q.op === "clear") { await st?.clear(); speech.clear(); } post({ type: "cache", id: q.id, disk: st ? await st.info() : null }); }
+    catch (err) { post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) }); }
+    return;
+  }
   if (q.type === "warm") {
     const say = (stage: string) => post({ type: "progress", id: q.id, stage });
-    try { if (q.models?.length) bases = q.models; if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; }); await engine; post({ type: "done", id: q.id, samples: new Float32Array(0), sr: SR, mem: memNow(), ms: { load: 0, sing: 0, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }); bootMs = {}; }
+    try { if (q.models?.length) bases = q.models; if (q.diskBytes !== undefined) diskBudget = q.diskBytes; if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; }); await engine; post({ type: "done", id: q.id, samples: new Float32Array(0), sr: SR, mem: memNow(), ms: { load: 0, sing: 0, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }); bootMs = {}; }
     catch (err) { post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) }); }
     return;
   }
@@ -180,6 +202,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
     const t0 = performance.now();
     if (q.models?.length) bases = q.models;
     if (q.cacheBytes !== undefined) speech.setBudget(q.cacheBytes);
+    if (q.diskBytes !== undefined) { diskBudget = q.diskBytes; (await storeP)?.setBudget(diskBudget); }
     if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; });   // 起不来不缓存失败（原来缓存了被拒的 promise = 之后每次播放都报同一个错，直到重开 app）
     const e = await engine;
     if (q.lang === "zh") await e.ensureZh(say);

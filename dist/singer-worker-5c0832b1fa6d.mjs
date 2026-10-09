@@ -736,7 +736,15 @@ var SpeechCache = class {
   hot = null;
   hits = 0;
   misses = 0;
+  diskHits = 0;
   budget;
+  store = null;
+  model = "";
+  touched = /* @__PURE__ */ new Map();
+  // 盘上的 at 一分钟最多碰一次
+  diskKeys = /* @__PURE__ */ new Map();
+  // 内存键 → 盘键（算过一次就记着）
+  warned = false;
   constructor(budget = 32e6) {
     this.budget = budget;
   }
@@ -774,16 +782,75 @@ var SpeechCache = class {
     this.bytes = 0;
     this.hot = null;
   }
+  /** 接上持久层；model = 模型配置标签（语音包 + 运行时包的 id）：换模型 = 另一组键。 */
+  attachStore(store2, model) {
+    this.store = store2;
+    this.model = model;
+    this.diskKeys.clear();
+  }
+  get disk() {
+    return this.store;
+  }
+  async diskKey(kind, memKey, sub = "") {
+    const id = `${kind}|${memKey}`;
+    let h = this.diskKeys.get(id);
+    if (!h) {
+      h = await sha256(memKey);
+      this.diskKeys.set(id, h);
+    }
+    return `${this.model}|${kind}|${h}${sub}`;
+  }
+  diskFail(e) {
+    if (this.warned) return;
+    this.warned = true;
+    console.warn("speech store: " + (e?.message ?? e));
+  }
+  touchDisk(diskKey) {
+    const t = Date.now();
+    if ((this.touched.get(diskKey) ?? 0) > t - 6e4) return;
+    this.touched.set(diskKey, t);
+    this.store?.touch(diskKey).catch((e) => this.diskFail(e));
+  }
+  /** run 回来那一刻：这一句念的分析（可能几份：不同 fs / 参数）从盘上预取进内存，让同步的 analyze 能命中。 */
+  async prefetchAnalyses(pKey) {
+    if (!this.store) return;
+    for (const k of this.map.keys()) if (k.startsWith(`a:${pKey}:`)) return;
+    try {
+      const prefix = await this.diskKey("a", pKey, "|");
+      for (const { key, e } of await this.store.scan(prefix)) {
+        if (e.kind !== "a" || this.map.has(e.k)) continue;
+        this.put(e.k, { bytes: e.bytes, an: { meta: e.meta, f0: e.f0, sp: e.sp, ap: e.ap } });
+        this.diskKeys.set(`a|${e.k}`, key.slice(prefix.length - 1 - 64, prefix.length - 1));
+        this.diskHits++;
+      }
+    } catch (e) {
+      this.diskFail(e);
+    }
+  }
   wrapPiper(piper) {
     const self2 = this, run = piper.run.bind(piper);
     return { ...piper, run: async (ids, pros, o) => {
       const k = "p:" + JSON.stringify([ids, pros, o]);
-      const had = self2.map.get(k);
+      let had = self2.map.get(k);
+      if (!had?.run && self2.store) {
+        try {
+          const dk = await self2.diskKey("p", k), e = await self2.store.get(dk);
+          if (e?.kind === "p") {
+            had = { bytes: e.bytes, run: { audio: e.audio, durations: e.durations } };
+            self2.put(k, had);
+            self2.diskHits++;
+            self2.touchDisk(dk);
+          }
+        } catch (e) {
+          self2.diskFail(e);
+        }
+      }
       if (had?.run) {
         self2.hits++;
         self2.touch(k, had);
         const a = had.run.audio.slice();
         self2.audioKey.set(a, k);
+        await self2.prefetchAnalyses(k);
         return { audio: a, durations: had.run.durations?.slice() };
       }
       self2.misses++;
@@ -791,6 +858,8 @@ var SpeechCache = class {
       const keep = { audio: r.audio.slice(), durations: r.durations?.slice() };
       self2.put(k, { bytes: keep.audio.byteLength + (keep.durations?.byteLength ?? 0), run: keep });
       self2.audioKey.set(r.audio, k);
+      if (self2.store) void self2.diskKey("p", k).then((dk) => self2.store.put(dk, { kind: "p", k, bytes: keep.audio.byteLength + (keep.durations?.byteLength ?? 0), audio: keep.audio, durations: keep.durations })).catch((e) => self2.diskFail(e));
+      await self2.prefetchAnalyses(k);
       return r;
     } };
   }
@@ -805,6 +874,9 @@ var SpeechCache = class {
         self2.touch(k, had);
         hooks?.stage?.("cached");
         hooks?.check?.();
+        if (self2.store && from) void self2.diskKey("a", from, `|${self2.diskKeys.get(`a|${k}`) ?? ""}`).then((dk) => {
+          if (self2.diskKeys.has(`a|${k}`)) self2.touchDisk(dk);
+        }).catch(() => void 0);
         if (self2.hot?.key === k) return self2.hot.an;
         const an3 = { ...had.an.meta, f0: had.an.f0.slice(), sp: fromBf16(had.an.sp), ap: fromBf16(had.an.ap) };
         self2.hot = { key: k, an: an3 };
@@ -812,13 +884,135 @@ var SpeechCache = class {
       }
       self2.misses++;
       const an2 = analyze(x, fs2, o, hooks), { f0, sp, ap, ...meta } = an2, spB = toBf16(sp), apB = toBf16(ap);
-      if (k) self2.put(k, { bytes: f0.byteLength + spB.byteLength + apB.byteLength, an: { meta, f0: f0.slice(), sp: spB, ap: apB } });
+      if (k) {
+        const bytes2 = f0.byteLength + spB.byteLength + apB.byteLength, f0c = f0.slice();
+        self2.put(k, { bytes: bytes2, an: { meta, f0: f0c, sp: spB, ap: apB } });
+        if (self2.store && from) void Promise.all([self2.diskKey("a", from, "|"), sha256(k)]).then(([pre, h]) => {
+          self2.diskKeys.set(`a|${k}`, h);
+          return self2.store.put(pre + h, { kind: "a", k, bytes: bytes2, meta: structuredClone(meta), f0: f0c, sp: spB, ap: apB });
+        }).catch((e) => self2.diskFail(e));
+      }
       const outAn = { ...meta, f0, sp: fromBf16(spB), ap: fromBf16(apB) };
       if (k) self2.hot = { key: k, an: outAn };
       return outAn;
     } };
   }
 };
+async function sha256(text) {
+  const sub = globalThis.crypto?.subtle;
+  if (sub) {
+    const d = await sub.digest("SHA-256", new TextEncoder().encode(text));
+    return [...new Uint8Array(d)].map((b2) => b2.toString(16).padStart(2, "0")).join("");
+  }
+  let a = 2166136261, b = 16777619 ^ 1540483477;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    a = Math.imul(a ^ c, 16777619);
+    b = Math.imul(b ^ c, 16777619) ^ b >>> 13;
+  }
+  return ((a >>> 0).toString(16).padStart(8, "0") + (b >>> 0).toString(16).padStart(8, "0")).padEnd(64, "0");
+}
+
+// src/singer/speech-store.ts
+var STORE = "entries";
+var META = "meta";
+var DB_VERSION = 1;
+var req = (r) => new Promise((ok, fail) => {
+  r.onsuccess = () => ok(r.result);
+  r.onerror = () => fail(r.error ?? new Error("idb"));
+});
+var done = (tx) => new Promise((ok, fail) => {
+  tx.oncomplete = () => ok();
+  tx.onerror = () => fail(tx.error ?? new Error("idb tx"));
+  tx.onabort = () => fail(tx.error ?? new Error("idb abort"));
+});
+var strip = (r) => {
+  const { key: _k, at: _a, ...e } = r;
+  return e;
+};
+async function openSpeechStore(name, budget) {
+  const idb = globalThis.indexedDB;
+  if (!idb) return null;
+  let db;
+  try {
+    db = await new Promise((ok, fail) => {
+      const r = idb.open(name, DB_VERSION);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE, { keyPath: "key" }).createIndex("at", "at");
+        if (!d.objectStoreNames.contains(META)) d.createObjectStore(META, { keyPath: "key" });
+      };
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => fail(r.error ?? new Error("idb open"));
+      r.onblocked = () => fail(new Error("idb blocked"));
+    });
+  } catch {
+    return null;
+  }
+  let budgetNow = budget;
+  const total = async (tx) => (await req(tx.objectStore(META).get("total")))?.bytes ?? 0;
+  const setTotal = (tx, bytes2) => tx.objectStore(META).put({ key: "total", bytes: Math.max(0, bytes2) });
+  return {
+    async get(key) {
+      const tx = db.transaction(STORE, "readonly"), r = await req(tx.objectStore(STORE).get(key));
+      return r ? strip(r) : null;
+    },
+    async put(key, e) {
+      const tx = db.transaction([STORE, META], "readwrite"), s = tx.objectStore(STORE);
+      const old = await req(s.get(key));
+      let t = await total(tx) - (old?.bytes ?? 0) + e.bytes;
+      s.put({ key, at: Date.now(), ...e });
+      if (t > budgetNow) {
+        const cur = s.index("at").openCursor();
+        await new Promise((ok, fail) => {
+          cur.onerror = () => fail(cur.error ?? new Error("idb cursor"));
+          cur.onsuccess = () => {
+            const c = cur.result;
+            if (!c || t <= budgetNow) {
+              ok();
+              return;
+            }
+            const r = c.value;
+            if (r.key !== key) {
+              t -= r.bytes;
+              c.delete();
+            }
+            c.continue();
+          };
+        });
+      }
+      setTotal(tx, t);
+      await done(tx);
+    },
+    async scan(prefix) {
+      const tx = db.transaction(STORE, "readonly");
+      const rs2 = await req(tx.objectStore(STORE).getAll(IDBKeyRange.bound(prefix, prefix + "\uFFFF")));
+      return rs2.map((r) => ({ key: r.key, e: strip(r) }));
+    },
+    async touch(key) {
+      const tx = db.transaction(STORE, "readwrite"), s = tx.objectStore(STORE), r = await req(s.get(key));
+      if (r) {
+        r.at = Date.now();
+        s.put(r);
+      }
+      await done(tx);
+    },
+    async info() {
+      const tx = db.transaction([STORE, META], "readonly");
+      const [bytes2, entries] = await Promise.all([total(tx), req(tx.objectStore(STORE).count())]);
+      return { bytes: bytes2, entries, budget: budgetNow };
+    },
+    async clear() {
+      const tx = db.transaction([STORE, META], "readwrite");
+      tx.objectStore(STORE).clear();
+      setTotal(tx, 0);
+      await done(tx);
+    },
+    setBudget(b) {
+      budgetNow = b;
+    }
+  };
+}
 
 // node_modules/@internal/model-packs/dist/sha256.js
 var K = new Uint32Array([
@@ -1053,8 +1247,8 @@ function createPackStore(deps) {
     const { packId, manifest: m } = manifestOf(slug);
     await dropIfStale(slug);
     const sizes = await cachedChunkSizes(slug, m);
-    let done = sizes.reduce((a, n, i) => a + (n === m.chunks[i].bytes ? n : 0), 0);
-    progress({ done, total: m.totalBytes });
+    let done2 = sizes.reduce((a, n, i) => a + (n === m.chunks[i].bytes ? n : 0), 0);
+    progress({ done: done2, total: m.totalBytes });
     const root = base2.replace(/\/+$/, "");
     for (let i = 0; i < m.chunks.length; i++) {
       const c = m.chunks[i];
@@ -1078,7 +1272,7 @@ function createPackStore(deps) {
         got += value.length;
         if (got - lastReported >= 1048576 || got === c.bytes) {
           lastReported = got;
-          progress({ done: done + got, total: m.totalBytes });
+          progress({ done: done2 + got, total: m.totalBytes });
         }
       }
       if (got !== c.bytes)
@@ -1086,7 +1280,7 @@ function createPackStore(deps) {
       if (sha.hex() !== c.sha256)
         throw new Error(`${c.name}: sha256 mismatch (source tampered or corrupted)`);
       await putChunk(slug, c.name, buf);
-      done += got;
+      done2 += got;
     }
     await markVerified(slug, packId);
     return status(slug);
@@ -1097,7 +1291,7 @@ function createPackStore(deps) {
       await dropIfStale(p.slug);
     const fresh = new Map(packs.map((p) => [p.slug, /* @__PURE__ */ new Set()]));
     const total = files.reduce((a, f) => a + f.size, 0);
-    let done = 0, matched = 0;
+    let done2 = 0, matched = 0;
     const bad = [];
     for (const f of files) {
       const whole = packs.find((p) => p.m.chunks.length > 1 && p.m.totalBytes === f.size);
@@ -1110,7 +1304,7 @@ function createPackStore(deps) {
           await putChunk(whole.slug, c.name, piece);
           fresh.get(whole.slug).add(c.name);
           offset += c.bytes;
-          progress({ done: done + offset, total });
+          progress({ done: done2 + offset, total });
         }
         matched++;
       } else {
@@ -1128,8 +1322,8 @@ function createPackStore(deps) {
             matched++;
         }
       }
-      done += f.size;
-      progress({ done, total });
+      done2 += f.size;
+      progress({ done: done2, total });
     }
     for (const p of packs)
       await sealIfComplete(p.slug, fresh.get(p.slug));
@@ -5030,10 +5224,10 @@ async function Module(moduleArg = {}) {
       FS.syncFSRequests--;
       return callback(errCode);
     }
-    function done(errCode) {
+    function done2(errCode) {
       if (errCode) {
-        if (!done.errored) {
-          done.errored = true;
+        if (!done2.errored) {
+          done2.errored = true;
           return doCallback(errCode);
         }
         return;
@@ -5044,9 +5238,9 @@ async function Module(moduleArg = {}) {
     }
     for (var mount of mounts) {
       if (mount.type.syncfs) {
-        mount.type.syncfs(mount, populate, done);
+        mount.type.syncfs(mount, populate, done2);
       } else {
-        done(null);
+        done2(null);
       }
     }
   }, mount(type, opts, mountpoint) {
@@ -7727,6 +7921,15 @@ var SR = 22050;
 var HOP = 256;
 var engine = null;
 var speech = new SpeechCache(32e6);
+var SPEECH_DB = "moonsinger-speech";
+var SPEECH_FORMAT = 1;
+var diskBudget = 512e6;
+var storeP = null;
+var speechStore = () => storeP ??= (diskBudget <= 0 ? Promise.resolve(null) : openSpeechStore(SPEECH_DB, diskBudget)).then((st) => {
+  st?.setBudget(diskBudget);
+  return st;
+}).catch(() => null);
+var hex16 = async (bytes2) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes2))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
 var bootMs = {};
 async function loadEngine(say) {
   const V = SINGER.voice, JA = SINGER.lang.ja;
@@ -7738,6 +7941,7 @@ async function loadEngine(say) {
   };
   await ensurePacks([V, SINGER.runtime, JA], "\u6708\u8BFB", say);
   lap("packs");
+  const store2 = await speechStore();
   say("\u52A0\u8F7D piper \u5F15\u64CE");
   const ort = ort_wasm_bundle_min_exports;
   ort.env.wasm.numThreads = 1;
@@ -7808,7 +8012,9 @@ async function loadEngine(say) {
   );
   const wasm = await fetch(new URL("world.wasm", WORLD));
   if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
-  const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) })));
+  const worldBytes = new Uint8Array(await wasm.arrayBuffer());
+  if (store2) speech.attachStore(store2, `${PACKS[V].packId.slice(0, 16)}:${PACKS[SINGER.runtime].packId.slice(0, 16)}:w${await hex16(worldBytes)}:v${SPEECH_FORMAT}`);
+  const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: worldBytes })));
   lap("world");
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id) => {
@@ -7826,10 +8032,28 @@ self.onmessage = async (ev) => {
     cancelled.add(q2.id);
     return;
   }
+  if (q2.type === "cache") {
+    try {
+      if (q2.diskBytes !== void 0) {
+        diskBudget = q2.diskBytes;
+        (await storeP)?.setBudget(diskBudget);
+      }
+      const st = await speechStore();
+      if (q2.op === "clear") {
+        await st?.clear();
+        speech.clear();
+      }
+      post({ type: "cache", id: q2.id, disk: st ? await st.info() : null });
+    } catch (err) {
+      post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
+    }
+    return;
+  }
   if (q2.type === "warm") {
     const say2 = (stage) => post({ type: "progress", id: q2.id, stage });
     try {
       if (q2.models?.length) bases = q2.models;
+      if (q2.diskBytes !== void 0) diskBudget = q2.diskBytes;
       if (!engine) engine = loadEngine(say2).catch((e) => {
         engine = null;
         throw e;
@@ -7854,6 +8078,10 @@ self.onmessage = async (ev) => {
     const t0 = performance.now();
     if (q2.models?.length) bases = q2.models;
     if (q2.cacheBytes !== void 0) speech.setBudget(q2.cacheBytes);
+    if (q2.diskBytes !== void 0) {
+      diskBudget = q2.diskBytes;
+      (await storeP)?.setBudget(diskBudget);
+    }
     if (!engine) engine = loadEngine(say).catch((e2) => {
       engine = null;
       throw e2;
@@ -7899,4 +8127,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-3628b83d65e1.mjs.map
+//# sourceMappingURL=singer-worker-5c0832b1fa6d.mjs.map
