@@ -24,7 +24,7 @@ await p.evaluate(() => {
 const play = async () => { await p.evaluate(() => { window.__sings = []; }); await p.click("#playBtn"); let played = false; for (let i = 0; i < 60; i++) { if (await p.evaluate(() => window.__moonsinger.engine.playing)) { played = true; break; } await p.waitForTimeout(100); } await p.waitForTimeout(150); await p.click("#playBtn").catch(() => {}); await p.waitForTimeout(100); return p.evaluate((played) => ({ sings: window.__sings, played }), played); };
 let r1 = await play();
 check(r1.sings.length === 3 && r1.sings.every((s) => s.raw), "每句：かな ｜ しいうたかな（跨纸一句）｜ しい = 唱 3 次（重复的内容不再唱），都带 raw", JSON.stringify(r1.sings));
-check(r1.sings.map((s) => s.kana).join("|") === "かな|しいうたかな|しい", "各段的字（只在休止处切开，纸界不切）", r1.sings.map((s) => s.kana).join("|"));
+check(r1.sings.map((s) => s.kana).sort().join("|") === "かな|しい|しいうたかな", "各段的字（只在休止处切开，纸界不切；顺序 = 从光标起按距离，刀 2）", r1.sings.map((s) => s.kana).join("|"));
 check(r1.played === true, "块喂齐了、走带放起来了", String(r1.played));
 let r2 = await play();
 check(r2.sings.length === 0, "再放 = 全部复用（一次都不唱）", JSON.stringify(r2.sings));
@@ -36,6 +36,25 @@ check(r3.sings.length === 2 && r3.sings.every((s) => s.kana.includes("し")), "�
 await p.evaluate(() => window.__moonsinger.setChunk("whole"));
 let r4 = await play();
 check(r4.sings.length === 1, "一整首 = 唱 1 次（一块）", JSON.stringify(r4.sings));
+// 边算边放（刀 2；user「第一句好了就开播 嗯」）：每句唱 350 ms，三句新内容 → 走带在全部唱完之前就放起来；到了没唱好的那句会等，唱好接着放
+await p.evaluate(() => window.__moonsinger.setChunk("phrase"));
+await p.evaluate(() => {
+  const m = window.__moonsinger, st = m.state(), pid = st.song.parts[0].id, a = st.song.papers[0], t = a.tracks[pid].map((x) => (x.kind === "note" && x.lyric ? { ...x, lyric: x.lyric === "か" ? "さ" : x.lyric === "し" ? "き" : x.lyric } : x));   // 换歌词 = 新的键
+  m.set({ ...st, song: { ...st.song, papers: [{ ...a, tracks: { [pid]: t } }, ...st.song.papers.slice(1)] } });
+  window.__sings = []; window.__sungAt = [];
+  m.singer.sing = async (score) => { await new Promise((ok) => setTimeout(ok, 350)); window.__sings.push({ kana: score.SCORE.map((e) => e.kana).join("") }); window.__sungAt.push(performance.now()); return { samples: new Float32Array(22050 * 2).fill(0.05), sr: 22050 }; };
+});
+await p.waitForTimeout(900);   // 预唱会先唱光标附近（quiet）；等它过去再按播放，看的是播放的预卷
+await p.evaluate(() => { window.__sings = []; window.__sungAt = []; });
+await p.click("#playBtn");
+let startedAt = -1, sungWhenStarted = -1;
+for (let i = 0; i < 80; i++) { if (await p.evaluate(() => window.__moonsinger.engine.playing)) { startedAt = Date.now(); sungWhenStarted = await p.evaluate(() => window.__sings.length); break; } await p.waitForTimeout(50); }
+check(startedAt > 0, "放起来了");
+const total = await p.evaluate(() => { const tl = window.__moonsinger.engine.timeline; return tl.tracks.filter((t) => t.kind === "clips").reduce((n, t) => n + t.clips.length, 0); });
+check(total >= 3 && sungWhenStarted < total, `开播时还没全唱完（开播时 ${sungWhenStarted} / ${total} 句，边放边唱）`);
+await p.waitForTimeout(1500);
+check((await p.evaluate(() => window.__sings.length)) + (await p.evaluate(() => [...new Set(window.__sings.map((s) => s.kana))].length)) >= 0 && (await p.evaluate(() => window.__moonsinger.engine.timeline.tracks.filter((t) => t.kind === "clips").every((t) => t.clips.every((c) => window.__moonsinger.engine.hasChunk(c.key))))), "后面的边放边唱完了");
+await p.click("#playBtn").catch(() => {}); await p.waitForTimeout(100);
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);

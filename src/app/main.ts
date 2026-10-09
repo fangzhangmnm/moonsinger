@@ -40,7 +40,8 @@ import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSound
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
 import { StudioClient } from "../engine/studio-client.ts";
 import type { AuditionInst, TrackSpec } from "../engine/studio.ts";
-import { buildTimeline, lightNotes, songLangOf, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo } from "../engine/timeline.ts";
+import { buildTimeline, lightNotes, songLangOf, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
+import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
 import { loadVowelTable } from "../engine/vowel-table.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
 import { Finder, type FinderPick } from "../ui/finder.ts";
@@ -577,7 +578,7 @@ function updateExtras(next: Extras, locus: Locus, gesture?: string): void {
   if (next === doc.extras) return;
   history = record(history, st, doc.extras, gesture ?? null, performance.now(), locus);
   doc.extras = next; renderTitle(); changed(); renderUndo();
-  pushChannels(); schedulePlaybackRefresh();   // 推子 / 校准立刻进录音房（边放边调）；换人 = 时间线重算
+  pushChannels(); schedulePlaybackRefresh(); schedulePrewarm();   // 推子 / 校准立刻进录音房（边放边调）；换人 = 时间线重算
   if (locus.kind === "lounge") pad.render();   // 演奏者变了 = pad 的提示跟着（音域 / 原速键；固定原速 = 不提示）
   drawInst(); trackRedraw?.();
 }
@@ -598,6 +599,7 @@ function applyState(next: EditorState): void {
   changed();
   updateChrome();
   schedulePlaybackRefresh();   // 放着的时候改谱：时间线重算（正在响的不动）
+  schedulePrewarm();            // 没在放：停下 700 ms 后先把光标附近唱好
 }
 function undoNow(): void { const r = undo(history, st, doc.extras); if (!r) { info("没有可撤销的"); return; } closeOffer?.(); view.lyrics.commitAndClose(); restore(r, "撤销"); }
 function redoNow(): void { const r = redo(history, st, doc.extras); if (!r) { info("没有可重做的"); return; } closeOffer?.(); view.lyrics.commitAndClose(); restore(r, "重做"); }
@@ -687,25 +689,65 @@ async function prepareBanks(parts: readonly PartDef[]): Promise<string[]> {
   }
   return errs;
 }
-/** 月读要唱的块：没在录音房里的逐块让 worker 唱（按内容键：重复的纸 / 没改的句子不再唱），唱好一块喂一块。 */
-let chunking: Promise<void> | null = null;
-function prepareChunks(tl: Timeline): Promise<void> {
-  if (chunking) return chunking.then(() => prepareChunks(tl));   // 前一轮在唱：排在后面（键已经在的会跳过）
-  const todo = tl.chunks.filter((c) => !engine.hasChunk(c.key));
-  if (!todo.length) return Promise.resolve();
-  chunking = (async () => {
-    renderBar.start(todo.length);
-    try {
-      for (let k = 0; k < todo.length; k++) {
-        const c = todo[k]; if (engine.hasChunk(c.key)) { renderBar.next(); continue; }
-        const who = roleName(doc.extras, st.song.parts.find((p) => p.id === c.part)?.role ?? "");
-        progress(`${who}：第 ${k + 1} / ${todo.length} 句…`);
-        const r = await singer.sing(c.score, (stage) => { progress(`${who}：第 ${k + 1} / ${todo.length} 句 · ${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); }, { opt: humOpt(), models: modelBases(), raw: true });
-        engine.chunk(c.key, r.sr, r.samples); renderBar.next();
+/** 月读的块 = 调度器（src/engine/scheduler.ts）+ 一次一块的泵（刀 2，边算边放；user「第一句好了就开播 嗯」「实时播放的时候…预提前算然后用cache invalid」）：
+ *  顺序 = 播放头所在的那块先、往后按距离、循环绕回；seek / 改谱 = 换顺序（正在算的那块算完照样进缓存）。唱不了的一句 = 报错 + 空着（不替补）；
+ *  预唱（quiet）时不报错、不空着，等真按播放再说。 */
+let chunkKeysWanted: string[] = [];                      // 现在该算的顺序（键）
+let chunkPlans = new Map<string, ChunkPlan>();           // 键 → 计划（含唱谱）
+const chunkFailed = new Map<string, string>();           // 键 → 为什么唱不了（预唱时攒着，播放时报）
+let pumping = false, pumpQuiet = false, singSpeed: number | null = null;   // singSpeed = 算一秒歌几毫秒（预卷几块按它）
+const pendingChunks = () => chunkKeysWanted.filter((k) => !engine.hasChunk(k)).length;
+function setChunkOrder(tl: Timeline, pos: number, loop: { from: number; to: number } | null, o: { quiet?: boolean; limit?: number } = {}): void {
+  chunkPlans = new Map(tl.chunks.map((c) => [c.key, c]));
+  let keys = chunkOrder(tl.chunks, pos, loop, (k) => engine.hasChunk(k));
+  if (o.limit !== undefined) keys = keys.slice(0, o.limit);
+  chunkKeysWanted = keys; pumpQuiet = !!o.quiet;
+  void pump();
+}
+async function pump(): Promise<void> {
+  if (pumping) return;
+  pumping = true;
+  let shown = 0;
+  try {
+    for (;;) {
+      const key = chunkKeysWanted.find((k) => !engine.hasChunk(k)); if (!key) break;
+      const c = chunkPlans.get(key); if (!c) { chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key); continue; }
+      const who = roleName(doc.extras, st.song.parts.find((p) => p.id === c.part)?.role ?? ""), left = pendingChunks();
+      if (left > shown) { renderBar.start(left); shown = left; }   // 进度条：还有几句（顺序换了、多了就重开一条）
+      const failed = chunkFailed.get(key);
+      if (failed !== undefined) {   // 预唱时就唱不了的：不再试；真播放 = 报出来、这一句空着（不出声、不替补）
+        if (pumpQuiet) { chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key); continue; }
+        showError(`「${who}」唱不了这一句：${failed}`); engine.chunk(key, 22050, new Float32Array(0)); renderBar.next(); continue;
       }
-    } finally { renderBar.end(); chunking = null; }
-  })();
-  return chunking;
+      progress(`${who}：${pumpQuiet ? "先唱着" : "还有"} ${left} 句…`);
+      const t = performance.now();
+      try {
+        const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); }, { opt: humOpt(), models: modelBases(), raw: true });
+        if (engine.hasChunk(key) || !chunkPlans.has(key)) { renderBar.next(); continue; }   // 期间换了歌 / 顺序：照样留着（键对就不浪费），但别再算进度
+        engine.chunk(key, r.sr, r.samples);
+        const secs = Math.max(0.5, c.dur - LEAD_IN); singSpeed = singSpeed === null ? (performance.now() - t) / secs : singSpeed * 0.7 + ((performance.now() - t) / secs) * 0.3;
+      } catch (e) {
+        const msg = (e as Error).message ?? String(e);
+        if (msg === "cancelled") continue;
+        chunkFailed.set(key, msg);
+        if (!pumpQuiet) { showError(`「${who}」唱不了这一句：${msg}`); engine.chunk(key, 22050, new Float32Array(0)); }
+        else chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key);
+      }
+      renderBar.next();
+    }
+  } finally { pumping = false; renderBar.end(); if (!engine.playing) progress(""); }
+}
+/** 等从 pos 起的前几块到齐（预卷；几块按这台设备的速度）；stop = 外面取消了。 */
+async function waitChunksReady(tl: Timeline, pos: number, stop: () => boolean): Promise<void> {
+  while (!stop() && !readyToStart(tl.chunks, pos, prerollCount(singSpeed), (k) => engine.hasChunk(k))) {
+    if (!pumping && pendingChunks() === 0) break;   // 泵停了、也没有要算的 = 该来的都来了（或唱不了的已经空着）
+    await new Promise<void>((r) => setTimeout(r, 80));
+  }
+}
+/** 全部块到齐（导出 / 测试钩子用）。 */
+async function awaitAllChunks(tl: Timeline): Promise<void> {
+  setChunkOrder(tl, tl.range.from, null);
+  while (pumping || pendingChunks() > 0) { await new Promise<void>((r) => setTimeout(r, 80)); if (!pumping && pendingChunks() > 0) void pump(); }
 }
 /** 录音房里只留最近用到的块（内容键；按代价 / 预算留归刀 2）。 */
 const MAX_CHUNKS = 64, chunkKeys: string[] = [];   // 最近用过的在后面
@@ -726,7 +768,7 @@ async function prepare(scope: RenderScope, o: { chunks?: boolean } = {}): Promis
   if (errs.length) showError(`${errs.join("；")}。${tl.tracks.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
   if (!tl.tracks.length) return null;
   pruneChunks(tl);
-  if (o.chunks !== false) await prepareChunks(tl);
+  if (o.chunks !== false) await awaitAllChunks(tl);
   pushChannels();
   return tl;
 }
@@ -739,7 +781,7 @@ async function renderMixForTest(): Promise<{ samples: Float32Array; right: Float
 // ── 走带（这次打开里有效；不进歌）──────────────────────────────────────────────────────────────────────────────────
 let loopOn = false;                   // user「我确实希望能单曲循环…无穷循环和循环走带都做」
 let playTl: Timeline | null = null;   // 现在放的时间线（播放头 / 改谱刷新用）
-let preparing = false;
+let preparing = false, cancelPrepare = false;
 const SEAM_LEAD = 4;                  // 接缝：从循环尾前几秒放起
 /** 这张纸（第一次出现）的秒区间。 */
 const paperSpan = (tl: Timeline, paperId: string) => tl.papers.find((p) => p.paper.id === paperId) ?? null;
@@ -770,25 +812,36 @@ function cursorSeconds(tl: Timeline): number | null {
  *  fromStart = 从范围头；seam = 从循环尾前几秒放起（听接缝）。 */
 async function togglePlay(o: { fromStart?: boolean; seam?: boolean } = {}): Promise<void> {
   if (engine.playing) { stopPlay(); return; }
-  if (preparing) return;
+  if (preparing) { cancelPrepare = true; return; }   // 准备中再按 = 不放了
   singer.unlock(); holdAudio();   // 在用户手势里先把声音打开（iPad）；准备期间让声音一直醒着
-  preparing = true; $("playBtn").classList.add("is-on");
+  preparing = true; cancelPrepare = false; $("playBtn").classList.add("is-on");
   try {
-    const tl = await prepare("view"); if (!tl) { progress(""); return; }
+    const tl = await prepare("view", { chunks: false }); if (!tl) { progress(""); return; }
     const r = playRange(tl); playTl = tl;
-    engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopOn || !!o.seam, loopFrom: r.loopFrom });
+    const loop = loopOn || !!o.seam;
+    engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop, loopFrom: r.loopFrom });
     const cur = cursorSeconds(tl);   // null = 光标在纸尾 / 没有音 = 从头
     const at = o.seam ? Math.max(r.from, r.to - SEAM_LEAD) : o.fromStart || cur === null ? r.from : Math.min(Math.max(cur, r.from), r.to);
+    // 边算边放：从 at 起按距离排队唱，前几块到齐就开播，后面的边放边唱（到了没唱好的那句走带会等）
+    setChunkOrder(tl, at, loop ? { from: r.loopFrom, to: r.to } : null);
+    await waitChunksReady(tl, at, () => cancelPrepare);
+    if (cancelPrepare) { progress(""); return; }
     await engine.play(at);
     playIcon(true);
     progress(loopOn ? `循环 ${(r.to - r.loopFrom).toFixed(1)} 秒` : `${(r.to - at).toFixed(1)} 秒`);
   } catch (e) { showError(`放不了：${(e as Error).message}`); progress(""); playIcon(false); }
   finally { releaseAudio(); preparing = false; if (!engine.playing) $("playBtn").classList.remove("is-on"); }
 }
-function stopPlay(): void { engine.stop(); playIcon(false); view.setPlayhead(null); }
+function stopPlay(): void { engine.stop(); playIcon(false); view.setPlayhead(null); cancelPrepare = true; }
 engine.on("ended", () => { playIcon(false); view.setPlayhead(null); });
-engine.on("pos", (sec, playing, waiting) => { if (!playing) return; if (playTl) view.setPlayhead(playTl.locate(sec)); if (waiting) progress("等月读唱好这一句…"); });
-engine.on("missing", () => { if (playTl) void prepareChunks(playTl).catch((e) => showError(`放不了：${(e as Error).message}`)); });   // 放着的时候改了谱：新的句子现唱（走带在那儿等，A）
+let lastReorder = 0;
+engine.on("pos", (sec, playing, waiting) => {
+  if (!playing) return;
+  if (playTl) view.setPlayhead(playTl.locate(sec));
+  if (waiting) progress("等月读唱好这一句…");
+  if (playTl && performance.now() - lastReorder > 1000) { lastReorder = performance.now(); const r = playRange(playTl); setChunkOrder(playTl, sec, loopOn ? { from: r.loopFrom, to: r.to } : null); }   // 顺序跟着播放头走
+});
+engine.on("missing", () => { if (playTl) { const r = playRange(playTl); setChunkOrder(playTl, engine.position, loopOn ? { from: r.loopFrom, to: r.to } : null); } });   // 走带前面缺块（放着的时候改了谱）：现唱（走带到那儿会等，A）
 /** 放着的时候改谱 / 换人 / 静音独奏：时间线重算、换进去（正在响的不动，响完换新；user「正在响的那句不换、响完换新」）。攒 300 ms。 */
 let refreshTimer = 0;
 function schedulePlaybackRefresh(): void {
@@ -799,8 +852,24 @@ function schedulePlaybackRefresh(): void {
     const tl = await prepare("view", { chunks: false }); if (!tl) { stopPlay(); return; }
     const r = playRange(tl); playTl = tl;
     engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom });
-    void prepareChunks(tl).catch((e) => showError(`放不了：${(e as Error).message}`));
+    setChunkOrder(tl, engine.position, loopOn ? { from: r.loopFrom, to: r.to } : null);
   })(); }, 300);
+}
+/** 预唱（刀 2；user「打开歌后空闲片预热 + 预唱光标附近 建议这样…然后最好有ui提示」）：改谱停下 700 ms 后、没在放 → 从光标起往后先唱几句（quiet：不报错、不空着）。
+ *  歌里有月读上场 = 意图（第一次会下模型；user「不会太浪费电吧因为就几句」）。 */
+const PREWARM_PHRASES = 3;
+let prewarmTimer = 0;
+function schedulePrewarm(): void {
+  clearTimeout(prewarmTimer);
+  prewarmTimer = window.setTimeout(() => {
+    if (engine.playing || preparing || exporting) return;
+    const parts = audibleParts(); if (!parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "tsukuyomi")) return;
+    const song = songIn("view");
+    const tl = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st.song.hum, singOpt: humOpt() });
+    if (!tl.chunks.length) return;
+    pruneChunks(tl);
+    setChunkOrder(tl, cursorSeconds(tl) ?? tl.range.from, null, { quiet: true, limit: PREWARM_PHRASES });
+  }, 700);
 }
 $("playBtn").addEventListener("click", () => { void togglePlay(); });
 $("rewindBtn").addEventListener("click", () => { if (engine.playing && playTl) engine.seek(playRange(playTl).from); else void togglePlay({ fromStart: true }); });
@@ -1994,7 +2063,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   applyDesk(d);
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);
-  engine.forget(chunkKeys.splice(0)); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉
+  engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; singer.cancelPending(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了
   view.render(); pad.render(); renderTitle();
 }
 /** 存好了：文件名从此定下来（之后和歌名各管各的；user「之后各管各的同意」）。 */

@@ -685,6 +685,91 @@ function wrapWorld(M) {
   return { analyze, synth };
 }
 
+// src/singer/speech-cache.ts
+var SpeechCache = class {
+  map = /* @__PURE__ */ new Map();
+  // 插入顺序 = 最久没用的在前
+  bytes = 0;
+  /** 分析按它来自哪段 piper 输出记（同一个 Float32Array 对象 → 同一次念） */
+  audioKey = /* @__PURE__ */ new WeakMap();
+  hits = 0;
+  misses = 0;
+  budget;
+  constructor(budget = 32e6) {
+    this.budget = budget;
+  }
+  // 不用参数属性：Node 的 strip-only TS 不认
+  get used() {
+    return this.bytes;
+  }
+  setBudget(b) {
+    this.budget = b;
+    this.trim();
+  }
+  touch(k, e) {
+    this.map.delete(k);
+    this.map.set(k, e);
+  }
+  put(k, e) {
+    const old = this.map.get(k);
+    if (old) {
+      this.bytes -= old.bytes;
+      this.map.delete(k);
+    }
+    this.map.set(k, e);
+    this.bytes += e.bytes;
+    this.trim();
+  }
+  trim() {
+    for (const [k, e] of this.map) {
+      if (this.bytes <= this.budget) break;
+      this.map.delete(k);
+      this.bytes -= e.bytes;
+    }
+  }
+  clear() {
+    this.map.clear();
+    this.bytes = 0;
+  }
+  wrapPiper(piper) {
+    const self2 = this, run = piper.run.bind(piper);
+    return { ...piper, run: async (ids, pros, o) => {
+      const k = "p:" + JSON.stringify([ids, pros, o]);
+      const had = self2.map.get(k);
+      if (had?.run) {
+        self2.hits++;
+        self2.touch(k, had);
+        const a = had.run.audio.slice();
+        self2.audioKey.set(a, k);
+        return { audio: a, durations: had.run.durations?.slice() };
+      }
+      self2.misses++;
+      const r = await run(ids, pros, o);
+      const keep = { audio: r.audio.slice(), durations: r.durations?.slice() };
+      self2.put(k, { bytes: keep.audio.byteLength + (keep.durations?.byteLength ?? 0), run: keep });
+      self2.audioKey.set(r.audio, k);
+      return r;
+    } };
+  }
+  wrapWorld(world) {
+    const self2 = this, analyze = world.analyze.bind(world);
+    return { ...world, analyze: (x, fs2, o) => {
+      const from = x instanceof Float32Array ? self2.audioKey.get(x) : void 0;
+      const k = from ? `a:${from}:${fs2}:${JSON.stringify(o ?? {})}` : null;
+      const had = k ? self2.map.get(k) : void 0;
+      if (had?.an) {
+        self2.hits++;
+        self2.touch(k, had);
+        return { ...had.an, f0: had.an.f0.slice(), sp: had.an.sp.slice(), ap: had.an.ap.slice() };
+      }
+      self2.misses++;
+      const an2 = analyze(x, fs2, o);
+      if (k) self2.put(k, { bytes: an2.f0.byteLength + an2.sp.byteLength + an2.ap.byteLength, an: { ...an2, f0: an2.f0.slice(), sp: an2.sp.slice(), ap: an2.ap.slice() } });
+      return an2;
+    } };
+  }
+};
+
 // node_modules/@internal/model-packs/dist/sha256.js
 var K = new Uint32Array([
   1116352408,
@@ -7562,6 +7647,7 @@ var packJson = async (slug, path) => JSON.parse(new TextDecoder().decode(await p
 var SR = 22050;
 var HOP = 256;
 var engine = null;
+var speech = new SpeechCache(32e6);
 async function loadEngine(say) {
   const V = SINGER.voice, JA = SINGER.lang.ja;
   await ensurePacks([V, SINGER.runtime, JA], "\u6708\u8BFB", say);
@@ -7610,7 +7696,7 @@ async function loadEngine(say) {
     const r = await sess.run(feeds);
     return { audio: new Float32Array(r.output.data), durations: Float32Array.from(r.durations.data) };
   }
-  const piper = {
+  const piper = speech.wrapPiper({
     SR,
     HOP,
     run,
@@ -7624,7 +7710,7 @@ async function loadEngine(say) {
     },
     encode: (tokens, prosody) => encodeTokens(tokens, prosody, config.phoneme_id_map),
     phonemizeEnWords: (words) => en2.phonemizeWords(words)
-  };
+  });
   say("\u52A0\u8F7D WORLD");
   const { default: createWorld } = await import(
     /* @vite-ignore */
@@ -7632,7 +7718,7 @@ async function loadEngine(say) {
   );
   const wasm = await fetch(new URL("world.wasm", WORLD));
   if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
-  const world = wrapWorld(await createWorld({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) }));
+  const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) })));
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id) => {
     const meta = await json(`atlas/${id}.json`);
@@ -7649,6 +7735,7 @@ self.onmessage = async (ev) => {
   try {
     const t0 = performance.now();
     if (q2.models?.length) bases = q2.models;
+    if (q2.cacheBytes !== void 0) speech.setBudget(q2.cacheBytes);
     if (!engine) engine = loadEngine(say).catch((e2) => {
       engine = null;
       throw e2;
@@ -7677,4 +7764,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-753ea424f8b8.mjs.map
+//# sourceMappingURL=singer-worker-fca7ff557499.mjs.map

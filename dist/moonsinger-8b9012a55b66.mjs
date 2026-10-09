@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.3-2026-10-09";
+var APP_VERSION = "v0.9.4-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -18706,9 +18706,11 @@ var Singer = class {
   w = null;
   seq = 0;
   pending = /* @__PURE__ */ new Map();
+  queue = [];
+  inflight = false;
   worker() {
     if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-753ea424f8b8.mjs"}`, import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${"singer-worker-fca7ff557499.mjs"}`, import.meta.url), { type: "module" });
     this.w.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
       if (!p2) return;
@@ -18736,10 +18738,45 @@ var Singer = class {
     for (const p2 of this.pending.values()) p2.fail(new Error("\u6708\u8BFB\u7684 worker \u91CD\u5F00\u4E86"));
     this.pending.clear();
   }
-  /** 唱。内存不够（换着试很多音色之后 wasm 堆撑大了，月读的引擎起不来——user 2026-10-08 iPad「Out of memory」「感觉是没有gc」）= 重开 worker（全部还回去）再试一次；
-   *  还不行才报错。同一位演奏者重来，不是换人（不自动替补）。 */
-  async sing(s10, progress2 = () => {
+  /** 还没开始算的全扔掉（以 "cancelled" 拒绝）；正在算的那一句算完照常回来。返回扔了几个。 */
+  cancelPending() {
+    const n10 = this.queue.length;
+    for (const j2 of this.queue.splice(0)) j2.fail(new Error("cancelled"));
+    return n10;
+  }
+  get busy() {
+    return this.inflight || this.queue.length > 0;
+  }
+  get queued() {
+    return this.queue.length;
+  }
+  /** 唱（排队；一次只给 worker 一个）。内存不够（换着试很多音色之后 wasm 堆撑大了，月读的引擎起不来——user 2026-10-08 iPad「Out of memory」「感觉是没有gc」）
+   *  = 重开 worker（全部还回去）再试一次；还不行才报错。同一位演奏者重来，不是换人（不自动替补）。 */
+  sing(s10, progress2 = () => {
   }, extra = {}) {
+    return new Promise((ok2, fail) => {
+      this.queue.push({ s: s10, progress: progress2, extra, ok: ok2, fail });
+      void this.pump();
+    });
+  }
+  async pump() {
+    if (this.inflight) return;
+    this.inflight = true;
+    try {
+      for (; ; ) {
+        const j2 = this.queue.shift();
+        if (!j2) break;
+        try {
+          j2.ok(await this.singRetry(j2.s, j2.progress, j2.extra));
+        } catch (e10) {
+          j2.fail(e10);
+        }
+      }
+    } finally {
+      this.inflight = false;
+    }
+  }
+  async singRetry(s10, progress2, extra) {
     try {
       return await this.singOnce(s10, progress2, extra);
     } catch (e10) {
@@ -21970,6 +22007,34 @@ function buildTimeline(inp) {
     return { paperId: span.paper.id, tick: Math.max(0, Math.floor(inPaper)) };
   };
   return { tracks, range: { from, to: to2 }, total, chunks: chunks2, papers, unplayable, secondsOfToken, locate };
+}
+
+// src/engine/scheduler.ts
+function chunkOrder(chunks2, pos, loop, has) {
+  const seen = /* @__PURE__ */ new Set(), out = [];
+  const add = (c10) => {
+    if (!seen.has(c10.key)) {
+      seen.add(c10.key);
+      if (!has(c10.key)) out.push(c10.key);
+    }
+  };
+  const sorted = [...chunks2].sort((a10, b3) => a10.t0 - b3.t0);
+  for (const c10 of sorted) if (c10.t0 <= pos && c10.t0 + c10.dur > pos) add(c10);
+  for (const c10 of sorted) if (c10.t0 > pos && (!loop || c10.t0 < loop.to)) add(c10);
+  if (loop) {
+    for (const c10 of sorted) if (c10.t0 >= loop.from && c10.t0 <= pos) add(c10);
+  }
+  for (const c10 of sorted) add(c10);
+  return out;
+}
+function readyToStart(chunks2, pos, n10, has) {
+  const sorted = [...chunks2].sort((a10, b3) => a10.t0 - b3.t0), need = [];
+  for (const c10 of sorted) if (c10.t0 + c10.dur > pos && need.length < n10 && !need.includes(c10.key)) need.push(c10.key);
+  return need.every(has);
+}
+function prerollCount(msPerSongSec) {
+  if (msPerSongSec === null) return 2;
+  return msPerSongSec < 400 ? 2 : msPerSongSec < 900 ? 3 : 4;
 }
 
 // src/engine/vowel-table.ts
@@ -33826,6 +33891,7 @@ function updateExtras(next2, locus, gesture) {
   renderUndo();
   pushChannels();
   schedulePlaybackRefresh();
+  schedulePrewarm();
   if (locus.kind === "lounge") pad3.render();
   drawInst();
   trackRedraw?.();
@@ -33851,6 +33917,7 @@ function applyState(next2) {
   changed();
   updateChrome();
   schedulePlaybackRefresh();
+  schedulePrewarm();
 }
 function undoNow() {
   const r10 = undo(history, st2, doc.extras);
@@ -33978,36 +34045,94 @@ async function prepareBanks(parts) {
   }
   return errs;
 }
-var chunking = null;
-function prepareChunks(tl2) {
-  if (chunking) return chunking.then(() => prepareChunks(tl2));
-  const todo = tl2.chunks.filter((c10) => !engine.hasChunk(c10.key));
-  if (!todo.length) return Promise.resolve();
-  chunking = (async () => {
-    renderBar.start(todo.length);
-    try {
-      for (let k2 = 0; k2 < todo.length; k2++) {
-        const c10 = todo[k2];
-        if (engine.hasChunk(c10.key)) {
-          renderBar.next();
+var chunkKeysWanted = [];
+var chunkPlans = /* @__PURE__ */ new Map();
+var chunkFailed = /* @__PURE__ */ new Map();
+var pumping = false;
+var pumpQuiet = false;
+var singSpeed = null;
+var pendingChunks = () => chunkKeysWanted.filter((k2) => !engine.hasChunk(k2)).length;
+function setChunkOrder(tl2, pos, loop, o10 = {}) {
+  chunkPlans = new Map(tl2.chunks.map((c10) => [c10.key, c10]));
+  let keys = chunkOrder(tl2.chunks, pos, loop, (k2) => engine.hasChunk(k2));
+  if (o10.limit !== void 0) keys = keys.slice(0, o10.limit);
+  chunkKeysWanted = keys;
+  pumpQuiet = !!o10.quiet;
+  void pump();
+}
+async function pump() {
+  if (pumping) return;
+  pumping = true;
+  let shown = 0;
+  try {
+    for (; ; ) {
+      const key = chunkKeysWanted.find((k2) => !engine.hasChunk(k2));
+      if (!key) break;
+      const c10 = chunkPlans.get(key);
+      if (!c10) {
+        chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
+        continue;
+      }
+      const who = roleName(doc.extras, st2.song.parts.find((p2) => p2.id === c10.part)?.role ?? ""), left = pendingChunks();
+      if (left > shown) {
+        renderBar.start(left);
+        shown = left;
+      }
+      const failed = chunkFailed.get(key);
+      if (failed !== void 0) {
+        if (pumpQuiet) {
+          chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
           continue;
         }
-        const who = roleName(doc.extras, st2.song.parts.find((p2) => p2.id === c10.part)?.role ?? "");
-        progress(`${who}\uFF1A\u7B2C ${k2 + 1} / ${todo.length} \u53E5\u2026`);
+        showError(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${failed}`);
+        engine.chunk(key, 22050, new Float32Array(0));
+        renderBar.next();
+        continue;
+      }
+      progress(`${who}\uFF1A${pumpQuiet ? "\u5148\u5531\u7740" : "\u8FD8\u6709"} ${left} \u53E5\u2026`);
+      const t10 = performance.now();
+      try {
         const r10 = await singer.sing(c10.score, (stage) => {
-          progress(`${who}\uFF1A\u7B2C ${k2 + 1} / ${todo.length} \u53E5 \xB7 ${stage}\u2026`);
+          progress(`${who}\uFF1A${stage}\u2026`);
           const pc = /(\d+)%$/.exec(stage);
           if (pc) renderBar.frac(Number(pc[1]) / 100);
         }, { opt: humOpt(), models: modelBases(), raw: true });
-        engine.chunk(c10.key, r10.sr, r10.samples);
-        renderBar.next();
+        if (engine.hasChunk(key) || !chunkPlans.has(key)) {
+          renderBar.next();
+          continue;
+        }
+        engine.chunk(key, r10.sr, r10.samples);
+        const secs = Math.max(0.5, c10.dur - LEAD_IN);
+        singSpeed = singSpeed === null ? (performance.now() - t10) / secs : singSpeed * 0.7 + (performance.now() - t10) / secs * 0.3;
+      } catch (e10) {
+        const msg = e10.message ?? String(e10);
+        if (msg === "cancelled") continue;
+        chunkFailed.set(key, msg);
+        if (!pumpQuiet) {
+          showError(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${msg}`);
+          engine.chunk(key, 22050, new Float32Array(0));
+        } else chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
       }
-    } finally {
-      renderBar.end();
-      chunking = null;
+      renderBar.next();
     }
-  })();
-  return chunking;
+  } finally {
+    pumping = false;
+    renderBar.end();
+    if (!engine.playing) progress("");
+  }
+}
+async function waitChunksReady(tl2, pos, stop) {
+  while (!stop() && !readyToStart(tl2.chunks, pos, prerollCount(singSpeed), (k2) => engine.hasChunk(k2))) {
+    if (!pumping && pendingChunks() === 0) break;
+    await new Promise((r10) => setTimeout(r10, 80));
+  }
+}
+async function awaitAllChunks(tl2) {
+  setChunkOrder(tl2, tl2.range.from, null);
+  while (pumping || pendingChunks() > 0) {
+    await new Promise((r10) => setTimeout(r10, 80));
+    if (!pumping && pendingChunks() > 0) void pump();
+  }
 }
 var MAX_CHUNKS = 64;
 var chunkKeys = [];
@@ -34035,7 +34160,7 @@ async function prepare(scope, o10 = {}) {
   if (errs.length) showError(`${errs.join("\uFF1B")}\u3002${tl2.tracks.length ? "\u8FD9\u4E9B\u58F0\u90E8\u6CA1\u6709\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\u3002" : "\u6CA1\u6709\u51FA\u58F0\u3002"}\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
   if (!tl2.tracks.length) return null;
   pruneChunks(tl2);
-  if (o10.chunks !== false) await prepareChunks(tl2);
+  if (o10.chunks !== false) await awaitAllChunks(tl2);
   pushChannels();
   return tl2;
 }
@@ -34048,6 +34173,7 @@ async function renderMixForTest() {
 var loopOn = false;
 var playTl = null;
 var preparing = false;
+var cancelPrepare = false;
 var SEAM_LEAD = 4;
 var paperSpan = (tl2, paperId) => tl2.papers.find((p2) => p2.paper.id === paperId) ?? null;
 function playRange(tl2) {
@@ -34074,22 +34200,33 @@ async function togglePlay(o10 = {}) {
     stopPlay();
     return;
   }
-  if (preparing) return;
+  if (preparing) {
+    cancelPrepare = true;
+    return;
+  }
   singer.unlock();
   holdAudio();
   preparing = true;
+  cancelPrepare = false;
   $2("playBtn").classList.add("is-on");
   try {
-    const tl2 = await prepare("view");
+    const tl2 = await prepare("view", { chunks: false });
     if (!tl2) {
       progress("");
       return;
     }
     const r10 = playRange(tl2);
     playTl = tl2;
-    engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn || !!o10.seam, loopFrom: r10.loopFrom });
+    const loop = loopOn || !!o10.seam;
+    engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop, loopFrom: r10.loopFrom });
     const cur = cursorSeconds(tl2);
     const at2 = o10.seam ? Math.max(r10.from, r10.to - SEAM_LEAD) : o10.fromStart || cur === null ? r10.from : Math.min(Math.max(cur, r10.from), r10.to);
+    setChunkOrder(tl2, at2, loop ? { from: r10.loopFrom, to: r10.to } : null);
+    await waitChunksReady(tl2, at2, () => cancelPrepare);
+    if (cancelPrepare) {
+      progress("");
+      return;
+    }
     await engine.play(at2);
     playIcon(true);
     progress(loopOn ? `\u5FAA\u73AF ${(r10.to - r10.loopFrom).toFixed(1)} \u79D2` : `${(r10.to - at2).toFixed(1)} \u79D2`);
@@ -34107,18 +34244,28 @@ function stopPlay() {
   engine.stop();
   playIcon(false);
   view.setPlayhead(null);
+  cancelPrepare = true;
 }
 engine.on("ended", () => {
   playIcon(false);
   view.setPlayhead(null);
 });
+var lastReorder = 0;
 engine.on("pos", (sec, playing, waiting) => {
   if (!playing) return;
   if (playTl) view.setPlayhead(playTl.locate(sec));
   if (waiting) progress("\u7B49\u6708\u8BFB\u5531\u597D\u8FD9\u4E00\u53E5\u2026");
+  if (playTl && performance.now() - lastReorder > 1e3) {
+    lastReorder = performance.now();
+    const r10 = playRange(playTl);
+    setChunkOrder(playTl, sec, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
+  }
 });
 engine.on("missing", () => {
-  if (playTl) void prepareChunks(playTl).catch((e10) => showError(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`));
+  if (playTl) {
+    const r10 = playRange(playTl);
+    setChunkOrder(playTl, engine.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
+  }
 });
 var refreshTimer = 0;
 function schedulePlaybackRefresh() {
@@ -34135,9 +34282,24 @@ function schedulePlaybackRefresh() {
       const r10 = playRange(tl2);
       playTl = tl2;
       engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom });
-      void prepareChunks(tl2).catch((e10) => showError(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`));
+      setChunkOrder(tl2, engine.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
     })();
   }, 300);
+}
+var PREWARM_PHRASES = 3;
+var prewarmTimer = 0;
+function schedulePrewarm() {
+  clearTimeout(prewarmTimer);
+  prewarmTimer = window.setTimeout(() => {
+    if (engine.playing || preparing || exporting) return;
+    const parts = audibleParts();
+    if (!parts.some((p2) => activeInstrument(doc.extras, p2.role)?.engine === "tsukuyomi")) return;
+    const song = songIn("view");
+    const tl2 = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st2.song.hum, singOpt: humOpt() });
+    if (!tl2.chunks.length) return;
+    pruneChunks(tl2);
+    setChunkOrder(tl2, cursorSeconds(tl2) ?? tl2.range.from, null, { quiet: true, limit: PREWARM_PHRASES });
+  }, 700);
 }
 $2("playBtn").addEventListener("click", () => {
   void togglePlay();
@@ -35927,6 +36089,9 @@ function loadDoc(song, o10) {
   void refHost.apply(o10.references ?? {}, d3.ref);
   pad3.setRangeLow(d3.pad.low);
   engine.forget(chunkKeys.splice(0));
+  chunkFailed.clear();
+  chunkKeysWanted = [];
+  singer.cancelPending();
   sound.allOff();
   void prepareBank();
   view.render();
@@ -37197,4 +37362,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6a0cd8b2ccba.mjs.map
+//# sourceMappingURL=moonsinger-8b9012a55b66.mjs.map

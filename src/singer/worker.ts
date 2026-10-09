@@ -11,6 +11,7 @@
 
 import { singCore } from "./sing-core.mjs";
 import { wrapWorld } from "./world-wrap.mjs";
+import { SpeechCache } from "./speech-cache.ts";
 import { makeEnglishFront } from "./en-front.mjs";
 import type { SingLang } from "../score/lab-score.ts";
 import { createPackStore } from "@internal/model-packs";
@@ -20,7 +21,9 @@ export interface SingRequest { type: "sing"; id: number; score: unknown[]; text:
   /** true = 回 WORLD 的原样输出（不归一化、不补尾巴）：分段唱时宿主自己拼、整首最后归一化一次（2026-10-08 深夜）。 */
   raw?: boolean;
   /** 模型源，按顺序试（宿主给：同源 pwa-models/ → 设置里的来源）。不给 = 出厂默认。 */
-  models?: string[] }
+  models?: string[];
+  /** 「念」缓存的预算（字节；src/singer/speech-cache.ts）。不给 = 不动。 */
+  cacheBytes?: number }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number } }
@@ -70,6 +73,8 @@ const SR = 22050, HOP = 256;
 
 interface Engine { piper: any; world: any; loadAtlas: ((id: string) => Promise<any>) | null; hasAtlas: boolean; ensureZh: (say: (s: string) => void) => Promise<void>; ensureEn: (say: (s: string) => void) => Promise<void>; presetDefault: Record<string, number> }
 let engine: Promise<Engine> | null = null;
+/** 「念」缓存（两遍 piper + WORLD 分析，只依赖歌词 / 语言 / 哼的参数；刀 2）：命中时只剩按谱重建 + 合成。预算宿主可改（cacheBytes）。 */
+const speech = new SpeechCache(32e6);
 
 async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const V = SINGER.voice, JA = SINGER.lang.ja;
@@ -114,17 +119,17 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
     const r = await sess.run(feeds);
     return { audio: new Float32Array(r.output.data), durations: Float32Array.from(r.durations.data) };
   }
-  const piper = {
+  const piper = speech.wrapPiper({
     SR, HOP, run,
     phonemize: (text: string) => { const r = ja.phonemize(text); return { tokens: r.tokens, prosody: r.prosody, ...encodeTokens(r.tokens, r.prosody, config.phoneme_id_map) }; },
     phonemizeZh: (text: string) => { const t = zh.phonemize(text), e = zh.encode(text, config.phoneme_id_map); return { tokens: t.tokens, prosody: t.prosody, ids: e.ids, pros: e.pros }; },
     encode: (tokens: string[], prosody: number[][]) => encodeTokens(tokens, prosody, config.phoneme_id_map),
     phonemizeEnWords: (words: string[]) => en.phonemizeWords(words),
-  };
+  });
   say("加载 WORLD");
   const { default: createWorld } = await import(/* @vite-ignore */ new URL("world.mjs", WORLD).href);   // emscripten 产物带 node 分支，不进打包，运行时按地址载
   const wasm = await fetch(new URL("world.wasm", WORLD)); if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
-  const world = wrapWorld(await createWorld({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) }));
+  const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) })));   // 「念」缓存：分析按它来自哪段 piper 输出记
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id: string) => { const meta = await json(`atlas/${id}.json`); const raw = await bytes(`atlas/${id}.f32`);
     return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) }; } : null;
@@ -139,6 +144,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest>) => {
   try {
     const t0 = performance.now();
     if (q.models?.length) bases = q.models;
+    if (q.cacheBytes !== undefined) speech.setBudget(q.cacheBytes);
     if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; });   // 起不来不缓存失败（原来缓存了被拒的 promise = 之后每次播放都报同一个错，直到重开 app）
     const e = await engine;
     if (q.lang === "zh") await e.ensureZh(say);

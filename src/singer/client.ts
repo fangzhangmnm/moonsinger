@@ -1,6 +1,7 @@
 // client.ts —— 主线程这边：把乐谱发给月读的 worker、拿回歌声。created 2026-10-06 by Claude Opus 5.5
 // worker 第一次用到才创建（家规：重资源要等用户有意图才加载）。
-// 2026-10-09（Claude Fable 5.1，实时试听刀 1）：播放和 SoundFont 的离线渲染都搬去了录音房（src/engine/）——这里只剩「唱」。
+// 2026-10-09（Claude Fable 5.1，实时试听刀 1 / 刀 2）：播放和 SoundFont 的离线渲染都搬去了录音房（src/engine/）——这里只剩「唱」；
+//   唱的请求在这边排队、一次只给 worker 一个（借朗读库 cancelPending 的做法：排多了用户一跳就全作废），cancelPending() 扔掉还没开始算的。
 import type { LabScore } from "../score/lab-score.ts";
 import type { SingReply, SingRequest } from "./worker.ts";
 import { audioCtx } from "./audio.ts";
@@ -10,11 +11,15 @@ import { diagNote } from "../app/report-error.ts";
 const OOM = /out of memory|no available backend/i;
 
 export interface SingResult { samples: Float32Array; sr: number; ms: { load: number; sing: number } }
+type Extra = Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw" | "cacheBytes">>;
+interface Job { s: LabScore; progress: (stage: string) => void; extra: Extra; ok: (r: SingResult) => void; fail: (e: Error) => void }
 
 export class Singer {
   private w: Worker | null = null;
   private seq = 0;
   private pending = new Map<number, { ok: (r: SingResult) => void; fail: (e: Error) => void; progress: (s: string) => void }>();
+  private queue: Job[] = [];
+  private inflight = false;
 
   private worker(): Worker {
     if (this.w) return this.w;
@@ -37,9 +42,31 @@ export class Singer {
     this.w?.terminate(); this.w = null;
     for (const p of this.pending.values()) p.fail(new Error("月读的 worker 重开了")); this.pending.clear();
   }
-  /** 唱。内存不够（换着试很多音色之后 wasm 堆撑大了，月读的引擎起不来——user 2026-10-08 iPad「Out of memory」「感觉是没有gc」）= 重开 worker（全部还回去）再试一次；
-   *  还不行才报错。同一位演奏者重来，不是换人（不自动替补）。 */
-  async sing(s: LabScore, progress: (stage: string) => void = () => {}, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw">> = {}): Promise<SingResult> {
+  /** 还没开始算的全扔掉（以 "cancelled" 拒绝）；正在算的那一句算完照常回来。返回扔了几个。 */
+  cancelPending(): number {
+    const n = this.queue.length;
+    for (const j of this.queue.splice(0)) j.fail(new Error("cancelled"));
+    return n;
+  }
+  get busy(): boolean { return this.inflight || this.queue.length > 0; }
+  get queued(): number { return this.queue.length; }
+
+  /** 唱（排队；一次只给 worker 一个）。内存不够（换着试很多音色之后 wasm 堆撑大了，月读的引擎起不来——user 2026-10-08 iPad「Out of memory」「感觉是没有gc」）
+   *  = 重开 worker（全部还回去）再试一次；还不行才报错。同一位演奏者重来，不是换人（不自动替补）。 */
+  sing(s: LabScore, progress: (stage: string) => void = () => {}, extra: Extra = {}): Promise<SingResult> {
+    return new Promise<SingResult>((ok, fail) => { this.queue.push({ s, progress, extra, ok, fail }); void this.pump(); });
+  }
+  private async pump(): Promise<void> {
+    if (this.inflight) return;
+    this.inflight = true;
+    try {
+      for (;;) {
+        const j = this.queue.shift(); if (!j) break;
+        try { j.ok(await this.singRetry(j.s, j.progress, j.extra)); } catch (e) { j.fail(e as Error); }
+      }
+    } finally { this.inflight = false; }
+  }
+  private async singRetry(s: LabScore, progress: (stage: string) => void, extra: Extra): Promise<SingResult> {
     try { return await this.singOnce(s, progress, extra); }
     catch (e) {
       const msg = (e as Error).message ?? "";
@@ -55,7 +82,7 @@ export class Singer {
       }
     }
   }
-  private singOnce(s: LabScore, progress: (stage: string) => void, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw">>): Promise<SingResult> {
+  private singOnce(s: LabScore, progress: (stage: string) => void, extra: Extra): Promise<SingResult> {
     const id = ++this.seq;
     const req: SingRequest = { type: "sing", id, score: s.SCORE, text: s.TEXT, tempo: s.TEMPO_QUARTER, lang: s.LANG, ...extra };
     return new Promise((ok, fail) => { this.pending.set(id, { ok, fail, progress }); this.worker().postMessage(req); });

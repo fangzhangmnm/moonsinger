@@ -26,6 +26,8 @@ import "./history.test.ts";
 import "./desk.test.ts";
 import "./studio.test.ts";
 import "./timeline.test.ts";
+import "./scheduler.test.ts";
+import "./speech-cache.test.ts";
 import "./pack.test.ts";
 import "./credits.test.ts";
 import "./credit-translations.test.ts";
