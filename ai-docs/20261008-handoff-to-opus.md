@@ -146,6 +146,8 @@
 
 **v0.8.17（2026-10-09，edited by Claude Opus 5.5）**：PDF 只印一段 / 只排看得见的声部。user 派的三个小件（谱内反复 / 波萨拉丁 / PDF 范围）都落了。还开着：分享前预览、页眉；§3 记账（编排点选面板、全量摇摆、歌手跟多少）；给 Fable 的实时预览 + 唱的缓存 + 按键试听走表情和通道 + 总轨 / 常用混音。
 
+**prod v0.8.17 + v0.9.0 起手（2026-10-09，edited by Claude Opus 5.5）**：user「push prod bump minor」→ prod 分支 = d2a02bb（空合并 commit：内容 = main fee7460，第二个父 = 上次的 prod 空 commit 347d50f，快进不强推），从 main 触发部署，根目录 bundle `890e42cc990f` 核过。0.9.0 = 新纪元起手（叫什么由 user 定；排队下一件大的 = 实时预览，归 Fable，§3）。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |
