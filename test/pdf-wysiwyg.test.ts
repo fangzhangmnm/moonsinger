@@ -37,6 +37,13 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
       assert(print.pages.length >= 2, `排成了好几页（${print.pages.length}）`);
     });
   }
+  it("只印这一张纸 = 分页预览的「本段」：控件开关同样不改版面（2026-10-09，user「只印一段或一个声部…和wxhw差不多」）", () => {
+    for (const paper of st.song.papers) {
+      const base = printOpts(st.song, sp, parts(st), measure, true, 0, paper.id), print = engrave(st.song, base);
+      eq(geo(engrave(st.song, { ...base, titlePlaceholder: true, caret: 20, justWrote: true, paperLabel: "A5" } as never)), geo(print), `纸 ${paper.name || paper.id}`);
+      assert(print.systems.every((r) => r.paper === paper.id), "只有这一张纸的谱行");
+    }
+  });
   it("隐藏的声部：预览里一条细行（控件），PDF 不印；隐藏的纸：折叠的曲段名 + 细行，PDF 也不印", () => {
     const Lt = engrave(st.song, printOpts(st.song, 10, parts(st), measure, true, 0));
     const stub = Lt.prims.filter((p) => (p as { cls?: string }).cls?.includes("part-stub"));

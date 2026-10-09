@@ -27,6 +27,18 @@ check(r.preview === r.pdf && r.pdf < shown, "隐藏一个声部：两边一起�
 await p.evaluate(() => window.__moonsinger.partView("P9", { hidden: false, only: false })); await p.evaluate(() => window.__moonsinger.partView(window.__moonsinger.state().song.parts[0].id, { only: true })); await p.waitForTimeout(200);
 r = await both();
 check(r.preview === r.pdf && r.pdf < shown, "「只看它」一个声部：同样只印看得见的", JSON.stringify(r));
+// 印哪些（2026-10-09，user「只印一段或一个声部 这个也到时候需要做，和wxhw差不多，在只显示一个声部的时候你可以选」）
+await p.evaluate(() => { const m = window.__moonsinger; m.partView(m.state().song.parts[0].id, { only: false }); m.partView("P9", { hidden: true }); });
+const one = await p.evaluate(async () => { const m = window.__moonsinger; m.setScope("segment"); await new Promise((ok) => setTimeout(ok, 150)); const pv = m.layout().pages.length, x = await m.makePdf("sans", { paper: m.state().at.paper }); m.setScope("all"); return { preview: pv, pdf: x.pages, name: x.name }; });
+check(one.preview === one.pdf && /-A\.pdf$/.test(one.name), "只印这一段 = 「本段」分页预览的页数；文件名带曲段名", JSON.stringify(one));
+const sh = await p.evaluate(async () => { const m = window.__moonsinger, view = await m.makePdf("sans"), x = await m.makePdf("sans", { onlyShown: true }); return { view: view.pages, shown: x.pages, name: x.name }; });
+check(sh.shown <= sh.view && /Vocals/.test(sh.name), "只排看得见的声部：不留空位（页数不比照预览多）、文件名带声部名", JSON.stringify(sh));
+// 面板：多张纸 = 有「整首 / 这一段」；有隐藏的声部 = 有「照分页预览 / 只排看得见的」
+await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="export"]'); await p.waitForTimeout(200); await p.click('.offer [data-v="pdf"]'); await p.waitForTimeout(200);
+check(!!(await p.$('.offer [data-v="paper:one"]')) && !!(await p.$('.offer [data-v="parts:shown"]')), "PDF 面板：「这一段」「只排看得见的」都在");
+await p.click('.offer [data-v="parts:shown"]'); await p.waitForTimeout(100);
+check(/和分页预览不一样/.test(await p.$eval(".offer", (e) => e.textContent)), "选了只排看得见的 = 明说和预览不一样");
+await p.click('.offer [data-v="close"]');
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);

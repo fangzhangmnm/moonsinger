@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.16-2026-10-09";
+var APP_VERSION = "v0.8.17-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -31414,13 +31414,13 @@ function segsOf(d3, dx, dy) {
   }
   return out;
 }
-function printOpts(song, sp2, parts, measureLyric, autoBars2, lyricRaise) {
+function printOpts(song, sp2, parts, measureLyric, autoBars2, lyricRaise, onlyPaper) {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER);
-  return { width: lineSp(paper) * sp2, sp: sp2, at: { paper: song.papers[0].id, part: song.parts[0].id }, caret: -1, sel: null, parts, measureLyric, titlePlaceholder: false, autoBars: autoBars2, justWrote: false, page: pageGeoOf(paper), lyricRaise };
+  return { width: lineSp(paper) * sp2, sp: sp2, at: { paper: onlyPaper ?? song.papers[0].id, part: song.parts[0].id }, caret: -1, sel: null, parts, measureLyric, titlePlaceholder: false, autoBars: autoBars2, justWrote: false, page: pageGeoOf(paper), lyricRaise, ...onlyPaper ? { onlyPaper } : {} };
 }
 function scorePdf(a10) {
   const paper = a10.song.paper ?? paperOf(DEFAULT_PAPER), sp2 = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp2;
-  const L2 = engrave(a10.song, printOpts(a10.song, sp2, a10.parts, a10.measureAt ? a10.measureAt(lyricPx) : (s10) => textEm(a10.font, s10) * lyricPx, a10.autoBars ?? true, LYRIC_RAISE[a10.fontId]));
+  const L2 = engrave(a10.song, printOpts(a10.song, sp2, a10.parts, a10.measureAt ? a10.measureAt(lyricPx) : (s10) => textEm(a10.font, s10) * lyricPx, a10.autoBars ?? true, LYRIC_RAISE[a10.fontId], a10.onlyPaper));
   const W3 = paper.widthMm * PT_PER_MM, H2 = paper.heightMm * PT_PER_MM, dx = L2.pageX.left;
   const pages = L2.pages.map(() => ({ w: W3, h: H2, ops: [] }));
   const pageOf = (y2) => {
@@ -33729,10 +33729,10 @@ window.__moonsinger = {
   zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]),
   load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null, view: o10.view, references: o10.references }),
   refHost,
-  makePdf: async (id2) => {
-    const { r: r10 } = await makePdf(id2);
+  makePdf: async (id2, pick) => {
+    const { r: r10, file } = await makePdf(id2, pick);
     progress("");
-    return { bytes: r10.bytes, pages: r10.pages, stats: r10.stats };
+    return { bytes: r10.bytes, pages: r10.pages, stats: r10.stats, name: file.name };
   },
   setChunk: (v) => {
     const role = st2.song.parts.find((x2) => x2.id === st2.at.part)?.role;
@@ -35397,9 +35397,13 @@ function openPdfPanel() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
+  const curPaper = st2.song.papers.find((p2) => p2.id === st2.at.paper) ?? st2.song.papers[0];
+  let paperPick = viewScope === "segment" && st2.song.papers.length > 1 ? "one" : "all", partPick = "view";
+  const someHidden = st2.song.parts.some((p2) => !isShown(p2.id)), shownNames = partLabels(st2.song, doc.extras).filter((_2, k2) => isShown(st2.song.parts[k2].id));
   const draw = () => {
     const chip2 = (id2, label, note2) => `<button class="btn cand${pdfFont === id2 ? " is-on" : ""}" data-v="font:${id2}" title="${esc7(note2)}">${label}</button>`;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u4E50\u8C31\uFF08PDF\uFF09</div><div class="part-sec">\u6B4C\u8BCD\u7684\u5B57\u4F53</div><div class="set-row">${chip2("sans", "\u9ED1\u4F53", "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587 / \u65E5\u6587 / \u82F1\u6587\u90FD\u6709")}${chip2("pinyin", "\u62FC\u97F3", "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF08\u53EF\u7231\uFF09\uFF1B\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3")}</div><div class="offer-msg">${pdfFont === "pinyin" ? "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF0C\u6B4C\u8BCD\u90A3\u4E00\u884C\u4F1A\u5F80\u4E0B\u8BA9\u51FA\u62FC\u97F3\u7684\u5730\u65B9\u3002\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3\u3002" : "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587\u3001\u65E5\u6587\u3001\u82F1\u6587\u90FD\u6709\u3002"}\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7EA6 ${PDF_FONT_MB[pdfFont]} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u7EB8\u7684\u6273\u624B\u91CC\u6539\uFF09\u3002</div><div class="offer-msg">\u5370\u51FA\u6765\u7684 = \u6273\u624B\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C\u5168\u90E8\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684\u7EB8 / \u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002</div><div class="offer-btns"><button class="btn" data-v="close">\u7B97\u4E86</button><button class="btn primary" data-v="go">\u751F\u6210 PDF</button></div></div>`;
+    const pick = (v, on2, label, note2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}" title="${esc7(note2)}">${esc7(label)}</button>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u4E50\u8C31\uFF08PDF\uFF09</div>` + (st2.song.papers.length > 1 ? `<div class="part-sec">\u5370\u54EA\u4E9B</div><div class="set-row">${pick("paper:all", paperPick === "all", "\u6574\u9996", "\u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u63A5\u7740\u6392\uFF08= \u5206\u9875 + \u300C\u5168\u90E8\u300D\uFF09")}${pick("paper:one", paperPick === "one", `\u8FD9\u4E00\u6BB5\u300C${curPaper.name || "\u8FD9\u5F20\u7EB8"}\u300D`, "\u53EA\u5370\u5149\u6807\u6240\u5728\u7684\u8FD9\u5F20\u7EB8\uFF08= \u5206\u9875 + \u300C\u672C\u6BB5\u300D\uFF09")}</div>` : "") + (someHidden ? `<div class="part-sec">\u58F0\u90E8</div><div class="set-row">${pick("parts:view", partPick === "view", "\u7167\u5206\u9875\u9884\u89C8", "\u9690\u85CF\u7684\u58F0\u90E8\u4E0D\u5370\uFF0C\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF08\u548C\u9884\u89C8\u4E00\u6837\uFF09")}${pick("parts:shown", partPick === "shown", `\u53EA\u6392\u770B\u5F97\u89C1\u7684\uFF1A${shownNames.join("\u3001")}`, "\u9690\u85CF\u7684\u58F0\u90E8\u6574\u4E2A\u62FF\u6389\u3001\u91CD\u65B0\u6392\uFF0C\u4E0D\u7559\u7A7A\u4F4D\uFF08\u50CF\u62BD\u51FA\u6765\u7684\u5206\u8C31\uFF1B\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\uFF09")}</div>` : "") + `<div class="part-sec">\u6B4C\u8BCD\u7684\u5B57\u4F53</div><div class="set-row">${chip2("sans", "\u9ED1\u4F53", "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587 / \u65E5\u6587 / \u82F1\u6587\u90FD\u6709")}${chip2("pinyin", "\u62FC\u97F3", "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF08\u53EF\u7231\uFF09\uFF1B\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3")}</div><div class="offer-msg">${pdfFont === "pinyin" ? "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF0C\u6B4C\u8BCD\u90A3\u4E00\u884C\u4F1A\u5F80\u4E0B\u8BA9\u51FA\u62FC\u97F3\u7684\u5730\u65B9\u3002\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3\u3002" : "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587\u3001\u65E5\u6587\u3001\u82F1\u6587\u90FD\u6709\u3002"}\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7EA6 ${PDF_FONT_MB[pdfFont]} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u7EB8\u7684\u6273\u624B\u91CC\u6539\uFF09\u3002</div><div class="offer-msg">${partPick === "shown" ? `\u53EA\u6392\u770B\u5F97\u89C1\u7684\u58F0\u90E8\uFF08${esc7(shownNames.join("\u3001"))}\uFF09\uFF1A\u91CD\u65B0\u6392\u3001\u4E0D\u7559\u7A7A\u4F4D\u2014\u2014\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\u3002` : `\u5370\u51FA\u6765\u7684 = \u6273\u624B\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C${paperPick === "one" ? "\u672C\u6BB5" : "\u5168\u90E8"}\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684${paperPick === "one" ? "" : "\u7EB8 / "}\u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002`}</div><div class="offer-btns"><button class="btn" data-v="close">\u7B97\u4E86</button><button class="btn primary" data-v="go">\u751F\u6210 PDF</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -35421,26 +35425,44 @@ function openPdfPanel() {
       view.render();
       return;
     }
+    if (v === "paper:all" || v === "paper:one") {
+      paperPick = v === "paper:all" ? "all" : "one";
+      draw();
+      return;
+    }
+    if (v === "parts:view" || v === "parts:shown") {
+      partPick = v === "parts:view" ? "view" : "shown";
+      draw();
+      return;
+    }
     if (v === "go") {
       close();
-      void exportPdf(pdfFont);
+      void exportPdf(pdfFont, { ...paperPick === "one" ? { paper: curPaper.id } : {}, ...partPick === "shown" ? { onlyShown: true } : {} });
     }
   });
 }
 var pdfBusy = false;
-async function makePdf(fontId) {
+async function makePdf(fontId, pick = {}) {
   progress(`\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7B2C\u4E00\u6B21\u7EA6 ${PDF_FONT_MB[fontId]} MB\uFF09\u2026`);
   const [font, music] = await Promise.all([loadPdfFont(fontId), loadMusicOutlines()]);
   progress("\u6392\u7248\u2026");
   const title = st2.song.title || docName();
-  const r10 = scorePdf({ song: st2.song, parts: partViews(), font, fontId, music, title, created: /* @__PURE__ */ new Date(), measureAt: (px) => view.measureAt(px), autoBars });
-  return { file: new File([r10.bytes], `${docName()}.pdf`, { type: "application/pdf" }), r: r10 };
+  let song = st2.song, parts = partViews();
+  if (pick.onlyShown) {
+    const keep2 = new Set(st2.song.parts.filter((p2) => isShown(p2.id)).map((p2) => p2.id));
+    song = { ...song, parts: song.parts.filter((p2) => keep2.has(p2.id)), papers: song.papers.map((p2) => ({ ...p2, tracks: Object.fromEntries(Object.entries(p2.tracks).filter(([k2]) => keep2.has(k2))) })).filter((p2) => Object.keys(p2.tracks).length || p2.id === pick.paper) };
+    parts = parts.filter((v) => keep2.has(v.id)).map((v, k2) => ({ ...v, hidden: false, first: k2 === 0 }));
+  }
+  const r10 = scorePdf({ song, parts, font, fontId, music, title, created: /* @__PURE__ */ new Date(), measureAt: (px) => view.measureAt(px), autoBars, ...pick.paper ? { onlyPaper: pick.paper } : {} });
+  const paperName = pick.paper ? st2.song.papers.find((p2) => p2.id === pick.paper)?.name || "\u8FD9\u4E00\u6BB5" : "";
+  const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x2) => fileSafe(x2)).join("-");
+  return { file: new File([r10.bytes], `${docName()}${suffix ? `-${suffix}` : ""}.pdf`, { type: "application/pdf" }), r: r10 };
 }
-async function exportPdf(fontId) {
+async function exportPdf(fontId, pick = {}) {
   if (pdfBusy) return;
   pdfBusy = true;
   try {
-    const { file, r: r10 } = await makePdf(fontId);
+    const { file, r: r10 } = await makePdf(fontId, pick);
     progress("");
     const miss = r10.stats.missing.length ? `<div class="offer-msg">\u8FD9\u4E9B\u5B57\u8FD9\u6B3E\u5B57\u4F53\u91CC\u6CA1\u6709\uFF0CPDF \u91CC\u662F\u7A7A\u767D\uFF1A${esc7(r10.stats.missing.slice(0, 20).join(" "))}${r10.stats.missing.length > 20 ? " \u2026" : ""}</div>` : "";
     const missM = r10.stats.missingMusic.length ? `<div class="offer-msg">\u6709 ${r10.stats.missingMusic.length} \u79CD\u8BB0\u8C31\u7B26\u53F7\u6CA1\u753B\u51FA\u6765\uFF08${esc7(r10.stats.missingMusic.join(" "))}\uFF09\u2014\u2014\u8FD9\u662F app \u7684\u6BDB\u75C5\uFF0C\u8BF7\u544A\u8BC9\u6211\u4EEC\u3002</div>` : "";
@@ -36418,4 +36440,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-9dcbcb57279c.mjs.map
+//# sourceMappingURL=moonsinger-890e42cc990f.mjs.map
