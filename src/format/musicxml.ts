@@ -92,11 +92,11 @@ function readCredits(root: El, title: string): string | undefined {
 const dynXml = (v: Dyn) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
 /** 渐强渐弱（2026-10-08）：<wedge> 是一种 direction，和力度记号放在一起（谱上方）。 */
 const wedgeXml = (type: "crescendo" | "diminuendo" | "stop") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"/></direction-type></direction>`;
-const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };   // sfz / fp 写在 <notations><dynamics> 里
+const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "" };   // ghost = 括号符头（<notehead parentheses="yes">），不在 <articulations> 里   // sfz / fp 写在 <notations><dynamics> 里
 const NOTE_DYN: readonly Art[] = ["sfz", "fp"];
 /** 别家谱里音上（或音前）的力度形状 → 我们的两个：突强一族 / 强后即弱一族。 */
 const XML_NOTE_DYN: Record<string, Art> = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
-const XML_ART: Record<string, Art> = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
+const XML_ART: Record<string, Art> = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
 /** 别家谱的力度归到这一版认的六档（更弱 / 更强的并到两头）；sfz / fp 这类认不了 = null（数出来报给人）。 */
 const XML_DYN = (name: string): Dyn | null => (["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? (name as Dyn) : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null);
 const tempoXml = (bpm: number) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
@@ -163,19 +163,20 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       // 元素顺序照 MusicXML 4.0：type / dot / time-modification 之后才是 staff，再后面 notations / lyric（v0.6.8 之前 staff 写在 type 前面）
       const typeXml = ty ? `<type>${ty.type}</type>` + "<dot/>".repeat(ty.dots) + (ty.tuplet ? `<time-modification><actual-notes>${ty.tuplet[0]}</actual-notes><normal-notes>${ty.tuplet[1]}</normal-notes></time-modification>` : "") : "";
       const staffXml = staves === 2 ? `<staff>${staffs[i]}</staff>` : "";
-      x += typeXml + staffXml;
+      const headXml = t.kind === "note" && (t.art ?? []).includes("ghost") ? `<notehead parentheses="yes">normal</notehead>` : "";   // 幽灵音 = 括号符头（顺序：stem 之后、staff 之前）
+      x += typeXml + headXml + staffXml;
       const chordXml: string[] = [];
       if (t.kind === "note") {
         const tieIn = firstPiece ? !!t.tie : true, tieOn = last ? tieOut : true;
         // 演奏法：跳音 / 重音 / 保持挂在第一段，呼吸挂在最后一段（音被小节线拆开时）
-        const arts = (t.art ?? []).filter((a) => (a === "breath" ? last : firstPiece)), noteDyn = arts.filter((a) => NOTE_DYN.includes(a)), artic = arts.filter((a) => !NOTE_DYN.includes(a));
+        const arts = (t.art ?? []).filter((a) => a !== "ghost" && (a === "breath" ? last : firstPiece)), noteDyn = arts.filter((a) => NOTE_DYN.includes(a)), artic = arts.filter((a) => !NOTE_DYN.includes(a));
         const artXml = (artic.length ? `<articulations>${artic.map((a) => `<${ART_XML[a]}/>`).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a) => `<${ART_XML[a]}/>`).join("")}</dynamics>` : "");
         const slurXml = firstPiece ? slurs(i, t) : "";
         if (tieIn || tieOn || artXml || slurXml) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}</notations>`;
         // 叠音：跟在后面的 <chord/> 音（同时值、同连音线；歌词、演奏法只在第一个上）
         for (const [ci, cp] of (t.chord ?? []).entries()) {
           chordXml.push(`<note id="${id}c${ci + 1}"><chord/>` + pitchXml(cp) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` +
-            typeXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
+            typeXml + headXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
         }
         if (!lyricDone && t.lyric) {
           if (t.lyric === MELISMA_MARK) x += `<lyric number="1"><extend/></lyric>`;
@@ -258,6 +259,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     for (const nn of kids(note, "notations")) for (const ar of kids(nn, "articulations")) for (const e of kids(ar)) { const a = XML_ART[e.name]; if (a) set.add(a); else drop("演奏法记号（这一版不认的）"); }
     for (const nn of kids(note, "notations")) for (const dy of kids(nn, "dynamics")) for (const e of kids(dy)) { const a = XML_NOTE_DYN[e.name]; if (a) set.add(a); else drop("力度记号（这一版不认的，如 sfz）"); }
     if (pendingAttack) { set.add(pendingAttack); pendingAttack = null; }   // 音前面那个方向里的 sfz / fp：挂到这个音上
+    if (kids(note, "notehead").some((h) => h.attrs.parentheses === "yes")) set.add("ghost");   // 括号符头 = 幽灵音
     const att = ATTACKS.filter((x) => set.has(x)); if (att.length > 1) for (const x of att.slice(0, -1)) set.delete(x);   // 音头那一组只留一个（后来的）
     const art = ARTS.filter((a) => set.has(a));
     if (art.length) tok.art = art;

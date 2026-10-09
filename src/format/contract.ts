@@ -105,6 +105,7 @@ export interface CandidateV2 {
      *  SoundFont 新候选按仓鼠 v11 的 sustain（sustained = 能）by value 抄进来。 */
     canSwell?: boolean };
   //   2026-10-08 加（可选，不升版本；Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）：上面这些 = 记号怎么解读的数，没写 = performance.ts MARK_DEFAULTS
+  //   2026-10-08 深夜再加（可选，不升版本；Opus 5.5）：stressDb / stressVel（次重音）、unstressDb / unstressVel（弱化）、ghostDb / ghostVel（幽灵音）——强度的其余几级。
   /** 2026-10-08 加（可选）：月读——谱上的记号变成唱法核心哪个字前记号（^ / v / O）、放在这个字还是下一个字前面；没写 = performance.ts SING_MARKS。 */
   sing?: Record<string, { mark: "^" | "v" | "O"; at: "this" | "next" } | null>;   // 跳音 / 保持吃掉多长（0–1）；重音加多少 dB；
   //   gapSec（2026-10-08 加，可选，不升版本；Claude Opus 5.5）= 连断的底色：不写记号的音之间留多大缝（秒）；连线 / 保持 = 不留；没写 = 0

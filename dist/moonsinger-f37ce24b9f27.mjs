@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.25-2026-10-08";
+var APP_VERSION = "v0.7.26-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2845,9 +2845,9 @@ var DEFAULT_UNIT = 2;
 var TUPLET = { 3: [2, 3], 5: [4, 5], 6: [4, 6], 7: [4, 7] };
 var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
-var ARTS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath"];
-var ATTACKS = ["accent", "marcato", "sfz", "fp"];
-var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", sfz: "\u7A81\u5F3A", fp: "\u5F3A\u540E\u5373\u5F31", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438" };
+var ARTS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost"];
+var ATTACKS = ["ghost", "unstress", "stress", "accent", "marcato", "sfz", "fp"];
+var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", sfz: "\u7A81\u5F3A", fp: "\u5F3A\u540E\u5373\u5F31", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438", stress: "\u6B21\u91CD\u97F3", unstress: "\u5F31\u5316", ghost: "\u5E7D\u7075\u97F3" };
 var DEFAULT_DYN = "mf";
 var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
@@ -3702,7 +3702,7 @@ function symBackspace(st3) {
       nt2[i10] = strip("swell");
       return next(st3, nt2);
     }
-    for (const a10 of ["marcato", "accent", "sfz", "fp", "tenuto", "staccato", "breath"]) if (art.includes(a10)) {
+    for (const a10 of ["marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "breath"]) if (art.includes(a10)) {
       nt2[i10] = withArt(t10, a10, false);
       return next(st3, nt2);
     }
@@ -4700,6 +4700,10 @@ var TOP_LINE = 38;
 var MID_LINE = 34;
 var BOTTOM_LINE = 30;
 var ART_GLYPH = {
+  stress: { above: "\uE4B6", below: "\uE4B7", w: 1, h: 1 },
+  // 次重音（2026-10-08 深夜；宽高 = canvas 量的 Bravura 墨迹）
+  unstress: { above: "\uE4B8", below: "\uE4B9", w: 1.6, h: 0.9 },
+  // 弱化
   accent: { above: "\uE4A0", below: "\uE4A1", w: 1.36, h: 0.99 },
   marcato: { above: "\uE4AC", below: "\uE4AD", w: 1, h: 1.08 },
   // 强音（2026-10-08；宽按同字号和重音比着量的）
@@ -5379,7 +5383,7 @@ function engrave(song, o10) {
           if (a10 === null) return;
           const ag2 = a10 === 1 ? GLYPH.accidentalSharp : a10 === -1 ? GLYPH.accidentalFlat : a10 === 2 ? GLYPH.accidentalDoubleSharp : a10 === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
           const near = c10.accs.slice(0, k2).some((b3, kk) => b3 !== null && Math.abs(ds[kk] - ds[k2]) < 3);
-          prims.push({ t: "glyph", x: P2(c10.x + 0.2) - (near ? P2(1.1) : 0), y: yOf(row, ds[k2]), ch: ag2, cls });
+          prims.push({ t: "glyph", x: P2(c10.x + 0.2) - (near ? P2(1.1) : 0) - (c10.art.includes("ghost") ? P2(0.6) : 0), y: yOf(row, ds[k2]), ch: ag2, cls });
         });
         const ledgers = /* @__PURE__ */ new Set();
         for (const dd of ds) {
@@ -5394,6 +5398,11 @@ function engrave(song, o10) {
           shifted = second;
           const mute = k2 > 0 && !!q2.p.mono;
           prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row, dd), ch: ng2, cls: ["note", cls ?? "", mute ? "chord-mute" : ""].filter(Boolean).join(" ") });
+          if (c10.art.includes("ghost")) {
+            const hx = second ? x0 + nhW(c10) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
+            prims.push({ t: "glyph", x: hx - P2(0.6), y: yOf(row, dd), ch: "\uE0F5", cls: pc });
+            prims.push({ t: "glyph", x: hx + nhW(c10) + P2(0.25), y: yOf(row, dd), ch: "\uE0F6", cls: pc });
+          }
         });
         if (c10.dotted) prims.push({ t: "glyph", x: x0 + nhW(c10) + P2(0.3), y: yOf(row, d3 % 2 === 0 ? d3 + 1 : d3), ch: GLYPH.augmentationDot, cls });
         if (c10.j === 0) notes.push({ index: c10.index, system: row, x: x0, y: y2, w: nhW(c10), d: diatonicIndex(c10.pitch) });
@@ -5548,12 +5557,13 @@ function engrave(song, o10) {
         const below = upOf.get(c10) ?? false, sgn = below ? -1 : 1;
         const inStaff = (d4) => d4 >= BOTTOM_LINE && d4 <= TOP_LINE;
         let d3 = below ? dLo - 2 : dHi + 2;
-        for (const a10 of ["staccato", "tenuto", "accent", "marcato"].filter((x3) => c10.art.includes(x3))) {
-          if (a10 === "accent" || a10 === "marcato") d3 = below ? Math.min(d3, BOTTOM_LINE - 2) : Math.max(d3, TOP_LINE + 2);
+        const OUTER = (a10) => a10 === "accent" || a10 === "marcato" || a10 === "stress" || a10 === "unstress";
+        for (const a10 of ["staccato", "tenuto", "accent", "marcato", "stress", "unstress"].filter((x3) => c10.art.includes(x3))) {
+          if (OUTER(a10)) d3 = below ? Math.min(d3, BOTTOM_LINE - 2) : Math.max(d3, TOP_LINE + 2);
           else if (inStaff(d3) && d3 % 2 === 0) d3 += sgn;
           const m2 = ART_GLYPH[a10], g3 = below ? m2.below : m2.above;
           prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yOf(row, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: ["art", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-          d3 += sgn * (a10 === "accent" || a10 === "marcato" ? 3 : 2);
+          d3 += sgn * (OUTER(a10) ? 3 : 2);
         }
         const swl = c10.j === 0 ? tokens[c10.index].swell : void 0;
         if (swl) {
@@ -7426,12 +7436,13 @@ var HER_RANGE = { lo: 57, hi: 76, who: "\u6708\u8BFB" };
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var SYM_PAGES = {
-  art: ["art:accent", "art:marcato", "art:sfz", "art:fp", "art:staccato", "art:tenuto", "slur", "art:breath"],
+  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath"],
+  // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>"],
   mark: ["phrase", "key", "time", "tempo", "staff"]
 };
 var SYM_PAGE_NAME = { art: "\u6F14\u594F\u6CD5", dyn: "\u529B\u5EA6", mark: "\u8BB0\u53F7" };
-var SYM_PAGE_TITLE = { art: "\u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\u3001\u8DF3\u97F3 / \u4FDD\u6301 / \u8FDE\u7EBF / \u547C\u5438", dyn: "pp\u2026ff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u97F3\u5185\u8D77\u4F0F", mark: "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6" };
+var SYM_PAGE_TITLE = { art: "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438", dyn: "pp\u2026ff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u97F3\u5185\u8D77\u4F0F", mark: "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6" };
 var CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var DYN_CELL = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
@@ -7788,6 +7799,9 @@ var Pad = class {
     const items = [
       cell("phrase", `<span class="big">\u3002</span>`, "\u53E5\u53F7", "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09"),
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "\u8DF3\u97F3", "\u8DF3\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u5F97\u77ED\u4FC3\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
+      cell("art:ghost", `<span class="smufl">\uE0F5\uE0A4\uE0F6</span>`, "\u5E7D\u7075\u97F3", "\u5E7D\u7075\u97F3\uFF08\u62EC\u53F7\u7B26\u5934\uFF09\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5F88\u8F7B\u3001\u51E0\u4E4E\u542C\u4E0D\u89C1\uFF1B\u97F3\u7684\u5F3A\u5EA6\u53EA\u6709\u4E00\u79CD\uFF1A\u548C\u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\u4E92\u65A5"),
+      cell("art:unstress", `<span class="smufl">\uE4B8</span>`, "\u5F31\u5316", "\u5F31\u5316\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u8F7B\u4E00\u70B9\uFF1B\u548C\u522B\u7684\u5F3A\u5EA6\u4E92\u65A5"),
+      cell("art:stress", `<span class="smufl">\uE4B6</span>`, "\u6B21\u91CD\u97F3", "\u6B21\u91CD\u97F3\uFF1A\u6BD4\u91CD\u97F3\u8F7B\u7684\u91CD\u97F3\uFF08\u56DB\u62CD\u5B50\u300C\u5F3A\u5F31\u6B21\u5F3A\u5F31\u300D\u7684\u6B21\u5F3A\uFF09\uFF1B\u548C\u522B\u7684\u5F3A\u5EA6\u4E92\u65A5"),
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "\u91CD\u97F3", "\u91CD\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u52A0\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:marcato", `<span class="smufl">\uE4AC</span>`, "\u5F3A\u97F3", "\u5F3A\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6BD4\u91CD\u97F3\u66F4\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:sfz", `<span class="smufl">\uE539</span>`, "\u7A81\u5F3A", "\u7A81\u5F3A sfz\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u97F3\u5934\u731B\u5730\u51B2\u4E00\u4E0B\u518D\u843D\u56DE\u6765\uFF1B\u548C\u91CD\u97F3 / \u5F3A\u97F3 / fp \u4E92\u65A5"),
@@ -8197,8 +8211,15 @@ var MARK_DEFAULTS = {
   // 突强：音头比当下高多少（dB 那一路，sfzSec 里落回来）/ 力度那一路加多少
   fpSec: 0.2,
   // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
-  swellDb: 6
+  swellDb: 6,
   // 音内起伏：< 走到 +swellDb、> 走到 −swellDb、<> 中间到 +swellDb 再回来
+  // 强度的其余几级（2026-10-08 深夜 Opus 5.5）：次重音 = 重音的一半（音头 accentSec 那一段 / 力度）；弱化 / 幽灵音 = 整个音轻下去（幽灵音 ≈ 强音反过来）
+  stressDb: 2,
+  stressVel: 8,
+  unstressDb: -3,
+  unstressVel: -10,
+  ghostDb: -9,
+  ghostVel: -28
 };
 var SING_MARKS = {
   staccato: { mark: "^", at: "next" },
@@ -17589,10 +17610,10 @@ function readCredits(root, title) {
 }
 var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
 var wedgeXml = (type) => `<direction placement="above"><direction-type><wedge type="${type}" number="1"/></direction-type></direction>`;
-var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark" };
+var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "" };
 var NOTE_DYN = ["sfz", "fp"];
 var XML_NOTE_DYN = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
-var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath" };
+var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
 var XML_DYN = (name) => ["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? name : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null;
 var tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
 function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
@@ -17701,16 +17722,17 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       x2 += `<voice>1</voice>`;
       const typeXml = ty2 ? `<type>${ty2.type}</type>` + "<dot/>".repeat(ty2.dots) + (ty2.tuplet ? `<time-modification><actual-notes>${ty2.tuplet[0]}</actual-notes><normal-notes>${ty2.tuplet[1]}</normal-notes></time-modification>` : "") : "";
       const staffXml = staves === 2 ? `<staff>${staffs[i10]}</staff>` : "";
-      x2 += typeXml + staffXml;
+      const headXml = t10.kind === "note" && (t10.art ?? []).includes("ghost") ? `<notehead parentheses="yes">normal</notehead>` : "";
+      x2 += typeXml + headXml + staffXml;
       const chordXml = [];
       if (t10.kind === "note") {
         const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
-        const arts = (t10.art ?? []).filter((a10) => a10 === "breath" ? last : firstPiece), noteDyn = arts.filter((a10) => NOTE_DYN.includes(a10)), artic = arts.filter((a10) => !NOTE_DYN.includes(a10));
+        const arts = (t10.art ?? []).filter((a10) => a10 !== "ghost" && (a10 === "breath" ? last : firstPiece)), noteDyn = arts.filter((a10) => NOTE_DYN.includes(a10)), artic = arts.filter((a10) => !NOTE_DYN.includes(a10));
         const artXml = (artic.length ? `<articulations>${artic.map((a10) => `<${ART_XML[a10]}/>`).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a10) => `<${ART_XML[a10]}/>`).join("")}</dynamics>` : "");
         const slurXml = firstPiece ? slurs(i10, t10) : "";
         if (tieIn || tieOn || artXml || slurXml) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}</notations>`;
         for (const [ci2, cp2] of (t10.chord ?? []).entries()) {
-          chordXml.push(`<note id="${id2}c${ci2 + 1}"><chord/>` + pitchXml(cp2) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + typeXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
+          chordXml.push(`<note id="${id2}c${ci2 + 1}"><chord/>` + pitchXml(cp2) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + typeXml + headXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
         }
         if (!lyricDone && t10.lyric) {
           if (t10.lyric === MELISMA_MARK) x2 += `<lyric number="1"><extend/></lyric>`;
@@ -17818,6 +17840,7 @@ function readMusicXml(xml, hints) {
       set.add(pendingAttack);
       pendingAttack = null;
     }
+    if (kids(note2, "notehead").some((h2) => h2.attrs.parentheses === "yes")) set.add("ghost");
     const att = ATTACKS.filter((x2) => set.has(x2));
     if (att.length > 1) for (const x2 of att.slice(0, -1)) set.delete(x2);
     const art = ARTS.filter((a10) => set.has(a10));
@@ -18375,6 +18398,12 @@ function activePerfSpec(extras, role) {
     fpSec: Math.max(0.01, num(a10.fpSec, MARK_DEFAULTS.fpSec)),
     swellDb: num(a10.swellDb, MARK_DEFAULTS.swellDb),
     canSwell: a10.canSwell !== false,
+    stressDb: num(a10.stressDb, MARK_DEFAULTS.stressDb),
+    stressVel: num(a10.stressVel, MARK_DEFAULTS.stressVel),
+    unstressDb: num(a10.unstressDb, MARK_DEFAULTS.unstressDb),
+    unstressVel: num(a10.unstressVel, MARK_DEFAULTS.unstressVel),
+    ghostDb: num(a10.ghostDb, MARK_DEFAULTS.ghostDb),
+    ghostVel: num(a10.ghostVel, MARK_DEFAULTS.ghostVel),
     sing: { ...SING_MARKS, ...c10?.sing ?? {} },
     dynamicsVel: c10?.dynamicsVel ? Object.fromEntries(Object.keys(DYNAMICS_VEL).map((k2) => [k2, Math.max(1, Math.min(127, num(c10.dynamicsVel[k2], DYNAMICS_VEL[k2])))])) : null
   };
@@ -18761,7 +18790,8 @@ function gainSegments(tokens, map, spec, bounds) {
     for (let k2 = 0; k2 < n10; k2++) segs.push({ t0: s02 + (s12 - s02) * k2 / n10, t1: s02 + (s12 - s02) * (k2 + 1) / n10, dB: a10 + (b3 - a10) * (k2 + 0.5) / n10 });
   };
   for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
-    const L2 = levels?.get(index), base3 = L2 ? L2.at0 : 0, baseEnd = L2 ? L2.at1 : 0;
+    const L2 = levels?.get(index), soft = tok.kind === "note" && !vel ? artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : 0 : 0;
+    const base3 = (L2 ? L2.at0 : 0) + soft, baseEnd = (L2 ? L2.at1 : 0) + soft;
     if (base3 !== 0 || baseEnd !== 0) any = true;
     if (tok.kind !== "note") {
       if (baseEnd !== base3) ramp(base3, baseEnd, t02, t12);
@@ -18797,7 +18827,7 @@ function gainSegments(tokens, map, spec, bounds) {
       cur = e10;
       any = true;
     }
-    const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : 0;
+    const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : art.includes("stress") ? spec.stressDb ?? M.stressDb : 0;
     if (boost) {
       const e10 = Math.min(t12, t02 + (spec.accentSec ?? M.accentSec));
       segs.push({ t0: t02, t1: e10, dB: base3 + boost });
@@ -18897,16 +18927,19 @@ var noteVel = (v, art, spec) => {
   else if (art.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
   else if (art.includes("marcato")) v += spec.marcatoVel ?? 0;
   else if (art.includes("accent")) v += spec.accentVel ?? 0;
+  else if (art.includes("stress")) v += spec.stressVel ?? M.stressVel;
+  else if (art.includes("unstress")) v += spec.unstressVel ?? M.unstressVel;
+  else if (art.includes("ghost")) v += spec.ghostVel ?? M.ghostVel;
   return Math.max(1, Math.min(127, Math.round(v))) / 127;
 };
 var HONORS = {
-  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade"],
+  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
   // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
-  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade"],
-  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade"]
+  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
+  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"]
 };
 var GAP_ONLY = ["tenuto", "slur"];
-var ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade"];
+var ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"];
 function ignoredArts(engine, gapSec = 0, canSwell = true) {
   const h2 = engine ? HONORS[engine] : void 0;
   return h2 ? ALL_MARKS.filter((a10) => !h2.includes(a10) || GAP_ONLY.includes(a10) && !(gapSec > 0) || a10 === "swellGrow" && !canSwell) : [];
@@ -28231,6 +28264,9 @@ function marksTableHtml(role, eng) {
   const rows = [
     ["\u529B\u5EA6\u8BB0\u53F7", "", vel ? `\u529B\u5EA6\u8868\uFF1A${Object.entries(sp2.dynamicsVel).map(([d3, x2]) => `${d3} ${x2}`).join(" \xB7 ")}` : `\u97F3\u91CF\uFF1A${Object.entries(sp2.dynamicsDb).map(([d3, x2]) => `${d3} ${db(x2)}`).join(" \xB7 ")}`],
     ["\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9", "", vel ? `\u8D70\u4E00\u6863 = \u529B\u5EA6 ${sp2.wedgeStepVel}` : `\u8D70\u4E00\u6863 = ${db(sp2.wedgeStepDb)}`],
+    ["\u5E7D\u7075\u97F3", "ghost", vel ? `\u529B\u5EA6 ${sp2.ghostVel}` : `\u6574\u4E2A\u97F3 ${db(sp2.ghostDb)}`],
+    ["\u5F31\u5316", "unstress", vel ? `\u529B\u5EA6 ${sp2.unstressVel}` : `\u6574\u4E2A\u97F3 ${db(sp2.unstressDb)}`],
+    ["\u6B21\u91CD\u97F3", "stress", vel ? `\u529B\u5EA6 +${sp2.stressVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.stressDb)}`],
     ["\u91CD\u97F3", "accent", vel ? `\u529B\u5EA6 +${sp2.accentVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.accentDb)}${eng === "tsukuyomi" ? `\uFF1B${singTxt("accent")}` : ""}`],
     ["\u5F3A\u97F3", "marcato", vel ? `\u529B\u5EA6 +${sp2.marcatoVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.marcatoDb)}${eng === "tsukuyomi" ? `\uFF1B${singTxt("marcato")}` : ""}`],
     ["\u7A81\u5F3A sfz", "sfz", vel ? `\u529B\u5EA6 +${sp2.sfzVel}` : `\u97F3\u5934 ${db(sp2.sfzDb)}\uFF0C${ms(sp2.sfzSec)} \u91CC\u843D\u56DE\u6765${eng === "tsukuyomi" ? `\uFF1B${singTxt("sfz")}` : ""}`],
@@ -30412,4 +30448,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b6a3428395b4.mjs.map
+//# sourceMappingURL=moonsinger-f37ce24b9f27.mjs.map

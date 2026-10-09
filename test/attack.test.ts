@@ -75,3 +75,32 @@ describe("音内的起伏（< / > / <>）", () => {
     assert(fpUp.at(-1)!.dB > DYNAMICS_DB.p + 3, "fp 之后再往上");
   });
 });
+
+// 强度的阶梯（2026-10-08 深夜 Opus 5.5；user「重音能不能有不同的阶梯…次重音」「各种弱化也做」「音的强度只能有一种，但是可能有很多级」）
+describe("强度的阶梯：幽灵音 < 弱化 < 不写 < 次重音 < 重音 < 强音", () => {
+  it("一个音只有一种强度（全组互斥）", () => {
+    let t = note(["staccato", "accent"]) as NoteTok;
+    t = withArt(t, "stress", true); eq(JSON.stringify(t.art), `["staccato","stress"]`);
+    t = withArt(t, "ghost", true); eq(JSON.stringify(t.art), `["staccato","ghost"]`);
+    t = withArt(t, "marcato", true); eq(JSON.stringify(t.art), `["staccato","marcato"]`);
+  });
+  it("力度那一路（SoundFont）：一级一级往上", () => {
+    const ladder = ["ghost", "unstress", null, "stress", "accent", "marcato"] as const;
+    const toks = line([dyn("mf"), ...ladder.map((a) => note(a ? [a] : undefined))]), V = noteVelocities(toks, undefined, vel, 80 / 127), xs = notes(toks).map((i) => Math.round(V.get(i)! * 127));
+    eq(JSON.stringify(xs), JSON.stringify([80 + MARK_DEFAULTS.ghostVel, 80 + MARK_DEFAULTS.unstressVel, 80, 80 + MARK_DEFAULTS.stressVel, 80 + ACCENT_VEL, 80 + MARCATO_VEL]));
+    for (let k = 1; k < xs.length; k++) assert(xs[k] > xs[k - 1], `第 ${k} 级比前一级重`);
+  });
+  it("dB 那一路（月读 / 元音版）：弱化 / 幽灵音整个音轻下去，次重音音头加一点", () => {
+    const g = (a?: NoteTok["art"]) => gainSegments(line([note(a)]), undefined, db)!;
+    assert(g(["ghost"]).every((x) => x.dB === MARK_DEFAULTS.ghostDb), "幽灵音：整个音 ghostDb");
+    assert(g(["unstress"]).every((x) => x.dB === MARK_DEFAULTS.unstressDb), "弱化：整个音 unstressDb");
+    eq(g(["stress"])[0].dB, MARK_DEFAULTS.stressDb, "次重音：音头");
+  });
+  it("MusicXML：<stress/> / <unstress/> / 括号符头 往返", () => {
+    const info = { id: "P1", name: "V", instrumentName: "月读", sound: "voice.vocals", program: 55 };
+    const toks = line([note(["stress"]), note(["unstress"]), note(["ghost"])]), w = writeMusicXml({ parts: [{ info, tokens: toks }] }, { software: "t", date: "2026-10-08" });
+    assert(w.xml.includes("<stress/>") && w.xml.includes("<unstress/>") && w.xml.includes('<notehead parentheses="yes">normal</notehead>'), "写出来了");
+    const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.filter((t) => t.kind === "note") as NoteTok[];
+    eq(JSON.stringify(back.map((t) => t.art)), `[["stress"],["unstress"],["ghost"]]`);
+  });
+});

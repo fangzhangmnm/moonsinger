@@ -19,6 +19,8 @@ export const MARK_DEFAULTS = {
   sfzDb: 9, sfzVel: 32, sfzSec: 0.2,     // 突强：音头比当下高多少（dB 那一路，sfzSec 里落回来）/ 力度那一路加多少
   fpSec: 0.2,                       // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
   swellDb: 6,                       // 音内起伏：< 走到 +swellDb、> 走到 −swellDb、<> 中间到 +swellDb 再回来
+  // 强度的其余几级（2026-10-08 深夜 Opus 5.5）：次重音 = 重音的一半（音头 accentSec 那一段 / 力度）；弱化 / 幽灵音 = 整个音轻下去（幽灵音 ≈ 强音反过来）
+  stressDb: 2, stressVel: 8, unstressDb: -3, unstressVel: -10, ghostDb: -9, ghostVel: -28,
 } as const;
 /** 月读：谱上的记号 → 唱法核心认的字前记号（^ = 顿一下、不换气；v = 换气；O = 大口换气）、放在哪个字前（this = 这个字，next = 下一个字）。
  *  user「跳音就是顿一下」「嗯重音也顿」「月读在那儿换气」。同一个字前面有几个：换气优先（v / O 本来就带一个空当）。 */

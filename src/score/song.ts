@@ -54,12 +54,15 @@ export type MarkTok = KeyTok | TimeTok | TempoTok;
  *  出声：跳音 = 截短（候选的 articulation.staccatoGate）、重音 = 音头加 accentDb、保持 = 满长；呼吸 = 月读在下一个字前换一口气（唱法核心的「v」），乐器不受影响。 */
 export type Swell = "<" | ">" | "<>";
 export const SWELL_NAME: Record<Swell, string> = { "<": "音内渐强", ">": "音内渐弱", "<>": "音内鼓起" };
-export type Art = "staccato" | "accent" | "marcato" | "sfz" | "fp" | "tenuto" | "breath";   // marcato = 强音（^，比重音更重；MusicXML <strong-accent/>；2026-10-08 加）
+export type Art = "staccato" | "accent" | "marcato" | "sfz" | "fp" | "tenuto" | "breath" | "stress" | "unstress" | "ghost";   // marcato = 强音（^，比重音更重；MusicXML <strong-accent/>；2026-10-08 加）
+//   stress = 次重音（比重音轻；MusicXML <stress/>）、unstress = 弱化（<unstress/>）、ghost = 幽灵音（括号符头，很轻；<notehead parentheses="yes">）——
+//   2026-10-08 深夜 Opus 5.5，user「重音能不能有不同的阶梯（给一个比这个轻的次重音，想一下四拍子的强弱次强弱」「都做」「各种弱化也做」「音的强度只能有一种，但是可能有很多级」：
+//   一个音的「强度」只有一个、有很多级：幽灵音 < 弱化 < （不写）< 次重音 < 重音 < 强音（= 超级重音，MusicXML 叫 strong-accent），突强 / 强后即弱是带力度形状的那两个。
 //   sfz = 突强、fp = 强后即弱（2026-10-08，user「音头先冲一下，再回落…要，要，我都要」）：音头的力度形状，MusicXML <notations><dynamics>；
 //   音头那一组（重音 / 强音 / sfz / fp）互斥——开一个就关掉别的（ATTACKS）。
-export const ARTS: readonly Art[] = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath"];
-export const ATTACKS: readonly Art[] = ["accent", "marcato", "sfz", "fp"];
-export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", marcato: "强音", sfz: "突强", fp: "强后即弱", tenuto: "保持", breath: "呼吸" };
+export const ARTS: readonly Art[] = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost"];
+export const ATTACKS: readonly Art[] = ["ghost", "unstress", "stress", "accent", "marcato", "sfz", "fp"];   // 一个音的强度只有一种（互斥）
+export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", marcato: "强音", sfz: "突强", fp: "强后即弱", tenuto: "保持", breath: "呼吸", stress: "次重音", unstress: "弱化", ghost: "幽灵音" };
 /** 力度 = 一个记号 token（不占时值，管到下一个力度为止；一首没写 = mf）。MusicXML <direction><dynamics>。出声 = 候选的 dynamicsDb（mf = 0 dB）。 */
 export type Dyn = "pp" | "p" | "mp" | "mf" | "f" | "ff";
 export const DYNS: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
@@ -936,7 +939,7 @@ export function symBackspace(st: EditorState): EditorState {
     const nt = toks.slice(), art = artOf(t);
     const strip = (k: "swell" | "slur") => { const { [k]: _x, ...rest } = t; return rest as NoteTok; };
     if (t.swell) { nt[i] = strip("swell"); return next(st, nt); }
-    for (const a of ["marcato", "accent", "sfz", "fp", "tenuto", "staccato", "breath"] as Art[]) if (art.includes(a)) { nt[i] = withArt(t, a, false); return next(st, nt); }
+    for (const a of ["marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "breath"] as Art[]) if (art.includes(a)) { nt[i] = withArt(t, a, false); return next(st, nt); }
     if (t.slur) { nt[i] = strip("slur"); return next(st, nt); }
   }
   return moveCaret(st, -1);

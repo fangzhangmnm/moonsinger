@@ -45,12 +45,12 @@ const SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true">
 /** 符号层三页（2026-10-08 Opus 5.5 提、user「可以」）：一页一般放得下（4 列 3 排 = 12），位置固定好记。演奏法 = 上一排音头、下一排长短 / 连断；力度 = 力度、渐强渐弱、音内起伏；记号 = 句号、调号 / 拍号 / 速度（大谱表多换谱表）。 */
 type SymPage = "art" | "dyn" | "mark";
 const SYM_PAGES: Record<SymPage, readonly string[]> = {
-  art: ["art:accent", "art:marcato", "art:sfz", "art:fp", "art:staccato", "art:tenuto", "slur", "art:breath"],
+  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath"],   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>"],
   mark: ["phrase", "key", "time", "tempo", "staff"],
 };
 const SYM_PAGE_NAME: Record<SymPage, string> = { art: "演奏法", dyn: "力度", mark: "记号" };
-const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "重音 / 强音 / 突强 / 强后即弱、跳音 / 保持 / 连线 / 呼吸", dyn: "pp…ff、渐强 / 渐弱、音内起伏", mark: "句号、调号 / 拍号 / 速度" };
+const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸", dyn: "pp…ff、渐强 / 渐弱、音内起伏", mark: "句号、调号 / 拍号 / 速度" };
 const CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 /** 力度记号的 Bravura 字形（同选区条「修」）。 */
@@ -389,6 +389,9 @@ export class Pad {
     const items = [
       cell("phrase", `<span class="big">。</span>`, "句号", "句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）"),
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "跳音", "跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉"),
+      cell("art:ghost", `<span class="smufl">\uE0F5\uE0A4\uE0F6</span>`, "幽灵音", "幽灵音（括号符头）：光标前那个音（有选区 = 选中的）很轻、几乎听不见；音的强度只有一种：和弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱互斥"),
+      cell("art:unstress", `<span class="smufl">\uE4B8</span>`, "弱化", "弱化：光标前那个音（有选区 = 选中的）轻一点；和别的强度互斥"),
+      cell("art:stress", `<span class="smufl">\uE4B6</span>`, "次重音", "次重音：比重音轻的重音（四拍子「强弱次强弱」的次强）；和别的强度互斥"),
       cell("art:accent", `<span class="smufl">\uE4A0</span>`, "重音", "重音：光标前那个音（有选区 = 选中的）加重；再点一次去掉"),
       cell("art:marcato", `<span class="smufl">\uE4AC</span>`, "强音", "强音：光标前那个音（有选区 = 选中的）比重音更重；再点一次去掉"),
       cell("art:sfz", `<span class="smufl">\uE539</span>`, "突强", "突强 sfz：光标前那个音（有选区 = 选中的）音头猛地冲一下再落回来；和重音 / 强音 / fp 互斥"),

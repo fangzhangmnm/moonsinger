@@ -106,7 +106,9 @@ const SPACING: Record<Density, { staffAbove: number; rowH: number; rowHNoLyric: 
 };
 const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;
 // 修的字形（SMuFL；宽 / 高 = staff space，浏览器里量的 Bravura：重音 1.36 × 0.99、跳音点 0.28、保持线 1.35 × 0.17）。Above 的从基线往上长，Below 的往下长
-const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp">, { above: string; below: string; w: number; h: number }> = {
+const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp" | "ghost">, { above: string; below: string; w: number; h: number }> = {
+  stress: { above: "\u{E4B6}", below: "\u{E4B7}", w: 1.0, h: 1.0 },     // 次重音（2026-10-08 深夜；宽高 = canvas 量的 Bravura 墨迹）
+  unstress: { above: "\u{E4B8}", below: "\u{E4B9}", w: 1.6, h: 0.9 },   // 弱化
   accent: { above: "\u{E4A0}", below: "\u{E4A1}", w: 1.36, h: 0.99 },
   marcato: { above: "\u{E4AC}", below: "\u{E4AD}", w: 1.0, h: 1.08 },   // 强音（2026-10-08；宽按同字号和重音比着量的）
   staccato: { above: "\u{E4A2}", below: "\u{E4A3}", w: 0.28, h: 0.28 },
@@ -666,7 +668,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           if (a === null) return;
           const ag = a === 1 ? GLYPH.accidentalSharp : a === -1 ? GLYPH.accidentalFlat : a === 2 ? GLYPH.accidentalDoubleSharp : a === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
           const near = c.accs.slice(0, k).some((b, kk) => b !== null && Math.abs(ds[kk] - ds[k]) < 3);   // 挨得近的两个临时记号错开一列
-          prims.push({ t: "glyph", x: P(c.x + 0.2) - (near ? P(1.1) : 0), y: yOf(row, ds[k]), ch: ag, cls });
+          prims.push({ t: "glyph", x: P(c.x + 0.2) - (near ? P(1.1) : 0) - (c.art.includes("ghost") ? P(0.6) : 0), y: yOf(row, ds[k]), ch: ag, cls });   // 幽灵音：给左括号让位
         });
         const ledgers = new Set<number>();
         for (const dd of ds) { for (let L = 28; L >= dd; L -= 2) ledgers.add(L); for (let L = 40; L <= dd; L += 2) ledgers.add(L); }
@@ -677,6 +679,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted; shifted = second;   // 二度：下面那个符头往右错开（连着的二度交错）
           const mute = k > 0 && !!q.p.mono;   // 单声乐器的声部：下面的音灰掉、只唱最上面（user「叠音声部换单声乐器时下方音数据结构上保留，但是变灰」）
           prims.push({ t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: ng, cls: ["note", cls ?? "", mute ? "chord-mute" : ""].filter(Boolean).join(" ") });
+          if (c.art.includes("ghost")) {   // 幽灵音 = 符头两边一对括号（SMuFL noteheadParenthesisLeft / Right；墨迹按 canvas 量的）
+            const hx = second ? x0 + nhW(c) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
+            prims.push({ t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\u{E0F5}", cls: pc });
+            prims.push({ t: "glyph", x: hx + nhW(c) + P(0.25), y: yOf(row, dd), ch: "\u{E0F6}", cls: pc });
+          }
         });
         if (c.dotted) prims.push({ t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(row, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
         if (c.j === 0) notes.push({ index: c.index, system: row, x: x0, y, w: nhW(c), d: diatonicIndex(c.pitch!) });   // d = 真的音级（拖音高用），不带谱号位移
@@ -808,12 +815,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const below = upOf.get(c) ?? false, sgn = below ? -1 : 1;
         const inStaff = (d: number) => d >= BOTTOM_LINE && d <= TOP_LINE;
         let d = below ? dLo - 2 : dHi + 2;
-        for (const a of (["staccato", "tenuto", "accent", "marcato"] as const).filter((x) => c.art.includes(x))) {
-          if (a === "accent" || a === "marcato") d = below ? Math.min(d, BOTTOM_LINE - 2) : Math.max(d, TOP_LINE + 2);   // 重音 / 强音在最外层、出谱
+        const OUTER = (a: string) => a === "accent" || a === "marcato" || a === "stress" || a === "unstress";   // 强度那一组（重音 / 强音 / 次重音 / 弱化）在最外层、出谱
+        for (const a of (["staccato", "tenuto", "accent", "marcato", "stress", "unstress"] as const).filter((x) => c.art.includes(x))) {
+          if (OUTER(a)) d = below ? Math.min(d, BOTTOM_LINE - 2) : Math.max(d, TOP_LINE + 2);
           else if (inStaff(d) && d % 2 === 0) d += sgn;                                                 // 跳音 / 保持在谱内落在间里
           const m = ART_GLYPH[a], g = below ? m.below : m.above;
           prims.push({ t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-          d += sgn * (a === "accent" || a === "marcato" ? 3 : 2);
+          d += sgn * (OUTER(a) ? 3 : 2);
         }
         // 音内的起伏（< / > / <>）：力度那一行，这个音自己的宽度里一个小发夹；做不到的（canSwell = false 的 < / <>）画灰
         const swl = c.j === 0 ? (tokens[c.index] as NoteTok).swell : undefined;

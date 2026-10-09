@@ -14,6 +14,7 @@ export interface PerfSpec { dynamicsDb: Record<Dyn, number>; staccatoGate: numbe
   /** 记号怎么解读的其余的数（候选 articulation by value；没给 = MARK_DEFAULTS）。 */
   accentSec?: number; breathSec?: number; breathShare?: number; gapShare?: number; wedgeStepDb?: number; wedgeStepVel?: number;
   sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number; swellDb?: number; canSwell?: boolean;
+  stressDb?: number; stressVel?: number; unstressDb?: number; unstressVel?: number; ghostDb?: number; ghostVel?: number;
   /** 有 = 力度记号 / 重音 / 强音走 MIDI 力度（SoundFont 新候选），音量曲线就不再管它们；没有 = 走 dB（月读 / 元音版 / 旧候选）。 */
   dynamicsVel?: Record<Dyn, number> | null; accentVel?: number; marcatoVel?: number }
 const M = MARK_DEFAULTS;   // 演奏者没写的键用它（= 这一版之前写死的数）
@@ -29,7 +30,8 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
   /** 渐强渐弱：一个音里面的 dB 从 a 走到 b（切成小段；月读一个长音也能渐强）。 */
   const ramp = (a: number, b: number, s0: number, s1: number) => { const n = Math.max(1, Math.min(32, Math.ceil((s1 - s0) / 0.03))); for (let k = 0; k < n; k++) segs.push({ t0: s0 + ((s1 - s0) * k) / n, t1: s0 + ((s1 - s0) * (k + 1)) / n, dB: a + ((b - a) * (k + 0.5)) / n }); };
   for (const { index, tok, t0, t1 } of timeline(tokens, map)) {
-    const L = levels?.get(index), base = L ? L.at0 : 0, baseEnd = L ? L.at1 : 0;
+    const L = levels?.get(index), soft = tok.kind === "note" && !vel ? (artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : 0) : 0;
+    const base = (L ? L.at0 : 0) + soft, baseEnd = (L ? L.at1 : 0) + soft;   // 弱化 / 幽灵音：整个音轻下去（dB 那一路；力度那一路在 noteVel）
     if (base !== 0 || baseEnd !== 0) any = true;
     if (tok.kind !== "note") { if (baseEnd !== base) ramp(base, baseEnd, t0, t1); else segs.push({ t0, t1, dB: base }); continue; }
     const art = artOf(tok);
@@ -51,7 +53,7 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
       any = true; continue;
     }
     if (art.includes("sfz") && !vel) { const e = Math.min(t1, t0 + (spec.sfzSec ?? M.sfzSec)), b = spec.sfzDb ?? M.sfzDb; ramp(base + b, baseEnd === base ? base : base + ((baseEnd - base) * (e - t0)) / Math.max(1e-9, t1 - t0), t0, e); cur = e; any = true; }
-    const boost = vel ? 0 : art.includes("marcato") ? (spec.marcatoDb ?? spec.accentDb + 3) : art.includes("accent") ? spec.accentDb : 0;   // 强音比重音重
+    const boost = vel ? 0 : art.includes("marcato") ? (spec.marcatoDb ?? spec.accentDb + 3) : art.includes("accent") ? spec.accentDb : art.includes("stress") ? (spec.stressDb ?? M.stressDb) : 0;   // 强音比重音重、次重音比重音轻
     if (boost) { const e = Math.min(t1, t0 + (spec.accentSec ?? M.accentSec)); segs.push({ t0, t1: e, dB: base + boost }); cur = e; any = true; }
     if (t1 > cur) {
       const a0 = base + ((baseEnd - base) * (cur - t0)) / Math.max(1e-9, t1 - t0);
@@ -129,6 +131,7 @@ const noteVel = (v: number, art: readonly string[], spec: PerfSpec) => {
   if (art.includes("fp")) v = spec.dynamicsVel?.f ?? v;   // 强后即弱：音头按 f 弹（之后 gainSegments 压到 p）
   else if (art.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
   else if (art.includes("marcato")) v += spec.marcatoVel ?? 0; else if (art.includes("accent")) v += spec.accentVel ?? 0;
+  else if (art.includes("stress")) v += spec.stressVel ?? M.stressVel; else if (art.includes("unstress")) v += spec.unstressVel ?? M.unstressVel; else if (art.includes("ghost")) v += spec.ghostVel ?? M.ghostVel;
   return Math.max(1, Math.min(127, Math.round(v))) / 127;
 };
 /** 谁认哪些记号（2026-10-08 Opus 5.5；user 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。
@@ -137,13 +140,13 @@ const noteVel = (v: number, art: readonly string[], spec: PerfSpec) => {
  *  保持 / 连线：元音版 / SoundFont = 这个音不留底色的缝（gapSec > 0 才有区别），月读还不认（连断第 3 步）。test/honors.test.ts 守着。
  *  不在表里的引擎（没人上场 / 认不出的）= null：整个声部本来就不出声，不再逐个记号画灰。 */
 const HONORS: Record<string, readonly string[]> = {
-  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade"],                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
-  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade"],
-  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade"],
+  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost"],                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
+  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
+  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
 };
 /** 连线 / 保持只改「留不留缝」：这位底色本来就不留缝（gapSec = 0）= 写了也不变 → 一样画灰、明说。 */
 const GAP_ONLY = ["tenuto", "slur"];
-export const ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade"] as const;   // swellGrow = 音内 < / <>，swellFade = 音内 >
+export const ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"] as const;   // swellGrow = 音内 < / <>，swellFade = 音内 >
 export type Mark = (typeof ALL_MARKS)[number];
 /** 这位不认的记号（写在谱上照画、画灰，出声不受影响）：引擎没实现的 + 底色不留缝时的连线 / 保持。 */
 export function ignoredArts(engine: string | null | undefined, gapSec = 0, canSwell = true): Mark[] {

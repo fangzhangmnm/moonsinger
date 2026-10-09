@@ -1062,6 +1062,9 @@ function marksTableHtml(role: string, eng: string): string {
   const rows: [string, string, string][] = [
     ["力度记号", "", vel ? `力度表：${(Object.entries(sp.dynamicsVel!) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ")}` : `音量：${(Object.entries(sp.dynamicsDb) as [string, number][]).map(([d, x]) => `${d} ${db(x)}`).join(" · ")}`],
     ["渐强渐弱没写终点", "", vel ? `走一档 = 力度 ${sp.wedgeStepVel}` : `走一档 = ${db(sp.wedgeStepDb)}`],
+    ["幽灵音", "ghost", vel ? `力度 ${sp.ghostVel}` : `整个音 ${db(sp.ghostDb)}`],
+    ["弱化", "unstress", vel ? `力度 ${sp.unstressVel}` : `整个音 ${db(sp.unstressDb)}`],
+    ["次重音", "stress", vel ? `力度 +${sp.stressVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.stressDb)}`],
     ["重音", "accent", vel ? `力度 +${sp.accentVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.accentDb)}${eng === "tsukuyomi" ? `；${singTxt("accent")}` : ""}`],
     ["强音", "marcato", vel ? `力度 +${sp.marcatoVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.marcatoDb)}${eng === "tsukuyomi" ? `；${singTxt("marcato")}` : ""}`],
     ["突强 sfz", "sfz", vel ? `力度 +${sp.sfzVel}` : `音头 ${db(sp.sfzDb)}，${ms(sp.sfzSec)} 里落回来${eng === "tsukuyomi" ? `；${singTxt("sfz")}` : ""}`],

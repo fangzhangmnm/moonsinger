@@ -336,6 +336,7 @@ export function withUnpacked(extras: Extras, only?: (subsetSha256: string) => bo
 /** 上场那位的力度表（mf = 0 dB）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（DYNAMICS_DB / ARTICULATION）。 */
 export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number>; staccatoGate: number; accentDb: number; gapSec: number;
   marcatoDb: number; dynamicsVel: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number> | null; accentVel: number; marcatoVel: number;
+  stressDb: number; stressVel: number; unstressDb: number; unstressVel: number; ghostDb: number; ghostVel: number;
   accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepDb: number; wedgeStepVel: number; sfzDb: number; sfzVel: number; sfzSec: number; fpSec: number; swellDb: number; canSwell: boolean; sing: Record<string, SingMark | null> } {
   const c = activeCandidate(extras, role), d = (c?.dynamicsDb ?? {}) as Partial<Record<string, number>>, a = (c?.articulation ?? {}) as Partial<Record<string, number>>;
   const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
@@ -346,6 +347,8 @@ export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Reco
     gapShare: Math.max(0, Math.min(1, num(a.gapShare, MARK_DEFAULTS.gapShare))), wedgeStepDb: num(a.wedgeStepDb, MARK_DEFAULTS.wedgeStepDb), wedgeStepVel: num(a.wedgeStepVel, MARK_DEFAULTS.wedgeStepVel),
     sfzDb: num(a.sfzDb, MARK_DEFAULTS.sfzDb), sfzVel: num(a.sfzVel, MARK_DEFAULTS.sfzVel), sfzSec: Math.max(0.01, num(a.sfzSec, MARK_DEFAULTS.sfzSec)), fpSec: Math.max(0.01, num(a.fpSec, MARK_DEFAULTS.fpSec)),
     swellDb: num(a.swellDb, MARK_DEFAULTS.swellDb), canSwell: (a as Json).canSwell !== false,
+    stressDb: num(a.stressDb, MARK_DEFAULTS.stressDb), stressVel: num(a.stressVel, MARK_DEFAULTS.stressVel), unstressDb: num(a.unstressDb, MARK_DEFAULTS.unstressDb),
+    unstressVel: num(a.unstressVel, MARK_DEFAULTS.unstressVel), ghostDb: num(a.ghostDb, MARK_DEFAULTS.ghostDb), ghostVel: num(a.ghostVel, MARK_DEFAULTS.ghostVel),
     sing: { ...SING_MARKS, ...((c?.sing ?? {}) as Record<string, SingMark | null>) },
     dynamicsVel: c?.dynamicsVel ? (Object.fromEntries((Object.keys(DYNAMICS_VEL) as (keyof typeof DYNAMICS_VEL)[]).map((k) => [k, Math.max(1, Math.min(127, num((c.dynamicsVel as Json)[k], DYNAMICS_VEL[k])))])) as Record<keyof typeof DYNAMICS_VEL, number>) : null };
 }
