@@ -21,7 +21,7 @@ import { ScoreView } from "../ui/score-view.ts";
 import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
 import { Pad, HER_RANGE, type HintRange } from "../ui/pad.ts";
-import { toLabScore, type SingLang } from "../score/lab-score.ts";
+import { singChunks, toLabScore, type SingLang } from "../score/lab-score.ts";
 import { Singer, type SingResult } from "../singer/client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
 import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS } from "../format/performance.ts";
@@ -33,7 +33,7 @@ import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { Sampler } from "../singer/sampler.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { mixTracks, applyGain } from "../audio/mix.ts";
 import { gainSegments, noteEnd, noteVelocities, ignoredArts, whyIgnored, lightMarks, type Mark } from "../score/perform.ts";
@@ -655,6 +655,7 @@ async function renderPart(part: PartDef, scope: RenderScope = "view", order?: st
   if (eng === "unknown") throw new Error(`「${roleName(doc.extras, role)}」还没有人上场`);
   const song = songIn(scope);
   const { tokens, map, bounds, groove } = flatFor(song, part, order);
+  if (eng === "tsukuyomi" && activeSingChunk(doc.extras, role) !== "whole") return renderSungChunks(part, tokens, map, bounds);   // 分段唱（默认每句；歌手的属性）
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);   // 跳音 / 重音 / 呼吸 → 核心认的 ^ / v（怎么对应 = 这位的配置），改了就重唱
     if (!score.SCORE.length) return null;
@@ -686,6 +687,42 @@ async function renderPart(part: PartDef, scope: RenderScope = "view", order?: st
   const bytes = await resolveGmBytes(g);
   const r = await singer.gm(bytes, g.subsetSha256, gmNotes, GM_SR, 2), out = { samples: r.samples, sr: r.sr, at: 0 };
   lastRender.set(part.id, { key, r: out }); return out;
+}
+/** 月读分段唱的缓存：声部 → （这一段唱谱的内容 → 唱出来的原样声音）。只留最近一次渲染用到的：重复的纸 / 没改的句子下次直接拿。 */
+const chunkCache = new Map<string, Map<string, { y: Float32Array; sr: number }>>();
+/** 月读分段唱（2026-10-08 深夜 Opus 5.5；user「对我也觉得分开唱复用」「月读至少拆成句级别」「开关是歌手的属性，可以有不同的粒度」）：
+ *  一段唱完就放掉（WASM 的堆只涨不缩 → 峰值 = 最长那段）；每段按它第一个音的时刻摆（同整首：第一个元音前留 LEAD_IN）；
+ *  worker 回原样输出（raw，不归一化），这里每段尾巴 30 ms 淡出、拼好之后整首只归一化一次（峰值 0.89 + 尾巴 0.6 s，同 sing-core 的 finish）——
+ *  句和句之间的强弱不被各自拉平。 */
+async function renderSungChunks(part: PartDef, tokens: Token[], map: TempoMap, bounds: number[]): Promise<Rendered | null> {
+  const role = part.role, lang = songLangOf(tokens), sing = activePerfSpec(doc.extras, role).sing, opt = humOpt(), mode = activeSingChunk(doc.extras, role);
+  const tl = timeline(tokens, map), noteAt = (a: number) => tl.find((x) => x.index >= a && x.tok.kind === "note")?.t0 ?? 0;
+  const chunks = singChunks(tokens, map, bounds, mode).map(([a, b]) => ({ score: toLabScore(tokens, st.song.hum, lang, map, sing, [a, b]), t0: noteAt(a) })).filter((c) => c.score.SCORE.length);
+  if (!chunks.length) return null;
+  const keys = chunks.map((c) => JSON.stringify(["tsukuyomi-chunk", c.score, opt])), key = JSON.stringify(["tsukuyomi-chunks", keys, chunks.map((c) => c.t0)]), had = lastRender.get(part.id);
+  if (had?.key === key) return had.r;
+  const cache = chunkCache.get(part.id) ?? new Map<string, { y: Float32Array; sr: number }>(), used = new Set<string>(), got: { y: Float32Array; sr: number; t0: number }[] = [];
+  const who = roleName(doc.extras, role);
+  for (let k = 0; k < chunks.length; k++) {
+    let r = cache.get(keys[k]);
+    if (!r) {
+      progress(`${who}：第 ${k + 1} / ${chunks.length} 段…`);
+      const s = await singer.sing(chunks[k].score, (stage) => { progress(`${who}：第 ${k + 1} / ${chunks.length} 段 · ${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); }, { opt, models: modelBases(), raw: true });
+      r = { y: s.samples, sr: s.sr }; cache.set(keys[k], r);
+    }
+    used.add(keys[k]); got.push({ ...r, t0: chunks[k].t0 });
+    renderBar.frac((k + 1) / chunks.length);   // 一段一格（真实的单元，不是猜的百分比）
+  }
+  for (const k of [...cache.keys()]) if (!used.has(k)) cache.delete(k);
+  chunkCache.set(part.id, cache);
+  const sr = got[0].sr, origin = got.reduce((m, g) => Math.min(m, g.t0), Infinity) - LEAD_IN, fade = Math.round(0.03 * sr);
+  let n = 0; for (const g of got) n = Math.max(n, Math.round((g.t0 - LEAD_IN - origin) * sr) + g.y.length);
+  const out = new Float32Array(n + Math.round(0.6 * sr));
+  for (const g of got) { const off = Math.round((g.t0 - LEAD_IN - origin) * sr), L = g.y.length; for (let i = 0; i < L; i++) out[off + i] += g.y[i] * (i > L - fade ? (L - i) / fade : 1); }
+  let m = 1e-9; for (let i = 0; i < n; i++) m = Math.max(m, Math.abs(out[i]));
+  const gn = 0.89 / m; for (let i = 0; i < n; i++) out[i] *= gn;
+  const res = { samples: out, sr, at: origin };
+  lastRender.set(part.id, { key, r: res }); return res;
 }
 /** 一个声部的音量曲线（力度 + 重音；月读的跳音 = 后半段收声；src/score/perform.ts）：没有力度 / 重音 = null，声音不碰。渲染结果是缓存的，乘在拷贝上。 */
 function partGain(part: PartDef, scope: RenderScope, order?: string[]) {
@@ -1008,6 +1045,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null, view: o.view, references: o.references }), refHost,
+  setChunk: (v: "phrase" | "sheet" | "whole") => { const role = st.song.parts.find((x) => x.id === st.at.part)?.role; if (role) updateExtras(withSingChunk(doc.extras, role, v, st.song.hum), { kind: "lounge", label: `分段唱：${v}` }); },
   set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: history.past.length, future: history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
@@ -1808,6 +1846,9 @@ function drawInst(): void {
     (active && active.note === undefined ? row("修八度", `<b class="ip-val">${tr > 0 ? "+" : tr < 0 ? "−" : ""}${Math.abs(tr)} 半音</b><button class="btn" data-v="tr:-12" title="低一个八度">−12</button><button class="btn" data-v="tr:-1" title="低半音">−1</button><button class="btn" data-v="tr:1" title="高半音">+1</button><button class="btn" data-v="tr:12" title="高一个八度">+12</button>${tr ? `<button class="btn" data-v="tr:0" title="回到 0">归零</button>` : ""}`,
       "大部分情况不用动：某些音色本身就差八度（比如 GS 的 Guitar Harmonics 高两个八度）时兜底，调好后写什么音就响什么音") : "") +
     (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("哼的字", HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), "没写歌词的音唱什么（整首歌一个）") : "") +
+    // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
+    (eng === "tsukuyomi" ? ((sc) => row("分段唱", (([["phrase", "每句", "在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句"], ["sheet", "每张纸", "一张纸一段"], ["whole", "一整首", "一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）"]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),
+      sc === "whole" ? "一口气唱完：句和句之间唱法最连贯，但长歌在 iPad 上可能内存不够" : "分段唱：一段唱完就放掉，重复的段 / 没改的句子直接拿上次的；段和段之间切在休止 / 纸界，整首最后统一音量"))(activeSingChunk(doc.extras, role)) : "") +
     (eng === "unknown" ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
   instEl.innerHTML =
     `<div class="ip-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="ip-title">乐器</span>` +
@@ -1854,6 +1895,7 @@ instEl.addEventListener("click", (e) => {
   else if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4)))); updateExtras(withGapSec(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」音和音之间 ${Math.round(next * 1000)} ms` }, "gap"); }
   else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d)); updateExtras(withCalibration(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
   else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
+  else if (v.startsWith("chunk:")) { const c = v.slice(6) as "phrase" | "sheet" | "whole"; updateExtras(withSingChunk(doc.extras, role, c, st.song.hum), { kind: "lounge", label: `「${rn}」分段唱：${c === "phrase" ? "每句" : c === "sheet" ? "每张纸" : "一整首"}` }); lastRender.delete(st.at.part); }
   else return;
   drawInst();
 });

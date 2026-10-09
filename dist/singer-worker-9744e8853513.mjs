@@ -7769,7 +7769,7 @@ self.onmessage = async (ev) => {
     const atlas = q2.atlas ?? "off", breath = q2.breath ?? atlas !== "off";
     const preset = e.presetDefault[q2.lang] ?? 0;
     const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q2.opt ?? {} });
-    const samples = r.sung;
+    const samples = q2.raw ? Float32Array.from(r.y) : r.sung;
     post({ type: "done", id: q2.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1 } }, [samples.buffer]);
   } catch (err) {
     engine = engine && await engine.catch(() => null) ? engine : null;
@@ -7785,4 +7785,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-8faa7537f23a.mjs.map
+//# sourceMappingURL=singer-worker-9744e8853513.mjs.map

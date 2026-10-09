@@ -401,6 +401,17 @@ export function withSfxFixed(extras: Extras, role: string, on: boolean, hum: Hum
   if (on) i.note = i.sfx.key; else delete i.note;
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
+/** 月读分段唱的粒度（上场那位；没写 = 每句）。user「开关是歌手的属性，可以有不同的粒度」。 */
+export function activeSingChunk(extras: Extras, role: string): "phrase" | "sheet" | "whole" {
+  const i = activeInstrument(extras, role);
+  return i?.engine === "tsukuyomi" && (i.chunk === "sheet" || i.chunk === "whole") ? i.chunk : "phrase";
+}
+export function withSingChunk(extras: Extras, role: string, v: "phrase" | "sheet" | "whole", hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), i = instrumentOf(cands(r).find((x) => x.id === r.active));
+  if (i?.engine !== "tsukuyomi") return extras;
+  if (v === "phrase") delete i.chunk; else i.chunk = v;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
 /** 音高对齐开 / 关（只在没固定原速、原速时听得出音高时有意义）。 */
 export function withSfxAlign(extras: Extras, role: string, on: boolean, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), i = instrumentOf(cands(r).find((x) => x.id === r.active));

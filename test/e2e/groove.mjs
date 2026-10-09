@@ -42,7 +42,7 @@ const lv = await p.evaluate(async () => {
   const at = (sec) => Math.abs(got.samples[Math.round((sec + 0.5) * got.sr)]), q = 60 / 90;   // 声音的第 0 秒 = 谱上 −0.5 秒（月读的提前量）
   return [at(0.03), at(q + 0.03), at(2 * q + 0.03), at(q + 0.4)];
 });
-check(!!lv && lv[1] > lv[0] * 1.02 && Math.abs(lv[2] - lv[0]) < 1e-6, "流行：第二拍音头比第一拍响（第三拍 = 第一拍）", JSON.stringify(lv));
+check(!!lv && lv[1] > lv[0] * 1.02 && Math.abs(lv[2] - lv[0]) < lv[0] * 1e-4, "流行：第二拍音头比第一拍响（第三拍 = 第一拍；相对误差，月读分段唱后整首归一化过）", JSON.stringify(lv));
 check(!!lv && lv[3] < lv[1], "音头过了回到原来的音量", JSON.stringify(lv));
 // 删
 const gx = await p.$eval("#score text.groove-mark", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + 6, y: r.y + r.height / 2 }; });

@@ -21,6 +21,8 @@ import { PACKS, SINGER } from "./packs.gen.ts";
  *  sf2 只在第一次发（worker 按 sha256 缓存载好的音色库；重建 worker 后客户端再发一次）。notes 的 preset = [bank, program]（SoundFont 的 0 起编号）。 */
 export interface GmRequest { type: "gm"; id: number; sha256: string; sf2?: Uint8Array; sampleRate: number; tail: number; notes: { preset: [number, number]; key: number; vel: number; t0: number; t1: number }[] }
 export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: SingLang; opt?: Record<string, unknown>; atlas?: string; breath?: boolean;
+  /** true = 回 WORLD 的原样输出（不归一化、不补尾巴）：分段唱时宿主自己拼、整首最后归一化一次（2026-10-08 深夜）。 */
+  raw?: boolean;
   /** 模型源，按顺序试（宿主给：同源 pwa-models/ → 设置里的来源）。不给 = 出厂默认。 */
   models?: string[] }
 export type SingReply =
@@ -182,7 +184,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | GmRequest>) => {
     const atlas = q.atlas ?? "off", breath = q.breath ?? atlas !== "off";
     const preset = e.presetDefault[q.lang] ?? 0;   // 模型配置的 preset_default（中 3、英 9；日语没写 = 0 = 原版），同 Lab piper-node.mjs
     const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q.opt ?? {} });
-    const samples: Float32Array = r.sung;
+    const samples: Float32Array = q.raw ? Float32Array.from(r.y as ArrayLike<number>) : r.sung;
     post({ type: "done", id: q.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1 } }, [samples.buffer]);
   } catch (err) {
     engine = engine && (await engine.catch(() => null)) ? engine : null;   // 加载失败就允许下次重试

@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.5-2026-10-08";
+var APP_VERSION = "v0.8.6-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -9391,8 +9391,9 @@ var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId }
 
 // src/score/lab-score.ts
 var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
-function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS) {
-  const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2[0]?.bpm ?? 90;
+function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range2) {
+  const inRange = (i10) => !range2 || i10 >= range2[0] && i10 < range2[1];
+  const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2.find((x2) => inRange(x2.index))?.bpm ?? 90;
   const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
   const out = [];
   const pick = (a10, b3) => !a10 ? b3 : a10 === "^" ? b3 : a10;
@@ -9411,7 +9412,7 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS) {
     return null;
   };
   tokens.forEach((t10, i10) => {
-    if (!isTimed(t10)) return;
+    if (!isTimed(t10) || !inRange(i10)) return;
     const arts = t10.kind === "note" ? artOf(t10) : [], held = (u2) => u2?.kind === "note" && (u2.tie || u2.lyric === MELISMA_MARK);
     thisMark = null;
     if (t10.kind === "note" && !held(t10)) for (const a10 of arts) {
@@ -9463,6 +9464,24 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS) {
   }
   const TEXT2 = lang === "en" ? out.map((e10) => e10.kana + (e10.hyph ? "" : " ")).join("").trim() : out.map((e10, k2) => e10.kana + (e10.rest ? "\u3001" : k2 === out.length - 1 ? "\u3002" : "")).join("");
   return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base3, LANG: lang };
+}
+var PHRASE_REST_SEC = 0.25;
+function singChunks(tokens, tempoMap, bounds, mode) {
+  if (mode === "whole") return tokens.some((t10) => t10.kind === "note") ? [[0, tokens.length]] : [];
+  const cuts = new Set(bounds.filter((b3) => b3 > 0 && b3 < tokens.length));
+  if (mode === "phrase") {
+    let rest = 0;
+    for (const x2 of timeline(tokens, tempoMap)) {
+      if (x2.tok.kind === "rest") {
+        rest += x2.t1 - x2.t0;
+        continue;
+      }
+      if (rest >= PHRASE_REST_SEC) cuts.add(x2.index);
+      rest = 0;
+    }
+  }
+  const starts = [0, ...[...cuts].sort((a10, b3) => a10 - b3)];
+  return starts.map((a10, k2) => [a10, starts[k2 + 1] ?? tokens.length]).filter(([a10, b3]) => tokens.slice(a10, b3).some((t10) => t10.kind === "note"));
 }
 
 // src/singer/audio.ts
@@ -17803,7 +17822,7 @@ var Singer = class {
   // worker 里已经载过的音色库（sha256）；worker 重建就清
   worker() {
     if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-8faa7537f23a.mjs"}`, import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${"singer-worker-9744e8853513.mjs"}`, import.meta.url), { type: "module" });
     this.sent.clear();
     this.w.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -19688,6 +19707,17 @@ function withSfxFixed(extras, role, on2, hum) {
   if (i10?.engine !== "soundfont" || !i10.sfx) return extras;
   if (on2) i10.note = i10.sfx.key;
   else delete i10.note;
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+function activeSingChunk(extras, role) {
+  const i10 = activeInstrument(extras, role);
+  return i10?.engine === "tsukuyomi" && (i10.chunk === "sheet" || i10.chunk === "whole") ? i10.chunk : "phrase";
+}
+function withSingChunk(extras, role, v, hum) {
+  const r10 = roleOf(extras, role, hum), i10 = instrumentOf(cands(r10).find((x2) => x2.id === r10.active));
+  if (i10?.engine !== "tsukuyomi") return extras;
+  if (v === "phrase") delete i10.chunk;
+  else i10.chunk = v;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
 function withSfxAlign(extras, role, on2, hum) {
@@ -31123,6 +31153,7 @@ async function renderPart(part, scope = "view", order) {
   if (eng === "unknown") throw new Error(`\u300C${roleName(doc.extras, role)}\u300D\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A`);
   const song = songIn(scope);
   const { tokens, map, bounds, groove } = flatFor(song, part, order);
+  if (eng === "tsukuyomi" && activeSingChunk(doc.extras, role) !== "whole") return renderSungChunks(part, tokens, map, bounds);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);
     if (!score.SCORE.length) return null;
@@ -31160,6 +31191,50 @@ async function renderPart(part, scope = "view", order) {
   const r10 = await singer.gm(bytes, g3.subsetSha256, gmNotes, GM_SR, 2), out = { samples: r10.samples, sr: r10.sr, at: 0 };
   lastRender.set(part.id, { key, r: out });
   return out;
+}
+var chunkCache = /* @__PURE__ */ new Map();
+async function renderSungChunks(part, tokens, map, bounds) {
+  const role = part.role, lang = songLangOf(tokens), sing = activePerfSpec(doc.extras, role).sing, opt = humOpt(), mode = activeSingChunk(doc.extras, role);
+  const tl2 = timeline(tokens, map), noteAt = (a10) => tl2.find((x2) => x2.index >= a10 && x2.tok.kind === "note")?.t0 ?? 0;
+  const chunks2 = singChunks(tokens, map, bounds, mode).map(([a10, b3]) => ({ score: toLabScore(tokens, st2.song.hum, lang, map, sing, [a10, b3]), t0: noteAt(a10) })).filter((c10) => c10.score.SCORE.length);
+  if (!chunks2.length) return null;
+  const keys = chunks2.map((c10) => JSON.stringify(["tsukuyomi-chunk", c10.score, opt])), key = JSON.stringify(["tsukuyomi-chunks", keys, chunks2.map((c10) => c10.t0)]), had = lastRender.get(part.id);
+  if (had?.key === key) return had.r;
+  const cache = chunkCache.get(part.id) ?? /* @__PURE__ */ new Map(), used = /* @__PURE__ */ new Set(), got = [];
+  const who = roleName(doc.extras, role);
+  for (let k2 = 0; k2 < chunks2.length; k2++) {
+    let r10 = cache.get(keys[k2]);
+    if (!r10) {
+      progress(`${who}\uFF1A\u7B2C ${k2 + 1} / ${chunks2.length} \u6BB5\u2026`);
+      const s10 = await singer.sing(chunks2[k2].score, (stage) => {
+        progress(`${who}\uFF1A\u7B2C ${k2 + 1} / ${chunks2.length} \u6BB5 \xB7 ${stage}\u2026`);
+        const pc = /(\d+)%$/.exec(stage);
+        if (pc) renderBar.frac(Number(pc[1]) / 100);
+      }, { opt, models: modelBases(), raw: true });
+      r10 = { y: s10.samples, sr: s10.sr };
+      cache.set(keys[k2], r10);
+    }
+    used.add(keys[k2]);
+    got.push({ ...r10, t0: chunks2[k2].t0 });
+    renderBar.frac((k2 + 1) / chunks2.length);
+  }
+  for (const k2 of [...cache.keys()]) if (!used.has(k2)) cache.delete(k2);
+  chunkCache.set(part.id, cache);
+  const sr2 = got[0].sr, origin = got.reduce((m3, g3) => Math.min(m3, g3.t0), Infinity) - LEAD_IN, fade = Math.round(0.03 * sr2);
+  let n10 = 0;
+  for (const g3 of got) n10 = Math.max(n10, Math.round((g3.t0 - LEAD_IN - origin) * sr2) + g3.y.length);
+  const out = new Float32Array(n10 + Math.round(0.6 * sr2));
+  for (const g3 of got) {
+    const off = Math.round((g3.t0 - LEAD_IN - origin) * sr2), L2 = g3.y.length;
+    for (let i10 = 0; i10 < L2; i10++) out[off + i10] += g3.y[i10] * (i10 > L2 - fade ? (L2 - i10) / fade : 1);
+  }
+  let m2 = 1e-9;
+  for (let i10 = 0; i10 < n10; i10++) m2 = Math.max(m2, Math.abs(out[i10]));
+  const gn = 0.89 / m2;
+  for (let i10 = 0; i10 < n10; i10++) out[i10] *= gn;
+  const res = { samples: out, sr: sr2, at: origin };
+  lastRender.set(part.id, { key, r: res });
+  return res;
 }
 function partGain(part, scope, order) {
   const { tokens, map, bounds, groove } = flatFor(songIn(scope), part, order);
@@ -31648,6 +31723,10 @@ window.__moonsinger = {
   zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]),
   load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null, view: o10.view, references: o10.references }),
   refHost,
+  setChunk: (v) => {
+    const role = st2.song.parts.find((x2) => x2.id === st2.at.part)?.role;
+    if (role) updateExtras(withSingChunk(doc.extras, role, v, st2.song.hum), { kind: "lounge", label: `\u5206\u6BB5\u5531\uFF1A${v}` });
+  },
   set: (n10) => update(n10),
   addPaper: () => update(addPaper(st2)),
   toggleChord: (i10, p2) => update(toggleChordPitch(st2, i10, p2)),
@@ -32815,7 +32894,12 @@ function drawInst() {
     "\u4FEE\u516B\u5EA6",
     `<b class="ip-val">${tr3 > 0 ? "+" : tr3 < 0 ? "\u2212" : ""}${Math.abs(tr3)} \u534A\u97F3</b><button class="btn" data-v="tr:-12" title="\u4F4E\u4E00\u4E2A\u516B\u5EA6">\u221212</button><button class="btn" data-v="tr:-1" title="\u4F4E\u534A\u97F3">\u22121</button><button class="btn" data-v="tr:1" title="\u9AD8\u534A\u97F3">+1</button><button class="btn" data-v="tr:12" title="\u9AD8\u4E00\u4E2A\u516B\u5EA6">+12</button>${tr3 ? `<button class="btn" data-v="tr:0" title="\u56DE\u5230 0">\u5F52\u96F6</button>` : ""}`,
     "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3"
-  ) : "") + (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
+  ) : "") + (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
+  (eng === "tsukuyomi" ? ((sc2) => row(
+    "\u5206\u6BB5\u5531",
+    [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
+    sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF"
+  ))(activeSingChunk(doc.extras, role)) : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
   instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc7(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc7(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc7(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
   const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
   sel.addEventListener("change", () => {
@@ -32917,7 +33001,11 @@ instEl.addEventListener("click", (e10) => {
     const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d3));
     updateExtras(withCalibration(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u54CD\u5EA6\u6821\u51C6 ${next2} dB` }, "cal");
   } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
-  else return;
+  else if (v.startsWith("chunk:")) {
+    const c10 = v.slice(6);
+    updateExtras(withSingChunk(doc.extras, role, c10, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u5206\u6BB5\u5531\uFF1A${c10 === "phrase" ? "\u6BCF\u53E5" : c10 === "sheet" ? "\u6BCF\u5F20\u7EB8" : "\u4E00\u6574\u9996"}` });
+    lastRender.delete(st2.at.part);
+  } else return;
   drawInst();
 });
 var deskNow = () => ({
@@ -34149,4 +34237,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3f2c09c13140.mjs.map
+//# sourceMappingURL=moonsinger-677ef21caddb.mjs.map

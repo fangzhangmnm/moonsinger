@@ -22,8 +22,10 @@ export interface LabScore { SCORE: LabEntry[]; TEXT: string; TEMPO_QUARTER: numb
 export const HUM_SYLLABLE: Record<Hum, Record<SingLang, string>> = { la: { ja: "ら", zh: "啦", en: "la" }, n: { ja: "ん", zh: "嗯", en: "hum" }, u: { ja: "う", zh: "呜", en: "ooh" }, o: { ja: "お", zh: "哦", en: "oh" }, a: { ja: "あ", zh: "啊", en: "ah" } };
 
 /** tokens = 一个声部（压平后的一串）；tempoMap = 第一个声部的速度表（这个声部不是第一个时给，自己串里的速度记号不算数）。 */
-export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap, sing: Record<string, SingMark | null> = SING_MARKS): LabScore {
-  const eighth = TPQ / 2, tl = timeline(tokens, tempoMap), base = tl[0]?.bpm ?? 90;
+/** range = 只出这一段的 token（下标 [from, to)；月读分段唱用，见 singChunks）——速度、没写音高的音照样按整串的上下文算。不给 = 整串。 */
+export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tempoMap?: TempoMap, sing: Record<string, SingMark | null> = SING_MARKS, range?: readonly [number, number]): LabScore {
+  const inRange = (i: number) => !range || (i >= range[0] && i < range[1]);
+  const eighth = TPQ / 2, tl = timeline(tokens, tempoMap), base = tl.find((x) => inRange(x.index))?.bpm ?? 90;
   const bpmOf = new Map(tl.map((x) => [x.index, x.bpm]));
   const out: LabEntry[] = [];
   // 记号 → 唱法核心认的字前记号（v = 换气 / O = 大口换气 / ^ = 顿一下不换气）：怎么对应是这位演奏者自己的配置（候选 sing，by value；没写 = SING_MARKS），
@@ -35,7 +37,7 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
   const push = (e: LabEntry) => { const m = thisMark && nextMark ? pick(thisMark, nextMark) : thisMark ?? nextMark; if (m) e.before = m; nextMark = thisMark = null; out.push(e); };
   const nextTimed = (i: number) => { for (let j = i + 1; j < tokens.length; j++) { const u = tokens[j]; if (isTimed(u)) return u; } return null; };
   tokens.forEach((t, i) => {
-    if (!isTimed(t)) return;
+    if (!isTimed(t) || !inRange(i)) return;
     const arts = t.kind === "note" ? artOf(t) : [], held = (u: Token | null) => u?.kind === "note" && (u.tie || u.lyric === MELISMA_MARK);
     thisMark = null;
     if (t.kind === "note" && !held(t)) for (const a of arts) { const s = sing[a]; if (s && s.at === "this") thisMark = pick(thisMark, s.mark); }
@@ -68,4 +70,25 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
     ? out.map((e) => e.kana + (e.hyph ? "" : " ")).join("").trim()
     : out.map((e, k) => e.kana + (e.rest ? "、" : k === out.length - 1 ? "。" : "")).join("");
   return { SCORE: out, TEXT, TEMPO_QUARTER: base, LANG: lang };
+}
+
+/** 月读分段唱（2026-10-08 深夜 Opus 5.5；user「对我也觉得分开唱复用」「月读至少拆成句级别」「开关是歌手的属性，可以有不同的粒度」）：
+ *  一口气唱完一整首 = 唱法核心整段算（piper 一次念完、WORLD 整段分析 + 重唱），长歌把 iPad 的内存撑爆（团子大家族 195.6 s 必崩）；
+ *  分段 = 一段唱完就放掉（峰值 = 最长那段），重复的段 / 没改的句子按内容复用。whole = 一整首；sheet = 每张纸；phrase = 每张纸里再在够长的休止处切。
+ *  返回 token 下标范围 [from, to)；没有音的段不要。 */
+export type SingChunkMode = "phrase" | "sheet" | "whole";
+export const PHRASE_REST_SEC = 0.25;   // 这么长以上的休止（连着几个休止加起来）= 一句的边界：那里本来就没声音，切开听不出接缝
+export function singChunks(tokens: Token[], tempoMap: TempoMap | undefined, bounds: readonly number[], mode: SingChunkMode): [number, number][] {
+  if (mode === "whole") return tokens.some((t) => t.kind === "note") ? [[0, tokens.length]] : [];
+  const cuts = new Set(bounds.filter((b) => b > 0 && b < tokens.length));
+  if (mode === "phrase") {
+    let rest = 0;
+    for (const x of timeline(tokens, tempoMap)) {
+      if (x.tok.kind === "rest") { rest += x.t1 - x.t0; continue; }
+      if (rest >= PHRASE_REST_SEC) cuts.add(x.index);
+      rest = 0;
+    }
+  }
+  const starts = [0, ...[...cuts].sort((a, b) => a - b)];
+  return starts.map((a, k) => [a, starts[k + 1] ?? tokens.length] as [number, number]).filter(([a, b]) => tokens.slice(a, b).some((t) => t.kind === "note"));
 }

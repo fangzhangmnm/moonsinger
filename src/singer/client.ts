@@ -41,7 +41,7 @@ export class Singer {
   }
   /** 唱。内存不够（换着试很多音色之后，SoundFont 的库把 worker 的 wasm 堆撑大了，月读的引擎起不来——user 2026-10-08 iPad「Out of memory」
    *  「感觉是没有gc」）= 重开 worker（全部还回去）再试一次；还不行才报错。同一位演奏者重来，不是换人（不自动替补）。 */
-  async sing(s: LabScore, progress: (stage: string) => void = () => {}, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models">> = {}): Promise<SingResult> {
+  async sing(s: LabScore, progress: (stage: string) => void = () => {}, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw">> = {}): Promise<SingResult> {
     try { return await this.singOnce(s, progress, extra); }
     catch (e) {
       const msg = (e as Error).message ?? "";
@@ -57,7 +57,7 @@ export class Singer {
       }
     }
   }
-  private singOnce(s: LabScore, progress: (stage: string) => void, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models">>): Promise<SingResult> {
+  private singOnce(s: LabScore, progress: (stage: string) => void, extra: Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw">>): Promise<SingResult> {
     const id = ++this.seq;
     const req: SingRequest = { type: "sing", id, score: s.SCORE, text: s.TEXT, tempo: s.TEMPO_QUARTER, lang: s.LANG, ...extra };
     return new Promise((ok, fail) => { this.pending.set(id, { ok, fail, progress }); this.worker().postMessage(req); });

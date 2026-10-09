@@ -124,7 +124,10 @@ export interface CandidateV2 {
 }
 /** 乐器 = 按引擎分的判别联合。每种引擎自带自己的配置（月读才有「哼的字」，SoundFont 才有 bank / program）。 */
 export type InstrumentV2 =
-  | { engine: "tsukuyomi"; model: { pack: string; sha256: string }; hum: Hum }        // 月读完整：piper（时长接管）+ WORLD；model = 家族模型包（packId = manifest 的 sha256）
+  | { engine: "tsukuyomi"; model: { pack: string; sha256: string }; hum: Hum;        // 月读完整：piper（时长接管）+ WORLD；model = 家族模型包（packId = manifest 的 sha256）
+      /** 2026-10-08 深夜加（可选，不升版本；Opus 5.5）：分段唱——"phrase" 每句（在休止处切）/ "sheet" 每张纸 / "whole" 一整首；没写 = phrase。
+       *  user「开关是歌手的属性，可以有不同的粒度」；src/score/lab-score.ts singChunks。 */
+      chunk?: "phrase" | "sheet" | "whole" }
   | { engine: "vowel-sampler"; table: "builtin"; hum: Hum }                            // 月读元音版（轻量）：app 随带的元音表（assets/preview/）
   | { engine: "soundfont"; bank: number; program: number; note?: number; source: Sf2Source;   // SoundFont 2 的一个预设（TinySoundFont 出声）；note = 每个音都敲这个键：鼓件（2026-10-07 加，可选）/ 音效固定原速（2026-10-08）
       /** 2026-10-08 加（可选，不升版本；Claude Opus 5.5）：音效（GS GM 116–128）上场时从目录按值抄的——key = 原速键、midi = 原速时听到的最强频率（有音高才有）、
