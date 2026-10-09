@@ -38,3 +38,15 @@ describe("PDF：资产", () => {
     eq(sha("vendor/fonts/pinyin.ttf.gz"), "354bf347aa43f09aae2712bbb329498a39d14af1a413e25088954b424f3d8c6a");
   });
 });
+
+describe("PDF：拼音字体的让位（分页预览不下字体，用钉住的常数；这里拿真字体核）", () => {
+  it("LYRIC_RAISE.pinyin = 「国」的墨迹顶：萌神 − 思源黑体（× 歌词字号）", async () => {
+    const { gunzipSync } = (await import("node:zlib" as string)) as { gunzipSync(b: Uint8Array): Uint8Array };
+    const { parseTtf } = await import("../src/export/ttf.ts");
+    const { lyricRaiseOf, LYRIC_RAISE } = await import("../src/export/score-pdf.ts");
+    const load = (f: string) => parseTtf(new Uint8Array(gunzipSync(fs.readFileSync(new URL(`vendor/fonts/${f}.ttf.gz`, root)))));
+    const real = lyricRaiseOf(load("pinyin"), load("sans"));
+    assert(Math.abs(real - LYRIC_RAISE.pinyin) < 1e-9, `真字体量出来 ${real}，钉的常数 ${LYRIC_RAISE.pinyin}（字体换了就改常数）`);
+    eq(LYRIC_RAISE.sans, 0);
+  });
+});

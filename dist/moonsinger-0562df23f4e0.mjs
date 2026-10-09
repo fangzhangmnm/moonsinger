@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.10-2026-10-09";
+var APP_VERSION = "v0.8.11-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2769,6 +2769,10 @@ function paperOf(kind, density = "cozy") {
   return { kind, widthMm: s10.w, heightMm: s10.h, marginMm: { l: s10.m, r: s10.m, t: s10.m, b: s10.m }, ...density === "compact" ? { density } : {} };
 }
 var lineSp = (p2) => (p2.widthMm - p2.marginMm.l - p2.marginMm.r) / spMm(p2);
+var pageGeoOf = (p2) => {
+  const mm = spMm(p2), m2 = p2.marginMm;
+  return { h: p2.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm };
+};
 function detectPaper(widthMm, heightMm, marginMm, staffMm = STAFF_MM, density = "cozy") {
   const near = (a10, b3) => Math.abs(a10 - b3) <= 2;
   const kind = PAPER_KINDS.find((k2) => near(widthMm, SIZES[k2].w) && near(heightMm, SIZES[k2].h));
@@ -6286,7 +6290,7 @@ function engrave(song, o10) {
     const as2 = P2(1.25), wOf = (t10, size) => o10.measureLyric(t10) * size / LYRIC_EM, row = Math.max(lines.length, 1), base3 = y0 + row * cs2 * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
     const label = "\u7F16\u6392\u3000", lw2 = wOf(label, 1.25), x0 = P2(MARGIN) + lw2, avail = o10.width - P2(2 * MARGIN) - lw2;
-    prims.push({ t: "text", x: P2(MARGIN), y: base3, s: label, cls: "arr-label", size: as2, anchor: "start" });
+    prims.push({ t: "text", x: P2(MARGIN), y: base3, s: label, cls: txt ? "arr-label" : "arr-label empty", size: as2, anchor: "start" });
     arrLast = base3;
     if (txt) {
       prims.push({ t: "text", x: x0, y: base3, s: txt, cls: "arr", size: as2, anchor: "start" });
@@ -6357,7 +6361,7 @@ function engrave(song, o10) {
       const pBase = yCur + P2(PAPER_H * 0.68);
       pTitle.y = yCur;
       pTitle.baseline = pBase;
-      if (paper.name) prims.push({ t: "text", x: P2(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });
+      if (paper.name) prims.push({ t: "text", x: P2(MARGIN), y: pBase, s: paper.name, cls: paper.hidden && !o10.onlyPaper ? "paper-name hidden-paper" : "paper-name", size: pSize, anchor: "start" });
       else if (o10.titlePlaceholder) prims.push({ t: "text", x: P2(MARGIN), y: pBase, s: "\u66F2\u6BB5\u540D", cls: "paper-name empty", size: pSize, anchor: "start" });
       if (o10.titlePlaceholder && song.papers.length > 1) {
         const k2 = song.papers.findIndex((p2) => p2.id === paper.id), n10 = song.papers.length, ch2 = P2(2.2), cw2 = P2(2.2), cy2 = yCur + P2((PAPER_H - 2.2) / 2);
@@ -8040,7 +8044,7 @@ var ScoreView = class {
   frame() {
     const st3 = this.host.get(), paper = st3.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
     const base3 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
-    const mm = spMm(paper), m2 = paper.marginMm, geo = { h: paper.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm }, page = this.host.pages?.() ? geo : null;
+    const geo = pageGeoOf(paper), page = this.host.pages?.() ? geo : null;
     const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
     const extra = margins.l + margins.r, want = Math.ceil((lineSp(paper) + extra) * base3);
     if (avail > 0 && want <= avail) return { sp: base3, width: lineSp(paper) * base3, strict: true, page, margins };
@@ -8050,6 +8054,14 @@ var ScoreView = class {
     }
     return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base3, avail / 42 * scale)) : base3, width: Math.max(320, avail), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
   }
+  /** 量文字宽（px，歌词字号 = px）：屏幕和 PDF 共用这一把尺子——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。 */
+  measureAt(px) {
+    const f2 = `${px}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
+    return (s10) => {
+      if (this.ctx.font !== f2) this.ctx.font = f2;
+      return this.ctx.measureText(s10).width;
+    };
+  }
   render() {
     const st3 = this.host.get(), { sp: sp2, width, strict, page, margins } = this.frame();
     const totalW = width + (margins.l + margins.r) * sp2;
@@ -8057,7 +8069,6 @@ var ScoreView = class {
     this.el.classList.toggle("pages", !!page);
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st3.song.paper ?? paperOf(DEFAULT_PAPER);
-    this.ctx.font = `${LYRIC_EM * sp2}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     this.layout = engrave(st3.song, {
       width,
       sp: sp2,
@@ -8065,8 +8076,9 @@ var ScoreView = class {
       caret: st3.caret,
       sel: st3.sel,
       parts: this.host.parts(),
-      measureLyric: (s10) => this.ctx.measureText(s10).width,
+      measureLyric: this.measureAt(LYRIC_EM * sp2),
       titlePlaceholder: true,
+      ...page && this.host.lyricRaise?.() ? { lyricRaise: this.host.lyricRaise() } : {},
       autoBars: this.host.autoBars?.() ?? true,
       paperLabel: paper.kind === "other" ? "\u5176\u4ED6\u7EB8" : PAPER_LABEL[paper.kind],
       justWrote: st3.log.length > 0,
@@ -30642,6 +30654,7 @@ var SKIP = /* @__PURE__ */ new Set([
   "part-stub",
   "part-stub-line",
   "hidden-note",
+  "hidden-paper",
   "warn",
   "selbox",
   "caret",
@@ -30656,19 +30669,13 @@ var SKIP = /* @__PURE__ */ new Set([
   "page",
   "in-span"
 ]);
+var skipped = (cls) => cls.some((c10) => SKIP.has(c10) && !(c10 === "empty" && cls.includes("part-name")));
+var LYRIC_RAISE = { sans: 0, pinyin: (1184 - 795) / 1e3 * LYRIC_EM };
 var STROKE = { tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true } };
 var BOLD = /* @__PURE__ */ new Set(["song-title", "tempo-word", "paper-name", "groove-mark", "part-name"]);
 var ITALIC = /* @__PURE__ */ new Set(["groove-mark", "dyn-word"]);
 function textEm(font, s10) {
   return font.shape(s10).reduce((a10, g3) => a10 + font.advance(g3), 0) / font.unitsPerEm;
-}
-function lyricRaiseOf(font, ref) {
-  if (!ref) return 0;
-  const top = (f2) => {
-    const ink = f2.inkOf(f2.glyphId(22269));
-    return ink ? ink[3] / f2.unitsPerEm : 0;
-  };
-  return Math.max(0, top(font) - top(ref)) * LYRIC_EM;
 }
 function segsOf(d3, dx, dy) {
   const t10 = d3.match(/[MLQCZHVmlqczhv]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [], out = [];
@@ -30710,24 +30717,13 @@ function segsOf(d3, dx, dy) {
   }
   return out;
 }
+function printOpts(song, sp2, parts, measureLyric, autoBars2, lyricRaise) {
+  const paper = song.paper ?? paperOf(DEFAULT_PAPER);
+  return { width: lineSp(paper) * sp2, sp: sp2, at: { paper: song.papers[0].id, part: song.parts[0].id }, caret: -1, sel: null, parts, measureLyric, titlePlaceholder: false, autoBars: autoBars2, justWrote: false, page: pageGeoOf(paper), lyricRaise };
+}
 function scorePdf(a10) {
-  const paper = a10.song.paper ?? paperOf(DEFAULT_PAPER), mm = spMm(paper), sp2 = mm * PT_PER_MM, m2 = paper.marginMm;
-  const page = { h: paper.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm };
-  const lyricPx = LYRIC_EM * sp2;
-  const L2 = engrave(a10.song, {
-    width: lineSp(paper) * sp2,
-    sp: sp2,
-    at: { paper: a10.song.papers[0].id, part: a10.song.parts[0].id },
-    caret: -1,
-    sel: null,
-    parts: a10.parts,
-    measureLyric: (s10) => textEm(a10.font, s10) * lyricPx,
-    titlePlaceholder: false,
-    autoBars: true,
-    justWrote: false,
-    page,
-    lyricRaise: lyricRaiseOf(a10.font, a10.ref)
-  });
+  const paper = a10.song.paper ?? paperOf(DEFAULT_PAPER), sp2 = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp2;
+  const L2 = engrave(a10.song, printOpts(a10.song, sp2, a10.parts, a10.measureAt ? a10.measureAt(lyricPx) : (s10) => textEm(a10.font, s10) * lyricPx, a10.autoBars ?? true, LYRIC_RAISE[a10.fontId]));
   const W3 = paper.widthMm * PT_PER_MM, H2 = paper.heightMm * PT_PER_MM, dx = L2.pageX.left;
   const pages = L2.pages.map(() => ({ w: W3, h: H2, ops: [] }));
   const pageOf = (y2) => {
@@ -30739,7 +30735,7 @@ function scorePdf(a10) {
   for (const p2 of L2.prims) {
     if (p2.t === "icon") continue;
     const cls = (p2.cls ?? "").split(/\s+/).filter(Boolean);
-    if (cls.some((c10) => SKIP.has(c10))) continue;
+    if (skipped(cls)) continue;
     const y0 = p2.t === "line" ? Math.min(p2.y1, p2.y2) : p2.t === "path" ? Number(/M\s*-?[\d.]+[ ,]+(-?[\d.]+)/.exec(p2.d)?.[1] ?? NaN) : p2.y;
     const k2 = pageOf(y0);
     if (k2 < 0) continue;
@@ -31000,9 +30996,9 @@ function buildRclt(b3, t10) {
     for (let k2 = 0, m2 = u162(b3, f2 + 2); k2 < m2; k2++) wanted.add(u162(b3, f2 + 4 + 2 * k2));
   }
   if (!wanted.size) return null;
-  const skipped = [];
+  const skipped2 = [];
   const skip = (what) => {
-    if (!skipped.includes(what)) skipped.push(what);
+    if (!skipped2.includes(what)) skipped2.push(what);
     return null;
   };
   const coverage = (o10) => {
@@ -31161,7 +31157,7 @@ function buildRclt(b3, t10) {
     return skip(`lookup type ${type} format ${fmt}`);
   }
   const order = [...wanted].sort((x2, y2) => x2 - y2);
-  return { skipped, apply(g3) {
+  return { skipped: skipped2, apply(g3) {
     for (const lk2 of order) {
       for (let i10 = 0; i10 < g3.length; ) {
         const n10 = applyAt(lk2, g3, i10);
@@ -31936,6 +31932,8 @@ var view = new ScoreView(scoreEl, {
   onCredits: () => openCreditsSheet(),
   reflow: () => reflow,
   pages: () => pageFlow,
+  lyricRaise: () => LYRIC_RAISE[pdfFont],
+  // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope
 });
 var viewScope = "segment";
@@ -33037,6 +33035,11 @@ window.__moonsinger = {
   },
   setPages: (v) => {
     pageFlow = v;
+    view.render();
+  },
+  partView: (id2, patch) => {
+    setPv(id2, patch);
+    afterViewChange();
     view.render();
   },
   flatten: () => flattenPart(st2.song, st2.at.part),
@@ -34572,7 +34575,7 @@ function openPdfPanel() {
   box.className = "offer";
   const draw = () => {
     const chip2 = (id2, label, note2) => `<button class="btn cand${pdfFont === id2 ? " is-on" : ""}" data-v="font:${id2}" title="${esc7(note2)}">${label}</button>`;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u4E50\u8C31\uFF08PDF\uFF09</div><div class="part-sec">\u6B4C\u8BCD\u7684\u5B57\u4F53</div><div class="set-row">${chip2("sans", "\u9ED1\u4F53", "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587 / \u65E5\u6587 / \u82F1\u6587\u90FD\u6709")}${chip2("pinyin", "\u62FC\u97F3", "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF08\u53EF\u7231\uFF09\uFF1B\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3")}</div><div class="offer-msg">${pdfFont === "pinyin" ? "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF0C\u6B4C\u8BCD\u90A3\u4E00\u884C\u4F1A\u5F80\u4E0B\u8BA9\u51FA\u62FC\u97F3\u7684\u5730\u65B9\u3002\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3\u3002" : "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587\u3001\u65E5\u6587\u3001\u82F1\u6587\u90FD\u6709\u3002"}\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7EA6 ${PDF_FONT_MB[pdfFont]} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u7EB8\u7684\u6273\u624B\u91CC\u6539\uFF09\u3002</div><div class="offer-btns"><button class="btn" data-v="close">\u7B97\u4E86</button><button class="btn primary" data-v="go">\u751F\u6210 PDF</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u4E50\u8C31\uFF08PDF\uFF09</div><div class="part-sec">\u6B4C\u8BCD\u7684\u5B57\u4F53</div><div class="set-row">${chip2("sans", "\u9ED1\u4F53", "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587 / \u65E5\u6587 / \u82F1\u6587\u90FD\u6709")}${chip2("pinyin", "\u62FC\u97F3", "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF08\u53EF\u7231\uFF09\uFF1B\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3")}</div><div class="offer-msg">${pdfFont === "pinyin" ? "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF0C\u6B4C\u8BCD\u90A3\u4E00\u884C\u4F1A\u5F80\u4E0B\u8BA9\u51FA\u62FC\u97F3\u7684\u5730\u65B9\u3002\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3\u3002" : "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587\u3001\u65E5\u6587\u3001\u82F1\u6587\u90FD\u6709\u3002"}\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7EA6 ${PDF_FONT_MB[pdfFont]} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u7EB8\u7684\u6273\u624B\u91CC\u6539\uFF09\u3002</div><div class="offer-msg">\u5370\u51FA\u6765\u7684 = \u6273\u624B\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C\u5168\u90E8\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684\u7EB8 / \u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002</div><div class="offer-btns"><button class="btn" data-v="close">\u7B97\u4E86</button><button class="btn primary" data-v="go">\u751F\u6210 PDF</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -34591,6 +34594,7 @@ function openPdfPanel() {
     if (v?.startsWith("font:")) {
       pdfFont = v.slice(5);
       draw();
+      view.render();
       return;
     }
     if (v === "go") {
@@ -34602,12 +34606,10 @@ function openPdfPanel() {
 var pdfBusy = false;
 async function makePdf(fontId) {
   progress(`\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7B2C\u4E00\u6B21\u7EA6 ${PDF_FONT_MB[fontId]} MB\uFF09\u2026`);
-  const [font, ref, music] = await Promise.all([loadPdfFont(fontId), fontId === "pinyin" ? loadPdfFont("sans") : Promise.resolve(null), loadMusicOutlines()]);
+  const [font, music] = await Promise.all([loadPdfFont(fontId), loadMusicOutlines()]);
   progress("\u6392\u7248\u2026");
-  const song = { ...st2.song, papers: st2.song.papers.filter((p2) => !p2.hidden) }, labels = partLabels(st2.song, doc.extras);
-  const parts = song.parts.map((p2, k2) => ({ id: p2.id, name: labels[k2] ?? "", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {} }));
   const title = st2.song.title || docName();
-  const r10 = scorePdf({ song, parts, font, ref, music, title, created: /* @__PURE__ */ new Date() });
+  const r10 = scorePdf({ song: st2.song, parts: partViews(), font, fontId, music, title, created: /* @__PURE__ */ new Date(), measureAt: (px) => view.measureAt(px), autoBars });
   return { file: new File([r10.bytes], `${docName()}.pdf`, { type: "application/pdf" }), r: r10 };
 }
 async function exportPdf(fontId) {
@@ -35592,4 +35594,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-cedaa9a1d499.mjs.map
+//# sourceMappingURL=moonsinger-0562df23f4e0.mjs.map

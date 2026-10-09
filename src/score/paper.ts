@@ -33,6 +33,8 @@ export function paperOf(kind: PaperKind, density: Density = "cozy"): Paper {
 }
 /** 一行（版心）多宽，单位 = 线间距（谱越小一行放得越多）。 */
 export const lineSp = (p: Paper): number => (p.widthMm - p.marginMm.l - p.marginMm.r) / spMm(p);
+/** 分页排版的页面几何（单位 = 线间距）：页高 + 四边边距。分页预览和 PDF 共用（一处算，两边一样）。 */
+export const pageGeoOf = (p: Paper): { h: number; l: number; r: number; t: number; b: number } => { const mm = spMm(p), m = p.marginMm; return { h: p.heightMm / mm, l: m.l / mm, r: m.r / mm, t: m.t / mm, b: m.b / mm }; };
 
 /** 按页面尺寸认档：差 2 mm 内算同一档（边距照文件里的）；都不是 = other（原样保留）。
  *  density 照文件里的 staff-distance 认（musicxml.ts）；谱的大小正好是那一档的就不另记 staffMm，别的大小（别的软件的）原样记下来。 */

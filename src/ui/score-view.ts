@@ -19,7 +19,7 @@
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
-import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL } from "../score/paper.ts";
+import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL, pageGeoOf } from "../score/paper.ts";
 import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic } from "../score/pitch.ts";
@@ -77,6 +77,8 @@ export interface ScoreViewHost {
   reflow?(): boolean;
   /** 排法：true = 分页（按纸的真实高度分页、画页框，所见即所得）；false = 连续（同一张纸的几何，只是不断页）。 */
   pages?(): boolean;
+  /** 分页（= 打印预览）时歌词行往下让多少（sp）：选了拼音字体印 PDF 时 = 拼音那一截（PDF 和分页预览排出来一样）。 */
+  lyricRaise?(): number;
   /** 范围：segment = 一次只看光标所在的那张纸（曲段），‹ › 翻；all = 全部（隐藏的纸折叠着）。 */
   scope?(): "all" | "segment";
 }
@@ -184,7 +186,7 @@ export class ScoreView {
     const st = this.host.get(), paper = st.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
     const base = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
     // 分页：整页（版心 + 左右边距）要放得下；页高 / 边距按这张纸算（sp）
-    const mm = spMm(paper), m = paper.marginMm, geo = { h: paper.heightMm / mm, l: m.l / mm, r: m.r / mm, t: m.t / mm, b: m.b / mm }, page = this.host.pages?.() ? geo : null;
+    const geo = pageGeoOf(paper), page = this.host.pages?.() ? geo : null;
     // 边距：分页 = 纸的真边距（所见即所得）；连续 = 一圈舒服的窄边（CONT_MARGIN；user 2026-10-08「非分页显示…能不能把页边距省了，选一个舒服的边距，
     //   和做分页显示之前类似。但是行宽必须严格一样」）。行宽两种都是这张纸的版心 lineSp 个间距、不取整（取整会让两边差零点几个间距，可能断行不同）→ 每一行一模一样，只差断不断页、边多宽
     const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
@@ -196,6 +198,11 @@ export class ScoreView {
     return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
   }
 
+  /** 量文字宽（px，歌词字号 = px）：屏幕和 PDF 共用这一把尺子——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。 */
+  measureAt(px: number): (s: string) => number {
+    const f = `${px}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
+    return (s) => { if (this.ctx.font !== f) this.ctx.font = f; return this.ctx.measureText(s).width; };
+  }
   render(): void {
     const st = this.host.get(), { sp, width, strict, page, margins } = this.frame();
     const totalW = width + (margins.l + margins.r) * sp;
@@ -203,8 +210,8 @@ export class ScoreView {
     this.el.classList.toggle("pages", !!page);
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
-    this.ctx.font = `${LYRIC_EM * sp}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
-    this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: (s) => this.ctx.measureText(s).width, titlePlaceholder: true,
+    this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true,
+      ...(page && this.host.lyricRaise?.() ? { lyricRaise: this.host.lyricRaise() } : {}),
       autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
       ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}), ...(this.hot ? { hot: this.hot } : {}), ...(this.span ? { span: this.span } : {}) });
     this.ink.style.left = `${this.layout.pageX.left}px`;

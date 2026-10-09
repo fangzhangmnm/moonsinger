@@ -59,7 +59,7 @@ import { createEditorSession } from "../editor-session/index.ts";
 import { openInputSheet, openChoiceSheet, type Choice, openConfirmSheet, isSheetOpen, closeSheet, isGateOpen, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
 import { createReferenceHost, type RefImportQuestion, type RefImportChoice } from "./reference-host.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
-import { scorePdf, type PdfFontId } from "../export/score-pdf.ts";
+import { scorePdf, LYRIC_RAISE, type PdfFontId } from "../export/score-pdf.ts";
 import { loadPdfFont, loadMusicOutlines, PDF_FONT_MB } from "../export/pdf-assets.ts";
 import { reportError, diagNote, diagText, initBlackBox } from "./report-error.ts";
 import { copyDiag, shareDiag, clearDiag, canShareDiag } from "./diag-ui.ts";
@@ -289,6 +289,7 @@ const view = new ScoreView(scoreEl, {
   onCredits: () => openCreditsSheet(),
   reflow: () => reflow,
   pages: () => pageFlow,
+  lyricRaise: () => LYRIC_RAISE[pdfFont],   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope,
 });
 /** 视图范围（这次打开里有效）：本段 = 一次只看光标所在的纸，‹ › 翻（默认；user「不同曲段应该是不同页，而不是一起显示」）；全部 = 整首（隐藏的纸折叠着）。 */
@@ -1072,7 +1073,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, sampler, exportSong, labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, synth, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId) => { const { r } = await makePdf(id); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats }; },
   setChunk: (v: "phrase" | "sheet" | "whole") => { const role = st.song.parts.find((x) => x.id === st.at.part)?.role; if (role) updateExtras(withSingChunk(doc.extras, role, v, st.song.hum), { kind: "lounge", label: `分段唱：${v}` }); },
-  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: history.past.length, future: history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
+  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: history.past.length, future: history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
@@ -2145,6 +2146,7 @@ function openPdfPanel(): void {
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">乐谱（PDF）</div>` +
       `<div class="part-sec">歌词的字体</div><div class="set-row">${chip("sans", "黑体", "思源黑体：中文 / 日文 / 英文都有")}${chip("pinyin", "拼音", "萌神手写体：汉字头上标普通话拼音（可爱）；日文歌的汉字也会被标上普通话拼音")}</div>` +
       `<div class="offer-msg">${pdfFont === "pinyin" ? "萌神手写体：汉字头上标普通话拼音，歌词那一行会往下让出拼音的地方。日文歌的汉字也会被标上普通话拼音。" : "思源黑体：中文、日文、英文都有。"}第一次要下载字体（约 ${PDF_FONT_MB[pdfFont]} MB），之后离线也能用。纸张 = 这首歌的纸（纸的扳手里改）。</div>` +
+      `<div class="offer-msg">印出来的 = 扳手里「分页」+ 曲段控件「全部」看到的样子，去掉按钮和提示；隐藏的纸 / 声部不印（预览里那条细行的位置空着）。</div>` +
       `<div class="offer-btns"><button class="btn" data-v="close">算了</button><button class="btn primary" data-v="go">生成 PDF</button></div></div>`;
   };
   draw(); document.body.append(box);
@@ -2153,20 +2155,19 @@ function openPdfPanel(): void {
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
-    if (v?.startsWith("font:")) { pdfFont = v.slice(5) as PdfFontId; draw(); return; }   // 视图态（desk）：存时顺手带、不标脏
+    if (v?.startsWith("font:")) { pdfFont = v.slice(5) as PdfFontId; draw(); view.render(); return; }   // 视图态（desk）：存时顺手带、不标脏；分页预览跟着让出拼音那一截
     if (v === "go") { close(); void exportPdf(pdfFont); }
   });
 }
 let pdfBusy = false;
-/** 生成乐谱 PDF：整首（藏起来的纸不印），声部全印（屏幕上的隐藏 / 只看它不管）。 */
+/** 生成乐谱 PDF = 「全部 + 分页」预览除了控件和提示的样子（2026-10-09 user「…做到除了控件和提示外的wysiwyg」）：整首；隐藏的纸 / 声部不印（预览里那条细行的位置空着），
+ *  同一份声部视图、同一把量字的尺子（view.measureAt）、同一个小节线开关、同样的拼音让位。 */
 async function makePdf(fontId: PdfFontId): Promise<{ file: File; r: ReturnType<typeof scorePdf> }> {
     progress(`下载字体（第一次约 ${PDF_FONT_MB[fontId]} MB）…`);
-    const [font, ref, music] = await Promise.all([loadPdfFont(fontId), fontId === "pinyin" ? loadPdfFont("sans") : Promise.resolve(null), loadMusicOutlines()]);
+    const [font, music] = await Promise.all([loadPdfFont(fontId), loadMusicOutlines()]);
     progress("排版…");
-    const song = { ...st.song, papers: st.song.papers.filter((p) => !p.hidden) }, labels = partLabels(st.song, doc.extras);
-    const parts: PartView[] = song.parts.map((p, k) => ({ id: p.id, name: labels[k] ?? "", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}) }));
     const title = st.song.title || docName();
-    const r = scorePdf({ song, parts, font, ref, music, title, created: new Date() });
+    const r = scorePdf({ song: st.song, parts: partViews(), font, fontId, music, title, created: new Date(), measureAt: (px) => view.measureAt(px), autoBars });
     return { file: new File([r.bytes as unknown as BlobPart], `${docName()}.pdf`, { type: "application/pdf" }), r };
 }
 async function exportPdf(fontId: PdfFontId): Promise<void> {

@@ -355,7 +355,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const as = P(1.25), wOf = (t: string, size: number) => (o.measureLyric(t) * size) / LYRIC_EM, row = Math.max(lines.length, 1), base = y0 + row * cs * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
     const label = "编排　", lw = wOf(label, 1.25), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
-    prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: "arr-label", size: as, anchor: "start" });
+    prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: txt ? "arr-label" : "arr-label empty", size: as, anchor: "start" });   // 没写编排 = 这个标签只是入口（提示），PDF 不印
     arrLast = base;
     if (txt) {
       prims.push({ t: "text", x: x0, y: base, s: txt, cls: "arr", size: as, anchor: "start" });
@@ -429,7 +429,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       ensure(P(PAPER_H) + firstBlock);
       const pBase = yCur + P(PAPER_H * 0.68);
       pTitle.y = yCur; pTitle.baseline = pBase;
-      if (paper.name) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });
+      if (paper.name) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: paper.hidden && !o.onlyPaper ? "paper-name hidden-paper" : "paper-name", size: pSize, anchor: "start" });   // 折叠的隐藏纸 = 控件（点了进去），PDF 不印
       else if (o.titlePlaceholder) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: "曲段名", cls: "paper-name empty", size: pSize, anchor: "start" });
       // 曲段控件组（2026-10-08 user「…能不能放在和曲段导航在一起」「就一个按钮toggle」「类似solo toggle」「然后曲段的...也放在曲段控件那里」
       //   「多曲段模式下面应该每个曲段都有对应的小控件组」）：每张纸自己那一行右边「‹ k/n › 本段 ⋯」——‹ › 从这张跳；本段 = 只看这张（亮）/ 回到全部；⋯ = 这张纸的菜单
