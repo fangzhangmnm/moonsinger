@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "date": "2026-10-08",
  "producer": "MyLlamaReborn / 20261007 音乐史（scripts/build_grooves.py）",
  "license": {
@@ -11,7 +11,8 @@
   "levels": "古典的层级（原文）→ 数值（AI 取）：小节第一拍 1 / 四拍子第三拍 0.5 / 其余拍 0 / 拍与拍之间的第一层细分 −0.25 / 再往下 −0.5",
   "basis.order": "sourced = 强弱的先后照原文；derived = 从原文的规律推到这个拍号；values = ai-scaled：具体数值是 AI 按层级取的，原文不给数",
   "follow": "这个风格里各类乐器默认跟多少（0–1，AI 判）；键 = gm-map 的 family（defs.families 的 id），另加 voice = 人声类概念（kind: voice，月读、合唱、人声），优先于 family",
-  "swing": "摇摆是时值不是轻重：{unit, ratio = 一对音里前一个占的比例, range}；null = 不摇"
+  "swing": "摇摆是时值不是轻重：{unit, ratio = 一对音里前一个占的比例, range}；null = 不摇",
+  "bars": "一组 weights 管几小节（没写 = 1）；> 1 时 weights 长 = grid × bars，按小节顺序接着写；app 从风格记号那一小节起数，第 1 小节用第一段。克拉维类风格另有 phase：默认 3-2，2-3 = 错开一小节（app 开关）"
  },
  "sources": {
   "beat-hierarchy": {
@@ -211,6 +212,123 @@
    "license": "CC BY-SA 4.0",
    "format": "plain",
    "quote": "Style: Samba-Reggae or Bossanova 3:2; O..O..O.|..O..O.."
+  },
+  "clave-legend": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Legend: Time signature: 24; L=low bell, H=high bell, O = open surdo hit, X = muffled surdo hit, and | divides the measure: Style: Samba 3:2; LL.L.H.H|L.L.L.H."
+  },
+  "clave-24": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Clave was initially written in two measures of 24 in Cuban music."
+  },
+  "clave-cut": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "In North America, salsa and Latin jazz charts commonly represent clave in two measures of cut-time (22); this is most likely the influence of jazz conventions."
+  },
+  "clave-reverse": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "When clave is written in two measures (right), changing from one clave sequence to the other is a matter of reversing the order of the measures."
+  },
+  "clave-sides": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "==== Three-side / two-side ==== The antecedent half has three strokes and is called the three-side of the clave."
+  },
+  "clave-grenet": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Going only slightly into the rhythmic structure of our music we find that all its melodic design is constructed on a rhythmic pattern of two measures, as though both were only one, the first is antecedent, strong, and the second is consequent, weak—Grenet (1939)."
+  },
+  "son-strokes": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Son clave has strokes on 1, 1a, 2&, 3&, 4."
+  },
+  "son-popular": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "== Types == === Son clave === The most common clave pattern used in Cuban popular music is called the son clave, named after the Cuban musical genre of the same name."
+  },
+  "bossa-delay": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "==== Bossa nova pattern ==== The so-called \"bossa nova clave\" (or \"Brazilian clave\") has a similar rhythm to that of the son clave, but the second note on the two-side is delayed by one pulse (subdivision)."
+  },
+  "bossa-rim": {
+   "article": "Clave (rhythm)",
+   "revid": 1379169322,
+   "url": "https://en.wikipedia.org/wiki/Clave_(rhythm)",
+   "retrieved": "2026-10-08T09:28:26Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "The rhythm is typically played as a snare rim pattern in bossa nova music."
+  },
+  "bossa-surdo": {
+   "article": "Bossa nova",
+   "revid": 1378906226,
+   "url": "https://en.wikipedia.org/wiki/Bossa_nova",
+   "retrieved": "2026-10-06T21:15:40Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "=== Drums and percussion === As in samba, the surdo plays an ostinato figure on the downbeat of beat one, the \"ah\" of beat one, the downbeat of beat two and the \"ah\" of beat two."
+  },
+  "bossa-guitar": {
+   "article": "Bossa nova",
+   "revid": 1378906226,
+   "url": "https://en.wikipedia.org/wiki/Bossa_nova",
+   "retrieved": "2026-10-06T21:15:40Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "Gilberto basically took one of the several rhythmic layers from a samba ensemble, specifically the tamborim, and applied it to the picking hand."
+  },
+  "bossa-weak": {
+   "article": "Bossa nova",
+   "revid": 1378906226,
+   "url": "https://en.wikipedia.org/wiki/Bossa_nova",
+   "retrieved": "2026-10-06T21:15:40Z",
+   "license": "CC BY-SA 4.0",
+   "format": "plain",
+   "quote": "By accompanying Cardoso's voice, Gilberto innovated in the way of pacing the rhythm, accentuating the weak times, to carry out a synthesis of the beat of samba to guitar."
   }
  },
  "styles": [
@@ -996,20 +1114,394 @@
     "disco-offbeat"
    ],
    "notes": "只定义了 4/4（原文就是按 4/4 定义的）。"
-  }
- ],
- "deferred": [
+  },
   {
    "id": "bossa-nova",
-   "zh": "波萨：原文有节奏型（Bossanova 3:2; O..O..O.|..O..O..，克拉维一轮 16 个脉冲），但一轮跨两小节（2/4 记谱）或要按两小节 4/4 的八分来数，「一小节一组 weights」装不下；要做得给 meters 加 bars: 2 一类的字段，等 MoonSinger 定",
+   "name": {
+    "zh": "波萨",
+    "en": "Bossa nova",
+    "ja": "ボサノヴァ"
+   },
+   "aliases": [
+    "Bossa",
+    "巴萨诺瓦",
+    "ボサノバ",
+    "Samba-reggae"
+   ],
+   "meters": {
+    "2/4": {
+     "grid": 8,
+     "bars": 2,
+     "weights": [
+      1.0,
+      -0.25,
+      -0.25,
+      0.75,
+      0.5,
+      -0.25,
+      0.75,
+      0.25,
+      0.5,
+      -0.25,
+      0.75,
+      0.25,
+      0.5,
+      0.75,
+      -0.25,
+      0.25
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "clave-legend",
+       "bossa-clave",
+       "bossa-delay",
+       "bossa-surdo",
+       "bossa-weak"
+      ],
+      "zh": "原文：波萨克拉维 = 两小节 2/4 的 O..O..O.|..O..O..（像 son clave，二那一侧的第二击晚一格），在波萨里由军鼓边打；surdo 打每小节第一拍、第一拍的「ah」、第二拍、第二拍的「ah」；吉尔伯托「强调弱的时值」。克拉维击点 0.75、一轮开头 1、surdo 正拍 0.5 / 「ah」0.25、其余拍点 0、其余脉冲 −0.25；数值 AI 取。"
+     }
+    },
+    "2/2": {
+     "grid": 16,
+     "bars": 2,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      0.75,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "clave-cut",
+       "bossa-clave"
+      ],
+      "zh": "原文：北美谱常把克拉维写成两小节二二拍——脉冲变成八分（每个脉冲两个十六分格，后一格 −0.5），节奏型和 2/4 那份一样。"
+     }
+    },
+    "4/4": {
+     "grid": 16,
+     "bars": 2,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      0.25,
+      -0.5,
+      0.5,
+      -0.5,
+      0.75,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "derived",
+      "values": "ai-scaled",
+      "sources": [
+       "clave-cut",
+       "bossa-clave"
+      ],
+      "zh": "推算：4/4 和 2/2 一小节都是 16 个十六分，格子位置一样，照搬 2/2。"
+     }
+    }
+   },
+   "phase": {
+    "default": "3-2",
+    "zh": "默认 3-2：第一小节是三击那边（前句）。2-3 = 两小节对调（原文：写成两小节时，换方向就是把两小节对调）→ 由 app 的「错开一小节」开关做，不另出一份。",
+    "sources": [
+     "clave-sides",
+     "clave-reverse"
+    ]
+   },
+   "meterFallback": {
+    "rule": "classical",
+    "zh": "没列的拍号按古典的层级推（克拉维只在两小节的二拍子 / 四拍子里成立）。"
+   },
+   "follow": {
+    "piano": 0.6,
+    "chromatic-percussion": 0.4,
+    "organ": 0.3,
+    "guitar": 1,
+    "bass": 0.6,
+    "strings": 0.1,
+    "ensemble": 0.1,
+    "brass": 0.3,
+    "reed": 0.3,
+    "pipe": 0.3,
+    "synth-lead": 0.3,
+    "synth-pad": 0.0,
+    "synth-effects": 0.0,
+    "ethnic": 0.5,
+    "percussive": 1,
+    "sound-effects": 0.0,
+    "percussion": 1,
+    "voice": 0.1
+   },
+   "followBasis": "AI 判：原文说波萨的节奏是吉尔伯托把桑巴打击乐的一层（tamborim）搬到吉他右手——所以吉他和打击跟满；贝斯（像 surdo）、钢琴中等；人声轻轻唱在上面，少跟。",
+   "swing": null,
    "sources": [
-    "bossa-clave"
-   ]
+    "bossa-clave",
+    "bossa-delay",
+    "bossa-rim",
+    "bossa-surdo",
+    "bossa-guitar",
+    "bossa-weak",
+    "clave-legend",
+    "clave-cut",
+    "clave-reverse"
+   ],
+   "notes": "一轮两小节（bars: 2）。也有人把一轮写进一小节 4/4 的十六分里（原文 son clave「strokes on 1, 1a, 2&, 3&, 4」就是这种数法）；这一版按歌谱常见的两小节写法（原文：北美萨尔萨 / 拉丁爵士谱常写成两小节 cut time），一小节写法没出。"
   },
   {
    "id": "latin",
-   "zh": "拉丁（son clave）：同上，克拉维跨两小节"
-  },
+   "name": {
+    "zh": "拉丁（克拉维）",
+    "en": "Latin (son clave)",
+    "ja": "ラテン（ソン・クラーベ）"
+   },
+   "aliases": [
+    "拉丁",
+    "Latin",
+    "Son",
+    "Salsa",
+    "萨尔萨",
+    "Mambo",
+    "曼波",
+    "サルサ",
+    "ラテン",
+    "Clave",
+    "克拉维"
+   ],
+   "meters": {
+    "2/4": {
+     "grid": 8,
+     "bars": 2,
+     "weights": [
+      1.0,
+      -0.25,
+      -0.25,
+      0.75,
+      0.0,
+      -0.25,
+      0.75,
+      -0.25,
+      0.25,
+      -0.25,
+      0.75,
+      -0.25,
+      0.75,
+      -0.25,
+      -0.25,
+      -0.25
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "clave-24",
+       "son-strokes",
+       "son-popular",
+       "clave-sides",
+       "clave-grenet"
+      ],
+      "zh": "原文：古巴流行音乐最常用 son clave，最初写成两小节 2/4；击点 1、1a、2&、3&、4（一小节十六分数法）= 两小节 2/4 的脉冲 0 3 6 | 10 12；前半三击（三那边）、后半两击；Grenet：两小节里第一小节是前句、强，第二小节是后句、弱。克拉维击点 0.75、一轮开头 1、第二小节首拍 0.25（弱的后句）、其余拍点 0、其余脉冲 −0.25；数值 AI 取。"
+     }
+    },
+    "2/2": {
+     "grid": 16,
+     "bars": 2,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "sourced",
+      "values": "ai-scaled",
+      "sources": [
+       "clave-cut",
+       "son-strokes"
+      ],
+      "zh": "原文：北美萨尔萨、拉丁爵士谱常把克拉维写成两小节二二拍——脉冲变成八分，节奏型和 2/4 那份一样。"
+     }
+    },
+    "4/4": {
+     "grid": 16,
+     "bars": 2,
+     "weights": [
+      1.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      0.0,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      -0.25,
+      -0.5,
+      0.75,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5,
+      -0.25,
+      -0.5
+     ],
+     "basis": {
+      "order": "derived",
+      "values": "ai-scaled",
+      "sources": [
+       "clave-cut",
+       "son-strokes"
+      ],
+      "zh": "推算：4/4 和 2/2 格子位置一样，照搬 2/2。"
+     }
+    }
+   },
+   "phase": {
+    "default": "3-2",
+    "zh": "默认 3-2：第一小节是三击那边（前句）。2-3 = 两小节对调（原文：写成两小节时，换方向就是把两小节对调）→ 由 app 的「错开一小节」开关做，不另出一份。",
+    "sources": [
+     "clave-sides",
+     "clave-reverse"
+    ]
+   },
+   "meterFallback": {
+    "rule": "classical",
+    "zh": "没列的拍号按古典的层级推（克拉维只在两小节的二拍子 / 四拍子里成立）。"
+   },
+   "follow": {
+    "piano": 0.8,
+    "chromatic-percussion": 0.5,
+    "organ": 0.3,
+    "guitar": 0.6,
+    "bass": 0.8,
+    "strings": 0.3,
+    "ensemble": 0.1,
+    "brass": 0.6,
+    "reed": 0.4,
+    "pipe": 0.4,
+    "synth-lead": 0.3,
+    "synth-pad": 0.0,
+    "synth-effects": 0.0,
+    "ethnic": 0.6,
+    "percussive": 1,
+    "sound-effects": 0.0,
+    "percussion": 1,
+    "voice": 0.3
+   },
+   "followBasis": "AI 判：打击（克拉维、康加）跟满；钢琴蒙图诺、贝斯、三弦吉他的 guajeo 是贴着克拉维写的（原文讲 guajeo 时说到「两小节写法里的弱拍尾音当拾音」），跟得多；铜管齐奏中等；人声少跟。",
+   "swing": null,
+   "sources": [
+    "son-strokes",
+    "son-popular",
+    "clave-24",
+    "clave-cut",
+    "clave-sides",
+    "clave-grenet",
+    "clave-reverse"
+   ],
+   "notes": "son clave（不是伦巴克拉维：伦巴的第三击晚一格，原文另列）。一轮两小节（bars: 2）。也有人把一轮写进一小节 4/4 的十六分里（原文 son clave「strokes on 1, 1a, 2&, 3&, 4」就是这种数法）；这一版按歌谱常见的两小节写法（原文：北美萨尔萨 / 拉丁爵士谱常写成两小节 cut time），一小节写法没出。"
+  }
+ ],
+ "deferred": [
   {
    "id": "ballad",
    "zh": "慢歌：没找到和流行反拍不同的可靠依据；12/8 慢歌已放进流行的 12/8"

@@ -77,7 +77,7 @@ export function toJianpu(toks: Token[], fifths: number): string {
     if (t.kind === "phrase") { out.push(","); continue; }   // 句 = 单独一个逗号（换气）
     if (t.kind === "dyn") { out.push(`[${t.value}]`); continue; }   // 力度 = [mf]（演奏法不进简谱文字；app 内剪贴板带着原 token）
     if (t.kind === "hairpin") { out.push(t.dir === "cresc" ? "[<]" : "[>]"); continue; }   // 渐强 / 渐弱 = [<] / [>]
-    if (t.kind === "groove") { out.push(`[G=${t.style}${t.amount !== undefined && t.amount !== 1 ? `:${Math.round(t.amount * 100)}` : ""}]`); continue; }   // 风格（拍子轻重）= [G=pop] / [G=pop:150]
+    if (t.kind === "groove") { out.push(`[G=${t.style}${t.amount !== undefined && t.amount !== 1 ? `:${Math.round(t.amount * 100)}` : ""}${t.shift ? "/2-3" : ""}]`); continue; }   // /2-3 = 错开一小节   // 风格（拍子轻重）= [G=pop] / [G=pop:150]
     const suf = durText(t.dur), lead = suf.startsWith(" -") ? "" : suf, tail = suf.startsWith(" -") ? suf : "";
     if (t.kind === "rest") { out.push(`0${lead}${tail}`); continue; }
     const body = t.pitch ? allPitches(t).map((pp) => { const { degree, shift, acc } = toDegree(pp, f); return `${accText(acc)}${degree}${octText(shift)}`; }).join("&") : "x";   // 叠音 = 1&3&5（从高到低）
@@ -116,8 +116,8 @@ export function fromJianpu(text: string, fifths: number): Token[] | null {
     m = /^\[(pp|p|mp|mf|f|ff)\]$/.exec(w);
     if (m) { out.push({ kind: "dyn", id: id++, value: m[1] as Dyn }); continue; }
     if (w === "[<]" || w === "[>]") { out.push({ kind: "hairpin", id: id++, dir: w === "[<]" ? "cresc" : "dim" }); continue; }
-    m = /^\[G=([a-z][a-z0-9-]*)(?::(\d+))?\]$/.exec(w);
-    if (m) { const a = m[2] ? Number(m[2]) / 100 : 1; out.push({ kind: "groove", id: id++, style: m[1], ...(a !== 1 ? { amount: a } : {}) }); continue; }
+    m = /^\[G=([a-z][a-z0-9-]*)(?::(\d+))?(\/2-3)?\]$/.exec(w);
+    if (m) { const a = m[2] ? Number(m[2]) / 100 : 1; out.push({ kind: "groove", id: id++, style: m[1], ...(a !== 1 ? { amount: a } : {}), ...(m[3] ? { shift: true as const } : {}) }); continue; }
     m = /^(\^?)((?:[#b]*[0-7x]['’,]*)(?:&[#b]*[1-7]['’,]*)*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w);
     if (!m) return null;
     const [, tie, body, unders, dot, ticks, lyric, hyph] = m;

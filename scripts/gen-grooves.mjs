@@ -12,7 +12,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const SRC = process.env.INSTRUMENTS_SRC ?? join(ROOT, "..", "..", "20260813 MyLlamaReborn", "20261007 音乐史", "export", "moonsinger");
 export const DST = join(ROOT, "vendor", "grooves");
 export const OUT = join(ROOT, "src", "score", "grooves.gen.ts");
-export const VERSION = 1;   // v1 = 2026-10-08（仓鼠 d960331：7 个风格，强弱先后引维基原文、数值 AI 按层级取）
+export const VERSION = 2;   // v1 = 2026-10-08（仓鼠 d960331：7 个风格，强弱先后引维基原文、数值 AI 按层级取）；v2 = 2026-10-09 收（仓鼠 46f41fd：加波萨、拉丁（son clave），拍号可带 bars: 2（两小节一轮），风格加 phase（默认 3-2，2-3 = app 的「错开一小节」））
 export const FILE = `grooves-v${VERSION}.json`;
 const sha = (b) => createHash("sha256").update(b).digest("hex");
 
@@ -22,7 +22,8 @@ export function render() {
   const b = readFileSync(p), d = JSON.parse(b.toString("utf8"));
   const styles = d.styles.map((s) => ({
     id: s.id, name: s.name, aliases: s.aliases ?? [],
-    meters: Object.fromEntries(Object.entries(s.meters).map(([m, v]) => [m, { grid: v.grid, weights: v.weights }])),
+    meters: Object.fromEntries(Object.entries(s.meters).map(([m, v]) => [m, { grid: v.grid, weights: v.weights, ...(v.bars && v.bars > 1 ? { bars: v.bars } : {}) }])),
+    phase: s.phase?.default ?? null,
     fallback: s.meterFallback?.rule === "classical" ? "classical" : "none",
     follow: s.follow, swing: s.swing ? { unit: s.swing.unit, ratio: s.swing.ratio, range: s.swing.range } : null,
   }));
@@ -32,8 +33,10 @@ export const GROOVES_VERSION = ${VERSION};
 export const GROOVES_FILE = ${JSON.stringify({ file: `vendor/grooves/${FILE}`, bytes: b.length, sha256: sha(b) })} as const;
 export interface GrooveStyle {
   id: string; name: { zh: string; en: string; ja: string }; aliases: string[];
-  /** 拍号（"4/4"）→ 一小节几个十六分格子 + 每格上开始的音的相对轻重（−1…1）。 */
-  meters: Record<string, { grid: number; weights: number[] }>;
+  /** 拍号（"4/4"）→ 一小节几个十六分格子 + 每格上开始的音的相对轻重（−1…1）；bars = 几小节一轮（克拉维 = 2，weights = 两小节的格子接起来）。 */
+  meters: Record<string, { grid: number; weights: number[]; bars?: number }>;
+  /** 两小节一轮的默认方向（"3-2" = 第一小节是三击那边）；「错开一小节」= 两小节对调（2-3）。没有 = 一小节一轮。 */
+  phase: string | null;
   /** 没列的拍号：classical = 按古典层级推；none = 不加。 */
   fallback: "classical" | "none";
   /** 各类乐器跟多少（0–1）：键 = GM 家族（gm-map defs.families）+ voice（人声类，优先）。 */

@@ -106,7 +106,7 @@ const XML_DYN = (name: string): Dyn | null => (["pp", "p", "mp", "mf", "f", "ff"
 /** 风格记号（拍子轻重；2026-10-08 深夜 Opus 5.5）：<direction><words>（别的软件照样显示那个字），id = groove.<预设>.<幅度百分数>.<token id>——
  *  我们自己读回来认 id 变回风格记号；别家谱里普通的 <words>（rit. / dolce…）照旧不读。 */
 const GROOVE_ID = "groove.";
-const grooveXml = (t: GrooveTok) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t.style}.${Math.round((t.amount ?? 1) * 100)}.${t.id}">${esc(grooveLabel(t))}</words></direction-type></direction>`;
+const grooveXml = (t: GrooveTok) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t.style}.${Math.round((t.amount ?? 1) * 100)}.${t.id}${t.shift ? ".2-3" : ""}">${esc(grooveLabel(t))}</words></direction-type></direction>`;
 /** 谱内反复 / 跳转（2026-10-09 Opus 5.5；MusicXML 原生：<barline> 的 <repeat> / <ending>，<direction> 的 segno / coda / words + <sound dacapo / dalsegno / fine / tocoda>）。
  *  我们自己写的带 id = nav.<种类>.<token id>（读回来认种类；别家谱按 sound 的属性 / 字认）。 */
 const NAV_ID = "nav.";
@@ -380,7 +380,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           }
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const w of kids(dt, "words")) {   // 风格记号：只认我们自己写的（id 打头 groove.）
             const g = /^groove\.([a-z][a-z0-9-]*)\.(\d+)\./.exec(w.attrs.id ?? "");
-            if (g) { const a = Number(g[2]) / 100; mark({ kind: "groove", id: 0, style: g[1], ...(a !== 1 ? { amount: a } : {}) }); }
+            if (g) { const a = Number(g[2]) / 100; mark({ kind: "groove", id: 0, style: g[1], ...(a !== 1 ? { amount: a } : {}), ...(/\.2-3$/.test(w.attrs.id ?? "") ? { shift: true as const } : {}) }); }   // .2-3 = 错开一小节（2026-10-09）
           }
           // 谱内反复 / 跳转：自家写的认 id（nav.<种类>.）；别家谱认 <segno/> <coda/> 和 <sound> 的 dacapo / dalsegno / fine / tocoda（字里有 Fine / Coda = al Fine / al Coda）
           {

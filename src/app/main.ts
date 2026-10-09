@@ -11,7 +11,7 @@ import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, loopPlan, loopWindow } from "../score/arrange.ts";
-import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, GROOVE_STYLES } from "../score/groove.ts";
+import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -1681,6 +1681,7 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
   box.className = "track-card ctx-menu groove-menu"; box.setAttribute("role", "menu");
   box.innerHTML = `<div class="ctx-hint ctx-what">风格 = 拍子轻重：从这个音起到这张纸结尾，每个音按它落在小节里的哪一拍轻一点或重一点（像鼓手的律动）；写了重音 / 弱化的音照写的来。</div>` +
     `<div class="ctx-row ctx-groove">${chips}</div>` + (t.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") +
+    (grooveHasPhase(style) ? `<div class="ctx-row ctx-phase"><button class="btn ctx-chip${t.shift ? "" : " is-on"}" data-v="shift:0" title="一轮的第一小节是三击那边（前句），从这个记号那一小节起数">3-2</button><button class="btn ctx-chip${t.shift ? " is-on" : ""}" data-v="shift:1" title="错开一小节：两小节对调，第一小节是两击那边">2-3（错开一小节）</button></div>` : "") +
     hints.map((h) => `<div class="ctx-hint">${esc(h)}</div>`).join("") + `<div class="ctx-sep"></div>` +
     `<button class="btn ctx-item danger" data-v="del" title="去掉这个风格记号（这儿起回到前一个风格；这张纸开头 = 不加）">删除</button>` +
     `<div class="ctx-hint">只管这张纸：从这个音到这张纸结尾（或下一个风格记号）。长按拖 = 挪到别的音上</div>`;
@@ -1696,8 +1697,12 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
     if (v === "del") update(editMarkAt(st, i, null));
-    else if (v.startsWith("style:")) { update(editMarkAt(st, i, { style: v.slice(6) })); view.menuFor(i); return; }   // 换了接着看（说明会跟着变）
+    else if (v.startsWith("style:")) {   // 换了接着看（说明会跟着变）；换成没有两小节一轮的风格 = 错开一小节顺手去掉
+      let n = editMarkAt(st, i, { style: v.slice(6) }); if (!grooveHasPhase(grooveStyle(v.slice(6)))) n = editMarkAt(n, i, { shift: false });
+      update(n); view.menuFor(i); return;
+    }
     else if (v.startsWith("amount:")) { update(editMarkAt(st, i, { amount: Number(v.slice(7)) })); view.menuFor(i); return; }
+    else if (v.startsWith("shift:")) { update(editMarkAt(st, i, { shift: v === "shift:1" })); view.menuFor(i); return; }   // 两小节一轮：3-2 / 2-3（错开一小节）
     scoreEl.focus();
   });
 }

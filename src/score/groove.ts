@@ -17,8 +17,10 @@ export const grooveName = (style: string): string => { const s = grooveStyle(sty
 export const grooveNameEn = (style: string): string => { const s = grooveStyle(style); return style === "none" ? "none" : s ? s.name.en : style; };
 /** 谱上 / MusicXML 里写的字：「Style: Classical」（光写名字像谜语，user「光说一个古典比较谜语人，说风格：古典」；
  *  语言对齐记谱：拉丁不用于演奏指示，古典传统是意大利文、流行 / 爵士谱的风格写英文——user「风格名用英文」）。 */
-export const grooveLabel = (t: Pick<GrooveTok, "style" | "amount">): string =>
-  `Style: ${grooveNameEn(t.style)}${t.amount !== undefined && t.amount !== 1 && t.style !== "none" ? ` ×${t.amount}` : ""}`;
+export const grooveLabel = (t: Pick<GrooveTok, "style" | "amount" | "shift">): string =>
+  `Style: ${grooveNameEn(t.style)}${t.shift && grooveHasPhase(grooveStyle(t.style)) ? " 2-3" : ""}${t.amount !== undefined && t.amount !== 1 && t.style !== "none" ? ` ×${t.amount}` : ""}`;
+/** 这个风格有没有两小节一轮的拍号（克拉维）：有 = 菜单里给「3-2 / 2-3」（错开一小节）。 */
+export const grooveHasPhase = (s: GrooveStyle | null): boolean => !!s && Object.values(s.meters).some((m) => (m.bars ?? 1) > 1);
 /** 一拍拍分组（同 classicalWeights）：每拍几个十六分 + 拍里第一层细分的步长。 */
 function beatGroups(beats: number, beatType: number): { groups: number[]; sub: number } | null {
   if (!Number.isInteger((beats * 16) / beatType)) return null;
@@ -33,6 +35,11 @@ export function describeGroove(s: GrooveStyle, beats: number, beatType: number):
   const tb = grooveTable(s, beats, beatType), bg = beatGroups(beats, beatType);
   if (!tb || !bg) return null;
   const starts: number[] = []; let at = 0; for (const g of bg.groups) { starts.push(at); at += g; }
+  if (tb.bars > 1) {   // 两小节一轮（克拉维）：两小节各说一句拍上的轻重，再说哪几个格子最重（克拉维的击点）
+    const bar = (b: number) => starts.map((st, k) => `${BEAT_NO[k] ?? k + 1}拍 ${WORD(tb.weights[b * tb.grid + st])}`).join(" · ");
+    const hits = tb.weights.map((w, k) => (w >= 0.7 ? k : -1)).filter((k) => k >= 0).map((k) => `${Math.floor(k / tb.grid) + 1}-${(k % tb.grid) + 1}`);
+    return `两小节一轮：第一小节 ${bar(0)}；第二小节 ${bar(1)}；重的格子（小节-第几个十六分）${hits.join(" ")}`;
+  }
   const beatsTxt = starts.map((st, k) => `${BEAT_NO[k] ?? k + 1}拍 ${WORD(tb.weights[st])}`).join(" · ");
   const subs: number[] = [], finer: number[] = [];
   starts.forEach((st, k) => { for (let q = 1; q < bg.groups[k]; q++) (bg.sub >= 1 && Number.isInteger(bg.sub) && q % bg.sub === 0 ? subs : finer).push(tb.weights[st + q]); });
@@ -61,28 +68,29 @@ export function classicalWeights(beats: number, beatType: number): { grid: numbe
   return { grid, weights };
 }
 /** 这个风格在这个拍号下的表：列了的用列的；没列 = 按 fallback（古典层级推 / 不加）。 */
-export function grooveTable(s: GrooveStyle, beats: number, beatType: number): { grid: number; weights: number[]; derived: boolean } | null {
+export function grooveTable(s: GrooveStyle, beats: number, beatType: number): { grid: number; weights: number[]; bars: number; derived: boolean } | null {
   const m = s.meters[`${beats}/${beatType}`];
-  if (m) return { ...m, derived: false };
+  if (m) return { grid: m.grid, weights: m.weights, bars: m.bars ?? 1, derived: false };
   const c = s.fallback === "classical" ? classicalWeights(beats, beatType) : null;
-  return c ? { ...c, derived: true } : null;
+  return c ? { ...c, bars: 1, derived: true } : null;
 }
 
 /** 每个音头（不含连过来的音）在小节里的位置（tick）+ 那里的拍号。bounds = 纸界（每张纸各自从头数，同画谱）。规则同 engrave unitsOf：
  *  人插的「|」/ 拍号变 = 新的一小节；写满一小节 = 自动小节线；每张纸的第一小节还没写满就碰到「|」= 弱起——位置按小节尾对齐（弱起的那一拍是最后一拍）。 */
-export function meterPositions(tokens: readonly Token[], bounds: readonly number[] = [0]): Map<number, { pos: number; beats: number; beatType: number }> {
-  const out = new Map<number, { pos: number; beats: number; beatType: number }>(), starts = new Set(bounds);
+export function meterPositions(tokens: readonly Token[], bounds: readonly number[] = [0]): Map<number, { pos: number; beats: number; beatType: number; bar: number; pickup?: true }> {
+  // bar = 这张纸里第几小节（0 起；有弱起时弱起是第 0 小节、第一个整小节是第 1 小节）；pickup = 弱起的音。两小节一轮的风格按 bar 数单双
+  const out = new Map<number, { pos: number; beats: number; beatType: number; bar: number; pickup?: true }>(), starts = new Set(bounds);
   let time = { ...DEFAULT_TIME }, len = (time.beats * WHOLE) / time.beatType, inBar = 0, measureNo = 0, first: number[] = [];
   tokens.forEach((t, i) => {
     if (starts.has(i)) { inBar = 0; measureNo = 0; first = []; }
     if (t.kind === "bar") {
-      if (measureNo === 0 && inBar > 0 && inBar < len) for (const k of first) out.get(k)!.pos += len - inBar;   // 弱起
+      if (measureNo === 0 && inBar > 0 && inBar < len) for (const k of first) { const e = out.get(k)!; e.pos += len - inBar; e.pickup = true; }   // 弱起
       inBar = 0; measureNo++; first = []; return;
     }
     if (t.kind === "time") { if (inBar > 0) { inBar = 0; measureNo++; } time = { beats: t.beats, beatType: t.beatType }; len = (t.beats * WHOLE) / t.beatType; return; }
     if (!isTimed(t)) return;
     while (inBar >= len && inBar > 0) { inBar -= len; measureNo++; }
-    if (t.kind === "note" && !t.tie) { out.set(i, { pos: inBar, ...time }); if (measureNo === 0) first.push(i); }
+    if (t.kind === "note" && !t.tie) { out.set(i, { pos: inBar, ...time, bar: measureNo }); if (measureNo === 0) first.push(i); }
     inBar += t.dur;
   });
   return out;
@@ -90,7 +98,7 @@ export function meterPositions(tokens: readonly Token[], bounds: readonly number
 
 /** 整首（照放的顺序）的风格记号：每张纸开头回到「不加」（风格只管它那张纸）；纸里任何一行写的都算（整张纸一起听），同一时刻两行都写了 = 上面那行。
  *  tick = 压平后从头数（flattenPart 把每张纸补到最长那条的长度，所以纸的起点 = 前面各张纸长度之和）。 */
-export type GrooveMap = { tick: number; style: string | null; amount: number }[];
+export type GrooveMap = { tick: number; style: string | null; amount: number; shift?: boolean }[];   // shift = 错开一小节（2-3）
 export function grooveMapOf(song: Song, order?: readonly string[]): GrooveMap {
   const seq: PaperSeg[] = order ? order.flatMap((id) => song.papers.filter((p) => p.id === id)) : song.papers.filter((p) => !p.hidden);
   const out: GrooveMap = [];
@@ -98,13 +106,13 @@ export function grooveMapOf(song: Song, order?: readonly string[]): GrooveMap {
   for (const p0 of seq) {
     const p = expandPaper(song, p0, () => -1);   // 谱内反复：和压平（flattenPart）同一个展开，tick 才对得上
     out.push({ tick: at, style: null, amount: 1 });
-    const here: { tick: number; style: string; amount: number; row: number }[] = [];
+    const here: { tick: number; style: string; amount: number; shift: boolean; row: number }[] = [];
     song.parts.forEach((part, row) => {
       let t = 0;
-      for (const tok of p.tracks[part.id] ?? []) { if (tok.kind === "groove") here.push({ tick: at + t, style: tok.style, amount: tok.amount ?? 1, row }); else if (isTimed(tok)) t += tok.dur; }
+      for (const tok of p.tracks[part.id] ?? []) { if (tok.kind === "groove") here.push({ tick: at + t, style: tok.style, amount: tok.amount ?? 1, shift: !!tok.shift, row }); else if (isTimed(tok)) t += tok.dur; }
     });
     here.sort((a, b) => a.tick - b.tick || b.row - a.row);   // 同一时刻：下面的先、上面的后（后来的算数）
-    for (const g of here) out.push({ tick: g.tick, style: g.style === "none" ? null : g.style, amount: g.amount });
+    for (const g of here) out.push({ tick: g.tick, style: g.style === "none" ? null : g.style, amount: g.amount, ...(g.shift ? { shift: true } : {}) });
     at += paperTicks(p);
   }
   return out;
@@ -115,17 +123,19 @@ export function grooveWeights(tokens: readonly Token[], bounds: readonly number[
   const out = new Map<number, number>();
   if (!map.some((g) => g.style)) return out;
   const pos = meterPositions(tokens, bounds);
-  let tick = 0, k = -1;
+  let tick = 0, k = -1, bar0: number | null = null;   // bar0 = 这个风格记号从第几小节起（两小节一轮的风格按它数单双）
   tokens.forEach((t, i) => {
     if (!isTimed(t)) return;
-    while (k + 1 < map.length && map[k + 1].tick <= tick) k++;
+    while (k + 1 < map.length && map[k + 1].tick <= tick) { k++; bar0 = null; }
     const g = k >= 0 ? map[k] : null; tick += t.dur;
     if (!g?.style || t.kind !== "note") return;
     const p = pos.get(i), s = grooveStyle(g.style); if (!p || !s) return;
+    if (bar0 === null) bar0 = p.pickup ? p.bar + 1 : p.bar;   // 记号之后第一个音所在的小节 = 一轮的第一小节（是弱起 = 从下一个整小节起，弱起算前一轮的第二小节）
     if (artOf(t as NoteTok).some((a) => ATTACKS.includes(a))) return;   // 写了音头记号 = 写的说了算
     const tb = grooveTable(s, p.beats, p.beatType); if (!tb) return;
     const slot = (p.pos * tb.grid) / ((p.beats * WHOLE) / p.beatType), on = Math.abs(slot - Math.round(slot)) < 1e-6;
-    const w = on ? tb.weights[Math.round(slot) % tb.grid] : Math.min(...tb.weights);   // 不在十六分格子上（三连音里面的）= 最轻的那一档
+    const half = tb.bars > 1 ? ((((p.bar - bar0 + (g.shift ? 1 : 0)) % tb.bars) + tb.bars) % tb.bars) : 0;   // 两小节一轮：这是一轮里的第几小节（错开一小节 = 2-3）
+    const w = on ? tb.weights[half * tb.grid + (Math.round(slot) % tb.grid)] : Math.min(...tb.weights);   // 不在十六分格子上（三连音里面的）= 最轻的那一档
     const v = w * g.amount * follow(s);
     if (v) out.set(i, v);
   });

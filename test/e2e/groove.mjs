@@ -20,6 +20,14 @@ check(await p.$$eval("#score text.groove-mark", (e) => e.map((x) => x.textConten
 await p.click('.groove-menu [data-v="style:pop"]'); await p.waitForTimeout(250);
 check(await grooves() === "pop", "换成流行");
 check(!!(await p.$(".groove-menu")) && (await p.$eval('.groove-menu [data-v="style:pop"]', (e) => e.classList.contains("is-on"))), "换了接着开着（看说明）");
+// 两小节一轮（v2：波萨 / 拉丁；2026-10-09）：只有这种风格出「3-2 / 2-3」；点 2-3 = 错开一小节
+check(!(await p.$(".groove-menu .ctx-phase")), "流行：没有 3-2 / 2-3");
+await p.click('.groove-menu [data-v="style:latin"]'); await p.waitForTimeout(250);
+check(!!(await p.$(".groove-menu .ctx-phase")), "拉丁：出「3-2 / 2-3」");
+await p.click('.groove-menu [data-v="shift:1"]'); await p.waitForTimeout(250);
+check(await p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].find((t) => t.kind === "groove")?.shift === true; }), "点 2-3 = 记号带上错开一小节");
+check(/2-3/.test(await p.$$eval("#score text.groove-mark", (e) => e.map((x) => x.textContent).join())), "谱上写「… 2-3」");
+await p.click('.groove-menu [data-v="style:pop"]'); await p.waitForTimeout(250);
 const hints = await p.$$eval(".groove-menu .ctx-hint", (e) => e.map((x) => x.textContent).join(" | "));
 check(/这张纸上：.*跟 30%/.test(hints), "明说这张纸上的歌手跟多少（月读 = 人声 30%）", hints);
 await p.click('.groove-menu [data-v="amount:2"]'); await p.waitForTimeout(250);

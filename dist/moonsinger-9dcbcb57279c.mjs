@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.15-2026-10-09";
+var APP_VERSION = "v0.8.16-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4005,6 +4005,12 @@ function editMarkAt(st3, i10, change) {
     nt2[i10] = { ...m2, nums };
     return next(st3, nt2);
   }
+  if (m2.kind === "groove" && "shift" in change) {
+    if (!!m2.shift === change.shift) return st3;
+    const { shift: _s, ...rest } = m2;
+    nt2[i10] = change.shift ? { ...rest, shift: true } : rest;
+    return next(st3, nt2);
+  }
   if (m2.kind === "groove" && "style" in change) {
     if (m2.style === change.style) return st3;
     nt2[i10] = { ...m2, style: change.style };
@@ -4533,6 +4539,7 @@ var GROOVE_STYLES = [
       "Off"
     ],
     "meters": {},
+    "phase": null,
     "fallback": "none",
     "follow": {
       "piano": 0,
@@ -4687,6 +4694,7 @@ var GROOVE_STYLES = [
         ]
       }
     },
+    "phase": null,
     "fallback": "classical",
     "follow": {
       "piano": 0.5,
@@ -4777,6 +4785,7 @@ var GROOVE_STYLES = [
         ]
       }
     },
+    "phase": null,
     "fallback": "classical",
     "follow": {
       "piano": 0.6,
@@ -4831,6 +4840,7 @@ var GROOVE_STYLES = [
         ]
       }
     },
+    "phase": null,
     "fallback": "classical",
     "follow": {
       "piano": 0.8,
@@ -4940,6 +4950,7 @@ var GROOVE_STYLES = [
         ]
       }
     },
+    "phase": null,
     "fallback": "classical",
     "follow": {
       "piano": 0.6,
@@ -4999,6 +5010,7 @@ var GROOVE_STYLES = [
         ]
       }
     },
+    "phase": null,
     "fallback": "classical",
     "follow": {
       "piano": 0.5,
@@ -5067,6 +5079,7 @@ var GROOVE_STYLES = [
         ]
       }
     },
+    "phase": null,
     "fallback": "classical",
     "follow": {
       "piano": 0.6,
@@ -5089,6 +5102,287 @@ var GROOVE_STYLES = [
       "voice": 0.2
     },
     "swing": null
+  },
+  {
+    "id": "bossa-nova",
+    "name": {
+      "zh": "\u6CE2\u8428",
+      "en": "Bossa nova",
+      "ja": "\u30DC\u30B5\u30CE\u30F4\u30A1"
+    },
+    "aliases": [
+      "Bossa",
+      "\u5DF4\u8428\u8BFA\u74E6",
+      "\u30DC\u30B5\u30CE\u30D0",
+      "Samba-reggae"
+    ],
+    "meters": {
+      "2/4": {
+        "grid": 8,
+        "weights": [
+          1,
+          -0.25,
+          -0.25,
+          0.75,
+          0.5,
+          -0.25,
+          0.75,
+          0.25,
+          0.5,
+          -0.25,
+          0.75,
+          0.25,
+          0.5,
+          0.75,
+          -0.25,
+          0.25
+        ],
+        "bars": 2
+      },
+      "2/2": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.25,
+          -0.5
+        ],
+        "bars": 2
+      },
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.25,
+          -0.5
+        ],
+        "bars": 2
+      }
+    },
+    "phase": "3-2",
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.6,
+      "chromatic-percussion": 0.4,
+      "organ": 0.3,
+      "guitar": 1,
+      "bass": 0.6,
+      "strings": 0.1,
+      "ensemble": 0.1,
+      "brass": 0.3,
+      "reed": 0.3,
+      "pipe": 0.3,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 1,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.1
+    },
+    "swing": null
+  },
+  {
+    "id": "latin",
+    "name": {
+      "zh": "\u62C9\u4E01\uFF08\u514B\u62C9\u7EF4\uFF09",
+      "en": "Latin (son clave)",
+      "ja": "\u30E9\u30C6\u30F3\uFF08\u30BD\u30F3\u30FB\u30AF\u30E9\u30FC\u30D9\uFF09"
+    },
+    "aliases": [
+      "\u62C9\u4E01",
+      "Latin",
+      "Son",
+      "Salsa",
+      "\u8428\u5C14\u8428",
+      "Mambo",
+      "\u66FC\u6CE2",
+      "\u30B5\u30EB\u30B5",
+      "\u30E9\u30C6\u30F3",
+      "Clave",
+      "\u514B\u62C9\u7EF4"
+    ],
+    "meters": {
+      "2/4": {
+        "grid": 8,
+        "weights": [
+          1,
+          -0.25,
+          -0.25,
+          0.75,
+          0,
+          -0.25,
+          0.75,
+          -0.25,
+          0.25,
+          -0.25,
+          0.75,
+          -0.25,
+          0.75,
+          -0.25,
+          -0.25,
+          -0.25
+        ],
+        "bars": 2
+      },
+      "2/2": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ],
+        "bars": 2
+      },
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ],
+        "bars": 2
+      }
+    },
+    "phase": "3-2",
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.8,
+      "chromatic-percussion": 0.5,
+      "organ": 0.3,
+      "guitar": 0.6,
+      "bass": 0.8,
+      "strings": 0.3,
+      "ensemble": 0.1,
+      "brass": 0.6,
+      "reed": 0.4,
+      "pipe": 0.4,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.6,
+      "percussive": 1,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.3
+    },
+    "swing": null
   }
 ];
 
@@ -5102,7 +5396,8 @@ var grooveNameEn = (style) => {
   const s10 = grooveStyle(style);
   return style === "none" ? "none" : s10 ? s10.name.en : style;
 };
-var grooveLabel = (t10) => `Style: ${grooveNameEn(t10.style)}${t10.amount !== void 0 && t10.amount !== 1 && t10.style !== "none" ? ` \xD7${t10.amount}` : ""}`;
+var grooveLabel = (t10) => `Style: ${grooveNameEn(t10.style)}${t10.shift && grooveHasPhase(grooveStyle(t10.style)) ? " 2-3" : ""}${t10.amount !== void 0 && t10.amount !== 1 && t10.style !== "none" ? ` \xD7${t10.amount}` : ""}`;
+var grooveHasPhase = (s10) => !!s10 && Object.values(s10.meters).some((m2) => (m2.bars ?? 1) > 1);
 function beatGroups(beats, beatType) {
   if (!Number.isInteger(beats * 16 / beatType)) return null;
   if (beatType === 8 && beats > 3 && beats % 3 === 0) return { groups: Array(beats / 3).fill(6), sub: 2 };
@@ -5124,6 +5419,11 @@ function describeGroove(s10, beats, beatType) {
   for (const g3 of bg.groups) {
     starts.push(at2);
     at2 += g3;
+  }
+  if (tb2.bars > 1) {
+    const bar2 = (b3) => starts.map((st3, k2) => `${BEAT_NO[k2] ?? k2 + 1}\u62CD ${WORD(tb2.weights[b3 * tb2.grid + st3])}`).join(" \xB7 ");
+    const hits = tb2.weights.map((w2, k2) => w2 >= 0.7 ? k2 : -1).filter((k2) => k2 >= 0).map((k2) => `${Math.floor(k2 / tb2.grid) + 1}-${k2 % tb2.grid + 1}`);
+    return `\u4E24\u5C0F\u8282\u4E00\u8F6E\uFF1A\u7B2C\u4E00\u5C0F\u8282 ${bar2(0)}\uFF1B\u7B2C\u4E8C\u5C0F\u8282 ${bar2(1)}\uFF1B\u91CD\u7684\u683C\u5B50\uFF08\u5C0F\u8282-\u7B2C\u51E0\u4E2A\u5341\u516D\u5206\uFF09${hits.join(" ")}`;
   }
   const beatsTxt = starts.map((st3, k2) => `${BEAT_NO[k2] ?? k2 + 1}\u62CD ${WORD(tb2.weights[st3])}`).join(" \xB7 ");
   const subs = [], finer = [];
@@ -5164,9 +5464,9 @@ function classicalWeights(beats, beatType) {
 }
 function grooveTable(s10, beats, beatType) {
   const m2 = s10.meters[`${beats}/${beatType}`];
-  if (m2) return { ...m2, derived: false };
+  if (m2) return { grid: m2.grid, weights: m2.weights, bars: m2.bars ?? 1, derived: false };
   const c10 = s10.fallback === "classical" ? classicalWeights(beats, beatType) : null;
-  return c10 ? { ...c10, derived: true } : null;
+  return c10 ? { ...c10, bars: 1, derived: true } : null;
 }
 function meterPositions(tokens, bounds = [0]) {
   const out = /* @__PURE__ */ new Map(), starts = new Set(bounds);
@@ -5178,7 +5478,11 @@ function meterPositions(tokens, bounds = [0]) {
       first = [];
     }
     if (t10.kind === "bar") {
-      if (measureNo === 0 && inBar > 0 && inBar < len) for (const k2 of first) out.get(k2).pos += len - inBar;
+      if (measureNo === 0 && inBar > 0 && inBar < len) for (const k2 of first) {
+        const e10 = out.get(k2);
+        e10.pos += len - inBar;
+        e10.pickup = true;
+      }
       inBar = 0;
       measureNo++;
       first = [];
@@ -5199,7 +5503,7 @@ function meterPositions(tokens, bounds = [0]) {
       measureNo++;
     }
     if (t10.kind === "note" && !t10.tie) {
-      out.set(i10, { pos: inBar, ...time });
+      out.set(i10, { pos: inBar, ...time, bar: measureNo });
       if (measureNo === 0) first.push(i10);
     }
     inBar += t10.dur;
@@ -5217,12 +5521,12 @@ function grooveMapOf(song, order) {
     song.parts.forEach((part, row) => {
       let t10 = 0;
       for (const tok of p2.tracks[part.id] ?? []) {
-        if (tok.kind === "groove") here.push({ tick: at2 + t10, style: tok.style, amount: tok.amount ?? 1, row });
+        if (tok.kind === "groove") here.push({ tick: at2 + t10, style: tok.style, amount: tok.amount ?? 1, shift: !!tok.shift, row });
         else if (isTimed(tok)) t10 += tok.dur;
       }
     });
     here.sort((a10, b3) => a10.tick - b3.tick || b3.row - a10.row);
-    for (const g3 of here) out.push({ tick: g3.tick, style: g3.style === "none" ? null : g3.style, amount: g3.amount });
+    for (const g3 of here) out.push({ tick: g3.tick, style: g3.style === "none" ? null : g3.style, amount: g3.amount, ...g3.shift ? { shift: true } : {} });
     at2 += paperTicks(p2);
   }
   return out;
@@ -5231,20 +5535,25 @@ function grooveWeights(tokens, bounds, map, follow) {
   const out = /* @__PURE__ */ new Map();
   if (!map.some((g3) => g3.style)) return out;
   const pos = meterPositions(tokens, bounds);
-  let tick = 0, k2 = -1;
+  let tick = 0, k2 = -1, bar0 = null;
   tokens.forEach((t10, i10) => {
     if (!isTimed(t10)) return;
-    while (k2 + 1 < map.length && map[k2 + 1].tick <= tick) k2++;
+    while (k2 + 1 < map.length && map[k2 + 1].tick <= tick) {
+      k2++;
+      bar0 = null;
+    }
     const g3 = k2 >= 0 ? map[k2] : null;
     tick += t10.dur;
     if (!g3?.style || t10.kind !== "note") return;
     const p2 = pos.get(i10), s10 = grooveStyle(g3.style);
     if (!p2 || !s10) return;
+    if (bar0 === null) bar0 = p2.pickup ? p2.bar + 1 : p2.bar;
     if (artOf(t10).some((a10) => ATTACKS.includes(a10))) return;
     const tb2 = grooveTable(s10, p2.beats, p2.beatType);
     if (!tb2) return;
     const slot = p2.pos * tb2.grid / (p2.beats * WHOLE / p2.beatType), on2 = Math.abs(slot - Math.round(slot)) < 1e-6;
-    const w2 = on2 ? tb2.weights[Math.round(slot) % tb2.grid] : Math.min(...tb2.weights);
+    const half2 = tb2.bars > 1 ? ((p2.bar - bar0 + (g3.shift ? 1 : 0)) % tb2.bars + tb2.bars) % tb2.bars : 0;
+    const w2 = on2 ? tb2.weights[half2 * tb2.grid + Math.round(slot) % tb2.grid] : Math.min(...tb2.weights);
     const v = w2 * g3.amount * follow(s10);
     if (v) out.set(i10, v);
   });
@@ -19389,7 +19698,7 @@ var XML_NOTE_DYN = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", 
 var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
 var XML_DYN = (name) => ["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? name : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null;
 var GROOVE_ID = "groove.";
-var grooveXml = (t10) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t10.style}.${Math.round((t10.amount ?? 1) * 100)}.${t10.id}">${esc2(grooveLabel(t10))}</words></direction-type></direction>`;
+var grooveXml = (t10) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t10.style}.${Math.round((t10.amount ?? 1) * 100)}.${t10.id}${t10.shift ? ".2-3" : ""}">${esc2(grooveLabel(t10))}</words></direction-type></direction>`;
 var NAV_ID = "nav.";
 var navXml = (t10) => {
   const id2 = `${NAV_ID}${t10.what}.${t10.id}`;
@@ -19774,7 +20083,7 @@ function readMusicXml(xml, hints) {
             const g3 = /^groove\.([a-z][a-z0-9-]*)\.(\d+)\./.exec(w2.attrs.id ?? "");
             if (g3) {
               const a10 = Number(g3[2]) / 100;
-              mark({ kind: "groove", id: 0, style: g3[1], ...a10 !== 1 ? { amount: a10 } : {} });
+              mark({ kind: "groove", id: 0, style: g3[1], ...a10 !== 1 ? { amount: a10 } : {}, .../\.2-3$/.test(w2.attrs.id ?? "") ? { shift: true } : {} });
             }
           }
           {
@@ -31800,7 +32109,7 @@ function toJianpu(toks, fifths) {
       continue;
     }
     if (t10.kind === "groove") {
-      out.push(`[G=${t10.style}${t10.amount !== void 0 && t10.amount !== 1 ? `:${Math.round(t10.amount * 100)}` : ""}]`);
+      out.push(`[G=${t10.style}${t10.amount !== void 0 && t10.amount !== 1 ? `:${Math.round(t10.amount * 100)}` : ""}${t10.shift ? "/2-3" : ""}]`);
       continue;
     }
     const suf = durText(t10.dur), lead = suf.startsWith(" -") ? "" : suf, tail = suf.startsWith(" -") ? suf : "";
@@ -31891,10 +32200,10 @@ function fromJianpu(text2, fifths) {
       out.push({ kind: "hairpin", id: id2++, dir: w2 === "[<]" ? "cresc" : "dim" });
       continue;
     }
-    m2 = /^\[G=([a-z][a-z0-9-]*)(?::(\d+))?\]$/.exec(w2);
+    m2 = /^\[G=([a-z][a-z0-9-]*)(?::(\d+))?(\/2-3)?\]$/.exec(w2);
     if (m2) {
       const a10 = m2[2] ? Number(m2[2]) / 100 : 1;
-      out.push({ kind: "groove", id: id2++, style: m2[1], ...a10 !== 1 ? { amount: a10 } : {} });
+      out.push({ kind: "groove", id: id2++, style: m2[1], ...a10 !== 1 ? { amount: a10 } : {}, ...m2[3] ? { shift: true } : {} });
       continue;
     }
     m2 = /^(\^?)((?:[#b]*[0-7x]['’,]*)(?:&[#b]*[1-7]['’,]*)*)(_{0,3})(\.?)(?:\((\d+)\))?(?:\/([^/\s]+?)(-?))?$/.exec(w2);
@@ -34333,7 +34642,7 @@ function openGrooveMenu(i10, at2) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu groove-menu";
   box.setAttribute("role", "menu");
-  box.innerHTML = `<div class="ctx-hint ctx-what">\u98CE\u683C = \u62CD\u5B50\u8F7B\u91CD\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u843D\u5728\u5C0F\u8282\u91CC\u7684\u54EA\u4E00\u62CD\u8F7B\u4E00\u70B9\u6216\u91CD\u4E00\u70B9\uFF08\u50CF\u9F13\u624B\u7684\u5F8B\u52A8\uFF09\uFF1B\u5199\u4E86\u91CD\u97F3 / \u5F31\u5316\u7684\u97F3\u7167\u5199\u7684\u6765\u3002</div><div class="ctx-row ctx-groove">${chips}</div>` + (t10.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") + hints.map((h3) => `<div class="ctx-hint">${esc7(h3)}</div>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09">\u5220\u9664</button><div class="ctx-hint">\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
+  box.innerHTML = `<div class="ctx-hint ctx-what">\u98CE\u683C = \u62CD\u5B50\u8F7B\u91CD\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u843D\u5728\u5C0F\u8282\u91CC\u7684\u54EA\u4E00\u62CD\u8F7B\u4E00\u70B9\u6216\u91CD\u4E00\u70B9\uFF08\u50CF\u9F13\u624B\u7684\u5F8B\u52A8\uFF09\uFF1B\u5199\u4E86\u91CD\u97F3 / \u5F31\u5316\u7684\u97F3\u7167\u5199\u7684\u6765\u3002</div><div class="ctx-row ctx-groove">${chips}</div>` + (t10.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") + (grooveHasPhase(style) ? `<div class="ctx-row ctx-phase"><button class="btn ctx-chip${t10.shift ? "" : " is-on"}" data-v="shift:0" title="\u4E00\u8F6E\u7684\u7B2C\u4E00\u5C0F\u8282\u662F\u4E09\u51FB\u90A3\u8FB9\uFF08\u524D\u53E5\uFF09\uFF0C\u4ECE\u8FD9\u4E2A\u8BB0\u53F7\u90A3\u4E00\u5C0F\u8282\u8D77\u6570">3-2</button><button class="btn ctx-chip${t10.shift ? " is-on" : ""}" data-v="shift:1" title="\u9519\u5F00\u4E00\u5C0F\u8282\uFF1A\u4E24\u5C0F\u8282\u5BF9\u8C03\uFF0C\u7B2C\u4E00\u5C0F\u8282\u662F\u4E24\u51FB\u90A3\u8FB9">2-3\uFF08\u9519\u5F00\u4E00\u5C0F\u8282\uFF09</button></div>` : "") + hints.map((h3) => `<div class="ctx-hint">${esc7(h3)}</div>`).join("") + `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09">\u5220\u9664</button><div class="ctx-hint">\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at2.y + 6;
@@ -34359,11 +34668,17 @@ function openGrooveMenu(i10, at2) {
     close();
     if (v === "del") update(editMarkAt(st2, i10, null));
     else if (v.startsWith("style:")) {
-      update(editMarkAt(st2, i10, { style: v.slice(6) }));
+      let n10 = editMarkAt(st2, i10, { style: v.slice(6) });
+      if (!grooveHasPhase(grooveStyle(v.slice(6)))) n10 = editMarkAt(n10, i10, { shift: false });
+      update(n10);
       view.menuFor(i10);
       return;
     } else if (v.startsWith("amount:")) {
       update(editMarkAt(st2, i10, { amount: Number(v.slice(7)) }));
+      view.menuFor(i10);
+      return;
+    } else if (v.startsWith("shift:")) {
+      update(editMarkAt(st2, i10, { shift: v === "shift:1" }));
       view.menuFor(i10);
       return;
     }
@@ -36103,4 +36418,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-9cda2f089241.mjs.map
+//# sourceMappingURL=moonsinger-9dcbcb57279c.mjs.map

@@ -86,7 +86,7 @@ export interface HairpinTok { kind: "hairpin"; id: number; dir: "cresc" | "dim" 
  *  「点开之后可以设置具体的细节」「预设可以…做成数据驱动的」）：从这儿起到这张纸结尾（或下一个风格记号），每个音按它在小节里的位置轻一点 / 重一点
  *  （预设 = 音乐仓鼠的 grooves-vN.json，src/score/groove.ts）。整张纸一起听（写在哪一行都管全部歌手；同一时刻两行都写了 = 上面那行算）。
  *  style = 预设 id（"pop"…；"none" = 这儿起不加）；amount = 幅度（1 = 预设本身；不写 = 1）。不占时值、不占横向地方。MusicXML <direction><words id="groove.…">。 */
-export interface GrooveTok { kind: "groove"; id: number; style: string; amount?: number }
+export interface GrooveTok { kind: "groove"; id: number; style: string; amount?: number; shift?: true }   // shift = 错开一小节（两小节一轮的风格：3-2 → 2-3；2026-10-09）
 export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
@@ -999,7 +999,7 @@ export function moveMark(st: EditorState, from: number, before: number): { st: E
   return { st: next(st, a.tokens, { caret: c2 - a.removed.filter((k) => k < c2).length, sel: null }), removed: a.removed.length };
 }
 /** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
-export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | { style: string } | { amount: number } | { nav: Exclude<NavWhat, "ending"> } | { nums: number[] } | null): EditorState {
+export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | { style: string } | { amount: number } | { shift: boolean } | { nav: Exclude<NavWhat, "ending"> } | { nums: number[] } | null): EditorState {
   const toks = tr(st), m = toks[i];
   if (!m || (m.kind !== "dyn" && m.kind !== "hairpin" && m.kind !== "groove" && m.kind !== "nav")) return st;
   const nt = toks.slice();
@@ -1009,6 +1009,7 @@ export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | 
   if (m.kind === "hairpin" && "dir" in change) { if (m.dir === change.dir) return st; nt[i] = { ...m, dir: change.dir }; return next(st, nt); }
   if (m.kind === "nav" && "nav" in change && m.what !== "ending") { if (m.what === change.nav) return st; nt[i] = { ...m, what: change.nav }; return next(st, nt); }
   if (m.kind === "nav" && "nums" in change && m.what === "ending") { const nums = [...new Set(change.nums)].sort((a, b) => a - b); if (!nums.length || nums.join() === (m.nums ?? [1]).join()) return st; nt[i] = { ...m, nums }; return next(st, nt); }
+  if (m.kind === "groove" && "shift" in change) { if (!!m.shift === change.shift) return st; const { shift: _s, ...rest } = m; nt[i] = change.shift ? { ...rest, shift: true } : rest; return next(st, nt); }
   if (m.kind === "groove" && "style" in change) { if (m.style === change.style) return st; nt[i] = { ...m, style: change.style }; return next(st, nt); }
   if (m.kind === "groove" && "amount" in change) { const a = Math.round(change.amount * 100) / 100; if ((m.amount ?? 1) === a) return st; const { amount: _a, ...rest } = m; nt[i] = a === 1 ? rest : { ...rest, amount: a }; return next(st, nt); }
   return st;

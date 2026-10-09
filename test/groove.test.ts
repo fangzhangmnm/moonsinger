@@ -23,8 +23,8 @@ describe("拍子轻重：数据", () => {
     const out = g.render(); if (out === null) return;
     eq(fs.readFileSync(new URL("../src/score/grooves.gen.ts", import.meta.url)).toString() === out, true);
   });
-  it("七个风格；古典层级推出来的 = 仓鼠列的古典表（每个列了的拍号逐格一样）", () => {
-    eq(GROOVE_STYLES.map((s) => s.id).join(" "), "none classical pop waltz march swing four-on-the-floor");
+  it("九个风格（v2 加波萨、拉丁）；古典层级推出来的 = 仓鼠列的古典表（每个列了的拍号逐格一样）", () => {
+    eq(GROOVE_STYLES.map((s) => s.id).join(" "), "none classical pop waltz march swing four-on-the-floor bossa-nova latin");
     const c = grooveStyle("classical")!;
     for (const [m, v] of Object.entries(c.meters)) { const [b, bt] = m.split("/").map(Number); eq(JSON.stringify(classicalWeights(b, bt)), JSON.stringify(v), m); }
   });
@@ -129,3 +129,40 @@ describe("拍子轻重：存档 / 简谱文字", () => {
     eq(JSON.stringify(fromJianpu(txt, 0)!.filter((t) => t.kind === "groove").map((t) => [(t as { style: string }).style, (t as { amount?: number }).amount ?? 1])), JSON.stringify([["pop", 1], ["waltz", 1.5]]));
   });
 });
+
+// 两小节一轮（v2：波萨、拉丁 son clave；2026-10-09 Opus 5.5 收货）：一轮从风格记号那一小节起数；「错开一小节」= 2-3（两小节对调）；弱起算前一轮的第二小节
+describe("拍子轻重：两小节一轮（克拉维）", () => {
+  const latin = grooveStyle("latin")!, tb = grooveTable(latin, 4, 4)!;
+  const sixteenths = (bars: number) => Array.from({ length: bars * 16 }, () => n(TPQ / 4));
+  const weightsOf = (toks: Token[]) => { const w = grooveWeights(toks, [0], grooveMapOf(one(toks)), full); return toks.map((t, i) => (t.kind === "note" ? w.get(i) ?? 0 : null)).filter((x) => x !== null); };
+  it("拉丁 4/4 = 两小节 32 格；第一小节用前 16 格、第二小节后 16 格、第三小节又回到前 16 格", () => {
+    eq(tb.bars, 2); eq(tb.weights.length, 32);
+    const toks = [...head(), gr("latin"), ...sixteenths(3)];
+    eq(JSON.stringify(weightsOf(toks)), JSON.stringify([...tb.weights, ...tb.weights.slice(0, 16)]));
+  });
+  it("错开一小节（2-3）= 先后半、再前半", () => {
+    const toks = [...head(), { ...(gr("latin") as object), shift: true } as Token, ...sixteenths(2)];
+    eq(JSON.stringify(weightsOf(toks)), JSON.stringify([...tb.weights.slice(16), ...tb.weights.slice(0, 16)]));
+  });
+  it("风格记号写在第二小节：从那一小节起数（那一小节 = 一轮的第一小节）", () => {
+    const toks = [...head(), ...sixteenths(1), gr("latin"), ...sixteenths(2)];
+    eq(JSON.stringify(weightsOf(toks).slice(16)), JSON.stringify(tb.weights));
+  });
+  it("弱起：弱起的音算前一轮的第二小节，第一个整小节是一轮的第一小节", () => {
+    const toks = [...head(), gr("latin"), n(TPQ), { kind: "bar", id: nid++ } as Token, ...sixteenths(1)];   // 弱起一拍（第四拍）
+    const w = weightsOf(toks);
+    eq(w[0], tb.weights[16 + 12], "弱起 = 第二小节的第四拍（第 13 个十六分）");
+    eq(JSON.stringify(w.slice(1)), JSON.stringify(tb.weights.slice(0, 16)), "第一个整小节 = 前 16 格");
+  });
+  it("存档 / 简谱文字：2-3 带着走（MusicXML id 后缀 .2-3；[G=latin/2-3]）；谱上写「Style: Latin (son clave) 2-3」", async () => {
+    const { grooveLabel } = await import("../src/score/groove.ts");
+    const t = { ...(gr("latin") as object), shift: true } as Token, toks = [...head(), t, n(), n()];
+    eq(grooveLabel(t as never), "Style: Latin (son clave) 2-3");
+    const meta = { software: "test", date: "2026-10-09" }, info = { id: "P1", name: "Vocals", instrumentName: "月读", sound: "voice.vocals", program: 55 };
+    const w = writeMusicXml({ parts: [{ info, tokens: toks }] }, meta), back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.find((x) => x.kind === "groove") as { style: string; shift?: boolean };
+    eq(JSON.stringify([back.style, !!back.shift]), JSON.stringify(["latin", true]));
+    const txt = toJianpu([t, n()], 0); assert(txt.includes("[G=latin/2-3]"), txt);
+    const re = fromJianpu(txt, 0)!.find((x) => x.kind === "groove") as { shift?: boolean }; eq(!!re.shift, true);
+  });
+});
+

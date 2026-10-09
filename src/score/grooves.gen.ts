@@ -1,11 +1,13 @@
-// 生成物：node scripts/gen-grooves.mjs（源 = ../20260813 MyLlamaReborn/20261007 音乐史/export/moonsinger/grooves-v1.json，拷在 vendor/grooves/）。勿手改。
-// 拍子轻重的预设（音乐仓鼠出；强弱先后引维基原文、具体数值 AI 按层级取；引文 / 依据 / 许可证见 vendor/grooves/grooves-v1.json）。
-export const GROOVES_VERSION = 1;
-export const GROOVES_FILE = {"file":"vendor/grooves/grooves-v1.json","bytes":29144,"sha256":"d199499b8178aaec6837c0aeecb8e0e575a1b356a1a99f8be2d4309003f10613"} as const;
+// 生成物：node scripts/gen-grooves.mjs（源 = ../20260813 MyLlamaReborn/20261007 音乐史/export/moonsinger/grooves-v2.json，拷在 vendor/grooves/）。勿手改。
+// 拍子轻重的预设（音乐仓鼠出；强弱先后引维基原文、具体数值 AI 按层级取；引文 / 依据 / 许可证见 vendor/grooves/grooves-v2.json）。
+export const GROOVES_VERSION = 2;
+export const GROOVES_FILE = {"file":"vendor/grooves/grooves-v2.json","bytes":42822,"sha256":"95c8f7fc050dc0512ee31bd6044bb1059393b80bdb2c289dbfd48001954b098b"} as const;
 export interface GrooveStyle {
   id: string; name: { zh: string; en: string; ja: string }; aliases: string[];
-  /** 拍号（"4/4"）→ 一小节几个十六分格子 + 每格上开始的音的相对轻重（−1…1）。 */
-  meters: Record<string, { grid: number; weights: number[] }>;
+  /** 拍号（"4/4"）→ 一小节几个十六分格子 + 每格上开始的音的相对轻重（−1…1）；bars = 几小节一轮（克拉维 = 2，weights = 两小节的格子接起来）。 */
+  meters: Record<string, { grid: number; weights: number[]; bars?: number }>;
+  /** 两小节一轮的默认方向（"3-2" = 第一小节是三击那边）；「错开一小节」= 两小节对调（2-3）。没有 = 一小节一轮。 */
+  phase: string | null;
   /** 没列的拍号：classical = 按古典层级推；none = 不加。 */
   fallback: "classical" | "none";
   /** 各类乐器跟多少（0–1）：键 = GM 家族（gm-map defs.families）+ voice（人声类，优先）。 */
@@ -26,6 +28,7 @@ export const GROOVE_STYLES: GrooveStyle[] = [
    "Off"
   ],
   "meters": {},
+  "phase": null,
   "fallback": "none",
   "follow": {
    "piano": 0,
@@ -180,6 +183,7 @@ export const GROOVE_STYLES: GrooveStyle[] = [
     ]
    }
   },
+  "phase": null,
   "fallback": "classical",
   "follow": {
    "piano": 0.5,
@@ -270,6 +274,7 @@ export const GROOVE_STYLES: GrooveStyle[] = [
     ]
    }
   },
+  "phase": null,
   "fallback": "classical",
   "follow": {
    "piano": 0.6,
@@ -324,6 +329,7 @@ export const GROOVE_STYLES: GrooveStyle[] = [
     ]
    }
   },
+  "phase": null,
   "fallback": "classical",
   "follow": {
    "piano": 0.8,
@@ -433,6 +439,7 @@ export const GROOVE_STYLES: GrooveStyle[] = [
     ]
    }
   },
+  "phase": null,
   "fallback": "classical",
   "follow": {
    "piano": 0.6,
@@ -492,6 +499,7 @@ export const GROOVE_STYLES: GrooveStyle[] = [
     ]
    }
   },
+  "phase": null,
   "fallback": "classical",
   "follow": {
    "piano": 0.5,
@@ -560,6 +568,7 @@ export const GROOVE_STYLES: GrooveStyle[] = [
     ]
    }
   },
+  "phase": null,
   "fallback": "classical",
   "follow": {
    "piano": 0.6,
@@ -580,6 +589,287 @@ export const GROOVE_STYLES: GrooveStyle[] = [
    "sound-effects": 0,
    "percussion": 1,
    "voice": 0.2
+  },
+  "swing": null
+ },
+ {
+  "id": "bossa-nova",
+  "name": {
+   "zh": "波萨",
+   "en": "Bossa nova",
+   "ja": "ボサノヴァ"
+  },
+  "aliases": [
+   "Bossa",
+   "巴萨诺瓦",
+   "ボサノバ",
+   "Samba-reggae"
+  ],
+  "meters": {
+   "2/4": {
+    "grid": 8,
+    "weights": [
+     1,
+     -0.25,
+     -0.25,
+     0.75,
+     0.5,
+     -0.25,
+     0.75,
+     0.25,
+     0.5,
+     -0.25,
+     0.75,
+     0.25,
+     0.5,
+     0.75,
+     -0.25,
+     0.25
+    ],
+    "bars": 2
+   },
+   "2/2": {
+    "grid": 16,
+    "weights": [
+     1,
+     -0.5,
+     -0.25,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     0.5,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     0.25,
+     -0.5,
+     0.5,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     0.25,
+     -0.5,
+     0.5,
+     -0.5,
+     0.75,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.25,
+     -0.5
+    ],
+    "bars": 2
+   },
+   "4/4": {
+    "grid": 16,
+    "weights": [
+     1,
+     -0.5,
+     -0.25,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     0.5,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     0.25,
+     -0.5,
+     0.5,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     0.25,
+     -0.5,
+     0.5,
+     -0.5,
+     0.75,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.25,
+     -0.5
+    ],
+    "bars": 2
+   }
+  },
+  "phase": "3-2",
+  "fallback": "classical",
+  "follow": {
+   "piano": 0.6,
+   "chromatic-percussion": 0.4,
+   "organ": 0.3,
+   "guitar": 1,
+   "bass": 0.6,
+   "strings": 0.1,
+   "ensemble": 0.1,
+   "brass": 0.3,
+   "reed": 0.3,
+   "pipe": 0.3,
+   "synth-lead": 0.3,
+   "synth-pad": 0,
+   "synth-effects": 0,
+   "ethnic": 0.5,
+   "percussive": 1,
+   "sound-effects": 0,
+   "percussion": 1,
+   "voice": 0.1
+  },
+  "swing": null
+ },
+ {
+  "id": "latin",
+  "name": {
+   "zh": "拉丁（克拉维）",
+   "en": "Latin (son clave)",
+   "ja": "ラテン（ソン・クラーベ）"
+  },
+  "aliases": [
+   "拉丁",
+   "Latin",
+   "Son",
+   "Salsa",
+   "萨尔萨",
+   "Mambo",
+   "曼波",
+   "サルサ",
+   "ラテン",
+   "Clave",
+   "克拉维"
+  ],
+  "meters": {
+   "2/4": {
+    "grid": 8,
+    "weights": [
+     1,
+     -0.25,
+     -0.25,
+     0.75,
+     0,
+     -0.25,
+     0.75,
+     -0.25,
+     0.25,
+     -0.25,
+     0.75,
+     -0.25,
+     0.75,
+     -0.25,
+     -0.25,
+     -0.25
+    ],
+    "bars": 2
+   },
+   "2/2": {
+    "grid": 16,
+    "weights": [
+     1,
+     -0.5,
+     -0.25,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     0,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.25,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     -0.25,
+     -0.5,
+     -0.25,
+     -0.5,
+     -0.25,
+     -0.5
+    ],
+    "bars": 2
+   },
+   "4/4": {
+    "grid": 16,
+    "weights": [
+     1,
+     -0.5,
+     -0.25,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     0,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.25,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     -0.25,
+     -0.5,
+     0.75,
+     -0.5,
+     -0.25,
+     -0.5,
+     -0.25,
+     -0.5,
+     -0.25,
+     -0.5
+    ],
+    "bars": 2
+   }
+  },
+  "phase": "3-2",
+  "fallback": "classical",
+  "follow": {
+   "piano": 0.8,
+   "chromatic-percussion": 0.5,
+   "organ": 0.3,
+   "guitar": 0.6,
+   "bass": 0.8,
+   "strings": 0.3,
+   "ensemble": 0.1,
+   "brass": 0.6,
+   "reed": 0.4,
+   "pipe": 0.4,
+   "synth-lead": 0.3,
+   "synth-pad": 0,
+   "synth-effects": 0,
+   "ethnic": 0.6,
+   "percussive": 1,
+   "sound-effects": 0,
+   "percussion": 1,
+   "voice": 0.3
   },
   "swing": null
  }
