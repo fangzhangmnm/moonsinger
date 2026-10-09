@@ -577,6 +577,7 @@ var V_CUT = 6e-3;
 var V_GLIDE = 0.012;
 var LOOKAHEAD = 30;
 var dbToLin2 = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
+var now = typeof performance !== "undefined" && typeof performance.now === "function" ? () => performance.now() : () => Date.now();
 var I16 = 1 / 32768;
 function toInt16(x) {
   const out = new Int16Array(x.length);
@@ -653,6 +654,10 @@ var Studio = class {
   meterOn = false;
   meterPeak = 0;
   meterFrames = 0;
+  loadBusy = 0;
+  loadFrames = 0;
+  chunkBytes = 0;
+  // 负载 / 内存监控（刀 6）
   posFrames = 0;
   missingSent = /* @__PURE__ */ new Set();
   constructor(sampleRate2, tsf, post) {
@@ -730,10 +735,14 @@ var Studio = class {
       case "timeline":
         this.setTimeline(m.tl);
         return;
-      case "chunk":
-        this.chunks.set(m.key, { sr: m.sr, samples: m.samples instanceof Int16Array ? m.samples : toInt16(m.samples) });
+      case "chunk": {
+        this.dropChunk(m.key);
+        const samples = m.samples instanceof Int16Array ? m.samples : toInt16(m.samples);
+        this.chunks.set(m.key, { sr: m.sr, samples });
+        this.chunkBytes += samples.byteLength;
         this.missingSent.delete(m.key);
         return;
+      }
       case "getChunks": {
         const items = m.keys.flatMap((k) => {
           const c = this.chunks.get(k);
@@ -745,7 +754,7 @@ var Studio = class {
       case "forget":
         for (const k of m.keys) {
           if (this.held(k) || this.sounding(k)) this.forgetLater.add(k);
-          else this.chunks.delete(k);
+          else this.dropChunk(k);
         }
         return;
       // 正在响 / hold 着的块：响完再删（主线程换时间线之前就会先来清块）
@@ -924,6 +933,13 @@ var Studio = class {
     t.hold = null;
     this.sweepForget();
   }
+  dropChunk(key) {
+    const c = this.chunks.get(key);
+    if (c) {
+      this.chunkBytes -= c.samples.byteLength;
+      this.chunks.delete(key);
+    }
+  }
   held(key) {
     for (const t of this.tracks.values()) if (t.hold?.key === key) return true;
     return false;
@@ -947,7 +963,7 @@ var Studio = class {
       }
       if (!used) {
         this.forgetLater.delete(k);
-        this.chunks.delete(k);
+        this.dropChunk(k);
       }
     }
   }
@@ -1044,6 +1060,7 @@ var Studio = class {
   // ── 渲染 ────────────────────────────────────────────────────────────────────────────────────────────────────────
   /** 出一块：outL / outR 长 n（≤ BLOCK）。 */
   render(outL, outR, n) {
+    const tStart = now();
     this.busL.fill(0, 0, n);
     this.busR.fill(0, 0, n);
     this.audL.fill(0, 0, n);
@@ -1091,6 +1108,13 @@ var Studio = class {
         this.meterPeak = 0;
         this.meterFrames = 0;
       }
+    }
+    this.loadBusy += now() - tStart;
+    this.loadFrames += n;
+    if (this.loadFrames >= this.sr) {
+      this.post({ type: "load", busy: Math.min(1, this.loadBusy / (this.loadFrames / this.sr * 1e3)), chunkBytes: this.chunkBytes, chunks: this.chunks.size, voices: this.activeVoices() });
+      this.loadBusy = 0;
+      this.loadFrames = 0;
     }
   }
   activeVoices() {
@@ -1519,4 +1543,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-188ac7459e99.mjs.map
+//# sourceMappingURL=studio-worklet-c543ee86b1c6.mjs.map

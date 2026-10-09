@@ -114,6 +114,20 @@ describe("录音房：停 / 再放 / 放着的时候换时间线（2026-10-10）
   });
 });
 
+describe("录音房：负载 / 内存上报（刀 6）", () => {
+  it("每秒报一条 load：忙闲在 0–1；块的 Int16 字节数随喂 / 放变", async () => {
+    const { s, out } = await studio();
+    run(s, 1.1);
+    const l0 = out.filter((m) => m.type === "load"); assert(l0.length >= 1, "1 s 内报了"); if (l0[0].type === "load") { assert(l0[0].busy >= 0 && l0[0].busy <= 1, `busy ${l0[0].busy}`); eq(l0[0].chunkBytes, 0); eq(l0[0].chunks, 0); }
+    s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(1, 0.5) });   // 48000 个采样 → Int16 96000 B
+    out.length = 0; run(s, 1.05);
+    const l1 = out.find((m) => m.type === "load"); assert(l1 && l1.type === "load" && l1.chunkBytes === 96000 && l1.chunks === 1, `喂了一块：${JSON.stringify(l1)}`);
+    s.handle({ type: "forget", keys: ["A"] });
+    out.length = 0; run(s, 1.05);
+    const l2 = out.find((m) => m.type === "load"); assert(l2 && l2.type === "load" && l2.chunkBytes === 0 && l2.chunks === 0, `放掉了：${JSON.stringify(l2)}`);
+  });
+});
+
 describe("录音房：块回放（慢引擎）", () => {
   it("块没到 = 冻在它的头、报 missing；到了接着放；增益乘上去、22050 → 48000 重采样", async () => {
     const { s, out } = await studio();

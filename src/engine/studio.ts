@@ -74,7 +74,9 @@ export type StudioOut =
   | { type: "ended"; gen: number }
   | { type: "missing"; keys: string[] }
   | { type: "chunks"; items: { key: string; sr: number; samples: Int16Array }[] }
-  | { type: "meter"; peak: number; active: number };
+  | { type: "meter"; peak: number; active: number }
+  /** 每秒一条（一直开着，便宜）：音频线程这 1 s 的忙闲（渲染耗时 / 这 1 s）、录音房里留着的块（Int16 字节数 / 块数）、正在响的声音数。刀 6 负载 / 内存监控。 */
+  | { type: "load"; busy: number; chunkBytes: number; chunks: number; voices: number };
 
 // ── 内部状态 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 interface Chunk { sr: number; samples: Int16Array }   // 块存 Int16（刀 5 精度分级：一半内存；放的时候乘回来）
@@ -101,6 +103,7 @@ interface Audition { inst: AuditionInst; key: number; gl: number; gr: number }
 interface ClipVoice { src: string; data: Float32Array; ratio: number; pos: number; env: number; state: "attack" | "hold" | "release" | "cut"; gl: number; gr: number }
 
 const dbToLin = (dB: number) => (dB === -Infinity ? 0 : 10 ** (dB / 20));
+const now: () => number = typeof performance !== "undefined" && typeof performance.now === "function" ? () => performance.now() : () => Date.now();
 const I16 = 1 / 32768;
 /** Float32 → Int16（夹到 ±1）。 */
 export function toInt16(x: Float32Array): Int16Array { const out = new Int16Array(x.length); for (let i = 0; i < x.length; i++) { const v = x[i]; out[i] = v >= 1 ? 32767 : v <= -1 ? -32768 : Math.round(v * 32767); } return out; }
@@ -147,6 +150,7 @@ export class Studio {
   private wr = 0; private gPrev = 1; private aRel: number;
   // 表 / 报告
   private meterOn = false; private meterPeak = 0; private meterFrames = 0;
+  private loadBusy = 0; private loadFrames = 0; private chunkBytes = 0;   // 负载 / 内存监控（刀 6）
   private posFrames = 0;
   private missingSent = new Set<string>();
 
@@ -192,9 +196,9 @@ export class Studio {
         return;
       }
       case "timeline": this.setTimeline(m.tl); return;
-      case "chunk": this.chunks.set(m.key, { sr: m.sr, samples: m.samples instanceof Int16Array ? m.samples : toInt16(m.samples) }); this.missingSent.delete(m.key); return;
+      case "chunk": { this.dropChunk(m.key); const samples = m.samples instanceof Int16Array ? m.samples : toInt16(m.samples); this.chunks.set(m.key, { sr: m.sr, samples }); this.chunkBytes += samples.byteLength; this.missingSent.delete(m.key); return; }
       case "getChunks": { const items = m.keys.flatMap((k) => { const c = this.chunks.get(k); return c ? [{ key: k, sr: c.sr, samples: c.samples.slice() }] : []; }); this.post({ type: "chunks", items }, items.map((x) => x.samples.buffer)); return; }
-      case "forget": for (const k of m.keys) { if (this.held(k) || this.sounding(k)) this.forgetLater.add(k); else this.chunks.delete(k); } return;   // 正在响 / hold 着的块：响完再删（主线程换时间线之前就会先来清块）
+      case "forget": for (const k of m.keys) { if (this.held(k) || this.sounding(k)) this.forgetLater.add(k); else this.dropChunk(k); } return;   // 正在响 / hold 着的块：响完再删（主线程换时间线之前就会先来清块）
       case "channel": {
         const cur = this.channels.get(m.id) ?? { ...DEFAULT_CH }, next = { ...cur, ...m.p };
         this.channels.set(m.id, next);
@@ -295,6 +299,7 @@ export class Studio {
     if (!t.hold) return; t.hold = null;
     this.sweepForget();
   }
+  private dropChunk(key: string): void { const c = this.chunks.get(key); if (c) { this.chunkBytes -= c.samples.byteLength; this.chunks.delete(key); } }
   private held(key: string): boolean { for (const t of this.tracks.values()) if (t.hold?.key === key) return true; return false; }
   /** 放着的时候这个块正在响（时间线里它盖着播放头）。 */
   private sounding(key: string): boolean {
@@ -307,7 +312,7 @@ export class Studio {
     for (const k of this.forgetLater) {
       if (this.held(k)) continue;
       let used = false; for (const t of this.tracks.values()) if (t.spec.kind === "clips" && t.spec.clips.some((c) => c.key === k)) { used = true; break; }
-      if (!used) { this.forgetLater.delete(k); this.chunks.delete(k); }
+      if (!used) { this.forgetLater.delete(k); this.dropChunk(k); }
     }
   }
   /** 所有正在响的声音快速收掉（几毫秒的淡出，不是硬切）：起放时清上一次的尾巴。 */
@@ -377,6 +382,7 @@ export class Studio {
   // ── 渲染 ────────────────────────────────────────────────────────────────────────────────────────────────────────
   /** 出一块：outL / outR 长 n（≤ BLOCK）。 */
   render(outL: Float32Array, outR: Float32Array, n: number): void {
+    const tStart = now();
     this.busL.fill(0, 0, n); this.busR.fill(0, 0, n); this.audL.fill(0, 0, n); this.audR.fill(0, 0, n);
     for (const b of this.buses.values()) { b.L.fill(0, 0, n); b.R.fill(0, 0, n); }
     if (this.playing) this.renderTransport(n); else if (this.draining) this.renderDrain(n);
@@ -399,6 +405,9 @@ export class Studio {
       this.meterFrames += n;
       if (this.meterFrames >= 1024) { this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices() }); this.meterPeak = 0; this.meterFrames = 0; }
     }
+    // 负载：这一块渲染花了多久 / 这一块值多久（AudioWorklet 里没有 performance，退回 Date.now：毫秒粗，攒满 1 s 再报就够准）
+    this.loadBusy += now() - tStart; this.loadFrames += n;
+    if (this.loadFrames >= this.sr) { this.post({ type: "load", busy: Math.min(1, this.loadBusy / ((this.loadFrames / this.sr) * 1000)), chunkBytes: this.chunkBytes, chunks: this.chunks.size, voices: this.activeVoices() }); this.loadBusy = 0; this.loadFrames = 0; }
   }
   activeVoices(): number {
     let a = this.auditionVowels.length;

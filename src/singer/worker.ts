@@ -31,7 +31,9 @@ export interface WarmRequest { type: "warm"; id: number; models?: string[] }
 export interface CancelRequest { type: "cancel"; id: number }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
-  | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> } }
+  | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> };
+      /** 这条 worker 现在占多少（刀 6 内存监控）：wasm = 三块 WASM 堆（ort / OpenJTalk / WORLD，只涨不落）；cache = 念缓存的字节。 */
+      mem: { wasm: number; cache: number } }
   | { type: "error"; id: number; message: string };
 
 import * as ortLib from "@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs";
@@ -40,6 +42,22 @@ import { createJaFrontend, mountDictionaryBytes } from "@internal/read-aloud/bac
 import { encodeTokens } from "@internal/read-aloud/backend/piper-plus/encode.js";
 import { createChineseG2p } from "@internal/read-aloud/backend/piper-plus/zh-g2p.js";
 import { createEnglishG2p } from "@internal/read-aloud/backend/piper-plus/en-g2p.js";
+
+// ── 内存监控（刀 6；user「负载和内存监控防闪退 做」）：WASM 的堆是 WebAssembly.Memory，只涨不落——在实例化那一刻把它记下来，之后随时能读 buffer.byteLength。
+//   ort / OpenJTalk / WORLD 三块都经 WebAssembly.instantiate(Streaming) 起来（emscripten 的 memory 走 imports.env.memory，别的走 exports），这里一处全接住。
+//   iPad / Safari 没有任何别的办法量到 worker 的内存；这是我们能算的那部分，主线程按设备预算决定放块 / 减并行 / 重开引擎 / 明说。
+const wasmMems = new Set<WebAssembly.Memory>();
+const captureMem = (imports: unknown, instance: unknown) => {
+  for (const ns of Object.values((imports ?? {}) as Record<string, unknown>)) if (ns && typeof ns === "object") for (const v of Object.values(ns as Record<string, unknown>)) if (v instanceof WebAssembly.Memory) wasmMems.add(v);
+  const ex = (instance as { exports?: Record<string, unknown> } | null)?.exports; if (ex) for (const v of Object.values(ex)) if (v instanceof WebAssembly.Memory) wasmMems.add(v);
+};
+{
+  const WA = WebAssembly as unknown as Record<string, (...a: unknown[]) => Promise<unknown>>;
+  const inst = WA.instantiate, stream = WA.instantiateStreaming;
+  WA.instantiate = async function (src: unknown, imports?: unknown) { const r = (await inst.call(WebAssembly, src, imports)) as { instance?: unknown }; captureMem(imports, r.instance ?? r); return r; };
+  if (stream) WA.instantiateStreaming = async function (src: unknown, imports?: unknown) { const r = (await stream.call(WebAssembly, src, imports)) as { instance?: unknown }; captureMem(imports, r.instance); return r; };
+}
+const memNow = () => { let wasm = 0; for (const m of wasmMems) wasm += m.buffer.byteLength; return { wasm, cache: speech.used }; };
 
 const base = new URL("../dev-assets/", import.meta.url);   // 开发期：元音图谱（默认关）
 const u = (p: string) => new URL(p, base).href;
@@ -151,7 +169,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
   if (q.type === "cancel") { cancelled.add(q.id); return; }
   if (q.type === "warm") {
     const say = (stage: string) => post({ type: "progress", id: q.id, stage });
-    try { if (q.models?.length) bases = q.models; if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; }); await engine; post({ type: "done", id: q.id, samples: new Float32Array(0), sr: SR, ms: { load: 0, sing: 0, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }); bootMs = {}; }
+    try { if (q.models?.length) bases = q.models; if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; }); await engine; post({ type: "done", id: q.id, samples: new Float32Array(0), sr: SR, mem: memNow(), ms: { load: 0, sing: 0, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }); bootMs = {}; }
     catch (err) { post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) }); }
     return;
   }
@@ -179,7 +197,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
     const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper, world, loadAtlas: e.loadAtlas, opt: q.opt ?? {}, only: q.only ?? null });
     check();
     const samples: Float32Array = q.raw || q.only ? Float32Array.from(r.y as ArrayLike<number>) : r.sung;
-    post({ type: "done", id: q.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }, [samples.buffer]); bootMs = {};
+    post({ type: "done", id: q.id, samples, sr: r.SR, mem: memNow(), ms: { load: t1 - t0, sing: performance.now() - t1, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }, [samples.buffer]); bootMs = {};
   } catch (err) {
     cancelled.delete(q.id);
     engine = engine && (await engine.catch(() => null)) ? engine : null;   // 加载失败就允许下次重试

@@ -5,7 +5,8 @@ import { instantiateTsf } from "../gm/tsf-standalone.ts";
 import { Studio, BLOCK, toInt16, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
 
 export interface VowelTableMsg { sr: number; entries: VowelEntry[]; pcm: Int16Array }
-export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number) => void }
+export interface LoadInfo { busy: number; chunkBytes: number; chunks: number; voices: number }
+export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number) => void; load: (info: LoadInfo) => void }
 
 export class StudioClient {
   private node: AudioWorkletNode | null = null;
@@ -62,6 +63,7 @@ export class StudioClient {
             case "ended": if (m.gen !== this.gen) return; this._playing = false; this.emit("ended"); return;
             case "missing": this.emit("missing", m.keys); return;
             case "meter": this.emit("meter", m.peak, m.active); return;
+            case "load": this.emit("load", { busy: m.busy, chunkBytes: m.chunkBytes, chunks: m.chunks, voices: m.voices }); return;
             case "chunks": { const w = this.chunkWait; this.chunkWait = null; w?.(m.items); return; }
           }
         };

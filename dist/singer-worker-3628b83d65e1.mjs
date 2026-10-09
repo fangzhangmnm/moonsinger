@@ -7661,6 +7661,35 @@ function createEnglishG2p({ cmudict, homographs = null }) {
 }
 
 // src/singer/worker.ts
+var wasmMems = /* @__PURE__ */ new Set();
+var captureMem = (imports, instance) => {
+  for (const ns2 of Object.values(imports ?? {})) if (ns2 && typeof ns2 === "object") {
+    for (const v of Object.values(ns2)) if (v instanceof WebAssembly.Memory) wasmMems.add(v);
+  }
+  const ex = instance?.exports;
+  if (ex) {
+    for (const v of Object.values(ex)) if (v instanceof WebAssembly.Memory) wasmMems.add(v);
+  }
+};
+{
+  const WA = WebAssembly;
+  const inst = WA.instantiate, stream = WA.instantiateStreaming;
+  WA.instantiate = async function(src, imports) {
+    const r = await inst.call(WebAssembly, src, imports);
+    captureMem(imports, r.instance ?? r);
+    return r;
+  };
+  if (stream) WA.instantiateStreaming = async function(src, imports) {
+    const r = await stream.call(WebAssembly, src, imports);
+    captureMem(imports, r.instance);
+    return r;
+  };
+}
+var memNow = () => {
+  let wasm = 0;
+  for (const m of wasmMems) wasm += m.buffer.byteLength;
+  return { wasm, cache: speech.used };
+};
 var base = new URL("../dev-assets/", import.meta.url);
 var u = (p) => new URL(p, base).href;
 async function bytes(p) {
@@ -7806,7 +7835,7 @@ self.onmessage = async (ev) => {
         throw e;
       });
       await engine;
-      post({ type: "done", id: q2.id, samples: new Float32Array(0), sr: SR, ms: { load: 0, sing: 0, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } });
+      post({ type: "done", id: q2.id, samples: new Float32Array(0), sr: SR, mem: memNow(), ms: { load: 0, sing: 0, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } });
       bootMs = {};
     } catch (err) {
       post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
@@ -7853,7 +7882,7 @@ self.onmessage = async (ev) => {
     const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas, breath, preset, piper, world, loadAtlas: e.loadAtlas, opt: q2.opt ?? {}, only: q2.only ?? null });
     check();
     const samples = q2.raw || q2.only ? Float32Array.from(r.y) : r.sung;
-    post({ type: "done", id: q2.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } }, [samples.buffer]);
+    post({ type: "done", id: q2.id, samples, sr: r.SR, mem: memNow(), ms: { load: t1 - t0, sing: performance.now() - t1, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } }, [samples.buffer]);
     bootMs = {};
   } catch (err) {
     cancelled.delete(q2.id);
@@ -7870,4 +7899,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-ca3c8a32eb30.mjs.map
+//# sourceMappingURL=singer-worker-3628b83d65e1.mjs.map

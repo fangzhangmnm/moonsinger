@@ -25,6 +25,7 @@ import "./chord.test.ts";
 import "./history.test.ts";
 import "./desk.test.ts";
 import "./studio.test.ts";
+import "./resource-watch.test.ts";
 import "./timeline.test.ts";
 import "./scheduler.test.ts";
 import "./speech-cache.test.ts";

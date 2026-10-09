@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.13-2026-10-10";
+var APP_VERSION = "v0.9.14-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3707,12 +3707,12 @@ function scaleSelDur(st3, f2) {
 function setTuplet(st3, n10) {
   return { ...st3, input: { ...st3.input, tuplet: n10 } };
 }
-function tapAcc(st3, acc, now) {
+function tapAcc(st3, acc, now2) {
   if (st3.sel) return mapSelPitch(st3, (p2) => alterBy(p2, acc));
   const i10 = st3.input;
-  if (i10.acc !== acc || i10.accMode === "off") return { ...st3, input: { ...i10, acc, accMode: "once", accAt: now } };
-  if (i10.accMode === "once" && now - i10.accAt < 350) return { ...st3, input: { ...i10, accMode: "lock", accAt: now } };
-  return { ...st3, input: { ...i10, acc: 0, accMode: "off", accAt: now } };
+  if (i10.acc !== acc || i10.accMode === "off") return { ...st3, input: { ...i10, acc, accMode: "once", accAt: now2 } };
+  if (i10.accMode === "once" && now2 - i10.accAt < 350) return { ...st3, input: { ...i10, accMode: "lock", accAt: now2 } };
+  return { ...st3, input: { ...i10, acc: 0, accMode: "off", accAt: now2 } };
 }
 function setAccState(st3, acc, mode) {
   const i10 = st3.input;
@@ -5557,7 +5557,7 @@ function grooveCategory(engine2, gm) {
 var followOf = (s10, category) => category ? s10.follow[category] ?? 0 : 0;
 
 // src/score/commands.ts
-function apply(st3, c10, now = Date.now()) {
+function apply(st3, c10, now2 = Date.now()) {
   switch (c10.k) {
     case "degree":
       return writeDegree(st3, c10.degree, c10.dir);
@@ -5589,7 +5589,7 @@ function apply(st3, c10, now = Date.now()) {
     case "extend":
       return extend(st3, !!c10.half);
     case "acc":
-      return tapAcc(st3, c10.acc, now);
+      return tapAcc(st3, c10.acc, now2);
     case "octave":
       return octaveTarget(st3, c10.d);
     case "step":
@@ -10631,8 +10631,8 @@ function _mount(el2, opts, hooks) {
     const t10 = e10.target;
     if (t10 && el2.contains(t10))
       return;
-    const now = anchorPos();
-    if (Math.abs(now.x - anchorAt.x) < 0.5 && Math.abs(now.y - anchorAt.y) < 0.5)
+    const now2 = anchorPos();
+    if (Math.abs(now2.x - anchorAt.x) < 0.5 && Math.abs(now2.y - anchorAt.y) < 0.5)
       return;
     handle.close();
   };
@@ -11999,7 +11999,7 @@ function createIdentifiersNoKinds() {
 var defaultCloudToName = (cloudName) => cloudName.endsWith(".zip") ? cloudName.slice(0, -4) : cloudName;
 function createCloudSync(cfg) {
   const { provider, kv, fileName: fileName2, encFileName = null, contentType = "application/octet-stream", trashFolder = ".trash", backupFolder = ".backup", appKey = "sync", manageDirty = true } = cfg;
-  const now = cfg.now || (() => Date.now());
+  const now2 = cfg.now || (() => Date.now());
   const isHiddenAny = (n10) => isHidden(n10) || !!cfg.hidden?.(n10);
   async function _find(name) {
     const p2 = fileName2(name);
@@ -12020,7 +12020,7 @@ function createCloudSync(cfg) {
   const etagKey = (n10) => `${appKey}.etag:${n10}`;
   const dirtyKey = (n10) => `${appKey}.dirty:${n10}`;
   const baseName = (n10) => n10.includes("/") ? n10.slice(n10.lastIndexOf("/") + 1) : n10;
-  const stampedName = (n10, enc3 = false, stamp2 = asideStamp(now())) => (enc3 && encFileName ? encFileName : fileName2)(`${baseName(n10)} [${stamp2}]`);
+  const stampedName = (n10, enc3 = false, stamp2 = asideStamp(now2())) => (enc3 && encFileName ? encFileName : fileName2)(`${baseName(n10)} [${stamp2}]`);
   function getETag(name) {
     return kv.get(etagKey(name)) || null;
   }
@@ -12188,7 +12188,7 @@ function createCloudSync(cfg) {
     const base3 = baseName(clean);
     const mkName = opts.encrypted && encFileName ? encFileName : fileName2;
     const folderId = await provider.ensureFolder(folder);
-    const disp = restoreStampDisplay(opts.snapshotStamp, now());
+    const disp = restoreStampDisplay(opts.snapshotStamp, now2());
     const stamped = (suf) => withStemTail(base3, ` [${suf}]`, ids);
     for (let attempt = 1; attempt < 100; attempt++) {
       const candidate = attempt === 1 ? base3 : attempt === 2 ? stamped(disp) : stamped(`${disp}-${attempt - 1}`);
@@ -12203,7 +12203,7 @@ function createCloudSync(cfg) {
         throw e10;
       }
     }
-    return await provider.move(cloudRef, folderId, { newName: mkName(stamped(asideStamp(now()))), conflictBehavior: "fail", eTag: opts.eTag ?? null });
+    return await provider.move(cloudRef, folderId, { newName: mkName(stamped(asideStamp(now2()))), conflictBehavior: "fail", eTag: opts.eTag ?? null });
   }
   async function purge(cloudRef, eTag) {
     try {
@@ -12679,7 +12679,7 @@ function classifyCloudGone(localNames, cloudNameSet, opts) {
 function createReconcile(cfg) {
   const { cloud, local, head, pending, isOnline, activeIdentifier: activeFileNameFn } = cfg;
   const isHiddenAny = (n10) => isHidden(n10) || !!cfg.hidden?.(n10);
-  const now = cfg.now || (() => Date.now());
+  const now2 = cfg.now || (() => Date.now());
   const skipName = (opt) => opt ?? activeFileNameFn?.() ?? void 0;
   async function converge(localNames, cloudNames, authoritative, activeFileName) {
     if (!authoritative)
@@ -12698,9 +12698,9 @@ function createReconcile(cfg) {
     });
     const demoted = [];
     for (const name of demote) {
-      if (!pending.seenGone(name, now()))
+      if (!pending.seenGone(name, now2()))
         continue;
-      await local.trash(name, asideStamp(now()));
+      await local.trash(name, asideStamp(now2()));
       cloud.clearState(name);
       head.forget(name);
       pending.clear(name);
@@ -12765,15 +12765,15 @@ function createPendingGone(kv, graceMs) {
     isPending(name) {
       return read()[name] != null;
     },
-    seenGone(name, now) {
+    seenGone(name, now2) {
       const m2 = read();
       const first = m2[name];
       if (first == null) {
-        m2[name] = now;
+        m2[name] = now2;
         write(m2);
         return false;
       }
-      if (now - first >= graceMs)
+      if (now2 - first >= graceMs)
         return true;
       return false;
     },
@@ -12924,7 +12924,7 @@ var shallowCopy = (v) => Array.isArray(v) ? [...v] : v && typeof v === "object" 
 var valueOf = (e10) => e10.value;
 var isTombstone = (e10) => valueOf(e10) === null;
 function createCollection(cfg) {
-  const { cloud, name, isOnline, syncDelayMs = 1500, now = () => Date.now(), manual = false, local, localWriteDelayMs = 400, getInitData } = cfg;
+  const { cloud, name, isOnline, syncDelayMs = 1500, now: now2 = () => Date.now(), manual = false, local, localWriteDelayMs = 400, getInitData } = cfg;
   const flow = createFolderFlow({ cloud, name, encode, decode, isOnline });
   let env2 = emptyFolder();
   let timer = null;
@@ -13115,7 +13115,7 @@ function createCollection(cfg) {
       throw new Error(`collection(${name}).setItem: value \u4E0D\u53EF\u4E3A undefined\uFF08\u5220\u9664\u8BF7\u7528 deleteItem \u6216\u4F20 null \u5893\u7891\uFF09`);
     const prev = env2.items.find((e10) => e10.id === id2);
     const valueChanged = !prev || JSON.stringify(valueOf(prev)) !== JSON.stringify(value);
-    const fi = { id: id2, uat: now(), value: shallowCopy(value) };
+    const fi = { id: id2, uat: now2(), value: shallowCopy(value) };
     env2 = { ...env2, items: [...env2.items.filter((e10) => e10.id !== id2), fi] };
     scheduleSync();
     if (valueChanged)
@@ -13929,7 +13929,7 @@ function createDownloadSessions(cfg) {
   const { staging, fetchMeta, range: range2, adoptLocal } = cfg;
   const chunkSize = cfg.chunkSize ?? CHUNK_DEFAULT;
   const capBytes = cfg.capBytes ?? CAP_DEFAULT;
-  const now = cfg.now ?? (() => Date.now());
+  const now2 = cfg.now ?? (() => Date.now());
   let playbackBusy = 0;
   let playbackIdleWaiters = [];
   const playbackIdle = () => playbackBusy === 0 ? Promise.resolve() : new Promise((r10) => playbackIdleWaiters.push(r10));
@@ -14056,7 +14056,7 @@ function createDownloadSessions(cfg) {
     const prev = await readMeta(name);
     if (prev && prev.eTag !== etag)
       await purgeName(name);
-    const meta = prev && prev.eTag === etag ? { ...prev, touchedAt: now() } : { v: 1, eTag: etag, totalBytes: size, chunkBytes: chunkSize, chunks: [], touchedAt: now() };
+    const meta = prev && prev.eTag === etag ? { ...prev, touchedAt: now2() } : { v: 1, eTag: etag, totalBytes: size, chunkBytes: chunkSize, chunks: [], touchedAt: now2() };
     const got = new Set(meta.chunks);
     await writeMeta(name, meta);
     const nChunks = Math.max(1, Math.ceil(size / chunkSize));
@@ -14080,7 +14080,7 @@ function createDownloadSessions(cfg) {
         if (!got.has(i10)) {
           got.add(i10);
           meta.chunks = [...got];
-          meta.touchedAt = now();
+          meta.touchedAt = now2();
           await writeMeta(name, meta);
         }
         void enforceCap();
@@ -16555,7 +16555,7 @@ var REAL_TIMERS2 = {
 function createFirstFrameWatchdog(onStall, opts) {
   const timeoutMs = opts?.timeoutMs ?? 8e3;
   const timers = opts?.timers ?? REAL_TIMERS2;
-  const now = opts?.now ?? (() => Date.now());
+  const now2 = opts?.now ?? (() => Date.now());
   let handle = null;
   let folder = null;
   let armedAt = 0;
@@ -16570,9 +16570,9 @@ function createFirstFrameWatchdog(onStall, opts) {
     arm(f2) {
       disarm();
       folder = f2;
-      armedAt = now();
+      armedAt = now2();
       handle = timers.set(() => {
-        const elapsedMs = now() - armedAt;
+        const elapsedMs = now2() - armedAt;
         const stalledFolder = folder ?? f2;
         handle = null;
         folder = null;
@@ -17405,7 +17405,7 @@ function idbThumbStore(opts) {
 // node_modules/@internal/gallery/dist/core/thumbs/thumb-cache.js
 var thumbKeyFor = (galleryId, fullName) => galleryId === "default" ? fullName : `${galleryId}:${fullName}`;
 function createThumbCache(deps) {
-  const now = deps.now ?? (() => Date.now());
+  const now2 = deps.now ?? (() => Date.now());
   const stats = { hits: 0, misses: 0, errors: 0 };
   const config = { skipCache: false };
   const listeners = /* @__PURE__ */ new Set();
@@ -17419,7 +17419,7 @@ function createThumbCache(deps) {
   }
   async function write(name, token, blob) {
     try {
-      await deps.store.set(deps.keyOf(name), { token, blob, at: now() });
+      await deps.store.set(deps.keyOf(name), { token, blob, at: now2() });
     } catch (e10) {
       deps.report?.(new Error("[thumb-cache] write failed: " + String(e10)));
     }
@@ -17795,7 +17795,7 @@ function thumbLoadPixelated(e10) {
   return edge > 0 && edge < PIXELATED_THUMB_MAX_EDGE;
 }
 function mountGalleryScreen(el2, d3) {
-  const { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick } = d3.vue;
+  const { createApp, defineComponent, reactive, ref, computed, watch: watch2, onMounted, onUnmounted, nextTick } = d3.vue;
   const icon = d3.ui.iconHtml;
   const phHtml = (name, info2) => d3.ui.tilePlaceholderHtml?.(name, info2) ?? "";
   const ovHtml = (name, info2) => {
@@ -17917,11 +17917,11 @@ function mountGalleryScreen(el2, d3) {
           });
         }
       });
-      watch(() => _lockState.unlocked, () => {
+      watch2(() => _lockState.unlocked, () => {
         if (locked.value || props.encName)
           void tryDecrypt();
       });
-      watch(() => [props.thumbToken, props.cloudNewer, _thumbRev.get(thumbKey(props.alt)) ?? 0], () => {
+      watch2(() => [props.thumbToken, props.cloudNewer, _thumbRev.get(thumbKey(props.alt)) ?? 0], () => {
         if (props.encName) {
           void tryDecrypt();
           return;
@@ -17988,7 +17988,7 @@ function mountGalleryScreen(el2, d3) {
             obs.observe(root.value);
         });
       });
-      watch(() => props.token, () => {
+      watch2(() => props.token, () => {
         if (!obs)
           fetchThumb();
       });
@@ -18699,79 +18699,143 @@ function initBlackBox(version) {
 
 // src/singer/client.ts
 var OOM = /out of memory|no available backend/i;
+var newLane = () => ({ w: null, inflightId: 0, onlyId: 0, warming: null, mem: null, closing: false });
+var hash = (s10) => {
+  let h2 = 2166136261;
+  for (let i10 = 0; i10 < s10.length; i10++) {
+    h2 ^= s10.charCodeAt(i10);
+    h2 = Math.imul(h2, 16777619);
+  }
+  return h2 >>> 0;
+};
 var Singer = class {
-  w = null;
+  lanes = [newLane()];
+  retiring = [];
+  // 减掉但还在算的道
   seq = 0;
   pending = /* @__PURE__ */ new Map();
   queue = [];
-  inflight = false;
-  inflightId = 0;
-  // 正在算的那一句（取消用）
-  onlyId = 0;
-  // 最近一次按键试听的请求（新的来了旧的取消）
-  warming = null;
-  worker() {
-    if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-ca3c8a32eb30.mjs"}`, import.meta.url), { type: "module" });
-    this.w.onmessage = (ev2) => {
+  /** 每次有道报占用就叫一下（刀 6 内存监控）。 */
+  onMem = null;
+  /** 几条道（主线程按设备定；内存吃紧降到 1）。 */
+  get parallelism() {
+    return this.lanes.length;
+  }
+  setLanes(n10) {
+    n10 = Math.max(1, Math.floor(n10));
+    while (this.lanes.length < n10) this.lanes.push(newLane());
+    while (this.lanes.length > n10) {
+      const l10 = this.lanes.pop();
+      if (l10.inflightId || [...this.pending.values()].some((p2) => p2.lane === l10)) {
+        l10.closing = true;
+        this.retiring.push(l10);
+      } else this.closeLane(l10);
+    }
+  }
+  /** 每条道最近报的占用（没起的道不在里面）。 */
+  memory() {
+    return this.lanes.map((l10) => l10.mem).filter((m2) => !!m2);
+  }
+  laneBusy(i10) {
+    const l10 = this.lanes[i10];
+    return !!l10 && (l10.inflightId !== 0 || [...this.pending.values()].some((p2) => p2.lane === l10));
+  }
+  laneFor(s10) {
+    return this.lanes[hash(`${s10.LANG}|${s10.TEXT}`) % this.lanes.length];
+  }
+  laneIndex(l10) {
+    return this.lanes.indexOf(l10);
+  }
+  worker(l10) {
+    if (l10.w) return l10.w;
+    const w2 = new Worker(new URL(`./${"singer-worker-3628b83d65e1.mjs"}`, import.meta.url), { type: "module" });
+    l10.w = w2;
+    w2.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
       if (!p2) return;
-      if (m2.type === "progress") p2.progress(m2.stage);
-      else if (m2.type === "done") {
-        this.pending.delete(m2.id);
-        p2.ok({ samples: m2.samples, sr: m2.sr, ms: m2.ms });
-      } else {
-        this.pending.delete(m2.id);
-        p2.fail(new Error(m2.message));
+      if (m2.type === "progress") {
+        p2.progress(m2.stage);
+        return;
       }
+      this.pending.delete(m2.id);
+      if (m2.type === "done") {
+        if (m2.mem) {
+          l10.mem = m2.mem;
+          const i10 = this.laneIndex(l10);
+          if (i10 >= 0) this.onMem?.(i10, m2.mem);
+        }
+        p2.ok({ samples: m2.samples, sr: m2.sr, ms: m2.ms });
+      } else p2.fail(new Error(m2.message));
+      if (l10.closing && ![...this.pending.values()].some((q2) => q2.lane === l10)) this.closeLane(l10);
     };
-    this.w.onerror = (e10) => {
-      this.w?.terminate();
-      this.w = null;
-      for (const p2 of this.pending.values()) p2.fail(new Error(e10.message || "\u6708\u8BFB\u7684 worker \u51FA\u9519"));
-      this.pending.clear();
+    w2.onerror = (e10) => {
+      this.failLane(l10, new Error(e10.message || "\u6708\u8BFB\u7684 worker \u51FA\u9519"));
     };
-    return this.w;
+    return w2;
   }
-  /** 重开 worker：wasm 的内存只涨不落，只有整个 worker 关掉才真还回去。 */
+  closeLane(l10) {
+    l10.w?.terminate();
+    l10.w = null;
+    l10.mem = null;
+    l10.inflightId = 0;
+    l10.onlyId = 0;
+    const k2 = this.retiring.indexOf(l10);
+    if (k2 >= 0) this.retiring.splice(k2, 1);
+  }
+  failLane(l10, err2) {
+    l10.w?.terminate();
+    l10.w = null;
+    l10.mem = null;
+    l10.inflightId = 0;
+    l10.onlyId = 0;
+    for (const [id2, p2] of [...this.pending]) if (p2.lane === l10) {
+      this.pending.delete(id2);
+      p2.fail(err2);
+    }
+    void this.pump();
+  }
+  /** 重开所有道：wasm 的内存只涨不落，只有整个 worker 关掉才真还回去。 */
   restart() {
-    this.w?.terminate();
-    this.w = null;
-    for (const p2 of this.pending.values()) p2.fail(new Error("\u6708\u8BFB\u7684 worker \u91CD\u5F00\u4E86"));
-    this.pending.clear();
+    for (const l10 of this.lanes) this.failLane(l10, new Error("\u6708\u8BFB\u7684 worker \u91CD\u5F00\u4E86"));
   }
-  /** 还没开始算的全扔掉（以 "cancelled" 拒绝）；正在算的那一句算完照常回来。返回扔了几个。 */
+  /** 只重开一条道（内存监控：这条道的堆超了预算、现在空着）。 */
+  restartLane(i10) {
+    const l10 = this.lanes[i10];
+    if (l10) this.failLane(l10, new Error("\u6708\u8BFB\u7684 worker \u91CD\u5F00\u4E86"));
+  }
+  /** 还没开始算的全扔掉（以 "cancelled" 拒绝）；正在算的照常回来。返回扔了几个。 */
   cancelPending() {
     const n10 = this.queue.length;
     for (const j2 of this.queue.splice(0)) j2.fail(new Error("cancelled"));
     return n10;
   }
-  /** 取消正在算的那一句（worker 在段与段之间认；正在跑的那一段跑完才停）。 */
-  cancelInflight() {
-    if (this.inflightId) {
-      const req = { type: "cancel", id: this.inflightId };
-      this.w?.postMessage(req);
+  /** 取消正在算的整句（worker 在段与段之间认；正在跑的那一段跑完才停）。给了 tag = 只取消贴着这个标签的那句；不给 = 全部。 */
+  cancelInflight(tag2) {
+    for (const l10 of [...this.lanes, ...this.retiring]) if (l10.inflightId && (tag2 === void 0 || l10.inflightTag === tag2)) {
+      const req = { type: "cancel", id: l10.inflightId };
+      l10.w?.postMessage(req);
     }
   }
-  /** 只把引擎起起来（打开歌就起；user 10-10「冷启动做」）。失败不抛（第一次真唱会再报）。 */
+  /** 只把引擎起起来（打开歌就起；user 10-10「冷启动做」）：第一条道。别的道第一次用到才起（起在并行里，不另花等待）。失败不抛（第一次真唱会再报）。 */
   warm(models) {
-    return this.warming ??= new Promise((ok2) => {
+    const l10 = this.lanes[0];
+    return l10.warming ??= new Promise((ok2) => {
       const id2 = ++this.seq, req = { type: "warm", id: id2, models };
       this.pending.set(id2, { ok: () => ok2(), fail: () => ok2(), progress: () => {
-      } });
-      this.worker().postMessage(req);
+      }, lane: l10 });
+      this.worker(l10).postMessage(req);
     }).finally(() => {
-      this.warming = null;
+      l10.warming = null;
     });
   }
   get busy() {
-    return this.inflight || this.queue.length > 0;
+    return this.queue.length > 0 || this.lanes.some((l10) => l10.inflightId !== 0);
   }
   get queued() {
     return this.queue.length;
   }
-  /** 唱（排队；一次只给 worker 一个）。内存不够（换着试很多音色之后 wasm 堆撑大了，月读的引擎起不来——user 2026-10-08 iPad「Out of memory」「感觉是没有gc」）
-   *  = 重开 worker（全部还回去）再试一次；还不行才报错。同一位演奏者重来，不是换人（不自动替补）。 */
+  /** 唱（排队；每条道一次一句）。内存不够（换着试很多音色之后 wasm 堆撑大了，月读的引擎起不来——user 2026-10-08 iPad「Out of memory」「感觉是没有gc」）
+   *  = 重开那条道（全部还回去）再试一次；还不行才报错。同一位演奏者重来，不是换人（不自动替补）。 */
   sing(s10, progress2 = () => {
   }, extra = {}) {
     return new Promise((ok2, fail) => {
@@ -18779,36 +18843,32 @@ var Singer = class {
       void this.pump();
     });
   }
-  async pump() {
-    if (this.inflight) return;
-    this.inflight = true;
-    try {
-      for (; ; ) {
-        const j2 = this.queue.shift();
-        if (!j2) break;
-        try {
-          j2.ok(await this.singRetry(j2.s, j2.progress, j2.extra));
-        } catch (e10) {
-          j2.fail(e10);
-        } finally {
-          this.inflightId = 0;
-        }
-      }
-    } finally {
-      this.inflight = false;
+  pump() {
+    for (; ; ) {
+      const j2 = this.queue[0];
+      if (!j2) return;
+      const pref = this.laneFor(j2.s), lane = pref.inflightId === 0 ? pref : this.lanes.find((l10) => l10.inflightId === 0);
+      if (!lane) return;
+      this.queue.shift();
+      lane.inflightId = -1;
+      void this.singRetry(lane, j2.s, j2.progress, j2.extra).then(j2.ok, j2.fail).finally(() => {
+        lane.inflightId = 0;
+        lane.inflightTag = void 0;
+        this.pump();
+      });
     }
   }
-  async singRetry(s10, progress2, extra) {
+  async singRetry(lane, s10, progress2, extra) {
     try {
-      return await this.singOnce(s10, progress2, extra);
+      return await this.singOnce(lane, s10, progress2, extra);
     } catch (e10) {
       const msg = e10.message ?? "";
       if (!OOM.test(msg)) throw e10;
       diagNote("singer", `out of memory, restarting worker and retrying once: ${msg}`);
-      this.restart();
+      this.failLane(lane, new Error("\u6708\u8BFB\u7684 worker \u91CD\u5F00\u4E86"));
       progress2("\u5185\u5B58\u4E0D\u591F\uFF1A\u91CD\u5F00\u6708\u8BFB\u7684\u5F15\u64CE\u518D\u8BD5\u4E00\u6B21");
       try {
-        return await this.singOnce(s10, progress2, extra);
+        return await this.singOnce(lane, s10, progress2, extra);
       } catch (e22) {
         const m2 = e22.message ?? "";
         diagNote("singer", `retry after restart failed: ${m2}`);
@@ -18817,21 +18877,25 @@ var Singer = class {
       }
     }
   }
-  singOnce(s10, progress2, extra) {
+  singOnce(lane, s10, progress2, extra) {
     const id2 = ++this.seq;
-    if (extra.only) {
-      if (this.onlyId) this.w?.postMessage({ type: "cancel", id: this.onlyId });
-      this.onlyId = id2;
-    } else this.inflightId = id2;
-    const req = { type: "sing", id: id2, score: s10.SCORE, text: s10.TEXT, tempo: s10.TEMPO_QUARTER, lang: s10.LANG, ...extra };
+    const { tag: tag2, ...rest } = extra;
+    if (rest.only) {
+      if (lane.onlyId) lane.w?.postMessage({ type: "cancel", id: lane.onlyId });
+      lane.onlyId = id2;
+    } else {
+      lane.inflightId = id2;
+      lane.inflightTag = tag2;
+    }
+    const req = { type: "sing", id: id2, score: s10.SCORE, text: s10.TEXT, tempo: s10.TEMPO_QUARTER, lang: s10.LANG, ...rest };
     return new Promise((ok2, fail) => {
-      this.pending.set(id2, { ok: ok2, fail, progress: progress2 });
-      this.worker().postMessage(req);
+      this.pending.set(id2, { ok: ok2, fail, progress: progress2, lane, tag: tag2 });
+      this.worker(lane).postMessage(req);
     });
   }
-  /** 只唱一个字（按键试听，刀 3）：不排队、直接给 worker（排在整句后面 = 迟到的音更烦）；念缓存命中时几毫秒。 */
+  /** 只唱一个字（按键试听，刀 3）：不排队、直接给这一句自己的道（排在整句后面 = 迟到的音更烦；worker 在段界之间就会插进来）；念缓存命中时几毫秒。 */
   singOnly(s10, only, extra = {}) {
-    return this.singOnce(s10, () => {
+    return this.singOnce(this.laneFor(s10), s10, () => {
     }, { ...extra, only, raw: true });
   }
   /** 全 app 共用的 AudioContext（必须在用户手势里先调过一次，iPad 才放声）。 */
@@ -18839,6 +18903,39 @@ var Singer = class {
     return audioCtx();
   }
 };
+
+// src/app/resource-watch.ts
+var MB = 1e6;
+function budgetFor(d3) {
+  const small = d3.ios || d3.deviceMemoryGB !== null && d3.deviceMemoryGB <= 4;
+  if (small) return { lanes: 1, total: 600 * MB, perWorker: 420 * MB, chunkBytes: 24 * MB };
+  const mid = d3.deviceMemoryGB !== null && d3.deviceMemoryGB < 8;
+  return { lanes: !mid && d3.cores >= 4 ? 2 : 1, total: mid ? 1200 * MB : 2500 * MB, perWorker: mid ? 700 * MB : 1400 * MB, chunkBytes: mid ? 64 * MB : 160 * MB };
+}
+var totalBytes = (s10) => s10.lanes.reduce((n10, l10) => n10 + l10.wasm + l10.cache, 0) + s10.chunkBytes + s10.soundMem;
+var AUDIO_HOT = 0.85;
+function advise(s10, b3) {
+  const out = [];
+  const over = totalBytes(s10) > b3.total;
+  if (s10.chunkBytes > b3.chunkBytes || over && s10.chunkBytes > b3.chunkBytes / 2) out.push({ kind: "pruneChunks", toBytes: Math.floor(Math.min(b3.chunkBytes, s10.chunkBytes) / 2) });
+  else if (over && s10.lanes.length > 1) out.push({ kind: "fewerLanes", lanes: 1 });
+  else {
+    const i10 = s10.lanes.findIndex((l10) => l10.wasm > b3.perWorker);
+    if (i10 >= 0) out.push({ kind: "restartLane", lane: i10 });
+    else if (over && s10.lanes.length) out.push({ kind: "restartLane", lane: s10.lanes.map((l10, k2) => [l10.wasm, k2]).sort((a10, c10) => c10[0] - a10[0])[0][1] });
+  }
+  if (s10.audioBusy !== null && s10.audioBusy > AUDIO_HOT) {
+    out.push({ kind: "audioHot", busy: s10.audioBusy });
+    if (s10.lanes.length > 1 && !out.some((a10) => a10.kind === "fewerLanes")) out.push({ kind: "fewerLanes", lanes: 1 });
+  }
+  return out;
+}
+var sizeText = (n10) => n10 >= 1e9 ? `${(n10 / 1e9).toFixed(2)} GB` : n10 >= 1e6 ? `${(n10 / 1e6).toFixed(0)} MB` : `${(n10 / 1e3).toFixed(0)} KB`;
+function describe(s10, b3) {
+  const lanes = s10.lanes.length ? s10.lanes.map((l10, i10) => `\u9053 ${i10 + 1}\uFF1A\u5806 ${sizeText(l10.wasm)} + \u5FF5\u7F13\u5B58 ${sizeText(l10.cache)}`).join("\uFF1B") : "\u6708\u8BFB\u5F15\u64CE\u6CA1\u8D77";
+  const audio = s10.audioBusy === null ? "\u97F3\u9891\u7EBF\u7A0B\uFF1A\u6CA1\u5728\u62A5" : `\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 ${Math.round(s10.audioBusy * 100)}%${s10.audioBusy > AUDIO_HOT ? "\uFF08\u70ED\uFF1A\u53EF\u80FD\u7206\u97F3\uFF09" : ""}`;
+  return `\u80FD\u7B97\u5230\u7684\u5360\u7528 ${sizeText(totalBytes(s10))} / \u9884\u7B97 ${sizeText(b3.total)}\uFF08${lanes}\uFF1B\u5F55\u97F3\u623F\u91CC ${s10.chunks} \u5757 ${sizeText(s10.chunkBytes)}\uFF1B\u97F3\u6E90\u5185\u5B58 ${sizeText(s10.soundMem)}\uFF09\u3002${audio}\u3002`;
+}
 
 // src/export/mp3.ts
 var MP3_QUALITY = {
@@ -21513,6 +21610,7 @@ var V_CUT = 6e-3;
 var V_GLIDE = 0.012;
 var LOOKAHEAD = 30;
 var dbToLin2 = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
+var now = typeof performance !== "undefined" && typeof performance.now === "function" ? () => performance.now() : () => Date.now();
 var I16 = 1 / 32768;
 function toInt16(x2) {
   const out = new Int16Array(x2.length);
@@ -21589,6 +21687,10 @@ var Studio = class {
   meterOn = false;
   meterPeak = 0;
   meterFrames = 0;
+  loadBusy = 0;
+  loadFrames = 0;
+  chunkBytes = 0;
+  // 负载 / 内存监控（刀 6）
   posFrames = 0;
   missingSent = /* @__PURE__ */ new Set();
   constructor(sampleRate, tsf, post) {
@@ -21666,10 +21768,14 @@ var Studio = class {
       case "timeline":
         this.setTimeline(m2.tl);
         return;
-      case "chunk":
-        this.chunks.set(m2.key, { sr: m2.sr, samples: m2.samples instanceof Int16Array ? m2.samples : toInt16(m2.samples) });
+      case "chunk": {
+        this.dropChunk(m2.key);
+        const samples = m2.samples instanceof Int16Array ? m2.samples : toInt16(m2.samples);
+        this.chunks.set(m2.key, { sr: m2.sr, samples });
+        this.chunkBytes += samples.byteLength;
         this.missingSent.delete(m2.key);
         return;
+      }
       case "getChunks": {
         const items = m2.keys.flatMap((k2) => {
           const c10 = this.chunks.get(k2);
@@ -21681,7 +21787,7 @@ var Studio = class {
       case "forget":
         for (const k2 of m2.keys) {
           if (this.held(k2) || this.sounding(k2)) this.forgetLater.add(k2);
-          else this.chunks.delete(k2);
+          else this.dropChunk(k2);
         }
         return;
       // 正在响 / hold 着的块：响完再删（主线程换时间线之前就会先来清块）
@@ -21860,6 +21966,13 @@ var Studio = class {
     t10.hold = null;
     this.sweepForget();
   }
+  dropChunk(key) {
+    const c10 = this.chunks.get(key);
+    if (c10) {
+      this.chunkBytes -= c10.samples.byteLength;
+      this.chunks.delete(key);
+    }
+  }
   held(key) {
     for (const t10 of this.tracks.values()) if (t10.hold?.key === key) return true;
     return false;
@@ -21883,7 +21996,7 @@ var Studio = class {
       }
       if (!used) {
         this.forgetLater.delete(k2);
-        this.chunks.delete(k2);
+        this.dropChunk(k2);
       }
     }
   }
@@ -21980,6 +22093,7 @@ var Studio = class {
   // ── 渲染 ────────────────────────────────────────────────────────────────────────────────────────────────────────
   /** 出一块：outL / outR 长 n（≤ BLOCK）。 */
   render(outL, outR, n10) {
+    const tStart = now();
     this.busL.fill(0, 0, n10);
     this.busR.fill(0, 0, n10);
     this.audL.fill(0, 0, n10);
@@ -22027,6 +22141,13 @@ var Studio = class {
         this.meterPeak = 0;
         this.meterFrames = 0;
       }
+    }
+    this.loadBusy += now() - tStart;
+    this.loadFrames += n10;
+    if (this.loadFrames >= this.sr) {
+      this.post({ type: "load", busy: Math.min(1, this.loadBusy / (this.loadFrames / this.sr * 1e3)), chunkBytes: this.chunkBytes, chunks: this.chunks.size, voices: this.activeVoices() });
+      this.loadBusy = 0;
+      this.loadFrames = 0;
     }
   }
   activeVoices() {
@@ -22537,6 +22658,9 @@ var StudioClient = class {
               return;
             case "meter":
               this.emit("meter", m2.peak, m2.active);
+              return;
+            case "load":
+              this.emit("load", { busy: m2.busy, chunkBytes: m2.chunkBytes, chunks: m2.chunks, voices: m2.voices });
               return;
             case "chunks": {
               const w2 = this.chunkWait;
@@ -23716,7 +23840,7 @@ async function mtime(h2) {
     return null;
   }
 }
-var isStale = (seen, now) => seen != null && now != null && seen !== now;
+var isStale = (seen, now2) => seen != null && now2 != null && seen !== now2;
 function grabDrop(dt) {
   for (const it2 of [...dt.items ?? []]) {
     if (it2.kind !== "file") continue;
@@ -23746,7 +23870,7 @@ function consumeLaunchFiles(cb2) {
 init_fflate_esm();
 
 // src/app/names.ts
-function defaultStem(now = /* @__PURE__ */ new Date()) {
+function defaultStem(now2 = /* @__PURE__ */ new Date()) {
   const z2 = (n10) => String(n10).padStart(2, "0");
   let r10;
   try {
@@ -23754,12 +23878,12 @@ function defaultStem(now = /* @__PURE__ */ new Date()) {
   } catch {
     r10 = Math.floor(Math.random() * 65536);
   }
-  return `${now.getFullYear()}${z2(now.getMonth() + 1)}${z2(now.getDate())}-${r10.toString(16).padStart(4, "0")}`;
+  return `${now2.getFullYear()}${z2(now2.getMonth() + 1)}${z2(now2.getDate())}-${r10.toString(16).padStart(4, "0")}`;
 }
 var fileSafe = (s10) => s10.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim();
-function stampedCopy(stem, now = /* @__PURE__ */ new Date()) {
+function stampedCopy(stem, now2 = /* @__PURE__ */ new Date()) {
   const z2 = (n10) => String(n10).padStart(2, "0");
-  return `${stem}-${now.getFullYear()}${z2(now.getMonth() + 1)}${z2(now.getDate())}-${z2(now.getHours())}${z2(now.getMinutes())}`;
+  return `${stem}-${now2.getFullYear()}${z2(now2.getMonth() + 1)}${z2(now2.getDate())}-${z2(now2.getHours())}${z2(now2.getMinutes())}`;
 }
 
 // src/config.ts
@@ -32151,8 +32275,8 @@ ${this._ramMissingText()}`;
       return true;
     this._dropLiveIfOther(cur);
     const gap = Math.max(0, this.liveMinIntervalMs);
-    const now = performance.now();
-    const since = now - (this._lastLiveComposeT ?? -Infinity);
+    const now2 = performance.now();
+    const since = now2 - (this._lastLiveComposeT ?? -Infinity);
     if (since < gap) {
       if (this._liveThrottle == null) {
         this._liveThrottle = setTimeout(() => {
@@ -34006,14 +34130,14 @@ var COALESCE_MS = 1500;
 var emptyHistory = () => ({ past: [], future: [], lastKey: null, lastAt: 0 });
 var snapOf = (st3, extras, locus) => ({ song: st3.song, extras, at: st3.at, caret: st3.caret, sel: st3.sel, locus });
 var applySnap = (st3, s10) => ({ ...st3, song: s10.song, at: s10.at, caret: s10.caret, sel: s10.sel, log: [] });
-function record2(h2, prev, prevExtras, gesture, now, locus) {
-  if (gesture && gesture === h2.lastKey && now - h2.lastAt < COALESCE_MS && h2.past.length) {
+function record2(h2, prev, prevExtras, gesture, now2, locus) {
+  if (gesture && gesture === h2.lastKey && now2 - h2.lastAt < COALESCE_MS && h2.past.length) {
     const last = h2.past[h2.past.length - 1];
-    return { ...h2, past: [...h2.past.slice(0, -1), { ...last, locus }], future: [], lastAt: now };
+    return { ...h2, past: [...h2.past.slice(0, -1), { ...last, locus }], future: [], lastAt: now2 };
   }
   const snap = snapOf(prev, prevExtras, locus);
   const past = h2.past.length >= LIMIT ? [...h2.past.slice(1), snap] : [...h2.past, snap];
-  return { past, future: [], lastKey: gesture, lastAt: now };
+  return { past, future: [], lastKey: gesture, lastAt: now2 };
 }
 function undo(h2, cur, curExtras) {
   if (!h2.past.length) return null;
@@ -34169,9 +34293,9 @@ function discloseArt(prev, a10) {
   info(why === "decay" ? `${who}\u7684\u97F3\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF0C${MARK_NAME[a10]}\u505A\u4E0D\u5230\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u97F3\u5185\u6E10\u5F31\u7167\u505A` : why === "sung" ? `${who}\u672C\u6765\u5C31\u8FDE\u7740\u5531\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u8981\u65AD\u53E5\u7528\u547C\u5438` : why === "gap" ? `${who}\u672C\u6765\u5C31\u4E0D\u7559\u7F1D\uFF08\u4E50\u5668\u9875\u300C\u97F3\u548C\u97F3\u4E4B\u95F4\u300D= 0\uFF09\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8` : `${who}\u4E0D\u8BA4${MARK_NAME[a10]}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD`);
 }
 function discloseDynOverride(prev) {
-  const toks = tr(st2), now = dynOverridden(toks);
-  if (now.size <= dynOverridden(tr(prev)).size) return;
-  const v = [...now].map((i10) => toks[i10]).find((t10) => t10.kind === "dyn");
+  const toks = tr(st2), now2 = dynOverridden(toks);
+  if (now2.size <= dynOverridden(tr(prev)).size) return;
+  const v = [...now2].map((i10) => toks[i10]).find((t10) => t10.kind === "dyn");
   info(`\u8FD9\u4E2A ${v && v.kind === "dyn" ? v.value : "\u529B\u5EA6\u8BB0\u53F7"} \u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\uFF0C\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p`);
 }
 var curRole = () => curPart().role;
@@ -34331,7 +34455,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-188ac7459e99.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-c543ee86b1c6.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -34619,10 +34743,10 @@ var canStack = () => engineNow() === "soundfont";
 var monoHeld = /* @__PURE__ */ new Set();
 var monoAt = -Infinity;
 function monoAccept(id2) {
-  const now = performance.now();
-  if (monoHeld.size && now - monoAt < CHORD_MS) return false;
+  const now2 = performance.now();
+  if (monoHeld.size && now2 - monoAt < CHORD_MS) return false;
   monoHeld.add(id2);
-  monoAt = now;
+  monoAt = now2;
   return true;
 }
 var auditionHint = null;
@@ -34648,9 +34772,9 @@ function chordMerge(root, pitch) {
 }
 function decideChord(w2, why) {
   if (w2.done) return;
-  const now = performance.now(), rootHeld = monoHeld.has(w2.root.keyId), keyHeld = monoHeld.has(w2.keyId);
+  const now2 = performance.now(), rootHeld = monoHeld.has(w2.root.keyId), keyHeld = monoHeld.has(w2.keyId);
   let chord;
-  if (why === "rootUp") chord = now - w2.t > w2.t - w2.root.t;
+  if (why === "rootUp") chord = now2 - w2.t > w2.t - w2.root.t;
   else if (why === "keyUp") chord = rootHeld;
   else if (why === "both") {
     if (!(rootHeld && keyHeld)) return;
@@ -34702,7 +34826,7 @@ var pad3 = new Pad(padEl, {
   // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
   onPitch: (p2, id2) => {
     if (finder.isOpen) return;
-    const now = performance.now();
+    const now2 = performance.now();
     if (canStack()) {
       if (stack !== "off") {
         update(stackPitch(st2, p2));
@@ -34716,12 +34840,12 @@ var pad3 = new Pad(padEl, {
       if (root) {
         const sp2 = soundingPitch(st2, p2).pitch;
         padNotes.set(id2, { index: -1, base: p2 });
-        if (now - root.t < CHORD_WIN) {
+        if (now2 - root.t < CHORD_WIN) {
           chordMerge(root, sp2);
           return;
         }
-        const w2 = { keyId: id2, pitch: sp2, t: now, root, timer: 0, done: false };
-        w2.timer = window.setTimeout(() => decideChord(w2, "both"), now - root.t + 5);
+        const w2 = { keyId: id2, pitch: sp2, t: now2, root, timer: 0, done: false };
+        w2.timer = window.setTimeout(() => decideChord(w2, "both"), now2 - root.t + 5);
         chordWaits.push(w2);
         return;
       }
@@ -34736,8 +34860,8 @@ var pad3 = new Pad(padEl, {
     }
     const t10 = tr(st2)[i10];
     padNotes.set(id2, { index: i10, base: t10?.kind === "note" && t10.pitch ? t10.pitch : p2 });
-    if (canStack() && t10) chordRoots.set(id2, { tokId: t10.id, t: now });
-    lastWrite = { index: i10, at: now };
+    if (canStack() && t10) chordRoots.set(id2, { tokId: t10.id, t: now2 });
+    lastWrite = { index: i10, at: now2 };
     afterWrite();
   },
   onStack: (down) => stackKey(down),
@@ -35030,83 +35154,93 @@ var chunkFailed = /* @__PURE__ */ new Map();
 var pumping = false;
 var pumpQuiet = false;
 var singSpeed = null;
-var inflightKey = null;
+var inflightKeys = /* @__PURE__ */ new Set();
 var pendingChunks = () => chunkKeysWanted.filter((k2) => !engine.hasChunk(k2)).length;
 function setChunkOrder(tl2, pos, loop, o10 = {}) {
   chunkPlans = new Map(tl2.chunks.map((c10) => [c10.key, c10]));
   let keys = chunkOrder(tl2.chunks, pos, loop, (k2) => engine.hasChunk(k2));
   if (o10.limit !== void 0) keys = keys.slice(0, o10.limit);
-  const wasInflight = inflightKey;
   chunkKeysWanted = keys;
   pumpQuiet = !!o10.quiet;
-  if (wasInflight && !keys.includes(wasInflight) && !chunkPlans.has(wasInflight)) singer.cancelInflight();
+  for (const k2 of inflightKeys) if (!keys.includes(k2) && !chunkPlans.has(k2)) singer.cancelInflight(k2);
   void pump();
 }
+var STAGE_FRAC = { "\u5FF5\uFF081/2\uFF09": 0.05, "\u5FF5\uFF082/2\uFF09": 0.25, "\u5206\u6790\uFF081/3 \u97F3\u9AD8\uFF09": 0.45, "\u5206\u6790\uFF082/3 \u8C31\u5305\u7EDC\uFF09": 0.6, "\u5206\u6790\uFF083/3 \u6C14\u58F0\uFF09": 0.7, "\u5206\u6790\uFF08\u7F13\u5B58\uFF09": 0.75, "\u5408\u6210": 0.85 };
 async function pump() {
   if (pumping) return;
   pumping = true;
   let shown = 0;
+  const running = /* @__PURE__ */ new Set();
   try {
     for (; ; ) {
-      const key = chunkKeysWanted.find((k2) => !engine.hasChunk(k2));
-      if (!key) break;
-      const c10 = chunkPlans.get(key);
-      if (!c10) {
-        chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
-        continue;
-      }
-      const who = roleName(doc.extras, st2.song.parts.find((p2) => p2.id === c10.part)?.role ?? ""), left = pendingChunks();
-      if (left > shown) {
-        renderBar.start(left);
-        shown = left;
-      }
-      const failed = chunkFailed.get(key);
-      if (failed !== void 0) {
-        if (pumpQuiet) {
+      while (running.size < singer.parallelism) {
+        const key = chunkKeysWanted.find((k2) => !engine.hasChunk(k2) && !inflightKeys.has(k2));
+        if (!key) break;
+        const c10 = chunkPlans.get(key);
+        if (!c10) {
           chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
           continue;
         }
-        showError(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${failed}`);
-        engine.chunk(key, 22050, new Float32Array(0));
-        renderBar.next();
-        continue;
-      }
-      progress(`${who}\uFF1A${pumpQuiet ? "\u5148\u5531\u7740" : "\u8FD8\u6709"} ${left} \u53E5\u2026`);
-      const t10 = performance.now();
-      inflightKey = key;
-      const STAGE_FRAC = { "\u5FF5\uFF081/2\uFF09": 0.05, "\u5FF5\uFF082/2\uFF09": 0.25, "\u5206\u6790\uFF081/3 \u97F3\u9AD8\uFF09": 0.45, "\u5206\u6790\uFF082/3 \u8C31\u5305\u7EDC\uFF09": 0.6, "\u5206\u6790\uFF083/3 \u6C14\u58F0\uFF09": 0.7, "\u5206\u6790\uFF08\u7F13\u5B58\uFF09": 0.75, "\u5408\u6210": 0.85 };
-      try {
-        const r10 = await singer.sing(c10.score, (stage) => {
-          progress(`${who}\uFF1A${stage}\u2026`);
-          const pc = /(\d+)%$/.exec(stage);
-          if (pc) renderBar.frac(Number(pc[1]) / 100);
-          else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]);
-        }, { opt: humOpt(), models: modelBases(), raw: true });
-        if (engine.hasChunk(key) || !chunkPlans.has(key)) {
+        const who = roleName(doc.extras, st2.song.parts.find((p3) => p3.id === c10.part)?.role ?? ""), left = pendingChunks();
+        if (left > shown) {
+          renderBar.start(left);
+          shown = left;
+        }
+        const failed = chunkFailed.get(key);
+        if (failed !== void 0) {
+          if (pumpQuiet) {
+            chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
+            continue;
+          }
+          showError(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${failed}`);
+          engine.chunk(key, 22050, new Float32Array(0));
           renderBar.next();
           continue;
         }
-        engine.chunk(key, r10.sr, r10.samples);
-        if (r10.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r10.ms.boot)}`);
-        const secs = Math.max(0.5, c10.dur - LEAD_IN);
-        singSpeed = singSpeed === null ? (performance.now() - t10) / secs : singSpeed * 0.7 + (performance.now() - t10) / secs * 0.3;
-      } catch (e10) {
-        const msg = e10.message ?? String(e10);
-        if (msg === "cancelled") continue;
-        chunkFailed.set(key, msg);
-        if (!pumpQuiet) {
-          showError(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${msg}`);
-          engine.chunk(key, 22050, new Float32Array(0));
-        } else chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
+        progress(`${who}\uFF1A${pumpQuiet ? "\u5148\u5531\u7740" : "\u8FD8\u6709"} ${left} \u53E5\u2026`);
+        inflightKeys.add(key);
+        const p2 = singOne(key, c10, who).finally(() => {
+          inflightKeys.delete(key);
+          running.delete(p2);
+        });
+        running.add(p2);
       }
-      renderBar.next();
+      if (!running.size) break;
+      await Promise.race(running);
     }
   } finally {
     pumping = false;
-    inflightKey = null;
     renderBar.end();
     if (!engine.playing) progress("");
   }
+}
+async function singOne(key, c10, who) {
+  const t10 = performance.now();
+  try {
+    const r10 = await singer.sing(c10.score, (stage) => {
+      progress(`${who}\uFF1A${stage}\u2026`);
+      const pc = /(\d+)%$/.exec(stage);
+      if (pc) renderBar.frac(Number(pc[1]) / 100);
+      else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]);
+    }, { opt: humOpt(), models: modelBases(), raw: true, tag: key });
+    if (engine.hasChunk(key) || !chunkPlans.has(key)) {
+      renderBar.next();
+      return;
+    }
+    engine.chunk(key, r10.sr, r10.samples);
+    if (r10.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r10.ms.boot)}`);
+    const secs = Math.max(0.5, c10.dur - LEAD_IN);
+    singSpeed = singSpeed === null ? (performance.now() - t10) / secs : singSpeed * 0.7 + (performance.now() - t10) / secs * 0.3;
+  } catch (e10) {
+    const msg = e10.message ?? String(e10);
+    if (msg === "cancelled") return;
+    chunkFailed.set(key, msg);
+    if (!pumpQuiet) {
+      showError(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${msg}`);
+      engine.chunk(key, 22050, new Float32Array(0));
+    } else chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
+  }
+  renderBar.next();
 }
 async function waitChunksReady(tl2, pos, stop) {
   while (!stop() && !readyToStart(tl2.chunks, pos, prerollCount(singSpeed), (k2) => engine.hasChunk(k2))) {
@@ -35138,6 +35272,65 @@ function pruneChunks(tl2) {
   }
   if (drop.length) engine.forget(drop);
 }
+var DEVICE = { ios: /iPad|iPhone|iPod/.test(navigator.platform) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1, cores: navigator.hardwareConcurrency ?? 2, deviceMemoryGB: navigator.deviceMemory ?? null };
+var BUDGET = budgetFor(DEVICE);
+singer.setLanes(BUDGET.lanes);
+diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB \u2192 lanes ${BUDGET.lanes}, budget ${Math.round(BUDGET.total / 1e6)} MB (worker ${Math.round(BUDGET.perWorker / 1e6)}, chunks ${Math.round(BUDGET.chunkBytes / 1e6)})`);
+var watch = { load: null, hot: 0, lanesCut: false, said: /* @__PURE__ */ new Map() };
+var resourceSnapshot = () => ({ lanes: singer.memory(), chunkBytes: watch.load?.chunkBytes ?? 0, chunks: watch.load?.chunks ?? 0, soundMem: soundMemoryBytes(), audioBusy: watch.load?.busy ?? null });
+function resourceSay(kind, text2) {
+  const t10 = performance.now();
+  if ((watch.said.get(kind) ?? -1e9) > t10 - 3e4) return;
+  watch.said.set(kind, t10);
+  reportError(text2, "warning");
+}
+function shrinkChunks(snap, toBytes) {
+  if (!snap.chunks) return;
+  const avg = Math.max(1, snap.chunkBytes / snap.chunks), n10 = Math.ceil((snap.chunkBytes - toBytes) / avg), wanted = new Set(chunkKeysWanted), drop = [];
+  for (const k2 of chunkKeys) {
+    if (drop.length >= n10) break;
+    if (!wanted.has(k2) && engine.hasChunk(k2)) drop.push(k2);
+  }
+  for (const k2 of drop) chunkKeys.splice(chunkKeys.indexOf(k2), 1);
+  if (drop.length) {
+    engine.forget(drop);
+    diagNote("resource", `pruned ${drop.length} chunks (${Math.round(snap.chunkBytes / 1e6)} MB \u2192 target ${Math.round(toBytes / 1e6)} MB)`);
+  }
+}
+function resourceTick() {
+  const snap = resourceSnapshot();
+  for (const a10 of advise(snap, BUDGET)) {
+    if (a10.kind === "pruneChunks") shrinkChunks(snap, a10.toBytes);
+    else if (a10.kind === "fewerLanes") {
+      if (singer.parallelism > a10.lanes) {
+        singer.setLanes(a10.lanes);
+        watch.lanesCut = true;
+        diagNote("resource", `lanes \u2192 ${a10.lanes}`);
+        resourceSay("lanes", "\u5185\u5B58 / \u8D1F\u8F7D\u5403\u7D27\uFF1A\u6708\u8BFB\u6539\u6210\u4E00\u6761\u9053\u5531\uFF08\u6162\u4E00\u70B9\uFF0C\u58F0\u97F3\u4E0D\u53D8\uFF09");
+      }
+    } else if (a10.kind === "restartLane") {
+      if (!singer.laneBusy(a10.lane)) {
+        const mb = Math.round((snap.lanes[a10.lane]?.wasm ?? 0) / 1e6);
+        singer.restartLane(a10.lane);
+        diagNote("resource", `restart lane ${a10.lane} (wasm ${mb} MB)`);
+        resourceSay("restart", `\u6708\u8BFB\u5F15\u64CE\u7684\u5185\u5B58\u6DA8\u5230 ${mb} MB\uFF0C\u8D81\u7A7A\u91CD\u5F00\u4E86\u4E00\u6B21\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5\uFF09`);
+      }
+    } else if (a10.kind === "audioHot") {
+      if (++watch.hot >= 3) resourceSay("audio", `\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 ${Math.round(a10.busy * 100)}%\uFF1A\u53EF\u80FD\u7206\u97F3\u3002\u6548\u679C\u94FE / \u58F0\u90E8\u662F\u4F60\u7684\u6DF7\u97F3\uFF0C\u4E0D\u66FF\u4F60\u52A8\uFF1B\u53EF\u4EE5\u5148\u628A\u6CA1\u5728\u542C\u7684\u58F0\u90E8\u9759\u97F3`);
+    }
+  }
+  if (snap.audioBusy !== null && snap.audioBusy <= AUDIO_HOT) watch.hot = 0;
+  if (watch.lanesCut && totalBytes(snap) < BUDGET.total * 0.6 && (snap.audioBusy ?? 0) < AUDIO_HOT * 0.7) {
+    singer.setLanes(BUDGET.lanes);
+    watch.lanesCut = false;
+    diagNote("resource", `lanes \u2192 ${BUDGET.lanes} (recovered)`);
+  }
+}
+singer.onMem = () => resourceTick();
+engine.on("load", (info2) => {
+  watch.load = info2;
+  resourceTick();
+});
 async function prepare(scope, o10 = {}) {
   const parts = audibleParts(), song = songIn(scope);
   const errs = await prepareBanks(parts);
@@ -35487,31 +35680,38 @@ ${esc7(CREDIT.attribution.join("\n"))}</pre><div class="part-sec">\u4E2D\u6587\u
 
 ${esc7(CREDIT_TRANSLATIONS.zh.terms)}</pre><div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc7(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="\u6708\u8BFB\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5">\u91CD\u5F00\u6708\u8BFB\u5F15\u64CE</button></div></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc7(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
     void packStatusText().then((t10) => packSt.textContent = t10);
   };
   refresh();
+  const engRes = box.querySelector("#engRes");
+  const refreshRes = () => {
+    engRes.textContent = `${describe(resourceSnapshot(), BUDGET)} \u6708\u8BFB ${singer.parallelism} \u6761\u9053\uFF08\u8BBE\u5907\u9884\u7B97 ${BUDGET.lanes}\uFF09\u3002`;
+  };
+  refreshRes();
+  const resTimer = window.setInterval(refreshRes, 1e3);
   const sndIn = box.querySelector("#sndIn"), sndCache = box.querySelector("#sndCache");
   const refreshSounds = async () => {
     const cached2 = await listCachedSounds(), bySha = new Map(cached2.map((c10) => [c10.sha256, c10])), known = new Set(Object.values(SOUNDS).map((e10) => e10.sha256)), uses = new Map(soundUses(doc.extras).map((u2) => [u2.subsetSha256, u2]));
     const total = cached2.reduce((n10, c10) => n10 + c10.bytes, 0), mem = soundMemoryBytes();
     let quota = "";
     const est = await siteStorageEstimate();
-    if (est) quota = `\uFF1B\u8FD9\u4E2A\u7AD9\u70B9\u5171\u7528\u4E86 ${sizeText(est.usage)} / \u914D\u989D ${sizeText(est.quota)}`;
-    sndCache.innerHTML = `<div class="set-row"><span>\u8BBE\u5907\u4E0A\u7559\u7740 ${sizeText(total)}${quota}\uFF1B\u5185\u5B58\u91CC\u73B0\u5728 ${sizeText(mem)}</span>${mem ? `<button class="btn" data-v="snd:mem" title="\u653E\u6389\u5185\u5B58\u91CC\u7684\u6574\u5305\uFF08\u8BBE\u5907\u4E0A\u7559\u7740\u7684\u4E0D\u52A8\uFF0C\u4E0B\u6B21\u7528\u518D\u4ECE\u8BBE\u5907\u8BFB\uFF09">\u653E\u6389\u5185\u5B58</button>` : ""}</div>` + Object.values(SOUNDS).map((e10) => {
+    if (est) quota = `\uFF1B\u8FD9\u4E2A\u7AD9\u70B9\u5171\u7528\u4E86 ${sizeText2(est.usage)} / \u914D\u989D ${sizeText2(est.quota)}`;
+    sndCache.innerHTML = `<div class="set-row"><span>\u8BBE\u5907\u4E0A\u7559\u7740 ${sizeText2(total)}${quota}\uFF1B\u5185\u5B58\u91CC\u73B0\u5728 ${sizeText2(mem)}</span>${mem ? `<button class="btn" data-v="snd:mem" title="\u653E\u6389\u5185\u5B58\u91CC\u7684\u6574\u5305\uFF08\u8BBE\u5907\u4E0A\u7559\u7740\u7684\u4E0D\u52A8\uFF0C\u4E0B\u6B21\u7528\u518D\u4ECE\u8BBE\u5907\u8BFB\uFF09">\u653E\u6389\u5185\u5B58</button>` : ""}</div>` + Object.values(SOUNDS).map((e10) => {
       const c10 = bySha.get(e10.sha256);
-      return `<div class="set-row"><span>${esc7(e10.name)} \xB7 ${sizeText(e10.bytes)} \xB7 ${c10 ? "\u5DF2\u7559\u5728\u8BBE\u5907\u4E0A" : "\u6CA1\u4E0B\u8F7D"}</span>${c10 ? `<button class="btn" data-v="snd:del:${esc7(e10.id)}">\u5220\u6389</button>` : `<button class="btn" data-v="snd:get:${esc7(e10.id)}">\u4E0B\u8F7D\u7559\u7740</button>`}</div>`;
+      return `<div class="set-row"><span>${esc7(e10.name)} \xB7 ${sizeText2(e10.bytes)} \xB7 ${c10 ? "\u5DF2\u7559\u5728\u8BBE\u5907\u4E0A" : "\u6CA1\u4E0B\u8F7D"}</span>${c10 ? `<button class="btn" data-v="snd:del:${esc7(e10.id)}">\u5220\u6389</button>` : `<button class="btn" data-v="snd:get:${esc7(e10.id)}">\u4E0B\u8F7D\u7559\u7740</button>`}</div>`;
     }).join("") + // 子集（自己的 .sf2 加进来时 / 解包时留的，按子集 sha256 存）：这首歌弱引用着的写出名字——删了它，没有原文件就找不回来
     cached2.filter((c10) => !known.has(c10.sha256)).map((c10) => {
       const u2 = uses.get(c10.sha256);
-      return `<div class="set-row"><span>${u2 ? `\u300C${esc7(u2.names.join("\u3001"))}\u300D\u7684\u58F0\u97F3\uFF08\u8FD9\u9996\u6B4C${u2.packed ? "\u4E5F\u6253\u5305\u7740" : "\u5F15\u7528\u7740\uFF1B\u5220\u4E86\u8981\u4ECE\u300C" + esc7(u2.origin.name) + "\u300D\u627E"}\uFF09` : `\u522B\u7684\u6B4C / \u522B\u7684\u7248\u672C / \u522B\u7684 app \u7559\u7684\uFF08${c10.sha256.slice(0, 8)}\u2026\uFF09`} \xB7 ${sizeText(c10.bytes)}</span><button class="btn" data-v="snd:delsha:${c10.sha256}">\u5220\u6389</button></div>`;
+      return `<div class="set-row"><span>${u2 ? `\u300C${esc7(u2.names.join("\u3001"))}\u300D\u7684\u58F0\u97F3\uFF08\u8FD9\u9996\u6B4C${u2.packed ? "\u4E5F\u6253\u5305\u7740" : "\u5F15\u7528\u7740\uFF1B\u5220\u4E86\u8981\u4ECE\u300C" + esc7(u2.origin.name) + "\u300D\u627E"}\uFF09` : `\u522B\u7684\u6B4C / \u522B\u7684\u7248\u672C / \u522B\u7684 app \u7559\u7684\uFF08${c10.sha256.slice(0, 8)}\u2026\uFF09`} \xB7 ${sizeText2(c10.bytes)}</span><button class="btn" data-v="snd:delsha:${c10.sha256}">\u5220\u6389</button></div>`;
     }).join("") || "\uFF08\u6CA1\u6709\uFF09";
   };
   void refreshSounds();
   const close = () => {
+    clearInterval(resTimer);
     modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT;
     soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT;
     box.remove();
@@ -35552,6 +35752,12 @@ ${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><details class="set-credit"
       } else info(r10 === "latest" ? "\u5DF2\u7ECF\u662F\u6700\u65B0\u7248" : "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0");
     });
     else if (v === "reset") void shell.forceReset();
+    else if (v === "eng:restart") {
+      singer.restart();
+      diagNote("resource", "manual restart of singer lanes");
+      refreshRes();
+      info("\u6708\u8BFB\u5F15\u64CE\u91CD\u5F00\u4E86\uFF08\u5185\u5B58\u8FD8\u56DE\u53BB\u4E86\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5\uFF09");
+    }
   });
   box.querySelector("#impIn").addEventListener("change", async (e10) => {
     const files = [...e10.target.files ?? []];
@@ -35613,6 +35819,7 @@ window.__moonsinger = {
   engine,
   exportSong,
   renderMix: () => renderMixForTest(),
+  resource: () => ({ snapshot: resourceSnapshot(), text: describe(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
   setTrack: (id2, patch) => {
     updateExtras(withTrack2(doc.extras, id2, patch), { kind: "studio", label: `\u8F68\u300C${id2}\u300D` });
@@ -36688,8 +36895,8 @@ function openSelMenu(at2) {
   const chip2 = (v, label, title = "") => `<button class="btn ctx-chip" data-v="${v}"${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
   const draw = (page) => {
     if (page === "keys") {
-      const now = keyAt(tr(st2), st2.sel?.from ?? 0);
-      box.innerHTML = item("back", "\u2039 \u8F6C\u8C03\u5230\u2026") + `<div class="ctx-grid">` + KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now ? "\u73B0\u5728\u7684\u8C03" : "")).join("") + `</div>`;
+      const now2 = keyAt(tr(st2), st2.sel?.from ?? 0);
+      box.innerHTML = item("back", "\u2039 \u8F6C\u8C03\u5230\u2026") + `<div class="ctx-grid">` + KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now2 ? "\u73B0\u5728\u7684\u8C03" : "")).join("") + `</div>`;
       return;
     }
     box.innerHTML = `<div class="ctx-row"><span class="ctx-k">\u79FB\u8C03</span>${chip2("tr:1", "\u2191 \u534A\u97F3")}${chip2("tr:-1", "\u2193 \u534A\u97F3")}${chip2("tr:2", "\u2191 \u5168\u97F3")}${chip2("tr:-2", "\u2193 \u5168\u97F3")}${chip2("oct:1", "\u2191 \u516B\u5EA6")}${chip2("oct:-1", "\u2193 \u516B\u5EA6")}</div>` + item("keys", "\u8F6C\u8C03\u2026", "\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362") + item("respell", "\u6309\u8C03\u53F7\u62FC\u5199", "\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8") + `<div class="ctx-row"><span class="ctx-k">\u65F6\u503C</span>${chip2("short", "\xF72")}${chip2("long", "\xD72")}${chip2("seldur", `\u90FD\u6539\u6210 <span class="smufl">${UNIT_SMUFL[st2.input.unit]}</span>`, "\u90FD\u6539\u6210\u957F\u77ED\u65CB\u94AE\u73B0\u5728\u90A3\u4E00\u6863")}</div><div class="ctx-sep"></div>` + item("copy", "\u590D\u5236") + item("cut", "\u526A\u5207") + (clip ? item("paste", "\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09") : "") + item("delete", "\u5220\u6389", "", "danger");
@@ -36905,9 +37112,9 @@ function drawInst() {
   const chipTitle = (c10) => {
     const g3 = gms.get(c10.id);
     if (!g3) return ENGINE_TITLE[c10.engine];
-    return g3.bytes ? `SoundFont ${g3.bank}:${g3.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(g3.bytes.length)}\uFF09` : g3.path ? "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765" : `\u5F31\u5F15\u7528\uFF1A\u58F0\u97F3\u4E0D\u5728\u6B4C\u91CC\uFF0C\u7528\u65F6\u4ECE\u300C${g3.origin.name}\u300D\u627E`;
+    return g3.bytes ? `SoundFont ${g3.bank}:${g3.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText2(g3.bytes.length)}\uFF09` : g3.path ? "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765" : `\u5F31\u5F15\u7528\uFF1A\u58F0\u97F3\u4E0D\u5728\u6B4C\u91CC\uFF0C\u7528\u65F6\u4ECE\u300C${g3.origin.name}\u300D\u627E`;
   };
-  const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc7(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc7(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : ((found) => `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc7(active.origin.name)}\u300D\u627E\uFF08${found ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09${found ? "" : `<button class="btn" data-v="find:${esc7(active.id)}">\u627E\u6587\u4EF6\u2026</button>`}</div>`)(sessionSubsets.has(active.subsetSha256));
+  const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText2(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc7(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc7(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : ((found) => `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc7(active.origin.name)}\u300D\u627E\uFF08${found ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09${found ? "" : `<button class="btn" data-v="find:${esc7(active.id)}">\u627E\u6587\u4EF6\u2026</button>`}</div>`)(sessionSubsets.has(active.subsetSha256));
   const labels = partLabels(st2.song, doc.extras), onPaper = new Set(Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}));
   const parts = st2.song.parts.map((p2, k2) => ({ p: p2, label: labels[k2] })).filter((x2) => onPaper.has(x2.p.id));
   const cal = activeCalibrationDb(doc.extras, role), tr3 = activeTranspose(doc.extras, role);
@@ -36948,7 +37155,7 @@ function drawInst() {
     [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
     sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF"
   ))(activeSingChunk(doc.extras, role)) : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
-  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc7(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc7(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc7(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
+  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc7(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc7(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText2(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc7(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
   const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
   sel.addEventListener("change", () => {
     const [snd, ...nm2] = sel.value.split("|");
@@ -37170,7 +37377,7 @@ var extrasForSave = (base3 = doc.extras) => base3.thumbnail ? withThumbnail(base
 var bytesNow = (extras, song = st2.song) => saveMxl({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), references: refHost.files() });
 var mxlFile = (name, extras, song) => new File([bytesNow(extras, song)], name, { type: "application/vnd.recordare.musicxml" });
 var stemOf2 = (name) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
-var sizeText = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
+var sizeText2 = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 async function fileSave() {
   try {
     if (doc.identifier) {
@@ -37178,8 +37385,8 @@ async function fileSave() {
       return;
     }
     if (doc.handle) {
-      const h2 = doc.handle, now = await mtime(h2);
-      if (isStale(doc.mtime, now) && !await askSheet(`\u300C${h2.name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7`, "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002", "\u8986\u76D6")) {
+      const h2 = doc.handle, now2 = await mtime(h2);
+      if (isStale(doc.mtime, now2) && !await askSheet(`\u300C${h2.name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7`, "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002", "\u8986\u76D6")) {
         info("\u6CA1\u5B58");
         return;
       }
@@ -37207,7 +37414,7 @@ async function fileSave() {
       return;
     }
     const file = mxlFile(`${docName()}.mxl`);
-    offerFile(file, "\u5B58\u6210 .mxl", `${esc7(file.name)} \xB7 ${sizeText(file.size)}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
+    offerFile(file, "\u5B58\u6210 .mxl", `${esc7(file.name)} \xB7 ${sizeText2(file.size)}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
   } catch (e10) {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e10.message}`);
   }
@@ -37232,7 +37439,7 @@ async function exportCopyMxl(packed = false) {
       return;
     }
     const file = mxlFile(name, extras, song);
-    offerFile(file, packed ? "\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09" : "\u5B58\u4E00\u4EFD .mxl \u526F\u672C", `${esc7(file.name)} \xB7 ${sizeText(file.size)}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002${credits}`);
+    offerFile(file, packed ? "\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09" : "\u5B58\u4E00\u4EFD .mxl \u526F\u672C", `${esc7(file.name)} \xB7 ${sizeText2(file.size)}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002${credits}`);
   } catch (e10) {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e10.message}`);
   }
@@ -37256,7 +37463,7 @@ async function packAll() {
   if (r10.packed.length) {
     updateExtras(r10.extras, { kind: "lounge", label: `\u6253\u5305\u4E86 ${r10.packed.length} \u4EF6\u58F0\u97F3` });
     const size = Object.values(doc.extras.sounds).reduce((n10, b3) => n10 + b3.length, 0);
-    info(`\u6253\u5305\u4E86 ${r10.packed.length} \u4EF6\u58F0\u97F3\u8FDB\u6B4C\uFF1A\u73B0\u5728\u6B4C\u91CC\u5E26\u7740 ${sizeText(size)}${size > embedSoftLimit ? `\uFF08\u8D85\u8FC7 ${sizeText(embedSoftLimit)}\uFF1A\u5B58 / \u540C\u6B65\u4F1A\u6162\u4E00\u70B9\uFF09` : ""}\uFF0C\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD`);
+    info(`\u6253\u5305\u4E86 ${r10.packed.length} \u4EF6\u58F0\u97F3\u8FDB\u6B4C\uFF1A\u73B0\u5728\u6B4C\u91CC\u5E26\u7740 ${sizeText2(size)}${size > embedSoftLimit ? `\uFF08\u8D85\u8FC7 ${sizeText2(embedSoftLimit)}\uFF1A\u5B58 / \u540C\u6B65\u4F1A\u6162\u4E00\u70B9\uFF09` : ""}\uFF0C\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD`);
   }
   if (missing.length) showError(`\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u6CA1\u6253\u5305\uFF1A${missing.join("\u3001")}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\u3002`);
   if (!r10.packed.length && !missing.length) info("\u6CA1\u6709\u8981\u6253\u5305\u7684\uFF08\u6708\u8BFB / \u5143\u97F3\u7248\u4E0D\u6253\u5305\uFF1A\u5B83\u4EEC\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09");
@@ -37280,7 +37487,7 @@ async function unpackAll() {
   const r10 = withUnpacked(doc.extras, (sha) => ok2.has(sha));
   if (r10.removed.size) {
     updateExtras(r10.extras, { kind: "lounge", label: `\u89E3\u5305\u4E86 ${r10.removed.size} \u4EF6\u58F0\u97F3` });
-    info(`\u89E3\u5305\u4E86 ${r10.removed.size} \u4EF6\uFF1A\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u5C0F\u4E86 ${sizeText([...r10.removed.values()].reduce((n10, b3) => n10 + b3.length, 0))}\uFF09\uFF1B\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u7740\uFF0C\u7167\u6837\u80FD\u54CD\u3002\u522B\u7684\u8BBE\u5907\u4E0A\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u539F\u6587\u4EF6\u627E`);
+    info(`\u89E3\u5305\u4E86 ${r10.removed.size} \u4EF6\uFF1A\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u5C0F\u4E86 ${sizeText2([...r10.removed.values()].reduce((n10, b3) => n10 + b3.length, 0))}\uFF09\uFF1B\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u7740\uFF0C\u7167\u6837\u80FD\u54CD\u3002\u522B\u7684\u8BBE\u5907\u4E0A\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u539F\u6587\u4EF6\u627E`);
   }
   if (stuck.length) showError(`\u8FD9\u51E0\u4EF6\u6CA1\u89E3\u5305\uFF1A${stuck.join("\uFF1B")}\u2014\u2014\u8FD9\u53F0\u8BBE\u5907\u7559\u4E0D\u4F4F\u5B83\u7684\u58F0\u97F3\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF0C\u5BB6\u65CF\u97F3\u6E90\u5E93\u91CC\u4E5F\u6CA1\u6709\uFF0C\u89E3\u4E86\u5C31\u627E\u4E0D\u56DE\u6765\u3002`);
 }
@@ -37409,7 +37616,7 @@ function soundsSection() {
   const uses = soundUses(doc.extras);
   if (!uses.length) return "";
   const packed = uses.filter((u2) => u2.packed), size = packed.reduce((n10, u2) => n10 + u2.bytes, 0);
-  return `<div class="part-sec">\u4E50\u5668\u7684\u58F0\u97F3</div><div class="offer-msg">${uses.length} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC ${packed.length} \u4EF6${packed.length ? `\uFF08${sizeText(size)}\uFF09` : ""}\uFF0C\u53EA\u8BB0\u6765\u6E90 ${uses.length - packed.length} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u6708\u8BFB\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002</div><div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">\u5168\u90E8\u6253\u5305\u8FDB\u6B4C</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09</button>` : ""}</div>` + creditsBlock(packedLicenses(doc.extras), "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u6587\u4EF6\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09");
+  return `<div class="part-sec">\u4E50\u5668\u7684\u58F0\u97F3</div><div class="offer-msg">${uses.length} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC ${packed.length} \u4EF6${packed.length ? `\uFF08${sizeText2(size)}\uFF09` : ""}\uFF0C\u53EA\u8BB0\u6765\u6E90 ${uses.length - packed.length} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u6708\u8BFB\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002</div><div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">\u5168\u90E8\u6253\u5305\u8FDB\u6B4C</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09</button>` : ""}</div>` + creditsBlock(packedLicenses(doc.extras), "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u6587\u4EF6\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09");
 }
 function creditsOf(roles, rights = st2.song.rights) {
   const perf = performerCredits(doc.extras, roles), own = songCreditLine({ ...st2.song, rights });
@@ -38141,7 +38348,7 @@ async function setCover(f2) {
     coverTouched = true;
     coverRev++;
     updateExtras(withThumbnail(doc.extras, png), { kind: "cover", label: "\u6362\u5C01\u9762\u56FE" });
-    info(`\u5C01\u9762\u56FE\u6362\u597D\u4E86\uFF08${sizeText(png.length)}\uFF09`);
+    info(`\u5C01\u9762\u56FE\u6362\u597D\u4E86\uFF08${sizeText2(png.length)}\uFF09`);
   } catch (e10) {
     showError(`\u8FD9\u5F20\u56FE\u7528\u4E0D\u4E86\uFF1A${e10.message}`);
   }
@@ -38370,4 +38577,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5fc6e0276067.mjs.map
+//# sourceMappingURL=moonsinger-55414a176db4.mjs.map

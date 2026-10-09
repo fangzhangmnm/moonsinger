@@ -23,6 +23,8 @@ import { installPlatformGuards } from "../ui/platform-guards.ts";
 import { Pad, HER_RANGE, type HintRange } from "../ui/pad.ts";
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer } from "../singer/client.ts";
+import { budgetFor, advise, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
+import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
 import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS } from "../format/performance.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
@@ -739,51 +741,62 @@ async function prepareBanks(parts: readonly PartDef[]): Promise<string[]> {
 let chunkKeysWanted: string[] = [];                      // 现在该算的顺序（键）
 let chunkPlans = new Map<string, ChunkPlan>();           // 键 → 计划（含唱谱）
 const chunkFailed = new Map<string, string>();           // 键 → 为什么唱不了（预唱时攒着，播放时报）
-let pumping = false, pumpQuiet = false, singSpeed: number | null = null, inflightKey: string | null = null;   // singSpeed = 算一秒歌几毫秒（预卷几块按它）；inflightKey = 正在算的那句
+let pumping = false, pumpQuiet = false, singSpeed: number | null = null;   // singSpeed = 算一秒歌几毫秒（预卷几块按它）
+const inflightKeys = new Set<string>();   // 正在算的那几句（几条道并行，刀 6 ③：PC 两条、iPad 一条；user「两个 worker 并行唱（PC）」）
 const pendingChunks = () => chunkKeysWanted.filter((k) => !engine.hasChunk(k)).length;
 function setChunkOrder(tl: Timeline, pos: number, loop: { from: number; to: number } | null, o: { quiet?: boolean; limit?: number } = {}): void {
   chunkPlans = new Map(tl.chunks.map((c) => [c.key, c]));
   let keys = chunkOrder(tl.chunks, pos, loop, (k) => engine.hasChunk(k));
   if (o.limit !== undefined) keys = keys.slice(0, o.limit);
-  const wasInflight = inflightKey;
   chunkKeysWanted = keys; pumpQuiet = !!o.quiet;
-  if (wasInflight && !keys.includes(wasInflight) && !chunkPlans.has(wasInflight)) singer.cancelInflight();   // 正在算的那句已经不在歌里（改了 / 换歌）= 中途取消
+  for (const k of inflightKeys) if (!keys.includes(k) && !chunkPlans.has(k)) singer.cancelInflight(k);   // 正在算的那句已经不在歌里（改了 / 换歌）= 中途取消
   void pump();
 }
+const STAGE_FRAC: Record<string, number> = { "念（1/2）": 0.05, "念（2/2）": 0.25, "分析（1/3 音高）": 0.45, "分析（2/3 谱包络）": 0.6, "分析（3/3 气声）": 0.7, "分析（缓存）": 0.75, "合成": 0.85 };   // 刀 0 量的比例：念 40%、分析 40%、合成 20%
+/** 泵：按 chunkKeysWanted 的顺序，同时最多 singer.parallelism 句在算（每条道一句）；哪句算完就补下一句。 */
 async function pump(): Promise<void> {
   if (pumping) return;
   pumping = true;
   let shown = 0;
+  const running = new Set<Promise<void>>();
   try {
     for (;;) {
-      const key = chunkKeysWanted.find((k) => !engine.hasChunk(k)); if (!key) break;
-      const c = chunkPlans.get(key); if (!c) { chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key); continue; }
-      const who = roleName(doc.extras, st.song.parts.find((p) => p.id === c.part)?.role ?? ""), left = pendingChunks();
-      if (left > shown) { renderBar.start(left); shown = left; }   // 进度条：还有几句（顺序换了、多了就重开一条）
-      const failed = chunkFailed.get(key);
-      if (failed !== undefined) {   // 预唱时就唱不了的：不再试；真播放 = 报出来、这一句空着（不出声、不替补）
-        if (pumpQuiet) { chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key); continue; }
-        showError(`「${who}」唱不了这一句：${failed}`); engine.chunk(key, 22050, new Float32Array(0)); renderBar.next(); continue;
+      while (running.size < singer.parallelism) {
+        const key = chunkKeysWanted.find((k) => !engine.hasChunk(k) && !inflightKeys.has(k)); if (!key) break;
+        const c = chunkPlans.get(key); if (!c) { chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key); continue; }
+        const who = roleName(doc.extras, st.song.parts.find((p) => p.id === c.part)?.role ?? ""), left = pendingChunks();
+        if (left > shown) { renderBar.start(left); shown = left; }   // 进度条：还有几句（顺序换了、多了就重开一条）
+        const failed = chunkFailed.get(key);
+        if (failed !== undefined) {   // 预唱时就唱不了的：不再试；真播放 = 报出来、这一句空着（不出声、不替补）
+          if (pumpQuiet) { chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key); continue; }
+          showError(`「${who}」唱不了这一句：${failed}`); engine.chunk(key, 22050, new Float32Array(0)); renderBar.next(); continue;
+        }
+        progress(`${who}：${pumpQuiet ? "先唱着" : "还有"} ${left} 句…`);
+        inflightKeys.add(key);
+        const p: Promise<void> = singOne(key, c, who).finally(() => { inflightKeys.delete(key); running.delete(p); });
+        running.add(p);
       }
-      progress(`${who}：${pumpQuiet ? "先唱着" : "还有"} ${left} 句…`);
-      const t = performance.now(); inflightKey = key;
-      const STAGE_FRAC: Record<string, number> = { "念（1/2）": 0.05, "念（2/2）": 0.25, "分析（1/3 音高）": 0.45, "分析（2/3 谱包络）": 0.6, "分析（3/3 气声）": 0.7, "分析（缓存）": 0.75, "合成": 0.85 };   // 刀 0 量的比例：念 40%、分析 40%、合成 20%
-      try {
-        const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]); }, { opt: humOpt(), models: modelBases(), raw: true });
-        if (engine.hasChunk(key) || !chunkPlans.has(key)) { renderBar.next(); continue; }   // 期间换了歌 / 顺序：照样留着（键对就不浪费），但别再算进度
-        engine.chunk(key, r.sr, r.samples);
-        if (r.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r.ms.boot)}`);   // 冷启动各段（刀 5）：诊断页看（测试里的假唱没有 ms）
-        const secs = Math.max(0.5, c.dur - LEAD_IN); singSpeed = singSpeed === null ? (performance.now() - t) / secs : singSpeed * 0.7 + ((performance.now() - t) / secs) * 0.3;
-      } catch (e) {
-        const msg = (e as Error).message ?? String(e);
-        if (msg === "cancelled") continue;
-        chunkFailed.set(key, msg);
-        if (!pumpQuiet) { showError(`「${who}」唱不了这一句：${msg}`); engine.chunk(key, 22050, new Float32Array(0)); }
-        else chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key);
-      }
-      renderBar.next();
+      if (!running.size) break;
+      await Promise.race(running);
     }
-  } finally { pumping = false; inflightKey = null; renderBar.end(); if (!engine.playing) progress(""); }
+  } finally { pumping = false; renderBar.end(); if (!engine.playing) progress(""); }
+}
+async function singOne(key: string, c: ChunkPlan, who: string): Promise<void> {
+  const t = performance.now();
+  try {
+    const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]); }, { opt: humOpt(), models: modelBases(), raw: true, tag: key });
+    if (engine.hasChunk(key) || !chunkPlans.has(key)) { renderBar.next(); return; }   // 期间换了歌 / 顺序：照样留着（键对就不浪费），但别再算进度
+    engine.chunk(key, r.sr, r.samples);
+    if (r.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r.ms.boot)}`);   // 冷启动各段（刀 5）：诊断页看（测试里的假唱没有 ms）
+    const secs = Math.max(0.5, c.dur - LEAD_IN); singSpeed = singSpeed === null ? (performance.now() - t) / secs : singSpeed * 0.7 + ((performance.now() - t) / secs) * 0.3;
+  } catch (e) {
+    const msg = (e as Error).message ?? String(e);
+    if (msg === "cancelled") return;
+    chunkFailed.set(key, msg);
+    if (!pumpQuiet) { showError(`「${who}」唱不了这一句：${msg}`); engine.chunk(key, 22050, new Float32Array(0)); }
+    else chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key);
+  }
+  renderBar.next();
 }
 /** 等从 pos 起的前几块到齐（预卷；几块按这台设备的速度）；stop = 外面取消了。 */
 async function waitChunksReady(tl: Timeline, pos: number, stop: () => boolean): Promise<void> {
@@ -806,6 +819,40 @@ function pruneChunks(tl: Timeline): void {
   while (chunkKeys.length > MAX_CHUNKS) { const i = chunkKeys.findIndex((k) => !keep.has(k)); if (i < 0) break; drop.push(chunkKeys.splice(i, 1)[0]); }
   if (drop.length) engine.forget(drop);
 }
+// ── 刀 6 ④：负载和内存监控防闪退（user 2026-10-10「负载和内存监控防闪退 做」「超预算先放块 / 减并行 / 明说」）。纯逻辑在 src/app/resource-watch.ts，这里只动手 + 说话。
+//   能算到的 = 每条月读 worker 的 WASM 堆 + 念缓存（worker 每次回话带着）、录音房里的块（音频线程每秒报）、音源在内存里的整包；音频线程每秒报忙闲。
+const DEVICE: DeviceInfo = { ios: /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1), cores: navigator.hardwareConcurrency ?? 2, deviceMemoryGB: (navigator as { deviceMemory?: number }).deviceMemory ?? null };
+const BUDGET = budgetFor(DEVICE);
+singer.setLanes(BUDGET.lanes);
+diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB → lanes ${BUDGET.lanes}, budget ${Math.round(BUDGET.total / 1e6)} MB (worker ${Math.round(BUDGET.perWorker / 1e6)}, chunks ${Math.round(BUDGET.chunkBytes / 1e6)})`);
+const watch = { load: null as LoadInfo | null, hot: 0, lanesCut: false, said: new Map<string, number>() };
+const resourceSnapshot = (): Snapshot => ({ lanes: singer.memory(), chunkBytes: watch.load?.chunkBytes ?? 0, chunks: watch.load?.chunks ?? 0, soundMem: soundMemoryBytes(), audioBusy: watch.load?.busy ?? null });
+/** 明说，但同一件事 30 s 内只说一次（状态条 + 黑匣子）。 */
+function resourceSay(kind: string, text: string): void {
+  const t = performance.now(); if ((watch.said.get(kind) ?? -1e9) > t - 30_000) return; watch.said.set(kind, t);
+  reportError(text, "warning");
+}
+/** 放远处的块到 toBytes 以下：最久没用的先走（正在要的那几句不放）。 */
+function shrinkChunks(snap: Snapshot, toBytes: number): void {
+  if (!snap.chunks) return;
+  const avg = Math.max(1, snap.chunkBytes / snap.chunks), n = Math.ceil((snap.chunkBytes - toBytes) / avg), wanted = new Set(chunkKeysWanted), drop: string[] = [];
+  for (const k of chunkKeys) { if (drop.length >= n) break; if (!wanted.has(k) && engine.hasChunk(k)) drop.push(k); }
+  for (const k of drop) chunkKeys.splice(chunkKeys.indexOf(k), 1);
+  if (drop.length) { engine.forget(drop); diagNote("resource", `pruned ${drop.length} chunks (${Math.round(snap.chunkBytes / 1e6)} MB → target ${Math.round(toBytes / 1e6)} MB)`); }
+}
+function resourceTick(): void {
+  const snap = resourceSnapshot();
+  for (const a of advise(snap, BUDGET)) {
+    if (a.kind === "pruneChunks") shrinkChunks(snap, a.toBytes);
+    else if (a.kind === "fewerLanes") { if (singer.parallelism > a.lanes) { singer.setLanes(a.lanes); watch.lanesCut = true; diagNote("resource", `lanes → ${a.lanes}`); resourceSay("lanes", "内存 / 负载吃紧：月读改成一条道唱（慢一点，声音不变）"); } }
+    else if (a.kind === "restartLane") { if (!singer.laneBusy(a.lane)) { const mb = Math.round((snap.lanes[a.lane]?.wasm ?? 0) / 1e6); singer.restartLane(a.lane); diagNote("resource", `restart lane ${a.lane} (wasm ${mb} MB)`); resourceSay("restart", `月读引擎的内存涨到 ${mb} MB，趁空重开了一次（念过的句子要重念）`); } }
+    else if (a.kind === "audioHot") { if (++watch.hot >= 3) resourceSay("audio", `音频线程最近 1 s 忙 ${Math.round(a.busy * 100)}%：可能爆音。效果链 / 声部是你的混音，不替你动；可以先把没在听的声部静音`); }
+  }
+  if (snap.audioBusy !== null && snap.audioBusy <= AUDIO_HOT) watch.hot = 0;
+  if (watch.lanesCut && totalBytes(snap) < BUDGET.total * 0.6 && (snap.audioBusy ?? 0) < AUDIO_HOT * 0.7) { singer.setLanes(BUDGET.lanes); watch.lanesCut = false; diagNote("resource", `lanes → ${BUDGET.lanes} (recovered)`); }   // 吃紧过去了 = 道数回到设备预算
+}
+singer.onMem = () => resourceTick();
+engine.on("load", (info) => { watch.load = info; resourceTick(); });
 /** 准备一次播放 / 导出：库进录音房 → 时间线 → 月读的块。没法出声的声部报出来、其余照放（user「不是显示自动上，而是就是不出声，报错，人类手动换」）。 */
 async function prepare(scope: RenderScope, o: { chunks?: boolean } = {}): Promise<Timeline | null> {
   const parts = audibleParts(), song = songIn(scope);
@@ -1077,6 +1124,7 @@ function openSettings(): void {
     `<details class="set-credit"><summary>月读（つくよみちゃん）的署名与使用条款</summary><div class="part-sec">原文（以此为准）</div><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre>` +
       `<div class="part-sec">中文译文（仅供阅读，以日文原文为准）</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` +
       `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc(CREDIT_TRANSLATIONS.en.credit)}\n\n${esc(CREDIT_TRANSLATIONS.en.terms)}</pre></details>` +
+    `<div class="set-field">引擎负载与内存（能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说）<div id="engRes" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="eng:restart" title="月读引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念">重开月读引擎</button></div></div>` +
     `<details class="set-credit"><summary>诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:share">${canShareDiag() ? "分享 .txt" : "下载 .txt"}</button><button class="btn" data-v="diag:clear">清空</button></div></details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的月读模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
@@ -1084,6 +1132,9 @@ function openSettings(): void {
   const srcIn = box.querySelector<HTMLInputElement>("#srcIn")!, packSt = box.querySelector<HTMLElement>("#packSt")!;
   const refresh = () => { void packStatusText().then((t) => (packSt.textContent = t)); };
   refresh();
+  const engRes = box.querySelector<HTMLElement>("#engRes")!;
+  const refreshRes = () => { engRes.textContent = `${describeResources(resourceSnapshot(), BUDGET)} 月读 ${singer.parallelism} 条道（设备预算 ${BUDGET.lanes}）。`; };
+  refreshRes(); const resTimer = window.setInterval(refreshRes, 1000);
   const sndIn = box.querySelector<HTMLInputElement>("#sndIn")!, sndCache = box.querySelector<HTMLElement>("#sndCache")!;
   const refreshSounds = async () => {
     const cached = await listCachedSounds(), bySha = new Map(cached.map((c) => [c.sha256, c])), known = new Set(Object.values(SOUNDS).map((e) => e.sha256)), uses = new Map(soundUses(doc.extras).map((u) => [u.subsetSha256, u]));
@@ -1095,7 +1146,7 @@ function openSettings(): void {
       cached.filter((c) => !known.has(c.sha256)).map((c) => { const u = uses.get(c.sha256); return `<div class="set-row"><span>${u ? `「${esc(u.names.join("、"))}」的声音（这首歌${u.packed ? "也打包着" : "引用着；删了要从「" + esc(u.origin.name) + "」找"}）` : `别的歌 / 别的版本 / 别的 app 留的（${c.sha256.slice(0, 8)}…）`} · ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">删掉</button></div>`; }).join("") || "（没有）";
   };
   void refreshSounds();
-  const close = () => { modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; box.remove(); closeOffer = null; scoreEl.focus(); };
+  const close = () => { clearInterval(resTimer); modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; box.remove(); closeOffer = null; scoreEl.focus(); };
   closeOffer = close;
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
@@ -1110,6 +1161,7 @@ function openSettings(): void {
     else if (v === "snd:mem") { releaseSoundMemory(); void refreshSounds(); }
     else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
     else if (v === "reset") void shell.forceReset();
+    else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info("月读引擎重开了（内存还回去了；念过的句子要重念）"); }
   });
   box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
     const files = [...((e.target as HTMLInputElement).files ?? [])]; if (!files.length) return;
@@ -1148,6 +1200,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, renderMix: () => renderMixForTest(),
+  resource: () => ({ snapshot: resourceSnapshot(), text: describeResources(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
   setTrack: (id: string, patch: Record<string, unknown>) => { updateExtras(withTrack(doc.extras, id, patch as never), { kind: "studio", label: `轨「${id}」` }); },
   addBus: (name = "总线") => { const id = newBusId(doc.extras); updateExtras(withTrack(doc.extras, id, { kind: "bus", name }), { kind: "studio", label: `加总线「${name}」` }); return id; },
