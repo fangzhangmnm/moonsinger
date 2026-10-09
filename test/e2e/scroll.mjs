@@ -1,5 +1,5 @@
 // test/e2e/scroll.mjs —— 真浏览器 E2E（iPad 竖屏、手指）：歌词框开着时手指滚谱 = 框不收、焦点不走（系统键盘不收回、视图不被拽回去）；
-//   谱下面留一整屏空白；跟随光标不贴底（下面留大约一行）；光标在行末的音后面画在这一行末尾。
+//   谱下面留 ¾ 屏空白；跟随光标不贴底（下面留大约一行）；光标在行末的音后面画在这一行末尾。
 // created 2026-10-08 by Claude Opus 5.5（user「每次打日文还是跟八年抗战一样，有一个滚动的bug就是歌词输入模式滚动会导致键盘弹回来，然后白滚。
 //   然后另外做一个护栏：滚动的时候页面下面还是留一整页白」「然后打字的自动对齐也不要靠着最下面，而是倒数第二排之类的，打音符也是」）
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/scroll.mjs（MS_E2E_BASE 可改地址）
@@ -41,7 +41,7 @@ await p.touchscreen.tap(700, 400); await p.waitForTimeout(300);
 check(await p.$eval(".lyric-input", (e) => e.hidden), "轻点谱面 = 收起歌词框");
 // 一整页白：能滚到内容下面一整屏
 const g = await p.$eval("#score", (e) => ({ sh: e.scrollHeight, ch: e.clientHeight, sheet: e.querySelector(".sheet").getBoundingClientRect().height }));
-check(g.sh >= g.sheet + g.ch - 2, "下面留一整页白", JSON.stringify(g));
+check(g.sh >= g.sheet + g.ch * 0.75 - 2 && g.sh <= g.sheet + g.ch * 0.75 + 40, "下面留 ¾ 屏的空白", JSON.stringify(g));
 // 跟随光标不贴着最下面：光标一路往右挪（写音模式的 →），每次看光标那一行下面留没留出大约一行
 await p.evaluate(() => { document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(200);
 let worst = Infinity, moved = 0;

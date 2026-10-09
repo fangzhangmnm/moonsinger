@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.27-2026-10-08";
+var APP_VERSION = "v0.7.28-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5486,7 +5486,7 @@ function engrave(song, o10) {
       const chunksInOrder = [];
       for (const u2 of units) {
         if (u2.kind === "chunk") chunksInOrder.push(u2);
-        else if (u2.kind !== "head") chunksInOrder.push(null);
+        else if (u2.kind === "bar" || u2.kind === "key" || u2.kind === "time") chunksInOrder.push(null);
       }
       for (const u2 of chunksInOrder) {
         if (!u2 || !u2.note || u2.base >= WHOLE) {
@@ -6679,7 +6679,7 @@ var ScoreView = class {
       ...this.hot ? { hot: this.hot } : {}
     });
     this.ink.style.left = `${this.layout.pageX.left}px`;
-    this.tail.style.height = `${this.el.clientHeight}px`;
+    this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg;
@@ -30463,4 +30463,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-97133e260cec.mjs.map
+//# sourceMappingURL=moonsinger-c714c8d77962.mjs.map

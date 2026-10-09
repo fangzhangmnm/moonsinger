@@ -114,7 +114,7 @@ export class ScoreView {
     this.sheet = document.createElement("div"); this.sheet.className = "sheet";
     this.boxEl = document.createElement("div"); this.boxEl.className = "marquee"; this.boxEl.hidden = true;
     el.replaceChildren(this.sheet);
-    // 谱下面永远留一整屏的空白（user 2026-10-08「做一个护栏：滚动的时候页面下面还是留一整页白」）：最后一行也能滚到上面来，
+    // 谱下面永远留一大截空白（user 2026-10-08「做一个护栏：滚动的时候页面下面还是留一整页白」→ 后来「…3/4左右？」= ¾ 屏）：最后一行也能滚到上面来，
     //   跟随光标往下推时不会被「滚到底了」卡住（软键盘弹出谱面变矮时尤其）。高度 = 谱面板自己的高（render 里跟着改）
     this.tail = document.createElement("div"); this.tail.className = "sheet-tail"; this.tail.setAttribute("aria-hidden", "true");
     el.appendChild(this.tail);
@@ -201,7 +201,7 @@ export class ScoreView {
       autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
       ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}), ...(this.hot ? { hot: this.hot } : {}) });
     this.ink.style.left = `${this.layout.pageX.left}px`;
-    this.tail.style.height = `${this.el.clientHeight}px`;
+    this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;   // ¾ 屏（一整屏有时让人以为白屏了；user 2026-10-08「留的滚动空白不应该是一整页…3/4左右？」）
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);

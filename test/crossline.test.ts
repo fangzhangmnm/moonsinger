@@ -37,3 +37,15 @@ describe("连音线跨行", () => {
     eq(L.prims.filter((p) => p.t === "path" && (p as { cls?: string }).cls === "tie").length, 2, "两半");
   });
 });
+
+describe("符杠：力度记号 / 渐强渐弱 / 句号夹在中间不打断（2026-10-08，user「为什么…力度标识会破坏八分音符尾巴的连音？」）", () => {
+  it("四个八分一组：中间插 f / < / 句号，符杠和没插一样", () => {
+    const eight = () => Array.from({ length: 4 }, (_, k) => n(TPQ / 2, k));
+    const beams = (items: Token[]) => lay(song(items), 600).prims.filter((p) => p.t === "path" && /\bbeam\b/.test((p as { cls?: string }).cls ?? "")).length;
+    const plain = beams(eight());
+    const e = eight();
+    const marked: Token[] = [e[0], e[1], { kind: "dyn", id: id++, value: "f" } as Token, { kind: "hairpin", id: id++, dir: "cresc" } as Token, e[2], { kind: "phrase", id: id++ } as Token, e[3]];
+    assert(plain > 0, "有符杠");
+    eq(beams(marked), plain);
+  });
+});

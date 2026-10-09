@@ -744,7 +744,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       let group: Stemmed[] = [], groupBeat = -1, groupSys = -1;
       const endGroup = () => { if (group.length) stemmed.push(group); group = []; groupBeat = -1; };
       const chunksInOrder: (Chunk | null)[] = [];
-      for (const u of units) { if (u.kind === "chunk") chunksInOrder.push(u); else if (u.kind !== "head") chunksInOrder.push(null); }   // 光标不打断符杠
+      // 打断符杠的只有小节线和中途的调号 / 拍号；光标、力度记号、渐强渐弱、句号、速度都不打断（2026-10-08 Opus 5.5，user「为什么…力度标识会破坏八分音符尾巴的连音？」）
+      for (const u of units) { if (u.kind === "chunk") chunksInOrder.push(u); else if (u.kind === "bar" || u.kind === "key" || u.kind === "time") chunksInOrder.push(null); }
       for (const u of chunksInOrder) {
         if (!u || !u.note || u.base >= WHOLE) { endGroup(); continue; }
         const dsU = (u.pitches.length ? u.pitches : [u.pitch!]).map((pp) => dIdx(pp, u.staff));
