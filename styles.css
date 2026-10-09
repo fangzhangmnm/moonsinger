@@ -262,6 +262,10 @@ button, input, select { font: inherit; color: inherit; }
 .paper-row { align-items: center; justify-content: space-between; }
 .paper-row-name { font-size: 14px; }
 .title-input.paper { text-align: left; font-weight: 600; }
+.title-input.arr { text-align: left; font-weight: 400; }   /* 编排那一行（2026-10-08 深夜） */
+.staff-svg text.arr-label { fill: var(--muted); }
+.staff-svg text.arr-empty { fill: var(--muted); opacity: .6; }
+.staff-svg text.arr-issue { fill: var(--muted); font-style: italic; }
 .staff-svg .credits.empty { fill: var(--muted); opacity: .7; }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
 /* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */

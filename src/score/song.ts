@@ -99,6 +99,9 @@ export interface Song {
   /** 这首歌自己（词 / 曲 / 编——用户写的那部分）的许可，一段文字，用户选或自己写；没有 = 没声明（不替用户选）。
    *  存档 = MusicXML <identification><rights>（标准位置，别的软件也认）；署名推演和 mp3 标签里排第一条（2026-10-08 by Claude Opus 5.5；user「你计算的时候别忘了用户自己写的那一部分，用户可以选」）。 */
   rights?: string;
+  /** 编排：按什么顺序放哪几张纸（一行字：曲段名 / 序号、×N、括号、最后一个 [循环段]；src/score/arrange.ts）。没有 = 每张纸按顺序各放一遍。
+   *  存档 = score.json 可选字段 arrangement（2026-10-08 深夜 Opus 5.5，user「a flat 编排 list 同意」「编排…就是总paper的顶上说一下…就是一行」）。 */
+  arrangement?: string;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表
@@ -238,7 +241,7 @@ export function stackPitch(st: EditorState, pitch0: Pitch): EditorState {
 }
 /** 只有这一张纸的歌（本段视图的播放范围；user 2026-10-08「为什么在本段视图下播放还是播放全部了？」）。 */
 /** 只要这一张纸（「本段」放 / 导出这一段）。点名要它 = 隐藏的也放（user 2026-10-08「隐藏的歌段在solo预览的时候还是应该可以放的」）：隐藏只管整首放 / 压平件跳过它。 */
-export const songOnlyPaper = (song: Song, paperId: string): Song => ({ ...song, papers: song.papers.filter((p) => p.id === paperId).map(({ hidden: _h, ...p }) => p) });
+export const songOnlyPaper = (song: Song, paperId: string): Song => { const { arrangement: _a, ...rest } = song; return { ...rest, papers: song.papers.filter((p) => p.id === paperId).map(({ hidden: _h, ...p }) => p) }; };   // 本段 = 只这一张，编排不管
 
 /** 下标 i 处（i 之前最近的那个记号）生效的调号 / 拍号 / 速度（一条 track 内）。 */
 export function keyAt(tokens: Token[], i: number): number {
@@ -1034,6 +1037,12 @@ export function setRights(st: EditorState, text: string): EditorState {
   if (t) song.rights = t; else delete song.rights;
   return { ...st, song };
 }
+/** 编排那一行（空 = 不写 = 每张纸按顺序各放一遍；src/score/arrange.ts）。 */
+export function setArrangement(st: EditorState, text: string): EditorState {
+  const t = text.trim(), song = { ...st.song };
+  if (t) song.arrangement = t; else delete song.arrangement;
+  return (st.song.arrangement ?? "") === t ? st : { ...st, song };
+}
 export function setTitle(st: EditorState, title: string): EditorState {
   const t = title.trim(), song = { ...st.song };
   if (t) song.title = t; else delete song.title;
@@ -1249,12 +1258,17 @@ export const trackTicks = (tokens: Token[]): number => tokens.reduce((a, t) => a
 export const paperTicks = (p: PaperSeg): number => Math.max(0, ...Object.values(p.tracks).map(trackTicks));
 /** 一个声部压平成一串（播放 / 派生的 score.musicxml 用）：各纸按序接起来，后面纸的谱头记号变成中途的记号；
  *  某张纸没这个声部 = 只有谱头（抄这张纸第一个在场声部的）+ 整纸休止；短的补休止到纸的长度。starts = 每张纸在这串里从哪个下标起。 */
-export function flattenPart(song: Song, partId: string, opts: { tempo?: boolean } = {}): { tokens: Token[]; starts: { index: number; paper: PaperSeg }[] } {
+/** opts.order = 编排展开后的放的顺序（纸 id，可以重复；src/score/arrange.ts）：照它接；没给 = 每张不隐藏的纸按顺序各一遍。
+ *  同一张纸第二次起：音 / 记号抄一份、换负 id（压平件里 id 不重复；不落地）。 */
+export function flattenPart(song: Song, partId: string, opts: { tempo?: boolean; order?: readonly string[] } = {}): { tokens: Token[]; starts: { index: number; paper: PaperSeg }[] } {
   const out: Token[] = [], starts: { index: number; paper: PaperSeg }[] = [];
   let id = -1;   // 补的休止 / 抄的记号用负 id（不落地，只在这一串里；文件里的 id 由写的那边编）
   let k = -1;
-  song.papers.forEach((p) => {
-    if (p.hidden) return;   // 隐藏的纸不放、不进压平件
+  const seq = opts.order ? opts.order.flatMap((pid) => song.papers.filter((p) => p.id === pid)) : song.papers.filter((p) => !p.hidden);   // 编排里点名的照放（隐藏的也放）
+  const seen = new Set<string>();
+  seq.forEach((p0) => {
+    const again = seen.has(p0.id); seen.add(p0.id);
+    const p: PaperSeg = again ? { ...p0, tracks: Object.fromEntries(Object.entries(p0.tracks).map(([k2, t]) => [k2, t.map((x) => ({ ...x, id: id-- }))])) } : p0;
     k++;
     const have = p.tracks[partId], len = paperTicks(p);
     starts.push({ index: out.length, paper: p });
@@ -1282,9 +1296,9 @@ export function flattenPart(song: Song, partId: string, opts: { tempo?: boolean 
   return { tokens: out, starts };
 }
 /** 第一个声部的速度表（压平后的速度记号按 tick 列出来；别的声部按它算秒数）。 */
-export function tempoMapOf(song: Song): TempoMap {
+export function tempoMapOf(song: Song, order?: readonly string[]): TempoMap {
   const first = song.parts[0]; if (!first) return [];
-  const { tokens } = flattenPart(song, first.id, { tempo: true }), map: TempoMap = [];
+  const { tokens } = flattenPart(song, first.id, { tempo: true, ...(order ? { order } : {}) }), map: TempoMap = [];
   let t = 0;
   for (const tok of tokens) { if (tok.kind === "tempo") map.push({ tick: t, bpm: tok.bpm }); else if (isTimed(tok)) t += tok.dur; }
   return map;

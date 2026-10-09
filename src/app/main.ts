@@ -10,6 +10,7 @@
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { type Art, ART_NAME, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { songPlayOrder } from "../score/arrange.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -606,7 +607,7 @@ function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: {
 /** 光标所在声部压平后的一串 + 速度表（试听「听开头」、月读哼用）。 */
 /** 播放 / 试听的范围跟着视图走：本段 = 只有光标所在的纸；全部 = 整首（导出永远整首）。user 2026-10-08「为什么在本段视图下播放还是播放全部了？」 */
 const playSong = (): Song => (viewScope === "segment" ? songOnlyPaper(st.song, st.at.paper) : st.song);
-const curFlat = () => ({ tokens: flattenPart(playSong(), st.at.part).tokens, map: tempoMapOf(playSong()) });
+const curFlat = () => { const s = playSong(), order = songPlayOrder(s); return { tokens: flattenPart(s, st.at.part, { order }).tokens, map: tempoMapOf(s, order) }; };
 /** 一个声部渲染出来的声音：samples 的 0 秒对应谱上的第 at 秒（月读的前面有 leadIn、采样器前面有 0.1 s，混音时扣掉）。 */
 interface Rendered { samples: Float32Array; sr: number; at: number }
 /** 同一份谱 + 同一个演奏者只算一次（再播 / 导出直接用上次的）；按声部各存一份。 */
@@ -619,8 +620,8 @@ const songIn = (s: RenderScope): Song => (s === "all" ? st.song : s === "segment
 async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<Rendered | null> {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`「${roleName(doc.extras, role)}」还没有人上场`);
-  const song = songIn(scope);
-  const { tokens, starts } = flattenPart(song, part.id), map = tempoMapOf(song), bounds = starts.map((x) => x.index);   // bounds = 纸界（渐强渐弱不跨纸）
+  const song = songIn(scope), order = songPlayOrder(song);   // 整首 = 照编排那一行的顺序（arrange.ts）；本段 = 只这一张
+  const { tokens, starts } = flattenPart(song, part.id, { order }), map = tempoMapOf(song, order), bounds = starts.map((x) => x.index);   // bounds = 纸界（渐强渐弱不跨纸）
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);   // 跳音 / 重音 / 呼吸 → 核心认的 ^ / v（怎么对应 = 这位的配置），改了就重唱
     if (!score.SCORE.length) return null;
@@ -655,8 +656,8 @@ async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<R
 }
 /** 一个声部的音量曲线（力度 + 重音；月读的跳音 = 后半段收声；src/score/perform.ts）：没有力度 / 重音 = null，声音不碰。渲染结果是缓存的，乘在拷贝上。 */
 function partGain(part: PartDef, scope: RenderScope) {
-  const song = songIn(scope), { tokens, starts } = flattenPart(song, part.id);
-  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), starts.map((x) => x.index));   // 月读的跳音走唱谱（核心认的 ^），不再切音频
+  const song = songIn(scope), order = songPlayOrder(song), { tokens, starts } = flattenPart(song, part.id, { order });
+  return gainSegments(tokens, tempoMapOf(song, order), activePerfSpec(doc.extras, part.role), starts.map((x) => x.index));   // 月读的跳音走唱谱（核心认的 ^），不再切音频
 }
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
 const audibleParts = (): PartDef[] => { const solo = st.song.parts.some((p) => pv(p.id).solo); return st.song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted)); };

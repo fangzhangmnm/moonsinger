@@ -25,6 +25,7 @@
       "version": "number"
     },
     "score": {
+      "arrangement": "string",
       "papers": [
         {
           "file": "string",

@@ -539,8 +539,9 @@ export class ScoreView {
       this.heldBase = this.baseKey();   // 本来就在这条（没重画）也一样：接下来 pad 弹出也不拽
       this.host.onPart?.(pt.paper, pt.part, at); return true;
     }
-    // 0¼. 纸面最上面的歌名（可不填）
+    // 0¼. 纸面最上面的歌名（可不填）；歌名下面的编排那一行（全部视图里才有）
     if (this.inBox(L.title, x, y)) { this.title.openNow(); this.host.focus?.("text"); return true; }
+    if (this.inBox(L.arrangement, x, y)) { this.title.openArrangement(); this.host.focus?.("text"); return true; }
     // 0⅜. 纸顶：「⋯」（纸的菜单）、曲段名（就地改）；最底下「＋ 新的纸」
     for (const pp of L.papers) {
       if (this.inBox(pp.menu, x, y)) { this.host.onPaperMenu?.(pp.id); return true; }

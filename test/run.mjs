@@ -41,6 +41,7 @@ import "./sheet-tempo.test.ts";
 import "./crossline.test.ts";
 import "./lyric-check.test.ts";
 import "./ramp.test.ts";
+import "./arrange.test.ts";
 import "./part-name.test.ts";
 import "./id3.test.ts";
 import "./sf-key.test.ts";

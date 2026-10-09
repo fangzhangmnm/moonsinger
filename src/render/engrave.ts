@@ -17,6 +17,7 @@
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
 import { type Song, type NoteTok, type Token, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
+import { parseArrangement } from "../score/arrange.ts";
 import { densityOf, type Density } from "../score/paper.ts";
 import { type Pitch, diatonicIndex, keyAlter } from "../score/pitch.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
@@ -80,6 +81,7 @@ export interface Box { x: number; y: number; w: number; h: number }
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; rests: RestHit[]; title: TitleHit;
+  arrangement: TitleHit | null;                 // 编排那一行（只在「全部」视图里有；点了就地改）
   credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
   head: { system: number; x: number } | null;    // 光标在哪（画面跟随用；改的时候没有）
   parts: (Box & { paper: string; part: string })[];   // 歌手牌（每张纸第一行各条谱左边的声部名）的点击区域
@@ -335,9 +337,31 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const w = (o.measureLyric("作者") * 1.25) / LYRIC_EM + P(0.6);
     credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.75 };
   }
-  // 作者栏超过两行：第一张纸往下让（每多一行让一行字高），不和五线谱撞
+  // 编排（2026-10-08 深夜 Opus 5.5；user「编排我建议就是总paper的顶上说一下，然后只有全部paper的时候可见，就是一行，对吧，就和title一样」）：
+  //   作者栏下面单独一行、靠左；写错的（找不到的纸、循环段不在最后…）灰字说为什么（放不下 = 下一行），放的时候跳过（纪律）
+  let arrangement: TitleHit | null = null, arrLast = 0;   // arrLast = 编排那一块最后一行的基线（px；五线谱从它下面开始）
+  if (!o.onlyPaper) {
+    const as = P(1.25), wOf = (t: string, size: number) => (o.measureLyric(t) * size) / LYRIC_EM, row = Math.max(lines.length, 1), base = y0 + row * cs * 1.35;
+    const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
+    const label = "编排　", lw = wOf(label, 1.25), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
+    prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: "arr-label", size: as, anchor: "start" });
+    arrLast = base;
+    if (txt) {
+      prims.push({ t: "text", x: x0, y: base, s: txt, cls: "arr", size: as, anchor: "start" });
+      if (arr.issues.length) {
+        const why = `· ${arr.issues[0].why}${arr.issues.length > 1 ? ` 等 ${arr.issues.length} 处` : ""}`, tw = wOf(txt, 1.25) + P(0.8), fits = tw + wOf(why, 1.1) <= avail;
+        prims.push({ t: "text", x: fits ? x0 + tw : x0, y: fits ? base : base + cs * 1.35, s: why, cls: "arr-issue", size: P(1.1), anchor: "start" });
+        if (!fits) arrLast = base + cs * 1.35;
+      }
+    } else if (o.titlePlaceholder) {
+      const full = "不写 = 每张纸按顺序各放一遍（例：前奏 (A A1)×3 A A2 [副歌]）", short = "不写 = 每张纸按顺序各放一遍";
+      prims.push({ t: "text", x: x0, y: base, s: wOf(full, 1.25) <= avail ? full : short, cls: "arr-empty", size: as, anchor: "start" });
+    }
+    arrangement = { x: x0 - P(0.3), y: base - as * 1.15, w: avail + P(0.3), h: as * 1.6, baseline: base, size: as };
+  }
+  // 作者栏超过两行：第一张纸往下让（每多一行让一行字高），不和五线谱撞；编排那一行靠左，会和速度记号撞 = 五线谱从它下面开始
   const headExtra = Math.max(0, lines.length - 2) * 1.25 * 1.35;
-  let yCur = TOP + P(TITLE_H + headExtra + 0.5);   // px，往下排的游标
+  let yCur = Math.max(TOP + P(TITLE_H + headExtra + 0.5), arrangement ? arrLast + P(0.8) : 0);   // px，往下排的游标
   /** 分页：这一块（高 h px）在这页放不下 = 翻页（页顶上什么都还没放时不翻）。 */
   const ensure = (h: number) => { if (PG && yCur + h > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) { pageNo++; yCur = contentTop(pageNo); } };
 
@@ -1026,7 +1050,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

@@ -48,7 +48,7 @@ export function sampleSong(): Song {
     t({ kind: "note", pitch: p("B"), dur: Q, lyric: "la" }),
     t({ kind: "rest", dur: Q * 2 }),
   ];
-  return { title: "冻结样本", credits: "词曲：样本\n演唱：月读", hum: "u", paper: paperOf("A5"),
+  return { title: "冻结样本", credits: "词曲：样本\n演唱：月读", arrangement: "1 (2)×2", hum: "u", paper: paperOf("A5"),
     parts: [{ id: "P1", role: "r1", mic: "m1" }, { id: "P2", role: "r2", mic: "m2" }],
     papers: [{ id: "p1", name: "", tracks: { P1: p1P1, P2: p1P2 } }, { id: "p2", name: "副歌", tracks: { P1: p2P1 } }] };
 }

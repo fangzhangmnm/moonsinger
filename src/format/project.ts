@@ -12,6 +12,7 @@
 import { DEFAULT_ROLE, numberParts } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
 import { type Song, type PartDef, type PaperSeg, type Token, type NoteTok, flattenPart } from "../score/song.ts";
+import { songPlayOrder } from "../score/arrange.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
 import { FORMAT, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
 import { migrate } from "./migrate/index.ts";
@@ -99,11 +100,12 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   });
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k) => {
-    const f = flattenPart(song, part.id, { tempo: k === 0 });   // 第一个声部带速度：它不在的纸上照那张纸最上面在场的歌手补变速（新歌手只在当前纸以后常见）
+    const f = flattenPart(song, part.id, { tempo: k === 0, order: songPlayOrder(song) });   // 照编排的顺序（重复的纸再写一遍；循环段写一遍）   // 第一个声部带速度：它不在的纸上照那张纸最上面在场的歌手补变速（新歌手只在当前纸以后常见）
     return { info: infos[k], tokens: f.tokens, breaks: new Map(f.starts.slice(1).map((s) => [s.index, s.paper.name])) };
   }) }, meta);
   const scoreExt: Json = { version: FORMAT.score, papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched" })),
-    ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}) };   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
+    ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}),   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
+    ...(song.arrangement?.trim() ? { arrangement: song.arrangement } : {}) };   // 编排那一行（可选，2026-10-08 深夜）
   // 嵌的音源：只写还有候选引用着的（换了音源 = 旧块从歌里丢掉；§10.2）
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => (x < y ? -1 : 1));
@@ -538,5 +540,6 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   }
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
-  return { song: { ...song0, hum }, stem, hum, extras, ours, notices, view: (extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null };
+  const arr = extras.scoreExt?.arrangement;   // 编排那一行（只有我们自己的文件有）
+  return { song: { ...song0, hum, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}) }, stem, hum, extras, ours, notices, view: (extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null };
 }

@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.32-2026-10-08";
+var APP_VERSION = "v0.7.33-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2948,7 +2948,10 @@ function stackPitch(st3, pitch0) {
   const pitch = keySpell(applyAcc(pitch0, st3.input), keyAt(tr(st3), i10));
   return toggleChordPitch({ ...st3, input }, i10, pitch);
 }
-var songOnlyPaper = (song, paperId) => ({ ...song, papers: song.papers.filter((p2) => p2.id === paperId).map(({ hidden: _h, ...p2 }) => p2) });
+var songOnlyPaper = (song, paperId) => {
+  const { arrangement: _a2, ...rest } = song;
+  return { ...rest, papers: song.papers.filter((p2) => p2.id === paperId).map(({ hidden: _h, ...p2 }) => p2) };
+};
 function keyAt(tokens, i10) {
   let f2 = DEFAULT_KEY;
   for (let j2 = 0; j2 < i10 && j2 < tokens.length; j2++) {
@@ -3820,6 +3823,12 @@ function setRights(st3, text2) {
   else delete song.rights;
   return { ...st3, song };
 }
+function setArrangement(st3, text2) {
+  const t10 = text2.trim(), song = { ...st3.song };
+  if (t10) song.arrangement = t10;
+  else delete song.arrangement;
+  return (st3.song.arrangement ?? "") === t10 ? st3 : { ...st3, song };
+}
 function setTitle(st3, title) {
   const t10 = title.trim(), song = { ...st3.song };
   if (t10) song.title = t10;
@@ -4048,8 +4057,12 @@ function flattenPart(song, partId, opts = {}) {
   const out = [], starts = [];
   let id2 = -1;
   let k2 = -1;
-  song.papers.forEach((p2) => {
-    if (p2.hidden) return;
+  const seq = opts.order ? opts.order.flatMap((pid) => song.papers.filter((p2) => p2.id === pid)) : song.papers.filter((p2) => !p2.hidden);
+  const seen = /* @__PURE__ */ new Set();
+  seq.forEach((p0) => {
+    const again = seen.has(p0.id);
+    seen.add(p0.id);
+    const p2 = again ? { ...p0, tracks: Object.fromEntries(Object.entries(p0.tracks).map(([k22, t10]) => [k22, t10.map((x2) => ({ ...x2, id: id2-- }))])) } : p0;
     k2++;
     const have = p2.tracks[partId], len = paperTicks(p2);
     starts.push({ index: out.length, paper: p2 });
@@ -4082,10 +4095,10 @@ function flattenPart(song, partId, opts = {}) {
   });
   return { tokens: out, starts };
 }
-function tempoMapOf(song) {
+function tempoMapOf(song, order) {
   const first = song.parts[0];
   if (!first) return [];
-  const { tokens } = flattenPart(song, first.id, { tempo: true }), map = [];
+  const { tokens } = flattenPart(song, first.id, { tempo: true, ...order ? { order } : {} }), map = [];
   let t10 = 0;
   for (const tok of tokens) {
     if (tok.kind === "tempo") map.push({ tick: t10, bpm: tok.bpm });
@@ -4093,6 +4106,102 @@ function tempoMapOf(song) {
   }
   return map;
 }
+
+// src/score/arrange.ts
+var REP = /^(?:[×xX*])(\d+)/;
+function parseArrangement(text2, papers) {
+  const src = (text2 ?? "").trim();
+  if (!src) return { order: papers.filter((p2) => !p2.hidden).map((p2) => p2.id), loop: null, issues: [], explicit: false };
+  const issues = [];
+  let i10 = 0;
+  const ws = () => {
+    while (i10 < src.length && /[\s、,，→]/.test(src[i10])) i10++;
+  };
+  const findPaper = (name) => {
+    const byName = papers.find((p2) => p2.name.trim() === name);
+    if (byName) return byName.id;
+    if (/^\d+$/.test(name)) {
+      const k2 = Number(name);
+      if (k2 >= 1 && k2 <= papers.length) return papers[k2 - 1].id;
+    }
+    return null;
+  };
+  const rep = () => {
+    const save = i10;
+    while (src[i10] === " ") i10++;
+    const m2 = REP.exec(src.slice(i10));
+    if (!m2) {
+      i10 = save;
+      return null;
+    }
+    i10 += m2[0].length;
+    return Number(m2[1]);
+  };
+  const seq = (close) => {
+    const out = [];
+    for (; ; ) {
+      ws();
+      if (i10 >= src.length) {
+        if (close) issues.push({ at: src.length, len: 0, why: `\u5C11\u4E86\u300C${close}\u300D` });
+        return out;
+      }
+      const c10 = src[i10];
+      if (close && c10 === close) {
+        i10++;
+        return out;
+      }
+      if (c10 === ")" || c10 === "]") {
+        issues.push({ at: i10, len: 1, why: `\u591A\u4E86\u300C${c10}\u300D` });
+        i10++;
+        continue;
+      }
+      if (c10 === "[") return out;
+      let node;
+      const at2 = i10;
+      if (c10 === "(") {
+        i10++;
+        node = { kind: "rep", body: seq(")"), n: 1 };
+      } else {
+        let name = "";
+        while (i10 < src.length && !/[\s、,，→()[\]×*]/.test(src[i10]) && !(/[xX]/.test(src[i10]) && /\d/.test(src[i10 + 1] ?? "") && name)) name += src[i10++];
+        if (!name) {
+          issues.push({ at: i10, len: 1, why: `\u770B\u4E0D\u61C2\u300C${src[i10]}\u300D` });
+          i10++;
+          continue;
+        }
+        const paper = findPaper(name);
+        if (!paper) {
+          issues.push({ at: at2, len: name.length, why: `\u6CA1\u6709\u53EB\u300C${name}\u300D\u7684\u7EB8\uFF08\u5199\u66F2\u6BB5\u540D\uFF0C\u6216\u8005\u7B2C\u51E0\u5F20\u7EB8\u7684\u5E8F\u53F7\uFF09` });
+          node = { kind: "rep", body: [], n: 1 };
+        } else node = { kind: "ref", paper, text: name, at: at2 };
+      }
+      const n10 = rep();
+      if (n10 !== null) {
+        if (n10 < 1 || n10 > 99) issues.push({ at: at2, len: i10 - at2, why: "\u91CD\u590D\u6B21\u6570\u8981\u5728 1 \u5230 99 \u4E4B\u95F4" });
+        if (n10 >= 1) node = { kind: "rep", body: [node], n: Math.min(99, n10) };
+      }
+      out.push(node);
+    }
+  };
+  const main = seq(null);
+  let loopNodes = null;
+  ws();
+  if (i10 < src.length && src[i10] === "[") {
+    const at2 = i10;
+    i10++;
+    loopNodes = seq("]");
+    if (!loopNodes.length) issues.push({ at: at2, len: i10 - at2, why: "\u5FAA\u73AF\u6BB5\u662F\u7A7A\u7684" });
+    ws();
+    if (i10 < src.length) {
+      issues.push({ at: i10, len: src.length - i10, why: "\u5FAA\u73AF\u6BB5\u53EA\u80FD\u653E\u5728\u6700\u540E\uFF1A\u540E\u9762\u7684\u6C38\u8FDC\u653E\u4E0D\u5230" });
+    }
+  }
+  const expand = (ns2) => ns2.flatMap((n10) => n10.kind === "ref" ? [n10.paper] : Array.from({ length: n10.n }, () => expand(n10.body)).flat());
+  const loop = loopNodes ? expand(loopNodes) : null;
+  return { order: expand(main), loop: loop && loop.length ? loop : null, issues, explicit: true };
+}
+var playOrder = (a10) => [...a10.order, ...a10.loop ?? []];
+var songPlayOrder = (song) => playOrder(parseArrangement(song.arrangement, song.papers));
 
 // src/score/commands.ts
 function apply(st3, c10, now = Date.now()) {
@@ -5078,8 +5187,28 @@ function engrave(song, o10) {
     const w2 = o10.measureLyric("\u4F5C\u8005") * 1.25 / LYRIC_EM + P2(0.6);
     credits = { x: rx2 - w2, y: y0 - cs2 * 1.1, w: w2 + P2(0.3), h: cs2 * 1.75 };
   }
+  let arrangement = null, arrLast = 0;
+  if (!o10.onlyPaper) {
+    const as2 = P2(1.25), wOf = (t10, size) => o10.measureLyric(t10) * size / LYRIC_EM, row = Math.max(lines.length, 1), base3 = y0 + row * cs2 * 1.35;
+    const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
+    const label = "\u7F16\u6392\u3000", lw2 = wOf(label, 1.25), x0 = P2(MARGIN) + lw2, avail = o10.width - P2(2 * MARGIN) - lw2;
+    prims.push({ t: "text", x: P2(MARGIN), y: base3, s: label, cls: "arr-label", size: as2, anchor: "start" });
+    arrLast = base3;
+    if (txt) {
+      prims.push({ t: "text", x: x0, y: base3, s: txt, cls: "arr", size: as2, anchor: "start" });
+      if (arr.issues.length) {
+        const why = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? ` \u7B49 ${arr.issues.length} \u5904` : ""}`, tw2 = wOf(txt, 1.25) + P2(0.8), fits = tw2 + wOf(why, 1.1) <= avail;
+        prims.push({ t: "text", x: fits ? x0 + tw2 : x0, y: fits ? base3 : base3 + cs2 * 1.35, s: why, cls: "arr-issue", size: P2(1.1), anchor: "start" });
+        if (!fits) arrLast = base3 + cs2 * 1.35;
+      }
+    } else if (o10.titlePlaceholder) {
+      const full = "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09", short = "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D";
+      prims.push({ t: "text", x: x0, y: base3, s: wOf(full, 1.25) <= avail ? full : short, cls: "arr-empty", size: as2, anchor: "start" });
+    }
+    arrangement = { x: x0 - P2(0.3), y: base3 - as2 * 1.15, w: avail + P2(0.3), h: as2 * 1.6, baseline: base3, size: as2 };
+  }
   const headExtra = Math.max(0, lines.length - 2) * 1.25 * 1.35;
-  let yCur = TOP + P2(TITLE_H + headExtra + 0.5);
+  let yCur = Math.max(TOP + P2(TITLE_H + headExtra + 0.5), arrangement ? arrLast + P2(0.8) : 0);
   const ensure = (h2) => {
     if (PG && yCur + h2 > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) {
       pageNo++;
@@ -5872,7 +6001,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P2(PG.h) : yCur + P2(MX.b);
-  return { prims, width: o10.width, height, sp: sp2, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o10.width, height, sp: sp2, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -6558,7 +6687,7 @@ var MarkEditor = class {
 
 // src/ui/title-editor.ts
 var TitleEditor = class {
-  // 正在改哪张纸的曲段名；null = 歌名
+  // 正在改编排那一行（2026-10-08 深夜 Opus 5.5）
   constructor(parent, host, layout) {
     this.host = host;
     this.layout = layout;
@@ -6587,13 +6716,30 @@ var TitleEditor = class {
   input;
   open = false;
   paper = null;
+  // 正在改哪张纸的曲段名；null = 歌名
+  arr = false;
   /** 开框：不给 paperId = 歌名；给了 = 那张纸的曲段名。 */
   openNow(paperId = null) {
     this.open = true;
     this.paper = paperId;
+    this.arr = false;
     const song = this.host.get().song;
     this.input.value = (paperId ? song.papers.find((p2) => p2.id === paperId)?.name : song.title) ?? "";
     this.input.classList.toggle("paper", !!paperId);
+    this.input.classList.remove("arr");
+    this.input.hidden = false;
+    this.reposition();
+    this.input.focus({ preventScroll: true });
+    this.input.select();
+  }
+  /** 开编排那一行的框（曲段名 / 序号、×N、括号、最后一个 [循环段]）。 */
+  openArrangement() {
+    this.open = true;
+    this.paper = null;
+    this.arr = true;
+    this.input.value = this.host.get().song.arrangement ?? "";
+    this.input.classList.remove("paper");
+    this.input.classList.add("arr");
     this.input.hidden = false;
     this.reposition();
     this.input.focus({ preventScroll: true });
@@ -6601,9 +6747,9 @@ var TitleEditor = class {
   }
   commitAndClose() {
     if (!this.open) return;
-    const v = this.input.value, paper = this.paper;
+    const v = this.input.value, paper = this.paper, arr = this.arr;
     this.close();
-    this.host.set(paper ? setPaperName(this.host.get(), paper, v) : setTitle(this.host.get(), v));
+    this.host.set(arr ? setArrangement(this.host.get(), v) : paper ? setPaperName(this.host.get(), paper, v) : setTitle(this.host.get(), v));
   }
   close() {
     this.open = false;
@@ -6612,7 +6758,7 @@ var TitleEditor = class {
   reposition() {
     const L2 = this.layout();
     if (!this.open || !L2) return;
-    const t10 = this.paper ? L2.papers.find((p2) => p2.id === this.paper)?.title : L2.title;
+    const t10 = this.arr ? L2.arrangement : this.paper ? L2.papers.find((p2) => p2.id === this.paper)?.title : L2.title;
     if (!t10) {
       this.close();
       return;
@@ -7252,6 +7398,11 @@ var ScoreView = class {
     }
     if (this.inBox(L2.title, x2, y2)) {
       this.title.openNow();
+      this.host.focus?.("text");
+      return true;
+    }
+    if (this.inBox(L2.arrangement, x2, y2)) {
+      this.title.openArrangement();
       this.host.focus?.("text");
       return true;
     }
@@ -18310,14 +18461,16 @@ function saveMxl(a10) {
     return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, ...Object.keys(phrases).length ? { phrases } : {}, ...Object.keys(swells).length ? { swells } : {}, ...p2.hidden ? { hidden: true } : {} };
   });
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k2) => {
-    const f2 = flattenPart(song, part.id, { tempo: k2 === 0 });
+    const f2 = flattenPart(song, part.id, { tempo: k2 === 0, order: songPlayOrder(song) });
     return { info: infos[k2], tokens: f2.tokens, breaks: new Map(f2.starts.slice(1).map((s10) => [s10.index, s10.paper.name])) };
   }) }, meta);
   const scoreExt = {
     version: FORMAT.score,
     papers,
     parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched" })),
-    ...a10.view && Object.keys(a10.view).length ? { view: a10.view } : {}
+    ...a10.view && Object.keys(a10.view).length ? { view: a10.view } : {},
+    // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
+    ...song.arrangement?.trim() ? { arrangement: song.arrangement } : {}
   };
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a10.extras.sounds).filter(([p2]) => referenced.has(p2)).sort(([x2], [y2]) => x2 < y2 ? -1 : 1);
@@ -18812,7 +18965,8 @@ function finish(reads, song0, extras, ours, name) {
   }
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
-  return { song: { ...song0, hum }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null };
+  const arr = extras.scoreExt?.arrangement;
+  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null };
 }
 
 // src/format/credits.ts
@@ -27811,15 +27965,18 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
   return notes;
 }
 var playSong = () => viewScope === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : st2.song;
-var curFlat = () => ({ tokens: flattenPart(playSong(), st2.at.part).tokens, map: tempoMapOf(playSong()) });
+var curFlat = () => {
+  const s10 = playSong(), order = songPlayOrder(s10);
+  return { tokens: flattenPart(s10, st2.at.part, { order }).tokens, map: tempoMapOf(s10, order) };
+};
 var lastRender = /* @__PURE__ */ new Map();
 var GM_SR = 44100;
 var songIn = (s10) => s10 === "all" ? st2.song : s10 === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : playSong();
 async function renderPart(part, scope = "view") {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`\u300C${roleName(doc.extras, role)}\u300D\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A`);
-  const song = songIn(scope);
-  const { tokens, starts } = flattenPart(song, part.id), map = tempoMapOf(song), bounds = starts.map((x2) => x2.index);
+  const song = songIn(scope), order = songPlayOrder(song);
+  const { tokens, starts } = flattenPart(song, part.id, { order }), map = tempoMapOf(song, order), bounds = starts.map((x2) => x2.index);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);
     if (!score.SCORE.length) return null;
@@ -27855,8 +28012,8 @@ async function renderPart(part, scope = "view") {
   return out;
 }
 function partGain(part, scope) {
-  const song = songIn(scope), { tokens, starts } = flattenPart(song, part.id);
-  return gainSegments(tokens, tempoMapOf(song), activePerfSpec(doc.extras, part.role), starts.map((x2) => x2.index));
+  const song = songIn(scope), order = songPlayOrder(song), { tokens, starts } = flattenPart(song, part.id, { order });
+  return gainSegments(tokens, tempoMapOf(song, order), activePerfSpec(doc.extras, part.role), starts.map((x2) => x2.index));
 }
 var audibleParts = () => {
   const solo = st2.song.parts.some((p2) => pv(p2.id).solo);
@@ -28267,7 +28424,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "4870985cf038",
+  cssHash: "478b6af73f73",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -30665,4 +30822,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e94b8c9c2dfb.mjs.map
+//# sourceMappingURL=moonsinger-2897aa2c2102.mjs.map
