@@ -27,7 +27,7 @@ let a = await tl();
 check(!!a && a.loop === false, "循环没开 = 时间线不循环", JSON.stringify(a));
 check(Math.abs(a.from + LEAD) < 1e-6, "范围从月读的提前量起（−0.5 s）", String(a.from));
 await p.waitForTimeout(300);
-check((await pos()) > 0, "位置在走", String(await pos()));
+check((await pos()) > a.from + 0.1, "位置在走（光标在纸尾 = 从范围头放起，v0.9.2）", String(await pos()));
 await p.click("#playBtn"); await p.waitForTimeout(150);
 check(!(await playing()), "再点 = 停");
 await p.evaluate(() => { const m = window.__moonsinger; m.setScope("all"); const st = m.state(); m.set({ ...st, song: { ...st.song, arrangement: "1 [2]" } }); }); await p.waitForTimeout(150);

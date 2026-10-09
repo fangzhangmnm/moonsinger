@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.1-2026-10-09";
+var APP_VERSION = "v0.9.2-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -34064,7 +34064,8 @@ function playRange(tl2) {
 function cursorSeconds(tl2) {
   const track = tr(st2), i10 = st2.sel ? st2.sel.from : st2.caret, tok = track[i10];
   const sec = tok ? tl2.secondsOfToken(st2.at.part, tok.id) : null;
-  return Math.max(tl2.range.from, (sec ?? paperSpan(tl2, st2.at.paper)?.t1 ?? tl2.range.from) - PRE_ROLL);
+  if (sec === null || sec >= tl2.range.to - 0.05) return null;
+  return Math.max(tl2.range.from, sec - PRE_ROLL);
 }
 async function togglePlay(o10 = {}) {
   if (engine.playing) {
@@ -34085,7 +34086,8 @@ async function togglePlay(o10 = {}) {
     const r10 = playRange(tl2);
     playTl = tl2;
     engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn || !!o10.seam, loopFrom: r10.loopFrom });
-    const at2 = o10.seam ? Math.max(r10.from, r10.to - SEAM_LEAD) : o10.fromStart ? r10.from : Math.min(Math.max(cursorSeconds(tl2), r10.from), r10.to);
+    const cur = cursorSeconds(tl2);
+    const at2 = o10.seam ? Math.max(r10.from, r10.to - SEAM_LEAD) : o10.fromStart || cur === null ? r10.from : Math.min(Math.max(cur, r10.from), r10.to);
     await engine.play(at2);
     playIcon(true);
     progress(loopOn ? `\u5FAA\u73AF ${(r10.to - r10.loopFrom).toFixed(1)} \u79D2` : `${(r10.to - at2).toFixed(1)} \u79D2`);
@@ -37193,4 +37195,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-db168a320ca6.mjs.map
+//# sourceMappingURL=moonsinger-14166653c665.mjs.map

@@ -758,11 +758,13 @@ function playRange(tl: Timeline): { from: number; to: number; loopFrom: number }
   if (viewScope === "all" && a.loop && tl.papers[a.order.length]) loopFrom = tl.papers[a.order.length].t0;
   return { from, to, loopFrom };
 }
-/** 从光标放：光标（选区 = 选区头）那个音的时刻，提前一点（辅音在元音前）。光标在纸尾 = 纸尾。 */
-function cursorSeconds(tl: Timeline): number {
+/** 从光标放：光标（选区 = 选区头）那个音的时刻，提前一点（辅音在元音前）。
+ *  光标在纸尾 / 不在放的范围里 = null = 从头放（v0.9.2；user「没有光标的时候点开始就不放了哈哈哈」——写完谱光标停在最后，原来从纸尾放 = 什么都听不到）。 */
+function cursorSeconds(tl: Timeline): number | null {
   const track = tr(st), i = st.sel ? st.sel.from : st.caret, tok = track[i];
   const sec = tok ? tl.secondsOfToken(st.at.part, tok.id) : null;
-  return Math.max(tl.range.from, (sec ?? paperSpan(tl, st.at.paper)?.t1 ?? tl.range.from) - PRE_ROLL);
+  if (sec === null || sec >= tl.range.to - 0.05) return null;
+  return Math.max(tl.range.from, sec - PRE_ROLL);
 }
 /** 播放 / 停（空格、顶栏 ▶）：从光标放起（user「最practical的需求是从中间开始而不是每次编辑之后都得从头放」）；再按 = 停。
  *  fromStart = 从范围头；seam = 从循环尾前几秒放起（听接缝）。 */
@@ -775,7 +777,8 @@ async function togglePlay(o: { fromStart?: boolean; seam?: boolean } = {}): Prom
     const tl = await prepare("view"); if (!tl) { progress(""); return; }
     const r = playRange(tl); playTl = tl;
     engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopOn || !!o.seam, loopFrom: r.loopFrom });
-    const at = o.seam ? Math.max(r.from, r.to - SEAM_LEAD) : o.fromStart ? r.from : Math.min(Math.max(cursorSeconds(tl), r.from), r.to);
+    const cur = cursorSeconds(tl);   // null = 光标在纸尾 / 没有音 = 从头
+    const at = o.seam ? Math.max(r.from, r.to - SEAM_LEAD) : o.fromStart || cur === null ? r.from : Math.min(Math.max(cur, r.from), r.to);
     await engine.play(at);
     playIcon(true);
     progress(loopOn ? `循环 ${(r.to - r.loopFrom).toFixed(1)} 秒` : `${(r.to - at).toFixed(1)} 秒`);
