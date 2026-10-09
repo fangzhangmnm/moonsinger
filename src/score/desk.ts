@@ -18,17 +18,19 @@ export const freshPartView = (): PartViewState => ({ hidden: false, only: false,
 /** mp3 = 导出歌声的音质（导出面板里选的；2026-10-08 by Claude Opus 5.5，user「音质配置就是应该也跟着吧」——跟这首歌走、存时顺手带、不标脏、不进 undo）。 */
 /** ref = 参考窗的窗（开着没有 + 位置 / 大小，CSS 像素；2026-10-08 深夜 Opus 5.5，v0.8；同 WXHW 的 refPanel）——这首歌里开过窗才有；里面的卡不在这里（进文件、标脏，见 src/app/reference-host.ts）。 */
 export interface RefPanelDesk { open: boolean; left: number; top: number; width: number; height: number }
-export interface Desk { scope: "all" | "segment"; pageFlow: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null }
-export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null });
+/** pdf = 乐谱 PDF 的字体（导出面板里选的；同 mp3 音质跟着这首歌走、不标脏；2026-10-09 Opus 5.5，user「字体可以选普通的和那个拼音可爱的」）。 */
+export interface Desk { scope: "all" | "segment"; pageFlow: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null; pdf: "sans" | "pinyin" }
+export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans" });
 
 /** 文件里的形状（只写非默认值；全默认 = 不写这个字段）。 */
-export interface DeskJson { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number } }
+export interface DeskJson { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number }; pdf?: "pinyin" }
 /** pad 在文件里的形状：只写不是默认的；全默认 = 不写。 */
 export interface PadJson { fifths?: number; scale?: string; unit?: PadUnit; tuplet?: 3 | 5 | 6 | 7; low?: number }
 export function serializeDesk(d: Desk): DeskJson | null {
   const out: DeskJson = {};
   if (d.scope === "all") out.scope = "all";
   if (d.mp3 === "small") out.mp3 = "small";
+  if (d.pdf === "pinyin") out.pdf = "pinyin";
   if (d.pageFlow) out.pageFlow = true;
   if (d.paper) out.paper = d.paper;
   const parts: NonNullable<DeskJson["parts"]> = {};
@@ -56,6 +58,7 @@ export function unserializeDesk(json: unknown): Desk {
   if (j.scope === "all") d.scope = "all";
   if (j.pageFlow === true) d.pageFlow = true;
   if (j.mp3 === "small") d.mp3 = "small";
+  if (j.pdf === "pinyin") d.pdf = "pinyin";
   if (typeof j.paper === "string" && j.paper) d.paper = j.paper;
   if (j.parts && typeof j.parts === "object") {
     for (const [id, v] of Object.entries(j.parts as Record<string, unknown>)) {

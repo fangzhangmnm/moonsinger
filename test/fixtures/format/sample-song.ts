@@ -9,7 +9,7 @@ const Q = TPQ, E = TPQ / 2, T3 = (TPQ / 2) * 2 / 3;
 const p = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", octave = 4, alter = 0) => ({ step, alter, octave });
 /** id 按纸序 × 声部序 × 下标连着编（读回来时 project.ts 也这么重编 → 逐字节可比）。 */
 /** 冻结样本里的视图态（score.json 可选字段 view；形状快照要盖到它）。 */
-export const sampleView = () => ({ scope: "all" as const, pageFlow: true as const, paper: "p2", parts: { P2: { muted: true as const } }, pad: { fifths: 2, scale: "minor", unit: "quarter" as const, tuplet: 3 as const, low: 55 }, ref: { open: true as const, left: 40, top: 90, width: 320, height: 240 } });   // pad：2026-10-08 Opus 5.5 加（可选字段，不升版本）；ref = 参考窗的窗（2026-10-08 深夜 v0.8，同上）
+export const sampleView = () => ({ scope: "all" as const, pageFlow: true as const, paper: "p2", parts: { P2: { muted: true as const } }, pad: { fifths: 2, scale: "minor", unit: "quarter" as const, tuplet: 3 as const, low: 55 }, ref: { open: true as const, left: 40, top: 90, width: 320, height: 240 }, pdf: "pinyin" as const });   // pad：2026-10-08 Opus 5.5 加（可选字段，不升版本）；ref = 参考窗的窗（2026-10-08 深夜 v0.8，同上）
 export function sampleSong(): Song {
   let id = 1;
   const t = (x: Omit<Token, "id"> & Record<string, unknown>) => ({ ...x, id: id++ }) as Token;

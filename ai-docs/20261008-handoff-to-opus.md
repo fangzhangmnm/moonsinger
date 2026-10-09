@@ -126,6 +126,8 @@
 
 **v0.8.7（2026-10-08 深夜，edited by Claude Opus 5.5）**：风格名用英文（`Style: Pop`）。接下来：参考窗库升 minor 的一页方案（音频卡 + app 注入的转码接口；user「mp3做」）→ PDF 导出（user「先给参考窗库升 minor…写一页方案给你过目，然后开始 PDF 导出 同意」）。
 
+**v0.8.8（2026-10-09，edited by Claude Opus 5.5）**：乐谱 PDF（自己写；黑体 / 拼音；Bravura 轮廓画成路径；歌词嵌字体子集）。参考窗库 0.4.0 一页方案在家族根仓 `ai-docs/20261008-reference-window-0.4-audio-plan.md`，等 user 拍三件事（翻卡停不停 / 速度 / 问的门槛）。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |

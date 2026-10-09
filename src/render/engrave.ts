@@ -48,6 +48,8 @@ export interface EngraveOpts {
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
   /** 分页排法（user 2026-10-08「显示法还加一个分页？可以预览打印，要求和之后生成的pdf wysiwyg」）：按纸高分页、画页框 + 页码；h = 整页高、l r t b = 四边边距（sp）。没有 = 连续（一张长纸）。 */
   page?: { h: number; l: number; r: number; t: number; b: number };
+  /** 歌词行再往下让多少（sp）：PDF 选了萌神拼音时，汉字头上那一截拼音要地方（src/export/score-pdf.ts 按字形墨迹算；屏幕上 = 0）。 */
+  lyricRaise?: number;
   /** 只画这一张纸（曲段）：视图范围「本段」（user 2026-10-08「不同曲段应该是不同页，而不是一起显示」「视图里面应该也有个连续和分段」）。 */
   onlyPaper?: string;
   /** 正拿在手里拖的东西（token id：力度记号 / 渐强渐弱 / 字所在的音）：画成强调色（2026-10-08 user「然后拖动能不能给一点视觉反馈」）。 */
@@ -588,7 +590,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const g = ex.map((e, k) => {
         const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
         let above = Math.max(STAFF_ABOVE, (e.top - TOP_LINE) / 2 + 0.8), below = Math.max(minBelow, (BOTTOM_LINE - e.bot) / 2 + 0.8), lyric: number | null = null;
-        if (lyricsOf[r] && k === q.staves - 1) { lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e.bot) / 2 + 2.0); below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW)); }
+        if (lyricsOf[r] && k === q.staves - 1) { lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e.bot) / 2 + 2.0) + (o.lyricRaise ?? 0); below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW)); }
         return { above, below, lyric, dynD: null as number | null, tempoD: null as number | null, grooveD: null as number | null };
       });
       if (dyn && mode === "above") { const d = Math.max(TOP_LINE + 2.4, ex[0].top + 3); g[0].dynD = d; g[0].above = Math.max(g[0].above, (d - TOP_LINE) / 2 + 2.2); }   // f 这种字有下伸：离音远一点

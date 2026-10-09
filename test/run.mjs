@@ -45,6 +45,7 @@ import "./arrange.test.ts";
 import "./groove.test.ts";
 import "./reference.test.ts";
 import "./sing-chunks.test.ts";
+import "./pdf.test.ts";
 import "./part-name.test.ts";
 import "./id3.test.ts";
 import "./sf-key.test.ts";

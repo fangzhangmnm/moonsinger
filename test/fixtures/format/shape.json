@@ -67,6 +67,7 @@
             "muted": "boolean"
           }
         },
+        "pdf": "string",
         "ref": {
           "height": "number",
           "left": "number",

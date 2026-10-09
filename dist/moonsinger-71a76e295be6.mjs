@@ -15,6 +15,12 @@ function deflateSync(data, opts) {
 function inflateSync(data, opts) {
   return inflt(data, { i: 2 }, opts && opts.out, opts && opts.dictionary);
 }
+function gunzipSync(data, opts) {
+  var st3 = gzs(data);
+  if (st3 + 8 > data.length)
+    err(6, "invalid gzip data");
+  return inflt(data.subarray(st3, -8), { i: 2 }, opts && opts.out || new u8(gzl(data)), opts && opts.dictionary);
+}
 function zlibSync(data, opts) {
   if (!opts)
     opts = {};
@@ -155,7 +161,7 @@ function unzipSync(data, opts) {
   }
   return files;
 }
-var u8, u16, i32, fleb, fdeb, clim, freb, _a, fl, revfl, _b, fd, revfd, rev, x2, i10, hMap, flt, i10, i10, i10, i10, fdt, i10, flm, flrm, fdm, fdrm, max, bits, bits16, shft, slc, ec, err, inflt, wbits, wbits16, hTree, ln, lc, clen, wfblk, wblk, deo, et, dflt, crct, crc, adler, dopt, mrg, b2, b4, b8, wbytes, zlh, fltn, te, td, tds, dutf8, slzh, zh, z64e, exfl, wzh, wzf;
+var u8, u16, i32, fleb, fdeb, clim, freb, _a, fl, revfl, _b, fd, revfd, rev, x2, i10, hMap, flt, i10, i10, i10, i10, fdt, i10, flm, flrm, fdm, fdrm, max, bits, bits16, shft, slc, ec, err, inflt, wbits, wbits16, hTree, ln, lc, clen, wfblk, wblk, deo, et, dflt, crct, crc, adler, dopt, mrg, b2, b4, b8, wbytes, gzs, gzl, zlh, fltn, te, td, tds, dutf8, slzh, zh, z64e, exfl, wzh, wzf;
 var init_fflate_esm = __esm({
   "vendor/fflate/fflate.esm.js"() {
     "use strict";
@@ -885,6 +891,21 @@ var init_fflate_esm = __esm({
     wbytes = function(d3, b3, v) {
       for (; v; ++b3)
         d3[b3] = v, v >>>= 8;
+    };
+    gzs = function(d3) {
+      if (d3[0] != 31 || d3[1] != 139 || d3[2] != 8)
+        err(6, "invalid gzip data");
+      var flg = d3[3];
+      var st3 = 10;
+      if (flg & 4)
+        st3 += (d3[10] | d3[11] << 8) + 2;
+      for (var zs = (flg >> 3 & 1) + (flg >> 4 & 1); zs > 0; zs -= !d3[st3++])
+        ;
+      return st3 + (flg & 2);
+    };
+    gzl = function(d3) {
+      var l10 = d3.length;
+      return (d3[l10 - 4] | d3[l10 - 3] << 8 | d3[l10 - 2] << 16 | d3[l10 - 1] << 24) >>> 0;
     };
     zlh = function(c10, o10) {
       var lv2 = o10.level, fl2 = lv2 == 0 ? 0 : lv2 < 6 ? 1 : lv2 == 9 ? 3 : 2;
@@ -2623,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.7-2026-10-08";
+var APP_VERSION = "v0.8.8-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6027,20 +6048,20 @@ function engrave(song, o10) {
   const lyricY = (r10) => yOf(r10, BOTTOM_LINE) + P2(lyricOff.get(r10) ?? LYRIC_BELOW);
   const staffHit = (r10) => ({ y: yOf(r10, TOP_LINE) - P2(1.2), h: yOf(r10, BOTTOM_LINE) - yOf(r10, TOP_LINE) + P2(2.4) });
   const drawTime = (r10, x0, beats, beatType, cls) => {
-    const num = timeSigDigits(beats), den = timeSigDigits(beatType);
-    const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw2 = Math.max(wn, wd);
-    prims.push({ t: "glyph", x: P2(x0 + (cw2 - wn) / 2), y: yOf(r10, 36), ch: num, cls });
+    const num2 = timeSigDigits(beats), den = timeSigDigits(beatType);
+    const wn = [...num2].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw2 = Math.max(wn, wd);
+    prims.push({ t: "glyph", x: P2(x0 + (cw2 - wn) / 2), y: yOf(r10, 36), ch: num2, cls });
     prims.push({ t: "glyph", x: P2(x0 + (cw2 - wd) / 2), y: yOf(r10, 32), ch: den, cls });
     return cw2;
   };
   const drawTempo = (r10, x0, v, cls, index, change) => {
     const fs = TEMPO_EM * sp2, word = tempoWord(v).it, y2 = tempoYAt.get(r10) ?? staffTop(r10) - P2(2.4);
     if (change) prims.push({ t: "text", x: P2(x0 - 0.3), y: y2, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change", size: fs, anchor: "end" });
-    const ww = o10.measureLyric(word) * TEMPO_EM / LYRIC_EM / sp2, num = `= ${v}`, nw2 = o10.measureLyric(num) * TEMPO_EM / LYRIC_EM / sp2;
+    const ww = o10.measureLyric(word) * TEMPO_EM / LYRIC_EM / sp2, num2 = `= ${v}`, nw2 = o10.measureLyric(num2) * TEMPO_EM / LYRIC_EM / sp2;
     prims.push({ t: "text", x: P2(x0), y: y2, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
     const gx = x0 + ww + 0.7;
     prims.push({ t: "glyph", x: P2(gx), y: y2 - P2(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
-    prims.push({ t: "text", x: P2(gx + 1.3), y: y2, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+    prims.push({ t: "text", x: P2(gx + 1.3), y: y2, s: num2, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
     marks.push({ index, kind: "tempo", system: r10, x: P2(x0 - 0.3), y: y2 - P2(TEMPO_EM * 1.1), w: P2(gx + 1.3 + nw2 + 0.6 - x0), h: P2(TEMPO_EM * 1.5) });
   };
   const drawKeySig = (r10, x0, f2, cls, clef = "G") => {
@@ -6269,7 +6290,7 @@ function engrave(song, o10) {
         const minBelow = q2.staves === 2 && k2 === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r10] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
         let above = Math.max(STAFF_ABOVE, (e10.top - TOP_LINE) / 2 + 0.8), below = Math.max(minBelow, (BOTTOM_LINE - e10.bot) / 2 + 0.8), lyric = null;
         if (lyricsOf[r10] && k2 === q2.staves - 1) {
-          lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e10.bot) / 2 + 2);
+          lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e10.bot) / 2 + 2) + (o10.lyricRaise ?? 0);
           below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW));
         }
         return { above, below, lyric, dynD: null, tempoD: null, grooveD: null };
@@ -6767,14 +6788,14 @@ function engrave(song, o10) {
         prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen" });
       }
       lyrics.push(...partLyrics);
-      const bracket = (cs3, openL, openR, num) => {
+      const bracket = (cs3, openL, openR, num2) => {
         const row = RW(cs3[0]), n10 = cs3[0].ratio[0];
         const xa = openL ? Math.min(nhX(cs3[0]) - P2(1.2), nhX(cs3[0])) : nhX(cs3[0]), last = cs3[cs3.length - 1], xb = openR ? nhX(last) + nhW(last) + P2(1.2) : nhX(last) + nhW(last);
         const top = Math.min(...cs3.map((c10) => Math.min(c10.pitch ? yOf(row, dIdx(c10.pitch, c10.staff)) : yOf(row, MID_LINE), tipOf.get(c10) ?? Infinity)), yOf(row, TOP_LINE)) - P2(1.6);
-        const mid = (xa + xb) / 2, gap = num ? P2(1) : 0;
+        const mid = (xa + xb) / 2, gap = num2 ? P2(1) : 0;
         const left = openL ? `M${xa},${top}` : `M${xa},${top + P2(0.6)}L${xa},${top}`, right2 = openR ? `L${xb},${top}` : `L${xb},${top}L${xb},${top + P2(0.6)}`;
-        prims.push({ t: "path", d: num ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right2}` : `${left}${right2}`, cls: "tuplet-bracket" });
-        if (num) prims.push({ t: "glyph", x: mid - P2(0.55), y: top + P2(0.55), ch: GLYPH_TUPLET(n10), cls: "tuplet" });
+        prims.push({ t: "path", d: num2 ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right2}` : `${left}${right2}`, cls: "tuplet-bracket" });
+        if (num2) prims.push({ t: "glyph", x: mid - P2(0.55), y: top + P2(0.55), ch: GLYPH_TUPLET(n10), cls: "tuplet" });
       };
       let run2 = [], runRatio = null, acc = 0, minBase = Infinity, segStart = 0;
       const flushSeg = (openR) => {
@@ -11138,7 +11159,7 @@ function createCloudSync(cfg) {
   const etagKey = (n10) => `${appKey}.etag:${n10}`;
   const dirtyKey = (n10) => `${appKey}.dirty:${n10}`;
   const baseName = (n10) => n10.includes("/") ? n10.slice(n10.lastIndexOf("/") + 1) : n10;
-  const stampedName = (n10, enc2 = false, stamp2 = asideStamp(now())) => (enc2 && encFileName ? encFileName : fileName2)(`${baseName(n10)} [${stamp2}]`);
+  const stampedName = (n10, enc3 = false, stamp2 = asideStamp(now())) => (enc3 && encFileName ? encFileName : fileName2)(`${baseName(n10)} [${stamp2}]`);
   function getETag(name) {
     return kv.get(etagKey(name)) || null;
   }
@@ -11199,11 +11220,11 @@ function createCloudSync(cfg) {
     }
   }
   async function push(name, bytes, opts = {}) {
-    const enc2 = !!(encFileName && opts.encrypted);
-    const path = enc2 ? encFileName(name) : fileName2(name);
+    const enc3 = !!(encFileName && opts.encrypted);
+    const path = enc3 ? encFileName(name) : fileName2(name);
     let baseEtag = "baseEtag" in opts ? opts.baseEtag : getETag(name);
     if (encFileName && baseEtag) {
-      const otherPath = enc2 ? fileName2(name) : encFileName(name);
+      const otherPath = enc3 ? fileName2(name) : encFileName(name);
       const target = await provider.getItemByPath(path).catch((e10) => {
         reportStoreError(e10, "log");
         return null;
@@ -11267,35 +11288,35 @@ function createCloudSync(cfg) {
     return { etag: item.eTag, lastModified: item.lastModifiedDateTime, size: item.size, item };
   }
   async function pullTail(name, n10) {
-    const { item, enc: enc2 } = await _find(name);
+    const { item, enc: enc3 } = await _find(name);
     if (!item)
       return null;
     const offset = Math.max(0, (item.size || 0) - n10);
     const raw = await provider.downloadRange(item.ref, offset, Math.min(n10, item.size || n10));
     const bytes = raw instanceof Uint8Array ? raw : raw instanceof ArrayBuffer ? new Uint8Array(raw) : new Uint8Array(await raw.arrayBuffer());
-    return { bytes, item, encrypted: enc2 };
+    return { bytes, item, encrypted: enc3 };
   }
   async function pullRange(name, offset, length) {
-    const { item, enc: enc2 } = await _find(name);
+    const { item, enc: enc3 } = await _find(name);
     if (!item)
       return null;
     const size = item.size || 0;
     const off = Math.max(0, Math.min(offset, size));
     const len = Math.max(0, Math.min(length, size - off));
     if (len === 0)
-      return { bytes: new Uint8Array(0), item, encrypted: enc2 };
+      return { bytes: new Uint8Array(0), item, encrypted: enc3 };
     const raw = await provider.downloadRange(item.ref, off, len);
     const bytes = raw instanceof Uint8Array ? raw : raw instanceof ArrayBuffer ? new Uint8Array(raw) : new Uint8Array(await raw.arrayBuffer());
-    return { bytes, item, encrypted: enc2 };
+    return { bytes, item, encrypted: enc3 };
   }
   async function trash(name, deleteEventId, opts = {}) {
-    const { item, enc: enc2 } = await _find(name);
+    const { item, enc: enc3 } = await _find(name);
     if (!item) {
       clearState(name);
       return null;
     }
     const folderId = await provider.ensureFolder(trashFolder);
-    const stamped = stampedName(name, enc2, deleteEventId);
+    const stamped = stampedName(name, enc3, deleteEventId);
     const moved = await provider.move(item.ref, folderId, { newName: stamped, conflictBehavior: "fail", eTag: opts.baseEtag ?? item.eTag });
     clearState(name);
     return moved;
@@ -13574,7 +13595,7 @@ function createStore(config) {
     throw new Error("createStore: config.encryption is required (pass createEncryption(), codec-less is fine) \u2014 no substitutes");
   if (config.reconcilePolicy !== "app-driven" && config.reconcilePolicy !== "none")
     throw new Error('createStore: config.reconcilePolicy is required ("app-driven" | "none") \u2014 declare who drives periodic reconcile');
-  const enc2 = config.encryption;
+  const enc3 = config.encryption;
   const toName = (cloudName) => ids.fromCloud(cloudName).identifier;
   const cloud = createCloudSync({ provider, kv, fileName: (n10) => n10, encFileName: (n10) => ids.sealed(n10), toName, appKey: "files", manageDirty: false, hidden: config.hidden, identifiers: ids });
   const collectionsCloud = createCloudSync({ provider, kv, fileName: (n10) => `.${appId}/${n10}.json`, appKey: "collections" });
@@ -13867,9 +13888,9 @@ function createStore(config) {
     return null;
   }
   const seal = createSeal({
-    looksContainer: (b3) => enc2.looksEncryptedContainer(b3),
-    pack: (o10) => enc2.packContainer({ dataBytes: o10.dataBytes, fileName: o10.fileName, ext: o10.ext, peek: o10.peek, password: o10.password }),
-    unpack: (blob, pw) => enc2.unpackContainer(blob, pw),
+    looksContainer: (b3) => enc3.looksEncryptedContainer(b3),
+    pack: (o10) => enc3.packContainer({ dataBytes: o10.dataBytes, fileName: o10.fileName, ext: o10.ext, peek: o10.peek, password: o10.password }),
+    unpack: (blob, pw) => enc3.unpackContainer(blob, pw),
     getPassword,
     getPrev: (n10) => local.get(n10),
     makePeek: config.crypt?.makePeek
@@ -13885,7 +13906,7 @@ function createStore(config) {
     validateAdopt,
     unseal: (n10, blob) => seal.unsealForRead(n10, blob),
     // 返明文；加密但锁定 → null（safePull 退验封套）
-    looksEncrypted: (b3) => enc2.looksEncryptedContainer(b3)
+    looksEncrypted: (b3) => enc3.looksEncryptedContainer(b3)
   });
   const busyT = (label, fn) => ui2.busy(resolveStoreText(ui2.text, label), fn, label);
   const busyK = (key, params, fn) => ui2.busy(resolveStoreText(ui2.text, key, params), fn, key);
@@ -14028,23 +14049,23 @@ function createStore(config) {
     return null;
   }
   async function decryptEncPeek(name, encPeek) {
-    if (encPeek.type !== enc2.ENC_PEEK_MIME)
+    if (encPeek.type !== enc3.ENC_PEEK_MIME)
       return encPeek;
-    const parsed = enc2.scanEncPeekFromEnd(new Uint8Array(await encPeek.arrayBuffer()));
+    const parsed = enc3.scanEncPeekFromEnd(new Uint8Array(await encPeek.arrayBuffer()));
     if (!parsed)
       return null;
-    const plain2 = await seal.withPassword(name, (pw) => enc2.decryptPeek(parsed, pw));
+    const plain2 = await seal.withPassword(name, (pw) => enc3.decryptPeek(parsed, pw));
     return plain2 ? new Blob([plain2]) : null;
   }
   async function encVerify(name, pw) {
     if (!pw)
       return false;
-    const tail = await encTailBytes(name, enc2.PEEK_TAIL_WINDOW, true);
+    const tail = await encTailBytes(name, enc3.PEEK_TAIL_WINDOW, true);
     if (tail) {
-      const p2 = enc2.scanEncPeekFromEnd(new Uint8Array(await tail.arrayBuffer()));
+      const p2 = enc3.scanEncPeekFromEnd(new Uint8Array(await tail.arrayBuffer()));
       if (p2) {
         try {
-          await enc2.decryptPeek(p2, pw);
+          await enc3.decryptPeek(p2, pw);
           return true;
         } catch {
           return false;
@@ -14055,7 +14076,7 @@ function createStore(config) {
     if (!full)
       return false;
     try {
-      await enc2.unpackContainer(full instanceof Blob ? full : new Blob([full]), pw);
+      await enc3.unpackContainer(full instanceof Blob ? full : new Blob([full]), pw);
       return true;
     } catch {
       return false;
@@ -14063,7 +14084,7 @@ function createStore(config) {
   }
   async function encIsEncrypted(name) {
     const blob = await local.get(name);
-    return blob ? enc2.looksEncryptedContainer(blob instanceof Blob ? blob : new Blob([blob])) : false;
+    return blob ? enc3.looksEncryptedContainer(blob instanceof Blob ? blob : new Blob([blob])) : false;
   }
   async function encSwap(name, bytes, online, encrypted) {
     const prevEtag = cloud.getETag(name);
@@ -14092,7 +14113,7 @@ function createStore(config) {
       if (!blob)
         return { status: "no-local" };
       const asBlob = blob instanceof Blob ? blob : new Blob([blob]);
-      if (await enc2.looksEncryptedContainer(asBlob))
+      if (await enc3.looksEncryptedContainer(asBlob))
         return { status: "already" };
       if (cloud.getETag(name) != null && !online())
         return { status: "offline" };
@@ -14107,7 +14128,7 @@ function createStore(config) {
           peek = null;
         }
       }
-      const container = await enc2.packContainer({ dataBytes: await toU8(asBlob), fileName: name, ext: cryptExtFor(name), peek, password: pw });
+      const container = await enc3.packContainer({ dataBytes: await toU8(asBlob), fileName: name, ext: cryptExtFor(name), peek, password: pw });
       return await encSwap(name, await toU8(container), online, true);
     }));
   }
@@ -14117,11 +14138,11 @@ function createStore(config) {
       if (!blob)
         return { status: "no-local" };
       const asBlob = blob instanceof Blob ? blob : new Blob([blob]);
-      if (!await enc2.looksEncryptedContainer(asBlob))
+      if (!await enc3.looksEncryptedContainer(asBlob))
         return { status: "not-encrypted" };
       if (cloud.getETag(name) != null && !online())
         return { status: "offline" };
-      const res = await seal.withPassword(name, (pw) => enc2.unpackContainer(asBlob, pw));
+      const res = await seal.withPassword(name, (pw) => enc3.unpackContainer(asBlob, pw));
       if (!res)
         return { status: "locked" };
       return await encSwap(name, await toU8(res.dataBlob), online, false);
@@ -14135,11 +14156,11 @@ function createStore(config) {
       if (!blob)
         return { status: "no-local" };
       const asBlob = blob instanceof Blob ? blob : new Blob([blob]);
-      if (!await enc2.looksEncryptedContainer(asBlob))
+      if (!await enc3.looksEncryptedContainer(asBlob))
         return { status: "not-encrypted" };
       if (cloud.getETag(name) != null && !online())
         return { status: "offline" };
-      const res = await seal.withPassword(name, (pw) => enc2.unpackContainer(asBlob, pw));
+      const res = await seal.withPassword(name, (pw) => enc3.unpackContainer(asBlob, pw));
       if (!res)
         return { status: "locked" };
       let peek = null;
@@ -14150,7 +14171,7 @@ function createStore(config) {
           peek = null;
         }
       }
-      const container = await enc2.packContainer({ dataBytes: await toU8(res.dataBlob), fileName: name, ext: cryptExtFor(name), peek, password: newPassword });
+      const container = await enc3.packContainer({ dataBytes: await toU8(res.dataBlob), fileName: name, ext: cryptExtFor(name), peek, password: newPassword });
       return await encSwap(name, await toU8(container), online, true);
     }));
   }
@@ -14246,7 +14267,7 @@ function createStore(config) {
           const blob = await local.get(name);
           if (blob) {
             const b3 = blob instanceof Blob ? blob : new Blob([blob]);
-            if (await enc2.looksEncryptedContainer(b3))
+            if (await enc3.looksEncryptedContainer(b3))
               return null;
             return b3.slice(0, Math.min(n10, b3.size));
           }
@@ -14397,7 +14418,7 @@ function createStore(config) {
         if (!blob)
           return null;
         const asBlob = blob instanceof Blob ? blob : new Blob([blob]);
-        if (!await enc2.looksEncryptedContainer(asBlob))
+        if (!await enc3.looksEncryptedContainer(asBlob))
           return null;
         return asBlob;
       },
@@ -14430,10 +14451,10 @@ function createStore(config) {
       const entries2 = await readCentralDirectory(src);
       if (!entries2)
         return null;
-      const encEntry = entries2.find((e10) => enc2.CONTAINER_PEEK_ENTRIES.includes(e10.name));
+      const encEntry = entries2.find((e10) => enc3.CONTAINER_PEEK_ENTRIES.includes(e10.name));
       if (encEntry) {
         const bytes2 = await readEntryBytes(src, encEntry);
-        return bytes2 ? new Blob([bytes2], { type: enc2.ENC_PEEK_MIME }) : null;
+        return bytes2 ? new Blob([bytes2], { type: enc3.ENC_PEEK_MIME }) : null;
       }
       const target = entries2.find((e10) => e10.name === o10.zipEntry);
       if (!target)
@@ -16382,18 +16403,18 @@ function createGalleryVerbs(d3) {
     return true;
   }
   async function encryptItem(item) {
-    const enc2 = d3.encryption;
-    if (!enc2)
+    const enc3 = d3.encryption;
+    if (!enc3)
       return;
     if (!_encPrecheck(item, t("gal.verb.encrypt")))
       return;
-    const fresh = enc2.isFreshPasswordSetup();
-    const pw = await enc2.ensureNewPassword();
+    const fresh = enc3.isFreshPasswordSetup();
+    const pw = await enc3.ensureNewPassword();
     if (pw == null) {
       d3.host.status(t("gal.st.cancelled"));
       return;
     }
-    enc2.setPassword(pw);
+    enc3.setPassword(pw);
     let ok2 = false;
     try {
       const res = await docFile(item.identifier).encrypt({ isOnline: cloudOn });
@@ -16408,18 +16429,18 @@ function createGalleryVerbs(d3) {
       d3.host.status(t("gal.st.encFail", { e: errMsg(e10) }), true);
     } finally {
       if (fresh && !ok2)
-        enc2.rollbackFreshPassword();
+        enc3.rollbackFreshPassword();
     }
   }
   async function decryptItem(item) {
-    const enc2 = d3.encryption;
-    if (!enc2)
+    const enc3 = d3.encryption;
+    if (!enc3)
       return;
     if (!_encPrecheck(item, t("gal.verb.decrypt")))
       return;
     if (!await d3.host.confirm(t("gal.dlg.decryptTitle", { base: item.stem }), t("gal.dlg.decryptMsg")))
       return;
-    if (!await enc2.ensureUnlocked(item.identifier)) {
+    if (!await enc3.ensureUnlocked(item.identifier)) {
       d3.host.status(t("gal.st.cancelledPw"), true);
       return;
     }
@@ -16943,9 +16964,9 @@ function mountGalleryScreen(el2, d3) {
     image: icon("image"),
     file: icon("file")
   };
-  const enc2 = d3.encryption;
-  const _lockState = reactive({ unlocked: enc2?.isUnlocked() ?? true });
-  enc2?.onLockChange((u2) => {
+  const enc3 = d3.encryption;
+  const _lockState = reactive({ unlocked: enc3?.isUnlocked() ?? true });
+  enc3?.onLockChange((u2) => {
     _lockState.unlocked = u2;
   });
   const _thumbRev = reactive(/* @__PURE__ */ new Map());
@@ -16977,19 +16998,19 @@ function mountGalleryScreen(el2, d3) {
         readBlurb(blob);
       };
       const tryDecrypt = async () => {
-        if (!enc2) {
+        if (!enc3) {
           locked.value = true;
           return;
         }
         let png = null;
         if (props.encName)
-          png = await enc2.localPeekThumb(props.encName);
+          png = await enc3.localPeekThumb(props.encName);
         else if (cloudEncBlob)
-          png = await enc2.decryptCloudPeekThumb(props.alt, cloudEncBlob);
+          png = await enc3.decryptCloudPeekThumb(props.alt, cloudEncBlob);
         if (png && png.size > 0) {
           locked.value = false;
           setBlob(png);
-        } else if (enc2.isUnlocked())
+        } else if (enc3.isUnlocked())
           locked.value = false;
         else
           locked.value = true;
@@ -17005,7 +17026,7 @@ function mountGalleryScreen(el2, d3) {
           showCloud.value = false;
           if (!blob)
             return;
-          if (enc2?.isEncryptedPeekBlob(blob)) {
+          if (enc3?.isEncryptedPeekBlob(blob)) {
             cloudEncBlob = blob;
             return tryDecrypt();
           }
@@ -17253,13 +17274,13 @@ function mountGalleryScreen(el2, d3) {
       document.addEventListener("pointercancel", _onGatePtrUp, true);
       const encByName = reactive({});
       async function probeEncrypted() {
-        if (!enc2)
+        if (!enc3)
           return;
         for (const nm2 of data.files.filter((it2) => hasLocalCopy(it2.syncState)).map((it2) => it2.identifier)) {
           if (nm2 in encByName)
             continue;
           try {
-            encByName[nm2] = await enc2.isEncrypted(nm2);
+            encByName[nm2] = await enc3.isEncrypted(nm2);
           } catch {
             encByName[nm2] = false;
           }
@@ -17378,7 +17399,7 @@ function mountGalleryScreen(el2, d3) {
         if (!s10)
           throw new Error("gallery: no library attached");
         return s10;
-      }, host: d3.host, doc: d3.doc, thumbs: d3.thumbs, onEncryptionChanged: invalidateEncrypted, encryption: enc2 });
+      }, host: d3.host, doc: d3.doc, thumbs: d3.thumbs, onEncryptionChanged: invalidateEncrypted, encryption: enc3 });
       const wrap = (fn) => async (...a10) => {
         closeMenu();
         await fn(...a10);
@@ -17538,7 +17559,7 @@ function mountGalleryScreen(el2, d3) {
         decryptItem,
         onUnlock,
         requestUnlock,
-        hasEncryption: !!enc2,
+        hasEncryption: !!enc3,
         reload,
         setView: (v) => {
           view2.value = v;
@@ -19050,16 +19071,16 @@ function readMusicXml(xml, hints) {
   };
   const infos = kids(kid(root, "part-list"), "score-part").map((sp2) => {
     const si2 = kid(sp2, "score-instrument"), mi = kid(sp2, "midi-instrument"), vi = kid(si2, "virtual-instrument");
-    const num = (s10) => s10 === void 0 || s10 === "" ? void 0 : Number(s10);
+    const num2 = (s10) => s10 === void 0 || s10 === "" ? void 0 : Number(s10);
     return {
       id: sp2.attrs.id,
       name: childText(sp2, "part-name") ?? "",
       instrumentName: childText(si2, "instrument-name"),
       sound: childText(si2, "instrument-sound"),
-      program: num(childText(mi, "midi-program")),
+      program: num2(childText(mi, "midi-program")),
       variant: childText(vi, "virtual-name"),
-      volume: num(childText(mi, "volume")),
-      pan: num(childText(mi, "pan"))
+      volume: num2(childText(mi, "volume")),
+      pan: num2(childText(mi, "pan"))
     };
   });
   const partEls = kids(root, "part");
@@ -19646,36 +19667,36 @@ function withUnpacked(extras, only) {
 }
 function activePerfSpec(extras, role) {
   const c10 = activeCandidate(extras, role), d3 = c10?.dynamicsDb ?? {}, a10 = c10?.articulation ?? {};
-  const num = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
-  const dynamicsDb = Object.fromEntries(Object.keys(DYNAMICS_DB).map((k2) => [k2, num(d3[k2], DYNAMICS_DB[k2])]));
+  const num2 = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
+  const dynamicsDb = Object.fromEntries(Object.keys(DYNAMICS_DB).map((k2) => [k2, num2(d3[k2], DYNAMICS_DB[k2])]));
   return {
     dynamicsDb,
-    staccatoGate: Math.max(0.05, Math.min(1, num(a10.staccatoGate, ARTICULATION.staccatoGate))),
-    accentDb: num(a10.accentDb, ARTICULATION.accentDb),
-    gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a10.gapSec, 0))),
-    marcatoDb: num(a10.marcatoDb, MARCATO_DB),
-    accentVel: num(a10.accentVel, ACCENT_VEL),
-    marcatoVel: num(a10.marcatoVel, MARCATO_VEL),
-    accentSec: Math.max(0, num(a10.accentSec, MARK_DEFAULTS.accentSec)),
-    breathSec: Math.max(0, num(a10.breathSec, MARK_DEFAULTS.breathSec)),
-    breathShare: Math.max(0, Math.min(1, num(a10.breathShare, MARK_DEFAULTS.breathShare))),
-    gapShare: Math.max(0, Math.min(1, num(a10.gapShare, MARK_DEFAULTS.gapShare))),
-    wedgeStepDb: num(a10.wedgeStepDb, MARK_DEFAULTS.wedgeStepDb),
-    wedgeStepVel: num(a10.wedgeStepVel, MARK_DEFAULTS.wedgeStepVel),
-    sfzDb: num(a10.sfzDb, MARK_DEFAULTS.sfzDb),
-    sfzVel: num(a10.sfzVel, MARK_DEFAULTS.sfzVel),
-    sfzSec: Math.max(0.01, num(a10.sfzSec, MARK_DEFAULTS.sfzSec)),
-    fpSec: Math.max(0.01, num(a10.fpSec, MARK_DEFAULTS.fpSec)),
-    swellDb: num(a10.swellDb, MARK_DEFAULTS.swellDb),
+    staccatoGate: Math.max(0.05, Math.min(1, num2(a10.staccatoGate, ARTICULATION.staccatoGate))),
+    accentDb: num2(a10.accentDb, ARTICULATION.accentDb),
+    gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num2(a10.gapSec, 0))),
+    marcatoDb: num2(a10.marcatoDb, MARCATO_DB),
+    accentVel: num2(a10.accentVel, ACCENT_VEL),
+    marcatoVel: num2(a10.marcatoVel, MARCATO_VEL),
+    accentSec: Math.max(0, num2(a10.accentSec, MARK_DEFAULTS.accentSec)),
+    breathSec: Math.max(0, num2(a10.breathSec, MARK_DEFAULTS.breathSec)),
+    breathShare: Math.max(0, Math.min(1, num2(a10.breathShare, MARK_DEFAULTS.breathShare))),
+    gapShare: Math.max(0, Math.min(1, num2(a10.gapShare, MARK_DEFAULTS.gapShare))),
+    wedgeStepDb: num2(a10.wedgeStepDb, MARK_DEFAULTS.wedgeStepDb),
+    wedgeStepVel: num2(a10.wedgeStepVel, MARK_DEFAULTS.wedgeStepVel),
+    sfzDb: num2(a10.sfzDb, MARK_DEFAULTS.sfzDb),
+    sfzVel: num2(a10.sfzVel, MARK_DEFAULTS.sfzVel),
+    sfzSec: Math.max(0.01, num2(a10.sfzSec, MARK_DEFAULTS.sfzSec)),
+    fpSec: Math.max(0.01, num2(a10.fpSec, MARK_DEFAULTS.fpSec)),
+    swellDb: num2(a10.swellDb, MARK_DEFAULTS.swellDb),
     canSwell: a10.canSwell !== false,
-    stressDb: num(a10.stressDb, MARK_DEFAULTS.stressDb),
-    stressVel: num(a10.stressVel, MARK_DEFAULTS.stressVel),
-    unstressDb: num(a10.unstressDb, MARK_DEFAULTS.unstressDb),
-    unstressVel: num(a10.unstressVel, MARK_DEFAULTS.unstressVel),
-    ghostDb: num(a10.ghostDb, MARK_DEFAULTS.ghostDb),
-    ghostVel: num(a10.ghostVel, MARK_DEFAULTS.ghostVel),
+    stressDb: num2(a10.stressDb, MARK_DEFAULTS.stressDb),
+    stressVel: num2(a10.stressVel, MARK_DEFAULTS.stressVel),
+    unstressDb: num2(a10.unstressDb, MARK_DEFAULTS.unstressDb),
+    unstressVel: num2(a10.unstressVel, MARK_DEFAULTS.unstressVel),
+    ghostDb: num2(a10.ghostDb, MARK_DEFAULTS.ghostDb),
+    ghostVel: num2(a10.ghostVel, MARK_DEFAULTS.ghostVel),
     sing: { ...SING_MARKS, ...c10?.sing ?? {} },
-    dynamicsVel: c10?.dynamicsVel ? Object.fromEntries(Object.keys(DYNAMICS_VEL).map((k2) => [k2, Math.max(1, Math.min(127, num(c10.dynamicsVel[k2], DYNAMICS_VEL[k2])))])) : null
+    dynamicsVel: c10?.dynamicsVel ? Object.fromEntries(Object.keys(DYNAMICS_VEL).map((k2) => [k2, Math.max(1, Math.min(127, num2(c10.dynamicsVel[k2], DYNAMICS_VEL[k2])))])) : null
   };
 }
 var GAP_MAX_SEC = 0.2;
@@ -20968,23 +20989,23 @@ function subsetSf2(input, want) {
   const { info: info2, smpl, pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const count = (k2) => pdta[k2].size / REC[k2];
   const at2 = (k2, i10) => pdta[k2].off + i10 * REC[k2];
-  const u162 = (k2, i10, field) => dv.getUint16(at2(k2, i10) + field, true);
+  const u163 = (k2, i10, field) => dv.getUint16(at2(k2, i10) + field, true);
   const nP2 = count("phdr") - 1;
   const wantKey = new Set(want.map((w2) => `${w2.bank}:${w2.program}`));
   const presets = [];
-  for (let i10 = 0; i10 < nP2; i10++) if (wantKey.has(`${u162("phdr", i10, 22)}:${u162("phdr", i10, 20)}`)) presets.push(i10);
-  const found = new Set(presets.map((i10) => `${u162("phdr", i10, 22)}:${u162("phdr", i10, 20)}`));
+  for (let i10 = 0; i10 < nP2; i10++) if (wantKey.has(`${u163("phdr", i10, 22)}:${u163("phdr", i10, 20)}`)) presets.push(i10);
+  const found = new Set(presets.map((i10) => `${u163("phdr", i10, 22)}:${u163("phdr", i10, 20)}`));
   const missing = [...wantKey].filter((k2) => !found.has(k2));
   if (missing.length) throw new Error(`sf2: presets not in this bank: ${missing.join(", ")}`);
   const instSet = /* @__PURE__ */ new Set();
-  for (const i10 of presets) for (let b3 = u162("phdr", i10, 24); b3 < u162("phdr", i10 + 1, 24); b3++)
-    for (let g3 = u162("pbag", b3, 0); g3 < u162("pbag", b3 + 1, 0); g3++) if (u162("pgen", g3, 0) === GEN_INSTRUMENT) instSet.add(u162("pgen", g3, 2));
+  for (const i10 of presets) for (let b3 = u163("phdr", i10, 24); b3 < u163("phdr", i10 + 1, 24); b3++)
+    for (let g3 = u163("pbag", b3, 0); g3 < u163("pbag", b3 + 1, 0); g3++) if (u163("pgen", g3, 0) === GEN_INSTRUMENT) instSet.add(u163("pgen", g3, 2));
   const insts = [...instSet].sort((a10, b3) => a10 - b3), instMap = new Map(insts.map((v, i10) => [v, i10]));
   const nS2 = count("shdr") - 1, sampleSet = /* @__PURE__ */ new Set();
-  for (const j2 of insts) for (let b3 = u162("inst", j2, 20); b3 < u162("inst", j2 + 1, 20); b3++)
-    for (let g3 = u162("ibag", b3, 0); g3 < u162("ibag", b3 + 1, 0); g3++) if (u162("igen", g3, 0) === GEN_SAMPLE_ID) sampleSet.add(u162("igen", g3, 2));
+  for (const j2 of insts) for (let b3 = u163("inst", j2, 20); b3 < u163("inst", j2 + 1, 20); b3++)
+    for (let g3 = u163("ibag", b3, 0); g3 < u163("ibag", b3 + 1, 0); g3++) if (u163("igen", g3, 0) === GEN_SAMPLE_ID) sampleSet.add(u163("igen", g3, 2));
   for (const s10 of [...sampleSet]) {
-    const type = u162("shdr", s10, 44), link = u162("shdr", s10, 42);
+    const type = u163("shdr", s10, 44), link = u163("shdr", s10, 42);
     if (type & 14 && link < nS2) sampleSet.add(link);
   }
   const samples = [...sampleSet].sort((a10, b3) => a10 - b3), sampleMap = new Map(samples.map((v, i10) => [v, i10]));
@@ -21005,19 +21026,19 @@ function subsetSf2(input, want) {
   let nBag = 0, nGen = 0, nMod = 0;
   for (const i10 of presets) {
     copy("phdr", i10, (r10) => w16(r10, 24, nBag));
-    for (let b3 = u162("phdr", i10, 24); b3 < u162("phdr", i10 + 1, 24); b3++) {
+    for (let b3 = u163("phdr", i10, 24); b3 < u163("phdr", i10 + 1, 24); b3++) {
       copy("pbag", b3, (r10) => {
         w16(r10, 0, nGen);
         w16(r10, 2, nMod);
       });
       nBag++;
-      for (let g3 = u162("pbag", b3, 0); g3 < u162("pbag", b3 + 1, 0); g3++) {
+      for (let g3 = u163("pbag", b3, 0); g3 < u163("pbag", b3 + 1, 0); g3++) {
         copy("pgen", g3, (r10) => {
-          if (u162("pgen", g3, 0) === GEN_INSTRUMENT) w16(r10, 2, instMap.get(u162("pgen", g3, 2)));
+          if (u163("pgen", g3, 0) === GEN_INSTRUMENT) w16(r10, 2, instMap.get(u163("pgen", g3, 2)));
         });
         nGen++;
       }
-      for (let m2 = u162("pbag", b3, 2); m2 < u162("pbag", b3 + 1, 2); m2++) {
+      for (let m2 = u163("pbag", b3, 2); m2 < u163("pbag", b3 + 1, 2); m2++) {
         copy("pmod", m2);
         nMod++;
       }
@@ -21037,19 +21058,19 @@ function subsetSf2(input, want) {
   nMod = 0;
   for (const j2 of insts) {
     copy("inst", j2, (r10) => w16(r10, 20, nBag));
-    for (let b3 = u162("inst", j2, 20); b3 < u162("inst", j2 + 1, 20); b3++) {
+    for (let b3 = u163("inst", j2, 20); b3 < u163("inst", j2 + 1, 20); b3++) {
       copy("ibag", b3, (r10) => {
         w16(r10, 0, nGen);
         w16(r10, 2, nMod);
       });
       nBag++;
-      for (let g3 = u162("ibag", b3, 0); g3 < u162("ibag", b3 + 1, 0); g3++) {
+      for (let g3 = u163("ibag", b3, 0); g3 < u163("ibag", b3 + 1, 0); g3++) {
         copy("igen", g3, (r10) => {
-          if (u162("igen", g3, 0) === GEN_SAMPLE_ID) w16(r10, 2, sampleMap.get(u162("igen", g3, 2)));
+          if (u163("igen", g3, 0) === GEN_SAMPLE_ID) w16(r10, 2, sampleMap.get(u163("igen", g3, 2)));
         });
         nGen++;
       }
-      for (let m2 = u162("ibag", b3, 2); m2 < u162("ibag", b3 + 1, 2); m2++) {
+      for (let m2 = u163("ibag", b3, 2); m2 < u163("ibag", b3 + 1, 2); m2++) {
         copy("imod", m2);
         nMod++;
       }
@@ -21066,15 +21087,15 @@ function subsetSf2(input, want) {
   out.imod.push(...new Uint8Array(REC.imod));
   const pieces = [];
   let pos = 0;
-  const u32 = (k2, i10, field) => dv.getUint32(at2(k2, i10) + field, true);
+  const u322 = (k2, i10, field) => dv.getUint32(at2(k2, i10) + field, true);
   for (const s10 of samples) {
-    const start = u32("shdr", s10, 20), end = u32("shdr", s10, 24), len = end - start;
+    const start = u322("shdr", s10, 20), end = u322("shdr", s10, 24), len = end - start;
     copy("shdr", s10, (r10) => {
       w32(r10, 20, pos);
       w32(r10, 24, pos + len);
-      w32(r10, 28, pos + (u32("shdr", s10, 28) - start));
-      w32(r10, 32, pos + (u32("shdr", s10, 32) - start));
-      const link = u162("shdr", s10, 42), ns2 = sampleMap.get(link);
+      w32(r10, 28, pos + (u322("shdr", s10, 28) - start));
+      w32(r10, 32, pos + (u322("shdr", s10, 32) - start));
+      const link = u163("shdr", s10, 42), ns2 = sampleMap.get(link);
       if (ns2 === void 0) {
         w16(r10, 42, 0);
         w16(r10, 44, 1);
@@ -29922,6 +29943,838 @@ var RenderProgress = class {
   }
 };
 
+// src/export/pdf.ts
+init_fflate_esm();
+var enc2 = new TextEncoder();
+var num = (v) => (Math.round(v * 1e3) / 1e3).toString();
+var hex4 = (v) => (v & 65535).toString(16).padStart(4, "0").toUpperCase();
+var hexString = (s10) => {
+  let out = "<FEFF";
+  for (let i10 = 0; i10 < s10.length; i10++) out += hex4(s10.charCodeAt(i10));
+  return out + ">";
+};
+var rgb = (c10, stroke) => `${num(c10[0])} ${num(c10[1])} ${num(c10[2])} ${stroke ? "RG" : "rg"}`;
+function svgToPdfPath(d3) {
+  const t10 = d3.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [];
+  let i10 = 0, cmd2 = "", cx2 = 0, cy2 = 0, sx2 = 0, sy2 = 0, out = "";
+  const n10 = () => Number(t10[i10++]);
+  while (i10 < t10.length) {
+    if (/[A-Za-z]/.test(t10[i10])) cmd2 = t10[i10++];
+    switch (cmd2) {
+      case "M":
+        cx2 = sx2 = n10();
+        cy2 = sy2 = n10();
+        out += `${num(cx2)} ${num(cy2)} m `;
+        cmd2 = "L";
+        break;
+      case "L":
+        cx2 = n10();
+        cy2 = n10();
+        out += `${num(cx2)} ${num(cy2)} l `;
+        break;
+      case "H":
+        cx2 = n10();
+        out += `${num(cx2)} ${num(cy2)} l `;
+        break;
+      case "V":
+        cy2 = n10();
+        out += `${num(cx2)} ${num(cy2)} l `;
+        break;
+      case "C": {
+        const a10 = n10(), b3 = n10(), c10 = n10(), e10 = n10();
+        cx2 = n10();
+        cy2 = n10();
+        out += `${num(a10)} ${num(b3)} ${num(c10)} ${num(e10)} ${num(cx2)} ${num(cy2)} c `;
+        break;
+      }
+      case "Q": {
+        const qx = n10(), qy = n10(), x2 = n10(), y2 = n10();
+        out += `${num(cx2 + 2 / 3 * (qx - cx2))} ${num(cy2 + 2 / 3 * (qy - cy2))} ${num(x2 + 2 / 3 * (qx - x2))} ${num(y2 + 2 / 3 * (qy - y2))} ${num(x2)} ${num(y2)} c `;
+        cx2 = x2;
+        cy2 = y2;
+        break;
+      }
+      case "Z":
+        out += "h ";
+        cx2 = sx2;
+        cy2 = sy2;
+        cmd2 = "";
+        break;
+      default:
+        throw new Error(`svgToPdfPath: unsupported path command "${cmd2 || t10[i10]}"`);
+    }
+  }
+  return out;
+}
+function writePdf(doc2, font, music, opts = {}) {
+  const chunks2 = [];
+  let length = 0;
+  const offsets = [0];
+  const push = (d3) => {
+    const b3 = typeof d3 === "string" ? enc2.encode(d3) : d3;
+    chunks2.push(b3);
+    length += b3.length;
+  };
+  const reserve = () => {
+    offsets.push(-1);
+    return offsets.length - 1;
+  };
+  const begin = (n10) => {
+    offsets[n10] = length;
+    push(`${n10} 0 obj
+`);
+  };
+  const obj = (n10, body2) => {
+    begin(n10);
+    push(body2 + "\nendobj\n");
+  };
+  const stream = (n10, dict, data) => {
+    const body2 = zlibSync(data);
+    begin(n10);
+    push(`<< ${dict} /Filter /FlateDecode /Length ${body2.length} >>
+stream
+`);
+    push(body2);
+    push("\nendstream\nendobj\n");
+  };
+  push("%PDF-1.7\n%\xE2\xE3\xCF\xD3\n");
+  const catalog = reserve(), pagesObj = reserve(), fontObj = reserve(), cidObj = reserve(), descObj = reserve(), fileObj = reserve(), uniObj = reserve(), infoObj = reserve();
+  const used = /* @__PURE__ */ new Map(), missing = /* @__PURE__ */ new Set(), missingMusic = /* @__PURE__ */ new Set();
+  const forms = /* @__PURE__ */ new Map();
+  const pageObjs = doc2.pages.map(() => reserve());
+  const em2 = music.unitsPerEm;
+  doc2.pages.forEach((page, pi) => {
+    const H2 = page.h;
+    let c10 = "";
+    const xobj = /* @__PURE__ */ new Set();
+    for (const o10 of page.ops) {
+      if (o10.op === "rect") c10 += `${rgb(o10.color, false)} ${num(o10.x)} ${num(H2 - o10.y - o10.h)} ${num(o10.w)} ${num(o10.h)} re f
+`;
+      else if (o10.op === "line") c10 += `${rgb(o10.color, true)} ${num(o10.width)} w ${o10.round ? 1 : 0} J [${(o10.dash ?? []).map(num).join(" ")}] 0 d ${num(o10.x1)} ${num(H2 - o10.y1)} m ${num(o10.x2)} ${num(H2 - o10.y2)} l S
+`;
+      else if (o10.op === "path") {
+        let p3 = "";
+        for (const s10 of o10.segs) p3 += s10.k === "Z" ? "h " : s10.k === "C" ? `${num(s10.x1)} ${num(H2 - s10.y1)} ${num(s10.x2)} ${num(H2 - s10.y2)} ${num(s10.x)} ${num(H2 - s10.y)} c ` : `${num(s10.x)} ${num(H2 - s10.y)} ${s10.k === "M" ? "m" : "l"} `;
+        c10 += o10.fill ? `${rgb(o10.color, false)} ${p3}f
+` : `${rgb(o10.color, true)} ${num(o10.width ?? 1)} w ${o10.round ? 1 : 0} J ${o10.round ? 1 : 0} j [${(o10.dash ?? []).map(num).join(" ")}] 0 d ${p3}S
+`;
+      } else if (o10.op === "glyph") {
+        const g3 = music.glyphs[o10.code];
+        if (!g3) {
+          missingMusic.add(o10.code);
+          continue;
+        }
+        let n10 = forms.get(o10.code);
+        if (n10 === void 0) {
+          n10 = reserve();
+          forms.set(o10.code, n10);
+        }
+        xobj.add(o10.code);
+        const s10 = o10.size / em2;
+        c10 += `q ${rgb(o10.color, false)} ${num(s10)} 0 0 ${num(s10)} ${num(o10.x)} ${num(H2 - o10.y)} cm /G${o10.code} Do Q
+`;
+      } else {
+        let hex = "";
+        const chars = [...o10.text], shaped = font.shape(o10.text);
+        chars.forEach((ch2, k3) => {
+          const cp2 = ch2.codePointAt(0), g3 = shaped[k3] ?? 0;
+          if (g3 === 0 && ch2.trim()) missing.add(ch2);
+          if (!used.has(g3)) used.set(g3, cp2);
+          hex += hex4(g3);
+        });
+        if (!hex) continue;
+        const tm2 = o10.italic ? `1 0 0.2 1 ${num(o10.x)} ${num(H2 - o10.y)} Tm` : `1 0 0 1 ${num(o10.x)} ${num(H2 - o10.y)} Tm`;
+        const bold = o10.bold ? ` 2 Tr ${num(o10.size * 0.035)} w ${rgb(o10.color, true)}` : " 0 Tr";
+        c10 += `BT /F1 ${num(o10.size)} Tf ${rgb(o10.color, false)}${bold} ${tm2} <${hex}> Tj ET
+`;
+      }
+    }
+    const content = reserve();
+    stream(content, "", enc2.encode(c10));
+    const xo = xobj.size ? ` /XObject << ${[...xobj].map((code) => `/G${code} ${forms.get(code)} 0 R`).join(" ")} >>` : "";
+    obj(pageObjs[pi], `<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${num(page.w)} ${num(page.h)}] /Resources << /Font << /F1 ${fontObj} 0 R >>${xo} >> /Contents ${content} 0 R >>`);
+  });
+  for (const [code, n10] of forms) {
+    const g3 = music.glyphs[code];
+    stream(n10, `/Type /XObject /Subtype /Form /BBox [-${em2 * 2} -${em2 * 2} ${em2 * 4} ${em2 * 4}]`, enc2.encode(`${svgToPdfPath(g3.d)}f
+`));
+  }
+  obj(pagesObj, `<< /Type /Pages /Kids [${pageObjs.map((n10) => `${n10} 0 R`).join(" ")}] /Count ${pageObjs.length} >>`);
+  const k2 = 1e3 / font.unitsPerEm, sc2 = (v) => Math.round(v * k2);
+  const gids = [...used.keys()].sort((a10, b3) => a10 - b3), sub = font.subset(gids);
+  const tagSeed = gids.reduce((a10, g3) => a10 * 31 + g3 >>> 0, gids.length);
+  let prefix = "";
+  for (let i10 = 0, v = tagSeed; i10 < 6; i10++) {
+    prefix += String.fromCharCode(65 + v % 26);
+    v = Math.floor(v / 26) + i10 * 7;
+  }
+  const base3 = `${prefix}+${font.psName}`;
+  let W3 = "";
+  for (let i10 = 0; i10 < gids.length; ) {
+    let j2 = i10;
+    const ws = [];
+    while (j2 < gids.length && gids[j2] === gids[i10] + (j2 - i10)) {
+      ws.push(sc2(font.advance(gids[j2])));
+      j2++;
+    }
+    W3 += `${gids[i10]} [${ws.join(" ")}] `;
+    i10 = j2;
+  }
+  stream(fileObj, `/Length1 ${sub.length}`, sub);
+  obj(descObj, `<< /Type /FontDescriptor /FontName /${base3} /Flags 4 /FontBBox [${font.bbox.map(sc2).join(" ")}] /ItalicAngle 0 /Ascent ${sc2(font.ascender)} /Descent ${sc2(font.descender)} /CapHeight ${sc2(font.capHeight)} /StemV 80 /FontFile2 ${fileObj} 0 R >>`);
+  obj(cidObj, `<< /Type /Font /Subtype /CIDFontType2 /BaseFont /${base3} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor ${descObj} 0 R /DW 1000 /W [ ${W3}] /CIDToGIDMap /Identity >>`);
+  let cmapText = "/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n";
+  const pairs = gids.filter((g3) => g3 !== 0).map((g3) => {
+    const cp2 = used.get(g3);
+    const u2 = cp2 > 65535 ? hex4(55296 + (cp2 - 65536 >> 10)) + hex4(56320 + (cp2 - 65536 & 1023)) : hex4(cp2);
+    return `<${hex4(g3)}> <${u2}>`;
+  });
+  for (let i10 = 0; i10 < pairs.length; i10 += 100) {
+    const part = pairs.slice(i10, i10 + 100);
+    cmapText += `${part.length} beginbfchar
+${part.join("\n")}
+endbfchar
+`;
+  }
+  cmapText += "endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n";
+  stream(uniObj, "", enc2.encode(cmapText));
+  obj(fontObj, `<< /Type /Font /Subtype /Type0 /BaseFont /${base3} /Encoding /Identity-H /DescendantFonts [${cidObj} 0 R] /ToUnicode ${uniObj} 0 R >>`);
+  const pdfDate = (d3) => {
+    const p22 = (v) => String(v).padStart(2, "0");
+    const off = -d3.getTimezoneOffset(), sign = off < 0 ? "-" : "+", ao2 = Math.abs(off);
+    return `D:${d3.getFullYear()}${p22(d3.getMonth() + 1)}${p22(d3.getDate())}${p22(d3.getHours())}${p22(d3.getMinutes())}${p22(d3.getSeconds())}${sign}${p22(Math.floor(ao2 / 60))}'${p22(ao2 % 60)}'`;
+  };
+  obj(infoObj, `<< /Title ${hexString(doc2.title)} /Producer ${hexString(doc2.producer ?? "MoonSinger")}${doc2.created ? ` /CreationDate (${pdfDate(doc2.created)})` : ""} >>`);
+  obj(catalog, `<< /Type /Catalog /Pages ${pagesObj} 0 R >>`);
+  const xrefAt = length, count = offsets.length;
+  let xref = `xref
+0 ${count}
+0000000000 65535 f 
+`;
+  for (let i10 = 1; i10 < count; i10++) xref += `${String(offsets[i10]).padStart(10, "0")} 00000 n 
+`;
+  push(xref);
+  push(`trailer
+<< /Size ${count} /Root ${catalog} 0 R /Info ${infoObj} 0 R >>
+startxref
+${xrefAt}
+%%EOF
+`);
+  if (opts.stats) {
+    opts.stats.glyphs = gids.length;
+    opts.stats.missing = [...missing];
+    opts.stats.missingMusic = [...missingMusic];
+    opts.stats.fontBytes = sub.length;
+  }
+  const out = new Uint8Array(length);
+  let p2 = 0;
+  for (const cnk of chunks2) {
+    out.set(cnk, p2);
+    p2 += cnk.length;
+  }
+  return out;
+}
+
+// src/export/score-pdf.ts
+var PT_PER_MM = 72 / 25.4;
+var INK = [0.1, 0.1, 0.1];
+var SKIP = /* @__PURE__ */ new Set([
+  "paper-chip",
+  "paper-chip-text",
+  "paper-chip-icon",
+  "part-stub",
+  "part-stub-line",
+  "hidden-note",
+  "warn",
+  "selbox",
+  "caret",
+  "nav-text",
+  "part-badge",
+  "tempo-change",
+  "dyn-implied",
+  "arr-issue",
+  "arr-empty",
+  "empty",
+  "phrase-mark",
+  "page",
+  "in-span"
+]);
+var STROKE = { tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true } };
+var BOLD = /* @__PURE__ */ new Set(["song-title", "tempo-word", "paper-name", "groove-mark", "part-name"]);
+var ITALIC = /* @__PURE__ */ new Set(["groove-mark", "dyn-word"]);
+function textEm(font, s10) {
+  return font.shape(s10).reduce((a10, g3) => a10 + font.advance(g3), 0) / font.unitsPerEm;
+}
+function lyricRaiseOf(font, ref) {
+  if (!ref) return 0;
+  const top = (f2) => {
+    const ink = f2.inkOf(f2.glyphId(22269));
+    return ink ? ink[3] / f2.unitsPerEm : 0;
+  };
+  return Math.max(0, top(font) - top(ref)) * LYRIC_EM;
+}
+function segsOf(d3, dx, dy) {
+  const t10 = d3.match(/[MLQCZHVmlqczhv]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [], out = [];
+  let i10 = 0, cmd2 = "", cx2 = 0, cy2 = 0, sx2 = 0, sy2 = 0;
+  const n10 = () => Number(t10[i10++]);
+  while (i10 < t10.length) {
+    if (/[A-Za-z]/.test(t10[i10])) cmd2 = t10[i10++].toUpperCase();
+    if (cmd2 === "M") {
+      cx2 = sx2 = n10();
+      cy2 = sy2 = n10();
+      out.push({ k: "M", x: cx2 + dx, y: cy2 + dy });
+      cmd2 = "L";
+    } else if (cmd2 === "L") {
+      cx2 = n10();
+      cy2 = n10();
+      out.push({ k: "L", x: cx2 + dx, y: cy2 + dy });
+    } else if (cmd2 === "H") {
+      cx2 = n10();
+      out.push({ k: "L", x: cx2 + dx, y: cy2 + dy });
+    } else if (cmd2 === "V") {
+      cy2 = n10();
+      out.push({ k: "L", x: cx2 + dx, y: cy2 + dy });
+    } else if (cmd2 === "C") {
+      const a10 = n10(), b3 = n10(), c10 = n10(), e10 = n10();
+      cx2 = n10();
+      cy2 = n10();
+      out.push({ k: "C", x1: a10 + dx, y1: b3 + dy, x2: c10 + dx, y2: e10 + dy, x: cx2 + dx, y: cy2 + dy });
+    } else if (cmd2 === "Q") {
+      const qx = n10(), qy = n10(), x2 = n10(), y2 = n10();
+      out.push({ k: "C", x1: cx2 + 2 / 3 * (qx - cx2) + dx, y1: cy2 + 2 / 3 * (qy - cy2) + dy, x2: x2 + 2 / 3 * (qx - x2) + dx, y2: y2 + 2 / 3 * (qy - y2) + dy, x: x2 + dx, y: y2 + dy });
+      cx2 = x2;
+      cy2 = y2;
+    } else if (cmd2 === "Z") {
+      out.push({ k: "Z" });
+      cx2 = sx2;
+      cy2 = sy2;
+      cmd2 = "";
+    } else i10++;
+  }
+  return out;
+}
+function scorePdf(a10) {
+  const paper = a10.song.paper ?? paperOf(DEFAULT_PAPER), mm = spMm(paper), sp2 = mm * PT_PER_MM, m2 = paper.marginMm;
+  const page = { h: paper.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm };
+  const lyricPx = LYRIC_EM * sp2;
+  const L2 = engrave(a10.song, {
+    width: lineSp(paper) * sp2,
+    sp: sp2,
+    at: { paper: a10.song.papers[0].id, part: a10.song.parts[0].id },
+    caret: -1,
+    sel: null,
+    parts: a10.parts,
+    measureLyric: (s10) => textEm(a10.font, s10) * lyricPx,
+    titlePlaceholder: false,
+    autoBars: true,
+    justWrote: false,
+    page,
+    lyricRaise: lyricRaiseOf(a10.font, a10.ref)
+  });
+  const W3 = paper.widthMm * PT_PER_MM, H2 = paper.heightMm * PT_PER_MM, dx = L2.pageX.left;
+  const pages = L2.pages.map(() => ({ w: W3, h: H2, ops: [] }));
+  const pageOf = (y2) => {
+    for (let k2 = 0; k2 < L2.pages.length; k2++) if (y2 >= L2.pages[k2].top && y2 < L2.pages[k2].top + L2.pages[k2].h) return k2;
+    return -1;
+  };
+  const scaleW = sp2 / 10;
+  const em2 = a10.music.unitsPerEm;
+  for (const p2 of L2.prims) {
+    if (p2.t === "icon") continue;
+    const cls = (p2.cls ?? "").split(/\s+/).filter(Boolean);
+    if (cls.some((c10) => SKIP.has(c10))) continue;
+    const y0 = p2.t === "line" ? Math.min(p2.y1, p2.y2) : p2.t === "path" ? Number(/M\s*-?[\d.]+[ ,]+(-?[\d.]+)/.exec(p2.d)?.[1] ?? NaN) : p2.y;
+    const k2 = pageOf(y0);
+    if (k2 < 0) continue;
+    const top = L2.pages[k2].top, ops = pages[k2].ops;
+    ops.push(...toOps(p2, cls, dx, top));
+  }
+  function toOps(p2, cls, ox2, top) {
+    switch (p2.t) {
+      case "line":
+        return [{ op: "line", x1: p2.x1 + ox2, y1: p2.y1 - top, x2: p2.x2 + ox2, y2: p2.y2 - top, color: INK, width: p2.w }];
+      case "rect":
+        return [{ op: "rect", x: p2.x + ox2, y: p2.y - top, w: p2.w, h: p2.h, color: INK }];
+      case "path": {
+        const st3 = cls.map((c10) => STROKE[c10]).find(Boolean), segs = segsOf(p2.d, ox2, -top);
+        return st3 ? [{ op: "path", segs, color: INK, fill: false, width: st3.w * scaleW, ...cls.includes("ramp") ? { dash: [4 * scaleW, 3 * scaleW] } : {}, ...st3.round ? { round: true } : {} }] : [{ op: "path", segs, color: INK, fill: true }];
+      }
+      case "glyph": {
+        const size = p2.size ?? 4 * sp2, out = [];
+        let x2 = p2.x + ox2;
+        for (const ch2 of p2.ch) {
+          const code = ch2.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+          out.push({ op: "glyph", code, x: x2, y: p2.y - top, size, color: INK });
+          x2 += (a10.music.glyphs[code]?.adv ?? 0) / em2 * size;
+        }
+        return out;
+      }
+      case "text": {
+        const size = p2.size ?? lyricPx, w2 = textEm(a10.font, p2.s) * size, anchor = p2.anchor ?? "middle";
+        const x2 = p2.x + ox2 - (anchor === "middle" ? w2 / 2 : anchor === "end" ? w2 : 0);
+        return [{ op: "text", x: x2, y: p2.y - top, text: p2.s, size, color: INK, ...cls.some((c10) => BOLD.has(c10)) ? { bold: true } : {}, ...cls.some((c10) => ITALIC.has(c10)) ? { italic: true } : {} }];
+      }
+      default:
+        return [];
+    }
+  }
+  const stats = { glyphs: 0, missing: [], missingMusic: [], fontBytes: 0 };
+  const bytes = writePdf({ title: a10.title, pages, producer: "MoonSinger", ...a10.created ? { created: a10.created } : {} }, a10.font, a10.music, { stats });
+  return { bytes, pages: pages.length, stats };
+}
+
+// src/export/pdf-assets.ts
+init_fflate_esm();
+
+// src/export/ttf.ts
+var u162 = (b3, o10) => b3[o10] << 8 | b3[o10 + 1];
+var i16 = (b3, o10) => {
+  const v = u162(b3, o10);
+  return v & 32768 ? v - 65536 : v;
+};
+var u32 = (b3, o10) => (b3[o10] << 24 | b3[o10 + 1] << 16 | b3[o10 + 2] << 8 | b3[o10 + 3]) >>> 0;
+var tagAt = (b3, o10) => String.fromCharCode(b3[o10], b3[o10 + 1], b3[o10 + 2], b3[o10 + 3]);
+var NotTrueTypeError = class extends Error {
+  name = "NotTrueTypeError";
+};
+function parseTtf(bytes) {
+  if (bytes.length < 12) throw new NotTrueTypeError("font file too short");
+  const sfnt = u32(bytes, 0);
+  if (tagAt(bytes, 0) === "OTTO") throw new NotTrueTypeError("CFF-flavoured OpenType (OTTO) is not supported; a glyf-outline TrueType font is required");
+  if (sfnt !== 65536 && tagAt(bytes, 0) !== "true") throw new NotTrueTypeError(`not a TrueType font (sfnt version 0x${sfnt.toString(16)})`);
+  const tables = /* @__PURE__ */ new Map();
+  const n10 = u162(bytes, 4);
+  for (let i10 = 0; i10 < n10; i10++) {
+    const r10 = 12 + 16 * i10;
+    tables.set(tagAt(bytes, r10), { off: u32(bytes, r10 + 8), len: u32(bytes, r10 + 12) });
+  }
+  const need = (tag2) => {
+    const t10 = tables.get(tag2);
+    if (!t10) throw new NotTrueTypeError(`missing '${tag2}' table`);
+    return t10;
+  };
+  const head = need("head"), hhea = need("hhea"), maxp = need("maxp"), hmtx = need("hmtx"), loca = need("loca"), glyf = need("glyf"), cmap = need("cmap");
+  const unitsPerEm = u162(bytes, head.off + 18), longLoca = i16(bytes, head.off + 50) === 1;
+  const bbox = [i16(bytes, head.off + 36), i16(bytes, head.off + 38), i16(bytes, head.off + 40), i16(bytes, head.off + 42)];
+  const ascender = i16(bytes, hhea.off + 4), descender = i16(bytes, hhea.off + 6), numHMetrics = u162(bytes, hhea.off + 34);
+  const numGlyphs = u162(bytes, maxp.off + 4);
+  const os2 = tables.get("OS/2");
+  const capHeight = os2 && os2.len >= 90 && u162(bytes, os2.off) >= 2 ? i16(bytes, os2.off + 88) : Math.round(ascender * 0.8);
+  let psName = "Font";
+  const nameT = tables.get("name");
+  if (nameT) {
+    const cnt = u162(bytes, nameT.off + 2), so2 = nameT.off + u162(bytes, nameT.off + 4);
+    for (let i10 = 0; i10 < cnt; i10++) {
+      const r10 = nameT.off + 6 + 12 * i10;
+      if (u162(bytes, r10 + 6) !== 6) continue;
+      const pid = u162(bytes, r10), len = u162(bytes, r10 + 8), o10 = so2 + u162(bytes, r10 + 10);
+      let s10 = "";
+      if (pid === 3 || pid === 0) for (let k2 = 0; k2 + 1 < len; k2 += 2) s10 += String.fromCharCode(u162(bytes, o10 + k2));
+      else for (let k2 = 0; k2 < len; k2++) s10 += String.fromCharCode(bytes[o10 + k2]);
+      s10 = s10.replace(/[^A-Za-z0-9\-]/g, "");
+      if (s10) {
+        psName = s10;
+        break;
+      }
+    }
+  }
+  let f12 = -1, f4 = -1, f14 = -1;
+  const nSub = u162(bytes, cmap.off + 2);
+  for (let i10 = 0; i10 < nSub; i10++) {
+    const r10 = cmap.off + 4 + 8 * i10, pid = u162(bytes, r10), s10 = cmap.off + u32(bytes, r10 + 4), fmt = u162(bytes, s10);
+    if (fmt === 12 && (pid === 3 || pid === 0)) f12 = s10;
+    else if (fmt === 4 && (pid === 3 || pid === 0) && f4 < 0) f4 = s10;
+    else if (fmt === 14) f14 = s10;
+  }
+  if (f12 < 0 && f4 < 0) throw new NotTrueTypeError("no usable cmap subtable (format 4 or 12)");
+  const glyphId = (cp2) => {
+    if (f12 >= 0) {
+      let lo3 = 0, hi2 = u32(bytes, f12 + 12) - 1;
+      while (lo3 <= hi2) {
+        const mid = lo3 + hi2 >> 1, g3 = f12 + 16 + 12 * mid, a10 = u32(bytes, g3), e10 = u32(bytes, g3 + 4);
+        if (cp2 < a10) hi2 = mid - 1;
+        else if (cp2 > e10) lo3 = mid + 1;
+        else {
+          const gid = u32(bytes, g3 + 8) + (cp2 - a10);
+          return gid < numGlyphs ? gid : 0;
+        }
+      }
+      return 0;
+    }
+    if (cp2 > 65535) return 0;
+    const segX2 = u162(bytes, f4 + 6), ends = f4 + 14, starts = ends + segX2 + 2, deltas = starts + segX2, ranges = deltas + segX2;
+    let lo2 = 0, hi = segX2 / 2 - 1;
+    while (lo2 <= hi) {
+      const mid = lo2 + hi >> 1, e10 = u162(bytes, ends + 2 * mid);
+      if (cp2 > e10) {
+        lo2 = mid + 1;
+        continue;
+      }
+      const a10 = u162(bytes, starts + 2 * mid);
+      if (cp2 < a10) {
+        hi = mid - 1;
+        continue;
+      }
+      const ro2 = u162(bytes, ranges + 2 * mid);
+      if (ro2 === 0) return cp2 + u162(bytes, deltas + 2 * mid) & 65535;
+      const g3 = u162(bytes, ranges + 2 * mid + ro2 + 2 * (cp2 - a10));
+      return g3 === 0 ? 0 : g3 + u162(bytes, deltas + 2 * mid) & 65535;
+    }
+    return 0;
+  };
+  const advance = (gid) => u162(bytes, hmtx.off + 4 * Math.min(Math.max(gid, 0), numHMetrics - 1));
+  const span = (gid) => longLoca ? [u32(bytes, loca.off + 4 * gid), u32(bytes, loca.off + 4 * gid + 4)] : [u162(bytes, loca.off + 2 * gid) * 2, u162(bytes, loca.off + 2 * gid + 2) * 2];
+  const inkOf = (gid) => {
+    if (gid < 0 || gid >= numGlyphs) return null;
+    const [a10, e10] = span(gid);
+    if (e10 <= a10) return null;
+    const o10 = glyf.off + a10;
+    return [i16(bytes, o10 + 2), i16(bytes, o10 + 4), i16(bytes, o10 + 6), i16(bytes, o10 + 8)];
+  };
+  function subset(gids) {
+    const keep2 = /* @__PURE__ */ new Set([0]);
+    const todo = [];
+    for (const g3 of gids) if (g3 > 0 && g3 < numGlyphs && !keep2.has(g3)) {
+      keep2.add(g3);
+      todo.push(g3);
+    }
+    todo.push(0);
+    while (todo.length) {
+      const g3 = todo.pop();
+      const [a10, e10] = span(g3);
+      if (e10 - a10 < 10) continue;
+      let o10 = glyf.off + a10;
+      if (i16(bytes, o10) >= 0) continue;
+      o10 += 10;
+      for (; ; ) {
+        const flags = u162(bytes, o10), comp = u162(bytes, o10 + 2);
+        o10 += 4;
+        if (comp < numGlyphs && !keep2.has(comp)) {
+          keep2.add(comp);
+          todo.push(comp);
+        }
+        o10 += flags & 1 ? 4 : 2;
+        if (flags & 8) o10 += 2;
+        else if (flags & 64) o10 += 4;
+        else if (flags & 128) o10 += 8;
+        if (!(flags & 32)) break;
+      }
+    }
+    let total = 0;
+    for (const g3 of keep2) {
+      const [a10, e10] = span(g3);
+      total += e10 - a10 + 3 & ~3;
+    }
+    const newGlyf = new Uint8Array(total), newLoca = new Uint8Array(4 * (numGlyphs + 1));
+    const dv = new DataView(newLoca.buffer);
+    let pos = 0;
+    for (let g3 = 0; g3 < numGlyphs; g3++) {
+      dv.setUint32(4 * g3, pos);
+      if (keep2.has(g3)) {
+        const [a10, e10] = span(g3);
+        newGlyf.set(bytes.subarray(glyf.off + a10, glyf.off + e10), pos);
+        pos += e10 - a10 + 3 & ~3;
+      }
+    }
+    dv.setUint32(4 * numGlyphs, pos);
+    const newHead = bytes.slice(head.off, head.off + head.len);
+    newHead[8] = newHead[9] = newHead[10] = newHead[11] = 0;
+    newHead[50] = 0;
+    newHead[51] = 1;
+    const out = [["glyf", newGlyf], ["head", newHead], ["hhea", bytes.subarray(hhea.off, hhea.off + hhea.len)], ["hmtx", bytes.subarray(hmtx.off, hmtx.off + hmtx.len)], ["loca", newLoca], ["maxp", bytes.subarray(maxp.off, maxp.off + maxp.len)]];
+    for (const t10 of ["cvt ", "fpgm", "prep"]) {
+      const x2 = tables.get(t10);
+      if (x2) out.push([t10, bytes.subarray(x2.off, x2.off + x2.len)]);
+    }
+    out.sort((p2, q2) => p2[0] < q2[0] ? -1 : 1);
+    return assembleSfnt(out);
+  }
+  const rclt = buildRclt(bytes, tables.get("GSUB"));
+  const shape = (text2) => {
+    const g3 = [];
+    for (const ch2 of text2) g3.push(glyphId(ch2.codePointAt(0)));
+    if (rclt) rclt.apply(g3);
+    return g3;
+  };
+  const u24 = (o10) => bytes[o10] << 16 | bytes[o10 + 1] << 8 | bytes[o10 + 2];
+  const selectorFor = (cp2, gid) => {
+    if (f14 < 0) return 0;
+    for (let i10 = 0, n11 = u32(bytes, f14 + 6); i10 < n11; i10++) {
+      const r10 = f14 + 10 + 11 * i10, nd2 = u32(bytes, r10 + 7);
+      if (!nd2) continue;
+      const t10 = f14 + nd2;
+      let lo2 = 0, hi = u32(bytes, t10) - 1;
+      while (lo2 <= hi) {
+        const mid = lo2 + hi >> 1, m2 = t10 + 4 + 5 * mid, v = u24(m2);
+        if (cp2 < v) hi = mid - 1;
+        else if (cp2 > v) lo2 = mid + 1;
+        else {
+          if (u162(bytes, m2 + 3) === gid) return u24(r10);
+          break;
+        }
+      }
+    }
+    return 0;
+  };
+  const annotate = (text2, before = "", after = "") => {
+    if (!rclt) return text2;
+    const chars = [...text2], skipN = [...before].length, g3 = shape(before + text2 + after);
+    let out = "";
+    chars.forEach((ch2, k2) => {
+      const cp2 = ch2.codePointAt(0), got = g3[skipN + k2];
+      out += ch2;
+      if (got !== glyphId(cp2)) {
+        const vs = selectorFor(cp2, got);
+        if (vs) out += String.fromCodePoint(vs);
+      }
+    });
+    return out;
+  };
+  return { unitsPerEm, ascender, descender, capHeight, bbox, numGlyphs, psName, glyphId, advance, inkOf, subset, shape, annotate, contextual: !!rclt, shapeSkipped: rclt ? rclt.skipped : [] };
+}
+function buildRclt(b3, t10) {
+  if (!t10 || t10.len < 10) return null;
+  const base3 = t10.off, featureList = base3 + u162(b3, base3 + 6), lookupList = base3 + u162(b3, base3 + 8);
+  const wanted = /* @__PURE__ */ new Set();
+  for (let i10 = 0, n10 = u162(b3, featureList); i10 < n10; i10++) {
+    const r10 = featureList + 2 + 6 * i10;
+    if (tagAt(b3, r10) !== "rclt") continue;
+    const f2 = featureList + u162(b3, r10 + 4);
+    for (let k2 = 0, m2 = u162(b3, f2 + 2); k2 < m2; k2++) wanted.add(u162(b3, f2 + 4 + 2 * k2));
+  }
+  if (!wanted.size) return null;
+  const skipped = [];
+  const skip = (what) => {
+    if (!skipped.includes(what)) skipped.push(what);
+    return null;
+  };
+  const coverage = (o10) => {
+    const fmt = u162(b3, o10), n10 = u162(b3, o10 + 2);
+    if (fmt === 1) return (g3) => {
+      let lo2 = 0, hi = n10 - 1;
+      while (lo2 <= hi) {
+        const mid = lo2 + hi >> 1, v = u162(b3, o10 + 4 + 2 * mid);
+        if (g3 < v) hi = mid - 1;
+        else if (g3 > v) lo2 = mid + 1;
+        else return mid;
+      }
+      return -1;
+    };
+    return (g3) => {
+      let lo2 = 0, hi = n10 - 1;
+      while (lo2 <= hi) {
+        const mid = lo2 + hi >> 1, r10 = o10 + 4 + 6 * mid, a10 = u162(b3, r10), e10 = u162(b3, r10 + 2);
+        if (g3 < a10) hi = mid - 1;
+        else if (g3 > e10) lo2 = mid + 1;
+        else return u162(b3, r10 + 4) + (g3 - a10);
+      }
+      return -1;
+    };
+  };
+  const classDef = (o10) => {
+    if (o10 == null) return () => 0;
+    const fmt = u162(b3, o10);
+    if (fmt === 1) {
+      const start = u162(b3, o10 + 2), n11 = u162(b3, o10 + 4);
+      return (g3) => g3 >= start && g3 < start + n11 ? u162(b3, o10 + 6 + 2 * (g3 - start)) : 0;
+    }
+    const n10 = u162(b3, o10 + 2);
+    return (g3) => {
+      let lo2 = 0, hi = n10 - 1;
+      while (lo2 <= hi) {
+        const mid = lo2 + hi >> 1, r10 = o10 + 4 + 6 * mid, a10 = u162(b3, r10), e10 = u162(b3, r10 + 2);
+        if (g3 < a10) hi = mid - 1;
+        else if (g3 > e10) lo2 = mid + 1;
+        else return u162(b3, r10 + 4);
+      }
+      return 0;
+    };
+  };
+  const lookupCache = /* @__PURE__ */ new Map();
+  const applyAt = (lookup, g3, i10) => {
+    for (const s10 of subsOf(lookup)) {
+      const n10 = s10(g3, i10);
+      if (n10) return n10;
+    }
+    return 0;
+  };
+  const records = (o10, count, g3, i10) => {
+    for (let k2 = 0; k2 < count; k2++) {
+      const seq = u162(b3, o10 + 4 * k2), lk2 = u162(b3, o10 + 4 * k2 + 2);
+      if (i10 + seq < g3.length) applyAt(lk2, g3, i10 + seq);
+    }
+  };
+  function subsOf(lookup) {
+    let subs = lookupCache.get(lookup);
+    if (subs) return subs;
+    subs = [];
+    lookupCache.set(lookup, subs);
+    if (lookup >= u162(b3, lookupList)) return subs;
+    const lo2 = lookupList + u162(b3, lookupList + 2 + 2 * lookup);
+    let type = u162(b3, lo2);
+    for (let k2 = 0, n10 = u162(b3, lo2 + 4); k2 < n10; k2++) {
+      let st3 = lo2 + u162(b3, lo2 + 6 + 2 * k2), ty2 = type;
+      if (ty2 === 7) {
+        ty2 = u162(b3, st3 + 2);
+        st3 = st3 + u32(b3, st3 + 4);
+      }
+      const sub = makeSub(ty2, st3);
+      if (sub) subs.push(sub);
+    }
+    return subs;
+  }
+  function makeSub(type, o10) {
+    const fmt = u162(b3, o10);
+    if (type === 1) {
+      const cov = coverage(o10 + u162(b3, o10 + 2));
+      if (fmt === 1) {
+        const delta = u162(b3, o10 + 4);
+        return (g3, i10) => {
+          if (cov(g3[i10]) < 0) return 0;
+          g3[i10] = g3[i10] + delta & 65535;
+          return 1;
+        };
+      }
+      if (fmt === 2) return (g3, i10) => {
+        const c10 = cov(g3[i10]);
+        if (c10 < 0 || c10 >= u162(b3, o10 + 4)) return 0;
+        g3[i10] = u162(b3, o10 + 6 + 2 * c10);
+        return 1;
+      };
+      return skip(`single substitution format ${fmt}`);
+    }
+    if (type === 6 && fmt === 2) {
+      const off = (k2) => {
+        const v = u162(b3, o10 + k2);
+        return v ? o10 + v : null;
+      };
+      const cov = coverage(o10 + u162(b3, o10 + 2)), back = classDef(off(4)), input = classDef(off(6)), ahead = classDef(off(8)), nSets = u162(b3, o10 + 10);
+      return (g3, i10) => {
+        if (cov(g3[i10]) < 0) return 0;
+        const cls = input(g3[i10]);
+        if (cls >= nSets) return 0;
+        const so2 = u162(b3, o10 + 12 + 2 * cls);
+        if (!so2) return 0;
+        const set = o10 + so2;
+        rules: for (let r10 = 0, nr2 = u162(b3, set); r10 < nr2; r10++) {
+          let p2 = set + u162(b3, set + 2 + 2 * r10);
+          const nb2 = u162(b3, p2);
+          p2 += 2;
+          if (nb2 > i10) continue;
+          for (let k2 = 0; k2 < nb2; k2++) if (back(g3[i10 - 1 - k2]) !== u162(b3, p2 + 2 * k2)) continue rules;
+          p2 += 2 * nb2;
+          const ni2 = u162(b3, p2);
+          p2 += 2;
+          if (i10 + ni2 > g3.length) continue;
+          for (let k2 = 1; k2 < ni2; k2++) if (input(g3[i10 + k2]) !== u162(b3, p2 + 2 * (k2 - 1))) continue rules;
+          p2 += 2 * (ni2 - 1);
+          const na2 = u162(b3, p2);
+          p2 += 2;
+          if (i10 + ni2 + na2 > g3.length) continue;
+          for (let k2 = 0; k2 < na2; k2++) if (ahead(g3[i10 + ni2 + k2]) !== u162(b3, p2 + 2 * k2)) continue rules;
+          p2 += 2 * na2;
+          records(p2 + 2, u162(b3, p2), g3, i10);
+          return Math.max(1, ni2);
+        }
+        return 0;
+      };
+    }
+    if (type === 6 && fmt === 3) {
+      let p2 = o10 + 2;
+      const list = () => {
+        const n10 = u162(b3, p2);
+        p2 += 2;
+        const out = [];
+        for (let k2 = 0; k2 < n10; k2++) out.push(coverage(o10 + u162(b3, p2 + 2 * k2)));
+        p2 += 2 * n10;
+        return out;
+      };
+      const back = list(), input = list(), ahead = list();
+      const nRec = u162(b3, p2), rec = p2 + 2;
+      if (!input.length) return null;
+      return (g3, i10) => {
+        if (back.length > i10 || i10 + input.length + ahead.length > g3.length) return 0;
+        for (let k2 = 0; k2 < input.length; k2++) if (input[k2](g3[i10 + k2]) < 0) return 0;
+        for (let k2 = 0; k2 < back.length; k2++) if (back[k2](g3[i10 - 1 - k2]) < 0) return 0;
+        for (let k2 = 0; k2 < ahead.length; k2++) if (ahead[k2](g3[i10 + input.length + k2]) < 0) return 0;
+        records(rec, nRec, g3, i10);
+        return input.length;
+      };
+    }
+    return skip(`lookup type ${type} format ${fmt}`);
+  }
+  const order = [...wanted].sort((x2, y2) => x2 - y2);
+  return { skipped, apply(g3) {
+    for (const lk2 of order) {
+      for (let i10 = 0; i10 < g3.length; ) {
+        const n10 = applyAt(lk2, g3, i10);
+        i10 += n10 || 1;
+      }
+    }
+  } };
+}
+function checksum(b3) {
+  let sum = 0;
+  const n10 = b3.length & ~3;
+  for (let i10 = 0; i10 < n10; i10 += 4) sum = sum + u32(b3, i10) >>> 0;
+  if (b3.length & 3) {
+    let last = 0;
+    for (let i10 = n10; i10 < b3.length; i10++) last |= b3[i10] << 24 - 8 * (i10 - n10);
+    sum = sum + (last >>> 0) >>> 0;
+  }
+  return sum;
+}
+function assembleSfnt(tables) {
+  const n10 = tables.length;
+  let e10 = 0;
+  while (1 << e10 + 1 <= n10) e10++;
+  const headerLen = 12 + 16 * n10;
+  let total = headerLen;
+  for (const [, d3] of tables) total += d3.length + 3 & ~3;
+  const out = new Uint8Array(total), dv = new DataView(out.buffer);
+  dv.setUint32(0, 65536);
+  dv.setUint16(4, n10);
+  dv.setUint16(6, (1 << e10) * 16);
+  dv.setUint16(8, e10);
+  dv.setUint16(10, n10 * 16 - (1 << e10) * 16);
+  let off = headerLen, headOff = -1;
+  tables.forEach(([tag2, d3], i10) => {
+    const r10 = 12 + 16 * i10;
+    for (let k2 = 0; k2 < 4; k2++) out[r10 + k2] = tag2.charCodeAt(k2);
+    dv.setUint32(r10 + 4, checksum(d3));
+    dv.setUint32(r10 + 8, off);
+    dv.setUint32(r10 + 12, d3.length);
+    out.set(d3, off);
+    if (tag2 === "head") headOff = off;
+    off += d3.length + 3 & ~3;
+  });
+  if (headOff >= 0) dv.setUint32(headOff + 8, 2981146554 - checksum(out) >>> 0);
+  return out;
+}
+
+// src/export/pdf-assets.ts
+async function gunzip(b3) {
+  if (typeof DecompressionStream !== "undefined") {
+    try {
+      return new Uint8Array(await new Response(new Blob([b3]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+    } catch {
+    }
+  }
+  return gunzipSync(b3);
+}
+async function loadPdfFont(id2) {
+  const r10 = await fetch(id2 === "pinyin" ? "./vendor/fonts/pinyin.ttf.gz" : "./vendor/fonts/sans.ttf.gz");
+  if (!r10.ok) throw new Error(`\u5B57\u4F53\u4E0B\u4E0D\u6765\uFF08${r10.status}\uFF09`);
+  const b3 = new Uint8Array(await r10.arrayBuffer());
+  return parseTtf(b3[0] === 31 && b3[1] === 139 ? await gunzip(b3) : b3);
+}
+async function loadMusicOutlines() {
+  const r10 = await fetch("./vendor/fonts/bravura/outlines.json");
+  if (!r10.ok) throw new Error(`\u97F3\u4E50\u5B57\u5F62\u4E0B\u4E0D\u6765\uFF08${r10.status}\uFF09`);
+  return await r10.json();
+}
+var PDF_FONT_MB = { sans: 6.3, pinyin: 12.2 };
+
 // src/app/diag-ui.ts
 function copyViaTextarea(text2) {
   const ta2 = document.createElement("textarea");
@@ -30302,11 +31155,12 @@ function describeSongChange(prev, next2) {
 var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
 var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
-var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null });
+var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans" });
 function serializeDesk(d3) {
   const out = {};
   if (d3.scope === "all") out.scope = "all";
   if (d3.mp3 === "small") out.mp3 = "small";
+  if (d3.pdf === "pinyin") out.pdf = "pinyin";
   if (d3.pageFlow) out.pageFlow = true;
   if (d3.paper) out.paper = d3.paper;
   const parts = {};
@@ -30339,6 +31193,7 @@ function unserializeDesk(json) {
   if (j2.scope === "all") d3.scope = "all";
   if (j2.pageFlow === true) d3.pageFlow = true;
   if (j2.mp3 === "small") d3.mp3 = "small";
+  if (j2.pdf === "pinyin") d3.pdf = "pinyin";
   if (typeof j2.paper === "string" && j2.paper) d3.paper = j2.paper;
   if (j2.parts && typeof j2.parts === "object") {
     for (const [id2, v] of Object.entries(j2.parts)) {
@@ -30660,6 +31515,7 @@ var view = new ScoreView(scoreEl, {
   scope: () => viewScope
 });
 var viewScope = "segment";
+var pdfFont = "sans";
 var mp3Quality = "standard";
 var impro = false;
 var autoBars = true;
@@ -31727,6 +32583,11 @@ window.__moonsinger = {
   zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]),
   load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null, view: o10.view, references: o10.references }),
   refHost,
+  makePdf: async (id2) => {
+    const { r: r10 } = await makePdf(id2);
+    progress("");
+    return { bytes: r10.bytes, pages: r10.pages, stats: r10.stats };
+  },
   setChunk: (v) => {
     const role = st2.song.parts.find((x2) => x2.id === st2.at.part)?.role;
     if (role) updateExtras(withSingChunk(doc.extras, role, v, st2.song.hum), { kind: "lounge", label: `\u5206\u6BB5\u5531\uFF1A${v}` });
@@ -33020,12 +33881,14 @@ var deskNow = () => ({
   parts: Object.fromEntries(partView),
   mp3: mp3Quality,
   pad: { fifths: st2.input.inputFifths, scale: st2.input.inputScale, unit: PAD_UNITS[st2.input.unit], tuplet: st2.input.tuplet, low: pad3.rangeLow() },
-  ref: refHost.panel()
+  ref: refHost.panel(),
+  pdf: pdfFont
 });
 function applyDesk(d3) {
   viewScope = d3.scope;
   pageFlow = d3.pageFlow;
   mp3Quality = d3.mp3;
+  pdfFont = d3.pdf;
   st2 = { ...st2, input: { ...st2.input, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d3.pad.unit)), tuplet: d3.pad.tuplet } };
   partView.clear();
   for (const [id2, p2] of Object.entries(d3.parts)) partView.set(id2, { ...freshPartView(), ...p2 });
@@ -33255,7 +34118,7 @@ function openExportHub() {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5BFC\u51FA</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="\u6708\u8BFB\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D"><svg class="ico"><use href="#export"/></svg>\u6B4C\u58F0\uFF08mp3\uFF09\u2026</button><button class="btn" data-v="mxl" title="\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026</button>` + (soundUses(doc.extras).some((u2) => !u2.packed) ? `<button class="btn" data-v="mxlPacked" title="\u526F\u672C\u91CC\u628A\u4E50\u5668\u7684\u58F0\u97F3\u4E5F\u88C5\u8FDB\u53BB\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u7167\u65E7\u53EA\u8BB0\u6765\u6E90"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026</button>` : "") + `</div><div class="offer-msg">\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002\u4E50\u8C31 PDF \u4EE5\u540E\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5BFC\u51FA</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="\u6708\u8BFB\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D"><svg class="ico"><use href="#export"/></svg>\u6B4C\u58F0\uFF08mp3\uFF09\u2026</button><button class="btn" data-v="pdf" title="\u5370\u51FA\u6765\u7684\u8C31\uFF08\u6309\u8FD9\u9996\u6B4C\u7684\u7EB8\u5F20\u5206\u9875\uFF1B\u6B4C\u8BCD\u7528\u5D4C\u8FDB\u53BB\u7684\u5B57\u4F53\uFF0C\u80FD\u9009\u4E2D\u590D\u5236\uFF09"><svg class="ico"><use href="#export"/></svg>\u4E50\u8C31\uFF08PDF\uFF09\u2026</button><button class="btn" data-v="mxl" title="\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026</button>` + (soundUses(doc.extras).some((u2) => !u2.packed) ? `<button class="btn" data-v="mxlPacked" title="\u526F\u672C\u91CC\u628A\u4E50\u5668\u7684\u58F0\u97F3\u4E5F\u88C5\u8FDB\u53BB\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u7167\u65E7\u53EA\u8BB0\u6765\u6E90"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026</button>` : "") + `</div><div class="offer-msg">\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -33272,9 +34135,70 @@ function openExportHub() {
     if (!v) return;
     close();
     if (v === "mp3") openMp3Panel();
+    else if (v === "pdf") openPdfPanel();
     else if (v === "mxl") void exportCopyMxl();
     else if (v === "mxlPacked") void exportCopyMxl(true);
   });
+}
+function openPdfPanel() {
+  closeOffer?.();
+  const box = document.createElement("div");
+  box.className = "offer";
+  const draw = () => {
+    const chip2 = (id2, label, note2) => `<button class="btn cand${pdfFont === id2 ? " is-on" : ""}" data-v="font:${id2}" title="${esc7(note2)}">${label}</button>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u4E50\u8C31\uFF08PDF\uFF09</div><div class="part-sec">\u6B4C\u8BCD\u7684\u5B57\u4F53</div><div class="set-row">${chip2("sans", "\u9ED1\u4F53", "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587 / \u65E5\u6587 / \u82F1\u6587\u90FD\u6709")}${chip2("pinyin", "\u62FC\u97F3", "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF08\u53EF\u7231\uFF09\uFF1B\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3")}</div><div class="offer-msg">${pdfFont === "pinyin" ? "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF0C\u6B4C\u8BCD\u90A3\u4E00\u884C\u4F1A\u5F80\u4E0B\u8BA9\u51FA\u62FC\u97F3\u7684\u5730\u65B9\u3002\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3\u3002" : "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587\u3001\u65E5\u6587\u3001\u82F1\u6587\u90FD\u6709\u3002"}\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7EA6 ${PDF_FONT_MB[pdfFont]} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u7EB8\u7684\u6273\u624B\u91CC\u6539\uFF09\u3002</div><div class="offer-btns"><button class="btn" data-v="close">\u7B97\u4E86</button><button class="btn primary" data-v="go">\u751F\u6210 PDF</button></div></div>`;
+  };
+  draw();
+  document.body.append(box);
+  const close = () => {
+    box.remove();
+    if (closeOffer === close) closeOffer = null;
+    scoreEl.focus();
+  };
+  closeOffer = close;
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (e10.target === box || v === "close") {
+      close();
+      return;
+    }
+    if (v?.startsWith("font:")) {
+      pdfFont = v.slice(5);
+      draw();
+      return;
+    }
+    if (v === "go") {
+      close();
+      void exportPdf(pdfFont);
+    }
+  });
+}
+var pdfBusy = false;
+async function makePdf(fontId) {
+  progress(`\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7B2C\u4E00\u6B21\u7EA6 ${PDF_FONT_MB[fontId]} MB\uFF09\u2026`);
+  const [font, ref, music] = await Promise.all([loadPdfFont(fontId), fontId === "pinyin" ? loadPdfFont("sans") : Promise.resolve(null), loadMusicOutlines()]);
+  progress("\u6392\u7248\u2026");
+  const song = { ...st2.song, papers: st2.song.papers.filter((p2) => !p2.hidden) }, labels = partLabels(st2.song, doc.extras);
+  const parts = song.parts.map((p2, k2) => ({ id: p2.id, name: labels[k2] ?? "", first: k2 === 0, clef: p2.clef ?? "G", ...p2.staves === 2 ? { staves: 2 } : {} }));
+  const title = st2.song.title || docName();
+  const r10 = scorePdf({ song, parts, font, ref, music, title, created: /* @__PURE__ */ new Date() });
+  return { file: new File([r10.bytes], `${docName()}.pdf`, { type: "application/pdf" }), r: r10 };
+}
+async function exportPdf(fontId) {
+  if (pdfBusy) return;
+  pdfBusy = true;
+  try {
+    const { file, r: r10 } = await makePdf(fontId);
+    progress("");
+    const miss = r10.stats.missing.length ? `<div class="offer-msg">\u8FD9\u4E9B\u5B57\u8FD9\u6B3E\u5B57\u4F53\u91CC\u6CA1\u6709\uFF0CPDF \u91CC\u662F\u7A7A\u767D\uFF1A${esc7(r10.stats.missing.slice(0, 20).join(" "))}${r10.stats.missing.length > 20 ? " \u2026" : ""}</div>` : "";
+    const missM = r10.stats.missingMusic.length ? `<div class="offer-msg">\u6709 ${r10.stats.missingMusic.length} \u79CD\u8BB0\u8C31\u7B26\u53F7\u6CA1\u753B\u51FA\u6765\uFF08${esc7(r10.stats.missingMusic.join(" "))}\uFF09\u2014\u2014\u8FD9\u662F app \u7684\u6BDB\u75C5\uFF0C\u8BF7\u544A\u8BC9\u6211\u4EEC\u3002</div>` : "";
+    offerFile(file, "\u4E50\u8C31 PDF \u597D\u4E86", `${r10.pages} \u9875 \xB7 ${fontId === "pinyin" ? "\u62FC\u97F3\u5B57\u4F53" : "\u9ED1\u4F53"} \xB7 ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` + miss + missM);
+  } catch (e10) {
+    progress("");
+    showError(`PDF \u751F\u6210\u5931\u8D25\uFF1A${e10.message}`);
+  } finally {
+    pdfBusy = false;
+  }
 }
 function soundingRoles() {
   return audibleParts().filter((p2) => flattenPart(st2.song, p2.id).tokens.some((t10) => t10.kind === "note")).map((p2) => p2.role);
@@ -34242,4 +35166,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f814638a05bc.mjs.map
+//# sourceMappingURL=moonsinger-71a76e295be6.mjs.map
