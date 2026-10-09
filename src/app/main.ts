@@ -10,7 +10,7 @@
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { type Art, ART_NAME, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
-import { songPlayOrder } from "../score/arrange.ts";
+import { songPlayOrder, loopPlan, loopWindow } from "../score/arrange.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -141,6 +141,8 @@ bar.innerHTML =
   `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button></div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="月读唱 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
+  `<button id="loopBtn" class="btn" title="循环：放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环">循环</button>` +
+  `<button id="seamBtn" class="btn" hidden title="听接缝：从循环段结尾前几秒放起，跳回开头再放几秒就停">接缝</button>` +
   `<button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button>` +
   `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div>` +
   `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
@@ -617,10 +619,12 @@ const GM_SR = 44100;
 /** 渲染哪一段：view = 跟视图（本段 / 全部，播放用）；all = 整首；segment = 光标所在的这一张纸（导出面板里选）。 */
 type RenderScope = "view" | "all" | "segment";
 const songIn = (s: RenderScope): Song => (s === "all" ? st.song : s === "segment" ? songOnlyPaper(st.song, st.at.paper) : playSong());
-async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<Rendered | null> {
+/** order = 放哪几张纸、什么顺序（没给 = 照编排那一行，arrange.ts；本段 = 只这一张）；循环放给的是「前面 + 循环段两遍」（loopPlan）。 */
+async function renderPart(part: PartDef, scope: RenderScope = "view", order?: string[]): Promise<Rendered | null> {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`「${roleName(doc.extras, role)}」还没有人上场`);
-  const song = songIn(scope), order = songPlayOrder(song);   // 整首 = 照编排那一行的顺序（arrange.ts）；本段 = 只这一张
+  const song = songIn(scope);
+  order ??= songPlayOrder(song);
   const { tokens, starts } = flattenPart(song, part.id, { order }), map = tempoMapOf(song, order), bounds = starts.map((x) => x.index);   // bounds = 纸界（渐强渐弱不跨纸）
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);   // 跳音 / 重音 / 呼吸 → 核心认的 ^ / v（怎么对应 = 这位的配置），改了就重唱
@@ -655,8 +659,8 @@ async function renderPart(part: PartDef, scope: RenderScope = "view"): Promise<R
   lastRender.set(part.id, { key, r: out }); return out;
 }
 /** 一个声部的音量曲线（力度 + 重音；月读的跳音 = 后半段收声；src/score/perform.ts）：没有力度 / 重音 = null，声音不碰。渲染结果是缓存的，乘在拷贝上。 */
-function partGain(part: PartDef, scope: RenderScope) {
-  const song = songIn(scope), order = songPlayOrder(song), { tokens, starts } = flattenPart(song, part.id, { order });
+function partGain(part: PartDef, scope: RenderScope, order?: string[]) {
+  const song = songIn(scope), { tokens, starts } = flattenPart(song, part.id, { order: order ?? songPlayOrder(song) });
   return gainSegments(tokens, tempoMapOf(song, order), activePerfSpec(doc.extras, part.role), starts.map((x) => x.index));   // 月读的跳音走唱谱（核心认的 ^），不再切音频
 }
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
@@ -669,20 +673,20 @@ function micOf(part: PartDef): { gainDb: number; pan: number } {
 /** 整首 = 各声部各自渲染再混成立体声（src/audio/mix.ts：线性重采样到 44.1k；推子 = 麦克风增益 + 上场那位的响度校准；等功率声像；母线只在超天花板的地方限幅）。
  *  旧做法超 0 dB 就整条按峰值缩——响的乐器一进来，整首（包括只有月读的段落）一起变轻（user 2026-10-08「感觉乐器进来之后好像月读变轻了」）。
  *  哪个声部响不了 = 那个声部不出声、报错，其余照出（user「不是显示自动上，而是就是不出声，报错，人类手动换」）。roles = 真出了声的声部的角色（署名推演用）。 */
-async function renderMix(scope: RenderScope = "view"): Promise<{ left: Float32Array; right: Float32Array; sr: number; roles: string[] } | null> {
+async function renderMix(scope: RenderScope = "view", order?: string[]): Promise<{ left: Float32Array; right: Float32Array; sr: number; start: number; roles: string[] } | null> {
   const parts = audibleParts(), got: { part: PartDef; r: Rendered }[] = [], errs: string[] = [];
   // 月读本人先唱：她的引擎（onnxruntime 的 wasm 堆）要一大块内存，先起好再让 SoundFont 的库进 worker（iPad 上反过来容易「Out of memory」；
   //   user 2026-10-08「感觉是没有gc」）。混音 / 署名照原来的声部顺序
   const heavyFirst = [...parts].sort((a, b) => Number(activeInstrument(doc.extras, b.role)?.engine === "tsukuyomi") - Number(activeInstrument(doc.extras, a.role)?.engine === "tsukuyomi"));
   for (const part of heavyFirst) {
-    try { const r = await renderPart(part, scope); if (r) got.push({ part, r }); }
+    try { const r = await renderPart(part, scope, order); if (r) got.push({ part, r }); }
     catch (e) { errs.push(`「${roleName(doc.extras, part.role)}」：${(e as Error).message}`); }
   }
   got.sort((a, b) => parts.indexOf(a.part) - parts.indexOf(b.part));
   if (errs.length) showError(`${errs.join("；")}。${got.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
   if (!got.length) return null;
-  const m = mixTracks(got.map(({ part, r }) => { const { gainDb, pan } = micOf(part), segs = partGain(part, scope); return { samples: segs ? applyGain(r.samples, r.sr, r.at, segs) : r.samples, sr: r.sr, at: r.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; }), GM_SR);
-  return { left: m.left, right: m.right, sr: m.sr, roles: got.map((x) => x.part.role) };
+  const m = mixTracks(got.map(({ part, r }) => { const { gainDb, pan } = micOf(part), segs = partGain(part, scope, order); return { samples: segs ? applyGain(r.samples, r.sr, r.at, segs) : r.samples, sr: r.sr, at: r.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; }), GM_SR);
+  return { left: m.left, right: m.right, sr: m.sr, start: m.start, roles: got.map((x) => x.part.role) };
 }
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */
 let embedSoftLimit = 10e6;
@@ -735,18 +739,36 @@ function playLight(who = "月读（哼）"): void {
   const total = sampler.playSong(notes, st.song.hum, () => playIcon(false));
   playIcon(true); progress(`${who} ${total.toFixed(1)} 秒`);
 }
-async function togglePlay(): Promise<void> {
+/** 走带「循环」开着没有（这台设备这一次打开；不进歌）。user「我确实希望能单曲循环，或者测试战斗循环切割」「无穷循环和循环走带都做」 */
+let loopOn = false;
+/** 接缝试听：从循环段结尾前几秒放起、跳回开头再放几秒就停（听切口接得顺不顺）。 */
+const SEAM_LEAD = 4;
+async function togglePlay(seam = false): Promise<void> {
   if (singer.playing || sampler.songPlaying) { singer.stop(); sampler.stopSong(); playIcon(false); return; }
   if (singing) return;
   singer.unlock();   // 在用户手势里先把声音打开（iPad）
   holdAudio();       // 准备（第一次唱要几十秒）期间让声音一直醒着，准备完才开播也有声（src/singer/audio.ts）
   singing = true; $("playBtn").classList.add("is-on");
   try {
-    const t0 = performance.now(), m = await renderMix();
+    const looping = loopOn || seam;
+    // 循环放：前面一遍 + 循环段两遍，循环区间 = 第二遍（arrange.ts loopPlan：第一遍的尾音渗进第二遍开头 = 接缝和真连着放一样）
+    const song = songIn("view"), plan = looping ? loopPlan(song) : null;
+    const t0 = performance.now(), m = await renderMix("view", plan?.order);
     if (!m) { progress(""); return; }
-    const secs = m.left.length / m.sr, took = (performance.now() - t0) / 1000;
-    progress(took > 0.3 ? `${secs.toFixed(1)} 秒（准备 ${took.toFixed(1)} s）` : `${secs.toFixed(1)} 秒`);
-    singer.play({ samples: m.left, right: m.right, sr: m.sr }, () => { playIcon(false); });
+    const secs = m.left.length / m.sr, took = (performance.now() - t0) / 1000, prep = took > 0.3 ? `（准备 ${took.toFixed(1)} s）` : "";
+    let win: { start: number; end: number } | null = null;
+    if (plan) { const first = song.parts[0], f = first ? flattenPart(song, first.id, { order: plan.order, tempo: true }) : null; win = f ? loopWindow(f.tokens, tempoMapOf(song, plan.order), f.starts, plan) : null; }
+    if (plan && !win) { progress(""); info("循环段里什么都没有，循环不了"); return; }
+    if (win) {
+      const loop = { start: win.start - m.start, end: win.end - m.start }, len = win.end - win.start;   // 谱上的秒 → 这条声音里的秒（前面可能有月读的提前量）
+      const offset = seam ? Math.max(0, loop.end - SEAM_LEAD) : 0, need = Math.ceil(loop.end * m.sr);
+      const fit = (x: Float32Array) => { if (x.length >= need) return x; const y = new Float32Array(need); y.set(x); return y; };   // 纸尾是休止 = 声音比谱短：补静音，不然循环点被截到声音结尾、循环变短
+      singer.play({ samples: fit(m.left), right: fit(m.right), sr: m.sr }, () => { playIcon(false); }, { loop, offset, ...(seam ? { stopAfter: SEAM_LEAD * 2 } : {}) });
+      progress(seam ? `接缝：结尾前 ${SEAM_LEAD} 秒 → 跳回开头${prep}` : `${plan!.intro ? `前面 ${win.start.toFixed(1)} 秒，然后` : ""}循环 ${len.toFixed(1)} 秒${prep}`);
+    } else {
+      progress(`${secs.toFixed(1)} 秒${prep}`);
+      singer.play({ samples: m.left, right: m.right, sr: m.sr }, () => { playIcon(false); });
+    }
     playIcon(true);
   } catch (e) {
     showError(`放不了：${(e as Error).message}`);
@@ -754,6 +776,11 @@ async function togglePlay(): Promise<void> {
   } finally { releaseAudio(); singing = false; $("playBtn").classList.remove("is-on"); }
 }
 $("playBtn").addEventListener("click", () => { void togglePlay(); });
+$("loopBtn").addEventListener("click", () => {
+  loopOn = !loopOn; $("loopBtn").classList.toggle("is-on", loopOn); $("seamBtn").hidden = !loopOn;
+  if (singer.playing) { singer.stop(); playIcon(false); void togglePlay(); }   // 放着的时候切 = 照新的方式重放
+});
+$("seamBtn").addEventListener("click", () => { if (singer.playing || sampler.songPlaying) { singer.stop(); sampler.stopSong(); playIcon(false); } void togglePlay(true); });
 
 // ── 导出歌声（user「基于wxhw的经验分享是可以很早就做」）：照 WXHW 的形状——先生成，再弹「好了」面板，
 //    点「分享」那一下才调系统分享（iOS Safari 只认用户手势里的 navigator.share）；没有分享的（桌面 / Quest）= 下载。

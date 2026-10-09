@@ -1,6 +1,6 @@
 // 编排（2026-10-08 深夜 Opus 5.5）：名字 / 序号 + ×N + 括号 + 一个放在最后的循环段 [ … ]。user「a flat 编排 list 同意」「有12房子，master list能调用A.1 x3 A.2 x5这样吗？也许不要弄得太复杂」「无穷循环和循环走带都做」
 import { describe, it, eq } from "./runner.mjs";
-import { parseArrangement, playOrder } from "../src/score/arrange.ts";
+import { parseArrangement, playOrder, loopPlan, loopWindow } from "../src/score/arrange.ts";
 import type { PaperSeg } from "../src/score/song.ts";
 
 const paper = (id: string, name: string, hidden = false): PaperSeg => ({ id, name, tracks: {}, ...(hidden ? { hidden: true } : {}) });
@@ -66,4 +66,28 @@ describe("编排：存、放、导出", () => {
     eq([...flat.matchAll(/<rehearsal[^>]*>([^<]*)</g)].map((m) => m[1]).join(" "), "A", "第二段起写排练记号 = 曲段名");
     eq("arrangement" in openBytes("x.mxl", saveMxl({ song: (await two()).song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08" })).song, false, "没写 = 不落字段");
   });
+});
+
+describe("循环放（loopPlan / loopWindow）", () => {
+  it("写了循环段：前面一遍 + 循环段两遍；没写 = 整首两遍；本段（只一张纸）= 这一张两遍", () => {
+    const a = loopPlan({ arrangement: "前奏 [A A1]", papers });
+    eq(names(a.order), "前奏 A A1 A A1"); eq(a.intro, 1); eq(a.body, 2);
+    const b = loopPlan({ papers });
+    eq(names(b.order), "前奏 A A1 A2 前奏 A A1 A2"); eq(b.intro, 0); eq(b.body, 4);
+    eq(names(loopPlan({ papers: [papers[1]] }).order), "A A");
+  });
+  it("循环区间 = 第二遍（谱上的秒）：前奏 3 拍 + 循环段 2 拍，速度 90 → 第二遍从 (3+2)×⅔ 秒到 (3+4)×⅔ 秒", async () => {
+    const { initState, writeDegree, addPaper, setPaperName, setArrangement, flattenPart, tempoMapOf } = await import("../src/score/song.ts");
+    let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } };
+    for (const d of [1, 2, 3]) st = writeDegree(st, d, "near");
+    st = setPaperName(st, st.song.papers[0].id, "前奏"); st = addPaper(st); st = setPaperName(st, st.song.papers[1].id, "B");
+    st = { ...st, at: { ...st.at, paper: st.song.papers[1].id }, caret: 3 };
+    for (const d of [4, 5]) st = writeDegree(st, d, "near");
+    st = setArrangement(st, "前奏 [B]");
+    const plan = loopPlan(st.song), f = flattenPart(st.song, st.song.parts[0].id, { order: plan.order, tempo: true });
+    const w = loopWindow(f.tokens, tempoMapOf(st.song, plan.order), f.starts, plan)!;
+    const q = 60 / 90, near = (x: number, y: number) => Math.abs(x - y) < 1e-9;
+    eq(near(w.start, 5 * q) && near(w.end, 7 * q), true, `${w.start} / ${w.end}`);
+  });
+  it("循环段一个音都没有 = 不循环（null）", () => eq(loopWindow([], [], [{ index: 0 }, { index: 0 }], { intro: 0, body: 1 }), null));
 });

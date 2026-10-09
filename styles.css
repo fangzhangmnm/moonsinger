@@ -555,6 +555,8 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 
 /* 撤销 / 重做在顶栏中间；窄屏（手机）把录音室钮收进设置（顶栏放不下 10 个钮） */
 @media (max-width: 480px) { #studioBtn { display: none; } }
+/* 走带「循环」/「接缝」（2026-10-08 深夜 Opus 5.5）：手机上顶栏挤——循环钮收窄、间距收紧、走带不硬居中（居中 = 两边各分一半，右边一组被压到和撤销 / 重做叠在一起）；「接缝」不放（循环放着每一圈都过接缝，钮只是直接跳过去听） */
+@media (max-width: 480px) { #loopBtn { padding: 0 6px; min-width: 0; } #seamBtn { display: none; } .bar { gap: 4px; padding-left: 6px; padding-right: 6px; grid-template-columns: minmax(0, 1fr) auto auto; } .bar .tb-left { overflow: hidden; } .bar .tb-mid { gap: 4px; } }
 
 /* 声部的设置分两处（2026-10-08 by Claude Opus 5.5；user「乐器设置和轨设置视觉上分开来…是否是弹窗的模态。还是别的更好？你判断一下」）：
    轨 = 歌手牌旁边的非模态小卡（没有遮罩、谱照常看得见）；乐器 = 全屏一页（占 #stage 的 main，pad 留在旁边只弹不写，改了马上能试） */

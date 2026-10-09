@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.33-2026-10-08";
+var APP_VERSION = "v0.7.34-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4202,6 +4202,17 @@ function parseArrangement(text2, papers) {
 }
 var playOrder = (a10) => [...a10.order, ...a10.loop ?? []];
 var songPlayOrder = (song) => playOrder(parseArrangement(song.arrangement, song.papers));
+function loopPlan(song) {
+  const a10 = parseArrangement(song.arrangement, song.papers);
+  const intro = a10.loop ? a10.order : [], body2 = a10.loop ?? a10.order;
+  return { order: [...intro, ...body2, ...body2], intro: intro.length, body: body2.length };
+}
+function loopWindow(tokens, map, starts, plan) {
+  if (!plan.body) return null;
+  const tl2 = timeline(tokens, map), end = tl2.length ? tl2[tl2.length - 1].t1 : 0, from = starts[plan.intro + plan.body]?.index ?? tokens.length;
+  const start = tl2.find((x2) => x2.index >= from)?.t0 ?? end;
+  return end - start > 0.05 ? { start, end } : null;
+}
 
 // src/score/commands.ts
 function apply(st3, c10, now = Date.now()) {
@@ -16993,8 +17004,9 @@ var Singer = class {
       return r10;
     }
   }
-  /** 播放（必须在用户手势里先调过 unlock()，iPad 才放声）。播完回调 onEnd。 */
-  play(r10, onEnd) {
+  /** 播放（必须在用户手势里先调过 unlock()，iPad 才放声）。播完回调 onEnd。
+   *  o.loop = 循环区间（这条声音里的秒；放到 end 跳回 start，一直放到 stop()）；o.offset = 从第几秒放起；o.stopAfter = 放几秒就停（接缝试听）。 */
+  play(r10, onEnd, o10 = {}) {
     this.stop();
     const ctx2 = this.unlock();
     const buf = ctx2.createBuffer(r10.right ? 2 : 1, r10.samples.length, r10.sr);
@@ -17009,8 +17021,14 @@ var Singer = class {
         onEnd();
       }
     };
-    src.start();
+    if (o10.loop) {
+      src.loop = true;
+      src.loopStart = o10.loop.start;
+      src.loopEnd = o10.loop.end;
+    }
+    src.start(0, o10.offset ?? 0);
     this.src = src;
+    if (o10.stopAfter) src.stop(ctx2.currentTime + o10.stopAfter);
   }
   stop() {
     const s10 = this.src;
@@ -27305,7 +27323,7 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u6708\u8BFB\u5531 / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="loopBtn" class="btn" title="\u5FAA\u73AF\uFF1A\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF">\u5FAA\u73AF</button><button id="seamBtn" class="btn" hidden title="\u542C\u63A5\u7F1D\uFF1A\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C">\u63A5\u7F1D</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
 padTab.id = "padTab";
@@ -27972,10 +27990,11 @@ var curFlat = () => {
 var lastRender = /* @__PURE__ */ new Map();
 var GM_SR = 44100;
 var songIn = (s10) => s10 === "all" ? st2.song : s10 === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : playSong();
-async function renderPart(part, scope = "view") {
+async function renderPart(part, scope = "view", order) {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`\u300C${roleName(doc.extras, role)}\u300D\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A`);
-  const song = songIn(scope), order = songPlayOrder(song);
+  const song = songIn(scope);
+  order ??= songPlayOrder(song);
   const { tokens, starts } = flattenPart(song, part.id, { order }), map = tempoMapOf(song, order), bounds = starts.map((x2) => x2.index);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);
@@ -28011,8 +28030,8 @@ async function renderPart(part, scope = "view") {
   lastRender.set(part.id, { key, r: out });
   return out;
 }
-function partGain(part, scope) {
-  const song = songIn(scope), order = songPlayOrder(song), { tokens, starts } = flattenPart(song, part.id, { order });
+function partGain(part, scope, order) {
+  const song = songIn(scope), { tokens, starts } = flattenPart(song, part.id, { order: order ?? songPlayOrder(song) });
   return gainSegments(tokens, tempoMapOf(song, order), activePerfSpec(doc.extras, part.role), starts.map((x2) => x2.index));
 }
 var audibleParts = () => {
@@ -28023,12 +28042,12 @@ function micOf(part) {
   const m2 = (doc.extras.studio?.mics ?? []).find((x2) => x2.id === part.mic);
   return { gainDb: Number(m2?.gainDb ?? 0), pan: Math.max(-1, Math.min(1, Number(m2?.pan ?? 0))) };
 }
-async function renderMix(scope = "view") {
+async function renderMix(scope = "view", order) {
   const parts = audibleParts(), got = [], errs = [];
   const heavyFirst = [...parts].sort((a10, b3) => Number(activeInstrument(doc.extras, b3.role)?.engine === "tsukuyomi") - Number(activeInstrument(doc.extras, a10.role)?.engine === "tsukuyomi"));
   for (const part of heavyFirst) {
     try {
-      const r10 = await renderPart(part, scope);
+      const r10 = await renderPart(part, scope, order);
       if (r10) got.push({ part, r: r10 });
     } catch (e10) {
       errs.push(`\u300C${roleName(doc.extras, part.role)}\u300D\uFF1A${e10.message}`);
@@ -28038,10 +28057,10 @@ async function renderMix(scope = "view") {
   if (errs.length) showError(`${errs.join("\uFF1B")}\u3002${got.length ? "\u8FD9\u4E9B\u58F0\u90E8\u6CA1\u6709\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\u3002" : "\u6CA1\u6709\u51FA\u58F0\u3002"}\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
   if (!got.length) return null;
   const m2 = mixTracks(got.map(({ part, r: r10 }) => {
-    const { gainDb, pan } = micOf(part), segs = partGain(part, scope);
+    const { gainDb, pan } = micOf(part), segs = partGain(part, scope, order);
     return { samples: segs ? applyGain(r10.samples, r10.sr, r10.at, segs) : r10.samples, sr: r10.sr, at: r10.at, gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan };
   }), GM_SR);
-  return { left: m2.left, right: m2.right, sr: m2.sr, roles: got.map((x2) => x2.part.role) };
+  return { left: m2.left, right: m2.right, sr: m2.sr, start: m2.start, roles: got.map((x2) => x2.part.role) };
 }
 var embedSoftLimit = 1e7;
 var sessionSubsets = /* @__PURE__ */ new Map();
@@ -28124,7 +28143,9 @@ function playLight(who = "\u6708\u8BFB\uFF08\u54FC\uFF09") {
   playIcon(true);
   progress(`${who} ${total.toFixed(1)} \u79D2`);
 }
-async function togglePlay() {
+var loopOn = false;
+var SEAM_LEAD = 4;
+async function togglePlay(seam = false) {
   if (singer.playing || sampler.songPlaying) {
     singer.stop();
     sampler.stopSong();
@@ -28137,16 +28158,43 @@ async function togglePlay() {
   singing = true;
   $2("playBtn").classList.add("is-on");
   try {
-    const t02 = performance.now(), m2 = await renderMix();
+    const looping = loopOn || seam;
+    const song = songIn("view"), plan = looping ? loopPlan(song) : null;
+    const t02 = performance.now(), m2 = await renderMix("view", plan?.order);
     if (!m2) {
       progress("");
       return;
     }
-    const secs = m2.left.length / m2.sr, took = (performance.now() - t02) / 1e3;
-    progress(took > 0.3 ? `${secs.toFixed(1)} \u79D2\uFF08\u51C6\u5907 ${took.toFixed(1)} s\uFF09` : `${secs.toFixed(1)} \u79D2`);
-    singer.play({ samples: m2.left, right: m2.right, sr: m2.sr }, () => {
-      playIcon(false);
-    });
+    const secs = m2.left.length / m2.sr, took = (performance.now() - t02) / 1e3, prep = took > 0.3 ? `\uFF08\u51C6\u5907 ${took.toFixed(1)} s\uFF09` : "";
+    let win = null;
+    if (plan) {
+      const first = song.parts[0], f2 = first ? flattenPart(song, first.id, { order: plan.order, tempo: true }) : null;
+      win = f2 ? loopWindow(f2.tokens, tempoMapOf(song, plan.order), f2.starts, plan) : null;
+    }
+    if (plan && !win) {
+      progress("");
+      info("\u5FAA\u73AF\u6BB5\u91CC\u4EC0\u4E48\u90FD\u6CA1\u6709\uFF0C\u5FAA\u73AF\u4E0D\u4E86");
+      return;
+    }
+    if (win) {
+      const loop = { start: win.start - m2.start, end: win.end - m2.start }, len = win.end - win.start;
+      const offset = seam ? Math.max(0, loop.end - SEAM_LEAD) : 0, need = Math.ceil(loop.end * m2.sr);
+      const fit = (x2) => {
+        if (x2.length >= need) return x2;
+        const y2 = new Float32Array(need);
+        y2.set(x2);
+        return y2;
+      };
+      singer.play({ samples: fit(m2.left), right: fit(m2.right), sr: m2.sr }, () => {
+        playIcon(false);
+      }, { loop, offset, ...seam ? { stopAfter: SEAM_LEAD * 2 } : {} });
+      progress(seam ? `\u63A5\u7F1D\uFF1A\u7ED3\u5C3E\u524D ${SEAM_LEAD} \u79D2 \u2192 \u8DF3\u56DE\u5F00\u5934${prep}` : `${plan.intro ? `\u524D\u9762 ${win.start.toFixed(1)} \u79D2\uFF0C\u7136\u540E` : ""}\u5FAA\u73AF ${len.toFixed(1)} \u79D2${prep}`);
+    } else {
+      progress(`${secs.toFixed(1)} \u79D2${prep}`);
+      singer.play({ samples: m2.left, right: m2.right, sr: m2.sr }, () => {
+        playIcon(false);
+      });
+    }
     playIcon(true);
   } catch (e10) {
     showError(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`);
@@ -28159,6 +28207,24 @@ async function togglePlay() {
 }
 $2("playBtn").addEventListener("click", () => {
   void togglePlay();
+});
+$2("loopBtn").addEventListener("click", () => {
+  loopOn = !loopOn;
+  $2("loopBtn").classList.toggle("is-on", loopOn);
+  $2("seamBtn").hidden = !loopOn;
+  if (singer.playing) {
+    singer.stop();
+    playIcon(false);
+    void togglePlay();
+  }
+});
+$2("seamBtn").addEventListener("click", () => {
+  if (singer.playing || sampler.songPlaying) {
+    singer.stop();
+    sampler.stopSong();
+    playIcon(false);
+  }
+  void togglePlay(true);
 });
 var exporting = false;
 var mp3Scope = "all";
@@ -28424,7 +28490,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "478b6af73f73",
+  cssHash: "f6717ddba77e",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -30822,4 +30888,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2897aa2c2102.mjs.map
+//# sourceMappingURL=moonsinger-f15cd4ab36c0.mjs.map

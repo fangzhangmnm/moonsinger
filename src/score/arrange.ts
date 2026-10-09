@@ -6,7 +6,7 @@
 //   · 重复：名字或括号后面跟 ×N（x / X / * 也认），如 A×2、(A A1)×3——房子 = 结尾单独做成一张小纸，主体共用，括起来重复；
 //   · 循环段：[ … ]，只能一个、放在最后：前面放一遍，括住的一直循环（单曲循环 / 游戏的「前奏 + 循环段」）。
 // 不写 = 每张纸按顺序各放一遍（隐藏的不放；和以前一样）。写错的（找不到这张纸、循环段后面还有东西…）照写照存、谱上那一行画出来、说为什么，放的时候跳过（纪律「做不到的一律画灰 + 明说」）。
-import type { PaperSeg } from "./song.ts";
+import { type PaperSeg, type Token, type TempoMap, timeline } from "./song.ts";
 
 export type ArrNode = { kind: "ref"; paper: string; text: string; at: number } | { kind: "rep"; body: ArrNode[]; n: number };
 export interface ArrIssue { at: number; len: number; why: string }
@@ -74,3 +74,20 @@ export function parseArrangement(text: string | undefined, papers: readonly Pape
 export const playOrder = (a: Arrangement): string[] => [...a.order, ...(a.loop ?? [])];
 /** 一首歌整首放的顺序（没写编排 = 每张没藏的纸各一遍）。 */
 export const songPlayOrder = (song: { arrangement?: string; papers: readonly PaperSeg[] }): string[] => playOrder(parseArrangement(song.arrangement, song.papers));
+
+/** 循环放（走带「循环」开着；user「我确实希望能单曲循环，或者测试战斗循环切割」「无穷循环和循环走带都做」）：
+ *  渲染的顺序 = 前面那段 + 循环段**放两遍**；循环区间 = 第二遍。第一遍的尾音（混响、没收完的音）自然渗进第二遍的开头，
+ *  所以每次从第二遍的结尾跳回第二遍的开头，听到的接缝和真的一遍遍连着放一模一样（游戏里循环音乐切法的同一个道理）。
+ *  没写循环段 = 整首循环；本段视图（歌只剩一张纸、没有编排）= 这一张循环。intro / body = 纸的张数。 */
+export function loopPlan(song: { arrangement?: string; papers: readonly PaperSeg[] }): { order: string[]; intro: number; body: number } {
+  const a = parseArrangement(song.arrangement, song.papers);
+  const intro = a.loop ? a.order : [], body = a.loop ?? a.order;
+  return { order: [...intro, ...body, ...body], intro: intro.length, body: body.length };
+}
+/** 循环区间（谱上的秒）：tokens / map / starts = 照 loopPlan 的顺序压平的第一个声部；第二遍从 starts[intro + body] 起、到整串结尾。 */
+export function loopWindow(tokens: Token[], map: TempoMap, starts: readonly { index: number }[], plan: { intro: number; body: number }): { start: number; end: number } | null {
+  if (!plan.body) return null;
+  const tl = timeline(tokens, map), end = tl.length ? tl[tl.length - 1].t1 : 0, from = starts[plan.intro + plan.body]?.index ?? tokens.length;
+  const start = tl.find((x) => x.index >= from)?.t0 ?? end;
+  return end - start > 0.05 ? { start, end } : null;   // 循环段是空的（一个音都没有、也没有休止）= 不循环
+}
