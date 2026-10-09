@@ -10,15 +10,22 @@
 //   · 脏：加 / 删 / 挪卡 = 正经改动（编好字节之后 rev +1、onCards() 通知宿主）；开关窗 / 挪窗 / 翻卡 = 视图态（宿主存时顺手捞，不标脏）
 //   · 清单比库新（DeckManifestTooNewError）→ 目录原样带着、存的时候原样写回、明说；不吞、不猜
 //   · 图片原样存（家规「字节进出不走 canvas」；库也说没编码器就留原字节）；单张超过 4 MB 先问一句「存进歌里 / 取消」（家族批过的提醒线）
+//     → 0.4.0（2026-10-09，v0.9.x）：图片 / 音频超过 1 MB 都问（user「3. 音频也超过1MB才问？」）：存进歌里 / 压一下（约 X MB；src/app/ref-transcode.ts 注入）/
+//       只放内存（不存进歌里；读回来是空位，同名文件拖进来补上——user「然后能不能加RAM only，就是不落盘，每次重新上传」）/ 算了。
+//       超过 4 MB 把「只放内存」排第一（user「这里可能是全家族仓我们唯一一个真的需要nudge用户」）。问的面板是宿主的（main.ts askImport），不用系统对话框。
+//   · 音频卡（库 0.4.0）：播放 / 暂停 + 进度条；循环、速度 1 / 0.75 / 0.5（user「默认不开，moonsinger开」）；关窗、翻卡不停（user「不停」）
 //   · 粘贴看焦点：窗有焦点 = 贴进窗；没有 = 宿主照旧（谱里贴简谱文字）
 import "@internal/reference-window";
-import type { WpReferenceWindow, RefMenuPort, RefPanelRect } from "@internal/reference-window";
+import type { WpReferenceWindow, RefMenuPort, RefPanelRect, RefImportQuestion, RefImportChoice } from "@internal/reference-window";
 import { encodeDeck, decodeDeck, mimeForName, DeckManifestTooNewError } from "@internal/reference-window/deck";
 import { togglePopupMenu } from "@internal/workbench-elements";
+import { createRefTranscoder } from "./ref-transcode.ts";
 
 const APP = "moonsinger";                          // 目录 = .moonsinger/references/（库按 app 名算）
-const KINDS = ["image", "text"] as const;          // 这个宿主画得出来的；其余的库原样带着
-export const BIG_BYTES = 4 * 1024 * 1024;          // 单张超过这么大先问（技术方案批过的 4 MB 提醒线）
+const KINDS = ["image", "text", "audio"] as const; // 这个宿主画得出来的；其余的库原样带着
+export const ASK_ABOVE = 1024 * 1024;              // 图片 / 音频超过 1 MB 先问（存 / 压 / 只放内存 / 算了）
+export const RAM_ABOVE = 4 * 1024 * 1024;          // 超过 4 MB：问的时候「只放内存」排第一（技术方案批过的 4 MB 提醒线）
+export type { RefImportQuestion, RefImportChoice };
 /** 窗的位置 / 开着没有（视图态：存进 score.json 的 view.ref，不标脏、不进撤销）。 */
 export interface RefPanel { open: boolean; left: number; top: number; width: number; height: number }
 
@@ -31,8 +38,8 @@ export interface ReferenceHostDeps {
   bottomFloor(): number;
   /** 关窗 / Esc 之后焦点还给谱。 */
   focusScore(): void;
-  /** 单张很大：问一句（应用内面板，不用系统对话框）。 */
-  confirmBig(name: string, bytes: number): Promise<boolean>;
+  /** 文件超过 1 MB：问存 / 压 / 只放内存 / 算了（应用内面板，不用系统对话框）。 */
+  askImport(q: RefImportQuestion): Promise<RefImportChoice>;
   /** 卡片变了、字节已经编好（files() / rev() 已是新的）：宿主标脏、通知存档节律。 */
   onCards(): void;
 }
@@ -41,7 +48,7 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   const el = document.createElement("wp-reference-window") as WpReferenceWindow;
   el.className = "ref-window";
   const fileInput = document.createElement("input");
-  fileInput.type = "file"; fileInput.multiple = true; fileInput.hidden = true; fileInput.accept = "image/*,.txt,.md,text/plain,text/markdown";
+  fileInput.type = "file"; fileInput.multiple = true; fileInput.hidden = true; fileInput.accept = "image/*,audio/*,.txt,.md,text/plain,text/markdown";
   document.body.append(el, fileInput);
 
   let encoded: Record<string, Uint8Array> = {};      // 现在要存的那份字节（路径 → 字节；路径都在 .moonsinger/references/ 下）
@@ -56,10 +63,14 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   el.menuPort = ((o) => togglePopupMenu(o)) as RefMenuPort;
   el.setAttribute("no-cloud", "");                     // 不从云盘选图（歌库不是图库；iPad 的「文件」已经能挑相册 / OneDrive）
   el.labels = {
-    load: "导入图片 / 文字…", paste: "粘贴", oneToOne: "原尺寸", del: "删掉这张", delConfirm: "再点一次删掉", closeWin: "收起参考窗",
+    paste: "粘贴", oneToOne: "原尺寸", del: "删掉这张", delConfirm: "再点一次删掉", closeWin: "收起参考窗",
     prev: "上一张", next: "下一张", menu: "参考窗菜单", move: "拖动", resize: "改大小", resizeAria: "改大小",
-    moveEarlier: "往前挪", moveLater: "往后挪", jump: "跳到…", kindNames: { image: "图片", text: "文字" }, linkMissing: "内容不在了",
+    moveEarlier: "往前挪", moveLater: "往后挪", jump: "跳到…", kindNames: { image: "图片", text: "文字", audio: "音频" }, linkMissing: "内容不在了",
+    load: "导入图片 / 音频 / 文字…", play: "播放", pause: "暂停", loop: "循环", rate: "速度",
+    ram: "只放内存（不存进歌里）", ramMissing: "只在内存里，没存进歌里——把这个文件拖进来，或者点 ＋ 重新导入，就补回这里",
   };
+  el.audioRates = [1, 0.75, 0.5];   // 扒谱用（保音高）
+  const transcoder = createRefTranscoder();
   const syncFloor = () => { el.topFloor = d.topFloor(); el.bottomFloor = d.bottomFloor(); if (el.open) el.reclamp(); };
   window.addEventListener("resize", syncFloor);
 
@@ -100,16 +111,15 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   });
   el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); d.focusScore(); } });   // Esc = 焦点回谱（窗留着）
 
+  /** 导入（菜单 / 拖放 / 粘贴文件）：库的漏斗（嗅种类 → 超过 1 MB 问 → 原样 / 压 / 只放内存 / 不要），结果如实说。 */
   async function importFiles(files: File[]): Promise<void> {
-    let added = 0;
-    for (const f of files) {
-      if (f.type.startsWith("text/") || /\.(txt|md)$/i.test(f.name)) { el.addText(await f.text(), { name: f.name }); added++; continue; }
-      if (!f.type.startsWith("image/")) { d.error(`认不出：${f.name}（参考窗收图片和文字）`); continue; }
-      if (f.size > BIG_BYTES && !(await d.confirmBig(f.name, f.size))) continue;
-      el.deck.add({ kind: "image", bytes: f, mime: f.type, name: f.name });
-      added++;
+    const r = await el.importFiles(files, { kinds: KINDS, transcoder, ask: (q) => d.askImport(q), askAbove: { image: ASK_ABOVE, audio: ASK_ABOVE }, ramAbove: RAM_ABOVE });
+    for (const k of r.skipped) {
+      if (k.why === "unsupported") d.error(`认不出：${k.name}（参考窗收图片、音频和文字）`);
+      else if (k.why === "failed") d.error(`没加上：${k.name}（${k.message ?? "出错了"}）`);
     }
-    if (added) { el.open = true; el.focus({ preventScroll: true }); d.info(`参考窗：加了 ${added} 张`); }
+    const said = [r.added.length ? `加了 ${r.added.length} 张` : "", r.filled.length ? `补回 ${r.filled.length} 张（只放内存的空位）` : "", ...r.notes].filter(Boolean);
+    if (r.added.length || r.filled.length) { el.focus({ preventScroll: true }); d.info(`参考窗：${said.join("；")}`); }
   }
   async function pasteFromClipboard(): Promise<void> {
     try {

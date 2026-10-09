@@ -6,7 +6,7 @@
 //   跳音：SoundFont / 元音版把音截短（lightNotes，乐器自己的余音照常收）；月读截不短（唱法核心按谱唱满）→ 曲线在音的后半段收声（gateStaccato）。
 //   呼吸：月读 = 下一个字前「v」（lab-score.ts）；元音版和乐器 = 前一个音收短一点（lightNotes；乐器上的逗号 = 稍微断开再进下一个音，管乐 / 人声就是换气；
 //   2026-10-08 user「breath是否应该对大量GS乐器也生效。毕竟不断气一直拖着也不对，fl你还得手动调一下时长」）。
-import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, DEFAULT_DYN, rampTarget } from "./song.ts";
+import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, DEFAULT_DYN, rampTarget, isTimed } from "./song.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
 const DEFAULT_DYN_KEY: Dyn = DEFAULT_DYN;
 
@@ -119,6 +119,26 @@ export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Rec
     const x = at.get(i); if (!x) continue;
     out.set(i, { at0: lvl(x.t0), at1: lvl(x.t1) });
     if (t.kind === "note" && !ramp && artOf(t).includes("fp")) cur = table.p;   // 强后即弱：之后的音都是 p（它也是一个新状态）
+  }
+  return out;
+}
+/** 被强后即弱盖掉、不起作用的力度记号（下标）：紧跟着的那个音是 fp（音头按 f、随后落到 p，之后都是 p——不看前面的力度），
+ *  而且它也不是渐强渐弱 / 渐到的起点或终点。判法 = 把它换成别的值，除了 fp 那个音以外每个音的力度水平都不变（和出声同一个函数 dynLevels，不另写规则）。
+ *  谱上画灰、点开说为什么（纪律「做不到的一律画灰 + 明说」；2026-10-09 user「要不要按纪律把 mf 画灰、说一句？ 要」）。 */
+export function dynOverridden(tokens: Token[], bounds?: readonly number[]): Set<number> {
+  const out = new Set<number>();
+  const T: Record<Dyn, number> = { pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6 };
+  const fpNotes = new Set<number>(); tokens.forEach((t, k) => { if (t.kind === "note" && artOf(t).includes("fp")) fpNotes.add(k); });
+  if (!fpNotes.size) return out;
+  const levels = (ts: Token[]) => [...dynLevels(ts, undefined, T, 0, 0.5, bounds)].filter(([k]) => !fpNotes.has(k)).map(([k, l]) => `${k}:${l.at0}:${l.at1}`).join("|");
+  let base: string | null = null;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i]; if (t.kind !== "dyn") continue;
+    let j = i + 1; while (j < tokens.length && !isTimed(tokens[j])) j++;
+    if (!fpNotes.has(j)) continue;   // 先筛：只有紧跟着 fp 的才可能被盖掉
+    base ??= levels(tokens);
+    const alt = (v: Dyn) => levels(tokens.map((x, k) => (k === i ? { ...t, value: v } : x)));
+    if (alt(t.value === "pp" ? "ff" : "pp") === base && alt(t.value === "mf" ? "p" : "mf") === base) out.add(i);
   }
   return out;
 }

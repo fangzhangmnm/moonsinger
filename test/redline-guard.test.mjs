@@ -6,7 +6,7 @@ import { describe, it, assert } from "./runner.mjs";
 
 const SEAM = new Set(["src/app-store.ts", "src/device-kv.ts", "src/config.ts"]);
 // @internal/gallery 的值级 import 点（图库屏 / 纯函数缩图 / store 的 ui 接线器 storeUIFor / 黑匣子 diagLog）
-const GALLERY_OK = new Set(["src/gallery-host.ts", "src/image/cover.ts", "src/store-ui.ts", "src/app/report-error.ts"]);
+const GALLERY_OK = new Set(["src/gallery-host.ts", "src/image/cover.ts", "src/image/shrink.ts", "src/store-ui.ts", "src/app/report-error.ts"]);   // shrink.ts = 参考窗「压一下」的缩图（纯函数），2026-10-09 Opus 5.5
 const BAD = [
   { re: /\blocalStorage\b/, why: "raw localStorage" },
   { re: /\bindexedDB\b|\bIDBDatabase\b/, why: "raw IndexedDB" },
@@ -52,7 +52,7 @@ describe("redline-guard", () => {
     }
     assert(hits.length === 0, "yellow-line guard hits:\n" + hits.join("\n"));
   });
-  it("@internal/store 值级 import 只在 src/app-store.ts（+ src/identifiers.ts 只准拿纯函数 createIdentifiers）；@internal/encryption 只在 src/encryption.ts；@internal/gallery 值级只在 GALLERY_OK 四个文件", () => {
+  it("@internal/store 值级 import 只在 src/app-store.ts（+ src/identifiers.ts 只准拿纯函数 createIdentifiers）；@internal/encryption 只在 src/encryption.ts；@internal/gallery 值级只在 GALLERY_OK 里那几个文件", () => {
     const hits = [];
     for (const p of walk("src")) {
       const rel = p.replace(/\\/g, "/");

@@ -36,7 +36,7 @@ import { Sampler } from "../singer/sampler.ts";
 import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { mixTracks, applyGain } from "../audio/mix.ts";
-import { gainSegments, noteEnd, noteVelocities, ignoredArts, whyIgnored, lightMarks, type Mark } from "../score/perform.ts";
+import { gainSegments, noteEnd, noteVelocities, ignoredArts, whyIgnored, lightMarks, dynOverridden, type Mark } from "../score/perform.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
 import { GmSynth } from "../gm/synth.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
@@ -56,8 +56,8 @@ import { identifiers } from "../identifiers.ts";
 import { SONG_SUFFIX, LOCAL_SAVE_DEBOUNCE_MS } from "../config.ts";
 import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
 import { createEditorSession } from "../editor-session/index.ts";
-import { openInputSheet, openChoiceSheet, openConfirmSheet, isSheetOpen, closeSheet, isGateOpen, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
-import { createReferenceHost } from "./reference-host.ts";
+import { openInputSheet, openChoiceSheet, type Choice, openConfirmSheet, isSheetOpen, closeSheet, isGateOpen, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
+import { createReferenceHost, type RefImportQuestion, type RefImportChoice } from "./reference-host.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
 import { scorePdf, type PdfFontId } from "../export/score-pdf.ts";
 import { loadPdfFont, loadMusicOutlines, PDF_FONT_MB } from "../export/pdf-assets.ts";
@@ -105,6 +105,13 @@ function discloseArt(prev: EditorState, a: Mark): void {
     : why === "gap" ? `${who}本来就不留缝（乐器页「音和音之间」= 0）：${MARK_NAME[a]}写在谱上了（画灰），出声不变`
     : `${who}不认${MARK_NAME[a]}：写在谱上了（画灰），出声不受影响`);
 }
+/** 刚写的力度记号 / 强后即弱让一个力度记号不起作用了（紧跟着的音是 fp：音头按 f、随后落到 p）→ 明说（照写、画灰；2026-10-09 user「要不要按纪律把 mf 画灰、说一句？ 要」）。 */
+function discloseDynOverride(prev: EditorState): void {
+  const toks = tr(st), now = dynOverridden(toks);
+  if (now.size <= dynOverridden(tr(prev)).size) return;
+  const v = [...now].map((i) => toks[i]).find((t) => t.kind === "dyn");
+  info(`这个 ${v && v.kind === "dyn" ? v.value : "力度记号"} 不起作用（画灰）：后面那个音是强后即弱（fp），音头按 f、随后落到 p`);
+}
 const curRole = (): string => curPart().role;
 /** 声部的显示 / 出声状态：隐藏（不画）、静音、独奏——这次打开里有效，不进文件（user 2026-10-08「不同的声部视图和出声应该分别可以solo和hide」）。 */
 //   两根轴同一套语法（user 2026-10-08「display有hide 和show only， play有mute和solo。这两个的逻辑关系你理一个好的」）：每根轴 = 一个「关掉」旗（隐藏 / 静音）+ 一个「只要这些」集合（只看它 / 独奏）；
@@ -128,10 +135,25 @@ const refHost = createReferenceHost({
   topFloor: () => Math.round(bar.getBoundingClientRect().bottom),
   bottomFloor: () => { const r = padEl.getBoundingClientRect(); return !padEl.hidden && r.width > innerWidth * 0.6 && r.top > innerHeight * 0.3 ? Math.max(0, Math.round(innerHeight - r.top)) : 0; },
   focusScore: () => scoreEl.focus({ preventScroll: true }),
-  confirmBig: (name, n) => openConfirmSheet("这张图很大", `「${name}」${(n / 1024 / 1024).toFixed(1)} MB。参考图跟着歌一起存、一起同步，存进去这首歌会大这么多。`, { okLabel: "存进歌里", cancelLabel: "算了" }),
+  askImport: (q) => askRefImport(q),
   onCards: () => { renderTitle(); changed(); },
 });
 new ResizeObserver(() => refHost.relayout()).observe(padEl);
+/** 参考窗导入的问询（库 0.4.0：超过 1 MB 的图片 / 音频）：存进歌里 / 压一下（约 X MB）/ 只放内存 / 算了。
+ *  user「应用内小面板 如果支持压缩的话应该有压缩选项和估计」；超过 4 MB（q.suggestRam）「只放内存」排第一、说为什么（user 选 B：「这里可能是全家族仓我们唯一一个真的需要nudge用户」）。 */
+async function askRefImport(q: RefImportQuestion): Promise<RefImportChoice> {
+  const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`, what = q.kind === "audio" ? "mp3 128k" : "PNG 256 色、长边最多 2048";
+  const smaller = q.canCompress && (q.estimate === null || q.estimate < q.bytes * 0.9);
+  const keep: Choice<RefImportChoice> = { label: `存进歌里（${mb(q.bytes)}）`, value: "keep" };
+  const zip: Choice<RefImportChoice> = { label: q.estimate === null ? `压一下再存（${what}）` : `压一下再存（约 ${mb(q.estimate)}）`, value: "compress" };
+  const ram: Choice<RefImportChoice> = { label: q.suggestRam ? "只放内存（推荐）" : "只放内存（不存进歌里）", value: "ram" };
+  const msg = `「${q.name}」${mb(q.bytes)}。参考窗里的东西跟着歌一起存、一起同步。` +
+    (q.canCompress && !smaller ? `压了也不会更小，就不列了。` : smaller ? `压一下 = ${what}。` : "") +
+    `只放内存 = 这次打开能${q.kind === "audio" ? "听" : "看"}，不存进歌里；下次打开是个空位，把同一个文件拖进来就补上。` +
+    (q.suggestRam ? `超过 4 MB 的，存进去这首歌会大这么多、同步也慢，所以先推荐只放内存。` : "");
+  const list = q.suggestRam ? [{ ...ram, primary: true }, ...(smaller ? [zip] : []), keep] : [{ ...keep, primary: true }, ...(smaller ? [zip] : []), ram];
+  return (await openChoiceSheet(q.kind === "audio" ? "这段音频有点大" : "这张图有点大", msg, list)) ?? "cancel";
+}
 
 new ResizeObserver(() => refHost.relayout()).observe(bar);
 installPlatformGuards([scoreEl, padEl]);   // iPad：长按放大镜 / 系统菜单 / 双击缩放（照 WeebPaint）
@@ -491,6 +513,7 @@ const pad = new Pad(padEl, {
     if (c.k === "art") discloseArt(prev, c.a);
     if (c.k === "slur") discloseArt(prev, "slur");
     if (c.k === "swell") discloseArt(prev, c.w === ">" ? "swellFade" : "swellGrow");
+    if (c.k === "dyn" || (c.k === "art" && c.a === "fp")) discloseDynOverride(prev);
   },
   onUnit: (u) => { if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n) => update(setTuplet(st, n)),
@@ -1627,9 +1650,10 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
     : (["cresc", "dim"] as const).map((d) => `<button class="btn ctx-chip${t.dir === d ? " is-on" : ""}" data-v="dir:${d}" title="${d === "cresc" ? "渐强" : "渐弱"}">${WEDGE_MENU[d]}</button>`).join("");
   // 渐到（只给力度记号）：开关 + 做不到时说为什么（纪律：画灰 + 明说）
   const rampWhy = src === "none" ? "这张纸里前面没有力度记号，没有地方渐过来" : src === "hairpin" ? "中间有手写的渐强渐弱，按手写的走" : "";
+  const offWhy = t.kind === "dyn" && dynOverridden(toks).has(i) ? `<div class="ctx-hint">不起作用（画灰）：后面那个音是强后即弱（fp）——音头按 f、随后落到 p，之后也是 p，这个 ${t.value} 管不到</div>` : "";
   const rampRow = t.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t.ramp ? " disabled" : ""} title="渐到：从这张纸里上一个力度记号那儿一路渐变到这里（谱上虚线发夹）；关 = 到这儿突变">${t.ramp ? "✓ " : ""}渐到（从上一个力度渐变过来）</button>` +
     (rampWhy ? `<div class="ctx-hint">${t.ramp ? "不起作用：" : ""}${esc(rampWhy)}</div>` : "");
-  box.innerHTML = `<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div>` +
+  box.innerHTML = `${offWhy}<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div>` +
     `<button class="btn ctx-item danger" data-v="del" title="${t.kind === "dyn" ? "去掉这个力度记号（后面的音回到前一个力度记号）" : "去掉这个渐强 / 渐弱"}">删除</button>` +
     `<div class="ctx-hint">长按拖 = 挪到别的音上</div>`;
   document.body.append(box);

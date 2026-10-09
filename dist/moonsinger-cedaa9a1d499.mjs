@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.9-2026-10-09";
+var APP_VERSION = "v0.8.10-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5626,6 +5626,277 @@ function lyricWhyText(x2, engineName, lang) {
   return lang === "ja" ? "\u8FD9\u6761\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D" : lang === "zh" ? "\u8FD9\u6761\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57" : "\u8FD9\u6761\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD";
 }
 
+// src/singer/packs.gen.ts
+var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
+var PACKS = {
+  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
+  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
+  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
+  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
+  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
+};
+var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
+
+// src/format/performance.ts
+var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
+var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
+var MARK_DEFAULTS = {
+  accentSec: 0.12,
+  // 重音 / 强音：音头加重持续多久（秒；月读 / 元音版 / 旧乐器的 dB 那一路）
+  breathSec: 0.16,
+  breathShare: 0.25,
+  // 呼吸：前一个音收短多少（秒），最多占这个音的几分之几（元音版 / 乐器）
+  gapShare: 0.25,
+  // 连断底色的缝最多吃掉这个音的几分之几
+  wedgeStepDb: 6,
+  wedgeStepVel: 16,
+  // 渐强渐弱后面没写力度记号 = 走一档：dB 那一路 / 力度那一路各走多少
+  sfzDb: 9,
+  sfzVel: 32,
+  sfzSec: 0.2,
+  // 突强：音头比当下高多少（dB 那一路，sfzSec 里落回来）/ 力度那一路加多少
+  fpSec: 0.2,
+  // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
+  swellDb: 6,
+  // 音内起伏：< 走到 +swellDb、> 走到 −swellDb、<> 中间到 +swellDb 再回来
+  // 强度的其余几级（2026-10-08 深夜 Opus 5.5）：次重音 = 重音的一半（音头 accentSec 那一段 / 力度）；弱化 / 幽灵音 = 整个音轻下去（幽灵音 ≈ 强音反过来）
+  stressDb: 2,
+  stressVel: 8,
+  unstressDb: -3,
+  unstressVel: -10,
+  ghostDb: -9,
+  ghostVel: -28
+};
+var SING_MARKS = {
+  staccato: { mark: "^", at: "next" },
+  accent: { mark: "^", at: "this" },
+  marcato: { mark: "^", at: "this" },
+  breath: { mark: "v", at: "next" },
+  sfz: { mark: "^", at: "this" },
+  fp: { mark: "^", at: "this" }
+  // 音头那一组都顿一下（同重音，user「嗯重音也顿」）
+};
+var DYNAMICS_VEL = { pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112 };
+var ACCENT_VEL = 16;
+var MARCATO_VEL = 28;
+var MARCATO_DB = 7;
+var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
+var SOUNDFONT_CALIBRATION_DB = -6;
+var DEFAULT_CALIBRATION_DB = -6;
+var TSUKUYOMI_DEFAULTS = {};
+var REPO = "https://github.com/fangzhangmnm/moonsinger";
+var TSUKUYOMI_CREDIT = {
+  attribution: [CREDIT.credit, ...CREDIT.attribution],
+  license: { name: "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09", url: CREDIT.termsUrl, text: CREDIT.terms }
+};
+var TSUKUYOMI_SPEC = { kind: "ours", doc: "#tsukuyomi", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sing-core.mjs" } };
+var VOWEL_SAMPLER_SPEC = { kind: "ours", doc: "#vowel-sampler", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sampler.ts" } };
+var SOUNDFONT_SPEC = { kind: "standard", name: "SoundFont", version: "2.04" };
+var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
+
+// src/score/perform.ts
+var DEFAULT_DYN_KEY = DEFAULT_DYN;
+var M = MARK_DEFAULTS;
+function gainSegments(tokens, map, spec, bounds, groove) {
+  const segs = [];
+  let any = false;
+  const vel = !!spec.dynamicsVel;
+  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb, bounds);
+  const ramp = (a10, b3, s02, s12) => {
+    const n10 = Math.max(1, Math.min(32, Math.ceil((s12 - s02) / 0.03)));
+    for (let k2 = 0; k2 < n10; k2++) segs.push({ t0: s02 + (s12 - s02) * k2 / n10, t1: s02 + (s12 - s02) * (k2 + 1) / n10, dB: a10 + (b3 - a10) * (k2 + 0.5) / n10 });
+  };
+  for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
+    const gw = vel ? 0 : groove?.get(index) ?? 0;
+    const L2 = levels?.get(index), soft = tok.kind === "note" && !vel ? artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : gw < 0 ? -gw * (spec.unstressDb ?? M.unstressDb) : 0 : 0;
+    const base3 = (L2 ? L2.at0 : 0) + soft, baseEnd = (L2 ? L2.at1 : 0) + soft;
+    if (base3 !== 0 || baseEnd !== 0) any = true;
+    if (tok.kind !== "note") {
+      if (baseEnd !== base3) ramp(base3, baseEnd, t02, t12);
+      else segs.push({ t0: t02, t1: t12, dB: base3 });
+      continue;
+    }
+    const art = artOf(tok);
+    let cur = t02;
+    const sw2 = tok.swell && !(spec.canSwell === false && tok.swell !== ">") ? tok.swell : null, D2 = spec.swellDb ?? M.swellDb;
+    const swOff = (fr) => sw2 === "<" ? D2 * fr : sw2 === ">" ? -D2 * fr : sw2 === "<>" ? D2 * (1 - Math.abs(2 * fr - 1)) : 0;
+    const shaped = (a02, a12, s02, s12) => {
+      const n10 = Math.max(2, Math.min(48, Math.ceil((s12 - s02) / 0.03)));
+      for (let k2 = 0; k2 < n10; k2++) {
+        const a10 = s02 + (s12 - s02) * k2 / n10, b3 = s02 + (s12 - s02) * (k2 + 1) / n10, m2 = (a10 + b3) / 2, fr = (m2 - t02) / Math.max(1e-9, t12 - t02), fs = (m2 - s02) / Math.max(1e-9, s12 - s02);
+        segs.push({ t0: a10, t1: b3, dB: a02 + (a12 - a02) * fs + swOff(fr) });
+      }
+      any = true;
+    };
+    if (art.includes("fp")) {
+      const f2 = spec.dynamicsDb.f ?? 6, p2 = spec.dynamicsDb.p ?? -12, e10 = Math.min(t12, t02 + (spec.fpSec ?? M.fpSec));
+      if (vel) ramp(0, p2 - f2, t02, e10);
+      else ramp(f2, p2, t02, e10);
+      if (t12 > e10) {
+        if (sw2) shaped(vel ? p2 - f2 : p2, vel ? p2 - f2 : p2, e10, t12);
+        else segs.push({ t0: e10, t1: t12, dB: vel ? p2 - f2 : p2 });
+      }
+      any = true;
+      continue;
+    }
+    if (art.includes("sfz") && !vel) {
+      const e10 = Math.min(t12, t02 + (spec.sfzSec ?? M.sfzSec)), b3 = spec.sfzDb ?? M.sfzDb;
+      ramp(base3 + b3, baseEnd === base3 ? base3 : base3 + (baseEnd - base3) * (e10 - t02) / Math.max(1e-9, t12 - t02), t02, e10);
+      cur = e10;
+      any = true;
+    }
+    const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : art.includes("stress") ? spec.stressDb ?? M.stressDb : gw > 0 ? gw * (spec.stressDb ?? M.stressDb) : 0;
+    if (boost) {
+      const e10 = Math.min(t12, t02 + (spec.accentSec ?? M.accentSec));
+      segs.push({ t0: t02, t1: e10, dB: base3 + boost });
+      cur = e10;
+      any = true;
+    }
+    if (t12 > cur) {
+      const a02 = base3 + (baseEnd - base3) * (cur - t02) / Math.max(1e-9, t12 - t02);
+      if (sw2) shaped(a02, baseEnd, cur, t12);
+      else if (baseEnd !== base3) ramp(a02, baseEnd, cur, t12);
+      else segs.push({ t0: cur, t1: t12, dB: base3 });
+    }
+  }
+  return any ? segs : null;
+}
+function noteEnd(t02, t12, art, o10, slur = false) {
+  let end = t12;
+  if (art.includes("staccato")) end = t02 + (t12 - t02) * o10.staccatoGate;
+  else if (!slur && !art.includes("tenuto") && (o10.gapSec ?? 0) > 0) end = t12 - Math.min(o10.gapSec, (o10.gapShare ?? M.gapShare) * (t12 - t02));
+  if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(o10.breathSec ?? M.breathSec, (o10.breathShare ?? M.breathShare) * (t12 - t02)));
+  return end;
+}
+function hairpinEnd(tokens, i10, bounds) {
+  const pe = paperEndOf(i10, tokens.length, bounds);
+  for (let j2 = i10 + 1; j2 < pe; j2++) {
+    const k2 = tokens[j2].kind;
+    if (k2 === "dyn" || k2 === "hairpin") return { kind: k2, at: j2 };
+  }
+  return { kind: "end", at: pe };
+}
+var paperEndOf = (i10, n10, bounds) => {
+  for (const b3 of bounds ?? []) if (b3 > i10) return b3;
+  return n10;
+};
+function dynLevels(tokens, map, table, def, step, bounds) {
+  const out = /* @__PURE__ */ new Map(), tl2 = timeline(tokens, map), at2 = new Map(tl2.map((x2) => [x2.index, x2]));
+  const lo2 = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
+  const onsetFrom = (j2, stop = tokens.length) => {
+    for (let k2 = j2; k2 < stop; k2++) {
+      const x2 = at2.get(k2);
+      if (x2) return x2;
+    }
+    return null;
+  };
+  const endBefore = (j2) => {
+    for (let k2 = j2 - 1; k2 >= 0; k2--) {
+      const x2 = at2.get(k2);
+      if (x2) return x2.t1;
+    }
+    return 0;
+  };
+  let cur = def, ramp = null;
+  const lvl = (t10) => ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t10 - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur;
+  for (let i10 = 0; i10 < tokens.length; i10++) {
+    if (ramp && i10 >= ramp.end) {
+      cur = ramp.to;
+      ramp = null;
+    }
+    const t10 = tokens[i10];
+    if (t10.kind === "dyn") {
+      if (!ramp) cur = table[t10.value];
+      const pe = paperEndOf(i10, tokens.length, bounds), j2 = ramp ? -1 : rampTarget(tokens, i10, pe), start = j2 >= 0 ? onsetFrom(i10 + 1, j2) : null;
+      if (j2 >= 0 && start) ramp = { from: cur, to: table[tokens[j2].value], T0: start.t0, T1: onsetFrom(j2, pe)?.t0 ?? endBefore(j2), end: j2 };
+      continue;
+    }
+    if (t10.kind === "hairpin") {
+      const e10 = hairpinEnd(tokens, i10, bounds), start = onsetFrom(i10 + 1, e10.at);
+      if (!start) continue;
+      const endVal = e10.kind === "dyn" ? table[tokens[e10.at].value] : null, oneStep = Math.max(lo2, Math.min(hi, cur + (t10.dir === "cresc" ? step : -step)));
+      const agrees = endVal !== null && (t10.dir === "cresc" ? endVal > cur : endVal < cur);
+      const to2 = agrees ? endVal : oneStep;
+      const T1 = e10.kind === "end" ? endBefore(e10.at) : onsetFrom(e10.at, paperEndOf(i10, tokens.length, bounds))?.t0 ?? endBefore(e10.at);
+      ramp = { from: cur, to: to2, T0: start.t0, T1, end: e10.at };
+      continue;
+    }
+    const x2 = at2.get(i10);
+    if (!x2) continue;
+    out.set(i10, { at0: lvl(x2.t0), at1: lvl(x2.t1) });
+    if (t10.kind === "note" && !ramp && artOf(t10).includes("fp")) cur = table.p;
+  }
+  return out;
+}
+function dynOverridden(tokens, bounds) {
+  const out = /* @__PURE__ */ new Set();
+  const T2 = { pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6 };
+  const fpNotes = /* @__PURE__ */ new Set();
+  tokens.forEach((t10, k2) => {
+    if (t10.kind === "note" && artOf(t10).includes("fp")) fpNotes.add(k2);
+  });
+  if (!fpNotes.size) return out;
+  const levels = (ts2) => [...dynLevels(ts2, void 0, T2, 0, 0.5, bounds)].filter(([k2]) => !fpNotes.has(k2)).map(([k2, l10]) => `${k2}:${l10.at0}:${l10.at1}`).join("|");
+  let base3 = null;
+  for (let i10 = 0; i10 < tokens.length; i10++) {
+    const t10 = tokens[i10];
+    if (t10.kind !== "dyn") continue;
+    let j2 = i10 + 1;
+    while (j2 < tokens.length && !isTimed(tokens[j2])) j2++;
+    if (!fpNotes.has(j2)) continue;
+    base3 ??= levels(tokens);
+    const alt = (v) => levels(tokens.map((x2, k2) => k2 === i10 ? { ...t10, value: v } : x2));
+    if (alt(t10.value === "pp" ? "ff" : "pp") === base3 && alt(t10.value === "mf" ? "p" : "mf") === base3) out.add(i10);
+  }
+  return out;
+}
+function noteVelocities(tokens, map, spec, defaultVel, bounds, groove) {
+  const out = /* @__PURE__ */ new Map();
+  if (!spec.dynamicsVel) {
+    tokens.forEach((t10, i10) => {
+      if (t10.kind === "note") out.set(i10, defaultVel);
+    });
+    return out;
+  }
+  for (const [i10, l10] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds)) {
+    const t10 = tokens[i10];
+    if (t10.kind === "note") out.set(i10, noteVel(l10.at0, artOf(t10), spec, groove?.get(i10) ?? 0));
+  }
+  return out;
+}
+var noteVel = (v, art, spec, gw = 0) => {
+  if (art.includes("fp")) v = spec.dynamicsVel?.f ?? v;
+  else if (art.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
+  else if (art.includes("marcato")) v += spec.marcatoVel ?? 0;
+  else if (art.includes("accent")) v += spec.accentVel ?? 0;
+  else if (art.includes("stress")) v += spec.stressVel ?? M.stressVel;
+  else if (art.includes("unstress")) v += spec.unstressVel ?? M.unstressVel;
+  else if (art.includes("ghost")) v += spec.ghostVel ?? M.ghostVel;
+  else if (gw > 0) v += gw * (spec.stressVel ?? M.stressVel);
+  else if (gw < 0) v += -gw * (spec.unstressVel ?? M.unstressVel);
+  return Math.max(1, Math.min(127, Math.round(v))) / 127;
+};
+var HONORS = {
+  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
+  // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
+  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
+  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"]
+};
+var GAP_ONLY = ["tenuto", "slur"];
+var ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"];
+function ignoredArts(engine, gapSec = 0, canSwell = true) {
+  const h2 = engine ? HONORS[engine] : void 0;
+  return h2 ? ALL_MARKS.filter((a10) => !h2.includes(a10) || GAP_ONLY.includes(a10) && !(gapSec > 0) || a10 === "swellGrow" && !canSwell) : [];
+}
+function whyIgnored(engine, m2) {
+  if (m2 === "swellGrow" && engine && HONORS[engine]?.includes(m2)) return "decay";
+  if (engine === "tsukuyomi" && GAP_ONLY.includes(m2)) return "sung";
+  return engine && HONORS[engine]?.includes(m2) ? "gap" : "engine";
+}
+function lightMarks(spec) {
+  return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
+}
+
 // src/render/smufl.ts
 var GLYPH = {
   metNoteQuarterUp: "\uECA5",
@@ -5731,6 +6002,7 @@ var ART_GLYPH = {
 };
 var GLYPH_BREATH = "\uE4CE";
 var GROOVE_LANE = 3.4;
+var DYN_LANE = 4.8;
 var isStrength = (a10) => a10 === "accent" || a10 === "marcato" || a10 === "stress" || a10 === "unstress";
 var DYN_GLYPH = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
 var DYN_INK = { pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
@@ -6041,7 +6313,7 @@ function engrave(song, o10) {
   const partsHit = [], papersHit = [];
   let head = null, shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
-  const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map(), dynYAt = /* @__PURE__ */ new Map(), tempoYAt = /* @__PURE__ */ new Map(), grooveYAt = /* @__PURE__ */ new Map();
+  const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map(), dynYAt = /* @__PURE__ */ new Map(), noteDynYAt = /* @__PURE__ */ new Map(), tempoYAt = /* @__PURE__ */ new Map(), grooveYAt = /* @__PURE__ */ new Map();
   const staffTop = (r10) => rowTop.get(r10) + P2(rowAbove.get(r10) ?? STAFF_ABOVE);
   const yOf = (r10, d3) => staffTop(r10) + (TOP_LINE - d3) * P2(0.5);
   const dOf = (r10, y2) => Math.round(TOP_LINE - (y2 - staffTop(r10)) / P2(0.5));
@@ -6282,9 +6554,10 @@ function engrave(song, o10) {
       }
       return { top, bot };
     };
-    const dynIn = (q2, s10) => q2.units.some((u2) => u2.system === s10 && (u2.kind === "dyn" || u2.kind === "hairpin" || u2.kind === "chunk" && u2.note && (u2.art.includes("sfz") || u2.art.includes("fp") || !!q2.tokens[u2.index].swell)));
+    const bigDynIn = (q2, s10) => q2.units.some((u2) => u2.system === s10 && (u2.kind === "dyn" || u2.kind === "hairpin"));
+    const noteDynIn = (q2, s10) => q2.units.some((u2) => u2.system === s10 && u2.kind === "chunk" && u2.note && (u2.art.includes("sfz") || u2.art.includes("fp") || !!q2.tokens[u2.index].swell));
     const geoOf = (s10) => per.map((q2, r10) => {
-      const ex2 = Array.from({ length: q2.staves }, (_2, k2) => extentOf(q2, s10, k2)), dyn = dynIn(q2, s10);
+      const ex2 = Array.from({ length: q2.staves }, (_2, k2) => extentOf(q2, s10, k2)), big = bigDynIn(q2, s10), own = noteDynIn(q2, s10), dyn = big || own;
       const g3 = ex2.map((e10, k2) => {
         const minBelow = q2.staves === 2 && k2 === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r10] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
         let above = Math.max(STAFF_ABOVE, (e10.top - TOP_LINE) / 2 + 0.8), below = Math.max(minBelow, (BOTTOM_LINE - e10.bot) / 2 + 0.8), lyric = null;
@@ -6292,21 +6565,21 @@ function engrave(song, o10) {
           lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e10.bot) / 2 + 2) + (o10.lyricRaise ?? 0);
           below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW));
         }
-        return { above, below, lyric, dynD: null, tempoD: null, grooveD: null };
+        return { above, below, lyric, dynD: null, noteDynD: null, tempoD: null, grooveD: null };
       });
-      if (dyn) {
-        const d3 = Math.max(TOP_LINE + 2.4, ex2[0].top + 3);
-        g3[0].dynD = d3;
-        g3[0].above = Math.max(g3[0].above, (d3 - TOP_LINE) / 2 + 2.2);
-      }
+      const lane0 = Math.max(TOP_LINE + 2.4, ex2[0].top + 3);
+      if (own) g3[0].noteDynD = lane0;
+      if (big) g3[0].dynD = own ? lane0 + DYN_LANE : lane0;
+      const topDyn = g3[0].dynD ?? g3[0].noteDynD;
+      if (topDyn !== null) g3[0].above = Math.max(g3[0].above, (topDyn - TOP_LINE) / 2 + 2.2);
       if (q2.p.id === owner) {
-        const t10 = Math.max(TOP_LINE + 4.8, ex2[0].top + 3, g3[0].dynD !== null ? g3[0].dynD + 4.6 : 0);
+        const t10 = Math.max(TOP_LINE + 4.8, ex2[0].top + 3, topDyn !== null ? topDyn + 4.6 : 0);
         g3[0].tempoD = t10;
         g3[0].above = Math.max(g3[0].above, (t10 - TOP_LINE) / 2 + 1.6);
       }
       const nGroove = q2.units.filter((u2) => u2.system === s10 && u2.kind === "groove").length;
       if (nGroove) {
-        const t10 = g3[0].tempoD !== null ? g3[0].tempoD + 4.6 : Math.max(TOP_LINE + 4.8, ex2[0].top + 3, g3[0].dynD !== null ? g3[0].dynD + 4.6 : 0);
+        const t10 = g3[0].tempoD !== null ? g3[0].tempoD + 4.6 : Math.max(TOP_LINE + 4.8, ex2[0].top + 3, topDyn !== null ? topDyn + 4.6 : 0);
         g3[0].grooveD = t10;
         g3[0].above = Math.max(g3[0].above, (t10 + (nGroove > 1 ? GROOVE_LANE : 0) - TOP_LINE) / 2 + 1.6);
       }
@@ -6336,6 +6609,7 @@ function engrave(song, o10) {
         if (x3.g[0].tempoD !== null) tempoYAt.set(r02, yOf(r02, x3.g[0].tempoD));
         if (x3.g[0].grooveD !== null) grooveYAt.set(r02, yOf(r02, x3.g[0].grooveD));
         dynYAt.set(r02, yOf(r02, x3.g[0].dynD ?? TOP_LINE + 2.4));
+        noteDynYAt.set(r02, yOf(r02, x3.g[0].noteDynD ?? TOP_LINE + 2.4));
       }
       yCur += P2(SYS_GAP);
     }
@@ -6385,6 +6659,7 @@ function engrave(song, o10) {
     }
     per.forEach((q2, r10) => {
       const tokens = q2.tokens, units = q2.units, focused = q2.focused;
+      const dynOff = dynOverridden(tokens);
       const clefOf = (staff) => q2.staves === 2 ? staff === 2 ? "F" : "G" : q2.p.clef ?? "G";
       const shOf = (staff) => clefOf(staff) === "F" ? 12 : 0;
       const dIdx = (p2, staff) => diatonicIndex(p2) + shOf(staff);
@@ -6471,7 +6746,7 @@ function engrave(song, o10) {
           const lx2 = P2(u2.x + 0.3 + cl0), prev = dynRight.get(dr);
           if (prev !== void 0 && lx2 < prev + P2(0.3)) dy += dy < yOf(dr, MID_LINE) ? -P2(1.9) : P2(1.9);
           else dynRight.set(dr, P2(u2.x + 0.3 + cr0));
-          prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: dy, ch: DYN_GLYPH[u2.value], cls: o10.hot?.has(tokens[u2.index].id) ? "dyn hot" : inSel(u2.index) ? "dyn sel" : "dyn" });
+          prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: dy, ch: DYN_GLYPH[u2.value], cls: (o10.hot?.has(tokens[u2.index].id) ? "dyn hot" : inSel(u2.index) ? "dyn sel" : "dyn") + (dynOff.has(u2.index) ? " art-mute" : "") });
           const [il2, ir2, iu2, id2] = DYN_INK[u2.value];
           dyns.push({ index: u2.index, kind: "dyn", system: dr, x: P2(u2.x + 0.3 + il2 - 0.3), y: dy - P2(iu2 + 0.4), w: P2(ir2 - il2 + 0.6), h: P2(iu2 + id2 + 0.8) });
           continue;
@@ -6633,13 +6908,13 @@ function engrave(song, o10) {
         }
         const swl = c10.j === 0 ? tokens[c10.index].swell : void 0;
         if (swl) {
-          const y2 = (dynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4)) - P2(0.5), xa = nhX(c10) + (c10.art.some((a10) => a10 === "sfz" || a10 === "fp") ? P2(2.4) : 0), xb = Math.max(xa + P2(1.6), nhX(c10) + P2(c10.w) - P2(0.8)), H3 = P2(0.35);
+          const y2 = (noteDynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4)) - P2(0.5), xa = nhX(c10) + (c10.art.some((a10) => a10 === "sfz" || a10 === "fp") ? P2(2.4) : 0), xb = Math.max(xa + P2(1.6), nhX(c10) + P2(c10.w) - P2(0.8)), H3 = P2(0.35);
           const cl2 = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
           const d4 = swl === "<" ? `M${xb},${y2 - H3}L${xa},${y2}L${xb},${y2 + H3}` : swl === ">" ? `M${xa},${y2 - H3}L${xb},${y2}L${xa},${y2 + H3}` : `M${xa},${y2}L${mx},${y2 - H3}L${xb},${y2}M${xa},${y2}L${mx},${y2 + H3}L${xb},${y2}`;
           prims.push({ t: "path", d: d4, cls: cl2 });
         }
         for (const a10 of ["sfz", "fp"].filter((x3) => c10.art.includes(x3)))
-          prims.push({ t: "glyph", x: nhX(c10) - P2(0.2), y: dynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4), ch: a10 === "sfz" ? "\uE539" : "\uE534", cls: ["dyn", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+          prims.push({ t: "glyph", x: nhX(c10) - P2(0.2), y: noteDynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4), ch: a10 === "sfz" ? "\uE539" : "\uE534", cls: ["dyn", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
       const tieArc = (row, d3, x1, x22, ghost) => {
@@ -9338,74 +9613,6 @@ var Pad = class {
     }
   }
 };
-
-// src/singer/packs.gen.ts
-var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
-var PACKS = {
-  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
-  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
-  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
-  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
-  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
-};
-var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
-
-// src/format/performance.ts
-var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
-var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
-var MARK_DEFAULTS = {
-  accentSec: 0.12,
-  // 重音 / 强音：音头加重持续多久（秒；月读 / 元音版 / 旧乐器的 dB 那一路）
-  breathSec: 0.16,
-  breathShare: 0.25,
-  // 呼吸：前一个音收短多少（秒），最多占这个音的几分之几（元音版 / 乐器）
-  gapShare: 0.25,
-  // 连断底色的缝最多吃掉这个音的几分之几
-  wedgeStepDb: 6,
-  wedgeStepVel: 16,
-  // 渐强渐弱后面没写力度记号 = 走一档：dB 那一路 / 力度那一路各走多少
-  sfzDb: 9,
-  sfzVel: 32,
-  sfzSec: 0.2,
-  // 突强：音头比当下高多少（dB 那一路，sfzSec 里落回来）/ 力度那一路加多少
-  fpSec: 0.2,
-  // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
-  swellDb: 6,
-  // 音内起伏：< 走到 +swellDb、> 走到 −swellDb、<> 中间到 +swellDb 再回来
-  // 强度的其余几级（2026-10-08 深夜 Opus 5.5）：次重音 = 重音的一半（音头 accentSec 那一段 / 力度）；弱化 / 幽灵音 = 整个音轻下去（幽灵音 ≈ 强音反过来）
-  stressDb: 2,
-  stressVel: 8,
-  unstressDb: -3,
-  unstressVel: -10,
-  ghostDb: -9,
-  ghostVel: -28
-};
-var SING_MARKS = {
-  staccato: { mark: "^", at: "next" },
-  accent: { mark: "^", at: "this" },
-  marcato: { mark: "^", at: "this" },
-  breath: { mark: "v", at: "next" },
-  sfz: { mark: "^", at: "this" },
-  fp: { mark: "^", at: "this" }
-  // 音头那一组都顿一下（同重音，user「嗯重音也顿」）
-};
-var DYNAMICS_VEL = { pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112 };
-var ACCENT_VEL = 16;
-var MARCATO_VEL = 28;
-var MARCATO_DB = 7;
-var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
-var SOUNDFONT_CALIBRATION_DB = -6;
-var DEFAULT_CALIBRATION_DB = -6;
-var TSUKUYOMI_DEFAULTS = {};
-var REPO = "https://github.com/fangzhangmnm/moonsinger";
-var TSUKUYOMI_CREDIT = {
-  attribution: [CREDIT.credit, ...CREDIT.attribution],
-  license: { name: "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09", url: CREDIT.termsUrl, text: CREDIT.terms }
-};
-var TSUKUYOMI_SPEC = { kind: "ours", doc: "#tsukuyomi", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sing-core.mjs" } };
-var VOWEL_SAMPLER_SPEC = { kind: "ours", doc: "#vowel-sampler", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sampler.ts" } };
-var SOUNDFONT_SPEC = { kind: "standard", name: "SoundFont", version: "2.04" };
-var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
 
 // src/score/lab-score.ts
 var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
@@ -20078,187 +20285,6 @@ function mixTracks(tracks, sr2, tailSec = 0.3) {
   return { ...m2, limitedDb: limitBus(m2.left, m2.right, sr2) };
 }
 
-// src/score/perform.ts
-var DEFAULT_DYN_KEY = DEFAULT_DYN;
-var M = MARK_DEFAULTS;
-function gainSegments(tokens, map, spec, bounds, groove) {
-  const segs = [];
-  let any = false;
-  const vel = !!spec.dynamicsVel;
-  const levels = vel ? null : dynLevels(tokens, map, spec.dynamicsDb, spec.dynamicsDb[DEFAULT_DYN_KEY] ?? 0, spec.wedgeStepDb ?? M.wedgeStepDb, bounds);
-  const ramp = (a10, b3, s02, s12) => {
-    const n10 = Math.max(1, Math.min(32, Math.ceil((s12 - s02) / 0.03)));
-    for (let k2 = 0; k2 < n10; k2++) segs.push({ t0: s02 + (s12 - s02) * k2 / n10, t1: s02 + (s12 - s02) * (k2 + 1) / n10, dB: a10 + (b3 - a10) * (k2 + 0.5) / n10 });
-  };
-  for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
-    const gw = vel ? 0 : groove?.get(index) ?? 0;
-    const L2 = levels?.get(index), soft = tok.kind === "note" && !vel ? artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : gw < 0 ? -gw * (spec.unstressDb ?? M.unstressDb) : 0 : 0;
-    const base3 = (L2 ? L2.at0 : 0) + soft, baseEnd = (L2 ? L2.at1 : 0) + soft;
-    if (base3 !== 0 || baseEnd !== 0) any = true;
-    if (tok.kind !== "note") {
-      if (baseEnd !== base3) ramp(base3, baseEnd, t02, t12);
-      else segs.push({ t0: t02, t1: t12, dB: base3 });
-      continue;
-    }
-    const art = artOf(tok);
-    let cur = t02;
-    const sw2 = tok.swell && !(spec.canSwell === false && tok.swell !== ">") ? tok.swell : null, D2 = spec.swellDb ?? M.swellDb;
-    const swOff = (fr) => sw2 === "<" ? D2 * fr : sw2 === ">" ? -D2 * fr : sw2 === "<>" ? D2 * (1 - Math.abs(2 * fr - 1)) : 0;
-    const shaped = (a02, a12, s02, s12) => {
-      const n10 = Math.max(2, Math.min(48, Math.ceil((s12 - s02) / 0.03)));
-      for (let k2 = 0; k2 < n10; k2++) {
-        const a10 = s02 + (s12 - s02) * k2 / n10, b3 = s02 + (s12 - s02) * (k2 + 1) / n10, m2 = (a10 + b3) / 2, fr = (m2 - t02) / Math.max(1e-9, t12 - t02), fs = (m2 - s02) / Math.max(1e-9, s12 - s02);
-        segs.push({ t0: a10, t1: b3, dB: a02 + (a12 - a02) * fs + swOff(fr) });
-      }
-      any = true;
-    };
-    if (art.includes("fp")) {
-      const f2 = spec.dynamicsDb.f ?? 6, p2 = spec.dynamicsDb.p ?? -12, e10 = Math.min(t12, t02 + (spec.fpSec ?? M.fpSec));
-      if (vel) ramp(0, p2 - f2, t02, e10);
-      else ramp(f2, p2, t02, e10);
-      if (t12 > e10) {
-        if (sw2) shaped(vel ? p2 - f2 : p2, vel ? p2 - f2 : p2, e10, t12);
-        else segs.push({ t0: e10, t1: t12, dB: vel ? p2 - f2 : p2 });
-      }
-      any = true;
-      continue;
-    }
-    if (art.includes("sfz") && !vel) {
-      const e10 = Math.min(t12, t02 + (spec.sfzSec ?? M.sfzSec)), b3 = spec.sfzDb ?? M.sfzDb;
-      ramp(base3 + b3, baseEnd === base3 ? base3 : base3 + (baseEnd - base3) * (e10 - t02) / Math.max(1e-9, t12 - t02), t02, e10);
-      cur = e10;
-      any = true;
-    }
-    const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : art.includes("stress") ? spec.stressDb ?? M.stressDb : gw > 0 ? gw * (spec.stressDb ?? M.stressDb) : 0;
-    if (boost) {
-      const e10 = Math.min(t12, t02 + (spec.accentSec ?? M.accentSec));
-      segs.push({ t0: t02, t1: e10, dB: base3 + boost });
-      cur = e10;
-      any = true;
-    }
-    if (t12 > cur) {
-      const a02 = base3 + (baseEnd - base3) * (cur - t02) / Math.max(1e-9, t12 - t02);
-      if (sw2) shaped(a02, baseEnd, cur, t12);
-      else if (baseEnd !== base3) ramp(a02, baseEnd, cur, t12);
-      else segs.push({ t0: cur, t1: t12, dB: base3 });
-    }
-  }
-  return any ? segs : null;
-}
-function noteEnd(t02, t12, art, o10, slur = false) {
-  let end = t12;
-  if (art.includes("staccato")) end = t02 + (t12 - t02) * o10.staccatoGate;
-  else if (!slur && !art.includes("tenuto") && (o10.gapSec ?? 0) > 0) end = t12 - Math.min(o10.gapSec, (o10.gapShare ?? M.gapShare) * (t12 - t02));
-  if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(o10.breathSec ?? M.breathSec, (o10.breathShare ?? M.breathShare) * (t12 - t02)));
-  return end;
-}
-function hairpinEnd(tokens, i10, bounds) {
-  const pe = paperEndOf(i10, tokens.length, bounds);
-  for (let j2 = i10 + 1; j2 < pe; j2++) {
-    const k2 = tokens[j2].kind;
-    if (k2 === "dyn" || k2 === "hairpin") return { kind: k2, at: j2 };
-  }
-  return { kind: "end", at: pe };
-}
-var paperEndOf = (i10, n10, bounds) => {
-  for (const b3 of bounds ?? []) if (b3 > i10) return b3;
-  return n10;
-};
-function dynLevels(tokens, map, table, def, step, bounds) {
-  const out = /* @__PURE__ */ new Map(), tl2 = timeline(tokens, map), at2 = new Map(tl2.map((x2) => [x2.index, x2]));
-  const lo2 = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
-  const onsetFrom = (j2, stop = tokens.length) => {
-    for (let k2 = j2; k2 < stop; k2++) {
-      const x2 = at2.get(k2);
-      if (x2) return x2;
-    }
-    return null;
-  };
-  const endBefore = (j2) => {
-    for (let k2 = j2 - 1; k2 >= 0; k2--) {
-      const x2 = at2.get(k2);
-      if (x2) return x2.t1;
-    }
-    return 0;
-  };
-  let cur = def, ramp = null;
-  const lvl = (t10) => ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t10 - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur;
-  for (let i10 = 0; i10 < tokens.length; i10++) {
-    if (ramp && i10 >= ramp.end) {
-      cur = ramp.to;
-      ramp = null;
-    }
-    const t10 = tokens[i10];
-    if (t10.kind === "dyn") {
-      if (!ramp) cur = table[t10.value];
-      const pe = paperEndOf(i10, tokens.length, bounds), j2 = ramp ? -1 : rampTarget(tokens, i10, pe), start = j2 >= 0 ? onsetFrom(i10 + 1, j2) : null;
-      if (j2 >= 0 && start) ramp = { from: cur, to: table[tokens[j2].value], T0: start.t0, T1: onsetFrom(j2, pe)?.t0 ?? endBefore(j2), end: j2 };
-      continue;
-    }
-    if (t10.kind === "hairpin") {
-      const e10 = hairpinEnd(tokens, i10, bounds), start = onsetFrom(i10 + 1, e10.at);
-      if (!start) continue;
-      const endVal = e10.kind === "dyn" ? table[tokens[e10.at].value] : null, oneStep = Math.max(lo2, Math.min(hi, cur + (t10.dir === "cresc" ? step : -step)));
-      const agrees = endVal !== null && (t10.dir === "cresc" ? endVal > cur : endVal < cur);
-      const to2 = agrees ? endVal : oneStep;
-      const T1 = e10.kind === "end" ? endBefore(e10.at) : onsetFrom(e10.at, paperEndOf(i10, tokens.length, bounds))?.t0 ?? endBefore(e10.at);
-      ramp = { from: cur, to: to2, T0: start.t0, T1, end: e10.at };
-      continue;
-    }
-    const x2 = at2.get(i10);
-    if (!x2) continue;
-    out.set(i10, { at0: lvl(x2.t0), at1: lvl(x2.t1) });
-    if (t10.kind === "note" && !ramp && artOf(t10).includes("fp")) cur = table.p;
-  }
-  return out;
-}
-function noteVelocities(tokens, map, spec, defaultVel, bounds, groove) {
-  const out = /* @__PURE__ */ new Map();
-  if (!spec.dynamicsVel) {
-    tokens.forEach((t10, i10) => {
-      if (t10.kind === "note") out.set(i10, defaultVel);
-    });
-    return out;
-  }
-  for (const [i10, l10] of dynLevels(tokens, map, spec.dynamicsVel, defaultVel * 127, spec.wedgeStepVel ?? M.wedgeStepVel, bounds)) {
-    const t10 = tokens[i10];
-    if (t10.kind === "note") out.set(i10, noteVel(l10.at0, artOf(t10), spec, groove?.get(i10) ?? 0));
-  }
-  return out;
-}
-var noteVel = (v, art, spec, gw = 0) => {
-  if (art.includes("fp")) v = spec.dynamicsVel?.f ?? v;
-  else if (art.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
-  else if (art.includes("marcato")) v += spec.marcatoVel ?? 0;
-  else if (art.includes("accent")) v += spec.accentVel ?? 0;
-  else if (art.includes("stress")) v += spec.stressVel ?? M.stressVel;
-  else if (art.includes("unstress")) v += spec.unstressVel ?? M.unstressVel;
-  else if (art.includes("ghost")) v += spec.ghostVel ?? M.ghostVel;
-  else if (gw > 0) v += gw * (spec.stressVel ?? M.stressVel);
-  else if (gw < 0) v += -gw * (spec.unstressVel ?? M.unstressVel);
-  return Math.max(1, Math.min(127, Math.round(v))) / 127;
-};
-var HONORS = {
-  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
-  // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
-  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
-  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"]
-};
-var GAP_ONLY = ["tenuto", "slur"];
-var ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"];
-function ignoredArts(engine, gapSec = 0, canSwell = true) {
-  const h2 = engine ? HONORS[engine] : void 0;
-  return h2 ? ALL_MARKS.filter((a10) => !h2.includes(a10) || GAP_ONLY.includes(a10) && !(gapSec > 0) || a10 === "swellGrow" && !canSwell) : [];
-}
-function whyIgnored(engine, m2) {
-  if (m2 === "swellGrow" && engine && HONORS[engine]?.includes(m2)) return "decay";
-  if (engine === "tsukuyomi" && GAP_ONLY.includes(m2)) return "sung";
-  return engine && HONORS[engine]?.includes(m2) ? "gap" : "engine";
-}
-function lightMarks(spec) {
-  return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
-}
-
 // src/gm/sound-cache.ts
 var CACHE = "pwa-sounds";
 var keyOf = (sha256) => `${location.origin}/__pwa-sounds__/${sha256}`;
@@ -27841,9 +27867,10 @@ function createDeck() {
     target: c10.target ?? null,
     vp: cloneView(c10.vp),
     play: clonePlay(c10.play),
-    origin: c10.origin ?? null
+    origin: c10.origin ?? null,
+    ram: c10.ram && Number.isFinite(c10.ram.bytes) ? { bytes: c10.ram.bytes } : null
   });
-  const copy = (c10) => ({ ...c10, vp: cloneView(c10.vp), play: clonePlay(c10.play) });
+  const copy = (c10) => ({ ...c10, vp: cloneView(c10.vp), play: clonePlay(c10.play), ram: c10.ram ? { bytes: c10.ram.bytes } : null });
   const deck = {
     get size() {
       return cards.length;
@@ -27939,6 +27966,30 @@ function createDeck() {
       c10.play = p2;
       emit({ type: "view" });
     },
+    setRam(id2, on2) {
+      const c10 = deck.get(id2);
+      if (!c10)
+        return;
+      if (on2) {
+        if (c10.ram)
+          return;
+        c10.ram = { bytes: c10.bytes?.size ?? 0 };
+      } else {
+        if (!c10.ram || !c10.bytes)
+          return;
+        c10.ram = null;
+      }
+      emit({ type: "cards" });
+    },
+    fill(id2, bytes, mime) {
+      const c10 = deck.get(id2);
+      if (!c10 || !c10.ram)
+        return;
+      c10.bytes = bytes;
+      if (mime)
+        c10.mime = mime;
+      emit({ type: "view" });
+    },
     setTarget(id2, target) {
       const c10 = deck.get(id2);
       if (!c10 || c10.target === target)
@@ -27962,7 +28013,77 @@ function createDeck() {
   return deck;
 }
 
+// node_modules/@internal/reference-window/dist/deck/import.js
+function sniffKind(f2) {
+  const t10 = (f2.type || "").toLowerCase(), n10 = (f2.name || "").toLowerCase();
+  if (t10.startsWith("image/"))
+    return "image";
+  if (t10.startsWith("audio/"))
+    return "audio";
+  if (t10.startsWith("video/"))
+    return "video";
+  if (t10.startsWith("text/") || /\.(txt|md)$/.test(n10))
+    return "text";
+  if (/\.(mp3|m4a|wav|flac|ogg|opus|aac|weba)$/.test(n10))
+    return "audio";
+  if (/\.(png|jpe?g|webp|gif)$/.test(n10))
+    return "image";
+  if (/\.(mp4|webm|mov)$/.test(n10))
+    return "video";
+  return null;
+}
+async function importIntoDeck(deck, files, o10) {
+  const out = { added: [], filled: [], skipped: [], notes: [] };
+  for (const f2 of files) {
+    const name = f2.name ?? "", kind = sniffKind(f2);
+    if (!kind || !o10.kinds.includes(kind)) {
+      out.skipped.push({ name, why: "unsupported" });
+      continue;
+    }
+    const hole = deck.cards().find((c10) => c10.ram && !c10.bytes && c10.kind === kind && c10.name === name);
+    if (hole) {
+      deck.fill(hole.id, f2, f2.type || void 0);
+      deck.select(deck.indexOf(hole.id));
+      out.filled.push(hole);
+      continue;
+    }
+    try {
+      let blob = f2, mime = f2.type || "", ram = false;
+      const canCompress = !!o10.transcoder?.kinds.includes(kind), limit = o10.askAbove?.[kind];
+      if (o10.ask && limit !== void 0 && f2.size > limit) {
+        const estimate = canCompress && o10.transcoder?.estimate ? await o10.transcoder.estimate(kind, f2).catch(() => null) : null;
+        const choice = await o10.ask({ name, kind, bytes: f2.size, estimate, canCompress, suggestRam: o10.ramAbove !== void 0 && f2.size > o10.ramAbove });
+        if (choice === "cancel") {
+          out.skipped.push({ name, why: "cancelled" });
+          continue;
+        }
+        if (choice === "ram")
+          ram = true;
+        if (choice === "compress" && canCompress) {
+          const r10 = await o10.transcoder.encode(kind, f2);
+          blob = r10.blob;
+          mime = r10.mime;
+          if (r10.note)
+            out.notes.push(`${name}: ${r10.note}`);
+        }
+      }
+      if (kind === "text" && !mime)
+        mime = /\.md$/i.test(name) ? "text/markdown" : "text/plain";
+      const id2 = deck.add({ kind, bytes: blob, mime, name, ...ram ? { ram: { bytes: blob.size } } : {} });
+      const c10 = deck.cards().find((x2) => x2.id === id2);
+      if (c10)
+        out.added.push(c10);
+    } catch (e10) {
+      out.skipped.push({ name, why: "failed", message: String(e10?.message ?? e10) });
+    }
+  }
+  return out;
+}
+
 // node_modules/@internal/reference-window/dist/reference-window.js
+function fmtBytes(n10) {
+  return n10 >= 1048576 ? `${(n10 / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n10 / 1024))} KB`;
+}
 var REF_LONG_PRESS_MS = 450;
 var REF_LONG_PRESS_CANCEL_SQ = 64;
 var LIVE_THROTTLE_MS = 300;
@@ -27993,7 +28114,10 @@ var REF_ICON_IDS = {
   // 2026-09-29：挪动顺序 / 跳转列表。都是库里现成的图标（带杆的左右箭头、勾），没有新画。
   earlier: "back",
   later: "forward",
-  current: "check"
+  current: "check",
+  // 0.4.0（2026-10-09）：音频卡的播放 / 暂停。图标库里现成的。
+  play: "play",
+  pause: "pause"
 };
 function iconMarkup(id2) {
   const sym = typeof document !== "undefined" ? document.querySelector(`svg symbol[id="${id2}"]`) : null;
@@ -28138,11 +28262,23 @@ canvas:active { cursor: grabbing; }
   pointer-events: none; padding: 12px; font-size: 12px;
 }
 .empty.hidden { display: none; }
+/* 0.4.0 \u97F3\u9891\u5361\uFF082026-10-09\uFF09\uFF1A\u5361\u7247\u5185\u5BB9\u533A\u4E00\u4E2A\u64AD\u653E / \u6682\u505C + \u540D\u5B57 + \u80FD\u62D6\u7684\u8FDB\u5EA6\u6761 + \u65F6\u95F4\uFF1B\u4E0D\u81EA\u52A8\u653E\uFF08user\u300C\u5176\u5B9E\u6211\u4E5F\u89C9\u5F97\u81EA\u52A8\u653E\u53CD\u800C\u70E6\uFF0C\u8981\u4E0D\u8FD8\u662F\u64AD\u653E\u952E\u5427\u300D\uFF09 */
+.audio { position: absolute; inset: 0; display: none; z-index: 1; align-items: center; gap: 12px; padding: 12px 14px 30px 14px; box-sizing: border-box;
+  color: var(--ink, #e8eaed); background: color-mix(in srgb, var(--bg, #202124) 94%, transparent); }
+.audio.shown { display: flex; }
+.audio .aplay { flex: none; width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line, #5f6368); background: transparent; color: inherit; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.audio .aplay svg { width: 26px; height: 26px; }
+.audio .ainfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.audio .aname { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audio .aseek { width: 100%; margin: 0; accent-color: var(--ink, #e8eaed); }
+.audio .atime { font-size: 12px; color: var(--ink-soft, #9aa0a6); font-variant-numeric: tabular-nums; }
+.audio.missing .aname { color: var(--ink-soft, #9aa0a6); font-style: italic; }
 .empty ::slotted(*), .empty p { margin: 0; }
 :host(:focus) { box-shadow: var(--shadow, 0 8px 24px rgba(0, 0, 0, 0.4)), inset 0 0 0 2px color-mix(in srgb, var(--ink, #e8eaed) 45%, transparent); }   /* \u6709\u7126\u70B9 = \u7C98\u8D34\u843D\u8FD9\u91CC\uFF1A\u4E00\u5708\u7EC6\u63CF\u8FB9 */
 </style>
 <canvas></canvas>
 <div class="text" part="text" data-takes-focus></div>
+<div class="audio" part="audio"><button class="aplay" type="button"></button><div class="ainfo"><div class="aname"></div><input class="aseek" type="range" min="0" max="1000" step="1" value="0"><div class="atime"></div></div></div>
 <div class="empty"><slot name="empty"><p>\uFF0B \u5BFC\u5165\u53C2\u8003</p></slot></div>
 <div class="move" part="move"></div>
 <button class="plus" part="plus" type="button" aria-haspopup="true">${iconMarkup(REF_ICON_IDS.plus)}</button>
@@ -28178,12 +28314,24 @@ var WpReferenceWindow = class extends HTMLElement {
   /** 拖把地板（宿主注入 = ui/floating-window 运行时量的「顶栏下缘」；缺省 60 = 旧常数，裸挂可用）。
    *  拖 / 恢复 / 视口钳制三条路都吃它——出血区规则只准一个出处（2026-09-02 C2）。 */
   topFloor = DRAG_TOP_FLOOR;
+  /** 0.4.0 音频卡的速度档（宿主注入，如 [1, 0.75, 0.5]；保音高）。null = 不给速度（库的缺省；user 2026-10-09「默认不开，moonsinger开」）。 */
+  audioRates = null;
   /** 底边地板（宿主注入 = 屏底被占掉的高度：app 内软键盘、iOS 键盘那一块……；缺省 0）。拖 / resize / 视口钳制都吃它——
    *  否则右下角的 resize 把手会被键盘盖住（user 2026-09-30「参考窗或者任何浮窗需要保证 move 和 resize 能点到」）。改了之后宿主调 reclamp()。 */
   bottomFloor = 0;
   _canvas;
   _cctx;
   _textEl;
+  _audioLayer;
+  _aPlay;
+  _aName;
+  _aSeek;
+  _aTime;
+  /** 0.4.0 音频卡：一个窗一个 <audio>，记着正在放哪张卡。翻到别的卡 / 关窗都不停（user「关窗的时候音乐不停」、2026-10-09「1. 不停」）。 */
+  _audio = null;
+  _audioOf = null;
+  _audioUrl = null;
+  _rate = 1;
   _emptyEl;
   _plusEl;
   _menu = null;
@@ -28249,6 +28397,28 @@ var WpReferenceWindow = class extends HTMLElement {
     root.innerHTML = buildTemplate();
     this._canvas = root.querySelector("canvas");
     this._textEl = root.querySelector(".text");
+    this._audioLayer = root.querySelector(".audio");
+    this._aPlay = root.querySelector(".aplay");
+    this._aName = root.querySelector(".aname");
+    this._aSeek = root.querySelector(".aseek");
+    this._aTime = root.querySelector(".atime");
+    this._aPlay.innerHTML = iconMarkup(REF_ICON_IDS.play);
+    this._aPlay.addEventListener("click", () => this.togglePlay());
+    this._aSeek.addEventListener("input", () => {
+      const a10 = this._audio;
+      if (a10 && this._audioOf === this._deck.current?.id && Number.isFinite(a10.duration)) {
+        a10.currentTime = Number(this._aSeek.value) / 1e3 * a10.duration;
+        this._updateAudioLayer();
+      }
+    });
+    this._aSeek.addEventListener("change", () => this._saveAudioPos());
+    this.addEventListener("keydown", (e10) => {
+      if (e10.key === " " && this._deck.current?.kind === "audio" && !e10.composedPath()[0]?.closest?.("input, .text")) {
+        e10.preventDefault();
+        e10.stopPropagation();
+        this.togglePlay();
+      }
+    });
     this._emptyEl = root.querySelector(".empty");
     this._plusEl = root.querySelector(".plus");
     this._chipsEl = root.querySelector(".chips");
@@ -28297,6 +28467,104 @@ var WpReferenceWindow = class extends HTMLElement {
     this.open = false;
   }
   // 程序性关（不发事件）
+  /** 0.4.0 导入漏斗（deck/import.ts）：嗅种类 → 够大就问宿主（ask）→ 原样 / 压（宿主注入的 transcoder）/ 不要 → 进牌组；加进去了就开窗。
+   *  kinds 缺省 = 图片 / 文字 / 音频。结果（加了哪些、哪些没进、为什么）原样还给宿主，由宿主明说。 */
+  async importFiles(files, opts = {}) {
+    const r10 = await importIntoDeck(this._deck, files, { ...opts, kinds: opts.kinds ?? ["image", "text", "audio"] });
+    if (r10.added.length || r10.filled.length)
+      this.open = true;
+    return r10;
+  }
+  /** 元素从文档里拿掉 = 停（关窗不停；整个窗没了才停）。 */
+  disconnectedCallback() {
+    this._audio?.pause();
+  }
+  // ---- 0.4.0 音频卡 ----
+  /** 当前这张音频卡：播放 / 暂停（换了一张卡 = 先停上一张、从这张记着的位置放）。不是音频卡 = 什么都不做。 */
+  togglePlay() {
+    const cur = this._deck.current;
+    if (!cur || cur.kind !== "audio")
+      return;
+    const bytes = cur.bytes ?? this._linked.get(cur.id) ?? null;
+    if (!bytes)
+      return;
+    if (this._audioOf !== cur.id)
+      this._loadAudio(cur, bytes);
+    const a10 = this._audio;
+    if (a10.paused)
+      a10.play().catch((e10) => this._emit("notice", { level: "error", code: "decode-failed", id: cur.id, name: cur.name, message: String(e10?.message ?? e10) }));
+    else
+      a10.pause();
+    this._updateAudioLayer();
+  }
+  /** 正在放（任何一张音频卡）。 */
+  get playing() {
+    return !!this._audio && !this._audio.paused;
+  }
+  _loadAudio(c10, bytes) {
+    this._stopAudio();
+    const a10 = new Audio(), t02 = c10.play?.t ?? 0;
+    this._audioUrl = URL.createObjectURL(bytes);
+    a10.preload = "auto";
+    a10.src = this._audioUrl;
+    a10.loop = !!c10.play?.loop;
+    a10.playbackRate = this._rate;
+    a10.preservesPitch = true;
+    if (t02 > 0)
+      a10.addEventListener("loadedmetadata", () => {
+        a10.currentTime = Math.min(t02, Number.isFinite(a10.duration) ? a10.duration : t02);
+      }, { once: true });
+    for (const ev2 of ["timeupdate", "play", "pause", "ended", "loadedmetadata", "durationchange"])
+      a10.addEventListener(ev2, () => this._updateAudioLayer());
+    a10.addEventListener("pause", () => this._saveAudioPos());
+    a10.addEventListener("error", () => this._emit("notice", { level: "error", code: "decode-failed", id: c10.id, name: c10.name, message: "audio could not be decoded" }));
+    this._audio = a10;
+    this._audioOf = c10.id;
+  }
+  _stopAudio() {
+    if (this._audio) {
+      this._saveAudioPos();
+      this._audio.pause();
+      this._audio.removeAttribute("src");
+    }
+    if (this._audioUrl)
+      URL.revokeObjectURL(this._audioUrl);
+    this._audio = null;
+    this._audioOf = null;
+    this._audioUrl = null;
+  }
+  /** 放到哪 / 循环记进卡（视图态：牌组发 view，不标脏）。 */
+  _saveAudioPos() {
+    const a10 = this._audio, id2 = this._audioOf;
+    if (!a10 || !id2 || this._deck.indexOf(id2) < 0)
+      return;
+    this._deck.setPlay(id2, { t: Math.round(a10.currentTime * 100) / 100, loop: a10.loop });
+  }
+  _updateAudioLayer() {
+    const cur = this._deck.current, isAudio = cur?.kind === "audio";
+    this._audioLayer.classList.toggle("shown", isAudio);
+    if (!isAudio || !cur)
+      return;
+    const a10 = this._audio && this._audioOf === cur.id ? this._audio : null, playing = !!a10 && !a10.paused;
+    const want = playing ? REF_ICON_IDS.pause : REF_ICON_IDS.play;
+    if (this._aPlay.dataset.icon !== want) {
+      this._aPlay.innerHTML = iconMarkup(want);
+      this._aPlay.dataset.icon = want;
+    }
+    this._aPlay.setAttribute("aria-label", playing ? this._labels.pause ?? "Pause" : this._labels.play ?? "Play");
+    const missing = !cur.bytes && !this._linked.get(cur.id);
+    this._audioLayer.classList.toggle("missing", missing);
+    const hole = missing && !!cur.ram;
+    const name = hole ? `${cur.name || this._labels.kindNames?.audio || "audio"} \xB7 ${fmtBytes(cur.ram.bytes)} \u2014 ${this._ramMissingText()}` : missing && this._linkMissing.has(cur.id) ? this._labels.linkMissing ?? "Content unavailable" : cur.name || this._labels.kindNames?.audio || "audio";
+    if (this._aName.textContent !== name)
+      this._aName.textContent = name;
+    const dur = a10 && Number.isFinite(a10.duration) ? a10.duration : null, t10 = a10 ? a10.currentTime : cur.play?.t ?? 0;
+    this._aPlay.disabled = missing;
+    this._aSeek.disabled = !dur;
+    this._aSeek.value = String(dur ? Math.round(t10 / dur * 1e3) : 0);
+    const fmt = (x2) => `${Math.floor(x2 / 60)}:${String(Math.floor(x2 % 60)).padStart(2, "0")}`;
+    this._aTime.textContent = `${fmt(t10)}${dur ? ` / ${fmt(dur)}` : ""}${a10 && a10.playbackRate !== 1 ? ` \xB7 ${a10.playbackRate}\xD7` : ""}${cur.play?.loop ? ` \xB7 ${this._labels.loop ?? "loop"}` : ""}`;
+  }
   get live() {
     return this._deck.current?.kind === "live";
   }
@@ -28658,6 +28926,8 @@ var WpReferenceWindow = class extends HTMLElement {
     for (const id2 of [...this._linkMissing])
       if (this._deck.indexOf(id2) < 0)
         this._linkMissing.delete(id2);
+    if (this._audioOf && this._deck.indexOf(this._audioOf) < 0)
+      this._stopAudio();
     for (const c10 of this._deck.cards()) {
       if (c10.kind === "live")
         continue;
@@ -28752,16 +29022,26 @@ var WpReferenceWindow = class extends HTMLElement {
     this._updateEmptyHint();
     this._updateChips();
     this._updateTextLayer();
+    this._updateAudioLayer();
     this._invalidate();
   }
   /** 文字卡：内容层显示 / 隐藏 + 灌内容 + 字号 + 滚动位置。 */
   _updateTextLayer() {
     const cur = this._deck.current;
-    const isText = cur?.kind === "text";
+    const hole = !!cur && cur.kind !== "audio" && cur.kind !== "live" && !!cur.ram && !cur.bytes;
+    const isText = cur?.kind === "text" || hole;
     this._textEl.classList.toggle("shown", isText);
-    this._canvas.style.visibility = isText ? "hidden" : "";
+    this._canvas.style.visibility = isText || cur?.kind === "audio" ? "hidden" : "";
     if (!isText || !cur)
       return;
+    if (hole) {
+      this._textEl.classList.add("missing");
+      const content2 = `${cur.name || this._labels.kindNames?.[cur.kind] || cur.kind} \xB7 ${fmtBytes(cur.ram.bytes)}
+${this._ramMissingText()}`;
+      if (this._textEl.textContent !== content2)
+        this._textEl.textContent = content2;
+      return;
+    }
     const text2 = this._texts.get(cur.id);
     const missing = text2 === void 0 && this._linkMissing.has(cur.id);
     this._textEl.classList.toggle("missing", missing);
@@ -28980,15 +29260,28 @@ var WpReferenceWindow = class extends HTMLElement {
     });
     ro2.observe(this);
   }
+  _ramMissingText() {
+    return this._labels.ramMissing ?? "Kept in memory only, not saved. Drop the file here or import it again with \uFF0B.";
+  }
   _menuItems() {
-    const l10 = this._labels;
+    const l10 = this._labels, cur = this._deck.current;
     return [
       { id: "load", label: l10.load ?? "Load image", icon: REF_ICON_IDS.folder },
       { id: "paste", label: l10.paste ?? "Paste", icon: REF_ICON_IDS.paste },
       { id: "cloud", label: l10.cloud ?? "From cloud", icon: REF_ICON_IDS.cloud, hidden: this.hasAttribute("no-cloud") },
       // 宿主出画面的卡：宿主没给 provider 就不列（写作 app 没有画布可镜像）；多台相机的宿主经 liveTargets 列多项
       ...this._liveMenuItems(),
-      { id: "onetoone", label: l10.oneToOne ?? "1:1", icon: REF_ICON_IDS.oneToOne },
+      { id: "onetoone", label: l10.oneToOne ?? "1:1", icon: REF_ICON_IDS.oneToOne, hidden: this._deck.current?.kind === "audio" },
+      // 0.4.0 音频卡：循环（ROUND 的设想：放在 ＋ 菜单）；速度只在宿主给了档位时列（user 2026-10-09「默认不开，moonsinger开」）。点了不关，可以连点
+      ...this._deck.current?.kind === "audio" ? this._audioMenuItems() : [],
+      // 只放内存（user 2026-10-09「然后能不能加RAM only，就是不落盘，每次重新上传」）：有自己字节的卡才有（链接卡 / 宿主画面 / 读回来的空位没有）
+      {
+        id: "ram",
+        label: l10.ram ?? "Keep in memory only (not saved)",
+        ...cur?.ram ? { icon: REF_ICON_IDS.current } : {},
+        hidden: !cur || cur.kind === "live" || !!cur.target || !cur.bytes,
+        separatorBefore: true
+      },
       // 挪动顺序的逃生口（user 2026-09-29「reorder也需要有逃生口」）：点完菜单不关，可以连点；到头的那一项藏起来
       {
         id: "earlier",
@@ -29014,6 +29307,13 @@ var WpReferenceWindow = class extends HTMLElement {
         separatorBefore: true
       }
       // 「关闭」2026-09-11 从菜单提出成窗右上角 × 钮（user「不然找不到」）
+    ];
+  }
+  _audioMenuItems() {
+    const cur = this._deck.current, l10 = this._labels, loop = !!cur.play?.loop;
+    return [
+      { id: "loop", label: l10.loop ?? "Loop", ...loop ? { icon: REF_ICON_IDS.current } : {}, separatorBefore: true },
+      ...(this.audioRates ?? []).map((r10, i10) => ({ id: "rate:" + r10, label: `${l10.rate ?? "Speed"} ${r10}\xD7`, ...r10 === this._rate ? { icon: REF_ICON_IDS.current } : {}, ...i10 === 0 ? { separatorBefore: true } : {} }))
     ];
   }
   _liveMenuId(target) {
@@ -29089,6 +29389,30 @@ var WpReferenceWindow = class extends HTMLElement {
         if (id2 === "earlier" || id2 === "later") {
           this._delArmed = false;
           this._moveCurrent(id2 === "earlier" ? -1 : 1);
+          return "keep";
+        }
+        if (id2 === "loop") {
+          const cur = this._deck.current;
+          if (!cur)
+            return;
+          const loop = !cur.play?.loop;
+          if (this._audio && this._audioOf === cur.id)
+            this._audio.loop = loop;
+          this._deck.setPlay(cur.id, { t: this._audio && this._audioOf === cur.id ? this._audio.currentTime : cur.play?.t ?? 0, loop });
+          this._updateAudioLayer();
+          return "keep";
+        }
+        if (id2 === "ram") {
+          const cur = this._deck.current;
+          if (cur)
+            this._deck.setRam(cur.id, !cur.ram);
+          return "keep";
+        }
+        if (id2.startsWith("rate:")) {
+          this._rate = Number(id2.slice(5)) || 1;
+          if (this._audio)
+            this._audio.playbackRate = this._rate;
+          this._updateAudioLayer();
           return "keep";
         }
         if (id2 === "load")
@@ -29485,12 +29809,26 @@ var EXT_BY_MIME = {
   "audio/mp4": "m4a",
   "audio/ogg": "ogg",
   "audio/opus": "opus",
-  "audio/webm": "weba"
+  "audio/webm": "weba",
+  // 0.4.0（2026-10-09，音频卡；Claude Opus 5.5）：以前这几种落成 bin
+  "audio/wav": "wav",
+  "audio/flac": "flac",
+  "audio/aac": "aac",
+  "video/quicktime": "mov"
 };
 var MIME_BY_EXT = Object.fromEntries(Object.entries(EXT_BY_MIME).map(([m2, e10]) => [e10, m2]));
+var EXT_BY_MIME_ALIAS = {
+  "audio/x-wav": "wav",
+  "audio/wave": "wav",
+  "audio/vnd.wave": "wav",
+  "audio/x-m4a": "m4a",
+  "audio/mp3": "mp3",
+  "audio/x-flac": "flac",
+  "audio/aacp": "aac"
+};
 function extForMime(mime) {
   const base3 = (mime || "").split(";")[0].trim().toLowerCase();
-  return EXT_BY_MIME[base3] ?? (base3.startsWith("image/") ? "img" : "bin");
+  return EXT_BY_MIME[base3] ?? EXT_BY_MIME_ALIAS[base3] ?? (base3.startsWith("image/") ? "img" : "bin");
 }
 function mimeForName(name) {
   const m2 = /\.([A-Za-z0-9]+)$/.exec(name || "");
@@ -29565,7 +29903,8 @@ function decodeDeckFromJson(manifestJson, o10) {
       carried.push({ at: at2, item: JSON.parse(JSON.stringify(raw)), files });
       return;
     }
-    const src = str(raw.src);
+    const ram = isObj(raw.ram) && typeof raw.ram.bytes === "number" && Number.isFinite(raw.ram.bytes) ? { bytes: raw.ram.bytes } : null;
+    const src = ram ? "" : str(raw.src);
     const bytes = src ? o10.getFile(src) : null;
     if (at2 === m2.index) {
       index = cards.length;
@@ -29579,7 +29918,8 @@ function decodeDeckFromJson(manifestJson, o10) {
       target: str(raw.target) || null,
       vp: readView(raw.vp),
       play: readPlay(raw.play),
-      origin: str(raw.origin) || null
+      origin: str(raw.origin) || null,
+      ram
     });
   });
   if (!indexSet)
@@ -29614,7 +29954,7 @@ function encodeDeck(s10, o10) {
     if (c10 === viewing)
       index = position;
     const item = { kind: c10.kind };
-    if (c10.bytes) {
+    if (c10.bytes && !c10.ram) {
       const n10 = fileName(dir, position, extForMime(c10.mime || c10.bytes.type));
       files.set(n10, c10.bytes);
       item.src = n10;
@@ -29630,6 +29970,8 @@ function encodeDeck(s10, o10) {
       item.origin = c10.origin;
     if (c10.play)
       item.play = { t: c10.play.t, loop: c10.play.loop };
+    if (c10.ram)
+      item.ram = { bytes: c10.ram.bytes };
     items.push(item);
   });
   const manifest = { version: DECK_MANIFEST_VERSION, index, items };
@@ -29640,10 +29982,134 @@ function encodeDeck(s10, o10) {
   return out;
 }
 
+// src/image/codec.ts
+function makeCanvas(w2, h2) {
+  w2 = Math.max(1, w2 | 0);
+  h2 = Math.max(1, h2 | 0);
+  return typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(w2, h2) : (() => {
+    const c10 = document.createElement("canvas");
+    c10.width = w2;
+    c10.height = h2;
+    return c10;
+  })();
+}
+async function decodeBlob(blob) {
+  try {
+    return await createImageBitmap(blob, { imageOrientation: "from-image" });
+  } catch {
+  }
+  try {
+    return await createImageBitmap(blob);
+  } catch {
+  }
+  return await new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("image decode failed"));
+    };
+    img.src = url;
+  });
+}
+async function decodeToRgba(blob) {
+  const src = await decodeBlob(blob);
+  const w2 = src.width || src.naturalWidth, h2 = src.height || src.naturalHeight;
+  const c10 = makeCanvas(w2, h2);
+  const cx2 = c10.getContext("2d", { willReadFrequently: true });
+  if (!cx2) throw new Error("2d context unavailable");
+  cx2.drawImage(src, 0, 0);
+  const img = cx2.getImageData(0, 0, w2, h2);
+  if ("close" in src) try {
+    src.close();
+  } catch {
+  }
+  return { data: img.data, w: w2, h: h2 };
+}
+async function encodePng(rgba, w2, h2, colors) {
+  const { default: UPNG2 } = await Promise.resolve().then(() => (init_upng_esm(), upng_esm_exports));
+  return new Uint8Array(UPNG2.encode([new Uint8Array(rgba).buffer], w2, h2, colors));
+}
+
+// src/image/shrink.ts
+var REF_IMAGE_EDGE = 2048;
+var REF_IMAGE_COLORS = 256;
+async function shrinkImage(blob, edge = REF_IMAGE_EDGE, colors = REF_IMAGE_COLORS) {
+  const src = await decodeToRgba(blob), t10 = fitWithin(src.w, src.h, edge);
+  const px = t10.w === src.w && t10.h === src.h ? new Uint8ClampedArray(src.data) : areaResampleRgba(src.data, src.w, src.h, t10.w, t10.h);
+  return { png: await encodePng(px, t10.w, t10.h, colors), w: t10.w, h: t10.h };
+}
+
+// src/app/ref-transcode.ts
+var REF_MP3_KBPS = 128;
+var SR = 44100;
+function durationOf(f2) {
+  return new Promise((ok2) => {
+    const a10 = document.createElement("audio"), url = URL.createObjectURL(f2);
+    const done = (v) => {
+      clearTimeout(t10);
+      URL.revokeObjectURL(url);
+      a10.removeAttribute("src");
+      ok2(v);
+    };
+    const t10 = setTimeout(() => done(null), 5e3);
+    a10.preload = "metadata";
+    a10.onloadedmetadata = () => done(Number.isFinite(a10.duration) && a10.duration > 0 ? a10.duration : null);
+    a10.onerror = () => done(null);
+    a10.src = url;
+  });
+}
+async function decodeAudio(f2) {
+  const Ctx = globalThis.OfflineAudioContext ?? globalThis.webkitOfflineAudioContext;
+  if (!Ctx) throw new Error("\u8FD9\u4E2A\u6D4F\u89C8\u5668\u89E3\u4E0D\u4E86\u97F3\u9891");
+  return await new Ctx(1, 1, SR).decodeAudioData(await f2.arrayBuffer());
+}
+function createRefTranscoder() {
+  const images = /* @__PURE__ */ new WeakMap();
+  const image = (f2) => {
+    let p2 = images.get(f2);
+    if (!p2) {
+      p2 = shrinkImage(f2).then((r10) => ({ blob: new Blob([r10.png], { type: "image/png" }), mime: "image/png", note: `PNG ${REF_IMAGE_COLORS} \u8272\u3001${r10.w} \xD7 ${r10.h}\uFF08\u957F\u8FB9\u6700\u591A ${REF_IMAGE_EDGE}\uFF09` }));
+      images.set(f2, p2);
+      p2.catch(() => images.delete(f2));
+    }
+    return p2;
+  };
+  return {
+    kinds: ["image", "audio"],
+    async estimate(kind, f2) {
+      if (kind === "image") return (await image(f2)).blob.size;
+      if (kind === "audio") {
+        const d3 = await durationOf(f2);
+        return d3 === null ? null : Math.round(d3 * REF_MP3_KBPS * 1e3 / 8);
+      }
+      return null;
+    },
+    async encode(kind, f2) {
+      if (kind === "image") {
+        const r10 = await image(f2);
+        images.delete(f2);
+        return r10;
+      }
+      if (kind === "audio") {
+        const buf = await decodeAudio(f2), left = buf.getChannelData(0), right = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null;
+        const bytes = await encodeMp3(left, right, buf.sampleRate, REF_MP3_KBPS);
+        return { blob: new Blob([bytes], { type: "audio/mpeg" }), mime: "audio/mpeg", note: `mp3 ${REF_MP3_KBPS}k${right ? "" : " \u5355\u58F0\u9053"}\u3001${(buf.duration / 60).toFixed(1)} \u5206\u949F` };
+      }
+      throw new Error(`\u4E0D\u4F1A\u538B\u8FD9\u79CD\uFF1A${kind}`);
+    }
+  };
+}
+
 // src/app/reference-host.ts
 var APP = "moonsinger";
-var KINDS = ["image", "text"];
-var BIG_BYTES = 4 * 1024 * 1024;
+var KINDS = ["image", "text", "audio"];
+var ASK_ABOVE = 1024 * 1024;
+var RAM_ABOVE = 4 * 1024 * 1024;
 function createReferenceHost(d3) {
   const el2 = document.createElement("wp-reference-window");
   el2.className = "ref-window";
@@ -29651,7 +30117,7 @@ function createReferenceHost(d3) {
   fileInput2.type = "file";
   fileInput2.multiple = true;
   fileInput2.hidden = true;
-  fileInput2.accept = "image/*,.txt,.md,text/plain,text/markdown";
+  fileInput2.accept = "image/*,audio/*,.txt,.md,text/plain,text/markdown";
   document.body.append(el2, fileInput2);
   let encoded = {};
   let rev2 = 0;
@@ -29663,7 +30129,6 @@ function createReferenceHost(d3) {
   el2.menuPort = (o10) => togglePopupMenu(o10);
   el2.setAttribute("no-cloud", "");
   el2.labels = {
-    load: "\u5BFC\u5165\u56FE\u7247 / \u6587\u5B57\u2026",
     paste: "\u7C98\u8D34",
     oneToOne: "\u539F\u5C3A\u5BF8",
     del: "\u5220\u6389\u8FD9\u5F20",
@@ -29678,9 +30143,18 @@ function createReferenceHost(d3) {
     moveEarlier: "\u5F80\u524D\u632A",
     moveLater: "\u5F80\u540E\u632A",
     jump: "\u8DF3\u5230\u2026",
-    kindNames: { image: "\u56FE\u7247", text: "\u6587\u5B57" },
-    linkMissing: "\u5185\u5BB9\u4E0D\u5728\u4E86"
+    kindNames: { image: "\u56FE\u7247", text: "\u6587\u5B57", audio: "\u97F3\u9891" },
+    linkMissing: "\u5185\u5BB9\u4E0D\u5728\u4E86",
+    load: "\u5BFC\u5165\u56FE\u7247 / \u97F3\u9891 / \u6587\u5B57\u2026",
+    play: "\u64AD\u653E",
+    pause: "\u6682\u505C",
+    loop: "\u5FAA\u73AF",
+    rate: "\u901F\u5EA6",
+    ram: "\u53EA\u653E\u5185\u5B58\uFF08\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF09",
+    ramMissing: "\u53EA\u5728\u5185\u5B58\u91CC\uFF0C\u6CA1\u5B58\u8FDB\u6B4C\u91CC\u2014\u2014\u628A\u8FD9\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u70B9 \uFF0B \u91CD\u65B0\u5BFC\u5165\uFF0C\u5C31\u8865\u56DE\u8FD9\u91CC"
   };
+  el2.audioRates = [1, 0.75, 0.5];
+  const transcoder = createRefTranscoder();
   const syncFloor = () => {
     el2.topFloor = d3.topFloor();
     el2.bottomFloor = d3.bottomFloor();
@@ -29766,25 +30240,15 @@ function createReferenceHost(d3) {
     }
   });
   async function importFiles(files) {
-    let added = 0;
-    for (const f2 of files) {
-      if (f2.type.startsWith("text/") || /\.(txt|md)$/i.test(f2.name)) {
-        el2.addText(await f2.text(), { name: f2.name });
-        added++;
-        continue;
-      }
-      if (!f2.type.startsWith("image/")) {
-        d3.error(`\u8BA4\u4E0D\u51FA\uFF1A${f2.name}\uFF08\u53C2\u8003\u7A97\u6536\u56FE\u7247\u548C\u6587\u5B57\uFF09`);
-        continue;
-      }
-      if (f2.size > BIG_BYTES && !await d3.confirmBig(f2.name, f2.size)) continue;
-      el2.deck.add({ kind: "image", bytes: f2, mime: f2.type, name: f2.name });
-      added++;
+    const r10 = await el2.importFiles(files, { kinds: KINDS, transcoder, ask: (q2) => d3.askImport(q2), askAbove: { image: ASK_ABOVE, audio: ASK_ABOVE }, ramAbove: RAM_ABOVE });
+    for (const k2 of r10.skipped) {
+      if (k2.why === "unsupported") d3.error(`\u8BA4\u4E0D\u51FA\uFF1A${k2.name}\uFF08\u53C2\u8003\u7A97\u6536\u56FE\u7247\u3001\u97F3\u9891\u548C\u6587\u5B57\uFF09`);
+      else if (k2.why === "failed") d3.error(`\u6CA1\u52A0\u4E0A\uFF1A${k2.name}\uFF08${k2.message ?? "\u51FA\u9519\u4E86"}\uFF09`);
     }
-    if (added) {
-      el2.open = true;
+    const said = [r10.added.length ? `\u52A0\u4E86 ${r10.added.length} \u5F20` : "", r10.filled.length ? `\u8865\u56DE ${r10.filled.length} \u5F20\uFF08\u53EA\u653E\u5185\u5B58\u7684\u7A7A\u4F4D\uFF09` : "", ...r10.notes].filter(Boolean);
+    if (r10.added.length || r10.filled.length) {
       el2.focus({ preventScroll: true });
-      d3.info(`\u53C2\u8003\u7A97\uFF1A\u52A0\u4E86 ${added} \u5F20`);
+      d3.info(`\u53C2\u8003\u7A97\uFF1A${said.join("\uFF1B")}`);
     }
   }
   async function pasteFromClipboard() {
@@ -30850,55 +31314,6 @@ function clearDiag(pre, status) {
   status("\u6E05\u7A7A\u4E86");
 }
 
-// src/image/codec.ts
-function makeCanvas(w2, h2) {
-  w2 = Math.max(1, w2 | 0);
-  h2 = Math.max(1, h2 | 0);
-  return typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(w2, h2) : (() => {
-    const c10 = document.createElement("canvas");
-    c10.width = w2;
-    c10.height = h2;
-    return c10;
-  })();
-}
-async function decodeBlob(blob) {
-  try {
-    return await createImageBitmap(blob, { imageOrientation: "from-image" });
-  } catch {
-  }
-  try {
-    return await createImageBitmap(blob);
-  } catch {
-  }
-  return await new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("image decode failed"));
-    };
-    img.src = url;
-  });
-}
-async function decodeToRgba(blob) {
-  const src = await decodeBlob(blob);
-  const w2 = src.width || src.naturalWidth, h2 = src.height || src.naturalHeight;
-  const c10 = makeCanvas(w2, h2);
-  const cx2 = c10.getContext("2d", { willReadFrequently: true });
-  if (!cx2) throw new Error("2d context unavailable");
-  cx2.drawImage(src, 0, 0);
-  const img = cx2.getImageData(0, 0, w2, h2);
-  if ("close" in src) try {
-    src.close();
-  } catch {
-  }
-  return { data: img.data, w: w2, h: h2 };
-}
-
 // src/image/cover.ts
 function cropSquare(img) {
   const { w: w2, h: h2 } = img;
@@ -31270,6 +31685,12 @@ function discloseArt(prev, a10) {
   const why = whyIgnored(activeInstrument(doc.extras, role)?.engine, a10);
   info(why === "decay" ? `${who}\u7684\u97F3\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF0C${MARK_NAME[a10]}\u505A\u4E0D\u5230\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u97F3\u5185\u6E10\u5F31\u7167\u505A` : why === "sung" ? `${who}\u672C\u6765\u5C31\u8FDE\u7740\u5531\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u8981\u65AD\u53E5\u7528\u547C\u5438` : why === "gap" ? `${who}\u672C\u6765\u5C31\u4E0D\u7559\u7F1D\uFF08\u4E50\u5668\u9875\u300C\u97F3\u548C\u97F3\u4E4B\u95F4\u300D= 0\uFF09\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8` : `${who}\u4E0D\u8BA4${MARK_NAME[a10]}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD`);
 }
+function discloseDynOverride(prev) {
+  const toks = tr(st2), now = dynOverridden(toks);
+  if (now.size <= dynOverridden(tr(prev)).size) return;
+  const v = [...now].map((i10) => toks[i10]).find((t10) => t10.kind === "dyn");
+  info(`\u8FD9\u4E2A ${v && v.kind === "dyn" ? v.value : "\u529B\u5EA6\u8BB0\u53F7"} \u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\uFF0C\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p`);
+}
 var curRole = () => curPart().role;
 var partView = /* @__PURE__ */ new Map();
 var pv = (id2) => partView.get(id2) ?? { hidden: false, only: false, muted: false, solo: false };
@@ -31295,13 +31716,23 @@ var refHost = createReferenceHost({
     return !padEl.hidden && r10.width > innerWidth * 0.6 && r10.top > innerHeight * 0.3 ? Math.max(0, Math.round(innerHeight - r10.top)) : 0;
   },
   focusScore: () => scoreEl.focus({ preventScroll: true }),
-  confirmBig: (name, n10) => openConfirmSheet("\u8FD9\u5F20\u56FE\u5F88\u5927", `\u300C${name}\u300D${(n10 / 1024 / 1024).toFixed(1)} MB\u3002\u53C2\u8003\u56FE\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58\u3001\u4E00\u8D77\u540C\u6B65\uFF0C\u5B58\u8FDB\u53BB\u8FD9\u9996\u6B4C\u4F1A\u5927\u8FD9\u4E48\u591A\u3002`, { okLabel: "\u5B58\u8FDB\u6B4C\u91CC", cancelLabel: "\u7B97\u4E86" }),
+  askImport: (q2) => askRefImport(q2),
   onCards: () => {
     renderTitle();
     changed();
   }
 });
 new ResizeObserver(() => refHost.relayout()).observe(padEl);
+async function askRefImport(q2) {
+  const mb = (n10) => `${(n10 / 1024 / 1024).toFixed(1)} MB`, what = q2.kind === "audio" ? "mp3 128k" : "PNG 256 \u8272\u3001\u957F\u8FB9\u6700\u591A 2048";
+  const smaller = q2.canCompress && (q2.estimate === null || q2.estimate < q2.bytes * 0.9);
+  const keep2 = { label: `\u5B58\u8FDB\u6B4C\u91CC\uFF08${mb(q2.bytes)}\uFF09`, value: "keep" };
+  const zip = { label: q2.estimate === null ? `\u538B\u4E00\u4E0B\u518D\u5B58\uFF08${what}\uFF09` : `\u538B\u4E00\u4E0B\u518D\u5B58\uFF08\u7EA6 ${mb(q2.estimate)}\uFF09`, value: "compress" };
+  const ram = { label: q2.suggestRam ? "\u53EA\u653E\u5185\u5B58\uFF08\u63A8\u8350\uFF09" : "\u53EA\u653E\u5185\u5B58\uFF08\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF09", value: "ram" };
+  const msg = `\u300C${q2.name}\u300D${mb(q2.bytes)}\u3002\u53C2\u8003\u7A97\u91CC\u7684\u4E1C\u897F\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58\u3001\u4E00\u8D77\u540C\u6B65\u3002` + (q2.canCompress && !smaller ? `\u538B\u4E86\u4E5F\u4E0D\u4F1A\u66F4\u5C0F\uFF0C\u5C31\u4E0D\u5217\u4E86\u3002` : smaller ? `\u538B\u4E00\u4E0B = ${what}\u3002` : "") + `\u53EA\u653E\u5185\u5B58 = \u8FD9\u6B21\u6253\u5F00\u80FD${q2.kind === "audio" ? "\u542C" : "\u770B"}\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E0B\u6B21\u6253\u5F00\u662F\u4E2A\u7A7A\u4F4D\uFF0C\u628A\u540C\u4E00\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\u5C31\u8865\u4E0A\u3002` + (q2.suggestRam ? `\u8D85\u8FC7 4 MB \u7684\uFF0C\u5B58\u8FDB\u53BB\u8FD9\u9996\u6B4C\u4F1A\u5927\u8FD9\u4E48\u591A\u3001\u540C\u6B65\u4E5F\u6162\uFF0C\u6240\u4EE5\u5148\u63A8\u8350\u53EA\u653E\u5185\u5B58\u3002` : "");
+  const list = q2.suggestRam ? [{ ...ram, primary: true }, ...smaller ? [zip] : [], keep2] : [{ ...keep2, primary: true }, ...smaller ? [zip] : [], ram];
+  return await openChoiceSheet(q2.kind === "audio" ? "\u8FD9\u6BB5\u97F3\u9891\u6709\u70B9\u5927" : "\u8FD9\u5F20\u56FE\u6709\u70B9\u5927", msg, list) ?? "cancel";
+}
 new ResizeObserver(() => refHost.relayout()).observe(bar);
 installPlatformGuards([scoreEl, padEl]);
 var shell = initPwaShell({ onUpdateAvailable: () => {
@@ -31774,6 +32205,7 @@ var pad3 = new Pad(padEl, {
     if (c10.k === "art") discloseArt(prev, c10.a);
     if (c10.k === "slur") discloseArt(prev, "slur");
     if (c10.k === "swell") discloseArt(prev, c10.w === ">" ? "swellFade" : "swellGrow");
+    if (c10.k === "dyn" || c10.k === "art" && c10.a === "fp") discloseDynOverride(prev);
   },
   onUnit: (u2) => {
     if (half === "once") {
@@ -33449,8 +33881,9 @@ function openMarkMenu(i10, at2) {
   box.setAttribute("role", "menu");
   const row = t10.kind === "dyn" ? ["pp", "p", "mp", "mf", "f", "ff"].map((d3) => `<button class="btn ctx-chip${t10.value === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u6539\u6210 ${d3}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("") : ["cresc", "dim"].map((d3) => `<button class="btn ctx-chip${t10.dir === d3 ? " is-on" : ""}" data-v="dir:${d3}" title="${d3 === "cresc" ? "\u6E10\u5F3A" : "\u6E10\u5F31"}">${WEDGE_MENU[d3]}</button>`).join("");
   const rampWhy = src === "none" ? "\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765" : src === "hairpin" ? "\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70" : "";
+  const offWhy = t10.kind === "dyn" && dynOverridden(toks).has(i10) ? `<div class="ctx-hint">\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A ${t10.value} \u7BA1\u4E0D\u5230</div>` : "";
   const rampRow = t10.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t10.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t10.ramp ? " disabled" : ""} title="\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8">${t10.ramp ? "\u2713 " : ""}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09</button>` + (rampWhy ? `<div class="ctx-hint">${t10.ramp ? "\u4E0D\u8D77\u4F5C\u7528\uFF1A" : ""}${esc7(rampWhy)}</div>` : "");
-  box.innerHTML = `<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? "\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09" : "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31"}">\u5220\u9664</button><div class="ctx-hint">\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
+  box.innerHTML = `${offWhy}<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? "\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09" : "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31"}">\u5220\u9664</button><div class="ctx-hint">\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at2.y + 6;
@@ -35159,4 +35592,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ef01917708ee.mjs.map
+//# sourceMappingURL=moonsinger-cedaa9a1d499.mjs.map

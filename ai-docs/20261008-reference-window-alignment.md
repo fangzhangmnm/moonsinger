@@ -44,3 +44,8 @@ user「.moonsinger/references/ 拍，无脑一模一样」：存法和 WXHW 一�
 ## 要你拍的一件事（已拍，见上）
 
 存法（第 3 条）：`.moonsinger/references/` 取代 `attachments/`、不升 FORMAT、窗的位置进 `view`。家族清单写的是「每个宿主改文件格式都要 user 点头」。其余的照上面直接做。
+
+## 后续（2026-10-09，v0.8.10，edited by Claude Opus 5.5）
+
+库升 0.4.0 已发（方案 = 家族根仓 `ai-docs/20261008-reference-window-0.4-audio-plan.md`；user「发」），MoonSinger 收货：音频卡、导入超过 1 MB 先问（存 / 压一下 / 只放内存 / 算了）、只放内存的空位。上面第 2 条「音频卡这一轮不做」、第 4 条「单张超过 4 MB 弹存进歌里 / 取消」都已被这一版取代。
+

@@ -52,9 +52,60 @@ check(re.list.includes(".moonsinger/references/manifest.json") && re.list.some((
 const big = p.evaluate(async () => { const f = new File([new Uint8Array(4.2 * 1024 * 1024)], "huge.png", { type: "image/png" }); await window.__moonsinger.refHost.importFiles([f]); });
 await p.waitForTimeout(300);
 const sheet = await p.$$eval(".offer .offer-card", (e) => e.map((x) => x.textContent).join(" | "));
-check(/很大/.test(sheet), "超过 4 MB：应用内面板问一句", sheet.slice(0, 80));
-await p.click("text=算了"); await big; h = await H();
+check(/有点大/.test(sheet), "超过 1 MB：应用内面板问一句", sheet.slice(0, 80));
+const order = await p.$$eval(".offer .sheet-choices button", (e) => e.map((x) => x.textContent));
+check(/只放内存（推荐）/.test(order[0] ?? ""), "超过 4 MB：「只放内存」排第一（推荐）", order.join(" | "));
+await p.click(".offer-btns >> text=算了"); await big; h = await H();
 check(h.n === 2, "取消 = 不加", JSON.stringify(h));
+
+// ── 库 0.4.0：音频卡 + 压一下 + 只放内存（2026-10-09）──
+const wav = (name, sec) => p.evaluate(({ name, sec }) => {   // 立体声 44.1k 16 位：sec 秒 ≈ 176 KB / 秒
+  const n = Math.round(sec * 44100), b = new ArrayBuffer(44 + n * 4), v = new DataView(b), w = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + n * 4, true); w(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 2, true);
+  v.setUint32(24, 44100, true); v.setUint32(28, 44100 * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++) { const x = Math.round(Math.sin((i / 44100) * 2 * Math.PI * 440) * 6000); v.setInt16(44 + i * 4, x, true); v.setInt16(46 + i * 4, x, true); }
+  window.__wav = new File([b], name, { type: "audio/wav" });
+}, { name, sec });
+const deckOf = () => p.evaluate(() => window.__moonsinger.refHost.el.deck.cards().map((c) => ({ kind: c.kind, name: c.name, mime: c.mime, size: c.bytes?.size ?? null, ram: c.ram })));
+await wav("扒谱.wav", 8);
+const imp1 = p.evaluate(async () => { await window.__moonsinger.refHost.importFiles([window.__wav]); });
+await p.waitForTimeout(600);
+const s1 = await p.$$eval(".offer .sheet-choices button", (e) => e.map((x) => x.textContent));
+check(/存进歌里/.test(s1[0] ?? "") && s1.some((x) => /压一下再存（约 0\.1 MB）/.test(x)) && s1.some((x) => /只放内存/.test(x)), "1.4 MB 的 wav：问（存进歌里排第一、压一下带估计、只放内存）", s1.join(" | "));
+await p.click(".offer .sheet-choices >> text=压一下再存"); await imp1; await p.waitForTimeout(300);
+let dk = await deckOf(), a = dk.find((c) => c.name === "扒谱.wav");
+check(a && a.kind === "audio" && a.mime === "audio/mpeg" && a.size > 100_000 && a.size < 160_000, "压一下 = mp3 128k（8 秒约 128 KB）", JSON.stringify(a));
+check(await p.$eval("wp-reference-window", (el) => el.shadowRoot.querySelector(".audio").classList.contains("shown")), "音频卡：播放层露出来");
+await p.click("wp-reference-window .aplay"); await p.waitForTimeout(400);
+check(await p.evaluate(() => window.__moonsinger.refHost.el.playing), "点播放钮 = 放起来");
+await p.click("wp-reference-window .aplay"); await p.waitForTimeout(100);
+check(!(await p.evaluate(() => window.__moonsinger.refHost.el.playing)), "再点 = 停");
+// 只放内存：存了再开 = 空位（字节不进文件）；同名拖回来 = 补回原位
+await wav("现场.wav", 7);
+const imp2 = p.evaluate(async () => { await window.__moonsinger.refHost.importFiles([window.__wav]); });
+await p.waitForTimeout(500); await p.click(".offer .sheet-choices >> text=只放内存"); await imp2; await p.waitForTimeout(300);
+dk = await deckOf(); a = dk.find((c) => c.name === "现场.wav");
+check(a && a.ram && a.ram.bytes === a.size && a.size > 1_000_000, "只放内存：卡上有字节、标着 ram", JSON.stringify(a));
+check(await p.evaluate(() => window.__moonsinger.dirty()), "加了卡 = 标脏");
+const ramRe = await p.evaluate(async () => {
+  const m = window.__moonsinger; await m.refHost.settled(); const bytes = m.bytes(), refs = m.zipList(bytes).filter((x) => x.includes("references"));
+  const big = refs.filter((x) => !x.endsWith(".json")).length;
+  m.load(m.open("x.mxl", bytes)); await new Promise((ok) => setTimeout(ok, 400));
+  const c = m.refHost.el.deck.cards().find((x) => x.name === "现场.wav"); m.refHost.el.deck.select(m.refHost.el.deck.indexOf(c.id)); await new Promise((ok) => setTimeout(ok, 100));
+  return { refs, big, hole: !c.bytes && c.ram?.bytes > 0, line: m.refHost.el.shadowRoot.querySelector(".aname").textContent, disabled: m.refHost.el.shadowRoot.querySelector(".aplay").disabled, dirty: m.dirty() };
+});
+check(ramRe.big === 3, "文件里只有两张图 + 压过的 mp3（只放内存的那段没进去）", ramRe.refs.join(","));
+check(ramRe.hole && /现场\.wav · .* MB — 只在内存里/.test(ramRe.line) && ramRe.disabled && !ramRe.dirty, "存了再开 = 空位：写着名字 · 大小 + 怎么补，播放钮按不动，不脏", JSON.stringify(ramRe));
+await wav("现场.wav", 7);
+await p.evaluate(async () => { await window.__moonsinger.refHost.importFiles([window.__wav]); }); await p.waitForTimeout(300);
+const sheets = await p.$$eval(".offer .offer-card", (e) => e.length);
+dk = await deckOf(); a = dk.find((c) => c.name === "现场.wav");
+check(sheets === 0 && a.size > 1_000_000 && a.ram && dk.filter((c) => c.name === "现场.wav").length === 1, "同名拖回来 = 补回原位（不问、不新加，照旧只放内存）", JSON.stringify({ sheets, a }));
+check(!(await p.evaluate(() => window.__moonsinger.dirty())), "补回空位不标脏（文件里本来就没有它）");
+// 小于 1 MB 的图 = 不问
+await p.evaluate(async () => { const c = document.createElement("canvas"); c.width = c.height = 8; const b = await new Promise((r) => c.toBlob(r, "image/png")); await window.__moonsinger.refHost.importFiles([new File([b], "小.png", { type: "image/png" })]); });
+await p.waitForTimeout(200);
+check((await p.$$eval(".offer .offer-card", (e) => e.length)) === 0 && (await deckOf()).some((c) => c.name === "小.png"), "小于 1 MB：不问、直接加");
 // 参考清单比这一版新：明说，原样写回
 const tooNew = await p.evaluate(async () => {
   const m = window.__moonsinger, o = m.open("x.mxl", m.bytes()), man = ".moonsinger/references/manifest.json";

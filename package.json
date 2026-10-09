@@ -22,6 +22,6 @@
     "@internal/store": "file:./vendor-pkgs/internal-store-0.16.2.tgz",
     "@internal/encryption": "file:./vendor-pkgs/internal-encryption-0.1.0.tgz",
     "@internal/gallery": "file:./vendor-pkgs/internal-gallery-0.7.0.tgz",
-    "@internal/reference-window": "file:./vendor-pkgs/internal-reference-window-0.3.2.tgz"
+    "@internal/reference-window": "file:./vendor-pkgs/internal-reference-window-0.4.0.tgz"
   }
 }
