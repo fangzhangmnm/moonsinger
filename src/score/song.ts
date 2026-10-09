@@ -1176,8 +1176,12 @@ export function addPaper(st: EditorState, after?: string): EditorState {
     const src = prev?.tracks[part.id] ?? st.song.parts.map((x) => prev?.tracks[x.id]).find((x) => x) ?? [];
     tracks[part.id] = headTokens({ ...endMarks(src), ...(bpmEnd !== null ? { bpm: bpmEnd } : {}) }, nid); nid += 3;
   }
-  const paper: PaperSeg = { id, name: "", tracks };
-  const list = papers.slice(); list.splice(k + 1, 0, paper);
+  // 曲段名自动起 A B C D（2026-10-08 深夜 Opus 5.5，user「曲段名自动命名ABCD」）：没名字的纸（多半是第一张）先按顺序补上，新纸取下一个没用过的；起过名的不动
+  const used = new Set(papers.map((p) => p.name.trim()).filter(Boolean));
+  const nextName = () => { for (let r = 1; ; r++) for (let c = 0; c < 26; c++) { const n = String.fromCharCode(65 + c) + (r > 1 ? r : ""); if (!used.has(n)) { used.add(n); return n; } } };
+  const named = papers.map((p) => (p.name.trim() ? p : { ...p, name: nextName() }));
+  const paper: PaperSeg = { id, name: nextName(), tracks };
+  const list = named.slice(); list.splice(k + 1, 0, paper);
   return setFocus({ ...st, song: { ...st.song, papers: list }, nextId: nid }, id, st.at.part);
 }
 /** 删一张纸（最后一张不能删）。 */

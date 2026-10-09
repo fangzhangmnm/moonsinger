@@ -431,6 +431,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .strip-row output { color: var(--ink); font-variant-numeric: tabular-nums; }
 .strip-row input[type="range"] { width: 100%; }
 .strip-btns { display: flex; gap: 6px; }
+.strip-refs { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
 /* 分页：页框 + 页码 */
 .staff-svg rect.page { fill: #fff; stroke: var(--line); stroke-width: 1; }
 .staff-svg .page-no { fill: var(--muted); }

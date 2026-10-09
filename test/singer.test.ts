@@ -100,3 +100,17 @@ describe("隐藏的纸：点名放这一张（本段）照样放", () => {
     eq(notesIn(songOnlyPaper(st.song, p2)), 1, "本段：点名放它 = 照样放");
   });
 });
+
+describe("曲段名自动 A B C D（2026-10-08 深夜，user「曲段名自动命名ABCD」）", () => {
+  it("第二张纸：前面没名字的补 A、新的 B；再加 C；起过名的不动、用过的字母跳过", async () => {
+    const { initState, addPaper, setPaperName } = await import("../src/score/song.ts");
+    let st = initState(); st = addPaper(st);
+    if (st.song.papers.map((p) => p.name).join(",") !== "A,B") throw new Error(st.song.papers.map((p) => p.name).join(","));
+    st = setPaperName(st, st.song.papers[1].id, "副歌"); st = addPaper(st);
+    const names = st.song.papers.map((p) => p.name).join(",");
+    if (names !== "A,副歌,B") throw new Error(names);
+    st = addPaper(st, st.song.papers[0].id);   // 插在 A 后面
+    const n2 = st.song.papers.map((p) => p.name).join(",");
+    if (n2 !== "A,C,副歌,B") throw new Error(n2);
+  });
+});

@@ -1183,13 +1183,20 @@ const finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName
 // ── 录音室（src/ui/studio.ts）：全屏替掉谱区，一个声部一条推子条；增益 / 声像进录音房（studio.json），静音 / 独奏 = partView ──
 const partLabel = (id: string): string => { const k = st.song.parts.findIndex((p) => p.id === id); return k < 0 ? id : partLabels(st.song, doc.extras)[k]; };
 const studio = new Studio($("stage"), {
-  strips: () => { const labels = partLabels(st.song, doc.extras); return st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], performer: activeCandidateName(doc.extras, p.role) ?? "（没人上场）", ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
+  strips: () => { const labels = partLabels(st.song, doc.extras); return st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], refs: st.song.papers.filter((pp) => pp.tracks[p.id]).length, performer: activeCandidateName(doc.extras, p.role) ?? "（没人上场）", ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
   setGain: (id, dB) => { const p = st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(doc.extras, p.mic, { gainDb: dB }), { kind: "studio", label: `${partLabel(id)} 增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id}`); },
   setPan: (id, pan) => { const p = st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(doc.extras, p.mic, { pan }), { kind: "studio", label: `${partLabel(id)} 声像 ${Math.abs(pan) < 0.025 ? "中" : pan < 0 ? `左 ${Math.round(-pan * 100)}` : `右 ${Math.round(pan * 100)}`}` }, `mix:pan:${id}`); },
   toggleMute: (id) => { setPv(id, { muted: !pv(id).muted }); view.render(); },
   toggleSolo: (id) => { setPv(id, { solo: !pv(id).solo }); view.render(); },
   play: () => { void togglePlay(); },
   close: () => closeStudio(),
+  /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
+  deletePart: (id) => {
+    const p = st.song.parts.find((x) => x.id === id); if (!p || st.song.papers.some((pp) => pp.tracks[id])) return;
+    const name = partLabel(id);
+    updateBoth(removePart(st, id), withoutRole(doc.extras, p.role), { kind: "studio", label: `删掉歌手「${name}」` });
+    studio.render(); renderTitle(); info(`删掉了「${name}」（撤销能找回来）`);
+  },
 });
 function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); scoreEl.hidden = true; showPad(false); studio.show(); updateChrome(); }
 function closeStudio(): void { if (!studio.isOpen) return; studio.hide(); scoreEl.hidden = false; updateChrome(); scoreEl.focus(); }
@@ -1408,7 +1415,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
       (st.song.parts.length > 1 ? `<span class="tc-k">顺序</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="往上挪一格（最上面那个声部的速度记号说了算）">↑ 往上</button><button class="btn" data-v="movedown"${k === st.song.parts.length - 1 ? " disabled" : ""} title="往下挪一格">↓ 往下</button></div>` : "") +
       `</div><div class="tc-foot"><button class="btn" data-v="give" title="这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）">交给…</button><button class="btn" data-v="add" title="这张纸上再加一位歌手（已有的或新的；只加在这张纸上）">＋ 加歌手…</button>` +
       (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="这张纸上不要这个声部（别的纸照旧）">这张纸上去掉</button>` : "") +
-      (st.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="整首歌里删掉这个声部（休息室里它的角色一起删；能撤销）">删掉…</button>` : "") + `</div>`;
+      `<button class="btn" data-v="studio" title="录音室：每位歌手一条（增益 / 声像 / 静音 / 独奏）；一张纸都不在的歌手在那里删">歌手管理（录音室）…</button></div>`;   // 纸上不删歌手（2026-10-08 深夜 user「在纸上不应该可以直接删歌手，这个功能去掉，只有没引用的时候才可以在歌手管理里面删」）：删 = 录音室里、一张纸都不在的那位；三条杠里不放录音室（user「三条杠里面不应该有乐器目录，云端，歌库 录音室」），手机上从这里进
   };
   draw(); document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
@@ -1429,6 +1436,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     const me = curPart();
     if (v === "inst") { close(); openInstPage(); return; }
+    if (v === "studio") { close(); openStudio(); return; }
     if (v === "give" || v === "add") { page = v; draw(); return; }
     if (v === "back") { page = "main"; draw(); return; }
     if (v.startsWith("give:")) { const to = v.slice(5), name = partLabels(st.song, doc.extras)[st.song.parts.findIndex((p) => p.id === to)] ?? ""; close(); update(rebindTrack(st, st.at.paper, me.id, to)); renderTitle(); info(`这张纸上这一行交给了「${name}」`); return; }
@@ -1443,11 +1451,6 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     else if (v === "moveup" || v === "movedown") { update(movePart(st, me.id, v === "moveup" ? -1 : 1)); renderTitle(); }
     else if (v.startsWith("staves:")) { update(setPartStaves(st, me.id, v.slice(7) === "2" ? 2 : 1)); pad.render(); }
     else if (v === "droptrack") { close(); update(removeTrack(st, st.at.paper, me.id)); return; }
-    else if (v === "delpart") {
-      close();
-      void askSheet(`删掉声部「${roleName(doc.extras, me.role)}」？`, "整首歌里它写的东西都没了，休息室里它的角色也一起删（能撤销）。", "删").then((ok) => { if (!ok) return; updateBoth(removePart(st, me.id), withoutRole(doc.extras, me.role), { kind: "score", label: `删了声部「${roleName(doc.extras, me.role)}」` }); view.render(); });
-      return;
-    }
     else return;
     draw();
   });

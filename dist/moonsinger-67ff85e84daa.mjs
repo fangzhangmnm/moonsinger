@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.3-2026-10-08";
+var APP_VERSION = "v0.8.4-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3978,8 +3978,19 @@ function addPaper(st3, after) {
     tracks[part.id] = headTokens({ ...endMarks(src), ...bpmEnd !== null ? { bpm: bpmEnd } : {} }, nid);
     nid += 3;
   }
-  const paper = { id: id2, name: "", tracks };
-  const list = papers.slice();
+  const used = new Set(papers.map((p2) => p2.name.trim()).filter(Boolean));
+  const nextName = () => {
+    for (let r10 = 1; ; r10++) for (let c10 = 0; c10 < 26; c10++) {
+      const n10 = String.fromCharCode(65 + c10) + (r10 > 1 ? r10 : "");
+      if (!used.has(n10)) {
+        used.add(n10);
+        return n10;
+      }
+    }
+  };
+  const named = papers.map((p2) => p2.name.trim() ? p2 : { ...p2, name: nextName() });
+  const paper = { id: id2, name: nextName(), tracks };
+  const list = named.slice();
   list.splice(k2 + 1, 0, paper);
   return setFocus({ ...st3, song: { ...st3.song, papers: list }, nextId: nid }, id2, st3.at.part);
 }
@@ -20829,7 +20840,7 @@ var Studio = class {
       } else if (v === "solo" && strip) {
         this.host.toggleSolo(strip);
         this.render();
-      }
+      } else if (v === "delpart" && strip) this.host.deletePart(strip);
     });
     this.el.addEventListener("input", (e10) => {
       const t10 = e10.target, strip = t10.closest(".strip");
@@ -20864,7 +20875,8 @@ var Studio = class {
   }
   render() {
     const box = this.el.querySelector(".studio-strips");
-    box.innerHTML = this.host.strips().map((s10) => `<div class="strip" data-id="${esc4(s10.id)}"><div class="strip-name">${esc4(s10.name)}</div><div class="strip-who">${esc4(s10.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s10.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s10.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label><div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div></div>`).join("");
+    box.innerHTML = this.host.strips().map((s10) => `<div class="strip" data-id="${esc4(s10.id)}"><div class="strip-name">${esc4(s10.name)}</div><div class="strip-who">${esc4(s10.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s10.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s10.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label><div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+    (s10.refs ? `<div class="strip-refs">\u5728 ${s10.refs} \u5F20\u7EB8\u4E0A</div>` : `<div class="strip-refs">\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709 <button class="btn cand danger" data-v="delpart" title="\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B</button></div>`) + `</div>`).join("");
   }
 };
 
@@ -31546,7 +31558,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "aa0c478d3024",
+  cssHash: "503cc54f63e7",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -31820,7 +31832,7 @@ var partLabel = (id2) => {
 var studio = new Studio($2("stage"), {
   strips: () => {
     const labels = partLabels(st2.song, doc.extras);
-    return st2.song.parts.map((p2, k2) => ({ id: p2.id, name: labels[k2], performer: activeCandidateName(doc.extras, p2.role) ?? "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09", ...micOf(p2), muted: pv(p2.id).muted, solo: pv(p2.id).solo }));
+    return st2.song.parts.map((p2, k2) => ({ id: p2.id, name: labels[k2], refs: st2.song.papers.filter((pp) => pp.tracks[p2.id]).length, performer: activeCandidateName(doc.extras, p2.role) ?? "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09", ...micOf(p2), muted: pv(p2.id).muted, solo: pv(p2.id).solo }));
   },
   setGain: (id2, dB) => {
     const p2 = st2.song.parts.find((x2) => x2.id === id2);
@@ -31841,7 +31853,17 @@ var studio = new Studio($2("stage"), {
   play: () => {
     void togglePlay();
   },
-  close: () => closeStudio()
+  close: () => closeStudio(),
+  /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
+  deletePart: (id2) => {
+    const p2 = st2.song.parts.find((x2) => x2.id === id2);
+    if (!p2 || st2.song.papers.some((pp) => pp.tracks[id2])) return;
+    const name = partLabel(id2);
+    updateBoth(removePart(st2, id2), withoutRole(doc.extras, p2.role), { kind: "studio", label: `\u5220\u6389\u6B4C\u624B\u300C${name}\u300D` });
+    studio.render();
+    renderTitle();
+    info(`\u5220\u6389\u4E86\u300C${name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09`);
+  }
 });
 function openStudio() {
   closeOffer?.();
@@ -32137,7 +32159,7 @@ function openTrackCard(at2) {
       if (!m3 || !m3.size) return "";
       const xs = [...m3.values()], first = xs[0], lang = songLangOf(flattenPart(st2.song, me.id).tokens);
       return `<div class="tc-warn">${first.why === "notSung" ? esc7(lyricWhyText(first, roleName(doc.extras, me.role), lang)) : `\u6709 ${xs.length} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A${esc7(lyricWhyText(first, roleName(doc.extras, me.role), lang))}${xs.some((x3) => x3.why !== first.why) ? " \u7B49" : ""}`}</div>`;
-    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:G", "\u9AD8\u97F3", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09">\u4EA4\u7ED9\u2026</button><button class="btn" data-v="add" title="\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09">\uFF0B \u52A0\u6B4C\u624B\u2026</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + (st2.song.parts.length > 1 ? `<button class="btn danger" data-v="delpart" title="\u6574\u9996\u6B4C\u91CC\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u2026</button>` : "") + `</div>`;
+    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:G", "\u9AD8\u97F3", (me.clef ?? "G") === "G")}${chip("clef:F", "\u4F4E\u97F3", me.clef === "F", "\u4F4E\u7684\u58F0\u90E8\uFF08\u8D1D\u65AF / \u5927\u63D0\u7434\uFF09")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09">\u4EA4\u7ED9\u2026</button><button class="btn" data-v="add" title="\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09">\uFF0B \u52A0\u6B4C\u624B\u2026</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + `<button class="btn" data-v="studio" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220">\u6B4C\u624B\u7BA1\u7406\uFF08\u5F55\u97F3\u5BA4\uFF09\u2026</button></div>`;
   };
   draw();
   document.body.append(box);
@@ -32179,6 +32201,11 @@ function openTrackCard(at2) {
     if (v === "inst") {
       close();
       openInstPage();
+      return;
+    }
+    if (v === "studio") {
+      close();
+      openStudio();
       return;
     }
     if (v === "give" || v === "add") {
@@ -32236,14 +32263,6 @@ function openTrackCard(at2) {
     } else if (v === "droptrack") {
       close();
       update(removeTrack(st2, st2.at.paper, me.id));
-      return;
-    } else if (v === "delpart") {
-      close();
-      void askSheet(`\u5220\u6389\u58F0\u90E8\u300C${roleName(doc.extras, me.role)}\u300D\uFF1F`, "\u6574\u9996\u6B4C\u91CC\u5B83\u5199\u7684\u4E1C\u897F\u90FD\u6CA1\u4E86\uFF0C\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u89D2\u8272\u4E5F\u4E00\u8D77\u5220\uFF08\u80FD\u64A4\u9500\uFF09\u3002", "\u5220").then((ok2) => {
-        if (!ok2) return;
-        updateBoth(removePart(st2, me.id), withoutRole(doc.extras, me.role), { kind: "score", label: `\u5220\u4E86\u58F0\u90E8\u300C${roleName(doc.extras, me.role)}\u300D` });
-        view.render();
-      });
       return;
     } else return;
     draw();
@@ -34054,4 +34073,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-7c4038de04b8.mjs.map
+//# sourceMappingURL=moonsinger-67ff85e84daa.mjs.map
