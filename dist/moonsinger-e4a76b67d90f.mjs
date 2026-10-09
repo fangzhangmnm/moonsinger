@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.22-2026-10-08";
+var APP_VERSION = "v0.7.23-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5329,7 +5329,7 @@ function engrave(song, o10) {
           const g3 = c10.base >= WHOLE ? GLYPH.restWhole : c10.base >= TPQ * 2 ? GLYPH.restHalf : c10.base >= TPQ ? GLYPH.restQuarter : c10.base >= TPQ / 2 ? GLYPH.rest8th : c10.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
           const ry2 = c10.base >= WHOLE ? yOf(row, 36) : yOf(row, MID_LINE);
           prims.push({ t: "glyph", x: P2(c10.x + 0.35), y: ry2, ch: g3, cls: cls ? `rest ${cls}` : "rest" });
-          if (c10.j === 0 && c10.index >= 0) rests.push({ index: c10.index, system: row, x: P2(c10.x + 0.35), w: P2(1.2) });
+          if (c10.j === 0 && c10.index >= 0) rests.push({ index: c10.index, system: row, x: P2(c10.x + 0.35), y: yOf(row, MID_LINE), w: P2(1.2) });
           if (c10.dotted) prims.push({ t: "glyph", x: P2(c10.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
           return;
         }
@@ -6627,6 +6627,13 @@ var ScoreView = class {
   // 正在点声部名（这一次重画不跟光标）
   heldBase = null;
   // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
+  /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
+   *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
+  get hits() {
+    const L2 = this.layout;
+    if (!L2) return [];
+    return [...L2.notes, ...L2.rests.map((r10) => ({ index: r10.index, system: r10.system, x: r10.x, y: r10.y, w: r10.w, d: NaN }))];
+  }
   /** 这个命中记录是不是光标所在那条 track 的。 */
   onTrack(h2) {
     const L2 = this.layout, st3 = this.host.get(), row = L2.systems[h2.system];
@@ -6635,7 +6642,7 @@ var ScoreView = class {
   /** 选区两端的棒棒糖把手：第一个 / 最后一个选中的音的下面（歌词行再往下一点）。 */
   placeHandles() {
     const L2 = this.layout, st3 = this.host.get();
-    const inSel = L2 && st3.sel ? L2.notes.filter((n10) => this.onTrack(n10) && n10.index >= st3.sel.from && n10.index < st3.sel.to) : [];
+    const inSel = L2 && st3.sel ? this.hits.filter((n10) => this.onTrack(n10) && n10.index >= st3.sel.from && n10.index < st3.sel.to) : [];
     if (!L2 || !inSel.length) {
       this.handles.start.hidden = true;
       this.handles.end.hidden = true;
@@ -6657,7 +6664,7 @@ var ScoreView = class {
     const L2 = this.layout, st3 = this.host.get();
     if (!L2) return;
     let sys = L2.head?.system ?? -1;
-    if (sys < 0 && st3.sel) sys = L2.notes.find((n10) => this.onTrack(n10) && n10.index >= st3.sel.from && n10.index < st3.sel.to)?.system ?? -1;
+    if (sys < 0 && st3.sel) sys = this.hits.find((n10) => this.onTrack(n10) && n10.index >= st3.sel.from && n10.index < st3.sel.to)?.system ?? -1;
     if (this.lyrics.open) sys = this.lyrics.system;
     if (this.marks.open) sys = this.marks.system;
     const box = L2.systems[sys];
@@ -6823,7 +6830,7 @@ var ScoreView = class {
       this.drag = null;
     }
     this.host.set(this.caretAt(x2, y2));
-    const L2 = this.layout, row = this.rowAt(y2), mine = L2.notes.filter((n10) => n10.system === row && this.onTrack(n10));
+    const L2 = this.layout, row = this.rowAt(y2), mine = this.hits.filter((n10) => n10.system === row && this.onTrack(n10));
     const range2 = mine.length ? { from: Math.min(...mine.map((n10) => n10.index)), to: Math.max(...mine.map((n10) => n10.index)) + 1 } : null;
     this.host.focus?.("staff");
     this.host.onBlankPress?.({ x: cx2, y: cy2 }, range2);
@@ -6948,10 +6955,10 @@ var ScoreView = class {
     const L2 = this.layout, row = this.rowAt(y2);
     if (row < 0) return null;
     const sp2 = L2.sp;
-    if (!finger) return L2.notes.find((n10) => n10.system === row && x2 >= n10.x - sp2 * 0.5 && x2 <= n10.x + n10.w + sp2 * 0.5 && Math.abs(y2 - n10.y) <= sp2 * 0.9) ?? null;
+    if (!finger) return this.hits.find((n10) => n10.system === row && x2 >= n10.x - sp2 * 0.5 && x2 <= n10.x + n10.w + sp2 * 0.5 && Math.abs(y2 - n10.y) <= sp2 * 0.9) ?? null;
     const tx2 = Math.max(sp2 * 0.5, 22 / this.zoom), ty2 = Math.max(sp2 * 0.9, 26 / this.zoom);
     let best = null, bd = Infinity;
-    for (const n10 of L2.notes) {
+    for (const n10 of this.hits) {
       if (n10.system !== row) continue;
       const dx = x2 - Math.max(n10.x, Math.min(x2, n10.x + n10.w)), dy = y2 - n10.y;
       if (Math.abs(dx) > tx2 || Math.abs(dy) > ty2) continue;
@@ -6965,7 +6972,7 @@ var ScoreView = class {
   }
   /** 离指针最近的、光标所在 track 上的音（扩选用）：先按行（指针所在行；不是这条 track 的行就取最近的一行），再按 x。 */
   noteNear(p2) {
-    const L2 = this.layout, mine = L2.notes.filter((n10) => this.onTrack(n10));
+    const L2 = this.layout, mine = this.hits.filter((n10) => this.onTrack(n10));
     if (!mine.length) return -1;
     const row = this.rowAt(p2.y);
     const rows = [...new Set(mine.map((n10) => n10.system))], sys = rows.includes(row) ? row : rows.reduce((a10, b3) => Math.abs(b3 - row) < Math.abs(a10 - row) ? b3 : a10);
@@ -7101,7 +7108,7 @@ var ScoreView = class {
   boxSelect(x1, y1) {
     const b3 = this.box, L2 = this.layout, xa = Math.min(b3.x0, x1), xb = Math.max(b3.x0, x1), ya = Math.min(b3.y0, y1), yb = Math.max(b3.y0, y1);
     Object.assign(this.boxEl.style, { left: `${xa}px`, top: `${ya}px`, width: `${xb - xa}px`, height: `${yb - ya}px` });
-    const inside = L2.notes.filter((n10) => {
+    const inside = this.hits.filter((n10) => {
       const cx2 = n10.x + n10.w / 2;
       return n10.system === b3.row && cx2 >= xa && cx2 <= xb && n10.y >= ya && n10.y <= yb;
     }).map((n10) => n10.index);
@@ -7174,7 +7181,7 @@ var ScoreView = class {
     const p2 = this.local(e10), dx = p2.x - g3.x0, dy = p2.y - g3.y0;
     if (!g3.axis) {
       if (Math.hypot(dx, dy) < 6) return;
-      g3.axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
+      g3.axis = Number.isNaN(g3.d0) ? "x" : Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
       if (g3.axis === "y") this.host.audition?.(g3.index, true);
     }
     const st3 = this.host.get();
@@ -30348,4 +30355,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-bfff6c8d86ee.mjs.map
+//# sourceMappingURL=moonsinger-e4a76b67d90f.mjs.map

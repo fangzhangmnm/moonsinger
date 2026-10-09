@@ -71,7 +71,7 @@ export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system
 /** 力度记号 / 渐强渐弱的点击区域（px）：点 = 小菜单（改 / 删），长按拖 = 挪到别的音上（2026-10-08 Opus 5.5）。渐强渐弱跨行 = 每行一块。 */
 export interface DynHit { index: number; kind: "dyn" | "hairpin"; system: number; x: number; y: number; w: number; h: number }
 /** 休止的位置（px）：力度记号 / 渐强渐弱能拖到休止上（2026-10-08 user「力度符号应该能拖动到休止符上」）。 */
-export interface RestHit { index: number; system: number; x: number; w: number }
+export interface RestHit { index: number; system: number; x: number; y: number; w: number }   // y = 谱的中线（点 / 框选用）
 /** 纸面最上面的歌名那一条（点了就地改）。 */
 export interface TitleHit { x: number; y: number; w: number; h: number; baseline: number; size: number }
 export interface Box { x: number; y: number; w: number; h: number }
@@ -653,7 +653,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
           const ry = c.base >= WHOLE ? yOf(row, 36) : yOf(row, MID_LINE);
           prims.push({ t: "glyph", x: P(c.x + 0.35), y: ry, ch: g, cls: cls ? `rest ${cls}` : "rest" });
-          if (c.j === 0 && c.index >= 0) rests.push({ index: c.index, system: row, x: P(c.x + 0.35), w: P(1.2) });
+          if (c.j === 0 && c.index >= 0) rests.push({ index: c.index, system: row, x: P(c.x + 0.35), y: yOf(row, MID_LINE), w: P(1.2) });
           if (c.dotted) prims.push({ t: "glyph", x: P(c.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
           return;
         }

@@ -225,6 +225,12 @@ export class ScoreView {
   private holdView = false;               // 正在点声部名（这一次重画不跟光标）
   private heldBase: string | null = null; // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
 
+  /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
+   *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
+  private get hits(): HitNote[] {
+    const L = this.layout; if (!L) return [];
+    return [...L.notes, ...L.rests.map((r) => ({ index: r.index, system: r.system, x: r.x, y: r.y, w: r.w, d: NaN }))];
+  }
   /** 这个命中记录是不是光标所在那条 track 的。 */
   private onTrack(h: { system: number }): boolean {
     const L = this.layout!, st = this.host.get(), row = L.systems[h.system];
@@ -233,7 +239,7 @@ export class ScoreView {
   /** 选区两端的棒棒糖把手：第一个 / 最后一个选中的音的下面（歌词行再往下一点）。 */
   private placeHandles(): void {
     const L = this.layout, st = this.host.get();
-    const inSel = L && st.sel ? L.notes.filter((n) => this.onTrack(n) && n.index >= st.sel!.from && n.index < st.sel!.to) : [];
+    const inSel = L && st.sel ? this.hits.filter((n) => this.onTrack(n) && n.index >= st.sel!.from && n.index < st.sel!.to) : [];
     if (!L || !inSel.length) { this.handles.start.hidden = true; this.handles.end.hidden = true; return; }
     const a = inSel.reduce((p, n) => (n.index < p.index ? n : p)), b = inSel.reduce((p, n) => (n.index > p.index ? n : p)), sp = L.sp;
     Object.assign(this.handles.start.style, { left: `${a.x - sp * 0.3}px`, top: `${L.lyricY(a.system) + sp * 0.9}px` }); this.handles.start.hidden = false;
@@ -245,7 +251,7 @@ export class ScoreView {
   private follow(): void {
     const L = this.layout, st = this.host.get(); if (!L) return;
     let sys = L.head?.system ?? -1;
-    if (sys < 0 && st.sel) sys = L.notes.find((n) => this.onTrack(n) && n.index >= st.sel!.from && n.index < st.sel!.to)?.system ?? -1;
+    if (sys < 0 && st.sel) sys = this.hits.find((n) => this.onTrack(n) && n.index >= st.sel!.from && n.index < st.sel!.to)?.system ?? -1;
     if (this.lyrics.open) sys = this.lyrics.system;
     if (this.marks.open) sys = this.marks.system;
     const box = L.systems[sys]; if (!box) return;
@@ -378,7 +384,7 @@ export class ScoreView {
     this.finger = null; this.box = null; this.boxEl.hidden = true;
     if (this.drag) { this.host.release?.(); this.drag = null; }
     this.host.set(this.caretAt(x, y));
-    const L = this.layout!, row = this.rowAt(y), mine = L.notes.filter((n) => n.system === row && this.onTrack(n));
+    const L = this.layout!, row = this.rowAt(y), mine = this.hits.filter((n) => n.system === row && this.onTrack(n));
     const range = mine.length ? { from: Math.min(...mine.map((n) => n.index)), to: Math.max(...mine.map((n) => n.index)) + 1 } : null;
     this.host.focus?.("staff");
     this.host.onBlankPress?.({ x: cx, y: cy }, range);
@@ -481,12 +487,12 @@ export class ScoreView {
   private noteAt(x: number, y: number, finger = false): HitNote | null {
     const L = this.layout!, row = this.rowAt(y); if (row < 0) return null;
     const sp = L.sp;
-    if (!finger) return L.notes.find((n) => n.system === row && x >= n.x - sp * 0.5 && x <= n.x + n.w + sp * 0.5 && Math.abs(y - n.y) <= sp * 0.9) ?? null;   // 笔 / 鼠标：准
+    if (!finger) return this.hits.find((n) => n.system === row && x >= n.x - sp * 0.5 && x <= n.x + n.w + sp * 0.5 && Math.abs(y - n.y) <= sp * 0.9) ?? null;   // 笔 / 鼠标：准
     // 手指：指尖比符头大得多（符头 ≈ 1.2 sp，iPad 上十来个像素），原来的碰撞箱贴着符头 = 按偏一点、按在符干上、按叠音下面的音就算空白，长按没反应
     //   （user 2026-10-08「手指，有时候能选中有时候选不中，是不是你碰撞箱literally贴着音符的图像画了？」）→ 这一行里按指尖大小（屏幕上约 22 × 26 px）找最近的音
     const tx = Math.max(sp * 0.5, 22 / this.zoom), ty = Math.max(sp * 0.9, 26 / this.zoom);
     let best: HitNote | null = null, bd = Infinity;
-    for (const n of L.notes) {
+    for (const n of this.hits) {
       if (n.system !== row) continue;
       const dx = x - Math.max(n.x, Math.min(x, n.x + n.w)), dy = y - n.y;
       if (Math.abs(dx) > tx || Math.abs(dy) > ty) continue;
@@ -496,7 +502,7 @@ export class ScoreView {
   }
   /** 离指针最近的、光标所在 track 上的音（扩选用）：先按行（指针所在行；不是这条 track 的行就取最近的一行），再按 x。 */
   private noteNear(p: { x: number; y: number }): number {
-    const L = this.layout!, mine = L.notes.filter((n) => this.onTrack(n)); if (!mine.length) return -1;
+    const L = this.layout!, mine = this.hits.filter((n) => this.onTrack(n)); if (!mine.length) return -1;
     const row = this.rowAt(p.y);
     const rows = [...new Set(mine.map((n) => n.system))], sys = rows.includes(row) ? row : rows.reduce((a, b) => (Math.abs(b - row) < Math.abs(a - row) ? b : a));
     const cands = mine.filter((n) => n.system === sys);
@@ -574,7 +580,7 @@ export class ScoreView {
   private boxSelect(x1: number, y1: number): void {
     const b = this.box!, L = this.layout!, xa = Math.min(b.x0, x1), xb = Math.max(b.x0, x1), ya = Math.min(b.y0, y1), yb = Math.max(b.y0, y1);
     Object.assign(this.boxEl.style, { left: `${xa}px`, top: `${ya}px`, width: `${xb - xa}px`, height: `${yb - ya}px` });
-    const inside = L.notes.filter((n) => { const cx = n.x + n.w / 2; return n.system === b.row && cx >= xa && cx <= xb && n.y >= ya && n.y <= yb; }).map((n) => n.index);
+    const inside = this.hits.filter((n) => { const cx = n.x + n.w / 2; return n.system === b.row && cx >= xa && cx <= xb && n.y >= ya && n.y <= yb; }).map((n) => n.index);
     if (!inside.length) { this.host.set(this.caretAt(b.x0, b.y0, b.st0)); return; }
     const st = this.focusRow(b.st0, b.row, b.st0.caret);
     this.host.set(select(st, Math.min(...inside), Math.max(...inside) + 1));
@@ -617,7 +623,7 @@ export class ScoreView {
     const p = this.local(e), dx = p.x - g.x0, dy = p.y - g.y0;
     if (!g.axis) {
       if (Math.hypot(dx, dy) < 6) return;
-      g.axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
+      g.axis = Number.isNaN(g.d0) ? "x" : Math.abs(dy) >= Math.abs(dx) ? "y" : "x";   // 休止没有音高：只能横着拖改时值
       if (g.axis === "y") this.host.audition?.(g.index, true);   // 拖音高：从这一下起一直响、换到新音高就换（改时长不出声）
     }
     const st = this.host.get();
