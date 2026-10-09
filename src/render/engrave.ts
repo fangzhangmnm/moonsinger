@@ -566,10 +566,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const rowOf = (s: number, r: number, k = 0) => rowBase + s * nRowsSys + rowStart[r] + k;
     // 4½. 行距按内容（2026-10-08 Opus 5.5；user「和歌词一样能不能根据有没有来自动调整行距」「行距计算应该考虑到有没有歌词，最高最低符号的位置之类的」）：
     //   每一行（这张纸第 s 行 × 声部 × 谱表）估最高 / 最低（符头、符干的大概、加线、演奏法）；谱上下的空从版式的最小值起，内容要更多才加。
-    //   力度那一行（user「感觉一般强弱是写下面而不是上面的吧？然后同时有两个谱号就是写中间？」）：有歌词的声部写上面（下面让给歌词）、大谱表写两条谱中间、
-    //   其余写下面；这一行这个声部真有力度记号 / 渐强渐弱 / sfz fp 才留地方。
+    //   力度那一行一律写在谱上面（大谱表 = 上面那条谱的上面）：user 2026-10-09「有没有歌词的时候强度符号都统一放谱子上面」
+    //   （v0.7.8 起是有歌词上面、大谱表中间、其余下面——按 user 那时问的「感觉一般强弱是写下面而不是上面的吧？然后同时有两个谱号就是写中间？」做的，这次统一了）；
+    //   这一行这个声部真有力度记号 / 渐强渐弱 / sfz fp 才留地方。
     const lyricsOf = per.map((q) => q.tokens.some((t) => t.kind === "note" && t.lyric));
-    const dynMode = per.map((q, r) => (lyricsOf[r] ? "above" : q.staves === 2 ? "between" : "below"));
     const clefShift = (q: (typeof per)[number], k: number) => ((q.staves === 2 ? (k === 1 ? "F" : "G") : (q.p.clef ?? "G")) === "F" ? 12 : 0);
     const extentOf = (q: (typeof per)[number], s: number, k: number) => {
       let top = TOP_LINE, bot = BOTTOM_LINE;
@@ -586,15 +586,14 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const dynIn = (q: (typeof per)[number], s: number) => q.units.some((u) => u.system === s && (u.kind === "dyn" || u.kind === "hairpin" || (u.kind === "chunk" && u.note && (u.art.includes("sfz") || u.art.includes("fp") || !!(q.tokens[u.index] as NoteTok).swell))));
     /** 第 s 行：每个声部每张谱表的「上面留多少 / 下面留多少 / 歌词基线」（sp）+ 力度字基线的位置（谱上的级数；中间那种放好了再算）。 */
     const geoOf = (s: number) => per.map((q, r) => {
-      const ex = Array.from({ length: q.staves }, (_, k) => extentOf(q, s, k)), dyn = dynIn(q, s), mode = dynMode[r];
+      const ex = Array.from({ length: q.staves }, (_, k) => extentOf(q, s, k)), dyn = dynIn(q, s);
       const g = ex.map((e, k) => {
         const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
         let above = Math.max(STAFF_ABOVE, (e.top - TOP_LINE) / 2 + 0.8), below = Math.max(minBelow, (BOTTOM_LINE - e.bot) / 2 + 0.8), lyric: number | null = null;
         if (lyricsOf[r] && k === q.staves - 1) { lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e.bot) / 2 + 2.0) + (o.lyricRaise ?? 0); below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW)); }
         return { above, below, lyric, dynD: null as number | null, tempoD: null as number | null, grooveD: null as number | null };
       });
-      if (dyn && mode === "above") { const d = Math.max(TOP_LINE + 2.4, ex[0].top + 3); g[0].dynD = d; g[0].above = Math.max(g[0].above, (d - TOP_LINE) / 2 + 2.2); }   // f 这种字有下伸：离音远一点
-      if (dyn && mode === "below") { const d = Math.min(BOTTOM_LINE - 5, ex[0].bot - 4); g[0].dynD = d; g[0].below = Math.max(g[0].below, (BOTTOM_LINE - d) / 2 + 0.6); }
+      if (dyn) { const d = Math.max(TOP_LINE + 2.4, ex[0].top + 3); g[0].dynD = d; g[0].above = Math.max(g[0].above, (d - TOP_LINE) / 2 + 2.2); }   // f 这种字有下伸：离音远一点
       if (q.p.id === owner) {   // 速度记号（这张纸最上面那位在场的歌手上面）：在最高的音和写在上面的力度字之上
         const t = Math.max(TOP_LINE + 4.8, ex[0].top + 3, g[0].dynD !== null ? g[0].dynD + 4.6 : 0); g[0].tempoD = t; g[0].above = Math.max(g[0].above, (t - TOP_LINE) / 2 + 1.6);
       }
@@ -602,8 +601,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       if (nGroove) {   // 风格记号：速度记号那一行再上面一行；没有速度记号 = 和速度记号一样的高度；一行谱里两个以上 = 多留一行（挤了错开，见下面画的地方）
         const t = g[0].tempoD !== null ? g[0].tempoD + 4.6 : Math.max(TOP_LINE + 4.8, ex[0].top + 3, g[0].dynD !== null ? g[0].dynD + 4.6 : 0); g[0].grooveD = t; g[0].above = Math.max(g[0].above, (t + (nGroove > 1 ? GROOVE_LANE : 0) - TOP_LINE) / 2 + 1.6);
       }
-      if (dyn && mode === "between") { g[0].below = Math.max(g[0].below, (BOTTOM_LINE - ex[0].bot) / 2 + 1.6); g[1].above = Math.max(g[1].above, (ex[1].top - TOP_LINE) / 2 + 1.6); }
-      return { g, ex, dyn, mode };
+      return { g, ex, dyn };
     });
     const sysHOf = (G: ReturnType<typeof geoOf>) => P(G.reduce((n, x) => n + x.g.reduce((m, y) => m + y.above + 4 + y.below, 0), 0) + SYS_GAP);
     const geos = Array.from({ length: nSys }, (_, s) => geoOf(s));
@@ -617,12 +615,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         rowTop.set(row, top); rowAbove.set(row, g.above); if (g.lyric !== null) lyricOff.set(row, g.lyric);
         rows.push({ top, staffTop: top + P(g.above), bottom: top + P(h), paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff }); yCur += P(h);
       }
-      for (let r = 0; r < nR; r++) {   // 力度字的基线（px）：上面 / 下面按算好的级数；中间 = 两条谱的内容之间的正中
+      for (let r = 0; r < nR; r++) {   // 力度字的基线（px）：按算好的级数（谱上面）
         const x = G[r], r0 = rowOf(s, r, 0);
         if (x.g[0].tempoD !== null) tempoYAt.set(r0, yOf(r0, x.g[0].tempoD));
         if (x.g[0].grooveD !== null) grooveYAt.set(r0, yOf(r0, x.g[0].grooveD));
-        if (x.mode === "between" && per[r].staves === 2) dynYAt.set(r0, (yOf(r0, Math.min(BOTTOM_LINE, x.ex[0].bot - 1)) + yOf(rowOf(s, r, 1), Math.max(TOP_LINE, x.ex[1].top + 1))) / 2 + P(0.7));
-        else dynYAt.set(r0, yOf(r0, x.g[0].dynD ?? (x.mode === "below" ? BOTTOM_LINE - 5 : TOP_LINE + 2.4)));
+        dynYAt.set(r0, yOf(r0, x.g[0].dynD ?? TOP_LINE + 2.4));
       }
       yCur += P(SYS_GAP);
     }

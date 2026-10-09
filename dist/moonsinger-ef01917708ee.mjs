@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.8-2026-10-09";
+var APP_VERSION = "v0.8.9-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6264,7 +6264,6 @@ function engrave(song, o10) {
     const rowStart = per.map((_2, i10) => per.slice(0, i10).reduce((a10, q2) => a10 + q2.staves, 0)), nRowsSys = per.reduce((a10, q2) => a10 + q2.staves, 0);
     const rowOf = (s10, r10, k2 = 0) => rowBase + s10 * nRowsSys + rowStart[r10] + k2;
     const lyricsOf = per.map((q2) => q2.tokens.some((t10) => t10.kind === "note" && t10.lyric));
-    const dynMode = per.map((q2, r10) => lyricsOf[r10] ? "above" : q2.staves === 2 ? "between" : "below");
     const clefShift = (q2, k2) => (q2.staves === 2 ? k2 === 1 ? "F" : "G" : q2.p.clef ?? "G") === "F" ? 12 : 0;
     const extentOf = (q2, s10, k2) => {
       let top = TOP_LINE, bot = BOTTOM_LINE;
@@ -6285,7 +6284,7 @@ function engrave(song, o10) {
     };
     const dynIn = (q2, s10) => q2.units.some((u2) => u2.system === s10 && (u2.kind === "dyn" || u2.kind === "hairpin" || u2.kind === "chunk" && u2.note && (u2.art.includes("sfz") || u2.art.includes("fp") || !!q2.tokens[u2.index].swell)));
     const geoOf = (s10) => per.map((q2, r10) => {
-      const ex2 = Array.from({ length: q2.staves }, (_2, k2) => extentOf(q2, s10, k2)), dyn = dynIn(q2, s10), mode = dynMode[r10];
+      const ex2 = Array.from({ length: q2.staves }, (_2, k2) => extentOf(q2, s10, k2)), dyn = dynIn(q2, s10);
       const g3 = ex2.map((e10, k2) => {
         const minBelow = q2.staves === 2 && k2 === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r10] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
         let above = Math.max(STAFF_ABOVE, (e10.top - TOP_LINE) / 2 + 0.8), below = Math.max(minBelow, (BOTTOM_LINE - e10.bot) / 2 + 0.8), lyric = null;
@@ -6295,15 +6294,10 @@ function engrave(song, o10) {
         }
         return { above, below, lyric, dynD: null, tempoD: null, grooveD: null };
       });
-      if (dyn && mode === "above") {
+      if (dyn) {
         const d3 = Math.max(TOP_LINE + 2.4, ex2[0].top + 3);
         g3[0].dynD = d3;
         g3[0].above = Math.max(g3[0].above, (d3 - TOP_LINE) / 2 + 2.2);
-      }
-      if (dyn && mode === "below") {
-        const d3 = Math.min(BOTTOM_LINE - 5, ex2[0].bot - 4);
-        g3[0].dynD = d3;
-        g3[0].below = Math.max(g3[0].below, (BOTTOM_LINE - d3) / 2 + 0.6);
       }
       if (q2.p.id === owner) {
         const t10 = Math.max(TOP_LINE + 4.8, ex2[0].top + 3, g3[0].dynD !== null ? g3[0].dynD + 4.6 : 0);
@@ -6316,11 +6310,7 @@ function engrave(song, o10) {
         g3[0].grooveD = t10;
         g3[0].above = Math.max(g3[0].above, (t10 + (nGroove > 1 ? GROOVE_LANE : 0) - TOP_LINE) / 2 + 1.6);
       }
-      if (dyn && mode === "between") {
-        g3[0].below = Math.max(g3[0].below, (BOTTOM_LINE - ex2[0].bot) / 2 + 1.6);
-        g3[1].above = Math.max(g3[1].above, (ex2[1].top - TOP_LINE) / 2 + 1.6);
-      }
-      return { g: g3, ex: ex2, dyn, mode };
+      return { g: g3, ex: ex2, dyn };
     });
     const sysHOf = (G2) => P2(G2.reduce((n10, x3) => n10 + x3.g.reduce((m2, y2) => m2 + y2.above + 4 + y2.below, 0), 0) + SYS_GAP);
     const geos = Array.from({ length: nSys }, (_2, s10) => geoOf(s10));
@@ -6345,8 +6335,7 @@ function engrave(song, o10) {
         const x3 = G2[r10], r02 = rowOf(s10, r10, 0);
         if (x3.g[0].tempoD !== null) tempoYAt.set(r02, yOf(r02, x3.g[0].tempoD));
         if (x3.g[0].grooveD !== null) grooveYAt.set(r02, yOf(r02, x3.g[0].grooveD));
-        if (x3.mode === "between" && per[r10].staves === 2) dynYAt.set(r02, (yOf(r02, Math.min(BOTTOM_LINE, x3.ex[0].bot - 1)) + yOf(rowOf(s10, r10, 1), Math.max(TOP_LINE, x3.ex[1].top + 1))) / 2 + P2(0.7));
-        else dynYAt.set(r02, yOf(r02, x3.g[0].dynD ?? (x3.mode === "below" ? BOTTOM_LINE - 5 : TOP_LINE + 2.4)));
+        dynYAt.set(r02, yOf(r02, x3.g[0].dynD ?? TOP_LINE + 2.4));
       }
       yCur += P2(SYS_GAP);
     }
@@ -8663,8 +8652,10 @@ var Pad = class {
   /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
   symPage = "art";
   symBuilt = null;
-  /** 「渐到」先点它、再点一个力度 = 这个力度从上一个力度记号渐变过来（一次性，同 Shift；2026-10-08 深夜，user「渐到 做」）。 */
-  rampNext = false;
+  /** 「渐到」先点它、再点一个力度 = 这个力度从上一个力度记号渐变过来（2026-10-08 深夜，user「渐到 做」）。Shift 逻辑（2026-10-09，user「然后软键盘到时候加一个toggle渐进到的标签，这样可以快速键盘输入」）：
+   *  点一下 = 下一个力度是渐到；连点两下 = 锁住（之后写的力度都是渐到，「力度」标签上挂着「渐到」）；再点 = 关。 */
+  ramp = "off";
+  rampAt = 0;
   // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
   mode = "normal";
   gridFor = "";
@@ -8823,13 +8814,13 @@ var Pad = class {
       };
       for (const t10 of ["pointerup", "pointercancel", "lostpointercapture"]) ak2.addEventListener(t10, (e10) => akUp(e10));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.rampNext}|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.ramp}|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) {
       if (this.symbols !== "off") this.buildSymbols();
       else this.buildGrid(f2, base3, rows);
       this.gridFor = gridSig;
     }
-    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}|${this.symbols !== "off" ? this.symPage : ""}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st3)) : ""}`;
+    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}|${this.symbols !== "off" ? `${this.symPage}|${this.ramp}` : ""}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st3)) : ""}`;
     if (toolSig !== this.toolsFor) {
       this.buildHead(selKey, rows);
       this.toolsFor = toolSig;
@@ -8863,7 +8854,7 @@ var Pad = class {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     const tabs = this.symbols !== "off" && this.mode === "normal";
-    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}</button>`).join("") + `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp !== "off" ? `<small class="ramp-tag${this.ramp === "lock" ? " lock" : ""}">\u6E10\u5230</small>` : ""}</button>`).join("") + `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b3) => b3.addEventListener("pointerdown", (e10) => {
       e10.preventDefault();
       this.knobDown(b3, e10);
@@ -8946,11 +8937,11 @@ var Pad = class {
   buildSymbols() {
     const grid = this.el.querySelector(".pad-grid");
     const ign = new Set(this.host.ignoredArts?.() ?? []), dynNow = this.host.dynHere?.() ?? null;
-    const cell = (id2, big, label, title) => {
+    const cell = (id2, big, label, title, state = "") => {
       const mk2 = id2.startsWith("art:") ? id2.slice(4) : id2 === "slur" ? "slur" : id2 === "swell:>" ? "swellFade" : id2.startsWith("swell:") ? "swellGrow" : null, off = !!mk2 && ign.has(mk2);
       const on2 = id2.endsWith(":on");
       id2 = on2 ? id2.slice(0, -3) : id2;
-      return `<button class="pad-key sym${mk2 ? " art" : ""}${off ? " ignored" : ""}${on2 ? " is-on" : ""}" data-sym="${id2}" title="${title}${off ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</small></button>`;
+      return `<button class="pad-key sym${mk2 ? " art" : ""}${off ? " ignored" : ""}${on2 ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id2}" title="${title}${off ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</small></button>`;
     };
     const items = [
       cell("phrase", `<span class="big">\u3002</span>`, "\u53E5\u53F7", "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09"),
@@ -8966,7 +8957,7 @@ var Pad = class {
       cell("wedge:cresc", CRESC_CELL, "\u6E10\u5F3A", "\u6E10\u5F3A <\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F3A\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("wedge:dim", DIM_CELL, "\u6E10\u5F31", "\u6E10\u5F31 >\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F31\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       ...["pp", "p", "mp", "mf", "f", "ff"].map((d3) => cell(`dyn:${d3}${d3 === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d3]}</span>`, "\u529B\u5EA6", `\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389\uFF08user 2026-10-08\u300Cmp mf \u5728\u54EA\u91CC\u52A0\u554A\u300D\uFF09`)),
-      cell(`dyn:ramp${this.rampNext ? ":on" : ""}`, RAMP_CELL, "\u6E10\u5230", "\u6E10\u5230\uFF1A\u5148\u70B9\u5B83\uFF0C\u518D\u70B9\u4E00\u4E2A\u529B\u5EA6 = \u8FD9\u4E2A\u529B\u5EA6\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u8FC7\u6765\uFF08\u8C31\u4E0A\u753B\u865A\u7EBF\u53D1\u5939\uFF1B\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u5B9E\u7EBF\uFF09\uFF1B\u4E0D\u70B9 = \u5230\u90A3\u513F\u7A81\u53D8"),
+      cell("dyn:ramp", RAMP_CELL, "\u6E10\u5230", "\u6E10\u5230\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u529B\u5EA6\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u8FC7\u6765\uFF08\u8C31\u4E0A\u753B\u865A\u7EBF\u53D1\u5939\uFF1B\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u5B9E\u7EBF\uFF09\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u4E4B\u540E\u5199\u7684\u529B\u5EA6\u90FD\u662F\u6E10\u5230\uFF1B\u518D\u70B9 = \u5173\u3002\u4E0D\u5F00 = \u5230\u90A3\u513F\u7A81\u53D8", this.ramp === "off" ? "" : this.ramp),
       ...["<", ">", "<>"].map((w2) => cell(`swell:${w2}`, SWELL_CELL[w2], w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31" : "\u97F3\u5185\u9F13\u8D77", `${w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31\uFF08\u952F\u9F7F\uFF09" : "\u97F3\u5185\u9F13\u8D77\uFF08messa di voce\uFF09"}\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u81EA\u5DF1\u91CC\u9762\u7684\u8D77\u4F0F\uFF1B\u548C\u6BB5\u843D\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u4E24\u5C42\uFF0C\u53EF\u4EE5\u53E0\uFF1B\u518D\u70B9 = \u53BB\u6389`)),
       cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09\u3002\u540C\u4E00\u4E2A\u97F3\u4E0A\u53C8\u6709\u547C\u5438 = \u547C\u5438\u7B97\u6570\uFF1A\u90A3\u91CC\u7167\u6837\u65AD\u5F00\u6362\u6C14\uFF0C\u8FDE\u7EBF\u7167\u753B"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
@@ -9001,7 +8992,9 @@ var Pad = class {
     const act = (b3) => {
       const id2 = b3.dataset.sym;
       if (id2 === "dyn:ramp") {
-        this.rampNext = !this.rampNext;
+        const t10 = performance.now();
+        this.ramp = this.ramp === "off" ? "once" : this.ramp === "once" && t10 - this.rampAt < 350 ? "lock" : "off";
+        this.rampAt = t10;
         this.render();
         return;
       }
@@ -9013,8 +9006,8 @@ var Pad = class {
       else if (id2 === "slur") this.host.onCommand({ k: "slur" });
       else if (id2.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id2.slice(6) });
       else if (id2.startsWith("dyn:")) {
-        this.host.onCommand({ k: "dyn", v: id2.slice(4), ...this.rampNext ? { ramp: true } : {} });
-        this.rampNext = false;
+        this.host.onCommand({ k: "dyn", v: id2.slice(4), ...this.ramp !== "off" ? { ramp: true } : {} });
+        if (this.ramp === "once") this.ramp = "off";
       } else if (id2 === "wedge:cresc" || id2 === "wedge:dim") this.host.onCommand({ k: "wedge", w: id2 === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: "phrase" });
       this.render();
@@ -32569,7 +32562,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "067f574a172b",
+  cssHash: "b0ce749755f4",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -35166,4 +35159,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-71a76e295be6.mjs.map
+//# sourceMappingURL=moonsinger-ef01917708ee.mjs.map

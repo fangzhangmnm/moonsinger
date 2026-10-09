@@ -39,6 +39,7 @@ import "./singer.test.ts";
 import "./sokuon.test.ts";
 import "./sheet-tempo.test.ts";
 import "./crossline.test.ts";
+import "./dyn-above.test.ts";
 import "./lyric-check.test.ts";
 import "./ramp.test.ts";
 import "./arrange.test.ts";

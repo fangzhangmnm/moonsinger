@@ -151,8 +151,9 @@ export class Pad {
   private symbols: "off" | "once" | "lock" = "off"; private symAt = 0;
   /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
   private symPage: SymPage = "art"; private symBuilt: SymPage | null = null;
-  /** 「渐到」先点它、再点一个力度 = 这个力度从上一个力度记号渐变过来（一次性，同 Shift；2026-10-08 深夜，user「渐到 做」）。 */
-  private rampNext = false;   // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
+  /** 「渐到」先点它、再点一个力度 = 这个力度从上一个力度记号渐变过来（2026-10-08 深夜，user「渐到 做」）。Shift 逻辑（2026-10-09，user「然后软键盘到时候加一个toggle渐进到的标签，这样可以快速键盘输入」）：
+   *  点一下 = 下一个力度是渐到；连点两下 = 锁住（之后写的力度都是渐到，「力度」标签上挂着「渐到」）；再点 = 关。 */
+  private ramp: "off" | "once" | "lock" = "off"; private rampAt = 0;   // 符号层：点一下 = 写一个符号就回音键；连点两下 = 锁住（同 /2、升降；user 2026-10-08「符号输入也应该有capslock」）。                                  // 符号层开着（像 iOS 键盘翻到 .?123 那一页：句 / 换气、小节线、休止、调号 / 拍号 / 速度…）
   private mode: Mode = "normal";
   private gridFor = "";
   private toolsFor = "";
@@ -283,9 +284,9 @@ export class Pad {
       const akUp = (e: PointerEvent) => { if (!akDrag || e.pointerId !== akDrag.pid) return; akDrag = null; this.host.onAccShift("up", this.accSel); };
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) ak.addEventListener(t, (e) => akUp(e as PointerEvent));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.rampNext}|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.ramp}|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f}|${st.input.inputScale}|${base}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) { if (this.symbols !== "off") this.buildSymbols(); else this.buildGrid(f, base, rows); this.gridFor = gridSig; }
-    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}|${this.symbols !== "off" ? this.symPage : ""}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st)) : ""}`;
+    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}|${this.symbols !== "off" ? `${this.symPage}|${this.ramp}` : ""}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st)) : ""}`;
     if (toolSig !== this.toolsFor) { this.buildHead(selKey, rows); this.toolsFor = toolSig; }
     this.refresh(st);
   }
@@ -323,7 +324,7 @@ export class Pad {
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     const tabs = this.symbols !== "off" && this.mode === "normal";   // 符号层：1= / 长短 / 音域（只管音键）换成三页的标签，位置 / 大小不变
     box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ?
-      (Object.keys(SYM_PAGES) as SymPage[]).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}</button>`).join("") +
+      (Object.keys(SYM_PAGES) as SymPage[]).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp !== "off" ? `<small class="ramp-tag${this.ramp === "lock" ? " lock" : ""}">渐到</small>` : ""}</button>`).join("") +
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="弹：音键只响不写（快捷键 \`）；再点回到写">弹</button>` +
       `<button class="btn hide-pad" data-hide="1" title="收起键盘（点五线谱再弹出来）">收起</button>` +
       `<button class="btn knob k-more" data-knob="more" title="更多：布局、插记号"><span class="kl">⋯</span></button>` :
@@ -386,10 +387,10 @@ export class Pad {
   private buildSymbols(): void {
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
     const ign = new Set(this.host.ignoredArts?.() ?? []), dynNow = this.host.dynHere?.() ?? null;
-    const cell = (id: string, big: string, label: string, title: string) => {
+    const cell = (id: string, big: string, label: string, title: string, state = "") => {
       const mk = id.startsWith("art:") ? id.slice(4) : id === "slur" ? "slur" : id === "swell:>" ? "swellFade" : id.startsWith("swell:") ? "swellGrow" : null, off = !!mk && ign.has(mk);   // 台上这位不认：照样能写，格子标出来（不静默失效）
       const on = id.endsWith(":on"); id = on ? id.slice(0, -3) : id;   // 力度：现在生效的那个亮着
-      return `<button class="pad-key sym${mk ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
+      return `<button class="pad-key sym${mk ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
     };
     const items = [
       cell("phrase", `<span class="big">。</span>`, "句号", "句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）"),
@@ -405,7 +406,7 @@ export class Pad {
       cell("wedge:cresc", CRESC_CELL, "渐强", "渐强 <：从光标前那个音（有选区 = 选区第一个音）起，一路渐强到这张纸里下一个力度记号；没写 = 走一档（谱上灰字标出推定的终点）；再点一次去掉"),
       cell("wedge:dim", DIM_CELL, "渐弱", "渐弱 >：从光标前那个音（有选区 = 选区第一个音）起，一路渐弱到这张纸里下一个力度记号；没写 = 走一档（谱上灰字标出推定的终点）；再点一次去掉"),
       ...(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => cell(`dyn:${d}${d === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d]}</span>`, "力度", `力度 ${d}：从光标前那个音起（有选区 = 选区开头），管到下一个力度记号；那儿已经是它 = 去掉（user 2026-10-08「mp mf 在哪里加啊」）`)),
-      cell(`dyn:ramp${this.rampNext ? ":on" : ""}`, RAMP_CELL, "渐到", "渐到：先点它，再点一个力度 = 这个力度从这张纸里上一个力度记号那儿一路渐变过来（谱上画虚线发夹；手写的渐强渐弱是实线）；不点 = 到那儿突变"),
+      cell("dyn:ramp", RAMP_CELL, "渐到", "渐到：点一下 = 下一个力度从这张纸里上一个力度记号那儿一路渐变过来（谱上画虚线发夹；手写的渐强渐弱是实线）；连点两下 = 锁住，之后写的力度都是渐到；再点 = 关。不开 = 到那儿突变", this.ramp === "off" ? "" : this.ramp),
       ...(["<", ">", "<>"] as const).map((w) => cell(`swell:${w}`, SWELL_CELL[w], w === "<" ? "音内渐强" : w === ">" ? "音内渐弱" : "音内鼓起", `${w === "<" ? "音内渐强" : w === ">" ? "音内渐弱（锯齿）" : "音内鼓起（messa di voce）"}：光标前那个音（有选区 = 选中的）自己里面的起伏；和段落的渐强渐弱是两层，可以叠；再点 = 去掉`)),
       cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；有选区 = 选中的连起来；再点一次去掉）。同一个音上又有呼吸 = 呼吸算数：那里照样断开换气，连线照画"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"),
@@ -435,7 +436,10 @@ export class Pad {
     });
     const act = (b: HTMLElement) => {
       const id = b.dataset.sym!;
-      if (id === "dyn:ramp") { this.rampNext = !this.rampNext; this.render(); return; }   // 修饰键：不算用掉「一次性」
+      if (id === "dyn:ramp") {   // 修饰键：不算用掉「一次性」；点一下 = 下一个，连点两下 = 锁，再点 = 关（同「符」）
+        const t = performance.now();
+        this.ramp = this.ramp === "off" ? "once" : this.ramp === "once" && t - this.rampAt < 350 ? "lock" : "off"; this.rampAt = t; this.render(); return;
+      }
       if (this.symbols === "once") this.symbols = "off";   // 点一下 = 一次性：做完回到音键；锁住 = 留在符号层
       if (id === "key" || id === "time" || id === "tempo") this.host.onInsertMark(id);
       else if (id === "groove") this.host.onGroove?.();
@@ -443,7 +447,7 @@ export class Pad {
       else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
       else if (id === "slur") this.host.onCommand({ k: "slur" });
       else if (id.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id.slice(6) as "<" | ">" | "<>" });
-      else if (id.startsWith("dyn:")) { this.host.onCommand({ k: "dyn", v: id.slice(4) as "pp" | "p" | "mp" | "mf" | "f" | "ff", ...(this.rampNext ? { ramp: true } : {}) }); this.rampNext = false; }
+      else if (id.startsWith("dyn:")) { this.host.onCommand({ k: "dyn", v: id.slice(4) as "pp" | "p" | "mp" | "mf" | "f" | "ff", ...(this.ramp !== "off" ? { ramp: true } : {}) }); if (this.ramp === "once") this.ramp = "off"; }
       else if (id === "wedge:cresc" || id === "wedge:dim") this.host.onCommand({ k: "wedge", w: id === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: "phrase" });
       this.render();
