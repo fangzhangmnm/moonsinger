@@ -50,6 +50,18 @@ describe("渐强渐弱：力度怎么过渡（dynLevels）", () => {
     eq(hairpinEnd(toks, notes(toks)[0] - 1, [0, bound]).kind, "end");
     eq(dynLevels(toks, undefined, DYNAMICS_VEL, 80, STEP, [0, bound]).get(notes(toks)[1])!.at1, 80, "纸尾 = mp 走一档");
   });
+  it("方向和终点反着 = 方向说了算：mp > f → 先往下走一档（p）、到 f 突变（subito；user「记号的方向说了算…同意」）", () => {
+    const toks = line([dyn("mp"), pin("dim"), "n", "n", dyn("f"), "n"]), L = dynLevels(toks, undefined, DYNAMICS_VEL, 80, STEP), [a, b, c] = notes(toks);
+    eq(L.get(a)!.at0, 64); assert(L.get(b)!.at0 < 64, "往下走（不是往上）"); eq(L.get(b)!.at1, 48, "走到一档 = p"); eq(L.get(c)!.at0, 96, "到 f 突变");
+  });
+  it("终点和现在一样（f > f）= 也是走一档再回来", () => {
+    const toks = line([dyn("f"), pin("dim"), "n", "n", dyn("f"), "n"]), L = dynLevels(toks, undefined, DYNAMICS_VEL, 80, STEP), [, b, c] = notes(toks);
+    eq(L.get(b)!.at1, 80); eq(L.get(c)!.at0, 96);
+  });
+  it("渐强后面接更弱的：mp < p → 先往上一档、到 p 突变下去（贝多芬的 cresc. … subito p）", () => {
+    const toks = line([dyn("mp"), pin("cresc"), "n", "n", dyn("pp"), "n"]), L = dynLevels(toks, undefined, DYNAMICS_VEL, 80, STEP), [a, b, c] = notes(toks);
+    eq(L.get(a)!.at0, 64); assert(L.get(b)!.at0 > 64, "往上走"); eq(L.get(b)!.at1, 80); eq(L.get(c)!.at0, 33, "到 pp 突变");
+  });
   it("它和终点之间一个音都没有 = 不起作用", () => {
     const toks = line(["n", pin("cresc"), dyn("f"), "n"]), L = dynLevels(toks, undefined, DYNAMICS_VEL, 80, STEP), [a, b] = notes(toks);
     eq(L.get(a)!.at0, 80); eq(L.get(b)!.at0, 96);

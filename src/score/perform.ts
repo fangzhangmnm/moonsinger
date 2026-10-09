@@ -96,7 +96,11 @@ export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Rec
     if (t.kind === "hairpin") {
       const e = hairpinEnd(tokens, i, bounds), start = onsetFrom(i + 1, e.at);
       if (!start) continue;   // 它和终点之间一个音都没有 = 不起作用
-      const to = e.kind === "dyn" ? table[(tokens[e.at] as Extract<Token, { kind: "dyn" }>).value] : Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
+      // 终点是力度记号、但和方向反着（渐弱后面接更强的 / 一样的；渐强后面接更弱的 / 一样的）= **记号的方向说了算**：先按方向走一档，到那个力度记号再突变（subito）
+      //   （2026-10-08 user 拍：「记号的方向说了算。先按渐弱方向走一档，到那个 f 再突变…同意」；贝多芬的「cresc. … subito p」）。谱上发夹末端画灰字推定的那一档（engrave）
+      const endVal = e.kind === "dyn" ? table[(tokens[e.at] as Extract<Token, { kind: "dyn" }>).value] : null, oneStep = Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
+      const agrees = endVal !== null && (t.dir === "cresc" ? endVal > cur : endVal < cur);
+      const to = agrees ? endVal! : oneStep;
       const T1 = e.kind === "end" ? endBefore(e.at) : (onsetFrom(e.at, paperEndOf(i, tokens.length, bounds))?.t0 ?? endBefore(e.at));
       ramp = { from: cur, to, T0: start.t0, T1, end: e.at };
       continue;

@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.18-2026-10-08";
+var APP_VERSION = "v0.7.19-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5565,7 +5565,17 @@ function engrave(song, o10) {
         const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h2.system ? prevU : null;
         const startX = Math.max(P2(h2.x + 0.3), dynBefore ? P2(dynBefore.x + 0.3 + DYN_INK[dynBefore.value][1] + PIN_GAP) : 0), s02 = h2.system;
         const endU = units.slice(hi + 1).find((u2) => u2.kind === "dyn" || u2.kind === "hairpin");
-        const endX = endU ? P2(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP) : nhX(lastChunk) + nhW(lastChunk) + P2(0.8), s12 = endU ? endU.system : lastChunk.system;
+        let curDyn = "mf";
+        for (let j2 = h2.index - 1; j2 >= 0; j2--) {
+          const u2 = tokens[j2];
+          if (u2.kind === "dyn") {
+            curDyn = u2.value;
+            break;
+          }
+        }
+        const ci2 = LEVELS.indexOf(curDyn), against = !!endU && endU.kind === "dyn" && (h2.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci2 : LEVELS.indexOf(endU.value) >= ci2);
+        const IMPLIED_W = 3;
+        const endX = endU ? P2(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : nhX(lastChunk) + nhW(lastChunk) + P2(0.8), s12 = endU ? endU.system : lastChunk.system;
         if (s12 < s02 || s12 === s02 && endX - startX < P2(1)) return;
         const leftOf = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((c10) => nhX(c10)), P2(right)) - P2(1);
         const segs = [];
@@ -5597,16 +5607,8 @@ function engrave(song, o10) {
             dyns.push({ index: h2.index, kind: "hairpin", system: rowOf(sy2, r10, 0), x: a10, y: y2 - P2(1.4), w: b3 - a10, h: P2(2.8) });
           }
         }
-        if (!endU) {
-          let cur = "mf";
-          for (let j2 = h2.index - 1; j2 >= 0; j2--) {
-            const u2 = tokens[j2];
-            if (u2.kind === "dyn") {
-              cur = u2.value;
-              break;
-            }
-          }
-          const k2 = Math.max(0, Math.min(LEVELS.length - 1, LEVELS.indexOf(cur) + (h2.dir === "cresc" ? 1 : -1)));
+        if (!endU || against) {
+          const k2 = Math.max(0, Math.min(LEVELS.length - 1, ci2 + (h2.dir === "cresc" ? 1 : -1)));
           prims.push({ t: "text", x: endX + P2(0.4), y: (dynYAt.get(rowOf(s12, r10, 0)) ?? yOf(rowOf(s12, r10, 0), TOP_LINE + 2.4)) + P2(0.1), s: `(${LEVELS[k2]})`, cls: "dyn-implied", size: P2(1.3), anchor: "start" });
         }
       });
@@ -18776,7 +18778,9 @@ function dynLevels(tokens, map, table, def, step, bounds) {
     if (t10.kind === "hairpin") {
       const e10 = hairpinEnd(tokens, i10, bounds), start = onsetFrom(i10 + 1, e10.at);
       if (!start) continue;
-      const to2 = e10.kind === "dyn" ? table[tokens[e10.at].value] : Math.max(lo2, Math.min(hi, cur + (t10.dir === "cresc" ? step : -step)));
+      const endVal = e10.kind === "dyn" ? table[tokens[e10.at].value] : null, oneStep = Math.max(lo2, Math.min(hi, cur + (t10.dir === "cresc" ? step : -step)));
+      const agrees = endVal !== null && (t10.dir === "cresc" ? endVal > cur : endVal < cur);
+      const to2 = agrees ? endVal : oneStep;
       const T1 = e10.kind === "end" ? endBefore(e10.at) : onsetFrom(e10.at, paperEndOf(i10, tokens.length, bounds))?.t0 ?? endBefore(e10.at);
       ramp = { from: cur, to: to2, T0: start.t0, T1, end: e10.at };
       continue;
@@ -30322,4 +30326,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-846824c1053d.mjs.map
+//# sourceMappingURL=moonsinger-9b922016ef38.mjs.map

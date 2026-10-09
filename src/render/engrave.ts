@@ -858,7 +858,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
         const startX = Math.max(P(h.x + 0.3), dynBefore ? P(dynBefore.x + 0.3 + DYN_INK[dynBefore.value][1] + PIN_GAP) : 0), s0 = h.system;
         const endU = units.slice(hi + 1).find((u) => u.kind === "dyn" || u.kind === "hairpin");
-        const endX = endU ? P(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP) : nhX(lastChunk) + nhW(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;   // 终点的字画在 x + 0.3
+        // 终点的力度和方向反着（渐弱后面更强 / 一样）= 方向说了算：走一档、到那儿突变（perform.ts dynLevels）→ 发夹末端照样画灰字推定的那一档，让开它（2026-10-08 user「同意」）
+        let curDyn: string = "mf"; for (let j = h.index - 1; j >= 0; j--) { const u = tokens[j]; if (u.kind === "dyn") { curDyn = u.value; break; } }
+        const ci = LEVELS.indexOf(curDyn as (typeof LEVELS)[number]), against = !!endU && endU.kind === "dyn" && (h.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci : LEVELS.indexOf(endU.value) >= ci);
+        const IMPLIED_W = 3;   // 灰字「(mp)」大概多宽（sp，1.3 号斜体）
+        const endX = endU ? P(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : nhX(lastChunk) + nhW(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;   // 终点的字画在 x + 0.3
         if (s1 < s0 || (s1 === s0 && endX - startX < P(1))) return;
         const leftOf = (sy: number) => Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((c) => nhX(c)), P(right)) - P(1);
         const segs: [number, number, number][] = [];
@@ -888,9 +892,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             dyns.push({ index: h.index, kind: "hairpin", system: rowOf(sy, r, 0), x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
           }
         }
-        if (!endU) {   // 推定的终点：现在的力度往上 / 往下一档
-          let cur: string = "mf"; for (let j = h.index - 1; j >= 0; j--) { const u = tokens[j]; if (u.kind === "dyn") { cur = u.value; break; } }
-          const k = Math.max(0, Math.min(LEVELS.length - 1, LEVELS.indexOf(cur as (typeof LEVELS)[number]) + (h.dir === "cresc" ? 1 : -1)));
+        if (!endU || against) {   // 推定的终点：现在的力度往上 / 往下一档（没有终点 / 终点和方向反着）
+          const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
           prims.push({ t: "text", x: endX + P(0.4), y: (dynYAt.get(rowOf(s1, r, 0)) ?? yOf(rowOf(s1, r, 0), TOP_LINE + 2.4)) + P(0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied", size: P(1.3), anchor: "start" });
         }
       });

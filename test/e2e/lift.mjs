@@ -85,7 +85,8 @@ const undo = (p) => p.keyboard.press("Control+z");
   check(await p.$$eval(".ctx-menu [data-v^='dir:']", (e) => e.length) === 2, "点渐强 = 小菜单（两个方向）");
   await p.click(".ctx-menu [data-v='dir:dim']"); await p.waitForTimeout(150);
   check(await marks(p) === "p n > n n f n n n n n", "换成渐弱", await marks(p));
-  await p.mouse.click(hp[0].x, hp[0].y); await p.waitForTimeout(150);
+  const hp2 = await p.$$eval("#score path.hairpin", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));   // 换成渐弱以后 p > f 方向反着：发夹让出灰字的位置、变短了，重新量
+  await p.mouse.click(hp2[0].x, hp2[0].y); await p.waitForTimeout(150);
   await p.click(".ctx-menu [data-v='del']"); await p.waitForTimeout(150);
   check(await marks(p) === "p n n n f n n n n n", "删除", await marks(p));
   check(p.errs.length === 0, "鼠标：没有页面错误", p.errs.join(" | "));
