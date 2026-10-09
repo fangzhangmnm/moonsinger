@@ -48,7 +48,7 @@ export type StudioIn =
   | { type: "forget"; keys: string[] }
   | { type: "channel"; id: string; p: Partial<ChannelParams> }
   | { type: "master"; p: Partial<MasterParams> }
-  | { type: "play"; at?: number }
+  | { type: "play"; at?: number; gen?: number }   // gen = 主线程的走带代号：位置报告带着它，停了之后迟到的报告主线程能认出来扔掉
   | { type: "stop" }
   | { type: "seek"; at: number }
   /** 按键试听：src = 来源（手指 / 键），同一来源新的顶掉旧的；gainDb / pan = 这条通道（麦克风 + 校准）+ 光标处的力度。 */
@@ -60,8 +60,8 @@ export type StudioOut =
   | { type: "ready" }
   | { type: "banked"; sha: string; presets: [number, number][] }
   | { type: "error"; message: string }
-  | { type: "pos"; sec: number; playing: boolean; waiting: string | null }
-  | { type: "ended" }
+  | { type: "pos"; sec: number; playing: boolean; waiting: string | null; gen: number }
+  | { type: "ended"; gen: number }
   | { type: "missing"; keys: string[] }
   | { type: "meter"; peak: number; active: number };
 
@@ -108,6 +108,7 @@ export class Studio {
   private loopFrom: number | null = null;
   private tail = -1;                       // ≥0 = 范围尾：已经等了几秒
   private waiting: string | null = null;   // 块没到：等它（走带冻住）
+  private gen = 0;                         // 走带代号（主线程给；报告带着它）
   // 试听
   private auditionSf = new Map<string, SfPlayer>();   // sha → 试听用的 player（和时间线的分开：绕过静音 / 独奏）
   private auditions = new Map<string, Audition>();     // src → 正在按着的
@@ -177,7 +178,7 @@ export class Studio {
         return;
       }
       case "master": this.master = { ...this.master, ...m.p }; this.masterLin = dbToLin(this.master.gainDb); return;
-      case "play": this.play(m.at); return;
+      case "play": if (m.gen !== undefined) this.gen = m.gen; this.play(m.at); return;
       case "stop": this.stop(); return;
       case "seek": this.seek(m.at); return;
       case "audition": this.audition(m); return;
@@ -326,7 +327,7 @@ export class Studio {
       }
       if (this.tail >= 0) {   // 范围尾：不排新音，块淡出，响完就停
         this.renderTracks(done, left, false, true); this.pos += left / sr; this.tail += left / sr; done = n;
-        if (this.tail >= TAIL_MAX || this.silent()) { this.stop(); this.post({ type: "ended" }); }
+        if (this.tail >= TAIL_MAX || this.silent()) { this.stop(); this.post({ type: "ended", gen: this.gen }); }
         break;
       }
       const blockEnd = this.pos + left / sr;
@@ -346,7 +347,7 @@ export class Studio {
       }
     }
     this.posFrames += n;
-    if (this.posFrames >= 16 * BLOCK) { this.posFrames = 0; this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting }); }
+    if (this.posFrames >= 16 * BLOCK) { this.posFrames = 0; this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen }); }
   }
   private chaseAtLoop(): void { for (const t of this.tracks.values()) { if (t.spec.kind === "clips") continue; for (const nte of t.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos) this.noteOn(t, nte); } }
   private silent(): boolean {

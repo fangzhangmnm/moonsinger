@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.6-2026-10-10";
+var APP_VERSION = "v0.9.7-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -20981,6 +20981,8 @@ var Studio = class {
   // ≥0 = 范围尾：已经等了几秒
   waiting = null;
   // 块没到：等它（走带冻住）
+  gen = 0;
+  // 走带代号（主线程给；报告带着它）
   // 试听
   auditionSf = /* @__PURE__ */ new Map();
   // sha → 试听用的 player（和时间线的分开：绕过静音 / 独奏）
@@ -21105,6 +21107,7 @@ var Studio = class {
         this.masterLin = dbToLin(this.master.gainDb);
         return;
       case "play":
+        if (m2.gen !== void 0) this.gen = m2.gen;
         this.play(m2.at);
         return;
       case "stop":
@@ -21345,7 +21348,7 @@ var Studio = class {
         done = n10;
         if (this.tail >= TAIL_MAX || this.silent()) {
           this.stop();
-          this.post({ type: "ended" });
+          this.post({ type: "ended", gen: this.gen });
         }
         break;
       }
@@ -21389,7 +21392,7 @@ var Studio = class {
     this.posFrames += n10;
     if (this.posFrames >= 16 * BLOCK) {
       this.posFrames = 0;
-      this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting });
+      this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen });
     }
   }
   chaseAtLoop() {
@@ -21693,6 +21696,8 @@ var StudioClient = class {
   _playing = false;
   _pos = 0;
   _waiting = null;
+  gen = 0;
+  // 走带代号：play / stop 各加一；录音房的位置报告带着发出时的代号，旧代号的（停了之后还在路上的）扔掉——不然「停」之后一条迟到的 pos 会把 playing 翻回 true
   ctx;
   moduleUrl;
   wasmUrl;
@@ -21763,12 +21768,14 @@ var StudioClient = class {
               return;
             }
             case "pos":
+              if (m2.gen !== this.gen) return;
               this._pos = m2.sec;
               this._playing = m2.playing;
               this._waiting = m2.waiting;
               this.emit("pos", m2.sec, m2.playing, m2.waiting);
               return;
             case "ended":
+              if (m2.gen !== this.gen) return;
               this._playing = false;
               this.emit("ended");
               return;
@@ -21856,12 +21863,14 @@ var StudioClient = class {
   /** 从 at 秒放起（不给 = 从范围头 / 上次位置）。要先在用户手势里解锁过 AudioContext（iPad）。 */
   async play(at2) {
     await this.ensure();
+    this.gen++;
     this._playing = true;
     this._waiting = null;
     if (at2 !== void 0) this._pos = at2;
-    this.post({ type: "play", at: at2 });
+    this.post({ type: "play", at: at2, gen: this.gen });
   }
   stop() {
+    this.gen++;
     this._playing = false;
     this._waiting = null;
     this.post({ type: "stop" });
@@ -33509,7 +33518,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-8118fb2d369f.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-6f9247d21a39.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -37525,4 +37534,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-fac437a43e91.mjs.map
+//# sourceMappingURL=moonsinger-4f039286868b.mjs.map

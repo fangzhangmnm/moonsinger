@@ -109,6 +109,8 @@ var Studio = class {
   // ≥0 = 范围尾：已经等了几秒
   waiting = null;
   // 块没到：等它（走带冻住）
+  gen = 0;
+  // 走带代号（主线程给；报告带着它）
   // 试听
   auditionSf = /* @__PURE__ */ new Map();
   // sha → 试听用的 player（和时间线的分开：绕过静音 / 独奏）
@@ -233,6 +235,7 @@ var Studio = class {
         this.masterLin = dbToLin(this.master.gainDb);
         return;
       case "play":
+        if (m.gen !== void 0) this.gen = m.gen;
         this.play(m.at);
         return;
       case "stop":
@@ -473,7 +476,7 @@ var Studio = class {
         done = n;
         if (this.tail >= TAIL_MAX || this.silent()) {
           this.stop();
-          this.post({ type: "ended" });
+          this.post({ type: "ended", gen: this.gen });
         }
         break;
       }
@@ -517,7 +520,7 @@ var Studio = class {
     this.posFrames += n;
     if (this.posFrames >= 16 * BLOCK) {
       this.posFrames = 0;
-      this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting });
+      this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen });
     }
   }
   chaseAtLoop() {
@@ -832,4 +835,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-8118fb2d369f.mjs.map
+//# sourceMappingURL=studio-worklet-6f9247d21a39.mjs.map

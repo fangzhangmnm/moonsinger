@@ -21,6 +21,7 @@ export class StudioClient {
   private masterP: Partial<MasterParams> = {};
   private listeners = new Map<keyof StudioEvents, Set<(...a: never[]) => void>>();
   private _playing = false; private _pos = 0; private _waiting: string | null = null;
+  private gen = 0;   // 走带代号：play / stop 各加一；录音房的位置报告带着发出时的代号，旧代号的（停了之后还在路上的）扔掉——不然「停」之后一条迟到的 pos 会把 playing 翻回 true
 
   private ctx: () => AudioContext; private moduleUrl: URL; private wasmUrl: URL;
   constructor(ctx: () => AudioContext, moduleUrl: URL, wasmUrl: URL) { this.ctx = ctx; this.moduleUrl = moduleUrl; this.wasmUrl = wasmUrl; }
@@ -54,8 +55,8 @@ export class StudioClient {
             case "ready": ok(); return;
             case "banked": { this.presets.set(m.sha, new Map(m.presets.map(([b, p], i) => [`${b}:${p}`, i]))); for (const w of this.bankWait.get(m.sha) ?? []) w.ok(); this.bankWait.delete(m.sha); return; }
             case "error": { fail(new Error(m.message)); for (const ws of this.bankWait.values()) for (const w of ws) w.fail(new Error(m.message)); this.bankWait.clear(); return; }
-            case "pos": this._pos = m.sec; this._playing = m.playing; this._waiting = m.waiting; this.emit("pos", m.sec, m.playing, m.waiting); return;
-            case "ended": this._playing = false; this.emit("ended"); return;
+            case "pos": if (m.gen !== this.gen) return; this._pos = m.sec; this._playing = m.playing; this._waiting = m.waiting; this.emit("pos", m.sec, m.playing, m.waiting); return;
+            case "ended": if (m.gen !== this.gen) return; this._playing = false; this.emit("ended"); return;
             case "missing": this.emit("missing", m.keys); return;
             case "meter": this.emit("meter", m.peak, m.active); return;
           }
@@ -103,8 +104,8 @@ export class StudioClient {
   master(p: Partial<MasterParams>): void { this.masterP = { ...this.masterP, ...p }; this.post({ type: "master", p }); }
 
   /** 从 at 秒放起（不给 = 从范围头 / 上次位置）。要先在用户手势里解锁过 AudioContext（iPad）。 */
-  async play(at?: number): Promise<void> { await this.ensure(); this._playing = true; this._waiting = null; if (at !== undefined) this._pos = at; this.post({ type: "play", at }); }
-  stop(): void { this._playing = false; this._waiting = null; this.post({ type: "stop" }); }
+  async play(at?: number): Promise<void> { await this.ensure(); this.gen++; this._playing = true; this._waiting = null; if (at !== undefined) this._pos = at; this.post({ type: "play", at, gen: this.gen }); }
+  stop(): void { this.gen++; this._playing = false; this._waiting = null; this.post({ type: "stop" }); }
   seek(at: number): void { this._pos = at; this.post({ type: "seek", at }); }
   /** 按键试听（要先 ensure 过；没装好的这一下丢掉——试听要即时，迟到的音更烦）。 */
   audition(m: Omit<Extract<StudioIn, { type: "audition" }>, "type">): void { if (this.node) this.post({ type: "audition", ...m }); }
