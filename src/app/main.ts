@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -187,10 +187,10 @@ function showUpdateBar(): void {
 bar.innerHTML =
   `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button></div>` +
-  `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="从光标放 / 停（空格）"><svg class="ico"><use href="#play"/></svg></button>` +
-  `<button id="rewindBtn" class="btn" title="从头放（▶ 是从光标放）">从头</button>` +
-  `<button id="loopBtn" class="btn" title="循环：放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环">循环</button>` +
-  `<button id="seamBtn" class="btn" hidden title="听接缝：从循环段结尾前几秒放起，跳回开头再放几秒就停">接缝</button>` +
+  `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="放 / 暂停（空格）：暂停着再点 = 接着放（起点不动）"><svg class="ico"><use href="#play"/></svg></button>` +
+  `<button id="rewindBtn" class="btn" title="回到起点重放（一遍一遍听同一个小节）。起点 = 长按空白处「从这儿放」挪；编辑、挪光标都不动它"><svg class="ico"><use href="#refresh"/></svg></button>` +
+  `<button id="transportMore" class="btn" title="循环 / 从头放 / 接缝">⋯</button>` +
+  `<button id="listenBtn" class="btn" title="听：锁住谱（防误触），点谱 = 从那个小节放；录音室照样能调。再点 = 回到写（Esc）">听</button>` +
   `<button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button>` +
   `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div>` +
   `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
@@ -317,6 +317,14 @@ const sound = {
 };
 /** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
 const soundTok = (s: EditorState, i: number, id = "main") => { const t = tr(s)[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id); };
+/** 改了音高之后响一下（user 2026-10-10「按住音的时候应该能听到preview，拖动音高，或者改动yngk的时候也会，但是改时长不会」）：有选区 = 选区里第一个音，否则光标前那个音。 */
+function previewEdited(): void {
+  const toks = tr(st); let i = -1;
+  if (st.sel) { for (let k = st.sel.from; k < st.sel.to; k++) if (toks[k]?.kind === "note") { i = k; break; } }
+  else for (let k = st.caret - 1; k >= 0; k--) if (toks[k]?.kind === "note") { i = k; break; }
+  if (i < 0) return;
+  clearTimeout(upTimer); soundTok(st, i, "score"); upTimer = window.setTimeout(() => sound.up("score"), 350);
+}
 /** 电脑键盘按下一个音：响 + pad 上那个音高的键亮着（和手指按 pad 一样，松开键才灭）。 */
 const keyTok = (s: EditorState, i: number, code: string) => { const t = tr(s)[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(t.pitch, `key${code}`); };
 /** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
@@ -338,6 +346,7 @@ const view = new ScoreView(scoreEl, {
   parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at) => openTrackCard(at),
   onBlankPress: (at, row) => openScoreMenu(at, row),
+  onListenTap: (a) => playFromHere(a.paper, a.part, a.index !== null ? tickOfCaret(a.paper, a.part, a.index) : tickOfCaret(a.paper, a.part, a.caret)),   // 听模式：点哪个小节就从那儿放
   onSelPress: (at) => openSelMenu(at),
   onMarkPress: (i, at) => openMarkMenu(i, at),
   lyricHint: (i) => lyricHintAt(i),
@@ -693,12 +702,9 @@ function showError(text: string): void { reportError(text, "error"); }   // 唯�
 //   谱 → 时间线（秒；src/engine/timeline.ts）→ 录音房（音频线程里走带 / 通道 / SoundFont / 元音 / 块回放；src/engine/studio.ts）。
 //   月读按句出块（内容键缓存；这一刀仍在开播前把块唱齐，边算边放归刀 2）；从光标放、选一段、循环、边放边调混音、范围尾 / 循环点不切尾音。
 //   旧路（整首离线渲染成一条 → AudioBufferSource；循环段渲染两遍；src/audio/mix.ts）已删（user「旧引擎不用留念念旧，只是placeholder，可以大刀阔斧改」）。
-const playIcon = (stop: boolean) => { $("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`; $("playBtn").classList.toggle("is-on", stop); if (!stop) progress(""); };
+const playIcon = (playing: boolean) => { $("playBtn").innerHTML = `<svg class="ico"><use href="#${playing ? "pause" : "play"}"/></svg>`; $("playBtn").classList.toggle("is-on", playing); if (!playing) progress(""); };
 /** 整首唱时给核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）；leadIn 明说（块按它摆）。 */
-/** 借元音的唱法（A/B 实验，2026-10-10 user「AB实验同意」；只在这次打开里有效、不进歌）：piper 把一个元音念成气声（团子的「つ」）时，
- *  static = 原样（一张静态的元音样本）/ fade = A 两头交叉淡入淡出 / donor = B 借同元音那个字的整段。不是原样时进唱法的 opt（也就进了块的内容键 = 切了就重唱）。 */
-let borrowMode: "static" | "fade" | "donor" = "static";
-const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN, ...(borrowMode !== "static" ? { borrow: borrowMode } : {}) });
+const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
 /** 播放 / 试听的范围跟着视图走：本段 = 只有光标所在的纸；全部 = 整首（导出面板另选）。user 2026-10-08「为什么在本段视图下播放还是播放全部了？」 */
 const playSong = (): Song => (viewScope === "segment" ? songOnlyPaper(st.song, st.at.paper) : st.song);
 /** 光标所在声部压平后的一串 + 速度表（找人视图「听开头」、测试钩子用）。 */
@@ -903,42 +909,129 @@ function playRange(tl: Timeline): { from: number; to: number; loopFrom: number }
 }
 /** 从光标放：光标（选区 = 选区头）那个音的时刻，提前一点（辅音在元音前）。
  *  光标在纸尾 / 不在放的范围里 = null = 从头放（v0.9.2；user「没有光标的时候点开始就不放了哈哈哈」——写完谱光标停在最后，原来从纸尾放 = 什么都听不到）。 */
-function cursorSeconds(tl: Timeline): number | null {
-  const track = tr(st), i = st.sel ? st.sel.from : st.caret, tok = track[i];
-  const sec = tok ? tl.secondsOfToken(st.at.part, tok.id) : null;
-  if (sec === null || sec >= tl.range.to - 0.05) return null;
-  return Math.max(tl.range.from, sec - PRE_ROLL);
+// ── 走带（2026-10-10 Opus 5.5）：起点 / 续播·暂停 / 回起点重放 / ⋯（循环、从头放、接缝）/ 听模式 ──────────────────────────
+//   user「走带控制有续播/暂停 和从上一次开播的地方重新开始两个，loop和之后别的设置比如从头开始放在...里面」「但是我想编辑的时候光标动但是播放头不动」
+//   「核心场景就是一遍一遍听同一个小节」「以及大部分时候可以小节级别的开始精度」「那么续播不reset起点」「长按加播放同意」。
+//   起点 = 一个小节头：只有「从这儿放」（空白长按 / 选区菜单 / 听模式里点谱）和「从头放」挪它；编辑、挪光标、续播都不动它（取代 v0.9.1 的「▶ = 从光标放」）。
+let startMark: { paperId: string; tick: number } | null = null;
+let paused: { sec: number; at: { paperId: string; tick: number } | null } | null = null;   // 暂停在哪：秒 + 谱位置（暂停时改了谱 = 按谱位置接着放）
+const clampTo = (r: { from: number; to: number }, s: number) => Math.min(Math.max(s, r.from), r.to);
+function startSeconds(tl: Timeline, r: { from: number; to: number }): number {
+  if (!startMark) return r.from;
+  const s = tl.secondsAt(startMark.paperId, startMark.tick, 0);
+  return s === null ? r.from : clampTo(r, s - PRE_ROLL);   // 提前一点（月读的辅音在拍子前）
 }
-/** 播放 / 停（空格、顶栏 ▶）：从光标放起（user「最practical的需求是从中间开始而不是每次编辑之后都得从头放」）；再按 = 停。
- *  fromStart = 从范围头；seam = 从循环尾前几秒放起（听接缝）。 */
-async function togglePlay(o: { fromStart?: boolean; seam?: boolean } = {}): Promise<void> {
-  if (engine.playing) { stopPlay(); return; }
+function resumeSeconds(tl: Timeline, r: { from: number; to: number }): number {
+  if (!paused) return startSeconds(tl, r);
+  const s = paused.at ? tl.secondsAt(paused.at.paperId, paused.at.tick, paused.sec) : null;
+  return clampTo(r, s ?? paused.sec);
+}
+/** 这张纸里 part 那一行 tick 所在小节的头（同画谱的规矩：人插的「|」、拍号变 = 新小节；写满自动换；弱起 = 纸头）。 */
+function barHeadTick(paperId: string, part: string, tick: number): number {
+  const paper = st.song.papers.find((p) => p.id === paperId); if (!paper) return 0;
+  const toks = paper.tracks[part] ?? Object.values(paper.tracks)[0] ?? [];
+  let len = (DEFAULT_TIME.beats * WHOLE) / DEFAULT_TIME.beatType, inBar = 0, t = 0, head = 0;
+  for (const k of toks) {
+    if (k.kind === "bar") { if (t <= tick) head = t; inBar = 0; continue; }
+    if (k.kind === "time") { if (inBar > 0 && t <= tick) head = t; inBar = 0; len = (k.beats * WHOLE) / k.beatType; continue; }
+    if (!isTimed(k)) continue;
+    while (inBar >= len && inBar > 0) { const b = t - (inBar - len); if (b <= tick) head = b; inBar -= len; }
+    if (t > tick) break;
+    inBar += k.dur; t += k.dur;
+  }
+  return head;
+}
+/** 一条 track 上第 caret 个 token 之前有多少 tick。 */
+const tickOfCaret = (paperId: string, part: string, caret: number): number => { const toks = st.song.papers.find((p) => p.id === paperId)?.tracks[part] ?? []; let t = 0; for (let i = 0; i < Math.min(caret, toks.length); i++) if (isTimed(toks[i])) t += (toks[i] as { dur: number }).dur; return t; };
+/** 开播（准备时间线 + 唱前几块）：start = 从起点；resume = 从暂停的地方；seam = 循环尾前几秒（听接缝）。 */
+async function startPlayback(how: "start" | "resume" | "seam"): Promise<void> {
   if (preparing) { cancelPrepare = true; return; }   // 准备中再按 = 不放了
   singer.unlock(); holdAudio();   // 在用户手势里先把声音打开（iPad）；准备期间让声音一直醒着
   preparing = true; cancelPrepare = false; $("playBtn").classList.add("is-on");
   try {
     const tl = await prepare("view", { chunks: false }); if (!tl) { progress(""); return; }
     const r = playRange(tl); playTl = tl;
-    const loop = loopOn || !!o.seam;
+    const loop = loopOn || how === "seam";
     engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop, loopFrom: r.loopFrom });
-    const cur = cursorSeconds(tl);   // null = 光标在纸尾 / 没有音 = 从头
-    const at = o.seam ? Math.max(r.from, r.to - SEAM_LEAD) : o.fromStart || cur === null ? r.from : Math.min(Math.max(cur, r.from), r.to);
+    const at = how === "seam" ? Math.max(r.from, r.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl, r) : startSeconds(tl, r);
     // 边算边放：从 at 起按距离排队唱，前几块到齐就开播，后面的边放边唱（到了没唱好的那句走带会等）
     setChunkOrder(tl, at, loop ? { from: r.loopFrom, to: r.to } : null);
     await waitChunksReady(tl, at, () => cancelPrepare);
     if (cancelPrepare) { progress(""); return; }
     await engine.play(at);
+    paused = null;
     playIcon(true);
     progress(loopOn ? `循环 ${(r.to - r.loopFrom).toFixed(1)} 秒` : `${(r.to - at).toFixed(1)} 秒`);
   } catch (e) { showError(`放不了：${(e as Error).message}`); progress(""); playIcon(false); }
   finally { releaseAudio(); preparing = false; if (!engine.playing) $("playBtn").classList.remove("is-on"); }
 }
+/** ▶ = 续播 / 暂停（空格）：放着 = 暂停（记住听到的地方，播放线留着）；暂停着 = 从那儿接着放（不动起点）；都不是 = 从起点放。 */
+function playPause(): void {
+  if (engine.playing) { pausePlay(); return; }
+  void startPlayback(paused ? "resume" : "start");
+}
+function pausePlay(): void {
+  const sec = engine.audibleSec() ?? engine.position, at = playTl?.locate(sec) ?? null;
+  stopPlay(); paused = { sec, at }; view.setPlayhead(at);
+}
+/** ⟲ = 回到起点重放（一遍一遍听同一个小节）。放着 = 直接跳回去。 */
+function replay(): void {
+  paused = null;
+  if (engine.playing && playTl) { engine.seek(startSeconds(playTl, playRange(playTl))); return; }
+  view.setPlayhead(null); void startPlayback("start");
+}
+/** 从这儿放：起点挪到 paperId 这张纸 part 那一行 tick 所在小节的头，并从那儿放。 */
+function playFromHere(paperId: string, part: string, tick: number): void {
+  startMark = { paperId, tick: barHeadTick(paperId, part, tick) }; view.setStartMark(startMark); replay();
+}
+function playFromHead(): void { startMark = null; view.setStartMark(null); replay(); }
+/** 听接缝：放着 = 跳到循环尾前几秒；没放 = 从那儿放。 */
+function playSeam(): void { if (engine.playing && playTl) { const r = playRange(playTl); engine.seek(Math.max(r.from, r.to - SEAM_LEAD)); } else void startPlayback("seam"); }
 function stopPlay(): void {
-  engine.stop(); playIcon(false); view.setPlayhead(null); phKey = ""; cancelPrepare = true;
+  engine.stop(); playIcon(false); view.setPlayhead(null); phKey = ""; cancelPrepare = true; paused = null;
   // 停 = 月读也停：正在念的那句中途取消、后面排着的不念了（user 2026-10-10「按停之后月读不应该把长句念完」）；只留安静的预唱（光标附近几句，改谱那套）
   chunkKeysWanted = []; singer.cancelPending(); singer.cancelInflight(); schedulePrewarm();
 }
-engine.on("ended", () => { playIcon(false); view.setPlayhead(null); phKey = ""; });
+engine.on("ended", () => { playIcon(false); view.setPlayhead(null); phKey = ""; paused = null; });
+/** 听模式（2026-10-10 user「还有一个就是播放模式，锁写谱，但是可以调录音室」「我蛮需要播放欣赏的时候防误触的哈哈」）：谱锁住（轻点 = 从那个小节放、拖 = 滚动），
+ *  pad 收起、键盘只认空格（放 / 暂停）和 Esc（回到写）；录音室照样能开能调。 */
+let listenMode = false, padBeforeListen = false;
+function setListen(on: boolean): void {
+  if (on === listenMode) return;
+  listenMode = on; view.locked = on;
+  document.body.classList.toggle("listen-mode", on); $("listenBtn").classList.toggle("is-on", on);
+  if (on) { closeOffer?.(); view.lyrics.commitAndClose(); view.marks.commitAndClose(); padBeforeListen = !padEl.hidden; showPad(false); }
+  else if (padBeforeListen) showPad(true);
+  updateChrome();
+  info(on ? "听：谱锁住了（不能写），点谱 = 从那个小节放；再点「听」或 Esc 回到写" : "回到写");
+}
+/** 顶栏 ⋯：循环（开关）/ 从头放 / 接缝（开了循环才有）。 */
+function openTransportMenu(): void {
+  closeOffer?.();
+  const btn = $("transportMore"), box = document.createElement("div");
+  box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
+  const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
+  box.innerHTML = item("loop", `${loopOn ? "✓ " : ""}循环`, "放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环") +
+    item("head", "从头放", "起点回到开头，从头放") + (loopOn ? item("seam", "听接缝", "从循环段结尾前几秒放起，跳回开头再放几秒就停") : "");
+  document.body.append(box);
+  const b = btn.getBoundingClientRect(), w = box.offsetWidth, m = 8;
+  box.style.left = `${Math.max(m, Math.min(b.left, innerWidth - w - m))}px`; box.style.top = `${b.bottom + 4}px`;
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && e.target !== btn) close(); };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
+    close();
+    if (v === "loop") setLoop(!loopOn);
+    else if (v === "head") playFromHead();
+    else if (v === "seam") playSeam();
+  });
+}
+function setLoop(on: boolean): void {
+  loopOn = on; $("transportMore").classList.toggle("is-on", on); $("transportMore").textContent = on ? "循环 ⋯" : "⋯";
+  if (engine.playing && playTl) { const r = playRange(playTl); engine.setTimeline({ tracks: playTl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom }); }   // 放着的时候切 = 下一次到尾按新的来
+}
 let lastReorder = 0;
 // 播放头 = 现在**听到的**地方（2026-10-10 Opus 5.5；user「ipad后台唤起后音频和动画错位。以及你有没有办法实际测音频播到哪里了来好好对齐？」）：
 //   原来画的是录音房「正在算」的位置（每 43 ms 一报），声音还要过系统的输出缓冲才到扬声器 → 画面一直早一个输出延迟；iPad 切后台回来系统可能换了更大的缓冲 = 早得更多。
@@ -980,6 +1073,7 @@ function schedulePlaybackRefresh(): void {
 }
 /** 预唱（刀 2；user「打开歌后空闲片预热 + 预唱光标附近 建议这样…然后最好有ui提示」）：改谱停下 700 ms 后、没在放 → 从光标起往后先唱几句（quiet：不报错、不空着）。
  *  歌里有月读上场 = 意图（第一次会下模型；user「不会太浪费电吧因为就几句」）。 */
+//   2026-10-10（v0.9.18）：从「下一次开播会从的地方」唱起（暂停处 / 起点），不再按光标——开播已经和光标分开了。
 const PREWARM_PHRASES = 3;
 let prewarmTimer = 0;
 function schedulePrewarm(): void {
@@ -991,16 +1085,15 @@ function schedulePrewarm(): void {
     const tl = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st.song.hum, singOpt: humOpt() });
     if (!tl.chunks.length) return;
     pruneChunks(tl);
-    setChunkOrder(tl, cursorSeconds(tl) ?? tl.range.from, null, { quiet: true, limit: PREWARM_PHRASES });
+    // 从下一次开播会从的地方唱起：暂停着 = 暂停处，否则 = 起点（v0.9.18 起开播不再看光标；原来按光标附近唱，起点在别处时开头那句排不上）
+    const r = playRange(tl);
+    setChunkOrder(tl, paused ? resumeSeconds(tl, r) : startSeconds(tl, r), null, { quiet: true, limit: PREWARM_PHRASES });
   }, 700);
 }
-$("playBtn").addEventListener("click", () => { void togglePlay(); });
-$("rewindBtn").addEventListener("click", () => { if (engine.playing && playTl) engine.seek(playRange(playTl).from); else void togglePlay({ fromStart: true }); });
-$("loopBtn").addEventListener("click", () => {
-  loopOn = !loopOn; $("loopBtn").classList.toggle("is-on", loopOn); $("seamBtn").hidden = !loopOn;
-  if (engine.playing && playTl) { const r = playRange(playTl); engine.setTimeline({ tracks: playTl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom }); }   // 放着的时候切 = 下一次到尾按新的来
-});
-$("seamBtn").addEventListener("click", () => { if (engine.playing && playTl) { const r = playRange(playTl); engine.seek(Math.max(r.from, r.to - SEAM_LEAD)); } else void togglePlay({ seam: true }); });
+$("playBtn").addEventListener("click", () => playPause());
+$("rewindBtn").addEventListener("click", () => replay());
+$("transportMore").addEventListener("click", () => openTransportMenu());
+$("listenBtn").addEventListener("click", () => setListen(!listenMode));
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */
 let embedSoftLimit = 10e6;
 /** 弱引用解析到的子集（本次打开；subsetSha256 → 字节）。 */
@@ -1238,6 +1331,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, renderMix: () => renderMixForTest(),
+  transport: () => ({ startMark, paused, listen: listenMode, loop: loopOn }),   // 走带的状态（E2E 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describeResources(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
   speechCache: (op: "info" | "clear") => singer.cache(op, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
@@ -1448,7 +1542,7 @@ const studio = new Studio($("stage"), {
   setPan: (id, pan) => { const p = st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(doc.extras, p.mic, { pan }), { kind: "studio", label: `${partLabel(id)} 声像 ${Math.abs(pan) < 0.025 ? "中" : pan < 0 ? `左 ${Math.round(-pan * 100)}` : `右 ${Math.round(pan * 100)}`}` }, `mix:pan:${id}`); },
   toggleMute: (id) => { setPv(id, { muted: !pv(id).muted }); view.render(); },
   toggleSolo: (id) => { setPv(id, { solo: !pv(id).solo }); view.render(); },
-  play: () => { void togglePlay(); },
+  play: () => playPause(),
   close: () => closeStudio(),
   master: () => activeMaster(doc.extras),
   setMasterGain: (dB) => updateExtras(withMaster(doc.extras, { gainDb: dB }), { kind: "studio", label: `总轨增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
@@ -1730,6 +1824,7 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
   box.innerHTML =
+    item("play", "从这儿放", "起点挪到这个小节的头，从这儿放（⟲ 回到这儿重放；编辑、挪光标都不动起点）") + `<div class="ctx-sep"></div>` +
     item("paste", "粘贴", "贴在这里：app 里复制的，或系统剪贴板里的简谱文字（1 2 3 | 5 - -）") +
     `<div class="ctx-sep"></div>` +
     item("bar", "小节线 |", "从这里重新数小节（弱起）") + item("phrase", "句号", "这一句到这儿（「合」挪字的边界；不换行不换气）") +
@@ -1750,6 +1845,7 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
+    if (v === "play") { playFromHere(st.at.paper, st.at.part, tickOfCaret(st.at.paper, st.at.part, st.caret)); return; }
     if (v === "paste") void pasteNow();
     else if (v === "bar") update(apply(st, { k: "bar" }, performance.now()));
     else if (v === "phrase") update(apply(st, { k: "phrase" }, performance.now()));
@@ -1977,8 +2073,8 @@ function openSelMenu(at: { x: number; y: number }): void {
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v || !st.sel) return;
     const cmd = (c: Command) => update(apply(st, c, performance.now()));
-    if (v.startsWith("tr:")) { cmd({ k: "transpose", semis: Number(v.slice(3)) }); return; }   // 不收：可以连着点
-    if (v.startsWith("oct:")) { cmd({ k: "octave", d: Number(v.slice(4)) }); return; }
+    if (v.startsWith("tr:")) { cmd({ k: "transpose", semis: Number(v.slice(3)) }); previewEdited(); return; }   // 不收：可以连着点
+    if (v.startsWith("oct:")) { cmd({ k: "octave", d: Number(v.slice(4)) }); previewEdited(); return; }
     if (v === "short") { cmd({ k: "selscale", f: 0.5 }); return; }
     if (v === "long") { cmd({ k: "selscale", f: 2 }); return; }
     if (v === "seldur") { cmd({ k: "seldur" }); return; }
@@ -2136,9 +2232,6 @@ function drawInst(): void {
     // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
     (eng === "tsukuyomi" ? ((sc) => row("分段唱", (([["phrase", "每句", "在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句"], ["sheet", "每张纸", "一张纸一段"], ["whole", "一整首", "一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）"]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),
       sc === "whole" ? "一口气唱完：句和句之间唱法最连贯，但长歌在 iPad 上可能内存不够" : "分段唱：一段唱完就放掉，重复的段 / 没改的句子直接拿上次的；段和段之间切在休止 / 纸界，整首最后统一音量"))(activeSingChunk(doc.extras, role)) : "") +
-    // 借元音（A/B 实验）：只在这次打开里有效（不进歌、不进撤销）；切了 = 用到的句子重唱
-    (eng === "tsukuyomi" ? row("借元音（实验）", (([["static", "原样", "一张静态的元音样本（以前的唱法）"], ["fade", "A 两头过渡", "借来的样本在元音两头和她自己念的那几帧交叉淡入淡出（40 ms）"], ["donor", "B 借整段", "借同一句里同元音那个字的整段（起音 / 稳态 / 收尾），按这个音的长度拉伸"]] as const)).map(([v, l, t]) => chip(`borrow:${v}`, l, borrowMode === v, t)).join(""),
-      "她把一个元音念成气声时（团子的「つ」），唱的时候从别的字借一个干净的元音。三种借法切着听同一句；只在这次打开里有效，不进歌") : "") +
     (eng === "unknown" ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
   instEl.innerHTML =
     `<div class="ip-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="ip-title">乐器</span>` +
@@ -2185,7 +2278,6 @@ instEl.addEventListener("click", (e) => {
   else if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4)))); updateExtras(withGapSec(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」音和音之间 ${Math.round(next * 1000)} ms` }, "gap"); }
   else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d)); updateExtras(withCalibration(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
   else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
-  else if (v.startsWith("borrow:")) { borrowMode = v.slice(7) as typeof borrowMode; schedulePlaybackRefresh(); schedulePrewarm(); info(`借元音：${borrowMode === "static" ? "原样" : borrowMode === "fade" ? "A 两头过渡" : "B 借整段"}（用到的句子会重唱）`); }
   else if (v.startsWith("chunk:")) { const c = v.slice(6) as "phrase" | "sheet" | "whole"; updateExtras(withSingChunk(doc.extras, role, c, st.song.hum), { kind: "lounge", label: `「${rn}」分段唱：${c === "phrase" ? "每句" : c === "sheet" ? "每张纸" : "一整首"}` }); }
   else return;
   drawInst();
@@ -3007,6 +3099,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       }
       update(apply(st, withHalf(a.cmd), performance.now()));
       if (a.cmd.k === "rest" || a.cmd.k === "extend") afterWrite();
+      if (a.cmd.k === "step" || a.cmd.k === "alter" || a.cmd.k === "octave") previewEdited();   // 改音高 = 响一下（改时长不响；user 2026-10-10）
       return true;
     case "audition": {   // 弹：在草稿状态上写一下，拿到那个音高就扔
       if (repeat) return true;
@@ -3015,7 +3108,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       if (probe.input !== st.input) update({ ...st, input: probe.input });   // 「只管下一个音」的 ♯ / ♭ 用掉了
       return true;
     }
-    case "play": void togglePlay(); return true;
+    case "play": playPause(); return true;
     case "impro": toggleImpro(); return true;
     case "lyric": return view.lyrics.act(a.a);
     case "mark": view.marks.act(a.a); return true;
@@ -3038,7 +3131,13 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if ((e.target as HTMLElement | null)?.closest?.("wp-reference-window")) return;   // 参考窗拿着焦点：键盘归它（Ctrl / ⌘+V 进窗；Esc 它自己交回谱）
-  if (studio.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeStudio(); } else if (e.key === " " && !(e.target as HTMLElement)?.closest("input")) { e.preventDefault(); void togglePlay(); } return; }   // 录音室：Esc 回谱、空格播放
+  if (studio.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeStudio(); } else if (e.key === " " && !(e.target as HTMLElement)?.closest("input")) { e.preventDefault(); playPause(); } return; }   // 录音室：Esc 回谱、空格播放
+  if (listenMode) {   // 听模式：只认 空格（放 / 暂停）、Esc（回到写）和 Ctrl / ⌘+S（存）；别的键不写谱
+    if (e.key === " ") { e.preventDefault(); playPause(); }
+    else if (e.key === "Escape") { e.preventDefault(); setListen(false); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { const a = route(e, whereNow(), "write"); if (a && run(a, e.repeat, e.code)) e.preventDefault(); }
+    return;
+  }
   // 别的表单控件（顶栏的下拉框）拿着焦点：不接，它们自己吃方向键 / 空格。歌词框、记号框的输入框照常路由。
   const t = e.target as HTMLElement | null;
   if (!(e.ctrlKey || e.metaKey) && t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !t.closest(".lyric-input, .mark-ed")))) return;

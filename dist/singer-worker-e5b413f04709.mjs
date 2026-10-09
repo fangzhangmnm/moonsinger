@@ -165,14 +165,10 @@ var DEFAULT_OPT = {
   // 2026-10-10 (Claude Opus 5.5) — score entries may carry whisper: true (气声: the syllable is sung without pitch — f0 stays 0, so WORLD makes it
   //   pure noise through piper's own envelope; user「x同意，做支持」) and inhale: true (the breath before this syllable is audible even with breath: false —
   //   per written mark only; user「不应该每个逗号都大喘气」). Neither changes anything when absent (the default path is sample-identical).
-  whisperDb: -6,
+  whisperDb: -6
   // 气声 is this much softer than the syllable's sung level (AI's starting value; the ear decides)
-  // borrowed vowels (a whispered vowel in piper's take sung voiced from a clean sample, see cleanMax) — A/B experiment, user「AB实验同意」:
-  borrow: "static",
-  // "static" = one median envelope for every frame (as before) | "fade" (A) = crossfade from / back to its own frames at the edges |
-  // "donor" (B) = the whole vowel taken from the nearest clean syllable with the same vowel (its attack / held stretch / tail, time-mapped)
-  borrowFade: 0.04
-  // s: A's crossfade at each edge of the vowel
+  // (v0.9.16 tried two other ways to sing a borrowed vowel — crossfade at its edges / the whole donor syllable; the user kept the original, 2026-10-10
+  //  「ab，要不用原版？之前其实已经修好了」, and both were removed again in v0.9.18.)
 };
 var VOWEL = /* @__PURE__ */ new Set(["a", "i", "u", "e", "o", "N"]);
 var VOICED_FOR = { A: "a", I: "i", U: "u", E: "e", O: "o" };
@@ -380,17 +376,8 @@ async function singCore({
       return out;
     };
     const good = moras.filter((m) => m.ownClean <= OPT.cleanMax), all = tmpl(good), allSp = tmplSp(good);
-    const kOf = new Map(moras.map((m, k) => [m, k])), pitchOf = (m) => SCORE[kOf.get(m)].notes[0][0];
     for (const m of moras) if (m.ownClean > OPT.cleanMax && !m.whisper) {
       const same = good.filter((g) => tokens[g.vowel] === tokens[m.vowel]);
-      if (OPT.borrow === "donor" && same.length) {
-        const d = [...same].sort((p2, q2) => Math.abs(pitchOf(p2) - pitchOf(m)) - Math.abs(pitchOf(q2) - pitchOf(m)) || Math.abs(kOf.get(p2) - kOf.get(m)) - Math.abs(kOf.get(q2) - kOf.get(m)))[0];
-        m.src = { v0: d.v0, v1: d.v1, hold: d.hold };
-        m.donor = d;
-        m.apClean = d.apClean;
-        m.borrowed = true;
-        continue;
-      }
       m.apClean = tmpl(same) ?? all ?? m.apClean;
       m.spClean = tmplSp(same) ?? allSp ?? void 0;
       m.borrowed = (tmpl(same) ?? all) !== null;
@@ -399,10 +386,7 @@ async function singCore({
   }
   {
     const lv = moras.filter((m) => m.ownClean <= OPT.cleanMax).map((m) => m.levelDb).sort((p2, q2) => p2 - q2), med = lv[lv.length >> 1];
-    for (const m of moras) {
-      const lvl = m.donor ? m.donor.levelDb : m.levelDb, keep = m.ownClean > OPT.cleanMax && !m.donor;
-      m.gainDb = (keep ? 0 : Math.max(-OPT.levelMaxDb, Math.min(OPT.levelMaxDb, OPT.level * (med - lvl)))) + (m.whisper ? OPT.whisperDb : 0);
-    }
+    for (const m of moras) m.gainDb = (m.ownClean > OPT.cleanMax ? 0 : Math.max(-OPT.levelMaxDb, Math.min(OPT.levelMaxDb, OPT.level * (med - m.levelDb)))) + (m.whisper ? OPT.whisperDb : 0);
   }
   let t = OPT.leadIn + leadRest * EIGHTH;
   const notes = [];
@@ -445,15 +429,13 @@ async function singCore({
     const codaLen = m.codaC1 ? Math.min(m.codaC1 - m.v1, 0.45 * (sEnd0 - m.noteStart)) : 0, sEnd = sEnd0 - codaLen;
     const L = sEnd - m.noteStart, last = k + 1 === moras.length, fade = (m.rest || last) && !codaLen ? OPT.release : 0;
     m.fade = fade > 0 ? [sEnd - Math.min(fade, 0.4 * L), sEnd] : null;
-    const V = m.src ?? m;
-    const { h0, h1 } = V.hold, tailC = fade > 0 || m.src ? 0 : Math.min(OPT.tailIntoNext, V.v1 - h1);
-    const attC = h0 - V.v0;
-    m.vEnd = sEnd;
-    if (L <= attC + tailC + 0.02) seg(m.noteStart, sEnd, V.v0, fade > 0 ? h1 : V.v1, "vowel", k);
+    const { h0, h1 } = m.hold, tailC = fade > 0 ? 0 : Math.min(OPT.tailIntoNext, m.v1 - h1);
+    const attC = h0 - m.v0;
+    if (L <= attC + tailC + 0.02) seg(m.noteStart, sEnd, m.v0, fade > 0 ? h1 : m.v1, "vowel", k);
     else {
-      seg(m.noteStart, m.noteStart + attC, V.v0, h0, "vowel", k);
+      seg(m.noteStart, m.noteStart + attC, m.v0, h0, "vowel", k);
       seg(m.noteStart + attC, sEnd - tailC, h0, h1, "vowel", k, true);
-      if (tailC > 0) seg(sEnd - tailC, sEnd, V.v1 - tailC, V.v1, "vowel", k, "tail");
+      if (tailC > 0) seg(sEnd - tailC, sEnd, m.v1 - tailC, m.v1, "vowel", k, "tail");
     }
     if (codaLen > 0) {
       seg(sEnd, sEnd0, m.v1, m.codaC1, "cons", k, "coda");
@@ -535,7 +517,7 @@ async function singCore({
     if (fr) logsp.set(fr.logsp);
     else {
       const src = m.spClean ?? null;
-      for (let q2 = 0; q2 < bins; q2++) logsp[q2] = Math.log((src ? src[q2] : an2.sp[Math.ceil((m.src ?? m).hold.h0 / FPS) * bins + q2]) + 1e-16);
+      for (let q2 = 0; q2 < bins; q2++) logsp[q2] = Math.log((src ? src[q2] : an2.sp[Math.ceil(m.hold.h0 / FPS) * bins + q2]) + 1e-16);
     }
     const tilt = Math.round(OPT.atlasTiltHz / SR2 * an2.fft);
     for (let q2 = 0; q2 < bins; q2++) if (q2 > tilt) logsp[q2] += Math.log(0.25) * Math.min(1, (q2 - tilt) / tilt);
@@ -617,11 +599,7 @@ async function singCore({
       f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
       const m = moras[s.k];
       let changed = false;
-      if (m.spClean && OPT.borrow === "fade") {
-        const w2 = Math.max(0, Math.min(1, (tt - m.noteStart) / OPT.borrowFade, (m.vEnd - tt) / OPT.borrowFade));
-        if (w2 >= 1) sp.set(m.spClean, jj * bins);
-        else for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] = Math.exp((1 - w2) * Math.log(sp[jj * bins + q2] + 1e-16) + w2 * Math.log(m.spClean[q2] + 1e-16));
-      } else if (m.spClean) sp.set(m.spClean, jj * bins);
+      if (m.spClean) sp.set(m.spClean, jj * bins);
       for (let q2 = 0; q2 < bins; q2++) {
         const v = ap[jj * bins + q2], c2 = m.apClean[q2];
         if (v > c2) {
@@ -8162,4 +8140,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-8a107df51dbe.mjs.map
+//# sourceMappingURL=singer-worker-e5b413f04709.mjs.map

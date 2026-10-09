@@ -41,6 +41,8 @@ export interface ScoreViewHost {
   /** 拖音高时换到下标 i 的新音高（新的顶掉旧的；怎么顶由采样器定：滑过去或重新起音）。 */
   glide?(i: number): void;
   release?(): void;
+  /** 听模式里轻点谱面：点在音 / 休止上 = index（它所在的声部）；空白 = caret（那一行光标会落的位置）。宿主算 tick、吸到小节头、从那儿放。 */
+  onListenTap?(at: { paper: string; part: string; index: number | null; caret: number }): void;
   /** 五线谱像文本框（user「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
    *  staff = 点在谱上（音 / 空白 / 框选）；text = 打开了要系统键盘的框（歌词 / 歌名）。记号框不算（触屏上不弹系统键盘）。 */
   focus?(where: "staff" | "text"): void;
@@ -159,6 +161,7 @@ export class ScoreView {
     el.addEventListener("pointerup", (e) => this.up(e));
     // 电脑右键 = 空白处的小菜单（手指 / 笔走长按）；音上右键不接（选区条管）。pointerdown 里 button 2 直接不接，免得先放一下光标 / 起框选
     el.addEventListener("contextmenu", (e) => {
+      if (this.locked) { e.preventDefault(); return; }   // 听模式：右键不开菜单
       if (!this.layout || (e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
       e.preventDefault();
       const p = this.local(e); this.cancelPress();
@@ -175,7 +178,7 @@ export class ScoreView {
       this.host.focus?.("staff");
       this.host.onSelPress?.({ x: e.clientX, y: e.clientY });
     });
-    el.addEventListener("pointercancel", (e) => { if (this.drag) this.host.release?.(); this.drag = null; if (this.lift) { this.lift = null; this.hot = null; this.render(); } el.classList.remove("lifting"); this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
+    el.addEventListener("pointercancel", (e) => { if (this.holdPid === e.pointerId) { this.holdPid = null; this.host.release?.(); } this.lockTap = null; if (this.drag) this.host.release?.(); this.drag = null; if (this.lift) { this.lift = null; this.hot = null; this.render(); } el.classList.remove("lifting"); this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
     new ResizeObserver(() => this.render()).observe(el);
   }
 
@@ -221,6 +224,8 @@ export class ScoreView {
     if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
     if (!this.boxEl.isConnected) this.ink.appendChild(this.boxEl);
     this.placeHandles();
+    if (this.playP) this.setPlayhead(this.playP);   // 暂停着 / 放着的时候重画：播放线和高亮跟着新的排版
+    this.drawStartMark();
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
@@ -231,27 +236,71 @@ export class ScoreView {
     if (fk !== this.followKey) { this.followKey = fk; if (base !== this.heldBase) { this.heldBase = null; this.follow(); } }
   }
   private playheadEl: HTMLDivElement | null = null;
+  private hlEls: HTMLDivElement[] = [];                                  // 正在响的音的高亮
+  private playP: { paperId: string; tick: number } | null = null;       // 播放线在哪（重画后照着再摆）
+  private startP: { paperId: string; tick: number } | null = null;      // 起点
+  private startEl: HTMLDivElement | null = null;
+  /** 听模式（2026-10-10 user「播放模式，锁写谱，但是可以调录音室」「我蛮需要播放欣赏的时候防误触的哈哈」）：谱面不写——轻点 = 告诉宿主「从这儿放」，拖 = 滚动，别的手势都不接。 */
+  locked = false;
+  private lockTap: { pid: number; x: number; y: number; moved: boolean } | null = null;
+  private holdPid: number | null = null;                                 // 按住一个音在出声（长按 = 预览；抬手停）
   /** 播放头（实时试听「谱上跟着亮」，2026-10-09 Claude Fable 5.1）：p = 哪张纸的第几个 tick（纸自己的，反复已折回去；src/engine/timeline.ts locate）；null = 收起。
    *  只挪一条线，不重排、不动滚动。位置 = 这张纸第一行那条 track 上「起点 ≥ tick 的第一个音」的光标位 → slot 的 x；行高 = 那一行的谱表范围。 */
+  /** 播放线（2026-10-10 Opus 5.5；user「首先是线，和光标用不一样的颜色，然后对齐是和所有track里面最后面的一个音符对齐，取max，然后唱到的音符试着高亮一下。看效果好不好」）：
+   *  x = 这一行所有声部里、此刻已经开始的音中最晚开始的那个（取 max）；线从这一行最上面那条谱画到最下面那条；每个声部正在响的音高亮。
+   *  颜色走 CSS（.playhead / .play-hl，和光标的 --accent 分开）。暂停着也留着（续播从这儿）。 */
   setPlayhead(p: { paperId: string; tick: number } | null): void {
+    this.playP = p;
     const L = this.layout;
-    if (!p || !L) { this.playheadEl?.remove(); this.playheadEl = null; return; }
-    const st = this.host.get(), paper = st.song.papers.find((x) => x.id === p.paperId);
-    const sysIdx = L.systems.findIndex((r) => r.paper === p.paperId);
-    if (!paper || sysIdx < 0) { this.playheadEl?.remove(); this.playheadEl = null; return; }
-    const part = L.systems[sysIdx].part, toks = paper.tracks[part] ?? [];
-    let t = 0, caret = toks.length;
-    for (let i = 0; i < toks.length; i++) { const k = toks[i]; if (!isTimed(k)) continue; if (t + k.dur > p.tick) { caret = i; break; } t += k.dur; }
-    // 线穿过正在放的那个符头（休止 = 那个休止符）的中心，而不是它左边的写字头位置——写字头的位置读起来像「光标停在上一个音后面」
-    //   （v0.9.3；user「光标动画也比较误导，你是一个音播完了才跳，但是我觉得是播了就跳会更自然一点吧」）。没有符头（纸尾）才退回写字头位置。
-    const onRow = (h: { index: number; system: number }) => h.index === caret && L.systems[h.system]?.paper === p.paperId && L.systems[h.system]?.part === part;
-    const hit = L.notes.find(onRow) ?? L.rests.find(onRow);
-    const slot = hit ? null : L.slots.find((sl) => sl.caret === caret && L.systems[sl.system]?.paper === p.paperId && L.systems[sl.system]?.part === part);
-    if (!hit && !slot) { this.playheadEl?.remove(); this.playheadEl = null; return; }
-    const row = L.systems[(hit ?? slot!).system], x = hit ? hit.x + hit.w / 2 : slot!.x;
+    const clear = () => { this.playheadEl?.remove(); this.playheadEl = null; for (const e of this.hlEls) e.remove(); this.hlEls = []; };
+    if (!p || !L) { clear(); return; }
+    const found = this.soundingAt(p.paperId, p.tick);
+    if (!found.length) { clear(); return; }
+    const lead = found.reduce((a, b) => (b.start > a.start ? b : a)), h0 = lead.hits[0], sys = L.systems[h0.system].sys;
+    const rows = L.systems.filter((r) => r.paper === p.paperId && r.sys === sys);
+    const top = Math.min(...rows.map((r) => r.top)), bottom = Math.max(...rows.map((r) => r.bottom)), x = h0.x + h0.w / 2;
     let el = this.playheadEl;
-    if (!el || !el.isConnected) { el = document.createElement("div"); el.className = "playhead"; el.style.cssText = "position:absolute;width:2px;background:var(--accent);opacity:.55;pointer-events:none;border-radius:1px"; this.ink.appendChild(el); this.playheadEl = el; }
-    el.style.left = `${x - 1}px`; el.style.top = `${row.top}px`; el.style.height = `${Math.max(1, row.bottom - row.top)}px`;
+    if (!el || !el.isConnected) { el = document.createElement("div"); el.className = "playhead"; this.ink.appendChild(el); this.playheadEl = el; }
+    el.style.left = `${x - 1}px`; el.style.top = `${top}px`; el.style.height = `${Math.max(1, bottom - top)}px`;
+    // 正在响的音：每个声部各自的那一个（休止不亮）；连音线拆开的几段一起亮
+    const spots = found.filter((f) => f.note).flatMap((f) => f.hits);
+    while (this.hlEls.length > spots.length) this.hlEls.pop()!.remove();
+    spots.forEach((h, k) => {
+      let d = this.hlEls[k];
+      if (!d || !d.isConnected) { d = document.createElement("div"); d.className = "play-hl"; this.ink.appendChild(d); this.hlEls[k] = d; }
+      const r = Math.max(6, h.w * 0.8);
+      d.style.left = `${h.x + h.w / 2 - r}px`; d.style.top = `${h.y - r}px`; d.style.width = d.style.height = `${2 * r}px`;
+    });
+  }
+  /** 这张纸 tick 那一刻每个声部（排出来的每一行）正在放的 token：下标、开始的 tick、画出来的位置（音 / 休止）。 */
+  private soundingAt(paperId: string, tick: number): { part: string; index: number; start: number; note: boolean; hits: { x: number; y: number; w: number; system: number }[] }[] {
+    const L = this.layout; if (!L) return [];
+    const paper = this.host.get().song.papers.find((x) => x.id === paperId); if (!paper) return [];
+    const out: { part: string; index: number; start: number; note: boolean; hits: { x: number; y: number; w: number; system: number }[] }[] = [], seen = new Set<string>();
+    for (const r of L.systems) {
+      if (r.paper !== paperId || seen.has(r.part)) continue; seen.add(r.part);
+      const toks = paper.tracks[r.part] ?? []; let t = 0, at = -1, start = 0;
+      for (let i = 0; i < toks.length; i++) { const k = toks[i]; if (!isTimed(k)) continue; if (t + k.dur > tick) { at = i; start = t; break; } t += k.dur; }
+      if (at < 0) continue;
+      const mine = (h: { index: number; system: number }) => h.index === at && L.systems[h.system]?.paper === paperId && L.systems[h.system]?.part === r.part;
+      const hits = [...L.notes.filter(mine), ...L.rests.filter(mine)];
+      if (hits.length) out.push({ part: r.part, index: at, start, note: toks[at].kind === "note", hits });
+    }
+    return out;
+  }
+  /** 开播的起点（小节头；2026-10-10 user「编辑的时候光标动但是播放头不动」「大部分时候可以小节级别的开始精度」）：一面小旗，颜色和光标 / 播放线都不一样。null = 没设（从头）。 */
+  setStartMark(p: { paperId: string; tick: number } | null): void { this.startP = p; this.drawStartMark(); }
+  private drawStartMark(): void {
+    const L = this.layout, p = this.startP;
+    if (!p || !L) { this.startEl?.remove(); this.startEl = null; return; }
+    const found = this.soundingAt(p.paperId, p.tick).filter((f) => f.start >= p.tick);   // 正好从小节头开始的那些音 / 休止
+    const h = (found.length ? found : this.soundingAt(p.paperId, p.tick)).flatMap((f) => f.hits).sort((a, b) => a.x - b.x)[0];
+    if (!h) { this.startEl?.remove(); this.startEl = null; return; }
+    const sys = L.systems[h.system].sys, rows = L.systems.filter((r) => r.paper === p.paperId && r.sys === sys);
+    const top = Math.min(...rows.map((r) => r.top)), bottom = Math.max(...rows.map((r) => r.bottom));
+    let el = this.startEl;
+    if (!el || !el.isConnected) { el = document.createElement("div"); el.className = "start-mark"; el.title = "起点：⟲ 从这儿重放（长按空白处「从这儿放」挪它；编辑不动它）"; this.ink.appendChild(el); this.startEl = el; }
+    el.style.left = `${h.x - 4}px`; el.style.top = `${top}px`; el.style.height = `${Math.max(1, bottom - top)}px`;
   }
   /** 光标 / 选区 / 编辑框在哪（变了才跟）。 */
   private baseKey(): string {
@@ -347,6 +396,18 @@ export class ScoreView {
     // 笔 / 鼠标：点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）。手指：按下先不抢——拖 = 滚动，歌词框开着时滚谱不该把它收掉、
     //   把系统键盘收回去（收键盘 → 谱面变高 → 跟随光标又把视图拽回去 = 白滚；user 2026-10-08「每次打日文还是跟八年抗战一样…歌词输入模式滚动会导致键盘弹回来，然后白滚」）；
     //   轻点（up）/ 长按（longPress）才抢
+    if (this.locked) {   // 听模式：手指照样能滚 / 捏合；笔 / 鼠标只认轻点。轻点 = 从这儿放（抬手时）
+      if (e.pointerType === "touch") {
+        this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY }); this.el.setPointerCapture(e.pointerId);
+        if (this.touches.size === 2) { this.finger = null; const [a, b] = [...this.touches.values()], mid = this.local({ clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 }); this.pinch = { d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), z0: this.zoom, cx: mid.x, cy: mid.y }; return; }
+        if (this.touches.size > 2) return;
+        this.finger = { pid: e.pointerId, y0: e.clientY, top0: this.el.scrollTop, x: p.x, y: p.y, moved: false, shift: false, x0: e.clientX, left0: this.el.scrollLeft };
+        return;
+      }
+      e.preventDefault(); this.el.setPointerCapture(e.pointerId);
+      this.lockTap = { pid: e.pointerId, x: p.x, y: p.y, moved: false };
+      return;
+    }
     if (e.pointerType !== "touch") this.el.focus({ preventScroll: true });
     if (e.pointerType === "touch") {   // 手指：拖 = 滚动；不动 = 轻点；按住不动 = 长按选区；第二根手指落下 = 捏合缩放 / 双指平移
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -405,7 +466,8 @@ export class ScoreView {
     const cur = this.host.get().sel;
     if (cur && this.onTrack(pr.hit) && pr.hit.index >= cur.from && pr.hit.index < cur.to) {   // 长按已经选中的音：不抬手拖 = 照常从它扩选；原地抬手 = 选区菜单（不重选）
       this.finger = null; if (this.drag) { this.host.release?.(); this.drag = null; }
-      this.selDrag = { pid: pr.pid, anchor: pr.hit.index, menu: true }; return;
+      this.selDrag = { pid: pr.pid, anchor: pr.hit.index, menu: true };
+      this.host.audition?.(pr.hit.index, true); this.holdPid = pr.pid; return;   // 按住已选中的音也听见它
     }
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     this.finger = null;   // 手指：长按之后不再当滚动
@@ -414,6 +476,15 @@ export class ScoreView {
     this.host.set(select(st, pr.hit.index, pr.hit.index + 1));
     this.selDrag = { pid: pr.pid, anchor: pr.hit.index };
     this.host.focus?.("staff");
+    this.host.audition?.(pr.hit.index, true); this.holdPid = pr.pid;   // 按住音 = 听见它（2026-10-10 user「按住音的时候应该能听到preview」），抬手停
+  }
+  /** 听模式的轻点：点在音 / 休止上 = 它；空白 = 那一行光标会落的位置。不改光标、不改谱。 */
+  private listenTap(x: number, y: number): void {
+    const L = this.layout; if (!L) return;
+    const hit = this.noteAt(x, y, true);
+    if (hit) { const r = L.systems[hit.system]; if (r) { this.host.onListenTap?.({ paper: r.paper, part: r.part, index: hit.index, caret: hit.index }); return; } }
+    const s = this.caretAt(x, y);
+    this.host.onListenTap?.({ paper: s.at.paper, part: s.at.part, index: null, caret: s.caret });
   }
   /** 空白处长按 / 右键：收起编辑框、光标放到那里（同轻点空白），再告诉宿主开小菜单。row = 这一行里光标所在 track 的音的下标范围。 */
   private blankPress(x: number, y: number, cx: number, cy: number): void {
@@ -625,6 +696,7 @@ export class ScoreView {
   }
 
   private move(e: PointerEvent): void {
+    if (this.lockTap && e.pointerId === this.lockTap.pid) { const p = this.local(e); if (Math.hypot(p.x - this.lockTap.x, p.y - this.lockTap.y) > 6) this.lockTap.moved = true; return; }
     const pr = this.press;
     if (pr && e.pointerId === pr.pid && !pr.moved && !pr.fired) { const p = this.local(e); if (Math.hypot(p.x - pr.x, p.y - pr.y) > (pr.type === "touch" ? 10 : 6)) { pr.moved = true; clearTimeout(pr.timer); } }   // 手指抖一点也算轻点
     if (pr && pr.grab && e.pointerId === pr.pid && pr.moved && !pr.fired && pr.type !== "touch") { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); }   // 笔 / 鼠标按住字 / 记号动了 = 直接拖（手指动了 = 滚动）
@@ -682,6 +754,13 @@ export class ScoreView {
     // 手指轻点（没拖、没长按）= 这时才把焦点拿回谱面（down 里手指不抢）；先拿焦点再 tap：tap 打开的歌词框会自己再把焦点拿走
     if (e.pointerType === "touch" && this.press && this.press.pid === e.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
     if (this.touches.delete(e.pointerId) && this.pinch && this.touches.size < 2) { this.pinch = null; this.finger = null; this.cancelPress(); return; }   // 捏合结束：剩下那根手指不接着当滚动（会跳）
+    if (this.holdPid === e.pointerId) { this.holdPid = null; this.host.release?.(); }   // 按住音的预览：抬手停
+    if (this.locked) {   // 听模式：没拖 = 从这儿放
+      const lt = this.lockTap, f = this.finger;
+      if (lt && e.pointerId === lt.pid) { this.lockTap = null; if (!lt.moved) this.listenTap(lt.x, lt.y); return; }
+      if (f && e.pointerId === f.pid) { this.finger = null; if (!f.moved) this.listenTap(f.x, f.y); return; }
+      return;
+    }
     if (this.lift && e.pointerId === this.lift.pid) { this.cancelPress(); this.finger = null; this.endLift(); return; }
     const pr = this.press;
     if (pr && e.pointerId === pr.pid) {

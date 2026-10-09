@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.17-2026-10-10";
+var APP_VERSION = "v0.9.18-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -8590,6 +8590,10 @@ var ScoreView = class {
     el2.addEventListener("pointermove", (e10) => this.move(e10));
     el2.addEventListener("pointerup", (e10) => this.up(e10));
     el2.addEventListener("contextmenu", (e10) => {
+      if (this.locked) {
+        e10.preventDefault();
+        return;
+      }
       if (!this.layout || e10.target.closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
       e10.preventDefault();
       const p2 = this.local(e10);
@@ -8615,6 +8619,11 @@ var ScoreView = class {
       this.host.onSelPress?.({ x: e10.clientX, y: e10.clientY });
     });
     el2.addEventListener("pointercancel", (e10) => {
+      if (this.holdPid === e10.pointerId) {
+        this.holdPid = null;
+        this.host.release?.();
+      }
+      this.lockTap = null;
       if (this.drag) this.host.release?.();
       this.drag = null;
       if (this.lift) {
@@ -8732,6 +8741,8 @@ var ScoreView = class {
     else this.sheet.insertAdjacentHTML("afterbegin", svg);
     if (!this.boxEl.isConnected) this.ink.appendChild(this.boxEl);
     this.placeHandles();
+    if (this.playP) this.setPlayhead(this.playP);
+    this.drawStartMark();
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
@@ -8746,53 +8757,131 @@ var ScoreView = class {
     }
   }
   playheadEl = null;
+  hlEls = [];
+  // 正在响的音的高亮
+  playP = null;
+  // 播放线在哪（重画后照着再摆）
+  startP = null;
+  // 起点
+  startEl = null;
+  /** 听模式（2026-10-10 user「播放模式，锁写谱，但是可以调录音室」「我蛮需要播放欣赏的时候防误触的哈哈」）：谱面不写——轻点 = 告诉宿主「从这儿放」，拖 = 滚动，别的手势都不接。 */
+  locked = false;
+  lockTap = null;
+  holdPid = null;
+  // 按住一个音在出声（长按 = 预览；抬手停）
   /** 播放头（实时试听「谱上跟着亮」，2026-10-09 Claude Fable 5.1）：p = 哪张纸的第几个 tick（纸自己的，反复已折回去；src/engine/timeline.ts locate）；null = 收起。
    *  只挪一条线，不重排、不动滚动。位置 = 这张纸第一行那条 track 上「起点 ≥ tick 的第一个音」的光标位 → slot 的 x；行高 = 那一行的谱表范围。 */
+  /** 播放线（2026-10-10 Opus 5.5；user「首先是线，和光标用不一样的颜色，然后对齐是和所有track里面最后面的一个音符对齐，取max，然后唱到的音符试着高亮一下。看效果好不好」）：
+   *  x = 这一行所有声部里、此刻已经开始的音中最晚开始的那个（取 max）；线从这一行最上面那条谱画到最下面那条；每个声部正在响的音高亮。
+   *  颜色走 CSS（.playhead / .play-hl，和光标的 --accent 分开）。暂停着也留着（续播从这儿）。 */
   setPlayhead(p2) {
+    this.playP = p2;
     const L2 = this.layout;
+    const clear2 = () => {
+      this.playheadEl?.remove();
+      this.playheadEl = null;
+      for (const e10 of this.hlEls) e10.remove();
+      this.hlEls = [];
+    };
     if (!p2 || !L2) {
-      this.playheadEl?.remove();
-      this.playheadEl = null;
+      clear2();
       return;
     }
-    const st3 = this.host.get(), paper = st3.song.papers.find((x3) => x3.id === p2.paperId);
-    const sysIdx = L2.systems.findIndex((r10) => r10.paper === p2.paperId);
-    if (!paper || sysIdx < 0) {
-      this.playheadEl?.remove();
-      this.playheadEl = null;
+    const found = this.soundingAt(p2.paperId, p2.tick);
+    if (!found.length) {
+      clear2();
       return;
     }
-    const part = L2.systems[sysIdx].part, toks = paper.tracks[part] ?? [];
-    let t10 = 0, caret = toks.length;
-    for (let i10 = 0; i10 < toks.length; i10++) {
-      const k2 = toks[i10];
-      if (!isTimed(k2)) continue;
-      if (t10 + k2.dur > p2.tick) {
-        caret = i10;
-        break;
-      }
-      t10 += k2.dur;
-    }
-    const onRow = (h2) => h2.index === caret && L2.systems[h2.system]?.paper === p2.paperId && L2.systems[h2.system]?.part === part;
-    const hit = L2.notes.find(onRow) ?? L2.rests.find(onRow);
-    const slot = hit ? null : L2.slots.find((sl2) => sl2.caret === caret && L2.systems[sl2.system]?.paper === p2.paperId && L2.systems[sl2.system]?.part === part);
-    if (!hit && !slot) {
-      this.playheadEl?.remove();
-      this.playheadEl = null;
-      return;
-    }
-    const row = L2.systems[(hit ?? slot).system], x2 = hit ? hit.x + hit.w / 2 : slot.x;
+    const lead = found.reduce((a10, b3) => b3.start > a10.start ? b3 : a10), h0 = lead.hits[0], sys = L2.systems[h0.system].sys;
+    const rows = L2.systems.filter((r10) => r10.paper === p2.paperId && r10.sys === sys);
+    const top = Math.min(...rows.map((r10) => r10.top)), bottom = Math.max(...rows.map((r10) => r10.bottom)), x2 = h0.x + h0.w / 2;
     let el2 = this.playheadEl;
     if (!el2 || !el2.isConnected) {
       el2 = document.createElement("div");
       el2.className = "playhead";
-      el2.style.cssText = "position:absolute;width:2px;background:var(--accent);opacity:.55;pointer-events:none;border-radius:1px";
       this.ink.appendChild(el2);
       this.playheadEl = el2;
     }
     el2.style.left = `${x2 - 1}px`;
-    el2.style.top = `${row.top}px`;
-    el2.style.height = `${Math.max(1, row.bottom - row.top)}px`;
+    el2.style.top = `${top}px`;
+    el2.style.height = `${Math.max(1, bottom - top)}px`;
+    const spots = found.filter((f2) => f2.note).flatMap((f2) => f2.hits);
+    while (this.hlEls.length > spots.length) this.hlEls.pop().remove();
+    spots.forEach((h2, k2) => {
+      let d3 = this.hlEls[k2];
+      if (!d3 || !d3.isConnected) {
+        d3 = document.createElement("div");
+        d3.className = "play-hl";
+        this.ink.appendChild(d3);
+        this.hlEls[k2] = d3;
+      }
+      const r10 = Math.max(6, h2.w * 0.8);
+      d3.style.left = `${h2.x + h2.w / 2 - r10}px`;
+      d3.style.top = `${h2.y - r10}px`;
+      d3.style.width = d3.style.height = `${2 * r10}px`;
+    });
+  }
+  /** 这张纸 tick 那一刻每个声部（排出来的每一行）正在放的 token：下标、开始的 tick、画出来的位置（音 / 休止）。 */
+  soundingAt(paperId, tick) {
+    const L2 = this.layout;
+    if (!L2) return [];
+    const paper = this.host.get().song.papers.find((x2) => x2.id === paperId);
+    if (!paper) return [];
+    const out = [], seen = /* @__PURE__ */ new Set();
+    for (const r10 of L2.systems) {
+      if (r10.paper !== paperId || seen.has(r10.part)) continue;
+      seen.add(r10.part);
+      const toks = paper.tracks[r10.part] ?? [];
+      let t10 = 0, at2 = -1, start = 0;
+      for (let i10 = 0; i10 < toks.length; i10++) {
+        const k2 = toks[i10];
+        if (!isTimed(k2)) continue;
+        if (t10 + k2.dur > tick) {
+          at2 = i10;
+          start = t10;
+          break;
+        }
+        t10 += k2.dur;
+      }
+      if (at2 < 0) continue;
+      const mine = (h2) => h2.index === at2 && L2.systems[h2.system]?.paper === paperId && L2.systems[h2.system]?.part === r10.part;
+      const hits = [...L2.notes.filter(mine), ...L2.rests.filter(mine)];
+      if (hits.length) out.push({ part: r10.part, index: at2, start, note: toks[at2].kind === "note", hits });
+    }
+    return out;
+  }
+  /** 开播的起点（小节头；2026-10-10 user「编辑的时候光标动但是播放头不动」「大部分时候可以小节级别的开始精度」）：一面小旗，颜色和光标 / 播放线都不一样。null = 没设（从头）。 */
+  setStartMark(p2) {
+    this.startP = p2;
+    this.drawStartMark();
+  }
+  drawStartMark() {
+    const L2 = this.layout, p2 = this.startP;
+    if (!p2 || !L2) {
+      this.startEl?.remove();
+      this.startEl = null;
+      return;
+    }
+    const found = this.soundingAt(p2.paperId, p2.tick).filter((f2) => f2.start >= p2.tick);
+    const h2 = (found.length ? found : this.soundingAt(p2.paperId, p2.tick)).flatMap((f2) => f2.hits).sort((a10, b3) => a10.x - b3.x)[0];
+    if (!h2) {
+      this.startEl?.remove();
+      this.startEl = null;
+      return;
+    }
+    const sys = L2.systems[h2.system].sys, rows = L2.systems.filter((r10) => r10.paper === p2.paperId && r10.sys === sys);
+    const top = Math.min(...rows.map((r10) => r10.top)), bottom = Math.max(...rows.map((r10) => r10.bottom));
+    let el2 = this.startEl;
+    if (!el2 || !el2.isConnected) {
+      el2 = document.createElement("div");
+      el2.className = "start-mark";
+      el2.title = "\u8D77\u70B9\uFF1A\u27F2 \u4ECE\u8FD9\u513F\u91CD\u653E\uFF08\u957F\u6309\u7A7A\u767D\u5904\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\u5B83\uFF1B\u7F16\u8F91\u4E0D\u52A8\u5B83\uFF09";
+      this.ink.appendChild(el2);
+      this.startEl = el2;
+    }
+    el2.style.left = `${h2.x - 4}px`;
+    el2.style.top = `${top}px`;
+    el2.style.height = `${Math.max(1, bottom - top)}px`;
   }
   /** 光标 / 选区 / 编辑框在哪（变了才跟）。 */
   baseKey() {
@@ -8905,6 +8994,25 @@ var ScoreView = class {
     const L2 = this.layout;
     if (!L2 || e10.button === 2) return;
     const p2 = this.local(e10);
+    if (this.locked) {
+      if (e10.pointerType === "touch") {
+        this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
+        this.el.setPointerCapture(e10.pointerId);
+        if (this.touches.size === 2) {
+          this.finger = null;
+          const [a10, b3] = [...this.touches.values()], mid = this.local({ clientX: (a10.x + b3.x) / 2, clientY: (a10.y + b3.y) / 2 });
+          this.pinch = { d0: Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y)), z0: this.zoom, cx: mid.x, cy: mid.y };
+          return;
+        }
+        if (this.touches.size > 2) return;
+        this.finger = { pid: e10.pointerId, y0: e10.clientY, top0: this.el.scrollTop, x: p2.x, y: p2.y, moved: false, shift: false, x0: e10.clientX, left0: this.el.scrollLeft };
+        return;
+      }
+      e10.preventDefault();
+      this.el.setPointerCapture(e10.pointerId);
+      this.lockTap = { pid: e10.pointerId, x: p2.x, y: p2.y, moved: false };
+      return;
+    }
     if (e10.pointerType !== "touch") this.el.focus({ preventScroll: true });
     if (e10.pointerType === "touch") {
       this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
@@ -8981,6 +9089,8 @@ var ScoreView = class {
         this.drag = null;
       }
       this.selDrag = { pid: pr.pid, anchor: pr.hit.index, menu: true };
+      this.host.audition?.(pr.hit.index, true);
+      this.holdPid = pr.pid;
       return;
     }
     this.lyrics.commitAndClose();
@@ -8994,6 +9104,23 @@ var ScoreView = class {
     this.host.set(select(st3, pr.hit.index, pr.hit.index + 1));
     this.selDrag = { pid: pr.pid, anchor: pr.hit.index };
     this.host.focus?.("staff");
+    this.host.audition?.(pr.hit.index, true);
+    this.holdPid = pr.pid;
+  }
+  /** 听模式的轻点：点在音 / 休止上 = 它；空白 = 那一行光标会落的位置。不改光标、不改谱。 */
+  listenTap(x2, y2) {
+    const L2 = this.layout;
+    if (!L2) return;
+    const hit = this.noteAt(x2, y2, true);
+    if (hit) {
+      const r10 = L2.systems[hit.system];
+      if (r10) {
+        this.host.onListenTap?.({ paper: r10.paper, part: r10.part, index: hit.index, caret: hit.index });
+        return;
+      }
+    }
+    const s10 = this.caretAt(x2, y2);
+    this.host.onListenTap?.({ paper: s10.at.paper, part: s10.at.part, index: null, caret: s10.caret });
   }
   /** 空白处长按 / 右键：收起编辑框、光标放到那里（同轻点空白），再告诉宿主开小菜单。row = 这一行里光标所在 track 的音的下标范围。 */
   blankPress(x2, y2, cx2, cy2) {
@@ -9302,6 +9429,11 @@ var ScoreView = class {
     this.host.set(select(st3, Math.min(...inside), Math.max(...inside) + 1));
   }
   move(e10) {
+    if (this.lockTap && e10.pointerId === this.lockTap.pid) {
+      const p3 = this.local(e10);
+      if (Math.hypot(p3.x - this.lockTap.x, p3.y - this.lockTap.y) > 6) this.lockTap.moved = true;
+      return;
+    }
     const pr = this.press;
     if (pr && e10.pointerId === pr.pid && !pr.moved && !pr.fired) {
       const p3 = this.local(e10);
@@ -9386,6 +9518,24 @@ var ScoreView = class {
       this.pinch = null;
       this.finger = null;
       this.cancelPress();
+      return;
+    }
+    if (this.holdPid === e10.pointerId) {
+      this.holdPid = null;
+      this.host.release?.();
+    }
+    if (this.locked) {
+      const lt2 = this.lockTap, f2 = this.finger;
+      if (lt2 && e10.pointerId === lt2.pid) {
+        this.lockTap = null;
+        if (!lt2.moved) this.listenTap(lt2.x, lt2.y);
+        return;
+      }
+      if (f2 && e10.pointerId === f2.pid) {
+        this.finger = null;
+        if (!f2.moved) this.listenTap(f2.x, f2.y);
+        return;
+      }
       return;
     }
     if (this.lift && e10.pointerId === this.lift.pid) {
@@ -18812,7 +18962,7 @@ var Singer = class {
   }
   worker(l10) {
     if (l10.w) return l10.w;
-    const w2 = new Worker(new URL(`./${"singer-worker-8a107df51dbe.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"singer-worker-e5b413f04709.mjs"}`, import.meta.url), { type: "module" });
     l10.w = w2;
     w2.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -34485,7 +34635,7 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u4ECE\u5149\u6807\u653E / \u505C\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="rewindBtn" class="btn" title="\u4ECE\u5934\u653E\uFF08\u25B6 \u662F\u4ECE\u5149\u6807\u653E\uFF09">\u4ECE\u5934</button><button id="loopBtn" class="btn" title="\u5FAA\u73AF\uFF1A\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF">\u5FAA\u73AF</button><button id="seamBtn" class="btn" hidden title="\u542C\u63A5\u7F1D\uFF1A\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C">\u63A5\u7F1D</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u653E / \u6682\u505C\uFF08\u7A7A\u683C\uFF09\uFF1A\u6682\u505C\u7740\u518D\u70B9 = \u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09"><svg class="ico"><use href="#play"/></svg></button><button id="rewindBtn" class="btn" title="\u56DE\u5230\u8D77\u70B9\u91CD\u653E\uFF08\u4E00\u904D\u4E00\u904D\u542C\u540C\u4E00\u4E2A\u5C0F\u8282\uFF09\u3002\u8D77\u70B9 = \u957F\u6309\u7A7A\u767D\u5904\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#refresh"/></svg></button><button id="transportMore" class="btn" title="\u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><button id="listenBtn" class="btn" title="\u542C\uFF1A\u9501\u4F4F\u8C31\uFF08\u9632\u8BEF\u89E6\uFF09\uFF0C\u70B9\u8C31 = \u4ECE\u90A3\u4E2A\u5C0F\u8282\u653E\uFF1B\u5F55\u97F3\u5BA4\u7167\u6837\u80FD\u8C03\u3002\u518D\u70B9 = \u56DE\u5230\u5199\uFF08Esc\uFF09">\u542C</button><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
@@ -34695,6 +34845,23 @@ var soundTok = (s10, i10, id2 = "main") => {
   const t10 = tr(s10)[i10];
   if (t10?.kind === "note" && t10.pitch) sound.down(t10.pitch, id2);
 };
+function previewEdited() {
+  const toks = tr(st2);
+  let i10 = -1;
+  if (st2.sel) {
+    for (let k2 = st2.sel.from; k2 < st2.sel.to; k2++) if (toks[k2]?.kind === "note") {
+      i10 = k2;
+      break;
+    }
+  } else for (let k2 = st2.caret - 1; k2 >= 0; k2--) if (toks[k2]?.kind === "note") {
+    i10 = k2;
+    break;
+  }
+  if (i10 < 0) return;
+  clearTimeout(upTimer);
+  soundTok(st2, i10, "score");
+  upTimer = window.setTimeout(() => sound.up("score"), 350);
+}
 var keyTok = (s10, i10, code) => {
   const t10 = tr(s10)[i10];
   soundTok(s10, i10, `key${code}`);
@@ -34731,6 +34898,8 @@ var view = new ScoreView(scoreEl, {
   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at2) => openTrackCard(at2),
   onBlankPress: (at2, row) => openScoreMenu(at2, row),
+  onListenTap: (a10) => playFromHere(a10.paper, a10.part, a10.index !== null ? tickOfCaret(a10.paper, a10.part, a10.index) : tickOfCaret(a10.paper, a10.part, a10.caret)),
+  // 听模式：点哪个小节就从那儿放
   onSelPress: (at2) => openSelMenu(at2),
   onMarkPress: (i10, at2) => openMarkMenu(i10, at2),
   lyricHint: (i10) => lyricHintAt(i10),
@@ -35218,13 +35387,12 @@ var info = (s10) => {
 function showError(text2) {
   reportError(text2, "error");
 }
-var playIcon = (stop) => {
-  $2("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`;
-  $2("playBtn").classList.toggle("is-on", stop);
-  if (!stop) progress("");
+var playIcon = (playing) => {
+  $2("playBtn").innerHTML = `<svg class="ico"><use href="#${playing ? "pause" : "play"}"/></svg>`;
+  $2("playBtn").classList.toggle("is-on", playing);
+  if (!playing) progress("");
 };
-var borrowMode = "static";
-var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN, ...borrowMode !== "static" ? { borrow: borrowMode } : {} });
+var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
 var playSong = () => viewScope === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : st2.song;
 var curFlat = () => {
   const s10 = playSong(), order = songPlayOrder(s10);
@@ -35499,17 +35667,55 @@ function playRange(tl2) {
   if (viewScope === "all" && a10.loop && tl2.papers[a10.order.length]) loopFrom = tl2.papers[a10.order.length].t0;
   return { from, to: to2, loopFrom };
 }
-function cursorSeconds(tl2) {
-  const track = tr(st2), i10 = st2.sel ? st2.sel.from : st2.caret, tok = track[i10];
-  const sec = tok ? tl2.secondsOfToken(st2.at.part, tok.id) : null;
-  if (sec === null || sec >= tl2.range.to - 0.05) return null;
-  return Math.max(tl2.range.from, sec - PRE_ROLL);
+var startMark = null;
+var paused = null;
+var clampTo = (r10, s10) => Math.min(Math.max(s10, r10.from), r10.to);
+function startSeconds(tl2, r10) {
+  if (!startMark) return r10.from;
+  const s10 = tl2.secondsAt(startMark.paperId, startMark.tick, 0);
+  return s10 === null ? r10.from : clampTo(r10, s10 - PRE_ROLL);
 }
-async function togglePlay(o10 = {}) {
-  if (engine.playing) {
-    stopPlay();
-    return;
+function resumeSeconds(tl2, r10) {
+  if (!paused) return startSeconds(tl2, r10);
+  const s10 = paused.at ? tl2.secondsAt(paused.at.paperId, paused.at.tick, paused.sec) : null;
+  return clampTo(r10, s10 ?? paused.sec);
+}
+function barHeadTick(paperId, part, tick) {
+  const paper = st2.song.papers.find((p2) => p2.id === paperId);
+  if (!paper) return 0;
+  const toks = paper.tracks[part] ?? Object.values(paper.tracks)[0] ?? [];
+  let len = DEFAULT_TIME.beats * WHOLE / DEFAULT_TIME.beatType, inBar = 0, t10 = 0, head = 0;
+  for (const k2 of toks) {
+    if (k2.kind === "bar") {
+      if (t10 <= tick) head = t10;
+      inBar = 0;
+      continue;
+    }
+    if (k2.kind === "time") {
+      if (inBar > 0 && t10 <= tick) head = t10;
+      inBar = 0;
+      len = k2.beats * WHOLE / k2.beatType;
+      continue;
+    }
+    if (!isTimed(k2)) continue;
+    while (inBar >= len && inBar > 0) {
+      const b3 = t10 - (inBar - len);
+      if (b3 <= tick) head = b3;
+      inBar -= len;
+    }
+    if (t10 > tick) break;
+    inBar += k2.dur;
+    t10 += k2.dur;
   }
+  return head;
+}
+var tickOfCaret = (paperId, part, caret) => {
+  const toks = st2.song.papers.find((p2) => p2.id === paperId)?.tracks[part] ?? [];
+  let t10 = 0;
+  for (let i10 = 0; i10 < Math.min(caret, toks.length); i10++) if (isTimed(toks[i10])) t10 += toks[i10].dur;
+  return t10;
+};
+async function startPlayback(how) {
   if (preparing) {
     cancelPrepare = true;
     return;
@@ -35527,10 +35733,9 @@ async function togglePlay(o10 = {}) {
     }
     const r10 = playRange(tl2);
     playTl = tl2;
-    const loop = loopOn || !!o10.seam;
+    const loop = loopOn || how === "seam";
     engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop, loopFrom: r10.loopFrom });
-    const cur = cursorSeconds(tl2);
-    const at2 = o10.seam ? Math.max(r10.from, r10.to - SEAM_LEAD) : o10.fromStart || cur === null ? r10.from : Math.min(Math.max(cur, r10.from), r10.to);
+    const at2 = how === "seam" ? Math.max(r10.from, r10.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl2, r10) : startSeconds(tl2, r10);
     setChunkOrder(tl2, at2, loop ? { from: r10.loopFrom, to: r10.to } : null);
     await waitChunksReady(tl2, at2, () => cancelPrepare);
     if (cancelPrepare) {
@@ -35538,6 +35743,7 @@ async function togglePlay(o10 = {}) {
       return;
     }
     await engine.play(at2);
+    paused = null;
     playIcon(true);
     progress(loopOn ? `\u5FAA\u73AF ${(r10.to - r10.loopFrom).toFixed(1)} \u79D2` : `${(r10.to - at2).toFixed(1)} \u79D2`);
   } catch (e10) {
@@ -35550,12 +35756,51 @@ async function togglePlay(o10 = {}) {
     if (!engine.playing) $2("playBtn").classList.remove("is-on");
   }
 }
+function playPause() {
+  if (engine.playing) {
+    pausePlay();
+    return;
+  }
+  void startPlayback(paused ? "resume" : "start");
+}
+function pausePlay() {
+  const sec = engine.audibleSec() ?? engine.position, at2 = playTl?.locate(sec) ?? null;
+  stopPlay();
+  paused = { sec, at: at2 };
+  view.setPlayhead(at2);
+}
+function replay() {
+  paused = null;
+  if (engine.playing && playTl) {
+    engine.seek(startSeconds(playTl, playRange(playTl)));
+    return;
+  }
+  view.setPlayhead(null);
+  void startPlayback("start");
+}
+function playFromHere(paperId, part, tick) {
+  startMark = { paperId, tick: barHeadTick(paperId, part, tick) };
+  view.setStartMark(startMark);
+  replay();
+}
+function playFromHead() {
+  startMark = null;
+  view.setStartMark(null);
+  replay();
+}
+function playSeam() {
+  if (engine.playing && playTl) {
+    const r10 = playRange(playTl);
+    engine.seek(Math.max(r10.from, r10.to - SEAM_LEAD));
+  } else void startPlayback("seam");
+}
 function stopPlay() {
   engine.stop();
   playIcon(false);
   view.setPlayhead(null);
   phKey = "";
   cancelPrepare = true;
+  paused = null;
   chunkKeysWanted = [];
   singer.cancelPending();
   singer.cancelInflight();
@@ -35565,7 +35810,67 @@ engine.on("ended", () => {
   playIcon(false);
   view.setPlayhead(null);
   phKey = "";
+  paused = null;
 });
+var listenMode = false;
+var padBeforeListen = false;
+function setListen(on2) {
+  if (on2 === listenMode) return;
+  listenMode = on2;
+  view.locked = on2;
+  document.body.classList.toggle("listen-mode", on2);
+  $2("listenBtn").classList.toggle("is-on", on2);
+  if (on2) {
+    closeOffer?.();
+    view.lyrics.commitAndClose();
+    view.marks.commitAndClose();
+    padBeforeListen = !padEl.hidden;
+    showPad(false);
+  } else if (padBeforeListen) showPad(true);
+  updateChrome();
+  info(on2 ? "\u542C\uFF1A\u8C31\u9501\u4F4F\u4E86\uFF08\u4E0D\u80FD\u5199\uFF09\uFF0C\u70B9\u8C31 = \u4ECE\u90A3\u4E2A\u5C0F\u8282\u653E\uFF1B\u518D\u70B9\u300C\u542C\u300D\u6216 Esc \u56DE\u5230\u5199" : "\u56DE\u5230\u5199");
+}
+function openTransportMenu() {
+  closeOffer?.();
+  const btn = $2("transportMore"), box = document.createElement("div");
+  box.className = "track-card ctx-menu";
+  box.setAttribute("role", "menu");
+  const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc7(title)}">${label}</button>`;
+  box.innerHTML = item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
+  document.body.append(box);
+  const b3 = btn.getBoundingClientRect(), w2 = box.offsetWidth, m2 = 8;
+  box.style.left = `${Math.max(m2, Math.min(b3.left, innerWidth - w2 - m2))}px`;
+  box.style.top = `${b3.bottom + 4}px`;
+  const outside = (e10) => {
+    if (!box.contains(e10.target) && e10.target !== btn) close();
+  };
+  const close = () => {
+    document.removeEventListener("pointerdown", outside, true);
+    box.remove();
+    if (closeOffer === close) closeOffer = null;
+  };
+  setTimeout(() => {
+    if (box.isConnected) document.addEventListener("pointerdown", outside, true);
+  }, 0);
+  closeOffer = close;
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (!v) return;
+    close();
+    if (v === "loop") setLoop(!loopOn);
+    else if (v === "head") playFromHead();
+    else if (v === "seam") playSeam();
+  });
+}
+function setLoop(on2) {
+  loopOn = on2;
+  $2("transportMore").classList.toggle("is-on", on2);
+  $2("transportMore").textContent = on2 ? "\u5FAA\u73AF \u22EF" : "\u22EF";
+  if (engine.playing && playTl) {
+    const r10 = playRange(playTl);
+    engine.setTimeline({ tracks: playTl.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom });
+  }
+}
 var lastReorder = 0;
 var phRaf = 0;
 var phKey = "";
@@ -35639,31 +35944,14 @@ function schedulePrewarm() {
     const tl2 = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st2.song.hum, singOpt: humOpt() });
     if (!tl2.chunks.length) return;
     pruneChunks(tl2);
-    setChunkOrder(tl2, cursorSeconds(tl2) ?? tl2.range.from, null, { quiet: true, limit: PREWARM_PHRASES });
+    const r10 = playRange(tl2);
+    setChunkOrder(tl2, paused ? resumeSeconds(tl2, r10) : startSeconds(tl2, r10), null, { quiet: true, limit: PREWARM_PHRASES });
   }, 700);
 }
-$2("playBtn").addEventListener("click", () => {
-  void togglePlay();
-});
-$2("rewindBtn").addEventListener("click", () => {
-  if (engine.playing && playTl) engine.seek(playRange(playTl).from);
-  else void togglePlay({ fromStart: true });
-});
-$2("loopBtn").addEventListener("click", () => {
-  loopOn = !loopOn;
-  $2("loopBtn").classList.toggle("is-on", loopOn);
-  $2("seamBtn").hidden = !loopOn;
-  if (engine.playing && playTl) {
-    const r10 = playRange(playTl);
-    engine.setTimeline({ tracks: playTl.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom });
-  }
-});
-$2("seamBtn").addEventListener("click", () => {
-  if (engine.playing && playTl) {
-    const r10 = playRange(playTl);
-    engine.seek(Math.max(r10.from, r10.to - SEAM_LEAD));
-  } else void togglePlay({ seam: true });
-});
+$2("playBtn").addEventListener("click", () => playPause());
+$2("rewindBtn").addEventListener("click", () => replay());
+$2("transportMore").addEventListener("click", () => openTransportMenu());
+$2("listenBtn").addEventListener("click", () => setListen(!listenMode));
 var embedSoftLimit = 1e7;
 var sessionSubsets = /* @__PURE__ */ new Map();
 async function resolveGmBytes(g3) {
@@ -35999,6 +36287,8 @@ window.__moonsinger = {
   engine,
   exportSong,
   renderMix: () => renderMixForTest(),
+  transport: () => ({ startMark, paused, listen: listenMode, loop: loopOn }),
+  // 走带的状态（E2E 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describe(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
   speechCache: (op2) => singer.cache(op2, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
@@ -36018,7 +36308,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "e31b8c8ceb0b",
+  cssHash: "f2f93a57232c",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -36332,9 +36622,7 @@ var studio = new Studio2($2("stage"), {
     setPv(id2, { solo: !pv(id2).solo });
     view.render();
   },
-  play: () => {
-    void togglePlay();
-  },
+  play: () => playPause(),
   close: () => closeStudio(),
   master: () => activeMaster(doc.extras),
   setMasterGain: (dB) => updateExtras(withMaster(doc.extras, { gainDb: dB }), { kind: "studio", label: `\u603B\u8F68\u589E\u76CA ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
@@ -36767,7 +37055,7 @@ function openScoreMenu(at2, row) {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
-  box.innerHTML = item("paste", "\u7C98\u8D34", "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09") + `<div class="ctx-sep"></div>` + item("bar", "\u5C0F\u8282\u7EBF |", "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09") + item("phrase", "\u53E5\u53F7", "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09") + item("mark:key", "\u8C03\u53F7\u2026") + item("mark:time", "\u62CD\u53F7\u2026") + item("mark:tempo", "\u901F\u5EA6\u2026") + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
+  box.innerHTML = item("play", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u27F2 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09") + `<div class="ctx-sep"></div>` + item("paste", "\u7C98\u8D34", "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09") + `<div class="ctx-sep"></div>` + item("bar", "\u5C0F\u8282\u7EBF |", "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09") + item("phrase", "\u53E5\u53F7", "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09") + item("mark:key", "\u8C03\u53F7\u2026") + item("mark:time", "\u62CD\u53F7\u2026") + item("mark:tempo", "\u901F\u5EA6\u2026") + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
   `<div class="ctx-row ctx-dyn">${["pp", "p", "mp", "mf", "f", "ff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(st2), st2.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("row", "\u5168\u9009\u8FD9\u4E00\u884C", "", !row) + item("all", "\u5168\u9009");
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -36791,6 +37079,10 @@ function openScoreMenu(at2, row) {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
     close();
+    if (v === "play") {
+      playFromHere(st2.at.paper, st2.at.part, tickOfCaret(st2.at.paper, st2.at.part, st2.caret));
+      return;
+    }
     if (v === "paste") void pasteNow();
     else if (v === "bar") update(apply(st2, { k: "bar" }, performance.now()));
     else if (v === "phrase") update(apply(st2, { k: "phrase" }, performance.now()));
@@ -37112,10 +37404,12 @@ function openSelMenu(at2) {
     const cmd2 = (c10) => update(apply(st2, c10, performance.now()));
     if (v.startsWith("tr:")) {
       cmd2({ k: "transpose", semis: Number(v.slice(3)) });
+      previewEdited();
       return;
     }
     if (v.startsWith("oct:")) {
       cmd2({ k: "octave", d: Number(v.slice(4)) });
+      previewEdited();
       return;
     }
     if (v === "short") {
@@ -37337,12 +37631,7 @@ function drawInst() {
     "\u5206\u6BB5\u5531",
     [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
     sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF"
-  ))(activeSingChunk(doc.extras, role)) : "") + // 借元音（A/B 实验）：只在这次打开里有效（不进歌、不进撤销）；切了 = 用到的句子重唱
-  (eng === "tsukuyomi" ? row(
-    "\u501F\u5143\u97F3\uFF08\u5B9E\u9A8C\uFF09",
-    [["static", "\u539F\u6837", "\u4E00\u5F20\u9759\u6001\u7684\u5143\u97F3\u6837\u672C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF09"], ["fade", "A \u4E24\u5934\u8FC7\u6E21", "\u501F\u6765\u7684\u6837\u672C\u5728\u5143\u97F3\u4E24\u5934\u548C\u5979\u81EA\u5DF1\u5FF5\u7684\u90A3\u51E0\u5E27\u4EA4\u53C9\u6DE1\u5165\u6DE1\u51FA\uFF0840 ms\uFF09"], ["donor", "B \u501F\u6574\u6BB5", "\u501F\u540C\u4E00\u53E5\u91CC\u540C\u5143\u97F3\u90A3\u4E2A\u5B57\u7684\u6574\u6BB5\uFF08\u8D77\u97F3 / \u7A33\u6001 / \u6536\u5C3E\uFF09\uFF0C\u6309\u8FD9\u4E2A\u97F3\u7684\u957F\u5EA6\u62C9\u4F38"]].map(([v, l10, t10]) => chip(`borrow:${v}`, l10, borrowMode === v, t10)).join(""),
-    "\u5979\u628A\u4E00\u4E2A\u5143\u97F3\u5FF5\u6210\u6C14\u58F0\u65F6\uFF08\u56E2\u5B50\u7684\u300C\u3064\u300D\uFF09\uFF0C\u5531\u7684\u65F6\u5019\u4ECE\u522B\u7684\u5B57\u501F\u4E00\u4E2A\u5E72\u51C0\u7684\u5143\u97F3\u3002\u4E09\u79CD\u501F\u6CD5\u5207\u7740\u542C\u540C\u4E00\u53E5\uFF1B\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C"
-  ) : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
+  ))(activeSingChunk(doc.extras, role)) : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
   instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc7(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc7(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText2(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc7(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
   const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
   sel.addEventListener("change", () => {
@@ -37440,12 +37729,7 @@ instEl.addEventListener("click", (e10) => {
     const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d3));
     updateExtras(withCalibration(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u54CD\u5EA6\u6821\u51C6 ${next2} dB` }, "cal");
   } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
-  else if (v.startsWith("borrow:")) {
-    borrowMode = v.slice(7);
-    schedulePlaybackRefresh();
-    schedulePrewarm();
-    info(`\u501F\u5143\u97F3\uFF1A${borrowMode === "static" ? "\u539F\u6837" : borrowMode === "fade" ? "A \u4E24\u5934\u8FC7\u6E21" : "B \u501F\u6574\u6BB5"}\uFF08\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF09`);
-  } else if (v.startsWith("chunk:")) {
+  else if (v.startsWith("chunk:")) {
     const c10 = v.slice(6);
     updateExtras(withSingChunk(doc.extras, role, c10, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u5206\u6BB5\u5531\uFF1A${c10 === "phrase" ? "\u6BCF\u53E5" : c10 === "sheet" ? "\u6BCF\u5F20\u7EB8" : "\u4E00\u6574\u9996"}` });
   } else return;
@@ -38637,6 +38921,7 @@ function run(a10, repeat, code) {
       }
       update(apply(st2, withHalf(a10.cmd), performance.now()));
       if (a10.cmd.k === "rest" || a10.cmd.k === "extend") afterWrite();
+      if (a10.cmd.k === "step" || a10.cmd.k === "alter" || a10.cmd.k === "octave") previewEdited();
       return true;
     case "audition": {
       if (repeat) return true;
@@ -38646,7 +38931,7 @@ function run(a10, repeat, code) {
       return true;
     }
     case "play":
-      void togglePlay();
+      playPause();
       return true;
     case "impro":
       toggleImpro();
@@ -38714,7 +38999,20 @@ window.addEventListener("keydown", (e10) => {
       closeStudio();
     } else if (e10.key === " " && !e10.target?.closest("input")) {
       e10.preventDefault();
-      void togglePlay();
+      playPause();
+    }
+    return;
+  }
+  if (listenMode) {
+    if (e10.key === " ") {
+      e10.preventDefault();
+      playPause();
+    } else if (e10.key === "Escape") {
+      e10.preventDefault();
+      setListen(false);
+    } else if ((e10.ctrlKey || e10.metaKey) && e10.key.toLowerCase() === "s") {
+      const a11 = route(e10, whereNow(), "write");
+      if (a11 && run(a11, e10.repeat, e10.code)) e10.preventDefault();
     }
     return;
   }
@@ -38777,4 +39075,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6e0f58308896.mjs.map
+//# sourceMappingURL=moonsinger-9cc78a791530.mjs.map

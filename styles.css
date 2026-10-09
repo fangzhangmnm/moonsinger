@@ -10,6 +10,8 @@
   --line: #ddd9d0;
   --accent: #2b6cb0;
   --accent-soft: #e3edf9;
+  --play: #e0702a;    /* 播放线 / 正在响的音（和光标的 --accent 分开；2026-10-10 user「线，和光标用不一样的颜色」） */
+  --start: #2f8f5b;   /* 起点的小旗（⟲ 从这儿重放） */
   --ghost: #a9b4c2;
   --z-menu: 300;
   --z-overlay: 250;   /* 歌库一屏（在 menu 之下：图库包的卡片菜单 / 弹层用 --z-menu，要压在屏上面） */
@@ -583,7 +585,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 /* 撤销 / 重做在顶栏中间；窄屏（手机）把录音室钮收进设置（顶栏放不下 10 个钮） */
 @media (max-width: 480px) { #studioBtn { display: none; } }
 /* 走带「循环」/「接缝」（2026-10-08 深夜 Opus 5.5）：手机上顶栏挤——循环钮收窄、间距收紧、走带不硬居中（居中 = 两边各分一半，右边一组被压到和撤销 / 重做叠在一起）；「接缝」不放（循环放着每一圈都过接缝，钮只是直接跳过去听） */
-@media (max-width: 480px) { #loopBtn { padding: 0 6px; min-width: 0; } #seamBtn { display: none; } .bar { gap: 4px; padding-left: 6px; padding-right: 6px; grid-template-columns: minmax(0, 1fr) auto auto; } .bar .tb-left { overflow: hidden; } .bar .tb-mid { gap: 4px; } }
+@media (max-width: 480px) { #transportMore, #listenBtn { padding: 0 6px; min-width: 0; } .bar { gap: 4px; padding-left: 6px; padding-right: 6px; grid-template-columns: minmax(0, 1fr) auto auto; } .bar .tb-left { overflow: hidden; } .bar .tb-mid { gap: 4px; } }
 
 /* 声部的设置分两处（2026-10-08 by Claude Opus 5.5；user「乐器设置和轨设置视觉上分开来…是否是弹窗的模态。还是别的更好？你判断一下」）：
    轨 = 歌手牌旁边的非模态小卡（没有遮罩、谱照常看得见）；乐器 = 全屏一页（占 #stage 的 main，pad 留在旁边只弹不写，改了马上能试） */
@@ -719,3 +721,12 @@ span.smufl { pointer-events: none; }
 .ip-marks td { padding: 3px 0; color: var(--ink); }
 .ip-marks tr.ign th, .ip-marks tr.ign td { color: var(--muted); }
 .staff-svg .dyn-implied { fill: var(--muted); font-style: italic; font-weight: 600; }   /* 渐强渐弱没写终点：走一档推定的终点（灰字披露） */
+
+/* 走带（2026-10-10 Opus 5.5）：播放线 / 正在响的音 / 起点 / 听模式 */
+.playhead { position: absolute; width: 2px; background: var(--play); opacity: .75; pointer-events: none; border-radius: 1px; }
+.play-hl { position: absolute; background: var(--play); opacity: .28; border-radius: 50%; pointer-events: none; }
+.start-mark { position: absolute; width: 0; border-left: 2px dashed var(--start); pointer-events: none; }
+.start-mark::before { content: ""; position: absolute; left: -2px; top: -2px; width: 10px; height: 8px; background: var(--start); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+body.listen-mode #padTab { display: none; }
+body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不画光标 */
+#listenBtn.is-on { background: var(--play); color: #fff; border-color: var(--play); }

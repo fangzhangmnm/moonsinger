@@ -23,7 +23,7 @@ await p.waitForTimeout(700);
 const ph2 = await p.evaluate(() => { const e = document.querySelector(".playhead"); return e ? parseFloat(e.style.left) : null; });
 check(ph1 !== null && ph2 !== null && ph2 > ph1, "播放头画出来了、往右走", `${ph1} → ${ph2}`);
 await p.click("#playBtn"); await p.waitForTimeout(200);
-check(!(await p.$(".playhead")), "停了 = 播放头没了");
+check(!!(await p.$(".playhead")) && !(await p.evaluate(() => window.__moonsinger.engine.playing)), "暂停 = 播放线留在停下的地方（续播从这儿）");
 check(!errs.length, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nplayhead: ${pass} passed, ${fail} failed`);

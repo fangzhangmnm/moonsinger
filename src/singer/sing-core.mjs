@@ -52,10 +52,8 @@ export const DEFAULT_OPT = {
   //   pure noise through piper's own envelope; user「x同意，做支持」) and inhale: true (the breath before this syllable is audible even with breath: false —
   //   per written mark only; user「不应该每个逗号都大喘气」). Neither changes anything when absent (the default path is sample-identical).
   whisperDb: -6,          // 气声 is this much softer than the syllable's sung level (AI's starting value; the ear decides)
-  // borrowed vowels (a whispered vowel in piper's take sung voiced from a clean sample, see cleanMax) — A/B experiment, user「AB实验同意」:
-  borrow: "static",       // "static" = one median envelope for every frame (as before) | "fade" (A) = crossfade from / back to its own frames at the edges |
-                          // "donor" (B) = the whole vowel taken from the nearest clean syllable with the same vowel (its attack / held stretch / tail, time-mapped)
-  borrowFade: 0.04,       // s: A's crossfade at each edge of the vowel
+  // (v0.9.16 tried two other ways to sing a borrowed vowel — crossfade at its edges / the whole donor syllable; the user kept the original, 2026-10-10
+  //  「ab，要不用原版？之前其实已经修好了」, and both were removed again in v0.9.18.)
 };
 
 import { wordsOf, alignEnglish } from "./en-front.mjs";   // 英文：音节拼回单词、元音核心对齐（2026-10-07 Claude Opus 5.5）
@@ -177,20 +175,12 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
     const tmplSp = (ms) => { const fr = ms.flatMap((m) => m.cleanFrames); if (!fr.length) return null; const out = new Float64Array(bins), col = new Float64Array(fr.length);
       for (let q = 0; q < bins; q++) { fr.forEach((f, i) => (col[i] = Math.log(an.sp[f * bins + q] + 1e-16))); col.sort(); out[q] = Math.exp(col[col.length >> 1]); } return out; };
     const good = moras.filter((m) => m.ownClean <= OPT.cleanMax), all = tmpl(good), allSp = tmplSp(good);
-    const kOf = new Map(moras.map((m, k) => [m, k])), pitchOf = (m) => SCORE[kOf.get(m)].notes[0][0];
     for (const m of moras) if (m.ownClean > OPT.cleanMax && !m.whisper) { const same = good.filter((g) => tokens[g.vowel] === tokens[m.vowel]);   // 写了气声的不借：就要它念的那口气
-      if (OPT.borrow === "donor" && same.length) {   // B：借同元音那个字的整段（起音 / 稳态 / 收尾按歌的时钟拉伸，同它自己被唱的样子）
-        const d = [...same].sort((p, q) => Math.abs(pitchOf(p) - pitchOf(m)) - Math.abs(pitchOf(q) - pitchOf(m)) || Math.abs(kOf.get(p) - kOf.get(m)) - Math.abs(kOf.get(q) - kOf.get(m)))[0];
-        m.src = { v0: d.v0, v1: d.v1, hold: d.hold }; m.donor = d; m.apClean = d.apClean; m.borrowed = true; continue;
-      }
       m.apClean = tmpl(same) ?? all ?? m.apClean; m.spClean = tmplSp(same) ?? allSp ?? undefined; m.borrowed = (tmpl(same) ?? all) !== null; }   // 2026-10-07 (Claude Opus 5.5): nothing clean to borrow (a one-syllable phrase) → keep its own profile instead of crashing
     log(`whispered vowels sung from a clean sample of the same vowel: ${moras.filter((m) => m.borrowed).map((m) => m.kana).join(" ") || "none"}`);
   }
   { const lv = moras.filter((m) => m.ownClean <= OPT.cleanMax).map((m) => m.levelDb).sort((p, q) => p - q), med = lv[lv.length >> 1];
-    for (const m of moras) {
-      const lvl = m.donor ? m.donor.levelDb : m.levelDb, keep = m.ownClean > OPT.cleanMax && !m.donor;
-      m.gainDb = (keep ? 0 : Math.max(-OPT.levelMaxDb, Math.min(OPT.levelMaxDb, OPT.level * (med - lvl)))) + (m.whisper ? OPT.whisperDb : 0);
-    } }
+    for (const m of moras) m.gainDb = (m.ownClean > OPT.cleanMax ? 0 : Math.max(-OPT.levelMaxDb, Math.min(OPT.levelMaxDb, OPT.level * (med - m.levelDb)))) + (m.whisper ? OPT.whisperDb : 0); }
   let t = OPT.leadIn + leadRest * EIGHTH; const notes = [];
   SCORE.forEach((s, k) => {
     const m = moras[k]; m.noteStart = t;
@@ -220,14 +210,13 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
     const codaLen = m.codaC1 ? Math.min(m.codaC1 - m.v1, 0.45 * (sEnd0 - m.noteStart)) : 0, sEnd = sEnd0 - codaLen;   // en coda: the note's last bit
     const L = sEnd - m.noteStart, last = k + 1 === moras.length, fade = (m.rest || last) && !codaLen ? OPT.release : 0;
     m.fade = fade > 0 ? [sEnd - Math.min(fade, 0.4 * L), sEnd] : null;
-    const V = m.src ?? m;                                          // where the vowel's frames come from: its own take, or (borrow = donor) the donor's
-    const { h0, h1 } = V.hold, tailC = fade > 0 || m.src ? 0 : Math.min(OPT.tailIntoNext, V.v1 - h1);   // a donor's tail doesn't lead into our next consonant
-    const attC = h0 - V.v0; m.vEnd = sEnd;
-    if (L <= attC + tailC + 0.02) seg(m.noteStart, sEnd, V.v0, fade > 0 ? h1 : V.v1, "vowel", k);   // short note: plain linear map
+    const { h0, h1 } = m.hold, tailC = fade > 0 ? 0 : Math.min(OPT.tailIntoNext, m.v1 - h1);
+    const attC = h0 - m.v0;
+    if (L <= attC + tailC + 0.02) seg(m.noteStart, sEnd, m.v0, fade > 0 ? h1 : m.v1, "vowel", k);   // short note: plain linear map
     else {
-      seg(m.noteStart, m.noteStart + attC, V.v0, h0, "vowel", k);
+      seg(m.noteStart, m.noteStart + attC, m.v0, h0, "vowel", k);
       seg(m.noteStart + attC, sEnd - tailC, h0, h1, "vowel", k, true);   // the held stretch: the atlas sings here
-      if (tailC > 0) seg(sEnd - tailC, sEnd, V.v1 - tailC, V.v1, "vowel", k, "tail");   // atlas → piper crossfade happens here
+      if (tailC > 0) seg(sEnd - tailC, sEnd, m.v1 - tailC, m.v1, "vowel", k, "tail");   // atlas → piper crossfade happens here
     }
     if (codaLen > 0) { seg(sEnd, sEnd0, m.v1, m.codaC1, "cons", k, "coda"); m.codaFade = [sEnd0 - Math.min(0.04, codaLen / 2), sEnd0]; }
     if (m.rest && k + 1 < moras.length) seg(m.end, moras[k + 1].preStart, m.codaC1 ?? m.v1, moras[k + 1].c0, "rest", k);
@@ -277,7 +266,7 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   /** breath template for the mora that follows a rest: its vowel's atlas (or piper) envelope, tilted, as pure noise; returns log-sp scaled to breathDb below the vowel */
   function breathTemplate(m, midi, k) {
     const fr = atlas ? atlasFrame(m, midi, 0, k) : null; const logsp = new Float64Array(bins);
-    if (fr) logsp.set(fr.logsp); else { const src = m.spClean ?? null; for (let q = 0; q < bins; q++) logsp[q] = Math.log((src ? src[q] : an.sp[Math.ceil((m.src ?? m).hold.h0 / FPS) * bins + q]) + 1e-16); }
+    if (fr) logsp.set(fr.logsp); else { const src = m.spClean ?? null; for (let q = 0; q < bins; q++) logsp[q] = Math.log((src ? src[q] : an.sp[Math.ceil(m.hold.h0 / FPS) * bins + q]) + 1e-16); }
     const tilt = Math.round(OPT.atlasTiltHz / SR * an.fft);
     for (let q = 0; q < bins; q++) if (q > tilt) logsp[q] += Math.log(0.25) * Math.min(1, (q - tilt) / tilt);
     let e = 0; for (let q = 0; q < bins; q++) e += Math.exp(logsp[q]); const db = 10 * Math.log10(e + 1e-30);
@@ -335,10 +324,7 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
     else if (s.kind === "vowel" && sung) {
       vowelFrames++; f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
       const m = moras[s.k]; let changed = false;
-      if (m.spClean && OPT.borrow === "fade") {                    // A：借来的样本在元音两头和它自己的帧交叉淡入淡出（对数谱上插值）
-        const w = Math.max(0, Math.min(1, (tt - m.noteStart) / OPT.borrowFade, (m.vEnd - tt) / OPT.borrowFade));
-        if (w >= 1) sp.set(m.spClean, jj * bins); else for (let q = 0; q < bins; q++) sp[jj * bins + q] = Math.exp((1 - w) * Math.log(sp[jj * bins + q] + 1e-16) + w * Math.log(m.spClean[q] + 1e-16));
-      } else if (m.spClean) sp.set(m.spClean, jj * bins);          // whispered in piper's take: sing the song's clean sample of this vowel
+      if (m.spClean) sp.set(m.spClean, jj * bins);                 // whispered in piper's take: sing the song's clean sample of this vowel
       for (let q = 0; q < bins; q++) { const v = ap[jj * bins + q], c = m.apClean[q]; if (v > c) { ap[jj * bins + q] = c + OPT.breath * (v - c); changed = true; } }
       if (changed && !srcVoiced) repaired++;
       if (atlas && s.hold) {                                       // 元音图谱: the held stretch sings real sung vowel frames; fade in at its start, fade out across the tail segment
