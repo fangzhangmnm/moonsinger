@@ -18,9 +18,9 @@ describe("念缓存", () => {
     eq(c.hits, 3); eq(c.misses, 3);
   });
   it("不同歌词 / 不同 override = 不命中；预算小了最久没用的先走", async () => {
-    const c = new SpeechCache(300), f = fakes(), P = c.wrapPiper(f.piper), W = c.wrapWorld(f.world);
+    const c = new SpeechCache(100), f = fakes(), P = c.wrapPiper(f.piper), W = c.wrapWorld(f.world);   // 一段念 ≈ 72 B（分析存 bf16），100 B 只装得下一段
     const r1 = await P.run([1, 2], [[0]], {}); W.analyze(r1.audio, 22050); const r2 = await P.run([3, 4], [[0]], {}); W.analyze(r2.audio, 22050);
-    assert(c.used <= 300, `预算内（${c.used}）`);
+    assert(c.used <= 100, `预算内（${c.used}）`);
     await P.run([1, 2], [[0]], {}); eq(f.n().runs, 3, "最早的那段被挤掉了、重跑");
     await P.run([1, 2], [[0]], { override: [1, 1] }); eq(f.n().runs, 4, "override 不同 = 另一键");
   });

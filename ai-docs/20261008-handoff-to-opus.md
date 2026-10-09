@@ -151,6 +151,7 @@
 ## 0¾. 实时试听刀 1（v0.9.1，2026-10-09 晚，Claude Fable 5.1）
 - 做了什么 = 仓 CLAUDE.md v0.9.1 那条；设计 = `ai-docs/20261009-realtime-preview-engine-proposal.md`（§1–§12 提案、§13 user 三轮回复与修订、§14 刀 0 量的代价）；原话全集 = `ai-docs/20261009-sound-engine-user-vision.md`。
 - **接口面**（给接着做的人）：`src/engine/studio.ts` 的 `StudioIn / StudioOut / TimelineMsg / TrackSpec / ClipRef`；`src/engine/timeline.ts` 的 `buildTimeline(TimelineInput) → Timeline`、`PerformerInfo`；`src/engine/studio-client.ts` 的 `StudioClient`（bank / vowels / setTimeline / chunk / channel / master / play / stop / seek / audition* / renderOffline / on(pos | ended | missing | meter)）。main.ts 里：`prepare(scope)`（库 → 时间线 → 块）、`playRange(tl)`、`cursorSeconds(tl)`、`togglePlay`、`schedulePlaybackRefresh`、`auditionTarget()`。
+- **user 2026-10-10 拍板刀 5 / 刀 6**：「精度分级做 冷启动做 然后下一刀 内部进度回调中途取消按键加速worker并行 负载和内存监控防闪退 做 llama科研不做」→ 刀 5 = 精度分级（v0.9.11 已落块 Int16 + 分析 bf16；WORLD 单精度另议）+ 冷启动（v0.9.11 先落分段计时；词典解压缓存 / session 选项 / 启动就起引擎接着做；**念缓存持久化到 IDB 仍等 user 一句话**）；刀 6 = WORLD 内部进度回调、正在算的那句中途取消、按键再加速（断句 / 稳态那几步按句缓存）、两个 worker 并行唱（按设备）、音频线程负载 + 内存监控（防闪退：超预算先放块 / 减并行 / 明说）。llama 科研线不做。
 - **刀 5 = 性能收尾（2026-10-10 user 问「还有什么性能和底层架构以及模型优化的东西你没做吗，冷启动优化怎么办。几个不同精度你做了吗」；Claude Fable 5.1 的清单）**：
   ① 精度分级（没做）：唱的块 Float32 → **Int16**（音频线程转回来放）、主线程那份拷贝去掉（现在块存两份：主线程留着给离线导出 + 音频线程一份）、念缓存的分析 Float64 → bf16 / 8 bit、WORLD 单精度（后两样改冻结样本 → 重定基线 + user 听）。
   ② 冷启动（没专门做）：分段计时（ort 实例化 / 建 session / 词典 gunzip + 挂载 / WORLD）→ 词典解压后缓存、建 session 选项量一下、启动就起引擎；**念缓存持久化到 IDB（可再生派生缓存，MoonSinger 自己前缀，不进 store）= 逐案问 user**。

@@ -28,7 +28,7 @@ export interface SingRequest { type: "sing"; id: number; score: unknown[]; text:
   only?: { entry: number; midi: number; secs: number } }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
-  | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number } }
+  | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> } }
   | { type: "error"; id: number; message: string };
 
 import * as ortLib from "@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs";
@@ -78,21 +78,23 @@ let engine: Promise<Engine> | null = null;
 /** 「念」缓存（两遍 piper + WORLD 分析，只依赖歌词 / 语言 / 哼的参数；刀 2）：命中时只剩按谱重建 + 合成。预算宿主可改（cacheBytes）。 */
 const speech = new SpeechCache(32e6);
 
+let bootMs: Record<string, number> = {};   // 冷启动各段多久（刀 5；诊断用）
 async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const V = SINGER.voice, JA = SINGER.lang.ja;
-  await ensurePacks([V, SINGER.runtime, JA], "月读", say);
+  let tk = performance.now(); const lap = (name: string) => { const t = performance.now(); bootMs[name] = Math.round(t - tk); tk = t; };
+  await ensurePacks([V, SINGER.runtime, JA], "月读", say); lap("packs");
   say("加载 piper 引擎");
   const ort: any = ortLib;
   ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
-  ort.env.wasm.wasmBinary = await packFile(SINGER.runtime, "ort-wasm-simd-threaded.wasm.gz");
+  ort.env.wasm.wasmBinary = await packFile(SINGER.runtime, "ort-wasm-simd-threaded.wasm.gz"); lap("ortWasm");
   say("加载月读的模型");
   // 中英增强（zhen）时长接管版：全 0 = 中英增强原包（日 / 中 / 英逐样本相同，2026-10-07 实测），中 / 英按它的预设读——user「中英增强的日文是原版的，理论上我们只需要host这一个模型就行了」
   const sess = await ort.InferenceSession.create(await packFile(V, "model.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
-  ort.env.wasm.wasmBinary = undefined;
+  ort.env.wasm.wasmBinary = undefined; lap("session");
   say("加载日语前端");
   const Module = await createOjt({ wasmBinary: await packFile(JA, "ja/ojt.wasm.gz"), print: () => {}, printErr: () => {} });
   mountDictionaryBytes(Module, { sys: await packFile(JA, "ja/sys.dic.gz"), matrix: await packFile(JA, "ja/matrix.bin.gz"), char: await packFile(JA, "ja/char.bin.gz"), unk: await packFile(JA, "ja/unk.dic.gz") });
-  const ja = createJaFrontend(Module, "/dic", { naniModel: await packJson(JA, "ja/nani-model.json.gz") });
+  const ja = createJaFrontend(Module, "/dic", { naniModel: await packJson(JA, "ja/nani-model.json.gz") }); lap("jaFrontend");
   const config = await packJson(V, "config.json");
   let zh: any = null;
   const ensureZh = async (say: (s: string) => void) => {
@@ -132,6 +134,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const { default: createWorld } = await import(/* @vite-ignore */ new URL("world.mjs", WORLD).href);   // emscripten 产物带 node 分支，不进打包，运行时按地址载
   const wasm = await fetch(new URL("world.wasm", WORLD)); if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
   const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) })));   // 「念」缓存：分析按它来自哪段 piper 输出记
+  lap("world");
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id: string) => { const meta = await json(`atlas/${id}.json`); const raw = await bytes(`atlas/${id}.f32`);
     return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) }; } : null;
@@ -158,7 +161,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest>) => {
     const preset = e.presetDefault[q.lang] ?? 0;   // 模型配置的 preset_default（中 3、英 9；日语没写 = 0 = 原版），同 Lab piper-node.mjs
     const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q.opt ?? {}, only: q.only ?? null });
     const samples: Float32Array = q.raw || q.only ? Float32Array.from(r.y as ArrayLike<number>) : r.sung;
-    post({ type: "done", id: q.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1 } }, [samples.buffer]);
+    post({ type: "done", id: q.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }, [samples.buffer]); bootMs = {};
   } catch (err) {
     engine = engine && (await engine.catch(() => null)) ? engine : null;   // 加载失败就允许下次重试
     post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) });

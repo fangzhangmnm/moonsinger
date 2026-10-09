@@ -50,8 +50,10 @@ export type StudioIn =
   | { type: "unbank"; sha: string }
   | { type: "vowels"; sr: number; entries: VowelEntry[]; pcm: Int16Array }
   | { type: "timeline"; tl: TimelineMsg }
-  | { type: "chunk"; key: string; sr: number; samples: Float32Array }
+  | { type: "chunk"; key: string; sr: number; samples: Float32Array | Int16Array }
   | { type: "forget"; keys: string[] }
+  /** 离线导出要块（主线程不再留拷贝）：录音房把这几块拷一份发回来。 */
+  | { type: "getChunks"; keys: string[] }
   | { type: "channel"; id: string; p: Partial<ChannelParams> }
   | { type: "buses"; buses: BusSpec[] }
   | { type: "master"; p: Partial<MasterParams> }
@@ -70,10 +72,11 @@ export type StudioOut =
   | { type: "pos"; sec: number; playing: boolean; waiting: string | null; gen: number }
   | { type: "ended"; gen: number }
   | { type: "missing"; keys: string[] }
+  | { type: "chunks"; items: { key: string; sr: number; samples: Int16Array }[] }
   | { type: "meter"; peak: number; active: number };
 
 // ── 内部状态 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-interface Chunk { sr: number; samples: Float32Array }
+interface Chunk { sr: number; samples: Int16Array }   // 块存 Int16（刀 5 精度分级：一半内存；放的时候乘回来）
 interface VowelVoice { src: string | null; data: Float32Array; pos: number; rate: number; target: number; loopStart: number; loopEnd: number; env: number; state: "attack" | "hold" | "release" | "cut"; gl: number; gr: number; key: number; baseMidi: number }
 interface VowelTable { sr: number; entries: (VowelEntry & { data: Float32Array })[] }
 interface SfPlayer { bank: TsfBank; player: TsfBank }
@@ -95,6 +98,9 @@ interface Audition { inst: AuditionInst; key: number; gl: number; gr: number }
 interface ClipVoice { src: string; data: Float32Array; ratio: number; pos: number; env: number; state: "attack" | "hold" | "release" | "cut"; gl: number; gr: number }
 
 const dbToLin = (dB: number) => (dB === -Infinity ? 0 : 10 ** (dB / 20));
+const I16 = 1 / 32768;
+/** Float32 → Int16（夹到 ±1）。 */
+export function toInt16(x: Float32Array): Int16Array { const out = new Int16Array(x.length); for (let i = 0; i < x.length; i++) { const v = x[i]; out[i] = v >= 1 ? 32767 : v <= -1 ? -32768 : Math.round(v * 32767); } return out; }
 const panGains = (gainDb: number, pan: number): [number, number] => { const g = dbToLin(gainDb), p = Math.max(-1, Math.min(1, pan)); return [g * Math.cos(((p + 1) * Math.PI) / 4), g * Math.sin(((p + 1) * Math.PI) / 4)]; };
 const DEFAULT_CH: ChannelParams = { gainDb: 0, pan: 0, mute: false, solo: false };
 
@@ -181,7 +187,8 @@ export class Studio {
         return;
       }
       case "timeline": this.setTimeline(m.tl); return;
-      case "chunk": this.chunks.set(m.key, { sr: m.sr, samples: m.samples }); this.missingSent.delete(m.key); return;
+      case "chunk": this.chunks.set(m.key, { sr: m.sr, samples: m.samples instanceof Int16Array ? m.samples : toInt16(m.samples) }); this.missingSent.delete(m.key); return;
+      case "getChunks": { const items = m.keys.flatMap((k) => { const c = this.chunks.get(k); return c ? [{ key: k, sr: c.sr, samples: c.samples.slice() }] : []; }); this.post({ type: "chunks", items }, items.map((x) => x.samples.buffer)); return; }
       case "forget": for (const k of m.keys) this.chunks.delete(k); return;
       case "channel": {
         const cur = this.channels.get(m.id) ?? { ...DEFAULT_CH }, next = { ...cur, ...m.p };
@@ -434,7 +441,7 @@ export class Studio {
       const ch = this.chunks.get(c.key); if (!ch) continue;
       const len = ch.samples.length, cEnd = c.t0 + len / ch.sr;
       if (c.t0 >= tEnd || cEnd <= t0) continue;
-      const s = ch.samples, g = c.gain;
+      const s = ch.samples, g = c.gain * I16;
       for (let i = 0; i < cnt; i++) {
         const p = (t0 + i / sr - c.t0) * ch.sr; if (p < 0) continue;
         const k = p | 0; if (k >= len - 1) break;

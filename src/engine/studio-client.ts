@@ -2,7 +2,7 @@
 // 收位置 / 结束 / 缺块。离线导出 = 同一个 Studio 类在这边的循环里跑（同一份数学；提案 §5）。created 2026-10-09 by Claude Fable 5.1
 // 一个 app 一个实例；AudioContext 全 app 共用（src/singer/audio.ts）。装 worklet 第一次用才做（家规：重资源要等用户有意图才加载）。
 import { instantiateTsf } from "../gm/tsf-standalone.ts";
-import { Studio, BLOCK, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
+import { Studio, BLOCK, toInt16, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
 
 export interface VowelTableMsg { sr: number; entries: VowelEntry[]; pcm: Int16Array }
 export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number) => void }
@@ -16,7 +16,9 @@ export class StudioClient {
   private bankBytes = new Map<string, Uint8Array>();   // 离线导出时再装一遍要用
   private vowelTable: VowelTableMsg | null = null;
   private tl: TimelineMsg | null = null;
-  private chunks = new Map<string, { sr: number; samples: Float32Array }>();
+  private chunkKeys = new Set<string>();   // 块只在录音房里一份（Int16；刀 5）；主线程只记键
+  private pendingChunks: { key: string; sr: number; samples: Int16Array }[] = [];   // worklet 还没装好时先排着
+  private chunkWait: ((items: { key: string; sr: number; samples: Int16Array }[]) => void) | null = null;
   private channels = new Map<string, Partial<ChannelParams>>();
   private masterP: Partial<MasterParams> = {};
   private busesP: BusSpec[] = [];
@@ -37,7 +39,7 @@ export class StudioClient {
   get position(): number { return this._pos; }
   get waiting(): string | null { return this._waiting; }
   get timeline(): TimelineMsg | null { return this.tl; }
-  hasChunk(key: string): boolean { return this.chunks.has(key); }
+  hasChunk(key: string): boolean { return this.chunkKeys.has(key); }
 
   private wasmModule(): Promise<WebAssembly.Module> {
     return (this.wasm ??= fetch(this.wasmUrl).then(async (r) => { if (!r.ok) throw new Error(`TinySoundFont (standalone): HTTP ${r.status}`); return WebAssembly.compile(await r.arrayBuffer()); }));
@@ -60,6 +62,7 @@ export class StudioClient {
             case "ended": if (m.gen !== this.gen) return; this._playing = false; this.emit("ended"); return;
             case "missing": this.emit("missing", m.keys); return;
             case "meter": this.emit("meter", m.peak, m.active); return;
+            case "chunks": { const w = this.chunkWait; this.chunkWait = null; w?.(m.items); return; }
           }
         };
       });
@@ -72,7 +75,7 @@ export class StudioClient {
       if (this.busesP.length) this.post({ type: "buses", buses: this.busesP });
       if (Object.keys(this.masterP).length) this.post({ type: "master", p: this.masterP });
       if (this.tl) this.post({ type: "timeline", tl: this.tl });
-      for (const [key, c] of this.chunks) this.post({ type: "chunk", key, sr: c.sr, samples: c.samples });
+      for (const c of this.pendingChunks.splice(0)) this.post({ type: "chunk", key: c.key, sr: c.sr, samples: c.samples }, [c.samples.buffer]);
     })().catch((e) => { this.readyP = null; throw e; });
     return this.readyP;
   }
@@ -96,12 +99,19 @@ export class StudioClient {
   vowels(t: VowelTableMsg): void { this.vowelTable = t; this.post({ type: "vowels", ...t }); }
 
   setTimeline(tl: TimelineMsg): void { this.tl = tl; this.post({ type: "timeline", tl }); }
-  /** 喂一块（samples 拷一份转移过去；这边留原件给离线导出）。 */
-  chunk(key: string, sr: number, samples: Float32Array): void {
-    this.chunks.set(key, { sr, samples });
-    const copy = samples.slice(); this.post({ type: "chunk", key, sr, samples: copy }, [copy.buffer]);
+  /** 喂一块：转成 Int16 转移给录音房（只在那边留一份；离线导出再要回来）。worklet 还没装好 = 先排着、装好就发。 */
+  chunk(key: string, sr: number, samples: Float32Array | Int16Array): void {
+    const i16 = samples instanceof Int16Array ? samples : toInt16(samples);
+    this.chunkKeys.add(key);
+    if (this.node) this.post({ type: "chunk", key, sr, samples: i16 }, [i16.buffer]);
+    else { this.pendingChunks.push({ key, sr, samples: i16 }); void this.ensure().catch(() => undefined); }
   }
-  forget(keys: string[]): void { for (const k of keys) this.chunks.delete(k); this.post({ type: "forget", keys }); }
+  forget(keys: string[]): void { for (const k of keys) { this.chunkKeys.delete(k); this.pendingChunks = this.pendingChunks.filter((c) => c.key !== k); } this.post({ type: "forget", keys }); }
+  /** 向录音房要几块（拷贝）：离线导出用。 */
+  private fetchChunks(keys: string[]): Promise<{ key: string; sr: number; samples: Int16Array }[]> {
+    if (!keys.length || !this.node) return Promise.resolve([]);
+    return new Promise((ok) => { this.chunkWait = ok; this.post({ type: "getChunks", keys }); });
+  }
   channel(id: string, p: Partial<ChannelParams>): void { this.channels.set(id, { ...this.channels.get(id), ...p }); this.post({ type: "channel", id, p }); }
   master(p: Partial<MasterParams>): void { this.masterP = { ...this.masterP, ...p }; this.post({ type: "master", p }); }
   /** 总线（混响 / 延迟这类「留在屋里的」）：整张表一起给。 */
@@ -135,7 +145,8 @@ export class StudioClient {
     s.handle({ type: "buses", buses: this.busesP });
     s.handle({ type: "master", p: this.masterP });
     s.handle({ type: "timeline", tl: { ...tl, loop: false } });
-    for (const [key, c] of this.chunks) s.handle({ type: "chunk", key, sr: c.sr, samples: c.samples });
+    const keys = tl.tracks.flatMap((t) => (t.kind === "clips" ? t.clips.map((c) => c.key) : [])).filter((k) => this.chunkKeys.has(k));
+    if (keys.length) { await this.ensure(); for (const c of await this.fetchChunks([...new Set(keys)])) s.handle({ type: "chunk", key: c.key, sr: c.sr, samples: c.samples }); }
     const lat = s.latency, total = Math.ceil((tl.range.to - tl.range.from) * sr) + lat + Math.ceil(2.5 * sr);   // + 尾巴上限
     const L = new Float32Array(total), R = new Float32Array(total), bl = new Float32Array(BLOCK), br = new Float32Array(BLOCK);
     s.handle({ type: "play", at: tl.range.from });

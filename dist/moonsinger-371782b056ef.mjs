@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.10-2026-10-10";
+var APP_VERSION = "v0.9.11-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -18707,7 +18707,7 @@ var Singer = class {
   inflight = false;
   worker() {
     if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-a069b6dddd28.mjs"}`, import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${"singer-worker-29ddb9d34557.mjs"}`, import.meta.url), { type: "module" });
     this.w.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
       if (!p2) return;
@@ -21480,6 +21480,15 @@ var V_CUT = 6e-3;
 var V_GLIDE = 0.012;
 var LOOKAHEAD = 30;
 var dbToLin2 = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
+var I16 = 1 / 32768;
+function toInt16(x2) {
+  const out = new Int16Array(x2.length);
+  for (let i10 = 0; i10 < x2.length; i10++) {
+    const v = x2[i10];
+    out[i10] = v >= 1 ? 32767 : v <= -1 ? -32768 : Math.round(v * 32767);
+  }
+  return out;
+}
 var panGains = (gainDb, pan) => {
   const g3 = dbToLin2(gainDb), p2 = Math.max(-1, Math.min(1, pan));
   return [g3 * Math.cos((p2 + 1) * Math.PI / 4), g3 * Math.sin((p2 + 1) * Math.PI / 4)];
@@ -21619,9 +21628,17 @@ var Studio = class {
         this.setTimeline(m2.tl);
         return;
       case "chunk":
-        this.chunks.set(m2.key, { sr: m2.sr, samples: m2.samples });
+        this.chunks.set(m2.key, { sr: m2.sr, samples: m2.samples instanceof Int16Array ? m2.samples : toInt16(m2.samples) });
         this.missingSent.delete(m2.key);
         return;
+      case "getChunks": {
+        const items = m2.keys.flatMap((k2) => {
+          const c10 = this.chunks.get(k2);
+          return c10 ? [{ key: k2, sr: c10.sr, samples: c10.samples.slice() }] : [];
+        });
+        this.post({ type: "chunks", items }, items.map((x2) => x2.samples.buffer));
+        return;
+      }
       case "forget":
         for (const k2 of m2.keys) this.chunks.delete(k2);
         return;
@@ -22047,7 +22064,7 @@ var Studio = class {
       if (!ch2) continue;
       const len = ch2.samples.length, cEnd = c10.t0 + len / ch2.sr;
       if (c10.t0 >= tEnd || cEnd <= t02) continue;
-      const s10 = ch2.samples, g3 = c10.gain;
+      const s10 = ch2.samples, g3 = c10.gain * I16;
       for (let i10 = 0; i10 < cnt; i10++) {
         const p2 = (t02 + i10 / sr2 - c10.t0) * ch2.sr;
         if (p2 < 0) continue;
@@ -22275,7 +22292,11 @@ var StudioClient = class {
   // 离线导出时再装一遍要用
   vowelTable = null;
   tl = null;
-  chunks = /* @__PURE__ */ new Map();
+  chunkKeys = /* @__PURE__ */ new Set();
+  // 块只在录音房里一份（Int16；刀 5）；主线程只记键
+  pendingChunks = [];
+  // worklet 还没装好时先排着
+  chunkWait = null;
   channels = /* @__PURE__ */ new Map();
   masterP = {};
   busesP = [];
@@ -22320,7 +22341,7 @@ var StudioClient = class {
     return this.tl;
   }
   hasChunk(key) {
-    return this.chunks.has(key);
+    return this.chunkKeys.has(key);
   }
   wasmModule() {
     return this.wasm ??= fetch(this.wasmUrl).then(async (r10) => {
@@ -22372,6 +22393,12 @@ var StudioClient = class {
             case "meter":
               this.emit("meter", m2.peak, m2.active);
               return;
+            case "chunks": {
+              const w2 = this.chunkWait;
+              this.chunkWait = null;
+              w2?.(m2.items);
+              return;
+            }
           }
         };
       });
@@ -22383,7 +22410,7 @@ var StudioClient = class {
       if (this.busesP.length) this.post({ type: "buses", buses: this.busesP });
       if (Object.keys(this.masterP).length) this.post({ type: "master", p: this.masterP });
       if (this.tl) this.post({ type: "timeline", tl: this.tl });
-      for (const [key, c10] of this.chunks) this.post({ type: "chunk", key, sr: c10.sr, samples: c10.samples });
+      for (const c10 of this.pendingChunks.splice(0)) this.post({ type: "chunk", key: c10.key, sr: c10.sr, samples: c10.samples }, [c10.samples.buffer]);
     })().catch((e10) => {
       this.readyP = null;
       throw e10;
@@ -22430,15 +22457,30 @@ var StudioClient = class {
     this.tl = tl2;
     this.post({ type: "timeline", tl: tl2 });
   }
-  /** 喂一块（samples 拷一份转移过去；这边留原件给离线导出）。 */
+  /** 喂一块：转成 Int16 转移给录音房（只在那边留一份；离线导出再要回来）。worklet 还没装好 = 先排着、装好就发。 */
   chunk(key, sr2, samples) {
-    this.chunks.set(key, { sr: sr2, samples });
-    const copy = samples.slice();
-    this.post({ type: "chunk", key, sr: sr2, samples: copy }, [copy.buffer]);
+    const i162 = samples instanceof Int16Array ? samples : toInt16(samples);
+    this.chunkKeys.add(key);
+    if (this.node) this.post({ type: "chunk", key, sr: sr2, samples: i162 }, [i162.buffer]);
+    else {
+      this.pendingChunks.push({ key, sr: sr2, samples: i162 });
+      void this.ensure().catch(() => void 0);
+    }
   }
   forget(keys) {
-    for (const k2 of keys) this.chunks.delete(k2);
+    for (const k2 of keys) {
+      this.chunkKeys.delete(k2);
+      this.pendingChunks = this.pendingChunks.filter((c10) => c10.key !== k2);
+    }
     this.post({ type: "forget", keys });
+  }
+  /** 向录音房要几块（拷贝）：离线导出用。 */
+  fetchChunks(keys) {
+    if (!keys.length || !this.node) return Promise.resolve([]);
+    return new Promise((ok2) => {
+      this.chunkWait = ok2;
+      this.post({ type: "getChunks", keys });
+    });
   }
   channel(id2, p2) {
     this.channels.set(id2, { ...this.channels.get(id2), ...p2 });
@@ -22515,7 +22557,11 @@ var StudioClient = class {
     s10.handle({ type: "buses", buses: this.busesP });
     s10.handle({ type: "master", p: this.masterP });
     s10.handle({ type: "timeline", tl: { ...tl2, loop: false } });
-    for (const [key, c10] of this.chunks) s10.handle({ type: "chunk", key, sr: c10.sr, samples: c10.samples });
+    const keys = tl2.tracks.flatMap((t10) => t10.kind === "clips" ? t10.clips.map((c10) => c10.key) : []).filter((k3) => this.chunkKeys.has(k3));
+    if (keys.length) {
+      await this.ensure();
+      for (const c10 of await this.fetchChunks([...new Set(keys)])) s10.handle({ type: "chunk", key: c10.key, sr: c10.sr, samples: c10.samples });
+    }
     const lat = s10.latency, total = Math.ceil((tl2.range.to - tl2.range.from) * sr2) + lat + Math.ceil(2.5 * sr2);
     const L2 = new Float32Array(total), R2 = new Float32Array(total), bl = new Float32Array(BLOCK), br = new Float32Array(BLOCK);
     s10.handle({ type: "play", at: tl2.range.from });
@@ -34112,7 +34158,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-94ab89cd752f.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-66f1de79ab38.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -34862,6 +34908,7 @@ async function pump() {
           continue;
         }
         engine.chunk(key, r10.sr, r10.samples);
+        if (r10.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r10.ms.boot)}`);
         const secs = Math.max(0.5, c10.dur - LEAD_IN);
         singSpeed = singSpeed === null ? (performance.now() - t10) / secs : singSpeed * 0.7 + (performance.now() - t10) / secs * 0.3;
       } catch (e10) {
@@ -38147,4 +38194,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-efe7c54e6bb7.mjs.map
+//# sourceMappingURL=moonsinger-371782b056ef.mjs.map

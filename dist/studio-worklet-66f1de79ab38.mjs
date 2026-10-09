@@ -573,6 +573,15 @@ var V_CUT = 6e-3;
 var V_GLIDE = 0.012;
 var LOOKAHEAD = 30;
 var dbToLin2 = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
+var I16 = 1 / 32768;
+function toInt16(x) {
+  const out = new Int16Array(x.length);
+  for (let i = 0; i < x.length; i++) {
+    const v = x[i];
+    out[i] = v >= 1 ? 32767 : v <= -1 ? -32768 : Math.round(v * 32767);
+  }
+  return out;
+}
 var panGains = (gainDb, pan) => {
   const g = dbToLin2(gainDb), p = Math.max(-1, Math.min(1, pan));
   return [g * Math.cos((p + 1) * Math.PI / 4), g * Math.sin((p + 1) * Math.PI / 4)];
@@ -712,9 +721,17 @@ var Studio = class {
         this.setTimeline(m.tl);
         return;
       case "chunk":
-        this.chunks.set(m.key, { sr: m.sr, samples: m.samples });
+        this.chunks.set(m.key, { sr: m.sr, samples: m.samples instanceof Int16Array ? m.samples : toInt16(m.samples) });
         this.missingSent.delete(m.key);
         return;
+      case "getChunks": {
+        const items = m.keys.flatMap((k) => {
+          const c = this.chunks.get(k);
+          return c ? [{ key: k, sr: c.sr, samples: c.samples.slice() }] : [];
+        });
+        this.post({ type: "chunks", items }, items.map((x) => x.samples.buffer));
+        return;
+      }
       case "forget":
         for (const k of m.keys) this.chunks.delete(k);
         return;
@@ -1140,7 +1157,7 @@ var Studio = class {
       if (!ch) continue;
       const len = ch.samples.length, cEnd = c.t0 + len / ch.sr;
       if (c.t0 >= tEnd || cEnd <= t0) continue;
-      const s = ch.samples, g = c.gain;
+      const s = ch.samples, g = c.gain * I16;
       for (let i = 0; i < cnt; i++) {
         const p = (t0 + i / sr - c.t0) * ch.sr;
         if (p < 0) continue;
@@ -1386,4 +1403,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-94ab89cd752f.mjs.map
+//# sourceMappingURL=studio-worklet-66f1de79ab38.mjs.map

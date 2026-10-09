@@ -769,6 +769,7 @@ async function pump(): Promise<void> {
         const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); }, { opt: humOpt(), models: modelBases(), raw: true });
         if (engine.hasChunk(key) || !chunkPlans.has(key)) { renderBar.next(); continue; }   // 期间换了歌 / 顺序：照样留着（键对就不浪费），但别再算进度
         engine.chunk(key, r.sr, r.samples);
+        if (r.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r.ms.boot)}`);   // 冷启动各段（刀 5）：诊断页看（测试里的假唱没有 ms）
         const secs = Math.max(0.5, c.dur - LEAD_IN); singSpeed = singSpeed === null ? (performance.now() - t) / secs : singSpeed * 0.7 + ((performance.now() - t) / secs) * 0.3;
       } catch (e) {
         const msg = (e as Error).message ?? String(e);

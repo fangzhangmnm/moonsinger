@@ -692,6 +692,25 @@ function wrapWorld(M) {
 }
 
 // src/singer/speech-cache.ts
+var f32 = new Float32Array(1);
+var u32 = new Uint32Array(f32.buffer);
+function toBf16(x) {
+  const out = new Uint16Array(x.length);
+  for (let i = 0; i < x.length; i++) {
+    f32[0] = x[i];
+    const b = u32[0];
+    out[i] = b + 32767 + (b >>> 16 & 1) >>> 16 & 65535;
+  }
+  return out;
+}
+function fromBf16(x) {
+  const out = new Float64Array(x.length);
+  for (let i = 0; i < x.length; i++) {
+    u32[0] = x[i] << 16;
+    out[i] = f32[0];
+  }
+  return out;
+}
 var SpeechCache = class {
   map = /* @__PURE__ */ new Map();
   // 插入顺序 = 最久没用的在前
@@ -766,12 +785,12 @@ var SpeechCache = class {
       if (had?.an) {
         self2.hits++;
         self2.touch(k, had);
-        return { ...had.an, f0: had.an.f0.slice(), sp: had.an.sp.slice(), ap: had.an.ap.slice() };
+        return { ...had.an.meta, f0: had.an.f0.slice(), sp: fromBf16(had.an.sp), ap: fromBf16(had.an.ap) };
       }
       self2.misses++;
-      const an2 = analyze(x, fs2, o);
-      if (k) self2.put(k, { bytes: an2.f0.byteLength + an2.sp.byteLength + an2.ap.byteLength, an: { ...an2, f0: an2.f0.slice(), sp: an2.sp.slice(), ap: an2.ap.slice() } });
-      return an2;
+      const an2 = analyze(x, fs2, o), { f0, sp, ap, ...meta } = an2, spB = toBf16(sp), apB = toBf16(ap);
+      if (k) self2.put(k, { bytes: f0.byteLength + spB.byteLength + apB.byteLength, an: { meta, f0: f0.slice(), sp: spB, ap: apB } });
+      return { ...meta, f0, sp: fromBf16(spB), ap: fromBf16(apB) };
     } };
   }
 };
@@ -7654,23 +7673,34 @@ var SR = 22050;
 var HOP = 256;
 var engine = null;
 var speech = new SpeechCache(32e6);
+var bootMs = {};
 async function loadEngine(say) {
   const V = SINGER.voice, JA = SINGER.lang.ja;
+  let tk = performance.now();
+  const lap = (name) => {
+    const t = performance.now();
+    bootMs[name] = Math.round(t - tk);
+    tk = t;
+  };
   await ensurePacks([V, SINGER.runtime, JA], "\u6708\u8BFB", say);
+  lap("packs");
   say("\u52A0\u8F7D piper \u5F15\u64CE");
   const ort = ort_wasm_bundle_min_exports;
   ort.env.wasm.numThreads = 1;
   ort.env.wasm.proxy = false;
   ort.env.wasm.wasmBinary = await packFile(SINGER.runtime, "ort-wasm-simd-threaded.wasm.gz");
+  lap("ortWasm");
   say("\u52A0\u8F7D\u6708\u8BFB\u7684\u6A21\u578B");
   const sess = await ort.InferenceSession.create(await packFile(V, "model.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
   ort.env.wasm.wasmBinary = void 0;
+  lap("session");
   say("\u52A0\u8F7D\u65E5\u8BED\u524D\u7AEF");
   const Module2 = await ojt_default({ wasmBinary: await packFile(JA, "ja/ojt.wasm.gz"), print: () => {
   }, printErr: () => {
   } });
   mountDictionaryBytes(Module2, { sys: await packFile(JA, "ja/sys.dic.gz"), matrix: await packFile(JA, "ja/matrix.bin.gz"), char: await packFile(JA, "ja/char.bin.gz"), unk: await packFile(JA, "ja/unk.dic.gz") });
   const ja = createJaFrontend(Module2, "/dic", { naniModel: await packJson(JA, "ja/nani-model.json.gz") });
+  lap("jaFrontend");
   const config = await packJson(V, "config.json");
   let zh = null;
   const ensureZh = async (say2) => {
@@ -7725,6 +7755,7 @@ async function loadEngine(say) {
   const wasm = await fetch(new URL("world.wasm", WORLD));
   if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
   const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) })));
+  lap("world");
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id) => {
     const meta = await json(`atlas/${id}.json`);
@@ -7755,7 +7786,8 @@ self.onmessage = async (ev) => {
     const preset = e.presetDefault[q2.lang] ?? 0;
     const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q2.opt ?? {}, only: q2.only ?? null });
     const samples = q2.raw || q2.only ? Float32Array.from(r.y) : r.sung;
-    post({ type: "done", id: q2.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1 } }, [samples.buffer]);
+    post({ type: "done", id: q2.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } }, [samples.buffer]);
+    bootMs = {};
   } catch (err) {
     engine = engine && await engine.catch(() => null) ? engine : null;
     post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
@@ -7770,4 +7802,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-a069b6dddd28.mjs.map
+//# sourceMappingURL=singer-worker-29ddb9d34557.mjs.map

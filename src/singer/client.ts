@@ -10,7 +10,7 @@ import { diagNote } from "../app/report-error.ts";
 /** 内存不够的样子（onnxruntime-web 起不来时报「no available backend found. ERR: [wasm] RangeError: Out of memory」）。 */
 const OOM = /out of memory|no available backend/i;
 
-export interface SingResult { samples: Float32Array; sr: number; ms: { load: number; sing: number } }
+export interface SingResult { samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> } }
 type Extra = Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw" | "cacheBytes" | "only">>;
 interface Job { s: LabScore; progress: (stage: string) => void; extra: Extra; ok: (r: SingResult) => void; fail: (e: Error) => void }
 

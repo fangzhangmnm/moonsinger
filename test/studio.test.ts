@@ -137,7 +137,7 @@ describe("录音房：通道 / 表情曲线 / 总轨", () => {
     const off = await mk(false, true);
     assert(peak(off.L) > 1.1, "关掉 = 1.6 × 0.707 原样出去");
     const quiet = await mk(true, false);
-    assert(Math.abs(peak(quiet.L, sec(0.2), sec(0.8)) - 0.6 * PAN0) < 1e-6, "没超 = 不动（0.3 + 0.3）× 0.707");
+    assert(Math.abs(peak(quiet.L, sec(0.2), sec(0.8)) - 0.6 * PAN0) < 1e-4, "没超 = 不动（0.3 + 0.3）× 0.707；块存 Int16 差一个量化步");
   });
 });
 
