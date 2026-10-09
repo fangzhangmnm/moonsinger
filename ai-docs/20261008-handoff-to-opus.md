@@ -114,6 +114,8 @@
 
 **v0.8.1（2026-10-08 深夜，edited by Claude Opus 5.5）**：参考窗接进来（库 0.3.2 整包；截图 / 文字卡；☰ 入口；粘贴看焦点；`.moonsinger/references/` + `view.ref`；不进撤销）。对齐稿 `ai-docs/20261008-reference-window-alignment.md`。
 
+**v0.8.2（2026-10-08 深夜，edited by Claude Opus 5.5）**：演奏者页「记号怎么演」第一行「力度怎么变」（MIDI 力度 = 一音一台阶 / 音量曲线 = 连续、只变响度）。参考窗存法 user 拍了（「.moonsinger/references/ 拍，无脑一模一样」）。
+
 ## 1. 10-08 落下的（按版本）
 
 | 版本 | 内容 |

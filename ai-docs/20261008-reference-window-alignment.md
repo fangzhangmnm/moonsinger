@@ -37,6 +37,10 @@
    - 单元测试：歌存 / 开往返、老版本留着、太新的 manifest 原样留着并明说。
    - E2E `test/e2e/reference.mjs`：开窗、粘贴看焦点、存了再开。
 
-## 要你拍的一件事
+## 拍了（2026-10-08 深夜）
+
+user「.moonsinger/references/ 拍，无脑一模一样」：存法和 WXHW 一模一样（目录 `.moonsinger/references/`、不升 FORMAT、窗的位置进视图态）。
+
+## 要你拍的一件事（已拍，见上）
 
 存法（第 3 条）：`.moonsinger/references/` 取代 `attachments/`、不升 FORMAT、窗的位置进 `view`。家族清单写的是「每个宿主改文件格式都要 user 点头」。其余的照上面直接做。

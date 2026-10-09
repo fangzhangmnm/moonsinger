@@ -1114,7 +1114,13 @@ function marksTableHtml(role: string, eng: string): string {
   const ign = ignoredArts(eng, sp.gapSec), gray = (m: string) => (ign.includes(m as Mark) ? ` class="ign"` : "");
   const singTxt = (k: string) => { const m = sp.sing[k]; return m ? `${m.at === "next" ? "下一个字" : "这个字"}前「${m.mark}」${m.mark === "^" ? "（顿一下，不换气）" : m.mark === "v" ? "（换气）" : "（大口换气）"}` : "不变成唱法记号"; };
   const vel = !!sp.dynamicsVel;
+  // 这一类怎么变响 / 变轻（2026-10-08 深夜 Opus 5.5；user「月读吃音内减弱吗，普通减弱可以有一样的效果吗还是只影响输入的…月读又是弦又是管所以应该是实时调制的」
+  //   「我觉得其实可以不同的类别乐器卡可以说一下」）：按这位实际走的那条路说（perform.ts：有力度表 = MIDI 力度，否则 = 音量曲线乘在出来的声音上）
+  const how = vel
+    ? `按下那一下的轻重（MIDI 力度）：渐强渐弱 = 每个新音一个台阶，按住的音中间不变；一个音里面要变，用音内起伏${sp.canSwell ? "" : "（这件乐器按下去就自然衰减：音内只能变弱）"}`
+    : `一条连续的音量曲线（乘在${eng === "tsukuyomi" ? "唱" : "弹"}出来的声音上）：渐强渐弱在一个长音中间也一直在变，和音内起伏是同一种变法；只变响度、不变音色${eng === "tsukuyomi" ? "（真人渐弱会变虚、变暗，这个还没有）" : ""}`;
   const rows: [string, string, string][] = [
+    ["力度怎么变", "", how],
     ["力度记号", "", vel ? `力度表：${(Object.entries(sp.dynamicsVel!) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ")}` : `音量：${(Object.entries(sp.dynamicsDb) as [string, number][]).map(([d, x]) => `${d} ${db(x)}`).join(" · ")}`],
     ["渐强渐弱没写终点", "", vel ? `走一档 = 力度 ${sp.wedgeStepVel}` : `走一档 = ${db(sp.wedgeStepDb)}`],
     ["幽灵音", "ghost", vel ? `力度 ${sp.ghostVel}` : `整个音 ${db(sp.ghostDb)}`],

@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.8.1-2026-10-08";
+var APP_VERSION = "v0.8.2-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -31670,7 +31670,9 @@ function marksTableHtml(role, eng) {
     return m2 ? `${m2.at === "next" ? "\u4E0B\u4E00\u4E2A\u5B57" : "\u8FD9\u4E2A\u5B57"}\u524D\u300C${m2.mark}\u300D${m2.mark === "^" ? "\uFF08\u987F\u4E00\u4E0B\uFF0C\u4E0D\u6362\u6C14\uFF09" : m2.mark === "v" ? "\uFF08\u6362\u6C14\uFF09" : "\uFF08\u5927\u53E3\u6362\u6C14\uFF09"}` : "\u4E0D\u53D8\u6210\u5531\u6CD5\u8BB0\u53F7";
   };
   const vel = !!sp2.dynamicsVel;
+  const how = vel ? `\u6309\u4E0B\u90A3\u4E00\u4E0B\u7684\u8F7B\u91CD\uFF08MIDI \u529B\u5EA6\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31 = \u6BCF\u4E2A\u65B0\u97F3\u4E00\u4E2A\u53F0\u9636\uFF0C\u6309\u4F4F\u7684\u97F3\u4E2D\u95F4\u4E0D\u53D8\uFF1B\u4E00\u4E2A\u97F3\u91CC\u9762\u8981\u53D8\uFF0C\u7528\u97F3\u5185\u8D77\u4F0F${sp2.canSwell ? "" : "\uFF08\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF1A\u97F3\u5185\u53EA\u80FD\u53D8\u5F31\uFF09"}` : `\u4E00\u6761\u8FDE\u7EED\u7684\u97F3\u91CF\u66F2\u7EBF\uFF08\u4E58\u5728${eng === "tsukuyomi" ? "\u5531" : "\u5F39"}\u51FA\u6765\u7684\u58F0\u97F3\u4E0A\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31\u5728\u4E00\u4E2A\u957F\u97F3\u4E2D\u95F4\u4E5F\u4E00\u76F4\u5728\u53D8\uFF0C\u548C\u97F3\u5185\u8D77\u4F0F\u662F\u540C\u4E00\u79CD\u53D8\u6CD5\uFF1B\u53EA\u53D8\u54CD\u5EA6\u3001\u4E0D\u53D8\u97F3\u8272${eng === "tsukuyomi" ? "\uFF08\u771F\u4EBA\u6E10\u5F31\u4F1A\u53D8\u865A\u3001\u53D8\u6697\uFF0C\u8FD9\u4E2A\u8FD8\u6CA1\u6709\uFF09" : ""}`;
   const rows = [
+    ["\u529B\u5EA6\u600E\u4E48\u53D8", "", how],
     ["\u529B\u5EA6\u8BB0\u53F7", "", vel ? `\u529B\u5EA6\u8868\uFF1A${Object.entries(sp2.dynamicsVel).map(([d3, x2]) => `${d3} ${x2}`).join(" \xB7 ")}` : `\u97F3\u91CF\uFF1A${Object.entries(sp2.dynamicsDb).map(([d3, x2]) => `${d3} ${db(x2)}`).join(" \xB7 ")}`],
     ["\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9", "", vel ? `\u8D70\u4E00\u6863 = \u529B\u5EA6 ${sp2.wedgeStepVel}` : `\u8D70\u4E00\u6863 = ${db(sp2.wedgeStepDb)}`],
     ["\u5E7D\u7075\u97F3", "ghost", vel ? `\u529B\u5EA6 ${sp2.ghostVel}` : `\u6574\u4E2A\u97F3 ${db(sp2.ghostDb)}`],
@@ -33999,4 +34001,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-59f0ff2af9d9.mjs.map
+//# sourceMappingURL=moonsinger-b22de7ac6f78.mjs.map
