@@ -65,6 +65,8 @@ export interface Timeline {
   secondsOfToken(partId: string, tokenId: number): number | null;
   /** 第 sec 秒落在哪张纸的第几个 tick（纸自己的 tick，反复已折回去；画播放头用）。 */
   locate(sec: number): { paperId: string; tick: number } | null;
+  /** 谱位置（纸 + 纸内 tick）→ 秒：反复 / 编排里同一处放几遍 = 几个候选，取离 near 最近的；不在播放顺序里 = null。放着的时候换时间线用（播放头按谱位置留在原地）。 */
+  secondsAt(paperId: string, tick: number, near: number): number | null;
 }
 
 /** 歌词里有汉字、没有假名 → 按中文唱；其余（含没有歌词）按日语唱。按一个声部（压平后的一串）判。 */
@@ -155,6 +157,8 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const i = f.tokens.findIndex((t) => t.id === tokenId); if (i < 0) return null;
     return tl.find((x) => x.index >= i)?.t0 ?? (tl.length ? tl[tl.length - 1].t1 : null);
   };
+  /** 这张纸的反复结构——按原件算（starts 里的 paper 是展开后的那份：反复小节线已经被展开吃掉，拿它算永远是 null；2026-10-10 修，之前第二遍 locate 回的 tick 超出纸长）。 */
+  const segsOf = (paperId: string) => { const pp = song.papers.find((x) => x.id === paperId), owner = pp ? tempoOwner(song, pp) : null; return pp && owner ? playSegments(pp.tracks[owner], paperTicks(pp)) : null; };
   const locate = (sec: number): { paperId: string; tick: number } | null => {
     if (!ref) return null;
     const { tokens } = flat(ref.id), tl = timeline(tokens, map);
@@ -165,9 +169,27 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     if (!span) return null;
     let inPaper = tick - span.tick0;
     // 谱内反复展开过：展开后的 tick → 纸自己的 tick（src/score/repeats.ts）
-    const owner = tempoOwner(song, span.paper), segs = owner ? playSegments(span.paper.tracks[owner], paperTicks(span.paper)) : null;
+    const segs = segsOf(span.paper.id);
     if (segs) { let cum = 0; for (const s of segs) { const len = s.t1 - s.t0; if (inPaper < cum + len) { inPaper = s.t0 + (inPaper - cum); break; } cum += len; } }
     return { paperId: span.paper.id, tick: Math.max(0, Math.floor(inPaper)) };
   };
-  return { tracks, range: { from, to }, total, chunks, papers, unplayable, secondsOfToken, locate };
+  const secondsAt = (paperId: string, tick: number, near: number): number | null => {
+    if (!ref) return null;
+    const { tokens } = flat(ref.id), tl = timeline(tokens, map);
+    let best: number | null = null;
+    for (const span of papers) {
+      if (span.paper.id !== paperId) continue;
+      const segs = segsOf(span.paper.id);
+      const cands: number[] = [];   // 纸自己的 tick → 展开后的 tick（反复 = 几个）
+      if (segs) { let cum = 0; for (const sg of segs) { if (tick >= sg.t0 && tick < sg.t1) cands.push(span.tick0 + cum + (tick - sg.t0)); cum += sg.t1 - sg.t0; } }
+      else cands.push(span.tick0 + tick);
+      for (const T of cands) {
+        const e = tl.find((x) => T >= x.start && T < x.start + x.tok.dur); if (!e) continue;
+        const sec = e.t0 + ((T - e.start) / Math.max(1e-9, e.tok.dur)) * (e.t1 - e.t0);
+        if (best === null || Math.abs(sec - near) < Math.abs(best - near)) best = sec;
+      }
+    }
+    return best;
+  };
+  return { tracks, range: { from, to }, total, chunks, papers, unplayable, secondsOfToken, locate, secondsAt };
 }

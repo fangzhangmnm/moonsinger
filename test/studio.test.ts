@@ -72,6 +72,48 @@ describe("录音房：确定性 + 走带", () => {
   });
 });
 
+describe("录音房：停 / 再放 / 放着的时候换时间线（2026-10-10）", () => {
+  it("停 = 释放中的尾巴接着响到静（不是冻住）；再按放 = 上次的音不漏出来（user「每次点play的时候会漏上次的最后一个音」）", async () => {
+    const { s } = await studio();
+    s.handle({ type: "timeline", tl: tl([sfTrack("p", [{ t0: 0, t1: 1.5, key: 60 }])]) }); s.handle({ type: "play" });
+    run(s, 0.3);
+    s.handle({ type: "stop" });
+    const a = run(s, 0.4);
+    assert(peak(a.L, 0, sec(0.01)) > 0.01, `停的一瞬尾巴照响、不是硬切（${peak(a.L, 0, sec(0.01))}）`);
+    assert(Math.abs(s.position - 0.3) < 1e-6, "播放头留在停的地方");
+    s.handle({ type: "play", at: 1.8 });   // 1.8 s 起没有音：旧代码释放中的音冻着、这时漏出来
+    const b = run(s, 0.15);
+    assert(peak(b.L, sec(0.02), sec(0.15)) < 1e-4, `再放：上次的音不漏（${peak(b.L, sec(0.02), sec(0.15))}）`);
+  });
+  it("放着的时候正在唱的那句换了唱谱：旧块留到响完、走带不冻；响完新块没到才等（user「正在响的那句不换、响完换新」）", async () => {
+    const { s, out } = await studio();
+    s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(1, 0.5) });
+    s.handle({ type: "timeline", tl: tl([clipTrack("v", "A", 0, 1)]) }); s.handle({ type: "play" });
+    run(s, 0.3);
+    s.handle({ type: "forget", keys: ["A"] });   // 主线程按新时间线清块：hold 着的要留到响完
+    s.handle({ type: "timeline", tl: tl([{ id: "v", kind: "clips", clips: [{ key: "B", t0: 0, dur: 1.5, gain: 1 }], gain: null }]) });   // B 还没唱
+    const a = run(s, 0.4);
+    assert(Math.abs(s.position - 0.7) < 1e-3, `走带没冻（${s.position}）`);
+    assert(peak(a.L) > 0.3, `旧块照响（${peak(a.L)}）`);
+    assert(out.some((m) => m.type === "missing" && m.keys.includes("B")), "新块报 missing（主线程去唱）");
+    run(s, 0.4);
+    const w = (s as unknown as { waiting: string | null }).waiting;
+    assert(Math.abs(s.position - 1.0) < 0.005 && w === "B", `旧块响完才轮到新块、没到就等（pos ${s.position} waiting ${w}）`);   // 块粒度 2.7 ms
+    s.handle({ type: "chunk", key: "B", sr: SR, samples: flat(1.5, 0.25) });
+    const c = run(s, 0.2);
+    assert(peak(c.L, sec(0.05)) > 0.1 && s.position > 1.1, "新块到了接着放");
+  });
+  it("时间线带 shift：改了播放头前面的东西，播放头按谱位置挪（等着松开的音一起挪）", async () => {
+    const { s } = await studio();
+    s.handle({ type: "timeline", tl: tl([sfTrack("p", [{ t0: 0, t1: 0.5, key: 60 }])]) }); s.handle({ type: "play" });
+    run(s, 0.3);
+    s.handle({ type: "timeline", tl: { ...tl([sfTrack("p", [{ t0: 0.5, t1: 1, key: 60 }])]), shift: 0.5 } });   // 前面插了半秒
+    assert(Math.abs(s.position - 0.8) < 1e-3, `0.3 + 0.5 = ${s.position}`);
+    const a = run(s, 0.3);
+    assert(peak(a.L, 0, sec(0.1)) > 0.01, "正在响的音接着响（没被当成已过去）");
+  });
+});
+
 describe("录音房：块回放（慢引擎）", () => {
   it("块没到 = 冻在它的头、报 missing；到了接着放；增益乘上去、22050 → 48000 重采样", async () => {
     const { s, out } = await studio();

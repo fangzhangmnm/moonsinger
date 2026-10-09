@@ -739,13 +739,15 @@ async function prepareBanks(parts: readonly PartDef[]): Promise<string[]> {
 let chunkKeysWanted: string[] = [];                      // 现在该算的顺序（键）
 let chunkPlans = new Map<string, ChunkPlan>();           // 键 → 计划（含唱谱）
 const chunkFailed = new Map<string, string>();           // 键 → 为什么唱不了（预唱时攒着，播放时报）
-let pumping = false, pumpQuiet = false, singSpeed: number | null = null;   // singSpeed = 算一秒歌几毫秒（预卷几块按它）
+let pumping = false, pumpQuiet = false, singSpeed: number | null = null, inflightKey: string | null = null;   // singSpeed = 算一秒歌几毫秒（预卷几块按它）；inflightKey = 正在算的那句
 const pendingChunks = () => chunkKeysWanted.filter((k) => !engine.hasChunk(k)).length;
 function setChunkOrder(tl: Timeline, pos: number, loop: { from: number; to: number } | null, o: { quiet?: boolean; limit?: number } = {}): void {
   chunkPlans = new Map(tl.chunks.map((c) => [c.key, c]));
   let keys = chunkOrder(tl.chunks, pos, loop, (k) => engine.hasChunk(k));
   if (o.limit !== undefined) keys = keys.slice(0, o.limit);
+  const wasInflight = inflightKey;
   chunkKeysWanted = keys; pumpQuiet = !!o.quiet;
+  if (wasInflight && !keys.includes(wasInflight) && !chunkPlans.has(wasInflight)) singer.cancelInflight();   // 正在算的那句已经不在歌里（改了 / 换歌）= 中途取消
   void pump();
 }
 async function pump(): Promise<void> {
@@ -764,9 +766,10 @@ async function pump(): Promise<void> {
         showError(`「${who}」唱不了这一句：${failed}`); engine.chunk(key, 22050, new Float32Array(0)); renderBar.next(); continue;
       }
       progress(`${who}：${pumpQuiet ? "先唱着" : "还有"} ${left} 句…`);
-      const t = performance.now();
+      const t = performance.now(); inflightKey = key;
+      const STAGE_FRAC: Record<string, number> = { "念（1/2）": 0.05, "念（2/2）": 0.25, "分析（1/3 音高）": 0.45, "分析（2/3 谱包络）": 0.6, "分析（3/3 气声）": 0.7, "分析（缓存）": 0.75, "合成": 0.85 };   // 刀 0 量的比例：念 40%、分析 40%、合成 20%
       try {
-        const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); }, { opt: humOpt(), models: modelBases(), raw: true });
+        const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]); }, { opt: humOpt(), models: modelBases(), raw: true });
         if (engine.hasChunk(key) || !chunkPlans.has(key)) { renderBar.next(); continue; }   // 期间换了歌 / 顺序：照样留着（键对就不浪费），但别再算进度
         engine.chunk(key, r.sr, r.samples);
         if (r.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r.ms.boot)}`);   // 冷启动各段（刀 5）：诊断页看（测试里的假唱没有 ms）
@@ -780,7 +783,7 @@ async function pump(): Promise<void> {
       }
       renderBar.next();
     }
-  } finally { pumping = false; renderBar.end(); if (!engine.playing) progress(""); }
+  } finally { pumping = false; inflightKey = null; renderBar.end(); if (!engine.playing) progress(""); }
 }
 /** 等从 pos 起的前几块到齐（预卷；几块按这台设备的速度）；stop = 外面取消了。 */
 async function waitChunksReady(tl: Timeline, pos: number, stop: () => boolean): Promise<void> {
@@ -894,9 +897,11 @@ function schedulePlaybackRefresh(): void {
   clearTimeout(refreshTimer);
   refreshTimer = window.setTimeout(() => { void (async () => {
     if (!engine.playing) return;
+    const at = engine.position, loc = playTl?.locate(at) ?? null;   // 播放头现在在谱的哪儿：换了时间线按谱位置留在原地（改了前面的音 / 反复结构，秒数不变会跳）
     const tl = await prepare("view", { chunks: false }); if (!tl) { stopPlay(); return; }
     const r = playRange(tl); playTl = tl;
-    engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom });
+    const sec = loc ? tl.secondsAt(loc.paperId, loc.tick, at) : null, shift = sec !== null && Math.abs(sec - at) > 0.005 ? sec - at : 0;
+    engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom, ...(shift ? { shift } : {}) });
     setChunkOrder(tl, engine.position, loopOn ? { from: r.loopFrom, to: r.to } : null);
   })(); }, 300);
 }
@@ -2120,6 +2125,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   pad.setRangeLow(d.pad.low);
   engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; singer.cancelPending(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了
   view.render(); pad.render(); renderTitle();
+  if (st.song.parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "tsukuyomi")) void singer.warm(modelBases());   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }
 /** 存好了：文件名从此定下来（之后和歌名各管各的；user「之后各管各的同意」）。 */

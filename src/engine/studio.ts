@@ -36,7 +36,8 @@ export type TrackSpec =
   | { id: string; kind: "sf"; sha: string; notes: NoteEv[]; gain: GainSeg[] | null; chain?: FxV2[] }
   | { id: string; kind: "vowel"; kana: string; notes: NoteEv[]; gain: GainSeg[] | null; chain?: FxV2[] }
   | { id: string; kind: "clips"; clips: ClipRef[]; gain: GainSeg[] | null; chain?: FxV2[] };
-export interface TimelineMsg { tracks: TrackSpec[]; range: { from: number; to: number }; loop: boolean; /** 循环从哪儿跳回（不给 = 范围头）：编排「前面放一遍、括住的一直循环」。 */ loopFrom?: number }
+export interface TimelineMsg { tracks: TrackSpec[]; range: { from: number; to: number }; loop: boolean; /** 循环从哪儿跳回（不给 = 范围头）：编排「前面放一遍、括住的一直循环」。 */ loopFrom?: number;
+  /** 放着的时候换时间线：播放头挪这么多秒（主线程按谱位置算的：改了播放头前面的东西 / 反复结构，秒数不变会跳到别的音上）。 */ shift?: number }
 /** 一条通道（轨 ≠ 乐手：乐手的通道、总线、以后的素材轨都是这个形状；user 2026-10-10「轨还是和乐手是两个概念」）：
  *  chain = 通道条上的效果（EQ / 压缩（可侧链 key = 别的轨 id）…）；sends = 推子之后发到总线多少；to = 去哪（"master" / 总线 id）。 */
 export interface ChannelParams { gainDb: number; pan: number; mute: boolean; solo: boolean; chain?: FxV2[]; sends?: { to: string; gainDb: number }[]; to?: string }
@@ -90,6 +91,8 @@ interface TrackState {
   sf: SfPlayer | null;
   vowels: VowelVoice[];
   env: number; envTarget: number;         // 块轨的淡入淡出（起放 / seek / 范围尾）
+  /** 放着的时候这一句的唱谱改了：旧的那块留到响完（until）再换新的（user「正在响的那句不换、响完换新」）；新块没到也不冻。 */
+  hold: { key: string; t0: number; dur: number; gain: number; until: number } | null;
   src: Float32Array; out: Float32Array;   // 第一趟（出声 + 曲线 + 演奏者链）/ 第二趟（通道链）的这一段；src 给别的轨当侧链 key
   perfFx: FxInstance[]; chFx: FxInstance[];
 }
@@ -125,6 +128,8 @@ export class Studio {
   private loop = false;
   private loopFrom: number | null = null;
   private tail = -1;                       // ≥0 = 范围尾：已经等了几秒
+  private draining = false; private drainPos = 0; private drainSecs = 0;   // 停了之后：释放中的尾巴照响到静（不渲染 = 冻住，下次放才漏出来；user「每次点play的时候会漏上次的最后一个音」）
+  private forgetLater = new Set<string>();   // 主线程要放掉、但正被 hold 着的块：响完再删
   private waiting: string | null = null;   // 块没到：等它（走带冻住）
   private gen = 0;                         // 走带代号（主线程给；报告带着它）
   // 试听
@@ -189,7 +194,7 @@ export class Studio {
       case "timeline": this.setTimeline(m.tl); return;
       case "chunk": this.chunks.set(m.key, { sr: m.sr, samples: m.samples instanceof Int16Array ? m.samples : toInt16(m.samples) }); this.missingSent.delete(m.key); return;
       case "getChunks": { const items = m.keys.flatMap((k) => { const c = this.chunks.get(k); return c ? [{ key: k, sr: c.sr, samples: c.samples.slice() }] : []; }); this.post({ type: "chunks", items }, items.map((x) => x.samples.buffer)); return; }
-      case "forget": for (const k of m.keys) this.chunks.delete(k); return;
+      case "forget": for (const k of m.keys) { if (this.held(k) || this.sounding(k)) this.forgetLater.add(k); else this.chunks.delete(k); } return;   // 正在响 / hold 着的块：响完再删（主线程换时间线之前就会先来清块）
       case "channel": {
         const cur = this.channels.get(m.id) ?? { ...DEFAULT_CH }, next = { ...cur, ...m.p };
         this.channels.set(m.id, next);
@@ -224,9 +229,12 @@ export class Studio {
   }
   private setTimeline(tl: TimelineMsg): void {
     const old = this.tracks; this.tracks = new Map(); this.order = [];
+    const pos0 = this.pos, shift = this.playing && tl.shift ? tl.shift : 0;
+    const prevClips = new Map<string, { key: string; t0: number; dur: number; gain: number }[]>();   // 换之前每条块轨的块（算 hold 用）
     for (const spec of tl.tracks) {
       const prev = old.get(spec.id);
-      const t: TrackState = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
+      if (prev && prev.spec.kind === "clips") prevClips.set(spec.id, prev.spec.clips);
+      const t: TrackState = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, hold: null, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
       t.spec = spec; t.ch = this.channels.get(spec.id) ?? t.ch;
       t.perfFx = buildChain(spec.chain ?? [], t.perfFx, this.sr);
       if (!prev) t.chFx = buildChain(t.ch.chain ?? [], [], this.sr);
@@ -238,28 +246,75 @@ export class Studio {
       this.tracks.set(spec.id, t); this.order.push(spec.id);
       old.delete(spec.id);
     }
-    for (const t of old.values()) if (t.sf) this.tsf.close(t.sf.player);   // 没了的声部
+    for (const t of old.values()) { if (t.sf) this.tsf.close(t.sf.player); this.endHold(t); }   // 没了的声部
     this.range = { ...tl.range }; this.loop = tl.loop; this.loopFrom = tl.loopFrom ?? null;
     // 正在放：时间线换了（改谱 / 换范围）= 游标按现在的位置重算，已经在响的音不动（user「正在响的那句不换、响完换新」）
-    if (this.playing) { this.resetCursors(false); this.checkMissing(); }
-    else if (this.pos < this.range.from || this.pos > this.range.to) this.pos = this.range.from;
+    if (this.playing) {
+      if (shift) {   // 改了播放头前面的东西：按谱位置挪（主线程算好的秒差），等着松开的音和 hold 一起挪
+        this.pos = Math.max(this.range.from, Math.min(this.range.to, pos0 + shift));
+        for (const t of this.tracks.values()) { for (const o of t.offs) o.t += shift; if (t.hold) { t.hold.t0 += shift; t.hold.until += shift; } }
+      }
+      for (const t of this.tracks.values()) {   // 正在唱的那句换了唱谱：旧块留到响完（新块到了也不中途换——换就是一跳）
+        if (t.spec.kind !== "clips") { this.endHold(t); continue; }
+        const cur = t.spec.clips.find((c) => c.t0 <= this.pos && c.t0 + c.dur > this.pos);
+        if (!cur) { this.endHold(t); continue; }
+        if (t.hold && t.hold.until > this.pos) continue;
+        this.endHold(t);
+        if (this.chunks.has(cur.key)) continue;
+        const o = prevClips.get(t.spec.id)?.find((c) => c.t0 <= pos0 && c.t0 + c.dur > pos0 && c.key !== cur.key && this.chunks.has(c.key));
+        if (o) t.hold = { key: o.key, t0: o.t0 + shift, dur: o.dur, gain: o.gain, until: Math.min(o.t0 + o.dur, cur.t0 + cur.dur - shift) + shift };
+      }
+      this.resetCursors(false); this.checkMissing();
+    }
+    else { for (const t of this.tracks.values()) this.endHold(t); if (this.pos < this.range.from || this.pos > this.range.to) this.pos = this.range.from; }
+    this.sweepForget();
   }
 
   // ── 走带 ────────────────────────────────────────────────────────────────────────────────────────────────────────
   private play(at?: number): void {
     if (at !== undefined) this.pos = at;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
-    this.playing = true; this.tail = -1; this.waiting = null; this.posFrames = 0;
+    this.playing = true; this.draining = false; this.tail = -1; this.waiting = null; this.posFrames = 0;
+    for (const t of this.tracks.values()) { this.killAll(t); this.endHold(t); }   // 上次停下来还没响完的尾巴快速收掉，别漏进这一次
     this.resetCursors(true);
     this.checkMissing();
   }
+  /** 停：不排新音、块 30 ms 淡出、释放中的尾巴接着响到静（不是冻住）。播放头留在原地。 */
   private stop(): void {
     this.playing = false; this.tail = -1; this.waiting = null;
-    for (const t of this.tracks.values()) { this.releaseAll(t); t.envTarget = 1; }
+    this.draining = true; this.drainPos = this.pos; this.drainSecs = 0;
+    for (const t of this.tracks.values()) { this.releaseAll(t); t.envTarget = 0; this.endHold(t); }
+    this.sweepForget();
   }
   private seek(at: number): void {
     this.pos = at;
-    if (this.playing) { this.tail = -1; this.waiting = null; this.resetCursors(true); this.checkMissing(); }
+    if (this.playing) { this.tail = -1; this.waiting = null; for (const t of this.tracks.values()) this.endHold(t); this.resetCursors(true); this.checkMissing(); }
+  }
+  /** 旧块响完 / 不要了：撤 hold；主线程早就说要放掉的这时才真删。 */
+  private endHold(t: TrackState): void {
+    if (!t.hold) return; t.hold = null;
+    this.sweepForget();
+  }
+  private held(key: string): boolean { for (const t of this.tracks.values()) if (t.hold?.key === key) return true; return false; }
+  /** 放着的时候这个块正在响（时间线里它盖着播放头）。 */
+  private sounding(key: string): boolean {
+    if (!this.playing) return false;
+    for (const t of this.tracks.values()) if (t.spec.kind === "clips") for (const c of t.spec.clips) if (c.key === key && c.t0 <= this.pos && c.t0 + c.dur > this.pos) return true;
+    return false;
+  }
+  /** 主线程早说要放掉的块：既没 hold 着、时间线里也不再用 = 这时才真删。 */
+  private sweepForget(): void {
+    for (const k of this.forgetLater) {
+      if (this.held(k)) continue;
+      let used = false; for (const t of this.tracks.values()) if (t.spec.kind === "clips" && t.spec.clips.some((c) => c.key === k)) { used = true; break; }
+      if (!used) { this.forgetLater.delete(k); this.chunks.delete(k); }
+    }
+  }
+  /** 所有正在响的声音快速收掉（几毫秒的淡出，不是硬切）：起放时清上一次的尾巴。 */
+  private killAll(t: TrackState): void {
+    if (t.sf) this.tsf.reset(t.sf.player);
+    t.offs.length = 0;
+    for (const v of t.vowels) v.state = "cut";
   }
   /** 游标对齐到 pos；chase = 把 pos 这一刻该响着的音按下（起放 / seek / 续放），正在响的先松开。 */
   private resetCursors(chase: boolean): void {
@@ -306,7 +361,7 @@ export class Studio {
     for (const t of this.tracks.values()) {
       if (t.spec.kind !== "clips") continue;
       for (const c of t.spec.clips) {
-        if (this.chunks.has(c.key)) continue;
+        if (this.chunks.has(c.key) || (t.hold && c.t0 < t.hold.until)) continue;   // hold 着的那段：旧块顶着，新块没到也不挡
         if (c.t0 <= this.pos && c.t0 + c.dur > this.pos) return { stop: this.pos, wait: c.key };
         if (c.t0 > this.pos && c.t0 < stop) stop = c.t0;
       }
@@ -314,7 +369,7 @@ export class Studio {
     return { stop, wait: null };
   }
   private keyStartingAt(t0: number): string | null {
-    for (const t of this.tracks.values()) if (t.spec.kind === "clips") for (const c of t.spec.clips) if (!this.chunks.has(c.key) && Math.abs(c.t0 - t0) < 1e-6) return c.key;
+    for (const t of this.tracks.values()) if (t.spec.kind === "clips") for (const c of t.spec.clips) if (!this.chunks.has(c.key) && !(t.hold && c.t0 < t.hold.until) && Math.abs(c.t0 - t0) < 1e-6) return c.key;
     return null;
   }
   private freeze(key: string | null): void { this.waiting = key; for (const t of this.tracks.values()) this.releaseAll(t); this.checkMissing(); }
@@ -324,7 +379,7 @@ export class Studio {
   render(outL: Float32Array, outR: Float32Array, n: number): void {
     this.busL.fill(0, 0, n); this.busR.fill(0, 0, n); this.audL.fill(0, 0, n); this.audR.fill(0, 0, n);
     for (const b of this.buses.values()) { b.L.fill(0, 0, n); b.R.fill(0, 0, n); }
-    if (this.playing) this.renderTransport(n);
+    if (this.playing) this.renderTransport(n); else if (this.draining) this.renderDrain(n);
     // 总线：各轨送来的 → 这条总线的链（混响 / 延迟…）→ 增益 / 平衡 → 总轨
     for (const b of this.buses.values()) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
@@ -356,6 +411,7 @@ export class Studio {
     let done = 0;
     while (done < n) {
       const left = n - done;
+      for (const t of this.tracks.values()) if (t.hold && this.pos >= t.hold.until) this.endHold(t);   // 旧块响完 = 换新的（没到就在下面等）
       if (this.waiting) {   // 等块：冻住，只让尾巴响
         if (!this.chunks.has(this.waiting)) { this.renderTracks(done, left, false, false); done = n; break; }
         this.waiting = null; this.resetCursors(true);
@@ -371,7 +427,7 @@ export class Studio {
       const cnt = Math.min(left, Math.max(0, Math.round((stop - this.pos) * sr)));
       if (cnt > 0) { this.renderTracks(done, cnt, true, true); this.pos += cnt / sr; done += cnt; }
       if (this.pos >= this.range.to - 0.5 / sr) {   // 到范围尾
-        if (this.loop) { this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to)); this.resetCursors(false); this.chaseAtLoop(); this.checkMissing(); }   // 跳回去：正在响的照响，不松
+        if (this.loop) { this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to)); for (const t of this.tracks.values()) this.endHold(t); this.resetCursors(false); this.chaseAtLoop(); this.checkMissing(); }   // 跳回去：正在响的照响，不松
         else { this.tail = 0; for (const t of this.tracks.values()) { this.releaseAll(t); t.envTarget = 0; } }
         continue;
       }
@@ -384,6 +440,12 @@ export class Studio {
     this.posFrames += n;
     if (this.posFrames >= 16 * BLOCK) { this.posFrames = 0; this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen }); }
   }
+  /** 停了之后：尾巴（释放中的音、淡出中的块）照响到静或 TAIL_MAX；播放头不动，块按自己的钟走。 */
+  private renderDrain(n: number): void {
+    this.renderTracks(0, n, false, true, this.drainPos);
+    this.drainPos += n / this.sr; this.drainSecs += n / this.sr;
+    if (this.drainSecs >= TAIL_MAX || this.silent()) this.draining = false;
+  }
   private chaseAtLoop(): void { for (const t of this.tracks.values()) { if (t.spec.kind === "clips") continue; for (const nte of t.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos) this.noteOn(t, nte); } }
   private silent(): boolean {
     for (const t of this.tracks.values()) { if (t.sf && this.tsf.active(t.sf.player) > 0) return false; if (t.vowels.length) return false; if (t.spec.kind === "clips" && t.env > 1e-4) return false; }
@@ -391,9 +453,9 @@ export class Studio {
   }
   /** 各声部出 cnt 个采样进母线 / 总线（从 off 起）。notesOn = 排新音；clipsOn = 块前进（false = 冻着，块不出声）。
    *  两趟（侧链要先看到别的轨的声）：① 每轨 出声 → 表情曲线 → 块淡入淡出 → 演奏者的链 → src；② 每轨 src → 通道链（压缩器的 key 读别的轨的 src）→ 静音 / 独奏 → 推子 / 声像 → 去总轨或总线，再按发送量发到总线。 */
-  private renderTracks(off: number, cnt: number, notesOn: boolean, clipsOn: boolean): void {
+  private renderTracks(off: number, cnt: number, notesOn: boolean, clipsOn: boolean, t0 = this.pos): void {
     const solo = this.order.some((id) => this.tracks.get(id)!.ch.solo);
-    const t0 = this.pos, sr = this.sr;
+    const sr = this.sr;
     for (const id of this.order) {   // ── 第一趟
       const t = this.tracks.get(id)!, mono = t.src; mono.fill(0, 0, cnt);
       if (t.spec.kind === "clips") { if (clipsOn) this.renderClips(t, mono, cnt, t0); }
@@ -436,17 +498,19 @@ export class Studio {
   }
   private renderClips(t: TrackState, mono: Float32Array, cnt: number, t0: number): void {
     if (t.spec.kind !== "clips") return;
+    if (t.hold) this.renderClip(t.hold, mono, cnt, t0);
+    for (const c of t.spec.clips) { if (t.hold && c.t0 < t.hold.until) continue; this.renderClip(c, mono, cnt, t0); }
+  }
+  private renderClip(c: { key: string; t0: number; gain: number }, mono: Float32Array, cnt: number, t0: number): void {
     const sr = this.sr, tEnd = t0 + cnt / sr;
-    for (const c of t.spec.clips) {
-      const ch = this.chunks.get(c.key); if (!ch) continue;
-      const len = ch.samples.length, cEnd = c.t0 + len / ch.sr;
-      if (c.t0 >= tEnd || cEnd <= t0) continue;
-      const s = ch.samples, g = c.gain * I16;
-      for (let i = 0; i < cnt; i++) {
-        const p = (t0 + i / sr - c.t0) * ch.sr; if (p < 0) continue;
-        const k = p | 0; if (k >= len - 1) break;
-        const f = p - k; mono[i] += (s[k] * (1 - f) + s[k + 1] * f) * g;
-      }
+    const ch = this.chunks.get(c.key); if (!ch) return;
+    const len = ch.samples.length, cEnd = c.t0 + len / ch.sr;
+    if (c.t0 >= tEnd || cEnd <= t0) return;
+    const s = ch.samples, g = c.gain * I16;
+    for (let i = 0; i < cnt; i++) {
+      const p = (t0 + i / sr - c.t0) * ch.sr; if (p < 0) continue;
+      const k = p | 0; if (k >= len - 1) break;
+      const f = p - k; mono[i] += (s[k] * (1 - f) + s[k + 1] * f) * g;
     }
   }
   /** 快引擎的轨：事件按采样位置施加（同原 synth-processor），中间逐段渲染。 */

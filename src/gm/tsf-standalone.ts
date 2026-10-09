@@ -41,6 +41,8 @@ export class Tsf {
   noteOn(b: TsfBank, preset: number, key: number, vel: number): void { this.ex.sf_note_on(b.handle, preset, key, vel); }
   noteOff(b: TsfBank, preset: number, key: number): void { this.ex.sf_note_off(b.handle, preset, key); }
   allOff(b: TsfBank): void { this.ex.sf_note_off_all(b.handle); }
+  /** 所有声音快速收掉（tsf_reset = endquick：几毫秒淡出，不是硬切）。 */
+  reset(b: TsfBank): void { this.ex.sf_reset(b.handle); }
   active(b: TsfBank): number { return this.ex.sf_active(b.handle); }
   /** 渲染 n 个单声道采样进 out（从 offset 起）。 */
   render(b: TsfBank, out: Float32Array, offset = 0, n = out.length - offset): void {

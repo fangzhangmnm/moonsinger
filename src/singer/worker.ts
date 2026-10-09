@@ -26,6 +26,9 @@ export interface SingRequest { type: "sing"; id: number; score: unknown[]; text:
   cacheBytes?: number;
   /** 只唱第 entry 个字（按键试听，刀 3）：按下的 midi、唱 secs 秒；回原样（raw）。 */
   only?: { entry: number; midi: number; secs: number } }
+/** 只把引擎起起来（打开歌就起，不等第一句）/ 中途取消某一句（在段与段之间认：两遍 piper 之间、分析三段之间、合成前；正在跑的那一段跑完才停）。 */
+export interface WarmRequest { type: "warm"; id: number; models?: string[] }
+export interface CancelRequest { type: "cancel"; id: number }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> } }
@@ -141,11 +144,20 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, presetDefault: config.preset_default ?? {} };
 }
 
-self.onmessage = async (ev: MessageEvent<SingRequest>) => {
+const cancelled = new Set<number>();
+self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelRequest>) => {
   const q = ev.data;
   const post = (m: SingReply, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(m, transfer);
+  if (q.type === "cancel") { cancelled.add(q.id); return; }
+  if (q.type === "warm") {
+    const say = (stage: string) => post({ type: "progress", id: q.id, stage });
+    try { if (q.models?.length) bases = q.models; if (!engine) engine = loadEngine(say).catch((e) => { engine = null; throw e; }); await engine; post({ type: "done", id: q.id, samples: new Float32Array(0), sr: SR, ms: { load: 0, sing: 0, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }); bootMs = {}; }
+    catch (err) { post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) }); }
+    return;
+  }
   if (q.type !== "sing") return;
   const say = (stage: string) => post({ type: "progress", id: q.id, stage });
+  const check = () => { if (cancelled.has(q.id)) { cancelled.delete(q.id); throw new Error("cancelled"); } };
   try {
     const t0 = performance.now();
     if (q.models?.length) bases = q.models;
@@ -159,10 +171,17 @@ self.onmessage = async (ev: MessageEvent<SingRequest>) => {
     // 元音图谱默认关（user 2026-10-06「元音图谱一般般，先不做」）；断气随图谱（和 Lab 命令行的规则一样）。要试图谱就传 atlas: "normal"。
     const atlas = q.atlas ?? "off", breath = q.breath ?? atlas !== "off";
     const preset = e.presetDefault[q.lang] ?? 0;   // 模型配置的 preset_default（中 3、英 9；日语没写 = 0 = 原版），同 Lab piper-node.mjs
-    const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q.opt ?? {}, only: q.only ?? null });
+    // 这一句自己的 piper / WORLD 视图：段与段之间报进度、认取消（sing-core 一行不动）
+    let runs = 0;
+    const piper = { ...e.piper, run: async (ids: number[], pros: number[][], o: Record<string, unknown>) => { check(); say(runs++ === 0 ? "念（1/2）" : "念（2/2）"); const r = await e.piper.run(ids, pros, o); check(); return r; } };
+    const names: Record<string, string> = { f0: "分析（1/3 音高）", sp: "分析（2/3 谱包络）", ap: "分析（3/3 气声）", cached: "分析（缓存）" };
+    const world = { ...e.world, analyze: (x: ArrayLike<number>, fs: number, o?: Record<string, unknown>) => e.world.analyze(x, fs, o, { stage: (n: string) => say(names[n] ?? n), check }), synth: (a: unknown) => { check(); say("合成"); return e.world.synth(a); } };
+    const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper, world, loadAtlas: e.loadAtlas, opt: q.opt ?? {}, only: q.only ?? null });
+    check();
     const samples: Float32Array = q.raw || q.only ? Float32Array.from(r.y as ArrayLike<number>) : r.sung;
     post({ type: "done", id: q.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }, [samples.buffer]); bootMs = {};
   } catch (err) {
+    cancelled.delete(q.id);
     engine = engine && (await engine.catch(() => null)) ? engine : null;   // 加载失败就允许下次重试
     post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) });
   }

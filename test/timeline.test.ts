@@ -76,3 +76,22 @@ describe("时间线：乐器 / 光标 / 纸", () => {
     assert(Math.abs(p2t.notes[0].t0 - 2 * Q) < 1e-9, "P2 的音从第二张纸起");
   });
 });
+
+describe("时间线：谱位置 → 秒（放着的时候换时间线用）", () => {
+  it("secondsAt = secondsOfToken 的反面；反复里同一处两遍 = 取离 near 近的那一遍", () => {
+    let st: EditorState = initState();
+    const pid = st.song.parts[0].id, p1 = st.song.papers[0];
+    const bar = (repeat: "start" | "end"): Token => ({ kind: "bar", id: nid++, repeat }) as unknown as Token;
+    const notes = [n("C"), n("D"), n("E"), n("F")];
+    const plain = { song: { ...st.song, papers: [{ ...p1, tracks: { [pid]: [...head(p1.tracks[pid]), ...notes] } }] }, parts: st.song.parts };
+    const t = build(plain, "soundfont");
+    for (const [k, tok] of notes.entries()) { const a = t.secondsOfToken(pid, tok.id), b = t.secondsAt(p1.id, k * TPQ, 0); assert(a !== null && b !== null && Math.abs(a - b) < 1e-9, `第 ${k} 个音 ${a} vs ${b}`); }
+    eq(t.secondsAt("nope", 0, 0), null);
+    const rep = { song: { ...st.song, papers: [{ ...p1, tracks: { [pid]: [...head(p1.tracks[pid]), bar("start"), ...notes, bar("end")] } }] }, parts: st.song.parts };
+    const t2 = build(rep, "soundfont");
+    const first = t2.secondsAt(p1.id, TPQ, 0), second = t2.secondsAt(p1.id, TPQ, 10);
+    assert(first !== null && second !== null && Math.abs(first - Q) < 1e-9 && Math.abs(second - 5 * Q) < 1e-9, `两遍：${first} / ${second}`);
+    const back = t2.locate(5 * Q);   // 第二遍的秒 → 纸自己的 tick（以前回的是展开后的 tick 8400，超出纸长、播放头画不出来）
+    assert(back !== null && back.paperId === p1.id && back.tick === TPQ, `第二遍 locate 回纸内 tick：${JSON.stringify(back)}`);
+  });
+});

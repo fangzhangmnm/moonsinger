@@ -279,24 +279,25 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   for (const n of notes) { const V = OPT.vibrato; if (n.t1 - n.t0 < V.minNote) continue;
     for (let j = Math.ceil((n.t0 + V.delay) / FPS); j * FPS < n.t1 && j < N; j++) { const u = j * FPS - n.t0 - V.delay; smooth[j] += V.cents * Math.min(1, u / V.fadeIn) * Math.sin(2 * Math.PI * V.hz * u); } }
   // rebuild frames
-  const sp = new Float64Array(N * bins), ap = new Float64Array(N * bins), f0 = new Float64Array(N); let repaired = 0, vowelFrames = 0, atlasFrames = 0, holdFrames = 0, breaths = new Map();   // mora k -> "v" | "O"
-  const breathSp = new Map();   // mora k -> breath template (built once)
-  // only：只重建这个字自己的帧（辅音起 → 它的末尾）；别的帧不算
+  // only：只重建这个字自己的帧（辅音起 → 它的末尾）；别的帧不算、也不分配（按键一次原来要零填充整句 N×bins 的 Float64 ≈ 7 MB）
   const onlyK = only ? SRC.slice(0, only.entry).reduce((a, e) => a + (e.moras || 1), 0) : -1;   // SRC 的条目 → SCORE / moras 的下标（几个假名一条的拆开过）
   const onlyM = only ? moras[Math.min(onlyK, moras.length - 1)] : null;
-  const J0 = onlyM ? Math.max(0, Math.floor(onlyM.preStart / FPS)) : 0, J1 = onlyM ? Math.min(N, Math.ceil(onlyM.end / FPS) + 1) : N;
+  const J0 = onlyM ? Math.max(0, Math.floor(onlyM.preStart / FPS)) : 0, J1 = onlyM ? Math.min(N, Math.ceil(onlyM.end / FPS) + 1) : N, NN = J1 - J0;
+  const sp = new Float64Array(NN * bins), ap = new Float64Array(NN * bins), f0 = new Float64Array(NN); let repaired = 0, vowelFrames = 0, atlasFrames = 0, holdFrames = 0, breaths = new Map();   // mora k -> "v" | "O"
+  const breathSp = new Map();   // mora k -> breath template (built once)
   for (let j = J0; j < J1; j++) {
+    const jj = j - J0;   // 写进数组的下标（不走 only 时 = j）
     const tt = j * FPS, s = segs.find((q) => tt >= q.s0 && tt < q.s1) ?? (tt >= songEnd ? segs[segs.length - 1] : null);
     if (!s) continue;
     const c = s.c0 + ((Math.min(tt, s.s1) - s.s0) / (s.s1 - s.s0)) * (s.c1 - s.c0), fi = Math.min(an.frames - 1, c / FPS);
     const a = Math.floor(fi), b = Math.min(an.frames - 1, a + 1), w = fi - a;
     for (let q = 0; q < bins; q++) {
-      sp[j * bins + q] = Math.exp((1 - w) * Math.log(an.sp[a * bins + q] + 1e-16) + w * Math.log(an.sp[b * bins + q] + 1e-16));
-      ap[j * bins + q] = (1 - w) * an.ap[a * bins + q] + w * an.ap[b * bins + q];
+      sp[jj * bins + q] = Math.exp((1 - w) * Math.log(an.sp[a * bins + q] + 1e-16) + w * Math.log(an.sp[b * bins + q] + 1e-16));
+      ap[jj * bins + q] = (1 - w) * an.ap[a * bins + q] + w * an.ap[b * bins + q];
     }
     const srcVoiced = an.f0[a] > 0 || an.f0[b] > 0, sung = !isNaN(smooth[j]);
     if (s.kind === "rest" || s.kind === "lead") {
-      for (let q = 0; q < bins; q++) sp[j * bins + q] *= 1e-6;   // −60 dB: silence
+      for (let q = 0; q < bins; q++) sp[jj * bins + q] *= 1e-6;   // −60 dB: silence
       // 断气: an inhale at the end of the rest / lead-in, before the next phrase
       const nk = s.kind === "lead" ? 0 : s.k + 1, mark = s.kind === "lead" ? "v" : (moras[nk]?.mark ?? null);
       const restLen = s.s1 - s.s0, stolen = s.kind === "rest" && !!moras[s.k].stolen, longEnough = s.kind === "lead" || restLen >= OPT.breathMinRest * EIGHTH - 1e-6;
@@ -306,16 +307,16 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
         if (tt >= b0) {
           if (!breathSp.has(nk)) breathSp.set(nk, breathTemplate(moras[nk], midiOf(nk), nk));
           const u = (tt - b0) / bl, env = u < 0.7 ? 0.5 - 0.5 * Math.cos(Math.PI * u / 0.7) : 0.5 + 0.5 * Math.cos(Math.PI * (u - 0.7) / 0.3);   // rise 70 %, fall 30 %
-          const tpl = breathSp.get(nk); for (let q = 0; q < bins; q++) { sp[j * bins + q] = Math.exp(tpl[q]) * env * env * boost; ap[j * bins + q] = 1; }
-          f0[j] = 0; breaths.set(nk, mark === "O" ? "O" : "v");
+          const tpl = breathSp.get(nk); for (let q = 0; q < bins; q++) { sp[jj * bins + q] = Math.exp(tpl[q]) * env * env * boost; ap[jj * bins + q] = 1; }
+          f0[jj] = 0; breaths.set(nk, mark === "O" ? "O" : "v");
         }
       }
     }
     if (s.kind === "vowel" && sung) {
-      vowelFrames++; f0[j] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
+      vowelFrames++; f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
       const m = moras[s.k]; let changed = false;
-      if (m.spClean) sp.set(m.spClean, j * bins);                 // whispered in piper's take: sing the song's clean sample of this vowel
-      for (let q = 0; q < bins; q++) { const v = ap[j * bins + q], c = m.apClean[q]; if (v > c) { ap[j * bins + q] = c + OPT.breath * (v - c); changed = true; } }
+      if (m.spClean) sp.set(m.spClean, jj * bins);                 // whispered in piper's take: sing the song's clean sample of this vowel
+      for (let q = 0; q < bins; q++) { const v = ap[jj * bins + q], c = m.apClean[q]; if (v > c) { ap[jj * bins + q] = c + OPT.breath * (v - c); changed = true; } }
       if (changed && !srcVoiced) repaired++;
       if (atlas && s.hold) {                                       // 元音图谱: the held stretch sings real sung vowel frames; fade in at its start, fade out across the tail segment
         holdFrames++;
@@ -325,22 +326,20 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
         if (s.hold === "tail") { wa = holdSeg ? MIX * (1 - (tt - s.s0) / total) : 0; }                         // tail: atlas → piper across the whole tail
         else { const fadeOut = moras[s.k].fade ? Math.min(1, (total - (tt - s.s0)) / xf) : 1; wa = MIX * Math.min(1, (tt - s.s0) / xf, fadeOut); }   // hold: fade in; fade out only if the note ends in silence
         const fr = wa > 0 ? atlasFrame(m, midiOf(s.k), tau, s.k) : null;
-        if (fr) { atlasFrames++; for (let q = 0; q < bins; q++) { sp[j * bins + q] = Math.exp((1 - wa) * Math.log(sp[j * bins + q] + 1e-16) + wa * fr.logsp[q]); ap[j * bins + q] = (1 - wa) * ap[j * bins + q] + wa * fr.ap[q]; } }
+        if (fr) { atlasFrames++; for (let q = 0; q < bins; q++) { sp[jj * bins + q] = Math.exp((1 - wa) * Math.log(sp[jj * bins + q] + 1e-16) + wa * fr.logsp[q]); ap[jj * bins + q] = (1 - wa) * ap[jj * bins + q] + wa * fr.ap[q]; } }
       }
     }
     const fm = s.kind === "vowel" ? moras[s.k].fade : s.kind === "cons" && s.hold === "coda" ? moras[s.k].codaFade : null;
-    if (fm && tt >= fm[0]) { const g = Math.max(0.01, 1 - (tt - fm[0]) / (fm[1] - fm[0])); for (let q = 0; q < bins; q++) sp[j * bins + q] *= g * g; }
+    if (fm && tt >= fm[0]) { const g = Math.max(0.01, 1 - (tt - fm[0]) / (fm[1] - fm[0])); for (let q = 0; q < bins; q++) sp[jj * bins + q] *= g * g; }
     if (s.kind === "vowel" && s.k >= 0) {                           // level: vowels only (consonants untouched), ramp over the first 30 ms
       const m = moras[s.k], w = Math.min(1, Math.max(0, (tt - m.noteStart) / 0.03)), gg = 10 ** ((w * m.gainDb) / 10);
-      for (let q = 0; q < bins; q++) sp[j * bins + q] *= gg;
-    } else if (s.kind === "cons" && sung && srcVoiced && noisiness(a) <= 0.5 && noisiness(b) <= 0.5) f0[j] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
+      for (let q = 0; q < bins; q++) sp[jj * bins + q] *= gg;
+    } else if (s.kind === "cons" && sung && srcVoiced && noisiness(a) <= 0.5 && noisiness(b) <= 0.5) f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
     // ↑ a consonant is pitched only where piper's frame is really voiced (m n r g …): Harvest sometimes finds a pitch inside s / sh / ts,
     //   and a pitched hiss is a buzz (user, take 5/6「有时候还有电锯声」)
   }
 
-  const y = only
-    ? W.synth({ f0: f0.subarray(J0, J1), sp: sp.subarray(J0 * bins, J1 * bins), ap: ap.subarray(J0 * bins, J1 * bins), fft: an.fft, fs: SR, framePeriod: FP })
-    : W.synth({ f0, sp, ap, fft: an.fft, fs: SR, framePeriod: FP });
+  const y = W.synth({ f0, sp, ap, fft: an.fft, fs: SR, framePeriod: FP });   // only 时数组本来就只有那几帧
   const worldMs = performance.now() - t0;
 
   function finish(sig) {

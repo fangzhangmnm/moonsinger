@@ -3,7 +3,7 @@
 // 2026-10-09（Claude Fable 5.1，实时试听刀 1 / 刀 2）：播放和 SoundFont 的离线渲染都搬去了录音房（src/engine/）——这里只剩「唱」；
 //   唱的请求在这边排队、一次只给 worker 一个（借朗读库 cancelPending 的做法：排多了用户一跳就全作废），cancelPending() 扔掉还没开始算的。
 import type { LabScore } from "../score/lab-score.ts";
-import type { SingReply, SingRequest } from "./worker.ts";
+import type { SingReply, SingRequest, WarmRequest, CancelRequest } from "./worker.ts";
 import { audioCtx } from "./audio.ts";
 import { diagNote } from "../app/report-error.ts";
 
@@ -20,6 +20,9 @@ export class Singer {
   private pending = new Map<number, { ok: (r: SingResult) => void; fail: (e: Error) => void; progress: (s: string) => void }>();
   private queue: Job[] = [];
   private inflight = false;
+  private inflightId = 0;      // 正在算的那一句（取消用）
+  private onlyId = 0;          // 最近一次按键试听的请求（新的来了旧的取消）
+  private warming: Promise<void> | null = null;
 
   private worker(): Worker {
     if (this.w) return this.w;
@@ -48,6 +51,15 @@ export class Singer {
     for (const j of this.queue.splice(0)) j.fail(new Error("cancelled"));
     return n;
   }
+  /** 取消正在算的那一句（worker 在段与段之间认；正在跑的那一段跑完才停）。 */
+  cancelInflight(): void { if (this.inflightId) { const req: CancelRequest = { type: "cancel", id: this.inflightId }; this.w?.postMessage(req); } }
+  /** 只把引擎起起来（打开歌就起；user 10-10「冷启动做」）。失败不抛（第一次真唱会再报）。 */
+  warm(models?: string[]): Promise<void> {
+    return (this.warming ??= new Promise<void>((ok) => {
+      const id = ++this.seq, req: WarmRequest = { type: "warm", id, models };
+      this.pending.set(id, { ok: () => ok(), fail: () => ok(), progress: () => {} }); this.worker().postMessage(req);
+    }).finally(() => { this.warming = null; }));
+  }
   get busy(): boolean { return this.inflight || this.queue.length > 0; }
   get queued(): number { return this.queue.length; }
 
@@ -62,7 +74,7 @@ export class Singer {
     try {
       for (;;) {
         const j = this.queue.shift(); if (!j) break;
-        try { j.ok(await this.singRetry(j.s, j.progress, j.extra)); } catch (e) { j.fail(e as Error); }
+        try { j.ok(await this.singRetry(j.s, j.progress, j.extra)); } catch (e) { j.fail(e as Error); } finally { this.inflightId = 0; }
       }
     } finally { this.inflight = false; }
   }
@@ -84,6 +96,7 @@ export class Singer {
   }
   private singOnce(s: LabScore, progress: (stage: string) => void, extra: Extra): Promise<SingResult> {
     const id = ++this.seq;
+    if (extra.only) { if (this.onlyId) this.w?.postMessage({ type: "cancel", id: this.onlyId } satisfies CancelRequest); this.onlyId = id; } else this.inflightId = id;
     const req: SingRequest = { type: "sing", id, score: s.SCORE, text: s.TEXT, tempo: s.TEMPO_QUARTER, lang: s.LANG, ...extra };
     return new Promise((ok, fail) => { this.pending.set(id, { ok, fail, progress }); this.worker().postMessage(req); });
   }

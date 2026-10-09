@@ -14,8 +14,13 @@ describe("念缓存", () => {
     const sing = async () => { const pred = await P.run([1, 2, 3], [[0]], { noiseScale: 0 }); const said = await P.run([1, 2, 3], [[0]], { override: [1, 1, 1] }); return { pred, an: W.analyze(said.audio, 22050, { framePeriod: 5 }) }; };
     const a = await sing(); eq(f.n().runs, 2); eq(f.n().analyses, 1);
     const b = await sing(); eq(f.n().runs, 2, "piper 不再跑"); eq(f.n().analyses, 1, "分析不再跑");
-    eq([...b.an.sp].join(), [...a.an.sp].join()); assert(b.an.sp !== a.an.sp && b.pred.durations !== a.pred.durations, "交出去的是拷贝");
-    eq(c.hits, 3); eq(c.misses, 3);
+    eq([...b.an.sp].join(), [...a.an.sp].join()); assert(b.pred.durations !== a.pred.durations, "念的结果交出去的是拷贝");
+    // 分析：最近一句留一份解好码的（hot，2026-10-10 按键再提速）——连着命中同一句交的是同一个对象，不每次 bf16 → f64；换一句再回来 = 重新解码
+    assert(b.an === a.an, "同一句连着命中 = 同一份解好码的分析");
+    const other = async () => { const said = await P.run([9, 9], [[0]], { override: [1, 1] }); return W.analyze(said.audio, 22050, { framePeriod: 5 }); };
+    await other(); const d = await sing();
+    assert(d.an !== a.an && [...d.an.sp].join() === [...a.an.sp].join(), "换过一句再回来 = 重新解码、数一样");
+    eq(c.hits, 6, "第二、三遍 sing 各命中 3（两遍念 + 分析）"); eq(c.misses, 5, "第一遍 3 + other 2");
   });
   it("不同歌词 / 不同 override = 不命中；预算小了最久没用的先走", async () => {
     const c = new SpeechCache(100), f = fakes(), P = c.wrapPiper(f.piper), W = c.wrapWorld(f.world);   // 一段念 ≈ 72 B（分析存 bf16），100 B 只装得下一段
@@ -23,5 +28,14 @@ describe("念缓存", () => {
     assert(c.used <= 100, `预算内（${c.used}）`);
     await P.run([1, 2], [[0]], {}); eq(f.n().runs, 3, "最早的那段被挤掉了、重跑");
     await P.run([1, 2], [[0]], { override: [1, 1] }); eq(f.n().runs, 4, "override 不同 = 另一键");
+  });
+});
+
+describe("念缓存：分析是共享的只读对象", () => {
+  it("唱法核心不就地改 an.f0 / an.sp / an.ap（hot 命中交的是同一个对象，改了 = 污染缓存）", async () => {
+    const fs = (await import("node:fs" as string)) as { readFileSync(u: URL, e: string): string };
+    const src = fs.readFileSync(new URL("../src/singer/sing-core.mjs", import.meta.url), "utf8");
+    const writes = src.match(/\ban\.(?:sp|ap|f0)(?:\[[^\]]*\]\s*[-+*/]?=[^=]|\.(?:set|fill|copyWithin|reverse|sort)\()/g) ?? [];
+    eq(writes.length, 0, `sing-core.mjs 里不许写分析数组：${writes.join(" | ")}`);
   });
 });

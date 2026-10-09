@@ -544,24 +544,25 @@ async function singCore({
       smooth[j] += V.cents * Math.min(1, u2 / V.fadeIn) * Math.sin(2 * Math.PI * V.hz * u2);
     }
   }
-  const sp = new Float64Array(N2 * bins), ap = new Float64Array(N2 * bins), f0 = new Float64Array(N2);
-  let repaired = 0, vowelFrames = 0, atlasFrames = 0, holdFrames = 0, breaths = /* @__PURE__ */ new Map();
-  const breathSp = /* @__PURE__ */ new Map();
   const onlyK = only ? SRC.slice(0, only.entry).reduce((a, e) => a + (e.moras || 1), 0) : -1;
   const onlyM = only ? moras[Math.min(onlyK, moras.length - 1)] : null;
-  const J0 = onlyM ? Math.max(0, Math.floor(onlyM.preStart / FPS)) : 0, J1 = onlyM ? Math.min(N2, Math.ceil(onlyM.end / FPS) + 1) : N2;
+  const J0 = onlyM ? Math.max(0, Math.floor(onlyM.preStart / FPS)) : 0, J1 = onlyM ? Math.min(N2, Math.ceil(onlyM.end / FPS) + 1) : N2, NN = J1 - J0;
+  const sp = new Float64Array(NN * bins), ap = new Float64Array(NN * bins), f0 = new Float64Array(NN);
+  let repaired = 0, vowelFrames = 0, atlasFrames = 0, holdFrames = 0, breaths = /* @__PURE__ */ new Map();
+  const breathSp = /* @__PURE__ */ new Map();
   for (let j = J0; j < J1; j++) {
+    const jj = j - J0;
     const tt = j * FPS, s = segs.find((q2) => tt >= q2.s0 && tt < q2.s1) ?? (tt >= songEnd ? segs[segs.length - 1] : null);
     if (!s) continue;
     const c = s.c0 + (Math.min(tt, s.s1) - s.s0) / (s.s1 - s.s0) * (s.c1 - s.c0), fi = Math.min(an2.frames - 1, c / FPS);
     const a = Math.floor(fi), b = Math.min(an2.frames - 1, a + 1), w = fi - a;
     for (let q2 = 0; q2 < bins; q2++) {
-      sp[j * bins + q2] = Math.exp((1 - w) * Math.log(an2.sp[a * bins + q2] + 1e-16) + w * Math.log(an2.sp[b * bins + q2] + 1e-16));
-      ap[j * bins + q2] = (1 - w) * an2.ap[a * bins + q2] + w * an2.ap[b * bins + q2];
+      sp[jj * bins + q2] = Math.exp((1 - w) * Math.log(an2.sp[a * bins + q2] + 1e-16) + w * Math.log(an2.sp[b * bins + q2] + 1e-16));
+      ap[jj * bins + q2] = (1 - w) * an2.ap[a * bins + q2] + w * an2.ap[b * bins + q2];
     }
     const srcVoiced = an2.f0[a] > 0 || an2.f0[b] > 0, sung = !isNaN(smooth[j]);
     if (s.kind === "rest" || s.kind === "lead") {
-      for (let q2 = 0; q2 < bins; q2++) sp[j * bins + q2] *= 1e-6;
+      for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= 1e-6;
       const nk = s.kind === "lead" ? 0 : s.k + 1, mark = s.kind === "lead" ? "v" : moras[nk]?.mark ?? null;
       const restLen = s.s1 - s.s0, stolen = s.kind === "rest" && !!moras[s.k].stolen, longEnough = s.kind === "lead" || restLen >= OPT.breathMinRest * EIGHTH - 1e-6;
       const g = OPT.gap[mark === "O" ? "O" : "v"];
@@ -572,24 +573,24 @@ async function singCore({
           const u2 = (tt - b0) / bl, env = u2 < 0.7 ? 0.5 - 0.5 * Math.cos(Math.PI * u2 / 0.7) : 0.5 + 0.5 * Math.cos(Math.PI * (u2 - 0.7) / 0.3);
           const tpl = breathSp.get(nk);
           for (let q2 = 0; q2 < bins; q2++) {
-            sp[j * bins + q2] = Math.exp(tpl[q2]) * env * env * boost;
-            ap[j * bins + q2] = 1;
+            sp[jj * bins + q2] = Math.exp(tpl[q2]) * env * env * boost;
+            ap[jj * bins + q2] = 1;
           }
-          f0[j] = 0;
+          f0[jj] = 0;
           breaths.set(nk, mark === "O" ? "O" : "v");
         }
       }
     }
     if (s.kind === "vowel" && sung) {
       vowelFrames++;
-      f0[j] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
+      f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
       const m = moras[s.k];
       let changed = false;
-      if (m.spClean) sp.set(m.spClean, j * bins);
+      if (m.spClean) sp.set(m.spClean, jj * bins);
       for (let q2 = 0; q2 < bins; q2++) {
-        const v = ap[j * bins + q2], c2 = m.apClean[q2];
+        const v = ap[jj * bins + q2], c2 = m.apClean[q2];
         if (v > c2) {
-          ap[j * bins + q2] = c2 + OPT.breath * (v - c2);
+          ap[jj * bins + q2] = c2 + OPT.breath * (v - c2);
           changed = true;
         }
       }
@@ -609,8 +610,8 @@ async function singCore({
         if (fr) {
           atlasFrames++;
           for (let q2 = 0; q2 < bins; q2++) {
-            sp[j * bins + q2] = Math.exp((1 - wa) * Math.log(sp[j * bins + q2] + 1e-16) + wa * fr.logsp[q2]);
-            ap[j * bins + q2] = (1 - wa) * ap[j * bins + q2] + wa * fr.ap[q2];
+            sp[jj * bins + q2] = Math.exp((1 - wa) * Math.log(sp[jj * bins + q2] + 1e-16) + wa * fr.logsp[q2]);
+            ap[jj * bins + q2] = (1 - wa) * ap[jj * bins + q2] + wa * fr.ap[q2];
           }
         }
       }
@@ -618,14 +619,14 @@ async function singCore({
     const fm = s.kind === "vowel" ? moras[s.k].fade : s.kind === "cons" && s.hold === "coda" ? moras[s.k].codaFade : null;
     if (fm && tt >= fm[0]) {
       const g = Math.max(0.01, 1 - (tt - fm[0]) / (fm[1] - fm[0]));
-      for (let q2 = 0; q2 < bins; q2++) sp[j * bins + q2] *= g * g;
+      for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= g * g;
     }
     if (s.kind === "vowel" && s.k >= 0) {
       const m = moras[s.k], w2 = Math.min(1, Math.max(0, (tt - m.noteStart) / 0.03)), gg = 10 ** (w2 * m.gainDb / 10);
-      for (let q2 = 0; q2 < bins; q2++) sp[j * bins + q2] *= gg;
-    } else if (s.kind === "cons" && sung && srcVoiced && noisiness(a) <= 0.5 && noisiness(b) <= 0.5) f0[j] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
+      for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= gg;
+    } else if (s.kind === "cons" && sung && srcVoiced && noisiness(a) <= 0.5 && noisiness(b) <= 0.5) f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
   }
-  const y = only ? W.synth({ f0: f0.subarray(J0, J1), sp: sp.subarray(J0 * bins, J1 * bins), ap: ap.subarray(J0 * bins, J1 * bins), fft: an2.fft, fs: SR2, framePeriod: FP }) : W.synth({ f0, sp, ap, fft: an2.fft, fs: SR2, framePeriod: FP });
+  const y = W.synth({ f0, sp, ap, fft: an2.fft, fs: SR2, framePeriod: FP });
   const worldMs = performance.now() - t0;
   function finish(sig) {
     const fade = Math.round(0.03 * SR2), n = sig.length, out = new Float32Array(n + Math.round(OPT.tail * SR2));
@@ -671,14 +672,28 @@ function wrapWorld(M) {
     M.HEAPF64.set(arr, p / 8);
     return p;
   };
-  function analyze(x, fs2, { framePeriod = 5, f0Floor = 80, f0Ceil = 1e3 } = {}) {
-    const px = put(Float64Array.from(x)), a = M._w_analyze(px, x.length, fs2, framePeriod, f0Floor, f0Ceil);
-    const frames = M._w_frames(a), fft = M._w_fft(a), bins = fft / 2 + 1;
-    const view = (p, n) => M.HEAPF64.slice(p / 8, p / 8 + n);
-    const out = { frames, fft, bins, framePeriod, fs: fs2, f0: view(M._w_f0(a), frames), sp: view(M._w_sp(a), frames * bins), ap: view(M._w_ap(a), frames * bins) };
-    M._w_free(a);
-    M._free(px);
-    return out;
+  function analyze(x, fs2, { framePeriod = 5, f0Floor = 80, f0Ceil = 1e3 } = {}, hooks = null) {
+    const px = put(Float64Array.from(x));
+    try {
+      hooks?.stage?.("f0");
+      hooks?.check?.();
+      const a = M._w_f0(px, x.length, fs2, framePeriod, f0Floor, f0Ceil);
+      try {
+        hooks?.stage?.("sp");
+        hooks?.check?.();
+        M._w_sp(a, px, x.length, fs2, f0Floor);
+        hooks?.stage?.("ap");
+        hooks?.check?.();
+        M._w_ap(a, px, x.length, fs2);
+        const frames = M._w_frames(a), fft = M._w_fft(a), bins = fft / 2 + 1;
+        const view = (p, n) => M.HEAPF64.slice(p / 8, p / 8 + n);
+        return { frames, fft, bins, framePeriod, fs: fs2, f0: view(M._w_f0_ptr(a), frames), sp: view(M._w_sp_ptr(a), frames * bins), ap: view(M._w_ap_ptr(a), frames * bins) };
+      } finally {
+        M._w_free(a);
+      }
+    } finally {
+      M._free(px);
+    }
   }
   function synth({ f0, sp, ap, fft, fs: fs2, framePeriod }) {
     const frames = f0.length, n = M._w_synth_len(frames, fs2, framePeriod);
@@ -717,6 +732,8 @@ var SpeechCache = class {
   bytes = 0;
   /** 分析按它来自哪段 piper 输出记（同一个 Float32Array 对象 → 同一次念） */
   audioKey = /* @__PURE__ */ new WeakMap();
+  /** 最近一次解好码的分析（按键试听连按同一句：不用每次把 bf16 解成 Float64 ≈ 1M 个数）。交出去的不拷贝——唱法核心不就地改这些数组（core 里 grep 过）。 */
+  hot = null;
   hits = 0;
   misses = 0;
   budget;
@@ -755,6 +772,7 @@ var SpeechCache = class {
   clear() {
     this.map.clear();
     this.bytes = 0;
+    this.hot = null;
   }
   wrapPiper(piper) {
     const self2 = this, run = piper.run.bind(piper);
@@ -778,19 +796,26 @@ var SpeechCache = class {
   }
   wrapWorld(world) {
     const self2 = this, analyze = world.analyze.bind(world);
-    return { ...world, analyze: (x, fs2, o) => {
+    return { ...world, analyze: (x, fs2, o, hooks = null) => {
       const from = x instanceof Float32Array ? self2.audioKey.get(x) : void 0;
       const k = from ? `a:${from}:${fs2}:${JSON.stringify(o ?? {})}` : null;
       const had = k ? self2.map.get(k) : void 0;
       if (had?.an) {
         self2.hits++;
         self2.touch(k, had);
-        return { ...had.an.meta, f0: had.an.f0.slice(), sp: fromBf16(had.an.sp), ap: fromBf16(had.an.ap) };
+        hooks?.stage?.("cached");
+        hooks?.check?.();
+        if (self2.hot?.key === k) return self2.hot.an;
+        const an3 = { ...had.an.meta, f0: had.an.f0.slice(), sp: fromBf16(had.an.sp), ap: fromBf16(had.an.ap) };
+        self2.hot = { key: k, an: an3 };
+        return an3;
       }
       self2.misses++;
-      const an2 = analyze(x, fs2, o), { f0, sp, ap, ...meta } = an2, spB = toBf16(sp), apB = toBf16(ap);
+      const an2 = analyze(x, fs2, o, hooks), { f0, sp, ap, ...meta } = an2, spB = toBf16(sp), apB = toBf16(ap);
       if (k) self2.put(k, { bytes: f0.byteLength + spB.byteLength + apB.byteLength, an: { meta, f0: f0.slice(), sp: spB, ap: apB } });
-      return { ...meta, f0, sp: fromBf16(spB), ap: fromBf16(apB) };
+      const outAn = { ...meta, f0, sp: fromBf16(spB), ap: fromBf16(apB) };
+      if (k) self2.hot = { key: k, an: outAn };
+      return outAn;
     } };
   }
 };
@@ -7764,11 +7789,38 @@ async function loadEngine(say) {
   } : null;
   return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, presetDefault: config.preset_default ?? {} };
 }
+var cancelled = /* @__PURE__ */ new Set();
 self.onmessage = async (ev) => {
   const q2 = ev.data;
   const post = (m, transfer = []) => self.postMessage(m, transfer);
+  if (q2.type === "cancel") {
+    cancelled.add(q2.id);
+    return;
+  }
+  if (q2.type === "warm") {
+    const say2 = (stage) => post({ type: "progress", id: q2.id, stage });
+    try {
+      if (q2.models?.length) bases = q2.models;
+      if (!engine) engine = loadEngine(say2).catch((e) => {
+        engine = null;
+        throw e;
+      });
+      await engine;
+      post({ type: "done", id: q2.id, samples: new Float32Array(0), sr: SR, ms: { load: 0, sing: 0, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } });
+      bootMs = {};
+    } catch (err) {
+      post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
+    }
+    return;
+  }
   if (q2.type !== "sing") return;
   const say = (stage) => post({ type: "progress", id: q2.id, stage });
+  const check = () => {
+    if (cancelled.has(q2.id)) {
+      cancelled.delete(q2.id);
+      throw new Error("cancelled");
+    }
+  };
   try {
     const t0 = performance.now();
     if (q2.models?.length) bases = q2.models;
@@ -7784,11 +7836,27 @@ self.onmessage = async (ev) => {
     say("\u6708\u8BFB\u5728\u5531");
     const atlas = q2.atlas ?? "off", breath = q2.breath ?? atlas !== "off";
     const preset = e.presetDefault[q2.lang] ?? 0;
-    const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas, breath, preset, piper: e.piper, world: e.world, loadAtlas: e.loadAtlas, opt: q2.opt ?? {}, only: q2.only ?? null });
+    let runs = 0;
+    const piper = { ...e.piper, run: async (ids, pros, o) => {
+      check();
+      say(runs++ === 0 ? "\u5FF5\uFF081/2\uFF09" : "\u5FF5\uFF082/2\uFF09");
+      const r2 = await e.piper.run(ids, pros, o);
+      check();
+      return r2;
+    } };
+    const names = { f0: "\u5206\u6790\uFF081/3 \u97F3\u9AD8\uFF09", sp: "\u5206\u6790\uFF082/3 \u8C31\u5305\u7EDC\uFF09", ap: "\u5206\u6790\uFF083/3 \u6C14\u58F0\uFF09", cached: "\u5206\u6790\uFF08\u7F13\u5B58\uFF09" };
+    const world = { ...e.world, analyze: (x, fs2, o) => e.world.analyze(x, fs2, o, { stage: (n) => say(names[n] ?? n), check }), synth: (a) => {
+      check();
+      say("\u5408\u6210");
+      return e.world.synth(a);
+    } };
+    const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas, breath, preset, piper, world, loadAtlas: e.loadAtlas, opt: q2.opt ?? {}, only: q2.only ?? null });
+    check();
     const samples = q2.raw || q2.only ? Float32Array.from(r.y) : r.sung;
     post({ type: "done", id: q2.id, samples, sr: r.SR, ms: { load: t1 - t0, sing: performance.now() - t1, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } }, [samples.buffer]);
     bootMs = {};
   } catch (err) {
+    cancelled.delete(q2.id);
     engine = engine && await engine.catch(() => null) ? engine : null;
     post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
   }
@@ -7802,4 +7870,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-29ddb9d34557.mjs.map
+//# sourceMappingURL=singer-worker-ca3c8a32eb30.mjs.map

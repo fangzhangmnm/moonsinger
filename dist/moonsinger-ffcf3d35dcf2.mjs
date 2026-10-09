@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.11-2026-10-10";
+var APP_VERSION = "v0.9.12-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -18705,9 +18705,14 @@ var Singer = class {
   pending = /* @__PURE__ */ new Map();
   queue = [];
   inflight = false;
+  inflightId = 0;
+  // 正在算的那一句（取消用）
+  onlyId = 0;
+  // 最近一次按键试听的请求（新的来了旧的取消）
+  warming = null;
   worker() {
     if (this.w) return this.w;
-    this.w = new Worker(new URL(`./${"singer-worker-29ddb9d34557.mjs"}`, import.meta.url), { type: "module" });
+    this.w = new Worker(new URL(`./${"singer-worker-ca3c8a32eb30.mjs"}`, import.meta.url), { type: "module" });
     this.w.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
       if (!p2) return;
@@ -18741,6 +18746,24 @@ var Singer = class {
     for (const j2 of this.queue.splice(0)) j2.fail(new Error("cancelled"));
     return n10;
   }
+  /** 取消正在算的那一句（worker 在段与段之间认；正在跑的那一段跑完才停）。 */
+  cancelInflight() {
+    if (this.inflightId) {
+      const req = { type: "cancel", id: this.inflightId };
+      this.w?.postMessage(req);
+    }
+  }
+  /** 只把引擎起起来（打开歌就起；user 10-10「冷启动做」）。失败不抛（第一次真唱会再报）。 */
+  warm(models) {
+    return this.warming ??= new Promise((ok2) => {
+      const id2 = ++this.seq, req = { type: "warm", id: id2, models };
+      this.pending.set(id2, { ok: () => ok2(), fail: () => ok2(), progress: () => {
+      } });
+      this.worker().postMessage(req);
+    }).finally(() => {
+      this.warming = null;
+    });
+  }
   get busy() {
     return this.inflight || this.queue.length > 0;
   }
@@ -18767,6 +18790,8 @@ var Singer = class {
           j2.ok(await this.singRetry(j2.s, j2.progress, j2.extra));
         } catch (e10) {
           j2.fail(e10);
+        } finally {
+          this.inflightId = 0;
         }
       }
     } finally {
@@ -18794,6 +18819,10 @@ var Singer = class {
   }
   singOnce(s10, progress2, extra) {
     const id2 = ++this.seq;
+    if (extra.only) {
+      if (this.onlyId) this.w?.postMessage({ type: "cancel", id: this.onlyId });
+      this.onlyId = id2;
+    } else this.inflightId = id2;
     const req = { type: "sing", id: id2, score: s10.SCORE, text: s10.TEXT, tempo: s10.TEMPO_QUARTER, lang: s10.LANG, ...extra };
     return new Promise((ok2, fail) => {
       this.pending.set(id2, { ok: ok2, fail, progress: progress2 });
@@ -20954,6 +20983,10 @@ var Tsf = class {
   allOff(b3) {
     this.ex.sf_note_off_all(b3.handle);
   }
+  /** 所有声音快速收掉（tsf_reset = endquick：几毫秒淡出，不是硬切）。 */
+  reset(b3) {
+    this.ex.sf_reset(b3.handle);
+  }
   active(b3) {
     return this.ex.sf_active(b3.handle);
   }
@@ -21518,6 +21551,12 @@ var Studio = class {
   loopFrom = null;
   tail = -1;
   // ≥0 = 范围尾：已经等了几秒
+  draining = false;
+  drainPos = 0;
+  drainSecs = 0;
+  // 停了之后：释放中的尾巴照响到静（不渲染 = 冻住，下次放才漏出来；user「每次点play的时候会漏上次的最后一个音」）
+  forgetLater = /* @__PURE__ */ new Set();
+  // 主线程要放掉、但正被 hold 着的块：响完再删
   waiting = null;
   // 块没到：等它（走带冻住）
   gen = 0;
@@ -21640,8 +21679,12 @@ var Studio = class {
         return;
       }
       case "forget":
-        for (const k2 of m2.keys) this.chunks.delete(k2);
+        for (const k2 of m2.keys) {
+          if (this.held(k2) || this.sounding(k2)) this.forgetLater.add(k2);
+          else this.chunks.delete(k2);
+        }
         return;
+      // 正在响 / hold 着的块：响完再删（主线程换时间线之前就会先来清块）
       case "channel": {
         const cur = this.channels.get(m2.id) ?? { ...DEFAULT_CH }, next2 = { ...cur, ...m2.p };
         this.channels.set(m2.id, next2);
@@ -21703,9 +21746,12 @@ var Studio = class {
     const old = this.tracks;
     this.tracks = /* @__PURE__ */ new Map();
     this.order = [];
+    const pos0 = this.pos, shift = this.playing && tl2.shift ? tl2.shift : 0;
+    const prevClips = /* @__PURE__ */ new Map();
     for (const spec of tl2.tracks) {
       const prev = old.get(spec.id);
-      const t10 = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
+      if (prev && prev.spec.kind === "clips") prevClips.set(spec.id, prev.spec.clips);
+      const t10 = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, hold: null, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
       t10.spec = spec;
       t10.ch = this.channels.get(spec.id) ?? t10.ch;
       t10.perfFx = buildChain(spec.chain ?? [], t10.perfFx, this.sr);
@@ -21725,43 +21771,127 @@ var Studio = class {
       this.order.push(spec.id);
       old.delete(spec.id);
     }
-    for (const t10 of old.values()) if (t10.sf) this.tsf.close(t10.sf.player);
+    for (const t10 of old.values()) {
+      if (t10.sf) this.tsf.close(t10.sf.player);
+      this.endHold(t10);
+    }
     this.range = { ...tl2.range };
     this.loop = tl2.loop;
     this.loopFrom = tl2.loopFrom ?? null;
     if (this.playing) {
+      if (shift) {
+        this.pos = Math.max(this.range.from, Math.min(this.range.to, pos0 + shift));
+        for (const t10 of this.tracks.values()) {
+          for (const o10 of t10.offs) o10.t += shift;
+          if (t10.hold) {
+            t10.hold.t0 += shift;
+            t10.hold.until += shift;
+          }
+        }
+      }
+      for (const t10 of this.tracks.values()) {
+        if (t10.spec.kind !== "clips") {
+          this.endHold(t10);
+          continue;
+        }
+        const cur = t10.spec.clips.find((c10) => c10.t0 <= this.pos && c10.t0 + c10.dur > this.pos);
+        if (!cur) {
+          this.endHold(t10);
+          continue;
+        }
+        if (t10.hold && t10.hold.until > this.pos) continue;
+        this.endHold(t10);
+        if (this.chunks.has(cur.key)) continue;
+        const o10 = prevClips.get(t10.spec.id)?.find((c10) => c10.t0 <= pos0 && c10.t0 + c10.dur > pos0 && c10.key !== cur.key && this.chunks.has(c10.key));
+        if (o10) t10.hold = { key: o10.key, t0: o10.t0 + shift, dur: o10.dur, gain: o10.gain, until: Math.min(o10.t0 + o10.dur, cur.t0 + cur.dur - shift) + shift };
+      }
       this.resetCursors(false);
       this.checkMissing();
-    } else if (this.pos < this.range.from || this.pos > this.range.to) this.pos = this.range.from;
+    } else {
+      for (const t10 of this.tracks.values()) this.endHold(t10);
+      if (this.pos < this.range.from || this.pos > this.range.to) this.pos = this.range.from;
+    }
+    this.sweepForget();
   }
   // ── 走带 ────────────────────────────────────────────────────────────────────────────────────────────────────────
   play(at2) {
     if (at2 !== void 0) this.pos = at2;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
     this.playing = true;
+    this.draining = false;
     this.tail = -1;
     this.waiting = null;
     this.posFrames = 0;
+    for (const t10 of this.tracks.values()) {
+      this.killAll(t10);
+      this.endHold(t10);
+    }
     this.resetCursors(true);
     this.checkMissing();
   }
+  /** 停：不排新音、块 30 ms 淡出、释放中的尾巴接着响到静（不是冻住）。播放头留在原地。 */
   stop() {
     this.playing = false;
     this.tail = -1;
     this.waiting = null;
+    this.draining = true;
+    this.drainPos = this.pos;
+    this.drainSecs = 0;
     for (const t10 of this.tracks.values()) {
       this.releaseAll(t10);
-      t10.envTarget = 1;
+      t10.envTarget = 0;
+      this.endHold(t10);
     }
+    this.sweepForget();
   }
   seek(at2) {
     this.pos = at2;
     if (this.playing) {
       this.tail = -1;
       this.waiting = null;
+      for (const t10 of this.tracks.values()) this.endHold(t10);
       this.resetCursors(true);
       this.checkMissing();
     }
+  }
+  /** 旧块响完 / 不要了：撤 hold；主线程早就说要放掉的这时才真删。 */
+  endHold(t10) {
+    if (!t10.hold) return;
+    t10.hold = null;
+    this.sweepForget();
+  }
+  held(key) {
+    for (const t10 of this.tracks.values()) if (t10.hold?.key === key) return true;
+    return false;
+  }
+  /** 放着的时候这个块正在响（时间线里它盖着播放头）。 */
+  sounding(key) {
+    if (!this.playing) return false;
+    for (const t10 of this.tracks.values()) if (t10.spec.kind === "clips") {
+      for (const c10 of t10.spec.clips) if (c10.key === key && c10.t0 <= this.pos && c10.t0 + c10.dur > this.pos) return true;
+    }
+    return false;
+  }
+  /** 主线程早说要放掉的块：既没 hold 着、时间线里也不再用 = 这时才真删。 */
+  sweepForget() {
+    for (const k2 of this.forgetLater) {
+      if (this.held(k2)) continue;
+      let used = false;
+      for (const t10 of this.tracks.values()) if (t10.spec.kind === "clips" && t10.spec.clips.some((c10) => c10.key === k2)) {
+        used = true;
+        break;
+      }
+      if (!used) {
+        this.forgetLater.delete(k2);
+        this.chunks.delete(k2);
+      }
+    }
+  }
+  /** 所有正在响的声音快速收掉（几毫秒的淡出，不是硬切）：起放时清上一次的尾巴。 */
+  killAll(t10) {
+    if (t10.sf) this.tsf.reset(t10.sf.player);
+    t10.offs.length = 0;
+    for (const v of t10.vowels) v.state = "cut";
   }
   /** 游标对齐到 pos；chase = 把 pos 这一刻该响着的音按下（起放 / seek / 续放），正在响的先松开。 */
   resetCursors(chase) {
@@ -21829,7 +21959,7 @@ var Studio = class {
     for (const t10 of this.tracks.values()) {
       if (t10.spec.kind !== "clips") continue;
       for (const c10 of t10.spec.clips) {
-        if (this.chunks.has(c10.key)) continue;
+        if (this.chunks.has(c10.key) || t10.hold && c10.t0 < t10.hold.until) continue;
         if (c10.t0 <= this.pos && c10.t0 + c10.dur > this.pos) return { stop: this.pos, wait: c10.key };
         if (c10.t0 > this.pos && c10.t0 < stop) stop = c10.t0;
       }
@@ -21838,7 +21968,7 @@ var Studio = class {
   }
   keyStartingAt(t02) {
     for (const t10 of this.tracks.values()) if (t10.spec.kind === "clips") {
-      for (const c10 of t10.spec.clips) if (!this.chunks.has(c10.key) && Math.abs(c10.t0 - t02) < 1e-6) return c10.key;
+      for (const c10 of t10.spec.clips) if (!this.chunks.has(c10.key) && !(t10.hold && c10.t0 < t10.hold.until) && Math.abs(c10.t0 - t02) < 1e-6) return c10.key;
     }
     return null;
   }
@@ -21859,6 +21989,7 @@ var Studio = class {
       b3.R.fill(0, 0, n10);
     }
     if (this.playing) this.renderTransport(n10);
+    else if (this.draining) this.renderDrain(n10);
     for (const b3 of this.buses.values()) {
       for (const fx of b3.fx) fx.process(b3.L, b3.R, n10, null);
       const [gl, gr] = panGains(b3.gainDb, b3.pan), dl = (gl - b3.gl) / n10, dr = (gr - b3.gr) / n10;
@@ -21912,6 +22043,7 @@ var Studio = class {
     let done = 0;
     while (done < n10) {
       const left = n10 - done;
+      for (const t10 of this.tracks.values()) if (t10.hold && this.pos >= t10.hold.until) this.endHold(t10);
       if (this.waiting) {
         if (!this.chunks.has(this.waiting)) {
           this.renderTracks(done, left, false, false);
@@ -21947,6 +22079,7 @@ var Studio = class {
       if (this.pos >= this.range.to - 0.5 / sr2) {
         if (this.loop) {
           this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
+          for (const t10 of this.tracks.values()) this.endHold(t10);
           this.resetCursors(false);
           this.chaseAtLoop();
           this.checkMissing();
@@ -21975,6 +22108,13 @@ var Studio = class {
       this.post({ type: "pos", sec: this.pos, playing: this.playing, waiting: this.waiting, gen: this.gen });
     }
   }
+  /** 停了之后：尾巴（释放中的音、淡出中的块）照响到静或 TAIL_MAX；播放头不动，块按自己的钟走。 */
+  renderDrain(n10) {
+    this.renderTracks(0, n10, false, true, this.drainPos);
+    this.drainPos += n10 / this.sr;
+    this.drainSecs += n10 / this.sr;
+    if (this.drainSecs >= TAIL_MAX || this.silent()) this.draining = false;
+  }
   chaseAtLoop() {
     for (const t10 of this.tracks.values()) {
       if (t10.spec.kind === "clips") continue;
@@ -21991,9 +22131,9 @@ var Studio = class {
   }
   /** 各声部出 cnt 个采样进母线 / 总线（从 off 起）。notesOn = 排新音；clipsOn = 块前进（false = 冻着，块不出声）。
    *  两趟（侧链要先看到别的轨的声）：① 每轨 出声 → 表情曲线 → 块淡入淡出 → 演奏者的链 → src；② 每轨 src → 通道链（压缩器的 key 读别的轨的 src）→ 静音 / 独奏 → 推子 / 声像 → 去总轨或总线，再按发送量发到总线。 */
-  renderTracks(off, cnt, notesOn, clipsOn) {
+  renderTracks(off, cnt, notesOn, clipsOn, t02 = this.pos) {
     const solo = this.order.some((id2) => this.tracks.get(id2).ch.solo);
-    const t02 = this.pos, sr2 = this.sr;
+    const sr2 = this.sr;
     for (const id2 of this.order) {
       const t10 = this.tracks.get(id2), mono = t10.src;
       mono.fill(0, 0, cnt);
@@ -22058,21 +22198,26 @@ var Studio = class {
   }
   renderClips(t10, mono, cnt, t02) {
     if (t10.spec.kind !== "clips") return;
-    const sr2 = this.sr, tEnd = t02 + cnt / sr2;
+    if (t10.hold) this.renderClip(t10.hold, mono, cnt, t02);
     for (const c10 of t10.spec.clips) {
-      const ch2 = this.chunks.get(c10.key);
-      if (!ch2) continue;
-      const len = ch2.samples.length, cEnd = c10.t0 + len / ch2.sr;
-      if (c10.t0 >= tEnd || cEnd <= t02) continue;
-      const s10 = ch2.samples, g3 = c10.gain * I16;
-      for (let i10 = 0; i10 < cnt; i10++) {
-        const p2 = (t02 + i10 / sr2 - c10.t0) * ch2.sr;
-        if (p2 < 0) continue;
-        const k2 = p2 | 0;
-        if (k2 >= len - 1) break;
-        const f2 = p2 - k2;
-        mono[i10] += (s10[k2] * (1 - f2) + s10[k2 + 1] * f2) * g3;
-      }
+      if (t10.hold && c10.t0 < t10.hold.until) continue;
+      this.renderClip(c10, mono, cnt, t02);
+    }
+  }
+  renderClip(c10, mono, cnt, t02) {
+    const sr2 = this.sr, tEnd = t02 + cnt / sr2;
+    const ch2 = this.chunks.get(c10.key);
+    if (!ch2) return;
+    const len = ch2.samples.length, cEnd = c10.t0 + len / ch2.sr;
+    if (c10.t0 >= tEnd || cEnd <= t02) return;
+    const s10 = ch2.samples, g3 = c10.gain * I16;
+    for (let i10 = 0; i10 < cnt; i10++) {
+      const p2 = (t02 + i10 / sr2 - c10.t0) * ch2.sr;
+      if (p2 < 0) continue;
+      const k2 = p2 | 0;
+      if (k2 >= len - 1) break;
+      const f2 = p2 - k2;
+      mono[i10] += (s10[k2] * (1 - f2) + s10[k2 + 1] * f2) * g3;
     }
   }
   /** 快引擎的轨：事件按采样位置施加（同原 synth-processor），中间逐段渲染。 */
@@ -22703,6 +22848,10 @@ function buildTimeline(inp) {
     if (i10 < 0) return null;
     return tl2.find((x2) => x2.index >= i10)?.t0 ?? (tl2.length ? tl2[tl2.length - 1].t1 : null);
   };
+  const segsOf2 = (paperId) => {
+    const pp = song.papers.find((x2) => x2.id === paperId), owner = pp ? tempoOwner(song, pp) : null;
+    return pp && owner ? playSegments(pp.tracks[owner], paperTicks(pp)) : null;
+  };
   const locate = (sec) => {
     if (!ref) return null;
     const { tokens } = flat(ref.id), tl2 = timeline(tokens, map);
@@ -22713,7 +22862,7 @@ function buildTimeline(inp) {
     for (const p2 of papers) if (p2.tick0 <= tick + 1e-9) span = p2;
     if (!span) return null;
     let inPaper = tick - span.tick0;
-    const owner = tempoOwner(song, span.paper), segs = owner ? playSegments(span.paper.tracks[owner], paperTicks(span.paper)) : null;
+    const segs = segsOf2(span.paper.id);
     if (segs) {
       let cum = 0;
       for (const s10 of segs) {
@@ -22727,7 +22876,31 @@ function buildTimeline(inp) {
     }
     return { paperId: span.paper.id, tick: Math.max(0, Math.floor(inPaper)) };
   };
-  return { tracks, range: { from, to: to2 }, total, chunks: chunks2, papers, unplayable, secondsOfToken, locate };
+  const secondsAt = (paperId, tick, near) => {
+    if (!ref) return null;
+    const { tokens } = flat(ref.id), tl2 = timeline(tokens, map);
+    let best = null;
+    for (const span of papers) {
+      if (span.paper.id !== paperId) continue;
+      const segs = segsOf2(span.paper.id);
+      const cands3 = [];
+      if (segs) {
+        let cum = 0;
+        for (const sg2 of segs) {
+          if (tick >= sg2.t0 && tick < sg2.t1) cands3.push(span.tick0 + cum + (tick - sg2.t0));
+          cum += sg2.t1 - sg2.t0;
+        }
+      } else cands3.push(span.tick0 + tick);
+      for (const T2 of cands3) {
+        const e10 = tl2.find((x2) => T2 >= x2.start && T2 < x2.start + x2.tok.dur);
+        if (!e10) continue;
+        const sec = e10.t0 + (T2 - e10.start) / Math.max(1e-9, e10.tok.dur) * (e10.t1 - e10.t0);
+        if (best === null || Math.abs(sec - near) < Math.abs(best - near)) best = sec;
+      }
+    }
+    return best;
+  };
+  return { tracks, range: { from, to: to2 }, total, chunks: chunks2, papers, unplayable, secondsOfToken, locate, secondsAt };
 }
 
 // src/engine/scheduler.ts
@@ -34158,7 +34331,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-66f1de79ab38.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-188ac7459e99.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -34857,13 +35030,16 @@ var chunkFailed = /* @__PURE__ */ new Map();
 var pumping = false;
 var pumpQuiet = false;
 var singSpeed = null;
+var inflightKey = null;
 var pendingChunks = () => chunkKeysWanted.filter((k2) => !engine.hasChunk(k2)).length;
 function setChunkOrder(tl2, pos, loop, o10 = {}) {
   chunkPlans = new Map(tl2.chunks.map((c10) => [c10.key, c10]));
   let keys = chunkOrder(tl2.chunks, pos, loop, (k2) => engine.hasChunk(k2));
   if (o10.limit !== void 0) keys = keys.slice(0, o10.limit);
+  const wasInflight = inflightKey;
   chunkKeysWanted = keys;
   pumpQuiet = !!o10.quiet;
+  if (wasInflight && !keys.includes(wasInflight) && !chunkPlans.has(wasInflight)) singer.cancelInflight();
   void pump();
 }
 async function pump() {
@@ -34897,11 +35073,14 @@ async function pump() {
       }
       progress(`${who}\uFF1A${pumpQuiet ? "\u5148\u5531\u7740" : "\u8FD8\u6709"} ${left} \u53E5\u2026`);
       const t10 = performance.now();
+      inflightKey = key;
+      const STAGE_FRAC = { "\u5FF5\uFF081/2\uFF09": 0.05, "\u5FF5\uFF082/2\uFF09": 0.25, "\u5206\u6790\uFF081/3 \u97F3\u9AD8\uFF09": 0.45, "\u5206\u6790\uFF082/3 \u8C31\u5305\u7EDC\uFF09": 0.6, "\u5206\u6790\uFF083/3 \u6C14\u58F0\uFF09": 0.7, "\u5206\u6790\uFF08\u7F13\u5B58\uFF09": 0.75, "\u5408\u6210": 0.85 };
       try {
         const r10 = await singer.sing(c10.score, (stage) => {
           progress(`${who}\uFF1A${stage}\u2026`);
           const pc = /(\d+)%$/.exec(stage);
           if (pc) renderBar.frac(Number(pc[1]) / 100);
+          else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]);
         }, { opt: humOpt(), models: modelBases(), raw: true });
         if (engine.hasChunk(key) || !chunkPlans.has(key)) {
           renderBar.next();
@@ -34924,6 +35103,7 @@ async function pump() {
     }
   } finally {
     pumping = false;
+    inflightKey = null;
     renderBar.end();
     if (!engine.playing) progress("");
   }
@@ -35081,6 +35261,7 @@ function schedulePlaybackRefresh() {
   refreshTimer = window.setTimeout(() => {
     void (async () => {
       if (!engine.playing) return;
+      const at2 = engine.position, loc = playTl?.locate(at2) ?? null;
       const tl2 = await prepare("view", { chunks: false });
       if (!tl2) {
         stopPlay();
@@ -35088,7 +35269,8 @@ function schedulePlaybackRefresh() {
       }
       const r10 = playRange(tl2);
       playTl = tl2;
-      engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom });
+      const sec = loc ? tl2.secondsAt(loc.paperId, loc.tick, at2) : null, shift = sec !== null && Math.abs(sec - at2) > 5e-3 ? sec - at2 : 0;
+      engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom, ...shift ? { shift } : {} });
       setChunkOrder(tl2, engine.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
     })();
   }, 300);
@@ -36927,6 +37109,7 @@ function loadDoc(song, o10) {
   view.render();
   pad3.render();
   renderTitle();
+  if (st2.song.parts.some((p2) => activeInstrument(doc.extras, p2.role)?.engine === "tsukuyomi")) void singer.warm(modelBases());
   schedulePrewarm();
 }
 function markSaved() {
@@ -38194,4 +38377,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-371782b056ef.mjs.map
+//# sourceMappingURL=moonsinger-ffcf3d35dcf2.mjs.map
