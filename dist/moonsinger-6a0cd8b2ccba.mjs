@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.2-2026-10-09";
+var APP_VERSION = "v0.9.3-2026-10-09";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -8723,7 +8723,7 @@ var ScoreView = class {
       this.playheadEl = null;
       return;
     }
-    const st3 = this.host.get(), paper = st3.song.papers.find((x2) => x2.id === p2.paperId);
+    const st3 = this.host.get(), paper = st3.song.papers.find((x3) => x3.id === p2.paperId);
     const sysIdx = L2.systems.findIndex((r10) => r10.paper === p2.paperId);
     if (!paper || sysIdx < 0) {
       this.playheadEl?.remove();
@@ -8741,13 +8741,15 @@ var ScoreView = class {
       }
       t10 += k2.dur;
     }
-    const slot = L2.slots.find((sl2) => sl2.caret === caret && L2.systems[sl2.system]?.paper === p2.paperId && L2.systems[sl2.system]?.part === part);
-    if (!slot) {
+    const onRow = (h2) => h2.index === caret && L2.systems[h2.system]?.paper === p2.paperId && L2.systems[h2.system]?.part === part;
+    const hit = L2.notes.find(onRow) ?? L2.rests.find(onRow);
+    const slot = hit ? null : L2.slots.find((sl2) => sl2.caret === caret && L2.systems[sl2.system]?.paper === p2.paperId && L2.systems[sl2.system]?.part === part);
+    if (!hit && !slot) {
       this.playheadEl?.remove();
       this.playheadEl = null;
       return;
     }
-    const row = L2.systems[slot.system];
+    const row = L2.systems[(hit ?? slot).system], x2 = hit ? hit.x + hit.w / 2 : slot.x;
     let el2 = this.playheadEl;
     if (!el2 || !el2.isConnected) {
       el2 = document.createElement("div");
@@ -8756,7 +8758,7 @@ var ScoreView = class {
       this.ink.appendChild(el2);
       this.playheadEl = el2;
     }
-    el2.style.left = `${slot.x - 1}px`;
+    el2.style.left = `${x2 - 1}px`;
     el2.style.top = `${row.top}px`;
     el2.style.height = `${Math.max(1, row.bottom - row.top)}px`;
   }
@@ -37195,4 +37197,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-14166653c665.mjs.map
+//# sourceMappingURL=moonsinger-6a0cd8b2ccba.mjs.map

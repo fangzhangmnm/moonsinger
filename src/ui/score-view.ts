@@ -242,12 +242,16 @@ export class ScoreView {
     const part = L.systems[sysIdx].part, toks = paper.tracks[part] ?? [];
     let t = 0, caret = toks.length;
     for (let i = 0; i < toks.length; i++) { const k = toks[i]; if (!isTimed(k)) continue; if (t + k.dur > p.tick) { caret = i; break; } t += k.dur; }
-    const slot = L.slots.find((sl) => sl.caret === caret && L.systems[sl.system]?.paper === p.paperId && L.systems[sl.system]?.part === part);
-    if (!slot) { this.playheadEl?.remove(); this.playheadEl = null; return; }
-    const row = L.systems[slot.system];
+    // 线穿过正在放的那个符头（休止 = 那个休止符）的中心，而不是它左边的写字头位置——写字头的位置读起来像「光标停在上一个音后面」
+    //   （v0.9.3；user「光标动画也比较误导，你是一个音播完了才跳，但是我觉得是播了就跳会更自然一点吧」）。没有符头（纸尾）才退回写字头位置。
+    const onRow = (h: { index: number; system: number }) => h.index === caret && L.systems[h.system]?.paper === p.paperId && L.systems[h.system]?.part === part;
+    const hit = L.notes.find(onRow) ?? L.rests.find(onRow);
+    const slot = hit ? null : L.slots.find((sl) => sl.caret === caret && L.systems[sl.system]?.paper === p.paperId && L.systems[sl.system]?.part === part);
+    if (!hit && !slot) { this.playheadEl?.remove(); this.playheadEl = null; return; }
+    const row = L.systems[(hit ?? slot!).system], x = hit ? hit.x + hit.w / 2 : slot!.x;
     let el = this.playheadEl;
     if (!el || !el.isConnected) { el = document.createElement("div"); el.className = "playhead"; el.style.cssText = "position:absolute;width:2px;background:var(--accent);opacity:.55;pointer-events:none;border-radius:1px"; this.ink.appendChild(el); this.playheadEl = el; }
-    el.style.left = `${slot.x - 1}px`; el.style.top = `${row.top}px`; el.style.height = `${Math.max(1, row.bottom - row.top)}px`;
+    el.style.left = `${x - 1}px`; el.style.top = `${row.top}px`; el.style.height = `${Math.max(1, row.bottom - row.top)}px`;
   }
   /** 光标 / 选区 / 编辑框在哪（变了才跟）。 */
   private baseKey(): string {
