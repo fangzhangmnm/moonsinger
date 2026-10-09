@@ -357,8 +357,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     return cw;
   };
   /** 「Andante ♩ = 88」：词 + 四分音符 + 数（user「速度记号可以用语义+数字吗」）。 */
-  const drawTempo = (r: number, x0: number, v: number, cls: string, index: number) => {
+  const drawTempo = (r: number, x0: number, v: number, cls: string, index: number, change?: "up" | "down") => {
     const fs = TEMPO_EM * sp, word = tempoWord(v).it, y = tempoYAt.get(r) ?? staffTop(r) - P(2.4);   // 速度记号在最上面：高音、力度字（写上面的时候）都在它下面
+    // 这一段开头的速度和上一段不一样 = 前面标一个强调色的 ↑（快了）/ ↓（慢了）提示（user 2026-10-08「不要grey out，而是有变化的时候会标一个东西提示用户」；一样 = 照常画，不标）
+    if (change) prims.push({ t: "text", x: P(x0 - 0.3), y, s: change === "up" ? "↑" : "↓", cls: "tempo-change", size: fs, anchor: "end" });
     const ww = (o.measureLyric(word) * TEMPO_EM) / LYRIC_EM / sp, num = `= ${v}`, nw = (o.measureLyric(num) * TEMPO_EM) / LYRIC_EM / sp;
     prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
     const gx = x0 + ww + 0.7;
@@ -377,7 +379,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     if (o.onlyPaper && paper.id !== o.onlyPaper) return;   // 一次只看一张纸（曲段）
     if (drawn++ > 0) yCur += P(PAPER_GAP);
     // 速度记号画在这张纸最上面那位在场的歌手那一行（它的速度才算数；2026-10-08 user「第四章sheet只有第二个声部的时候速度记号失踪了」——原来只画全曲第一个声部的）。
-    //   开头的速度和上一段（前面最近一张不隐藏的纸）结尾一样 = 只是重申、画淡；不一样 = 真变了、照常（user「然后如果速度和上一段一样和不一样的话应该也有ui上的差别」）
+    //   开头的速度和上一段（前面最近一张不隐藏的纸）结尾不一样 = 前面标 ↑ / ↓（user「然后如果速度和上一段一样和不一样的话应该也有ui上的差别」→「不要grey out，而是有变化的时候会标一个东西提示用户」）
     const owner = tempoOwner(song, paper), prevPaper = song.papers.slice(0, paperK).reverse().find((x) => !x.hidden), prevBpm = prevPaper ? sheetEndBpm(song, prevPaper) : null;
     const paperTop = yCur;
     // 曲段名那一条（多于一张纸或填了名字才画；空着画浅色提示；右边「⋯」= 纸的菜单）。分页时和第一行谱一起挪，所以等算完行高再画
@@ -608,7 +610,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             if (f) hx += 0.8;
             const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
             if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
-            if (k === 0 && q.p.id === owner && q.head.idx.tempo !== undefined) drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, prevBpm === q.head.bpm ? "tempo same" : "tempo", q.head.idx.tempo);
+            if (k === 0 && q.p.id === owner && q.head.idx.tempo !== undefined) drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", q.head.idx.tempo, prevBpm === null || prevBpm === q.head.bpm ? undefined : q.head.bpm > prevBpm ? "up" : "down");
           }
         }
         if (s === 0) {

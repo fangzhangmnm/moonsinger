@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.30-2026-10-08";
+var APP_VERSION = "v0.7.31-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5078,8 +5078,9 @@ function engrave(song, o10) {
     prims.push({ t: "glyph", x: P2(x0 + (cw2 - wd) / 2), y: yOf(r10, 32), ch: den, cls });
     return cw2;
   };
-  const drawTempo = (r10, x0, v, cls, index) => {
+  const drawTempo = (r10, x0, v, cls, index, change) => {
     const fs = TEMPO_EM * sp2, word = tempoWord(v).it, y2 = tempoYAt.get(r10) ?? staffTop(r10) - P2(2.4);
+    if (change) prims.push({ t: "text", x: P2(x0 - 0.3), y: y2, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change", size: fs, anchor: "end" });
     const ww = o10.measureLyric(word) * TEMPO_EM / LYRIC_EM / sp2, num = `= ${v}`, nw2 = o10.measureLyric(num) * TEMPO_EM / LYRIC_EM / sp2;
     prims.push({ t: "text", x: P2(x0), y: y2, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
     const gx = x0 + ww + 0.7;
@@ -5391,7 +5392,7 @@ function engrave(song, o10) {
             if (f2) hx += 0.8;
             const cw2 = drawTime(row, hx, q2.head.time.beats, q2.head.time.beatType, "timesig");
             if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row, x: P2(hx - 0.3), ...staffHit(row), w: P2(cw2 + 0.6) });
-            if (k2 === 0 && q2.p.id === owner && q2.head.idx.tempo !== void 0) drawTempo(row, MARGIN + ind + 0.6, q2.head.bpm, prevBpm === q2.head.bpm ? "tempo same" : "tempo", q2.head.idx.tempo);
+            if (k2 === 0 && q2.p.id === owner && q2.head.idx.tempo !== void 0) drawTempo(row, MARGIN + ind + 0.6, q2.head.bpm, "tempo", q2.head.idx.tempo, prevBpm === null || prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > prevBpm ? "up" : "down");
           }
         }
         if (s10 === 0) {
@@ -28188,7 +28189,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "2e012bcc24ef",
+  cssHash: "75fec2aa05c8",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -30576,4 +30577,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-34585fa886c4.mjs.map
+//# sourceMappingURL=moonsinger-85959611dcbd.mjs.map
