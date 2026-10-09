@@ -79,7 +79,7 @@ const partName = await p.textContent("#score text.part-name");
 check(partName.length > 0 && !!(await p.$("#score text.part-name.empty")) && (await title()) === "twinkle" && (await p.textContent("#score text.song-title")) === "Twinkle",
   "别家谱：谱前 = 它的声部名（淡色 = 没人上场）、顶栏 = 文件名、纸上 = 谱里的歌名", partName);
 await p.click(".notice-error .dismiss"); await p.click("#playBtn"); await p.waitForTimeout(300);
-check((await p.textContent(".notice-error .notice-text")).includes("还没有人上场") && !(await p.evaluate(() => window.__moonsinger.singer.playing || window.__moonsinger.sampler.songPlaying)), "别家谱：点播放 = 不出声、报错（不自动替补）");
+check((await p.textContent(".notice-error .notice-text")).includes("还没有人上场") && !(await p.evaluate(() => window.__moonsinger.engine.playing)), "别家谱：点播放 = 不出声、报错（不自动替补）");
 // 歌手牌：点了选月读 → 不再是未选角
 await p.click(".notice-error .dismiss");
 const pn = await p.$eval("#score text.part-name", (t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });

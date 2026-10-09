@@ -63,13 +63,13 @@ rm -f ./dist/*.mjs ./dist/*.mjs.map   # 旧哈希的产物不留（dist 进 git�
 SINGER=$(hashed ./src/singer/worker.ts singer-worker); echo "[build] ✓ dist/$SINGER"
 # mp3 编码 worker（vendored lamejs，LGPL-3.0，单独一个文件；点导出才加载）
 MP3=$(hashed ./src/export/mp3-worker.ts mp3-worker); echo "[build] ✓ dist/$MP3"
-# 实时 SoundFont 合成器的 AudioWorklet 模块（src/gm/synth-processor.ts；WASM 由主线程编好递进去，vendor/tsf/tsf-standalone.wasm）
-SYNTH=$(hashed ./src/gm/synth-processor.ts synth-worklet); echo "[build] ✓ dist/$SYNTH"
+# 录音房的 AudioWorklet 模块（src/engine/studio-processor.ts：走带 / 通道 / TinySoundFont / 元音采样器 / 块回放 / 母线；WASM 由主线程编好递进去，vendor/tsf/tsf-standalone.wasm）
+STUDIO=$(hashed ./src/engine/studio-processor.ts studio-worklet); echo "[build] ✓ dist/$STUDIO"
 # 样式表也按内容版本化（2026-10-07，user「0 | - 的中文字在ipad上面没有自动换和别的一样的小灰字体」= iPad 拿到新 bundle 配旧 styles.css：
 #   Pages 给 styles.css 的缓存头是 max-age=600，dev 的 network-first 走浏览器 HTTP 缓存）。index.html 写 styles.css?v=<哈希> → 新地址绕过 HTTP 缓存；
 #   哈希 --define 进主 bundle → 样式一改主 bundle 的哈希也变 → service worker 换新缓存名、重新预缓存 styles.css。SW 本身不用改（取缓存时 ignoreSearch）。
 CSS_HASH=$(cat styles.css vendor/internal-css/*.css | sha256sum | cut -c1-12)   # 自家样式 + vendored 的包样式一起算（包样式升级也要换地址）
-MAIN=$(hashed "$ENTRY" moonsinger "--define:__SINGER_WORKER__=\"$SINGER\"" "--define:__MP3_WORKER__=\"$MP3\"" "--define:__SYNTH_WORKLET__=\"$SYNTH\"" "--define:__CSS_HASH__=\"$CSS_HASH\""); echo "[build] ✓ dist/$MAIN"
+MAIN=$(hashed "$ENTRY" moonsinger "--define:__SINGER_WORKER__=\"$SINGER\"" "--define:__MP3_WORKER__=\"$MP3\"" "--define:__STUDIO_WORKLET__=\"$STUDIO\"" "--define:__CSS_HASH__=\"$CSS_HASH\""); echo "[build] ✓ dist/$MAIN"
 sed -i -E "s|src=\"\./dist/moonsinger(-[a-z0-9]+)?\.mjs\"|src=\"./dist/$MAIN\"|" index.html
 grep -q "$MAIN" index.html || { echo "[build] ✗ index.html 没改到主 bundle 的新文件名" >&2; exit 1; }
 sed -i -E "s|href=\"\./styles\.css(\?v=[a-z0-9]+)?\"|href=\"./styles.css?v=$CSS_HASH\"|" index.html

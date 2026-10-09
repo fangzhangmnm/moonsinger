@@ -11,8 +11,17 @@ import { toLabScore } from "../src/score/lab-score.ts";
 import { gainSegments, noteEnd } from "../src/score/perform.ts";
 import { MARK_DEFAULTS } from "../src/format/performance.ts";
 const ACCENT_SEC = MARK_DEFAULTS.accentSec;
-import { applyGain } from "../src/audio/mix.ts";
 import { DYNAMICS_DB, ARTICULATION } from "../src/format/performance.ts";
+/** 音量曲线乘在一条声音上（原 src/audio/mix.ts applyGain 的参考实现；2026-10-09 乘法搬进录音房 src/engine/studio.ts 后这里留一份对照）。 */
+function applyGain(samples: Float32Array, sr: number, at: number, segs: readonly { t0: number; t1: number; dB: number }[], smoothSec = 0.004): Float32Array {
+  const out = new Float32Array(samples.length);
+  if (!segs.length) { out.set(samples); return out; }
+  const lin = (dB: number) => (dB === -Infinity ? 0 : 10 ** (dB / 20)), a = 1 - Math.exp(-1 / (smoothSec * sr));
+  let k = 0, y = lin(segs[0].dB);
+  for (let i = 0; i < samples.length; i++) { const t = at + i / sr; while (k < segs.length - 1 && t >= segs[k].t1) k++; y += (lin(segs[k].dB) - y) * a; out[i] = samples[i] * y; }
+  return out;
+}
+
 
 const deq = (a: unknown, b: unknown, msg?: string) => eq(JSON.stringify(a), JSON.stringify(b), msg);
 const SPEC = { dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb };

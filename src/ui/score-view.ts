@@ -20,7 +20,7 @@
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL, pageGeoOf } from "../score/paper.ts";
-import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf } from "../score/song.ts";
+import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit } from "../render/engrave.ts";
@@ -229,6 +229,25 @@ export class ScoreView {
     const base = this.baseKey(), fk = `${base}|${this.el.clientWidth}x${this.el.clientHeight}`;   // 窗口变了（pad 弹出把谱挤矮）照样跟
     if (this.holdView) this.heldBase = base;   // 点声部名：这个光标位置不跟，直到光标再挪
     if (fk !== this.followKey) { this.followKey = fk; if (base !== this.heldBase) { this.heldBase = null; this.follow(); } }
+  }
+  private playheadEl: HTMLDivElement | null = null;
+  /** 播放头（实时试听「谱上跟着亮」，2026-10-09 Claude Fable 5.1）：p = 哪张纸的第几个 tick（纸自己的，反复已折回去；src/engine/timeline.ts locate）；null = 收起。
+   *  只挪一条线，不重排、不动滚动。位置 = 这张纸第一行那条 track 上「起点 ≥ tick 的第一个音」的光标位 → slot 的 x；行高 = 那一行的谱表范围。 */
+  setPlayhead(p: { paperId: string; tick: number } | null): void {
+    const L = this.layout;
+    if (!p || !L) { this.playheadEl?.remove(); this.playheadEl = null; return; }
+    const st = this.host.get(), paper = st.song.papers.find((x) => x.id === p.paperId);
+    const sysIdx = L.systems.findIndex((r) => r.paper === p.paperId);
+    if (!paper || sysIdx < 0) { this.playheadEl?.remove(); this.playheadEl = null; return; }
+    const part = L.systems[sysIdx].part, toks = paper.tracks[part] ?? [];
+    let t = 0, caret = toks.length;
+    for (let i = 0; i < toks.length; i++) { const k = toks[i]; if (!isTimed(k)) continue; if (t + k.dur > p.tick) { caret = i; break; } t += k.dur; }
+    const slot = L.slots.find((sl) => sl.caret === caret && L.systems[sl.system]?.paper === p.paperId && L.systems[sl.system]?.part === part);
+    if (!slot) { this.playheadEl?.remove(); this.playheadEl = null; return; }
+    const row = L.systems[slot.system];
+    let el = this.playheadEl;
+    if (!el || !el.isConnected) { el = document.createElement("div"); el.className = "playhead"; el.style.cssText = "position:absolute;width:2px;background:var(--accent);opacity:.55;pointer-events:none;border-radius:1px"; this.ink.appendChild(el); this.playheadEl = el; }
+    el.style.left = `${slot.x - 1}px`; el.style.top = `${row.top}px`; el.style.height = `${Math.max(1, row.bottom - row.top)}px`;
   }
   /** 光标 / 选区 / 编辑框在哪（变了才跟）。 */
   private baseKey(): string {

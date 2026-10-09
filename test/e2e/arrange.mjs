@@ -39,12 +39,9 @@ const drop = await q.evaluate(async () => {
   ta.splice(k, 0, { kind: "dyn", id: 99001, value: "pp" });
   m.set({ ...st, song: { ...st.song, arrangement: "2 1", papers: [{ ...a, tracks: { ...a.tracks, [pid]: ta } }, { ...b2, tracks: { ...b2.tracks, [pid]: bpm(b2.tracks[pid], 180) } }] } });
   m.singer.sing = async () => ({ samples: new Float32Array(48000 * 4).fill(0.1), sr: 48000 });
-  let got = null; m.singer.play = (r) => { got = r; };
-  document.getElementById("playBtn").click();
-  for (let i = 0; i < 50 && !got; i++) await new Promise((ok) => setTimeout(ok, 50));
-  if (!got) return null;
-  const x = got.samples, ref = Math.abs(x[Math.round(0.6 * got.sr)]);   // 0.1 秒（谱上）的地方 = 还没 pp（月读提前量 0.5 秒）
-  for (let i = Math.round(0.6 * got.sr); i < x.length; i++) if (Math.abs(x[i]) < ref * 0.5) return i / got.sr - 0.5;
+  const got = await m.renderMix(); if (!got) return null;   // 离线混音（录音房同一份数学；2026-10-09 实时试听刀 1）
+  const x = got.samples, i0 = Math.round((0.1 - got.start) * got.sr), ref = Math.abs(x[i0]);   // 0.1 秒（谱上）的地方 = 还没 pp
+  for (let i = i0; i < x.length; i++) if (Math.abs(x[i]) < ref * 0.5) return i / got.sr + got.start;
   return -1;
 });
 check(drop !== null && Math.abs(drop - 1 / 3) < 0.03, "编排「2 1」+ 各段速度不同：pp 从 ⅓ 秒起（照放的顺序算速度）", String(drop));

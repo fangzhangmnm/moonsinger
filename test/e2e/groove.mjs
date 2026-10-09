@@ -43,11 +43,8 @@ check(!(await p.$(".groove-menu")), "点外面 = 收起");
 const lv = await p.evaluate(async () => {
   const m = window.__moonsinger;
   m.singer.sing = async () => ({ samples: new Float32Array(48000 * 4).fill(0.1), sr: 48000 });
-  let got = null; m.singer.play = (r) => { got = r; };
-  document.getElementById("playBtn").click();
-  for (let i = 0; i < 50 && !got; i++) await new Promise((ok) => setTimeout(ok, 50));
-  if (!got) return null;
-  const at = (sec) => Math.abs(got.samples[Math.round((sec + 0.5) * got.sr)]), q = 60 / 90;   // 声音的第 0 秒 = 谱上 −0.5 秒（月读的提前量）
+  const got = await m.renderMix(); if (!got) return null;   // 离线混音（录音房同一份数学；2026-10-09 实时试听刀 1）：samples[0] = 谱上第 start 秒（= −0.5，月读的提前量）
+  const at = (sec) => Math.abs(got.samples[Math.round((sec - got.start) * got.sr)]), q = 60 / 90;
   return [at(0.03), at(q + 0.03), at(2 * q + 0.03), at(q + 0.4)];
 });
 check(!!lv && lv[1] > lv[0] * 1.02 && Math.abs(lv[2] - lv[0]) < lv[0] * 1e-4, "流行：第二拍音头比第一拍响（第三拍 = 第一拍；相对误差，月读分段唱后整首归一化过）", JSON.stringify(lv));

@@ -685,65 +685,6 @@ function wrapWorld(M) {
   return { analyze, synth };
 }
 
-// src/gm/soundfont.ts
-function wrapTsf(M) {
-  return {
-    load(bytes2, sampleRate) {
-      const p = M._malloc(bytes2.length);
-      M.HEAPU8.set(bytes2, p);
-      const bank = M._sf_load(p, bytes2.length, sampleRate);
-      M._free(p);
-      if (!bank) throw new Error("soundfont: not a SoundFont 2 file");
-      const presets = Array.from({ length: M._sf_preset_count(bank) }, (_, i) => ({ index: i, bank: M._sf_preset_bank(bank, i), program: M._sf_preset_num(bank, i), name: M.UTF8ToString(M._sf_preset_name(bank, i)) }));
-      let closed = false;
-      const render = (notes, tailSec = 2) => {
-        if (closed) throw new Error("soundfont: bank closed");
-        const ev = [];
-        for (const n of notes) {
-          ev.push({ t: n.t0, on: true, n });
-          ev.push({ t: Math.max(n.t0, n.t1), on: false, n });
-        }
-        ev.sort((a, b) => a.t - b.t || (a.on === b.on ? 0 : a.on ? 1 : -1));
-        const end = ev.length ? ev[ev.length - 1].t + tailSec : 0;
-        const total = Math.ceil(end * sampleRate), out = new Float32Array(total);
-        const f = M._sf_copy(bank);
-        const BLOCK = 4096, buf = M._malloc(BLOCK * 4);
-        let pos = 0, k = 0;
-        const renderTo = (sample) => {
-          while (pos < sample) {
-            const n = Math.min(BLOCK, sample - pos);
-            M._sf_render(f, buf, n);
-            out.set(M.HEAPF32.subarray(buf / 4, buf / 4 + n), pos);
-            pos += n;
-          }
-        };
-        for (; k < ev.length; k++) {
-          const e = ev[k];
-          renderTo(Math.min(total, Math.round(e.t * sampleRate)));
-          if (e.on) M._sf_note_on(f, e.n.preset, e.n.key, e.n.vel);
-          else M._sf_note_off(f, e.n.preset, e.n.key);
-        }
-        renderTo(total);
-        M._free(buf);
-        M._sf_close(f);
-        return out;
-      };
-      return {
-        sampleRate,
-        presets,
-        presetIndex: (b, pr2) => M._sf_preset_index(bank, b, pr2),
-        render,
-        close: () => {
-          if (!closed) {
-            closed = true;
-            M._sf_close(bank);
-          }
-        }
-      };
-    }
-  };
-}
-
 // node_modules/@internal/model-packs/dist/sha256.js
 var K = new Uint32Array([
   1116352408,
@@ -7700,58 +7641,9 @@ async function loadEngine(say) {
   } : null;
   return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, presetDefault: config.preset_default ?? {} };
 }
-var TSF = new URL("../vendor/tsf/", import.meta.url);
-var tsf = null;
-var banks = /* @__PURE__ */ new Map();
-var MAX_BANKS = 4;
-async function renderGm(q2) {
-  if (!tsf) tsf = (async () => {
-    const { default: createTsf } = await import(
-      /* @vite-ignore */
-      new URL("tsf.mjs", TSF).href
-    );
-    const wasm = await fetch(new URL("tsf.wasm", TSF));
-    if (!wasm.ok) throw new Error(`TinySoundFont: HTTP ${wasm.status}`);
-    return wrapTsf(await createTsf({ wasmBinary: new Uint8Array(await wasm.arrayBuffer()) }));
-  })();
-  const T = await tsf.catch((e) => {
-    tsf = null;
-    throw e;
-  });
-  let bank = banks.get(q2.sha256);
-  if (!bank || bank.sampleRate !== q2.sampleRate) {
-    if (!q2.sf2) throw new Error("gm: bank not loaded");
-    bank?.close();
-    banks.delete(q2.sha256);
-    while (banks.size >= MAX_BANKS) {
-      const [old, b2] = banks.entries().next().value;
-      b2.close();
-      banks.delete(old);
-    }
-    bank = T.load(q2.sf2, q2.sampleRate);
-  }
-  banks.delete(q2.sha256);
-  banks.set(q2.sha256, bank);
-  const b = bank;
-  const notes = q2.notes.map((n) => {
-    const preset = b.presetIndex(n.preset[0], n.preset[1]);
-    if (preset < 0) throw new Error(`gm: preset ${n.preset[0]}:${n.preset[1]} not in this bank`);
-    return { preset, key: n.key, vel: n.vel, t0: n.t0, t1: n.t1 };
-  });
-  return b.render(notes, q2.tail);
-}
 self.onmessage = async (ev) => {
   const q2 = ev.data;
   const post = (m, transfer = []) => self.postMessage(m, transfer);
-  if (q2.type === "gm") {
-    try {
-      const t0 = performance.now(), samples = await renderGm(q2);
-      post({ type: "done", id: q2.id, samples, sr: q2.sampleRate, ms: { load: 0, sing: performance.now() - t0 } }, [samples.buffer]);
-    } catch (err) {
-      post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
-    }
-    return;
-  }
   if (q2.type !== "sing") return;
   const say = (stage) => post({ type: "progress", id: q2.id, stage });
   try {
@@ -7785,4 +7677,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-9744e8853513.mjs.map
+//# sourceMappingURL=singer-worker-753ea424f8b8.mjs.map

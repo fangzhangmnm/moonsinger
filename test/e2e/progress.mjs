@@ -7,7 +7,7 @@ const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1000, height: 800 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 for (let i = 0; i < 3; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
-await p.evaluate(() => { const m = window.__moonsinger; m.singer.sing = (score, prog) => new Promise((ok) => { prog("下载月读的模型（40 MB，只下这一次）50%"); setTimeout(() => ok({ samples: new Float32Array(48000), sr: 48000 }), 700); }); m.singer.play = () => {}; });
+await p.evaluate(() => { const m = window.__moonsinger; m.singer.sing = (score, prog) => new Promise((ok) => { prog("下载月读的模型（40 MB，只下这一次）50%"); setTimeout(() => ok({ samples: new Float32Array(48000), sr: 48000 }), 700); }); });
 check(await p.$eval(".render-bar", (e) => e.hidden), "平时收着");
 await p.click("#playBtn"); await p.waitForTimeout(250);
 const mid = await p.$eval(".render-bar", (e) => ({ hidden: e.hidden, fill: e.querySelector(".rb-fill").style.width, known: e.querySelector(".rb-cur").classList.contains("known") }));

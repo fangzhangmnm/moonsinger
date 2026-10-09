@@ -123,6 +123,7 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .cur { fill: var(--accent); stroke: var(--accent); }
 .staff-svg path.tie.cur { fill: none; }
 .staff-svg line.caret { stroke: var(--accent); }
+.staff-svg line.playhead { stroke: var(--accent); stroke-width: 2px; opacity: 0.55; pointer-events: none; }   /* 播放头（实时试听的「谱上跟着亮」；src/ui/score-view.ts setPlayhead） */
 .staff-svg rect.warn { fill: #d9a23a; }
 .staff-svg text.lyric { font-family: system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif; }
 /* 选中 = 底下那条淡蓝带子（rect.selbox）就够了，音不涂蓝（user 2026-10-08「选区画成一条淡蓝的带子盖住那几个音（不是把音涂蓝）」） */
