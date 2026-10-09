@@ -552,7 +552,12 @@ export function setMark(st: EditorState, i: number, v: MarkVal): EditorState {
   if (!t || t.kind !== v.kind) return st;
   const nt = tr(st).slice(); nt[i] = { ...v, id: t.id } as MarkTok;
   if (v.kind === "key") respellFrom(nt, i);   // 改调号：它管的音跟着按调号拼写（同一步，能撤销）
-  return next(st, nt, {});
+  const n2 = next(st, nt, {});
+  if (v.kind === "tempo" && i < headLen(nt)) {   // 改这张纸开头的速度 = 这张纸每一行的谱头都写齐（速度是这张纸的）
+    const paper = n2.song.papers.find((p) => p.id === st.at.paper);
+    if (paper) return { ...n2, song: { ...n2.song, papers: n2.song.papers.map((p) => (p.id === paper.id ? withSheetBpm(p, v.bpm) : p)) } };
+  }
+  return n2;
 }
 /** 删一个中途的记号（谱头的删不掉）。 */
 export function deleteMark(st: EditorState, i: number): EditorState {
@@ -1012,6 +1017,32 @@ export function setTitle(st: EditorState, title: string): EditorState {
 
 // ── 纸 / 声部（0.5.0）────────────────────────────────────────────────────
 
+/** 一张纸的速度看谁：这张纸上在场的、全曲顺序里最上面那位（速度记号只写在它那一行）。 */
+export function tempoOwner(song: Song, paper: PaperSeg): string | null { return song.parts.find((p) => paper.tracks[p.id])?.id ?? null; }
+/** 一张纸开头的速度（看 tempoOwner 那一行的谱头）；纸上没人 = null。 */
+export function sheetStartBpm(song: Song, paper: PaperSeg): number | null {
+  const o = tempoOwner(song, paper); if (!o) return null;
+  const t = paper.tracks[o].slice(0, headLen(paper.tracks[o])).find((x) => x.kind === "tempo") as Extract<Token, { kind: "tempo" }> | undefined;
+  return t ? t.bpm : null;
+}
+/** 一张纸结尾生效的速度（tempoOwner 那一行走到底）。 */
+export function sheetEndBpm(song: Song, paper: PaperSeg): number | null { const o = tempoOwner(song, paper); return o ? tempoAt(paper.tracks[o], paper.tracks[o].length) : null; }
+/** 这张纸上每一行谱头的速度都写成 bpm（谱头的速度是这张纸的、不是哪一行的；只有 tempoOwner 那一行算数，其余跟着写齐，免得换了谁在最上面速度就变）。 */
+function withSheetBpm(paper: PaperSeg, bpm: number): PaperSeg {
+  let changed = false;
+  const tracks: Record<string, Token[]> = {};
+  for (const [k, toks] of Object.entries(paper.tracks)) {   // 已经对的那一行原样留着（同一个数组：结构共享，undo 快照不多占）
+    const h = headLen(toks), i = toks.findIndex((t, j) => j < h && t.kind === "tempo" && t.bpm !== bpm);
+    if (i < 0) { tracks[k] = toks; continue; }
+    changed = true; tracks[k] = toks.map((t, j) => (j < h && t.kind === "tempo" && t.bpm !== bpm ? { ...t, bpm } : t));
+  }
+  return changed ? { ...paper, tracks } : paper;
+}
+/** 换了一张纸上有谁 / 谁在最上面（去掉一行、换绑、挪顺序、加一行）之后：每张纸开头的速度保持改之前的样子（2026-10-08 Opus 5.5；
+ *  user「第四章sheet只有第二个声部的时候速度记号失踪了而且好像速度不对」——原来速度只看最上面那一行，别的行谱头是没人看见的旧数，最上面那位一走就跳成旧数）。 */
+function keepSheetTempos(before: Song, after: Song): Song {
+  return { ...after, papers: after.papers.map((p) => { const b = before.papers.find((x) => x.id === p.id), bpm = b ? sheetStartBpm(before, b) : null; return bpm === null ? p : withSheetBpm(p, bpm); }) };
+}
 const nextKey = (ids: string[], prefix: string) => `${prefix}${Math.max(0, ...ids.map((x) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x)?.[1] ?? 0))) + 1}`;
 /** 一条 track 末尾生效的调号 / 拍号 / 速度（新纸 / 新声部的谱头照抄它）。 */
 const endMarks = (toks: Token[]) => ({ fifths: keyAt(toks, toks.length), ...timeAt(toks, toks.length), bpm: tempoAt(toks, toks.length) });
@@ -1039,7 +1070,7 @@ export function rebindTrack(st: EditorState, paperId: string, from: string, to: 
   if (!p || from === to || !p.tracks[from] || !st.song.parts.some((x) => x.id === to)) return st;
   const tracks = { ...p.tracks }, mine = tracks[from], theirs = tracks[to];
   if (theirs) { tracks[from] = theirs; tracks[to] = mine; } else { delete tracks[from]; tracks[to] = mine; }
-  const song = { ...st.song, papers: st.song.papers.map((x) => (x.id === paperId ? { ...x, tracks } : x)) };
+  const song = keepSheetTempos(st.song, { ...st.song, papers: st.song.papers.map((x) => (x.id === paperId ? { ...x, tracks } : x)) });
   const followMe = st.at.paper === paperId && st.at.part === from;
   return followMe ? setFocus({ ...st, song }, paperId, to, st.caret) : { ...st, song };
 }
@@ -1052,12 +1083,12 @@ export function removePart(st: EditorState, partId: string): EditorState {
   return setFocus({ ...st, song }, at.paper, at.part, st.at.part === partId ? undefined : st.caret);
 }
 /** 声部上下挪一格（谱上从上到下 = Song.parts 的顺序；user 2026-10-08「声部顺序应该能重排」）。每张纸、每条 track 都不动，只换顺序。
- *  速度照旧跟最上面那个声部（tempoMapOf）：挪了谁在最上面，速度就看谁的。 */
+ *  速度只看每张纸最上面那一行（tempoOwner）；挪了谁在最上面，每张纸开头的速度照旧（keepSheetTempos 把各行谱头写齐）。 */
 export function movePart(st: EditorState, partId: string, d: -1 | 1): EditorState {
   const ps = st.song.parts, i = ps.findIndex((p) => p.id === partId), j = i + d;
   if (i < 0 || j < 0 || j >= ps.length) return st;
   const parts = ps.slice(); [parts[i], parts[j]] = [parts[j], parts[i]];
-  return { ...st, song: { ...st.song, parts } };
+  return { ...st, song: keepSheetTempos(st.song, { ...st.song, parts }) };   // 挪了谁在最上面：每张纸的速度不跟着变
 }
 /** 这张纸上加上某个（歌里已有的）声部：一条只有谱头的 track（谱头抄这张纸第一个在场声部的开头）。user 2026-10-08「每个sheet的track数量当然不同」。 */
 export function addTrack(st: EditorState, paperId: string, partId: string): EditorState {
@@ -1066,14 +1097,14 @@ export function addTrack(st: EditorState, paperId: string, partId: string): Edit
   const src = st.song.parts.map((x) => p.tracks[x.id]).find((x) => x) ?? [], h = src.slice(0, headLen(src));
   let id = st.nextId;
   const toks = h.length ? h.map((t) => ({ ...t, id: id++ })) : headTokens({}, (id += 3) - 3);
-  return setFocus({ ...st, song: withTrack(st.song, paperId, partId, toks), nextId: id }, paperId, partId);
+  return setFocus({ ...st, song: keepSheetTempos(st.song, withTrack(st.song, paperId, partId, toks)), nextId: id }, paperId, partId);
 }
 /** 这张纸上去掉某个声部的那条 track（纸上最后一条不能去）。声部本身还在歌里（别的纸照旧）。 */
 export function removeTrack(st: EditorState, paperId: string, partId: string): EditorState {
   const p = st.song.papers.find((x) => x.id === paperId);
   if (!p || !p.tracks[partId] || Object.keys(p.tracks).length <= 1) return st;
   const tracks = { ...p.tracks }; delete tracks[partId];
-  const song = { ...st.song, papers: st.song.papers.map((x) => (x.id === paperId ? { ...x, tracks } : x)) };
+  const song = keepSheetTempos(st.song, { ...st.song, papers: st.song.papers.map((x) => (x.id === paperId ? { ...x, tracks } : x)) });
   if (st.at.paper !== paperId || st.at.part !== partId) return { ...st, song };
   return setFocus({ ...st, song }, paperId, st.song.parts.find((x) => tracks[x.id])!.id);
 }
@@ -1084,9 +1115,10 @@ export function addPaper(st: EditorState, after?: string): EditorState {
   const prev = papers[k] ?? papers[papers.length - 1], id = nextKey(papers.map((p) => p.id), "p");
   let nid = st.nextId;
   const tracks: Record<string, Token[]> = {};
+  const bpmEnd = prev ? sheetEndBpm(st.song, prev) : null;   // 速度 = 上一张纸结尾真正生效的（最上面那位那一行），不是各行自己谱头里没人看见的旧数
   for (const part of st.song.parts) {
     const src = prev?.tracks[part.id] ?? st.song.parts.map((x) => prev?.tracks[x.id]).find((x) => x) ?? [];
-    tracks[part.id] = headTokens(endMarks(src), nid); nid += 3;
+    tracks[part.id] = headTokens({ ...endMarks(src), ...(bpmEnd !== null ? { bpm: bpmEnd } : {}) }, nid); nid += 3;
   }
   const paper: PaperSeg = { id, name: "", tracks };
   const list = papers.slice(); list.splice(k + 1, 0, paper);

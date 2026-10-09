@@ -16,7 +16,7 @@
 //   小节线、调号、拍号是各声部自己的画法（契约 §7.8）；速度只画在第一个声部上面；歌手牌（声部名）在每张纸第一行各条谱的左边。
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
-import { type Song, type NoteTok, type Token, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches } from "../score/song.ts";
+import { type Song, type NoteTok, type Token, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm } from "../score/song.ts";
 import { densityOf, type Density } from "../score/paper.ts";
 import { type Pitch, diatonicIndex, keyAlter } from "../score/pitch.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
@@ -369,9 +369,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
 
   const showPaperLine = song.papers.length > 1 || song.papers.some((p) => p.name);
   let drawn = 0;
-  song.papers.forEach((paper) => {
+  song.papers.forEach((paper, paperK) => {
     if (o.onlyPaper && paper.id !== o.onlyPaper) return;   // 一次只看一张纸（曲段）
     if (drawn++ > 0) yCur += P(PAPER_GAP);
+    // 速度记号画在这张纸最上面那位在场的歌手那一行（它的速度才算数；2026-10-08 user「第四章sheet只有第二个声部的时候速度记号失踪了」——原来只画全曲第一个声部的）。
+    //   开头的速度和上一段（前面最近一张不隐藏的纸）结尾一样 = 只是重申、画淡；不一样 = 真变了、照常（user「然后如果速度和上一段一样和不一样的话应该也有ui上的差别」）
+    const owner = tempoOwner(song, paper), prevPaper = song.papers.slice(0, paperK).reverse().find((x) => !x.hidden), prevBpm = prevPaper ? sheetEndBpm(song, prevPaper) : null;
     const paperTop = yCur;
     // 曲段名那一条（多于一张纸或填了名字才画；空着画浅色提示；右边「⋯」= 纸的菜单）。分页时和第一行谱一起挪，所以等算完行高再画
     const pSize = P(1.6);
@@ -550,7 +553,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       });
       if (dyn && mode === "above") { const d = Math.max(TOP_LINE + 2.4, ex[0].top + 3); g[0].dynD = d; g[0].above = Math.max(g[0].above, (d - TOP_LINE) / 2 + 2.2); }   // f 这种字有下伸：离音远一点
       if (dyn && mode === "below") { const d = Math.min(BOTTOM_LINE - 5, ex[0].bot - 4); g[0].dynD = d; g[0].below = Math.max(g[0].below, (BOTTOM_LINE - d) / 2 + 0.6); }
-      if (q.p.first) {   // 速度记号（第一个声部上面）：在最高的音和写在上面的力度字之上
+      if (q.p.id === owner) {   // 速度记号（这张纸最上面那位在场的歌手上面）：在最高的音和写在上面的力度字之上
         const t = Math.max(TOP_LINE + 4.8, ex[0].top + 3, g[0].dynD !== null ? g[0].dynD + 4.6 : 0); g[0].tempoD = t; g[0].above = Math.max(g[0].above, (t - TOP_LINE) / 2 + 1.6);
       }
       if (dyn && mode === "between") { g[0].below = Math.max(g[0].below, (BOTTOM_LINE - ex[0].bot) / 2 + 1.6); g[1].above = Math.max(g[1].above, (ex[1].top - TOP_LINE) / 2 + 1.6); }
@@ -601,7 +604,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             if (f) hx += 0.8;
             const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
             if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
-            if (k === 0 && q.p.first && q.head.idx.tempo !== undefined) drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", q.head.idx.tempo);
+            if (k === 0 && q.p.id === owner && q.head.idx.tempo !== undefined) drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, prevBpm === q.head.bpm ? "tempo same" : "tempo", q.head.idx.tempo);
           }
         }
         if (s === 0) {
@@ -724,7 +727,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           }
           continue;
         }
-        if (u.kind === "tempo") { if (q.p.first) drawTempo(row, u.x + 0.3, u.bpm, inSel(u.index) ? "tempo sel" : "tempo", u.index); continue; }
+        if (u.kind === "tempo") { if (q.p.id === owner) drawTempo(row, u.x + 0.3, u.bpm, inSel(u.index) ? "tempo sel" : "tempo", u.index); continue; }
         if (u.kind === "hairpin") continue;   // 渐强渐弱在 8¾ 画（要知道终点）
         drawChunk(u);
       }

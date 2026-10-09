@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.23-2026-10-08";
+var APP_VERSION = "v0.7.24-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3276,7 +3276,12 @@ function setMark(st3, i10, v) {
   const nt2 = tr(st3).slice();
   nt2[i10] = { ...v, id: t10.id };
   if (v.kind === "key") respellFrom(nt2, i10);
-  return next(st3, nt2, {});
+  const n23 = next(st3, nt2, {});
+  if (v.kind === "tempo" && i10 < headLen(nt2)) {
+    const paper = n23.song.papers.find((p2) => p2.id === st3.at.paper);
+    if (paper) return { ...n23, song: { ...n23.song, papers: n23.song.papers.map((p2) => p2.id === paper.id ? withSheetBpm(p2, v.bpm) : p2) } };
+  }
+  return n23;
 }
 function deleteMark(st3, i10) {
   const t10 = tr(st3)[i10];
@@ -3781,6 +3786,39 @@ function setTitle(st3, title) {
   else delete song.title;
   return (st3.song.title ?? "") === t10 ? st3 : { ...st3, song };
 }
+function tempoOwner(song, paper) {
+  return song.parts.find((p2) => paper.tracks[p2.id])?.id ?? null;
+}
+function sheetStartBpm(song, paper) {
+  const o10 = tempoOwner(song, paper);
+  if (!o10) return null;
+  const t10 = paper.tracks[o10].slice(0, headLen(paper.tracks[o10])).find((x2) => x2.kind === "tempo");
+  return t10 ? t10.bpm : null;
+}
+function sheetEndBpm(song, paper) {
+  const o10 = tempoOwner(song, paper);
+  return o10 ? tempoAt(paper.tracks[o10], paper.tracks[o10].length) : null;
+}
+function withSheetBpm(paper, bpm) {
+  let changed2 = false;
+  const tracks = {};
+  for (const [k2, toks] of Object.entries(paper.tracks)) {
+    const h2 = headLen(toks), i10 = toks.findIndex((t10, j2) => j2 < h2 && t10.kind === "tempo" && t10.bpm !== bpm);
+    if (i10 < 0) {
+      tracks[k2] = toks;
+      continue;
+    }
+    changed2 = true;
+    tracks[k2] = toks.map((t10, j2) => j2 < h2 && t10.kind === "tempo" && t10.bpm !== bpm ? { ...t10, bpm } : t10);
+  }
+  return changed2 ? { ...paper, tracks } : paper;
+}
+function keepSheetTempos(before, after) {
+  return { ...after, papers: after.papers.map((p2) => {
+    const b3 = before.papers.find((x2) => x2.id === p2.id), bpm = b3 ? sheetStartBpm(before, b3) : null;
+    return bpm === null ? p2 : withSheetBpm(p2, bpm);
+  }) };
+}
 var nextKey = (ids, prefix) => `${prefix}${Math.max(0, ...ids.map((x2) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x2)?.[1] ?? 0))) + 1}`;
 var endMarks = (toks) => ({ fifths: keyAt(toks, toks.length), ...timeAt(toks, toks.length), bpm: tempoAt(toks, toks.length) });
 function addPart(st3, part, onPaper = st3.at.paper) {
@@ -3807,7 +3845,7 @@ function rebindTrack(st3, paperId, from, to2) {
     delete tracks[from];
     tracks[to2] = mine;
   }
-  const song = { ...st3.song, papers: st3.song.papers.map((x2) => x2.id === paperId ? { ...x2, tracks } : x2) };
+  const song = keepSheetTempos(st3.song, { ...st3.song, papers: st3.song.papers.map((x2) => x2.id === paperId ? { ...x2, tracks } : x2) });
   const followMe = st3.at.paper === paperId && st3.at.part === from;
   return followMe ? setFocus({ ...st3, song }, paperId, to2, st3.caret) : { ...st3, song };
 }
@@ -3827,7 +3865,7 @@ function movePart(st3, partId, d3) {
   if (i10 < 0 || j2 < 0 || j2 >= ps.length) return st3;
   const parts = ps.slice();
   [parts[i10], parts[j2]] = [parts[j2], parts[i10]];
-  return { ...st3, song: { ...st3.song, parts } };
+  return { ...st3, song: keepSheetTempos(st3.song, { ...st3.song, parts }) };
 }
 function addTrack(st3, paperId, partId) {
   const p2 = st3.song.papers.find((x2) => x2.id === paperId);
@@ -3835,14 +3873,14 @@ function addTrack(st3, paperId, partId) {
   const src = st3.song.parts.map((x2) => p2.tracks[x2.id]).find((x2) => x2) ?? [], h2 = src.slice(0, headLen(src));
   let id2 = st3.nextId;
   const toks = h2.length ? h2.map((t10) => ({ ...t10, id: id2++ })) : headTokens({}, (id2 += 3) - 3);
-  return setFocus({ ...st3, song: withTrack(st3.song, paperId, partId, toks), nextId: id2 }, paperId, partId);
+  return setFocus({ ...st3, song: keepSheetTempos(st3.song, withTrack(st3.song, paperId, partId, toks)), nextId: id2 }, paperId, partId);
 }
 function removeTrack(st3, paperId, partId) {
   const p2 = st3.song.papers.find((x2) => x2.id === paperId);
   if (!p2 || !p2.tracks[partId] || Object.keys(p2.tracks).length <= 1) return st3;
   const tracks = { ...p2.tracks };
   delete tracks[partId];
-  const song = { ...st3.song, papers: st3.song.papers.map((x2) => x2.id === paperId ? { ...x2, tracks } : x2) };
+  const song = keepSheetTempos(st3.song, { ...st3.song, papers: st3.song.papers.map((x2) => x2.id === paperId ? { ...x2, tracks } : x2) });
   if (st3.at.paper !== paperId || st3.at.part !== partId) return { ...st3, song };
   return setFocus({ ...st3, song }, paperId, st3.song.parts.find((x2) => tracks[x2.id]).id);
 }
@@ -3851,9 +3889,10 @@ function addPaper(st3, after) {
   const prev = papers[k2] ?? papers[papers.length - 1], id2 = nextKey(papers.map((p2) => p2.id), "p");
   let nid = st3.nextId;
   const tracks = {};
+  const bpmEnd = prev ? sheetEndBpm(st3.song, prev) : null;
   for (const part of st3.song.parts) {
     const src = prev?.tracks[part.id] ?? st3.song.parts.map((x2) => prev?.tracks[x2.id]).find((x2) => x2) ?? [];
-    tracks[part.id] = headTokens(endMarks(src), nid);
+    tracks[part.id] = headTokens({ ...endMarks(src), ...bpmEnd !== null ? { bpm: bpmEnd } : {} }, nid);
     nid += 3;
   }
   const paper = { id: id2, name: "", tracks };
@@ -4980,9 +5019,10 @@ function engrave(song, o10) {
   };
   const showPaperLine = song.papers.length > 1 || song.papers.some((p2) => p2.name);
   let drawn = 0;
-  song.papers.forEach((paper) => {
+  song.papers.forEach((paper, paperK) => {
     if (o10.onlyPaper && paper.id !== o10.onlyPaper) return;
     if (drawn++ > 0) yCur += P2(PAPER_GAP);
+    const owner = tempoOwner(song, paper), prevPaper = song.papers.slice(0, paperK).reverse().find((x3) => !x3.hidden), prevBpm = prevPaper ? sheetEndBpm(song, prevPaper) : null;
     const paperTop = yCur;
     const pSize = P2(1.6);
     let menu = null;
@@ -5213,7 +5253,7 @@ function engrave(song, o10) {
         g3[0].dynD = d3;
         g3[0].below = Math.max(g3[0].below, (BOTTOM_LINE - d3) / 2 + 0.6);
       }
-      if (q2.p.first) {
+      if (q2.p.id === owner) {
         const t10 = Math.max(TOP_LINE + 4.8, ex2[0].top + 3, g3[0].dynD !== null ? g3[0].dynD + 4.6 : 0);
         g3[0].tempoD = t10;
         g3[0].above = Math.max(g3[0].above, (t10 - TOP_LINE) / 2 + 1.6);
@@ -5277,7 +5317,7 @@ function engrave(song, o10) {
             if (f2) hx += 0.8;
             const cw2 = drawTime(row, hx, q2.head.time.beats, q2.head.time.beatType, "timesig");
             if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row, x: P2(hx - 0.3), ...staffHit(row), w: P2(cw2 + 0.6) });
-            if (k2 === 0 && q2.p.first && q2.head.idx.tempo !== void 0) drawTempo(row, MARGIN + ind + 0.6, q2.head.bpm, "tempo", q2.head.idx.tempo);
+            if (k2 === 0 && q2.p.id === owner && q2.head.idx.tempo !== void 0) drawTempo(row, MARGIN + ind + 0.6, q2.head.bpm, prevBpm === q2.head.bpm ? "tempo same" : "tempo", q2.head.idx.tempo);
           }
         }
         if (s10 === 0) {
@@ -5406,7 +5446,7 @@ function engrave(song, o10) {
           continue;
         }
         if (u2.kind === "tempo") {
-          if (q2.p.first) drawTempo(row, u2.x + 0.3, u2.bpm, inSel(u2.index) ? "tempo sel" : "tempo", u2.index);
+          if (q2.p.id === owner) drawTempo(row, u2.x + 0.3, u2.bpm, inSel(u2.index) ? "tempo sel" : "tempo", u2.index);
           continue;
         }
         if (u2.kind === "hairpin") continue;
@@ -27999,7 +28039,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens), map);
   },
   state: () => st2,
-  cssHash: "afa65b1a0d27",
+  cssHash: "42ff70423cdb",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -30355,4 +30395,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e4a76b67d90f.mjs.map
+//# sourceMappingURL=moonsinger-ebe3a2064973.mjs.map
