@@ -1,5 +1,5 @@
 // test/e2e/scroll.mjs —— 真浏览器 E2E（iPad 竖屏、手指）：歌词框开着时手指滚谱 = 框不收、焦点不走（系统键盘不收回、视图不被拽回去）；
-//   谱下面留一整屏空白；跟随光标不贴底（下面留大约一行）。
+//   谱下面留一整屏空白；跟随光标不贴底（下面留大约一行）；光标在行末的音后面画在这一行末尾。
 // created 2026-10-08 by Claude Opus 5.5（user「每次打日文还是跟八年抗战一样，有一个滚动的bug就是歌词输入模式滚动会导致键盘弹回来，然后白滚。
 //   然后另外做一个护栏：滚动的时候页面下面还是留一整页白」「然后打字的自动对齐也不要靠着最下面，而是倒数第二排之类的，打音符也是」）
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/scroll.mjs（MS_E2E_BASE 可改地址）
@@ -54,6 +54,15 @@ for (let k = 0; k < 90; k++) {
 }
 check(moved > 0, "光标往下走，视图跟着滚了", String(moved));
 check(worst > -2, "跟着滚的时候光标那一行下面留着大约一行（不贴底）", `最差差了 ${worst.toFixed(1)} px`);
+// 光标在一行最后一个音后面（后面还有下一行）= 画在这一行末尾，不在下一行开头（user 2026-10-08「然后到行末的时候光标应该在行末而不是下一行开头？」）
+const ends = await p.evaluate(() => { const L = window.__moonsinger.layout(); const bySys = new Map(); for (const n of L.notes) { const c = bySys.get(n.system); if (!c || n.index > c.index) bySys.set(n.system, n); } return [...bySys.values()].slice(0, -1).slice(0, 4).map((n) => ({ index: n.index, system: n.system, x: n.x })); });
+let lineEndOk = 0;
+for (const e of ends) {
+  await p.evaluate((i) => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: i + 1, sel: null }); }, e.index); await p.waitForTimeout(60);
+  const h = await p.evaluate(() => window.__moonsinger.layout().head);
+  if (h && h.system === e.system && h.x > e.x) lineEndOk++;
+}
+check(ends.length >= 2 && lineEndOk === ends.length, "光标在行末的音后面 = 画在这一行末尾", `${lineEndOk}/${ends.length}`);
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);
