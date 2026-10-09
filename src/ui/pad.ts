@@ -45,12 +45,12 @@ const SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true">
 /** 符号层三页（2026-10-08 Opus 5.5 提、user「可以」）：一页一般放得下（4 列 3 排 = 12），位置固定好记。演奏法 = 上一排音头、下一排长短 / 连断；力度 = 力度、渐强渐弱、音内起伏；记号 = 句号、调号 / 拍号 / 速度（大谱表多换谱表）。 */
 type SymPage = "art" | "dyn" | "mark";
 const SYM_PAGES: Record<SymPage, readonly string[]> = {
-  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath"],   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
+  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper"],   // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>", "dyn:ramp"],
   mark: ["phrase", "key", "time", "tempo", "groove", "repeat", "staff"],
 };
 const SYM_PAGE_NAME: Record<SymPage, string> = { art: "演奏法", dyn: "力度", mark: "记号" };
-const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸", dyn: "pp…ff、渐强 / 渐弱、音内起伏", mark: "句号、调号 / 拍号 / 速度、风格（拍子轻重）" };
+const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸（静默 / 轻吸 / 深吸）、气声", dyn: "pp…ff、渐强 / 渐弱、音内起伏", mark: "句号、调号 / 拍号 / 速度、风格（拍子轻重）" };
 const RAMP_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;   // 渐到 = 虚线发夹
 const CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -391,7 +391,7 @@ export class Pad {
     const grid = this.el.querySelector<HTMLElement>(".pad-grid")!;
     const ign = new Set(this.host.ignoredArts?.() ?? []), dynNow = this.host.dynHere?.() ?? null;
     const cell = (id: string, big: string, label: string, title: string, state = "") => {
-      const mk = id.startsWith("art:") ? id.slice(4) : id === "slur" ? "slur" : id === "swell:>" ? "swellFade" : id.startsWith("swell:") ? "swellGrow" : null, off = !!mk && ign.has(mk);   // 台上这位不认：照样能写，格子标出来（不静默失效）
+      const mk = id.startsWith("art:") ? id.slice(4) : id === "slur" ? "slur" : id === "swell:>" ? "swellFade" : id.startsWith("swell:") ? "swellGrow" : id.startsWith("inhale:") ? "inhale" : null, off = !!mk && ign.has(mk);   // 台上这位不认：照样能写，格子标出来（不静默失效）
       const on = id.endsWith(":on"); id = on ? id.slice(0, -3) : id;   // 力度：现在生效的那个亮着
       return `<button class="pad-key sym${mk ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
     };
@@ -413,6 +413,9 @@ export class Pad {
       ...(["<", ">", "<>"] as const).map((w) => cell(`swell:${w}`, SWELL_CELL[w], w === "<" ? "音内渐强" : w === ">" ? "音内渐弱" : "音内鼓起", `${w === "<" ? "音内渐强" : w === ">" ? "音内渐弱（锯齿）" : "音内鼓起（messa di voce）"}：光标前那个音（有选区 = 选中的）自己里面的起伏；和段落的渐强渐弱是两层，可以叠；再点 = 去掉`)),
       cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；有选区 = 选中的连起来；再点一次去掉）。同一个音上又有呼吸 = 呼吸算数：那里照样断开换气，连线照画"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"),
+      cell("inhale:soft", `<span class="glyphs"><span class="smufl">\uE4CE</span><span class="big">吸</span></span>`, "轻吸", "出声的换气（轻吸）：光标前那个音后面换气、听得见吸气声（没有呼吸记号就连逗号一起加上；再点一次 = 整个去掉）。只有点了的地方才出声，普通的呼吸记号照旧静默"),
+      cell("inhale:big", `<span class="glyphs"><span class="smufl">\uE4CE</span><span class="big">深吸</span></span>`, "深吸", "出声的换气（深吸）：大口吸气、换气的空当也长一点（从前一个音末尾借时间）；再点一次 = 整个去掉"),
+      cell("art:whisper", `<span class="smufl">\uE0A9</span>`, "气声", "气声（× 符头）：光标前那个音（有选区 = 选中的）不唱音高、用气声唱这个字（念白 / 耳语）；再点一次去掉。只有月读做得到，乐器上画灰"),
       cell("key", `<span class="big">1=</span>`, "调号", "插调号（在光标处；先填现在的，插了再改）"),
       cell("time", `<span class="big">4/4</span>`, "拍号", "插拍号（在光标处）"),
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "速度", "插速度（在光标处）"),
@@ -449,6 +452,7 @@ export class Pad {
       else if (id === "repeat") this.host.onRepeat?.();
       else if (id === "staff") this.host.onCommand({ k: "staff" });
       else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
+      else if (id.startsWith("inhale:")) this.host.onCommand({ k: "inhale", v: id.slice(7) as "soft" | "big" });
       else if (id === "slur") this.host.onCommand({ k: "slur" });
       else if (id.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id.slice(6) as "<" | ">" | "<>" });
       else if (id.startsWith("dyn:")) { this.host.onCommand({ k: "dyn", v: id.slice(4) as "pp" | "p" | "mp" | "mf" | "f" | "ff", ...(this.ramp !== "off" ? { ramp: true } : {}) }); if (this.ramp === "once") this.ramp = "off"; }

@@ -98,11 +98,11 @@ const curPart = (): PartDef => st.song.parts.find((p) => p.id === st.at.part) ??
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
 const ignoredFor = (role: string): Mark[] => { const sp = activePerfSpec(doc.extras, role); return ignoredArts(activeInstrument(doc.extras, role)?.engine, sp.gapSec, sp.canSwell); };
 const ignoredHere = (): Mark[] => ignoredFor(curPart().role);
-const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: "连线", swellGrow: "音内渐强 / 鼓起", swellFade: "音内渐弱" };
+const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: "连线", swellGrow: "音内渐强 / 鼓起", swellFade: "音内渐弱", inhale: "出声的换气" };
 /** 刚写上了一个台上那位不认的记号 → 明说（照样写进谱、画灰，出声不受影响）。连线 / 保持在「本来就不留缝」的人那里也是这样（连断，2026-10-08）。 */
 function discloseArt(prev: EditorState, a: Mark): void {
   if (!ignoredHere().includes(a)) return;
-  const has = (t: Token) => t.kind === "note" && (a === "slur" ? !!t.slur : a === "swellGrow" ? t.swell === "<" || t.swell === "<>" : a === "swellFade" ? t.swell === ">" : (t.art ?? []).includes(a as Art));
+  const has = (t: Token) => t.kind === "note" && (a === "slur" ? !!t.slur : a === "inhale" ? !!t.inhale : a === "swellGrow" ? t.swell === "<" || t.swell === "<>" : a === "swellFade" ? t.swell === ">" : (t.art ?? []).includes(a as Art));
   const n = (s: EditorState) => tr(s).filter(has).length;
   if (n(st) <= n(prev)) return;
   const role = curPart().role, who = activeCandidateName(doc.extras, role) || "台上这位";
@@ -567,6 +567,7 @@ const pad = new Pad(padEl, {
     const nx = apply(st, withHalf(c), performance.now());
     if (c.k === "art" && nx === st) { info(`${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
     if (c.k === "slur" && nx === st) { info("连线从一个音连到下一个音（光标前面是休止或者还没有音）"); return; }
+    if (c.k === "inhale" && nx === st) { info("出声的换气挂在一个音后面（光标前面是休止或者还没有音）"); return; }
     if (c.k === "swell" && nx === st) { info("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）"); return; }
     if (c.k === "wedge" && nx === st) { info(`${c.w === "cresc" ? "渐强" : "渐弱"}从一个音到下一个音（光标前面是休止或者还没有音）`); return; }
     const prev = st; update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
@@ -576,6 +577,7 @@ const pad = new Pad(padEl, {
     }
     if (c.k === "art") discloseArt(prev, c.a);
     if (c.k === "slur") discloseArt(prev, "slur");
+    if (c.k === "inhale") discloseArt(prev, "inhale");
     if (c.k === "swell") discloseArt(prev, c.w === ">" ? "swellFade" : "swellGrow");
     if (c.k === "dyn" || (c.k === "art" && c.a === "fp")) discloseDynOverride(prev);
   },
@@ -693,7 +695,10 @@ function showError(text: string): void { reportError(text, "error"); }   // 唯�
 //   旧路（整首离线渲染成一条 → AudioBufferSource；循环段渲染两遍；src/audio/mix.ts）已删（user「旧引擎不用留念念旧，只是placeholder，可以大刀阔斧改」）。
 const playIcon = (stop: boolean) => { $("playBtn").innerHTML = `<svg class="ico"><use href="#${stop ? "stop" : "play"}"/></svg>`; $("playBtn").classList.toggle("is-on", stop); if (!stop) progress(""); };
 /** 整首唱时给核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）；leadIn 明说（块按它摆）。 */
-const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
+/** 借元音的唱法（A/B 实验，2026-10-10 user「AB实验同意」；只在这次打开里有效、不进歌）：piper 把一个元音念成气声（团子的「つ」）时，
+ *  static = 原样（一张静态的元音样本）/ fade = A 两头交叉淡入淡出 / donor = B 借同元音那个字的整段。不是原样时进唱法的 opt（也就进了块的内容键 = 切了就重唱）。 */
+let borrowMode: "static" | "fade" | "donor" = "static";
+const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN, ...(borrowMode !== "static" ? { borrow: borrowMode } : {}) });
 /** 播放 / 试听的范围跟着视图走：本段 = 只有光标所在的纸；全部 = 整首（导出面板另选）。user 2026-10-08「为什么在本段视图下播放还是播放全部了？」 */
 const playSong = (): Song => (viewScope === "segment" ? songOnlyPaper(st.song, st.at.paper) : st.song);
 /** 光标所在声部压平后的一串 + 速度表（找人视图「听开头」、测试钩子用）。 */
@@ -1365,6 +1370,8 @@ function marksTableHtml(role: string, eng: string): string {
     ["保持", "tenuto", "这个音不留缝"],
     ["连线", "slur", "连到下一个音、不留缝"],
     ["呼吸", "breath", eng === "tsukuyomi" ? singTxt("breath") : `前一个音收短 ${ms(sp.breathSec)}（最多 ${pct(sp.breathShare)}）`],
+    ["出声的换气（轻吸 / 深吸）", "inhale", eng === "tsukuyomi" ? "换气的空当里一声吸气（按下一个字的元音塑形，比它轻约 28 dB；深吸 = 空当长一点、响 4 dB）" : "做不到：这位只断开，不出吸气声"],
+    ["气声（× 符头）", "whisper", eng === "tsukuyomi" ? "这个字不唱音高：用念的时候的气声（谱包络照旧、声带不振），再轻 6 dB" : "做不到：这位只按音高出声"],
     ["音和音之间", "", eng === "tsukuyomi" ? "连着唱" : `${ms(sp.gapSec)}（最多 ${pct(sp.gapShare)}）`],
   ];
   return `<details class="ip-marks"><summary>记号怎么演（这位自己的配置，跟着演奏者存进歌）</summary><table>${rows.map(([k, m, v]) => `<tr${gray(m)}><th>${k}</th><td>${esc(v)}${m && ign.includes(m as Mark) ? `<span class="ign-tag">不认</span>` : ""}</td></tr>`).join("")}</table></details>`;
@@ -2113,6 +2120,9 @@ function drawInst(): void {
     // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
     (eng === "tsukuyomi" ? ((sc) => row("分段唱", (([["phrase", "每句", "在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句"], ["sheet", "每张纸", "一张纸一段"], ["whole", "一整首", "一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）"]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),
       sc === "whole" ? "一口气唱完：句和句之间唱法最连贯，但长歌在 iPad 上可能内存不够" : "分段唱：一段唱完就放掉，重复的段 / 没改的句子直接拿上次的；段和段之间切在休止 / 纸界，整首最后统一音量"))(activeSingChunk(doc.extras, role)) : "") +
+    // 借元音（A/B 实验）：只在这次打开里有效（不进歌、不进撤销）；切了 = 用到的句子重唱
+    (eng === "tsukuyomi" ? row("借元音（实验）", (([["static", "原样", "一张静态的元音样本（以前的唱法）"], ["fade", "A 两头过渡", "借来的样本在元音两头和她自己念的那几帧交叉淡入淡出（40 ms）"], ["donor", "B 借整段", "借同一句里同元音那个字的整段（起音 / 稳态 / 收尾），按这个音的长度拉伸"]] as const)).map(([v, l, t]) => chip(`borrow:${v}`, l, borrowMode === v, t)).join(""),
+      "她把一个元音念成气声时（团子的「つ」），唱的时候从别的字借一个干净的元音。三种借法切着听同一句；只在这次打开里有效，不进歌") : "") +
     (eng === "unknown" ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
   instEl.innerHTML =
     `<div class="ip-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="ip-title">乐器</span>` +
@@ -2159,6 +2169,7 @@ instEl.addEventListener("click", (e) => {
   else if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4)))); updateExtras(withGapSec(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」音和音之间 ${Math.round(next * 1000)} ms` }, "gap"); }
   else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d)); updateExtras(withCalibration(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
   else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
+  else if (v.startsWith("borrow:")) { borrowMode = v.slice(7) as typeof borrowMode; schedulePlaybackRefresh(); schedulePrewarm(); info(`借元音：${borrowMode === "static" ? "原样" : borrowMode === "fade" ? "A 两头过渡" : "B 借整段"}（用到的句子会重唱）`); }
   else if (v.startsWith("chunk:")) { const c = v.slice(6) as "phrase" | "sheet" | "whole"; updateExtras(withSingChunk(doc.extras, role, c, st.song.hum), { kind: "lounge", label: `「${rn}」分段唱：${c === "phrase" ? "每句" : c === "sheet" ? "每张纸" : "一整首"}` }); }
   else return;
   drawInst();

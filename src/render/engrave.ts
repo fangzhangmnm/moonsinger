@@ -115,7 +115,7 @@ const SPACING: Record<Density, { staffAbove: number; rowH: number; rowHNoLyric: 
 };
 const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;
 // 修的字形（SMuFL；宽 / 高 = staff space，浏览器里量的 Bravura：重音 1.36 × 0.99、跳音点 0.28、保持线 1.35 × 0.17）。Above 的从基线往上长，Below 的往下长
-const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp" | "ghost">, { above: string; below: string; w: number; h: number }> = {
+const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp" | "ghost" | "whisper">, { above: string; below: string; w: number; h: number }> = {
   stress: { above: "\u{E4B6}", below: "\u{E4B7}", w: 1.0, h: 1.0 },     // 次重音（2026-10-08 深夜；宽高 = canvas 量的 Bravura 墨迹）
   unstress: { above: "\u{E4B8}", below: "\u{E4B9}", w: 1.6, h: 0.9 },   // 弱化
   accent: { above: "\u{E4A0}", below: "\u{E4A1}", w: 1.36, h: 0.99 },
@@ -175,6 +175,8 @@ interface Chunk {
   pitch: Pitch | null; ghost: boolean; tie: boolean; lyric: string | null; hyph: boolean; inBar: number; beat: number; acc: number | null; w: number; accW: number;
   pitches: Pitch[]; accs: (number | null)[];   // 叠音：全部符头（从高到低，第一个 = pitch）+ 各自的临时记号
   art: Art[]; breath: boolean;                 // 修：第一段画跳音 / 重音 / 保持，最后一段后面画呼吸（2026-10-08）
+  inhale?: "soft" | "big";                     // 呼吸出声：逗号后面写「吸」/「深吸」（2026-10-10）
+  whisper?: boolean;                           // 气声：这个音（拆开的每一段）画 × 符头（2026-10-10）
   x: number; system: number; tick: number; staff: Staff;   // staff = 大谱表里在上还是下（单谱表 = 1）
 }
 interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean; repeat?: Repeat; times?: number }   // repeat = 反复小节线（Bravura 的反复记号字形，比细线宽）   // auto = 按拍号自动画的（index = -1，不是 token）
@@ -266,13 +268,13 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
         if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyricShow(lyric)) / o.sp + (nt.hyph ? 1.4 : 0.7));
         const u: Chunk = { kind: "chunk", index: i, j, last: false, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
           ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs,
-          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [], breath: false };
+          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [], breath: false, ...(isNote && nt.art?.includes("whisper") ? { whisper: true } : {}) };
         units.push(u); lastChunk = u;
         off += c.ticks; j++;
       }
       inBar += piece; left -= piece; tick += piece;
     }
-    if (lastChunk) { lastChunk.last = true; if (isNote && nt.art?.includes("breath")) { lastChunk.breath = true; lastChunk.w += 0.8; } }   // 呼吸逗号画在这个音后面：留一点地方
+    if (lastChunk) { lastChunk.last = true; if (isNote && nt.art?.includes("breath")) { lastChunk.breath = true; lastChunk.w += 0.8; if (nt.inhale) { lastChunk.inhale = nt.inhale; lastChunk.w += nt.inhale === "big" ? 2.1 : 1.2; } } }   // 出声的换气：逗号后面的字也留地方   // 呼吸逗号画在这个音后面：留一点地方
   });
   flushFull();   // 曲尾正好写满：画上这一条小节线
   if (o.caret !== null && o.caret >= tokens.length) pushHead();
@@ -747,7 +749,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const nhX = (c: Chunk) => P(c.x + c.accW + 0.35);
       // × 符头：这个声部台上那位固定敲一个键（鼓件 / 音效固定原速）——谱上写的音高照留、只是不拿来出声，画成 × 让人一眼看出来（user 2026-10-08「披露就用x」）
       const xHead = !!q.p.xHead;
-      const nhW = (c: Chunk) => P(xHead ? (c.base >= WHOLE ? W.noteheadXWhole : c.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack) : c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+      // 气声（2026-10-10，user「x同意，做支持」）：这个音画 × 符头（念白 / 说唱的标准写法）——和上面的 × 同一个意思：谱上的音高不拿来出声
+      const xOf = (c: Chunk) => xHead || !!c.whisper;
+      const nhW = (c: Chunk) => P(xOf(c) ? (c.base >= WHOLE ? W.noteheadXWhole : c.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack) : c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+      const whisperMute = (q.p.ignores ?? []).includes("whisper");   // 台上这位做不到气声：× 照画、画灰
       const clsOf = (c: Chunk) => [c.ghost ? "ghost" : "", c.index >= 0 && c.index === curIndex ? "cur" : "", c.index >= 0 && inSel(c.index) ? "sel" : ""].filter(Boolean).join(" ") || undefined;
       const partLyrics: LyricHit[] = [];
       const drawChunk = (c: Chunk) => {
@@ -772,12 +777,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const ledgers = new Set<number>();
         for (const dd of ds) { for (let L = 28; L >= dd; L -= 2) ledgers.add(L); for (let L = 40; L <= dd; L += 2) ledgers.add(L); }
         for (const L of ledgers) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(row, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(row, L), w: P(ENGRAVE.ledger), cls: "ledger" });
-        const ng = xHead ? (c.base >= WHOLE ? GLYPH.noteheadXWhole : c.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack) : c.base >= WHOLE ? GLYPH.noteheadWhole : c.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
+        const ng = xOf(c) ? (c.base >= WHOLE ? GLYPH.noteheadXWhole : c.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack) : c.base >= WHOLE ? GLYPH.noteheadWhole : c.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
         let shifted = false;
         ds.forEach((dd, k) => {
           const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted; shifted = second;   // 二度：下面那个符头往右错开（连着的二度交错）
           const mute = k > 0 && !!q.p.mono;   // 单声乐器的声部：下面的音灰掉、只唱最上面（user「叠音声部换单声乐器时下方音数据结构上保留，但是变灰」）
-          prims.push({ t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: ng, cls: ["note", cls ?? "", mute ? "chord-mute" : "", focused && o.span && c.index >= o.span.from && c.index < o.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
+          prims.push({ t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: ng, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c.whisper && whisperMute ? "art-mute" : "", focused && o.span && c.index >= o.span.from && c.index < o.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c.art.includes("ghost")) {   // 幽灵音 = 符头两边一对括号（SMuFL noteheadParenthesisLeft / Right；墨迹按 canvas 量的）
             const hx = second ? x0 + nhW(c) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
             prims.push({ t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\u{E0F5}", cls: pc });
@@ -963,6 +968,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         for (const a of (["sfz", "fp"] as const).filter((x) => c.art.includes(x)))
           prims.push({ t: "glyph", x: nhX(c) - P(0.2), y: noteDynYAt.get(rowOf(c.system, r, 0)) ?? yOf(RW(c), TOP_LINE + 2.4), ch: a === "sfz" ? "\u{E539}" : "\u{E534}", cls: ["dyn", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         if (c.breath) prims.push({ t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+        // 出声的换气：逗号后面一个小字「吸」/「深吸」（出版谱的做法 = 逗号 + 文字；没有通用的单个记号）；做不到的人画灰
+        if (c.breath && c.inhale) prims.push({ t: "text", x: nhX(c) + nhW(c) + P(1.35), y: yOf(row, TOP_LINE + 1) + P(0.45), s: c.inhale === "big" ? "深吸" : "吸", cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: P(1.15), anchor: "start" });
       }
       // 8. 连音线：同一个 token 拆开的几段之间 + 数据里的 tie（连着前一个音）。跨行 = 两半：这一行从音到行尾、下一行从行头到音
       //   （2026-10-08 Opus 5.5，user「跨行的连音符显示不正常」——以前跨行的整条不画）

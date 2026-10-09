@@ -558,6 +558,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 
 /* 句（换气记号）、隐藏的纸 */
 .staff-svg .phrase-mark { fill: var(--muted); }
+.staff-svg .breath-label { fill: currentColor; }   /* 出声的换气：逗号后面的「吸」/「深吸」（2026-10-10） */
 .staff-svg .part-stub.hidden-note { fill: var(--muted); }   /* 灰字（user「红字：应该用灰字」） */
 
 /* 叠音（polyphony，2026-10-08）：单声乐器的声部里下面的音灰掉 */

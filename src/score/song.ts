@@ -34,7 +34,9 @@ export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
 /** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean; swell?: Swell }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean; swell?: Swell; inhale?: "soft" | "big" }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+//   inhale（2026-10-10，Claude Opus 5.5；user「wishlist里面还有吸气声，也一起支持下…但是不应该每个逗号都大喘气」→ AI 提「逗号默认静默、要出声的处处明写」，user「气声同意」）
+//     = 这个音后面的呼吸（art 里的 breath）换气时听得见：soft = 轻吸、big = 深吸。只跟着 breath 有意义（去掉呼吸 = 一起去掉）；MusicXML <other-articulation>inhale / inhale-big。
 //   slur（2026-10-08 连断，Claude Opus 5.5）= 连线：这个音连到下一个音（不留缝）；一串连着的 = 一条连线。MusicXML <slur type="start/stop"> 原生。
 //     user「连和断，嗯就是我想的，能做吗」「连断 预设 都同意」：底色归演奏者（articulation.gapSec），谱上的连线只改局部。
 //   swell（2026-10-08，Claude Opus 5.5；user「一个音里面的发展…要要我都要」）= 音内的力度起伏：< 越来越强、> 越来越弱（锯齿）、<> 鼓起来再落（messa di voce）；
@@ -65,15 +67,16 @@ export type MarkTok = KeyTok | TimeTok | TempoTok;
  *  出声：跳音 = 截短（候选的 articulation.staccatoGate）、重音 = 音头加 accentDb、保持 = 满长；呼吸 = 月读在下一个字前换一口气（唱法核心的「v」），乐器不受影响。 */
 export type Swell = "<" | ">" | "<>";
 export const SWELL_NAME: Record<Swell, string> = { "<": "音内渐强", ">": "音内渐弱", "<>": "音内鼓起" };
-export type Art = "staccato" | "accent" | "marcato" | "sfz" | "fp" | "tenuto" | "breath" | "stress" | "unstress" | "ghost";   // marcato = 强音（^，比重音更重；MusicXML <strong-accent/>；2026-10-08 加）
+export type Art = "staccato" | "accent" | "marcato" | "sfz" | "fp" | "tenuto" | "breath" | "stress" | "unstress" | "ghost" | "whisper";   // whisper = 气声（× 符头：这个字不唱音高；2026-10-10 Opus 5.5，user「x同意，做支持」）
+   // marcato = 强音（^，比重音更重；MusicXML <strong-accent/>；2026-10-08 加）
 //   stress = 次重音（比重音轻；MusicXML <stress/>）、unstress = 弱化（<unstress/>）、ghost = 幽灵音（括号符头，很轻；<notehead parentheses="yes">）——
 //   2026-10-08 深夜 Opus 5.5，user「重音能不能有不同的阶梯（给一个比这个轻的次重音，想一下四拍子的强弱次强弱」「都做」「各种弱化也做」「音的强度只能有一种，但是可能有很多级」：
 //   一个音的「强度」只有一个、有很多级：幽灵音 < 弱化 < （不写）< 次重音 < 重音 < 强音（= 超级重音，MusicXML 叫 strong-accent），突强 / 强后即弱是带力度形状的那两个。
 //   sfz = 突强、fp = 强后即弱（2026-10-08，user「音头先冲一下，再回落…要，要，我都要」）：音头的力度形状，MusicXML <notations><dynamics>；
 //   音头那一组（重音 / 强音 / sfz / fp）互斥——开一个就关掉别的（ATTACKS）。
-export const ARTS: readonly Art[] = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost"];
+export const ARTS: readonly Art[] = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost", "whisper"];
 export const ATTACKS: readonly Art[] = ["ghost", "unstress", "stress", "accent", "marcato", "sfz", "fp"];   // 一个音的强度只有一种（互斥）
-export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", marcato: "强音", sfz: "突强", fp: "强后即弱", tenuto: "保持", breath: "呼吸", stress: "次重音", unstress: "弱化", ghost: "幽灵音" };
+export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", marcato: "强音", sfz: "突强", fp: "强后即弱", tenuto: "保持", breath: "呼吸", stress: "次重音", unstress: "弱化", ghost: "幽灵音", whisper: "气声" };
 /** 力度 = 一个记号 token（不占时值，管到下一个力度为止；一首没写 = mf）。MusicXML <direction><dynamics>。出声 = 候选的 dynamicsDb（mf = 0 dB）。 */
 export type Dyn = "pp" | "p" | "mp" | "mf" | "f" | "ff";
 export const DYNS: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
@@ -432,8 +435,9 @@ export const artOf = (t: NoteTok): Art[] => t.art ?? [];
 export function withArt(t: NoteTok, a: Art, on: boolean): NoteTok {
   const set = new Set(artOf(t)); if (on) { if (ATTACKS.includes(a)) for (const x of ATTACKS) set.delete(x); set.add(a); } else set.delete(a);   // 音头那一组互斥
   const art = ARTS.filter((x) => set.has(x));
-  if (art.length) return { ...t, art };
-  const { art: _a, ...rest } = t; return rest;
+  const base = !set.has("breath") && t.inhale ? (({ inhale: _i, ...r }) => r)(t) : t;   // 呼吸去掉 = 出声的换气一起去掉
+  if (art.length) return { ...base, art };
+  const { art: _a, ...rest } = base; return rest;
 }
 /** 选区里的音的下标。 */
 const selNoteIdx = (st: EditorState): number[] => { if (!st.sel) return []; const out: number[] = []; for (let i = st.sel.from; i < st.sel.to; i++) if (tr(st)[i]?.kind === "note") out.push(i); return out; };
@@ -465,6 +469,26 @@ export function toggleArtBefore(st: EditorState, a: Art): EditorState | null {
   return null;
 }
 export const toggleBreath = (st: EditorState): EditorState | null => toggleArtBefore(st, "breath");
+/** 出声的换气（轻吸 / 深吸）：给光标前那个音（有选区 = 选中的音）加一个听得见的呼吸——没有呼吸记号就连逗号一起加上；
+ *  已经是这一档 = 整个呼吸去掉（同「再点 = 去掉」）；是另一档 = 换档。前面是休止 / 没有音 = null。 */
+export function toggleInhaleBefore(st: EditorState, level: "soft" | "big"): EditorState | null {
+  const set = (t: NoteTok, on: boolean): NoteTok => (on ? { ...withArt(t, "breath", true), inhale: level } : withArt(t, "breath", false));
+  if (st.sel) {
+    const idx = selNoteIdx(st); if (!idx.length) return null;
+    const on = !idx.every((i) => (tr(st)[i] as NoteTok).inhale === level), nt = tr(st).slice();
+    for (const i of idx) nt[i] = set(nt[i] as NoteTok, on);
+    return next(st, nt);
+  }
+  const toks = tr(st);
+  for (let i = st.caret - 1; i >= headLen(toks); i--) {
+    const t = toks[i];
+    if (t.kind === "rest") return null;
+    if (t.kind !== "note") continue;
+    const nt = toks.slice(); nt[i] = set(t, t.inhale !== level);
+    return next(st, nt);
+  }
+  return null;
+}
 /** 连线（选区）：选中的音连起来——前 n−1 个标「连到下一个」；只选了一个 = 它连到下一个音。都连着 = 都去掉。没选音 = 原样。 */
 export function toggleSlurSel(st: EditorState): EditorState {
   const idx = selNoteIdx(st); if (!idx.length) return st;
@@ -1016,7 +1040,7 @@ export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | 
 }
 /** 符号模式的退格（2026-10-08，user「退格只删符号或者没符号的时候退一步，不删音符」）：
  *  ① 光标前面紧挨着的不占时值的记号（力度 / 渐强渐弱 / 句号 / 中途的调号拍号速度）→ 删最后一个；
- *  ② 没有 = 光标前那个音身上的装饰，一次一个、从最外层开始：音内起伏 → 音头（强音 / 重音 / 突强 / 强后即弱）→ 保持 → 跳音 → 呼吸 → 连线；
+ *  ② 没有 = 光标前那个音身上的装饰，一次一个、从最外层开始：音内起伏 → 音头（强音 / 重音 / 突强 / 强后即弱）→ 保持 → 跳音 → 气声 → 出声的换气 → 呼吸 → 连线；
  *  ③ 都没有 = 光标往回一步。永远不删音。 */
 export function symBackspace(st: EditorState): EditorState {
   if (st.sel) return st;
@@ -1027,7 +1051,9 @@ export function symBackspace(st: EditorState): EditorState {
     const nt = toks.slice(), art = artOf(t);
     const strip = (k: "swell" | "slur") => { const { [k]: _x, ...rest } = t; return rest as NoteTok; };
     if (t.swell) { nt[i] = strip("swell"); return next(st, nt); }
-    for (const a of ["marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "breath"] as Art[]) if (art.includes(a)) { nt[i] = withArt(t, a, false); return next(st, nt); }
+    for (const a of ["marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "whisper"] as Art[]) if (art.includes(a)) { nt[i] = withArt(t, a, false); return next(st, nt); }
+    if (t.inhale) { const { inhale: _i, ...rest } = t; nt[i] = rest; return next(st, nt); }   // 出声的换气 → 变回静默的呼吸，再退一下才去掉逗号
+    if (art.includes("breath")) { nt[i] = withArt(t, "breath", false); return next(st, nt); }
     if (t.slur) { nt[i] = strip("slur"); return next(st, nt); }
   }
   return moveCaret(st, -1);

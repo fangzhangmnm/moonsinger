@@ -43,7 +43,10 @@ export interface ScoreExtV2 {
    *  <repeat direction="forward|backward" times>（纸头的 |: 不开空小节）；房子 = <barline location="left"><ending number="1, 2" type="start">，被 :| 收 = stop、最后一个 = discontinue；
    *  Segno / Coda = <direction><direction-type><segno|coda id="nav.<种类>.<token id>"/></direction-type><sound segno|coda/>；Fine / To Coda / D.C.… / D.S.… = <words id="nav.…">字</words> +
    *  <sound fine | tocoda | dacapo | dalsegno>。纸的正本里是记号；派生的压平件 score.musicxml 已经按结构展开（没有这些记号）。
-   *  老版本的 app 读到它们 = 当普通的发夹 / 文字忽略（风格记号会丢——老版本本来就不会放拍子轻重）。 */
+   *  老版本的 app 读到它们 = 当普通的发夹 / 文字忽略（风格记号会丢——老版本本来就不会放拍子轻重）。
+   *  气声 / 出声的换气（2026-10-10 Opus 5.5；不升版本：MusicXML 原生）：气声 = <notehead>x</notehead>（和幽灵音一起 = <notehead parentheses="yes">x</notehead>；
+   *  别家谱的 × 符头读进来也是气声——乐器不认、画灰，不影响出声）；出声的换气 = <breath-mark/> 后面紧跟 <other-articulation>inhale | inhale-big</other-articulation>
+   *  （别的软件照样认得是换气；老版本的 app 读到 = 「不认的演奏法」数出来报，呼吸照旧）。 */
   papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[]; hidden?: boolean; phrases?: Record<string, number[]>;
     /** 音内的力度起伏（2026-10-08 加，可选；MusicXML 里表达不了音内的发夹）：声部 id → 音的 id → "<" / ">" / "<>"。 */
     swells?: Record<string, Record<string, "<" | ">" | "<>">> }[];   // hidden（2026-10-08 加，可选）= 这张纸不放、不进压平件；phrases（同日加，可选）= 声部 id → 句号跟在哪些 token（id）后面（句号不算打谱符号，不进 MusicXML）

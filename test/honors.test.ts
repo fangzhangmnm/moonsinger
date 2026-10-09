@@ -18,6 +18,7 @@ function two(mark?: Mark): EditorState {
   if (!mark) return st;
   const i = tr(st).findIndex((t) => t.kind === "note");
   if (mark === "swellGrow" || mark === "swellFade") { const toks = tr(st).slice(); toks[i] = { ...(toks[i] as NoteTok), swell: mark === "swellGrow" ? "<" : ">" }; return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }
+  if (mark === "inhale") { const toks = tr(st).slice(); toks[i] = { ...(toks[i] as NoteTok), art: ["breath"], inhale: "soft" }; return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }   // 出声的换气 = 呼吸 + inhale（比的是「只有呼吸」）
   return mark === "slur" ? toggleSlurSel(select(st, i, i + 1)) : toggleArtSel(select(st, i, i + 1), mark);
 }
 const first = (st: EditorState) => tr(st).find((t) => t.kind === "note") as NoteTok;
@@ -34,8 +35,8 @@ const heard = (eng: string, gap: number) => (st: EditorState) => {
 describe("谁认哪些记号（不认 = 画灰 + 明说）", () => {
   it("表：月读不认保持 / 连线（唱法核心还没接）；元音版 / 乐器底色不留缝时连线 / 保持也算不认；没人上场 = 不逐个画灰", () => {
     deq(ignoredArts("tsukuyomi"), ["tenuto", "slur"]); deq(ignoredArts("tsukuyomi", 0.04), ["tenuto", "slur"]);
-    deq(ignoredArts("vowel-sampler"), ["tenuto", "slur"]); deq(ignoredArts("vowel-sampler", 0.04), []);
-    deq(ignoredArts("soundfont"), ["tenuto", "slur"]); deq(ignoredArts("soundfont", 0.02), []);
+    deq(ignoredArts("vowel-sampler"), ["tenuto", "slur", "whisper", "inhale"]); deq(ignoredArts("vowel-sampler", 0.04), ["whisper", "inhale"]);   // 气声 / 出声的换气只有月读做得到（2026-10-10）
+    deq(ignoredArts("soundfont"), ["tenuto", "slur", "whisper", "inhale"]); deq(ignoredArts("soundfont", 0.02), ["whisper", "inhale"]);
     deq(ignoredArts("unknown"), []); deq(ignoredArts(null), []);
   });
   for (const eng of ["tsukuyomi", "vowel-sampler", "soundfont"] as const) {
@@ -43,7 +44,7 @@ describe("谁认哪些记号（不认 = 画灰 + 明说）", () => {
       it(`${eng}（底色 ${gap * 1000} ms）：表说不认的 = 出声不变，表说认的 = 出声变了`, () => {
         const h = heard(eng, gap), plain = h(two()), ign = ignoredArts(eng, gap);
         for (const m of ALL_MARKS) {
-          const changed = h(two(m)) !== plain;
+          const changed = h(two(m)) !== (m === "inhale" ? h(two("breath")) : plain);   // 出声的换气：和只有呼吸比
           if (ign.includes(m)) assert(!changed, `${eng} 表上不认 ${m}，可出声变了（表该改成认）`);
           else assert(changed, `${eng} 表上认 ${m}，可出声没变（不认就要画灰 + 明说）`);
         }
@@ -87,7 +88,7 @@ describe("力度 = MIDI velocity（SoundFont；2026-10-08 user「应该send的�
 
 describe("音内的起伏：按下去就自然衰减的乐器（canSwell = false）", () => {
   it("< / <> 不认（画灰、明说）、出声不变；> 照做", () => {
-    deq(ignoredArts("soundfont", 0.02, false), ["swellGrow"]);
+    deq(ignoredArts("soundfont", 0.02, false), ["swellGrow", "whisper", "inhale"]);   // 气声 / 出声的换气乐器本来就不认（2026-10-10）
     const piano = { ...sfSpec(0.02), canSwell: false }, h = (st: EditorState) => JSON.stringify(gainSegments(tr(st), undefined, piano));
     eq(h(two("swellGrow")), h(two()), "< 做不到 = 出声不变");
     assert(h(two("swellFade")) !== h(two()), "> 照做");

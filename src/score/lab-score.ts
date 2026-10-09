@@ -13,7 +13,7 @@ import { type Token, type Hum, type TempoMap, TPQ, effectivePitch, isTimed, time
 import { MELISMA_MARK, ELISION, isSmallKana, isSokuon } from "./lyrics.ts";
 import { SING_MARKS, type SingMark } from "../format/performance.ts";
 
-export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean; hyph?: boolean; before?: "^" | "v" | "O" }   // before = 这个字前面的记号（唱法核心：v = 换一口气，从前一个音末尾偷时间）   // hyph = 英文：这个词没完（下一条接着拼）   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
+export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean; hyph?: boolean; before?: "^" | "v" | "O"; whisper?: boolean; inhale?: boolean }   // whisper = 这个字不唱音高（气声，× 符头）；inhale = 这个字前面的换气听得见（2026-10-10 Opus 5.5）   // before = 这个字前面的记号（唱法核心：v = 换一口气，从前一个音末尾偷时间）   // hyph = 英文：这个词没完（下一条接着拼）   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
 export type SingLang = "ja" | "zh" | "en";
 export interface LabScore { SCORE: LabEntry[]; TEXT: string; TEMPO_QUARTER: number; LANG: SingLang }
 
@@ -34,8 +34,14 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
   //   at = this：这个字自己前面；at = next：下一个字前面。同一个字前面几个记号撞了：换气（v / O 本来就带空当）优先于 ^。
   //   拖着的同一个字（连音线 / 拖腔）前面放不了；跳到「下一个字」的那种，后面紧跟着的还是同一个字 = 放不了（顿不开）。
   const pick = (a: "^" | "v" | "O" | null, b: "^" | "v" | "O") => (!a ? b : a === "^" ? b : a);
-  let nextMark: "^" | "v" | "O" | null = null, thisMark: "^" | "v" | "O" | null = null;
-  const push = (e: LabEntry) => { const m = thisMark && nextMark ? pick(thisMark, nextMark) : thisMark ?? nextMark; if (m) e.before = m; nextMark = thisMark = null; out.push(e); };
+  let nextMark: "^" | "v" | "O" | null = null, thisMark: "^" | "v" | "O" | null = null, nextInhale = false;
+  const push = (e: LabEntry) => { const m = thisMark && nextMark ? pick(thisMark, nextMark) : thisMark ?? nextMark; if (m) e.before = m; if (nextInhale && m && m !== "^") e.inhale = true; nextMark = thisMark = null; nextInhale = false; out.push(e); };
+  // 出声的换气（2026-10-10）：呼吸记号带 inhale = 下一个字前面的换气听得见（深吸 = 大口 O）。只认跟着呼吸的。
+  const takeInhale = (t: Token) => { if (t.kind !== "note" || !t.inhale || !artOf(t).includes("breath")) return; nextMark = t.inhale === "big" ? "O" : pick(nextMark, "v"); nextInhale = true; };
+  if (range) {   // 分段唱：这一段第一个字前面那口气写在上一段最后一个音上（段界多半就切在呼吸 + 休止处）——只带出声的换气（别的字前记号在第一个字上本来就不起作用，带上只会白白换掉旧的块键）
+    for (let j = range[0] - 1; j >= 0; j--) { const u = tokens[j]; if (u.kind !== "note") continue; takeInhale(u); break; }   // 隔着休止往回找上一个音（整首换算时记号本来就隔着休止带到下一个字）
+    if (!nextInhale) nextMark = null;
+  }
   const nextTimed = (i: number) => { for (let j = i + 1; j < tokens.length; j++) { const u = tokens[j]; if (isTimed(u)) return u; } return null; };
   tokens.forEach((t, i) => {
     if (!isTimed(t) || !inRange(i)) return;
@@ -43,7 +49,7 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
     thisMark = null;
     if (t.kind === "note" && !held(t)) for (const a of arts) { const s = sing[a]; if (s && s.at === "this") thisMark = pick(thisMark, s.mark); }
     one(t, i); thisMark = null;
-    if (t.kind === "note" && !held(nextTimed(i))) for (const a of arts) { const s = sing[a]; if (s && s.at === "next") nextMark = pick(nextMark, s.mark); }
+    if (t.kind === "note" && !held(nextTimed(i))) { for (const a of arts) { const s = sing[a]; if (s && s.at === "next") nextMark = pick(nextMark, s.mark); } takeInhale(t); }
   });
   function one(t: Token & { dur: number }, i: number): void {
     const n0 = out.length; one0(t, i);
@@ -58,7 +64,8 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
     // 拖腔（ー / ~）和连音线连着的音（tie）都并进上一个音节：同一个字唱过几个音 / 同一个音连下去
     if ((t.lyric === MELISMA_MARK || t.tie) && last && !last.rest) { last.notes.push([midi, len]); return; }
     const lyric = t.lyric && t.lyric !== MELISMA_MARK ? t.lyric : null;
-    if (!lyric) { push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true }); return; }
+    const wh = artOf(t).includes("whisper") ? { whisper: true } : {};   // 气声：这个音上唱的每个字都不唱音高
+    if (!lyric) { push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true, ...wh }); return; }
     // 小字自己占了一个音（っ / ゃ…；输入法分两次上屏、或者人就这么写）：唱法核心按读音数音节，っ 不是唱出来的音节、ゃ 不单独成拍——
     //   不并 = 「score 比 text 多几个音节」整段不出声（2026-10-08 user 报「90 sung syllables in the text, 92 in the score」：ふって / でっかい 的 っ 各占了一个音）。
     //   っ = 前一个音节后面停这么长（一下顿、不换气：下一个字前面「^」）；ゃ… = 前一个音节拖过这个音。前面没有音节（开头）= 当休止。
@@ -69,7 +76,7 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
     }
     // 一个音上几个音节（「+」连着的，如 だ‿ん）：这个音平分给它们，一个音节一条（user 点头「唱的时候把这个音的时值切成几段，先按平均分」）；连着的小字并进前一个（ふ‿っ = ふっ）
     const parts = lyric.split(ELISION).filter(Boolean).reduce<string[]>((a, k) => (a.length && isSmallKana(k) ? [...a.slice(0, -1), a[a.length - 1] + k] : [...a, k]), []);
-    parts.forEach((kana, k) => push({ kana, notes: [[midi, len / parts.length]], ...(lang === "en" && t.hyph && k === parts.length - 1 ? { hyph: true } : {}) }));
+    parts.forEach((kana, k) => push({ kana, notes: [[midi, len / parts.length]], ...(lang === "en" && t.hyph && k === parts.length - 1 ? { hyph: true } : {}), ...wh }));
   }
   const TEXT = lang === "en"   // 英文：音节按 hyph 拼回单词、空格隔开（核心自己从 SCORE 拼词，TEXT 只给人看 / 日志）
     ? out.map((e) => e.kana + (e.hyph ? "" : " ")).join("").trim()

@@ -96,7 +96,7 @@ const wedgeXml = (type: "crescendo" | "diminuendo" | "stop", extra = "") => `<di
 /** 渐到（2026-10-08 深夜 Opus 5.5）：写成从上一个力度记号起的虚线 <wedge line-type="dashed">（别的软件照样渐变、照样画虚线），id 以 ramp- 开头 = 我们自己读回来时认出它是渐到、不变成手写的渐强渐弱。 */
 const RAMP_ID = "ramp-";
 const DYN_ORDER: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
-const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "" };   // ghost = 括号符头（<notehead parentheses="yes">），不在 <articulations> 里   // sfz / fp 写在 <notations><dynamics> 里
+const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "" };   // whisper = × 符头（<notehead>x</notehead>），同幽灵音不在 <articulations> 里   // ghost = 括号符头（<notehead parentheses="yes">），不在 <articulations> 里   // sfz / fp 写在 <notations><dynamics> 里
 const NOTE_DYN: readonly Art[] = ["sfz", "fp"];
 /** 别家谱里音上（或音前）的力度形状 → 我们的两个：突强一族 / 强后即弱一族。 */
 const XML_NOTE_DYN: Record<string, Art> = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
@@ -223,14 +223,17 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       // 元素顺序照 MusicXML 4.0：type / dot / time-modification 之后才是 staff，再后面 notations / lyric（v0.6.8 之前 staff 写在 type 前面）
       const typeXml = ty ? `<type>${ty.type}</type>` + "<dot/>".repeat(ty.dots) + (ty.tuplet ? `<time-modification><actual-notes>${ty.tuplet[0]}</actual-notes><normal-notes>${ty.tuplet[1]}</normal-notes></time-modification>` : "") : "";
       const staffXml = staves === 2 ? `<staff>${staffs[i]}</staff>` : "";
-      const headXml = t.kind === "note" && (t.art ?? []).includes("ghost") ? `<notehead parentheses="yes">normal</notehead>` : "";   // 幽灵音 = 括号符头（顺序：stem 之后、staff 之前）
+      const ghostH = t.kind === "note" && (t.art ?? []).includes("ghost"), whisperH = t.kind === "note" && (t.art ?? []).includes("whisper");
+      const headXml = ghostH || whisperH ? `<notehead${ghostH ? ` parentheses="yes"` : ""}>${whisperH ? "x" : "normal"}</notehead>` : "";   // 幽灵音 = 括号符头、气声 = × 符头（念白 / 说唱 / Sprechstimme 的标准写法；顺序：stem 之后、staff 之前）
       x += typeXml + headXml + staffXml;
       const chordXml: string[] = [];
       if (t.kind === "note") {
         const tieIn = firstPiece ? !!t.tie : true, tieOn = last ? tieOut : true;
         // 演奏法：跳音 / 重音 / 保持挂在第一段，呼吸挂在最后一段（音被小节线拆开时）
-        const arts = (t.art ?? []).filter((a) => a !== "ghost" && (a === "breath" ? last : firstPiece)), noteDyn = arts.filter((a) => NOTE_DYN.includes(a)), artic = arts.filter((a) => !NOTE_DYN.includes(a));
-        const artXml = (artic.length ? `<articulations>${artic.map((a) => `<${ART_XML[a]}/>`).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a) => `<${ART_XML[a]}/>`).join("")}</dynamics>` : "");
+        const arts = (t.art ?? []).filter((a) => a !== "ghost" && a !== "whisper" && (a === "breath" ? last : firstPiece)), noteDyn = arts.filter((a) => NOTE_DYN.includes(a)), artic = arts.filter((a) => !NOTE_DYN.includes(a));
+        // 出声的换气（NoteTok.inhale）= 呼吸记号旁边一个 <other-articulation>（别的软件照样认得是换气，只是不知道要出声）
+        const inhaleXml = (a: Art) => (a === "breath" && t.inhale ? `<other-articulation>${t.inhale === "big" ? "inhale-big" : "inhale"}</other-articulation>` : "");
+        const artXml = (artic.length ? `<articulations>${artic.map((a) => `<${ART_XML[a]}/>` + inhaleXml(a)).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a) => `<${ART_XML[a]}/>`).join("")}</dynamics>` : "");
         const slurXml = firstPiece ? slurs(i, t) : "";
         if (tieIn || tieOn || artXml || slurXml) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}</notations>`;
         // 叠音：跟在后面的 <chord/> 音（同时值、同连音线；歌词、演奏法只在第一个上）
@@ -317,13 +320,18 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   let pendingRamp = false;   // 读到我们写的渐到虚线 wedge（id ramp-…）= 下一个力度记号是渐到
   const addArts = (tok: NoteTok, note: El) => {
     const set = new Set(tok.art ?? []);
-    for (const nn of kids(note, "notations")) for (const ar of kids(nn, "articulations")) for (const e of kids(ar)) { const a = XML_ART[e.name]; if (a) set.add(a); else drop("演奏法记号（这一版不认的）"); }
+    for (const nn of kids(note, "notations")) for (const ar of kids(nn, "articulations")) for (const e of kids(ar)) {
+      if (e.name === "other-articulation") { const v = text(e).trim(); if (v === "inhale" || v === "inhale-big") { tok.inhale = v === "inhale-big" ? "big" : "soft"; continue; } }   // 我们写的出声的换气
+      const a = XML_ART[e.name]; if (a) set.add(a); else drop("演奏法记号（这一版不认的）");
+    }
     for (const nn of kids(note, "notations")) for (const dy of kids(nn, "dynamics")) for (const e of kids(dy)) { const a = XML_NOTE_DYN[e.name]; if (a) set.add(a); else drop("力度记号（这一版不认的，如 sfz）"); }
     if (pendingAttack) { set.add(pendingAttack); pendingAttack = null; }   // 音前面那个方向里的 sfz / fp：挂到这个音上
     if (kids(note, "notehead").some((h) => h.attrs.parentheses === "yes")) set.add("ghost");   // 括号符头 = 幽灵音
+    if (kids(note, "notehead").some((h) => text(h).trim() === "x")) set.add("whisper");   // × 符头 = 气声（念白 / 说唱；别家的鼓谱 × 读进来也是它——乐器不认，画灰，不影响出声）
     const att = ATTACKS.filter((x) => set.has(x)); if (att.length > 1) for (const x of att.slice(0, -1)) set.delete(x);   // 音头那一组只留一个（后来的）
     const art = ARTS.filter((a) => set.has(a));
     if (art.length) tok.art = art;
+    if (tok.inhale && !set.has("breath")) delete tok.inhale;   // 出声的换气只跟着呼吸
   };
   /** <notations><slur> → 这一串音「连到下一个」（start 的那个起、stop 的那个前一个止；按 number 分开数，有一条开着就算连着）。 */
   const slurEvents = (note: El, open: Set<string>) => {

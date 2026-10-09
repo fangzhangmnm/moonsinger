@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.15-2026-10-10";
+var APP_VERSION = "v0.9.16-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3065,9 +3065,9 @@ var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
 var NAV_LABEL = { segno: "Segno", coda: "Coda", fine: "Fine", toCoda: "To Coda", dc: "D.C.", dcFine: "D.C. al Fine", dcCoda: "D.C. al Coda", ds: "D.S.", dsFine: "D.S. al Fine", dsCoda: "D.S. al Coda" };
 var endingLabel = (nums) => nums && nums.length ? nums.map((n10) => `${n10}.`).join(" ") : "1.";
-var ARTS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost"];
+var ARTS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost", "whisper"];
 var ATTACKS = ["ghost", "unstress", "stress", "accent", "marcato", "sfz", "fp"];
-var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", sfz: "\u7A81\u5F3A", fp: "\u5F3A\u540E\u5373\u5F31", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438", stress: "\u6B21\u91CD\u97F3", unstress: "\u5F31\u5316", ghost: "\u5E7D\u7075\u97F3" };
+var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", sfz: "\u7A81\u5F3A", fp: "\u5F3A\u540E\u5373\u5F31", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438", stress: "\u6B21\u91CD\u97F3", unstress: "\u5F31\u5316", ghost: "\u5E7D\u7075\u97F3", whisper: "\u6C14\u58F0" };
 var DEFAULT_DYN = "mf";
 var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
@@ -3338,8 +3338,9 @@ function withArt(t10, a10, on2) {
     set.add(a10);
   } else set.delete(a10);
   const art = ARTS.filter((x2) => set.has(x2));
-  if (art.length) return { ...t10, art };
-  const { art: _a2, ...rest } = t10;
+  const base3 = !set.has("breath") && t10.inhale ? (({ inhale: _i, ...r10 }) => r10)(t10) : t10;
+  if (art.length) return { ...base3, art };
+  const { art: _a2, ...rest } = base3;
   return rest;
 }
 var selNoteIdx = (st3) => {
@@ -3375,6 +3376,26 @@ function toggleArtBefore(st3, a10) {
     if (t10.kind !== "note") continue;
     const nt2 = toks.slice();
     nt2[i10] = withArt(t10, a10, !artOf(t10).includes(a10));
+    return next(st3, nt2);
+  }
+  return null;
+}
+function toggleInhaleBefore(st3, level) {
+  const set = (t10, on2) => on2 ? { ...withArt(t10, "breath", true), inhale: level } : withArt(t10, "breath", false);
+  if (st3.sel) {
+    const idx = selNoteIdx(st3);
+    if (!idx.length) return null;
+    const on2 = !idx.every((i10) => tr(st3)[i10].inhale === level), nt2 = tr(st3).slice();
+    for (const i10 of idx) nt2[i10] = set(nt2[i10], on2);
+    return next(st3, nt2);
+  }
+  const toks = tr(st3);
+  for (let i10 = st3.caret - 1; i10 >= headLen(toks); i10--) {
+    const t10 = toks[i10];
+    if (t10.kind === "rest") return null;
+    if (t10.kind !== "note") continue;
+    const nt2 = toks.slice();
+    nt2[i10] = set(t10, t10.inhale !== level);
     return next(st3, nt2);
   }
   return null;
@@ -4044,8 +4065,17 @@ function symBackspace(st3) {
       nt2[i10] = strip("swell");
       return next(st3, nt2);
     }
-    for (const a10 of ["marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "breath"]) if (art.includes(a10)) {
+    for (const a10 of ["marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "whisper"]) if (art.includes(a10)) {
       nt2[i10] = withArt(t10, a10, false);
+      return next(st3, nt2);
+    }
+    if (t10.inhale) {
+      const { inhale: _i, ...rest } = t10;
+      nt2[i10] = rest;
+      return next(st3, nt2);
+    }
+    if (art.includes("breath")) {
+      nt2[i10] = withArt(t10, "breath", false);
       return next(st3, nt2);
     }
     if (t10.slur) {
@@ -5569,6 +5599,8 @@ function apply(st3, c10, now2 = Date.now()) {
       return writePhrase(st3);
     case "art":
       return toggleArtBefore(st3, c10.a) ?? st3;
+    case "inhale":
+      return toggleInhaleBefore(st3, c10.v) ?? st3;
     case "slur":
       return toggleSlurBefore(st3) ?? st3;
     case "swell":
@@ -6415,13 +6447,13 @@ var noteVel = (v, art, spec, gw = 0) => {
   return Math.max(1, Math.min(127, Math.round(v))) / 127;
 };
 var HONORS = {
-  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
-  // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
+  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale"],
+  // 气声 / 出声的换气 = 唱法核心（lab-score 带进唱谱）；乐器 / 元音版做不到                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
   "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
   soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"]
 };
 var GAP_ONLY = ["tenuto", "slur"];
-var ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"];
+var ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale"];
 function ignoredArts(engine2, gapSec = 0, canSwell = true) {
   const h2 = engine2 ? HONORS[engine2] : void 0;
   return h2 ? ALL_MARKS.filter((a10) => !h2.includes(a10) || GAP_ONLY.includes(a10) && !(gapSec > 0) || a10 === "swellGrow" && !canSwell) : [];
@@ -6721,7 +6753,8 @@ function unitsOf(tokens, o10) {
           pitches,
           accs,
           art: isNote && j2 === 0 ? (nt2.art ?? []).filter((a10) => a10 !== "breath") : [],
-          breath: false
+          breath: false,
+          ...isNote && nt2.art?.includes("whisper") ? { whisper: true } : {}
         };
         units.push(u2);
         lastChunk = u2;
@@ -6737,6 +6770,10 @@ function unitsOf(tokens, o10) {
       if (isNote && nt2.art?.includes("breath")) {
         lastChunk.breath = true;
         lastChunk.w += 0.8;
+        if (nt2.inhale) {
+          lastChunk.inhale = nt2.inhale;
+          lastChunk.w += nt2.inhale === "big" ? 2.1 : 1.2;
+        }
       }
     }
   });
@@ -7279,7 +7316,9 @@ function engrave(song, o10) {
       })();
       const nhX = (c10) => P2(c10.x + c10.accW + 0.35);
       const xHead = !!q2.p.xHead;
-      const nhW = (c10) => P2(xHead ? c10.base >= WHOLE ? W.noteheadXWhole : c10.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : c10.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+      const xOf = (c10) => xHead || !!c10.whisper;
+      const nhW = (c10) => P2(xOf(c10) ? c10.base >= WHOLE ? W.noteheadXWhole : c10.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : c10.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+      const whisperMute = (q2.p.ignores ?? []).includes("whisper");
       const clsOf = (c10) => [c10.ghost ? "ghost" : "", c10.index >= 0 && c10.index === curIndex ? "cur" : "", c10.index >= 0 && inSel(c10.index) ? "sel" : ""].filter(Boolean).join(" ") || void 0;
       const partLyrics = [];
       const drawChunk = (c10) => {
@@ -7306,13 +7345,13 @@ function engrave(song, o10) {
           for (let L2 = 40; L2 <= dd; L2 += 2) ledgers.add(L2);
         }
         for (const L2 of ledgers) prims.push({ t: "line", x1: x0 - P2(ENGRAVE.ledgerExt), y1: yOf(row, L2), x2: x0 + nhW(c10) + P2(ENGRAVE.ledgerExt), y2: yOf(row, L2), w: P2(ENGRAVE.ledger), cls: "ledger" });
-        const ng2 = xHead ? c10.base >= WHOLE ? GLYPH.noteheadXWhole : c10.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack : c10.base >= WHOLE ? GLYPH.noteheadWhole : c10.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
+        const ng2 = xOf(c10) ? c10.base >= WHOLE ? GLYPH.noteheadXWhole : c10.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack : c10.base >= WHOLE ? GLYPH.noteheadWhole : c10.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
         let shifted = false;
         ds.forEach((dd, k2) => {
           const second = k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1 && !shifted;
           shifted = second;
           const mute = k2 > 0 && !!q2.p.mono;
-          prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row, dd), ch: ng2, cls: ["note", cls ?? "", mute ? "chord-mute" : "", focused && o10.span && c10.index >= o10.span.from && c10.index < o10.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
+          prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row, dd), ch: ng2, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c10.whisper && whisperMute ? "art-mute" : "", focused && o10.span && c10.index >= o10.span.from && c10.index < o10.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c10.art.includes("ghost")) {
             const hx = second ? x0 + nhW(c10) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
             prims.push({ t: "glyph", x: hx - P2(0.6), y: yOf(row, dd), ch: "\uE0F5", cls: pc });
@@ -7517,6 +7556,7 @@ function engrave(song, o10) {
         for (const a10 of ["sfz", "fp"].filter((x3) => c10.art.includes(x3)))
           prims.push({ t: "glyph", x: nhX(c10) - P2(0.2), y: noteDynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4), ch: a10 === "sfz" ? "\uE539" : "\uE534", cls: ["dyn", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+        if (c10.breath && c10.inhale) prims.push({ t: "text", x: nhX(c10) + nhW(c10) + P2(1.35), y: yOf(row, TOP_LINE + 1) + P2(0.45), s: c10.inhale === "big" ? "\u6DF1\u5438" : "\u5438", cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: P2(1.15), anchor: "start" });
       }
       const tieArc = (row, d3, x1, x22, ghost) => {
         const sgn = d3 < MID_LINE ? 1 : -1, y2 = yOf(row, d3) + sgn * P2(0.8), h2 = Math.min(P2(1), Math.abs(x22 - x1) * 0.25);
@@ -9511,13 +9551,13 @@ var HER_RANGE = { lo: 57, hi: 76, who: "\u6708\u8BFB" };
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var SYM_PAGES = {
-  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath"],
-  // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
+  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper"],
+  // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>", "dyn:ramp"],
   mark: ["phrase", "key", "time", "tempo", "groove", "repeat", "staff"]
 };
 var SYM_PAGE_NAME = { art: "\u6F14\u594F\u6CD5", dyn: "\u529B\u5EA6", mark: "\u8BB0\u53F7" };
-var SYM_PAGE_TITLE = { art: "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438", dyn: "pp\u2026ff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u97F3\u5185\u8D77\u4F0F", mark: "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09" };
+var SYM_PAGE_TITLE = { art: "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0", dyn: "pp\u2026ff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u97F3\u5185\u8D77\u4F0F", mark: "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09" };
 var RAMP_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -9869,7 +9909,7 @@ var Pad = class {
     const grid = this.el.querySelector(".pad-grid");
     const ign = new Set(this.host.ignoredArts?.() ?? []), dynNow = this.host.dynHere?.() ?? null;
     const cell = (id2, big, label, title, state = "") => {
-      const mk2 = id2.startsWith("art:") ? id2.slice(4) : id2 === "slur" ? "slur" : id2 === "swell:>" ? "swellFade" : id2.startsWith("swell:") ? "swellGrow" : null, off = !!mk2 && ign.has(mk2);
+      const mk2 = id2.startsWith("art:") ? id2.slice(4) : id2 === "slur" ? "slur" : id2 === "swell:>" ? "swellFade" : id2.startsWith("swell:") ? "swellGrow" : id2.startsWith("inhale:") ? "inhale" : null, off = !!mk2 && ign.has(mk2);
       const on2 = id2.endsWith(":on");
       id2 = on2 ? id2.slice(0, -3) : id2;
       return `<button class="pad-key sym${mk2 ? " art" : ""}${off ? " ignored" : ""}${on2 ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id2}" title="${title}${off ? "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</small></button>`;
@@ -9892,6 +9932,9 @@ var Pad = class {
       ...["<", ">", "<>"].map((w2) => cell(`swell:${w2}`, SWELL_CELL[w2], w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31" : "\u97F3\u5185\u9F13\u8D77", `${w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31\uFF08\u952F\u9F7F\uFF09" : "\u97F3\u5185\u9F13\u8D77\uFF08messa di voce\uFF09"}\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u81EA\u5DF1\u91CC\u9762\u7684\u8D77\u4F0F\uFF1B\u548C\u6BB5\u843D\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u4E24\u5C42\uFF0C\u53EF\u4EE5\u53E0\uFF1B\u518D\u70B9 = \u53BB\u6389`)),
       cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09\u3002\u540C\u4E00\u4E2A\u97F3\u4E0A\u53C8\u6709\u547C\u5438 = \u547C\u5438\u7B97\u6570\uFF1A\u90A3\u91CC\u7167\u6837\u65AD\u5F00\u6362\u6C14\uFF0C\u8FDE\u7EBF\u7167\u753B"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u6708\u8BFB\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
+      cell("inhale:soft", `<span class="glyphs"><span class="smufl">\uE4CE</span><span class="big">\u5438</span></span>`, "\u8F7B\u5438", "\u51FA\u58F0\u7684\u6362\u6C14\uFF08\u8F7B\u5438\uFF09\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u6C14\u3001\u542C\u5F97\u89C1\u5438\u6C14\u58F0\uFF08\u6CA1\u6709\u547C\u5438\u8BB0\u53F7\u5C31\u8FDE\u9017\u53F7\u4E00\u8D77\u52A0\u4E0A\uFF1B\u518D\u70B9\u4E00\u6B21 = \u6574\u4E2A\u53BB\u6389\uFF09\u3002\u53EA\u6709\u70B9\u4E86\u7684\u5730\u65B9\u624D\u51FA\u58F0\uFF0C\u666E\u901A\u7684\u547C\u5438\u8BB0\u53F7\u7167\u65E7\u9759\u9ED8"),
+      cell("inhale:big", `<span class="glyphs"><span class="smufl">\uE4CE</span><span class="big">\u6DF1\u5438</span></span>`, "\u6DF1\u5438", "\u51FA\u58F0\u7684\u6362\u6C14\uFF08\u6DF1\u5438\uFF09\uFF1A\u5927\u53E3\u5438\u6C14\u3001\u6362\u6C14\u7684\u7A7A\u5F53\u4E5F\u957F\u4E00\u70B9\uFF08\u4ECE\u524D\u4E00\u4E2A\u97F3\u672B\u5C3E\u501F\u65F6\u95F4\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21 = \u6574\u4E2A\u53BB\u6389"),
+      cell("art:whisper", `<span class="smufl">\uE0A9</span>`, "\u6C14\u58F0", "\u6C14\u58F0\uFF08\xD7 \u7B26\u5934\uFF09\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5531\u8FD9\u4E2A\u5B57\uFF08\u5FF5\u767D / \u8033\u8BED\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\u3002\u53EA\u6709\u6708\u8BFB\u505A\u5F97\u5230\uFF0C\u4E50\u5668\u4E0A\u753B\u7070"),
       cell("key", `<span class="big">1=</span>`, "\u8C03\u53F7", "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09"),
       cell("time", `<span class="big">4/4</span>`, "\u62CD\u53F7", "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF09"),
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "\u901F\u5EA6", "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF09"),
@@ -9935,6 +9978,7 @@ var Pad = class {
       else if (id2 === "repeat") this.host.onRepeat?.();
       else if (id2 === "staff") this.host.onCommand({ k: "staff" });
       else if (id2.startsWith("art:")) this.host.onCommand({ k: "art", a: id2.slice(4) });
+      else if (id2.startsWith("inhale:")) this.host.onCommand({ k: "inhale", v: id2.slice(7) });
       else if (id2 === "slur") this.host.onCommand({ k: "slur" });
       else if (id2.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id2.slice(6) });
       else if (id2.startsWith("dyn:")) {
@@ -10278,13 +10322,29 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
   const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
   const out = [];
   const pick = (a10, b3) => !a10 ? b3 : a10 === "^" ? b3 : a10;
-  let nextMark = null, thisMark = null;
+  let nextMark = null, thisMark = null, nextInhale = false;
   const push = (e10) => {
     const m2 = thisMark && nextMark ? pick(thisMark, nextMark) : thisMark ?? nextMark;
     if (m2) e10.before = m2;
+    if (nextInhale && m2 && m2 !== "^") e10.inhale = true;
     nextMark = thisMark = null;
+    nextInhale = false;
     out.push(e10);
   };
+  const takeInhale = (t10) => {
+    if (t10.kind !== "note" || !t10.inhale || !artOf(t10).includes("breath")) return;
+    nextMark = t10.inhale === "big" ? "O" : pick(nextMark, "v");
+    nextInhale = true;
+  };
+  if (range2) {
+    for (let j2 = range2[0] - 1; j2 >= 0; j2--) {
+      const u2 = tokens[j2];
+      if (u2.kind !== "note") continue;
+      takeInhale(u2);
+      break;
+    }
+    if (!nextInhale) nextMark = null;
+  }
   const nextTimed = (i10) => {
     for (let j2 = i10 + 1; j2 < tokens.length; j2++) {
       const u2 = tokens[j2];
@@ -10302,9 +10362,12 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
     }
     one(t10, i10);
     thisMark = null;
-    if (t10.kind === "note" && !held(nextTimed(i10))) for (const a10 of arts) {
-      const s10 = sing[a10];
-      if (s10 && s10.at === "next") nextMark = pick(nextMark, s10.mark);
+    if (t10.kind === "note" && !held(nextTimed(i10))) {
+      for (const a10 of arts) {
+        const s10 = sing[a10];
+        if (s10 && s10.at === "next") nextMark = pick(nextMark, s10.mark);
+      }
+      takeInhale(t10);
     }
   });
   function one(t10, i10) {
@@ -10327,8 +10390,9 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
       return;
     }
     const lyric = t10.lyric && t10.lyric !== MELISMA_MARK ? t10.lyric : null;
+    const wh = artOf(t10).includes("whisper") ? { whisper: true } : {};
     if (!lyric) {
-      push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true });
+      push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true, ...wh });
       return;
     }
     if (isSmallKana(lyric)) {
@@ -10346,7 +10410,7 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
       }
     }
     const parts = lyric.split(ELISION).filter(Boolean).reduce((a10, k2) => a10.length && isSmallKana(k2) ? [...a10.slice(0, -1), a10[a10.length - 1] + k2] : [...a10, k2], []);
-    parts.forEach((kana, k2) => push({ kana, notes: [[midi, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {} }));
+    parts.forEach((kana, k2) => push({ kana, notes: [[midi, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {}, ...wh }));
   }
   const TEXT2 = lang === "en" ? out.map((e10) => e10.kana + (e10.hyph ? "" : " ")).join("").trim() : out.map((e10, k2) => e10.kana + (e10.rest ? "\u3001" : k2 === out.length - 1 ? "\u3002" : "")).join("");
   return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base3, LANG: lang };
@@ -18748,7 +18812,7 @@ var Singer = class {
   }
   worker(l10) {
     if (l10.w) return l10.w;
-    const w2 = new Worker(new URL(`./${"singer-worker-5c0832b1fa6d.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"singer-worker-8a107df51dbe.mjs"}`, import.meta.url), { type: "module" });
     l10.w = w2;
     w2.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -19668,7 +19732,7 @@ var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v
 var wedgeXml = (type, extra = "") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"${extra}/></direction-type></direction>`;
 var RAMP_ID = "ramp-";
 var DYN_ORDER = ["pp", "p", "mp", "mf", "f", "ff"];
-var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "" };
+var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "" };
 var NOTE_DYN = ["sfz", "fp"];
 var XML_NOTE_DYN = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
 var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
@@ -19849,13 +19913,15 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       x2 += `<voice>1</voice>`;
       const typeXml = ty2 ? `<type>${ty2.type}</type>` + "<dot/>".repeat(ty2.dots) + (ty2.tuplet ? `<time-modification><actual-notes>${ty2.tuplet[0]}</actual-notes><normal-notes>${ty2.tuplet[1]}</normal-notes></time-modification>` : "") : "";
       const staffXml = staves === 2 ? `<staff>${staffs[i10]}</staff>` : "";
-      const headXml = t10.kind === "note" && (t10.art ?? []).includes("ghost") ? `<notehead parentheses="yes">normal</notehead>` : "";
+      const ghostH = t10.kind === "note" && (t10.art ?? []).includes("ghost"), whisperH = t10.kind === "note" && (t10.art ?? []).includes("whisper");
+      const headXml = ghostH || whisperH ? `<notehead${ghostH ? ` parentheses="yes"` : ""}>${whisperH ? "x" : "normal"}</notehead>` : "";
       x2 += typeXml + headXml + staffXml;
       const chordXml = [];
       if (t10.kind === "note") {
         const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
-        const arts = (t10.art ?? []).filter((a10) => a10 !== "ghost" && (a10 === "breath" ? last : firstPiece)), noteDyn = arts.filter((a10) => NOTE_DYN.includes(a10)), artic = arts.filter((a10) => !NOTE_DYN.includes(a10));
-        const artXml = (artic.length ? `<articulations>${artic.map((a10) => `<${ART_XML[a10]}/>`).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a10) => `<${ART_XML[a10]}/>`).join("")}</dynamics>` : "");
+        const arts = (t10.art ?? []).filter((a10) => a10 !== "ghost" && a10 !== "whisper" && (a10 === "breath" ? last : firstPiece)), noteDyn = arts.filter((a10) => NOTE_DYN.includes(a10)), artic = arts.filter((a10) => !NOTE_DYN.includes(a10));
+        const inhaleXml = (a10) => a10 === "breath" && t10.inhale ? `<other-articulation>${t10.inhale === "big" ? "inhale-big" : "inhale"}</other-articulation>` : "";
+        const artXml = (artic.length ? `<articulations>${artic.map((a10) => `<${ART_XML[a10]}/>` + inhaleXml(a10)).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a10) => `<${ART_XML[a10]}/>`).join("")}</dynamics>` : "");
         const slurXml = firstPiece ? slurs(i10, t10) : "";
         if (tieIn || tieOn || artXml || slurXml) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}</notations>`;
         for (const [ci2, cp2] of (t10.chord ?? []).entries()) {
@@ -19955,6 +20021,13 @@ function readMusicXml(xml, hints) {
   const addArts = (tok, note2) => {
     const set = new Set(tok.art ?? []);
     for (const nn2 of kids(note2, "notations")) for (const ar2 of kids(nn2, "articulations")) for (const e10 of kids(ar2)) {
+      if (e10.name === "other-articulation") {
+        const v = text(e10).trim();
+        if (v === "inhale" || v === "inhale-big") {
+          tok.inhale = v === "inhale-big" ? "big" : "soft";
+          continue;
+        }
+      }
       const a10 = XML_ART[e10.name];
       if (a10) set.add(a10);
       else drop("\u6F14\u594F\u6CD5\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF09");
@@ -19969,10 +20042,12 @@ function readMusicXml(xml, hints) {
       pendingAttack = null;
     }
     if (kids(note2, "notehead").some((h2) => h2.attrs.parentheses === "yes")) set.add("ghost");
+    if (kids(note2, "notehead").some((h2) => text(h2).trim() === "x")) set.add("whisper");
     const att = ATTACKS.filter((x2) => set.has(x2));
     if (att.length > 1) for (const x2 of att.slice(0, -1)) set.delete(x2);
     const art = ARTS.filter((a10) => set.has(a10));
     if (art.length) tok.art = art;
+    if (tok.inhale && !set.has("breath")) delete tok.inhale;
   };
   const slurEvents = (note2, open) => {
     const sl2 = kids(note2, "notations").flatMap((nn2) => kids(nn2, "slur"));
@@ -34295,10 +34370,10 @@ var ignoredFor = (role) => {
   return ignoredArts(activeInstrument(doc.extras, role)?.engine, sp2.gapSec, sp2.canSwell);
 };
 var ignoredHere = () => ignoredFor(curPart().role);
-var MARK_NAME = { ...ART_NAME, slur: "\u8FDE\u7EBF", swellGrow: "\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77", swellFade: "\u97F3\u5185\u6E10\u5F31" };
+var MARK_NAME = { ...ART_NAME, slur: "\u8FDE\u7EBF", swellGrow: "\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77", swellFade: "\u97F3\u5185\u6E10\u5F31", inhale: "\u51FA\u58F0\u7684\u6362\u6C14" };
 function discloseArt(prev, a10) {
   if (!ignoredHere().includes(a10)) return;
-  const has = (t10) => t10.kind === "note" && (a10 === "slur" ? !!t10.slur : a10 === "swellGrow" ? t10.swell === "<" || t10.swell === "<>" : a10 === "swellFade" ? t10.swell === ">" : (t10.art ?? []).includes(a10));
+  const has = (t10) => t10.kind === "note" && (a10 === "slur" ? !!t10.slur : a10 === "inhale" ? !!t10.inhale : a10 === "swellGrow" ? t10.swell === "<" || t10.swell === "<>" : a10 === "swellFade" ? t10.swell === ">" : (t10.art ?? []).includes(a10));
   const n10 = (s10) => tr(s10).filter(has).length;
   if (n10(st2) <= n10(prev)) return;
   const role = curPart().role, who = activeCandidateName(doc.extras, role) || "\u53F0\u4E0A\u8FD9\u4F4D";
@@ -34899,6 +34974,10 @@ var pad3 = new Pad(padEl, {
       info("\u8FDE\u7EBF\u4ECE\u4E00\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
       return;
     }
+    if (c10.k === "inhale" && nx2 === st2) {
+      info("\u51FA\u58F0\u7684\u6362\u6C14\u6302\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
+      return;
+    }
     if (c10.k === "swell" && nx2 === st2) {
       info("\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
       return;
@@ -34916,6 +34995,7 @@ var pad3 = new Pad(padEl, {
     }
     if (c10.k === "art") discloseArt(prev, c10.a);
     if (c10.k === "slur") discloseArt(prev, "slur");
+    if (c10.k === "inhale") discloseArt(prev, "inhale");
     if (c10.k === "swell") discloseArt(prev, c10.w === ">" ? "swellFade" : "swellGrow");
     if (c10.k === "dyn" || c10.k === "art" && c10.a === "fp") discloseDynOverride(prev);
   },
@@ -35105,7 +35185,8 @@ var playIcon = (stop) => {
   $2("playBtn").classList.toggle("is-on", stop);
   if (!stop) progress("");
 };
-var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
+var borrowMode = "static";
+var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN, ...borrowMode !== "static" ? { borrow: borrowMode } : {} });
 var playSong = () => viewScope === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : st2.song;
 var curFlat = () => {
   const s10 = playSong(), order = songPlayOrder(s10);
@@ -35873,7 +35954,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "5d72221b7b6b",
+  cssHash: "e31b8c8ceb0b",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -36075,6 +36156,8 @@ function marksTableHtml(role, eng) {
     ["\u4FDD\u6301", "tenuto", "\u8FD9\u4E2A\u97F3\u4E0D\u7559\u7F1D"],
     ["\u8FDE\u7EBF", "slur", "\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\u3001\u4E0D\u7559\u7F1D"],
     ["\u547C\u5438", "breath", eng === "tsukuyomi" ? singTxt("breath") : `\u524D\u4E00\u4E2A\u97F3\u6536\u77ED ${ms(sp2.breathSec)}\uFF08\u6700\u591A ${pct(sp2.breathShare)}\uFF09`],
+    ["\u51FA\u58F0\u7684\u6362\u6C14\uFF08\u8F7B\u5438 / \u6DF1\u5438\uFF09", "inhale", eng === "tsukuyomi" ? "\u6362\u6C14\u7684\u7A7A\u5F53\u91CC\u4E00\u58F0\u5438\u6C14\uFF08\u6309\u4E0B\u4E00\u4E2A\u5B57\u7684\u5143\u97F3\u5851\u5F62\uFF0C\u6BD4\u5B83\u8F7B\u7EA6 28 dB\uFF1B\u6DF1\u5438 = \u7A7A\u5F53\u957F\u4E00\u70B9\u3001\u54CD 4 dB\uFF09" : "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4F4D\u53EA\u65AD\u5F00\uFF0C\u4E0D\u51FA\u5438\u6C14\u58F0"],
+    ["\u6C14\u58F0\uFF08\xD7 \u7B26\u5934\uFF09", "whisper", eng === "tsukuyomi" ? "\u8FD9\u4E2A\u5B57\u4E0D\u5531\u97F3\u9AD8\uFF1A\u7528\u5FF5\u7684\u65F6\u5019\u7684\u6C14\u58F0\uFF08\u8C31\u5305\u7EDC\u7167\u65E7\u3001\u58F0\u5E26\u4E0D\u632F\uFF09\uFF0C\u518D\u8F7B 6 dB" : "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4F4D\u53EA\u6309\u97F3\u9AD8\u51FA\u58F0"],
     ["\u97F3\u548C\u97F3\u4E4B\u95F4", "", eng === "tsukuyomi" ? "\u8FDE\u7740\u5531" : `${ms(sp2.gapSec)}\uFF08\u6700\u591A ${pct(sp2.gapShare)}\uFF09`]
   ];
   return `<details class="ip-marks"><summary>\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09</summary><table>${rows.map(([k2, m2, v]) => `<tr${gray(m2)}><th>${k2}</th><td>${esc7(v)}${m2 && ign.includes(m2) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</td></tr>`).join("")}</table></details>`;
@@ -37190,7 +37273,12 @@ function drawInst() {
     "\u5206\u6BB5\u5531",
     [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
     sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF"
-  ))(activeSingChunk(doc.extras, role)) : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
+  ))(activeSingChunk(doc.extras, role)) : "") + // 借元音（A/B 实验）：只在这次打开里有效（不进歌、不进撤销）；切了 = 用到的句子重唱
+  (eng === "tsukuyomi" ? row(
+    "\u501F\u5143\u97F3\uFF08\u5B9E\u9A8C\uFF09",
+    [["static", "\u539F\u6837", "\u4E00\u5F20\u9759\u6001\u7684\u5143\u97F3\u6837\u672C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF09"], ["fade", "A \u4E24\u5934\u8FC7\u6E21", "\u501F\u6765\u7684\u6837\u672C\u5728\u5143\u97F3\u4E24\u5934\u548C\u5979\u81EA\u5DF1\u5FF5\u7684\u90A3\u51E0\u5E27\u4EA4\u53C9\u6DE1\u5165\u6DE1\u51FA\uFF0840 ms\uFF09"], ["donor", "B \u501F\u6574\u6BB5", "\u501F\u540C\u4E00\u53E5\u91CC\u540C\u5143\u97F3\u90A3\u4E2A\u5B57\u7684\u6574\u6BB5\uFF08\u8D77\u97F3 / \u7A33\u6001 / \u6536\u5C3E\uFF09\uFF0C\u6309\u8FD9\u4E2A\u97F3\u7684\u957F\u5EA6\u62C9\u4F38"]].map(([v, l10, t10]) => chip(`borrow:${v}`, l10, borrowMode === v, t10)).join(""),
+    "\u5979\u628A\u4E00\u4E2A\u5143\u97F3\u5FF5\u6210\u6C14\u58F0\u65F6\uFF08\u56E2\u5B50\u7684\u300C\u3064\u300D\uFF09\uFF0C\u5531\u7684\u65F6\u5019\u4ECE\u522B\u7684\u5B57\u501F\u4E00\u4E2A\u5E72\u51C0\u7684\u5143\u97F3\u3002\u4E09\u79CD\u501F\u6CD5\u5207\u7740\u542C\u540C\u4E00\u53E5\uFF1B\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C"
+  ) : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
   instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc7(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc7(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText2(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc7(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
   const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
   sel.addEventListener("change", () => {
@@ -37288,7 +37376,12 @@ instEl.addEventListener("click", (e10) => {
     const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d3));
     updateExtras(withCalibration(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u54CD\u5EA6\u6821\u51C6 ${next2} dB` }, "cal");
   } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
-  else if (v.startsWith("chunk:")) {
+  else if (v.startsWith("borrow:")) {
+    borrowMode = v.slice(7);
+    schedulePlaybackRefresh();
+    schedulePrewarm();
+    info(`\u501F\u5143\u97F3\uFF1A${borrowMode === "static" ? "\u539F\u6837" : borrowMode === "fade" ? "A \u4E24\u5934\u8FC7\u6E21" : "B \u501F\u6574\u6BB5"}\uFF08\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF09`);
+  } else if (v.startsWith("chunk:")) {
     const c10 = v.slice(6);
     updateExtras(withSingChunk(doc.extras, role, c10, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u5206\u6BB5\u5531\uFF1A${c10 === "phrase" ? "\u6BCF\u53E5" : c10 === "sheet" ? "\u6BCF\u5F20\u7EB8" : "\u4E00\u6574\u9996"}` });
   } else return;
@@ -38613,4 +38706,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-97e39cb4c24d.mjs.map
+//# sourceMappingURL=moonsinger-8341559cf027.mjs.map
