@@ -2623,7 +2623,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.7.34-2026-10-08";
+var APP_VERSION = "v0.7.35-2026-10-08";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -27990,12 +27990,15 @@ var curFlat = () => {
 var lastRender = /* @__PURE__ */ new Map();
 var GM_SR = 44100;
 var songIn = (s10) => s10 === "all" ? st2.song : s10 === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : playSong();
+function flatFor(song, partId, order) {
+  const ord = order ?? songPlayOrder(song), f2 = flattenPart(song, partId, { order: ord });
+  return { tokens: f2.tokens, map: tempoMapOf(song, ord), bounds: f2.starts.map((x2) => x2.index) };
+}
 async function renderPart(part, scope = "view", order) {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`\u300C${roleName(doc.extras, role)}\u300D\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A`);
   const song = songIn(scope);
-  order ??= songPlayOrder(song);
-  const { tokens, starts } = flattenPart(song, part.id, { order }), map = tempoMapOf(song, order), bounds = starts.map((x2) => x2.index);
+  const { tokens, map, bounds } = flatFor(song, part.id, order);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st2.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);
     if (!score.SCORE.length) return null;
@@ -28031,8 +28034,8 @@ async function renderPart(part, scope = "view", order) {
   return out;
 }
 function partGain(part, scope, order) {
-  const song = songIn(scope), { tokens, starts } = flattenPart(song, part.id, { order: order ?? songPlayOrder(song) });
-  return gainSegments(tokens, tempoMapOf(song, order), activePerfSpec(doc.extras, part.role), starts.map((x2) => x2.index));
+  const { tokens, map, bounds } = flatFor(songIn(scope), part.id, order);
+  return gainSegments(tokens, map, activePerfSpec(doc.extras, part.role), bounds);
 }
 var audibleParts = () => {
   const solo = st2.song.parts.some((p2) => pv(p2.id).solo);
@@ -30888,4 +30891,4 @@ setTimeout(() => {
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f15cd4ab36c0.mjs.map
+//# sourceMappingURL=moonsinger-1a3689b262d6.mjs.map

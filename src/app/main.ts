@@ -619,13 +619,18 @@ const GM_SR = 44100;
 /** 渲染哪一段：view = 跟视图（本段 / 全部，播放用）；all = 整首；segment = 光标所在的这一张纸（导出面板里选）。 */
 type RenderScope = "view" | "all" | "segment";
 const songIn = (s: RenderScope): Song => (s === "all" ? st.song : s === "segment" ? songOnlyPaper(st.song, st.at.paper) : playSong());
+/** 一个声部照放的顺序压平 + **同一个顺序**的速度表 + 纸界（渐强渐弱不跨纸）。出声和音量曲线都走这一个：v0.7.34 音量曲线的速度表用了默认顺序，
+ *  写了编排、各段速度不一样时，力度 / 重音落的时刻和音对不上（v0.7.35 修）。 */
+function flatFor(song: Song, partId: string, order?: string[]) {
+  const ord = order ?? songPlayOrder(song), f = flattenPart(song, partId, { order: ord });
+  return { tokens: f.tokens, map: tempoMapOf(song, ord), bounds: f.starts.map((x) => x.index) };
+}
 /** order = 放哪几张纸、什么顺序（没给 = 照编排那一行，arrange.ts；本段 = 只这一张）；循环放给的是「前面 + 循环段两遍」（loopPlan）。 */
 async function renderPart(part: PartDef, scope: RenderScope = "view", order?: string[]): Promise<Rendered | null> {
   const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown";
   if (eng === "unknown") throw new Error(`「${roleName(doc.extras, role)}」还没有人上场`);
   const song = songIn(scope);
-  order ??= songPlayOrder(song);
-  const { tokens, starts } = flattenPart(song, part.id, { order }), map = tempoMapOf(song, order), bounds = starts.map((x) => x.index);   // bounds = 纸界（渐强渐弱不跨纸）
+  const { tokens, map, bounds } = flatFor(song, part.id, order);
   if (eng === "tsukuyomi") {
     const lang = songLangOf(tokens), score = toLabScore(tokens, st.song.hum, lang, map, activePerfSpec(doc.extras, role).sing);   // 跳音 / 重音 / 呼吸 → 核心认的 ^ / v（怎么对应 = 这位的配置），改了就重唱
     if (!score.SCORE.length) return null;
@@ -660,8 +665,8 @@ async function renderPart(part: PartDef, scope: RenderScope = "view", order?: st
 }
 /** 一个声部的音量曲线（力度 + 重音；月读的跳音 = 后半段收声；src/score/perform.ts）：没有力度 / 重音 = null，声音不碰。渲染结果是缓存的，乘在拷贝上。 */
 function partGain(part: PartDef, scope: RenderScope, order?: string[]) {
-  const song = songIn(scope), { tokens, starts } = flattenPart(song, part.id, { order: order ?? songPlayOrder(song) });
-  return gainSegments(tokens, tempoMapOf(song, order), activePerfSpec(doc.extras, part.role), starts.map((x) => x.index));   // 月读的跳音走唱谱（核心认的 ^），不再切音频
+  const { tokens, map, bounds } = flatFor(songIn(scope), part.id, order);
+  return gainSegments(tokens, map, activePerfSpec(doc.extras, part.role), bounds);   // 月读的跳音走唱谱（核心认的 ^），不再切音频
 }
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
 const audibleParts = (): PartDef[] => { const solo = st.song.parts.some((p) => pv(p.id).solo); return st.song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted)); };

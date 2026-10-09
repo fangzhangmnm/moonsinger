@@ -25,6 +25,29 @@ await p.mouse.click(at2.x, at2.y); await p.waitForTimeout(150);
 await p.keyboard.type("1 副歌"); await p.keyboard.press("Enter"); await p.waitForTimeout(200);   // 开框时整行已经选中
 const why = await p.$$eval("#score text.arr-issue", (e) => e.map((x) => x.textContent).join());
 check(/没有叫「副歌」的纸/.test(why), "写错的 = 后面灰字说为什么", why);
+// 回归（v0.7.35）：写了编排、各段速度不同 = 音量曲线（力度 / 重音）的时刻照放的顺序算（v0.7.34 用了默认顺序的速度表、和音对不上）。
+// 第一张 ♩=60、第一个音前 pp；第二张 ♩=180；编排「2 1」→ pp 从第二张放完（2 个八分 @180 = ⅓ 秒）起，不是 1 秒（新开一页：上面改编排后键盘在文字状态）
+const q = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); q.on("pageerror", (e) => errs.push(e.message));
+await q.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await q.waitForTimeout(800);
+for (let i = 0; i < 3; i++) { await q.click(`.pad-key[data-k] >> nth=${i}`); await q.waitForTimeout(40); }
+await q.evaluate(() => window.__moonsinger.addPaper()); await q.waitForTimeout(200);
+for (let i = 0; i < 2; i++) { await q.click(`.pad-key[data-k] >> nth=${i + 4}`); await q.waitForTimeout(40); }
+const drop = await q.evaluate(async () => {
+  const m = window.__moonsinger; m.setScope("all"); const st = m.state(), [a, b2] = st.song.papers, pid = st.song.parts[0].id;
+  const bpm = (toks, v) => toks.map((t) => (t.kind === "tempo" ? { ...t, bpm: v } : t));
+  const ta = bpm(a.tracks[pid], 60), k = ta.findIndex((t) => t.kind === "note");
+  ta.splice(k, 0, { kind: "dyn", id: 99001, value: "pp" });
+  m.set({ ...st, song: { ...st.song, arrangement: "2 1", papers: [{ ...a, tracks: { ...a.tracks, [pid]: ta } }, { ...b2, tracks: { ...b2.tracks, [pid]: bpm(b2.tracks[pid], 180) } }] } });
+  m.singer.sing = async () => ({ samples: new Float32Array(48000 * 4).fill(0.1), sr: 48000 });
+  let got = null; m.singer.play = (r) => { got = r; };
+  document.getElementById("playBtn").click();
+  for (let i = 0; i < 50 && !got; i++) await new Promise((ok) => setTimeout(ok, 50));
+  if (!got) return null;
+  const x = got.samples, ref = Math.abs(x[Math.round(0.6 * got.sr)]);   // 0.1 秒（谱上）的地方 = 还没 pp（月读提前量 0.5 秒）
+  for (let i = Math.round(0.6 * got.sr); i < x.length; i++) if (Math.abs(x[i]) < ref * 0.5) return i / got.sr - 0.5;
+  return -1;
+});
+check(drop !== null && Math.abs(drop - 1 / 3) < 0.03, "编排「2 1」+ 各段速度不同：pp 从 ⅓ 秒起（照放的顺序算速度）", String(drop));
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);
