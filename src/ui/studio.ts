@@ -9,8 +9,9 @@
 //   每张卡片顶上一条峰值细线（所有页都有；录音房只在混音台开着时报）。加混音轨在页签那一行的「⋯」里（user「混音轨不要用一个单独的空页面，可以在混音台的顶栏上面加一个...的目录，里面有加混音轨。然后混音轨之间还可以排序。然后歌手卡片的排序还是以五线谱为准」）。
 import type { FxV2 } from "../format/contract.ts";
 import { eqResponseDb } from "../engine/fx.ts";
-import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath } from "./spectrum.ts";
-import { DEFAULT_EQ_ID, PLUGIN_KINDS, simpleView, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, type Params } from "./plugins.ts";
+import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath, xOfHz } from "./spectrum.ts";
+const SPEC_TICKS = [100, 1000, 10000];
+import { DEFAULT_EQ_ID, PLUGIN_KINDS, simpleView, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, type Params } from "./plugins.ts";
 import { paramRow, slider, wireParamRows } from "./param-row.ts";
 
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）
@@ -30,6 +31,8 @@ export interface StudioHost {
   toggleLimiter(): void;
   /** 一条轨的效果链（MASTER = 总轨；别的 = 歌手的 id / 混音轨的 id）。 */
   chain(track: string): FxV2[];
+  /** 这一格送进录音房的样子（自动低切换成这位最低的音算出来的 Hz、延迟跟速度换成毫秒）：曲线 / 读数照这个画，和听到的一致。 */
+  resolve(track: string, fx: FxV2): FxV2;
   /** 改一条轨的效果链（进 undo；merge = 连续拖同一个旋钮并成一步的键）。 */
   setChain(track: string, chain: FxV2[], label: string, merge?: string): void;
   /** 压缩「被谁压」能选的轨（除了自己；没有 = 这条轨上的压缩器只听自己）。 */
@@ -71,7 +74,7 @@ const toDb = (x: number) => (x > 1e-5 ? 20 * Math.log10(x) : -60);
 const row = paramRow;   // 一行参数 = 深模块 param-row.ts（名字 + 问号 + 读数 + 控件；滑块的滚轮 / 双击也在那里）
 const HINT = {
   gain: "增益（推子）：这条轨整体的音量。混音的第一步 = 先把几条轨的音量摆平",
-  pan: "声像：在左右哪个位置。几条轨左右错开一点，就不会都挤在正中间",
+  pan: "声像：在左右哪个位置。几条轨左右错开一点，就不会都挤在正中间。数字 = 往一边推了多少（等功率：怎么摆总响度不变）：中 = 两个喇叭各 −3 dB；50 = 这边 −0.7 dB、那边 −8.3 dB（差 7.7 dB）；100 = 全在这边，另一边没声",
   masterGain: "总轨增益：所有轨混在一起之后整体再调大调小",
   out: "出到：这条轨的声音最后去哪——直接去总轨，或者先进一条混音轨（在那里一起过效果）",
   send: "发送：推子之后再复制一份给这条混音轨；越大，那边的效果（混响 / 延迟）越多，原声照旧走「出到」",
@@ -128,14 +131,17 @@ export class Studio {
     }
   }
   /** 这一格 EQ 的响应曲线（±18 dB 映到卡片高度，中线 = 0 dB）。 */
-  private curvePath(fx: FxV2 | null): string {
+  private curvePath(track: string, fx: FxV2 | null): string {
     if (!fx || fx.on === false) return "M0,50L100,50";
-    const db = eqResponseDb(paramsOf(fx), 48000, Array.from({ length: SPEC_BANDS }, (_, k) => bandHz(k)));
+    const db = eqResponseDb(paramsOf(this.host.resolve(track, fx)), 48000, Array.from({ length: SPEC_BANDS }, (_, k) => bandHz(k)));
     return db.map((d, k) => `${k ? "L" : "M"}${((100 * (k + 0.5)) / SPEC_BANDS).toFixed(2)},${(50 - (Math.max(-18, Math.min(18, d)) / 18) * 45).toFixed(2)}`).join("");
   }
   private specSvg(track: string): string {
     const eq = this.slots(track).find((s) => s.fx.kind === "eq")?.fx ?? null;
-    return `<svg class="strip-spec" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="spec" d=""/><path class="eqc" d="${this.curvePath(eq)}"/></svg>`;
+    // 频率刻度（user「…可能还是需要频率刻度，很subtle的淡字放在底下？」）：100 / 1k / 10k 三根竖线 + 底下小字；字用 HTML 放（SVG 拉伸了字会变形）
+    const ticks = SPEC_TICKS.map((f) => ({ f, x: 100 * xOfHz(f) }));
+    return `<svg class="strip-spec" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="grid" d="${ticks.map((t) => `M${t.x.toFixed(2)},0L${t.x.toFixed(2)},100`).join("")}"/><path class="spec" d=""/><path class="eqc" d="${this.curvePath(track, eq)}"/></svg>` +
+      `<div class="spec-ticks" aria-hidden="true">${ticks.map((t) => `<span style="left:${t.x.toFixed(2)}%">${t.f >= 1000 ? `${t.f / 1000}k` : t.f}</span>`).join("")}</div>`;
   }
   private tick = (now: number): void => {
     this.raf = 0; if (this.el.hidden) return;
@@ -179,6 +185,7 @@ export class Studio {
     else if (v === "fxon" && tg) { this.patch(tg, (fx) => ({ ...fx, on: fx.on === false }), "开 / 关"); this.render(); }
     else if (v === "fxtoggle" && tg) { const id = t.closest<HTMLElement>("[data-c]")!.dataset.c!; this.simpleSet(tg, id, (this.simpleNow(tg)?.[id] ?? 0) ? 0 : 1, false); this.render(); }
     else if (v === "fxchoice" && tg) { const b = t.closest<HTMLElement>("[data-c]")!; this.simpleSet(tg, b.dataset.c!, Number(b.dataset.val), false); this.render(); }
+    else if (v === "fxproject" && tg) { this.patch(tg, (fx) => ({ ...fx, params: projectToSimple(fx.kind, this.onBus(tg.track), paramsOf(fx)) }), "改成最接近的一键"); this.render(); }
     else if (v === "fxbool" && tg) { const id = t.closest<HTMLElement>("[data-p]")!.dataset.p!; this.patch(tg, (fx) => ({ ...fx, params: { ...paramsOf(fx), [id]: paramsOf(fx)[id] ? 0 : 1 } }), id); this.render(); }
   }
   private onInput(e: Event): void {
@@ -232,7 +239,7 @@ export class Studio {
     this.host.setChain(tg.track, next, `${this.trackName(tg.track)} ${pluginName(nx.kind)} ${what}`, merge ? `fx:${tg.track}:${tg.fx}:${what}` : undefined);
     const b = this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(tg.track)}"] .fx-chip[data-fx="${CSS.escape(nx.id)}"]`);   // 只找「链」页的小钮（EQ / 压缩页摊开的那一块也带 data-fx，别把它整块换成一行字）
     if (b) { b.textContent = fxSummary(nx, this.onBus(tg.track)); b.classList.toggle("off", nx.on === false); }
-    if (nx.kind === "eq") { const c = this.el.querySelector(`.strip[data-id="${CSS.escape(tg.track)}"] .strip-spec .eqc`); if (c) c.setAttribute("d", this.curvePath(nx)); }   // EQ 页的曲线跟着拧
+    if (nx.kind === "eq") { const c = this.el.querySelector(`.strip[data-id="${CSS.escape(tg.track)}"] .strip-spec .eqc`); if (c) c.setAttribute("d", this.curvePath(tg.track, nx)); }   // EQ 页的曲线跟着拧
   }
   private deleteFx(tg: Target): void {
     if (tg.fx === DEFAULT_EQ_ID) return;
@@ -245,7 +252,7 @@ export class Studio {
   /** 一键改一个控件：在当前读数上改这一个（读不出 = 在全量里调过 = 从一键的默认起），按公式写回全量参数。 */
   private simpleSet(tg: Target, id: string, v: number, live: boolean, input?: HTMLElement): void {
     const s = this.slotOf(tg); if (!s) return;
-    const bus = this.onBus(tg.track), view = simpleView(s.fx.kind, bus)!, base = view.read(paramsOf(s.fx)) ?? view.read(freshParams(s.fx.kind, bus)) ?? {};
+    const bus = this.onBus(tg.track), view = simpleView(s.fx.kind, bus)!, base = view.read(paramsOf(s.fx)); if (!base) return;   // 锁着（在全量里调过）：只有「改成最接近的一键」能动
     const ctl = view.controls.find((c) => c.id === id);
     this.patch(tg, (fx) => ({ ...fx, params: view.write({ ...base, [id]: v }, paramsOf(fx)) }), ctl?.label ?? id, live);
     if (live && input) { const w = input.closest("[data-fxwrap]"); const out = w?.querySelector<HTMLElement>(`output[data-c="${id}"]`); if (out && ctl?.fmt) out.textContent = ctl.fmt(v); w?.querySelector(".fx-note")?.remove(); }
@@ -265,19 +272,20 @@ export class Studio {
     const keyOpts = fx.kind === "comp" ? this.host.keyTracks(tg.track) : [];
     const keyRow = keyOpts.length ? row("被谁压", HINT.key, "", `<select data-key><option value="">不用（自己压自己）</option>${keyOpts.map((x) => `<option value="${esc(x.id)}"${fx.key === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select>`) : "";
     if (mode === "simple" && view) {
-      const fresh = view.read(freshParams(fx.kind, bus)) ?? {}, cur = read ?? fresh;
-      return (read ? "" : `<div class="fx-note">在全量里调过（不是一键的样子）；动这里会改回一键的样子。</div>`) + view.controls.map((c) => {
+      // 在全量里调过（落不到一键公式上）= 一键锁着、灰着显示「改过去会是什么样」，要改先点「改成最接近的一键」（v0.10.14；user「basic模式下应该有一个project to basic模式的功能，不然的话basic模式会是被锁住，免得不小心override」）
+      const fresh = view.read(freshParams(fx.kind, bus)) ?? {}, locked = !read, cur = read ?? view.project(p), dis = locked ? " disabled" : "";
+      return (locked ? `<div class="fx-note">在全量里调过，一键表达不了：一键先锁着，免得一碰就盖掉。<button class="btn cand" data-v="fxproject" title="按最接近的一键数值改写——全量里多调的会丢掉（比如中频那一刀）；能撤销。下面灰着的就是改过去的样子">改成最接近的一键</button></div>` : "") + view.controls.map((c) => {
         const v = cur[c.id] ?? 0;
-        if (c.kind === "toggle") return row(c.label, c.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c.id}">${v ? "开" : "关"}</button>`);
-        if (c.kind === "choice") return row(c.label, c.hint, "", `<span class="fx-seg">${c.choices!.map((x) => `<button class="btn${Math.abs(v - x.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c.id}" data-val="${x.v}">${esc(x.label)}</button>`).join("")}</span>`);
-        return row(c.label, c.hint, `<output data-c="${c.id}">${c.fmt ? c.fmt(v) : v}</output>`, slider({ min: c.min!, max: c.max!, step: c.step!, value: v, attrs: `data-c="${c.id}"`, def: fresh[c.id], defText: fresh[c.id] == null ? undefined : c.fmt ? c.fmt(fresh[c.id]) : String(fresh[c.id]) }));
+        if (c.kind === "toggle") return row(c.label, c.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c.id}"${dis}>${v ? "开" : "关"}</button>`);
+        if (c.kind === "choice") return row(c.label, c.hint, "", `<span class="fx-seg">${c.choices!.map((x) => `<button class="btn${Math.abs(v - x.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c.id}" data-val="${x.v}"${dis}>${esc(x.label)}</button>`).join("")}</span>`);
+        return row(c.label, c.hint, `<output data-c="${c.id}">${c.fmt ? c.fmt(v) : v}</output>`, slider({ min: c.min!, max: c.max!, step: c.step!, value: v, attrs: `data-c="${c.id}"`, def: fresh[c.id], defText: fresh[c.id] == null ? undefined : c.fmt ? c.fmt(fresh[c.id]) : String(fresh[c.id]), disabled: locked }));
       }).join("") + keyRow;
     }
     const fresh = freshParams(fx.kind, bus);
     return fullParams(fx.kind).map((d) => {
       const sl = paramView(fx.kind, d);
       if (d.unit === "bool") return row(sl.label, sl.hint, "", `<button class="btn cand${p[d.id] ? " is-on" : ""}" data-v="fxbool" data-p="${d.id}">${p[d.id] ? "开" : "关"}</button>`);
-      if (fx.kind === "eq" && d.id === "hpHz" && p.hpAuto) return row(sl.label, sl.hint, "", `<span class="fx-dim">自动（按这个声部最低的音）</span>`);
+      if (fx.kind === "eq" && d.id === "hpHz" && p.hpAuto) { const hz = this.host.resolve(tg.track, fx).params.hpHz ?? 0; return row(sl.label, sl.hint, "", `<span class="fx-dim">${hz > 0 ? `自动：${hz} Hz（这位最低的音往下四个半音）` : "自动（这条轨没有音 = 不切）"}</span>`); }
       return row(sl.label, sl.hint, `<output>${sl.fmt(p[d.id])}</output>`, slider({ min: sl.min, max: sl.max, step: sl.step, value: sl.toS(p[d.id]), attrs: `data-p="${d.id}"`, def: sl.toS(fresh[d.id]), defText: sl.fmt(fresh[d.id]) }));
     }).join("") + keyRow;
   }

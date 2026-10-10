@@ -1,7 +1,7 @@
 // 混音台的插件面板（src/ui/plugins.ts，v0.10.8）：一键 = 同一组全量参数的另一种看法。created 2026-10-10 by Claude Opus 5.5
 // 守的是：一键写进去再读出来是同一个值；在全量里调过 = 读不出一键（不假装）；主线程换算（自动低切 / 跟速度）对；默认 EQ 格没碰过 = 平。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { SIMPLE, SIMPLE_BUS, simpleView, PLUGIN_KINDS, defaults, freshParams, fullParams, fxSummary, resolveChain, autoLowCutHz, paramsOf, rt60OfRoom, roomOfRt60, dampKHz, dampOfKHz, linDb, dbLin, paramView, PARAM_HINT } from "../src/ui/plugins.ts";
+import { SIMPLE, SIMPLE_BUS, simpleView, PLUGIN_KINDS, defaults, freshParams, fullParams, fxSummary, resolveChain, autoLowCutHz, paramsOf, rt60OfRoom, roomOfRt60, dampKHz, dampOfKHz, linDb, dbLin, paramView, PARAM_HINT, projectToSimple } from "../src/ui/plugins.ts";
 import { FX_KINDS } from "../src/engine/fx.ts";
 
 describe("插件面板：一键 ↔ 全量", () => {
@@ -85,5 +85,26 @@ describe("物理量纲 + 原声（v0.10.10）", () => {
   });
   it("全量面板：每个参数都有一句解释；百分比只留给本来就是比例的（宽度 / 铺开）", () => {
     for (const k of PLUGIN_KINDS) for (const d of fullParams(k)) { assert(!!PARAM_HINT[`${k}.${d.id}`], `${k}.${d.id} 没有解释`); const v = paramView(k, d); if (v.fmt(d.default).endsWith("%")) assert(["reverb.width", "chorus.spread"].includes(`${k}.${d.id}`), `${k}.${d.id} 还在用百分比`); }
+  });
+});
+
+describe("「改成最接近的一键」（v0.10.14）", () => {
+  it("每种插件（歌手轨 / 路由轨）：全量随便调过之后改过去，一定读得回一键；公式不管的参数照留", () => {
+    let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (const onBus of [false, true]) for (const kind of Object.keys(SIMPLE)) for (let k = 0; k < 40; k++) {
+      const p = { ...freshParams(kind, onBus) };
+      for (const d of fullParams(kind)) if (d.unit !== "bool" && rnd() < 0.5) p[d.id] = d.min + rnd() * (d.max - d.min);
+      const q = projectToSimple(kind, onBus, p), v = simpleView(kind, onBus)!;
+      assert(v.read(q) !== null, `${kind}${onBus ? "（路由轨）" : ""} 改完读不回一键：${JSON.stringify(q)}`);
+    }
+  });
+  it("EQ：中频那一刀丢掉，倾斜 = 高架减低架的一半，手调的低切算「自动低切」", () => {
+    const p = { ...freshParams("eq"), midDb: -4, lowDb: -2, highDb: 4, hpHz: 120 };
+    const v = SIMPLE.eq.read(projectToSimple("eq", false, p))!;
+    eq(v.autoLow, 1); eq(v.tilt, 0.5);
+  });
+  it("压缩：阈值和比例各自反推的「压多少」取平均", () => {
+    const p = { ...freshParams("comp"), thresholdDb: -21, ratio: 3.75, attackMs: 30 };   // 阈值 → 0.5、比例 → 0.5
+    eq(SIMPLE.comp.read(projectToSimple("comp", false, p))!.amount, 0.5);
   });
 });

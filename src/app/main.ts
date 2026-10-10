@@ -1709,6 +1709,7 @@ const studio = new Studio($("stage"), {
   toggleLimiter: () => { const on = !activeMaster(doc.extras).limiter; updateExtras(withMaster(doc.extras, { limiter: on }), { kind: "studio", label: `母线限幅${on ? "开" : "关"}` }); },
   // 插件格（v0.10.8）：总轨 = studio.json master.chain；歌手 = 它那条麦克风轨的 chain
   chain: (track) => (track === STUDIO_MASTER ? activeMaster(doc.extras).chain : studioTrack(doc.extras, trackKey(track))?.chain ?? []),
+  resolve: (track, fx) => resolveChain([fx], { lowestMidi: st.song.parts.some((x) => x.id === track) ? lowestMidiOf(track) : null, bpm: songBpm() })[0],   // 和 pushChannels 同一份换算
   setChain: (track, chain, label, merge) => {
     if (track === STUDIO_MASTER) { updateExtras(withMaster(doc.extras, { chain }), { kind: "studio", label }, merge); return; }
     updateExtras(withTrack(doc.extras, trackKey(track), { chain }), { kind: "studio", label }, merge);

@@ -48,6 +48,7 @@ await p.keyboard.press("Space"); await p.waitForTimeout(200);
 await tab("eq");
 // EQ 页卡片背景（v0.10.11）：频谱面 + EQ 曲线；放着的时候频谱有东西，440 Hz 附近最高；拧「厚 ↔ 亮」曲线跟着变（user「看不到频谱背景调均衡等于瞎子」）
 check(!!(await p.$(`.strip[data-id="${partId}"] .strip-spec .eqc`)), "EQ 页：卡片背景有频谱面和 EQ 曲线");
+check((await p.$$eval(`.strip[data-id="${partId}"] .spec-ticks span`, (es) => es.map((e) => e.textContent))).join(",") === "100,1k,10k", "频谱底下有频率刻度（100 / 1k / 10k）");
 { await p.click("#playBtn"); let d = ""; for (let i = 0; i < 40 && !d; i++) { await p.waitForTimeout(150); d = await p.$eval(`.strip[data-id="${partId}"] .strip-spec .spec`, (e) => e.getAttribute("d") ?? ""); }
   const top = await p.$eval(`.strip[data-id="${partId}"] .strip-spec .spec`, (e) => { const pts = [...(e.getAttribute("d") ?? "").matchAll(/L([\d.]+),([\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]).filter(([x]) => x > 0 && x < 100); return pts.reduce((a, c) => (c[1] < a[1] ? c : a), [0, 101])[0]; });
   const x440 = 100 * Math.log(440 / 30) / Math.log(16000 / 30);
@@ -59,9 +60,15 @@ await p.$eval(`.strip[data-id="${partId}"] .fx-inline input[data-c="tilt"]`, (el
 check((await p.$eval(`.strip[data-id="${partId}"] .strip-spec .eqc`, (e) => e.getAttribute("d"))) !== curve0, "拧「厚 ↔ 亮」= EQ 曲线跟着变");
 check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-c="tilt"]`)) && !!(await p.$(`.strip[data-id="${partId}"] .fx-inline [data-v="fxtoggle"]`)), "拧完卡片上的控件还在（不被换成一行字）");
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
+// 自动低切也画进曲线（user「自动低切好像预览曲线上面没看到」）：曲线 / 读数和送进录音房的同一份换算
+await p.click(`.strip[data-id="${partId}"] .fx-inline [data-v="fxtoggle"][data-c="autoLow"]`); await p.waitForTimeout(120);
+{ const ys = await p.$eval(`.strip[data-id="${partId}"] .strip-spec .eqc`, (e) => [...(e.getAttribute("d") ?? "").matchAll(/[ML]([\d.]+),([\d.]+)/g)].map((m) => Number(m[2])));
+  check(ys[0] > 70 && Math.abs(ys[ys.length - 1] - 50) < 1, "开自动低切 = 曲线最左边（30 Hz）往下掉、高处不动", `${ys[0]} … ${ys[ys.length - 1]}`); }
 await p.selectOption(".mix-tabbar select[data-panelmode]", "full"); await p.waitForTimeout(120);
 check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-p="midDb"]`)), "下拉换「全量」= 卡片上摊开全部参数");
+check(/自动：\d+ Hz/.test(await p.textContent(`.strip[data-id="${partId}"] .fx-inline`)), "全量里低切那一行写出自动算出来的 Hz");
 await p.selectOption(".mix-tabbar select[data-panelmode]", "simple"); await p.waitForTimeout(120);
+await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 await tab("comp");
 check(!!(await p.$(`.strip[data-id="${partId}"] [data-v="fxaddkind"][data-kind="comp"]`)), "压缩页：没有压缩 = 「＋ 压缩」");
 await tab("chain");
@@ -78,6 +85,16 @@ await setRange('.fx-panel input[data-p="midDb"]', -4); await p.waitForTimeout(15
 check((await chain(partId))[0].params.midDb === -4 && (await p.textContent(chip(partId, "eq"))) === "均衡（全量）", "全量里挖一刀中频 = 同一格的参数；卡片上写「全量」");
 await p.click('.fx-panel [data-mode="simple"]'); await p.waitForTimeout(150);
 check(!!(await p.$(".fx-panel .fx-note")), "回到一键 = 明说「在全量里调过」");
+// 一键锁着 + 「改成最接近的一键」（v0.10.14；user「basic模式下应该有一个project to basic模式的功能，不然的话basic模式会是被锁住，免得不小心override」）
+check(await p.$eval('.fx-panel input[data-c="tilt"]', (e) => e.disabled) && await p.$eval('.fx-panel [data-v="fxtoggle"]', (e) => e.disabled), "在全量里调过 = 一键的旋钮 / 开关灰着、动不了");
+{ const r = await p.$eval('.fx-panel input[data-c="tilt"]', (e) => { const b = e.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
+  await p.mouse.move(r.x, r.y); await p.mouse.wheel(0, -100); await p.waitForTimeout(120);
+  check((await chain(partId))[0].params.midDb === -4, "锁着时滚轮也不会盖掉全量里调的"); }
+await p.click('.fx-panel [data-v="fxproject"]'); await p.waitForTimeout(150);
+{ const q = (await chain(partId))[0].params;
+  check(q.midDb === 0 && q.highDb === 3 && q.lowDb === -3 && !(await p.$(".fx-panel .fx-note")) && !(await p.$eval('.fx-panel input[data-c="tilt"]', (e) => e.disabled)), "「改成最接近的一键」= 中频那一刀丢掉、倾斜留着（亮 3 dB），一键解锁", JSON.stringify(q)); }
+await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
+check((await chain(partId))[0].params.midDb === -4 && !!(await p.$(".fx-panel .fx-note")), "能撤销：撤回 = 全量里那一刀回来、一键又锁上");
 await p.click('.fx-panel [data-v="fxon"]'); await p.waitForTimeout(150);
 check((await chain(partId))[0].on === false && (await p.$eval(chip(partId, "eq"), (e) => e.classList.contains("off"))), "关 = 这一格跳过（参数留着），卡片上划掉");
 // ＋ 压缩，被谁压

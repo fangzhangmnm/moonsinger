@@ -39,9 +39,14 @@ export interface SimpleView {
   read(p: Params): Record<string, number> | null;
   /** 一键面板的值 → 全量参数（只改公式管的那几个，别的照留）。 */
   write(v: Record<string, number>, p: Params): Params;
+  /** 全量参数（落不到公式上）→ 最接近的一键值（v0.10.14；user「basic模式下应该有一个project to basic模式的功能，不然的话basic模式会是被锁住，免得不小心override」）。 */
+  project(p: Params): Record<string, number>;
 }
 const near = (a: number, b: number, e = 1e-3) => Math.abs(a - b) <= e;
 const r1 = (x: number) => Math.round(x * 10) / 10;
+/** 一键旋钮的格子（0–1，0.05 一格）；几个参数各自反推出的位置取平均 = 离几个都最近。 */
+const knob01 = (...xs: number[]) => Math.round(Math.max(0, Math.min(1, xs.reduce((a, b) => a + b, 0) / xs.length)) * 20) / 20;
+const nearestBeat = (b: number | undefined) => (b ? [0.5, 0.75, 1].reduce((a, c) => (Math.abs(c - b) < Math.abs(a - b) ? c : a)) : 0.75);
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 // ── 物理量纲（v0.10.10，user「房间大小为什么是百分比……不是说好都用SI吗？都用可以理解的不依赖与convention的量纲」）──
 //   存的还是原语的参数（下礼拜 Fable 理契约时再定存什么），面板上的旋钮和读数一律换算成物理量：秒、kHz、dB。
@@ -132,6 +137,8 @@ const EQ_SIMPLE: SimpleView = {
     return { autoLow: p.hpAuto ? 1 : 0, tilt: flat ? 0 : p.highDb / TILT_DB };
   },
   write(v, p) { const t = Math.max(-1, Math.min(1, v.tilt ?? 0)); return { ...p, hpAuto: v.autoLow ? 1 : 0, hpHz: 0, lpHz: 0, midDb: 0, lowHz: TILT_LO, highHz: TILT_HI, lowDb: r1(-t * TILT_DB), highDb: r1(t * TILT_DB) }; },
+  /** 低切开着（自动或手调）= 自动低切；高架减低架的一半 = 倾斜；中峰 / 高切丢掉。 */
+  project(p) { return { autoLow: p.hpAuto || p.hpHz > 0 ? 1 : 0, tilt: Math.round(Math.max(-1, Math.min(1, (p.highDb - p.lowDb) / (2 * TILT_DB))) * 20) / 20 }; },
 };
 /** 压缩一键 = 「压多少」a：阈值 −6 → −36 dB、比例 1.5 → 6，起 10 ms、落 150 ms、拐点 6 dB 固定；补偿 = 压掉的一半补回来。 */
 const compOf = (a: number) => { const thr = -6 - 30 * a, ratio = 1.5 + 4.5 * a; return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) }; };
@@ -143,6 +150,7 @@ const COMP_SIMPLE: SimpleView = {
     return near(p.ratio, c.ratio, 0.06) && p.attackMs === c.attackMs && p.releaseMs === c.releaseMs && p.kneeDb === c.kneeDb && near(p.makeupDb, c.makeupDb, 0.06) ? { amount: Math.round(a * 20) / 20 } : null;
   },
   write(v, p) { return { ...p, ...compOf(Math.max(0, Math.min(1, v.amount ?? 0))) }; },
+  project(p) { return { amount: knob01((-p.thresholdDb - 6) / 30, (p.ratio - 1.5) / 4.5) }; },
 };
 /** 混响一键 = 「远近」d：**原声 100% 不动**、湿 8% → 48% 加在上面（v0.10.10 改；原来是原声和湿交叉，往右拧原声就掉 = user「开了混响结果铃声都哑掉了」「有可能是你混响的新手模式Preset不合理」）、
  *  房间 0.3 → 0.95；高频吸收 0.5、预延迟 10 ms、宽度满。 */
@@ -151,6 +159,7 @@ const REV_SIMPLE: SimpleView = {
   controls: [{ id: "far", label: "远近", hint: "往右 = 越远、越大的房间（铃可以远一点，贴耳的人声近一点）；原声不动，只往上加混响", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d) => { const c = revOf(d); return `湿 ${dbt(linDb(c.mix))} · ${rt60OfRoom(c.room).toFixed(1)} s`; } }],
   read(p) { const d = (p.mix - 0.08) / 0.4, c = revOf(d); return d >= -1e-3 && d <= 1 + 1e-3 && p.dry === 1 && near(p.room, c.room, 0.006) && p.damp === 0.5 && p.preDelayMs === 10 && p.width === 1 ? { far: Math.round(d * 20) / 20 } : null; },
   write(v, p) { return { ...p, ...revOf(Math.max(0, Math.min(1, v.far ?? 0))) }; },
+  project(p) { return { far: knob01((p.mix - 0.08) / 0.4, (p.room - 0.3) / 0.65) }; },
 };
 /** 延迟一键 = 「回声多少」e + 「几拍一次」：湿 10% → 50%、反馈 0.15 → 0.65；反馈高切 6000 Hz；时间跟速度。 */
 const dlyOf = (e: number) => ({ mix: r1((0.1 + 0.4 * e) * 100) / 100, dry: 1, feedback: r1((0.15 + 0.5 * e) * 100) / 100, dampHz: 6000 });   // 原声 100% 不动（同混响，v0.10.10）
@@ -161,6 +170,7 @@ const DLY_SIMPLE: SimpleView = {
   ],
   read(p) { const e = (p.mix - 0.1) / 0.4, c = dlyOf(e); return e >= -1e-3 && e <= 1 + 1e-3 && p.dry === 1 && near(p.feedback, c.feedback, 0.006) && p.dampHz === 6000 && [0.5, 0.75, 1].includes(p.syncBeats) ? { echo: Math.round(e * 20) / 20, beats: p.syncBeats } : null; },
   write(v, p) { return { ...p, ...dlyOf(Math.max(0, Math.min(1, v.echo ?? 0))), syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 }; },
+  project(p) { return { echo: knob01((p.mix - 0.1) / 0.4, (p.feedback - 0.15) / 0.5), beats: nearestBeat(p.syncBeats) }; },
 };
 /** 合唱一键 = 「宽」w：湿 20% → 60%、抖动深度 1 → 5 ms、左右铺开 0.4 → 1；三条、延迟 18 ms、抖动 0.6 Hz。 */
 const choOf = (w: number) => ({ mix: r1((0.2 + 0.4 * w) * 100) / 100, dry: 1, depthMs: r1(1 + 4 * w), spread: r1((0.4 + 0.6 * w) * 100) / 100, voices: 3, delayMs: 18, rateHz: 0.6 });   // 原声 100% 不动（同混响，v0.10.10）
@@ -168,11 +178,13 @@ const CHO_SIMPLE: SimpleView = {
   controls: [{ id: "wide", label: "宽", hint: "往右 = 越宽、越像好几个人；原声不动", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (w) => { const c = choOf(w); return `湿 ${dbt(linDb(c.mix))} · 抖动 ${c.depthMs} ms`; } }],
   read(p) { const w = (p.mix - 0.2) / 0.4, c = choOf(w); return w >= -1e-3 && w <= 1 + 1e-3 && p.dry === 1 && near(p.depthMs, c.depthMs, 0.06) && near(p.spread, c.spread, 0.006) && p.voices === 3 && p.delayMs === 18 && p.rateHz === 0.6 ? { wide: Math.round(w * 20) / 20 } : null; },
   write(v, p) { return { ...p, ...choOf(Math.max(0, Math.min(1, v.wide ?? 0))) }; },
+  project(p) { return { wide: knob01((p.mix - 0.2) / 0.4, (p.depthMs - 1) / 4, (p.spread - 0.4) / 0.6) }; },
 };
 const GAIN_SIMPLE: SimpleView = {
   controls: [{ id: "dB", label: "增益", hint: "插件链中间单纯调大调小（前面的插件把音量改了，用它补回来）", kind: "knob", min: -24, max: 12, step: 0.5, fmt: (v) => `${v > 0 ? "+" : ""}${v.toFixed(1)} dB` }],
   read(p) { return { dB: p.dB }; },
   write(v, p) { return { ...p, dB: v.dB ?? 0 }; },
+  project(p) { return { dB: p.dB }; },
 };
 export const SIMPLE: Record<string, SimpleView> = { eq: EQ_SIMPLE, comp: COMP_SIMPLE, reverb: REV_SIMPLE, delay: DLY_SIMPLE, chorus: CHO_SIMPLE, gain: GAIN_SIMPLE };
 /** 放在路由轨上（发送的返回轨）的混响 / 延迟 / 合唱：混音的老规矩 = 全湿（原声留在歌手自己那条路上，发多少 = 加多少效果；不全湿 = 发得越多原声越响）。
@@ -181,16 +193,23 @@ const wet1 = (p: Params) => p.mix === 1 && p.dry === 0;
 export const SIMPLE_BUS: Record<string, SimpleView> = {
   reverb: { controls: [{ id: "size", label: "混响时间", hint: "尾巴衰减 60 dB 要多久（RT60）：往右 = 越大的房间（发多少由发送那边的旋钮管）", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d) => `${rt60OfRoom(0.3 + 0.65 * d).toFixed(1)} s` }],
     read(p) { const d = (p.room - 0.3) / 0.65; return wet1(p) && d >= -1e-3 && d <= 1 + 1e-3 && p.damp === 0.5 && p.preDelayMs === 10 && p.width === 1 ? { size: Math.round(d * 20) / 20 } : null; },
-    write(v, p) { const d = Math.max(0, Math.min(1, v.size ?? 0)); return { ...p, room: r1((0.3 + 0.65 * d) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1, dry: 0 }; } },
+    write(v, p) { const d = Math.max(0, Math.min(1, v.size ?? 0)); return { ...p, room: r1((0.3 + 0.65 * d) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1, dry: 0 }; },
+    project(p) { return { size: knob01((p.room - 0.3) / 0.65) }; } },
   delay: { controls: [{ id: "echo", label: "回声多长", hint: "往右 = 回声重复得越久（发多少由发送那边的旋钮管）", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e) => `每次 ${linDb(0.15 + 0.5 * e).toFixed(1)} dB` }, DLY_SIMPLE.controls[1]],
     read(p) { const e = (p.feedback - 0.15) / 0.5; return wet1(p) && e >= -1e-3 && e <= 1 + 1e-3 && p.dampHz === 6000 && [0.5, 0.75, 1].includes(p.syncBeats) ? { echo: Math.round(e * 20) / 20, beats: p.syncBeats } : null; },
-    write(v, p) { const e = Math.max(0, Math.min(1, v.echo ?? 0)); return { ...p, feedback: r1((0.15 + 0.5 * e) * 100) / 100, dampHz: 6000, mix: 1, dry: 0, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 }; } },
+    write(v, p) { const e = Math.max(0, Math.min(1, v.echo ?? 0)); return { ...p, feedback: r1((0.15 + 0.5 * e) * 100) / 100, dampHz: 6000, mix: 1, dry: 0, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 }; },
+    project(p) { return { echo: knob01((p.feedback - 0.15) / 0.5), beats: nearestBeat(p.syncBeats) }; } },
   chorus: { controls: [{ ...CHO_SIMPLE.controls[0], hint: "往右 = 越宽、越像好几个人（发多少由发送那边的旋钮管）", fmt: (w) => `抖动 ${choOf(w).depthMs} ms` }],
     read(p) { const w = (p.depthMs - 1) / 4; return wet1(p) && w >= -1e-3 && w <= 1 + 1e-3 && near(p.spread, r1((0.4 + 0.6 * w) * 100) / 100, 0.006) && p.voices === 3 && p.delayMs === 18 && p.rateHz === 0.6 ? { wide: Math.round(w * 20) / 20 } : null; },
-    write(v, p) { const w = Math.max(0, Math.min(1, v.wide ?? 0)); return { ...p, ...choOf(w), mix: 1, dry: 0 }; } },
+    write(v, p) { const w = Math.max(0, Math.min(1, v.wide ?? 0)); return { ...p, ...choOf(w), mix: 1, dry: 0 }; },
+    project(p) { return { wide: knob01((p.depthMs - 1) / 4, (p.spread - 0.4) / 0.6) }; } },
 };
 /** 这一格用哪套一键面板（onBus = 在路由轨上）。 */
 export const simpleView = (kind: string, onBus = false): SimpleView | undefined => (onBus ? SIMPLE_BUS[kind] : undefined) ?? SIMPLE[kind];
+/** 「改成最接近的一键」：全量参数 → 最接近的一键值 → 按一键公式写回（公式不管的参数照留）。结果一定读得回一键（plugins.test 钉着）。 */
+export function projectToSimple(kind: string, onBus: boolean, p: Params): Params {
+  const v = simpleView(kind, onBus); return v ? v.write(v.project(p), p) : p;
+}
 /** 新插一格的初始参数：一键面板的「中间值」（插上就有一点效果，一眼能听出它在干什么）。 */
 export function freshParams(kind: string, onBus = false): Params {
   const p = defaults(kind), s = SIMPLE[kind];

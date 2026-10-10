@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.13-2026-10-10";
+var APP_VERSION = "v0.10.14-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -25489,6 +25489,7 @@ var SPEC_BANDS = 96;
 var SPEC_FMIN = 30;
 var SPEC_FMAX = 16e3;
 var bandHz = (k2) => SPEC_FMIN * (SPEC_FMAX / SPEC_FMIN) ** ((k2 + 0.5) / SPEC_BANDS);
+var xOfHz = (f2) => Math.log(Math.max(SPEC_FMIN, Math.min(SPEC_FMAX, f2)) / SPEC_FMIN) / Math.log(SPEC_FMAX / SPEC_FMIN);
 function fft(re2, im2) {
   const n10 = re2.length;
   for (let i10 = 1, j2 = 0; i10 < n10; i10++) {
@@ -25577,6 +25578,8 @@ var paramsOf = (fx) => {
 var fullyWet = (fx) => (fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.on !== false && paramsOf(fx).dry === 0;
 var near = (a10, b3, e10 = 1e-3) => Math.abs(a10 - b3) <= e10;
 var r1 = (x2) => Math.round(x2 * 10) / 10;
+var knob01 = (...xs) => Math.round(Math.max(0, Math.min(1, xs.reduce((a10, b3) => a10 + b3, 0) / xs.length)) * 20) / 20;
+var nearestBeat = (b3) => b3 ? [0.5, 0.75, 1].reduce((a10, c10) => Math.abs(c10 - b3) < Math.abs(a10 - b3) ? c10 : a10) : 0.75;
 var pct = (v) => `${Math.round(v * 100)}%`;
 var clamp01 = (x2) => Math.max(0, Math.min(1, x2));
 var COMB_AVG_S = 1378 / 44100;
@@ -25673,6 +25676,10 @@ var EQ_SIMPLE = {
   write(v, p2) {
     const t10 = Math.max(-1, Math.min(1, v.tilt ?? 0));
     return { ...p2, hpAuto: v.autoLow ? 1 : 0, hpHz: 0, lpHz: 0, midDb: 0, lowHz: TILT_LO, highHz: TILT_HI, lowDb: r1(-t10 * TILT_DB), highDb: r1(t10 * TILT_DB) };
+  },
+  /** 低切开着（自动或手调）= 自动低切；高架减低架的一半 = 倾斜；中峰 / 高切丢掉。 */
+  project(p2) {
+    return { autoLow: p2.hpAuto || p2.hpHz > 0 ? 1 : 0, tilt: Math.round(Math.max(-1, Math.min(1, (p2.highDb - p2.lowDb) / (2 * TILT_DB))) * 20) / 20 };
   }
 };
 var compOf = (a10) => {
@@ -25692,6 +25699,9 @@ var COMP_SIMPLE = {
   },
   write(v, p2) {
     return { ...p2, ...compOf(Math.max(0, Math.min(1, v.amount ?? 0))) };
+  },
+  project(p2) {
+    return { amount: knob01((-p2.thresholdDb - 6) / 30, (p2.ratio - 1.5) / 4.5) };
   }
 };
 var revOf = (d3) => ({ mix: r1((0.08 + 0.4 * d3) * 100) / 100, dry: 1, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
@@ -25706,6 +25716,9 @@ var REV_SIMPLE = {
   },
   write(v, p2) {
     return { ...p2, ...revOf(Math.max(0, Math.min(1, v.far ?? 0))) };
+  },
+  project(p2) {
+    return { far: knob01((p2.mix - 0.08) / 0.4, (p2.room - 0.3) / 0.65) };
   }
 };
 var dlyOf = (e10) => ({ mix: r1((0.1 + 0.4 * e10) * 100) / 100, dry: 1, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3 });
@@ -25723,6 +25736,9 @@ var DLY_SIMPLE = {
   },
   write(v, p2) {
     return { ...p2, ...dlyOf(Math.max(0, Math.min(1, v.echo ?? 0))), syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
+  },
+  project(p2) {
+    return { echo: knob01((p2.mix - 0.1) / 0.4, (p2.feedback - 0.15) / 0.5), beats: nearestBeat(p2.syncBeats) };
   }
 };
 var choOf = (w2) => ({ mix: r1((0.2 + 0.4 * w2) * 100) / 100, dry: 1, depthMs: r1(1 + 4 * w2), spread: r1((0.4 + 0.6 * w2) * 100) / 100, voices: 3, delayMs: 18, rateHz: 0.6 });
@@ -25737,6 +25753,9 @@ var CHO_SIMPLE = {
   },
   write(v, p2) {
     return { ...p2, ...choOf(Math.max(0, Math.min(1, v.wide ?? 0))) };
+  },
+  project(p2) {
+    return { wide: knob01((p2.mix - 0.2) / 0.4, (p2.depthMs - 1) / 4, (p2.spread - 0.4) / 0.6) };
   }
 };
 var GAIN_SIMPLE = {
@@ -25746,6 +25765,9 @@ var GAIN_SIMPLE = {
   },
   write(v, p2) {
     return { ...p2, dB: v.dB ?? 0 };
+  },
+  project(p2) {
+    return { dB: p2.dB };
   }
 };
 var SIMPLE = { eq: EQ_SIMPLE, comp: COMP_SIMPLE, reverb: REV_SIMPLE, delay: DLY_SIMPLE, chorus: CHO_SIMPLE, gain: GAIN_SIMPLE };
@@ -25760,6 +25782,9 @@ var SIMPLE_BUS = {
     write(v, p2) {
       const d3 = Math.max(0, Math.min(1, v.size ?? 0));
       return { ...p2, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1, dry: 0 };
+    },
+    project(p2) {
+      return { size: knob01((p2.room - 0.3) / 0.65) };
     }
   },
   delay: {
@@ -25771,6 +25796,9 @@ var SIMPLE_BUS = {
     write(v, p2) {
       const e10 = Math.max(0, Math.min(1, v.echo ?? 0));
       return { ...p2, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3, mix: 1, dry: 0, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
+    },
+    project(p2) {
+      return { echo: knob01((p2.feedback - 0.15) / 0.5), beats: nearestBeat(p2.syncBeats) };
     }
   },
   chorus: {
@@ -25782,10 +25810,17 @@ var SIMPLE_BUS = {
     write(v, p2) {
       const w2 = Math.max(0, Math.min(1, v.wide ?? 0));
       return { ...p2, ...choOf(w2), mix: 1, dry: 0 };
+    },
+    project(p2) {
+      return { wide: knob01((p2.depthMs - 1) / 4, (p2.spread - 0.4) / 0.6) };
     }
   }
 };
 var simpleView = (kind, onBus = false) => (onBus ? SIMPLE_BUS[kind] : void 0) ?? SIMPLE[kind];
+function projectToSimple(kind, onBus, p2) {
+  const v = simpleView(kind, onBus);
+  return v ? v.write(v.project(p2), p2) : p2;
+}
 function freshParams(kind, onBus = false) {
   const p2 = defaults(kind), s10 = SIMPLE[kind];
   if (onBus && kind === "reverb") return SIMPLE_BUS.reverb.write({ size: 0.5 }, p2);
@@ -25832,7 +25867,7 @@ function paramRow(label, hint2, out, control, cls = "fx-row") {
 }
 function slider(s10) {
   const def = s10.def == null || !Number.isFinite(s10.def) ? "" : ` data-def="${s10.def}" title="\u53CC\u51FB\u56DE ${esc4(s10.defText ?? String(s10.def))}"`;
-  return `<input type="range" min="${s10.min}" max="${s10.max}" step="${s10.step}" value="${s10.value}"${def} ${s10.attrs} />`;
+  return `<input type="range" min="${s10.min}" max="${s10.max}" step="${s10.step}" value="${s10.value}"${def}${s10.disabled ? " disabled" : ""} ${s10.attrs} />`;
 }
 var fire = (t10) => {
   t10.dispatchEvent(new Event("input", { bubbles: true }));
@@ -25868,6 +25903,7 @@ function wireParamRows(root) {
 }
 
 // src/ui/studio.ts
+var SPEC_TICKS = [100, 1e3, 1e4];
 var MASTER = "__master";
 var TABS = [
   { id: "basic", label: "\u57FA\u7840", hint: "\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\uFF1A\u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73\u3001\u5DE6\u53F3\u6446\u5F00\uFF08\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65\uFF09" },
@@ -25883,7 +25919,7 @@ var toDb = (x2) => x2 > 1e-5 ? 20 * Math.log10(x2) : -60;
 var row = paramRow;
 var HINT2 = {
   gain: "\u589E\u76CA\uFF08\u63A8\u5B50\uFF09\uFF1A\u8FD9\u6761\u8F68\u6574\u4F53\u7684\u97F3\u91CF\u3002\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65 = \u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73",
-  pan: "\u58F0\u50CF\uFF1A\u5728\u5DE6\u53F3\u54EA\u4E2A\u4F4D\u7F6E\u3002\u51E0\u6761\u8F68\u5DE6\u53F3\u9519\u5F00\u4E00\u70B9\uFF0C\u5C31\u4E0D\u4F1A\u90FD\u6324\u5728\u6B63\u4E2D\u95F4",
+  pan: "\u58F0\u50CF\uFF1A\u5728\u5DE6\u53F3\u54EA\u4E2A\u4F4D\u7F6E\u3002\u51E0\u6761\u8F68\u5DE6\u53F3\u9519\u5F00\u4E00\u70B9\uFF0C\u5C31\u4E0D\u4F1A\u90FD\u6324\u5728\u6B63\u4E2D\u95F4\u3002\u6570\u5B57 = \u5F80\u4E00\u8FB9\u63A8\u4E86\u591A\u5C11\uFF08\u7B49\u529F\u7387\uFF1A\u600E\u4E48\u6446\u603B\u54CD\u5EA6\u4E0D\u53D8\uFF09\uFF1A\u4E2D = \u4E24\u4E2A\u5587\u53ED\u5404 \u22123 dB\uFF1B50 = \u8FD9\u8FB9 \u22120.7 dB\u3001\u90A3\u8FB9 \u22128.3 dB\uFF08\u5DEE 7.7 dB\uFF09\uFF1B100 = \u5168\u5728\u8FD9\u8FB9\uFF0C\u53E6\u4E00\u8FB9\u6CA1\u58F0",
   masterGain: "\u603B\u8F68\u589E\u76CA\uFF1A\u6240\u6709\u8F68\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E\u6574\u4F53\u518D\u8C03\u5927\u8C03\u5C0F",
   out: "\u51FA\u5230\uFF1A\u8FD9\u6761\u8F68\u7684\u58F0\u97F3\u6700\u540E\u53BB\u54EA\u2014\u2014\u76F4\u63A5\u53BB\u603B\u8F68\uFF0C\u6216\u8005\u5148\u8FDB\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u5728\u90A3\u91CC\u4E00\u8D77\u8FC7\u6548\u679C\uFF09",
   send: "\u53D1\u9001\uFF1A\u63A8\u5B50\u4E4B\u540E\u518D\u590D\u5236\u4E00\u4EFD\u7ED9\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF1B\u8D8A\u5927\uFF0C\u90A3\u8FB9\u7684\u6548\u679C\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\uFF09\u8D8A\u591A\uFF0C\u539F\u58F0\u7167\u65E7\u8D70\u300C\u51FA\u5230\u300D",
@@ -25962,14 +25998,15 @@ var Studio2 = class {
     }
   }
   /** 这一格 EQ 的响应曲线（±18 dB 映到卡片高度，中线 = 0 dB）。 */
-  curvePath(fx) {
+  curvePath(track, fx) {
     if (!fx || fx.on === false) return "M0,50L100,50";
-    const db = eqResponseDb(paramsOf(fx), 48e3, Array.from({ length: SPEC_BANDS }, (_2, k2) => bandHz(k2)));
+    const db = eqResponseDb(paramsOf(this.host.resolve(track, fx)), 48e3, Array.from({ length: SPEC_BANDS }, (_2, k2) => bandHz(k2)));
     return db.map((d3, k2) => `${k2 ? "L" : "M"}${(100 * (k2 + 0.5) / SPEC_BANDS).toFixed(2)},${(50 - Math.max(-18, Math.min(18, d3)) / 18 * 45).toFixed(2)}`).join("");
   }
   specSvg(track) {
     const eq2 = this.slots(track).find((s10) => s10.fx.kind === "eq")?.fx ?? null;
-    return `<svg class="strip-spec" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="spec" d=""/><path class="eqc" d="${this.curvePath(eq2)}"/></svg>`;
+    const ticks = SPEC_TICKS.map((f2) => ({ f: f2, x: 100 * xOfHz(f2) }));
+    return `<svg class="strip-spec" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="grid" d="${ticks.map((t10) => `M${t10.x.toFixed(2)},0L${t10.x.toFixed(2)},100`).join("")}"/><path class="spec" d=""/><path class="eqc" d="${this.curvePath(track, eq2)}"/></svg><div class="spec-ticks" aria-hidden="true">${ticks.map((t10) => `<span style="left:${t10.x.toFixed(2)}%">${t10.f >= 1e3 ? `${t10.f / 1e3}k` : t10.f}</span>`).join("")}</div>`;
   }
   tick = (now2) => {
     this.raf = 0;
@@ -26062,6 +26099,9 @@ var Studio2 = class {
     } else if (v === "fxchoice" && tg2) {
       const b3 = t10.closest("[data-c]");
       this.simpleSet(tg2, b3.dataset.c, Number(b3.dataset.val), false);
+      this.render();
+    } else if (v === "fxproject" && tg2) {
+      this.patch(tg2, (fx) => ({ ...fx, params: projectToSimple(fx.kind, this.onBus(tg2.track), paramsOf(fx)) }), "\u6539\u6210\u6700\u63A5\u8FD1\u7684\u4E00\u952E");
       this.render();
     } else if (v === "fxbool" && tg2) {
       const id2 = t10.closest("[data-p]").dataset.p;
@@ -26184,7 +26224,7 @@ var Studio2 = class {
     }
     if (nx2.kind === "eq") {
       const c10 = this.el.querySelector(`.strip[data-id="${CSS.escape(tg2.track)}"] .strip-spec .eqc`);
-      if (c10) c10.setAttribute("d", this.curvePath(nx2));
+      if (c10) c10.setAttribute("d", this.curvePath(tg2.track, nx2));
     }
   }
   deleteFx(tg2) {
@@ -26202,7 +26242,8 @@ var Studio2 = class {
   simpleSet(tg2, id2, v, live, input) {
     const s10 = this.slotOf(tg2);
     if (!s10) return;
-    const bus = this.onBus(tg2.track), view2 = simpleView(s10.fx.kind, bus), base3 = view2.read(paramsOf(s10.fx)) ?? view2.read(freshParams(s10.fx.kind, bus)) ?? {};
+    const bus = this.onBus(tg2.track), view2 = simpleView(s10.fx.kind, bus), base3 = view2.read(paramsOf(s10.fx));
+    if (!base3) return;
     const ctl = view2.controls.find((c10) => c10.id === id2);
     this.patch(tg2, (fx) => ({ ...fx, params: view2.write({ ...base3, [id2]: v }, paramsOf(fx)) }), ctl?.label ?? id2, live);
     if (live && input) {
@@ -26229,19 +26270,22 @@ var Studio2 = class {
     const keyOpts = fx.kind === "comp" ? this.host.keyTracks(tg2.track) : [];
     const keyRow = keyOpts.length ? row("\u88AB\u8C01\u538B", HINT2.key, "", `<select data-key><option value="">\u4E0D\u7528\uFF08\u81EA\u5DF1\u538B\u81EA\u5DF1\uFF09</option>${keyOpts.map((x2) => `<option value="${esc5(x2.id)}"${fx.key === x2.id ? " selected" : ""}>${esc5(x2.name)}</option>`).join("")}</select>`) : "";
     if (mode === "simple" && view2) {
-      const fresh2 = view2.read(freshParams(fx.kind, bus)) ?? {}, cur = read ?? fresh2;
-      return (read ? "" : `<div class="fx-note">\u5728\u5168\u91CF\u91CC\u8C03\u8FC7\uFF08\u4E0D\u662F\u4E00\u952E\u7684\u6837\u5B50\uFF09\uFF1B\u52A8\u8FD9\u91CC\u4F1A\u6539\u56DE\u4E00\u952E\u7684\u6837\u5B50\u3002</div>`) + view2.controls.map((c10) => {
+      const fresh2 = view2.read(freshParams(fx.kind, bus)) ?? {}, locked = !read, cur = read ?? view2.project(p2), dis = locked ? " disabled" : "";
+      return (locked ? `<div class="fx-note">\u5728\u5168\u91CF\u91CC\u8C03\u8FC7\uFF0C\u4E00\u952E\u8868\u8FBE\u4E0D\u4E86\uFF1A\u4E00\u952E\u5148\u9501\u7740\uFF0C\u514D\u5F97\u4E00\u78B0\u5C31\u76D6\u6389\u3002<button class="btn cand" data-v="fxproject" title="\u6309\u6700\u63A5\u8FD1\u7684\u4E00\u952E\u6570\u503C\u6539\u5199\u2014\u2014\u5168\u91CF\u91CC\u591A\u8C03\u7684\u4F1A\u4E22\u6389\uFF08\u6BD4\u5982\u4E2D\u9891\u90A3\u4E00\u5200\uFF09\uFF1B\u80FD\u64A4\u9500\u3002\u4E0B\u9762\u7070\u7740\u7684\u5C31\u662F\u6539\u8FC7\u53BB\u7684\u6837\u5B50">\u6539\u6210\u6700\u63A5\u8FD1\u7684\u4E00\u952E</button></div>` : "") + view2.controls.map((c10) => {
         const v = cur[c10.id] ?? 0;
-        if (c10.kind === "toggle") return row(c10.label, c10.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c10.id}">${v ? "\u5F00" : "\u5173"}</button>`);
-        if (c10.kind === "choice") return row(c10.label, c10.hint, "", `<span class="fx-seg">${c10.choices.map((x2) => `<button class="btn${Math.abs(v - x2.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c10.id}" data-val="${x2.v}">${esc5(x2.label)}</button>`).join("")}</span>`);
-        return row(c10.label, c10.hint, `<output data-c="${c10.id}">${c10.fmt ? c10.fmt(v) : v}</output>`, slider({ min: c10.min, max: c10.max, step: c10.step, value: v, attrs: `data-c="${c10.id}"`, def: fresh2[c10.id], defText: fresh2[c10.id] == null ? void 0 : c10.fmt ? c10.fmt(fresh2[c10.id]) : String(fresh2[c10.id]) }));
+        if (c10.kind === "toggle") return row(c10.label, c10.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c10.id}"${dis}>${v ? "\u5F00" : "\u5173"}</button>`);
+        if (c10.kind === "choice") return row(c10.label, c10.hint, "", `<span class="fx-seg">${c10.choices.map((x2) => `<button class="btn${Math.abs(v - x2.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c10.id}" data-val="${x2.v}"${dis}>${esc5(x2.label)}</button>`).join("")}</span>`);
+        return row(c10.label, c10.hint, `<output data-c="${c10.id}">${c10.fmt ? c10.fmt(v) : v}</output>`, slider({ min: c10.min, max: c10.max, step: c10.step, value: v, attrs: `data-c="${c10.id}"`, def: fresh2[c10.id], defText: fresh2[c10.id] == null ? void 0 : c10.fmt ? c10.fmt(fresh2[c10.id]) : String(fresh2[c10.id]), disabled: locked }));
       }).join("") + keyRow;
     }
     const fresh = freshParams(fx.kind, bus);
     return fullParams(fx.kind).map((d3) => {
       const sl2 = paramView(fx.kind, d3);
       if (d3.unit === "bool") return row(sl2.label, sl2.hint, "", `<button class="btn cand${p2[d3.id] ? " is-on" : ""}" data-v="fxbool" data-p="${d3.id}">${p2[d3.id] ? "\u5F00" : "\u5173"}</button>`);
-      if (fx.kind === "eq" && d3.id === "hpHz" && p2.hpAuto) return row(sl2.label, sl2.hint, "", `<span class="fx-dim">\u81EA\u52A8\uFF08\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\uFF09</span>`);
+      if (fx.kind === "eq" && d3.id === "hpHz" && p2.hpAuto) {
+        const hz = this.host.resolve(tg2.track, fx).params.hpHz ?? 0;
+        return row(sl2.label, sl2.hint, "", `<span class="fx-dim">${hz > 0 ? `\u81EA\u52A8\uFF1A${hz} Hz\uFF08\u8FD9\u4F4D\u6700\u4F4E\u7684\u97F3\u5F80\u4E0B\u56DB\u4E2A\u534A\u97F3\uFF09` : "\u81EA\u52A8\uFF08\u8FD9\u6761\u8F68\u6CA1\u6709\u97F3 = \u4E0D\u5207\uFF09"}</span>`);
+      }
       return row(sl2.label, sl2.hint, `<output>${sl2.fmt(p2[d3.id])}</output>`, slider({ min: sl2.min, max: sl2.max, step: sl2.step, value: sl2.toS(p2[d3.id]), attrs: `data-p="${d3.id}"`, def: sl2.toS(fresh[d3.id]), defText: sl2.fmt(fresh[d3.id]) }));
     }).join("") + keyRow;
   }
@@ -39132,7 +39176,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "ce3a337ebe6d",
+  cssHash: "221068e2328d",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -39458,6 +39502,8 @@ var studio = new Studio2($2("stage"), {
   },
   // 插件格（v0.10.8）：总轨 = studio.json master.chain；歌手 = 它那条麦克风轨的 chain
   chain: (track) => track === MASTER ? activeMaster(doc.extras).chain : studioTrack(doc.extras, trackKey(track))?.chain ?? [],
+  resolve: (track, fx) => resolveChain([fx], { lowestMidi: st2.song.parts.some((x2) => x2.id === track) ? lowestMidiOf(track) : null, bpm: songBpm() })[0],
+  // 和 pushChannels 同一份换算
   setChain: (track, chain, label, merge) => {
     if (track === MASTER) {
       updateExtras(withMaster(doc.extras, { chain }), { kind: "studio", label }, merge);
@@ -42277,4 +42323,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2e1ffd8e0dd2.mjs.map
+//# sourceMappingURL=moonsinger-c56a2092a7db.mjs.map

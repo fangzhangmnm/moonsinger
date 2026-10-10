@@ -527,7 +527,10 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .strip-spec { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 10px; overflow: hidden; }
 .strip-spec .spec { fill: var(--accent); opacity: .14; }
 .strip-spec .eqc { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: .7; vector-effect: non-scaling-stroke; }
-.strip > :not(.strip-spec):not(.strip-meter) { position: relative; }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
+.strip-spec .grid { stroke: var(--muted); stroke-width: 1; opacity: .25; vector-effect: non-scaling-stroke; fill: none; }
+.spec-ticks { position: absolute; left: 0; right: 0; bottom: 2px; height: 12px; pointer-events: none; }
+.spec-ticks span { position: absolute; transform: translateX(-50%); font-size: 9px; line-height: 12px; color: var(--muted); opacity: .8; }
+.strip > :not(.strip-spec):not(.strip-meter):not(.spec-ticks) { position: relative; }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
 /* 分页：页框 + 页码 */
 .staff-svg rect.page { fill: #fff; stroke: var(--line); stroke-width: 1; }
 .staff-svg .page-no { fill: var(--muted); }
@@ -807,9 +810,9 @@ span.smufl { pointer-events: none; }
 /* 走带（2026-10-10 Opus 5.5）：播放线 / 正在响的音 / 起点 / 听模式 */
 .playhead { position: absolute; width: 2px; background: var(--play); opacity: .75; pointer-events: none; border-radius: 1px; }
 /* 播放时的小节底色（v0.10.12）：正在放的那一小节，盖住这一行所有声部；很淡，垫在音符高亮下面；长跳转到了闪一下 */
-.play-bar { position: absolute; background: var(--play); opacity: .09; border-radius: 4px; pointer-events: none; }
+.play-bar { position: absolute; background: var(--ink); opacity: .06; border-radius: 4px; pointer-events: none; }   /* 很淡的灰（user「小节背景可以用很淡的灰色吗」）：--ink 跟着明暗主题走 */
 .play-bar.flash { animation: play-bar-flash .6s ease-out; }
-@keyframes play-bar-flash { 0% { opacity: .35; } 100% { opacity: .09; } }
+@keyframes play-bar-flash { 0% { opacity: .22; } 100% { opacity: .06; } }
 .play-hl { position: absolute; background: var(--hl, var(--play)); opacity: .32; border-radius: 50%; pointer-events: none; }   /* 正在响的音：这位歌手的类别色（v0.9.31） */
 /* 歌手的类别色（tab20，src/ui/part-colors.ts；user「乐手名和颜色同意」）：每行左边细色条 + 名字前小色点；不印 */
 .staff-svg .cat-0 { fill: #1f77b4; } .staff-svg .cat-1 { fill: #aec7e8; } .staff-svg .cat-2 { fill: #ff7f0e; } .staff-svg .cat-3 { fill: #ffbb78; } .staff-svg .cat-4 { fill: #2ca02c; } .staff-svg .cat-5 { fill: #98df8a; } .staff-svg .cat-6 { fill: #d62728; } .staff-svg .cat-7 { fill: #ff9896; } .staff-svg .cat-8 { fill: #9467bd; } .staff-svg .cat-9 { fill: #c5b0d5; } .staff-svg .cat-10 { fill: #8c564b; } .staff-svg .cat-11 { fill: #c49c94; } .staff-svg .cat-12 { fill: #e377c2; } .staff-svg .cat-13 { fill: #f7b6d2; } .staff-svg .cat-14 { fill: #7f7f7f; } .staff-svg .cat-15 { fill: #c7c7c7; } .staff-svg .cat-16 { fill: #bcbd22; } .staff-svg .cat-17 { fill: #dbdb8d; } .staff-svg .cat-18 { fill: #17becf; } .staff-svg .cat-19 { fill: #9edae5; }

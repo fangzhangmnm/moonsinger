@@ -18,10 +18,12 @@ export interface SliderSpec {
   def?: number;
   /** 「双击回 ___」那几个字。 */
   defText?: string;
+  /** 灰着、动不了（滚轮 / 双击也不管）。 */
+  disabled?: boolean;
 }
 export function slider(s: SliderSpec): string {
   const def = s.def == null || !Number.isFinite(s.def) ? "" : ` data-def="${s.def}" title="双击回 ${esc(s.defText ?? String(s.def))}"`;
-  return `<input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.value}"${def} ${s.attrs} />`;
+  return `<input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.value}"${def}${s.disabled ? " disabled" : ""} ${s.attrs} />`;
 }
 
 const fire = (t: HTMLInputElement) => { t.dispatchEvent(new Event("input", { bubbles: true })); t.dispatchEvent(new Event("change", { bubbles: true })); };
