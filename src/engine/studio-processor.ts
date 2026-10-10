@@ -12,6 +12,7 @@ declare function registerProcessor(name: string, ctor: new (options: { processor
 class StudioProcessor extends AudioWorkletProcessor {
   private studio: Studio | null = null;
   private queue: StudioIn[] = [];
+  private lastCrash = "";
   constructor(options: { processorOptions: { module: WebAssembly.Module } }) {
     super();
     this.port.onmessage = (e: MessageEvent<StudioIn>) => { if (this.studio) this.studio.handle(e.data); else this.queue.push(e.data); };
@@ -26,7 +27,15 @@ class StudioProcessor extends AudioWorkletProcessor {
     const L = out[0], R = out[1] ?? out[0];
     if (!this.studio) { for (const c of out) c.fill(0); return true; }
     this.studio.clock = currentTime;   // 位置报告带上音频时钟：主线程按扬声器的时钟对齐播放头
-    this.studio.render(L, R, L.length);
+    // 核心抛了 = 报给主线程（带栈）、停走带、这一块静音，节点照活（v0.10.15）：原来不接，worklet 抛一次就整个死掉、之后怎么按播放都没声，
+    //   日志里什么都没有（user「C段混了半天音调到A段突然不播放了」）
+    try { this.studio.render(L, R, L.length); }
+    catch (err) {
+      for (const c of out) c.fill(0);
+      const e = err as Error, msg = `${e?.message ?? String(err)}\n${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
+      if (msg !== this.lastCrash) { this.lastCrash = msg; this.port.postMessage({ type: "crash", message: msg } satisfies StudioOut); }
+      try { this.studio.handle({ type: "stop" }); } catch { /* 停也抛 = 下一块再试 */ }
+    }
     return true;
   }
 }

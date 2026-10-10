@@ -677,17 +677,18 @@ var Studio = class {
   specOn = false;
   specFrames = 0;
   specRings = /* @__PURE__ */ new Map();
-  /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）。 */
-  specPush(id, a, b, n, off = 0) {
+  /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）；g0 → g1 = 这一段的推子（线性渐变，和出声同一条斜坡）。 */
+  specPush(id, a, b, n, g0 = 1, g1 = g0) {
     let r = this.specRings.get(id);
     if (!r) {
       r = { buf: new Float32Array(SPEC_N), w: 0 };
       this.specRings.set(id, r);
     }
-    const buf = r.buf;
-    let w = r.w;
+    const buf = r.buf, dg = (g1 - g0) / n;
+    let w = r.w, g = g0;
     for (let i = 0; i < n; i++) {
-      buf[w] = b ? (a[off + i] + b[off + i]) * 0.5 : a[off + i];
+      g += dg;
+      buf[w] = (b ? (a[i] + b[i]) * 0.5 : a[i]) * g;
       w = w + 1 & SPEC_N - 1;
     }
     r.w = w;
@@ -928,7 +929,11 @@ var Studio = class {
       this.resetCursors(false);
       this.checkMissing();
     } else {
-      for (const t of this.tracks.values()) this.endHold(t);
+      for (const t of this.tracks.values()) {
+        this.endHold(t);
+        t.gk = 0;
+        t.nextNote = 0;
+      }
       if (this.pos < this.range.from || this.pos > this.range.to) this.pos = this.range.from;
     }
     this.sweepForget();
@@ -1133,9 +1138,9 @@ var Studio = class {
     else if (this.draining) this.renderDrain(n);
     for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
-      if (this.specOn) this.specPush(b.id, b.L, b.R, n);
       const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n;
       let cl = b.gl, cr = b.gr;
+      if (this.specOn) this.specPush(b.id, b.L, b.R, n, Math.hypot(b.gl, b.gr), Math.hypot(gl, gr));
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
       let pk = 0;
       for (let i = 0; i < n; i++) {
@@ -1357,9 +1362,9 @@ var Studio = class {
       const t = this.tracks.get(id), out = t.out;
       out.set(t.src.subarray(0, cnt));
       for (const fx of t.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t, fx.id) : null);
-      if (this.specOn) this.specPush(id, out, null, cnt);
       const audible = solo ? t.ch.solo : !t.ch.mute;
       const [gl, gr] = audible ? panGains(t.ch.gainDb, t.ch.pan) : [0, 0];
+      if (this.specOn) this.specPush(id, out, null, cnt, Math.hypot(t.gl, t.gr), Math.hypot(gl, gr));
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : void 0, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr, pk = 0;
@@ -1665,6 +1670,7 @@ function busOrder(specs, buses) {
 var StudioProcessor = class extends AudioWorkletProcessor {
   studio = null;
   queue = [];
+  lastCrash = "";
   constructor(options) {
     super();
     this.port.onmessage = (e) => {
@@ -1687,9 +1693,23 @@ var StudioProcessor = class extends AudioWorkletProcessor {
       return true;
     }
     this.studio.clock = currentTime;
-    this.studio.render(L, R, L.length);
+    try {
+      this.studio.render(L, R, L.length);
+    } catch (err) {
+      for (const c of out) c.fill(0);
+      const e = err, msg = `${e?.message ?? String(err)}
+${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
+      if (msg !== this.lastCrash) {
+        this.lastCrash = msg;
+        this.port.postMessage({ type: "crash", message: msg });
+      }
+      try {
+        this.studio.handle({ type: "stop" });
+      } catch {
+      }
+    }
     return true;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-6666db828564.mjs.map
+//# sourceMappingURL=studio-worklet-d5112ef13eb6.mjs.map

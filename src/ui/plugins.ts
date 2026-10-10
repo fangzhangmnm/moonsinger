@@ -140,18 +140,20 @@ const EQ_SIMPLE: SimpleView = {
   /** 低切开着（自动或手调）= 自动低切；高架减低架的一半 = 倾斜；中峰 / 高切丢掉。 */
   project(p) { return { autoLow: p.hpAuto || p.hpHz > 0 ? 1 : 0, tilt: Math.round(Math.max(-1, Math.min(1, (p.highDb - p.lowDb) / (2 * TILT_DB))) * 20) / 20 }; },
 };
-/** 压缩一键 = 「压多少」a：阈值 −6 → −36 dB、比例 1.5 → 6，起 10 ms、落 150 ms、拐点 6 dB 固定；补偿 = 压掉的一半补回来。 */
-const compOf = (a: number) => { const thr = -6 - 30 * a, ratio = 1.5 + 4.5 * a; return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) }; };
-const COMP_SIMPLE: SimpleView = {
-  controls: [{ id: "amount", label: "压多少", hint: "把忽大忽小拉平：往右 = 压得越狠（响的字压下来、轻的相对显出来）", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a) => { const c = compOf(a); return `${c.thresholdDb} dB 起压 · ${c.ratio}:1`; } }],
+/** 压缩一键 = 「压多少」a：阈值 −6 → −36 dB、比例 1.5 → 6，起 10 ms、落 150 ms、拐点 6 dB 固定；补偿 = 压掉的一半补回来。
+ *  「被谁压」（侧链让路）时补偿 = 0（v0.10.15）：让路就是要它让出来；原来照自己压自己那套补，别人不唱的时候被压的轨比推子响（查 user 的 団子大家族 时发现：+2.8 dB）。 */
+const compOf = (a: number, keyed = false) => { const thr = -6 - 30 * a, ratio = 1.5 + 4.5 * a; return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: keyed ? 0 : r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) }; };
+const compSimple = (keyed: boolean): SimpleView => ({
+  controls: [{ id: "amount", label: keyed ? "让多少" : "压多少", hint: keyed ? "被那条轨压：它一响，这条就让出来；往右 = 让得越多（不补偿：它不响的时候这条照推子的音量）" : "把忽大忽小拉平：往右 = 压得越狠（响的字压下来、轻的相对显出来）", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a) => { const c = compOf(a, keyed); return `${c.thresholdDb} dB 起压 · ${c.ratio}:1`; } }],
   read(p) {
     const a = (-p.thresholdDb - 6) / 30; if (a < -1e-3 || a > 1 + 1e-3) return null;
-    const c = compOf(a);
+    const c = compOf(a, keyed);
     return near(p.ratio, c.ratio, 0.06) && p.attackMs === c.attackMs && p.releaseMs === c.releaseMs && p.kneeDb === c.kneeDb && near(p.makeupDb, c.makeupDb, 0.06) ? { amount: Math.round(a * 20) / 20 } : null;
   },
-  write(v, p) { return { ...p, ...compOf(Math.max(0, Math.min(1, v.amount ?? 0))) }; },
+  write(v, p) { return { ...p, ...compOf(Math.max(0, Math.min(1, v.amount ?? 0)), keyed) }; },
   project(p) { return { amount: knob01((-p.thresholdDb - 6) / 30, (p.ratio - 1.5) / 4.5) }; },
-};
+});
+const COMP_SIMPLE = compSimple(false), COMP_SIMPLE_KEYED = compSimple(true);
 /** 混响一键 = 「远近」d：**原声 100% 不动**、湿 8% → 48% 加在上面（v0.10.10 改；原来是原声和湿交叉，往右拧原声就掉 = user「开了混响结果铃声都哑掉了」「有可能是你混响的新手模式Preset不合理」）、
  *  房间 0.3 → 0.95；高频吸收 0.5、预延迟 10 ms、宽度满。 */
 const revOf = (d: number) => ({ mix: r1((0.08 + 0.4 * d) * 100) / 100, dry: 1, room: r1((0.3 + 0.65 * d) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
@@ -205,10 +207,12 @@ export const SIMPLE_BUS: Record<string, SimpleView> = {
     project(p) { return { wide: knob01((p.depthMs - 1) / 4, (p.spread - 0.4) / 0.6) }; } },
 };
 /** 这一格用哪套一键面板（onBus = 在路由轨上）。 */
-export const simpleView = (kind: string, onBus = false): SimpleView | undefined => (onBus ? SIMPLE_BUS[kind] : undefined) ?? SIMPLE[kind];
+export const simpleView = (kind: string, onBus = false, keyed = false): SimpleView | undefined => (kind === "comp" && keyed ? COMP_SIMPLE_KEYED : undefined) ?? (onBus ? SIMPLE_BUS[kind] : undefined) ?? SIMPLE[kind];
+/** 这一格用哪套一键面板（看插件种类、在不在路由轨上、有没有「被谁压」）。 */
+export const viewOfFx = (fx: Pick<FxV2, "kind" | "key">, onBus = false): SimpleView | undefined => simpleView(fx.kind, onBus, !!fx.key);
 /** 「改成最接近的一键」：全量参数 → 最接近的一键值 → 按一键公式写回（公式不管的参数照留）。结果一定读得回一键（plugins.test 钉着）。 */
-export function projectToSimple(kind: string, onBus: boolean, p: Params): Params {
-  const v = simpleView(kind, onBus); return v ? v.write(v.project(p), p) : p;
+export function projectToSimple(kind: string, onBus: boolean, p: Params, keyed = false): Params {
+  const v = simpleView(kind, onBus, keyed); return v ? v.write(v.project(p), p) : p;
 }
 /** 新插一格的初始参数：一键面板的「中间值」（插上就有一点效果，一眼能听出它在干什么）。 */
 export function freshParams(kind: string, onBus = false): Params {
@@ -225,7 +229,7 @@ export function freshParams(kind: string, onBus = false): Params {
 }
 /** 一格在卡片上的一句话（插件格小钮上的字）。 */
 export function fxSummary(fx: FxV2, onBus = false): string {
-  const view = simpleView(fx.kind, onBus), p = paramsOf(fx), s = view?.read(p), name = pluginName(fx.kind);
+  const view = viewOfFx(fx, onBus), p = paramsOf(fx), s = view?.read(p), name = pluginName(fx.kind);
   if (fx.on === false) return `${name}（关）`;
   if (!s) return `${name}（全量）`;
   if (fx.kind === "eq") return `${name}${s.autoLow ? " 低切" : ""}${near(s.tilt, 0, 0.01) ? (s.autoLow ? "" : "（平）") : s.tilt < 0 ? " 厚" : " 亮"}`;

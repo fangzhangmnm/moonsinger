@@ -32,7 +32,7 @@ export function outputClock(o: { currentTime: number; ts: { contextTime: number;
   }
   return c ? { T: c - (o.baseLatency || 0) - (o.outputLatency || 0), src: "estimate" } : null;
 }
-export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number, tracks: Record<string, number>) => void; spectrum: (sr: number, tracks: Record<string, Float32Array>) => void; load: (info: LoadInfo) => void }
+export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number, tracks: Record<string, number>) => void; spectrum: (sr: number, tracks: Record<string, Float32Array>) => void; load: (info: LoadInfo) => void; crash: (message: string) => void }
 
 export class StudioClient {
   private node: AudioWorkletNode | null = null;
@@ -85,6 +85,7 @@ export class StudioClient {
           switch (m.type) {
             case "ready": ok(); return;
             case "banked": { this.presets.set(m.sha, new Map(m.presets.map(([b, p], i) => [`${b}:${p}`, i]))); for (const w of this.bankWait.get(m.sha) ?? []) w.ok(); this.bankWait.delete(m.sha); return; }
+            case "crash": this._playing = false; this._waiting = null; this.emit("crash", m.message); return;
             case "error": { fail(new Error(m.message)); for (const ws of this.bankWait.values()) for (const w of ws) w.fail(new Error(m.message)); this.bankWait.clear(); return; }
             case "pos": {
               if (m.gen !== this.gen) return; this._pos = m.sec; this._playing = m.playing; this._waiting = m.waiting;

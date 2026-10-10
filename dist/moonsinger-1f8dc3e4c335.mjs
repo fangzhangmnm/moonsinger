@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.14-2026-10-10";
+var APP_VERSION = "v0.10.15-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -23496,17 +23496,18 @@ var Studio = class {
   specOn = false;
   specFrames = 0;
   specRings = /* @__PURE__ */ new Map();
-  /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）。 */
-  specPush(id2, a10, b3, n10, off = 0) {
+  /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）；g0 → g1 = 这一段的推子（线性渐变，和出声同一条斜坡）。 */
+  specPush(id2, a10, b3, n10, g0 = 1, g1 = g0) {
     let r10 = this.specRings.get(id2);
     if (!r10) {
       r10 = { buf: new Float32Array(SPEC_N), w: 0 };
       this.specRings.set(id2, r10);
     }
-    const buf = r10.buf;
-    let w2 = r10.w;
+    const buf = r10.buf, dg = (g1 - g0) / n10;
+    let w2 = r10.w, g3 = g0;
     for (let i10 = 0; i10 < n10; i10++) {
-      buf[w2] = b3 ? (a10[off + i10] + b3[off + i10]) * 0.5 : a10[off + i10];
+      g3 += dg;
+      buf[w2] = (b3 ? (a10[i10] + b3[i10]) * 0.5 : a10[i10]) * g3;
       w2 = w2 + 1 & SPEC_N - 1;
     }
     r10.w = w2;
@@ -23747,7 +23748,11 @@ var Studio = class {
       this.resetCursors(false);
       this.checkMissing();
     } else {
-      for (const t10 of this.tracks.values()) this.endHold(t10);
+      for (const t10 of this.tracks.values()) {
+        this.endHold(t10);
+        t10.gk = 0;
+        t10.nextNote = 0;
+      }
       if (this.pos < this.range.from || this.pos > this.range.to) this.pos = this.range.from;
     }
     this.sweepForget();
@@ -23952,9 +23957,9 @@ var Studio = class {
     else if (this.draining) this.renderDrain(n10);
     for (const b3 of this.busList) {
       for (const fx of b3.fx) fx.process(b3.L, b3.R, n10, null);
-      if (this.specOn) this.specPush(b3.id, b3.L, b3.R, n10);
       const [gl, gr] = panGains(b3.gainDb, b3.pan), dl = (gl - b3.gl) / n10, dr = (gr - b3.gr) / n10;
       let cl2 = b3.gl, cr2 = b3.gr;
+      if (this.specOn) this.specPush(b3.id, b3.L, b3.R, n10, Math.hypot(b3.gl, b3.gr), Math.hypot(gl, gr));
       const L2 = b3.out ? b3.out.L : this.busL, R2 = b3.out ? b3.out.R : this.busR;
       let pk = 0;
       for (let i10 = 0; i10 < n10; i10++) {
@@ -24176,9 +24181,9 @@ var Studio = class {
       const t10 = this.tracks.get(id2), out = t10.out;
       out.set(t10.src.subarray(0, cnt));
       for (const fx of t10.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t10, fx.id) : null);
-      if (this.specOn) this.specPush(id2, out, null, cnt);
       const audible = solo ? t10.ch.solo : !t10.ch.mute;
       const [gl, gr] = audible ? panGains(t10.ch.gainDb, t10.ch.pan) : [0, 0];
+      if (this.specOn) this.specPush(id2, out, null, cnt, Math.hypot(t10.gl, t10.gr), Math.hypot(gl, gr));
       const dl = (gl - t10.gl) / cnt, dr = (gr - t10.gr) / cnt;
       const bus = t10.ch.to && t10.ch.to !== "master" ? this.buses.get(t10.ch.to) : void 0, L2 = bus ? bus.L : this.busL, R2 = bus ? bus.R : this.busR;
       let cl2 = t10.gl, cr2 = t10.gr, pk = 0;
@@ -24588,6 +24593,11 @@ var StudioClient = class {
               this.bankWait.delete(m2.sha);
               return;
             }
+            case "crash":
+              this._playing = false;
+              this._waiting = null;
+              this.emit("crash", m2.message);
+              return;
             case "error": {
               fail(new Error(m2.message));
               for (const ws2 of this.bankWait.values()) for (const w2 of ws2) w2.fail(new Error(m2.message));
@@ -25682,28 +25692,30 @@ var EQ_SIMPLE = {
     return { autoLow: p2.hpAuto || p2.hpHz > 0 ? 1 : 0, tilt: Math.round(Math.max(-1, Math.min(1, (p2.highDb - p2.lowDb) / (2 * TILT_DB))) * 20) / 20 };
   }
 };
-var compOf = (a10) => {
+var compOf = (a10, keyed = false) => {
   const thr = -6 - 30 * a10, ratio = 1.5 + 4.5 * a10;
-  return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) };
+  return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: keyed ? 0 : r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) };
 };
-var COMP_SIMPLE = {
-  controls: [{ id: "amount", label: "\u538B\u591A\u5C11", hint: "\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73\uFF1A\u5F80\u53F3 = \u538B\u5F97\u8D8A\u72E0\uFF08\u54CD\u7684\u5B57\u538B\u4E0B\u6765\u3001\u8F7B\u7684\u76F8\u5BF9\u663E\u51FA\u6765\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a10) => {
-    const c10 = compOf(a10);
+var compSimple = (keyed) => ({
+  controls: [{ id: "amount", label: keyed ? "\u8BA9\u591A\u5C11" : "\u538B\u591A\u5C11", hint: keyed ? "\u88AB\u90A3\u6761\u8F68\u538B\uFF1A\u5B83\u4E00\u54CD\uFF0C\u8FD9\u6761\u5C31\u8BA9\u51FA\u6765\uFF1B\u5F80\u53F3 = \u8BA9\u5F97\u8D8A\u591A\uFF08\u4E0D\u8865\u507F\uFF1A\u5B83\u4E0D\u54CD\u7684\u65F6\u5019\u8FD9\u6761\u7167\u63A8\u5B50\u7684\u97F3\u91CF\uFF09" : "\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73\uFF1A\u5F80\u53F3 = \u538B\u5F97\u8D8A\u72E0\uFF08\u54CD\u7684\u5B57\u538B\u4E0B\u6765\u3001\u8F7B\u7684\u76F8\u5BF9\u663E\u51FA\u6765\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a10) => {
+    const c10 = compOf(a10, keyed);
     return `${c10.thresholdDb} dB \u8D77\u538B \xB7 ${c10.ratio}:1`;
   } }],
   read(p2) {
     const a10 = (-p2.thresholdDb - 6) / 30;
     if (a10 < -1e-3 || a10 > 1 + 1e-3) return null;
-    const c10 = compOf(a10);
+    const c10 = compOf(a10, keyed);
     return near(p2.ratio, c10.ratio, 0.06) && p2.attackMs === c10.attackMs && p2.releaseMs === c10.releaseMs && p2.kneeDb === c10.kneeDb && near(p2.makeupDb, c10.makeupDb, 0.06) ? { amount: Math.round(a10 * 20) / 20 } : null;
   },
   write(v, p2) {
-    return { ...p2, ...compOf(Math.max(0, Math.min(1, v.amount ?? 0))) };
+    return { ...p2, ...compOf(Math.max(0, Math.min(1, v.amount ?? 0)), keyed) };
   },
   project(p2) {
     return { amount: knob01((-p2.thresholdDb - 6) / 30, (p2.ratio - 1.5) / 4.5) };
   }
-};
+});
+var COMP_SIMPLE = compSimple(false);
+var COMP_SIMPLE_KEYED = compSimple(true);
 var revOf = (d3) => ({ mix: r1((0.08 + 0.4 * d3) * 100) / 100, dry: 1, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
 var REV_SIMPLE = {
   controls: [{ id: "far", label: "\u8FDC\u8FD1", hint: "\u5F80\u53F3 = \u8D8A\u8FDC\u3001\u8D8A\u5927\u7684\u623F\u95F4\uFF08\u94C3\u53EF\u4EE5\u8FDC\u4E00\u70B9\uFF0C\u8D34\u8033\u7684\u4EBA\u58F0\u8FD1\u4E00\u70B9\uFF09\uFF1B\u539F\u58F0\u4E0D\u52A8\uFF0C\u53EA\u5F80\u4E0A\u52A0\u6DF7\u54CD", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d3) => {
@@ -25816,9 +25828,10 @@ var SIMPLE_BUS = {
     }
   }
 };
-var simpleView = (kind, onBus = false) => (onBus ? SIMPLE_BUS[kind] : void 0) ?? SIMPLE[kind];
-function projectToSimple(kind, onBus, p2) {
-  const v = simpleView(kind, onBus);
+var simpleView = (kind, onBus = false, keyed = false) => (kind === "comp" && keyed ? COMP_SIMPLE_KEYED : void 0) ?? (onBus ? SIMPLE_BUS[kind] : void 0) ?? SIMPLE[kind];
+var viewOfFx = (fx, onBus = false) => simpleView(fx.kind, onBus, !!fx.key);
+function projectToSimple(kind, onBus, p2, keyed = false) {
+  const v = simpleView(kind, onBus, keyed);
   return v ? v.write(v.project(p2), p2) : p2;
 }
 function freshParams(kind, onBus = false) {
@@ -25834,7 +25847,7 @@ function freshParams(kind, onBus = false) {
   return p2;
 }
 function fxSummary(fx, onBus = false) {
-  const view2 = simpleView(fx.kind, onBus), p2 = paramsOf(fx), s10 = view2?.read(p2), name = pluginName(fx.kind);
+  const view2 = viewOfFx(fx, onBus), p2 = paramsOf(fx), s10 = view2?.read(p2), name = pluginName(fx.kind);
   if (fx.on === false) return `${name}\uFF08\u5173\uFF09`;
   if (!s10) return `${name}\uFF08\u5168\u91CF\uFF09`;
   if (fx.kind === "eq") return `${name}${s10.autoLow ? " \u4F4E\u5207" : ""}${near(s10.tilt, 0, 0.01) ? s10.autoLow ? "" : "\uFF08\u5E73\uFF09" : s10.tilt < 0 ? " \u539A" : " \u4EAE"}`;
@@ -25940,9 +25953,10 @@ var Studio2 = class {
   }
   el;
   tab = "basic";
-  /** EQ / 压缩页摊开的控件用一键还是全量（全部卡片一起换；这次打开里有效）。 */
-  panelMode = { eq: "simple", comp: "simple" };
-  /** 「链」页顶上展开着的插件面板：哪条轨的哪一格 + 一键 / 全量。 */
+  /** 每一格自己记着用一键还是全量（卡片里切，不是全局切；user「一键和全量应该是卡片内部切，而不是全局切。每个卡片记住自己是一键还是全量」）。
+   *  没切过 = 读得回一键就一键、读不回（在全量里调过）就全量；这次打开里有效。 */
+  cardMode = /* @__PURE__ */ new Map();
+  /** 「链」页顶上展开着的插件面板：哪条轨的哪一格。 */
   open = null;
   addFor = null;
   // 「链」页「＋」的小菜单开在哪条轨
@@ -26082,9 +26096,10 @@ var Studio2 = class {
       this.render();
     } else if (v === "fxpick" && strip) this.addFx(strip, t10.closest("[data-kind]").dataset.kind, true);
     else if (v === "fxaddkind" && strip) this.addFx(strip, t10.closest("[data-kind]").dataset.kind, false);
-    else if (v === "fxmode" && this.open) {
-      this.open.mode = t10.closest("[data-mode]").dataset.mode;
-      this.renderPanel();
+    else if (v === "fxmode" && tg2) {
+      this.cardMode.set(`${tg2.track}
+${tg2.fx}`, t10.closest("[data-mode]").dataset.mode);
+      this.render();
     } else if (v === "fxclose") {
       this.open = null;
       this.render();
@@ -26101,7 +26116,7 @@ var Studio2 = class {
       this.simpleSet(tg2, b3.dataset.c, Number(b3.dataset.val), false);
       this.render();
     } else if (v === "fxproject" && tg2) {
-      this.patch(tg2, (fx) => ({ ...fx, params: projectToSimple(fx.kind, this.onBus(tg2.track), paramsOf(fx)) }), "\u6539\u6210\u6700\u63A5\u8FD1\u7684\u4E00\u952E");
+      this.patch(tg2, (fx) => ({ ...fx, params: projectToSimple(fx.kind, this.onBus(tg2.track), paramsOf(fx), !!fx.key) }), "\u6539\u6210\u6700\u63A5\u8FD1\u7684\u4E00\u952E");
       this.render();
     } else if (v === "fxbool" && tg2) {
       const id2 = t10.closest("[data-p]").dataset.p;
@@ -26145,11 +26160,6 @@ var Studio2 = class {
   }
   onChange(e10) {
     const t10 = e10.target, strip = t10.closest(".strip")?.dataset.id, tg2 = this.targetOf(t10);
-    if (t10.dataset.panelmode !== void 0 && (this.tab === "eq" || this.tab === "comp")) {
-      this.panelMode[this.tab] = t10.value;
-      this.render();
-      return;
-    }
     if (strip && t10.dataset.out !== void 0) {
       this.host.setOutTo(strip, t10.value);
       this.render();
@@ -26167,10 +26177,10 @@ var Studio2 = class {
       return;
     }
     if (tg2 && t10.dataset.key !== void 0) {
-      const v = t10.value;
+      const v = t10.value, bus = this.onBus(tg2.track);
       this.patch(tg2, (fx) => {
-        const { key: _k, ...rest } = fx;
-        return v ? { ...rest, key: v } : rest;
+        const { key: _k, ...rest } = fx, nx2 = v ? { ...rest, key: v } : rest, was = viewOfFx(fx, bus)?.read(paramsOf(fx)), view2 = viewOfFx(nx2, bus);
+        return was && view2 ? { ...nx2, params: view2.write(was, paramsOf(nx2)) } : nx2;
       }, "\u88AB\u8C01\u538B");
       this.render();
     }
@@ -26192,13 +26202,21 @@ var Studio2 = class {
     return track === MASTER || track === "master" ? "\u603B\u8F68" : this.host.strips().find((s10) => s10.id === track)?.name ?? this.host.buses().find((b3) => b3.id === track)?.name ?? track;
   }
   toggleOpen(track, fx) {
-    if (this.open && this.open.track === track && this.open.fx === fx) this.open = null;
-    else {
-      const s10 = this.slotOf({ track, fx });
-      this.open = { track, fx, mode: s10 && simpleView(s10.fx.kind, this.onBus(track))?.read(paramsOf(s10.fx)) ? "simple" : "full" };
-    }
+    this.open = this.open && this.open.track === track && this.open.fx === fx ? null : { track, fx };
     this.addFor = null;
     this.render();
+  }
+  modeOf(tg2) {
+    const m2 = this.cardMode.get(`${tg2.track}
+${tg2.fx}`);
+    if (m2) return m2;
+    const s10 = this.slotOf(tg2);
+    return s10 && viewOfFx(s10.fx, this.onBus(tg2.track))?.read(paramsOf(s10.fx)) ? "simple" : "full";
+  }
+  /** 一键 | 全量 两个小钮（卡片上摊开的那一块、「链」页顶上的面板都用这一份）。 */
+  modeSeg(tg2) {
+    const m2 = this.modeOf(tg2);
+    return `<span class="fx-seg"><button class="btn${m2 === "simple" ? " is-on" : ""}" data-v="fxmode" data-mode="simple" title="\u51E0\u4E2A\u5927\u65CB\u94AE\uFF0C\u6309\u516C\u5F0F\u8C03\u4E0B\u9762\u5168\u91CF\u7684\u53C2\u6570\uFF08\u53EA\u6362\u8FD9\u4E00\u683C\uFF09">\u4E00\u952E</button><button class="btn${m2 === "full" ? " is-on" : ""}" data-v="fxmode" data-mode="full" title="\u6BCF\u4E00\u4E2A\u53C2\u6570\u90FD\u644A\u5F00\uFF08\u53EA\u6362\u8FD9\u4E00\u683C\uFF09">\u5168\u91CF</button></span>`;
   }
   addFx(track, kind, openPanel) {
     const ch2 = this.host.chain(track), used = new Set(ch2.map((f2) => f2.id));
@@ -26207,7 +26225,7 @@ var Studio2 = class {
     const fx = { id: `${kind}${n10}`, kind, params: freshParams(kind, this.onBus(track)) };
     this.host.setChain(track, [...ch2, fx], `${this.trackName(track)} \u63D2\u4E0A${pluginName(kind)}`);
     this.addFor = null;
-    if (openPanel) this.open = { track, fx: fx.id, mode: "simple" };
+    if (openPanel) this.open = { track, fx: fx.id };
     this.render();
   }
   /** 改一格（虚的默认 EQ = 第一次改的时候写进链的最前面）。 */
@@ -26236,13 +26254,13 @@ var Studio2 = class {
   }
   simpleNow(tg2) {
     const s10 = this.slotOf(tg2);
-    return s10 ? simpleView(s10.fx.kind, this.onBus(tg2.track))?.read(paramsOf(s10.fx)) ?? null : null;
+    return s10 ? viewOfFx(s10.fx, this.onBus(tg2.track))?.read(paramsOf(s10.fx)) ?? null : null;
   }
   /** 一键改一个控件：在当前读数上改这一个（读不出 = 在全量里调过 = 从一键的默认起），按公式写回全量参数。 */
   simpleSet(tg2, id2, v, live, input) {
     const s10 = this.slotOf(tg2);
     if (!s10) return;
-    const bus = this.onBus(tg2.track), view2 = simpleView(s10.fx.kind, bus), base3 = view2.read(paramsOf(s10.fx));
+    const bus = this.onBus(tg2.track), view2 = viewOfFx(s10.fx, bus), base3 = view2.read(paramsOf(s10.fx));
     if (!base3) return;
     const ctl = view2.controls.find((c10) => c10.id === id2);
     this.patch(tg2, (fx) => ({ ...fx, params: view2.write({ ...base3, [id2]: v }, paramsOf(fx)) }), ctl?.label ?? id2, live);
@@ -26266,17 +26284,18 @@ var Studio2 = class {
   // ── 画 ──────────────────────────────────────────────────────────────────
   /** 一格的控件（一键 / 全量）：「链」页顶上的面板和 EQ / 压缩页卡片上摊开的共用。 */
   controlsHtml(tg2, fx, mode) {
-    const bus = this.onBus(tg2.track), p2 = paramsOf(fx), view2 = simpleView(fx.kind, bus), read = view2?.read(p2) ?? null;
+    const bus = this.onBus(tg2.track), p2 = paramsOf(fx), view2 = viewOfFx(fx, bus), read = view2?.read(p2) ?? null;
     const keyOpts = fx.kind === "comp" ? this.host.keyTracks(tg2.track) : [];
     const keyRow = keyOpts.length ? row("\u88AB\u8C01\u538B", HINT2.key, "", `<select data-key><option value="">\u4E0D\u7528\uFF08\u81EA\u5DF1\u538B\u81EA\u5DF1\uFF09</option>${keyOpts.map((x2) => `<option value="${esc5(x2.id)}"${fx.key === x2.id ? " selected" : ""}>${esc5(x2.name)}</option>`).join("")}</select>`) : "";
     if (mode === "simple" && view2) {
-      const fresh2 = view2.read(freshParams(fx.kind, bus)) ?? {}, locked = !read, cur = read ?? view2.project(p2), dis = locked ? " disabled" : "";
-      return (locked ? `<div class="fx-note">\u5728\u5168\u91CF\u91CC\u8C03\u8FC7\uFF0C\u4E00\u952E\u8868\u8FBE\u4E0D\u4E86\uFF1A\u4E00\u952E\u5148\u9501\u7740\uFF0C\u514D\u5F97\u4E00\u78B0\u5C31\u76D6\u6389\u3002<button class="btn cand" data-v="fxproject" title="\u6309\u6700\u63A5\u8FD1\u7684\u4E00\u952E\u6570\u503C\u6539\u5199\u2014\u2014\u5168\u91CF\u91CC\u591A\u8C03\u7684\u4F1A\u4E22\u6389\uFF08\u6BD4\u5982\u4E2D\u9891\u90A3\u4E00\u5200\uFF09\uFF1B\u80FD\u64A4\u9500\u3002\u4E0B\u9762\u7070\u7740\u7684\u5C31\u662F\u6539\u8FC7\u53BB\u7684\u6837\u5B50">\u6539\u6210\u6700\u63A5\u8FD1\u7684\u4E00\u952E</button></div>` : "") + view2.controls.map((c10) => {
+      const fp = freshParams(fx.kind, bus), fresh2 = view2.read(fp) ?? view2.project(fp), locked = !read, cur = read ?? {};
+      return (locked ? `<div class="fx-note">\u5728\u5168\u91CF\u91CC\u8C03\u8FC7\uFF0C\u4E00\u952E\u8868\u8FBE\u4E0D\u4E86\uFF1A\u4E00\u952E\u5148\u9501\u7740\uFF0C\u514D\u5F97\u4E00\u78B0\u5C31\u76D6\u6389\u3002<button class="btn cand" data-v="fxproject" title="\u6309\u6700\u63A5\u8FD1\u7684\u4E00\u952E\u6570\u503C\u6539\u5199\u2014\u2014\u5168\u91CF\u91CC\u591A\u8C03\u7684\u4F1A\u4E22\u6389\uFF08\u6BD4\u5982\u4E2D\u9891\u90A3\u4E00\u5200\uFF09\uFF1B\u80FD\u64A4\u9500">\u6539\u6210\u6700\u63A5\u8FD1\u7684\u4E00\u952E</button></div>` + keyRow : "") + (locked ? "" : view2.controls.map((c10) => {
         const v = cur[c10.id] ?? 0;
-        if (c10.kind === "toggle") return row(c10.label, c10.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c10.id}"${dis}>${v ? "\u5F00" : "\u5173"}</button>`);
-        if (c10.kind === "choice") return row(c10.label, c10.hint, "", `<span class="fx-seg">${c10.choices.map((x2) => `<button class="btn${Math.abs(v - x2.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c10.id}" data-val="${x2.v}"${dis}>${esc5(x2.label)}</button>`).join("")}</span>`);
-        return row(c10.label, c10.hint, `<output data-c="${c10.id}">${c10.fmt ? c10.fmt(v) : v}</output>`, slider({ min: c10.min, max: c10.max, step: c10.step, value: v, attrs: `data-c="${c10.id}"`, def: fresh2[c10.id], defText: fresh2[c10.id] == null ? void 0 : c10.fmt ? c10.fmt(fresh2[c10.id]) : String(fresh2[c10.id]), disabled: locked }));
-      }).join("") + keyRow;
+        if (c10.id === "autoLow" && !this.host.strips().some((x2) => x2.id === tg2.track)) return row(c10.label, c10.hint, "", `<span class="fx-dim">\u6DF7\u97F3\u8F68 / \u603B\u8F68\u4E0A\u6CA1\u6709\u97F3\uFF0C\u7528\u4E0D\u4E0A${v ? "\uFF08\u5F00\u7740\u4E5F\u4E0D\u5207\uFF09" : ""}</span>`);
+        if (c10.kind === "toggle") return row(c10.label, c10.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c10.id}">${v ? "\u5F00" : "\u5173"}</button>`);
+        if (c10.kind === "choice") return row(c10.label, c10.hint, "", `<span class="fx-seg">${c10.choices.map((x2) => `<button class="btn${Math.abs(v - x2.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c10.id}" data-val="${x2.v}">${esc5(x2.label)}</button>`).join("")}</span>`);
+        return row(c10.label, c10.hint, `<output data-c="${c10.id}">${c10.fmt ? c10.fmt(v) : v}</output>`, slider({ min: c10.min, max: c10.max, step: c10.step, value: v, attrs: `data-c="${c10.id}"`, def: fresh2[c10.id], defText: fresh2[c10.id] == null ? void 0 : c10.fmt ? c10.fmt(fresh2[c10.id]) : String(fresh2[c10.id]) }));
+      }).join("") + keyRow);
     }
     const fresh = freshParams(fx.kind, bus);
     return fullParams(fx.kind).map((d3) => {
@@ -26294,7 +26313,7 @@ var Studio2 = class {
     const all = this.slots(track).filter((s11) => s11.fx.kind === kind), s10 = all[0];
     if (!s10) return `<button class="btn cand" data-v="fxaddkind" data-kind="${kind}" title="\u5F80\u8FD9\u6761\u8F68\u4E0A\u63D2\u4E00\u4E2A${pluginName(kind)}">\uFF0B ${esc5(pluginName(kind))}</button>`;
     const fx = s10.fx, tg2 = { track, fx: fx.id };
-    return `<div class="fx-inline${fx.on === false ? " off" : ""}" data-fxwrap data-track="${esc5(track)}" data-fx="${esc5(fx.id)}"><div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="\u5173 = \u8FD9\u4E00\u683C\u8DF3\u8FC7\uFF08\u53C2\u6570\u7559\u7740\uFF09">${fx.on === false ? "\u5173\u7740" : "\u5F00\u7740"}</button>${all.length > 1 ? `<span class="fx-dim">\u8FD8\u6709 ${all.length - 1} \u4E2A${esc5(pluginName(kind))}\u5728\u300C\u94FE\u300D\u91CC</span>` : ""}</div><div class="fx-body">${this.controlsHtml(tg2, fx, this.panelMode[kind])}</div></div>`;
+    return `<div class="fx-inline${fx.on === false ? " off" : ""}" data-fxwrap data-track="${esc5(track)}" data-fx="${esc5(fx.id)}"><div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="\u5173 = \u8FD9\u4E00\u683C\u8DF3\u8FC7\uFF08\u53C2\u6570\u7559\u7740\uFF09">${fx.on === false ? "\u5173\u7740" : "\u5F00\u7740"}</button>${all.length > 1 ? `<span class="fx-dim">\u8FD8\u6709 ${all.length - 1} \u4E2A${esc5(pluginName(kind))}\u5728\u300C\u94FE\u300D\u91CC</span>` : ""}${this.modeSeg(tg2)}</div><div class="fx-body">${this.controlsHtml(tg2, fx, this.modeOf(tg2))}</div></div>`;
   }
   /** 出到 + 发送（歌手轨和路由轨都有；总轨没有）。 */
   routeHtml(track) {
@@ -26305,7 +26324,10 @@ var Studio2 = class {
     const add = free.length ? `<select class="send-add" data-sendadd title="\u63A8\u5B50\u4E4B\u540E\u53D1\u4E00\u4EFD\u5230\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u653E\u5728\u6DF7\u97F3\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09"><option value="">\uFF0B \u53D1\u9001\u5230\u2026</option>${free.map((x2) => `<option value="${esc5(x2.id)}">${esc5(x2.name)}</option>`).join("")}</select>` : tg2.length ? "" : `<div class="fx-dim">\u8FD8\u6CA1\u6709\u6DF7\u97F3\u8F68\uFF08\u300C\u22EF\u300D\u91CC\u52A0\uFF09</div>`;
     const wet = out !== "master" ? this.host.chain(out).find(fullyWet) : void 0;
     const warn = wet ? `<div class="fx-note">\u300C${name(out)}\u300D\u4E0A\u7684${esc5(pluginName(wet.kind))}\u662F\u5168\u6E7F\u7684\uFF1A\u51FA\u5230\u5B83 = \u539F\u58F0\u6CA1\u4E86\uFF0C\u53EA\u5269${esc5(pluginName(wet.kind))}\u3002\u8981\u539F\u58F0\u52A0${esc5(pluginName(wet.kind))}\uFF1A\u51FA\u5230\u603B\u8F68\uFF0C\u7528\u4E0B\u9762\u7684\u300C\u53D1\u9001\u300D\u3002</div>` : "";
-    return outSel + warn + rows + add;
+    const shared = !wet && out !== "master" ? this.host.chain(out).find((f2) => (f2.kind === "reverb" || f2.kind === "delay" || f2.kind === "chorus") && f2.on !== false) : void 0;
+    const sharedDry = shared ? paramsOf(shared).dry : 1, dryDb = 20 * Math.log10(Math.max(1e-6, sharedDry));
+    const note2 = shared ? `<div class="fx-note">\u51FA\u5230\u300C${name(out)}\u300D= \u6574\u6761\u58F0\u97F3\u90FD\u8FC7\u5B83\u7684${esc5(pluginName(shared.kind))}\uFF1A\u51FA\u5230\u5B83\u7684\u51E0\u6761\u8F68${esc5(pluginName(shared.kind))}\u4E00\u6837\u591A${sharedDry < 0.999 ? `\uFF0C\u539F\u58F0\u4E5F\u88AB\u5B83\u5173\u5C0F ${dbText(dryDb)}\uFF08\u63A8\u5B50\u4E0A\u770B\u4E0D\u51FA\u6765\uFF09` : ""}\u3002\u60F3\u6BCF\u6761\u8F68\u5404\u81EA\u591A\u5C11\uFF1A\u51FA\u5230\u603B\u8F68\u3001\u7528\u4E0B\u9762\u7684\u300C\u53D1\u9001\u300D\uFF0C\u90A3\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684${esc5(pluginName(shared.kind))}\u6539\u6210\u5168\u6E7F\u3002</div>` : "";
+    return outSel + warn + note2 + rows + add;
   }
   chipsHtml(track) {
     const chips = this.slots(track).map(({ fx }) => `<button class="btn fx-chip${this.open?.track === track && this.open.fx === fx.id ? " is-on" : ""}${fx.on === false ? " off" : ""}" data-v="fx" data-fx="${esc5(fx.id)}" title="${esc5(pluginName(fx.kind))}\uFF1A\u70B9\u5F00\u8C03${fx.id === DEFAULT_EQ_ID ? "\uFF08\u9ED8\u8BA4\u90A3\u4E00\u683C\uFF1A\u80FD\u5173\u3001\u80FD\u6362\u9762\u677F\uFF0C\u4E0D\u80FD\u5220\uFF09" : ""}">${esc5(fxSummary(fx, this.onBus(track)))}</button>`).join("");
@@ -26324,13 +26346,13 @@ var Studio2 = class {
     const fx = s10.fx, isDefault = fx.id === DEFAULT_EQ_ID;
     box.dataset.track = o10.track;
     box.dataset.fx = o10.fx;
-    const head = `<div class="fx-head"><span class="fx-title">${esc5(this.trackName(o10.track))} \xB7 ${esc5(pluginName(fx.kind))}${s10.virtual ? "\uFF08\u5E73\uFF09" : ""}</span><span class="fx-seg"><button class="btn${o10.mode === "simple" ? " is-on" : ""}" data-v="fxmode" data-mode="simple" title="\u51E0\u4E2A\u5927\u65CB\u94AE\uFF0C\u6309\u516C\u5F0F\u8C03\u4E0B\u9762\u5168\u91CF\u7684\u53C2\u6570">\u4E00\u952E</button><button class="btn${o10.mode === "full" ? " is-on" : ""}" data-v="fxmode" data-mode="full" title="\u6BCF\u4E00\u4E2A\u53C2\u6570\u90FD\u644A\u5F00">\u5168\u91CF</button></span><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="\u5173 = \u8FD9\u4E00\u683C\u8DF3\u8FC7\uFF08\u53C2\u6570\u7559\u7740\uFF09">${fx.on === false ? "\u5173\u7740" : "\u5F00\u7740"}</button>` + (isDefault ? "" : `<button class="btn cand danger" data-v="fxdel" title="\u4ECE\u8FD9\u6761\u8F68\u4E0A\u62FF\u6389\uFF08\u80FD\u64A4\u9500\uFF09">\u62FF\u6389</button>`) + `<button class="btn" data-v="fxclose" title="\u6536\u8D77">\u2715</button></div>`;
-    box.innerHTML = head + `<div class="fx-body">${this.controlsHtml(o10, fx, o10.mode)}</div>`;
+    const head = `<div class="fx-head"><span class="fx-title">${esc5(this.trackName(o10.track))} \xB7 ${esc5(pluginName(fx.kind))}${s10.virtual ? "\uFF08\u5E73\uFF09" : ""}</span>` + this.modeSeg(o10) + `<button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="\u5173 = \u8FD9\u4E00\u683C\u8DF3\u8FC7\uFF08\u53C2\u6570\u7559\u7740\uFF09">${fx.on === false ? "\u5173\u7740" : "\u5F00\u7740"}</button>` + (isDefault ? "" : `<button class="btn cand danger" data-v="fxdel" title="\u4ECE\u8FD9\u6761\u8F68\u4E0A\u62FF\u6389\uFF08\u80FD\u64A4\u9500\uFF09">\u62FF\u6389</button>`) + `<button class="btn" data-v="fxclose" title="\u6536\u8D77">\u2715</button></div>`;
+    box.innerHTML = head + `<div class="fx-body">${this.controlsHtml(o10, fx, this.modeOf(o10))}</div>`;
     box.hidden = false;
   }
   renderBar() {
-    const bar2 = this.el.querySelector(".mix-tabbar"), modeKind = this.tab === "eq" || this.tab === "comp" ? this.tab : null;
-    bar2.innerHTML = `<span class="fx-seg mix-tabs" role="tablist">${TABS.map((x2) => `<button class="btn${this.tab === x2.id ? " is-on" : ""}" data-v="tab" data-tab="${x2.id}" role="tab" title="${esc5(x2.hint)}">${esc5(x2.label)}</button>`).join("")}</span>` + (modeKind ? `<select class="mix-mode" data-panelmode title="\u5361\u7247\u4E0A\u644A\u5F00\u7684${esc5(pluginName(modeKind))}\u7528\u54EA\u79CD\u9762\u677F\uFF08\u5168\u90E8\u5361\u7247\u4E00\u8D77\u6362\uFF09"><option value="simple"${this.panelMode[modeKind] === "simple" ? " selected" : ""}>\u4E00\u952E</option><option value="full"${this.panelMode[modeKind] === "full" ? " selected" : ""}>\u5168\u91CF</option></select>` : "") + `<button class="btn mix-more${this.menuOpen ? " is-on" : ""}" data-v="more" title="\u66F4\u591A\uFF1A\u52A0\u6DF7\u97F3\u8F68\u2026">\u22EF</button>`;
+    const bar2 = this.el.querySelector(".mix-tabbar");
+    bar2.innerHTML = `<span class="fx-seg mix-tabs" role="tablist">${TABS.map((x2) => `<button class="btn${this.tab === x2.id ? " is-on" : ""}" data-v="tab" data-tab="${x2.id}" role="tab" title="${esc5(x2.hint)}">${esc5(x2.label)}</button>`).join("")}</span><button class="btn mix-more${this.menuOpen ? " is-on" : ""}" data-v="more" title="\u66F4\u591A\uFF1A\u52A0\u6DF7\u97F3\u8F68\u2026">\u22EF</button>`;
     const menu = this.el.querySelector(".mix-menu");
     menu.hidden = !this.menuOpen;
     menu.innerHTML = this.menuOpen ? `<button class="btn cand" data-v="addbus" title="\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD">\uFF0B \u6DF7\u97F3\u8F68</button>` : "";
@@ -36745,19 +36767,22 @@ async function copyDiag(pre, status) {
 }
 var logFile = () => new File([diagText()], `moonsinger-diag-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace(/[:T]/g, "-")}.txt`, { type: "text/plain" });
 var canShareDiag = () => typeof navigator.share === "function";
+function downloadDiag(status) {
+  const f2 = logFile(), url = URL.createObjectURL(f2);
+  const a10 = document.createElement("a");
+  a10.href = url;
+  a10.download = f2.name;
+  a10.style.display = "none";
+  document.body.appendChild(a10);
+  a10.click();
+  a10.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1e4);
+  status(`\u4E0B\u8F7D\u4E86 ${f2.name}`);
+}
 async function shareDiag(status) {
   const f2 = logFile();
   if (!canShareDiag()) {
-    const url = URL.createObjectURL(f2);
-    const a10 = document.createElement("a");
-    a10.href = url;
-    a10.download = f2.name;
-    a10.style.display = "none";
-    document.body.appendChild(a10);
-    a10.click();
-    a10.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1e4);
-    status(`\u4E0B\u8F7D\u4E86 ${f2.name}`);
+    downloadDiag(status);
     return;
   }
   try {
@@ -37415,7 +37440,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-6666db828564.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-d5112ef13eb6.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -38596,6 +38621,14 @@ engine.on("ended", () => {
   phKey = "";
   paused = null;
 });
+engine.on("crash", (msg) => {
+  diagNote("engine", `render crash: ${msg}`);
+  playIcon(false);
+  view.setPlayhead(null);
+  phKey = "";
+  paused = null;
+  showError(`\u64AD\u653E\u51FA\u9519\u4E86\uFF0C\u5DF2\u7ECF\u505C\u4E0B\uFF08\u9519\u8BEF\u8BB0\u8FDB\u4E86\u8BCA\u65AD\u65E5\u5FD7\uFF09\uFF1A${msg.split("\n")[0]}`);
+});
 var ws = { mode: "notes", collapsed: false, tryout: false };
 var lastEditMode = "notes";
 var listenOn = () => ws.mode === "listen";
@@ -38999,7 +39032,7 @@ ${esc8(CREDIT.attribution.join("\n"))}</pre><div class="part-sec">\u4E2D\u6587\u
 
 ${esc8(CREDIT_TRANSLATIONS.zh.terms)}</pre><div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc8(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u6708\u8BFB\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">\u6E05\u7A7A\u5FF5\u7F13\u5B58</button></div></div><div class="set-field">\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="\u6708\u8BFB\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5">\u91CD\u5F00\u6708\u8BFB\u5F15\u64CE</button></div></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc8(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:share">${canShareDiag() ? "\u5206\u4EAB .txt" : "\u4E0B\u8F7D .txt"}</button><button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u6708\u8BFB\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">\u6E05\u7A7A\u5FF5\u7F13\u5B58</button></div></div><div class="set-field">\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="\u6708\u8BFB\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5">\u91CD\u5F00\u6708\u8BFB\u5F15\u64CE</button></div></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc8(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:download">\u4E0B\u8F7D .txt</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">\u5206\u4EAB\u2026</button>` : ""}<button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u6708\u8BFB\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -39055,6 +39088,7 @@ ${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u67
       srcIn.value = MODEL_SOURCE_DEFAULT;
       sndIn.value = SOUNDS_SOURCE_DEFAULT;
     } else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
+    else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
     else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
     else if (v?.startsWith("snd:get:")) {
@@ -42323,4 +42357,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c56a2092a7db.mjs.map
+//# sourceMappingURL=moonsinger-1f8dc3e4c335.mjs.map

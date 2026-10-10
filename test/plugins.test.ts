@@ -1,7 +1,7 @@
 // 混音台的插件面板（src/ui/plugins.ts，v0.10.8）：一键 = 同一组全量参数的另一种看法。created 2026-10-10 by Claude Opus 5.5
 // 守的是：一键写进去再读出来是同一个值；在全量里调过 = 读不出一键（不假装）；主线程换算（自动低切 / 跟速度）对；默认 EQ 格没碰过 = 平。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { SIMPLE, SIMPLE_BUS, simpleView, PLUGIN_KINDS, defaults, freshParams, fullParams, fxSummary, resolveChain, autoLowCutHz, paramsOf, rt60OfRoom, roomOfRt60, dampKHz, dampOfKHz, linDb, dbLin, paramView, PARAM_HINT, projectToSimple } from "../src/ui/plugins.ts";
+import { SIMPLE, SIMPLE_BUS, simpleView, PLUGIN_KINDS, defaults, freshParams, fullParams, fxSummary, resolveChain, autoLowCutHz, paramsOf, rt60OfRoom, roomOfRt60, dampKHz, dampOfKHz, linDb, dbLin, paramView, PARAM_HINT, projectToSimple, viewOfFx } from "../src/ui/plugins.ts";
 import { FX_KINDS } from "../src/engine/fx.ts";
 
 describe("插件面板：一键 ↔ 全量", () => {
@@ -96,6 +96,7 @@ describe("「改成最接近的一键」（v0.10.14）", () => {
       for (const d of fullParams(kind)) if (d.unit !== "bool" && rnd() < 0.5) p[d.id] = d.min + rnd() * (d.max - d.min);
       const q = projectToSimple(kind, onBus, p), v = simpleView(kind, onBus)!;
       assert(v.read(q) !== null, `${kind}${onBus ? "（路由轨）" : ""} 改完读不回一键：${JSON.stringify(q)}`);
+      if (kind === "comp") { const qk = projectToSimple(kind, onBus, p, true); assert(simpleView(kind, onBus, true)!.read(qk) !== null && qk.makeupDb === 0, `侧链压缩改完读不回一键：${JSON.stringify(qk)}`); }
     }
   });
   it("EQ：中频那一刀丢掉，倾斜 = 高架减低架的一半，手调的低切算「自动低切」", () => {
@@ -106,5 +107,14 @@ describe("「改成最接近的一键」（v0.10.14）", () => {
   it("压缩：阈值和比例各自反推的「压多少」取平均", () => {
     const p = { ...freshParams("comp"), thresholdDb: -21, ratio: 3.75, attackMs: 30 };   // 阈值 → 0.5、比例 → 0.5
     eq(SIMPLE.comp.read(projectToSimple("comp", false, p))!.amount, 0.5);
+  });
+});
+
+describe("侧链（被谁压）的压缩一键不补偿（v0.10.15）", () => {
+  it("同一个「压多少」：自己压自己有补偿，被别人压补偿 0；两套公式互相读不回", () => {
+    const self = SIMPLE.comp.write({ amount: 0.35 }, freshParams("comp")), keyed = simpleView("comp", false, true)!.write({ amount: 0.35 }, freshParams("comp"));
+    eq(self.makeupDb, 2.8); eq(keyed.makeupDb, 0); eq(keyed.thresholdDb, self.thresholdDb);
+    eq(simpleView("comp", false, true)!.read(self), null); eq(SIMPLE.comp.read(keyed), null);
+    eq(viewOfFx({ kind: "comp", key: "P1" })!.read(keyed)!.amount, 0.35);
   });
 });

@@ -46,6 +46,20 @@ await p.selectOption(`${strip(ids[1].id)} select[data-sendadd]`, b1); await p.wa
 check(JSON.stringify((await tr(ids[1].mic)).sends) === JSON.stringify([{ to: b1, gainDb: -12 }]), "B 发给 混音轨 1（−12 dB 起步）", JSON.stringify((await tr(ids[1].mic)).sends));
 await p.$eval(`${strip(ids[1].id)} input[data-send="${b1}"]`, (el) => { el.value = "-6"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(150);
 check((await tr(ids[1].mic)).sends[0].gainDb === -6, "拖发送量 = −6 dB");
+// 出到一条插了混响（不是全湿）的混音轨 = 明说几条轨一样多、原声被关小（v0.10.15）
+await tab("chain"); await p.click(`${strip(b1)} [data-v="fxadd"]`); await p.click(`${strip(b1)} [data-v="fxpick"][data-kind="reverb"]`); await p.waitForTimeout(150);
+await tab("send");
+check((await p.textContent(`${strip(ids[0].id)}`)).includes("是全湿的"), "混音轨上插的混响默认全湿 = 出到它的 A 卡片上明说「原声没了」");
+await tab("chain"); if (await p.$eval(".fx-panel", (e) => e.hidden)) { await p.click(`${strip(b1)} .fx-chip[data-fx="reverb1"]`); await p.waitForTimeout(120); }
+await p.click('.fx-panel [data-v="fxmode"][data-mode="full"]'); await p.waitForTimeout(120);
+await p.$eval('.fx-panel input[data-p="dry"]', (el) => { el.value = "-3.5"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(150);
+await tab("send");
+{ const t = await p.textContent(`${strip(ids[0].id)}`); check(t.includes("一样多") && t.includes("-3.5 dB"), "改成留原声（−3.5 dB）= 出到它的 A 卡片上明说「几条轨一样多、原声被关小 3.5 dB」", t.slice(0, 200)); }
+await p.evaluate(() => { window.__moonsinger.undo(); window.__moonsinger.undo(); }); await p.waitForTimeout(150);
+check(!(await tr(b1)).chain.length, "撤销两次 = 混响拿掉");
+// 自动低切在混音轨上用不上
+await tab("eq");
+check((await p.textContent(`${strip(b1)}`)).includes("用不上"), "混音轨的 EQ：自动低切写「用不上」（没有音）");
 // 改名（基础页）；混音轨之间排前后（user「混音轨之间还可以排序」）
 await tab("basic");
 const order = async () => (await tracks()).filter((t) => t.kind === "bus").map((t) => t.id).join(",");
@@ -60,6 +74,13 @@ await tab("chain");
 await p.click(`${strip(ids[0].id)} [data-v="fxadd"]`); await p.click(`${strip(ids[0].id)} [data-v="fxpick"][data-kind="comp"]`); await p.waitForTimeout(150);
 await p.selectOption('.fx-panel select[data-key]', ids[1].id); await p.waitForTimeout(150);
 check((await tr(ids[0].mic)).chain.find((f) => f.kind === "comp")?.key === ids[1].id, "A 上的压缩「被谁压」= B（侧链）");
+// 侧链让路不补偿（v0.10.15；查 user 的 団子大家族 发现被压的轨平时比推子响 2.8 dB）：换「被谁压」= 一键照旧是一键、「压多少」不变、补偿 0
+{ const c = (await tr(ids[0].mic)).chain.find((f) => f.kind === "comp");
+  check(c.params.makeupDb === 0 && c.params.thresholdDb === -15 && !(await p.$(".fx-panel .fx-note")) && (await p.textContent(".fx-panel .fx-body")).includes("让多少"), "设了「被谁压」= 补偿 0、阈值不动、一键没锁（旋钮叫「让多少」）", JSON.stringify(c.params));
+  await p.selectOption('.fx-panel select[data-key]', ""); await p.waitForTimeout(150);
+  const c2 = (await tr(ids[0].mic)).chain.find((f) => f.kind === "comp");
+  check(!c2.key && c2.params.makeupDb > 0 && c2.params.thresholdDb === -15, "改回「不用」= 补偿回来（自己压自己那套）", JSON.stringify(c2.params));
+  await p.selectOption('.fx-panel select[data-key]', ids[1].id); await p.waitForTimeout(150); }
 // 删掉混音轨 1：出到它的、发给它的都改回总轨 / 拿掉
 await tab("basic");
 await p.click(`${strip(b1)} [data-v="delbus"]`); await p.waitForTimeout(150);

@@ -74,6 +74,18 @@ describe("录音房：确定性 + 走带", () => {
 });
 
 describe("录音房：停 / 再放 / 放着的时候换时间线（2026-10-10）", () => {
+  it("停了尾巴还在响的时候换成表情段更少的时间线（换曲段）= 不抛、再放有声（v0.10.15，user「C段混了半天音调到A段突然不播放了」：旧游标越界，worklet 抛一次就整个死掉）", async () => {
+    const { s } = await studio();
+    const segs = (k: number) => Array.from({ length: k }, (_, i) => ({ t0: i * 0.5, t1: (i + 1) * 0.5, dB: 0 }));
+    s.handle({ type: "timeline", tl: tl([sfTrack("p", [{ t0: 0, t1: 2.4, key: 60 }], segs(5))], { from: 0, to: 2.5 }) }); s.handle({ type: "play" });
+    run(s, 2.3);   // 表情游标走到第 5 段
+    s.handle({ type: "stop" });   // 尾巴接着响
+    s.handle({ type: "timeline", tl: tl([sfTrack("p", [{ t0: 0, t1: 1, key: 64 }], segs(1))], { from: 0, to: 0.5 }) });   // 换到短的那一段
+    let threw: unknown = null; try { run(s, 0.2); } catch (e) { threw = e; }
+    assert(threw === null, `停后的尾巴照常渲染，不抛（${(threw as Error)?.message}）`);
+    s.handle({ type: "play" }); const r = run(s, 0.3);
+    assert(peak(r.L, sec(0.05), sec(0.3)) > 0.01, "再放有声");
+  });
   it("尾巴还在响的时候开了循环 = 这一轮照样跳回去（user「中途toggle循环对本轮播放应该生效」）；没开 = 照旧响完报 ended", async () => {
     const { s, out } = await studio(), notes = [{ t0: 0, t1: 0.9, key: 60 }];
     s.handle({ type: "timeline", tl: tl([sfTrack("p", notes)], { from: 0, to: 1 }) }); s.handle({ type: "play" });

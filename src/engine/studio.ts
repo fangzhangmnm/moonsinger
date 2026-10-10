@@ -75,6 +75,7 @@ export type StudioOut =
   | { type: "ready" }
   | { type: "banked"; sha: string; presets: [number, number][] }
   | { type: "error"; message: string }
+  | { type: "crash"; message: string }   // 渲染里抛了（studio-processor.ts 接住：停走带、节点照活）
   /** at = 这个位置对应的音频时钟（AudioContext 的秒；宿主给了 clock 才有）：主线程拿扬声器此刻的时钟（getOutputTimestamp）来查「现在听到的是走带的哪儿」。 */
   | { type: "pos"; sec: number; playing: boolean; waiting: string | null; gen: number; at?: number }
   | { type: "ended"; gen: number }
@@ -163,11 +164,11 @@ export class Studio {
   private trackPeaks = new Map<string, number>();
   private specOn = false; private specFrames = 0;
   private specRings = new Map<string, { buf: Float32Array; w: number }>();
-  /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）。 */
-  private specPush(id: string, a: Float32Array, b: Float32Array | null, n: number, off = 0): void {
+  /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）；g0 → g1 = 这一段的推子（线性渐变，和出声同一条斜坡）。 */
+  private specPush(id: string, a: Float32Array, b: Float32Array | null, n: number, g0 = 1, g1 = g0): void {
     let r = this.specRings.get(id); if (!r) { r = { buf: new Float32Array(SPEC_N), w: 0 }; this.specRings.set(id, r); }
-    const buf = r.buf; let w = r.w;
-    for (let i = 0; i < n; i++) { buf[w] = b ? (a[off + i] + b[off + i]) * 0.5 : a[off + i]; w = (w + 1) & (SPEC_N - 1); }
+    const buf = r.buf, dg = (g1 - g0) / n; let w = r.w, g = g0;
+    for (let i = 0; i < n; i++) { g += dg; buf[w] = (b ? (a[i] + b[i]) * 0.5 : a[i]) * g; w = (w + 1) & (SPEC_N - 1); }
     r.w = w;
   }
   private loadBusy = 0; private loadFrames = 0; private chunkBytes = 0;   // 负载 / 内存监控（刀 6）
@@ -294,7 +295,12 @@ export class Studio {
       }
       this.resetCursors(false); this.checkMissing();
     }
-    else { for (const t of this.tracks.values()) this.endHold(t); if (this.pos < this.range.from || this.pos > this.range.to) this.pos = this.range.from; }
+    else {
+      // 没在放（停了、尾巴可能还在响）：游标归零（v0.10.15）——新时间线的表情段 / 音比旧的少时，旧游标越界，停后的尾巴一渲染就抛、worklet 整个死掉
+      //   （user「C段混了半天音调到A段突然不播放了」：C 段停 → 尾巴还响着 → 换到 A 段的时间线 → segs[t.gk] = undefined）。开放时 play() 会按位置重算。
+      for (const t of this.tracks.values()) { this.endHold(t); t.gk = 0; t.nextNote = 0; }
+      if (this.pos < this.range.from || this.pos > this.range.to) this.pos = this.range.from;
+    }
     this.sweepForget();
   }
 
@@ -422,8 +428,8 @@ export class Studio {
     //   按 busOrder 的顺序（送出去的先处理），轮到一条总线时送进它的都已经加好了（v0.10.9 总线接总线）。
     for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
-      if (this.specOn) this.specPush(b.id, b.L, b.R, n);
       const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;
+      if (this.specOn) this.specPush(b.id, b.L, b.R, n, Math.hypot(b.gl, b.gr), Math.hypot(gl, gr));   // 频谱：推子之后（等功率 → hypot = 推子，声像不算）
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
       let pk = 0;
       for (let i = 0; i < n; i++) { cl += dl; cr += dr; const l = b.L[i] * cl * Math.SQRT2, r = b.R[i] * cr * Math.SQRT2; L[i] += l; R[i] += r; if (this.meterOn) { const a = Math.abs(l), c = Math.abs(r); if (a > pk) pk = a; if (c > pk) pk = c; } }   // 立体声的平衡：正中 = 原样
@@ -536,9 +542,10 @@ export class Studio {
     for (const id of this.order) {   // ── 第二趟
       const t = this.tracks.get(id)!, out = t.out; out.set(t.src.subarray(0, cnt));
       for (const fx of t.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t, fx.id) : null);
-      if (this.specOn) this.specPush(id, out, null, cnt);   // 频谱：链之后、推子之前（推子不改形状）
       const audible = solo ? t.ch.solo : !t.ch.mute;
       const [gl, gr] = audible ? panGains(t.ch.gainDb, t.ch.pan) : [0, 0];
+      // 频谱：推子之后（v0.10.15，user「spectrum也算了fader，是全量send的东西对吧？」= 这条轨真正送进混音的量；静音 = 没有；等功率 → hypot = 推子，声像不算，同峰值细线的尺子）
+      if (this.specOn) this.specPush(id, out, null, cnt, Math.hypot(t.gl, t.gr), Math.hypot(gl, gr));
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : undefined, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr, pk = 0;

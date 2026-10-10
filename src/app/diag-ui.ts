@@ -1,7 +1,7 @@
 // diag-ui.ts —— 设置里「诊断日志」的三个动作：复制 / 分享 .txt（没有 share 的环境 = 下载）/ 清空。数据源 = src/app/report-error.ts 的黑匣子。
 // created 2026-10-08 by Claude Fable 5.1（照抄 WebXiaoHeiWu src/diag-log-ui.ts；user「debug consolelog…就是出错了可以发给你的东西，看 wxhw 是怎么做的」）。
 // 复制：navigator.clipboard.writeText（点击手势内）→ 失败回退 textarea + execCommand → 再失败选中 <pre> 让用户长按复制。
-// 分享：canShare files → .txt 文件（微信 / QQ 吃不下 60 KB 长文本——WeebPaint 2026-09-06 教训）；没有 share（桌面）→ 下载 .txt。无系统弹窗（家规）：结果走 notice。
+// 分享：canShare files → .txt 文件（微信 / QQ 吃不下 60 KB 长文本——WeebPaint 2026-09-06 教训）；下载 .txt 一直有（v0.10.15）。无系统弹窗（家规）：结果走 notice。
 import { diagText, diagClear, diagCount, reportError } from "./report-error.ts";
 
 function copyViaTextarea(text: string): boolean {
@@ -28,15 +28,18 @@ export async function copyDiag(pre: HTMLElement | null, status: (text: string) =
 }
 const logFile = () => new File([diagText()], `moonsinger-diag-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.txt`, { type: "text/plain" });
 export const canShareDiag = (): boolean => typeof navigator.share === "function";
+/** 下载 .txt（一直有：电脑上 Windows / Edge 也有系统分享，分享出去的 txt 不好找——v0.10.15，user「bug report的电脑上面分享txt应该是下载，或者加一个下载？」）。
+ *  不靠猜「是不是电脑」（iPad 接了触控板也报细指针、Windows 也有分享），两个钮都摆出来。 */
+export function downloadDiag(status: (text: string) => void): void {
+  const f = logFile(), url = URL.createObjectURL(f);
+  const a = document.createElement("a"); a.href = url; a.download = f.name; a.style.display = "none";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  status(`下载了 ${f.name}`);
+}
 export async function shareDiag(status: (text: string) => void): Promise<void> {
   const f = logFile();
-  if (!canShareDiag()) {   // 桌面：下载
-    const url = URL.createObjectURL(f);
-    const a = document.createElement("a"); a.href = url; a.download = f.name; a.style.display = "none";
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10_000);
-    status(`下载了 ${f.name}`); return;
-  }
+  if (!canShareDiag()) { downloadDiag(status); return; }
   try {
     const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
     if (nav.canShare?.({ files: [f] })) await navigator.share({ title: "MoonSinger 诊断日志", files: [f] });

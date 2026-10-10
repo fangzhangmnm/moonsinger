@@ -11,7 +11,7 @@ import type { FxV2 } from "../format/contract.ts";
 import { eqResponseDb } from "../engine/fx.ts";
 import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath, xOfHz } from "./spectrum.ts";
 const SPEC_TICKS = [100, 1000, 10000];
-import { DEFAULT_EQ_ID, PLUGIN_KINDS, simpleView, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, type Params } from "./plugins.ts";
+import { DEFAULT_EQ_ID, PLUGIN_KINDS, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, viewOfFx, type Params } from "./plugins.ts";
 import { paramRow, slider, wireParamRows } from "./param-row.ts";
 
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）
@@ -86,10 +86,11 @@ interface Target { track: string; fx: string }
 export class Studio {
   readonly el: HTMLDivElement;
   private tab: MixTab = "basic";
-  /** EQ / 压缩页摊开的控件用一键还是全量（全部卡片一起换；这次打开里有效）。 */
-  private panelMode: Record<"eq" | "comp", "simple" | "full"> = { eq: "simple", comp: "simple" };
-  /** 「链」页顶上展开着的插件面板：哪条轨的哪一格 + 一键 / 全量。 */
-  private open: { track: string; fx: string; mode: "simple" | "full" } | null = null;
+  /** 每一格自己记着用一键还是全量（卡片里切，不是全局切；user「一键和全量应该是卡片内部切，而不是全局切。每个卡片记住自己是一键还是全量」）。
+   *  没切过 = 读得回一键就一键、读不回（在全量里调过）就全量；这次打开里有效。 */
+  private cardMode = new Map<string, "simple" | "full">();
+  /** 「链」页顶上展开着的插件面板：哪条轨的哪一格。 */
+  private open: Target | null = null;
   private addFor: string | null = null;   // 「链」页「＋」的小菜单开在哪条轨
   private menuOpen = false;               // 页签那一行的「⋯」
   // 峰值细线：录音房每 ~21 ms 报一次（推子后）；画的时候涨得快、落得慢（每秒 30 dB），只在看得见、有声音时跑动画
@@ -179,13 +180,13 @@ export class Studio {
     else if (v === "fxadd" && strip) { this.addFor = this.addFor === strip ? null : strip; this.render(); }
     else if (v === "fxpick" && strip) this.addFx(strip, t.closest<HTMLElement>("[data-kind]")!.dataset.kind!, true);
     else if (v === "fxaddkind" && strip) this.addFx(strip, t.closest<HTMLElement>("[data-kind]")!.dataset.kind!, false);
-    else if (v === "fxmode" && this.open) { this.open.mode = t.closest<HTMLElement>("[data-mode]")!.dataset.mode as "simple" | "full"; this.renderPanel(); }
+    else if (v === "fxmode" && tg) { this.cardMode.set(`${tg.track}\n${tg.fx}`, t.closest<HTMLElement>("[data-mode]")!.dataset.mode as "simple" | "full"); this.render(); }
     else if (v === "fxclose") { this.open = null; this.render(); }
     else if (v === "fxdel" && tg) this.deleteFx(tg);
     else if (v === "fxon" && tg) { this.patch(tg, (fx) => ({ ...fx, on: fx.on === false }), "开 / 关"); this.render(); }
     else if (v === "fxtoggle" && tg) { const id = t.closest<HTMLElement>("[data-c]")!.dataset.c!; this.simpleSet(tg, id, (this.simpleNow(tg)?.[id] ?? 0) ? 0 : 1, false); this.render(); }
     else if (v === "fxchoice" && tg) { const b = t.closest<HTMLElement>("[data-c]")!; this.simpleSet(tg, b.dataset.c!, Number(b.dataset.val), false); this.render(); }
-    else if (v === "fxproject" && tg) { this.patch(tg, (fx) => ({ ...fx, params: projectToSimple(fx.kind, this.onBus(tg.track), paramsOf(fx)) }), "改成最接近的一键"); this.render(); }
+    else if (v === "fxproject" && tg) { this.patch(tg, (fx) => ({ ...fx, params: projectToSimple(fx.kind, this.onBus(tg.track), paramsOf(fx), !!fx.key) }), "改成最接近的一键"); this.render(); }
     else if (v === "fxbool" && tg) { const id = t.closest<HTMLElement>("[data-p]")!.dataset.p!; this.patch(tg, (fx) => ({ ...fx, params: { ...paramsOf(fx), [id]: paramsOf(fx)[id] ? 0 : 1 } }), id); this.render(); }
   }
   private onInput(e: Event): void {
@@ -203,11 +204,13 @@ export class Studio {
   }
   private onChange(e: Event): void {
     const t = e.target as HTMLSelectElement & HTMLInputElement, strip = t.closest<HTMLElement>(".strip")?.dataset.id, tg = this.targetOf(t);
-    if (t.dataset.panelmode !== undefined && (this.tab === "eq" || this.tab === "comp")) { this.panelMode[this.tab] = t.value as "simple" | "full"; this.render(); return; }
     if (strip && t.dataset.out !== undefined) { this.host.setOutTo(strip, t.value); this.render(); return; }
     if (strip && t.dataset.sendadd !== undefined && t.value) { this.host.setSends(strip, [...this.host.sends(strip), { to: t.value, gainDb: -12 }], `发给 ${this.trackName(t.value)}`); this.render(); return; }
     if (strip && t.classList.contains("bus-name")) { const name = t.value.trim(); if (name) this.host.renameBus(strip, name); this.render(); return; }
-    if (tg && t.dataset.key !== undefined) { const v = t.value; this.patch(tg, (fx) => { const { key: _k, ...rest } = fx; return v ? { ...rest, key: v } : rest; }, "被谁压"); this.render(); }
+    if (tg && t.dataset.key !== undefined) {   // 换「被谁压」：原来是一键的样子 = 换成另一套公式（侧链不补偿）照旧是一键，「压多少」不变
+      const v = t.value, bus = this.onBus(tg.track);
+      this.patch(tg, (fx) => { const { key: _k, ...rest } = fx, nx: FxV2 = v ? { ...rest, key: v } : rest, was = viewOfFx(fx, bus)?.read(paramsOf(fx)), view = viewOfFx(nx, bus);
+        return was && view ? { ...nx, params: view.write(was, paramsOf(nx)) } : nx; }, "被谁压"); this.render(); }
   }
 
   // ── 插件格 ──────────────────────────────────────────────────────────────
@@ -221,15 +224,23 @@ export class Studio {
   private onBus(track: string): boolean { return this.host.buses().some((b) => b.id === track); }
   private trackName(track: string): string { return track === MASTER || track === "master" ? "总轨" : this.host.strips().find((s) => s.id === track)?.name ?? this.host.buses().find((b) => b.id === track)?.name ?? track; }
   private toggleOpen(track: string, fx: string): void {
-    if (this.open && this.open.track === track && this.open.fx === fx) this.open = null;
-    else { const s = this.slotOf({ track, fx }); this.open = { track, fx, mode: s && simpleView(s.fx.kind, this.onBus(track))?.read(paramsOf(s.fx)) ? "simple" : "full" }; }
+    this.open = this.open && this.open.track === track && this.open.fx === fx ? null : { track, fx };
     this.addFor = null; this.render();
+  }
+  private modeOf(tg: Target): "simple" | "full" {
+    const m = this.cardMode.get(`${tg.track}\n${tg.fx}`); if (m) return m;
+    const s = this.slotOf(tg); return s && viewOfFx(s.fx, this.onBus(tg.track))?.read(paramsOf(s.fx)) ? "simple" : "full";
+  }
+  /** 一键 | 全量 两个小钮（卡片上摊开的那一块、「链」页顶上的面板都用这一份）。 */
+  private modeSeg(tg: Target): string {
+    const m = this.modeOf(tg);
+    return `<span class="fx-seg"><button class="btn${m === "simple" ? " is-on" : ""}" data-v="fxmode" data-mode="simple" title="几个大旋钮，按公式调下面全量的参数（只换这一格）">一键</button><button class="btn${m === "full" ? " is-on" : ""}" data-v="fxmode" data-mode="full" title="每一个参数都摊开（只换这一格）">全量</button></span>`;
   }
   private addFx(track: string, kind: string, openPanel: boolean): void {
     const ch = this.host.chain(track), used = new Set(ch.map((f) => f.id)); let n = 1; while (used.has(`${kind}${n}`)) n++;
     const fx: FxV2 = { id: `${kind}${n}`, kind, params: freshParams(kind, this.onBus(track)) };
     this.host.setChain(track, [...ch, fx], `${this.trackName(track)} 插上${pluginName(kind)}`);
-    this.addFor = null; if (openPanel) this.open = { track, fx: fx.id, mode: "simple" }; this.render();
+    this.addFor = null; if (openPanel) this.open = { track, fx: fx.id }; this.render();
   }
   /** 改一格（虚的默认 EQ = 第一次改的时候写进链的最前面）。 */
   private patch(tg: Target, f: (fx: FxV2) => FxV2, what: string, merge = false): void {
@@ -248,11 +259,11 @@ export class Studio {
     if (this.open && this.open.track === tg.track && this.open.fx === tg.fx) this.open = null;
     this.render();
   }
-  private simpleNow(tg: Target): Record<string, number> | null { const s = this.slotOf(tg); return s ? simpleView(s.fx.kind, this.onBus(tg.track))?.read(paramsOf(s.fx)) ?? null : null; }
+  private simpleNow(tg: Target): Record<string, number> | null { const s = this.slotOf(tg); return s ? viewOfFx(s.fx, this.onBus(tg.track))?.read(paramsOf(s.fx)) ?? null : null; }
   /** 一键改一个控件：在当前读数上改这一个（读不出 = 在全量里调过 = 从一键的默认起），按公式写回全量参数。 */
   private simpleSet(tg: Target, id: string, v: number, live: boolean, input?: HTMLElement): void {
     const s = this.slotOf(tg); if (!s) return;
-    const bus = this.onBus(tg.track), view = simpleView(s.fx.kind, bus)!, base = view.read(paramsOf(s.fx)); if (!base) return;   // 锁着（在全量里调过）：只有「改成最接近的一键」能动
+    const bus = this.onBus(tg.track), view = viewOfFx(s.fx, bus)!, base = view.read(paramsOf(s.fx)); if (!base) return;   // 锁着（在全量里调过）：只有「改成最接近的一键」能动
     const ctl = view.controls.find((c) => c.id === id);
     this.patch(tg, (fx) => ({ ...fx, params: view.write({ ...base, [id]: v }, paramsOf(fx)) }), ctl?.label ?? id, live);
     if (live && input) { const w = input.closest("[data-fxwrap]"); const out = w?.querySelector<HTMLElement>(`output[data-c="${id}"]`); if (out && ctl?.fmt) out.textContent = ctl.fmt(v); w?.querySelector(".fx-note")?.remove(); }
@@ -268,18 +279,19 @@ export class Studio {
   // ── 画 ──────────────────────────────────────────────────────────────────
   /** 一格的控件（一键 / 全量）：「链」页顶上的面板和 EQ / 压缩页卡片上摊开的共用。 */
   private controlsHtml(tg: Target, fx: FxV2, mode: "simple" | "full"): string {
-    const bus = this.onBus(tg.track), p = paramsOf(fx), view = simpleView(fx.kind, bus), read = view?.read(p) ?? null;
+    const bus = this.onBus(tg.track), p = paramsOf(fx), view = viewOfFx(fx, bus), read = view?.read(p) ?? null;
     const keyOpts = fx.kind === "comp" ? this.host.keyTracks(tg.track) : [];
     const keyRow = keyOpts.length ? row("被谁压", HINT.key, "", `<select data-key><option value="">不用（自己压自己）</option>${keyOpts.map((x) => `<option value="${esc(x.id)}"${fx.key === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select>`) : "";
     if (mode === "simple" && view) {
-      // 在全量里调过（落不到一键公式上）= 一键锁着、灰着显示「改过去会是什么样」，要改先点「改成最接近的一键」（v0.10.14；user「basic模式下应该有一个project to basic模式的功能，不然的话basic模式会是被锁住，免得不小心override」）
-      const fresh = view.read(freshParams(fx.kind, bus)) ?? {}, locked = !read, cur = read ?? view.project(p), dis = locked ? " disabled" : "";
-      return (locked ? `<div class="fx-note">在全量里调过，一键表达不了：一键先锁着，免得一碰就盖掉。<button class="btn cand" data-v="fxproject" title="按最接近的一键数值改写——全量里多调的会丢掉（比如中频那一刀）；能撤销。下面灰着的就是改过去的样子">改成最接近的一键</button></div>` : "") + view.controls.map((c) => {
+      // 在全量里调过（落不到一键公式上）= 一键锁着、旋钮不摆出来（user「没法用一键的时候那些一键的invalid slider可以不显示哈哈」），要改先点「改成最接近的一键」（v0.10.14；user「basic模式下应该有一个project to basic模式的功能，不然的话basic模式会是被锁住，免得不小心override」）
+      const fp = freshParams(fx.kind, bus), fresh = view.read(fp) ?? view.project(fp), locked = !read, cur = read ?? {};
+      return (locked ? `<div class="fx-note">在全量里调过，一键表达不了：一键先锁着，免得一碰就盖掉。<button class="btn cand" data-v="fxproject" title="按最接近的一键数值改写——全量里多调的会丢掉（比如中频那一刀）；能撤销">改成最接近的一键</button></div>` + keyRow : "") + (locked ? "" : view.controls.map((c) => {
         const v = cur[c.id] ?? 0;
-        if (c.kind === "toggle") return row(c.label, c.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c.id}"${dis}>${v ? "开" : "关"}</button>`);
-        if (c.kind === "choice") return row(c.label, c.hint, "", `<span class="fx-seg">${c.choices!.map((x) => `<button class="btn${Math.abs(v - x.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c.id}" data-val="${x.v}"${dis}>${esc(x.label)}</button>`).join("")}</span>`);
-        return row(c.label, c.hint, `<output data-c="${c.id}">${c.fmt ? c.fmt(v) : v}</output>`, slider({ min: c.min!, max: c.max!, step: c.step!, value: v, attrs: `data-c="${c.id}"`, def: fresh[c.id], defText: fresh[c.id] == null ? undefined : c.fmt ? c.fmt(fresh[c.id]) : String(fresh[c.id]), disabled: locked }));
-      }).join("") + keyRow;
+        if (c.id === "autoLow" && !this.host.strips().some((x) => x.id === tg.track)) return row(c.label, c.hint, "", `<span class="fx-dim">混音轨 / 总轨上没有音，用不上${v ? "（开着也不切）" : ""}</span>`);   // 自动低切按这一轨最低的音算：没有音 = 不起作用（v0.10.15）
+        if (c.kind === "toggle") return row(c.label, c.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c.id}">${v ? "开" : "关"}</button>`);
+        if (c.kind === "choice") return row(c.label, c.hint, "", `<span class="fx-seg">${c.choices!.map((x) => `<button class="btn${Math.abs(v - x.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c.id}" data-val="${x.v}">${esc(x.label)}</button>`).join("")}</span>`);
+        return row(c.label, c.hint, `<output data-c="${c.id}">${c.fmt ? c.fmt(v) : v}</output>`, slider({ min: c.min!, max: c.max!, step: c.step!, value: v, attrs: `data-c="${c.id}"`, def: fresh[c.id], defText: fresh[c.id] == null ? undefined : c.fmt ? c.fmt(fresh[c.id]) : String(fresh[c.id]), }));
+      }).join("") + keyRow);
     }
     const fresh = freshParams(fx.kind, bus);
     return fullParams(fx.kind).map((d) => {
@@ -295,8 +307,8 @@ export class Studio {
     if (!s) return `<button class="btn cand" data-v="fxaddkind" data-kind="${kind}" title="往这条轨上插一个${pluginName(kind)}">＋ ${esc(pluginName(kind))}</button>`;
     const fx = s.fx, tg = { track, fx: fx.id };
     return `<div class="fx-inline${fx.on === false ? " off" : ""}" data-fxwrap data-track="${esc(track)}" data-fx="${esc(fx.id)}">` +
-      `<div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="关 = 这一格跳过（参数留着）">${fx.on === false ? "关着" : "开着"}</button>${all.length > 1 ? `<span class="fx-dim">还有 ${all.length - 1} 个${esc(pluginName(kind))}在「链」里</span>` : ""}</div>` +
-      `<div class="fx-body">${this.controlsHtml(tg, fx, this.panelMode[kind])}</div></div>`;
+      `<div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="关 = 这一格跳过（参数留着）">${fx.on === false ? "关着" : "开着"}</button>${all.length > 1 ? `<span class="fx-dim">还有 ${all.length - 1} 个${esc(pluginName(kind))}在「链」里</span>` : ""}${this.modeSeg(tg)}</div>` +
+      `<div class="fx-body">${this.controlsHtml(tg, fx, this.modeOf(tg))}</div></div>`;
   }
   /** 出到 + 发送（歌手轨和路由轨都有；总轨没有）。 */
   private routeHtml(track: string): string {
@@ -308,7 +320,11 @@ export class Studio {
     // 出到一条带全湿效果的混音轨 = 原声没了：明说（v0.10.10；user「开了混响结果铃声都哑掉了」）
     const wet = out !== "master" ? this.host.chain(out).find(fullyWet) : undefined;
     const warn = wet ? `<div class="fx-note">「${name(out)}」上的${esc(pluginName(wet.kind))}是全湿的：出到它 = 原声没了，只剩${esc(pluginName(wet.kind))}。要原声加${esc(pluginName(wet.kind))}：出到总轨，用下面的「发送」。</div>` : "";
-    return outSel + warn + rows + add;
+    // 出到一条带混响 / 延迟 / 合唱（插在上面、不是全湿）的混音轨：几条轨效果一样多、原声被它关小（v0.10.15；查 user 的 団子大家族 时发现：五条轨出到「空间感」，混响原声 0.67 = 悄悄 −3.5 dB）
+    const shared = !wet && out !== "master" ? this.host.chain(out).find((f) => (f.kind === "reverb" || f.kind === "delay" || f.kind === "chorus") && f.on !== false) : undefined;
+    const sharedDry = shared ? paramsOf(shared).dry : 1, dryDb = 20 * Math.log10(Math.max(1e-6, sharedDry));
+    const note = shared ? `<div class="fx-note">出到「${name(out)}」= 整条声音都过它的${esc(pluginName(shared.kind))}：出到它的几条轨${esc(pluginName(shared.kind))}一样多${sharedDry < 0.999 ? `，原声也被它关小 ${dbText(dryDb)}（推子上看不出来）` : ""}。想每条轨各自多少：出到总轨、用下面的「发送」，那条混音轨上的${esc(pluginName(shared.kind))}改成全湿。</div>` : "";
+    return outSel + warn + note + rows + add;
   }
   private chipsHtml(track: string): string {
     const chips = this.slots(track).map(({ fx }) => `<button class="btn fx-chip${this.open?.track === track && this.open.fx === fx.id ? " is-on" : ""}${fx.on === false ? " off" : ""}" data-v="fx" data-fx="${esc(fx.id)}" title="${esc(pluginName(fx.kind))}：点开调${fx.id === DEFAULT_EQ_ID ? "（默认那一格：能关、能换面板，不能删）" : ""}">${esc(fxSummary(fx, this.onBus(track)))}</button>`).join("");
@@ -321,16 +337,15 @@ export class Studio {
     const fx = s.fx, isDefault = fx.id === DEFAULT_EQ_ID;
     box.dataset.track = o.track; box.dataset.fx = o.fx;
     const head = `<div class="fx-head"><span class="fx-title">${esc(this.trackName(o.track))} · ${esc(pluginName(fx.kind))}${s.virtual ? "（平）" : ""}</span>` +
-      `<span class="fx-seg"><button class="btn${o.mode === "simple" ? " is-on" : ""}" data-v="fxmode" data-mode="simple" title="几个大旋钮，按公式调下面全量的参数">一键</button><button class="btn${o.mode === "full" ? " is-on" : ""}" data-v="fxmode" data-mode="full" title="每一个参数都摊开">全量</button></span>` +
+      this.modeSeg(o) +
       `<button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="关 = 这一格跳过（参数留着）">${fx.on === false ? "关着" : "开着"}</button>` +
       (isDefault ? "" : `<button class="btn cand danger" data-v="fxdel" title="从这条轨上拿掉（能撤销）">拿掉</button>`) +
       `<button class="btn" data-v="fxclose" title="收起">✕</button></div>`;
-    box.innerHTML = head + `<div class="fx-body">${this.controlsHtml(o, fx, o.mode)}</div>`; box.hidden = false;
+    box.innerHTML = head + `<div class="fx-body">${this.controlsHtml(o, fx, this.modeOf(o))}</div>`; box.hidden = false;
   }
   private renderBar(): void {
-    const bar = this.el.querySelector<HTMLElement>(".mix-tabbar")!, modeKind = this.tab === "eq" || this.tab === "comp" ? this.tab : null;
+    const bar = this.el.querySelector<HTMLElement>(".mix-tabbar")!;
     bar.innerHTML = `<span class="fx-seg mix-tabs" role="tablist">${TABS.map((x) => `<button class="btn${this.tab === x.id ? " is-on" : ""}" data-v="tab" data-tab="${x.id}" role="tab" title="${esc(x.hint)}">${esc(x.label)}</button>`).join("")}</span>` +
-      (modeKind ? `<select class="mix-mode" data-panelmode title="卡片上摊开的${esc(pluginName(modeKind))}用哪种面板（全部卡片一起换）"><option value="simple"${this.panelMode[modeKind] === "simple" ? " selected" : ""}>一键</option><option value="full"${this.panelMode[modeKind] === "full" ? " selected" : ""}>全量</option></select>` : "") +
       `<button class="btn mix-more${this.menuOpen ? " is-on" : ""}" data-v="more" title="更多：加混音轨…">⋯</button>`;
     const menu = this.el.querySelector<HTMLElement>(".mix-menu")!;
     menu.hidden = !this.menuOpen;

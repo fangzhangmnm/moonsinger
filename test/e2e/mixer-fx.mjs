@@ -53,6 +53,15 @@ check((await p.$$eval(`.strip[data-id="${partId}"] .spec-ticks span`, (es) => es
   const top = await p.$eval(`.strip[data-id="${partId}"] .strip-spec .spec`, (e) => { const pts = [...(e.getAttribute("d") ?? "").matchAll(/L([\d.]+),([\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]).filter(([x]) => x > 0 && x < 100); return pts.reduce((a, c) => (c[1] < a[1] ? c : a), [0, 101])[0]; });
   const x440 = 100 * Math.log(440 / 30) / Math.log(16000 / 30);
   check(d.length > 0 && Math.abs(top - x440) < 4, "放着 = 频谱面有东西，最高处在 440 Hz 附近", `最高处 x ${top.toFixed(1)} / 440 Hz 在 ${x440.toFixed(1)}`);
+  // 推子之后（v0.10.15；user「spectrum也算了fader，是全量send的东西对吧？」）：推子拉低 24 dB = 频谱面整体往下掉
+  const peakY = () => p.$eval(`.strip[data-id="${partId}"] .strip-spec .spec`, (e) => Math.min(...[...(e.getAttribute("d") ?? "").matchAll(/L([\d.]+),([\d.]+)/g)].map((m) => Number(m[2]))));
+  const y0 = await peakY();
+  await tab("basic"); await p.$eval(`.strip[data-id="${partId}"] input[data-gain]`, (el) => { el.value = "-24"; el.dispatchEvent(new Event("input", { bubbles: true })); });
+  await tab("eq"); if (!(await p.evaluate(() => window.__moonsinger.engine.playing))) await p.click("#playBtn");   // 那段只有 3 s：放完了 = 再放（推子已经在 −24）
+  let y1 = Infinity; for (let i = 0; i < 30 && !Number.isFinite(y1); i++) { await p.waitForTimeout(150); y1 = await peakY(); }
+  if (Number.isFinite(y1)) { await p.waitForTimeout(800); y1 = await peakY(); }   // 新开的频谱先涨到位、再等慢落落完
+  check(Number.isFinite(y0) && Number.isFinite(y1) && y1 - y0 > 20, "推子拉低 24 dB = 频谱最高处往下掉（频谱在推子之后）", `y ${y0.toFixed(1)} → ${y1.toFixed(1)}（24 dB ≈ ${(24 / 84 * 100).toFixed(1)}）`);
+  await tab("basic"); await p.dblclick(`.strip[data-id="${partId}"] input[data-gain]`); await tab("eq");
   await p.click("#playBtn"); await p.waitForTimeout(200); }
 const curve0 = await p.$eval(`.strip[data-id="${partId}"] .strip-spec .eqc`, (e) => e.getAttribute("d"));
 check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-c="tilt"]`)) && !(await p.$(`.strip[data-id="${partId}"] input[data-gain]`)), "EQ 页：卡片上直接摊开默认 EQ 的一键（厚 ↔ 亮），推子不在这页");
@@ -64,10 +73,13 @@ await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 await p.click(`.strip[data-id="${partId}"] .fx-inline [data-v="fxtoggle"][data-c="autoLow"]`); await p.waitForTimeout(120);
 { const ys = await p.$eval(`.strip[data-id="${partId}"] .strip-spec .eqc`, (e) => [...(e.getAttribute("d") ?? "").matchAll(/[ML]([\d.]+),([\d.]+)/g)].map((m) => Number(m[2])));
   check(ys[0] > 70 && Math.abs(ys[ys.length - 1] - 50) < 1, "开自动低切 = 曲线最左边（30 Hz）往下掉、高处不动", `${ys[0]} … ${ys[ys.length - 1]}`); }
-await p.selectOption(".mix-tabbar select[data-panelmode]", "full"); await p.waitForTimeout(120);
-check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-p="midDb"]`)), "下拉换「全量」= 卡片上摊开全部参数");
+await p.click(`.strip[data-id="${partId}"] .fx-inline [data-v="fxmode"][data-mode="full"]`); await p.waitForTimeout(120);
+check(!(await p.$(".mix-tabbar select")), "顶条上没有全局的一键 / 全量下拉了（卡片里切）");
+await tab("comp"); await tab("eq");
+check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline [data-v="fxmode"][data-mode="full"].is-on`)), "这张卡片记住自己是全量（换页回来还是）");
+check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-p="midDb"]`)), "卡片里点「全量」= 这张卡片摊开全部参数");
 check(/自动：\d+ Hz/.test(await p.textContent(`.strip[data-id="${partId}"] .fx-inline`)), "全量里低切那一行写出自动算出来的 Hz");
-await p.selectOption(".mix-tabbar select[data-panelmode]", "simple"); await p.waitForTimeout(120);
+await p.click(`.strip[data-id="${partId}"] .fx-inline [data-v="fxmode"][data-mode="simple"]`); await p.waitForTimeout(120);
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 await tab("comp");
 check(!!(await p.$(`.strip[data-id="${partId}"] [data-v="fxaddkind"][data-kind="comp"]`)), "压缩页：没有压缩 = 「＋ 压缩」");
@@ -86,13 +98,10 @@ check((await chain(partId))[0].params.midDb === -4 && (await p.textContent(chip(
 await p.click('.fx-panel [data-mode="simple"]'); await p.waitForTimeout(150);
 check(!!(await p.$(".fx-panel .fx-note")), "回到一键 = 明说「在全量里调过」");
 // 一键锁着 + 「改成最接近的一键」（v0.10.14；user「basic模式下应该有一个project to basic模式的功能，不然的话basic模式会是被锁住，免得不小心override」）
-check(await p.$eval('.fx-panel input[data-c="tilt"]', (e) => e.disabled) && await p.$eval('.fx-panel [data-v="fxtoggle"]', (e) => e.disabled), "在全量里调过 = 一键的旋钮 / 开关灰着、动不了");
-{ const r = await p.$eval('.fx-panel input[data-c="tilt"]', (e) => { const b = e.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
-  await p.mouse.move(r.x, r.y); await p.mouse.wheel(0, -100); await p.waitForTimeout(120);
-  check((await chain(partId))[0].params.midDb === -4, "锁着时滚轮也不会盖掉全量里调的"); }
+check(!(await p.$('.fx-panel input[data-c="tilt"]')) && !(await p.$('.fx-panel [data-v="fxtoggle"]')) && !!(await p.$('.fx-panel [data-v="fxproject"]')), "在全量里调过 = 一键锁着：旋钮 / 开关不摆出来，只有「改成最接近的一键」（user「没法用一键的时候那些一键的invalid slider可以不显示」）");
 await p.click('.fx-panel [data-v="fxproject"]'); await p.waitForTimeout(150);
 { const q = (await chain(partId))[0].params;
-  check(q.midDb === 0 && q.highDb === 3 && q.lowDb === -3 && !(await p.$(".fx-panel .fx-note")) && !(await p.$eval('.fx-panel input[data-c="tilt"]', (e) => e.disabled)), "「改成最接近的一键」= 中频那一刀丢掉、倾斜留着（亮 3 dB），一键解锁", JSON.stringify(q)); }
+  check(q.midDb === 0 && q.highDb === 3 && q.lowDb === -3 && !(await p.$(".fx-panel .fx-note")) && !!(await p.$('.fx-panel input[data-c="tilt"]')), "「改成最接近的一键」= 中频那一刀丢掉、倾斜留着（亮 3 dB），一键解锁", JSON.stringify(q)); }
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 check((await chain(partId))[0].params.midDb === -4 && !!(await p.$(".fx-panel .fx-note")), "能撤销：撤回 = 全量里那一刀回来、一键又锁上");
 await p.click('.fx-panel [data-v="fxon"]'); await p.waitForTimeout(150);
