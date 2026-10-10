@@ -113,7 +113,7 @@ export function fromJianpu(text: string, fifths: number): Token[] | null {
     if (m) { out.push({ kind: "time", id: id++, beats: Number(m[1]), beatType: Number(m[2]) }); continue; }
     m = /^\[T=(\d+)\]$/.exec(w);
     if (m) { out.push({ kind: "tempo", id: id++, bpm: Number(m[1]) }); continue; }
-    m = /^\[(pp|p|mp|mf|f|ff)\]$/.exec(w);
+    m = /^\[(ppp|pp|p|mp|mf|f|ff|fff)\]$/.exec(w);
     if (m) { out.push({ kind: "dyn", id: id++, value: m[1] as Dyn }); continue; }
     if (w === "[<]" || w === "[>]") { out.push({ kind: "hairpin", id: id++, dir: w === "[<]" ? "cresc" : "dim" }); continue; }
     m = /^\[G=([a-z][a-z0-9-]*)(?::(\d+))?(\/2-3)?\]$/.exec(w);

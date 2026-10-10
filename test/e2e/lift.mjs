@@ -64,7 +64,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   const dyns = await p.$$eval("#score text.dyn", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
   check(dyns.length === 2, "两个力度字", String(dyns.length));
   await p.mouse.click(dyns[0].x, dyns[0].y); await p.waitForTimeout(150);
-  check(await p.$$eval(".ctx-menu [data-v^='dyn:']", (e) => e.length) === 6, "点 p = 小菜单（6 个力度）");
+  check(await p.$$eval(".ctx-menu [data-v^='dyn:']", (e) => e.length) === 8, "点 p = 小菜单（8 个力度：ppp…fff，v0.9.23）");
   check(await p.$eval(".ctx-menu [data-v='dyn:p']", (e) => e.classList.contains("is-on")), "现在的 p 亮着");
   await p.click(".ctx-menu [data-v='dyn:mp']"); await p.waitForTimeout(150);
   check(await marks(p) === "mp n < n n f n n n n n", "改成 mp", await marks(p));
@@ -122,7 +122,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   // 12. 轻点力度字 = 小菜单
   const d0 = await center(p, "#score text.dyn", 0);
   await touch([d0], 40);
-  check(await p.$$eval(".ctx-menu [data-v^='dyn:']", (e) => e.length) === 6, "手指轻点力度字 = 小菜单");
+  check(await p.$$eval(".ctx-menu [data-v^='dyn:']", (e) => e.length) === 8, "手指轻点力度字 = 小菜单");
   await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu")?.remove());
   // 13. 手指长按力度字拖到第二个音
   const hd = await heads(p), dl = await p.$$eval("#score text.dyn", (es) => { const r = es[0].getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });

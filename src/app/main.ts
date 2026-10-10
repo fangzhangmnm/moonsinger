@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { clearMarks, stackDegree, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { clearMarks, stackDegree, DYNS, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -1889,7 +1889,17 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
 
 /** 空白处的小菜单（长按 / 电脑右键；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」「小菜单同意」）：非模态，开在按的地方，点外面就收。
  *  光标已经由 score-view 放到按的位置：粘贴 = 贴在那里；插记号 = 插在那里。 */
-const DYN_MENU = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" } as const;   // Bravura 力度字形
+const DYN_MENU = { ppp: "\u{E52A}", pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}", fff: "\u{E530}" } as const;   // Bravura 力度字形
+/** 力度换算表（v0.9.23；user 2026-10-10「wishlist: ppp fff，以及帮我科普这些和db的换算关系，然后应该向用户揭露，方便对比」「揭露表的位置建议是乐器页「力度」那一行 同意」）：
+ *  每个力度记号 → 这位的 MIDI 力度（有力度表的乐器）或音量 dB（月读 / 元音版 / 旧候选），有 GS 力度层数据的再加一行「第几层」（跨层 = 换一份录音）。数都是这位 by value 的配置。 */
+function dynTable(sp: { dynamicsDb: Record<Dyn, number>; dynamicsVel: Record<Dyn, number> | null }, layers: { count: number; ranges: [number, number][] } | null): string {
+  const db = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x)}`;
+  const cells = (f: (d: Dyn) => string) => DYNS.map((d) => `<td>${f(d)}</td>`).join("");
+  const vel = sp.dynamicsVel;
+  return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d) => `<th title="${d}"><span class="smufl">${DYN_MENU[d]}</span></th>`).join("")}</tr>` +
+    (vel ? `<tr><th>MIDI 力度</th>${cells((d) => String(vel[d]))}</tr>` : `<tr><th>音量 dB</th>${cells((d) => db(sp.dynamicsDb[d]))}</tr>`) +
+    (vel && layers && layers.count > 1 ? `<tr><th>GS 力度层</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
+}
 function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: number } | null): void {
   closeOffer?.();
   const box = document.createElement("div");
@@ -1902,7 +1912,7 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
     item("bar", "小节线 |", "从这里重新数小节（弱起）") + item("phrase", "句号", "这一句到这儿（「合」挪字的边界；不换行不换气）") +
     item("mark:key", "调号…") + item("mark:time", "拍号…") + item("mark:tempo", "速度…") +
     // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
-    `<div class="ctx-row ctx-dyn">${(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(st), st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：从这儿前面那个音起"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
+    `<div class="ctx-row ctx-dyn">${(["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(st), st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：从这儿前面那个音起"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
     `<div class="ctx-sep"></div>` +
     item("all", "全选");   // 「全选这一行」去掉了（2026-10-10 user「wishlist 全选这一行没啥用，去掉」）
   document.body.append(box);
@@ -2073,7 +2083,7 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const row = t.kind === "dyn"
-    ? (["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => `<button class="btn ctx-chip${t.value === d ? " is-on" : ""}" data-v="dyn:${d}" title="改成 ${d}"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")
+    ? (["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => `<button class="btn ctx-chip${t.value === d ? " is-on" : ""}" data-v="dyn:${d}" title="改成 ${d}"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")
     : (["cresc", "dim"] as const).map((d) => `<button class="btn ctx-chip${t.dir === d ? " is-on" : ""}" data-v="dir:${d}" title="${d === "cresc" ? "渐强" : "渐弱"}">${WEDGE_MENU[d]}</button>`).join("");
   // 渐到（只给力度记号）：开关 + 做不到时说为什么（纪律：画灰 + 明说）
   const rampWhy = src === "none" ? "这张纸里前面没有力度记号，没有地方渐过来" : src === "hairpin" ? "中间有手写的渐强渐弱，按手写的走" : "";
@@ -2290,9 +2300,11 @@ function drawInst(): void {
       const L = g && g.origin.library === GS_LIBRARY_ID && catalogNow ? velLayersOf(catalogNow, g.bank, g.program, g.note) : null, k = L ? L.ranges.findIndex(([lo, hi]) => midi >= lo && midi <= hi) : -1;
       return row("力度", `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="轻一点（MIDI 力度 −8）">−8</button><button class="btn" data-v="vel:8" title="重一点（+8）">+8</button>` +
         (midi !== def ? `<button class="btn" data-v="vel:def" title="回到 ${def}">默认</button>` : ""),
-        `没写力度记号的音按这个力度（MIDI 1–127）。` + (sp.dynamicsVel ? `力度记号按这位的力度表：${(Object.entries(sp.dynamicsVel) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ")}；重音 +${sp.accentVel}、强音 +${sp.marcatoVel}。` : "这位是之前上场的：力度记号还是只改音量（新上场的才按力度表走力度）。") +
+        `没写力度记号的音按这个力度（MIDI 1–127）。` + (sp.dynamicsVel ? `力度记号按这位的力度表（重音 +${sp.accentVel}、强音 +${sp.marcatoVel}；别的记号见下面「记号怎么演」）：${dynTable(sp, L)}` : `这位是之前上场的：力度记号还是只改音量：${dynTable(sp, null)}`) +
         (L ? (L.count > 1 ? `GS 里这个音色有 ${L.count} 个力度层${k >= 0 ? `，现在在第 ${k + 1} 层（${L.ranges[k][0]}–${L.ranges[k][1]}）` : ""}：跨层 = 换一份录音，音色会变，不只是响度。` : "GS 里这个音色只有一个力度层：力度只改响度。") : ""));
     })(activeVelocity(doc.extras, role), activePerfSpec(doc.extras, role)) : "") +
+    // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
+    (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("力度记号", "", `力度记号 = 音量（相对 mf，dB）；一档 6 dB ≈ 振幅翻倍 / 减半。力度记号没有标准的 dB，是相对的：每位演奏者自己带一张表，这是这位的：${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") +
     // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
     //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
     (active?.sfx ? ((fixed, al) => row("音效", chip("sfx:fixed", "固定原速", fixed, "每个音都敲原速键：写谱按键、播放都是原来的样子；谱上写的音高照留，只是不拿来出声") +

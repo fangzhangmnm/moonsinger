@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.22-2026-10-10";
+var APP_VERSION = "v0.9.23-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3068,6 +3068,7 @@ var endingLabel = (nums) => nums && nums.length ? nums.map((n10) => `${n10}.`).j
 var ARTS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost", "whisper"];
 var ATTACKS = ["ghost", "unstress", "stress", "accent", "marcato", "sfz", "fp"];
 var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", sfz: "\u7A81\u5F3A", fp: "\u5F3A\u540E\u5373\u5F31", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438", stress: "\u6B21\u91CD\u97F3", unstress: "\u5F31\u5316", ghost: "\u5E7D\u7075\u97F3", whisper: "\u6C14\u58F0" };
+var DYNS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
 var DEFAULT_DYN = "mf";
 var SPLIT_MIDI = 60;
 var DEFAULT_KEY = 0;
@@ -6260,7 +6261,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/format/performance.ts
-var DYNAMICS_DB = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
+var DYNAMICS_DB = { ppp: -24, pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12, fff: 18 };
 var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
 var MARK_DEFAULTS = {
   accentSec: 0.12,
@@ -6298,7 +6299,7 @@ var SING_MARKS = {
   fp: { mark: "^", at: "this" }
   // 音头那一组都顿一下（同重音，user「嗯重音也顿」）
 };
-var DYNAMICS_VEL = { pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112 };
+var DYNAMICS_VEL = { ppp: 16, pp: 33, p: 49, mp: 64, mf: 80, f: 96, ff: 112, fff: 126 };
 var ACCENT_VEL = 16;
 var MARCATO_VEL = 28;
 var MARCATO_DB = 7;
@@ -6452,7 +6453,7 @@ function dynLevels(tokens, map, table, def, step, bounds) {
 }
 function dynOverridden(tokens, bounds) {
   const out = /* @__PURE__ */ new Set();
-  const T2 = { pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6 };
+  const T2 = { ppp: 0, pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6, fff: 7 };
   const fpNotes = /* @__PURE__ */ new Set();
   tokens.forEach((t10, k2) => {
     if (t10.kind === "note" && artOf(t10).includes("fp")) fpNotes.add(k2);
@@ -6626,8 +6627,8 @@ var GLYPH_BREATH = "\uE4CE";
 var GROOVE_LANE = 3.4;
 var DYN_LANE = 4.8;
 var isStrength = (a10) => a10 === "accent" || a10 === "marcato" || a10 === "stress" || a10 === "unstress";
-var DYN_GLYPH = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
-var DYN_INK = { pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
+var DYN_GLYPH = { ppp: "\uE52A", pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F", fff: "\uE530" };
+var DYN_INK = { ppp: [-0.4, 4.3, 1.1, 0.6], fff: [-0.6, 3.4, 1.8, 0.6], pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
 var PIN_GAP = 0.7;
 var PIN_WORD = { size: 2, w: { cresc: 4.7, dim: 3.5 } };
 var DASH = { len: 0.6, gap: 1 };
@@ -7666,7 +7667,7 @@ function engrave(song, o10) {
           prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy2} ${xb - (xb - xa) * 0.2},${cy2} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
         });
       }
-      const LEVELS = ["pp", "p", "mp", "mf", "f", "ff"];
+      const LEVELS = DYNS;
       const lastChunk = [...units].reverse().find((u2) => u2.kind === "chunk");
       const drawWedge = (index, dir, s02, startX, s12, endX, ramp) => {
         const leftOf = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((c10) => nhX(c10)), P2(right)) - P2(1);
@@ -9919,15 +9920,16 @@ var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><p
 var SYM_PAGES = {
   art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper"],
   // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
-  dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>", "dyn:ramp"],
+  dyn: ["dyn:ppp", "dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "dyn:fff", "wedge:cresc", "wedge:dim", "dyn:ramp", "swell:<", "swell:>", "swell:<>"],
+  // ppp…fff 两整排（v0.9.23）
   mark: ["phrase", "key", "time", "tempo", "groove", "repeat", "staff"]
 };
 var SYM_PAGE_NAME = { art: "\u6F14\u594F\u6CD5", dyn: "\u529B\u5EA6", mark: "\u8BB0\u53F7" };
-var SYM_PAGE_TITLE = { art: "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0", dyn: "pp\u2026ff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u97F3\u5185\u8D77\u4F0F", mark: "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09" };
+var SYM_PAGE_TITLE = { art: "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0", dyn: "ppp\u2026fff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F", mark: "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09" };
 var RAMP_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 var DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-var DYN_CELL = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
+var DYN_CELL = { ppp: "\uE52A", pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F", fff: "\uE530" };
 var swellSvg = (d3) => `<svg class="slur-ico" viewBox="0 0 22 16" aria-hidden="true"><path d="${d3}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="11" cy="13" rx="3.2" ry="2.3" fill="currentColor"/></svg>`;
 var SWELL_CELL = { "<": swellSvg("M19,2 L4,5.5 L19,9"), ">": swellSvg("M3,2 L18,5.5 L3,9"), "<>": swellSvg("M2,5.5 L11,2 L20,5.5 M2,5.5 L11,9 L20,5.5") };
 var ROWS_MIN = 3;
@@ -10299,7 +10301,7 @@ var Pad = class {
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "\u4FDD\u6301", "\u4FDD\u6301\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u6EE1\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("wedge:cresc", CRESC_CELL, "\u6E10\u5F3A", "\u6E10\u5F3A <\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F3A\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("wedge:dim", DIM_CELL, "\u6E10\u5F31", "\u6E10\u5F31 >\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F31\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
-      ...["pp", "p", "mp", "mf", "f", "ff"].map((d3) => cell(`dyn:${d3}${d3 === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d3]}</span>`, "\u529B\u5EA6", `\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389\uFF08user 2026-10-08\u300Cmp mf \u5728\u54EA\u91CC\u52A0\u554A\u300D\uFF09`)),
+      ...["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => cell(`dyn:${d3}${d3 === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d3]}</span>`, "\u529B\u5EA6", `\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389\uFF08user 2026-10-08\u300Cmp mf \u5728\u54EA\u91CC\u52A0\u554A\u300D\uFF09`)),
       cell("dyn:ramp", RAMP_CELL, "\u6E10\u5230", "\u6E10\u5230\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u529B\u5EA6\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u8FC7\u6765\uFF08\u8C31\u4E0A\u753B\u865A\u7EBF\u53D1\u5939\uFF1B\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u5B9E\u7EBF\uFF09\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u4E4B\u540E\u5199\u7684\u529B\u5EA6\u90FD\u662F\u6E10\u5230\uFF1B\u518D\u70B9 = \u5173\u3002\u4E0D\u5F00 = \u5230\u90A3\u513F\u7A81\u53D8", this.ramp === "off" ? "" : this.ramp),
       ...["<", ">", "<>"].map((w2) => cell(`swell:${w2}`, SWELL_CELL[w2], w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31" : "\u97F3\u5185\u9F13\u8D77", `${w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31\uFF08\u952F\u9F7F\uFF09" : "\u97F3\u5185\u9F13\u8D77\uFF08messa di voce\uFF09"}\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u81EA\u5DF1\u91CC\u9762\u7684\u8D77\u4F0F\uFF1B\u548C\u6BB5\u843D\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u4E24\u5C42\uFF0C\u53EF\u4EE5\u53E0\uFF1B\u518D\u70B9 = \u53BB\u6389`)),
       cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09\u3002\u540C\u4E00\u4E2A\u97F3\u4E0A\u53C8\u6709\u547C\u5438 = \u547C\u5438\u7B97\u6570\uFF1A\u90A3\u91CC\u7167\u6837\u65AD\u5F00\u6362\u6C14\uFF0C\u8FDE\u7EBF\u7167\u753B"),
@@ -20110,12 +20112,12 @@ function readCredits(root, title) {
 var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
 var wedgeXml = (type, extra = "") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"${extra}/></direction-type></direction>`;
 var RAMP_ID = "ramp-";
-var DYN_ORDER = ["pp", "p", "mp", "mf", "f", "ff"];
+var DYN_ORDER = DYNS;
 var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "" };
 var NOTE_DYN = ["sfz", "fp"];
 var XML_NOTE_DYN = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
 var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
-var XML_DYN = (name) => ["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? name : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null;
+var XML_DYN = (name) => DYNS.includes(name) ? name : /^p{4,}$/.test(name) ? "ppp" : /^f{4,}$/.test(name) ? "fff" : null;
 var GROOVE_ID = "groove.";
 var grooveXml = (t10) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t10.style}.${Math.round((t10.amount ?? 1) * 100)}.${t10.id}${t10.shift ? ".2-3" : ""}">${esc2(grooveLabel(t10))}</words></direction-type></direction>`;
 var NAV_ID = "nav.";
@@ -20637,6 +20639,7 @@ function readMusicXml(xml, hints) {
 var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
 
 // src/format/migrate/index.ts
+var DYNAMICS_DB_V1 = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
 var HUMS = /* @__PURE__ */ new Set(["la", "n", "u", "o", "a"]);
 function loungeV1toV2(json) {
   const cands3 = (json.candidates ?? []).map((c02) => {
@@ -20647,7 +20650,7 @@ function loungeV1toV2(json) {
     delete c10.engines;
     delete c10.credit;
     delete c10.spec;
-    const common2 = { calibrationDb: Number(c02.calibrationDb ?? 0), chain: c02.chain ?? [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION } };
+    const common2 = { calibrationDb: Number(c02.calibrationDb ?? 0), chain: c02.chain ?? [], dynamicsDb: { ...DYNAMICS_DB_V1 }, articulation: { ...ARTICULATION } };
     if (gm.variant === "tsukuyomi") return { ...c10, ...common2, instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC), ...Object.keys(engines).length ? { engines } : {} };
     if (gm.variant === "tsukuyomi-vowels") return { ...c10, ...common2, instrument: { engine: "vowel-sampler", table: "builtin", hum }, defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC), ...Object.keys(engines).length ? { engines } : {} };
     if (src?.kind === "sf2") {
@@ -21060,7 +21063,14 @@ function withUnpacked(extras, only) {
 function activePerfSpec(extras, role) {
   const c10 = activeCandidate(extras, role), d3 = c10?.dynamicsDb ?? {}, a10 = c10?.articulation ?? {};
   const num2 = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
-  const dynamicsDb = Object.fromEntries(Object.keys(DYNAMICS_DB).map((k2) => [k2, num2(d3[k2], DYNAMICS_DB[k2])]));
+  const ladder = (got, dflt2, clamp3 = (v) => v) => {
+    const o10 = {};
+    for (const k2 of ["pp", "p", "mp", "mf", "f", "ff"]) o10[k2] = clamp3(num2(got[k2], dflt2[k2]));
+    o10.ppp = clamp3(num2(got.ppp, o10.pp - (o10.p - o10.pp)));
+    o10.fff = clamp3(num2(got.fff, o10.ff + (o10.ff - o10.f)));
+    return o10;
+  };
+  const dynamicsDb = ladder(d3, DYNAMICS_DB);
   return {
     dynamicsDb,
     staccatoGate: Math.max(0.05, Math.min(1, num2(a10.staccatoGate, ARTICULATION.staccatoGate))),
@@ -21088,7 +21098,7 @@ function activePerfSpec(extras, role) {
     ghostDb: num2(a10.ghostDb, MARK_DEFAULTS.ghostDb),
     ghostVel: num2(a10.ghostVel, MARK_DEFAULTS.ghostVel),
     sing: { ...SING_MARKS, ...c10?.sing ?? {} },
-    dynamicsVel: c10?.dynamicsVel ? Object.fromEntries(Object.keys(DYNAMICS_VEL).map((k2) => [k2, Math.max(1, Math.min(127, num2(c10.dynamicsVel[k2], DYNAMICS_VEL[k2])))])) : null
+    dynamicsVel: c10?.dynamicsVel ? ladder(c10.dynamicsVel, DYNAMICS_VEL, (v) => Math.max(1, Math.min(127, v))) : null
   };
 }
 var GAP_MAX_SEC = 0.2;
@@ -34595,7 +34605,7 @@ function fromJianpu(text2, fifths) {
       out.push({ kind: "tempo", id: id2++, bpm: Number(m2[1]) });
       continue;
     }
-    m2 = /^\[(pp|p|mp|mf|f|ff)\]$/.exec(w2);
+    m2 = /^\[(ppp|pp|p|mp|mf|f|ff|fff)\]$/.exec(w2);
     if (m2) {
       out.push({ kind: "dyn", id: id2++, value: m2[1] });
       continue;
@@ -36635,7 +36645,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "c752c8d431f3",
+  cssHash: "ecc848e859c3",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -37371,7 +37381,16 @@ function openTrackCard(at2) {
     draw();
   });
 }
-var DYN_MENU = { pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F" };
+var DYN_MENU = { ppp: "\uE52A", pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F", fff: "\uE530" };
+function dynTable(sp2, layers) {
+  const db = (x2) => `${x2 > 0 ? "+" : x2 < 0 ? "\u2212" : ""}${Math.abs(x2)}`;
+  const cells = (f2) => DYNS.map((d3) => `<td>${f2(d3)}</td>`).join("");
+  const vel = sp2.dynamicsVel;
+  return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d3) => `<th title="${d3}"><span class="smufl">${DYN_MENU[d3]}</span></th>`).join("")}</tr>` + (vel ? `<tr><th>MIDI \u529B\u5EA6</th>${cells((d3) => String(vel[d3]))}</tr>` : `<tr><th>\u97F3\u91CF dB</th>${cells((d3) => db(sp2.dynamicsDb[d3]))}</tr>`) + (vel && layers && layers.count > 1 ? `<tr><th>GS \u529B\u5EA6\u5C42</th>${cells((d3) => {
+    const k2 = layers.ranges.findIndex(([lo2, hi]) => vel[d3] >= lo2 && vel[d3] <= hi);
+    return k2 >= 0 ? String(k2 + 1) : "\u2013";
+  })}</tr>` : "") + `</table>`;
+}
 function openScoreMenu(at2, _row) {
   closeOffer?.();
   const box = document.createElement("div");
@@ -37379,7 +37398,7 @@ function openScoreMenu(at2, _row) {
   box.setAttribute("role", "menu");
   const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
   box.innerHTML = item("play", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09") + `<div class="ctx-sep"></div>` + item("paste", "\u7C98\u8D34", "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09") + `<div class="ctx-sep"></div>` + item("bar", "\u5C0F\u8282\u7EBF |", "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09") + item("phrase", "\u53E5\u53F7", "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09") + item("mark:key", "\u8C03\u53F7\u2026") + item("mark:time", "\u62CD\u53F7\u2026") + item("mark:tempo", "\u901F\u5EA6\u2026") + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
-  `<div class="ctx-row ctx-dyn">${["pp", "p", "mp", "mf", "f", "ff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(st2), st2.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("all", "\u5168\u9009");
+  `<div class="ctx-row ctx-dyn">${["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(st2), st2.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("all", "\u5168\u9009");
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let x2 = at2.x + 6, y2 = at2.y + 10;
@@ -37639,7 +37658,7 @@ function openMarkMenu(i10, at2) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
-  const row = t10.kind === "dyn" ? ["pp", "p", "mp", "mf", "f", "ff"].map((d3) => `<button class="btn ctx-chip${t10.value === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u6539\u6210 ${d3}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("") : ["cresc", "dim"].map((d3) => `<button class="btn ctx-chip${t10.dir === d3 ? " is-on" : ""}" data-v="dir:${d3}" title="${d3 === "cresc" ? "\u6E10\u5F3A" : "\u6E10\u5F31"}">${WEDGE_MENU[d3]}</button>`).join("");
+  const row = t10.kind === "dyn" ? ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${t10.value === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u6539\u6210 ${d3}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("") : ["cresc", "dim"].map((d3) => `<button class="btn ctx-chip${t10.dir === d3 ? " is-on" : ""}" data-v="dir:${d3}" title="${d3 === "cresc" ? "\u6E10\u5F3A" : "\u6E10\u5F31"}">${WEDGE_MENU[d3]}</button>`).join("");
   const rampWhy = src === "none" ? "\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765" : src === "hairpin" ? "\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70" : "";
   const offWhy = t10.kind === "dyn" && dynOverridden(toks).has(i10) ? `<div class="ctx-hint">\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A ${t10.value} \u7BA1\u4E0D\u5230</div>` : "";
   const rampRow = t10.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t10.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t10.ramp ? " disabled" : ""} title="\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8">${t10.ramp ? "\u2713 " : ""}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09</button>` + (rampWhy ? `<div class="ctx-hint">${t10.ramp ? "\u4E0D\u8D77\u4F5C\u7528\uFF1A" : ""}${esc7(rampWhy)}</div>` : "");
@@ -37944,9 +37963,10 @@ function drawInst() {
     return row(
       "\u529B\u5EA6",
       `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09">\u22128</button><button class="btn" data-v="vel:8" title="\u91CD\u4E00\u70B9\uFF08+8\uFF09">+8</button>` + (midi !== def ? `<button class="btn" data-v="vel:def" title="\u56DE\u5230 ${def}">\u9ED8\u8BA4</button>` : ""),
-      `\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002` + (sp2.dynamicsVel ? `\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF1A${Object.entries(sp2.dynamicsVel).map(([d3, x2]) => `${d3} ${x2}`).join(" \xB7 ")}\uFF1B\u91CD\u97F3 +${sp2.accentVel}\u3001\u5F3A\u97F3 +${sp2.marcatoVel}\u3002` : "\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF08\u65B0\u4E0A\u573A\u7684\u624D\u6309\u529B\u5EA6\u8868\u8D70\u529B\u5EA6\uFF09\u3002") + (L2 ? L2.count > 1 ? `GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 ${L2.count} \u4E2A\u529B\u5EA6\u5C42${k2 >= 0 ? `\uFF0C\u73B0\u5728\u5728\u7B2C ${k2 + 1} \u5C42\uFF08${L2.ranges[k2][0]}\u2013${L2.ranges[k2][1]}\uFF09` : ""}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002` : "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002" : "")
+      `\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002` + (sp2.dynamicsVel ? `\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +${sp2.accentVel}\u3001\u5F3A\u97F3 +${sp2.marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A${dynTable(sp2, L2)}` : `\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A${dynTable(sp2, null)}`) + (L2 ? L2.count > 1 ? `GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 ${L2.count} \u4E2A\u529B\u5EA6\u5C42${k2 >= 0 ? `\uFF0C\u73B0\u5728\u5728\u7B2C ${k2 + 1} \u5C42\uFF08${L2.ranges[k2][0]}\u2013${L2.ranges[k2][1]}\uFF09` : ""}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002` : "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002" : "")
     );
-  })(activeVelocity(doc.extras, role), activePerfSpec(doc.extras, role)) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
+  })(activeVelocity(doc.extras, role), activePerfSpec(doc.extras, role)) : "") + // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
+  (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("\u529B\u5EA6\u8BB0\u53F7", "", `\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
   //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
   (active?.sfx ? ((fixed, al2) => row(
     "\u97F3\u6548",
@@ -39465,4 +39485,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a6a858e2ff0d.mjs.map
+//# sourceMappingURL=moonsinger-aae94d48a6bd.mjs.map

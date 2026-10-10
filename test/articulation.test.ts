@@ -103,7 +103,7 @@ describe("修：MusicXML（musicxml.ts）", () => {
     const back = readMusicXml(w.xml, { manualBars: w.manualBars, unwritten: w.unwritten }).parts[0].tokens.filter((t) => t.kind === "note") as NoteTok[];
     eq(back.length, 2); deq(back[1].art, ["staccato", "breath"]);
   });
-  it("别家谱：ppp → pp、fff → ff；sfz / 不认的演奏法数出来报；和弦里每个音都标的并到一个音", () => {
+  it("别家谱：ppp / fff 原样（v0.9.23 起认）；sfz / 不认的演奏法数出来报；和弦里每个音都标的并到一个音", () => {
     const x = `<?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>A</part-name></score-part></part-list><part id="P1"><measure number="1">
 <attributes><divisions>1</divisions></attributes>
 <direction><direction-type><dynamics><ppp/></dynamics></direction-type></direction>
@@ -117,7 +117,9 @@ describe("修：MusicXML（musicxml.ts）", () => {
 <note><pitch><step>F</step><octave>4</octave></pitch><duration>1</duration><notations><dynamics><fp/></dynamics></notations></note>
 </measure></part></score-partwise>`;
     const r = readMusicXml(x), toks = r.parts[0].tokens;
-    deq(toks.filter((t) => t.kind === "dyn").map((t) => (t as { value: string }).value), ["pp", "ff"]);
+    deq(toks.filter((t) => t.kind === "dyn").map((t) => (t as { value: string }).value), ["ppp", "fff"]);
+    const x4 = x.replace("<ppp/>", "<pppp/>").replace("<fff/>", "<ffff/>");
+    deq(readMusicXml(x4).parts[0].tokens.filter((t) => t.kind === "dyn").map((t) => (t as { value: string }).value), ["ppp", "fff"], "pppp / ffff = 并到两头");
     deq((toks.find((t) => t.kind === "note") as NoteTok).art, ["staccato", "accent"], "和弦音的重音并上来");
     eq(r.dropped["力度记号（这一版不认的，如 sfz）"], 1, "rfz 不认"); eq(r.dropped["演奏法记号（这一版不认的）"], 1, "spiccato 不认");
     const ns = toks.filter((t) => t.kind === "note") as NoteTok[];

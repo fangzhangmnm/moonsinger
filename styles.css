@@ -712,6 +712,10 @@ span.smufl { pointer-events: none; }
 .pad-key.sym .big.it { font-style: italic; font-size: 16px; }
 .ctx-menu .ctx-chip.is-on { background: var(--accent-soft); border-color: var(--accent); }
 /* 乐器页「记号怎么演」：这位 by value 的解读表（只读） */
+.dyn-tab { border-collapse: collapse; margin-top: 4px; font-size: 12px; color: var(--ink); }   /* 力度换算表（乐器页「力度」那一行，v0.9.23） */
+.dyn-tab th, .dyn-tab td { padding: 1px 6px; text-align: center; white-space: nowrap; }
+.dyn-tab th:first-child { text-align: left; font-weight: 500; color: var(--muted); padding-left: 0; }
+.dyn-tab th .smufl { font-size: 18px; line-height: 1; }
 .ip-marks { margin-top: 10px; font-size: 13px; }
 .ip-marks summary { cursor: pointer; color: var(--muted); }
 .ip-marks table { border-collapse: collapse; margin-top: 6px; }

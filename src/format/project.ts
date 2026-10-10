@@ -14,7 +14,7 @@ import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/ffla
 import { type Song, type PartDef, type PaperSeg, type Token, type NoteTok, flattenPart } from "../score/song.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
-import { FORMAT, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
+import { FORMAT, type Dynamic, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
 import { migrate } from "./migrate/index.ts";
 import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
@@ -375,13 +375,20 @@ export function withUnpacked(extras: Extras, only?: (subsetSha256: string) => bo
 
 // ── 演奏规格（修的记号怎么出声：上场那位 by value 带着的力度表 + 演奏法；src/score/perform.ts 用；2026-10-08 by Claude Opus 5.5）──
 /** 上场那位的力度表（mf = 0 dB）/ 跳音吃掉多少 / 重音加多少。没有角色快照或字段缺 = app 内置那份（DYNAMICS_DB / ARTICULATION）。 */
-export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number>; staccatoGate: number; accentDb: number; gapSec: number;
-  marcatoDb: number; dynamicsVel: Record<"pp" | "p" | "mp" | "mf" | "f" | "ff", number> | null; accentVel: number; marcatoVel: number;
+export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Record<Dynamic, number>; staccatoGate: number; accentDb: number; gapSec: number;
+  marcatoDb: number; dynamicsVel: Record<Dynamic, number> | null; accentVel: number; marcatoVel: number;
   stressDb: number; stressVel: number; unstressDb: number; unstressVel: number; ghostDb: number; ghostVel: number;
   accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepDb: number; wedgeStepVel: number; sfzDb: number; sfzVel: number; sfzSec: number; fpSec: number; swellDb: number; canSwell: boolean; sing: Record<string, SingMark | null> } {
   const c = activeCandidate(extras, role), d = (c?.dynamicsDb ?? {}) as Partial<Record<string, number>>, a = (c?.articulation ?? {}) as Partial<Record<string, number>>;
   const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
-  const dynamicsDb = Object.fromEntries((Object.keys(DYNAMICS_DB) as (keyof typeof DYNAMICS_DB)[]).map((k) => [k, num(d[k], DYNAMICS_DB[k])])) as Record<keyof typeof DYNAMICS_DB, number>;
+  // 力度表：pp…ff 没写 = 默认；ppp / fff 没写（v0.9.23 之前的演奏者）= 按这位自己 pp→p / f→ff 的间隔往外推一档（不是拿默认表硬塞，免得和它自己的表不成比例）
+  const ladder = (got: Partial<Record<string, number>>, dflt: Record<Dynamic, number>, clamp: (v: number) => number = (v) => v): Record<Dynamic, number> => {
+    const o = {} as Record<Dynamic, number>;
+    for (const k of ["pp", "p", "mp", "mf", "f", "ff"] as const) o[k] = clamp(num(got[k], dflt[k]));
+    o.ppp = clamp(num(got.ppp, o.pp - (o.p - o.pp))); o.fff = clamp(num(got.fff, o.ff + (o.ff - o.f)));
+    return o;
+  };
+  const dynamicsDb = ladder(d, DYNAMICS_DB);
   return { dynamicsDb, staccatoGate: Math.max(0.05, Math.min(1, num(a.staccatoGate, ARTICULATION.staccatoGate))), accentDb: num(a.accentDb, ARTICULATION.accentDb), gapSec: Math.max(0, Math.min(GAP_MAX_SEC, num(a.gapSec, 0))),
     marcatoDb: num(a.marcatoDb, MARCATO_DB), accentVel: num(a.accentVel, ACCENT_VEL), marcatoVel: num(a.marcatoVel, MARCATO_VEL),
     accentSec: Math.max(0, num(a.accentSec, MARK_DEFAULTS.accentSec)), breathSec: Math.max(0, num(a.breathSec, MARK_DEFAULTS.breathSec)), breathShare: Math.max(0, Math.min(1, num(a.breathShare, MARK_DEFAULTS.breathShare))),
@@ -391,7 +398,7 @@ export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Reco
     stressDb: num(a.stressDb, MARK_DEFAULTS.stressDb), stressVel: num(a.stressVel, MARK_DEFAULTS.stressVel), unstressDb: num(a.unstressDb, MARK_DEFAULTS.unstressDb),
     unstressVel: num(a.unstressVel, MARK_DEFAULTS.unstressVel), ghostDb: num(a.ghostDb, MARK_DEFAULTS.ghostDb), ghostVel: num(a.ghostVel, MARK_DEFAULTS.ghostVel),
     sing: { ...SING_MARKS, ...((c?.sing ?? {}) as Record<string, SingMark | null>) },
-    dynamicsVel: c?.dynamicsVel ? (Object.fromEntries((Object.keys(DYNAMICS_VEL) as (keyof typeof DYNAMICS_VEL)[]).map((k) => [k, Math.max(1, Math.min(127, num((c.dynamicsVel as Json)[k], DYNAMICS_VEL[k])))])) as Record<keyof typeof DYNAMICS_VEL, number>) : null };
+    dynamicsVel: c?.dynamicsVel ? ladder(c.dynamicsVel as Partial<Record<string, number>>, DYNAMICS_VEL, (v) => Math.max(1, Math.min(127, v))) : null };
 }
 /** 连断底色能调到多大（秒）。 */
 export const GAP_MAX_SEC = 0.2;

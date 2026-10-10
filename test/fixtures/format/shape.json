@@ -122,10 +122,12 @@
           "dynamicsDb": {
             "f": "number",
             "ff": "number",
+            "fff": "number",
             "mf": "number",
             "mp": "number",
             "p": "number",
-            "pp": "number"
+            "pp": "number",
+            "ppp": "number"
           },
           "gm": {
             "program": "number",

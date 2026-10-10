@@ -16,7 +16,7 @@
 //   小节线、调号、拍号是各声部自己的画法（契约 §7.8）；速度只画在第一个声部上面；歌手牌（声部名）在每张纸第一行各条谱的左边。
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
-import { type Song, type NoteTok, type Token, type GrooveTok, type BarTok, type NavTok, type Repeat, NAV_LABEL, endingLabel, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
+import { DYNS, type Song, type NoteTok, type Token, type GrooveTok, type BarTok, type NavTok, type Repeat, NAV_LABEL, endingLabel, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
 import { grooveLabel, grooveStyle } from "../score/groove.ts";
 import { dynOverridden } from "../score/perform.ts";
 import { navWhy } from "../score/repeats.ts";
@@ -132,10 +132,10 @@ const GROOVE_LANE = 3.4;
 const DYN_LANE = 4.8;   // 力度两道：外道（大的强弱线）比里道（音的修饰）高多少（谱上的级数 = 2.4 个线间距）
 /** 强度那一组（重音 / 强音 / 次重音 / 弱化）：一律画在谱上方（user「强度记号统一放上面吧，不然容易misleading」）。 */
 const isStrength = (a: string) => a === "accent" || a === "marcato" || a === "stress" || a === "unstress";
-const DYN_GLYPH: Record<Dyn, string> = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" };     // F5 / B4 / E4 的五线谱位置
+const DYN_GLYPH: Record<Dyn, string> = { ppp: "\u{E52A}", pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}", fff: "\u{E530}" };     // F5 / B4 / E4 的五线谱位置
 /** 力度字的墨迹（sp，相对字的原点：左、右、基线以上、基线以下）：浏览器里 canvas measureText 量的 Bravura（2026-10-08 Opus 5.5；此前估的宽度小了一截，渐强渐弱压到字上）。
  *  渐强渐弱和两头的字之间留 PIN_GAP；点击区域按它。 */
-const DYN_INK: Record<string, [number, number, number, number]> = { pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
+const DYN_INK: Record<string, [number, number, number, number]> = { ppp: [-0.4, 4.3, 1.1, 0.6], fff: [-0.6, 3.4, 1.8, 0.6], pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
 const PIN_GAP = 0.7;
 /** 渐强渐弱比一整行还长 = 不画发夹，写「cresc. - - -」/「dim. - - -」（user 2026-10-08「如果一个超级长的<号不要让它太awkward」；
  *  记谱的老规矩：长的渐变用文字加虚线，发夹留给短的）。字号 / 大概字宽（sp）、虚线一节多长 / 隔多远。 */
@@ -1026,7 +1026,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       // 8¾. 渐强渐弱（记号，2026-10-08）：从这个记号画到终点——下一个力度记号（让开它的字）/ 下一个渐强渐弱；都没有 = 画到这张纸最后一个音，
       //   后面灰字「(f)」= 走一档推定的终点（user「走一档也行，更合理，需要向用户披露」）。跨行 = 每行画它那一份开口（按横向长度分）。
       //   和两头的力度字之间留空（user 2026-10-08「< 号不用靠着一点空隙都没有」：按量过的墨迹让开 PIN_GAP）；比一整行还长 = 写成「cresc. - - -」（PIN_WORD）。
-      const LEVELS = ["pp", "p", "mp", "mf", "f", "ff"] as const;
+      const LEVELS = DYNS;   // ppp…fff（v0.9.23）：走一档推定的灰字也能推到 ppp / fff
       const lastChunk = [...units].reverse().find((u): u is Chunk => u.kind === "chunk");
       // 发夹（或太长时的「cresc. - - -」）从 (s0, startX) 画到 (s1, endX)：跨行每行一段（按横向长度分开口）；index = 点它开哪个记号的小菜单；
       //   ramp = 渐到画的（虚线；2026-10-08 深夜 Opus 5.5，user「渐到…和手动加的可以分开来」「如何不混淆的搞清楚<到底是哪里开始的」——手写的实线、渐到虚线，都从看得见的记号起）

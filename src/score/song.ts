@@ -78,8 +78,8 @@ export const ARTS: readonly Art[] = ["staccato", "accent", "marcato", "sfz", "fp
 export const ATTACKS: readonly Art[] = ["ghost", "unstress", "stress", "accent", "marcato", "sfz", "fp"];   // 一个音的强度只有一种（互斥）
 export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", marcato: "强音", sfz: "突强", fp: "强后即弱", tenuto: "保持", breath: "呼吸", stress: "次重音", unstress: "弱化", ghost: "幽灵音", whisper: "气声" };
 /** 力度 = 一个记号 token（不占时值，管到下一个力度为止；一首没写 = mf）。MusicXML <direction><dynamics>。出声 = 候选的 dynamicsDb（mf = 0 dB）。 */
-export type Dyn = "pp" | "p" | "mp" | "mf" | "f" | "ff";
-export const DYNS: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
+export type Dyn = "ppp" | "pp" | "p" | "mp" | "mf" | "f" | "ff" | "fff";   // ppp / fff：v0.9.23（2026-10-10 user「wishlist: ppp fff，以及帮我科普这些和db的换算关系，然后应该向用户揭露，方便对比」）
+export const DYNS: readonly Dyn[] = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
 export const DEFAULT_DYN: Dyn = "mf";
 export interface DynTok { kind: "dyn"; id: number; value: Dyn; ramp?: true }   // ramp = 渐到：从这张纸里上一个力度记号那儿一路渐变到这里（关键帧的线性插值；2026-10-08 深夜 Opus 5.5，user「渐到 做」）
 /** 渐强 / 渐弱（2026-10-08 改成记号，Claude Opus 5.5；user「所以<>是一个语义，就是从这一刻开始连续变到下一个强度/速度标记？」「大于小于号不用精确指定范围，而是读最近的pf」）：

@@ -7,7 +7,7 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
+import { DYNS, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
@@ -95,14 +95,14 @@ const dynXml = (v: Dyn) => `<direction placement="above"><direction-type><dynami
 const wedgeXml = (type: "crescendo" | "diminuendo" | "stop", extra = "") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"${extra}/></direction-type></direction>`;
 /** 渐到（2026-10-08 深夜 Opus 5.5）：写成从上一个力度记号起的虚线 <wedge line-type="dashed">（别的软件照样渐变、照样画虚线），id 以 ramp- 开头 = 我们自己读回来时认出它是渐到、不变成手写的渐强渐弱。 */
 const RAMP_ID = "ramp-";
-const DYN_ORDER: readonly Dyn[] = ["pp", "p", "mp", "mf", "f", "ff"];
+const DYN_ORDER: readonly Dyn[] = DYNS;   // ppp…fff（v0.9.23）
 const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "" };   // whisper = × 符头（<notehead>x</notehead>），同幽灵音不在 <articulations> 里   // ghost = 括号符头（<notehead parentheses="yes">），不在 <articulations> 里   // sfz / fp 写在 <notations><dynamics> 里
 const NOTE_DYN: readonly Art[] = ["sfz", "fp"];
 /** 别家谱里音上（或音前）的力度形状 → 我们的两个：突强一族 / 强后即弱一族。 */
 const XML_NOTE_DYN: Record<string, Art> = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
 const XML_ART: Record<string, Art> = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
-/** 别家谱的力度归到这一版认的六档（更弱 / 更强的并到两头）；sfz / fp 这类认不了 = null（数出来报给人）。 */
-const XML_DYN = (name: string): Dyn | null => (["pp", "p", "mp", "mf", "f", "ff"].includes(name) ? (name as Dyn) : /^p{3,}$/.test(name) ? "pp" : /^f{3,}$/.test(name) ? "ff" : null);
+/** 别家谱的力度归到这一版认的八档（v0.9.23 起 ppp / fff 原样；pppp 以上 / ffff 以上并到两头）；sfz / fp 这类认不了 = null（数出来报给人）。 */
+const XML_DYN = (name: string): Dyn | null => ((DYNS as readonly string[]).includes(name) ? (name as Dyn) : /^p{4,}$/.test(name) ? "ppp" : /^f{4,}$/.test(name) ? "fff" : null);
 /** 风格记号（拍子轻重；2026-10-08 深夜 Opus 5.5）：<direction><words>（别的软件照样显示那个字），id = groove.<预设>.<幅度百分数>.<token id>——
  *  我们自己读回来认 id 变回风格记号；别家谱里普通的 <words>（rit. / dolce…）照旧不读。 */
 const GROOVE_ID = "groove.";

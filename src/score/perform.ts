@@ -127,7 +127,7 @@ export function dynLevels(tokens: Token[], map: TempoMap | undefined, table: Rec
  *  谱上画灰、点开说为什么（纪律「做不到的一律画灰 + 明说」；2026-10-09 user「要不要按纪律把 mf 画灰、说一句？ 要」）。 */
 export function dynOverridden(tokens: Token[], bounds?: readonly number[]): Set<number> {
   const out = new Set<number>();
-  const T: Record<Dyn, number> = { pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6 };
+  const T: Record<Dyn, number> = { ppp: 0, pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6, fff: 7 };
   const fpNotes = new Set<number>(); tokens.forEach((t, k) => { if (t.kind === "note" && artOf(t).includes("fp")) fpNotes.add(k); });
   if (!fpNotes.size) return out;
   const levels = (ts: Token[]) => [...dynLevels(ts, undefined, T, 0, 0.5, bounds)].filter(([k]) => !fpNotes.has(k)).map(([k, l]) => `${k}:${l.at0}:${l.at1}`).join("|");

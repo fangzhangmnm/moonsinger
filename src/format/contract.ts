@@ -99,7 +99,7 @@ export interface StudioV2 {
 // 每个候选 by value 带全纯函数要的一切（§8）：乐器（按引擎分）、默认数、力度表、演奏法、校准、链、署名、规格。不依赖 app 里的默认表。
 
 export type Hum = "la" | "n" | "u" | "o" | "a";
-export type Dynamic = "pp" | "p" | "mp" | "mf" | "f" | "ff";
+export type Dynamic = "ppp" | "pp" | "p" | "mp" | "mf" | "f" | "ff" | "fff";   // ppp / fff：v0.9.23 加（只加不改；旧演奏者的表里没有 = 按它自己 pp→p / f→ff 的间隔往外推一档）
 
 export interface LoungeRoleV2 {
   version: 2;

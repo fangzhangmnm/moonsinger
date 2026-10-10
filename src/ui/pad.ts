@@ -46,16 +46,16 @@ const SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true">
 type SymPage = "art" | "dyn" | "mark";
 const SYM_PAGES: Record<SymPage, readonly string[]> = {
   art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper"],   // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
-  dyn: ["dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "wedge:cresc", "wedge:dim", "swell:<", "swell:>", "swell:<>", "dyn:ramp"],
+  dyn: ["dyn:ppp", "dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "dyn:fff", "wedge:cresc", "wedge:dim", "dyn:ramp", "swell:<", "swell:>", "swell:<>"],   // ppp…fff 两整排（v0.9.23）
   mark: ["phrase", "key", "time", "tempo", "groove", "repeat", "staff"],
 };
 const SYM_PAGE_NAME: Record<SymPage, string> = { art: "演奏法", dyn: "力度", mark: "记号" };
-const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸（静默 / 轻吸 / 深吸）、气声", dyn: "pp…ff、渐强 / 渐弱、音内起伏", mark: "句号、调号 / 拍号 / 速度、风格（拍子轻重）" };
+const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸（静默 / 轻吸 / 深吸）、气声", dyn: "ppp…fff、渐强 / 渐弱、渐到、音内起伏", mark: "句号、调号 / 拍号 / 速度、风格（拍子轻重）" };
 const RAMP_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;   // 渐到 = 虚线发夹
 const CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 /** 力度记号的 Bravura 字形（同选区条「修」）。 */
-const DYN_CELL = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" } as const;
+const DYN_CELL = { ppp: "\u{E52A}", pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}", fff: "\u{E530}" } as const;
 /** 音内起伏的格子：一个符头上面一个小发夹。 */
 const swellSvg = (d: string) => `<svg class="slur-ico" viewBox="0 0 22 16" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="11" cy="13" rx="3.2" ry="2.3" fill="currentColor"/></svg>`;
 const SWELL_CELL = { "<": swellSvg("M19,2 L4,5.5 L19,9"), ">": swellSvg("M3,2 L18,5.5 L3,9"), "<>": swellSvg("M2,5.5 L11,2 L20,5.5 M2,5.5 L11,9 L20,5.5") } as const;
@@ -405,7 +405,7 @@ export class Pad {
       cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "保持", "保持：光标前那个音（有选区 = 选中的）唱 / 弹满；再点一次去掉"),
       cell("wedge:cresc", CRESC_CELL, "渐强", "渐强 <：从光标前那个音（有选区 = 选区第一个音）起，一路渐强到这张纸里下一个力度记号；没写 = 走一档（谱上灰字标出推定的终点）；再点一次去掉"),
       cell("wedge:dim", DIM_CELL, "渐弱", "渐弱 >：从光标前那个音（有选区 = 选区第一个音）起，一路渐弱到这张纸里下一个力度记号；没写 = 走一档（谱上灰字标出推定的终点）；再点一次去掉"),
-      ...(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => cell(`dyn:${d}${d === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d]}</span>`, "力度", `力度 ${d}：从光标前那个音起（有选区 = 选区开头），管到下一个力度记号；那儿已经是它 = 去掉（user 2026-10-08「mp mf 在哪里加啊」）`)),
+      ...(["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => cell(`dyn:${d}${d === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d]}</span>`, "力度", `力度 ${d}：从光标前那个音起（有选区 = 选区开头），管到下一个力度记号；那儿已经是它 = 去掉（user 2026-10-08「mp mf 在哪里加啊」）`)),
       cell("dyn:ramp", RAMP_CELL, "渐到", "渐到：点一下 = 下一个力度从这张纸里上一个力度记号那儿一路渐变过来（谱上画虚线发夹；手写的渐强渐弱是实线）；连点两下 = 锁住，之后写的力度都是渐到；再点 = 关。不开 = 到那儿突变", this.ramp === "off" ? "" : this.ramp),
       ...(["<", ">", "<>"] as const).map((w) => cell(`swell:${w}`, SWELL_CELL[w], w === "<" ? "音内渐强" : w === ">" ? "音内渐弱" : "音内鼓起", `${w === "<" ? "音内渐强" : w === ">" ? "音内渐弱（锯齿）" : "音内鼓起（messa di voce）"}：光标前那个音（有选区 = 选中的）自己里面的起伏；和段落的渐强渐弱是两层，可以叠；再点 = 去掉`)),
       cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；有选区 = 选中的连起来；再点一次去掉）。同一个音上又有呼吸 = 呼吸算数：那里照样断开换气，连线照画"),
@@ -452,7 +452,7 @@ export class Pad {
       else if (id.startsWith("inhale:")) this.host.onCommand({ k: "inhale", v: id.slice(7) as "soft" | "big" });
       else if (id === "slur") this.host.onCommand({ k: "slur" });
       else if (id.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id.slice(6) as "<" | ">" | "<>" });
-      else if (id.startsWith("dyn:")) { this.host.onCommand({ k: "dyn", v: id.slice(4) as "pp" | "p" | "mp" | "mf" | "f" | "ff", ...(this.ramp !== "off" ? { ramp: true } : {}) }); if (this.ramp === "once") this.ramp = "off"; }
+      else if (id.startsWith("dyn:")) { this.host.onCommand({ k: "dyn", v: id.slice(4) as "ppp" | "pp" | "p" | "mp" | "mf" | "f" | "ff" | "fff", ...(this.ramp !== "off" ? { ramp: true } : {}) }); if (this.ramp === "once") this.ramp = "off"; }
       else if (id === "wedge:cresc" || id === "wedge:dim") this.host.onCommand({ k: "wedge", w: id === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: "phrase" });
       this.render();

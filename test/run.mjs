@@ -69,6 +69,7 @@ import "./sel-ops.test.ts";
 import "./redline-guard.test.mjs";
 import "./storage-whitelist.test.mjs";
 import "./store-wiring.test.mjs";
+import "./dyn-levels.test.ts";
 import { run } from "./runner.mjs";
 
 await run();
