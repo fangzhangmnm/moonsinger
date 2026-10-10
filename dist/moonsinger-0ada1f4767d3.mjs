@@ -1497,10 +1497,10 @@ var init_upng_esm = __esm({
             x2 += 3;
             if (i10 == 0) {
               if ((x2 & 7) != 0) x2 += 8 - (x2 & 7);
-              var K3 = (x2 >>> 3) + 4, m2 = o10[K3 - 4] | o10[K3 - 3] << 8;
+              var K4 = (x2 >>> 3) + 4, m2 = o10[K4 - 4] | o10[K4 - 3] << 8;
               if (A2) j2 = H2(j2, N2 + m2);
-              j2.set(new I2(o10.buffer, o10.byteOffset + K3, m2), N2);
-              x2 = K3 + m2 << 3;
+              j2.set(new I2(o10.buffer, o10.byteOffset + K4, m2), N2);
+              x2 = K4 + m2 << 3;
               N2 += m2;
               continue;
             }
@@ -2346,12 +2346,12 @@ var init_upng_esm = __esm({
         var time = Date.now();
         var sb2 = new Uint8Array(abuf), tb2 = sb2.slice(0), tb32 = new Uint32Array(tb2.buffer);
         var KD = getKDtree(tb2, ps);
-        var root = KD[0], leafs = KD[1], K3 = leafs.length;
-        var cl32 = new Uint32Array(K3), clr8 = new Uint8Array(cl32.buffer);
-        for (var i10 = 0; i10 < K3; i10++) cl32[i10] = leafs[i10].est.rgba;
+        var root = KD[0], leafs = KD[1], K4 = leafs.length;
+        var cl32 = new Uint32Array(K4), clr8 = new Uint8Array(cl32.buffer);
+        for (var i10 = 0; i10 < K4; i10++) cl32[i10] = leafs[i10].est.rgba;
         var len = sb2.length;
         var inds = new Uint8Array(len >> 2), nd2;
-        if (K3 <= 60) {
+        if (K4 <= 60) {
           findNearest(sb2, inds, clr8);
           remap(inds, tb32, cl32);
         } else if (sb2.length < 32e6)
@@ -2369,14 +2369,14 @@ var init_upng_esm = __esm({
             inds[i10 >> 2] = nd2.ind;
             tb32[i10 >> 2] = nd2.est.rgba;
           }
-        if (doKmeans || sb2.length * K3 < 10 * 4e6) {
+        if (doKmeans || sb2.length * K4 < 10 * 4e6) {
           var le2 = 1e9;
           for (var i10 = 0; i10 < 10; i10++) {
             var ce2 = kmeans(sb2, inds, clr8);
             if (ce2 / le2 > 0.997) break;
             le2 = ce2;
           }
-          for (var i10 = 0; i10 < K3; i10++) leafs[i10].est.rgba = cl32[i10];
+          for (var i10 = 0; i10 < K4; i10++) leafs[i10].est.rgba = cl32[i10];
           remap(inds, tb32, cl32);
         }
         return { abuf: tb2.buffer, inds, plte: leafs };
@@ -2390,8 +2390,8 @@ var init_upng_esm = __esm({
         return err2;
       }
       function updatePalette(sb2, inds, plte) {
-        var K3 = plte.length >>> 2;
-        var sums = new Uint32Array(K3 * 4), cnts = new Uint32Array(K3);
+        var K4 = plte.length >>> 2;
+        var sums = new Uint32Array(K4 * 4), cnts = new Uint32Array(K4);
         for (var i10 = 0; i10 < sb2.length; i10 += 4) {
           var ind = inds[i10 >>> 2], qi = ind * 4;
           cnts[ind]++;
@@ -2403,12 +2403,12 @@ var init_upng_esm = __esm({
         for (var i10 = 0; i10 < plte.length; i10++) plte[i10] = Math.round(sums[i10] / cnts[i10 >>> 2]);
       }
       function findNearest(sb2, inds, plte) {
-        var terr = 0, K3 = plte.length >>> 2;
+        var terr = 0, K4 = plte.length >>> 2;
         var nd2 = [];
-        for (var i10 = 0; i10 < K3; i10++) {
+        for (var i10 = 0; i10 < K4; i10++) {
           var qi = i10 * 4;
           var r10 = plte[qi], g3 = plte[qi + 1], b3 = plte[qi + 2], a10 = plte[qi + 3], ti2 = 0, te3 = 1e9;
-          for (var j2 = 0; j2 < K3; j2++) {
+          for (var j2 = 0; j2 < K4; j2++) {
             if (i10 == j2) continue;
             var qj = j2 * 4, dr = r10 - plte[qj], dg = g3 - plte[qj + 1], db = b3 - plte[qj + 2], da = a10 - plte[qj + 3];
             var err2 = dr * dr + dg * dg + db * db + da * da;
@@ -2423,7 +2423,7 @@ var init_upng_esm = __esm({
         for (var i10 = 0; i10 < sb2.length; i10 += 4) {
           var r10 = sb2[i10], g3 = sb2[i10 + 1], b3 = sb2[i10 + 2], a10 = sb2[i10 + 3];
           var ti2 = inds[i10 >>> 2], qi = ti2 * 4, dr = r10 - plte[qi], dg = g3 - plte[qi + 1], db = b3 - plte[qi + 2], da = a10 - plte[qi + 3], te3 = dr * dr + dg * dg + db * db + da * da;
-          if (te3 > nd2[ti2]) for (var j2 = 0; j2 < K3; j2++) {
+          if (te3 > nd2[ti2]) for (var j2 = 0; j2 < K4; j2++) {
             qi = j2 * 4;
             dr = r10 - plte[qi];
             dg = g3 - plte[qi + 1];
@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.24-2026-10-10";
+var APP_VERSION = "v0.10.25-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7647,6 +7647,7 @@ function engrave(song, o10) {
   };
   const bars = [];
   const chordHeads = [];
+  const sharedRows = [];
   const rows = [], notes = [], slots = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
   const partsHit = [], papersHit = [];
   let head = null, shortBars = 0;
@@ -7781,11 +7782,14 @@ function engrave(song, o10) {
       return { p: p2, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, ...u2 };
     });
     const hostOf = (id2) => song.parts.find((x3) => x3.id === id2)?.host;
+    const editingHere = o10.at.paper === paper.id ? o10.at.part : null;
     const foldTo = per.map((q2) => {
       const h2 = hostOf(q2.p.id);
-      if (!h2 || o10.at.paper === paper.id && o10.at.part === q2.p.id) return -1;
+      if (!h2) return -1;
       const hi = per.findIndex((x3) => x3.p.id === h2);
-      return hi >= 0 && !hostOf(per[hi].p.id) ? hi : -1;
+      if (hi < 0 || hostOf(per[hi].p.id)) return -1;
+      if (editingHere === h2 || editingHere !== null && hostOf(editingHere) === h2) return -1;
+      return hi;
     });
     const shAt = (q2, staff, index) => {
       const fi = foldTo[per.indexOf(q2)] ?? -1;
@@ -8008,6 +8012,7 @@ function engrave(song, o10) {
         if (g3.lyric !== null) lyricOff.set(row2, g3.lyric);
         rows.push({ top, staffTop: top + P2(g3.above), bottom: top + P2(h2), paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1 });
         yCur += P2(h2);
+        if (foldTo.some((f2) => f2 === r10)) sharedRows.push(row2);
       }
       for (let r10 = 0; r10 < nR2; r10++) {
         if (foldTo[r10] >= 0) continue;
@@ -8698,7 +8703,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P2(PG.h) : yCur + P2(MX.b);
-  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, chordHeads, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, chordHeads, sharedRows, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -9982,6 +9987,16 @@ var ScoreView = class {
   playSysKey = "";
   userScrollAt = -1e9;
   lockTap = null;
+  roGesture = false;
+  // 这一下按在合租叠起来的那一行上（只读）
+  inSharedRow(x2, y2) {
+    const L2 = this.layout;
+    if (!L2 || !L2.sharedRows.length) return false;
+    return L2.sharedRows.some((i10) => {
+      const r10 = L2.systems[i10];
+      return !!r10 && y2 >= r10.top && y2 <= r10.bottom;
+    });
+  }
   holdPid = null;
   // 按住一个音在出声（长按 = 预览；抬手停）
   /** 播放头（实时试听「谱上跟着亮」，2026-10-09 Claude Fable 5.1）：p = 哪张纸的第几个 tick（纸自己的，反复已折回去；src/engine/timeline.ts locate）；null = 收起。
@@ -10388,7 +10403,8 @@ var ScoreView = class {
     const L2 = this.layout;
     if (!L2 || e10.button === 2) return;
     const p2 = this.local(e10);
-    if (!this.rules.edit) {
+    this.roGesture = this.rules.edit && this.inSharedRow(p2.x, p2.y) && !L2.parts.some((b3) => this.inBox(b3, p2.x, p2.y));
+    if (!this.rules.edit || this.roGesture) {
       if (e10.pointerType === "touch") {
         this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
         this.el.setPointerCapture(e10.pointerId);
@@ -10467,7 +10483,7 @@ var ScoreView = class {
     const pr = this.press;
     if (!pr || pr.moved) return;
     pr.fired = true;
-    if (!this.rules.edit) {
+    if (!this.rules.edit || this.roGesture) {
       this.finger = null;
       this.lockTap = null;
       this.listenMenu(pr.x, pr.y, pr.cx, pr.cy);
@@ -11032,8 +11048,10 @@ var ScoreView = class {
       this.holdPid = null;
       this.host.release?.();
     }
-    if (!this.rules.edit) {
+    if (!this.rules.edit || this.roGesture) {
       const lt2 = this.lockTap, f2 = this.finger, pr2 = this.press, fired = !!(pr2 && pr2.pid === e10.pointerId && pr2.fired);
+      if (this.roGesture && (lt2 && e10.pointerId === lt2.pid && !lt2.moved && !fired || f2 && e10.pointerId === f2.pid && !f2.moved && !fired)) this.host.notice?.("\u5408\u79DF\u53E0\u8D77\u6765\u7684\u8FD9\u4E00\u884C\u53EA\u80FD\u770B\uFF1A\u70B9\u5DE6\u8FB9\u7684\u540D\u5B57 = \u62C6\u5F00\u6765\u5199");
+      if (!this.touches.size) this.roGesture = false;
       if (pr2 && pr2.pid === e10.pointerId) {
         this.press = null;
         clearTimeout(pr2.timer);
@@ -11871,9 +11889,9 @@ var Pad = class {
   knobList(knob, narrow = this.rangeNarrow()) {
     const st3 = this.host.state(), f2 = inputKey(st3);
     if (knob === "key") {
-      const K3 = [...KEY_CIRCLE].reverse();
+      const K4 = [...KEY_CIRCLE].reverse();
       const sc2 = this.scale();
-      return { items: K3.map((k2) => keyLabel(k2, sc2)), index: Math.max(0, K3.indexOf(f2)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i10) => this.host.onInputKey(K3[i10]), loop: true };
+      return { items: K4.map((k2) => keyLabel(k2, sc2)), index: Math.max(0, K4.indexOf(f2)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i10) => this.host.onInputKey(K4[i10]), loop: true };
     }
     if (knob === "unit") return { items: UNITS.map((u2) => `<span class="smufl">${UNIT_GLYPH[u2]}</span>`), index: Math.max(0, UNITS.indexOf(st3.input.unit)), title: "\u957F\u77ED\u57FA\u7EBF", set: (i10) => this.host.onUnit(UNITS[i10]) };
     const rows = this.rows();
@@ -11995,13 +12013,13 @@ var Pad = class {
       return;
     }
     if (knob === "key") {
-      const st3 = this.host.state(), K3 = [...KEY_CIRCLE].reverse();
+      const st3 = this.host.state(), K4 = [...KEY_CIRCLE].reverse();
       const [wk, ws2] = w2 >= 210 ? [Math.round(w2 * 0.36), w2 - Math.round(w2 * 0.36) - 2] : [72, 136];
       openDrum(anchor, [
-        { items: K3.map((k2) => `1=${KEY_NAMES[k2]}`), index: Math.max(0, K3.indexOf(inputKey(st3))), width: wk, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", loop: true },
+        { items: K4.map((k2) => `1=${KEY_NAMES[k2]}`), index: Math.max(0, K4.indexOf(inputKey(st3))), width: wk, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", loop: true },
         { items: SCALES.map(scaleItem), index: Math.max(0, SCALES.findIndex((x2) => x2.id === st3.input.inputScale)), width: ws2, title: "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3" }
       ], { onChange: (c10, i10) => {
-        if (c10 === 0) this.host.onInputKey(K3[i10]);
+        if (c10 === 0) this.host.onInputKey(K4[i10]);
         else this.host.onInputScale(SCALES[i10].id);
       } });
       return;
@@ -23256,10 +23274,10 @@ var Comp = class {
     this.aRel = Math.exp(-1 / (Math.max(1e-3, g3("releaseMs") / 1e3) * this.sr));
   }
   gainDb(levelDb) {
-    const { T: T2, R: R2, K: K3 } = this, over = levelDb - T2;
-    if (K3 > 0 && over > -K3 / 2 && over < K3 / 2) {
-      const t10 = over + K3 / 2;
-      return -(t10 * t10 * (1 - 1 / R2)) / (2 * K3);
+    const { T: T2, R: R2, K: K4 } = this, over = levelDb - T2;
+    if (K4 > 0 && over > -K4 / 2 && over < K4 / 2) {
+      const t10 = over + K4 / 2;
+      return -(t10 * t10 * (1 - 1 / R2)) / (2 * K4);
     }
     return over <= 0 ? 0 : -over * (1 - 1 / R2);
   }
@@ -26161,12 +26179,30 @@ var fire = (t10) => {
   t10.dispatchEvent(new Event("input", { bubbles: true }));
   t10.dispatchEvent(new Event("change", { bubbles: true }));
 };
+var SCROLL_GRACE = 600;
+var REST_MS = 300;
 function wireParamRows(root) {
   const acc = /* @__PURE__ */ new WeakMap();
+  let lastScroll = -1e9, hoverEl = null, hoverSince = 0;
+  root.addEventListener("scroll", () => {
+    lastScroll = performance.now();
+  }, true);
+  root.addEventListener("pointermove", (e10) => {
+    const t10 = e10.target, inp = t10 instanceof HTMLInputElement && t10.type === "range" ? t10 : null;
+    if (inp !== hoverEl) {
+      hoverEl = inp;
+      hoverSince = performance.now();
+    }
+  });
+  root.addEventListener("pointerleave", () => {
+    hoverEl = null;
+  });
   root.addEventListener("wheel", (e10) => {
     const t10 = e10.target;
     if (!(t10 instanceof HTMLInputElement) || t10.type !== "range" || t10.disabled) return;
     if (Math.abs(e10.deltaX) > Math.abs(e10.deltaY)) return;
+    const now2 = performance.now();
+    if (document.activeElement !== t10 && (now2 - lastScroll < SCROLL_GRACE || hoverEl !== t10 || now2 - hoverSince < REST_MS)) return;
     e10.preventDefault();
     const r10 = wheelSteps(e10, acc.get(t10) ?? 0);
     acc.set(t10, r10.acc);
@@ -26192,7 +26228,8 @@ function wireParamRows(root) {
 
 // src/ui/scopes.ts
 var SCOPE_POINTS = 512;
-var FLOOR = 0.05;
+var K2 = 0.9 / Math.SQRT2;
+var SILENT = 1e-4;
 function stereoShape(L2, R2) {
   const n10 = Math.min(L2.length, R2.length);
   let lr2 = 0, ll2 = 0, rr2 = 0, pk = 0;
@@ -26207,7 +26244,8 @@ function stereoShape(L2, R2) {
   }
   pk *= Math.SQRT1_2;
   const corr = ll2 > 1e-9 && rr2 > 1e-9 ? Math.max(-1, Math.min(1, lr2 / Math.sqrt(ll2 * rr2))) : ll2 + rr2 > 1e-9 ? 0 : null;
-  const k2 = 0.9 / Math.max(pk, FLOOR), step = Math.max(1, Math.floor(n10 / SCOPE_POINTS));
+  if (pk < SILENT) return { path: "", corr };
+  const k2 = K2, step = Math.max(1, Math.floor(n10 / SCOPE_POINTS));
   const xs = [], ys = [];
   for (let i10 = 0; i10 < n10; i10 += step) {
     xs.push((R2[i10] - L2[i10]) * Math.SQRT1_2 * k2);
@@ -27791,7 +27829,7 @@ var W2 = (e10) => {
   let t10 = parseFloat(e10);
   return isNaN(t10) ? e10 : t10;
 };
-var K2 = (e10) => {
+var K3 = (e10) => {
   let t10 = N(e10) ? Number(e10) : NaN;
   return isNaN(t10) ? e10 : t10;
 };
@@ -30050,7 +30088,7 @@ function iL(e10, t10) {
     let a11, c11 = t11.el = e11.el, { patchFlag: u3, dynamicChildren: d4, dirs: h3 } = t11;
     u3 |= 16 & e11.patchFlag;
     let g3 = e11.props || f, m2 = t11.props || f;
-    if (n11 && iV(n11, false), (a11 = m2.onVnodeBeforeUpdate) && lm(a11, n11, t11, e11), h3 && nu(t11, e11, n11, "beforeUpdate"), n11 && iV(n11, true), (g3.innerHTML && null == m2.innerHTML || g3.textContent && null == m2.textContent) && p2(c11, ""), d4 ? D2(e11.dynamicChildren, d4, c11, n11, r11, i$(t11, i11), l11) : s11 || K3(e11, t11, c11, null, n11, r11, i$(t11, i11), l11, false), u3 > 0) {
+    if (n11 && iV(n11, false), (a11 = m2.onVnodeBeforeUpdate) && lm(a11, n11, t11, e11), h3 && nu(t11, e11, n11, "beforeUpdate"), n11 && iV(n11, true), (g3.innerHTML && null == m2.innerHTML || g3.textContent && null == m2.textContent) && p2(c11, ""), d4 ? D2(e11.dynamicChildren, d4, c11, n11, r11, i$(t11, i11), l11) : s11 || K4(e11, t11, c11, null, n11, r11, i$(t11, i11), l11, false), u3 > 0) {
       if (16 & u3) F2(c11, g3, m2, n11, i11);
       else if (2 & u3 && g3.class !== m2.class && o10(c11, "class", null, m2.class, i11), 4 & u3 && o10(c11, "style", g3.style, m2.style, i11), 8 & u3) {
         let e12 = t11.dynamicProps;
@@ -30081,7 +30119,7 @@ function iL(e10, t10) {
     }
   }, $3 = (e11, t11, n11, r11, i11, s11, o11, a11, u3) => {
     let d4 = t11.el = e11 ? e11.el : c10(""), p3 = t11.anchor = e11 ? e11.anchor : c10(""), { patchFlag: h3, dynamicChildren: f2, slotScopeIds: g3 } = t11;
-    g3 && (a11 = a11 ? a11.concat(g3) : g3), null == e11 ? (l10(d4, n11, r11), l10(p3, n11, r11), O2(t11.children || [], n11, p3, i11, s11, o11, a11, u3)) : h3 > 0 && 64 & h3 && f2 && e11.dynamicChildren && e11.dynamicChildren.length === f2.length ? (D2(e11.dynamicChildren, f2, n11, i11, s11, o11, a11), (null != t11.key || i11 && t11 === i11.subTree) && ij(e11, t11, true)) : K3(e11, t11, n11, p3, i11, s11, o11, a11, u3);
+    g3 && (a11 = a11 ? a11.concat(g3) : g3), null == e11 ? (l10(d4, n11, r11), l10(p3, n11, r11), O2(t11.children || [], n11, p3, i11, s11, o11, a11, u3)) : h3 > 0 && 64 & h3 && f2 && e11.dynamicChildren && e11.dynamicChildren.length === f2.length ? (D2(e11.dynamicChildren, f2, n11, i11, s11, o11, a11), (null != t11.key || i11 && t11 === i11.subTree) && ij(e11, t11, true)) : K4(e11, t11, n11, p3, i11, s11, o11, a11, u3);
   }, B2 = (e11, t11, n11, r11, i11, l11, s11, o11, a11) => {
     t11.slotScopeIds = o11, null == e11 ? 512 & t11.shapeFlag ? i11.ctx.activate(t11, n11, r11, s11, a11) : j2(t11, n11, r11, i11, l11, s11, a11) : U2(e11, t11, a11);
   }, j2 = (e11, t11, n11, r11, i11, l11, s11) => {
@@ -30191,7 +30229,7 @@ function iL(e10, t10) {
       } else t12 && (iO(e12, t12), s11 = { default: 1 });
       if (l11) for (let e13 in i11) iA(e13) || null != s11[e13] || delete i11[e13];
     })(e11, t11.children, n11), eI(), t7(e11), eO();
-  }, K3 = (e11, t11, n11, r11, i11, l11, s11, o11, a11 = false) => {
+  }, K4 = (e11, t11, n11, r11, i11, l11, s11, o11, a11 = false) => {
     let c11 = e11 && e11.children, u3 = e11 ? e11.shapeFlag : 0, d4 = t11.children, { patchFlag: h3, shapeFlag: f2 } = t11;
     if (h3 > 0) {
       if (128 & h3) return void G2(c11, d4, n11, r11, i11, l11, s11, o11, a11);
@@ -30349,7 +30387,7 @@ function iL(e10, t10) {
   }, er2 = false, ei2 = (e11, t11, n11) => {
     let r11;
     null == e11 ? t11._vnode && (Q2(t11._vnode, null, null, true), r11 = t11._vnode.component) : x2(t11._vnode || null, e11, t11, null, null, null, n11), t11._vnode = e11, er2 || (er2 = true, t7(r11), ne(), er2 = false);
-  }, el2 = { p: x2, um: Q2, m: X2, r: Z2, mt: j2, mc: O2, pc: K3, pbc: D2, n: en2, o: e10 };
+  }, el2 = { p: x2, um: Q2, m: X2, r: Z2, mt: j2, mc: O2, pc: K4, pbc: D2, n: en2, o: e10 };
   return t10 && ([r10, i10] = t10(el2)), { render: ei2, hydrate: r10, createApp: (n10 = r10, function(e11, t11 = null) {
     w(e11) || (e11 = S({}, e11)), null == t11 || E(t11) || (t11 = null);
     let r11 = io(), i11 = /* @__PURE__ */ new WeakSet(), l11 = [], s11 = false, o11 = r11.app = { _uid: ia++, _component: e11, _props: t11, _container: null, _context: r11, _instance: null, version: lB, get config() {
@@ -30437,7 +30475,7 @@ function iz(e10, t10, n10, r10, i10, l10, s10, o10, a10, c10, u2 = false) {
   var d3;
   let p2, h2, { p: f2, m: g3, um: m2, n: y2, o: { parentNode: b3, remove: _2 } } = c10, S2 = null != (p2 = (d3 = e10).props && d3.props.suspensible) && false !== p2;
   S2 && t10 && t10.pendingBranch && (h2 = t10.pendingId, t10.deps++);
-  let x2 = e10.props ? K2(e10.props.timeout) : void 0, C2 = l10, k2 = { vnode: e10, parent: t10, parentComponent: n10, namespace: s10, container: r10, hiddenContainer: i10, deps: 0, pendingId: iq++, timeout: "number" == typeof x2 ? x2 : -1, activeBranch: null, isFallbackMountPending: false, pendingBranch: null, isInFallback: !u2, isHydrating: u2, isUnmounted: false, effects: [], resolve(e11 = false, n11 = false) {
+  let x2 = e10.props ? K3(e10.props.timeout) : void 0, C2 = l10, k2 = { vnode: e10, parent: t10, parentComponent: n10, namespace: s10, container: r10, hiddenContainer: i10, deps: 0, pendingId: iq++, timeout: "number" == typeof x2 ? x2 : -1, activeBranch: null, isFallbackMountPending: false, pendingBranch: null, isInFallback: !u2, isHydrating: u2, isUnmounted: false, effects: [], resolve(e11 = false, n11 = false) {
     let { vnode: r11, activeBranch: i11, pendingBranch: s11, pendingId: o11, effects: a11, parentComponent: c11, container: u3, isInFallback: d4 } = k2, p3 = false;
     if (k2.isHydrating) k2.isHydrating = false;
     else if (!e11) {
@@ -30917,12 +30955,12 @@ function l9(e10) {
     if (null == e11) return null;
     {
       if (E(e11)) return [function(e12) {
-        return K2(e12);
+        return K3(e12);
       }(e11.enter), function(e12) {
-        return K2(e12);
+        return K3(e12);
       }(e11.leave)];
       let t11 = function(e12) {
-        return K2(e12);
+        return K3(e12);
       }(e11);
       return [t11, t11];
     }
@@ -31250,7 +31288,7 @@ var sM = class _sM extends sP {
       let { props: r10, styles: i10 } = e11;
       if (r10 && !T(r10)) for (let e12 in r10) {
         let t12 = r10[e12];
-        (t12 === Number || t12 && t12.type === Number) && (e12 in this._props && (this._props[e12] = K2(this._props[e12])), (n10 || (n10 = /* @__PURE__ */ Object.create(null)))[L(e12)] = true);
+        (t12 === Number || t12 && t12.type === Number) && (e12 in this._props && (this._props[e12] = K3(this._props[e12])), (n10 || (n10 = /* @__PURE__ */ Object.create(null)))[L(e12)] = true);
       }
       this._numberProps = n10, this._resolveProps(e11), this.shadowRoot && this._applyStyles(i10), this._mount(e11);
     }, t10 = this._def.__asyncLoader;
@@ -31275,7 +31313,7 @@ var sM = class _sM extends sP {
   _setAttr(e10) {
     if (e10.startsWith("data-v-")) return;
     let t10 = this.hasAttribute(e10), n10 = t10 ? this.getAttribute(e10) : sR, r10 = L(e10);
-    t10 && this._numberProps && this._numberProps[r10] && (n10 = K2(n10)), this._setProp(r10, n10, false, true);
+    t10 && this._numberProps && this._numberProps[r10] && (n10 = K3(n10)), this._setProp(r10, n10, false, true);
   }
   _getProp(e10) {
     return this._props[e10];
@@ -39807,7 +39845,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "fd7a15b8d7fe",
+  cssHash: "43c3fa798ebb",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -40647,11 +40685,11 @@ function openTrackCard(at2) {
   box.addEventListener("change", (e10) => {
     const t10 = e10.target;
     if (t10.dataset.hostsel === void 0) return;
-    let next2 = setPartHost(st2, curPart().id, t10.value || null);
-    if (t10.value && next2 !== st2 && st2.song.papers.find((pp) => pp.id === st2.at.paper)?.tracks[t10.value]) next2 = setFocus(next2, st2.at.paper, t10.value);
+    const next2 = setPartHost(st2, curPart().id, t10.value || null);
     update(next2);
     renderTitle();
     draw();
+    if (t10.value && next2 !== st2) info("\u6302\u4E0A\u4E86\uFF1A\u5728\u522B\u7684\u6B4C\u624B\u90A3\u513F\u5199\u7684\u65F6\u5019\uFF0C\u8FD9\u4E00\u5BB6\u53E0\u5728\u4E00\u884C\u4E0A\u770B\uFF08\u53EA\u8BFB\uFF09\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199");
   });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
@@ -43007,4 +43045,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a02e0c8a7977.mjs.map
+//# sourceMappingURL=moonsinger-0ada1f4767d3.mjs.map

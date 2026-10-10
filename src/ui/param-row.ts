@@ -28,13 +28,23 @@ export function slider(s: SliderSpec): string {
 
 const fire = (t: HTMLInputElement) => { t.dispatchEvent(new Event("input", { bubbles: true })); t.dispatchEvent(new Event("change", { bubbles: true })); };
 
+/** 滚轮滚卡片的时候路过推子不动它（v0.10.25；user「滚轮滚卡片的时候误动插件的推子怎么办？还是不应该识别滚轮？」）：
+ *  刚滚过（SCROLL_GRACE 内）= 照样滚卡片；鼠标得是挪到这根推子上、停了 REST_MS，滚轮才拨它（点过它 = 有焦点，马上就拨）。
+ *  卡片滚动时鼠标没动、推子自己滑到鼠标底下（不出 pointermove）= 不算停在它上面。 */
+const SCROLL_GRACE = 600, REST_MS = 300;
 /** 在根上挂一次（委托，重画不用重挂）：滚轮、双击、问号。 */
 export function wireParamRows(root: HTMLElement): void {
   const acc = new WeakMap<HTMLInputElement, number>();
+  let lastScroll = -1e9, hoverEl: HTMLInputElement | null = null, hoverSince = 0;
+  root.addEventListener("scroll", () => { lastScroll = performance.now(); }, true);   // 混音台里任何一块在滚（捕获：scroll 不冒泡）
+  root.addEventListener("pointermove", (e) => { const t = e.target, inp = t instanceof HTMLInputElement && t.type === "range" ? t : null; if (inp !== hoverEl) { hoverEl = inp; hoverSince = performance.now(); } });
+  root.addEventListener("pointerleave", () => { hoverEl = null; });
   root.addEventListener("wheel", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLInputElement) || t.type !== "range" || t.disabled) return;
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;   // 横着划 = 让给外面横着滚卡片
+    const now = performance.now();
+    if (document.activeElement !== t && (now - lastScroll < SCROLL_GRACE || hoverEl !== t || now - hoverSince < REST_MS)) return;   // 滚卡片时路过 = 照样滚卡片
     e.preventDefault();
     const r = wheelSteps(e, acc.get(t) ?? 0); acc.set(t, r.acc);
     if (!r.steps) return;

@@ -2122,10 +2122,10 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   closeOffer = close; trackRedraw = draw;
   box.addEventListener("change", (e) => {   // 合租：挂到谁上 / 自己一行
     const t = e.target as HTMLSelectElement; if (t.dataset.hostsel === undefined) return;
-    let next = setPartHost(st, curPart().id, t.value || null);
-    // 挂上了 = 光标挪到主人那儿（在写的那位总是拆开的：不挪就看不出叠上了）；点房客的名字 = 再去写它（拆开）
-    if (t.value && next !== st && st.song.papers.find((pp) => pp.id === st.at.paper)?.tracks[t.value]) next = setFocus(next, st.at.paper, t.value);
+    const next = setPartHost(st, curPart().id, t.value || null);
     update(next); renderTitle(); draw();
+    // 一家（主人 + 房客）里有谁在写 = 整家拆开（user「host也应该只读，只有展开时才能编辑」）：挂上之后去别的歌手那儿写，这一家才叠成一行
+    if (t.value && next !== st) info("挂上了：在别的歌手那儿写的时候，这一家叠在一行上看（只读）；点名字 = 拆开来写");
   });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;

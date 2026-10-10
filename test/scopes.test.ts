@@ -16,15 +16,17 @@ describe("李萨如图 / 左右相关", () => {
     assert(pts(g.path).every(([, py]) => Math.abs(py) < 1e-3), "都在横线上");
   });
   it("只有左声道 = 左上那条斜线（相位表老规矩）、相关 0", () => {
-    const x = sine(1024), g = stereoShape(x, new Float32Array(1024));
+    const x = sine(1024, 0.013, 1), g = stereoShape(x, new Float32Array(1024));
     eq(g.corr, 0);
     assert(pts(g.path).every(([px, py]) => Math.abs(px - py) < 1e-3), "x = y：正半周落在左上");
     assert(pts(g.path).some(([px, py]) => px < -0.3 && py < -0.3), "有点在左上");
   });
-  it("静音 = 没有相关（不是 0 也不是 1）；小声不被放大成满格", () => {
-    eq(stereoShape(new Float32Array(1024), new Float32Array(1024)).corr, null);
-    const q = sine(1024, 0.013, 0.01), g = stereoShape(q, q);
-    assert(Math.max(...pts(g.path).map(([, py]) => Math.abs(py))) < 0.3, "0.01 的小声画得也小");
+  it("静音 = 没有相关、什么都不画（停了不留一个点）；刻度固定：小一半的声音画得小一半（v0.10.25，不自动放大）", () => {
+    const z = stereoShape(new Float32Array(1024), new Float32Array(1024)); eq(z.corr, null); eq(z.path, "");
+    const big = sine(1024, 0.013, 0.5), small = sine(1024, 0.013, 0.25);
+    const r = (a: Float32Array) => Math.max(...pts(stereoShape(a, a).path).map(([, py]) => Math.abs(py)));
+    assert(Math.abs(r(big) / r(small) - 2) < 0.05, `大小比 ${(r(big) / r(small)).toFixed(3)}`);
+    assert(Math.abs(r(sine(1024, 0.013, 1)) - 0.9) < 0.02, `0 dBFS 单声道碰到边（${r(sine(1024, 0.013, 1)).toFixed(3)}）`);
   });
 });
 describe("李萨如图 = 圆滑的线（v0.10.17）", () => {

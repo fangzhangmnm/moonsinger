@@ -44,8 +44,9 @@ describe("合租：数据", () => {
 });
 
 describe("合租：排版（看个大概）", () => {
-  it("房客不占自己的谱行；它的音画在主人那一行上；不进点击区、不画歌词；主人名字下面写房客的名字、各自能点", () => {
+  it("房客不占自己的谱行；它的音画在主人那一行上；不进点击区、不画歌词；主人名字下面写房客的名字、各自能点；叠起来的那一行只读", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
+    st = setFocus(st, st.song.papers[0].id, "P2");   // 光标在别人那儿（一家里有谁在写 = 整家拆开）
     const L0 = lay(trio()), L = lay(st);
     assert(!L.systems.some((r) => r.part === c), "房客没有自己的谱行");
     assert(L.systems.length < L0.systems.length, `谱行少了：${L0.systems.length} → ${L.systems.length}`);
@@ -55,6 +56,12 @@ describe("合租：排版（看个大概）", () => {
     const heads0 = L0.prims.filter((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.split(" ").includes("note"));
     eq(heads.length, heads0.length, "符头一个不少（房客的画到主人那行上了）");
     assert(L.parts.some((h) => h.part === c) && hostRows.size > 0, "房客的名字能点");
+    assert(L.sharedRows.length > 0 && L.sharedRows.every((i) => L.systems[i].part === a), "叠起来的那几行（主人的）标成只读");
+  });
+  it("光标在主人上 = 整家拆开（v0.10.25，user「host也应该只读，只有展开时才能编辑」）", () => {
+    let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
+    const L = lay(setFocus(st, st.song.papers[0].id, a));
+    assert(L.systems.some((r) => r.part === c) && L.sharedRows.length === 0, "主人在写 = 房客也拆开、没有只读行");
   });
   it("现在在写的是房客 = 它拆开（有自己的谱行、能点）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);

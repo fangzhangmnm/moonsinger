@@ -132,6 +132,8 @@ export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   /** 和弦里主音以外的那几个符头（播放时一起亮；不进 notes——点 / 拖还是按整个音；v0.10.23，user「音符高亮忘了做和弦的其他音的高亮」）。 */
   chordHeads: { index: number; system: number; x: number; y: number; w: number }[];
+  /** 合租叠起来的谱行（下标 = systems 里的）：只读——点了不写、不放光标，点名字拆开（v0.10.25，user「host也应该只读，只有展开时才能编辑」）。 */
+  sharedRows: number[];
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; rests: RestHit[]; title: TitleHit; clefs: ClefHit[];
   arrangement: TitleHit | null;                 // 编排那一行（只在「全部」视图里有；点了就地改）
   credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
@@ -452,6 +454,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
 
   const bars: Layout["bars"] = [];
   const chordHeads: Layout["chordHeads"] = [];
+  const sharedRows: number[] = [];   // 合租叠起来的那几行（只读：点了不写、不放光标；v0.10.25）
   const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
   let head: Layout["head"] = null, shortBars = 0;
@@ -590,7 +593,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     //   user「我的想法就是先做一个看上去大概的…主要就是总览监视用。所以撞一起就撞」「先不建议着色」「…宁缺误骗」：只画音（符头 / 符干 / 符尾 / 连线 / 跟着音的演奏法），
     //   休止、歌词、力度这些跟着谱子的不画；不进点击区；音高按主人那一行的谱号放。foldTo[r] = 主人在 per 里的下标，-1 = 不叠
     const hostOf = (id: string) => song.parts.find((x) => x.id === id)?.host;
-    const foldTo = per.map((q) => { const h = hostOf(q.p.id); if (!h || (o.at.paper === paper.id && o.at.part === q.p.id)) return -1; const hi = per.findIndex((x) => x.p.id === h); return hi >= 0 && !hostOf(per[hi].p.id) ? hi : -1; });
+    //   一家（主人 + 房客）里有谁是现在在写的 = 整家拆开（各自一行、能写）；都不是 = 叠起来、整行只读（v0.10.25，user「host也应该只读，只有展开时才能编辑」）
+    const editingHere = o.at.paper === paper.id ? o.at.part : null;
+    const foldTo = per.map((q) => { const h = hostOf(q.p.id); if (!h) return -1; const hi = per.findIndex((x) => x.p.id === h); if (hi < 0 || hostOf(per[hi].p.id)) return -1;
+      if (editingHere === h || (editingHere !== null && hostOf(editingHere) === h)) return -1; return hi; });
     /** 同一个实际音高在谱上要挪几级：谱号 + 八度线（index < 0 = 这张纸开头的谱号）。大谱表 = 上高音下低音。叠在主人那一行的房客 = 按主人的谱号。 */
     const shAt = (q: (typeof per)[number], staff: Staff, index: number): number => {
       const fi = foldTo[per.indexOf(q)] ?? -1; if (fi >= 0) { const h = per[fi]; return h.staves === 2 ? 0 : CLEF_SHIFT[h.start]; }
@@ -764,6 +770,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const top = yCur, row = rowOf(s, r, k), g = G[r].g[k], h = g.above + 4 + g.below;
         rowTop.set(row, top); rowAbove.set(row, g.above); if (g.lyric !== null) lyricOff.set(row, g.lyric);
         rows.push({ top, staffTop: top + P(g.above), bottom: top + P(h), paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff }); yCur += P(h);
+        if (foldTo.some((f) => f === r)) sharedRows.push(row);
       }
       for (let r = 0; r < nR; r++) {   // 力度字的基线（px）：按算好的级数（谱上面）
         if (foldTo[r] >= 0) continue;
@@ -1391,7 +1398,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, sharedRows, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

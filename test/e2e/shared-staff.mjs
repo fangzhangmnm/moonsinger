@@ -21,13 +21,22 @@ await p.click("#score text.part-name >> text=Flute", { button: "right" }); await
 check(!!(await p.$(".track-card select[data-hostsel]")), "Flute 的歌手牌里有「合租」");
 await p.selectOption(".track-card select[data-hostsel]", "P1"); await p.waitForTimeout(250);
 await p.keyboard.press("Escape"); await p.mouse.click(1380, 840); await p.waitForTimeout(150);
+// 一家里有谁在写 = 整家拆开（user「host也应该只读，只有展开时才能编辑」）：去 Violin 那儿写 = Piano + Flute 叠成一行
+await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { ...s.at, part: "P3" } }); }); await p.waitForTimeout(200);
 const parts = await p.evaluate(() => window.__moonsinger.state().song.parts.map((x) => `${x.id}${x.host ? "<" + x.host : ""}`).join(","));
 check(parts === "P1,P2<P1,P3", "挂到 Piano 上 = 存成 host、排在 Piano 后面", parts);
 check((await rowsOf("P2")) === 0 && (await rowsOf("P1")) > 0, "Flute 没有自己的谱行了（画在 Piano 那一行上）");
 const names = await p.$$eval("#score text.part-name", (es) => es.map((e) => e.textContent).join("|"));
 check(names.includes("Piano") && names.includes("Flute") && names.includes("Violin"), "名字：Piano 下面跟着 Flute", names);
+// 叠起来的那一行只读：点在上面 = 不放光标、不写（说一声点名字）
+{ const pt = await p.evaluate(() => { const L = window.__moonsinger.layout(), sh = document.querySelector("#score .sheet").getBoundingClientRect(), z = sh.width / L.width, r = L.systems[L.sharedRows[0]];
+    return { x: sh.left + (L.pageX.left + 300) * z, y: sh.top + (r.staffTop + 20) * z }; });
+  const before = await p.evaluate(() => JSON.stringify(window.__moonsinger.state().at));
+  await p.mouse.click(pt.x, pt.y); await p.waitForTimeout(250);
+  const after = await p.evaluate(() => JSON.stringify(window.__moonsinger.state().at));
+  check(before === after && (await rowsOf("P2")) === 0, "点在叠起来的那一行上 = 光标不动、照旧叠着（只读）", after); }
 await p.click("#score text.part-name >> text=Flute"); await p.waitForTimeout(250);
-check((await focus()) === "P2" && (await rowsOf("P2")) > 0, "点 Flute 的名字 = 去写它、它拆开（有自己的谱行）", await focus());
+check((await focus()) === "P2" && (await rowsOf("P2")) > 0, "点 Flute 的名字 = 去写它、整家拆开（有自己的谱行）", await focus());
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nshared-staff: ${pass} passed, ${fail} failed`);

@@ -322,6 +322,8 @@ export class ScoreView {
   private playSysKey = "";
   private userScrollAt = -1e9;
   private lockTap: { pid: number; x: number; y: number; moved: boolean } | null = null;
+  private roGesture = false;   // 这一下按在合租叠起来的那一行上（只读）
+  private inSharedRow(x: number, y: number): boolean { const L = this.layout; if (!L || !L.sharedRows.length) return false; void x; return L.sharedRows.some((i) => { const r = L.systems[i]; return !!r && y >= r.top && y <= r.bottom; }); }
   private holdPid: number | null = null;                                 // 按住一个音在出声（长按 = 预览；抬手停）
   /** 播放头（实时试听「谱上跟着亮」，2026-10-09 Claude Fable 5.1）：p = 哪张纸的第几个 tick（纸自己的，反复已折回去；src/engine/timeline.ts locate）；null = 收起。
    *  只挪一条线，不重排、不动滚动。位置 = 这张纸第一行那条 track 上「起点 ≥ tick 的第一个音」的光标位 → slot 的 x；行高 = 那一行的谱表范围。 */
@@ -600,11 +602,13 @@ export class ScoreView {
   private down(e: PointerEvent): void {
     if ((e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;   // 在歌词框 / 记号框 / 把手上点：交给它们
     const L = this.layout; if (!L || e.button === 2) return;   // 右键归 contextmenu
-    const p = this.local(e);   // 先算纸面坐标再拿焦点：focus 可能连带滚一下（分页时光标那行在页外），坐标就错了（2026-10-08 E2E 抓到）
+    const p = this.local(e);
+    // 合租叠起来的那一行 = 只读（v0.10.25，user「host也应该只读，只有展开时才能编辑」）：这一下按「听」的规矩走（滚 / 捏合 / 看谱的轻点 / 长按小菜单），名字照样能点（点名字 = 拆开来写）
+    this.roGesture = this.rules.edit && this.inSharedRow(p.x, p.y) && !L.parts.some((b) => this.inBox(b, p.x, p.y));   // 先算纸面坐标再拿焦点：focus 可能连带滚一下（分页时光标那行在页外），坐标就错了（2026-10-08 E2E 抓到）
     // 笔 / 鼠标：点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）。手指：按下先不抢——拖 = 滚动，歌词框开着时滚谱不该把它收掉、
     //   把系统键盘收回去（收键盘 → 谱面变高 → 跟随光标又把视图拽回去 = 白滚；user 2026-10-08「每次打日文还是跟八年抗战一样…歌词输入模式滚动会导致键盘弹回来，然后白滚」）；
     //   轻点（up）/ 长按（longPress）才抢
-    if (!this.rules.edit) {   // 听模式：只挡写谱。手指照样能滚 / 捏合；轻点 = 看谱的那些（歌手牌 / 翻纸 / 本段…），不跳播；长按 = 小菜单（从这儿放…）
+    if (!this.rules.edit || this.roGesture) {   // 听模式 / 合租叠起来的那一行：只挡写谱。手指照样能滚 / 捏合；轻点 = 看谱的那些（歌手牌 / 翻纸 / 本段…），不跳播；长按 = 小菜单（从这儿放…）
       if (e.pointerType === "touch") {
         this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY }); this.el.setPointerCapture(e.pointerId);
         if (this.touches.size === 2) { this.finger = null; this.cancelPress(); this.pinchStart(); return; }
@@ -669,7 +673,7 @@ export class ScoreView {
   private longPress(): void {
     const pr = this.press; if (!pr || pr.moved) return;
     pr.fired = true;
-    if (!this.rules.edit) { this.finger = null; this.lockTap = null; this.listenMenu(pr.x, pr.y, pr.cx, pr.cy); return; }   // 听模式：长按 = 小菜单
+    if (!this.rules.edit || this.roGesture) { this.finger = null; this.lockTap = null; this.listenMenu(pr.x, pr.y, pr.cx, pr.cy); return; }   // 听模式 / 合租叠起来的那一行：长按 = 小菜单
     if (pr.type === "touch") this.el.focus({ preventScroll: true });   // 手指按下时没抢焦点（见 down），长按到点才抢
     if (pr.grab) { this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, pr.type === "touch"); return; }
     if (!pr.hit) { this.blankPress(pr.x, pr.y, pr.cx, pr.cy); return; }
@@ -1026,8 +1030,10 @@ export class ScoreView {
     if (e.pointerType === "touch" && this.press && this.press.pid === e.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
     if (this.touches.delete(e.pointerId) && this.pinch && this.touches.size < 2) { this.pinchEnd(); this.finger = null; this.cancelPress(); return; }   // 捏合结束：落定缩放；剩下那根手指不接着当滚动（会跳）
     if (this.holdPid === e.pointerId) { this.holdPid = null; this.host.release?.(); }   // 按住音的预览：抬手停
-    if (!this.rules.edit) {   // 听模式：没拖、没长按 = 轻点（只认看谱的那些）
+    if (!this.rules.edit || this.roGesture) {   // 听模式 / 合租叠起来的那一行：没拖、没长按 = 轻点（只认看谱的那些）
       const lt = this.lockTap, f = this.finger, pr = this.press, fired = !!(pr && pr.pid === e.pointerId && pr.fired);
+      if (this.roGesture && ((lt && e.pointerId === lt.pid && !lt.moved && !fired) || (f && e.pointerId === f.pid && !f.moved && !fired))) this.host.notice?.("合租叠起来的这一行只能看：点左边的名字 = 拆开来写");
+      if (!this.touches.size) this.roGesture = false;
       if (pr && pr.pid === e.pointerId) { this.press = null; clearTimeout(pr.timer); }
       if (lt && e.pointerId === lt.pid) { this.lockTap = null; if (!lt.moved && !fired) this.tap(lt.x, lt.y, false, e.pointerId, true); return; }
       if (f && e.pointerId === f.pid) { this.finger = null; if (!f.moved && !fired) this.tap(f.x, f.y, false, null, true); return; }
