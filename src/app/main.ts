@@ -141,6 +141,13 @@ const docName = () => { const t = fileSafe(st.song.title ?? ""); return doc.name
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const bar = $("bar"), scoreEl = $("score"), padEl = $("padPanel");
+// 提示（toast）放在谱那一块的底边居中（v0.10.23；user「待会：info error的弹窗和控制条也撞车」：原来顶栏下面横着居中，长的报错压住左上的挂签 / 混音台的顶条）：
+//   竖屏 = 键盘上面（不盖键）、横屏 = 谱那一块的下边；谱被盖着（歌库）= 照库的默认（屏幕底下居中）。开着对话框时库自己挪到顶上（docked-top），不管
+{ const de = document.documentElement;
+  const placeNotices = () => { const r = scoreEl.getBoundingClientRect(); if (r.height < 80) { de.style.removeProperty("--notice-bottom"); de.style.removeProperty("--notice-x"); return; }
+    de.style.setProperty("--notice-bottom", `${Math.round(Math.max(12, innerHeight - r.bottom + 60))}px`); de.style.setProperty("--notice-x", `${Math.round(r.left + r.width / 2)}px`); };
+  if (typeof ResizeObserver === "function") new ResizeObserver(placeNotices).observe(scoreEl);
+  addEventListener("resize", placeNotices); placeNotices(); }
 /** 参考窗（v0.8，2026-10-08 深夜 Opus 5.5；src/app/reference-host.ts 是唯一认识库的地方）：截图 / 文字放在旁边对着打谱。
  *  卡片进文件（加 / 删 / 挪 = 标脏，不进撤销）；窗的位置 = 视图态（desk.ref）。底边地板 = 竖屏时 pad 那一块（窗的把手不躲到 pad 底下）。 */
 const refHost = createReferenceHost({
@@ -802,7 +809,7 @@ function pushChannels(raw = mixBypass): void {
   // 插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）在这里换成录音房认的数（src/ui/plugins.ts resolveChain；v0.10.8）
   const bpm = songBpm(), ctx = (lowestMidi: number | null) => ({ lowestMidi, bpm }), fx = <T,>(x: T[]): T[] => (raw ? [] : x);
   for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: false, solo: false, chain: fx(resolveChain(t?.chain ?? [], ctx(lowestMidiOf(p.id)))), sends: fx(t?.sends ?? []), to: t?.to ?? "master" }); }
-  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: fx(resolveChain(b.chain, ctx(null))), to: b.to, sends: fx(b.sends) })));   // 总线也能出到 / 发给别的总线（v0.10.9）
+  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: b.bypass ? [] : fx(resolveChain(b.chain, ctx(null))), to: b.to, sends: fx(b.sends) })));   // 混音轨旁通 = 插件全跳过，推子 / 发送照旧   // 总线也能出到 / 发给别的总线（v0.10.9）
   const m = activeMaster(doc.extras); engine.master({ ...m, chain: fx(resolveChain(m.chain, ctx(null))) });
 }
 /** 焦点在能打字的框里（文字输入 / 多行）：空格归它。推子（range）、下拉、按钮不算。 */
@@ -1767,7 +1774,8 @@ const studio = new Studio($("stage"), {
   tabChanged: () => syncSpectrum(),
   keyTracks: (track) => { if (!st.song.parts.some((p) => p.id === track)) return []; const labels = partLabels(st.song, doc.extras); return st.song.parts.flatMap((p, k) => (p.id === track ? [] : [{ id: p.id, name: labels[k] }])); },
   // 路由轨（v0.10.9；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨。比如我可以放两个路由轨然后放混响」「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
-  buses: () => studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, name: b.name, gainDb: b.gainDb, pan: b.pan })),
+  buses: () => studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, name: b.name, gainDb: b.gainDb, pan: b.pan, bypass: b.bypass })),
+  setBusBypass: (id, on) => updateExtras(withTrack(doc.extras, id, { bypass: on }), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} ${on ? "旁通" : "取消旁通"}` }),
   addBus: () => { const id = newBusId(doc.extras), n = studioTracks(doc.extras).filter((t) => t.kind === "bus").length + 1, name = `混音轨 ${n}`; updateExtras(withTrack(doc.extras, id, { kind: "bus", name }), { kind: "studio", label: `加${name}` }); return id; },
   removeBus: (id) => { const name = studioTrack(doc.extras, id)?.name ?? id; updateExtras(withoutBus(doc.extras, id), { kind: "studio", label: `删${name}` }); },
   renameBus: (id, name) => updateExtras(withTrack(doc.extras, id, { name }), { kind: "studio", label: `改名「${name}」` }),

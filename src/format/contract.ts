@@ -92,7 +92,9 @@ export interface StudioV1 {
 }
 /** 录音房 v2（2026-10-10 刀 4；user「轨还是和乐手是两个概念」）：轨是通用的条——乐手的通道（kind mic，谱上声部 `part.mic` 指着它）、总线（kind bus，没有乐手；混响 / 延迟这类「留在屋里的」）、
  *  以后的素材轨。每条：增益 / 声像 / 效果链 / 发送（推子之后发到哪条总线多少）/ 去哪（"master" 或总线 id）。总轨：增益 / 限幅 / 链。老文件（v1）读进来 = 每个麦克风一条 mic 轨、空链、直通总轨。 */
-export interface StudioTrackV2 { id: string; kind: "mic" | "bus"; name: string; gainDb: number; pan: number; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string }
+export interface StudioTrackV2 { id: string; kind: "mic" | "bus"; name: string; gainDb: number; pan: number; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string;
+  /** 2026-10-10 加（可选，不升版本；Opus 5.5）：混音轨整条旁通——链上的插件全跳过，推子 / 声像 / 出到 / 发送照旧；只写 true（user「混音轨和每个插件都可以toggle bypass」）。 */
+  bypass?: true }
 export interface StudioV2 {
   version: 2;
   tracks: StudioTrackV2[];

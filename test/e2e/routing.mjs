@@ -40,6 +40,14 @@ await tab("chain"); await p.click(`${strip(b2)} [data-v="fxadd"]`); await p.clic
 await p.$eval('.fx-panel input[data-c="dB"]', (el) => { el.value = "-40"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(150);
 const pk1 = await peak();
 check(pk1 < pk0 * 0.9, "A → 混音轨 1 → 混音轨 2（增益 −40）→ 总轨：离线混音里 A 那一份几乎没了（B 照旧）", `${pk0.toFixed(3)} → ${pk1.toFixed(3)}`);
+// 混音轨整条旁通（v0.10.23；user「混音轨和每个插件都可以toggle bypass」）：混音轨 2 旁通 = 它的增益 −40 不响了、A 回来；参数留着；再点回来
+await tab("basic"); await p.click(`${strip(b2)} [data-v="busbypass"]`); await p.waitForTimeout(150);
+{ const pk2 = await peak(), t2 = await tr(b2);
+  check(t2.bypass === true && t2.chain.length === 1 && Math.abs(pk2 / pk0 - 1) < 0.05, "混音轨 2 旁通 = 链上的 −40 跳过（A 回来）、链留着、存成 bypass: true", `${pk0.toFixed(3)} → ${pk2.toFixed(3)} ${JSON.stringify({ bypass: t2.bypass, chain: t2.chain.length })}`);
+  await p.click(`${strip(b2)} [data-v="busbypass"]`); await p.waitForTimeout(150);
+  const raw = await p.evaluate((id) => window.__moonsinger.extras().studio.tracks.find((t) => t.id === id), b2);
+  check(!("bypass" in raw) && Math.abs((await peak()) / pk1 - 1) < 0.05, "再点 = 回来；文件里不留 bypass 字段"); }
+await tab("chain");
 // 发送：B 发给 混音轨 1，−12 dB 起步，拖到 −6
 await tab("send");
 await p.selectOption(`${strip(ids[1].id)} select[data-sendadd]`, b1); await p.waitForTimeout(150);
@@ -96,6 +104,27 @@ await p.click(`${strip(b1)} [data-v="delbus"]`); await p.waitForTimeout(150);
 check((await tr(ids[0].mic)).to === "master" && (await tr(ids[1].mic)).sends.length === 0 && !(await tr(b1)), "删掉混音轨 1 = A 改回出到总轨、B 不再发给它", JSON.stringify(await tracks()));
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 check(!!(await tr(b1)) && (await tr(ids[0].mic)).to === b1, "撤销 = 混音轨和连线都回来");
+// 插件参数拷贝（v0.10.23；user「效果器预设可以拷贝，类似Unity的component，尽量严格一点避免混淆。不读快捷键」）：A 的 EQ 拷参数 → B 的 EQ 粘参数 = 一样；B 的压缩上没有「粘参数」（种类不同）；「＋」里粘成新的一格
+await tab("chain");
+if (await p.$eval(".fx-panel", (e) => e.hidden) === false) await p.click('.fx-panel [data-v="fxclose"]').catch(() => {});
+await p.click(`${strip(ids[0].id)} .fx-chip[data-fx="eq"]`); await p.waitForTimeout(120);
+await p.click('.fx-panel [data-v="fxmode"][data-mode="full"]'); await p.waitForTimeout(100);
+await p.$eval('.fx-panel input[data-p="midDb"]', (el) => { el.value = "-5"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(120);
+await p.click('.fx-panel [data-v="fxcopy"]'); await p.waitForTimeout(80);
+await p.click(`${strip(ids[1].id)} .fx-chip[data-fx="eq"]`); await p.waitForTimeout(120);
+check(!!(await p.$('.fx-panel [data-v="fxpaste"]')), "B 的 EQ 面板上有「粘参数」");
+await p.click('.fx-panel [data-v="fxpaste"]'); await p.waitForTimeout(150);
+{ const ea = (await tr(ids[0].mic)).chain.find((f) => f.id === "eq"), eb = (await tr(ids[1].mic)).chain.find((f) => f.id === "eq");
+  check(!!eb && JSON.stringify(eb.params) === JSON.stringify(ea.params) && eb.params.midDb === -5, "粘参数 = B 的 EQ 和 A 的一模一样", JSON.stringify(eb?.params)); }
+{ const comp = (await tr(ids[0].mic)).chain.find((f) => f.kind === "comp");
+  check(!!comp, "A 上有一台压缩（前面插的）");
+  await p.click(`${strip(ids[0].id)} .fx-chip[data-fx="${comp.id}"]`); await p.waitForTimeout(120);
+  check(!!(await p.$('.fx-panel [data-v="fxcopy"]')) && !(await p.$('.fx-panel [data-v="fxpaste"]')), "拷的是 EQ：压缩的面板上没有「粘参数」（种类不同不让粘）"); }
+const nB = (await tr(ids[1].mic)).chain.length;
+await p.click(`${strip(ids[1].id)} [data-v="fxadd"]`); await p.waitForTimeout(100);
+await p.click(`${strip(ids[1].id)} [data-v="fxpastenew"]`); await p.waitForTimeout(150);
+{ const ch = (await tr(ids[1].mic)).chain;
+  check(ch.length === nB + 1 && ch.at(-1).kind === "eq" && ch.at(-1).params.midDb === -5, "「＋」里粘成新的一格 = 链尾多一格一样的 EQ", JSON.stringify(ch.map((f) => f.id))); }
 // 差设备（v0.10.17；user「以及注意一下差设备上的性能影响」）：滚出去看不见的卡片不算 FFT、不画；滚回来才画
 await p.setViewportSize({ width: 1100, height: 420 }); await tab("eq"); await p.waitForTimeout(200);
 await p.$eval(".studio-strips", (e) => { e.scrollTop = 0; }); await p.evaluate(() => { const s = document.querySelector(".studio"); if (s) s.scrollTop = 0; });

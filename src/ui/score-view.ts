@@ -20,9 +20,9 @@
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL, pageGeoOf } from "../score/paper.ts";
-import { type EditorState, type NoteTok, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed } from "../score/song.ts";
+import { type EditorState, type NoteTok, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
-import { fromDiatonic, diatonicIndex, type Pitch } from "../score/pitch.ts";
+import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
@@ -290,12 +290,15 @@ export class ScoreView {
     const NS = "http://www.w3.org/2000/svg", g = (this.ghostEl ??= document.createElementNS(NS, "svg"));
     g.setAttribute("class", "ghost-preview"); g.setAttribute("width", String(L.width)); g.setAttribute("height", String(L.height));
     const fs = 4 * sp, nh = 1.18 * sp, ext = 0.4 * sp, parts: string[] = [];
-    for (const p of this.ghostP) {
+    // 升降号和真写下去的那个音一样（v0.10.23）：拼法按那里的调号（同 writePitch 的 keySpell），画不画按调号 + 这一小节前面的临时记号（shownAccAt，和排版同一个规矩）
+    const toks = tr(st), at = one >= 0 ? one : st.caret, fifths = keyAt(toks, at);
+    for (const p0 of this.ghostP) {
+      const p = keySpell(p0, fifths), shown = shownAccAt(toks, at, p);
       const d = diatonicIndex(p) + shift, y = L.yOf(row, d);
       for (let k = 28; k >= d; k -= 2) parts.push(`<line x1="${x - ext}" x2="${x + nh + ext}" y1="${L.yOf(row, k)}" y2="${L.yOf(row, k)}" stroke-width="${0.16 * sp}"/>`);
       for (let k = 40; k <= d; k += 2) parts.push(`<line x1="${x - ext}" x2="${x + nh + ext}" y1="${L.yOf(row, k)}" y2="${L.yOf(row, k)}" stroke-width="${0.16 * sp}"/>`);
       parts.push(`<text x="${x}" y="${y}" font-family="Bravura" font-size="${fs}">\u{E0A4}</text>`);
-      const acc = p.alter === 1 ? "\u{E262}" : p.alter === -1 ? "\u{E260}" : p.alter === 2 ? "\u{E263}" : p.alter === -2 ? "\u{E264}" : "";
+      const acc = shown === null ? "" : shown === 1 ? "\u{E262}" : shown === -1 ? "\u{E260}" : shown === 2 ? "\u{E263}" : shown === -2 ? "\u{E264}" : "\u{E261}";   // 0 = 还原号
       if (acc) parts.push(`<text x="${x - 1.2 * sp}" y="${y}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
     }
     g.innerHTML = parts.join("");
@@ -455,7 +458,7 @@ export class ScoreView {
       for (let i = 0; i < toks.length; i++) { const k = toks[i]; if (!isTimed(k)) continue; if (t + k.dur > tick) { at = i; start = t; break; } t += k.dur; }
       if (at < 0) continue;
       const mine = (h: { index: number; system: number }) => h.index === at && L.systems[h.system]?.paper === paperId && L.systems[h.system]?.part === r.part;
-      const hits = [...L.notes.filter(mine), ...L.rests.filter(mine)];
+      const hits = [...L.notes.filter(mine), ...L.chordHeads.filter(mine), ...L.rests.filter(mine)];   // 和弦 = 每个符头都亮（v0.10.23）
       if (hits.length) out.push({ part: r.part, index: at, start, note: toks[at].kind === "note", hits });
     }
     return out;

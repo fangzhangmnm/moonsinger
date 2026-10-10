@@ -16,7 +16,7 @@
 //   · 速度 = 第一个声部的状态机（其余声部的速度记号只是跟着抄、不出声不画）。
 
 import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
-import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell } from "./pitch.ts";
+import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell, keyAlter } from "./pitch.ts";
 import { expandPaper } from "./repeats.ts";   // 谱内反复（循环 import：repeats.ts 只在函数里用 song.ts 的东西，加载顺序无所谓）
 
 /** 一个四分音符的 tick 数。 */
@@ -1169,6 +1169,26 @@ function barPosAtEnd(tokens: Token[]): { inBar: number; len: number } {
     else if (isTimed(t)) { inBar += t.dur; while (inBar >= len - 1e-6) inBar -= len; if (inBar < 1e-6) inBar = 0; }
   }
   return { inBar, len };
+}
+/** 在第 i 个 token 前面写音高 p，谱上要画的临时记号（v0.10.23「弹」的鬼音符用；user「鬼音符应该按照对应的谱号和临时升降号来显示升降号。和对应的真音符要一致」）：
+ *  和排版（engrave.ts unitsOf）同一个规矩——按调号 + 这一小节里前面同一个音级出现过的临时记号；每小节（自动 / 人插的小节线、换拍号、换调号）重新算；
+ *  连音线连过来的、跨过小节线那后半截不算。返回要画的 alter（0 = 还原号）；不用画 = null。 */
+export function shownAccAt(tokens: Token[], i: number, p: Pitch): number | null {
+  let len = (DEFAULT_TIME.beats * WHOLE) / DEFAULT_TIME.beatType, inBar = 0, fifths = 0, acc = new Map<string, number>();
+  for (let k = 0; k < Math.min(i, tokens.length); k++) {
+    const t = tokens[k];
+    if (t.kind === "key") { fifths = t.fifths; acc = new Map(); continue; }
+    if (t.kind === "time") { len = (t.beats * WHOLE) / t.beatType; inBar = 0; acc = new Map(); continue; }
+    if (t.kind === "bar") { inBar = 0; acc = new Map(); continue; }
+    if (!isTimed(t)) continue;
+    if (inBar >= len - 1e-6) { inBar = 0; acc = new Map(); }   // 上一个音正好填满这一小节
+    if (t.kind === "note" && !t.tie) for (const q of allPitches(t)) { const key = `${q.step}${q.octave}`, cur = acc.has(key) ? acc.get(key)! : keyAlter(q.step, fifths); if (q.alter !== cur) acc.set(key, q.alter); }
+    inBar += t.dur;
+    if (inBar > len + 1e-6) { while (inBar > len + 1e-6) inBar -= len; acc = new Map(); }   // 跨过了自动小节线：新的一小节从头算
+  }
+  if (inBar >= len - 1e-6) acc = new Map();
+  const key = `${p.step}${p.octave}`, cur = acc.has(key) ? acc.get(key)! : keyAlter(p.step, fifths);
+  return p.alter === cur ? null : p.alter;
 }
 /** 写之前把 lead 落成休止：先补满尾巴所在的小节，再一小节一个（整小节休止），最后剩的一截。光标在新休止后面。 */
 function materializeLead(st: EditorState): EditorState {

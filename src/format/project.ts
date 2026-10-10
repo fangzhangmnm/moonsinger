@@ -195,11 +195,11 @@ export function withRoleConcept(extras: Extras, role: string, c: { name: string;
 export function newRoleId(extras: Extras, song: Song): string { return nextKey([...Object.keys(extras.lounge), ...song.parts.map((p) => p.role)], "r"); }
 /** 新声部要的麦克风 id。 */
 // ── 录音房 v2：轨（mic / bus）+ 总轨（契约 StudioV2；2026-10-10 刀 4）──────────────────────────────────────────────
-export type StudioTrack = { id: string; kind: "mic" | "bus"; name: string; gainDb: number; pan: number; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string };
+export type StudioTrack = { id: string; kind: "mic" | "bus"; name: string; gainDb: number; pan: number; chain: FxV2[]; sends: { to: string; gainDb: number }[]; to: string; bypass: boolean };
 const emptyStudio = (): Json => ({ version: FORMAT.studio, tracks: [], master: { gainDb: 0, limiter: true, chain: [] } });
 const micTrack = (id: string, name: string): Json => ({ id, kind: "mic", name, gainDb: 0, pan: 0, chain: [], sends: [], to: "master" });
 const normTrack = (t: Json): StudioTrack => ({ id: String(t.id), kind: t.kind === "bus" ? "bus" : "mic", name: String(t.name ?? ""), gainDb: Number(t.gainDb ?? 0) || 0, pan: Math.max(-1, Math.min(1, Number(t.pan ?? 0) || 0)),
-  chain: Array.isArray(t.chain) ? (t.chain as FxV2[]) : [], sends: Array.isArray(t.sends) ? (t.sends as { to: string; gainDb: number }[]) : [], to: typeof t.to === "string" ? t.to : "master" });
+  chain: Array.isArray(t.chain) ? (t.chain as FxV2[]) : [], sends: Array.isArray(t.sends) ? (t.sends as { to: string; gainDb: number }[]) : [], to: typeof t.to === "string" ? t.to : "master", bypass: t.bypass === true });
 /** 录音房里的轨（原样读出；没有录音房 = 空）。 */
 export function studioTracks(extras: Extras): StudioTrack[] { return ((extras.studio?.tracks as Json[] | undefined) ?? []).map(normTrack); }
 export function studioTrack(extras: Extras, id: string): StudioTrack | null { const t = ((extras.studio?.tracks as Json[] | undefined) ?? []).find((x) => x.id === id); return t ? normTrack(t) : null; }
@@ -210,6 +210,7 @@ export function withTrack(extras: Extras, id: string, patch: Partial<Omit<Studio
   let t = tracks.find((x) => x.id === id);
   if (!t) { t = patch.kind === "bus" ? { ...micTrack(id, patch.name ?? "总线"), kind: "bus" } : micTrack(id, patch.name ?? `麦克风 ${tracks.filter((x) => x.kind === "mic").length + 1}`); tracks.push(t); }
   const { kind: _k, ...rest } = patch; Object.assign(t, structuredClone(rest));
+  if (t.bypass !== true) delete t.bypass;   // 旁通只写 true（没开 = 不写这个字段）
   studio.tracks = tracks;
   return { ...extras, studio };
 }

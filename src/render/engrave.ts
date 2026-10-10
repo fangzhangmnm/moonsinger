@@ -130,6 +130,8 @@ export interface TitleHit { x: number; y: number; w: number; h: number; baseline
 export interface Box { x: number; y: number; w: number; h: number }
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
+  /** 和弦里主音以外的那几个符头（播放时一起亮；不进 notes——点 / 拖还是按整个音；v0.10.23，user「音符高亮忘了做和弦的其他音的高亮」）。 */
+  chordHeads: { index: number; system: number; x: number; y: number; w: number }[];
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; rests: RestHit[]; title: TitleHit; clefs: ClefHit[];
   arrangement: TitleHit | null;                 // 编排那一行（只在「全部」视图里有；点了就地改）
   credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
@@ -152,7 +154,7 @@ export interface Layout {
 
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
 const SQUEEZE = 0.15;   // 一行最多压紧多少（音符总宽的比例）
-const MARGIN = 1.2, BAR_W = 1.6, TITLE_H = 4.6;   // TITLE_H = 纸面最上面歌名那一条
+const MARGIN = 1.2, BAR_W = 1.6, TITLE_H = 5.4;   // TITLE_H = 纸面最上面歌名那一条（v0.10.23：歌名放大了，这一条跟着高）
 const PAPER_H = 3.4, PAPER_GAP = 1.6, STUB_H = 2.4;
 /** 纸上的小控件（不印）：在自己那一条里尽量大（2026-10-10 user「纸张上的小控件既然打印的时候不显示。在不影响点击和排版的时候为什么不做大一点，好点」）——
  *  高 = 曲段名那一条（3.4）减上下各 0.2；字放大；那一条本身不变高（排版 / 分页 / PDF 都不动）。 */
@@ -383,7 +385,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   };
 
   // 纸面最上面：歌名 + 作者栏 + 纸的小钮
-  const titleSize = P(1.9), titleBase = TOP + P(TITLE_H * 0.62);
+  // 歌名 2.8 个谱线间距（原来 1.9 ≈ 曲段名 1.6，看不出谁大；出版总谱的歌名比谱上别的字大一大截；user「歌曲标题字体大小不合理」）
+  const titleSize = P(2.8), titleBase = TOP + P(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
   else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "歌名", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });   // user「虚框更不舒服，换回字提示（不过简短一点）」
   let paperChip: Box | null = null, addPaper: Box | null = null, nav: Layout["nav"] = null, paperMenu: Box | null = null;
@@ -441,13 +444,14 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     }
     arrangement = { x: x0 - P(0.3), y: base - as * 1.15, w: avail + P(0.3), h: as * 1.6, baseline: base, size: as };
   }
-  // 作者栏超过两行：第一张纸往下让（每多一行让一行字高），不和五线谱撞；编排那一行靠左，会和速度记号撞 = 五线谱从它下面开始
-  const headExtra = Math.max(0, lines.length - 2) * 1.25 * 1.35;
-  let yCur = Math.max(TOP + P(TITLE_H + headExtra + 0.5), arrangement ? arrLast + P(0.8) : 0);   // px，往下排的游标
+  // 作者栏有几行：第一张纸从它下面开始（v0.10.23：原来只给第三行起让位，本段视图没有编排那一行垫着 = 两行作者就压在曲段控件上；user「词曲的输入和本段显示的控件撞车了」）；
+  //   编排那一行靠左，会和速度记号撞 = 五线谱从它下面开始
+  let yCur = Math.max(TOP + P(TITLE_H + 0.5), credits && lines.length ? credits.y + credits.h + P(0.3) : 0, arrangement ? arrLast + P(0.8) : 0);   // px，往下排的游标
   /** 分页：这一块（高 h px）在这页放不下 = 翻页（页顶上什么都还没放时不翻）。 */
   const ensure = (h: number) => { if (PG && yCur + h > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) { pageNo++; yCur = contentTop(pageNo); } };
 
   const bars: Layout["bars"] = [];
+  const chordHeads: Layout["chordHeads"] = [];
   const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
   let head: Layout["head"] = null, shortBars = 0;
@@ -932,6 +936,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         ds.forEach((dd, k) => {
           const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted; shifted = second;   // 二度：下面那个符头往右错开（连着的二度交错）
           const mute = k > 0 && !!q.p.mono;   // 单声乐器的声部：下面的音灰掉、只唱最上面（user「叠音声部换单声乐器时下方音数据结构上保留，但是变灰」）
+          if (c.j === 0 && k > 0) chordHeads.push({ index: c.index, system: row, x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), w: nhW(c) });
           prims.push({ t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: ng, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c.whisper && whisperMute ? "art-mute" : "", focused && o.span && c.index >= o.span.from && c.index < o.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c.art.includes("ghost")) {   // 幽灵音 = 符头两边一对括号（SMuFL noteheadParenthesisLeft / Right；墨迹按 canvas 量的）
             const hx = second ? x0 + nhW(c) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
@@ -1363,7 +1368,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

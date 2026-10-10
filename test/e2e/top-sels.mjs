@@ -49,6 +49,13 @@ await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(250); ch
 await p.keyboard.press("Escape"); await p.waitForTimeout(200);
 const on = () => p.evaluate(() => [...document.querySelectorAll(".mode-seg .is-on")].map((b) => b.dataset.mode).join());
 check((await on()) === "lyrics", "Esc = 回到写（上一个写的模式）", await on());
+// 提示（toast）不压控件（v0.10.23；user「info error的弹窗和控制条也撞车」）：在谱那一块的底边，不碰左上的挂签和底座边上的小条
+await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(100); await p.click('.ctx-menu [data-v="follow"]'); await p.waitForTimeout(250);
+{ const g = await p.evaluate(() => { const r = (el) => el && !el.hidden ? el.getBoundingClientRect() : null, t = r(document.querySelector(".notice-stack .toast")), v = r(document.querySelector(".view-tab")), d = r(document.querySelector(".dock-tab")), s = r(document.querySelector("#score"));
+    const hit = (a, b) => !!a && !!b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+    return { toast: !!t, view: hit(t, v), dock: hit(t, d), inScore: !!t && !!s && t.bottom <= s.bottom + 1 && t.top >= s.top }; });
+  check(g.toast && !g.view && !g.dock && g.inScore, "提示在谱那一块的底边：不压挂签、不压小条", JSON.stringify(g)); }
+await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(100); await p.click('.ctx-menu [data-v="follow"]'); await p.waitForTimeout(100);   // 自动翻开回去
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\ntop-sels: ${pass} passed, ${fail} failed`);

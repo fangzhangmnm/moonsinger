@@ -88,6 +88,8 @@ import "./plugins.test.ts";
 import "./spectrum.test.ts";
 import "./wheel.test.ts";
 import "./scopes.test.ts";
+import "./header-layout.test.ts";
+import "./ghost-acc.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

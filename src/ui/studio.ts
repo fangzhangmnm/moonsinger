@@ -41,7 +41,9 @@ export interface StudioHost {
   /** 压缩「被谁压」能选的轨（除了自己；没有 = 这条轨上的压缩器只听自己）。 */
   keyTracks(track: string): { id: string; name: string }[];
   // 路由轨（v0.10.9）：歌手轨和输出（总轨）是内置的，混音轨自己加（user「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
-  buses(): { id: string; name: string; gainDb: number; pan: number }[];
+  buses(): { id: string; name: string; gainDb: number; pan: number; bypass: boolean }[];
+  /** 混音轨整条旁通（插件全跳过，推子 / 声像 / 发送照旧；v0.10.23）。 */
+  setBusBypass(id: string, on: boolean): void;
   addBus(): string;
   removeBus(id: string): void;
   renameBus(id: string, name: string): void;
@@ -120,6 +122,15 @@ export class Studio {
   private grTarget = new Map<string, number>(); private grShown = new Map<string, number>();
   private corrShown = new Map<string, number>(); private lastText = 0;
   private full = false;
+  /** 插件参数的剪贴板（v0.10.23；user「待会：效果器预设可以拷贝，类似Unity的component，尽量严格一点避免混淆。不读快捷键」）：
+   *  拷 = 这一格的种类 + 全部参数（不拷开 / 关、不拷「被谁压」）；粘参数 = 只能粘到同一种插件上（覆盖参数，开关 / 被谁压照旧）；粘成新的一格 = 链尾加一格。这次打开里有效、没有快捷键。 */
+  private fxClip: { kind: string; params: Params; from: string } | null = null;
+  private clipBtns(tg: Target, fx: FxV2): string {
+    const c = this.fxClip, here = `${this.trackName(tg.track)} · ${pluginName(fx.kind)}`;
+    const copy = `<button class="btn" data-v="fxcopy" title="拷这一格的参数（种类 + 全部参数；不拷开关、不拷被谁压）">拷参数</button>`;
+    const paste = c && c.kind === fx.kind ? `<button class="btn" data-v="fxpaste" title="把拷的参数（来自「${esc(c.from)}」）盖到这一格上；开关 / 被谁压照旧；能撤销">粘参数</button>` : "";
+    return copy + (c && c.from === here && paste ? "" : paste);
+  }
   /** 压缩页：每条轨最近 COMP_HIST 段（~21 ms 一段）的 [进峰值, 出峰值, 压了多少 dB]。 */
   private compHist = new Map<string, [number, number, number][]>();
   /** 差设备（v0.10.17；user「以及注意一下差设备上的性能影响」）：① 只算 / 只画看得见的卡片（混音台里滚出去的不算 FFT、不画李萨如图）；
@@ -269,6 +280,7 @@ export class Studio {
     else if (v === "addbus") { this.menuOpen = false; const id = this.host.addBus(); this.render(); this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); }
     else if (v === "mute" && strip) { this.host.toggleMute(strip); this.render(); }
     else if (v === "solo" && strip) { this.host.toggleSolo(strip); this.render(); }
+    else if (v === "busbypass" && strip) { const b = this.host.buses().find((x) => x.id === strip); if (b) { this.host.setBusBypass(strip, !b.bypass); this.render(); } }
     else if ((v === "partleft" || v === "partright") && strip) { this.host.movePart(strip, v === "partleft" ? -1 : 1); this.render(); }
     else if (v === "delpart" && strip) this.host.deletePart(strip);
     else if (v === "limiter") { this.host.toggleLimiter(); this.render(); }
@@ -285,6 +297,11 @@ export class Studio {
     else if (v === "fxon" && tg) { this.patch(tg, (fx) => ({ ...fx, on: fx.on === false }), "开 / 关"); this.render(); }
     else if (v === "fxtoggle" && tg) { const id = t.closest<HTMLElement>("[data-c]")!.dataset.c!; this.simpleSet(tg, id, (this.simpleNow(tg)?.[id] ?? 0) ? 0 : 1, false); this.render(); }
     else if (v === "fxchoice" && tg) { const b = t.closest<HTMLElement>("[data-c]")!; this.simpleSet(tg, b.dataset.c!, Number(b.dataset.val), false); this.render(); }
+    else if (v === "fxcopy" && tg) { const sl = this.slotOf(tg); if (sl) { this.fxClip = { kind: sl.fx.kind, params: structuredClone(paramsOf(sl.fx)), from: `${this.trackName(tg.track)} · ${pluginName(sl.fx.kind)}` }; this.render(); } }
+    else if (v === "fxpaste" && tg && this.fxClip) { const c = this.fxClip, sl = this.slotOf(tg); if (sl && sl.fx.kind === c.kind) { this.patch(tg, (fx) => ({ ...fx, params: structuredClone(c.params) }), "粘参数"); this.render(); } }   // 严格：种类不同不粘
+    else if (v === "fxpastenew" && strip && this.fxClip) { const c = this.fxClip, ch = this.host.chain(strip), used = new Set(ch.map((f) => f.id)); let n = 1; while (used.has(`${c.kind}${n}`)) n++;
+      const fx: FxV2 = { id: `${c.kind}${n}`, kind: c.kind, params: structuredClone(c.params) };
+      this.host.setChain(strip, [...ch, fx], `${this.trackName(strip)} 粘成新的一格：${pluginName(c.kind)}`); this.addFor = null; this.open = { track: strip, fx: fx.id }; this.render(); }
     else if (v === "fxproject" && tg) { this.patch(tg, (fx) => ({ ...fx, params: projectToSimple(fx.kind, this.onBus(tg.track), paramsOf(fx), !!fx.key) }), "改成最接近的一键"); this.render(); }
     else if (v === "fxbool" && tg) { const id = t.closest<HTMLElement>("[data-p]")!.dataset.p!; this.patch(tg, (fx) => ({ ...fx, params: { ...paramsOf(fx), [id]: paramsOf(fx)[id] ? 0 : 1 } }), id); this.render(); }
   }
@@ -406,7 +423,7 @@ export class Studio {
     if (!s) return `<button class="btn cand" data-v="fxaddkind" data-kind="${kind}" title="往这条轨上插一个${pluginName(kind)}">＋ ${esc(pluginName(kind))}</button>`;
     const fx = s.fx, tg = { track, fx: fx.id };
     return `<div class="fx-inline${fx.on === false ? " off" : ""}" data-fxwrap data-track="${esc(track)}" data-fx="${esc(fx.id)}">` +
-      `<div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="关 = 这一格跳过（参数留着）">${fx.on === false ? "关着" : "开着"}</button>${all.length > 1 ? `<span class="fx-dim">还有 ${all.length - 1} 个${esc(pluginName(kind))}在「链」里</span>` : ""}${this.modeSeg(tg)}</div>` +
+      `<div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="关 = 这一格跳过（参数留着）">${fx.on === false ? "关着" : "开着"}</button>${all.length > 1 ? `<span class="fx-dim">还有 ${all.length - 1} 个${esc(pluginName(kind))}在「链」里</span>` : ""}${this.modeSeg(tg)}${this.clipBtns(tg, fx)}</div>` +
       (kind === "comp" ? row("压了", HINT.gr, `<output class="gr-val">0 dB</output>`, `<span class="gr-bar"><i></i></span>`, "strip-row gr-row") : "") +
       `<div class="fx-body">${this.controlsHtml(tg, fx, this.modeOf(tg))}</div></div>`;
   }
@@ -428,7 +445,8 @@ export class Studio {
   }
   private chipsHtml(track: string): string {
     const chips = this.slots(track).map(({ fx }) => `<button class="btn fx-chip${this.open?.track === track && this.open.fx === fx.id ? " is-on" : ""}${fx.on === false ? " off" : ""}" data-v="fx" data-fx="${esc(fx.id)}" title="${esc(pluginName(fx.kind))}：点开调${fx.id === DEFAULT_EQ_ID ? "（默认那一格：能关、能换面板，不能删）" : ""}">${esc(fxSummary(fx, this.onBus(track)))}</button>`).join("");
-    const menu = this.addFor === track ? `<div class="fx-add-menu">${PLUGIN_KINDS.map((k) => `<button class="btn cand" data-v="fxpick" data-kind="${k}">${esc(pluginName(k))}</button>`).join("")}</div>` : "";
+    const clip = this.fxClip ? `<button class="btn cand fx-paste-new" data-v="fxpastenew" title="链尾加一格：拷的那一格（来自「${esc(this.fxClip.from)}」）的种类和参数">粘成新的一格：${esc(pluginName(this.fxClip.kind))}</button>` : "";
+    const menu = this.addFor === track ? `<div class="fx-add-menu">${clip}${PLUGIN_KINDS.map((k) => `<button class="btn cand" data-v="fxpick" data-kind="${k}">${esc(pluginName(k))}</button>`).join("")}</div>` : "";
     return `<div class="strip-fx">${chips}<button class="btn fx-add${this.addFor === track ? " is-on" : ""}" data-v="fxadd" title="插一个插件（任何插件都能插在任何轨上）">＋</button>${menu}</div>`;
   }
   private renderPanel(): void {
@@ -439,6 +457,7 @@ export class Studio {
     const head = `<div class="fx-head"><span class="fx-title">${esc(this.trackName(o.track))} · ${esc(pluginName(fx.kind))}${s.virtual ? "（平）" : ""}</span>` +
       this.modeSeg(o) +
       `<button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="关 = 这一格跳过（参数留着）">${fx.on === false ? "关着" : "开着"}</button>` +
+      this.clipBtns(o, fx) +
       (isDefault ? "" : `<button class="btn cand danger" data-v="fxdel" title="从这条轨上拿掉（能撤销）">拿掉</button>`) +
       `<button class="btn" data-v="fxclose" title="收起">✕</button></div>`;
     box.innerHTML = head + `<div class="fx-body">${this.controlsHtml(o, fx, this.modeOf(o))}</div>`; box.hidden = false;
@@ -477,10 +496,10 @@ export class Studio {
     const buses = this.host.buses(), busCards = buses.map((b, k) => {
       const body = tab === "basic" ? row("增益", HINT.gain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") +
           row("声像", HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: 0, defText: "中" }), "strip-row") + RMS_ROW + CORR_ROW +
-          `<div class="strip-btns"><button class="btn" data-v="busleft" title="往前挪一位"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="往后挪一位"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）">删掉</button></div>`
+          `<div class="strip-btns"><button class="btn cand${b.bypass ? " is-on" : ""}" data-v="busbypass" title="旁通：这条混音轨上的插件全跳过（推子 / 声像 / 出到 / 发送照旧）；再点 = 回来">${b.bypass ? "旁通中" : "旁通"}</button><button class="btn" data-v="busleft" title="往前挪一位"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="往后挪一位"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）">删掉</button></div>`
         : tab === "eq" || tab === "comp" ? this.inlineHtml(b.id, tab) : tab === "send" ? this.routeHtml(b.id) : this.chipsHtml(b.id);
       const name = tab === "basic" ? `<input class="bus-name" value="${esc(b.name)}" title="名字（点了改）" />` : nameDiv(b.name);
-      return this.card(b.id, " bus", name, "混音轨", body);
+      return this.card(b.id, ` bus${b.bypass ? " bypassed" : ""}`, name, b.bypass ? "混音轨 · 旁通中（插件全跳过）" : "混音轨", body);
     }).join("");
     // 歌手：顺序跟谱上的声部（user「歌手卡片的排序还是以五线谱为准」）
     const strips = this.host.strips(), singers = strips.map((s, k) => {

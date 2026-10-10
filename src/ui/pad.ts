@@ -231,6 +231,7 @@ export class Pad {
         `<button class="btn wk" data-cmd="extend" title="拉长一份（${hint("extend")}）"><span>—</span><small>拉长</small></button>` +
         `<button class="btn" data-cmd="backspace" title="退格（${hint("backspace")}）"><svg class="ico"><use href="#backspace"/></svg></button></div>` +
         `<div class="pad-grid"></div>`;
+      { const g = this.el.querySelector<HTMLElement>(".pad-grid")!; g.addEventListener("wheel", (e) => this.gridWheel(g, e), { passive: false }); }
       const w = this.el.querySelector<HTMLElement>(".writes")!;
       this.on(w, "[data-caret]", (b) => this.host.onCommand({ k: "caret", d: Number(b.dataset.caret) }));
       this.on(w, "[data-cmd]:not([data-cmd=backspace])", (b) => this.host.onCommand({ k: b.dataset.cmd } as Command));
@@ -626,6 +627,18 @@ export class Pad {
     const v = this.knobList(knob), n = v.items.length;
     const i = v.loop ? (((v.index + steps) % n) + n) % n : Math.max(0, Math.min(n - 1, v.index + steps));
     if (i !== v.index) v.set(i);
+  }
+  /** 滚轮在键上（v0.10.23；user「待会：鼠标滚轮可以滚动音符键盘以及其他键盘的row」）：音键 = 和音域旋钮一样，一格挪一排；
+   *  符号层 = 一格滚一排格子（格子多了本来就在里面滚，原来按像素滚）。横着划不管。 */
+  private gridWheel(g: HTMLElement, e: WheelEvent): void {
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    if (this.symbols !== "off") {
+      e.preventDefault();
+      const r = wheelSteps(e, this.wheelAcc.get("sym") ?? 0); this.wheelAcc.set("sym", r.acc); if (!r.steps) return;
+      const cell = g.querySelector<HTMLElement>("[data-sym]"), rowH = (cell?.offsetHeight ?? 46) + (parseFloat(getComputedStyle(g).rowGap) || 6);
+      g.scrollBy({ top: r.steps * rowH, behavior: "smooth" }); return;
+    }
+    const knob = this.el.querySelector<HTMLElement>('[data-knob="range"]'); if (knob) this.knobWheel(knob, e);
   }
   private knobDown(b: HTMLElement, e: PointerEvent): void {
     const knob = b.dataset.knob!;

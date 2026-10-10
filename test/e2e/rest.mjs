@@ -46,9 +46,11 @@ if (await p.$eval(".pad-panel", (e) => e.hidden)) { await p.click("#padTab"); aw
     check((await st()).toks !== before && /r\d+/.test((await st()).toks), "鼠标：横着拖休止 = 改时值", `${before} → ${(await st()).toks}`);
     await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
     // 框选从第一个音框到休止
-    const heads = await p.$$eval("#score text.note", (es) => es.map((e) => { const q = e.getBoundingClientRect(); return { x: q.x, y: q.y }; }));
+    // 起点 = 第一个谱上的音的左上方、五线谱上面一点（v0.10.23：原来取第一个 text.note = 速度记号里的 ♩，歌名那一条一加高，「上面 30px」就落进歌名的点击区、点成改歌名了）
+    const s0 = await p.evaluate(() => { const L = window.__moonsinger.layout(), sh = document.querySelector("#score .sheet").getBoundingClientRect(), z = sh.width / L.width, n = L.notes[0], sys = L.systems[n.system];
+      return { x: sh.left + (n.x - 10) * z, y: sh.top + (sys.staffTop - 15) * z }; });
     r = await rest();
-    await p.mouse.move(heads[0].x - 10, heads[0].y - 30); await p.mouse.down(); await p.mouse.move(r.x + 12, r.y + 40, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+    await p.mouse.move(s0.x, s0.y); await p.mouse.down(); await p.mouse.move(r.x + 12, r.y + 40, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
     const s2 = await st();
     check(!!s2.sel && s2.sel.to === restIdx + 1, "鼠标：框选框得住休止", JSON.stringify(s2.sel));
     // 选中休止删掉（先收掉框选：长按已经选中的 = 开选区菜单，是设计）

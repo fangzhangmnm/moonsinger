@@ -70,6 +70,14 @@ const knob = await p.locator('[data-knob="unit"]').boundingBox();
 await p.mouse.move(knob.x + knob.width / 2, knob.y + knob.height / 2); await p.mouse.wheel(0, 120); await p.waitForTimeout(150);
 const unit1 = await p.evaluate(() => window.__moonsinger.state().input.unit);
 check(unit1 !== unit0, "滚轮拨「长短」旋钮", `${unit0} → ${unit1}`);
+// 滚轮在音键上 = 挪一排（和音域旋钮一样；v0.10.23，user「鼠标滚轮可以滚动音符键盘以及其他键盘的row」）
+{ const lab = () => p.$$eval(".pad-key[data-k] .abs", (es) => es.map((e) => e.textContent).join(","));
+  const r0 = await lab(), g = await p.locator(".pad-grid").boundingBox();
+  await p.mouse.move(g.x + g.width / 2, g.y + g.height / 2); await p.mouse.wheel(0, 100); await p.waitForTimeout(150);
+  const r1 = await lab(); await p.mouse.wheel(0, -100); await p.waitForTimeout(150); const r2 = await lab();
+  const rows0 = r0.split(","), rows1 = r1.split(","), cols = await p.evaluate(() => getComputedStyle(document.querySelector(".pad-panel")).getPropertyValue("--cols").trim() || "4");
+  const shifted = rows1.slice(Number(cols)).join(",") === rows0.slice(0, -Number(cols)).join(",") || rows1.slice(0, -Number(cols)).join(",") === rows0.slice(Number(cols)).join(",");
+  check(r1 !== r0 && shifted && r2 === r0, "滚轮在音键上一格 = 整排挪一排，滚回来 = 回原样", `${r0.slice(0, 40)} → ${r1.slice(0, 40)}`); }
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 await b.close();
 console.log(`\nmodes: ${pass} passed, ${fail} failed`);
