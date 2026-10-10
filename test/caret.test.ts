@@ -41,15 +41,19 @@ describe("写音模式 ⌫ = 留休止（v0.10.7，user 选「留休止」）；
     st = backspace(st); eq(show(st), "p n f rest n");
     st = backspace(st); eq(show(st), "p rest f rest n", "A 也变休止；记号都留着（时值没变，没有湮灭）");
   });
-  it("光标前是休止 = ⌫ 删掉它、后面的合拢（v0.10.17，user「bug: backspace cannot delete 休止符 token」）", () => {
-    const st = backspace(stOf([note(), rest(), note()], 3 + 2)); eq(show(st), "n n"); eq(st.caret, 3 + 1, "光标在 A 后");
+  // v0.10.19（user「backspace: remove the note or the mute. perhaps for mute backspace removes it by step duration of the keyboard. or the minimal mute left?」）：
+  //   休止 ⌫ = 按长短旋钮那一档（默认八分）一步一步删、后面合拢；剩的不到一步 = 整个删
+  const durs = (st: EditorState) => tr(st).slice(3).filter((t) => t.kind === "note" || t.kind === "rest").map((t) => `${t.kind[0]}${(t as { dur: number }).dur / (TPQ / 2)}`).join(" ");
+  it("光标前是四分休止：⌫ 一下 = 短一个八分（后面合拢），再 ⌫ = 删掉", () => {
+    let st = backspace(stOf([note(), rest(), note()], 3 + 2)); eq(durs(st), "n2 r1 n2"); eq(st.caret, 3 + 2, "光标还在休止后面");
+    st = backspace(st); eq(durs(st), "n2 n2"); eq(st.caret, 3 + 1, "删完 = 光标在 A 后");
   });
-  it("音 ⌫ = 休止（光标退到它前面）；→ 再 ⌫ = 把这个休止也删了", () => {
+  it("音 ⌫ = 一样长的休止（光标退到它前面，同 v0.10.7）；→ 再 ⌫ 两下 = 这段休止删光", () => {
     let st = backspace(stOf([note(), note(), note()], 3 + 2)); eq(show(st), "n rest n");
-    st = backspace(moveCaret(st, 1)); eq(show(st), "n n"); eq(st.caret, 3 + 1);
+    st = moveCaret(st, 1); st = backspace(backspace(st)); eq(show(st), "n n"); eq(st.caret, 3 + 1);
   });
   it("休止和光标之间隔着记号：记号留着、跟着后面的音", () => {
-    eq(show(backspace(stOf([note(), rest(), dyn("f"), note()], 3 + 3))), "n f n");
+    eq(show(backspace(backspace(stOf([note(), rest(), dyn("f"), note()], 3 + 3)))), "n f n");
   });
   it("Delete 删掉后面的音 = 合拢；p 和 f 之间没音了 → p 湮灭", () => {
     const st = deleteForward(stOf([dyn("p"), note(), dyn("f"), note(), note()], 3 + 1)); eq(show(st), "f n n");

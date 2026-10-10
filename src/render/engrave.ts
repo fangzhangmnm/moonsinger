@@ -907,6 +907,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const drawChunk = (c: Chunk) => {
         const cls = clsOf(c), row = RW(c);
         if (!c.note) {
+          if (c.pad) return;   // 补齐的空小节不画休止（v0.10.19；user「remove the ghost mute idea」「dont display them. once you insert a note later in a new section, all the previous mute materialized」）：位置和落点照留，在那儿写 = 前面的空落成真休止
           const g = c.base >= WHOLE ? GLYPH.restWhole : c.base >= TPQ * 2 ? GLYPH.restHalf : c.base >= TPQ ? GLYPH.restQuarter
             : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
           const ry = c.base >= WHOLE ? yOf(row, 36) : yOf(row, MID_LINE);

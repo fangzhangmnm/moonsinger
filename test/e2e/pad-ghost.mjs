@@ -14,13 +14,13 @@ await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitF
 await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML);
 await p.waitForTimeout(300);
 const p2 = () => p.evaluate(() => { const s = window.__moonsinger.state(), pid = s.song.parts[1].id; return s.song.papers[0].tracks[pid].filter((t) => t.kind === "note" || t.kind === "rest").map((t) => t.kind === "rest" ? `r${t.dur}` : `${t.pitch.step}${t.dur}`).join(" "); });
-check(await p.evaluate(() => document.querySelectorAll("#score .rest.pad-rest").length) >= 2, "B 后面空着的小节画成淡色休止");
+check(await p.evaluate(() => document.querySelectorAll("#score .rest.pad-rest").length) === 0 && await p.evaluate(() => window.__moonsinger.layout().slots.some((x) => x.lead)), "B 后面空着的小节：不画休止（v0.10.19，user「remove the ghost mute idea」），点那儿的落点还在");
 const before = await p2();
 // 点 B 的第 3 小节开头（落点 lead = 离尾巴 7 拍）
 const pt = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = L.slots.filter((x) => x.lead).sort((a, c) => c.lead - a.lead)[0], svg = document.querySelector("#score svg").getBoundingClientRect(); return { x: svg.left + L.pageX.left + s.x + 4, y: svg.top + L.yOf(s.system, 34), lead: s.lead }; });
 await p.mouse.click(pt.x, pt.y); await p.waitForTimeout(200);
 const st1 = await p.evaluate(() => { const s = window.__moonsinger.state(); return { lead: s.lead ?? 0, part: s.at.part === s.song.parts[1].id }; });
-check(st1.part && Math.abs(st1.lead - pt.lead) < 1 && (await p2()) === before, "点淡色小节 = 光标到 B、带着 lead；谱一点没变", JSON.stringify(st1));
+check(st1.part && Math.abs(st1.lead - pt.lead) < 1 && (await p2()) === before, "点空着的小节 = 光标到 B、带着 lead；谱一点没变", JSON.stringify(st1));
 await p.keyboard.press("5"); await p.waitForTimeout(200);
 const after = await p2();
 check(after.startsWith("G1680 r5040 r6720 G"), "按 5 = 先补满第 1 小节、补一整个第 2 小节，G 写在第 3 小节开头", after);

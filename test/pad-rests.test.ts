@@ -20,12 +20,12 @@ const padRests = (st: EditorState) => lay(st).prims.filter((p) => p.t === "glyph
 const E = TPQ / 2;
 const show = (st: EditorState) => tr(st).slice(headLen(tr(st))).map((t) => t.kind === "note" ? `${t.pitch!.step}/${t.dur / E}` : t.kind === "rest" ? `r/${t.dur / E}` : t.kind).join(" ");
 
-describe("补齐的淡色休止（只画不存）", () => {
-  it("短的声部后面画淡色休止，按小节切；谱里没有它们", () => {
+describe("补齐的空小节（只占位不画休止，v0.10.19；user「remove the ghost mute idea」）", () => {
+  it("短的声部后面：空小节照样占位（落点在），但不画淡色休止；谱里没有它们", () => {
     const st = two(12, 1);   // P1 三小节；P2 一拍 → 补：这一小节剩 3 拍 + 两个整小节
-    assert(padRests(st) >= 3, `淡色休止 ${padRests(st)} 个`);
+    eq(padRests(st), 0, "不画淡色休止");
     eq(show(st), "C/2", "谱没变");
-    eq(padRests(two(12, 12)), 0, "一样长 = 不补");
+    assert(lay(st).slots.some((x) => x.lead), "空小节开头的落点还在");
   });
   it("淡色休止不能点（不进 rests 命中框）；每个补齐的小节开头有一个落点（lead = 离尾巴多少 tick）", () => {
     const st = two(12, 1), L = lay(st);

@@ -439,8 +439,9 @@ export function writeRest(st: EditorState): EditorState {
   if (one >= 0) { const t = tr(st)[one]; if (t.kind !== "note") return st; const nt = tr(st).slice(); nt[one] = { kind: "rest", id: t.id, dur: t.dur }; dropTieAfter(nt, one); return next(st, nt); }   // 改这个音：变成一样长的休止
   if (st.sel) return fillSel(st, { kind: "rest" });   // 选了好几个 = 换成一样长的休止
   if (st.lead) st = materializeLead(st);
-  const dur = unitDur(st.input), id = st.nextId, o = overwriteInsert(tr(st), st.caret, { kind: "rest", id, dur });
-  return next(st, o.tokens, { caret: o.at + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur, ...(o.ate ? { ate: o.ate } : {}) }] });
+  // 光标处打休止 = 插进去、后面的往后推（不吃后面的休止；v0.10.19，user「type 0: push forward」）。写音才盖休止（「type note: insert the mute, of overflow, push forward」）
+  const dur = unitDur(st.input), id = st.nextId, nt = tr(st).slice(); nt.splice(st.caret, 0, { kind: "rest", id, dur } as Token);
+  return next(st, nt, { caret: st.caret + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur }] });
 }
 
 // ── 写音覆盖休止 / 选区输入 / 改一个音（v0.10.5，ai-docs/20261010-keyboard-selection-rules.md） ──────────────────────────────
@@ -918,12 +919,17 @@ export function backspace(st: EditorState): EditorState {
   // 光标前最近的音 / 休止 / 手动小节线（中间隔着的不占时值的记号留着）。
   // v0.10.7（user 2026-10-10 选「留休止」：光标下 ⌫ 删一个音 = 留一样长的休止，后面不挪，和写音覆盖休止对称；想合拢 = Delete）：
   //   音 → 一样长的休止、光标退到它前面（接着按 = 接着往前改；接着写 = 覆盖它）；人插的「|」照旧删掉（不占时值）。
-  //   休止 → 删掉、后面的往前合拢（v0.10.17，user「bug: backspace cannot delete 休止符 token」；原来是光标挪过它，休止用退格永远删不掉）。
+  //   休止 → 按键盘那一档（长短旋钮）一步一步删、后面的往前合拢；剩的不到一步 = 整个删掉（v0.10.19，user「backspace: remove the note or the mute.
+  //   perhaps for mute backspace removes it by step duration of the keyboard. or the minimal mute left?」；v0.10.17 是一下整个删掉，更早是光标挪过它、永远删不掉）。
   let i = st.caret - 1; while (i >= headLen(tokens) && !stopTok(tokens[i])) i--;
   if (i < headLen(tokens)) return st;
   const t = tokens[i];
   if (t.kind === "note") { const nt = tokens.slice(); nt[i] = { kind: "rest", id: t.id, dur: t.dur } as Token; dropTieAfter(nt, i); return next(leave(st), nt, { caret: i }); }
-  const nt = tokens.slice(); nt.splice(i, 1);   // 休止 / 「|」：删掉
+  if (t.kind === "rest") {
+    const step = unitDur(st.input), nt = tokens.slice();
+    if (t.dur > step + 1e-6) { nt[i] = { ...t, dur: t.dur - step }; return next(leave(st), nt, {}); }   // 短一步，光标还在它后面（接着按 = 接着删）
+  }
+  const nt = tokens.slice(); nt.splice(i, 1);   // 休止（剩的不到一步）/「|」：删掉
   return afterDelete(st, nt, { caret: st.caret - 1 });
 }
 export function deleteForward(st: EditorState): EditorState {

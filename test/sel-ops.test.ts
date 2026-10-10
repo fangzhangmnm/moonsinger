@@ -60,7 +60,7 @@ describe("写音默认覆盖休止（光标）", () => {
   it("光标和休止之间的记号留在新音前面（力度跟着这个时刻）", () => {
     eq(show(writePitch(unit(at(rests(["dyn", ["r", 2]]), H), 2), P("C"))), "dyn C4/1 r/1");
   });
-  it("休止键也一样覆盖", () => { eq(show(writeRest(unit(at(rests([["r", 2], ["D", 1]]), H), 2))), "r/1 r/1 D4/1"); });
+  it("休止键 = 插进去、后面往后推（不吃后面的休止；v0.10.19，user「type 0: push forward」）", () => { eq(show(writeRest(unit(at(rests([["r", 2], ["D", 1]]), H), 2))), "r/1 r/2 D4/1"); });
   it("⌫ 撤回刚写的 = 吃掉的休止放回去，后面不挪", () => {
     const st = backspace(writePitch(unit(at(rests([["r", 4], ["D", 1]]), H), 2), P("C")));
     eq(show(st), "r/1 r/3 D4/1"); eq(st.caret, H);

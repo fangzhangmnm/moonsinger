@@ -1,6 +1,9 @@
 # 提案：时间是绝对的——音放在格子上，休止 / 小节线都算出来（不存）
 
-> created 20261010 by Claude Opus 5.5 · as-of v0.10.18 / 2026-10-10 · **提案，等 user 拍**（没动代码）
+> created 20261010 by Claude Opus 5.5 · as-of v0.10.18 / 2026-10-10 · **被否决**（edited by Claude Opus 5.5 2026-10-10）
+>
+> **user 否决**：「Proposal: store each note at an absolute position 不同意，which beats the whole idea」「what i think is just auto mute override and rearrange. make it consistient that typing will override the mute symbols」。
+> 留着这份是为了不再提（家规：否决的设计不再 re-litigate）。照 user 的规矩做的 = v0.10.19，见 `20261010-keyboard-selection-rules.md` 文末修订。
 
 ## user 原话（2026-10-10 晚）
 

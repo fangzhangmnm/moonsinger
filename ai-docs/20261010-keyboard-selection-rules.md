@@ -57,3 +57,16 @@
 ## 修订（v0.10.17，2026-10-10，edited by Claude Opus 5.5）
 
 - 光标前是休止 ⌫：原来 = 光标挪过它（休止用退格永远删不掉）→ 现在 = 删掉、后面的往前合拢（user「bug: backspace cannot delete 休止符 token」）。音 ⌫ 照旧 = 一样长的休止、光标退到它前面。
+
+## 修订（v0.10.19，2026-10-10，edited by Claude Opus 5.5）
+
+user：「what i think is just auto mute override and rearrange. make it consistient that typing will override the mute symbols.
+type note: insert the mute, of overflow, push forward / type 0: push forward / backspace: remove the note or the mute. perhaps for mute backspace removes it by step duration of the keyboard. or the minimal mute left? …
+so the auto inserted mute are just a visual artifact. or no, dont display them. once you insert a note later in a new section, all the previous mute materialized. remove the ghost mute idea」
+
+- 打音（光标）= 先盖后面的休止，不够才往后推（同 v0.10.5，不变）。
+- 打休止（0 / 休止键，光标）= **插进去、后面往后推**（不再吃后面的休止）。
+- ⌫ 光标前是音 = 一样长的休止、光标退到它前面（同 v0.10.7，不变）。
+- ⌫ 光标前是休止 = **按长短旋钮那一档一步一步删**、后面合拢；剩的不到一步 = 整个删（v0.10.17 是一下整个删）。
+- 短的声部后面补齐的空小节：**不画休止**（淡色休止去掉），空小节照样占位、能点；在那儿写 = 前面的空落成真休止（`materializeLead`，不变）。
+- 「音存绝对位置」的推倒提案被否决（`20261010-time-grid-proposal.md`）。

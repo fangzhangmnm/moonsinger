@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.18-2026-10-10";
+var APP_VERSION = "v0.10.19-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3326,15 +3326,16 @@ function writeRest(st3) {
   if (one >= 0) {
     const t10 = tr(st3)[one];
     if (t10.kind !== "note") return st3;
-    const nt2 = tr(st3).slice();
-    nt2[one] = { kind: "rest", id: t10.id, dur: t10.dur };
-    dropTieAfter(nt2, one);
-    return next(st3, nt2);
+    const nt3 = tr(st3).slice();
+    nt3[one] = { kind: "rest", id: t10.id, dur: t10.dur };
+    dropTieAfter(nt3, one);
+    return next(st3, nt3);
   }
   if (st3.sel) return fillSel(st3, { kind: "rest" });
   if (st3.lead) st3 = materializeLead(st3);
-  const dur = unitDur(st3.input), id2 = st3.nextId, o10 = overwriteInsert(tr(st3), st3.caret, { kind: "rest", id: id2, dur });
-  return next(st3, o10.tokens, { caret: o10.at + 1, nextId: id2 + 1, log: [...st3.log, { k: "ins", id: id2, unit: dur, ...o10.ate ? { ate: o10.ate } : {} }] });
+  const dur = unitDur(st3.input), id2 = st3.nextId, nt2 = tr(st3).slice();
+  nt2.splice(st3.caret, 0, { kind: "rest", id: id2, dur });
+  return next(st3, nt2, { caret: st3.caret + 1, nextId: id2 + 1, log: [...st3.log, { k: "ins", id: id2, unit: dur }] });
 }
 function singleSel(st3) {
   if (!st3.sel) return -1;
@@ -3927,6 +3928,13 @@ function backspace(st3) {
     nt3[i10] = { kind: "rest", id: t10.id, dur: t10.dur };
     dropTieAfter(nt3, i10);
     return next(leave(st3), nt3, { caret: i10 });
+  }
+  if (t10.kind === "rest") {
+    const step = unitDur(st3.input), nt3 = tokens.slice();
+    if (t10.dur > step + 1e-6) {
+      nt3[i10] = { ...t10, dur: t10.dur - step };
+      return next(leave(st3), nt3, {});
+    }
   }
   const nt2 = tokens.slice();
   nt2.splice(i10, 1);
@@ -8083,6 +8091,7 @@ function engrave(song, o10) {
       const drawChunk = (c10) => {
         const cls = clsOf(c10), row2 = RW(c10);
         if (!c10.note) {
+          if (c10.pad) return;
           const g3 = c10.base >= WHOLE ? GLYPH.restWhole : c10.base >= TPQ * 2 ? GLYPH.restHalf : c10.base >= TPQ ? GLYPH.restQuarter : c10.base >= TPQ / 2 ? GLYPH.rest8th : c10.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
           const ry2 = c10.base >= WHOLE ? yOf(row2, 36) : yOf(row2, MID_LINE);
           prims.push({ t: "glyph", x: P2(c10.x + 0.35), y: ry2, ch: g3, cls: cls ? `rest ${cls}` : "rest" });
@@ -42633,4 +42642,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6edb90fcfc3d.mjs.map
+//# sourceMappingURL=moonsinger-a9c3310865b4.mjs.map
