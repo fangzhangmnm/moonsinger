@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.31-2026-10-10";
+var APP_VERSION = "v0.9.32-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3304,7 +3304,7 @@ function setRepeatBar(st3, repeat, times) {
   const mk2 = (b3) => {
     let r10 = repeat;
     if (repeat && b3.repeat && b3.repeat !== repeat) r10 = "both";
-    const { repeat: _r, times: _t, ...rest } = b3;
+    const { repeat: _r, times: _t, style: _st, ...rest } = b3;
     const tm2 = r10 === "end" || r10 === "both" ? times ?? b3.times : void 0;
     return { ...rest, ...r10 ? { repeat: r10 } : {}, ...tm2 && tm2 > 2 ? { times: tm2 } : {} };
   };
@@ -3316,6 +3316,20 @@ function setRepeatBar(st3, repeat, times) {
   if (!repeat) return st3;
   const id2 = st3.nextId;
   nt2.splice(at2, 0, mk2({ kind: "bar", id: id2 }));
+  return next(st3, nt2, { caret: at2 + 1, sel: null, nextId: id2 + 1, log: [] });
+}
+function setBarStyle(st3, style) {
+  const toks = tr(st3), at2 = st3.sel ? st3.sel.to : st3.caret, h2 = headLen(toks);
+  const near = toks[at2 - 1]?.kind === "bar" && at2 - 1 >= h2 ? at2 - 1 : toks[at2]?.kind === "bar" ? at2 : -1;
+  const nt2 = toks.slice();
+  if (near >= 0) {
+    const { repeat: _r, times: _t, style: _s, ...rest } = toks[near];
+    nt2[near] = { ...rest, ...style ? { style } : {} };
+    return next(st3, nt2, { sel: null });
+  }
+  if (!style) return st3;
+  const id2 = st3.nextId;
+  nt2.splice(at2, 0, { kind: "bar", id: id2, style });
   return next(st3, nt2, { caret: at2 + 1, sel: null, nextId: id2 + 1, log: [] });
 }
 function insertNav(st3, what, nums) {
@@ -3355,7 +3369,7 @@ function clearMarks(st3, which) {
 function writeBar(st3) {
   const at2 = st3.sel ? st3.sel.to : st3.caret, id2 = st3.nextId, tokens = tr(st3).slice();
   const prev = tokens[at2 - 1];
-  if (!st3.sel && at2 - 1 >= headLen(tokens) && prev?.kind === "bar" && !prev.repeat) {
+  if (!st3.sel && at2 - 1 >= headLen(tokens) && prev?.kind === "bar" && !prev.repeat && !prev.style) {
     tokens.splice(at2 - 1, 1);
     return next(st3, tokens, { caret: at2 - 1, sel: null, log: [] });
   }
@@ -6839,7 +6853,8 @@ function unitsOf(tokens, o10) {
     const rb2 = index >= 0 ? tokens[index] : null, repeat = rb2?.repeat;
     const warn = inBar !== len && measureNo > 0 && !(repeat === "start" && inBar === 0);
     if (warn) shortBars++;
-    units.push({ kind: "bar", index, w: repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto, ...repeat ? { repeat, ...rb2?.times ? { times: rb2.times } : {} } : {} });
+    const style = !repeat ? rb2?.style : void 0;
+    units.push({ kind: "bar", index, w: repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : style ? BAR_W + 0.7 : BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto, ...repeat ? { repeat, ...rb2?.times ? { times: rb2.times } : {} } : {}, ...style ? { style } : {} });
     const empty = inBar === 0;
     accState = /* @__PURE__ */ new Map();
     inBar = 0;
@@ -7662,8 +7677,10 @@ function engrave(song, o10) {
               prims.push({ t: "glyph", x: P2(u2.x + 0.4), y: yOf(rr2, BOTTOM_LINE), ch: u2.repeat === "start" ? "\uE040" : u2.repeat === "end" ? "\uE041" : "\uE042", cls: (inSel(u2.index) ? "repeat-bar sel" : "repeat-bar") + navMute(u2.index) });
               if (u2.times && u2.times > 2 && k2 === 0) prims.push({ t: "text", x: P2(u2.x + 0.4 + (u2.repeat === "both" ? 1.2 : 1.47)), y: navY(u2.system), s: `\xD7${u2.times}`, cls: "nav-mark" + navMute(u2.index), size: P2(TEMPO_EM * 1.05), anchor: "end" });
             } else if (u2.kind === "bar") {
-              const bx = P2(u2.x + 0.7);
-              prims.push({ t: "line", x1: bx, y1: yOf(rr2, TOP_LINE), x2: bx, y2: yOf(rr2, BOTTOM_LINE), w: P2(ENGRAVE.thinBar), cls: u2.auto ? "bar auto" : inSel(u2.index) ? "bar sel" : "bar" });
+              const bx = P2(u2.x + 0.7), bcls = u2.auto ? "bar auto" : inSel(u2.index) ? "bar sel" : "bar";
+              prims.push({ t: "line", x1: bx, y1: yOf(rr2, TOP_LINE), x2: bx, y2: yOf(rr2, BOTTOM_LINE), w: P2(ENGRAVE.thinBar), cls: bcls });
+              if (u2.style === "double") prims.push({ t: "line", x1: bx + P2(0.45), y1: yOf(rr2, TOP_LINE), x2: bx + P2(0.45), y2: yOf(rr2, BOTTOM_LINE), w: P2(ENGRAVE.thinBar), cls: bcls });
+              if (u2.style === "final") prims.push({ t: "line", x1: bx + P2(0.6), y1: yOf(rr2, TOP_LINE), x2: bx + P2(0.6), y2: yOf(rr2, BOTTOM_LINE), w: P2(0.5), cls: bcls });
               if (u2.warn && k2 === 0) prims.push({ t: "rect", x: bx - P2(0.3), y: yOf(rr2, TOP_LINE) - P2(1.6), w: P2(0.6), h: P2(0.6), cls: "warn" });
             } else if (u2.kind === "key") {
               const cls = inSel(u2.index) ? "keysig sel" : "keysig";
@@ -20620,7 +20637,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       continue;
     }
     if (t10.kind === "bar") {
-      close(true);
+      close(true, t10.style ? `<barline location="right"><bar-style>${t10.style === "double" ? "light-light" : "light-heavy"}</bar-style></barline>` : "");
       continue;
     }
     if (t10.kind === "nav") {
@@ -20867,6 +20884,7 @@ function readMusicXml(xml, hints) {
     const measures = kids(pe, "measure");
     measures.forEach((m2, mi) => {
       let rightRepeat = null;
+      let rightStyle = null;
       for (const c10 of kids(m2)) {
         if (c10.name === "barline") {
           const loc = c10.attrs.location ?? "right", rp2 = kid(c10, "repeat"), en2 = kid(c10, "ending");
@@ -20880,6 +20898,11 @@ function readMusicXml(xml, hints) {
             body2.push({ kind: "nav", id: 0, what: "ending", nums: nums.length ? nums : [1] });
           }
           if (loc !== "left" && rp2?.attrs.direction === "backward") rightRepeat = { times: Math.max(2, Number(rp2.attrs.times ?? "2") || 2) };
+          else if (loc !== "left") {
+            const bs = childText(c10, "bar-style");
+            if (bs === "light-light") rightStyle = "double";
+            else if (bs === "light-heavy") rightStyle = "final";
+          }
           continue;
         }
         if (c10.name === "attributes") {
@@ -21035,7 +21058,7 @@ function readMusicXml(xml, hints) {
         } else if (c10.name === "harmony") drop("\u548C\u5F26\u8BB0\u53F7");
       }
       const n10 = Number(m2.attrs.number ?? mi + 1);
-      if (rightRepeat || (manual ? manual.has(n10) : mi < measures.length - 1)) body2.push({ kind: "bar", id: 0, ...rightRepeat ? { repeat: "end", ...rightRepeat.times > 2 ? { times: rightRepeat.times } : {} } : {} });
+      if (rightRepeat || rightStyle || (manual ? manual.has(n10) : mi < measures.length - 1)) body2.push({ kind: "bar", id: 0, ...rightRepeat ? { repeat: "end", ...rightRepeat.times > 2 ? { times: rightRepeat.times } : {} } : rightStyle ? { style: rightStyle } : {} });
     });
     const tokens = [{ kind: "key", id: 0, fifths: H2.fifths }, { kind: "time", id: 0, beats: H2.beats, beatType: H2.beatType }, { kind: "tempo", id: 0, bpm: H2.bpm }, ...body2];
     keepOnlyOverrides(tokens, tokens.map((t10) => langRead.get(t10) ?? null));
@@ -24156,6 +24179,21 @@ function sustainOf(cat2, bank, program, note2) {
 function velLayersOf(cat2, bank, program, note2) {
   const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.velLayers) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.velLayers);
   return row?.velLayers && row.velLayers.count > 0 ? { count: row.velLayers.count, ranges: row.velLayers.ranges ?? [], key: row.velLayers.key } : null;
+}
+function octaveCheckOf(cat2, bank, program, note2) {
+  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.octaveCheck) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.octaveCheck);
+  return row?.octaveCheck ?? null;
+}
+function conceptOfIds(cat2, ids) {
+  if (!ids) return void 0;
+  return (ids.wikidata ? cat2.byId.get(ids.wikidata) : void 0) ?? (ids.local ? cat2.byId.get(ids.local) ?? cat2.byId.get(`x:${ids.local}`) : void 0);
+}
+function octaveDisclosure(nt2, oc2, clefLabel) {
+  if (!oc2 && !(nt2 && nt2.octave)) return null;
+  const parts = ["\u8C31\u4E0A\u5199\u7684\u5C31\u662F\u5B9E\u9645\u97F3\u9AD8\uFF08MoonSinger \u4E0D\u6309\u4E50\u5668\u79FB\u8C03\uFF09\uFF0C\u53D1\u7ED9\u97F3\u6E90\u7684\u4E5F\u662F\u8FD9\u4E2A\u97F3\u3002"];
+  if (nt2 && nt2.octave) parts.push(`\u8FD9\u4EF6\u4E50\u5668\u7684\u8C31\u4E60\u60EF\u5199${nt2.octave > 0 ? "\u4F4E" : "\u9AD8"} ${Math.abs(nt2.octave) / 12} \u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645${nt2.octave > 0 ? "\u9AD8" : "\u4F4E"}\uFF09\uFF1B\u60F3\u8981\u8C31\u9762\u597D\u8BFB\uFF0C\u7528\u8C31\u53F7\uFF08\u8FD9\u4EF6\u4E50\u5668\u6309\u5B9E\u9645\u97F3\u9AD8\u65F6\u5E38\u7528\u300C${clefLabel(nt2.concertClef)}\u300D\uFF0C\u8C31\u53F7\u300C\u81EA\u52A8\u300D\u4E5F\u4F1A\u6311\uFF09\u6216 8va \u7EBF\uFF0C\u51FA\u58F0\u4E0D\u53D8\u3002`);
+  if (oc2) parts.push(oc2.perceived === null ? `GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u5224\u4E0D\u51C6\u2014\u2014\u6BCF\u4E2A\u952E\u6700\u5F3A\u7684\u90A3\u4E2A\u5206\u97F3\u6BD4\u952E\u540D\u9AD8 ${Math.round(oc2.measured)} \u534A\u97F3\uFF0C\u542C\u8D77\u6765\u591A\u534A\u8DDF\u7740\u5B83\u3002` : oc2.perceived === 0 && Math.abs(oc2.measured) < 0.5 ? "GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u6309\u54EA\u4E2A\u952E\uFF0C\u8033\u6735\u542C\u5230\u7684\u5C31\u662F\u90A3\u4E2A\u97F3\u3002" : oc2.perceived === 0 ? `GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u6700\u5F3A\u7684\u5206\u97F3\u6BD4\u952E\u540D\u9AD8 ${Math.round(oc2.measured)} \u534A\u97F3\uFF08${oc2.measuredOctave} \u4E2A\u516B\u5EA6\uFF09\uFF0C\u4F46\u8033\u6735\u542C\u5230\u7684\u97F3\u540D\u8FD8\u662F\u952E\u540D\uFF08\u949F\u7684\u6253\u51FB\u97F3\uFF09\u2014\u2014\u542C\u7740\u89C9\u5F97\u9AD8\u4E86\u662F\u8FD9\u4E2A\u539F\u56E0\u3002` : `GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u8033\u6735\u542C\u5230\u7684\u6BD4\u952E\u540D${oc2.perceived > 0 ? "\u9AD8" : "\u4F4E"} ${Math.abs(oc2.perceived)} \u534A\u97F3\u3002`);
+  return parts.join("");
 }
 var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
 var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
@@ -34981,7 +35019,7 @@ function toJianpu(toks, fifths) {
   let f2 = fifths;
   for (const t10 of toks) {
     if (t10.kind === "bar") {
-      out.push(t10.repeat === "start" ? "|:" : t10.repeat === "end" ? `:|${t10.times && t10.times > 2 ? `x${t10.times}` : ""}` : t10.repeat === "both" ? `:|:${t10.times && t10.times > 2 ? `x${t10.times}` : ""}` : "|");
+      out.push(t10.repeat === "start" ? "|:" : t10.repeat === "end" ? `:|${t10.times && t10.times > 2 ? `x${t10.times}` : ""}` : t10.repeat === "both" ? `:|:${t10.times && t10.times > 2 ? `x${t10.times}` : ""}` : t10.style === "double" ? "||" : t10.style === "final" ? "|]" : "|");
       continue;
     }
     if (t10.kind === "nav") {
@@ -35050,6 +35088,10 @@ function fromJianpu(text2, fifths) {
   for (const w2 of words) {
     if (w2 === "|") {
       out.push({ kind: "bar", id: id2++ });
+      continue;
+    }
+    if (w2 === "||" || w2 === "|]") {
+      out.push({ kind: "bar", id: id2++, style: w2 === "||" ? "double" : "final" });
       continue;
     }
     let r10 = /^(\|:|:\|:|:\|)(?:x(\d+))?$/.exec(w2);
@@ -38037,13 +38079,14 @@ function openRepeatMenu() {
   const chip2 = (v, label, title) => `<button class="btn ctx-chip" data-v="${v}" title="${esc7(title)}">${esc7(label)}</button>`;
   ctxMenu(
     "repeat-menu",
-    `<div class="ctx-hint ctx-what">\u8C31\u5185\u53CD\u590D\uFF1A\u63D2\u5728\u5149\u6807\u5904\uFF1B\u5149\u6807\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\u3002\u653E\u7684\u65F6\u5019\u6309\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4F4D\u6B4C\u624B\u90A3\u4E00\u884C\u5C55\u5F00\uFF0C\u522B\u7684\u58F0\u90E8\u8DDF\u7740\uFF1B\u4E0D\u8DE8\u7EB8\u3002\u8DF3\u56DE\u6765\uFF08D.C. / D.S.\uFF09\u4E4B\u540E\u53CD\u590D\u4E0D\u518D\u53CD\u590D\u3002</div><div class="ctx-row">${chip2("bar:start", "|:", "\u53CD\u590D\u5F00\u59CB")}${chip2("bar:end", ":|", "\u53CD\u590D\u7ED3\u675F\uFF1A\u56DE\u5230 |:\uFF08\u6CA1\u6709 = \u8FD9\u5F20\u7EB8\u5F00\u5934\uFF09\u518D\u653E\u4E00\u904D")}${chip2("bar:both", ":|:", "\u524D\u4E00\u6BB5\u53CD\u590D\u7ED3\u675F\u3001\u540E\u4E00\u6BB5\u53CD\u590D\u5F00\u59CB")}${chip2("bar:end:3", ":| \xD73", "\u4E00\u5171\u653E\u4E09\u904D")}${chip2("bar:end:4", ":| \xD74", "\u4E00\u5171\u653E\u56DB\u904D")}${chip2("bar:plain", "|", "\u6539\u56DE\u666E\u901A\u5C0F\u8282\u7EBF")}</div><div class="ctx-row">${ENDINGS.map((n10) => chip2(`end:${n10.join(",")}`, endingLabel(n10), `\u623F\u5B50\uFF1A\u7B2C ${n10.join("\u3001")} \u904D\u8D70\u8FD9\u91CC`)).join("")}</div><div class="ctx-row">${JUMPS.slice(0, 4).map((w2) => chip2(`nav:${w2}`, NAV_LABEL[w2], NAV_HELP[w2])).join("")}</div><div class="ctx-row">${JUMPS.slice(4).map((w2) => chip2(`nav:${w2}`, NAV_LABEL[w2], NAV_HELP[w2])).join("")}</div>`,
+    `<div class="ctx-hint ctx-what">\u8C31\u5185\u53CD\u590D\uFF1A\u63D2\u5728\u5149\u6807\u5904\uFF1B\u5149\u6807\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\u3002\u653E\u7684\u65F6\u5019\u6309\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4F4D\u6B4C\u624B\u90A3\u4E00\u884C\u5C55\u5F00\uFF0C\u522B\u7684\u58F0\u90E8\u8DDF\u7740\uFF1B\u4E0D\u8DE8\u7EB8\u3002\u8DF3\u56DE\u6765\uFF08D.C. / D.S.\uFF09\u4E4B\u540E\u53CD\u590D\u4E0D\u518D\u53CD\u590D\u3002</div><div class="ctx-row">${chip2("bar:start", "|:", "\u53CD\u590D\u5F00\u59CB")}${chip2("bar:end", ":|", "\u53CD\u590D\u7ED3\u675F\uFF1A\u56DE\u5230 |:\uFF08\u6CA1\u6709 = \u8FD9\u5F20\u7EB8\u5F00\u5934\uFF09\u518D\u653E\u4E00\u904D")}${chip2("bar:both", ":|:", "\u524D\u4E00\u6BB5\u53CD\u590D\u7ED3\u675F\u3001\u540E\u4E00\u6BB5\u53CD\u590D\u5F00\u59CB")}${chip2("bar:end:3", ":| \xD73", "\u4E00\u5171\u653E\u4E09\u904D")}${chip2("bar:end:4", ":| \xD74", "\u4E00\u5171\u653E\u56DB\u904D")}${chip2("bar:plain", "|", "\u6539\u56DE\u666E\u901A\u5C0F\u8282\u7EBF")}</div><div class="ctx-row">${chip2("bs:double", "\u2016 \u6BB5\u843D\u7EBF", "\u6BB5\u843D\u7EBF\uFF08\u4E24\u6839\u7EC6\u7EBF\uFF09\uFF1A\u5206\u6BB5\u7684\u8BB0\u53F7\uFF0C\u4E0D\u662F\u4E24\u6839\u5C0F\u8282\u7EBF\uFF1B\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u6BB5\u843D\u7EBF")}${chip2("bs:final", "\u7EC8\u6B62\u7EBF", "\u7EC8\u6B62\u7EBF\uFF08\u7EC6 + \u7C97\uFF09\uFF1A\u66F2\u5B50 / \u8FD9\u4E00\u6BB5\u5230\u8FD9\u513F\u7ED3\u675F")}</div><div class="ctx-row">${ENDINGS.map((n10) => chip2(`end:${n10.join(",")}`, endingLabel(n10), `\u623F\u5B50\uFF1A\u7B2C ${n10.join("\u3001")} \u904D\u8D70\u8FD9\u91CC`)).join("")}</div><div class="ctx-row">${JUMPS.slice(0, 4).map((w2) => chip2(`nav:${w2}`, NAV_LABEL[w2], NAV_HELP[w2])).join("")}</div><div class="ctx-row">${JUMPS.slice(4).map((w2) => chip2(`nav:${w2}`, NAV_LABEL[w2], NAV_HELP[w2])).join("")}</div>`,
     { x: r10.left + r10.width / 2, y: r10.top - 4 },
     (v) => {
       if (v.startsWith("bar:")) {
         const [, k2, tm2] = v.split(":");
         update(setRepeatBar(st2, k2 === "plain" ? null : k2, tm2 ? Number(tm2) : void 0));
-      } else if (v.startsWith("end:")) update(insertNav(st2, "ending", v.slice(4).split(",").map(Number)));
+      } else if (v.startsWith("bs:")) update(setBarStyle(st2, v.slice(3)));
+      else if (v.startsWith("end:")) update(insertNav(st2, "ending", v.slice(4).split(",").map(Number)));
       else if (v.startsWith("nav:")) update(insertNav(st2, v.slice(4)));
       discloseNav();
     }
@@ -38583,7 +38626,13 @@ function drawInst() {
     "\u4FEE\u516B\u5EA6",
     `<b class="ip-val">${tr3 > 0 ? "+" : tr3 < 0 ? "\u2212" : ""}${Math.abs(tr3)} \u534A\u97F3</b><button class="btn" data-v="tr:-12" title="\u4F4E\u4E00\u4E2A\u516B\u5EA6">\u221212</button><button class="btn" data-v="tr:-1" title="\u4F4E\u534A\u97F3">\u22121</button><button class="btn" data-v="tr:1" title="\u9AD8\u534A\u97F3">+1</button><button class="btn" data-v="tr:12" title="\u9AD8\u4E00\u4E2A\u516B\u5EA6">+12</button>${tr3 ? `<button class="btn" data-v="tr:0" title="\u56DE\u5230 0">\u5F52\u96F6</button>` : ""}`,
     "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3"
-  ) : "") + (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
+  ) : "") + // 八度（v0.9.32；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：谱上写的 = 实际音高 = 发给音源的；这件乐器的记谱习惯（仓鼠 v12 notation）+ GS 这个音色的实测（octaveCheck）
+  (eng === "soundfont" ? ((g3) => {
+    const cpt = catalogNow ? conceptOfIds(catalogNow, doc.extras.lounge[role]?.concept?.ids) : void 0;
+    const oc2 = g3 && catalogNow && g3.origin.library === GS_LIBRARY_ID ? octaveCheckOf(catalogNow, g3.bank, g3.program, g3.note) : null, nt2 = cpt?.notation;
+    const text2 = octaveDisclosure(nt2, oc2, (c10) => CLEF_LABEL[c10] ?? c10);
+    return text2 ? row("\u516B\u5EA6", "", esc7(text2)) : "";
+  })(activeGm(doc.extras, role)) : "") + (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
   (eng === "tsukuyomi" ? ((sc2) => row(
     "\u5206\u6BB5\u5531",
     [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
@@ -40093,4 +40142,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-29316813cc75.mjs.map
+//# sourceMappingURL=moonsinger-60b2eb71631f.mjs.map

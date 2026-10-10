@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { clearMarks, stackDegree, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { clearMarks, stackDegree, setBarStyle, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -50,7 +50,7 @@ import { loadVowelTable } from "../engine/vowel-table.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
 import { Finder, type FinderPick } from "../ui/finder.ts";
 import { Studio } from "../ui/studio.ts";
-import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, velLayersOf, sustainOf, GS_LIBRARY_ID, type Catalog } from "../gm/catalog.ts";
+import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, velLayersOf, sustainOf, octaveCheckOf, conceptOfIds, octaveDisclosure, GS_LIBRARY_ID, type Catalog } from "../gm/catalog.ts";
 import { ICON_CREDITS } from "../gm/instruments.gen.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
@@ -2015,12 +2015,14 @@ function openRepeatMenu(): void {
   ctxMenu("repeat-menu",
     `<div class="ctx-hint ctx-what">谱内反复：插在光标处；光标挨着小节线 = 把那条改成反复的。放的时候按这张纸最上面那位歌手那一行展开，别的声部跟着；不跨纸。跳回来（D.C. / D.S.）之后反复不再反复。</div>` +
     `<div class="ctx-row">${chip("bar:start", "|:", "反复开始")}${chip("bar:end", ":|", "反复结束：回到 |:（没有 = 这张纸开头）再放一遍")}${chip("bar:both", ":|:", "前一段反复结束、后一段反复开始")}${chip("bar:end:3", ":| ×3", "一共放三遍")}${chip("bar:end:4", ":| ×4", "一共放四遍")}${chip("bar:plain", "|", "改回普通小节线")}</div>` +
+    `<div class="ctx-row">${chip("bs:double", "‖ 段落线", "段落线（两根细线）：分段的记号，不是两根小节线；挨着小节线 = 把那条改成段落线")}${chip("bs:final", "终止线", "终止线（细 + 粗）：曲子 / 这一段到这儿结束")}</div>` +
     `<div class="ctx-row">${ENDINGS.map((n) => chip(`end:${n.join(",")}`, endingLabel(n), `房子：第 ${n.join("、")} 遍走这里`)).join("")}</div>` +
     `<div class="ctx-row">${JUMPS.slice(0, 4).map((w) => chip(`nav:${w}`, NAV_LABEL[w], NAV_HELP[w])).join("")}</div>` +
     `<div class="ctx-row">${JUMPS.slice(4).map((w) => chip(`nav:${w}`, NAV_LABEL[w], NAV_HELP[w])).join("")}</div>`,
     { x: r.left + r.width / 2, y: r.top - 4 },
     (v) => {
       if (v.startsWith("bar:")) { const [, k, tm] = v.split(":"); update(setRepeatBar(st, k === "plain" ? null : (k as Repeat), tm ? Number(tm) : undefined)); }
+      else if (v.startsWith("bs:")) update(setBarStyle(st, v.slice(3) as "double" | "final"));   // 段落线 / 终止线（v0.9.32；user「嗯双小节线的语义不是两个小节线，同意你的归类」）
       else if (v.startsWith("end:")) update(insertNav(st, "ending", v.slice(4).split(",").map(Number)));
       else if (v.startsWith("nav:")) update(insertNav(st, v.slice(4) as NavWhat));
       discloseNav();
@@ -2390,6 +2392,13 @@ function drawInst(): void {
     // 修八度 / 移调（user「修八度和移调的音色级别的选项…大部分情况不应该动，是worst case兜底」）：只给 SoundFont 的（鼓件 / 固定原速按哪个键都一样，不给）；默认 0、不自动套用
     (active && active.note === undefined ? row("修八度", `<b class="ip-val">${tr > 0 ? "+" : tr < 0 ? "−" : ""}${Math.abs(tr)} 半音</b><button class="btn" data-v="tr:-12" title="低一个八度">−12</button><button class="btn" data-v="tr:-1" title="低半音">−1</button><button class="btn" data-v="tr:1" title="高半音">+1</button><button class="btn" data-v="tr:12" title="高一个八度">+12</button>${tr ? `<button class="btn" data-v="tr:0" title="回到 0">归零</button>` : ""}`,
       "大部分情况不用动：某些音色本身就差八度（比如 GS 的 Guitar Harmonics 高两个八度）时兜底，调好后写什么音就响什么音") : "") +
+    // 八度（v0.9.32；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：谱上写的 = 实际音高 = 发给音源的；这件乐器的记谱习惯（仓鼠 v12 notation）+ GS 这个音色的实测（octaveCheck）
+    (eng === "soundfont" ? ((g) => {
+      const cpt = catalogNow ? conceptOfIds(catalogNow, (doc.extras.lounge[role] as { concept?: { ids?: { wikidata?: string | null; local?: string | null } } } | undefined)?.concept?.ids) : undefined;
+      const oc = g && catalogNow && g.origin.library === GS_LIBRARY_ID ? octaveCheckOf(catalogNow, g.bank, g.program, g.note) : null, nt = cpt?.notation;
+      const text = octaveDisclosure(nt, oc, (c) => CLEF_LABEL[c as ClefName] ?? c);
+      return text ? row("八度", "", esc(text)) : "";
+    })(activeGm(doc.extras, role)) : "") +
     (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("哼的字", HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), "没写歌词的音唱什么（整首歌一个）") : "") +
     // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
     (eng === "tsukuyomi" ? ((sc) => row("分段唱", (([["phrase", "每句", "在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句"], ["sheet", "每张纸", "一张纸一段"], ["whole", "一整首", "一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）"]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),

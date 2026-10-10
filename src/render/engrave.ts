@@ -188,7 +188,7 @@ interface Chunk {
   whisper?: boolean;                           // 气声：这个音（拆开的每一段）画 × 符头（2026-10-10）
   x: number; system: number; tick: number; staff: Staff;   // staff = 大谱表里在上还是下（单谱表 = 1）
 }
-interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean; repeat?: Repeat; times?: number }   // repeat = 反复小节线（Bravura 的反复记号字形，比细线宽）   // auto = 按拍号自动画的（index = -1，不是 token）
+interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean; repeat?: Repeat; times?: number; style?: "double" | "final" }   // repeat = 反复小节线（Bravura 的反复记号字形，比细线宽）   // auto = 按拍号自动画的（index = -1，不是 token）
 interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number; tick: number; staff: Staff }
@@ -231,7 +231,8 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
     const warn = inBar !== len && measureNo > 0 && !(repeat === "start" && inBar === 0);   // 第一小节 = 弱起，不标；开头的 |: 不算一个小节
     if (warn) shortBars++;
     // 反复小节线：字形宽 1.47（:|: 2.43）+ 两边留一点（Bravura repeatLeft / repeatRight / repeatRightLeft）
-    units.push({ kind: "bar", index, w: repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto, ...(repeat ? { repeat, ...(rb?.times ? { times: rb.times } : {}) } : {}) });
+    const style = !repeat ? rb?.style : undefined;   // 段落线 / 终止线（v0.9.32）：比一根小节线宽一点
+    units.push({ kind: "bar", index, w: repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : style ? BAR_W + 0.7 : BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto, ...(repeat ? { repeat, ...(rb?.times ? { times: rb.times } : {}) } : {}), ...(style ? { style } : {}) });
     const empty = inBar === 0;
     accState = new Map(); inBar = 0; if (!(repeat === "start" && empty)) measureNo++;   // 小节开头的 |:（前面那条小节线之后紧跟着 / 纸头）不多数一个小节
   };
@@ -902,8 +903,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
               prims.push({ t: "glyph", x: P(u.x + 0.4), y: yOf(rr, BOTTOM_LINE), ch: u.repeat === "start" ? "\u{E040}" : u.repeat === "end" ? "\u{E041}" : "\u{E042}", cls: (inSel(u.index) ? "repeat-bar sel" : "repeat-bar") + navMute(u.index) });
               if (u.times && u.times > 2 && k === 0) prims.push({ t: "text", x: P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), y: navY(u.system), s: `×${u.times}`, cls: "nav-mark" + navMute(u.index), size: P(TEMPO_EM * 1.05), anchor: "end" });
             } else if (u.kind === "bar") {
-              const bx = P(u.x + 0.7);
-              prims.push({ t: "line", x1: bx, y1: yOf(rr, TOP_LINE), x2: bx, y2: yOf(rr, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: u.auto ? "bar auto" : inSel(u.index) ? "bar sel" : "bar" });
+              const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : inSel(u.index) ? "bar sel" : "bar";
+              prims.push({ t: "line", x1: bx, y1: yOf(rr, TOP_LINE), x2: bx, y2: yOf(rr, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: bcls });
+              if (u.style === "double") prims.push({ t: "line", x1: bx + P(0.45), y1: yOf(rr, TOP_LINE), x2: bx + P(0.45), y2: yOf(rr, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: bcls });   // 段落线 ‖
+              if (u.style === "final") prims.push({ t: "line", x1: bx + P(0.6), y1: yOf(rr, TOP_LINE), x2: bx + P(0.6), y2: yOf(rr, BOTTOM_LINE), w: P(0.5), cls: bcls });   // 终止线：细 + 粗
               if (u.warn && k === 0) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn" });
             } else if (u.kind === "key") {
               const cls = inSel(u.index) ? "keysig sel" : "keysig";

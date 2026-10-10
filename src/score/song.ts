@@ -43,7 +43,8 @@ export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: n
 //     音自己的事（和段落级的渐强渐弱记号是两层，可以叠）。存在 .moonsinger/score.json（MusicXML 里表达不了音内的发夹）。
 //   chord（2026-10-08 polyphony）= 叠音：pitch 之外的音高，都比 pitch 低、从高到低；pitch = 最高的那个 = 旋律线（唱的人只读它：user「一个 Polyphony 换月读…应该是只读上面的旋律线」）。MusicXML = <chord/>。
 export interface RestTok { kind: "rest"; id: number; dur: number; staff?: Staff }
-export interface BarTok { kind: "bar"; id: number; repeat?: Repeat; times?: number }   // repeat = 反复小节线（|: / :| / :|:）；times = :| 这一段一共放几遍（没写 = 2）
+/** style（v0.9.32）：double = 段落线 ‖（分段，不是两根小节线）；final = 终止线（user「嗯双小节线的语义不是两个小节线，同意你的归类」= 从「反复」菜单进）。和 repeat 不同时有。 */
+export interface BarTok { kind: "bar"; id: number; repeat?: Repeat; times?: number; style?: "double" | "final" }   // repeat = 反复小节线（|: / :| / :|:）；times = :| 这一段一共放几遍（没写 = 2）
 /** 谱内反复 / 跳转（2026-10-09 Opus 5.5；user「顺便一提谱内的循环和标准的dc这种是不是支持下也不难？…不然遇到弱起什么其实AAABBB不是很方便」
  *  「就是普通记谱软件支持的那种。这样，不超过sheet边界。等参考窗好了当小东西加」）：不跨纸；放的时候按这张纸最上面那位在场歌手那一行的结构展开（src/score/repeats.ts），
  *  别的声部按 tick 跟；MusicXML 原生（<repeat> / <ending> / segno / coda / D.C. / Fine）。 */
@@ -410,7 +411,7 @@ export function setRepeatBar(st: EditorState, repeat: Repeat | null, times?: num
   const mk = (b: BarTok): BarTok => {
     let r: Repeat | null = repeat;
     if (repeat && b.repeat && b.repeat !== repeat) r = "both";   // |: + :| 同一条 = :|:
-    const { repeat: _r, times: _t, ...rest } = b;
+    const { repeat: _r, times: _t, style: _st, ...rest } = b;   // 改成反复的 = 段落线 / 终止线的样子去掉
     const tm = r === "end" || r === "both" ? (times ?? b.times) : undefined;
     return { ...rest, ...(r ? { repeat: r } : {}), ...(tm && tm > 2 ? { times: tm } : {}) };
   };
@@ -419,6 +420,16 @@ export function setRepeatBar(st: EditorState, repeat: Repeat | null, times?: num
   if (!repeat) return st;
   const id = st.nextId;
   nt.splice(at, 0, mk({ kind: "bar", id }));
+  return next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+}
+/** 段落线 ‖ / 终止线（v0.9.32）：光标挨着一条小节线（前面或后面）= 把它改成这种（反复去掉）；否则在光标处插一条。null = 改回普通小节线。 */
+export function setBarStyle(st: EditorState, style: "double" | "final" | null): EditorState {
+  const toks = tr(st), at = st.sel ? st.sel.to : st.caret, h = headLen(toks);
+  const near = toks[at - 1]?.kind === "bar" && at - 1 >= h ? at - 1 : toks[at]?.kind === "bar" ? at : -1;
+  const nt = toks.slice();
+  if (near >= 0) { const { repeat: _r, times: _t, style: _s, ...rest } = toks[near] as BarTok; nt[near] = { ...rest, ...(style ? { style } : {}) }; return next(st, nt, { sel: null }); }
+  if (!style) return st;
+  const id = st.nextId; nt.splice(at, 0, { kind: "bar", id, style });
   return next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
 }
 /** 房子 / 跳转记号：插在光标处（同调号 / 拍号 / 速度，是结构不是表情）。光标后面紧挨着小节线 = 插在小节线后面（房子从下一小节开头起）。 */
@@ -453,7 +464,7 @@ export function writeBar(st: EditorState): EditorState {
   const at = st.sel ? st.sel.to : st.caret, id = st.nextId, tokens = tr(st).slice();
   // 小节线也是 XOR（2026-10-10 user「wishlist 小节线应该也是xor，有时候误加的小节线一直删不掉」）：光标紧挨在一根人插的普通小节线后面 = 再按一下去掉它（反复小节线走「反复」菜单，不动）
   const prev = tokens[at - 1];
-  if (!st.sel && at - 1 >= headLen(tokens) && prev?.kind === "bar" && !prev.repeat) { tokens.splice(at - 1, 1); return next(st, tokens, { caret: at - 1, sel: null, log: [] }); }
+  if (!st.sel && at - 1 >= headLen(tokens) && prev?.kind === "bar" && !prev.repeat && !prev.style) { tokens.splice(at - 1, 1); return next(st, tokens, { caret: at - 1, sel: null, log: [] }); }
   tokens.splice(at, 0, { kind: "bar", id });
   return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
 }

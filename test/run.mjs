@@ -73,6 +73,8 @@ import "./dyn-levels.test.ts";
 import "./metronome.test.ts";
 import "./clef.test.ts";
 import "./part-colors.test.ts";
+import "./octave-disclosure.test.ts";
+import "./barstyle.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

@@ -188,7 +188,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       if (t.repeat === "start" || t.repeat === "both") cur.push(fwd);
       continue;
     }
-    if (t.kind === "bar") { close(true); continue; }
+    if (t.kind === "bar") { close(true, t.style ? `<barline location="right"><bar-style>${t.style === "double" ? "light-light" : "light-heavy"}</bar-style></barline>` : ""); continue; }   // 段落线 / 终止线（v0.9.32）
     if (t.kind === "nav") {
       if (t.what === "ending") {
         if (ticks >= len) close(false);
@@ -370,6 +370,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     const measures = kids(pe, "measure");
     measures.forEach((m, mi) => {
       let rightRepeat: { times: number } | null = null;   // 这小节右边的 :|（读完这小节补小节线时用）
+      let rightStyle: "double" | "final" | null = null;   // 这小节右边的段落线 ‖ / 终止线（v0.9.32）
       for (const c of kids(m)) {
         if (c.name === "barline") {   // 谱内反复：|: 挂在前面那条小节线上（纸头 = 补一条）；房子 = 这小节开头一个记号；:| 等这小节读完
           const loc = c.attrs.location ?? "right", rp = kid(c, "repeat"), en = kid(c, "ending");
@@ -383,6 +384,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
             body.push({ kind: "nav", id: 0, what: "ending", nums: nums.length ? nums : [1] });
           }
           if (loc !== "left" && rp?.attrs.direction === "backward") rightRepeat = { times: Math.max(2, Number(rp.attrs.times ?? "2") || 2) };
+          else if (loc !== "left") { const bs = childText(c, "bar-style"); if (bs === "light-light") rightStyle = "double"; else if (bs === "light-heavy") rightStyle = "final"; }
           continue;
         }
         if (c.name === "attributes") {
@@ -481,7 +483,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
         else if (c.name === "harmony") drop("和弦记号");
       }
       const n = Number(m.attrs.number ?? mi + 1);
-      if (rightRepeat || (manual ? manual.has(n) : mi < measures.length - 1)) body.push({ kind: "bar", id: 0, ...(rightRepeat ? { repeat: "end" as Repeat, ...(rightRepeat.times > 2 ? { times: rightRepeat.times } : {}) } : {}) });
+      if (rightRepeat || rightStyle || (manual ? manual.has(n) : mi < measures.length - 1)) body.push({ kind: "bar", id: 0, ...(rightRepeat ? { repeat: "end" as Repeat, ...(rightRepeat.times > 2 ? { times: rightRepeat.times } : {}) } : rightStyle ? { style: rightStyle } : {}) });
     });
     const tokens: Token[] = [{ kind: "key", id: 0, fifths: H.fifths }, { kind: "time", id: 0, beats: H.beats, beatType: H.beatType }, { kind: "tempo", id: 0, bpm: H.bpm }, ...body];
     keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));

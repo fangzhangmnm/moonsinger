@@ -120,6 +120,27 @@ export function velLayersOf(cat: Catalog, bank: number, program: number, note?: 
   const row = cat.rows.find((r) => r.bank === bank && r.program === program && r.note === note && r.velLayers) ?? cat.rows.find((r) => r.bank === bank && r.program === program && r.velLayers);
   return row?.velLayers && row.velLayers.count > 0 ? { count: row.velLayers.count, ranges: row.velLayers.ranges ?? [], key: row.velLayers.key } : null;
 }
+/** 铃类的八度实测（仓鼠 v12，GM 9–16 / 99 / 113 / 115）。 */
+export function octaveCheckOf(cat: Catalog, bank: number, program: number, note?: number): OctaveCheck | null {
+  const row = cat.rows.find((r) => r.bank === bank && r.program === program && r.note === note && r.octaveCheck) ?? cat.rows.find((r) => r.bank === bank && r.program === program && r.octaveCheck);
+  return row?.octaveCheck ?? null;
+}
+/** 角色记着的概念（id 束）→ 目录里的那件。 */
+export function conceptOfIds(cat: Catalog, ids: { wikidata?: string | null; local?: string | null } | undefined): Concept | undefined {
+  if (!ids) return undefined;
+  return (ids.wikidata ? cat.byId.get(ids.wikidata) : undefined) ?? (ids.local ? cat.byId.get(ids.local) ?? cat.byId.get(`x:${ids.local}`) : undefined);
+}
+/** 乐器页「八度」那一行说的话（v0.9.32；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：没有可说的 = null。clefLabel = 谱号的中文名（「高音 15ma」）。 */
+export function octaveDisclosure(nt: Concept["notation"] | undefined, oc: OctaveCheck | null, clefLabel: (c: string) => string): string | null {
+  if (!oc && !(nt && nt.octave)) return null;
+  const parts = ["谱上写的就是实际音高（MoonSinger 不按乐器移调），发给音源的也是这个音。"];
+  if (nt && nt.octave) parts.push(`这件乐器的谱习惯写${nt.octave > 0 ? "低" : "高"} ${Math.abs(nt.octave) / 12} 个八度（实际${nt.octave > 0 ? "高" : "低"}）；想要谱面好读，用谱号（这件乐器按实际音高时常用「${clefLabel(nt.concertClef)}」，谱号「自动」也会挑）或 8va 线，出声不变。`);
+  if (oc) parts.push(oc.perceived === null ? `GS 这个音色实测：判不准——每个键最强的那个分音比键名高 ${Math.round(oc.measured)} 半音，听起来多半跟着它。`
+    : oc.perceived === 0 && Math.abs(oc.measured) < 0.5 ? "GS 这个音色实测：按哪个键，耳朵听到的就是那个音。"
+    : oc.perceived === 0 ? `GS 这个音色实测：最强的分音比键名高 ${Math.round(oc.measured)} 半音（${oc.measuredOctave} 个八度），但耳朵听到的音名还是键名（钟的打击音）——听着觉得高了是这个原因。`
+    : `GS 这个音色实测：耳朵听到的比键名${oc.perceived > 0 ? "高" : "低"} ${Math.abs(oc.perceived)} 半音。`);
+  return parts.join("");
+}
 /** GS 在家族音源库里的 id（sampleKey 只对它成立）。 */
 export const GS_LIBRARY_ID = "generaluser-gs-2.0.3";
 /** 谱上写的角色名：目录里的英文名首字母大写（打谱惯例；Vocals / Piano 同款）。 */

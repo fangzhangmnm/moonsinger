@@ -69,7 +69,7 @@ export function toJianpu(toks: Token[], fifths: number): string {
   const out: string[] = [];
   let f = fifths;
   for (const t of toks) {
-    if (t.kind === "bar") { out.push(t.repeat === "start" ? "|:" : t.repeat === "end" ? `:|${t.times && t.times > 2 ? `x${t.times}` : ""}` : t.repeat === "both" ? `:|:${t.times && t.times > 2 ? `x${t.times}` : ""}` : "|"); continue; }   // 反复小节线 = |: / :| / :|x3 / :|:
+    if (t.kind === "bar") { out.push(t.repeat === "start" ? "|:" : t.repeat === "end" ? `:|${t.times && t.times > 2 ? `x${t.times}` : ""}` : t.repeat === "both" ? `:|:${t.times && t.times > 2 ? `x${t.times}` : ""}` : t.style === "double" ? "||" : t.style === "final" ? "|]" : "|"); continue; }   // 反复小节线 = |: / :| / :|x3 / :|:；段落线 = ||、终止线 = |]（v0.9.32）
     if (t.kind === "nav") { out.push(t.what === "ending" ? `[${(t.nums ?? [1]).join(".")}.]` : `[${NAV_TEXT[t.what]}]`); continue; }   // 房子 = [1.] / [1.2.]；跳转 = [D.C.] [D.S. al Coda] [Segno]…
     if (t.kind === "key") { f = t.fifths; out.push(`[1=${KEY_LABEL[t.fifths] ?? t.fifths}]`); continue; }
     if (t.kind === "time") { out.push(`[${t.beats}/${t.beatType}]`); continue; }
@@ -99,6 +99,7 @@ export function fromJianpu(text: string, fifths: number): Token[] | null {
   const lastTimed = (): Timed | null => { for (let i = out.length - 1; i >= 0; i--) { const t = out[i]; if (t.kind === "note" || t.kind === "rest") return t; } return null; };
   for (const w of words) {
     if (w === "|") { out.push({ kind: "bar", id: id++ }); continue; }
+    if (w === "||" || w === "|]") { out.push({ kind: "bar", id: id++, style: w === "||" ? "double" : "final" }); continue; }
     let r = /^(\|:|:\|:|:\|)(?:x(\d+))?$/.exec(w);
     if (r) { const rep: Repeat = r[1] === "|:" ? "start" : r[1] === ":|" ? "end" : "both", tm = r[2] ? Number(r[2]) : 0; if (rep === "start" && tm) return null;
       out.push({ kind: "bar", id: id++, repeat: rep, ...(tm > 2 ? { times: tm } : {}) }); continue; }
