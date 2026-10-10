@@ -16,9 +16,13 @@ check(!(await p.$eval("#partSel", (e) => e.hidden)), "载入一首两位歌手�
 await p.evaluate(() => window.__moonsinger.addPaper());
 await p.waitForTimeout(300);
 check(!(await p.$("#studioBtn")) && !(await p.$(".bar .mode-seg")) && !(await p.$(".bar select")), "顶栏里没有录音室钮、模式钮、下拉");
-check((await p.$$(".view-tab .mode-seg [data-mode]")).length === 4 && !!(await p.$(".view-tab #paperSel")) && !!(await p.$(".view-tab #partSel")) && !(await p.$eval("#paperSel", (e) => e.hidden)) && !(await p.$eval("#partSel", (e) => e.hidden)), "挂签里：模式四个钮 + 看哪一段 + 看哪位歌手");
+check((await p.$$(".dock-tab .mode-seg [data-mode]")).length === 4 && !(await p.$(".view-tab .mode-seg")) && !!(await p.$(".view-tab #paperSel")) && !!(await p.$(".view-tab #partSel")) && !(await p.$eval("#paperSel", (e) => e.hidden)) && !(await p.$eval("#partSel", (e) => e.hidden)), "模式四个钮在底座边上的小条里（v0.10.20）；挂签里 = 看哪一段 + 看哪位歌手");
 { const g = await p.evaluate(() => { const t = document.querySelector(".view-tab").getBoundingClientRect(), b = document.getElementById("bar").getBoundingClientRect(), s = document.getElementById("score").getBoundingClientRect(); return { gap: Math.round(t.top - b.bottom), overScore: t.top >= s.top && t.left < s.right && t.bottom > s.top, pos: getComputedStyle(document.querySelector(".view-tab")).position }; });
   check(g.gap === 0 && g.overScore && g.pos === "absolute", "挂签贴着顶栏底边往下挂、浮在谱上（不占谱的位置）", JSON.stringify(g)); }
+// 底座边上的小条（v0.10.20；user「音符词听那个小面版变成靠着键盘…」「尤其是模式条的位置（这个其实蛮重要的，不然鼠标上下跑）」）：横屏 = 贴着键盘左边；顶栏只剩一个 |▶
+{ const d = await p.evaluate(() => { const t = document.querySelector(".dock-tab").getBoundingClientRect(), k = document.querySelector(".pad-panel").getBoundingClientRect(); return { gap: Math.round(k.left - t.right), top: Math.round(t.top - k.top), tops: document.querySelectorAll("#bar .btn").length }; });
+  check(Math.abs(d.gap) <= 1 && d.top >= 0 && d.top < 40, "横屏：模式 + 走带的小条贴着键盘左边、在键盘顶上那一截", JSON.stringify(d));
+  check(!!(await p.$("#bar #playBtn")) && !(await p.$("#bar #undoBtn")) && !!(await p.$(".dock-tab #undoBtn")) && !!(await p.$(".dock-tab #dockPlay")), "顶栏只剩一个 |▶；撤销 / 重做 / 另一个 |▶ 在小条上"); }
 const shown = () => p.evaluate(() => [...new Set(window.__moonsinger.layout().systems.map((s) => `${s.paper}:${s.part}`))].join(","));
 const papers = await p.evaluate(() => window.__moonsinger.state().song.papers.map((x) => x.id));
 await p.selectOption("#paperSel", "all"); await p.waitForTimeout(200);

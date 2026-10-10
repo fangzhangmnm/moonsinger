@@ -23,8 +23,8 @@ const tl = () => p.evaluate(() => { const t = window.__moonsinger.engine.timelin
 const playing = () => p.evaluate(() => window.__moonsinger.engine.playing);
 const pos = () => p.evaluate(() => window.__moonsinger.engine.position);
 // v0.9.18：循环 / 从头放 / 接缝收进走带的「⋯」菜单；▶ = 续播 / 暂停、⟲ = 回起点重放
-const menuHas = async (v) => { await p.click("#transportMore"); await p.waitForTimeout(80); const has = !!(await p.$(`.ctx-menu [data-v="${v}"]`)); await p.keyboard.press("Escape").catch(() => {}); await p.mouse.click(5, 300); await p.waitForTimeout(60); return has; };
-const menuClick = async (v) => { await p.click("#transportMore"); await p.waitForTimeout(80); await p.click(`.ctx-menu [data-v="${v}"]`); await p.waitForTimeout(100); };
+const menuHas = async (v) => { await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(80); const has = !!(await p.$(`.ctx-menu [data-v="${v}"]`)); await p.keyboard.press("Escape").catch(() => {}); await p.mouse.click(5, 300); await p.waitForTimeout(60); return has; };
+const menuClick = async (v) => { await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(80); await p.click(`.ctx-menu [data-v="${v}"]`); await p.waitForTimeout(100); };
 const waitPlaying = async (want = true) => { for (let i = 0; i < 60; i++) { if ((await playing()) === want) return true; await p.waitForTimeout(100); } return false; };
 check(!(await menuHas("seam")), "循环没开 = 菜单里没有「听接缝」");
 await tapPlay();
@@ -38,7 +38,7 @@ await tapPlay(); await p.waitForTimeout(400);   // > 连按窗口（350 ms），
 check(!(await playing()), "再点 = 停");
 await p.evaluate(() => { const m = window.__moonsinger; m.setScope("all"); const st = m.state(); m.set({ ...st, song: { ...st.song, arrangement: "1 [2]" } }); }); await p.waitForTimeout(150);
 await menuClick("loop");
-check(await p.$eval("#transportMore", (e) => e.classList.contains("is-on")) && (await menuHas("seam")), "开循环：⋯ 钮亮（写着循环）、菜单里出「听接缝」");
+check(await p.$eval("#playBtn", (e) => e.classList.contains("looping")) && (await menuHas("seam")), "开循环：|▶ 上有「循环」角标、菜单（右键 |▶）里出「听接缝」");
 await tapPlay(); check(await waitPlaying(), "放起来");
 a = await tl();
 check(!!a && a.loop === true, "全部视图 + 编排「1 [2]」：时间线循环", JSON.stringify(a));
@@ -62,7 +62,7 @@ check(!!g && g.loop === true && Math.abs(g.loopFrom - g.from) < 1e-6, "本段：
 check(!!g && g.to < a.to - 1e-6, "本段：范围只有这一张（比全部短）", JSON.stringify(g));
 await tapPlay(); await p.waitForTimeout(400);   // > 连按窗口（350 ms），不然下一下算「连按两下 = 从头放」
 await menuClick("loop");
-check(!(await menuHas("seam")) && !(await p.$eval("#transportMore", (e) => e.classList.contains("is-on"))), "关循环 = 菜单里没有「听接缝」、⋯ 钮不亮");
+check(!(await menuHas("seam")) && !(await p.$eval("#playBtn", (e) => e.classList.contains("looping"))), "关循环 = 菜单里没有「听接缝」、|▶ 上没有角标");
 // 中途切循环 = 这一轮就生效（2026-10-10 user「中途toggle循环对本轮播放应该生效」）：本段视图、循环关着
 const track = async (ms) => { const out = []; for (let i = 0; i < ms / 100; i++) { out.push({ on: await playing(), p: await pos() }); await p.waitForTimeout(100); } return out; };
 await tapPlay(); check(await waitPlaying(), "中途切：放起来（循环关）");

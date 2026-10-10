@@ -866,3 +866,33 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 .mode-seg [data-mode="listen"].is-on { background: var(--play); }
 @media (max-width: 720px) { .sel-bar { top: 44px; } }   /* 窄屏：选区条让到挂签下面（居中的选区条会撞上左边的挂签） */
 @media (max-width: 480px) { .view-tab .vt-sel { max-width: 5.5em; } .mode-seg .btn { min-width: 0; padding: 0 6px; } }
+
+/* 底座边上的小条（v0.10.20；user「音符词听那个小面版变成靠着键盘…竖屏的时候就是左下角，拉着键盘的左上角 / 横屏的时候变成竖排」「尤其是模式条的位置…不然鼠标上下跑」）：
+   用 #stage 的 grid 区域定位（绝对定位的子元素按它的 grid-area 当包含块）——底座在哪它就挂在哪，不用 JS 量。 */
+.dock-tab { position: absolute; z-index: 45; display: flex; gap: 6px; padding: 5px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 94%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 2px 8px rgba(0, 0, 0, .08); }
+.dock-tab[hidden] { display: none; }
+.dock-tab .btn { height: 32px; min-width: 32px; font-size: 13px; -webkit-touch-callout: none; user-select: none; }
+.dock-tab .dock-tr { display: flex; gap: 4px; }
+.dock-tab .pad-tab { position: static; transform: none; border-radius: 7px; padding: 0 8px; box-shadow: none; background: var(--panel); bottom: auto; left: auto; }
+.dock-tab .pad-tab[hidden] { display: none; }
+/* 横屏：键盘在右边 = 挂在它左边、竖着排 */
+#stage:not([data-dock="none"]) > .dock-tab { grid-area: pad; right: 100%; top: 8px; flex-direction: column; border-right: 0; border-radius: 10px 0 0 10px; }
+#stage[data-dock="none"] > .dock-tab { grid-area: main; right: 0; top: 8px; flex-direction: column; border-right: 0; border-radius: 10px 0 0 10px; }
+#stage > .dock-tab .mode-seg, #stage > .dock-tab .dock-tr { flex-direction: column; }
+#stage > .dock-tab .mode-seg .btn + .btn { border-left: 0; border-top: 1px solid var(--line); }
+/* 竖屏：键盘贴底 = 挂在它左上角、往上、横着排；收起 = 贴屏幕左下 */
+@media (max-aspect-ratio: 1/1) {
+  #stage:not([data-dock="none"]) > .dock-tab { grid-area: pad; right: auto; left: 8px; top: auto; bottom: 100%; flex-direction: row; border: 1px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; }
+  #stage[data-dock="none"] > .dock-tab { grid-area: main; right: auto; left: 8px; top: auto; bottom: max(8px, var(--safe-bottom)); flex-direction: row; border: 1px solid var(--line); border-radius: 10px; }
+  #stage > .dock-tab .mode-seg, #stage > .dock-tab .dock-tr { flex-direction: row; }
+  #stage > .dock-tab .mode-seg .btn + .btn { border-top: 0; border-left: 1px solid var(--line); }
+}
+/* 小条不盖谱：横屏 = 谱的右边让出小条那一条（margin：谱宽按 clientWidth 算，padding 会算进去）；竖屏不用让——谱底下本来就留了 ¾ 屏能滚过去 */
+#stage > .score { margin-right: 46px; }
+@media (max-aspect-ratio: 1/1) { #stage > .score { margin-right: 0; } }
+/* 选区条：在谱那一块里居中（原来按整个舞台居中，宽了会伸到键盘那边、压住小条）；横屏让出小条那 46px */
+#stage > .sel-bar { grid-area: main; left: calc((100% - 46px) / 2); max-width: calc(100% - 16px - 46px); }
+@media (max-aspect-ratio: 1/1) { #stage > .sel-bar { left: 50%; max-width: calc(100% - 16px); } }
+/* |▶ 开着循环：右上角一个小「循环」 */
+.play-btn { position: relative; }
+.play-btn.looping::after { content: "循环"; position: absolute; top: -6px; right: -8px; padding: 0 3px; border-radius: 6px; font-size: 9px; line-height: 13px; background: var(--accent); color: #fff; pointer-events: none; }

@@ -190,31 +190,37 @@ function showUpdateBar(): void {
 //   「加密和 smart save button 的 status 必须永远可见」）：左 = 歌库图标 + 文件名（能按的字 = 文件菜单）；右 = 加密状态 / smart save（状态即按钮）/ 三条杠。
 //   走带（唱 / 弹 / 录音室 / 进度）在顶栏中间（2026-10-08 试过挂胶囊，user「看着碍眼，还是收到顶栏里面吧」）。
 //   键盘开关不在顶栏：pad 自己有「收起」，收起后屏幕最下面一粒「键盘」tab 再弹出来；点谱也弹（user「软键盘的 toggle 可以放在屏幕最下面」）。
+/** |▶ 的说明（顶栏和底座边上那个一样）。⋯ 收进长按 / 右键（v0.10.20；user「play的...收到长按和右键play里面 / 然后顶栏只单放一个一样的play」）。 */
+const PLAY_TITLE = "从起点放 / 停（空格）；连按两下 = 从头放。长按 / 右键 = 接着放 / 自动翻 / 循环 / 从头放 / 接缝。起点 = 长按 / 右键谱面「从这儿放」挪";
 bar.innerHTML =
   `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button>` +
   `</div>` +
-  `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="从起点放 / 停（空格）；连按两下 = 从头放（起点回开头）。起点 = 长按 / 右键谱面「从这儿放」挪；编辑、挪光标都不动它"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
-  `<button id="transportMore" class="btn" title="接着放（停过才有）/ 循环 / 从头放 / 接缝">⋯</button>` +
-
-  `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div>` +
+  `<div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div>` +
   `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
   `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
   `<button id="setBtn" class="btn" title="菜单：新建 / 打开 / 导出 / 封面 / 声音与署名 / 设置"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
 /** 渲染进度条（顶栏底边；播放的准备和 mp3 导出共用 renderMix 这一条路）。顶栏的 HTML 写好之后再挂（上面 bar.innerHTML = … 会冲掉先挂的）。 */
 const renderBar = new RenderProgress(bar);
 const stageEl = $("stage");   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
+const attr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = "键盘（pad）";
 padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>键盘</span>`;
-stageEl.append(padTab);
+// 底座边上的小条（v0.10.20）：模式四个钮 + |▶ + 撤销 / 重做 + 收起后叫回键盘，贴在键盘边上（竖屏 = 键盘左上角往上挂；横屏 = 键盘左边竖着挂；键盘收起 = 贴屏幕边）——
+//   按键盘的时候东西就在手边，鼠标不用上下跑（user「音符词听那个小面版变成靠着键盘 / 加一个按一下弹出键盘的钮…所以竖屏的时候就是左下角，拉着键盘的左上角 / 横屏的时候变成竖排可以吗 /
+//   这样按键盘的时候东西就在手边 / 然后走带控制也放这个面版上面 / 就是 play/pause undo redo 音符词听」「尤其是模式条的位置（这个其实蛮重要的，不然鼠标上下跑）」）。位置全在 CSS（grid 区域定位）。
+const dockTab = document.createElement("div"); dockTab.className = "dock-tab"; dockTab.setAttribute("role", "toolbar");
+dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="模式：这一下点的是哪一层">${MODES.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
+  `<span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
+  `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
+dockTab.append(padTab);
+stageEl.append(dockTab);
 padTab.addEventListener("click", () => showPad(true));
 // 挂签（v0.10.3）：模式四个钮 + 看哪一段 + 看哪位歌手，从顶栏底下往下挂、浮在谱上（可以挡住谱）。
 //   user 2026-10-10「模式切换不是下拉，回到之前的四个排一起的按钮，然后模式切换，曲段和声部选择这三个不是在顶栏，而是顶栏下面创建一个类似tab的往下的东西，可以遮挡屏幕」
 //   （v0.10.2 那版 = 三个下拉挤在顶栏左上角，user 原话「我希望有一个快速选择看全部或者哪个曲段，以及快速看全部或者哪个声部的下拉框」「模式收到下拉框里面」）。
-const attr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 const viewTab = document.createElement("div"); viewTab.className = "view-tab";
-viewTab.innerHTML = `<span class="mode-seg" role="tablist" title="模式：这一下点的是哪一层">${MODES.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
-  `<select id="paperSel" class="vt-sel" title="看哪一段：全部 / 只看这一段"></select><select id="partSel" class="vt-sel" title="看哪位歌手：全部 / 只看这一位"></select>`;
+viewTab.innerHTML = `<select id="paperSel" class="vt-sel" title="看哪一段：全部 / 只看这一段"></select><select id="partSel" class="vt-sel" title="看哪位歌手：全部 / 只看这一位"></select>`;
 stageEl.append(viewTab);
 // 选区条（2026-10-08 改的手感；src/ui/sel-bar.ts）：有选区时挂在胶囊下面；剪贴板两层 = app 内 token（clip）+ 系统剪贴板一行简谱文字（clipText）
 const selBar = new SelBar(stageEl, { verb: (v) => { void selVerb(v); } });
@@ -242,10 +248,11 @@ function renderTopSels(): void {
 function updateChrome(): void {
   if (!chromeReady) return;
   const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);   // 乐器页开着：选区条也收（不然盖住乐器页顶条的「← 谱」）
-  viewTab.hidden = over;   // 挂签同理：乐器页 / 目录 / 歌库盖着谱时收起
+  dockTab.hidden = over;   // 底座边上的小条 / 挂签：乐器页 / 目录 / 歌库盖着谱时收起
   padTab.hidden = !padEl.hidden || ((gallery?.isOpen() ?? false) && !finderShown) || studio.isOpen || !hasKeys(ws.mode);
   { const lab = ws.mode === "listen" ? "混音台" : "键盘", sp = padTab.querySelector("span"); if (sp && sp.textContent !== lab) sp.textContent = lab; padTab.title = ws.mode === "listen" ? "混音台（听的键盘）" : "键盘（pad）"; }
   renderTopSels();   // 「词 / 听」没有键盘：不露「键盘」tab
+  viewTab.hidden = over || (($("paperSel") as HTMLSelectElement).hidden && ($("partSel") as HTMLSelectElement).hidden);   // 挂签只剩看哪一段 / 哪位：都不用选 = 不挂
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n = st.sel ? st.sel.to - st.sel.from : 0;
@@ -763,7 +770,8 @@ function showError(text: string): void { reportError(text, "error"); }   // 唯�
 //   谱 → 时间线（秒；src/engine/timeline.ts）→ 录音房（音频线程里走带 / 通道 / SoundFont / 元音 / 块回放；src/engine/studio.ts）。
 //   月读按句出块（内容键缓存；这一刀仍在开播前把块唱齐，边算边放归刀 2）；从光标放、选一段、循环、边放边调混音、范围尾 / 循环点不切尾音。
 //   旧路（整首离线渲染成一条 → AudioBufferSource；循环段渲染两遍；src/audio/mix.ts）已删（user「旧引擎不用留念念旧，只是placeholder，可以大刀阔斧改」）。
-const playIcon = (playing: boolean) => { $("playBtn").innerHTML = `<svg class="ico"><use href="#${playing ? "stop" : "play-from-start"}"/></svg>`; $("playBtn").classList.toggle("is-on", playing); if (!playing) progress(""); };   // 一个主键：|▶ 从起点放 / ■ 停（user「先只有一个键」）
+const playBtns = (): HTMLElement[] => [$("playBtn"), $("dockPlay")].filter((x): x is HTMLElement => !!x);
+const playIcon = (playing: boolean) => { for (const b of playBtns()) { b.innerHTML = `<svg class="ico"><use href="#${playing ? "stop" : "play-from-start"}"/></svg>`; b.classList.toggle("is-on", playing); } if (!playing) progress(""); };   // 一个主键：|▶ 从起点放 / ■ 停（user「先只有一个键」）
 /** 整首唱时给核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）；leadIn 明说（块按它摆）。 */
 const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
 /** 播放 / 试听的范围跟着视图走：本段 = 只有光标所在的纸；全部 = 整首（导出面板另选）。user 2026-10-08「为什么在本段视图下播放还是播放全部了？」 */
@@ -1039,7 +1047,7 @@ const tickOfCaret = (paperId: string, part: string, caret: number): number => { 
 async function startPlayback(how: "start" | "head" | "resume" | "seam"): Promise<void> {
   if (preparing) { cancelPrepare = true; return; }   // 准备中再按 = 不放了
   singer.unlock(); holdAudio();   // 在用户手势里先把声音打开（iPad）；准备期间让声音一直醒着
-  preparing = true; cancelPrepare = false; $("playBtn").classList.add("is-on");
+  preparing = true; cancelPrepare = false; for (const b of playBtns()) b.classList.add("is-on");
   try {
     const tl = await prepare("view", { chunks: false }); if (!tl) { progress(""); return; }
     const r = playRange(tl); playTl = tl;
@@ -1061,7 +1069,7 @@ async function startPlayback(how: "start" | "head" | "resume" | "seam"): Promise
     playIcon(true);
     progress(loopOn ? `循环 ${(r.to - r.loopFrom).toFixed(1)} 秒` : `${(r.to - atNow).toFixed(1)} 秒`);
   } catch (e) { showError(`放不了：${(e as Error).message}`); progress(""); playIcon(false); }
-  finally { releaseAudio(); preparing = false; if (!engine.playing) $("playBtn").classList.remove("is-on"); }
+  finally { releaseAudio(); preparing = false; if (!engine.playing) for (const b of playBtns()) b.classList.remove("is-on"); }
 }
 /** 主键（空格）= |▶ 从起点放 / 放着 = 停（停的地方记下来，⋯ 里「接着放」从那儿接）。
  *  user 2026-10-10「ui上先暂时不要续播，开始用杠三角的那个符号，就是从设定的开始播放。这样先只有一个键」「续播可以放在...里面」。 */
@@ -1118,7 +1126,7 @@ function applyWorkspace(): void {
   const d = dockOf(ws), padOn = d === "keys" || d === "symbols";
   view.rules = RULES[ws.mode];
   document.body.dataset.wmode = ws.mode; document.body.classList.toggle("listen-mode", ws.mode === "listen"); scoreEl.dataset.mode = ws.mode;   // 不用 body[data-mode]：歌库自己用它（gallery）
-  viewTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.classList.toggle("is-on", b.dataset.mode === ws.mode));
+  dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.classList.toggle("is-on", b.dataset.mode === ws.mode));
   const changed = padEl.hidden === padOn || stageEl.dataset.dock !== d;
   stageEl.dataset.dock = d;
   padEl.hidden = !padOn; pad.setSymbols(d === "symbols"); if (!padOn) pad.clearHeld();
@@ -1160,9 +1168,9 @@ function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: 
   });
 }
 /** 顶栏 ⋯：循环（开关）/ 从头放 / 接缝（开了循环才有）。 */
-function openTransportMenu(): void {
+function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
   closeOffer?.();
-  const btn = $("transportMore"), box = document.createElement("div");
+  const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
   box.innerHTML = (paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放（起点不动）") : "") +
@@ -1170,9 +1178,10 @@ function openTransportMenu(): void {
     item("loop", `${loopOn ? "✓ " : ""}循环`, "放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环") +
     item("head", "从头放", "起点回到开头，从头放（也可以连按两下 |▶ / 空格）") + (loopOn ? item("seam", "听接缝", "从循环段结尾前几秒放起，跳回开头再放几秒就停") : "");
   document.body.append(box);
-  const b = btn.getBoundingClientRect(), w = box.offsetWidth, m = 8;
-  box.style.left = `${Math.max(m, Math.min(b.left, innerWidth - w - m))}px`; box.style.top = `${b.bottom + 4}px`;
-  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && e.target !== btn) close(); };
+  const b = btn.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, m = 8;
+  box.style.left = `${Math.max(m, Math.min(b.left, innerWidth - w - m))}px`;
+  box.style.top = `${b.bottom + 4 + h <= innerHeight - m ? b.bottom + 4 : Math.max(m, b.top - h - 4)}px`;   // 底座边上那个：下面放不下 = 往上开
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !btn.contains(e.target as Node)) close(); };
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   closeOffer = close;
@@ -1187,7 +1196,7 @@ function openTransportMenu(): void {
   });
 }
 function setLoop(on: boolean): void {
-  loopOn = on; $("transportMore").classList.toggle("is-on", on); $("transportMore").textContent = on ? "循环 ⋯" : "⋯";
+  loopOn = on; for (const b of playBtns()) b.classList.toggle("looping", on);   // |▶ 上一个小「循环」角标（原来写在 ⋯ 钮上）
   // 放着的时候切 = 这一轮就按新的来：到尾（尾巴还在响也算）跳回去 / 不跳；开了循环 = 循环头那几句也排进去先唱（不然跳回去要冻着等月读）
   if (engine.playing && playTl) { const r = playRange(playTl); engine.setTimeline({ tracks: playTl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom }); setChunkOrder(playTl, engine.position, loopOn ? { from: r.loopFrom, to: r.to } : null); }
 }
@@ -1250,9 +1259,17 @@ function schedulePrewarm(): void {
     setChunkOrder(tl, paused ? resumeSeconds(tl, r) : startSeconds(tl, r), null, { quiet: true, limit: PREWARM_PHRASES, mute: paused ? undefined : startMute(tl, r) });
   }, 700);
 }
-$("playBtn").addEventListener("click", (e) => playPause(e.timeStamp));
-$("transportMore").addEventListener("click", () => openTransportMenu());
-viewTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode as Mode)));
+/** 点 = 放 / 停（连按两下 = 从头放）；长按 / 右键 = 走带菜单（长按松开不再算一下点）。 */
+function wirePlayBtn(btn: HTMLElement): void {
+  let timer = 0, held = false;
+  const cancel = () => clearTimeout(timer);
+  btn.addEventListener("pointerdown", (e) => { if (e.button !== 0) return; held = false; cancel(); timer = window.setTimeout(() => { held = true; openTransportMenu(btn); }, 500); });
+  btn.addEventListener("pointerup", cancel); btn.addEventListener("pointerleave", cancel); btn.addEventListener("pointercancel", cancel);
+  btn.addEventListener("click", (e) => { if (held) { held = false; return; } playPause(e.timeStamp); });
+  btn.addEventListener("contextmenu", (e) => { e.preventDefault(); cancel(); openTransportMenu(btn); });
+}
+wirePlayBtn($("playBtn")); wirePlayBtn($("dockPlay"));
+dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode as Mode)));
 // 看哪一段 / 看哪位歌手（v0.10.2）：全部 = 都看；选一段 = 本段视图跳到它；选一位 = 「只看它」（别的缩成细行），再选「全部」= 都看
 $("paperSel").addEventListener("change", (e) => {
   const v = (e.target as HTMLSelectElement).value; (e.target as HTMLSelectElement).blur();

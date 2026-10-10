@@ -39,7 +39,7 @@ t = await T();
 check(!(await playing()) && !!t.paused && !!(await p.$(".play-hl")), "主键再按 = 停（记住位置、高亮留着）", JSON.stringify(t.paused));
 check((await p.$eval("#playBtn use", (e) => e.getAttribute("href"))) === "#play-from-start", "停了 = 主键是 |▶");
 const pausedAt = t.paused.sec;
-await p.click("#transportMore"); await p.waitForTimeout(80);
+await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(80);
 check(!!(await p.$('.ctx-menu [data-v="resume"]')), "停过 = ⋯ 里有「接着放」");
 check(!!(await p.$('.ctx-menu [data-v="follow"]')) && (await p.$eval('.ctx-menu [data-v="follow"]', (e) => e.textContent.startsWith("✓"))), "⋯ 里有「自动翻」，默认开");
 await p.click('.ctx-menu [data-v="resume"]'); check(await waitPlaying(), "接着放 = 放起来");
@@ -79,7 +79,7 @@ check(!(await playing()), "听模式里空格 = 停");
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 check(!(await T()).listen, "Esc = 回到写");
 // 6. ⋯ 里「从头放」= 起点回到开头、从头放（2026-10-10 user「从头开始播放的关键是指针也放在开头了」；v0.9.20 曾改成不动起点，v0.9.25 改回）
-await p.click("#transportMore"); await p.waitForTimeout(80); await p.click('.ctx-menu [data-v="head"]');
+await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(80); await p.click('.ctx-menu [data-v="head"]');
 check(await waitPlaying(), "从头放 = 放起来"); await p.waitForTimeout(150);
 check((await pos()) < 1, "从头放 = 从开头放", `${(await pos()).toFixed(2)} s`);
 check((await T()).startMark === null && !(await p.$(".start-mark")), "从头放 = 起点回到开头（小旗没了）", JSON.stringify((await T()).startMark));

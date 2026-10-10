@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.19-2026-10-10";
+var APP_VERSION = "v0.10.20-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -37508,21 +37508,27 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\uFF08\u8D77\u70B9\u56DE\u5F00\u5934\uFF09\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="transportMore" class="btn" title="\u63A5\u7740\u653E\uFF08\u505C\u8FC7\u624D\u6709\uFF09/ \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+var PLAY_TITLE = "\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\u3002\u957F\u6309 / \u53F3\u952E = \u63A5\u7740\u653E / \u81EA\u52A8\u7FFB / \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A";
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
+var attr = (s10) => s10.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 var padTab = document.createElement("button");
 padTab.id = "padTab";
 padTab.className = "btn pad-tab";
 padTab.hidden = true;
 padTab.title = "\u952E\u76D8\uFF08pad\uFF09";
 padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span>`;
-stageEl.append(padTab);
+var dockTab = document.createElement("div");
+dockTab.className = "dock-tab";
+dockTab.setAttribute("role", "toolbar");
+dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${attr(MODE_TITLE[m2])}">${MODE_LABEL[m2]}</button>`).join("")}</span><span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
+dockTab.append(padTab);
+stageEl.append(dockTab);
 padTab.addEventListener("click", () => showPad(true));
-var attr = (s10) => s10.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 var viewTab = document.createElement("div");
 viewTab.className = "view-tab";
-viewTab.innerHTML = `<span class="mode-seg" role="tablist" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${attr(MODE_TITLE[m2])}">${MODE_LABEL[m2]}</button>`).join("")}</span><select id="paperSel" class="vt-sel" title="\u770B\u54EA\u4E00\u6BB5\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u6BB5"></select><select id="partSel" class="vt-sel" title="\u770B\u54EA\u4F4D\u6B4C\u624B\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u4F4D"></select>`;
+viewTab.innerHTML = `<select id="paperSel" class="vt-sel" title="\u770B\u54EA\u4E00\u6BB5\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u6BB5"></select><select id="partSel" class="vt-sel" title="\u770B\u54EA\u4F4D\u6B4C\u624B\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u4F4D"></select>`;
 stageEl.append(viewTab);
 var selBar = new SelBar(stageEl, { verb: (v) => {
   void selVerb(v);
@@ -37552,7 +37558,7 @@ function renderTopSels() {
 function updateChrome() {
   if (!chromeReady) return;
   const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);
-  viewTab.hidden = over;
+  dockTab.hidden = over;
   padTab.hidden = !padEl.hidden || (gallery?.isOpen() ?? false) && !finderShown || studio.isOpen || !hasKeys(ws.mode);
   {
     const lab = ws.mode === "listen" ? "\u6DF7\u97F3\u53F0" : "\u952E\u76D8", sp2 = padTab.querySelector("span");
@@ -37560,6 +37566,7 @@ function updateChrome() {
     padTab.title = ws.mode === "listen" ? "\u6DF7\u97F3\u53F0\uFF08\u542C\u7684\u952E\u76D8\uFF09" : "\u952E\u76D8\uFF08pad\uFF09";
   }
   renderTopSels();
+  viewTab.hidden = over || $2("paperSel").hidden && $2("partSel").hidden;
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
@@ -38384,9 +38391,12 @@ var info = (s10) => {
 function showError(text2) {
   reportError(text2, "error");
 }
+var playBtns = () => [$2("playBtn"), $2("dockPlay")].filter((x2) => !!x2);
 var playIcon = (playing) => {
-  $2("playBtn").innerHTML = `<svg class="ico"><use href="#${playing ? "stop" : "play-from-start"}"/></svg>`;
-  $2("playBtn").classList.toggle("is-on", playing);
+  for (const b3 of playBtns()) {
+    b3.innerHTML = `<svg class="ico"><use href="#${playing ? "stop" : "play-from-start"}"/></svg>`;
+    b3.classList.toggle("is-on", playing);
+  }
   if (!playing) progress("");
 };
 var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
@@ -38756,7 +38766,7 @@ async function startPlayback(how) {
   holdAudio();
   preparing = true;
   cancelPrepare = false;
-  $2("playBtn").classList.add("is-on");
+  for (const b3 of playBtns()) b3.classList.add("is-on");
   try {
     const tl2 = await prepare("view", { chunks: false });
     if (!tl2) {
@@ -38791,7 +38801,7 @@ async function startPlayback(how) {
   } finally {
     releaseAudio();
     preparing = false;
-    if (!engine.playing) $2("playBtn").classList.remove("is-on");
+    if (!engine.playing) for (const b3 of playBtns()) b3.classList.remove("is-on");
   }
 }
 var DOUBLE_TAP_MS = 350;
@@ -38883,7 +38893,7 @@ function applyWorkspace() {
   document.body.dataset.wmode = ws.mode;
   document.body.classList.toggle("listen-mode", ws.mode === "listen");
   scoreEl.dataset.mode = ws.mode;
-  viewTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.mode === ws.mode));
+  dockTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.mode === ws.mode));
   const changed2 = padEl.hidden === padOn || stageEl.dataset.dock !== d3;
   stageEl.dataset.dock = d3;
   padEl.hidden = !padOn;
@@ -38948,19 +38958,19 @@ function openListenMenu(at2, a10) {
     else if (v === "head") playFromHead();
   });
 }
-function openTransportMenu() {
+function openTransportMenu(btn = $2("playBtn")) {
   closeOffer?.();
-  const btn = $2("transportMore"), box = document.createElement("div");
+  const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc8(title)}">${label}</button>`;
   box.innerHTML = (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
   document.body.append(box);
-  const b3 = btn.getBoundingClientRect(), w2 = box.offsetWidth, m2 = 8;
+  const b3 = btn.getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   box.style.left = `${Math.max(m2, Math.min(b3.left, innerWidth - w2 - m2))}px`;
-  box.style.top = `${b3.bottom + 4}px`;
+  box.style.top = `${b3.bottom + 4 + h2 <= innerHeight - m2 ? b3.bottom + 4 : Math.max(m2, b3.top - h2 - 4)}px`;
   const outside = (e10) => {
-    if (!box.contains(e10.target) && e10.target !== btn) close();
+    if (!box.contains(e10.target) && !btn.contains(e10.target)) close();
   };
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
@@ -38986,8 +38996,7 @@ function openTransportMenu() {
 }
 function setLoop(on2) {
   loopOn = on2;
-  $2("transportMore").classList.toggle("is-on", on2);
-  $2("transportMore").textContent = on2 ? "\u5FAA\u73AF \u22EF" : "\u22EF";
+  for (const b3 of playBtns()) b3.classList.toggle("looping", on2);
   if (engine.playing && playTl) {
     const r10 = playRange(playTl);
     engine.setTimeline({ tracks: playTl.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom });
@@ -39074,9 +39083,37 @@ function schedulePrewarm() {
     setChunkOrder(tl2, paused ? resumeSeconds(tl2, r10) : startSeconds(tl2, r10), null, { quiet: true, limit: PREWARM_PHRASES, mute: paused ? void 0 : startMute(tl2, r10) });
   }, 700);
 }
-$2("playBtn").addEventListener("click", (e10) => playPause(e10.timeStamp));
-$2("transportMore").addEventListener("click", () => openTransportMenu());
-viewTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.addEventListener("click", () => setMode(b3.dataset.mode)));
+function wirePlayBtn(btn) {
+  let timer = 0, held = false;
+  const cancel = () => clearTimeout(timer);
+  btn.addEventListener("pointerdown", (e10) => {
+    if (e10.button !== 0) return;
+    held = false;
+    cancel();
+    timer = window.setTimeout(() => {
+      held = true;
+      openTransportMenu(btn);
+    }, 500);
+  });
+  btn.addEventListener("pointerup", cancel);
+  btn.addEventListener("pointerleave", cancel);
+  btn.addEventListener("pointercancel", cancel);
+  btn.addEventListener("click", (e10) => {
+    if (held) {
+      held = false;
+      return;
+    }
+    playPause(e10.timeStamp);
+  });
+  btn.addEventListener("contextmenu", (e10) => {
+    e10.preventDefault();
+    cancel();
+    openTransportMenu(btn);
+  });
+}
+wirePlayBtn($2("playBtn"));
+wirePlayBtn($2("dockPlay"));
+dockTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.addEventListener("click", () => setMode(b3.dataset.mode)));
 $2("paperSel").addEventListener("change", (e10) => {
   const v = e10.target.value;
   e10.target.blur();
@@ -39461,7 +39498,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "663755fd8bce",
+  cssHash: "7ed19b2fc99e",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -42642,4 +42679,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a9c3310865b4.mjs.map
+//# sourceMappingURL=moonsinger-01d84c606595.mjs.map
