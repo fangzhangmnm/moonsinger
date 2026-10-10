@@ -14,7 +14,7 @@ import { diagNote } from "../app/report-error.ts";
 const OOM = /out of memory|no available backend/i;
 
 export interface SingResult { samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> } }
-export interface LaneMem { wasm: number; cache: number }
+export interface LaneMem { wasm: number; cache: number; /** 这条道刚起来、第一次唱完时的堆（v0.9.38；内存监控按它判断重开值不值）。 */ base?: number }
 export interface DiskInfo { bytes: number; entries: number; budget: number }
 /** 读音（v0.9.34）：labels[k] = 第 k 条念成的音素；对不上 = null + said（念出来的每个音节）；ready false = 引擎还没起来（不为此起引擎）。 */
 export interface Reading { ready: boolean; labels: string[] | null; said: string[] }
@@ -27,7 +27,7 @@ interface Lane {
   inflightTag?: string;
   onlyId: number;               // 最近一次按键试听的请求（新的来了旧的取消）
   warming: Promise<void> | null;
-  mem: LaneMem | null;          // 最近一次报的占用
+  mem: LaneMem | null;          // 最近一次报的占用（base = 这条道这一辈子第一次报的堆）
   closing: boolean;             // setLanes 减掉的：算完手上的就关
 }
 const newLane = (): Lane => ({ w: null, inflightId: 0, onlyId: 0, warming: null, mem: null, closing: false });
@@ -65,7 +65,7 @@ export class Singer {
       this.pending.delete(m.id);
       if (m.type === "cache") { (p as Pending & { cache?: (d: DiskInfo | null) => void }).cache?.(m.disk); return; }
       if (m.type === "read") { (p as Pending & { read?: (r: Reading) => void }).read?.({ ready: m.ready, labels: m.labels, said: m.said }); return; }
-      if (m.type === "done") { if (m.mem) { l.mem = m.mem; const i = this.laneIndex(l); if (i >= 0) this.onMem?.(i, m.mem); } p.ok({ samples: m.samples, sr: m.sr, ms: m.ms }); }
+      if (m.type === "done") { if (m.mem) { l.mem = { ...m.mem, base: l.mem?.base ?? m.mem.wasm }; const i = this.laneIndex(l); if (i >= 0) this.onMem?.(i, m.mem); } p.ok({ samples: m.samples, sr: m.sr, ms: m.ms }); }
       else p.fail(new Error(m.message));
       if (l.closing && ![...this.pending.values()].some((q) => q.lane === l)) this.closeLane(l);
     };

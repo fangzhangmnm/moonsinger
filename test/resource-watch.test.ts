@@ -27,12 +27,18 @@ describe("资源阶梯", () => {
   it("总量超了、块不多、两条道 = 关一条；一条道 = 重开堆最大的那条", () => {
     const two = advise(snap({ lanes: [{ wasm: 300 * MB, cache: 30 * MB }, { wasm: 280 * MB, cache: 30 * MB }], chunkBytes: 5 * MB, chunks: 4 }), b);
     eq(two.map((x) => x.kind).join(), "fewerLanes");
-    const one = advise(snap({ lanes: [{ wasm: 380 * MB, cache: 30 * MB }], chunkBytes: 5 * MB, chunks: 4, soundMem: 200 * MB }), b);
+    const one = advise(snap({ lanes: [{ wasm: 380 * MB, cache: 30 * MB, base: 200 * MB }], chunkBytes: 5 * MB, chunks: 4, soundMem: 200 * MB }), b);
     eq(one.map((x) => x.kind).join(), "restartLane"); if (one[0].kind === "restartLane") eq(one[0].lane, 0);
   });
   it("某条道的堆超过单道预算 = 重开它（总量没超也重开）", () => {
-    const a = advise(snap({ lanes: [{ wasm: 100 * MB, cache: 1 * MB }, { wasm: 430 * MB, cache: 1 * MB }], chunkBytes: 1 * MB, chunks: 1 }), budgetFor({ ios: false, cores: 8, deviceMemoryGB: 4 }));
+    const a = advise(snap({ lanes: [{ wasm: 100 * MB, cache: 1 * MB, base: 100 * MB }, { wasm: 430 * MB, cache: 1 * MB, base: 250 * MB }], chunkBytes: 1 * MB, chunks: 1 }), budgetFor({ ios: false, cores: 8, deviceMemoryGB: 4 }));
     eq(a.length, 1); if (a[0].kind === "restartLane") eq(a[0].lane, 1); else assert(false, "该重开第二条道");
+  });
+  it("引擎本来就这么大（堆没比基线多涨）= 不重开、不说：重开还不回来（user「为什么经常会有440MB的抱怨」；iPad 那档单道 420 MB）", () => {
+    eq(advise(snap({ lanes: [{ wasm: 440 * MB, cache: 20 * MB, base: 430 * MB }], chunkBytes: 5 * MB, chunks: 4 }), b).length, 0, "超单道预算、但只比基线多 10 MB");
+    eq(advise(snap({ lanes: [{ wasm: 440 * MB, cache: 20 * MB, base: 430 * MB }], chunkBytes: 5 * MB, chunks: 4, soundMem: 200 * MB }), b).length, 0, "总量也超了，照样不重开");
+    eq(advise(snap({ lanes: [{ wasm: 440 * MB, cache: 20 * MB }], chunkBytes: 5 * MB, chunks: 4 }), b).length, 0, "没有基线 = 不知道能还多少 = 不重开");
+    eq(advise(snap({ lanes: [{ wasm: 600 * MB, cache: 20 * MB, base: 430 * MB }], chunkBytes: 5 * MB, chunks: 4 }), b).map((x) => x.kind).join(), "restartLane", "多涨了 170 MB = 重开");
   });
   it("音频线程热 = 明说 + 两条道时减并行；不热不说", () => {
     const hot = advise(snap({ lanes: [{ wasm: 100 * MB, cache: 1 * MB }, { wasm: 100 * MB, cache: 1 * MB }], audioBusy: 0.95 }), budgetFor({ ios: false, cores: 8, deviceMemoryGB: null }));

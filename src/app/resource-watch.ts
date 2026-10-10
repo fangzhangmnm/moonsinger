@@ -18,7 +18,8 @@ export interface Budget {
   /** 念缓存持久层（全局池，IndexedDB）的字节预算（user 2026-10-10「代价约每首32MB」：小设备约 4 首、桌面约 16 首）。 */
   speechDisk: number;
 }
-export interface LaneMem { wasm: number; cache: number }
+/** base = 这条道刚起来、第一次唱完时的堆（v0.9.38）：引擎活着本来就要这么多（模型 + 词典 + WORLD 缓冲），重开只能还回比它多涨的那一截。 */
+export interface LaneMem { wasm: number; cache: number; base?: number }
 export interface Snapshot {
   lanes: LaneMem[];           // 每条道最近一次报的数（没报过 = 不在）
   chunkBytes: number; chunks: number;
@@ -45,13 +46,23 @@ export const totalBytes = (s: Snapshot): number => s.lanes.reduce((n, l) => n + 
 /** 音频线程算「热」的门槛（忙闲比；超过 = 可能爆音）。 */
 export const AUDIO_HOT = 0.85;
 
-/** 超预算的阶梯（按顺序，一次只建议一步，做了再看下一次快照）：① 块超了先放块 ② 两条道关一条 ③ 某条道的堆超了 = 重开它 ④ 音频线程热 = 明说（并减并行）。 */
+/** 重开一条道能还回来多少：比基线多涨的那一截（没有基线 = 不知道 = 当 0）。 */
+const freeable = (l: LaneMem): number => (l.base !== undefined ? Math.max(0, l.wasm - l.base) : 0);
+/** 值不值得重开：多涨的超过 100 MB 或基线的三成（取大的）。2026-10-10 修（user「为什么经常会有440MB的抱怨，清缓存重启也有…没做gc？」）：
+ *  原来只比单道预算——iPad 那档 420 MB 比引擎正常的大小（约 440 MB）还低，一闲下来就重开、唱几句又回到 440、又重开，每次还弹一句；重开省不了内存，只丢念缓存。 */
+const worth = (l: LaneMem): boolean => freeable(l) > Math.max(100 * MB, 0.3 * (l.base ?? 0));
+/** 超预算的阶梯（按顺序，一次只建议一步，做了再看下一次快照）：① 块超了先放块 ② 两条道关一条 ③ 某条道的堆超了而且比基线多涨了一大截 = 重开它 ④ 音频线程热 = 明说（并减并行）。
+ *  堆没比基线多涨（引擎本来就这么大）= 不重开、不说（重开还不回来）。 */
 export function advise(s: Snapshot, b: Budget): Advice[] {
   const out: Advice[] = [];
   const over = totalBytes(s) > b.total;
   if (s.chunkBytes > b.chunkBytes || (over && s.chunkBytes > b.chunkBytes / 2)) out.push({ kind: "pruneChunks", toBytes: Math.floor(Math.min(b.chunkBytes, s.chunkBytes) / 2) });
   else if (over && s.lanes.length > 1) out.push({ kind: "fewerLanes", lanes: 1 });
-  else { const i = s.lanes.findIndex((l) => l.wasm > b.perWorker); if (i >= 0) out.push({ kind: "restartLane", lane: i }); else if (over && s.lanes.length) out.push({ kind: "restartLane", lane: s.lanes.map((l, k) => [l.wasm, k] as const).sort((a, c) => c[0] - a[0])[0][1] }); }
+  else {
+    const i = s.lanes.findIndex((l) => l.wasm > b.perWorker && worth(l));
+    if (i >= 0) out.push({ kind: "restartLane", lane: i });
+    else if (over) { const k = s.lanes.map((l, j) => [freeable(l), j] as const).filter(([, j]) => worth(s.lanes[j])).sort((a, c) => c[0] - a[0])[0]; if (k) out.push({ kind: "restartLane", lane: k[1] }); }
+  }
   if (s.audioBusy !== null && s.audioBusy > AUDIO_HOT) { out.push({ kind: "audioHot", busy: s.audioBusy }); if (s.lanes.length > 1 && !out.some((a) => a.kind === "fewerLanes")) out.push({ kind: "fewerLanes", lanes: 1 }); }
   return out;
 }
@@ -59,7 +70,7 @@ export function advise(s: Snapshot, b: Budget): Advice[] {
 const sizeText = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : `${(n / 1e3).toFixed(0)} KB`);
 /** 设置页 / 诊断用的一句人话（能算的那部分，不假装是页面总内存）。 */
 export function describe(s: Snapshot, b: Budget): string {
-  const lanes = s.lanes.length ? s.lanes.map((l, i) => `道 ${i + 1}：堆 ${sizeText(l.wasm)} + 念缓存 ${sizeText(l.cache)}`).join("；") : "月读引擎没起";
+  const lanes = s.lanes.length ? s.lanes.map((l, i) => `道 ${i + 1}：堆 ${sizeText(l.wasm)}${l.base !== undefined ? `（刚起来 ${sizeText(l.base)}）` : ""} + 念缓存 ${sizeText(l.cache)}`).join("；") : "月读引擎没起";
   const audio = s.audioBusy === null ? "音频线程：没在报" : `音频线程最近 1 s 忙 ${Math.round(s.audioBusy * 100)}%${s.audioBusy > AUDIO_HOT ? "（热：可能爆音）" : ""}`;
   return `能算到的占用 ${sizeText(totalBytes(s))} / 预算 ${sizeText(b.total)}（${lanes}；录音房里 ${s.chunks} 块 ${sizeText(s.chunkBytes)}；音源内存 ${sizeText(s.soundMem)}）。${audio}。`;
 }

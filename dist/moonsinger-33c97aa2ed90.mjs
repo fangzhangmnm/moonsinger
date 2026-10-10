@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.37-2026-10-10";
+var APP_VERSION = "v0.9.38-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -19903,7 +19903,7 @@ var Singer = class {
       }
       if (m2.type === "done") {
         if (m2.mem) {
-          l10.mem = m2.mem;
+          l10.mem = { ...m2.mem, base: l10.mem?.base ?? m2.mem.wasm };
           const i10 = this.laneIndex(l10);
           if (i10 >= 0) this.onMem?.(i10, m2.mem);
         }
@@ -20077,15 +20077,20 @@ function budgetFor(d3) {
 }
 var totalBytes = (s10) => s10.lanes.reduce((n10, l10) => n10 + l10.wasm + l10.cache, 0) + s10.chunkBytes + s10.soundMem;
 var AUDIO_HOT = 0.85;
+var freeable = (l10) => l10.base !== void 0 ? Math.max(0, l10.wasm - l10.base) : 0;
+var worth = (l10) => freeable(l10) > Math.max(100 * MB, 0.3 * (l10.base ?? 0));
 function advise(s10, b3) {
   const out = [];
   const over = totalBytes(s10) > b3.total;
   if (s10.chunkBytes > b3.chunkBytes || over && s10.chunkBytes > b3.chunkBytes / 2) out.push({ kind: "pruneChunks", toBytes: Math.floor(Math.min(b3.chunkBytes, s10.chunkBytes) / 2) });
   else if (over && s10.lanes.length > 1) out.push({ kind: "fewerLanes", lanes: 1 });
   else {
-    const i10 = s10.lanes.findIndex((l10) => l10.wasm > b3.perWorker);
+    const i10 = s10.lanes.findIndex((l10) => l10.wasm > b3.perWorker && worth(l10));
     if (i10 >= 0) out.push({ kind: "restartLane", lane: i10 });
-    else if (over && s10.lanes.length) out.push({ kind: "restartLane", lane: s10.lanes.map((l10, k2) => [l10.wasm, k2]).sort((a10, c10) => c10[0] - a10[0])[0][1] });
+    else if (over) {
+      const k2 = s10.lanes.map((l10, j2) => [freeable(l10), j2]).filter(([, j2]) => worth(s10.lanes[j2])).sort((a10, c10) => c10[0] - a10[0])[0];
+      if (k2) out.push({ kind: "restartLane", lane: k2[1] });
+    }
   }
   if (s10.audioBusy !== null && s10.audioBusy > AUDIO_HOT) {
     out.push({ kind: "audioHot", busy: s10.audioBusy });
@@ -20095,7 +20100,7 @@ function advise(s10, b3) {
 }
 var sizeText = (n10) => n10 >= 1e9 ? `${(n10 / 1e9).toFixed(2)} GB` : n10 >= 1e6 ? `${(n10 / 1e6).toFixed(0)} MB` : `${(n10 / 1e3).toFixed(0)} KB`;
 function describe(s10, b3) {
-  const lanes = s10.lanes.length ? s10.lanes.map((l10, i10) => `\u9053 ${i10 + 1}\uFF1A\u5806 ${sizeText(l10.wasm)} + \u5FF5\u7F13\u5B58 ${sizeText(l10.cache)}`).join("\uFF1B") : "\u6708\u8BFB\u5F15\u64CE\u6CA1\u8D77";
+  const lanes = s10.lanes.length ? s10.lanes.map((l10, i10) => `\u9053 ${i10 + 1}\uFF1A\u5806 ${sizeText(l10.wasm)}${l10.base !== void 0 ? `\uFF08\u521A\u8D77\u6765 ${sizeText(l10.base)}\uFF09` : ""} + \u5FF5\u7F13\u5B58 ${sizeText(l10.cache)}`).join("\uFF1B") : "\u6708\u8BFB\u5F15\u64CE\u6CA1\u8D77";
   const audio = s10.audioBusy === null ? "\u97F3\u9891\u7EBF\u7A0B\uFF1A\u6CA1\u5728\u62A5" : `\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 ${Math.round(s10.audioBusy * 100)}%${s10.audioBusy > AUDIO_HOT ? "\uFF08\u70ED\uFF1A\u53EF\u80FD\u7206\u97F3\uFF09" : ""}`;
   return `\u80FD\u7B97\u5230\u7684\u5360\u7528 ${sizeText(totalBytes(s10))} / \u9884\u7B97 ${sizeText(b3.total)}\uFF08${lanes}\uFF1B\u5F55\u97F3\u623F\u91CC ${s10.chunks} \u5757 ${sizeText(s10.chunkBytes)}\uFF1B\u97F3\u6E90\u5185\u5B58 ${sizeText(s10.soundMem)}\uFF09\u3002${audio}\u3002`;
 }
@@ -40582,4 +40587,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8c90c1ac73c4.mjs.map
+//# sourceMappingURL=moonsinger-33c97aa2ed90.mjs.map
