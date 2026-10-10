@@ -917,13 +917,13 @@ export function backspace(st: EditorState): EditorState {
   if (st.caret <= headLen(tokens)) return st;   // 谱头删不掉
   // 光标前最近的音 / 休止 / 手动小节线（中间隔着的不占时值的记号留着）。
   // v0.10.7（user 2026-10-10 选「留休止」：光标下 ⌫ 删一个音 = 留一样长的休止，后面不挪，和写音覆盖休止对称；想合拢 = Delete）：
-  //   音 → 一样长的休止、光标退到它前面（接着按 = 接着往前改；接着写 = 覆盖它）；休止 → 光标往前挪过它；人插的「|」照旧删掉（不占时值）。
+  //   音 → 一样长的休止、光标退到它前面（接着按 = 接着往前改；接着写 = 覆盖它）；人插的「|」照旧删掉（不占时值）。
+  //   休止 → 删掉、后面的往前合拢（v0.10.17，user「bug: backspace cannot delete 休止符 token」；原来是光标挪过它，休止用退格永远删不掉）。
   let i = st.caret - 1; while (i >= headLen(tokens) && !stopTok(tokens[i])) i--;
   if (i < headLen(tokens)) return st;
   const t = tokens[i];
   if (t.kind === "note") { const nt = tokens.slice(); nt[i] = { kind: "rest", id: t.id, dur: t.dur } as Token; dropTieAfter(nt, i); return next(leave(st), nt, { caret: i }); }
-  if (t.kind === "rest") return { ...leave(st), caret: i };
-  const nt = tokens.slice(); nt.splice(i, 1);
+  const nt = tokens.slice(); nt.splice(i, 1);   // 休止 / 「|」：删掉
   return afterDelete(st, nt, { caret: st.caret - 1 });
 }
 export function deleteForward(st: EditorState): EditorState {

@@ -9,6 +9,7 @@ const note = (art?: NoteTok["art"]) => ({ kind: "note", id: nid++, pitch: { step
 const dyn = (v: "p" | "f" | "mp") => ({ kind: "dyn", id: nid++, value: v }) as Token;
 const pin = () => ({ kind: "hairpin", id: nid++, dir: "cresc" }) as Token;
 const bar = () => ({ kind: "bar", id: nid++ }) as Token;
+const rest = () => ({ kind: "rest", id: nid++, dur: TPQ }) as Token;
 const head = tr(initState()).slice(0, 3);
 function stOf(items: Token[], caret?: number): EditorState {
   const base = initState(), toks = [...head, ...items];
@@ -39,6 +40,16 @@ describe("写音模式 ⌫ = 留休止（v0.10.7，user 选「留休止」）；
     let st = stOf([dyn("p"), note(), dyn("f"), note(), note()], 3 + 4);   // 光标在 B 后
     st = backspace(st); eq(show(st), "p n f rest n");
     st = backspace(st); eq(show(st), "p rest f rest n", "A 也变休止；记号都留着（时值没变，没有湮灭）");
+  });
+  it("光标前是休止 = ⌫ 删掉它、后面的合拢（v0.10.17，user「bug: backspace cannot delete 休止符 token」）", () => {
+    const st = backspace(stOf([note(), rest(), note()], 3 + 2)); eq(show(st), "n n"); eq(st.caret, 3 + 1, "光标在 A 后");
+  });
+  it("音 ⌫ = 休止（光标退到它前面）；→ 再 ⌫ = 把这个休止也删了", () => {
+    let st = backspace(stOf([note(), note(), note()], 3 + 2)); eq(show(st), "n rest n");
+    st = backspace(moveCaret(st, 1)); eq(show(st), "n n"); eq(st.caret, 3 + 1);
+  });
+  it("休止和光标之间隔着记号：记号留着、跟着后面的音", () => {
+    eq(show(backspace(stOf([note(), rest(), dyn("f"), note()], 3 + 3))), "n f n");
   });
   it("Delete 删掉后面的音 = 合拢；p 和 f 之间没音了 → p 湮灭", () => {
     const st = deleteForward(stOf([dyn("p"), note(), dyn("f"), note(), note()], 3 + 1)); eq(show(st), "f n n");

@@ -1495,6 +1495,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, renderMix: () => renderMixForTest(),
   transport: () => ({ startMark, paused, listen: listenOn(), loop: loopOn }),   // 走带的状态（E2E 用）
+  navPaper: (d: -1 | 1) => navPaper(d), paperSpans: () => playTl?.papers.map((x) => ({ id: x.paper.id, t0: x.t0 })) ?? null,   // 换段 / 现在放的时间线里每段从几秒起（E2E 用）
   workspace: () => ({ ...ws, dock: dockOf(ws) }), setMode: (m: Mode) => setMode(m),   // 模式 / 底座（E2E 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describeResources(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
   speechCache: (op: "info" | "clear") => singer.cache(op, BUDGET.speechDisk),
@@ -1725,6 +1726,7 @@ const studio = new Studio($("stage"), {
   addBus: () => { const id = newBusId(doc.extras), n = studioTracks(doc.extras).filter((t) => t.kind === "bus").length + 1, name = `混音轨 ${n}`; updateExtras(withTrack(doc.extras, id, { kind: "bus", name }), { kind: "studio", label: `加${name}` }); return id; },
   removeBus: (id) => { const name = studioTrack(doc.extras, id)?.name ?? id; updateExtras(withoutBus(doc.extras, id), { kind: "studio", label: `删${name}` }); },
   renameBus: (id, name) => updateExtras(withTrack(doc.extras, id, { name }), { kind: "studio", label: `改名「${name}」` }),
+  movePart: (id, dir) => { update(movePart(st, id, dir)); renderTitle(); },   // 和谱上声部菜单的「上移 / 下移」同一个
   moveBus: (id, dir) => updateExtras(moveBus(doc.extras, id, dir), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} 往${dir < 0 ? "前" : "后"}挪` }),
   setBusGain: (id, dB) => updateExtras(withTrack(doc.extras, id, { gainDb: dB }), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} 增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id}`),
   setBusPan: (id, pan) => updateExtras(withTrack(doc.extras, id, { pan }), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} 声像` }, `mix:pan:${id}`),
@@ -1948,6 +1950,18 @@ function navPaperTo(id: string): void {
   const to = st.song.papers.find((p) => p.id === id); if (!to) return;
   const part = to.tracks[st.at.part] ? st.at.part : st.song.parts.find((p) => to.tracks[p.id])?.id ?? st.at.part;
   update(setFocus(st, to.id, part));
+  jumpPlaybackToPaper(id);
+}
+/** 放着的时候换曲段（‹ › / 挂签下拉 / 每张纸自己的曲段控件；只认这几处明说的「换段」，点谱上别的纸里的音不算）= 从那一段的开头放
+ *  （v0.10.17；user「播放的时候强切不同的曲段应该能跳到那个曲段去播放」「播放中跳曲段的时候播放头应该从开始播放」）。
+ *  本段视图 = 范围换成那一段、从它的头放；全部视图 = 跳到那一段（第一次出现）的头，前一段没响完的音不带过来（同「从这儿放」）。起点（从这儿放的那个小节）不动。 */
+function jumpPlaybackToPaper(id: string): void {
+  if (!engine.playing && !preparing) return;
+  const span = viewScope === "all" && engine.playing ? playTl?.papers.find((x) => x.paper.id === id) : undefined;
+  if (span && playTl) { const r = playRange(playTl); playMute = span.t0; engine.seek(clampTo(r, span.t0 - PRE_ROLL), playMute); return; }
+  stopPlay();
+  const go = (): void => { if (preparing) setTimeout(go, 30); else void startPlayback("head"); };   // 正在准备的那次先退干净
+  go();
 }
 /** 新歌手（声部就是歌手；2026-10-08 user「嗯声部就是歌手」）：休息室里建一份默认角色（月读两个候选）+ 录音房一个麦克风（歌手认领麦克风）。
  *  只在 paper 这张纸上给它一行（user「新歌手只出现在当前这张纸嗯」）；giveFrom = 「交给新歌手」：这张纸上 giveFrom 那一行直接交给它（不另起空行）。

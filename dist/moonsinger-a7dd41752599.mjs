@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.16-2026-10-10";
+var APP_VERSION = "v0.10.17-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3928,7 +3928,6 @@ function backspace(st3) {
     dropTieAfter(nt3, i10);
     return next(leave(st3), nt3, { caret: i10 });
   }
-  if (t10.kind === "rest") return { ...leave(st3), caret: i10 };
   const nt2 = tokens.slice();
   nt2.splice(i10, 1);
   return afterDelete(st3, nt2, { caret: st3.caret - 1 });
@@ -25995,7 +25994,7 @@ function wireParamRows(root) {
 }
 
 // src/ui/scopes.ts
-var SCOPE_POINTS = 256;
+var SCOPE_POINTS = 512;
 var FLOOR = 0.05;
 function stereoShape(L2, R2) {
   const n10 = Math.min(L2.length, R2.length);
@@ -26005,18 +26004,23 @@ function stereoShape(L2, R2) {
     lr2 += l10 * r10;
     ll2 += l10 * l10;
     rr2 += r10 * r10;
-    const m2 = Math.abs(l10 + r10), s10 = Math.abs(l10 - r10);
-    if (m2 > pk) pk = m2;
+    const m3 = Math.abs(l10 + r10), s10 = Math.abs(l10 - r10);
+    if (m3 > pk) pk = m3;
     if (s10 > pk) pk = s10;
   }
   pk *= Math.SQRT1_2;
   const corr = ll2 > 1e-9 && rr2 > 1e-9 ? Math.max(-1, Math.min(1, lr2 / Math.sqrt(ll2 * rr2))) : ll2 + rr2 > 1e-9 ? 0 : null;
   const k2 = 0.9 / Math.max(pk, FLOOR), step = Math.max(1, Math.floor(n10 / SCOPE_POINTS));
-  let d3 = "";
+  const xs = [], ys = [];
   for (let i10 = 0; i10 < n10; i10 += step) {
-    const x2 = ((R2[i10] - L2[i10]) * Math.SQRT1_2 * k2).toFixed(3), y2 = (-(L2[i10] + R2[i10]) * Math.SQRT1_2 * k2).toFixed(3);
-    d3 += `${d3 ? "L" : "M"}${x2},${y2}`;
+    xs.push((R2[i10] - L2[i10]) * Math.SQRT1_2 * k2);
+    ys.push(-(L2[i10] + R2[i10]) * Math.SQRT1_2 * k2);
   }
+  const f2 = (v) => v.toFixed(3), m2 = xs.length;
+  if (m2 < 2) return { path: m2 ? `M${f2(xs[0])},${f2(ys[0])}` : "", corr };
+  let d3 = `M${f2(xs[0])},${f2(ys[0])}L${f2((xs[0] + xs[1]) / 2)},${f2((ys[0] + ys[1]) / 2)}`;
+  for (let i10 = 1; i10 < m2 - 1; i10++) d3 += `Q${f2(xs[i10])},${f2(ys[i10])} ${f2((xs[i10] + xs[i10 + 1]) / 2)},${f2((ys[i10] + ys[i10 + 1]) / 2)}`;
+  d3 += `L${f2(xs[m2 - 1])},${f2(ys[m2 - 1])}`;
   return { path: d3, corr };
 }
 
@@ -26041,6 +26045,8 @@ var HINT2 = {
   masterGain: "\u603B\u8F68\u589E\u76CA\uFF1A\u6240\u6709\u8F68\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E\u6574\u4F53\u518D\u8C03\u5927\u8C03\u5C0F",
   out: "\u51FA\u5230\uFF1A\u8FD9\u6761\u8F68\u7684\u58F0\u97F3\u6700\u540E\u53BB\u54EA\u2014\u2014\u76F4\u63A5\u53BB\u603B\u8F68\uFF0C\u6216\u8005\u5148\u8FDB\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u5728\u90A3\u91CC\u4E00\u8D77\u8FC7\u6548\u679C\uFF09",
   send: "\u53D1\u9001\uFF1A\u63A8\u5B50\u4E4B\u540E\u518D\u590D\u5236\u4E00\u4EFD\u7ED9\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF1B\u8D8A\u5927\uFF0C\u90A3\u8FB9\u7684\u6548\u679C\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\uFF09\u8D8A\u591A\uFF0C\u539F\u58F0\u7167\u65E7\u8D70\u300C\u51FA\u5230\u300D",
+  limiter: "\u9650\u5E45\uFF08\u603B\u8F68\u6700\u540E\u4E00\u9053\uFF09\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u5F88\u5FEB\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E00\u4E2A\u91C7\u6837\u90FD\u4E0D\u52A8\uFF0C\u4E0D\u6539\u97F3\u8272\u3002\u5173\u6389 = \u8D85\u4E86\u5C31\u524A\u6CE2\uFF08\u7206\u97F3\u3001\u5BFC\u51FA\u7684\u6587\u4EF6\u91CC\u4E5F\u662F\uFF09\u3002\u4E00\u822C\u4E00\u76F4\u5F00\u7740\uFF1B\u60F3\u770B\u81EA\u5DF1\u7684\u6DF7\u97F3\u5230\u5E95\u591A\u54CD\uFF0C\u53EF\u4EE5\u5148\u5173\u4E86\u770B\u5CF0\u503C",
+  peak: "\u5CF0\u503C\uFF1A\u6700\u8FD1\u8FD9\u4E00\u4E0B\u6700\u54CD\u7684\u90A3\u4E2A\u91C7\u6837\uFF08dBFS\uFF09\u30020 dB = \u6EE1\u683C\uFF0C\u518D\u5927\u5C31\u524A\u6CE2\uFF1B\u9650\u5E45\u5F00\u7740\u65F6\u6700\u591A\u5230 \u22120.18 dB\u3002\u9876\u4E0A\u7684\u7EC6\u7EBF\u662F\u540C\u4E00\u4E2A\u6570",
   rms: "\u5E73\u5747\u7535\u5E73\uFF08RMS\uFF0C\u6700\u8FD1 0.3 \u79D2\uFF0C\u63A8\u5B50\u4E4B\u540E\uFF0CdBFS\uFF09\uFF1A\u6BD4\u5CF0\u503C\u66F4\u63A5\u8FD1\u8033\u6735\u89C9\u5F97\u7684\u54CD\u3002\u51E0\u6761\u8F68\u6446\u5E73\u97F3\u91CF\u770B\u8FD9\u4E2A\uFF1B\u9876\u4E0A\u7684\u7EC6\u7EBF\uFF08\u5CF0\u503C\uFF09\u770B\u4F1A\u4E0D\u4F1A\u7206",
   corr: "\u5DE6\u53F3\u76F8\u5173\uFF08\u22121 \u5230 +1\uFF09\uFF1A+1 = \u5DE6\u53F3\u4E00\u6837\uFF08\u5355\u58F0\u9053\uFF09\uFF1B0 \u9644\u8FD1 = \u5F88\u5BBD\uFF1B\u5C0F\u4E8E 0 = \u5DE6\u53F3\u53CD\u76F8\uFF0C\u624B\u673A\u5916\u653E / \u5355\u58F0\u9053\u4E00\u5408\u5C31\u4F1A\u53D8\u5C0F\u3001\u53D8\u7A7A\u3002\u80CC\u666F\u7684\u56FE\uFF1A\u7AD6\u7EBF = \u5355\u58F0\u9053\uFF0C\u8D8A\u5706\u8D8A\u5BBD\uFF0C\u6A2A\u7740 = \u53CD\u76F8",
   gr: "\u538B\u4E86\u591A\u5C11\uFF1A\u8FD9\u6761\u8F68\u4E0A\u7B2C\u4E00\u53F0\u538B\u7F29\u6B64\u523B\u628A\u58F0\u97F3\u538B\u4F4E\u4E86\u51E0 dB\uFF08\u4E0B\u9762\u644A\u5F00\u7684\u5C31\u662F\u5B83\uFF09\u3002\u4E00\u76F4\u538B\u5F88\u591A = \u9608\u503C\u592A\u4F4E\u6216\u6BD4\u4F8B\u592A\u5927",
@@ -26088,6 +26094,38 @@ var Studio2 = class {
   grShown = /* @__PURE__ */ new Map();
   corrShown = /* @__PURE__ */ new Map();
   lastText = 0;
+  /** 差设备（v0.10.17；user「以及注意一下差设备上的性能影响」）：① 只算 / 只画看得见的卡片（混音台里滚出去的不算 FFT、不画李萨如图）；
+   *  ② 背景统计按花的时间自己降频：最近平均一次超过 4 ms = 隔一帧画一帧（最多 4 帧画 1 帧），降到 1.5 ms 以下再恢复。 */
+  seen = /* @__PURE__ */ new Set();
+  io = null;
+  bgCost = 0;
+  bgSkip = 0;
+  bgN = 0;
+  budgeted(f2) {
+    if (this.bgSkip && this.bgN++ % (this.bgSkip + 1)) return;
+    const t02 = performance.now();
+    f2();
+    const dt = performance.now() - t02;
+    this.bgCost = this.bgCost * 0.8 + dt * 0.2;
+    if (this.bgCost > 4 && this.bgSkip < 3) this.bgSkip++;
+    else if (this.bgCost < 1.5 && this.bgSkip > 0) this.bgSkip--;
+  }
+  watchCards() {
+    if (typeof IntersectionObserver !== "function") return;
+    this.io ??= new IntersectionObserver((es3) => {
+      for (const e10 of es3) {
+        const id2 = e10.target.dataset.id;
+        if (e10.isIntersecting) this.seen.add(id2);
+        else this.seen.delete(id2);
+      }
+    });
+    this.io.disconnect();
+    this.seen.clear();
+    for (const el2 of this.el.querySelectorAll(".studio-strips .strip[data-id]")) this.io.observe(el2);
+  }
+  shownCard(id2) {
+    return !this.io || this.seen.has(id2);
+  }
   get isOpen() {
     return !this.el.hidden;
   }
@@ -26101,6 +26139,8 @@ var Studio2 = class {
   hide() {
     this.el.hidden = true;
     this.menuOpen = false;
+    this.io?.disconnect();
+    this.seen.clear();
   }
   // ── 峰值 ────────────────────────────────────────────────────────────────
   /** 录音房报的峰值（0–1；总轨 = 出声口；tracks = 每条轨 / 混音轨推子后）。 */
@@ -26125,7 +26165,11 @@ var Studio2 = class {
   /** 录音房拷来的最近一段采样（每条轨 / 混音轨 / 总轨）→ EQ 页卡片背景的频谱面。只在 EQ 页、混音台看得见时录音房才发。 */
   spectrum(sr2, tracks) {
     if (this.el.hidden || this.tab !== "eq") return;
+    this.budgeted(() => this.drawSpectrum(sr2, tracks));
+  }
+  drawSpectrum(sr2, tracks) {
     for (const [id2, x2] of Object.entries(tracks)) {
+      if (!this.shownCard(id2)) continue;
       const path = this.el.querySelector(`.strip[data-id="${CSS.escape(id2)}"] .strip-spec .spec`);
       if (!path) continue;
       const b3 = smoothBands(this.specShown.get(id2), bandsDb(x2, sr2));
@@ -26137,7 +26181,11 @@ var Studio2 = class {
    *  竖着 = 中 (L+R)/√2、横着 = (R−L)/√2（只有左 = 左上斜线）：竖线 = 单声道、越圆越宽、横着 = 反相。形状看的是左右关系，不看多响：按这一帧最大的那下缩放（太小的不放大）。 */
   stereo(tracks) {
     if (this.el.hidden || this.tab !== "basic") return;
+    this.budgeted(() => this.drawStereo(tracks));
+  }
+  drawStereo(tracks) {
     for (const [id2, { L: L2, R: R2 }] of Object.entries(tracks)) {
+      if (!this.shownCard(id2)) continue;
       const card = this.el.querySelector(`.strip[data-id="${CSS.escape(id2)}"]`);
       if (!card) continue;
       const g3 = stereoShape(L2, R2), path = card.querySelector(".strip-gonio .gon");
@@ -26232,6 +26280,9 @@ var Studio2 = class {
       this.render();
     } else if (v === "solo" && strip) {
       this.host.toggleSolo(strip);
+      this.render();
+    } else if ((v === "partleft" || v === "partright") && strip) {
+      this.host.movePart(strip, v === "partleft" ? -1 : 1);
       this.render();
     } else if (v === "delpart" && strip) this.host.deletePart(strip);
     else if (v === "limiter") {
@@ -26527,19 +26578,20 @@ ${tg2.fx}`);
     if (this.open && !this.slotOf(this.open)) this.open = null;
     this.renderBar();
     const nameDiv = (s10) => `<div class="strip-name">${esc5(s10)}</div>`;
-    const masterBody = tab === "basic" ? row("\u589E\u76CA", HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") + `<div class="strip-btns"><button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter" title="\u6BCD\u7EBF\u9650\u5E45\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E0D\u52A8\uFF1B\u5173\u6389 = \u53EF\u80FD\u524A\u6CE2">\u9650\u5E45${m2.limiter ? "" : "\uFF08\u5173\uFF1A\u53EF\u80FD\u524A\u6CE2\uFF09"}</button></div><div class="strip-row">\u5CF0\u503C <span class="meter-val">\u2014</span></div>` + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904</div>` : this.chipsHtml(MASTER);
+    const masterBody = tab === "basic" ? row("\u589E\u76CA", HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") + row("\u9650\u5E45", HINT2.limiter, "", `<button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter">${m2.limiter ? "\u5F00\u7740" : "\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09"}</button>`, "strip-row") + row("\u5CF0\u503C", HINT2.peak, `<span class="meter-val">\u2014</span>`, "", "strip-row") + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv("\u603B\u8F68"), "\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E", masterBody);
     const buses = this.host.buses(), busCards = buses.map((b3, k2) => {
       const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="strip-btns"><button class="btn" data-v="busleft" title="\u5F80\u524D\u632A\u4E00\u4F4D"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="\u5F80\u540E\u632A\u4E00\u4F4D"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? this.routeHtml(b3.id) : this.chipsHtml(b3.id);
       const name = tab === "basic" ? `<input class="bus-name" value="${esc5(b3.name)}" title="\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09" />` : nameDiv(b3.name);
       return this.card(b3.id, " bus", name, "\u6DF7\u97F3\u8F68", body2);
     }).join("");
-    const singers = this.host.strips().map((s10) => {
-      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + `<div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+    const strips = this.host.strips(), singers = strips.map((s10, k2) => {
+      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + `<div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button><button class="btn" data-v="partleft" title="\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
       (s10.refs ? `<div class="strip-refs">\u5728 ${s10.refs} \u5F20\u7EB8\u4E0A</div>` : `<div class="strip-refs">\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709 <button class="btn cand danger" data-v="delpart" title="\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? this.routeHtml(s10.id) : this.chipsHtml(s10.id);
       return this.card(s10.id, "", nameDiv(s10.name), s10.performer, body2, s10.color);
     }).join("");
     box.innerHTML = master + busCards + singers;
+    this.watchCards();
     box.classList.toggle("wide", tab === "eq" || tab === "comp");
     this.renderPanel();
   }
@@ -39348,6 +39400,9 @@ window.__moonsinger = {
   renderMix: () => renderMixForTest(),
   transport: () => ({ startMark, paused, listen: listenOn(), loop: loopOn }),
   // 走带的状态（E2E 用）
+  navPaper: (d3) => navPaper(d3),
+  paperSpans: () => playTl?.papers.map((x2) => ({ id: x2.paper.id, t0: x2.t0 })) ?? null,
+  // 换段 / 现在放的时间线里每段从几秒起（E2E 用）
   workspace: () => ({ ...ws, dock: dockOf(ws) }),
   setMode: (m2) => setMode(m2),
   // 模式 / 底座（E2E 用）
@@ -39370,7 +39425,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "852e05bf7df9",
+  cssHash: "80ab943a0516",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -39724,6 +39779,11 @@ var studio = new Studio2($2("stage"), {
     updateExtras(withoutBus(doc.extras, id2), { kind: "studio", label: `\u5220${name}` });
   },
   renameBus: (id2, name) => updateExtras(withTrack2(doc.extras, id2, { name }), { kind: "studio", label: `\u6539\u540D\u300C${name}\u300D` }),
+  movePart: (id2, dir) => {
+    update(movePart(st2, id2, dir));
+    renderTitle();
+  },
+  // 和谱上声部菜单的「上移 / 下移」同一个
   moveBus: (id2, dir) => updateExtras(moveBus(doc.extras, id2, dir), { kind: "studio", label: `${studioTrack(doc.extras, id2)?.name ?? id2} \u5F80${dir < 0 ? "\u524D" : "\u540E"}\u632A` }),
   setBusGain: (id2, dB) => updateExtras(withTrack2(doc.extras, id2, { gainDb: dB }), { kind: "studio", label: `${studioTrack(doc.extras, id2)?.name ?? id2} \u589E\u76CA ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id2}`),
   setBusPan: (id2, pan) => updateExtras(withTrack2(doc.extras, id2, { pan }), { kind: "studio", label: `${studioTrack(doc.extras, id2)?.name ?? id2} \u58F0\u50CF` }, `mix:pan:${id2}`),
@@ -40040,6 +40100,23 @@ function navPaperTo(id2) {
   if (!to2) return;
   const part = to2.tracks[st2.at.part] ? st2.at.part : st2.song.parts.find((p2) => to2.tracks[p2.id])?.id ?? st2.at.part;
   update(setFocus(st2, to2.id, part));
+  jumpPlaybackToPaper(id2);
+}
+function jumpPlaybackToPaper(id2) {
+  if (!engine.playing && !preparing) return;
+  const span = viewScope === "all" && engine.playing ? playTl?.papers.find((x2) => x2.paper.id === id2) : void 0;
+  if (span && playTl) {
+    const r10 = playRange(playTl);
+    playMute = span.t0;
+    engine.seek(clampTo(r10, span.t0 - PRE_ROLL), playMute);
+    return;
+  }
+  stopPlay();
+  const go = () => {
+    if (preparing) setTimeout(go, 30);
+    else void startPlayback("head");
+  };
+  go();
 }
 function addNewPart(paper = st2.at.paper, giveFrom) {
   const role = newRoleId(doc.extras, st2.song), mic = newMicId(doc.extras, st2.song);
@@ -42522,4 +42599,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8f51e839e7f7.mjs.map
+//# sourceMappingURL=moonsinger-a7dd41752599.mjs.map

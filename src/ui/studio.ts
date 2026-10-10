@@ -45,6 +45,8 @@ export interface StudioHost {
   renameBus(id: string, name: string): void;
   /** 混音轨往前 / 往后挪一位（只在混音轨之间）。 */
   moveBus(id: string, dir: -1 | 1): void;
+  /** 歌手往前 / 往后挪一位 = 谱上声部的顺序（混音台和五线谱是同一个顺序；v0.10.17，user「混音台里面还是应该支持歌手顺序排序」）。 */
+  movePart(id: string, dir: -1 | 1): void;
   setBusGain(id: string, dB: number): void;
   setBusPan(id: string, pan: number): void;
   /** 出到哪（"master" / 路由轨 id）。 */
@@ -79,6 +81,8 @@ const HINT = {
   masterGain: "总轨增益：所有轨混在一起之后整体再调大调小",
   out: "出到：这条轨的声音最后去哪——直接去总轨，或者先进一条混音轨（在那里一起过效果）",
   send: "发送：推子之后再复制一份给这条混音轨；越大，那边的效果（混响 / 延迟）越多，原声照旧走「出到」",
+  limiter: "限幅（总轨最后一道）：超过天花板（−0.18 dBFS）的那一小段很快压下来，不超的地方一个采样都不动，不改音色。关掉 = 超了就削波（爆音、导出的文件里也是）。一般一直开着；想看自己的混音到底多响，可以先关了看峰值",
+  peak: "峰值：最近这一下最响的那个采样（dBFS）。0 dB = 满格，再大就削波；限幅开着时最多到 −0.18 dB。顶上的细线是同一个数",
   rms: "平均电平（RMS，最近 0.3 秒，推子之后，dBFS）：比峰值更接近耳朵觉得的响。几条轨摆平音量看这个；顶上的细线（峰值）看会不会爆",
   corr: "左右相关（−1 到 +1）：+1 = 左右一样（单声道）；0 附近 = 很宽；小于 0 = 左右反相，手机外放 / 单声道一合就会变小、变空。背景的图：竖线 = 单声道，越圆越宽，横着 = 反相",
   gr: "压了多少：这条轨上第一台压缩此刻把声音压低了几 dB（下面摊开的就是它）。一直压很多 = 阈值太低或比例太大",
@@ -111,6 +115,23 @@ export class Studio {
   private msTarget = new Map<string, number>(); private msShown = new Map<string, number>();
   private grTarget = new Map<string, number>(); private grShown = new Map<string, number>();
   private corrShown = new Map<string, number>(); private lastText = 0;
+  /** 差设备（v0.10.17；user「以及注意一下差设备上的性能影响」）：① 只算 / 只画看得见的卡片（混音台里滚出去的不算 FFT、不画李萨如图）；
+   *  ② 背景统计按花的时间自己降频：最近平均一次超过 4 ms = 隔一帧画一帧（最多 4 帧画 1 帧），降到 1.5 ms 以下再恢复。 */
+  private seen = new Set<string>(); private io: IntersectionObserver | null = null;
+  private bgCost = 0; private bgSkip = 0; private bgN = 0;
+  private budgeted(f: () => void): void {
+    if (this.bgSkip && this.bgN++ % (this.bgSkip + 1)) return;
+    const t0 = performance.now(); f(); const dt = performance.now() - t0;
+    this.bgCost = this.bgCost * 0.8 + dt * 0.2;
+    if (this.bgCost > 4 && this.bgSkip < 3) this.bgSkip++; else if (this.bgCost < 1.5 && this.bgSkip > 0) this.bgSkip--;
+  }
+  private watchCards(): void {
+    if (typeof IntersectionObserver !== "function") return;   // 没有（很老的浏览器）= 当全看得见
+    this.io ??= new IntersectionObserver((es) => { for (const e of es) { const id = (e.target as HTMLElement).dataset.id!; if (e.isIntersecting) this.seen.add(id); else this.seen.delete(id); } });
+    this.io.disconnect(); this.seen.clear();
+    for (const el of this.el.querySelectorAll<HTMLElement>(".studio-strips .strip[data-id]")) this.io.observe(el);
+  }
+  private shownCard(id: string): boolean { return !this.io || this.seen.has(id); }
   constructor(parent: HTMLElement, private host: StudioHost) {
     this.el = document.createElement("div"); this.el.className = "studio"; this.el.hidden = true;
     this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">混音台</span><button class="btn" data-v="back" title="收起混音台：底座让出来、还在「听」（Esc = 回去写）">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button></div>` +
@@ -124,7 +145,7 @@ export class Studio {
   get isOpen(): boolean { return !this.el.hidden; }
   get currentTab(): MixTab { return this.tab; }
   show(): void { this.el.hidden = false; this.render(); }
-  hide(): void { this.el.hidden = true; this.menuOpen = false; }
+  hide(): void { this.el.hidden = true; this.menuOpen = false; this.io?.disconnect(); this.seen.clear(); }
 
   // ── 峰值 ────────────────────────────────────────────────────────────────
   /** 录音房报的峰值（0–1；总轨 = 出声口；tracks = 每条轨 / 混音轨推子后）。 */
@@ -139,7 +160,11 @@ export class Studio {
   /** 录音房拷来的最近一段采样（每条轨 / 混音轨 / 总轨）→ EQ 页卡片背景的频谱面。只在 EQ 页、混音台看得见时录音房才发。 */
   spectrum(sr: number, tracks: Record<string, Float32Array>): void {
     if (this.el.hidden || this.tab !== "eq") return;
+    this.budgeted(() => this.drawSpectrum(sr, tracks));
+  }
+  private drawSpectrum(sr: number, tracks: Record<string, Float32Array>): void {
     for (const [id, x] of Object.entries(tracks)) {
+      if (!this.shownCard(id)) continue;
       const path = this.el.querySelector<SVGPathElement>(`.strip[data-id="${CSS.escape(id)}"] .strip-spec .spec`); if (!path) continue;
       const b = smoothBands(this.specShown.get(id), bandsDb(x, sr)); this.specShown.set(id, b);
       path.setAttribute("d", areaPath(b));
@@ -149,7 +174,11 @@ export class Studio {
    *  竖着 = 中 (L+R)/√2、横着 = (R−L)/√2（只有左 = 左上斜线）：竖线 = 单声道、越圆越宽、横着 = 反相。形状看的是左右关系，不看多响：按这一帧最大的那下缩放（太小的不放大）。 */
   stereo(tracks: Record<string, { L: Float32Array; R: Float32Array }>): void {
     if (this.el.hidden || this.tab !== "basic") return;
+    this.budgeted(() => this.drawStereo(tracks));
+  }
+  private drawStereo(tracks: Record<string, { L: Float32Array; R: Float32Array }>): void {
     for (const [id, { L, R }] of Object.entries(tracks)) {
+      if (!this.shownCard(id)) continue;
       const card = this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(id)}"]`); if (!card) continue;
       const g = stereoShape(L, R), path = card.querySelector<SVGPathElement>(".strip-gonio .gon"); if (path) path.setAttribute("d", g.path);
       const prev = this.corrShown.get(id), c = g.corr === null ? null : prev === undefined ? g.corr : prev + (g.corr - prev) * 0.3;
@@ -209,6 +238,7 @@ export class Studio {
     else if (v === "addbus") { this.menuOpen = false; const id = this.host.addBus(); this.render(); this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); }
     else if (v === "mute" && strip) { this.host.toggleMute(strip); this.render(); }
     else if (v === "solo" && strip) { this.host.toggleSolo(strip); this.render(); }
+    else if ((v === "partleft" || v === "partright") && strip) { this.host.movePart(strip, v === "partleft" ? -1 : 1); this.render(); }
     else if (v === "delpart" && strip) this.host.deletePart(strip);
     else if (v === "limiter") { this.host.toggleLimiter(); this.render(); }
     else if (v === "delbus" && strip) { if (this.open?.track === strip) this.open = null; this.host.removeBus(strip); this.render(); }
@@ -402,8 +432,8 @@ export class Studio {
     const nameDiv = (s: string) => `<div class="strip-name">${esc(s)}</div>`;
     // 总轨
     const masterBody = tab === "basic" ? row("增益", HINT.masterGain, `<output>${dbText(m.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") +
-        `<div class="strip-btns"><button class="btn cand${m.limiter ? " is-on" : ""}" data-v="limiter" title="母线限幅：超过天花板（−0.18 dBFS）的那一小段压下来，不超的地方不动；关掉 = 可能削波">限幅${m.limiter ? "" : "（关：可能削波）"}</button></div>` +
-        `<div class="strip-row">峰值 <span class="meter-val">—</span></div>` + RMS_ROW + CORR_ROW
+        row("限幅", HINT.limiter, "", `<button class="btn cand${m.limiter ? " is-on" : ""}" data-v="limiter">${m.limiter ? "开着" : "关着（可能削波）"}</button>`, "strip-row") +
+        row("峰值", HINT.peak, `<span class="meter-val">—</span>`, "", "strip-row") + RMS_ROW + CORR_ROW
       : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">总轨就是输出，不再发给别处</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv("总轨"), "所有声部混在一起之后", masterBody);
     // 混音轨（自己加的路由轨，普通的轨）：排在总轨后面、歌手前面（user「你自己加的中间的路由轨也是普通的轨道，排在总轨后面，歌手前面」）
@@ -416,16 +446,18 @@ export class Studio {
       return this.card(b.id, " bus", name, "混音轨", body);
     }).join("");
     // 歌手：顺序跟谱上的声部（user「歌手卡片的排序还是以五线谱为准」）
-    const singers = this.host.strips().map((s) => {
+    const strips = this.host.strips(), singers = strips.map((s, k) => {
       const body = tab === "basic" ? row("增益", HINT.gain, `<output>${dbText(s.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") +
           row("声像", HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: 0, defText: "中" }), "strip-row") + RMS_ROW +
-          `<div class="strip-btns"><button class="btn cand${s.muted ? " is-on" : ""}" data-v="mute">静音</button><button class="btn cand${s.solo ? " is-on" : ""}" data-v="solo">独奏</button></div>` +
+          `<div class="strip-btns"><button class="btn cand${s.muted ? " is-on" : ""}" data-v="mute">静音</button><button class="btn cand${s.solo ? " is-on" : ""}" data-v="solo">独奏</button>` +
+            `<button class="btn" data-v="partleft" title="往前挪一位（谱上这个声部也往上挪）"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="往后挪一位（谱上这个声部也往下挪）"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
           (s.refs ? `<div class="strip-refs">在 ${s.refs} 张纸上</div>` : `<div class="strip-refs">哪张纸上都没有 <button class="btn cand danger" data-v="delpart" title="删掉这位歌手（休息室里它的配置一起删；能撤销）">删掉这位歌手</button></div>`)
         : tab === "eq" || tab === "comp" ? this.inlineHtml(s.id, tab) : tab === "send" ? this.routeHtml(s.id) : this.chipsHtml(s.id);
       return this.card(s.id, "", nameDiv(s.name), s.performer, body, s.color);
     }).join("");
     box.innerHTML = master + busCards + singers;
+    this.watchCards();   // 卡片重画了：重新看哪些在屏幕里
     box.classList.toggle("wide", tab === "eq" || tab === "comp");
     this.renderPanel();
   }

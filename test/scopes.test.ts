@@ -3,7 +3,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { stereoShape } from "../src/ui/scopes.ts";
 
 const sine = (n: number, f = 0.013, a = 0.5) => Float32Array.from({ length: n }, (_, i) => a * Math.sin(2 * Math.PI * f * i));
-const pts = (d: string) => [...d.matchAll(/[ML](-?[\d.]+),(-?[\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+const pts = (d: string) => [...d.matchAll(/(-?[\d.]+),(-?[\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
 describe("李萨如图 / 左右相关", () => {
   it("单声道（左右一样）= 相关 +1、一根竖线", () => {
     const x = sine(1024), g = stereoShape(x, x);
@@ -25,5 +25,11 @@ describe("李萨如图 / 左右相关", () => {
     eq(stereoShape(new Float32Array(1024), new Float32Array(1024)).corr, null);
     const q = sine(1024, 0.013, 0.01), g = stereoShape(q, q);
     assert(Math.max(...pts(g.path).map(([, py]) => Math.abs(py))) < 0.3, "0.01 的小声画得也小");
+  });
+});
+describe("李萨如图 = 圆滑的线（v0.10.17）", () => {
+  it("过中点的二次曲线连（不是散点、不是直线折线）", () => {
+    const x = Float32Array.from({ length: 1024 }, (_, i) => 0.5 * Math.sin(i / 7)), g = stereoShape(x, x.map((v, i) => 0.5 * Math.cos(i / 7)));
+    assert(!/h0/.test(g.path) && (g.path.match(/Q/g) ?? []).length >= 500, `${(g.path.match(/Q/g) ?? []).length} 段曲线`);
   });
 });

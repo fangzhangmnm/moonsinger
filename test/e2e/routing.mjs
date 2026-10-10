@@ -69,6 +69,15 @@ check(await p.$eval(`.studio-strips .strip.bus >> nth=0`, (e) => e.dataset.id) =
 await p.click(`${strip(b2)} [data-v="busright"]`); await p.waitForTimeout(150);
 await p.fill(`${strip(b1)} .bus-name`, "混响"); await p.press(`${strip(b1)} .bus-name`, "Tab"); await p.waitForTimeout(150);
 check((await tr(b1)).name === "混响", "混音轨改名");
+// 歌手排序（v0.10.17；user「混音台里面还是应该支持歌手顺序排序」）= 谱上声部的顺序；能撤销
+{ const order = () => p.evaluate(() => window.__moonsinger.state().song.parts.map((x) => x.id).join(","));
+  const o0 = await order();
+  check(await p.$eval(`${strip(ids[0].id)} [data-v="partleft"]`, (e) => e.disabled), "第一位歌手的「‹」灰着");
+  await p.click(`${strip(ids[1].id)} [data-v="partleft"]`); await p.waitForTimeout(150);
+  const cards = await p.$$eval(".studio-strips .strip:not(.master):not(.bus)", (es) => es.map((e) => e.dataset.id).join(","));
+  check((await order()) === `${ids[1].id},${ids[0].id}` && cards === `${ids[1].id},${ids[0].id}`, "B 往前挪 = 谱上声部顺序换了、混音台卡片跟着换", `${await order()} / ${cards}`);
+  await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
+  check((await order()) === o0, "能撤销"); }
 // 被谁压：两位歌手 = 能选另一位
 await tab("chain");
 await p.click(`${strip(ids[0].id)} [data-v="fxadd"]`); await p.click(`${strip(ids[0].id)} [data-v="fxpick"][data-kind="comp"]`); await p.waitForTimeout(150);
@@ -87,6 +96,16 @@ await p.click(`${strip(b1)} [data-v="delbus"]`); await p.waitForTimeout(150);
 check((await tr(ids[0].mic)).to === "master" && (await tr(ids[1].mic)).sends.length === 0 && !(await tr(b1)), "删掉混音轨 1 = A 改回出到总轨、B 不再发给它", JSON.stringify(await tracks()));
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 check(!!(await tr(b1)) && (await tr(ids[0].mic)).to === b1, "撤销 = 混音轨和连线都回来");
+// 差设备（v0.10.17；user「以及注意一下差设备上的性能影响」）：滚出去看不见的卡片不算 FFT、不画；滚回来才画
+await p.setViewportSize({ width: 1100, height: 420 }); await tab("eq"); await p.waitForTimeout(200);
+await p.$eval(".studio-strips", (e) => { e.scrollTop = 0; }); await p.evaluate(() => { const s = document.querySelector(".studio"); if (s) s.scrollTop = 0; });
+await p.click("#playBtn"); await p.waitForTimeout(1500);
+{ const last = await p.$$eval(".studio-strips .strip[data-id]", (es) => { const vh = innerHeight; const el = es.at(-1); const r = el.getBoundingClientRect(); return { id: el.dataset.id, off: r.top > vh || r.bottom < 0, d: el.querySelector(".strip-spec .spec")?.getAttribute("d") ?? "" }; });
+  const first = await p.$eval(".studio-strips .strip[data-id]", (el) => el.querySelector(".strip-spec .spec")?.getAttribute("d") ?? "");
+  check(first.length > 0 && (!last.off || last.d === ""), "看得见的卡片画频谱、滚出去的不画", `first ${first.length} / last off=${last.off} d=${last.d.length}`);
+  await p.$eval(`.strip[data-id="${last.id}"]`, (el) => el.scrollIntoView()); await p.waitForTimeout(900);
+  check(((await p.$eval(`.strip[data-id="${last.id}"] .strip-spec .spec`, (e) => e.getAttribute("d"))) ?? "").length > 0, "滚回来 = 接着画"); }
+if (await p.evaluate(() => window.__moonsinger.engine.playing)) await p.click("#playBtn");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nrouting: ${pass} passed, ${fail} failed`);
