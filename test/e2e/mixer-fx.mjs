@@ -138,6 +138,16 @@ await setRange('.fx-panel input[data-c="dB"]', -6); await p.waitForTimeout(150);
 check((await chain("master"))[0]?.params.dB === -6, "总轨链：增益 −6 dB 进歌", JSON.stringify(await chain("master")));
 const pk1 = await peak();
 check(Math.abs(pk1 / pk0 - 0.501) < 0.01, "离线混音吃到总轨链上的增益（峰值减半）", `${pk0.toFixed(3)} → ${pk1.toFixed(3)}`);
+// 效果全关（A/B，v0.10.18；user「混音台加一个暂时禁用所有魔法的toggle…给你回到musescore/谱子本身用的，以及听差别」）：插件不响、推子留着；再点回来
+await p.click('.studio [data-v="bypass"]'); await p.waitForTimeout(150);
+{ const pk2 = await peak();
+  await setRange('.fx-panel input[data-c="dB"]', -20); await p.waitForTimeout(150);
+  const pk3 = await peak();
+  check(Math.abs(pk3 / pk2 - 1) < 0.01 && Math.abs(pk2 / pk1 - 1) > 0.05 && await p.$eval(".mix-ab-note", (e) => !e.hidden) && (await p.textContent('.studio [data-v="bypass"]')) === "效果全关", "效果全关 = 插件不响（总轨那格从 −6 拧到 −20 混音一点不变）、顶上明说", `开着 ${pk1.toFixed(3)} / 全关 ${pk2.toFixed(3)} → 拧了 ${pk3.toFixed(3)}`);
+  check((await chain("master"))[0]?.params.dB === -20, "全关时拧的照样进歌（全关只管响不响，不改参数）");
+  await setRange('.fx-panel input[data-c="dB"]', -6); await p.waitForTimeout(150);
+  await p.click('.studio [data-v="bypass"]'); await p.waitForTimeout(150);
+  check(Math.abs((await peak()) / pk1 - 1) < 0.01 && await p.$eval(".mix-ab-note", (e) => e.hidden), "再点 = 效果回来"); }
 check(!(await p.$(`.strip[data-id="__master"] [data-fx="eq"]`)), "总轨没有默认 EQ 那一格");
 { const sel = '.fx-panel input[data-c="dB"]', r = await p.$eval(sel, (e) => { const b = e.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2, step: Number(e.step) }; });
   await p.mouse.move(r.x, r.y); await p.mouse.wheel(0, -100); await p.waitForTimeout(150);

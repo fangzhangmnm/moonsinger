@@ -539,7 +539,11 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 /* 压缩页：压了多少 dB（0–20 dB 满格） */
 .gr-row .gr-bar { display: block; height: 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); overflow: hidden; }
 .gr-row .gr-bar > i { display: block; height: 100%; width: 0; background: var(--accent); }
-.strip > :not(.strip-spec):not(.strip-meter):not(.spec-ticks):not(.strip-gonio) { position: relative; }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
+.strip > :not(.strip-spec):not(.strip-meter):not(.spec-ticks):not(.strip-gonio) { position: relative; }
+/* 效果全关（A/B，v0.10.18）：钮醒目、顶上一条说明、插件格划掉的样子 */
+.mix-ab.ab-off { background: var(--danger); border-color: var(--danger); color: #fff; }
+.mix-ab-note { margin: 6px 10px 0; }
+.studio.bypassed .fx-chip, .studio.bypassed .fx-inline { opacity: .5; }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
 /* 分页：页框 + 页码 */
 .staff-svg rect.page { fill: #fff; stroke: var(--line); stroke-width: 1; }
 .staff-svg .page-no { fill: var(--muted); }

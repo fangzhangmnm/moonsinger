@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.17-2026-10-10";
+var APP_VERSION = "v0.10.18-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -26061,7 +26061,7 @@ var Studio2 = class {
     this.el = document.createElement("div");
     this.el.className = "studio";
     this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">\u6DF7\u97F3\u53F0</span><button class="btn" data-v="back" title="\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09">\u6536\u8D77</button><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="mix-tabbar"></div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">\u6DF7\u97F3\u53F0</span><button class="btn" data-v="back" title="\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09">\u6536\u8D77</button><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button><button class="btn mix-ab" data-v="bypass"></button></div><div class="mix-tabbar"></div><div class="fx-note mix-ab-note" hidden>\u6548\u679C\u5168\u5173\u7740\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF0C\u53EA\u5269\u63A8\u5B50\u3001\u58F0\u50CF\u3001\u51FA\u5230\u548C\u603B\u8F68\u9650\u5E45\u2014\u2014\u542C\u8C31\u5B50\u672C\u8EAB / \u542C\u5DEE\u522B\u7528\uFF1B\u518D\u70B9\u4E00\u4E0B\u56DE\u6765\u3002\u5BFC\u51FA\u7167\u5E38\u5E26\u6548\u679C\u3002</div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
     parent.append(this.el);
     this.el.addEventListener("click", (e10) => this.onClick(e10));
     this.el.addEventListener("input", (e10) => this.onInput(e10));
@@ -26260,7 +26260,10 @@ var Studio2 = class {
     if (!v) return;
     if (v === "back") this.host.close();
     else if (v === "play") this.host.play();
-    else if (v === "tab") {
+    else if (v === "bypass") {
+      this.host.setBypass(!this.host.bypass());
+      this.render();
+    } else if (v === "tab") {
       this.tab = t10.closest("[data-tab]").dataset.tab;
       this.menuOpen = false;
       this.addFor = null;
@@ -26574,7 +26577,14 @@ ${tg2.fx}`);
     return `<div class="strip${cls}" data-id="${esc5(id2)}"${color ? ` data-color style="--cat:${esc5(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc5(who)}</div>` : ""}${body2}</div>`;
   }
   render() {
-    const box = this.el.querySelector(".studio-strips"), m2 = this.host.master(), tab = this.tab;
+    const box = this.el.querySelector(".studio-strips"), m2 = this.host.master(), tab = this.tab, off = this.host.bypass();
+    const ab2 = this.el.querySelector(".mix-ab");
+    ab2.textContent = off ? "\u6548\u679C\u5168\u5173" : "\u6548\u679C\u5F00\u7740";
+    ab2.classList.toggle("is-on", !off);
+    ab2.classList.toggle("ab-off", off);
+    ab2.title = off ? "\u73B0\u5728\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF08\u63A8\u5B50 / \u58F0\u50CF\u7559\u7740\uFF09\u3002\u70B9 = \u6548\u679C\u56DE\u6765" : "\u70B9 = \u6682\u65F6\u5173\u6389\u5168\u90E8\u6548\u679C\uFF08\u63D2\u4EF6 + \u53D1\u9001\uFF09\uFF0C\u542C\u8C31\u5B50\u672C\u8EAB / \u542C\u5DEE\u522B\uFF1B\u63A8\u5B50\u3001\u58F0\u50CF\u7559\u7740";
+    this.el.querySelector(".mix-ab-note").hidden = !off;
+    this.el.classList.toggle("bypassed", off);
     if (this.open && !this.slotOf(this.open)) this.open = null;
     this.renderBar();
     const nameDiv = (s10) => `<div class="strip-name">${esc5(s10)}</div>`;
@@ -37756,15 +37766,28 @@ var sound = {
   up: (id2 = "main") => {
     sungHeld.delete(id2);
     engine.auditionOff(id2);
+    const n10 = chordVoices.get(id2) ?? 0;
+    for (let k2 = 1; k2 <= n10; k2++) {
+      sungHeld.delete(`${id2}~${k2}`);
+      engine.auditionOff(`${id2}~${k2}`);
+    }
+    chordVoices.delete(id2);
   },
   allOff: () => {
     sungHeld.clear();
+    chordVoices.clear();
     engine.auditionAllOff();
   }
 };
+var chordVoices = /* @__PURE__ */ new Map();
 var soundTok = (s10, i10, id2 = "main") => {
   const t10 = tr(s10)[i10];
-  if (t10?.kind === "note" && t10.pitch) sound.down(t10.pitch, id2);
+  if (t10?.kind !== "note" || !t10.pitch) return;
+  sound.up(id2);
+  sound.down(t10.pitch, id2);
+  const extra = t10.chord ?? [];
+  extra.forEach((q2, k2) => sound.down(q2, `${id2}~${k2 + 1}`));
+  if (extra.length) chordVoices.set(id2, extra.length);
 };
 function previewEdited() {
   const toks = tr(st2);
@@ -38377,15 +38400,16 @@ var channelOf = (part) => {
   const { gainDb, pan } = micOf(part);
   return { gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan };
 };
-function pushChannels() {
-  const bpm = songBpm(), ctx2 = (lowestMidi) => ({ lowestMidi, bpm });
+var mixBypass = false;
+function pushChannels(raw = mixBypass) {
+  const bpm = songBpm(), ctx2 = (lowestMidi) => ({ lowestMidi, bpm }), fx = (x2) => raw ? [] : x2;
   for (const p2 of st2.song.parts) {
     const t10 = studioTrack(doc.extras, p2.mic);
-    engine.channel(p2.id, { ...channelOf(p2), mute: false, solo: false, chain: resolveChain(t10?.chain ?? [], ctx2(lowestMidiOf(p2.id))), sends: t10?.sends ?? [], to: t10?.to ?? "master" });
+    engine.channel(p2.id, { ...channelOf(p2), mute: false, solo: false, chain: fx(resolveChain(t10?.chain ?? [], ctx2(lowestMidiOf(p2.id)))), sends: fx(t10?.sends ?? []), to: t10?.to ?? "master" });
   }
-  engine.buses(studioTracks(doc.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: resolveChain(b3.chain, ctx2(null)), to: b3.to, sends: b3.sends })));
+  engine.buses(studioTracks(doc.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: fx(resolveChain(b3.chain, ctx2(null))), to: b3.to, sends: fx(b3.sends) })));
   const m2 = activeMaster(doc.extras);
-  engine.master({ ...m2, chain: resolveChain(m2.chain, ctx2(null)) });
+  engine.master({ ...m2, chain: fx(resolveChain(m2.chain, ctx2(null))) });
 }
 function typingIn(t10) {
   const el2 = t10;
@@ -38640,7 +38664,7 @@ async function prepare(scope, o10 = {}) {
   if (!tl2.tracks.length) return null;
   pruneChunks(tl2);
   if (o10.chunks !== false) await awaitAllChunks(tl2);
-  pushChannels();
+  pushChannels(o10.raw);
   return tl2;
 }
 async function renderMixForTest() {
@@ -39153,14 +39177,17 @@ async function exportSong(o10 = { quality: "standard", scope: "all" }) {
   exporting = true;
   try {
     if (engine.playing) stopPlay();
-    const tl2 = await prepare(o10.scope);
+    const tl2 = await prepare(o10.scope, { raw: false });
     if (!tl2) {
       progress("");
       return;
     }
     progress("\u6DF7\u97F3\u2026");
     renderBar.start(1);
-    const m2 = await engine.renderOffline({ tracks: tl2.tracks, range: tl2.range, loop: false }, { sr: GM_SR, progress: (f2) => renderBar.frac(f2) }).finally(() => renderBar.end());
+    const m2 = await engine.renderOffline({ tracks: tl2.tracks, range: tl2.range, loop: false }, { sr: GM_SR, progress: (f2) => renderBar.frac(f2) }).finally(() => {
+      renderBar.end();
+      if (mixBypass) pushChannels();
+    });
     const roles = st2.song.parts.filter((p2) => tl2.tracks.some((t10) => t10.id === p2.id)).map((p2) => p2.role);
     progress("\u7F16 mp3\u2026");
     const Q2 = MP3_QUALITY[o10.quality];
@@ -39425,7 +39452,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "80ab943a0516",
+  cssHash: "663755fd8bce",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -39745,6 +39772,12 @@ var studio = new Studio2($2("stage"), {
   close: () => closeStudio(),
   master: () => activeMaster(doc.extras),
   setMasterGain: (dB) => updateExtras(withMaster(doc.extras, { gainDb: dB }), { kind: "studio", label: `\u603B\u8F68\u589E\u76CA ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
+  bypass: () => mixBypass,
+  setBypass: (on2) => {
+    mixBypass = on2;
+    pushChannels();
+    diagNote("studio", `bypass ${on2 ? "on" : "off"}`);
+  },
   toggleLimiter: () => {
     const on2 = !activeMaster(doc.extras).limiter;
     updateExtras(withMaster(doc.extras, { limiter: on2 }), { kind: "studio", label: `\u6BCD\u7EBF\u9650\u5E45${on2 ? "\u5F00" : "\u5173"}` });
@@ -41195,6 +41228,7 @@ function applyDesk(d3) {
   }
 }
 function loadDoc(song, o10) {
+  mixBypass = false;
   if (impro) toggleImpro();
   closeOffer?.();
   closeInstPage();
@@ -42599,4 +42633,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a7dd41752599.mjs.map
+//# sourceMappingURL=moonsinger-6edb90fcfc3d.mjs.map

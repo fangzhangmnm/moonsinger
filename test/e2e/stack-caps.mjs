@@ -25,8 +25,12 @@ await stk(); await p.waitForTimeout(150);
 const s1 = await sel();
 check(!!s1 && s1.to - s1.from === 1 && (await stackOn()), "按一下叠 = 选中光标前那个音（C）、叠亮着", JSON.stringify(s1));
 check((await bsText()).includes("短一步"), "改一个音时 ⌫ 写「短一步」", await bsText());
+// 试听：录音房的按键试听记下来（测试里没有音色库：假装库在）
+await p.evaluate(() => { const e = window.__moonsinger.engine; e.hasBank = () => true; e.presetIndex = () => 0; window.__aud = []; e.auditionOn = (src, _inst, key) => window.__aud.push([src, key]); });
 await p.focus("#score"); await p.keyboard.press("3"); await p.waitForTimeout(150);
 check((await toks()).startsWith("E+C") || (await toks()).startsWith("C+E"), "按 3 = 叠上 E（XOR）", await toks());
+{ const aud = await p.evaluate(() => window.__aud.splice(0)), last = aud.filter(([s]) => !String(s).includes("~")).at(-1)?.[0], group = aud.filter(([s]) => s === last || String(s).startsWith(`${last}~`));
+  check(group.length === 2 && new Set(group.map(([, k]) => k)).size === 2, "叠上之后试听 = 整个和弦一起响（C 和 E 两个音，不只是旧的那个）", JSON.stringify(aud)); }
 await p.keyboard.press("3"); await p.keyboard.press("1"); await p.waitForTimeout(150);
 check((await toks()).startsWith("r"), "再按 3、按 1 = 拿掉 E、拿掉最后一个 C = 一样长的休止", await toks());
 await p.keyboard.press("5"); await p.waitForTimeout(150);

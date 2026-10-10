@@ -30,6 +30,8 @@ export interface StudioHost {
   master(): { gainDb: number; limiter: boolean };
   setMasterGain(dB: number): void;
   toggleLimiter(): void;
+  /** 效果全关（A/B；这次打开里有效）：插件和发送不响，推子 / 声像 / 出到 / 限幅留着。 */
+  bypass(): boolean; setBypass(on: boolean): void;
   /** 一条轨的效果链（MASTER = 总轨；别的 = 歌手的 id / 混音轨的 id）。 */
   chain(track: string): FxV2[];
   /** 这一格送进录音房的样子（自动低切换成这位最低的音算出来的 Hz、延迟跟速度换成毫秒）：曲线 / 读数照这个画，和听到的一致。 */
@@ -134,8 +136,8 @@ export class Studio {
   private shownCard(id: string): boolean { return !this.io || this.seen.has(id); }
   constructor(parent: HTMLElement, private host: StudioHost) {
     this.el = document.createElement("div"); this.el.className = "studio"; this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">混音台</span><button class="btn" data-v="back" title="收起混音台：底座让出来、还在「听」（Esc = 回去写）">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button></div>` +
-      `<div class="mix-tabbar"></div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">混音台</span><button class="btn" data-v="back" title="收起混音台：底座让出来、还在「听」（Esc = 回去写）">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button><button class="btn mix-ab" data-v="bypass"></button></div>` +
+      `<div class="mix-tabbar"></div><div class="fx-note mix-ab-note" hidden>效果全关着：插件和发送都不响，只剩推子、声像、出到和总轨限幅——听谱子本身 / 听差别用；再点一下回来。导出照常带效果。</div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
     parent.append(this.el);
     this.el.addEventListener("click", (e) => this.onClick(e));
     this.el.addEventListener("input", (e) => this.onInput(e));
@@ -233,6 +235,7 @@ export class Studio {
     if (!v) return;
     if (v === "back") this.host.close();
     else if (v === "play") this.host.play();
+    else if (v === "bypass") { this.host.setBypass(!this.host.bypass()); this.render(); }
     else if (v === "tab") { this.tab = t.closest<HTMLElement>("[data-tab]")!.dataset.tab as MixTab; this.menuOpen = false; this.addFor = null; this.specShown.clear(); this.render(); this.host.tabChanged?.(this.tab); }
     else if (v === "more") { this.menuOpen = !this.menuOpen; this.render(); }
     else if (v === "addbus") { this.menuOpen = false; const id = this.host.addBus(); this.render(); this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); }
@@ -426,7 +429,11 @@ export class Studio {
     return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}${body}</div>`;
   }
   render(): void {
-    const box = this.el.querySelector(".studio-strips")!, m = this.host.master(), tab = this.tab;
+    const box = this.el.querySelector(".studio-strips")!, m = this.host.master(), tab = this.tab, off = this.host.bypass();
+    const ab = this.el.querySelector<HTMLElement>(".mix-ab")!;   // A/B：效果开着 / 全关（user「混音台加一个暂时禁用所有魔法的toggle」）
+    ab.textContent = off ? "效果全关" : "效果开着"; ab.classList.toggle("is-on", !off); ab.classList.toggle("ab-off", off);
+    ab.title = off ? "现在：插件和发送都不响（推子 / 声像留着）。点 = 效果回来" : "点 = 暂时关掉全部效果（插件 + 发送），听谱子本身 / 听差别；推子、声像留着";
+    this.el.querySelector<HTMLElement>(".mix-ab-note")!.hidden = !off; this.el.classList.toggle("bypassed", off);
     if (this.open && !this.slotOf(this.open)) this.open = null;   // 撤销把这一格撤没了
     this.renderBar();
     const nameDiv = (s: string) => `<div class="strip-name">${esc(s)}</div>`;

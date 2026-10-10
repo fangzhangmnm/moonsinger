@@ -351,11 +351,18 @@ const sound = {
     singer.unlock(); engine.auditionOn(id, t.inst, t.key(midiOf(p)), t.vel, t.gainDb, t.pan);
   },
   glide: (p: Pitch, id = "main") => { if (!finder.isOpen && engineNow() === "tsukuyomi") { sungDown(p, id); return; } const t = auditionTarget(); if (t) engine.auditionGlide(id, t.key(midiOf(p))); },
-  up: (id = "main") => { sungHeld.delete(id); engine.auditionOff(id); },
-  allOff: () => { sungHeld.clear(); engine.auditionAllOff(); },
+  up: (id = "main") => { sungHeld.delete(id); engine.auditionOff(id); const n = chordVoices.get(id) ?? 0; for (let k = 1; k <= n; k++) { sungHeld.delete(`${id}~${k}`); engine.auditionOff(`${id}~${k}`); } chordVoices.delete(id); },
+  allOff: () => { sungHeld.clear(); chordVoices.clear(); engine.auditionAllOff(); },
 };
 /** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
-const soundTok = (s: EditorState, i: number, id = "main") => { const t = tr(s)[i]; if (t?.kind === "note" && t.pitch) sound.down(t.pitch, id); };
+/** 响下标 i 的音：和弦 = 整个和弦一起响（v0.10.18；user「叠音的时候预览的是chord还是之前的旧音啊？」——原来只响 t.pitch 那一个）。
+ *  每个和弦音一个来源 id（id、id~1、id~2…；录音房按来源一个声部），sound.up(id) 一起松开。 */
+const chordVoices = new Map<string, number>();
+const soundTok = (s: EditorState, i: number, id = "main") => {
+  const t = tr(s)[i]; if (t?.kind !== "note" || !t.pitch) return;
+  sound.up(id);   // 同一个来源上次的和弦先松干净（这次的音少了也不留尾巴）
+  sound.down(t.pitch, id); const extra = t.chord ?? []; extra.forEach((q, k) => sound.down(q, `${id}~${k + 1}`)); if (extra.length) chordVoices.set(id, extra.length);
+};
 /** 改了音高之后响一下（user 2026-10-10「按住音的时候应该能听到preview，拖动音高，或者改动yngk的时候也会，但是改时长不会」）：有选区 = 选区里第一个音，否则光标前那个音。 */
 function previewEdited(): void {
   const toks = tr(st); let i = -1;
@@ -777,12 +784,15 @@ function micOf(part: PartDef): { gainDb: number; pan: number } {
 /** 这条通道 = 麦克风增益 + 上场那位的响度校准（三层不连乘：音符力度 = 意图；校准 = 看得见能调的默认；推子 = dB）。 */
 const channelOf = (part: PartDef): { gainDb: number; pan: number } => { const { gainDb, pan } = micOf(part); return { gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; };
 /** 通道参数推进录音房（播放时才乘 → 边放边调立刻听见；静音 / 独奏在 audibleParts 里筛，不在通道上）。 */
-function pushChannels(): void {
+/** 效果全关（A/B，这次打开里有效、换歌复位；v0.10.18，user「混音台加一个暂时禁用所有魔法的toggle，不过fade和pan要不要留？（就是给你回到musescore/谱子本身用的，以及听差别）」）：
+ *  所有插件格（歌手 / 混音轨 / 总轨）+ 所有发送不响；推子、声像、出到、总轨限幅留着（A/B 两边音量摆得一样，听的才是效果的差别）。导出照常带效果。 */
+let mixBypass = false;
+function pushChannels(raw = mixBypass): void {
   // 插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）在这里换成录音房认的数（src/ui/plugins.ts resolveChain；v0.10.8）
-  const bpm = songBpm(), ctx = (lowestMidi: number | null) => ({ lowestMidi, bpm });
-  for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: false, solo: false, chain: resolveChain(t?.chain ?? [], ctx(lowestMidiOf(p.id))), sends: t?.sends ?? [], to: t?.to ?? "master" }); }
-  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: resolveChain(b.chain, ctx(null)), to: b.to, sends: b.sends })));   // 总线也能出到 / 发给别的总线（v0.10.9）
-  const m = activeMaster(doc.extras); engine.master({ ...m, chain: resolveChain(m.chain, ctx(null)) });
+  const bpm = songBpm(), ctx = (lowestMidi: number | null) => ({ lowestMidi, bpm }), fx = <T,>(x: T[]): T[] => (raw ? [] : x);
+  for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: false, solo: false, chain: fx(resolveChain(t?.chain ?? [], ctx(lowestMidiOf(p.id)))), sends: fx(t?.sends ?? []), to: t?.to ?? "master" }); }
+  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: fx(resolveChain(b.chain, ctx(null))), to: b.to, sends: fx(b.sends) })));   // 总线也能出到 / 发给别的总线（v0.10.9）
+  const m = activeMaster(doc.extras); engine.master({ ...m, chain: fx(resolveChain(m.chain, ctx(null))) });
 }
 /** 焦点在能打字的框里（文字输入 / 多行）：空格归它。推子（range）、下拉、按钮不算。 */
 function typingIn(t: EventTarget | null): boolean { const el = t as HTMLElement | null; if (!el) return false; if (el.tagName === "TEXTAREA" || el.isContentEditable) return true; return el.tagName === "INPUT" && !["range", "checkbox", "radio", "button"].includes((el as HTMLInputElement).type); }
@@ -948,7 +958,7 @@ function trimLanesForNewSong(): void {
 }
 engine.on("load", (info) => { watch.load = info; resourceTick(); });
 /** 准备一次播放 / 导出：库进录音房 → 时间线 → 月读的块。没法出声的声部报出来、其余照放（user「不是显示自动上，而是就是不出声，报错，人类手动换」）。 */
-async function prepare(scope: RenderScope, o: { chunks?: boolean } = {}): Promise<Timeline | null> {
+async function prepare(scope: RenderScope, o: { chunks?: boolean; raw?: boolean } = {}): Promise<Timeline | null> {
   const parts = audibleParts(), song = songIn(scope);
   const errs = await prepareBanks(parts);
   if (parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "vowel-sampler")) await ensureVowels();
@@ -958,7 +968,7 @@ async function prepare(scope: RenderScope, o: { chunks?: boolean } = {}): Promis
   if (!tl.tracks.length) return null;
   pruneChunks(tl);
   if (o.chunks !== false) await awaitAllChunks(tl);
-  pushChannels();
+  pushChannels(o.raw);
   return tl;
 }
 /** 测试钩子：现在视图范围的混音（离线，和播放同一份数学）；samples[0] = 谱上第 start 秒。 */
@@ -1332,9 +1342,9 @@ async function exportSong(o: { quality: Mp3Quality; scope: "all" | "segment" } =
   exporting = true;
   try {
     if (engine.playing) stopPlay();
-    const tl = await prepare(o.scope); if (!tl) { progress(""); return; }   // 导出 = 面板里选的范围（默认整首；播放才跟视图范围）
+    const tl = await prepare(o.scope, { raw: false }); if (!tl) { progress(""); return; }   // 导出 = 面板里选的范围（默认整首；播放才跟视图范围）；效果全关（A/B）不影响导出
     progress("混音…"); renderBar.start(1);
-    const m = await engine.renderOffline({ tracks: tl.tracks, range: tl.range, loop: false }, { sr: GM_SR, progress: (f) => renderBar.frac(f) }).finally(() => renderBar.end());   // 和播放同一个类、同一份数学
+    const m = await engine.renderOffline({ tracks: tl.tracks, range: tl.range, loop: false }, { sr: GM_SR, progress: (f) => renderBar.frac(f) }).finally(() => { renderBar.end(); if (mixBypass) pushChannels(); });   // 和播放同一个类、同一份数学
     const roles = st.song.parts.filter((p) => tl.tracks.some((t) => t.id === p.id)).map((p) => p.role);   // 真出了声的声部（署名推演）
     progress("编 mp3…");
     const Q = MP3_QUALITY[o.quality];
@@ -1710,6 +1720,7 @@ const studio = new Studio($("stage"), {
   close: () => closeStudio(),
   master: () => activeMaster(doc.extras),
   setMasterGain: (dB) => updateExtras(withMaster(doc.extras, { gainDb: dB }), { kind: "studio", label: `总轨增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
+  bypass: () => mixBypass, setBypass: (on) => { mixBypass = on; pushChannels(); diagNote("studio", `bypass ${on ? "on" : "off"}`); },
   toggleLimiter: () => { const on = !activeMaster(doc.extras).limiter; updateExtras(withMaster(doc.extras, { limiter: on }), { kind: "studio", label: `母线限幅${on ? "开" : "关"}` }); },
   // 插件格（v0.10.8）：总轨 = studio.json master.chain；歌手 = 它那条麦克风轨的 chain
   chain: (track) => (track === STUDIO_MASTER ? activeMaster(doc.extras).chain : studioTrack(doc.extras, trackKey(track))?.chain ?? []),
@@ -2680,6 +2691,7 @@ function applyDesk(d: Desk): void {
   }
 }
 function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; handle: docFile.FileHandle | null; mtime?: number | null; identifier?: string | null; view?: unknown; references?: Record<string, Uint8Array> }): void {
+  mixBypass = false;   // 效果全关是这次听的，换歌复位
   if (impro) toggleImpro();
   closeOffer?.(); closeInstPage();
   doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.mtime = o.handle ? (o.mtime ?? null) : null; doc.extras = o.extras;
