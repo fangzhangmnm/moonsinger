@@ -56,6 +56,8 @@ export interface ScoreExtV2 {
   arrangement?: string;
   /** 歌词怎么排（v0.9.40 加，可选，不升版本；Opus 5.5）：只写 "lyrics"（按歌词：长字把音推开）；没写 = 按节奏（音的位置只看时值，歌词让路；默认）。 */
   lyricFit?: "lyrics";
+  /** 小节号（v0.9.42 加，可选，不升版本；Opus 5.5）：只写 "off"（不印）；没写 = 每行开头印。 */
+  barNumbers?: "off";
   /** 歌级声部并集（总谱从上到下）：声部 → 角色 id → 麦克风 id；某张纸没有某声部 = 那张纸的 MusicXML 里没那个 part。kind 留给打击乐记谱（现在都是 pitched）。
    *  **声部就是歌手**（2026-10-08 Opus 5.5，user「嗯声部就是歌手」）：role 在 parts 里唯一（读到共用的 = 后面那个拆成一位新歌手，见 project.ts finish）；
    *  一张纸上一位歌手最多一行（tracks 按声部 id 记，天然如此）；跨纸按声部 id 接；mic 可以几位歌手共用（歌手认领麦克风）。不改形状、不升版本。 */

@@ -219,6 +219,7 @@ const baseWidth = (base: number) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base / 
 interface Chunk {
   kind: "chunk"; index: number; j: number; last: boolean; base: number; dotted: boolean; note: boolean; ratio: [number, number] | null; ticks: number;
   pitch: Pitch | null; ghost: boolean; tie: boolean; lyric: string | null; hyph: boolean; inBar: number; beat: number; acc: number | null; w: number; accW: number;
+  m?: number;   // 第几小节（0 起；纸头弱起 = 第 0 小节）——每行开头的小节号用（v0.9.42）
   pitches: Pitch[]; accs: (number | null)[];   // 叠音：全部符头（从高到低，第一个 = pitch）+ 各自的临时记号
   art: Art[]; breath: boolean;                 // 修：第一段画跳音 / 重音 / 保持，最后一段后面画呼吸（2026-10-08）
   inhale?: "soft" | "big";                     // 呼吸出声：逗号后面写「吸」/「深吸」（2026-10-10）
@@ -247,7 +248,7 @@ const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats
 
 interface Head { key: number; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
 /** 一条 track → 排版单元（第 1 步：切时值、临时记号、自动小节线；tick = 从这条的开头数）。caret 只在光标在这条上时给。 */
-function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; measureLyric: (s: string) => number; sp: number; rhythm?: boolean }): { units: Unit[]; head: Head; shortBars: number } {
+function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; measureLyric: (s: string) => number; sp: number; rhythm?: boolean }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
   const H = headLen(tokens);
   let fifths = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx: Head["idx"] = {};
@@ -260,7 +261,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
   //   inBar = 这个小节里已经走了多少；满了（= len）不马上画小节线，等下一个音 / 记号 / 写字头 / 曲尾来了再画——
   //   紧跟着的是人插的「|」就用它那一条（不画两条）。拍号中途变了：没写完的这个小节就此结束（同存 MusicXML）。
   const units: Unit[] = [], measureLen = (b: number, bt: number) => (b * WHOLE) / bt;
-  let accState = new Map<string, number>(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0;
+  let accState = new Map<string, number>(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0, pickup = false;
   let beat = beatTicks(time.beats, time.beatType), len = measureLen(time.beats, time.beatType);
   const pushHead = () => { units.push({ kind: "head", index: -1, w: 0, x: 0, system: 0, tick, staff: 1 }); };
   const pushBar = (index: number, auto: boolean) => {
@@ -271,6 +272,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
     const style = !repeat ? rb?.style : undefined;   // 段落线 / 终止线（v0.9.32）：比一根小节线宽一点
     units.push({ kind: "bar", index, w: repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : style ? BAR_W + 0.7 : BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto, ...(repeat ? { repeat, ...(rb?.times ? { times: rb.times } : {}) } : {}), ...(style ? { style } : {}) });
     const empty = inBar === 0;
+    if (measureNo === 0 && inBar > 0 && inBar < len) pickup = true;   // 纸头还没写满就碰到「|」= 弱起（小节号：弱起算第 0 小节）
     accState = new Map(); inBar = 0; if (!(repeat === "start" && empty)) measureNo++;   // 小节开头的 |:（前面那条小节线之后紧跟着 / 纸头）不多数一个小节
   };
   const flushFull = () => { if (o.autoBars && inBar >= len && inBar > 0) pushBar(-1, true); };
@@ -320,7 +322,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
         const accW = accs.some((a) => a !== null) ? 1.3 : 0;
         let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
         if (lyric && lyric !== MELISMA_MARK && !o.rhythm) w = Math.max(w, accW + o.measureLyric(lyricShow(lyric)) / o.sp + (nt.hyph ? 1.4 : 0.7));   // 按歌词排：字把音推开；按节奏排（v0.9.40）= 音只看时值
-        const u: Chunk = { kind: "chunk", index: i, j, last: false, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
+        const u: Chunk = { kind: "chunk", index: i, j, last: false, m: measureNo, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
           ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs,
           art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [], breath: false, ...(isNote && nt.art?.includes("whisper") ? { whisper: true } : {}) };
         units.push(u); lastChunk = u;
@@ -332,7 +334,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
   });
   flushFull();   // 曲尾正好写满：画上这一条小节线
   if (o.caret !== null && o.caret >= tokens.length) pushHead();
-  return { units, head, shortBars };
+  return { units, head, shortBars, pickup };
 }
 
 /** 一列：同一 tick、同一种东西（小节线 / 记号 / 音）各声部对齐在一起；宽 = 最宽的那个。 */
@@ -759,6 +761,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     // 5. 每条谱：五线、谱号、调号、拍号（第一行）、速度（第一个声部）、歌手牌（第一行）；几条谱左边一根竖线连着
     for (let s = 0; s < nSys; s++) {
       const ind = s === 0 ? ind0 : indN;
+      // 小节号（v0.9.42；user 2026-10-10「小节号要，可以页面设置toggle，默认是每行开头有。字小一点」）：每行最上面那条谱的左上角，印这一行第一个小节的号；
+      //   每张纸从 1 数（纸 = 曲段），弱起算第 0 小节；第一行是 1 / 0 就不印（出版谱的老规矩）
+      if (song.barNumbers !== "off" && per[0]) {
+        const c0 = per[0].units.find((u): u is Chunk => u.kind === "chunk" && u.system === s);
+        const num = c0 ? (c0.m ?? 0) + (per[0].pickup ? 0 : 1) : null;
+        if (num !== null && !(s === 0 && num <= 1)) prims.push({ t: "text", x: P(MARGIN + ind), y: yOf(rowOf(s, 0, 0), TOP_LINE + 3.2), s: String(num), cls: "bar-no", size: P(1.05), anchor: "start" });
+      }
       per.forEach((q, r) => {
         const f = sysKeys[s].get(q.p.id) ?? q.head.key;
         for (let k = 0; k < q.staves; k++) {

@@ -29,6 +29,13 @@ check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === "l
 await p.keyboard.press("Escape"); await p.mouse.click(5, 880); await p.waitForTimeout(150);
 await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === undefined, "撤销 = 回到按节奏");
+// 小节号（v0.9.42）：纸的设置里「每行开头 / 不印」，默认每行开头；进歌里
+await openSheet();
+check(await p.$eval('[data-v="bn:on"]', (e) => e.classList.contains("is-on")), "纸的设置里有小节号，默认「每行开头」");
+await p.click('[data-v="bn:off"]'); await p.waitForTimeout(200);
+check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === "off" && (await p.$$eval("#score text.bar-no", (e) => e.length)) === 0, "点「不印」= 歌里记着、谱上没有小节号");
+await p.click('[data-v="bn:on"]'); await p.waitForTimeout(200);
+check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === undefined, "再点「每行开头」= 回到默认");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nonly1: ${pass} passed, ${fail} failed`);

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.41-2026-10-10";
+var APP_VERSION = "v0.9.42-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4433,6 +4433,13 @@ function setPartClef(st3, partId, clef) {
   if (clef === null) delete np2.clef;
   else np2.clef = clef;
   return { ...st3, song: { ...st3.song, parts: st3.song.parts.map((x2) => x2.id === partId ? np2 : x2) } };
+}
+function setBarNumbers(st3, on2) {
+  if (st3.song.barNumbers !== "off" === on2) return st3;
+  const song = { ...st3.song };
+  if (on2) delete song.barNumbers;
+  else song.barNumbers = "off";
+  return { ...st3, song };
 }
 function setLyricFit(st3, v) {
   if ((st3.song.lyricFit ?? "rhythm") === v) return st3;
@@ -7103,7 +7110,7 @@ function unitsOf(tokens, o10) {
   }
   const head = { key: fifths, time, bpm, idx: headIdx };
   const units = [], measureLen2 = (b3, bt) => b3 * WHOLE / bt;
-  let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0;
+  let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0, pickup = false;
   let beat = beatTicks(time.beats, time.beatType), len = measureLen2(time.beats, time.beatType);
   const pushHead = () => {
     units.push({ kind: "head", index: -1, w: 0, x: 0, system: 0, tick, staff: 1 });
@@ -7115,6 +7122,7 @@ function unitsOf(tokens, o10) {
     const style = !repeat ? rb2?.style : void 0;
     units.push({ kind: "bar", index, w: repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : style ? BAR_W + 0.7 : BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto, ...repeat ? { repeat, ...rb2?.times ? { times: rb2.times } : {} } : {}, ...style ? { style } : {} });
     const empty = inBar === 0;
+    if (measureNo === 0 && inBar > 0 && inBar < len) pickup = true;
     accState = /* @__PURE__ */ new Map();
     inBar = 0;
     if (!(repeat === "start" && empty)) measureNo++;
@@ -7216,6 +7224,7 @@ function unitsOf(tokens, o10) {
           index: i10,
           j: j2,
           last: false,
+          m: measureNo,
           base: c10.base,
           dotted: c10.dotted,
           note: isNote,
@@ -7264,7 +7273,7 @@ function unitsOf(tokens, o10) {
   });
   flushFull();
   if (o10.caret !== null && o10.caret >= tokens.length) pushHead();
-  return { units, head, shortBars };
+  return { units, head, shortBars, pickup };
 }
 function engrave(song, o10) {
   const clefStarts = resolveSongClefs(song);
@@ -7740,6 +7749,11 @@ function engrave(song, o10) {
     });
     for (let s10 = 0; s10 < nSys; s10++) {
       const ind = s10 === 0 ? ind0 : indN;
+      if (song.barNumbers !== "off" && per[0]) {
+        const c02 = per[0].units.find((u2) => u2.kind === "chunk" && u2.system === s10);
+        const num2 = c02 ? (c02.m ?? 0) + (per[0].pickup ? 0 : 1) : null;
+        if (num2 !== null && !(s10 === 0 && num2 <= 1)) prims.push({ t: "text", x: P2(MARGIN + ind), y: yOf(rowOf(s10, 0, 0), TOP_LINE + 3.2), s: String(num2), cls: "bar-no", size: P2(1.05), anchor: "start" });
+      }
       per.forEach((q2, r10) => {
         const f2 = sysKeys[s10].get(q2.p.id) ?? q2.head.key;
         for (let k2 = 0; k2 < q2.staves; k2++) {
@@ -21709,7 +21723,8 @@ function saveMxl(a10) {
     // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
     ...song.arrangement?.trim() ? { arrangement: song.arrangement } : {},
     // 编排那一行（可选，2026-10-08 深夜）
-    ...song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}
+    ...song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {},
+    ...song.barNumbers === "off" ? { barNumbers: "off" } : {}
   };
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a10.extras.sounds).filter(([p2]) => referenced.has(p2)).sort(([x2], [y2]) => x2 < y2 ? -1 : 1);
@@ -22285,7 +22300,7 @@ function finish(reads, song0, extras, ours, name) {
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;
-  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null, references: {} };
+  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}, ...extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null, references: {} };
 }
 
 // src/format/credits.ts
@@ -37699,7 +37714,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "3cdd66be1b03",
+  cssHash: "fd7959bf505d",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -38140,7 +38155,7 @@ function openPaperSheet() {
   const draw = () => {
     const p2 = st2.song.paper ?? paperOf(DEFAULT_PAPER);
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u7248\u5F0F</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002</div><div class="part-sec">\u7EB8\uFF08\u66F2\u6BB5\uFF09</div>` + st2.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc7(pp.name || "\uFF08\u6CA1\u540D\u5B57\uFF09")}${pp.hidden ? "\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09" : ""}${pp.id === st2.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc7(pp.id)}" title="\u8FD9\u5F20\u7EB8\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u632A / \u52A0\u58F0\u90E8 / \u5220">\u22EF</button></div>`).join("") + `<div class="set-row"><button class="btn" data-v="addpaper">\uFF0B \u65B0\u7684\u7EB8\uFF08\u63A5\u5728\u6700\u540E\uFF09</button></div>` + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
-    ((one) => `<div class="part-sec">\u663E\u793A</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && st2.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">\u53EA\u770B\u4E00\u53F7\u8F68<small>\u53EA\u770B\u300C${esc7(partLabels(st2.song, doc.extras)[0] ?? "")}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B</small></button></div>`)(st2.song.parts[0]) + `<div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">\u6A2A\u5377<small>\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u6B4C\u624B\u540D\u9489\u5728\u5DE6\u8FB9</small></button></div><div class="part-sec">\u6B4C\u8BCD</div><div class="set-row"><button class="btn cand${st2.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">\u6309\u8282\u594F<small>\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u5C0F\u4E00\u53F7 \u2192 \u4E0A\u4E0B\u9519\u5F00 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070</small></button><button class="btn cand${st2.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">\u6309\u6B4C\u8BCD<small>\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    ((one) => `<div class="part-sec">\u663E\u793A</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && st2.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">\u53EA\u770B\u4E00\u53F7\u8F68<small>\u53EA\u770B\u300C${esc7(partLabels(st2.song, doc.extras)[0] ?? "")}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B</small></button></div>`)(st2.song.parts[0]) + `<div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">\u6A2A\u5377<small>\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u6B4C\u624B\u540D\u9489\u5728\u5DE6\u8FB9</small></button></div><div class="part-sec">\u5C0F\u8282\u53F7</div><div class="set-row"><button class="btn cand${st2.song.barNumbers === "off" ? "" : " is-on"}" data-v="bn:on">\u6BCF\u884C\u5F00\u5934<small>\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0</small></button><button class="btn cand${st2.song.barNumbers === "off" ? " is-on" : ""}" data-v="bn:off">\u4E0D\u5370</button></div><div class="part-sec">\u6B4C\u8BCD</div><div class="set-row"><button class="btn cand${st2.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">\u6309\u8282\u594F<small>\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u5C0F\u4E00\u53F7 \u2192 \u4E0A\u4E0B\u9519\u5F00 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070</small></button><button class="btn cand${st2.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">\u6309\u6B4C\u8BCD<small>\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -38172,6 +38187,9 @@ function openPaperSheet() {
     } else if (v === "fit" || v === "reflow") {
       reflow = v === "reflow";
       view.render();
+      draw();
+    } else if (v === "bn:on" || v === "bn:off") {
+      update(setBarNumbers(st2, v === "bn:on"));
       draw();
     } else if (v === "lyr:lyrics" || v === "lyr:rhythm") {
       update(setLyricFit(st2, v === "lyr:rhythm" ? "rhythm" : "lyrics"));
@@ -40760,4 +40778,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c8861e6d98d9.mjs.map
+//# sourceMappingURL=moonsinger-6d0fd6be3851.mjs.map

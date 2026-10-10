@@ -759,3 +759,5 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 /* 歌库「新建」小菜单（v0.9.41） */
 .gallery-full .gallery-new-menu { z-index: var(--z-menu); }
 .gallery-new-menu .ctx-item { display: flex; align-items: center; gap: 8px; }
+/* 小节号（v0.9.42） */
+.staff-svg .bar-no { fill: var(--ink-soft); }

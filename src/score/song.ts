@@ -134,6 +134,8 @@ export interface Song {
   /** 歌词怎么排（v0.9.40；user 2026-10-10「先试下你说的两个歌词开关吧，approved」→「默认用修歌词的那个排版方式吧」）：没有 = 按节奏（默认：音的位置只看时值，
    *  歌词让路：借旁边的空 → 小一号 → 上下错开 → 还放不下画灰说「挤了」）；lyrics = 按歌词（长字把音推开，出版谱的老规矩）。存档 = score.json 可选字段 lyricFit（只写 "lyrics"）。 */
   lyricFit?: "lyrics";
+  /** 小节号（v0.9.42；user「小节号要，可以页面设置toggle，默认是每行开头有」）：没有 = 每行开头印；off = 不印。存档 = score.json 可选字段 barNumbers（只写 "off"）。 */
+  barNumbers?: "off";
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表
@@ -1395,6 +1397,12 @@ export function setPartClef(st: EditorState, partId: string, clef: ClefName | nu
   const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.clef ?? null) === clef) return st;
   const np: PartDef = { ...p }; if (clef === null) delete np.clef; else np.clef = clef;
   return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
+}
+/** 小节号印不印（v0.9.42；默认每行开头印）。 */
+export function setBarNumbers(st: EditorState, on: boolean): EditorState {
+  if ((st.song.barNumbers !== "off") === on) return st;
+  const song = { ...st.song }; if (on) delete song.barNumbers; else song.barNumbers = "off";
+  return { ...st, song };
 }
 /** 歌词怎么排（v0.9.40）：按节奏（默认）/ 按歌词。 */
 export function setLyricFit(st: EditorState, v: "lyrics" | "rhythm"): EditorState {
