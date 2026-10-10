@@ -1,5 +1,5 @@
 // test/e2e/groove.mjs —— 真浏览器 E2E：风格记号（拍子轻重）——pad 记号页「风格」放在光标前那个音上、马上开小菜单；换风格 / 幅度 / 删；
-// 小菜单明说（这张纸上谁跟多少、摇摆还没接）；出声：流行 = 第二拍比第一拍响（月读换成一段平的声音，看音量曲线乘上去的样子）。
+// 小菜单明说（这张纸上谁跟多少、摇摆怎么摇（v0.9.36 前是「还没接」））；出声：流行 = 第二拍比第一拍响（月读换成一段平的声音，看音量曲线乘上去的样子）。
 // created 2026-10-08 深夜 by Claude Opus 5.5（user「点开之后可以设置具体的细节」「预设可以…做成数据驱动的」）
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/groove.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
@@ -34,7 +34,7 @@ await p.click('.groove-menu [data-v="amount:2"]'); await p.waitForTimeout(250);
 check(await grooves() === "pop×2", "幅度 ×2");
 check(await p.$$eval("#score text.groove-mark", (e) => e.map((x) => x.textContent).join()) === "Style: Pop ×2", "谱上「Style: Pop ×2」");
 await p.click('.groove-menu [data-v="style:swing"]'); await p.waitForTimeout(250);
-check(/摇摆.*还没接/.test(await p.$$eval(".groove-menu .ctx-hint", (e) => e.map((x) => x.textContent).join(" | "))), "Swing：明说摇摆（时值）还没接");
+check(/摇摆：一拍里前一个八分占 75%.*所有歌手一起摇/.test(await p.$$eval(".groove-menu .ctx-hint", (e) => e.map((x) => x.textContent).join(" | "))), "Swing：明说怎么摇（幅度 ×2 = 夹到 75%，所有歌手一起；v0.9.36 起真摇）");
 await p.click('.groove-menu [data-v="style:pop"]'); await p.waitForTimeout(250);
 await p.click('.groove-menu [data-v="amount:1"]'); await p.waitForTimeout(250);
 await p.mouse.click(5, 880); await p.waitForTimeout(150);

@@ -11,7 +11,7 @@ import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
-import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, GROOVE_STYLES } from "../score/groove.ts";
+import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
@@ -729,7 +729,7 @@ const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.
 /** 播放 / 试听的范围跟着视图走：本段 = 只有光标所在的纸；全部 = 整首（导出面板另选）。user 2026-10-08「为什么在本段视图下播放还是播放全部了？」 */
 const playSong = (): Song => (viewScope === "segment" ? songOnlyPaper(st.song, st.at.paper) : st.song);
 /** 光标所在声部压平后的一串 + 速度表（找人视图「听开头」、测试钩子用）。 */
-const curFlat = () => { const s = playSong(), order = songPlayOrder(s); return { tokens: flattenPart(s, st.at.part, { order }).tokens, map: tempoMapOf(s, order) }; };
+const curFlat = () => { const s = playSong(), order = songPlayOrder(s); return { tokens: flattenPart(s, st.at.part, { order }).tokens, map: timeMapOf(s, order) }; };
 /** 渲染哪一段：view = 跟视图（本段 / 全部，播放用）；all = 整首；segment = 光标所在的这一张纸（导出面板里选）。 */
 type RenderScope = "view" | "all" | "segment";
 const songIn = (s: RenderScope): Song => (s === "all" ? st.song : s === "segment" ? songOnlyPaper(st.song, st.at.paper) : playSong());
@@ -2180,7 +2180,8 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
     const none = [...meters].filter((m) => { const [b, bt] = m.split("/").map(Number); return !grooveTable(style, b, bt); });
     if (derived.length) hints.push(`${derived.join("、")} 这个预设没列：按古典的强弱推${derived.some((m) => m.endsWith("/8") && Number(m.split("/")[0]) % 3 !== 0 && Number(m.split("/")[0]) > 3) ? "（几个八分一组谱上没记，按 2 + 2 + … + 3 推）" : ""}`);
     if (none.length) hints.push(`${none.join("、")}：这个预设不加轻重`);
-    if (style.swing) hints.push("摇摆（前长后短的时值）这一版还没接：现在只有轻重");
+    if (style.swing) { const r = swingRatio(t.style, amount), [lo, hi] = style.swing.range;   // 摇摆（v0.9.36）：按数据现算（纪律：做到什么程度明说）
+      hints.push(`摇摆：一拍里前一个八分占 ${Math.round(r * 100)}%（直 = 50%，三连音感 ≈ 67%；幅度只放大 / 缩小比直的多出来的那一截，夹在 ${Math.round(lo * 100)}–${Math.round(hi * 100)}%）。这张纸上所有歌手一起摇（月读也是，不分跟多少）；写成连音的音、6/8 这类拍号不摇`); }
     const paper = st.song.papers.find((p) => p.id === st.at.paper);
     const who = st.song.parts.filter((p) => paper?.tracks[p.id]).map((p) => {
       const f = followOf(style, grooveCategory(activeInstrument(doc.extras, p.role)?.engine ?? null, activeGm(doc.extras, p.role)));

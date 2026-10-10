@@ -4,8 +4,8 @@
 // 怎么出声（perform.ts 用）：权重 w（−1…1）× 记号的幅度 × 这位演奏者跟多少（预设按乐器类别给，follow）= 这个音的「拍子轻重」；
 //   w > 0 = 按次重音的量加（w = 1 就是一个次重音），w < 0 = 按弱化的量减（w = −1 就是一个弱化）——同一把尺子，演奏者配置里次重音 / 弱化调多少，这里跟着变。
 //   谱上写了音头记号（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）的音 = 写的说了算，拍子轻重不叠上去（「音的强度只能有一种」）。
-//   连过来的音（tie）不是新的音头，不算。摇摆（时值）这一版不接，面板里明说。
-import { type Token, type NoteTok, type Song, type PaperSeg, type GrooveTok, WHOLE, ATTACKS, DEFAULT_TIME, artOf, isTimed, paperTicks } from "./song.ts";
+//   连过来的音（tie）不是新的音头，不算。摇摆（时值）v0.9.36 起接了：timeMapOf（下面）把它做进放的时候的时间表，三种演奏者同一个扭曲（song.ts swingDelta）。
+import { type Token, type NoteTok, type Song, type PaperSeg, type GrooveTok, type TempoMap, WHOLE, TPQ, ATTACKS, DEFAULT_TIME, DEFAULT_BPM, artOf, isTimed, paperTicks, tempoMapOf, tempoOwner } from "./song.ts";
 import { expandPaper } from "./repeats.ts";
 import { GROOVE_STYLES, type GrooveStyle } from "./grooves.gen.ts";
 
@@ -151,3 +151,34 @@ export function grooveCategory(engine: string | null | undefined, gm?: { bank: n
 }
 /** 类别里预设没写的 = 0（不跟）。 */
 export const followOf = (s: GrooveStyle, category: string | null): number => (category ? s.follow[category] ?? 0 : 0);
+
+// ── 摇摆（v0.9.36，2026-10-10 Opus 5.5；user「全量摇摆同意，放在一号轨？」→ 是：跟着风格记号走（风格记号写在每张纸最上面那位身上、管整张纸） ──
+/** 摇多少：风格数据的 swing.ratio（一拍里前一个八分占多少；仓鼠 grooves，Swing = 0.667、范围 0.5–0.75），幅度放大 / 缩小「比直的多出来的那一截」，
+ *  夹在数据给的范围里；这个风格不摇 = 0。 */
+export function swingRatio(style: string | null, amount = 1): number {
+  const w = style ? grooveStyle(style)?.swing : null; if (!w) return 0;
+  return Math.min(w.range[1], Math.max(w.range[0], 0.5 + (w.ratio - 0.5) * amount));
+}
+/** 放的时候用的时间表 = 速度表（tempoMapOf）+ 摇摆：风格记号带摇摆的那一段，**整张纸所有歌手一起摇**（时间不分谁跟多少，不然对不上拍；跟多少只管轻重）。
+ *  拍的网格从纸头起数；纸的第一小节是弱起（还没写满就碰到「|」）= 网格对齐到那条小节线（弱起的那个八分是后半拍）。
+ *  整首没有哪一段摇 = 原样返回速度表（旧歌逐样本不变）。 */
+export function timeMapOf(song: Song, order?: readonly string[]): TempoMap {
+  const tempo = tempoMapOf(song, order), g = grooveMapOf(song, order);
+  if (!g.some((e) => swingRatio(e.style, e.amount))) return tempo;
+  const seq: PaperSeg[] = order ? order.flatMap((id) => song.papers.filter((p) => p.id === id)) : song.papers.filter((p) => !p.hidden);   // 同 grooveMapOf
+  const spans: { at: number; end: number; origin: number }[] = []; let at = 0;
+  for (const p0 of seq) {
+    const p = expandPaper(song, p0, () => -1), len = paperTicks(p), owner = tempoOwner(song, p), toks = owner ? p.tracks[owner] ?? [] : [];
+    let t = 0, b1 = -1, measure = (DEFAULT_TIME.beats * WHOLE) / DEFAULT_TIME.beatType;
+    for (const tok of toks) {
+      if (tok.kind === "time" && t === 0) measure = (tok.beats * WHOLE) / tok.beatType;
+      if (tok.kind === "bar") { b1 = t; break; }
+      if (isTimed(tok)) { t += tok.dur; if (t >= measure) break; }
+    }
+    spans.push({ at, end: at + len, origin: at + (b1 > 0 && b1 < measure ? b1 % TPQ : 0) }); at += len;
+  }
+  const originAt = (tick: number) => (spans.find((s) => tick >= s.at && tick < s.end) ?? spans[spans.length - 1])?.origin ?? 0;
+  const bpmAt = (tick: number) => { let b = tempo[0]?.bpm ?? DEFAULT_BPM; for (const e of tempo) if (e.tick <= tick) b = e.bpm; return b; };
+  const out: TempoMap = [...tempo, ...g.map((e) => ({ tick: e.tick, bpm: bpmAt(e.tick), swing: swingRatio(e.style, e.amount), origin: originAt(e.tick) }))];
+  return out.sort((a, b) => a.tick - b.tick || (a.swing === undefined ? 0 : 1) - (b.swing === undefined ? 0 : 1));   // 同一时刻：速度先、摇摆后
+}

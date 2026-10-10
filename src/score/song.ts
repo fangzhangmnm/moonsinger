@@ -1478,21 +1478,37 @@ export interface TimedAt {
   start: number;            // tick，从头算
   inBar: number;            // tick，从上一条小节线算
   bpm: number;              // 这里生效的速度
-  t0: number; t1: number;   // 秒（按速度记号一段一段算）
+  t0: number; t1: number;   // 秒（按速度记号一段一段算；摇摆的音已经扭过）
+  /** 摇摆（v0.9.36）：起 / 止被扭了多少（tick；正 = 往后）。没摇 = 没有这两个字段（旧歌逐样本不变）。月读的唱谱按它换算长度（lab-score.ts）。 */
+  dw0?: number; dw1?: number;
 }
 
-/** 速度表：tick → 从这里起的 bpm（第一个声部压平后的速度记号；其余声部按它算秒数，自己串里的速度记号不算数）。 */
-export type TempoMap = { tick: number; bpm: number }[];
+/** 速度表：tick → 从这里起的 bpm（第一个声部压平后的速度记号；其余声部按它算秒数，自己串里的速度记号不算数）。
+ *  swing / origin（v0.9.36，摇摆；groove.ts timeMapOf 加）：从这里起一拍里前一个八分占多少（0 = 直），拍的网格从 origin 起数（弱起已经对齐到小节线）。 */
+export type TempoMap = { tick: number; bpm: number; swing?: number; origin?: number }[];
+/** 摇摆的时间扭曲（v0.9.36；user 2026-10-10「全量摇摆同意，放在一号轨？」）：一拍（四分音符）里前一个八分占 r（0.5 = 直、≈0.667 = 三连音感），拍头拍尾不动；
+ *  拍内分段线性（前半拍拉到 r、后半拍压到 1 − r），十六分跟着一起扭。返回 tick 位置 T 被挪了多少（tick）。三种演奏者（乐器 / 元音版 / 月读）都走这一个。 */
+export function swingDelta(T: number, origin: number, r: number): number {
+  const u = (((T - origin) % TPQ) + TPQ) % TPQ, h = TPQ / 2;
+  return (u <= h ? u * 2 * r : r * TPQ + (u - h) * 2 * (1 - r)) - u;
+}
+/** 这个时值摇不摇：写成连音的（时值不在 64 分音符的网格上：三连音 / 五连音…）不摇（user 同意的设计：已经写成三连音的不再摇）。 */
+const SWING_GRID = TPQ / 16;
 export function timeline(tokens: Token[], tempoMap?: TempoMap): TimedAt[] {
   const out: TimedAt[] = [];
-  let t = 0, bar = 0, sec = 0, bpm = DEFAULT_BPM, k = 0;
+  let t = 0, bar = 0, sec = 0, bpm = DEFAULT_BPM, k = 0, sw = 0, org = 0, bt = DEFAULT_TIME.beatType;
   tokens.forEach((tok, index) => {
     if (tok.kind === "bar") { bar = t; return; }
     if (tok.kind === "tempo") { if (!tempoMap) bpm = tok.bpm; return; }
+    if (tok.kind === "time") { bt = tok.beatType; return; }
     if (!isTimed(tok)) return;
-    if (tempoMap) { while (k < tempoMap.length && tempoMap[k].tick <= t) { bpm = tempoMap[k].bpm; k++; } }
+    if (tempoMap) { while (k < tempoMap.length && tempoMap[k].tick <= t) { const e = tempoMap[k]; bpm = e.bpm; if (e.swing !== undefined) { sw = e.swing; org = e.origin ?? 0; } k++; } }
     const len = (tok.dur / TPQ) * (60 / bpm);
-    out.push({ index, tok, start: t, inBar: t - bar, bpm, t0: sec, t1: sec + len });
+    // 摇摆：只在拍子是四分 / 二分（6/8 这类复合拍本来就是三连音的感觉，不摇）、时值在网格上的音
+    const swOn = sw !== 0 && (bt === 4 || bt === 2) && tok.dur % SWING_GRID === 0;
+    const d0 = swOn ? swingDelta(t, org, sw) : 0, d1 = swOn ? swingDelta(t + tok.dur, org, sw) : 0;
+    if (d0 || d1) { const spt = 60 / (bpm * TPQ); out.push({ index, tok, start: t, inBar: t - bar, bpm, t0: sec + d0 * spt, t1: sec + len + d1 * spt, dw0: d0, dw1: d1 }); }
+    else out.push({ index, tok, start: t, inBar: t - bar, bpm, t0: sec, t1: sec + len });
     t += tok.dur; sec += len;
   });
   return out;

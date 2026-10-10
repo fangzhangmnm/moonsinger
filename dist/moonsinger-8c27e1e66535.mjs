@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.35-2026-10-10";
+var APP_VERSION = "v0.9.36-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4533,9 +4533,14 @@ function setPaperName(st3, paperId, name) {
   if (!p2 || p2.name === t10) return st3;
   return { ...st3, song: { ...st3.song, papers: st3.song.papers.map((x2) => x2.id === paperId ? { ...x2, name: t10 } : x2) } };
 }
+function swingDelta(T2, origin, r10) {
+  const u2 = ((T2 - origin) % TPQ + TPQ) % TPQ, h2 = TPQ / 2;
+  return (u2 <= h2 ? u2 * 2 * r10 : r10 * TPQ + (u2 - h2) * 2 * (1 - r10)) - u2;
+}
+var SWING_GRID = TPQ / 16;
 function timeline(tokens, tempoMap) {
   const out = [];
-  let t10 = 0, bar2 = 0, sec = 0, bpm = DEFAULT_BPM, k2 = 0;
+  let t10 = 0, bar2 = 0, sec = 0, bpm = DEFAULT_BPM, k2 = 0, sw2 = 0, org = 0, bt = DEFAULT_TIME.beatType;
   tokens.forEach((tok, index) => {
     if (tok.kind === "bar") {
       bar2 = t10;
@@ -4545,15 +4550,29 @@ function timeline(tokens, tempoMap) {
       if (!tempoMap) bpm = tok.bpm;
       return;
     }
+    if (tok.kind === "time") {
+      bt = tok.beatType;
+      return;
+    }
     if (!isTimed(tok)) return;
     if (tempoMap) {
       while (k2 < tempoMap.length && tempoMap[k2].tick <= t10) {
-        bpm = tempoMap[k2].bpm;
+        const e10 = tempoMap[k2];
+        bpm = e10.bpm;
+        if (e10.swing !== void 0) {
+          sw2 = e10.swing;
+          org = e10.origin ?? 0;
+        }
         k2++;
       }
     }
     const len = tok.dur / TPQ * (60 / bpm);
-    out.push({ index, tok, start: t10, inBar: t10 - bar2, bpm, t0: sec, t1: sec + len });
+    const swOn = sw2 !== 0 && (bt === 4 || bt === 2) && tok.dur % SWING_GRID === 0;
+    const d0 = swOn ? swingDelta(t10, org, sw2) : 0, d1 = swOn ? swingDelta(t10 + tok.dur, org, sw2) : 0;
+    if (d0 || d1) {
+      const spt = 60 / (bpm * TPQ);
+      out.push({ index, tok, start: t10, inBar: t10 - bar2, bpm, t0: sec + d0 * spt, t1: sec + len + d1 * spt, dw0: d0, dw1: d1 });
+    } else out.push({ index, tok, start: t10, inBar: t10 - bar2, bpm, t0: sec, t1: sec + len });
     t10 += tok.dur;
     sec += len;
   });
@@ -5753,6 +5772,43 @@ function grooveCategory(engine2, gm) {
   return null;
 }
 var followOf = (s10, category) => category ? s10.follow[category] ?? 0 : 0;
+function swingRatio(style, amount = 1) {
+  const w2 = style ? grooveStyle(style)?.swing : null;
+  if (!w2) return 0;
+  return Math.min(w2.range[1], Math.max(w2.range[0], 0.5 + (w2.ratio - 0.5) * amount));
+}
+function timeMapOf(song, order) {
+  const tempo = tempoMapOf(song, order), g3 = grooveMapOf(song, order);
+  if (!g3.some((e10) => swingRatio(e10.style, e10.amount))) return tempo;
+  const seq = order ? order.flatMap((id2) => song.papers.filter((p2) => p2.id === id2)) : song.papers.filter((p2) => !p2.hidden);
+  const spans = [];
+  let at2 = 0;
+  for (const p0 of seq) {
+    const p2 = expandPaper(song, p0, () => -1), len = paperTicks(p2), owner = tempoOwner(song, p2), toks = owner ? p2.tracks[owner] ?? [] : [];
+    let t10 = 0, b1 = -1, measure = DEFAULT_TIME.beats * WHOLE / DEFAULT_TIME.beatType;
+    for (const tok of toks) {
+      if (tok.kind === "time" && t10 === 0) measure = tok.beats * WHOLE / tok.beatType;
+      if (tok.kind === "bar") {
+        b1 = t10;
+        break;
+      }
+      if (isTimed(tok)) {
+        t10 += tok.dur;
+        if (t10 >= measure) break;
+      }
+    }
+    spans.push({ at: at2, end: at2 + len, origin: at2 + (b1 > 0 && b1 < measure ? b1 % TPQ : 0) });
+    at2 += len;
+  }
+  const originAt = (tick) => (spans.find((s10) => tick >= s10.at && tick < s10.end) ?? spans[spans.length - 1])?.origin ?? 0;
+  const bpmAt = (tick) => {
+    let b3 = tempo[0]?.bpm ?? DEFAULT_BPM;
+    for (const e10 of tempo) if (e10.tick <= tick) b3 = e10.bpm;
+    return b3;
+  };
+  const out = [...tempo, ...g3.map((e10) => ({ tick: e10.tick, bpm: bpmAt(e10.tick), swing: swingRatio(e10.style, e10.amount), origin: originAt(e10.tick) }))];
+  return out.sort((a10, b3) => a10.tick - b3.tick || (a10.swing === void 0 ? 0 : 1) - (b3.swing === void 0 ? 0 : 1));
+}
 
 // src/score/commands.ts
 function apply(st3, c10, now2 = Date.now()) {
@@ -11241,6 +11297,7 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
   const inRange = (i10) => !range2 || i10 >= range2[0] && i10 < range2[1];
   const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2.find((x2) => inRange(x2.index))?.bpm ?? 90;
   const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
+  const dwOf = new Map(tl2.filter((x2) => x2.dw0 !== void 0).map((x2) => [x2.index, x2.dw1 - x2.dw0]));
   const out = [];
   const pick = (a10, b3) => !a10 ? b3 : a10 === "^" ? b3 : a10;
   let nextMark = null, thisMark = null, nextInhale = false;
@@ -11297,7 +11354,7 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
     if (tokenEntry && t10.kind === "note" && out.length) tokenEntry.set(i10, out.length > n02 ? n02 : out.length - 1);
   }
   function one0(t10, i10) {
-    const len = t10.dur / eighth * (base3 / bpmOf.get(i10));
+    const len = (t10.dur + (dwOf.get(i10) ?? 0)) / eighth * (base3 / bpmOf.get(i10));
     if (t10.kind === "rest") {
       const last2 = out[out.length - 1];
       if (last2) last2.rest = (last2.rest ?? 0) + len;
@@ -24051,7 +24108,7 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
 var HUM_KANA = { la: "\u3089", n: "\u3093", u: "\u3046", o: "\u304A", a: "\u3042" };
 function buildTimeline(inp) {
   const { song, order, hum } = inp;
-  const map = tempoMapOf(song, order), gmap = grooveMapOf(song, order);
+  const map = timeMapOf(song, order), gmap = grooveMapOf(song, order);
   const flats = /* @__PURE__ */ new Map();
   const flat = (partId) => {
     let f2 = flats.get(partId);
@@ -36367,7 +36424,7 @@ var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
 var playSong = () => viewScope === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : st2.song;
 var curFlat = () => {
   const s10 = playSong(), order = songPlayOrder(s10);
-  return { tokens: flattenPart(s10, st2.at.part, { order }).tokens, map: tempoMapOf(s10, order) };
+  return { tokens: flattenPart(s10, st2.at.part, { order }).tokens, map: timeMapOf(s10, order) };
 };
 var songIn = (s10) => s10 === "all" ? st2.song : s10 === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : playSong();
 var GM_SR = 44100;
@@ -38479,7 +38536,10 @@ function openGrooveMenu(i10, at2) {
     });
     if (derived.length) hints.push(`${derived.join("\u3001")} \u8FD9\u4E2A\u9884\u8BBE\u6CA1\u5217\uFF1A\u6309\u53E4\u5178\u7684\u5F3A\u5F31\u63A8${derived.some((m3) => m3.endsWith("/8") && Number(m3.split("/")[0]) % 3 !== 0 && Number(m3.split("/")[0]) > 3) ? "\uFF08\u51E0\u4E2A\u516B\u5206\u4E00\u7EC4\u8C31\u4E0A\u6CA1\u8BB0\uFF0C\u6309 2 + 2 + \u2026 + 3 \u63A8\uFF09" : ""}`);
     if (none.length) hints.push(`${none.join("\u3001")}\uFF1A\u8FD9\u4E2A\u9884\u8BBE\u4E0D\u52A0\u8F7B\u91CD`);
-    if (style.swing) hints.push("\u6447\u6446\uFF08\u524D\u957F\u540E\u77ED\u7684\u65F6\u503C\uFF09\u8FD9\u4E00\u7248\u8FD8\u6CA1\u63A5\uFF1A\u73B0\u5728\u53EA\u6709\u8F7B\u91CD");
+    if (style.swing) {
+      const r10 = swingRatio(t10.style, amount), [lo2, hi] = style.swing.range;
+      hints.push(`\u6447\u6446\uFF1A\u4E00\u62CD\u91CC\u524D\u4E00\u4E2A\u516B\u5206\u5360 ${Math.round(r10 * 100)}%\uFF08\u76F4 = 50%\uFF0C\u4E09\u8FDE\u97F3\u611F \u2248 67%\uFF1B\u5E45\u5EA6\u53EA\u653E\u5927 / \u7F29\u5C0F\u6BD4\u76F4\u7684\u591A\u51FA\u6765\u7684\u90A3\u4E00\u622A\uFF0C\u5939\u5728 ${Math.round(lo2 * 100)}\u2013${Math.round(hi * 100)}%\uFF09\u3002\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u6B4C\u624B\u4E00\u8D77\u6447\uFF08\u6708\u8BFB\u4E5F\u662F\uFF0C\u4E0D\u5206\u8DDF\u591A\u5C11\uFF09\uFF1B\u5199\u6210\u8FDE\u97F3\u7684\u97F3\u30016/8 \u8FD9\u7C7B\u62CD\u53F7\u4E0D\u6447`);
+    }
     const paper = st2.song.papers.find((p2) => p2.id === st2.at.paper);
     const who = st2.song.parts.filter((p2) => paper?.tracks[p2.id]).map((p2) => {
       const f2 = followOf(style, grooveCategory(activeInstrument(doc.extras, p2.role)?.engine ?? null, activeGm(doc.extras, p2.role)));
@@ -40394,4 +40454,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ae7a66a02bb2.mjs.map
+//# sourceMappingURL=moonsinger-8c27e1e66535.mjs.map

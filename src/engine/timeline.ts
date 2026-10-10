@@ -3,11 +3,11 @@
 //   谱是 tick + 速度表 + 反复 + 编排，这里一次解成秒，seek / 循环 / 排程就是算术，三个引擎共一个钟）。派生物，改谱重算，不进文件。
 // 月读的块：只在够长的休止处切，**不在纸界切**（user「曲段的边界算句子吧…也许还是同意可以跨曲段句子。cache应该不伤，听你的试试」；
 //   弱起 / 连音线跨段的一句拦腰切 = 中间多一道接缝）；粒度仍是歌手的属性（句 / 曲段 / 一整首）。块的内容键里没有位置 → 歌词移位再复原照样命中。
-import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type Hum, type NoteTok, flattenPart, tempoMapOf, timeline, effectivePitch, allPitches, paperTicks, tempoOwner } from "../score/song.ts";
+import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type Hum, type NoteTok, flattenPart, timeline, effectivePitch, allPitches, paperTicks, tempoOwner } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { gainSegments, noteEnd, noteVelocities, lightMarks, type PerfSpec } from "../score/perform.ts";
-import { grooveWeights, grooveMapOf, followOf, type GrooveStyle } from "../score/groove.ts";
+import { grooveWeights, grooveMapOf, followOf, timeMapOf, type GrooveStyle } from "../score/groove.ts";
 import { toLabScore, singChunks, type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
 import { playSegments } from "../score/repeats.ts";
 import { sfKey, type SfxInfo } from "../gm/sf-key.ts";
@@ -101,7 +101,7 @@ export const HUM_KANA: Record<Hum, string> = { la: "ら", n: "ん", u: "う", o:
 
 export function buildTimeline(inp: TimelineInput): Timeline {
   const { song, order, hum } = inp;
-  const map = tempoMapOf(song, order), gmap = grooveMapOf(song, order);
+  const map = timeMapOf(song, order), gmap = grooveMapOf(song, order);   // 时间表 = 速度 + 摇摆（v0.9.36：三种演奏者同一个扭曲）
   const flats = new Map<string, { tokens: Token[]; starts: { index: number; paper: PaperSeg }[] }>();
   const flat = (partId: string) => { let f = flats.get(partId); if (!f) { f = flattenPart(song, partId, { order }); flats.set(partId, f); } return f; };
   const tracks: TrackSpec[] = [], chunks: ChunkPlan[] = [], unplayable: { part: string; why: string }[] = [];

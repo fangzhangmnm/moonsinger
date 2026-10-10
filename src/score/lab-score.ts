@@ -28,6 +28,7 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
   const inRange = (i: number) => !range || (i >= range[0] && i < range[1]);
   const eighth = TPQ / 2, tl = timeline(tokens, tempoMap), base = tl.find((x) => inRange(x.index))?.bpm ?? 90;
   const bpmOf = new Map(tl.map((x) => [x.index, x.bpm]));
+  const dwOf = new Map(tl.filter((x) => x.dw0 !== undefined).map((x) => [x.index, x.dw1! - x.dw0!]));   // 摇摆（v0.9.36）：这个音被扭长 / 扭短了多少 tick（和乐器同一个扭曲；没摇 = 没有）
   const out: LabEntry[] = [];
   // 记号 → 唱法核心认的字前记号（v = 换气 / O = 大口换气 / ^ = 顿一下不换气）：怎么对应是这位演奏者自己的配置（候选 sing，by value；没写 = SING_MARKS），
   //   不写死在这里（2026-10-08 user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」；「跳音就是顿一下」「嗯重音也顿」「月读在那儿换气」）。
@@ -56,7 +57,7 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
     if (tokenEntry && t.kind === "note" && out.length) tokenEntry.set(i, out.length > n0 ? n0 : out.length - 1);   // 新出了条目 = 第一条；并进前一条的 = 前一条
   }
   function one0(t: Token & { dur: number }, i: number): void {
-    const len = (t.dur / eighth) * (base / bpmOf.get(i)!);
+    const len = ((t.dur + (dwOf.get(i) ?? 0)) / eighth) * (base / bpmOf.get(i)!);
     if (t.kind === "rest") { const last = out[out.length - 1]; if (last) last.rest = (last.rest ?? 0) + len; return; }
     if (t.kind !== "note") return;
     const midi = midiOf(effectivePitch(tokens, i));

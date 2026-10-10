@@ -152,6 +152,7 @@
 - 做了什么 = 仓 CLAUDE.md v0.9.1 那条；设计 = `ai-docs/20261009-realtime-preview-engine-proposal.md`（§1–§12 提案、§13 user 三轮回复与修订、§14 刀 0 量的代价）；原话全集 = `ai-docs/20261009-sound-engine-user-vision.md`。
 - **接口面**（给接着做的人）：`src/engine/studio.ts` 的 `StudioIn / StudioOut / TimelineMsg / TrackSpec / ClipRef`；`src/engine/timeline.ts` 的 `buildTimeline(TimelineInput) → Timeline`、`PerformerInfo`；`src/engine/studio-client.ts` 的 `StudioClient`（bank / vowels / setTimeline / chunk / channel / master / play / stop / seek / audition* / renderOffline / on(pos | ended | missing | meter)）。main.ts 里：`prepare(scope)`（库 → 时间线 → 块）、`playRange(tl)`、`cursorSeconds(tl)`、`togglePlay`、`schedulePlaybackRefresh`、`auditionTarget()`。
 - **user 2026-10-10 拍板刀 5 / 刀 6**：「精度分级做 冷启动做 然后下一刀 内部进度回调中途取消按键加速worker并行 负载和内存监控防闪退 做 llama科研不做」→ 刀 5 = 精度分级（v0.9.11 已落块 Int16 + 分析 bf16；WORLD 单精度另议）+ 冷启动（v0.9.11 先落分段计时；词典解压缓存 / session 选项 / 启动就起引擎接着做；**念缓存持久化到 IDB 仍等 user 一句话**）；刀 6 = WORLD 内部进度回调、正在算的那句中途取消、按键再加速（断句 / 稳态那几步按句缓存）、两个 worker 并行唱（按设备）、音频线程负载 + 内存监控（防闪退：超预算先放块 / 减并行 / 明说）。llama 科研线不做。
+- **全量摇摆（v0.9.36，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.36 那条。引擎契约归 Fable：这一刀只动了时间表（TempoMap 加两个可选字段、timeline 加偏移），录音房 / 唱法核心没动；Fable 下次碰时间线时知道一下。
 - **排法「横卷」（v0.9.35，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.35 那条。卷首那一屏的控件（扳手 / 曲段控件）滚开了够不着，要不要也钉住等 user 用了再说。
 - **歌词框下面显示月读念成什么（v0.9.34，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.34 那条。唱法核心第 1 步切成了共用的小函数（逐样本不变），改 sing-core 第 1 步时 readingCore 跟着走。
 - **整段 / 整首移调转调（v0.9.33，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.33 那条。
