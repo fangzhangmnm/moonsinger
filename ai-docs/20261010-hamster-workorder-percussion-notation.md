@@ -26,6 +26,6 @@
 - 例：GM 119 Reverse Cymbal（反向镲：着力点 = 快结尾的地方）、GM 128 Gunshot、各种 Impact 类。照「音效原速键」那套 TinySoundFont 实测，测法写进 `defs`。
 - MoonSinger 的用法：谱上写在砸下去的那一拍，录音房提前 `hitSec` 开始放（和月读辅音提前同一个机制）。
 
-## 4. 顺带（不急）
+## 4. 「大炮」= 所有音效（edited by Claude Opus 5.5 2026-10-10）
 
-- **大炮**：团子大家族就差它了（user「团子就差大炮了」）。GM 里没有大炮；有没有许可证干净的大炮单发采样，能进家族音源库 `pwa-sounds`（音源跟人不跟 app，进库前逐条核许可证）？只调研、列候选，不用你搬。
+- user「canon is a joke. 这首歌不用literally canon，我用这个代指所有的sfx」：不用找大炮采样。音效（表 ① 里 kind = 音效的概念、表 ② GM 120–128 那些）一样走上面两条：`pitched: false`（谱上画在一线谱上、不管音高）+ 有着力点的给 `hitSec`。
