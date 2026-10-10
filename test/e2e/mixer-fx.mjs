@@ -7,7 +7,7 @@ const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 for (let i = 0; i < 3; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
-await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 3).fill(0.2), sr: 22050 }); });
+await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: Float32Array.from({ length: 22050 * 3 }, (_, i) => 0.2 * Math.sin((2 * Math.PI * 440 * i) / 22050)), sr: 22050 }); });   // 440 Hz 正弦（频谱看得出来）
 await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(250);
 const partId = await p.evaluate(() => window.__moonsinger.state().song.parts[0].id);
 const chain = (track) => p.evaluate((t) => { const m = window.__moonsinger, s = m.state(); if (t === "master") return m.extras().studio?.master?.chain ?? []; const mic = s.song.parts.find((x) => x.id === t).mic; return m.studioTracks().find((x) => x.id === mic)?.chain ?? []; }, track);
@@ -29,7 +29,19 @@ let started = false; for (let i = 0; i < 40 && !started; i++) { await p.waitForT
 check(started, "焦点在推子上按空格 = 放（原来推子上的空格被放过）");
 await p.keyboard.press("Space"); await p.waitForTimeout(200);
 await tab("eq");
+// EQ 页卡片背景（v0.10.11）：频谱面 + EQ 曲线；放着的时候频谱有东西，440 Hz 附近最高；拧「厚 ↔ 亮」曲线跟着变（user「看不到频谱背景调均衡等于瞎子」）
+check(!!(await p.$(`.strip[data-id="${partId}"] .strip-spec .eqc`)), "EQ 页：卡片背景有频谱面和 EQ 曲线");
+{ await p.click("#playBtn"); let d = ""; for (let i = 0; i < 40 && !d; i++) { await p.waitForTimeout(150); d = await p.$eval(`.strip[data-id="${partId}"] .strip-spec .spec`, (e) => e.getAttribute("d") ?? ""); }
+  const top = await p.$eval(`.strip[data-id="${partId}"] .strip-spec .spec`, (e) => { const pts = [...(e.getAttribute("d") ?? "").matchAll(/L([\d.]+),([\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]).filter(([x]) => x > 0 && x < 100); return pts.reduce((a, c) => (c[1] < a[1] ? c : a), [0, 101])[0]; });
+  const x440 = 100 * Math.log(440 / 30) / Math.log(16000 / 30);
+  check(d.length > 0 && Math.abs(top - x440) < 4, "放着 = 频谱面有东西，最高处在 440 Hz 附近", `最高处 x ${top.toFixed(1)} / 440 Hz 在 ${x440.toFixed(1)}`);
+  await p.click("#playBtn"); await p.waitForTimeout(200); }
+const curve0 = await p.$eval(`.strip[data-id="${partId}"] .strip-spec .eqc`, (e) => e.getAttribute("d"));
 check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-c="tilt"]`)) && !(await p.$(`.strip[data-id="${partId}"] input[data-gain]`)), "EQ 页：卡片上直接摊开默认 EQ 的一键（厚 ↔ 亮），推子不在这页");
+await p.$eval(`.strip[data-id="${partId}"] .fx-inline input[data-c="tilt"]`, (el) => { el.value = "0.8"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(120);
+check((await p.$eval(`.strip[data-id="${partId}"] .strip-spec .eqc`, (e) => e.getAttribute("d"))) !== curve0, "拧「厚 ↔ 亮」= EQ 曲线跟着变");
+check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-c="tilt"]`)) && !!(await p.$(`.strip[data-id="${partId}"] .fx-inline [data-v="fxtoggle"]`)), "拧完卡片上的控件还在（不被换成一行字）");
+await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 await p.selectOption(".mix-tabbar select[data-panelmode]", "full"); await p.waitForTimeout(120);
 check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-p="midDb"]`)), "下拉换「全量」= 卡片上摊开全部参数");
 await p.selectOption(".mix-tabbar select[data-panelmode]", "simple"); await p.waitForTimeout(120);

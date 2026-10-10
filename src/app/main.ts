@@ -1109,8 +1109,8 @@ function applyWorkspace(): void {
   const changed = padEl.hidden === padOn || stageEl.dataset.dock !== d;
   stageEl.dataset.dock = d;
   padEl.hidden = !padOn; pad.setSymbols(d === "symbols"); if (!padOn) pad.clearHeld();
-  if (d === "studio" && !studio.isOpen) { studio.show(); void engine.ensure().then(() => engine.meter(true)).catch(() => undefined); }   // 峰值表：开着才要
-  else if (d !== "studio" && studio.isOpen) { studio.hide(); engine.meter(false); }
+  if (d === "studio" && !studio.isOpen) { studio.show(); void engine.ensure().then(() => { engine.meter(true); syncSpectrum(); }).catch(() => undefined); }   // 峰值表 / 频谱：开着才要
+  else if (d !== "studio" && studio.isOpen) { studio.hide(); engine.meter(false); syncSpectrum(); }
   updateChrome();
   if (changed) view.render();
 }
@@ -1713,6 +1713,7 @@ const studio = new Studio($("stage"), {
     updateExtras(withTrack(doc.extras, trackKey(track), { chain }), { kind: "studio", label }, merge);
   },
   // 被谁压（侧链）：录音房只给歌手轨的压缩器接 key（总线 / 总轨上的压缩器听自己）
+  tabChanged: () => syncSpectrum(),
   keyTracks: (track) => { if (!st.song.parts.some((p) => p.id === track)) return []; const labels = partLabels(st.song, doc.extras); return st.song.parts.flatMap((p, k) => (p.id === track ? [] : [{ id: p.id, name: labels[k] }])); },
   // 路由轨（v0.10.9；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨。比如我可以放两个路由轨然后放混响」「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
   buses: () => studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, name: b.name, gainDb: b.gainDb, pan: b.pan })),
@@ -1743,6 +1744,9 @@ const studio = new Studio($("stage"), {
 function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); ws.collapsed = false; if (ws.mode !== "listen") setMode("listen"); else applyWorkspace(); }   // 峰值表：页开着才要
 function closeStudio(): void { if (!studio.isOpen) return; ws.collapsed = true; applyWorkspace(); scoreEl.focus(); }
 engine.on("meter", (peak, _active, tracks) => { if (studio.isOpen) studio.meter(peak, tracks); });   // 每张卡片顶上的峰值细线（v0.10.10）
+engine.on("spectrum", (sr, tracks) => studio.spectrum(sr, tracks));   // EQ 页卡片背景的频谱（v0.10.11）
+/** 录音房的频谱只在「混音台开着 + EQ 页 + 页面看得见」时算（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）。 */
+function syncSpectrum(): void { engine.spectrum(studio.isOpen && studio.currentTab === "eq" && document.visibilityState === "visible"); }
 function openFinder(): void {
   finderBackToInst = instShown; if (instShown) { instShown = false; instEl.hidden = true; }
   finderShown = true; finderPlayOnly = gallery?.isOpen() ?? false;
@@ -3538,7 +3542,7 @@ window.addEventListener("blur", () => { settleChords("lost"); chordRoots.clear()
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } } });
 // 切后台回来：声音被系统收起来了（iPad = interrupted）就叫醒；记一笔延迟（回来后系统可能换了缓冲大小——播放头按扬声器的时钟走，会自己跟上）
 document.addEventListener("visibilitychange", () => {
-  if (studio.isOpen) engine.meter(document.visibilityState === "visible");   // 看不见就不统计（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）
+  if (studio.isOpen) { engine.meter(document.visibilityState === "visible"); syncSpectrum(); }   // 看不见就不统计（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）
   if (document.visibilityState !== "visible") return;
   const c = singer.unlock(); latLogged = null; latAt = 0;
   const ts = typeof c.getOutputTimestamp === "function" ? c.getOutputTimestamp() : null;   // 原始的一对时钟也记下来：错位再报时能看出是哪个时钟跳了

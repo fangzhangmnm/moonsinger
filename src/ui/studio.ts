@@ -8,6 +8,8 @@
 //   页签 = 混音的顺序（基础 = 增益 / 声像 / 静音独奏 → EQ → 压缩 → 发送 → 链 = 全部插件格）；EQ / 压缩页每张卡片直接摊开那一格的控件（一键 / 全量下拉，全部卡片一起换）；
 //   每张卡片顶上一条峰值细线（所有页都有；录音房只在混音台开着时报）。加混音轨在页签那一行的「⋯」里（user「混音轨不要用一个单独的空页面，可以在混音台的顶栏上面加一个...的目录，里面有加混音轨。然后混音轨之间还可以排序。然后歌手卡片的排序还是以五线谱为准」）。
 import type { FxV2 } from "../format/contract.ts";
+import { eqResponseDb } from "../engine/fx.ts";
+import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath } from "./spectrum.ts";
 import { DEFAULT_EQ_ID, PLUGIN_KINDS, simpleView, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, type Params } from "./plugins.ts";
 
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）
@@ -48,6 +50,8 @@ export interface StudioHost {
   setSends(track: string, sends: { to: string; gainDb: number }[], label: string, merge?: string): void;
   /** 这条轨能出到 / 发给的路由轨（不含自己、不含会接成环的）。 */
   targets(track: string): { id: string; name: string }[];
+  /** 换页了（宿主据此开关录音房的频谱：只有 EQ 页看得见才算；user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）。 */
+  tabChanged?(tab: MixTab): void;
 }
 export const MASTER = "__master";
 export type MixTab = "basic" | "eq" | "comp" | "send" | "chain";
@@ -91,6 +95,8 @@ export class Studio {
   private target = new Map<string, number>();
   private shown = new Map<string, number>();
   private raf = 0; private lastTick = 0; private lastMeter = 0;
+  /** EQ 页卡片背景的频谱（v0.10.11）：每条轨平滑后的 96 个频带（dB）。 */
+  private specShown = new Map<string, Float32Array>();
   constructor(parent: HTMLElement, private host: StudioHost) {
     this.el = document.createElement("div"); this.el.className = "studio"; this.el.hidden = true;
     this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">混音台</span><button class="btn" data-v="back" title="收起混音台：底座让出来、还在「听」（Esc = 回去写）">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button></div>` +
@@ -120,6 +126,25 @@ export class Studio {
     const val = this.el.querySelector<HTMLElement>(".meter-val"); if (val) { const db = toDb(peak); val.textContent = db <= -59 ? "—" : `${db.toFixed(1)} dB`; }
     if (!this.raf && !this.el.hidden) { this.lastTick = performance.now(); this.raf = requestAnimationFrame(this.tick); }
   }
+  /** 录音房拷来的最近一段采样（每条轨 / 混音轨 / 总轨）→ EQ 页卡片背景的频谱面。只在 EQ 页、混音台看得见时录音房才发。 */
+  spectrum(sr: number, tracks: Record<string, Float32Array>): void {
+    if (this.el.hidden || this.tab !== "eq") return;
+    for (const [id, x] of Object.entries(tracks)) {
+      const path = this.el.querySelector<SVGPathElement>(`.strip[data-id="${CSS.escape(id)}"] .strip-spec .spec`); if (!path) continue;
+      const b = smoothBands(this.specShown.get(id), bandsDb(x, sr)); this.specShown.set(id, b);
+      path.setAttribute("d", areaPath(b));
+    }
+  }
+  /** 这一格 EQ 的响应曲线（±18 dB 映到卡片高度，中线 = 0 dB）。 */
+  private curvePath(fx: FxV2 | null): string {
+    if (!fx || fx.on === false) return "M0,50L100,50";
+    const db = eqResponseDb(paramsOf(fx), 48000, Array.from({ length: SPEC_BANDS }, (_, k) => bandHz(k)));
+    return db.map((d, k) => `${k ? "L" : "M"}${((100 * (k + 0.5)) / SPEC_BANDS).toFixed(2)},${(50 - (Math.max(-18, Math.min(18, d)) / 18) * 45).toFixed(2)}`).join("");
+  }
+  private specSvg(track: string): string {
+    const eq = this.slots(track).find((s) => s.fx.kind === "eq")?.fx ?? null;
+    return `<svg class="strip-spec" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="spec" d=""/><path class="eqc" d="${this.curvePath(eq)}"/></svg>`;
+  }
   private tick = (now: number): void => {
     this.raf = 0; if (this.el.hidden) return;
     const dt = Math.min(0.1, (now - this.lastTick) / 1000); this.lastTick = now;
@@ -143,7 +168,7 @@ export class Studio {
     if (v === "help") { t.closest(".fx-row, .strip-row")?.classList.toggle("show-help"); return; }   // 小问号：这一行下面展开 / 收起说明
     if (v === "back") this.host.close();
     else if (v === "play") this.host.play();
-    else if (v === "tab") { this.tab = t.closest<HTMLElement>("[data-tab]")!.dataset.tab as MixTab; this.menuOpen = false; this.addFor = null; this.render(); }
+    else if (v === "tab") { this.tab = t.closest<HTMLElement>("[data-tab]")!.dataset.tab as MixTab; this.menuOpen = false; this.addFor = null; this.specShown.clear(); this.render(); this.host.tabChanged?.(this.tab); }
     else if (v === "more") { this.menuOpen = !this.menuOpen; this.render(); }
     else if (v === "addbus") { this.menuOpen = false; const id = this.host.addBus(); this.render(); this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); }
     else if (v === "mute" && strip) { this.host.toggleMute(strip); this.render(); }
@@ -214,8 +239,9 @@ export class Studio {
     const ch = this.host.chain(tg.track), nx = f(s.fx);
     const next = s.virtual ? [nx, ...ch] : ch.map((x) => (x.id === tg.fx ? nx : x));
     this.host.setChain(tg.track, next, `${this.trackName(tg.track)} ${pluginName(nx.kind)} ${what}`, merge ? `fx:${tg.track}:${tg.fx}:${what}` : undefined);
-    const b = this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(tg.track)}"] [data-fx="${CSS.escape(nx.id)}"]`);
+    const b = this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(tg.track)}"] .fx-chip[data-fx="${CSS.escape(nx.id)}"]`);   // 只找「链」页的小钮（EQ / 压缩页摊开的那一块也带 data-fx，别把它整块换成一行字）
     if (b) { b.textContent = fxSummary(nx, this.onBus(tg.track)); b.classList.toggle("off", nx.on === false); }
+    if (nx.kind === "eq") { const c = this.el.querySelector(`.strip[data-id="${CSS.escape(tg.track)}"] .strip-spec .eqc`); if (c) c.setAttribute("d", this.curvePath(nx)); }   // EQ 页的曲线跟着拧
   }
   private deleteFx(tg: Target): void {
     if (tg.fx === DEFAULT_EQ_ID) return;
@@ -312,7 +338,8 @@ export class Studio {
   }
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   private card(id: string, cls: string, name: string, who: string, body: string, color?: string): string {
-    return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}><div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}${body}</div>`;
+    const spec = this.tab === "eq" ? this.specSvg(id) : "";   // EQ 页：卡片背景 = 频谱 + 这一格 EQ 的曲线
+    return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}${body}</div>`;
   }
   render(): void {
     const box = this.el.querySelector(".studio-strips")!, m = this.host.master(), tab = this.tab;

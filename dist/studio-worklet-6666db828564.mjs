@@ -172,6 +172,16 @@ var EQ = {
     { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, default: 5e3, label: "\u9AD8\u67B6\u9891\u7387" }
   ]
 };
+function eqSections(p) {
+  const g = (k) => p[k] ?? EQ.params.find((d) => d.id === k).default;
+  return [
+    [g("hpHz") > 0, "hp", g("hpHz"), 0.707, 0],
+    [g("lpHz") > 0, "lp", g("lpHz"), 0.707, 0],
+    [g("lowDb") !== 0, "lowshelf", g("lowHz"), 0.707, g("lowDb")],
+    [g("midDb") !== 0, "peak", g("midHz"), g("midQ"), g("midDb")],
+    [g("highDb") !== 0, "highshelf", g("highHz"), 0.707, g("highDb")]
+  ];
+}
 var Eq = class {
   kind = "eq";
   on = true;
@@ -186,14 +196,7 @@ var Eq = class {
   }
   // 不用参数属性：Node 的 strip-only TS 不认
   setParams(p) {
-    const g = (k) => p[k] ?? EQ.params.find((d) => d.id === k).default;
-    const defs = [
-      [g("hpHz") > 0, "hp", g("hpHz"), 0.707, 0],
-      [g("lpHz") > 0, "lp", g("lpHz"), 0.707, 0],
-      [g("lowDb") !== 0, "lowshelf", g("lowHz"), 0.707, g("lowDb")],
-      [g("midDb") !== 0, "peak", g("midHz"), g("midQ"), g("midDb")],
-      [g("highDb") !== 0, "highshelf", g("highHz"), 0.707, g("highDb")]
-    ];
+    const defs = eqSections(p);
     defs.forEach(([on, type, f, q, db], k) => {
       this.use[k] = on;
       for (const b of this.sec[k]) if (on) b.set(type, f, q, db, this.sr);
@@ -671,6 +674,24 @@ var Studio = class {
   meterFrames = 0;
   /** 每条轨 / 混音轨这一段推子后的峰值（只在 meterOn 时攒；混音台开着才开）。 */
   trackPeaks = /* @__PURE__ */ new Map();
+  specOn = false;
+  specFrames = 0;
+  specRings = /* @__PURE__ */ new Map();
+  /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）。 */
+  specPush(id, a, b, n, off = 0) {
+    let r = this.specRings.get(id);
+    if (!r) {
+      r = { buf: new Float32Array(SPEC_N), w: 0 };
+      this.specRings.set(id, r);
+    }
+    const buf = r.buf;
+    let w = r.w;
+    for (let i = 0; i < n; i++) {
+      buf[w] = b ? (a[off + i] + b[off + i]) * 0.5 : a[off + i];
+      w = w + 1 & SPEC_N - 1;
+    }
+    r.w = w;
+  }
   loadBusy = 0;
   loadFrames = 0;
   chunkBytes = 0;
@@ -828,6 +849,11 @@ var Studio = class {
         this.meterPeak = 0;
         this.meterFrames = 0;
         this.trackPeaks.clear();
+        return;
+      case "spectrum":
+        this.specOn = m.on;
+        this.specFrames = 0;
+        if (!m.on) this.specRings.clear();
         return;
     }
   }
@@ -1107,6 +1133,7 @@ var Studio = class {
     else if (this.draining) this.renderDrain(n);
     for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
+      if (this.specOn) this.specPush(b.id, b.L, b.R, n);
       const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n;
       let cl = b.gl, cr = b.gr;
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
@@ -1145,6 +1172,21 @@ var Studio = class {
     for (let i = 0; i < n; i++) {
       outL[i] = this.busL[i] + this.audL[i] * g;
       outR[i] = this.busR[i] + this.audR[i] * g;
+    }
+    if (this.specOn) {
+      this.specPush("__master", outL, outR, n);
+      this.specFrames += n;
+      if (this.specFrames >= SPEC_N * 2) {
+        this.specFrames = 0;
+        const tracks = {};
+        for (const [id, r] of this.specRings) {
+          const o = new Float32Array(SPEC_N);
+          o.set(r.buf.subarray(r.w));
+          o.set(r.buf.subarray(0, r.w), SPEC_N - r.w);
+          tracks[id] = o;
+        }
+        this.post({ type: "spectrum", sr: this.sr, tracks }, Object.values(tracks).map((x) => x.buffer));
+      }
     }
     if (this.meterOn) {
       for (let i = 0; i < n; i++) {
@@ -1315,6 +1357,7 @@ var Studio = class {
       const t = this.tracks.get(id), out = t.out;
       out.set(t.src.subarray(0, cnt));
       for (const fx of t.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t, fx.id) : null);
+      if (this.specOn) this.specPush(id, out, null, cnt);
       const audible = solo ? t.ch.solo : !t.ch.mute;
       const [gl, gr] = audible ? panGains(t.ch.gainDb, t.ch.pan) : [0, 0];
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
@@ -1579,6 +1622,7 @@ var Studio = class {
     }
   }
 };
+var SPEC_N = 2048;
 function busOrder(specs, buses) {
   const edges = /* @__PURE__ */ new Map();
   const reach = (from, to) => {
@@ -1648,4 +1692,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-da487777a4c9.mjs.map
+//# sourceMappingURL=studio-worklet-6666db828564.mjs.map

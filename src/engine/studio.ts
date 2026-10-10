@@ -68,7 +68,9 @@ export type StudioIn =
   | { type: "audition"; src: string; ev: "on" | "off" | "glide" | "alloff"; inst?: AuditionInst; key?: number; vel?: number; gainDb?: number; pan?: number }
   /** 按键试听：放一段现成的声音（月读唱的一个字；刀 3）。同一来源新的顶掉旧的；off 走 audition off。 */
   | { type: "auditionClip"; src: string; sr: number; samples: Float32Array; gainDb?: number; pan?: number }
-  | { type: "meter"; on: boolean };
+  | { type: "meter"; on: boolean }
+  /** 频谱（v0.10.11）：开着 = 每条轨（链之后、推子之前）/ 混音轨（链之后）/ 总轨（出口）留最近 2048 个采样，每 4096 帧拷一份给主线程。混音台 EQ 页看得见才开。 */
+  | { type: "spectrum"; on: boolean };
 export type StudioOut =
   | { type: "ready" }
   | { type: "banked"; sha: string; presets: [number, number][] }
@@ -79,6 +81,7 @@ export type StudioOut =
   | { type: "missing"; keys: string[] }
   | { type: "chunks"; items: { key: string; sr: number; samples: Int16Array }[] }
   | { type: "meter"; peak: number; active: number; /** 每条轨 / 混音轨推子后的峰值（v0.10.10：混音台每张卡片顶上一条细线）。 */ tracks?: Record<string, number> }
+  | { type: "spectrum"; sr: number; tracks: Record<string, Float32Array> }
   /** 每秒一条（一直开着，便宜）：音频线程这 1 s 的忙闲（渲染耗时 / 这 1 s）、录音房里留着的块（Int16 字节数 / 块数）、正在响的声音数。刀 6 负载 / 内存监控。 */
   | { type: "load"; busy: number; chunkBytes: number; chunks: number; voices: number };
 
@@ -158,6 +161,15 @@ export class Studio {
   private meterOn = false; private meterPeak = 0; private meterFrames = 0;
   /** 每条轨 / 混音轨这一段推子后的峰值（只在 meterOn 时攒；混音台开着才开）。 */
   private trackPeaks = new Map<string, number>();
+  private specOn = false; private specFrames = 0;
+  private specRings = new Map<string, { buf: Float32Array; w: number }>();
+  /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）。 */
+  private specPush(id: string, a: Float32Array, b: Float32Array | null, n: number, off = 0): void {
+    let r = this.specRings.get(id); if (!r) { r = { buf: new Float32Array(SPEC_N), w: 0 }; this.specRings.set(id, r); }
+    const buf = r.buf; let w = r.w;
+    for (let i = 0; i < n; i++) { buf[w] = b ? (a[off + i] + b[off + i]) * 0.5 : a[off + i]; w = (w + 1) & (SPEC_N - 1); }
+    r.w = w;
+  }
   private loadBusy = 0; private loadFrames = 0; private chunkBytes = 0;   // 负载 / 内存监控（刀 6）
   private posFrames = 0;
   /** 宿主的音频时钟：这一块开头的 AudioContext 时间（worklet 每块前设 = currentTime；离线 / 测试不设）。位置报告带上「块尾的时钟」。 */
@@ -235,6 +247,7 @@ export class Studio {
         return;
       }
       case "meter": this.meterOn = m.on; this.meterPeak = 0; this.meterFrames = 0; this.trackPeaks.clear(); return;
+      case "spectrum": this.specOn = m.on; this.specFrames = 0; if (!m.on) this.specRings.clear(); return;
     }
   }
 
@@ -409,6 +422,7 @@ export class Studio {
     //   按 busOrder 的顺序（送出去的先处理），轮到一条总线时送进它的都已经加好了（v0.10.9 总线接总线）。
     for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
+      if (this.specOn) this.specPush(b.id, b.L, b.R, n);
       const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
       let pk = 0;
@@ -424,6 +438,10 @@ export class Studio {
     if (this.master.limiter) this.limit(n, g);
     else for (let i = 0; i < n; i++) { this.busL[i] *= g; this.busR[i] *= g; }
     for (let i = 0; i < n; i++) { outL[i] = this.busL[i] + this.audL[i] * g; outR[i] = this.busR[i] + this.audR[i] * g; }
+    if (this.specOn) {
+      this.specPush("__master", outL, outR, n); this.specFrames += n;
+      if (this.specFrames >= SPEC_N * 2) { this.specFrames = 0; const tracks: Record<string, Float32Array> = {}; for (const [id, r] of this.specRings) { const o = new Float32Array(SPEC_N); o.set(r.buf.subarray(r.w)); o.set(r.buf.subarray(0, r.w), SPEC_N - r.w); tracks[id] = o; } this.post({ type: "spectrum", sr: this.sr, tracks }, Object.values(tracks).map((x) => x.buffer)); }
+    }
     if (this.meterOn) {
       for (let i = 0; i < n; i++) { const a = Math.abs(outL[i]), b = Math.abs(outR[i]); if (a > this.meterPeak) this.meterPeak = a; if (b > this.meterPeak) this.meterPeak = b; }
       this.meterFrames += n;
@@ -518,6 +536,7 @@ export class Studio {
     for (const id of this.order) {   // ── 第二趟
       const t = this.tracks.get(id)!, out = t.out; out.set(t.src.subarray(0, cnt));
       for (const fx of t.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t, fx.id) : null);
+      if (this.specOn) this.specPush(id, out, null, cnt);   // 频谱：链之后、推子之前（推子不改形状）
       const audible = solo ? t.ch.solo : !t.ch.mute;
       const [gl, gr] = audible ? panGains(t.ch.gainDb, t.ch.pan) : [0, 0];
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
@@ -681,6 +700,8 @@ export class Studio {
   }
 }
 
+/** 频谱环的长度（2048 个采样 ≈ 43 ms @48k；FFT 在主线程做）。 */
+const SPEC_N = 2048;
 /** 总线的处理顺序 + 连好 out / sends（v0.10.9）：送出去的排在被送进的前面（拓扑序）；一条连线会接成环 = 断掉它（出到退回总轨、发送不要），
  *  界面上本来就不让这样连（读到手改过的文件才会遇到）。不认识的去处 = 总轨 / 不发。 */
 export function busOrder(specs: readonly BusSpec[], buses: Map<string, Bus>): Bus[] {

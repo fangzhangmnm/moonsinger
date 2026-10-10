@@ -48,6 +48,28 @@ const EQ: FxKindDef = { kind: "eq", name: "均衡", formula: "每段一个双二
     { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: "中峰" }, { id: "midHz", unit: "Hz", min: 100, max: 10000, default: 1500, label: "中峰频率" }, { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: "中峰宽" },
     { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: "高架" }, { id: "highHz", unit: "Hz", min: 1000, max: 16000, default: 5000, label: "高架频率" },
   ] };
+type EqSection = [boolean, "hp" | "lp" | "lowshelf" | "peak" | "highshelf", number, number, number];
+/** EQ 的五段（录音房设系数和画响应曲线共用这一份，v0.10.11）：开不开、类型、频率、Q、增益。 */
+function eqSections(p: Record<string, number>): EqSection[] {
+  const g = (k: string) => p[k] ?? EQ.params.find((d) => d.id === k)!.default;
+  return [
+    [g("hpHz") > 0, "hp", g("hpHz"), 0.707, 0], [g("lpHz") > 0, "lp", g("lpHz"), 0.707, 0],
+    [g("lowDb") !== 0, "lowshelf", g("lowHz"), 0.707, g("lowDb")], [g("midDb") !== 0, "peak", g("midHz"), g("midQ"), g("midDb")], [g("highDb") !== 0, "highshelf", g("highHz"), 0.707, g("highDb")],
+  ];
+}
+/** EQ 在这些频率上的响应（dB；混音台 EQ 页卡片背景上那条曲线，v0.10.11）：同录音房的双二阶系数，|H(e^{jω})| 连乘。 */
+export function eqResponseDb(p: Record<string, number>, sr: number, freqs: readonly number[]): number[] {
+  const bq = eqSections(p).filter(([on]) => on).map(([, type, f, q, db]) => { const b = new Biquad(); b.set(type, f, q, db, sr); return b; });
+  return freqs.map((f) => {
+    const w = (2 * Math.PI * f) / sr, c1 = Math.cos(w), s1 = Math.sin(w), c2 = Math.cos(2 * w), s2 = Math.sin(2 * w);
+    let mag = 1;
+    for (const b of bq) {
+      const nr = b.b0 + b.b1 * c1 + b.b2 * c2, ni = -(b.b1 * s1 + b.b2 * s2), dr = 1 + b.a1 * c1 + b.a2 * c2, di = -(b.a1 * s1 + b.a2 * s2);
+      mag *= Math.sqrt((nr * nr + ni * ni) / (dr * dr + di * di));
+    }
+    return 20 * Math.log10(Math.max(1e-9, mag));
+  });
+}
 class Eq implements FxInstance {
   readonly kind = "eq"; on = true;
   private sec: [Biquad, Biquad][] = Array.from({ length: 5 }, () => [new Biquad(), new Biquad()]);
@@ -55,11 +77,7 @@ class Eq implements FxInstance {
   readonly id: string; private sr: number;
   constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; this.setParams(p); }   // 不用参数属性：Node 的 strip-only TS 不认
   setParams(p: Record<string, number>): void {
-    const g = (k: string) => p[k] ?? EQ.params.find((d) => d.id === k)!.default;
-    const defs: [boolean, "hp" | "lp" | "lowshelf" | "peak" | "highshelf", number, number, number][] = [
-      [g("hpHz") > 0, "hp", g("hpHz"), 0.707, 0], [g("lpHz") > 0, "lp", g("lpHz"), 0.707, 0],
-      [g("lowDb") !== 0, "lowshelf", g("lowHz"), 0.707, g("lowDb")], [g("midDb") !== 0, "peak", g("midHz"), g("midQ"), g("midDb")], [g("highDb") !== 0, "highshelf", g("highHz"), 0.707, g("highDb")],
-    ];
+    const defs = eqSections(p);
     defs.forEach(([on, type, f, q, db], k) => { this.use[k] = on; for (const b of this.sec[k]) if (on) b.set(type, f, q, db, this.sr); else b.bypass(); });
   }
   process(L: Float32Array, R: Float32Array | null, n: number): void {

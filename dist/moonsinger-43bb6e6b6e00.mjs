@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.10-2026-10-10";
+var APP_VERSION = "v0.10.11-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -22913,6 +22913,32 @@ var EQ = {
     { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, default: 5e3, label: "\u9AD8\u67B6\u9891\u7387" }
   ]
 };
+function eqSections(p2) {
+  const g3 = (k2) => p2[k2] ?? EQ.params.find((d3) => d3.id === k2).default;
+  return [
+    [g3("hpHz") > 0, "hp", g3("hpHz"), 0.707, 0],
+    [g3("lpHz") > 0, "lp", g3("lpHz"), 0.707, 0],
+    [g3("lowDb") !== 0, "lowshelf", g3("lowHz"), 0.707, g3("lowDb")],
+    [g3("midDb") !== 0, "peak", g3("midHz"), g3("midQ"), g3("midDb")],
+    [g3("highDb") !== 0, "highshelf", g3("highHz"), 0.707, g3("highDb")]
+  ];
+}
+function eqResponseDb(p2, sr2, freqs) {
+  const bq = eqSections(p2).filter(([on2]) => on2).map(([, type, f2, q2, db]) => {
+    const b3 = new Biquad();
+    b3.set(type, f2, q2, db, sr2);
+    return b3;
+  });
+  return freqs.map((f2) => {
+    const w2 = 2 * Math.PI * f2 / sr2, c12 = Math.cos(w2), s12 = Math.sin(w2), c22 = Math.cos(2 * w2), s22 = Math.sin(2 * w2);
+    let mag = 1;
+    for (const b3 of bq) {
+      const nr2 = b3.b0 + b3.b1 * c12 + b3.b2 * c22, ni2 = -(b3.b1 * s12 + b3.b2 * s22), dr = 1 + b3.a1 * c12 + b3.a2 * c22, di = -(b3.a1 * s12 + b3.a2 * s22);
+      mag *= Math.sqrt((nr2 * nr2 + ni2 * ni2) / (dr * dr + di * di));
+    }
+    return 20 * Math.log10(Math.max(1e-9, mag));
+  });
+}
 var Eq = class {
   kind = "eq";
   on = true;
@@ -22927,14 +22953,7 @@ var Eq = class {
   }
   // 不用参数属性：Node 的 strip-only TS 不认
   setParams(p2) {
-    const g3 = (k2) => p2[k2] ?? EQ.params.find((d3) => d3.id === k2).default;
-    const defs = [
-      [g3("hpHz") > 0, "hp", g3("hpHz"), 0.707, 0],
-      [g3("lpHz") > 0, "lp", g3("lpHz"), 0.707, 0],
-      [g3("lowDb") !== 0, "lowshelf", g3("lowHz"), 0.707, g3("lowDb")],
-      [g3("midDb") !== 0, "peak", g3("midHz"), g3("midQ"), g3("midDb")],
-      [g3("highDb") !== 0, "highshelf", g3("highHz"), 0.707, g3("highDb")]
-    ];
+    const defs = eqSections(p2);
     defs.forEach(([on2, type, f2, q2, db], k2) => {
       this.use[k2] = on2;
       for (const b3 of this.sec[k2]) if (on2) b3.set(type, f2, q2, db, this.sr);
@@ -23414,6 +23433,24 @@ var Studio = class {
   meterFrames = 0;
   /** 每条轨 / 混音轨这一段推子后的峰值（只在 meterOn 时攒；混音台开着才开）。 */
   trackPeaks = /* @__PURE__ */ new Map();
+  specOn = false;
+  specFrames = 0;
+  specRings = /* @__PURE__ */ new Map();
+  /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）。 */
+  specPush(id2, a10, b3, n10, off = 0) {
+    let r10 = this.specRings.get(id2);
+    if (!r10) {
+      r10 = { buf: new Float32Array(SPEC_N), w: 0 };
+      this.specRings.set(id2, r10);
+    }
+    const buf = r10.buf;
+    let w2 = r10.w;
+    for (let i10 = 0; i10 < n10; i10++) {
+      buf[w2] = b3 ? (a10[off + i10] + b3[off + i10]) * 0.5 : a10[off + i10];
+      w2 = w2 + 1 & SPEC_N - 1;
+    }
+    r10.w = w2;
+  }
   loadBusy = 0;
   loadFrames = 0;
   chunkBytes = 0;
@@ -23571,6 +23608,11 @@ var Studio = class {
         this.meterPeak = 0;
         this.meterFrames = 0;
         this.trackPeaks.clear();
+        return;
+      case "spectrum":
+        this.specOn = m2.on;
+        this.specFrames = 0;
+        if (!m2.on) this.specRings.clear();
         return;
     }
   }
@@ -23850,6 +23892,7 @@ var Studio = class {
     else if (this.draining) this.renderDrain(n10);
     for (const b3 of this.busList) {
       for (const fx of b3.fx) fx.process(b3.L, b3.R, n10, null);
+      if (this.specOn) this.specPush(b3.id, b3.L, b3.R, n10);
       const [gl, gr] = panGains(b3.gainDb, b3.pan), dl = (gl - b3.gl) / n10, dr = (gr - b3.gr) / n10;
       let cl2 = b3.gl, cr2 = b3.gr;
       const L2 = b3.out ? b3.out.L : this.busL, R2 = b3.out ? b3.out.R : this.busR;
@@ -23888,6 +23931,21 @@ var Studio = class {
     for (let i10 = 0; i10 < n10; i10++) {
       outL[i10] = this.busL[i10] + this.audL[i10] * g3;
       outR[i10] = this.busR[i10] + this.audR[i10] * g3;
+    }
+    if (this.specOn) {
+      this.specPush("__master", outL, outR, n10);
+      this.specFrames += n10;
+      if (this.specFrames >= SPEC_N * 2) {
+        this.specFrames = 0;
+        const tracks = {};
+        for (const [id2, r10] of this.specRings) {
+          const o10 = new Float32Array(SPEC_N);
+          o10.set(r10.buf.subarray(r10.w));
+          o10.set(r10.buf.subarray(0, r10.w), SPEC_N - r10.w);
+          tracks[id2] = o10;
+        }
+        this.post({ type: "spectrum", sr: this.sr, tracks }, Object.values(tracks).map((x2) => x2.buffer));
+      }
     }
     if (this.meterOn) {
       for (let i10 = 0; i10 < n10; i10++) {
@@ -24058,6 +24116,7 @@ var Studio = class {
       const t10 = this.tracks.get(id2), out = t10.out;
       out.set(t10.src.subarray(0, cnt));
       for (const fx of t10.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t10, fx.id) : null);
+      if (this.specOn) this.specPush(id2, out, null, cnt);
       const audible = solo ? t10.ch.solo : !t10.ch.mute;
       const [gl, gr] = audible ? panGains(t10.ch.gainDb, t10.ch.pan) : [0, 0];
       const dl = (gl - t10.gl) / cnt, dr = (gr - t10.gr) / cnt;
@@ -24322,6 +24381,7 @@ var Studio = class {
     }
   }
 };
+var SPEC_N = 2048;
 function busOrder(specs, buses) {
   const edges = /* @__PURE__ */ new Map();
   const reach = (from, to2) => {
@@ -24498,6 +24558,9 @@ var StudioClient = class {
             case "meter":
               this.emit("meter", m2.peak, m2.active, m2.tracks ?? {});
               return;
+            case "spectrum":
+              this.emit("spectrum", m2.sr, m2.tracks);
+              return;
             case "load":
               this.emit("load", { busy: m2.busy, chunkBytes: m2.chunkBytes, chunks: m2.chunks, voices: m2.voices });
               return;
@@ -24669,6 +24732,14 @@ var StudioClient = class {
   meter(on2) {
     this.post({ type: "meter", on: on2 });
   }
+  /** 频谱开关（混音台 EQ 页看得见才开；v0.10.11）。 */
+  spectrum(on2) {
+    if (on2 !== this.specOn) {
+      this.specOn = on2;
+      this.post({ type: "spectrum", on: on2 });
+    }
+  }
+  specOn = false;
   get now() {
     return this.ctx().currentTime;
   }
@@ -25353,6 +25424,75 @@ var Finder = class {
   }
 };
 
+// src/ui/spectrum.ts
+var SPEC_BANDS = 96;
+var SPEC_FMIN = 30;
+var SPEC_FMAX = 16e3;
+var bandHz = (k2) => SPEC_FMIN * (SPEC_FMAX / SPEC_FMIN) ** ((k2 + 0.5) / SPEC_BANDS);
+function fft(re2, im2) {
+  const n10 = re2.length;
+  for (let i10 = 1, j2 = 0; i10 < n10; i10++) {
+    let bit = n10 >> 1;
+    for (; j2 & bit; bit >>= 1) j2 ^= bit;
+    j2 ^= bit;
+    if (i10 < j2) {
+      [re2[i10], re2[j2]] = [re2[j2], re2[i10]];
+      [im2[i10], im2[j2]] = [im2[j2], im2[i10]];
+    }
+  }
+  for (let len = 2; len <= n10; len <<= 1) {
+    const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i10 = 0; i10 < n10; i10 += len) {
+      let cr2 = 1, ci2 = 0;
+      for (let k2 = 0; k2 < len / 2; k2++) {
+        const a10 = i10 + k2, b3 = a10 + len / 2, tr3 = re2[b3] * cr2 - im2[b3] * ci2, ti2 = re2[b3] * ci2 + im2[b3] * cr2;
+        re2[b3] = re2[a10] - tr3;
+        im2[b3] = im2[a10] - ti2;
+        re2[a10] += tr3;
+        im2[a10] += ti2;
+        const ncr = cr2 * wr - ci2 * wi;
+        ci2 = cr2 * wi + ci2 * wr;
+        cr2 = ncr;
+      }
+    }
+  }
+}
+function bandsDb(x2, sr2) {
+  const n10 = x2.length, re2 = new Float64Array(n10), im2 = new Float64Array(n10);
+  let wsum = 0;
+  for (let i10 = 0; i10 < n10; i10++) {
+    const w2 = 0.5 - 0.5 * Math.cos(2 * Math.PI * i10 / (n10 - 1));
+    re2[i10] = x2[i10] * w2;
+    wsum += w2;
+  }
+  fft(re2, im2);
+  const out = new Float32Array(SPEC_BANDS).fill(-120), binHz = sr2 / n10, norm = 2 / wsum;
+  for (let k2 = 0; k2 < SPEC_BANDS; k2++) {
+    const lo2 = SPEC_FMIN * (SPEC_FMAX / SPEC_FMIN) ** (k2 / SPEC_BANDS), hi = SPEC_FMIN * (SPEC_FMAX / SPEC_FMIN) ** ((k2 + 1) / SPEC_BANDS);
+    let b0 = Math.floor(lo2 / binHz), b1 = Math.ceil(hi / binHz);
+    if (b1 <= b0) b1 = b0 + 1;
+    let mx = 0;
+    for (let b3 = Math.max(1, b0); b3 < Math.min(n10 / 2, b1); b3++) {
+      const m2 = Math.hypot(re2[b3], im2[b3]) * norm;
+      if (m2 > mx) mx = m2;
+    }
+    out[k2] = mx > 1e-6 ? 20 * Math.log10(mx) : -120;
+  }
+  return out;
+}
+function smoothBands(prev, next2, fall = 6) {
+  if (!prev) return next2;
+  const o10 = new Float32Array(next2.length);
+  for (let k2 = 0; k2 < next2.length; k2++) o10[k2] = next2[k2] >= prev[k2] ? next2[k2] : Math.max(next2[k2], prev[k2] - fall);
+  return o10;
+}
+function areaPath(b3, lo2 = -90, hi = -6) {
+  const y2 = (d4) => 100 * (hi - Math.max(lo2, Math.min(hi, d4))) / (hi - lo2);
+  let d3 = `M0,100`;
+  for (let k2 = 0; k2 < b3.length; k2++) d3 += `L${(100 * (k2 + 0.5) / b3.length).toFixed(2)},${y2(b3[k2]).toFixed(2)}`;
+  return d3 + "L100,100Z";
+}
+
 // src/ui/plugins.ts
 var PLUGIN_KINDS = ["eq", "comp", "reverb", "delay", "chorus", "gain"];
 var DEFAULT_EQ_ID = "eq";
@@ -25689,6 +25829,8 @@ var Studio2 = class {
   raf = 0;
   lastTick = 0;
   lastMeter = 0;
+  /** EQ 页卡片背景的频谱（v0.10.11）：每条轨平滑后的 96 个频带（dB）。 */
+  specShown = /* @__PURE__ */ new Map();
   get isOpen() {
     return !this.el.hidden;
   }
@@ -25718,6 +25860,27 @@ var Studio2 = class {
       this.lastTick = performance.now();
       this.raf = requestAnimationFrame(this.tick);
     }
+  }
+  /** 录音房拷来的最近一段采样（每条轨 / 混音轨 / 总轨）→ EQ 页卡片背景的频谱面。只在 EQ 页、混音台看得见时录音房才发。 */
+  spectrum(sr2, tracks) {
+    if (this.el.hidden || this.tab !== "eq") return;
+    for (const [id2, x2] of Object.entries(tracks)) {
+      const path = this.el.querySelector(`.strip[data-id="${CSS.escape(id2)}"] .strip-spec .spec`);
+      if (!path) continue;
+      const b3 = smoothBands(this.specShown.get(id2), bandsDb(x2, sr2));
+      this.specShown.set(id2, b3);
+      path.setAttribute("d", areaPath(b3));
+    }
+  }
+  /** 这一格 EQ 的响应曲线（±18 dB 映到卡片高度，中线 = 0 dB）。 */
+  curvePath(fx) {
+    if (!fx || fx.on === false) return "M0,50L100,50";
+    const db = eqResponseDb(paramsOf(fx), 48e3, Array.from({ length: SPEC_BANDS }, (_2, k2) => bandHz(k2)));
+    return db.map((d3, k2) => `${k2 ? "L" : "M"}${(100 * (k2 + 0.5) / SPEC_BANDS).toFixed(2)},${(50 - Math.max(-18, Math.min(18, d3)) / 18 * 45).toFixed(2)}`).join("");
+  }
+  specSvg(track) {
+    const eq2 = this.slots(track).find((s10) => s10.fx.kind === "eq")?.fx ?? null;
+    return `<svg class="strip-spec" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="spec" d=""/><path class="eqc" d="${this.curvePath(eq2)}"/></svg>`;
   }
   tick = (now2) => {
     this.raf = 0;
@@ -25757,7 +25920,9 @@ var Studio2 = class {
       this.tab = t10.closest("[data-tab]").dataset.tab;
       this.menuOpen = false;
       this.addFor = null;
+      this.specShown.clear();
       this.render();
+      this.host.tabChanged?.(this.tab);
     } else if (v === "more") {
       this.menuOpen = !this.menuOpen;
       this.render();
@@ -25927,10 +26092,14 @@ var Studio2 = class {
     const ch2 = this.host.chain(tg2.track), nx2 = f2(s10.fx);
     const next2 = s10.virtual ? [nx2, ...ch2] : ch2.map((x2) => x2.id === tg2.fx ? nx2 : x2);
     this.host.setChain(tg2.track, next2, `${this.trackName(tg2.track)} ${pluginName(nx2.kind)} ${what}`, merge ? `fx:${tg2.track}:${tg2.fx}:${what}` : void 0);
-    const b3 = this.el.querySelector(`.strip[data-id="${CSS.escape(tg2.track)}"] [data-fx="${CSS.escape(nx2.id)}"]`);
+    const b3 = this.el.querySelector(`.strip[data-id="${CSS.escape(tg2.track)}"] .fx-chip[data-fx="${CSS.escape(nx2.id)}"]`);
     if (b3) {
       b3.textContent = fxSummary(nx2, this.onBus(tg2.track));
       b3.classList.toggle("off", nx2.on === false);
+    }
+    if (nx2.kind === "eq") {
+      const c10 = this.el.querySelector(`.strip[data-id="${CSS.escape(tg2.track)}"] .strip-spec .eqc`);
+      if (c10) c10.setAttribute("d", this.curvePath(nx2));
     }
   }
   deleteFx(tg2) {
@@ -26038,7 +26207,8 @@ var Studio2 = class {
   }
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   card(id2, cls, name, who, body2, color) {
-    return `<div class="strip${cls}" data-id="${esc4(id2)}"${color ? ` data-color style="--cat:${esc4(color)}"` : ""}><div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc4(who)}</div>` : ""}${body2}</div>`;
+    const spec = this.tab === "eq" ? this.specSvg(id2) : "";
+    return `<div class="strip${cls}" data-id="${esc4(id2)}"${color ? ` data-color style="--cat:${esc4(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc4(who)}</div>` : ""}${body2}</div>`;
   }
   render() {
     const box = this.el.querySelector(".studio-strips"), m2 = this.host.master(), tab = this.tab;
@@ -37115,7 +37285,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-da487777a4c9.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-6666db828564.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -38312,10 +38482,14 @@ function applyWorkspace() {
   if (!padOn) pad3.clearHeld();
   if (d3 === "studio" && !studio.isOpen) {
     studio.show();
-    void engine.ensure().then(() => engine.meter(true)).catch(() => void 0);
+    void engine.ensure().then(() => {
+      engine.meter(true);
+      syncSpectrum();
+    }).catch(() => void 0);
   } else if (d3 !== "studio" && studio.isOpen) {
     studio.hide();
     engine.meter(false);
+    syncSpectrum();
   }
   updateChrome();
   if (changed2) view.render();
@@ -38871,7 +39045,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "a6384410f0e7",
+  cssHash: "4935e06317ce",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -39205,6 +39379,7 @@ var studio = new Studio2($2("stage"), {
     updateExtras(withTrack2(doc.extras, trackKey(track), { chain }), { kind: "studio", label }, merge);
   },
   // 被谁压（侧链）：录音房只给歌手轨的压缩器接 key（总线 / 总轨上的压缩器听自己）
+  tabChanged: () => syncSpectrum(),
   keyTracks: (track) => {
     if (!st2.song.parts.some((p2) => p2.id === track)) return [];
     const labels = partLabels(st2.song, doc.extras);
@@ -39277,6 +39452,10 @@ function closeStudio() {
 engine.on("meter", (peak, _active, tracks) => {
   if (studio.isOpen) studio.meter(peak, tracks);
 });
+engine.on("spectrum", (sr2, tracks) => studio.spectrum(sr2, tracks));
+function syncSpectrum() {
+  engine.spectrum(studio.isOpen && studio.currentTab === "eq" && document.visibilityState === "visible");
+}
 function openFinder() {
   finderBackToInst = instShown;
   if (instShown) {
@@ -41976,7 +42155,10 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 document.addEventListener("visibilitychange", () => {
-  if (studio.isOpen) engine.meter(document.visibilityState === "visible");
+  if (studio.isOpen) {
+    engine.meter(document.visibilityState === "visible");
+    syncSpectrum();
+  }
   if (document.visibilityState !== "visible") return;
   const c10 = singer.unlock();
   latLogged = null;
@@ -42008,4 +42190,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-fa1b77d7dd13.mjs.map
+//# sourceMappingURL=moonsinger-43bb6e6b6e00.mjs.map
