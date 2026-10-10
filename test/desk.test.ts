@@ -20,6 +20,12 @@ describe("desk（视图态顺手捞进文件）", () => {
     d.mp3 = "small"; deq(serializeDesk(d), { mp3: "small" });
     eq(unserializeDesk({ mp3: "small" }).mp3, "small"); eq(unserializeDesk({ mp3: "loud" }).mp3, "standard");
   });
+  it("横卷（v0.9.35）：只写 scroll: true（不再写 pageFlow）；读回来横卷说了算；怪值 = 不是横卷", () => {
+    const d = freshDesk(); d.scroll = true; d.pageFlow = true;
+    deq(serializeDesk(d), { scroll: true });
+    const back = unserializeDesk({ scroll: true, pageFlow: true }); eq(back.scroll, true); eq(back.pageFlow, false);
+    eq(unserializeDesk({ scroll: "yes" }).scroll, false); eq(unserializeDesk({ pageFlow: true }).scroll, false);
+  });
   it("宽容读：不是对象 / 怪值 = 默认", () => {
     deq(unserializeDesk(null), freshDesk()); deq(unserializeDesk("x"), freshDesk());
     const d = unserializeDesk({ scope: "weird", pageFlow: "yes", paper: 3, parts: { P1: "nope", P2: { hidden: "true" } } });

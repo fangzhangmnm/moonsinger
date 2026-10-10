@@ -88,6 +88,8 @@ export interface ScoreViewHost {
   reflow?(): boolean;
   /** 排法：true = 分页（按纸的真实高度分页、画页框，所见即所得）；false = 连续（同一张纸的几何，只是不断页）。 */
   pages?(): boolean;
+  /** 排法「横卷」（v0.9.35）：每张纸一行、一直往右，谱面板横着滚；打字 / 放的时候横着跟；歌手名钉在屏幕左边。 */
+  scroll?(): boolean;
   /** 分页（= 打印预览）时歌词行往下让多少（sp）：选了拼音字体印 PDF 时 = 拼音那一截（PDF 和分页预览排出来一样）。 */
   lyricRaise?(): number;
   /** 范围：segment = 一次只看光标所在的那张纸（曲段），‹ › 翻；all = 全部（隐藏的纸折叠着）。 */
@@ -173,6 +175,7 @@ export class ScoreView {
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("wheel", () => { this.userScrollAt = performance.now(); }, { passive: true });   // 自己滚了：自动翻让开 4 秒
+    el.addEventListener("scroll", () => this.placePins(), { passive: true });   // 横卷：钉在左边的歌手名跟着横滚挪
     el.addEventListener("pointerup", (e) => this.up(e));
     // 电脑右键 = 空白处的小菜单（手指 / 笔走长按）；音上右键不接（选区条管）。pointerdown 里 button 2 直接不接，免得先放一下光标 / 起框选
     el.addEventListener("contextmenu", (e) => {
@@ -206,6 +209,8 @@ export class ScoreView {
     const base = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
     // 分页：整页（版心 + 左右边距）要放得下；页高 / 边距按这张纸算（sp）
     const geo = pageGeoOf(paper), page = this.host.pages?.() ? geo : null;
+    // 横卷：谱的大小照原大（不按屏宽缩），width 只管歌名 / 作者栏 / 纸的控件那一屏；排完纸按内容撑宽（render 里）
+    if (this.host.scroll?.()) return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail - (CONT_MARGIN.l + CONT_MARGIN.r) * base), strict: false, page: null, margins: CONT_MARGIN };
     // 边距：分页 = 纸的真边距（所见即所得）；连续 = 一圈舒服的窄边（CONT_MARGIN；user 2026-10-08「非分页显示…能不能把页边距省了，选一个舒服的边距，
     //   和做分页显示之前类似。但是行宽必须严格一样」）。行宽两种都是这张纸的版心 lineSp 个间距、不取整（取整会让两边差零点几个间距，可能断行不同）→ 每一行一模一样，只差断不断页、边多宽
     const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
@@ -224,6 +229,9 @@ export class ScoreView {
   }
   render(): void {
     const st = this.host.get(), { sp, width, strict, page, margins } = this.frame();
+    const was = this.hscroll; this.hscroll = !!this.host.scroll?.();
+    if (was && !this.hscroll) this.el.scrollLeft = 0;
+    this.el.classList.toggle("hscroll", this.hscroll);
     const totalW = width + (margins.l + margins.r) * sp; this.paperW = totalW;
     this.el.classList.toggle("desk", (strict && totalW < this.el.clientWidth - 1) || !!page);
     this.el.classList.toggle("pages", !!page);
@@ -233,8 +241,10 @@ export class ScoreView {
     this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.caretEnd ? { caretEnd: true } : {}),
       ...(page && this.host.lyricRaise?.() ? { lyricRaise: this.host.lyricRaise() } : {}),
       autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
-      ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}), ...(this.hot ? { hot: this.hot } : {}), ...(this.span ? { span: this.span } : {}) });
+      ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}), ...(this.hot ? { hot: this.hot } : {}), ...(this.span ? { span: this.span } : {}),
+      ...(this.hscroll ? { scroll: true } : {}) });
     this.ink.style.left = `${this.layout.pageX.left}px`;
+    if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout.width + this.layout.pageX.left + this.layout.pageX.right)}px`;   // 横卷：纸按内容撑宽，谱面板横着滚
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;   // ¾ 屏（一整屏有时让人以为白屏了；user 2026-10-08「留的滚动空白不应该是一整页…3/4左右？」）
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
@@ -246,6 +256,7 @@ export class ScoreView {
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
+    this.drawPins();
     // 只在光标 / 选区 / 编辑框挪了的时候才把视图拉过去；别的重画（静音 / 独奏的角标、隐藏、换纸设置…）不动人家滚到哪
     //   （user 2026-10-08「toggle mute solo的时候页面滚动会变」：原来每次重画都 follow，滚开了光标那行再点静音 = 被拽回去）
     const base = this.baseKey(), fk = `${base}|${this.el.clientWidth}x${this.el.clientHeight}`;   // 窗口变了（pad 弹出把谱挤矮）照样跟
@@ -284,6 +295,7 @@ export class ScoreView {
     const top = Math.min(...rows.map((r) => r.top)), bottom = Math.max(...rows.map((r) => r.bottom)), x = h0.x + h0.w / 2;
     const sysKey = `${p.paperId}:${sys}`;
     if (sysKey !== this.playSysKey) { this.playSysKey = sysKey; if (this.autoFollow) this.followPlay(top, bottom); }
+    if (this.hscroll && this.autoFollow) this.followPlayX(x);   // 横卷：一行很长，横着跟（不等换行）
     void top; void bottom; void x;   // 播放线先不画（2026-10-10 user「感觉高亮够，可以先不用那根当前播放的线…先试试不用线」）——位置照算，要回来时在这儿画
     // 正在响的音：每个声部各自的那一个（休止不亮）；连音线拆开的几段一起亮
     const spots = found.filter((f) => f.note).flatMap((f) => f.hits);
@@ -303,6 +315,37 @@ export class ScoreView {
     const y0 = off + top * z, y1 = off + bottom * z;
     if (y0 >= vt + vh * 0.05 && y1 <= vt + vh * 0.8) return;
     this.el.scrollTo({ top: Math.max(0, y0 - vh * 0.2), behavior: "smooth" });
+  }
+  /** 横卷的自动翻（v0.9.35）：正在放的音（纸面 x）出了舒服区（屏幕左边 5% 到 80%）= 平滑滚到它在左边两成处；你刚自己滚过 4 秒内不跟。 */
+  private followPlayX(x: number): void {
+    if (performance.now() - this.userScrollAt < 4000) return;
+    const z = this.zoom, sx = this.sheet.offsetLeft + ((this.layout?.pageX.left ?? 0) + x) * z, vl = this.el.scrollLeft, vw = this.el.clientWidth;
+    if (sx >= vl + vw * 0.05 && sx <= vl + vw * 0.8) return;
+    this.el.scrollTo({ left: Math.max(0, sx - vw * 0.2), behavior: "smooth" });
+  }
+  /** 横卷：歌手名钉在屏幕左边（v0.9.35；10-10 问答「横卷没有行首，左边的名字会滚走，横卷里名字应该钉在屏幕左边、贴着每条谱的左上」）。
+   *  纸上原来的名字照画（滚到最左边时看得见）；滚开了才露出钉住的这一列。只看、不接点（点名字 = 滚回左边点纸上那个）。 */
+  private hscroll = false;
+  private pinEl: HTMLDivElement | null = null;
+  private drawPins(): void {
+    const L = this.layout;
+    if (!this.hscroll || !L) { this.pinEl?.remove(); this.pinEl = null; return; }
+    if (!this.pinEl || !this.pinEl.isConnected) { this.pinEl = document.createElement("div"); this.pinEl.className = "pin-names"; this.sheet.appendChild(this.pinEl); }
+    const views = this.host.parts();
+    this.pinEl.replaceChildren(...L.systems.filter((r) => r.staff === 1).map((r) => {
+      const v = views.find((q) => q.id === r.part), d = document.createElement("div");
+      d.className = "pin-name"; d.textContent = v?.abbr || v?.name || "";
+      if (v?.colorIdx !== undefined) d.style.setProperty("--cat", TAB20[v.colorIdx]);
+      d.style.top = `${r.staffTop - L.sp * 1.6}px`;
+      return d;
+    }));
+    this.placePins();
+  }
+  private placePins(): void {
+    if (!this.pinEl) return;
+    const left = this.el.scrollLeft / this.zoom;
+    this.pinEl.style.transform = `translateX(${left}px)`;
+    this.pinEl.classList.toggle("is-on", left > (this.layout?.sp ?? 10) * 4);
   }
   /** 这张纸 tick 那一刻每个声部（排出来的每一行）正在放的 token：下标、开始的 tick、画出来的位置（音 / 休止）。 */
   private soundingAt(paperId: string, tick: number): { part: string; index: number; start: number; note: boolean; hits: { x: number; y: number; w: number; system: number }[] }[] {
@@ -381,6 +424,12 @@ export class ScoreView {
     const a = off + box.top * z, bt = off + box.bottom * z, rowH = bt - a, below = Math.min(rowH, h * 0.3), above = Math.min(rowH * 0.25, h * 0.1);
     if (a - above < top) this.el.scrollTop = Math.max(0, a - above);
     else if (bt + below > top + h) this.el.scrollTop = Math.min(bt + below - h, a - above);
+    // 横卷：光标（选中 = 它的第一个音）横着也保持在视野里——左边留一成、右边留两成，出了就把它放到左边三成处（往右写的时候前面能看见几小节）
+    if (this.hscroll) {
+      const hx = L.head?.x ?? (st.sel ? this.hits.find((n) => this.onTrack(n) && n.index === st.sel!.from)?.x : undefined); if (hx === undefined) return;
+      const sx = this.sheet.offsetLeft + (L.pageX.left + hx) * z, vl = this.el.scrollLeft, vw = this.el.clientWidth;
+      if (sx < vl + vw * 0.1 || sx > vl + vw * 0.8) this.el.scrollLeft = Math.max(0, sx - vw * 0.3);
+    }
   }
 
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
@@ -824,7 +873,7 @@ export class ScoreView {
     if (this.finger && e.pointerId === this.finger.pid) {
       const dy = e.clientY - this.finger.y0, dx = e.clientX - this.finger.x0;
       if (Math.hypot(dx, dy) > 10) this.finger.moved = true;
-      if (this.finger.moved) { this.userScrollAt = performance.now(); this.el.scrollTop = this.finger.top0 - dy; if (this.zoom > 1.001) this.el.scrollLeft = this.finger.left0 - dx; }   // 放大了单指也能横着滚
+      if (this.finger.moved) { this.userScrollAt = performance.now(); this.el.scrollTop = this.finger.top0 - dy; if (this.zoom > 1.001 || this.hscroll) this.el.scrollLeft = this.finger.left0 - dx; }   // 放大了 / 横卷：单指也能横着滚
       return;
     }
     if (this.box && e.pointerId === this.box.pid && this.layout) {

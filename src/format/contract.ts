@@ -64,7 +64,7 @@ export interface ScoreExtV2 {
 export interface ManifestV1 { format: "moonsinger"; version: 1; app: string; saved: string; files: Record<string, number>; sounds?: { path: string; sha256: string; bytes: number }[] }
 /** 第 1 版的 score.json：一张纸、整首一份 score.musicxml 就是正本。 */
 /** 视图态（推荐稿）。全是可选、只写非默认值；读的一方宽容（不认识的忽略）。 */
-export interface ViewV1 { scope?: "all"; pageFlow?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>;
+export interface ViewV1 { scope?: "all"; pageFlow?: true; /** 排法「横卷」（v0.9.35 加，可选、不升版本；Opus 5.5；和 pageFlow 互斥，只写 true）。 */ scroll?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>;
   mp3?: "small";   // mp3 = 导出歌声的音质（只写非默认的「小文件」；2026-10-08 by Claude Opus 5.5，user「音质配置就是应该也跟着吧」）
   /** 2026-10-08 深夜 / 10-09 加（可选，不升版本；Opus 5.5）：ref = 参考窗的窗（开着没有 + 位置 / 大小，CSS px；开过窗才写）；
    *  pdf = 乐谱 PDF 的字体（只写非默认的「拼音」）。pad = pad 的状态（同日更早加的，见 desk.ts）。 */

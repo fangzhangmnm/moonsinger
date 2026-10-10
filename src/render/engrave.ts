@@ -59,6 +59,9 @@ export interface EngraveOpts {
   hot?: ReadonlySet<number>;
   /** 光标所在那条 track 上这一段音（下标 [from, to)）染强调色：点开力度记号 / 渐强渐弱 / 渐到的小菜单时，看它管哪几个音、从哪里开始（2026-10-08 深夜 Opus 5.5，user「如何不混淆的搞清楚<到底是哪里开始的？」）。 */
   span?: { from: number; to: number } | null;
+  /** 横卷（v0.9.35；user 2026-10-10「那个无限往右的总谱模式也做一下」）：不折行，每张纸一行、一直往右；width 只管歌名 / 作者栏 / 纸的控件那一屏，
+   *  排出来的 Layout.width = 最长那张纸的右端（+ 尾巴，光标停在最后能接着点）。 */
+  scroll?: boolean;
   /** 连续排法的纸边距（sp）：和分页同一张纸的几何，只是不断页（user 2026-10-08「连续和分页看到的行宽应该是一样的」「连续只是没有了断页，但是每一行还是一样的」）。 */
   margins?: { l: number; r: number; t: number; b: number };
   /** 刚写过（本次输入记录非空）：光标前那个音画成写字头（「−」/ 退格作用在它上）；挪过光标 / 轻点放的光标 = 不画（user 2026-10-08「如果是光标的话为什么前一个音是蓝的？」）。 */
@@ -70,6 +73,7 @@ export interface EngraveOpts {
                                          //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
 export const LYRIC_EM = 1.6;
+const SCROLL_TAIL = 6;   // sp：横卷每张纸内容后面留的尾巴
 const NAME_MAX = 6.5;   // sp：谱前声部名一列最宽（再长折行；engrave() 里 nameLines）
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
 
@@ -314,7 +318,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow, SYS_GAP = SPC.sysGap;
   const prims: Prim[] = [];
   const sel = o.sel ?? null, writing = !sel, autoBars = o.autoBars !== false;
-  const right = o.width / sp - MARGIN;
+  const baseRight = o.width / sp - MARGIN;
+  let right = baseRight, sheetRight = baseRight;   // 横卷：每张纸排完 right = 这张纸内容的右端 + SCROLL_TAIL；sheetRight = 最长那张
   const PART_EM = LYRIC_EM * 0.85;
   const nameW = (s: string) => (o.measureLyric(s) * PART_EM) / LYRIC_EM / sp;
   /** 声部名一列最宽 NAME_MAX（sp），再长就折行，不占五线谱的地方（user 2026-10-08「谱子前面的乐器名字如果很长的话应该换行而不是占用五线谱的空间」）。
@@ -439,6 +444,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const showPaperLine = song.papers.length > 1 || song.papers.some((p) => p.name);
   let drawn = 0;
   song.papers.forEach((paper, paperK) => {
+    right = baseRight;
     if (o.onlyPaper && paper.id !== o.onlyPaper) return;   // 一次只看一张纸（曲段）
     if (drawn++ > 0) yCur += P(PAPER_GAP);
     // 速度记号画在这张纸最上面那位在场的歌手那一行（它的速度才算数；2026-10-08 user「第四章sheet只有第二个声部的时候速度记号失踪了」——原来只画全曲第一个声部的）。
@@ -572,15 +578,16 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const chunkW = (cs: Col[]) => cs.reduce((a, c) => a + (c.chunk ? c.w : 0), 0);
     let seg: Col[] = [];
     // 挤一挤（user「「稍微超出一点的小节」压进当前行 这个就是我想要的」）：下一个小节只超出这一行音符总宽的 SQUEEZE 以内 = 留在这一行、整行压紧一点（下面右端对齐那一步压）。
+    const brk = o.scroll ? Infinity : right;   // 横卷 = 不折行
     const flush = () => {
       const segW = seg.reduce((s, c) => s + c.w, 0), closed = seg.length > 0 && seg[seg.length - 1].bar;
-      const over = x + segW + (closed ? 0 : BAR_W) - right;
+      const over = x + segW + (closed ? 0 : BAR_W) - brk;
       if (over > 0 && x > sysStarts[system] + 0.01) {
         const lineChunks = chunkW(placedCols.filter((c) => c.system === system)) + chunkW(seg);
         if (over <= lineChunks * SQUEEZE) { for (const c of seg) place(c); seg = []; return; }
         newline();
       }
-      for (const c of seg) { if (x + c.w > right && x > sysStarts[system] + 0.01) newline(); place(c); }
+      for (const c of seg) { if (x + c.w > brk && x > sysStarts[system] + 0.01) newline(); place(c); }
       seg = [];
     };
     // 句不换行（user 2026-10-08「不应该按照句换行，打谱软件没这么干的」）：只是换气记号 + 「合」的边界；折行照旧只在小节线后
@@ -590,7 +597,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     // 右端对齐：多出来的地方按宽度分给这一行的音 / 休止（小节线、记号不拉宽）；挤进来超出的行（最后一行也算）同样按宽度压回来
     for (let s = 0; s < nSys; s++) {
       const row = cols.filter((c) => c.system === s);
-      const end = row.reduce((m, c) => Math.max(m, c.x + c.w), sysStarts[s]), avail = right - sysStarts[s], used = end - sysStarts[s];
+      const end = row.reduce((m, c) => Math.max(m, c.x + c.w), sysStarts[s]), avail = brk - sysStarts[s], used = end - sysStarts[s];
       if (used <= avail + 1e-6 && (s === nSys - 1 || used < avail * 0.6)) continue;
       const gw = chunkW(row);
       if (!gw) continue;
@@ -598,6 +605,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       let xx = sysStarts[s];
       for (const c of row) { c.x = xx; if (c.chunk) c.w *= 1 + k; xx += c.w; for (const u of c.units) { u.x = c.x; if (u.kind === "chunk") u.w = c.w; } }
     }
+    // 横卷：这张纸的右端 = 内容的右端 + 尾巴（光标停在最后那儿照旧画到右边、能点着接着写）
+    if (o.scroll) { right = Math.max(baseRight, ...cols.map((c) => c.x + c.w)) + SCROLL_TAIL; sheetRight = Math.max(sheetRight, right); }
     // 3½. 光标在一行的最前面 = 就画在这一行的开头（2026-10-10 user「记账：光标应该在每行的开头而不是上一行的末尾」「能不能顺便把光标在行开头给修一下，很影响工作」）。
     //   2026-10-08 曾按 user 当时的问法「到行末的时候光标应该在行末而不是下一行开头？」把它挪到上一行末尾画（同文本编辑器）；10-10 user 改了主意，不挪了。
     //   同一天 user「然后我希望光标能同时支持一行的末尾和下一行的开头两个位置取决于点在哪里」→ 默认照旧在开头；点在上一行行末放的光标（caretEnd）= 画在上一行末尾。
@@ -1263,7 +1272,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.width, height, sp, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

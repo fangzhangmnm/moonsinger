@@ -362,6 +362,13 @@ button, input, select { font: inherit; color: inherit; }
 /* 纸（2026-10-07）：纸的版心放得下 = 纸居中、四周是桌面（同 WXHW 屏幕太宽时行宽有上限）；放不下（手机）= 纸铺满 */
 .score.desk { background: var(--bg); }
 .score.zoomed { overflow-x: auto; }                 /* 触屏捏合放大后能横着滚 */
+/* 横卷（v0.9.35）：一行一直往右，谱面板横着滚；歌手名钉在屏幕左边（滚开了才露出来；只看不接点） */
+.score.hscroll { overflow-x: auto; }
+.pin-names { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; pointer-events: none; z-index: 4; opacity: 0; transition: opacity .15s; }
+.pin-names.is-on { opacity: 1; }
+.pin-name { position: absolute; left: 4px; white-space: nowrap; font-size: 12px; line-height: 1.5; color: var(--ink-soft); background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border-radius: 4px; padding: 0 5px 0 4px; box-shadow: 0 0 0 1px var(--line); }
+.pin-name::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; background: var(--cat, var(--muted)); }
 .score.zoomed.desk .sheet { margin: 0; }            /* 放大超出屏幕时不再居中（居中会让左边滚不到） */
 .btn.zoom-reset { position: fixed; z-index: 30; height: 30px; padding: 0 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
 .score.desk .sheet { margin: 0 auto; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 2px 10px rgba(0, 0, 0, .08); min-height: 100%; }

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.34-2026-10-10";
+var APP_VERSION = "v0.9.35-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6807,6 +6807,7 @@ function resolveSongClefs(song) {
 
 // src/render/engrave.ts
 var LYRIC_EM = 1.6;
+var SCROLL_TAIL = 6;
 var NAME_MAX = 6.5;
 var TEMPO_EM = 1.35;
 var SQUEEZE = 0.15;
@@ -7075,7 +7076,8 @@ function engrave(song, o10) {
   const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow, SYS_GAP = SPC.sysGap;
   const prims = [];
   const sel = o10.sel ?? null, writing = !sel, autoBars2 = o10.autoBars !== false;
-  const right = o10.width / sp2 - MARGIN;
+  const baseRight = o10.width / sp2 - MARGIN;
+  let right = baseRight, sheetRight = baseRight;
   const PART_EM = LYRIC_EM * 0.85;
   const nameW = (s10) => o10.measureLyric(s10) * PART_EM / LYRIC_EM / sp2;
   const nameLines = (name, staves) => {
@@ -7209,6 +7211,7 @@ function engrave(song, o10) {
   const showPaperLine = song.papers.length > 1 || song.papers.some((p2) => p2.name);
   let drawn = 0;
   song.papers.forEach((paper, paperK) => {
+    right = baseRight;
     if (o10.onlyPaper && paper.id !== o10.onlyPaper) return;
     if (drawn++ > 0) yCur += P2(PAPER_GAP);
     const owner = tempoOwner(song, paper), prevPaper = song.papers.slice(0, paperK).reverse().find((x3) => !x3.hidden), prevBpm = prevPaper ? sheetEndBpm(song, prevPaper) : null;
@@ -7365,9 +7368,10 @@ function engrave(song, o10) {
     };
     const chunkW = (cs3) => cs3.reduce((a10, c10) => a10 + (c10.chunk ? c10.w : 0), 0);
     let seg = [];
+    const brk = o10.scroll ? Infinity : right;
     const flush2 = () => {
       const segW = seg.reduce((s10, c10) => s10 + c10.w, 0), closed = seg.length > 0 && seg[seg.length - 1].bar;
-      const over = x2 + segW + (closed ? 0 : BAR_W) - right;
+      const over = x2 + segW + (closed ? 0 : BAR_W) - brk;
       if (over > 0 && x2 > sysStarts[system] + 0.01) {
         const lineChunks = chunkW(placedCols.filter((c10) => c10.system === system)) + chunkW(seg);
         if (over <= lineChunks * SQUEEZE) {
@@ -7378,7 +7382,7 @@ function engrave(song, o10) {
         newline();
       }
       for (const c10 of seg) {
-        if (x2 + c10.w > right && x2 > sysStarts[system] + 0.01) newline();
+        if (x2 + c10.w > brk && x2 > sysStarts[system] + 0.01) newline();
         place(c10);
       }
       seg = [];
@@ -7391,7 +7395,7 @@ function engrave(song, o10) {
     const nSys = system + 1;
     for (let s10 = 0; s10 < nSys; s10++) {
       const row = cols.filter((c10) => c10.system === s10);
-      const end = row.reduce((m2, c10) => Math.max(m2, c10.x + c10.w), sysStarts[s10]), avail = right - sysStarts[s10], used = end - sysStarts[s10];
+      const end = row.reduce((m2, c10) => Math.max(m2, c10.x + c10.w), sysStarts[s10]), avail = brk - sysStarts[s10], used = end - sysStarts[s10];
       if (used <= avail + 1e-6 && (s10 === nSys - 1 || used < avail * 0.6)) continue;
       const gw = chunkW(row);
       if (!gw) continue;
@@ -7406,6 +7410,10 @@ function engrave(song, o10) {
           if (u2.kind === "chunk") u2.w = c10.w;
         }
       }
+    }
+    if (o10.scroll) {
+      right = Math.max(baseRight, ...cols.map((c10) => c10.x + c10.w)) + SCROLL_TAIL;
+      sheetRight = Math.max(sheetRight, right);
     }
     if (o10.caretEnd) for (const q2 of per) for (const u2 of q2.units) {
       if (u2.kind !== "head" || u2.system === 0) continue;
@@ -8138,7 +8146,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P2(PG.h) : yCur + P2(MX.b);
-  return { prims, width: o10.width, height, sp: sp2, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -9121,6 +9129,7 @@ var ScoreView = class {
     el2.addEventListener("wheel", () => {
       this.userScrollAt = performance.now();
     }, { passive: true });
+    el2.addEventListener("scroll", () => this.placePins(), { passive: true });
     el2.addEventListener("pointerup", (e10) => this.up(e10));
     el2.addEventListener("contextmenu", (e10) => {
       if (this.layout && this.openPartAt(this.local(e10).x, this.local(e10).y)) {
@@ -9235,6 +9244,7 @@ var ScoreView = class {
     const st3 = this.host.get(), paper = st3.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
     const base3 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
     const geo = pageGeoOf(paper), page = this.host.pages?.() ? geo : null;
+    if (this.host.scroll?.()) return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base3, avail / 42 * scale)) : base3, width: Math.max(320, avail - (CONT_MARGIN.l + CONT_MARGIN.r) * base3), strict: false, page: null, margins: CONT_MARGIN };
     const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
     const extra = margins.l + margins.r, want = Math.ceil((lineSp(paper) + extra) * base3);
     if (avail > 0 && want <= avail) return { sp: base3, width: lineSp(paper) * base3, strict: true, page, margins };
@@ -9254,6 +9264,10 @@ var ScoreView = class {
   }
   render() {
     const st3 = this.host.get(), { sp: sp2, width, strict, page, margins } = this.frame();
+    const was = this.hscroll;
+    this.hscroll = !!this.host.scroll?.();
+    if (was && !this.hscroll) this.el.scrollLeft = 0;
+    this.el.classList.toggle("hscroll", this.hscroll);
     const totalW = width + (margins.l + margins.r) * sp2;
     this.paperW = totalW;
     this.el.classList.toggle("desk", strict && totalW < this.el.clientWidth - 1 || !!page);
@@ -9278,9 +9292,11 @@ var ScoreView = class {
       ...page ? { page } : { margins },
       ...(this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st3.at.paper } : {},
       ...this.hot ? { hot: this.hot } : {},
-      ...this.span ? { span: this.span } : {}
+      ...this.span ? { span: this.span } : {},
+      ...this.hscroll ? { scroll: true } : {}
     });
     this.ink.style.left = `${this.layout.pageX.left}px`;
+    if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout.width + this.layout.pageX.left + this.layout.pageX.right)}px`;
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;
     const svg = toSvg(this.layout);
     const old = this.sheet.querySelector("svg");
@@ -9293,6 +9309,7 @@ var ScoreView = class {
     this.lyrics.reposition();
     this.marks.reposition();
     this.title.reposition();
+    this.drawPins();
     const base3 = this.baseKey(), fk = `${base3}|${this.el.clientWidth}x${this.el.clientHeight}`;
     if (this.holdView) this.heldBase = base3;
     if (fk !== this.followKey) {
@@ -9354,6 +9371,7 @@ var ScoreView = class {
       this.playSysKey = sysKey;
       if (this.autoFollow) this.followPlay(top, bottom);
     }
+    if (this.hscroll && this.autoFollow) this.followPlayX(x2);
     const spots = found.filter((f2) => f2.note).flatMap((f2) => f2.hits);
     while (this.hlEls.length > spots.length) this.hlEls.pop().remove();
     spots.forEach((h2, k2) => {
@@ -9378,6 +9396,46 @@ var ScoreView = class {
     const y0 = off + top * z2, y1 = off + bottom * z2;
     if (y0 >= vt + vh * 0.05 && y1 <= vt + vh * 0.8) return;
     this.el.scrollTo({ top: Math.max(0, y0 - vh * 0.2), behavior: "smooth" });
+  }
+  /** 横卷的自动翻（v0.9.35）：正在放的音（纸面 x）出了舒服区（屏幕左边 5% 到 80%）= 平滑滚到它在左边两成处；你刚自己滚过 4 秒内不跟。 */
+  followPlayX(x2) {
+    if (performance.now() - this.userScrollAt < 4e3) return;
+    const z2 = this.zoom, sx2 = this.sheet.offsetLeft + ((this.layout?.pageX.left ?? 0) + x2) * z2, vl = this.el.scrollLeft, vw = this.el.clientWidth;
+    if (sx2 >= vl + vw * 0.05 && sx2 <= vl + vw * 0.8) return;
+    this.el.scrollTo({ left: Math.max(0, sx2 - vw * 0.2), behavior: "smooth" });
+  }
+  /** 横卷：歌手名钉在屏幕左边（v0.9.35；10-10 问答「横卷没有行首，左边的名字会滚走，横卷里名字应该钉在屏幕左边、贴着每条谱的左上」）。
+   *  纸上原来的名字照画（滚到最左边时看得见）；滚开了才露出钉住的这一列。只看、不接点（点名字 = 滚回左边点纸上那个）。 */
+  hscroll = false;
+  pinEl = null;
+  drawPins() {
+    const L2 = this.layout;
+    if (!this.hscroll || !L2) {
+      this.pinEl?.remove();
+      this.pinEl = null;
+      return;
+    }
+    if (!this.pinEl || !this.pinEl.isConnected) {
+      this.pinEl = document.createElement("div");
+      this.pinEl.className = "pin-names";
+      this.sheet.appendChild(this.pinEl);
+    }
+    const views = this.host.parts();
+    this.pinEl.replaceChildren(...L2.systems.filter((r10) => r10.staff === 1).map((r10) => {
+      const v = views.find((q2) => q2.id === r10.part), d3 = document.createElement("div");
+      d3.className = "pin-name";
+      d3.textContent = v?.abbr || v?.name || "";
+      if (v?.colorIdx !== void 0) d3.style.setProperty("--cat", TAB20[v.colorIdx]);
+      d3.style.top = `${r10.staffTop - L2.sp * 1.6}px`;
+      return d3;
+    }));
+    this.placePins();
+  }
+  placePins() {
+    if (!this.pinEl) return;
+    const left = this.el.scrollLeft / this.zoom;
+    this.pinEl.style.transform = `translateX(${left}px)`;
+    this.pinEl.classList.toggle("is-on", left > (this.layout?.sp ?? 10) * 4);
   }
   /** 这张纸 tick 那一刻每个声部（排出来的每一行）正在放的 token：下标、开始的 tick、画出来的位置（音 / 休止）。 */
   soundingAt(paperId, tick) {
@@ -9499,6 +9557,12 @@ var ScoreView = class {
     const a10 = off + box.top * z2, bt = off + box.bottom * z2, rowH = bt - a10, below = Math.min(rowH, h2 * 0.3), above = Math.min(rowH * 0.25, h2 * 0.1);
     if (a10 - above < top) this.el.scrollTop = Math.max(0, a10 - above);
     else if (bt + below > top + h2) this.el.scrollTop = Math.min(bt + below - h2, a10 - above);
+    if (this.hscroll) {
+      const hx = L2.head?.x ?? (st3.sel ? this.hits.find((n10) => this.onTrack(n10) && n10.index === st3.sel.from)?.x : void 0);
+      if (hx === void 0) return;
+      const sx2 = this.sheet.offsetLeft + (L2.pageX.left + hx) * z2, vl = this.el.scrollLeft, vw = this.el.clientWidth;
+      if (sx2 < vl + vw * 0.1 || sx2 > vl + vw * 0.8) this.el.scrollLeft = Math.max(0, sx2 - vw * 0.3);
+    }
   }
   /** 指针 → 纸面坐标（纸可能居中在桌面上：按纸自己的位置算；放大了除回去）。 */
   /** 纸面上的框 → 屏幕坐标（local 的反过来）。 */
@@ -10159,7 +10223,7 @@ var ScoreView = class {
       if (this.finger.moved) {
         this.userScrollAt = performance.now();
         this.el.scrollTop = this.finger.top0 - dy2;
-        if (this.zoom > 1.001) this.el.scrollLeft = this.finger.left0 - dx2;
+        if (this.zoom > 1.001 || this.hscroll) this.el.scrollLeft = this.finger.left0 - dx2;
       }
       return;
     }
@@ -35317,13 +35381,14 @@ function describeSongChange(prev, next2) {
 var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
 var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
-var freshDesk = () => ({ scope: "segment", pageFlow: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans" });
+var freshDesk = () => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans" });
 function serializeDesk(d3) {
   const out = {};
   if (d3.scope === "all") out.scope = "all";
   if (d3.mp3 === "small") out.mp3 = "small";
   if (d3.pdf === "pinyin") out.pdf = "pinyin";
-  if (d3.pageFlow) out.pageFlow = true;
+  if (d3.scroll) out.scroll = true;
+  else if (d3.pageFlow) out.pageFlow = true;
   if (d3.paper) out.paper = d3.paper;
   const parts = {};
   for (const [id2, p2] of Object.entries(d3.parts)) {
@@ -35354,6 +35419,10 @@ function unserializeDesk(json) {
   const j2 = json;
   if (j2.scope === "all") d3.scope = "all";
   if (j2.pageFlow === true) d3.pageFlow = true;
+  if (j2.scroll === true) {
+    d3.scroll = true;
+    d3.pageFlow = false;
+  }
   if (j2.mp3 === "small") d3.mp3 = "small";
   if (j2.pdf === "pinyin") d3.pdf = "pinyin";
   if (typeof j2.paper === "string" && j2.paper) d3.paper = j2.paper;
@@ -35800,7 +35869,8 @@ var view = new ScoreView(scoreEl, {
   onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),
   reflow: () => reflow,
-  pages: () => pageFlow,
+  pages: () => pageFlow && !scrollFlow,
+  scroll: () => scrollFlow,
   lyricRaise: () => LYRIC_RAISE[pdfFont],
   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope
@@ -35903,6 +35973,7 @@ function afterWrite() {
 }
 var reflow = false;
 var pageFlow = false;
+var scrollFlow = false;
 var padNotes = /* @__PURE__ */ new Map();
 var CHORD_MS = 50;
 var CHORD_WIN = 80;
@@ -37288,7 +37359,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "77d1d429ad17",
+  cssHash: "ac03ba872f4b",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -37331,6 +37402,11 @@ window.__moonsinger = {
   setPages: (v) => {
     pageFlow = v;
     view.render();
+  },
+  setScroll: (v) => {
+    scrollFlow = v;
+    view.render();
+    view.followNow();
   },
   partView: (id2, patch) => {
     setPv(id2, patch);
@@ -37724,7 +37800,7 @@ function openPaperSheet() {
   const draw = () => {
     const p2 = st2.song.paper ?? paperOf(DEFAULT_PAPER);
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u7248\u5F0F</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002</div><div class="part-sec">\u7EB8\uFF08\u66F2\u6BB5\uFF09</div>` + st2.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc7(pp.name || "\uFF08\u6CA1\u540D\u5B57\uFF09")}${pp.hidden ? "\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09" : ""}${pp.id === st2.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc7(pp.id)}" title="\u8FD9\u5F20\u7EB8\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u632A / \u52A0\u58F0\u90E8 / \u5220">\u22EF</button></div>`).join("") + `<div class="set-row"><button class="btn" data-v="addpaper">\uFF0B \u65B0\u7684\u7EB8\uFF08\u63A5\u5728\u6700\u540E\uFF09</button></div>` + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
-    ((one) => `<div class="part-sec">\u663E\u793A</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && st2.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">\u53EA\u770B\u4E00\u53F7\u8F68<small>\u53EA\u770B\u300C${esc7(partLabels(st2.song, doc.extras)[0] ?? "")}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B</small></button></div>`)(st2.song.parts[0]) + `<div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    ((one) => `<div class="part-sec">\u663E\u793A</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && st2.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">\u53EA\u770B\u4E00\u53F7\u8F68<small>\u53EA\u770B\u300C${esc7(partLabels(st2.song, doc.extras)[0] ?? "")}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B</small></button></div>`)(st2.song.parts[0]) + `<div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">\u6A2A\u5377<small>\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u6B4C\u624B\u540D\u9489\u5728\u5DE6\u8FB9</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -37757,9 +37833,11 @@ function openPaperSheet() {
       reflow = v === "reflow";
       view.render();
       draw();
-    } else if (v === "flow:cont" || v === "flow:pages") {
+    } else if (v === "flow:cont" || v === "flow:pages" || v === "flow:scroll") {
       pageFlow = v === "flow:pages";
+      scrollFlow = v === "flow:scroll";
       view.render();
+      view.followNow();
       draw();
     } else if (v === "scope:all" || v === "scope:segment") {
       viewScope = v === "scope:all" ? "all" : "segment";
@@ -38916,6 +38994,7 @@ instEl.addEventListener("click", (e10) => {
 var deskNow = () => ({
   scope: viewScope,
   pageFlow,
+  scroll: scrollFlow,
   paper: st2.at.paper,
   parts: Object.fromEntries(partView),
   mp3: mp3Quality,
@@ -38926,6 +39005,7 @@ var deskNow = () => ({
 function applyDesk(d3) {
   viewScope = d3.scope;
   pageFlow = d3.pageFlow;
+  scrollFlow = d3.scroll;
   mp3Quality = d3.mp3;
   pdfFont = d3.pdf;
   st2 = { ...st2, input: { ...st2.input, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d3.pad.unit)), tuplet: d3.pad.tuplet } };
@@ -40314,4 +40394,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-482bc6d3fc06.mjs.map
+//# sourceMappingURL=moonsinger-ae7a66a02bb2.mjs.map

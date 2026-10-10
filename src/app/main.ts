@@ -366,7 +366,8 @@ const view = new ScoreView(scoreEl, {
   onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),
   reflow: () => reflow,
-  pages: () => pageFlow,
+  pages: () => pageFlow && !scrollFlow,
+  scroll: () => scrollFlow,
   lyricRaise: () => LYRIC_RAISE[pdfFont],   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope,
 });
@@ -440,8 +441,10 @@ const withHalf = (c: Command): Command => (c.k === "extend" && half !== "off" ? 
 function afterWrite(): void { if (accPrior) accWrote = true; if (halfHeld) { halfWrote = true; return; } if (half === "once" && --halfLeft <= 0) setHalf("off"); }
 /** 屏幕放不下纸的时候折不折行（默认不折行 = 整张纸按比例缩小；这次打开里有效，不进文件——怎么看，不是谱的内容）。 */
 let reflow = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
-/** 排法（这次打开里有效；user 2026-10-08「显示法还加一个分页？可以预览打印，要求和之后生成的pdf wysiwyg」）：false = 连续（一张长纸）；true = 分页（按纸高分页、画页框，和以后导出的 PDF 所见即所得）。横卷以后。 */
+/** 排法（这次打开里有效；user 2026-10-08「显示法还加一个分页？可以预览打印，要求和之后生成的pdf wysiwyg」）：false = 连续（一张长纸）；true = 分页（按纸高分页、画页框，和以后导出的 PDF 所见即所得）。横卷 = 下面 scrollFlow。 */
 let pageFlow = false;
+/** 排法「横卷」（v0.9.35；user 2026-10-10「那个无限往右的总谱模式也做一下」）：每张纸一行、无限往右，谱面板横着滚，打字 / 放的时候横着跟，歌手名钉在屏幕左边。和 pageFlow 互斥（横卷说了算）。跟着歌走（desk view.scroll）。 */
+let scrollFlow = false;
 /** pad 上每根按着的手指：刚写的是第几个音（弹 = -1）、它原本的音高——上下滑过门槛时在它上面升 / 降。 */
 const padNotes = new Map<string, { index: number; base: Pitch }>();
 /** 单音乐器（现在的主唱月读）写音：同时多按只写第一个（user「monophonic乐器输入的时候如果你多按只会输第一个。但是做好模糊护栏免得快速输入的时候第二个音被吃掉」）。
@@ -1425,7 +1428,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   setMaster: (patch: Record<string, unknown>) => updateExtras(withMaster(doc.extras, patch as never), { kind: "studio", label: "总轨" }),
   studioTracks: () => studioTracks(doc.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, st.song.hum, songLangOf(tokens, st.song.hum), map); }, state: () => st, cssHash: __CSS_HASH__, extras: () => doc.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => view.layout, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
   setChunk: (v: "phrase" | "sheet" | "whole") => { const role = st.song.parts.find((x) => x.id === st.at.part)?.role; if (role) updateExtras(withSingChunk(doc.extras, role, v, st.song.hum), { kind: "lounge", label: `分段唱：${v}` }); },
-  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: history.past.length, future: history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
+  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: history.past.length, future: history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(st.song, st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
@@ -1700,8 +1703,9 @@ function openPaperSheet(): void {
       // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
       ((one) => `<div class="part-sec">显示</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && st.song.parts.every((q) => q === one || !pv(q.id).only) ? " is-on" : ""}" data-v="only1">只看一号轨<small>只看「${esc(partLabels(st.song, doc.extras)[0] ?? "")}」（速度、风格、反复写在最上面那位身上）；再点 = 都看</small></button></div>`)(st.song.parts[0]) +
       `<div class="part-sec">排法</div><div class="set-row">` +
-      `<button class="btn cand${pageFlow ? "" : " is-on"}" data-v="flow:cont">连续<small>不断页，每一行和分页一样</small></button>` +
-      `<button class="btn cand${pageFlow ? " is-on" : ""}" data-v="flow:pages">分页<small>按纸（A4 / A5）的真实高度断页，预览打印</small></button></div>` +
+      `<button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">连续<small>不断页，每一行和分页一样</small></button>` +
+      `<button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">分页<small>按纸（A4 / A5）的真实高度断页，预览打印</small></button>` +
+      `<button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">横卷<small>每张纸一行、一直往右，横着滚；歌手名钉在左边</small></button></div>` +
       `<div class="part-sec">屏幕放不下纸的时候</div><div class="set-row">` +
       `<button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">不折行<small>整张纸缩小，行和纸上一样</small></button>` +
       `<button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">折行<small>按屏幕宽排，谱大一点</small></button></div>` +
@@ -1720,7 +1724,7 @@ function openPaperSheet(): void {
     else if (v === "addpaper") { close(); update(addPaper(st)); info("新的一张纸"); }
     else if (v?.startsWith("pm:")) { close(); openPaperMenu(v.slice(3)); }
     else if (v === "fit" || v === "reflow") { reflow = v === "reflow"; view.render(); draw(); }
-    else if (v === "flow:cont" || v === "flow:pages") { pageFlow = v === "flow:pages"; view.render(); draw(); }
+    else if (v === "flow:cont" || v === "flow:pages" || v === "flow:scroll") { pageFlow = v === "flow:pages"; scrollFlow = v === "flow:scroll"; view.render(); view.followNow(); draw(); }
     else if (v === "scope:all" || v === "scope:segment") { viewScope = v === "scope:all" ? "all" : "segment"; view.render(); draw(); }
     else if (v === "only1") {
       const one = st.song.parts[0]; if (!one) return;
@@ -2521,10 +2525,10 @@ instEl.addEventListener("click", (e) => {
   drawInst();
 });
 /** 视图态（desk，src/score/desk.ts）：存时聚一下（bytesNow）、开歌时散回去（loadDoc）。变量本身仍住这里（viewScope / pageFlow / partView）。 */
-const deskNow = (): Desk => ({ scope: viewScope, pageFlow, paper: st.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality,
+const deskNow = (): Desk => ({ scope: viewScope, pageFlow, scroll: scrollFlow, paper: st.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality,
   pad: { fifths: st.input.inputFifths, scale: st.input.inputScale, unit: PAD_UNITS[st.input.unit], tuplet: st.input.tuplet, low: pad.rangeLow() }, ref: refHost.panel(), pdf: pdfFont });   // pad 的状态跟着歌走（同 WeebPaint editor-state）
 function applyDesk(d: Desk): void {
-  viewScope = d.scope; pageFlow = d.pageFlow; mp3Quality = d.mp3; pdfFont = d.pdf;
+  viewScope = d.scope; pageFlow = d.pageFlow; scrollFlow = d.scroll; mp3Quality = d.mp3; pdfFont = d.pdf;
   st = { ...st, input: { ...st.input, inputFifths: d.pad.fifths, inputScale: d.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d.pad.unit)), tuplet: d.pad.tuplet } };
   partView.clear(); for (const [id, p] of Object.entries(d.parts)) partView.set(id, { ...freshPartView(), ...p });
   if (d.paper && d.paper !== st.at.paper) {
