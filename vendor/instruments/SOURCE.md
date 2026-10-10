@@ -1,16 +1,26 @@
 # MoonSinger 挑乐器数据（2026-10-07）
 
-**现行版本 = v12**（2026-10-10）。v1–v11 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v13。
+**现行版本 = v13**（2026-10-10）。v1–v12 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v14。
 
 > 由 `scripts/build_export.py` 生成，别手改；改数据改 `data/` 再重跑。规格 = PWAProjects 的 webpaint editor v1 prototyping 会话转述的 user 拍板 + 本仓会话 user 原话（见脚本头注释）。
 
 | 文件 | 是什么 |
 |---|---|
-| `instruments-v12.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
-| `gm-map-v12.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
-| `instrument-icons-20261010-v12.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
-| `icon-credits-v12.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
-| `LICENSES-chosen-v12.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+| `instruments-v13.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
+| `gm-map-v13.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
+| `instrument-icons-20261010-v13.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
+| `icon-credits-v13.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
+| `LICENSES-chosen-v13.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+
+## v12 → v13 改了什么（只加字段）
+
+MoonSinger 工单「鼓谱哪一线、什么符头 + 着力点」（user「把应该写成鼓谱的乐器具体写哪个头给元数据补齐一点」「定音鼓走五线谱对吧」「canon is a joke … 我用这个代指所有的sfx」）。依据和统计见源仓 `ai-docs/20261010-鼓谱与打点.md`。
+- **概念（表 ①）**：58 个不分音高的加 `pitched: false` + `percussion {staff, line, head, stem, voice, basis, mainKey?, drums?[{note, name, line, head, stem}], kit?}` = 单独成声部时的写法（MuseScore 单件乐器；没定义的音效等照它的通例，AI 判）。定音鼓 / 钟琴 / 木琴 / 管钟等有音高的不标。
+- **gm-map 鼓键行**：`percussion {staff: 5, line, head, smufl?, stem, voice, basis}` = 架子鼓五线谱里的写法（MuseScore「Drum Kit (large)」的 23 个键 + 其余照 drumset.cpp 标准 MIDI 鼓组）。
+- **gm-map GM 120–128 行**：`pitched: false` + 一线谱 `percussion`，盖过概念（121 挂在有音高的吉他概念上）。
+- **`hitSec`**（gm-map 打击乐 / 音效行、鼓键行、extraDrumKeys）：采样开头到砸下去那一下多少秒（TSF 实测）。只给「一下打完」和「涨到最响随即断掉」（反向镲 1.389 秒）；持续的、起伏的（海浪、鸟叫）不给。
+- **顶层 `extraDrumKeys`**（gm-map）：GS 扩展鼓键 27–34、82–87，每个 `{bank, program, note, name, gs: true, percussion, hitSec?}`。
+- **defs**：`heads`（符头中文名）、`percussionMethod`（line 约定：0 = 最上面那条线、往下每加 1 走半格、负数在上方；staff / stem / voice 的意思；出处）、`hitSecMethod`。
 
 ## v11 → v12 改了什么（只加字段）
 

@@ -1,11 +1,12 @@
-// 乐器页「八度」那一行（v0.9.31；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：按仓鼠 v12 的记谱习惯 + GS 实测说。created 2026-10-10 by Claude Opus 5.5
+// 乐器页「八度」那一行（文件名跟着 instruments.gen.ts 走，取货换版本不用改这里；edited by Claude Opus 5.5 2026-10-10）（v0.9.31；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：按仓鼠 v12 的记谱习惯 + GS 实测说。created 2026-10-10 by Claude Opus 5.5
 import { describe, it, assert, eq } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL, e?: string): string };
 import { octaveDisclosure, type Concept, type OctaveCheck } from "../src/gm/catalog.ts";
 import { CLEF_LABEL } from "../src/score/clef.ts";
+import { INSTRUMENT_FILES } from "../src/gm/instruments.gen.ts";
 
-const concepts = JSON.parse(fs.readFileSync(new URL("../vendor/instruments/instruments-v12.json", import.meta.url), "utf8")).concepts as Concept[];
-const rows = JSON.parse(fs.readFileSync(new URL("../vendor/instruments/gm-map-v12.json", import.meta.url), "utf8")).rows as { program: number; bank: number; gmName: string; octaveCheck?: OctaveCheck }[];
+const concepts = JSON.parse(fs.readFileSync(new URL(`../${INSTRUMENT_FILES.concepts.file}`, import.meta.url), "utf8")).concepts as Concept[];
+const rows = JSON.parse(fs.readFileSync(new URL(`../${INSTRUMENT_FILES.gmMap.file}`, import.meta.url), "utf8")).rows as { program: number; bank: number; gmName: string; octaveCheck?: OctaveCheck }[];
 const C = (en: string) => concepts.find((c) => c.names.en.toLowerCase() === en)!;
 const oc = (gm: number) => rows.find((r) => r.bank === 0 && r.program === gm - 1 && r.octaveCheck)?.octaveCheck ?? null;
 const lab = (c: string) => CLEF_LABEL[c as keyof typeof CLEF_LABEL] ?? c;

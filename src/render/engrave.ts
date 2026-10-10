@@ -22,9 +22,10 @@ import { dynOverridden } from "../score/perform.ts";
 import { navWhy } from "../score/repeats.ts";
 import { parseArrangement } from "../score/arrange.ts";
 import { densityOf, type Density } from "../score/paper.ts";
-import { type Pitch, diatonicIndex, keyAlter } from "../score/pitch.ts";
+import { type Pitch, diatonicIndex, keyAlter, midiOf } from "../score/pitch.ts";
+import { percOf, type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
-import { GLYPH, W, ENGRAVE, STEM_UP_SE, STEM_DOWN_NW, FLAG_ANCHOR_UP, FLAG_ANCHOR_DOWN, timeSigDigits } from "./smufl.ts";
+import { GLYPH, W, ENGRAVE, STEM_UP_SE, STEM_DOWN_NW, FLAG_ANCHOR_UP, FLAG_ANCHOR_DOWN, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } from "./smufl.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { resolveSongClefs, displayStates, autoOttava, CLEF_SHIFT, baseClef, isFClef, ottavaShift } from "../score/clef.ts";
 
@@ -37,8 +38,10 @@ export type Prim =
   | { t: "icon"; id: string; x: number; y: number; size: number; cls?: string; title?: string };   // 家族图标库的一个图标（页面里内联的 sprite，<use href="#id">）
 
 /** 要画的一个声部（顺序 = 总谱从上到下；隐藏的不在这里）。 */
-export interface PartView { id: string; name: string; abbr?: string; colorIdx?: number; empty?: boolean; first?: boolean; clef?: ClefName; staves?: 2; hidden?: boolean; badges?: string[]; mono?: boolean; xHead?: boolean; ignores?: readonly string[]; lyricMute?: ReadonlySet<number>; noLyrics?: string }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
+export interface PartView { id: string; name: string; abbr?: string; colorIdx?: number; empty?: boolean; first?: boolean; clef?: ClefName; staves?: 2; hidden?: boolean; badges?: string[]; mono?: boolean; xHead?: boolean; perc?: PartPerc; ignores?: readonly string[]; lyricMute?: ReadonlySet<number>; noLyrics?: string }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
 //   empty = 还没人上场（名字画淡色）；first = 歌里第一个声部（速度画在它上面）；clef = 谱号；hidden = 隐藏的：不画谱、缩成一条细行（点它开歌手牌）；badges = 名字下面的角标（静 / 独 / 只看它）
+/** 台上那位是鼓 / 音效（v0.10.27；src/gm/percussion.ts percKindOf）：kit = 整套鼓（写的音高 = 敲哪个鼓，五线鼓谱）；one = 固定敲一件（一线谱）。 */
+export type PartPerc = { kind: "kit" } | { kind: "one"; info: PercInfo };
 export interface EngraveOpts {
   width: number;                         // px，谱面板宽
   sp: number;                            // px，五线谱间距
@@ -587,7 +590,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       // 谱号（v0.9.28）：这张纸开头的（声部写了 = 它，没写 = 自动）+ 每个下标处生效的谱号 / 八度线；大谱表照旧上高音下低音
       const start: ClefName = staves === 2 ? "G" : clefStarts.get(paper.id)?.get(p.id) ?? "G";
       // 自动八度线（v0.9.37；user「自动加」）：在挑好的谱号下，一串很高 / 很低的音画 8va / 15ma / 8vb；手写的说了算；这位关了 / 大谱表 = 不自动。只管画，不存进谱
-      const ds0 = displayStates(tokens, start), ao = staves === 2 || song.parts.find((x) => x.id === p.id)?.autoOttava === false ? null : autoOttava(tokens, ds0);
+      const ds0 = displayStates(tokens, start), ao = staves === 2 || p.perc || song.parts.find((x) => x.id === p.id)?.autoOttava === false ? null : autoOttava(tokens, ds0);
       const ds = ao ? { clef: ds0.clef, ott: ao.ott, auto: ao.auto as boolean[] | null, runs: ao.runs } : { ...ds0, auto: null as boolean[] | null, runs: [] as { from: number; to: number; shift: 1 | 2 | -1 }[] };
       const fFam = staves === 2 || isFClef(start) || tokens.some((t) => t.kind === "clef" && isFClef(t.clef));
       return { p, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, ...u };
@@ -604,6 +607,21 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const shAt = (q: (typeof per)[number], staff: Staff, index: number): number => {
       const fi = foldTo[per.indexOf(q)] ?? -1; if (fi >= 0) { const h = per[fi]; return h.staves === 2 ? 0 : CLEF_SHIFT[h.start]; }
       return q.staves === 2 ? (staff === 2 ? 12 : 0) : CLEF_SHIFT[(index >= 0 ? q.ds.clef[index] : undefined) ?? q.start] + ottavaShift(index >= 0 ? q.ds.ott[index] ?? 0 : 0);
+    };
+    // 鼓谱（v0.10.27；user「这个做好之后鼓谱做一下。团子只剩下鼓和音效了」「单乐器一线谱同意」；设计账 §2）：这一行画成几线的鼓谱。
+    //   一位固定敲一件的（鼓件 / 音效）= 一线谱；整套鼓 = 五线鼓谱；一家合租全是鼓 = 五线鼓谱、每位在自己那一线（鼓组 = 一家合租）。房客跟主人那一行走。
+    const ownMode = (r: number): "one" | "five" | null => {
+      const pk = per[r].p.perc; if (!pk) return null; if (pk.kind === "kit") return "five";
+      const ten = per.filter((_, j) => foldTo[j] === r); return ten.length && ten.every((t) => !!t.p.perc) ? "five" : "one";
+    };
+    const pmode = per.map((_, r) => (foldTo[r] >= 0 ? ownMode(foldTo[r]) : ownMode(r)));
+    /** 这个音在鼓谱上的写法（哪一线 / 符头 / 符干）：整套鼓按写的音高（= GM 鼓键）查；固定敲一件的就是那一件。 */
+    const percAt = (q: (typeof per)[number], p: Pitch): PercInfo | null => { const pk = q.p.perc; return !pk ? null : pk.kind === "kit" ? percOf(128, 0, midiOf(p)) : pk.info; };
+    /** 谱上的位置（级数）：鼓谱 = 一线谱那条线（一线谱的高 / 低音 ±1）/ 五线鼓谱按 MuseScore 的 line（0 = 第五线，往下 +1 走半格）；有音高 = 实际音高 + 谱号 / 八度线。 */
+    const posD = (q: (typeof per)[number], p: Pitch, staff: Staff, index: number): number => {
+      const m = pmode[per.indexOf(q)];
+      if (m && q.p.perc) { const pi = percAt(q, p); return m === "one" ? MID_LINE - (pi && pi.staff === 1 ? pi.line : 0) : TOP_LINE - (pi ? pi.line : 4); }
+      return diatonicIndex(p) + shAt(q, staff, index);
     };
     /** 第 s 行开头的谱号（这一行第一个东西那里生效的）。 */
     const clefAtSys = (q: (typeof per)[number], s: number): ClefName => {
@@ -719,7 +737,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       let top = TOP_LINE, bot = BOTTOM_LINE;
       for (const u of q.units) {
         if (u.kind !== "chunk" || u.system !== s || !u.note || (!anyStaff && (u.staff ?? 1) !== k + 1)) continue;
-        const ds = (u.pitches.length ? u.pitches : u.pitch ? [u.pitch] : []).map((pp) => diatonicIndex(pp) + shAt(q, (k + 1) as Staff, u.index)); if (!ds.length) continue;
+        const ds = (u.pitches.length ? u.pitches : u.pitch ? [u.pitch] : []).map((pp) => posD(q, pp, (k + 1) as Staff, u.index)); if (!ds.length) continue;
         const hi = Math.max(...ds), lo = Math.min(...ds), stem = u.base < WHOLE, up = (hi + lo) / 2 < MID_LINE;
         top = Math.max(top, hi + (stem && up ? 7 : 1)); bot = Math.min(bot, lo - (stem && !up ? 7 : 1));
         if (u.art.some((a) => a === "staccato" || a === "tenuto")) { if (up) bot = Math.min(bot, lo - 3); else top = Math.max(top, hi + 3); }   // 跳音 / 保持在符干另一侧
@@ -818,17 +836,20 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         for (let k = 0; k < q.staves; k++) {
           const row = rowOf(s, r, k), clef: ClefName = q.staves === 2 ? (k ? "F" : "G") : clefAtSys(q, s), base = baseClef(clef);
           if (rows[row]) rows[row].x1 = P(staffEnd[s]);
-          for (let L = 0; L < 5; L++) { const y = yOf(row, BOTTOM_LINE + 2 * L); prims.push({ t: "line", x1: P(MARGIN + ind), y1: y, x2: P(staffEnd[s]), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" }); }
+          const pm = pmode[r];   // 鼓谱：一线谱 = 中间那一条；打击乐谱号；没有调号、不能点谱号换
+          for (let L = 0; L < 5; L++) { if (pm === "one" && L !== 2) continue; const y = yOf(row, BOTTOM_LINE + 2 * L); prims.push({ t: "line", x1: P(MARGIN + ind), y1: y, x2: P(staffEnd[s]), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" }); }
           let hx = MARGIN + ind + 0.6;
-          prims.push({ t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });   // 高音谱号挂 G 线（第 2 线）、低音谱号挂 F 线（第 4 线）；八度谱号的小 8 / 15 在字形里
-          if (q.staves === 1) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });   // 点谱号 = 换谱号（v0.9.28）
+          if (pm) prims.push({ t: "glyph", x: P(hx), y: yOf(row, MID_LINE), ch: PERC_CLEF, cls: "clef perc-clef" });
+          else prims.push({ t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });   // 高音谱号挂 G 线（第 2 线）、低音谱号挂 F 线（第 4 线）；八度谱号的小 8 / 15 在字形里
+          if (q.staves === 1 && !pm) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });   // 点谱号 = 换谱号（v0.9.28）
           hx += clefW(q) + 1.0;
           const keyX0 = hx;
-          drawKeySig(row, hx, f, "keysig", base); hx += Math.abs(f) * 1.05;
+          const fk = pm ? 0 : f;
+          drawKeySig(row, hx, fk, "keysig", base); hx += Math.abs(fk) * 1.05;
           if (s === 0) {
             // 谱头记号的点击区域：谱号 + 调号一块（改调号）、拍号（改拍号）、上方速度（改速度）
             if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });   // 调号（谱号那一块归谱号，v0.9.28）
-            if (f) hx += 0.8;
+            if (fk) hx += 0.8;
             const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
             if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
             if (k === 0 && q.p.id === owner && q.head.idx.tempo !== undefined) drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", q.head.idx.tempo, prevBpm === null || prevBpm === q.head.bpm ? undefined : q.head.bpm > prevBpm ? "up" : "down");
@@ -878,7 +899,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const dynOff = dynOverridden(tokens);   // 被紧跟着的强后即弱（fp）盖掉的力度记号：画灰（纪律：画灰 + 明说；点开小菜单说为什么）
       const clefOf = (staff: Staff, index = -1): "G" | "F" => (q.staves === 2 ? (staff === 2 ? "F" : "G") : baseClef((index >= 0 ? q.ds.clef[index] : undefined) ?? q.start));
       // 谱号 + 八度线（v0.9.28）：同一个实际音高在谱上挪几级（低音谱号 +12、下加 8 +7、8va 线 −7…；高音谱号顶线 F5 = 38）
-      const dIdx = (p: Pitch, staff: Staff, index = -1) => diatonicIndex(p) + shAt(q, staff, index);
+      const dIdx = (p: Pitch, staff: Staff, index = -1) => posD(q, p, staff, index);
       const inSel = (i: number) => focused && !!sel && i >= sel.from && i < sel.to;
       const dynRight = new Map<number, number>();   // 每一行上一个力度字的右边（px）：防叠
       const grooveRight = new Map<number, number[]>();   // 每一行风格记号两条道各自写到哪（px）：防叠
@@ -938,10 +959,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const curIndex = (() => { if (!focused || !writing || !o.justWrote) return -1; for (let i = o.caret - 1; i >= 0; i--) if (isTimed(tokens[i])) return i; return -1; })();
       const nhX = (c: Chunk) => P(c.x + c.accW + 0.35);
       // × 符头：这个声部台上那位固定敲一个键（鼓件 / 音效固定原速）——谱上写的音高照留、只是不拿来出声，画成 × 让人一眼看出来（user 2026-10-08「披露就用x」）
-      const xHead = !!q.p.xHead;
+      const pm = pmode[r], percHere = !!pm && !!q.p.perc;   // 鼓谱：符头按仓鼠的表（每个音各自的）、不画升降号
+      const xHead = !!q.p.xHead && !percHere;
+      /** 鼓谱上这个音的符头字形 + 宽（按时值挑黑 / 二分 / 全）。 */
+      const percHead = (c: Chunk, p: Pitch) => { const pi = percAt(q, p), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : undefined) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal, k = c.base >= WHOLE ? 2 : c.base >= TPQ * 2 ? 1 : 0; return { ch: hd.ch[k], w: hd.w[k] }; };
       // 气声（2026-10-10，user「x同意，做支持」）：这个音画 × 符头（念白 / 说唱的标准写法）——和上面的 × 同一个意思：谱上的音高不拿来出声
       const xOf = (c: Chunk) => xHead || !!c.whisper;
-      const nhW = (c: Chunk) => P(xOf(c) ? (c.base >= WHOLE ? W.noteheadXWhole : c.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack) : c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+      const nhW = (c: Chunk) => P(xOf(c) ? (c.base >= WHOLE ? W.noteheadXWhole : c.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack) : percHere && c.pitch ? percHead(c, c.pitch).w : c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
       const whisperMute = (q.p.ignores ?? []).includes("whisper");   // 台上这位做不到气声：× 照画、画灰
       const clsOf = (c: Chunk) => [c.ghost ? "ghost" : "", c.pad ? "pad-rest" : "", c.index >= 0 && c.index === curIndex ? "cur" : "", c.index >= 0 && inSel(c.index) ? "sel" : ""].filter(Boolean).join(" ") || undefined;
       const partLyrics: LyricHit[] = [];
@@ -951,7 +975,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           if (c.pad) return;   // 补齐的空小节不画休止（v0.10.19；user「remove the ghost mute idea」「dont display them. once you insert a note later in a new section, all the previous mute materialized」）：位置和落点照留，在那儿写 = 前面的空落成真休止
           const g = c.base >= WHOLE ? GLYPH.restWhole : c.base >= TPQ * 2 ? GLYPH.restHalf : c.base >= TPQ ? GLYPH.restQuarter
             : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
-          const ry = c.base >= WHOLE ? yOf(row, 36) : yOf(row, MID_LINE);
+          const ry = c.base >= WHOLE && pm !== "one" ? yOf(row, 36) : yOf(row, MID_LINE);   // 全休止挂在第四线下；一线谱 = 挂在那条线下
           prims.push({ t: "glyph", x: P(c.x + 0.35), y: ry, ch: g, cls: cls ? `rest ${cls}` : "rest" });
           if (c.j === 0 && c.index >= 0 && !c.pad) rests.push({ index: c.index, system: row, x: P(c.x + 0.35), y: yOf(row, MID_LINE), w: P(1.2) });   // 补齐的淡色休止不能点（点它 = 点空白：落到那个小节开头的落点）
           if (c.dotted) prims.push({ t: "glyph", x: P(c.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
@@ -960,7 +984,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const ds = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff, c.index));   // 叠音的符头从高到低；第一个 = 旋律线
         const d = ds[0], y = yOf(row, d), x0 = nhX(c);
         c.accs.forEach((a, k) => {
-          if (a === null) return;
+          if (a === null || percHere) return;
           const ag = a === 1 ? GLYPH.accidentalSharp : a === -1 ? GLYPH.accidentalFlat : a === 2 ? GLYPH.accidentalDoubleSharp : a === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
           const near = c.accs.slice(0, k).some((b, kk) => b !== null && Math.abs(ds[kk] - ds[k]) < 3);   // 挨得近的两个临时记号错开一列
           prims.push({ t: "glyph", x: P(c.x + 0.2) - (near ? P(1.1) : 0) - (c.art.includes("ghost") ? P(0.6) : 0), y: yOf(row, ds[k]), ch: ag, cls });   // 幽灵音：给左括号让位
@@ -974,7 +998,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted; shifted = second;   // 二度：下面那个符头往右错开（连着的二度交错）
           const mute = k > 0 && !!q.p.mono;   // 单声乐器的声部：下面的音灰掉、只唱最上面（user「叠音声部换单声乐器时下方音数据结构上保留，但是变灰」）
           if (c.j === 0 && k > 0 && !folded) chordHeads.push({ index: c.index, system: row, x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), w: nhW(c) });
-          prims.push({ t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: ng, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c.whisper && whisperMute ? "art-mute" : "", focused && o.span && c.index >= o.span.from && c.index < o.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
+          const hch = percHere && !xOf(c) ? percHead(c, (c.pitches.length ? c.pitches : [c.pitch!])[k]).ch : ng;
+          prims.push({ t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: hch, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c.whisper && whisperMute ? "art-mute" : "", focused && o.span && c.index >= o.span.from && c.index < o.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c.art.includes("ghost")) {   // 幽灵音 = 符头两边一对括号（SMuFL noteheadParenthesisLeft / Right；墨迹按 canvas 量的）
             const hx = second ? x0 + nhW(c) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
             prims.push({ t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\u{E0F5}", cls: pc });
@@ -1035,11 +1060,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
               if (u.times && u.times > 2 && k === 0) prims.push({ t: "text", x: P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), y: navY(u.system), s: `×${u.times}`, cls: "nav-mark" + navMute(u.index), size: P(TEMPO_EM * 1.05), anchor: "end" });
             } else if (u.kind === "bar") {
               const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : inSel(u.index) ? "bar sel" : "bar";
-              prims.push({ t: "line", x1: bx, y1: yOf(rr, TOP_LINE), x2: bx, y2: yOf(rr, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: bcls });
-              if (u.style === "double") prims.push({ t: "line", x1: bx + P(0.45), y1: yOf(rr, TOP_LINE), x2: bx + P(0.45), y2: yOf(rr, BOTTOM_LINE), w: P(ENGRAVE.thinBar), cls: bcls });   // 段落线 ‖
-              if (u.style === "final") prims.push({ t: "line", x1: bx + P(0.6), y1: yOf(rr, TOP_LINE), x2: bx + P(0.6), y2: yOf(rr, BOTTOM_LINE), w: P(0.5), cls: bcls });   // 终止线：细 + 粗
+              const [bt, bb] = pmode[r] === "one" ? [MID_LINE + 2, MID_LINE - 2] : [TOP_LINE, BOTTOM_LINE];   // 一线谱：小节线上下各出一格
+              prims.push({ t: "line", x1: bx, y1: yOf(rr, bt), x2: bx, y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
+              if (u.style === "double") prims.push({ t: "line", x1: bx + P(0.45), y1: yOf(rr, bt), x2: bx + P(0.45), y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });   // 段落线 ‖
+              if (u.style === "final") prims.push({ t: "line", x1: bx + P(0.6), y1: yOf(rr, bt), x2: bx + P(0.6), y2: yOf(rr, bb), w: P(0.5), cls: bcls });   // 终止线：细 + 粗
               if (u.warn && k === 0) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn" });
             } else if (u.kind === "key") {
+              if (pmode[r]) { marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) }); continue; }   // 鼓谱没有调号（记号照留、能点）
               const cls = inSel(u.index) ? "keysig sel" : "keysig";
               if (u.fifths === 0) { const pos = u.prev > 0 ? SHARP_POS : FLAT_POS; for (let j = 0; j < Math.abs(u.prev); j++) prims.push({ t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls }); }
               else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef);
@@ -1123,7 +1150,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const tipOf = new Map<Chunk, number>();
       for (const g of stemmed) {
         const row = RW(g[0].c), mid = yOf(row, MID_LINE);
-        const up = g.reduce((a, s) => a + (s.d + s.dLow) / 2, 0) / g.length < MID_LINE;
+        const up = percHere ? pm === "one" || g.some((s) => (s.c.pitches.length ? s.c.pitches : [s.c.pitch!]).some((p) => percAt(q, p)?.stem !== "down"))   // 鼓谱：手打朝上、脚踩朝下（一组里有手打的 = 朝上）；一线谱一律朝上
+          : g.reduce((a, s) => a + (s.d + s.dLow) / 2, 0) / g.length < MID_LINE;
         for (const s of g) upOf.set(s.c, up);
         const sx = (s: Stemmed) => (up ? s.x0 + P(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s.x0 + P(STEM_DOWN_NW[0] + ENGRAVE.stem / 2));
         const sy0 = (s: Stemmed) => (up ? s.yLow - P(STEM_UP_SE[1]) : s.y - P(STEM_DOWN_NW[1]));   // 符干从远端的那个符头起

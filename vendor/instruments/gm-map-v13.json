@@ -1,5 +1,5 @@
 {
- "v": 12,
+ "v": 13,
  "date": "2026-10-10",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ② GM 映射：一行 = 一个 GM 号 → 一个概念。relation = self（本尊：这个号就是这个概念，175 个号每个恰好一条 primary: true；多重认领的另加 primary: false）/ substitute（平替：这个号能拿来顶这个概念，basis 见 defs）。program 从 0 起；鼓件 bank 128、program 0、note = MIDI 键号。musicxmlSound = 这个号自己最贴的 sound id。",
@@ -521,7 +521,71 @@
    "velLayers": "count / ranges = 力度从 0 扫到 127，响的 zone 组合变几次（叠着响的几层算一个组合）。TSF 里力度只做三件事：挑力度层、线性增益、调制包络起音随力度变快；不执行 sf2 的调制器（GU 写的「力度 → 滤波截止」只在 FluidSynth 之类里生效）。mpMfSwitchesLayer = 力度 64 和 80 用到的 zone 不同；centroidShiftPct = 按 pp 33 / mp 64 / mf 80 / ff 112 各渲染 0.5 秒的频谱重心变化。MoonSinger 现在力度记号走 dB、velocity 固定 0.8（= 101），所以眼下 mp / mf 不会换层",
    "ai": "excitation / technique / joint / breath 是 AI 判（源仓 data/演奏_AI.tsv，user 可改）；joint.gapMs 对齐 MoonSinger 现行连断预设（擦弦 20 ms、吹奏 40 ms、其余 0）"
   },
-  "octaveCheckMethod": "铃类音色按 48 / 60 / 72 / 84 / 96 键在 TinySoundFont + GeneralUser GS 2.0.3 里渲染（力度 80，0.6 秒），列 ≥ 最强峰 12% 的谱峰。measured = 最强谱峰离键名几个半音（5 个键的中位数），measuredOctave = 取整到 12 的倍数，lowest = 最低强峰的中位数；perceived = 耳朵听到的音离键名几个半音（AI 按规则判：键名上有 ≥ 20% 的峰 = 基音在场；没有但有 ≈2:3:4 倍的一组峰 = 打击音（管钟），虚拟音高 = 键名；都不是 = null）。MoonSinger 存的音高是实际音高 = MIDI 键，所以 perceived = 0 表示按这个键听到的就是这个音。"
+  "octaveCheckMethod": "铃类音色按 48 / 60 / 72 / 84 / 96 键在 TinySoundFont + GeneralUser GS 2.0.3 里渲染（力度 80，0.6 秒），列 ≥ 最强峰 12% 的谱峰。measured = 最强谱峰离键名几个半音（5 个键的中位数），measuredOctave = 取整到 12 的倍数，lowest = 最低强峰的中位数；perceived = 耳朵听到的音离键名几个半音（AI 按规则判：键名上有 ≥ 20% 的峰 = 基音在场；没有但有 ≈2:3:4 倍的一组峰 = 打击音（管钟），虚拟音高 = 键名；都不是 = null）。MoonSinger 存的音高是实际音高 = MIDI 键，所以 perceived = 0 表示按这个键听到的就是这个音。",
+  "heads": [
+   {
+    "id": "normal",
+    "zh": "普通符头"
+   },
+   {
+    "id": "x",
+    "zh": "叉"
+   },
+   {
+    "id": "circle-x",
+    "zh": "圈叉"
+   },
+   {
+    "id": "slash",
+    "zh": "斜杠"
+   },
+   {
+    "id": "slashed1",
+    "zh": "普通符头加一道斜线（左下到右上）"
+   },
+   {
+    "id": "slashed2",
+    "zh": "普通符头加一道斜线（左上到右下）"
+   },
+   {
+    "id": "diamond",
+    "zh": "菱形"
+   },
+   {
+    "id": "triangle-up",
+    "zh": "正三角"
+   },
+   {
+    "id": "triangle-down",
+    "zh": "倒三角"
+   },
+   {
+    "id": "plus",
+    "zh": "加号"
+   },
+   {
+    "id": "la",
+    "zh": "MuseScore 的 la 符头（方形）"
+   },
+   {
+    "id": "ti",
+    "zh": "MuseScore 的 ti 符头"
+   },
+   {
+    "id": "custom",
+    "zh": "自定义，字形见 smufl（SMuFL 名字）"
+   }
+  ],
+  "percussionMethod": {
+   "source": "MuseScore（upstream/musescore/，GPL-3.0，固定 commit f9daad3）：鼓键 = instruments.xml「Drum Kit (large)」的 23 个键（手打符干朝上、脚踩朝下放第二声部）+ 其余键照 drumset.cpp 的标准 MIDI 鼓组；单件 = 对到的 MuseScore 单件乐器（stafftype + <Drum>）；MuseScore 没定义的不分音高概念（音效、牛吼器、苏尔多、巴西哨…）照它单件打击乐的通例，AI 判",
+   "staff": "staff = 几线谱：5 = 五线鼓谱（架子鼓、筒鼓），1 = 一线谱（单件打击乐、音效）",
+   "line": "line 和 MuseScore 的 <Drum><line> 同一个约定：0 = 最上面那条线，往下每加 1 走半格（线 → 间 → 线），负数在谱表上方（加线）；五线谱最下面一线 = 8，一线谱那条线 = 0（高音写 −1、低音写 +1）",
+   "stem": "stem = 符干朝向；voice = 第几声部（1 = 手、符干朝上；2 = 脚、符干朝下）",
+   "wikipedia": "英文维基 Percussion notation：「Cymbals are usually notated with 'x' note heads, drums with normal elliptical note heads and auxiliary percussion with alternative note heads」「a single line stave may be used for a single non-pitched instrument such as a tambourine」（CC BY-SA；每个键的具体位置原文是图例图片，没有文字，所以以 MuseScore 为准）",
+   "concepts": "概念上：pitched: false = 写成鼓谱 / 一线谱、不分音高；percussion 是这件单独成声部时的写法，mainKey = 主件的鼓键，drums = 各件（note / name / line / head / stem）；电子鼓 = kit: true（整套鼓机，键位照鼓键）",
+   "rows": "gm-map 上：第 10 通道每个鼓键的 percussion = 架子鼓五线谱里的写法；GM 120–128（音效）行上另写 pitched: false + percussion（一线谱），盖过概念；GS 扩展键（27–34、82–87）gm-map 里没有行，在顶层 extraDrumKeys"
+  },
+  "hitSecMethod": "hitSec = 采样开头到「砸下去那一下」多少秒（TinySoundFont + GeneralUser GS 2.0.3 实测：力度 80、5 ms 一帧 RMS 的最响处；鼓键按自己的键，GM 音色按演奏实测的参考键）。只给两种：起音后 0.12 秒内就最响的（一下打完）；慢慢涨到最响、之后 0.1 秒掉 ≥ 20 dB 的（GM 120 反向镲 1.389 秒，右对齐用）。不给：持续的（电话铃、直升机、掌声）、起伏的（海浪、鸟叫、GS 84 Bell Tree）。明细在源仓 data/打点_GUGS.tsv。"
  },
  "rows": [
   {
@@ -9901,7 +9965,8 @@
     "perceived": null,
     "perceivedNote": "不确定：每个键都只有一个主分音，在键名之上约 +17 半音、没有基音也没有 2:3:4 泛音，耳朵多半听它（AI 判，没有原文）",
     "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+17.1 / 60:+17.1 / 72:+17.1 / 84:+17.1 / 96:+17.1；各键最低 48:+17.1 / 60:+17.1 / 72:+17.1 / 84:+17.1 / 96:+17.1"
-   }
+   },
+   "hitSec": 0.002
   },
   {
    "program": 113,
@@ -9979,7 +10044,8 @@
      "ppToFf": 12.2
     },
     "basis": "实测 3 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
-   }
+   },
+   "hitSec": 0.007
   },
   {
    "program": 114,
@@ -10059,7 +10125,8 @@
     "perceived": 0,
     "perceivedNote": "键名（基音在场）",
     "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+24.0 / 60:+24.0 / 72:+12.0 / 84:+12.0 / 96:+12.2；各键最低 48:-0.0 / 60:+0.1 / 72:+0.1 / 84:+0.0 / 96:+0.2"
-   }
+   },
+   "hitSec": 0.072
   },
   {
    "program": 115,
@@ -10170,7 +10237,8 @@
      "ppToFf": 17.4
     },
     "basis": "实测 5 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -5500…+0；音量衰减 +800"
-   }
+   },
+   "hitSec": 0.002
   },
   {
    "program": 116,
@@ -10276,7 +10344,8 @@
      "ppToFf": 22.7
     },
     "basis": "实测 5 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
-   }
+   },
+   "hitSec": 0.027
   },
   {
    "program": 117,
@@ -10404,7 +10473,8 @@
      "ppToFf": 5.5
     },
     "basis": "实测 5 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
-   }
+   },
+   "hitSec": 0.007
   },
   {
    "program": 118,
@@ -10494,7 +10564,8 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
-   }
+   },
+   "hitSec": 0.007
   },
   {
    "program": 119,
@@ -10584,6 +10655,16 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "hitSec": 1.389,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 crash-cymbal（perc1Line）"
    }
   },
   {
@@ -10669,6 +10750,16 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "hitSec": 0.057,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：GM 音效一律当不分音高（user「我用这个代指所有的sfx」）；写法照 MuseScore 单件打击乐的通例（一线谱、线上、普通符头、符干朝上）"
    }
   },
   {
@@ -10765,6 +10856,16 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -3600…+0；音量衰减 +800"
+   },
+   "hitSec": 0.077,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
    }
   },
   {
@@ -10870,6 +10971,15 @@
      "ppToFf": -0.1
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -2800…+0；音量衰减 +800"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
    }
   },
   {
@@ -10980,6 +11090,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
    }
   },
   {
@@ -11092,6 +11211,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
    }
   },
   {
@@ -11182,6 +11310,15 @@
      "ppToFf": 45.3
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
    }
   },
   {
@@ -11307,6 +11444,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
    }
   },
   {
@@ -11402,6 +11548,16 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "hitSec": 0.007,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
    }
   },
   {
@@ -11523,6 +11679,15 @@
      "ppToFf": 149.1
     },
     "basis": "实测 7 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.037,
+   "percussion": {
+    "staff": 5,
+    "line": 8,
+    "head": "normal",
+    "stem": "down",
+    "voice": 2,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -11628,6 +11793,15 @@
      "ppToFf": 0.5
     },
     "basis": "实测 7 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.007,
+   "percussion": {
+    "staff": 5,
+    "line": 7,
+    "head": "normal",
+    "stem": "down",
+    "voice": 2,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -11717,6 +11891,15 @@
      "ppToFf": -5.3
     },
     "basis": "实测 4 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 3,
+    "head": "slashed1",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -11821,6 +12004,15 @@
      "ppToFf": -6.7
     },
     "basis": "实测 4 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.007,
+   "percussion": {
+    "staff": 5,
+    "line": 3,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -11897,6 +12089,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.012,
+   "percussion": {
+    "staff": 5,
+    "line": -2,
+    "head": "plus",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -11985,6 +12186,15 @@
      "ppToFf": 17.5
     },
     "basis": "实测 4 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.007,
+   "percussion": {
+    "staff": 5,
+    "line": 3,
+    "head": "slash",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12071,6 +12281,15 @@
      "ppToFf": 27.8
     },
     "basis": "实测 6 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.017,
+   "percussion": {
+    "staff": 5,
+    "line": 6,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12167,6 +12386,15 @@
      "ppToFf": 0.1
     },
     "basis": "实测 6 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": -1,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12253,6 +12481,15 @@
      "ppToFf": 34.0
     },
     "basis": "实测 6 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.017,
+   "percussion": {
+    "staff": 5,
+    "line": 5,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12336,6 +12573,15 @@
      "ppToFf": 27.0
     },
     "basis": "实测 4 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.012,
+   "percussion": {
+    "staff": 5,
+    "line": 9,
+    "head": "x",
+    "stem": "down",
+    "voice": 2,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12422,6 +12668,15 @@
      "ppToFf": 34.3
     },
     "basis": "实测 6 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.012,
+   "percussion": {
+    "staff": 5,
+    "line": 4,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12501,6 +12756,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 3 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.022,
+   "percussion": {
+    "staff": 5,
+    "line": -1,
+    "head": "circle-x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12587,6 +12851,15 @@
      "ppToFf": 26.0
     },
     "basis": "实测 6 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.007,
+   "percussion": {
+    "staff": 5,
+    "line": 2,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12673,6 +12946,15 @@
      "ppToFf": 23.9
     },
     "basis": "实测 6 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.012,
+   "percussion": {
+    "staff": 5,
+    "line": 1,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12812,6 +13094,15 @@
      "ppToFf": 289.5
     },
     "basis": "实测 13 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.057,
+   "percussion": {
+    "staff": 5,
+    "line": -2,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12898,6 +13189,15 @@
      "ppToFf": 21.9
     },
     "basis": "实测 6 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -12969,6 +13269,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 0,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -13046,6 +13355,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.027,
+   "percussion": {
+    "staff": 5,
+    "line": -3,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -13117,6 +13435,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 0,
+    "head": "diamond",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -13188,6 +13515,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 1,
+    "head": "diamond",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -13254,6 +13590,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.067,
+   "percussion": {
+    "staff": 5,
+    "line": -4,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -13325,6 +13670,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 1,
+    "head": "triangle-down",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -13439,6 +13793,15 @@
      "ppToFf": 238.8
     },
     "basis": "实测 13 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.057,
+   "percussion": {
+    "staff": 5,
+    "line": -3,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -13505,6 +13868,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 0,
+    "head": "ti",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -13576,6 +13948,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 2,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -13647,6 +14028,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": -1,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -13718,6 +14108,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.007,
+   "percussion": {
+    "staff": 5,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -13789,6 +14188,16 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.012,
+   "percussion": {
+    "staff": 5,
+    "line": 1,
+    "head": "custom",
+    "stem": "up",
+    "voice": 1,
+    "smufl": "noteheadXOrnate",
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -13860,6 +14269,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.012,
+   "percussion": {
+    "staff": 5,
+    "line": 1,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -13931,6 +14349,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.017,
+   "percussion": {
+    "staff": 5,
+    "line": 2,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -13998,6 +14425,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.012,
+   "percussion": {
+    "staff": 5,
+    "line": 5,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14065,6 +14501,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 7,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14144,6 +14589,15 @@
      "ppToFf": 61.8
     },
     "basis": "实测 3 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": -2,
+    "head": "triangle-down",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14223,6 +14677,15 @@
      "ppToFf": 39.9
     },
     "basis": "实测 3 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.007,
+   "percussion": {
+    "staff": 5,
+    "line": -1,
+    "head": "triangle-down",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14294,6 +14757,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.032,
+   "percussion": {
+    "staff": 5,
+    "line": 2,
+    "head": "diamond",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14360,6 +14832,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.032,
+   "percussion": {
+    "staff": 5,
+    "line": 4,
+    "head": "diamond",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14426,6 +14907,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.072,
+   "percussion": {
+    "staff": 5,
+    "line": -3,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14492,6 +14982,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.022,
+   "percussion": {
+    "staff": 5,
+    "line": -3,
+    "head": "ti",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14558,6 +15057,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.012,
+   "percussion": {
+    "staff": 5,
+    "line": -1,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14624,6 +15132,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.222,
+   "percussion": {
+    "staff": 5,
+    "line": -1,
+    "head": "slashed1",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14696,6 +15213,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 0,
+    "head": "la",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14778,6 +15304,15 @@
      "ppToFf": 7.1
     },
     "basis": "实测 5 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 5,
+    "head": "la",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14860,6 +15395,15 @@
      "ppToFf": 8.1
     },
     "basis": "实测 5 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 7,
+    "head": "la",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14926,6 +15470,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.062,
+   "percussion": {
+    "staff": 5,
+    "line": 8,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -14992,6 +15545,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.042,
+   "percussion": {
+    "staff": 5,
+    "line": 8,
+    "head": "slashed2",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -15058,6 +15620,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 0,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -15129,6 +15700,15 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.022,
+   "percussion": {
+    "staff": 5,
+    "line": 0,
+    "head": "triangle-up",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -15263,7 +15843,8 @@
      "ppToFf": 22.7
     },
     "basis": "实测 5 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
-   }
+   },
+   "hitSec": 0.027
   },
   {
    "program": 75,
@@ -15388,7 +15969,8 @@
     "perceived": null,
     "perceivedNote": "不确定：每个键都只有一个主分音，在键名之上约 +17 半音、没有基音也没有 2:3:4 泛音，耳朵多半听它（AI 判，没有原文）",
     "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+17.1 / 60:+17.1 / 72:+17.1 / 84:+17.1 / 96:+17.1；各键最低 48:+17.1 / 60:+17.1 / 72:+17.1 / 84:+17.1 / 96:+17.1"
-   }
+   },
+   "hitSec": 0.002
   },
   {
    "program": 15,
@@ -15910,6 +16492,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.002,
+   "percussion": {
+    "staff": 5,
+    "line": 0,
+    "head": "la",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
    }
   },
   {
@@ -15966,6 +16557,15 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4800…+0；调制包络→滤波 +8000；音量衰减 +100…+900；音量衰减段 -3986…+3369；音量起音 -22000；音量释放 +3369"
+   },
+   "hitSec": 0.027,
+   "percussion": {
+    "staff": 5,
+    "line": -3,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml「Drum Kit (large)」（drumset）"
    }
   },
   {
@@ -17267,7 +17867,8 @@
      "ppToFf": 17.4
     },
     "basis": "实测 5 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -5500…+0；音量衰减 +800"
-   }
+   },
+   "hitSec": 0.002
   },
   {
    "program": 58,
@@ -17918,7 +18519,8 @@
     "perceived": 0,
     "perceivedNote": "键名（基音在场）",
     "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+24.0 / 60:+24.0 / 72:+12.0 / 84:+12.0 / 96:+12.2；各键最低 48:-0.0 / 60:+0.1 / 72:+0.1 / 84:+0.0 / 96:+0.2"
-   }
+   },
+   "hitSec": 0.072
   },
   {
    "program": 113,
@@ -17981,7 +18583,8 @@
      "ppToFf": 12.2
     },
     "basis": "实测 3 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
-   }
+   },
+   "hitSec": 0.007
   },
   {
    "program": 115,
@@ -18052,7 +18655,8 @@
      "ppToFf": 17.4
     },
     "basis": "实测 5 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -5500…+0；音量衰减 +800"
-   }
+   },
+   "hitSec": 0.002
   },
   {
    "program": 24,
@@ -18431,6 +19035,233 @@
     },
     "basis": "实测 4 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
    }
+  }
+ ],
+ "extraDrumKeys": [
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 27,
+   "name": "Laser (High Q)",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 8,
+    "head": "slash",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.012
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 28,
+   "name": "Slap",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 4,
+    "head": "custom",
+    "stem": "up",
+    "voice": 1,
+    "smufl": "noteheadSlashX",
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.012
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 29,
+   "name": "Scratch Push",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 6,
+    "head": "slash",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.092
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 30,
+   "name": "Scratch Pull",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 6,
+    "head": "slash",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.077
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 31,
+   "name": "Sticks",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": -1,
+    "head": "plus",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.007
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 32,
+   "name": "Square Click",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 10,
+    "head": "plus",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.002
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 33,
+   "name": "Metronome Click",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 10,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.002
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 34,
+   "name": "Metronome Bell",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 10,
+    "head": "triangle-up",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.002
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 82,
+   "name": "Shaker",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 5,
+    "head": "diamond",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.027
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 83,
+   "name": "Jingle Bell",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 3,
+    "head": "triangle-down",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.072
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 84,
+   "name": "Belltree",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 2,
+    "head": "ti",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   }
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 85,
+   "name": "Castanets",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 2,
+    "head": "la",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.002
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 86,
+   "name": "Mute Surdo",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 4,
+    "head": "custom",
+    "stem": "up",
+    "voice": 1,
+    "smufl": "noteheadSlashX",
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.007
+  },
+  {
+   "bank": 128,
+   "program": 0,
+   "note": 87,
+   "name": "Open Surdo",
+   "gs": true,
+   "percussion": {
+    "staff": 5,
+    "line": 4,
+    "head": "slash",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore drumset.cpp 的标准 MIDI 鼓组（initDrumset）"
+   },
+   "hitSec": 0.027
   }
  ]
 }

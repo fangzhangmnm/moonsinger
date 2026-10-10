@@ -36,6 +36,7 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
+import { percKindOf, percOf } from "../gm/percussion.ts";
 import { moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
@@ -830,7 +831,14 @@ function performerInfo(part: PartDef): PerformerInfo {
   const role = part.role, eng = (activeInstrument(doc.extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], g = activeGm(doc.extras, role), cat = grooveCategory(eng, g);
   return { engine: eng, spec: activePerfSpec(doc.extras, role), velocity: activeVelocity(doc.extras, role), transpose: activeTranspose(doc.extras, role),
     gm: g ? { sha: g.subsetSha256, presetIndex: engine.presetIndex(g.subsetSha256, g.bank, g.program), note: g.note, sfx: g.sfx } : null,
-    chunk: activeSingChunk(doc.extras, role), follow: (s) => followOf(s, cat), chain: activeChain(doc.extras, role) };
+    chunk: activeSingChunk(doc.extras, role), follow: (s) => followOf(s, cat), chain: activeChain(doc.extras, role), ...hitOf(eng === "soundfont" ? g : null) };
+}
+/** 着力点（v0.10.27）：台上是鼓 / 固定敲一件的音效 = 按仓鼠实测的 hitSec 提前放；有音高的乐器不挪。 */
+function hitOf(g: GmCandidate | null): { hitSec?: (key: number) => number } {
+  const pk = g ? percKindOf(g) : null;
+  if (!pk) return {};
+  if (pk.kind === "kit") return { hitSec: (key) => percOf(128, 0, key)?.hitSec ?? 0 };
+  const h = pk.info.hitSec ?? 0; return h ? { hitSec: () => h } : {};
 }
 /** 这些声部要用的 SoundFont 子集进录音房（弱引用去找整包 → 切子集；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 async function prepareBanks(parts: readonly PartDef[]): Promise<string[]> {
@@ -1981,7 +1989,7 @@ function partViews(): PartView[] {
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
     const noLyrics = eng === "soundfont" || eng === "vowel-sampler" ? `${labels[k]}${eng === "vowel-sampler" ? "（元音版）只哼" : "不唱歌词"}：空着的歌词位不开框；已经写了的字点开能改、能删` : "";
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: eng === "unknown", first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: eng === "unknown", first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ...((g) => { const pk = g ? percKindOf(g) : null; return pk ? { perc: pk } : {}; })(eng === "soundfont" ? activeGm(doc.extras, p.role) : null), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -2255,18 +2263,18 @@ function openTransposeMenu(paperId: string, at: { x: number; y: number }): void 
       `<div class="ctx-row"><span class="ctx-k">移调</span>${chip("tr:1", "↑ 半音")}${chip("tr:-1", "↓ 半音")}${chip("tr:2", "↑ 全音")}${chip("tr:-2", "↓ 全音")}</div>` +
       `<div class="ctx-row"><span class="ctx-k">八度</span>${chip("tr:12", "↑ 八度")}${chip("tr:-12", "↓ 八度")}</div>` +
       `<div class="ctx-hint ctx-what">转调到（现在 1=${KEY_LABEL[now] ?? now}）：音按两个主音之间的音程挪</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k) => chip(`mod:${k}`, `1=${KEY_LABEL[k]}`, k === now)).join("")}</div>` +
-      `<div class="ctx-hint">${whole ? "整首" : "这张纸上"}所有声部一起挪，调号跟着挪（取升降号少的写法；挪八度调号不变）。歌词、记号、谱号不动；谱上画 × 的声部（固定敲一个键）不动；pad 的「1=」不跟。</div>`;
+      `<div class="ctx-hint">${whole ? "整首" : "这张纸上"}所有声部一起挪，调号跟着挪（取升降号少的写法；挪八度调号不变）。歌词、记号、谱号不动；鼓 / 固定敲一个键的声部（写的音高 = 敲哪个）不动；pad 的「1=」不跟。</div>`;
   };
   ctxMenu("transpose-menu", html(), at, (v) => {
     if (v.startsWith("scope:")) whole = v === "scope:song";
     else {
-      const skip = new Set(partViews().filter((x) => x.xHead).map((x) => x.id));
+      const skip = new Set(partViews().filter((x) => x.xHead || x.perc).map((x) => x.id));   // 固定敲一个键 / 鼓（整套鼓：写的音高 = 敲哪个鼓，挪了就换了鼓，v0.10.27）不挪
       const nx = v.startsWith("tr:") ? transposePapers(st, ids(), { semis: Number(v.slice(3)) }, skip) : v.startsWith("mod:") ? transposePapers(st, ids(), { toFifths: Number(v.slice(4)) }, skip) : st;
       if (nx === st) info(v.startsWith("mod:") ? "已经是这个调" : "没有可以挪的音");
       else {
         update(nx);
         const held = ids().flatMap((id) => Object.keys(st.song.papers.find((p) => p.id === id)?.tracks ?? {})).filter((pid) => skip.has(pid));
-        if (held.length && !told) { told = true; const labels = partLabels(st.song, doc.extras); info(`${[...new Set(held)].map((pid) => labels[st.song.parts.findIndex((p) => p.id === pid)]).join("、")} 固定敲一个键（谱上画 ×），没挪`); }
+        if (held.length && !told) { told = true; const labels = partLabels(st.song, doc.extras); info(`${[...new Set(held)].map((pid) => labels[st.song.parts.findIndex((p) => p.id === pid)]).join("、")} 是鼓 / 固定敲一个键（写的音高 = 敲哪个），没挪`); }
       }
     }
     const box = document.querySelector<HTMLElement>(".ctx-menu.transpose-menu"); if (box) box.innerHTML = html();

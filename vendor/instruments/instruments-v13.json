@@ -1,5 +1,5 @@
 {
- "v": 12,
+ "v": 13,
  "date": "2026-10-10",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效）。id = Wikidata QID（没有用 x: 本地 id）；ids 束里 gm 只放本尊，平替在 substitutes[]（按 basis 强弱 + 分类号同到的位数排）。year = 这个概念的声音第一次能被听见；lineageYear = 算上原文点名的前身。fundamentalRank 一律 null，归 user。AI 判的字段：musicxml、styles、技法号挂母乐器、平替 family / 自动、部分 hs 和中日名。",
@@ -500,6 +500,69 @@
    "sounds": "sounds = 实际音高 − 按基础谱号（G / F / C，不看 8va / 8vb 记号）读出的谱面音高，半音：吉他 −12（谱号 G8vb）、低音提琴 −12、短笛 +12、钢片琴 +12、钟琴 +24、B♭ 单簧管 −2、F 调圆号 −7",
    "octave": "octave = sounds 里整八度的部分（向 0 取整到 12 的倍数）：次中音萨克斯 −14 → −12、中音萨克斯 −9 → 0",
    "abbr": "abbr.en = MuseScore 的 shortName（出版总谱惯例）；zh / ja 这一版不给：MuseScore 的中日文翻译里简写大多照搬拉丁写法、写成汉字的只有二十来条且有错，没找到中文总谱通行简称的出处——显示时退回 en"
+  },
+  "heads": [
+   {
+    "id": "normal",
+    "zh": "普通符头"
+   },
+   {
+    "id": "x",
+    "zh": "叉"
+   },
+   {
+    "id": "circle-x",
+    "zh": "圈叉"
+   },
+   {
+    "id": "slash",
+    "zh": "斜杠"
+   },
+   {
+    "id": "slashed1",
+    "zh": "普通符头加一道斜线（左下到右上）"
+   },
+   {
+    "id": "slashed2",
+    "zh": "普通符头加一道斜线（左上到右下）"
+   },
+   {
+    "id": "diamond",
+    "zh": "菱形"
+   },
+   {
+    "id": "triangle-up",
+    "zh": "正三角"
+   },
+   {
+    "id": "triangle-down",
+    "zh": "倒三角"
+   },
+   {
+    "id": "plus",
+    "zh": "加号"
+   },
+   {
+    "id": "la",
+    "zh": "MuseScore 的 la 符头（方形）"
+   },
+   {
+    "id": "ti",
+    "zh": "MuseScore 的 ti 符头"
+   },
+   {
+    "id": "custom",
+    "zh": "自定义，字形见 smufl（SMuFL 名字）"
+   }
+  ],
+  "percussionMethod": {
+   "source": "MuseScore（upstream/musescore/，GPL-3.0，固定 commit f9daad3）：鼓键 = instruments.xml「Drum Kit (large)」的 23 个键（手打符干朝上、脚踩朝下放第二声部）+ 其余键照 drumset.cpp 的标准 MIDI 鼓组；单件 = 对到的 MuseScore 单件乐器（stafftype + <Drum>）；MuseScore 没定义的不分音高概念（音效、牛吼器、苏尔多、巴西哨…）照它单件打击乐的通例，AI 判",
+   "staff": "staff = 几线谱：5 = 五线鼓谱（架子鼓、筒鼓），1 = 一线谱（单件打击乐、音效）",
+   "line": "line 和 MuseScore 的 <Drum><line> 同一个约定：0 = 最上面那条线，往下每加 1 走半格（线 → 间 → 线），负数在谱表上方（加线）；五线谱最下面一线 = 8，一线谱那条线 = 0（高音写 −1、低音写 +1）",
+   "stem": "stem = 符干朝向；voice = 第几声部（1 = 手、符干朝上；2 = 脚、符干朝下）",
+   "wikipedia": "英文维基 Percussion notation：「Cymbals are usually notated with 'x' note heads, drums with normal elliptical note heads and auxiliary percussion with alternative note heads」「a single line stave may be used for a single non-pitched instrument such as a tambourine」（CC BY-SA；每个键的具体位置原文是图例图片，没有文字，所以以 MuseScore 为准）",
+   "concepts": "概念上：pitched: false = 写成鼓谱 / 一线谱、不分音高；percussion 是这件单独成声部时的写法，mainKey = 主件的鼓键，drums = 各件（note / name / line / head / stem）；电子鼓 = kit: true（整套鼓机，键位照鼓键）",
+   "rows": "gm-map 上：第 10 通道每个鼓键的 percussion = 架子鼓五线谱里的写法；GM 120–128（音效）行上另写 pitched: false + percussion（一线谱），盖过概念；GS 扩展键（27–34、82–87）gm-map 里没有行，在顶层 extraDrumKeys"
   }
  },
  "concepts": [
@@ -6804,6 +6867,25 @@
    "abbr": {
     "en": "Met. Wn Ch.",
     "basis": "MuseScore instruments.xml 的 metal-wind-chimes shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 metal-wind-chimes（perc1Line）",
+    "mainKey": 84,
+    "drums": [
+     {
+      "note": 84,
+      "name": "Metal Wind Chimes",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -6890,6 +6972,32 @@
    "abbr": {
     "en": "Agogô",
     "basis": "MuseScore instruments.xml 的 agogo-bells shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": -1,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 agogo-bells（perc1Line）",
+    "mainKey": 67,
+    "drums": [
+     {
+      "note": 67,
+      "name": "High Agogô",
+      "line": -1,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 68,
+      "name": "Low Agogô",
+      "line": 1,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -7032,6 +7140,32 @@
    "abbr": {
     "en": "Wd. Bl.",
     "basis": "MuseScore instruments.xml 的 wood-blocks shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": -1,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 wood-blocks（perc1Line）",
+    "mainKey": 76,
+    "drums": [
+     {
+      "note": 76,
+      "name": "High Wood Block",
+      "line": -1,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 77,
+      "name": "Low Wood Block",
+      "line": 1,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -7105,6 +7239,32 @@
    "abbr": {
     "en": "Taiko",
     "basis": "MuseScore instruments.xml 的 taiko shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 taiko（perc1Line）",
+    "mainKey": 87,
+    "drums": [
+     {
+      "note": 86,
+      "name": "Taiko Mute",
+      "line": 0,
+      "head": "x",
+      "stem": "up"
+     },
+     {
+      "note": 87,
+      "name": "Taiko",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -7198,6 +7358,60 @@
    "abbr": {
     "en": "Toms",
     "basis": "MuseScore instruments.xml 的 tom-toms shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 5,
+    "line": 5,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 tom-toms（perc5Line）",
+    "mainKey": 45,
+    "drums": [
+     {
+      "note": 41,
+      "name": "Tom 6",
+      "line": 9,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 43,
+      "name": "Tom 5",
+      "line": 7,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 45,
+      "name": "Tom 4",
+      "line": 5,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 47,
+      "name": "Tom 3",
+      "line": 3,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 48,
+      "name": "Tom 2",
+      "line": 1,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 50,
+      "name": "Tom 1",
+      "line": -1,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -7267,7 +7481,13 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 5,
+    "basis": "AI 判：电子鼓（整套鼓机 = 五线鼓谱，键位照鼓组）",
+    "kit": true
+   }
   },
   {
    "id": "Q7649196",
@@ -7330,6 +7550,25 @@
    "abbr": {
     "en": "Sus. Cym.",
     "basis": "MuseScore instruments.xml 的 crash-cymbal shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 crash-cymbal（perc1Line）",
+    "mainKey": 57,
+    "drums": [
+     {
+      "note": 57,
+      "name": "Suspended Cymbal",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -7479,7 +7718,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q93352",
@@ -7550,7 +7798,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q1126556",
@@ -7629,7 +7886,16 @@
     "hz": 2236.0,
     "basis": "原文换算（Bird vocalization）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q690856",
@@ -7697,7 +7963,16 @@
     "hz": 2147.9,
     "basis": "采样实测 + 推算"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q34486",
@@ -7762,7 +8037,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q814696",
@@ -7852,7 +8136,16 @@
     "license": "Apache-2.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q2992372",
@@ -7909,7 +8202,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q211028",
@@ -8018,6 +8320,25 @@
    "abbr": {
     "en": "BD",
     "basis": "MuseScore instruments.xml 的 bass-drum shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 bass-drum（perc1Line）",
+    "mainKey": 36,
+    "drums": [
+     {
+      "note": 36,
+      "name": "Concert Bass Drum",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8137,6 +8458,32 @@
    "abbr": {
     "en": "SD",
     "basis": "MuseScore instruments.xml 的 snare-drum shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 snare-drum（perc1Line）",
+    "mainKey": 38,
+    "drums": [
+     {
+      "note": 37,
+      "name": "Side Stick",
+      "line": 0,
+      "head": "x",
+      "stem": "up"
+     },
+     {
+      "note": 38,
+      "name": "Snare",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8208,6 +8555,25 @@
    "abbr": {
     "en": "Hd. Clp.",
     "basis": "MuseScore instruments.xml 的 hand-clap shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 hand-clap（perc1Line）",
+    "mainKey": 39,
+    "drums": [
+     {
+      "note": 39,
+      "name": "Hand Clap",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8281,6 +8647,60 @@
    "abbr": {
     "en": "Toms",
     "basis": "MuseScore instruments.xml 的 tom-toms shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 5,
+    "line": 9,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 tom-toms（perc5Line）",
+    "mainKey": 41,
+    "drums": [
+     {
+      "note": 41,
+      "name": "Tom 6",
+      "line": 9,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 43,
+      "name": "Tom 5",
+      "line": 7,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 45,
+      "name": "Tom 4",
+      "line": 5,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 47,
+      "name": "Tom 3",
+      "line": 3,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 48,
+      "name": "Tom 2",
+      "line": 1,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 50,
+      "name": "Tom 1",
+      "line": -1,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8366,6 +8786,39 @@
    "abbr": {
     "en": "Hi-hat",
     "basis": "MuseScore instruments.xml 的 hi-hat shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "x",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 hi-hat（perc1Line）",
+    "mainKey": 42,
+    "drums": [
+     {
+      "note": 42,
+      "name": "Closed Hi-Hat",
+      "line": 0,
+      "head": "x",
+      "stem": "up"
+     },
+     {
+      "note": 44,
+      "name": "Pedal Hi-Hat",
+      "line": 9,
+      "head": "x",
+      "stem": "down"
+     },
+     {
+      "note": 46,
+      "name": "Open Hi-Hat",
+      "line": 0,
+      "head": "x",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8455,6 +8908,25 @@
    "abbr": {
     "en": "Sus. Cym.",
     "basis": "MuseScore instruments.xml 的 crash-cymbal shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 crash-cymbal（perc1Line）",
+    "mainKey": 57,
+    "drums": [
+     {
+      "note": 57,
+      "name": "Suspended Cymbal",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8529,6 +9001,32 @@
    "abbr": {
     "en": "R. Cym.",
     "basis": "MuseScore instruments.xml 的 ride-cymbal shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 ride-cymbal（perc1Line）",
+    "mainKey": 51,
+    "drums": [
+     {
+      "note": 51,
+      "name": "Ride Cymbal",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 53,
+      "name": "Ride Bell",
+      "line": 0,
+      "head": "diamond",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8599,6 +9097,25 @@
    "abbr": {
     "en": "Ch. Cym.",
     "basis": "MuseScore instruments.xml 的 china-cymbal shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 china-cymbal（perc1Line）",
+    "mainKey": 52,
+    "drums": [
+     {
+      "note": 52,
+      "name": "China Cymbal",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8659,6 +9176,25 @@
    "abbr": {
     "en": "Tamb.",
     "basis": "MuseScore instruments.xml 的 tambourine shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 tambourine（perc1Line）",
+    "mainKey": 54,
+    "drums": [
+     {
+      "note": 54,
+      "name": "Tambourine",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8718,6 +9254,25 @@
    "abbr": {
     "en": "Sp. Cym.",
     "basis": "MuseScore instruments.xml 的 splash-cymbal shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 splash-cymbal（perc1Line）",
+    "mainKey": 55,
+    "drums": [
+     {
+      "note": 55,
+      "name": "Splash Cymbal",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8794,6 +9349,25 @@
    "abbr": {
     "en": "Cwb.",
     "basis": "MuseScore instruments.xml 的 cowbell shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 cowbell（perc1Line）",
+    "mainKey": 56,
+    "drums": [
+     {
+      "note": 56,
+      "name": "Cowbell",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8853,6 +9427,25 @@
    "abbr": {
     "en": "Vibslp.",
     "basis": "MuseScore instruments.xml 的 vibraslap shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 vibraslap（perc1Line）",
+    "mainKey": 58,
+    "drums": [
+     {
+      "note": 58,
+      "name": "Vibraslap",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -8935,6 +9528,32 @@
    "abbr": {
     "en": "Bon.",
     "basis": "MuseScore instruments.xml 的 bongos shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": -1,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 bongos（perc1Line）",
+    "mainKey": 60,
+    "drums": [
+     {
+      "note": 60,
+      "name": "High Bongo",
+      "line": -1,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 61,
+      "name": "Low Bongo",
+      "line": 1,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -9022,6 +9641,39 @@
    "abbr": {
     "en": "Con.",
     "basis": "MuseScore instruments.xml 的 congas shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": -1,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 congas（perc1Line）",
+    "mainKey": 63,
+    "drums": [
+     {
+      "note": 62,
+      "name": "Mute High Conga",
+      "line": -1,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 63,
+      "name": "High Conga",
+      "line": -1,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 64,
+      "name": "Low Conga",
+      "line": 1,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -9090,6 +9742,32 @@
    "abbr": {
     "en": "Timb.",
     "basis": "MuseScore instruments.xml 的 timbales shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": -1,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 timbales（perc1Line）",
+    "mainKey": 65,
+    "drums": [
+     {
+      "note": 65,
+      "name": "High Timbale",
+      "line": -1,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 66,
+      "name": "Low Timbale",
+      "line": 1,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -9160,6 +9838,25 @@
    "abbr": {
     "en": "Cabs.",
     "basis": "MuseScore instruments.xml 的 cabasa shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 cabasa（perc1Line）",
+    "mainKey": 69,
+    "drums": [
+     {
+      "note": 69,
+      "name": "Cabasa",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -9221,6 +9918,25 @@
    "abbr": {
     "en": "Mrcs.",
     "basis": "MuseScore instruments.xml 的 maracas shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 maracas（perc1Line）",
+    "mainKey": 70,
+    "drums": [
+     {
+      "note": 70,
+      "name": "Maracas",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -9279,7 +9995,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q2237198",
@@ -9339,6 +10064,32 @@
    "abbr": {
     "en": "Gro.",
     "basis": "MuseScore instruments.xml 的 guiro shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 guiro（perc1Line）",
+    "mainKey": 73,
+    "drums": [
+     {
+      "note": 73,
+      "name": "Short Güiro",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     },
+     {
+      "note": 74,
+      "name": "Long Güiro",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -9400,6 +10151,25 @@
    "abbr": {
     "en": "Clv.",
     "basis": "MuseScore instruments.xml 的 claves shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 claves（perc1Line）",
+    "mainKey": 75,
+    "drums": [
+     {
+      "note": 75,
+      "name": "Claves",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -9472,6 +10242,32 @@
    "abbr": {
     "en": "Cu.",
     "basis": "MuseScore instruments.xml 的 cuica shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 cuica（perc1Line）",
+    "mainKey": 79,
+    "drums": [
+     {
+      "note": 78,
+      "name": "Mute Cuica",
+      "line": 0,
+      "head": "x",
+      "stem": "up"
+     },
+     {
+      "note": 79,
+      "name": "Open Cuica",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -9541,6 +10337,32 @@
    "abbr": {
     "en": "Trgl.",
     "basis": "MuseScore instruments.xml 的 triangle shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 triangle（perc1Line）",
+    "mainKey": 81,
+    "drums": [
+     {
+      "note": 80,
+      "name": "Mute Triangle",
+      "line": 0,
+      "head": "x",
+      "stem": "up"
+     },
+     {
+      "note": 81,
+      "name": "Open Triangle",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -11422,6 +12244,25 @@
    "abbr": {
     "en": "Dabo",
     "basis": "MuseScore instruments.xml 的 dabo shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 dabo（perc1Line）",
+    "mainKey": 52,
+    "drums": [
+     {
+      "note": 52,
+      "name": "Dabo",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -11577,7 +12418,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q905244",
@@ -11727,6 +12577,25 @@
    "abbr": {
     "en": "Met. Wn Ch.",
     "basis": "MuseScore instruments.xml 的 metal-wind-chimes shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 metal-wind-chimes（perc1Line）",
+    "mainKey": 84,
+    "drums": [
+     {
+      "note": 84,
+      "name": "Metal Wind Chimes",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -11888,6 +12757,25 @@
    "abbr": {
     "en": "Slt. Dr.",
     "basis": "MuseScore instruments.xml 的 slit-drum shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 slit-drum（perc1Line）",
+    "mainKey": 77,
+    "drums": [
+     {
+      "note": 77,
+      "name": "Slit Drum",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -12076,6 +12964,25 @@
    "abbr": {
     "en": "Tam",
     "basis": "MuseScore instruments.xml 的 tam-tam shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 tam-tam（perc1Line）",
+    "mainKey": 52,
+    "drums": [
+     {
+      "note": 52,
+      "name": "Tam-tam",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   },
   {
@@ -12292,7 +13199,16 @@
     }
    ],
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q1630744",
@@ -12411,7 +13327,16 @@
     "hz": 500.0,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q3307942",
@@ -12472,7 +13397,16 @@
     "hz": 600.0,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q8094",
@@ -12542,7 +13476,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q7925",
@@ -12617,7 +13560,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q83301",
@@ -12677,7 +13629,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q47521",
@@ -12745,7 +13706,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q3196",
@@ -12801,7 +13771,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q3776776",
@@ -12866,7 +13845,16 @@
     "hz": 4500.0,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q1947892",
@@ -12926,7 +13914,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q53636",
@@ -12977,7 +13974,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q495529",
@@ -13136,7 +14142,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q81103",
@@ -13191,7 +14206,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q1420",
@@ -13262,7 +14286,16 @@
     "hz": 83.0,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q814068",
@@ -13330,7 +14363,16 @@
     "hz": 1000.0,
     "basis": "原文（Greenwich Time Signal）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q12760",
@@ -13386,7 +14428,16 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+   }
   },
   {
    "id": "Q207691",
@@ -13514,6 +14565,25 @@
    "abbr": {
     "en": "Clv.",
     "basis": "MuseScore instruments.xml 的 claves shortName"
+   },
+   "pitched": false,
+   "percussion": {
+    "staff": 1,
+    "line": 0,
+    "head": "normal",
+    "stem": "up",
+    "voice": 1,
+    "basis": "MuseScore instruments.xml 的 claves（perc1Line）",
+    "mainKey": 75,
+    "drums": [
+     {
+      "note": 75,
+      "name": "Claves",
+      "line": 0,
+      "head": "normal",
+      "stem": "up"
+     }
+    ]
    }
   }
  ]

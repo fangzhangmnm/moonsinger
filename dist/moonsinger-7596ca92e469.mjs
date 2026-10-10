@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.26-2026-10-10";
+var APP_VERSION = "v0.10.27-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6979,6 +6979,21 @@ function lightMarks(spec) {
   return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, arpeggioSec: spec.arpeggioSec ?? M.arpeggioSec, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
 }
 
+// src/gm/percussion.gen.ts
+var PERC = { "0:119": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 1.389 }, "0:120": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.057 }, "0:121": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.077 }, "0:122": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:123": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:124": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:125": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:126": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:127": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:35": { "staff": 5, "line": 8, "head": "normal", "stem": "down", "hitSec": 0.037 }, "128:0:36": { "staff": 5, "line": 7, "head": "normal", "stem": "down", "hitSec": 7e-3 }, "128:0:37": { "staff": 5, "line": 3, "head": "slashed1", "stem": "up", "hitSec": 2e-3 }, "128:0:38": { "staff": 5, "line": 3, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:39": { "staff": 5, "line": -2, "head": "plus", "stem": "up", "hitSec": 0.012 }, "128:0:40": { "staff": 5, "line": 3, "head": "slash", "stem": "up", "hitSec": 7e-3 }, "128:0:41": { "staff": 5, "line": 6, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:42": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:43": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:44": { "staff": 5, "line": 9, "head": "x", "stem": "down", "hitSec": 0.012 }, "128:0:45": { "staff": 5, "line": 4, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:46": { "staff": 5, "line": -1, "head": "circle-x", "stem": "up", "hitSec": 0.022 }, "128:0:47": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:48": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:49": { "staff": 5, "line": -2, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:50": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:51": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:52": { "staff": 5, "line": -3, "head": "normal", "stem": "up", "hitSec": 0.027 }, "128:0:53": { "staff": 5, "line": 0, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:54": { "staff": 5, "line": 1, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:55": { "staff": 5, "line": -4, "head": "x", "stem": "up", "hitSec": 0.067 }, "128:0:56": { "staff": 5, "line": 1, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:57": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:58": { "staff": 5, "line": 0, "head": "ti", "stem": "up", "hitSec": 2e-3 }, "128:0:59": { "staff": 5, "line": 2, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:60": { "staff": 5, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:61": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:62": { "staff": 5, "line": 1, "head": "custom", "stem": "up", "smufl": "noteheadXOrnate", "hitSec": 0.012 }, "128:0:63": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:64": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:65": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:66": { "staff": 5, "line": 7, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:67": { "staff": 5, "line": -2, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:68": { "staff": 5, "line": -1, "head": "triangle-down", "stem": "up", "hitSec": 7e-3 }, "128:0:69": { "staff": 5, "line": 2, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:70": { "staff": 5, "line": 4, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:71": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.072 }, "128:0:72": { "staff": 5, "line": -3, "head": "ti", "stem": "up", "hitSec": 0.022 }, "128:0:73": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 0.012 }, "128:0:74": { "staff": 5, "line": -1, "head": "slashed1", "stem": "up", "hitSec": 0.222 }, "128:0:75": { "staff": 5, "line": 0, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:76": { "staff": 5, "line": 5, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:77": { "staff": 5, "line": 7, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:78": { "staff": 5, "line": 8, "head": "x", "stem": "up", "hitSec": 0.062 }, "128:0:79": { "staff": 5, "line": 8, "head": "slashed2", "stem": "up", "hitSec": 0.042 }, "128:0:80": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:81": { "staff": 5, "line": 0, "head": "triangle-up", "stem": "up", "hitSec": 0.022 }, "128:0:27": { "staff": 5, "line": 8, "head": "slash", "stem": "up", "hitSec": 0.012 }, "128:0:28": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 0.012 }, "128:0:29": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.092 }, "128:0:30": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.077 }, "128:0:31": { "staff": 5, "line": -1, "head": "plus", "stem": "up", "hitSec": 7e-3 }, "128:0:32": { "staff": 5, "line": 10, "head": "plus", "stem": "up", "hitSec": 2e-3 }, "128:0:33": { "staff": 5, "line": 10, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:34": { "staff": 5, "line": 10, "head": "triangle-up", "stem": "up", "hitSec": 2e-3 }, "128:0:82": { "staff": 5, "line": 5, "head": "diamond", "stem": "up", "hitSec": 0.027 }, "128:0:83": { "staff": 5, "line": 3, "head": "triangle-down", "stem": "up", "hitSec": 0.072 }, "128:0:84": { "staff": 5, "line": 2, "head": "ti", "stem": "up" }, "128:0:85": { "staff": 5, "line": 2, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:86": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 7e-3 }, "128:0:87": { "staff": 5, "line": 4, "head": "slash", "stem": "up", "hitSec": 0.027 } };
+
+// src/gm/percussion.ts
+function percOf(bank, program, note2) {
+  if (bank === 128) return note2 === void 0 ? null : PERC[`128:0:${note2}`] ?? null;
+  return (note2 !== void 0 ? PERC[`${bank}:${program}:${note2}`] : void 0) ?? PERC[`${bank}:${program}`] ?? null;
+}
+function percKindOf(inst) {
+  if (inst.bank === 128 && inst.note === void 0) return { kind: "kit" };
+  if (inst.note === void 0) return null;
+  const info2 = percOf(inst.bank, inst.program, inst.bank === 128 ? inst.note : void 0);
+  return info2 ? { kind: "one", info: info2 } : null;
+}
+
 // src/render/smufl.ts
 var GLYPH = {
   metNoteQuarterUp: "\uECA5",
@@ -7022,6 +7037,25 @@ var GLYPH = {
   rest32nd: "\uE4E8"
 };
 var timeSigDigits = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(57472 + Number(d3))).join("");
+var PERC_CLEF = "\uE069";
+var PERC_HEAD = {
+  normal: { ch: ["\uE0A4", "\uE0A3", "\uE0A2"], w: [1.18, 1.18, 1.688] },
+  x: { ch: ["\uE0A9", "\uE0A8", "\uE0A7"], w: [1.16, 1.34, 1.51] },
+  "circle-x": { ch: ["\uE0B3", "\uE0B2", "\uE0B1"], w: [0.996, 1, 0.996] },
+  slash: { ch: ["\uE101", "\uE103", "\uE102"], w: [2.124, 3.12, 3.92] },
+  slashed1: { ch: ["\uE0CF", "\uE0D1", "\uE0D3"], w: [1.18, 1.168, 1.672] },
+  slashed2: { ch: ["\uE0D0", "\uE0D2", "\uE0D4"], w: [1.18, 1.172, 1.672] },
+  diamond: { ch: ["\uE0DB", "\uE0D9", "\uE0D8"], w: [0.98, 0.98, 1.664] },
+  "triangle-up": { ch: ["\uE0BE", "\uE0BC", "\uE0BB"], w: [1.172, 1.14, 1.276] },
+  "triangle-down": { ch: ["\uE0C7", "\uE0C5", "\uE0C4"], w: [1.168, 1.14, 1.276] },
+  plus: { ch: ["\uE0AF", "\uE0AE", "\uE0AD"], w: [0.996, 1.044, 1.14] },
+  la: { ch: ["\uE0B9", "\uE0B8", "\uE0B8"], w: [1.252, 1.252, 1.252] },
+  ti: { ch: ["\uE0CD", "\uE0CC", "\uE0CC"], w: [1.112, 1.112, 1.112] }
+};
+var PERC_SMUFL = {
+  noteheadXOrnate: { ch: ["\uE0AA", "\uE0AA", "\uE0AA"], w: [0.992, 0.992, 0.992] },
+  noteheadSlashX: { ch: ["\uE106", "\uE106", "\uE106"], w: [2.124, 2.124, 2.124] }
+};
 var W = {
   noteheadBlack: 1.18,
   noteheadHalf: 1.18,
@@ -7777,7 +7811,7 @@ function engrave(song, o10) {
         }
       }
       const start = staves === 2 ? "G" : clefStarts.get(paper.id)?.get(p2.id) ?? "G";
-      const ds0 = displayStates(tokens, start), ao2 = staves === 2 || song.parts.find((x3) => x3.id === p2.id)?.autoOttava === false ? null : autoOttava(tokens, ds0);
+      const ds0 = displayStates(tokens, start), ao2 = staves === 2 || p2.perc || song.parts.find((x3) => x3.id === p2.id)?.autoOttava === false ? null : autoOttava(tokens, ds0);
       const ds = ao2 ? { clef: ds0.clef, ott: ao2.ott, auto: ao2.auto, runs: ao2.runs } : { ...ds0, auto: null, runs: [] };
       const fFam = staves === 2 || isFClef(start) || tokens.some((t10) => t10.kind === "clef" && isFClef(t10.clef));
       return { p: p2, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, ...u2 };
@@ -7799,6 +7833,26 @@ function engrave(song, o10) {
         return h2.staves === 2 ? 0 : CLEF_SHIFT[h2.start];
       }
       return q2.staves === 2 ? staff === 2 ? 12 : 0 : CLEF_SHIFT[(index >= 0 ? q2.ds.clef[index] : void 0) ?? q2.start] + ottavaShift(index >= 0 ? q2.ds.ott[index] ?? 0 : 0);
+    };
+    const ownMode = (r10) => {
+      const pk = per[r10].p.perc;
+      if (!pk) return null;
+      if (pk.kind === "kit") return "five";
+      const ten = per.filter((_2, j2) => foldTo[j2] === r10);
+      return ten.length && ten.every((t10) => !!t10.p.perc) ? "five" : "one";
+    };
+    const pmode = per.map((_2, r10) => foldTo[r10] >= 0 ? ownMode(foldTo[r10]) : ownMode(r10));
+    const percAt = (q2, p2) => {
+      const pk = q2.p.perc;
+      return !pk ? null : pk.kind === "kit" ? percOf(128, 0, midiOf(p2)) : pk.info;
+    };
+    const posD = (q2, p2, staff, index) => {
+      const m2 = pmode[per.indexOf(q2)];
+      if (m2 && q2.p.perc) {
+        const pi = percAt(q2, p2);
+        return m2 === "one" ? MID_LINE - (pi && pi.staff === 1 ? pi.line : 0) : TOP_LINE - (pi ? pi.line : 4);
+      }
+      return diatonicIndex(p2) + shAt(q2, staff, index);
     };
     const clefAtSys = (q2, s10) => {
       const u2 = q2.units.find((x3) => x3.system === s10 && x3.index >= 0);
@@ -7945,7 +7999,7 @@ function engrave(song, o10) {
       let top = TOP_LINE, bot = BOTTOM_LINE;
       for (const u2 of q2.units) {
         if (u2.kind !== "chunk" || u2.system !== s10 || !u2.note || !anyStaff && (u2.staff ?? 1) !== k2 + 1) continue;
-        const ds = (u2.pitches.length ? u2.pitches : u2.pitch ? [u2.pitch] : []).map((pp) => diatonicIndex(pp) + shAt(q2, k2 + 1, u2.index));
+        const ds = (u2.pitches.length ? u2.pitches : u2.pitch ? [u2.pitch] : []).map((pp) => posD(q2, pp, k2 + 1, u2.index));
         if (!ds.length) continue;
         const hi = Math.max(...ds), lo2 = Math.min(...ds), stem = u2.base < WHOLE, up = (hi + lo2) / 2 < MID_LINE;
         top = Math.max(top, hi + (stem && up ? 7 : 1));
@@ -8057,20 +8111,24 @@ function engrave(song, o10) {
         for (let k2 = 0; k2 < q2.staves; k2++) {
           const row2 = rowOf(s10, r10, k2), clef = q2.staves === 2 ? k2 ? "F" : "G" : clefAtSys(q2, s10), base3 = baseClef(clef);
           if (rows[row2]) rows[row2].x1 = P2(staffEnd[s10]);
+          const pm = pmode[r10];
           for (let L2 = 0; L2 < 5; L2++) {
+            if (pm === "one" && L2 !== 2) continue;
             const y2 = yOf(row2, BOTTOM_LINE + 2 * L2);
             prims.push({ t: "line", x1: P2(MARGIN + ind), y1: y2, x2: P2(staffEnd[s10]), y2, w: P2(ENGRAVE.staffLine), cls: "staff" });
           }
           let hx = MARGIN + ind + 0.6;
-          prims.push({ t: "glyph", x: P2(hx), y: yOf(row2, base3 === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
-          if (q2.staves === 1) clefs.push({ kind: "start", paper: paper.id, part: q2.p.id, index: clefSrcAtSys(q2, s10), system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(clefW(q2) + 0.6) });
+          if (pm) prims.push({ t: "glyph", x: P2(hx), y: yOf(row2, MID_LINE), ch: PERC_CLEF, cls: "clef perc-clef" });
+          else prims.push({ t: "glyph", x: P2(hx), y: yOf(row2, base3 === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
+          if (q2.staves === 1 && !pm) clefs.push({ kind: "start", paper: paper.id, part: q2.p.id, index: clefSrcAtSys(q2, s10), system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(clefW(q2) + 0.6) });
           hx += clefW(q2) + 1;
           const keyX0 = hx;
-          drawKeySig(row2, hx, f2, "keysig", base3);
-          hx += Math.abs(f2) * 1.05;
+          const fk = pm ? 0 : f2;
+          drawKeySig(row2, hx, fk, "keysig", base3);
+          hx += Math.abs(fk) * 1.05;
           if (s10 === 0) {
             if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row2, x: P2(keyX0 - 0.3), ...staffHit(row2), w: P2(Math.max(1.2, hx - keyX0 + 0.3)) });
-            if (f2) hx += 0.8;
+            if (fk) hx += 0.8;
             const cw2 = drawTime(row2, hx, q2.head.time.beats, q2.head.time.beatType, "timesig");
             if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(cw2 + 0.6) });
             if (k2 === 0 && q2.p.id === owner && q2.head.idx.tempo !== void 0) drawTempo(row2, MARGIN + ind + 0.6, q2.head.bpm, "tempo", q2.head.idx.tempo, prevBpm === null || prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > prevBpm ? "up" : "down");
@@ -8120,7 +8178,7 @@ function engrave(song, o10) {
       const tokens = q2.tokens, units = folded ? q2.units.filter((u2) => u2.kind === "chunk" && u2.note || u2.kind === "bar") : q2.units, focused = q2.focused;
       const dynOff = dynOverridden(tokens);
       const clefOf = (staff, index = -1) => q2.staves === 2 ? staff === 2 ? "F" : "G" : baseClef((index >= 0 ? q2.ds.clef[index] : void 0) ?? q2.start);
-      const dIdx = (p2, staff, index = -1) => diatonicIndex(p2) + shAt(q2, staff, index);
+      const dIdx = (p2, staff, index = -1) => posD(q2, p2, staff, index);
       const inSel = (i10) => focused && !!sel && i10 >= sel.from && i10 < sel.to;
       const dynRight = /* @__PURE__ */ new Map();
       const grooveRight = /* @__PURE__ */ new Map();
@@ -8196,9 +8254,14 @@ function engrave(song, o10) {
         return -1;
       })();
       const nhX = (c10) => P2(c10.x + c10.accW + 0.35);
-      const xHead = !!q2.p.xHead;
+      const pm = pmode[r10], percHere = !!pm && !!q2.p.perc;
+      const xHead = !!q2.p.xHead && !percHere;
+      const percHead = (c10, p2) => {
+        const pi = percAt(q2, p2), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : void 0) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal, k2 = c10.base >= WHOLE ? 2 : c10.base >= TPQ * 2 ? 1 : 0;
+        return { ch: hd.ch[k2], w: hd.w[k2] };
+      };
       const xOf = (c10) => xHead || !!c10.whisper;
-      const nhW = (c10) => P2(xOf(c10) ? c10.base >= WHOLE ? W.noteheadXWhole : c10.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : c10.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+      const nhW = (c10) => P2(xOf(c10) ? c10.base >= WHOLE ? W.noteheadXWhole : c10.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : percHere && c10.pitch ? percHead(c10, c10.pitch).w : c10.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
       const whisperMute = (q2.p.ignores ?? []).includes("whisper");
       const clsOf = (c10) => [c10.ghost ? "ghost" : "", c10.pad ? "pad-rest" : "", c10.index >= 0 && c10.index === curIndex ? "cur" : "", c10.index >= 0 && inSel(c10.index) ? "sel" : ""].filter(Boolean).join(" ") || void 0;
       const partLyrics = [];
@@ -8207,7 +8270,7 @@ function engrave(song, o10) {
         if (!c10.note) {
           if (c10.pad) return;
           const g3 = c10.base >= WHOLE ? GLYPH.restWhole : c10.base >= TPQ * 2 ? GLYPH.restHalf : c10.base >= TPQ ? GLYPH.restQuarter : c10.base >= TPQ / 2 ? GLYPH.rest8th : c10.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
-          const ry2 = c10.base >= WHOLE ? yOf(row2, 36) : yOf(row2, MID_LINE);
+          const ry2 = c10.base >= WHOLE && pm !== "one" ? yOf(row2, 36) : yOf(row2, MID_LINE);
           prims.push({ t: "glyph", x: P2(c10.x + 0.35), y: ry2, ch: g3, cls: cls ? `rest ${cls}` : "rest" });
           if (c10.j === 0 && c10.index >= 0 && !c10.pad) rests.push({ index: c10.index, system: row2, x: P2(c10.x + 0.35), y: yOf(row2, MID_LINE), w: P2(1.2) });
           if (c10.dotted) prims.push({ t: "glyph", x: P2(c10.x + 0.35 + 1.5), y: yOf(row2, 35), ch: GLYPH.augmentationDot, cls });
@@ -8216,7 +8279,7 @@ function engrave(song, o10) {
         const ds = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff, c10.index));
         const d3 = ds[0], y2 = yOf(row2, d3), x0 = nhX(c10);
         c10.accs.forEach((a10, k2) => {
-          if (a10 === null) return;
+          if (a10 === null || percHere) return;
           const ag2 = a10 === 1 ? GLYPH.accidentalSharp : a10 === -1 ? GLYPH.accidentalFlat : a10 === 2 ? GLYPH.accidentalDoubleSharp : a10 === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
           const near2 = c10.accs.slice(0, k2).some((b3, kk) => b3 !== null && Math.abs(ds[kk] - ds[k2]) < 3);
           prims.push({ t: "glyph", x: P2(c10.x + 0.2) - (near2 ? P2(1.1) : 0) - (c10.art.includes("ghost") ? P2(0.6) : 0), y: yOf(row2, ds[k2]), ch: ag2, cls });
@@ -8234,7 +8297,8 @@ function engrave(song, o10) {
           shifted = second;
           const mute = k2 > 0 && !!q2.p.mono;
           if (c10.j === 0 && k2 > 0 && !folded) chordHeads.push({ index: c10.index, system: row2, x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row2, dd), w: nhW(c10) });
-          prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row2, dd), ch: ng2, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c10.whisper && whisperMute ? "art-mute" : "", focused && o10.span && c10.index >= o10.span.from && c10.index < o10.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
+          const hch = percHere && !xOf(c10) ? percHead(c10, (c10.pitches.length ? c10.pitches : [c10.pitch])[k2]).ch : ng2;
+          prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row2, dd), ch: hch, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c10.whisper && whisperMute ? "art-mute" : "", focused && o10.span && c10.index >= o10.span.from && c10.index < o10.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c10.art.includes("ghost")) {
             const hx = second ? x0 + nhW(c10) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
             prims.push({ t: "glyph", x: hx - P2(0.6), y: yOf(row2, dd), ch: "\uE0F5", cls: pc });
@@ -8297,11 +8361,16 @@ function engrave(song, o10) {
               if (u2.times && u2.times > 2 && k2 === 0) prims.push({ t: "text", x: P2(u2.x + 0.4 + (u2.repeat === "both" ? 1.2 : 1.47)), y: navY(u2.system), s: `\xD7${u2.times}`, cls: "nav-mark" + navMute(u2.index), size: P2(TEMPO_EM * 1.05), anchor: "end" });
             } else if (u2.kind === "bar") {
               const bx = P2(u2.x + 0.7), bcls = u2.auto ? "bar auto" : inSel(u2.index) ? "bar sel" : "bar";
-              prims.push({ t: "line", x1: bx, y1: yOf(rr2, TOP_LINE), x2: bx, y2: yOf(rr2, BOTTOM_LINE), w: P2(ENGRAVE.thinBar), cls: bcls });
-              if (u2.style === "double") prims.push({ t: "line", x1: bx + P2(0.45), y1: yOf(rr2, TOP_LINE), x2: bx + P2(0.45), y2: yOf(rr2, BOTTOM_LINE), w: P2(ENGRAVE.thinBar), cls: bcls });
-              if (u2.style === "final") prims.push({ t: "line", x1: bx + P2(0.6), y1: yOf(rr2, TOP_LINE), x2: bx + P2(0.6), y2: yOf(rr2, BOTTOM_LINE), w: P2(0.5), cls: bcls });
+              const [bt, bb] = pmode[r10] === "one" ? [MID_LINE + 2, MID_LINE - 2] : [TOP_LINE, BOTTOM_LINE];
+              prims.push({ t: "line", x1: bx, y1: yOf(rr2, bt), x2: bx, y2: yOf(rr2, bb), w: P2(ENGRAVE.thinBar), cls: bcls });
+              if (u2.style === "double") prims.push({ t: "line", x1: bx + P2(0.45), y1: yOf(rr2, bt), x2: bx + P2(0.45), y2: yOf(rr2, bb), w: P2(ENGRAVE.thinBar), cls: bcls });
+              if (u2.style === "final") prims.push({ t: "line", x1: bx + P2(0.6), y1: yOf(rr2, bt), x2: bx + P2(0.6), y2: yOf(rr2, bb), w: P2(0.5), cls: bcls });
               if (u2.warn && k2 === 0) prims.push({ t: "rect", x: bx - P2(0.3), y: yOf(rr2, TOP_LINE) - P2(1.6), w: P2(0.6), h: P2(0.6), cls: "warn" });
             } else if (u2.kind === "key") {
+              if (pmode[r10]) {
+                marks.push({ index: u2.index, kind: "key", system: rr2, x: P2(u2.x), ...staffHit(rr2), w: P2(Math.max(u2.w, 1.6)) });
+                continue;
+              }
               const cls = inSel(u2.index) ? "keysig sel" : "keysig";
               if (u2.fifths === 0) {
                 const pos = u2.prev > 0 ? SHARP_POS : FLAT_POS;
@@ -8412,7 +8481,7 @@ function engrave(song, o10) {
       const tipOf = /* @__PURE__ */ new Map();
       for (const g3 of stemmed) {
         const row2 = RW(g3[0].c), mid = yOf(row2, MID_LINE);
-        const up = g3.reduce((a10, s10) => a10 + (s10.d + s10.dLow) / 2, 0) / g3.length < MID_LINE;
+        const up = percHere ? pm === "one" || g3.some((s10) => (s10.c.pitches.length ? s10.c.pitches : [s10.c.pitch]).some((p2) => percAt(q2, p2)?.stem !== "down")) : g3.reduce((a10, s10) => a10 + (s10.d + s10.dLow) / 2, 0) / g3.length < MID_LINE;
         for (const s10 of g3) upOf.set(s10.c, up);
         const sx2 = (s10) => up ? s10.x0 + P2(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s10.x0 + P2(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
         const sy0 = (s10) => up ? s10.yLow - P2(STEM_UP_SE[1]) : s10.y - P2(STEM_DOWN_NW[1]);
@@ -25278,7 +25347,15 @@ function buildTimeline(inp) {
       unplayable.push({ part: part.id, why: "\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668" });
       continue;
     }
-    tracks.push({ id: part.id, kind: "sf", sha: g3.sha, notes: notes.map((n10) => ({ t0: n10.t0, t1: n10.t1, key: sfKey(n10.midi, g3, info2.transpose), vel: n10.vel ?? info2.velocity, preset: g3.presetIndex })), gain, ...info2.chain?.length ? { chain: info2.chain } : {} });
+    const sfNotes = notes.map((n10) => {
+      const key = sfKey(n10.midi, g3, info2.transpose), h2 = info2.hitSec?.(key) ?? 0;
+      return { t0: n10.t0 - h2, t1: n10.t1, key, vel: n10.vel ?? info2.velocity, preset: g3.presetIndex };
+    });
+    if (info2.hitSec) {
+      sfNotes.sort((x2, y2) => x2.t0 - y2.t0);
+      for (const n10 of sfNotes) from = Math.min(from, n10.t0);
+    }
+    tracks.push({ id: part.id, kind: "sf", sha: g3.sha, notes: sfNotes, gain, ...info2.chain?.length ? { chain: info2.chain } : {} });
   }
   to2 = Math.max(to2, total);
   const ref = inp.parts[0] ?? song.parts[0];
@@ -25408,29 +25485,29 @@ function loadVowelTable() {
 // src/gm/instruments.gen.ts
 var INSTRUMENT_FILES = {
   "concepts": {
-    "file": "vendor/instruments/instruments-v12.json",
-    "bytes": 268197,
-    "sha256": "0da06452a23ffd5f80b5e28e74dc8765d35740288ae72eba157a470659af4858"
+    "file": "vendor/instruments/instruments-v13.json",
+    "bytes": 293765,
+    "sha256": "b45932d2fd0d9bdecba9de7a07a9caf96417f70b38f6fe9eba57d5c3e5409704"
   },
   "gmMap": {
-    "file": "vendor/instruments/gm-map-v12.json",
-    "bytes": 413010,
-    "sha256": "43bf05020258332480141249e58624913015256dc10e32824cf146a3d349a23e"
+    "file": "vendor/instruments/gm-map-v13.json",
+    "bytes": 434032,
+    "sha256": "ce92541c112cfcfbda91e4086d7d0db36d441b0440f8171906d1d78c0a5fe6e5"
   },
   "icons": {
-    "file": "vendor/instruments/instrument-icons-20261010-v12.svg",
+    "file": "vendor/instruments/instrument-icons-20261010-v13.svg",
     "bytes": 139014,
-    "sha256": "7c82c60b395d4306f42c6cc6f886355ba77a5b2cab3f27717a7428ed222491b6"
+    "sha256": "11f81794734a517e1b3bb301b862471352c5edc0f2e4df926685352ab7e17a52"
   },
   "iconCredits": {
-    "file": "vendor/instruments/icon-credits-v12.json",
+    "file": "vendor/instruments/icon-credits-v13.json",
     "bytes": 20670,
-    "sha256": "a3cf6fccffaccd32a83bc556482fee6f0d332771ff9895dd7d1555f795141945"
+    "sha256": "4f21e792c26514e9fd13ca00ef19e3030834a5a59c6a8583772367302aa9b0a1"
   },
   "licenses": {
-    "file": "vendor/instruments/LICENSES-chosen-v12.md",
+    "file": "vendor/instruments/LICENSES-chosen-v13.md",
     "bytes": 145790,
-    "sha256": "ac32e9b1f194cd4f3e2b36e43ed9ecccc3c1e5e3588b83303ac853653003a7a8"
+    "sha256": "4eed98cf9658e415ba57397aebb654b5c5ba7ef4b188b5573d4111ed0cc67b91"
   }
 };
 var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
@@ -38830,8 +38907,16 @@ function performerInfo(part) {
     gm: g3 ? { sha: g3.subsetSha256, presetIndex: engine.presetIndex(g3.subsetSha256, g3.bank, g3.program), note: g3.note, sfx: g3.sfx } : null,
     chunk: activeSingChunk(doc.extras, role),
     follow: (s10) => followOf(s10, cat2),
-    chain: activeChain(doc.extras, role)
+    chain: activeChain(doc.extras, role),
+    ...hitOf(eng === "soundfont" ? g3 : null)
   };
+}
+function hitOf(g3) {
+  const pk = g3 ? percKindOf(g3) : null;
+  if (!pk) return {};
+  if (pk.kind === "kit") return { hitSec: (key) => percOf(128, 0, key)?.hitSec ?? 0 };
+  const h2 = pk.info.hitSec ?? 0;
+  return h2 ? { hitSec: () => h2 } : {};
 }
 async function prepareBanks(parts) {
   const errs = [];
@@ -40534,7 +40619,10 @@ function partViews() {
     const eng = activeInstrument(doc.extras, p2.role)?.engine ?? "unknown";
     const lm2 = mutes.get(p2.id);
     const noLyrics = eng === "soundfont" || eng === "vowel-sampler" ? `${labels[k2]}${eng === "vowel-sampler" ? "\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC" : "\u4E0D\u5531\u6B4C\u8BCD"}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220` : "";
-    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: eng === "unknown", first: k2 === 0, ...p2.clef ? { clef: p2.clef } : {}, ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ignores: ignoredFor(p2.role) };
+    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: eng === "unknown", first: k2 === 0, ...p2.clef ? { clef: p2.clef } : {}, ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ...((g3) => {
+      const pk = g3 ? percKindOf(g3) : null;
+      return pk ? { perc: pk } : {};
+    })(eng === "soundfont" ? activeGm(doc.extras, p2.role) : null), ignores: ignoredFor(p2.role) };
   });
 }
 function afterViewChange() {
@@ -40927,12 +41015,12 @@ function openTransposeMenu(paperId, at2) {
   const chip2 = (v, label, on2 = false, title = "") => `<button class="btn ctx-chip${on2 ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc8(title)}"` : ""}>${label}</button>`;
   const html = () => {
     const now2 = scopeKey(st2.song, ids());
-    return (many ? `<div class="ctx-row"><span class="ctx-k">\u8303\u56F4</span>${chip2("scope:paper", `\u8FD9\u4E00\u6BB5\u300C${esc8(nameOf2(paperId))}\u300D`, !whole)}${chip2("scope:song", "\u6574\u9996", whole)}</div>` : "") + `<div class="ctx-row"><span class="ctx-k">\u79FB\u8C03</span>${chip2("tr:1", "\u2191 \u534A\u97F3")}${chip2("tr:-1", "\u2193 \u534A\u97F3")}${chip2("tr:2", "\u2191 \u5168\u97F3")}${chip2("tr:-2", "\u2193 \u5168\u97F3")}</div><div class="ctx-row"><span class="ctx-k">\u516B\u5EA6</span>${chip2("tr:12", "\u2191 \u516B\u5EA6")}${chip2("tr:-12", "\u2193 \u516B\u5EA6")}</div><div class="ctx-hint ctx-what">\u8F6C\u8C03\u5230\uFF08\u73B0\u5728 1=${KEY_LABEL[now2] ?? now2}\uFF09\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now2)).join("")}</div><div class="ctx-hint">${whole ? "\u6574\u9996" : "\u8FD9\u5F20\u7EB8\u4E0A"}\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u632A\uFF08\u53D6\u5347\u964D\u53F7\u5C11\u7684\u5199\u6CD5\uFF1B\u632A\u516B\u5EA6\u8C03\u53F7\u4E0D\u53D8\uFF09\u3002\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u8C31\u53F7\u4E0D\u52A8\uFF1B\u8C31\u4E0A\u753B \xD7 \u7684\u58F0\u90E8\uFF08\u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\uFF09\u4E0D\u52A8\uFF1Bpad \u7684\u300C1=\u300D\u4E0D\u8DDF\u3002</div>`;
+    return (many ? `<div class="ctx-row"><span class="ctx-k">\u8303\u56F4</span>${chip2("scope:paper", `\u8FD9\u4E00\u6BB5\u300C${esc8(nameOf2(paperId))}\u300D`, !whole)}${chip2("scope:song", "\u6574\u9996", whole)}</div>` : "") + `<div class="ctx-row"><span class="ctx-k">\u79FB\u8C03</span>${chip2("tr:1", "\u2191 \u534A\u97F3")}${chip2("tr:-1", "\u2193 \u534A\u97F3")}${chip2("tr:2", "\u2191 \u5168\u97F3")}${chip2("tr:-2", "\u2193 \u5168\u97F3")}</div><div class="ctx-row"><span class="ctx-k">\u516B\u5EA6</span>${chip2("tr:12", "\u2191 \u516B\u5EA6")}${chip2("tr:-12", "\u2193 \u516B\u5EA6")}</div><div class="ctx-hint ctx-what">\u8F6C\u8C03\u5230\uFF08\u73B0\u5728 1=${KEY_LABEL[now2] ?? now2}\uFF09\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now2)).join("")}</div><div class="ctx-hint">${whole ? "\u6574\u9996" : "\u8FD9\u5F20\u7EB8\u4E0A"}\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u632A\uFF08\u53D6\u5347\u964D\u53F7\u5C11\u7684\u5199\u6CD5\uFF1B\u632A\u516B\u5EA6\u8C03\u53F7\u4E0D\u53D8\uFF09\u3002\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u8C31\u53F7\u4E0D\u52A8\uFF1B\u9F13 / \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\u7684\u58F0\u90E8\uFF08\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\uFF09\u4E0D\u52A8\uFF1Bpad \u7684\u300C1=\u300D\u4E0D\u8DDF\u3002</div>`;
   };
   ctxMenu("transpose-menu", html(), at2, (v) => {
     if (v.startsWith("scope:")) whole = v === "scope:song";
     else {
-      const skip = new Set(partViews().filter((x2) => x2.xHead).map((x2) => x2.id));
+      const skip = new Set(partViews().filter((x2) => x2.xHead || x2.perc).map((x2) => x2.id));
       const nx2 = v.startsWith("tr:") ? transposePapers(st2, ids(), { semis: Number(v.slice(3)) }, skip) : v.startsWith("mod:") ? transposePapers(st2, ids(), { toFifths: Number(v.slice(4)) }, skip) : st2;
       if (nx2 === st2) info(v.startsWith("mod:") ? "\u5DF2\u7ECF\u662F\u8FD9\u4E2A\u8C03" : "\u6CA1\u6709\u53EF\u4EE5\u632A\u7684\u97F3");
       else {
@@ -40941,7 +41029,7 @@ function openTransposeMenu(paperId, at2) {
         if (held.length && !told) {
           told = true;
           const labels = partLabels(st2.song, doc.extras);
-          info(`${[...new Set(held)].map((pid) => labels[st2.song.parts.findIndex((p2) => p2.id === pid)]).join("\u3001")} \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\uFF08\u8C31\u4E0A\u753B \xD7\uFF09\uFF0C\u6CA1\u632A`);
+          info(`${[...new Set(held)].map((pid) => labels[st2.song.parts.findIndex((p2) => p2.id === pid)]).join("\u3001")} \u662F\u9F13 / \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\uFF08\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\uFF09\uFF0C\u6CA1\u632A`);
         }
       }
     }
@@ -43075,4 +43163,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5c7f3c7f4cd4.mjs.map
+//# sourceMappingURL=moonsinger-7596ca92e469.mjs.map

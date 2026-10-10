@@ -37,6 +37,9 @@ export interface PerformerInfo {
   follow: (s: GrooveStyle) => number;
   /** 跟着演奏者走的效果链（CandidateV2.chain；刀 4）。 */
   chain?: FxV2[];
+  /** 着力点（v0.10.27；鼓 / 音效）：敲这个键时采样开头到「砸下去那一下」几秒——录音房提前这么多开始放，砸在写的那一拍上（反向镲 1.4 s）。
+   *  有音高的乐器不给（不挪）。src/gm/percussion.ts；设计账 ai-docs/20261010-shared-staff-percussion-design.md §3。 */
+  hitSec?: (key: number) => number;
 }
 export interface TimelineInput {
   song: Song;
@@ -143,7 +146,9 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     }
     const g = info.gm;
     if (!g) { unplayable.push({ part: part.id, why: "台上的不是 SoundFont 乐器" }); continue; }
-    tracks.push({ id: part.id, kind: "sf", sha: g.sha, notes: notes.map((n): NoteEv => ({ t0: n.t0, t1: n.t1, key: sfKey(n.midi, g, info.transpose), vel: n.vel ?? info.velocity, preset: g.presetIndex })), gain, ...(info.chain?.length ? { chain: info.chain } : {}) });
+    const sfNotes = notes.map((n): NoteEv => { const key = sfKey(n.midi, g, info.transpose), h = info.hitSec?.(key) ?? 0; return { t0: n.t0 - h, t1: n.t1, key, vel: n.vel ?? info.velocity, preset: g.presetIndex }; });
+    if (info.hitSec) { sfNotes.sort((x, y) => x.t0 - y.t0); for (const n of sfNotes) from = Math.min(from, n.t0); }   // 提前了的音：录音房按 t0 顺序走；比第一个音还早 = 时间线从那儿起（同月读的辅音提前）
+    tracks.push({ id: part.id, kind: "sf", sha: g.sha, notes: sfNotes, gain, ...(info.chain?.length ? { chain: info.chain } : {}) });
   }
   to = Math.max(to, total);
   // 纸的秒区间（所有声部压平后的纸序列一样：缺这个声部的纸补了休止）

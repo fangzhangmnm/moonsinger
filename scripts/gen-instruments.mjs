@@ -14,7 +14,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const SRC = process.env.INSTRUMENTS_SRC ?? join(ROOT, "..", "..", "20260813 MyLlamaReborn", "20261007 音乐史", "export", "moonsinger");   // ~/jupyter/20260813 MyLlamaReborn（不在 PWAProjects 里）
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
-export const VERSION = 12;   // v12 = 2026-10-10（仓鼠 ffd9a23：概念加 abbr（出版谱简写，MuseScore instruments.xml）/ notation（记谱谱号、按实际音高的谱号、sounds / octave），gm-map 铃类加 octaveCheck；纯增量。工单 ai-docs/20261010-hamster-workorder-abbr-octave.md）
+export const PERC_OUT = join(ROOT, "src", "gm", "percussion.gen.ts");
+export const VERSION = 13;   // v13 = 2026-10-10（仓鼠 7447213：不分音高的鼓谱写法 percussion / pitched:false / 着力点 hitSec / GS 扩展鼓键 extraDrumKeys；纯增量。工单 ai-docs/20261010-hamster-workorder-percussion-notation.md）
+//   v12 = 2026-10-10（仓鼠 ffd9a23：概念加 abbr（出版谱简写，MuseScore instruments.xml）/ notation（记谱谱号、按实际音高的谱号、sounds / octave），gm-map 铃类加 octaveCheck；纯增量。工单 ai-docs/20261010-hamster-workorder-abbr-octave.md）
 export const FILES = {
   concepts: `instruments-v${VERSION}.json`,
   gmMap: `gm-map-v${VERSION}.json`,
@@ -41,11 +43,33 @@ export const ICON_CREDITS: { id: string; set: string; author: string; license: s
 `;
 }
 
+/** 鼓谱表（v13 起；Claude Opus 5.5 2026-10-10）：gm-map 里有 percussion（不分音高的写法）的行 + 顶层 extraDrumKeys → 键「bank:program[:note]」→ 几线谱 / 哪一线 / 符头 / 符干 / 着力点。
+ *  排谱时就要（不能等找人视图 fetch 目录），所以按值烤进源码；line 的约定 = MuseScore <Drum><line>（0 = 最上面那条线，往下 +1 走半格）。 */
+export function renderPerc() {
+  const p = join(DST, FILES.gmMap); if (!existsSync(p)) return null;
+  const gm = JSON.parse(readFileSync(p, "utf8")), out = {};
+  for (const r of [...gm.rows, ...(gm.extraDrumKeys ?? [])]) {
+    const pc = r.percussion; if (!pc) continue;
+    const key = `${r.bank}:${r.program}${r.note !== undefined && r.note !== null ? `:${r.note}` : ""}`; if (out[key]) continue;   // 一个预设好几行（本尊 / 平替）：写法一样，取第一行
+    out[key] = { staff: pc.staff, line: pc.line, head: pc.head, stem: pc.stem, ...(pc.smufl ? { smufl: pc.smufl } : {}), ...(typeof r.hitSec === "number" ? { hitSec: r.hitSec } : {}) };
+  }
+  const heads = (gm.defs?.heads ?? []).map((h) => h.id);
+  return `// 生成物：node scripts/gen-instruments.mjs（源 = vendor/instruments/${FILES.gmMap} 的 percussion / hitSec + extraDrumKeys）。勿手改。
+// 鼓谱表：键 = "bank:program[:note]"（鼓件 = 128:0:键；音效 = 0:119… 不带键）。line = MuseScore <Drum><line> 的约定（0 = 最上面那条线，往下 +1 走半格；五线谱最下面一线 = 8，一线谱那条线 = 0）。
+// hitSec = 采样开头到「砸下去那一下」几秒（TinySoundFont + GeneralUser GS 实测；反向镲 = 快结尾）。
+export type PercHead = ${heads.map((h) => JSON.stringify(h)).join(" | ")};
+export interface PercInfo { staff: 1 | 5; line: number; head: PercHead; stem: "up" | "down"; smufl?: string; hitSec?: number }
+export const PERC_VERSION = ${VERSION};
+export const PERC: Record<string, PercInfo> = ${JSON.stringify(out)};
+`;
+}
+
 if (fileURLToPath(import.meta.url) === process.argv[1]) {
   if (!existsSync(SRC)) { console.error(`找不到源 ${SRC}`); process.exit(1); }
   mkdirSync(DST, { recursive: true });
   for (const name of Object.values(FILES)) copyFileSync(join(SRC, name), join(DST, name));
   copyFileSync(join(SRC, "README.md"), join(DST, "SOURCE.md"));
   writeFileSync(OUT, render());
+  writeFileSync(PERC_OUT, renderPerc());
   console.log(`[gen-instruments] v${VERSION} → vendor/instruments/ + ${OUT}`);
 }
