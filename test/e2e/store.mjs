@@ -43,7 +43,7 @@ try {
   await p.click('.finder [data-v="back"]'); await p.waitForTimeout(200);
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)) && (await p.$eval(".finder", (f) => f.hidden)), "目录「← 歌库」= 回到歌库");
   // 新建一首
-  await p.click('#galleryFull [data-v="new"]'); await p.waitForTimeout(600);
+  await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(600);
   check(await p.evaluate(() => document.getElementById("galleryFull").hidden), "新建后回到谱");
   // 首笔安家（user 2026-10-08「首笔安家做」）：新建 = 空谱没有家、不落盘；第一笔才铸身份、立刻落本地
   check((await p.evaluate(() => window.__moonsinger.identifier())) === null, "新建 = 空谱还没有家");
@@ -112,7 +112,7 @@ try {
   await p.click("#libBtn"); await p.waitForTimeout(500); await p.reload(); await p.waitForTimeout(1200);
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "从歌库里刷新 → 回来还在歌库");
   // 第二首：新建后歌库两张卡，点第一张切回
-  await p.click('#galleryFull [data-v="new"]'); await p.waitForTimeout(600);
+  await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(600);
   await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2");
   await p.waitForFunction(() => !!window.__moonsinger.identifier()); await p.waitForTimeout(400);
   const id3 = await p.evaluate(() => window.__moonsinger.identifier()); check(id3 !== id2 && /\.mxl$/.test(id3), "第二首：第一笔之后有身份", id3);
@@ -125,7 +125,7 @@ try {
   await p.click("#libBtn"); await p.waitForTimeout(600);
   const del = await p.evaluate(async (id) => (await window.__moonsinger.store().zip(id, { mode: "existing" }).delete()).status, id2);
   check(typeof del === "string", "删掉小星星（store delete）", del);
-  await p.click('#galleryFull [data-v="new"]'); await p.waitForTimeout(600);
+  await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(600);
   await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2"); await p.waitForTimeout(3500);
   check(!(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id2)), "之后新建再写也不会把删掉的名字复活");
   const id4 = await p.evaluate(() => window.__moonsinger.identifier()); check(!!id4 && id4 !== id2 && id4 !== id3, "新的一首有自己的身份", id4);
@@ -133,17 +133,17 @@ try {
   await p.click("#libBtn"); await p.waitForTimeout(600);
   const folderNames = () => p.$$eval("#galleryFull .gallery-folder, #galleryFull [data-folder]", (es) => es.map((e) => e.textContent.trim()));
   const before = (await p.textContent("#galleryFull")) ?? "";
-  await p.click('#galleryFull [data-v="newfolder"]'); await p.waitForTimeout(250);
+  await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-folder"]'); await p.waitForTimeout(250);
   check(await p.$eval(".offer input.sheet-input", (e) => e.value === "新文件夹").catch(() => false), "新建文件夹：问名字（默认「新文件夹」）");
   await p.fill(".offer input.sheet-input", "副歌草稿"); await p.keyboard.press("Enter"); await p.waitForTimeout(1200);
   const after = (await p.textContent("#galleryFull")) ?? "";
   check(!before.includes("副歌草稿") && after.includes("副歌草稿"), "歌库里出现了「副歌草稿」这个夹", JSON.stringify(await folderNames()));
   // 同名再建 = 说一声、不另建
-  await p.click('#galleryFull [data-v="newfolder"]'); await p.waitForTimeout(250);
+  await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-folder"]'); await p.waitForTimeout(250);
   await p.fill(".offer input.sheet-input", "副歌草稿"); await p.keyboard.press("Enter"); await p.waitForTimeout(800);
   check(((await p.textContent("#galleryFull")) ?? "").split("副歌草稿").length - 1 === 1, "同名的夹不再建第二个");
   // 名字里有 / = 不建、说一声
-  await p.click('#galleryFull [data-v="newfolder"]'); await p.waitForTimeout(250);
+  await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-folder"]'); await p.waitForTimeout(250);
   await p.fill(".offer input.sheet-input", "a/b"); await p.keyboard.press("Enter"); await p.waitForTimeout(500);
   check(!((await p.textContent("#galleryFull")) ?? "").includes("a/b") && !(await p.$$eval("#galleryFull *", (es) => es.some((e) => e.textContent.trim() === "a"))), "名字带 / = 不建");
   // 冲突面 / 报错 / busy 接线存在（storeUI 对象）

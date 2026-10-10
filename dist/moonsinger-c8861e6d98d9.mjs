@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.40-2026-10-10";
+var APP_VERSION = "v0.9.41-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7009,6 +7009,7 @@ function fitLyrics(items, gap = 0.5) {
   return out;
 }
 var SCROLL_TAIL = 6;
+var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
 var TEMPO_EM = 1.35;
 var SQUEEZE = 0.15;
@@ -7541,7 +7542,7 @@ function engrave(song, o10) {
     const spans = per.flatMap((q2) => q2.units.filter((u2) => u2.kind === "chunk").map((u2) => [u2.tick, u2.tick + u2.ticks]));
     const breakableAt = (tick) => !spans.some(([a10, b3]) => a10 < tick - 1e-6 && b3 > tick + 1e-6);
     const ind0 = Math.max(...parts.map((p2) => Math.max(...nameLines(p2.name, p2.staves ?? 1).map(nameW)))) + 1.4;
-    const indN = parts.some((p2) => p2.abbr) ? Math.max(...parts.map((p2) => nameW(p2.abbr ?? ""))) + 1.4 : 0;
+    const indN = parts.some((p2) => p2.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p2) => nameW(p2.abbr ?? ""))) + 1.4 : 0;
     const keyNow = new Map(per.map((q2) => [q2.p.id, q2.head.key]));
     const clefW = (q2) => q2.fFam ? W.fClef : W.gClef;
     const headerOf = (first) => Math.max(...per.map((q2) => {
@@ -9271,11 +9272,28 @@ function shortName(name) {
   if (w2.length > 1) return w2.map((x2) => x2[0]).join("").toUpperCase() + ".";
   return t10.length <= 5 ? t10 : `${t10.slice(0, 3)}.`;
 }
+var dispWidth = (s10) => [...s10].reduce((n10, ch2) => n10 + (/[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]/.test(ch2) ? 2 : 1), 0);
+var ABBR_W = 7;
+function fitAbbr(base3, num2 = "", W3 = ABBR_W) {
+  if (dispWidth(base3 + num2) <= W3) return base3 + num2;
+  const b3 = base3.replace(/\.\s+/g, ".");
+  if (dispWidth(b3 + num2) <= W3) return b3 + num2;
+  const budget = Math.max(2, W3 - dispWidth(num2)), cjk = dispWidth(b3) > [...b3].length;
+  let out = "", wd = 0;
+  for (const ch2 of b3) {
+    const cw2 = dispWidth(ch2);
+    if (wd + cw2 > (cjk ? budget : budget - 1)) break;
+    out += ch2;
+    wd += cw2;
+  }
+  out = out.replace(/[\s.]+$/, "");
+  return (cjk ? out : `${out}.`) + num2;
+}
 function partAbbr(label, o10) {
-  const m2 = / (\d+)$/.exec(label), base3 = m2 ? label.slice(0, -m2[0].length) : label, num2 = m2 ? ` ${m2[1]}` : "";
-  if (o10.conceptAbbr && o10.conceptNames?.some((n10) => n10 === base3)) return o10.conceptAbbr + num2;
-  if (o10.voice && VOICE_ABBR[base3]) return VOICE_ABBR[base3] + num2;
-  return shortName(base3) + num2;
+  const m2 = / (\d+)$/.exec(label), base3 = m2 ? label.slice(0, -m2[0].length) : label, num2 = m2 ? ` ${m2[1]}` : "", low = base3.toLowerCase();
+  if (o10.conceptAbbr && o10.conceptNames?.some((n10) => n10.toLowerCase() === low)) return fitAbbr(o10.conceptAbbr, num2);
+  if (o10.voice && VOICE_ABBR[base3]) return fitAbbr(VOICE_ABBR[base3], num2);
+  return fitAbbr(shortName(base3), num2);
 }
 
 // src/ui/score-view.ts
@@ -31555,7 +31573,7 @@ function initGalleryHost(d3) {
   fullEl.setAttribute("role", "dialog");
   fullEl.setAttribute("aria-modal", "true");
   fullEl.setAttribute("aria-label", "\u6B4C\u5E93");
-  fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button><button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u4E50\u5668\u76EE\u5F55\uFF1A\u6D4F\u89C8\u3001\u8BD5\u542C\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u4E50\u5668</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\u4E00\u9996">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="newfolder" title="\u65B0\u5EFA\u6587\u4EF6\u5939\uFF08\u5728\u73B0\u5728\u8FD9\u4E2A\u5939\u91CC\uFF09">${iconHtml2("create-folder")}</button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
+  fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button><button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u5373\u5174\uFF1A\u6311\u4E50\u5668\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u5373\u5174</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\uFF1A\u4E00\u9996\u6B4C / \u4E00\u4E2A\u6587\u4EF6\u5939" aria-haspopup="menu">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector(".gallery-mount"), asideBar = fullEl.querySelector(".gallery-asidebar");
   const cloudBtn = fullEl.querySelector('[data-v="cloud"]'), refreshBtn = fullEl.querySelector('[data-v="refresh"]');
@@ -31666,14 +31684,46 @@ function initGalleryHost(d3) {
     for (const b3 of asideBar.querySelectorAll(".gallery-aside-tab")) b3.classList.toggle("is-on", b3.dataset.v === kind);
     ensureMounted().handle.setView(kind ?? "files");
   }
+  let newMenu = null;
+  const outsideNew = (e10) => {
+    const t10 = e10.target;
+    if (newMenu && !newMenu.contains(t10) && !t10.closest('[data-v="new"]')) closeNewMenu();
+  };
+  function closeNewMenu() {
+    newMenu?.remove();
+    newMenu = null;
+    document.removeEventListener("pointerdown", outsideNew, true);
+  }
+  function openNewMenu(btn) {
+    if (newMenu) {
+      closeNewMenu();
+      return;
+    }
+    const m2 = document.createElement("div");
+    newMenu = m2;
+    m2.className = "track-card ctx-menu gallery-new-menu";
+    m2.setAttribute("role", "menu");
+    m2.innerHTML = `<button type="button" class="btn ctx-item" data-v="new-song">${iconHtml2("new")}<span>\u65B0\u5EFA\u6B4C</span></button><button type="button" class="btn ctx-item" data-v="new-folder" title="\u5728\u73B0\u5728\u8FD9\u4E2A\u5939\u91CC">${iconHtml2("create-folder")}<span>\u65B0\u5EFA\u6587\u4EF6\u5939\u2026</span></button>`;
+    fullEl.append(m2);
+    const r10 = btn.getBoundingClientRect(), w2 = m2.offsetWidth;
+    Object.assign(m2.style, { position: "fixed", top: `${r10.bottom + 4}px`, left: `${Math.max(8, Math.min(r10.right - w2, innerWidth - w2 - 8))}px` });
+    setTimeout(() => {
+      if (newMenu === m2) document.addEventListener("pointerdown", outsideNew, true);
+    }, 0);
+  }
   fullEl.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
     if (v === "cloud") d3.openCloudMenu(cloudBtn);
     else if (v === "refresh") gallery2?.handle.refresh();
-    else if (v === "new") void d3.newSong();
-    else if (v === "newfolder") void newFolder();
-    else if (v === "instruments") d3.openInstruments();
+    else if (v === "new") openNewMenu(e10.target.closest("[data-v]"));
+    else if (v === "new-song") {
+      closeNewMenu();
+      void d3.newSong();
+    } else if (v === "new-folder") {
+      closeNewMenu();
+      void newFolder();
+    } else if (v === "instruments") d3.openInstruments();
     else if (v === "aside") showAside("trash");
     else if (v === "files") showAside(null);
     else if (v === "trash" || v === "backup") showAside(v);
@@ -37649,7 +37699,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "ac03ba872f4b",
+  cssHash: "3cdd66be1b03",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -40710,4 +40760,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5e2dae31aa0e.mjs.map
+//# sourceMappingURL=moonsinger-c8861e6d98d9.mjs.map

@@ -104,7 +104,9 @@ export function fitLyrics(items: readonly { cx: number; w: number; hy?: boolean 
   }
   return out;
 }
-const SCROLL_TAIL = 6;   // sp：横卷每张纸内容后面留的尾巴
+const SCROLL_TAIL = 6;
+/** 谱前简写那一列的宽度参照（7 个半角宽 = part-colors.ts ABBR_W）。 */
+const ABBR_REF = "Vln.Vc.";   // sp：横卷每张纸内容后面留的尾巴
 const NAME_MAX = 6.5;   // sp：谱前声部名一列最宽（再长折行；engrave() 里 nameLines）
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
 
@@ -596,7 +598,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     // 3. 折行（像文字：优先在小节线后折；一个小节都放不下就逐列折）。每行开头的调号 = 各声部那里生效的调号；行首宽 = 最宽的那个声部
     const ind0 = Math.max(...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4;   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
     // 第二行起每行写简写（v0.9.31；user「todo 总谱的每一行都放乐器名的省空间简写」→「乐手名和颜色同意」）：缩进 = 最宽的那个简写；没给简写（测试 / 老调用）= 0，照旧
-    const indN = parts.some((p) => p.abbr) ? Math.max(...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 : 0;
+    //   v0.9.41：定宽（user 经仓鼠转达「没简写的能不能想办法也按定宽裁一下，不然有一个没查到简写就beat the propose了」）——简写已按 ABBR_W 裁好（part-colors.ts fitAbbr），
+    //   列宽 = 一个 ABBR_W 宽的参照（Vln.Vc.），不随谁最长变；字形特别宽、量出来超了参照的那个才撑一点（不叠到谱上）
+    const indN = parts.some((p) => p.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 : 0;
     const keyNow = new Map<string, number>(per.map((q) => [q.p.id, q.head.key]));
     const clefW = (q: { fFam: boolean }) => (q.fFam ? W.fClef : W.gClef);
     const headerOf = (first: boolean) => Math.max(...per.map((q) => {

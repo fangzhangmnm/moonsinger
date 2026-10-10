@@ -40,10 +40,27 @@ export function shortName(name: string): string {
   if (w.length > 1) return w.map((x) => x[0]).join("").toUpperCase() + ".";
   return t.length <= 5 ? t : `${t.slice(0, 3)}.`;
 }
-/** 谱前的简写：名字就是乐器自己的名字 = 目录给的出版谱简写（仓鼠 v12）；人声预设 = 老规矩；别的（自己起的名字）= 名字缩短。名字后面的号（Vocals 2）跟着。 */
+/** 显示宽度：半角 = 1，全角（汉字 / 假名 / 谚文 / 全角符号）= 2。 */
+export const dispWidth = (s: string): number => [...s].reduce((n, ch) => n + (/[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]/.test(ch) ? 2 : 1), 0);
+/** 简写那一列的定宽（显示宽度；v0.9.41，user 经仓鼠转达「没简写的能不能想办法也按定宽裁一下，不然有一个没查到简写就beat the propose了，然后让opus也处理下用户的自定义输入，也要处理定宽」）。
+ *  7：仓鼠 v12 有出处的 123 个简写里 ≤ 7 的约八成，去掉句点后的空格之后更多；再宽谱前就太占地方（iPad mini）。 */
+export const ABBR_W = 7;
+/** 按定宽裁（号也算在宽度里）：① 放得下 = 原样 ② 去掉句点后的空格（Bar. Sax. → Bar.Sax.）③ 还宽就截——拉丁字截到 W − 1 再补「.」，全角字截到放得下为止（不补点）。 */
+export function fitAbbr(base: string, num = "", W = ABBR_W): string {
+  if (dispWidth(base + num) <= W) return base + num;
+  const b = base.replace(/\.\s+/g, ".");
+  if (dispWidth(b + num) <= W) return b + num;
+  const budget = Math.max(2, W - dispWidth(num)), cjk = dispWidth(b) > [...b].length;
+  let out = "", wd = 0;
+  for (const ch of b) { const cw = dispWidth(ch); if (wd + cw > (cjk ? budget : budget - 1)) break; out += ch; wd += cw; }
+  out = out.replace(/[\s.]+$/, "");
+  return (cjk ? out : `${out}.`) + num;
+}
+/** 谱前的简写：名字就是乐器自己的名字 = 目录给的出版谱简写（仓鼠 v12）；人声预设 = 老规矩；别的（自己起的名字）= 名字缩短。名字后面的号（Vocals 2）跟着。最后都按定宽裁（fitAbbr）。
+ *  名字比较不分大小写（v0.9.41 修：谱上「Piano」、目录英文名照 Wikidata 惯例小写「piano」，原来逐字比 = 118 个目录简写一个都没用上；仓鼠查出来的）。 */
 export function partAbbr(label: string, o: { conceptNames?: readonly string[]; conceptAbbr?: string; voice?: boolean }): string {
-  const m = / (\d+)$/.exec(label), base = m ? label.slice(0, -m[0].length) : label, num = m ? ` ${m[1]}` : "";
-  if (o.conceptAbbr && o.conceptNames?.some((n) => n === base)) return o.conceptAbbr + num;
-  if (o.voice && VOICE_ABBR[base]) return VOICE_ABBR[base] + num;
-  return shortName(base) + num;
+  const m = / (\d+)$/.exec(label), base = m ? label.slice(0, -m[0].length) : label, num = m ? ` ${m[1]}` : "", low = base.toLowerCase();
+  if (o.conceptAbbr && o.conceptNames?.some((n) => n.toLowerCase() === low)) return fitAbbr(o.conceptAbbr, num);
+  if (o.voice && VOICE_ABBR[base]) return fitAbbr(VOICE_ABBR[base], num);
+  return fitAbbr(shortName(base), num);
 }

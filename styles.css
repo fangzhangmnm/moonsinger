@@ -756,3 +756,6 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 /* 不是这一层的东西淡一点（看得见、点不到）：词 = 记号淡；符 = 歌词淡；音 = 都不淡 */
 .score[data-mode="lyrics"] .staff-svg :is(.dyn, .dyn-word, .dyn-implied, .dyn-dash, .hairpin, .art, .breath, .breath-label, .groove-mark, .nav-mark, .nav-text, .phrase-mark, .slur, .tempo-change, .volta) { opacity: .35; }
 .score[data-mode="symbols"] .staff-svg :is(.lyric, .melisma) { opacity: .35; }
+/* 歌库「新建」小菜单（v0.9.41） */
+.gallery-full .gallery-new-menu { z-index: var(--z-menu); }
+.gallery-new-menu .ctx-item { display: flex; align-items: center; gap: 8px; }

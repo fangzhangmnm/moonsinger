@@ -27,7 +27,7 @@ export interface GalleryHostDeps {
   /** 「新建」：在歌库里新建一首（空谱）并打开。 */
   newSong: () => Promise<void>;
   openSettings: () => void;
-  /** 「乐器」：歌库上面开乐器目录（只弹着玩，不写进哪首歌；user 2026-10-08「歌库应该有一个专门的乐器目录的入口」）。 */
+  /** 「即兴」（原「乐器」，v0.9.41 user「gallery乐器改成即兴」）：歌库上面开乐器目录，只弹着玩、不写进哪首歌（user 2026-10-08「歌库应该有一个专门的乐器目录的入口」）。 */
   openInstruments: () => void;
   /** 云按钮：登录 / 退出 / 账号（宿主的 auth 菜单）。 */
   openCloudMenu: (anchor: HTMLElement) => void;
@@ -58,9 +58,8 @@ export function initGalleryHost(d: GalleryHostDeps) {
     `<div class="gallery-chrome-title">歌库</div><span class="spacer"></span>` +
     `<button type="button" class="btn" data-v="cloud" title="云端：登录 / 退出">${iconHtml("cloud")}</button>` +
     `<button type="button" class="btn" data-v="refresh" title="刷新云端" hidden>${iconHtml("refresh")}</button>` +
-    `<button type="button" class="btn gallery-inst" data-v="instruments" title="乐器目录：浏览、试听、用键盘弹着玩（不写进哪首歌）"><span>乐器</span></button>` +
-    `<button type="button" class="btn" data-v="new" title="新建一首">${iconHtml("new")}<span>新建</span></button>` +
-    `<button type="button" class="btn" data-v="newfolder" title="新建文件夹（在现在这个夹里）">${iconHtml("create-folder")}</button>` +
+    `<button type="button" class="btn gallery-inst" data-v="instruments" title="即兴：挑乐器、用键盘弹着玩（不写进哪首歌）"><span>即兴</span></button>` +
+    `<button type="button" class="btn" data-v="new" title="新建：一首歌 / 一个文件夹" aria-haspopup="menu">${iconHtml("new")}<span>新建</span></button>` +
     `<button type="button" class="btn" data-v="aside" title="回收站和备份箱">${iconHtml("trash-can")}</button>` +
     `<button type="button" class="btn" data-v="settings" title="设置">${iconHtml("menu")}</button></div>` +
     `<div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml("back")}<span>回到歌</span></button>` +
@@ -143,13 +142,28 @@ export function initGalleryHost(d: GalleryHostDeps) {
     for (const b of asideBar.querySelectorAll<HTMLElement>(".gallery-aside-tab")) b.classList.toggle("is-on", b.dataset.v === kind);
     ensureMounted().handle.setView(kind ?? "files");
   }
+  let newMenu: HTMLElement | null = null;
+  const outsideNew = (e: PointerEvent) => { const t = e.target as HTMLElement; if (newMenu && !newMenu.contains(t) && !t.closest('[data-v="new"]')) closeNewMenu(); };
+  function closeNewMenu(): void { newMenu?.remove(); newMenu = null; document.removeEventListener("pointerdown", outsideNew, true); }
+  function openNewMenu(btn: HTMLElement): void {
+    if (newMenu) { closeNewMenu(); return; }
+    const m = document.createElement("div"); newMenu = m;
+    m.className = "track-card ctx-menu gallery-new-menu"; m.setAttribute("role", "menu");
+    m.innerHTML = `<button type="button" class="btn ctx-item" data-v="new-song">${iconHtml("new")}<span>新建歌</span></button>` +
+      `<button type="button" class="btn ctx-item" data-v="new-folder" title="在现在这个夹里">${iconHtml("create-folder")}<span>新建文件夹…</span></button>`;
+    fullEl.append(m);
+    const r = btn.getBoundingClientRect(), w = m.offsetWidth;
+    Object.assign(m.style, { position: "fixed", top: `${r.bottom + 4}px`, left: `${Math.max(8, Math.min(r.right - w, innerWidth - w - 8))}px` });
+    setTimeout(() => { if (newMenu === m) document.addEventListener("pointerdown", outsideNew, true); }, 0);
+  }
   fullEl.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (!v) return;
     if (v === "cloud") d.openCloudMenu(cloudBtn);
     else if (v === "refresh") gallery?.handle.refresh();
-    else if (v === "new") void d.newSong();
-    else if (v === "newfolder") void newFolder();
+    else if (v === "new") openNewMenu((e.target as HTMLElement).closest<HTMLElement>("[data-v]")!);   // 「新建」= 小菜单（v0.9.41；user「gallery的新建按钮应该是一个菜单，里面有新建歌和文件夹」，同 WeebPaint 图库的「＋」）
+    else if (v === "new-song") { closeNewMenu(); void d.newSong(); }
+    else if (v === "new-folder") { closeNewMenu(); void newFolder(); }
     else if (v === "instruments") d.openInstruments();
     else if (v === "aside") showAside("trash");
     else if (v === "files") showAside(null);
