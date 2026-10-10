@@ -36,7 +36,7 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
-import { saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
@@ -676,7 +676,7 @@ function updateExtras(next: Extras, locus: Locus, gesture?: string): void {
   doc.extras = next; renderTitle(); changed(); renderUndo();
   pushChannels(); schedulePlaybackRefresh(); schedulePrewarm();   // 推子 / 校准立刻进录音房（边放边调）；换人 = 时间线重算
   if (locus.kind === "lounge") pad.render();   // 演奏者变了 = pad 的提示跟着（音域 / 原速键；固定原速 = 不提示）
-  drawInst(); trackRedraw?.();
+  drawInst(); trackRedraw?.(); updateChrome();   // 歌手名在挂签的下拉里
 }
 /** 歌和 extras 一起改、算一步（加声部 / 删声部：谱和休息室同时动）。 */
 function updateBoth(next: EditorState, nextExtras: Extras, locus: Locus): void {
@@ -783,6 +783,8 @@ function pushChannels(): void {
   engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: resolveChain(b.chain, ctx(null)), to: b.to, sends: b.sends })));   // 总线也能出到 / 发给别的总线（v0.10.9）
   const m = activeMaster(doc.extras); engine.master({ ...m, chain: resolveChain(m.chain, ctx(null)) });
 }
+/** 焦点在能打字的框里（文字输入 / 多行）：空格归它。推子（range）、下拉、按钮不算。 */
+function typingIn(t: EventTarget | null): boolean { const el = t as HTMLElement | null; if (!el) return false; if (el.tagName === "TEXTAREA" || el.isContentEditable) return true; return el.tagName === "INPUT" && !["range", "checkbox", "radio", "button"].includes((el as HTMLInputElement).type); }
 /** 混音台上一条轨的 id → studio.json 里那条轨的 id（歌手 = 它的麦克风轨；路由轨 = 自己）。 */
 function trackKey(track: string): string { return st.song.parts.find((x) => x.id === track)?.mic ?? track; }
 function routeName(track: string): string { if (track === "master") return "总轨"; const k = st.song.parts.findIndex((x) => x.id === track); return k >= 0 ? partLabels(st.song, doc.extras)[k] : studioTrack(doc.extras, track)?.name ?? track; }
@@ -1117,11 +1119,9 @@ function setMode(m: Mode): void {
   if (m === ws.mode) return;
   closeOffer?.(); view.lyrics.commitAndClose(); view.marks.commitAndClose();
   if (m !== "listen") lastEditMode = m;
-  const wasListen = ws.mode === "listen";
   ws.mode = m; if (hasKeys(m)) ws.collapsed = false;
   applyWorkspace();
-  if (m === "listen") info("听：谱锁住了（不能写），轻点不跳播；长按 / 右键谱面 = 从这儿放；空格 = 放 / 停；底下是混音台。Esc / 换别的模式回到写");
-  else if (wasListen) info("回到写");
+  // 进出「听」不弹提示（v0.10.10，user「然后听的时候会弹一个nudge chip，我觉得那个info是废话，不用说」）：说明在「听」钮的悬停提示里
 }
 const setListen = (on: boolean) => setMode(on ? "listen" : lastEditMode);
 /** 听模式的长按 / 右键小菜单（轻点不跳播，防误触）。 */
@@ -1719,6 +1719,7 @@ const studio = new Studio($("stage"), {
   addBus: () => { const id = newBusId(doc.extras), n = studioTracks(doc.extras).filter((t) => t.kind === "bus").length + 1, name = `混音轨 ${n}`; updateExtras(withTrack(doc.extras, id, { kind: "bus", name }), { kind: "studio", label: `加${name}` }); return id; },
   removeBus: (id) => { const name = studioTrack(doc.extras, id)?.name ?? id; updateExtras(withoutBus(doc.extras, id), { kind: "studio", label: `删${name}` }); },
   renameBus: (id, name) => updateExtras(withTrack(doc.extras, id, { name }), { kind: "studio", label: `改名「${name}」` }),
+  moveBus: (id, dir) => updateExtras(moveBus(doc.extras, id, dir), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} 往${dir < 0 ? "前" : "后"}挪` }),
   setBusGain: (id, dB) => updateExtras(withTrack(doc.extras, id, { gainDb: dB }), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} 增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id}`),
   setBusPan: (id, pan) => updateExtras(withTrack(doc.extras, id, { pan }), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} 声像` }, `mix:pan:${id}`),
   outTo: (track) => studioTrack(doc.extras, trackKey(track))?.to ?? "master",
@@ -1741,7 +1742,7 @@ const studio = new Studio($("stage"), {
 /** 混音台 = 「听」的键盘（v0.10.2；user「能不能混音台就是听的键盘，不用单独一个键，就是不同功能有不同键盘」）：打开 = 切到听（底座 = 混音台）；收起 = 收起底座（底下那粒 tab 叫回来）。 */
 function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); ws.collapsed = false; if (ws.mode !== "listen") setMode("listen"); else applyWorkspace(); }   // 峰值表：页开着才要
 function closeStudio(): void { if (!studio.isOpen) return; ws.collapsed = true; applyWorkspace(); scoreEl.focus(); }
-engine.on("meter", (peak) => { if (studio.isOpen) studio.meter(peak); });
+engine.on("meter", (peak, _active, tracks) => { if (studio.isOpen) studio.meter(peak, tracks); });   // 每张卡片顶上的峰值细线（v0.10.10）
 function openFinder(): void {
   finderBackToInst = instShown; if (instShown) { instShown = false; instEl.hidden = true; }
   finderShown = true; finderPlayOnly = gallery?.isOpen() ?? false;
@@ -2666,7 +2667,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);
   engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; singer.cancelPending(); trimLanesForNewSong(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了、上一首撑大的堆还回去
-  view.render(); pad.render(); renderTitle();
+  view.render(); pad.render(); renderTitle(); updateChrome();   // 挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
   if (st.song.parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "tsukuyomi")) void singer.warm(modelBases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }
@@ -3518,7 +3519,7 @@ window.addEventListener("keydown", (e) => {
   }
   if ((e.target as HTMLElement | null)?.closest?.("wp-reference-window")) return;   // 参考窗拿着焦点：键盘归它（Ctrl / ⌘+V 进窗；Esc 它自己交回谱）
   if (studio.isOpen && e.key === "Escape" && !st.sel && !view.lyrics.open && !view.marks.open && !closeOffer) { e.preventDefault(); setMode(lastEditMode); return; }   // 混音台 = 听：Esc = 回到写   // 谱上没别的可退 = Esc 收起录音室
-  if (studio.isOpen && (e.target as HTMLElement | null)?.closest?.(".studio")) { if (e.key === "Escape") { e.preventDefault(); setMode(lastEditMode); } else if (e.key === " " && !(e.target as HTMLElement)?.closest("input")) { e.preventDefault(); playPause(e.timeStamp); } return; }   // 录音室在底座里：焦点在它里面才归它，谱照样能写   // 录音室：Esc 回谱、空格播放
+  if (studio.isOpen && (e.target as HTMLElement | null)?.closest?.(".studio")) { if (e.key === "Escape") { e.preventDefault(); setMode(lastEditMode); } else if (e.key === " " && !typingIn(e.target)) { e.preventDefault(); playPause(e.timeStamp); } return; }   // 混音台在底座里：焦点在它里面才归它，谱照样能写；Esc 回谱、空格播放——焦点在推子 / 下拉 / 按钮上也是（v0.10.10 修：原来焦点在任何 input（推子也是）上都放过 = user「混音台的空格没有捕捉」），只有打字的框（混音轨的名字）不抢
   if (listenOn()) {   // 听模式：只认 空格（放 / 暂停）、Esc（回到写）和 Ctrl / ⌘+S（存）；别的键不写谱
     if (e.key === " ") { e.preventDefault(); playPause(e.timeStamp); }
     else if (e.key === "Escape") { e.preventDefault(); setListen(false); }
@@ -3537,6 +3538,7 @@ window.addEventListener("blur", () => { settleChords("lost"); chordRoots.clear()
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } } });
 // 切后台回来：声音被系统收起来了（iPad = interrupted）就叫醒；记一笔延迟（回来后系统可能换了缓冲大小——播放头按扬声器的时钟走，会自己跟上）
 document.addEventListener("visibilitychange", () => {
+  if (studio.isOpen) engine.meter(document.visibilityState === "visible");   // 看不见就不统计（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）
   if (document.visibilityState !== "visible") return;
   const c = singer.unlock(); latLogged = null; latAt = 0;
   const ts = typeof c.getOutputTimestamp === "function" ? c.getOutputTimestamp() : null;   // 原始的一对时钟也记下来：错位再报时能看出是哪个时钟跳了

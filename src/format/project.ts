@@ -219,6 +219,13 @@ export function withoutBus(extras: Extras, id: string): Extras {
   studio.tracks = ((studio.tracks as Json[] | undefined) ?? []).filter((x) => !(x.id === id && x.kind === "bus")).map((x) => ({ ...x, to: x.to === id ? "master" : x.to, sends: ((x.sends as Json[] | undefined) ?? []).filter((sd) => sd.to !== id) }));
   return { ...extras, studio };
 }
+/** 混音轨往前 / 往后挪一位（只在混音轨之间换；歌手的麦克风轨不动，它们的顺序跟谱走）。到头 = 原样。v0.10.10，user「混音轨之间还可以排序」。 */
+export function moveBus(extras: Extras, id: string, dir: -1 | 1): Extras {
+  const tracks = ((extras.studio?.tracks as Json[] | undefined) ?? []).slice(), buses = tracks.map((t, i) => [t, i] as const).filter(([t]) => t.kind === "bus");
+  const k = buses.findIndex(([t]) => t.id === id), j = k + dir; if (k < 0 || j < 0 || j >= buses.length) return extras;
+  const [a, ia] = buses[k], [b, ib] = buses[j]; tracks[ia] = b; tracks[ib] = a;
+  return { ...extras, studio: { ...(extras.studio as Json), tracks } };
+}
 export function newBusId(extras: Extras): string { return nextKey(studioTracks(extras).map((t) => t.id), "b"); }
 /** 总轨（studio.json master；没写 = 0 dB + 限幅开 + 空链）。 */
 export function activeMaster(extras: Extras): { gainDb: number; limiter: boolean; chain: FxV2[] } {

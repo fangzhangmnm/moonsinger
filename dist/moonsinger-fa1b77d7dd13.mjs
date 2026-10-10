@@ -388,7 +388,7 @@ var init_fflate_esm = __esm({
           buf = nbuf;
         }
       };
-      var final = st3.f || 0, pos = st3.p || 0, bt = st3.b || 0, lm2 = st3.l, dm = st3.d, lbt = st3.m, dbt = st3.n;
+      var final = st3.f || 0, pos = st3.p || 0, bt = st3.b || 0, lm2 = st3.l, dm = st3.d, lbt = st3.m, dbt2 = st3.n;
       var tbts = sl2 * 8;
       do {
         if (!lm2) {
@@ -408,7 +408,7 @@ var init_fflate_esm = __esm({
             st3.b = bt += l10, st3.p = pos = t10 * 8, st3.f = final;
             continue;
           } else if (type == 1)
-            lm2 = flrm, dm = fdrm, lbt = 9, dbt = 5;
+            lm2 = flrm, dm = fdrm, lbt = 9, dbt2 = 5;
           else if (type == 2) {
             var hLit = bits(dat, pos, 31) + 257, hcLen = bits(dat, pos + 10, 15) + 4;
             var tl2 = hLit + bits(dat, pos + 5, 31) + 1;
@@ -441,9 +441,9 @@ var init_fflate_esm = __esm({
             }
             var lt2 = ldt.subarray(0, hLit), dt = ldt.subarray(hLit);
             lbt = max(lt2);
-            dbt = max(dt);
+            dbt2 = max(dt);
             lm2 = hMap(lt2, lbt, 1);
-            dm = hMap(dt, dbt, 1);
+            dm = hMap(dt, dbt2, 1);
           } else
             err(1);
           if (pos > tbts) {
@@ -454,7 +454,7 @@ var init_fflate_esm = __esm({
         }
         if (resize)
           cbuf(bt + 131072);
-        var lms = (1 << lbt) - 1, dms = (1 << dbt) - 1;
+        var lms = (1 << lbt) - 1, dms = (1 << dbt2) - 1;
         var lpos = pos;
         for (; ; lpos = pos) {
           var c10 = lm2[bits16(dat, pos) & lms], sym = c10 >> 4;
@@ -508,7 +508,7 @@ var init_fflate_esm = __esm({
         }
         st3.l = lm2, st3.p = lpos, st3.b = bt, st3.f = final;
         if (lm2)
-          final = 1, st3.m = lbt, st3.d = dm, st3.n = dbt;
+          final = 1, st3.m = lbt, st3.d = dm, st3.n = dbt2;
       } while (!final);
       return bt != buf.length && noBuf ? slc(buf, 0, bt) : buf.subarray(0, bt);
     };
@@ -1654,35 +1654,35 @@ var init_upng_esm = __esm({
           }
           var bpll = Math.ceil(sw2 * bpp / 8);
           _filterZero(data, out, di, sw2, sh2);
-          var y2 = 0, row = starting_row[pass];
-          while (row < h2) {
+          var y2 = 0, row2 = starting_row[pass];
+          while (row2 < h2) {
             var col = starting_col[pass];
             var cdi = di + y2 * bpll << 3;
             while (col < w2) {
               if (bpp == 1) {
                 var val = data[cdi >> 3];
                 val = val >> 7 - (cdi & 7) & 1;
-                img[row * bpl + (col >> 3)] |= val << 7 - ((col & 7) << 0);
+                img[row2 * bpl + (col >> 3)] |= val << 7 - ((col & 7) << 0);
               }
               if (bpp == 2) {
                 var val = data[cdi >> 3];
                 val = val >> 6 - (cdi & 7) & 3;
-                img[row * bpl + (col >> 2)] |= val << 6 - ((col & 3) << 1);
+                img[row2 * bpl + (col >> 2)] |= val << 6 - ((col & 3) << 1);
               }
               if (bpp == 4) {
                 var val = data[cdi >> 3];
                 val = val >> 4 - (cdi & 7) & 15;
-                img[row * bpl + (col >> 1)] |= val << 4 - ((col & 1) << 2);
+                img[row2 * bpl + (col >> 1)] |= val << 4 - ((col & 1) << 2);
               }
               if (bpp >= 8) {
-                var ii2 = row * bpl + col * cbpp;
+                var ii2 = row2 * bpl + col * cbpp;
                 for (var j2 = 0; j2 < cbpp; j2++) img[ii2 + j2] = data[(cdi >> 3) + j2];
               }
               cdi += bpp;
               col += ci2;
             }
             y2++;
-            row += ri2;
+            row2 += ri2;
           }
           if (sw2 * sh2 != 0) di += sh2 * (1 + bpll);
           pass = pass + 1;
@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.9-2026-10-10";
+var APP_VERSION = "v0.10.10-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -5925,10 +5925,10 @@ function grooveMapOf(song, order) {
     const p2 = expandPaper(song, p0, () => -1);
     out.push({ tick: at2, style: null, amount: 1 });
     const here = [];
-    song.parts.forEach((part, row) => {
+    song.parts.forEach((part, row2) => {
       let t10 = 0;
       for (const tok of p2.tracks[part.id] ?? []) {
-        if (tok.kind === "groove") here.push({ tick: at2 + t10, style: tok.style, amount: tok.amount ?? 1, shift: !!tok.shift, row });
+        if (tok.kind === "groove") here.push({ tick: at2 + t10, style: tok.style, amount: tok.amount ?? 1, shift: !!tok.shift, row: row2 });
         else if (isTimed(tok)) t10 += tok.dur;
       }
     });
@@ -7183,14 +7183,14 @@ function fitLyrics(items, gap = 0.5) {
     });
     return out;
   }
-  const row = items.map(() => 0);
+  const row2 = items.map(() => 0);
   let flip = 0;
   for (let i10 = 0; i10 < items.length; i10++) {
-    if (r10.bad.has(i10)) row[i10] = flip++ % 2;
+    if (r10.bad.has(i10)) row2[i10] = flip++ % 2;
     else flip = 0;
   }
   for (const rr2 of [0, 1]) {
-    const idx = all.filter((i10) => row[i10] === rr2), res = place(idx);
+    const idx = all.filter((i10) => row2[i10] === rr2), res = place(idx);
     idx.forEach((i10, k2) => {
       out[i10] = { dx: res.pos[k2] - items[i10].cx, scale: scale[i10], row: rr2, tight: res.bad.has(i10) };
     });
@@ -7545,7 +7545,7 @@ function engrave(song, o10) {
   }
   let arrangement = null, arrLast = 0;
   if (!o10.onlyPaper) {
-    const as2 = P2(1.25), wOf = (t10, size) => o10.measureLyric(t10) * size / LYRIC_EM, row = Math.max(lines.length, 1), base3 = y0 + row * cs2 * 1.35;
+    const as2 = P2(1.25), wOf = (t10, size) => o10.measureLyric(t10) * size / LYRIC_EM, row2 = Math.max(lines.length, 1), base3 = y0 + row2 * cs2 * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
     const label = "\u7F16\u6392\u3000", lw2 = wOf(label, 1.25), x0 = P2(MARGIN) + lw2, avail = o10.width - P2(2 * MARGIN) - lw2;
     prims.push({ t: "text", x: P2(MARGIN), y: base3, s: label, cls: txt ? "arr-label" : "arr-label empty", size: as2, anchor: "start" });
@@ -7795,14 +7795,14 @@ function engrave(song, o10) {
     flush2();
     const nSys = system + 1;
     for (let s10 = 0; s10 < nSys; s10++) {
-      const row = cols.filter((c10) => c10.system === s10);
-      const end = row.reduce((m2, c10) => Math.max(m2, c10.x + c10.w), sysStarts[s10]), avail = brk - sysStarts[s10], used = end - sysStarts[s10];
+      const row2 = cols.filter((c10) => c10.system === s10);
+      const end = row2.reduce((m2, c10) => Math.max(m2, c10.x + c10.w), sysStarts[s10]), avail = brk - sysStarts[s10], used = end - sysStarts[s10];
       if (used <= avail + 1e-6 && (s10 === nSys - 1 || used < avail * 0.6)) continue;
-      const gw = chunkW(row);
+      const gw = chunkW(row2);
       if (!gw) continue;
       const k2 = (avail - used) / gw;
       let xx = sysStarts[s10];
-      for (const c10 of row) {
+      for (const c10 of row2) {
         c10.x = xx;
         if (c10.chunk) c10.w *= 1 + k2;
         xx += c10.w;
@@ -7911,10 +7911,10 @@ function engrave(song, o10) {
       const G2 = geos[s10];
       ensure(sysHOf(G2));
       for (let r10 = 0; r10 < nR2; r10++) for (let k2 = 0; k2 < per[r10].staves; k2++) {
-        const top = yCur, row = rowOf(s10, r10, k2), g3 = G2[r10].g[k2], h2 = g3.above + 4 + g3.below;
-        rowTop.set(row, top);
-        rowAbove.set(row, g3.above);
-        if (g3.lyric !== null) lyricOff.set(row, g3.lyric);
+        const top = yCur, row2 = rowOf(s10, r10, k2), g3 = G2[r10].g[k2], h2 = g3.above + 4 + g3.below;
+        rowTop.set(row2, top);
+        rowAbove.set(row2, g3.above);
+        if (g3.lyric !== null) lyricOff.set(row2, g3.lyric);
         rows.push({ top, staffTop: top + P2(g3.above), bottom: top + P2(h2), paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1 });
         yCur += P2(h2);
       }
@@ -7931,9 +7931,9 @@ function engrave(song, o10) {
       yCur += P2(SYS_GAP);
     }
     const staffEnd = Array.from({ length: nSys }, (_2, s10) => {
-      const row = placedCols.filter((c10) => c10.system === s10);
-      if (!row.length) return right;
-      const last = row.reduce((a10, c10) => c10.x > a10.x || c10.x === a10.x && (c10.slot > a10.slot || c10.slot === a10.slot && c10.n > a10.n) ? c10 : a10);
+      const row2 = placedCols.filter((c10) => c10.system === s10);
+      if (!row2.length) return right;
+      const last = row2.reduce((a10, c10) => c10.x > a10.x || c10.x === a10.x && (c10.slot > a10.slot || c10.slot === a10.slot && c10.n > a10.n) ? c10 : a10);
       return last.bar ? Math.min(right, last.x + 0.7) : right;
     });
     for (let s10 = 0; s10 < nSys; s10++) {
@@ -7947,24 +7947,24 @@ function engrave(song, o10) {
       per.forEach((q2, r10) => {
         const f2 = sysKeys[s10].get(q2.p.id) ?? q2.head.key;
         for (let k2 = 0; k2 < q2.staves; k2++) {
-          const row = rowOf(s10, r10, k2), clef = q2.staves === 2 ? k2 ? "F" : "G" : clefAtSys(q2, s10), base3 = baseClef(clef);
+          const row2 = rowOf(s10, r10, k2), clef = q2.staves === 2 ? k2 ? "F" : "G" : clefAtSys(q2, s10), base3 = baseClef(clef);
           for (let L2 = 0; L2 < 5; L2++) {
-            const y2 = yOf(row, BOTTOM_LINE + 2 * L2);
+            const y2 = yOf(row2, BOTTOM_LINE + 2 * L2);
             prims.push({ t: "line", x1: P2(MARGIN + ind), y1: y2, x2: P2(staffEnd[s10]), y2, w: P2(ENGRAVE.staffLine), cls: "staff" });
           }
           let hx = MARGIN + ind + 0.6;
-          prims.push({ t: "glyph", x: P2(hx), y: yOf(row, base3 === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
-          if (q2.staves === 1) clefs.push({ kind: "start", paper: paper.id, part: q2.p.id, index: clefSrcAtSys(q2, s10), system: row, x: P2(hx - 0.3), ...staffHit(row), w: P2(clefW(q2) + 0.6) });
+          prims.push({ t: "glyph", x: P2(hx), y: yOf(row2, base3 === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
+          if (q2.staves === 1) clefs.push({ kind: "start", paper: paper.id, part: q2.p.id, index: clefSrcAtSys(q2, s10), system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(clefW(q2) + 0.6) });
           hx += clefW(q2) + 1;
           const keyX0 = hx;
-          drawKeySig(row, hx, f2, "keysig", base3);
+          drawKeySig(row2, hx, f2, "keysig", base3);
           hx += Math.abs(f2) * 1.05;
           if (s10 === 0) {
-            if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row, x: P2(keyX0 - 0.3), ...staffHit(row), w: P2(Math.max(1.2, hx - keyX0 + 0.3)) });
+            if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row2, x: P2(keyX0 - 0.3), ...staffHit(row2), w: P2(Math.max(1.2, hx - keyX0 + 0.3)) });
             if (f2) hx += 0.8;
-            const cw2 = drawTime(row, hx, q2.head.time.beats, q2.head.time.beatType, "timesig");
-            if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row, x: P2(hx - 0.3), ...staffHit(row), w: P2(cw2 + 0.6) });
-            if (k2 === 0 && q2.p.id === owner && q2.head.idx.tempo !== void 0) drawTempo(row, MARGIN + ind + 0.6, q2.head.bpm, "tempo", q2.head.idx.tempo, prevBpm === null || prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > prevBpm ? "up" : "down");
+            const cw2 = drawTime(row2, hx, q2.head.time.beats, q2.head.time.beatType, "timesig");
+            if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(cw2 + 0.6) });
+            if (k2 === 0 && q2.p.id === owner && q2.head.idx.tempo !== void 0) drawTempo(row2, MARGIN + ind + 0.6, q2.head.bpm, "tempo", q2.head.idx.tempo, prevBpm === null || prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > prevBpm ? "up" : "down");
           }
         }
         if (s10 === 0) {
@@ -8080,61 +8080,61 @@ function engrave(song, o10) {
       const clsOf = (c10) => [c10.ghost ? "ghost" : "", c10.pad ? "pad-rest" : "", c10.index >= 0 && c10.index === curIndex ? "cur" : "", c10.index >= 0 && inSel(c10.index) ? "sel" : ""].filter(Boolean).join(" ") || void 0;
       const partLyrics = [];
       const drawChunk = (c10) => {
-        const cls = clsOf(c10), row = RW(c10);
+        const cls = clsOf(c10), row2 = RW(c10);
         if (!c10.note) {
           const g3 = c10.base >= WHOLE ? GLYPH.restWhole : c10.base >= TPQ * 2 ? GLYPH.restHalf : c10.base >= TPQ ? GLYPH.restQuarter : c10.base >= TPQ / 2 ? GLYPH.rest8th : c10.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
-          const ry2 = c10.base >= WHOLE ? yOf(row, 36) : yOf(row, MID_LINE);
+          const ry2 = c10.base >= WHOLE ? yOf(row2, 36) : yOf(row2, MID_LINE);
           prims.push({ t: "glyph", x: P2(c10.x + 0.35), y: ry2, ch: g3, cls: cls ? `rest ${cls}` : "rest" });
-          if (c10.j === 0 && c10.index >= 0 && !c10.pad) rests.push({ index: c10.index, system: row, x: P2(c10.x + 0.35), y: yOf(row, MID_LINE), w: P2(1.2) });
-          if (c10.dotted) prims.push({ t: "glyph", x: P2(c10.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
+          if (c10.j === 0 && c10.index >= 0 && !c10.pad) rests.push({ index: c10.index, system: row2, x: P2(c10.x + 0.35), y: yOf(row2, MID_LINE), w: P2(1.2) });
+          if (c10.dotted) prims.push({ t: "glyph", x: P2(c10.x + 0.35 + 1.5), y: yOf(row2, 35), ch: GLYPH.augmentationDot, cls });
           return;
         }
         const ds = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff, c10.index));
-        const d3 = ds[0], y2 = yOf(row, d3), x0 = nhX(c10);
+        const d3 = ds[0], y2 = yOf(row2, d3), x0 = nhX(c10);
         c10.accs.forEach((a10, k2) => {
           if (a10 === null) return;
           const ag2 = a10 === 1 ? GLYPH.accidentalSharp : a10 === -1 ? GLYPH.accidentalFlat : a10 === 2 ? GLYPH.accidentalDoubleSharp : a10 === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
           const near2 = c10.accs.slice(0, k2).some((b3, kk) => b3 !== null && Math.abs(ds[kk] - ds[k2]) < 3);
-          prims.push({ t: "glyph", x: P2(c10.x + 0.2) - (near2 ? P2(1.1) : 0) - (c10.art.includes("ghost") ? P2(0.6) : 0), y: yOf(row, ds[k2]), ch: ag2, cls });
+          prims.push({ t: "glyph", x: P2(c10.x + 0.2) - (near2 ? P2(1.1) : 0) - (c10.art.includes("ghost") ? P2(0.6) : 0), y: yOf(row2, ds[k2]), ch: ag2, cls });
         });
         const ledgers = /* @__PURE__ */ new Set();
         for (const dd of ds) {
           for (let L2 = 28; L2 >= dd; L2 -= 2) ledgers.add(L2);
           for (let L2 = 40; L2 <= dd; L2 += 2) ledgers.add(L2);
         }
-        for (const L2 of ledgers) prims.push({ t: "line", x1: x0 - P2(ENGRAVE.ledgerExt), y1: yOf(row, L2), x2: x0 + nhW(c10) + P2(ENGRAVE.ledgerExt), y2: yOf(row, L2), w: P2(ENGRAVE.ledger), cls: "ledger" });
+        for (const L2 of ledgers) prims.push({ t: "line", x1: x0 - P2(ENGRAVE.ledgerExt), y1: yOf(row2, L2), x2: x0 + nhW(c10) + P2(ENGRAVE.ledgerExt), y2: yOf(row2, L2), w: P2(ENGRAVE.ledger), cls: "ledger" });
         const ng2 = xOf(c10) ? c10.base >= WHOLE ? GLYPH.noteheadXWhole : c10.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack : c10.base >= WHOLE ? GLYPH.noteheadWhole : c10.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
         let shifted = false;
         ds.forEach((dd, k2) => {
           const second = k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1 && !shifted;
           shifted = second;
           const mute = k2 > 0 && !!q2.p.mono;
-          prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row, dd), ch: ng2, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c10.whisper && whisperMute ? "art-mute" : "", focused && o10.span && c10.index >= o10.span.from && c10.index < o10.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
+          prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row2, dd), ch: ng2, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c10.whisper && whisperMute ? "art-mute" : "", focused && o10.span && c10.index >= o10.span.from && c10.index < o10.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c10.art.includes("ghost")) {
             const hx = second ? x0 + nhW(c10) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
-            prims.push({ t: "glyph", x: hx - P2(0.6), y: yOf(row, dd), ch: "\uE0F5", cls: pc });
-            prims.push({ t: "glyph", x: hx + nhW(c10) + P2(0.25), y: yOf(row, dd), ch: "\uE0F6", cls: pc });
+            prims.push({ t: "glyph", x: hx - P2(0.6), y: yOf(row2, dd), ch: "\uE0F5", cls: pc });
+            prims.push({ t: "glyph", x: hx + nhW(c10) + P2(0.25), y: yOf(row2, dd), ch: "\uE0F6", cls: pc });
           }
         });
-        if (c10.dotted) prims.push({ t: "glyph", x: x0 + nhW(c10) + P2(0.3), y: yOf(row, d3 % 2 === 0 ? d3 + 1 : d3), ch: GLYPH.augmentationDot, cls });
-        if (c10.j === 0) notes.push({ index: c10.index, system: row, x: x0, y: y2, w: nhW(c10), d: diatonicIndex(c10.pitch) });
+        if (c10.dotted) prims.push({ t: "glyph", x: x0 + nhW(c10) + P2(0.3), y: yOf(row2, d3 % 2 === 0 ? d3 + 1 : d3), ch: GLYPH.augmentationDot, cls });
+        if (c10.j === 0) notes.push({ index: c10.index, system: row2, x: x0, y: y2, w: nhW(c10), d: diatonicIndex(c10.pitch) });
         if (c10.j === 0 && !c10.tie) {
           const fit = lyrPlan.get(`${r10}:${c10.index}`), ly0 = lyricY(lyricRow(c10.system)), cx0 = x0 + nhW(c10) / 2;
           const ly2 = ly0 + (fit?.row ? P2(LYRIC_ROW2) : 0), cx2 = cx0 + (fit ? P2(fit.dx) : 0);
-          partLyrics.push({ index: c10.index, system: row, x: cx2, y: ly2, ...fit?.tight ? { tight: true } : {} });
+          partLyrics.push({ index: c10.index, system: row2, x: cx2, y: ly2, ...fit?.tight ? { tight: true } : {} });
           if (c10.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P2(0.6), y1: ly0, x2: x0 + nhW(c10) + P2(0.4), y2: ly0, w: P2(0.12), cls: "melisma" });
           else if (c10.lyric) prims.push({ t: "text", x: cx2, y: ly2, s: lyricShow(c10.lyric), ...fit && fit.scale < 1 ? { size: P2(LYRIC_EM * fit.scale) } : {}, cls: [o10.hot?.has(tokens[c10.index]?.id ?? -1) ? "lyric hot" : "lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         }
       };
       for (const u2 of units) {
-        const row = RW(u2);
+        const row2 = RW(u2);
         if (u2.kind === "phrase") {
           prims.push({ t: "text", x: P2(u2.x + 0.1), y: lyricY(lyricRow(u2.system)), s: "\u3002", cls: "phrase-mark", size: P2(1.3), anchor: "start" });
           continue;
         }
         if (u2.kind === "dyn") {
           const dr = rowOf(u2.system, r10, 0), [cl0, cr0] = DYN_INK[u2.value];
-          let dy = dynYAt.get(dr) ?? yOf(row, TOP_LINE + 2.4);
+          let dy = dynYAt.get(dr) ?? yOf(row2, TOP_LINE + 2.4);
           const lx2 = P2(u2.x + 0.3 + cl0), prev = dynRight.get(dr);
           if (prev !== void 0 && lx2 < prev + P2(0.3)) dy += dy < yOf(dr, MID_LINE) ? -P2(1.9) : P2(1.9);
           else dynRight.set(dr, P2(u2.x + 0.3 + cr0));
@@ -8157,9 +8157,9 @@ function engrave(song, o10) {
         if (u2.kind === "head") {
           {
             const k2 = Math.min(o10.caret, q2.realLen) - 1;
-            head = { system: row, x: P2(u2.x), shift: shAt(q2, u2.staff, k2 >= headLen(q2.tokens) ? k2 : -1) };
+            head = { system: row2, x: P2(u2.x), shift: shAt(q2, u2.staff, k2 >= headLen(q2.tokens) ? k2 : -1) };
           }
-          prims.push({ t: "line", x1: P2(u2.x + 0.1), y1: yOf(row, 42), x2: P2(u2.x + 0.1), y2: yOf(row, 26), w: P2(0.16), cls: "caret" });
+          prims.push({ t: "line", x1: P2(u2.x + 0.1), y1: yOf(row2, 42), x2: P2(u2.x + 0.1), y2: yOf(row2, 26), w: P2(0.16), cls: "caret" });
           continue;
         }
         if (u2.kind === "bar" || u2.kind === "key" || u2.kind === "time") {
@@ -8191,7 +8191,7 @@ function engrave(song, o10) {
           continue;
         }
         if (u2.kind === "tempo") {
-          if (q2.p.id === owner) drawTempo(row, u2.x + 0.3, u2.bpm, inSel(u2.index) ? "tempo sel" : "tempo", u2.index);
+          if (q2.p.id === owner) drawTempo(row2, u2.x + 0.3, u2.bpm, inSel(u2.index) ? "tempo sel" : "tempo", u2.index);
           continue;
         }
         if (u2.kind === "hairpin") continue;
@@ -8204,8 +8204,8 @@ function engrave(song, o10) {
           if (q2.staves === 2) continue;
           const first = !units.some((x3) => x3.system === u2.system && x3.index >= 0 && x3.index < u2.index && x3.kind !== "ottava");
           const base3 = baseClef(u2.clef), cls = inSel(u2.index) ? "clef cue sel" : "clef cue";
-          if (!first) prims.push({ t: "glyph", x: P2(u2.x + 0.35), y: yOf(row, base3 === "F" ? 36 : 32), ch: CLEF_GLYPH[u2.clef], cls, size: P2(4 * CLEF_CUE) });
-          clefs.push({ kind: "mid", paper: paper.id, part: q2.p.id, index: u2.index, system: row, x: P2(u2.x), ...staffHit(row), w: P2(Math.max(u2.w, 1.6)) });
+          if (!first) prims.push({ t: "glyph", x: P2(u2.x + 0.35), y: yOf(row2, base3 === "F" ? 36 : 32), ch: CLEF_GLYPH[u2.clef], cls, size: P2(4 * CLEF_CUE) });
+          clefs.push({ kind: "mid", paper: paper.id, part: q2.p.id, index: u2.index, system: row2, x: P2(u2.x), ...staffHit(row2), w: P2(Math.max(u2.w, 1.6)) });
           continue;
         }
         drawChunk(u2);
@@ -8284,7 +8284,7 @@ function engrave(song, o10) {
       const upOf = /* @__PURE__ */ new Map();
       const tipOf = /* @__PURE__ */ new Map();
       for (const g3 of stemmed) {
-        const row = RW(g3[0].c), mid = yOf(row, MID_LINE);
+        const row2 = RW(g3[0].c), mid = yOf(row2, MID_LINE);
         const up = g3.reduce((a10, s10) => a10 + (s10.d + s10.dLow) / 2, 0) / g3.length < MID_LINE;
         for (const s10 of g3) upOf.set(s10.c, up);
         const sx2 = (s10) => up ? s10.x0 + P2(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s10.x0 + P2(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
@@ -8340,7 +8340,7 @@ function engrave(song, o10) {
       const ign = new Set(q2.p.ignores ?? []);
       for (const c10 of units) {
         if (c10.kind !== "chunk" || !c10.note || !c10.art.length && !c10.breath) continue;
-        const row = RW(c10), cls = clsOf(c10), cx2 = nhX(c10) + nhW(c10) / 2;
+        const row2 = RW(c10), cls = clsOf(c10), cx2 = nhX(c10) + nhW(c10) / 2;
         const dsC = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff, c10.index)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
         const below = upOf.get(c10) ?? false, sgn = below ? -1 : 1;
         const inStaff = (d4) => d4 >= BOTTOM_LINE && d4 <= TOP_LINE;
@@ -8349,10 +8349,10 @@ function engrave(song, o10) {
         for (const a10 of ["staccato", "tenuto"].filter((x3) => c10.art.includes(x3))) {
           if (inStaff(d3) && d3 % 2 === 0) d3 += sgn;
           const m2 = ART_GLYPH[a10], g3 = below ? m2.below : m2.above;
-          prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yOf(row, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: artCls(a10) });
+          prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yOf(row2, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: artCls(a10) });
           d3 += sgn * 2;
         }
-        let yS = Math.min(yOf(row, TOP_LINE + 2), below ? (tipOf.get(c10) ?? yOf(row, dHi + 7)) - P2(1.1) : yOf(row, d3));
+        let yS = Math.min(yOf(row2, TOP_LINE + 2), below ? (tipOf.get(c10) ?? yOf(row2, dHi + 7)) - P2(1.1) : yOf(row2, d3));
         for (const a10 of ["accent", "marcato", "stress", "unstress"].filter((x3) => c10.art.includes(x3))) {
           const m2 = ART_GLYPH[a10];
           prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yS + P2(m2.h / 2), ch: m2.above, cls: artCls(a10) });
@@ -8366,18 +8366,18 @@ function engrave(song, o10) {
           prims.push({ t: "path", d: d4, cls: cl2 });
         }
         if (c10.art.includes("arpeggio")) {
-          const yTop = yOf(row, dHi) - P2(0.7), yBot = yOf(row, dLo) + P2(0.7), x0 = nhX(c10) - P2(c10.accW + 0.9), amp = P2(0.28), step = P2(0.5);
+          const yTop = yOf(row2, dHi) - P2(0.7), yBot = yOf(row2, dLo) + P2(0.7), x0 = nhX(c10) - P2(c10.accW + 0.9), amp = P2(0.28), step = P2(0.5);
           let dd = `M${x0},${yBot}`;
           for (let y2 = yBot, k2 = 0; y2 > yTop; y2 -= step, k2++) dd += `Q${x0 + (k2 % 2 ? -amp : amp) * 2},${y2 - step / 2} ${x0},${Math.max(yTop, y2 - step)}`;
           prims.push({ t: "path", d: dd, cls: ["arpeggio", ign.has("arpeggio") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         }
         for (const a10 of ["sfz", "fp"].filter((x3) => c10.art.includes(x3)))
           prims.push({ t: "glyph", x: nhX(c10) - P2(0.2), y: noteDynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4), ch: a10 === "sfz" ? "\uE539" : "\uE534", cls: ["dyn", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-        if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-        if (c10.breath && c10.inhale) prims.push({ t: "text", x: nhX(c10) + nhW(c10) + P2(1.35), y: yOf(row, TOP_LINE + 1) + P2(0.45), s: c10.inhale === "big" ? "\u6DF1\u5438" : "\u5438", cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: P2(1.15), anchor: "start" });
+        if (c10.breath) prims.push({ t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row2, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+        if (c10.breath && c10.inhale) prims.push({ t: "text", x: nhX(c10) + nhW(c10) + P2(1.35), y: yOf(row2, TOP_LINE + 1) + P2(0.45), s: c10.inhale === "big" ? "\u6DF1\u5438" : "\u5438", cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: P2(1.15), anchor: "start" });
       }
-      const tieArc = (row, d3, x1, x22, ghost) => {
-        const sgn = d3 < MID_LINE ? 1 : -1, y2 = yOf(row, d3) + sgn * P2(0.8), h2 = Math.min(P2(1), Math.abs(x22 - x1) * 0.25);
+      const tieArc = (row2, d3, x1, x22, ghost) => {
+        const sgn = d3 < MID_LINE ? 1 : -1, y2 = yOf(row2, d3) + sgn * P2(0.8), h2 = Math.min(P2(1), Math.abs(x22 - x1) * 0.25);
         prims.push({ t: "path", d: `M${x1},${y2}Q${(x1 + x22) / 2},${y2 + sgn * h2} ${x22},${y2}`, cls: ghost ? "tie ghost" : "tie" });
       };
       const tieBetween = (a10, b3) => {
@@ -8512,9 +8512,9 @@ function engrave(song, o10) {
       }
       lyrics.push(...partLyrics);
       const bracket = (cs3, openL, openR, num2) => {
-        const row = RW(cs3[0]), n10 = cs3[0].ratio[0];
+        const row2 = RW(cs3[0]), n10 = cs3[0].ratio[0];
         const xa = openL ? Math.min(nhX(cs3[0]) - P2(1.2), nhX(cs3[0])) : nhX(cs3[0]), last = cs3[cs3.length - 1], xb = openR ? nhX(last) + nhW(last) + P2(1.2) : nhX(last) + nhW(last);
-        const top = Math.min(...cs3.map((c10) => Math.min(c10.pitch ? yOf(row, dIdx(c10.pitch, c10.staff, c10.index)) : yOf(row, MID_LINE), tipOf.get(c10) ?? Infinity)), yOf(row, TOP_LINE)) - P2(1.6);
+        const top = Math.min(...cs3.map((c10) => Math.min(c10.pitch ? yOf(row2, dIdx(c10.pitch, c10.staff, c10.index)) : yOf(row2, MID_LINE), tipOf.get(c10) ?? Infinity)), yOf(row2, TOP_LINE)) - P2(1.6);
         const mid = (xa + xb) / 2, gap = num2 ? P2(1) : 0;
         const left = openL ? `M${xa},${top}` : `M${xa},${top + P2(0.6)}L${xa},${top}`, right2 = openR ? `L${xb},${top}` : `L${xb},${top}L${xb},${top + P2(0.6)}`;
         prims.push({ t: "path", d: num2 ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right2}` : `${left}${right2}`, cls: "tuplet-bracket" });
@@ -9022,21 +9022,21 @@ function openDrum(anchor, cols, o10) {
   return handle;
 }
 function mountWheel(col, c10) {
-  const row = c10.row ?? ROW, visible = c10.visible ?? VISIBLE, padRows = Math.floor(visible / 2), n10 = c10.items.length;
+  const row2 = c10.row ?? ROW, visible = c10.visible ?? VISIBLE, padRows = Math.floor(visible / 2), n10 = c10.items.length;
   const copies = c10.loop ? LOOP_COPIES : 1, mid = Math.floor(copies / 2) * n10;
-  col.style.height = `${row * visible}px`;
-  col.innerHTML = `<div class="drum-pad" style="height:${row * padRows}px"></div>` + Array.from({ length: n10 * copies }, (_2, r10) => `<div class="drum-item" data-i="${r10}" style="height:${row}px">${c10.items[r10 % n10]}</div>`).join("") + `<div class="drum-pad" style="height:${row * padRows}px"></div>`;
+  col.style.height = `${row2 * visible}px`;
+  col.innerHTML = `<div class="drum-pad" style="height:${row2 * padRows}px"></div>` + Array.from({ length: n10 * copies }, (_2, r10) => `<div class="drum-item" data-i="${r10}" style="height:${row2}px">${c10.items[r10 % n10]}</div>`).join("") + `<div class="drum-pad" style="height:${row2 * padRows}px"></div>`;
   const items = [...col.querySelectorAll(".drum-item")], total = items.length;
-  const raw = () => Math.max(0, Math.min(total - 1, Math.round(col.scrollTop / row)));
+  const raw = () => Math.max(0, Math.min(total - 1, Math.round(col.scrollTop / row2)));
   let shown = c10.index, recenter = 0;
   const paint = () => {
     const top = col.scrollTop, a10 = raw();
     items.forEach((el2, i10) => {
-      el2.style.opacity = String(Math.max(0.25, 1 - Math.abs(i10 * row - top) / row * 0.3));
+      el2.style.opacity = String(Math.max(0.25, 1 - Math.abs(i10 * row2 - top) / row2 * 0.3));
       el2.classList.toggle("on", i10 === a10);
     });
   };
-  col.scrollTop = (c10.index + mid) * row;
+  col.scrollTop = (c10.index + mid) * row2;
   paint();
   col.addEventListener("scroll", () => {
     paint();
@@ -9049,7 +9049,7 @@ function mountWheel(col, c10) {
       clearTimeout(recenter);
       recenter = window.setTimeout(() => {
         const r10 = raw();
-        if (Math.abs(r10 - r10 % n10 - mid) >= n10) col.scrollTop = (r10 % n10 + mid) * row;
+        if (Math.abs(r10 - r10 % n10 - mid) >= n10) col.scrollTop = (r10 % n10 + mid) * row2;
       }, RECENTER_MS);
     }
   }, { passive: true });
@@ -9062,7 +9062,7 @@ function mountWheel(col, c10) {
       c10.onChange(i10);
     }
     if (c10.onPick) c10.onPick(i10);
-    else col.scrollTop = (i10 + mid) * row;
+    else col.scrollTop = (i10 + mid) * row2;
   });
   return {
     setItems: (its) => items.forEach((el2, i10) => {
@@ -9071,7 +9071,7 @@ function mountWheel(col, c10) {
     }),
     scrollTo: (i10) => {
       shown = i10;
-      col.scrollTop = (i10 + mid) * row;
+      col.scrollTop = (i10 + mid) * row2;
       paint();
     }
     // 外面改了值（点候选 / 打字）：滚过去，不再回报 onChange
@@ -9799,27 +9799,27 @@ var ScoreView = class {
       return;
     }
     const st3 = this.host.get(), one = singleSel(st3), sp2 = L2.sp;
-    const shiftOn = (row2) => {
-      const n10 = L2.notes.find((h2) => h2.system === row2);
-      return n10 ? Math.round(L2.dOf(row2, n10.y)) - n10.d : L2.head?.system === row2 ? L2.head.shift : 0;
+    const shiftOn = (row3) => {
+      const n10 = L2.notes.find((h2) => h2.system === row3);
+      return n10 ? Math.round(L2.dOf(row3, n10.y)) - n10.d : L2.head?.system === row3 ? L2.head.shift : 0;
     };
-    let row, x2, shift;
+    let row2, x2, shift;
     if (one >= 0) {
       const n10 = L2.notes.find((h2) => h2.index === one && this.onTrack(h2)), r10 = n10 ? null : L2.rests.find((h2) => h2.index === one && this.onTrack(h2));
       if (n10) {
-        row = n10.system;
+        row2 = n10.system;
         x2 = n10.x;
-        shift = Math.round(L2.dOf(row, n10.y)) - n10.d;
+        shift = Math.round(L2.dOf(row2, n10.y)) - n10.d;
       } else if (r10) {
-        row = r10.system;
+        row2 = r10.system;
         x2 = r10.x;
-        shift = shiftOn(row);
+        shift = shiftOn(row2);
       } else {
         clear2();
         return;
       }
     } else if (L2.head) {
-      row = L2.head.system;
+      row2 = L2.head.system;
       x2 = L2.head.x + 0.35 * sp2;
       shift = L2.head.shift;
     } else {
@@ -9832,9 +9832,9 @@ var ScoreView = class {
     g3.setAttribute("height", String(L2.height));
     const fs = 4 * sp2, nh2 = 1.18 * sp2, ext = 0.4 * sp2, parts = [];
     for (const p2 of this.ghostP) {
-      const d3 = diatonicIndex(p2) + shift, y2 = L2.yOf(row, d3);
-      for (let k2 = 28; k2 >= d3; k2 -= 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row, k2)}" y2="${L2.yOf(row, k2)}" stroke-width="${0.16 * sp2}"/>`);
-      for (let k2 = 40; k2 <= d3; k2 += 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row, k2)}" y2="${L2.yOf(row, k2)}" stroke-width="${0.16 * sp2}"/>`);
+      const d3 = diatonicIndex(p2) + shift, y2 = L2.yOf(row2, d3);
+      for (let k2 = 28; k2 >= d3; k2 -= 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row2, k2)}" y2="${L2.yOf(row2, k2)}" stroke-width="${0.16 * sp2}"/>`);
+      for (let k2 = 40; k2 <= d3; k2 += 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row2, k2)}" y2="${L2.yOf(row2, k2)}" stroke-width="${0.16 * sp2}"/>`);
       parts.push(`<text x="${x2}" y="${y2}" font-family="Bravura" font-size="${fs}">\uE0A4</text>`);
       const acc = p2.alter === 1 ? "\uE262" : p2.alter === -1 ? "\uE260" : p2.alter === 2 ? "\uE263" : p2.alter === -2 ? "\uE264" : "";
       if (acc) parts.push(`<text x="${x2 - 1.2 * sp2}" y="${y2}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
@@ -10042,8 +10042,8 @@ var ScoreView = class {
   }
   /** 这个命中记录是不是光标所在那条 track 的。 */
   onTrack(h2) {
-    const L2 = this.layout, st3 = this.host.get(), row = L2.systems[h2.system];
-    return !!row && row.paper === st3.at.paper && row.part === st3.at.part;
+    const L2 = this.layout, st3 = this.host.get(), row2 = L2.systems[h2.system];
+    return !!row2 && row2.paper === st3.at.paper && row2.part === st3.at.part;
   }
   /** 选区两端的棒棒糖把手：第一个 / 最后一个选中的音的下面（歌词行再往下一点）。 */
   placeHandles() {
@@ -10166,8 +10166,8 @@ var ScoreView = class {
     return best;
   }
   /** 光标到这条谱行的 track（点哪条谱写哪条）。 */
-  focusRow(st3, row, caret) {
-    const r10 = this.layout.systems[row];
+  focusRow(st3, row2, caret) {
+    const r10 = this.layout.systems[row2];
     if (!r10) return st3;
     return setFocus(st3, r10.paper, r10.part, caret);
   }
@@ -10334,11 +10334,11 @@ var ScoreView = class {
   }
   /** 「词」里点了一个音：开它的歌词框（休止没有歌词 = false，照常放光标）。 */
   openLyricOn(hit) {
-    const L2 = this.layout, row = L2?.systems[hit.system];
-    if (!L2 || !row) return false;
-    const t10 = trackOf(this.host.get().song, row.paper, row.part)[hit.index];
+    const L2 = this.layout, row2 = L2?.systems[hit.system];
+    if (!L2 || !row2) return false;
+    const t10 = trackOf(this.host.get().song, row2.paper, row2.part)[hit.index];
     if (t10?.kind !== "note") return false;
-    if (!t10.lyric && this.noLyricsHere(row.part)) return false;
+    if (!t10.lyric && this.noLyricsHere(row2.part)) return false;
     this.host.set(this.focusRow(this.host.get(), hit.system, this.host.get().caret));
     this.lyrics.openAt(hit.index);
     this.host.focus?.("text");
@@ -10368,7 +10368,7 @@ var ScoreView = class {
       this.drag = null;
     }
     this.placeCaretAt(x2, y2);
-    const L2 = this.layout, row = this.rowAt(y2), mine = this.hits.filter((n10) => n10.system === row && this.onTrack(n10));
+    const L2 = this.layout, row2 = this.rowAt(y2), mine = this.hits.filter((n10) => n10.system === row2 && this.onTrack(n10));
     const range2 = mine.length ? { from: Math.min(...mine.map((n10) => n10.index)), to: Math.max(...mine.map((n10) => n10.index)) + 1 } : null;
     this.host.focus?.("staff");
     this.host.onBlankPress?.({ x: cx2, y: cy2 }, range2);
@@ -10379,9 +10379,9 @@ var ScoreView = class {
     const dh = this.rules.symbols ? this.dynHitAt(x2, y2, finger) : null;
     if (dh) return { kind: "mark", index: dh.index, system: dh.system };
     if (!this.rules.lyrics || this.noteAt(x2, y2)) return null;
-    const ly2 = this.lyricAt(x2, y2), row = ly2 ? this.layout.systems[ly2.system] : null;
-    if (!ly2 || !row) return null;
-    const t10 = trackOf(this.host.get().song, row.paper, row.part)[ly2.index];
+    const ly2 = this.lyricAt(x2, y2), row2 = ly2 ? this.layout.systems[ly2.system] : null;
+    if (!ly2 || !row2) return null;
+    const t10 = trackOf(this.host.get().song, row2.paper, row2.part)[ly2.index];
     return t10?.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? { kind: "lyric", index: ly2.index, system: ly2.system } : null;
   }
   /** 歌词那一行上点中的字：按每一行自己的歌词基线找（没写歌词的行比歌词基线矮，光看 rowAt 会落到下一行——2026-10-08 E2E 抓到）。
@@ -10450,7 +10450,7 @@ var ScoreView = class {
     if (!f2.moved && Math.hypot(p2.x - f2.x0, p2.y - f2.y0) < 6) return;
     f2.moved = true;
     if (!f2.targets.length) return;
-    const rows = [...new Set(f2.targets.map((t10) => t10.system))], row = this.rowAt(p2.y), sys = rows.includes(row) ? row : rows.reduce((a10, b3) => Math.abs(b3 - row) < Math.abs(a10 - row) ? b3 : a10);
+    const rows = [...new Set(f2.targets.map((t10) => t10.system))], row2 = this.rowAt(p2.y), sys = rows.includes(row2) ? row2 : rows.reduce((a10, b3) => Math.abs(b3 - row2) < Math.abs(a10 - row2) ? b3 : a10);
     let best = -1, bd = Infinity;
     f2.targets.forEach((t10, k2) => {
       if (t10.system !== sys) return;
@@ -10490,14 +10490,14 @@ var ScoreView = class {
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
   noteAt(x2, y2, finger = false) {
-    const L2 = this.layout, row = this.rowAt(y2);
-    if (row < 0) return null;
+    const L2 = this.layout, row2 = this.rowAt(y2);
+    if (row2 < 0) return null;
     const sp2 = L2.sp;
-    if (!finger) return this.hits.find((n10) => n10.system === row && x2 >= n10.x - sp2 * 0.5 && x2 <= n10.x + n10.w + sp2 * 0.5 && Math.abs(y2 - n10.y) <= sp2 * 0.9) ?? null;
+    if (!finger) return this.hits.find((n10) => n10.system === row2 && x2 >= n10.x - sp2 * 0.5 && x2 <= n10.x + n10.w + sp2 * 0.5 && Math.abs(y2 - n10.y) <= sp2 * 0.9) ?? null;
     const tx2 = Math.max(sp2 * 0.5, 22 / this.zoom), ty2 = Math.max(sp2 * 0.9, 26 / this.zoom);
     let best = null, bd = Infinity;
     for (const n10 of this.hits) {
-      if (n10.system !== row) continue;
+      if (n10.system !== row2) continue;
       const dx = x2 - Math.max(n10.x, Math.min(x2, n10.x + n10.w)), dy = y2 - n10.y;
       if (Math.abs(dx) > tx2 || Math.abs(dy) > ty2) continue;
       const d3 = (dx / tx2) ** 2 + (dy / ty2) ** 2;
@@ -10512,8 +10512,8 @@ var ScoreView = class {
   noteNear(p2) {
     const L2 = this.layout, mine = this.hits.filter((n10) => this.onTrack(n10));
     if (!mine.length) return -1;
-    const row = this.rowAt(p2.y);
-    const rows = [...new Set(mine.map((n10) => n10.system))], sys = rows.includes(row) ? row : rows.reduce((a10, b3) => Math.abs(b3 - row) < Math.abs(a10 - row) ? b3 : a10);
+    const row2 = this.rowAt(p2.y);
+    const rows = [...new Set(mine.map((n10) => n10.system))], sys = rows.includes(row2) ? row2 : rows.reduce((a10, b3) => Math.abs(b3 - row2) < Math.abs(a10 - row2) ? b3 : a10);
     const cands3 = mine.filter((n10) => n10.system === sys);
     return cands3.reduce((a10, b3) => Math.abs(b3.x + b3.w / 2 - p2.x) < Math.abs(a10.x + a10.w / 2 - p2.x) ? b3 : a10).index;
   }
@@ -10615,8 +10615,8 @@ var ScoreView = class {
         return true;
       }
     }
-    const row = this.rowAt(y2);
-    if (row < 0) return false;
+    const row2 = this.rowAt(y2);
+    if (row2 < 0) return false;
     const ch2 = this.rules.edit ? L2.clefs.find((c10) => x2 >= c10.x && x2 <= c10.x + c10.w && y2 >= c10.y && y2 <= c10.y + c10.h) : void 0;
     if (ch2) {
       const b3 = this.clientBox(ch2);
@@ -10660,8 +10660,8 @@ var ScoreView = class {
     this.host.focus?.("staff");
   }
   /** 这一行（谱行）上有没有「行末」落点给这个光标位置（= 它本来画在下一行开头）。 */
-  endSlotOn(row, caret) {
-    return !!this.layout?.slots.some((s10) => s10.end && s10.system === row && s10.caret === caret);
+  endSlotOn(row2, caret) {
+    return !!this.layout?.slots.some((s10) => s10.end && s10.system === row2 && s10.caret === caret);
   }
   /** 放光标 + 记住画在行末还是行首。状态没变（光标本来就在这儿）但画法变了 = 自己重画。 */
   putCaret(next2, end) {
@@ -10676,14 +10676,14 @@ var ScoreView = class {
     this.putCaret(this.caretAt(x2, y2, st3), !!s10?.end);
   }
   slotAt(x2, y2) {
-    const L2 = this.layout, row = this.rowAt(y2), cands3 = L2.slots.filter((s10) => s10.system === row);
+    const L2 = this.layout, row2 = this.rowAt(y2), cands3 = L2.slots.filter((s10) => s10.system === row2);
     return cands3.length ? cands3.reduce((a10, b3) => Math.abs(b3.x - x2) < Math.abs(a10.x - x2) ? b3 : a10) : null;
   }
   /** 空白处 → 那条谱最近的光标落点（= 写；点哪条谱光标就到哪条）。 */
   caretAt(x2, y2, st3 = this.host.get()) {
-    const L2 = this.layout, row = this.rowAt(y2), best = this.slotAt(x2, y2);
+    const L2 = this.layout, row2 = this.rowAt(y2), best = this.slotAt(x2, y2);
     if (!best) return st3;
-    const r10 = L2.systems[row];
+    const r10 = L2.systems[row2];
     const at2 = r10.paper === st3.at.paper && r10.part === st3.at.part ? setCaret(st3, best.caret) : setFocus(st3, r10.paper, r10.part, best.caret);
     return best.lead ? setCaretLead(at2, best.lead) : at2;
   }
@@ -11494,9 +11494,9 @@ var Pad = class {
   buildGrid(f2, base3, rows) {
     const cells = [], sc2 = this.scale(), ht = homeTonic(f2), hr = this.hint();
     this.keys.clear();
-    for (let row = rows - 1; row >= 0; row--) {
+    for (let row2 = rows - 1; row2 >= 0; row2--) {
       for (let col = 0; col < this.cols; col++) {
-        const k2 = base3 + row * this.cols + col, { pitch: p2, deg, oct } = ladderAt(sc2, k2, ht, f2), m2 = midiOf(p2);
+        const k2 = base3 + row2 * this.cols + col, { pitch: p2, deg, oct } = ladderAt(sc2, k2, ht, f2), m2 = midiOf(p2);
         const inRange = !!hr && m2 >= hr.lo && m2 <= hr.hi;
         this.keys.set(k2, p2);
         cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k2}" title="${inRange ? hr.title ?? `${hr.who}\u7684\u97F3\u57DF\u91CC` : ""}"><span class="deg">${octDots(Math.max(0, oct))}<span class="num"><span class="acc"></span>${degLabel(deg)}</span>${octDots(Math.max(0, -oct))}</span><span class="abs">${pretty(p2)}</span></button>`);
@@ -22106,6 +22106,15 @@ function withoutBus(extras, id2) {
   studio2.tracks = (studio2.tracks ?? []).filter((x2) => !(x2.id === id2 && x2.kind === "bus")).map((x2) => ({ ...x2, to: x2.to === id2 ? "master" : x2.to, sends: (x2.sends ?? []).filter((sd2) => sd2.to !== id2) }));
   return { ...extras, studio: studio2 };
 }
+function moveBus(extras, id2, dir) {
+  const tracks = (extras.studio?.tracks ?? []).slice(), buses = tracks.map((t10, i10) => [t10, i10]).filter(([t10]) => t10.kind === "bus");
+  const k2 = buses.findIndex(([t10]) => t10.id === id2), j2 = k2 + dir;
+  if (k2 < 0 || j2 < 0 || j2 >= buses.length) return extras;
+  const [a10, ia2] = buses[k2], [b3, ib2] = buses[j2];
+  tracks[ia2] = b3;
+  tracks[ib2] = a10;
+  return { ...extras, studio: { ...extras.studio, tracks } };
+}
 function newBusId(extras) {
   return nextKey2(studioTracks(extras).map((t10) => t10.id), "b");
 }
@@ -23008,11 +23017,12 @@ var Comp = class {
 var DELAY = {
   kind: "delay",
   name: "\u5EF6\u8FDF",
-  formula: "y[n] = x[n]\xB7(1-mix) + d[n]\xB7mix\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002",
+  formula: "y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = 1 \u2212 mix\uFF0Cv0.10.10 \u524D\u7684\u5199\u6CD5\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002",
   params: [
     { id: "timeMs", unit: "ms", min: 1, max: 2e3, default: 375, label: "\u65F6\u95F4" },
     { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: "\u53CD\u9988" },
     { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "\u6E7F" },
+    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "\u539F\u58F0" },
     { id: "dampHz", unit: "Hz", min: 500, max: 2e4, default: 6e3, label: "\u53CD\u9988\u9AD8\u5207" }
   ]
 };
@@ -23025,6 +23035,7 @@ var Delay = class {
   D = 1;
   fb = 0.35;
   mix = 0.3;
+  dry = 0.7;
   lpK = 0.5;
   lpL = 0;
   lpR = 0;
@@ -23043,22 +23054,23 @@ var Delay = class {
     this.D = clamp(Math.round(g3("timeMs") / 1e3 * this.sr), 1, this.bufL.length - 1);
     this.fb = clamp(g3("feedback"), 0, 0.95);
     this.mix = clamp(g3("mix"), 0, 1);
+    this.dry = dryOf(p2, this.mix);
     this.lpK = 1 - Math.exp(-2 * Math.PI * clamp(g3("dampHz"), 100, this.sr * 0.45) / this.sr);
   }
   process(L2, R2, n10) {
     if (!this.on) return;
-    const len = this.bufL.length, D2 = this.D, fb = this.fb, mix = this.mix, k2 = this.lpK;
+    const len = this.bufL.length, D2 = this.D, fb = this.fb, mix = this.mix, dry = this.dry, k2 = this.lpK;
     for (let i10 = 0; i10 < n10; i10++) {
       const rd2 = (this.wr - D2 + len) % len;
       const dl = this.bufL[rd2];
       this.lpL += (dl - this.lpL) * k2;
       this.bufL[this.wr] = L2[i10] + this.lpL * fb;
-      L2[i10] = L2[i10] * (1 - mix) + dl * mix;
+      L2[i10] = L2[i10] * dry + dl * mix;
       if (R2) {
         const dr = this.bufR[rd2];
         this.lpR += (dr - this.lpR) * k2;
         this.bufR[this.wr] = R2[i10] + this.lpR * fb;
-        R2[i10] = R2[i10] * (1 - mix) + dr * mix;
+        R2[i10] = R2[i10] * dry + dr * mix;
       }
       this.wr = (this.wr + 1) % len;
     }
@@ -23072,6 +23084,7 @@ var REVERB = {
     { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u623F\u95F4\u5927\u5C0F" },
     { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u9AD8\u9891\u5438\u6536" },
     { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "\u6E7F" },
+    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "\u539F\u58F0" },
     { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: "\u9884\u5EF6\u8FDF" },
     { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: "\u5BBD\u5EA6" }
   ],
@@ -23121,6 +23134,7 @@ var Reverb = class {
   fb = 0.84;
   damp = 0.5;
   mix = 0.3;
+  dry = 0.7;
   width = 1;
   id;
   sr;
@@ -23140,12 +23154,13 @@ var Reverb = class {
     this.fb = 0.7 + 0.28 * clamp(g3("room"), 0, 1);
     this.damp = clamp(g3("damp"), 0, 1) * 0.4;
     this.mix = clamp(g3("mix"), 0, 1);
+    this.dry = dryOf(p2, this.mix);
     this.width = clamp(g3("width"), 0, 1);
     this.preD = clamp(Math.round(g3("preDelayMs") / 1e3 * this.sr), 0, this.pre.length - 1);
   }
   process(L2, R2, n10) {
     if (!this.on) return;
-    const Rr = R2 ?? L2, mix = this.mix, w1 = (1 + this.width) / 2, w2 = (1 - this.width) / 2, plen = this.pre.length;
+    const Rr = R2 ?? L2, mix = this.mix, dry = this.dry, w1 = (1 + this.width) / 2, w2 = (1 - this.width) / 2, plen = this.pre.length;
     for (let i10 = 0; i10 < n10; i10++) {
       const inp = (L2[i10] + Rr[i10]) * 0.015;
       this.pre[this.preW] = inp;
@@ -23161,8 +23176,8 @@ var Reverb = class {
         oR2 = this.aR[a10].tick(oR2);
       }
       const wl = oL2 * w1 + oR2 * w2, wr = oR2 * w1 + oL2 * w2;
-      L2[i10] = L2[i10] * (1 - mix) + wl * mix;
-      if (R2) R2[i10] = R2[i10] * (1 - mix) + wr * mix;
+      L2[i10] = L2[i10] * dry + wl * mix;
+      if (R2) R2[i10] = R2[i10] * dry + wr * mix;
     }
   }
 };
@@ -23176,7 +23191,8 @@ var CHORUS = {
     { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: "\u6296\u52A8\u6DF1\u5EA6" },
     { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: "\u6296\u52A8\u5FEB\u6162" },
     { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: "\u5DE6\u53F3\u94FA\u5F00" },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u6E7F" }
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u6E7F" },
+    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "\u539F\u58F0" }
   ]
 };
 var Chorus = class {
@@ -23193,6 +23209,7 @@ var Chorus = class {
   rate = 0.6;
   spread = 0.8;
   mix = 0.5;
+  dry = 0.5;
   constructor(id2, sr2, p2) {
     this.id = id2;
     this.sr = sr2;
@@ -23207,10 +23224,11 @@ var Chorus = class {
     this.rate = clamp(g3("rateHz"), 0.05, 5);
     this.spread = clamp(g3("spread"), 0, 1);
     this.mix = clamp(g3("mix"), 0, 1);
+    this.dry = dryOf(p2, this.mix);
   }
   process(L2, R2, n10) {
     if (!this.on) return;
-    const len = this.buf.length, v = this.voices, mix = this.mix, dphi = 2 * Math.PI * this.rate / this.sr;
+    const len = this.buf.length, v = this.voices, mix = this.mix, dry = this.dry, dphi = 2 * Math.PI * this.rate / this.sr;
     for (let i10 = 0; i10 < n10; i10++) {
       const x2 = R2 ? (L2[i10] + R2[i10]) * 0.5 : L2[i10];
       this.buf[this.wr] = x2;
@@ -23225,8 +23243,8 @@ var Chorus = class {
       this.phase += dphi;
       if (this.phase > 2 * Math.PI) this.phase -= 2 * Math.PI;
       this.wr = (this.wr + 1) % len;
-      L2[i10] = L2[i10] * (1 - mix) + wl * mix;
-      if (R2) R2[i10] = R2[i10] * (1 - mix) + wr * mix;
+      L2[i10] = L2[i10] * dry + wl * mix;
+      if (R2) R2[i10] = R2[i10] * dry + wr * mix;
     }
   }
 };
@@ -23251,6 +23269,9 @@ var Gain = class {
     }
   }
 };
+function dryOf(p2, mix) {
+  return p2.dry === void 0 || !Number.isFinite(p2.dry) ? 1 - mix : clamp(p2.dry, 0, 1);
+}
 var FX_KINDS = { eq: EQ, comp: COMP, delay: DELAY, reverb: REVERB, chorus: CHORUS, gain: GAIN };
 function createFx(spec, sr2) {
   const p2 = Object.fromEntries(Object.entries(spec.params ?? {}).filter(([, v]) => typeof v === "number" && Number.isFinite(v)));
@@ -23391,6 +23412,8 @@ var Studio = class {
   meterOn = false;
   meterPeak = 0;
   meterFrames = 0;
+  /** 每条轨 / 混音轨这一段推子后的峰值（只在 meterOn 时攒；混音台开着才开）。 */
+  trackPeaks = /* @__PURE__ */ new Map();
   loadBusy = 0;
   loadFrames = 0;
   chunkBytes = 0;
@@ -23547,6 +23570,7 @@ var Studio = class {
         this.meterOn = m2.on;
         this.meterPeak = 0;
         this.meterFrames = 0;
+        this.trackPeaks.clear();
         return;
     }
   }
@@ -23829,12 +23853,20 @@ var Studio = class {
       const [gl, gr] = panGains(b3.gainDb, b3.pan), dl = (gl - b3.gl) / n10, dr = (gr - b3.gr) / n10;
       let cl2 = b3.gl, cr2 = b3.gr;
       const L2 = b3.out ? b3.out.L : this.busL, R2 = b3.out ? b3.out.R : this.busR;
+      let pk = 0;
       for (let i10 = 0; i10 < n10; i10++) {
         cl2 += dl;
         cr2 += dr;
-        L2[i10] += b3.L[i10] * cl2 * Math.SQRT2;
-        R2[i10] += b3.R[i10] * cr2 * Math.SQRT2;
+        const l10 = b3.L[i10] * cl2 * Math.SQRT2, r10 = b3.R[i10] * cr2 * Math.SQRT2;
+        L2[i10] += l10;
+        R2[i10] += r10;
+        if (this.meterOn) {
+          const a10 = Math.abs(l10), c10 = Math.abs(r10);
+          if (a10 > pk) pk = a10;
+          if (c10 > pk) pk = c10;
+        }
       }
+      if (this.meterOn) this.trackPeaks.set(b3.id, Math.max(this.trackPeaks.get(b3.id) ?? 0, pk));
       for (const sd2 of b3.sends) {
         const sl2 = gl * sd2.lin * Math.SQRT2, sr2 = gr * sd2.lin * Math.SQRT2;
         for (let i10 = 0; i10 < n10; i10++) {
@@ -23865,9 +23897,10 @@ var Studio = class {
       }
       this.meterFrames += n10;
       if (this.meterFrames >= 1024) {
-        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices() });
+        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks) });
         this.meterPeak = 0;
         this.meterFrames = 0;
+        this.trackPeaks.clear();
       }
     }
     this.loadBusy += now() - tStart;
@@ -24029,13 +24062,18 @@ var Studio = class {
       const [gl, gr] = audible ? panGains(t10.ch.gainDb, t10.ch.pan) : [0, 0];
       const dl = (gl - t10.gl) / cnt, dr = (gr - t10.gr) / cnt;
       const bus = t10.ch.to && t10.ch.to !== "master" ? this.buses.get(t10.ch.to) : void 0, L2 = bus ? bus.L : this.busL, R2 = bus ? bus.R : this.busR;
-      let cl2 = t10.gl, cr2 = t10.gr;
+      let cl2 = t10.gl, cr2 = t10.gr, pk = 0;
       for (let i10 = 0; i10 < cnt; i10++) {
         cl2 += dl;
         cr2 += dr;
         L2[off + i10] += out[i10] * cl2;
         R2[off + i10] += out[i10] * cr2;
+        if (this.meterOn) {
+          const a10 = Math.abs(out[i10]) * Math.max(cl2, cr2) * Math.SQRT2;
+          if (a10 > pk) pk = a10;
+        }
       }
+      if (this.meterOn) this.trackPeaks.set(id2, Math.max(this.trackPeaks.get(id2) ?? 0, pk));
       if (t10.ch.sends) for (const sd2 of t10.ch.sends) {
         const b3 = this.buses.get(sd2.to);
         if (!b3) continue;
@@ -24458,7 +24496,7 @@ var StudioClient = class {
               this.emit("missing", m2.keys);
               return;
             case "meter":
-              this.emit("meter", m2.peak, m2.active);
+              this.emit("meter", m2.peak, m2.active, m2.tracks ?? {});
               return;
             case "load":
               this.emit("load", { busy: m2.busy, chunkBytes: m2.chunkBytes, chunks: m2.chunks, voices: m2.voices });
@@ -24977,8 +25015,8 @@ function rangeOf(c10) {
   return null;
 }
 function sampleKeyOf(cat2, bank, program) {
-  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === void 0 && r10.sampleKey);
-  const k2 = row?.sampleKey;
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === void 0 && r10.sampleKey);
+  const k2 = row2?.sampleKey;
   if (!k2 || !Number.isFinite(k2.recommended)) return null;
   const covers = (r10) => {
     const m2 = /^(\d+)\s*[–-]\s*(\d+)$/.exec(r10 ?? "");
@@ -24993,23 +25031,23 @@ function sampleKeyOf(cat2, bank, program) {
   };
 }
 function jointOf(cat2, bank, program, note2) {
-  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.joint) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.joint);
-  const j2 = row?.joint;
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.joint) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.joint);
+  const j2 = row2?.joint;
   if (!j2 || j2.id === null || j2.gapMs === null) return null;
   const zh2 = cat2.defs.joints?.find((x2) => x2.id === j2.id)?.zh ?? j2.id;
   return { gapSec: j2.gapMs / 1e3, zh: zh2, basis: j2.basis ?? "" };
 }
 function sustainOf(cat2, bank, program, note2) {
-  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.sustain) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.sustain);
-  return row?.sustain?.id ?? null;
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.sustain) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.sustain);
+  return row2?.sustain?.id ?? null;
 }
 function velLayersOf(cat2, bank, program, note2) {
-  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.velLayers) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.velLayers);
-  return row?.velLayers && row.velLayers.count > 0 ? { count: row.velLayers.count, ranges: row.velLayers.ranges ?? [], key: row.velLayers.key } : null;
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.velLayers) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.velLayers);
+  return row2?.velLayers && row2.velLayers.count > 0 ? { count: row2.velLayers.count, ranges: row2.velLayers.ranges ?? [], key: row2.velLayers.key } : null;
 }
 function octaveCheckOf(cat2, bank, program, note2) {
-  const row = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.octaveCheck) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.octaveCheck);
-  return row?.octaveCheck ?? null;
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.octaveCheck) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.octaveCheck);
+  return row2?.octaveCheck ?? null;
 }
 function conceptOfIds(cat2, ids) {
   if (!ids) return void 0;
@@ -25200,7 +25238,7 @@ var Finder = class {
     return p2 ? { kind: "gs", concept: c10, provider: p2 } : null;
   }
   async onClick(e10) {
-    const t10 = e10.target, btn = t10.closest("[data-v]"), row = t10.closest(".inst-row"), prov = t10.closest(".prov");
+    const t10 = e10.target, btn = t10.closest("[data-v]"), row2 = t10.closest(".inst-row"), prov = t10.closest(".prov");
     const rowOf = (el2) => el2.closest(".inst-prov")?.previousElementSibling?.dataset.o ?? "";
     const v = btn?.dataset.v;
     if (v === "back") {
@@ -25232,12 +25270,12 @@ var Finder = class {
       }
       return;
     }
-    if (row) {
-      const id2 = row.dataset.c, o10 = row.dataset.o;
+    if (row2) {
+      const id2 = row2.dataset.c, o10 = row2.dataset.o;
       if (this.opened === o10) this.opened = null;
       else {
         this.opened = o10;
-        const c10 = this.cat.byId.get(id2), pk = row.dataset.k, first = providersOf(this.cat, c10).find((x2) => !pk || gmKey(x2) === pk);
+        const c10 = this.cat.byId.get(id2), pk = row2.dataset.k, first = providersOf(this.cat, c10).find((x2) => !pk || gmKey(x2) === pk);
         const key = first ? `${id2}|${gmKey(first)}` : c10.kind === "voice" ? `${id2}|voice` : "";
         this.selected = key;
         this.renderAnchored(o10, true);
@@ -25267,14 +25305,14 @@ var Finder = class {
     const list = this.el.querySelector(".finder-list"), sel = `.inst-row[data-o="${CSS.escape(anchor)}"]`;
     const before = list.querySelector(sel)?.getBoundingClientRect().top;
     this.render();
-    const row = list.querySelector(sel);
-    if (!row || before === void 0) return;
-    list.scrollTop += row.getBoundingClientRect().top - before;
+    const row2 = list.querySelector(sel);
+    if (!row2 || before === void 0) return;
+    list.scrollTop += row2.getBoundingClientRect().top - before;
     if (!reveal) return;
-    const body2 = row.nextElementSibling;
+    const body2 = row2.nextElementSibling;
     if (!body2?.classList.contains("inst-prov")) return;
-    const lr2 = list.getBoundingClientRect(), hdr = row.closest(".finder-group")?.querySelector(".finder-group-h")?.offsetHeight ?? 0;
-    const over = body2.getBoundingClientRect().bottom - lr2.bottom, room = row.getBoundingClientRect().top - (lr2.top + hdr);
+    const lr2 = list.getBoundingClientRect(), hdr = row2.closest(".finder-group")?.querySelector(".finder-group-h")?.offsetHeight ?? 0;
+    const over = body2.getBoundingClientRect().bottom - lr2.bottom, room = row2.getBoundingClientRect().top - (lr2.top + hdr);
     if (over > 0 && room > 0) list.scrollTop += Math.min(over, room);
     this.markJump();
   }
@@ -25331,10 +25369,93 @@ function defaults(kind) {
   for (const d3 of fullParams(kind)) p2[d3.id] = d3.default;
   return p2;
 }
-var paramsOf = (fx) => ({ ...defaults(fx.kind), ...fx.params });
+var paramsOf = (fx) => {
+  const p2 = { ...defaults(fx.kind), ...fx.params };
+  if ((fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.params.dry === void 0) p2.dry = Math.round((1 - p2.mix) * 100) / 100;
+  return p2;
+};
+var fullyWet = (fx) => (fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.on !== false && paramsOf(fx).dry === 0;
 var near = (a10, b3, e10 = 1e-3) => Math.abs(a10 - b3) <= e10;
 var r1 = (x2) => Math.round(x2 * 10) / 10;
 var pct = (v) => `${Math.round(v * 100)}%`;
+var clamp01 = (x2) => Math.max(0, Math.min(1, x2));
+var COMB_AVG_S = 1378 / 44100;
+var SR_REF = 48e3;
+var rt60OfRoom = (room) => 3 * COMB_AVG_S / -Math.log10(0.7 + 0.28 * clamp01(room));
+var roomOfRt60 = (t10) => clamp01((10 ** (-3 * COMB_AVG_S / Math.max(0.01, t10)) - 0.7) / 0.28);
+var dampKHz = (damp) => {
+  const a10 = 0.4 * clamp01(damp);
+  return a10 <= 1e-6 ? Infinity : -SR_REF * Math.log(a10) / (2 * Math.PI) / 1e3;
+};
+var dampOfKHz = (k2) => clamp01(Math.exp(-2 * Math.PI * k2 * 1e3 / SR_REF) / 0.4);
+var linDb = (x2) => x2 <= 1e-3 ? -60 : 20 * Math.log10(x2);
+var dbLin = (d3) => d3 <= -60 ? 0 : 10 ** (d3 / 20);
+var dbt = (d3) => d3 <= -60 ? "\u5173" : `${d3 > 0 ? "+" : ""}${d3.toFixed(1)} dB`;
+var PARAM_HINT = {
+  "eq.hpAuto": "\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\uFF08\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF09\uFF0C\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\u2014\u2014\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891",
+  "eq.hpHz": "\u4F4E\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0B\u7684\u90FD\u5207\u6389\u3002\u4EBA\u58F0\u5E38\u5728 80\u2013120 Hz\uFF0C\u94C3\u8FD9\u7C7B\u9AD8\u7684\u4E50\u5668\u53EF\u4EE5\u66F4\u9AD8\uFF1B\u6700\u5DE6 = \u5173",
+  "eq.lpHz": "\u9AD8\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u90FD\u5207\u6389\uFF0C\u53BB\u523A\u8033\u3001\u5636\u5636\u58F0\uFF1B\u6700\u5DE6 = \u5173",
+  "eq.lowDb": "\u4F4E\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0B\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u51CF = \u53BB\u95F7\u3001\u7ED9\u522B\u7684\u8F68\u8BA9\u51FA\u4F4E\u9891\uFF1B\u52A0 = \u52A0\u539A",
+  "eq.lowHz": "\u4F4E\u67B6\u7684\u8F6C\u6298\u9891\u7387\uFF1A\u4ECE\u8FD9\u91CC\u5F80\u4E0B\u7B97\u300C\u4F4E\u300D",
+  "eq.midDb": "\u4E2D\u5CF0\uFF1A\u5728\u4E00\u4E2A\u9891\u6BB5\u4E0A\u63A8 / \u6316\u591A\u5C11\u3002\u4E24\u6837\u4E1C\u897F\u7CCA\u5728\u4E00\u8D77\u65F6\uFF0C\u5728\u5176\u4E2D\u4E00\u4E2A\u4E0A\u6316\u4E00\u5200\u7ED9\u53E6\u4E00\u4E2A\u8BA9\u4F4D",
+  "eq.midHz": "\u4E2D\u5CF0\u7684\u4E2D\u5FC3\u9891\u7387\uFF1A\u63A8 / \u6316\u7684\u662F\u54EA\u4E00\u6BB5",
+  "eq.midQ": "\u4E2D\u5CF0\u7684\u5BBD\u7A84\uFF1AQ \u8D8A\u5927\u8D8A\u7A84\uFF081 \u2248 \u4E00\u4E2A\u591A\u516B\u5EA6\u5BBD\uFF0C4 \u2248 \u5C0F\u534A\u4E2A\u516B\u5EA6\uFF09",
+  "eq.highDb": "\u9AD8\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0A\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u52A0 = \u4EAE\u3001\u51CF = \u6697",
+  "eq.highHz": "\u9AD8\u67B6\u7684\u8F6C\u6298\u9891\u7387\uFF1A\u4ECE\u8FD9\u91CC\u5F80\u4E0A\u7B97\u300C\u9AD8\u300D",
+  "comp.thresholdDb": "\u9608\u503C\uFF1A\u58F0\u97F3\u8D85\u8FC7\u8FD9\u4E2A\u7535\u5E73\u624D\u5F00\u59CB\u538B\uFF1B\u8D8A\u4F4E\uFF0C\u538B\u5230\u7684\u8D8A\u591A",
+  "comp.ratio": "\u6BD4\u4F8B\uFF1A\u8D85\u8FC7\u9608\u503C\u7684\u90E8\u5206\u538B\u6210\u51E0\u5206\u4E4B\u4E00\uFF084:1 = \u8D85\u51FA 4 dB \u7684\u53EA\u5269 1 dB\uFF09",
+  "comp.attackMs": "\u8D77\u538B\uFF1A\u8D85\u8FC7\u9608\u503C\u4E4B\u540E\u591A\u5FEB\u538B\u4E0B\u53BB\u3002\u77ED = \u8FDE\u5B57\u5934\u4E00\u8D77\u538B\u5E73\uFF1B\u957F = \u8BA9\u5B57\u5934\u5148\u51B2\u51FA\u6765\u3001\u66F4\u6709\u52B2",
+  "comp.releaseMs": "\u653E\u5F00\uFF1A\u58F0\u97F3\u843D\u56DE\u9608\u503C\u4EE5\u4E0B\u4E4B\u540E\u591A\u5FEB\u677E\u5F00\u3002\u592A\u77ED\u4F1A\u4E00\u62BD\u4E00\u62BD\u7684\uFF0C\u592A\u957F\u4E0B\u4E00\u4E2A\u5B57\u4E5F\u88AB\u538B\u7740",
+  "comp.kneeDb": "\u62D0\u70B9\uFF1A\u9608\u503C\u9644\u8FD1\u8FD9\u4E48\u5BBD\u7684\u4E00\u6BB5\u91CC\u6162\u6162\u5F00\u59CB\u538B\uFF08\u8F6F\uFF09\uFF1B0 = \u4E00\u5230\u9608\u503C\u5C31\u538B\uFF08\u786C\uFF09",
+  "comp.makeupDb": "\u8865\u507F\uFF1A\u538B\u5B8C\u6574\u4F53\u52A0\u56DE\u6765\u591A\u5C11\uFF08\u538B\u7F29\u4F1A\u8BA9\u6574\u4F53\u53D8\u8F7B\uFF09",
+  "reverb.room": "\u6DF7\u54CD\u65F6\u95F4\uFF08RT60\uFF09\uFF1A\u58F0\u97F3\u505C\u4E86\u4E4B\u540E\uFF0C\u5C3E\u5DF4\u8870\u51CF 60 dB \u8981\u591A\u4E45\u3002\u5C0F\u623F\u95F4\u4E0D\u5230 1 \u79D2\uFF0C\u5927\u5385 2\u20133 \u79D2\uFF0C\u6559\u5802\u66F4\u957F",
+  "reverb.damp": "\u9AD8\u9891\u4ECE\u8FD9\u91CC\u5F00\u59CB\u8870\u51CF\uFF1A\u771F\u5B9E\u7684\u623F\u95F4\u91CC\u9AD8\u9891\u88AB\u5438\u6536\u5F97\u5FEB\uFF0C\u5C3E\u5DF4\u8D8A\u5F80\u540E\u8D8A\u6697\uFF1B\u6570\u8D8A\u4F4E\u8D8A\u6697",
+  "reverb.mix": "\u6E7F\uFF1A\u6DF7\u54CD\u7684\u58F0\u97F3\u6709\u591A\u54CD",
+  "reverb.dry": "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173",
+  "reverb.preDelayMs": "\u9884\u5EF6\u8FDF\uFF1A\u539F\u58F0\u4E4B\u540E\u8FC7\u591A\u4E45\u6DF7\u54CD\u624D\u8FDB\u6765\u3002\u62C9\u5F00\u4E00\u70B9\uFF0C\u4EBA\u58F0\u66F4\u6E05\u695A\u3001\u4E0D\u88AB\u7CCA\u4F4F",
+  "reverb.width": "\u5BBD\u5EA6\uFF1A\u6DF7\u54CD\u5728\u5DE6\u53F3\u94FA\u591A\u5F00",
+  "delay.syncBeats": "\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\uFF0C\u6309\u6B4C\u7684\u901F\u5EA6\u7B97\u65F6\u95F4\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2",
+  "delay.timeMs": "\u65F6\u95F4\uFF1A\u6BCF\u6B21\u56DE\u58F0\u9694\u591A\u4E45",
+  "delay.feedback": "\u6BCF\u6B21\u56DE\u58F0\uFF1A\u6BCF\u91CD\u590D\u4E00\u6B21\u8F7B\u591A\u5C11 dB\uFF1B\u8D8A\u63A5\u8FD1 0\uFF0C\u56DE\u58F0\u8D8A\u4E45",
+  "delay.mix": "\u6E7F\uFF1A\u56DE\u58F0\u6709\u591A\u54CD",
+  "delay.dry": "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173",
+  "delay.dampHz": "\u53CD\u9988\u9AD8\u5207\uFF1A\u6BCF\u6B21\u56DE\u58F0\u90FD\u628A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u524A\u6389\u4E00\u70B9\uFF0C\u8D8A\u5F80\u540E\u8D8A\u6697\uFF08\u50CF\u771F\u7684\u56DE\u58F0\uFF09",
+  "chorus.voices": "\u51E0\u6761\uFF1A\u540C\u65F6\u6709\u51E0\u4E2A\u7A0D\u5FAE\u9519\u5F00\u7684\u526F\u672C",
+  "chorus.delayMs": "\u5EF6\u8FDF\uFF1A\u526F\u672C\u6BD4\u539F\u58F0\u665A\u591A\u5C11",
+  "chorus.depthMs": "\u6296\u52A8\u6DF1\u5EA6\uFF1A\u526F\u672C\u7684\u5EF6\u8FDF\u6765\u56DE\u6643\u591A\u5927\u2014\u2014\u6643 = \u97F3\u9AD8\u8F7B\u5FAE\u8D77\u4F0F\uFF0C\u50CF\u597D\u51E0\u4E2A\u4EBA\u5531\u4E0D\u9F50",
+  "chorus.rateHz": "\u6296\u52A8\u5FEB\u6162\uFF1A\u6BCF\u79D2\u6643\u51E0\u6B21",
+  "chorus.spread": "\u5DE6\u53F3\u94FA\u5F00\uFF1A\u526F\u672C\u6446\u5F97\u591A\u5F00",
+  "chorus.mix": "\u6E7F\uFF1A\u526F\u672C\u6709\u591A\u54CD",
+  "chorus.dry": "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173",
+  "gain.dB": "\u589E\u76CA\uFF1A\u5355\u7EAF\u8C03\u5927\u8C03\u5C0F\uFF08\u524D\u9762\u7684\u63D2\u4EF6\u628A\u97F3\u91CF\u6539\u4E86\uFF0C\u7528\u5B83\u8865\u56DE\u6765\uFF09"
+};
+function paramView(kind, d3) {
+  return { hint: PARAM_HINT[`${kind}.${d3.id}`] ?? d3.label, ...paramView0(kind, d3) };
+}
+function paramView0(kind, d3) {
+  const key = `${kind}.${d3.id}`;
+  if (key === "reverb.room") return { label: "\u6DF7\u54CD\u65F6\u95F4\uFF08RT60\uFF09", min: 0.6, max: 10, step: 0.1, toV: roomOfRt60, toS: rt60OfRoom, fmt: (v) => `${rt60OfRoom(v).toFixed(1)} s` };
+  if (key === "reverb.damp") return { label: "\u9AD8\u9891\u4ECE\u8FD9\u91CC\u5F00\u59CB\u8870\u51CF", min: 7, max: 20, step: 0.1, toV: (k2) => k2 >= 20 ? 0 : dampOfKHz(k2), toS: (v) => Math.min(20, dampKHz(v)), fmt: (v) => dampKHz(v) >= 20 ? "\u4E0D\u8870\u51CF\uFF0820 kHz \u4EE5\u4E0A\uFF09" : `${dampKHz(v).toFixed(1)} kHz` };
+  if (d3.id === "mix" || d3.id === "dry") return { label: d3.id === "mix" ? "\u6E7F\uFF08\u6548\u679C\uFF09" : "\u539F\u58F0", min: -60, max: 0, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => dbt(linDb(v)) };
+  if (key === "delay.feedback") return { label: "\u6BCF\u6B21\u56DE\u58F0", min: -40, max: -0.5, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => `${linDb(v).toFixed(1)} dB / \u6B21` };
+  if (key === "reverb.width") return { label: "\u5BBD\u5EA6\uFF080 = \u5355\u58F0\u9053\uFF0C100% = \u5DE6\u53F3\u94FA\u6EE1\uFF09", min: 0, max: 1, step: 0.01, toV: (x2) => x2, toS: (x2) => x2, fmt: pct };
+  if (key === "chorus.spread") return { label: "\u5DE6\u53F3\u94FA\u5F00\uFF080 = \u90FD\u5728\u4E2D\u95F4\uFF0C100% = \u94FA\u5230\u4E24\u8FB9\uFF09", min: 0, max: 1, step: 0.01, toV: (x2) => x2, toS: (x2) => x2, fmt: pct };
+  if (d3.unit === "Hz") {
+    const lo2 = Math.max(20, d3.min || 20), hi = d3.max, offable = d3.min === 0, L2 = Math.log(lo2), H2 = Math.log(hi);
+    return {
+      label: d3.label,
+      min: offable ? -0.02 : 0,
+      max: 1,
+      step: 2e-3,
+      toV: (x2) => offable && x2 < 0 ? 0 : Math.round(Math.exp(L2 + Math.max(0, x2) * (H2 - L2))),
+      toS: (v) => offable && v <= 0 ? -0.02 : (Math.log(Math.max(lo2, v)) - L2) / (H2 - L2),
+      fmt: (v) => v <= 0 ? "\u5173" : v >= 1e3 ? `${(v / 1e3).toFixed(v >= 1e4 ? 1 : 2)} kHz` : `${Math.round(v)} Hz`
+    };
+  }
+  const step = d3.unit === "dB" ? 0.5 : d3.unit === "ms" ? d3.max > 500 ? 5 : 0.5 : d3.unit === "0..1" ? 0.01 : d3.unit === "ratio" ? d3.max <= 4 ? 1 : 0.1 : 1;
+  const fmt = (v) => d3.unit === "dB" ? dbt(v) : d3.unit === "ms" ? `${v} ms` : d3.unit === "0..1" ? pct(v) : d3.unit === "ratio" ? d3.id === "ratio" ? `${v}:1` : d3.id === "voices" ? `${v} \u6761` : d3.id === "midQ" ? `Q ${v}` : String(v) : String(v);
+  return { label: d3.label, min: d3.min, max: d3.max, step, toV: (x2) => x2, toS: (x2) => x2, fmt };
+}
 var TILT_DB = 6;
 var TILT_LO = 300;
 var TILT_HI = 3e3;
@@ -25359,7 +25480,10 @@ var compOf = (a10) => {
   return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) };
 };
 var COMP_SIMPLE = {
-  controls: [{ id: "amount", label: "\u538B\u591A\u5C11", hint: "\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73\uFF1A\u5F80\u53F3 = \u538B\u5F97\u8D8A\u72E0\uFF08\u54CD\u7684\u5B57\u538B\u4E0B\u6765\u3001\u8F7B\u7684\u76F8\u5BF9\u663E\u51FA\u6765\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: pct }],
+  controls: [{ id: "amount", label: "\u538B\u591A\u5C11", hint: "\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73\uFF1A\u5F80\u53F3 = \u538B\u5F97\u8D8A\u72E0\uFF08\u54CD\u7684\u5B57\u538B\u4E0B\u6765\u3001\u8F7B\u7684\u76F8\u5BF9\u663E\u51FA\u6765\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a10) => {
+    const c10 = compOf(a10);
+    return `${c10.thresholdDb} dB \u8D77\u538B \xB7 ${c10.ratio}:1`;
+  } }],
   read(p2) {
     const a10 = (-p2.thresholdDb - 6) / 30;
     if (a10 < -1e-3 || a10 > 1 + 1e-3) return null;
@@ -25370,37 +25494,46 @@ var COMP_SIMPLE = {
     return { ...p2, ...compOf(Math.max(0, Math.min(1, v.amount ?? 0))) };
   }
 };
-var revOf = (d3) => ({ mix: r1((0.08 + 0.4 * d3) * 100) / 100, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
+var revOf = (d3) => ({ mix: r1((0.08 + 0.4 * d3) * 100) / 100, dry: 1, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
 var REV_SIMPLE = {
-  controls: [{ id: "far", label: "\u8FDC\u8FD1", hint: "\u5F80\u53F3 = \u8D8A\u8FDC\u3001\u8D8A\u5927\u7684\u623F\u95F4\uFF08\u94C3\u53EF\u4EE5\u8FDC\u4E00\u70B9\uFF0C\u8D34\u8033\u7684\u4EBA\u58F0\u8FD1\u4E00\u70B9\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: pct }],
+  controls: [{ id: "far", label: "\u8FDC\u8FD1", hint: "\u5F80\u53F3 = \u8D8A\u8FDC\u3001\u8D8A\u5927\u7684\u623F\u95F4\uFF08\u94C3\u53EF\u4EE5\u8FDC\u4E00\u70B9\uFF0C\u8D34\u8033\u7684\u4EBA\u58F0\u8FD1\u4E00\u70B9\uFF09\uFF1B\u539F\u58F0\u4E0D\u52A8\uFF0C\u53EA\u5F80\u4E0A\u52A0\u6DF7\u54CD", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d3) => {
+    const c10 = revOf(d3);
+    return `\u6E7F ${dbt(linDb(c10.mix))} \xB7 ${rt60OfRoom(c10.room).toFixed(1)} s`;
+  } }],
   read(p2) {
     const d3 = (p2.mix - 0.08) / 0.4, c10 = revOf(d3);
-    return d3 >= -1e-3 && d3 <= 1 + 1e-3 && near(p2.room, c10.room, 6e-3) && p2.damp === 0.5 && p2.preDelayMs === 10 && p2.width === 1 ? { far: Math.round(d3 * 20) / 20 } : null;
+    return d3 >= -1e-3 && d3 <= 1 + 1e-3 && p2.dry === 1 && near(p2.room, c10.room, 6e-3) && p2.damp === 0.5 && p2.preDelayMs === 10 && p2.width === 1 ? { far: Math.round(d3 * 20) / 20 } : null;
   },
   write(v, p2) {
     return { ...p2, ...revOf(Math.max(0, Math.min(1, v.far ?? 0))) };
   }
 };
-var dlyOf = (e10) => ({ mix: r1((0.1 + 0.4 * e10) * 100) / 100, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3 });
+var dlyOf = (e10) => ({ mix: r1((0.1 + 0.4 * e10) * 100) / 100, dry: 1, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3 });
 var DLY_SIMPLE = {
   controls: [
-    { id: "echo", label: "\u56DE\u58F0\u591A\u5C11", hint: "\u5F80\u53F3 = \u56DE\u58F0\u8D8A\u54CD\u3001\u8D8A\u4E45", kind: "knob", min: 0, max: 1, step: 0.05, fmt: pct },
+    { id: "echo", label: "\u56DE\u58F0\u591A\u5C11", hint: "\u5F80\u53F3 = \u56DE\u58F0\u8D8A\u54CD\u3001\u8D8A\u4E45\uFF1B\u539F\u58F0\u4E0D\u52A8", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e10) => {
+      const c10 = dlyOf(e10);
+      return `\u6E7F ${dbt(linDb(c10.mix))} \xB7 \u6BCF\u6B21 ${linDb(c10.feedback).toFixed(1)} dB`;
+    } },
     { id: "beats", label: "\u51E0\u62CD\u4E00\u6B21", hint: "\u56DE\u58F0\u548C\u62CD\u5B50\u5BF9\u9F50\uFF08\u8DDF\u7740\u6B4C\u7684\u901F\u5EA6\uFF09", kind: "choice", choices: [{ v: 0.5, label: "\u516B\u5206" }, { v: 0.75, label: "\u9644\u70B9\u516B\u5206" }, { v: 1, label: "\u56DB\u5206" }] }
   ],
   read(p2) {
     const e10 = (p2.mix - 0.1) / 0.4, c10 = dlyOf(e10);
-    return e10 >= -1e-3 && e10 <= 1 + 1e-3 && near(p2.feedback, c10.feedback, 6e-3) && p2.dampHz === 6e3 && [0.5, 0.75, 1].includes(p2.syncBeats) ? { echo: Math.round(e10 * 20) / 20, beats: p2.syncBeats } : null;
+    return e10 >= -1e-3 && e10 <= 1 + 1e-3 && p2.dry === 1 && near(p2.feedback, c10.feedback, 6e-3) && p2.dampHz === 6e3 && [0.5, 0.75, 1].includes(p2.syncBeats) ? { echo: Math.round(e10 * 20) / 20, beats: p2.syncBeats } : null;
   },
   write(v, p2) {
     return { ...p2, ...dlyOf(Math.max(0, Math.min(1, v.echo ?? 0))), syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
   }
 };
-var choOf = (w2) => ({ mix: r1((0.2 + 0.4 * w2) * 100) / 100, depthMs: r1(1 + 4 * w2), spread: r1((0.4 + 0.6 * w2) * 100) / 100, voices: 3, delayMs: 18, rateHz: 0.6 });
+var choOf = (w2) => ({ mix: r1((0.2 + 0.4 * w2) * 100) / 100, dry: 1, depthMs: r1(1 + 4 * w2), spread: r1((0.4 + 0.6 * w2) * 100) / 100, voices: 3, delayMs: 18, rateHz: 0.6 });
 var CHO_SIMPLE = {
-  controls: [{ id: "wide", label: "\u5BBD", hint: "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA", kind: "knob", min: 0, max: 1, step: 0.05, fmt: pct }],
+  controls: [{ id: "wide", label: "\u5BBD", hint: "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF1B\u539F\u58F0\u4E0D\u52A8", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (w2) => {
+    const c10 = choOf(w2);
+    return `\u6E7F ${dbt(linDb(c10.mix))} \xB7 \u6296\u52A8 ${c10.depthMs} ms`;
+  } }],
   read(p2) {
     const w2 = (p2.mix - 0.2) / 0.4, c10 = choOf(w2);
-    return w2 >= -1e-3 && w2 <= 1 + 1e-3 && near(p2.depthMs, c10.depthMs, 0.06) && near(p2.spread, c10.spread, 6e-3) && p2.voices === 3 && p2.delayMs === 18 && p2.rateHz === 0.6 ? { wide: Math.round(w2 * 20) / 20 } : null;
+    return w2 >= -1e-3 && w2 <= 1 + 1e-3 && p2.dry === 1 && near(p2.depthMs, c10.depthMs, 0.06) && near(p2.spread, c10.spread, 6e-3) && p2.voices === 3 && p2.delayMs === 18 && p2.rateHz === 0.6 ? { wide: Math.round(w2 * 20) / 20 } : null;
   },
   write(v, p2) {
     return { ...p2, ...choOf(Math.max(0, Math.min(1, v.wide ?? 0))) };
@@ -25416,39 +25549,39 @@ var GAIN_SIMPLE = {
   }
 };
 var SIMPLE = { eq: EQ_SIMPLE, comp: COMP_SIMPLE, reverb: REV_SIMPLE, delay: DLY_SIMPLE, chorus: CHO_SIMPLE, gain: GAIN_SIMPLE };
-var wet1 = (p2) => p2.mix === 1;
+var wet1 = (p2) => p2.mix === 1 && p2.dry === 0;
 var SIMPLE_BUS = {
   reverb: {
-    controls: [{ id: "size", label: "\u623F\u95F4\u5927\u5C0F", hint: "\u5F80\u53F3 = \u8D8A\u5927\u7684\u623F\u95F4\u3001\u5C3E\u5DF4\u8D8A\u957F\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: pct }],
+    controls: [{ id: "size", label: "\u6DF7\u54CD\u65F6\u95F4", hint: "\u5C3E\u5DF4\u8870\u51CF 60 dB \u8981\u591A\u4E45\uFF08RT60\uFF09\uFF1A\u5F80\u53F3 = \u8D8A\u5927\u7684\u623F\u95F4\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d3) => `${rt60OfRoom(0.3 + 0.65 * d3).toFixed(1)} s` }],
     read(p2) {
       const d3 = (p2.room - 0.3) / 0.65;
       return wet1(p2) && d3 >= -1e-3 && d3 <= 1 + 1e-3 && p2.damp === 0.5 && p2.preDelayMs === 10 && p2.width === 1 ? { size: Math.round(d3 * 20) / 20 } : null;
     },
     write(v, p2) {
       const d3 = Math.max(0, Math.min(1, v.size ?? 0));
-      return { ...p2, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1 };
+      return { ...p2, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1, dry: 0 };
     }
   },
   delay: {
-    controls: [{ id: "echo", label: "\u56DE\u58F0\u591A\u957F", hint: "\u5F80\u53F3 = \u56DE\u58F0\u91CD\u590D\u5F97\u8D8A\u4E45\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: pct }, DLY_SIMPLE.controls[1]],
+    controls: [{ id: "echo", label: "\u56DE\u58F0\u591A\u957F", hint: "\u5F80\u53F3 = \u56DE\u58F0\u91CD\u590D\u5F97\u8D8A\u4E45\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e10) => `\u6BCF\u6B21 ${linDb(0.15 + 0.5 * e10).toFixed(1)} dB` }, DLY_SIMPLE.controls[1]],
     read(p2) {
       const e10 = (p2.feedback - 0.15) / 0.5;
       return wet1(p2) && e10 >= -1e-3 && e10 <= 1 + 1e-3 && p2.dampHz === 6e3 && [0.5, 0.75, 1].includes(p2.syncBeats) ? { echo: Math.round(e10 * 20) / 20, beats: p2.syncBeats } : null;
     },
     write(v, p2) {
       const e10 = Math.max(0, Math.min(1, v.echo ?? 0));
-      return { ...p2, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3, mix: 1, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
+      return { ...p2, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3, mix: 1, dry: 0, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
     }
   },
   chorus: {
-    controls: [CHO_SIMPLE.controls[0]],
+    controls: [{ ...CHO_SIMPLE.controls[0], hint: "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", fmt: (w2) => `\u6296\u52A8 ${choOf(w2).depthMs} ms` }],
     read(p2) {
       const w2 = (p2.depthMs - 1) / 4;
       return wet1(p2) && w2 >= -1e-3 && w2 <= 1 + 1e-3 && near(p2.spread, r1((0.4 + 0.6 * w2) * 100) / 100, 6e-3) && p2.voices === 3 && p2.delayMs === 18 && p2.rateHz === 0.6 ? { wide: Math.round(w2 * 20) / 20 } : null;
     },
     write(v, p2) {
       const w2 = Math.max(0, Math.min(1, v.wide ?? 0));
-      return { ...p2, ...choOf(w2), mix: 1 };
+      return { ...p2, ...choOf(w2), mix: 1, dry: 0 };
     }
   }
 };
@@ -25494,173 +25627,73 @@ function resolveChain(chain, ctx2) {
 
 // src/ui/studio.ts
 var MASTER = "__master";
+var TABS = [
+  { id: "basic", label: "\u57FA\u7840", hint: "\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\uFF1A\u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73\u3001\u5DE6\u53F3\u6446\u5F00\uFF08\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65\uFF09" },
+  { id: "eq", label: "EQ", hint: "\u6BCF\u6761\u8F68\u7684\u9ED8\u8BA4 EQ\uFF1A\u4E24\u6837\u4E1C\u897F\u7CCA\u5728\u4E00\u8D77\u3001\u592A\u95F7 / \u592A\u523A" },
+  { id: "comp", label: "\u538B\u7F29", hint: "\u6BCF\u6761\u8F68\u4E0A\u7684\u7B2C\u4E00\u4E2A\u538B\u7F29\uFF1A\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73" },
+  { id: "send", label: "\u53D1\u9001", hint: "\u51FA\u5230\u54EA\u3001\u63A8\u5B50\u540E\u53D1\u7ED9\u54EA\u51E0\u6761\u6DF7\u97F3\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u653E\u5728\u6DF7\u97F3\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09" },
+  { id: "chain", label: "\u94FE", hint: "\u6BCF\u6761\u8F68\u4E0A\u7684\u5168\u90E8\u63D2\u4EF6\u683C\uFF1A\u968F\u4FBF\u63D2\u3001\u5F00\u5173\u3001\u62FF\u6389" }
+];
 var esc4 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 var panText = (p2) => Math.abs(p2) < 0.025 ? "\u4E2D" : p2 < 0 ? `\u5DE6 ${Math.round(-p2 * 100)}` : `\u53F3 ${Math.round(p2 * 100)}`;
 var dbText = (d3) => `${d3 > 0 ? "+" : ""}${d3.toFixed(1)} dB`;
-function sliderOf(d3) {
-  if (d3.unit === "Hz") {
-    const lo2 = Math.max(20, d3.min || 20), hi = d3.max, offable = d3.min === 0, L2 = Math.log(lo2), H2 = Math.log(hi);
-    return {
-      min: offable ? -0.02 : 0,
-      max: 1,
-      step: 2e-3,
-      toV: (s10) => offable && s10 < 0 ? 0 : Math.round(Math.exp(L2 + Math.max(0, s10) * (H2 - L2))),
-      toS: (v) => offable && v <= 0 ? -0.02 : (Math.log(Math.max(lo2, v)) - L2) / (H2 - L2),
-      fmt: (v) => v <= 0 ? "\u5173" : v >= 1e3 ? `${(v / 1e3).toFixed(v >= 1e4 ? 1 : 2)} kHz` : `${Math.round(v)} Hz`
-    };
-  }
-  const step = d3.unit === "dB" ? 0.5 : d3.unit === "ms" ? d3.max > 500 ? 5 : 0.5 : d3.unit === "0..1" ? 0.01 : d3.unit === "ratio" ? d3.max <= 4 ? 1 : 0.1 : 1;
-  const fmt = (v) => d3.unit === "dB" ? dbText(v) : d3.unit === "ms" ? `${v} ms` : d3.unit === "0..1" ? `${Math.round(v * 100)}%` : d3.unit === "ratio" ? d3.id === "ratio" ? `${v}:1` : String(v) : String(v);
-  return { min: d3.min, max: d3.max, step, toV: (s10) => s10, toS: (v) => v, fmt };
+var toDb = (x2) => x2 > 1e-5 ? 20 * Math.log10(x2) : -60;
+function row(label, hint2, out, control, cls = "fx-row") {
+  return `<div class="${cls}" title="${esc4(hint2)}"><span class="row-lab">${esc4(label)}<button class="q" type="button" data-v="help" aria-label="\u8FD9\u662F\u4EC0\u4E48">?</button> ${out}</span>${control}<div class="row-help">${esc4(hint2)}</div></div>`;
 }
+var HINT2 = {
+  gain: "\u589E\u76CA\uFF08\u63A8\u5B50\uFF09\uFF1A\u8FD9\u6761\u8F68\u6574\u4F53\u7684\u97F3\u91CF\u3002\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65 = \u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73",
+  pan: "\u58F0\u50CF\uFF1A\u5728\u5DE6\u53F3\u54EA\u4E2A\u4F4D\u7F6E\u3002\u51E0\u6761\u8F68\u5DE6\u53F3\u9519\u5F00\u4E00\u70B9\uFF0C\u5C31\u4E0D\u4F1A\u90FD\u6324\u5728\u6B63\u4E2D\u95F4",
+  masterGain: "\u603B\u8F68\u589E\u76CA\uFF1A\u6240\u6709\u8F68\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E\u6574\u4F53\u518D\u8C03\u5927\u8C03\u5C0F",
+  out: "\u51FA\u5230\uFF1A\u8FD9\u6761\u8F68\u7684\u58F0\u97F3\u6700\u540E\u53BB\u54EA\u2014\u2014\u76F4\u63A5\u53BB\u603B\u8F68\uFF0C\u6216\u8005\u5148\u8FDB\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u5728\u90A3\u91CC\u4E00\u8D77\u8FC7\u6548\u679C\uFF09",
+  send: "\u53D1\u9001\uFF1A\u63A8\u5B50\u4E4B\u540E\u518D\u590D\u5236\u4E00\u4EFD\u7ED9\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF1B\u8D8A\u5927\uFF0C\u90A3\u8FB9\u7684\u6548\u679C\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\uFF09\u8D8A\u591A\uFF0C\u539F\u58F0\u7167\u65E7\u8D70\u300C\u51FA\u5230\u300D",
+  key: "\u88AB\u8C01\u538B\uFF08\u4FA7\u94FE\uFF09\uFF1A\u538B\u7F29\u5668\u4E0D\u770B\u81EA\u5DF1\uFF0C\u800C\u770B\u53E6\u4E00\u6761\u8F68\u6709\u591A\u54CD\u2014\u2014\u6BD4\u5982\u6708\u8BFB\u4E00\u5531\uFF0C\u4F34\u594F\u81EA\u5DF1\u8BA9\u4E00\u70B9"
+};
 var Studio2 = class {
-  // 「＋」的小菜单开在哪条轨
   constructor(parent, host) {
     this.host = host;
     this.el = document.createElement("div");
     this.el.className = "studio";
     this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">\u6DF7\u97F3\u53F0</span><button class="btn" data-v="back" title="\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09">\u6536\u8D77</button><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="fx-panel" hidden></div><div class="studio-strips"></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">\u6DF7\u97F3\u53F0</span><button class="btn" data-v="back" title="\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09">\u6536\u8D77</button><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="mix-tabbar"></div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
     parent.append(this.el);
-    this.el.addEventListener("click", (e10) => {
-      const t10 = e10.target, v = t10.closest("[data-v]")?.dataset.v, strip = t10.closest(".strip")?.dataset.id;
-      if (v === "back") this.host.close();
-      else if (v === "play") this.host.play();
-      else if (v === "mute" && strip) {
-        this.host.toggleMute(strip);
-        this.render();
-      } else if (v === "solo" && strip) {
-        this.host.toggleSolo(strip);
-        this.render();
-      } else if (v === "delpart" && strip) this.host.deletePart(strip);
-      else if (v === "limiter") {
-        this.host.toggleLimiter();
-        this.render();
-      } else if (v === "fx" && strip) {
-        const id2 = t10.closest("[data-fx]").dataset.fx;
-        this.toggleOpen(strip, id2);
-      } else if (v === "fxadd" && strip) {
-        this.addFor = this.addFor === strip ? null : strip;
-        this.render();
-      } else if (v === "fxpick" && strip) {
-        this.addFx(strip, t10.closest("[data-kind]").dataset.kind);
-      } else if (v === "fxmode" && this.open) {
-        this.open.mode = t10.closest("[data-mode]").dataset.mode;
-        this.renderPanel();
-      } else if (v === "fxon") this.patchOpen((fx) => ({ ...fx, on: fx.on === false }), "\u5F00 / \u5173");
-      else if (v === "fxdel") this.deleteOpen();
-      else if (v === "fxclose") {
-        this.open = null;
-        this.render();
-      } else if (v === "fxtoggle") {
-        const id2 = t10.closest("[data-c]").dataset.c;
-        this.simpleSet(id2, this.simpleNow()?.[id2] ?? 0 ? 0 : 1, false);
-        this.renderPanel();
-      } else if (v === "fxchoice") {
-        const b3 = t10.closest("[data-c]");
-        this.simpleSet(b3.dataset.c, Number(b3.dataset.val), false);
-        this.renderPanel();
-      } else if (v === "addbus") {
-        const id2 = this.host.addBus();
-        this.render();
-        this.el.querySelector(`.strip[data-id="${CSS.escape(id2)}"]`)?.scrollIntoView({ block: "nearest" });
-      } else if (v === "delbus" && strip) {
-        if (this.open?.track === strip) this.open = null;
-        this.host.removeBus(strip);
-        this.render();
-      } else if (v === "sendx" && strip) {
-        const to2 = t10.closest("[data-to]").dataset.to;
-        this.host.setSends(strip, this.host.sends(strip).filter((x2) => x2.to !== to2), `\u4E0D\u518D\u53D1\u7ED9 ${this.trackName(to2)}`);
-        this.render();
-      } else if (v === "fxbool") {
-        const id2 = t10.closest("[data-p]").dataset.p;
-        this.patchOpen((fx) => ({ ...fx, params: { ...paramsOf(fx), [id2]: paramsOf(fx)[id2] ? 0 : 1 } }), id2);
-        this.renderPanel();
-      }
-    });
-    this.el.addEventListener("input", (e10) => {
-      const t10 = e10.target;
-      if (t10.dataset.c !== void 0) {
-        this.simpleSet(t10.dataset.c, Number(t10.value), true);
-        return;
-      }
-      if (t10.dataset.p !== void 0) {
-        this.fullSet(t10, true);
-        return;
-      }
-      const strip = t10.closest(".strip");
-      if (!strip) return;
-      const id2 = strip.dataset.id, out = t10.parentElement?.querySelector("output");
-      if (t10.dataset.send !== void 0) {
-        const to2 = t10.dataset.send, v = Number(t10.value);
-        this.host.setSends(id2, this.host.sends(id2).map((x2) => x2.to === to2 ? { ...x2, gainDb: v } : x2), `\u53D1\u7ED9 ${this.trackName(to2)} ${dbText(v)}`, `send:${id2}:${to2}`);
-        if (out) out.textContent = dbText(v);
-        return;
-      }
-      if (t10.dataset.busgain !== void 0) {
-        this.host.setBusGain(id2, Number(t10.value));
-        if (out) out.textContent = dbText(Number(t10.value));
-        return;
-      }
-      if (t10.dataset.buspan !== void 0) {
-        this.host.setBusPan(id2, Number(t10.value));
-        if (out) out.textContent = panText(Number(t10.value));
-        return;
-      }
-      if (t10.dataset.master !== void 0) {
-        this.host.setMasterGain(Number(t10.value));
-        if (out) out.textContent = dbText(Number(t10.value));
-      } else if (t10.dataset.gain !== void 0) {
-        this.host.setGain(id2, Number(t10.value));
-        if (out) out.textContent = dbText(Number(t10.value));
-      } else if (t10.dataset.pan !== void 0) {
-        this.host.setPan(id2, Number(t10.value));
-        if (out) out.textContent = panText(Number(t10.value));
-      }
-    });
-    this.el.addEventListener("change", (e10) => {
-      const t10 = e10.target;
-      const strip = t10.closest(".strip")?.dataset.id;
-      if (strip && t10.dataset.out !== void 0) {
-        this.host.setOutTo(strip, t10.value);
-        this.render();
-        return;
-      }
-      if (strip && t10.dataset.sendadd !== void 0 && t10.value) {
-        this.host.setSends(strip, [...this.host.sends(strip), { to: t10.value, gainDb: -12 }], `\u53D1\u7ED9 ${this.trackName(t10.value)}`);
-        this.render();
-        return;
-      }
-      if (strip && t10.classList.contains("bus-name")) {
-        const name = t10.value.trim();
-        if (name) this.host.renameBus(strip, name);
-        this.render();
-        return;
-      }
-      if (t10.dataset.key !== void 0) {
-        const v = t10.value;
-        this.patchOpen((fx) => {
-          const { key: _k, ...rest } = fx;
-          return v ? { ...rest, key: v } : rest;
-        }, "\u88AB\u8C01\u538B");
-        this.renderPanel();
-      }
-    });
+    this.el.addEventListener("click", (e10) => this.onClick(e10));
+    this.el.addEventListener("input", (e10) => this.onInput(e10));
+    this.el.addEventListener("change", (e10) => this.onChange(e10));
     this.el.addEventListener("dblclick", (e10) => {
       const t10 = e10.target, strip = t10.closest(".strip");
       if (!strip || t10.tagName !== "INPUT") return;
+      const id2 = strip.dataset.id;
       if (t10.dataset.master !== void 0) this.host.setMasterGain(0);
-      else if (t10.dataset.gain !== void 0) this.host.setGain(strip.dataset.id, 0);
-      else if (t10.dataset.pan !== void 0) this.host.setPan(strip.dataset.id, 0);
+      else if (t10.dataset.gain !== void 0) this.host.setGain(id2, 0);
+      else if (t10.dataset.pan !== void 0) this.host.setPan(id2, 0);
+      else if (t10.dataset.busgain !== void 0) this.host.setBusGain(id2, 0);
+      else if (t10.dataset.buspan !== void 0) this.host.setBusPan(id2, 0);
+      else return;
       this.render();
     });
   }
   el;
-  /** 展开着的插件面板：哪条轨的哪一格 + 一键 / 全量（只在这次打开里）。 */
+  tab = "basic";
+  /** EQ / 压缩页摊开的控件用一键还是全量（全部卡片一起换；这次打开里有效）。 */
+  panelMode = { eq: "simple", comp: "simple" };
+  /** 「链」页顶上展开着的插件面板：哪条轨的哪一格 + 一键 / 全量。 */
   open = null;
   addFor = null;
+  // 「链」页「＋」的小菜单开在哪条轨
+  menuOpen = false;
+  // 页签那一行的「⋯」
+  // 峰值细线：录音房每 ~21 ms 报一次（推子后）；画的时候涨得快、落得慢（每秒 30 dB），只在看得见、有声音时跑动画
+  target = /* @__PURE__ */ new Map();
+  shown = /* @__PURE__ */ new Map();
+  raf = 0;
+  lastTick = 0;
+  lastMeter = 0;
   get isOpen() {
     return !this.el.hidden;
+  }
+  get currentTab() {
+    return this.tab;
   }
   show() {
     this.el.hidden = false;
@@ -25668,156 +25701,364 @@ var Studio2 = class {
   }
   hide() {
     this.el.hidden = true;
+    this.menuOpen = false;
   }
-  /** 峰值表（播放 / 试听时录音房每 1024 帧报一次；0–1）。 */
-  meter(peak) {
-    const bar2 = this.el.querySelector(".meter-fill"), val = this.el.querySelector(".meter-val");
-    if (!bar2) return;
-    const db = peak > 1e-5 ? 20 * Math.log10(peak) : -60, w2 = Math.max(0, Math.min(100, (db + 60) / 60 * 100));
-    bar2.style.width = `${w2}%`;
-    bar2.classList.toggle("hot", peak >= 0.98);
-    if (val) val.textContent = db <= -59 ? "\u2014" : `${db.toFixed(1)} dB`;
+  // ── 峰值 ────────────────────────────────────────────────────────────────
+  /** 录音房报的峰值（0–1；总轨 = 出声口；tracks = 每条轨 / 混音轨推子后）。 */
+  meter(peak, tracks = {}) {
+    this.target.set(MASTER, peak);
+    for (const [k2, v] of Object.entries(tracks)) this.target.set(k2, v);
+    this.lastMeter = performance.now();
+    const val = this.el.querySelector(".meter-val");
+    if (val) {
+      const db = toDb(peak);
+      val.textContent = db <= -59 ? "\u2014" : `${db.toFixed(1)} dB`;
+    }
+    if (!this.raf && !this.el.hidden) {
+      this.lastTick = performance.now();
+      this.raf = requestAnimationFrame(this.tick);
+    }
+  }
+  tick = (now2) => {
+    this.raf = 0;
+    if (this.el.hidden) return;
+    const dt = Math.min(0.1, (now2 - this.lastTick) / 1e3);
+    this.lastTick = now2;
+    const stale = now2 - this.lastMeter > 200;
+    let alive = false;
+    for (const el2 of this.el.querySelectorAll(".strip[data-id]")) {
+      const id2 = el2.dataset.id, raw = stale ? 0 : this.target.get(id2) ?? 0, want = toDb(raw), cur = this.shown.get(id2) ?? -60;
+      const next2 = want >= cur ? want : Math.max(want, cur - 30 * dt);
+      this.shown.set(id2, next2);
+      if (next2 > -59.5) alive = true;
+      const bar2 = el2.querySelector(".strip-meter > i");
+      if (bar2) {
+        bar2.style.width = `${Math.max(0, Math.min(100, (next2 + 60) / 60 * 100))}%`;
+        bar2.classList.toggle("hot", raw >= 0.98);
+      }
+    }
+    if (alive || !stale) this.raf = requestAnimationFrame(this.tick);
+  };
+  // ── 事件 ────────────────────────────────────────────────────────────────
+  targetOf(el2) {
+    const w2 = el2.closest("[data-fxwrap]");
+    return w2?.dataset.track && w2.dataset.fx ? { track: w2.dataset.track, fx: w2.dataset.fx } : null;
+  }
+  onClick(e10) {
+    const t10 = e10.target, v = t10.closest("[data-v]")?.dataset.v, strip = t10.closest(".strip")?.dataset.id, tg2 = this.targetOf(t10);
+    if (!v) return;
+    if (v === "help") {
+      t10.closest(".fx-row, .strip-row")?.classList.toggle("show-help");
+      return;
+    }
+    if (v === "back") this.host.close();
+    else if (v === "play") this.host.play();
+    else if (v === "tab") {
+      this.tab = t10.closest("[data-tab]").dataset.tab;
+      this.menuOpen = false;
+      this.addFor = null;
+      this.render();
+    } else if (v === "more") {
+      this.menuOpen = !this.menuOpen;
+      this.render();
+    } else if (v === "addbus") {
+      this.menuOpen = false;
+      const id2 = this.host.addBus();
+      this.render();
+      this.el.querySelector(`.strip[data-id="${CSS.escape(id2)}"]`)?.scrollIntoView({ block: "nearest" });
+    } else if (v === "mute" && strip) {
+      this.host.toggleMute(strip);
+      this.render();
+    } else if (v === "solo" && strip) {
+      this.host.toggleSolo(strip);
+      this.render();
+    } else if (v === "delpart" && strip) this.host.deletePart(strip);
+    else if (v === "limiter") {
+      this.host.toggleLimiter();
+      this.render();
+    } else if (v === "delbus" && strip) {
+      if (this.open?.track === strip) this.open = null;
+      this.host.removeBus(strip);
+      this.render();
+    } else if ((v === "busleft" || v === "busright") && strip) {
+      this.host.moveBus(strip, v === "busleft" ? -1 : 1);
+      this.render();
+    } else if (v === "sendx" && strip) {
+      const to2 = t10.closest("[data-to]").dataset.to;
+      this.host.setSends(strip, this.host.sends(strip).filter((x2) => x2.to !== to2), `\u4E0D\u518D\u53D1\u7ED9 ${this.trackName(to2)}`);
+      this.render();
+    } else if (v === "fx" && strip) {
+      const id2 = t10.closest("[data-fx]").dataset.fx;
+      this.toggleOpen(strip, id2);
+    } else if (v === "fxadd" && strip) {
+      this.addFor = this.addFor === strip ? null : strip;
+      this.render();
+    } else if (v === "fxpick" && strip) this.addFx(strip, t10.closest("[data-kind]").dataset.kind, true);
+    else if (v === "fxaddkind" && strip) this.addFx(strip, t10.closest("[data-kind]").dataset.kind, false);
+    else if (v === "fxmode" && this.open) {
+      this.open.mode = t10.closest("[data-mode]").dataset.mode;
+      this.renderPanel();
+    } else if (v === "fxclose") {
+      this.open = null;
+      this.render();
+    } else if (v === "fxdel" && tg2) this.deleteFx(tg2);
+    else if (v === "fxon" && tg2) {
+      this.patch(tg2, (fx) => ({ ...fx, on: fx.on === false }), "\u5F00 / \u5173");
+      this.render();
+    } else if (v === "fxtoggle" && tg2) {
+      const id2 = t10.closest("[data-c]").dataset.c;
+      this.simpleSet(tg2, id2, this.simpleNow(tg2)?.[id2] ?? 0 ? 0 : 1, false);
+      this.render();
+    } else if (v === "fxchoice" && tg2) {
+      const b3 = t10.closest("[data-c]");
+      this.simpleSet(tg2, b3.dataset.c, Number(b3.dataset.val), false);
+      this.render();
+    } else if (v === "fxbool" && tg2) {
+      const id2 = t10.closest("[data-p]").dataset.p;
+      this.patch(tg2, (fx) => ({ ...fx, params: { ...paramsOf(fx), [id2]: paramsOf(fx)[id2] ? 0 : 1 } }), id2);
+      this.render();
+    }
+  }
+  onInput(e10) {
+    const t10 = e10.target, tg2 = this.targetOf(t10);
+    if (tg2 && t10.dataset.c !== void 0) {
+      this.simpleSet(tg2, t10.dataset.c, Number(t10.value), true, t10);
+      return;
+    }
+    if (tg2 && t10.dataset.p !== void 0) {
+      this.fullSet(tg2, t10);
+      return;
+    }
+    const strip = t10.closest(".strip");
+    if (!strip) return;
+    const id2 = strip.dataset.id, out = t10.parentElement?.querySelector("output"), v = Number(t10.value);
+    if (t10.dataset.send !== void 0) {
+      const to2 = t10.dataset.send;
+      this.host.setSends(id2, this.host.sends(id2).map((x2) => x2.to === to2 ? { ...x2, gainDb: v } : x2), `\u53D1\u7ED9 ${this.trackName(to2)} ${dbText(v)}`, `send:${id2}:${to2}`);
+      if (out) out.textContent = dbText(v);
+    } else if (t10.dataset.busgain !== void 0) {
+      this.host.setBusGain(id2, v);
+      if (out) out.textContent = dbText(v);
+    } else if (t10.dataset.buspan !== void 0) {
+      this.host.setBusPan(id2, v);
+      if (out) out.textContent = panText(v);
+    } else if (t10.dataset.master !== void 0) {
+      this.host.setMasterGain(v);
+      if (out) out.textContent = dbText(v);
+    } else if (t10.dataset.gain !== void 0) {
+      this.host.setGain(id2, v);
+      if (out) out.textContent = dbText(v);
+    } else if (t10.dataset.pan !== void 0) {
+      this.host.setPan(id2, v);
+      if (out) out.textContent = panText(v);
+    }
+  }
+  onChange(e10) {
+    const t10 = e10.target, strip = t10.closest(".strip")?.dataset.id, tg2 = this.targetOf(t10);
+    if (t10.dataset.panelmode !== void 0 && (this.tab === "eq" || this.tab === "comp")) {
+      this.panelMode[this.tab] = t10.value;
+      this.render();
+      return;
+    }
+    if (strip && t10.dataset.out !== void 0) {
+      this.host.setOutTo(strip, t10.value);
+      this.render();
+      return;
+    }
+    if (strip && t10.dataset.sendadd !== void 0 && t10.value) {
+      this.host.setSends(strip, [...this.host.sends(strip), { to: t10.value, gainDb: -12 }], `\u53D1\u7ED9 ${this.trackName(t10.value)}`);
+      this.render();
+      return;
+    }
+    if (strip && t10.classList.contains("bus-name")) {
+      const name = t10.value.trim();
+      if (name) this.host.renameBus(strip, name);
+      this.render();
+      return;
+    }
+    if (tg2 && t10.dataset.key !== void 0) {
+      const v = t10.value;
+      this.patch(tg2, (fx) => {
+        const { key: _k, ...rest } = fx;
+        return v ? { ...rest, key: v } : rest;
+      }, "\u88AB\u8C01\u538B");
+      this.render();
+    }
   }
   // ── 插件格 ──────────────────────────────────────────────────────────────
-  /** 一条轨显示的格子：歌手轨没有默认 EQ 那一格 = 补一个虚的（平，不在文件里）。 */
+  /** 一条轨显示的格子：歌手轨 / 混音轨没有默认 EQ 那一格 = 补一个虚的（平，不在文件里）。 */
   slots(track) {
     const ch2 = this.host.chain(track), out = ch2.map((fx) => ({ fx, virtual: false }));
     if (track !== MASTER && !ch2.some((f2) => f2.id === DEFAULT_EQ_ID)) out.unshift({ fx: { id: DEFAULT_EQ_ID, kind: "eq", params: freshParams("eq") }, virtual: true });
     return out;
   }
+  slotOf(tg2) {
+    return this.slots(tg2.track).find((s10) => s10.fx.id === tg2.fx) ?? null;
+  }
   onBus(track) {
     return this.host.buses().some((b3) => b3.id === track);
   }
   trackName(track) {
-    return track === MASTER ? "\u603B\u8F68" : this.host.strips().find((s10) => s10.id === track)?.name ?? this.host.buses().find((b3) => b3.id === track)?.name ?? track;
-  }
-  openFx() {
-    const o10 = this.open;
-    return o10 ? this.slots(o10.track).find((s10) => s10.fx.id === o10.fx) ?? null : null;
+    return track === MASTER || track === "master" ? "\u603B\u8F68" : this.host.strips().find((s10) => s10.id === track)?.name ?? this.host.buses().find((b3) => b3.id === track)?.name ?? track;
   }
   toggleOpen(track, fx) {
     if (this.open && this.open.track === track && this.open.fx === fx) this.open = null;
     else {
-      const s10 = this.slots(track).find((x2) => x2.fx.id === fx);
+      const s10 = this.slotOf({ track, fx });
       this.open = { track, fx, mode: s10 && simpleView(s10.fx.kind, this.onBus(track))?.read(paramsOf(s10.fx)) ? "simple" : "full" };
     }
     this.addFor = null;
     this.render();
   }
-  addFx(track, kind) {
+  addFx(track, kind, openPanel) {
     const ch2 = this.host.chain(track), used = new Set(ch2.map((f2) => f2.id));
     let n10 = 1;
     while (used.has(`${kind}${n10}`)) n10++;
     const fx = { id: `${kind}${n10}`, kind, params: freshParams(kind, this.onBus(track)) };
     this.host.setChain(track, [...ch2, fx], `${this.trackName(track)} \u63D2\u4E0A${pluginName(kind)}`);
     this.addFor = null;
-    this.open = { track, fx: fx.id, mode: "simple" };
+    if (openPanel) this.open = { track, fx: fx.id, mode: "simple" };
     this.render();
   }
-  /** 改展开着的那一格（虚的默认 EQ = 第一次改的时候写进链的最前面）。 */
-  patchOpen(f2, what, merge = false) {
-    const o10 = this.open, s10 = this.openFx();
-    if (!o10 || !s10) return;
-    const ch2 = this.host.chain(o10.track), nx2 = f2(s10.fx);
-    const next2 = s10.virtual ? [nx2, ...ch2] : ch2.map((x2) => x2.id === o10.fx ? nx2 : x2);
-    this.host.setChain(o10.track, next2, `${this.trackName(o10.track)} ${pluginName(nx2.kind)} ${what}`, merge ? `fx:${o10.track}:${o10.fx}:${what}` : void 0);
-    this.refreshChip(o10.track, nx2);
-  }
-  deleteOpen() {
-    const o10 = this.open;
-    if (!o10 || o10.fx === DEFAULT_EQ_ID) return;
-    const ch2 = this.host.chain(o10.track), gone = ch2.find((x2) => x2.id === o10.fx);
-    this.host.setChain(o10.track, ch2.filter((x2) => x2.id !== o10.fx), `${this.trackName(o10.track)} \u62FF\u6389${pluginName(gone?.kind ?? "")}`);
-    this.open = null;
-    this.render();
-  }
-  simpleNow() {
-    const s10 = this.openFx();
-    return s10 && this.open ? simpleView(s10.fx.kind, this.onBus(this.open.track))?.read(paramsOf(s10.fx)) ?? null : null;
-  }
-  /** 一键面板改一个控件：在当前读数上改这一个（读不出 = 在全量里调过 = 从一键的默认起），按公式写回全量参数。 */
-  simpleSet(id2, v, live) {
-    const s10 = this.openFx();
+  /** 改一格（虚的默认 EQ = 第一次改的时候写进链的最前面）。 */
+  patch(tg2, f2, what, merge = false) {
+    const s10 = this.slotOf(tg2);
     if (!s10) return;
-    const bus = this.onBus(this.open.track), view2 = simpleView(s10.fx.kind, bus), base3 = view2.read(paramsOf(s10.fx)) ?? view2.read(freshParams(s10.fx.kind, bus)) ?? {};
-    const ctl = view2.controls.find((c10) => c10.id === id2);
-    this.patchOpen((fx) => ({ ...fx, params: view2.write({ ...base3, [id2]: v }, paramsOf(fx)) }), ctl?.label ?? id2, live);
-    if (live) {
-      const out = this.el.querySelector(`.fx-panel output[data-c="${id2}"]`);
-      if (out && ctl?.fmt) out.textContent = ctl.fmt(v);
-      this.el.querySelector(".fx-panel .fx-note")?.remove();
+    const ch2 = this.host.chain(tg2.track), nx2 = f2(s10.fx);
+    const next2 = s10.virtual ? [nx2, ...ch2] : ch2.map((x2) => x2.id === tg2.fx ? nx2 : x2);
+    this.host.setChain(tg2.track, next2, `${this.trackName(tg2.track)} ${pluginName(nx2.kind)} ${what}`, merge ? `fx:${tg2.track}:${tg2.fx}:${what}` : void 0);
+    const b3 = this.el.querySelector(`.strip[data-id="${CSS.escape(tg2.track)}"] [data-fx="${CSS.escape(nx2.id)}"]`);
+    if (b3) {
+      b3.textContent = fxSummary(nx2, this.onBus(tg2.track));
+      b3.classList.toggle("off", nx2.on === false);
     }
   }
-  fullSet(t10, live) {
-    const s10 = this.openFx();
+  deleteFx(tg2) {
+    if (tg2.fx === DEFAULT_EQ_ID) return;
+    const ch2 = this.host.chain(tg2.track), gone = ch2.find((x2) => x2.id === tg2.fx);
+    this.host.setChain(tg2.track, ch2.filter((x2) => x2.id !== tg2.fx), `${this.trackName(tg2.track)} \u62FF\u6389${pluginName(gone?.kind ?? "")}`);
+    if (this.open && this.open.track === tg2.track && this.open.fx === tg2.fx) this.open = null;
+    this.render();
+  }
+  simpleNow(tg2) {
+    const s10 = this.slotOf(tg2);
+    return s10 ? simpleView(s10.fx.kind, this.onBus(tg2.track))?.read(paramsOf(s10.fx)) ?? null : null;
+  }
+  /** 一键改一个控件：在当前读数上改这一个（读不出 = 在全量里调过 = 从一键的默认起），按公式写回全量参数。 */
+  simpleSet(tg2, id2, v, live, input) {
+    const s10 = this.slotOf(tg2);
+    if (!s10) return;
+    const bus = this.onBus(tg2.track), view2 = simpleView(s10.fx.kind, bus), base3 = view2.read(paramsOf(s10.fx)) ?? view2.read(freshParams(s10.fx.kind, bus)) ?? {};
+    const ctl = view2.controls.find((c10) => c10.id === id2);
+    this.patch(tg2, (fx) => ({ ...fx, params: view2.write({ ...base3, [id2]: v }, paramsOf(fx)) }), ctl?.label ?? id2, live);
+    if (live && input) {
+      const w2 = input.closest("[data-fxwrap]");
+      const out = w2?.querySelector(`output[data-c="${id2}"]`);
+      if (out && ctl?.fmt) out.textContent = ctl.fmt(v);
+      w2?.querySelector(".fx-note")?.remove();
+    }
+  }
+  fullSet(tg2, t10) {
+    const s10 = this.slotOf(tg2);
     if (!s10) return;
     const id2 = t10.dataset.p, d3 = fullParams(s10.fx.kind).find((x2) => x2.id === id2);
     if (!d3) return;
-    const sl2 = sliderOf(d3), v = sl2.toV(Number(t10.value));
-    this.patchOpen((fx) => ({ ...fx, params: { ...paramsOf(fx), [id2]: v } }), d3.label, live);
+    const sl2 = paramView(s10.fx.kind, d3), v = sl2.toV(Number(t10.value));
+    this.patch(tg2, (fx) => ({ ...fx, params: { ...paramsOf(fx), [id2]: v } }), d3.label, true);
     const out = t10.parentElement?.querySelector("output");
     if (out) out.textContent = sl2.fmt(v);
   }
-  /** 卡片上那一格的字跟着改（拖旋钮时不重画整张卡片，免得滑块被换掉）。 */
-  refreshChip(track, fx) {
-    const b3 = this.el.querySelector(`.strip[data-id="${CSS.escape(track)}"] [data-fx="${CSS.escape(fx.id)}"]`);
-    if (b3) {
-      b3.textContent = fxSummary(fx, this.onBus(track));
-      b3.classList.toggle("off", fx.on === false);
+  // ── 画 ──────────────────────────────────────────────────────────────────
+  /** 一格的控件（一键 / 全量）：「链」页顶上的面板和 EQ / 压缩页卡片上摊开的共用。 */
+  controlsHtml(tg2, fx, mode) {
+    const bus = this.onBus(tg2.track), p2 = paramsOf(fx), view2 = simpleView(fx.kind, bus), read = view2?.read(p2) ?? null;
+    const keyOpts = fx.kind === "comp" ? this.host.keyTracks(tg2.track) : [];
+    const keyRow = keyOpts.length ? row("\u88AB\u8C01\u538B", HINT2.key, "", `<select data-key><option value="">\u4E0D\u7528\uFF08\u81EA\u5DF1\u538B\u81EA\u5DF1\uFF09</option>${keyOpts.map((x2) => `<option value="${esc4(x2.id)}"${fx.key === x2.id ? " selected" : ""}>${esc4(x2.name)}</option>`).join("")}</select>`) : "";
+    if (mode === "simple" && view2) {
+      const cur = read ?? view2.read(freshParams(fx.kind, bus)) ?? {};
+      return (read ? "" : `<div class="fx-note">\u5728\u5168\u91CF\u91CC\u8C03\u8FC7\uFF08\u4E0D\u662F\u4E00\u952E\u7684\u6837\u5B50\uFF09\uFF1B\u52A8\u8FD9\u91CC\u4F1A\u6539\u56DE\u4E00\u952E\u7684\u6837\u5B50\u3002</div>`) + view2.controls.map((c10) => {
+        const v = cur[c10.id] ?? 0;
+        if (c10.kind === "toggle") return row(c10.label, c10.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c10.id}">${v ? "\u5F00" : "\u5173"}</button>`);
+        if (c10.kind === "choice") return row(c10.label, c10.hint, "", `<span class="fx-seg">${c10.choices.map((x2) => `<button class="btn${Math.abs(v - x2.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c10.id}" data-val="${x2.v}">${esc4(x2.label)}</button>`).join("")}</span>`);
+        return row(c10.label, c10.hint, `<output data-c="${c10.id}">${c10.fmt ? c10.fmt(v) : v}</output>`, `<input type="range" min="${c10.min}" max="${c10.max}" step="${c10.step}" value="${v}" data-c="${c10.id}" />`);
+      }).join("") + keyRow;
     }
+    return fullParams(fx.kind).map((d3) => {
+      const sl2 = paramView(fx.kind, d3);
+      if (d3.unit === "bool") return row(sl2.label, sl2.hint, "", `<button class="btn cand${p2[d3.id] ? " is-on" : ""}" data-v="fxbool" data-p="${d3.id}">${p2[d3.id] ? "\u5F00" : "\u5173"}</button>`);
+      if (fx.kind === "eq" && d3.id === "hpHz" && p2.hpAuto) return row(sl2.label, sl2.hint, "", `<span class="fx-dim">\u81EA\u52A8\uFF08\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\uFF09</span>`);
+      return row(sl2.label, sl2.hint, `<output>${sl2.fmt(p2[d3.id])}</output>`, `<input type="range" min="${sl2.min}" max="${sl2.max}" step="${sl2.step}" value="${sl2.toS(p2[d3.id])}" data-p="${d3.id}" />`);
+    }).join("") + keyRow;
+  }
+  /** EQ / 压缩页：这条轨上第一格这种插件，摊在卡片上（没有 = 「＋」）。 */
+  inlineHtml(track, kind) {
+    const all = this.slots(track).filter((s11) => s11.fx.kind === kind), s10 = all[0];
+    if (!s10) return `<button class="btn cand" data-v="fxaddkind" data-kind="${kind}" title="\u5F80\u8FD9\u6761\u8F68\u4E0A\u63D2\u4E00\u4E2A${pluginName(kind)}">\uFF0B ${esc4(pluginName(kind))}</button>`;
+    const fx = s10.fx, tg2 = { track, fx: fx.id };
+    return `<div class="fx-inline${fx.on === false ? " off" : ""}" data-fxwrap data-track="${esc4(track)}" data-fx="${esc4(fx.id)}"><div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="\u5173 = \u8FD9\u4E00\u683C\u8DF3\u8FC7\uFF08\u53C2\u6570\u7559\u7740\uFF09">${fx.on === false ? "\u5173\u7740" : "\u5F00\u7740"}</button>${all.length > 1 ? `<span class="fx-dim">\u8FD8\u6709 ${all.length - 1} \u4E2A${esc4(pluginName(kind))}\u5728\u300C\u94FE\u300D\u91CC</span>` : ""}</div><div class="fx-body">${this.controlsHtml(tg2, fx, this.panelMode[kind])}</div></div>`;
+  }
+  /** 出到 + 发送（歌手轨和路由轨都有；总轨没有）。 */
+  routeHtml(track) {
+    const out = this.host.outTo(track), tg2 = this.host.targets(track), sends = this.host.sends(track), name = (id2) => esc4(this.trackName(id2));
+    const outSel = row("\u51FA\u5230", HINT2.out, "", `<select data-out>${[{ id: "master", name: "\u603B\u8F68" }, ...tg2].map((x2) => `<option value="${esc4(x2.id)}"${out === x2.id ? " selected" : ""}>${esc4(x2.name)}</option>`).join("")}${out !== "master" && !tg2.some((x2) => x2.id === out) ? `<option value="${esc4(out)}" selected>${name(out)}\uFF08\u63A5\u4E0D\u4E0A\uFF09</option>` : ""}</select>`, "strip-row");
+    const rows = sends.map((sd2) => `<div class="strip-send">${row(`\u53D1\u7ED9 ${this.trackName(sd2.to)}`, HINT2.send, `<output>${dbText(sd2.gainDb)}</output>`, `<input type="range" min="-40" max="6" step="0.5" value="${sd2.gainDb}" data-send="${esc4(sd2.to)}" />`, "strip-row")}<button class="btn" data-v="sendx" data-to="${esc4(sd2.to)}" title="\u4E0D\u518D\u53D1\u7ED9\u5B83">\u2715</button></div>`).join("");
+    const free = tg2.filter((x2) => !sends.some((sd2) => sd2.to === x2.id));
+    const add = free.length ? `<select class="send-add" data-sendadd title="\u63A8\u5B50\u4E4B\u540E\u53D1\u4E00\u4EFD\u5230\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u653E\u5728\u6DF7\u97F3\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09"><option value="">\uFF0B \u53D1\u9001\u5230\u2026</option>${free.map((x2) => `<option value="${esc4(x2.id)}">${esc4(x2.name)}</option>`).join("")}</select>` : tg2.length ? "" : `<div class="fx-dim">\u8FD8\u6CA1\u6709\u6DF7\u97F3\u8F68\uFF08\u300C\u22EF\u300D\u91CC\u52A0\uFF09</div>`;
+    const wet = out !== "master" ? this.host.chain(out).find(fullyWet) : void 0;
+    const warn = wet ? `<div class="fx-note">\u300C${name(out)}\u300D\u4E0A\u7684${esc4(pluginName(wet.kind))}\u662F\u5168\u6E7F\u7684\uFF1A\u51FA\u5230\u5B83 = \u539F\u58F0\u6CA1\u4E86\uFF0C\u53EA\u5269${esc4(pluginName(wet.kind))}\u3002\u8981\u539F\u58F0\u52A0${esc4(pluginName(wet.kind))}\uFF1A\u51FA\u5230\u603B\u8F68\uFF0C\u7528\u4E0B\u9762\u7684\u300C\u53D1\u9001\u300D\u3002</div>` : "";
+    return outSel + warn + rows + add;
   }
   chipsHtml(track) {
     const chips = this.slots(track).map(({ fx }) => `<button class="btn fx-chip${this.open?.track === track && this.open.fx === fx.id ? " is-on" : ""}${fx.on === false ? " off" : ""}" data-v="fx" data-fx="${esc4(fx.id)}" title="${esc4(pluginName(fx.kind))}\uFF1A\u70B9\u5F00\u8C03${fx.id === DEFAULT_EQ_ID ? "\uFF08\u9ED8\u8BA4\u90A3\u4E00\u683C\uFF1A\u80FD\u5173\u3001\u80FD\u6362\u9762\u677F\uFF0C\u4E0D\u80FD\u5220\uFF09" : ""}">${esc4(fxSummary(fx, this.onBus(track)))}</button>`).join("");
     const menu = this.addFor === track ? `<div class="fx-add-menu">${PLUGIN_KINDS.map((k2) => `<button class="btn cand" data-v="fxpick" data-kind="${k2}">${esc4(pluginName(k2))}</button>`).join("")}</div>` : "";
     return `<div class="strip-fx">${chips}<button class="btn fx-add${this.addFor === track ? " is-on" : ""}" data-v="fxadd" title="\u63D2\u4E00\u4E2A\u63D2\u4EF6\uFF08\u4EFB\u4F55\u63D2\u4EF6\u90FD\u80FD\u63D2\u5728\u4EFB\u4F55\u8F68\u4E0A\uFF09">\uFF0B</button>${menu}</div>`;
   }
-  /** 出到 + 发送（歌手轨和路由轨都有；总轨没有）。 */
-  routeHtml(track) {
-    const out = this.host.outTo(track), tg2 = this.host.targets(track), sends = this.host.sends(track), name = (id2) => esc4(this.trackName(id2));
-    const outSel = `<label class="strip-row">\u51FA\u5230 <select data-out>${[{ id: "master", name: "\u603B\u8F68" }, ...tg2].map((x2) => `<option value="${esc4(x2.id)}"${out === x2.id ? " selected" : ""}>${esc4(x2.name)}</option>`).join("")}${out !== "master" && !tg2.some((x2) => x2.id === out) ? `<option value="${esc4(out)}" selected>${name(out)}\uFF08\u63A5\u4E0D\u4E0A\uFF09</option>` : ""}</select></label>`;
-    const rows = sends.map((sd2) => `<div class="strip-send"><label class="strip-row">\u53D1\u7ED9 ${name(sd2.to)} <output>${dbText(sd2.gainDb)}</output><input type="range" min="-40" max="6" step="0.5" value="${sd2.gainDb}" data-send="${esc4(sd2.to)}" title="\u63A8\u5B50\u4E4B\u540E\u53D1\u4E00\u4EFD\u8FC7\u53BB\uFF08\u8D8A\u5927 = \u90A3\u6761\u8DEF\u7531\u8F68\u4E0A\u7684\u6548\u679C\u8D8A\u591A\uFF09" /></label><button class="btn" data-v="sendx" data-to="${esc4(sd2.to)}" title="\u4E0D\u518D\u53D1\u7ED9\u5B83">\u2715</button></div>`).join("");
-    const free = tg2.filter((x2) => !sends.some((sd2) => sd2.to === x2.id));
-    const add = free.length ? `<select class="send-add" data-sendadd title="\u63A8\u5B50\u4E4B\u540E\u53D1\u4E00\u4EFD\u5230\u4E00\u6761\u8DEF\u7531\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u653E\u5728\u8DEF\u7531\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09"><option value="">\uFF0B \u53D1\u9001\u5230\u2026</option>${free.map((x2) => `<option value="${esc4(x2.id)}">${esc4(x2.name)}</option>`).join("")}</select>` : "";
-    return outSel + rows + add;
-  }
   renderPanel() {
-    const box = this.el.querySelector(".fx-panel"), o10 = this.open, s10 = this.openFx();
+    const box = this.el.querySelector(".fx-panel"), o10 = this.tab === "chain" ? this.open : null, s10 = o10 ? this.slotOf(o10) : null;
     if (!o10 || !s10) {
       box.hidden = true;
       box.innerHTML = "";
+      delete box.dataset.track;
+      delete box.dataset.fx;
       return;
     }
-    const bus = this.onBus(o10.track), fx = s10.fx, p2 = paramsOf(fx), view2 = simpleView(fx.kind, bus), read = view2?.read(p2) ?? null, isDefault = fx.id === DEFAULT_EQ_ID;
+    const fx = s10.fx, isDefault = fx.id === DEFAULT_EQ_ID;
+    box.dataset.track = o10.track;
+    box.dataset.fx = o10.fx;
     const head = `<div class="fx-head"><span class="fx-title">${esc4(this.trackName(o10.track))} \xB7 ${esc4(pluginName(fx.kind))}${s10.virtual ? "\uFF08\u5E73\uFF09" : ""}</span><span class="fx-seg"><button class="btn${o10.mode === "simple" ? " is-on" : ""}" data-v="fxmode" data-mode="simple" title="\u51E0\u4E2A\u5927\u65CB\u94AE\uFF0C\u6309\u516C\u5F0F\u8C03\u4E0B\u9762\u5168\u91CF\u7684\u53C2\u6570">\u4E00\u952E</button><button class="btn${o10.mode === "full" ? " is-on" : ""}" data-v="fxmode" data-mode="full" title="\u6BCF\u4E00\u4E2A\u53C2\u6570\u90FD\u644A\u5F00">\u5168\u91CF</button></span><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="\u5173 = \u8FD9\u4E00\u683C\u8DF3\u8FC7\uFF08\u53C2\u6570\u7559\u7740\uFF09">${fx.on === false ? "\u5173\u7740" : "\u5F00\u7740"}</button>` + (isDefault ? "" : `<button class="btn cand danger" data-v="fxdel" title="\u4ECE\u8FD9\u6761\u8F68\u4E0A\u62FF\u6389\uFF08\u80FD\u64A4\u9500\uFF09">\u62FF\u6389</button>`) + `<button class="btn" data-v="fxclose" title="\u6536\u8D77">\u2715</button></div>`;
-    const keyOpts = fx.kind === "comp" ? this.host.keyTracks(o10.track) : [];
-    const keyRow = keyOpts.length ? `<label class="fx-row">\u88AB\u8C01\u538B <select data-key><option value="">\u4E0D\u7528\uFF08\u81EA\u5DF1\u538B\u81EA\u5DF1\uFF09</option>${keyOpts.map((t10) => `<option value="${esc4(t10.id)}"${fx.key === t10.id ? " selected" : ""}>${esc4(t10.name)}</option>`).join("")}</select></label>` : "";
-    let body2 = "";
-    if (o10.mode === "simple" && view2) {
-      const cur = read ?? view2.read(freshParams(fx.kind, bus)) ?? {};
-      body2 = (read ? "" : `<div class="fx-note">\u8FD9\u4E00\u683C\u5728\u5168\u91CF\u91CC\u8C03\u8FC7\uFF08\u4E0D\u662F\u4E00\u952E\u7684\u6837\u5B50\uFF09\uFF1B\u52A8\u8FD9\u91CC\u4F1A\u6539\u56DE\u4E00\u952E\u7684\u6837\u5B50\u3002</div>`) + view2.controls.map((c10) => {
-        const v = cur[c10.id] ?? 0;
-        if (c10.kind === "toggle") return `<div class="fx-row"><span title="${esc4(c10.hint)}">${esc4(c10.label)}</span><button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c10.id}" title="${esc4(c10.hint)}">${v ? "\u5F00" : "\u5173"}</button></div>`;
-        if (c10.kind === "choice") return `<div class="fx-row"><span title="${esc4(c10.hint)}">${esc4(c10.label)}</span><span class="fx-seg">${c10.choices.map((x2) => `<button class="btn${Math.abs(v - x2.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c10.id}" data-val="${x2.v}">${esc4(x2.label)}</button>`).join("")}</span></div>`;
-        return `<label class="fx-row" title="${esc4(c10.hint)}">${esc4(c10.label)} <output data-c="${c10.id}">${c10.fmt ? c10.fmt(v) : v}</output><input type="range" min="${c10.min}" max="${c10.max}" step="${c10.step}" value="${v}" data-c="${c10.id}" /></label>`;
-      }).join("") + keyRow;
-    } else {
-      body2 = fullParams(fx.kind).map((d3) => {
-        if (d3.unit === "bool") return `<div class="fx-row"><span>${esc4(d3.label)}</span><button class="btn cand${p2[d3.id] ? " is-on" : ""}" data-v="fxbool" data-p="${d3.id}">${p2[d3.id] ? "\u5F00" : "\u5173"}</button></div>`;
-        if (fx.kind === "eq" && d3.id === "hpHz" && p2.hpAuto) return `<div class="fx-row"><span>${esc4(d3.label)}</span><span class="fx-dim">\u81EA\u52A8\uFF08\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\uFF09</span></div>`;
-        const sl2 = sliderOf(d3);
-        return `<label class="fx-row">${esc4(d3.label)} <output>${sl2.fmt(p2[d3.id])}</output><input type="range" min="${sl2.min}" max="${sl2.max}" step="${sl2.step}" value="${sl2.toS(p2[d3.id])}" data-p="${d3.id}" /></label>`;
-      }).join("") + keyRow;
-    }
-    box.innerHTML = head + `<div class="fx-body">${body2}</div>`;
+    box.innerHTML = head + `<div class="fx-body">${this.controlsHtml(o10, fx, o10.mode)}</div>`;
     box.hidden = false;
   }
+  renderBar() {
+    const bar2 = this.el.querySelector(".mix-tabbar"), modeKind = this.tab === "eq" || this.tab === "comp" ? this.tab : null;
+    bar2.innerHTML = `<span class="fx-seg mix-tabs" role="tablist">${TABS.map((x2) => `<button class="btn${this.tab === x2.id ? " is-on" : ""}" data-v="tab" data-tab="${x2.id}" role="tab" title="${esc4(x2.hint)}">${esc4(x2.label)}</button>`).join("")}</span>` + (modeKind ? `<select class="mix-mode" data-panelmode title="\u5361\u7247\u4E0A\u644A\u5F00\u7684${esc4(pluginName(modeKind))}\u7528\u54EA\u79CD\u9762\u677F\uFF08\u5168\u90E8\u5361\u7247\u4E00\u8D77\u6362\uFF09"><option value="simple"${this.panelMode[modeKind] === "simple" ? " selected" : ""}>\u4E00\u952E</option><option value="full"${this.panelMode[modeKind] === "full" ? " selected" : ""}>\u5168\u91CF</option></select>` : "") + `<button class="btn mix-more${this.menuOpen ? " is-on" : ""}" data-v="more" title="\u66F4\u591A\uFF1A\u52A0\u6DF7\u97F3\u8F68\u2026">\u22EF</button>`;
+    const menu = this.el.querySelector(".mix-menu");
+    menu.hidden = !this.menuOpen;
+    menu.innerHTML = this.menuOpen ? `<button class="btn cand" data-v="addbus" title="\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD">\uFF0B \u6DF7\u97F3\u8F68</button>` : "";
+  }
+  /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
+  card(id2, cls, name, who, body2, color) {
+    return `<div class="strip${cls}" data-id="${esc4(id2)}"${color ? ` data-color style="--cat:${esc4(color)}"` : ""}><div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc4(who)}</div>` : ""}${body2}</div>`;
+  }
   render() {
-    const box = this.el.querySelector(".studio-strips"), m2 = this.host.master();
-    if (this.open && !this.openFx()) this.open = null;
-    const master = `<div class="strip master" data-id="${MASTER}"><div class="strip-name">\u603B\u8F68</div><div class="strip-who">\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E</div><label class="strip-row">\u589E\u76CA <output>${dbText(m2.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${m2.gainDb}" data-master title="\u53CC\u51FB\u56DE 0" /></label><div class="strip-btns"><button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter" title="\u6BCD\u7EBF\u9650\u5E45\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E0D\u52A8\uFF1B\u5173\u6389 = \u53EF\u80FD\u524A\u6CE2">\u9650\u5E45${m2.limiter ? "" : "\uFF08\u5173\uFF1A\u53EF\u80FD\u524A\u6CE2\uFF09"}</button></div>` + this.chipsHtml(MASTER) + `<div class="strip-row meter"><span>\u5CF0\u503C <span class="meter-val">\u2014</span></span><div class="meter-bar"><div class="meter-fill"></div></div></div></div>`;
-    const busCards = this.host.buses().map((b3) => `<div class="strip bus" data-id="${esc4(b3.id)}"><input class="bus-name" value="${esc4(b3.name)}" title="\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09" /><div class="strip-who">\u6DF7\u97F3\u8F68\uFF1A\u522B\u7684\u8F68\u53D1\u8FC7\u6765\u7684\u5728\u8FD9\u91CC\u4E00\u8D77\u8FC7\u6548\u679C</div><label class="strip-row">\u589E\u76CA <output>${dbText(b3.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${b3.gainDb}" data-busgain /></label><label class="strip-row">\u58F0\u50CF <output>${panText(b3.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${b3.pan}" data-buspan /></label>` + this.chipsHtml(b3.id) + this.routeHtml(b3.id) + `<div class="strip-btns"><button class="btn cand danger" data-v="delbus" title="\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389</button></div></div>`).join("") + `<button class="strip add-bus" data-v="addbus" title="\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD">\uFF0B \u6DF7\u97F3\u8F68</button>`;
-    box.innerHTML = master + busCards + this.host.strips().map((s10) => `<div class="strip" data-id="${esc4(s10.id)}"${s10.color ? ` data-color style="--cat:${esc4(s10.color)}"` : ""}><div class="strip-name">${esc4(s10.name)}</div><div class="strip-who">${esc4(s10.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s10.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s10.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label>` + this.chipsHtml(s10.id) + this.routeHtml(s10.id) + `<div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
-    (s10.refs ? `<div class="strip-refs">\u5728 ${s10.refs} \u5F20\u7EB8\u4E0A</div>` : `<div class="strip-refs">\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709 <button class="btn cand danger" data-v="delpart" title="\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B</button></div>`) + `</div>`).join("");
+    const box = this.el.querySelector(".studio-strips"), m2 = this.host.master(), tab = this.tab;
+    if (this.open && !this.slotOf(this.open)) this.open = null;
+    this.renderBar();
+    const nameDiv = (s10) => `<div class="strip-name">${esc4(s10)}</div>`;
+    const masterBody = tab === "basic" ? row("\u589E\u76CA", HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, `<input type="range" min="-24" max="12" step="0.5" value="${m2.gainDb}" data-master title="\u53CC\u51FB\u56DE 0" />`, "strip-row") + `<div class="strip-btns"><button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter" title="\u6BCD\u7EBF\u9650\u5E45\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E0D\u52A8\uFF1B\u5173\u6389 = \u53EF\u80FD\u524A\u6CE2">\u9650\u5E45${m2.limiter ? "" : "\uFF08\u5173\uFF1A\u53EF\u80FD\u524A\u6CE2\uFF09"}</button></div><div class="strip-row">\u5CF0\u503C <span class="meter-val">\u2014</span></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904</div>` : this.chipsHtml(MASTER);
+    const master = this.card(MASTER, " master", nameDiv("\u603B\u8F68"), "\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E", masterBody);
+    const buses = this.host.buses(), busCards = buses.map((b3, k2) => {
+      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(b3.gainDb)}</output>`, `<input type="range" min="-24" max="12" step="0.5" value="${b3.gainDb}" data-busgain title="\u53CC\u51FB\u56DE 0" />`, "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(b3.pan)}</output>`, `<input type="range" min="-1" max="1" step="0.05" value="${b3.pan}" data-buspan title="\u53CC\u51FB\u56DE\u4E2D" />`, "strip-row") + `<div class="strip-btns"><button class="btn" data-v="busleft" title="\u5F80\u524D\u632A\u4E00\u4F4D"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="\u5F80\u540E\u632A\u4E00\u4F4D"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? this.routeHtml(b3.id) : this.chipsHtml(b3.id);
+      const name = tab === "basic" ? `<input class="bus-name" value="${esc4(b3.name)}" title="\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09" />` : nameDiv(b3.name);
+      return this.card(b3.id, " bus", name, "\u6DF7\u97F3\u8F68", body2);
+    }).join("");
+    const singers = this.host.strips().map((s10) => {
+      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, `<input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" />`, "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(s10.pan)}</output>`, `<input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" />`, "strip-row") + `<div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+      (s10.refs ? `<div class="strip-refs">\u5728 ${s10.refs} \u5F20\u7EB8\u4E0A</div>` : `<div class="strip-refs">\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709 <button class="btn cand danger" data-v="delpart" title="\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? this.routeHtml(s10.id) : this.chipsHtml(s10.id);
+      return this.card(s10.id, "", nameDiv(s10.name), s10.performer, body2, s10.color);
+    }).join("");
+    box.innerHTML = master + busCards + singers;
+    box.classList.toggle("wide", tab === "eq" || tab === "comp");
     this.renderPanel();
   }
 };
@@ -36874,7 +37115,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-e5cd1d902c90.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-da487777a4c9.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -37040,7 +37281,7 @@ var view = new ScoreView(scoreEl, {
   parts: () => partViews(),
   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at2) => openTrackCard(at2),
-  onBlankPress: (at2, row) => openScoreMenu(at2, row),
+  onBlankPress: (at2, row2) => openScoreMenu(at2, row2),
   onListenMenu: (at2, a10) => openListenMenu(at2, a10),
   // 听模式：长按 / 右键 = 从这儿放 / 接着放 / 从头放
   onSelPress: (at2) => openSelMenu(at2),
@@ -37462,6 +37703,7 @@ function updateExtras(next2, locus, gesture) {
   if (locus.kind === "lounge") pad3.render();
   drawInst();
   trackRedraw?.();
+  updateChrome();
 }
 function updateBoth(next2, nextExtras, locus) {
   history = record2(history, st2, doc.extras, null, performance.now(), locus);
@@ -37606,6 +37848,12 @@ function pushChannels() {
   engine.buses(studioTracks(doc.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: resolveChain(b3.chain, ctx2(null)), to: b3.to, sends: b3.sends })));
   const m2 = activeMaster(doc.extras);
   engine.master({ ...m2, chain: resolveChain(m2.chain, ctx2(null)) });
+}
+function typingIn(t10) {
+  const el2 = t10;
+  if (!el2) return false;
+  if (el2.tagName === "TEXTAREA" || el2.isContentEditable) return true;
+  return el2.tagName === "INPUT" && !["range", "checkbox", "radio", "button"].includes(el2.type);
 }
 function trackKey(track) {
   return st2.song.parts.find((x2) => x2.id === track)?.mic ?? track;
@@ -38078,12 +38326,9 @@ function setMode(m2) {
   view.lyrics.commitAndClose();
   view.marks.commitAndClose();
   if (m2 !== "listen") lastEditMode = m2;
-  const wasListen = ws.mode === "listen";
   ws.mode = m2;
   if (hasKeys(m2)) ws.collapsed = false;
   applyWorkspace();
-  if (m2 === "listen") info("\u542C\uFF1A\u8C31\u9501\u4F4F\u4E86\uFF08\u4E0D\u80FD\u5199\uFF09\uFF0C\u8F7B\u70B9\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\u3002Esc / \u6362\u522B\u7684\u6A21\u5F0F\u56DE\u5230\u5199");
-  else if (wasListen) info("\u56DE\u5230\u5199");
 }
 var setListen = (on2) => setMode(on2 ? "listen" : lastEditMode);
 function openListenMenu(at2, a10) {
@@ -38626,7 +38871,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "5e880a7d2899",
+  cssHash: "a6384410f0e7",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -38977,6 +39222,7 @@ var studio = new Studio2($2("stage"), {
     updateExtras(withoutBus(doc.extras, id2), { kind: "studio", label: `\u5220${name}` });
   },
   renameBus: (id2, name) => updateExtras(withTrack2(doc.extras, id2, { name }), { kind: "studio", label: `\u6539\u540D\u300C${name}\u300D` }),
+  moveBus: (id2, dir) => updateExtras(moveBus(doc.extras, id2, dir), { kind: "studio", label: `${studioTrack(doc.extras, id2)?.name ?? id2} \u5F80${dir < 0 ? "\u524D" : "\u540E"}\u632A` }),
   setBusGain: (id2, dB) => updateExtras(withTrack2(doc.extras, id2, { gainDb: dB }), { kind: "studio", label: `${studioTrack(doc.extras, id2)?.name ?? id2} \u589E\u76CA ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id2}`),
   setBusPan: (id2, pan) => updateExtras(withTrack2(doc.extras, id2, { pan }), { kind: "studio", label: `${studioTrack(doc.extras, id2)?.name ?? id2} \u58F0\u50CF` }, `mix:pan:${id2}`),
   outTo: (track) => studioTrack(doc.extras, trackKey(track))?.to ?? "master",
@@ -39028,8 +39274,8 @@ function closeStudio() {
   applyWorkspace();
   scoreEl.focus();
 }
-engine.on("meter", (peak) => {
-  if (studio.isOpen) studio.meter(peak);
+engine.on("meter", (peak, _active, tracks) => {
+  if (studio.isOpen) studio.meter(peak, tracks);
 });
 function openFinder() {
   finderBackToInst = instShown;
@@ -39902,11 +40148,11 @@ function openMarkMenu(i10, at2) {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
-  const row = t10.kind === "dyn" ? ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${t10.value === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u6539\u6210 ${d3}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("") : ["cresc", "dim"].map((d3) => `<button class="btn ctx-chip${t10.dir === d3 ? " is-on" : ""}" data-v="dir:${d3}" title="${d3 === "cresc" ? "\u6E10\u5F3A" : "\u6E10\u5F31"}">${WEDGE_MENU[d3]}</button>`).join("");
+  const row2 = t10.kind === "dyn" ? ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${t10.value === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u6539\u6210 ${d3}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("") : ["cresc", "dim"].map((d3) => `<button class="btn ctx-chip${t10.dir === d3 ? " is-on" : ""}" data-v="dir:${d3}" title="${d3 === "cresc" ? "\u6E10\u5F3A" : "\u6E10\u5F31"}">${WEDGE_MENU[d3]}</button>`).join("");
   const rampWhy = src === "none" ? "\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765" : src === "hairpin" ? "\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70" : "";
   const offWhy = t10.kind === "dyn" && dynOverridden(toks).has(i10) ? `<div class="ctx-hint">\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A ${t10.value} \u7BA1\u4E0D\u5230</div>` : "";
   const rampRow = t10.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t10.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t10.ramp ? " disabled" : ""} title="\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8">${t10.ramp ? "\u2713 " : ""}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09</button>` + (rampWhy ? `<div class="ctx-hint">${t10.ramp ? "\u4E0D\u8D77\u4F5C\u7528\uFF1A" : ""}${esc7(rampWhy)}</div>` : "");
-  box.innerHTML = `${offWhy}<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? "\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09" : "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31"}">\u5220\u9664</button><div class="ctx-hint">\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
+  box.innerHTML = `${offWhy}<div class="ctx-row ctx-dyn">${row2}</div>${rampRow}<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? "\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09" : "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31"}">\u5220\u9664</button><div class="ctx-hint">\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at2.y + 6;
@@ -40188,14 +40434,14 @@ function drawInst() {
   const labels = partLabels(st2.song, doc.extras), onPaper = new Set(Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}));
   const parts = st2.song.parts.map((p2, k2) => ({ p: p2, label: labels[k2] })).filter((x2) => onPaper.has(x2.p.id));
   const cal = activeCalibrationDb(doc.extras, role), tr3 = activeTranspose(doc.extras, role);
-  const row = (k2, v, note2 = "") => `<span class="ip-k">${k2}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note2 ? `<div class="ip-note">${note2}</div>` : ""}</div>`;
-  const how = (eng !== "unknown" ? row(
+  const row2 = (k2, v, note2 = "") => `<span class="ip-k">${k2}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note2 ? `<div class="ip-note">${note2}</div>` : ""}</div>`;
+  const how = (eng !== "unknown" ? row2(
     "\u54CD\u5EA6",
     `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="\u56DE\u5230\u9ED8\u8BA4 ${fmtDb(DEFAULT_CALIBRATION_DB)}">\u9ED8\u8BA4</button>` : ""}`,
     `\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F ${fmtDb(DEFAULT_CALIBRATION_DB)}\uFF08\u6708\u8BFB\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u53E6\u7B97`
   ) : "") + // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
   //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
-  (eng === "soundfont" || eng === "vowel-sampler" ? ((gap, d3) => row(
+  (eng === "soundfont" || eng === "vowel-sampler" ? ((gap, d3) => row2(
     "\u97F3\u548C\u97F3\u4E4B\u95F4",
     `<b class="ip-val">${Math.round(gap * 1e3)} ms</b><button class="btn" data-v="gap:-0.01" title="\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09">\u221210</button><button class="btn" data-v="gap:0.01" title="\u7F1D\u5927 10 ms\uFF08\u66F4\u65AD\uFF09">+10</button>` + (d3 && Math.abs(gap - d3.gapSec) > 1e-9 ? `<button class="btn" data-v="gap:def" title="\u56DE\u5230\u9ED8\u8BA4 ${Math.round(d3.gapSec * 1e3)} ms">\u9ED8\u8BA4</button>` : ""),
     `\u4E0D\u5199\u8BB0\u53F7\u7684\u97F3\u548C\u4E0B\u4E00\u4E2A\u97F3\u4E4B\u95F4\u7559\u7684\u7F1D\uFF1A0 = \u8FDE\u7740\u3002${d3 ? `${esc7(d3.label)}\uFF1A\u9ED8\u8BA4 ${Math.round(d3.gapSec * 1e3)} ms\uFF08\u97F3\u4E50\u76EE\u5F55\u7ED9\u7684\uFF0C\u6309\u97F3\u8272\u9010\u4E2A\uFF09\u3002` : ""}\u8FDE\u7EBF\uFF08\u8FDE\u594F\uFF09\u3001\u4FDD\u6301\u7684\u97F3\u4E0D\u7559\u7F1D\uFF1B\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u8DF3\u97F3\u53E6\u7B97`
@@ -40203,20 +40449,20 @@ function drawInst() {
   (eng === "soundfont" ? ((v, sp2) => {
     const midi = Math.round(v * 127), def = sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127), g3 = activeGm(doc.extras, role);
     const L2 = g3 && g3.origin.library === GS_LIBRARY_ID && catalogNow ? velLayersOf(catalogNow, g3.bank, g3.program, g3.note) : null, k2 = L2 ? L2.ranges.findIndex(([lo2, hi]) => midi >= lo2 && midi <= hi) : -1;
-    return row(
+    return row2(
       "\u529B\u5EA6",
       `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09">\u22128</button><button class="btn" data-v="vel:8" title="\u91CD\u4E00\u70B9\uFF08+8\uFF09">+8</button>` + (midi !== def ? `<button class="btn" data-v="vel:def" title="\u56DE\u5230 ${def}">\u9ED8\u8BA4</button>` : ""),
       `\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002` + (sp2.dynamicsVel ? `\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +${sp2.accentVel}\u3001\u5F3A\u97F3 +${sp2.marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A${dynTable(sp2, L2)}` : `\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A${dynTable(sp2, null)}`) + (L2 ? L2.count > 1 ? `GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 ${L2.count} \u4E2A\u529B\u5EA6\u5C42${k2 >= 0 ? `\uFF0C\u73B0\u5728\u5728\u7B2C ${k2 + 1} \u5C42\uFF08${L2.ranges[k2][0]}\u2013${L2.ranges[k2][1]}\uFF09` : ""}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002` : "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002" : "")
     );
   })(activeVelocity(doc.extras, role), activePerfSpec(doc.extras, role)) : "") + // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-  (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("\u529B\u5EA6\u8BB0\u53F7", "", `\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
+  (eng === "tsukuyomi" || eng === "vowel-sampler" ? row2("\u529B\u5EA6\u8BB0\u53F7", "", `\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
   //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
-  (active?.sfx ? ((fixed, al2) => row(
+  (active?.sfx ? ((fixed, al2) => row2(
     "\u97F3\u6548",
     chip("sfx:fixed", "\u56FA\u5B9A\u539F\u901F", fixed, "\u6BCF\u4E2A\u97F3\u90FD\u6572\u539F\u901F\u952E\uFF1A\u5199\u8C31\u6309\u952E\u3001\u64AD\u653E\u90FD\u662F\u539F\u6765\u7684\u6837\u5B50\uFF1B\u8C31\u4E0A\u5199\u7684\u97F3\u9AD8\u7167\u7559\uFF0C\u53EA\u662F\u4E0D\u62FF\u6765\u51FA\u58F0") + (fixed ? "" : canAlign(active.sfx) ? chip("sfx:align", "\u97F3\u9AD8\u5BF9\u9F50", al2, "\u6309\u539F\u901F\u65F6\u6700\u5F3A\u7684\u90A3\u4E2A\u9891\u7387\u5927\u81F4\u5BF9\u9F50\uFF0C\u8C31\u4E0A\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF1B\u4E0D\u4E00\u5B9A\u662F\u8033\u6735\u542C\u5230\u7684\u4E3B\u97F3") : ""),
     fixed ? "\u8C31\u4E0A\u5199\u4E0D\u540C\u7684\u97F3\u4E5F\u90FD\u54CD\u539F\u6765\u7684\u6837\u5B50\uFF08\u97F3\u9AD8\u7559\u5728\u8C31\u4E0A\uFF0C\u5173\u6389\u5C31\u6309\u5B83\u53D8\u8C03\uFF09" : al2 ? "\u5199\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF08\u5927\u81F4\uFF09" : `\u6309\u5199\u7684\u97F3\u53D8\u8C03\u53D8\u901F\uFF1A\u8D8A\u9AD8\u8D8A\u5C16\u8D8A\u5FEB\uFF0C\u8D8A\u4F4E\u8D8A\u6C89\u8D8A\u6162${canAlign(active.sfx) ? "" : "\uFF1B\u8FD9\u4E2A\u97F3\u6548\u539F\u901F\u65F6\u542C\u4E0D\u51FA\u97F3\u9AD8\uFF0C\u6CA1\u6CD5\u5BF9\u9F50"}`
   ))(active.note !== void 0, !!active.sfx.align) : "") + // 修八度 / 移调（user「修八度和移调的音色级别的选项…大部分情况不应该动，是worst case兜底」）：只给 SoundFont 的（鼓件 / 固定原速按哪个键都一样，不给）；默认 0、不自动套用
-  (active && active.note === void 0 ? row(
+  (active && active.note === void 0 ? row2(
     "\u4FEE\u516B\u5EA6",
     `<b class="ip-val">${tr3 > 0 ? "+" : tr3 < 0 ? "\u2212" : ""}${Math.abs(tr3)} \u534A\u97F3</b><button class="btn" data-v="tr:-12" title="\u4F4E\u4E00\u4E2A\u516B\u5EA6">\u221212</button><button class="btn" data-v="tr:-1" title="\u4F4E\u534A\u97F3">\u22121</button><button class="btn" data-v="tr:1" title="\u9AD8\u534A\u97F3">+1</button><button class="btn" data-v="tr:12" title="\u9AD8\u4E00\u4E2A\u516B\u5EA6">+12</button>${tr3 ? `<button class="btn" data-v="tr:0" title="\u56DE\u5230 0">\u5F52\u96F6</button>` : ""}`,
     "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3"
@@ -40225,13 +40471,13 @@ function drawInst() {
     const cpt = catalogNow ? conceptOfIds(catalogNow, doc.extras.lounge[role]?.concept?.ids) : void 0;
     const oc2 = g3 && catalogNow && g3.origin.library === GS_LIBRARY_ID ? octaveCheckOf(catalogNow, g3.bank, g3.program, g3.note) : null, nt2 = cpt?.notation;
     const text2 = octaveDisclosure(nt2, oc2, (c10) => CLEF_LABEL[c10] ?? c10);
-    return text2 ? row("\u516B\u5EA6", "", esc7(text2)) : "";
-  })(activeGm(doc.extras, role)) : "") + (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
-  (eng === "tsukuyomi" ? ((sc2) => row(
+    return text2 ? row2("\u516B\u5EA6", "", esc7(text2)) : "";
+  })(activeGm(doc.extras, role)) : "") + (eng === "tsukuyomi" || eng === "vowel-sampler" ? row2("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
+  (eng === "tsukuyomi" ? ((sc2) => row2(
     "\u5206\u6BB5\u5531",
     [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
     sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF"
-  ))(activeSingChunk(doc.extras, role)) : "") + (eng === "unknown" ? row("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
+  ))(activeSingChunk(doc.extras, role)) : "") + (eng === "unknown" ? row2("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
   instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc7(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc7(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc7(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc7(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc7(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc7(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc7(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc7(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc7(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc7(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc7(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc7(e10.id)}" title="${esc7(`${e10.description ?? e10.name}\uFF08${sizeText2(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc7(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc7(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
   const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
   sel.addEventListener("change", () => {
@@ -40389,6 +40635,7 @@ function loadDoc(song, o10) {
   view.render();
   pad3.render();
   renderTitle();
+  updateChrome();
   if (st2.song.parts.some((p2) => activeInstrument(doc.extras, p2.role)?.engine === "tsukuyomi")) void singer.warm(modelBases(), BUDGET.speechDisk);
   schedulePrewarm();
 }
@@ -41672,7 +41919,7 @@ window.addEventListener("keydown", (e10) => {
     if (e10.key === "Escape") {
       e10.preventDefault();
       setMode(lastEditMode);
-    } else if (e10.key === " " && !e10.target?.closest("input")) {
+    } else if (e10.key === " " && !typingIn(e10.target)) {
       e10.preventDefault();
       playPause(e10.timeStamp);
     }
@@ -41729,6 +41976,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 document.addEventListener("visibilitychange", () => {
+  if (studio.isOpen) engine.meter(document.visibilityState === "visible");
   if (document.visibilityState !== "visible") return;
   const c10 = singer.unlock();
   latLogged = null;
@@ -41760,4 +42008,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-fccbaac292b8.mjs.map
+//# sourceMappingURL=moonsinger-fa1b77d7dd13.mjs.map

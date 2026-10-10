@@ -106,28 +106,28 @@ class Comp implements FxInstance {
 }
 
 // ── 延迟（反馈里一个低通，立体声同长）─────────────────────────────────────────────────────────────────────────────
-const DELAY: FxKindDef = { kind: "delay", name: "延迟", formula: "y[n] = x[n]·(1-mix) + d[n]·mix，d[n] = x[n - D] + fb · LP(d[n - D])，LP = 一阶低通 dampHz。D = timeMs（最长 2 s）。",
+const DELAY: FxKindDef = { kind: "delay", name: "延迟", formula: "y[n] = x[n]·dry + d[n]·mix（dry 没写 = 1 − mix，v0.10.10 前的写法），d[n] = x[n - D] + fb · LP(d[n - D])，LP = 一阶低通 dampHz。D = timeMs（最长 2 s）。",
   params: [
     { id: "timeMs", unit: "ms", min: 1, max: 2000, default: 375, label: "时间" }, { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: "反馈" },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "湿" }, { id: "dampHz", unit: "Hz", min: 500, max: 20000, default: 6000, label: "反馈高切" },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "湿" }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "原声" }, { id: "dampHz", unit: "Hz", min: 500, max: 20000, default: 6000, label: "反馈高切" },
   ] };
 class Delay implements FxInstance {
   readonly kind = "delay"; on = true;
-  private bufL: Float32Array; private bufR: Float32Array; private wr = 0; private D = 1; private fb = 0.35; private mix = 0.3; private lpK = 0.5; private lpL = 0; private lpR = 0;
+  private bufL: Float32Array; private bufR: Float32Array; private wr = 0; private D = 1; private fb = 0.35; private mix = 0.3; private dry = 0.7; private lpK = 0.5; private lpL = 0; private lpR = 0;
   readonly id: string; private sr: number;
   constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; const max = Math.ceil(2 * sr) + 1; this.bufL = new Float32Array(max); this.bufR = new Float32Array(max); this.setParams(p); }
   setParams(p: Record<string, number>): void {
     const g = (k: string) => p[k] ?? DELAY.params.find((d) => d.id === k)!.default;
-    this.D = clamp(Math.round((g("timeMs") / 1000) * this.sr), 1, this.bufL.length - 1); this.fb = clamp(g("feedback"), 0, 0.95); this.mix = clamp(g("mix"), 0, 1);
+    this.D = clamp(Math.round((g("timeMs") / 1000) * this.sr), 1, this.bufL.length - 1); this.fb = clamp(g("feedback"), 0, 0.95); this.mix = clamp(g("mix"), 0, 1); this.dry = dryOf(p, this.mix);
     this.lpK = 1 - Math.exp((-2 * Math.PI * clamp(g("dampHz"), 100, this.sr * 0.45)) / this.sr);
   }
   process(L: Float32Array, R: Float32Array | null, n: number): void {
     if (!this.on) return;
-    const len = this.bufL.length, D = this.D, fb = this.fb, mix = this.mix, k = this.lpK;
+    const len = this.bufL.length, D = this.D, fb = this.fb, mix = this.mix, dry = this.dry, k = this.lpK;
     for (let i = 0; i < n; i++) {
       const rd = (this.wr - D + len) % len;
-      const dl = this.bufL[rd]; this.lpL += (dl - this.lpL) * k; this.bufL[this.wr] = L[i] + this.lpL * fb; L[i] = L[i] * (1 - mix) + dl * mix;
-      if (R) { const dr = this.bufR[rd]; this.lpR += (dr - this.lpR) * k; this.bufR[this.wr] = R[i] + this.lpR * fb; R[i] = R[i] * (1 - mix) + dr * mix; }
+      const dl = this.bufL[rd]; this.lpL += (dl - this.lpL) * k; this.bufL[this.wr] = L[i] + this.lpL * fb; L[i] = L[i] * dry + dl * mix;
+      if (R) { const dr = this.bufR[rd]; this.lpR += (dr - this.lpR) * k; this.bufR[this.wr] = R[i] + this.lpR * fb; R[i] = R[i] * dry + dr * mix; }
       this.wr = (this.wr + 1) % len;
     }
   }
@@ -137,7 +137,7 @@ class Delay implements FxInstance {
 const REVERB: FxKindDef = { kind: "reverb", name: "混响", formula: "Freeverb：8 条低通反馈梳状（长度 1116…1617 @44.1k，按采样率缩放；反馈 = 0.7 + 0.28·room，低通 = damp）并联，再串 4 条全通（g = 0.5）；右边各长 23 个采样；前面一段 preDelayMs 纯延迟；y = x·(1-mix) + wet·mix。",
   params: [
     { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: "房间大小" }, { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: "高频吸收" },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "湿" }, { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: "预延迟" }, { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: "宽度" },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "湿" }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "原声" }, { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: "预延迟" }, { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: "宽度" },
   ], stereoOnly: true };
 const COMBS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617], ALLPASS = [556, 441, 341, 225], SPREAD = 23;
 class Comb { buf: Float32Array; idx = 0; store = 0; constructor(n: number) { this.buf = new Float32Array(n); }
@@ -148,7 +148,7 @@ class Reverb implements FxInstance {
   readonly kind = "reverb"; on = true;
   private cL: Comb[]; private cR: Comb[]; private aL: Allpass[]; private aR: Allpass[];
   private pre: Float32Array; private preW = 0; private preD = 0;
-  private fb = 0.84; private damp = 0.5; private mix = 0.3; private width = 1;
+  private fb = 0.84; private damp = 0.5; private mix = 0.3; private dry = 0.7; private width = 1;
   readonly id: string; private sr: number;
   constructor(id: string, sr: number, p: Record<string, number>) {
     this.id = id; this.sr = sr;
@@ -159,12 +159,12 @@ class Reverb implements FxInstance {
   }
   setParams(p: Record<string, number>): void {
     const g = (k: string) => p[k] ?? REVERB.params.find((d) => d.id === k)!.default;
-    this.fb = 0.7 + 0.28 * clamp(g("room"), 0, 1); this.damp = clamp(g("damp"), 0, 1) * 0.4; this.mix = clamp(g("mix"), 0, 1); this.width = clamp(g("width"), 0, 1);
+    this.fb = 0.7 + 0.28 * clamp(g("room"), 0, 1); this.damp = clamp(g("damp"), 0, 1) * 0.4; this.mix = clamp(g("mix"), 0, 1); this.dry = dryOf(p, this.mix); this.width = clamp(g("width"), 0, 1);
     this.preD = clamp(Math.round((g("preDelayMs") / 1000) * this.sr), 0, this.pre.length - 1);
   }
   process(L: Float32Array, R: Float32Array | null, n: number): void {
     if (!this.on) return;
-    const Rr = R ?? L, mix = this.mix, w1 = (1 + this.width) / 2, w2 = (1 - this.width) / 2, plen = this.pre.length;
+    const Rr = R ?? L, mix = this.mix, dry = this.dry, w1 = (1 + this.width) / 2, w2 = (1 - this.width) / 2, plen = this.pre.length;
     for (let i = 0; i < n; i++) {
       const inp = (L[i] + Rr[i]) * 0.015;   // Freeverb 的固定输入增益
       this.pre[this.preW] = inp; const x = this.pre[(this.preW - this.preD + plen) % plen]; this.preW = (this.preW + 1) % plen;
@@ -172,7 +172,7 @@ class Reverb implements FxInstance {
       for (let c = 0; c < 8; c++) { oL += this.cL[c].tick(x, this.fb, this.damp); oR += this.cR[c].tick(x, this.fb, this.damp); }
       for (let a = 0; a < 4; a++) { oL = this.aL[a].tick(oL); oR = this.aR[a].tick(oR); }
       const wl = oL * w1 + oR * w2, wr = oR * w1 + oL * w2;
-      L[i] = L[i] * (1 - mix) + wl * mix; if (R) R[i] = R[i] * (1 - mix) + wr * mix;
+      L[i] = L[i] * dry + wl * mix; if (R) R[i] = R[i] * dry + wr * mix;
     }
   }
 }
@@ -182,22 +182,22 @@ const CHORUS: FxKindDef = { kind: "chorus", name: "合唱", formula: "v 条延�
   params: [
     { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: "几条" }, { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: "延迟" },
     { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: "抖动深度" }, { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: "抖动快慢" },
-    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: "左右铺开" }, { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: "湿" },
+    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: "左右铺开" }, { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: "湿" }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "原声" },
   ] };
 class Chorus implements FxInstance {
   readonly kind = "chorus"; on = true;
   readonly id: string; private sr: number;
   private buf: Float32Array; private wr = 0; private phase = 0;
-  private voices = 3; private delay = 0; private depth = 0; private rate = 0.6; private spread = 0.8; private mix = 0.5;
+  private voices = 3; private delay = 0; private depth = 0; private rate = 0.6; private spread = 0.8; private mix = 0.5; private dry = 0.5;
   constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; this.buf = new Float32Array(Math.ceil(0.06 * sr) + 2); this.setParams(p); }
   setParams(p: Record<string, number>): void {
     const g = (k: string) => p[k] ?? CHORUS.params.find((d) => d.id === k)!.default;
     this.voices = clamp(Math.round(g("voices")), 1, 4); this.delay = (clamp(g("delayMs"), 5, 40) / 1000) * this.sr; this.depth = (clamp(g("depthMs"), 0, 10) / 1000) * this.sr;
-    this.rate = clamp(g("rateHz"), 0.05, 5); this.spread = clamp(g("spread"), 0, 1); this.mix = clamp(g("mix"), 0, 1);
+    this.rate = clamp(g("rateHz"), 0.05, 5); this.spread = clamp(g("spread"), 0, 1); this.mix = clamp(g("mix"), 0, 1); this.dry = dryOf(p, this.mix);
   }
   process(L: Float32Array, R: Float32Array | null, n: number): void {
     if (!this.on) return;
-    const len = this.buf.length, v = this.voices, mix = this.mix, dphi = (2 * Math.PI * this.rate) / this.sr;
+    const len = this.buf.length, v = this.voices, mix = this.mix, dry = this.dry, dphi = (2 * Math.PI * this.rate) / this.sr;
     for (let i = 0; i < n; i++) {
       const x = R ? (L[i] + R[i]) * 0.5 : L[i];
       this.buf[this.wr] = x;
@@ -210,7 +210,7 @@ class Chorus implements FxInstance {
       }
       this.phase += dphi; if (this.phase > 2 * Math.PI) this.phase -= 2 * Math.PI;
       this.wr = (this.wr + 1) % len;
-      L[i] = L[i] * (1 - mix) + wl * mix; if (R) R[i] = R[i] * (1 - mix) + wr * mix;
+      L[i] = L[i] * dry + wl * mix; if (R) R[i] = R[i] * dry + wr * mix;
     }
   }
 }
@@ -225,6 +225,9 @@ class Gain implements FxInstance {
   process(L: Float32Array, R: Float32Array | null, n: number): void { if (!this.on || this.g === 1) return; for (let i = 0; i < n; i++) { L[i] *= this.g; if (R) R[i] *= this.g; } }
 }
 
+/** 原声留多少（混响 / 延迟 / 合唱；v0.10.10，user「开了混响结果铃声都哑掉了…标准插件怎么做的？反正fl studio是没有这个问题的」）：
+ *  标准插件原声和湿声是两个旋钮（原声默认 100%，加效果不削原声；当发送的返回轨才把原声关掉）。没写 dry = 原来的交叉混合 1 − mix（旧歌逐样本不变）。 */
+function dryOf(p: Record<string, number>, mix: number): number { return p.dry === undefined || !Number.isFinite(p.dry) ? 1 - mix : clamp(p.dry, 0, 1); }
 export const FX_KINDS: Record<string, FxKindDef> = { eq: EQ, comp: COMP, delay: DELAY, reverb: REVERB, chorus: CHORUS, gain: GAIN };
 /** 按 FxV2 建实例；不认识的 kind = null（不出声、原样带着）。 */
 export function createFx(spec: FxV2, sr: number): FxInstance | null {

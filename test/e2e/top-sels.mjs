@@ -10,7 +10,10 @@ const XML = `<?xml version="1.0"?><score-partwise version="4.0"><part-list><scor
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
-await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); m.addPaper(); }, XML);
+await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML);
+await p.waitForTimeout(200);
+check(!(await p.$eval("#partSel", (e) => e.hidden)), "载入一首两位歌手的歌 = 歌手下拉马上就在（不用切模式；v0.10.10 修 user「ctrl shift r的时候…看不到下拉框，得切换模式之后下拉框才会出现」）");
+await p.evaluate(() => window.__moonsinger.addPaper());
 await p.waitForTimeout(300);
 check(!(await p.$("#studioBtn")) && !(await p.$(".bar .mode-seg")) && !(await p.$(".bar select")), "顶栏里没有录音室钮、模式钮、下拉");
 check((await p.$$(".view-tab .mode-seg [data-mode]")).length === 4 && !!(await p.$(".view-tab #paperSel")) && !!(await p.$(".view-tab #partSel")) && !(await p.$eval("#paperSel", (e) => e.hidden)) && !(await p.$eval("#partSel", (e) => e.hidden)), "挂签里：模式四个钮 + 看哪一段 + 看哪位歌手");

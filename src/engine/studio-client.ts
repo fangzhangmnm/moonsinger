@@ -32,7 +32,7 @@ export function outputClock(o: { currentTime: number; ts: { contextTime: number;
   }
   return c ? { T: c - (o.baseLatency || 0) - (o.outputLatency || 0), src: "estimate" } : null;
 }
-export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number) => void; load: (info: LoadInfo) => void }
+export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number, tracks: Record<string, number>) => void; load: (info: LoadInfo) => void }
 
 export class StudioClient {
   private node: AudioWorkletNode | null = null;
@@ -93,7 +93,7 @@ export class StudioClient {
             }
             case "ended": if (m.gen !== this.gen) return; this._playing = false; this.emit("ended"); return;
             case "missing": this.emit("missing", m.keys); return;
-            case "meter": this.emit("meter", m.peak, m.active); return;
+            case "meter": this.emit("meter", m.peak, m.active, m.tracks ?? {}); return;
             case "load": this.emit("load", { busy: m.busy, chunkBytes: m.chunkBytes, chunks: m.chunks, voices: m.voices }); return;
             case "chunks": { const w = this.chunkWait; this.chunkWait = null; w?.(m.items); return; }
           }

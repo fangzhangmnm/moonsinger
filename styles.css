@@ -498,7 +498,31 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .strip .bus-name { font: inherit; font-weight: 600; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink); padding: 2px 4px; margin: -2px -4px; min-width: 0; }
 .strip .bus-name:hover, .strip .bus-name:focus { border-color: var(--line); background: var(--panel); }
 .strip.add-bus { justify-content: center; align-items: center; color: var(--muted); border-style: dashed; cursor: pointer; font: inherit; min-height: 80px; }
-.strip.add-bus:hover { color: var(--accent); border-color: var(--accent); }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
+.strip.add-bus:hover { color: var(--accent); border-color: var(--accent); }
+/* 混音台分页（v0.10.10）：页签一行 + 一键 / 全量下拉 + 「⋯」；每张卡片顶上一条峰值细线；EQ / 压缩页卡片上摊开那一格的控件 */
+.mix-tabbar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.mix-tabbar .mix-tabs .btn { padding: 0 10px; }
+.mix-tabbar .mix-mode { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; }
+.mix-tabbar .mix-more { margin-left: auto; height: 28px; min-width: 32px; }
+.mix-menu { display: flex; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--bg); }
+.mix-menu[hidden] { display: none; }
+.strip { position: relative; }
+.strip-meter { position: absolute; left: 0; right: 0; top: 0; height: 3px; overflow: hidden; border-radius: 10px 10px 0 0; pointer-events: none; }
+.strip-meter > i { display: block; height: 100%; width: 0; background: var(--accent); }
+.strip-meter > i.hot { background: #d33; }
+.strip[data-color] .strip-meter { top: -3px; }   /* 有类别色顶边的卡片：细线压在色条上 */
+.studio-strips.wide { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.fx-inline { display: flex; flex-direction: column; gap: 6px; }
+.fx-inline.off .fx-body { opacity: .5; }
+.fx-inline-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fx-inline .fx-body { grid-template-columns: 1fr; }
+/* 参数的小方块问号（v0.10.10）：点了这一行下面展开说明（iPad 没有悬停） */
+.row-lab { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.row-lab .q { width: 16px; height: 16px; min-width: 0; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--muted); font-size: 11px; line-height: 14px; cursor: pointer; }
+.row-lab .q:hover { color: var(--accent); border-color: var(--accent); }
+.row-help { display: none; font-size: 12px; color: var(--muted); line-height: 1.45; padding: 2px 0 4px; }
+.show-help .row-help { display: block; }
+.show-help .row-lab .q { background: var(--accent); color: #fff; border-color: var(--accent); }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
 /* 分页：页框 + 页码 */
 .staff-svg rect.page { fill: #fff; stroke: var(--line); stroke-width: 1; }
 .staff-svg .page-no { fill: var(--muted); }

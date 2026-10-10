@@ -15,7 +15,28 @@ const chip = (track, fx) => `.strip[data-id="${track}"] [data-fx="${fx}"]`;
 const setRange = (sel, v) => p.$eval(sel, (el, v) => { el.value = String(v); el.dispatchEvent(new Event("input", { bubbles: true })); }, v);
 const peak = () => p.evaluate(async () => { const m = await window.__moonsinger.renderMix(); let pk = 0; for (const v of m.samples) pk = Math.max(pk, Math.abs(v)); return pk; });
 
-check((await p.textContent(chip(partId, "eq"))) === "均衡（平）" && (await chain(partId)).length === 0, "歌手轨第一格 = 默认 EQ（平），没碰过不进文件");
+const tab = async (t) => { await p.click(`.mix-tabbar [data-tab="${t}"]`); await p.waitForTimeout(120); };
+// 分页（v0.10.10）：默认「基础」；每张卡片顶上一条峰值细线；EQ 页摊开默认 EQ 的一键控件，下拉换全量全部卡片一起换；压缩页没有 = 「＋ 压缩」
+check(!!(await p.$('.mix-tabbar [data-tab="basic"].is-on')) && !!(await p.$(`.strip[data-id="${partId}"] input[data-gain]`)), "默认在「基础」页：增益 / 声像");
+check((await p.$$(".studio-strips .strip .strip-meter")).length === (await p.$$(".studio-strips .strip")).length, "每张卡片顶上都有峰值细线");
+// 小方块问号（iPad 能点）：点了这一行下面展开说明，再点收起；空格在推子上也是放（user「混音台的空格没有捕捉」）
+await p.click(`.strip[data-id="${partId}"] .strip-row:has(input[data-gain]) .q`); await p.waitForTimeout(80);
+check(await p.$eval(`.strip[data-id="${partId}"] .strip-row:has(input[data-gain])`, (e) => e.classList.contains("show-help") && getComputedStyle(e.querySelector(".row-help")).display !== "none"), "点「?」= 这一行下面展开说明");
+await p.click(`.strip[data-id="${partId}"] .strip-row:has(input[data-gain]) .q`); await p.waitForTimeout(80);
+check(!(await p.$eval(`.strip[data-id="${partId}"] .strip-row:has(input[data-gain])`, (e) => e.classList.contains("show-help"))), "再点 = 收起");
+await p.focus(`.strip[data-id="${partId}"] input[data-gain]`); await p.keyboard.press("Space");
+let started = false; for (let i = 0; i < 40 && !started; i++) { await p.waitForTimeout(100); started = await p.evaluate(() => window.__moonsinger.engine.playing); }
+check(started, "焦点在推子上按空格 = 放（原来推子上的空格被放过）");
+await p.keyboard.press("Space"); await p.waitForTimeout(200);
+await tab("eq");
+check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-c="tilt"]`)) && !(await p.$(`.strip[data-id="${partId}"] input[data-gain]`)), "EQ 页：卡片上直接摊开默认 EQ 的一键（厚 ↔ 亮），推子不在这页");
+await p.selectOption(".mix-tabbar select[data-panelmode]", "full"); await p.waitForTimeout(120);
+check(!!(await p.$(`.strip[data-id="${partId}"] .fx-inline input[data-p="midDb"]`)), "下拉换「全量」= 卡片上摊开全部参数");
+await p.selectOption(".mix-tabbar select[data-panelmode]", "simple"); await p.waitForTimeout(120);
+await tab("comp");
+check(!!(await p.$(`.strip[data-id="${partId}"] [data-v="fxaddkind"][data-kind="comp"]`)), "压缩页：没有压缩 = 「＋ 压缩」");
+await tab("chain");
+check((await p.textContent(chip(partId, "eq"))) === "均衡（平）" && (await chain(partId)).length === 0, "「链」页：歌手轨第一格 = 默认 EQ（平），没碰过不进文件");
 await p.click(chip(partId, "eq")); await p.waitForTimeout(150);
 check(await p.$eval(".fx-panel", (e) => !e.hidden) && !!(await p.$('.fx-panel [data-mode="simple"].is-on')) && !(await p.$('.fx-panel [data-v="fxdel"]')), "点开 = 顶上展开一键面板；默认那一格没有「拿掉」");
 await setRange('.fx-panel input[data-c="tilt"]', 0.5); await p.waitForTimeout(150);

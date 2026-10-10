@@ -19,11 +19,15 @@ const tr = async (id) => (await tracks()).find((t) => t.id === id);
 const peak = () => p.evaluate(async () => { const m = await window.__moonsinger.renderMix(); let pk = 0; for (const v of m.samples) pk = Math.max(pk, Math.abs(v)); return pk; });
 const strip = (id) => `.strip[data-id="${id}"]`;
 
-await p.click('[data-v="addbus"]'); await p.waitForTimeout(150); await p.click('[data-v="addbus"]'); await p.waitForTimeout(150);
+const tab = async (t) => { await p.click(`.mix-tabbar [data-tab="${t}"]`); await p.waitForTimeout(120); };
+const addBus = async () => { await p.click('.mix-tabbar [data-v="more"]'); await p.waitForTimeout(80); await p.click('.mix-menu [data-v="addbus"]'); await p.waitForTimeout(150); };
+check(!(await p.$('.studio-strips [data-v="addbus"]')), "加混音轨不占一张空卡片（在「⋯」里；user「混音轨不要用一个单独的空页面」）");
+await addBus(); await addBus();
 const buses = (await tracks()).filter((t) => t.kind === "bus");
 check(buses.length === 2 && buses[0].name === "混音轨 1" && buses[1].name === "混音轨 2", "＋ 混音轨 两次 = 两条（混音轨 1 / 2）", JSON.stringify(buses.map((x) => x.name)));
 const [b1, b2] = buses.map((x) => x.id);
 // 混音轨 1 出到 混音轨 2；混音轨 2 的「出到」里就不能再选混音轨 1（会接成环）
+await tab("send");
 await p.selectOption(`${strip(b1)} select[data-out]`, b2); await p.waitForTimeout(150);
 check((await tr(b1)).to === b2, "混音轨 1 出到 混音轨 2（总线接总线）");
 const b2opts = await p.$$eval(`${strip(b2)} select[data-out] option`, (os) => os.map((o) => o.value));
@@ -32,23 +36,32 @@ check(!b2opts.includes(b1), "混音轨 2 的「出到」里没有混音轨 1（�
 const pk0 = await peak();
 await p.selectOption(`${strip(ids[0].id)} select[data-out]`, b1); await p.waitForTimeout(150);
 check((await tr(ids[0].mic)).to === b1, "歌手 A 出到 混音轨 1");
-await p.click(`${strip(b2)} [data-v="fxadd"]`); await p.click(`${strip(b2)} [data-v="fxpick"][data-kind="gain"]`); await p.waitForTimeout(150);
+await tab("chain"); await p.click(`${strip(b2)} [data-v="fxadd"]`); await p.click(`${strip(b2)} [data-v="fxpick"][data-kind="gain"]`); await p.waitForTimeout(150);
 await p.$eval('.fx-panel input[data-c="dB"]', (el) => { el.value = "-40"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(150);
 const pk1 = await peak();
 check(pk1 < pk0 * 0.9, "A → 混音轨 1 → 混音轨 2（增益 −40）→ 总轨：离线混音里 A 那一份几乎没了（B 照旧）", `${pk0.toFixed(3)} → ${pk1.toFixed(3)}`);
 // 发送：B 发给 混音轨 1，−12 dB 起步，拖到 −6
+await tab("send");
 await p.selectOption(`${strip(ids[1].id)} select[data-sendadd]`, b1); await p.waitForTimeout(150);
 check(JSON.stringify((await tr(ids[1].mic)).sends) === JSON.stringify([{ to: b1, gainDb: -12 }]), "B 发给 混音轨 1（−12 dB 起步）", JSON.stringify((await tr(ids[1].mic)).sends));
 await p.$eval(`${strip(ids[1].id)} input[data-send="${b1}"]`, (el) => { el.value = "-6"; el.dispatchEvent(new Event("input", { bubbles: true })); }); await p.waitForTimeout(150);
 check((await tr(ids[1].mic)).sends[0].gainDb === -6, "拖发送量 = −6 dB");
-// 改名
+// 改名（基础页）；混音轨之间排前后（user「混音轨之间还可以排序」）
+await tab("basic");
+const order = async () => (await tracks()).filter((t) => t.kind === "bus").map((t) => t.id).join(",");
+await p.click(`${strip(b2)} [data-v="busleft"]`); await p.waitForTimeout(150);
+check((await order()) === `${b2},${b1}`, "混音轨 2 往前挪 = 排在混音轨 1 前面", await order());
+check(await p.$eval(`.studio-strips .strip.bus >> nth=0`, (e) => e.dataset.id) === b2 && await p.$eval(`.studio-strips .strip >> nth=0`, (e) => e.classList.contains("master")), "卡片顺序：总轨 → 混音轨（按排好的）→ 歌手");
+await p.click(`${strip(b2)} [data-v="busright"]`); await p.waitForTimeout(150);
 await p.fill(`${strip(b1)} .bus-name`, "混响"); await p.press(`${strip(b1)} .bus-name`, "Tab"); await p.waitForTimeout(150);
 check((await tr(b1)).name === "混响", "混音轨改名");
 // 被谁压：两位歌手 = 能选另一位
+await tab("chain");
 await p.click(`${strip(ids[0].id)} [data-v="fxadd"]`); await p.click(`${strip(ids[0].id)} [data-v="fxpick"][data-kind="comp"]`); await p.waitForTimeout(150);
 await p.selectOption('.fx-panel select[data-key]', ids[1].id); await p.waitForTimeout(150);
 check((await tr(ids[0].mic)).chain.find((f) => f.kind === "comp")?.key === ids[1].id, "A 上的压缩「被谁压」= B（侧链）");
 // 删掉混音轨 1：出到它的、发给它的都改回总轨 / 拿掉
+await tab("basic");
 await p.click(`${strip(b1)} [data-v="delbus"]`); await p.waitForTimeout(150);
 check((await tr(ids[0].mic)).to === "master" && (await tr(ids[1].mic)).sends.length === 0 && !(await tr(b1)), "删掉混音轨 1 = A 改回出到总轨、B 不再发给它", JSON.stringify(await tracks()));
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);

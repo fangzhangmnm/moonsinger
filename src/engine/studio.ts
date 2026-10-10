@@ -78,7 +78,7 @@ export type StudioOut =
   | { type: "ended"; gen: number }
   | { type: "missing"; keys: string[] }
   | { type: "chunks"; items: { key: string; sr: number; samples: Int16Array }[] }
-  | { type: "meter"; peak: number; active: number }
+  | { type: "meter"; peak: number; active: number; /** 每条轨 / 混音轨推子后的峰值（v0.10.10：混音台每张卡片顶上一条细线）。 */ tracks?: Record<string, number> }
   /** 每秒一条（一直开着，便宜）：音频线程这 1 s 的忙闲（渲染耗时 / 这 1 s）、录音房里留着的块（Int16 字节数 / 块数）、正在响的声音数。刀 6 负载 / 内存监控。 */
   | { type: "load"; busy: number; chunkBytes: number; chunks: number; voices: number };
 
@@ -156,6 +156,8 @@ export class Studio {
   private wr = 0; private gPrev = 1; private aRel: number;
   // 表 / 报告
   private meterOn = false; private meterPeak = 0; private meterFrames = 0;
+  /** 每条轨 / 混音轨这一段推子后的峰值（只在 meterOn 时攒；混音台开着才开）。 */
+  private trackPeaks = new Map<string, number>();
   private loadBusy = 0; private loadFrames = 0; private chunkBytes = 0;   // 负载 / 内存监控（刀 6）
   private posFrames = 0;
   /** 宿主的音频时钟：这一块开头的 AudioContext 时间（worklet 每块前设 = currentTime；离线 / 测试不设）。位置报告带上「块尾的时钟」。 */
@@ -232,7 +234,7 @@ export class Studio {
         this.auditions.set(m.src, { inst: { kind: "clip" }, key: 0, gl, gr });
         return;
       }
-      case "meter": this.meterOn = m.on; this.meterPeak = 0; this.meterFrames = 0; return;
+      case "meter": this.meterOn = m.on; this.meterPeak = 0; this.meterFrames = 0; this.trackPeaks.clear(); return;
     }
   }
 
@@ -409,7 +411,9 @@ export class Studio {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
       const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
-      for (let i = 0; i < n; i++) { cl += dl; cr += dr; L[i] += b.L[i] * cl * Math.SQRT2; R[i] += b.R[i] * cr * Math.SQRT2; }   // 立体声的平衡：正中 = 原样
+      let pk = 0;
+      for (let i = 0; i < n; i++) { cl += dl; cr += dr; const l = b.L[i] * cl * Math.SQRT2, r = b.R[i] * cr * Math.SQRT2; L[i] += l; R[i] += r; if (this.meterOn) { const a = Math.abs(l), c = Math.abs(r); if (a > pk) pk = a; if (c > pk) pk = c; } }   // 立体声的平衡：正中 = 原样
+      if (this.meterOn) this.trackPeaks.set(b.id, Math.max(this.trackPeaks.get(b.id) ?? 0, pk));
       for (const sd of b.sends) { const sl = gl * sd.lin * Math.SQRT2, sr = gr * sd.lin * Math.SQRT2; for (let i = 0; i < n; i++) { sd.bus.L[i] += b.L[i] * sl; sd.bus.R[i] += b.R[i] * sr; } }
       b.gl = gl; b.gr = gr;
     }
@@ -423,7 +427,7 @@ export class Studio {
     if (this.meterOn) {
       for (let i = 0; i < n; i++) { const a = Math.abs(outL[i]), b = Math.abs(outR[i]); if (a > this.meterPeak) this.meterPeak = a; if (b > this.meterPeak) this.meterPeak = b; }
       this.meterFrames += n;
-      if (this.meterFrames >= 1024) { this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices() }); this.meterPeak = 0; this.meterFrames = 0; }
+      if (this.meterFrames >= 1024) { this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks) }); this.meterPeak = 0; this.meterFrames = 0; this.trackPeaks.clear(); }
     }
     // 负载：这一块渲染花了多久 / 这一块值多久（AudioWorklet 里没有 performance，退回 Date.now：毫秒粗，攒满 1 s 再报就够准）
     this.loadBusy += now() - tStart; this.loadFrames += n;
@@ -518,8 +522,9 @@ export class Studio {
       const [gl, gr] = audible ? panGains(t.ch.gainDb, t.ch.pan) : [0, 0];
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : undefined, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
-      let cl = t.gl, cr = t.gr;
-      for (let i = 0; i < cnt; i++) { cl += dl; cr += dr; L[off + i] += out[i] * cl; R[off + i] += out[i] * cr; }
+      let cl = t.gl, cr = t.gr, pk = 0;
+      for (let i = 0; i < cnt; i++) { cl += dl; cr += dr; L[off + i] += out[i] * cl; R[off + i] += out[i] * cr; if (this.meterOn) { const a = Math.abs(out[i]) * Math.max(cl, cr) * Math.SQRT2; if (a > pk) pk = a; } }   // 峰值按「正中 = 原样」的尺子（和总线一样）
+      if (this.meterOn) this.trackPeaks.set(id, Math.max(this.trackPeaks.get(id) ?? 0, pk));
       if (t.ch.sends) for (const sd of t.ch.sends) {   // 发送（推子之后）
         const b = this.buses.get(sd.to); if (!b) continue;
         const g = dbToLin(sd.gainDb), sl = gl * g, sr2 = gr * g;
