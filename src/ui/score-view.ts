@@ -92,6 +92,8 @@ export interface ScoreViewHost {
 /** 按下去的是能拿起来拖的东西：歌词的一个字 / 力度记号 / 渐强渐弱（index = token 下标，system = 那一行）。 */
 type Grab = { kind: "lyric" | "mark"; index: number; system: number };
 
+/** 捏合最多放大到原大的几倍（同 PDF 阅读器，横着能滚）。 */
+const MAX_ZOOM = 6;
 export class ScoreView {
   layout: Layout | null = null;
   private sheet: HTMLDivElement;
@@ -118,7 +120,10 @@ export class ScoreView {
   private handles: { start: HTMLDivElement; end: HTMLDivElement };
   private handleDrag: null | { pid: number; which: "start" | "end"; other: number } = null;
   private touches = new Map<number, { x: number; y: number }>();   // 现在按着的手指（触屏缩放用）
-  private pinch: null | { d0: number; z0: number; cx: number; cy: number } = null;   // 捏合起点：两指距离、当时的 zoom、两指中点下面那个纸面点（纸面坐标）
+  /** 捏合（2026-10-10 v0.9.27 重做；user「ipad可以放的很大，就和pdf浏览器一样，懂了吗。可以横着滚」+ 查案「iPad 捏合缩放卡」）：
+   *  手势中只改 transform（合成器缩放，不重排、不读布局），一帧最多一次；松手才落成 CSS zoom（重排一次）并滚到让那个点还在手指下面。
+   *  d0 = 起手两指距离；z0 = 起手的 zoom；sx / sy = 两指中点下面那个纸面点（sheet 坐标、原大）；left / top = 起手时 sheet 在屏幕上的位置；k = 现在相对 z0 的倍数；mx / my = 现在的两指中点。 */
+  private pinch: null | { d0: number; z0: number; sx: number; sy: number; left: number; top: number; k: number; mx: number; my: number; raf: number } = null;
   private zoom = 1;
   private zoomBtn: HTMLButtonElement;
   readonly lyrics: LyricEditor;
@@ -184,7 +189,7 @@ export class ScoreView {
       this.host.focus?.("staff");
       this.host.onSelPress?.({ x: e.clientX, y: e.clientY });
     });
-    el.addEventListener("pointercancel", (e) => { if (this.holdPid === e.pointerId) { this.holdPid = null; this.host.release?.(); } this.lockTap = null; if (this.drag) this.host.release?.(); this.drag = null; if (this.lift) { this.lift = null; this.hot = null; this.render(); } el.classList.remove("lifting"); this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
+    el.addEventListener("pointercancel", (e) => { if (this.pinch && this.touches.delete(e.pointerId) && this.touches.size < 2) this.pinchEnd(); if (this.holdPid === e.pointerId) { this.holdPid = null; this.host.release?.(); } this.lockTap = null; if (this.drag) this.host.release?.(); this.drag = null; if (this.lift) { this.lift = null; this.hot = null; this.render(); } el.classList.remove("lifting"); this.finger = null; this.box = null; this.boxEl.hidden = true; this.cancelPress(); this.touches.delete(e.pointerId); if (this.touches.size < 2) this.pinch = null; });
     new ResizeObserver(() => this.render()).observe(el);
   }
 
@@ -384,10 +389,32 @@ export class ScoreView {
   }
   /** 原大时纸（含边距）有多宽（px，render 里记）：捏合最多放到它和屏幕一样宽。 */
   private paperW = 0;
-  private maxZoom(): number { return Math.max(1, (this.el.clientWidth - 4) / Math.max(1, this.paperW)); }
+  /** 最多放大几倍（同 PDF 阅读器：可以比屏幕宽、横着滚；user 2026-10-10「ipad可以放的很大，就和pdf浏览器一样」——取代 v0.9.19 的「最多到纸和屏幕一样宽」）。 */
+  private maxZoom(): number { return MAX_ZOOM; }
+  private pinchStart(): void {
+    const [a, b] = [...this.touches.values()], r = this.sheet.getBoundingClientRect(), z0 = this.zoom, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    if (this.pinch?.raf) cancelAnimationFrame(this.pinch.raf);
+    this.pinch = { d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), z0, sx: (mx - r.left) / z0, sy: (my - r.top) / z0, left: r.left, top: r.top, k: 1, mx, my, raf: 0 };
+    this.sheet.style.transformOrigin = "0 0"; this.sheet.style.willChange = "transform";
+  }
+  private pinchMove(): void {
+    const pi = this.pinch!, [a, b] = [...this.touches.values()], d = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
+    pi.k = Math.max(1, Math.min(this.maxZoom(), pi.z0 * (d / pi.d0))) / pi.z0; pi.mx = (a.x + b.x) / 2; pi.my = (a.y + b.y) / 2;
+    if (!pi.raf) pi.raf = requestAnimationFrame(() => {   // 一帧最多改一次；中点下面那个纸面点跟着两指走 = 缩放 + 平移一起
+      const q = this.pinch; if (!q) return; q.raf = 0;
+      const tx = q.mx - q.left - q.k * q.z0 * q.sx, ty = q.my - q.top - q.k * q.z0 * q.sy;
+      this.sheet.style.transform = `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) scale(${q.k.toFixed(4)})`;
+    });
+  }
+  private pinchEnd(): void {
+    const pi = this.pinch; if (!pi) return;
+    this.pinch = null; if (pi.raf) cancelAnimationFrame(pi.raf);
+    this.sheet.style.transform = ""; this.sheet.style.willChange = ""; this.sheet.style.transformOrigin = "";
+    this.setZoom(pi.z0 * pi.k, { x: pi.mx, y: pi.my, cx: pi.sx, cy: pi.sy });   // 落定：重排一次，滚到让那个点还在两指中点下面
+  }
   /** 放大 / 缩小到 z（1 = 原大，最多到纸和屏幕一样宽）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
   private setZoom(z: number, anchor: { x: number; y: number; cx: number; cy: number } | null): void {
-    z = Math.max(1, Math.min(this.maxZoom(), z));   // 最多放到纸和屏幕一样宽（2026-10-10 user「a4纸之类的不应该zoom的比屏幕还大」；同 WXHW：纸永远不比屏幕宽）
+    z = Math.max(1, Math.min(this.maxZoom(), z));
     const r = this.el.getBoundingClientRect();
     this.zoom = z; this.sheet.style.zoom = z === 1 ? "" : String(z);
     this.el.classList.toggle("zoomed", z > 1.001);
@@ -425,7 +452,7 @@ export class ScoreView {
     if (!this.rules.edit) {   // 听模式：只挡写谱。手指照样能滚 / 捏合；轻点 = 看谱的那些（歌手牌 / 翻纸 / 本段…），不跳播；长按 = 小菜单（从这儿放…）
       if (e.pointerType === "touch") {
         this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY }); this.el.setPointerCapture(e.pointerId);
-        if (this.touches.size === 2) { this.finger = null; this.cancelPress(); const [a, b] = [...this.touches.values()], mid = this.local({ clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 }); this.pinch = { d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), z0: this.zoom, cx: mid.x, cy: mid.y }; return; }
+        if (this.touches.size === 2) { this.finger = null; this.cancelPress(); this.pinchStart(); return; }
         if (this.touches.size > 2) return;
         this.finger = { pid: e.pointerId, y0: e.clientY, top0: this.el.scrollTop, x: p.x, y: p.y, moved: false, shift: false, x0: e.clientX, left0: this.el.scrollLeft };
         this.armPress(e, p, null);
@@ -442,8 +469,7 @@ export class ScoreView {
       this.el.setPointerCapture(e.pointerId);
       if (this.touches.size === 2) {
         this.finger = null; this.cancelPress();
-        const [a, b] = [...this.touches.values()], mid = this.local({ clientX: (a.x + b.x) / 2, clientY: (a.y + b.y) / 2 });
-        this.pinch = { d0: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), z0: this.zoom, cx: mid.x, cy: mid.y };
+        this.pinchStart();
         return;
       }
       if (this.touches.size > 2) return;
@@ -784,11 +810,7 @@ export class ScoreView {
     }
     if (this.touches.has(e.pointerId)) {
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (this.pinch && this.touches.size === 2) {
-        const [a, b] = [...this.touches.values()], d = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
-        this.setZoom(this.pinch.z0 * (d / this.pinch.d0), { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, cx: this.pinch.cx, cy: this.pinch.cy });   // 中点下面的纸面点跟着两指走 = 缩放 + 平移一起
-        return;
-      }
+      if (this.pinch && this.touches.size === 2) { this.pinchMove(); return; }
     }
     if (this.finger && e.pointerId === this.finger.pid) {
       const dy = e.clientY - this.finger.y0, dx = e.clientX - this.finger.x0;
@@ -827,7 +849,7 @@ export class ScoreView {
   private up(e: PointerEvent): void {
     // 手指轻点（没拖、没长按）= 这时才把焦点拿回谱面（down 里手指不抢）；先拿焦点再 tap：tap 打开的歌词框会自己再把焦点拿走
     if (e.pointerType === "touch" && this.press && this.press.pid === e.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
-    if (this.touches.delete(e.pointerId) && this.pinch && this.touches.size < 2) { this.pinch = null; this.finger = null; this.cancelPress(); return; }   // 捏合结束：剩下那根手指不接着当滚动（会跳）
+    if (this.touches.delete(e.pointerId) && this.pinch && this.touches.size < 2) { this.pinchEnd(); this.finger = null; this.cancelPress(); return; }   // 捏合结束：落定缩放；剩下那根手指不接着当滚动（会跳）
     if (this.holdPid === e.pointerId) { this.holdPid = null; this.host.release?.(); }   // 按住音的预览：抬手停
     if (!this.rules.edit) {   // 听模式：没拖、没长按 = 轻点（只认看谱的那些）
       const lt = this.lockTap, f = this.finger, pr = this.press, fired = !!(pr && pr.pid === e.pointerId && pr.fired);

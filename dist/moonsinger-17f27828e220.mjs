@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.26-2026-10-10";
+var APP_VERSION = "v0.9.27-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -8659,6 +8659,7 @@ var hasKeys = (m2) => m2 === "notes" || m2 === "symbols";
 var caretKey = (st3) => `${st3.at.paper}|${st3.at.part}|${st3.caret}`;
 var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
+var MAX_ZOOM = 6;
 var ScoreView = class {
   constructor(el2, host) {
     this.el = el2;
@@ -8767,6 +8768,7 @@ var ScoreView = class {
       this.host.onSelPress?.({ x: e10.clientX, y: e10.clientY });
     });
     el2.addEventListener("pointercancel", (e10) => {
+      if (this.pinch && this.touches.delete(e10.pointerId) && this.touches.size < 2) this.pinchEnd();
       if (this.holdPid === e10.pointerId) {
         this.holdPid = null;
         this.host.release?.();
@@ -8825,8 +8827,10 @@ var ScoreView = class {
   handleDrag = null;
   touches = /* @__PURE__ */ new Map();
   // 现在按着的手指（触屏缩放用）
+  /** 捏合（2026-10-10 v0.9.27 重做；user「ipad可以放的很大，就和pdf浏览器一样，懂了吗。可以横着滚」+ 查案「iPad 捏合缩放卡」）：
+   *  手势中只改 transform（合成器缩放，不重排、不读布局），一帧最多一次；松手才落成 CSS zoom（重排一次）并滚到让那个点还在手指下面。
+   *  d0 = 起手两指距离；z0 = 起手的 zoom；sx / sy = 两指中点下面那个纸面点（sheet 坐标、原大）；left / top = 起手时 sheet 在屏幕上的位置；k = 现在相对 z0 的倍数；mx / my = 现在的两指中点。 */
   pinch = null;
-  // 捏合起点：两指距离、当时的 zoom、两指中点下面那个纸面点（纸面坐标）
   zoom = 1;
   zoomBtn;
   lyrics;
@@ -9115,8 +9119,39 @@ var ScoreView = class {
   }
   /** 原大时纸（含边距）有多宽（px，render 里记）：捏合最多放到它和屏幕一样宽。 */
   paperW = 0;
+  /** 最多放大几倍（同 PDF 阅读器：可以比屏幕宽、横着滚；user 2026-10-10「ipad可以放的很大，就和pdf浏览器一样」——取代 v0.9.19 的「最多到纸和屏幕一样宽」）。 */
   maxZoom() {
-    return Math.max(1, (this.el.clientWidth - 4) / Math.max(1, this.paperW));
+    return MAX_ZOOM;
+  }
+  pinchStart() {
+    const [a10, b3] = [...this.touches.values()], r10 = this.sheet.getBoundingClientRect(), z0 = this.zoom, mx = (a10.x + b3.x) / 2, my = (a10.y + b3.y) / 2;
+    if (this.pinch?.raf) cancelAnimationFrame(this.pinch.raf);
+    this.pinch = { d0: Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y)), z0, sx: (mx - r10.left) / z0, sy: (my - r10.top) / z0, left: r10.left, top: r10.top, k: 1, mx, my, raf: 0 };
+    this.sheet.style.transformOrigin = "0 0";
+    this.sheet.style.willChange = "transform";
+  }
+  pinchMove() {
+    const pi = this.pinch, [a10, b3] = [...this.touches.values()], d3 = Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y));
+    pi.k = Math.max(1, Math.min(this.maxZoom(), pi.z0 * (d3 / pi.d0))) / pi.z0;
+    pi.mx = (a10.x + b3.x) / 2;
+    pi.my = (a10.y + b3.y) / 2;
+    if (!pi.raf) pi.raf = requestAnimationFrame(() => {
+      const q2 = this.pinch;
+      if (!q2) return;
+      q2.raf = 0;
+      const tx2 = q2.mx - q2.left - q2.k * q2.z0 * q2.sx, ty2 = q2.my - q2.top - q2.k * q2.z0 * q2.sy;
+      this.sheet.style.transform = `translate(${tx2.toFixed(1)}px, ${ty2.toFixed(1)}px) scale(${q2.k.toFixed(4)})`;
+    });
+  }
+  pinchEnd() {
+    const pi = this.pinch;
+    if (!pi) return;
+    this.pinch = null;
+    if (pi.raf) cancelAnimationFrame(pi.raf);
+    this.sheet.style.transform = "";
+    this.sheet.style.willChange = "";
+    this.sheet.style.transformOrigin = "";
+    this.setZoom(pi.z0 * pi.k, { x: pi.mx, y: pi.my, cx: pi.sx, cy: pi.sy });
   }
   /** 放大 / 缩小到 z（1 = 原大，最多到纸和屏幕一样宽）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
   setZoom(z2, anchor) {
@@ -9169,8 +9204,7 @@ var ScoreView = class {
         if (this.touches.size === 2) {
           this.finger = null;
           this.cancelPress();
-          const [a10, b3] = [...this.touches.values()], mid = this.local({ clientX: (a10.x + b3.x) / 2, clientY: (a10.y + b3.y) / 2 });
-          this.pinch = { d0: Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y)), z0: this.zoom, cx: mid.x, cy: mid.y };
+          this.pinchStart();
           return;
         }
         if (this.touches.size > 2) return;
@@ -9191,8 +9225,7 @@ var ScoreView = class {
       if (this.touches.size === 2) {
         this.finger = null;
         this.cancelPress();
-        const [a10, b3] = [...this.touches.values()], mid = this.local({ clientX: (a10.x + b3.x) / 2, clientY: (a10.y + b3.y) / 2 });
-        this.pinch = { d0: Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y)), z0: this.zoom, cx: mid.x, cy: mid.y };
+        this.pinchStart();
         return;
       }
       if (this.touches.size > 2) return;
@@ -9717,8 +9750,7 @@ var ScoreView = class {
     if (this.touches.has(e10.pointerId)) {
       this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
       if (this.pinch && this.touches.size === 2) {
-        const [a10, b3] = [...this.touches.values()], d3 = Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y));
-        this.setZoom(this.pinch.z0 * (d3 / this.pinch.d0), { x: (a10.x + b3.x) / 2, y: (a10.y + b3.y) / 2, cx: this.pinch.cx, cy: this.pinch.cy });
+        this.pinchMove();
         return;
       }
     }
@@ -9767,7 +9799,7 @@ var ScoreView = class {
   up(e10) {
     if (e10.pointerType === "touch" && this.press && this.press.pid === e10.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
     if (this.touches.delete(e10.pointerId) && this.pinch && this.touches.size < 2) {
-      this.pinch = null;
+      this.pinchEnd();
       this.finger = null;
       this.cancelPress();
       return;
@@ -39568,4 +39600,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1e651fc4eb1a.mjs.map
+//# sourceMappingURL=moonsinger-17f27828e220.mjs.map
