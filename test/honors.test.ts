@@ -16,7 +16,8 @@ const sfSpec = (gapSec: number) => ({ ...spec(gapSec), dynamicsVel: { ...DYNAMIC
 function two(mark?: Mark, chord = false): EditorState {
   let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } };
   for (const d of [1, 2]) st = writeDegree(st, d, "near");
-  const i = tr(st).findIndex((t) => t.kind === "note");
+  const notesAt = tr(st).flatMap((t, k) => (t.kind === "note" ? [k] : []));
+  const i = mark === "arpeggio" || (chord && !mark) ? notesAt[1] : notesAt[0];   // 琶音挂第二个音：v0.9.48 起低音往前提早，全曲第一个音前面没地方提早
   if (chord) { const toks = tr(st).slice(), t0 = toks[i] as NoteTok; toks[i] = { ...t0, chord: [{ ...t0.pitch!, octave: t0.pitch!.octave - 1 }] }; st = { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }
   if (!mark) return st;
   if (mark === "swellGrow" || mark === "swellFade") { const toks = tr(st).slice(); toks[i] = { ...(toks[i] as NoteTok), art: [mark === "swellGrow" ? "swellUp" as const : "swellDown" as const] }; return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }

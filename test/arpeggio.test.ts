@@ -11,16 +11,19 @@ const chord = (extra: Partial<NoteTok> = {}): Token => ({ kind: "note", id: nid+
 const head = () => tr(initState()).slice(0, 3);
 const marks = { staccatoGate: 0.5, breath: true, gapSec: 0, arpeggioSec: 0.04 };
 describe("琶音", () => {
-  it("SoundFont：叠音从低到高依次晚 arpeggioSec；不写 = 同时", () => {
-    const on = lightNotes([...head(), chord({ art: ["arpeggio"] })], [], true, marks).map((n) => [n.midi, +n.t0.toFixed(3)]);
-    eq(JSON.stringify(on.sort((a, b) => a[0] - b[0])), "[[60,0],[64,0.04],[67,0.08]]");
+  it("SoundFont：旋律（最上面）准时落拍，下面的从低到高依次提早 arpeggioSec（v0.9.48；user「旋律音准时落拍、低音提前滚奏」）；不写 = 同时；音符表按起点排好", () => {
+    const rest: Token = { kind: "rest", id: nid++, dur: TPQ };   // 前面一拍休止：和弦在 2/3 秒（♩ = 90），低音才有地方提早
+    const ns = lightNotes([...head(), rest, chord({ art: ["arpeggio"] })], [], true, marks), on = ns.map((n) => [n.midi, +n.t0.toFixed(3)]);
+    eq(JSON.stringify(on), "[[60,0.587],[64,0.627],[67,0.667]]", "最低的最早、旋律在拍上");
+    const head0 = lightNotes([...head(), chord({ art: ["arpeggio"] })], [], true, marks);
+    assert(head0.every((n) => n.t0 >= 0) && head0.some((n) => n.midi === 67 && n.t0 === 0), "歌开头：钳在 0，旋律照旧在拍上");
     const off = lightNotes([...head(), chord()], [], true, marks);
     assert(off.every((n) => n.t0 === 0), "不写琶音 = 一起响");
   });
   it("错开最多摊到这个音一半长；单声（只拿最上面那条线）= 不错开", () => {
     const short = lightNotes([...head(), chord({ art: ["arpeggio"], dur: TPQ / 8 })], [], true, { ...marks, arpeggioSec: 1 });
-    const len = short[0].t1 - Math.min(...short.map((n) => n.t0)), last = Math.max(...short.map((n) => n.t0));
-    assert(last <= len * 0.5 + 1e-9, `最晚的音 ${last} 秒`);
+    const top = short.find((n) => n.midi === 67)!, span = top.t0 - Math.min(...short.map((n) => n.t0)), len = top.t1 - top.t0;
+    assert(span <= len * 0.5 + 1e-9, `滚奏摊了 ${span} 秒、音长 ${len}`);
     eq(lightNotes([...head(), chord({ art: ["arpeggio"] })], [], false, marks).length, 1);
   });
   it("MusicXML：和弦里每个音都写 <arpeggiate/>；读回来 = 这个和弦有琶音", () => {

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.47-2026-10-10";
+var APP_VERSION = "v0.9.48-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6499,7 +6499,7 @@ var MARK_DEFAULTS = {
   fpSec: 0.2,
   // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
   arpeggioSec: 0.035,
-  // 琶音（v0.9.45）：和弦从低到高每个音晚多少秒（最多摊到这个音一半长）；AI 起的数，好不好听归耳朵
+  // 琶音（v0.9.45 / v0.9.48）：旋律（最上面）准时落拍，下面的从低到高每个提早这么多秒（最多摊到这个音一半长）；35 ms = user 定的
   swellDb: 6,
   // 音内起伏：< 走到 +swellDb、> 走到 −swellDb、<> 中间到 +swellDb 再回来
   // 强度的其余几级（2026-10-08 深夜 Opus 5.5）：次重音 = 重音的一半（音头 accentSec 那一段 / 力度）；弱化 / 幽灵音 = 整个音轻下去（幽灵音 ≈ 强音反过来）
@@ -24403,13 +24403,13 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
         nextOpen.set(midi, prev);
         continue;
       }
-      const n10 = { midi, t0: t02 + (rank ? (rank.get(midi) ?? 0) * arp : 0), t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {} };
+      const n10 = { midi, t0: rank ? Math.max(0, t02 - (ps.length - 1 - (rank.get(midi) ?? 0)) * arp) : t02, t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {} };
       notes.push(n10);
       nextOpen.set(midi, n10);
     }
     open = nextOpen;
   }
-  return notes;
+  return notes.sort((a10, b3) => a10.t0 - b3.t0);
 }
 var HUM_KANA = { la: "\u3089", n: "\u3093", u: "\u3046", o: "\u304A", a: "\u3042" };
 function buildTimeline(inp) {
@@ -40818,4 +40818,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-75538dfedf2a.mjs.map
+//# sourceMappingURL=moonsinger-01d4c6161434.mjs.map

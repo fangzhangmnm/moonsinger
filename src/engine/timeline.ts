@@ -87,17 +87,18 @@ export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, ma
     if (tok.kind !== "note") continue;
     const ps = poly && tok.pitch ? allPitches(tok as NoteTok) : [effectivePitch(tokens, index)];   // 单声引擎只拿最上面那条线
     const nextOpen = new Map<number, { midi: number; t0: number; t1: number; vel?: number }>();
-    // 琶音（v0.9.45）：叠音从低到高依次晚 arpeggioSec（最多摊到这个音一半长）；连过来的那段不再错开
+    // 琶音（v0.9.45；v0.9.48 改：user「建议改为旋律音准时落拍、低音提前滚奏，错开间隔35ms」）：最上面的（旋律）准时落拍，下面的从低到高依次提早 arpeggioSec
+    //   （最多摊到这个音一半长；歌开头前面没地方 = 钳在 0）；连过来的那段不再错开
     const arp = poly && ps.length > 1 && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks?.arpeggioSec ?? 0.035, ((t1 - t0) * 0.5) / (ps.length - 1)) : 0;
     const rank = arp ? new Map([...ps].map((q) => midiOf(q)).sort((a, b) => a - b).map((m, k) => [m, k] as const)) : null;
     for (const p of ps) {
       const midi = midiOf(p), prev = tok.tie ? open.get(midi) : undefined;
       if (prev) { prev.t1 = marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1; nextOpen.set(midi, prev); continue; }
-      const n = { midi, t0: t0 + (rank ? (rank.get(midi) ?? 0) * arp : 0), t1: marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}) }; notes.push(n); nextOpen.set(midi, n);
+      const n = { midi, t0: rank ? Math.max(0, t0 - (ps.length - 1 - (rank.get(midi) ?? 0)) * arp) : t0, t1: marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}) }; notes.push(n); nextOpen.set(midi, n);
     }
     open = nextOpen;
   }
-  return notes;
+  return notes.sort((a, b) => a.t0 - b.t0);   // 琶音提早的低音可能比前一个音还早一点：按起点排（稳定排序：没琶音的歌顺序原样）
 }
 
 export const HUM_KANA: Record<Hum, string> = { la: "ら", n: "ん", u: "う", o: "お", a: "あ" };

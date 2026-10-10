@@ -152,7 +152,7 @@
 - 做了什么 = 仓 CLAUDE.md v0.9.1 那条；设计 = `ai-docs/20261009-realtime-preview-engine-proposal.md`（§1–§12 提案、§13 user 三轮回复与修订、§14 刀 0 量的代价）；原话全集 = `ai-docs/20261009-sound-engine-user-vision.md`。
 - **接口面**（给接着做的人）：`src/engine/studio.ts` 的 `StudioIn / StudioOut / TimelineMsg / TrackSpec / ClipRef`；`src/engine/timeline.ts` 的 `buildTimeline(TimelineInput) → Timeline`、`PerformerInfo`；`src/engine/studio-client.ts` 的 `StudioClient`（bank / vowels / setTimeline / chunk / channel / master / play / stop / seek / audition* / renderOffline / on(pos | ended | missing | meter)）。main.ts 里：`prepare(scope)`（库 → 时间线 → 块）、`playRange(tl)`、`cursorSeconds(tl)`、`togglePlay`、`schedulePlaybackRefresh`、`auditionTarget()`。
 - **user 2026-10-10 拍板刀 5 / 刀 6**：「精度分级做 冷启动做 然后下一刀 内部进度回调中途取消按键加速worker并行 负载和内存监控防闪退 做 llama科研不做」→ 刀 5 = 精度分级（v0.9.11 已落块 Int16 + 分析 bf16；WORLD 单精度另议）+ 冷启动（v0.9.11 先落分段计时；词典解压缓存 / session 选项 / 启动就起引擎接着做；**念缓存持久化到 IDB 仍等 user 一句话**）；刀 6 = WORLD 内部进度回调、正在算的那句中途取消、按键再加速（断句 / 稳态那几步按句缓存）、两个 worker 并行唱（按设备）、音频线程负载 + 内存监控（防闪退：超预算先放块 / 减并行 / 明说）。llama 科研线不做。
-- **导出文件名带时间（v0.9.47）/ 琶音只挂和弦（v0.9.46），2026-10-10，Opus 5.5**：仓 CLAUDE.md 那两条。**琶音的时间等 user 拍**（user「琶音会导致能听得出来的延迟。。。是不是算法错了」：现在最低音落拍、往上每个晚 35 ms = 旋律（最上面）晚 70–105 ms；AI 提「收在拍上：旋律准时、下面的提早」+ 错开量要不要小，等回话）。
+- **导出文件名带时间（v0.9.47）/ 琶音只挂和弦（v0.9.46），2026-10-10，Opus 5.5**：仓 CLAUDE.md 那两条。琶音的时间 user 拍了（「建议改为旋律音准时落拍、低音提前滚奏，错开间隔35ms」）= v0.9.48 落了。
 - **琶音（v0.9.45，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.45 那条。
 - **音内起伏归演奏法（v0.9.44，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.44 那条。
 - **即兴滑窗弹不出 + 层级守卫（v0.9.43，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.43 那条。
