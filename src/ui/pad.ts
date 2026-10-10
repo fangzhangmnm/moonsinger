@@ -47,10 +47,10 @@ type SymPage = "art" | "dyn" | "mark";
 const SYM_PAGES: Record<SymPage, readonly string[]> = {
   art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper"],   // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:ppp", "dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "dyn:fff", "wedge:cresc", "wedge:dim", "dyn:ramp", "swell:<", "swell:>", "swell:<>"],   // ppp…fff 两整排（v0.9.23）
-  mark: ["phrase", "key", "time", "tempo", "groove", "repeat", "staff"],
+  mark: ["phrase", "key", "time", "tempo", "clef", "ottava", "groove", "repeat", "staff"],   // 谱号 / 八度线（v0.9.28）
 };
 const SYM_PAGE_NAME: Record<SymPage, string> = { art: "演奏法", dyn: "力度", mark: "记号" };
-const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸（静默 / 轻吸 / 深吸）、气声", dyn: "ppp…fff、渐强 / 渐弱、渐到、音内起伏", mark: "句号、调号 / 拍号 / 速度、风格（拍子轻重）" };
+const SYM_PAGE_TITLE: Record<SymPage, string> = { art: "强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸（静默 / 轻吸 / 深吸）、气声", dyn: "ppp…fff、渐强 / 渐弱、渐到、音内起伏", mark: "句号、调号 / 拍号 / 谱号 / 八度线 / 速度、风格（拍子轻重）" };
 const RAMP_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;   // 渐到 = 虚线发夹
 const CRESC_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M20,2 L3,6 L20,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const DIM_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -135,6 +135,9 @@ export interface PadHost {
   onGroove?(): void;
   /** 符号层「反复」：开谱内反复 / 跳转的小菜单（2026-10-09）。 */
   onRepeat?(): void;
+  /** 符号层「谱号」/「8va」：开小菜单，插在光标处（v0.9.28）。 */
+  onClefKey?(): void;
+  onOttavaKey?(): void;
   onSoundDown(p: Pitch, id: string): void;   // 试听 / 弹：按下响（复音：每根手指一个声音）
   onSoundUp(id: string): void;
   onImpro(): void;                         // 「弹」开关（第一排「收起」左边）：只响不写
@@ -416,6 +419,8 @@ export class Pad {
       cell("key", `<span class="big">1=</span>`, "调号", "插调号（在光标处；先填现在的，插了再改）"),
       cell("time", `<span class="big">4/4</span>`, "拍号", "插拍号（在光标处）"),
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "速度", "插速度（在光标处）"),
+      cell("clef", `<span class="smufl">\uE050</span>`, "谱号", "谱号：从光标处起换谱号（高音 / 低音 / 下加 8 / 上加 8 / 上加 15）；只管画，音高不变。每行开头的谱号也能直接点"),
+      cell("ottava", `<span class="smufl">\uE511</span>`, "八度线", "八度线：从光标处起谱上画低（8va / 15ma）或画高（8vb）；有选区 = 这一段；「结束」= 到这儿收。只管画，音高不变"),
       cell("groove", `<span class="big it">风格</span>`, "拍子轻重", "风格记号：从光标前那个音起到这张纸结尾，每个音按它在小节里的位置轻一点 / 重一点（古典 / 流行 / 华尔兹 / 进行曲…点开选）；整张纸的歌手一起听，各人跟多少按乐器"),
       cell("repeat", `<span class="big">:|</span>`, "反复", "谱内反复 / 跳转：|: :|、房子 1. 2.、Segno / Coda / D.C. / D.S. / Fine…（点开选；插在光标处，挨着小节线 = 把那条改成反复的）。不跨纸；放的时候只看这张纸最上面那位歌手那一行"),
       ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, "换谱表", "大谱表：这个音换到另一张谱表")] : []),
@@ -447,6 +452,8 @@ export class Pad {
       if (id === "key" || id === "time" || id === "tempo") this.host.onInsertMark(id);
       else if (id === "groove") this.host.onGroove?.();
       else if (id === "repeat") this.host.onRepeat?.();
+      else if (id === "clef") this.host.onClefKey?.();
+      else if (id === "ottava") this.host.onOttavaKey?.();
       else if (id === "staff") this.host.onCommand({ k: "staff" });
       else if (id.startsWith("art:")) this.host.onCommand({ k: "art", a: id.slice(4) as Art });
       else if (id.startsWith("inhale:")) this.host.onCommand({ k: "inhale", v: id.slice(7) as "soft" | "big" });

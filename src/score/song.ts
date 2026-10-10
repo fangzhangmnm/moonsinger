@@ -90,7 +90,13 @@ export interface HairpinTok { kind: "hairpin"; id: number; dir: "cresc" | "dim" 
  *  （预设 = 音乐仓鼠的 grooves-vN.json，src/score/groove.ts）。整张纸一起听（写在哪一行都管全部歌手；同一时刻两行都写了 = 上面那行算）。
  *  style = 预设 id（"pop"…；"none" = 这儿起不加）；amount = 幅度（1 = 预设本身；不写 = 1）。不占时值、不占横向地方。MusicXML <direction><words id="groove.…">。 */
 export interface GrooveTok { kind: "groove"; id: number; style: string; amount?: number; shift?: true }   // shift = 错开一小节（两小节一轮的风格：3-2 → 2-3；2026-10-09）
-export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok;
+/** 谱号记号（v0.9.28；user 2026-10-10「谱号的显示模式跟着谱号而不是乐器」「默认自动同意」「加格式同意」）：从这儿起换谱号（只管画，音高数据不动）。
+ *  声部自己的谱号（PartDef.clef，没有 = 自动）管每张纸开头；纸中间要换就插这个。MusicXML 原生 <attributes><clef>。 */
+export interface ClefTok { kind: "clef"; id: number; clef: ClefName }
+/** 八度线（v0.9.28；user「铃铛会很高。8va可以做了吗」）：从这儿起谱上画低（8va / 15ma）/ 高（8vb）几个八度，直到下一个八度线记号（shift 0 = 结束）；只管画。
+ *  shift：1 = 8va（实际高八度）、2 = 15ma、−1 = 8vb、0 = 结束。MusicXML 原生 <octave-shift>。 */
+export interface OttavaTok { kind: "ottava"; id: number; shift: -1 | 0 | 1 | 2 }
+export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok | ClefTok | OttavaTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
 export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;
@@ -100,7 +106,10 @@ export type Hum = "la" | "n" | "u" | "o" | "a";
 
 /** 歌级的一个声部（谱上的一行；顺序 = 总谱从上到下）：role = 休息室角色 id（谁来演、叫什么），mic = 录音房麦克风 id。 */
 export interface PartDef { id: string; role: string; mic: string; clef?: Clef; staves?: 2 }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
-export type Clef = "G" | "F";
+/** 谱号：高音 / 高音下加 8（吉他、男高音：实际低八度）/ 上加 8 / 上加 15（钟琴）/ 低音 / 低音下加 8（低音提琴、贝斯）。中音谱号不做（user「中音这个冷门没人用吧」）。 */
+export type ClefName = "G" | "G8vb" | "G8va" | "G15ma" | "F" | "F8vb";
+export const CLEFS: readonly ClefName[] = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
+export type Clef = ClefName;
 export type Staff = 1 | 2;
 /** 大谱表的分界：中央 C 以下自动落到下谱表（音可以手动指定 staff 覆盖；user 2026-10-08「钢琴这种左右手要两个谱号」「musicxml原生支持那就不纠结了直接上」）。 */
 export const SPLIT_MIDI = 60;
@@ -352,7 +361,7 @@ function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alter
 function fillTarget(st: EditorState): number {
   for (let i = st.caret; i < tr(st).length; i++) {
     const t = tr(st)[i];
-    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove" || t.kind === "nav" || isMark(t)) continue;
+    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove" || t.kind === "nav" || t.kind === "clef" || t.kind === "ottava" || isMark(t)) continue;
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
   return -1;
@@ -1311,10 +1320,43 @@ export function movePaper(st: EditorState, paperId: string, d: -1 | 1): EditorSt
   return { ...st, song: { ...st.song, papers: list } };
 }
 /** 改一个声部的谱号（高音 = 默认，存成「没有」）。 */
-export function setPartClef(st: EditorState, partId: string, clef: Clef): EditorState {
-  const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.clef ?? "G") === clef) return st;
-  const np: PartDef = { ...p }; if (clef === "G") delete np.clef; else np.clef = clef;
+/** 声部自己的谱号（每张纸开头用它）：null = 自动（v0.9.28 起没写 = 自动；user「默认自动同意」）。 */
+export function setPartClef(st: EditorState, partId: string, clef: ClefName | null): EditorState {
+  const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.clef ?? null) === clef) return st;
+  const np: PartDef = { ...p }; if (clef === null) delete np.clef; else np.clef = clef;
   return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
+}
+/** 谱号记号插在光标处（有选区 = 选区开头）；光标前紧挨着就是一个谱号记号 = 改它（v0.9.28）。 */
+export function insertClef(st: EditorState, clef: ClefName): EditorState {
+  const toks = tr(st), at = st.sel ? st.sel.from : st.caret, h = headLen(toks), prev = toks[at - 1];
+  if (at - 1 >= h && prev?.kind === "clef") { if (prev.clef === clef) return st; const nt = toks.slice(); nt[at - 1] = { ...prev, clef }; return next(st, nt, { sel: null }); }
+  const id = st.nextId, nt = toks.slice(); nt.splice(Math.max(h, at), 0, { kind: "clef", id, clef });
+  return next(st, nt, { caret: Math.max(h, at) + 1, sel: null, nextId: id + 1, log: [] });
+}
+/** 八度线插在光标处（有选区 = 选区开头起、选区尾结束）；光标前紧挨着就是一个八度线记号 = 改它（v0.9.28）。 */
+export function insertOttava(st: EditorState, shift: -1 | 0 | 1 | 2): EditorState {
+  const toks = tr(st), h = headLen(toks);
+  if (st.sel && shift !== 0) {   // 选了一段 = 这一段画八度线（开头一个、结尾一个「结束」）
+    let id = st.nextId; const nt = toks.slice(), a = Math.max(h, st.sel.from), b = st.sel.to;
+    nt.splice(b, 0, { kind: "ottava", id: id++, shift: 0 }); nt.splice(a, 0, { kind: "ottava", id: id++, shift });
+    return next(st, nt, { sel: null, caret: b + 2, nextId: id, log: [] });
+  }
+  const at = st.sel ? st.sel.from : st.caret, prev = toks[at - 1];
+  if (at - 1 >= h && prev?.kind === "ottava") { if (prev.shift === shift) return st; const nt = toks.slice(); nt[at - 1] = { ...prev, shift }; return next(st, nt, { sel: null }); }
+  const id = st.nextId, nt = toks.slice(); nt.splice(Math.max(h, at), 0, { kind: "ottava", id, shift });
+  return next(st, nt, { caret: Math.max(h, at) + 1, sel: null, nextId: id + 1, log: [] });
+}
+/** 改 / 删某张纸某个声部第 i 个 token（谱号记号 / 八度线记号；null = 删）。光标所在 track 的光标跟着挪。 */
+export function setDisplayMark(st: EditorState, paperId: string, partId: string, i: number, value: ClefName | -1 | 0 | 1 | 2 | null): EditorState {
+  const paper = st.song.papers.find((p) => p.id === paperId), toks = paper?.tracks[partId], t = toks?.[i];
+  if (!toks || !t || (t.kind !== "clef" && t.kind !== "ottava")) return st;
+  const nt = toks.slice();
+  if (value === null) nt.splice(i, 1);
+  else if (t.kind === "clef" && typeof value === "string") { if (t.clef === value) return st; nt[i] = { ...t, clef: value }; }
+  else if (t.kind === "ottava" && typeof value === "number") { if (t.shift === value) return st; nt[i] = { ...t, shift: value }; }
+  else return st;
+  const here = st.at.paper === paperId && st.at.part === partId;
+  return { ...st, song: withTrack(st.song, paperId, partId, nt), ...(here && value === null && st.caret > i ? { caret: st.caret - 1 } : {}) };
 }
 /** 大谱表：每个 token 落在上（1）还是下（2）谱表——按音高自动（中央 C 以下 = 下），手动指定的优先；休止 / 记号跟前一个音。单谱表 = 全 1。 */
 export function autoStaffs(tokens: Token[], staves: 1 | 2): Staff[] {

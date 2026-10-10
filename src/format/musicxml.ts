@@ -7,7 +7,7 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { DYNS, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
+import { DYNS, type ClefName, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
@@ -17,7 +17,7 @@ import { grooveLabel } from "../score/groove.ts";
 
 export interface PartInfo {
   id: string;               // "P1"
-  clef?: "G" | "F";         // 谱号（没有 = 高音）
+  clef?: ClefName;          // 谱号（没有 = 高音）；八度谱号写 <clef-octave-change>（v0.9.28）
   staves?: 2;               // 大谱表（上高音下低音；每个音带 <staff>）
   name: string;             // 声部名 = 角色名（谱号前面那个）
   instrumentName: string;   // 上场的候选的名字（给别的软件看）
@@ -120,7 +120,23 @@ const navXml = (t: NavTok): string => {
 };
 const tempoXml = (bpm: number) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
 /** 一条声部 → 它的小节们（body = 每小节里的 XML 片段，manual = 这小节后面那条小节线是人插的）+ 还没写音高的音。first = 第一个声部（才写速度 / 排练记号）。 */
-function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, first: boolean, clef: "G" | "F" = "G", staves: 1 | 2 = 1): { measures: { body: string[]; manual: boolean }[]; unwritten: string[]; lastLen: number } {
+/** 谱号 → MusicXML <clef>（八度谱号 = <clef-octave-change>；v0.9.28）。 */
+const CLEF_OC: Record<ClefName, number> = { G: 0, G8vb: -1, G8va: 1, G15ma: 2, F: 0, F8vb: -1 };
+export const clefXml = (c: ClefName): string => { const F = c === "F" || c === "F8vb", oc = CLEF_OC[c]; return `<clef><sign>${F ? "F" : "G"}</sign><line>${F ? 4 : 2}</line>${oc ? `<clef-octave-change>${oc}</clef-octave-change>` : ""}</clef>`; };
+/** MusicXML <clef> → 谱号（中音 / 打击乐 / TAB 这些不认 = null）。 */
+export function clefOfXml(sign: string | undefined, octave: string | undefined): ClefName | null {
+  const oc = Number(octave ?? "0") || 0;
+  if (sign === "G") return oc <= -1 ? "G8vb" : oc === 1 ? "G8va" : oc >= 2 ? "G15ma" : "G";
+  if (sign === "F") return oc <= -1 ? "F8vb" : "F";
+  return null;
+}
+/** 八度线 → <octave-shift>（8va = 谱上写低了 = type down；结束 = stop，size 跟着开着的那条）。 */
+const ottavaXml = (shift: number, open: number): string => {
+  const stop = open ? `<direction><direction-type><octave-shift type="stop" size="${open === 2 ? 15 : 8}"/></direction-type></direction>` : "";
+  if (!shift) return stop;
+  return stop + `<direction placement="${shift > 0 ? "above" : "below"}"><direction-type><octave-shift type="${shift > 0 ? "down" : "up"}" size="${shift === 2 ? 15 : 8}"/></direction-type></direction>`;
+};
+function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, first: boolean, clef: ClefName = "G", staves: 1 | 2 = 1): { measures: { body: string[]; manual: boolean }[]; unwritten: string[]; lastLen: number } {
   const staffs = staffOfTokens(toks, staves);
   const head = headLen(toks);
   const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
@@ -136,7 +152,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
     if (right) cur.push(right);
     measures.push({ body: cur, manual }); cur = []; ticks = 0;
   };
-  const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : `<clef><sign>${clef}</sign><line>${clef === "F" ? 4 : 2}</line></clef>`;
+  const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : clefXml(clef);
   cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time>${clefs}</attributes>`);
   if (first) cur.push(tempoXml(H.bpm));
   // 歌词的 syllabic：按「这个词没完」（hyph）推；拖腔记号不打断一个词
@@ -146,7 +162,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
   const nextTimed = (i: number) => { for (let j = i + 1; j < toks.length; j++) { const t = toks[j]; if (t.kind === "note" || t.kind === "rest") return t; } return null; };
   // 连线（2026-10-08）：一串「连到下一个」的音 = 一条 <slur>：头一个音 start，被连到的那个音 stop（后面没有音的那个标记不写，免得 start 没有 stop）
   const noteAt = (i: number, d: 1 | -1) => { for (let j = i + d; j >= 0 && j < toks.length; j += d) if (toks[j].kind === "note") return toks[j] as NoteTok; return null; };
-  let wedgeOpen = false;
+  let ottOpen = 0, wedgeOpen = false;
   const slurs = (i: number, t: NoteTok) => { const pv = noteAt(i, -1), nx = noteAt(i, 1), out = !!t.slur && !!nx, into = !!pv?.slur;
     return `${into && !out ? `<slur type="stop" number="1"/>` : ""}${out && !into ? `<slur type="start" number="1"/>` : ""}`; };
   for (let i = head; i < toks.length; i++) {
@@ -204,6 +220,8 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
     }
     if (t.kind === "hairpin") { if (ticks >= len) close(false); if (wedgeOpen) cur.push(wedgeXml("stop")); cur.push(wedgeXml(t.dir === "cresc" ? "crescendo" : "diminuendo")); wedgeOpen = true; continue; }
     if (t.kind === "groove") { if (ticks >= len) close(false); cur.push(grooveXml(t)); continue; }
+    if (t.kind === "clef") { if (staves === 1) { if (ticks >= len) close(false); cur.push(`<attributes>${clefXml(t.clef)}</attributes>`); } continue; }   // 谱号记号（v0.9.28）：小节中间的 <attributes><clef>
+    if (t.kind === "ottava") { if (ticks >= len) close(false); const x = ottavaXml(t.shift, ottOpen); if (x) cur.push(x); ottOpen = t.shift; continue; }   // 八度线（v0.9.28）
     if (t.kind !== "note" && t.kind !== "rest") continue;
     let left = t.dur, k = 0;
     const tieOut = t.kind === "note" && nextTimed(i)?.kind === "note" && (nextTimed(i) as NoteTok).tie;
@@ -291,7 +309,7 @@ ${bodies.join("\n")}
   return { xml, manualBars, unwritten };
 }
 
-export interface ReadPart { id: string; name: string; instrumentName?: string; sound?: string; program?: number; variant?: string; volume?: number; pan?: number; clef?: "G" | "F"; staves?: 2 }   // clef = 第一个 <clef>（F = 低音；别的谱号先按高音）；staves = <staves> 2 = 大谱表
+export interface ReadPart { id: string; name: string; instrumentName?: string; sound?: string; program?: number; variant?: string; volume?: number; pan?: number; clef?: ClefName; staves?: 2 }   // clef = 第一个 <clef>（F = 低音；别的谱号先按高音）；staves = <staves> 2 = 大谱表
 export interface ReadScore { title: string; movementTitle: string; paper?: Paper; credits?: string; rights?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number> }
 export interface ReadHints { manualBars?: Record<string, number[]>; unwritten?: string[] }   // 自家文件的 .moonsinger/score.json（这张纸的）；别家文件 = 没有
 
@@ -369,7 +387,9 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
         }
         if (c.name === "attributes") {
           const d = childText(c, "divisions"); if (d) divisions = Number(d);
-          const cl = kid(c, "clef"); if (cl && info.clef === undefined) info.clef = childText(cl, "sign") === "F" ? "F" : "G";
+          // 谱号（v0.9.28）：这份里第一个 <clef> = 开头的谱号（info.clef）；后面的 = 中间换谱号（记号）；八度谱号认 <clef-octave-change>；大谱表的不管
+          const cl = kid(c, "clef");
+          if (cl) { const cn = clefOfXml(childText(cl, "sign"), childText(cl, "clef-octave-change")); if (info.clef === undefined) info.clef = cn ?? "G"; else if (cn && !cl.attrs.number && info.staves !== 2) mark({ kind: "clef", id: 0, clef: cn }); }
           if (Number(childText(c, "staves") ?? "1") >= 2) info.staves = 2;
           const key = kid(c, "key"), time = kid(c, "time");
           if (key && childText(key, "fifths") !== undefined) { const f = Number(childText(key, "fifths")); if (headPhase && !H.gotKey) { H.fifths = f; H.gotKey = true; } else mark({ kind: "key", id: 0, fifths: f }); }
@@ -377,6 +397,13 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
         } else if (c.name === "direction" || c.name === "sound") {
           const bpm = tempoOf(c);
           if (bpm) { if (headPhase && !H.gotTempo) { H.bpm = bpm; H.gotTempo = true; } else mark({ kind: "tempo", id: 0, bpm }); }
+          // 八度线（v0.9.28）：down = 8va（15 = 15ma），up = 8vb，stop = 结束；紧跟着结束的开头 = 换了一种（并成一个记号）
+          for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const os of kids(dt, "octave-shift")) {
+            const ty = os.attrs.type, size = Number(os.attrs.size ?? "8"), shift = (ty === "down" ? (size >= 15 ? 2 : 1) : ty === "up" ? -1 : 0) as -1 | 0 | 1 | 2;
+            if (ty !== "down" && ty !== "up" && ty !== "stop") continue;
+            const lastTok = body[body.length - 1];
+            if (shift && lastTok?.kind === "ottava" && lastTok.shift === 0) lastTok.shift = shift; else mark({ kind: "ottava", id: 0, shift });
+          }
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const dy of kids(dt, "dynamics")) for (const e of kids(dy)) {
             const v = XML_DYN(e.name), na = XML_NOTE_DYN[e.name];
             if (v) { mark({ kind: "dyn", id: 0, value: v, ...(pendingRamp ? { ramp: true as const } : {}) }); pendingRamp = false; } else if (na) pendingAttack = na; else drop("力度记号（这一版不认的，如 sfz）");   // sfz / fp 写在音前面的方向里 = 挂到下一个音上

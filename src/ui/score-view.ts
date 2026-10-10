@@ -23,7 +23,7 @@ import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL,
 import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic } from "../score/pitch.ts";
-import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot } from "../render/engrave.ts";
+import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type ClefHit } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
@@ -71,6 +71,8 @@ export interface ScoreViewHost {
   onMarkPress?(index: number, at: { x: number; y: number }): void;
   /** 说一声（拖歌词挪不动、挪力度记号顶掉了原来的）。 */
   notice?(text: string): void;
+  /** 点了谱号（行首 / 行中间）或八度线开头的字（v0.9.28）：at = 屏幕坐标（小菜单开在那）。 */
+  onClef?(hit: ClefHit, at: { x: number; y: number }): void;
   /** 光标所在那条下标 i 的歌词台上这位唱不出来的那句话（歌词框上面的小字）；唱得出来 = null。 */
   lyricHint?(i: number): string | null;
   /** 标题下面靠右的作词 / 作曲点了。 */
@@ -730,6 +732,9 @@ export class ScoreView {
       if (pp.title.shown && this.inBox(pp.title, x, y)) { this.title.openNow(pp.id); this.host.focus?.("text"); return true; }
     }
     const row = this.rowAt(y); if (row < 0) return false;
+    // 0¼. 谱号 / 八度线（v0.9.28；user「谱号是高音还是低音以及移动八度应该点谱号就能做，然后每一行的谱号应该都可以点」）：写谱的模式里都认（听模式不接）
+    const ch = this.rules.edit ? L.clefs.find((c) => x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h) : undefined;
+    if (ch) { const b = this.clientBox(ch); this.host.onClef?.(ch, { x: b.left, y: b.bottom }); return true; }
     // 0½. 记号（调号 / 拍号 / 速度）：换到那条 track 再开框——只在「符」里（别的模式点它 = 放光标）
     const mk = this.rules.symbols ? L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h) : undefined;
     if (mk) { this.host.set(this.focusRow(this.host.get(), mk.system, this.host.get().caret)); this.marks.openAt(mk.index); return true; }

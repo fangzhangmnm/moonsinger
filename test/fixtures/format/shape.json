@@ -45,6 +45,7 @@
       ],
       "parts": [
         {
+          "clef": "string",
           "id": "string",
           "kind": "string",
           "mic": "string",

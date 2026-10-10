@@ -5,6 +5,8 @@
 export const GLYPH = {
   metNoteQuarterUp: "\u{ECA5}",   // 速度记号里的四分音符（metronome mark）
   gClef: "", fClef: "\u{E062}",   // 低音谱号（2026-10-08）
+  gClef8vb: "\u{E052}", gClef8va: "\u{E053}", gClef15ma: "\u{E054}", fClef8vb: "\u{E064}",   // 八度谱号（2026-10-10 v0.9.28：吉他 / 男高音 8vb、短笛 8va、钟琴 15ma、贝斯 8vb）
+  ottavaAlta: "\u{E511}", ottavaBassa: "\u{E512}", quindicesimaAlta: "\u{E515}",   // 八度线开头的字：8va / 8vb / 15ma
   noteheadWhole: "", noteheadHalf: "", noteheadBlack: "",
   noteheadXWhole: "\u{E0A7}", noteheadXHalf: "\u{E0A8}", noteheadXBlack: "\u{E0A9}",   // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
   augmentationDot: "",

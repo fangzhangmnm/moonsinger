@@ -80,7 +80,7 @@ export function playSegments(tokens: readonly Token[], len: number): Seg[] | nul
   return segs;
 }
 
-const STATE_KINDS = new Set(["key", "time", "tempo", "dyn", "groove"]);
+const STATE_KINDS = new Set(["key", "time", "tempo", "dyn", "groove", "clef", "ottava"]);   // 谱号 / 八度线（v0.9.28）：跳过去也要接上那一刻的画法
 /** 一条 track 按段切开再接起来（见文件头）。newId = 抄出来的给负 id。 */
 export function sliceBySegments(tokens: readonly Token[], segs: readonly Seg[], newId: () => number): Token[] {
   const ticks = tickOf(tokens), out: Token[] = [], used = new Set<number>();
@@ -93,7 +93,7 @@ export function sliceBySegments(tokens: readonly Token[], segs: readonly Seg[], 
     if (jump) {   // 跳过来的：补上 t0 这一刻生效的调号 / 拍号 / 速度 / 力度 / 风格（各取 t0 之前最后一个）
       const last = new Map<string, Token>();
       tokens.forEach((t, i) => { if (STATE_KINDS.has(t.kind) && ticks[i] < s.t0) last.set(t.kind, t); });
-      for (const kind of ["key", "time", "tempo", "groove", "dyn"]) { const t = last.get(kind); if (t) out.push({ ...t, id: newId() }); }
+      for (const kind of ["key", "time", "tempo", "groove", "dyn", "clef", "ottava"]) { const t = last.get(kind); if (t) out.push({ ...t, id: newId() }); }
     }
     tokens.forEach((t, i) => {
       const at = ticks[i];

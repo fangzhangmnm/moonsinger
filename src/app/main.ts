@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { clearMarks, stackDegree, DYNS, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { clearMarks, stackDegree, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -77,6 +77,8 @@ import { copyTokens, cutTokens, pasteTokens, selectAll, toJianpu, fromJianpu, fi
 import { emptyHistory, record, undo, redo, describeSongChange, type History, type Locus, type Restored } from "../score/history.ts";
 import { freshDesk, freshPartView, serializeDesk, unserializeDesk, PAD_UNITS, type Desk, type PartViewState } from "../score/desk.ts";
 import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
+import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongClefs } from "../score/clef.ts";
+import type { ClefHit } from "../render/engrave.ts";
 
 initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
 let st: EditorState = initState();
@@ -351,6 +353,7 @@ const view = new ScoreView(scoreEl, {
   onMarkPress: (i, at) => openMarkMenu(i, at),
   lyricHint: (i) => lyricHintAt(i),
   notice: (s) => info(s),
+  onClef: (hit, at) => openClefMenu(hit, at),
   onPaperMenu: (id) => openPaperMenu(id),
   onAddPaper: () => { update(addPaper(st)); info("新的一张纸"); },
   onNav: (dir) => navPaper(dir),
@@ -606,6 +609,8 @@ const pad = new Pad(padEl, {
   onInsertMark: (kind) => { if (!finder.isOpen) insertMarkHere(kind); },
   onGroove: () => { if (!finder.isOpen) insertGrooveHere(); },
   onRepeat: () => { if (!finder.isOpen) openRepeatMenu(); },
+  onClefKey: () => { if (!finder.isOpen) { const r = padEl.getBoundingClientRect(); openInsertClefMenu({ x: r.left + r.width / 2, y: r.top - 4 }); } },
+  onOttavaKey: () => { if (!finder.isOpen) { const r = padEl.getBoundingClientRect(); openInsertOttavaMenu({ x: r.left + r.width / 2, y: r.top - 4 }); } },
   onSoundDown: (p, id) => {
     const n = padNotes.get(id);
     if (n && n.index >= 0) soundTok(st, n.index, id);
@@ -1747,7 +1752,7 @@ function partViews(): PartView[] {
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
     const noLyrics = eng === "soundfont" || eng === "vowel-sampler" ? `${labels[k]}${eng === "vowel-sampler" ? "（元音版）只哼" : "不唱歌词"}：空着的歌词位不开框；已经写了的字点开能改、能删` : "";
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -1848,7 +1853,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
       `<span class="tc-k">显示</span><div class="tc-v">${chip("hide", "隐藏", v.hidden, "谱上缩成一条细行（点细行再放出来）；照样出声")}${chip("only", "只看它", v.only, "其余声部都缩成细行（可以几个一起「只看」）")}</div>` +
       `<span class="tc-k">出声</span><div class="tc-v">${chip("mute", "静音", v.muted, "播放时不出声；谱上照画")}${chip("solo", "独奏", v.solo, "播放时只出有独奏的声部")}</div>` +
       `<span class="tc-k">谱表</span><div class="tc-v">${chip("staves:1", "一张", one)}${chip("staves:2", "大谱表", !one, "上高音下低音（钢琴）：中央 C 以下自动落下面，pad「⋯ → 换谱表」能手动挪")}</div>` +
-      (one ? `<span class="tc-k">谱号</span><div class="tc-v">${chip("clef:G", "高音", (me.clef ?? "G") === "G")}${chip("clef:F", "低音", me.clef === "F", "低的声部（贝斯 / 大提琴）")}</div>` : "") +
+      (one ? `<span class="tc-k">谱号</span><div class="tc-v">${chip("clef:auto", "自动", !me.clef, "按每张纸的音挑加线最省的谱号（很高的会挑 15ma / 8va，很低的挑低音 / 低音 8vb）；只管画，音高不变。还不看乐器的习惯（比如吉他写 8vb），要的话手动选")}${CLEFS.map((c) => chip(`clef:${c}`, CLEF_LABEL[c], me.clef === c, CLEF_TITLE[c])).join("")}</div>` : "") +
       (st.song.parts.length > 1 ? `<span class="tc-k">顺序</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="往上挪一格（最上面那个声部的速度记号说了算）">↑ 往上</button><button class="btn" data-v="movedown"${k === st.song.parts.length - 1 ? " disabled" : ""} title="往下挪一格">↓ 往下</button></div>` : "") +
       `</div><div class="tc-foot"><button class="btn" data-v="give" title="这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）">交给…</button><button class="btn" data-v="add" title="这张纸上再加一位歌手（已有的或新的；只加在这张纸上）">＋ 加歌手…</button>` +
       (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="这张纸上不要这个声部（别的纸照旧）">这张纸上去掉</button>` : "") +
@@ -1884,7 +1889,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     else if (v === "only") { setPv(me.id, { only: !pv(me.id).only }); afterViewChange(); }
     else if (v === "mute") { setPv(me.id, { muted: !pv(me.id).muted }); view.render(); }
     else if (v === "solo") { setPv(me.id, { solo: !pv(me.id).solo }); view.render(); }
-    else if (v.startsWith("clef:")) update(setPartClef(st, me.id, v.slice(5) as Clef));
+    else if (v.startsWith("clef:")) update(setPartClef(st, me.id, v.slice(5) === "auto" ? null : (v.slice(5) as ClefName)));
     else if (v === "moveup" || v === "movedown") { update(movePart(st, me.id, v === "moveup" ? -1 : 1)); renderTitle(); }
     else if (v.startsWith("staves:")) { update(setPartStaves(st, me.id, v.slice(7) === "2" ? 2 : 1)); pad.render(); }
     else if (v === "droptrack") { close(); update(removeTrack(st, st.at.paper, me.id)); return; }
@@ -1916,7 +1921,7 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
     item("paste", "粘贴", "贴在这里：app 里复制的，或系统剪贴板里的简谱文字（1 2 3 | 5 - -）") +
     `<div class="ctx-sep"></div>` +
     item("bar", "小节线 |", "从这里重新数小节（弱起）") + item("phrase", "句号", "这一句到这儿（「合」挪字的边界；不换行不换气）") +
-    item("mark:key", "调号…") + item("mark:time", "拍号…") + item("mark:tempo", "速度…") +
+    item("mark:key", "调号…") + item("mark:time", "拍号…") + item("mark:tempo", "速度…") + item("clef", "谱号…", "从这儿起换谱号（只管画）") + item("ottava", "八度线…", "8va / 15ma / 8vb（只管画）") +
     // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
     `<div class="ctx-row ctx-dyn">${(["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(st), st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：从这儿前面那个音起"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
     `<div class="ctx-sep"></div>` +
@@ -1938,6 +1943,8 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
     else if (v === "bar") update(apply(st, { k: "bar" }, performance.now()));
     else if (v === "phrase") update(apply(st, { k: "phrase" }, performance.now()));
     else if (v.startsWith("mark:")) insertMarkHere(v.slice(5) as MarkVal["kind"]);
+    else if (v === "clef") { openInsertClefMenu(at); return; }
+    else if (v === "ottava") { openInsertOttavaMenu(at); return; }
     else if (v.startsWith("dyn:")) update(apply(st, { k: "dyn", v: v.slice(4) as Dyn }, performance.now()));
     else if (v === "all") { update(selectAll(st)); updateChrome(); }
     scoreEl.focus();
@@ -1995,6 +2002,48 @@ function openRepeatMenu(): void {
       else if (v.startsWith("end:")) update(insertNav(st, "ending", v.slice(4).split(",").map(Number)));
       else if (v.startsWith("nav:")) update(insertNav(st, v.slice(4) as NavWhat));
       discloseNav();
+    });
+}
+// ── 谱号 / 八度线（v0.9.28；user「谱号的显示模式跟着谱号而不是乐器」「默认自动同意」「加格式同意」「8va可以做了吗」）：只管画，音高数据不动 ──
+const OTTAVAS: readonly (1 | 2 | -1)[] = [1, 2, -1];
+const OTT_HELP: Record<number, string> = { 1: "8va：谱上画低一个八度（实际照写的高八度响）", 2: "15ma：谱上画低两个八度", [-1]: "8vb：谱上画高一个八度（实际照写的低八度响）", 0: "到这儿结束八度线" };
+const clefChips = (on: ClefName | null, prefix: string) => CLEFS.map((c) => `<button class="btn ctx-chip${on === c ? " is-on" : ""}" data-v="${prefix}${c}" title="${esc(CLEF_TITLE[c])}">${esc(CLEF_LABEL[c])}</button>`).join("");
+/** 插谱号（pad 符号层 / 空白处菜单）：从光标处起换。 */
+function openInsertClefMenu(at: { x: number; y: number }): void {
+  ctxMenu("clef-menu", `<div class="ctx-hint ctx-what">谱号：从光标处起换（只管画，音高不变）。每行开头的谱号也能直接点。</div><div class="ctx-row">${clefChips(null, "c:")}</div>`, at,
+    (v) => { if (v.startsWith("c:")) update(insertClef(st, v.slice(2) as ClefName)); });
+}
+/** 插八度线：从光标处起（有选区 = 这一段）。 */
+function openInsertOttavaMenu(at: { x: number; y: number }): void {
+  ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">八度线：从光标处起${st.sel ? "（有选区 = 只画这一段）" : "，到下一个八度线记号为止"}。只管画，音高不变。</div>` +
+    `<div class="ctx-row">${[...OTTAVAS, 0].map((v) => `<button class="btn ctx-chip" data-v="o:${v}" title="${esc(OTT_HELP[v])}">${esc(OTTAVA_LABEL[v])}</button>`).join("")}</div>`, at,
+    (v) => { if (v.startsWith("o:")) update(insertOttava(st, Number(v.slice(2)) as -1 | 0 | 1 | 2)); });
+}
+/** 点谱上的谱号 / 八度线。行首的谱号：管着它的是声部自己的谱号 = 改声部的（全曲，自动也在这）+「只改这张纸」；是谱号记号 = 改 / 删那个记号。 */
+function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {
+  const paper = st.song.papers.find((p) => p.id === hit.paper), toks = paper?.tracks[hit.part]; if (!toks) return;
+  const part = st.song.parts.find((p) => p.id === hit.part); if (!part) return;
+  if (hit.kind === "ottava") {
+    const t = toks[hit.index]; if (!t || t.kind !== "ottava") return;
+    ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">八度线：${esc(OTT_HELP[t.shift])}。只管画，音高不变。</div>` +
+      `<div class="ctx-row">${OTTAVAS.map((v) => `<button class="btn ctx-chip${t.shift === v ? " is-on" : ""}" data-v="o:${v}" title="${esc(OTT_HELP[v])}">${esc(OTTAVA_LABEL[v])}</button>`).join("")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">删掉这条八度线</button>`, at,
+      (v) => { if (v === "del") update(setDisplayMark(st, hit.paper, hit.part, hit.index, null)); else if (v.startsWith("o:")) update(setDisplayMark(st, hit.paper, hit.part, hit.index, Number(v.slice(2)) as -1 | 1 | 2)); });
+    return;
+  }
+  if (hit.index >= 0) {   // 谱号记号（行中间的，或管着这一行开头的）
+    const t = toks[hit.index]; if (!t || t.kind !== "clef") return;
+    ctxMenu("clef-menu", `<div class="ctx-hint ctx-what">这个谱号记号：从这儿起换成别的谱号（只管画，音高不变）。</div><div class="ctx-row">${clefChips(t.clef, "c:")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">删掉这个谱号记号</button>`, at,
+      (v) => { if (v === "del") update(setDisplayMark(st, hit.paper, hit.part, hit.index, null)); else if (v.startsWith("c:")) update(setDisplayMark(st, hit.paper, hit.part, hit.index, v.slice(2) as ClefName)); });
+    return;
+  }
+  const auto = !part.clef, now = auto ? (resolveSongClefs(st.song).get(hit.paper)?.get(hit.part) ?? "G") : part.clef!;
+  ctxMenu("clef-menu",
+    `<div class="ctx-hint ctx-what">这个声部的谱号（每张纸开头都用它）：${auto ? `自动（这张纸挑了「${esc(CLEF_LABEL[now])}」）` : esc(CLEF_LABEL[now])}。只管画，音高不变。</div>` +
+    `<div class="ctx-row"><button class="btn ctx-chip${auto ? " is-on" : ""}" data-v="p:auto" title="按每张纸的音挑加线最少的谱号">自动</button>${clefChips(auto ? null : now, "p:")}</div>` +
+    `<div class="ctx-hint">只改这张纸（在这张纸开头放一个谱号记号）：</div><div class="ctx-row">${clefChips(null, "here:")}</div>`, at,
+    (v) => {
+      if (v.startsWith("p:")) update(setPartClef(st, hit.part, v === "p:auto" ? null : (v.slice(2) as ClefName)));
+      else if (v.startsWith("here:")) update(insertClef(setFocus(st, hit.paper, hit.part, headLen(toks)), v.slice(5) as ClefName));
     });
 }
 const NAV_HELP: Record<Exclude<NavWhat, "ending">, string> = {

@@ -74,6 +74,7 @@ export function toJianpu(toks: Token[], fifths: number): string {
     if (t.kind === "key") { f = t.fifths; out.push(`[1=${KEY_LABEL[t.fifths] ?? t.fifths}]`); continue; }
     if (t.kind === "time") { out.push(`[${t.beats}/${t.beatType}]`); continue; }
     if (t.kind === "tempo") { out.push(`[T=${t.bpm}]`); continue; }
+    if (t.kind === "clef" || t.kind === "ottava") continue;   // 谱号 / 八度线只管画，不进简谱文字（app 内剪贴板带着原 token）
     if (t.kind === "phrase") { out.push(","); continue; }   // 句 = 单独一个逗号（换气）
     if (t.kind === "dyn") { out.push(`[${t.value}]`); continue; }   // 力度 = [mf]（演奏法不进简谱文字；app 内剪贴板带着原 token）
     if (t.kind === "hairpin") { out.push(t.dir === "cresc" ? "[<]" : "[>]"); continue; }   // 渐强 / 渐弱 = [<] / [>]

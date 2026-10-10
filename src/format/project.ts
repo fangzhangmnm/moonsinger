@@ -11,7 +11,8 @@
 // 无地逃生口（user 2026-10-07「先不急着store。可以先按照无地规范导入导出做逃生口」）：这里只管字节 ↔ 歌，打开 / 存的界面在 app 里。
 import { DEFAULT_ROLE, numberParts } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
-import { type Song, type PartDef, type PaperSeg, type Token, type NoteTok, flattenPart } from "../score/song.ts";
+import { type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, CLEFS, flattenPart } from "../score/song.ts";
+import { resolveSongClefs, displayStates } from "../score/clef.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
 import { FORMAT, type Dynamic, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
@@ -82,16 +83,19 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   const labels = partLabels(song, { ...a.extras, lounge });
   const infoOf = (part: PartDef, k: number): PartInfo => {
     const role = lounge[part.role], active = cands(role).find((c) => c.id === role.active), mic = mics.find((m) => m.id === part.mic);
-    return { id: part.id, name: labels[k], ...(part.clef && part.clef !== "G" ? { clef: part.clef } : {}), ...(part.staves === 2 ? { staves: 2 as const } : {}), instrumentName: String(active?.name ?? "月读"), sound: String(role.sound ?? DEFAULT_ROLE.sound),
+    return { id: part.id, name: labels[k], ...(part.staves === 2 ? { staves: 2 as const } : {}), instrumentName: String(active?.name ?? "月读"), sound: String(role.sound ?? DEFAULT_ROLE.sound),
       program: Number((active?.gm as Json | undefined)?.program ?? 55),
       variant: typeof (active?.gm as Json | undefined)?.variant === "string" ? { library: "MoonSinger", name: String((active!.gm as Json).variant) } : undefined,
       pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : undefined };
   };
   const infos = song.parts.map(infoOf), meta = { software: `MoonSinger ${a.app}`, date: a.date };
   const files: Record<string, Uint8Array> = {};
+  // 谱号（v0.9.28）：每张纸每个声部开头的谱号（自动的按整首挑好）写进那张纸的第一个 <clef>；自动不自动记在 score.json 的 parts[].clef
+  const clefStarts = resolveSongClefs(song);
+  const clefInfo = (paperId: string, part: PartDef): { clef?: ClefName } => { const c = part.staves === 2 ? undefined : clefStarts.get(paperId)?.get(part.id); return c && c !== "G" ? { clef: c } : {}; };
   // 正本：每张纸一份（这张纸上在场的声部）
   const papers = song.papers.map((p) => {
-    const parts = song.parts.flatMap((part, k) => (p.tracks[part.id] ? [{ info: infos[k], tokens: p.tracks[part.id] }] : []));
+    const parts = song.parts.flatMap((part, k) => (p.tracks[part.id] ? [{ info: { ...infos[k], ...clefInfo(p.id, part) }, tokens: p.tracks[part.id] }] : []));
     const w = writeMusicXml({ title: song.title, movementTitle: p.name || undefined, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
     files[paperFile(p.id)] = strToU8(w.xml);
     // 句号（不算打谱符号，不进 MusicXML）：每个声部里「句号跟在哪个 token 后面」（那个 token 的 id）
@@ -105,9 +109,20 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k) => {
     const f = flattenPart(song, part.id, { tempo: k === 0, order: songPlayOrder(song) });   // 照编排的顺序（重复的纸再写一遍；循环段写一遍）   // 第一个声部带速度：它不在的纸上照那张纸最上面在场的歌手补变速（新歌手只在当前纸以后常见）
-    return { info: infos[k], tokens: f.tokens, breaks: new Map(f.starts.slice(1).map((s) => [s.index, s.paper.name])) };
+    // 谱号（v0.9.28）：每张纸开头按它自己挑好的谱号；和前面接下来的不一样 = 在纸界插一个谱号记号（压平件给别的软件看，画法要对）
+    const toks = f.tokens.slice(), starts = f.starts.map((x) => ({ ...x }));
+    const first = part.staves === 2 ? undefined : clefStarts.get(starts[0]?.paper.id ?? "")?.get(part.id);
+    if (first) {
+      let off = 0;
+      for (let j = 1; j < starts.length; j++) {
+        const at = starts[j].index + off, want = clefStarts.get(starts[j].paper.id)?.get(part.id); starts[j].index = at; if (!want) continue;
+        const ds = displayStates(toks.slice(0, at), first), now = at > 0 ? ds.clef[at - 1] : first;
+        if (now !== want) { toks.splice(at, 0, { kind: "clef", id: 0, clef: want }); off++; }
+      }
+    }
+    return { info: { ...infos[k], ...(first && first !== "G" ? { clef: first } : {}) }, tokens: toks, breaks: new Map(starts.slice(1).map((s) => [s.index, s.paper.name])) };
   }) }, meta);
-  const scoreExt: Json = { version: FORMAT.score, papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched" })),
+  const scoreExt: Json = { version: FORMAT.score, papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched", ...(p.staves === 2 ? {} : { clef: p.clef ?? "auto" }) })),   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}),   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
     ...(song.arrangement?.trim() ? { arrangement: song.arrangement } : {}) };   // 编排那一行（可选，2026-10-08 深夜）
   // 嵌的音源：只写还有候选引用着的（换了音源 = 旧块从歌里丢掉；§10.2）
@@ -549,10 +564,15 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
 function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: Json[] | null = null): Song {
   const ps = papers ?? [paperOfRead("p1", reads[0])];
   const seen = new Map<string, PartDef>();
-  for (const p of partList ?? []) seen.set(String(p.id), { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) });
+  const clefFromScore = new Set<string>();   // score.json 里写了 clef 的声部（v0.9.28 起都写：auto = 自动）：不再看 MusicXML 的第一个 <clef>
+  for (const p of partList ?? []) {
+    const d: PartDef = { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) };
+    if ("clef" in p) { clefFromScore.add(d.id); if ((CLEFS as readonly unknown[]).includes(p.clef)) d.clef = p.clef as ClefName; }
+    seen.set(d.id, d);
+  }
   for (const p of ps) for (const id of Object.keys(p.tracks)) if (!seen.has(id)) seen.set(id, { id, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
-  // 谱号：MusicXML 里这个声部第一个 <clef>（任何一张纸上的）是 F = 低音谱号
-  for (const r of reads) for (const p of r.parts) { const d = seen.get(p.info.id); if (!d) continue; if (p.info.clef === "F" && !d.clef) d.clef = "F"; if (p.info.staves === 2) d.staves = 2; }
+  // 谱号：score.json 没写的（v0.9.28 以前存的 / 别家的谱）= MusicXML 里这个声部第一个 <clef>：不是普通高音谱号的（低音、八度谱号）算写明了，普通高音谱号 = 自动
+  for (const r of reads) for (const p of r.parts) { const d = seen.get(p.info.id); if (!d) continue; if (p.info.staves === 2) d.staves = 2; if (!clefFromScore.has(d.id) && !d.clef && p.info.clef && p.info.clef !== "G" && d.staves !== 2) d.clef = p.info.clef; }
   const parts = [...seen.values()];
   let id = 1;
   const renumbered = ps.map((p) => ({ ...p, tracks: Object.fromEntries(parts.flatMap((part) => (p.tracks[part.id] ? [[part.id, p.tracks[part.id].map((t) => ({ ...t, id: id++ }))]] : []))) }));
