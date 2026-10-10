@@ -20,9 +20,9 @@
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL, pageGeoOf } from "../score/paper.ts";
-import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed } from "../score/song.ts";
+import { type EditorState, type NoteTok, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
-import { fromDiatonic } from "../score/pitch.ts";
+import { fromDiatonic, diatonicIndex, type Pitch } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type ClefHit } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
@@ -241,7 +241,7 @@ export class ScoreView {
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
-    this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.caretEnd ? { caretEnd: true } : {}),
+    this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, ...(st.lead ? { lead: st.lead } : {}), sel: st.sel, parts: this.host.parts(), measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.caretEnd ? { caretEnd: true } : {}),
       ...(page && this.host.lyricRaise?.() ? { lyricRaise: this.host.lyricRaise() } : {}),
       autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
       ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}), ...(this.hot ? { hot: this.hot } : {}), ...(this.span ? { span: this.span } : {}),
@@ -260,11 +260,46 @@ export class ScoreView {
     this.marks.reposition();
     this.title.reposition();
     this.drawPins();
+    this.drawGhost();   // 「弹」的鬼音符照着新的排版重摆（只是摆，不影响排版）
     // 只在光标 / 选区 / 编辑框挪了的时候才把视图拉过去；别的重画（静音 / 独奏的角标、隐藏、换纸设置…）不动人家滚到哪
     //   （user 2026-10-08「toggle mute solo的时候页面滚动会变」：原来每次重画都 follow，滚开了光标那行再点静音 = 被拽回去）
     const base = this.baseKey(), fk = `${base}|${this.el.clientWidth}x${this.el.clientHeight}`;   // 窗口变了（pad 弹出把谱挤矮）照样跟
     if (this.holdView) this.heldBase = base;   // 点声部名：这个光标位置不跟，直到光标再挪
     if (fk !== this.followKey) { this.followKey = fk; if (base !== this.heldBase) { this.heldBase = null; this.follow(); } }
+  }
+  // ── 「弹」的鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「特别是前面有一个音的时候…如果是叠的话会在前面一个音上面加东西，但是不能动排版！！！，
+  //   如果是非叠的话就是在要插入的地方加东西」「鬼音符的时候千万不能动排版！」）：盖在谱上的一层（ink 里一个不接点击的 svg），只借排版现成的位置——
+  //   只选了一个音（叠亮着）= 叠画在那个音上；否则 = 光标处（下一个音要写进去的地方）。不进 engrave、不重排。
+  private ghostEl: SVGSVGElement | null = null;
+  private ghostP: Pitch[] = [];
+  showGhost(ps: Pitch[]): void { this.ghostP = ps; this.drawGhost(); }
+  private drawGhost(): void {
+    const L = this.layout, clear = () => { this.ghostEl?.remove(); this.ghostEl = null; };
+    if (!this.ghostP.length || !L) { clear(); return; }
+    const st = this.host.get(), one = singleSel(st), sp = L.sp;
+    /** 这一行谱号的位移：看这一行上随便一个音（命中框里 y 带位移、d 不带）。 */
+    const shiftOn = (row: number) => { const n = L.notes.find((h) => h.system === row); return n ? Math.round(L.dOf(row, n.y)) - n.d : L.head?.system === row ? L.head.shift : 0; };
+    let row: number, x: number, shift: number;
+    if (one >= 0) {
+      const n = L.notes.find((h) => h.index === one && this.onTrack(h)), r = n ? null : L.rests.find((h) => h.index === one && this.onTrack(h));
+      if (n) { row = n.system; x = n.x; shift = Math.round(L.dOf(row, n.y)) - n.d; }
+      else if (r) { row = r.system; x = r.x; shift = shiftOn(row); }
+      else { clear(); return; }
+    } else if (L.head) { row = L.head.system; x = L.head.x + 0.35 * sp; shift = L.head.shift; }
+    else { clear(); return; }
+    const NS = "http://www.w3.org/2000/svg", g = (this.ghostEl ??= document.createElementNS(NS, "svg"));
+    g.setAttribute("class", "ghost-preview"); g.setAttribute("width", String(L.width)); g.setAttribute("height", String(L.height));
+    const fs = 4 * sp, nh = 1.18 * sp, ext = 0.4 * sp, parts: string[] = [];
+    for (const p of this.ghostP) {
+      const d = diatonicIndex(p) + shift, y = L.yOf(row, d);
+      for (let k = 28; k >= d; k -= 2) parts.push(`<line x1="${x - ext}" x2="${x + nh + ext}" y1="${L.yOf(row, k)}" y2="${L.yOf(row, k)}" stroke-width="${0.16 * sp}"/>`);
+      for (let k = 40; k <= d; k += 2) parts.push(`<line x1="${x - ext}" x2="${x + nh + ext}" y1="${L.yOf(row, k)}" y2="${L.yOf(row, k)}" stroke-width="${0.16 * sp}"/>`);
+      parts.push(`<text x="${x}" y="${y}" font-family="Bravura" font-size="${fs}">\u{E0A4}</text>`);
+      const acc = p.alter === 1 ? "\u{E262}" : p.alter === -1 ? "\u{E260}" : p.alter === 2 ? "\u{E263}" : p.alter === -2 ? "\u{E264}" : "";
+      if (acc) parts.push(`<text x="${x - 1.2 * sp}" y="${y}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
+    }
+    g.innerHTML = parts.join("");
+    if (!g.isConnected) this.ink.appendChild(g);
   }
   private playheadEl: HTMLDivElement | null = null;
   private hlEls: HTMLDivElement[] = [];                                  // 正在响的音的高亮
@@ -851,7 +886,8 @@ export class ScoreView {
     const L = this.layout!, row = this.rowAt(y), best = this.slotAt(x, y);
     if (!best) return st;
     const r = L.systems[row];
-    return r.paper === st.at.paper && r.part === st.at.part ? setCaret(st, best.caret) : setFocus(st, r.paper, r.part, best.caret);
+    const at = r.paper === st.at.paper && r.part === st.at.part ? setCaret(st, best.caret) : setFocus(st, r.paper, r.part, best.caret);
+    return best.lead ? setCaretLead(at, best.lead) : at;   // 补齐的淡色小节（v0.10.6）：光标在尾巴、写的时候先补到这个小节开头
   }
   /** 框选：框住的音（音头中心在框里；只算框起点那条谱的）从第一个到最后一个选成一段；一个都没框住 = 回到起点的光标。 */
   private boxSelect(x1: number, y1: number): void {

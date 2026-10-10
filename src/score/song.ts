@@ -182,6 +182,9 @@ export interface EditorState {
   nextId: number;
   log: LogEntry[];
   input: InputState;
+  /** 点的是声部末尾后面补齐的淡色小节（v0.10.6；user「点小节写这里好」「新轨在显示的时候自动补齐小节号。然后自动补的休止也是自动的淡色」）：
+   *  光标在 track 尾巴，下一次写音 / 休止之前先补这么长的休止（tick；按小节切开）。点一下不改谱，写的那一刻才落进去；挪光标 / 选中 / 任何编辑都清掉。 */
+  lead?: number;
 }
 
 /** 一条 track 开头的三个谱头记号（id 从 id0 起连着编）。 */
@@ -226,7 +229,7 @@ export function withTrack(song: Song, paper: string, part: string, tokens: Token
 export function setFocus(st: EditorState, paper: string, part: string, caret?: number): EditorState {
   if (st.at.paper === paper && st.at.part === part && caret === undefined) return st;
   const toks = trackOf(st.song, paper, part);
-  return { ...leave(st), at: { paper, part }, sel: null, caret: Math.max(headLen(toks), Math.min(toks.length, caret ?? toks.length)) };
+  return { ...leave(st), at: { paper, part }, sel: null, caret: Math.max(headLen(toks), Math.min(toks.length, caret ?? toks.length)), lead: undefined };
 }
 
 export const isTimed = (t: Token): t is Timed => t.kind === "note" || t.kind === "rest";
@@ -366,7 +369,7 @@ const indexOfId = (tokens: Token[], id: number) => tokens.findIndex((t) => t.id 
 
 function next(st: EditorState, tokens: Token[], patch: Partial<EditorState> = {}): EditorState {
   const caret = Math.max(headLen(tokens), Math.min(tokens.length, patch.caret ?? st.caret));
-  return { ...st, ...patch, song: withTrack(st.song, st.at.paper, st.at.part, tokens), caret };
+  return { ...st, ...patch, song: withTrack(st.song, st.at.paper, st.at.part, tokens), caret, lead: patch.lead };
 }
 /** 挪光标 / 选中 = 离开「本次输入」，记录清空。 */
 const leave = (st: EditorState): EditorState => (st.log.length ? { ...st, log: [] } : st);
@@ -402,6 +405,7 @@ export function writePitch(st: EditorState, pitch0: Pitch, raw = false, mono = f
   const one = singleSel(st);
   if (one >= 0) return xorSingle(st, one, keySpell(raw ? pitch0 : applyAcc(pitch0, st.input), keyAt(tr(st), one)), raw ? st.input : consumeAcc(st.input), mono);
   if (st.sel) { const c = clearSelToRests(st); const n = writePitch(c.st, pitch0, raw, mono); return c.inherit ? inheritLyric(n, c.inherit) : n; }
+  if (st.lead) st = materializeLead(st);   // 点的是后面补齐的淡色小节：先把前面空着的落成休止
   const f = fillTarget(st), at = f >= 0 ? f : st.caret;
   // 按谱上的调号简化拼写：pad 的「1=」是它自己的（user「把pad想成一个独立的medo式的输入设备」），音落进谱时调内的音用谱上调号的写法——
   //   pad 1=C 按 ♭ 写的 A♭ 在五个升号的调里 = G♯（user 2026-10-08「升降号的歧义导致的没有自动简化怎么办」）；调外音照 pad 写的
@@ -434,6 +438,7 @@ export function writeRest(st: EditorState): EditorState {
   const one = singleSel(st);
   if (one >= 0) { const t = tr(st)[one]; if (t.kind !== "note") return st; const nt = tr(st).slice(); nt[one] = { kind: "rest", id: t.id, dur: t.dur }; dropTieAfter(nt, one); return next(st, nt); }   // 改这个音：变成一样长的休止
   if (st.sel) return writeRest(clearSelToRests(st).st);   // 选了好几个 = 替换整段
+  if (st.lead) st = materializeLead(st);
   const dur = unitDur(st.input), id = st.nextId, o = overwriteInsert(tr(st), st.caret, { kind: "rest", id, dur });
   return next(st, o.tokens, { caret: o.at + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur, ...(o.ate ? { ate: o.ate } : {}) }] });
 }
@@ -1132,12 +1137,32 @@ export function transposePapers(st: EditorState, paperIds: readonly string[], ho
 
 /** 放光标（= 写）：清选中、清本次输入记录。 */
 export const setCaret = (st: EditorState, caret: number): EditorState =>
-  ({ ...leave(st), sel: null, caret: Math.max(headLen(tr(st)), Math.min(tr(st).length, caret)) });
+  ({ ...leave(st), sel: null, caret: Math.max(headLen(tr(st)), Math.min(tr(st).length, caret)), lead: undefined });
+/** 光标放到这条 track 尾巴后面补齐的淡色小节里（v0.10.6）：lead = 离尾巴多少 tick（点的那个小节的开头）；0 = 就是尾巴。 */
+export const setCaretLead = (st: EditorState, lead: number): EditorState => { const c = setCaret(st, tr(st).length); return lead > 1e-6 ? { ...c, lead } : c; };
+/** 这条 track 尾巴在小节里走到哪了 + 那里的小节长（同排版：拍号 / 人插的「|」/ 写满自动换；拍号中途变 = 没写完的小节就此结束）。 */
+function barPosAtEnd(tokens: Token[]): { inBar: number; len: number } {
+  let len = (DEFAULT_TIME.beats * WHOLE) / DEFAULT_TIME.beatType, inBar = 0;
+  for (const t of tokens) {
+    if (t.kind === "time") { inBar = 0; len = (t.beats * WHOLE) / t.beatType; }
+    else if (t.kind === "bar") inBar = 0;
+    else if (isTimed(t)) { inBar += t.dur; while (inBar >= len - 1e-6) inBar -= len; if (inBar < 1e-6) inBar = 0; }
+  }
+  return { inBar, len };
+}
+/** 写之前把 lead 落成休止：先补满尾巴所在的小节，再一小节一个（整小节休止），最后剩的一截。光标在新休止后面。 */
+function materializeLead(st: EditorState): EditorState {
+  const lead = st.lead; if (!lead || st.sel || st.caret !== tr(st).length) return st.lead ? { ...st, lead: undefined } : st;
+  const tk = tr(st).slice(), { inBar, len } = barPosAtEnd(tk); let left = lead, id = st.nextId;
+  let piece = inBar > 0 ? Math.min(left, len - inBar) : Math.min(left, len);
+  while (left > 1e-6) { if (!validDur(piece)) break; tk.push({ kind: "rest", id: id++, dur: piece } as Token); left -= piece; piece = Math.min(left, len); }
+  return next(st, tk, { caret: tk.length, nextId: id });
+}
 /** 选中一段（= 改）。 */
 export function select(st: EditorState, from: number, to: number): EditorState {
   const n = tr(st).length, a = Math.max(headLen(tr(st)), Math.min(from, to)), b = Math.min(n, Math.max(from, to));
   if (b <= a) return setCaret(st, a);
-  return { ...leave(st), sel: { from: a, to: b }, caret: b };
+  return { ...leave(st), sel: { from: a, to: b }, caret: b, lead: undefined };
 }
 /** ←→：有选中 = 收成左 / 右边的光标；没有 = 挪光标。 */
 /** 光标的落脚点（2026-10-08，user「多个非音记号会影响步进吗」「写音和符号：嗯简化的心智模型好」「手动的「|」：属于写音层…同意」）：

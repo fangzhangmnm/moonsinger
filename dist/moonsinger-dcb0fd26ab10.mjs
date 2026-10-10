@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.5-2026-10-10";
+var APP_VERSION = "v0.10.6-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3118,7 +3118,7 @@ function withTrack(song, paper, part, tokens) {
 function setFocus(st3, paper, part, caret) {
   if (st3.at.paper === paper && st3.at.part === part && caret === void 0) return st3;
   const toks = trackOf(st3.song, paper, part);
-  return { ...leave(st3), at: { paper, part }, sel: null, caret: Math.max(headLen(toks), Math.min(toks.length, caret ?? toks.length)) };
+  return { ...leave(st3), at: { paper, part }, sel: null, caret: Math.max(headLen(toks), Math.min(toks.length, caret ?? toks.length)), lead: void 0 };
 }
 var isTimed = (t10) => t10.kind === "note" || t10.kind === "rest";
 var isMark = (t10) => t10.kind === "key" || t10.kind === "time" || t10.kind === "tempo";
@@ -3258,7 +3258,7 @@ function unitDur(input) {
 var indexOfId = (tokens, id2) => tokens.findIndex((t10) => t10.id === id2);
 function next(st3, tokens, patch = {}) {
   const caret = Math.max(headLen(tokens), Math.min(tokens.length, patch.caret ?? st3.caret));
-  return { ...st3, ...patch, song: withTrack(st3.song, st3.at.paper, st3.at.part, tokens), caret };
+  return { ...st3, ...patch, song: withTrack(st3.song, st3.at.paper, st3.at.part, tokens), caret, lead: patch.lead };
 }
 var leave = (st3) => st3.log.length ? { ...st3, log: [] } : st3;
 var validDur = (d3) => Number.isInteger(d3) && d3 >= MIN_DUR && d3 <= MAX_DUR;
@@ -3288,6 +3288,7 @@ function writePitch(st3, pitch0, raw = false, mono = false) {
     const n10 = writePitch(c10.st, pitch0, raw, mono);
     return c10.inherit ? inheritLyric(n10, c10.inherit) : n10;
   }
+  if (st3.lead) st3 = materializeLead(st3);
   const f2 = fillTarget(st3), at2 = f2 >= 0 ? f2 : st3.caret;
   const pitch = keySpell(raw ? pitch0 : applyAcc(pitch0, st3.input), keyAt(tr(st3), at2)), input = raw ? st3.input : consumeAcc(st3.input);
   if (f2 >= 0) {
@@ -3332,6 +3333,7 @@ function writeRest(st3) {
     return next(st3, nt2);
   }
   if (st3.sel) return writeRest(clearSelToRests(st3).st);
+  if (st3.lead) st3 = materializeLead(st3);
   const dur = unitDur(st3.input), id2 = st3.nextId, o10 = overwriteInsert(tr(st3), st3.caret, { kind: "rest", id: id2, dur });
   return next(st3, o10.tokens, { caret: o10.at + 1, nextId: id2 + 1, log: [...st3.log, { k: "ins", id: id2, unit: dur, ...o10.ate ? { ate: o10.ate } : {} }] });
 }
@@ -4129,11 +4131,44 @@ function transposePapers(st3, paperIds, how, skip) {
   });
   return changed2 ? { ...st3, song: { ...st3.song, papers } } : st3;
 }
-var setCaret = (st3, caret) => ({ ...leave(st3), sel: null, caret: Math.max(headLen(tr(st3)), Math.min(tr(st3).length, caret)) });
+var setCaret = (st3, caret) => ({ ...leave(st3), sel: null, caret: Math.max(headLen(tr(st3)), Math.min(tr(st3).length, caret)), lead: void 0 });
+var setCaretLead = (st3, lead) => {
+  const c10 = setCaret(st3, tr(st3).length);
+  return lead > 1e-6 ? { ...c10, lead } : c10;
+};
+function barPosAtEnd(tokens) {
+  let len = DEFAULT_TIME.beats * WHOLE / DEFAULT_TIME.beatType, inBar = 0;
+  for (const t10 of tokens) {
+    if (t10.kind === "time") {
+      inBar = 0;
+      len = t10.beats * WHOLE / t10.beatType;
+    } else if (t10.kind === "bar") inBar = 0;
+    else if (isTimed(t10)) {
+      inBar += t10.dur;
+      while (inBar >= len - 1e-6) inBar -= len;
+      if (inBar < 1e-6) inBar = 0;
+    }
+  }
+  return { inBar, len };
+}
+function materializeLead(st3) {
+  const lead = st3.lead;
+  if (!lead || st3.sel || st3.caret !== tr(st3).length) return st3.lead ? { ...st3, lead: void 0 } : st3;
+  const tk2 = tr(st3).slice(), { inBar, len } = barPosAtEnd(tk2);
+  let left = lead, id2 = st3.nextId;
+  let piece = inBar > 0 ? Math.min(left, len - inBar) : Math.min(left, len);
+  while (left > 1e-6) {
+    if (!validDur(piece)) break;
+    tk2.push({ kind: "rest", id: id2++, dur: piece });
+    left -= piece;
+    piece = Math.min(left, len);
+  }
+  return next(st3, tk2, { caret: tk2.length, nextId: id2 });
+}
 function select(st3, from, to2) {
   const n10 = tr(st3).length, a10 = Math.max(headLen(tr(st3)), Math.min(from, to2)), b3 = Math.min(n10, Math.max(from, to2));
   if (b3 <= a10) return setCaret(st3, a10);
-  return { ...leave(st3), sel: { from: a10, to: b3 }, caret: b3 };
+  return { ...leave(st3), sel: { from: a10, to: b3 }, caret: b3, lead: void 0 };
 }
 var stopTok = (t10) => isTimed(t10) || t10.kind === "bar";
 function moveCaret(st3, d3) {
@@ -7366,7 +7401,8 @@ function unitsOf(tokens, o10) {
           accs,
           art: isNote && j2 === 0 ? (nt2.art ?? []).filter((a10) => a10 !== "breath") : [],
           breath: false,
-          ...isNote && nt2.art?.includes("whisper") ? { whisper: true } : {}
+          ...isNote && nt2.art?.includes("whisper") ? { whisper: true } : {},
+          ...o10.padFrom !== void 0 && i10 >= o10.padFrom ? { pad: true } : {}
         };
         units.push(u2);
         lastChunk = u2;
@@ -7613,9 +7649,15 @@ function engrave(song, o10) {
       papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
       return;
     }
-    const per = parts.map((p2) => {
-      const tokens = paper.tracks[p2.id], focused = o10.at.paper === paper.id && o10.at.part === p2.id, staves = p2.staves === 2 ? 2 : 1;
-      const u2 = unitsOf(tokens, { caret: focused && writing ? o10.caret : null, autoBars: autoBars2, measureLyric: o10.measureLyric, sp: sp2, rhythm: song.lyricFit !== "lyrics" });
+    const lenOf = (t10) => t10.reduce((n10, x3) => n10 + (isTimed(x3) ? x3.dur : 0), 0);
+    const lens = parts.map((p2) => lenOf(paper.tracks[p2.id] ?? [])), paperLen = Math.max(0, ...lens);
+    const per = parts.map((p2, pi) => {
+      const real = paper.tracks[p2.id], focused = o10.at.paper === paper.id && o10.at.part === p2.id, staves = p2.staves === 2 ? 2 : 1;
+      const gap = paperLen - lens[pi], lead = focused && writing && o10.lead && o10.caret >= real.length ? Math.min(o10.lead, gap) : 0;
+      const padT = (dur, id2) => ({ kind: "rest", id: id2, dur });
+      const tokens = gap > 1e-6 ? [...real, ...lead > 1e-6 ? [padT(lead, -1)] : [], ...gap - lead > 1e-6 ? [padT(gap - lead, -2)] : []] : real;
+      const caret = focused && writing ? lead > 1e-6 ? real.length + 1 : o10.caret : null;
+      const u2 = unitsOf(tokens, { caret, autoBars: autoBars2, measureLyric: o10.measureLyric, sp: sp2, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
       shortBars += u2.shortBars;
       if (staves === 2) {
         const stf = staffOfTokens(tokens, 2);
@@ -7631,7 +7673,7 @@ function engrave(song, o10) {
       const ds0 = displayStates(tokens, start), ao2 = staves === 2 || song.parts.find((x3) => x3.id === p2.id)?.autoOttava === false ? null : autoOttava(tokens, ds0);
       const ds = ao2 ? { clef: ds0.clef, ott: ao2.ott, auto: ao2.auto, runs: ao2.runs } : { ...ds0, auto: null, runs: [] };
       const fFam = staves === 2 || isFClef(start) || tokens.some((t10) => t10.kind === "clef" && isFClef(t10.clef));
-      return { p: p2, tokens, focused, staves, start, ds, fFam, ...u2 };
+      return { p: p2, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, ...u2 };
     });
     const shAt = (q2, staff, index) => q2.staves === 2 ? staff === 2 ? 12 : 0 : CLEF_SHIFT[(index >= 0 ? q2.ds.clef[index] : void 0) ?? q2.start] + ottavaShift(index >= 0 ? q2.ds.ott[index] ?? 0 : 0);
     const clefAtSys = (q2, s10) => {
@@ -7868,8 +7910,9 @@ function engrave(song, o10) {
     for (let s10 = 0; s10 < nSys; s10++) {
       const ind = s10 === 0 ? ind0 : indN;
       if (song.barNumbers !== "off" && per[0]) {
-        const c02 = per[0].units.find((u2) => u2.kind === "chunk" && u2.system === s10);
-        const num2 = c02 ? (c02.m ?? 0) + (per[0].pickup ? 0 : 1) : null;
+        const q0 = per.find((q2) => q2.units.some((u2) => u2.kind === "chunk" && u2.system === s10)) ?? per[0];
+        const c02 = q0.units.find((u2) => u2.kind === "chunk" && u2.system === s10);
+        const num2 = c02 ? (c02.m ?? 0) + (q0.pickup ? 0 : 1) : null;
         if (num2 !== null && !(s10 === 0 && num2 <= 1)) prims.push({ t: "text", x: P2(MARGIN + ind), y: yOf(rowOf(s10, 0, 0), TOP_LINE + 3.2), s: String(num2), cls: "bar-no", size: P2(1.05), anchor: "start" });
       }
       per.forEach((q2, r10) => {
@@ -8005,7 +8048,7 @@ function engrave(song, o10) {
       const xOf = (c10) => xHead || !!c10.whisper;
       const nhW = (c10) => P2(xOf(c10) ? c10.base >= WHOLE ? W.noteheadXWhole : c10.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : c10.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
       const whisperMute = (q2.p.ignores ?? []).includes("whisper");
-      const clsOf = (c10) => [c10.ghost ? "ghost" : "", c10.index >= 0 && c10.index === curIndex ? "cur" : "", c10.index >= 0 && inSel(c10.index) ? "sel" : ""].filter(Boolean).join(" ") || void 0;
+      const clsOf = (c10) => [c10.ghost ? "ghost" : "", c10.pad ? "pad-rest" : "", c10.index >= 0 && c10.index === curIndex ? "cur" : "", c10.index >= 0 && inSel(c10.index) ? "sel" : ""].filter(Boolean).join(" ") || void 0;
       const partLyrics = [];
       const drawChunk = (c10) => {
         const cls = clsOf(c10), row = RW(c10);
@@ -8013,7 +8056,7 @@ function engrave(song, o10) {
           const g3 = c10.base >= WHOLE ? GLYPH.restWhole : c10.base >= TPQ * 2 ? GLYPH.restHalf : c10.base >= TPQ ? GLYPH.restQuarter : c10.base >= TPQ / 2 ? GLYPH.rest8th : c10.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
           const ry2 = c10.base >= WHOLE ? yOf(row, 36) : yOf(row, MID_LINE);
           prims.push({ t: "glyph", x: P2(c10.x + 0.35), y: ry2, ch: g3, cls: cls ? `rest ${cls}` : "rest" });
-          if (c10.j === 0 && c10.index >= 0) rests.push({ index: c10.index, system: row, x: P2(c10.x + 0.35), y: yOf(row, MID_LINE), w: P2(1.2) });
+          if (c10.j === 0 && c10.index >= 0 && !c10.pad) rests.push({ index: c10.index, system: row, x: P2(c10.x + 0.35), y: yOf(row, MID_LINE), w: P2(1.2) });
           if (c10.dotted) prims.push({ t: "glyph", x: P2(c10.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
           return;
         }
@@ -8083,7 +8126,10 @@ function engrave(song, o10) {
           continue;
         }
         if (u2.kind === "head") {
-          head = { system: row, x: P2(u2.x) };
+          {
+            const k2 = Math.min(o10.caret, q2.realLen) - 1;
+            head = { system: row, x: P2(u2.x), shift: shAt(q2, u2.staff, k2 >= headLen(q2.tokens) ? k2 : -1) };
+          }
           prims.push({ t: "line", x1: P2(u2.x + 0.1), y1: yOf(row, 42), x2: P2(u2.x + 0.1), y2: yOf(row, 26), w: P2(0.16), cls: "caret" });
           continue;
         }
@@ -8474,14 +8520,16 @@ function engrave(song, o10) {
       const H2 = headLen(tokens);
       const firstUnitOf = /* @__PURE__ */ new Map();
       for (const u2 of units) if (u2.kind !== "head" && u2.index >= 0 && !firstUnitOf.has(u2.index)) firstUnitOf.set(u2.index, u2);
-      for (let c10 = H2; c10 <= tokens.length; c10++) {
+      const realLen = q2.realLen;
+      for (let c10 = H2; c10 <= realLen; c10++) {
         const u2 = c10 < tokens.length ? firstUnitOf.get(c10) : void 0;
         const last = u2 ? null : [...units].reverse().find((v) => v.kind !== "head");
         const sys = u2 ? u2.system : last ? last.system : 0, x3 = u2 ? P2(u2.x) : last ? P2(last.x + last.w) : P2(sysStarts[0]);
         for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: c10, system: rowOf(sys, r10, k2), x: x3 });
       }
+      for (const u2 of units) if (u2.kind === "chunk" && u2.pad && u2.inBar < 1e-6 && u2.tick - q2.realTicks > 1e-6) for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: realLen, system: rowOf(u2.system, r10, k2), x: P2(u2.x), lead: u2.tick - q2.realTicks });
       let lastSys = -1;
-      for (let c10 = H2; c10 < tokens.length; c10++) {
+      for (let c10 = H2; c10 < Math.min(tokens.length, realLen + 1); c10++) {
         const u2 = firstUnitOf.get(c10);
         if (!u2) continue;
         const crossed = lastSys >= 0 && u2.system > lastSys;
@@ -9661,6 +9709,7 @@ var ScoreView = class {
       sp: sp2,
       at: st3.at,
       caret: st3.caret,
+      ...st3.lead ? { lead: st3.lead } : {},
       sel: st3.sel,
       parts: this.host.parts(),
       measureLyric: this.measureAt(LYRIC_EM * sp2),
@@ -9691,6 +9740,7 @@ var ScoreView = class {
     this.marks.reposition();
     this.title.reposition();
     this.drawPins();
+    this.drawGhost();
     const base3 = this.baseKey(), fk = `${base3}|${this.el.clientWidth}x${this.el.clientHeight}`;
     if (this.holdView) this.heldBase = base3;
     if (fk !== this.followKey) {
@@ -9700,6 +9750,68 @@ var ScoreView = class {
         this.follow();
       }
     }
+  }
+  // ── 「弹」的鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「特别是前面有一个音的时候…如果是叠的话会在前面一个音上面加东西，但是不能动排版！！！，
+  //   如果是非叠的话就是在要插入的地方加东西」「鬼音符的时候千万不能动排版！」）：盖在谱上的一层（ink 里一个不接点击的 svg），只借排版现成的位置——
+  //   只选了一个音（叠亮着）= 叠画在那个音上；否则 = 光标处（下一个音要写进去的地方）。不进 engrave、不重排。
+  ghostEl = null;
+  ghostP = [];
+  showGhost(ps) {
+    this.ghostP = ps;
+    this.drawGhost();
+  }
+  drawGhost() {
+    const L2 = this.layout, clear2 = () => {
+      this.ghostEl?.remove();
+      this.ghostEl = null;
+    };
+    if (!this.ghostP.length || !L2) {
+      clear2();
+      return;
+    }
+    const st3 = this.host.get(), one = singleSel(st3), sp2 = L2.sp;
+    const shiftOn = (row2) => {
+      const n10 = L2.notes.find((h2) => h2.system === row2);
+      return n10 ? Math.round(L2.dOf(row2, n10.y)) - n10.d : L2.head?.system === row2 ? L2.head.shift : 0;
+    };
+    let row, x2, shift;
+    if (one >= 0) {
+      const n10 = L2.notes.find((h2) => h2.index === one && this.onTrack(h2)), r10 = n10 ? null : L2.rests.find((h2) => h2.index === one && this.onTrack(h2));
+      if (n10) {
+        row = n10.system;
+        x2 = n10.x;
+        shift = Math.round(L2.dOf(row, n10.y)) - n10.d;
+      } else if (r10) {
+        row = r10.system;
+        x2 = r10.x;
+        shift = shiftOn(row);
+      } else {
+        clear2();
+        return;
+      }
+    } else if (L2.head) {
+      row = L2.head.system;
+      x2 = L2.head.x + 0.35 * sp2;
+      shift = L2.head.shift;
+    } else {
+      clear2();
+      return;
+    }
+    const NS = "http://www.w3.org/2000/svg", g3 = this.ghostEl ??= document.createElementNS(NS, "svg");
+    g3.setAttribute("class", "ghost-preview");
+    g3.setAttribute("width", String(L2.width));
+    g3.setAttribute("height", String(L2.height));
+    const fs = 4 * sp2, nh2 = 1.18 * sp2, ext = 0.4 * sp2, parts = [];
+    for (const p2 of this.ghostP) {
+      const d3 = diatonicIndex(p2) + shift, y2 = L2.yOf(row, d3);
+      for (let k2 = 28; k2 >= d3; k2 -= 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row, k2)}" y2="${L2.yOf(row, k2)}" stroke-width="${0.16 * sp2}"/>`);
+      for (let k2 = 40; k2 <= d3; k2 += 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row, k2)}" y2="${L2.yOf(row, k2)}" stroke-width="${0.16 * sp2}"/>`);
+      parts.push(`<text x="${x2}" y="${y2}" font-family="Bravura" font-size="${fs}">\uE0A4</text>`);
+      const acc = p2.alter === 1 ? "\uE262" : p2.alter === -1 ? "\uE260" : p2.alter === 2 ? "\uE263" : p2.alter === -2 ? "\uE264" : "";
+      if (acc) parts.push(`<text x="${x2 - 1.2 * sp2}" y="${y2}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
+    }
+    g3.innerHTML = parts.join("");
+    if (!g3.isConnected) this.ink.appendChild(g3);
   }
   playheadEl = null;
   hlEls = [];
@@ -10543,7 +10655,8 @@ var ScoreView = class {
     const L2 = this.layout, row = this.rowAt(y2), best = this.slotAt(x2, y2);
     if (!best) return st3;
     const r10 = L2.systems[row];
-    return r10.paper === st3.at.paper && r10.part === st3.at.part ? setCaret(st3, best.caret) : setFocus(st3, r10.paper, r10.part, best.caret);
+    const at2 = r10.paper === st3.at.paper && r10.part === st3.at.part ? setCaret(st3, best.caret) : setFocus(st3, r10.paper, r10.part, best.caret);
+    return best.lead ? setCaretLead(at2, best.lead) : at2;
   }
   /** 框选：框住的音（音头中心在框里；只算框起点那条谱的）从第一个到最后一个选成一段；一个都没框住 = 回到起点的光标。 */
   boxSelect(x1, y1) {
@@ -36786,6 +36899,10 @@ var pad3 = new Pad(padEl, {
       update(r10.st);
       padNotes.set(id2, { index: -1, base: r10.pitch });
       sound.down(r10.pitch, id2);
+      if (ghostOn()) {
+        ghostHeld.set(id2, r10.pitch);
+        ghostSync();
+      }
     }
   },
   onSoundUp: (id2) => {
@@ -36793,6 +36910,7 @@ var pad3 = new Pad(padEl, {
     padNotes.delete(id2);
     monoHeld.delete(id2);
     sound.up(id2);
+    if (ghostHeld.delete(id2)) ghostSync();
   }
   // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
 });
@@ -36801,6 +36919,13 @@ function toggleImpro() {
   impro = !impro;
   if (impro) showPad(true);
   pad3.render();
+  ghostHeld.clear();
+  ghostSync();
+}
+var ghostHeld = /* @__PURE__ */ new Map();
+var ghostOn = () => impro && !finder.isOpen && !instShown;
+function ghostSync() {
+  view.showGhost(ghostOn() ? [...ghostHeld.values()] : []);
 }
 var history = emptyHistory();
 function update(next2, gesture) {
@@ -37966,7 +38091,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "68073cd29665",
+  cssHash: "228ae941169b",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -40848,6 +40973,13 @@ function run(a10, repeat, code) {
       if (repeat) return true;
       const probe = apply({ ...st2, sel: null, log: [] }, { k: "degree", degree: a10.degree, dir: a10.dir }, performance.now());
       keyTok(probe, probe.caret - 1, code);
+      {
+        const t10 = tr(probe)[probe.caret - 1];
+        if (ghostOn() && t10?.kind === "note" && t10.pitch) {
+          ghostHeld.set(`key${code}`, t10.pitch);
+          ghostSync();
+        }
+      }
       if (probe.input !== st2.input) update({ ...st2, input: probe.input });
       return true;
     }
@@ -40979,6 +41111,7 @@ window.addEventListener("keydown", (e10) => {
 });
 window.addEventListener("keyup", (e10) => {
   monoHeld.delete(`key${e10.code}`);
+  if (ghostHeld.delete(`key${e10.code}`)) ghostSync();
   if (isSoundKey(e10)) {
     sound.up(`key${e10.code}`);
     pad3.showUp(`key${e10.code}`);
@@ -40990,6 +41123,10 @@ window.addEventListener("blur", () => {
   sound.allOff();
   pad3.clearHeld();
   monoHeld.clear();
+  if (ghostHeld.size) {
+    ghostHeld.clear();
+    ghostSync();
+  }
 });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
@@ -40998,6 +41135,10 @@ document.addEventListener("visibilitychange", () => {
     sound.allOff();
     pad3.clearHeld();
     monoHeld.clear();
+    if (ghostHeld.size) {
+      ghostHeld.clear();
+      ghostSync();
+    }
   }
 });
 document.addEventListener("visibilitychange", () => {
@@ -41032,4 +41173,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-316f5def67d8.mjs.map
+//# sourceMappingURL=moonsinger-dcb0fd26ab10.mjs.map

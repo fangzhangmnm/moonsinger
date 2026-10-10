@@ -44,6 +44,8 @@ export interface EngraveOpts {
   sp: number;                            // px，五线谱间距
   at: Focus;                             // 光标 / 选中在哪条 track
   caret: number;                         // 光标（插入点）
+  /** 光标在声部尾巴后面补齐的淡色小节里（EditorState.lead）：离尾巴多少 tick。 */
+  lead?: number;
   sel?: { from: number; to: number } | null;   // 有 = 改（没有光标）
   parts: PartView[];                     // 显示的声部
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
@@ -113,7 +115,7 @@ const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
 /** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。 */
 export interface SystemBox { top: number; staffTop: number; bottom: number; paper: string; part: string; sys: number; staff: Staff }   // staff = 大谱表里是上（1）还是下（2）
 export interface HitNote { index: number; system: number; x: number; y: number; w: number; d: number }
-export interface Slot { caret: number; system: number; x: number; end?: true }   // end = 行末那个落点（光标在下一行开头的那个位置，点在这一行行末时画在这儿）
+export interface Slot { caret: number; system: number; x: number; end?: true; /** 补齐的淡色小节的开头：点这里 = 光标在尾巴 + 先补这么长（tick）的休止再写（v0.10.6）。 */ lead?: number }   // end = 行末那个落点（光标在下一行开头的那个位置，点在这一行行末时画在这儿）
 export interface LyricHit { index: number; system: number; x: number; y: number; tight?: true }   // x = 歌词中心，y = 基线；tight = 按节奏排时这个字挤（画灰，歌词框上说一声）
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
@@ -131,7 +133,7 @@ export interface Layout {
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; rests: RestHit[]; title: TitleHit; clefs: ClefHit[];
   arrangement: TitleHit | null;                 // 编排那一行（只在「全部」视图里有；点了就地改）
   credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
-  head: { system: number; x: number } | null;    // 光标在哪（画面跟随用；改的时候没有）
+  head: { system: number; x: number; /** 光标那里的谱号 + 八度线位移（音级 → 谱上第几级；「弹」的鬼音符按它画在对的高低，v0.10.6）。 */ shift: number } | null;    // 光标在哪（画面跟随用；改的时候没有）
   parts: (Box & { paper: string; part: string })[];   // 歌手牌（每张纸第一行各条谱左边的声部名）的点击区域
   papers: { id: string; title: (TitleHit & { shown: boolean }); menu: Box | null; top: number; bottom: number; prev?: Box | null; next?: Box | null; scope?: Box }[];   // 多张纸：每张纸曲段名那一行右边一组「‹ k/n › 本段 ⋯」   // 每张纸：曲段名那一条（shown = 画了）、「⋯」、占的竖直范围
   addPaper: Box | null;                          // 扳手旁边的「＋」（新的纸；user「这个很低频的，可以小加号放在扳手旁边」）
@@ -220,6 +222,7 @@ interface Chunk {
   kind: "chunk"; index: number; j: number; last: boolean; base: number; dotted: boolean; note: boolean; ratio: [number, number] | null; ticks: number;
   pitch: Pitch | null; ghost: boolean; tie: boolean; lyric: string | null; hyph: boolean; inBar: number; beat: number; acc: number | null; w: number; accW: number;
   m?: number;   // 第几小节（0 起；纸头弱起 = 第 0 小节）——每行开头的小节号用（v0.9.42）
+  pad?: true;   // 补齐的淡色休止（不在谱里：这张纸别的声部更长，这位后面空着的那几个小节；只画、不能点）
   pitches: Pitch[]; accs: (number | null)[];   // 叠音：全部符头（从高到低，第一个 = pitch）+ 各自的临时记号
   art: Art[]; breath: boolean;                 // 修：第一段画跳音 / 重音 / 保持，最后一段后面画呼吸（2026-10-08）
   inhale?: "soft" | "big";                     // 呼吸出声：逗号后面写「吸」/「深吸」（2026-10-10）
@@ -248,7 +251,7 @@ const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats
 
 interface Head { key: number; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
 /** 一条 track → 排版单元（第 1 步：切时值、临时记号、自动小节线；tick = 从这条的开头数）。caret 只在光标在这条上时给。 */
-function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; measureLyric: (s: string) => number; sp: number; rhythm?: boolean }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
+function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; measureLyric: (s: string) => number; sp: number; rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */ padFrom?: number }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
   const H = headLen(tokens);
   let fifths = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx: Head["idx"] = {};
@@ -324,7 +327,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
         if (lyric && lyric !== MELISMA_MARK && !o.rhythm) w = Math.max(w, accW + o.measureLyric(lyricShow(lyric)) / o.sp + (nt.hyph ? 1.4 : 0.7));   // 按歌词排：字把音推开；按节奏排（v0.9.40）= 音只看时值
         const u: Chunk = { kind: "chunk", index: i, j, last: false, m: measureNo, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
           ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs,
-          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [], breath: false, ...(isNote && nt.art?.includes("whisper") ? { whisper: true } : {}) };
+          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [], breath: false, ...(isNote && nt.art?.includes("whisper") ? { whisper: true } : {}), ...(o.padFrom !== undefined && i >= o.padFrom ? { pad: true as const } : {}) };
         units.push(u); lastChunk = u;
         off += c.ticks; j++;
       }
@@ -552,9 +555,17 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       return;
     }
     // 1. 每个声部的排版单元
-    const per = parts.map((p) => {
-      const tokens = paper.tracks[p.id], focused = o.at.paper === paper.id && o.at.part === p.id, staves: 1 | 2 = p.staves === 2 ? 2 : 1;
-      const u = unitsOf(tokens, { caret: focused && writing ? o.caret : null, autoBars, measureLyric: o.measureLyric, sp, rhythm: song.lyricFit !== "lyrics" });
+    //   补齐（v0.10.6；user「点小节写这里好」「这样的话要不要做新轨在显示的时候自动补齐小节号。然后自动补的休止也是自动的淡色」「小节号（用小字体）也做一下」）：这张纸上短的声部，后面空着的时值画成淡色休止（按小节切，小节线 / 折行 / 每行开头的小节号都跟着），只画不存；
+    //   点那几个小节 = 光标在尾巴 + lead（写的那一刻才落成休止，song.ts materializeLead）。
+    const lenOf = (t: Token[]) => t.reduce((n, x) => n + (isTimed(x) ? x.dur : 0), 0);
+    const lens = parts.map((p) => lenOf(paper.tracks[p.id] ?? [])), paperLen = Math.max(0, ...lens);
+    const per = parts.map((p, pi) => {
+      const real = paper.tracks[p.id], focused = o.at.paper === paper.id && o.at.part === p.id, staves: 1 | 2 = p.staves === 2 ? 2 : 1;
+      const gap = paperLen - lens[pi], lead = focused && writing && o.lead && o.caret >= real.length ? Math.min(o.lead, gap) : 0;
+      const padT = (dur: number, id: number): Token => ({ kind: "rest", id, dur }) as Token;
+      const tokens = gap > 1e-6 ? [...real, ...(lead > 1e-6 ? [padT(lead, -1)] : []), ...(gap - lead > 1e-6 ? [padT(gap - lead, -2)] : [])] : real;
+      const caret = focused && writing ? (lead > 1e-6 ? real.length + 1 : o.caret) : null;
+      const u = unitsOf(tokens, { caret, autoBars, measureLyric: o.measureLyric, sp, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
       shortBars += u.shortBars;
       if (staves === 2) {   // 大谱表：每个音在上还是下（按音高自动 / 手动指定）；光标跟着前一个音
         const stf = staffOfTokens(tokens, 2); let last: Staff = 1;
@@ -566,7 +577,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const ds0 = displayStates(tokens, start), ao = staves === 2 || song.parts.find((x) => x.id === p.id)?.autoOttava === false ? null : autoOttava(tokens, ds0);
       const ds = ao ? { clef: ds0.clef, ott: ao.ott, auto: ao.auto as boolean[] | null, runs: ao.runs } : { ...ds0, auto: null as boolean[] | null, runs: [] as { from: number; to: number; shift: 1 | 2 | -1 }[] };
       const fFam = staves === 2 || isFClef(start) || tokens.some((t) => t.kind === "clef" && isFClef(t.clef));
-      return { p, tokens, focused, staves, start, ds, fFam, ...u };
+      return { p, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, ...u };
     });
     /** 同一个实际音高在谱上要挪几级：谱号 + 八度线（index < 0 = 这张纸开头的谱号）。大谱表 = 上高音下低音。 */
     const shAt = (q: (typeof per)[number], staff: Staff, index: number): number => q.staves === 2 ? (staff === 2 ? 12 : 0)
@@ -763,9 +774,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const ind = s === 0 ? ind0 : indN;
       // 小节号（v0.9.42；user 2026-10-10「小节号要，可以页面设置toggle，默认是每行开头有。字小一点」）：每行最上面那条谱的左上角，印这一行第一个小节的号；
       //   每张纸从 1 数（纸 = 曲段），弱起算第 0 小节；第一行是 1 / 0 就不印（出版谱的老规矩）
-      if (song.barNumbers !== "off" && per[0]) {
-        const c0 = per[0].units.find((u): u is Chunk => u.kind === "chunk" && u.system === s);
-        const num = c0 ? (c0.m ?? 0) + (per[0].pickup ? 0 : 1) : null;
+      if (song.barNumbers !== "off" && per[0]) {   // 取这一行第一位有东西的歌手（补齐之后人人都有；v0.10.6）
+        const q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s)) ?? per[0];
+        const c0 = q0.units.find((u): u is Chunk => u.kind === "chunk" && u.system === s);
+        const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null;
         if (num !== null && !(s === 0 && num <= 1)) prims.push({ t: "text", x: P(MARGIN + ind), y: yOf(rowOf(s, 0, 0), TOP_LINE + 3.2), s: String(num), cls: "bar-no", size: P(1.05), anchor: "start" });
       }
       per.forEach((q, r) => {
@@ -886,7 +898,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const xOf = (c: Chunk) => xHead || !!c.whisper;
       const nhW = (c: Chunk) => P(xOf(c) ? (c.base >= WHOLE ? W.noteheadXWhole : c.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack) : c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
       const whisperMute = (q.p.ignores ?? []).includes("whisper");   // 台上这位做不到气声：× 照画、画灰
-      const clsOf = (c: Chunk) => [c.ghost ? "ghost" : "", c.index >= 0 && c.index === curIndex ? "cur" : "", c.index >= 0 && inSel(c.index) ? "sel" : ""].filter(Boolean).join(" ") || undefined;
+      const clsOf = (c: Chunk) => [c.ghost ? "ghost" : "", c.pad ? "pad-rest" : "", c.index >= 0 && c.index === curIndex ? "cur" : "", c.index >= 0 && inSel(c.index) ? "sel" : ""].filter(Boolean).join(" ") || undefined;
       const partLyrics: LyricHit[] = [];
       const drawChunk = (c: Chunk) => {
         const cls = clsOf(c), row = RW(c);
@@ -895,7 +907,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
           const ry = c.base >= WHOLE ? yOf(row, 36) : yOf(row, MID_LINE);
           prims.push({ t: "glyph", x: P(c.x + 0.35), y: ry, ch: g, cls: cls ? `rest ${cls}` : "rest" });
-          if (c.j === 0 && c.index >= 0) rests.push({ index: c.index, system: row, x: P(c.x + 0.35), y: yOf(row, MID_LINE), w: P(1.2) });
+          if (c.j === 0 && c.index >= 0 && !c.pad) rests.push({ index: c.index, system: row, x: P(c.x + 0.35), y: yOf(row, MID_LINE), w: P(1.2) });   // 补齐的淡色休止不能点（点它 = 点空白：落到那个小节开头的落点）
           if (c.dotted) prims.push({ t: "glyph", x: P(c.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
           return;
         }
@@ -962,7 +974,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           continue;
         }
         if (u.kind === "head") {
-          head = { system: row, x: P(u.x) };
+          { const k = Math.min(o.caret, q.realLen) - 1; head = { system: row, x: P(u.x), shift: shAt(q, u.staff, k >= headLen(q.tokens) ? k : -1) }; }
           prims.push({ t: "line", x1: P(u.x + 0.1), y1: yOf(row, 42), x2: P(u.x + 0.1), y2: yOf(row, 26), w: P(0.16), cls: "caret" });
           continue;
         }
@@ -1308,15 +1320,18 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const H = headLen(tokens);
       const firstUnitOf = new Map<number, Unit>();
       for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
-      for (let c = H; c <= tokens.length; c++) {   // 大谱表：两条谱表上都放落点（点哪条都是这个声部）
+      const realLen = q.realLen;
+      for (let c = H; c <= realLen; c++) {   // 大谱表：两条谱表上都放落点（点哪条都是这个声部）；补齐的那段另放（下面）
         const u = c < tokens.length ? firstUnitOf.get(c) : undefined;
         const last = u ? null : [...units].reverse().find((v) => v.kind !== "head");
         const sys = u ? u.system : last ? last.system : 0, x = u ? P(u.x) : last ? P(last.x + last.w) : P(sysStarts[0]);
         for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(sys, r, k), x });
       }
+      // 补齐的淡色小节：每个小节开头一个落点（caret = 尾巴、lead = 离尾巴多少 tick）
+      for (const u of units) if (u.kind === "chunk" && u.pad && u.inBar < 1e-6 && u.tick - q.realTicks > 1e-6) for (let k = 0; k < q.staves; k++) slots.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), lead: u.tick - q.realTicks });
       // 行末落点：这一行最后一个东西后面 = 下一行第一个光标位置，点在这里 = 光标画在这一行末尾（caretEnd）。原来这里没有落点，点行末空白会落到最后一个音前面。
       let lastSys = -1;
-      for (let c = H; c < tokens.length; c++) {
+      for (let c = H; c < Math.min(tokens.length, realLen + 1); c++) {
         const u = firstUnitOf.get(c); if (!u) continue;
         const crossed = lastSys >= 0 && u.system > lastSys; lastSys = u.system;
         if (!crossed) continue;

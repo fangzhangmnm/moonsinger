@@ -761,6 +761,12 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 .gallery-new-menu .ctx-item { display: flex; align-items: center; gap: 8px; }
 /* 小节号（v0.9.42） */
 .staff-svg .bar-no { fill: var(--ink-soft); }
+/* 补齐的淡色休止（v0.10.6）：这张纸别的声部更长，这位后面空着的那几个小节；只画不存、点它 = 点那个小节写 */
+.staff-svg .rest.pad-rest { fill: var(--ghost); opacity: .55; }
+/* 「弹」的鬼音符（v0.10.6）：盖在谱上的一层，不接点击、不影响排版 */
+.ghost-preview { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; opacity: .5; }
+.ghost-preview text { fill: var(--accent); }
+.ghost-preview line { stroke: var(--accent); }
 /* 琶音（v0.9.45）：和弦左边的波浪线 */
 .staff-svg path.arpeggio { fill: none; stroke: var(--ink); stroke-width: 1.1; }
 .staff-svg path.arpeggio.art-mute { stroke: var(--ghost); }

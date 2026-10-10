@@ -646,14 +646,19 @@ const pad = new Pad(padEl, {
   onSoundDown: (p, id) => {
     const n = padNotes.get(id);
     if (n && n.index >= 0) soundTok(st, n.index, id);
-    else { const r = soundingPitch(st, p); update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); sound.down(r.pitch, id); }   // 弹：带上挂着的 ♯ / ♭
+    else { const r = soundingPitch(st, p); update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); sound.down(r.pitch, id); if (ghostOn()) { ghostHeld.set(id, r.pitch); ghostSync(); } }   // 弹：带上挂着的 ♯ / ♭；谱上画鬼音符
   },
-  onSoundUp: (id) => { chordKeyUp(id); padNotes.delete(id); monoHeld.delete(id); sound.up(id); },   // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
+  onSoundUp: (id) => { chordKeyUp(id); padNotes.delete(id); monoHeld.delete(id); sound.up(id); if (ghostHeld.delete(id)) ghostSync(); },   // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
 });
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
 /** 弹（只响不写）：开关在 pad 第一排「收起」左边（user 2026-10-08「弹这个锁还是放键盘上吧放在第一row，收起键盘的左边」）；快捷键 ` 照旧。找人视图里一直是弹、拨不动。 */
-function toggleImpro(): void { if (finder.isOpen) return; impro = !impro; if (impro) showPad(true); pad.render(); }
+function toggleImpro(): void { if (finder.isOpen) return; impro = !impro; if (impro) showPad(true); pad.render(); ghostHeld.clear(); ghostSync(); }
+/** 「弹」时正按着的音 → 谱上光标处（叠亮着 = 那个音上）画鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「鬼音符的时候千万不能动排版！」）：
+ *  只是盖在谱上的一层（ScoreView.showGhost），不改谱、不重排。 */
+const ghostHeld = new Map<string, Pitch>();
+const ghostOn = (): boolean => impro && !finder.isOpen && !instShown;
+function ghostSync(): void { view.showGhost(ghostOn() ? [...ghostHeld.values()] : []); }
 
 // ── 撤销 / 重做（src/score/history.ts）：song 每变一次记一份改之前的快照（引用，不拷贝）；gesture = 连续动作（拖 / 连打歌词）并成一步；换歌清栈 ──
 let history: History = emptyHistory();
@@ -3437,6 +3442,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       if (repeat) return true;
       const probe = apply({ ...st, sel: null, log: [] }, { k: "degree", degree: a.degree, dir: a.dir }, performance.now());
       keyTok(probe, probe.caret - 1, code);
+      { const t = tr(probe)[probe.caret - 1]; if (ghostOn() && t?.kind === "note" && t.pitch) { ghostHeld.set(`key${code}`, t.pitch); ghostSync(); } }   // 弹：鬼音符
       if (probe.input !== st.input) update({ ...st, input: probe.input });   // 「只管下一个音」的 ♯ / ♭ 用掉了
       return true;
     }
@@ -3488,10 +3494,10 @@ window.addEventListener("keydown", (e) => {
   const a = route(e, whereNow(), st.sel ? "edit" : "write");
   if (a && run(a, e.repeat, e.code)) e.preventDefault();
 });
-window.addEventListener("keyup", (e) => { monoHeld.delete(`key${e.code}`); if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
+window.addEventListener("keyup", (e) => { monoHeld.delete(`key${e.code}`); if (ghostHeld.delete(`key${e.code}`)) ghostSync(); if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
 // 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）
-window.addEventListener("blur", () => { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); });
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); } });
+window.addEventListener("blur", () => { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } } });
 // 切后台回来：声音被系统收起来了（iPad = interrupted）就叫醒；记一笔延迟（回来后系统可能换了缓冲大小——播放头按扬声器的时钟走，会自己跟上）
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
