@@ -605,6 +605,8 @@ var Studio = class {
   channels = /* @__PURE__ */ new Map();
   // 时间线换了也留着（边放边调不丢）
   buses = /* @__PURE__ */ new Map();
+  /** 处理总线的顺序：送出去的在被送进的前面（busOrder）。 */
+  busList = [];
   master = { gainDb: 0, limiter: true };
   masterLin = 1;
   masterFx = [];
@@ -776,8 +778,9 @@ var Studio = class {
         this.buses = /* @__PURE__ */ new Map();
         for (const b of m.buses) {
           const had = old.get(b.id);
-          this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK) });
+          this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] });
         }
+        this.busList = busOrder(m.buses, this.buses);
         return;
       }
       case "master":
@@ -1087,15 +1090,23 @@ var Studio = class {
     }
     if (this.playing) this.renderTransport(n);
     else if (this.draining) this.renderDrain(n);
-    for (const b of this.buses.values()) {
+    for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
       const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n;
       let cl = b.gl, cr = b.gr;
+      const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
       for (let i = 0; i < n; i++) {
         cl += dl;
         cr += dr;
-        this.busL[i] += b.L[i] * cl * Math.SQRT2;
-        this.busR[i] += b.R[i] * cr * Math.SQRT2;
+        L[i] += b.L[i] * cl * Math.SQRT2;
+        R[i] += b.R[i] * cr * Math.SQRT2;
+      }
+      for (const sd of b.sends) {
+        const sl = gl * sd.lin * Math.SQRT2, sr = gr * sd.lin * Math.SQRT2;
+        for (let i = 0; i < n; i++) {
+          sd.bus.L[i] += b.L[i] * sl;
+          sd.bus.R[i] += b.R[i] * sr;
+        }
       }
       b.gl = gl;
       b.gr = gr;
@@ -1539,6 +1550,43 @@ var Studio = class {
     }
   }
 };
+function busOrder(specs, buses) {
+  const edges = /* @__PURE__ */ new Map();
+  const reach = (from, to) => {
+    const seen = /* @__PURE__ */ new Set(), st = [from];
+    while (st.length) {
+      const x = st.pop();
+      if (x === to) return true;
+      if (seen.has(x)) continue;
+      seen.add(x);
+      st.push(...edges.get(x) ?? []);
+    }
+    return false;
+  };
+  const link = (a, b) => {
+    if (!buses.has(b) || a === b || reach(b, a)) return false;
+    edges.set(a, [...edges.get(a) ?? [], b]);
+    return true;
+  };
+  for (const sp of specs) {
+    const b = buses.get(sp.id);
+    b.out = null;
+    b.sends = [];
+    if (sp.to && sp.to !== "master" && link(sp.id, sp.to)) b.out = buses.get(sp.to);
+    for (const sd of sp.sends ?? []) if (link(sp.id, sd.to)) b.sends.push({ bus: buses.get(sd.to), lin: dbToLin2(sd.gainDb) });
+  }
+  const out = [], done = /* @__PURE__ */ new Set(), visiting = /* @__PURE__ */ new Set();
+  const visit = (id) => {
+    if (done.has(id) || visiting.has(id)) return;
+    visiting.add(id);
+    for (const sp of specs) if ((edges.get(sp.id) ?? []).includes(id)) visit(sp.id);
+    visiting.delete(id);
+    done.add(id);
+    out.push(buses.get(id));
+  };
+  for (const sp of specs) visit(sp.id);
+  return out;
+}
 
 // src/engine/studio-processor.ts
 var StudioProcessor = class extends AudioWorkletProcessor {
@@ -1571,4 +1619,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-19406d0145f4.mjs.map
+//# sourceMappingURL=studio-worklet-e5cd1d902c90.mjs.map

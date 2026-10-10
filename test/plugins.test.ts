@@ -1,7 +1,7 @@
 // 混音台的插件面板（src/ui/plugins.ts，v0.10.8）：一键 = 同一组全量参数的另一种看法。created 2026-10-10 by Claude Opus 5.5
 // 守的是：一键写进去再读出来是同一个值；在全量里调过 = 读不出一键（不假装）；主线程换算（自动低切 / 跟速度）对；默认 EQ 格没碰过 = 平。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { SIMPLE, PLUGIN_KINDS, defaults, freshParams, fullParams, fxSummary, resolveChain, autoLowCutHz, paramsOf } from "../src/ui/plugins.ts";
+import { SIMPLE, SIMPLE_BUS, simpleView, PLUGIN_KINDS, defaults, freshParams, fullParams, fxSummary, resolveChain, autoLowCutHz, paramsOf } from "../src/ui/plugins.ts";
 import { FX_KINDS } from "../src/engine/fx.ts";
 
 describe("插件面板：一键 ↔ 全量", () => {
@@ -41,6 +41,19 @@ describe("插件面板：一键 ↔ 全量", () => {
     eq(fxSummary({ id: "eq", kind: "eq", on: false, params: freshParams("eq") }), "均衡（关）");
     eq(fxSummary({ id: "eq", kind: "eq", params: { ...freshParams("eq"), midDb: -4 } }), "均衡（全量）");
     eq(paramsOf({ id: "x", kind: "reverb", params: {} }).room, 0.5, "缺的补默认");
+  });
+});
+
+describe("路由轨上的混响 / 延迟 / 合唱 = 全湿（v0.10.9）", () => {
+  it("新插在路由轨上 = 湿 100%；一键写进去再读出来还原；歌手轨上的同一个插件照旧用原来那套", () => {
+    for (const k of ["reverb", "delay", "chorus"]) {
+      const p = freshParams(k, true); eq(p.mix, 1, `${k} 全湿`);
+      assert(!!SIMPLE_BUS[k].read(p), `${k} 读得出`); eq(SIMPLE[k].read(p), null, `${k} 在歌手轨的一键公式上不成立（全湿不在那套里）`);
+      assert(simpleView(k, true) === SIMPLE_BUS[k] && simpleView(k, false) === SIMPLE[k]);
+    }
+    const back = SIMPLE_BUS.reverb.read(SIMPLE_BUS.reverb.write({ size: 0.7 }, defaults("reverb")))!; assert(Math.abs(back.size - 0.7) < 0.026);
+    eq(fxSummary({ id: "r", kind: "reverb", params: freshParams("reverb", true) }, true), "混响 50%");
+    eq(simpleView("eq", true), SIMPLE.eq, "EQ / 压缩在哪都一样");
   });
 });
 

@@ -487,7 +487,18 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .fx-row select { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; }
 .fx-row .btn { align-self: flex-start; }
 .fx-note { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
-.fx-dim { color: var(--muted); }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
+.fx-dim { color: var(--muted); }
+/* 路由轨（v0.10.9）：混音轨卡片 + 出到 / 发送 + 「＋ 混音轨」 */
+.strip select { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; min-width: 0; }
+.strip-send { display: flex; align-items: flex-end; gap: 4px; }
+.strip-send .strip-row { flex: 1; min-width: 0; }
+.strip-send .btn { height: 26px; min-width: 26px; padding: 0 6px; }
+.strip .send-add { color: var(--muted); }
+.strip.bus { border-style: dashed; }
+.strip .bus-name { font: inherit; font-weight: 600; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink); padding: 2px 4px; margin: -2px -4px; min-width: 0; }
+.strip .bus-name:hover, .strip .bus-name:focus { border-color: var(--line); background: var(--panel); }
+.strip.add-bus { justify-content: center; align-items: center; color: var(--muted); border-style: dashed; cursor: pointer; font: inherit; min-height: 80px; }
+.strip.add-bus:hover { color: var(--accent); border-color: var(--accent); }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
 /* 分页：页框 + 页码 */
 .staff-svg rect.page { fill: #fff; stroke: var(--line); stroke-width: 1; }
 .staff-svg .page-no { fill: var(--muted); }

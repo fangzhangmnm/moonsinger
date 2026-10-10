@@ -43,7 +43,8 @@ export interface TimelineMsg { tracks: TrackSpec[]; range: { from: number; to: n
 /** 一条通道（轨 ≠ 乐手：乐手的通道、总线、以后的素材轨都是这个形状；user 2026-10-10「轨还是和乐手是两个概念」）：
  *  chain = 通道条上的效果（EQ / 压缩（可侧链 key = 别的轨 id）…）；sends = 推子之后发到总线多少；to = 去哪（"master" / 总线 id）。 */
 export interface ChannelParams { gainDb: number; pan: number; mute: boolean; solo: boolean; chain?: FxV2[]; sends?: { to: string; gainDb: number }[]; to?: string }
-export interface BusSpec { id: string; gainDb: number; pan: number; chain: FxV2[] }
+/** 路由轨（总线）：to = 出到哪（"master" / 别的总线）；sends = 推子后发给别的总线（v0.10.9：总线也能接总线；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨」）。 */
+export interface BusSpec { id: string; gainDb: number; pan: number; chain: FxV2[]; to?: string; sends?: { to: string; gainDb: number }[] }
 export interface MasterParams { gainDb: number; limiter: boolean; chain?: FxV2[] }
 /** 元音表（assets/preview/vowels.json + .pcm16 的形状）。 */
 export interface VowelEntry { kana: string; midi: number; start: number; len: number; loopStart: number; loopEnd: number }
@@ -101,7 +102,7 @@ interface TrackState {
   src: Float32Array; out: Float32Array;   // 第一趟（出声 + 曲线 + 演奏者链）/ 第二趟（通道链）的这一段；src 给别的轨当侧链 key
   perfFx: FxInstance[]; chFx: FxInstance[];
 }
-interface Bus { id: string; gainDb: number; pan: number; gl: number; gr: number; fx: FxInstance[]; L: Float32Array; R: Float32Array }
+interface Bus { id: string; gainDb: number; pan: number; gl: number; gr: number; fx: FxInstance[]; L: Float32Array; R: Float32Array; /** 出到的总线（null = 总轨）。 */ out: Bus | null; sends: { bus: Bus; lin: number }[] }
 interface Audition { inst: AuditionInst; key: number; gl: number; gr: number }
 interface ClipVoice { src: string; data: Float32Array; ratio: number; pos: number; env: number; state: "attack" | "hold" | "release" | "cut"; gl: number; gr: number }
 
@@ -124,6 +125,8 @@ export class Studio {
   private order: string[] = [];
   private channels = new Map<string, ChannelParams>();   // 时间线换了也留着（边放边调不丢）
   private buses = new Map<string, Bus>();
+  /** 处理总线的顺序：送出去的在被送进的前面（busOrder）。 */
+  private busList: Bus[] = [];
   private master: MasterParams = { gainDb: 0, limiter: true };
   private masterLin = 1;
   private masterFx: FxInstance[] = [];
@@ -212,7 +215,8 @@ export class Studio {
       }
       case "buses": {
         const old = this.buses; this.buses = new Map();
-        for (const b of m.buses) { const had = old.get(b.id); this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK) }); }
+        for (const b of m.buses) { const had = old.get(b.id); this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] }); }
+        this.busList = busOrder(m.buses, this.buses);
         return;
       }
       case "master": this.master = { ...this.master, ...m.p }; this.masterLin = dbToLin(this.master.gainDb); if (m.p.chain !== undefined) this.masterFx = buildChain(m.p.chain, this.masterFx, this.sr); return;
@@ -399,11 +403,14 @@ export class Studio {
     this.busL.fill(0, 0, n); this.busR.fill(0, 0, n); this.audL.fill(0, 0, n); this.audR.fill(0, 0, n);
     for (const b of this.buses.values()) { b.L.fill(0, 0, n); b.R.fill(0, 0, n); }
     if (this.playing) this.renderTransport(n); else if (this.draining) this.renderDrain(n);
-    // 总线：各轨送来的 → 这条总线的链（混响 / 延迟…）→ 增益 / 平衡 → 总轨
-    for (const b of this.buses.values()) {
+    // 总线：各轨 / 别的总线送来的 → 这条总线的链（混响 / 延迟…）→ 增益 / 平衡 → 出到总轨或下一条总线（+ 推子后的发送）。
+    //   按 busOrder 的顺序（送出去的先处理），轮到一条总线时送进它的都已经加好了（v0.10.9 总线接总线）。
+    for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
       const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;
-      for (let i = 0; i < n; i++) { cl += dl; cr += dr; this.busL[i] += b.L[i] * cl * Math.SQRT2; this.busR[i] += b.R[i] * cr * Math.SQRT2; }   // 立体声的平衡：正中 = 原样
+      const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
+      for (let i = 0; i < n; i++) { cl += dl; cr += dr; L[i] += b.L[i] * cl * Math.SQRT2; R[i] += b.R[i] * cr * Math.SQRT2; }   // 立体声的平衡：正中 = 原样
+      for (const sd of b.sends) { const sl = gl * sd.lin * Math.SQRT2, sr = gr * sd.lin * Math.SQRT2; for (let i = 0; i < n; i++) { sd.bus.L[i] += b.L[i] * sl; sd.bus.R[i] += b.R[i] * sr; } }
       b.gl = gl; b.gr = gr;
     }
     for (const fx of this.masterFx) fx.process(this.busL, this.busR, n, null);   // 总轨链（母带 EQ / 压缩…），限幅在最后
@@ -667,4 +674,21 @@ export class Studio {
       L[i] = a; R[i] = b;
     }
   }
+}
+
+/** 总线的处理顺序 + 连好 out / sends（v0.10.9）：送出去的排在被送进的前面（拓扑序）；一条连线会接成环 = 断掉它（出到退回总轨、发送不要），
+ *  界面上本来就不让这样连（读到手改过的文件才会遇到）。不认识的去处 = 总轨 / 不发。 */
+export function busOrder(specs: readonly BusSpec[], buses: Map<string, Bus>): Bus[] {
+  const edges = new Map<string, string[]>();
+  const reach = (from: string, to: string): boolean => { const seen = new Set<string>(), st = [from]; while (st.length) { const x = st.pop()!; if (x === to) return true; if (seen.has(x)) continue; seen.add(x); st.push(...(edges.get(x) ?? [])); } return false; };
+  const link = (a: string, b: string): boolean => { if (!buses.has(b) || a === b || reach(b, a)) return false; edges.set(a, [...(edges.get(a) ?? []), b]); return true; };
+  for (const sp of specs) {
+    const b = buses.get(sp.id)!; b.out = null; b.sends = [];
+    if (sp.to && sp.to !== "master" && link(sp.id, sp.to)) b.out = buses.get(sp.to)!;
+    for (const sd of sp.sends ?? []) if (link(sp.id, sd.to)) b.sends.push({ bus: buses.get(sd.to)!, lin: dbToLin(sd.gainDb) });
+  }
+  const out: Bus[] = [], done = new Set<string>(), visiting = new Set<string>();
+  const visit = (id: string) => { if (done.has(id) || visiting.has(id)) return; visiting.add(id); for (const sp of specs) if ((edges.get(sp.id) ?? []).includes(id)) visit(sp.id); visiting.delete(id); done.add(id); out.push(buses.get(id)!); };
+  for (const sp of specs) visit(sp.id);
+  return out;
 }

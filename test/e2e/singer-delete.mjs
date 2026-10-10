@@ -19,7 +19,7 @@ await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 const openStudio = async () => { await p.click("#score text.part-name >> nth=0"); await p.waitForTimeout(200); await p.click('.track-card [data-v="studio"]'); await p.waitForTimeout(250); };   // 歌手牌底下「歌手管理（录音室）…」（三条杠里不放录音室）
 await openStudio();
 check(await p.$$eval(".studio .strip [data-v=delpart]", (e) => e.length) === 0, "都在纸上 = 都不能删");
-check(/在 1 张纸上/.test(await p.$eval(".studio .strip >> nth=1", (e) => e.textContent)), "写着在几张纸上");
+check(/在 1 张纸上/.test(await p.$eval(".studio .strip:not(.master):not(.bus):not(.add-bus) >> nth=0", (e) => e.textContent)), "写着在几张纸上");   // 第一位歌手的卡片（v0.10.9 起卡片顺序 = 总轨 → 混音轨 →「＋ 混音轨」→ 歌手）
 await p.click('.studio [data-v="back"]'); await p.waitForTimeout(200);
 // 第二位从这张纸上去掉 → 哪张纸都没有 → 录音室里能删
 await p.evaluate(() => { const m = window.__moonsinger, st = m.state(), p2 = st.song.parts[1].id; m.set({ ...st, at: { ...st.at, part: p2 } }); });

@@ -780,9 +780,12 @@ function pushChannels(): void {
   // 插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）在这里换成录音房认的数（src/ui/plugins.ts resolveChain；v0.10.8）
   const bpm = songBpm(), ctx = (lowestMidi: number | null) => ({ lowestMidi, bpm });
   for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: false, solo: false, chain: resolveChain(t?.chain ?? [], ctx(lowestMidiOf(p.id))), sends: t?.sends ?? [], to: t?.to ?? "master" }); }
-  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: resolveChain(b.chain, ctx(null)) })));
+  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: resolveChain(b.chain, ctx(null)), to: b.to, sends: b.sends })));   // 总线也能出到 / 发给别的总线（v0.10.9）
   const m = activeMaster(doc.extras); engine.master({ ...m, chain: resolveChain(m.chain, ctx(null)) });
 }
+/** 混音台上一条轨的 id → studio.json 里那条轨的 id（歌手 = 它的麦克风轨；路由轨 = 自己）。 */
+function trackKey(track: string): string { return st.song.parts.find((x) => x.id === track)?.mic ?? track; }
+function routeName(track: string): string { if (track === "master") return "总轨"; const k = st.song.parts.findIndex((x) => x.id === track); return k >= 0 ? partLabels(st.song, doc.extras)[k] : studioTrack(doc.extras, track)?.name ?? track; }
 /** 这位歌手全曲最低的音（自动低切用；没有音 = null）。 */
 function lowestMidiOf(partId: string): number | null {
   let lo: number | null = null;
@@ -1704,12 +1707,28 @@ const studio = new Studio($("stage"), {
   setMasterGain: (dB) => updateExtras(withMaster(doc.extras, { gainDb: dB }), { kind: "studio", label: `总轨增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
   toggleLimiter: () => { const on = !activeMaster(doc.extras).limiter; updateExtras(withMaster(doc.extras, { limiter: on }), { kind: "studio", label: `母线限幅${on ? "开" : "关"}` }); },
   // 插件格（v0.10.8）：总轨 = studio.json master.chain；歌手 = 它那条麦克风轨的 chain
-  chain: (track) => (track === STUDIO_MASTER ? activeMaster(doc.extras).chain : (() => { const p = st.song.parts.find((x) => x.id === track); return p ? studioTrack(doc.extras, p.mic)?.chain ?? [] : []; })()),
+  chain: (track) => (track === STUDIO_MASTER ? activeMaster(doc.extras).chain : studioTrack(doc.extras, trackKey(track))?.chain ?? []),
   setChain: (track, chain, label, merge) => {
     if (track === STUDIO_MASTER) { updateExtras(withMaster(doc.extras, { chain }), { kind: "studio", label }, merge); return; }
-    const p = st.song.parts.find((x) => x.id === track); if (p) updateExtras(withTrack(doc.extras, p.mic, { chain }), { kind: "studio", label }, merge);
+    updateExtras(withTrack(doc.extras, trackKey(track), { chain }), { kind: "studio", label }, merge);
   },
-  keyTracks: (track) => { const labels = partLabels(st.song, doc.extras); return st.song.parts.flatMap((p, k) => (p.id === track ? [] : [{ id: p.id, name: labels[k] }])); },
+  // 被谁压（侧链）：录音房只给歌手轨的压缩器接 key（总线 / 总轨上的压缩器听自己）
+  keyTracks: (track) => { if (!st.song.parts.some((p) => p.id === track)) return []; const labels = partLabels(st.song, doc.extras); return st.song.parts.flatMap((p, k) => (p.id === track ? [] : [{ id: p.id, name: labels[k] }])); },
+  // 路由轨（v0.10.9；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨。比如我可以放两个路由轨然后放混响」「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
+  buses: () => studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, name: b.name, gainDb: b.gainDb, pan: b.pan })),
+  addBus: () => { const id = newBusId(doc.extras), n = studioTracks(doc.extras).filter((t) => t.kind === "bus").length + 1, name = `混音轨 ${n}`; updateExtras(withTrack(doc.extras, id, { kind: "bus", name }), { kind: "studio", label: `加${name}` }); return id; },
+  removeBus: (id) => { const name = studioTrack(doc.extras, id)?.name ?? id; updateExtras(withoutBus(doc.extras, id), { kind: "studio", label: `删${name}` }); },
+  renameBus: (id, name) => updateExtras(withTrack(doc.extras, id, { name }), { kind: "studio", label: `改名「${name}」` }),
+  setBusGain: (id, dB) => updateExtras(withTrack(doc.extras, id, { gainDb: dB }), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} 增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id}`),
+  setBusPan: (id, pan) => updateExtras(withTrack(doc.extras, id, { pan }), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} 声像` }, `mix:pan:${id}`),
+  outTo: (track) => studioTrack(doc.extras, trackKey(track))?.to ?? "master",
+  setOutTo: (track, to) => updateExtras(withTrack(doc.extras, trackKey(track), { to }), { kind: "studio", label: `${routeName(track)} 出到 ${routeName(to)}` }),
+  sends: (track) => studioTrack(doc.extras, trackKey(track))?.sends ?? [],
+  setSends: (track, sends, label, merge) => updateExtras(withTrack(doc.extras, trackKey(track), { sends }), { kind: "studio", label: `${routeName(track)} ${label}` }, merge),
+  /** 这条轨能出到 / 发给的路由轨：除了自己，以及会接成环的（从那条走得回这条的）。 */
+  targets: (track) => { const all = studioTracks(doc.extras).filter((t) => t.kind === "bus"), key = trackKey(track), next = (id: string) => { const t = all.find((x) => x.id === id); return t ? [t.to, ...t.sends.map((x) => x.to)].filter((x) => x && x !== "master") : []; };
+    const reaches = (from: string, to: string) => { const seen = new Set<string>(), stk = [from]; while (stk.length) { const x = stk.pop()!; if (x === to) return true; if (seen.has(x)) continue; seen.add(x); stk.push(...next(x)); } return false; };
+    return all.filter((b) => b.id !== key && !reaches(b.id, key)).map((b) => ({ id: b.id, name: b.name })); },
   /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
   deletePart: (id) => {
     const p = st.song.parts.find((x) => x.id === id); if (!p || st.song.papers.some((pp) => pp.tracks[id])) return;

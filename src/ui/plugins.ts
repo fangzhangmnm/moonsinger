@@ -94,9 +94,28 @@ const GAIN_SIMPLE: SimpleView = {
   write(v, p) { return { ...p, dB: v.dB ?? 0 }; },
 };
 export const SIMPLE: Record<string, SimpleView> = { eq: EQ_SIMPLE, comp: COMP_SIMPLE, reverb: REV_SIMPLE, delay: DLY_SIMPLE, chorus: CHO_SIMPLE, gain: GAIN_SIMPLE };
+/** 放在路由轨上（发送的返回轨）的混响 / 延迟 / 合唱：混音的老规矩 = 全湿（原声留在歌手自己那条路上，发多少 = 加多少效果；不全湿 = 发得越多原声越响）。
+ *  同一个插件、同一组参数，只是一键面板的公式换一套：湿 = 100% 固定，旋钮管房间大小 / 回声长短 / 宽窄（v0.10.9）。 */
+const wet1 = (p: Params) => p.mix === 1;
+export const SIMPLE_BUS: Record<string, SimpleView> = {
+  reverb: { controls: [{ id: "size", label: "房间大小", hint: "往右 = 越大的房间、尾巴越长（发多少由发送那边的旋钮管）", kind: "knob", min: 0, max: 1, step: 0.05, fmt: pct }],
+    read(p) { const d = (p.room - 0.3) / 0.65; return wet1(p) && d >= -1e-3 && d <= 1 + 1e-3 && p.damp === 0.5 && p.preDelayMs === 10 && p.width === 1 ? { size: Math.round(d * 20) / 20 } : null; },
+    write(v, p) { const d = Math.max(0, Math.min(1, v.size ?? 0)); return { ...p, room: r1((0.3 + 0.65 * d) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1 }; } },
+  delay: { controls: [{ id: "echo", label: "回声多长", hint: "往右 = 回声重复得越久（发多少由发送那边的旋钮管）", kind: "knob", min: 0, max: 1, step: 0.05, fmt: pct }, DLY_SIMPLE.controls[1]],
+    read(p) { const e = (p.feedback - 0.15) / 0.5; return wet1(p) && e >= -1e-3 && e <= 1 + 1e-3 && p.dampHz === 6000 && [0.5, 0.75, 1].includes(p.syncBeats) ? { echo: Math.round(e * 20) / 20, beats: p.syncBeats } : null; },
+    write(v, p) { const e = Math.max(0, Math.min(1, v.echo ?? 0)); return { ...p, feedback: r1((0.15 + 0.5 * e) * 100) / 100, dampHz: 6000, mix: 1, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 }; } },
+  chorus: { controls: [CHO_SIMPLE.controls[0]],
+    read(p) { const w = (p.depthMs - 1) / 4; return wet1(p) && w >= -1e-3 && w <= 1 + 1e-3 && near(p.spread, r1((0.4 + 0.6 * w) * 100) / 100, 0.006) && p.voices === 3 && p.delayMs === 18 && p.rateHz === 0.6 ? { wide: Math.round(w * 20) / 20 } : null; },
+    write(v, p) { const w = Math.max(0, Math.min(1, v.wide ?? 0)); return { ...p, ...choOf(w), mix: 1 }; } },
+};
+/** 这一格用哪套一键面板（onBus = 在路由轨上）。 */
+export const simpleView = (kind: string, onBus = false): SimpleView | undefined => (onBus ? SIMPLE_BUS[kind] : undefined) ?? SIMPLE[kind];
 /** 新插一格的初始参数：一键面板的「中间值」（插上就有一点效果，一眼能听出它在干什么）。 */
-export function freshParams(kind: string): Params {
+export function freshParams(kind: string, onBus = false): Params {
   const p = defaults(kind), s = SIMPLE[kind];
+  if (onBus && kind === "reverb") return SIMPLE_BUS.reverb.write({ size: 0.5 }, p);
+  if (onBus && kind === "delay") return SIMPLE_BUS.delay.write({ echo: 0.3, beats: 0.75 }, p);
+  if (onBus && kind === "chorus") return SIMPLE_BUS.chorus.write({ wide: 0.4 }, p);
   if (kind === "eq") return s.write({ autoLow: 0, tilt: 0 }, p);
   if (kind === "comp") return s.write({ amount: 0.3 }, p);
   if (kind === "reverb") return s.write({ far: 0.4 }, p);
@@ -105,12 +124,12 @@ export function freshParams(kind: string): Params {
   return p;
 }
 /** 一格在卡片上的一句话（插件格小钮上的字）。 */
-export function fxSummary(fx: FxV2): string {
-  const p = paramsOf(fx), s = SIMPLE[fx.kind]?.read(p), name = pluginName(fx.kind);
+export function fxSummary(fx: FxV2, onBus = false): string {
+  const view = simpleView(fx.kind, onBus), p = paramsOf(fx), s = view?.read(p), name = pluginName(fx.kind);
   if (fx.on === false) return `${name}（关）`;
   if (!s) return `${name}（全量）`;
   if (fx.kind === "eq") return `${name}${s.autoLow ? " 低切" : ""}${near(s.tilt, 0, 0.01) ? (s.autoLow ? "" : "（平）") : s.tilt < 0 ? " 厚" : " 亮"}`;
-  const c = SIMPLE[fx.kind].controls[0];
+  const c = view!.controls[0];
   return `${name} ${c.fmt ? c.fmt(s[c.id]) : s[c.id]}`;
 }
 

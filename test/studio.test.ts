@@ -311,6 +311,20 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     s2.handle({ type: "master", p: { chain: [{ id: "g", kind: "gain", params: { dB: -6.0206 } }] } }); s2.handle({ type: "play" });
     assert(Math.abs(peak(run(s2, 1).L, sec(0.5), sec(0.9)) - 0.4 * PAN0 * 0.5) < 1e-3, "总轨链 −6 dB");
   });
+  it("总线接总线（v0.10.9）：A → b1 → b2（b2 上增益 −6 dB）→ 总轨 = 峰值减半；b1 发一份给 b2 = 两份叠起来", async () => {
+    const lvl = async (buses: unknown[], ch: Record<string, unknown>) => { const { s } = await clipS([{ id: "A", v: 0.4 }]); s.handle({ type: "buses", buses: buses as never }); s.handle({ type: "channel", id: "A", p: ch as never }); s.handle({ type: "play" }); return peak(run(s, 1).L, sec(0.5), sec(0.9)); };
+    const g6 = [{ id: "g", kind: "gain", params: { dB: -6.0206 } }];
+    const chainOf = await lvl([{ id: "b2", gainDb: 0, pan: 0, chain: g6 }, { id: "b1", gainDb: 0, pan: 0, chain: [], to: "b2" }], { to: "b1" });   // 故意倒着给：顺序按连线排，不按给的顺序
+    assert(Math.abs(chainOf - 0.4 * PAN0 * 0.5) < 1e-3, `A → b1 → b2(−6) → 总轨 ${chainOf}`);
+    const both = await lvl([{ id: "b1", gainDb: 0, pan: 0, chain: [], sends: [{ to: "b2", gainDb: 0 }] }, { id: "b2", gainDb: 0, pan: 0, chain: [] }], { to: "b1" });
+    assert(Math.abs(both - 0.4 * PAN0 * 2) < 1e-3, `b1 直出 + 发一份给 b2 = 两份 ${both}`);
+  });
+  it("总线接成环（手改过的文件）= 断掉成环的那一条、照样出声、不挂", async () => {
+    const { s } = await clipS([{ id: "A", v: 0.4 }]);
+    s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [], to: "b2" }, { id: "b2", gainDb: 0, pan: 0, chain: [], to: "b1" }] });
+    s.handle({ type: "channel", id: "A", p: { to: "b1" } }); s.handle({ type: "play" });
+    assert(Math.abs(peak(run(s, 1).L, sec(0.5), sec(0.9)) - 0.4 * PAN0) < 1e-3, "b1 → b2 留着、b2 → b1 断了 = b2 出到总轨");
+  });
   it("侧链：B 轨很响时 A 轨上的压缩器（key = B）把 A 压下去；没有 key 时 A 自己很轻不压", async () => {
     const mk = async (key: string | undefined) => {
       const { s } = await clipS([{ id: "A", v: 0.05 }, { id: "B", v: 0.8 }]);

@@ -35,7 +35,7 @@ await p.click(`.strip[data-id="${partId}"] [data-v="fxadd"]`); await p.waitForTi
 await p.click(`.strip[data-id="${partId}"] [data-v="fxpick"][data-kind="comp"]`); await p.waitForTimeout(150);
 c = await chain(partId);
 check(c.length === 2 && c[1].kind === "comp" && Math.abs(c[1].params.thresholdDb - -15) < 0.01, "＋ 压缩 = 插在后面、一键「压多少」30%（阈值 −15 dB）", JSON.stringify(c[1]?.params));
-check(!!(await p.$('.fx-panel select[data-key]')), "压缩有「被谁压」");
+check(!(await p.$('.fx-panel select[data-key]')), "只有一位歌手 = 没有别的轨可选，不显示「被谁压」（两位的在 routing.mjs）");
 await p.click('.fx-panel [data-v="fxdel"]'); await p.waitForTimeout(150);
 check((await chain(partId)).length === 1, "拿掉 = 链上没了");
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
