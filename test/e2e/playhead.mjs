@@ -7,10 +7,13 @@ let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
+/** 点主键：离上一下至少 500 ms（> 连按窗口 350 ms；连按两下 = 从头放，v0.9.25）。 */
+let lastPlayTap = 0;
+const tapPlay = async () => { const w = 500 - (Date.now() - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Date.now(); };
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 for (let i = 0; i < 8; i++) { await p.click(`.pad-key[data-k] >> nth=${i % 5}`); await p.waitForTimeout(30); }
 await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 6), sr: 22050 }); });   // 月读不唱（静音块），只看走带
-await p.click("#playBtn");
+await tapPlay();
 let ok = false; for (let i = 0; i < 60; i++) { if (await p.evaluate(() => window.__moonsinger.engine.playing)) { ok = true; break; } await p.waitForTimeout(100); }
 check(ok, "放起来了");
 await p.waitForTimeout(600);
@@ -23,7 +26,7 @@ const hl = () => p.evaluate(() => { const e = document.querySelector(".play-hl")
 const ph1 = await hl(); await p.waitForTimeout(700); const ph2 = await hl();
 check(ph1 !== null && ph2 !== null && ph2 > ph1, "正在响的音高亮了、往右走（没有播放线）", `${ph1} → ${ph2}`);
 check(!(await p.$(".playhead")), "不画播放线");
-await p.click("#playBtn"); await p.waitForTimeout(200);
+await tapPlay(); await p.waitForTimeout(200);
 check(!!(await p.$(".play-hl")) && !(await p.evaluate(() => window.__moonsinger.engine.playing)), "暂停 = 高亮留在停下的那个音（续播从这儿）");
 check(!errs.length, "页面没有报错", errs.join(" | "));
 await b.close();

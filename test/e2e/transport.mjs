@@ -7,6 +7,9 @@ let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
+/** 点主键：离上一下至少 500 ms（> 连按窗口 350 ms；连按两下 = 从头放，v0.9.25）。 */
+let lastPlayTap = 0;
+const tapPlay = async () => { const w = 500 - (Date.now() - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Date.now(); };
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 for (let i = 0; i < 24; i++) { await p.click(`.pad-key[data-k] >> nth=${i % 5}`); await p.waitForTimeout(25); }
 // 写了多长按谱里实际的时值算（pad 默认的长短 = 八分）：一小节几个音、第二 / 第三小节从第几个音起
@@ -31,7 +34,7 @@ await p.waitForTimeout(400);
 const p1 = await pos();
 check(p1 > BAR - 0.3 && p1 < BAR + 1.2, "从第二小节放起", `${p1.toFixed(2)} s（小节 ${BAR.toFixed(2)} s）`);
 // 2. 主键 = 停（停的地方记下来）→ ⋯「接着放」：从那儿接着放、不回起点；起点不变（v0.9.19：只有一个主键 |▶，续播在 ⋯ 里）
-await p.click("#playBtn"); await p.waitForTimeout(150);
+await tapPlay(); await p.waitForTimeout(400);   // > 连按窗口（350 ms），不然下一下算「连按两下 = 从头放」
 t = await T();
 check(!(await playing()) && !!t.paused && !!(await p.$(".play-hl")), "主键再按 = 停（记住位置、高亮留着）", JSON.stringify(t.paused));
 check((await p.$eval("#playBtn use", (e) => e.getAttribute("href"))) === "#play-from-start", "停了 = 主键是 |▶");
@@ -46,11 +49,11 @@ check(p2 >= pausedAt - 0.15, "接着放 = 从停下的地方（不回起点）",
 check((await T()).startMark?.tick === BAR2, "接着放不动起点");
 // 3. 主键（停着）= 从起点放
 await p.waitForTimeout(400);
-await p.click("#playBtn"); await p.waitForTimeout(150);
-await p.click("#playBtn"); check(await waitPlaying(), "主键 = 从起点放"); await p.waitForTimeout(200);
+await tapPlay(); await p.waitForTimeout(400);   // > 连按窗口（350 ms），不然下一下算「连按两下 = 从头放」
+await tapPlay(); check(await waitPlaying(), "主键 = 从起点放"); await p.waitForTimeout(200);
 const p3 = await pos();
 check(p3 < BAR + 0.6 && p3 > BAR - 0.4, "从起点（第二小节）放", `${p3.toFixed(2)} s`);
-await p.click("#playBtn"); await p.waitForTimeout(150);
+await tapPlay(); await p.waitForTimeout(400);   // > 连按窗口（350 ms），不然下一下算「连按两下 = 从头放」
 // 4. 编辑（挪光标）不动起点
 await p.keyboard.press("ArrowLeft"); await p.keyboard.press("ArrowLeft"); await p.waitForTimeout(80);
 check((await T()).startMark?.tick === BAR2, "挪光标不动起点");
@@ -75,16 +78,29 @@ await p.keyboard.press(" "); await p.waitForTimeout(150);
 check(!(await playing()), "听模式里空格 = 停");
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 check(!(await T()).listen, "Esc = 回到写");
-// 6. ⋯ 里「从头放」= 从开头放一遍、起点不动（2026-10-10 user「从头放会把start reset回头」）；之后主键照旧回到起点
+// 6. ⋯ 里「从头放」= 起点回到开头、从头放（2026-10-10 user「从头开始播放的关键是指针也放在开头了」；v0.9.20 曾改成不动起点，v0.9.25 改回）
 await p.click("#transportMore"); await p.waitForTimeout(80); await p.click('.ctx-menu [data-v="head"]');
 check(await waitPlaying(), "从头放 = 放起来"); await p.waitForTimeout(150);
 check((await pos()) < 1, "从头放 = 从开头放", `${(await pos()).toFixed(2)} s`);
-check((await T()).startMark?.tick === BAR3 && !!(await p.$(".start-mark")), "从头放不动起点（小旗还在第三小节）", JSON.stringify((await T()).startMark));
-await p.click("#playBtn"); await p.waitForTimeout(150);
-await p.click("#playBtn"); check(await waitPlaying(), "停了再按主键 = 放起来"); await p.waitForTimeout(200);
-const p6 = await pos();
-check(p6 > 2 * BAR - 0.4 && p6 < 2 * BAR + 0.6, "主键 = 回到起点（第三小节）", `${p6.toFixed(2)} s（第三小节 ${(2 * BAR).toFixed(2)} s）`);
-await p.click("#playBtn"); await p.waitForTimeout(100);
+check((await T()).startMark === null && !(await p.$(".start-mark")), "从头放 = 起点回到开头（小旗没了）", JSON.stringify((await T()).startMark));
+await tapPlay(); await p.waitForTimeout(400);   // 停（等过连按的窗口）
+// 7. 连按两下主键 = 从头放（user「double tap 从新开始 会激活从头开始」）：停着 / 放着都一样
+const setMark3 = async () => { await p.evaluate(() => { const m = window.__moonsinger; m.setMode("listen"); }); await p.waitForTimeout(100);
+  const n = await p.locator(".staff-svg .note").nth(2 * PER + 1).boundingBox(); await p.mouse.click(n.x + n.width / 2, n.y + n.height / 2, { button: "right" }); await p.waitForTimeout(120);
+  await p.click('.ctx-menu [data-v="here"]'); await waitPlaying(); await p.waitForTimeout(150); await tapPlay(); await p.waitForTimeout(400);
+  await p.keyboard.press("Escape"); await p.waitForTimeout(100); };
+await setMark3();
+check((await T()).startMark?.tick === BAR3 && !(await playing()), "（起点在第三小节、停着）", JSON.stringify((await T()).startMark));
+await p.dblclick("#playBtn");
+check(await waitPlaying(), "停着连按两下 = 放起来"); await p.waitForTimeout(200);
+check((await T()).startMark === null && (await pos()) < 1, "停着连按两下 = 从头放、起点回开头", `${(await pos()).toFixed(2)} s ${JSON.stringify((await T()).startMark)}`);
+await tapPlay(); await p.waitForTimeout(400);
+await setMark3();
+await tapPlay(); check(await waitPlaying(), "主键 = 从起点（第三小节）放"); await p.waitForTimeout(600);
+check((await pos()) > 2 * BAR - 0.4, "在第三小节放着", `${(await pos()).toFixed(2)} s`);
+await p.dblclick("#playBtn"); await p.waitForTimeout(250);
+check((await playing()) && (await pos()) < 1 && (await T()).startMark === null, "放着连按两下 = 跳回开头接着放、起点回开头", `${await playing()} ${(await pos()).toFixed(2)} s`);
+await tapPlay(); await p.waitForTimeout(400);
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 await b.close();
 console.log(`\ntransport: ${pass} passed, ${fail} failed`);

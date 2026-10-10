@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.24-2026-10-10";
+var APP_VERSION = "v0.9.25-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -34922,7 +34922,7 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="transportMore" class="btn" title="\u63A5\u7740\u653E\uFF08\u505C\u8FC7\u624D\u6709\uFF09/ \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><span class="mode-seg" role="tablist" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${MODE_TITLE[m2]}">${MODE_LABEL[m2]}</button>`).join("")}</span><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\uFF08\u8D77\u70B9\u56DE\u5F00\u5934\uFF09\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="transportMore" class="btn" title="\u63A5\u7740\u653E\uFF08\u505C\u8FC7\u624D\u6709\uFF09/ \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><span class="mode-seg" role="tablist" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${MODE_TITLE[m2]}">${MODE_LABEL[m2]}</button>`).join("")}</span><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
@@ -36045,14 +36045,13 @@ async function startPlayback(how) {
       return;
     }
     const loopNow = loopOn || how === "seam";
-    if (loopNow !== loop) {
-      engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopNow, loopFrom: r10.loopFrom });
-      setChunkOrder(tl2, at2, loopNow ? { from: r10.loopFrom, to: r10.to } : null);
-    }
-    await engine.play(at2);
+    const atNow = how === "start" ? startSeconds(tl2, r10) : at2;
+    if (loopNow !== loop) engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopNow, loopFrom: r10.loopFrom });
+    if (loopNow !== loop || atNow !== at2) setChunkOrder(tl2, atNow, loopNow ? { from: r10.loopFrom, to: r10.to } : null);
+    await engine.play(atNow);
     paused = null;
     playIcon(true);
-    progress(loopOn ? `\u5FAA\u73AF ${(r10.to - r10.loopFrom).toFixed(1)} \u79D2` : `${(r10.to - at2).toFixed(1)} \u79D2`);
+    progress(loopOn ? `\u5FAA\u73AF ${(r10.to - r10.loopFrom).toFixed(1)} \u79D2` : `${(r10.to - atNow).toFixed(1)} \u79D2`);
   } catch (e10) {
     showError(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`);
     progress("");
@@ -36063,7 +36062,16 @@ async function startPlayback(how) {
     if (!engine.playing) $2("playBtn").classList.remove("is-on");
   }
 }
-function playPause() {
+var DOUBLE_TAP_MS = 350;
+var lastPlayTap = 0;
+function playPause(at2 = performance.now()) {
+  const now2 = at2;
+  if (now2 - lastPlayTap < DOUBLE_TAP_MS) {
+    lastPlayTap = 0;
+    playFromHead();
+    return;
+  }
+  lastPlayTap = now2;
   if (engine.playing) {
     pausePlay();
     return;
@@ -36086,6 +36094,7 @@ function replay() {
     return;
   }
   view.setPlayhead(null);
+  if (preparing) return;
   void startPlayback("start");
 }
 function playFromHere(paperId, part, tick) {
@@ -36094,13 +36103,9 @@ function playFromHere(paperId, part, tick) {
   replay();
 }
 function playFromHead() {
-  paused = null;
-  if (engine.playing && playTl) {
-    engine.seek(playRange(playTl).from);
-    return;
-  }
-  view.setPlayhead(null);
-  void startPlayback("head");
+  startMark = null;
+  view.setStartMark(null);
+  replay();
 }
 function playSeam() {
   if (engine.playing && playTl) {
@@ -36172,7 +36177,7 @@ function openListenMenu(at2, a10) {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc7(title)}">${label}</button>`;
-  box.innerHTML = item("here", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E") + (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E") : "") + item("head", "\u4ECE\u5934\u653E", "\u4ECE\u5F00\u5934\u653E\u4E00\u904D\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09");
+  box.innerHTML = item("here", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E") + (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E") : "") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09");
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at2.y + 10;
@@ -36206,7 +36211,7 @@ function openTransportMenu() {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc7(title)}">${label}</button>`;
-  box.innerHTML = (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u4ECE\u5F00\u5934\u653E\u4E00\u904D\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
+  box.innerHTML = (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
   document.body.append(box);
   const b3 = btn.getBoundingClientRect(), w2 = box.offsetWidth, m2 = 8;
   box.style.left = `${Math.max(m2, Math.min(b3.left, innerWidth - w2 - m2))}px`;
@@ -36323,7 +36328,7 @@ function schedulePrewarm() {
     setChunkOrder(tl2, paused ? resumeSeconds(tl2, r10) : startSeconds(tl2, r10), null, { quiet: true, limit: PREWARM_PHRASES });
   }, 700);
 }
-$2("playBtn").addEventListener("click", () => playPause());
+$2("playBtn").addEventListener("click", (e10) => playPause(e10.timeStamp));
 $2("transportMore").addEventListener("click", () => openTransportMenu());
 document.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.addEventListener("click", () => setMode(b3.dataset.mode)));
 var embedSoftLimit = 1e7;
@@ -39368,7 +39373,7 @@ function run(a10, repeat, code) {
       }
       return true;
     case "play":
-      playPause();
+      playPause(keyTs);
       return true;
     case "impro":
       toggleImpro();
@@ -39398,7 +39403,9 @@ function run(a10, repeat, code) {
       return true;
   }
 }
+var keyTs = 0;
 window.addEventListener("keydown", (e10) => {
+  keyTs = e10.timeStamp;
   if (finderShown && gallery?.isOpen()) {
     if (e10.key === "Escape") {
       e10.preventDefault();
@@ -39449,14 +39456,14 @@ window.addEventListener("keydown", (e10) => {
       closeStudio();
     } else if (e10.key === " " && !e10.target?.closest("input")) {
       e10.preventDefault();
-      playPause();
+      playPause(e10.timeStamp);
     }
     return;
   }
   if (listenOn()) {
     if (e10.key === " ") {
       e10.preventDefault();
-      playPause();
+      playPause(e10.timeStamp);
     } else if (e10.key === "Escape") {
       e10.preventDefault();
       setListen(false);
@@ -39525,4 +39532,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1bb00a084805.mjs.map
+//# sourceMappingURL=moonsinger-8e483d6278dc.mjs.map

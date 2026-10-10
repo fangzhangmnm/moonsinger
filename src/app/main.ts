@@ -188,7 +188,7 @@ function showUpdateBar(): void {
 bar.innerHTML =
   `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button></div>` +
-  `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="从起点放 / 停（空格）。起点 = 长按 / 右键谱面「从这儿放」挪；编辑、挪光标都不动它"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
+  `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="从起点放 / 停（空格）；连按两下 = 从头放（起点回开头）。起点 = 长按 / 右键谱面「从这儿放」挪；编辑、挪光标都不动它"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
   `<button id="transportMore" class="btn" title="接着放（停过才有）/ 循环 / 从头放 / 接缝">⋯</button>` +
   `<span class="mode-seg" role="tablist" title="模式：这一下点的是哪一层">${MODES.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${MODE_TITLE[m]}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
   `<button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button>` +
@@ -922,8 +922,7 @@ function playRange(tl: Timeline): { from: number; to: number; loopFrom: number }
 // ── 走带（2026-10-10 Opus 5.5）：起点 / 续播·暂停 / 回起点重放 / ⋯（循环、从头放、接缝）/ 听模式 ──────────────────────────
 //   user「走带控制有续播/暂停 和从上一次开播的地方重新开始两个，loop和之后别的设置比如从头开始放在...里面」「但是我想编辑的时候光标动但是播放头不动」
 //   「核心场景就是一遍一遍听同一个小节」「以及大部分时候可以小节级别的开始精度」「那么续播不reset起点」「长按加播放同意」。
-//   起点 = 一个小节头：只有「从这儿放」（空白长按 / 右键菜单；听模式里长按 / 右键谱面）挪它；编辑、挪光标、续播、「从头放」都不动它（取代 v0.9.1 的「▶ = 从光标放」）。
-//   「从头放」= 从开头放一遍、起点留着（2026-10-10 user「从头放会把start reset回头」：v0.9.18 起它会把起点挪回开头，听完整首再按 |▶ 就回不到正在磨的那个小节了）。
+//   起点 = 一个小节头：只有「从这儿放」（空白长按 / 右键菜单；听模式里长按 / 右键谱面）和「从头放」（⋯ 菜单 / 连按两下主键）挪它；编辑、挪光标、续播都不动它（取代 v0.9.1 的「▶ = 从光标放」）。
 let startMark: { paperId: string; tick: number } | null = null;
 let paused: { sec: number; at: { paperId: string; tick: number } | null } | null = null;   // 暂停在哪：秒 + 谱位置（暂停时改了谱 = 按谱位置接着放）
 const clampTo = (r: { from: number; to: number }, s: number) => Math.min(Math.max(s, r.from), r.to);
@@ -970,17 +969,26 @@ async function startPlayback(how: "start" | "head" | "resume" | "seam"): Promise
     await waitChunksReady(tl, at, () => cancelPrepare);
     if (cancelPrepare) { progress(""); return; }
     const loopNow = loopOn || how === "seam";   // 准备的这几秒里切了循环 = 这一轮就按新的（user 2026-10-10「中途toggle循环对本轮播放应该生效」）
-    if (loopNow !== loop) { engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopNow, loopFrom: r.loopFrom }); setChunkOrder(tl, at, loopNow ? { from: r.loopFrom, to: r.to } : null); }
-    await engine.play(at);
+    const atNow = how === "start" ? startSeconds(tl, r) : at;   // 准备的这几秒里起点挪了（连按两下 = 从头放 / 从这儿放）= 从新的起点放
+    if (loopNow !== loop) engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopNow, loopFrom: r.loopFrom });
+    if (loopNow !== loop || atNow !== at) setChunkOrder(tl, atNow, loopNow ? { from: r.loopFrom, to: r.to } : null);
+    await engine.play(atNow);
     paused = null;
     playIcon(true);
-    progress(loopOn ? `循环 ${(r.to - r.loopFrom).toFixed(1)} 秒` : `${(r.to - at).toFixed(1)} 秒`);
+    progress(loopOn ? `循环 ${(r.to - r.loopFrom).toFixed(1)} 秒` : `${(r.to - atNow).toFixed(1)} 秒`);
   } catch (e) { showError(`放不了：${(e as Error).message}`); progress(""); playIcon(false); }
   finally { releaseAudio(); preparing = false; if (!engine.playing) $("playBtn").classList.remove("is-on"); }
 }
 /** 主键（空格）= |▶ 从起点放 / 放着 = 停（停的地方记下来，⋯ 里「接着放」从那儿接）。
  *  user 2026-10-10「ui上先暂时不要续播，开始用杠三角的那个符号，就是从设定的开始播放。这样先只有一个键」「续播可以放在...里面」。 */
-function playPause(): void {
+//   连按两下（主键 / 空格）= 从头放（2026-10-10 user「从头开始播放的关键是指针也放在开头了。然后double tap 从新开始 会激活从头开始」）：
+//   第一下照常（放 / 停），第二下在 DOUBLE_TAP_MS 内到 = 起点回开头、从头放（第一下正在准备 = 不打断，准备完从开头起）。
+const DOUBLE_TAP_MS = 350;
+let lastPlayTap = 0;
+function playPause(at: number = performance.now()): void {   // at = 这一下按下的时刻（事件的 timeStamp）：页面忙的时候处理晚了，也按真的间隔算连按
+  const now = at;
+  if (now - lastPlayTap < DOUBLE_TAP_MS) { lastPlayTap = 0; playFromHead(); return; }
+  lastPlayTap = now;
   if (engine.playing) { pausePlay(); return; }
   void startPlayback("start");
 }
@@ -994,18 +1002,16 @@ function pausePlay(): void {
 function replay(): void {
   paused = null;
   if (engine.playing && playTl) { engine.seek(startSeconds(playTl, playRange(playTl))); return; }
-  view.setPlayhead(null); void startPlayback("start");
+  view.setPlayhead(null);
+  if (preparing) return;   // 正在准备开播（月读在唱前几句）：不打断，开播那一刻按新的起点算（startPlayback 里再看一次）
+  void startPlayback("start");
 }
 /** 从这儿放：起点挪到 paperId 这张纸 part 那一行 tick 所在小节的头，并从那儿放。 */
 function playFromHere(paperId: string, part: string, tick: number): void {
   startMark = { paperId, tick: barHeadTick(paperId, part, tick) }; view.setStartMark(startMark); replay();
 }
-/** 从头放：从开头放一遍，起点不动（之后 |▶ 照旧回到起点）。放着 = 直接跳到开头。 */
-function playFromHead(): void {
-  paused = null;
-  if (engine.playing && playTl) { engine.seek(playRange(playTl).from); return; }
-  view.setPlayhead(null); void startPlayback("head");
-}
+/** 从头放：起点回到开头，从头放（2026-10-10 user「从头开始播放的关键是指针也放在开头了」——v0.9.20 曾改成「起点不动」，是误读了「从头放会把start reset回头」，v0.9.25 改回）。放着 = 直接跳回开头。 */
+function playFromHead(): void { startMark = null; view.setStartMark(null); replay(); }
 /** 听接缝：放着 = 跳到循环尾前几秒；没放 = 从那儿放。 */
 function playSeam(): void { if (engine.playing && playTl) { const r = playRange(playTl); engine.seek(Math.max(r.from, r.to - SEAM_LEAD)); } else void startPlayback("seam"); }
 function stopPlay(): void {
@@ -1054,7 +1060,7 @@ function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: 
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
-  box.innerHTML = item("here", "从这儿放", "起点挪到这个小节的头，从这儿放") + (paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放") : "") + item("head", "从头放", "从开头放一遍（起点不动）");
+  box.innerHTML = item("here", "从这儿放", "起点挪到这个小节的头，从这儿放") + (paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放") : "") + item("head", "从头放", "起点回到开头，从头放（也可以连按两下 |▶ / 空格）");
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8; let y = at.y + 10; if (y + h > innerHeight - m) y = at.y - h - 10;
   box.style.left = `${Math.max(m, Math.min(at.x + 6, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, y)}px`;
@@ -1079,7 +1085,7 @@ function openTransportMenu(): void {
   box.innerHTML = (paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放（起点不动）") : "") +
     item("follow", `${view.autoFollow ? "✓ " : ""}自动翻`, "放着的时候谱跟着正在放的那一行滚（出了屏幕舒服的那一段才滚；你自己滚过 4 秒内不跟）") +
     item("loop", `${loopOn ? "✓ " : ""}循环`, "放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环") +
-    item("head", "从头放", "从开头放一遍（起点不动）") + (loopOn ? item("seam", "听接缝", "从循环段结尾前几秒放起，跳回开头再放几秒就停") : "");
+    item("head", "从头放", "起点回到开头，从头放（也可以连按两下 |▶ / 空格）") + (loopOn ? item("seam", "听接缝", "从循环段结尾前几秒放起，跳回开头再放几秒就停") : "");
   document.body.append(box);
   const b = btn.getBoundingClientRect(), w = box.offsetWidth, m = 8;
   box.style.left = `${Math.max(m, Math.min(b.left, innerWidth - w - m))}px`; box.style.top = `${b.bottom + 4}px`;
@@ -1160,7 +1166,7 @@ function schedulePrewarm(): void {
     setChunkOrder(tl, paused ? resumeSeconds(tl, r) : startSeconds(tl, r), null, { quiet: true, limit: PREWARM_PHRASES });
   }, 700);
 }
-$("playBtn").addEventListener("click", () => playPause());
+$("playBtn").addEventListener("click", (e) => playPause(e.timeStamp));
 $("transportMore").addEventListener("click", () => openTransportMenu());
 document.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode as Mode)));
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */
@@ -3214,7 +3220,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       if (!canStack()) { info("这条声部台上是单声的（月读 / 元音版 / 没人）：叠不了。换成能叠音的乐器再叠"); return true; }
       { const n = stackDegree(st, a.degree); if (n === st) return true; update(n); previewEdited(); }
       return true;
-    case "play": playPause(); return true;
+    case "play": playPause(keyTs); return true;
     case "impro": toggleImpro(); return true;
     case "lyric": return view.lyrics.act(a.a);
     case "mark": view.marks.act(a.a); return true;
@@ -3225,7 +3231,9 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "redo": redoNow(); return true;
   }
 }
+let keyTs = 0;   // 这一下按键的时刻（事件的 timeStamp）：空格连按两下 = 从头放，按真的间隔算
 window.addEventListener("keydown", (e) => {
+  keyTs = e.timeStamp;
   if (finderShown && gallery?.isOpen()) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } return; }   // 歌库上面的乐器目录（只弹着玩）：Esc 回歌库
   if (gallery?.isOpen()) return;   // 歌库开着：键盘归它。没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建
   // 存 / 导出 / 打开（Ctrl / ⌘+S、+Shift+S、+O）挂在最外层：不管哪一页开着、焦点在谁身上（录音室 / 乐器页 / 乐器目录 / 参考窗）都是这首歌的事，
@@ -3241,9 +3249,9 @@ window.addEventListener("keydown", (e) => {
   }
   if ((e.target as HTMLElement | null)?.closest?.("wp-reference-window")) return;   // 参考窗拿着焦点：键盘归它（Ctrl / ⌘+V 进窗；Esc 它自己交回谱）
   if (studio.isOpen && e.key === "Escape" && !st.sel && !view.lyrics.open && !view.marks.open && !closeOffer) { e.preventDefault(); closeStudio(); return; }   // 谱上没别的可退 = Esc 收起录音室
-  if (studio.isOpen && (e.target as HTMLElement | null)?.closest?.(".studio")) { if (e.key === "Escape") { e.preventDefault(); closeStudio(); } else if (e.key === " " && !(e.target as HTMLElement)?.closest("input")) { e.preventDefault(); playPause(); } return; }   // 录音室在底座里：焦点在它里面才归它，谱照样能写   // 录音室：Esc 回谱、空格播放
+  if (studio.isOpen && (e.target as HTMLElement | null)?.closest?.(".studio")) { if (e.key === "Escape") { e.preventDefault(); closeStudio(); } else if (e.key === " " && !(e.target as HTMLElement)?.closest("input")) { e.preventDefault(); playPause(e.timeStamp); } return; }   // 录音室在底座里：焦点在它里面才归它，谱照样能写   // 录音室：Esc 回谱、空格播放
   if (listenOn()) {   // 听模式：只认 空格（放 / 暂停）、Esc（回到写）和 Ctrl / ⌘+S（存）；别的键不写谱
-    if (e.key === " ") { e.preventDefault(); playPause(); }
+    if (e.key === " ") { e.preventDefault(); playPause(e.timeStamp); }
     else if (e.key === "Escape") { e.preventDefault(); setListen(false); }
     else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { const a = route(e, whereNow(), "write"); if (a && run(a, e.repeat, e.code)) e.preventDefault(); }
     return;
