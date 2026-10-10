@@ -191,11 +191,13 @@ function showUpdateBar(): void {
 //   键盘开关不在顶栏：pad 自己有「收起」，收起后屏幕最下面一粒「键盘」tab 再弹出来；点谱也弹（user「软键盘的 toggle 可以放在屏幕最下面」）。
 bar.innerHTML =
   `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
-  `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button></div>` +
+  `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button>` +
+  // 左上角三个下拉（v0.10.2；user「我希望有一个快速选择看全部或者哪个曲段，以及快速看全部或者哪个声部的下拉框，也许可以挂在左上角，和选功能放一起」→「模式收到下拉框里面，然后顶栏会干净不少」）
+  `<span class="tb-sels"><select id="modeSel" class="tb-sel" title="模式：这一下点的是哪一层">${MODES.map((m) => `<option value="${m}" title="${MODE_TITLE[m].replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">${MODE_LABEL[m]}</option>`).join("")}</select>` +
+  `<select id="paperSel" class="tb-sel" title="看哪一段：全部 / 只看这一段"></select><select id="partSel" class="tb-sel" title="看哪位歌手：全部 / 只看这一位"></select></span></div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="从起点放 / 停（空格）；连按两下 = 从头放（起点回开头）。起点 = 长按 / 右键谱面「从这儿放」挪；编辑、挪光标都不动它"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
   `<button id="transportMore" class="btn" title="接着放（停过才有）/ 循环 / 从头放 / 接缝">⋯</button>` +
-  `<span class="mode-seg" role="tablist" title="模式：这一下点的是哪一层">${MODES.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${MODE_TITLE[m]}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
-  `<button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button>` +
+
   `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div>` +
   `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
   `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
@@ -213,10 +215,29 @@ let clip: Token[] | null = null, clipText = "", selSig = "";
 let chromeReady = false;
 /** 胶囊 / 键盘 tab / 选区条跟着谁在最上面走：歌库开着都藏；找人视图里键盘 tab 照样露（收起了能叫回来；user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）、
  *  选区条藏；录音室里胶囊留着（▶ / 空格都能播）、tab 藏。 */
+/** 左上角「看哪一段 / 看哪位歌手」两个下拉（v0.10.2）：选项跟着歌（纸 / 歌手的名字）重画，值跟着视图（本段 / 全部、只看它）。 */
+let topSelsSig = "";
+function renderTopSels(): void {
+  const ps = $("paperSel") as HTMLSelectElement | null, qs = $("partSel") as HTMLSelectElement | null; if (!ps || !qs) return;
+  const labels = partLabels(st.song, doc.extras), only = st.song.parts.filter((p) => pv(p.id).only);
+  const paperOpts = [["all", "全部曲段"], ...st.song.papers.map((p, k) => [p.id, `${p.name || `第 ${k + 1} 段`}${p.hidden ? "（隐藏）" : ""}`])] as const;
+  const partOpts = [["all", "全部歌手"], ...st.song.parts.map((p, k) => [p.id, labels[k] ?? p.id])] as const;
+  const sig = JSON.stringify([paperOpts, partOpts]);
+  if (sig !== topSelsSig) {
+    topSelsSig = sig;
+    ps.innerHTML = paperOpts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
+    qs.innerHTML = partOpts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
+  }
+  ps.value = viewScope === "all" ? "all" : st.at.paper;
+  qs.value = only.length === 1 ? only[0].id : "all";
+  ps.hidden = st.song.papers.length < 2; qs.hidden = st.song.parts.length < 2;   // 只有一段 / 一位 = 不用选
+}
 function updateChrome(): void {
   if (!chromeReady) return;
   const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);   // 乐器页开着：选区条也收（不然盖住乐器页顶条的「← 谱」）
-  padTab.hidden = !padEl.hidden || ((gallery?.isOpen() ?? false) && !finderShown) || studio.isOpen || !hasKeys(ws.mode);   // 「词 / 听」没有键盘：不露「键盘」tab
+  padTab.hidden = !padEl.hidden || ((gallery?.isOpen() ?? false) && !finderShown) || studio.isOpen || !hasKeys(ws.mode);
+  { const lab = ws.mode === "listen" ? "混音台" : "键盘", sp = padTab.querySelector("span"); if (sp && sp.textContent !== lab) sp.textContent = lab; padTab.title = ws.mode === "listen" ? "混音台（听的键盘）" : "键盘（pad）"; }
+  renderTopSels();   // 「词 / 听」没有键盘：不露「键盘」tab
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n = st.sel ? st.sel.to - st.sel.from : 0;
@@ -702,7 +723,7 @@ function locusText(at: EditorState, l: Locus): string {
   const part = at.song.parts.find((p) => p.id === at.at.part), partName = part ? roleName(doc.extras, part.role) : "";
   if (l.kind === "score") return `${at.song.papers.length > 1 ? paperName + " · " : ""}${at.song.parts.length > 1 ? partName + " · " : ""}${l.label}`;
   if (l.kind === "paper") return `${paperName} · ${l.label}`;
-  return `${l.kind === "lounge" ? "休息室" : l.kind === "studio" ? "录音室" : "封面"} · ${l.label}`;
+  return `${l.kind === "lounge" ? "休息室" : l.kind === "studio" ? "混音台" : "封面"} · ${l.label}`;
 }
 function renderUndo(): void { $<HTMLButtonElement>("undoBtn").disabled = !history.past.length; $<HTMLButtonElement>("redoBtn").disabled = !history.future.length; }
 
@@ -1042,20 +1063,19 @@ engine.on("ended", () => { playIcon(false); view.setPlayhead(null); phKey = ""; 
 // ── 模式 + 底座（2026-10-10 Opus 5.5；规则表 = src/app/workspace.ts）：音 / 词 / 符 + 听；pad 那个位子 = 底座，放 音键 / 符号格 / 录音室（互斥）。
 //   user「模式！音，歌词，强度和articulation！…还有一个就是播放模式，锁写谱，但是可以调录音室」「强度和演奏法能不能合并，就是符号编辑，和别的符号也合并」
 //   「录音室的键盘位化，和键盘互相排斥…键盘的模式键是不是能摘下来。好好理一下架构」。applyWorkspace 是唯一把状态落到界面上的地方。
-const ws: WorkspaceState = { mode: "notes", studio: false, collapsed: false, tryout: false };
+const ws: WorkspaceState = { mode: "notes", collapsed: false, tryout: false };
 let lastEditMode: Mode = "notes";   // 从「听」回来回到哪
 const listenOn = () => ws.mode === "listen";
 function applyWorkspace(): void {
   const d = dockOf(ws), padOn = d === "keys" || d === "symbols";
   view.rules = RULES[ws.mode];
   document.body.dataset.wmode = ws.mode; document.body.classList.toggle("listen-mode", ws.mode === "listen"); scoreEl.dataset.mode = ws.mode;   // 不用 body[data-mode]：歌库自己用它（gallery）
-  document.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.classList.toggle("is-on", b.dataset.mode === ws.mode));
+  ($("modeSel") as HTMLSelectElement).value = ws.mode;
   const changed = padEl.hidden === padOn || stageEl.dataset.dock !== d;
   stageEl.dataset.dock = d;
   padEl.hidden = !padOn; pad.setSymbols(d === "symbols"); if (!padOn) pad.clearHeld();
   if (d === "studio" && !studio.isOpen) { studio.show(); void engine.ensure().then(() => engine.meter(true)).catch(() => undefined); }   // 峰值表：开着才要
   else if (d !== "studio" && studio.isOpen) { studio.hide(); engine.meter(false); }
-  $("studioBtn").classList.toggle("is-on", d === "studio");
   updateChrome();
   if (changed) view.render();
 }
@@ -1067,7 +1087,7 @@ function setMode(m: Mode): void {
   const wasListen = ws.mode === "listen";
   ws.mode = m; if (hasKeys(m)) ws.collapsed = false;
   applyWorkspace();
-  if (m === "listen") info("听：谱锁住了（不能写），轻点不跳播；长按 / 右键谱面 = 从这儿放；空格 = 放 / 停；录音室照样能调。Esc / 点别的模式回到写");
+  if (m === "listen") info("听：谱锁住了（不能写），轻点不跳播；长按 / 右键谱面 = 从这儿放；空格 = 放 / 停；底下是混音台。Esc / 换别的模式回到写");
   else if (wasListen) info("回到写");
 }
 const setListen = (on: boolean) => setMode(on ? "listen" : lastEditMode);
@@ -1185,7 +1205,18 @@ function schedulePrewarm(): void {
 }
 $("playBtn").addEventListener("click", (e) => playPause(e.timeStamp));
 $("transportMore").addEventListener("click", () => openTransportMenu());
-document.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode as Mode)));
+$("modeSel").addEventListener("change", (e) => { setMode((e.target as HTMLSelectElement).value as Mode); (e.target as HTMLSelectElement).blur(); });
+// 看哪一段 / 看哪位歌手（v0.10.2）：全部 = 都看；选一段 = 本段视图跳到它；选一位 = 「只看它」（别的缩成细行），再选「全部」= 都看
+$("paperSel").addEventListener("change", (e) => {
+  const v = (e.target as HTMLSelectElement).value; (e.target as HTMLSelectElement).blur();
+  if (v === "all") viewScope = "all"; else { viewScope = "segment"; if (v !== st.at.paper) navPaperTo(v); }
+  view.render(); updateChrome();
+});
+$("partSel").addEventListener("change", (e) => {
+  const v = (e.target as HTMLSelectElement).value; (e.target as HTMLSelectElement).blur();
+  for (const p of st.song.parts) setPv(p.id, { only: v !== "all" && p.id === v });
+  afterViewChange(); updateChrome();
+});
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */
 let embedSoftLimit = 10e6;
 /** 弱引用解析到的子集（本次打开；subsetSha256 → 字节）。 */
@@ -1650,10 +1681,10 @@ const studio = new Studio($("stage"), {
   },
 });
 /** 录音室 = 底座里（键盘那个位子；和键盘互斥），谱留着能看（2026-10-10 user「录音室的键盘位化，和键盘互相排斥」；之前是全屏页）。 */
-function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); ws.studio = true; applyWorkspace(); }   // 峰值表：页开着才要
-function closeStudio(): void { if (!ws.studio) return; ws.studio = false; applyWorkspace(); scoreEl.focus(); }
+/** 混音台 = 「听」的键盘（v0.10.2；user「能不能混音台就是听的键盘，不用单独一个键，就是不同功能有不同键盘」）：打开 = 切到听（底座 = 混音台）；收起 = 收起底座（底下那粒 tab 叫回来）。 */
+function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); ws.collapsed = false; if (ws.mode !== "listen") setMode("listen"); else applyWorkspace(); }   // 峰值表：页开着才要
+function closeStudio(): void { if (!studio.isOpen) return; ws.collapsed = true; applyWorkspace(); scoreEl.focus(); }
 engine.on("meter", (peak) => { if (studio.isOpen) studio.meter(peak); });
-$("studioBtn").addEventListener("click", () => { if (studio.isOpen) closeStudio(); else openStudio(); });
 function openFinder(): void {
   finderBackToInst = instShown; if (instShown) { instShown = false; instEl.hidden = true; }
   finderShown = true; finderPlayOnly = gallery?.isOpen() ?? false;
@@ -1932,7 +1963,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
       (st.song.parts.length > 1 ? `<span class="tc-k">顺序</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="往上挪一格（最上面那个声部的速度记号说了算）">↑ 往上</button><button class="btn" data-v="movedown"${k === st.song.parts.length - 1 ? " disabled" : ""} title="往下挪一格">↓ 往下</button></div>` : "") +
       `</div><div class="tc-foot"><button class="btn" data-v="give" title="这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）">交给…</button><button class="btn" data-v="add" title="这张纸上再加一位歌手（已有的或新的；只加在这张纸上）">＋ 加歌手…</button>` +
       (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="这张纸上不要这个声部（别的纸照旧）">这张纸上去掉</button>` : "") +
-      `<button class="btn" data-v="studio" title="录音室：每位歌手一条（增益 / 声像 / 静音 / 独奏）；一张纸都不在的歌手在那里删">歌手管理（录音室）…</button></div>`;   // 纸上不删歌手（2026-10-08 深夜 user「在纸上不应该可以直接删歌手，这个功能去掉，只有没引用的时候才可以在歌手管理里面删」）：删 = 录音室里、一张纸都不在的那位；三条杠里不放录音室（user「三条杠里面不应该有乐器目录，云端，歌库 录音室」），手机上从这里进
+      `<button class="btn" data-v="studio" title="混音台（= 听的底座）：每位歌手一条（增益 / 声像 / 静音 / 独奏）；一张纸都不在的歌手在那里删">歌手管理（混音台）…</button></div>`;   // 纸上不删歌手（2026-10-08 深夜 user「在纸上不应该可以直接删歌手，这个功能去掉，只有没引用的时候才可以在歌手管理里面删」）：删 = 录音室里、一张纸都不在的那位；三条杠里不放录音室（user「三条杠里面不应该有乐器目录，云端，歌库 录音室」），手机上从这里进
   };
   draw(); document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
@@ -2361,7 +2392,6 @@ const ENGINE_TITLE: Record<Engine, string> = { tsukuyomi: "月读本人（つく
 function openInstPage(): void {
   closeOffer?.(); finderBackToInst = false;
   if (finder.isOpen) closeFinder();
-  if (studio.isOpen) closeStudio();
   instShown = true; instPicked = null; scoreEl.hidden = true; instEl.hidden = false;
   ws.tryout = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render();
   drawInst(); updateChrome();
@@ -2468,7 +2498,7 @@ function drawInst(): void {
   // 这位怎么演：响度（契约「看得见、能调的默认，不偷偷自动」）/ 音效的固定原速与音高对齐 / 修八度（兜底）/ 月读没写歌词的音
   const how =
     (eng !== "unknown" ? row("响度", `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="这位演奏者小声 1 dB">−1 dB</button><button class="btn" data-v="cal:1" title="大声 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="回到默认 ${fmtDb(DEFAULT_CALIBRATION_DB)}">默认</button>` : ""}`,
-      `这位演奏者自己的音量：默认都是 ${fmtDb(DEFAULT_CALIBRATION_DB)}（月读也是），几个声部叠在一起才不顶到天花板、不把声音压变样；录音室的推子另算`) : "") +
+      `这位演奏者自己的音量：默认都是 ${fmtDb(DEFAULT_CALIBRATION_DB)}（月读也是），几个声部叠在一起才不顶到天花板、不把声音压变样；混音台的推子另算`) : "") +
     // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
     //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
     ((eng === "soundfont" || eng === "vowel-sampler") ? ((gap, d) => row("音和音之间", `<b class="ip-val">${Math.round(gap * 1000)} ms</b>` +
@@ -3169,7 +3199,7 @@ function ensureGallery(): GalleryHost {
     openSettings: () => openSettings(),
     openInstruments: () => openFinder(),   // 歌库开着 = 只弹着玩的目录，盖在歌库上面
     openCloudMenu: () => { void openCloudMenu(); },
-    onOpened: () => { closeOffer?.(); finderBackToInst = false; closeFinder(); closeStudio(); closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },
+    onOpened: () => { closeOffer?.(); finderBackToInst = false; closeFinder(); if (ws.mode === "listen") { ws.mode = lastEditMode; applyWorkspace(); } closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },   // 进歌库 = 放下手里的歌：混音台（听）也收
     onClosed: () => { void afterGalleryClosed(); showPad(padWas); updateChrome(); scoreEl.focus(); },
   });
   return gallery;
@@ -3429,8 +3459,8 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if ((e.target as HTMLElement | null)?.closest?.("wp-reference-window")) return;   // 参考窗拿着焦点：键盘归它（Ctrl / ⌘+V 进窗；Esc 它自己交回谱）
-  if (studio.isOpen && e.key === "Escape" && !st.sel && !view.lyrics.open && !view.marks.open && !closeOffer) { e.preventDefault(); closeStudio(); return; }   // 谱上没别的可退 = Esc 收起录音室
-  if (studio.isOpen && (e.target as HTMLElement | null)?.closest?.(".studio")) { if (e.key === "Escape") { e.preventDefault(); closeStudio(); } else if (e.key === " " && !(e.target as HTMLElement)?.closest("input")) { e.preventDefault(); playPause(e.timeStamp); } return; }   // 录音室在底座里：焦点在它里面才归它，谱照样能写   // 录音室：Esc 回谱、空格播放
+  if (studio.isOpen && e.key === "Escape" && !st.sel && !view.lyrics.open && !view.marks.open && !closeOffer) { e.preventDefault(); setMode(lastEditMode); return; }   // 混音台 = 听：Esc = 回到写   // 谱上没别的可退 = Esc 收起录音室
+  if (studio.isOpen && (e.target as HTMLElement | null)?.closest?.(".studio")) { if (e.key === "Escape") { e.preventDefault(); setMode(lastEditMode); } else if (e.key === " " && !(e.target as HTMLElement)?.closest("input")) { e.preventDefault(); playPause(e.timeStamp); } return; }   // 录音室在底座里：焦点在它里面才归它，谱照样能写   // 录音室：Esc 回谱、空格播放
   if (listenOn()) {   // 听模式：只认 空格（放 / 暂停）、Esc（回到写）和 Ctrl / ⌘+S（存）；别的键不写谱
     if (e.key === " ") { e.preventDefault(); playPause(e.timeStamp); }
     else if (e.key === "Escape") { e.preventDefault(); setListen(false); }

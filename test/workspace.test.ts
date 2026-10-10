@@ -2,7 +2,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { RULES, MODES, dockOf, hasKeys, type WorkspaceState } from "../src/app/workspace.ts";
 
-const ws = (o: Partial<WorkspaceState>): WorkspaceState => ({ mode: "notes", studio: false, collapsed: false, tryout: false, ...o });
+const ws = (o: Partial<WorkspaceState>): WorkspaceState => ({ mode: "notes", collapsed: false, tryout: false, ...o });
 describe("模式规则表", () => {
   it("每一层只在自己的模式里点得到：音 = 拖音，词 = 歌词，符 = 记号；听 = 都不（不改谱）", () => {
     eq(MODES.join(","), "notes,lyrics,symbols,listen");
@@ -13,9 +13,9 @@ describe("模式规则表", () => {
     eq([RULES.notes.backspace, RULES.lyrics.backspace, RULES.symbols.backspace].join(","), "notes,lyrics,symbols");
   });
   it("底座：录音室 > 试音 > 收起 > 按模式（音 = 音键、符 = 符号格、词 / 听 = 空）", () => {
-    eq(dockOf(ws({})), "keys"); eq(dockOf(ws({ mode: "symbols" })), "symbols"); eq(dockOf(ws({ mode: "lyrics" })), "none"); eq(dockOf(ws({ mode: "listen" })), "none");
+    eq(dockOf(ws({})), "keys"); eq(dockOf(ws({ mode: "symbols" })), "symbols"); eq(dockOf(ws({ mode: "lyrics" })), "none"); eq(dockOf(ws({ mode: "listen" })), "studio", "听 = 混音台（v0.10.2：每个模式自己的键盘）");
     eq(dockOf(ws({ collapsed: true })), "none"); eq(dockOf(ws({ mode: "lyrics", tryout: true })), "keys", "试音（乐器目录 / 乐器页）照样给音键");
-    eq(dockOf(ws({ studio: true, tryout: true })), "studio", "录音室和键盘互斥、录音室优先"); eq(dockOf(ws({ mode: "listen", studio: true })), "studio", "听着也能调录音室");
-    assert(hasKeys("notes") && hasKeys("symbols") && !hasKeys("lyrics") && !hasKeys("listen"));
+    eq(dockOf(ws({ mode: "listen", tryout: true })), "keys", "听着试音 = 音键（试完回到混音台）"); eq(dockOf(ws({ mode: "listen", collapsed: true })), "none", "混音台也能收起");
+    assert(hasKeys("notes") && hasKeys("symbols") && !hasKeys("lyrics") && hasKeys("listen"));
   });
 });

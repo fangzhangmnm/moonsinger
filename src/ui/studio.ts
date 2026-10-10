@@ -25,7 +25,7 @@ export class Studio {
   readonly el: HTMLDivElement;
   constructor(parent: HTMLElement, private host: StudioHost) {
     this.el = document.createElement("div"); this.el.className = "studio"; this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">录音室</span><button class="btn" data-v="back" title="收起录音室（Esc）：底座回到键盘">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button></div>` +
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">混音台</span><button class="btn" data-v="back" title="收起混音台：底座让出来、还在「听」（Esc = 回去写）">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button></div>` +
       `<div class="finder-hint">每个声部一条：增益、声像、静音 / 独奏。增益和声像存进歌（录音房）；静音 / 独奏只是这次。谱上会给静音 / 独奏打角标。</div><div class="studio-strips"></div>`;
     parent.append(this.el);
     this.el.addEventListener("click", (e) => {

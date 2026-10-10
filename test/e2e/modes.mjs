@@ -10,7 +10,7 @@ const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } }))
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 const W = () => p.evaluate(() => window.__moonsinger.workspace());
 const notes = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "note").map((t) => t.lyric ?? "·").join(" "); });
-const mode = async (m) => { await p.click(`.mode-seg [data-mode="${m}"]`); await p.waitForTimeout(150); };
+const mode = async (m) => { await p.selectOption("#modeSel", m); await p.waitForTimeout(150); };
 // 0. 默认
 let w = await W();
 check(w.mode === "notes" && w.dock === "keys" && !(await p.$eval(".pad-panel", (e) => e.hidden)), "默认 = 「音」、底座是音键", JSON.stringify(w));
@@ -54,7 +54,7 @@ check((await dynN()) === 0 && (await notes()).split(" ").length === 4, "「符�
 await mode("notes");
 await p.mouse.click(f.x, f.y); await p.waitForTimeout(150);
 // 4. 录音室进底座：键盘让位、谱还看得见；Esc 收起 = 键盘回来
-await p.click("#studioBtn"); await p.waitForTimeout(200);
+await p.selectOption("#modeSel", "listen"); await p.waitForTimeout(200);
 w = await W();
 check(w.dock === "studio" && !(await p.$eval(".studio", (e) => e.hidden)) && (await p.$eval(".pad-panel", (e) => e.hidden)) && !(await p.$eval("#score", (e) => e.hidden)), "录音室 = 在底座里（键盘让位，谱还在）", JSON.stringify(w));
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);

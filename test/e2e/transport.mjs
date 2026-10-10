@@ -58,7 +58,7 @@ await tapPlay(); await p.waitForTimeout(400);   // > 连按窗口（350 ms），
 await p.keyboard.press("ArrowLeft"); await p.keyboard.press("ArrowLeft"); await p.waitForTimeout(80);
 check((await T()).startMark?.tick === BAR2, "挪光标不动起点");
 // 5. 听模式：锁写谱；轻点不跳播（防误触）；长按 / 右键 = 小菜单「从这儿放」；Esc 回到写
-await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(150);
+await p.selectOption("#modeSel", "listen"); await p.waitForTimeout(150);
 check((await T()).listen && (await p.evaluate(() => document.body.classList.contains("listen-mode"))), "听模式开了");
 const n0 = await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks[window.__moonsinger.state().at.part].filter((x) => x.kind === "note").length);
 await p.keyboard.press("Digit3"); await p.waitForTimeout(80);

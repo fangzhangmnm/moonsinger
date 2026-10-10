@@ -54,7 +54,7 @@ try {
   const saved = await p.evaluate(async (id) => { const bl = await window.__moonsinger.store().zip(id, { mode: "existing" }).open(); const u = new Uint8Array(await bl.arrayBuffer()); return window.__moonsinger.open("x.mxl", u).song.papers[0].tracks.P1.length - 3; }, id);
   check(saved === 1, "歌库里撤销也自动存进去了", String(saved));
   // ── extras 进同一条 undo（user 2026-10-08「undo 同意啊」「每一步快照带 locus 同意」）：录音室推子 → ⌘Z 回去 + toast 说是录音室的；重做再回来
-  await p.click("#studioBtn"); await p.waitForTimeout(300);
+  await p.selectOption("#modeSel", "listen"); await p.waitForTimeout(300);
   check(await p.isVisible(".studio"), "录音室开了");
   const slide = (v) => p.$eval(".studio .strip input[data-gain]", (el, v) => { el.value = String(v); el.dispatchEvent(new Event("input", { bubbles: true })); }, v);
   const gain = () => p.evaluate(() => { const m = (window.__moonsinger.extras().studio?.tracks ?? []).filter((t) => t.kind === "mic"); return m.length ? m[0].gainDb : null; });   // studio.json v2（2026-10-10）：mics → tracks（kind mic）
@@ -66,10 +66,10 @@ try {
   await p.keyboard.press("Escape"); await p.waitForTimeout(200);
   await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
   check((await gain()) !== -9 && (await gain()) !== -6, "⌘Z：增益回去了", String(await gain()));
-  const t1 = await p.evaluate(() => window.__moonsinger.undoText()); check(/^撤销 · 录音室 · .*增益/.test(t1), "toast 说明撤的是录音室的增益", t1);
+  const t1 = await p.evaluate(() => window.__moonsinger.undoText()); check(/^撤销 · 混音台 · .*增益/.test(t1), "toast 说明撤的是混音台的增益", t1);
   await p.keyboard.press("Control+Shift+z"); await p.waitForTimeout(150);
   check((await gain()) === -9, "重做：增益回到 −9", String(await gain()));
-  check(/^重做 · 录音室/.test(await p.evaluate(() => window.__moonsinger.undoText())), "重做的 toast 还是那句话");
+  check(/^重做 · 混音台/.test(await p.evaluate(() => window.__moonsinger.undoText())), "重做的 toast 还是那句话");
   // ── 视图跟着 locus 走：在第 2 段写的音，从第 1 段撤回去 → 视图跳到第 2 段（user 的顾虑：多按几次静默变了没在看的曲段）
   await p.evaluate(() => window.__moonsinger.addPaper()); await p.waitForTimeout(150);
   const paperOf = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers.findIndex((pp) => pp.id === s.at.paper); });

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.1-2026-10-10";
+var APP_VERSION = "v0.10.2-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -9257,7 +9257,7 @@ var MODE_TITLE = {
   notes: "\u97F3\uFF1A\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF08\u952E\u76D8 = \u97F3\u952E\uFF09\uFF1B\u70B9\u97F3 = \u5149\u6807\uFF0C\u7B14 / \u9F20\u6807\u62D6\u97F3 = \u6539\u97F3\u9AD8 / \u65F6\u503C\uFF1B\u9000\u683C = \u5220\u97F3",
   lyrics: "\u8BCD\uFF1A\u70B9\u97F3\u6216\u5B83\u4E0B\u9762 = \u5199\u8FD9\u4E2A\u97F3\u7684\u6B4C\u8BCD\uFF1B\u6309\u4F4F\u5B57\u62D6 = \u632A / \u5408\uFF1B\u9000\u683C = \u5220\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u7684\u5B57",
   symbols: "\u7B26\uFF1A\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF08\u952E\u76D8 = \u7B26\u53F7\u683C\uFF09\uFF1B\u70B9\u8BB0\u53F7 = \u5B83\u7684\u83DC\u5355\u3001\u6309\u4F4F\u62D6 = \u632A\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7",
-  listen: "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u6B4C\u624B\u724C / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5F55\u97F3\u5BA4\u7167\u6837\u80FD\u8C03\uFF08Esc \u56DE\u5230\u5199\uFF09"
+  listen: "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u6B4C\u624B\u724C / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\uFF08Esc \u56DE\u5230\u5199\uFF09"
 };
 var RULES = {
   notes: { edit: true, noteDrag: true, lyrics: false, symbols: false, backspace: "notes" },
@@ -9266,12 +9266,11 @@ var RULES = {
   listen: { edit: false, noteDrag: false, lyrics: false, symbols: false, backspace: null }
 };
 function dockOf(s10) {
-  if (s10.studio) return "studio";
   if (s10.tryout) return "keys";
   if (s10.collapsed) return "none";
-  return s10.mode === "notes" ? "keys" : s10.mode === "symbols" ? "symbols" : "none";
+  return s10.mode === "notes" ? "keys" : s10.mode === "symbols" ? "symbols" : s10.mode === "listen" ? "studio" : "none";
 }
-var hasKeys = (m2) => m2 === "notes" || m2 === "symbols";
+var hasKeys = (m2) => m2 === "notes" || m2 === "symbols" || m2 === "listen";
 
 // src/ui/part-colors.ts
 var TAB20 = [
@@ -25025,7 +25024,7 @@ var Studio2 = class {
     this.el = document.createElement("div");
     this.el.className = "studio";
     this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">\u5F55\u97F3\u5BA4</span><button class="btn" data-v="back" title="\u6536\u8D77\u5F55\u97F3\u5BA4\uFF08Esc\uFF09\uFF1A\u5E95\u5EA7\u56DE\u5230\u952E\u76D8">\u6536\u8D77</button><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="finder-hint">\u6BCF\u4E2A\u58F0\u90E8\u4E00\u6761\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\u3002\u589E\u76CA\u548C\u58F0\u50CF\u5B58\u8FDB\u6B4C\uFF08\u5F55\u97F3\u623F\uFF09\uFF1B\u9759\u97F3 / \u72EC\u594F\u53EA\u662F\u8FD9\u6B21\u3002\u8C31\u4E0A\u4F1A\u7ED9\u9759\u97F3 / \u72EC\u594F\u6253\u89D2\u6807\u3002</div><div class="studio-strips"></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">\u6DF7\u97F3\u53F0</span><button class="btn" data-v="back" title="\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09">\u6536\u8D77</button><button class="btn" data-v="play" title="\u64AD\u653E\uFF08\u7A7A\u683C\uFF09"><svg class="ico"><use href="#play"/></svg></button></div><div class="finder-hint">\u6BCF\u4E2A\u58F0\u90E8\u4E00\u6761\uFF1A\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\u3002\u589E\u76CA\u548C\u58F0\u50CF\u5B58\u8FDB\u6B4C\uFF08\u5F55\u97F3\u623F\uFF09\uFF1B\u9759\u97F3 / \u72EC\u594F\u53EA\u662F\u8FD9\u6B21\u3002\u8C31\u4E0A\u4F1A\u7ED9\u9759\u97F3 / \u72EC\u594F\u6253\u89D2\u6807\u3002</div><div class="studio-strips"></div>`;
     parent.append(this.el);
     this.el.addEventListener("click", (e10) => {
       const t10 = e10.target, v = t10.closest("[data-v]")?.dataset.v, strip = t10.closest(".strip")?.dataset.id;
@@ -35984,7 +35983,7 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\uFF08\u8D77\u70B9\u56DE\u5F00\u5934\uFF09\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="transportMore" class="btn" title="\u63A5\u7740\u653E\uFF08\u505C\u8FC7\u624D\u6709\uFF09/ \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><span class="mode-seg" role="tablist" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${MODE_TITLE[m2]}">${MODE_LABEL[m2]}</button>`).join("")}</span><button id="studioBtn" class="btn" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4E2A\u58F0\u90E8\u7684\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F"><svg class="ico"><use href="#sliders"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button><span class="tb-sels"><select id="modeSel" class="tb-sel" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<option value="${m2}" title="${MODE_TITLE[m2].replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">${MODE_LABEL[m2]}</option>`).join("")}</select><select id="paperSel" class="tb-sel" title="\u770B\u54EA\u4E00\u6BB5\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u6BB5"></select><select id="partSel" class="tb-sel" title="\u770B\u54EA\u4F4D\u6B4C\u624B\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u4F4D"></select></span></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\uFF08\u8D77\u70B9\u56DE\u5F00\u5934\uFF09\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="transportMore" class="btn" title="\u63A5\u7740\u653E\uFF08\u505C\u8FC7\u624D\u6709\uFF09/ \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
@@ -36002,10 +36001,34 @@ var clip = null;
 var clipText = "";
 var selSig = "";
 var chromeReady = false;
+var topSelsSig = "";
+function renderTopSels() {
+  const ps = $2("paperSel"), qs = $2("partSel");
+  if (!ps || !qs) return;
+  const labels = partLabels(st2.song, doc.extras), only = st2.song.parts.filter((p2) => pv(p2.id).only);
+  const paperOpts = [["all", "\u5168\u90E8\u66F2\u6BB5"], ...st2.song.papers.map((p2, k2) => [p2.id, `${p2.name || `\u7B2C ${k2 + 1} \u6BB5`}${p2.hidden ? "\uFF08\u9690\u85CF\uFF09" : ""}`])];
+  const partOpts = [["all", "\u5168\u90E8\u6B4C\u624B"], ...st2.song.parts.map((p2, k2) => [p2.id, labels[k2] ?? p2.id])];
+  const sig = JSON.stringify([paperOpts, partOpts]);
+  if (sig !== topSelsSig) {
+    topSelsSig = sig;
+    ps.innerHTML = paperOpts.map(([v, l10]) => `<option value="${esc7(v)}">${esc7(l10)}</option>`).join("");
+    qs.innerHTML = partOpts.map(([v, l10]) => `<option value="${esc7(v)}">${esc7(l10)}</option>`).join("");
+  }
+  ps.value = viewScope === "all" ? "all" : st2.at.paper;
+  qs.value = only.length === 1 ? only[0].id : "all";
+  ps.hidden = st2.song.papers.length < 2;
+  qs.hidden = st2.song.parts.length < 2;
+}
 function updateChrome() {
   if (!chromeReady) return;
   const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);
   padTab.hidden = !padEl.hidden || (gallery?.isOpen() ?? false) && !finderShown || studio.isOpen || !hasKeys(ws.mode);
+  {
+    const lab = ws.mode === "listen" ? "\u6DF7\u97F3\u53F0" : "\u952E\u76D8", sp2 = padTab.querySelector("span");
+    if (sp2 && sp2.textContent !== lab) sp2.textContent = lab;
+    padTab.title = ws.mode === "listen" ? "\u6DF7\u97F3\u53F0\uFF08\u542C\u7684\u952E\u76D8\uFF09" : "\u952E\u76D8\uFF08pad\uFF09";
+  }
+  renderTopSels();
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n10 = st2.sel ? st2.sel.to - st2.sel.from : 0;
@@ -36773,7 +36796,7 @@ function locusText(at2, l10) {
   const part = at2.song.parts.find((p2) => p2.id === at2.at.part), partName = part ? roleName(doc.extras, part.role) : "";
   if (l10.kind === "score") return `${at2.song.papers.length > 1 ? paperName + " \xB7 " : ""}${at2.song.parts.length > 1 ? partName + " \xB7 " : ""}${l10.label}`;
   if (l10.kind === "paper") return `${paperName} \xB7 ${l10.label}`;
-  return `${l10.kind === "lounge" ? "\u4F11\u606F\u5BA4" : l10.kind === "studio" ? "\u5F55\u97F3\u5BA4" : "\u5C01\u9762"} \xB7 ${l10.label}`;
+  return `${l10.kind === "lounge" ? "\u4F11\u606F\u5BA4" : l10.kind === "studio" ? "\u6DF7\u97F3\u53F0" : "\u5C01\u9762"} \xB7 ${l10.label}`;
 }
 function renderUndo() {
   $2("undoBtn").disabled = !history.past.length;
@@ -37246,7 +37269,7 @@ engine.on("ended", () => {
   phKey = "";
   paused = null;
 });
-var ws = { mode: "notes", studio: false, collapsed: false, tryout: false };
+var ws = { mode: "notes", collapsed: false, tryout: false };
 var lastEditMode = "notes";
 var listenOn = () => ws.mode === "listen";
 function applyWorkspace() {
@@ -37255,7 +37278,7 @@ function applyWorkspace() {
   document.body.dataset.wmode = ws.mode;
   document.body.classList.toggle("listen-mode", ws.mode === "listen");
   scoreEl.dataset.mode = ws.mode;
-  document.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.mode === ws.mode));
+  $2("modeSel").value = ws.mode;
   const changed2 = padEl.hidden === padOn || stageEl.dataset.dock !== d3;
   stageEl.dataset.dock = d3;
   padEl.hidden = !padOn;
@@ -37268,7 +37291,6 @@ function applyWorkspace() {
     studio.hide();
     engine.meter(false);
   }
-  $2("studioBtn").classList.toggle("is-on", d3 === "studio");
   updateChrome();
   if (changed2) view.render();
 }
@@ -37282,7 +37304,7 @@ function setMode(m2) {
   ws.mode = m2;
   if (hasKeys(m2)) ws.collapsed = false;
   applyWorkspace();
-  if (m2 === "listen") info("\u542C\uFF1A\u8C31\u9501\u4F4F\u4E86\uFF08\u4E0D\u80FD\u5199\uFF09\uFF0C\u8F7B\u70B9\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5F55\u97F3\u5BA4\u7167\u6837\u80FD\u8C03\u3002Esc / \u70B9\u522B\u7684\u6A21\u5F0F\u56DE\u5230\u5199");
+  if (m2 === "listen") info("\u542C\uFF1A\u8C31\u9501\u4F4F\u4E86\uFF08\u4E0D\u80FD\u5199\uFF09\uFF0C\u8F7B\u70B9\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\u3002Esc / \u6362\u522B\u7684\u6A21\u5F0F\u56DE\u5230\u5199");
   else if (wasListen) info("\u56DE\u5230\u5199");
 }
 var setListen = (on2) => setMode(on2 ? "listen" : lastEditMode);
@@ -37445,7 +37467,28 @@ function schedulePrewarm() {
 }
 $2("playBtn").addEventListener("click", (e10) => playPause(e10.timeStamp));
 $2("transportMore").addEventListener("click", () => openTransportMenu());
-document.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.addEventListener("click", () => setMode(b3.dataset.mode)));
+$2("modeSel").addEventListener("change", (e10) => {
+  setMode(e10.target.value);
+  e10.target.blur();
+});
+$2("paperSel").addEventListener("change", (e10) => {
+  const v = e10.target.value;
+  e10.target.blur();
+  if (v === "all") viewScope = "all";
+  else {
+    viewScope = "segment";
+    if (v !== st2.at.paper) navPaperTo(v);
+  }
+  view.render();
+  updateChrome();
+});
+$2("partSel").addEventListener("change", (e10) => {
+  const v = e10.target.value;
+  e10.target.blur();
+  for (const p2 of st2.song.parts) setPv(p2.id, { only: v !== "all" && p2.id === v });
+  afterViewChange();
+  updateChrome();
+});
 var embedSoftLimit = 1e7;
 var sessionSubsets = /* @__PURE__ */ new Map();
 async function resolveGmBytes(g3) {
@@ -37805,7 +37848,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "115e9b509d27",
+  cssHash: "be4cc5e33d86",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -38145,21 +38188,18 @@ function openStudio() {
   finderBackToInst = false;
   closeFinder();
   closeInstPage();
-  ws.studio = true;
-  applyWorkspace();
+  ws.collapsed = false;
+  if (ws.mode !== "listen") setMode("listen");
+  else applyWorkspace();
 }
 function closeStudio() {
-  if (!ws.studio) return;
-  ws.studio = false;
+  if (!studio.isOpen) return;
+  ws.collapsed = true;
   applyWorkspace();
   scoreEl.focus();
 }
 engine.on("meter", (peak) => {
   if (studio.isOpen) studio.meter(peak);
-});
-$2("studioBtn").addEventListener("click", () => {
-  if (studio.isOpen) closeStudio();
-  else openStudio();
 });
 function openFinder() {
   finderBackToInst = instShown;
@@ -38512,7 +38552,7 @@ function openTrackCard(at2) {
       if (!m3 || !m3.size) return "";
       const xs = [...m3.values()], first = xs[0], lang = songLangOf(flattenPart(st2.song, me.id).tokens, st2.song.hum);
       return `<div class="tc-warn">${first.why === "notSung" ? esc7(lyricWhyText(first, roleName(doc.extras, me.role), lang)) : `\u6709 ${xs.length} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A${esc7(lyricWhyText(first, roleName(doc.extras, me.role), lang))}${xs.some((x3) => x3.why !== first.why) ? " \u7B49" : ""}`}</div>`;
-    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:auto", "\u81EA\u52A8", !me.clef, "\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684\u8C31\u53F7\uFF08\u5F88\u9AD8\u7684\u4F1A\u6311 15ma / 8va\uFF0C\u5F88\u4F4E\u7684\u6311\u4F4E\u97F3 / \u4F4E\u97F3 8vb\uFF09\uFF1B\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002\u8FD8\u4E0D\u770B\u4E50\u5668\u7684\u4E60\u60EF\uFF08\u6BD4\u5982\u5409\u4ED6\u5199 8vb\uFF09\uFF0C\u8981\u7684\u8BDD\u624B\u52A8\u9009")}${CLEFS.map((c10) => chip(`clef:${c10}`, CLEF_LABEL[c10], me.clef === c10, CLEF_TITLE[c10])).join("")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09">\u4EA4\u7ED9\u2026</button><button class="btn" data-v="add" title="\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09">\uFF0B \u52A0\u6B4C\u624B\u2026</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + `<button class="btn" data-v="studio" title="\u5F55\u97F3\u5BA4\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220">\u6B4C\u624B\u7BA1\u7406\uFF08\u5F55\u97F3\u5BA4\uFF09\u2026</button></div>`;
+    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:auto", "\u81EA\u52A8", !me.clef, "\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684\u8C31\u53F7\uFF08\u5F88\u9AD8\u7684\u4F1A\u6311 15ma / 8va\uFF0C\u5F88\u4F4E\u7684\u6311\u4F4E\u97F3 / \u4F4E\u97F3 8vb\uFF09\uFF1B\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002\u8FD8\u4E0D\u770B\u4E50\u5668\u7684\u4E60\u60EF\uFF08\u6BD4\u5982\u5409\u4ED6\u5199 8vb\uFF09\uFF0C\u8981\u7684\u8BDD\u624B\u52A8\u9009")}${CLEFS.map((c10) => chip(`clef:${c10}`, CLEF_LABEL[c10], me.clef === c10, CLEF_TITLE[c10])).join("")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09">\u4EA4\u7ED9\u2026</button><button class="btn" data-v="add" title="\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09">\uFF0B \u52A0\u6B4C\u624B\u2026</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + `<button class="btn" data-v="studio" title="\u6DF7\u97F3\u53F0\uFF08= \u542C\u7684\u5E95\u5EA7\uFF09\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220">\u6B4C\u624B\u7BA1\u7406\uFF08\u6DF7\u97F3\u53F0\uFF09\u2026</button></div>`;
   };
   draw();
   document.body.append(box);
@@ -39172,7 +39212,6 @@ function openInstPage() {
   closeOffer?.();
   finderBackToInst = false;
   if (finder.isOpen) closeFinder();
-  if (studio.isOpen) closeStudio();
   instShown = true;
   instPicked = null;
   scoreEl.hidden = true;
@@ -39323,7 +39362,7 @@ function drawInst() {
   const how = (eng !== "unknown" ? row(
     "\u54CD\u5EA6",
     `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="\u56DE\u5230\u9ED8\u8BA4 ${fmtDb(DEFAULT_CALIBRATION_DB)}">\u9ED8\u8BA4</button>` : ""}`,
-    `\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F ${fmtDb(DEFAULT_CALIBRATION_DB)}\uFF08\u6708\u8BFB\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u5F55\u97F3\u5BA4\u7684\u63A8\u5B50\u53E6\u7B97`
+    `\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F ${fmtDb(DEFAULT_CALIBRATION_DB)}\uFF08\u6708\u8BFB\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u53E6\u7B97`
   ) : "") + // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
   //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
   (eng === "soundfont" || eng === "vowel-sampler" ? ((gap, d3) => row(
@@ -40323,12 +40362,16 @@ function ensureGallery() {
       closeOffer?.();
       finderBackToInst = false;
       closeFinder();
-      closeStudio();
+      if (ws.mode === "listen") {
+        ws.mode = lastEditMode;
+        applyWorkspace();
+      }
       closeInstPage();
       padWas = !padEl.hidden;
       showPad(false);
       updateChrome();
     },
+    // 进歌库 = 放下手里的歌：混音台（听）也收
     onClosed: () => {
       void afterGalleryClosed();
       showPad(padWas);
@@ -40784,13 +40827,13 @@ window.addEventListener("keydown", (e10) => {
   if (e10.target?.closest?.("wp-reference-window")) return;
   if (studio.isOpen && e10.key === "Escape" && !st2.sel && !view.lyrics.open && !view.marks.open && !closeOffer) {
     e10.preventDefault();
-    closeStudio();
+    setMode(lastEditMode);
     return;
   }
   if (studio.isOpen && e10.target?.closest?.(".studio")) {
     if (e10.key === "Escape") {
       e10.preventDefault();
-      closeStudio();
+      setMode(lastEditMode);
     } else if (e10.key === " " && !e10.target?.closest("input")) {
       e10.preventDefault();
       playPause(e10.timeStamp);
@@ -40869,4 +40912,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e9a06f797181.mjs.map
+//# sourceMappingURL=moonsinger-73aa55328349.mjs.map

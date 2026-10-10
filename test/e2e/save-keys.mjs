@@ -20,7 +20,7 @@ const caught = async (where) => {
 };
 await caught("谱面");
 // 录音室（底座里），焦点在它的推子上
-await p.click("#studioBtn"); await p.waitForTimeout(250);
+await p.selectOption("#modeSel", "listen"); await p.waitForTimeout(250);
 await p.focus(".studio input, .studio button"); await caught("录音室（焦点在里面）");
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 // 乐器页

@@ -14,7 +14,7 @@ export const MODE_TITLE: Record<Mode, string> = {
   notes: "音：写音 / 休止 / 小节线（键盘 = 音键）；点音 = 光标，笔 / 鼠标拖音 = 改音高 / 时值；退格 = 删音",
   lyrics: "词：点音或它下面 = 写这个音的歌词；按住字拖 = 挪 / 合；退格 = 删光标前那个音的字",
   symbols: "符：力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号（键盘 = 符号格）；点记号 = 它的菜单、按住拖 = 挪；退格 = 删记号",
-  listen: "听：谱锁住防误触——轻点只认看谱的（歌手牌 / 翻纸 / 本段），不跳播；长按 / 右键谱面 = 从这儿放 / 接着放 / 从头放；空格 = 放 / 停；录音室照样能调（Esc 回到写）",
+  listen: "听：谱锁住防误触——轻点只认看谱的（歌手牌 / 翻纸 / 本段），不跳播；长按 / 右键谱面 = 从这儿放 / 接着放 / 从头放；空格 = 放 / 停；底下是混音台（Esc 回到写）",
 };
 
 /** 一个模式下谱面的每种手势归谁（score-view 只看这个）。 */
@@ -41,19 +41,17 @@ export const RULES: Record<Mode, ModeRules> = {
 export type Dock = "keys" | "symbols" | "studio" | "none";
 export interface WorkspaceState {
   mode: Mode;
-  /** 录音室开着（在底座里）。 */
-  studio: boolean;
   /** 键盘收起了（pad 的「收起」；点谱 / 底下的「键盘」再弹出来）。 */
   collapsed: boolean;
   /** 试音中（乐器目录 / 乐器页开着：底座放音键，只弹不写）。 */
   tryout: boolean;
 }
-/** 底座放什么：录音室 > 试音 > 收起 > 按模式（音 = 音键、符 = 符号格；词 / 听 = 空——词用系统键盘，听不写）。 */
+/** 底座放什么：试音 > 收起 > 按模式——每个模式自己的键盘（v0.10.2；user「能不能混音台就是听的键盘，不用单独一个键，就是不同功能有不同键盘。歌词的时候是ipad键盘」）：
+ *  音 = 音键、符 = 符号格、听 = 混音台、词 = 空（用系统键盘）。 */
 export function dockOf(s: WorkspaceState): Dock {
-  if (s.studio) return "studio";
   if (s.tryout) return "keys";
   if (s.collapsed) return "none";
-  return s.mode === "notes" ? "keys" : s.mode === "symbols" ? "symbols" : "none";
+  return s.mode === "notes" ? "keys" : s.mode === "symbols" ? "symbols" : s.mode === "listen" ? "studio" : "none";
 }
-/** 这个模式有键盘可收起 / 弹出吗（底下的「键盘」tab 露不露）。 */
-export const hasKeys = (m: Mode): boolean => m === "notes" || m === "symbols";
+/** 这个模式底下有东西可收起 / 弹出吗（底下那粒 tab 露不露；听 = 混音台）。 */
+export const hasKeys = (m: Mode): boolean => m === "notes" || m === "symbols" || m === "listen";
