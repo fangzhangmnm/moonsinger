@@ -30,7 +30,7 @@ check(r.preview === r.pdf && r.pdf < shown, "「只看它」一个声部：同�
 // 印哪些（2026-10-09，user「只印一段或一个声部 这个也到时候需要做，和wxhw差不多，在只显示一个声部的时候你可以选」）
 await p.evaluate(() => { const m = window.__moonsinger; m.partView(m.state().song.parts[0].id, { only: false }); m.partView("P9", { hidden: true }); });
 const one = await p.evaluate(async () => { const m = window.__moonsinger; m.setScope("segment"); await new Promise((ok) => setTimeout(ok, 150)); const pv = m.layout().pages.length, x = await m.makePdf("sans", { paper: m.state().at.paper }); m.setScope("all"); return { preview: pv, pdf: x.pages, name: x.name }; });
-check(one.preview === one.pdf && /-A\.pdf$/.test(one.name), "只印这一段 = 「本段」分页预览的页数；文件名带曲段名", JSON.stringify(one));
+check(one.preview === one.pdf && /-A-\d{8}-\d{4}\.pdf$/.test(one.name), "只印这一段 = 「本段」分页预览的页数；文件名带曲段名和导出时间（名-A-YYYYMMDD-HHMM）", JSON.stringify(one));
 const sh = await p.evaluate(async () => { const m = window.__moonsinger, view = await m.makePdf("sans"), x = await m.makePdf("sans", { onlyShown: true }); return { view: view.pages, shown: x.pages, name: x.name }; });
 check(sh.shown <= sh.view && /Vocals/.test(sh.name), "只排看得见的声部：不留空位（页数不比照预览多）、文件名带声部名", JSON.stringify(sh));
 // 面板：多张纸 = 有「整首 / 这一段」；有隐藏的声部 = 有「照分页预览 / 只排看得见的」

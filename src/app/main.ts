@@ -1270,7 +1270,9 @@ async function exportSong(o: { quality: Mp3Quality; scope: "all" | "segment" } =
     // mp3 标签（user 2026-10-08「mp3能自动生成license吗」）：歌名 / 作者（作者栏第一行，用户自己写的）/ 这首歌的许可（用户选的；未声明或冲突 = 不写）/ 整段署名。
     const { rights, fellBack } = exportRights(roles), { lines } = creditsOf(roles, rights);
     const tag = id3v2({ title: st.song.title || docName(), artist: (st.song.credits ?? "").split("\n").map((s) => s.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || undefined, software: `MoonSinger ${APP_VERSION}` });
-    const file = new File([tag as unknown as BlobPart, bytes], `${docName()}${o.scope === "segment" ? `-${fileSafe(st.song.papers.find((p) => p.id === st.at.paper)?.name || "这一张")}` : ""}.mp3`, { type: "audio/mpeg" });
+    // 文件名 = 名[-曲段]-YYYYMMDD-HHMM（v0.9.47；user「看一下wxhw还是weebpaint，导出的时候文件名应该还有导出的时间，也许还有防撞」= WeebPaint naming.ts「下载版本 = 名-YYYYMMDD-HHMM」；
+    //   同一分钟再导 = 浏览器 / 系统自己补 (1)——WeebPaint 的规矩：撞名后缀只在能查占用的去处（云端）做，本地下载 / 分享查不了，交给系统）
+    const file = new File([tag as unknown as BlobPart, bytes], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st.song.papers.find((p) => p.id === st.at.paper)?.name || "这一张")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
     progress("");
     offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${Q.label} ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` +
       (fellBack ? `<div class="offer-msg">许可这一份按「未声明」写了（你选的许可和月读的条款可能冲突；作者栏里的选择没动）。</div>` : "") +
@@ -2809,7 +2811,7 @@ async function makePdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<{ file: F
     const r = scorePdf({ song, parts, font, fontId, music, title, created: new Date(), measureAt: (px) => view.measureAt(px), autoBars, ...(pick.paper ? { onlyPaper: pick.paper } : {}) });
     const paperName = pick.paper ? (st.song.papers.find((p) => p.id === pick.paper)?.name || "这一段") : "";
     const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x) => fileSafe(x)).join("-");
-    return { file: new File([r.bytes as unknown as BlobPart], `${docName()}${suffix ? `-${suffix}` : ""}.pdf`, { type: "application/pdf" }), r };
+    return { file: new File([r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${suffix ? `-${suffix}` : ""}`)}.pdf`, { type: "application/pdf" }), r };   // 名[-曲段 / 声部]-YYYYMMDD-HHMM（v0.9.47）
 }
 async function exportPdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<void> {
   if (pdfBusy) return;

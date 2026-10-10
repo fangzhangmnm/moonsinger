@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.46-2026-10-10";
+var APP_VERSION = "v0.9.47-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -37506,7 +37506,7 @@ async function exportSong(o10 = { quality: "standard", scope: "all" }) {
     const secs = left.length / m2.sr, bytes = await encodeMp3(left, right, m2.sr, Q2.kbps);
     const { rights, fellBack } = exportRights(roles), { lines } = creditsOf(roles, rights);
     const tag2 = id3v2({ title: st2.song.title || docName(), artist: (st2.song.credits ?? "").split("\n").map((s10) => s10.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || void 0, software: `MoonSinger ${APP_VERSION}` });
-    const file = new File([tag2, bytes], `${docName()}${o10.scope === "segment" ? `-${fileSafe(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.name || "\u8FD9\u4E00\u5F20")}` : ""}.mp3`, { type: "audio/mpeg" });
+    const file = new File([tag2, bytes], `${stampedCopy(`${docName()}${o10.scope === "segment" ? `-${fileSafe(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.name || "\u8FD9\u4E00\u5F20")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
     progress("");
     offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${secs.toFixed(1)} \u79D2 \xB7 mp3 ${Q2.label} ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` + (fellBack ? `<div class="offer-msg">\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u6708\u8BFB\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002</div>` : "") + creditsBlock(lines, "\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E"));
   } catch (e10) {
@@ -39750,7 +39750,7 @@ async function makePdf(fontId, pick = {}) {
   const r10 = scorePdf({ song, parts, font, fontId, music, title, created: /* @__PURE__ */ new Date(), measureAt: (px) => view.measureAt(px), autoBars, ...pick.paper ? { onlyPaper: pick.paper } : {} });
   const paperName = pick.paper ? st2.song.papers.find((p2) => p2.id === pick.paper)?.name || "\u8FD9\u4E00\u6BB5" : "";
   const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x2) => fileSafe(x2)).join("-");
-  return { file: new File([r10.bytes], `${docName()}${suffix ? `-${suffix}` : ""}.pdf`, { type: "application/pdf" }), r: r10 };
+  return { file: new File([r10.bytes], `${stampedCopy(`${docName()}${suffix ? `-${suffix}` : ""}`)}.pdf`, { type: "application/pdf" }), r: r10 };
 }
 async function exportPdf(fontId, pick = {}) {
   if (pdfBusy) return;
@@ -40818,4 +40818,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2655478ff918.mjs.map
+//# sourceMappingURL=moonsinger-75538dfedf2a.mjs.map
