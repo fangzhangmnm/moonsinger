@@ -66,13 +66,14 @@ describe("音内的起伏（< / > / <>）", () => {
     const back = o.song.papers[0].tracks[o.song.parts[0].id].filter((t) => t.kind === "note") as NoteTok[];
     eq(JSON.stringify(back.map((t) => t.swell ?? null)), `[null,null,"<>"]`);
   });
-  it("dB 那一路：< 一路往上到 +swellDb；<> 中间最高再回来；能和 fp 叠（fp 之后再往上）", () => {
+  it("dB 那一路：包络只往下乘（写的力度 = 最高点；user「鼓包改」）：< 从 −swellDb 长到 0；<> 两头 −swellDb、中间 0；能和 fp 叠（fp 之后长回 f，不超过）", () => {
+    const D = MARK_DEFAULTS.swellDb, maxOf = (g: { dB: number }[]) => Math.max(...g.map((x) => x.dB));
     const up = gainSegments(line([note()].map((t) => ({ ...(t as NoteTok), swell: "<" as const }))), undefined, db)!;
-    assert(up[0].dB < 1 && up.at(-1)!.dB > MARK_DEFAULTS.swellDb - 0.5, `< ${up[0].dB} → ${up.at(-1)!.dB}`);
+    assert(up[0].dB < -D + 0.6 && up.at(-1)!.dB > -0.6 && maxOf(up) <= 1e-9, `< ${up[0].dB} → ${up.at(-1)!.dB}（最高 ${maxOf(up)}）`);
     const bump = gainSegments(line([{ ...(note() as NoteTok), swell: "<>" as const }]), undefined, db)!, mid = bump[Math.floor(bump.length / 2)].dB;
-    assert(mid > bump[0].dB + 3 && mid > bump.at(-1)!.dB + 3, "<> 中间高");
+    assert(mid > bump[0].dB + 3 && mid > bump.at(-1)!.dB + 3 && maxOf(bump) <= 1e-9, "<> 中间高、两头低，最高 = 写的力度");
     const fpUp = gainSegments(line([{ ...(note(["fp"]) as NoteTok), swell: "<" as const }]), undefined, db)!;
-    assert(fpUp.at(-1)!.dB > DYNAMICS_DB.p + 3, "fp 之后再往上");
+    assert(fpUp.at(-1)!.dB > DYNAMICS_DB.p + 3 && maxOf(fpUp) <= DYNAMICS_DB.f + 1e-9, "fp 之后长回去，不超过音头的 f");
   });
 });
 

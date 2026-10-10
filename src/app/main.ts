@@ -1554,7 +1554,7 @@ function marksTableHtml(role: string, eng: string): string {
     ["强音", "marcato", vel ? `力度 +${sp.marcatoVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.marcatoDb)}${eng === "tsukuyomi" ? `；${singTxt("marcato")}` : ""}`],
     ["突强 sfz", "sfz", vel ? `力度 +${sp.sfzVel}` : `音头 ${db(sp.sfzDb)}，${ms(sp.sfzSec)} 里落回来${eng === "tsukuyomi" ? `；${singTxt("sfz")}` : ""}`],
     ["强后即弱 fp", "fp", `音头按 f，${ms(sp.fpSec)} 里落到 p，之后都是 p${eng === "tsukuyomi" ? `；${singTxt("fp")}` : ""}`],
-    ["音内渐强 / 鼓起", "swellGrow", sp.canSwell ? `最多 +${sp.swellDb} dB（< 一路往上；<> 中间最高再回来）` : "做不到：这件乐器按下去就自然衰减"],
+    ["音内渐强 / 鼓起", "swellGrow", sp.canSwell ? `写的力度是最高点：< 从 −${sp.swellDb} dB 长到写的力度；<> 两头 −${sp.swellDb} dB、中间回到写的力度（强后即弱之后的 < 长回音头的 f）` : "做不到：这件乐器按下去就自然衰减"],
     ["音内渐弱", "swellFade", `一路往下到 −${sp.swellDb} dB`],
     ["跳音", "staccato", eng === "tsukuyomi" ? singTxt("staccato") : `唱 / 弹 ${pct(sp.staccatoGate)} 的长度`],
     ["保持", "tenuto", "这个音不留缝"],

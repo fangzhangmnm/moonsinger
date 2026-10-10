@@ -41,7 +41,9 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
     // 音头那一组（互斥）：重音 / 强音 = 音头一小段加 dB；突强 = 冲高 sfzDb、sfzSec 里落回当下；强后即弱 = 音头这位的 f、fpSec 里落到 p（之后都是 p，dynLevels 管）
     // 音内的力度起伏（< / > / <>，音自己的事；swellDb 由演奏者配置）：做不到在一个音里变强的（canSwell = false：钢琴、拨弦…）只做 >
     const sw = tok.swell && !(spec.canSwell === false && tok.swell !== ">") ? tok.swell : null, D = spec.swellDb ?? M.swellDb;
-    const swOff = (fr: number) => (sw === "<" ? D * fr : sw === ">" ? -D * fr : sw === "<>" ? D * (1 - Math.abs(2 * fr - 1)) : 0);
+    // 包络只往下乘（v0.9.29；user 2026-10-10「音内减弱渐强和鼓起都是最大值对应的本来原始值，就是乘一个小于一的包罗，而不是大于一的」→「鼓包改」）：
+    //   写的力度 = 这个音的最高点；< 从 −D 长到写的力度、> 从写的力度收到 −D、<> 两头 −D 中间回到写的力度。一个音永远不比写的力度更响。
+    const swOff = (fr: number) => (sw === "<" ? -D * (1 - fr) : sw === ">" ? -D * fr : sw === "<>" ? -D * Math.abs(2 * fr - 1) : 0);
     const shaped = (a0: number, a1: number, s0: number, s1: number) => {   // s0–s1 这段：底下的水平从 a0 走到 a1（按整个音的进度），再叠上音内起伏
       const n = Math.max(2, Math.min(48, Math.ceil((s1 - s0) / 0.03)));
       for (let k = 0; k < n; k++) { const a = s0 + ((s1 - s0) * k) / n, b = s0 + ((s1 - s0) * (k + 1)) / n, m = (a + b) / 2, fr = (m - t0) / Math.max(1e-9, t1 - t0), fs = (m - s0) / Math.max(1e-9, s1 - s0);
@@ -51,7 +53,12 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
     if (art.includes("fp")) {
       const f = spec.dynamicsDb.f ?? 6, p = spec.dynamicsDb.p ?? -12, e = Math.min(t1, t0 + (spec.fpSec ?? M.fpSec));
       if (vel) ramp(0, p - f, t0, e); else ramp(f, p, t0, e);   // 力度那一路：音头已经按 f 的力度弹了，这里只把它压到 p
-      if (t1 > e) { if (sw) shaped(vel ? p - f : p, vel ? p - f : p, e, t1); else segs.push({ t0: e, t1, dB: vel ? p - f : p }); }   // fp 之后再 <（贝多芬常用）
+      if (t1 > e) {   // fp 之后再 <（贝多芬常用）：从 p 长回去，最多回到音头的 f（不超过写的）；<> = p → f → p；> = 在 p 上再往下收
+        const lo = vel ? p - f : p, hi = vel ? 0 : f;
+        if (sw === "<") ramp(lo, hi, e, t1);
+        else if (sw === "<>") { const m = (e + t1) / 2; ramp(lo, hi, e, m); ramp(hi, lo, m, t1); }
+        else if (sw) shaped(lo, lo, e, t1); else segs.push({ t0: e, t1, dB: lo });
+      }
       any = true; continue;
     }
     if (art.includes("sfz") && !vel) { const e = Math.min(t1, t0 + (spec.sfzSec ?? M.sfzSec)), b = spec.sfzDb ?? M.sfzDb; ramp(base + b, baseEnd === base ? base : base + ((baseEnd - base) * (e - t0)) / Math.max(1e-9, t1 - t0), t0, e); cur = e; any = true; }
