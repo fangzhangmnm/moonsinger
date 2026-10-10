@@ -4,7 +4,8 @@
 import { iconHtml } from "./icon.ts";
 import { ARTS, DYNS, type Art, type Dyn } from "../score/song.ts";
 
-export type SelVerb = "all" | "copy" | "cut" | "paste" | "transpose" | "delete" | "clear" | "forget";   // 「修」2026-10-08 去掉（user「也许不要修这个ui入口，符号键盘承重」）：演奏法 / 连线 / 力度都在 pad 符号层（有选区 = 整组）
+export type SelVerb = "all" | "copy" | "cut" | "paste" | "transpose" | "delete" | "clear" | "forget"
+  | "up" | "down" | "sharp" | "flat" | "octUp" | "octDown" | "half" | "double" | "dot";   // 第二排 = 微调（v0.10.1；user「选区多微调同意」= 设计稿方案 A）   // 「修」2026-10-08 去掉（user「也许不要修这个ui入口，符号键盘承重」）：演奏法 / 连线 / 力度都在 pad 符号层（有选区 = 整组）
 /** 「修」（2026-10-08 by Claude Opus 5.5；user 拍「挂在音上 + 选区条」）：选区条原地换成一排开关——演奏法（选中的音都有 = 亮；有的有 = 半亮）+ 力度（选区开头那儿写着的亮）。 */
 export interface FixState { art: Record<Art, "all" | "some" | "none">; slur?: "all" | "some" | "none"; ignores?: readonly string[] }   // ignores = 台上那位不认的（钮上标「不认」，照样能写）；slur = 连线（2026-10-08 连断）
 /** 渐强 / 渐弱的钮面：< / >（两条线）。 */
@@ -28,9 +29,13 @@ export class SelBar {
   update(sel: number, clip: boolean, over: boolean): void {
     if (over || (!sel && !clip)) { this.el.hidden = true; return; }
     const b = (v: SelVerb, label: string, icon?: string, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml(icon) : ""}<span>${label}</span></button>`;
-    this.el.innerHTML = sel
-      ? `<span class="sel-n">${sel} 个</span>` + b("all", "全选") + b("copy", "复制") + b("cut", "剪切") + (clip ? b("paste", "粘贴") : "") + b("transpose", "操作…") + b("delete", "删", "trash-can", "danger") + b("clear", "", "x")
-      : b("paste", "粘贴到光标处") + b("forget", "", "x");
+    // 第二排：微调（点了不收、选区留着、可以连着点；每一下一步撤销）——触屏上不拖也能改高低长短（user「既然拖动超级容易误触…选中一个或者几个音的时候出小控件」→「选区多微调同意」）
+    const t = (v: SelVerb, label: string, title: string) => `<button type="button" class="btn sel-tw" data-v="${v}" title="${title}">${label}</button>`;
+    const tweak = `<div class="sel-row sel-tweak">${t("up", "↑", "往上一级（调内）")}${t("down", "↓", "往下一级（调内）")}${t("sharp", "♯", "升半音")}${t("flat", "♭", "降半音")}` +
+      `${t("octUp", "↑8", "高八度")}${t("octDown", "↓8", "低八度")}<span class="sel-gap"></span>${t("half", "÷2", "时值减半")}${t("double", "×2", "时值加倍")}${t("dot", "附点", "加附点（都有附点 = 去掉）")}</div>`;
+    this.el.classList.toggle("has-tweak", !!sel);
+    const row1 = `<span class="sel-n">${sel} 个</span>` + b("all", "全选") + b("copy", "复制") + b("cut", "剪切") + (clip ? b("paste", "粘贴") : "") + b("transpose", "操作…") + b("delete", "删", "trash-can", "danger") + b("clear", "", "x");
+    this.el.innerHTML = sel ? `<div class="sel-row">${row1}</div>${tweak}` : b("paste", "粘贴到光标处") + b("forget", "", "x");
     this.el.hidden = false;
   }
 }

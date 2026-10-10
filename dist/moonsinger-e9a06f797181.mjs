@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.0-2026-10-10";
+var APP_VERSION = "v0.10.1-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3804,6 +3804,16 @@ function longer(st3) {
 }
 function scaleSelDur(st3, f2) {
   return mapSelDur(st3, (d3) => d3 * f2);
+}
+function toggleSelDot(st3) {
+  if (!st3.sel) return st3;
+  const plain2 = (d3) => {
+    for (let k2 = 0; k2 <= 6; k2++) if (d3 === WHOLE / 2 ** k2) return true;
+    return false;
+  };
+  const timed = tr(st3).slice(st3.sel.from, st3.sel.to).filter(isTimed), dotted = (d3) => d3 % 3 === 0 && plain2(d3 * 2 / 3);
+  const allDotted = timed.length > 0 && timed.every((t10) => dotted(t10.dur));
+  return mapSelDur(st3, (d3) => allDotted ? d3 * 2 / 3 : plain2(d3) ? d3 * 1.5 : d3);
 }
 function setTuplet(st3, n10) {
   return { ...st3, input: { ...st3.input, tuplet: n10 } };
@@ -35864,7 +35874,11 @@ var SelBar = class {
       return;
     }
     const b3 = (v, label, icon, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml2(icon) : ""}<span>${label}</span></button>`;
-    this.el.innerHTML = sel ? `<span class="sel-n">${sel} \u4E2A</span>` + b3("all", "\u5168\u9009") + b3("copy", "\u590D\u5236") + b3("cut", "\u526A\u5207") + (clip2 ? b3("paste", "\u7C98\u8D34") : "") + b3("transpose", "\u64CD\u4F5C\u2026") + b3("delete", "\u5220", "trash-can", "danger") + b3("clear", "", "x") : b3("paste", "\u7C98\u8D34\u5230\u5149\u6807\u5904") + b3("forget", "", "x");
+    const t10 = (v, label, title) => `<button type="button" class="btn sel-tw" data-v="${v}" title="${title}">${label}</button>`;
+    const tweak = `<div class="sel-row sel-tweak">${t10("up", "\u2191", "\u5F80\u4E0A\u4E00\u7EA7\uFF08\u8C03\u5185\uFF09")}${t10("down", "\u2193", "\u5F80\u4E0B\u4E00\u7EA7\uFF08\u8C03\u5185\uFF09")}${t10("sharp", "\u266F", "\u5347\u534A\u97F3")}${t10("flat", "\u266D", "\u964D\u534A\u97F3")}${t10("octUp", "\u21918", "\u9AD8\u516B\u5EA6")}${t10("octDown", "\u21938", "\u4F4E\u516B\u5EA6")}<span class="sel-gap"></span>${t10("half", "\xF72", "\u65F6\u503C\u51CF\u534A")}${t10("double", "\xD72", "\u65F6\u503C\u52A0\u500D")}${t10("dot", "\u9644\u70B9", "\u52A0\u9644\u70B9\uFF08\u90FD\u6709\u9644\u70B9 = \u53BB\u6389\uFF09")}</div>`;
+    this.el.classList.toggle("has-tweak", !!sel);
+    const row1 = `<span class="sel-n">${sel} \u4E2A</span>` + b3("all", "\u5168\u9009") + b3("copy", "\u590D\u5236") + b3("cut", "\u526A\u5207") + (clip2 ? b3("paste", "\u7C98\u8D34") : "") + b3("transpose", "\u64CD\u4F5C\u2026") + b3("delete", "\u5220", "trash-can", "danger") + b3("clear", "", "x");
+    this.el.innerHTML = sel ? `<div class="sel-row">${row1}</div>${tweak}` : b3("paste", "\u7C98\u8D34\u5230\u5149\u6807\u5904") + b3("forget", "", "x");
     this.el.hidden = false;
   }
 };
@@ -36061,6 +36075,43 @@ async function selVerb(v) {
       clip = null;
       clipText = "";
       updateChrome();
+      break;
+    // 第二排 = 微调（v0.10.1；user「选区多微调同意」）：点了不收、选区留着；音高变了响一下（同选区菜单的移调）
+    case "up":
+    case "down":
+      if (st2.sel) {
+        update(apply(st2, { k: "step", d: v === "up" ? 1 : -1 }, performance.now()));
+        previewEdited();
+      }
+      break;
+    case "sharp":
+    case "flat":
+      if (st2.sel) {
+        update(apply(st2, { k: "alter", d: v === "sharp" ? 1 : -1 }, performance.now()));
+        previewEdited();
+      }
+      break;
+    case "octUp":
+    case "octDown":
+      if (st2.sel) {
+        update(apply(st2, { k: "octave", d: v === "octUp" ? 1 : -1 }, performance.now()));
+        previewEdited();
+      }
+      break;
+    case "half":
+    case "double":
+      if (st2.sel) {
+        const nx2 = apply(st2, { k: "selscale", f: v === "half" ? 0.5 : 2 }, performance.now());
+        if (nx2 === st2) info(v === "half" ? "\u518D\u77ED\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86" : "\u518D\u957F\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86");
+        else update(nx2);
+      }
+      break;
+    case "dot":
+      if (st2.sel) {
+        const nx2 = toggleSelDot(st2);
+        if (nx2 === st2) info("\u9009\u4E2D\u7684\u91CC\u9762\u6CA1\u6709\u80FD\u52A0\u9644\u70B9\u7684\u65F6\u503C");
+        else update(nx2);
+      }
       break;
   }
   if (v !== "transpose") scoreEl.focus();
@@ -37754,7 +37805,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "0588a3e1d55c",
+  cssHash: "115e9b509d27",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -40818,4 +40869,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a78461af26bd.mjs.map
+//# sourceMappingURL=moonsinger-e9a06f797181.mjs.map

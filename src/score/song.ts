@@ -849,6 +849,14 @@ export function longer(st: EditorState): EditorState {
 }
 /** 选区菜单「÷2 / ×2」：选中的音 / 休止都乘这个数（超出全音符 / 三十二分的那个不动）。 */
 export function scaleSelDur(st: EditorState, f: 0.5 | 2): EditorState { return mapSelDur(st, (d) => d * f); }
+/** 附点（选区那一排微调，v0.10.1）：选中的都带附点 = 都去掉；否则不带附点的普通时值都加上（连音等别的时值不动）。 */
+export function toggleSelDot(st: EditorState): EditorState {
+  if (!st.sel) return st;
+  const plain = (d: number) => { for (let k = 0; k <= 6; k++) if (d === WHOLE / 2 ** k) return true; return false; };
+  const timed = tr(st).slice(st.sel.from, st.sel.to).filter(isTimed), dotted = (d: number) => d % 3 === 0 && plain((d * 2) / 3);
+  const allDotted = timed.length > 0 && timed.every((t) => dotted(t.dur));
+  return mapSelDur(st, (d) => (allDotted ? (d * 2) / 3 : plain(d) ? d * 1.5 : d));
+}
 /** 连音：设成 0 / 3 / 5 / 6 / 7（锁定式；候选由界面弹）。 */
 export function setTuplet(st: EditorState, n: InputState["tuplet"]): EditorState { return { ...st, input: { ...st.input, tuplet: n } }; }
 /** ♯ / ♭ Shift：关 → 一次；一次且 350 ms 内再点 → 锁；其余 → 关。有选中 = 选中的音直接升降半音。 */

@@ -555,6 +555,11 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .sel-bar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0, 0, 0, .08); white-space: nowrap; max-width: calc(100% - 16px); overflow-x: auto; }
 .sel-bar .btn { height: 30px; min-width: 30px; padding: 0 8px; font-size: 13px; }
 .sel-bar .sel-n { color: var(--muted); font-size: 12px; padding: 0 4px; }
+/* 选区条两排（v0.10.1：第二排 = 微调）：胶囊变成圆角卡片 */
+.sel-bar.has-tweak { flex-direction: column; align-items: stretch; border-radius: 14px; gap: 4px; }
+.sel-bar .sel-row { display: flex; align-items: center; gap: 4px; }
+.sel-bar .sel-tweak { justify-content: center; }
+.sel-bar .sel-tw { min-width: 36px; font-variant-numeric: tabular-nums; }
 /* 修（2026-10-08）：演奏法开关（都有 = 亮，有的有 = 虚线半亮）+ 力度字（Bravura 字形） */
 .sel-bar .smufl { font-family: Bravura; font-size: 20px; line-height: 1; display: inline-block; transform: translateY(2px); }
 .sel-bar .fix-art { gap: 4px; }
