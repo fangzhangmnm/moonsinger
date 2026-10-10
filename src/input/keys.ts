@@ -25,6 +25,7 @@ export interface Chord { code: string; shift?: boolean; alt?: boolean; mod?: boo
 export type Action =
   | { k: "cmd"; cmd: Command }                      // 编辑命令（score/commands.ts apply）
   | { k: "audition"; degree: number; dir: Dir }     // 弹：只唱这一级，不写
+  | { k: "stack"; degree: number }                  // Shift+1–7：这一级叠到光标前那个音上（和弦；宿主管单声护栏）
   | { k: "play" } | { k: "impro" }
   | { k: "file"; a: "open" | "save" | "export" }   // 无地逃生口（打开 / 存 .mxl / 导出 hub；另存为住导出里，user 2026-08-20「另存为也变成导出」）
   | { k: "clip"; a: "copy" | "cut" | "paste" | "all" }   // 选区条的键盘入口（2026-10-08；user「快捷键其实现在我都没用过」，触屏优先）
@@ -57,8 +58,9 @@ export const BINDINGS: Binding[] = [
   // ── 写音 ──
   { id: "degree.near", group: "写音", keys: [...range(DIGITS), ...range(NUMPAD)], show: "1–7（小键盘也行）", sound: true, act: degree("near"),
     does: { write: "写一个音：调里第几级，落在离上一个音最近处", edit: "把选中的第一个音改成这一级，选中跳到下一个音", impro: "只唱不写" } },
-  { id: "degree.up", group: "写音", keys: range(DIGITS, { shift: true }), show: "Shift+1–7", sound: true, act: degree("up"),
-    does: { write: "同上，往上找", edit: "同上，往上找", impro: "只唱不写（往上找）" } },
+  // Shift = 叠（2026-10-10 user「shift旧的功能不要，shift用来叠音输入和弦，以及pc上面叠功能找不到了」）：原来 Shift+1–7 = 往上找，撤了（往下找的 QWERTYU 留着）
+  { id: "stack", group: "写音", keys: range(DIGITS, { shift: true }), show: "Shift+1–7", act: (i, where) => (where === "impro" ? { k: "audition", degree: (i % 7) + 1, dir: "near" } : { k: "stack", degree: (i % 7) + 1 }),
+    does: { write: "叠：这一级叠到光标前那个音上（和弦，落在离它现有的音最近处；已经有 = 去掉）。同 pad「叠」", edit: "叠到刚写的那个 / 选区第一个音上", impro: "只唱不写" } },
   { id: "degree.down", group: "写音", keys: range(DOWN_ROW), show: "Q W E R T Y U", sound: true, act: degree("down"),
     does: { write: "同上，往下找（数字正下方那一排）", edit: "同上，往下找", impro: "只唱不写（往下找）" } },
   { id: "rest", group: "写音", keys: [{ code: "Digit0" }, { code: "Numpad0" }], act: cmd({ k: "rest" }),

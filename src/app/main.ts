@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { clearMarks, stackDegree, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -192,7 +192,7 @@ bar.innerHTML =
   `<button id="transportMore" class="btn" title="接着放（停过才有）/ 循环 / 从头放 / 接缝">⋯</button>` +
   `<span class="mode-seg" role="tablist" title="模式：这一下点的是哪一层">${MODES.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${MODE_TITLE[m]}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
   `<button id="studioBtn" class="btn" title="录音室：每个声部的增益 / 声像 / 静音 / 独奏"><svg class="ico"><use href="#sliders"/></svg></button>` +
-  `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button><span id="singStatus" class="sing-st"></span></div>` +
+  `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div>` +
   `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
   `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
   `<button id="setBtn" class="btn" title="菜单：新建 / 打开 / 导出 / 封面 / 声音与署名 / 设置"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
@@ -692,7 +692,17 @@ function renderUndo(): void { $<HTMLButtonElement>("undoBtn").disabled = !histor
 // ── 播放：月读唱（第一次要加载引擎，之后复用） ─────────────────────────
 const singer = new Singer();
 /** 唱 / 导出的进度 = 顶栏走带条旁边的小字（停了就清）。 */
-const progress = (s: string) => { $("singStatus").textContent = s; };
+// 顶栏的小状态行撤了（2026-10-10 user「小状态栏不要放在顶栏，这样会让顶栏的按钮重拍…或者就不显示？反正有log，用户也不care，有重要的事情有toast」）：
+//   文字进黑匣子（同一句换数字不重复记）；带百分比的（下载）推顶栏底边那条细线（不占位置、不挤按钮）。
+let statusLast = "", statusBar = false;
+const progress = (s: string): void => {
+  const pc = /(\d+)%/.exec(s);
+  if (pc) { if (!renderBar.running) { renderBar.start(1); statusBar = true; } renderBar.frac(Number(pc[1]) / 100); }
+  else if (!s && statusBar) { renderBar.end(); statusBar = false; }
+  const key = s.replace(/\d+(\.\d+)?/g, "#");
+  if (s && key !== statusLast) diagNote("status", s);
+  statusLast = key;
+};
 /** 一次性的消息（存好了、已分享…）= toast，3 秒（家族 @internal/workbench-elements 的 notice；错误另见 showError）。 */
 const info = (s: string) => { showNotice({ id: "info", level: "info", text: s, autoHideMs: 3000 }); };
 /** 报错：红色 toast，带完整原因，点了才收（家族四级 notice 的 error）。user 2026-10-07「替补不能静默替补，需要显示报错」→ 订正「不是显示自动上，而是就是不出声，报错，人类手动换」：
@@ -912,7 +922,7 @@ function playRange(tl: Timeline): { from: number; to: number; loopFrom: number }
 // ── 走带（2026-10-10 Opus 5.5）：起点 / 续播·暂停 / 回起点重放 / ⋯（循环、从头放、接缝）/ 听模式 ──────────────────────────
 //   user「走带控制有续播/暂停 和从上一次开播的地方重新开始两个，loop和之后别的设置比如从头开始放在...里面」「但是我想编辑的时候光标动但是播放头不动」
 //   「核心场景就是一遍一遍听同一个小节」「以及大部分时候可以小节级别的开始精度」「那么续播不reset起点」「长按加播放同意」。
-//   起点 = 一个小节头：只有「从这儿放」（空白长按 / 选区菜单 / 听模式里点谱）挪它；编辑、挪光标、续播、「从头放」都不动它（取代 v0.9.1 的「▶ = 从光标放」）。
+//   起点 = 一个小节头：只有「从这儿放」（空白长按 / 右键菜单；听模式里长按 / 右键谱面）挪它；编辑、挪光标、续播、「从头放」都不动它（取代 v0.9.1 的「▶ = 从光标放」）。
 //   「从头放」= 从开头放一遍、起点留着（2026-10-10 user「从头放会把start reset回头」：v0.9.18 起它会把起点挪回开头，听完整首再按 |▶ 就回不到正在磨的那个小节了）。
 let startMark: { paperId: string; tick: number } | null = null;
 let paused: { sec: number; at: { paperId: string; tick: number } | null } | null = null;   // 暂停在哪：秒 + 谱位置（暂停时改了谱 = 按谱位置接着放）
@@ -980,7 +990,7 @@ function pausePlay(): void {
   const sec = engine.audibleSec() ?? engine.position, at = playTl?.locate(sec) ?? null;
   stopPlay(); paused = { sec, at }; view.setPlayhead(at);
 }
-/** ⟲ = 回到起点重放（一遍一遍听同一个小节）。放着 = 直接跳回去。 */
+/** 回到起点重放（一遍一遍听同一个小节；|▶ 和「从这儿放」走这里）。放着 = 直接跳回去。 */
 function replay(): void {
   paused = null;
   if (engine.playing && playTl) { engine.seek(startSeconds(playTl, playRange(playTl))); return; }
@@ -1004,7 +1014,7 @@ function stopPlay(): void {
   chunkKeysWanted = []; singer.cancelPending(); singer.cancelInflight(); schedulePrewarm();
 }
 engine.on("ended", () => { playIcon(false); view.setPlayhead(null); phKey = ""; paused = null; });
-/** 听模式（2026-10-10 user「还有一个就是播放模式，锁写谱，但是可以调录音室」「我蛮需要播放欣赏的时候防误触的哈哈」）：谱锁住（轻点 = 从那个小节放、拖 = 滚动），
+/** 听模式（2026-10-10 user「还有一个就是播放模式，锁写谱，但是可以调录音室」「我蛮需要播放欣赏的时候防误触的哈哈」）：谱锁住（轻点不跳播、长按 / 右键 = 从这儿放、拖 = 滚动），
  *  pad 收起、键盘只认空格（放 / 暂停）和 Esc（回到写）；录音室照样能开能调。 */
 // ── 模式 + 底座（2026-10-10 Opus 5.5；规则表 = src/app/workspace.ts）：音 / 词 / 符 + 听；pad 那个位子 = 底座，放 音键 / 符号格 / 录音室（互斥）。
 //   user「模式！音，歌词，强度和articulation！…还有一个就是播放模式，锁写谱，但是可以调录音室」「强度和演奏法能不能合并，就是符号编辑，和别的符号也合并」
@@ -1034,7 +1044,7 @@ function setMode(m: Mode): void {
   const wasListen = ws.mode === "listen";
   ws.mode = m; if (hasKeys(m)) ws.collapsed = false;
   applyWorkspace();
-  if (m === "listen") info("听：谱锁住了（不能写），点谱 = 从那个小节放；录音室照样能调。Esc / 点别的模式回到写");
+  if (m === "listen") info("听：谱锁住了（不能写），轻点不跳播；长按 / 右键谱面 = 从这儿放；空格 = 放 / 停；录音室照样能调。Esc / 点别的模式回到写");
   else if (wasListen) info("回到写");
 }
 const setListen = (on: boolean) => setMode(on ? "listen" : lastEditMode);
@@ -1729,7 +1739,9 @@ function partViews(): PartView[] {
     const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown";
     const lm = mutes.get(p.id);
-    return { ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
+    // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
+    const noLyrics = eng === "soundfont" || eng === "vowel-sampler" ? `${labels[k]}${eng === "vowel-sampler" ? "（元音版）只哼" : "不唱歌词"}：空着的歌词位不开框；已经写了的字点开能改、能删` : "";
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, clef: p.clef ?? "G", ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -1878,13 +1890,13 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
 /** 空白处的小菜单（长按 / 电脑右键；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」「小菜单同意」）：非模态，开在按的地方，点外面就收。
  *  光标已经由 score-view 放到按的位置：粘贴 = 贴在那里；插记号 = 插在那里。 */
 const DYN_MENU = { pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}" } as const;   // Bravura 力度字形
-function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: number } | null): void {
+function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: number } | null): void {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
   box.innerHTML =
-    item("play", "从这儿放", "起点挪到这个小节的头，从这儿放（⟲ 回到这儿重放；编辑、挪光标都不动起点）") + `<div class="ctx-sep"></div>` +
+    item("play", "从这儿放", "起点挪到这个小节的头，从这儿放（之后 |▶ 回到这儿重放；编辑、挪光标都不动起点）") + `<div class="ctx-sep"></div>` +
     item("paste", "粘贴", "贴在这里：app 里复制的，或系统剪贴板里的简谱文字（1 2 3 | 5 - -）") +
     `<div class="ctx-sep"></div>` +
     item("bar", "小节线 |", "从这里重新数小节（弱起）") + item("phrase", "句号", "这一句到这儿（「合」挪字的边界；不换行不换气）") +
@@ -1892,7 +1904,7 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
     // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
     `<div class="ctx-row ctx-dyn">${(["pp", "p", "mp", "mf", "f", "ff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(st), st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：从这儿前面那个音起"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
     `<div class="ctx-sep"></div>` +
-    item("row", "全选这一行", "", !row) + item("all", "全选");
+    item("all", "全选");   // 「全选这一行」去掉了（2026-10-10 user「wishlist 全选这一行没啥用，去掉」）
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let x = at.x + 6, y = at.y + 10;
@@ -1911,7 +1923,6 @@ function openScoreMenu(at: { x: number; y: number }, row: { from: number; to: nu
     else if (v === "phrase") update(apply(st, { k: "phrase" }, performance.now()));
     else if (v.startsWith("mark:")) insertMarkHere(v.slice(5) as MarkVal["kind"]);
     else if (v.startsWith("dyn:")) update(apply(st, { k: "dyn", v: v.slice(4) as Dyn }, performance.now()));
-    else if (v === "row" && row) { update(select(st, row.from, row.to)); updateChrome(); }
     else if (v === "all") { update(selectAll(st)); updateChrome(); }
     scoreEl.focus();
   });
@@ -2116,6 +2127,7 @@ function openSelMenu(at: { x: number; y: number }): void {
       item("keys", "转调…", "整段转到另一个调：音按两个主音之间的音程挪，调号跟着换") +
       item("respell", "按调号拼写", "音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动") +
       `<div class="ctx-row"><span class="ctx-k">时值</span>${chip("short", "÷2")}${chip("long", "×2")}${chip("seldur", `都改成 <span class="smufl">${UNIT_SMUFL[st.input.unit]}</span>`, "都改成长短旋钮现在那一档")}</div>` +
+      `<div class="ctx-row"><span class="ctx-k">清掉记号</span>${chip("clr:phrase", "曲级", "力度字、渐强渐弱、渐到、风格（选区第一个音前面挂着的也算）")}${chip("clr:note", "音级", "演奏法、音头（重音 / 突强…）、音内起伏、连线、呼吸、气声")}${chip("clr:all", "都清", "曲级 + 音级；音、歌词、调号拍号速度、反复不动")}</div>` +
       `<div class="ctx-sep"></div>` + item("copy", "复制") + item("cut", "剪切") + (clip ? item("paste", "粘贴（替换选中的）") : "") + item("delete", "删掉", "", "danger");
   };
   draw("main");
@@ -2138,6 +2150,7 @@ function openSelMenu(at: { x: number; y: number }): void {
     if (v === "short") { cmd({ k: "selscale", f: 0.5 }); return; }
     if (v === "long") { cmd({ k: "selscale", f: 2 }); return; }
     if (v === "seldur") { cmd({ k: "seldur" }); return; }
+    if (v.startsWith("clr:")) { const n = clearMarks(st, v.slice(4) as "phrase" | "note" | "all"); if (n === st) info("选中的这一段没有这类记号"); else update(n); close(); scoreEl.focus(); return; }
     if (v === "keys") { draw("keys"); place(); return; }
     if (v === "back") { draw("main"); place(); return; }
     close();
@@ -3183,6 +3196,12 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       if (probe.input !== st.input) update({ ...st, input: probe.input });   // 「只管下一个音」的 ♯ / ♭ 用掉了
       return true;
     }
+    case "stack":   // Shift+1–7 = 叠（同 pad「叠」：XOR；单声乐器的声部叠不了）
+      if (repeat) return true;
+      if (ws.mode !== "notes") { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(`「${MODE_LABEL[ws.mode]}」里键盘不写音（切到「音」再写）`); } return true; }
+      if (!canStack()) { info("这条声部台上是单声的（月读 / 元音版 / 没人）：叠不了。换成能叠音的乐器再叠"); return true; }
+      { const n = stackDegree(st, a.degree); if (n === st) return true; update(n); previewEdited(); }
+      return true;
     case "play": playPause(); return true;
     case "impro": toggleImpro(); return true;
     case "lyric": return view.lyrics.act(a.a);
@@ -3197,6 +3216,9 @@ function run(a: Action, repeat: boolean, code: string): boolean {
 window.addEventListener("keydown", (e) => {
   if (finderShown && gallery?.isOpen()) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } return; }   // 歌库上面的乐器目录（只弹着玩）：Esc 回歌库
   if (gallery?.isOpen()) return;   // 歌库开着：键盘归它。没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建
+  // 存 / 导出 / 打开（Ctrl / ⌘+S、+Shift+S、+O）挂在最外层：不管哪一页开着、焦点在谁身上（录音室 / 乐器页 / 乐器目录 / 参考窗）都是这首歌的事，
+  //   不能落到浏览器的「保存网页」（2026-10-10 user「很多地方save没有拦截」）。各页只决定别的键。
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && /^[so]$/i.test(e.key)) { const a = route(e, whereNow(), "write"); if (a && a.k === "file") { e.preventDefault(); run(a, e.repeat, e.code); return; } }
   if (finder.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } return; }   // 找人视图开着：只认 Esc（pad 的触屏键照常）
   if (instShown) {   // 乐器页：只认 Esc（回谱）和撤销 / 重做；输入框里的照常打字
     const inField = (e.target as HTMLElement | null)?.closest("input, select, textarea");

@@ -320,7 +320,7 @@ export class ScoreView {
     const sys = L.systems[h.system].sys, rows = L.systems.filter((r) => r.paper === p.paperId && r.sys === sys);
     const top = Math.min(...rows.map((r) => r.top)), bottom = Math.max(...rows.map((r) => r.bottom));
     let el = this.startEl;
-    if (!el || !el.isConnected) { el = document.createElement("div"); el.className = "start-mark"; el.title = "起点：⟲ 从这儿重放（长按空白处「从这儿放」挪它；编辑不动它）"; this.ink.appendChild(el); this.startEl = el; }
+    if (!el || !el.isConnected) { el = document.createElement("div"); el.className = "start-mark"; el.title = "起点：|▶ 从这儿放（长按 / 右键空白处「从这儿放」挪它；编辑不动它）"; this.ink.appendChild(el); this.startEl = el; }
     el.style.left = `${h.x - 4}px`; el.style.top = `${top}px`; el.style.height = `${Math.max(1, bottom - top)}px`;
   }
   /** 光标 / 选区 / 编辑框在哪（变了才跟）。 */
@@ -516,10 +516,18 @@ export class ScoreView {
     this.heldBase = this.baseKey();   // 本来就在这条（没重画）也一样：接下来 pad 弹出也不拽
     this.host.onPart?.(pt.paper, pt.part, at); return true;
   }
+  /** 这条声部台上那位不唱字？是 = 说一次为什么（同一位歌手只说一次，换了再说）。 */
+  private noLyricsSaid = "";
+  private noLyricsHere(part: string): boolean {
+    const why = this.host.parts().find((p) => p.id === part)?.noLyrics; if (!why) return false;
+    if (this.noLyricsSaid !== why) { this.noLyricsSaid = why; this.host.notice?.(why); }
+    return true;
+  }
   /** 「词」里点了一个音：开它的歌词框（休止没有歌词 = false，照常放光标）。 */
   private openLyricOn(hit: HitNote): boolean {
     const L = this.layout, row = L?.systems[hit.system]; if (!L || !row) return false;
     const t = trackOf(this.host.get().song, row.paper, row.part)[hit.index]; if (t?.kind !== "note") return false;
+    if (!t.lyric && this.noLyricsHere(row.part)) return false;   // 不唱字的声部：空着的不开框（照常放光标）
     this.host.set(this.focusRow(this.host.get(), hit.system, this.host.get().caret)); this.lyrics.openAt(hit.index); this.host.focus?.("text");
     return true;
   }
@@ -704,7 +712,11 @@ export class ScoreView {
     if (dh) { this.markMenu(dh); return true; }
     // 1. 歌词那一行（音符优先，别抢下一行高音的点）——只在「词」里
     if (this.rules.lyrics && !this.noteAt(x, y)) {
-      const ly = this.lyricAt(x, y);
+      const ly = this.lyricAt(x, y), lyRow = ly ? L.systems[ly.system] : null;
+      if (ly && lyRow && this.noLyricsHere(lyRow.part)) {
+        const t = trackOf(this.host.get().song, lyRow.paper, lyRow.part)[ly.index];
+        if (t?.kind === "note" && !t.lyric) return false;   // 不唱字的声部：空着的歌词位不开框（照常放光标）
+      }
       if (ly) { this.host.set(this.focusRow(this.host.get(), ly.system, this.host.get().caret)); this.lyrics.openAt(ly.index); this.host.focus?.("text"); return true; }
     }
     // 2. 音符：不在这里（轻点 / 长按 / 拖在 down / up / longPress 里分）

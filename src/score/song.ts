@@ -246,6 +246,20 @@ export function toggleChordPitch(st: EditorState, i: number, p: Pitch): EditorSt
   return next(st, nt);
 }
 /** pad 的「叠」：往前一个音（有选中 = 选中的第一个音）上叠（挂着的升降一样用掉）。 */
+/** 电脑键盘 Shift+1–7 = 叠一级上去（2026-10-10 user「shift旧的功能不要，shift用来叠音输入和弦，以及pc上面叠功能找不到了」）：
+ *  叠到哪个音 = 同 stackPitch（有选区 = 写字头前那个 / 选区第一个音；没有 = 光标前那个音）；音高 = 这一级离那个音现有的几个音里最近的那个的位置（一样近取上面），
+ *  所以 C → Shift+3 = E（上面）、G → Shift+3 = E（下面）、C E → Shift+5 = G。已经有这个音 = 去掉（XOR，同 pad「叠」）。 */
+export function stackDegree(st: EditorState, degree: number): EditorState {
+  const toks = tr(st), i = st.sel ? (st.sel.head != null ? lastTimedBefore(toks, st.sel.head, st.sel.from) : firstNoteIn(st)) : currentIndex(st);
+  const t = i >= 0 ? toks[i] : undefined;
+  if (t?.kind !== "note" || !t.pitch) return st;
+  let best: Pitch | null = null, bestD = Infinity;
+  for (const ref of [t.pitch, ...(t.chord ?? [])]) {
+    const c = placeDegree(degree, inputKey(st), ref, "near"), d = Math.abs(midiOf(c) - midiOf(ref));
+    if (d < bestD || (d === bestD && best && midiOf(c) > midiOf(best))) { best = c; bestD = d; }
+  }
+  return best ? stackPitch(st, best) : st;
+}
 export function stackPitch(st: EditorState, pitch0: Pitch): EditorState {
   const input = consumeAcc(st.input);
   if (st.sel) {   // 有选中 = 叠到「当前那个音」上：替换模式里 = 刚写的那个（写字头前面）；还没写过 = 选区里第一个音（键盘只管打谱，整组的操作在选区菜单里）
@@ -406,8 +420,31 @@ export function insertNav(st: EditorState, what: NavWhat, nums?: number[]): Edit
   nt.splice(at, 0, { kind: "nav", id, what, ...(what === "ending" ? { nums: nums && nums.length ? [...nums].sort((a, b) => a - b) : [1] } : {}) });
   return next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
 }
+/** 选区里清掉记号（2026-10-10 user「批量修改，删除曲级（你之前分了曲级vs音符级）力度记号的方法，而不是得一个个手删 场景是我把人声的notes给复制到其他的轨里面之后，
+ *  想把之前调校的力度和articulation给删了按新乐器的特性写」）。phrase = 曲级：力度字 / 渐强渐弱 / 渐到 / 风格（选区起点前紧挨着第一个音的也算，同复制）；
+ *  note = 音级：演奏法 / 音头 / 音内起伏 / 连线 / 呼吸 / 出声的换气 / 气声；all = 两样。音、歌词、叠音、结构记号（调号拍号速度、反复、句号）不动。没东西可清 = 原样。 */
+export function clearMarks(st: EditorState, which: "phrase" | "note" | "all"): EditorState {
+  if (!st.sel) return st;
+  const toks = tr(st), h = headLen(toks), { from, to } = st.sel;
+  const isPhrase = (t: Token) => t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove";
+  let a = from; while (a > h && isPhrase(toks[a - 1])) a--;
+  const out: Token[] = []; let before = 0, inside = 0, touched = false;
+  toks.forEach((t, i) => {
+    if (which !== "note" && i >= a && i < to && isPhrase(t)) { if (i < from) before++; else inside++; return; }
+    if (which !== "phrase" && i >= from && i < to && t.kind === "note" && (t.art || t.slur || t.swell || t.inhale)) {
+      const { art: _a, slur: _s, swell: _w, inhale: _i, ...rest } = t; out.push(rest as Token); touched = true; return;
+    }
+    out.push(t);
+  });
+  if (!before && !inside && !touched) return st;
+  const f = from - before, e = to - before - inside;
+  return next(st, out, e > f ? { sel: { from: f, to: e }, caret: e, log: [] } : { sel: null, caret: f, log: [] });
+}
 export function writeBar(st: EditorState): EditorState {
   const at = st.sel ? st.sel.to : st.caret, id = st.nextId, tokens = tr(st).slice();
+  // 小节线也是 XOR（2026-10-10 user「wishlist 小节线应该也是xor，有时候误加的小节线一直删不掉」）：光标紧挨在一根人插的普通小节线后面 = 再按一下去掉它（反复小节线走「反复」菜单，不动）
+  const prev = tokens[at - 1];
+  if (!st.sel && at - 1 >= headLen(tokens) && prev?.kind === "bar" && !prev.repeat) { tokens.splice(at - 1, 1); return next(st, tokens, { caret: at - 1, sel: null, log: [] }); }
   tokens.splice(at, 0, { kind: "bar", id });
   return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
 }
@@ -1176,7 +1213,8 @@ const endMarks = (toks: Token[]) => ({ fifths: keyAt(toks, toks.length), ...time
  *  只在 onPaper 这张纸上给它一条只有谱头的 track（谱头抄那张纸第一个在场声部的开头；user「新歌手只出现在当前这张纸嗯」——此前是每张纸都给）；
  *  onPaper = null = 哪张纸都还没有它（「交给新歌手」：接着 rebindTrack 把一条交给它）。在全曲的顺序里排最后。光标跳到它那条（有的话）。
  *  role / mic 的 id 由调用方（休息室 / 录音房）配好。 */
-export function addPart(st: EditorState, part: PartDef, onPaper: string | null = st.at.paper): EditorState {
+/** after = 插在哪位歌手后面（默认 = 光标所在的那位；找不到 = 加在最后）：user 2026-10-10「加歌手的时候应该是insert next而不是append last」。 */
+export function addPart(st: EditorState, part: PartDef, onPaper: string | null = st.at.paper, after: string | null = st.at.part): EditorState {
   if (st.song.parts.some((p) => p.id === part.id)) return st;
   let id = st.nextId;
   const papers = st.song.papers.map((p) => {
@@ -1186,7 +1224,9 @@ export function addPart(st: EditorState, part: PartDef, onPaper: string | null =
     const toks = h.length ? h.map((t) => ({ ...t, id: id++ })) : headTokens({}, (id += 3) - 3);
     return { ...p, tracks: { ...p.tracks, [part.id]: toks } };
   });
-  const song = { ...st.song, parts: [...st.song.parts, part], papers };
+  const k = after === null ? -1 : st.song.parts.findIndex((p) => p.id === after);
+  const parts = k < 0 ? [...st.song.parts, part] : [...st.song.parts.slice(0, k + 1), part, ...st.song.parts.slice(k + 1)];
+  const song = { ...st.song, parts, papers };
   return onPaper && papers.some((p) => p.id === onPaper) ? setFocus({ ...st, song, nextId: id }, onPaper, part.id) : { ...st, song, nextId: id };
 }
 /** 换绑：这张纸上 from 那一行交给 to 这位歌手（音、歌词、记号原样，只换主人；只改这一张纸。user 2026-10-08「已有的track绑换不同的声部」）。

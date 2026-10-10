@@ -14,11 +14,19 @@ function twoPapers(): EditorState { let st = initState(); st = addPaper(st); ret
 const has = (st: EditorState, paper: string, part: string) => !!st.song.papers.find((p) => p.id === paper)?.tracks[part];
 
 describe("新歌手只出现在当前这张纸", () => {
-  it("addPart：只在当前纸给一行，排在全曲最后，光标过去", () => {
+  it("addPart：只在当前纸给一行，排在光标那位后面（只有一位 = 最后），光标过去", () => {
     let st = twoPapers(); const [p1, p2] = st.song.papers.map((p) => p.id);
     st = addPart(st, { id: "P2", role: "r2", mic: "m2" });   // 当前 = 第二张（addPaper 跳过去了）
     eq(has(st, p2, "P2"), true); eq(has(st, p1, "P2"), false, "第一张没有它");
     eq(st.song.parts.map((p) => p.id).join(","), "P1,P2"); eq(st.at.part, "P2");
+  });
+  it("插在光标那位的下一位，不是加到最后（user 2026-10-10「加歌手的时候应该是insert next而不是append last」）", () => {
+    let st = twoPapers();
+    st = addPart(st, { id: "P2", role: "r2", mic: "m2" }); st = addPart(st, { id: "P3", role: "r3", mic: "m3" });   // P1 → P2 → P3（每次光标都在刚加的那位）
+    st = { ...st, at: { ...st.at, part: "P1" } };
+    st = addPart(st, { id: "P4", role: "r4", mic: "m4" });
+    eq(st.song.parts.map((p) => p.id).join(","), "P1,P4,P2,P3", "P4 插在 P1 后面"); eq(st.at.part, "P4");
+    eq(addPart(st, { id: "P5", role: "r5", mic: "m5" }, st.at.paper, "nobody").song.parts.map((p) => p.id).at(-1), "P5", "找不到那位 = 加在最后");
   });
   it("onPaper = null = 哪张纸都还没有（交给新歌手用）", () => {
     const st = addPart(twoPapers(), { id: "P2", role: "r2", mic: "m2" }, null);

@@ -110,3 +110,53 @@ describe("替换模式（选区 + 打音）", () => {
     eq(show(st), "G4/1 C4/1 D4/1", "C 的连音线断开了");
   });
 });
+
+// 选区菜单「清掉记号」：曲级 / 音级 / 都清（2026-10-10 Opus 5.5；user「批量修改，删除曲级（你之前分了曲级vs音符级）力度记号的方法…场景是我把人声的notes给复制到其他的轨里面之后，想把之前调校的力度和articulation给删了」）
+import { clearMarks } from "../src/score/song.ts";
+describe("选区菜单：清掉记号", () => {
+  const build = () => {
+    const st0 = initState(), head = tr(st0).slice(0, headLen(tr(st0)));
+    let id = 500; const nt = (extra: Partial<NoteTok> = {}): Token => ({ kind: "note", id: id++, pitch: P("C"), dur: TPQ, lyric: "ら", ...extra }) as Token;
+    const toks: Token[] = [...head, nt(), { kind: "dyn", id: id++, value: "f" } as Token, nt({ art: ["accent"], slur: true }), { kind: "hairpin", id: id++, dir: "cresc" } as Token, nt({ swell: "<", chord: [P("E")] }),
+      { kind: "groove", id: id++, style: "pop" } as Token, { kind: "tempo", id: id++, bpm: 120 } as Token, nt({ art: ["breath", "whisper"], inhale: "soft" }), nt({ art: ["staccato"] })];
+    const st: EditorState = { ...st0, song: { ...st0.song, papers: st0.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st0.at.part]: toks } })) } };
+    const first = toks.findIndex((t, i) => i > headLen(toks) && t.kind === "note" && (t as NoteTok).art?.[0] === "accent");
+    return select(st, first, toks.length - 1);   // 选中：重音那个音 … 倒数第二个音（最后那个跳音不在里面）；f 挂在第一个音前面
+  };
+  const kinds = (st: EditorState) => tr(st).slice(headLen(tr(st))).map((t) => t.kind === "note" ? `n${t.art ? "[" + t.art.join(",") + "]" : ""}${t.slur ? "‿" : ""}${t.swell ? t.swell : ""}${t.inhale ? "吸" : ""}${t.chord ? "+" : ""}` : t.kind).join(" ");
+  it("曲级：力度字 / 渐强渐弱 / 风格去掉（第一个音前面挂着的 f 也算），速度记号、音身上的不动；选区跟着缩", () => {
+    const st = build(), out = clearMarks(st, "phrase");
+    eq(kinds(out), "n n[accent]‿ n<+ tempo n[breath,whisper]吸 n[staccato]");
+    eq(out.sel!.to - out.sel!.from, st.sel!.to - st.sel!.from - 2, "选区少了里面那两个（渐强渐弱、风格）");
+    assert(tr(out)[out.sel!.from].kind === "note", "选区还从那个音起");
+  });
+  it("音级：演奏法 / 连线 / 音内起伏 / 呼吸 / 出声的换气去掉；叠音、歌词、选区外的不动", () => {
+    const out = clearMarks(build(), "note");
+    eq(kinds(out), "n dyn n hairpin n+ groove tempo n n[staccato]");
+    assert(tr(out).filter((t) => t.kind === "note").every((t) => (t as NoteTok).lyric === "ら"), "歌词都在");
+  });
+  it("都清 = 两样；没东西可清 = 原样（同一个对象）", () => {
+    const out = clearMarks(build(), "all");
+    eq(kinds(out), "n n n+ tempo n n[staccato]");
+    eq(clearMarks(out, "all"), out);
+    const noSel = { ...out, sel: null }; eq(clearMarks(noSel, "all"), noSel, "没有选区 = 原样");
+  });
+});
+
+// 电脑键盘 Shift+1–7 = 叠（2026-10-10 Opus 5.5；user「shift旧的功能不要，shift用来叠音输入和弦，以及pc上面叠功能找不到了」）
+import { stackDegree, writeDegree } from "../src/score/song.ts";
+describe("Shift+级数 = 叠到光标前那个音上", () => {
+  const top = (st: EditorState) => { const t = tr(st).filter((x) => x.kind === "note").at(-1) as NoteTok; return [t.pitch, ...(t.chord ?? [])].map((q) => pitchName(q!)).join(" "); };
+  it("C → 叠 3 = E 在上面；再叠 5 = G；再叠 3 = 去掉 E（XOR）", () => {
+    let st = writeDegree(initState(), 1, "near");
+    st = stackDegree(st, 3); eq(top(st), "E4 C4");
+    st = stackDegree(st, 5); eq(top(st), "G4 E4 C4");
+    st = stackDegree(st, 3); eq(top(st), "G4 C4");
+  });
+  it("G → 叠 3 = E 在下面（离得近）；叠 1 = C 落在离现有的音最近处", () => {
+    let st = writeDegree(initState(), 5, "near"); const g = top(st);
+    st = stackDegree(st, 3); eq(top(st), `${g} E4`);
+    st = stackDegree(st, 1); eq(top(st), `${g} E4 C4`);
+  });
+  it("光标前是休止 = 原样", () => { const st = writeRest(initState()); eq(stackDegree(st, 3), st); });
+});

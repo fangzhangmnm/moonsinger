@@ -127,8 +127,17 @@ describe("song（记号：调号 / 拍号 / 速度都是 token）", () => {
   });
   it("小节对账跟着拍号记号走", () => {
     let st = initState(); st = writeMark(st, { kind: "time", beats: 3, beatType: 4 }).st;   // 改谱头
-    st = longer(st); for (const d of [1, 2, 3]) st = writeDegree(st, d, "near"); st = writeBar(st); st = writeBar(st);
+    st = longer(st); for (const d of [1, 2, 3]) st = writeDegree(st, d, "near"); st = writeBar(st);
     const f = barFill(tr(st)); eq(f[0].full, true);
+  });
+  it("小节线 XOR：光标紧挨在人插的「|」后面再按 = 去掉它；反复小节线不动（user「小节线应该也是xor，有时候误加的小节线一直删不掉」）", () => {
+    let st = initState(); st = writeDegree(st, 1, "near");
+    const n0 = tr(st).length;
+    st = writeBar(st); eq(tr(st).length, n0 + 1); eq(tr(st)[st.caret - 1].kind, "bar");
+    st = writeBar(st); eq(tr(st).length, n0, "再按一下 = 去掉"); eq(st.caret, n0); eq(tr(st)[st.caret - 1].kind, "note");
+    st = writeBar(st); const i = st.caret - 1, toks = tr(st).slice(); toks[i] = { ...(toks[i] as { kind: "bar"; id: number }), repeat: "end" } as never;
+    st = { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } };
+    st = writeBar(st); eq(tr(st).filter((t) => t.kind === "bar").length, 2, "反复小节线后面再按 = 照常加一根");
   });
   it("记号框认得的写法", () => {
     eq(JSON.stringify(parseMark("key", "1=D")), '{"kind":"key","fifths":2}'); eq(parseMark("key", "bb")?.kind, "key");

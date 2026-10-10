@@ -27,11 +27,12 @@ try {
   await p.waitForTimeout(150);
   check((await systems()) === 1, "句不换行（还是一行谱）", String(await systems()));
   check(await p.$("svg .phrase-mark") != null, "画了小「。」");
-  // 「|」两下 = 两根小节线（句号不绑小节线了）
-  await p.keyboard.press("Enter"); await p.waitForTimeout(80); await p.keyboard.press("Enter"); await p.waitForTimeout(150);
-  check((await kinds()).endsWith("| |"), "按两下「|」= 两根小节线", await kinds());
+  // 「|」是自己的（句号不绑小节线）；再按一下 = 去掉（v0.9.22 小节线 XOR，user「小节线应该也是xor，有时候误加的小节线一直删不掉」）
+  await p.keyboard.press("Enter"); await p.waitForTimeout(150);
+  check((await kinds()).endsWith("n |"), "按一下「|」= 一根小节线", await kinds());
+  await p.keyboard.press("Enter"); await p.waitForTimeout(150);
+  check((await kinds()).endsWith("n n n") && !(await kinds()).includes("|"), "紧挨着再按一下 = 去掉（XOR）", await kinds());
   // 歌词里打句号 = 句
-  await p.keyboard.press("Backspace"); await p.keyboard.press("Backspace"); await p.waitForTimeout(100);
   const ns2 = await p.$$eval("#score text.note", (ts) => ts.map((t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
   await p.evaluate(() => window.__moonsinger.setMode("lyrics"));   // v0.9.19：歌词框只在「词」模式里点得开
   const ly = await p.evaluate(() => { const L = window.__moonsinger.layout(), sh = document.querySelector("#score .sheet").getBoundingClientRect(); const h = L.lyrics[0]; return { x: sh.left + L.pageX.left + h.x, y: sh.top + h.y - L.sp * 0.5 }; });

@@ -13,7 +13,8 @@ describe("键盘路由", () => {
     eq(r(K("Digit3"), "edit"), '{"k":"cmd","cmd":{"k":"degree","degree":3,"dir":"near"}}');
     eq(r(K("Digit3"), "impro"), '{"k":"audition","degree":3,"dir":"near"}');
     eq(r(K("KeyE"), "impro"), '{"k":"audition","degree":3,"dir":"down"}');
-    eq(r(K("Digit3", { shiftKey: true }), "write"), '{"k":"cmd","cmd":{"k":"degree","degree":3,"dir":"up"}}');
+    eq(r(K("Digit3", { shiftKey: true }), "write"), '{"k":"stack","degree":3}');   // Shift = 叠（2026-10-10 user「shift用来叠音输入和弦」；原来 = 往上找）
+    eq(r(K("Digit3", { shiftKey: true }), "impro"), '{"k":"audition","degree":3,"dir":"near"}');
   });
   it("弹没写的键照写 / 改走；改没写的键不管；0 在改模式 = 整组休止（2026-10-08 user「其他键用C」）", () => {
     eq(r(K("Digit0"), "impro"), '{"k":"cmd","cmd":{"k":"rest"}}');
