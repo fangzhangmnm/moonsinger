@@ -44,6 +44,12 @@ check(!(await p.$eval(`.strip[data-id="${partId}"] .strip-row:has(input[data-gai
 await p.focus(`.strip[data-id="${partId}"] input[data-gain]`); await p.keyboard.press("Space");
 let started = false; for (let i = 0; i < 40 && !started; i++) { await p.waitForTimeout(100); started = await p.evaluate(() => window.__moonsinger.engine.playing); }
 check(started, "焦点在推子上按空格 = 放（原来推子上的空格被放过）");
+// 基础页的仪表（v0.10.16；user「三个页同意」「然后李萨如图你后来又觉得没必要做？」）：歌手卡片的平均电平、总轨的李萨如图 + 左右相关（正中的单声道 = +1.00）
+{ let rv = "—", cv = "—", d = ""; for (let i = 0; i < 30 && (rv === "—" || cv === "—" || !d); i++) { await p.waitForTimeout(150);
+    rv = await p.textContent(`.strip[data-id="${partId}"] .rms-val`); cv = await p.textContent(`.strip[data-id="__master"] .corr-val`); d = await p.$eval(`.strip[data-id="__master"] .strip-gonio .gon`, (e) => e.getAttribute("d") ?? ""); }
+  check(/^-\d+\.\d dB$/.test(rv), "放着 = 歌手卡片上有平均电平（dB）", rv);
+  check(cv === "+1.00" && d.length > 100, "总轨卡片背景有李萨如图，正中的单声道 = 左右相关 +1.00", `${cv} / path ${d.length}`);
+  check(!(await p.$(`.strip[data-id="${partId}"] .strip-gonio`)), "歌手卡片（单声道）不画李萨如图"); }
 await p.keyboard.press("Space"); await p.waitForTimeout(200);
 await tab("eq");
 // EQ 页卡片背景（v0.10.11）：频谱面 + EQ 曲线；放着的时候频谱有东西，440 Hz 附近最高；拧「厚 ↔ 亮」曲线跟着变（user「看不到频谱背景调均衡等于瞎子」）
@@ -83,6 +89,14 @@ await p.click(`.strip[data-id="${partId}"] .fx-inline [data-v="fxmode"][data-mod
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 await tab("comp");
 check(!!(await p.$(`.strip[data-id="${partId}"] [data-v="fxaddkind"][data-kind="comp"]`)), "压缩页：没有压缩 = 「＋ 压缩」");
+// 压缩页的表（v0.10.16）：插上压缩、放着 = 「压了」读数（这台压缩此刻压了几 dB）+ 条；撤销 = 拿掉
+await p.click(`.strip[data-id="${partId}"] [data-v="fxaddkind"][data-kind="comp"]`); await p.waitForTimeout(150);
+await p.click("#playBtn");
+{ let gv = "0 dB"; for (let i = 0; i < 30 && gv === "0 dB"; i++) { await p.waitForTimeout(150); gv = (await p.textContent(`.strip[data-id="${partId}"] .gr-val`)) ?? ""; }
+  const w = await p.$eval(`.strip[data-id="${partId}"] .gr-bar > i`, (e) => parseFloat(e.style.width) || 0);
+  check(/^-\d+\.\d dB$/.test(gv) && w > 0, "压缩页：放着 = 「压了」读数 + 条", `${gv} / 条 ${w}%`); }
+if (await p.evaluate(() => window.__moonsinger.engine.playing)) await p.click("#playBtn");
+await p.waitForTimeout(200); await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 await tab("chain");
 check((await p.textContent(chip(partId, "eq"))) === "均衡（平）" && (await chain(partId)).length === 0, "「链」页：歌手轨第一格 = 默认 EQ（平），没碰过不进文件");
 await p.click(chip(partId, "eq")); await p.waitForTimeout(150);

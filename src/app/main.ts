@@ -1748,10 +1748,12 @@ const studio = new Studio($("stage"), {
 /** 混音台 = 「听」的键盘（v0.10.2；user「能不能混音台就是听的键盘，不用单独一个键，就是不同功能有不同键盘」）：打开 = 切到听（底座 = 混音台）；收起 = 收起底座（底下那粒 tab 叫回来）。 */
 function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); ws.collapsed = false; if (ws.mode !== "listen") setMode("listen"); else applyWorkspace(); }   // 峰值表：页开着才要
 function closeStudio(): void { if (!studio.isOpen) return; ws.collapsed = true; applyWorkspace(); scoreEl.focus(); }
-engine.on("meter", (peak, _active, tracks) => { if (studio.isOpen) studio.meter(peak, tracks); });   // 每张卡片顶上的峰值细线（v0.10.10）
+engine.on("meter", (peak, _active, tracks, ms, gr) => { if (studio.isOpen) studio.meter(peak, tracks, ms, gr); });
+engine.on("stereo", (tracks) => { if (studio.isOpen) studio.stereo(tracks); });   // 李萨如图（v0.10.16）   // 每张卡片顶上的峰值细线（v0.10.10）
 engine.on("spectrum", (sr, tracks) => studio.spectrum(sr, tracks));   // EQ 页卡片背景的频谱（v0.10.11）
 /** 录音房的频谱只在「混音台开着 + EQ 页 + 页面看得见」时算（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）。 */
-function syncSpectrum(): void { engine.spectrum(studio.isOpen && studio.currentTab === "eq" && document.visibilityState === "visible"); }
+/** 背景的统计只在看得见的那一页开（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）：EQ 页 = 频谱，基础页 = 李萨如图。 */
+function syncSpectrum(): void { const on = studio.isOpen && document.visibilityState === "visible"; engine.spectrum(on && studio.currentTab === "eq"); engine.stereo(on && studio.currentTab === "basic"); }
 function openFinder(): void {
   finderBackToInst = instShown; if (instShown) { instShown = false; instEl.hidden = true; }
   finderShown = true; finderPlayOnly = gallery?.isOpen() ?? false;

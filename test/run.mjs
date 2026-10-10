@@ -87,6 +87,7 @@ import "./pad-rests.test.ts";
 import "./plugins.test.ts";
 import "./spectrum.test.ts";
 import "./wheel.test.ts";
+import "./scopes.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

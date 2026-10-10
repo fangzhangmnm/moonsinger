@@ -530,7 +530,16 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .strip-spec .grid { stroke: var(--muted); stroke-width: 1; opacity: .25; vector-effect: non-scaling-stroke; fill: none; }
 .spec-ticks { position: absolute; left: 0; right: 0; bottom: 2px; height: 12px; pointer-events: none; }
 .spec-ticks span { position: absolute; transform: translateX(-50%); font-size: 9px; line-height: 12px; color: var(--muted); opacity: .8; }
-.strip > :not(.strip-spec):not(.strip-meter):not(.spec-ticks) { position: relative; }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
+/* 基础页总轨 / 混音轨的李萨如图（v0.10.16）：卡片背景，正方形居中 */
+.strip-gonio { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 10px; overflow: hidden; }
+.strip-gonio .gon { fill: none; stroke: var(--accent); stroke-width: 1; opacity: .4; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.strip-gonio .gon-axis { stroke: var(--muted); stroke-width: 1; opacity: .25; vector-effect: non-scaling-stroke; }
+.strip-gonio .gon-lab { fill: var(--muted); font-size: .1px; opacity: .7; }
+.corr-val.neg { color: var(--danger, #c0392b); font-weight: 600; }
+/* 压缩页：压了多少 dB（0–20 dB 满格） */
+.gr-row .gr-bar { display: block; height: 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); overflow: hidden; }
+.gr-row .gr-bar > i { display: block; height: 100%; width: 0; background: var(--accent); }
+.strip > :not(.strip-spec):not(.strip-meter):not(.spec-ticks):not(.strip-gonio) { position: relative; }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
 /* 分页：页框 + 页码 */
 .staff-svg rect.page { fill: #fff; stroke: var(--line); stroke-width: 1; }
 .staff-svg .page-no { fill: var(--muted); }

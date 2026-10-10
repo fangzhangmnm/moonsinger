@@ -13,6 +13,7 @@ import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath, xOfHz } from "./spe
 const SPEC_TICKS = [100, 1000, 10000];
 import { DEFAULT_EQ_ID, PLUGIN_KINDS, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, viewOfFx, type Params } from "./plugins.ts";
 import { paramRow, slider, wireParamRows } from "./param-row.ts";
+import { stereoShape } from "./scopes.ts";
 
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）
 export interface StudioHost {
@@ -78,8 +79,15 @@ const HINT = {
   masterGain: "总轨增益：所有轨混在一起之后整体再调大调小",
   out: "出到：这条轨的声音最后去哪——直接去总轨，或者先进一条混音轨（在那里一起过效果）",
   send: "发送：推子之后再复制一份给这条混音轨；越大，那边的效果（混响 / 延迟）越多，原声照旧走「出到」",
+  rms: "平均电平（RMS，最近 0.3 秒，推子之后，dBFS）：比峰值更接近耳朵觉得的响。几条轨摆平音量看这个；顶上的细线（峰值）看会不会爆",
+  corr: "左右相关（−1 到 +1）：+1 = 左右一样（单声道）；0 附近 = 很宽；小于 0 = 左右反相，手机外放 / 单声道一合就会变小、变空。背景的图：竖线 = 单声道，越圆越宽，横着 = 反相",
+  gr: "压了多少：这条轨上第一台压缩此刻把声音压低了几 dB（下面摊开的就是它）。一直压很多 = 阈值太低或比例太大",
   key: "被谁压（侧链）：压缩器不看自己，而看另一条轨有多响——比如月读一唱，伴奏自己让一点",
 };
+const RMS_ROW = row("平均", HINT.rms, `<output class="rms-val">—</output>`, "", "strip-row");
+const CORR_ROW = row("左右相关", HINT.corr, `<output class="corr-val">—</output>`, "", "strip-row");
+/** 李萨如图的底：竖线 = 单声道、横线 = 反相；左上 / 右上 = 只有左 / 右声道。 */
+const GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="gon-axis" d="M0,-1L0,1M-1,0L1,0"/><text class="gon-lab" x="-0.72" y="-0.62">左</text><text class="gon-lab" x="0.6" y="-0.62">右</text><path class="gon" d=""/></svg>`;
 /** 一格的位置：哪条轨的哪一格（插件格的读写、面板和卡片上摊开的控件都按它找）。 */
 interface Target { track: string; fx: string }
 
@@ -99,6 +107,10 @@ export class Studio {
   private raf = 0; private lastTick = 0; private lastMeter = 0;
   /** EQ 页卡片背景的频谱（v0.10.11）：每条轨平滑后的 96 个频带（dB）。 */
   private specShown = new Map<string, Float32Array>();
+  /** 仪表（v0.10.16；user「三个页同意」）：平均电平 = 均方按 0.3 s 平滑；压缩页 = 压了多少（涨得快、每秒回 20 dB）；基础页总轨 / 混音轨 = 李萨如图 + 左右相关。读数一秒刷 4 次（不闪）。 */
+  private msTarget = new Map<string, number>(); private msShown = new Map<string, number>();
+  private grTarget = new Map<string, number>(); private grShown = new Map<string, number>();
+  private corrShown = new Map<string, number>(); private lastText = 0;
   constructor(parent: HTMLElement, private host: StudioHost) {
     this.el = document.createElement("div"); this.el.className = "studio"; this.el.hidden = true;
     this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">混音台</span><button class="btn" data-v="back" title="收起混音台：底座让出来、还在「听」（Esc = 回去写）">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button></div>` +
@@ -116,8 +128,10 @@ export class Studio {
 
   // ── 峰值 ────────────────────────────────────────────────────────────────
   /** 录音房报的峰值（0–1；总轨 = 出声口；tracks = 每条轨 / 混音轨推子后）。 */
-  meter(peak: number, tracks: Record<string, number> = {}): void {
+  meter(peak: number, tracks: Record<string, number> = {}, ms: Record<string, number> = {}, gr: Record<string, number> = {}): void {
     this.target.set(MASTER, peak); for (const [k, v] of Object.entries(tracks)) this.target.set(k, v);
+    this.msTarget.clear(); for (const [k, v] of Object.entries(ms)) this.msTarget.set(k, v);
+    this.grTarget.clear(); for (const [k, v] of Object.entries(gr)) this.grTarget.set(k, v);
     this.lastMeter = performance.now();
     const val = this.el.querySelector<HTMLElement>(".meter-val"); if (val) { const db = toDb(peak); val.textContent = db <= -59 ? "—" : `${db.toFixed(1)} dB`; }
     if (!this.raf && !this.el.hidden) { this.lastTick = performance.now(); this.raf = requestAnimationFrame(this.tick); }
@@ -129,6 +143,18 @@ export class Studio {
       const path = this.el.querySelector<SVGPathElement>(`.strip[data-id="${CSS.escape(id)}"] .strip-spec .spec`); if (!path) continue;
       const b = smoothBands(this.specShown.get(id), bandsDb(x, sr)); this.specShown.set(id, b);
       path.setAttribute("d", areaPath(b));
+    }
+  }
+  /** 总轨 / 混音轨推子后的左右采样 → 基础页卡片背景的李萨如图 + 左右相关（v0.10.16；user「声像对应的是莉萨如图吗？」「三个页同意」）。
+   *  竖着 = 中 (L+R)/√2、横着 = (R−L)/√2（只有左 = 左上斜线）：竖线 = 单声道、越圆越宽、横着 = 反相。形状看的是左右关系，不看多响：按这一帧最大的那下缩放（太小的不放大）。 */
+  stereo(tracks: Record<string, { L: Float32Array; R: Float32Array }>): void {
+    if (this.el.hidden || this.tab !== "basic") return;
+    for (const [id, { L, R }] of Object.entries(tracks)) {
+      const card = this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(id)}"]`); if (!card) continue;
+      const g = stereoShape(L, R), path = card.querySelector<SVGPathElement>(".strip-gonio .gon"); if (path) path.setAttribute("d", g.path);
+      const prev = this.corrShown.get(id), c = g.corr === null ? null : prev === undefined ? g.corr : prev + (g.corr - prev) * 0.3;
+      if (c === null) this.corrShown.delete(id); else this.corrShown.set(id, c);
+      const out = card.querySelector<HTMLElement>(".corr-val"); if (out) { out.textContent = c === null ? "—" : `${c >= 0 ? "+" : "−"}${Math.abs(c).toFixed(2)}`; out.classList.toggle("neg", c !== null && c < -0.05); }
     }
   }
   /** 这一格 EQ 的响应曲线（±18 dB 映到卡片高度，中线 = 0 dB）。 */
@@ -148,6 +174,7 @@ export class Studio {
     this.raf = 0; if (this.el.hidden) return;
     const dt = Math.min(0.1, (now - this.lastTick) / 1000); this.lastTick = now;
     const stale = now - this.lastMeter > 200;   // 一阵没报了 = 当它静了
+    const text = now - this.lastText > 250; if (text) this.lastText = now;
     let alive = false;
     for (const el of this.el.querySelectorAll<HTMLElement>(".strip[data-id]")) {
       const id = el.dataset.id!, raw = stale ? 0 : this.target.get(id) ?? 0, want = toDb(raw), cur = this.shown.get(id) ?? -60;
@@ -155,6 +182,17 @@ export class Studio {
       this.shown.set(id, next); if (next > -59.5) alive = true;
       const bar = el.querySelector<HTMLElement>(".strip-meter > i");
       if (bar) { bar.style.width = `${Math.max(0, Math.min(100, ((next + 60) / 60) * 100))}%`; bar.classList.toggle("hot", raw >= 0.98); }
+      // 平均电平：均方按 0.3 s 时间常数平滑（RMS）
+      const msWant = stale ? 0 : this.msTarget.get(id) ?? 0, msCur = this.msShown.get(id) ?? 0, ms = msCur + (msWant - msCur) * (1 - Math.exp(-dt / 0.3));
+      this.msShown.set(id, ms); if (ms > 1e-6) alive = true;
+      // 压了多少：一压就到、每秒回 20 dB
+      const grWant = stale ? 0 : this.grTarget.get(id) ?? 0, grCur = this.grShown.get(id) ?? 0, gr = grWant <= grCur ? grWant : Math.min(0, grCur + 20 * dt);
+      this.grShown.set(id, gr); if (gr < -0.05) alive = true;
+      const gb = el.querySelector<HTMLElement>(".gr-bar > i"); if (gb) gb.style.width = `${Math.min(100, (-gr / 20) * 100)}%`;
+      if (text) {
+        const rv = el.querySelector<HTMLElement>(".rms-val"); if (rv) { const db = ms > 1e-6 ? 10 * Math.log10(ms) : -99; rv.textContent = db <= -59 ? "—" : `${db.toFixed(1)} dB`; }
+        const gv = el.querySelector<HTMLElement>(".gr-val"); if (gv) gv.textContent = gr > -0.05 ? "0 dB" : `${gr.toFixed(1)} dB`;
+      }
     }
     if (alive || !stale) this.raf = requestAnimationFrame(this.tick);
   };
@@ -308,6 +346,7 @@ export class Studio {
     const fx = s.fx, tg = { track, fx: fx.id };
     return `<div class="fx-inline${fx.on === false ? " off" : ""}" data-fxwrap data-track="${esc(track)}" data-fx="${esc(fx.id)}">` +
       `<div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="关 = 这一格跳过（参数留着）">${fx.on === false ? "关着" : "开着"}</button>${all.length > 1 ? `<span class="fx-dim">还有 ${all.length - 1} 个${esc(pluginName(kind))}在「链」里</span>` : ""}${this.modeSeg(tg)}</div>` +
+      (kind === "comp" ? row("压了", HINT.gr, `<output class="gr-val">0 dB</output>`, `<span class="gr-bar"><i></i></span>`, "strip-row gr-row") : "") +
       `<div class="fx-body">${this.controlsHtml(tg, fx, this.modeOf(tg))}</div></div>`;
   }
   /** 出到 + 发送（歌手轨和路由轨都有；总轨没有）。 */
@@ -353,7 +392,7 @@ export class Studio {
   }
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   private card(id: string, cls: string, name: string, who: string, body: string, color?: string): string {
-    const spec = this.tab === "eq" ? this.specSvg(id) : "";   // EQ 页：卡片背景 = 频谱 + 这一格 EQ 的曲线
+    const spec = this.tab === "eq" ? this.specSvg(id) : this.tab === "basic" && (id === MASTER || cls.includes("bus")) ? GONIO_SVG : "";   // EQ 页：卡片背景 = 频谱 + 这一格 EQ 的曲线；基础页总轨 / 混音轨 = 李萨如图
     return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}${body}</div>`;
   }
   render(): void {
@@ -364,13 +403,13 @@ export class Studio {
     // 总轨
     const masterBody = tab === "basic" ? row("增益", HINT.masterGain, `<output>${dbText(m.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") +
         `<div class="strip-btns"><button class="btn cand${m.limiter ? " is-on" : ""}" data-v="limiter" title="母线限幅：超过天花板（−0.18 dBFS）的那一小段压下来，不超的地方不动；关掉 = 可能削波">限幅${m.limiter ? "" : "（关：可能削波）"}</button></div>` +
-        `<div class="strip-row">峰值 <span class="meter-val">—</span></div>`
+        `<div class="strip-row">峰值 <span class="meter-val">—</span></div>` + RMS_ROW + CORR_ROW
       : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">总轨就是输出，不再发给别处</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv("总轨"), "所有声部混在一起之后", masterBody);
     // 混音轨（自己加的路由轨，普通的轨）：排在总轨后面、歌手前面（user「你自己加的中间的路由轨也是普通的轨道，排在总轨后面，歌手前面」）
     const buses = this.host.buses(), busCards = buses.map((b, k) => {
       const body = tab === "basic" ? row("增益", HINT.gain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") +
-          row("声像", HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: 0, defText: "中" }), "strip-row") +
+          row("声像", HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: 0, defText: "中" }), "strip-row") + RMS_ROW + CORR_ROW +
           `<div class="strip-btns"><button class="btn" data-v="busleft" title="往前挪一位"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="往后挪一位"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）">删掉</button></div>`
         : tab === "eq" || tab === "comp" ? this.inlineHtml(b.id, tab) : tab === "send" ? this.routeHtml(b.id) : this.chipsHtml(b.id);
       const name = tab === "basic" ? `<input class="bus-name" value="${esc(b.name)}" title="名字（点了改）" />` : nameDiv(b.name);
@@ -379,7 +418,7 @@ export class Studio {
     // 歌手：顺序跟谱上的声部（user「歌手卡片的排序还是以五线谱为准」）
     const singers = this.host.strips().map((s) => {
       const body = tab === "basic" ? row("增益", HINT.gain, `<output>${dbText(s.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") +
-          row("声像", HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: 0, defText: "中" }), "strip-row") +
+          row("声像", HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: 0, defText: "中" }), "strip-row") + RMS_ROW +
           `<div class="strip-btns"><button class="btn cand${s.muted ? " is-on" : ""}" data-v="mute">静音</button><button class="btn cand${s.solo ? " is-on" : ""}" data-v="solo">独奏</button></div>` +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
           (s.refs ? `<div class="strip-refs">在 ${s.refs} 张纸上</div>` : `<div class="strip-refs">哪张纸上都没有 <button class="btn cand danger" data-v="delpart" title="删掉这位歌手（休息室里它的配置一起删；能撤销）">删掉这位歌手</button></div>`)

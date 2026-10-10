@@ -32,7 +32,7 @@ export function outputClock(o: { currentTime: number; ts: { contextTime: number;
   }
   return c ? { T: c - (o.baseLatency || 0) - (o.outputLatency || 0), src: "estimate" } : null;
 }
-export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number, tracks: Record<string, number>) => void; spectrum: (sr: number, tracks: Record<string, Float32Array>) => void; load: (info: LoadInfo) => void; crash: (message: string) => void }
+export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number, tracks: Record<string, number>, ms: Record<string, number>, gr: Record<string, number>) => void; stereo: (tracks: Record<string, { L: Float32Array; R: Float32Array }>) => void; spectrum: (sr: number, tracks: Record<string, Float32Array>) => void; load: (info: LoadInfo) => void; crash: (message: string) => void }
 
 export class StudioClient {
   private node: AudioWorkletNode | null = null;
@@ -94,7 +94,8 @@ export class StudioClient {
             }
             case "ended": if (m.gen !== this.gen) return; this._playing = false; this.emit("ended"); return;
             case "missing": this.emit("missing", m.keys); return;
-            case "meter": this.emit("meter", m.peak, m.active, m.tracks ?? {}); return;
+            case "meter": this.emit("meter", m.peak, m.active, m.tracks ?? {}, m.ms ?? {}, m.gr ?? {}); return;
+            case "stereo": this.emit("stereo", m.tracks); return;
             case "spectrum": this.emit("spectrum", m.sr, m.tracks); return;
             case "load": this.emit("load", { busy: m.busy, chunkBytes: m.chunkBytes, chunks: m.chunks, voices: m.voices }); return;
             case "chunks": { const w = this.chunkWait; this.chunkWait = null; w?.(m.items); return; }
@@ -181,7 +182,9 @@ export class StudioClient {
   meter(on: boolean): void { this.post({ type: "meter", on }); }
   /** 频谱开关（混音台 EQ 页看得见才开；v0.10.11）。 */
   spectrum(on: boolean): void { if (on !== this.specOn) { this.specOn = on; this.post({ type: "spectrum", on }); } }
-  private specOn = false;
+  /** 李萨如图（总轨 / 混音轨的左右采样）：开着才攒（混音台「基础」页看得见时）。 */
+  stereo(on: boolean): void { if (on !== this.stereoOn) { this.stereoOn = on; this.post({ type: "stereo", on }); } }
+  private specOn = false; private stereoOn = false;
   get now(): number { return this.ctx().currentTime; }
 
   /** 离线导出：同一个 Studio 类在主线程循环里跑同样的块网格（每 400 块让一次事件循环，界面不卡）。输出从 range.from 起、扣掉限幅器的延迟。

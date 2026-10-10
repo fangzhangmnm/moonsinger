@@ -310,6 +310,22 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     s.handle({ type: "timeline", tl: tl(specs.map((c) => clipTrack(c.id, c.id, 0, 1)), { from: 0, to: 1 }) });
     return { s, out };
   };
+  it("仪表（v0.10.16）：平均电平 = 推子后的均方（声像不算）；压了多少 = 第一台压缩；李萨如图只在开着时发、单声道正中 = 左右一样", async () => {
+    const { s, out } = await clipS([{ id: "A", v: 0.4 }]);
+    s.handle({ type: "channel", id: "A", p: { gainDb: -6.0206, pan: 0.5, chain: [{ id: "c", kind: "comp", params: { thresholdDb: -30, ratio: 4, attackMs: 1, releaseMs: 50, kneeDb: 0, makeupDb: 0 } }] } });
+    s.handle({ type: "meter", on: true }); s.handle({ type: "play" }); run(s, 0.5);
+    const m = out.filter((x) => x.type === "meter").at(-1) as Extract<StudioOut, { type: "meter" }>;
+    const gr = 20 * Math.log10(0.4) + 30, want = -gr * (1 - 1 / 4);   // 输入 −7.96 dBFS，超阈值 22.04 dB，4:1 → 压 16.53 dB
+    assert(Math.abs((m.gr?.A ?? 0) - want) < 0.05, `压了 ${m.gr?.A} dB（应 ${want.toFixed(2)}）`);
+    const lvl = 0.4 * 10 ** (want / 20) * 0.5;   // 压缩后 × 推子 0.5（声像右 0.5 不改均方：等功率）
+    assert(Math.abs((m.ms?.A ?? 0) / (lvl * lvl) - 1) < 0.01, `均方 ${m.ms?.A} vs ${(lvl * lvl).toExponential(3)}`);
+    assert(!out.some((x) => x.type === "stereo"), "没开李萨如图 = 不发");
+    s.handle({ type: "channel", id: "A", p: { pan: 0 } }); s.handle({ type: "stereo", on: true }); run(s, 0.1);
+    const st = out.filter((x) => x.type === "stereo").at(-1) as Extract<StudioOut, { type: "stereo" }> | undefined;
+    assert(!!st?.tracks.__master, "开了 = 发总轨的左右采样");
+    const { L, R } = st!.tracks.__master; let d = 0, e = 0; for (let i = 0; i < L.length; i++) { d = Math.max(d, Math.abs(L[i] - R[i])); e = Math.max(e, Math.abs(L[i])); }
+    assert(e > 0.01 && d < 1e-6, `正中的单声道 = 左右一样（差 ${d}，幅度 ${e}）`);
+  });
   it("通道链：EQ 低切把 100 Hz 的轨压掉；总轨链：增益 −6 dB 整体减半", async () => {
     const { s } = await studio();
     const x = Float32Array.from({ length: SR }, (_, i) => 0.3 * Math.sin((2 * Math.PI * 100 * i) / SR));

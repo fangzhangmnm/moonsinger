@@ -676,6 +676,29 @@ var Studio = class {
   trackPeaks = /* @__PURE__ */ new Map();
   specOn = false;
   specFrames = 0;
+  /** 平均电平 / 压缩的表（meterOn 时攒）：均方的和 + 帧数；最多压了多少 dB。 */
+  trackMs = /* @__PURE__ */ new Map();
+  grMin = /* @__PURE__ */ new Map();
+  /** 李萨如图：总轨 / 混音轨推子后的左右最近 STEREO_N 个采样。 */
+  stereoOn = false;
+  stereoFrames = 0;
+  stereoRings = /* @__PURE__ */ new Map();
+  stereoPush(id, l, r) {
+    let g = this.stereoRings.get(id);
+    if (!g) {
+      g = { L: new Float32Array(STEREO_N), R: new Float32Array(STEREO_N), w: 0 };
+      this.stereoRings.set(id, g);
+    }
+    g.L[g.w] = l;
+    g.R[g.w] = r;
+    g.w = g.w + 1 & STEREO_N - 1;
+  }
+  grOf(id, fx) {
+    const c = fx.find((f) => f.kind === "comp");
+    if (!c || !c.on) return;
+    const v = c.gainReductionDb ?? 0;
+    this.grMin.set(id, Math.min(this.grMin.get(id) ?? 0, v));
+  }
   specRings = /* @__PURE__ */ new Map();
   /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）；g0 → g1 = 这一段的推子（线性渐变，和出声同一条斜坡）。 */
   specPush(id, a, b, n, g0 = 1, g1 = g0) {
@@ -850,6 +873,13 @@ var Studio = class {
         this.meterPeak = 0;
         this.meterFrames = 0;
         this.trackPeaks.clear();
+        this.trackMs.clear();
+        this.grMin.clear();
+        return;
+      case "stereo":
+        this.stereoOn = m.on;
+        this.stereoFrames = 0;
+        if (!m.on) this.stereoRings.clear();
         return;
       case "spectrum":
         this.specOn = m.on;
@@ -1142,7 +1172,7 @@ var Studio = class {
       let cl = b.gl, cr = b.gr;
       if (this.specOn) this.specPush(b.id, b.L, b.R, n, Math.hypot(b.gl, b.gr), Math.hypot(gl, gr));
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
-      let pk = 0;
+      let pk = 0, ms = 0;
       for (let i = 0; i < n; i++) {
         cl += dl;
         cr += dr;
@@ -1153,9 +1183,15 @@ var Studio = class {
           const a = Math.abs(l), c = Math.abs(r);
           if (a > pk) pk = a;
           if (c > pk) pk = c;
+          ms += (l * l + r * r) * 0.5;
         }
+        if (this.stereoOn) this.stereoPush(b.id, l, r);
       }
-      if (this.meterOn) this.trackPeaks.set(b.id, Math.max(this.trackPeaks.get(b.id) ?? 0, pk));
+      if (this.meterOn) {
+        this.trackPeaks.set(b.id, Math.max(this.trackPeaks.get(b.id) ?? 0, pk));
+        this.trackMs.set(b.id, (this.trackMs.get(b.id) ?? 0) + ms);
+        this.grOf(b.id, b.fx);
+      }
       for (const sd of b.sends) {
         const sl = gl * sd.lin * Math.SQRT2, sr = gr * sd.lin * Math.SQRT2;
         for (let i = 0; i < n; i++) {
@@ -1193,18 +1229,44 @@ var Studio = class {
         this.post({ type: "spectrum", sr: this.sr, tracks }, Object.values(tracks).map((x) => x.buffer));
       }
     }
+    if (this.stereoOn) {
+      for (let i = 0; i < n; i++) this.stereoPush("__master", outL[i], outR[i]);
+      this.stereoFrames += n;
+      if (this.stereoFrames >= STEREO_N * 2) {
+        this.stereoFrames = 0;
+        const tracks = {}, bufs = [];
+        for (const [id, g2] of this.stereoRings) {
+          const L = new Float32Array(STEREO_N), R = new Float32Array(STEREO_N);
+          L.set(g2.L.subarray(g2.w));
+          L.set(g2.L.subarray(0, g2.w), STEREO_N - g2.w);
+          R.set(g2.R.subarray(g2.w));
+          R.set(g2.R.subarray(0, g2.w), STEREO_N - g2.w);
+          tracks[id] = { L, R };
+          bufs.push(L.buffer, R.buffer);
+        }
+        this.post({ type: "stereo", tracks }, bufs);
+      }
+    }
     if (this.meterOn) {
+      let ms = 0;
       for (let i = 0; i < n; i++) {
         const a = Math.abs(outL[i]), b = Math.abs(outR[i]);
         if (a > this.meterPeak) this.meterPeak = a;
         if (b > this.meterPeak) this.meterPeak = b;
+        ms += (outL[i] * outL[i] + outR[i] * outR[i]) * 0.5;
       }
+      this.trackMs.set("__master", (this.trackMs.get("__master") ?? 0) + ms);
+      this.grOf("__master", this.masterFx);
       this.meterFrames += n;
       if (this.meterFrames >= 1024) {
-        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks) });
+        const f = this.meterFrames, ms2 = {};
+        for (const [k, v] of this.trackMs) ms2[k] = v / f;
+        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks), ms: ms2, gr: Object.fromEntries(this.grMin) });
         this.meterPeak = 0;
         this.meterFrames = 0;
         this.trackPeaks.clear();
+        this.trackMs.clear();
+        this.grMin.clear();
       }
     }
     this.loadBusy += now() - tStart;
@@ -1367,7 +1429,7 @@ var Studio = class {
       if (this.specOn) this.specPush(id, out, null, cnt, Math.hypot(t.gl, t.gr), Math.hypot(gl, gr));
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : void 0, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
-      let cl = t.gl, cr = t.gr, pk = 0;
+      let cl = t.gl, cr = t.gr, pk = 0, ms = 0;
       for (let i = 0; i < cnt; i++) {
         cl += dl;
         cr += dr;
@@ -1376,9 +1438,14 @@ var Studio = class {
         if (this.meterOn) {
           const a = Math.abs(out[i]) * Math.max(cl, cr) * Math.SQRT2;
           if (a > pk) pk = a;
+          ms += out[i] * out[i] * (cl * cl + cr * cr);
         }
       }
-      if (this.meterOn) this.trackPeaks.set(id, Math.max(this.trackPeaks.get(id) ?? 0, pk));
+      if (this.meterOn) {
+        this.trackPeaks.set(id, Math.max(this.trackPeaks.get(id) ?? 0, pk));
+        this.trackMs.set(id, (this.trackMs.get(id) ?? 0) + ms);
+        this.grOf(id, t.chFx);
+      }
       if (t.ch.sends) for (const sd of t.ch.sends) {
         const b = this.buses.get(sd.to);
         if (!b) continue;
@@ -1628,6 +1695,7 @@ var Studio = class {
   }
 };
 var SPEC_N = 2048;
+var STEREO_N = 1024;
 function busOrder(specs, buses) {
   const edges = /* @__PURE__ */ new Map();
   const reach = (from, to) => {
@@ -1712,4 +1780,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-d5112ef13eb6.mjs.map
+//# sourceMappingURL=studio-worklet-b92b6e987b75.mjs.map

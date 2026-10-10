@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.15-2026-10-10";
+var APP_VERSION = "v0.10.16-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -23495,6 +23495,29 @@ var Studio = class {
   trackPeaks = /* @__PURE__ */ new Map();
   specOn = false;
   specFrames = 0;
+  /** 平均电平 / 压缩的表（meterOn 时攒）：均方的和 + 帧数；最多压了多少 dB。 */
+  trackMs = /* @__PURE__ */ new Map();
+  grMin = /* @__PURE__ */ new Map();
+  /** 李萨如图：总轨 / 混音轨推子后的左右最近 STEREO_N 个采样。 */
+  stereoOn = false;
+  stereoFrames = 0;
+  stereoRings = /* @__PURE__ */ new Map();
+  stereoPush(id2, l10, r10) {
+    let g3 = this.stereoRings.get(id2);
+    if (!g3) {
+      g3 = { L: new Float32Array(STEREO_N), R: new Float32Array(STEREO_N), w: 0 };
+      this.stereoRings.set(id2, g3);
+    }
+    g3.L[g3.w] = l10;
+    g3.R[g3.w] = r10;
+    g3.w = g3.w + 1 & STEREO_N - 1;
+  }
+  grOf(id2, fx) {
+    const c10 = fx.find((f2) => f2.kind === "comp");
+    if (!c10 || !c10.on) return;
+    const v = c10.gainReductionDb ?? 0;
+    this.grMin.set(id2, Math.min(this.grMin.get(id2) ?? 0, v));
+  }
   specRings = /* @__PURE__ */ new Map();
   /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）；g0 → g1 = 这一段的推子（线性渐变，和出声同一条斜坡）。 */
   specPush(id2, a10, b3, n10, g0 = 1, g1 = g0) {
@@ -23669,6 +23692,13 @@ var Studio = class {
         this.meterPeak = 0;
         this.meterFrames = 0;
         this.trackPeaks.clear();
+        this.trackMs.clear();
+        this.grMin.clear();
+        return;
+      case "stereo":
+        this.stereoOn = m2.on;
+        this.stereoFrames = 0;
+        if (!m2.on) this.stereoRings.clear();
         return;
       case "spectrum":
         this.specOn = m2.on;
@@ -23961,7 +23991,7 @@ var Studio = class {
       let cl2 = b3.gl, cr2 = b3.gr;
       if (this.specOn) this.specPush(b3.id, b3.L, b3.R, n10, Math.hypot(b3.gl, b3.gr), Math.hypot(gl, gr));
       const L2 = b3.out ? b3.out.L : this.busL, R2 = b3.out ? b3.out.R : this.busR;
-      let pk = 0;
+      let pk = 0, ms = 0;
       for (let i10 = 0; i10 < n10; i10++) {
         cl2 += dl;
         cr2 += dr;
@@ -23972,9 +24002,15 @@ var Studio = class {
           const a10 = Math.abs(l10), c10 = Math.abs(r10);
           if (a10 > pk) pk = a10;
           if (c10 > pk) pk = c10;
+          ms += (l10 * l10 + r10 * r10) * 0.5;
         }
+        if (this.stereoOn) this.stereoPush(b3.id, l10, r10);
       }
-      if (this.meterOn) this.trackPeaks.set(b3.id, Math.max(this.trackPeaks.get(b3.id) ?? 0, pk));
+      if (this.meterOn) {
+        this.trackPeaks.set(b3.id, Math.max(this.trackPeaks.get(b3.id) ?? 0, pk));
+        this.trackMs.set(b3.id, (this.trackMs.get(b3.id) ?? 0) + ms);
+        this.grOf(b3.id, b3.fx);
+      }
       for (const sd2 of b3.sends) {
         const sl2 = gl * sd2.lin * Math.SQRT2, sr2 = gr * sd2.lin * Math.SQRT2;
         for (let i10 = 0; i10 < n10; i10++) {
@@ -24012,18 +24048,44 @@ var Studio = class {
         this.post({ type: "spectrum", sr: this.sr, tracks }, Object.values(tracks).map((x2) => x2.buffer));
       }
     }
+    if (this.stereoOn) {
+      for (let i10 = 0; i10 < n10; i10++) this.stereoPush("__master", outL[i10], outR[i10]);
+      this.stereoFrames += n10;
+      if (this.stereoFrames >= STEREO_N * 2) {
+        this.stereoFrames = 0;
+        const tracks = {}, bufs = [];
+        for (const [id2, g4] of this.stereoRings) {
+          const L2 = new Float32Array(STEREO_N), R2 = new Float32Array(STEREO_N);
+          L2.set(g4.L.subarray(g4.w));
+          L2.set(g4.L.subarray(0, g4.w), STEREO_N - g4.w);
+          R2.set(g4.R.subarray(g4.w));
+          R2.set(g4.R.subarray(0, g4.w), STEREO_N - g4.w);
+          tracks[id2] = { L: L2, R: R2 };
+          bufs.push(L2.buffer, R2.buffer);
+        }
+        this.post({ type: "stereo", tracks }, bufs);
+      }
+    }
     if (this.meterOn) {
+      let ms = 0;
       for (let i10 = 0; i10 < n10; i10++) {
         const a10 = Math.abs(outL[i10]), b3 = Math.abs(outR[i10]);
         if (a10 > this.meterPeak) this.meterPeak = a10;
         if (b3 > this.meterPeak) this.meterPeak = b3;
+        ms += (outL[i10] * outL[i10] + outR[i10] * outR[i10]) * 0.5;
       }
+      this.trackMs.set("__master", (this.trackMs.get("__master") ?? 0) + ms);
+      this.grOf("__master", this.masterFx);
       this.meterFrames += n10;
       if (this.meterFrames >= 1024) {
-        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks) });
+        const f2 = this.meterFrames, ms2 = {};
+        for (const [k2, v] of this.trackMs) ms2[k2] = v / f2;
+        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks), ms: ms2, gr: Object.fromEntries(this.grMin) });
         this.meterPeak = 0;
         this.meterFrames = 0;
         this.trackPeaks.clear();
+        this.trackMs.clear();
+        this.grMin.clear();
       }
     }
     this.loadBusy += now() - tStart;
@@ -24186,7 +24248,7 @@ var Studio = class {
       if (this.specOn) this.specPush(id2, out, null, cnt, Math.hypot(t10.gl, t10.gr), Math.hypot(gl, gr));
       const dl = (gl - t10.gl) / cnt, dr = (gr - t10.gr) / cnt;
       const bus = t10.ch.to && t10.ch.to !== "master" ? this.buses.get(t10.ch.to) : void 0, L2 = bus ? bus.L : this.busL, R2 = bus ? bus.R : this.busR;
-      let cl2 = t10.gl, cr2 = t10.gr, pk = 0;
+      let cl2 = t10.gl, cr2 = t10.gr, pk = 0, ms = 0;
       for (let i10 = 0; i10 < cnt; i10++) {
         cl2 += dl;
         cr2 += dr;
@@ -24195,9 +24257,14 @@ var Studio = class {
         if (this.meterOn) {
           const a10 = Math.abs(out[i10]) * Math.max(cl2, cr2) * Math.SQRT2;
           if (a10 > pk) pk = a10;
+          ms += out[i10] * out[i10] * (cl2 * cl2 + cr2 * cr2);
         }
       }
-      if (this.meterOn) this.trackPeaks.set(id2, Math.max(this.trackPeaks.get(id2) ?? 0, pk));
+      if (this.meterOn) {
+        this.trackPeaks.set(id2, Math.max(this.trackPeaks.get(id2) ?? 0, pk));
+        this.trackMs.set(id2, (this.trackMs.get(id2) ?? 0) + ms);
+        this.grOf(id2, t10.chFx);
+      }
       if (t10.ch.sends) for (const sd2 of t10.ch.sends) {
         const b3 = this.buses.get(sd2.to);
         if (!b3) continue;
@@ -24447,6 +24514,7 @@ var Studio = class {
   }
 };
 var SPEC_N = 2048;
+var STEREO_N = 1024;
 function busOrder(specs, buses) {
   const edges = /* @__PURE__ */ new Map();
   const reach = (from, to2) => {
@@ -24626,7 +24694,10 @@ var StudioClient = class {
               this.emit("missing", m2.keys);
               return;
             case "meter":
-              this.emit("meter", m2.peak, m2.active, m2.tracks ?? {});
+              this.emit("meter", m2.peak, m2.active, m2.tracks ?? {}, m2.ms ?? {}, m2.gr ?? {});
+              return;
+            case "stereo":
+              this.emit("stereo", m2.tracks);
               return;
             case "spectrum":
               this.emit("spectrum", m2.sr, m2.tracks);
@@ -24809,7 +24880,15 @@ var StudioClient = class {
       this.post({ type: "spectrum", on: on2 });
     }
   }
+  /** 李萨如图（总轨 / 混音轨的左右采样）：开着才攒（混音台「基础」页看得见时）。 */
+  stereo(on2) {
+    if (on2 !== this.stereoOn) {
+      this.stereoOn = on2;
+      this.post({ type: "stereo", on: on2 });
+    }
+  }
   specOn = false;
+  stereoOn = false;
   get now() {
     return this.ctx().currentTime;
   }
@@ -25915,6 +25994,32 @@ function wireParamRows(root) {
   });
 }
 
+// src/ui/scopes.ts
+var SCOPE_POINTS = 256;
+var FLOOR = 0.05;
+function stereoShape(L2, R2) {
+  const n10 = Math.min(L2.length, R2.length);
+  let lr2 = 0, ll2 = 0, rr2 = 0, pk = 0;
+  for (let i10 = 0; i10 < n10; i10++) {
+    const l10 = L2[i10], r10 = R2[i10];
+    lr2 += l10 * r10;
+    ll2 += l10 * l10;
+    rr2 += r10 * r10;
+    const m2 = Math.abs(l10 + r10), s10 = Math.abs(l10 - r10);
+    if (m2 > pk) pk = m2;
+    if (s10 > pk) pk = s10;
+  }
+  pk *= Math.SQRT1_2;
+  const corr = ll2 > 1e-9 && rr2 > 1e-9 ? Math.max(-1, Math.min(1, lr2 / Math.sqrt(ll2 * rr2))) : ll2 + rr2 > 1e-9 ? 0 : null;
+  const k2 = 0.9 / Math.max(pk, FLOOR), step = Math.max(1, Math.floor(n10 / SCOPE_POINTS));
+  let d3 = "";
+  for (let i10 = 0; i10 < n10; i10 += step) {
+    const x2 = ((R2[i10] - L2[i10]) * Math.SQRT1_2 * k2).toFixed(3), y2 = (-(L2[i10] + R2[i10]) * Math.SQRT1_2 * k2).toFixed(3);
+    d3 += `${d3 ? "L" : "M"}${x2},${y2}`;
+  }
+  return { path: d3, corr };
+}
+
 // src/ui/studio.ts
 var SPEC_TICKS = [100, 1e3, 1e4];
 var MASTER = "__master";
@@ -25936,8 +26041,14 @@ var HINT2 = {
   masterGain: "\u603B\u8F68\u589E\u76CA\uFF1A\u6240\u6709\u8F68\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E\u6574\u4F53\u518D\u8C03\u5927\u8C03\u5C0F",
   out: "\u51FA\u5230\uFF1A\u8FD9\u6761\u8F68\u7684\u58F0\u97F3\u6700\u540E\u53BB\u54EA\u2014\u2014\u76F4\u63A5\u53BB\u603B\u8F68\uFF0C\u6216\u8005\u5148\u8FDB\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u5728\u90A3\u91CC\u4E00\u8D77\u8FC7\u6548\u679C\uFF09",
   send: "\u53D1\u9001\uFF1A\u63A8\u5B50\u4E4B\u540E\u518D\u590D\u5236\u4E00\u4EFD\u7ED9\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF1B\u8D8A\u5927\uFF0C\u90A3\u8FB9\u7684\u6548\u679C\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\uFF09\u8D8A\u591A\uFF0C\u539F\u58F0\u7167\u65E7\u8D70\u300C\u51FA\u5230\u300D",
+  rms: "\u5E73\u5747\u7535\u5E73\uFF08RMS\uFF0C\u6700\u8FD1 0.3 \u79D2\uFF0C\u63A8\u5B50\u4E4B\u540E\uFF0CdBFS\uFF09\uFF1A\u6BD4\u5CF0\u503C\u66F4\u63A5\u8FD1\u8033\u6735\u89C9\u5F97\u7684\u54CD\u3002\u51E0\u6761\u8F68\u6446\u5E73\u97F3\u91CF\u770B\u8FD9\u4E2A\uFF1B\u9876\u4E0A\u7684\u7EC6\u7EBF\uFF08\u5CF0\u503C\uFF09\u770B\u4F1A\u4E0D\u4F1A\u7206",
+  corr: "\u5DE6\u53F3\u76F8\u5173\uFF08\u22121 \u5230 +1\uFF09\uFF1A+1 = \u5DE6\u53F3\u4E00\u6837\uFF08\u5355\u58F0\u9053\uFF09\uFF1B0 \u9644\u8FD1 = \u5F88\u5BBD\uFF1B\u5C0F\u4E8E 0 = \u5DE6\u53F3\u53CD\u76F8\uFF0C\u624B\u673A\u5916\u653E / \u5355\u58F0\u9053\u4E00\u5408\u5C31\u4F1A\u53D8\u5C0F\u3001\u53D8\u7A7A\u3002\u80CC\u666F\u7684\u56FE\uFF1A\u7AD6\u7EBF = \u5355\u58F0\u9053\uFF0C\u8D8A\u5706\u8D8A\u5BBD\uFF0C\u6A2A\u7740 = \u53CD\u76F8",
+  gr: "\u538B\u4E86\u591A\u5C11\uFF1A\u8FD9\u6761\u8F68\u4E0A\u7B2C\u4E00\u53F0\u538B\u7F29\u6B64\u523B\u628A\u58F0\u97F3\u538B\u4F4E\u4E86\u51E0 dB\uFF08\u4E0B\u9762\u644A\u5F00\u7684\u5C31\u662F\u5B83\uFF09\u3002\u4E00\u76F4\u538B\u5F88\u591A = \u9608\u503C\u592A\u4F4E\u6216\u6BD4\u4F8B\u592A\u5927",
   key: "\u88AB\u8C01\u538B\uFF08\u4FA7\u94FE\uFF09\uFF1A\u538B\u7F29\u5668\u4E0D\u770B\u81EA\u5DF1\uFF0C\u800C\u770B\u53E6\u4E00\u6761\u8F68\u6709\u591A\u54CD\u2014\u2014\u6BD4\u5982\u6708\u8BFB\u4E00\u5531\uFF0C\u4F34\u594F\u81EA\u5DF1\u8BA9\u4E00\u70B9"
 };
+var RMS_ROW = row("\u5E73\u5747", HINT2.rms, `<output class="rms-val">\u2014</output>`, "", "strip-row");
+var CORR_ROW = row("\u5DE6\u53F3\u76F8\u5173", HINT2.corr, `<output class="corr-val">\u2014</output>`, "", "strip-row");
+var GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="gon-axis" d="M0,-1L0,1M-1,0L1,0"/><text class="gon-lab" x="-0.72" y="-0.62">\u5DE6</text><text class="gon-lab" x="0.6" y="-0.62">\u53F3</text><path class="gon" d=""/></svg>`;
 var Studio2 = class {
   constructor(parent, host) {
     this.host = host;
@@ -25970,6 +26081,13 @@ var Studio2 = class {
   lastMeter = 0;
   /** EQ 页卡片背景的频谱（v0.10.11）：每条轨平滑后的 96 个频带（dB）。 */
   specShown = /* @__PURE__ */ new Map();
+  /** 仪表（v0.10.16；user「三个页同意」）：平均电平 = 均方按 0.3 s 平滑；压缩页 = 压了多少（涨得快、每秒回 20 dB）；基础页总轨 / 混音轨 = 李萨如图 + 左右相关。读数一秒刷 4 次（不闪）。 */
+  msTarget = /* @__PURE__ */ new Map();
+  msShown = /* @__PURE__ */ new Map();
+  grTarget = /* @__PURE__ */ new Map();
+  grShown = /* @__PURE__ */ new Map();
+  corrShown = /* @__PURE__ */ new Map();
+  lastText = 0;
   get isOpen() {
     return !this.el.hidden;
   }
@@ -25986,9 +26104,13 @@ var Studio2 = class {
   }
   // ── 峰值 ────────────────────────────────────────────────────────────────
   /** 录音房报的峰值（0–1；总轨 = 出声口；tracks = 每条轨 / 混音轨推子后）。 */
-  meter(peak, tracks = {}) {
+  meter(peak, tracks = {}, ms = {}, gr = {}) {
     this.target.set(MASTER, peak);
     for (const [k2, v] of Object.entries(tracks)) this.target.set(k2, v);
+    this.msTarget.clear();
+    for (const [k2, v] of Object.entries(ms)) this.msTarget.set(k2, v);
+    this.grTarget.clear();
+    for (const [k2, v] of Object.entries(gr)) this.grTarget.set(k2, v);
     this.lastMeter = performance.now();
     const val = this.el.querySelector(".meter-val");
     if (val) {
@@ -26011,6 +26133,25 @@ var Studio2 = class {
       path.setAttribute("d", areaPath(b3));
     }
   }
+  /** 总轨 / 混音轨推子后的左右采样 → 基础页卡片背景的李萨如图 + 左右相关（v0.10.16；user「声像对应的是莉萨如图吗？」「三个页同意」）。
+   *  竖着 = 中 (L+R)/√2、横着 = (R−L)/√2（只有左 = 左上斜线）：竖线 = 单声道、越圆越宽、横着 = 反相。形状看的是左右关系，不看多响：按这一帧最大的那下缩放（太小的不放大）。 */
+  stereo(tracks) {
+    if (this.el.hidden || this.tab !== "basic") return;
+    for (const [id2, { L: L2, R: R2 }] of Object.entries(tracks)) {
+      const card = this.el.querySelector(`.strip[data-id="${CSS.escape(id2)}"]`);
+      if (!card) continue;
+      const g3 = stereoShape(L2, R2), path = card.querySelector(".strip-gonio .gon");
+      if (path) path.setAttribute("d", g3.path);
+      const prev = this.corrShown.get(id2), c10 = g3.corr === null ? null : prev === void 0 ? g3.corr : prev + (g3.corr - prev) * 0.3;
+      if (c10 === null) this.corrShown.delete(id2);
+      else this.corrShown.set(id2, c10);
+      const out = card.querySelector(".corr-val");
+      if (out) {
+        out.textContent = c10 === null ? "\u2014" : `${c10 >= 0 ? "+" : "\u2212"}${Math.abs(c10).toFixed(2)}`;
+        out.classList.toggle("neg", c10 !== null && c10 < -0.05);
+      }
+    }
+  }
   /** 这一格 EQ 的响应曲线（±18 dB 映到卡片高度，中线 = 0 dB）。 */
   curvePath(track, fx) {
     if (!fx || fx.on === false) return "M0,50L100,50";
@@ -26028,6 +26169,8 @@ var Studio2 = class {
     const dt = Math.min(0.1, (now2 - this.lastTick) / 1e3);
     this.lastTick = now2;
     const stale = now2 - this.lastMeter > 200;
+    const text2 = now2 - this.lastText > 250;
+    if (text2) this.lastText = now2;
     let alive = false;
     for (const el2 of this.el.querySelectorAll(".strip[data-id]")) {
       const id2 = el2.dataset.id, raw = stale ? 0 : this.target.get(id2) ?? 0, want = toDb(raw), cur = this.shown.get(id2) ?? -60;
@@ -26038,6 +26181,23 @@ var Studio2 = class {
       if (bar2) {
         bar2.style.width = `${Math.max(0, Math.min(100, (next2 + 60) / 60 * 100))}%`;
         bar2.classList.toggle("hot", raw >= 0.98);
+      }
+      const msWant = stale ? 0 : this.msTarget.get(id2) ?? 0, msCur = this.msShown.get(id2) ?? 0, ms = msCur + (msWant - msCur) * (1 - Math.exp(-dt / 0.3));
+      this.msShown.set(id2, ms);
+      if (ms > 1e-6) alive = true;
+      const grWant = stale ? 0 : this.grTarget.get(id2) ?? 0, grCur = this.grShown.get(id2) ?? 0, gr = grWant <= grCur ? grWant : Math.min(0, grCur + 20 * dt);
+      this.grShown.set(id2, gr);
+      if (gr < -0.05) alive = true;
+      const gb = el2.querySelector(".gr-bar > i");
+      if (gb) gb.style.width = `${Math.min(100, -gr / 20 * 100)}%`;
+      if (text2) {
+        const rv2 = el2.querySelector(".rms-val");
+        if (rv2) {
+          const db = ms > 1e-6 ? 10 * Math.log10(ms) : -99;
+          rv2.textContent = db <= -59 ? "\u2014" : `${db.toFixed(1)} dB`;
+        }
+        const gv = el2.querySelector(".gr-val");
+        if (gv) gv.textContent = gr > -0.05 ? "0 dB" : `${gr.toFixed(1)} dB`;
       }
     }
     if (alive || !stale) this.raf = requestAnimationFrame(this.tick);
@@ -26313,7 +26473,7 @@ ${tg2.fx}`);
     const all = this.slots(track).filter((s11) => s11.fx.kind === kind), s10 = all[0];
     if (!s10) return `<button class="btn cand" data-v="fxaddkind" data-kind="${kind}" title="\u5F80\u8FD9\u6761\u8F68\u4E0A\u63D2\u4E00\u4E2A${pluginName(kind)}">\uFF0B ${esc5(pluginName(kind))}</button>`;
     const fx = s10.fx, tg2 = { track, fx: fx.id };
-    return `<div class="fx-inline${fx.on === false ? " off" : ""}" data-fxwrap data-track="${esc5(track)}" data-fx="${esc5(fx.id)}"><div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="\u5173 = \u8FD9\u4E00\u683C\u8DF3\u8FC7\uFF08\u53C2\u6570\u7559\u7740\uFF09">${fx.on === false ? "\u5173\u7740" : "\u5F00\u7740"}</button>${all.length > 1 ? `<span class="fx-dim">\u8FD8\u6709 ${all.length - 1} \u4E2A${esc5(pluginName(kind))}\u5728\u300C\u94FE\u300D\u91CC</span>` : ""}${this.modeSeg(tg2)}</div><div class="fx-body">${this.controlsHtml(tg2, fx, this.modeOf(tg2))}</div></div>`;
+    return `<div class="fx-inline${fx.on === false ? " off" : ""}" data-fxwrap data-track="${esc5(track)}" data-fx="${esc5(fx.id)}"><div class="fx-inline-head"><button class="btn cand${fx.on === false ? "" : " is-on"}" data-v="fxon" title="\u5173 = \u8FD9\u4E00\u683C\u8DF3\u8FC7\uFF08\u53C2\u6570\u7559\u7740\uFF09">${fx.on === false ? "\u5173\u7740" : "\u5F00\u7740"}</button>${all.length > 1 ? `<span class="fx-dim">\u8FD8\u6709 ${all.length - 1} \u4E2A${esc5(pluginName(kind))}\u5728\u300C\u94FE\u300D\u91CC</span>` : ""}${this.modeSeg(tg2)}</div>` + (kind === "comp" ? row("\u538B\u4E86", HINT2.gr, `<output class="gr-val">0 dB</output>`, `<span class="gr-bar"><i></i></span>`, "strip-row gr-row") : "") + `<div class="fx-body">${this.controlsHtml(tg2, fx, this.modeOf(tg2))}</div></div>`;
   }
   /** 出到 + 发送（歌手轨和路由轨都有；总轨没有）。 */
   routeHtml(track) {
@@ -26359,7 +26519,7 @@ ${tg2.fx}`);
   }
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   card(id2, cls, name, who, body2, color) {
-    const spec = this.tab === "eq" ? this.specSvg(id2) : "";
+    const spec = this.tab === "eq" ? this.specSvg(id2) : this.tab === "basic" && (id2 === MASTER || cls.includes("bus")) ? GONIO_SVG : "";
     return `<div class="strip${cls}" data-id="${esc5(id2)}"${color ? ` data-color style="--cat:${esc5(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc5(who)}</div>` : ""}${body2}</div>`;
   }
   render() {
@@ -26367,15 +26527,15 @@ ${tg2.fx}`);
     if (this.open && !this.slotOf(this.open)) this.open = null;
     this.renderBar();
     const nameDiv = (s10) => `<div class="strip-name">${esc5(s10)}</div>`;
-    const masterBody = tab === "basic" ? row("\u589E\u76CA", HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") + `<div class="strip-btns"><button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter" title="\u6BCD\u7EBF\u9650\u5E45\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E0D\u52A8\uFF1B\u5173\u6389 = \u53EF\u80FD\u524A\u6CE2">\u9650\u5E45${m2.limiter ? "" : "\uFF08\u5173\uFF1A\u53EF\u80FD\u524A\u6CE2\uFF09"}</button></div><div class="strip-row">\u5CF0\u503C <span class="meter-val">\u2014</span></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904</div>` : this.chipsHtml(MASTER);
+    const masterBody = tab === "basic" ? row("\u589E\u76CA", HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") + `<div class="strip-btns"><button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter" title="\u6BCD\u7EBF\u9650\u5E45\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E0D\u52A8\uFF1B\u5173\u6389 = \u53EF\u80FD\u524A\u6CE2">\u9650\u5E45${m2.limiter ? "" : "\uFF08\u5173\uFF1A\u53EF\u80FD\u524A\u6CE2\uFF09"}</button></div><div class="strip-row">\u5CF0\u503C <span class="meter-val">\u2014</span></div>` + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv("\u603B\u8F68"), "\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E", masterBody);
     const buses = this.host.buses(), busCards = buses.map((b3, k2) => {
-      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: 0, defText: "\u4E2D" }), "strip-row") + `<div class="strip-btns"><button class="btn" data-v="busleft" title="\u5F80\u524D\u632A\u4E00\u4F4D"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="\u5F80\u540E\u632A\u4E00\u4F4D"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? this.routeHtml(b3.id) : this.chipsHtml(b3.id);
+      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="strip-btns"><button class="btn" data-v="busleft" title="\u5F80\u524D\u632A\u4E00\u4F4D"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="\u5F80\u540E\u632A\u4E00\u4F4D"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? this.routeHtml(b3.id) : this.chipsHtml(b3.id);
       const name = tab === "basic" ? `<input class="bus-name" value="${esc5(b3.name)}" title="\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09" />` : nameDiv(b3.name);
       return this.card(b3.id, " bus", name, "\u6DF7\u97F3\u8F68", body2);
     }).join("");
     const singers = this.host.strips().map((s10) => {
-      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: 0, defText: "\u4E2D" }), "strip-row") + `<div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + `<div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
       (s10.refs ? `<div class="strip-refs">\u5728 ${s10.refs} \u5F20\u7EB8\u4E0A</div>` : `<div class="strip-refs">\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709 <button class="btn cand danger" data-v="delpart" title="\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? this.routeHtml(s10.id) : this.chipsHtml(s10.id);
       return this.card(s10.id, "", nameDiv(s10.name), s10.performer, body2, s10.color);
     }).join("");
@@ -37440,7 +37600,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-d5112ef13eb6.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-b92b6e987b75.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -39210,7 +39370,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "221068e2328d",
+  cssHash: "852e05bf7df9",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -39616,12 +39776,17 @@ function closeStudio() {
   applyWorkspace();
   scoreEl.focus();
 }
-engine.on("meter", (peak, _active, tracks) => {
-  if (studio.isOpen) studio.meter(peak, tracks);
+engine.on("meter", (peak, _active, tracks, ms, gr) => {
+  if (studio.isOpen) studio.meter(peak, tracks, ms, gr);
+});
+engine.on("stereo", (tracks) => {
+  if (studio.isOpen) studio.stereo(tracks);
 });
 engine.on("spectrum", (sr2, tracks) => studio.spectrum(sr2, tracks));
 function syncSpectrum() {
-  engine.spectrum(studio.isOpen && studio.currentTab === "eq" && document.visibilityState === "visible");
+  const on2 = studio.isOpen && document.visibilityState === "visible";
+  engine.spectrum(on2 && studio.currentTab === "eq");
+  engine.stereo(on2 && studio.currentTab === "basic");
 }
 function openFinder() {
   finderBackToInst = instShown;
@@ -42357,4 +42522,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1f8dc3e4c335.mjs.map
+//# sourceMappingURL=moonsinger-8f51e839e7f7.mjs.map
