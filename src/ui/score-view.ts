@@ -23,12 +23,14 @@ import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL,
 import { type EditorState, type NoteTok, setCaret, setFocus, select, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic } from "../score/pitch.ts";
-import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit } from "../render/engrave.ts";
+import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
 import { TitleEditor } from "./title-editor.ts";
 import { RULES, type ModeRules } from "../app/workspace.ts";
+/** 一个光标位置的身份（纸 | 声部 | 下标）：行末 / 行首的画法只对这一个位置有效。 */
+const caretKey = (st: EditorState): string => `${st.at.paper}|${st.at.part}|${st.caret}`;
 
 /** 连续排法的边距（sp）：纸的真边距只在分页里画（所见即所得）；连续 = 一圈舒服的窄边，行宽照旧是版心。 */
 const CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 } as const;
@@ -217,7 +219,8 @@ export class ScoreView {
     this.el.classList.toggle("pages", !!page);
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
-    this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true,
+    if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
+    this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, sel: st.sel, parts: this.host.parts(), measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.caretEnd ? { caretEnd: true } : {}),
       ...(page && this.host.lyricRaise?.() ? { lyricRaise: this.host.lyricRaise() } : {}),
       autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
       ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}), ...(this.hot ? { hot: this.hot } : {}), ...(this.span ? { span: this.span } : {}) });
@@ -328,6 +331,8 @@ export class ScoreView {
   private followKey = "";
   private holdView = false;               // 正在点声部名（这一次重画不跟光标）
   private heldBase: string | null = null; // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
+  /** 光标画在上一行末尾（点在上一行行末放的）：记着是哪个光标位置（纸|声部|下标），光标一挪就失效；不进文件、不进 undo（2026-10-10 user「然后我希望光标能同时支持一行的末尾和下一行的开头两个位置取决于点在哪里」）。 */
+  private caretEnd: string | null = null;
 
   /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
    *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
@@ -531,7 +536,7 @@ export class ScoreView {
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     this.finger = null; this.box = null; this.boxEl.hidden = true;
     if (this.drag) { this.host.release?.(); this.drag = null; }
-    this.host.set(this.caretAt(x, y));
+    this.placeCaretAt(x, y);
     const L = this.layout!, row = this.rowAt(y), mine = this.hits.filter((n) => n.system === row && this.onTrack(n));
     const range = mine.length ? { from: Math.min(...mine.map((n) => n.index)), to: Math.max(...mine.map((n) => n.index)) + 1 } : null;
     this.host.focus?.("staff");
@@ -711,14 +716,34 @@ export class ScoreView {
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     const st0 = this.host.get(), st = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
     const cur = this.onTrack(hit) ? st.sel : null;
-    this.host.set(shift && cur ? select(st, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : setCaret(st, hit.index + 1));
+    if (shift && cur) this.host.set(select(st, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)));
+    else this.putCaret(setCaret(st, hit.index + 1), this.endSlotOn(hit.system, hit.index + 1));   // 点的是一行最后一个音 = 光标画在这一行末尾
     this.host.focus?.("staff");
+  }
+  /** 这一行（谱行）上有没有「行末」落点给这个光标位置（= 它本来画在下一行开头）。 */
+  private endSlotOn(row: number, caret: number): boolean {
+    return !!this.layout?.slots.some((s) => s.end && s.system === row && s.caret === caret);
+  }
+  /** 放光标 + 记住画在行末还是行首。状态没变（光标本来就在这儿）但画法变了 = 自己重画。 */
+  private putCaret(next: EditorState, end: boolean): void {
+    const want = end ? caretKey(next) : null, before = this.host.get(), redraw = want !== this.caretEnd;
+    this.caretEnd = want;
+    this.host.set(next);
+    if (redraw && this.host.get() === before) this.render();
+  }
+  /** 空白处放光标（轻点 / 长按 / 右键 / 框选没框住）：那条谱最近的落点，行末的落点 = 画在行末。 */
+  private placeCaretAt(x: number, y: number, st = this.host.get()): void {
+    const s = this.slotAt(x, y);
+    this.putCaret(this.caretAt(x, y, st), !!s?.end);
+  }
+  private slotAt(x: number, y: number): Slot | null {
+    const L = this.layout!, row = this.rowAt(y), cands = L.slots.filter((s) => s.system === row);
+    return cands.length ? cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a)) : null;
   }
   /** 空白处 → 那条谱最近的光标落点（= 写；点哪条谱光标就到哪条）。 */
   private caretAt(x: number, y: number, st = this.host.get()): EditorState {
-    const L = this.layout!, row = this.rowAt(y), cands = L.slots.filter((s) => s.system === row);
-    if (!cands.length) return st;
-    const best = cands.reduce((a, b) => (Math.abs(b.x - x) < Math.abs(a.x - x) ? b : a));
+    const L = this.layout!, row = this.rowAt(y), best = this.slotAt(x, y);
+    if (!best) return st;
     const r = L.systems[row];
     return r.paper === st.at.paper && r.part === st.at.part ? setCaret(st, best.caret) : setFocus(st, r.paper, r.part, best.caret);
   }
@@ -727,7 +752,7 @@ export class ScoreView {
     const b = this.box!, L = this.layout!, xa = Math.min(b.x0, x1), xb = Math.max(b.x0, x1), ya = Math.min(b.y0, y1), yb = Math.max(b.y0, y1);
     Object.assign(this.boxEl.style, { left: `${xa}px`, top: `${ya}px`, width: `${xb - xa}px`, height: `${yb - ya}px` });
     const inside = this.hits.filter((n) => { const cx = n.x + n.w / 2; return n.system === b.row && cx >= xa && cx <= xb && n.y >= ya && n.y <= yb; }).map((n) => n.index);
-    if (!inside.length) { this.host.set(this.caretAt(b.x0, b.y0, b.st0)); return; }
+    if (!inside.length) { this.placeCaretAt(b.x0, b.y0, b.st0); return; }
     const st = this.focusRow(b.st0, b.row, b.st0.caret);
     this.host.set(select(st, Math.min(...inside), Math.max(...inside) + 1));
   }
@@ -817,12 +842,12 @@ export class ScoreView {
     }
     if (this.finger && e.pointerId === this.finger.pid) {
       const f = this.finger; this.finger = null;
-      if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) { this.host.set(this.caretAt(f.x, f.y)); this.host.focus?.("staff"); }
+      if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) { this.placeCaretAt(f.x, f.y); this.host.focus?.("staff"); }
       return;
     }
     if (this.box && e.pointerId === this.box.pid) {
       const b = this.box; this.box = null; this.boxEl.hidden = true;
-      if (!b.moved && this.layout) this.host.set(this.caretAt(b.x0, b.y0));   // 没拖 = 放光标
+      if (!b.moved && this.layout) this.placeCaretAt(b.x0, b.y0);   // 没拖 = 放光标
       this.host.focus?.("staff");
       return;
     }

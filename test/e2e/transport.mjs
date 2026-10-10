@@ -75,10 +75,15 @@ await p.keyboard.press(" "); await p.waitForTimeout(150);
 check(!(await playing()), "听模式里空格 = 停");
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 check(!(await T()).listen, "Esc = 回到写");
-// 6. ⋯ 里「从头放」= 起点回到开头
+// 6. ⋯ 里「从头放」= 从开头放一遍、起点不动（2026-10-10 user「从头放会把start reset回头」）；之后主键照旧回到起点
 await p.click("#transportMore"); await p.waitForTimeout(80); await p.click('.ctx-menu [data-v="head"]');
 check(await waitPlaying(), "从头放 = 放起来"); await p.waitForTimeout(150);
-check((await T()).startMark === null && (await pos()) < 1, "从头放 = 起点回到开头");
+check((await pos()) < 1, "从头放 = 从开头放", `${(await pos()).toFixed(2)} s`);
+check((await T()).startMark?.tick === BAR3 && !!(await p.$(".start-mark")), "从头放不动起点（小旗还在第三小节）", JSON.stringify((await T()).startMark));
+await p.click("#playBtn"); await p.waitForTimeout(150);
+await p.click("#playBtn"); check(await waitPlaying(), "停了再按主键 = 放起来"); await p.waitForTimeout(200);
+const p6 = await pos();
+check(p6 > 2 * BAR - 0.4 && p6 < 2 * BAR + 0.6, "主键 = 回到起点（第三小节）", `${p6.toFixed(2)} s（第三小节 ${(2 * BAR).toFixed(2)} s）`);
 await p.click("#playBtn"); await p.waitForTimeout(100);
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 await b.close();

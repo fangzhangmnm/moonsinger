@@ -912,7 +912,8 @@ function playRange(tl: Timeline): { from: number; to: number; loopFrom: number }
 // ── 走带（2026-10-10 Opus 5.5）：起点 / 续播·暂停 / 回起点重放 / ⋯（循环、从头放、接缝）/ 听模式 ──────────────────────────
 //   user「走带控制有续播/暂停 和从上一次开播的地方重新开始两个，loop和之后别的设置比如从头开始放在...里面」「但是我想编辑的时候光标动但是播放头不动」
 //   「核心场景就是一遍一遍听同一个小节」「以及大部分时候可以小节级别的开始精度」「那么续播不reset起点」「长按加播放同意」。
-//   起点 = 一个小节头：只有「从这儿放」（空白长按 / 选区菜单 / 听模式里点谱）和「从头放」挪它；编辑、挪光标、续播都不动它（取代 v0.9.1 的「▶ = 从光标放」）。
+//   起点 = 一个小节头：只有「从这儿放」（空白长按 / 选区菜单 / 听模式里点谱）挪它；编辑、挪光标、续播、「从头放」都不动它（取代 v0.9.1 的「▶ = 从光标放」）。
+//   「从头放」= 从开头放一遍、起点留着（2026-10-10 user「从头放会把start reset回头」：v0.9.18 起它会把起点挪回开头，听完整首再按 |▶ 就回不到正在磨的那个小节了）。
 let startMark: { paperId: string; tick: number } | null = null;
 let paused: { sec: number; at: { paperId: string; tick: number } | null } | null = null;   // 暂停在哪：秒 + 谱位置（暂停时改了谱 = 按谱位置接着放）
 const clampTo = (r: { from: number; to: number }, s: number) => Math.min(Math.max(s, r.from), r.to);
@@ -943,8 +944,8 @@ function barHeadTick(paperId: string, part: string, tick: number): number {
 }
 /** 一条 track 上第 caret 个 token 之前有多少 tick。 */
 const tickOfCaret = (paperId: string, part: string, caret: number): number => { const toks = st.song.papers.find((p) => p.id === paperId)?.tracks[part] ?? []; let t = 0; for (let i = 0; i < Math.min(caret, toks.length); i++) if (isTimed(toks[i])) t += (toks[i] as { dur: number }).dur; return t; };
-/** 开播（准备时间线 + 唱前几块）：start = 从起点；resume = 从暂停的地方；seam = 循环尾前几秒（听接缝）。 */
-async function startPlayback(how: "start" | "resume" | "seam"): Promise<void> {
+/** 开播（准备时间线 + 唱前几块）：start = 从起点；head = 从开头（起点不动）；resume = 从暂停的地方；seam = 循环尾前几秒（听接缝）。 */
+async function startPlayback(how: "start" | "head" | "resume" | "seam"): Promise<void> {
   if (preparing) { cancelPrepare = true; return; }   // 准备中再按 = 不放了
   singer.unlock(); holdAudio();   // 在用户手势里先把声音打开（iPad）；准备期间让声音一直醒着
   preparing = true; cancelPrepare = false; $("playBtn").classList.add("is-on");
@@ -953,7 +954,7 @@ async function startPlayback(how: "start" | "resume" | "seam"): Promise<void> {
     const r = playRange(tl); playTl = tl;
     const loop = loopOn || how === "seam";
     engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop, loopFrom: r.loopFrom });
-    const at = how === "seam" ? Math.max(r.from, r.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl, r) : startSeconds(tl, r);
+    const at = how === "seam" ? Math.max(r.from, r.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl, r) : how === "head" ? r.from : startSeconds(tl, r);
     // 边算边放：从 at 起按距离排队唱，前几块到齐就开播，后面的边放边唱（到了没唱好的那句走带会等）
     setChunkOrder(tl, at, loop ? { from: r.loopFrom, to: r.to } : null);
     await waitChunksReady(tl, at, () => cancelPrepare);
@@ -987,7 +988,12 @@ function replay(): void {
 function playFromHere(paperId: string, part: string, tick: number): void {
   startMark = { paperId, tick: barHeadTick(paperId, part, tick) }; view.setStartMark(startMark); replay();
 }
-function playFromHead(): void { startMark = null; view.setStartMark(null); replay(); }
+/** 从头放：从开头放一遍，起点不动（之后 |▶ 照旧回到起点）。放着 = 直接跳到开头。 */
+function playFromHead(): void {
+  paused = null;
+  if (engine.playing && playTl) { engine.seek(playRange(playTl).from); return; }
+  view.setPlayhead(null); void startPlayback("head");
+}
 /** 听接缝：放着 = 跳到循环尾前几秒；没放 = 从那儿放。 */
 function playSeam(): void { if (engine.playing && playTl) { const r = playRange(playTl); engine.seek(Math.max(r.from, r.to - SEAM_LEAD)); } else void startPlayback("seam"); }
 function stopPlay(): void {
@@ -1036,7 +1042,7 @@ function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: 
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
-  box.innerHTML = item("here", "从这儿放", "起点挪到这个小节的头，从这儿放") + (paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放") : "") + item("head", "从头放", "起点回到开头，从头放");
+  box.innerHTML = item("here", "从这儿放", "起点挪到这个小节的头，从这儿放") + (paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放") : "") + item("head", "从头放", "从开头放一遍（起点不动）");
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8; let y = at.y + 10; if (y + h > innerHeight - m) y = at.y - h - 10;
   box.style.left = `${Math.max(m, Math.min(at.x + 6, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, y)}px`;
@@ -1061,7 +1067,7 @@ function openTransportMenu(): void {
   box.innerHTML = (paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放（起点不动）") : "") +
     item("follow", `${view.autoFollow ? "✓ " : ""}自动翻`, "放着的时候谱跟着正在放的那一行滚（出了屏幕舒服的那一段才滚；你自己滚过 4 秒内不跟）") +
     item("loop", `${loopOn ? "✓ " : ""}循环`, "放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环") +
-    item("head", "从头放", "起点回到开头，从头放") + (loopOn ? item("seam", "听接缝", "从循环段结尾前几秒放起，跳回开头再放几秒就停") : "");
+    item("head", "从头放", "从开头放一遍（起点不动）") + (loopOn ? item("seam", "听接缝", "从循环段结尾前几秒放起，跳回开头再放几秒就停") : "");
   document.body.append(box);
   const b = btn.getBoundingClientRect(), w = box.offsetWidth, m = 8;
   box.style.left = `${Math.max(m, Math.min(b.left, innerWidth - w - m))}px`; box.style.top = `${b.bottom + 4}px`;

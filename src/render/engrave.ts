@@ -62,6 +62,9 @@ export interface EngraveOpts {
   margins?: { l: number; r: number; t: number; b: number };
   /** 刚写过（本次输入记录非空）：光标前那个音画成写字头（「−」/ 退格作用在它上）；挪过光标 / 轻点放的光标 = 不画（user 2026-10-08「如果是光标的话为什么前一个音是蓝的？」）。 */
   justWrote?: boolean;
+  /** 光标画在上一行的末尾（光标正好在一行的最前面时）：点在上一行行末放的光标（2026-10-10 user「然后我希望光标能同时支持一行的末尾和下一行的开头两个位置取决于点在哪里」）。
+   *  只挪画的位置，光标在串里的位置不变；不给 = 画在这一行的开头（v0.9.8 的默认）。 */
+  caretEnd?: boolean;
   paperLabel?: string;                   // 纸右上角的小钮（扳手；这里的字只进悬停提示「纸：A5」）；点了 = 纸的设置（user「这种应该是纸的右上角有一个可以设置纸的属性吧。加图片的入口以后也可以放那里」；
                                          //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
@@ -72,7 +75,7 @@ const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
 /** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。 */
 export interface SystemBox { top: number; staffTop: number; bottom: number; paper: string; part: string; sys: number; staff: Staff }   // staff = 大谱表里是上（1）还是下（2）
 export interface HitNote { index: number; system: number; x: number; y: number; w: number; d: number }
-export interface Slot { caret: number; system: number; x: number }
+export interface Slot { caret: number; system: number; x: number; end?: true }   // end = 行末那个落点（光标在下一行开头的那个位置，点在这一行行末时画在这儿）
 export interface LyricHit { index: number; system: number; x: number; y: number }   // x = 歌词中心，y = 基线
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
@@ -563,6 +566,14 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     }
     // 3½. 光标在一行的最前面 = 就画在这一行的开头（2026-10-10 user「记账：光标应该在每行的开头而不是上一行的末尾」「能不能顺便把光标在行开头给修一下，很影响工作」）。
     //   2026-10-08 曾按 user 当时的问法「到行末的时候光标应该在行末而不是下一行开头？」把它挪到上一行末尾画（同文本编辑器）；10-10 user 改了主意，不挪了。
+    //   同一天 user「然后我希望光标能同时支持一行的末尾和下一行的开头两个位置取决于点在哪里」→ 默认照旧在开头；点在上一行行末放的光标（caretEnd）= 画在上一行末尾。
+    if (o.caretEnd) for (const q of per) for (const u of q.units) {
+      if (u.kind !== "head" || u.system === 0) continue;
+      if (cols.some((c) => c.system === u.system && c.chunk && c.x < u.x - 1e-6)) continue;   // 这一行里它前面已经有音 / 休止 = 不在行首
+      const prevRow = cols.filter((c) => c.system === u.system - 1);
+      if (!prevRow.length) continue;
+      u.system -= 1; u.x = Math.max(...prevRow.map((c) => c.x + c.w));
+    }
     // 4. 行号与坐标：这张纸第 s 行第 r 个声部的第 k 张谱表 = 一条谱行（大谱表两条；紧凑版式里这张纸上没写歌词的声部那条更矮）
     const rowBase = rows.length, nR = parts.length;
     const rowStart = per.map((_, i) => per.slice(0, i).reduce((a, q) => a + q.staves, 0)), nRowsSys = per.reduce((a, q) => a + q.staves, 0);
@@ -1130,6 +1141,17 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const last = u ? null : [...units].reverse().find((v) => v.kind !== "head");
         const sys = u ? u.system : last ? last.system : 0, x = u ? P(u.x) : last ? P(last.x + last.w) : P(sysStarts[0]);
         for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(sys, r, k), x });
+      }
+      // 行末落点：这一行最后一个东西后面 = 下一行第一个光标位置，点在这里 = 光标画在这一行末尾（caretEnd）。原来这里没有落点，点行末空白会落到最后一个音前面。
+      let lastSys = -1;
+      for (let c = H; c < tokens.length; c++) {
+        const u = firstUnitOf.get(c); if (!u) continue;
+        const crossed = lastSys >= 0 && u.system > lastSys; lastSys = u.system;
+        if (!crossed) continue;
+        const prevRow = cols.filter((cc) => cc.system === u.system - 1);
+        if (!prevRow.length) continue;
+        const x = P(Math.max(...prevRow.map((cc) => cc.x + cc.w)));
+        for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(u.system - 1, r, k), x, end: true });
       }
     });
     stubs();

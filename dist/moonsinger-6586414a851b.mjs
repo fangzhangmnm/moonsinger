@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.19-2026-10-10";
+var APP_VERSION = "v0.9.20-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7112,6 +7112,14 @@ function engrave(song, o10) {
         }
       }
     }
+    if (o10.caretEnd) for (const q2 of per) for (const u2 of q2.units) {
+      if (u2.kind !== "head" || u2.system === 0) continue;
+      if (cols.some((c10) => c10.system === u2.system && c10.chunk && c10.x < u2.x - 1e-6)) continue;
+      const prevRow = cols.filter((c10) => c10.system === u2.system - 1);
+      if (!prevRow.length) continue;
+      u2.system -= 1;
+      u2.x = Math.max(...prevRow.map((c10) => c10.x + c10.w));
+    }
     const rowBase = rows.length, nR2 = parts.length;
     const rowStart = per.map((_2, i10) => per.slice(0, i10).reduce((a10, q2) => a10 + q2.staves, 0)), nRowsSys = per.reduce((a10, q2) => a10 + q2.staves, 0);
     const rowOf = (s10, r10, k2 = 0) => rowBase + s10 * nRowsSys + rowStart[r10] + k2;
@@ -7741,6 +7749,18 @@ function engrave(song, o10) {
         const last = u2 ? null : [...units].reverse().find((v) => v.kind !== "head");
         const sys = u2 ? u2.system : last ? last.system : 0, x3 = u2 ? P2(u2.x) : last ? P2(last.x + last.w) : P2(sysStarts[0]);
         for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: c10, system: rowOf(sys, r10, k2), x: x3 });
+      }
+      let lastSys = -1;
+      for (let c10 = H2; c10 < tokens.length; c10++) {
+        const u2 = firstUnitOf.get(c10);
+        if (!u2) continue;
+        const crossed = lastSys >= 0 && u2.system > lastSys;
+        lastSys = u2.system;
+        if (!crossed) continue;
+        const prevRow = cols.filter((cc2) => cc2.system === u2.system - 1);
+        if (!prevRow.length) continue;
+        const x3 = P2(Math.max(...prevRow.map((cc2) => cc2.x + cc2.w)));
+        for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: c10, system: rowOf(u2.system - 1, r10, k2), x: x3, end: true });
       }
     });
     stubs();
@@ -8548,6 +8568,7 @@ function dockOf(s10) {
 var hasKeys = (m2) => m2 === "notes" || m2 === "symbols";
 
 // src/ui/score-view.ts
+var caretKey = (st3) => `${st3.at.paper}|${st3.at.part}|${st3.caret}`;
 var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
 var ScoreView = class {
@@ -8755,6 +8776,7 @@ var ScoreView = class {
     this.el.classList.toggle("pages", !!page);
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st3.song.paper ?? paperOf(DEFAULT_PAPER);
+    if (this.caretEnd !== null && (this.caretEnd !== caretKey(st3) || st3.sel)) this.caretEnd = null;
     this.layout = engrave(st3.song, {
       width,
       sp: sp2,
@@ -8764,6 +8786,7 @@ var ScoreView = class {
       parts: this.host.parts(),
       measureLyric: this.measureAt(LYRIC_EM * sp2),
       titlePlaceholder: true,
+      ...this.caretEnd ? { caretEnd: true } : {},
       ...page && this.host.lyricRaise?.() ? { lyricRaise: this.host.lyricRaise() } : {},
       autoBars: this.host.autoBars?.() ?? true,
       paperLabel: paper.kind === "other" ? "\u5176\u4ED6\u7EB8" : PAPER_LABEL[paper.kind],
@@ -8943,6 +8966,8 @@ var ScoreView = class {
   // 正在点声部名（这一次重画不跟光标）
   heldBase = null;
   // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
+  /** 光标画在上一行末尾（点在上一行行末放的）：记着是哪个光标位置（纸|声部|下标），光标一挪就失效；不进文件、不进 undo（2026-10-10 user「然后我希望光标能同时支持一行的末尾和下一行的开头两个位置取决于点在哪里」）。 */
+  caretEnd = null;
   /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
    *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
   get hits() {
@@ -9220,7 +9245,7 @@ var ScoreView = class {
       this.host.release?.();
       this.drag = null;
     }
-    this.host.set(this.caretAt(x2, y2));
+    this.placeCaretAt(x2, y2);
     const L2 = this.layout, row = this.rowAt(y2), mine = this.hits.filter((n10) => n10.system === row && this.onTrack(n10));
     const range2 = mine.length ? { from: Math.min(...mine.map((n10) => n10.index)), to: Math.max(...mine.map((n10) => n10.index)) + 1 } : null;
     this.host.focus?.("staff");
@@ -9498,14 +9523,34 @@ var ScoreView = class {
     this.marks.commitAndClose();
     const st0 = this.host.get(), st3 = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
     const cur = this.onTrack(hit) ? st3.sel : null;
-    this.host.set(shift && cur ? select(st3, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)) : setCaret(st3, hit.index + 1));
+    if (shift && cur) this.host.set(select(st3, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)));
+    else this.putCaret(setCaret(st3, hit.index + 1), this.endSlotOn(hit.system, hit.index + 1));
     this.host.focus?.("staff");
+  }
+  /** 这一行（谱行）上有没有「行末」落点给这个光标位置（= 它本来画在下一行开头）。 */
+  endSlotOn(row, caret) {
+    return !!this.layout?.slots.some((s10) => s10.end && s10.system === row && s10.caret === caret);
+  }
+  /** 放光标 + 记住画在行末还是行首。状态没变（光标本来就在这儿）但画法变了 = 自己重画。 */
+  putCaret(next2, end) {
+    const want = end ? caretKey(next2) : null, before = this.host.get(), redraw = want !== this.caretEnd;
+    this.caretEnd = want;
+    this.host.set(next2);
+    if (redraw && this.host.get() === before) this.render();
+  }
+  /** 空白处放光标（轻点 / 长按 / 右键 / 框选没框住）：那条谱最近的落点，行末的落点 = 画在行末。 */
+  placeCaretAt(x2, y2, st3 = this.host.get()) {
+    const s10 = this.slotAt(x2, y2);
+    this.putCaret(this.caretAt(x2, y2, st3), !!s10?.end);
+  }
+  slotAt(x2, y2) {
+    const L2 = this.layout, row = this.rowAt(y2), cands3 = L2.slots.filter((s10) => s10.system === row);
+    return cands3.length ? cands3.reduce((a10, b3) => Math.abs(b3.x - x2) < Math.abs(a10.x - x2) ? b3 : a10) : null;
   }
   /** 空白处 → 那条谱最近的光标落点（= 写；点哪条谱光标就到哪条）。 */
   caretAt(x2, y2, st3 = this.host.get()) {
-    const L2 = this.layout, row = this.rowAt(y2), cands3 = L2.slots.filter((s10) => s10.system === row);
-    if (!cands3.length) return st3;
-    const best = cands3.reduce((a10, b3) => Math.abs(b3.x - x2) < Math.abs(a10.x - x2) ? b3 : a10);
+    const L2 = this.layout, row = this.rowAt(y2), best = this.slotAt(x2, y2);
+    if (!best) return st3;
     const r10 = L2.systems[row];
     return r10.paper === st3.at.paper && r10.part === st3.at.part ? setCaret(st3, best.caret) : setFocus(st3, r10.paper, r10.part, best.caret);
   }
@@ -9518,7 +9563,7 @@ var ScoreView = class {
       return n10.system === b3.row && cx2 >= xa && cx2 <= xb && n10.y >= ya && n10.y <= yb;
     }).map((n10) => n10.index);
     if (!inside.length) {
-      this.host.set(this.caretAt(b3.x0, b3.y0, b3.st0));
+      this.placeCaretAt(b3.x0, b3.y0, b3.st0);
       return;
     }
     const st3 = this.focusRow(b3.st0, b3.row, b3.st0.caret);
@@ -9695,7 +9740,7 @@ var ScoreView = class {
       const f2 = this.finger;
       this.finger = null;
       if (!f2.moved && this.layout && !this.tap(f2.x, f2.y, f2.shift, null)) {
-        this.host.set(this.caretAt(f2.x, f2.y));
+        this.placeCaretAt(f2.x, f2.y);
         this.host.focus?.("staff");
       }
       return;
@@ -9704,7 +9749,7 @@ var ScoreView = class {
       const b3 = this.box;
       this.box = null;
       this.boxEl.hidden = true;
-      if (!b3.moved && this.layout) this.host.set(this.caretAt(b3.x0, b3.y0));
+      if (!b3.moved && this.layout) this.placeCaretAt(b3.x0, b3.y0);
       this.host.focus?.("staff");
       return;
     }
@@ -35856,7 +35901,7 @@ async function startPlayback(how) {
     playTl = tl2;
     const loop = loopOn || how === "seam";
     engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop, loopFrom: r10.loopFrom });
-    const at2 = how === "seam" ? Math.max(r10.from, r10.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl2, r10) : startSeconds(tl2, r10);
+    const at2 = how === "seam" ? Math.max(r10.from, r10.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl2, r10) : how === "head" ? r10.from : startSeconds(tl2, r10);
     setChunkOrder(tl2, at2, loop ? { from: r10.loopFrom, to: r10.to } : null);
     await waitChunksReady(tl2, at2, () => cancelPrepare);
     if (cancelPrepare) {
@@ -35908,9 +35953,13 @@ function playFromHere(paperId, part, tick) {
   replay();
 }
 function playFromHead() {
-  startMark = null;
-  view.setStartMark(null);
-  replay();
+  paused = null;
+  if (engine.playing && playTl) {
+    engine.seek(playRange(playTl).from);
+    return;
+  }
+  view.setPlayhead(null);
+  void startPlayback("head");
 }
 function playSeam() {
   if (engine.playing && playTl) {
@@ -35982,7 +36031,7 @@ function openListenMenu(at2, a10) {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc7(title)}">${label}</button>`;
-  box.innerHTML = item("here", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E") + (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E") : "") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E");
+  box.innerHTML = item("here", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E") + (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E") : "") + item("head", "\u4ECE\u5934\u653E", "\u4ECE\u5F00\u5934\u653E\u4E00\u904D\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09");
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at2.y + 10;
@@ -36016,7 +36065,7 @@ function openTransportMenu() {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc7(title)}">${label}</button>`;
-  box.innerHTML = (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
+  box.innerHTML = (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u4ECE\u5F00\u5934\u653E\u4E00\u904D\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
   document.body.append(box);
   const b3 = btn.getBoundingClientRect(), w2 = box.offsetWidth, m2 = 8;
   box.style.left = `${Math.max(m2, Math.min(b3.left, innerWidth - w2 - m2))}px`;
@@ -39290,4 +39339,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f40948566daf.mjs.map
+//# sourceMappingURL=moonsinger-6586414a851b.mjs.map
