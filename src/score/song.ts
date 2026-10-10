@@ -1009,6 +1009,62 @@ export function modulateSel(st: EditorState, toFifths: number): EditorState {
   return next({ ...st, nextId }, nt, { sel, caret: sel.to });
 }
 
+// ── 整段 / 整首移调转调（v0.9.33；user 2026-10-09「杂事记账：段级别和工程级别的整体移调转调」→ 10-10「小件做」） ──────────
+
+/** 等音调里挑升降号少的（±6 平手 = 跟 raw 的号）。 */
+function plainKey(raw: number): number {
+  const r = ((raw % 12) + 12) % 12, c = [r, r - 12].filter((f) => f >= -7 && f <= 7);
+  return c.reduce((a, b) => (Math.abs(b) < Math.abs(a) || (Math.abs(b) === Math.abs(a) && Math.sign(b) === Math.sign(raw)) ? b : a));
+}
+/** 参照调 = 范围里第一张纸开头、最上面那位在场歌手那一行的调号（同速度记号的规矩）。 */
+export function scopeKey(song: Song, paperIds: readonly string[]): number {
+  const paper = song.papers.find((p) => p.id === paperIds[0]); if (!paper) return 0;
+  const owner = tempoOwner(song, paper), toks = owner ? paper.tracks[owner] ?? [] : [];
+  return keyAt(toks, toks.length ? headLen(toks) : 0);
+}
+/** 移调 semis 个半音之后，参照调变成哪个（升降号少的写法）。 */
+export const keyAfterSemis = (f0: number, semis: number): number => (semis % 12 === 0 ? f0 : plainKey(f0 + 7 * semis));   // 挪八度 = 调号不变
+/** 几张纸上所有声部一起移调 / 转调。how = { semis }：整体挪几个半音（调号跟着挪，取升降号少的写法；±12 = 挪八度、调号不变）；
+ *  { toFifths }：参照调转到这个调（音按两个主音之间的音程挪，就近方向）。范围里每个调号（谱头的、中途的）挪同样的量，
+ *  音按同一个音程挪（拼写关系不变），挪完按各自的调号简化拼写。skip = 不动的声部（台上固定敲一个键的：谱上的音高不拿来出声）。
+ *  只改音高和调号：不插不删 token，光标 / 选区原样；歌词、记号、谱号、八度线不动。 */
+export function transposePapers(st: EditorState, paperIds: readonly string[], how: { semis: number } | { toFifths: number }, skip?: ReadonlySet<string>): EditorState {
+  const f0 = scopeKey(st.song, paperIds);
+  let f1: number, steps: number, semis: number;
+  if ("semis" in how) {
+    if (!how.semis) return st;
+    f1 = keyAfterSemis(f0, how.semis);
+    const iv = keyInterval(f0, f1), rem = how.semis - iv.semis;   // rem = 12 的倍数（keyInterval 取就近方向）
+    steps = iv.steps + (7 * rem) / 12; semis = how.semis;
+  } else {
+    f1 = how.toFifths; ({ steps, semis } = keyInterval(f0, f1));
+    if (f1 === f0) return st;
+  }
+  const df = f1 - f0, want = new Set(paperIds);
+  let changed = false;
+  const papers = st.song.papers.map((paper) => {
+    if (!want.has(paper.id)) return paper;
+    const tracks: Record<string, Token[]> = {};
+    for (const [pid, toks] of Object.entries(paper.tracks)) {
+      if (skip?.has(pid)) { tracks[pid] = toks; continue; }
+      const nt = toks.map((t): Token => {
+        if (t.kind === "key") return df ? { ...t, fifths: plainKey(t.fifths + df) } : t;
+        if (t.kind === "note" && t.pitch) return withPitches(t, allPitches(t).map((p) => transposeInterval(p, steps, semis)));
+        return t;
+      });
+      if (df) for (let i = 0; i < nt.length; i++) {   // 按挪完之后各自的调号简化拼写（挪八度不动拼写）（调号换成了等音调时，按音程挪的拼法可能和它对不上）
+        const t = nt[i]; if (t.kind !== "note" || !t.pitch) continue;
+        const k = keyAt(nt, i), ps = allPitches(t), qs = ps.map((q) => keySpell(q, k));
+        if (qs.some((q, n) => q !== ps[n])) nt[i] = withPitches(t, qs);
+      }
+      if (nt.some((t, i) => t !== toks[i])) changed = true;
+      tracks[pid] = nt;
+    }
+    return { ...paper, tracks };
+  });
+  return changed ? { ...st, song: { ...st.song, papers } } : st;
+}
+
 // ── 光标与选中 ──────────────────────────────────────────────────────────
 
 /** 放光标（= 写）：清选中、清本次输入记录。 */

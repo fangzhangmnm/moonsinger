@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { clearMarks, stackDegree, setBarStyle, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -1818,7 +1818,7 @@ function openPaperMenu(id: string): void {
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc(paper.name || `第 ${k + 1} 张纸`)}</div>` +
-    `<div class="set-row"><button class="btn" data-v="name">改曲段名…</button><button class="btn" data-v="up"${k === 0 ? " disabled" : ""}>上移</button><button class="btn" data-v="down"${k === st.song.papers.length - 1 ? " disabled" : ""}>下移</button><button class="btn" data-v="add">在它后面加一张纸</button>` +
+    `<div class="set-row"><button class="btn" data-v="name">改曲段名…</button><button class="btn" data-v="up"${k === 0 ? " disabled" : ""}>上移</button><button class="btn" data-v="down"${k === st.song.papers.length - 1 ? " disabled" : ""}>下移</button><button class="btn" data-v="add">在它后面加一张纸</button><button class="btn" data-v="transpose" title="这张纸 / 整首所有声部一起移调、转调（调号跟着挪）">移调 / 转调…</button>` +
     `<button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="隐藏 = 不放、不进压平件；谱上折叠着，翻页能进去">${paper.hidden ? "显示（现在隐藏着）" : "隐藏（不放）"}</button></div>` +
     (absent.length ? `<div class="part-sec">这张纸上加歌手</div><div class="set-row">${absent.map((a) => `<button class="btn cand" data-v="track:${esc(a.id)}">${esc(a.name)}</button>`).join("")}</div>` : "") +
     `<div class="set-row"><button class="btn" data-v="newpart" title="新的一位歌手，只出现在这张纸上">＋ 新歌手…</button>${st.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">删这张纸…</button>` : ""}</div>` +
@@ -1834,6 +1834,7 @@ function openPaperMenu(id: string): void {
     if (v === "name") { close(); view.title.openNow(id); return; }
     if (v === "up" || v === "down") { update(movePaper(st, id, v === "up" ? -1 : 1)); close(); return; }
     if (v === "add") { update(addPaper(st, id)); close(); info("新的一张纸"); return; }
+    if (v === "transpose") { close(); const r = scoreEl.getBoundingClientRect(); openTransposeMenu(id, { x: r.left + r.width / 2, y: r.top + 60 }); return; }
     if (v === "hide") { update(setPaperHidden(st, id, !paper.hidden)); close(); info(paper.hidden ? "这张纸显示了（会放）" : "这张纸隐藏了（不放）"); return; }
     if (v.startsWith("track:")) { update(addTrack(st, id, v.slice(6))); close(); return; }
     if (v === "newpart") { close(); addNewPart(id); return; }
@@ -1943,7 +1944,7 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
     item("paste", "粘贴", "贴在这里：app 里复制的，或系统剪贴板里的简谱文字（1 2 3 | 5 - -）") +
     `<div class="ctx-sep"></div>` +
     item("bar", "小节线 |", "从这里重新数小节（弱起）") + item("phrase", "句号", "这一句到这儿（「合」挪字的边界；不换行不换气）") +
-    item("mark:key", "调号…") + item("mark:time", "拍号…") + item("mark:tempo", "速度…") + item("clef", "谱号…", "从这儿起换谱号（只管画）") + item("ottava", "八度线…", "8va / 15ma / 8vb（只管画）") +
+    item("mark:key", "调号…") + item("mark:time", "拍号…") + item("mark:tempo", "速度…") + item("clef", "谱号…", "从这儿起换谱号（只管画）") + item("ottava", "八度线…", "8va / 15ma / 8vb（只管画）") + item("transpose", "移调 / 转调…", "这张纸 / 整首所有声部一起挪（调号跟着挪）；只挪一段 = 选中它，用选区菜单") +
     // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
     `<div class="ctx-row ctx-dyn">${(["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(st), st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：从这儿前面那个音起"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
     `<div class="ctx-sep"></div>` +
@@ -1967,6 +1968,7 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
     else if (v.startsWith("mark:")) insertMarkHere(v.slice(5) as MarkVal["kind"]);
     else if (v === "clef") { openInsertClefMenu(at); return; }
     else if (v === "ottava") { openInsertOttavaMenu(at); return; }
+    else if (v === "transpose") { openTransposeMenu(st.at.paper, at); return; }
     else if (v.startsWith("dyn:")) update(apply(st, { k: "dyn", v: v.slice(4) as Dyn }, performance.now()));
     else if (v === "all") { update(selectAll(st)); updateChrome(); }
     scoreEl.focus();
@@ -2007,6 +2009,39 @@ function ctxMenu(cls: string, html: string, at: { x: number; y: number }, pick: 
 function discloseNav(): void {
   const paper = st.song.papers.find((p) => p.id === st.at.paper), owner = paper ? tempoOwner(st.song, paper) : null;
   if (owner && owner !== st.at.part) info(`反复 / 跳转只看这张纸最上面那位（${roleName(doc.extras, st.song.parts.find((p) => p.id === owner)?.role ?? "")}）那一行：这一行写的画灰、不起作用`);
+}
+/** 整段 / 整首移调转调（v0.9.33；user 2026-10-09「杂事记账：段级别和工程级别的整体移调转调」→ 10-10「小件做」）：
+ *  纸的「⋯」/ 空白处小菜单 →「移调 / 转调…」。这张纸（或整首）上所有声部一起挪、调号跟着挪；点了不收、可以连着点，每一下一步撤销。
+ *  台上固定敲一个键的声部（鼓件 / 音效固定原速，谱上画 ×）不动——谱上的音高不拿来出声。选一段 = 选区菜单那个（只挪选中的、调号不动）。 */
+function openTransposeMenu(paperId: string, at: { x: number; y: number }): void {
+  let whole = false, told = false;
+  const many = st.song.papers.length > 1;
+  const nameOf = (id: string) => { const k = st.song.papers.findIndex((p) => p.id === id); return st.song.papers[k]?.name || `第 ${k + 1} 张纸`; };
+  const ids = () => (whole ? st.song.papers.map((p) => p.id) : [paperId]);
+  const chip = (v: string, label: string, on = false, title = "") => `<button class="btn ctx-chip${on ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
+  const html = () => {
+    const now = scopeKey(st.song, ids());
+    return (many ? `<div class="ctx-row"><span class="ctx-k">范围</span>${chip("scope:paper", `这一段「${esc(nameOf(paperId))}」`, !whole)}${chip("scope:song", "整首", whole)}</div>` : "") +
+      `<div class="ctx-row"><span class="ctx-k">移调</span>${chip("tr:1", "↑ 半音")}${chip("tr:-1", "↓ 半音")}${chip("tr:2", "↑ 全音")}${chip("tr:-2", "↓ 全音")}</div>` +
+      `<div class="ctx-row"><span class="ctx-k">八度</span>${chip("tr:12", "↑ 八度")}${chip("tr:-12", "↓ 八度")}</div>` +
+      `<div class="ctx-hint ctx-what">转调到（现在 1=${KEY_LABEL[now] ?? now}）：音按两个主音之间的音程挪</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k) => chip(`mod:${k}`, `1=${KEY_LABEL[k]}`, k === now)).join("")}</div>` +
+      `<div class="ctx-hint">${whole ? "整首" : "这张纸上"}所有声部一起挪，调号跟着挪（取升降号少的写法；挪八度调号不变）。歌词、记号、谱号不动；谱上画 × 的声部（固定敲一个键）不动；pad 的「1=」不跟。</div>`;
+  };
+  ctxMenu("transpose-menu", html(), at, (v) => {
+    if (v.startsWith("scope:")) whole = v === "scope:song";
+    else {
+      const skip = new Set(partViews().filter((x) => x.xHead).map((x) => x.id));
+      const nx = v.startsWith("tr:") ? transposePapers(st, ids(), { semis: Number(v.slice(3)) }, skip) : v.startsWith("mod:") ? transposePapers(st, ids(), { toFifths: Number(v.slice(4)) }, skip) : st;
+      if (nx === st) info(v.startsWith("mod:") ? "已经是这个调" : "没有可以挪的音");
+      else {
+        update(nx);
+        const held = ids().flatMap((id) => Object.keys(st.song.papers.find((p) => p.id === id)?.tracks ?? {})).filter((pid) => skip.has(pid));
+        if (held.length && !told) { told = true; const labels = partLabels(st.song, doc.extras); info(`${[...new Set(held)].map((pid) => labels[st.song.parts.findIndex((p) => p.id === pid)]).join("、")} 固定敲一个键（谱上画 ×），没挪`); }
+      }
+    }
+    const box = document.querySelector<HTMLElement>(".ctx-menu.transpose-menu"); if (box) box.innerHTML = html();
+    return true;   // 不收：可以连着点
+  });
 }
 /** pad 符号层「反复」：插在光标处（挨着小节线 = 把那条改成反复的）。 */
 function openRepeatMenu(): void {

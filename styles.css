@@ -706,6 +706,10 @@ span.smufl { pointer-events: none; }
 .staff-svg text.nav-word { font-style: italic; }
 .staff-svg .nav-mark.sel, .staff-svg .nav-sign.sel, .staff-svg .repeat-bar.sel, .staff-svg .nav-sign.hot { fill: var(--accent); }
 .ctx-menu.groove-menu { max-width: min(360px, calc(100vw - 16px)); }
+/* 整段 / 整首移调转调（v0.9.33） */
+.ctx-menu.transpose-menu { max-width: min(380px, calc(100vw - 16px)); }
+.ctx-menu.transpose-menu .ctx-hint { white-space: normal; }
+.ctx-menu.transpose-menu .ctx-what { color: var(--ink); padding-top: 6px; }
 .ctx-menu.groove-menu .ctx-hint { white-space: normal; }
 .ctx-menu.groove-menu .ctx-what { color: var(--ink); padding-top: 6px; }
 .pad-key.sym .big.it { font-style: italic; font-size: 16px; }

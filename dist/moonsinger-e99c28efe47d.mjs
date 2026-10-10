@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.32-2026-10-10";
+var APP_VERSION = "v0.9.33-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3972,6 +3972,59 @@ function modulateSel(st3, toFifths) {
     if (qs.some((q2, n10) => q2 !== ps[n10])) nt2[i10] = withPitches(t10, qs);
   }
   return next({ ...st3, nextId }, nt2, { sel, caret: sel.to });
+}
+function plainKey(raw) {
+  const r10 = (raw % 12 + 12) % 12, c10 = [r10, r10 - 12].filter((f2) => f2 >= -7 && f2 <= 7);
+  return c10.reduce((a10, b3) => Math.abs(b3) < Math.abs(a10) || Math.abs(b3) === Math.abs(a10) && Math.sign(b3) === Math.sign(raw) ? b3 : a10);
+}
+function scopeKey(song, paperIds) {
+  const paper = song.papers.find((p2) => p2.id === paperIds[0]);
+  if (!paper) return 0;
+  const owner = tempoOwner(song, paper), toks = owner ? paper.tracks[owner] ?? [] : [];
+  return keyAt(toks, toks.length ? headLen(toks) : 0);
+}
+var keyAfterSemis = (f0, semis) => semis % 12 === 0 ? f0 : plainKey(f0 + 7 * semis);
+function transposePapers(st3, paperIds, how, skip) {
+  const f0 = scopeKey(st3.song, paperIds);
+  let f1, steps, semis;
+  if ("semis" in how) {
+    if (!how.semis) return st3;
+    f1 = keyAfterSemis(f0, how.semis);
+    const iv2 = keyInterval(f0, f1), rem = how.semis - iv2.semis;
+    steps = iv2.steps + 7 * rem / 12;
+    semis = how.semis;
+  } else {
+    f1 = how.toFifths;
+    ({ steps, semis } = keyInterval(f0, f1));
+    if (f1 === f0) return st3;
+  }
+  const df = f1 - f0, want = new Set(paperIds);
+  let changed2 = false;
+  const papers = st3.song.papers.map((paper) => {
+    if (!want.has(paper.id)) return paper;
+    const tracks = {};
+    for (const [pid, toks] of Object.entries(paper.tracks)) {
+      if (skip?.has(pid)) {
+        tracks[pid] = toks;
+        continue;
+      }
+      const nt2 = toks.map((t10) => {
+        if (t10.kind === "key") return df ? { ...t10, fifths: plainKey(t10.fifths + df) } : t10;
+        if (t10.kind === "note" && t10.pitch) return withPitches(t10, allPitches(t10).map((p2) => transposeInterval(p2, steps, semis)));
+        return t10;
+      });
+      if (df) for (let i10 = 0; i10 < nt2.length; i10++) {
+        const t10 = nt2[i10];
+        if (t10.kind !== "note" || !t10.pitch) continue;
+        const k2 = keyAt(nt2, i10), ps = allPitches(t10), qs = ps.map((q2) => keySpell(q2, k2));
+        if (qs.some((q2, n10) => q2 !== ps[n10])) nt2[i10] = withPitches(t10, qs);
+      }
+      if (nt2.some((t10, i10) => t10 !== toks[i10])) changed2 = true;
+      tracks[pid] = nt2;
+    }
+    return { ...paper, tracks };
+  });
+  return changed2 ? { ...st3, song: { ...st3.song, papers } } : st3;
 }
 var setCaret = (st3, caret) => ({ ...leave(st3), sel: null, caret: Math.max(headLen(tr(st3)), Math.min(tr(st3).length, caret)) });
 function select(st3, from, to2) {
@@ -37197,7 +37250,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "b8226ef551fc",
+  cssHash: "f72711b89bd0",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -37772,7 +37825,7 @@ function openPaperMenu(id2) {
   const absent = st2.song.parts.flatMap((p2, i10) => paper.tracks[p2.id] ? [] : [{ id: p2.id, name: labels[i10] }]);
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc7(paper.name || `\u7B2C ${k2 + 1} \u5F20\u7EB8`)}</div><div class="set-row"><button class="btn" data-v="name">\u6539\u66F2\u6BB5\u540D\u2026</button><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>\u4E0A\u79FB</button><button class="btn" data-v="down"${k2 === st2.song.papers.length - 1 ? " disabled" : ""}>\u4E0B\u79FB</button><button class="btn" data-v="add">\u5728\u5B83\u540E\u9762\u52A0\u4E00\u5F20\u7EB8</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB">${paper.hidden ? "\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09" : "\u9690\u85CF\uFF08\u4E0D\u653E\uFF09"}</button></div>` + (absent.length ? `<div class="part-sec">\u8FD9\u5F20\u7EB8\u4E0A\u52A0\u6B4C\u624B</div><div class="set-row">${absent.map((a10) => `<button class="btn cand" data-v="track:${esc7(a10.id)}">${esc7(a10.name)}</button>`).join("")}</div>` : "") + `<div class="set-row"><button class="btn" data-v="newpart" title="\u65B0\u7684\u4E00\u4F4D\u6B4C\u624B\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u5F20\u7EB8\u4E0A">\uFF0B \u65B0\u6B4C\u624B\u2026</button>${st2.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">\u5220\u8FD9\u5F20\u7EB8\u2026</button>` : ""}</div><div class="offer-msg">\u7EB8 = \u66F2\u6BB5\uFF1A\u6BCF\u5F20\u7EB8\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u5F20\u7EB8\u4E0A\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc7(paper.name || `\u7B2C ${k2 + 1} \u5F20\u7EB8`)}</div><div class="set-row"><button class="btn" data-v="name">\u6539\u66F2\u6BB5\u540D\u2026</button><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>\u4E0A\u79FB</button><button class="btn" data-v="down"${k2 === st2.song.papers.length - 1 ? " disabled" : ""}>\u4E0B\u79FB</button><button class="btn" data-v="add">\u5728\u5B83\u540E\u9762\u52A0\u4E00\u5F20\u7EB8</button><button class="btn" data-v="transpose" title="\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u79FB\u8C03\u3001\u8F6C\u8C03\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09">\u79FB\u8C03 / \u8F6C\u8C03\u2026</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB">${paper.hidden ? "\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09" : "\u9690\u85CF\uFF08\u4E0D\u653E\uFF09"}</button></div>` + (absent.length ? `<div class="part-sec">\u8FD9\u5F20\u7EB8\u4E0A\u52A0\u6B4C\u624B</div><div class="set-row">${absent.map((a10) => `<button class="btn cand" data-v="track:${esc7(a10.id)}">${esc7(a10.name)}</button>`).join("")}</div>` : "") + `<div class="set-row"><button class="btn" data-v="newpart" title="\u65B0\u7684\u4E00\u4F4D\u6B4C\u624B\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u5F20\u7EB8\u4E0A">\uFF0B \u65B0\u6B4C\u624B\u2026</button>${st2.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">\u5220\u8FD9\u5F20\u7EB8\u2026</button>` : ""}</div><div class="offer-msg">\u7EB8 = \u66F2\u6BB5\uFF1A\u6BCF\u5F20\u7EB8\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u5F20\u7EB8\u4E0A\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -37801,6 +37854,12 @@ function openPaperMenu(id2) {
       update(addPaper(st2, id2));
       close();
       info("\u65B0\u7684\u4E00\u5F20\u7EB8");
+      return;
+    }
+    if (v === "transpose") {
+      close();
+      const r10 = scoreEl.getBoundingClientRect();
+      openTransposeMenu(id2, { x: r10.left + r10.width / 2, y: r10.top + 60 });
       return;
     }
     if (v === "hide") {
@@ -37972,7 +38031,7 @@ function openScoreMenu(at2, _row) {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
-  box.innerHTML = item("play", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09") + `<div class="ctx-sep"></div>` + item("paste", "\u7C98\u8D34", "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09") + `<div class="ctx-sep"></div>` + item("bar", "\u5C0F\u8282\u7EBF |", "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09") + item("phrase", "\u53E5\u53F7", "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09") + item("mark:key", "\u8C03\u53F7\u2026") + item("mark:time", "\u62CD\u53F7\u2026") + item("mark:tempo", "\u901F\u5EA6\u2026") + item("clef", "\u8C31\u53F7\u2026", "\u4ECE\u8FD9\u513F\u8D77\u6362\u8C31\u53F7\uFF08\u53EA\u7BA1\u753B\uFF09") + item("ottava", "\u516B\u5EA6\u7EBF\u2026", "8va / 15ma / 8vb\uFF08\u53EA\u7BA1\u753B\uFF09") + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
+  box.innerHTML = item("play", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09") + `<div class="ctx-sep"></div>` + item("paste", "\u7C98\u8D34", "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09") + `<div class="ctx-sep"></div>` + item("bar", "\u5C0F\u8282\u7EBF |", "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09") + item("phrase", "\u53E5\u53F7", "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09") + item("mark:key", "\u8C03\u53F7\u2026") + item("mark:time", "\u62CD\u53F7\u2026") + item("mark:tempo", "\u901F\u5EA6\u2026") + item("clef", "\u8C31\u53F7\u2026", "\u4ECE\u8FD9\u513F\u8D77\u6362\u8C31\u53F7\uFF08\u53EA\u7BA1\u753B\uFF09") + item("ottava", "\u516B\u5EA6\u7EBF\u2026", "8va / 15ma / 8vb\uFF08\u53EA\u7BA1\u753B\uFF09") + item("transpose", "\u79FB\u8C03 / \u8F6C\u8C03\u2026", "\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09\uFF1B\u53EA\u632A\u4E00\u6BB5 = \u9009\u4E2D\u5B83\uFF0C\u7528\u9009\u533A\u83DC\u5355") + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
   `<div class="ctx-row ctx-dyn">${["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(st2), st2.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("all", "\u5168\u9009");
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -38009,6 +38068,9 @@ function openScoreMenu(at2, _row) {
       return;
     } else if (v === "ottava") {
       openInsertOttavaMenu(at2);
+      return;
+    } else if (v === "transpose") {
+      openTransposeMenu(st2.at.paper, at2);
       return;
     } else if (v.startsWith("dyn:")) update(apply(st2, { k: "dyn", v: v.slice(4) }, performance.now()));
     else if (v === "all") {
@@ -38073,6 +38135,40 @@ function ctxMenu(cls, html, at2, pick) {
 function discloseNav() {
   const paper = st2.song.papers.find((p2) => p2.id === st2.at.paper), owner = paper ? tempoOwner(st2.song, paper) : null;
   if (owner && owner !== st2.at.part) info(`\u53CD\u590D / \u8DF3\u8F6C\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4F4D\uFF08${roleName(doc.extras, st2.song.parts.find((p2) => p2.id === owner)?.role ?? "")}\uFF09\u90A3\u4E00\u884C\uFF1A\u8FD9\u4E00\u884C\u5199\u7684\u753B\u7070\u3001\u4E0D\u8D77\u4F5C\u7528`);
+}
+function openTransposeMenu(paperId, at2) {
+  let whole = false, told = false;
+  const many = st2.song.papers.length > 1;
+  const nameOf2 = (id2) => {
+    const k2 = st2.song.papers.findIndex((p2) => p2.id === id2);
+    return st2.song.papers[k2]?.name || `\u7B2C ${k2 + 1} \u5F20\u7EB8`;
+  };
+  const ids = () => whole ? st2.song.papers.map((p2) => p2.id) : [paperId];
+  const chip2 = (v, label, on2 = false, title = "") => `<button class="btn ctx-chip${on2 ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc7(title)}"` : ""}>${label}</button>`;
+  const html = () => {
+    const now2 = scopeKey(st2.song, ids());
+    return (many ? `<div class="ctx-row"><span class="ctx-k">\u8303\u56F4</span>${chip2("scope:paper", `\u8FD9\u4E00\u6BB5\u300C${esc7(nameOf2(paperId))}\u300D`, !whole)}${chip2("scope:song", "\u6574\u9996", whole)}</div>` : "") + `<div class="ctx-row"><span class="ctx-k">\u79FB\u8C03</span>${chip2("tr:1", "\u2191 \u534A\u97F3")}${chip2("tr:-1", "\u2193 \u534A\u97F3")}${chip2("tr:2", "\u2191 \u5168\u97F3")}${chip2("tr:-2", "\u2193 \u5168\u97F3")}</div><div class="ctx-row"><span class="ctx-k">\u516B\u5EA6</span>${chip2("tr:12", "\u2191 \u516B\u5EA6")}${chip2("tr:-12", "\u2193 \u516B\u5EA6")}</div><div class="ctx-hint ctx-what">\u8F6C\u8C03\u5230\uFF08\u73B0\u5728 1=${KEY_LABEL[now2] ?? now2}\uFF09\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now2)).join("")}</div><div class="ctx-hint">${whole ? "\u6574\u9996" : "\u8FD9\u5F20\u7EB8\u4E0A"}\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u632A\uFF08\u53D6\u5347\u964D\u53F7\u5C11\u7684\u5199\u6CD5\uFF1B\u632A\u516B\u5EA6\u8C03\u53F7\u4E0D\u53D8\uFF09\u3002\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u8C31\u53F7\u4E0D\u52A8\uFF1B\u8C31\u4E0A\u753B \xD7 \u7684\u58F0\u90E8\uFF08\u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\uFF09\u4E0D\u52A8\uFF1Bpad \u7684\u300C1=\u300D\u4E0D\u8DDF\u3002</div>`;
+  };
+  ctxMenu("transpose-menu", html(), at2, (v) => {
+    if (v.startsWith("scope:")) whole = v === "scope:song";
+    else {
+      const skip = new Set(partViews().filter((x2) => x2.xHead).map((x2) => x2.id));
+      const nx2 = v.startsWith("tr:") ? transposePapers(st2, ids(), { semis: Number(v.slice(3)) }, skip) : v.startsWith("mod:") ? transposePapers(st2, ids(), { toFifths: Number(v.slice(4)) }, skip) : st2;
+      if (nx2 === st2) info(v.startsWith("mod:") ? "\u5DF2\u7ECF\u662F\u8FD9\u4E2A\u8C03" : "\u6CA1\u6709\u53EF\u4EE5\u632A\u7684\u97F3");
+      else {
+        update(nx2);
+        const held = ids().flatMap((id2) => Object.keys(st2.song.papers.find((p2) => p2.id === id2)?.tracks ?? {})).filter((pid) => skip.has(pid));
+        if (held.length && !told) {
+          told = true;
+          const labels = partLabels(st2.song, doc.extras);
+          info(`${[...new Set(held)].map((pid) => labels[st2.song.parts.findIndex((p2) => p2.id === pid)]).join("\u3001")} \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\uFF08\u8C31\u4E0A\u753B \xD7\uFF09\uFF0C\u6CA1\u632A`);
+        }
+      }
+    }
+    const box = document.querySelector(".ctx-menu.transpose-menu");
+    if (box) box.innerHTML = html();
+    return true;
+  });
 }
 function openRepeatMenu() {
   const r10 = padEl.getBoundingClientRect();
@@ -40142,4 +40238,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-60b2eb71631f.mjs.map
+//# sourceMappingURL=moonsinger-e99c28efe47d.mjs.map
