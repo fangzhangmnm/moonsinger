@@ -12,7 +12,7 @@ export const CRESC_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden=
 export const DIM_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 /** 连线的钮面：一道弧（SMuFL 没有单个连线字形）。 */
 export const SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
-const ART_LABEL: Record<Art, [string, string]> = { swellUp: ["<", "音内渐强"], swellDown: [">", "音内渐弱"], swellBoth: ["<>", "音内鼓起"], staccato: ["\u{E4A2}", "跳音"], accent: ["\u{E4A0}", "重音"], marcato: ["\u{E4AC}", "强音"], sfz: ["\u{E539}", "突强"], fp: ["\u{E534}", "强后弱"], tenuto: ["\u{E4A4}", "保持"], breath: ["\u{E4CE}", "呼吸"], stress: ["\u{E4B6}", "次重音"], unstress: ["\u{E4B8}", "弱化"], ghost: ["\u{E0F5}\u{E0A4}\u{E0F6}", "幽灵音"], whisper: ["\u{E0A9}", "气声"] };
+const ART_LABEL: Record<Art, [string, string]> = { swellUp: ["<", "音内渐强"], swellDown: [">", "音内渐弱"], swellBoth: ["<>", "音内鼓起"], arpeggio: ["\u{EAA9}", "琶音"], staccato: ["\u{E4A2}", "跳音"], accent: ["\u{E4A0}", "重音"], marcato: ["\u{E4AC}", "强音"], sfz: ["\u{E539}", "突强"], fp: ["\u{E534}", "强后弱"], tenuto: ["\u{E4A4}", "保持"], breath: ["\u{E4CE}", "呼吸"], stress: ["\u{E4B6}", "次重音"], unstress: ["\u{E4B8}", "弱化"], ghost: ["\u{E0F5}\u{E0A4}\u{E0F6}", "幽灵音"], whisper: ["\u{E0A9}", "气声"] };
 const DYN_GLYPH: Record<Dyn, string> = { ppp: "\u{E52A}", pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}", fff: "\u{E530}" };
 export interface SelBarHost { verb(v: SelVerb): void }
 

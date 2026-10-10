@@ -21,6 +21,10 @@ await p.click('.pad-grid.symbols [data-sym="swell:<"]'); await p.waitForTimeout(
 check((await lastArt()) === "swellUp", "换成「音内渐强」= 换掉（一个音一种起伏）", await lastArt());
 await p.click('.pad-grid.symbols [data-sym="swell:<"]'); await p.waitForTimeout(150);
 check((await lastArt()) === "", "再点 = 去掉", await lastArt());
+// 琶音（v0.9.45）：同一页里；月读唱不了和弦 = 格子标「不认」、照样能写（谱上画灰）
+check(!!(await p.$('.pad-grid.symbols [data-sym="art:arpeggio"]')), "「演奏法」页里有琶音");
+await p.click('.pad-grid.symbols [data-sym="art:arpeggio"]'); await p.waitForTimeout(150);
+check((await lastArt()) === "arpeggio" && (await p.$$eval("#score svg path.arpeggio.art-mute", (e) => e.length)) === 1, "点了 = 挂上琶音；月读不认 = 波浪线画灰", await lastArt());
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nswell-art: ${pass} passed, ${fail} failed`);

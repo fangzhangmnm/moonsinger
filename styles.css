@@ -762,3 +762,6 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 .gallery-new-menu .ctx-item { display: flex; align-items: center; gap: 8px; }
 /* 小节号（v0.9.42） */
 .staff-svg .bar-no { fill: var(--ink-soft); }
+/* 琶音（v0.9.45）：和弦左边的波浪线 */
+.staff-svg path.arpeggio { fill: none; stroke: var(--ink); stroke-width: 1.1; }
+.staff-svg path.arpeggio.art-mute { stroke: var(--ghost); }

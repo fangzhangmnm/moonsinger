@@ -19,6 +19,7 @@ export const MARK_DEFAULTS = {
   wedgeStepDb: 6, wedgeStepVel: 16, // 渐强渐弱后面没写力度记号 = 走一档：dB 那一路 / 力度那一路各走多少
   sfzDb: 9, sfzVel: 32, sfzSec: 0.2,     // 突强：音头比当下高多少（dB 那一路，sfzSec 里落回来）/ 力度那一路加多少
   fpSec: 0.2,                       // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
+  arpeggioSec: 0.035,               // 琶音（v0.9.45）：和弦从低到高每个音晚多少秒（最多摊到这个音一半长）；AI 起的数，好不好听归耳朵
   swellDb: 6,                       // 音内起伏：< 走到 +swellDb、> 走到 −swellDb、<> 中间到 +swellDb 再回来
   // 强度的其余几级（2026-10-08 深夜 Opus 5.5）：次重音 = 重音的一半（音头 accentSec 那一段 / 力度）；弱化 / 幽灵音 = 整个音轻下去（幽灵音 ≈ 强音反过来）
   stressDb: 2, stressVel: 8, unstressDb: -3, unstressVel: -10, ghostDb: -9, ghostVel: -28,

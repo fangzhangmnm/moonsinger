@@ -30,7 +30,7 @@ export const isPrinted = (cls: string | undefined): boolean => !skipped((cls ?? 
  *  分页预览也用它（选了拼音字体时），所以不用为了预览去下 12 MB 的字体。 */
 export const LYRIC_RAISE: Record<PdfFontId, number> = { sans: 0, pinyin: ((1184 - 795) / 1000) * LYRIC_EM };
 /** 描边的路径（其余路径都是填充）：屏幕上的线宽是固定 px（谱间距 ~10 px 时），这里按谱间距等比换。 */
-const STROKE: Record<string, { w: number; dash?: number[]; round?: boolean }> = { tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 } };
+const STROKE: Record<string, { w: number; dash?: number[]; round?: boolean }> = { arpeggio: { w: 1.1, round: true }, tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 } };
 const BOLD = new Set(["song-title", "tempo-word", "paper-name", "groove-mark", "part-name"]), ITALIC = new Set(["groove-mark", "dyn-word", "nav-word"]);
 
 /** 一串字在这款字体里多宽（em；按 shape 出来的字形——注音字体按词换的字形宽度一样）。 */

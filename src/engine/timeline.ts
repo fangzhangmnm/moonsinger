@@ -80,17 +80,20 @@ export function songLangOf(tokens: readonly Token[], hum: Hum): SingLang {
 }
 
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。marks = 修的记号怎么落到这一路上（跳音截短、呼吸处收短一口气）；不给 = 照谱满长。 */
-export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean; gapSec: number }, velOf?: (index: number, art: readonly string[]) => number): { midi: number; t0: number; t1: number; vel?: number }[] {
+export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean; gapSec: number; arpeggioSec?: number }, velOf?: (index: number, art: readonly string[]) => number): { midi: number; t0: number; t1: number; vel?: number }[] {
   const notes: { midi: number; t0: number; t1: number; vel?: number }[] = [];
   let open = new Map<number, { midi: number; t0: number; t1: number; vel?: number }>();   // 上一个音正在响的各音高（连音线按音高接；力度跟第一段）
   for (const { index, tok, t0, t1 } of timeline(tokens, tempoMap)) {
     if (tok.kind !== "note") continue;
     const ps = poly && tok.pitch ? allPitches(tok as NoteTok) : [effectivePitch(tokens, index)];   // 单声引擎只拿最上面那条线
     const nextOpen = new Map<number, { midi: number; t0: number; t1: number; vel?: number }>();
+    // 琶音（v0.9.45）：叠音从低到高依次晚 arpeggioSec（最多摊到这个音一半长）；连过来的那段不再错开
+    const arp = poly && ps.length > 1 && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks?.arpeggioSec ?? 0.035, ((t1 - t0) * 0.5) / (ps.length - 1)) : 0;
+    const rank = arp ? new Map([...ps].map((q) => midiOf(q)).sort((a, b) => a - b).map((m, k) => [m, k] as const)) : null;
     for (const p of ps) {
       const midi = midiOf(p), prev = tok.tie ? open.get(midi) : undefined;
       if (prev) { prev.t1 = marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1; nextOpen.set(midi, prev); continue; }
-      const n = { midi, t0, t1: marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}) }; notes.push(n); nextOpen.set(midi, n);
+      const n = { midi, t0: t0 + (rank ? (rank.get(midi) ?? 0) * arp : 0), t1: marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}) }; notes.push(n); nextOpen.set(midi, n);
     }
     open = nextOpen;
   }

@@ -1,6 +1,7 @@
 // 谁认哪些记号（perform.ts 的 ignoredArts）和真出声的路一致——表说「不认」的，出声的那条路确实不看它；说「认」的，确实改了出声。
 // created 2026-10-08 by Claude Opus 5.5；user 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」——表一旦和出声对不上，披露就成了谎话。
 // 2026-10-08 连断（Opus 5.5）：加连线；连线 / 保持只改「留不留缝」，底色不留缝（gapSec = 0）的人那里也算不认。
+import { lightNotes } from "../src/engine/timeline.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, select, tr, toggleArtSel, toggleSlurSel, type EditorState, type NoteTok } from "../src/score/song.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
@@ -11,12 +12,13 @@ const deq = (a: unknown, b: unknown, msg?: string) => eq(JSON.stringify(a), JSON
 const spec = (gapSec: number) => ({ dynamicsDb: { ...DYNAMICS_DB }, staccatoGate: ARTICULATION.staccatoGate, accentDb: ARTICULATION.accentDb, marcatoDb: MARCATO_DB, gapSec });
 /** 新建的 SoundFont 演奏者：带力度表（力度记号 / 重音 / 强音走 MIDI 力度）。 */
 const sfSpec = (gapSec: number) => ({ ...spec(gapSec), dynamicsVel: { ...DYNAMICS_VEL }, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL });
-/** 两个四分音符；mark = 给第一个音加的记号（连线 = 第一个连到第二个）。 */
-function two(mark?: Mark): EditorState {
+/** 两个四分音符；mark = 给第一个音加的记号（连线 = 第一个连到第二个）。chord = 第一个音叠成和弦（琶音要和弦才听得出来，v0.9.45）。 */
+function two(mark?: Mark, chord = false): EditorState {
   let st = initState(); st = { ...st, input: { ...st.input, unit: 3 } };
   for (const d of [1, 2]) st = writeDegree(st, d, "near");
-  if (!mark) return st;
   const i = tr(st).findIndex((t) => t.kind === "note");
+  if (chord) { const toks = tr(st).slice(), t0 = toks[i] as NoteTok; toks[i] = { ...t0, chord: [{ ...t0.pitch!, octave: t0.pitch!.octave - 1 }] }; st = { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }
+  if (!mark) return st;
   if (mark === "swellGrow" || mark === "swellFade") { const toks = tr(st).slice(); toks[i] = { ...(toks[i] as NoteTok), art: [mark === "swellGrow" ? "swellUp" as const : "swellDown" as const] }; return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }
   if (mark === "inhale") { const toks = tr(st).slice(); toks[i] = { ...(toks[i] as NoteTok), art: ["breath"], inhale: "soft" }; return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }   // 出声的换气 = 呼吸 + inhale（比的是「只有呼吸」）
   return mark === "slur" ? toggleSlurSel(select(st, i, i + 1)) : toggleArtSel(select(st, i, i + 1), mark);
@@ -28,14 +30,14 @@ const heard = (eng: string, gap: number) => (st: EditorState) => {
   if (eng === "tsukuyomi") return JSON.stringify([toLabScore(tr(st), "n"), gainSegments(tr(st), undefined, sp)]);   // 和 main.ts 一样：跳音进唱谱
   const f = first(st);
   if (eng === "soundfont") { const sv = sfSpec(gap), i = tr(st).indexOf(f);
-    return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sv), !!f.slur), gainSegments(tr(st), undefined, sv), noteVelocity(tr(st), i, f.art ?? [], sv, 80 / 127)]); }
+    return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sv), !!f.slur), gainSegments(tr(st), undefined, sv), noteVelocity(tr(st), i, f.art ?? [], sv, 80 / 127), lightNotes(tr(st), [], true, lightMarks(sv)).map((n) => [n.midi, n.t0])]); }   // 起点（琶音改的是它；v0.9.45）
   return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sp), !!f.slur), gainSegments(tr(st), undefined, sp)]);
 };
 
 describe("谁认哪些记号（不认 = 画灰 + 明说）", () => {
   it("表：月读不认保持 / 连线（唱法核心还没接）；元音版 / 乐器底色不留缝时连线 / 保持也算不认；没人上场 = 不逐个画灰", () => {
-    deq(ignoredArts("tsukuyomi"), ["tenuto", "slur"]); deq(ignoredArts("tsukuyomi", 0.04), ["tenuto", "slur"]);
-    deq(ignoredArts("vowel-sampler"), ["tenuto", "slur", "whisper", "inhale"]); deq(ignoredArts("vowel-sampler", 0.04), ["whisper", "inhale"]);   // 气声 / 出声的换气只有月读做得到（2026-10-10）
+    deq(ignoredArts("tsukuyomi"), ["tenuto", "slur", "arpeggio"]); deq(ignoredArts("tsukuyomi", 0.04), ["tenuto", "slur", "arpeggio"]);   // 琶音：单声的唱不了和弦（v0.9.45）
+    deq(ignoredArts("vowel-sampler"), ["tenuto", "slur", "whisper", "inhale", "arpeggio"]); deq(ignoredArts("vowel-sampler", 0.04), ["whisper", "inhale", "arpeggio"]);   // 气声 / 出声的换气只有月读做得到（2026-10-10）
     deq(ignoredArts("soundfont"), ["tenuto", "slur", "whisper", "inhale"]); deq(ignoredArts("soundfont", 0.02), ["whisper", "inhale"]);
     deq(ignoredArts("unknown"), []); deq(ignoredArts(null), []);
   });
@@ -44,7 +46,7 @@ describe("谁认哪些记号（不认 = 画灰 + 明说）", () => {
       it(`${eng}（底色 ${gap * 1000} ms）：表说不认的 = 出声不变，表说认的 = 出声变了`, () => {
         const h = heard(eng, gap), plain = h(two()), ign = ignoredArts(eng, gap);
         for (const m of ALL_MARKS) {
-          const changed = h(two(m)) !== (m === "inhale" ? h(two("breath")) : plain);   // 出声的换气：和只有呼吸比
+          const changed = m === "arpeggio" ? h(two(m, true)) !== h(two(undefined, true)) : h(two(m)) !== (m === "inhale" ? h(two("breath")) : plain);   // 出声的换气：和只有呼吸比；琶音：和弦对和弦比
           if (ign.includes(m)) assert(!changed, `${eng} 表上不认 ${m}，可出声变了（表该改成认）`);
           else assert(changed, `${eng} 表上认 ${m}，可出声没变（不认就要画灰 + 明说）`);
         }

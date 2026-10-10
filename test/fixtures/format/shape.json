@@ -86,6 +86,7 @@
           "articulation": {
             "accentDb": "number",
             "accentSec": "number",
+            "arpeggioSec": "number",
             "breathSec": "number",
             "breathShare": "number",
             "fpSec": "number",

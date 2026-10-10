@@ -96,7 +96,7 @@ const wedgeXml = (type: "crescendo" | "diminuendo" | "stop", extra = "") => `<di
 /** 渐到（2026-10-08 深夜 Opus 5.5）：写成从上一个力度记号起的虚线 <wedge line-type="dashed">（别的软件照样渐变、照样画虚线），id 以 ramp- 开头 = 我们自己读回来时认出它是渐到、不变成手写的渐强渐弱。 */
 const RAMP_ID = "ramp-";
 const DYN_ORDER: readonly Dyn[] = DYNS;   // ppp…fff（v0.9.23）
-const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "", swellUp: "", swellDown: "", swellBoth: "" };   // whisper = × 符头（<notehead>x</notehead>），同幽灵音不在 <articulations> 里   // ghost = 括号符头（<notehead parentheses="yes">），不在 <articulations> 里   // sfz / fp 写在 <notations><dynamics> 里
+const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "", swellUp: "", swellDown: "", swellBoth: "", arpeggio: "" };   // arpeggio = <notations><arpeggiate/>（每个和弦音都写，下面）   // whisper = × 符头（<notehead>x</notehead>），同幽灵音不在 <articulations> 里   // ghost = 括号符头（<notehead parentheses="yes">），不在 <articulations> 里   // sfz / fp 写在 <notations><dynamics> 里
 const NOTE_DYN: readonly Art[] = ["sfz", "fp"];
 /** 别家谱里音上（或音前）的力度形状 → 我们的两个：突强一族 / 强后即弱一族。 */
 const XML_NOTE_DYN: Record<string, Art> = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
@@ -256,11 +256,12 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
         const inhaleXml = (a: Art) => (a === "breath" && t.inhale ? `<other-articulation>${t.inhale === "big" ? "inhale-big" : "inhale"}</other-articulation>` : "");
         const artXml = (artic.length ? `<articulations>${artic.map((a) => `<${ART_XML[a]}/>` + inhaleXml(a)).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a) => `<${ART_XML[a]}/>`).join("")}</dynamics>` : "");
         const slurXml = firstPiece ? slurs(i, t) : "";
-        if (tieIn || tieOn || artXml || slurXml) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}</notations>`;
+        const arpXml = firstPiece && (t.art ?? []).includes("arpeggio") ? "<arpeggiate/>" : "";   // 琶音（v0.9.45）：和弦里每个音都标（MusicXML 的规矩）
+        if (tieIn || tieOn || artXml || slurXml || arpXml) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}${arpXml}</notations>`;
         // 叠音：跟在后面的 <chord/> 音（同时值、同连音线；歌词、演奏法只在第一个上）
         for (const [ci, cp] of (t.chord ?? []).entries()) {
           chordXml.push(`<note id="${id}c${ci + 1}"><chord/>` + pitchXml(cp) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` +
-            typeXml + headXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
+            typeXml + headXml + staffXml + (tieIn || tieOn || arpXml ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${arpXml}</notations>` : "") + `</note>`);
         }
         if (!lyricDone && t.lyric) {
           if (t.lyric === MELISMA_MARK) x += `<lyric number="1"><extend/></lyric>`;
@@ -349,6 +350,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
     for (const nn of kids(note, "notations")) for (const dy of kids(nn, "dynamics")) for (const e of kids(dy)) { const a = XML_NOTE_DYN[e.name]; if (a) set.add(a); else drop("力度记号（这一版不认的，如 sfz）"); }
     if (pendingAttack) { set.add(pendingAttack); pendingAttack = null; }   // 音前面那个方向里的 sfz / fp：挂到这个音上
     if (kids(note, "notehead").some((h) => h.attrs.parentheses === "yes")) set.add("ghost");   // 括号符头 = 幽灵音
+    if (kids(note, "notations").some((nn) => kids(nn, "arpeggiate").length > 0)) set.add("arpeggio");   // 琶音（和弦里哪个音标了都算这个和弦的）
     if (kids(note, "notehead").some((h) => text(h).trim() === "x")) set.add("whisper");   // × 符头 = 气声（念白 / 说唱；别家的鼓谱 × 读进来也是它——乐器不认，画灰，不影响出声）
     const att = ATTACKS.filter((x) => set.has(x)); if (att.length > 1) for (const x of att.slice(0, -1)) set.delete(x);   // 音头那一组只留一个（后来的）
     const art = ARTS.filter((a) => set.has(a));

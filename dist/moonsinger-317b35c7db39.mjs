@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.44-2026-10-10";
+var APP_VERSION = "v0.9.45-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3065,9 +3065,9 @@ var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
 var NAV_LABEL = { segno: "Segno", coda: "Coda", fine: "Fine", toCoda: "To Coda", dc: "D.C.", dcFine: "D.C. al Fine", dcCoda: "D.C. al Coda", ds: "D.S.", dsFine: "D.S. al Fine", dsCoda: "D.S. al Coda" };
 var endingLabel = (nums) => nums && nums.length ? nums.map((n10) => `${n10}.`).join(" ") : "1.";
-var ARTS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost", "whisper", "swellUp", "swellDown", "swellBoth"];
+var ARTS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost", "whisper", "swellUp", "swellDown", "swellBoth", "arpeggio"];
 var ATTACKS = ["ghost", "unstress", "stress", "accent", "marcato", "sfz", "fp"];
-var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", sfz: "\u7A81\u5F3A", fp: "\u5F3A\u540E\u5373\u5F31", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438", stress: "\u6B21\u91CD\u97F3", unstress: "\u5F31\u5316", ghost: "\u5E7D\u7075\u97F3", whisper: "\u6C14\u58F0", swellUp: "\u97F3\u5185\u6E10\u5F3A", swellDown: "\u97F3\u5185\u6E10\u5F31", swellBoth: "\u97F3\u5185\u9F13\u8D77" };
+var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", sfz: "\u7A81\u5F3A", fp: "\u5F3A\u540E\u5373\u5F31", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438", stress: "\u6B21\u91CD\u97F3", unstress: "\u5F31\u5316", ghost: "\u5E7D\u7075\u97F3", whisper: "\u6C14\u58F0", swellUp: "\u97F3\u5185\u6E10\u5F3A", swellDown: "\u97F3\u5185\u6E10\u5F31", swellBoth: "\u97F3\u5185\u9F13\u8D77", arpeggio: "\u7436\u97F3" };
 var SWELL_ART = { "<": "swellUp", ">": "swellDown", "<>": "swellBoth" };
 var SWELL_ARTS = ["swellUp", "swellDown", "swellBoth"];
 function swellOf(t10) {
@@ -4189,7 +4189,7 @@ function symBackspace(st3) {
         return next(st3, nt2);
       }
     }
-    for (const a10 of ["marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "whisper"]) if (art.includes(a10)) {
+    for (const a10 of ["arpeggio", "marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "whisper"]) if (art.includes(a10)) {
       nt2[i10] = withArt(t10, a10, false);
       return next(st3, nt2);
     }
@@ -6481,6 +6481,8 @@ var MARK_DEFAULTS = {
   // 突强：音头比当下高多少（dB 那一路，sfzSec 里落回来）/ 力度那一路加多少
   fpSec: 0.2,
   // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
+  arpeggioSec: 0.035,
+  // 琶音（v0.9.45）：和弦从低到高每个音晚多少秒（最多摊到这个音一半长）；AI 起的数，好不好听归耳朵
   swellDb: 6,
   // 音内起伏：< 走到 +swellDb、> 走到 −swellDb、<> 中间到 +swellDb 再回来
   // 强度的其余几级（2026-10-08 深夜 Opus 5.5）：次重音 = 重音的一半（音头 accentSec 那一段 / 力度）；弱化 / 幽灵音 = 整个音轻下去（幽灵音 ≈ 强音反过来）
@@ -6710,10 +6712,11 @@ var HONORS = {
   tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale"],
   // 气声 / 出声的换气 = 唱法核心（lab-score 带进唱谱）；乐器 / 元音版做不到                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
   "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
-  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"]
+  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio"]
+  // 琶音只有能叠音的认（v0.9.45）
 };
 var GAP_ONLY = ["tenuto", "slur"];
-var ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale"];
+var ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale", "arpeggio"];
 function ignoredArts(engine2, gapSec = 0, canSwell = true) {
   const h2 = engine2 ? HONORS[engine2] : void 0;
   return h2 ? ALL_MARKS.filter((a10) => !h2.includes(a10) || GAP_ONLY.includes(a10) && !(gapSec > 0) || a10 === "swellGrow" && !canSwell) : [];
@@ -6724,7 +6727,7 @@ function whyIgnored(engine2, m2) {
   return engine2 && HONORS[engine2]?.includes(m2) ? "gap" : "engine";
 }
 function lightMarks(spec) {
-  return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
+  return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, arpeggioSec: spec.arpeggioSec ?? M.arpeggioSec, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
 }
 
 // src/render/smufl.ts
@@ -8176,6 +8179,12 @@ function engrave(song, o10) {
           const cl2 = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
           const d4 = swl === "<" ? `M${xb},${y2 - H3}L${xa},${y2}L${xb},${y2 + H3}` : swl === ">" ? `M${xa},${y2 - H3}L${xb},${y2}L${xa},${y2 + H3}` : `M${xa},${y2}L${mx},${y2 - H3}L${xb},${y2}M${xa},${y2}L${mx},${y2 + H3}L${xb},${y2}`;
           prims.push({ t: "path", d: d4, cls: cl2 });
+        }
+        if (c10.art.includes("arpeggio")) {
+          const yTop = yOf(row, dHi) - P2(0.7), yBot = yOf(row, dLo) + P2(0.7), x0 = nhX(c10) - P2(c10.accW + 0.9), amp = P2(0.28), step = P2(0.5);
+          let dd = `M${x0},${yBot}`;
+          for (let y2 = yBot, k2 = 0; y2 > yTop; y2 -= step, k2++) dd += `Q${x0 + (k2 % 2 ? -amp : amp) * 2},${y2 - step / 2} ${x0},${Math.max(yTop, y2 - step)}`;
+          prims.push({ t: "path", d: dd, cls: ["arpeggio", ign.has("arpeggio") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         }
         for (const a10 of ["sfz", "fp"].filter((x3) => c10.art.includes(x3)))
           prims.push({ t: "glyph", x: nhX(c10) - P2(0.2), y: noteDynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4), ch: a10 === "sfz" ? "\uE539" : "\uE534", cls: ["dyn", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
@@ -10757,7 +10766,7 @@ var HER_RANGE = { lo: 57, hi: 76, who: "\u6708\u8BFB" };
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var SYM_PAGES = {
-  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper", "swell:<", "swell:>", "swell:<>"],
+  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper", "swell:<", "swell:>", "swell:<>", "art:arpeggio"],
   // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:ppp", "dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "dyn:fff", "wedge:cresc", "wedge:dim", "dyn:ramp"],
   // 音内渐强 / 渐弱 / 鼓起搬到「演奏法」（v0.9.44；user「…应该属于演奏法…因为是跟着音符的」）   // ppp…fff 两整排（v0.9.23）
@@ -11130,6 +11139,7 @@ var Pad = class {
     };
     const items = [
       cell("phrase", `<span class="big">\u3002</span>`, "\u53E5\u53F7", "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09"),
+      cell("art:arpeggio", `<span class="smufl">\uEAA9\uEAA9</span>`, "\u7436\u97F3", "\u7436\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u548C\u5F26\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u594F\u51FA\uFF08\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u6CE2\u6D6A\u7EBF\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "\u8DF3\u97F3", "\u8DF3\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u5F97\u77ED\u4FC3\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("art:ghost", `<span class="smufl">\uE0F5\uE0A4\uE0F6</span>`, "\u5E7D\u7075\u97F3", "\u5E7D\u7075\u97F3\uFF08\u62EC\u53F7\u7B26\u5934\uFF09\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5F88\u8F7B\u3001\u51E0\u4E4E\u542C\u4E0D\u89C1\uFF1B\u97F3\u7684\u5F3A\u5EA6\u53EA\u6709\u4E00\u79CD\uFF1A\u548C\u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\u4E92\u65A5"),
       cell("art:unstress", `<span class="smufl">\uE4B8</span>`, "\u5F31\u5316", "\u5F31\u5316\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u8F7B\u4E00\u70B9\uFF1B\u548C\u522B\u7684\u5F3A\u5EA6\u4E92\u65A5"),
@@ -20978,7 +20988,7 @@ var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v
 var wedgeXml = (type, extra = "") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"${extra}/></direction-type></direction>`;
 var RAMP_ID = "ramp-";
 var DYN_ORDER = DYNS;
-var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "", swellUp: "", swellDown: "", swellBoth: "" };
+var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "", swellUp: "", swellDown: "", swellBoth: "", arpeggio: "" };
 var NOTE_DYN = ["sfz", "fp"];
 var XML_NOTE_DYN = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
 var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
@@ -21201,9 +21211,10 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
         const inhaleXml = (a10) => a10 === "breath" && t10.inhale ? `<other-articulation>${t10.inhale === "big" ? "inhale-big" : "inhale"}</other-articulation>` : "";
         const artXml = (artic.length ? `<articulations>${artic.map((a10) => `<${ART_XML[a10]}/>` + inhaleXml(a10)).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a10) => `<${ART_XML[a10]}/>`).join("")}</dynamics>` : "");
         const slurXml = firstPiece ? slurs(i10, t10) : "";
-        if (tieIn || tieOn || artXml || slurXml) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}</notations>`;
+        const arpXml = firstPiece && (t10.art ?? []).includes("arpeggio") ? "<arpeggiate/>" : "";
+        if (tieIn || tieOn || artXml || slurXml || arpXml) x2 += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}${arpXml}</notations>`;
         for (const [ci2, cp2] of (t10.chord ?? []).entries()) {
-          chordXml.push(`<note id="${id2}c${ci2 + 1}"><chord/>` + pitchXml(cp2) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + typeXml + headXml + staffXml + (tieIn || tieOn ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}</notations>` : "") + `</note>`);
+          chordXml.push(`<note id="${id2}c${ci2 + 1}"><chord/>` + pitchXml(cp2) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + typeXml + headXml + staffXml + (tieIn || tieOn || arpXml ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${arpXml}</notations>` : "") + `</note>`);
         }
         if (!lyricDone && t10.lyric) {
           if (t10.lyric === MELISMA_MARK) x2 += `<lyric number="1"><extend/></lyric>`;
@@ -21321,6 +21332,7 @@ function readMusicXml(xml, hints) {
       pendingAttack = null;
     }
     if (kids(note2, "notehead").some((h2) => h2.attrs.parentheses === "yes")) set.add("ghost");
+    if (kids(note2, "notations").some((nn2) => kids(nn2, "arpeggiate").length > 0)) set.add("arpeggio");
     if (kids(note2, "notehead").some((h2) => text(h2).trim() === "x")) set.add("whisper");
     const att = ATTACKS.filter((x2) => set.has(x2));
     if (att.length > 1) for (const x2 of att.slice(0, -1)) set.delete(x2);
@@ -24364,6 +24376,8 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
     if (tok.kind !== "note") continue;
     const ps = poly && tok.pitch ? allPitches(tok) : [effectivePitch(tokens, index)];
     const nextOpen = /* @__PURE__ */ new Map();
+    const arp = poly && ps.length > 1 && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks?.arpeggioSec ?? 0.035, (t12 - t02) * 0.5 / (ps.length - 1)) : 0;
+    const rank = arp ? new Map([...ps].map((q2) => midiOf(q2)).sort((a10, b3) => a10 - b3).map((m2, k2) => [m2, k2])) : null;
     for (const p2 of ps) {
       const midi = midiOf(p2), prev = tok.tie ? open.get(midi) : void 0;
       if (prev) {
@@ -24371,7 +24385,7 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
         nextOpen.set(midi, prev);
         continue;
       }
-      const n10 = { midi, t0: t02, t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {} };
+      const n10 = { midi, t0: t02 + (rank ? (rank.get(midi) ?? 0) * arp : 0), t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {} };
       notes.push(n10);
       nextOpen.set(midi, n10);
     }
@@ -34828,7 +34842,7 @@ var SKIP = /* @__PURE__ */ new Set([
 ]);
 var skipped = (cls) => cls.some((c10) => SKIP.has(c10) && !(c10 === "empty" && cls.includes("part-name")));
 var LYRIC_RAISE = { sans: 0, pinyin: (1184 - 795) / 1e3 * LYRIC_EM };
-var STROKE = { tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 } };
+var STROKE = { arpeggio: { w: 1.1, round: true }, tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 } };
 var BOLD = /* @__PURE__ */ new Set(["song-title", "tempo-word", "paper-name", "groove-mark", "part-name"]);
 var ITALIC = /* @__PURE__ */ new Set(["groove-mark", "dyn-word", "nav-word"]);
 function textEm(font, s10) {
@@ -37722,7 +37736,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "34dbab15296e",
+  cssHash: "0588a3e1d55c",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -40786,4 +40800,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ba2c6eae57ac.mjs.map
+//# sourceMappingURL=moonsinger-317b35c7db39.mjs.map
