@@ -344,9 +344,10 @@ export class ScoreView {
       if (fa.length) {
         const ha = fa.reduce((a, b) => (b.start > a.start ? b : a)).hits[0], asys = L.systems[ha.system].sys, akey = `${ahead.paperId}:${asys}`;
         if (akey !== sysKey && akey !== this.turnedKey) {
-          this.turnedKey = akey;
+          // 放到这一行最后一个音了没（这一行所有声部里最靠右的那个音头）：没到 = 翻过去会把它翻没的那种翻法先等着（user「至少不要把每行最后一个音丢了。当然如果是一堆小快音的话人类会precache」）
+          const ids = new Set(rows.map((r) => L.systems.indexOf(r))); let lastX = -Infinity; for (const n of this.hits) if (ids.has(n.system) && n.x > lastX) lastX = n.x;
           const arows = L.systems.filter((r) => r.paper === ahead.paperId && r.sys === asys);
-          this.turnTo(top, Math.min(...arows.map((r) => r.top)), Math.max(...arows.map((r) => r.bottom)));
+          if (this.turnTo(top, bottom, Math.min(...arows.map((r) => r.top)), Math.max(...arows.map((r) => r.bottom)), h0.x >= lastX - 1)) this.turnedKey = akey;
         }
       }
     }
@@ -374,15 +375,18 @@ export class ScoreView {
   }
   /** 自动翻：正在放的那一行（纸面坐标 top..bottom）出了舒服区 = 平滑滚到它在屏幕上方两成处。 */
   private turnedKey = "";
-  /** 翻到接下来那一行：已经整个看得见 = 不动；和现在这一行一起放得下（它在下面）= 这一行贴顶、两行都在；放不下 = 它贴顶（这一行翻走了，最后一小截靠记，像翻谱）。远的（编排跳回去）= 先瞬移再平滑。 */
-  private turnTo(curTop: number, aTop: number, aBottom: number): void {
-    const now = performance.now(); if (now - this.userScrollAt < 4000 || now - this.userEditAt < 4000) return;
+  /** 翻到接下来那一行：已经整个看得见 = 不动；和现在这一行一起放得下（它在下面）= 这一行贴顶、两行都在；放不下 = 它贴顶（这一行翻走了，像翻谱）——
+   *  但放到这一行最后一个音之前不这么翻（onLast = false = 先等，返回 false，下一帧再来）。远的（编排跳回去）= 先瞬移再平滑。返回 true = 办完了（翻了 / 不用翻）。 */
+  private turnTo(curTop: number, curBottom: number, aTop: number, aBottom: number, onLast: boolean): boolean {
+    const now = performance.now(); if (now - this.userScrollAt < 4000 || now - this.userEditAt < 4000) return true;
     const z = this.zoom, off = this.sheet.offsetTop, vt = this.el.scrollTop, vh = this.el.clientHeight;
-    const a0 = off + aTop * z, a1 = off + aBottom * z, c0 = off + curTop * z;
-    if (a0 >= vt + vh * 0.03 && a1 <= vt + vh * 0.97) return;
-    const to = Math.max(0, a0 > c0 && a1 - c0 <= vh * 0.94 ? c0 - vh * 0.03 : a0 - vh * 0.1);
+    const a0 = off + aTop * z, a1 = off + aBottom * z, c0 = off + curTop * z, c1 = off + curBottom * z;
+    if (a0 >= vt + vh * 0.03 && a1 <= vt + vh * 0.97) return true;
+    const both = a0 > c0 && a1 - c0 <= vh * 0.94, to = Math.max(0, both ? c0 - vh * 0.03 : a0 - vh * 0.1);
+    if (!onLast && (c0 < to || c1 > to + vh)) return false;   // 这一翻会把正在放的这一行翻出屏幕、最后一个音还没开始唱 = 等
     if (Math.abs(to - vt) > vh * 1.5) this.el.scrollTo({ top: to + (to > vt ? -1 : 1) * vh * 0.3, behavior: "instant" as ScrollBehavior });
     this.el.scrollTo({ top: to, behavior: "smooth" });
+    return true;
   }
   /** 跳到正在放的地方（长按 / 右键 |▶ 的菜单；v0.10.21，user「播放的...可以支持跳转到当前播放的地方」）：不管刚才是不是自己滚过，滚过去、接着跟。 */
   revealPlayhead(): boolean {

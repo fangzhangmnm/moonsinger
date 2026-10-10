@@ -39,21 +39,31 @@ await p.click('.ctx-menu [data-v="reveal"]'); await p.waitForTimeout(900);
   check(!!g && g.top >= 0 && g.bottom <= g.vh, "点了 = 正在放的音回到屏幕里", JSON.stringify(g)); }
 if (await p.evaluate(() => window.__moonsinger.engine.playing)) await p.click("#playBtn");
 // 小屏（一屏只放得下一行多一点；user「小设备大总谱上面一次只能看一行」）：像翻谱——换行之前就翻过去了，换行那一刻新的一行已经在屏幕里、之后不用再滚
-await p.setViewportSize({ width: 1100, height: 300 }); await p.waitForTimeout(300);
+await p.setViewportSize({ width: 1100, height: 215 }); await p.waitForTimeout(300);
 await p.evaluate(() => { document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(4200);
 await p.click("#playBtn");
 { const tl2 = [];
   for (let i = 0; i < 300; i++) {
     await p.waitForTimeout(50);
-    const g = await p.evaluate(() => { const h = document.querySelector(".play-hl"), el = document.querySelector("#score"), sc = el.getBoundingClientRect(); if (!h) return null; const r = h.getBoundingClientRect(); return { y: r.top - sc.top + el.scrollTop, st: el.scrollTop, top: r.top - sc.top, bottom: r.bottom - sc.top, vh: sc.height }; });
+    const g = await p.evaluate(() => { const h = document.querySelector(".play-hl"), el = document.querySelector("#score"), sc = el.getBoundingClientRect(); if (!h) return null; const r = h.getBoundingClientRect(); return { y: r.top - sc.top + el.scrollTop, x: Math.round(r.left), st: el.scrollTop, top: r.top - sc.top, bottom: r.bottom - sc.top, vh: sc.height }; });
     if (!g) { if (tl2.length > 20 && !(await p.evaluate(() => window.__moonsinger.engine.playing))) break; continue; }
     tl2.push({ t: Date.now(), ...g });
   }
   const ch = []; for (let k = 1; k < tl2.length; k++) if (Math.abs(tl2[k].y - tl2[k - 1].y) > 40) ch.push(k);
-  const late2 = ch.filter((k) => { const after = tl2.find((x) => x.t >= tl2[k].t + 450); return after && Math.abs(after.st - tl2[k].st) > 20; });
-  const vis = ch.filter((k) => tl2[k].top >= 0 && tl2[k].bottom <= tl2[k].vh);
-  check(ch.length >= 3 && late2.length === 0 && vis.length === ch.length, "小屏：换行之前就翻好了（换行那一刻新的一行在屏幕里、之后不用再滚）", `换行 ${ch.length} 次，在屏幕里 ${vis.length}，换行后还滚 ${late2.length}，屏高 ${Math.round(tl2[0]?.vh ?? 0)}`); }
+  // 小屏的规矩（user「至少不要把每行最后一个音丢了。当然如果是一堆小快音的话人类会precache」）：换行前最后那个音一直在屏幕里（没被提前翻没）；换行后一小会儿新的一行在屏幕里
+  // 每行最后一个音「开始唱」的那一刻（第一次采到它）它在屏幕里——开始唱之后翻走可以（像翻谱）；原来提前 0.6 s 翻 = 最后几个音还没唱就没了
+  const onsetOf = (k) => { const last = tl2[k - 1]; let j = k - 1; while (j > 0 && Math.abs(tl2[j - 1].y - last.y) < 5 && Math.abs(tl2[j - 1].x - last.x) < 3) j--; return tl2[j]; };
+  const lastVis = ch.filter((k) => { const o = onsetOf(k); return o.top >= 0 && o.bottom <= o.vh; });
+  if (process.env.DBG) console.log("    DBG2", JSON.stringify(ch.map((k) => { const o = onsetOf(k); return { k, onTop: Math.round(o.top), onBot: Math.round(o.bottom), vh: Math.round(o.vh), st: Math.round(o.st), lastTop: Math.round(tl2[k - 1].top) }; })));
+  const newVis = ch.filter((k) => { const after = tl2.find((x) => x.t >= tl2[k].t + 450) ?? tl2[k]; const y = tl2[k].y - after.st; return y >= 0 && y + (tl2[k].bottom - tl2[k].top) <= after.vh; });
+  check(ch.length >= 3 && lastVis.length === ch.length && newVis.length === ch.length, "小屏：每行最后一个音唱到之前不被翻走；换了行马上看得见新的一行", `换行 ${ch.length} 次，最后一个音在屏幕里 ${lastVis.length}，新的一行看得见 ${newVis.length}，屏高 ${Math.round(tl2[0]?.vh ?? 0)}`); }
 if (await p.evaluate(() => window.__moonsinger.engine.playing)) await p.click("#playBtn");
+// 提前多少能挑（user「1.5s 应该太长了，让这个...里面可以配置…我猜0.5？」）：默认 0.6 s；菜单里点 1 s = 改成 1 s
+check((await p.evaluate(() => window.__moonsinger.transport().turnLead)) === 0.6, "翻谱默认提前 0.6 s");
+await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(100);
+check(!!(await p.$('.ctx-menu [data-v="lead:0.6"].is-on')), "|▶ 菜单里有「提前翻」那一排，0.6 亮着");
+await p.click('.ctx-menu [data-v="lead:1"]'); await p.waitForTimeout(100);
+check((await p.evaluate(() => window.__moonsinger.transport().turnLead)) === 1, "点 1 s = 改成提前 1 s");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nfollow: ${pass} passed, ${fail} failed`);

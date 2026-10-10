@@ -907,3 +907,7 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 /* |▶ 开着循环：右上角一个小「循环」 */
 .play-btn { position: relative; }
 .play-btn.looping::after { content: "循环"; position: absolute; top: -6px; right: -8px; padding: 0 3px; border-radius: 6px; font-size: 9px; line-height: 13px; background: var(--accent); color: #fff; pointer-events: none; }
+/* 走带菜单里「提前翻」那一排（v0.10.21） */
+.ctx-menu .ctx-row { display: flex; align-items: center; gap: 4px; padding: 2px 4px; }
+.ctx-menu .ctx-lab { font-size: 12px; color: var(--muted); margin-right: 2px; white-space: nowrap; }
+.ctx-menu .ctx-seg { height: 26px; min-width: 0; padding: 0 6px; font-size: 12px; }

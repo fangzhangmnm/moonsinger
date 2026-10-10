@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.21-2026-10-10";
+var APP_VERSION = "v0.10.22-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -9921,9 +9921,11 @@ var ScoreView = class {
       if (fa.length) {
         const ha = fa.reduce((a10, b3) => b3.start > a10.start ? b3 : a10).hits[0], asys = L2.systems[ha.system].sys, akey = `${ahead.paperId}:${asys}`;
         if (akey !== sysKey && akey !== this.turnedKey) {
-          this.turnedKey = akey;
+          const ids = new Set(rows.map((r10) => L2.systems.indexOf(r10)));
+          let lastX = -Infinity;
+          for (const n10 of this.hits) if (ids.has(n10.system) && n10.x > lastX) lastX = n10.x;
           const arows = L2.systems.filter((r10) => r10.paper === ahead.paperId && r10.sys === asys);
-          this.turnTo(top, Math.min(...arows.map((r10) => r10.top)), Math.max(...arows.map((r10) => r10.bottom)));
+          if (this.turnTo(top, bottom, Math.min(...arows.map((r10) => r10.top)), Math.max(...arows.map((r10) => r10.bottom)), h0.x >= lastX - 1)) this.turnedKey = akey;
         }
       }
     }
@@ -9976,16 +9978,19 @@ var ScoreView = class {
   }
   /** 自动翻：正在放的那一行（纸面坐标 top..bottom）出了舒服区 = 平滑滚到它在屏幕上方两成处。 */
   turnedKey = "";
-  /** 翻到接下来那一行：已经整个看得见 = 不动；和现在这一行一起放得下（它在下面）= 这一行贴顶、两行都在；放不下 = 它贴顶（这一行翻走了，最后一小截靠记，像翻谱）。远的（编排跳回去）= 先瞬移再平滑。 */
-  turnTo(curTop, aTop, aBottom) {
+  /** 翻到接下来那一行：已经整个看得见 = 不动；和现在这一行一起放得下（它在下面）= 这一行贴顶、两行都在；放不下 = 它贴顶（这一行翻走了，像翻谱）——
+   *  但放到这一行最后一个音之前不这么翻（onLast = false = 先等，返回 false，下一帧再来）。远的（编排跳回去）= 先瞬移再平滑。返回 true = 办完了（翻了 / 不用翻）。 */
+  turnTo(curTop, curBottom, aTop, aBottom, onLast) {
     const now2 = performance.now();
-    if (now2 - this.userScrollAt < 4e3 || now2 - this.userEditAt < 4e3) return;
+    if (now2 - this.userScrollAt < 4e3 || now2 - this.userEditAt < 4e3) return true;
     const z2 = this.zoom, off = this.sheet.offsetTop, vt = this.el.scrollTop, vh = this.el.clientHeight;
-    const a02 = off + aTop * z2, a12 = off + aBottom * z2, c02 = off + curTop * z2;
-    if (a02 >= vt + vh * 0.03 && a12 <= vt + vh * 0.97) return;
-    const to2 = Math.max(0, a02 > c02 && a12 - c02 <= vh * 0.94 ? c02 - vh * 0.03 : a02 - vh * 0.1);
+    const a02 = off + aTop * z2, a12 = off + aBottom * z2, c02 = off + curTop * z2, c12 = off + curBottom * z2;
+    if (a02 >= vt + vh * 0.03 && a12 <= vt + vh * 0.97) return true;
+    const both = a02 > c02 && a12 - c02 <= vh * 0.94, to2 = Math.max(0, both ? c02 - vh * 0.03 : a02 - vh * 0.1);
+    if (!onLast && (c02 < to2 || c12 > to2 + vh)) return false;
     if (Math.abs(to2 - vt) > vh * 1.5) this.el.scrollTo({ top: to2 + (to2 > vt ? -1 : 1) * vh * 0.3, behavior: "instant" });
     this.el.scrollTo({ top: to2, behavior: "smooth" });
+    return true;
   }
   /** 跳到正在放的地方（长按 / 右键 |▶ 的菜单；v0.10.21，user「播放的...可以支持跳转到当前播放的地方」）：不管刚才是不是自己滚过，滚过去、接着跟。 */
   revealPlayhead() {
@@ -39071,7 +39076,7 @@ function openTransportMenu(btn = $2("playBtn")) {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc8(title)}">${label}</button>`;
-  box.innerHTML = (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + (engine.playing || paused ? item("reveal", "\u8DF3\u5230\u6B63\u5728\u653E\u7684\u5730\u65B9", "\u8C31\u6EDA\u5230\u6B63\u5728\u653E\uFF08\u505C\u7740 = \u505C\u4E0B\uFF09\u7684\u90A3\u4E00\u884C\uFF1B\u521A\u624D\u81EA\u5DF1\u6EDA\u8FC7\u4E5F\u7167\u6837\u8FC7\u53BB\u3001\u63A5\u7740\u8DDF") : "") + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
+  box.innerHTML = (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + (engine.playing || paused ? item("reveal", "\u8DF3\u5230\u6B63\u5728\u653E\u7684\u5730\u65B9", "\u8C31\u6EDA\u5230\u6B63\u5728\u653E\uFF08\u505C\u7740 = \u505C\u4E0B\uFF09\u7684\u90A3\u4E00\u884C\uFF1B\u521A\u624D\u81EA\u5DF1\u6EDA\u8FC7\u4E5F\u7167\u6837\u8FC7\u53BB\u3001\u63A5\u7740\u8DDF") : "") + `<div class="ctx-row" title="\u7FFB\u8C31\u63D0\u524D\u591A\u5C11\uFF1A\u5FEB\u5230\u884C\u5C3E\uFF08\u6216\u7F16\u6392\u8DF3\u56DE\u53BB\u4E4B\u524D\uFF09\u8FD9\u4E48\u4E45\u5C31\u5148\u7FFB\u8FC7\u53BB\uFF0C\u6700\u540E\u4E00\u5C0F\u622A\u9760\u8BB0\u2014\u2014\u50CF\u94A2\u7434\u5BB6\u7FFB\u8C31\u30020 = \u6362\u4E86\u884C\u624D\u7FFB"><span class="ctx-lab">\u63D0\u524D\u7FFB</span>${TURN_LEADS.map((v) => `<button class="btn ctx-seg${v === turnLead ? " is-on" : ""}" data-v="lead:${v}">${v ? `${v} s` : "\u4E0D"}</button>`).join("")}</div>` + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
   document.body.append(box);
   const b3 = btn.getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   box.style.left = `${Math.max(m2, Math.min(b3.left, innerWidth - w2 - m2))}px`;
@@ -39093,7 +39098,10 @@ function openTransportMenu(btn = $2("playBtn")) {
     if (!v) return;
     close();
     if (v === "resume") resumePlay();
-    else if (v === "reveal") {
+    else if (v.startsWith("lead:")) {
+      turnLead = Number(v.slice(5));
+      info(turnLead ? `\u7FFB\u8C31\u63D0\u524D ${turnLead} \u79D2` : "\u7FFB\u8C31\u4E0D\u63D0\u524D\uFF08\u6362\u4E86\u884C\u624D\u7FFB\uFF09");
+    } else if (v === "reveal") {
       if (!view.revealPlayhead()) info("\u73B0\u5728\u6CA1\u6709\u5728\u653E\u7684\u5730\u65B9");
     } else if (v === "follow") {
       view.autoFollow = !view.autoFollow;
@@ -39118,16 +39126,17 @@ var phKey = "";
 var latLogged = null;
 var latAt = 0;
 var srcLogged = null;
-var TURN_LEAD = 1.5;
+var TURN_LEADS = [0, 0.3, 0.6, 1, 1.5];
+var turnLead = 0.6;
 var phAheadKey = "";
 function playheadFrame() {
   phRaf = 0;
   if (!engine.playing || !playTl) return;
   const sec = engine.audibleSec() ?? engine.position, loc = playTl.locate(sec), k2 = loc ? `${loc.paperId}:${loc.tick}` : "";
   const r10 = playRange(playTl);
-  let aSec = sec + TURN_LEAD;
+  let aSec = sec + turnLead;
   if (aSec >= r10.to) aSec = loopOn ? r10.loopFrom + (aSec - r10.to) : r10.to - 1e-3;
-  const ahead = playTl.locate(aSec), ak2 = ahead ? `${ahead.paperId}:${ahead.tick}` : "";
+  const ahead = turnLead > 0 ? playTl.locate(aSec) : null, ak2 = ahead ? `${ahead.paperId}:${ahead.tick}` : "";
   if (k2 !== phKey || ak2 !== phAheadKey) {
     phKey = k2;
     phAheadKey = ak2;
@@ -39587,7 +39596,7 @@ window.__moonsinger = {
   engine,
   exportSong,
   renderMix: () => renderMixForTest(),
-  transport: () => ({ startMark, paused, listen: listenOn(), loop: loopOn }),
+  transport: () => ({ startMark, paused, listen: listenOn(), loop: loopOn, turnLead }),
   // 走带的状态（E2E 用）
   navPaper: (d3) => navPaper(d3),
   paperSpans: () => playTl?.papers.map((x2) => ({ id: x2.paper.id, t0: x2.t0 })) ?? null,
@@ -39614,7 +39623,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "93aa877e5bc2",
+  cssHash: "00331dd6940c",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -42800,4 +42809,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8391acf1e0da.mjs.map
+//# sourceMappingURL=moonsinger-ad1e2fa916be.mjs.map

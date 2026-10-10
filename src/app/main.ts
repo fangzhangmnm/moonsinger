@@ -1178,6 +1178,7 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
   box.innerHTML = (paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放（起点不动）") : "") +
     (engine.playing || paused ? item("reveal", "跳到正在放的地方", "谱滚到正在放（停着 = 停下）的那一行；刚才自己滚过也照样过去、接着跟") : "") +
+    `<div class="ctx-row" title="翻谱提前多少：快到行尾（或编排跳回去之前）这么久就先翻过去，最后一小截靠记——像钢琴家翻谱。0 = 换了行才翻"><span class="ctx-lab">提前翻</span>${TURN_LEADS.map((v) => `<button class="btn ctx-seg${v === turnLead ? " is-on" : ""}" data-v="lead:${v}">${v ? `${v} s` : "不"}</button>`).join("")}</div>` +
     item("follow", `${view.autoFollow ? "✓ " : ""}自动翻`, "放着的时候谱跟着正在放的那一行滚（出了屏幕舒服的那一段才滚；你自己滚过 4 秒内不跟）") +
     item("loop", `${loopOn ? "✓ " : ""}循环`, "放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环") +
     item("head", "从头放", "起点回到开头，从头放（也可以连按两下 |▶ / 空格）") + (loopOn ? item("seam", "听接缝", "从循环段结尾前几秒放起，跳回开头再放几秒就停") : "");
@@ -1193,6 +1194,7 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
     if (v === "resume") resumePlay();
+    else if (v.startsWith("lead:")) { turnLead = Number(v.slice(5)); info(turnLead ? `翻谱提前 ${turnLead} 秒` : "翻谱不提前（换了行才翻）"); }
     else if (v === "reveal") { if (!view.revealPlayhead()) info("现在没有在放的地方"); }
     else if (v === "follow") { view.autoFollow = !view.autoFollow; info(view.autoFollow ? "自动翻：开" : "自动翻：关"); }
     else if (v === "loop") setLoop(!loopOn);
@@ -1212,15 +1214,18 @@ let lastReorder = 0;
 let phRaf = 0, phKey = "", latLogged: number | null = null, latAt = 0, srcLogged: string | null = null;
 /** 翻谱的提前量（秒）：像钢琴家翻谱——这一行最后一小截还没放完就先翻到「接下来要放的地方」（下一行 / 编排、反复跳回去的地方），最后那一点靠记着
  *  （v0.10.21；user「早跳转：我说的不是看下一行，因为小设备大总谱上面一次只能看一行。以及编排longjump。想一想钢琴家是怎么翻页的」）。 */
-const TURN_LEAD = 1.5;
+//   提前多少在 |▶ 长按 / 右键的菜单里挑（这次打开里有效，同「自动翻」）；默认 0.6 s（user「1.5s 应该太长了，让这个...里面可以配置，然后推理一下默认是多久，我猜0.5？」）：
+//   视唱时眼睛大约领先 1 s（不熟的谱）、自己的歌看得更少；平滑滚动本身 ~0.3 s——0.6 = 滚完正好赶上换行。0 = 不提前（换了行才翻）。
+const TURN_LEADS = [0, 0.3, 0.6, 1, 1.5] as const;
+let turnLead = 0.6;
 let phAheadKey = "";
 function playheadFrame(): void {
   phRaf = 0;
   if (!engine.playing || !playTl) return;
   const sec = engine.audibleSec() ?? engine.position, loc = playTl.locate(sec), k = loc ? `${loc.paperId}:${loc.tick}` : "";
   // 接下来 TURN_LEAD 秒放到哪（按播放的顺序：编排 / 反复照算；开着循环、快到尾了 = 循环头）
-  const r = playRange(playTl); let aSec = sec + TURN_LEAD; if (aSec >= r.to) aSec = loopOn ? r.loopFrom + (aSec - r.to) : r.to - 1e-3;
-  const ahead = playTl.locate(aSec), ak = ahead ? `${ahead.paperId}:${ahead.tick}` : "";
+  const r = playRange(playTl); let aSec = sec + turnLead; if (aSec >= r.to) aSec = loopOn ? r.loopFrom + (aSec - r.to) : r.to - 1e-3;
+  const ahead = turnLead > 0 ? playTl.locate(aSec) : null, ak = ahead ? `${ahead.paperId}:${ahead.tick}` : "";
   if (k !== phKey || ak !== phAheadKey) { phKey = k; phAheadKey = ak; view.setPlayhead(loc, ahead); }
   const now = performance.now();
   if (now - latAt > 2000) {   // 输出延迟变了（换耳机 / 切后台回来）记进黑匣子：错位再报时有数可查
@@ -1533,7 +1538,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, renderMix: () => renderMixForTest(),
-  transport: () => ({ startMark, paused, listen: listenOn(), loop: loopOn }),   // 走带的状态（E2E 用）
+  transport: () => ({ startMark, paused, listen: listenOn(), loop: loopOn, turnLead }),   // 走带的状态（E2E 用）
   navPaper: (d: -1 | 1) => navPaper(d), paperSpans: () => playTl?.papers.map((x) => ({ id: x.paper.id, t0: x.t0 })) ?? null,   // 换段 / 现在放的时间线里每段从几秒起（E2E 用）
   workspace: () => ({ ...ws, dock: dockOf(ws) }), setMode: (m: Mode) => setMode(m),   // 模式 / 底座（E2E 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describeResources(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
