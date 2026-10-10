@@ -79,10 +79,11 @@ describe("song（写）", () => {
 
 describe("song（改：选中）", () => {
   const base = () => { let st = initState(); for (const d of [1, 2, 3, 4]) st = writeDegree(st, d, "near"); return st; };
-  it("选中一个音按数字 = 替换模式：按长短档换掉它，写不出选区（2026-10-08 起；原来是「覆盖音高、选中跳到下一个音」）", () => {
-    let st = select(base(), H + 1, H + 2); st = writeDegree(st, 5, "near"); st = writeDegree(st, 6, "near");
-    eq(show(st), "C4/1 G3/1 E4/1 F4/1");   // 就近：C4 → 下面的 G3（3 级）比上面的 G4（4 级）近；第二下窗口满了 = 不写
-    eq(JSON.stringify(st.sel), JSON.stringify({ from: H + 1, to: H + 2, head: H + 2 }), "选区留着、写字头在尾巴上");
+  it("选中一个音按数字 = 改这个音：XOR 叠上这一级（离它最近的那个），再按 = 拿掉（v0.10.5；原来是替换模式）", () => {
+    let st = select(base(), H + 1, H + 2); st = writeDegree(st, 5, "near");
+    eq(show(st), "C4/1 G4/1 E4/1 F4/1"); eq((tr(st)[H + 1] as NoteTok).chord?.map(pitchName).join(), "D4", "D4 留在和弦里（show 只印最上面那个）");   // D4 的 5 级：上面的 G4（5 个半音）比下面的 G3（7 个）近
+    st = writeDegree(st, 5, "near"); eq(show(st), "C4/1 D4/1 E4/1 F4/1", "再按 = 拿掉");
+    eq(JSON.stringify(st.sel), JSON.stringify({ from: H + 1, to: H + 2 }), "选区一直在它身上");
   });
   it("有选区按长短 = 只改输入档位（谱不动）；整组改时值走选区菜单 scaleSelDur", () => {
     let st = select(base(), H, H + 2); st = longer(st); eq(show(st), "C4/1 D4/1 E4/1 F4/1"); eq(st.input.unit, 3);
@@ -94,8 +95,9 @@ describe("song（改：选中）", () => {
   it("选中退格 = 删掉，变成那里的光标（写）", () => {
     let st = select(base(), H + 1, H + 3); st = backspace(st); eq(show(st), "C4/1 F4/1"); eq(st.sel, null); eq(st.caret, H + 1);
   });
-  it("Esc = 选中光标前那个；← 收成左边的光标", () => {
-    let st = escape(base()); eq(st.sel?.from, H + 3); st = moveCaret(st, -1); eq(st.sel, null); eq(st.caret, H + 3);
+  it("Esc = 选中光标前那个；只选一个时 ← = 换到前一个（v0.10.5：改一个音时 ← → 换邻居）；选好几个时 ← 收成左边的光标", () => {
+    let st = escape(base()); eq(st.sel?.from, H + 3); st = moveCaret(st, -1); eq(st.sel?.from, H + 2);
+    st = moveCaret(select(base(), H + 1, H + 3), -1); eq(st.sel, null); eq(st.caret, H + 1);
   });
 });
 

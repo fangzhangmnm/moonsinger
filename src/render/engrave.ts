@@ -44,7 +44,7 @@ export interface EngraveOpts {
   sp: number;                            // px，五线谱间距
   at: Focus;                             // 光标 / 选中在哪条 track
   caret: number;                         // 光标（插入点）
-  sel?: { from: number; to: number; head?: number } | null;   // 有 = 改（没有光标）；head = 替换模式的写字头（有 = 选区里也画写字头）
+  sel?: { from: number; to: number } | null;   // 有 = 改（没有光标）
   parts: PartView[];                     // 显示的声部
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
   titlePlaceholder?: boolean;            // 歌名 / 词曲 / 曲段名空着时画浅色提示 + 「＋ 新的纸」（编辑器里；导出 / 打印不画）
@@ -554,7 +554,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     // 1. 每个声部的排版单元
     const per = parts.map((p) => {
       const tokens = paper.tracks[p.id], focused = o.at.paper === paper.id && o.at.part === p.id, staves: 1 | 2 = p.staves === 2 ? 2 : 1;
-      const u = unitsOf(tokens, { caret: focused && (writing || sel?.head != null) ? o.caret : null, autoBars, measureLyric: o.measureLyric, sp, rhythm: song.lyricFit !== "lyrics" });   // 替换模式：选区里也画写字头
+      const u = unitsOf(tokens, { caret: focused && writing ? o.caret : null, autoBars, measureLyric: o.measureLyric, sp, rhythm: song.lyricFit !== "lyrics" });
       shortBars += u.shortBars;
       if (staves === 2) {   // 大谱表：每个音在上还是下（按音高自动 / 手动指定）；光标跟着前一个音
         const stf = staffOfTokens(tokens, 2); let last: Staff = 1;

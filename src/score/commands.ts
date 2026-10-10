@@ -4,7 +4,7 @@ import type { Dir } from "./pitch.ts";
 import { type EditorState, type Art, type Dyn, setDynSel, dynMarkSel, toggleSlurBefore, toggleHairpin, toggleSwell, symBackspace, writeDegree, writeRest, writeBar, writePhrase, shorter, longer, setTuplet, extend, tapAcc, octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward, transposeSel, respellSel, modulateSel, selectToEdge, tr, toggleStaff, toggleArtBefore, toggleInhaleBefore, setSelDur, scaleSelDur } from "./song.ts";
 
 export type Command =
-  | { k: "degree"; degree: number; dir: Dir }
+  | { k: "degree"; degree: number; dir: Dir; /** 单声乐器的声部：改一个音时换音高、不叠（v0.10.5）。 */ mono?: boolean }
   | { k: "rest" } | { k: "bar" } | { k: "phrase" } | { k: "art"; a: Art } | { k: "inhale"; v: "soft" | "big" } | { k: "slur" } | { k: "wedge"; w: "cresc" | "dim" } | { k: "dyn"; v: Dyn; ramp?: boolean } | { k: "swell"; w: "<" | ">" | "<>" }   // art = 光标前那个音（有选区 = 选中的）切演奏法（pad 符号层；前面不是音 = 原样）
   | { k: "shorter" } | { k: "longer" } | { k: "tuplet" } | { k: "extend"; half?: boolean }   // half = pad 的「/2」开着：拉长半份（= 附点）
   | { k: "acc"; acc: 1 | -1 }
@@ -17,7 +17,7 @@ export type Command =
 /** 应用一条编辑命令。now = 判 Shift 连点用的时刻（ms）。 */
 export function apply(st: EditorState, c: Command, now = Date.now()): EditorState {
   switch (c.k) {
-    case "degree": return writeDegree(st, c.degree, c.dir);
+    case "degree": return writeDegree(st, c.degree, c.dir, !!c.mono);
     case "rest": return writeRest(st);
     case "bar": return writeBar(st);
     case "phrase": return writePhrase(st);

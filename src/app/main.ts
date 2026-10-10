@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { singleSel, currentIndex, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -367,7 +367,7 @@ function previewEdited(): void {
 const keyTok = (s: EditorState, i: number, code: string) => { const t = tr(s)[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(t.pitch, `key${code}`); };
 /** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
 function writeAndLocate(write: (s: EditorState) => EditorState): number {
-  const n = write(st); if (n === st) return -1;   // 没写成（替换模式的选区写满了 / 没有能填的）
+  const n = write(st); if (n === st) return -1;   // 没写成（没有能填的）
   update(n);
   return st.caret - 1;   // 插入 / 填 / 替换写完，光标（写字头）都在刚写的那个音后面
 }
@@ -434,20 +434,18 @@ function halfKey(down: boolean): void {
     if (halfWrote && half !== "lock") setHalf("off");   // 按住写过 = 松手回去（同 iOS 按住 Shift 打字）
   }
 }
-/** 叠键（pad）：和 /2 一个逻辑（点一下 = 下一个按的音叠到前一个音上；350 ms 内连点两下 = 锁住，叠着写；按住写 = 按住期间；松手回去）。 */
-let stack: "off" | "once" | "lock" = "off", stackAt = 0, stackHeld = false, stackWrote = false;
-function setStack(m: "off" | "once" | "lock"): void { stack = m; pad.showStack(m); }
+/** 叠键（pad）= 锁定式（v0.10.5；user「叠音模式也应该只有capslock没有shift，每次都会弄错，所以不要shift模式」+ 键盘 × 选区那套「叠这个字就用来选中上个」→「同意」）：
+ *  按一下 = 选中光标前那个音（= 改这个音：音键 XOR、— / ⌫ 长短一步、← → 换邻居）；再按一下 = 回到它后面的光标。没有单次档、没有按住期间。
+ *  亮不亮跟着「是不是正在改一个音」（点一个音选中它也亮），pad 自己看 singleSel。 */
 function stackKey(down: boolean): void {
-  if (!canStack()) { if (down) info(`「${roleName(doc.extras, curRole())}」是单声乐器，这个声部叠不了音`); return; }
-  if (down) {
-    const t = performance.now();
-    stackHeld = true; stackWrote = false;
-    setStack(stack === "off" ? "once" : stack === "once" && t - stackAt < 350 ? "lock" : "off");
-    stackAt = t;
-  } else {
-    stackHeld = false;
-    if (stackWrote && stack !== "lock") setStack("off");
-  }
+  if (!down) return;
+  if (!canStack()) { info(`「${roleName(doc.extras, curRole())}」是单声乐器，这个声部叠不了音`); return; }
+  if (singleSel(st) >= 0) { update(setCaret(st, st.sel!.to)); return; }
+  const tk = tr(st); let i = -1;
+  if (st.sel) { for (let k = st.sel.to - 1; k >= st.sel.from; k--) if (isTimed(tk[k])) { i = k; break; } }   // 选了好几个 = 改最后那个
+  else i = currentIndex(st);
+  if (i < 0) { info("光标前面还没有音"); return; }
+  update(select(st, i, i + 1));
 }
 /** 升降键（pad）：和 Shift 一个逻辑（点一下 = 下一个、350 ms 内连点两下 = 锁、再点 = 关；按住写 = 按住期间、松手回去），
  *  按着上下滑 = 换一种（𝄪 / ♯ / ♭ / 𝄫；user「按是当作shift，滑动是toggle which shift」）。有选中 = 选中的音直接升降（同电脑键盘的 [ ]）。 */
@@ -574,14 +572,10 @@ const pad = new Pad(padEl, {
   onPitch: (p, id) => {
     if (finder.isOpen) return;
     const now = performance.now();
+    { const one = singleSel(st); if (one >= 0) {   // 改这个音（只选了一个 / 叠亮着）：XOR（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）；单声乐器 = 换音高
+      update(writePitch(st, p, false, !canStack())); padNotes.set(id, { index: one, base: p }); previewEdited(); return;
+    } }
     if (canStack()) {
-      // 叠键开着（点一下 / 锁住 / 按住）：叠到前一个音上（XOR，最后一个留着）；单声乐器的声部永远不叠（护栏）
-      if (stack !== "off") {
-        update(stackPitch(st, p));
-        padNotes.set(id, { index: -1, base: p });
-        if (stack === "once" && !stackHeld) setStack("off"); if (stackHeld) stackWrote = true;
-        return;
-      }
       settleChords("force");   // 又按下一个键：还在观望的先定（根音还按着 = 叠）
       const root = chordRoot();
       if (root) {
@@ -593,11 +587,9 @@ const pad = new Pad(padEl, {
         chordWaits.push(w);
         return;
       }
-    } else if (stack !== "off") {   // 单声乐器：叠键开着也不叠（护栏），照常写
-      setStack("off");
     }
-    const i = writeAndLocate((s) => writePitch(s, p));
-    if (i < 0) { padNotes.set(id, { index: -1, base: p }); if (st.sel) info("选区写满了：写不出选区。要往后写，先点别处退出选区"); return; }
+    const i = writeAndLocate((s) => writePitch(s, p, false, !canStack()));
+    if (i < 0) { padNotes.set(id, { index: -1, base: p }); return; }
     const t = tr(st)[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
     if (canStack() && t) chordRoots.set(id, { tokId: t.id, t: now });
@@ -3434,7 +3426,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       if (a.cmd.k === "backspace" && ws.mode === "symbols") { update(apply(st, { k: "symBackspace" }, performance.now())); return true; }   // 符：退格删记号（user「我早就想用退格删强度曲线了」）
       if (a.cmd.k === "backspace" && ws.mode === "lyrics") { lyricBackspace(); return true; }
       if (a.cmd.k === "degree") {
-        if (!repeat && monoAccept(`key${code}`)) { const c = a.cmd, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); afterWrite(); }   // 先写再取 st（写完才有这个音）
+        if (!repeat && monoAccept(`key${code}`)) { const c = { ...a.cmd, mono: !canStack() }, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); afterWrite(); }   // 先写再取 st（写完才有这个音）
         return true;
       }
       update(apply(st, withHalf(a.cmd), performance.now()));

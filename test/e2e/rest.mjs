@@ -54,8 +54,13 @@ for (const touch of [false, true]) {
     await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu")?.remove()); await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, sel: null }); }); await p.waitForTimeout(150);
     r = await rest();
     await hold(r.x, r.y, 650);
+    // v0.10.5：只选一个（音或休止，一样）= 改它，⌫ = 短一步（空出来的还是休止，后面不挪）；删掉 = Delete 键 / 选区条「删」
+    const was = (await st()).toks;   // 一步 = 长短旋钮的默认档（八分 = 840）
     await p.keyboard.press("Backspace"); await p.waitForTimeout(150);
-    check(!(await st()).toks.includes("r"), "选中休止按退格 = 删掉", (await st()).toks);
+    check((await st()).toks === was.replace(/r(\d+)/, (_m, d) => `r${Number(d) - 840} r840`), "选中休止按退格 = 短一步（后面不挪）", `${was} → ${(await st()).toks}`);
+    await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), t = s.song.papers[0].tracks[s.at.part], i = t.findIndex((x) => x.kind === "rest"); m.set({ ...s, sel: { from: i, to: i + 1 }, caret: i + 1 }); });
+    await p.keyboard.press("Delete"); await p.waitForTimeout(150);
+    check((await st()).toks === "n r840 n n", "选中休止按 Delete = 删掉", (await st()).toks);
   }
   check(errs.length === 0, `${tag}：没有页面错误`, errs.join(" | "));
   await ctx.close();

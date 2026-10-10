@@ -1,9 +1,9 @@
-// 有选区时：音键 / 0 / ⌫ / − / 叠 = 替换模式（键盘只管打谱）；整组改时值 = 选区菜单（setSelDur / ÷2 / ×2）。
+// 有选区时：音键 / 0 / ⌫ / − / 叠（v0.10.5 起：选好几个 = 替换整段、只选一个 = 改这个音；光标 = 写音覆盖休止）；整组改时值 = 选区菜单（setSelDur / ÷2 / ×2）。
 // created 2026-10-08 by Claude Fable 5.1（整组）；2026-10-08 改成替换模式 by Claude Opus 5.5——
 //   user「加一个时长替换模式，类似override…吃掉后面的旋律线」「然后不能写出选区边界」「有选区 = 替换、无选区 = 插入」
 //   「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单，键盘只做纯粹的打谱」
 import { describe, it, eq, assert } from "./runner.mjs";
-import { initState, select, setSelDur, scaleSelDur, selUnit, writePitch, writeRest, backspace, extend, stackPitch, setUnit, shorter, tr, headLen, TPQ, songOf, type EditorState, type NoteTok, type Token } from "../src/score/song.ts";
+import { initState, select, setCaret, moveCaret, setSelDur, scaleSelDur, selUnit, writePitch, writeRest, backspace, extend, stackPitch, setUnit, shorter, tr, headLen, TPQ, songOf, type EditorState, type NoteTok, type Token } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
 
 const E = TPQ / 2, H = 3;
@@ -35,80 +35,94 @@ describe("选区菜单：整组改时值", () => {
   });
 });
 
-describe("替换模式（选区 + 打音）", () => {
-  it("按长短档吃掉窗口里的旧音，后面不挪；选区留着、写字头往后走", () => {
-    let st = unit(select(song([["C", 1], ["D", 1], ["E", 1], ["F", 1]]), H, H + 4), 3);   // 窗口 = 4 个八分；写四分
-    st = writePitch(st, P("G"));
-    eq(show(st), "G4/2 E4/1 F4/1");
-    eq(JSON.stringify(st.sel), JSON.stringify({ from: H, to: H + 3, head: H + 1 }));
-    st = writePitch(st, P("A"));
-    eq(show(st), "G4/2 A4/2");
-    eq(writePitch(st, P("B")), st, "窗口满了 = 原样（写不出选区）");
+// v0.10.5（ai-docs/20261010-keyboard-selection-rules.md；user「要不要输入会默认覆盖休止空间？…只有没有休止空间时才会推后面的。然后只在选区里面改的功能不要了，选择的时候输入音符变成替换旧的，剩下的空间变成休止。选区变成光标」
+//   「选中单音的时候…可以xor到保留时长的休止符…叠这个字就用来选中上个，然后你也可以调时长」→「同意」）。原来的替换模式（选区当窗口、写字头）去掉了。
+function rests(items: (["C" | "D" | "E" | "F" | "G" | "A" | "B", number, string?] | ["r", number] | "|" | "dyn")[]): EditorState {
+  let id = 1;
+  const toks: Token[] = [{ kind: "key", fifths: 0, id: id++ }, { kind: "time", beats: 4, beatType: 4, id: id++ }, { kind: "tempo", bpm: 90, id: id++ }] as Token[];
+  for (const it of items) toks.push((it === "|" ? { kind: "bar", id: id++ } : it === "dyn" ? { kind: "dyn", id: id++, value: "p" } : it[0] === "r" ? { kind: "rest", dur: it[1] * E, id: id++ } : { kind: "note", pitch: P(it[0]), dur: it[1] * E, lyric: it[2] ?? null, id: id++ }) as Token);
+  return initState(songOf(toks, { title: "" }));
+}
+const at = (st: EditorState, c: number) => setCaret(st, c);
+describe("写音默认覆盖休止（光标）", () => {
+  it("后面是休止 = 吃掉一样长的，后面不挪；吃一半的留下剩的那截", () => {
+    const st = writePitch(unit(at(rests([["r", 4], ["D", 1]]), H), 2), P("C"));
+    eq(show(st), "C4/1 r/3 D4/1"); eq(st.caret, H + 1, "光标在新音后面：接着写接着覆盖");
+    eq(show(writePitch(st, P("E"))), "C4/1 E4/1 r/2 D4/1");
   });
-  it("最后一个截短到正好填满窗口", () => {
-    let st = unit(select(song([["C", 1], ["D", 1], ["E", 1], ["F", 1]]), H, H + 3), 4);   // 窗口 = 3 个八分；写二分（4 个八分）
-    st = writePitch(st, P("G"));
-    eq(show(st), "G4/3 F4/1", "截成 3 个八分，窗口外的 F 不动");
+  it("休止不够 = 够的那截吃掉，差的那截才推后面的", () => {
+    eq(show(writePitch(unit(at(rests([["r", 1], ["D", 1]]), H), 3), P("C"))), "C4/2 D4/1", "四分吃掉一个八分休止，D 往后推一个八分");
   });
-  it("吃一半的音留下剩的那截（不带歌词）", () => {
-    let st = unit(select(song([["C", 2, "la"], ["D", 2, "li"]]), H, H + 2), 2);   // 窗口 = 两个四分；写八分
-    st = writePitch(st, P("G"));
-    eq(show(st), `G4/1"la" C4/1 D4/2"li"`, "新音接过 C 的歌词；C 剩的那截没有歌词");
+  it("后面是音 = 照旧插（全推）；碰到人插的「|」就停", () => {
+    eq(show(writePitch(unit(at(rests([["D", 1], ["r", 2]]), H), 2), P("C"))), "C4/1 D4/1 r/2");
+    eq(show(writePitch(unit(at(rests([["r", 1], "|", ["r", 2]]), H), 3), P("C"))), "C4/2 | r/2", "吃到「|」前为止，不越过小节线");
   });
-  it("新音落在旧音起点上 = 接过歌词（只改音高时歌词不丢）", () => {
-    let st = unit(select(song([["C", 1, "ka"], ["D", 1, "ki"]]), H, H + 2), 2);
-    st = writePitch(writePitch(st, P("E")), P("F"));
-    eq(show(st), `E4/1"ka" F4/1"ki"`);
+  it("光标和休止之间的记号留在新音前面（力度跟着这个时刻）", () => {
+    eq(show(writePitch(unit(at(rests(["dyn", ["r", 2]]), H), 2), P("C"))), "dyn C4/1 r/1");
   });
-  it("人插的小节线挡住：写到「|」前为止，下一个从「|」后面接着写", () => {
-    let st = unit(select(song([["C", 2], "|", ["D", 2]]), H, H + 3), 4);   // 窗口里有「|」；写二分
-    st = writePitch(st, P("G"));
-    eq(show(st), "G4/2 | D4/2", "截在小节线前");
-    st = writePitch(st, P("A"));
-    eq(show(st), "G4/2 | A4/2");
+  it("休止键也一样覆盖", () => { eq(show(writeRest(unit(at(rests([["r", 2], ["D", 1]]), H), 2))), "r/1 r/1 D4/1"); });
+  it("⌫ 撤回刚写的 = 吃掉的休止放回去，后面不挪", () => {
+    const st = backspace(writePitch(unit(at(rests([["r", 4], ["D", 1]]), H), 2), P("C")));
+    eq(show(st), "r/1 r/3 D4/1"); eq(st.caret, H);
   });
-  it("0 = 写一个休止（同样吃、同样不出选区）", () => {
-    let st = unit(select(song([["C", 1], ["D", 1]]), H, H + 2), 2);
-    st = writeRest(st);
-    eq(show(st), "r/1 D4/1");
+  it("「−」拉长刚写的 = 先吃后面的休止；⌫ 撤回 = 放回去", () => {
+    let st = extend(writePitch(unit(at(rests([["r", 4], ["D", 1]]), H), 2), P("C")));
+    eq(show(st), "C4/2 r/2 D4/1");
+    st = backspace(st); eq(show(st), "C4/1 r/1 r/2 D4/1");
   });
-  it("⌫ = 刚写的变回休止（位置不动、后面不挪），写字头退回去，再写接着替换", () => {
-    let st = unit(select(song([["C", 1], ["D", 1], ["E", 1]]), H, H + 3), 2);
-    st = writePitch(writePitch(st, P("G")), P("A"));
-    st = backspace(st);
-    eq(show(st), "G4/1 r/1 E4/1");
-    eq(st.sel?.head, H + 1);
-    st = writePitch(st, P("B"));
-    eq(show(st), "G4/1 B4/1 E4/1", "退回去的位置再写 = 把休止换掉");
+});
+describe("选了好几个：输入 = 替换整段", () => {
+  it("选中的全变休止、收成开头的光标、再覆盖写：新音在头、剩下是休止，接着写接着覆盖", () => {
+    let st = writePitch(unit(select(song([["C", 1], ["D", 1], ["E", 1], ["F", 1]]), H, H + 3), 3), P("G"));
+    eq(show(st), "G4/2 r/1 F4/1"); eq(st.sel, null); eq(st.caret, H + 1);
+    st = writePitch(st, P("A")); eq(show(st), "G4/2 A4/2 F4/1", "剩一个八分休止不够四分：吃掉它、F 往后推一个八分");
   });
-  it("没写过就按 ⌫ = 删掉选中的（照旧）", () => {
-    const st = backspace(select(song([["C", 1], ["D", 1], ["E", 1]]), H, H + 2));
-    eq(show(st), "E4/1");
+  it("新音接过原来第一个音的歌词", () => {
+    eq(show(writePitch(unit(select(song([["C", 2, "la"], ["D", 2, "li"]]), H, H + 2), 2), P("G"))), `G4/1"la" r/1 r/2`);
   });
-  it("「−」= 刚写的往后吃一份；不出选区；没写过 = 不动", () => {
-    let st = unit(select(song([["C", 1], ["D", 1], ["E", 1], ["F", 1]]), H, H + 3), 2);
-    eq(extend(st), st, "没写过 = 不动");
-    st = extend(writePitch(st, P("G")));
-    eq(show(st), "G4/2 E4/1 F4/1");
-    st = extend(st);
-    eq(show(st), "G4/3 F4/1", "吃到窗口尾为止");
-    eq(extend(st), st, "窗口满了 = 不动");
+  it("人插的「|」和记号留着", () => {
+    eq(show(writePitch(unit(select(song([["C", 2], "|", ["D", 2]]), H, H + 3), 2), P("G"))), "G4/1 r/1 | r/2");
   });
-  it("叠：替换模式里叠到刚写的那个上（还可以输入叠音）；没写过 = 叠到选区第一个音", () => {
-    let st = unit(select(song([["C", 1], ["D", 1]]), H, H + 2), 2);
-    st = stackPitch(st, P("E"));
-    assert(!!(tr(st)[H] as NoteTok).chord?.length, "没写过：叠到选区第一个音");
-    st = stackPitch(writePitch(st, P("G")), P("B"));
-    eq(show(st), "B4+G4/1 D4/1", "叠音按高低排：最高的当旋律线");
+  it("休止键 = 整段变休止、光标在开头后面一个", () => { eq(show(writeRest(unit(select(song([["C", 1], ["D", 1], ["E", 1]]), H, H + 2), 2))), "r/1 r/1 E4/1"); });
+  it("⌫ = 删掉选中的（照旧）；「−」= 不动", () => {
+    const base = select(song([["C", 1], ["D", 1], ["E", 1]]), H, H + 2);
+    eq(show(backspace(base)), "E4/1"); eq(extend(base), base);
   });
-  it("被吃掉的音后面那个原来连着它（连音线）：断开", () => {
-    const base = song([["C", 1], ["C", 1], ["D", 1]]);
-    const toks = tr(base).slice(); (toks[H + 1] as NoteTok).tie = true;
-    let st = initState(songOf(toks, { title: "" }));
-    st = unit(select(st, H, H + 1), 2);
-    st = writePitch(st, P("G"));
-    eq(show(st), "G4/1 C4/1 D4/1", "C 的连音线断开了");
+});
+describe("只选了一个音 = 改这个音", () => {
+  const one = (items: Parameters<typeof rests>[0], i: number) => unit(select(rests(items), H + i, H + i + 1), 2);
+  it("音键 XOR：叠上 / 拿掉；最后一个拿掉 = 一样长的休止；休止上按 = 变回音；选区一直在它身上", () => {
+    let st = writePitch(one([["C", 2]], 0), P("E")); eq(show(st), "E4+C4/2");
+    st = writePitch(st, P("E")); eq(show(st), "C4/2");
+    st = writePitch(st, P("C")); eq(show(st), "r/2", "最后一个拿掉 = 休止（时值不动）");
+    st = writePitch(st, P("D")); eq(show(st), "D4/2", "休止上按 = 变回音");
+    eq(JSON.stringify(st.sel), JSON.stringify({ from: H, to: H + 1 }));
   });
+  it("单声乐器的声部（mono）= 换音高、不叠", () => {
+    const st = one([["C", 2]], 0);
+    eq(show(writePitch(st, P("E"), false, true)), "E4/2"); eq(writePitch(st, P("C"), false, true).song, st.song, "按它自己的音 = 不动");
+  });
+  it("拿掉之后后面那个原来连着它的音：连音线断开", () => {
+    const base = rests([["C", 1], ["C", 1], ["D", 1]]); const toks = tr(base).slice(); (toks[H + 1] as NoteTok).tie = true;
+    const st = writePitch(unit(select(initState(songOf(toks, { title: "" })), H, H + 1), 2), P("C"));
+    eq(show(st), "r/1 C4/1 D4/1");
+  });
+  it("休止键 = 变成一样长的休止", () => { eq(show(writeRest(one([["C", 2], ["D", 1]], 0))), "r/2 D4/1"); });
+  it("「−」= 长一步：先吃后面的休止，不够才推", () => {
+    let st = extend(one([["C", 1], ["r", 2], ["D", 1]], 0)); eq(show(st), "C4/2 r/1 D4/1");
+    st = extend(st); eq(show(st), "C4/3 D4/1");
+    st = extend(st); eq(show(st), "C4/4 D4/1", "没休止了 = 推");
+  });
+  it("⌫ = 短一步：空出来的变休止，后面不挪；短到不能再短 = 不动", () => {
+    let st = backspace(one([["C", 2], ["D", 1]], 0)); eq(show(st), "C4/1 r/1 D4/1");
+    eq(backspace(st).song, st.song);
+  });
+  it("← → = 换到前一个 / 后一个（还在改）；到头不动", () => {
+    let st = moveCaret(one([["C", 1], "|", ["D", 1], ["E", 1]], 2), 1); eq(st.sel?.from, H + 3);
+    st = moveCaret(moveCaret(st, -1), -1); eq(st.sel?.from, H, "跳过「|」");
+    eq(moveCaret(st, -1), st, "到头");
+  });
+  it("Shift+叠 / pad 叠音（stackPitch）= 同样 XOR", () => { eq(show(stackPitch(one([["C", 2]], 0), P("G"))), "G4+C4/2"); });
 });
 
 // 选区菜单「清掉记号」：曲级 / 音级 / 都清（2026-10-10 Opus 5.5；user「批量修改，删除曲级（你之前分了曲级vs音符级）力度记号的方法…场景是我把人声的notes给复制到其他的轨里面之后，想把之前调校的力度和articulation给删了」）

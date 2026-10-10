@@ -30,7 +30,7 @@ import { type Pitch, HOME, diatonicIndex, tonicStepIndex, pitchName, alterBy, mi
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
-import { type EditorState, type Acc, type Art, inputKey, keyAt, timeAt, tempoAt, tr } from "../score/song.ts";
+import { type EditorState, type Acc, type Art, inputKey, keyAt, timeAt, tempoAt, tr, singleSel } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
 
 /** 月读的音域 A3–E5（MIDI）：键底部画细条提示，音域外不拦、不变灰。宿主不给提示音域时（hintRange 没接）用它。 */
@@ -127,7 +127,7 @@ export interface PadHost {
   onAutoBars(on: boolean): void;
   onHide(): void;                          // 收起键盘（pad）
   onHalf(down: boolean): void;             // /2 按下 / 松开：写的音临时减半
-  onStack(down: boolean): void;            // 叠 按下 / 松开：下一个按的音叠到前一个音上（Shift 逻辑同 /2；polyphony 2026-10-08）
+  onStack(down: boolean): void;            // 叠 按下（锁定式，v0.10.5）：选中光标前那个音（= 改这个音）/ 再按 = 回到光标；松开不管
   canStack(): boolean;                     // 光标所在声部的乐器能叠音吗（单声乐器 = 不能，键灰掉）
   onAccShift(phase: "down" | "slide" | "up", acc: Exclude<Acc, 0>): void;   // 升降键：按下 / 滑着换 / 松开
   onInsertMark(kind: "key" | "time" | "tempo"): void;
@@ -225,7 +225,7 @@ export class Pad {
         // 呼吸放在写音那一排（user 2026-10-08「呼吸应该是我在first pass 旋律flow的时候非常高频会用到的符号」）：和符号层「演奏法」页那一格同一件事——光标前那个音后面换气，再点去掉；符号层开着也能按
         `<button class="btn wk breath" data-breath="1" title="呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"><span class="smufl">\uE4CE</span><small>呼吸</small></button>` +
         `<button class="btn wk accshift" data-accshift="1" title="升降（和 Shift 一样）：点一下 = 下一个音；连点两下 = 锁住，再点解开；按住写 = 按住期间。在键上上下滑换 𝄪 / ♯ / ♭ / 𝄫"><span class="ag"></span><small>升降</small></button>` +
-        `<button class="btn wk stack" data-stack="1" title="叠音（和 Shift 一样）：点一下 = 下一个按的音叠到前一个音上；连点两下 = 锁住（叠着写：按已有的音 = 拿掉，最后一个留着）；按住写 = 按住期间。单声乐器的声部叠不了"><span>叠</span><small>叠音</small></button>` +
+        `<button class="btn wk stack" data-stack="1" title="叠（像 Caps Lock）：按一下 = 选中光标前那个音来改——按音键叠上 / 拿掉（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）、— 长一步、⌫ 短一步、← → 换前后的音；再按一下 = 回到它后面接着写。单声乐器的声部叠不了"><span>叠</span><small>叠音</small></button>` +
         `<button class="btn wk half" data-half="1" title="减半（长短基线短一档）：点一下 = 下一个音；连点两下 = 锁住，再点解开；也可以按住写"><span>/2</span><small>减半</small></button>` +
         `<button class="btn wk" data-cmd="extend" title="拉长一份（${hint("extend")}）"><span>—</span><small>拉长</small></button>` +
         `<button class="btn" data-cmd="backspace" title="退格（${hint("backspace")}）"><svg class="ico"><use href="#backspace"/></svg></button></div>` +
@@ -259,16 +259,9 @@ export class Pad {
       });
       for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) half.addEventListener(t, (e) => halfUp(e as PointerEvent));
       addEventListener("blur", () => { for (const id of [...holding]) halfUp({ pointerId: id }); });
-      // 叠：和 /2 同一套（点一下 / 连点两下 / 按住写，逻辑在宿主 main.ts stackKey）
-      const stk = w.querySelector<HTMLElement>("[data-stack]")!, sholding = new Set<number>();
-      const stkUp = (e: { pointerId: number }) => { if (!sholding.delete(e.pointerId)) return; if (!sholding.size) this.host.onStack(false); };
-      stk.addEventListener("pointerdown", (e) => {
-        e.preventDefault(); try { stk.setPointerCapture(e.pointerId); } catch { /* 合成事件 */ }
-        if (!sholding.size) this.host.onStack(true);
-        sholding.add(e.pointerId);
-      });
-      for (const t of ["pointerup", "pointercancel", "lostpointercapture"]) stk.addEventListener(t, (e) => stkUp(e as PointerEvent));
-      addEventListener("blur", () => { for (const id of [...sholding]) stkUp({ pointerId: id }); });
+      // 叠：锁定式，按一下切一下（v0.10.5；user「叠音模式也应该只有capslock没有shift，每次都会弄错，所以不要shift模式」；逻辑在宿主 main.ts stackKey）
+      const stk = w.querySelector<HTMLElement>("[data-stack]")!;
+      stk.addEventListener("pointerdown", (e) => { e.preventDefault(); this.host.onStack(true); });
       // 升降键（user「以及临时升降号的shift好像你也忘了哈哈，要不就是按住是shift，然后也可以上下滑动切换## # b bb，然后按是当作shift，滑动是toggle which shift」）：
       //   按 = Shift（点一下 / 连点两下 / 按住写，逻辑在宿主 main.ts accKey）；按着上下滑过 SWIPE = 换一种（往上 = 更升），键上跟着显示
       const ak = w.querySelector<HTMLElement>("[data-accshift]")!;
@@ -556,6 +549,12 @@ export class Pad {
 
   private refresh(st: EditorState): void {
     const q = <T extends HTMLElement>(s: string) => this.el.querySelector<T>(s);
+    { // 改一个音（只选了一个 / 叠亮着；v0.10.5）：叠亮着、⌫ = 短一步、— = 长一步（user「不，我说的就是退格，不过在这个context下面可以改图标」）
+      const one = singleSel(st) >= 0, stk = q("[data-stack]"), bs = q('[data-cmd="backspace"]'), ex = q('[data-cmd="extend"] small');
+      stk?.classList.toggle("lock", one);
+      if (bs && bs.dataset.one !== String(one)) { bs.dataset.one = String(one); bs.innerHTML = one ? `<span>−</span><small>短一步</small>` : `<svg class="ico"><use href="#backspace"/></svg>`; bs.classList.toggle("wk", one); bs.title = one ? "短一步（退格）：选中的这个音短一档，空出来的变成休止" : "退格"; }
+      if (ex && ex.textContent !== (one ? "长一步" : "拉长")) ex.textContent = one ? "长一步" : "拉长";
+    }
     const i = st.input, f = inputKey(st);
     const k = q(".k-key .kl");
     if (k) { const sc = this.scale(); k.innerHTML = keyLabel(f, sc); k.parentElement!.classList.toggle("stack", k.parentElement!.clientWidth < STACK); k.parentElement!.title = `1=${KEY_NAMES[f]} ${sc.name}（pad 自己的调和调式）：按住上下滑换调 / 点开选调和调式`; }
@@ -697,11 +696,7 @@ export class Pad {
     const b = this.el.querySelector<HTMLElement>("[data-half]"); if (!b) return;
     b.classList.toggle("once", m === "once"); b.classList.toggle("lock", m === "lock");
   }
-  /** 叠 的样子（同 /2）。 */
-  showStack(m: "off" | "once" | "lock"): void {
-    const b = this.el.querySelector<HTMLElement>("[data-stack]"); if (!b) return;
-    b.classList.toggle("once", m === "once"); b.classList.toggle("lock", m === "lock");
-  }
+
   /** 某个来源（手指 / 电脑键盘的键）按下了音高 p：pad 上同音高的键亮着，直到 showUp（调式里没有这个音 = 不亮）。 */
   showDown(p: Pitch, id: string): void { this.held.set(id, midiOf(p)); this.refresh(this.host.state()); }
   showUp(id: string): void { if (this.held.delete(id)) this.refresh(this.host.state()); }
