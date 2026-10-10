@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { singleSel, currentIndex, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { singleSel, currentIndex, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -2096,6 +2096,10 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
       `<span class="tc-k">出声</span><div class="tc-v">${chip("mute", "静音", v.muted, "播放时不出声；谱上照画")}${chip("solo", "独奏", v.solo, "播放时只出有独奏的声部")}</div>` +
       `<span class="tc-k">谱表</span><div class="tc-v">${chip("staves:1", "一张", one)}${chip("staves:2", "大谱表", !one, "上高音下低音（钢琴）：中央 C 以下自动落下面，pad「⋯ → 换谱表」能手动挪")}</div>` +
       (one ? `<span class="tc-k">谱号</span><div class="tc-v">${chip("clef:auto", "自动", !me.clef, "按每张纸的音挑加线最省的谱号（很高的会挑 15ma / 8va，很低的挑低音 / 低音 8vb）；只管画，音高不变。还不看乐器的习惯（比如吉他写 8vb），要的话手动选")}${CLEFS.map((c) => chip(`clef:${c}`, CLEF_LABEL[c], me.clef === c, CLEF_TITLE[c])).join("")}</div>` : "") +
+      // 合租（v0.10.24；user「合租还是有主人吧，这样钢琴小花可以挂钢琴上」）：画在谁的谱线上；只管画，出声 / 混音台照旧各是各的
+      ((cands, hasTenants) => st.song.parts.length > 1 ? `<span class="tc-k">合租</span><div class="tc-v">${hasTenants ? `<span class="tc-hint">有别的歌手挂在这一行上（它是主人），不能再去挂别人</span>`
+        : `<select class="tc-sel" data-hostsel title="挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）"><option value="">自己一行</option>${cands.map((p) => `<option value="${esc(p.id)}"${me.host === p.id ? " selected" : ""}>挂在「${esc(labels[st.song.parts.indexOf(p)] ?? p.id)}」上</option>`).join("")}</select>`}</div>` : "")(
+        st.song.parts.filter((p) => p.id !== me.id && !p.host), st.song.parts.some((p) => p.host === me.id)) +
       (st.song.parts.length > 1 ? `<span class="tc-k">顺序</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="往上挪一格（最上面那个声部的速度记号说了算）">↑ 往上</button><button class="btn" data-v="movedown"${k === st.song.parts.length - 1 ? " disabled" : ""} title="往下挪一格">↓ 往下</button></div>` : "") +
       `</div><div class="tc-foot"><button class="btn" data-v="give" title="这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）">交给…</button><button class="btn" data-v="add" title="这张纸上再加一位歌手（已有的或新的；只加在这张纸上）">＋ 加歌手…</button>` +
       (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="这张纸上不要这个声部（别的纸照旧）">这张纸上去掉</button>` : "") +
@@ -2116,6 +2120,13 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; trackRedraw = null; };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   closeOffer = close; trackRedraw = draw;
+  box.addEventListener("change", (e) => {   // 合租：挂到谁上 / 自己一行
+    const t = e.target as HTMLSelectElement; if (t.dataset.hostsel === undefined) return;
+    let next = setPartHost(st, curPart().id, t.value || null);
+    // 挂上了 = 光标挪到主人那儿（在写的那位总是拆开的：不挪就看不出叠上了）；点房客的名字 = 再去写它（拆开）
+    if (t.value && next !== st && st.song.papers.find((pp) => pp.id === st.at.paper)?.tracks[t.value]) next = setFocus(next, st.at.paper, t.value);
+    update(next); renderTitle(); draw();
+  });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     const me = curPart();

@@ -586,9 +586,16 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const fFam = staves === 2 || isFClef(start) || tokens.some((t) => t.kind === "clef" && isFClef(t.clef));
       return { p, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, ...u };
     });
-    /** 同一个实际音高在谱上要挪几级：谱号 + 八度线（index < 0 = 这张纸开头的谱号）。大谱表 = 上高音下低音。 */
-    const shAt = (q: (typeof per)[number], staff: Staff, index: number): number => q.staves === 2 ? (staff === 2 ? 12 : 0)
-      : CLEF_SHIFT[(index >= 0 ? q.ds.clef[index] : undefined) ?? q.start] + ottavaShift(index >= 0 ? q.ds.ott[index] ?? 0 : 0);
+    // 合租（v0.10.24；ai-docs/20261010-shared-staff-percussion-design.md §1）：房客画在主人那一行上、不占自己的谱行——主人在这张纸上；现在在写的那位拆开（好点好写）。
+    //   user「我的想法就是先做一个看上去大概的…主要就是总览监视用。所以撞一起就撞」「先不建议着色」「…宁缺误骗」：只画音（符头 / 符干 / 符尾 / 连线 / 跟着音的演奏法），
+    //   休止、歌词、力度这些跟着谱子的不画；不进点击区；音高按主人那一行的谱号放。foldTo[r] = 主人在 per 里的下标，-1 = 不叠
+    const hostOf = (id: string) => song.parts.find((x) => x.id === id)?.host;
+    const foldTo = per.map((q) => { const h = hostOf(q.p.id); if (!h || (o.at.paper === paper.id && o.at.part === q.p.id)) return -1; const hi = per.findIndex((x) => x.p.id === h); return hi >= 0 && !hostOf(per[hi].p.id) ? hi : -1; });
+    /** 同一个实际音高在谱上要挪几级：谱号 + 八度线（index < 0 = 这张纸开头的谱号）。大谱表 = 上高音下低音。叠在主人那一行的房客 = 按主人的谱号。 */
+    const shAt = (q: (typeof per)[number], staff: Staff, index: number): number => {
+      const fi = foldTo[per.indexOf(q)] ?? -1; if (fi >= 0) { const h = per[fi]; return h.staves === 2 ? 0 : CLEF_SHIFT[h.start]; }
+      return q.staves === 2 ? (staff === 2 ? 12 : 0) : CLEF_SHIFT[(index >= 0 ? q.ds.clef[index] : undefined) ?? q.start] + ottavaShift(index >= 0 ? q.ds.ott[index] ?? 0 : 0);
+    };
     /** 第 s 行开头的谱号（这一行第一个东西那里生效的）。 */
     const clefAtSys = (q: (typeof per)[number], s: number): ClefName => {
       const u = q.units.find((x) => x.system === s && x.index >= 0); if (u) return q.ds.clef[u.index] ?? q.start;
@@ -676,14 +683,15 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     }
     // 4. 行号与坐标：这张纸第 s 行第 r 个声部的第 k 张谱表 = 一条谱行（大谱表两条；紧凑版式里这张纸上没写歌词的声部那条更矮）
     const rowBase = rows.length, nR = parts.length;
-    const rowStart = per.map((_, i) => per.slice(0, i).reduce((a, q) => a + q.staves, 0)), nRowsSys = per.reduce((a, q) => a + q.staves, 0);
-    const rowOf = (s: number, r: number, k = 0) => rowBase + s * nRowsSys + rowStart[r] + k;
+    const effStaves = (i: number) => (foldTo[i] >= 0 ? 0 : per[i].staves);   // 叠起来的房客不占谱行
+    const rowStart = per.map((_, i) => per.slice(0, i).reduce((a, _q, j) => a + effStaves(j), 0)), nRowsSys = per.reduce((a, _q, j) => a + effStaves(j), 0);
+    const rowOf = (s: number, r: number, k = 0) => (foldTo[r] >= 0 ? rowBase + s * nRowsSys + rowStart[foldTo[r]] : rowBase + s * nRowsSys + rowStart[r] + k);   // 房客 = 主人那一行（第一张谱表）
     // 4½. 行距按内容（2026-10-08 Opus 5.5；user「和歌词一样能不能根据有没有来自动调整行距」「行距计算应该考虑到有没有歌词，最高最低符号的位置之类的」）：
     //   每一行（这张纸第 s 行 × 声部 × 谱表）估最高 / 最低（符头、符干的大概、加线、演奏法）；谱上下的空从版式的最小值起，内容要更多才加。
     //   力度那一行一律写在谱上面（大谱表 = 上面那条谱的上面）：user 2026-10-09「有没有歌词的时候强度符号都统一放谱子上面」
     //   （v0.7.8 起是有歌词上面、大谱表中间、其余下面——按 user 那时问的「感觉一般强弱是写下面而不是上面的吧？然后同时有两个谱号就是写中间？」做的，这次统一了）；
     //   这一行这个声部真有力度记号 / 渐强渐弱 / sfz fp 才留地方。
-    const lyricsOf = per.map((q) => q.tokens.some((t) => t.kind === "note" && t.lyric));
+    const lyricsOf = per.map((q, r) => foldTo[r] < 0 && q.tokens.some((t) => t.kind === "note" && t.lyric));   // 叠起来的房客不画歌词
     // 歌词按节奏排（v0.9.40；user「先试下你说的两个歌词开关吧，approved」）：音的位置只看时值，歌词让路（fitLyrics）。在算行高之前排好：错开到第二行的那一行要多留一行字
     const lyrPlan = new Map<string, LyricFit>(), lyr2 = new Set<string>();   // 键 = 声部序号:下标 / 声部序号:行
     if (song.lyricFit !== "lyrics") per.forEach((q, r) => {
@@ -745,19 +753,20 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       }
       return { g, ex, dyn };
     });
-    const sysHOf = (G: ReturnType<typeof geoOf>) => P(G.reduce((n, x) => n + x.g.reduce((m, y) => m + y.above + 4 + y.below, 0), 0) + SYS_GAP);
+    const sysHOf = (G: ReturnType<typeof geoOf>) => P(G.reduce((n, x, r) => n + (foldTo[r] >= 0 ? 0 : x.g.reduce((m, y) => m + y.above + 4 + y.below, 0)), 0) + SYS_GAP);
     const geos = Array.from({ length: nSys }, (_, s) => geoOf(s));
     drawPaperTitle(geos.length ? sysHOf(geos[0]) : P(SPC.rowH));
     if (paper.hidden) { ensure(P(STUB_H)); prims.push({ t: "text", x: P(MARGIN), y: yCur + P(STUB_H * 0.7), s: "这张纸隐藏着：不放、不进压平件（「⋯」里显示）", cls: "part-stub hidden-note", size: P(1.1), anchor: "start" }); yCur += P(STUB_H); }
     for (let s = 0; s < nSys; s++) {
       const G = geos[s];
       ensure(sysHOf(G));   // 分页：一行谱整块放不下就翻页
-      for (let r = 0; r < nR; r++) for (let k = 0; k < per[r].staves; k++) {
+      for (let r = 0; r < nR; r++) for (let k = 0; k < effStaves(r); k++) {
         const top = yCur, row = rowOf(s, r, k), g = G[r].g[k], h = g.above + 4 + g.below;
         rowTop.set(row, top); rowAbove.set(row, g.above); if (g.lyric !== null) lyricOff.set(row, g.lyric);
         rows.push({ top, staffTop: top + P(g.above), bottom: top + P(h), paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff }); yCur += P(h);
       }
       for (let r = 0; r < nR; r++) {   // 力度字的基线（px）：按算好的级数（谱上面）
+        if (foldTo[r] >= 0) continue;
         const x = G[r], r0 = rowOf(s, r, 0);
         if (x.g[0].tempoD !== null) tempoYAt.set(r0, yOf(r0, x.g[0].tempoD));
         if (x.g[0].grooveD !== null) grooveYAt.set(r0, yOf(r0, x.g[0].grooveD));
@@ -788,6 +797,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         if (num !== null && !(s === 0 && num <= 1)) prims.push({ t: "text", x: P(MARGIN + ind), y: yOf(rowOf(s, 0, 0), TOP_LINE + 3.2), s: String(num), cls: "bar-no", size: P(1.05), anchor: "start" });
       }
       per.forEach((q, r) => {
+        if (foldTo[r] >= 0) return;   // 叠在主人那一行上的房客：没有自己的五线 / 谱号 / 名字（名字写在主人那儿）
+        const ten = per.filter((_, j) => foldTo[j] === r);   // 叠在这一行上的房客
         const f = sysKeys[s].get(q.p.id) ?? q.head.key;
         for (let k = 0; k < q.staves; k++) {
           const row = rowOf(s, r, k), clef: ClefName = q.staves === 2 ? (k ? "F" : "G") : clefAtSys(q, s), base = baseClef(clef);
@@ -811,16 +822,25 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         if (s === 0) {
           // 歌手牌：声部名在第一行谱号左边、竖着居中（大谱表 = 两条谱表之间）（user「歌手牌同意，和打谱软件对齐」「乐器名可以选择一大堆乐器，然后下面可以in place改」）
           const r0 = rowOf(s, r, 0), r1 = rowOf(s, r, q.staves - 1), lines = nameLines(q.p.name, q.staves), LH = PART_EM * 1.15;
-          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (lines.length - 1)) / 2);   // 几行一起竖着居中
+          // 合租：主人的名字下面接着写房客的名字（user「谱号左边放歌手名的时候在folded的模式下会同时显示所有歌手的名字」）；每个名字各自能点（点房客 = 去写它，它就拆开）
+          const tl = ten.map((t) => nameLines(t.p.name, 1)[0] ?? ""), nAll = lines.length + tl.length;
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (nAll - 1)) / 2);   // 几行一起竖着居中
           const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
           lines.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
-          if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines.length - 1)) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
-          partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
+          tl.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines.length + k)), s: ln, cls: "part-name tenant", size: PART_EM * sp, anchor: "start" }));
+          if (ten.length) {
+            const lineTop = (i: number) => ny + P(LH * i) - P(PART_EM * 0.95);
+            ten.forEach((t, k) => partsHit.push({ paper: paper.id, part: t.p.id, x: P(MARGIN - 0.4), y: lineTop(lines.length + k), w: P(ind0 + 0.2), h: P(LH) }));
+          }
+          if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
+          { const y0 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines.length) - P(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);   // 有房客 = 主人的点击区只到它自己的名字
+            partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y0, w: P(ind0 + 0.2), h: yEnd - y0 }); }
           if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });   // 名字前一个小色点（不印）
         } else if (q.p.abbr) {   // 第二行起：简写（一行，竖着居中），点它同样开歌手牌
-          const r0 = rowOf(s, r, 0), r1 = rowOf(s, r, q.staves - 1);
-          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM);
+          const r0 = rowOf(s, r, 0), r1 = rowOf(s, r, q.staves - 1), LH = PART_EM * 1.15, ta = ten.map((t) => t.p.abbr ?? "");
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * ta.length) / 2);
           prims.push({ t: "text", x: P(MARGIN), y: ny, s: q.p.abbr, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp, anchor: "start" });
+          ta.forEach((a, k) => { prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (k + 1)), s: a, cls: "part-name abbr tenant", size: PART_EM * sp, anchor: "start" }); partsHit.push({ paper: paper.id, part: ten[k].p.id, x: P(MARGIN - 0.4), y: ny + P(LH * (k + 1)) - P(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) }); });   // 合租：房客的简写跟在下面
           if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
           partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(indN + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
         }
@@ -837,7 +857,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     }
     // 6. 各声部的内容
     per.forEach((q, r) => {
-      const tokens = q.tokens, units = q.units, focused = q.focused;
+      // 合租：叠在主人那一行上的房客只画音（符头 / 符干 / 符尾 / 连线 / 跟着音的演奏法）；小节线留着只为了符尾分组（不画）；不进点击区
+      const folded = foldTo[r] >= 0;
+      const tokens = q.tokens, units = folded ? q.units.filter((u) => (u.kind === "chunk" && u.note) || u.kind === "bar") : q.units, focused = q.focused;
       const dynOff = dynOverridden(tokens);   // 被紧跟着的强后即弱（fp）盖掉的力度记号：画灰（纪律：画灰 + 明说；点开小菜单说为什么）
       const clefOf = (staff: Staff, index = -1): "G" | "F" => (q.staves === 2 ? (staff === 2 ? "F" : "G") : baseClef((index >= 0 ? q.ds.clef[index] : undefined) ?? q.start));
       // 谱号 + 八度线（v0.9.28）：同一个实际音高在谱上挪几级（低音谱号 +12、下加 8 +7、8va 线 −7…；高音谱号顶线 F5 = 38）
@@ -936,7 +958,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         ds.forEach((dd, k) => {
           const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted; shifted = second;   // 二度：下面那个符头往右错开（连着的二度交错）
           const mute = k > 0 && !!q.p.mono;   // 单声乐器的声部：下面的音灰掉、只唱最上面（user「叠音声部换单声乐器时下方音数据结构上保留，但是变灰」）
-          if (c.j === 0 && k > 0) chordHeads.push({ index: c.index, system: row, x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), w: nhW(c) });
+          if (c.j === 0 && k > 0 && !folded) chordHeads.push({ index: c.index, system: row, x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), w: nhW(c) });
           prims.push({ t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: ng, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c.whisper && whisperMute ? "art-mute" : "", focused && o.span && c.index >= o.span.from && c.index < o.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c.art.includes("ghost")) {   // 幽灵音 = 符头两边一对括号（SMuFL noteheadParenthesisLeft / Right；墨迹按 canvas 量的）
             const hx = second ? x0 + nhW(c) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
@@ -945,8 +967,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           }
         });
         if (c.dotted) prims.push({ t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(row, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
-        if (c.j === 0) notes.push({ index: c.index, system: row, x: x0, y, w: nhW(c), d: diatonicIndex(c.pitch!) });   // d = 真的音级（拖音高用），不带谱号位移
-        if (c.j === 0 && !c.tie) {
+        if (c.j === 0 && !folded) notes.push({ index: c.index, system: row, x: x0, y, w: nhW(c), d: diatonicIndex(c.pitch!) });   // d = 真的音级（拖音高用），不带谱号位移
+        if (c.j === 0 && !c.tie && !folded) {
           const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lyricRow(c.system)), cx0 = x0 + nhW(c) / 2;   // 按节奏排：让过路的位置
           const ly = ly0 + (fit?.row ? P(LYRIC_ROW2) : 0), cx = cx0 + (fit ? P(fit.dx) : 0);
           partLyrics.push({ index: c.index, system: row, x: cx, y: ly, ...(fit?.tight ? { tight: true as const } : {}) });
@@ -988,6 +1010,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           prims.push({ t: "line", x1: P(u.x + 0.1), y1: yOf(row, 42), x2: P(u.x + 0.1), y2: yOf(row, 26), w: P(0.16), cls: "caret" });
           continue;
         }
+        if (folded && u.kind === "bar") continue;   // 房客的小节线 = 主人那条（不重画）
         if (u.kind === "bar" || u.kind === "key" || u.kind === "time") {   // 小节线 / 调号 / 拍号：每张谱表各画一份
           for (let k = 0; k < q.staves; k++) {
             const rr = rowOf(u.system, r, k), clef = clefOf((k + 1) as Staff, u.index), sh = clef === "F" ? 12 : 0;

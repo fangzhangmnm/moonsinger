@@ -915,3 +915,5 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 .ctx-menu .ctx-seg { height: 26px; min-width: 0; padding: 0 6px; font-size: 12px; }
 /* 混音轨旁通（v0.10.23）：插件格变淡、划掉 */
 .strip.bus.bypassed .fx-chip, .strip.bus.bypassed .fx-inline { opacity: .45; text-decoration: line-through; }
+/* 合租（v0.10.24）：歌手牌里「挂在谁上」的下拉 */
+.track-card .tc-sel { height: 30px; max-width: 100%; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; padding: 0 6px; }

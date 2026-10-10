@@ -62,7 +62,9 @@ export interface ScoreExtV2 {
    *  **声部就是歌手**（2026-10-08 Opus 5.5，user「嗯声部就是歌手」）：role 在 parts 里唯一（读到共用的 = 后面那个拆成一位新歌手，见 project.ts finish）；
    *  一张纸上一位歌手最多一行（tracks 按声部 id 记，天然如此）；跨纸按声部 id 接；mic 可以几位歌手共用（歌手认领麦克风）。不改形状、不升版本。 */
   /** clef（v0.9.28，可选）：声部自己的谱号，"auto" = 自动（MusicXML 里写的是挑好的那个）。autoOttava（v0.9.37，可选，只写 false）：这位不要自动八度线（没写 = 开）。都不升版本。 */
-  parts: { id: string; role: string; mic: string; kind: "pitched" | "percussion"; clef?: string; autoOttava?: false }[];
+  parts: { id: string; role: string; mic: string; kind: "pitched" | "percussion"; clef?: string; autoOttava?: false;
+    /** 2026-10-10 加（可选，不升版本；Opus 5.5）：合租——画在哪位（主人）的谱线上；主人自己不能是房客（读的时候不合规矩 = 丢掉这个字段）。user「合租还是有主人吧」。 */
+    host?: string }[];
 }
 
 // ─── 第 1 版（只给迁移对照；migrate/index.ts）────────────────────────────────────────────

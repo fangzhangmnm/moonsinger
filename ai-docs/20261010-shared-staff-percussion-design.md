@@ -1,6 +1,6 @@
 # 设计账：合租谱线 / 鼓和大炮（不分音高的一下） / 反向镲右对齐 / 曲段连排预览
 
-> created 20261010 by Claude Opus 5.5 · as-of v0.10.21 / 2026-10-10 · **user 点头**（「合租 大炮 reverse cymbal continuous seg view 同意」），**还没动代码**
+> created 20261010 by Claude Opus 5.5 · as-of v0.10.24 / 2026-10-10 · **user 点头**（「合租 大炮 reverse cymbal continuous seg view 同意」）· §1 合租 = v0.10.24 做了（只做了 (a) 自己有轨那种；(b) 纯记谱用主人的轨还没做）；§2–4 还没动代码（音乐仓鼠 export v13 已交付）；user「单乐器一线谱同意」
 > 碰到 `src/format/` 的几处（下面标 ⚑）= 格式红线区，动手前给 Fable / user 过目形状。
 
 ## user 原话（2026-10-10 晚）

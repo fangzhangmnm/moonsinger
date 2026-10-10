@@ -117,7 +117,9 @@ export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, 
 export type Hum = "la" | "n" | "u" | "o" | "a";
 
 /** 歌级的一个声部（谱上的一行；顺序 = 总谱从上到下）：role = 休息室角色 id（谁来演、叫什么），mic = 录音房麦克风 id。 */
-export interface PartDef { id: string; role: string; mic: string; clef?: Clef; staves?: 2; /** 自动八度线（v0.9.37）：没写 = 开；false = 这位不自动（score.json parts[].autoOttava）。 */ autoOttava?: false }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
+export interface PartDef { id: string; role: string; mic: string; clef?: Clef; staves?: 2; /** 自动八度线（v0.9.37）：没写 = 开；false = 这位不自动（score.json parts[].autoOttava）。 */ autoOttava?: false;
+  /** 合租（v0.10.24）：挂在哪位（主人）的谱线上画（主人自己不能再是房客）。只管画：轨 / 乐器 / 混音台照旧各是各的（ai-docs/20261010-shared-staff-percussion-design.md §1）。 */
+  host?: string }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
 /** 谱号：高音 / 高音下加 8（吉他、男高音：实际低八度）/ 上加 8 / 上加 15（钟琴）/ 低音 / 低音下加 8（低音提琴、贝斯）。中音谱号不做（user「中音这个冷门没人用吧」）。 */
 export type ClefName = "G" | "G8vb" | "G8va" | "G15ma" | "F" | "F8vb";
 export const CLEFS: readonly ClefName[] = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
@@ -1454,17 +1456,37 @@ export function rebindTrack(st: EditorState, paperId: string, from: string, to: 
 export function removePart(st: EditorState, partId: string): EditorState {
   if (st.song.parts.length <= 1 || !st.song.parts.some((p) => p.id === partId)) return st;
   const papers = st.song.papers.map((p) => { const tracks = { ...p.tracks }; delete tracks[partId]; return { ...p, tracks }; });
-  const song = { ...st.song, parts: st.song.parts.filter((p) => p.id !== partId), papers };
+  const song = { ...st.song, parts: st.song.parts.filter((p) => p.id !== partId).map((p) => (p.host === partId ? (({ host: _h, ...rest }) => rest)(p) : p)), papers };   // 删了主人 = 房客搬出来自己一行
   const at = st.at.part === partId ? { paper: st.at.paper, part: song.parts[0].id } : st.at;
   return setFocus({ ...st, song }, at.paper, at.part, st.at.part === partId ? undefined : st.caret);
 }
 /** 声部上下挪一格（谱上从上到下 = Song.parts 的顺序；user 2026-10-08「声部顺序应该能重排」）。每张纸、每条 track 都不动，只换顺序。
  *  速度只看每张纸最上面那一行（tempoOwner）；挪了谁在最上面，每张纸开头的速度照旧（keepSheetTempos 把各行谱头写齐）。 */
 export function movePart(st: EditorState, partId: string, d: -1 | 1): EditorState {
-  const ps = st.song.parts, i = ps.findIndex((p) => p.id === partId), j = i + d;
-  if (i < 0 || j < 0 || j >= ps.length) return st;
-  const parts = ps.slice(); [parts[i], parts[j]] = [parts[j], parts[i]];
-  return { ...st, song: keepSheetTempos(st.song, { ...st.song, parts }) };   // 挪了谁在最上面：每张纸的速度不跟着变
+  const ps = st.song.parts, me = ps.find((p) => p.id === partId); if (!me) return st;
+  // 合租（v0.10.24；user「排序同意」）：主人和房客是一家，挪主人 = 整家挪过邻居（邻居也按一家算）；房客只在自家里挪
+  if (me.host) {
+    const i = ps.indexOf(me), j = i + d, other = ps[j];
+    if (!other || other.host !== me.host) return st;
+    const parts = ps.slice(); [parts[i], parts[j]] = [parts[j], parts[i]];
+    return { ...st, song: { ...st.song, parts } };
+  }
+  const blocks: PartDef[][] = []; for (const p of ps) { if (p.host && blocks.length && blocks[blocks.length - 1][0].id === p.host) blocks[blocks.length - 1].push(p); else blocks.push([p]); }
+  const bi = blocks.findIndex((b) => b[0].id === partId), bj = bi + d;
+  if (bi < 0 || bj < 0 || bj >= blocks.length) return st;
+  [blocks[bi], blocks[bj]] = [blocks[bj], blocks[bi]];
+  return { ...st, song: keepSheetTempos(st.song, { ...st.song, parts: blocks.flat() }) };   // 挪了谁在最上面：每张纸的速度不跟着变
+}
+/** 合租：partId 挂到 host 的谱线上（host = null = 搬出来自己一行）。主人不能是房客、不能挂自己、有房客的不能再去当房客；挂上 = 排到主人那一家最后（v0.10.24）。 */
+export function setPartHost(st: EditorState, partId: string, host: string | null): EditorState {
+  const ps = st.song.parts, me = ps.find((p) => p.id === partId); if (!me) return st;
+  if (host === null) { if (!me.host) return st; const { host: _h, ...rest } = me; void _h; return { ...st, song: { ...st.song, parts: ps.map((p) => (p.id === partId ? rest : p)) } }; }
+  const h = ps.find((p) => p.id === host);
+  if (!h || h.id === partId || h.host || ps.some((p) => p.host === partId)) return st;
+  const others = ps.filter((p) => p.id !== partId), hi = others.indexOf(h);
+  let at = hi + 1; while (at < others.length && others[at].host === host) at++;
+  const parts = [...others.slice(0, at), { ...me, host }, ...others.slice(at)];
+  return { ...st, song: keepSheetTempos(st.song, { ...st.song, parts }) };
 }
 /** 这张纸上加上某个（歌里已有的）声部：一条只有谱头的 track（谱头抄这张纸第一个在场声部的开头）。user 2026-10-08「每个sheet的track数量当然不同」。 */
 export function addTrack(st: EditorState, paperId: string, partId: string): EditorState {

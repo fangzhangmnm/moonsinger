@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.23-2026-10-10";
+var APP_VERSION = "v0.10.24-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4580,15 +4580,44 @@ function removePart(st3, partId) {
     delete tracks[partId];
     return { ...p2, tracks };
   });
-  const song = { ...st3.song, parts: st3.song.parts.filter((p2) => p2.id !== partId), papers };
+  const song = { ...st3.song, parts: st3.song.parts.filter((p2) => p2.id !== partId).map((p2) => p2.host === partId ? (({ host: _h, ...rest }) => rest)(p2) : p2), papers };
   const at2 = st3.at.part === partId ? { paper: st3.at.paper, part: song.parts[0].id } : st3.at;
   return setFocus({ ...st3, song }, at2.paper, at2.part, st3.at.part === partId ? void 0 : st3.caret);
 }
 function movePart(st3, partId, d3) {
-  const ps = st3.song.parts, i10 = ps.findIndex((p2) => p2.id === partId), j2 = i10 + d3;
-  if (i10 < 0 || j2 < 0 || j2 >= ps.length) return st3;
-  const parts = ps.slice();
-  [parts[i10], parts[j2]] = [parts[j2], parts[i10]];
+  const ps = st3.song.parts, me = ps.find((p2) => p2.id === partId);
+  if (!me) return st3;
+  if (me.host) {
+    const i10 = ps.indexOf(me), j2 = i10 + d3, other = ps[j2];
+    if (!other || other.host !== me.host) return st3;
+    const parts = ps.slice();
+    [parts[i10], parts[j2]] = [parts[j2], parts[i10]];
+    return { ...st3, song: { ...st3.song, parts } };
+  }
+  const blocks = [];
+  for (const p2 of ps) {
+    if (p2.host && blocks.length && blocks[blocks.length - 1][0].id === p2.host) blocks[blocks.length - 1].push(p2);
+    else blocks.push([p2]);
+  }
+  const bi = blocks.findIndex((b3) => b3[0].id === partId), bj = bi + d3;
+  if (bi < 0 || bj < 0 || bj >= blocks.length) return st3;
+  [blocks[bi], blocks[bj]] = [blocks[bj], blocks[bi]];
+  return { ...st3, song: keepSheetTempos(st3.song, { ...st3.song, parts: blocks.flat() }) };
+}
+function setPartHost(st3, partId, host) {
+  const ps = st3.song.parts, me = ps.find((p2) => p2.id === partId);
+  if (!me) return st3;
+  if (host === null) {
+    if (!me.host) return st3;
+    const { host: _h, ...rest } = me;
+    return { ...st3, song: { ...st3.song, parts: ps.map((p2) => p2.id === partId ? rest : p2) } };
+  }
+  const h2 = ps.find((p2) => p2.id === host);
+  if (!h2 || h2.id === partId || h2.host || ps.some((p2) => p2.host === partId)) return st3;
+  const others = ps.filter((p2) => p2.id !== partId), hi = others.indexOf(h2);
+  let at2 = hi + 1;
+  while (at2 < others.length && others[at2].host === host) at2++;
+  const parts = [...others.slice(0, at2), { ...me, host }, ...others.slice(at2)];
   return { ...st3, song: keepSheetTempos(st3.song, { ...st3.song, parts }) };
 }
 function addTrack(st3, paperId, partId) {
@@ -7751,7 +7780,21 @@ function engrave(song, o10) {
       const fFam = staves === 2 || isFClef(start) || tokens.some((t10) => t10.kind === "clef" && isFClef(t10.clef));
       return { p: p2, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, ...u2 };
     });
-    const shAt = (q2, staff, index) => q2.staves === 2 ? staff === 2 ? 12 : 0 : CLEF_SHIFT[(index >= 0 ? q2.ds.clef[index] : void 0) ?? q2.start] + ottavaShift(index >= 0 ? q2.ds.ott[index] ?? 0 : 0);
+    const hostOf = (id2) => song.parts.find((x3) => x3.id === id2)?.host;
+    const foldTo = per.map((q2) => {
+      const h2 = hostOf(q2.p.id);
+      if (!h2 || o10.at.paper === paper.id && o10.at.part === q2.p.id) return -1;
+      const hi = per.findIndex((x3) => x3.p.id === h2);
+      return hi >= 0 && !hostOf(per[hi].p.id) ? hi : -1;
+    });
+    const shAt = (q2, staff, index) => {
+      const fi = foldTo[per.indexOf(q2)] ?? -1;
+      if (fi >= 0) {
+        const h2 = per[fi];
+        return h2.staves === 2 ? 0 : CLEF_SHIFT[h2.start];
+      }
+      return q2.staves === 2 ? staff === 2 ? 12 : 0 : CLEF_SHIFT[(index >= 0 ? q2.ds.clef[index] : void 0) ?? q2.start] + ottavaShift(index >= 0 ? q2.ds.ott[index] ?? 0 : 0);
+    };
     const clefAtSys = (q2, s10) => {
       const u2 = q2.units.find((x3) => x3.system === s10 && x3.index >= 0);
       if (u2) return q2.ds.clef[u2.index] ?? q2.start;
@@ -7872,9 +7915,10 @@ function engrave(song, o10) {
       u2.x = Math.max(...prevRow.map((c10) => c10.x + c10.w));
     }
     const rowBase = rows.length, nR2 = parts.length;
-    const rowStart = per.map((_2, i10) => per.slice(0, i10).reduce((a10, q2) => a10 + q2.staves, 0)), nRowsSys = per.reduce((a10, q2) => a10 + q2.staves, 0);
-    const rowOf = (s10, r10, k2 = 0) => rowBase + s10 * nRowsSys + rowStart[r10] + k2;
-    const lyricsOf = per.map((q2) => q2.tokens.some((t10) => t10.kind === "note" && t10.lyric));
+    const effStaves = (i10) => foldTo[i10] >= 0 ? 0 : per[i10].staves;
+    const rowStart = per.map((_2, i10) => per.slice(0, i10).reduce((a10, _q, j2) => a10 + effStaves(j2), 0)), nRowsSys = per.reduce((a10, _q, j2) => a10 + effStaves(j2), 0);
+    const rowOf = (s10, r10, k2 = 0) => foldTo[r10] >= 0 ? rowBase + s10 * nRowsSys + rowStart[foldTo[r10]] : rowBase + s10 * nRowsSys + rowStart[r10] + k2;
+    const lyricsOf = per.map((q2, r10) => foldTo[r10] < 0 && q2.tokens.some((t10) => t10.kind === "note" && t10.lyric));
     const lyrPlan = /* @__PURE__ */ new Map(), lyr2 = /* @__PURE__ */ new Set();
     if (song.lyricFit !== "lyrics") per.forEach((q2, r10) => {
       if (!lyricsOf[r10]) return;
@@ -7946,7 +7990,7 @@ function engrave(song, o10) {
       }
       return { g: g3, ex: ex2, dyn };
     });
-    const sysHOf = (G2) => P2(G2.reduce((n10, x3) => n10 + x3.g.reduce((m2, y2) => m2 + y2.above + 4 + y2.below, 0), 0) + SYS_GAP);
+    const sysHOf = (G2) => P2(G2.reduce((n10, x3, r10) => n10 + (foldTo[r10] >= 0 ? 0 : x3.g.reduce((m2, y2) => m2 + y2.above + 4 + y2.below, 0)), 0) + SYS_GAP);
     const geos = Array.from({ length: nSys }, (_2, s10) => geoOf(s10));
     drawPaperTitle(geos.length ? sysHOf(geos[0]) : P2(SPC.rowH));
     if (paper.hidden) {
@@ -7957,7 +8001,7 @@ function engrave(song, o10) {
     for (let s10 = 0; s10 < nSys; s10++) {
       const G2 = geos[s10];
       ensure(sysHOf(G2));
-      for (let r10 = 0; r10 < nR2; r10++) for (let k2 = 0; k2 < per[r10].staves; k2++) {
+      for (let r10 = 0; r10 < nR2; r10++) for (let k2 = 0; k2 < effStaves(r10); k2++) {
         const top = yCur, row2 = rowOf(s10, r10, k2), g3 = G2[r10].g[k2], h2 = g3.above + 4 + g3.below;
         rowTop.set(row2, top);
         rowAbove.set(row2, g3.above);
@@ -7966,6 +8010,7 @@ function engrave(song, o10) {
         yCur += P2(h2);
       }
       for (let r10 = 0; r10 < nR2; r10++) {
+        if (foldTo[r10] >= 0) continue;
         const x3 = G2[r10], r02 = rowOf(s10, r10, 0);
         if (x3.g[0].tempoD !== null) tempoYAt.set(r02, yOf(r02, x3.g[0].tempoD));
         if (x3.g[0].grooveD !== null) grooveYAt.set(r02, yOf(r02, x3.g[0].grooveD));
@@ -7992,6 +8037,8 @@ function engrave(song, o10) {
         if (num2 !== null && !(s10 === 0 && num2 <= 1)) prims.push({ t: "text", x: P2(MARGIN + ind), y: yOf(rowOf(s10, 0, 0), TOP_LINE + 3.2), s: String(num2), cls: "bar-no", size: P2(1.05), anchor: "start" });
       }
       per.forEach((q2, r10) => {
+        if (foldTo[r10] >= 0) return;
+        const ten = per.filter((_2, j2) => foldTo[j2] === r10);
         const f2 = sysKeys[s10].get(q2.p.id) ?? q2.head.key;
         for (let k2 = 0; k2 < q2.staves; k2++) {
           const row2 = rowOf(s10, r10, k2), clef = q2.staves === 2 ? k2 ? "F" : "G" : clefAtSys(q2, s10), base3 = baseClef(clef);
@@ -8017,16 +8064,29 @@ function engrave(song, o10) {
         }
         if (s10 === 0) {
           const r02 = rowOf(s10, r10, 0), r13 = rowOf(s10, r10, q2.staves - 1), lines2 = nameLines(q2.p.name, q2.staves), LH = PART_EM * 1.15;
-          const ny2 = (yOf(r02, MID_LINE) + yOf(r13, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * (lines2.length - 1) / 2);
+          const tl2 = ten.map((t10) => nameLines(t10.p.name, 1)[0] ?? ""), nAll = lines2.length + tl2.length;
+          const ny2 = (yOf(r02, MID_LINE) + yOf(r13, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2);
           const ncls = q2.p.empty ? "part-name empty" : q2.focused ? "part-name focus" : "part-name";
           lines2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: ln3, cls: ncls, size: PART_EM * sp2, anchor: "start" }));
-          if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (lines2.length - 1)) + P2(1.5), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
-          partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: yOf(r02, TOP_LINE) - P2(1.2), w: P2(ind0 + 0.2), h: yOf(r13, BOTTOM_LINE) - yOf(r02, TOP_LINE) + P2(2.4) });
+          tl2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (lines2.length + k2)), s: ln3, cls: "part-name tenant", size: PART_EM * sp2, anchor: "start" }));
+          if (ten.length) {
+            const lineTop = (i10) => ny2 + P2(LH * i10) - P2(PART_EM * 0.95);
+            ten.forEach((t10, k2) => partsHit.push({ paper: paper.id, part: t10.p.id, x: P2(MARGIN - 0.4), y: lineTop(lines2.length + k2), w: P2(ind0 + 0.2), h: P2(LH) }));
+          }
+          if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (nAll - 1)) + P2(1.5), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
+          {
+            const y02 = yOf(r02, TOP_LINE) - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - P2(PART_EM * 0.95) : yOf(r13, BOTTOM_LINE) + P2(1.2);
+            partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: y02, w: P2(ind0 + 0.2), h: yEnd - y02 });
+          }
           if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
         } else if (q2.p.abbr) {
-          const r02 = rowOf(s10, r10, 0), r13 = rowOf(s10, r10, q2.staves - 1);
-          const ny2 = (yOf(r02, MID_LINE) + yOf(r13, MID_LINE)) / 2 + P2(0.55 * PART_EM);
+          const r02 = rowOf(s10, r10, 0), r13 = rowOf(s10, r10, q2.staves - 1), LH = PART_EM * 1.15, ta2 = ten.map((t10) => t10.p.abbr ?? "");
+          const ny2 = (yOf(r02, MID_LINE) + yOf(r13, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * ta2.length / 2);
           prims.push({ t: "text", x: P2(MARGIN), y: ny2, s: q2.p.abbr, cls: q2.p.empty ? "part-name abbr empty" : q2.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp2, anchor: "start" });
+          ta2.forEach((a10, k2) => {
+            prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (k2 + 1)), s: a10, cls: "part-name abbr tenant", size: PART_EM * sp2, anchor: "start" });
+            partsHit.push({ paper: paper.id, part: ten[k2].p.id, x: P2(MARGIN - 0.4), y: ny2 + P2(LH * (k2 + 1)) - P2(PART_EM * 0.95), w: P2(indN + 0.2), h: P2(LH) });
+          });
           if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
           partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: yOf(r02, TOP_LINE) - P2(1.2), w: P2(indN + 0.2), h: yOf(r13, BOTTOM_LINE) - yOf(r02, TOP_LINE) + P2(2.4) });
         }
@@ -8042,7 +8102,8 @@ function engrave(song, o10) {
       if (nRowsSys > 1) prims.push({ t: "line", x1: P2(MARGIN + ind), y1: yOf(rowOf(s10, 0, 0), TOP_LINE), x2: P2(MARGIN + ind), y2: yOf(rowOf(s10, nR2 - 1, per[nR2 - 1].staves - 1), BOTTOM_LINE), w: P2(ENGRAVE.thinBar * 1.4), cls: "bar" });
     }
     per.forEach((q2, r10) => {
-      const tokens = q2.tokens, units = q2.units, focused = q2.focused;
+      const folded = foldTo[r10] >= 0;
+      const tokens = q2.tokens, units = folded ? q2.units.filter((u2) => u2.kind === "chunk" && u2.note || u2.kind === "bar") : q2.units, focused = q2.focused;
       const dynOff = dynOverridden(tokens);
       const clefOf = (staff, index = -1) => q2.staves === 2 ? staff === 2 ? "F" : "G" : baseClef((index >= 0 ? q2.ds.clef[index] : void 0) ?? q2.start);
       const dIdx = (p2, staff, index = -1) => diatonicIndex(p2) + shAt(q2, staff, index);
@@ -8158,7 +8219,7 @@ function engrave(song, o10) {
           const second = k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1 && !shifted;
           shifted = second;
           const mute = k2 > 0 && !!q2.p.mono;
-          if (c10.j === 0 && k2 > 0) chordHeads.push({ index: c10.index, system: row2, x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row2, dd), w: nhW(c10) });
+          if (c10.j === 0 && k2 > 0 && !folded) chordHeads.push({ index: c10.index, system: row2, x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row2, dd), w: nhW(c10) });
           prims.push({ t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row2, dd), ch: ng2, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c10.whisper && whisperMute ? "art-mute" : "", focused && o10.span && c10.index >= o10.span.from && c10.index < o10.span.to ? "in-span" : ""].filter(Boolean).join(" ") });
           if (c10.art.includes("ghost")) {
             const hx = second ? x0 + nhW(c10) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
@@ -8167,8 +8228,8 @@ function engrave(song, o10) {
           }
         });
         if (c10.dotted) prims.push({ t: "glyph", x: x0 + nhW(c10) + P2(0.3), y: yOf(row2, d3 % 2 === 0 ? d3 + 1 : d3), ch: GLYPH.augmentationDot, cls });
-        if (c10.j === 0) notes.push({ index: c10.index, system: row2, x: x0, y: y2, w: nhW(c10), d: diatonicIndex(c10.pitch) });
-        if (c10.j === 0 && !c10.tie) {
+        if (c10.j === 0 && !folded) notes.push({ index: c10.index, system: row2, x: x0, y: y2, w: nhW(c10), d: diatonicIndex(c10.pitch) });
+        if (c10.j === 0 && !c10.tie && !folded) {
           const fit = lyrPlan.get(`${r10}:${c10.index}`), ly0 = lyricY(lyricRow(c10.system)), cx0 = x0 + nhW(c10) / 2;
           const ly2 = ly0 + (fit?.row ? P2(LYRIC_ROW2) : 0), cx2 = cx0 + (fit ? P2(fit.dx) : 0);
           partLyrics.push({ index: c10.index, system: row2, x: cx2, y: ly2, ...fit?.tight ? { tight: true } : {} });
@@ -8212,6 +8273,7 @@ function engrave(song, o10) {
           prims.push({ t: "line", x1: P2(u2.x + 0.1), y1: yOf(row2, 42), x2: P2(u2.x + 0.1), y2: yOf(row2, 26), w: P2(0.16), cls: "caret" });
           continue;
         }
+        if (folded && u2.kind === "bar") continue;
         if (u2.kind === "bar" || u2.kind === "key" || u2.kind === "time") {
           for (let k2 = 0; k2 < q2.staves; k2++) {
             const rr2 = rowOf(u2.system, r10, k2), clef = clefOf(k2 + 1, u2.index), sh2 = clef === "F" ? 12 : 0;
@@ -22159,7 +22221,7 @@ function saveMxl(a10) {
   const scoreExt = {
     version: FORMAT.score,
     papers,
-    parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched", ...p2.staves === 2 ? {} : { clef: p2.clef ?? "auto" }, ...p2.autoOttava === false ? { autoOttava: false } : {} })),
+    parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched", ...p2.staves === 2 ? {} : { clef: p2.clef ?? "auto" }, ...p2.autoOttava === false ? { autoOttava: false } : {}, ...p2.host ? { host: p2.host } : {} })),
     // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     ...a10.view && Object.keys(a10.view).length ? { view: a10.view } : {},
     // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
@@ -22694,7 +22756,12 @@ function songFromReads(reads, papers, partList = null) {
       if (CLEFS.includes(p2.clef)) d3.clef = p2.clef;
     }
     if (p2.autoOttava === false) d3.autoOttava = false;
+    if (typeof p2.host === "string" && p2.host) d3.host = p2.host;
     seen.set(d3.id, d3);
+  }
+  for (const d3 of seen.values()) {
+    const h2 = d3.host ? seen.get(d3.host) : void 0;
+    if (d3.host && (!h2 || h2.id === d3.id || h2.host)) delete d3.host;
   }
   for (const p2 of ps) for (const id3 of Object.keys(p2.tracks)) if (!seen.has(id3)) seen.set(id3, { id: id3, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
   for (const r10 of reads) for (const p2 of r10.parts) {
@@ -39740,7 +39807,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "10dc530d60b9",
+  cssHash: "fd7a15b8d7fe",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -40538,7 +40605,11 @@ function openTrackCard(at2) {
       if (!m3 || !m3.size) return "";
       const xs = [...m3.values()], first = xs[0], lang = songLangOf(flattenPart(st2.song, me.id).tokens, st2.song.hum);
       return `<div class="tc-warn">${first.why === "notSung" ? esc8(lyricWhyText(first, roleName(doc.extras, me.role), lang)) : `\u6709 ${xs.length} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A${esc8(lyricWhyText(first, roleName(doc.extras, me.role), lang))}${xs.some((x3) => x3.why !== first.why) ? " \u7B49" : ""}`}</div>`;
-    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:auto", "\u81EA\u52A8", !me.clef, "\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684\u8C31\u53F7\uFF08\u5F88\u9AD8\u7684\u4F1A\u6311 15ma / 8va\uFF0C\u5F88\u4F4E\u7684\u6311\u4F4E\u97F3 / \u4F4E\u97F3 8vb\uFF09\uFF1B\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002\u8FD8\u4E0D\u770B\u4E50\u5668\u7684\u4E60\u60EF\uFF08\u6BD4\u5982\u5409\u4ED6\u5199 8vb\uFF09\uFF0C\u8981\u7684\u8BDD\u624B\u52A8\u9009")}${CLEFS.map((c10) => chip(`clef:${c10}`, CLEF_LABEL[c10], me.clef === c10, CLEF_TITLE[c10])).join("")}</div>` : "") + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09">\u4EA4\u7ED9\u2026</button><button class="btn" data-v="add" title="\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09">\uFF0B \u52A0\u6B4C\u624B\u2026</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + `<button class="btn" data-v="studio" title="\u6DF7\u97F3\u53F0\uFF08= \u542C\u7684\u5E95\u5EA7\uFF09\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220">\u6B4C\u624B\u7BA1\u7406\uFF08\u6DF7\u97F3\u53F0\uFF09\u2026</button></div>`;
+    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:auto", "\u81EA\u52A8", !me.clef, "\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684\u8C31\u53F7\uFF08\u5F88\u9AD8\u7684\u4F1A\u6311 15ma / 8va\uFF0C\u5F88\u4F4E\u7684\u6311\u4F4E\u97F3 / \u4F4E\u97F3 8vb\uFF09\uFF1B\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002\u8FD8\u4E0D\u770B\u4E50\u5668\u7684\u4E60\u60EF\uFF08\u6BD4\u5982\u5409\u4ED6\u5199 8vb\uFF09\uFF0C\u8981\u7684\u8BDD\u624B\u52A8\u9009")}${CLEFS.map((c10) => chip(`clef:${c10}`, CLEF_LABEL[c10], me.clef === c10, CLEF_TITLE[c10])).join("")}</div>` : "") + // 合租（v0.10.24；user「合租还是有主人吧，这样钢琴小花可以挂钢琴上」）：画在谁的谱线上；只管画，出声 / 混音台照旧各是各的
+    ((cands3, hasTenants) => st2.song.parts.length > 1 ? `<span class="tc-k">\u5408\u79DF</span><div class="tc-v">${hasTenants ? `<span class="tc-hint">\u6709\u522B\u7684\u6B4C\u624B\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA</span>` : `<select class="tc-sel" data-hostsel title="\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09"><option value="">\u81EA\u5DF1\u4E00\u884C</option>${cands3.map((p2) => `<option value="${esc8(p2.id)}"${me.host === p2.id ? " selected" : ""}>\u6302\u5728\u300C${esc8(labels[st2.song.parts.indexOf(p2)] ?? p2.id)}\u300D\u4E0A</option>`).join("")}</select>`}</div>` : "")(
+      st2.song.parts.filter((p2) => p2.id !== me.id && !p2.host),
+      st2.song.parts.some((p2) => p2.host === me.id)
+    ) + (st2.song.parts.length > 1 ? `<span class="tc-k">\u987A\u5E8F</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09">\u2191 \u5F80\u4E0A</button><button class="btn" data-v="movedown"${k2 === st2.song.parts.length - 1 ? " disabled" : ""} title="\u5F80\u4E0B\u632A\u4E00\u683C">\u2193 \u5F80\u4E0B</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09">\u4EA4\u7ED9\u2026</button><button class="btn" data-v="add" title="\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09">\uFF0B \u52A0\u6B4C\u624B\u2026</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09">\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389</button>` : "") + `<button class="btn" data-v="studio" title="\u6DF7\u97F3\u53F0\uFF08= \u542C\u7684\u5E95\u5EA7\uFF09\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220">\u6B4C\u624B\u7BA1\u7406\uFF08\u6DF7\u97F3\u53F0\uFF09\u2026</button></div>`;
   };
   draw();
   document.body.append(box);
@@ -40573,6 +40644,15 @@ function openTrackCard(at2) {
   }, 0);
   closeOffer = close;
   trackRedraw = draw;
+  box.addEventListener("change", (e10) => {
+    const t10 = e10.target;
+    if (t10.dataset.hostsel === void 0) return;
+    let next2 = setPartHost(st2, curPart().id, t10.value || null);
+    if (t10.value && next2 !== st2 && st2.song.papers.find((pp) => pp.id === st2.at.paper)?.tracks[t10.value]) next2 = setFocus(next2, st2.at.paper, t10.value);
+    update(next2);
+    renderTitle();
+    draw();
+  });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
@@ -42927,4 +43007,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-874309aa6022.mjs.map
+//# sourceMappingURL=moonsinger-a02e0c8a7977.mjs.map

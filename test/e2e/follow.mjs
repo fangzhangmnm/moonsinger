@@ -52,8 +52,9 @@ await p.click("#playBtn");
   const ch = []; for (let k = 1; k < tl2.length; k++) if (Math.abs(tl2[k].y - tl2[k - 1].y) > 40) ch.push(k);
   // 小屏的规矩（user「至少不要把每行最后一个音丢了。当然如果是一堆小快音的话人类会precache」）：换行前最后那个音一直在屏幕里（没被提前翻没）；换行后一小会儿新的一行在屏幕里
   // 每行最后一个音「开始唱」的那一刻（第一次采到它）它在屏幕里——开始唱之后翻走可以（像翻谱）；原来提前 0.6 s 翻 = 最后几个音还没唱就没了
-  const onsetOf = (k) => { const last = tl2[k - 1]; let j = k - 1; while (j > 0 && Math.abs(tl2[j - 1].y - last.y) < 5 && Math.abs(tl2[j - 1].x - last.x) < 3) j--; return tl2[j]; };
-  const lastVis = ch.filter((k) => { const o = onsetOf(k); return o.top >= 0 && o.bottom <= o.vh; });
+  //   判法：最后那个音开始唱之前的那一次采样（还在唱前一个音、同一行）这一行在屏幕里 = 没被提前翻走（开始唱那一刻就翻 = 照规矩；采样落在滚动半途不算数）
+  const onsetOf = (k) => { const last = tl2[k - 1]; let j = k - 1; while (j > 0 && Math.abs(tl2[j - 1].y - last.y) < 5 && Math.abs(tl2[j - 1].x - last.x) < 3) j--; return j; };
+  const lastVis = ch.filter((k) => { const j = onsetOf(k), o = tl2[Math.max(0, j - 1)]; return o.top >= 0 && o.bottom <= o.vh; });
   if (process.env.DBG) console.log("    DBG2", JSON.stringify(ch.map((k) => { const o = onsetOf(k); return { k, onTop: Math.round(o.top), onBot: Math.round(o.bottom), vh: Math.round(o.vh), st: Math.round(o.st), lastTop: Math.round(tl2[k - 1].top) }; })));
   const newVis = ch.filter((k) => { const after = tl2.find((x) => x.t >= tl2[k].t + 450) ?? tl2[k]; const y = tl2[k].y - after.st; return y >= 0 && y + (tl2[k].bottom - tl2[k].top) <= after.vh; });
   check(ch.length >= 3 && lastVis.length === ch.length && newVis.length === ch.length, "小屏：每行最后一个音唱到之前不被翻走；换了行马上看得见新的一行", `换行 ${ch.length} 次，最后一个音在屏幕里 ${lastVis.length}，新的一行看得见 ${newVis.length}，屏高 ${Math.round(tl2[0]?.vh ?? 0)}`); }

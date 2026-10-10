@@ -90,6 +90,7 @@ import "./wheel.test.ts";
 import "./scopes.test.ts";
 import "./header-layout.test.ts";
 import "./ghost-acc.test.ts";
+import "./shared-staff.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

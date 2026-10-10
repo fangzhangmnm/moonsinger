@@ -129,7 +129,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     }
     return { info: { ...infos[k], ...(first && first !== "G" ? { clef: first } : {}) }, tokens: toks, breaks: new Map(starts.slice(1).map((s) => [s.index, s.paper.name])) };
   }) }, meta);
-  const scoreExt: Json = { version: FORMAT.score, papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched", ...(p.staves === 2 ? {} : { clef: p.clef ?? "auto" }), ...(p.autoOttava === false ? { autoOttava: false } : {}) })),   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
+  const scoreExt: Json = { version: FORMAT.score, papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched", ...(p.staves === 2 ? {} : { clef: p.clef ?? "auto" }), ...(p.autoOttava === false ? { autoOttava: false } : {}), ...(p.host ? { host: p.host } : {}) })),   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}),   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
     ...(song.arrangement?.trim() ? { arrangement: song.arrangement } : {}),   // 编排那一行（可选，2026-10-08 深夜）
     ...(song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}),
@@ -586,8 +586,10 @@ function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: 
     const d: PartDef = { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) };
     if ("clef" in p) { clefFromScore.add(d.id); if ((CLEFS as readonly unknown[]).includes(p.clef)) d.clef = p.clef as ClefName; }
     if (p.autoOttava === false) d.autoOttava = false;   // 这位不要自动八度线（v0.9.37）
+    if (typeof p.host === "string" && p.host) d.host = p.host;   // 合租（v0.10.24）：下面核一遍
     seen.set(d.id, d);
   }
+  for (const d of seen.values()) { const h = d.host ? seen.get(d.host) : undefined; if (d.host && (!h || h.id === d.id || h.host)) delete d.host; }   // 主人不在 / 挂自己 / 主人也是房客 = 不合租
   for (const p of ps) for (const id of Object.keys(p.tracks)) if (!seen.has(id)) seen.set(id, { id, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
   // 谱号：score.json 没写的（v0.9.28 以前存的 / 别家的谱）= MusicXML 里这个声部第一个 <clef>：不是普通高音谱号的（低音、八度谱号）算写明了，普通高音谱号 = 自动
   for (const r of reads) for (const p of r.parts) { const d = seen.get(p.info.id); if (!d) continue; if (p.info.staves === 2) d.staves = 2; if (!clefFromScore.has(d.id) && !d.clef && p.info.clef && p.info.clef !== "G" && d.staves !== 2) d.clef = p.info.clef; }
