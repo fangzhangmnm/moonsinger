@@ -131,6 +131,9 @@ export interface Song {
   /** 编排：按什么顺序放哪几张纸（一行字：曲段名 / 序号、×N、括号、最后一个 [循环段]；src/score/arrange.ts）。没有 = 每张纸按顺序各放一遍。
    *  存档 = score.json 可选字段 arrangement（2026-10-08 深夜 Opus 5.5，user「a flat 编排 list 同意」「编排…就是总paper的顶上说一下…就是一行」）。 */
   arrangement?: string;
+  /** 歌词怎么排（v0.9.40；user 2026-10-10「先试下你说的两个歌词开关吧，approved」→「默认用修歌词的那个排版方式吧」）：没有 = 按节奏（默认：音的位置只看时值，
+   *  歌词让路：借旁边的空 → 小一号 → 上下错开 → 还放不下画灰说「挤了」）；lyrics = 按歌词（长字把音推开，出版谱的老规矩）。存档 = score.json 可选字段 lyricFit（只写 "lyrics"）。 */
+  lyricFit?: "lyrics";
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表
@@ -1392,6 +1395,12 @@ export function setPartClef(st: EditorState, partId: string, clef: ClefName | nu
   const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.clef ?? null) === clef) return st;
   const np: PartDef = { ...p }; if (clef === null) delete np.clef; else np.clef = clef;
   return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
+}
+/** 歌词怎么排（v0.9.40）：按节奏（默认）/ 按歌词。 */
+export function setLyricFit(st: EditorState, v: "lyrics" | "rhythm"): EditorState {
+  if ((st.song.lyricFit ?? "rhythm") === v) return st;
+  const song = { ...st.song }; if (v === "lyrics") song.lyricFit = "lyrics"; else delete song.lyricFit;
+  return { ...st, song };
 }
 /** 这位歌手的自动八度线开 / 关（v0.9.37；默认开）。 */
 export function setPartAutoOttava(st: EditorState, partId: string, on: boolean): EditorState {

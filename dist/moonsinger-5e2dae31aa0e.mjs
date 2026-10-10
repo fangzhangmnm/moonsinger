@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.39-2026-10-10";
+var APP_VERSION = "v0.9.40-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4433,6 +4433,13 @@ function setPartClef(st3, partId, clef) {
   if (clef === null) delete np2.clef;
   else np2.clef = clef;
   return { ...st3, song: { ...st3.song, parts: st3.song.parts.map((x2) => x2.id === partId ? np2 : x2) } };
+}
+function setLyricFit(st3, v) {
+  if ((st3.song.lyricFit ?? "rhythm") === v) return st3;
+  const song = { ...st3.song };
+  if (v === "lyrics") song.lyricFit = "lyrics";
+  else delete song.lyricFit;
+  return { ...st3, song };
 }
 function setPartAutoOttava(st3, partId, on2) {
   const p2 = st3.song.parts.find((x2) => x2.id === partId);
@@ -6952,6 +6959,55 @@ function resolveSongClefs(song) {
 
 // src/render/engrave.ts
 var LYRIC_EM = 1.6;
+var LYRIC_ROW2 = LYRIC_EM * 1.2;
+function fitLyrics(items, gap = 0.5) {
+  const out = items.map(() => ({ dx: 0, scale: 1, row: 0, tight: false })), scale = items.map(() => 1);
+  const g3 = (i10) => gap + (items[i10].hy ? 0.9 : 0);
+  const place = (idx) => {
+    const pos = idx.map((i10) => items[i10].cx), half2 = idx.map((i10) => items[i10].w * scale[i10] / 2), cap = idx.map((i10) => Math.max(0.8, 0.45 * items[i10].w));
+    for (let pass = 0; pass < 4; pass++) {
+      for (let k2 = 1; k2 < idx.length; k2++) {
+        const need = pos[k2 - 1] + half2[k2 - 1] + g3(idx[k2 - 1]) + half2[k2];
+        if (pos[k2] < need) pos[k2] = Math.min(need, items[idx[k2]].cx + cap[k2]);
+      }
+      for (let k2 = idx.length - 2; k2 >= 0; k2--) {
+        const need = pos[k2 + 1] - half2[k2 + 1] - g3(idx[k2]) - half2[k2];
+        if (pos[k2] > need) pos[k2] = Math.max(need, items[idx[k2]].cx - cap[k2]);
+      }
+    }
+    const bad = /* @__PURE__ */ new Set();
+    for (let k2 = 1; k2 < idx.length; k2++) if (pos[k2] - half2[k2] < pos[k2 - 1] + half2[k2 - 1] + g3(idx[k2 - 1]) - 1e-6) {
+      bad.add(idx[k2]);
+      bad.add(idx[k2 - 1]);
+    }
+    return { pos, bad };
+  };
+  const all = items.map((_2, i10) => i10);
+  let r10 = place(all);
+  if (r10.bad.size) {
+    for (const i10 of r10.bad) scale[i10] = 0.8;
+    r10 = place(all);
+  }
+  if (!r10.bad.size) {
+    all.forEach((i10, k2) => {
+      out[i10] = { dx: r10.pos[k2] - items[i10].cx, scale: scale[i10], row: 0, tight: false };
+    });
+    return out;
+  }
+  const row = items.map(() => 0);
+  let flip = 0;
+  for (let i10 = 0; i10 < items.length; i10++) {
+    if (r10.bad.has(i10)) row[i10] = flip++ % 2;
+    else flip = 0;
+  }
+  for (const rr2 of [0, 1]) {
+    const idx = all.filter((i10) => row[i10] === rr2), res = place(idx);
+    idx.forEach((i10, k2) => {
+      out[i10] = { dx: res.pos[k2] - items[i10].cx, scale: scale[i10], row: rr2, tight: res.bad.has(i10) };
+    });
+  }
+  return out;
+}
 var SCROLL_TAIL = 6;
 var NAME_MAX = 6.5;
 var TEMPO_EM = 1.35;
@@ -7153,7 +7209,7 @@ function unitsOf(tokens, o10) {
         const lyric = isNote && j2 === 0 && !nt2.tie ? nt2.lyric : null;
         const accW = accs.some((a10) => a10 !== null) ? 1.3 : 0;
         let w2 = accW + baseWidth(c10.base) + (c10.dotted ? 0.6 : 0);
-        if (lyric && lyric !== MELISMA_MARK) w2 = Math.max(w2, accW + o10.measureLyric(lyricShow(lyric)) / o10.sp + (nt2.hyph ? 1.4 : 0.7));
+        if (lyric && lyric !== MELISMA_MARK && !o10.rhythm) w2 = Math.max(w2, accW + o10.measureLyric(lyricShow(lyric)) / o10.sp + (nt2.hyph ? 1.4 : 0.7));
         const u2 = {
           kind: "chunk",
           index: i10,
@@ -7431,7 +7487,7 @@ function engrave(song, o10) {
     }
     const per = parts.map((p2) => {
       const tokens = paper.tracks[p2.id], focused = o10.at.paper === paper.id && o10.at.part === p2.id, staves = p2.staves === 2 ? 2 : 1;
-      const u2 = unitsOf(tokens, { caret: focused && (writing || sel?.head != null) ? o10.caret : null, autoBars: autoBars2, measureLyric: o10.measureLyric, sp: sp2 });
+      const u2 = unitsOf(tokens, { caret: focused && (writing || sel?.head != null) ? o10.caret : null, autoBars: autoBars2, measureLyric: o10.measureLyric, sp: sp2, rhythm: song.lyricFit !== "lyrics" });
       shortBars += u2.shortBars;
       if (staves === 2) {
         const stf = staffOfTokens(tokens, 2);
@@ -7573,6 +7629,23 @@ function engrave(song, o10) {
     const rowStart = per.map((_2, i10) => per.slice(0, i10).reduce((a10, q2) => a10 + q2.staves, 0)), nRowsSys = per.reduce((a10, q2) => a10 + q2.staves, 0);
     const rowOf = (s10, r10, k2 = 0) => rowBase + s10 * nRowsSys + rowStart[r10] + k2;
     const lyricsOf = per.map((q2) => q2.tokens.some((t10) => t10.kind === "note" && t10.lyric));
+    const lyrPlan = /* @__PURE__ */ new Map(), lyr2 = /* @__PURE__ */ new Set();
+    if (song.lyricFit !== "lyrics") per.forEach((q2, r10) => {
+      if (!lyricsOf[r10]) return;
+      const bySys = /* @__PURE__ */ new Map();
+      for (const u2 of q2.units) if (u2.kind === "chunk" && u2.lyric && u2.lyric !== MELISMA_MARK) {
+        const arr = bySys.get(u2.system) ?? [];
+        bySys.set(u2.system, arr);
+        arr.push({ index: u2.index, cx: u2.x + u2.accW + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2, hy: u2.hyph });
+      }
+      for (const [sy2, items] of bySys) {
+        items.sort((a10, b3) => a10.cx - b3.cx);
+        fitLyrics(items).forEach((f2, k2) => {
+          lyrPlan.set(`${r10}:${items[k2].index}`, f2);
+          if (f2.row) lyr2.add(`${r10}:${sy2}`);
+        });
+      }
+    });
     const extentOf = (q2, s10, k2) => {
       let top = TOP_LINE, bot = BOTTOM_LINE;
       for (const u2 of q2.units) {
@@ -7602,7 +7675,7 @@ function engrave(song, o10) {
         if (ottDown) below = Math.max(below, (BOTTOM_LINE - e10.bot) / 2 + 3);
         if (lyricsOf[r10] && k2 === q2.staves - 1) {
           lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e10.bot) / 2 + 2 + (ottDown ? 2.4 : 0)) + (o10.lyricRaise ?? 0);
-          below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW));
+          below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW)) + (lyr2.has(`${r10}:${s10}`) ? LYRIC_ROW2 : 0);
         }
         return { above, below, lyric, dynD: null, noteDynD: null, navD: null, tempoD: null, grooveD: null, ottD: null, ottDownD: null };
       });
@@ -7841,10 +7914,11 @@ function engrave(song, o10) {
         if (c10.dotted) prims.push({ t: "glyph", x: x0 + nhW(c10) + P2(0.3), y: yOf(row, d3 % 2 === 0 ? d3 + 1 : d3), ch: GLYPH.augmentationDot, cls });
         if (c10.j === 0) notes.push({ index: c10.index, system: row, x: x0, y: y2, w: nhW(c10), d: diatonicIndex(c10.pitch) });
         if (c10.j === 0 && !c10.tie) {
-          const ly2 = lyricY(lyricRow(c10.system)), cx2 = x0 + nhW(c10) / 2;
-          partLyrics.push({ index: c10.index, system: row, x: cx2, y: ly2 });
-          if (c10.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P2(0.6), y1: ly2, x2: x0 + nhW(c10) + P2(0.4), y2: ly2, w: P2(0.12), cls: "melisma" });
-          else if (c10.lyric) prims.push({ t: "text", x: cx2, y: ly2, s: lyricShow(c10.lyric), cls: [o10.hot?.has(tokens[c10.index]?.id ?? -1) ? "lyric hot" : "lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) ? "lyric-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+          const fit = lyrPlan.get(`${r10}:${c10.index}`), ly0 = lyricY(lyricRow(c10.system)), cx0 = x0 + nhW(c10) / 2;
+          const ly2 = ly0 + (fit?.row ? P2(LYRIC_ROW2) : 0), cx2 = cx0 + (fit ? P2(fit.dx) : 0);
+          partLyrics.push({ index: c10.index, system: row, x: cx2, y: ly2, ...fit?.tight ? { tight: true } : {} });
+          if (c10.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P2(0.6), y1: ly0, x2: x0 + nhW(c10) + P2(0.4), y2: ly0, w: P2(0.12), cls: "melisma" });
+          else if (c10.lyric) prims.push({ t: "text", x: cx2, y: ly2, s: lyricShow(c10.lyric), ...fit && fit.scale < 1 ? { size: P2(LYRIC_EM * fit.scale) } : {}, cls: [o10.hot?.has(tokens[c10.index]?.id ?? -1) ? "lyric hot" : "lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         }
       };
       for (const u2 of units) {
@@ -8452,7 +8526,7 @@ var LyricEditor = class {
     this.system = h2.system;
     const w2 = Math.max(48, this.input.value.length * L2.sp * 1.6 + 24);
     Object.assign(this.input.style, { left: `${h2.x - w2 / 2}px`, top: `${h2.y - L2.sp * 2.1}px`, width: `${w2}px`, fontSize: `${L2.sp * 1.6}px` });
-    const hint2 = this.host.lyricHint?.(this.index) ?? null;
+    const hint2 = [this.host.lyricHint?.(this.index) ?? null, h2.tight ? "\u6324\u4E86\uFF1A\u6309\u8282\u594F\u6392\uFF0C\u8FD9\u4E2A\u5B57\u653E\u4E0D\u4E0B\uFF08\u7EB8\u7684\u8BBE\u7F6E\u91CC\u6362\u6210\u300C\u6309\u6B4C\u8BCD\u300D= \u628A\u97F3\u63A8\u5F00\uFF09" : null].filter(Boolean).join("\uFF1B") || null;
     this.hint.hidden = !hint2;
     if (hint2) {
       this.hint.textContent = hint2;
@@ -21615,7 +21689,9 @@ function saveMxl(a10) {
     // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     ...a10.view && Object.keys(a10.view).length ? { view: a10.view } : {},
     // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
-    ...song.arrangement?.trim() ? { arrangement: song.arrangement } : {}
+    ...song.arrangement?.trim() ? { arrangement: song.arrangement } : {},
+    // 编排那一行（可选，2026-10-08 深夜）
+    ...song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}
   };
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a10.extras.sounds).filter(([p2]) => referenced.has(p2)).sort(([x2], [y2]) => x2 < y2 ? -1 : 1);
@@ -22191,7 +22267,7 @@ function finish(reads, song0, extras, ours, name) {
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;
-  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null, references: {} };
+  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null, references: {} };
 }
 
 // src/format/credits.ts
@@ -38014,7 +38090,7 @@ function openPaperSheet() {
   const draw = () => {
     const p2 = st2.song.paper ?? paperOf(DEFAULT_PAPER);
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u7248\u5F0F</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002</div><div class="part-sec">\u7EB8\uFF08\u66F2\u6BB5\uFF09</div>` + st2.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc7(pp.name || "\uFF08\u6CA1\u540D\u5B57\uFF09")}${pp.hidden ? "\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09" : ""}${pp.id === st2.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc7(pp.id)}" title="\u8FD9\u5F20\u7EB8\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u632A / \u52A0\u58F0\u90E8 / \u5220">\u22EF</button></div>`).join("") + `<div class="set-row"><button class="btn" data-v="addpaper">\uFF0B \u65B0\u7684\u7EB8\uFF08\u63A5\u5728\u6700\u540E\uFF09</button></div>` + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
-    ((one) => `<div class="part-sec">\u663E\u793A</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && st2.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">\u53EA\u770B\u4E00\u53F7\u8F68<small>\u53EA\u770B\u300C${esc7(partLabels(st2.song, doc.extras)[0] ?? "")}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B</small></button></div>`)(st2.song.parts[0]) + `<div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">\u6A2A\u5377<small>\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u6B4C\u624B\u540D\u9489\u5728\u5DE6\u8FB9</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    ((one) => `<div class="part-sec">\u663E\u793A</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && st2.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">\u53EA\u770B\u4E00\u53F7\u8F68<small>\u53EA\u770B\u300C${esc7(partLabels(st2.song, doc.extras)[0] ?? "")}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B</small></button></div>`)(st2.song.parts[0]) + `<div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">\u6A2A\u5377<small>\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u6B4C\u624B\u540D\u9489\u5728\u5DE6\u8FB9</small></button></div><div class="part-sec">\u6B4C\u8BCD</div><div class="set-row"><button class="btn cand${st2.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">\u6309\u8282\u594F<small>\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u5C0F\u4E00\u53F7 \u2192 \u4E0A\u4E0B\u9519\u5F00 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070</small></button><button class="btn cand${st2.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">\u6309\u6B4C\u8BCD<small>\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -38046,6 +38122,9 @@ function openPaperSheet() {
     } else if (v === "fit" || v === "reflow") {
       reflow = v === "reflow";
       view.render();
+      draw();
+    } else if (v === "lyr:lyrics" || v === "lyr:rhythm") {
+      update(setLyricFit(st2, v === "lyr:rhythm" ? "rhythm" : "lyrics"));
       draw();
     } else if (v === "flow:cont" || v === "flow:pages" || v === "flow:scroll") {
       pageFlow = v === "flow:pages";
@@ -40631,4 +40710,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f7ae2db525ba.mjs.map
+//# sourceMappingURL=moonsinger-5e2dae31aa0e.mjs.map

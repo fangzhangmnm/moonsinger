@@ -79,6 +79,7 @@ import "./transpose-scope.test.ts";
 import "./reading.test.ts";
 import "./swing.test.ts";
 import "./auto-ottava.test.ts";
+import "./lyric-fit.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

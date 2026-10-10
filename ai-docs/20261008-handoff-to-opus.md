@@ -152,6 +152,12 @@
 - 做了什么 = 仓 CLAUDE.md v0.9.1 那条；设计 = `ai-docs/20261009-realtime-preview-engine-proposal.md`（§1–§12 提案、§13 user 三轮回复与修订、§14 刀 0 量的代价）；原话全集 = `ai-docs/20261009-sound-engine-user-vision.md`。
 - **接口面**（给接着做的人）：`src/engine/studio.ts` 的 `StudioIn / StudioOut / TimelineMsg / TrackSpec / ClipRef`；`src/engine/timeline.ts` 的 `buildTimeline(TimelineInput) → Timeline`、`PerformerInfo`；`src/engine/studio-client.ts` 的 `StudioClient`（bank / vowels / setTimeline / chunk / channel / master / play / stop / seek / audition* / renderOffline / on(pos | ended | missing | meter)）。main.ts 里：`prepare(scope)`（库 → 时间线 → 块）、`playRange(tl)`、`cursorSeconds(tl)`、`togglePlay`、`schedulePlaybackRefresh`、`auditionTarget()`。
 - **user 2026-10-10 拍板刀 5 / 刀 6**：「精度分级做 冷启动做 然后下一刀 内部进度回调中途取消按键加速worker并行 负载和内存监控防闪退 做 llama科研不做」→ 刀 5 = 精度分级（v0.9.11 已落块 Int16 + 分析 bf16；WORLD 单精度另议）+ 冷启动（v0.9.11 先落分段计时；词典解压缓存 / session 选项 / 启动就起引擎接着做；**念缓存持久化到 IDB 仍等 user 一句话**）；刀 6 = WORLD 内部进度回调、正在算的那句中途取消、按键再加速（断句 / 稳态那几步按句缓存）、两个 worker 并行唱（按设备）、音频线程负载 + 内存监控（防闪退：超预算先放块 / 减并行 / 明说）。llama 科研线不做。
+- **歌词按歌词 / 按节奏（v0.9.40，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.40 那条。
+- **混音纪元的单子（user 2026-10-10，下一个 minor = 0.10.0 起手；user「这波做好之后可以进入混音纪元了，到时候别忘了bump minor」）**：
+  ① **插件制**（user「我建议还是做成插件制，fl和所有的daw都是这么做的。每一个插件有自己的id和版本号拍子和升级方法，关键是这样的话sunset了数据还在，以后不sunset了又能回来，然后这样的话几个eq方案就可以都要了。只是默认会帮你开一个，你可以换但不能删，但这个是ux层的，引擎层遇到noop还是会跳过。然后帮我说一下最基础的几个是什么」）——先出契约提案 + 讲最基础的几个，user 点头再做；现有 `fx.ts` 的 FxV2 {id, kind, on, params} 是起点（缺每个插件自己的版本号和升级方法）。
+  ② **总轨峰值表**（user「总轨的峰值感觉没以前灵敏了，是我那句不要太伤性能让你矫枉过正了吗？我还是喜欢旧的动画」）：回到旧的那种动画；**每条轨也要表或者 EQ 动画**（user「我希望每个子轨也能看到类似的动画或者eq动画。混音纪元处理」）。
+  ③ EQ 四个投标都做成插件（默认开一个 = 投标 3，可换不可删）。混音开工前先 nudge 基础（memory：平衡 → 摆位 → 频率 → 动态 → 空间）。
+- **记账（user 2026-10-10）**：影子 = 高亮小键盘（不是钢琴格），要分析谁是主旋律，「算做好点子记下来，到和弦输入的时候翻出来做」。音的微调小控件（选中一个 / 几个音时出小控件、能不能对单音 tweak）：「可以先多design一轮」。
 - **鼠标长按才拖 + 短按拖 = 框选 + 框选不卡（v0.9.39，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.39 那条。笔要不要也长按，没问。
 - **月读「变甜了」查案（2026-10-10，Opus 5.5）**：`ai-docs/20261010-tsukuyomi-sweeter-investigation.md`（写歌实验室同一份）。
 - **修内存监控误报 440 MB（v0.9.38，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.38 那条。刀 6 ④（Fable）的单道预算低于引擎常驻大小，改成按基线判断。

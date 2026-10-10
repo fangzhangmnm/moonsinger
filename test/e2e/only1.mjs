@@ -22,6 +22,13 @@ check((await shownParts()) === "P1", "点了 = 只画一号轨（别的缩成细
 check(await p.$eval('[data-v="only1"]', (e) => e.classList.contains("is-on")), "开关亮着");
 await p.click('[data-v="only1"]'); await p.waitForTimeout(200);
 check((await shownParts()) === "P1,P2", "再点 = 都看", await shownParts());
+// 歌词怎么排（v0.9.40；user「先试下你说的两个歌词开关吧，approved」）：按歌词（默认）/ 按节奏；进歌里、能撤销
+check(await p.$eval('[data-v="lyr:rhythm"]', (e) => e.classList.contains("is-on")), "纸的设置里有歌词两种排法，默认「按节奏」（user「默认用修歌词的那个排版方式吧」）");
+await p.click('[data-v="lyr:lyrics"]'); await p.waitForTimeout(200);
+check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === "lyrics" && await p.$eval('[data-v="lyr:lyrics"]', (e) => e.classList.contains("is-on")), "点「按歌词」= 歌里记着、按钮亮");
+await p.keyboard.press("Escape"); await p.mouse.click(5, 880); await p.waitForTimeout(150);
+await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
+check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === undefined, "撤销 = 回到按节奏");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nonly1: ${pass} passed, ${fail} failed`);

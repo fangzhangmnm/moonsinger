@@ -73,6 +73,37 @@ export interface EngraveOpts {
                                          //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
 export const LYRIC_EM = 1.6;
+/** 按节奏排时错开到第二行的歌词往下挪多少（sp）。 */
+const LYRIC_ROW2 = LYRIC_EM * 1.2;
+export interface LyricFit { dx: number; scale: number; row: 0 | 1; tight: boolean }
+/** 歌词按节奏排的让路（v0.9.40；设计 = ai-docs/20261010-design-answers.md「歌词不想影响音符的位置」，user approved）：一行里的字（中心 cx、宽 w，单位 sp；hy = 后面有连字符 = 多留一点）。
+ *  依次：① 左右借空（字往旁边挪，最多挪自己宽的 45% 或 0.8，不再死死居中）② 还挤 = 挤的那几个小一号（八成）③ 还挤 = 挤成一串的轮流放到第二行
+ *  ④ 第二行也放不下 = 照写，标 tight（画灰、歌词框上说「挤了」）。纯函数。 */
+export function fitLyrics(items: readonly { cx: number; w: number; hy?: boolean }[], gap = 0.5): LyricFit[] {
+  const out: LyricFit[] = items.map(() => ({ dx: 0, scale: 1, row: 0, tight: false })), scale = items.map(() => 1);
+  const g = (i: number) => gap + (items[i].hy ? 0.9 : 0);
+  const place = (idx: number[]): { pos: number[]; bad: Set<number> } => {
+    const pos = idx.map((i) => items[i].cx), half = idx.map((i) => (items[i].w * scale[i]) / 2), cap = idx.map((i) => Math.max(0.8, 0.45 * items[i].w));   // 能挪多远按原来的字宽（缩小了也照样能挪那么远，不然「小一号」几乎不起作用）
+    for (let pass = 0; pass < 4; pass++) {
+      for (let k = 1; k < idx.length; k++) { const need = pos[k - 1] + half[k - 1] + g(idx[k - 1]) + half[k]; if (pos[k] < need) pos[k] = Math.min(need, items[idx[k]].cx + cap[k]); }
+      for (let k = idx.length - 2; k >= 0; k--) { const need = pos[k + 1] - half[k + 1] - g(idx[k]) - half[k]; if (pos[k] > need) pos[k] = Math.max(need, items[idx[k]].cx - cap[k]); }
+    }
+    const bad = new Set<number>();
+    for (let k = 1; k < idx.length; k++) if (pos[k] - half[k] < pos[k - 1] + half[k - 1] + g(idx[k - 1]) - 1e-6) { bad.add(idx[k]); bad.add(idx[k - 1]); }
+    return { pos, bad };
+  };
+  const all = items.map((_, i) => i);
+  let r = place(all);
+  if (r.bad.size) { for (const i of r.bad) scale[i] = 0.8; r = place(all); }
+  if (!r.bad.size) { all.forEach((i, k) => { out[i] = { dx: r.pos[k] - items[i].cx, scale: scale[i], row: 0, tight: false }; }); return out; }
+  const row = items.map(() => 0 as 0 | 1);
+  let flip = 0; for (let i = 0; i < items.length; i++) { if (r.bad.has(i)) row[i] = (flip++ % 2) as 0 | 1; else flip = 0; }
+  for (const rr of [0, 1] as const) {
+    const idx = all.filter((i) => row[i] === rr), res = place(idx);
+    idx.forEach((i, k) => { out[i] = { dx: res.pos[k] - items[i].cx, scale: scale[i], row: rr, tight: res.bad.has(i) }; });
+  }
+  return out;
+}
 const SCROLL_TAIL = 6;   // sp：横卷每张纸内容后面留的尾巴
 const NAME_MAX = 6.5;   // sp：谱前声部名一列最宽（再长折行；engrave() 里 nameLines）
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
@@ -81,7 +112,7 @@ const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
 export interface SystemBox { top: number; staffTop: number; bottom: number; paper: string; part: string; sys: number; staff: Staff }   // staff = 大谱表里是上（1）还是下（2）
 export interface HitNote { index: number; system: number; x: number; y: number; w: number; d: number }
 export interface Slot { caret: number; system: number; x: number; end?: true }   // end = 行末那个落点（光标在下一行开头的那个位置，点在这一行行末时画在这儿）
-export interface LyricHit { index: number; system: number; x: number; y: number }   // x = 歌词中心，y = 基线
+export interface LyricHit { index: number; system: number; x: number; y: number; tight?: true }   // x = 歌词中心，y = 基线；tight = 按节奏排时这个字挤（画灰，歌词框上说一声）
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
 /** 谱号 / 八度线的点击区域（v0.9.28）：start = 每行开头的谱号（index = 管着它的谱号记号，−1 = 声部自己的谱号）；mid = 行中间的谱号记号；ottava = 八度线开头的字。 */
@@ -214,7 +245,7 @@ const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats
 
 interface Head { key: number; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
 /** 一条 track → 排版单元（第 1 步：切时值、临时记号、自动小节线；tick = 从这条的开头数）。caret 只在光标在这条上时给。 */
-function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; measureLyric: (s: string) => number; sp: number }): { units: Unit[]; head: Head; shortBars: number } {
+function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; measureLyric: (s: string) => number; sp: number; rhythm?: boolean }): { units: Unit[]; head: Head; shortBars: number } {
   const H = headLen(tokens);
   let fifths = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx: Head["idx"] = {};
@@ -286,7 +317,7 @@ function unitsOf(tokens: Token[], o: { caret: number | null; autoBars: boolean; 
         const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
         const accW = accs.some((a) => a !== null) ? 1.3 : 0;
         let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
-        if (lyric && lyric !== MELISMA_MARK) w = Math.max(w, accW + o.measureLyric(lyricShow(lyric)) / o.sp + (nt.hyph ? 1.4 : 0.7));
+        if (lyric && lyric !== MELISMA_MARK && !o.rhythm) w = Math.max(w, accW + o.measureLyric(lyricShow(lyric)) / o.sp + (nt.hyph ? 1.4 : 0.7));   // 按歌词排：字把音推开；按节奏排（v0.9.40）= 音只看时值
         const u: Chunk = { kind: "chunk", index: i, j, last: false, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
           ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs,
           art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [], breath: false, ...(isNote && nt.art?.includes("whisper") ? { whisper: true } : {}) };
@@ -519,7 +550,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     // 1. 每个声部的排版单元
     const per = parts.map((p) => {
       const tokens = paper.tracks[p.id], focused = o.at.paper === paper.id && o.at.part === p.id, staves: 1 | 2 = p.staves === 2 ? 2 : 1;
-      const u = unitsOf(tokens, { caret: focused && (writing || sel?.head != null) ? o.caret : null, autoBars, measureLyric: o.measureLyric, sp });   // 替换模式：选区里也画写字头
+      const u = unitsOf(tokens, { caret: focused && (writing || sel?.head != null) ? o.caret : null, autoBars, measureLyric: o.measureLyric, sp, rhythm: song.lyricFit !== "lyrics" });   // 替换模式：选区里也画写字头
       shortBars += u.shortBars;
       if (staves === 2) {   // 大谱表：每个音在上还是下（按音高自动 / 手动指定）；光标跟着前一个音
         const stf = staffOfTokens(tokens, 2); let last: Staff = 1;
@@ -629,6 +660,20 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     //   （v0.7.8 起是有歌词上面、大谱表中间、其余下面——按 user 那时问的「感觉一般强弱是写下面而不是上面的吧？然后同时有两个谱号就是写中间？」做的，这次统一了）；
     //   这一行这个声部真有力度记号 / 渐强渐弱 / sfz fp 才留地方。
     const lyricsOf = per.map((q) => q.tokens.some((t) => t.kind === "note" && t.lyric));
+    // 歌词按节奏排（v0.9.40；user「先试下你说的两个歌词开关吧，approved」）：音的位置只看时值，歌词让路（fitLyrics）。在算行高之前排好：错开到第二行的那一行要多留一行字
+    const lyrPlan = new Map<string, LyricFit>(), lyr2 = new Set<string>();   // 键 = 声部序号:下标 / 声部序号:行
+    if (song.lyricFit !== "lyrics") per.forEach((q, r) => {
+      if (!lyricsOf[r]) return;
+      const bySys = new Map<number, { index: number; cx: number; w: number; hy?: boolean }[]>();
+      for (const u of q.units) if (u.kind === "chunk" && u.lyric && u.lyric !== MELISMA_MARK) {
+        const arr = bySys.get(u.system) ?? []; bySys.set(u.system, arr);
+        arr.push({ index: u.index, cx: u.x + u.accW + 0.6, w: o.measureLyric(lyricShow(u.lyric)) / sp, hy: u.hyph });
+      }
+      for (const [sy, items] of bySys) {
+        items.sort((a, b) => a.cx - b.cx);
+        fitLyrics(items).forEach((f, k) => { lyrPlan.set(`${r}:${items[k].index}`, f); if (f.row) lyr2.add(`${r}:${sy}`); });
+      }
+    });
     const extentOf = (q: (typeof per)[number], s: number, k: number) => {
       let top = TOP_LINE, bot = BOTTOM_LINE;
       for (const u of q.units) {
@@ -655,7 +700,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
         let above = Math.max(STAFF_ABOVE, (e.top - TOP_LINE) / 2 + 0.8), below = Math.max(minBelow, (BOTTOM_LINE - e.bot) / 2 + 0.8), lyric: number | null = null;
         if (ottDown) below = Math.max(below, (BOTTOM_LINE - e.bot) / 2 + 3.0);
-        if (lyricsOf[r] && k === q.staves - 1) { lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e.bot) / 2 + 2.0 + (ottDown ? 2.4 : 0)) + (o.lyricRaise ?? 0); below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW)); }
+        if (lyricsOf[r] && k === q.staves - 1) { lyric = Math.max(LYRIC_BELOW, (BOTTOM_LINE - e.bot) / 2 + 2.0 + (ottDown ? 2.4 : 0)) + (o.lyricRaise ?? 0); below = Math.max(below, lyric + (SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW)) + (lyr2.has(`${r}:${s}`) ? LYRIC_ROW2 : 0); }
         return { above, below, lyric, dynD: null as number | null, noteDynD: null as number | null, navD: null as number | null, tempoD: null as number | null, grooveD: null as number | null, ottD: null as number | null, ottDownD: null as number | null };
       });
       const lane0 = Math.max(TOP_LINE + 2.4, ex[0].top + 3);   // 最靠谱的那一道（f 这种字有下伸：离音远一点）
@@ -867,10 +912,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         if (c.dotted) prims.push({ t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(row, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
         if (c.j === 0) notes.push({ index: c.index, system: row, x: x0, y, w: nhW(c), d: diatonicIndex(c.pitch!) });   // d = 真的音级（拖音高用），不带谱号位移
         if (c.j === 0 && !c.tie) {
-          const ly = lyricY(lyricRow(c.system)), cx = x0 + nhW(c) / 2;
-          partLyrics.push({ index: c.index, system: row, x: cx, y: ly });
-          if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly, x2: x0 + nhW(c) + P(0.4), y2: ly, w: P(0.12), cls: "melisma" });
-          else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: lyricShow(c.lyric), cls: [o.hot?.has(tokens[c.index]?.id ?? -1) ? "lyric hot" : "lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) ? "lyric-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+          const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lyricRow(c.system)), cx0 = x0 + nhW(c) / 2;   // 按节奏排：让过路的位置
+          const ly = ly0 + (fit?.row ? P(LYRIC_ROW2) : 0), cx = cx0 + (fit ? P(fit.dx) : 0);
+          partLyrics.push({ index: c.index, system: row, x: cx, y: ly, ...(fit?.tight ? { tight: true as const } : {}) });
+          if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly0, x2: x0 + nhW(c) + P(0.4), y2: ly0, w: P(0.12), cls: "melisma" });
+          else if (c.lyric) prims.push({ t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(fit && fit.scale < 1 ? { size: P(LYRIC_EM * fit.scale) } : {}), cls: [o.hot?.has(tokens[c.index]?.id ?? -1) ? "lyric hot" : "lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         }
       };
       for (const u of units) {

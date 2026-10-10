@@ -73,7 +73,7 @@ export class LyricEditor {
     this.system = h.system;
     const w = Math.max(48, this.input.value.length * L.sp * 1.6 + 24);
     Object.assign(this.input.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1}px`, width: `${w}px`, fontSize: `${L.sp * 1.6}px` });
-    const hint = this.host.lyricHint?.(this.index) ?? null;
+    const hint = [this.host.lyricHint?.(this.index) ?? null, h.tight ? "挤了：按节奏排，这个字放不下（纸的设置里换成「按歌词」= 把音推开）" : null].filter(Boolean).join("；") || null;   // 按节奏排时挤的字（v0.9.40）
     this.hint.hidden = !hint;
     if (hint) {   // 框上面：先放字再量高，底边贴着框的上沿
       this.hint.textContent = hint; this.hint.style.left = `${h.x - w / 2}px`;
