@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.28-2026-10-10";
+var APP_VERSION = "v0.9.29-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6390,7 +6390,7 @@ function gainSegments(tokens, map, spec, bounds, groove) {
     const art = artOf(tok);
     let cur = t02;
     const sw2 = tok.swell && !(spec.canSwell === false && tok.swell !== ">") ? tok.swell : null, D2 = spec.swellDb ?? M.swellDb;
-    const swOff = (fr) => sw2 === "<" ? D2 * fr : sw2 === ">" ? -D2 * fr : sw2 === "<>" ? D2 * (1 - Math.abs(2 * fr - 1)) : 0;
+    const swOff = (fr) => sw2 === "<" ? -D2 * (1 - fr) : sw2 === ">" ? -D2 * fr : sw2 === "<>" ? -D2 * Math.abs(2 * fr - 1) : 0;
     const shaped = (a02, a12, s02, s12) => {
       const n10 = Math.max(2, Math.min(48, Math.ceil((s12 - s02) / 0.03)));
       for (let k2 = 0; k2 < n10; k2++) {
@@ -6404,8 +6404,14 @@ function gainSegments(tokens, map, spec, bounds, groove) {
       if (vel) ramp(0, p2 - f2, t02, e10);
       else ramp(f2, p2, t02, e10);
       if (t12 > e10) {
-        if (sw2) shaped(vel ? p2 - f2 : p2, vel ? p2 - f2 : p2, e10, t12);
-        else segs.push({ t0: e10, t1: t12, dB: vel ? p2 - f2 : p2 });
+        const lo2 = vel ? p2 - f2 : p2, hi = vel ? 0 : f2;
+        if (sw2 === "<") ramp(lo2, hi, e10, t12);
+        else if (sw2 === "<>") {
+          const m2 = (e10 + t12) / 2;
+          ramp(lo2, hi, e10, m2);
+          ramp(hi, lo2, m2, t12);
+        } else if (sw2) shaped(lo2, lo2, e10, t12);
+        else segs.push({ t0: e10, t1: t12, dB: lo2 });
       }
       any = true;
       continue;
@@ -37263,7 +37269,7 @@ function marksTableHtml(role, eng) {
     ["\u5F3A\u97F3", "marcato", vel ? `\u529B\u5EA6 +${sp2.marcatoVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.marcatoDb)}${eng === "tsukuyomi" ? `\uFF1B${singTxt("marcato")}` : ""}`],
     ["\u7A81\u5F3A sfz", "sfz", vel ? `\u529B\u5EA6 +${sp2.sfzVel}` : `\u97F3\u5934 ${db(sp2.sfzDb)}\uFF0C${ms(sp2.sfzSec)} \u91CC\u843D\u56DE\u6765${eng === "tsukuyomi" ? `\uFF1B${singTxt("sfz")}` : ""}`],
     ["\u5F3A\u540E\u5373\u5F31 fp", "fp", `\u97F3\u5934\u6309 f\uFF0C${ms(sp2.fpSec)} \u91CC\u843D\u5230 p\uFF0C\u4E4B\u540E\u90FD\u662F p${eng === "tsukuyomi" ? `\uFF1B${singTxt("fp")}` : ""}`],
-    ["\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77", "swellGrow", sp2.canSwell ? `\u6700\u591A +${sp2.swellDb} dB\uFF08< \u4E00\u8DEF\u5F80\u4E0A\uFF1B<> \u4E2D\u95F4\u6700\u9AD8\u518D\u56DE\u6765\uFF09` : "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF"],
+    ["\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77", "swellGrow", sp2.canSwell ? `\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF1A< \u4ECE \u2212${sp2.swellDb} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\uFF1B<> \u4E24\u5934 \u2212${sp2.swellDb} dB\u3001\u4E2D\u95F4\u56DE\u5230\u5199\u7684\u529B\u5EA6\uFF08\u5F3A\u540E\u5373\u5F31\u4E4B\u540E\u7684 < \u957F\u56DE\u97F3\u5934\u7684 f\uFF09` : "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF"],
     ["\u97F3\u5185\u6E10\u5F31", "swellFade", `\u4E00\u8DEF\u5F80\u4E0B\u5230 \u2212${sp2.swellDb} dB`],
     ["\u8DF3\u97F3", "staccato", eng === "tsukuyomi" ? singTxt("staccato") : `\u5531 / \u5F39 ${pct(sp2.staccatoGate)} \u7684\u957F\u5EA6`],
     ["\u4FDD\u6301", "tenuto", "\u8FD9\u4E2A\u97F3\u4E0D\u7559\u7F1D"],
@@ -37505,7 +37511,8 @@ function openPaperSheet() {
   box.className = "offer";
   const draw = () => {
     const p2 = st2.song.paper ?? paperOf(DEFAULT_PAPER);
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u7248\u5F0F</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002</div><div class="part-sec">\u7EB8\uFF08\u66F2\u6BB5\uFF09</div>` + st2.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc7(pp.name || "\uFF08\u6CA1\u540D\u5B57\uFF09")}${pp.hidden ? "\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09" : ""}${pp.id === st2.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc7(pp.id)}" title="\u8FD9\u5F20\u7EB8\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u632A / \u52A0\u58F0\u90E8 / \u5220">\u22EF</button></div>`).join("") + `<div class="set-row"><button class="btn" data-v="addpaper">\uFF0B \u65B0\u7684\u7EB8\uFF08\u63A5\u5728\u6700\u540E\uFF09</button></div><div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u7EB8</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">\u5176\u4ED6<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002</div><div class="part-sec">\u7248\u5F0F</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002</div><div class="part-sec">\u7EB8\uFF08\u66F2\u6BB5\uFF09</div>` + st2.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc7(pp.name || "\uFF08\u6CA1\u540D\u5B57\uFF09")}${pp.hidden ? "\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09" : ""}${pp.id === st2.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc7(pp.id)}" title="\u8FD9\u5F20\u7EB8\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u632A / \u52A0\u58F0\u90E8 / \u5220">\u22EF</button></div>`).join("") + `<div class="set-row"><button class="btn" data-v="addpaper">\uFF0B \u65B0\u7684\u7EB8\uFF08\u63A5\u5728\u6700\u540E\uFF09</button></div>` + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
+    ((one) => `<div class="part-sec">\u663E\u793A</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && st2.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">\u53EA\u770B\u4E00\u53F7\u8F68<small>\u53EA\u770B\u300C${esc7(partLabels(st2.song, doc.extras)[0] ?? "")}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B</small></button></div>`)(st2.song.parts[0]) + `<div class="part-sec">\u6392\u6CD5</div><div class="set-row"><button class="btn cand${pageFlow ? "" : " is-on"}" data-v="flow:cont">\u8FDE\u7EED<small>\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837</small></button><button class="btn cand${pageFlow ? " is-on" : ""}" data-v="flow:pages">\u5206\u9875<small>\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370</small></button></div><div class="part-sec">\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">\u4E0D\u6298\u884C<small>\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">\u6298\u884C<small>\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9</small></button></div><div class="offer-msg">\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -37545,6 +37552,13 @@ function openPaperSheet() {
     } else if (v === "scope:all" || v === "scope:segment") {
       viewScope = v === "scope:all" ? "all" : "segment";
       view.render();
+      draw();
+    } else if (v === "only1") {
+      const one = st2.song.parts[0];
+      if (!one) return;
+      const on2 = pv(one.id).only && st2.song.parts.every((q2) => q2 === one || !pv(q2.id).only);
+      for (const q2 of st2.song.parts) setPv(q2.id, { only: !on2 && q2 === one });
+      afterViewChange();
       draw();
     }
   });
@@ -39985,4 +39999,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a50c5d6f8b1b.mjs.map
+//# sourceMappingURL=moonsinger-2ddf1a89322d.mjs.map
