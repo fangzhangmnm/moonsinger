@@ -35,6 +35,12 @@ try {
   // 歌库顶条「乐器」= 只弹着玩的乐器目录，盖在歌库上面；「←」回歌库（2026-10-08 Opus；user「歌库应该有一个专门的乐器目录的入口」）
   await p.click('#galleryFull [data-v="instruments"]'); await p.waitForSelector(".inst-row");
   check((await p.textContent(".finder-title")) === "乐器目录（弹着玩）" && !(await p.$('.finder [data-v="cast"]')), "歌库「乐器」= 只弹着玩的目录（没有「上场」）");
+  {   // 即兴时点 pad 的「1=」滑窗 = 滚轮弹出来、在最上层（v0.9.43；user「即兴的时候键盘窗口的滑窗，点不出弹窗」：滚轮写死 z 40，压在叠到歌库上的舞台下面）
+    await p.click('.pad-panel [data-knob="key"]'); await p.waitForTimeout(250);
+    const top = await p.evaluate(() => { const d = document.querySelector(".drum"); if (!d) return "没有滚轮"; const r = d.getBoundingClientRect(), el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return d.contains(el) ? "ok" : `被盖住：${el?.className}`; });
+    check(top === "ok", "即兴：点「1=」= 滚轮弹出来、在最上层", top);
+    await p.click(".drum .drum-item.on"); await p.waitForTimeout(200);   // 点当前那一格 = 收起（调不变）
+  }
   {   // 屏幕够宽 = 多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）
     const fw = await p.$eval(".finder-list", (e) => e.clientWidth), cols = await p.$eval(".finder-items", (e) => getComputedStyle(e).gridTemplateColumns.split(" ").length);
     check(cols === Math.max(1, Math.floor(fw / 260)), `目录 ${fw}px 宽 = ${cols} 列（每格至少 260 px）`);
@@ -57,9 +63,10 @@ try {
   check(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id1), "安家即落本地：身份在 store 里（occupied）");
   const t1 = await title(); check(!/•/.test(t1), "安家那一笔已经存了，没有「•」", t1);
   // 再写几个音 → 「•」→ 2 s 后自动存
-  for (const k of ["Digit3", "Digit5"]) await p.keyboard.press(k);
-  await p.waitForTimeout(300);
-  check(/•$/.test(await title()), "写了之后「•」", await title());
+  // 写完那一刻就看（写音时标题同步刷新）：自动落盘是每 2 s 一跳的定时器（editor-session autosaveMs），隔 300 ms 再看会撞上它的相位（v0.9.43 前面多一步就稳定撞上）
+  await p.keyboard.press("Digit3"); await p.keyboard.press("Digit5");
+  const tDirty = await title();
+  check(/•$/.test(tDirty), "写了之后「•」", tDirty);
   await p.waitForTimeout(3500);
   check(!/•/.test(await title()), "2 s 内自动存了（「•」消失）", await title());
   const toks1 = await tokens();

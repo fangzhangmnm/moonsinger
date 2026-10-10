@@ -13,7 +13,8 @@
   --play: #e0702a;    /* 播放线 / 正在响的音（和光标的 --accent 分开；2026-10-10 user「线，和光标用不一样的颜色」） */
   --start: #2f8f5b;   /* 起点的小旗（⟲ 从这儿重放） */
   --ghost: #a9b4c2;
-  --z-menu: 300;
+  --z-menu: 300;      /* 浮在 body 上的小菜单 / 滚轮 / 提示条：盖过歌库一屏和「即兴」叠上来的舞台（v0.9.43：滑窗的滚轮原来写死 40，即兴时压在下面点不出来） */
+  --z-float: 30;      /* 谱面上浮着的小钮（1:1）：在谱之上、在任何一屏之下 */
   --z-overlay: 250;   /* 歌库一屏（在 menu 之下：图库包的卡片菜单 / 弹层用 --z-menu，要压在屏上面） */
   --z-window: 200;    /* 参考窗（@internal/reference-window 读这个名字）：谱 / pad 之上，歌库一屏和菜单之下（2026-10-08 深夜 v0.8） */
   --z-sheet: 500;
@@ -242,7 +243,7 @@ button, input, select { font: inherit; color: inherit; }
 .set-credit pre { white-space: pre-wrap; font: inherit; font-size: 12px; -webkit-user-select: text; user-select: text; }
 
 /* 有新版本（PWA 壳，2026-10-07）：顶上一条，不挡谱 */
-.update-bar { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 6px); left: 50%; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 8px;
+.update-bar { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 6px); left: 50%; transform: translateX(-50%); z-index: var(--z-menu); display: flex; align-items: center; gap: 8px;
   background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px 6px 14px; box-shadow: 0 4px 16px rgba(0,0,0,.12); font-size: 14px; }
 .set-app { align-items: center; }
 .set-ver { color: #777; font-size: 12px; margin-right: auto; }
@@ -315,7 +316,7 @@ button, input, select { font: inherit; color: inherit; }
 .pad-key.swiping { background: var(--accent-soft); }
 .pad-key.swiping .acc { font-weight: 700; }
 /* 竖直滚轮（点开 pad 的旋钮；src/ui/drum.ts）：中间那格 = 选中 */
-.drum { position: fixed; z-index: 40; display: flex; gap: 2px; background: #fff; border-radius: 10px; box-shadow: 0 0 0 1px var(--line), 0 8px 28px rgba(0,0,0,.18); overflow: hidden; }   /* 描边不占地方：滚轮和旋钮一样宽 */
+.drum { position: fixed; z-index: var(--z-menu); display: flex; gap: 2px; background: #fff; border-radius: 10px; box-shadow: 0 0 0 1px var(--line), 0 8px 28px rgba(0,0,0,.18); overflow: hidden; }   /* 描边不占地方：滚轮和旋钮一样宽 */
 .drum::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); background: var(--accent-soft); pointer-events: none; }
 /* 原生滚动 + 吸附（user「拖动的物理也很难受，能不能换成标准的」）：手感 = 系统里别的列表 */
 .drum-col { position: relative; height: 100%; overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; touch-action: pan-y; scrollbar-width: none; }
@@ -370,7 +371,7 @@ button, input, select { font: inherit; color: inherit; }
   border-radius: 4px; padding: 0 5px 0 4px; box-shadow: 0 0 0 1px var(--line); }
 .pin-name::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; background: var(--cat, var(--muted)); }
 .score.zoomed.desk .sheet { margin: 0; }            /* 放大超出屏幕时不再居中（居中会让左边滚不到） */
-.btn.zoom-reset { position: fixed; z-index: 30; height: 30px; padding: 0 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.btn.zoom-reset { position: fixed; z-index: var(--z-float); height: 30px; padding: 0 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
 .score.desk .sheet { margin: 0 auto; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 2px 10px rgba(0, 0, 0, .08); min-height: 100%; }
 .staff-svg .paper-chip { fill: var(--panel); stroke: var(--line); rx: 6px; cursor: pointer; }
 .staff-svg .paper-chip-icon { color: var(--muted); cursor: pointer; }
