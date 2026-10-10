@@ -20,7 +20,7 @@ export type PdfFontId = "sans" | "pinyin";
 const PT_PER_MM = 72 / 25.4;
 const INK: Rgb = [0.1, 0.1, 0.1];
 /** 编辑器专用、不印的样式类（任一个命中就不印）。 */
-const SKIP = new Set(["paper-chip", "paper-chip-text", "paper-chip-icon", "part-stub", "part-stub-line", "hidden-note", "hidden-paper", "warn", "selbox", "caret", "nav-text", "part-badge",
+const SKIP = new Set(["cat-bar", "cat-dot", "paper-chip", "paper-chip-text", "paper-chip-icon", "part-stub", "part-stub-line", "hidden-note", "hidden-paper", "warn", "selbox", "caret", "nav-text", "part-badge",
   "tempo-change", "dyn-implied", "arr-issue", "arr-empty", "empty", "phrase-mark", "page", "in-span"]);
 /** 「empty」在占位提示上 = 不印；在声部名上 = 还没人上场（屏幕上画淡），名字照印。 */
 const skipped = (cls: string[]) => cls.some((c) => SKIP.has(c) && !(c === "empty" && cls.includes("part-name")));

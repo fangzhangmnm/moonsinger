@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.30-2026-10-10";
+var APP_VERSION = "v0.9.31-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7265,11 +7265,12 @@ function engrave(song, o10) {
     const spans = per.flatMap((q2) => q2.units.filter((u2) => u2.kind === "chunk").map((u2) => [u2.tick, u2.tick + u2.ticks]));
     const breakableAt = (tick) => !spans.some(([a10, b3]) => a10 < tick - 1e-6 && b3 > tick + 1e-6);
     const ind0 = Math.max(...parts.map((p2) => Math.max(...nameLines(p2.name, p2.staves ?? 1).map(nameW)))) + 1.4;
+    const indN = parts.some((p2) => p2.abbr) ? Math.max(...parts.map((p2) => nameW(p2.abbr ?? ""))) + 1.4 : 0;
     const keyNow = new Map(per.map((q2) => [q2.p.id, q2.head.key]));
     const clefW = (q2) => q2.fFam ? W.fClef : W.gClef;
     const headerOf = (first) => Math.max(...per.map((q2) => {
       const f2 = keyNow.get(q2.p.id);
-      return (first ? ind0 : 0) + MARGIN + 0.6 + clefW(q2) + 1 + Math.abs(f2) * 1.05 + (f2 ? 0.8 : 0) + (first ? timeWidth(q2.head.time.beats, q2.head.time.beatType) + 1.2 : 0.4);
+      return (first ? ind0 : indN) + MARGIN + 0.6 + clefW(q2) + 1 + Math.abs(f2) * 1.05 + (f2 ? 0.8 : 0) + (first ? timeWidth(q2.head.time.beats, q2.head.time.beatType) + 1.2 : 0.4);
     }));
     let system = 0, x2 = headerOf(true);
     const sysStarts = [x2], sysKeys = [new Map(keyNow)];
@@ -7439,7 +7440,7 @@ function engrave(song, o10) {
       return last.bar ? Math.min(right, last.x + 0.7) : right;
     });
     for (let s10 = 0; s10 < nSys; s10++) {
-      const ind = s10 === 0 ? ind0 : 0;
+      const ind = s10 === 0 ? ind0 : indN;
       per.forEach((q2, r10) => {
         const f2 = sysKeys[s10].get(q2.p.id) ?? q2.head.key;
         for (let k2 = 0; k2 < q2.staves; k2++) {
@@ -7470,6 +7471,17 @@ function engrave(song, o10) {
           lines2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: ln3, cls: ncls, size: PART_EM * sp2, anchor: "start" }));
           if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (lines2.length - 1)) + P2(1.5), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
           partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: yOf(r02, TOP_LINE) - P2(1.2), w: P2(ind0 + 0.2), h: yOf(r12, BOTTOM_LINE) - yOf(r02, TOP_LINE) + P2(2.4) });
+          if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
+        } else if (q2.p.abbr) {
+          const r02 = rowOf(s10, r10, 0), r12 = rowOf(s10, r10, q2.staves - 1);
+          const ny2 = (yOf(r02, MID_LINE) + yOf(r12, MID_LINE)) / 2 + P2(0.55 * PART_EM);
+          prims.push({ t: "text", x: P2(MARGIN), y: ny2, s: q2.p.abbr, cls: q2.p.empty ? "part-name abbr empty" : q2.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp2, anchor: "start" });
+          if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
+          partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: yOf(r02, TOP_LINE) - P2(1.2), w: P2(indN + 0.2), h: yOf(r12, BOTTOM_LINE) - yOf(r02, TOP_LINE) + P2(2.4) });
+        }
+        if (q2.p.colorIdx !== void 0) {
+          const r02 = rowOf(s10, r10, 0), r12 = rowOf(s10, r10, q2.staves - 1);
+          prims.push({ t: "rect", x: P2(MARGIN + ind - 0.8), y: yOf(r02, TOP_LINE), w: P2(0.3), h: yOf(r12, BOTTOM_LINE) - yOf(r02, TOP_LINE), cls: `cat-bar cat-${q2.p.colorIdx}` });
         }
         if (q2.staves === 2) {
           const bx = P2(MARGIN + ind - 0.7), y02 = yOf(rowOf(s10, r10, 0), TOP_LINE), y1 = yOf(rowOf(s10, r10, 1), BOTTOM_LINE);
@@ -8882,6 +8894,67 @@ function dockOf(s10) {
 }
 var hasKeys = (m2) => m2 === "notes" || m2 === "symbols";
 
+// src/ui/part-colors.ts
+var TAB20 = [
+  "#1f77b4",
+  "#aec7e8",
+  "#ff7f0e",
+  "#ffbb78",
+  "#2ca02c",
+  "#98df8a",
+  "#d62728",
+  "#ff9896",
+  "#9467bd",
+  "#c5b0d5",
+  "#8c564b",
+  "#c49c94",
+  "#e377c2",
+  "#f7b6d2",
+  "#7f7f7f",
+  "#c7c7c7",
+  "#bcbd22",
+  "#dbdb8d",
+  "#17becf",
+  "#9edae5"
+];
+var HUE = { keys: 0, voice: 1, strings: 2, brass: 3, wind: 4, pluck: 5, synth: 6, perc: 7, mallet: 8, fx: 9 };
+function categoryOfSound(sound2) {
+  const head = sound2.split(".")[0];
+  if (head === "voice") return "voice";
+  if (head === "keyboard") return "keys";
+  if (head === "pluck") return "pluck";
+  if (head === "strings") return "strings";
+  if (head === "brass") return "brass";
+  if (head === "wind") return "wind";
+  if (head === "synth") return "synth";
+  if (head === "drum" || head === "rattle" || head === "wood" || head === "percussion") return "perc";
+  if (head === "metal" || head === "pitched-percussion") return "mallet";
+  return "fx";
+}
+function partColorIndices(sounds) {
+  const seen = /* @__PURE__ */ new Map();
+  return sounds.map((s10) => {
+    const c10 = categoryOfSound(s10), k2 = seen.get(c10) ?? 0;
+    seen.set(c10, k2 + 1);
+    return HUE[c10] * 2 + k2 % 2;
+  });
+}
+var VOICE_ABBR = { Vocals: "Vo.", "Backing Vocals": "B. Vo.", Soprano: "S.", Alto: "A.", Tenor: "T.", Bass: "B." };
+function shortName(name) {
+  const t10 = name.trim();
+  if (!t10) return t10;
+  if (/[぀-ヿ㐀-鿿가-힯]/.test(t10)) return [...t10].slice(0, 2).join("");
+  const w2 = t10.split(/\s+/).filter(Boolean);
+  if (w2.length > 1) return w2.map((x2) => x2[0]).join("").toUpperCase() + ".";
+  return t10.length <= 5 ? t10 : `${t10.slice(0, 3)}.`;
+}
+function partAbbr(label, o10) {
+  const m2 = / (\d+)$/.exec(label), base3 = m2 ? label.slice(0, -m2[0].length) : label, num2 = m2 ? ` ${m2[1]}` : "";
+  if (o10.conceptAbbr && o10.conceptNames?.some((n10) => n10 === base3)) return o10.conceptAbbr + num2;
+  if (o10.voice && VOICE_ABBR[base3]) return VOICE_ABBR[base3] + num2;
+  return shortName(base3) + num2;
+}
+
 // src/ui/score-view.ts
 var caretKey = (st3) => `${st3.at.paper}|${st3.at.part}|${st3.caret}`;
 var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
@@ -9199,7 +9272,8 @@ var ScoreView = class {
         this.ink.appendChild(d3);
         this.hlEls[k2] = d3;
       }
-      const r10 = Math.max(6, h2.w * 0.8);
+      const r10 = Math.max(6, h2.w * 0.8), pv2 = this.host.parts().find((q2) => q2.id === L2.systems[h2.system]?.part);
+      d3.style.setProperty("--hl", pv2?.colorIdx !== void 0 ? TAB20[pv2.colorIdx] : "");
       d3.style.left = `${h2.x + h2.w / 2 - r10}px`;
       d3.style.top = `${h2.y - r10}px`;
       d3.style.width = d3.style.height = `${2 * r10}px`;
@@ -23982,29 +24056,29 @@ function loadVowelTable() {
 // src/gm/instruments.gen.ts
 var INSTRUMENT_FILES = {
   "concepts": {
-    "file": "vendor/instruments/instruments-v11.json",
-    "bytes": 228355,
-    "sha256": "038382fce31d22ca5d5fe68ae68f0b74d26ac37445adcc1de708b342b4a5c5b9"
+    "file": "vendor/instruments/instruments-v12.json",
+    "bytes": 268197,
+    "sha256": "0da06452a23ffd5f80b5e28e74dc8765d35740288ae72eba157a470659af4858"
   },
   "gmMap": {
-    "file": "vendor/instruments/gm-map-v11.json",
-    "bytes": 404898,
-    "sha256": "64479bc902bcbcc214d711b457cd38d6229532624fecff2b4806c8310e653163"
+    "file": "vendor/instruments/gm-map-v12.json",
+    "bytes": 413010,
+    "sha256": "43bf05020258332480141249e58624913015256dc10e32824cf146a3d349a23e"
   },
   "icons": {
-    "file": "vendor/instruments/instrument-icons-20261008-v11.svg",
+    "file": "vendor/instruments/instrument-icons-20261010-v12.svg",
     "bytes": 139014,
-    "sha256": "a397a5f10f5fdc901e95234b8df1c5b2f870191db4aef85c12e0876de482a0ad"
+    "sha256": "7c82c60b395d4306f42c6cc6f886355ba77a5b2cab3f27717a7428ed222491b6"
   },
   "iconCredits": {
-    "file": "vendor/instruments/icon-credits-v11.json",
+    "file": "vendor/instruments/icon-credits-v12.json",
     "bytes": 20670,
-    "sha256": "370dc65005bf9775362a0acd2a6e38d32eef493ce4638d89079faf645961960e"
+    "sha256": "a3cf6fccffaccd32a83bc556482fee6f0d332771ff9895dd7d1555f795141945"
   },
   "licenses": {
-    "file": "vendor/instruments/LICENSES-chosen-v11.md",
+    "file": "vendor/instruments/LICENSES-chosen-v12.md",
     "bytes": 145790,
-    "sha256": "fb6b86667ee3993502f479d417e0863ff5d407e5dc2ebc13c63d1326d4e82f84"
+    "sha256": "ac32e9b1f194cd4f3e2b36e43ed9ecccc3c1e5e3588b83303ac853653003a7a8"
   }
 };
 var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
@@ -24451,7 +24525,7 @@ var Studio2 = class {
   render() {
     const box = this.el.querySelector(".studio-strips"), m2 = this.host.master();
     const master = `<div class="strip master" data-id="__master"><div class="strip-name">\u603B\u8F68</div><div class="strip-who">\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E</div><label class="strip-row">\u589E\u76CA <output>${dbText(m2.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${m2.gainDb}" data-master title="\u53CC\u51FB\u56DE 0" /></label><div class="strip-btns"><button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter" title="\u6BCD\u7EBF\u9650\u5E45\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E0D\u52A8\uFF1B\u5173\u6389 = \u53EF\u80FD\u524A\u6CE2">\u9650\u5E45${m2.limiter ? "" : "\uFF08\u5173\uFF1A\u53EF\u80FD\u524A\u6CE2\uFF09"}</button></div><div class="strip-row meter"><span>\u5CF0\u503C <span class="meter-val">\u2014</span></span><div class="meter-bar"><div class="meter-fill"></div></div></div></div>`;
-    box.innerHTML = master + this.host.strips().map((s10) => `<div class="strip" data-id="${esc4(s10.id)}"><div class="strip-name">${esc4(s10.name)}</div><div class="strip-who">${esc4(s10.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s10.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s10.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label><div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+    box.innerHTML = master + this.host.strips().map((s10) => `<div class="strip" data-id="${esc4(s10.id)}"${s10.color ? ` data-color style="--cat:${esc4(s10.color)}"` : ""}><div class="strip-name">${esc4(s10.name)}</div><div class="strip-who">${esc4(s10.performer)}</div><label class="strip-row">\u589E\u76CA <output>${dbText(s10.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s10.gainDb}" data-gain title="\u53CC\u51FB\u56DE 0" /></label><label class="strip-row">\u58F0\u50CF <output>${panText(s10.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s10.pan}" data-pan title="\u53CC\u51FB\u56DE\u4E2D" /></label><div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
     (s10.refs ? `<div class="strip-refs">\u5728 ${s10.refs} \u5F20\u7EB8\u4E0A</div>` : `<div class="strip-refs">\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709 <button class="btn cand danger" data-v="delpart" title="\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B</button></div>`) + `</div>`).join("");
   }
 };
@@ -34174,6 +34248,8 @@ ${xrefAt}
 var PT_PER_MM = 72 / 25.4;
 var INK = [0.1, 0.1, 0.1];
 var SKIP = /* @__PURE__ */ new Set([
+  "cat-bar",
+  "cat-dot",
   "paper-chip",
   "paper-chip-text",
   "paper-chip-icon",
@@ -37079,7 +37155,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "095dc2a51175",
+  cssHash: "b8226ef551fc",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -37371,8 +37447,8 @@ var partLabel = (id2) => {
 };
 var studio = new Studio2($2("stage"), {
   strips: () => {
-    const labels = partLabels(st2.song, doc.extras);
-    return st2.song.parts.map((p2, k2) => ({ id: p2.id, name: labels[k2], refs: st2.song.papers.filter((pp) => pp.tracks[p2.id]).length, performer: activeCandidateName(doc.extras, p2.role) ?? "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09", ...micOf(p2), muted: pv(p2.id).muted, solo: pv(p2.id).solo }));
+    const labels = partLabels(st2.song, doc.extras), cols = partColorIndices(st2.song.parts.map((p2) => roleSound(doc.extras, p2.role)));
+    return st2.song.parts.map((p2, k2) => ({ id: p2.id, name: labels[k2], color: TAB20[cols[k2]], refs: st2.song.papers.filter((pp) => pp.tracks[p2.id]).length, performer: activeCandidateName(doc.extras, p2.role) ?? "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09", ...micOf(p2), muted: pv(p2.id).muted, solo: pv(p2.id).solo }));
   },
   setGain: (id2, dB) => {
     const p2 = st2.song.parts.find((x2) => x2.id === id2);
@@ -37591,14 +37667,29 @@ function lyricHintAt(i10) {
   if (!x2) return null;
   return lyricWhyText(x2, roleName(doc.extras, p2.role), songLangOf(flattenPart(st2.song, p2.id).tokens, st2.song.hum));
 }
+function partLooks() {
+  const labels = partLabels(st2.song, doc.extras), sounds = st2.song.parts.map((p2) => roleSound(doc.extras, p2.role));
+  const colors = partColorIndices(sounds);
+  const needCat = !catalogNow && st2.song.parts.some((p2) => !!doc.extras.lounge[p2.role]?.concept);
+  if (needCat) void loadCatalog(new URL(import.meta.url)).then((c10) => {
+    catalogNow = c10;
+    view.render();
+  }).catch(() => void 0);
+  const abbrs = st2.song.parts.map((p2, k2) => {
+    const ids = doc.extras.lounge[p2.role]?.concept?.ids;
+    const c10 = catalogNow && ids ? (ids.wikidata ? catalogNow.byId.get(ids.wikidata) : void 0) ?? (ids.local ? catalogNow.byId.get(ids.local) ?? catalogNow.byId.get(`x:${ids.local}`) : void 0) : void 0;
+    return partAbbr(labels[k2], { ...c10 ? { conceptNames: [c10.names.en, c10.names.zh], ...c10.abbr?.en ? { conceptAbbr: c10.abbr.en } : {} } : {}, voice: sounds[k2].startsWith("voice.") });
+  });
+  return { colors, abbrs };
+}
 function partViews() {
-  const labels = partLabels(st2.song, doc.extras), mutes = lyricMutes();
+  const labels = partLabels(st2.song, doc.extras), mutes = lyricMutes(), looks = partLooks();
   return st2.song.parts.map((p2, k2) => {
     const v = pv(p2.id), badges = [v.muted ? "\u9759\u97F3" : "", v.solo ? "\u72EC\u594F" : "", v.only ? "\u53EA\u770B\u5B83" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p2.role)?.engine ?? "unknown";
     const lm2 = mutes.get(p2.id);
     const noLyrics = eng === "soundfont" || eng === "vowel-sampler" ? `${labels[k2]}${eng === "vowel-sampler" ? "\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC" : "\u4E0D\u5531\u6B4C\u8BCD"}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220` : "";
-    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], empty: eng === "unknown", first: k2 === 0, ...p2.clef ? { clef: p2.clef } : {}, ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ignores: ignoredFor(p2.role) };
+    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: eng === "unknown", first: k2 === 0, ...p2.clef ? { clef: p2.clef } : {}, ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ignores: ignoredFor(p2.role) };
   });
 }
 function afterViewChange() {
@@ -40002,4 +40093,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-14a410bba960.mjs.map
+//# sourceMappingURL=moonsinger-29316813cc75.mjs.map

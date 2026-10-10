@@ -1,6 +1,6 @@
 {
- "v": 11,
- "date": "2026-10-08",
+ "v": 12,
+ "date": "2026-10-10",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效）。id = Wikidata QID（没有用 x: 本地 id）；ids 束里 gm 只放本尊，平替在 substitutes[]（按 basis 强弱 + 分类号同到的位数排）。year = 这个概念的声音第一次能被听见；lineageYear = 算上原文点名的前身。fundamentalRank 一律 null，归 user。AI 判的字段：musicxml、styles、技法号挂母乐器、平替 family / 自动、部分 hs 和中日名。",
  "defs": {
@@ -455,7 +455,52 @@
     "id": "sound",
     "zh": "音效"
    }
-  ]
+  ],
+  "clefs": [
+   {
+    "id": "G",
+    "zh": "高音谱号"
+   },
+   {
+    "id": "G8vb",
+    "zh": "高音谱号（下加 8：低一个八度）"
+   },
+   {
+    "id": "G8va",
+    "zh": "高音谱号（上加 8：高一个八度）"
+   },
+   {
+    "id": "G15ma",
+    "zh": "高音谱号（上加 15：高两个八度）"
+   },
+   {
+    "id": "F",
+    "zh": "低音谱号"
+   },
+   {
+    "id": "F8vb",
+    "zh": "低音谱号（下加 8：低一个八度）"
+   },
+   {
+    "id": "F8va",
+    "zh": "低音谱号（上加 8：高一个八度）"
+   },
+   {
+    "id": "C3",
+    "zh": "中音谱号"
+   },
+   {
+    "id": "C4",
+    "zh": "次中音谱号"
+   }
+  ],
+  "notationMethod": {
+   "source": "MuseScore instruments.xml（upstream/musescore/，GPL-3.0，固定 commit 见 manifest）+ 能找到的英文维基原文佐证（notation.wikipedia）",
+   "clef": "clef = 按谱惯例写谱（谱面 = 记谱音高）时用的谱号（MuseScore 的 transposingClef，没有就 clef）；concertClef = 按实际音高显示时 MuseScore 用的谱号（钟琴 G15ma、木琴 G8va……）；多谱表的乐器另有 clefs / concertClefs",
+   "sounds": "sounds = 实际音高 − 按基础谱号（G / F / C，不看 8va / 8vb 记号）读出的谱面音高，半音：吉他 −12（谱号 G8vb）、低音提琴 −12、短笛 +12、钢片琴 +12、钟琴 +24、B♭ 单簧管 −2、F 调圆号 −7",
+   "octave": "octave = sounds 里整八度的部分（向 0 取整到 12 的倍数）：次中音萨克斯 −14 → −12、中音萨克斯 −9 → 0",
+   "abbr": "abbr.en = MuseScore 的 shortName（出版总谱惯例）；zh / ja 这一版不给：MuseScore 的中日文翻译里简写大多照搬拉丁写法、写成汉字的只有二十来条且有错，没找到中文总谱通行简称的出处——显示时退回 en"
+  }
  },
  "concepts": [
   {
@@ -564,7 +609,26 @@
     "high": 108,
     "basis": "原文（Piano）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Pno.",
+    "basis": "MuseScore instruments.xml 的 piano shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 piano：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q5357606",
@@ -638,7 +702,26 @@
     "high": 108,
     "basis": "原文换算（Yamaha CP-70）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. Pno.",
+    "basis": "MuseScore instruments.xml 的 electric-piano shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 electric-piano：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q7673920",
@@ -697,7 +780,26 @@
     "high": 108,
     "basis": "原文换算（Tack piano）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Hnk. Pno.",
+    "basis": "MuseScore instruments.xml 的 honky-tonk-piano shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 honky-tonk-piano：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q1136507",
@@ -780,7 +882,26 @@
     "high": 100,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. Pno.",
+    "basis": "MuseScore instruments.xml 的 electric-piano shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 electric-piano：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q81982",
@@ -854,7 +975,26 @@
     "high": 89,
     "basis": "原文（Harpsichord）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Hch.",
+    "basis": "MuseScore instruments.xml 的 harpsichord shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 harpsichord：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q1099153",
@@ -928,7 +1068,26 @@
     "high": 88,
     "basis": "原文（Clavinet）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Cch.",
+    "basis": "MuseScore instruments.xml 的 clavichord shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 clavichord：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q320341",
@@ -1010,7 +1169,31 @@
     "high": 108,
     "basis": "原文（Celesta）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Cel.",
+    "basis": "MuseScore instruments.xml 的 celesta shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G8va",
+    "sounds": 12,
+    "octave": 12,
+    "basis": "MuseScore instruments.xml 的 celesta：谱号 G / F、移调 +12 半音、实际音高显示用 G8va / F8va",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G8va",
+     "F8va"
+    ],
+    "wikipedia": {
+     "quote": "The celesta is a transposing instrument; it sounds one octave higher than the written pitch.",
+     "file": "upstream/wikipedia-en/Celesta.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q626035",
@@ -1093,7 +1276,23 @@
     "high": 108,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Glock.",
+    "basis": "MuseScore instruments.xml 的 glockenspiel shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G15ma",
+    "sounds": 24,
+    "octave": 24,
+    "basis": "MuseScore instruments.xml 的 glockenspiel：谱号 G、移调 +24 半音、实际音高显示用 G15ma",
+    "wikipedia": {
+     "quote": "The glockenspiel is often a transposing instrument and sounds two octaves above the written pitch, though this is sometimes remedied by using an octave clef. == History == Early glockenspiels were percussion instruments that produced notes via small, tuned bronze bells struck with a drumstick.",
+     "file": "upstream/wikipedia-en/Glockenspiel.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q1365218",
@@ -1211,7 +1410,23 @@
     "high": 89,
     "basis": "原文（Vibraphone）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Vib.",
+    "basis": "MuseScore instruments.xml 的 vibraphone shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 vibraphone：谱号 G、不移调",
+    "wikipedia": {
+     "quote": "Unlike its cousin, the glockenspiel, the vibraphone is generally a non-transposing instrument, written at concert pitch.",
+     "file": "upstream/wikipedia-en/Vibraphone.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q220971",
@@ -1275,7 +1490,31 @@
     "high": 96,
     "basis": "原文（Marimba）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Mrm.",
+    "basis": "MuseScore instruments.xml 的 marimba shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 marimba：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ],
+    "wikipedia": {
+     "quote": "The marimba is a non-transposing instrument with no octave displacement, unlike the xylophone, which sounds one octave higher than written, and the glockenspiel, which sounds two octaves higher than written. === Resonators === Part of the key to the marimba's rich sound are its resonators.",
+     "file": "upstream/wikipedia-en/Marimba.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q165666",
@@ -1353,7 +1592,23 @@
     "high": 108,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Xyl.",
+    "basis": "MuseScore instruments.xml 的 xylophone shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G8va",
+    "sounds": 12,
+    "octave": 12,
+    "basis": "MuseScore instruments.xml 的 xylophone：谱号 G、移调 +12 半音、实际音高显示用 G8va",
+    "wikipedia": {
+     "quote": "Like the glockenspiel, the xylophone is a transposing instrument: its parts are written one octave below the sounding notes.Concert xylophones have tube resonators below the bars to enhance the tone and sustain.",
+     "file": "upstream/wikipedia-en/Xylophone.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q178812",
@@ -1422,7 +1677,18 @@
     "high": 77,
     "basis": "原文（Tubular bells）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Cme.",
+    "basis": "MuseScore instruments.xml 的 tubular-bells shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 tubular-bells：谱号 G、不移调"
+   }
   },
   {
    "id": "Q1588017",
@@ -1487,7 +1753,26 @@
     "high": 86,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Dlc.",
+    "basis": "MuseScore instruments.xml 的 dulcimer shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 dulcimer：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q105891",
@@ -1566,7 +1851,28 @@
     "high": 96,
     "basis": "原文换算（Hammond organ）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Hm. Org.",
+    "basis": "MuseScore instruments.xml 的 hammond-organ shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 hammond-organ：谱号 G / F / F、不移调",
+    "clefs": [
+     "G",
+     "F",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q281460",
@@ -1633,7 +1939,28 @@
     "high": 96,
     "basis": "原文换算（Pipe organ）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Org.",
+    "basis": "MuseScore instruments.xml 的 pipe-organ shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 pipe-organ：谱号 G / F / F8vb、不移调",
+    "clefs": [
+     "G",
+     "F",
+     "F8vb"
+    ],
+    "concertClefs": [
+     "G",
+     "F",
+     "F8vb"
+    ]
+   }
   },
   {
    "id": "Q12460259",
@@ -1705,7 +2032,26 @@
     "high": 89,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Rd. Org.",
+    "basis": "MuseScore instruments.xml 的 reed-organ shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 reed-organ：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q79838",
@@ -1786,7 +2132,26 @@
     "high": 93,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Acc.",
+    "basis": "MuseScore instruments.xml 的 accordion shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 accordion：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q51290",
@@ -1859,7 +2224,18 @@
     "high": 97,
     "basis": "原文（Harmonica）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Harm.",
+    "basis": "MuseScore instruments.xml 的 harmonica-d10high-g shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 harmonica：谱号 G、不移调"
+   }
   },
   {
    "id": "Q215032",
@@ -1930,7 +2306,26 @@
     "high": 93,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Ban.",
+    "basis": "MuseScore instruments.xml 的 bandoneon shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 bandoneon：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q719120",
@@ -2021,7 +2416,18 @@
     "high": 83,
     "basis": "原文换算（Classical guitar）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Guit.",
+    "basis": "MuseScore instruments.xml 的 guitar-nylon shortName"
+   },
+   "notation": {
+    "clef": "G8vb",
+    "concertClef": "G8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 guitar-nylon：谱号 G8vb、不移调"
+   }
   },
   {
    "id": "Q2563510",
@@ -2122,7 +2528,18 @@
     "high": 84,
     "basis": "原文换算（Guitar tunings）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Guit.",
+    "basis": "MuseScore instruments.xml 的 guitar-steel shortName"
+   },
+   "notation": {
+    "clef": "G8vb",
+    "concertClef": "G8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 guitar-steel：谱号 G8vb、不移调"
+   }
   },
   {
    "id": "Q636313",
@@ -2192,7 +2609,18 @@
     "high": 84,
     "basis": "原文换算（Guitar tunings）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. Guit.",
+    "basis": "MuseScore instruments.xml 的 electric-guitar shortName"
+   },
+   "notation": {
+    "clef": "G8vb",
+    "concertClef": "G8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 electric-guitar：谱号 G8vb、不移调"
+   }
   },
   {
    "id": "Q78987",
@@ -2296,7 +2724,18 @@
     "high": 86,
     "basis": "原文换算（Guitar tunings）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. Guit.",
+    "basis": "MuseScore instruments.xml 的 electric-guitar shortName"
+   },
+   "notation": {
+    "clef": "G8vb",
+    "concertClef": "G8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 electric-guitar：谱号 G8vb、不移调"
+   }
   },
   {
    "id": "Q80019",
@@ -2395,7 +2834,23 @@
     "high": 55,
     "basis": "原文（Double bass）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Cb.",
+    "basis": "MuseScore instruments.xml 的 contrabass shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 contrabass：谱号 F、移调 -12 半音、实际音高显示用 F8vb",
+    "wikipedia": {
+     "quote": "Since much of the double bass's range lies below the standard bass clef, it is notated an octave higher than it sounds to avoid having to use excessive ledger lines below the staff.",
+     "file": "upstream/wikipedia-en/Double_bass.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q46185",
@@ -2481,7 +2936,23 @@
     "high": 63,
     "basis": "原文换算（Bass guitar tuning）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. B.",
+    "basis": "MuseScore instruments.xml 的 electric-bass shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 electric-bass：谱号 F、移调 -12 半音、实际音高显示用 F8vb",
+    "wikipedia": {
+     "quote": "The bass guitar is a transposing instrument, as it is notated in bass clef an octave higher than it sounds (as is the double bass) to avoid excessive ledger lines being required below the staff.",
+     "file": "upstream/wikipedia-en/Guitar.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q932855",
@@ -2545,7 +3016,18 @@
     "high": 63,
     "basis": "原文换算（Fretless bass）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Frtl. El. B.",
+    "basis": "MuseScore instruments.xml 的 fretless-electric-bass shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 fretless-electric-bass：谱号 F、移调 -12 半音、实际音高显示用 F8vb"
+   }
   },
   {
    "id": "Q6398221",
@@ -2625,7 +3107,26 @@
     "high": 59,
     "basis": "原文（Rhodes piano）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 bass-synthesizer shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 bass-synthesizer：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q8355",
@@ -2707,7 +3208,18 @@
     "high": 100,
     "basis": "原文（Violin）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Vln.",
+    "basis": "MuseScore instruments.xml 的 violin shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 violin：谱号 G、不移调"
+   }
   },
   {
    "id": "Q80284",
@@ -2774,7 +3286,18 @@
     "high": 88,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Vla.",
+    "basis": "MuseScore instruments.xml 的 viola shortName"
+   },
+   "notation": {
+    "clef": "C3",
+    "concertClef": "C3",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 viola：谱号 C3、不移调"
+   }
   },
   {
    "id": "Q8371",
@@ -2842,7 +3365,18 @@
     "high": 81,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Vc.",
+    "basis": "MuseScore instruments.xml 的 violoncello shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 violoncello：谱号 F、不移调"
+   }
   },
   {
    "id": "Q2997126",
@@ -2946,7 +3480,26 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "St.",
+    "basis": "MuseScore instruments.xml 的 strings shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 strings：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q1231959",
@@ -3027,7 +3580,26 @@
     "high": 102,
     "basis": "原文（Pedal harp）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Hrp.",
+    "basis": "MuseScore instruments.xml 的 harp shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 harp：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q189737",
@@ -3109,7 +3681,18 @@
     "high": 57,
     "basis": "原文（Timpani）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Timp.",
+    "basis": "MuseScore instruments.xml 的 timpani shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 timpani：谱号 F、不移调"
+   }
   },
   {
    "id": "Q110897746",
@@ -3189,7 +3772,26 @@
     "high": 84,
     "basis": "原文换算（ARP String Ensemble）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 string-synthesizer shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 string-synthesizer：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q131186",
@@ -3367,7 +3969,18 @@
     "high": 86,
     "basis": "原文（Voice type）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Vo.",
+    "basis": "MuseScore instruments.xml 的 voice shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 voice：谱号 G、不移调"
+   }
   },
   {
    "id": "Q16346",
@@ -3600,7 +4213,23 @@
     "high": 82,
     "basis": "原文换算（Trumpet）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Tpt.",
+    "basis": "MuseScore instruments.xml 的 bb-trumpet shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": -2,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 trumpet：谱号 G、移调 -2 半音",
+    "wikipedia": {
+     "quote": "The most common type is the B♭ trumpet, a transposing instrument that sounds a whole step lower than written.",
+     "file": "upstream/wikipedia-en/Trumpet.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q8350",
@@ -3672,7 +4301,18 @@
     "high": 77,
     "basis": "原文（Trombone）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Tbn.",
+    "basis": "MuseScore instruments.xml 的 trombone shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 trombone：谱号 F、不移调"
+   }
   },
   {
    "id": "Q131168",
@@ -3745,7 +4385,23 @@
     "high": 60,
     "basis": "原文（Tuba）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Tba.",
+    "basis": "MuseScore instruments.xml 的 tuba shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 tuba：谱号 F、不移调",
+    "wikipedia": {
+     "quote": "In orchestras and symphonic bands, the tuba is written at concert pitch in the bass clef as a non-transposing instrument.",
+     "file": "upstream/wikipedia-en/Tuba.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q163759",
@@ -3829,7 +4485,18 @@
     "high": 77,
     "basis": "原文换算（French horn）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Hn.",
+    "basis": "MuseScore instruments.xml 的 horn shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": -7,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 horn：谱号 G、移调 -7 半音"
+   }
   },
   {
    "id": "Q16824192",
@@ -3906,7 +4573,26 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Br.",
+    "basis": "MuseScore instruments.xml 的 brass shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 brass：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q163829",
@@ -4093,7 +4779,26 @@
     "high": 96,
     "basis": "原文换算（Musical keyboard）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 poly-synth shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 poly-synth：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q1463985",
@@ -4160,7 +4865,23 @@
     "high": 88,
     "basis": "原文（Soprano saxophone）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "S. Sax.",
+    "basis": "MuseScore instruments.xml 的 soprano-saxophone shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": -2,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 soprano-saxophone：谱号 G、移调 -2 半音",
+    "wikipedia": {
+     "quote": "A transposing instrument pitched in the key of B♭, the modern soprano saxophone with a high F♯ key has a range from concert A♭3 to E6 (written low B♭ to high F♯) and is therefore pitched one octave above the tenor saxophone.",
+     "file": "upstream/wikipedia-en/Soprano_saxophone.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q445275",
@@ -4232,7 +4953,23 @@
     "high": 80,
     "basis": "原文（Alto saxophone）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "A. Sax.",
+    "basis": "MuseScore instruments.xml 的 alto-saxophone shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": -9,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 alto-saxophone：谱号 G、移调 -9 半音",
+    "wikipedia": {
+     "quote": "The alto saxophone is a transposing instrument, with pitches sounding a major sixth lower than written.",
+     "file": "upstream/wikipedia-en/Alto_saxophone.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q1414932",
@@ -4304,7 +5041,23 @@
     "high": 76,
     "basis": "原文（Tenor saxophone）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "T. Sax.",
+    "basis": "MuseScore instruments.xml 的 tenor-saxophone shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G8vb",
+    "sounds": -14,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 tenor-saxophone：谱号 G、移调 -14 半音、实际音高显示用 G8vb",
+    "wikipedia": {
+     "quote": "The tenor is pitched in the key of B♭ (while the alto is pitched in the key of E♭), and is a transposing instrument in the treble clef, sounding an octave and a major second lower than the written pitch.",
+     "file": "upstream/wikipedia-en/Tenor_saxophone.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q808218",
@@ -4376,7 +5129,23 @@
     "high": 69,
     "basis": "原文（Baritone saxophone）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Bar. Sax.",
+    "basis": "MuseScore instruments.xml 的 baritone-saxophone shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "F",
+    "sounds": -21,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 baritone-saxophone：谱号 G、移调 -21 半音、实际音高显示用 F",
+    "wikipedia": {
+     "quote": "Some modern instruments have a mount for a floor peg, similar to those on bass clarinets, to reduce weight on the player's neck when seated. == Transposition == It is a transposing instrument in the key of E♭, pitched an octave plus a major sixth lower than written.",
+     "file": "upstream/wikipedia-en/Baritone_saxophone.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q8377",
@@ -4445,7 +5214,18 @@
     "high": 91,
     "basis": "原文（Oboe）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Ob.",
+    "basis": "MuseScore instruments.xml 的 oboe shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 oboe：谱号 G、不移调"
+   }
   },
   {
    "id": "Q185041",
@@ -4505,7 +5285,23 @@
     "high": 84,
     "basis": "原文（Cor anglais）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "E. Hn.",
+    "basis": "MuseScore instruments.xml 的 english-horn shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": -7,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 english-horn：谱号 G、移调 -7 半音",
+    "wikipedia": {
+     "quote": "This means that music for the cor anglais is written a perfect fifth higher than the instrument sounds.",
+     "file": "upstream/wikipedia-en/Cor_anglais.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q159998",
@@ -4568,7 +5364,18 @@
     "high": 76,
     "basis": "原文（Bassoon）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Bsn.",
+    "basis": "MuseScore instruments.xml 的 bassoon shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 bassoon：谱号 F、不移调"
+   }
   },
   {
    "id": "Q8343",
@@ -4641,7 +5448,23 @@
     "high": 94,
     "basis": "原文换算（Clarinet）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Cl.",
+    "basis": "MuseScore instruments.xml 的 bb-clarinet shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": -2,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 bb-clarinet：谱号 G、移调 -2 半音",
+    "wikipedia": {
+     "quote": "above the C clarinet sound higher than notated, such as the aforementioned A♭ clarinet, a sixth higher; the longer instruments sound lower, such as the B♭ clarinet by one tone and the B♭ contrabass clarinet by two octaves and one tone.",
+     "file": "upstream/wikipedia-en/Clarinet.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q83509",
@@ -4717,7 +5540,23 @@
     "high": 108,
     "basis": "原文（Piccolo）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Picc.",
+    "basis": "MuseScore instruments.xml 的 piccolo shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G8va",
+    "sounds": 12,
+    "octave": 12,
+    "basis": "MuseScore instruments.xml 的 piccolo：谱号 G、移调 +12 半音、实际音高显示用 G8va",
+    "wikipedia": {
+     "quote": "Sometimes referred to as a \"baby flute\" or piccolo flute, the modern piccolo has the same type of fingering as the standard transverse flute, but the sound it produces is an octave higher.",
+     "file": "upstream/wikipedia-en/Piccolo.txt",
+     "license": "CC BY-SA 4.0"
+    }
+   }
   },
   {
    "id": "Q209554",
@@ -4816,7 +5655,18 @@
     "high": 96,
     "basis": "原文（Western concert flute）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Fl.",
+    "basis": "MuseScore instruments.xml 的 flute shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 flute：谱号 G、不移调"
+   }
   },
   {
    "id": "Q187851",
@@ -4892,7 +5742,18 @@
     "high": 98,
     "basis": "原文（Recorder (musical instrument)）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "S. Rec.",
+    "basis": "MuseScore instruments.xml 的 soprano-recorder shortName"
+   },
+   "notation": {
+    "clef": "G8va",
+    "concertClef": "G8va",
+    "sounds": 12,
+    "octave": 12,
+    "basis": "MuseScore instruments.xml 的 recorder：谱号 G8va、不移调"
+   }
   },
   {
    "id": "Q218802",
@@ -4960,7 +5821,18 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Pn. Fl.",
+    "basis": "MuseScore instruments.xml 的 pan-flute shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 pan-flute：谱号 G、不移调"
+   }
   },
   {
    "id": "Q4928615",
@@ -5091,7 +5963,18 @@
     "high": 86,
     "basis": "原文换算（Shakuhachi）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Shak.",
+    "basis": "MuseScore instruments.xml 的 shakuhachi shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 shakuhachi：谱号 G、不移调"
+   }
   },
   {
    "id": "Q615403",
@@ -5160,7 +6043,18 @@
     "high": 98,
     "basis": "原文（Tin whistle）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "C Tin Wh.",
+    "basis": "MuseScore instruments.xml 的 c-tin-whistle shortName"
+   },
+   "notation": {
+    "clef": "G8va",
+    "concertClef": "G8va",
+    "sounds": 12,
+    "octave": 12,
+    "basis": "MuseScore instruments.xml 的 c-tin-whistle：谱号 G8va、不移调"
+   }
   },
   {
    "id": "Q187780",
@@ -5230,7 +6124,18 @@
     "high": 89,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "S. Oc.",
+    "basis": "MuseScore instruments.xml 的 c-soprano-ocarina shortName"
+   },
+   "notation": {
+    "clef": "G15ma",
+    "concertClef": "G15ma",
+    "sounds": 24,
+    "octave": 24,
+    "basis": "MuseScore instruments.xml 的 ocarina：谱号 G15ma、不移调"
+   }
   },
   {
    "id": "Q229205",
@@ -5288,7 +6193,18 @@
     "high": 85,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Si.",
+    "basis": "MuseScore instruments.xml 的 sitar shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 sitar：谱号 G、不移调"
+   }
   },
   {
    "id": "Q258896",
@@ -5353,7 +6269,18 @@
     "high": 84,
     "basis": "原文换算（Banjo）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Bj.",
+    "basis": "MuseScore instruments.xml 的 banjo shortName"
+   },
+   "notation": {
+    "clef": "G8vb",
+    "concertClef": "G8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 banjo：谱号 G8vb、不移调"
+   }
   },
   {
    "id": "Q241337",
@@ -5417,7 +6344,18 @@
     "high": 84,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Sh.",
+    "basis": "MuseScore instruments.xml 的 shamisen shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 shamisen：谱号 G、不移调"
+   }
   },
   {
    "id": "Q289037",
@@ -5480,7 +6418,18 @@
     "high": 81,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Ko.",
+    "basis": "MuseScore instruments.xml 的 koto shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 koto：谱号 G、不移调"
+   }
   },
   {
    "id": "Q1467960",
@@ -5543,7 +6492,18 @@
     "high": 88,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Kal.",
+    "basis": "MuseScore instruments.xml 的 kalimba shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 kalimba：谱号 G、不移调"
+   }
   },
   {
    "id": "Q8347",
@@ -5606,7 +6566,18 @@
     "high": 82,
     "basis": "原文换算（Great Highland bagpipe）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Bagp.",
+    "basis": "MuseScore instruments.xml 的 bagpipe shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": -2,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 bagpipe：谱号 G、移调 -2 半音"
+   }
   },
   {
    "id": "Q510487",
@@ -5677,7 +6648,18 @@
     "high": 100,
     "basis": "原文换算（Violin）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Vln.",
+    "basis": "MuseScore instruments.xml 的 violin shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 violin：谱号 G、不移调"
+   }
   },
   {
    "id": "Q847911",
@@ -5742,7 +6724,18 @@
     "high": 81,
     "basis": "原文（Shehnai）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "She.",
+    "basis": "MuseScore instruments.xml 的 shenai shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 shenai：谱号 G、不移调"
+   }
   },
   {
    "id": "Q1621499",
@@ -5807,7 +6800,11 @@
     "license": "CC-BY-SA-4.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Met. Wn Ch.",
+    "basis": "MuseScore instruments.xml 的 metal-wind-chimes shortName"
+   }
   },
   {
    "id": "Q395212",
@@ -5889,7 +6886,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Agogô",
+    "basis": "MuseScore instruments.xml 的 agogo-bells shortName"
+   }
   },
   {
    "id": "Q6610630",
@@ -5943,7 +6944,26 @@
     "high": 91,
     "basis": "原文（Steelpan）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "St. Pans",
+    "basis": "MuseScore instruments.xml 的 steel-drums shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 steel-drums：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q957212",
@@ -6008,7 +7028,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Wd. Bl.",
+    "basis": "MuseScore instruments.xml 的 wood-blocks shortName"
+   }
   },
   {
    "id": "Q221769",
@@ -6077,7 +7101,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Taiko",
+    "basis": "MuseScore instruments.xml 的 taiko shortName"
+   }
   },
   {
    "id": "Q849349",
@@ -6166,7 +7194,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Toms",
+    "basis": "MuseScore instruments.xml 的 tom-toms shortName"
+   }
   },
   {
    "id": "Q1327480",
@@ -6294,7 +7326,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Sus. Cym.",
+    "basis": "MuseScore instruments.xml 的 crash-cymbal shortName"
+   }
   },
   {
    "id": "Q6607",
@@ -6371,7 +7407,18 @@
     "high": 84,
     "basis": "原文换算（Guitar tunings）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Guit.",
+    "basis": "MuseScore instruments.xml 的 guitar-steel shortName"
+   },
+   "notation": {
+    "clef": "G8vb",
+    "concertClef": "G8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 guitar-steel：谱号 G8vb、不移调"
+   }
   },
   {
    "id": "Q9530",
@@ -6967,7 +8014,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "BD",
+    "basis": "MuseScore instruments.xml 的 bass-drum shortName"
+   }
   },
   {
    "id": "Q208421",
@@ -7082,7 +8133,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "SD",
+    "basis": "MuseScore instruments.xml 的 snare-drum shortName"
+   }
   },
   {
    "id": "Q1322478",
@@ -7149,7 +8204,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Hd. Clp.",
+    "basis": "MuseScore instruments.xml 的 hand-clap shortName"
+   }
   },
   {
    "id": "Q3305735",
@@ -7218,7 +8277,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Toms",
+    "basis": "MuseScore instruments.xml 的 tom-toms shortName"
+   }
   },
   {
    "id": "Q963334",
@@ -7299,7 +8362,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Hi-hat",
+    "basis": "MuseScore instruments.xml 的 hi-hat shortName"
+   }
   },
   {
    "id": "Q93985",
@@ -7384,7 +8451,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Sus. Cym.",
+    "basis": "MuseScore instruments.xml 的 crash-cymbal shortName"
+   }
   },
   {
    "id": "Q93992",
@@ -7454,7 +8525,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "R. Cym.",
+    "basis": "MuseScore instruments.xml 的 ride-cymbal shortName"
+   }
   },
   {
    "id": "Q2451592",
@@ -7520,7 +8595,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Ch. Cym.",
+    "basis": "MuseScore instruments.xml 的 china-cymbal shortName"
+   }
   },
   {
    "id": "Q193666",
@@ -7576,7 +8655,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Tamb.",
+    "basis": "MuseScore instruments.xml 的 tambourine shortName"
+   }
   },
   {
    "id": "Q1074981",
@@ -7631,7 +8714,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Sp. Cym.",
+    "basis": "MuseScore instruments.xml 的 splash-cymbal shortName"
+   }
   },
   {
    "id": "Q775570",
@@ -7703,7 +8790,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Cwb.",
+    "basis": "MuseScore instruments.xml 的 cowbell shortName"
+   }
   },
   {
    "id": "Q390110",
@@ -7758,7 +8849,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Vibslp.",
+    "basis": "MuseScore instruments.xml 的 vibraslap shortName"
+   }
   },
   {
    "id": "Q243998",
@@ -7836,7 +8931,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Bon.",
+    "basis": "MuseScore instruments.xml 的 bongos shortName"
+   }
   },
   {
    "id": "Q270200",
@@ -7919,7 +9018,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Con.",
+    "basis": "MuseScore instruments.xml 的 congas shortName"
+   }
   },
   {
    "id": "Q379248",
@@ -7983,7 +9086,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Timb.",
+    "basis": "MuseScore instruments.xml 的 timbales shortName"
+   }
   },
   {
    "id": "Q1024685",
@@ -8049,7 +9156,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Cabs.",
+    "basis": "MuseScore instruments.xml 的 cabasa shortName"
+   }
   },
   {
    "id": "Q39777",
@@ -8106,7 +9217,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Mrcs.",
+    "basis": "MuseScore instruments.xml 的 maracas shortName"
+   }
   },
   {
    "id": "Q1483670",
@@ -8220,7 +9335,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Gro.",
+    "basis": "MuseScore instruments.xml 的 guiro shortName"
+   }
   },
   {
    "id": "Q850118",
@@ -8277,7 +9396,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Clv.",
+    "basis": "MuseScore instruments.xml 的 claves shortName"
+   }
   },
   {
    "id": "Q176926",
@@ -8345,7 +9468,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Cu.",
+    "basis": "MuseScore instruments.xml 的 cuica shortName"
+   }
   },
   {
    "id": "Q201735",
@@ -8410,7 +9537,11 @@
     "license": "Apache-2.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Trgl.",
+    "basis": "MuseScore instruments.xml 的 triangle shortName"
+   }
   },
   {
    "id": "Q113624956",
@@ -8482,7 +9613,26 @@
     "high": 100,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. Pno.",
+    "basis": "MuseScore instruments.xml 的 electric-piano shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 electric-piano：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q743659",
@@ -8554,7 +9704,26 @@
     "high": 100,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. Pno.",
+    "basis": "MuseScore instruments.xml 的 electric-piano shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 electric-piano：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q1759986",
@@ -8626,7 +9795,26 @@
     "high": 96,
     "basis": "原文换算（Wurlitzer electronic piano）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. Pno.",
+    "basis": "MuseScore instruments.xml 的 electric-piano shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 electric-piano：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q139300",
@@ -8699,7 +9887,26 @@
     "high": 96,
     "basis": "原文换算（Yamaha DX7）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 poly-synth shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 poly-synth：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q208173",
@@ -8770,7 +9977,18 @@
     "high": 85,
     "basis": "原文换算（Fender Stratocaster）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. Guit.",
+    "basis": "MuseScore instruments.xml 的 electric-guitar shortName"
+   },
+   "notation": {
+    "clef": "G8vb",
+    "concertClef": "G8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 electric-guitar：谱号 G8vb、不移调"
+   }
   },
   {
    "id": "Q288342",
@@ -8821,7 +10039,18 @@
     "high": 63,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. B.",
+    "basis": "MuseScore instruments.xml 的 electric-bass shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 electric-bass：谱号 F、移调 -12 半音、实际音高显示用 F8vb"
+   }
   },
   {
    "id": "Q727758",
@@ -8878,7 +10107,18 @@
     "high": 63,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "El. B.",
+    "basis": "MuseScore instruments.xml 的 electric-bass shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F8vb",
+    "sounds": -12,
+    "octave": -12,
+    "basis": "MuseScore instruments.xml 的 electric-bass：谱号 F、移调 -12 半音、实际音高显示用 F8vb"
+   }
   },
   {
    "id": "Q734687",
@@ -8936,7 +10176,26 @@
     "high": 84,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 poly-synth shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 poly-synth：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q296879",
@@ -9000,7 +10259,26 @@
     "high": 84,
     "basis": "原文换算（ARP String Ensemble）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 string-synthesizer shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 string-synthesizer：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q2536440",
@@ -9067,7 +10345,26 @@
     "high": 96,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 poly-synth shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 poly-synth：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q366063",
@@ -9125,7 +10422,26 @@
     "high": 96,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 poly-synth shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 poly-synth：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q3347942",
@@ -9189,7 +10505,26 @@
     "high": 96,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 poly-synth shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 poly-synth：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q744418",
@@ -9247,7 +10582,26 @@
     "high": 96,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 poly-synth shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 poly-synth：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q512222",
@@ -9299,7 +10653,26 @@
     "high": 100,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Synth.",
+    "basis": "MuseScore instruments.xml 的 poly-synth shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 poly-synth：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q2912399",
@@ -9434,7 +10807,26 @@
     "high": 93,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Yq.",
+    "basis": "MuseScore instruments.xml 的 yangqin shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 yangqin：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q726303",
@@ -9500,7 +10892,26 @@
     "high": 86,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Gz.",
+    "basis": "MuseScore instruments.xml 的 guzheng shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 guzheng：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q1860805",
@@ -9853,7 +11264,18 @@
     "high": 105,
     "basis": "原文（Erhu）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Eh.",
+    "basis": "MuseScore instruments.xml 的 erhu shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 erhu：谱号 G、不移调"
+   }
   },
   {
    "id": "Q1146067",
@@ -9921,7 +11343,18 @@
     "high": 96,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Di.",
+    "basis": "MuseScore instruments.xml 的 d-dizi shortName（去掉调名）"
+   },
+   "notation": {
+    "clef": "G8va",
+    "concertClef": "G8va",
+    "sounds": 12,
+    "octave": 12,
+    "basis": "MuseScore instruments.xml 的 d-dizi：谱号 G8va、不移调"
+   }
   },
   {
    "id": "Q7206087",
@@ -9985,7 +11418,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Dabo",
+    "basis": "MuseScore instruments.xml 的 dabo shortName"
+   }
   },
   {
    "id": "Q804099",
@@ -10054,7 +11491,26 @@
     "high": 103,
     "basis": "原文（Bayan (accordion)）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Acc.",
+    "basis": "MuseScore instruments.xml 的 accordion shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 accordion：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "Q940274",
@@ -10188,7 +11644,18 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Pn. Fl.",
+    "basis": "MuseScore instruments.xml 的 pan-flute shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 pan-flute：谱号 G、不移调"
+   }
   },
   {
    "id": "Q21651966",
@@ -10256,7 +11723,11 @@
     "license": "CC-BY-SA-4.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Met. Wn Ch.",
+    "basis": "MuseScore instruments.xml 的 metal-wind-chimes shortName"
+   }
   },
   {
    "id": "Q189388",
@@ -10345,7 +11816,18 @@
     "high": 55,
     "basis": "原文（Didgeridoo）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Doo.",
+    "basis": "MuseScore instruments.xml 的 didgeridoo shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 didgeridoo：谱号 F、不移调"
+   }
   },
   {
    "id": "Q628428",
@@ -10402,7 +11884,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Slt. Dr.",
+    "basis": "MuseScore instruments.xml 的 slit-drum shortName"
+   }
   },
   {
    "id": "Q61285",
@@ -10495,7 +11981,18 @@
     "high": 81,
     "basis": "原文（Ukulele）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Uk.",
+    "basis": "MuseScore instruments.xml 的 ukulele shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 ukulele：谱号 G、不移调"
+   }
   },
   {
    "id": "Q208320",
@@ -10575,7 +12072,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Tam",
+    "basis": "MuseScore instruments.xml 的 tam-tam shortName"
+   }
   },
   {
    "id": "Q180733",
@@ -10667,7 +12168,18 @@
     "high": 79,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Lt.",
+    "basis": "MuseScore instruments.xml 的 lute shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 lute：谱号 G、不移调"
+   }
   },
   {
    "id": "Q201129",
@@ -11550,7 +13062,18 @@
     "high": 72,
     "basis": "原文换算（Euphonium）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Euph.",
+    "basis": "MuseScore instruments.xml 的 euphonium shortName"
+   },
+   "notation": {
+    "clef": "F",
+    "concertClef": "F",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 euphonium：谱号 F、不移调"
+   }
   },
   {
    "id": "Q127933",
@@ -11905,7 +13428,26 @@
     "high": 84,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Thmn.",
+    "basis": "MuseScore instruments.xml 的 theremin shortName"
+   },
+   "notation": {
+    "clef": "G",
+    "concertClef": "G",
+    "sounds": 0,
+    "octave": 0,
+    "basis": "MuseScore instruments.xml 的 theremin：谱号 G / F、不移调",
+    "clefs": [
+     "G",
+     "F"
+    ],
+    "concertClefs": [
+     "G",
+     "F"
+    ]
+   }
   },
   {
    "id": "x:bei-bangzi",
@@ -11968,7 +13510,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "abbr": {
+    "en": "Clv.",
+    "basis": "MuseScore instruments.xml 的 claves shortName"
+   }
   }
  ]
 }

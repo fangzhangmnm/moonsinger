@@ -14,11 +14,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const SRC = process.env.INSTRUMENTS_SRC ?? join(ROOT, "..", "..", "20260813 MyLlamaReborn", "20261007 音乐史", "export", "moonsinger");   // ~/jupyter/20260813 MyLlamaReborn（不在 PWAProjects 里）
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
-export const VERSION = 11;   // v11 = 2026-10-08（仓鼠 b586a44：gm-map 每行加演奏元数据 excitation / sustain / technique / joint / breath / velLayers，附依据；纯增量。user「是不是应该让音乐仓鼠准备一下分类用的元数据？因为我们每次是拉他那边的json的」）。v10 = 2026-10-08（仓鼠 9c2b9e3：吉他 / 贝斯 / 鼓件逐个音色重判风格——user「鼓啊吉他啊不同音色和演奏方法也都分开了评分可以吗」；结构同 v8）。v9 = 2026-10-08（仓鼠：合成器类音色逐个重判——user「音色为单位而不是家族一把捞」）。v8 = 2026-10-08（仓鼠 c7a44af：按 TinySoundFont 的真实音高公式重算 GM 音效 sampleKey.recommended（v5–v7 在 TSF 里错 2–14 键；电话 79 → 64 = 北美 20 Hz）；加 sampleKey.engine、layers[].peakAtRecommended）。v7 = 2026-10-08（仓鼠：user「我觉得应该按照gs的作者可能拆样的那台电话来推理」→ 北美老式话机 20 Hz：电话 naturalKey 100 → 96、GS 推荐键 86 → 79）。v6 = 2026-10-08（仓鼠：user 澄清电话铃 = 老式机械铃 → 电话 naturalKey 102 → 100、GS 推荐键 90 → 86；GM 行 sampleKey 加 recommendedBasis）。v5 = 概念 range / naturalKey、GM 行 sampleKey。v4 = 161 个概念、--tile 派生图标、AI 估算年份
+export const VERSION = 12;   // v12 = 2026-10-10（仓鼠 ffd9a23：概念加 abbr（出版谱简写，MuseScore instruments.xml）/ notation（记谱谱号、按实际音高的谱号、sounds / octave），gm-map 铃类加 octaveCheck；纯增量。工单 ai-docs/20261010-hamster-workorder-abbr-octave.md）
 export const FILES = {
   concepts: `instruments-v${VERSION}.json`,
   gmMap: `gm-map-v${VERSION}.json`,
-  icons: `instrument-icons-20261008-v${VERSION}.svg`,   // sprite 文件名里的日期 = 那一版出图的日子（v2 / v3 = 20261007）
+  icons: `instrument-icons-20261010-v${VERSION}.svg`,   // sprite 文件名里的日期 = 那一版出图的日子（v2 / v3 = 20261007）
   iconCredits: `icon-credits-v${VERSION}.json`,
   licenses: `LICENSES-chosen-v${VERSION}.md`,
 };

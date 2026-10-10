@@ -72,6 +72,7 @@ import "./store-wiring.test.mjs";
 import "./dyn-levels.test.ts";
 import "./metronome.test.ts";
 import "./clef.test.ts";
+import "./part-colors.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

@@ -37,7 +37,7 @@ export type Prim =
   | { t: "icon"; id: string; x: number; y: number; size: number; cls?: string; title?: string };   // 家族图标库的一个图标（页面里内联的 sprite，<use href="#id">）
 
 /** 要画的一个声部（顺序 = 总谱从上到下；隐藏的不在这里）。 */
-export interface PartView { id: string; name: string; empty?: boolean; first?: boolean; clef?: ClefName; staves?: 2; hidden?: boolean; badges?: string[]; mono?: boolean; xHead?: boolean; ignores?: readonly string[]; lyricMute?: ReadonlySet<number>; noLyrics?: string }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
+export interface PartView { id: string; name: string; abbr?: string; colorIdx?: number; empty?: boolean; first?: boolean; clef?: ClefName; staves?: 2; hidden?: boolean; badges?: string[]; mono?: boolean; xHead?: boolean; ignores?: readonly string[]; lyricMute?: ReadonlySet<number>; noLyrics?: string }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
 //   empty = 还没人上场（名字画淡色）；first = 歌里第一个声部（速度画在它上面）；clef = 谱号；hidden = 隐藏的：不画谱、缩成一条细行（点它开歌手牌）；badges = 名字下面的角标（静 / 独 / 只看它）
 export interface EngraveOpts {
   width: number;                         // px，谱面板宽
@@ -555,11 +555,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const breakableAt = (tick: number) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
     // 3. 折行（像文字：优先在小节线后折；一个小节都放不下就逐列折）。每行开头的调号 = 各声部那里生效的调号；行首宽 = 最宽的那个声部
     const ind0 = Math.max(...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4;   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
+    // 第二行起每行写简写（v0.9.31；user「todo 总谱的每一行都放乐器名的省空间简写」→「乐手名和颜色同意」）：缩进 = 最宽的那个简写；没给简写（测试 / 老调用）= 0，照旧
+    const indN = parts.some((p) => p.abbr) ? Math.max(...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 : 0;
     const keyNow = new Map<string, number>(per.map((q) => [q.p.id, q.head.key]));
     const clefW = (q: { fFam: boolean }) => (q.fFam ? W.fClef : W.gClef);
     const headerOf = (first: boolean) => Math.max(...per.map((q) => {
       const f = keyNow.get(q.p.id)!;
-      return (first ? ind0 : 0) + MARGIN + 0.6 + clefW(q) + 1.0 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
+      return (first ? ind0 : indN) + MARGIN + 0.6 + clefW(q) + 1.0 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
     }));
     let system = 0, x = headerOf(true);
     const sysStarts: number[] = [x], sysKeys: Map<string, number>[] = [new Map(keyNow)];
@@ -695,7 +697,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     });
     // 5. 每条谱：五线、谱号、调号、拍号（第一行）、速度（第一个声部）、歌手牌（第一行）；几条谱左边一根竖线连着
     for (let s = 0; s < nSys; s++) {
-      const ind = s === 0 ? ind0 : 0;
+      const ind = s === 0 ? ind0 : indN;
       per.forEach((q, r) => {
         const f = sysKeys[s].get(q.p.id) ?? q.head.key;
         for (let k = 0; k < q.staves; k++) {
@@ -724,6 +726,17 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           lines.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
           if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines.length - 1)) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
           partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(ind0 + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
+          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });   // 名字前一个小色点（不印）
+        } else if (q.p.abbr) {   // 第二行起：简写（一行，竖着居中），点它同样开歌手牌
+          const r0 = rowOf(s, r, 0), r1 = rowOf(s, r, q.staves - 1);
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM);
+          prims.push({ t: "text", x: P(MARGIN), y: ny, s: q.p.abbr, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp, anchor: "start" });
+          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
+          partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(indN + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
+        }
+        if (q.p.colorIdx !== undefined) {   // 每行左边一条细色条（类别色；不印）：谱号左边、从第一线到最后一线
+          const r0 = rowOf(s, r, 0), r1 = rowOf(s, r, q.staves - 1);
+          prims.push({ t: "rect", x: P(MARGIN + ind - 0.8), y: yOf(r0, TOP_LINE), w: P(0.3), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE), cls: `cat-bar cat-${q.p.colorIdx}` });
         }
         if (q.staves === 2) {   // 大谱表的花括号：两条谱表左边一根粗线 + 两头小钩
           const bx = P(MARGIN + ind - 0.7), y0 = yOf(rowOf(s, r, 0), TOP_LINE), y1 = yOf(rowOf(s, r, 1), BOTTOM_LINE);

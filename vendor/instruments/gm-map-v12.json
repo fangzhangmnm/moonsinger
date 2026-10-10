@@ -1,6 +1,6 @@
 {
- "v": 11,
- "date": "2026-10-08",
+ "v": 12,
+ "date": "2026-10-10",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ② GM 映射：一行 = 一个 GM 号 → 一个概念。relation = self（本尊：这个号就是这个概念，175 个号每个恰好一条 primary: true；多重认领的另加 primary: false）/ substitute（平替：这个号能拿来顶这个概念，basis 见 defs）。program 从 0 起；鼓件 bank 128、program 0、note = MIDI 键号。musicxmlSound = 这个号自己最贴的 sound id。",
  "defs": {
@@ -520,7 +520,8 @@
    "sustain": "力度 80。按住 5 秒 vs 0.25 秒松手：松不松手 0.3–1.5 秒电平差 < 3 dB（或按住 1.5 秒内就没了）= oneshot；按住 4–5 秒 ≥ 峰值 −20 dB 且比 1–1.5 秒掉得 < 8 dB = sustained；其余 decaying。dB 都相对按住时的峰值；attackMs = 到峰值 −3 dB；noteOffCuts = 松手差 ≥ 3 dB",
    "velLayers": "count / ranges = 力度从 0 扫到 127，响的 zone 组合变几次（叠着响的几层算一个组合）。TSF 里力度只做三件事：挑力度层、线性增益、调制包络起音随力度变快；不执行 sf2 的调制器（GU 写的「力度 → 滤波截止」只在 FluidSynth 之类里生效）。mpMfSwitchesLayer = 力度 64 和 80 用到的 zone 不同；centroidShiftPct = 按 pp 33 / mp 64 / mf 80 / ff 112 各渲染 0.5 秒的频谱重心变化。MoonSinger 现在力度记号走 dB、velocity 固定 0.8（= 101），所以眼下 mp / mf 不会换层",
    "ai": "excitation / technique / joint / breath 是 AI 判（源仓 data/演奏_AI.tsv，user 可改）；joint.gapMs 对齐 MoonSinger 现行连断预设（擦弦 20 ms、吹奏 40 ms、其余 0）"
-  }
+  },
+  "octaveCheckMethod": "铃类音色按 48 / 60 / 72 / 84 / 96 键在 TinySoundFont + GeneralUser GS 2.0.3 里渲染（力度 80，0.6 秒），列 ≥ 最强峰 12% 的谱峰。measured = 最强谱峰离键名几个半音（5 个键的中位数），measuredOctave = 取整到 12 的倍数，lowest = 最低强峰的中位数；perceived = 耳朵听到的音离键名几个半音（AI 按规则判：键名上有 ≥ 20% 的峰 = 基音在场；没有但有 ≈2:3:4 倍的一组峰 = 打击音（管钟），虚拟音高 = 键名；都不是 = null）。MoonSinger 存的音高是实际音高 = MIDI 键，所以 perceived = 0 表示按这个键听到的就是这个音。"
  },
  "rows": [
   {
@@ -1363,6 +1364,21 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -3000…+0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": -0.0,
+    "measuredOctave": 0,
+    "lowest": -0.0,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:-0.0 / 60:-0.0 / 72:-0.0 / 84:+0.0 / 96:+0.0；各键最低 48:-0.0 / 60:-0.0 / 72:-0.0 / 84:+0.0 / 96:+0.0"
    }
   },
   {
@@ -1453,6 +1469,21 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -3000…+0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 0.0,
+    "measuredOctave": 0,
+    "lowest": 0.0,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+28.7 / 60:+28.7 / 72:+0.0 / 84:+0.0 / 96:+0.0；各键最低 48:-0.0 / 60:-0.0 / 72:+0.0 / 84:+0.0 / 96:+0.0"
    }
   },
   {
@@ -1524,6 +1555,21 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": -0.0,
+    "measuredOctave": 0,
+    "lowest": -0.0,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:-0.0 / 60:-0.0 / 72:-0.0 / 84:-0.0 / 96:-0.0；各键最低 48:-0.0 / 60:-0.0 / 72:-0.0 / 84:-0.0 / 96:-0.0"
    }
   },
   {
@@ -1594,6 +1640,21 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0…+9000；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": -0.0,
+    "measuredOctave": 0,
+    "lowest": -0.0,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:-0.0 / 60:-0.0 / 72:-0.0 / 84:+0.0 / 96:+0.0；各键最低 48:-0.0 / 60:-0.0 / 72:-0.0 / 84:+0.0 / 96:+0.0"
    }
   },
   {
@@ -1705,6 +1766,21 @@
      "ppToFf": -17.7
     },
     "basis": "实测 10 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -3600…+0；音量衰减 +0…+960"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": -0.0,
+    "measuredOctave": 0,
+    "lowest": -0.0,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:-0.0 / 60:-0.0 / 72:-0.0 / 84:+0.0 / 96:-0.1；各键最低 48:-0.0 / 60:-0.0 / 72:-0.0 / 84:+0.0 / 96:-0.1"
    }
   },
   {
@@ -1810,6 +1886,21 @@
      "ppToFf": 55.9
     },
     "basis": "实测 6 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 0.0,
+    "measuredOctave": 0,
+    "lowest": -0.2,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:-0.0 / 60:+0.1 / 72:+0.1 / 84:+0.0 / 96:-0.1；各键最低 48:-0.0 / 60:+0.1 / 72:-0.2 / 84:-0.2 / 96:-0.3"
    }
   },
   {
@@ -1875,6 +1966,33 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 24.0,
+    "measuredOctave": 24,
+    "lowest": 3.6,
+    "perceived": 0,
+    "perceivedNote": "键名（打击音：2:3:4 泛音的虚拟基音）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+24.6 / 60:+24.5 / 72:+24.0 / 84:+12.1 / 96:+12.0；各键最低 48:+12.1 / 60:+12.1 / 72:+3.6 / 84:+3.6 / 96:-8.0",
+    "sources": [
+     {
+      "quote": "In tubular bells, modes 4, 5, and 6 appear to determine the strike tone and have frequencies in the ratios 92:112:132 (or 81:121:169) \"which are close enough to the ratios 2:3:4 for the ear to consider them nearly harmonic and to use them as a basis for establishing a virtual pitch\".",
+      "file": "upstream/wikipedia-en/Tubular_bells.txt",
+      "license": "CC BY-SA 4.0"
+     },
+     {
+      "quote": "The main partials (or harmonics) of a well-tuned bell are: hum note (an octave below the named note) strike tone (also called tap note or named note) tierce (a minor third above named note) quint (a fifth above named note) nominal (an octave above named note) Further, less-audible, harmonics",
+      "file": "upstream/wikipedia-en/Bell.txt",
+      "license": "CC BY-SA 4.0"
+     }
+    ]
    }
   },
   {
@@ -1947,6 +2065,21 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 0.0,
+    "measuredOctave": 0,
+    "lowest": 0.0,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:-0.0 / 60:-0.0 / 72:+0.0 / 84:+12.0 / 96:-0.0；各键最低 48:-0.0 / 60:-0.0 / 72:+0.0 / 84:+0.0 / 96:-0.0"
    }
   },
   {
@@ -8637,6 +8770,21 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4200…+0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 0.0,
+    "measuredOctave": 0,
+    "lowest": 0.0,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:-0.0 / 60:-0.0 / 72:+0.0 / 84:+0.0 / 96:+0.0；各键最低 48:-0.0 / 60:-0.0 / 72:+0.0 / 84:+0.0 / 96:+0.0"
    }
   },
   {
@@ -9738,6 +9886,21 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 17.1,
+    "measuredOctave": 12,
+    "lowest": 17.1,
+    "perceived": null,
+    "perceivedNote": "不确定：每个键都只有一个主分音，在键名之上约 +17 半音、没有基音也没有 2:3:4 泛音，耳朵多半听它（AI 判，没有原文）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+17.1 / 60:+17.1 / 72:+17.1 / 84:+17.1 / 96:+17.1；各键最低 48:+17.1 / 60:+17.1 / 72:+17.1 / 84:+17.1 / 96:+17.1"
    }
   },
   {
@@ -9881,6 +10044,21 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4000…+0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 12.2,
+    "measuredOctave": 12,
+    "lowest": 0.1,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+24.0 / 60:+24.0 / 72:+12.0 / 84:+12.0 / 96:+12.2；各键最低 48:-0.0 / 60:+0.1 / 72:+0.1 / 84:+0.0 / 96:+0.2"
    }
   },
   {
@@ -15195,6 +15373,21 @@
      "ppToFf": -0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 17.1,
+    "measuredOctave": 12,
+    "lowest": 17.1,
+    "perceived": null,
+    "perceivedNote": "不确定：每个键都只有一个主分音，在键名之上约 +17 半音、没有基音也没有 2:3:4 泛音，耳朵多半听它（AI 判，没有原文）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+17.1 / 60:+17.1 / 72:+17.1 / 84:+17.1 / 96:+17.1；各键最低 48:+17.1 / 60:+17.1 / 72:+17.1 / 84:+17.1 / 96:+17.1"
    }
   },
   {
@@ -15250,6 +15443,21 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 0.0,
+    "measuredOctave": 0,
+    "lowest": 0.0,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:-0.0 / 60:-0.0 / 72:+0.0 / 84:+12.0 / 96:-0.0；各键最低 48:-0.0 / 60:-0.0 / 72:+0.0 / 84:+0.0 / 96:-0.0"
    }
   },
   {
@@ -15305,6 +15513,21 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 +0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 0.0,
+    "measuredOctave": 0,
+    "lowest": 0.0,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:-0.0 / 60:-0.0 / 72:+0.0 / 84:+12.0 / 96:-0.0；各键最低 48:-0.0 / 60:-0.0 / 72:+0.0 / 84:+0.0 / 96:-0.0"
    }
   },
   {
@@ -17680,6 +17903,21 @@
      "ppToFf": 0.0
     },
     "basis": "实测 1 层；sf2 里的力度调制器（TSF 不用）：滤波截止 -4000…+0；音量衰减 +800"
+   },
+   "octaveCheck": {
+    "keys": [
+     48,
+     60,
+     72,
+     84,
+     96
+    ],
+    "measured": 12.2,
+    "measuredOctave": 12,
+    "lowest": 0.1,
+    "perceived": 0,
+    "perceivedNote": "键名（基音在场）",
+    "basis": "TSF 实测（GeneralUser GS 2.0.3，力度 80）：各键最强 48:+24.0 / 60:+24.0 / 72:+12.0 / 84:+12.0 / 96:+12.2；各键最低 48:-0.0 / 60:+0.1 / 72:+0.1 / 84:+0.0 / 96:+0.2"
    }
   },
   {

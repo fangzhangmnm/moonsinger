@@ -19,14 +19,22 @@ export interface Concept {
   range?: { low: number; high: number; basis?: string } | null;
   /** 音效在现实里最像的那个键（v5；电话 = 102，GS 采样实测 2951 Hz；user「电话铃感觉就是老实的，以你听到的为准」）。 */
   naturalKey?: { note: number; hz?: number; basis?: string } | null;
+  /** 出版谱简写（v12；MuseScore instruments.xml 的 shortName，如 Vln. / Pno. / Glock.）：总谱第二行起每行谱前写它（user「乐手名和颜色同意」）。没有 zh（仓鼠没找到中文通行简称的出处，不现编）。 */
+  abbr?: { en: string; basis?: string } | null;
+  /** 记谱惯例（v12）：clef = 按惯例写谱的谱号；concertClef = 按实际音高显示时的谱号（钟琴 G15ma、短笛 / 木琴 G8va、低音提琴 F8vb）；
+   *  sounds = 实际音高 − 按基础谱号读的谱面音高（半音）；octave = sounds 里整八度的部分。 */
+  notation?: { clef: string; clefs?: string[]; concertClef: string; concertClefs?: string[]; sounds: number; octave: number; basis?: string; wikipedia?: unknown } | null;
 }
+/** 铃类的八度实测（v12，gm-map GM 9–16 / 99 / 113 / 115）：measured = 最强分音比键名高几个半音；perceived = 耳朵听到的音比键名高几个半音（null = 判不准）。 */
+export interface OctaveCheck { keys: number[]; measured: number; measuredOctave: number; lowest: number; perceived: number | null; perceivedNote?: string; basis?: string; sources?: unknown }
 export interface GmRow { program: number; bank: number; note?: number; gmNumber: number; gmName: string; family?: string; concept: string; relation: "self" | "substitute"; primary?: boolean;
   /** 这个音色自己在哪些风里（仓鼠 v8 起逐个音色判；本尊行才有）：as = 在这种风里顶替哪个概念（平替认领）。概念上的 styles 是这些聚合出来的，只拿来说「这件乐器属于哪些风」。 */
   styles?: { tag: string; ear: string; weight?: number; as?: string }[]; musicxmlSound?: string; year?: number | null; era?: string; basis?: string; reason?: string;   // primary = 一个号多重认领时的主本尊（v3）
   /** GM 116–128 音效：在 GS + TinySoundFont 里按哪个键是采样原速（v8 按 TSF 的音高公式重算；换音色库 / 引擎就不算数）。 */
   joint?: RowJoint; excitation?: { id: string; basis?: string }; breath?: { id: string; basis?: string };
   sustain?: { id: string; attackMs?: number; noteOffCuts?: boolean; basis?: string };   // 仓鼠 v11：sustained / decaying / oneshot（实测）
-  velLayers?: { soundfont?: string; key?: number; count: number; ranges: [number, number][]; mpMfSwitchesLayer?: boolean; basis?: string };   // 仓鼠 v11：GS 里这个预设的力度层（实测）
+  velLayers?: { soundfont?: string; key?: number; count: number; ranges: [number, number][]; mpMfSwitchesLayer?: boolean; basis?: string };
+  octaveCheck?: OctaveCheck;   // 铃类的八度实测（v12）   // 仓鼠 v11：GS 里这个预设的力度层（实测）
   sampleKey?: { soundfont: string; engine?: string; recommended: number; recommendedBasis?: string;
     layers?: { sample?: string; originalSpeedKey?: number; centsPerKey?: number; keyRange?: string; peakAtRecommended?: { hz: number; midi: number; pitched: boolean } | null }[] } }
 /** 演奏元数据（仓鼠 v11 起，gm-map 每行都有，各带 basis 依据；W-13：中文标签从 defs 取，不写死）。

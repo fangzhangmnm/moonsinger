@@ -725,7 +725,11 @@ span.smufl { pointer-events: none; }
 
 /* 走带（2026-10-10 Opus 5.5）：播放线 / 正在响的音 / 起点 / 听模式 */
 .playhead { position: absolute; width: 2px; background: var(--play); opacity: .75; pointer-events: none; border-radius: 1px; }
-.play-hl { position: absolute; background: var(--play); opacity: .28; border-radius: 50%; pointer-events: none; }
+.play-hl { position: absolute; background: var(--hl, var(--play)); opacity: .32; border-radius: 50%; pointer-events: none; }   /* 正在响的音：这位歌手的类别色（v0.9.31） */
+/* 歌手的类别色（tab20，src/ui/part-colors.ts；user「乐手名和颜色同意」）：每行左边细色条 + 名字前小色点；不印 */
+.staff-svg .cat-0 { fill: #1f77b4; } .staff-svg .cat-1 { fill: #aec7e8; } .staff-svg .cat-2 { fill: #ff7f0e; } .staff-svg .cat-3 { fill: #ffbb78; } .staff-svg .cat-4 { fill: #2ca02c; } .staff-svg .cat-5 { fill: #98df8a; } .staff-svg .cat-6 { fill: #d62728; } .staff-svg .cat-7 { fill: #ff9896; } .staff-svg .cat-8 { fill: #9467bd; } .staff-svg .cat-9 { fill: #c5b0d5; } .staff-svg .cat-10 { fill: #8c564b; } .staff-svg .cat-11 { fill: #c49c94; } .staff-svg .cat-12 { fill: #e377c2; } .staff-svg .cat-13 { fill: #f7b6d2; } .staff-svg .cat-14 { fill: #7f7f7f; } .staff-svg .cat-15 { fill: #c7c7c7; } .staff-svg .cat-16 { fill: #bcbd22; } .staff-svg .cat-17 { fill: #dbdb8d; } .staff-svg .cat-18 { fill: #17becf; } .staff-svg .cat-19 { fill: #9edae5; }
+.staff-svg .cat-bar, .staff-svg .cat-dot { stroke: none; }
+.strip[data-color] { border-top: 3px solid var(--cat); }
 .start-mark { position: absolute; width: 0; border-left: 2px dashed var(--start); pointer-events: none; }
 .start-mark::before { content: ""; position: absolute; left: -2px; top: -2px; width: 10px; height: 8px; background: var(--start); clip-path: polygon(0 0, 100% 50%, 0 100%); }
 body.listen-mode #padTab { display: none; }

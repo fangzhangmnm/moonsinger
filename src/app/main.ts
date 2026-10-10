@@ -79,6 +79,7 @@ import { freshDesk, freshPartView, serializeDesk, unserializeDesk, PAD_UNITS, ty
 import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
 import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongClefs } from "../score/clef.ts";
 import type { ClefHit } from "../render/engrave.ts";
+import { TAB20, partColorIndices, partAbbr } from "../ui/part-colors.ts";
 
 initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
 let st: EditorState = initState();
@@ -1617,7 +1618,7 @@ const finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName
 // ── 录音室（src/ui/studio.ts）：全屏替掉谱区，一个声部一条推子条；增益 / 声像进录音房（studio.json），静音 / 独奏 = partView ──
 const partLabel = (id: string): string => { const k = st.song.parts.findIndex((p) => p.id === id); return k < 0 ? id : partLabels(st.song, doc.extras)[k]; };
 const studio = new Studio($("stage"), {
-  strips: () => { const labels = partLabels(st.song, doc.extras); return st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], refs: st.song.papers.filter((pp) => pp.tracks[p.id]).length, performer: activeCandidateName(doc.extras, p.role) ?? "（没人上场）", ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
+  strips: () => { const labels = partLabels(st.song, doc.extras), cols = partColorIndices(st.song.parts.map((p) => roleSound(doc.extras, p.role))); return st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], color: TAB20[cols[k]], refs: st.song.papers.filter((pp) => pp.tracks[p.id]).length, performer: activeCandidateName(doc.extras, p.role) ?? "（没人上场）", ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
   setGain: (id, dB) => { const p = st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(doc.extras, p.mic, { gainDb: dB }), { kind: "studio", label: `${partLabel(id)} 增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id}`); },
   setPan: (id, pan) => { const p = st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(doc.extras, p.mic, { pan }), { kind: "studio", label: `${partLabel(id)} 声像 ${Math.abs(pan) < 0.025 ? "中" : pan < 0 ? `左 ${Math.round(-pan * 100)}` : `右 ${Math.round(pan * 100)}`}` }, `mix:pan:${id}`); },
   toggleMute: (id) => { setPv(id, { muted: !pv(id).muted }); view.render(); },
@@ -1752,15 +1753,28 @@ function lyricHintAt(i: number): string | null {
   const x = lyricMutes().get(p.id)?.get(t.id); if (!x) return null;
   return lyricWhyText(x, roleName(doc.extras, p.role), songLangOf(flattenPart(st.song, p.id).tokens, st.song.hum));
 }
+/** 每位歌手的类别色（tab20 下标）和谱前简写（v0.9.31；user「乐手名和颜色同意」）。简写要目录（仓鼠 v12 的 abbr）：没载就先缩名字，载好了重画。 */
+function partLooks(): { colors: number[]; abbrs: string[] } {
+  const labels = partLabels(st.song, doc.extras), sounds = st.song.parts.map((p) => roleSound(doc.extras, p.role));
+  const colors = partColorIndices(sounds);
+  const needCat = !catalogNow && st.song.parts.some((p) => !!(doc.extras.lounge[p.role] as { concept?: unknown } | undefined)?.concept);
+  if (needCat) void loadCatalog(new URL(import.meta.url)).then((c) => { catalogNow = c; view.render(); }).catch(() => undefined);
+  const abbrs = st.song.parts.map((p, k) => {
+    const ids = (doc.extras.lounge[p.role] as { concept?: { ids?: { wikidata?: string | null; local?: string | null } } } | undefined)?.concept?.ids;
+    const c = catalogNow && ids ? (ids.wikidata ? catalogNow.byId.get(ids.wikidata) : undefined) ?? (ids.local ? catalogNow.byId.get(ids.local) ?? catalogNow.byId.get(`x:${ids.local}`) : undefined) : undefined;
+    return partAbbr(labels[k], { ...(c ? { conceptNames: [c.names.en, c.names.zh], ...(c.abbr?.en ? { conceptAbbr: c.abbr.en } : {}) } : {}), voice: sounds[k].startsWith("voice.") });
+  });
+  return { colors, abbrs };
+}
 function partViews(): PartView[] {
-  const labels = partLabels(st.song, doc.extras), mutes = lyricMutes();
+  const labels = partLabels(st.song, doc.extras), mutes = lyricMutes(), looks = partLooks();
   return st.song.parts.map((p, k) => {
     const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : ""].filter(Boolean);
     const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown";
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
     const noLyrics = eng === "soundfont" || eng === "vowel-sampler" ? `${labels[k]}${eng === "vowel-sampler" ? "（元音版）只哼" : "不唱歌词"}：空着的歌词位不开框；已经写了的字点开能改、能删` : "";
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], empty: eng === "unknown", first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: eng === "unknown", first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */

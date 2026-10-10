@@ -29,6 +29,7 @@ import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
 import { TitleEditor } from "./title-editor.ts";
 import { RULES, type ModeRules } from "../app/workspace.ts";
+import { TAB20 } from "./part-colors.ts";
 /** 一个光标位置的身份（纸 | 声部 | 下标）：行末 / 行首的画法只对这一个位置有效。 */
 const caretKey = (st: EditorState): string => `${st.at.paper}|${st.at.part}|${st.caret}`;
 
@@ -288,7 +289,8 @@ export class ScoreView {
     spots.forEach((h, k) => {
       let d = this.hlEls[k];
       if (!d || !d.isConnected) { d = document.createElement("div"); d.className = "play-hl"; this.ink.appendChild(d); this.hlEls[k] = d; }
-      const r = Math.max(6, h.w * 0.8);
+      const r = Math.max(6, h.w * 0.8), pv = this.host.parts().find((q) => q.id === L.systems[h.system]?.part);   // 这位歌手的类别色（v0.9.31）
+      d.style.setProperty("--hl", pv?.colorIdx !== undefined ? TAB20[pv.colorIdx] : "");
       d.style.left = `${h.x + h.w / 2 - r}px`; d.style.top = `${h.y - r}px`; d.style.width = d.style.height = `${2 * r}px`;
     });
   }

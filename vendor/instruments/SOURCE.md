@@ -1,16 +1,50 @@
 # MoonSinger 挑乐器数据（2026-10-07）
 
-**现行版本 = v11**（2026-10-08）。v1–v10 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v12。
+**现行版本 = v12**（2026-10-10）。v1–v11 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v13。
 
 > 由 `scripts/build_export.py` 生成，别手改；改数据改 `data/` 再重跑。规格 = PWAProjects 的 webpaint editor v1 prototyping 会话转述的 user 拍板 + 本仓会话 user 原话（见脚本头注释）。
 
 | 文件 | 是什么 |
 |---|---|
-| `instruments-v11.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
-| `gm-map-v11.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
-| `instrument-icons-20261008-v11.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
-| `icon-credits-v11.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
-| `LICENSES-chosen-v11.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+| `instruments-v12.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
+| `gm-map-v12.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
+| `instrument-icons-20261010-v12.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
+| `icon-credits-v12.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
+| `LICENSES-chosen-v12.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+
+## v11 → v12 改了什么（只加字段）
+
+MoonSinger 工单「乐器简写 + 记谱八度 / 铃的八度」（user「小件做，仓鼠给简写」「几个铃的到底哪个八度算数还是没有弄清楚」「铃铛会很高。8va可以做了吗」）。依据和统计见源仓 `ai-docs/20261010-简写记谱铃八度.md`。
+- **`abbr {en, basis}`**（表 ①，123 个概念）：MuseScore instruments.xml 的 shortName（出版惯例：Vln. / Vla. / Cb. / Picc. / Glock. / Tpt. / Vo. …）。zh / ja 这一版不给（没找到中文总谱通行简称的出处；MuseScore 的中日文翻译大多照搬拉丁写法、还有错），显示时退回 en。
+- **`notation {clef, clefs?, concertClef, concertClefs?, sounds, octave, basis, wikipedia?}`**（表 ①，91 个有音高的概念）：
+  - `clef`：按谱惯例写谱时的谱号。
+  - `concertClef`：按实际音高显示时 MuseScore 用的谱号（钟琴 G15ma、木琴 G8va……）。
+  - `sounds`：实际音高 − 按基础谱号（G / F / C，不看 8va / 8vb 记号）读的谱面音高，单位半音。吉他 −12（谱号 G8vb）、低音提琴 −12、短笛 / 钢片琴 / 木琴 +12、钟琴 +24、B♭ 单簧管 −2、F 调圆号 −7。
+  - `octave`：`sounds` 里整八度的部分（向 0 取整）。
+  - 16 件附 `wikipedia` 原文佐证（CC BY-SA）。
+  - 打击乐、指板谱不给。约定写在 `defs.notationMethod`，谱号中文名在 `defs.clefs`。
+- **`octaveCheck {keys, measured, measuredOctave, lowest, perceived, perceivedNote, basis, sources?}`**（表 ②，GM 9–16、99、113、115 这 11 个号，共 15 行）：TinySoundFont + GU 实测按 48–96 五个键。
+  - `measured`：最强谱峰离键名几个半音（中位数）。
+  - `perceived`：耳朵听到的音离键名几个半音（AI 按规则判）。0 = 按这个键听到的就是这个音，null = 判不准（只有 113 Tinkle Bell）。
+  - 管钟 `measured` +24、`perceived` 0：最强的分音高两个八度，耳朵听的是打击音。附维基原文。
+  - 测法写在 `defs.octaveCheckMethod`。
+
+## grooves-v2.json（拍子轻重预设第二批，现行；v1 原样留着）
+
+在 v1 基础上只加不改（v1 的 7 个风格、22 条引文在 v2 里一字没动）：加 `bossa-nova`（波萨）、`latin`（拉丁 / son clave，别名 Salsa、Mambo、Son……），共 9 个；引文 35 条。
+- **`meters[*].bars`**（新，可选）：一组 weights 管几小节，没写 = 1；> 1 时 `weights` 长 = `grid × bars`，按小节顺序接着写，app 从风格记号那一小节起数（第 1 小节用第一段）。波萨 / 拉丁的 2/4（grid 8）、2/2 和 4/4（grid 16）都是 `bars: 2`。
+- **`phase`**（新，克拉维风格才有）：`{default: "3-2", zh, sources}`。2-3 = 两小节对调（原文：写成两小节时换方向就是对调两小节），由 app 的「错开一小节」开关做，不另出一份。
+- `conventions.bars` 写了约定；`deferred` 只剩慢歌。依据见源仓 `ai-docs/20261008-拍子轻重预设.md` §2½。
+
+## grooves-v1.json（拍子轻重预设，单独的文件、单独的版本号）
+
+MoonSinger 工单：「风格」= 谱上写在曲段开头的文字记号（古典、流行、Swing……），只管当前这张纸；按拍号给一小节里每个格子一个相对轻重，演奏者自己设跟多少。由 `scripts/build_grooves.py` 从源仓 `data/拍子轻重_AI.json` 生成；同版本已存在就停。说明和依据表见源仓 `ai-docs/20261008-拍子轻重预设.md`。
+- 顶层：`version`、`conventions`（约定说明）、`sources`（引文：条目、修订号或抓取日期、URL、CC BY-SA 4.0、整句原文）、`styles[]`、`deferred[]`（还没做的风格和原因：波萨、拉丁、慢歌）。
+- `styles[]`：`{id, name {zh, en, ja}, aliases, meters {"4/4": {grid, weights, basis {order, values, sources, zh}}…}, meterFallback {rule: classical|none, zh}, follow {<family id>|voice: 0–1}, followBasis, swing {unit, ratio, range, basis}|null, sources, notes}`。
+- 7 个：`none`、`classical`、`pop`（别名摇滚 / Rock / R&B）、`waltz`、`march`、`swing`、`four-on-the-floor`（别名电子 / 迪斯科 / EDM / 4つ打ち）。
+- `grid` = 一小节有几个十六分音符；`weights` −1…1，相对数（app 再乘演奏者的幅度），谱上写的重音盖掉拍子轻重。`basis.order`：sourced = 强弱先后照原文，derived = 从原文规律推到这个拍号；`values` 一律 ai-scaled（数值是 AI 按层级取的）。
+- `follow` 的键 = gm-map `defs.families` 的 id，另加 `voice`（人声类概念：kind = voice，月读、合唱、人声），人声优先于 family。
+- 和工单推荐稿的差别：文件名 styles → grooves（gm-map 的 `styles[]` 已经是〇〇风）；`meterFallback` 从字符串改成 `{rule, zh}`；每个拍号加 `basis`；加 `followBasis`、顶层 `conventions` / `sources` / `deferred`；`swing` 多一个 `range`。
 
 ## v10 → v11 改了什么（只加字段；风的数据和 v10 一样）
 

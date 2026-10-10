@@ -1,7 +1,7 @@
 // studio.ts —— 录音室：混音台。2026-10-10 起住在底座里（键盘那个位子，和键盘互斥；user「录音室的键盘位化」），谱留着能看；之前是全屏页，和谱分开（user 2026-10-08「麦克风增益 / 声像没界面 对。这个可以把第一版录音室给逼出来。我建议是和谱子分开来」「录音室 可以做一个看看」）。
 // created 2026-10-08 by Claude Fable 5.1。一个声部一条：名字 / 谁来演 / 增益 dB / 声像 / 静音 / 独奏。数据 = 录音房 studio.json 的 mics（增益 / 声像进文件；静音 / 独奏是这次打开里的）。
 // 出声的事归这里（静音 / 独奏），显示的事归谱上的歌手牌（隐藏 / 只看它）；谱上给出声状态打角标。总线 / 效果器 / 电平表以后。
-export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number }   // refs = 在几张纸上（0 = 能删）
+export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）
 export interface StudioHost {
   strips(): StudioStrip[];
   setGain(id: string, dB: number): void;
@@ -66,7 +66,7 @@ export class Studio {
       `<label class="strip-row">增益 <output>${dbText(m.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${m.gainDb}" data-master title="双击回 0" /></label>` +
       `<div class="strip-btns"><button class="btn cand${m.limiter ? " is-on" : ""}" data-v="limiter" title="母线限幅：超过天花板（−0.18 dBFS）的那一小段压下来，不超的地方不动；关掉 = 可能削波">限幅${m.limiter ? "" : "（关：可能削波）"}</button></div>` +
       `<div class="strip-row meter"><span>峰值 <span class="meter-val">—</span></span><div class="meter-bar"><div class="meter-fill"></div></div></div></div>`;
-    box.innerHTML = master + this.host.strips().map((s) => `<div class="strip" data-id="${esc(s.id)}"><div class="strip-name">${esc(s.name)}</div><div class="strip-who">${esc(s.performer)}</div>` +
+    box.innerHTML = master + this.host.strips().map((s) => `<div class="strip" data-id="${esc(s.id)}"${s.color ? ` data-color style="--cat:${esc(s.color)}"` : ""}><div class="strip-name">${esc(s.name)}</div><div class="strip-who">${esc(s.performer)}</div>` +
       `<label class="strip-row">增益 <output>${dbText(s.gainDb)}</output><input type="range" min="-24" max="12" step="0.5" value="${s.gainDb}" data-gain title="双击回 0" /></label>` +
       `<label class="strip-row">声像 <output>${panText(s.pan)}</output><input type="range" min="-1" max="1" step="0.05" value="${s.pan}" data-pan title="双击回中" /></label>` +
       `<div class="strip-btns"><button class="btn cand${s.muted ? " is-on" : ""}" data-v="mute">静音</button><button class="btn cand${s.solo ? " is-on" : ""}" data-v="solo">独奏</button></div>` +
