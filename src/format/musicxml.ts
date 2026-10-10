@@ -131,10 +131,13 @@ export function clefOfXml(sign: string | undefined, octave: string | undefined):
   return null;
 }
 /** 八度线 → <octave-shift>（8va = 谱上写低了 = type down；结束 = stop，size 跟着开着的那条）。 */
-const ottavaXml = (shift: number, open: number): string => {
-  const stop = open ? `<direction><direction-type><octave-shift type="stop" size="${open === 2 ? 15 : 8}"/></direction-type></direction>` : "";
+/** auto（v0.9.37）= 自动画的八度线：带 id="ms-auto-…"，别的软件照样画；自己读回来认出是自动的就跳过（自动的不存进谱、随时重算）。 */
+let autoSeq = 0;
+const ottavaXml = (shift: number, open: number, auto = false): string => {
+  const id = () => (auto ? ` id="ms-auto-${++autoSeq}"` : "");
+  const stop = open ? `<direction><direction-type><octave-shift type="stop" size="${open === 2 ? 15 : 8}"${id()}/></direction-type></direction>` : "";
   if (!shift) return stop;
-  return stop + `<direction placement="${shift > 0 ? "above" : "below"}"><direction-type><octave-shift type="${shift > 0 ? "down" : "up"}" size="${shift === 2 ? 15 : 8}"/></direction-type></direction>`;
+  return stop + `<direction placement="${shift > 0 ? "above" : "below"}"><direction-type><octave-shift type="${shift > 0 ? "down" : "up"}" size="${shift === 2 ? 15 : 8}"${id()}/></direction-type></direction>`;
 };
 function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, first: boolean, clef: ClefName = "G", staves: 1 | 2 = 1): { measures: { body: string[]; manual: boolean }[]; unwritten: string[]; lastLen: number } {
   const staffs = staffOfTokens(toks, staves);
@@ -221,7 +224,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
     if (t.kind === "hairpin") { if (ticks >= len) close(false); if (wedgeOpen) cur.push(wedgeXml("stop")); cur.push(wedgeXml(t.dir === "cresc" ? "crescendo" : "diminuendo")); wedgeOpen = true; continue; }
     if (t.kind === "groove") { if (ticks >= len) close(false); cur.push(grooveXml(t)); continue; }
     if (t.kind === "clef") { if (staves === 1) { if (ticks >= len) close(false); cur.push(`<attributes>${clefXml(t.clef)}</attributes>`); } continue; }   // 谱号记号（v0.9.28）：小节中间的 <attributes><clef>
-    if (t.kind === "ottava") { if (ticks >= len) close(false); const x = ottavaXml(t.shift, ottOpen); if (x) cur.push(x); ottOpen = t.shift; continue; }   // 八度线（v0.9.28）
+    if (t.kind === "ottava") { if (ticks >= len) close(false); const x = ottavaXml(t.shift, ottOpen, !!t.auto); if (x) cur.push(x); ottOpen = t.shift; continue; }   // 八度线（v0.9.28；auto = 自动画的，v0.9.37）
     if (t.kind !== "note" && t.kind !== "rest") continue;
     let left = t.dur, k = 0;
     const tieOut = t.kind === "note" && nextTimed(i)?.kind === "note" && (nextTimed(i) as NoteTok).tie;
@@ -284,6 +287,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
 /** 几条声部 → 整份 MusicXML。manualBars = 声部 id → 人插的小节线（小节序号，1 起）；unwritten = 还没写音高的音（note id，各声部一起）。 */
 export function writeMusicXml(doc: ScoreXml, meta: WriteMeta): Written {
   const paper = doc.paper ?? paperOf(DEFAULT_PAPER);
+  autoSeq = 0;   // 自动八度线的 id 在这一份文件里唯一
   const built = doc.parts.map((p, k) => ({ p, ...partMeasures(p.tokens, p.breaks, k === 0, p.info.clef ?? "G", p.info.staves === 2 ? 2 : 1) }));
   const nMeas = Math.max(0, ...built.map((b) => b.measures.length));
   const manualBars: Record<string, number[]> = {}, unwritten: string[] = [];
@@ -403,6 +407,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const os of kids(dt, "octave-shift")) {
             const ty = os.attrs.type, size = Number(os.attrs.size ?? "8"), shift = (ty === "down" ? (size >= 15 ? 2 : 1) : ty === "up" ? -1 : 0) as -1 | 0 | 1 | 2;
             if (ty !== "down" && ty !== "up" && ty !== "stop") continue;
+            if ((os.attrs.id ?? "").startsWith("ms-auto")) continue;   // 自动画的八度线（v0.9.37）：不变成手写记号，读进来照样自动重算
             const lastTok = body[body.length - 1];
             if (shift && lastTok?.kind === "ottava" && lastTok.shift === 0) lastTok.shift = shift; else mark({ kind: "ottava", id: 0, shift });
           }

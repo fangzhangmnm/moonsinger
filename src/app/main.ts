@@ -9,7 +9,7 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
@@ -2118,6 +2118,16 @@ function openInsertOttavaMenu(at: { x: number; y: number }): void {
 function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {
   const paper = st.song.papers.find((p) => p.id === hit.paper), toks = paper?.tracks[hit.part]; if (!toks) return;
   const part = st.song.parts.find((p) => p.id === hit.part); if (!part) return;
+  if (hit.kind === "ottava" && hit.run) {   // 自动画的八度线（v0.9.37；user「自动加」）：不存进谱；可以固定成手写的，或者这位不要自动
+    const r = hit.run, lab = OTTAVA_LABEL[r.shift];
+    ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">自动八度线：这一串音要三条以上加线，自动画了 ${esc(lab)}。只管画、不存进谱，音高不变；改了音会跟着重算。手写的八度线说了算。</div>` +
+      `<button class="btn ctx-item" data-v="pin">固定成手写的 ${esc(lab)}（之后自己改）</button><button class="btn ctx-item" data-v="off">这位歌手不要自动八度线</button>`, at,
+      (v) => {
+        if (v === "pin") update(insertOttava({ ...setFocus(st, hit.paper, hit.part, r.from), sel: { from: r.from, to: r.to + 1 } }, r.shift));
+        else if (v === "off") { update(setPartAutoOttava(st, hit.part, false)); info("这位歌手的自动八度线关了（谱号小菜单里能再开）"); }
+      });
+    return;
+  }
   if (hit.kind === "ottava") {
     const t = toks[hit.index]; if (!t || t.kind !== "ottava") return;
     ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">八度线：${esc(OTT_HELP[t.shift])}。只管画，音高不变。</div>` +
@@ -2135,8 +2145,11 @@ function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {
   ctxMenu("clef-menu",
     `<div class="ctx-hint ctx-what">这个声部的谱号（每张纸开头都用它）：${auto ? `自动（这张纸挑了「${esc(CLEF_LABEL[now])}」）` : esc(CLEF_LABEL[now])}。只管画，音高不变。</div>` +
     `<div class="ctx-row"><button class="btn ctx-chip${auto ? " is-on" : ""}" data-v="p:auto" title="按每张纸的音挑加线最少的谱号">自动</button>${clefChips(auto ? null : now, "p:")}</div>` +
-    `<div class="ctx-hint">只改这张纸（在这张纸开头放一个谱号记号）：</div><div class="ctx-row">${clefChips(null, "here:")}</div>`, at,
+    `<div class="ctx-hint">只改这张纸（在这张纸开头放一个谱号记号）：</div><div class="ctx-row">${clefChips(null, "here:")}</div>` +
+    `<div class="ctx-hint">自动八度线：一串很高 / 很低的音（每个都要三条以上加线）自动画 8va / 15ma / 8vb；手写的说了算，不存进谱。</div>` +
+    `<div class="ctx-row"><button class="btn ctx-chip${part.autoOttava !== false ? " is-on" : ""}" data-v="ao:on">开</button><button class="btn ctx-chip${part.autoOttava === false ? " is-on" : ""}" data-v="ao:off">关</button></div>`, at,
     (v) => {
+      if (v.startsWith("ao:")) { update(setPartAutoOttava(st, hit.part, v === "ao:on")); return; }
       if (v.startsWith("p:")) update(setPartClef(st, hit.part, v === "p:auto" ? null : (v.slice(2) as ClefName)));
       else if (v.startsWith("here:")) update(insertClef(setFocus(st, hit.paper, hit.part, headLen(toks)), v.slice(5) as ClefName));
     });

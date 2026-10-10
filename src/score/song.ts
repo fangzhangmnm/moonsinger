@@ -96,7 +96,7 @@ export interface GrooveTok { kind: "groove"; id: number; style: string; amount?:
 export interface ClefTok { kind: "clef"; id: number; clef: ClefName }
 /** 八度线（v0.9.28；user「铃铛会很高。8va可以做了吗」）：从这儿起谱上画低（8va / 15ma）/ 高（8vb）几个八度，直到下一个八度线记号（shift 0 = 结束）；只管画。
  *  shift：1 = 8va（实际高八度）、2 = 15ma、−1 = 8vb、0 = 结束。MusicXML 原生 <octave-shift>。 */
-export interface OttavaTok { kind: "ottava"; id: number; shift: -1 | 0 | 1 | 2 }
+export interface OttavaTok { kind: "ottava"; id: number; shift: -1 | 0 | 1 | 2; /** 自动画的（v0.9.37）：只在导出 MusicXML 时临时插进去（带 ms-auto id），谱里永远没有。 */ auto?: true }
 export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok | ClefTok | OttavaTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
@@ -106,7 +106,7 @@ export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, 
 export type Hum = "la" | "n" | "u" | "o" | "a";
 
 /** 歌级的一个声部（谱上的一行；顺序 = 总谱从上到下）：role = 休息室角色 id（谁来演、叫什么），mic = 录音房麦克风 id。 */
-export interface PartDef { id: string; role: string; mic: string; clef?: Clef; staves?: 2 }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
+export interface PartDef { id: string; role: string; mic: string; clef?: Clef; staves?: 2; /** 自动八度线（v0.9.37）：没写 = 开；false = 这位不自动（score.json parts[].autoOttava）。 */ autoOttava?: false }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
 /** 谱号：高音 / 高音下加 8（吉他、男高音：实际低八度）/ 上加 8 / 上加 15（钟琴）/ 低音 / 低音下加 8（低音提琴、贝斯）。中音谱号不做（user「中音这个冷门没人用吧」）。 */
 export type ClefName = "G" | "G8vb" | "G8va" | "G15ma" | "F" | "F8vb";
 export const CLEFS: readonly ClefName[] = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
@@ -1391,6 +1391,12 @@ export function movePaper(st: EditorState, paperId: string, d: -1 | 1): EditorSt
 export function setPartClef(st: EditorState, partId: string, clef: ClefName | null): EditorState {
   const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.clef ?? null) === clef) return st;
   const np: PartDef = { ...p }; if (clef === null) delete np.clef; else np.clef = clef;
+  return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
+}
+/** 这位歌手的自动八度线开 / 关（v0.9.37；默认开）。 */
+export function setPartAutoOttava(st: EditorState, partId: string, on: boolean): EditorState {
+  const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.autoOttava !== false) === on) return st;
+  const np: PartDef = { ...p }; if (on) delete np.autoOttava; else np.autoOttava = false;
   return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
 }
 /** 谱号记号插在光标处（有选区 = 选区开头）；光标前紧挨着就是一个谱号记号 = 改它（v0.9.28）。 */

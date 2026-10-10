@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.36-2026-10-10";
+var APP_VERSION = "v0.9.37-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4432,6 +4432,14 @@ function setPartClef(st3, partId, clef) {
   const np2 = { ...p2 };
   if (clef === null) delete np2.clef;
   else np2.clef = clef;
+  return { ...st3, song: { ...st3.song, parts: st3.song.parts.map((x2) => x2.id === partId ? np2 : x2) } };
+}
+function setPartAutoOttava(st3, partId, on2) {
+  const p2 = st3.song.parts.find((x2) => x2.id === partId);
+  if (!p2 || p2.autoOttava !== false === on2) return st3;
+  const np2 = { ...p2 };
+  if (on2) delete np2.autoOttava;
+  else np2.autoOttava = false;
   return { ...st3, song: { ...st3.song, parts: st3.song.parts.map((x2) => x2.id === partId ? np2 : x2) } };
 }
 function insertClef(st3, clef) {
@@ -6807,7 +6815,9 @@ var ledgerCost = (pos) => {
 var BIAS = { G: 0, F: 0.1, G8vb: 1, G8va: 1, G15ma: 1.5, F8vb: 1.5 };
 function autoClef(positions, prev = null) {
   if (!positions.length) return prev ?? "G";
-  const cost = (c10) => positions.reduce((a10, x2) => a10 + ledgerCost(x2 + CLEF_SHIFT[c10]) + BIAS[c10], 0);
+  return pickClef((c10) => positions.reduce((a10, x2) => a10 + ledgerCost(x2 + CLEF_SHIFT[c10]) + BIAS[c10], 0), positions.length, prev);
+}
+function pickClef(cost, n10, prev) {
   let best = "G", bc = Infinity;
   for (const c10 of CLEFS) {
     const v = cost(c10);
@@ -6816,11 +6826,26 @@ function autoClef(positions, prev = null) {
       best = c10;
     }
   }
-  if (prev && cost(prev) <= bc + Math.max(1, 0.1 * positions.length)) return prev;
+  if (prev && cost(prev) <= bc + Math.max(1, 0.1 * n10)) return prev;
   return best;
 }
-function startClef(tokens, partClef, prev) {
+var RUN_COST = 3;
+function startClef(tokens, partClef, prev, autoOtt = false) {
   if (partClef) return partClef;
+  if (autoOtt) {
+    const cut = tokens.findIndex((t10) => t10.kind === "clef"), seg = cut < 0 ? tokens : tokens.slice(0, cut);
+    let n10 = 0;
+    for (const t10 of seg) if (t10.kind === "note" && t10.pitch) n10 += 1 + (t10.chord?.length ?? 0);
+    if (!n10) return prev ?? "G";
+    return pickClef((c10) => {
+      const ao2 = autoOttava(seg, displayStates(seg, c10));
+      let v = ao2.runs.length * RUN_COST;
+      seg.forEach((t10, i10) => {
+        if (t10.kind === "note" && t10.pitch) for (const p2 of [t10.pitch, ...t10.chord ?? []]) v += ledgerCost(diatonicIndex(p2) + CLEF_SHIFT[c10] + ottavaShift(ao2.ott[i10] ?? 0)) + BIAS[c10];
+      });
+      return v;
+    }, n10, prev);
+  }
   const pos = [];
   let o10 = 0;
   for (const t10 of tokens) {
@@ -6844,6 +6869,70 @@ function displayStates(tokens, start) {
   });
   return { clef, ott };
 }
+function autoOttava(tokens, ds) {
+  const ott = ds.ott.slice(), auto = new Array(tokens.length).fill(false), runs = [];
+  const items = [];
+  tokens.forEach((t10, i10) => {
+    if (!isTimed(t10)) return;
+    const manual = (ds.ott[i10] ?? 0) !== 0;
+    if (t10.kind !== "note" || !t10.pitch) {
+      items.push({ i: i10, note: false, hi: NaN, lo: NaN, dir: 0, manual });
+      return;
+    }
+    const pos = [t10.pitch, ...t10.chord ?? []].map((p2) => diatonicIndex(p2) + CLEF_SHIFT[ds.clef[i10]]);
+    const hi = Math.max(...pos), lo2 = Math.min(...pos);
+    const up = hi > TOP && ledgerLines(hi) >= 3, down = lo2 < BOTTOM && ledgerLines(lo2) >= 3;
+    items.push({ i: i10, note: true, hi, lo: lo2, dir: up && !down ? 1 : down && !up ? -1 : 0, manual });
+  });
+  const notes = items.filter((x2) => x2.note).length, cands3 = items.filter((x2) => x2.dir && !x2.manual).length;
+  if (cands3 < 2 || cands3 * 3 > notes) return { ott, auto, runs };
+  const okGap = (x2, dir) => !x2.manual && (!x2.note || (dir === 1 ? !(x2.lo - 7 < BOTTOM && ledgerLines(x2.lo - 7) >= 3) : !(x2.hi + 7 > TOP && ledgerLines(x2.hi + 7) >= 3)));
+  for (let k2 = 0; k2 < items.length; ) {
+    const it2 = items[k2];
+    if (!it2.dir || it2.manual) {
+      k2++;
+      continue;
+    }
+    const dir = it2.dir;
+    let e10 = k2, n10 = 1;
+    for (; ; ) {
+      const a10 = items[e10 + 1], b3 = items[e10 + 2];
+      if (a10 && a10.dir === dir && !a10.manual) {
+        e10 += 1;
+        n10++;
+        continue;
+      }
+      if (a10 && b3 && b3.dir === dir && !b3.manual && okGap(a10, dir)) {
+        e10 += 2;
+        n10++;
+        continue;
+      }
+      break;
+    }
+    if (n10 >= 2) {
+      const span = items.slice(k2, e10 + 1).filter((x2) => x2.note);
+      const shift = dir === -1 ? -1 : span.some((x2) => x2.hi - 7 > TOP && ledgerLines(x2.hi - 7) >= 3) ? 2 : 1;
+      const from = items[k2].i, to2 = items[e10].i;
+      for (let j2 = from; j2 <= to2; j2++) {
+        ott[j2] = shift;
+        auto[j2] = true;
+      }
+      runs.push({ from, to: to2, shift });
+    }
+    k2 = e10 + 1;
+  }
+  return { ott, auto, runs };
+}
+function withAutoOttava(tokens, start) {
+  const { runs } = autoOttava(tokens, displayStates(tokens, start));
+  if (!runs.length) return tokens;
+  const out = tokens.slice();
+  for (const r10 of [...runs].reverse()) {
+    if (tokens.slice(r10.to + 1).some((t10) => isTimed(t10))) out.splice(r10.to + 1, 0, { kind: "ottava", id: 0, shift: 0, auto: true });
+    out.splice(r10.from, 0, { kind: "ottava", id: 0, shift: r10.shift, auto: true });
+  }
+  return out;
+}
 function resolveSongClefs(song) {
   const out = /* @__PURE__ */ new Map(), last = /* @__PURE__ */ new Map();
   for (const paper of song.papers) {
@@ -6852,7 +6941,7 @@ function resolveSongClefs(song) {
     for (const part of song.parts) {
       const toks = paper.tracks[part.id];
       if (!toks || part.staves === 2) continue;
-      const c10 = startClef(toks, part.clef, last.get(part.id) ?? null);
+      const c10 = startClef(toks, part.clef, last.get(part.id) ?? null, part.autoOttava !== false);
       m2.set(part.id, c10);
       const ds = displayStates(toks, c10);
       last.set(part.id, ds.clef.length ? ds.clef[ds.clef.length - 1] : c10);
@@ -7355,7 +7444,8 @@ function engrave(song, o10) {
         }
       }
       const start = staves === 2 ? "G" : clefStarts.get(paper.id)?.get(p2.id) ?? "G";
-      const ds = displayStates(tokens, start);
+      const ds0 = displayStates(tokens, start), ao2 = staves === 2 || song.parts.find((x3) => x3.id === p2.id)?.autoOttava === false ? null : autoOttava(tokens, ds0);
+      const ds = ao2 ? { clef: ds0.clef, ott: ao2.ott, auto: ao2.auto, runs: ao2.runs } : { ...ds0, auto: null, runs: [] };
       const fFam = staves === 2 || isFClef(start) || tokens.some((t10) => t10.kind === "clef" && isFClef(t10.clef));
       return { p: p2, tokens, focused, staves, start, ds, fFam, ...u2 };
     });
@@ -7851,8 +7941,9 @@ function engrave(song, o10) {
               k2++;
               continue;
             }
+            const isAuto = !!q2.ds.auto?.[us[k2].index];
             let e10 = k2;
-            while (e10 + 1 < us.length && (q2.ds.ott[us[e10 + 1].index] ?? 0) === v) e10++;
+            while (e10 + 1 < us.length && (q2.ds.ott[us[e10 + 1].index] ?? 0) === v && !!q2.ds.auto?.[us[e10 + 1].index] === isAuto) e10++;
             const up = v > 0, y2 = up ? ottYAt.get(row0) : ottDownYAt.get(row0);
             if (y2 !== void 0) {
               const prevIdx = us[k2].index - 1, cont = k2 === 0 && prevIdx >= 0 && (q2.ds.ott[prevIdx] ?? 0) === v && units.some((x3) => x3.index >= 0 && x3.index <= prevIdx && x3.system < sy2);
@@ -7860,7 +7951,7 @@ function engrave(song, o10) {
               const x0 = P2(us[k2].x - 0.2), x1 = P2(us[e10].x + us[e10].w - 0.3), sz2 = P2(4 * 0.85), gw = P2(SIG_W[v] * 0.85);
               const src = units.find((x3) => x3.kind === "ottava" && x3.index <= us[k2].index && (q2.ds.ott[x3.index] ?? 0) === v && x3.system === sy2) ?? null;
               if (cont) prims.push({ t: "text", x: x0, y: y2 + P2(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont", size: P2(1.3), anchor: "start" });
-              else prims.push({ t: "glyph", x: x0, y: y2 + P2(up ? 0.4 : 0.4), ch: SIG2[v], cls: "ottava", size: sz2 });
+              else prims.push({ t: "glyph", x: x0, y: y2 + P2(up ? 0.4 : 0.4), ch: SIG2[v], cls: isAuto ? "ottava auto" : "ottava", size: sz2 });
               const lx2 = x0 + (cont ? P2(4.2) : gw) + P2(0.4), ly2 = y2 - P2(up ? 0.55 : 0.55);
               for (let x3 = lx2; x3 + P2(0.6) <= x1; x3 += P2(1)) prims.push({ t: "line", x1: x3, y1: ly2, x2: x3 + P2(0.6), y2: ly2, w: P2(0.1), cls: "ottava-line" });
               if (endsHere) prims.push({ t: "line", x1, y1: ly2, x2: x1, y2: ly2 + P2(up ? 1.1 : -1.1), w: P2(0.1), cls: "ottava-line" });
@@ -7868,7 +7959,9 @@ function engrave(song, o10) {
                 for (let i10 = us[k2].index; i10 >= 0; i10--) if (q2.tokens[i10]?.kind === "ottava") return i10;
                 return -1;
               })();
-              if (hitIdx >= 0) clefs.push({ kind: "ottava", paper: paper.id, part: q2.p.id, index: hitIdx, system: row0, x: x0, y: y2 - P2(1.6), w: Math.max(gw, P2(3)), h: P2(2.2) });
+              const run3 = isAuto ? q2.ds.runs.find((rr2) => us[k2].index >= rr2.from && us[k2].index <= rr2.to) : void 0;
+              if (run3) clefs.push({ kind: "ottava", paper: paper.id, part: q2.p.id, index: -1, run: run3, system: row0, x: x0, y: y2 - P2(1.6), w: Math.max(gw, P2(3)), h: P2(2.2) });
+              else if (hitIdx >= 0) clefs.push({ kind: "ottava", paper: paper.id, part: q2.p.id, index: hitIdx, system: row0, x: x0, y: y2 - P2(1.6), w: Math.max(gw, P2(3)), h: P2(2.2) });
             }
             k2 = e10 + 1;
           }
@@ -20753,10 +20846,12 @@ function clefOfXml(sign, octave) {
   if (sign === "F") return oc2 <= -1 ? "F8vb" : "F";
   return null;
 }
-var ottavaXml = (shift, open) => {
-  const stop = open ? `<direction><direction-type><octave-shift type="stop" size="${open === 2 ? 15 : 8}"/></direction-type></direction>` : "";
+var autoSeq = 0;
+var ottavaXml = (shift, open, auto = false) => {
+  const id2 = () => auto ? ` id="ms-auto-${++autoSeq}"` : "";
+  const stop = open ? `<direction><direction-type><octave-shift type="stop" size="${open === 2 ? 15 : 8}"${id2()}/></direction-type></direction>` : "";
   if (!shift) return stop;
-  return stop + `<direction placement="${shift > 0 ? "above" : "below"}"><direction-type><octave-shift type="${shift > 0 ? "down" : "up"}" size="${shift === 2 ? 15 : 8}"/></direction-type></direction>`;
+  return stop + `<direction placement="${shift > 0 ? "above" : "below"}"><direction-type><octave-shift type="${shift > 0 ? "down" : "up"}" size="${shift === 2 ? 15 : 8}"${id2()}/></direction-type></direction>`;
 };
 function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
   const staffs = staffOfTokens(toks, staves);
@@ -20913,7 +21008,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
     }
     if (t10.kind === "ottava") {
       if (ticks >= len) close(false);
-      const x2 = ottavaXml(t10.shift, ottOpen);
+      const x2 = ottavaXml(t10.shift, ottOpen, !!t10.auto);
       if (x2) cur.push(x2);
       ottOpen = t10.shift;
       continue;
@@ -20974,6 +21069,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
 }
 function writeMusicXml(doc2, meta) {
   const paper = doc2.paper ?? paperOf(DEFAULT_PAPER);
+  autoSeq = 0;
   const built = doc2.parts.map((p2, k2) => ({ p: p2, ...partMeasures(p2.tokens, p2.breaks, k2 === 0, p2.info.clef ?? "G", p2.info.staves === 2 ? 2 : 1) }));
   const nMeas = Math.max(0, ...built.map((b3) => b3.measures.length));
   const manualBars = {}, unwritten = [];
@@ -21153,6 +21249,7 @@ function readMusicXml(xml, hints) {
           for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const os2 of kids(dt, "octave-shift")) {
             const ty2 = os2.attrs.type, size = Number(os2.attrs.size ?? "8"), shift = ty2 === "down" ? size >= 15 ? 2 : 1 : ty2 === "up" ? -1 : 0;
             if (ty2 !== "down" && ty2 !== "up" && ty2 !== "stop") continue;
+            if ((os2.attrs.id ?? "").startsWith("ms-auto")) continue;
             const lastTok = body2[body2.length - 1];
             if (shift && lastTok?.kind === "ottava" && lastTok.shift === 0) lastTok.shift = shift;
             else mark({ kind: "ottava", id: 0, shift });
@@ -21416,12 +21513,13 @@ function saveMxl(a10) {
   const infos = song.parts.map(infoOf), meta = { software: `MoonSinger ${a10.app}`, date: a10.date };
   const files = {};
   const clefStarts = resolveSongClefs(song);
+  const autoOtt = (part) => part.staves !== 2 && part.autoOttava !== false;
   const clefInfo = (paperId, part) => {
     const c10 = part.staves === 2 ? void 0 : clefStarts.get(paperId)?.get(part.id);
     return c10 && c10 !== "G" ? { clef: c10 } : {};
   };
   const papers = song.papers.map((p2) => {
-    const parts = song.parts.flatMap((part, k2) => p2.tracks[part.id] ? [{ info: { ...infos[k2], ...clefInfo(p2.id, part) }, tokens: p2.tracks[part.id] }] : []);
+    const parts = song.parts.flatMap((part, k2) => p2.tracks[part.id] ? [{ info: { ...infos[k2], ...clefInfo(p2.id, part) }, tokens: autoOtt(part) ? withAutoOttava(p2.tracks[part.id], clefStarts.get(p2.id)?.get(part.id) ?? "G") : p2.tracks[part.id] }] : []);
     const w2 = writeMusicXml({ title: song.title, movementTitle: p2.name || void 0, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
     files[paperFile(p2.id)] = strToU8(w2.xml);
     const phrases = {};
@@ -21435,7 +21533,16 @@ function saveMxl(a10) {
   });
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k2) => {
     const f2 = flattenPart(song, part.id, { tempo: k2 === 0, order: songPlayOrder(song) });
-    const toks = f2.tokens.slice(), starts = f2.starts.map((x2) => ({ ...x2 }));
+    let toks = f2.tokens.slice(), starts = f2.starts.map((x2) => ({ ...x2 }));
+    if (autoOtt(part) && starts.length) {
+      const out2 = toks.slice(0, starts[0].index), ns2 = starts.map((x2) => ({ ...x2 }));
+      starts.forEach((s02, j2) => {
+        ns2[j2].index = out2.length;
+        out2.push(...withAutoOttava(toks.slice(s02.index, starts[j2 + 1]?.index ?? toks.length), clefStarts.get(s02.paper.id)?.get(part.id) ?? "G"));
+      });
+      toks = out2;
+      starts = ns2;
+    }
     const first = part.staves === 2 ? void 0 : clefStarts.get(starts[0]?.paper.id ?? "")?.get(part.id);
     if (first) {
       let off = 0;
@@ -21455,7 +21562,7 @@ function saveMxl(a10) {
   const scoreExt = {
     version: FORMAT.score,
     papers,
-    parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched", ...p2.staves === 2 ? {} : { clef: p2.clef ?? "auto" } })),
+    parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched", ...p2.staves === 2 ? {} : { clef: p2.clef ?? "auto" }, ...p2.autoOttava === false ? { autoOttava: false } : {} })),
     // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     ...a10.view && Object.keys(a10.view).length ? { view: a10.view } : {},
     // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
@@ -21975,6 +22082,7 @@ function songFromReads(reads, papers, partList = null) {
       clefFromScore.add(d3.id);
       if (CLEFS.includes(p2.clef)) d3.clef = p2.clef;
     }
+    if (p2.autoOttava === false) d3.autoOttava = false;
     seen.set(d3.id, d3);
   }
   for (const p2 of ps) for (const id3 of Object.keys(p2.tracks)) if (!seen.has(id3)) seen.set(id3, { id: id3, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
@@ -38427,6 +38535,22 @@ function openClefMenu(hit, at2) {
   if (!toks) return;
   const part = st2.song.parts.find((p2) => p2.id === hit.part);
   if (!part) return;
+  if (hit.kind === "ottava" && hit.run) {
+    const r10 = hit.run, lab = OTTAVA_LABEL[r10.shift];
+    ctxMenu(
+      "ottava-menu",
+      `<div class="ctx-hint ctx-what">\u81EA\u52A8\u516B\u5EA6\u7EBF\uFF1A\u8FD9\u4E00\u4E32\u97F3\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF0C\u81EA\u52A8\u753B\u4E86 ${esc7(lab)}\u3002\u53EA\u7BA1\u753B\u3001\u4E0D\u5B58\u8FDB\u8C31\uFF0C\u97F3\u9AD8\u4E0D\u53D8\uFF1B\u6539\u4E86\u97F3\u4F1A\u8DDF\u7740\u91CD\u7B97\u3002\u624B\u5199\u7684\u516B\u5EA6\u7EBF\u8BF4\u4E86\u7B97\u3002</div><button class="btn ctx-item" data-v="pin">\u56FA\u5B9A\u6210\u624B\u5199\u7684 ${esc7(lab)}\uFF08\u4E4B\u540E\u81EA\u5DF1\u6539\uFF09</button><button class="btn ctx-item" data-v="off">\u8FD9\u4F4D\u6B4C\u624B\u4E0D\u8981\u81EA\u52A8\u516B\u5EA6\u7EBF</button>`,
+      at2,
+      (v) => {
+        if (v === "pin") update(insertOttava({ ...setFocus(st2, hit.paper, hit.part, r10.from), sel: { from: r10.from, to: r10.to + 1 } }, r10.shift));
+        else if (v === "off") {
+          update(setPartAutoOttava(st2, hit.part, false));
+          info("\u8FD9\u4F4D\u6B4C\u624B\u7684\u81EA\u52A8\u516B\u5EA6\u7EBF\u5173\u4E86\uFF08\u8C31\u53F7\u5C0F\u83DC\u5355\u91CC\u80FD\u518D\u5F00\uFF09");
+        }
+      }
+    );
+    return;
+  }
   if (hit.kind === "ottava") {
     const t10 = toks[hit.index];
     if (!t10 || t10.kind !== "ottava") return;
@@ -38458,9 +38582,13 @@ function openClefMenu(hit, at2) {
   const auto = !part.clef, now2 = auto ? resolveSongClefs(st2.song).get(hit.paper)?.get(hit.part) ?? "G" : part.clef;
   ctxMenu(
     "clef-menu",
-    `<div class="ctx-hint ctx-what">\u8FD9\u4E2A\u58F0\u90E8\u7684\u8C31\u53F7\uFF08\u6BCF\u5F20\u7EB8\u5F00\u5934\u90FD\u7528\u5B83\uFF09\uFF1A${auto ? `\u81EA\u52A8\uFF08\u8FD9\u5F20\u7EB8\u6311\u4E86\u300C${esc7(CLEF_LABEL[now2])}\u300D\uFF09` : esc7(CLEF_LABEL[now2])}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002</div><div class="ctx-row"><button class="btn ctx-chip${auto ? " is-on" : ""}" data-v="p:auto" title="\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u5C11\u7684\u8C31\u53F7">\u81EA\u52A8</button>${clefChips(auto ? null : now2, "p:")}</div><div class="ctx-hint">\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF08\u5728\u8FD9\u5F20\u7EB8\u5F00\u5934\u653E\u4E00\u4E2A\u8C31\u53F7\u8BB0\u53F7\uFF09\uFF1A</div><div class="ctx-row">${clefChips(null, "here:")}</div>`,
+    `<div class="ctx-hint ctx-what">\u8FD9\u4E2A\u58F0\u90E8\u7684\u8C31\u53F7\uFF08\u6BCF\u5F20\u7EB8\u5F00\u5934\u90FD\u7528\u5B83\uFF09\uFF1A${auto ? `\u81EA\u52A8\uFF08\u8FD9\u5F20\u7EB8\u6311\u4E86\u300C${esc7(CLEF_LABEL[now2])}\u300D\uFF09` : esc7(CLEF_LABEL[now2])}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002</div><div class="ctx-row"><button class="btn ctx-chip${auto ? " is-on" : ""}" data-v="p:auto" title="\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u5C11\u7684\u8C31\u53F7">\u81EA\u52A8</button>${clefChips(auto ? null : now2, "p:")}</div><div class="ctx-hint">\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF08\u5728\u8FD9\u5F20\u7EB8\u5F00\u5934\u653E\u4E00\u4E2A\u8C31\u53F7\u8BB0\u53F7\uFF09\uFF1A</div><div class="ctx-row">${clefChips(null, "here:")}</div><div class="ctx-hint">\u81EA\u52A8\u516B\u5EA6\u7EBF\uFF1A\u4E00\u4E32\u5F88\u9AD8 / \u5F88\u4F4E\u7684\u97F3\uFF08\u6BCF\u4E2A\u90FD\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF09\u81EA\u52A8\u753B 8va / 15ma / 8vb\uFF1B\u624B\u5199\u7684\u8BF4\u4E86\u7B97\uFF0C\u4E0D\u5B58\u8FDB\u8C31\u3002</div><div class="ctx-row"><button class="btn ctx-chip${part.autoOttava !== false ? " is-on" : ""}" data-v="ao:on">\u5F00</button><button class="btn ctx-chip${part.autoOttava === false ? " is-on" : ""}" data-v="ao:off">\u5173</button></div>`,
     at2,
     (v) => {
+      if (v.startsWith("ao:")) {
+        update(setPartAutoOttava(st2, hit.part, v === "ao:on"));
+        return;
+      }
       if (v.startsWith("p:")) update(setPartClef(st2, hit.part, v === "p:auto" ? null : v.slice(2)));
       else if (v.startsWith("here:")) update(insertClef(setFocus(st2, hit.paper, hit.part, headLen(toks)), v.slice(5)));
     }
@@ -40454,4 +40582,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8c27e1e66535.mjs.map
+//# sourceMappingURL=moonsinger-8c90c1ac73c4.mjs.map
