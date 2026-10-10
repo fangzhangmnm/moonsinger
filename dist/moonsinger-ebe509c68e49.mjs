@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.11-2026-10-10";
+var APP_VERSION = "v0.10.12-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7571,6 +7571,7 @@ function engrave(song, o10) {
       yCur = contentTop(pageNo);
     }
   };
+  const bars = [];
   const rows = [], notes = [], slots = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
   const partsHit = [], papersHit = [];
   let head = null, shortBars = 0;
@@ -7948,6 +7949,7 @@ function engrave(song, o10) {
         const f2 = sysKeys[s10].get(q2.p.id) ?? q2.head.key;
         for (let k2 = 0; k2 < q2.staves; k2++) {
           const row2 = rowOf(s10, r10, k2), clef = q2.staves === 2 ? k2 ? "F" : "G" : clefAtSys(q2, s10), base3 = baseClef(clef);
+          if (rows[row2]) rows[row2].x1 = P2(staffEnd[s10]);
           for (let L2 = 0; L2 < 5; L2++) {
             const y2 = yOf(row2, BOTTOM_LINE + 2 * L2);
             prims.push({ t: "line", x1: P2(MARGIN + ind), y1: y2, x2: P2(staffEnd[s10]), y2, w: P2(ENGRAVE.staffLine), cls: "staff" });
@@ -8165,6 +8167,7 @@ function engrave(song, o10) {
         if (u2.kind === "bar" || u2.kind === "key" || u2.kind === "time") {
           for (let k2 = 0; k2 < q2.staves; k2++) {
             const rr2 = rowOf(u2.system, r10, k2), clef = clefOf(k2 + 1, u2.index), sh2 = clef === "F" ? 12 : 0;
+            if (u2.kind === "bar") bars.push({ system: rr2, x: P2(u2.x + 0.7) });
             if (u2.kind === "bar" && u2.repeat) {
               prims.push({ t: "glyph", x: P2(u2.x + 0.4), y: yOf(rr2, BOTTOM_LINE), ch: u2.repeat === "start" ? "\uE040" : u2.repeat === "end" ? "\uE041" : "\uE042", cls: (inSel(u2.index) ? "repeat-bar sel" : "repeat-bar") + navMute(u2.index) });
               if (u2.times && u2.times > 2 && k2 === 0) prims.push({ t: "text", x: P2(u2.x + 0.4 + (u2.repeat === "both" ? 1.2 : 1.47)), y: navY(u2.system), s: `\xD7${u2.times}`, cls: "nav-mark" + navMute(u2.index), size: P2(TEMPO_EM * 1.05), anchor: "end" });
@@ -8585,7 +8588,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P2(PG.h) : yCur + P2(MX.b);
-  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, notes, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -9843,6 +9846,14 @@ var ScoreView = class {
     if (!g3.isConnected) this.ink.appendChild(g3);
   }
   playheadEl = null;
+  barEl = null;
+  barKey = "";
+  // 播放时的小节底色（v0.10.12）
+  /** 你刚在谱上动过（写 / 改 / 挪光标）：几秒内播放不拽视图（v0.10.12；user「检测到用户在折腾谱子的时候需要hold住播放页面跟随？」→ AI 建议「你正在改谱时先不跟」→「12都同意」）。 */
+  userEditAt = -1e9;
+  noteUserEdit() {
+    this.userEditAt = performance.now();
+  }
   hlEls = [];
   // 正在响的音的高亮
   playP = null;
@@ -9874,6 +9885,9 @@ var ScoreView = class {
       this.playheadEl = null;
       for (const e10 of this.hlEls) e10.remove();
       this.hlEls = [];
+      this.barEl?.remove();
+      this.barEl = null;
+      this.barKey = "";
     };
     if (!p2 || !L2) {
       clear2();
@@ -9894,6 +9908,35 @@ var ScoreView = class {
       if (this.autoFollow) this.followPlay(top, bottom);
     }
     if (this.hscroll && this.autoFollow) this.followPlayX(x2);
+    {
+      const row2 = h0.system, hx = h0.x + h0.w / 2;
+      let left = -Infinity, right = Infinity;
+      for (const b3 of L2.bars) if (b3.system === row2) {
+        if (b3.x <= hx - 1 && b3.x > left) left = b3.x;
+        if (b3.x > hx + 1 && b3.x < right) right = b3.x;
+      }
+      if (!Number.isFinite(left)) {
+        let first = Infinity;
+        for (const n10 of this.hits) if (n10.system === row2 && n10.x < first) first = n10.x;
+        left = (Number.isFinite(first) ? first : hx) - L2.sp * 0.8;
+      }
+      if (!Number.isFinite(right)) right = L2.systems[row2].x1 ?? hx + L2.sp * 4;
+      let d3 = this.barEl;
+      if (!d3 || !d3.isConnected) {
+        d3 = document.createElement("div");
+        d3.className = "play-bar";
+        this.ink.insertBefore(d3, this.ink.firstChild);
+        this.barEl = d3;
+      }
+      const key = `${p2.paperId}:${sys}:${Math.round(left)}`;
+      if (key !== this.barKey) {
+        this.barKey = key;
+        d3.style.left = `${left}px`;
+        d3.style.top = `${top}px`;
+        d3.style.width = `${Math.max(4, right - left)}px`;
+        d3.style.height = `${bottom - top}px`;
+      }
+    }
     const spots = found.filter((f2) => f2.note).flatMap((f2) => f2.hits);
     while (this.hlEls.length > spots.length) this.hlEls.pop().remove();
     spots.forEach((h2, k2) => {
@@ -9913,11 +9956,25 @@ var ScoreView = class {
   }
   /** 自动翻：正在放的那一行（纸面坐标 top..bottom）出了舒服区 = 平滑滚到它在屏幕上方两成处。 */
   followPlay(top, bottom) {
-    if (performance.now() - this.userScrollAt < 4e3) return;
+    const now2 = performance.now();
+    if (now2 - this.userScrollAt < 4e3 || now2 - this.userEditAt < 4e3) return;
     const z2 = this.zoom, off = this.sheet.offsetTop, vt = this.el.scrollTop, vh = this.el.clientHeight;
     const y0 = off + top * z2, y1 = off + bottom * z2;
     if (y0 >= vt + vh * 0.05 && y1 <= vt + vh * 0.8) return;
-    this.el.scrollTo({ top: Math.max(0, y0 - vh * 0.2), behavior: "smooth" });
+    const to2 = Math.max(0, y0 - vh * 0.2);
+    if (Math.abs(to2 - vt) > vh * 1.5) {
+      this.el.scrollTo({ top: to2 + (to2 > vt ? -1 : 1) * vh * 0.3, behavior: "instant" });
+      this.flashBar();
+    }
+    this.el.scrollTo({ top: to2, behavior: "smooth" });
+  }
+  /** 小节底色闪一下（长跳转到了）。 */
+  flashBar() {
+    const d3 = this.barEl;
+    if (!d3) return;
+    d3.classList.remove("flash");
+    void d3.offsetWidth;
+    d3.classList.add("flash");
   }
   /** 横卷的自动翻（v0.9.35）：正在放的音（纸面 x）出了舒服区（屏幕左边 5% 到 80%）= 平滑滚到它在左边两成处；你刚自己滚过 4 秒内不跟。 */
   followPlayX(x2) {
@@ -37854,6 +37911,7 @@ function ghostSync() {
 var history = emptyHistory();
 function update(next2, gesture) {
   if (next2 === st2) return;
+  if (next2.song !== st2.song || next2.caret !== st2.caret || next2.sel !== st2.sel) view.noteUserEdit();
   if (next2.song !== st2.song) {
     history = record2(history, st2, doc.extras, gesture ?? null, performance.now(), describeSongChange(st2, next2));
     renderUndo();
@@ -39045,7 +39103,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "4935e06317ce",
+  cssHash: "ce3a337ebe6d",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -42190,4 +42248,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-43bb6e6b6e00.mjs.map
+//# sourceMappingURL=moonsinger-ebe509c68e49.mjs.map

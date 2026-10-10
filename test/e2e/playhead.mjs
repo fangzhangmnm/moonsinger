@@ -26,6 +26,10 @@ const hl = () => p.evaluate(() => { const e = document.querySelector(".play-hl")
 const ph1 = await hl(); await p.waitForTimeout(700); const ph2 = await hl();
 check(ph1 !== null && ph2 !== null && ph2 > ph1, "正在响的音高亮了、往右走（没有播放线）", `${ph1} → ${ph2}`);
 check(!(await p.$(".playhead")), "不画播放线");
+// 小节底色（v0.10.12；user「播放动画的时候还得垫一个比较轻的小节高亮…太低调了所以有时候找不到放哪里了」）：有一块、盖住正在响的音、在它下面
+{ const g = await p.evaluate(() => { const bar = document.querySelector(".play-bar"), hl = document.querySelector(".play-hl"); if (!bar || !hl) return null; const b = bar.getBoundingClientRect(), h = hl.getBoundingClientRect(), cx = h.left + h.width / 2, cy = h.top + h.height / 2;
+    return { inside: cx > b.left && cx < b.right && cy > b.top && cy < b.bottom, below: bar.compareDocumentPosition(hl) & Node.DOCUMENT_POSITION_FOLLOWING ? true : false, w: b.width }; });
+  check(!!g && g.inside && g.below && g.w > 10, "放着 = 正在响的那一小节垫一块淡底色（盖住正在响的音、在高亮下面）", JSON.stringify(g)); }
 await tapPlay(); await p.waitForTimeout(200);
 check(!!(await p.$(".play-hl")) && !(await p.evaluate(() => window.__moonsinger.engine.playing)), "暂停 = 高亮留在停下的那个音（续播从这儿）");
 check(!errs.length, "页面没有报错", errs.join(" | "));

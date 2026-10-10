@@ -665,6 +665,7 @@ function ghostSync(): void { view.showGhost(ghostOn() ? [...ghostHeld.values()] 
 let history: History = emptyHistory();
 function update(next: EditorState, gesture?: string): void {
   if (next === st) return;
+  if (next.song !== st.song || next.caret !== st.caret || next.sel !== st.sel) view.noteUserEdit();   // 你在谱上动了：播放几秒内不拽视图（v0.10.12）
   if (next.song !== st.song) { history = record(history, st, doc.extras, gesture ?? null, performance.now(), describeSongChange(st, next)); renderUndo(); }
   applyState(next);
 }

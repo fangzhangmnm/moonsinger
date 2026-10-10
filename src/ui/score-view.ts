@@ -302,6 +302,10 @@ export class ScoreView {
     if (!g.isConnected) this.ink.appendChild(g);
   }
   private playheadEl: HTMLDivElement | null = null;
+  private barEl: HTMLDivElement | null = null; private barKey = "";   // 播放时的小节底色（v0.10.12）
+  /** 你刚在谱上动过（写 / 改 / 挪光标）：几秒内播放不拽视图（v0.10.12；user「检测到用户在折腾谱子的时候需要hold住播放页面跟随？」→ AI 建议「你正在改谱时先不跟」→「12都同意」）。 */
+  private userEditAt = -1e9;
+  noteUserEdit(): void { this.userEditAt = performance.now(); }
   private hlEls: HTMLDivElement[] = [];                                  // 正在响的音的高亮
   private playP: { paperId: string; tick: number } | null = null;       // 播放线在哪（重画后照着再摆）
   private startP: { paperId: string; tick: number } | null = null;      // 起点
@@ -324,7 +328,7 @@ export class ScoreView {
   setPlayhead(p: { paperId: string; tick: number } | null): void {
     this.playP = p;
     const L = this.layout;
-    const clear = () => { this.playheadEl?.remove(); this.playheadEl = null; for (const e of this.hlEls) e.remove(); this.hlEls = []; };
+    const clear = () => { this.playheadEl?.remove(); this.playheadEl = null; for (const e of this.hlEls) e.remove(); this.hlEls = []; this.barEl?.remove(); this.barEl = null; this.barKey = ""; };
     if (!p || !L) { clear(); this.playSysKey = ""; return; }
     const found = this.soundingAt(p.paperId, p.tick);
     if (!found.length) { clear(); return; }
@@ -334,7 +338,16 @@ export class ScoreView {
     const sysKey = `${p.paperId}:${sys}`;
     if (sysKey !== this.playSysKey) { this.playSysKey = sysKey; if (this.autoFollow) this.followPlay(top, bottom); }
     if (this.hscroll && this.autoFollow) this.followPlayX(x);   // 横卷：一行很长，横着跟（不等换行）
-    void top; void bottom; void x;   // 播放线先不画（2026-10-10 user「感觉高亮够，可以先不用那根当前播放的线…先试试不用线」）——位置照算，要回来时在这儿画
+    // 小节底色（v0.10.12；user「播放动画的时候还得垫一个比较轻的小节高亮…太低调了所以有时候找不到放哪里了」→ AI 建议整小节、user「12都同意」）：
+    //   正在放的那个（最晚开始的音）所在的小节，盖住这一行所有声部，很淡，垫在音符高亮下面；一小节才换一次，不晃
+    { const row = h0.system, hx = h0.x + h0.w / 2; let left = -Infinity, right = Infinity;
+      for (const b of L.bars) if (b.system === row) { if (b.x <= hx - 1 && b.x > left) left = b.x; if (b.x > hx + 1 && b.x < right) right = b.x; }
+      if (!Number.isFinite(left)) { let first = Infinity; for (const n of this.hits) if (n.system === row && n.x < first) first = n.x; left = (Number.isFinite(first) ? first : hx) - L.sp * 0.8; }
+      if (!Number.isFinite(right)) right = L.systems[row].x1 ?? hx + L.sp * 4;
+      let d = this.barEl; if (!d || !d.isConnected) { d = document.createElement("div"); d.className = "play-bar"; this.ink.insertBefore(d, this.ink.firstChild); this.barEl = d; }
+      const key = `${p.paperId}:${sys}:${Math.round(left)}`;
+      if (key !== this.barKey) { this.barKey = key; d.style.left = `${left}px`; d.style.top = `${top}px`; d.style.width = `${Math.max(4, right - left)}px`; d.style.height = `${bottom - top}px`; } }
+    void x;   // 播放线先不画（2026-10-10 user「感觉高亮够，可以先不用那根当前播放的线…先试试不用线」）——位置照算，要回来时在这儿画
     // 正在响的音：每个声部各自的那一个（休止不亮）；连音线拆开的几段一起亮
     const spots = found.filter((f) => f.note).flatMap((f) => f.hits);
     while (this.hlEls.length > spots.length) this.hlEls.pop()!.remove();
@@ -348,12 +361,19 @@ export class ScoreView {
   }
   /** 自动翻：正在放的那一行（纸面坐标 top..bottom）出了舒服区 = 平滑滚到它在屏幕上方两成处。 */
   private followPlay(top: number, bottom: number): void {
-    if (performance.now() - this.userScrollAt < 4000) return;
+    const now = performance.now();
+    if (now - this.userScrollAt < 4000 || now - this.userEditAt < 4000) return;
     const z = this.zoom, off = this.sheet.offsetTop, vt = this.el.scrollTop, vh = this.el.clientHeight;
     const y0 = off + top * z, y1 = off + bottom * z;
     if (y0 >= vt + vh * 0.05 && y1 <= vt + vh * 0.8) return;
-    this.el.scrollTo({ top: Math.max(0, y0 - vh * 0.2), behavior: "smooth" });
+    const to = Math.max(0, y0 - vh * 0.2);
+    // 长跳转（编排 / 反复跳回去、跨好几屏）：先瞬移到还差三成屏的地方，再平滑滚完最后那一段，到了小节底色闪一下——
+    //   一路平滑滚好几屏会晕、还会扫过一堆不相干的谱；直接瞬移又找不着北（v0.10.12；user「如果是长跳转也许需要页面动画？不然的话突然teleport会misorientation。但是动画会不会晕车」）
+    if (Math.abs(to - vt) > vh * 1.5) { this.el.scrollTo({ top: to + (to > vt ? -1 : 1) * vh * 0.3, behavior: "instant" as ScrollBehavior }); this.flashBar(); }
+    this.el.scrollTo({ top: to, behavior: "smooth" });
   }
+  /** 小节底色闪一下（长跳转到了）。 */
+  private flashBar(): void { const d = this.barEl; if (!d) return; d.classList.remove("flash"); void d.offsetWidth; d.classList.add("flash"); }
   /** 横卷的自动翻（v0.9.35）：正在放的音（纸面 x）出了舒服区（屏幕左边 5% 到 80%）= 平滑滚到它在左边两成处；你刚自己滚过 4 秒内不跟。 */
   private followPlayX(x: number): void {
     if (performance.now() - this.userScrollAt < 4000) return;
