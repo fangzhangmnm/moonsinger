@@ -620,8 +620,11 @@ export class Pad {
   private knobWheel(b: HTMLElement, e: WheelEvent): void {
     const knob = b.dataset.knob!; if (knob === "more") return;
     e.preventDefault();
-    const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY, acc = (this.wheelAcc.get(knob) ?? 0) + px, STEP_PX = 40;
-    const steps = Math.trunc(acc / STEP_PX); this.wheelAcc.set(knob, acc - steps * STEP_PX);
+    // 鼠标滚轮一格（Chrome 报 100 px、按行模式报 3 行…）= 正好一档（v0.10.8，user「滚轮滚键盘的range的时候应该是一行行滚而不是两行」：原来 100 / 40 = 一格走两档）；触控板的小 delta 照旧攒够 40 px 才动
+    const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY, STEP_PX = 40;
+    let steps: number;
+    if (Math.abs(px) >= 50) { steps = Math.sign(px); this.wheelAcc.set(knob, 0); }
+    else { const acc = (this.wheelAcc.get(knob) ?? 0) + px; steps = Math.trunc(acc / STEP_PX); this.wheelAcc.set(knob, acc - steps * STEP_PX); }
     if (!steps) return;
     const v = this.knobList(knob), n = v.items.length;
     const i = v.loop ? (((v.index + steps) % n) + n) % n : Math.max(0, Math.min(n - 1, v.index + steps));

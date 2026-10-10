@@ -84,6 +84,7 @@ import "./bar-numbers.test.ts";
 import "./z-layers.test.ts";
 import "./arpeggio.test.ts";
 import "./pad-rests.test.ts";
+import "./plugins.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

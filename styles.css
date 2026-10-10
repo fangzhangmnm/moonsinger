@@ -464,7 +464,30 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .strip.master { border-color: var(--accent); }   /* 总轨（2026-10-10 刀 3） */
 .strip .meter-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .strip .meter-fill { height: 100%; width: 0; background: var(--accent); transition: width 60ms linear; }
-.strip .meter-fill.hot { background: #d33; }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
+.strip .meter-fill.hot { background: #d33; }
+/* 插件格（v0.10.8）：每条轨一排小钮（默认 EQ 在最前）+「＋」；点一格 = 混音台顶上展开它的面板（一键 / 全量） */
+.strip-fx { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; position: relative; }
+.strip-fx .fx-chip { height: 26px; padding: 0 8px; font-size: 12px; border-radius: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.strip-fx .fx-chip.is-on { border-color: var(--accent); color: var(--accent); }
+.strip-fx .fx-chip.off { color: var(--muted); text-decoration: line-through; }
+.strip-fx .fx-add { height: 26px; min-width: 26px; padding: 0 6px; border-radius: 13px; font-size: 14px; }
+.strip-fx .fx-add-menu { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
+.fx-panel { border-bottom: 1px solid var(--line); background: var(--bg); padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 8px; max-height: 55%; overflow: auto; flex: none; }
+.fx-panel[hidden] { display: none; }
+.fx-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fx-head .fx-title { font-weight: 600; margin-right: auto; }
+.fx-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.fx-seg .btn { border: 0; border-radius: 0; height: 28px; padding: 0 10px; background: transparent; }
+.fx-seg .btn + .btn { border-left: 1px solid var(--line); }
+.fx-seg .btn.is-on { background: var(--accent); color: #fff; }
+.fx-body { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 14px; }
+.fx-row { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
+.fx-row output { color: var(--ink); font-variant-numeric: tabular-nums; }
+.fx-row input[type="range"] { width: 100%; }
+.fx-row select { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; }
+.fx-row .btn { align-self: flex-start; }
+.fx-note { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.fx-dim { color: var(--muted); }   /* 歌手管理：在几张纸上；一张都不在 = 能删（2026-10-08 深夜） */
 /* 分页：页框 + 页码 */
 .staff-svg rect.page { fill: #fff; stroke: var(--line); stroke-width: 1; }
 .staff-svg .page-no { fill: var(--muted); }

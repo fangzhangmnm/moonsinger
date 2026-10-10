@@ -50,7 +50,8 @@ import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
 import { loadVowelTable } from "../engine/vowel-table.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
 import { Finder, type FinderPick } from "../ui/finder.ts";
-import { Studio } from "../ui/studio.ts";
+import { Studio, MASTER as STUDIO_MASTER } from "../ui/studio.ts";
+import { resolveChain } from "../ui/plugins.ts";
 import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, velLayersOf, sustainOf, octaveCheckOf, conceptOfIds, octaveDisclosure, GS_LIBRARY_ID, type Catalog } from "../gm/catalog.ts";
 import { ICON_CREDITS } from "../gm/instruments.gen.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
@@ -776,10 +777,20 @@ function micOf(part: PartDef): { gainDb: number; pan: number } {
 const channelOf = (part: PartDef): { gainDb: number; pan: number } => { const { gainDb, pan } = micOf(part); return { gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan }; };
 /** 通道参数推进录音房（播放时才乘 → 边放边调立刻听见；静音 / 独奏在 audibleParts 里筛，不在通道上）。 */
 function pushChannels(): void {
-  for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: false, solo: false, chain: t?.chain ?? [], sends: t?.sends ?? [], to: t?.to ?? "master" }); }
-  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: b.chain })));
-  engine.master(activeMaster(doc.extras));
+  // 插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）在这里换成录音房认的数（src/ui/plugins.ts resolveChain；v0.10.8）
+  const bpm = songBpm(), ctx = (lowestMidi: number | null) => ({ lowestMidi, bpm });
+  for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: false, solo: false, chain: resolveChain(t?.chain ?? [], ctx(lowestMidiOf(p.id))), sends: t?.sends ?? [], to: t?.to ?? "master" }); }
+  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: resolveChain(b.chain, ctx(null)) })));
+  const m = activeMaster(doc.extras); engine.master({ ...m, chain: resolveChain(m.chain, ctx(null)) });
 }
+/** 这位歌手全曲最低的音（自动低切用；没有音 = null）。 */
+function lowestMidiOf(partId: string): number | null {
+  let lo: number | null = null;
+  for (const pp of st.song.papers) for (const t of pp.tracks[partId] ?? []) if (t.kind === "note" && t.pitch) for (const q of [t.pitch, ...(t.chord ?? [])]) { const m = midiOf(q); if (lo === null || m < lo) lo = m; }
+  return lo;
+}
+/** 歌开头的速度（延迟「跟速度」用）。 */
+function songBpm(): number { const p = st.song.papers[0], t = p ? p.tracks[st.song.parts.find((x) => p.tracks[x.id])?.id ?? ""] : undefined; return t ? tempoAt(t, headLen(t)) : 90; }
 /** 上场那位的出声参数（时间线不碰 Extras；src/engine/timeline.ts）。SoundFont 的预设下标要库先进录音房（prepareBanks）。 */
 function performerInfo(part: PartDef): PerformerInfo {
   const role = part.role, eng = (activeInstrument(doc.extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], g = activeGm(doc.extras, role), cat = grooveCategory(eng, g);
@@ -1692,6 +1703,13 @@ const studio = new Studio($("stage"), {
   master: () => activeMaster(doc.extras),
   setMasterGain: (dB) => updateExtras(withMaster(doc.extras, { gainDb: dB }), { kind: "studio", label: `总轨增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
   toggleLimiter: () => { const on = !activeMaster(doc.extras).limiter; updateExtras(withMaster(doc.extras, { limiter: on }), { kind: "studio", label: `母线限幅${on ? "开" : "关"}` }); },
+  // 插件格（v0.10.8）：总轨 = studio.json master.chain；歌手 = 它那条麦克风轨的 chain
+  chain: (track) => (track === STUDIO_MASTER ? activeMaster(doc.extras).chain : (() => { const p = st.song.parts.find((x) => x.id === track); return p ? studioTrack(doc.extras, p.mic)?.chain ?? [] : []; })()),
+  setChain: (track, chain, label, merge) => {
+    if (track === STUDIO_MASTER) { updateExtras(withMaster(doc.extras, { chain }), { kind: "studio", label }, merge); return; }
+    const p = st.song.parts.find((x) => x.id === track); if (p) updateExtras(withTrack(doc.extras, p.mic, { chain }), { kind: "studio", label }, merge);
+  },
+  keyTracks: (track) => { const labels = partLabels(st.song, doc.extras); return st.song.parts.flatMap((p, k) => (p.id === track ? [] : [{ id: p.id, name: labels[k] }])); },
   /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
   deletePart: (id) => {
     const p = st.song.parts.find((x) => x.id === id); if (!p || st.song.papers.some((pp) => pp.tracks[id])) return;
