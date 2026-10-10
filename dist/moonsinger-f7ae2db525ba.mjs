@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.38-2026-10-10";
+var APP_VERSION = "v0.9.39-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -9346,8 +9346,11 @@ var ScoreView = class {
   ink;
   // 歌词框 / 记号框 / 框选的容器：分页时往右挪到版心（svg 的 viewBox 往左扩了边距）
   ctx = document.createElement("canvas").getContext("2d");
+  /** wait = 鼠标：长按到点之前不拖（v0.9.39；user 2026-10-10「这样吧，还是普通拖动，音也是，但是鼠标的时候也需要长按」——拖动太容易误触）。 */
   drag = null;
   finger = null;
+  /** 框选 = 鼠标短按就拖（v0.9.39；user「不，框选是普通短按拖动，这样才能有差别」「不然我框选会误触拖动」）：从空白、音、记号、字上短按拖都是框选；长按之后拖才是拿起来挪。
+   *  last = 上一次框出来的结果（没变就不重设 = 不重排；user「鼠标框选有点卡」）；raf = 合并到每帧一次。 */
   box = null;
   boxEl;
   tail;
@@ -9854,7 +9857,7 @@ var ScoreView = class {
       const st0 = this.host.get();
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t10 = tr(this.host.get())[hit.index];
-      if (this.rules.noteDrag) this.drag = { index: hit.index, d0: hit.d, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: hit.d };
+      if (this.rules.noteDrag) this.drag = { index: hit.index, d0: hit.d, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: hit.d, ...e10.pointerType === "mouse" ? { wait: true } : {} };
       this.el.setPointerCapture(e10.pointerId);
       this.armPress(e10, p2, hit);
       return;
@@ -9909,6 +9912,16 @@ var ScoreView = class {
       this.holdPid = pr.pid;
       return;
     }
+    if (this.drag?.wait) {
+      this.drag.wait = false;
+      this.host.audition?.(pr.hit.index, true);
+      this.holdPid = pr.pid;
+      return;
+    }
+    this.selectHeld(pr.pid, pr.hit);
+  }
+  /** 长按选中按着的那个音（不抬手接着拖 = 扩选）。 */
+  selectHeld(pid, hit) {
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
     this.finger = null;
@@ -9916,12 +9929,12 @@ var ScoreView = class {
       this.host.release?.();
       this.drag = null;
     }
-    const st0 = this.host.get(), st3 = this.onTrack(pr.hit) ? st0 : this.focusRow(st0, pr.hit.system);
-    this.host.set(select(st3, pr.hit.index, pr.hit.index + 1));
-    this.selDrag = { pid: pr.pid, anchor: pr.hit.index };
+    const st0 = this.host.get(), st3 = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
+    this.host.set(select(st3, hit.index, hit.index + 1));
+    this.selDrag = { pid, anchor: hit.index };
     this.host.focus?.("staff");
-    this.host.audition?.(pr.hit.index, true);
-    this.holdPid = pr.pid;
+    this.host.audition?.(hit.index, true);
+    this.holdPid = pid;
   }
   /** 歌手牌（每张纸第一行各条谱左边的声部名）：开轨的小卡——光标换到那条（setFocus 放在那条的最后），但视图不跟过去
    *  （user 2026-10-08「按vocal字弹track窗的时候页面滚动会乱」）。左键 / 右键（2026-10-10 user「右键歌手名应该也是弹歌手选项，和左键一样」）/ 听模式都走这里。 */
@@ -10311,6 +10324,9 @@ var ScoreView = class {
       const cx2 = n10.x + n10.w / 2;
       return n10.system === b3.row && cx2 >= xa && cx2 <= xb && n10.y >= ya && n10.y <= yb;
     }).map((n10) => n10.index);
+    const key = inside.length ? `${Math.min(...inside)}-${Math.max(...inside)}` : "caret";
+    if (key === b3.last) return;
+    b3.last = key;
     if (!inside.length) {
       this.placeCaretAt(b3.x0, b3.y0, b3.st0);
       return;
@@ -10338,9 +10354,15 @@ var ScoreView = class {
         clearTimeout(pr.timer);
       }
     }
-    if (pr && pr.grab && e10.pointerId === pr.pid && pr.moved && !pr.fired && pr.type !== "touch") {
+    if (pr && pr.grab && e10.pointerId === pr.pid && pr.moved && !pr.fired && pr.type === "pen") {
       pr.fired = true;
       this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false);
+    }
+    if (pr && e10.pointerId === pr.pid && pr.moved && !pr.fired && pr.type === "mouse" && (pr.grab || this.drag?.wait) && !this.box) {
+      const st0 = this.host.get();
+      this.cancelPress();
+      this.drag = null;
+      this.box = { pid: e10.pointerId, x0: pr.x, y0: pr.y, moved: false, st0, row: this.rowAt(pr.y) };
     }
     if (this.lift && e10.pointerId === this.lift.pid) {
       this.dragLift(this.local(e10));
@@ -10383,11 +10405,18 @@ var ScoreView = class {
         b3.moved = true;
         this.boxEl.hidden = false;
       }
-      this.boxSelect(p3.x, p3.y);
+      b3.px = p3.x;
+      b3.py = p3.y;
+      if (!b3.raf) b3.raf = requestAnimationFrame(() => {
+        const bb = this.box;
+        if (!bb || bb !== b3) return;
+        bb.raf = 0;
+        this.boxSelect(bb.px, bb.py);
+      });
       return;
     }
     const g3 = this.drag, L2 = this.layout;
-    if (!g3 || !L2 || e10.pointerId !== g3.pid) return;
+    if (!g3 || !L2 || e10.pointerId !== g3.pid || g3.wait) return;
     const p2 = this.local(e10), dx = p2.x - g3.x0, dy = p2.y - g3.y0;
     if (!g3.axis) {
       if (Math.hypot(dx, dy) < 6) return;
@@ -10462,6 +10491,13 @@ var ScoreView = class {
         this.host.onSelPress?.({ x: pr.cx, y: pr.cy });
         return;
       }
+      if (pr.fired && pr.hit && this.drag && !this.drag.wait && !this.drag.axis && pr.type === "mouse" && !extended) {
+        this.selectHeld(pr.pid, pr.hit);
+        this.selDrag = null;
+        this.host.release?.();
+        this.holdPid = null;
+        return;
+      }
       if (pr.fired || extended) {
         this.finger = null;
         if (this.drag) {
@@ -10497,6 +10533,14 @@ var ScoreView = class {
       const b3 = this.box;
       this.box = null;
       this.boxEl.hidden = true;
+      if (b3.raf) {
+        cancelAnimationFrame(b3.raf);
+        if (b3.moved && b3.px !== void 0) {
+          this.box = b3;
+          this.boxSelect(b3.px, b3.py);
+          this.box = null;
+        }
+      }
       if (!b3.moved && this.layout) this.placeCaretAt(b3.x0, b3.y0);
       this.host.focus?.("staff");
       return;
@@ -40587,4 +40631,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-33c97aa2ed90.mjs.map
+//# sourceMappingURL=moonsinger-f7ae2db525ba.mjs.map

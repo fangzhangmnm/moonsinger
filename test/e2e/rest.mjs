@@ -33,10 +33,15 @@ for (const touch of [false, true]) {
     // 横拖改时值；竖拖不改音高
     r = await rest();
     const before = (await st()).toks;
-    await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.mouse.move(r.x, r.y - 60, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+    await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(r.x, r.y - 60, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
     check((await st()).toks === before, "鼠标：竖着拖休止 = 什么都不变（没有音高）", (await st()).toks);
     r = await rest();
-    await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.mouse.move(r.x + 50, r.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+    { const before = await p.evaluate(() => { const s = window.__moonsinger.state(); return JSON.stringify(s.song.papers[0].tracks[s.at.part].map((t) => t.dur ?? 0)); });
+      await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.mouse.move(r.x + 50, r.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+      check((await p.evaluate(() => { const s = window.__moonsinger.state(); return JSON.stringify(s.song.papers[0].tracks[s.at.part].map((t) => t.dur ?? 0)); })) === before, "鼠标没长按就横拖 = 不改时值（v0.9.39：鼠标也要先长按）");
+      await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.mouse.move(r.x - 120, r.y - 40, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+      check(!!(await st()).sel, "鼠标从休止上短按就往左上拖 = 框选（框住前面的音；user「框选是普通短按拖动，这样才能有差别」）", JSON.stringify((await st()).sel)); await p.keyboard.press("Escape"); await p.waitForTimeout(100); }
+    await p.mouse.move(r.x, r.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(r.x + 50, r.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
     check((await st()).toks !== before && /r\d+/.test((await st()).toks), "鼠标：横着拖休止 = 改时值", `${before} → ${(await st()).toks}`);
     await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
     // 框选从第一个音框到休止

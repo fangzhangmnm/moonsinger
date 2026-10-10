@@ -35,15 +35,19 @@ const undo = (p) => p.keyboard.press("Control+z");
   check(await lyr(p) === "我 爱 你 _ _ _ _ _", "载入", await lyr(p));
   check(await marks(p) === "p n < n n f n n n n n", "记号载入", await marks(p));
   await p.evaluate(() => window.__moonsinger.setMode("lyrics"));   // v0.9.19：歌词框只在「词」模式里点得开
+  // 0. 鼠标没长按就拖 = 不算（v0.9.39；user「还是普通拖动，音也是，但是鼠标的时候也需要长按」）
+  { const a0 = await center(p, "#score text.lyric", 1), h0 = await heads(p);
+    await p.mouse.move(a0.x, a0.y); await p.mouse.down(); await p.mouse.move(h0[2].x, a0.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+    check(await lyr(p) === "我 爱 你 _ _ _ _ _", "鼠标没长按就拖「爱」= 不动", await lyr(p)); }
   // 1. 拖「爱」往右一个音
   let a = await center(p, "#score text.lyric", 1), h = await heads(p);
-  await p.mouse.move(a.x, a.y); await p.mouse.down(); await p.mouse.move(h[2].x, a.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+  await p.mouse.move(a.x, a.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(h[2].x, a.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
   check(await lyr(p) === "我 ー 爱 你 _ _ _ _", "鼠标拖「爱」往右 = 晚一个音起，你被推到空位", await lyr(p));
   await undo(p); await p.waitForTimeout(150);
   check(await lyr(p) === "我 爱 你 _ _ _ _ _", "撤销 = 一步回去", await lyr(p));
   // 2. 拖「爱」往左 = 合
   a = await center(p, "#score text.lyric", 1); h = await heads(p);
-  await p.mouse.move(a.x, a.y); await p.mouse.down(); await p.mouse.move(h[0].x, a.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+  await p.mouse.move(a.x, a.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(h[0].x, a.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
   check(await lyr(p) === "我‿爱 你 _ _ _ _ _ _", "鼠标拖「爱」往左 = 合", await lyr(p));
   await undo(p); await p.waitForTimeout(150);
   // 3. 轻点歌词 = 歌词框
@@ -72,11 +76,11 @@ const undo = (p) => p.keyboard.press("Control+z");
   // 6. 拖 p 到第三个音
   h = await heads(p);
   const d0 = (await p.$$eval("#score text.dyn", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, l: r.x }; })))[0];
-  await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.mouse.move(d0.x + (h[2].l - h[0].l), d0.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
+  await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(d0.x + (h[2].l - h[0].l), d0.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
   check(await marks(p) === "n < n p n f n n n n n", "鼠标拖 p 到第三个音", await marks(p));
   await undo(p); await p.waitForTimeout(150);
   // 7. 拖 p 到 f 那个音 = 顶掉 f（湮灭 + 说一声）
-  await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.mouse.move(d0.x + (h[3].l - h[0].l), d0.y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(200);
+  await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(d0.x + (h[3].l - h[0].l), d0.y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(200);
   check(await marks(p) === "n < n n p n n n n n", "拖 p 到 f 那个音 = p 算数、f 去掉（渐强走一档）", await marks(p));
   const note = await p.$eval(".wb-notice, .notice, [class*=notice]", (e) => e.textContent).catch(() => "");
   check(/顺手去掉了 1 个/.test(note ?? ""), "说一声", note ?? "");
@@ -146,7 +150,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   const d = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, l: r.x }; });
   const rest = await p.$eval("#score text.rest", (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y }; });
   const head0 = await p.$eval("#score text.note", (e) => e.getBoundingClientRect().x);
-  await p.mouse.move(d.x, d.y); await p.mouse.down(); await p.mouse.move(d.x + 8, d.y, { steps: 2 }); await p.waitForTimeout(100);
+  await p.mouse.move(d.x, d.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(d.x + 8, d.y, { steps: 2 }); await p.waitForTimeout(100);
   check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "拿起来就亮（强调色）");
   await p.mouse.move(d.x + (rest.x - head0), d.y, { steps: 8 }); await p.waitForTimeout(100);
   check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "拖着的时候一直亮");
@@ -163,7 +167,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   // 歌词拖：字跟着亮
   const ly = await p.$$eval("#score text.lyric", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
   const heads = await p.$$eval("#score text.note", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return r.x + r.width / 2; }));
-  await p.mouse.move(ly[1].x, ly[1].y); await p.mouse.down(); await p.mouse.move(heads[2], ly[1].y, { steps: 8 }); await p.waitForTimeout(100);
+  await p.mouse.move(ly[1].x, ly[1].y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(heads[2], ly[1].y, { steps: 8 }); await p.waitForTimeout(100);
   const hotLyric = await p.$$eval("#score text.lyric.hot", (es) => es.map((e) => e.textContent).join(","));
   check(hotLyric === "い", "拖字：亮的是被拖的那个字（跟着走）", hotLyric);
   await p.mouse.up(); await p.waitForTimeout(200);

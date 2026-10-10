@@ -106,9 +106,12 @@ export class ScoreView {
   private sheet: HTMLDivElement;
   private ink: HTMLDivElement;   // 歌词框 / 记号框 / 框选的容器：分页时往右挪到版心（svg 的 viewBox 往左扩了边距）
   private ctx = document.createElement("canvas").getContext("2d")!;
-  private drag: null | { index: number; d0: number; dur0: number; x0: number; y0: number; axis: "" | "x" | "y"; pid: number; heard: number } = null;
+  /** wait = 鼠标：长按到点之前不拖（v0.9.39；user 2026-10-10「这样吧，还是普通拖动，音也是，但是鼠标的时候也需要长按」——拖动太容易误触）。 */
+  private drag: null | { index: number; d0: number; dur0: number; x0: number; y0: number; axis: "" | "x" | "y"; pid: number; heard: number; wait?: boolean } = null;
   private finger: null | { pid: number; y0: number; top0: number; x: number; y: number; moved: boolean; shift: boolean; x0: number; left0: number } = null;
-  private box: null | { pid: number; x0: number; y0: number; moved: boolean; st0: EditorState; row: number } = null;
+  /** 框选 = 鼠标短按就拖（v0.9.39；user「不，框选是普通短按拖动，这样才能有差别」「不然我框选会误触拖动」）：从空白、音、记号、字上短按拖都是框选；长按之后拖才是拿起来挪。
+   *  last = 上一次框出来的结果（没变就不重设 = 不重排；user「鼠标框选有点卡」）；raf = 合并到每帧一次。 */
+  private box: null | { pid: number; x0: number; y0: number; moved: boolean; st0: EditorState; row: number; last?: string; raf?: number; px?: number; py?: number } = null;
   private boxEl: HTMLDivElement;
   private tail: HTMLDivElement;
   /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
@@ -547,7 +550,7 @@ export class ScoreView {
       const st0 = this.host.get();
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t = tr(this.host.get())[hit.index] as NoteTok;
-      if (this.rules.noteDrag) this.drag = { index: hit.index, d0: hit.d, dur0: t.dur, x0: p.x, y0: p.y, axis: "", pid: e.pointerId, heard: hit.d };   // 拖音 = 只在「音」里
+      if (this.rules.noteDrag) this.drag = { index: hit.index, d0: hit.d, dur0: t.dur, x0: p.x, y0: p.y, axis: "", pid: e.pointerId, heard: hit.d, ...(e.pointerType === "mouse" ? { wait: true } : {}) };   // 拖音 = 只在「音」里；鼠标要先长按
       this.el.setPointerCapture(e.pointerId);   // 按下不响（轻点 = 光标，不预览；user 2026-10-08「光标点选不标蓝音的话那么也不用 preview 吧」）；开始拖音高才响
       this.armPress(e, p, hit);
       return;
@@ -579,14 +582,21 @@ export class ScoreView {
       this.selDrag = { pid: pr.pid, anchor: pr.hit.index, menu: true };
       this.host.audition?.(pr.hit.index, true); this.holdPid = pr.pid; return;   // 按住已选中的音也听见它
     }
+    if (this.drag?.wait) {   // 鼠标长按到点 = 拿起来：接着拖 = 改音高 / 时值；原地松手 = 选中它（up 里）
+      this.drag.wait = false; this.host.audition?.(pr.hit.index, true); this.holdPid = pr.pid; return;
+    }
+    this.selectHeld(pr.pid, pr.hit);
+  }
+  /** 长按选中按着的那个音（不抬手接着拖 = 扩选）。 */
+  private selectHeld(pid: number, hit: HitNote): void {
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     this.finger = null;   // 手指：长按之后不再当滚动
     if (this.drag) { this.host.release?.(); this.drag = null; }   // 笔：按住出声到此为止
-    const st0 = this.host.get(), st = this.onTrack(pr.hit) ? st0 : this.focusRow(st0, pr.hit.system);
-    this.host.set(select(st, pr.hit.index, pr.hit.index + 1));
-    this.selDrag = { pid: pr.pid, anchor: pr.hit.index };
+    const st0 = this.host.get(), st = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
+    this.host.set(select(st, hit.index, hit.index + 1));
+    this.selDrag = { pid, anchor: hit.index };
     this.host.focus?.("staff");
-    this.host.audition?.(pr.hit.index, true); this.holdPid = pr.pid;   // 按住音 = 听见它（2026-10-10 user「按住音的时候应该能听到preview」），抬手停
+    this.host.audition?.(hit.index, true); this.holdPid = pid;   // 按住音 = 听见它（2026-10-10 user「按住音的时候应该能听到preview」），抬手停
   }
   /** 歌手牌（每张纸第一行各条谱左边的声部名）：开轨的小卡——光标换到那条（setFocus 放在那条的最后），但视图不跟过去
    *  （user 2026-10-08「按vocal字弹track窗的时候页面滚动会乱」）。左键 / 右键（2026-10-10 user「右键歌手名应该也是弹歌手选项，和左键一样」）/ 听模式都走这里。 */
@@ -848,6 +858,9 @@ export class ScoreView {
     const b = this.box!, L = this.layout!, xa = Math.min(b.x0, x1), xb = Math.max(b.x0, x1), ya = Math.min(b.y0, y1), yb = Math.max(b.y0, y1);
     Object.assign(this.boxEl.style, { left: `${xa}px`, top: `${ya}px`, width: `${xb - xa}px`, height: `${yb - ya}px` });
     const inside = this.hits.filter((n) => { const cx = n.x + n.w / 2; return n.system === b.row && cx >= xa && cx <= xb && n.y >= ya && n.y <= yb; }).map((n) => n.index);
+    const key = inside.length ? `${Math.min(...inside)}-${Math.max(...inside)}` : "caret";
+    if (key === b.last) return;   // 框住的没变 = 不重设（原来每动一下都重排整张谱 = 卡）
+    b.last = key;
     if (!inside.length) { this.placeCaretAt(b.x0, b.y0, b.st0); return; }
     const st = this.focusRow(b.st0, b.row, b.st0.caret);
     this.host.set(select(st, Math.min(...inside), Math.max(...inside) + 1));
@@ -857,7 +870,12 @@ export class ScoreView {
     if (this.lockTap && e.pointerId === this.lockTap.pid) { const p = this.local(e); if (Math.hypot(p.x - this.lockTap.x, p.y - this.lockTap.y) > 6) { this.lockTap.moved = true; if (this.press?.pid === e.pointerId) { this.press.moved = true; clearTimeout(this.press.timer); } } return; }
     const pr = this.press;
     if (pr && e.pointerId === pr.pid && !pr.moved && !pr.fired) { const p = this.local(e); if (Math.hypot(p.x - pr.x, p.y - pr.y) > (pr.type === "touch" ? 10 : 6)) { pr.moved = true; clearTimeout(pr.timer); } }   // 手指抖一点也算轻点
-    if (pr && pr.grab && e.pointerId === pr.pid && pr.moved && !pr.fired && pr.type !== "touch") { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); }   // 笔 / 鼠标按住字 / 记号动了 = 直接拖（手指动了 = 滚动）
+    if (pr && pr.grab && e.pointerId === pr.pid && pr.moved && !pr.fired && pr.type === "pen") { pr.fired = true; this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, false); }   // 笔按住字 / 记号动了 = 直接拖（手指动了 = 滚动；鼠标要先长按，没长按就动 = 不算，v0.9.39）
+    // 鼠标在音 / 记号 / 字上没长按就拖了 = 框选（长按之后才是拿起来挪）
+    if (pr && e.pointerId === pr.pid && pr.moved && !pr.fired && pr.type === "mouse" && (pr.grab || this.drag?.wait) && !this.box) {
+      const st0 = this.host.get(); this.cancelPress(); this.drag = null;
+      this.box = { pid: e.pointerId, x0: pr.x, y0: pr.y, moved: false, st0, row: this.rowAt(pr.y) };
+    }
     if (this.lift && e.pointerId === this.lift.pid) { this.dragLift(this.local(e)); return; }
     if (this.selDrag && e.pointerId === this.selDrag.pid) {   // 长按之后接着拖 = 扩选到指针下面的音
       const idx = this.noteNear(this.local(e)); if (idx < 0) return;
@@ -880,10 +898,11 @@ export class ScoreView {
       const p = this.local(e), b = this.box;
       if (!b.moved && Math.hypot(p.x - b.x0, p.y - b.y0) < 6) return;
       if (!b.moved) { b.moved = true; this.boxEl.hidden = false; }
-      this.boxSelect(p.x, p.y);
+      b.px = p.x; b.py = p.y;
+      if (!b.raf) b.raf = requestAnimationFrame(() => { const bb = this.box; if (!bb || bb !== b) return; bb.raf = 0; this.boxSelect(bb.px!, bb.py!); });   // 每帧最多一次
       return;
     }
-    const g = this.drag, L = this.layout; if (!g || !L || e.pointerId !== g.pid) return;
+    const g = this.drag, L = this.layout; if (!g || !L || e.pointerId !== g.pid || g.wait) return;   // 鼠标还没长按到点 = 不拖
     const p = this.local(e), dx = p.x - g.x0, dy = p.y - g.y0;
     if (!g.axis) {
       if (Math.hypot(dx, dy) < 6) return;
@@ -923,6 +942,7 @@ export class ScoreView {
       const extended = !!this.selDrag, menu = !!this.selDrag?.menu; this.selDrag = null;
       if (pr.grab && pr.type !== "touch") { if (!pr.moved && !pr.fired) this.tap(pr.x, pr.y, pr.shift, pr.pid); return; }   // 笔 / 鼠标轻点字 / 记号 = 歌词框 / 小菜单（手指走下面 finger 那条）
       if (menu) { this.finger = null; this.box = null; this.boxEl.hidden = true; this.host.focus?.("staff"); this.host.onSelPress?.({ x: pr.cx, y: pr.cy }); return; }
+      if (pr.fired && pr.hit && this.drag && !this.drag.wait && !this.drag.axis && pr.type === "mouse" && !extended) { this.selectHeld(pr.pid, pr.hit); this.selDrag = null; this.host.release?.(); this.holdPid = null; return; }   // 鼠标长按音、没拖就松手 = 选中它
       if (pr.fired || extended) { this.finger = null; if (this.drag) { this.host.release?.(); this.drag = null; } this.box = null; this.boxEl.hidden = true; return; }   // 长按选过了：抬手到此为止
       if (pr.hit && !pr.moved) {   // 轻点在音上
         this.finger = null; this.box = null;
@@ -939,6 +959,7 @@ export class ScoreView {
     }
     if (this.box && e.pointerId === this.box.pid) {
       const b = this.box; this.box = null; this.boxEl.hidden = true;
+      if (b.raf) { cancelAnimationFrame(b.raf); if (b.moved && b.px !== undefined) { this.box = b; this.boxSelect(b.px, b.py!); this.box = null; } }   // 最后一下补上
       if (!b.moved && this.layout) this.placeCaretAt(b.x0, b.y0);   // 没拖 = 放光标
       this.host.focus?.("staff");
       return;
