@@ -39,8 +39,9 @@ export interface ReadRequest { type: "read"; id: number; score: unknown[]; text:
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> };
-      /** 这条 worker 现在占多少（刀 6 内存监控）：wasm = 三块 WASM 堆（ort / OpenJTalk / WORLD，只涨不落）；cache = 念缓存的字节。 */
-      mem: { wasm: number; cache: number } }
+      /** 这条 worker 现在占多少（刀 6 内存监控）：wasm = 三块 WASM 堆（ort / OpenJTalk / WORLD，只涨不落）；cache = 念缓存的字节；
+       *  base = 引擎刚加载完那一刻的堆（v0.10.3：worker 自己量——原来主线程拿「第一次回话」当基线，冷启动那次还没唱、唱过的道又已经涨了，两头都不准）。 */
+      mem: { wasm: number; cache: number; base?: number } }
   | { type: "error"; id: number; message: string }
   | { type: "cache"; id: number; disk: { bytes: number; entries: number; budget: number } | null }
   | { type: "read"; id: number; ready: boolean; labels: string[] | null; said: string[] };
@@ -66,7 +67,10 @@ const captureMem = (imports: unknown, instance: unknown) => {
   WA.instantiate = async function (src: unknown, imports?: unknown) { const r = (await inst.call(WebAssembly, src, imports)) as { instance?: unknown }; captureMem(imports, r.instance ?? r); return r; };
   if (stream) WA.instantiateStreaming = async function (src: unknown, imports?: unknown) { const r = (await stream.call(WebAssembly, src, imports)) as { instance?: unknown }; captureMem(imports, r.instance); return r; };
 }
-const memNow = () => { let wasm = 0; for (const m of wasmMems) wasm += m.buffer.byteLength; return { wasm, cache: speech.used }; };
+const heapNow = () => { let n = 0; for (const m of wasmMems) n += m.buffer.byteLength; return n; };
+/** 引擎刚加载完的堆（模型 + 日语词典 + WORLD 的起始大小；之后涨的 = 唱过的最长那一句要的，只涨不落）。 */
+let baseHeap: number | undefined;
+const memNow = () => ({ wasm: heapNow(), cache: speech.used, base: baseHeap });
 
 const base = new URL("../dev-assets/", import.meta.url);   // 开发期：元音图谱（默认关）
 const u = (p: string) => new URL(p, base).href;
@@ -179,6 +183,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id: string) => { const meta = await json(`atlas/${id}.json`); const raw = await bytes(`atlas/${id}.f32`);
     return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) }; } : null;
+  baseHeap = heapNow();
   return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
 }
 

@@ -11,7 +11,7 @@ await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitF
 await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ ...st, input: { ...st.input, unit: 3 } }); });   // 四分音符
 for (let i = 0; i < 4; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
 await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ ...st, caret: 3 }); });   // 光标到最前面 = 放在第一个音上
-await p.selectOption("#modeSel", "symbols"); await p.waitForTimeout(100); await p.click('.pad-head [data-sympage="mark"]'); await p.waitForTimeout(100);
+await p.click('.mode-seg [data-mode="symbols"]'); await p.waitForTimeout(100); await p.click('.pad-head [data-sympage="mark"]'); await p.waitForTimeout(100);
 await p.click('[data-sym="groove"]'); await p.waitForTimeout(250);
 const grooves = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "groove").map((t) => `${t.style}${t.amount ? "×" + t.amount : ""}`).join(","); });
 check(await grooves() === "classical", "放了一个风格记号（先放古典）", await grooves());

@@ -9,7 +9,7 @@ await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitF
 for (let i = 0; i < 3; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
 await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 3).fill(0.2), sr: 22050 }); });
 const master = () => p.evaluate(() => window.__moonsinger.extras().studio?.master ?? null);
-await p.selectOption("#modeSel", "listen"); await p.waitForTimeout(250);
+await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(250);
 check(!!(await p.$(".strip.master")), "录音室里有总轨那一条");
 check((await master()) === null, "没动过 = 歌里没有 master 字段（老文件也不会多出东西）");
 const peakBefore = await p.evaluate(async () => { const m = await window.__moonsinger.renderMix(); let pk = 0; for (const v of m.samples) pk = Math.max(pk, Math.abs(v)); return pk; });
@@ -32,7 +32,7 @@ check(!(await p.$eval(".studio", (e) => !e.hidden)), "Esc 回谱");
 {
   const q = await (await b.newContext({ viewport: { width: 744, height: 1133 }, hasTouch: true, isMobile: true })).newPage();
   await q.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await q.waitForTimeout(800);
-  await q.selectOption("#modeSel", "listen"); await q.waitForTimeout(300);
+  await q.click('.mode-seg [data-mode="listen"]'); await q.waitForTimeout(300);
   const widths = await q.evaluate(() => {
     const box = document.querySelector(".studio-strips"), src = box.querySelector(".strip");
     while (box.querySelectorAll(".strip").length < 5) box.appendChild(src.cloneNode(true));

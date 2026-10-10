@@ -4,7 +4,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { instantiateTsf } from "../src/gm/tsf-standalone.ts";
 import { Studio, BLOCK, CEILING, type StudioOut, type TimelineMsg, type TrackSpec } from "../src/engine/studio.ts";
-import { audibleAt } from "../src/engine/studio-client.ts";
+import { audibleAt, outputClock } from "../src/engine/studio-client.ts";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL | string): Uint8Array };
 
 const SR = 48000;
@@ -149,6 +149,14 @@ describe("播放头 = 听到的地方（2026-10-10，user「ipad后台唤起后�
     eq(out.filter((m) => m.type === "pos").length, 3, "之后每 8 块一报");
     s.handle({ type: "seek", at: 2 }); out.length = 0; step();
     const p1 = out.find((m) => m.type === "pos"); assert(p1 && p1.type === "pos" && Math.abs(p1.sec - (2 + BLOCK / SR)) < 1e-9, "跳了那一块就报");
+  });
+  it("outputClock：时间戳合理 = 往前推；两个时钟对不上（长锁屏回来）= 不推；时间戳冻住 = 估（user「大部分音和动画没对齐都是发生在长锁屏之后回到前台」）", () => {
+    const ts = { contextTime: 9.95, performanceTime: 5000 };
+    const a = outputClock({ currentTime: 10, ts, perfNow: 5010 })!; eq(a.src, "ts"); assert(Math.abs(a.T - 9.96) < 1e-9, `推 10 ms：${a.T}`);
+    const b = outputClock({ currentTime: 10, ts, perfNow: 5000 + 3_600_000 })!; eq(b.src, "ts-ctx", "performance 时钟多走了一小时 = 推出来比 currentTime 还靠前 → 不推"); eq(b.T, 9.95);
+    const c = outputClock({ currentTime: 10, ts: { contextTime: 4, performanceTime: 5000 }, perfNow: 5000, baseLatency: 0.01, outputLatency: 0.04 })!; eq(c.src, "estimate", "时间戳停在 6 秒前"); assert(Math.abs(c.T - 9.95) < 1e-9);
+    eq(outputClock({ currentTime: 10, ts: null, perfNow: 0, baseLatency: 0.02 })!.src, "estimate", "浏览器不给时间戳");
+    eq(outputClock({ currentTime: 0, ts: null, perfNow: 0 }), null, "还没开始走");
   });
   it("audibleAt：扬声器的时钟 T 落在两条报告之间 = 从前一条往前推；在等块 = 不推；比最早一条还早 = 那一条", () => {
     const h = [{ at: 10, sec: 0, run: true }, { at: 10.021, sec: 0.021, run: true }, { at: 10.042, sec: 0.03, run: false }];

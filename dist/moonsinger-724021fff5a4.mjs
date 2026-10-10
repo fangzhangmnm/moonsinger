@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.2-2026-10-10";
+var APP_VERSION = "v0.10.3-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -20062,6 +20062,10 @@ var Singer = class {
   memory() {
     return this.lanes.map((l10) => l10.mem).filter((m2) => !!m2);
   }
+  /** 按道的下标排的占用（没起 = null；下标和 laneBusy / restartLane 对得上）。 */
+  laneMems() {
+    return this.lanes.map((l10) => l10.mem);
+  }
   laneBusy(i10) {
     const l10 = this.lanes[i10];
     return !!l10 && (l10.inflightId !== 0 || [...this.pending.values()].some((p2) => p2.lane === l10));
@@ -20074,7 +20078,7 @@ var Singer = class {
   }
   worker(l10) {
     if (l10.w) return l10.w;
-    const w2 = new Worker(new URL(`./${"singer-worker-a7d3d70fb27a.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"singer-worker-c2ce06a03c42.mjs"}`, import.meta.url), { type: "module" });
     l10.w = w2;
     w2.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -20094,7 +20098,7 @@ var Singer = class {
       }
       if (m2.type === "done") {
         if (m2.mem) {
-          l10.mem = { ...m2.mem, base: l10.mem?.base ?? m2.mem.wasm };
+          l10.mem = m2.mem;
           const i10 = this.laneIndex(l10);
           if (i10 >= 0) this.onMem?.(i10, m2.mem);
         }
@@ -20132,7 +20136,7 @@ var Singer = class {
   restart() {
     for (const l10 of this.lanes) this.failLane(l10, new Error("\u6708\u8BFB\u7684 worker \u91CD\u5F00\u4E86"));
   }
-  /** 只重开一条道（内存监控：这条道的堆超了预算、现在空着）。 */
+  /** 只重开一条道（换歌时：上一首的长句把这条道的堆撑大了、现在空着；念缓存盘上那份还在）。 */
   restartLane(i10) {
     const l10 = this.lanes[i10];
     if (l10) this.failLane(l10, new Error("\u6708\u8BFB\u7684 worker \u91CD\u5F00\u4E86"));
@@ -20262,27 +20266,22 @@ var Singer = class {
 var MB = 1e6;
 function budgetFor(d3) {
   const small = d3.ios || d3.deviceMemoryGB !== null && d3.deviceMemoryGB <= 4;
-  if (small) return { lanes: 1, total: 600 * MB, perWorker: 420 * MB, chunkBytes: 24 * MB, speechDisk: 128 * MB };
+  if (small) return { lanes: 1, total: 600 * MB, chunkBytes: 24 * MB, speechDisk: 128 * MB };
   const mid = d3.deviceMemoryGB !== null && d3.deviceMemoryGB < 8;
-  return { lanes: !mid && d3.cores >= 4 ? 2 : 1, total: mid ? 1200 * MB : 2500 * MB, perWorker: mid ? 700 * MB : 1400 * MB, chunkBytes: mid ? 64 * MB : 160 * MB, speechDisk: 512 * MB };
+  return { lanes: !mid && d3.cores >= 4 ? 2 : 1, total: mid ? 1200 * MB : 2500 * MB, chunkBytes: mid ? 64 * MB : 160 * MB, speechDisk: 512 * MB };
 }
 var totalBytes = (s10) => s10.lanes.reduce((n10, l10) => n10 + l10.wasm + l10.cache, 0) + s10.chunkBytes + s10.soundMem;
 var AUDIO_HOT = 0.85;
 var freeable = (l10) => l10.base !== void 0 ? Math.max(0, l10.wasm - l10.base) : 0;
 var worth = (l10) => freeable(l10) > Math.max(100 * MB, 0.3 * (l10.base ?? 0));
+function trimOnSongSwitch(lanes) {
+  return lanes.flatMap((l10, i10) => l10 && worth(l10) ? [i10] : []);
+}
 function advise(s10, b3) {
   const out = [];
   const over = totalBytes(s10) > b3.total;
   if (s10.chunkBytes > b3.chunkBytes || over && s10.chunkBytes > b3.chunkBytes / 2) out.push({ kind: "pruneChunks", toBytes: Math.floor(Math.min(b3.chunkBytes, s10.chunkBytes) / 2) });
   else if (over && s10.lanes.length > 1) out.push({ kind: "fewerLanes", lanes: 1 });
-  else {
-    const i10 = s10.lanes.findIndex((l10) => l10.wasm > b3.perWorker && worth(l10));
-    if (i10 >= 0) out.push({ kind: "restartLane", lane: i10 });
-    else if (over) {
-      const k2 = s10.lanes.map((l10, j2) => [freeable(l10), j2]).filter(([, j2]) => worth(s10.lanes[j2])).sort((a10, c10) => c10[0] - a10[0])[0];
-      if (k2) out.push({ kind: "restartLane", lane: k2[1] });
-    }
-  }
   if (s10.audioBusy !== null && s10.audioBusy > AUDIO_HOT) {
     out.push({ kind: "audioHot", busy: s10.audioBusy });
     if (s10.lanes.length > 1 && !out.some((a10) => a10.kind === "fewerLanes")) out.push({ kind: "fewerLanes", lanes: 1 });
@@ -24045,6 +24044,16 @@ function audibleAt(hist, T2) {
   if (s10.at > T2) return s10.sec;
   return s10.run ? s10.sec + (T2 - s10.at) : s10.sec;
 }
+var MAX_OUTPUT_LAT = 1;
+function outputClock(o10) {
+  const c10 = o10.currentTime, ok2 = (T2) => T2 <= c10 + 5e-3 && c10 - T2 <= MAX_OUTPUT_LAT;
+  if (o10.ts && o10.ts.contextTime && o10.ts.performanceTime) {
+    const T2 = o10.ts.contextTime + Math.max(0, o10.perfNow - o10.ts.performanceTime) / 1e3;
+    if (ok2(T2)) return { T: T2, src: "ts" };
+    if (ok2(o10.ts.contextTime)) return { T: o10.ts.contextTime, src: "ts-ctx" };
+  }
+  return c10 ? { T: c10 - (o10.baseLatency || 0) - (o10.outputLatency || 0), src: "estimate" } : null;
+}
 var StudioClient = class {
   node = null;
   readyP = null;
@@ -24289,9 +24298,12 @@ var StudioClient = class {
   /** 扬声器此刻在放音频时钟的哪一刻（getOutputTimestamp：浏览器按硬件的输出缓冲报的；没有就用 currentTime − 两个延迟估）。 */
   outputTime() {
     const ctx2 = this.ctx(), ts2 = typeof ctx2.getOutputTimestamp === "function" ? ctx2.getOutputTimestamp() : null;
-    if (ts2 && ts2.contextTime && ts2.performanceTime) return ts2.contextTime + Math.max(0, performance.now() - ts2.performanceTime) / 1e3;
-    return ctx2.currentTime ? ctx2.currentTime - (ctx2.baseLatency || 0) - (ctx2.outputLatency || 0) : null;
+    const r10 = outputClock({ currentTime: ctx2.currentTime, ts: ts2 && ts2.contextTime !== void 0 && ts2.performanceTime !== void 0 ? { contextTime: ts2.contextTime, performanceTime: ts2.performanceTime } : null, perfNow: performance.now(), baseLatency: ctx2.baseLatency, outputLatency: ctx2.outputLatency });
+    this.clockSrc = r10?.src ?? null;
+    return r10?.T ?? null;
   }
+  /** 最近一次 outputTime() 按哪一档算的（黑匣子用）。 */
+  clockSrc = null;
   /** 输出延迟（ms）：录音房算到的 vs 扬声器放到的（诊断 / 设置页看）。 */
   latencyMs() {
     const T2 = this.outputTime();
@@ -35983,7 +35995,7 @@ function showUpdateBar() {
   });
   document.body.append(el2);
 }
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button><span class="tb-sels"><select id="modeSel" class="tb-sel" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<option value="${m2}" title="${MODE_TITLE[m2].replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">${MODE_LABEL[m2]}</option>`).join("")}</select><select id="paperSel" class="tb-sel" title="\u770B\u54EA\u4E00\u6BB5\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u6BB5"></select><select id="partSel" class="tb-sel" title="\u770B\u54EA\u4F4D\u6B4C\u624B\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u4F4D"></select></span></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\uFF08\u8D77\u70B9\u56DE\u5F00\u5934\uFF09\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="transportMore" class="btn" title="\u63A5\u7740\u653E\uFF08\u505C\u8FC7\u624D\u6709\uFF09/ \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\uFF08\u8D77\u70B9\u56DE\u5F00\u5934\uFF09\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u5B83"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="transportMore" class="btn" title="\u63A5\u7740\u653E\uFF08\u505C\u8FC7\u624D\u6709\uFF09/ \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D">\u22EF</button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var padTab = document.createElement("button");
@@ -35994,6 +36006,11 @@ padTab.title = "\u952E\u76D8\uFF08pad\uFF09";
 padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span>`;
 stageEl.append(padTab);
 padTab.addEventListener("click", () => showPad(true));
+var attr = (s10) => s10.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+var viewTab = document.createElement("div");
+viewTab.className = "view-tab";
+viewTab.innerHTML = `<span class="mode-seg" role="tablist" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${attr(MODE_TITLE[m2])}">${MODE_LABEL[m2]}</button>`).join("")}</span><select id="paperSel" class="vt-sel" title="\u770B\u54EA\u4E00\u6BB5\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u6BB5"></select><select id="partSel" class="vt-sel" title="\u770B\u54EA\u4F4D\u6B4C\u624B\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u4F4D"></select>`;
+stageEl.append(viewTab);
 var selBar = new SelBar(stageEl, { verb: (v) => {
   void selVerb(v);
 } });
@@ -36022,6 +36039,7 @@ function renderTopSels() {
 function updateChrome() {
   if (!chromeReady) return;
   const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);
+  viewTab.hidden = over;
   padTab.hidden = !padEl.hidden || (gallery?.isOpen() ?? false) && !finderShown || studio.isOpen || !hasKeys(ws.mode);
   {
     const lab = ws.mode === "listen" ? "\u6DF7\u97F3\u53F0" : "\u952E\u76D8", sp2 = padTab.querySelector("span");
@@ -37020,7 +37038,7 @@ var DEVICE = { ios: /iPad|iPhone|iPod/.test(navigator.platform) || navigator.pla
 var BUDGET = budgetFor(DEVICE);
 if (new URLSearchParams(location.search).has("nodisk")) BUDGET.speechDisk = 0;
 singer.setLanes(BUDGET.lanes);
-diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB \u2192 lanes ${BUDGET.lanes}, budget ${Math.round(BUDGET.total / 1e6)} MB (worker ${Math.round(BUDGET.perWorker / 1e6)}, chunks ${Math.round(BUDGET.chunkBytes / 1e6)})`);
+diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB \u2192 lanes ${BUDGET.lanes}, budget ${Math.round(BUDGET.total / 1e6)} MB (chunks ${Math.round(BUDGET.chunkBytes / 1e6)})`);
 var watch = { load: null, hot: 0, lanesCut: false, said: /* @__PURE__ */ new Map() };
 var resourceSnapshot = () => ({ lanes: singer.memory(), chunkBytes: watch.load?.chunkBytes ?? 0, chunks: watch.load?.chunks ?? 0, soundMem: soundMemoryBytes(), audioBusy: watch.load?.busy ?? null });
 function resourceSay(kind, text2) {
@@ -37053,13 +37071,6 @@ function resourceTick() {
         diagNote("resource", `lanes \u2192 ${a10.lanes}`);
         resourceSay("lanes", "\u5185\u5B58 / \u8D1F\u8F7D\u5403\u7D27\uFF1A\u6708\u8BFB\u6539\u6210\u4E00\u6761\u9053\u5531\uFF08\u6162\u4E00\u70B9\uFF0C\u58F0\u97F3\u4E0D\u53D8\uFF09");
       }
-    } else if (a10.kind === "restartLane") {
-      if (!singer.laneBusy(a10.lane)) {
-        const mb = Math.round((snap.lanes[a10.lane]?.wasm ?? 0) / 1e6);
-        singer.restartLane(a10.lane);
-        diagNote("resource", `restart lane ${a10.lane} (wasm ${mb} MB)`);
-        resourceSay("restart", `\u6708\u8BFB\u5F15\u64CE\u7684\u5185\u5B58\u6DA8\u5230 ${mb} MB\uFF0C\u8D81\u7A7A\u91CD\u5F00\u4E86\u4E00\u6B21\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5\uFF09`);
-      }
     } else if (a10.kind === "audioHot") {
       if (++watch.hot >= 3) resourceSay("audio", `\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 ${Math.round(a10.busy * 100)}%\uFF1A\u53EF\u80FD\u7206\u97F3\u3002\u6548\u679C\u94FE / \u58F0\u90E8\u662F\u4F60\u7684\u6DF7\u97F3\uFF0C\u4E0D\u66FF\u4F60\u52A8\uFF1B\u53EF\u4EE5\u5148\u628A\u6CA1\u5728\u542C\u7684\u58F0\u90E8\u9759\u97F3`);
     }
@@ -37072,6 +37083,13 @@ function resourceTick() {
   }
 }
 singer.onMem = () => resourceTick();
+function trimLanesForNewSong() {
+  const mems = singer.laneMems();
+  for (const i10 of trimOnSongSwitch(mems)) if (!singer.laneBusy(i10)) {
+    diagNote("resource", `song switch: restart lane ${i10} (wasm ${Math.round((mems[i10]?.wasm ?? 0) / 1e6)} MB, base ${Math.round((mems[i10]?.base ?? 0) / 1e6)} MB)`);
+    singer.restartLane(i10);
+  }
+}
 engine.on("load", (info2) => {
   watch.load = info2;
   resourceTick();
@@ -37278,7 +37296,7 @@ function applyWorkspace() {
   document.body.dataset.wmode = ws.mode;
   document.body.classList.toggle("listen-mode", ws.mode === "listen");
   scoreEl.dataset.mode = ws.mode;
-  $2("modeSel").value = ws.mode;
+  viewTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.mode === ws.mode));
   const changed2 = padEl.hidden === padOn || stageEl.dataset.dock !== d3;
   stageEl.dataset.dock = d3;
   padEl.hidden = !padOn;
@@ -37393,6 +37411,7 @@ var phRaf = 0;
 var phKey = "";
 var latLogged = null;
 var latAt = 0;
+var srcLogged = null;
 function playheadFrame() {
   phRaf = 0;
   if (!engine.playing || !playTl) return;
@@ -37405,9 +37424,10 @@ function playheadFrame() {
   if (now2 - latAt > 2e3) {
     latAt = now2;
     const lat = engine.latencyMs();
-    if (lat !== null && (latLogged === null || Math.abs(lat - latLogged) > 25)) {
+    if (lat !== null && (latLogged === null || Math.abs(lat - latLogged) > 25 || engine.clockSrc !== srcLogged)) {
       latLogged = lat;
-      diagNote("audio", `output latency ${Math.round(lat)} ms (ctx ${singer.unlock().state}, ${typeof singer.unlock().getOutputTimestamp === "function" ? "getOutputTimestamp" : "estimate"})`);
+      srcLogged = engine.clockSrc;
+      diagNote("audio", `output latency ${Math.round(lat)} ms (ctx ${singer.unlock().state}, clock ${engine.clockSrc})`);
     }
   }
   phRaf = requestAnimationFrame(playheadFrame);
@@ -37467,10 +37487,7 @@ function schedulePrewarm() {
 }
 $2("playBtn").addEventListener("click", (e10) => playPause(e10.timeStamp));
 $2("transportMore").addEventListener("click", () => openTransportMenu());
-$2("modeSel").addEventListener("change", (e10) => {
-  setMode(e10.target.value);
-  e10.target.blur();
-});
+viewTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.addEventListener("click", () => setMode(b3.dataset.mode)));
 $2("paperSel").addEventListener("change", (e10) => {
   const v = e10.target.value;
   e10.target.blur();
@@ -37761,7 +37778,7 @@ ${esc7(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u67
       singer.restart();
       diagNote("resource", "manual restart of singer lanes");
       refreshRes();
-      info("\u6708\u8BFB\u5F15\u64CE\u91CD\u5F00\u4E86\uFF08\u5185\u5B58\u8FD8\u56DE\u53BB\u4E86\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5\uFF09");
+      info("\u6708\u8BFB\u5F15\u64CE\u91CD\u5F00\u4E86\uFF0C\u5185\u5B58\u8FD8\u56DE\u53BB\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u4E0D\u7528\u91CD\u5FF5\uFF09");
     }
   });
   box.querySelector("#impIn").addEventListener("change", async (e10) => {
@@ -37848,7 +37865,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "be4cc5e33d86",
+  cssHash: "68073cd29665",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -39553,6 +39570,7 @@ function loadDoc(song, o10) {
   chunkFailed.clear();
   chunkKeysWanted = [];
   singer.cancelPending();
+  trimLanesForNewSong();
   sound.allOff();
   void prepareBank();
   view.render();
@@ -40886,7 +40904,8 @@ document.addEventListener("visibilitychange", () => {
   const c10 = singer.unlock();
   latLogged = null;
   latAt = 0;
-  diagNote("audio", `visible again: ctx ${c10.state}, playing ${engine.playing}`);
+  const ts2 = typeof c10.getOutputTimestamp === "function" ? c10.getOutputTimestamp() : null;
+  diagNote("audio", `visible again: ctx ${c10.state}, playing ${engine.playing}, currentTime ${c10.currentTime.toFixed(3)}, ts ${ts2 ? `${ts2.contextTime?.toFixed(3)} @ ${ts2.performanceTime?.toFixed(0)}` : "none"}, now ${performance.now().toFixed(0)}`);
 });
 await document.fonts.load(`40px Bravura`).catch(() => void 0);
 view.render();
@@ -40912,4 +40931,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-73aa55328349.mjs.map
+//# sourceMappingURL=moonsinger-724021fff5a4.mjs.map

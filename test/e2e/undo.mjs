@@ -54,7 +54,7 @@ try {
   const saved = await p.evaluate(async (id) => { const bl = await window.__moonsinger.store().zip(id, { mode: "existing" }).open(); const u = new Uint8Array(await bl.arrayBuffer()); return window.__moonsinger.open("x.mxl", u).song.papers[0].tracks.P1.length - 3; }, id);
   check(saved === 1, "歌库里撤销也自动存进去了", String(saved));
   // ── extras 进同一条 undo（user 2026-10-08「undo 同意啊」「每一步快照带 locus 同意」）：录音室推子 → ⌘Z 回去 + toast 说是录音室的；重做再回来
-  await p.selectOption("#modeSel", "listen"); await p.waitForTimeout(300);
+  await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(300);
   check(await p.isVisible(".studio"), "录音室开了");
   const slide = (v) => p.$eval(".studio .strip input[data-gain]", (el, v) => { el.value = String(v); el.dispatchEvent(new Event("input", { bubbles: true })); }, v);
   const gain = () => p.evaluate(() => { const m = (window.__moonsinger.extras().studio?.tracks ?? []).filter((t) => t.kind === "mic"); return m.length ? m[0].gainDb : null; });   // studio.json v2（2026-10-10）：mics → tracks（kind mic）

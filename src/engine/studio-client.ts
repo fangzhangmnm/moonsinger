@@ -16,6 +16,22 @@ export function audibleAt(hist: readonly PosSample[], T: number): number | null 
   if (s.at > T) return s.sec;
   return s.run ? s.sec + (T - s.at) : s.sec;
 }
+/** 扬声器此刻放到音频时钟的哪一刻，以及按哪一档算的（v0.10.3，Claude Opus 5.5；user「大部分音和动画没对齐都是发生在长锁屏之后回到前台」）。
+ *  getOutputTimestamp 给一对（音频时钟, performance 时钟），要用 performance.now() 从那一刻往前推——这一推假定两个时钟一起走；
+ *  设备睡过一觉，两个时钟可能对不上（一个算睡眠、一个不算），推出来的时刻会跑到录音房算到的前面，播放头就提前（audibleAt 还会接着往前推）。
+ *  所以先查合理：扬声器不可能比录音房算到的（currentTime）更靠前，输出延迟也不会超过 MAX_OUTPUT_LAT。
+ *  ① 推出来的合理 = 用它（"ts"）② 不合理 = 不推、只用时间戳里的音频时钟（最多落后一个回调，约 10 ms；"ts-ctx"）③ 那个也不合理（时间戳冻住了）= currentTime − 两个延迟（"estimate"）。 */
+export type ClockSource = "ts" | "ts-ctx" | "estimate";
+export const MAX_OUTPUT_LAT = 1.0;
+export function outputClock(o: { currentTime: number; ts: { contextTime: number; performanceTime: number } | null; perfNow: number; baseLatency?: number; outputLatency?: number }): { T: number; src: ClockSource } | null {
+  const c = o.currentTime, ok = (T: number) => T <= c + 0.005 && c - T <= MAX_OUTPUT_LAT;
+  if (o.ts && o.ts.contextTime && o.ts.performanceTime) {
+    const T = o.ts.contextTime + Math.max(0, o.perfNow - o.ts.performanceTime) / 1000;
+    if (ok(T)) return { T, src: "ts" };
+    if (ok(o.ts.contextTime)) return { T: o.ts.contextTime, src: "ts-ctx" };
+  }
+  return c ? { T: c - (o.baseLatency || 0) - (o.outputLatency || 0), src: "estimate" } : null;
+}
 export interface StudioEvents { pos: (sec: number, playing: boolean, waiting: string | null) => void; ended: () => void; missing: (keys: string[]) => void; meter: (peak: number, active: number) => void; load: (info: LoadInfo) => void }
 
 export class StudioClient {
@@ -140,9 +156,12 @@ export class StudioClient {
   /** 扬声器此刻在放音频时钟的哪一刻（getOutputTimestamp：浏览器按硬件的输出缓冲报的；没有就用 currentTime − 两个延迟估）。 */
   outputTime(): number | null {
     const ctx = this.ctx(), ts = typeof ctx.getOutputTimestamp === "function" ? ctx.getOutputTimestamp() : null;
-    if (ts && ts.contextTime && ts.performanceTime) return ts.contextTime + Math.max(0, performance.now() - ts.performanceTime) / 1000;
-    return ctx.currentTime ? ctx.currentTime - (ctx.baseLatency || 0) - ((ctx as unknown as { outputLatency?: number }).outputLatency || 0) : null;
+    const r = outputClock({ currentTime: ctx.currentTime, ts: ts && ts.contextTime !== undefined && ts.performanceTime !== undefined ? { contextTime: ts.contextTime, performanceTime: ts.performanceTime } : null, perfNow: performance.now(), baseLatency: ctx.baseLatency, outputLatency: (ctx as unknown as { outputLatency?: number }).outputLatency });
+    this.clockSrc = r?.src ?? null;
+    return r?.T ?? null;
   }
+  /** 最近一次 outputTime() 按哪一档算的（黑匣子用）。 */
+  clockSrc: ClockSource | null = null;
   /** 输出延迟（ms）：录音房算到的 vs 扬声器放到的（诊断 / 设置页看）。 */
   latencyMs(): number | null { const T = this.outputTime(); return T === null ? null : Math.max(0, (this.ctx().currentTime - T) * 1000); }
   /** 现在**听到的**是走带的哪儿（播放头画这里）；没有报告 = null（退回 position）。 */

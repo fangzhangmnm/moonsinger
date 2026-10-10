@@ -765,6 +765,15 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 .staff-svg path.arpeggio { fill: none; stroke: var(--ink); stroke-width: 1.1; }
 .staff-svg path.arpeggio.art-mute { stroke: var(--ghost); }
 /* 左上角三个下拉（v0.10.2）：模式 / 看哪一段 / 看哪位歌手 */
-.bar .tb-sels { display: inline-flex; gap: 4px; margin-left: 6px; min-width: 0; }
-.bar .tb-sel { height: 30px; max-width: 9em; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; padding: 0 4px; text-overflow: ellipsis; }
-@media (max-width: 520px) { .bar .tb-sel { max-width: 5.5em; } }
+/* 挂签（v0.10.3）：模式 + 看哪一段 + 看哪位歌手，从顶栏底边往下挂、浮在谱上（user「顶栏下面创建一个类似tab的往下的东西，可以遮挡屏幕」） */
+.view-tab { position: absolute; top: 0; left: 8px; z-index: 40; display: flex; align-items: center; gap: 4px; padding: 4px 6px 5px; max-width: calc(100% - 16px); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 10px 10px; background: color-mix(in srgb, var(--panel) 94%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 2px 8px rgba(0, 0, 0, .08); white-space: nowrap; }
+.view-tab[hidden] { display: none; }
+.view-tab .btn { height: 28px; font-size: 13px; }
+.view-tab .vt-sel { height: 28px; max-width: 9em; min-width: 0; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; padding: 0 4px; text-overflow: ellipsis; }
+.mode-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; }
+.mode-seg .btn { border: 0; border-radius: 0; min-width: 30px; padding: 0 8px; background: transparent; }
+.mode-seg .btn + .btn { border-left: 1px solid var(--line); }
+.mode-seg .btn.is-on { background: var(--accent); color: #fff; }
+.mode-seg [data-mode="listen"].is-on { background: var(--play); }
+@media (max-width: 720px) { .sel-bar { top: 44px; } }   /* 窄屏：选区条让到挂签下面（居中的选区条会撞上左边的挂签） */
+@media (max-width: 480px) { .view-tab .vt-sel { max-width: 5.5em; } .mode-seg .btn { min-width: 0; padding: 0 6px; } }

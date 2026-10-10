@@ -25,7 +25,7 @@ import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
 import { RULES, MODES, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, type Mode, type WorkspaceState } from "./workspace.ts";
-import { budgetFor, advise, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
+import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
 import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS } from "../format/performance.ts";
@@ -192,9 +192,7 @@ function showUpdateBar(): void {
 bar.innerHTML =
   `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button>` +
-  // 左上角三个下拉（v0.10.2；user「我希望有一个快速选择看全部或者哪个曲段，以及快速看全部或者哪个声部的下拉框，也许可以挂在左上角，和选功能放一起」→「模式收到下拉框里面，然后顶栏会干净不少」）
-  `<span class="tb-sels"><select id="modeSel" class="tb-sel" title="模式：这一下点的是哪一层">${MODES.map((m) => `<option value="${m}" title="${MODE_TITLE[m].replace(/&/g, "&amp;").replace(/"/g, "&quot;")}">${MODE_LABEL[m]}</option>`).join("")}</select>` +
-  `<select id="paperSel" class="tb-sel" title="看哪一段：全部 / 只看这一段"></select><select id="partSel" class="tb-sel" title="看哪位歌手：全部 / 只看这一位"></select></span></div>` +
+  `</div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn" title="从起点放 / 停（空格）；连按两下 = 从头放（起点回开头）。起点 = 长按 / 右键谱面「从这儿放」挪；编辑、挪光标都不动它"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
   `<button id="transportMore" class="btn" title="接着放（停过才有）/ 循环 / 从头放 / 接缝">⋯</button>` +
 
@@ -209,13 +207,21 @@ const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.cl
 padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>键盘</span>`;
 stageEl.append(padTab);
 padTab.addEventListener("click", () => showPad(true));
+// 挂签（v0.10.3）：模式四个钮 + 看哪一段 + 看哪位歌手，从顶栏底下往下挂、浮在谱上（可以挡住谱）。
+//   user 2026-10-10「模式切换不是下拉，回到之前的四个排一起的按钮，然后模式切换，曲段和声部选择这三个不是在顶栏，而是顶栏下面创建一个类似tab的往下的东西，可以遮挡屏幕」
+//   （v0.10.2 那版 = 三个下拉挤在顶栏左上角，user 原话「我希望有一个快速选择看全部或者哪个曲段，以及快速看全部或者哪个声部的下拉框」「模式收到下拉框里面」）。
+const attr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+const viewTab = document.createElement("div"); viewTab.className = "view-tab";
+viewTab.innerHTML = `<span class="mode-seg" role="tablist" title="模式：这一下点的是哪一层">${MODES.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
+  `<select id="paperSel" class="vt-sel" title="看哪一段：全部 / 只看这一段"></select><select id="partSel" class="vt-sel" title="看哪位歌手：全部 / 只看这一位"></select>`;
+stageEl.append(viewTab);
 // 选区条（2026-10-08 改的手感；src/ui/sel-bar.ts）：有选区时挂在胶囊下面；剪贴板两层 = app 内 token（clip）+ 系统剪贴板一行简谱文字（clipText）
 const selBar = new SelBar(stageEl, { verb: (v) => { void selVerb(v); } });
 let clip: Token[] | null = null, clipText = "", selSig = "";
 let chromeReady = false;
 /** 胶囊 / 键盘 tab / 选区条跟着谁在最上面走：歌库开着都藏；找人视图里键盘 tab 照样露（收起了能叫回来；user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）、
  *  选区条藏；录音室里胶囊留着（▶ / 空格都能播）、tab 藏。 */
-/** 左上角「看哪一段 / 看哪位歌手」两个下拉（v0.10.2）：选项跟着歌（纸 / 歌手的名字）重画，值跟着视图（本段 / 全部、只看它）。 */
+/** 挂签上「看哪一段 / 看哪位歌手」两个下拉（v0.10.2 起；v0.10.3 搬进挂签）：选项跟着歌（纸 / 歌手的名字）重画，值跟着视图（本段 / 全部、只看它）。 */
 let topSelsSig = "";
 function renderTopSels(): void {
   const ps = $("paperSel") as HTMLSelectElement | null, qs = $("partSel") as HTMLSelectElement | null; if (!ps || !qs) return;
@@ -235,6 +241,7 @@ function renderTopSels(): void {
 function updateChrome(): void {
   if (!chromeReady) return;
   const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);   // 乐器页开着：选区条也收（不然盖住乐器页顶条的「← 谱」）
+  viewTab.hidden = over;   // 挂签同理：乐器页 / 目录 / 歌库盖着谱时收起
   padTab.hidden = !padEl.hidden || ((gallery?.isOpen() ?? false) && !finderShown) || studio.isOpen || !hasKeys(ws.mode);
   { const lab = ws.mode === "listen" ? "混音台" : "键盘", sp = padTab.querySelector("span"); if (sp && sp.textContent !== lab) sp.textContent = lab; padTab.title = ws.mode === "listen" ? "混音台（听的键盘）" : "键盘（pad）"; }
   renderTopSels();   // 「词 / 听」没有键盘：不露「键盘」tab
@@ -891,7 +898,7 @@ const DEVICE: DeviceInfo = { ios: /iPad|iPhone|iPod/.test(navigator.platform) ||
 const BUDGET = budgetFor(DEVICE);
 if (new URLSearchParams(location.search).has("nodisk")) BUDGET.speechDisk = 0;   // 查案开关：?nodisk=1 = 念缓存不落盘（只用内存）
 singer.setLanes(BUDGET.lanes);
-diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB → lanes ${BUDGET.lanes}, budget ${Math.round(BUDGET.total / 1e6)} MB (worker ${Math.round(BUDGET.perWorker / 1e6)}, chunks ${Math.round(BUDGET.chunkBytes / 1e6)})`);
+diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB → lanes ${BUDGET.lanes}, budget ${Math.round(BUDGET.total / 1e6)} MB (chunks ${Math.round(BUDGET.chunkBytes / 1e6)})`);
 const watch = { load: null as LoadInfo | null, hot: 0, lanesCut: false, said: new Map<string, number>() };
 const resourceSnapshot = (): Snapshot => ({ lanes: singer.memory(), chunkBytes: watch.load?.chunkBytes ?? 0, chunks: watch.load?.chunks ?? 0, soundMem: soundMemoryBytes(), audioBusy: watch.load?.busy ?? null });
 /** 明说，但同一件事 30 s 内只说一次（状态条 + 黑匣子）。 */
@@ -912,13 +919,17 @@ function resourceTick(): void {
   for (const a of advise(snap, BUDGET)) {
     if (a.kind === "pruneChunks") shrinkChunks(snap, a.toBytes);
     else if (a.kind === "fewerLanes") { if (singer.parallelism > a.lanes) { singer.setLanes(a.lanes); watch.lanesCut = true; diagNote("resource", `lanes → ${a.lanes}`); resourceSay("lanes", "内存 / 负载吃紧：月读改成一条道唱（慢一点，声音不变）"); } }
-    else if (a.kind === "restartLane") { if (!singer.laneBusy(a.lane)) { const mb = Math.round((snap.lanes[a.lane]?.wasm ?? 0) / 1e6); singer.restartLane(a.lane); diagNote("resource", `restart lane ${a.lane} (wasm ${mb} MB)`); resourceSay("restart", `月读引擎的内存涨到 ${mb} MB，趁空重开了一次（念过的句子要重念）`); } }
     else if (a.kind === "audioHot") { if (++watch.hot >= 3) resourceSay("audio", `音频线程最近 1 s 忙 ${Math.round(a.busy * 100)}%：可能爆音。效果链 / 声部是你的混音，不替你动；可以先把没在听的声部静音`); }
   }
   if (snap.audioBusy !== null && snap.audioBusy <= AUDIO_HOT) watch.hot = 0;
   if (watch.lanesCut && totalBytes(snap) < BUDGET.total * 0.6 && (snap.audioBusy ?? 0) < AUDIO_HOT * 0.7) { singer.setLanes(BUDGET.lanes); watch.lanesCut = false; diagNote("resource", `lanes → ${BUDGET.lanes} (recovered)`); }   // 吃紧过去了 = 道数回到设备预算
 }
 singer.onMem = () => resourceTick();
+/** 换歌：上一首的长句把哪条道的堆撑大了（比引擎刚起来多涨一大截）= 趁空静默重开，还给这一首（念缓存盘上那份还在；同一首歌里不重开，见 resource-watch.ts 文件头）。 */
+function trimLanesForNewSong(): void {
+  const mems = singer.laneMems();
+  for (const i of trimOnSongSwitch(mems)) if (!singer.laneBusy(i)) { diagNote("resource", `song switch: restart lane ${i} (wasm ${Math.round((mems[i]?.wasm ?? 0) / 1e6)} MB, base ${Math.round((mems[i]?.base ?? 0) / 1e6)} MB)`); singer.restartLane(i); }
+}
 engine.on("load", (info) => { watch.load = info; resourceTick(); });
 /** 准备一次播放 / 导出：库进录音房 → 时间线 → 月读的块。没法出声的声部报出来、其余照放（user「不是显示自动上，而是就是不出声，报错，人类手动换」）。 */
 async function prepare(scope: RenderScope, o: { chunks?: boolean } = {}): Promise<Timeline | null> {
@@ -1070,7 +1081,7 @@ function applyWorkspace(): void {
   const d = dockOf(ws), padOn = d === "keys" || d === "symbols";
   view.rules = RULES[ws.mode];
   document.body.dataset.wmode = ws.mode; document.body.classList.toggle("listen-mode", ws.mode === "listen"); scoreEl.dataset.mode = ws.mode;   // 不用 body[data-mode]：歌库自己用它（gallery）
-  ($("modeSel") as HTMLSelectElement).value = ws.mode;
+  viewTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.classList.toggle("is-on", b.dataset.mode === ws.mode));
   const changed = padEl.hidden === padOn || stageEl.dataset.dock !== d;
   stageEl.dataset.dock = d;
   padEl.hidden = !padOn; pad.setSymbols(d === "symbols"); if (!padOn) pad.clearHeld();
@@ -1149,7 +1160,7 @@ let lastReorder = 0;
 // 播放头 = 现在**听到的**地方（2026-10-10 Opus 5.5；user「ipad后台唤起后音频和动画错位。以及你有没有办法实际测音频播到哪里了来好好对齐？」）：
 //   原来画的是录音房「正在算」的位置（每 43 ms 一报），声音还要过系统的输出缓冲才到扬声器 → 画面一直早一个输出延迟；iPad 切后台回来系统可能换了更大的缓冲 = 早得更多。
 //   现在每一帧问浏览器扬声器此刻放到音频时钟的哪一刻（getOutputTimestamp），去录音房报的「音频时钟 → 走带位置」对照表里查（StudioClient.audibleSec）。
-let phRaf = 0, phKey = "", latLogged: number | null = null, latAt = 0;
+let phRaf = 0, phKey = "", latLogged: number | null = null, latAt = 0, srcLogged: string | null = null;
 function playheadFrame(): void {
   phRaf = 0;
   if (!engine.playing || !playTl) return;
@@ -1158,7 +1169,7 @@ function playheadFrame(): void {
   const now = performance.now();
   if (now - latAt > 2000) {   // 输出延迟变了（换耳机 / 切后台回来）记进黑匣子：错位再报时有数可查
     latAt = now; const lat = engine.latencyMs();
-    if (lat !== null && (latLogged === null || Math.abs(lat - latLogged) > 25)) { latLogged = lat; diagNote("audio", `output latency ${Math.round(lat)} ms (ctx ${singer.unlock().state}, ${typeof singer.unlock().getOutputTimestamp === "function" ? "getOutputTimestamp" : "estimate"})`); }
+    if (lat !== null && (latLogged === null || Math.abs(lat - latLogged) > 25 || engine.clockSrc !== srcLogged)) { latLogged = lat; srcLogged = engine.clockSrc; diagNote("audio", `output latency ${Math.round(lat)} ms (ctx ${singer.unlock().state}, clock ${engine.clockSrc})`); }   // clock ≠ ts = 时间戳的两个时钟对不上了（长锁屏回来），退了一档
   }
   phRaf = requestAnimationFrame(playheadFrame);
 }
@@ -1205,7 +1216,7 @@ function schedulePrewarm(): void {
 }
 $("playBtn").addEventListener("click", (e) => playPause(e.timeStamp));
 $("transportMore").addEventListener("click", () => openTransportMenu());
-$("modeSel").addEventListener("change", (e) => { setMode((e.target as HTMLSelectElement).value as Mode); (e.target as HTMLSelectElement).blur(); });
+viewTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode as Mode)));
 // 看哪一段 / 看哪位歌手（v0.10.2）：全部 = 都看；选一段 = 本段视图跳到它；选一位 = 「只看它」（别的缩成细行），再选「全部」= 都看
 $("paperSel").addEventListener("change", (e) => {
   const v = (e.target as HTMLSelectElement).value; (e.target as HTMLSelectElement).blur();
@@ -1417,7 +1428,7 @@ function openSettings(): void {
     else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
     else if (v === "reset") void shell.forceReset();
     else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => { refreshSpeech(); info("念缓存清空了（念过的句子要重念）"); });
-    else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info("月读引擎重开了（内存还回去了；念过的句子要重念）"); }
+    else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info("月读引擎重开了，内存还回去了（念过的句子存在这台设备上，不用重念）"); }
   });
   box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
     const files = [...((e.target as HTMLInputElement).files ?? [])]; if (!files.length) return;
@@ -2608,7 +2619,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   applyDesk(d);
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);
-  engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; singer.cancelPending(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了
+  engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; singer.cancelPending(); trimLanesForNewSong(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了、上一首撑大的堆还回去
   view.render(); pad.render(); renderTitle();
   if (st.song.parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "tsukuyomi")) void singer.warm(modelBases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
@@ -3481,7 +3492,8 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") return;
   const c = singer.unlock(); latLogged = null; latAt = 0;
-  diagNote("audio", `visible again: ctx ${c.state}, playing ${engine.playing}`);
+  const ts = typeof c.getOutputTimestamp === "function" ? c.getOutputTimestamp() : null;   // 原始的一对时钟也记下来：错位再报时能看出是哪个时钟跳了
+  diagNote("audio", `visible again: ctx ${c.state}, playing ${engine.playing}, currentTime ${c.currentTime.toFixed(3)}, ts ${ts ? `${ts.contextTime?.toFixed(3)} @ ${ts.performanceTime?.toFixed(0)}` : "none"}, now ${performance.now().toFixed(0)}`);
 });
 
 await document.fonts.load(`40px Bravura`).catch(() => undefined);

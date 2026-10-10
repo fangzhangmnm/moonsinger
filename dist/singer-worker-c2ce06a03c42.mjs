@@ -7917,11 +7917,13 @@ var captureMem = (imports, instance) => {
     return r;
   };
 }
-var memNow = () => {
-  let wasm = 0;
-  for (const m of wasmMems) wasm += m.buffer.byteLength;
-  return { wasm, cache: speech.used };
+var heapNow = () => {
+  let n = 0;
+  for (const m of wasmMems) n += m.buffer.byteLength;
+  return n;
 };
+var baseHeap;
+var memNow = () => ({ wasm: heapNow(), cache: speech.used, base: baseHeap });
 var base = new URL("../dev-assets/", import.meta.url);
 var u = (p) => new URL(p, base).href;
 async function bytes(p) {
@@ -8060,6 +8062,7 @@ async function loadEngine(say) {
     const raw = await bytes(`atlas/${id}.f32`);
     return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) };
   } : null;
+  baseHeap = heapNow();
   return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
 }
 var cancelled = /* @__PURE__ */ new Set();
@@ -8178,4 +8181,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-a7d3d70fb27a.mjs.map
+//# sourceMappingURL=singer-worker-c2ce06a03c42.mjs.map

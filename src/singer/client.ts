@@ -14,7 +14,7 @@ import { diagNote } from "../app/report-error.ts";
 const OOM = /out of memory|no available backend/i;
 
 export interface SingResult { samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> } }
-export interface LaneMem { wasm: number; cache: number; /** 这条道刚起来、第一次唱完时的堆（v0.9.38；内存监控按它判断重开值不值）。 */ base?: number }
+export interface LaneMem { wasm: number; cache: number; /** 引擎刚加载完那一刻的堆（worker 自己量，v0.10.3；换歌时按它判断重开值不值）。 */ base?: number }
 export interface DiskInfo { bytes: number; entries: number; budget: number }
 /** 读音（v0.9.34）：labels[k] = 第 k 条念成的音素；对不上 = null + said（念出来的每个音节）；ready false = 引擎还没起来（不为此起引擎）。 */
 export interface Reading { ready: boolean; labels: string[] | null; said: string[] }
@@ -27,7 +27,7 @@ interface Lane {
   inflightTag?: string;
   onlyId: number;               // 最近一次按键试听的请求（新的来了旧的取消）
   warming: Promise<void> | null;
-  mem: LaneMem | null;          // 最近一次报的占用（base = 这条道这一辈子第一次报的堆）
+  mem: LaneMem | null;          // 最近一次报的占用
   closing: boolean;             // setLanes 减掉的：算完手上的就关
 }
 const newLane = (): Lane => ({ w: null, inflightId: 0, onlyId: 0, warming: null, mem: null, closing: false });
@@ -51,6 +51,8 @@ export class Singer {
   }
   /** 每条道最近报的占用（没起的道不在里面）。 */
   memory(): LaneMem[] { return this.lanes.map((l) => l.mem).filter((m): m is LaneMem => !!m); }
+  /** 按道的下标排的占用（没起 = null；下标和 laneBusy / restartLane 对得上）。 */
+  laneMems(): (LaneMem | null)[] { return this.lanes.map((l) => l.mem); }
   laneBusy(i: number): boolean { const l = this.lanes[i]; return !!l && (l.inflightId !== 0 || [...this.pending.values()].some((p) => p.lane === l)); }
 
   private laneFor(s: LabScore): Lane { return this.lanes[hash(`${s.LANG}|${s.TEXT}`) % this.lanes.length]; }
@@ -65,7 +67,7 @@ export class Singer {
       this.pending.delete(m.id);
       if (m.type === "cache") { (p as Pending & { cache?: (d: DiskInfo | null) => void }).cache?.(m.disk); return; }
       if (m.type === "read") { (p as Pending & { read?: (r: Reading) => void }).read?.({ ready: m.ready, labels: m.labels, said: m.said }); return; }
-      if (m.type === "done") { if (m.mem) { l.mem = { ...m.mem, base: l.mem?.base ?? m.mem.wasm }; const i = this.laneIndex(l); if (i >= 0) this.onMem?.(i, m.mem); } p.ok({ samples: m.samples, sr: m.sr, ms: m.ms }); }
+      if (m.type === "done") { if (m.mem) { l.mem = m.mem; const i = this.laneIndex(l); if (i >= 0) this.onMem?.(i, m.mem); } p.ok({ samples: m.samples, sr: m.sr, ms: m.ms }); }
       else p.fail(new Error(m.message));
       if (l.closing && ![...this.pending.values()].some((q) => q.lane === l)) this.closeLane(l);
     };
@@ -83,7 +85,7 @@ export class Singer {
 
   /** 重开所有道：wasm 的内存只涨不落，只有整个 worker 关掉才真还回去。 */
   restart(): void { for (const l of this.lanes) this.failLane(l, new Error("月读的 worker 重开了")); }
-  /** 只重开一条道（内存监控：这条道的堆超了预算、现在空着）。 */
+  /** 只重开一条道（换歌时：上一首的长句把这条道的堆撑大了、现在空着；念缓存盘上那份还在）。 */
   restartLane(i: number): void { const l = this.lanes[i]; if (l) this.failLane(l, new Error("月读的 worker 重开了")); }
   /** 还没开始算的全扔掉（以 "cancelled" 拒绝）；正在算的照常回来。返回扔了几个。 */
   cancelPending(): number {
