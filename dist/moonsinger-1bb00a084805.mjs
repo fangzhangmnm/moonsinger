@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.23-2026-10-10";
+var APP_VERSION = "v0.9.24-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -8300,6 +8300,28 @@ function mountWheel(col, c10) {
   };
 }
 
+// src/ui/metronome.ts
+var AMP = 32;
+var TAU = 0.15;
+var MU = 4;
+var SUB = 1 / 480;
+var omegaOf = (bpm) => Math.PI * bpm / 60;
+var metroStart = (bpm) => ({ th: -AMP, v: 0, w: omegaOf(bpm) });
+function metroStep(s10, bpm, dt) {
+  let { th: th2, v, w: w2 } = s10;
+  if (!Number.isFinite(th2) || !Number.isFinite(v) || !Number.isFinite(w2) || w2 <= 0) ({ th: th2, v, w: w2 } = metroStart(bpm));
+  const wt = omegaOf(Math.max(20, Math.min(400, Number.isFinite(bpm) ? bpm : 90))), n10 = Math.max(1, Math.ceil(Math.min(dt, 0.1) / SUB)), h2 = Math.min(dt, 0.1) / n10;
+  for (let i10 = 0; i10 < n10; i10++) {
+    w2 += (wt - w2) * (1 - Math.exp(-h2 / TAU));
+    const r22 = Math.min(50, (th2 / AMP) ** 2 + (v / (w2 * AMP)) ** 2);
+    if (r22 < 1e-4) v += w2 * AMP * 0.05;
+    const c10 = MU * (1 - r22);
+    v = c10 >= 0 ? v + (-w2 * w2 * th2 + c10 * v) * h2 : (v - w2 * w2 * th2 * h2) / (1 - c10 * h2);
+    th2 += v * h2;
+  }
+  return { th: th2, v, w: w2 };
+}
+
 // src/ui/mark-editor.ts
 var KEY_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, -1, -2, -3, -4, -5, -6, -7];
 var TIMES = [[2, 4], [3, 4], [4, 4], [5, 4], [3, 8], [6, 8], [9, 8], [12, 8], [7, 8], [2, 2]];
@@ -8364,7 +8386,11 @@ var MarkEditor = class {
   ok;
   wheelBox;
   wheel = null;
-  metroTimer = 0;
+  /** 节拍器摆杆：一个自激的摆，频率追着试听的速度走（W-12；src/ui/metronome.ts）。raf = 0 = 没在摆。 */
+  metroRaf = 0;
+  metroS = null;
+  metroBpm = 90;
+  metroLast = 0;
   system = 0;
   get open() {
     return this.id >= 0;
@@ -8430,16 +8456,8 @@ var MarkEditor = class {
     this.pending = bpm;
     if (src === "chip" || src === "wheel") this.input.value = String(bpm);
     if (src !== "wheel") this.wheel?.scrollTo(wheelIndex(bpm));
-    clearTimeout(this.metroTimer);
-    const swing = () => {
-      const arm = this.metro.firstElementChild;
-      this.metro.style.setProperty("--beat", `${60 / bpm}s`);
-      arm.style.animation = "none";
-      void arm.offsetWidth;
-      arm.style.animation = "";
-    };
-    if (src === "wheel") this.metroTimer = window.setTimeout(swing, 150);
-    else swing();
+    this.metroBpm = bpm;
+    if (!this.metroRaf) this.metroGo();
     const word = tempoWord(bpm).it;
     this.list.querySelectorAll("[data-v]").forEach((b3) => {
       const v = b3.dataset.v === "delete" ? null : JSON.parse(b3.dataset.v);
@@ -8495,10 +8513,32 @@ var MarkEditor = class {
     }
     this.close();
   }
+  metroGo() {
+    this.metroS ??= metroStart(this.metroBpm);
+    this.metroLast = performance.now();
+    const arm = this.metro.firstElementChild;
+    const tick = (now2) => {
+      if (!this.open || this.metro.hidden) {
+        this.metroStop();
+        return;
+      }
+      const dt = Math.min(0.05, Math.max(0, (now2 - this.metroLast) / 1e3));
+      this.metroLast = now2;
+      this.metroS = metroStep(this.metroS, this.metroBpm, dt);
+      arm.style.transform = `rotate(${this.metroS.th.toFixed(2)}deg)`;
+      this.metroRaf = requestAnimationFrame(tick);
+    };
+    this.metroRaf = requestAnimationFrame(tick);
+  }
+  metroStop() {
+    if (this.metroRaf) cancelAnimationFrame(this.metroRaf);
+    this.metroRaf = 0;
+    this.metroS = null;
+  }
   /** 收起不改；新插的记号没改过 = 撤掉。 */
   close() {
     if (!this.open) return;
-    clearTimeout(this.metroTimer);
+    this.metroStop();
     this.wheel = null;
     if (this.fresh) {
       this.remove();
@@ -36645,7 +36685,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "ecc848e859c3",
+  cssHash: "095dc2a51175",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -39485,4 +39525,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-aae94d48a6bd.mjs.map
+//# sourceMappingURL=moonsinger-1bb00a084805.mjs.map

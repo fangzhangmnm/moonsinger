@@ -27,6 +27,20 @@ await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 check((await master())?.limiter === false, "撤销一步 = 限幅回到关");
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 check(!(await p.$eval(".studio", (e) => !e.hidden)), "Esc 回谱");
+// 卡片一样宽：撑不满一排的也不被拉宽（2026-10-10 user「录音房撑不满行宽的卡片应该也一样大，看着舒服」）——iPad 竖屏录音室在底下、一排几张；
+//   纯版式检查：把卡复制到 5 张（凑出没排满的最后一排），量完就关这一页
+{
+  const q = await (await b.newContext({ viewport: { width: 744, height: 1133 }, hasTouch: true, isMobile: true })).newPage();
+  await q.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await q.waitForTimeout(800);
+  await q.click("#studioBtn"); await q.waitForTimeout(300);
+  const widths = await q.evaluate(() => {
+    const box = document.querySelector(".studio-strips"), src = box.querySelector(".strip");
+    while (box.querySelectorAll(".strip").length < 5) box.appendChild(src.cloneNode(true));
+    return [...box.querySelectorAll(".strip")].map((e) => Math.round(e.getBoundingClientRect().width));
+  });
+  check(widths.length === 5 && widths.every((w) => w > 0 && Math.abs(w - widths[0]) <= 1), "iPad 竖屏：录音室的卡片一样宽（最后一排没排满也不被拉宽）", JSON.stringify(widths));
+  await q.close();
+}
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);

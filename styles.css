@@ -215,11 +215,10 @@ button, input, select { font: inherit; color: inherit; }
 /* 速度框：节拍器（摆到一头 = 一拍）+ 确定（user「选速度的时候能不能有一个文本框旁边的节拍器动画让你参考，然后有一个确认按钮才commit」） */
 .mark-row { display: flex; align-items: center; gap: 8px; }
 .mark-row .mark-in { flex: 1; min-width: 0; }
-.metro { --beat: 0.667s; position: relative; width: 34px; height: 34px; flex: none; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.metro { position: relative; width: 34px; height: 34px; flex: none; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
 .metro-arm { position: absolute; left: calc(50% - 1px); bottom: 4px; width: 2px; height: 24px; background: var(--accent); border-radius: 1px;
-  transform-origin: 50% 100%; animation: metro-swing var(--beat) ease-in-out infinite alternate; }
+  transform-origin: 50% 100%; transform: rotate(-32deg); }   /* 摆是 JS 算的（src/ui/metronome.ts 自激的摆，W-12）；这里只是初始位置 */
 .metro-arm::before { content: ""; position: absolute; left: -3px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
-@keyframes metro-swing { from { transform: rotate(-32deg); } to { transform: rotate(32deg); } }
 .mark-ok { flex: none; }
 /* 速度滚轮（候选左边；user「速度输入框能不能也做成这种能dial的」）：滚轮本体同 .drum-col，中间那格 = 试听值 */
 .mark-body { display: flex; align-items: center; gap: 8px; }
@@ -445,8 +444,8 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 
 /* 录音室（src/ui/studio.ts）：占 #stage 的 main 区；一个声部一条 */
 .studio { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--line); overflow: hidden; }
-.studio-strips { flex: 1; overflow: auto; display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; align-content: flex-start; }
-.strip { width: 200px; flex: 1 1 200px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
+.studio-strips { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; padding: 10px; align-content: start; }   /* 网格：撑不满一排的卡片也和别的一样宽（2026-10-10 user「录音房撑不满行宽的卡片应该也一样大，看着舒服」；原来 flex 换行、最后一排被拉宽） */
+.strip { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
 .strip-name { font-weight: 600; }
 .strip-who { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .strip-row { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 2px; }

@@ -17,6 +17,7 @@ import { KEY_LABEL } from "../score/pitch.ts";
 import { markText, parseMark } from "../score/marks.ts";
 import type { Layout } from "../render/engrave.ts";
 import { mountWheel, type WheelHandle } from "./drum.ts";
+import { metroStart, metroStep, type MetroState } from "./metronome.ts";
 
 interface Host { get(): EditorState; set(next: EditorState): void }
 
@@ -42,7 +43,8 @@ export class MarkEditor {
   private ok: HTMLButtonElement;
   private wheelBox: HTMLDivElement;
   private wheel: WheelHandle | null = null;
-  private metroTimer = 0;
+  /** 节拍器摆杆：一个自激的摆，频率追着试听的速度走（W-12；src/ui/metronome.ts）。raf = 0 = 没在摆。 */
+  private metroRaf = 0; private metroS: MetroState | null = null; private metroBpm = 90; private metroLast = 0;
   system = 0;
 
   constructor(parent: HTMLElement, private host: Host, private layout: () => Layout | null, private rerender: () => void) {
@@ -128,13 +130,9 @@ export class MarkEditor {
     this.pending = bpm;
     if (src === "chip" || src === "wheel") this.input.value = String(bpm);
     if (src !== "wheel") this.wheel?.scrollTo(wheelIndex(bpm));
-    clearTimeout(this.metroTimer);
-    const swing = () => {
-      const arm = this.metro.firstElementChild as HTMLElement;
-      this.metro.style.setProperty("--beat", `${60 / bpm}s`);
-      arm.style.animation = "none"; void arm.offsetWidth; arm.style.animation = "";   // 重新起摆
-    };
-    if (src === "wheel") this.metroTimer = window.setTimeout(swing, 150); else swing();   // 滚轮滚着的时候每格都重起会一直抽，停一下再摆
+    // 节拍器：不再重新起摆——摆着的时候换速度 = 摆锤挪了，摆杆连续地追上新速度（2026-10-07 user「小节拍器的动画应该有物理动画…受迫物理模型让小节拍器跟上你的乱调」）
+    this.metroBpm = bpm;
+    if (!this.metroRaf) this.metroGo();
     const word = tempoWord(bpm).it;
     this.list.querySelectorAll<HTMLElement>("[data-v]").forEach((b) => {
       const v = b.dataset.v === "delete" ? null : (JSON.parse(b.dataset.v!) as MarkVal);
@@ -183,10 +181,23 @@ export class MarkEditor {
     }
     this.close();
   }
+  private metroGo(): void {
+    this.metroS ??= metroStart(this.metroBpm); this.metroLast = performance.now();
+    const arm = this.metro.firstElementChild as HTMLElement;
+    const tick = (now: number) => {
+      if (!this.open || this.metro.hidden) { this.metroStop(); return; }
+      const dt = Math.min(0.05, Math.max(0, (now - this.metroLast) / 1000)); this.metroLast = now;   // 切后台回来不一口气补几秒
+      this.metroS = metroStep(this.metroS!, this.metroBpm, dt);
+      arm.style.transform = `rotate(${this.metroS.th.toFixed(2)}deg)`;
+      this.metroRaf = requestAnimationFrame(tick);
+    };
+    this.metroRaf = requestAnimationFrame(tick);
+  }
+  private metroStop(): void { if (this.metroRaf) cancelAnimationFrame(this.metroRaf); this.metroRaf = 0; this.metroS = null; }
   /** 收起不改；新插的记号没改过 = 撤掉。 */
   close(): void {
     if (!this.open) return;
-    clearTimeout(this.metroTimer); this.wheel = null;
+    this.metroStop(); this.wheel = null;
     if (this.fresh) { this.remove(); return; }
     this.id = -1; this.box.hidden = true; this.rerender();
   }

@@ -152,6 +152,7 @@
 - 做了什么 = 仓 CLAUDE.md v0.9.1 那条；设计 = `ai-docs/20261009-realtime-preview-engine-proposal.md`（§1–§12 提案、§13 user 三轮回复与修订、§14 刀 0 量的代价）；原话全集 = `ai-docs/20261009-sound-engine-user-vision.md`。
 - **接口面**（给接着做的人）：`src/engine/studio.ts` 的 `StudioIn / StudioOut / TimelineMsg / TrackSpec / ClipRef`；`src/engine/timeline.ts` 的 `buildTimeline(TimelineInput) → Timeline`、`PerformerInfo`；`src/engine/studio-client.ts` 的 `StudioClient`（bank / vowels / setTimeline / chunk / channel / master / play / stop / seek / audition* / renderOffline / on(pos | ended | missing | meter)）。main.ts 里：`prepare(scope)`（库 → 时间线 → 块）、`playRange(tl)`、`cursorSeconds(tl)`、`togglePlay`、`schedulePlaybackRefresh`、`auditionTarget()`。
 - **user 2026-10-10 拍板刀 5 / 刀 6**：「精度分级做 冷启动做 然后下一刀 内部进度回调中途取消按键加速worker并行 负载和内存监控防闪退 做 llama科研不做」→ 刀 5 = 精度分级（v0.9.11 已落块 Int16 + 分析 bf16；WORLD 单精度另议）+ 冷启动（v0.9.11 先落分段计时；词典解压缓存 / session 选项 / 启动就起引擎接着做；**念缓存持久化到 IDB 仍等 user 一句话**）；刀 6 = WORLD 内部进度回调、正在算的那句中途取消、按键再加速（断句 / 稳态那几步按句缓存）、两个 worker 并行唱（按设备）、音频线程负载 + 内存监控（防闪退：超预算先放块 / 减并行 / 明说）。llama 科研线不做。
+- **小节拍器物理动画 + 录音室卡片一样宽已落（v0.9.24，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.24 那条。
 - **ppp / fff + 力度换算表已落（v0.9.23，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.23 那条。
 - **小件一批已落（v0.9.22，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.22 那条。user「接下来两个minor分别是鼓轨和混音的插件仓鼠，都需要设计一下。现在先做比较小的不需要太多设计比较well define的东西」。
 - **中途切循环这一轮生效已落（v0.9.21，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.21 那条。
