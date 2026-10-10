@@ -3,7 +3,7 @@
 //   user「加一个时长替换模式，类似override…吃掉后面的旋律线」「然后不能写出选区边界」「有选区 = 替换、无选区 = 插入」
 //   「移调转调和长度以及其他的操作不要用keyboard，而是一个小的上下文菜单，键盘只做纯粹的打谱」
 import { describe, it, eq, assert } from "./runner.mjs";
-import { initState, select, setCaret, moveCaret, setSelDur, scaleSelDur, selUnit, writePitch, writeRest, backspace, extend, stackPitch, setUnit, shorter, tr, headLen, TPQ, songOf, type EditorState, type NoteTok, type Token } from "../src/score/song.ts";
+import { initState, select, setCaret, moveCaret, deleteForward, setSelDur, scaleSelDur, selUnit, writePitch, writeRest, backspace, extend, stackPitch, setUnit, shorter, tr, headLen, TPQ, songOf, type EditorState, type NoteTok, type Token } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
 
 const E = TPQ / 2, H = 3;
@@ -71,23 +71,26 @@ describe("写音默认覆盖休止（光标）", () => {
     st = backspace(st); eq(show(st), "C4/1 r/1 r/2 D4/1");
   });
 });
-describe("选了好几个：输入 = 替换整段", () => {
-  it("选中的全变休止、收成开头的光标、再覆盖写：新音在头、剩下是休止，接着写接着覆盖", () => {
+describe("选了好几个：音键 = 一个一样长的音、⌫ / 休止键 = 一样长的休止，然后选中它（v0.10.7）", () => {
+  // user「我知道多选怎么办了：如果是退格就替换成等长的休止，不然的话就是替换成等长的单音。然后接下来就变成单音选择模式了」
+  it("音键 = 整段换成一个一样长的音、选中它；后面不挪；接着按音键 = 叠上去", () => {
     let st = writePitch(unit(select(song([["C", 1], ["D", 1], ["E", 1], ["F", 1]]), H, H + 3), 3), P("G"));
-    eq(show(st), "G4/2 r/1 F4/1"); eq(st.sel, null); eq(st.caret, H + 1);
-    st = writePitch(st, P("A")); eq(show(st), "G4/2 A4/2 F4/1", "剩一个八分休止不够四分：吃掉它、F 往后推一个八分");
+    eq(show(st), "G4/3 F4/1", "三个八分 → 一个附点四分，F 不挪"); eq(JSON.stringify(st.sel), JSON.stringify({ from: H, to: H + 1 }));
+    st = writePitch(st, P("B")); eq(show(st), "B4+G4/3 F4/1", "接着按 = 叠（改这个音）");
   });
   it("新音接过原来第一个音的歌词", () => {
-    eq(show(writePitch(unit(select(song([["C", 2, "la"], ["D", 2, "li"]]), H, H + 2), 2), P("G"))), `G4/1"la" r/1 r/2`);
+    eq(show(writePitch(unit(select(song([["C", 2, "la"], ["D", 2, "li"]]), H, H + 2), 2), P("G"))), `G4/4"la"`);
   });
-  it("人插的「|」和记号留着", () => {
-    eq(show(writePitch(unit(select(song([["C", 2], "|", ["D", 2]]), H, H + 3), 2), P("G"))), "G4/1 r/1 | r/2");
+  it("跨了人插的「|」= 每段一个，连音线连起来", () => {
+    eq(show(writePitch(unit(select(song([["C", 2], "|", ["D", 2]]), H, H + 3), 2), P("G"))), "G4/2 | G4/2~");
   });
-  it("休止键 = 整段变休止、光标在开头后面一个", () => { eq(show(writeRest(unit(select(song([["C", 1], ["D", 1], ["E", 1]]), H, H + 2), 2))), "r/1 r/1 E4/1"); });
-  it("⌫ = 删掉选中的（照旧）；「−」= 不动", () => {
-    const base = select(song([["C", 1], ["D", 1], ["E", 1]]), H, H + 2);
-    eq(show(backspace(base)), "E4/1"); eq(extend(base), base);
+  it("⌫ / 休止键 = 一样长的休止（每段一个）、选中它；Delete 才合拢", () => {
+    const base = unit(select(song([["C", 1], ["D", 1], ["E", 1]]), H, H + 2), 2);
+    eq(show(backspace(base)), "r/2 E4/1"); eq(show(writeRest(base)), "r/2 E4/1");
+    eq(JSON.stringify(backspace(base).sel), JSON.stringify({ from: H, to: H + 1 }));
+    eq(show(deleteForward(base)), "E4/1", "Delete = 删掉合拢（照旧）");
   });
+  it("「−」= 不动", () => { const base = select(song([["C", 1], ["D", 1], ["E", 1]]), H, H + 2); eq(extend(base), base); });
 });
 describe("只选了一个音 = 改这个音", () => {
   const one = (items: Parameters<typeof rests>[0], i: number) => unit(select(rests(items), H + i, H + i + 1), 2);

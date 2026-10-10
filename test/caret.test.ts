@@ -2,7 +2,7 @@
 // user「写音和符号：嗯简化的心智模型好」「多个非音记号会影响步进吗」「退格只删符号或者没符号的时候退一步，不删音符」
 //   「大批量删音的时候会不会堆一堆强度符号…p f删第二个音，会变成，你觉得是p还是f?」「手动的「|」：属于写音层…同意」
 import { describe, it, eq } from "./runner.mjs";
-import { initState, tr, moveCaret, backspace, symBackspace, annihilate, TPQ, type Token, type EditorState, type NoteTok } from "../src/score/song.ts";
+import { initState, tr, moveCaret, backspace, deleteForward, symBackspace, annihilate, TPQ, type Token, type EditorState, type NoteTok } from "../src/score/song.ts";
 
 let nid = 700;
 const note = (art?: NoteTok["art"]) => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 4 }, dur: TPQ, lyric: null, ...(art ? { art } : {}) }) as Token;
@@ -31,17 +31,20 @@ describe("← →：只停在音 / 休止 / 手动小节线后面（记号不单
   });
 });
 
-describe("写音模式 ⌫：只删音 / 休止 / 小节线，记号留着；删完湮灭", () => {
-  it("A mp B，光标在 B 后：删 B，mp 留着", () => {
-    const st = backspace(stOf([note(), dyn("mp"), note()])); eq(show(st), "n mp");
+describe("写音模式 ⌫ = 留休止（v0.10.7，user 选「留休止」）；Delete = 删掉合拢、删完湮灭", () => {
+  it("A mp B，光标在 B 后：⌫ = B 变成一样长的休止，mp 留着；光标退到休止前面", () => {
+    const st = backspace(stOf([note(), dyn("mp"), note()])); eq(show(st), "n mp rest"); eq(st.caret, 3 + 2);
   });
-  it("p A f B C：删掉 B、A → 留 f（C 本来就在 f 下面），p 湮灭", () => {
+  it("接着按 ⌫ = 接着往前改（跳过记号和休止）", () => {
     let st = stOf([dyn("p"), note(), dyn("f"), note(), note()], 3 + 4);   // 光标在 B 后
-    st = backspace(st); eq(show(st), "p n f n");
-    st = backspace(st); eq(show(st), "f n", "p 不再管任何音 = 湮灭");
+    st = backspace(st); eq(show(st), "p n f rest n");
+    st = backspace(st); eq(show(st), "p rest f rest n", "A 也变休止；记号都留着（时值没变，没有湮灭）");
   });
-  it("mp < A f：删掉 A → < 和 mp 都不再管音，一起湮灭，留 f", () => {
-    const st = backspace(stOf([dyn("mp"), pin(), note(), dyn("f")], 3 + 3)); eq(show(st), "f");
+  it("Delete 删掉后面的音 = 合拢；p 和 f 之间没音了 → p 湮灭", () => {
+    const st = deleteForward(stOf([dyn("p"), note(), dyn("f"), note(), note()], 3 + 1)); eq(show(st), "f n n");
+  });
+  it("Delete：mp < A f 删掉 A → < 和 mp 都不再管音，一起湮灭，留 f", () => {
+    eq(show(deleteForward(stOf([dyn("mp"), pin(), note(), dyn("f")], 3 + 2))), "f");
   });
   it("annihilate：中间有音的不动", () => { const t = [dyn("p"), note(), dyn("f"), note()]; eq(annihilate(t).removed.length, 0); });
 });

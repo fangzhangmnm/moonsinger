@@ -7,6 +7,7 @@ import {
 import { toLabScore } from "../src/score/lab-score.ts";
 import { parseMark } from "../src/score/marks.ts";
 import { pitchName } from "../src/score/pitch.ts";
+import { deleteForward } from "../src/score/song.ts";
 
 const E = TPQ / 2;   // 八分
 const H = 3;         // 谱头：调号 / 拍号 / 速度三个记号
@@ -46,9 +47,9 @@ describe("song（写）", () => {
     let st = initState(); st = writeDegree(st, 5, "near"); st = writeBar(st); st = extend(st); st = extend(st);
     eq(show(st), "G4/1 | ~G4/2"); st = backspace(st); st = backspace(st); eq(show(st), "G4/1 |");
   });
-  it("挪光标 = 离开本次输入：记录清空，退格变成普通删除", () => {
+  it("挪光标 = 离开本次输入：记录清空，退格变成普通的 ⌫（v0.10.7 起 = 音变成一样长的休止）", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = extend(st); st = setCaret(st, H + 1);
-    st = backspace(st); eq(show(st), "");
+    st = backspace(st); eq(show(st), "r/2");
   });
   it("♯ Shift：点一下只管下一个音；350 ms 内连点两下锁住；再点解开", () => {
     let st = initState(); st = tapAcc(st, 1, 0); st = writeDegree(st, 4, "near"); st = writeDegree(st, 4, "near");
@@ -92,8 +93,9 @@ describe("song（改：选中）", () => {
   it("选中按 ♯ = 选中的音直接升半音", () => {
     let st = select(base(), H + 2, H + 3); st = tapAcc(st, 1, 0); eq(show(st), "C4/1 D4/1 E#4/1 F4/1");
   });
-  it("选中退格 = 删掉，变成那里的光标（写）", () => {
-    let st = select(base(), H + 1, H + 3); st = backspace(st); eq(show(st), "C4/1 F4/1"); eq(st.sel, null); eq(st.caret, H + 1);
+  it("选中好几个按退格 = 换成一样长的休止、选中它（后面不挪；v0.10.7）；Delete = 删掉合拢", () => {
+    let st = select(base(), H + 1, H + 3); st = backspace(st); eq(show(st), "C4/1 r/2 F4/1"); eq(JSON.stringify(st.sel), JSON.stringify({ from: H + 1, to: H + 2 }));
+    st = deleteForward(select(base(), H + 1, H + 3)); eq(show(st), "C4/1 F4/1"); eq(st.sel, null); eq(st.caret, H + 1);
   });
   it("Esc = 选中光标前那个；只选一个时 ← = 换到前一个（v0.10.5：改一个音时 ← → 换邻居）；选好几个时 ← 收成左边的光标", () => {
     let st = escape(base()); eq(st.sel?.from, H + 3); st = moveCaret(st, -1); eq(st.sel?.from, H + 2);

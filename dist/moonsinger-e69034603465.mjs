@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.6-2026-10-10";
+var APP_VERSION = "v0.10.7-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3284,9 +3284,8 @@ function writePitch(st3, pitch0, raw = false, mono = false) {
   const one = singleSel(st3);
   if (one >= 0) return xorSingle(st3, one, keySpell(raw ? pitch0 : applyAcc(pitch0, st3.input), keyAt(tr(st3), one)), raw ? st3.input : consumeAcc(st3.input), mono);
   if (st3.sel) {
-    const c10 = clearSelToRests(st3);
-    const n10 = writePitch(c10.st, pitch0, raw, mono);
-    return c10.inherit ? inheritLyric(n10, c10.inherit) : n10;
+    const n10 = fillSel({ ...st3, input: raw ? st3.input : consumeAcc(st3.input) }, { kind: "note", pitch: keySpell(raw ? pitch0 : applyAcc(pitch0, st3.input), keyAt(tr(st3), st3.sel.from)) });
+    return n10;
   }
   if (st3.lead) st3 = materializeLead(st3);
   const f2 = fillTarget(st3), at2 = f2 >= 0 ? f2 : st3.caret;
@@ -3332,7 +3331,7 @@ function writeRest(st3) {
     dropTieAfter(nt2, one);
     return next(st3, nt2);
   }
-  if (st3.sel) return writeRest(clearSelToRests(st3).st);
+  if (st3.sel) return fillSel(st3, { kind: "rest" });
   if (st3.lead) st3 = materializeLead(st3);
   const dur = unitDur(st3.input), id2 = st3.nextId, o10 = overwriteInsert(tr(st3), st3.caret, { kind: "rest", id: id2, dur });
   return next(st3, o10.tokens, { caret: o10.at + 1, nextId: id2 + 1, log: [...st3.log, { k: "ins", id: id2, unit: dur, ...o10.ate ? { ate: o10.ate } : {} }] });
@@ -3396,25 +3395,47 @@ function dropTieAfter(nt2, i10) {
     return;
   }
 }
-function clearSelToRests(st3) {
-  const sel = st3.sel, nt2 = tr(st3).slice();
-  let inherit = null, first = true;
+function fillSel(st3, what) {
+  const sel = st3.sel, tk2 = tr(st3), out = [];
+  let id2 = st3.nextId, first = -1, inherit = null, sawTimed = false;
+  let seg = 0, lead = [], mid = [];
+  const flush2 = () => {
+    if (seg <= 0) {
+      out.push(...lead, ...mid);
+      lead = [];
+      mid = [];
+      return true;
+    }
+    if (!validDur(seg)) return false;
+    const tie = what.kind === "note" && first >= 0;
+    const tok = what.kind === "note" ? { kind: "note", id: id2++, pitch: what.pitch, dur: seg, lyric: first < 0 ? inherit?.lyric ?? null : null, ...first < 0 && inherit?.hyph ? { hyph: true } : {}, ...tie ? { tie: true } : {} } : { kind: "rest", id: id2++, dur: seg };
+    out.push(...lead);
+    if (first < 0) first = sel.from + out.length;
+    out.push(tok, ...mid);
+    seg = 0;
+    lead = [];
+    mid = [];
+    return true;
+  };
   for (let i10 = sel.from; i10 < sel.to; i10++) {
-    const t10 = nt2[i10];
-    if (!isTimed(t10)) continue;
-    if (first && t10.kind === "note" && t10.lyric) inherit = { lyric: t10.lyric, ...t10.hyph ? { hyph: true } : {} };
-    first = false;
-    if (t10.kind === "note") nt2[i10] = { kind: "rest", id: t10.id, dur: t10.dur };
+    const t10 = tk2[i10];
+    if (t10.kind === "bar") {
+      if (!flush2()) return st3;
+      out.push(t10);
+      continue;
+    }
+    if (isTimed(t10)) {
+      if (!sawTimed && t10.kind === "note" && t10.lyric) inherit = { lyric: t10.lyric, ...t10.hyph ? { hyph: true } : {} };
+      sawTimed = true;
+      seg += t10.dur;
+      continue;
+    }
+    (seg > 0 ? mid : lead).push(t10);
   }
-  dropTieAfter(nt2, sel.to - 1);
-  return { st: next({ ...st3, sel: null, log: [] }, nt2, { caret: sel.from }), inherit };
-}
-function inheritLyric(st3, l10) {
-  const i10 = currentIndex(st3), t10 = tr(st3)[i10];
-  if (!t10 || t10.kind !== "note") return st3;
-  const nt2 = tr(st3).slice();
-  nt2[i10] = { ...t10, lyric: l10.lyric, ...l10.hyph ? { hyph: true } : {} };
-  return next(st3, nt2);
+  if (!flush2() || first < 0) return st3;
+  const nt2 = [...tk2.slice(0, sel.from), ...out, ...tk2.slice(sel.to)];
+  dropTieAfter(nt2, sel.from + out.length - 1);
+  return next({ ...st3, log: [] }, nt2, { sel: { from: first, to: first + 1 }, caret: first + 1, nextId: id2 });
 }
 function xorSingle(st3, i10, pitch, input, mono) {
   const tk2 = tr(st3), t10 = tk2[i10], nt2 = tk2.slice();
@@ -3869,7 +3890,7 @@ function extend(st3, half2 = false) {
 function backspace(st3) {
   const one = singleSel(st3);
   if (one >= 0) return resizeSingle(st3, one, -unitDur(st3.input));
-  if (st3.sel) return deleteSel(st3);
+  if (st3.sel) return fillSel(st3, { kind: "rest" });
   const tokens = tr(st3);
   while (st3.log.length) {
     const e10 = st3.log[st3.log.length - 1], log = st3.log.slice(0, -1), i11 = indexOfId(tokens, e10.id);
@@ -3879,14 +3900,14 @@ function backspace(st3) {
     }
     const nt3 = tokens.slice();
     if (e10.k === "ext") {
-      const t10 = nt3[i11];
-      nt3[i11] = { ...t10, dur: t10.dur - e10.by };
+      const t11 = nt3[i11];
+      nt3[i11] = { ...t11, dur: t11.dur - e10.by };
       if (e10.ate) nt3.splice(i11 + 1, 0, { kind: "rest", id: st3.nextId, dur: e10.ate });
       return next(st3, nt3, { log, ...e10.ate ? { nextId: st3.nextId + 1 } : {} });
     }
     if (e10.k === "fill") {
-      const t10 = nt3[i11];
-      nt3[i11] = { ...t10, pitch: null };
+      const t11 = nt3[i11];
+      nt3[i11] = { ...t11, pitch: null };
       return next(st3, nt3, { log, caret: i11 });
     }
     if (e10.k === "ins" && e10.ate) {
@@ -3900,6 +3921,14 @@ function backspace(st3) {
   let i10 = st3.caret - 1;
   while (i10 >= headLen(tokens) && !stopTok(tokens[i10])) i10--;
   if (i10 < headLen(tokens)) return st3;
+  const t10 = tokens[i10];
+  if (t10.kind === "note") {
+    const nt3 = tokens.slice();
+    nt3[i10] = { kind: "rest", id: t10.id, dur: t10.dur };
+    dropTieAfter(nt3, i10);
+    return next(leave(st3), nt3, { caret: i10 });
+  }
+  if (t10.kind === "rest") return { ...leave(st3), caret: i10 };
   const nt2 = tokens.slice();
   nt2.splice(i10, 1);
   return afterDelete(st3, nt2, { caret: st3.caret - 1 });
@@ -41173,4 +41202,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-dcb0fd26ab10.mjs.map
+//# sourceMappingURL=moonsinger-e69034603465.mjs.map
