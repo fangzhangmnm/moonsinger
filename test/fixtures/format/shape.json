@@ -54,6 +54,7 @@
       ],
       "version": "number",
       "view": {
+        "mode": "string",
         "pad": {
           "fifths": "number",
           "low": "number",

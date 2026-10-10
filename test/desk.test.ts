@@ -57,3 +57,13 @@ describe("desk：pad 的状态", () => {
     eq(PAD_UNITS[DEFAULT_UNIT], freshPad().unit); eq(initInput().inputScale, freshPad().scale); eq(initInput().inputFifths, freshPad().fifths);
   });
 });
+
+describe("打开时的模式（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」）", () => {
+  it("存在「听」= 打开还是「听」；默认「音」不写；不认识的 = 当「音」", () => {
+    eq(serializeDesk({ ...freshDesk(), mode: "listen" })?.mode, "listen");
+    eq(serializeDesk(freshDesk()), null, "全默认 = 不写 view");
+    eq(unserializeDesk({ mode: "listen" }).mode, "listen");
+    eq(unserializeDesk({ mode: "lyrics" }).mode, "lyrics");
+    eq(unserializeDesk({ mode: "karaoke" }).mode, "notes");
+  });
+});

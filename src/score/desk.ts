@@ -20,11 +20,12 @@ export const freshPartView = (): PartViewState => ({ hidden: false, only: false,
 export interface RefPanelDesk { open: boolean; left: number; top: number; width: number; height: number }
 /** pdf = 乐谱 PDF 的字体（导出面板里选的；同 mp3 音质跟着这首歌走、不标脏；2026-10-09 Opus 5.5，user「字体可以选普通的和那个拼音可爱的」）。 */
 /** scroll = 排法「横卷」（v0.9.35；一行无限往右；和 pageFlow 互斥，两个都写着 = 横卷说了算）。 */
-export interface Desk { scope: "all" | "segment"; pageFlow: boolean; scroll: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null; pdf: "sans" | "pinyin" }
-export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans" });
+/** mode = 打开时进哪个模式（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」）：存的时候记下当时的模式，默认「音」不写。 */
+export interface Desk { scope: "all" | "segment"; pageFlow: boolean; scroll: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null; pdf: "sans" | "pinyin"; mode: "notes" | "lyrics" | "symbols" | "listen" }
+export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans", mode: "notes" });
 
 /** 文件里的形状（只写非默认值；全默认 = 不写这个字段）。 */
-export interface DeskJson { scope?: "all"; pageFlow?: true; scroll?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number }; pdf?: "pinyin" }
+export interface DeskJson { scope?: "all"; pageFlow?: true; scroll?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number }; pdf?: "pinyin"; mode?: "lyrics" | "symbols" | "listen" }
 /** pad 在文件里的形状：只写不是默认的；全默认 = 不写。 */
 export interface PadJson { fifths?: number; scale?: string; unit?: PadUnit; tuplet?: 3 | 5 | 6 | 7; low?: number }
 export function serializeDesk(d: Desk): DeskJson | null {
@@ -32,6 +33,7 @@ export function serializeDesk(d: Desk): DeskJson | null {
   if (d.scope === "all") out.scope = "all";
   if (d.mp3 === "small") out.mp3 = "small";
   if (d.pdf === "pinyin") out.pdf = "pinyin";
+  if (d.mode !== "notes") out.mode = d.mode;
   if (d.scroll) out.scroll = true; else if (d.pageFlow) out.pageFlow = true;
   if (d.paper) out.paper = d.paper;
   const parts: NonNullable<DeskJson["parts"]> = {};
@@ -61,6 +63,7 @@ export function unserializeDesk(json: unknown): Desk {
   if (j.scroll === true) { d.scroll = true; d.pageFlow = false; }
   if (j.mp3 === "small") d.mp3 = "small";
   if (j.pdf === "pinyin") d.pdf = "pinyin";
+  if (j.mode === "lyrics" || j.mode === "symbols" || j.mode === "listen") d.mode = j.mode;
   if (typeof j.paper === "string" && j.paper) d.paper = j.paper;
   if (j.parts && typeof j.parts === "object") {
     for (const [id, v] of Object.entries(j.parts as Record<string, unknown>)) {

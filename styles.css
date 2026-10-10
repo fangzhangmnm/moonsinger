@@ -453,7 +453,10 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 /* 录音室（src/ui/studio.ts）：占 #stage 的 main 区；一个声部一条 */
 .studio { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--line); overflow: hidden; }
 .studio-strips { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; padding: 10px; align-content: start; }   /* 网格：撑不满一排的卡片也和别的一样宽（2026-10-10 user「录音房撑不满行宽的卡片应该也一样大，看着舒服」；原来 flex 换行、最后一排被拉宽） */
-.strip { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
+.strip { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); height: var(--card-h, 248px); overflow: hidden; }   /* 一样高 = 基础页那么高（v0.10.21） */
+.strip-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 6px; margin: 0 -4px; padding: 0 4px; }   /* 放不下 = 卡片里自己滚 */
+/* 混音台全屏（v0.10.21）：铺满整个舞台、卡片排成好几列 */
+.studio.full { grid-area: 1 / 1 / -1 / -1; position: absolute; inset: 0; z-index: 46; border-left: 0; }
 .strip-name { font-weight: 600; }
 .strip-who { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .strip-row { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 2px; }
@@ -525,21 +528,29 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .show-help .row-lab .q { background: var(--accent); color: #fff; border-color: var(--accent); }
 /* EQ 页卡片背景（v0.10.11）：频谱填充面 + 这一格 EQ 的响应曲线；只画不接点 */
 .strip-spec { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 10px; overflow: hidden; }
-.strip-spec .spec { fill: var(--accent); opacity: .14; }
+/* 示波器统一的规矩（v0.10.21；user「李萨如的浓度再低调一点，不要蓝色，就是像背景一样，然后别的示波器也用一样的标准做」）：量出来的东西 = 墨色、很淡（像背景）；格线 / 刻度更淡；
+   EQ 曲线不是量出来的、是你在调的那一样 = 照旧主题色 */
+:root { --scope-data: .09; --scope-line: .24; --scope-grid: .14; }
+.strip-spec .spec { fill: var(--ink); opacity: var(--scope-data); }
 .strip-spec .eqc { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: .7; vector-effect: non-scaling-stroke; }
-.strip-spec .grid { stroke: var(--muted); stroke-width: 1; opacity: .25; vector-effect: non-scaling-stroke; fill: none; }
+.strip-spec .grid { stroke: var(--muted); stroke-width: 1; opacity: var(--scope-grid); vector-effect: non-scaling-stroke; fill: none; }
 .spec-ticks { position: absolute; left: 0; right: 0; bottom: 2px; height: 12px; pointer-events: none; }
 .spec-ticks span { position: absolute; transform: translateX(-50%); font-size: 9px; line-height: 12px; color: var(--muted); opacity: .8; }
 /* 基础页总轨 / 混音轨的李萨如图（v0.10.16）：卡片背景，正方形居中 */
 .strip-gonio { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 10px; overflow: hidden; }
-.strip-gonio .gon { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; opacity: .45; vector-effect: non-scaling-stroke; }   /* 圆滑的线（中点二次曲线） */
-.strip-gonio .gon-axis { stroke: var(--muted); stroke-width: 1; opacity: .25; vector-effect: non-scaling-stroke; }
-.strip-gonio .gon-lab { fill: var(--muted); font-size: .1px; opacity: .7; }
+.strip-gonio .gon { fill: none; stroke: var(--ink); stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; opacity: var(--scope-line); vector-effect: non-scaling-stroke; }   /* 圆滑的线（中点二次曲线） */
+.strip-gonio .gon-axis { stroke: var(--muted); stroke-width: 1; opacity: var(--scope-grid); vector-effect: non-scaling-stroke; }
+.strip-comp { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; border-radius: 10px; overflow: hidden; }   /* 压缩页波形图（v0.10.21），同一套示波器规矩 */
+.strip-comp .cin { fill: var(--ink); opacity: var(--scope-data); }
+.strip-comp .cout { fill: none; stroke: var(--ink); stroke-width: 1; opacity: var(--scope-line); vector-effect: non-scaling-stroke; }
+.strip-comp .cgr { fill: none; stroke: var(--ink); stroke-width: 1.5; opacity: .45; vector-effect: non-scaling-stroke; }
+.strip-comp .cthr { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; opacity: .5; vector-effect: non-scaling-stroke; }
+.strip > :not(.strip-spec):not(.strip-meter):not(.spec-ticks):not(.strip-gonio):not(.strip-comp) { position: relative; }
+.strip-gonio .gon-lab { fill: var(--muted); font-size: .1px; opacity: .5; }
 .corr-val.neg { color: var(--danger, #c0392b); font-weight: 600; }
 /* 压缩页：压了多少 dB（0–20 dB 满格） */
 .gr-row .gr-bar { display: block; height: 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); overflow: hidden; }
 .gr-row .gr-bar > i { display: block; height: 100%; width: 0; background: var(--accent); }
-.strip > :not(.strip-spec):not(.strip-meter):not(.spec-ticks):not(.strip-gonio) { position: relative; }
 /* 效果全关（A/B，v0.10.18）：钮醒目、顶上一条说明、插件格划掉的样子 */
 .mix-ab.ab-off { background: var(--danger); border-color: var(--danger); color: #fff; }
 .mix-ab-note { margin: 6px 10px 0; }

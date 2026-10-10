@@ -97,6 +97,7 @@ class Comp implements FxInstance {
   readonly kind = "comp"; on = true;
   private env = 0; private aAtt = 0; private aRel = 0; private T = -18; private R = 3; private K = 6; private makeup = 1;
   gainReductionDb = 0;   // 表用（最近一块压了多少）
+  inPeak = 0; outPeak = 0;   // 表用（最近一块进 / 出的峰值，线性；压缩页的波形图，v0.10.21）
   readonly id: string; private sr: number;
   constructor(id: string, sr: number, p: Record<string, number>) { this.id = id; this.sr = sr; this.setParams(p); }
   setParams(p: Record<string, number>): void {
@@ -111,15 +112,16 @@ class Comp implements FxInstance {
   }
   process(L: Float32Array, R: Float32Array | null, n: number, key: Float32Array | null): void {
     if (!this.on) return;
-    let env = this.env, minG = 0;
+    let env = this.env, minG = 0, pin = 0, pout = 0;
     for (let i = 0; i < n; i++) {
-      const k = key ? Math.abs(key[i]) : Math.max(Math.abs(L[i]), R ? Math.abs(R[i]) : 0);
+      const a = Math.max(Math.abs(L[i]), R ? Math.abs(R[i]) : 0), k = key ? Math.abs(key[i]) : a;
       env = k > env ? k + (env - k) * this.aAtt : k + (env - k) * this.aRel;
       const lvl = env > 1e-7 ? 20 * Math.log10(env) : -140, gdb = this.gainDb(lvl), g = dbToLin(gdb) * this.makeup;
       if (gdb < minG) minG = gdb;
+      if (a > pin) pin = a; if (a * g > pout) pout = a * g;
       L[i] *= g; if (R) R[i] *= g;
     }
-    this.env = env; this.gainReductionDb = minG;
+    this.env = env; this.gainReductionDb = minG; this.inPeak = pin; this.outPeak = pout;
   }
 }
 

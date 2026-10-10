@@ -84,7 +84,8 @@ export type StudioOut =
   | { type: "chunks"; items: { key: string; sr: number; samples: Int16Array }[] }
   | { type: "meter"; peak: number; active: number; /** 每条轨 / 混音轨推子后的峰值（v0.10.10：混音台每张卡片顶上一条细线）。 */ tracks?: Record<string, number>;
       /** 这一段推子后的均方（v0.10.16：平均电平 = RMS；单声道轨 = (x·推子)²，立体声 = (L² + R²) / 2；总轨 = 出声口）。 */ ms?: Record<string, number>;
-      /** 每条轨上第一台压缩这一段最多压了多少 dB（≤ 0；v0.10.16 压缩页的表）。 */ gr?: Record<string, number> }
+      /** 每条轨上第一台压缩这一段最多压了多少 dB（≤ 0；v0.10.16 压缩页的表）。 */ gr?: Record<string, number>;
+      /** 同一台压缩这一段进 / 出的峰值（线性；v0.10.21 压缩页的波形图）。 */ cl?: Record<string, [number, number]> }
   | { type: "spectrum"; sr: number; tracks: Record<string, Float32Array> }
   | { type: "stereo"; tracks: Record<string, { L: Float32Array; R: Float32Array }> }
   /** 每秒一条（一直开着，便宜）：音频线程这 1 s 的忙闲（渲染耗时 / 这 1 s）、录音房里留着的块（Int16 字节数 / 块数）、正在响的声音数。刀 6 负载 / 内存监控。 */
@@ -168,7 +169,7 @@ export class Studio {
   private trackPeaks = new Map<string, number>();
   private specOn = false; private specFrames = 0;
   /** 平均电平 / 压缩的表（meterOn 时攒）：均方的和 + 帧数；最多压了多少 dB。 */
-  private trackMs = new Map<string, number>(); private grMin = new Map<string, number>();
+  private trackMs = new Map<string, number>(); private grMin = new Map<string, number>(); private compLv = new Map<string, [number, number]>();
   /** 李萨如图：总轨 / 混音轨推子后的左右最近 STEREO_N 个采样。 */
   private stereoOn = false; private stereoFrames = 0;
   private stereoRings = new Map<string, { L: Float32Array; R: Float32Array; w: number }>();
@@ -177,8 +178,9 @@ export class Studio {
     g.L[g.w] = l; g.R[g.w] = r; g.w = (g.w + 1) & (STEREO_N - 1);
   }
   private grOf(id: string, fx: readonly FxInstance[]): void {   // 第一台压缩（压缩页摊开的就是它）这一块压了多少
-    const c = fx.find((f) => f.kind === "comp") as (FxInstance & { gainReductionDb?: number }) | undefined; if (!c || !c.on) return;
+    const c = fx.find((f) => f.kind === "comp") as (FxInstance & { gainReductionDb?: number; inPeak?: number; outPeak?: number }) | undefined; if (!c || !c.on) return;
     const v = c.gainReductionDb ?? 0; this.grMin.set(id, Math.min(this.grMin.get(id) ?? 0, v));
+    const lv = this.compLv.get(id) ?? [0, 0]; this.compLv.set(id, [Math.max(lv[0], c.inPeak ?? 0), Math.max(lv[1], c.outPeak ?? 0)]);
   }
   private specRings = new Map<string, { buf: Float32Array; w: number }>();
   /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）；g0 → g1 = 这一段的推子（线性渐变，和出声同一条斜坡）。 */
@@ -264,7 +266,7 @@ export class Studio {
         this.auditions.set(m.src, { inst: { kind: "clip" }, key: 0, gl, gr });
         return;
       }
-      case "meter": this.meterOn = m.on; this.meterPeak = 0; this.meterFrames = 0; this.trackPeaks.clear(); this.trackMs.clear(); this.grMin.clear(); return;
+      case "meter": this.meterOn = m.on; this.meterPeak = 0; this.meterFrames = 0; this.trackPeaks.clear(); this.trackMs.clear(); this.grMin.clear(); this.compLv.clear(); return;
       case "stereo": this.stereoOn = m.on; this.stereoFrames = 0; if (!m.on) this.stereoRings.clear(); return;
       case "spectrum": this.specOn = m.on; this.specFrames = 0; if (!m.on) this.specRings.clear(); return;
     }
@@ -482,8 +484,8 @@ export class Studio {
       this.meterFrames += n;
       if (this.meterFrames >= 1024) {
         const f = this.meterFrames, ms2: Record<string, number> = {}; for (const [k, v] of this.trackMs) ms2[k] = v / f;
-        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks), ms: ms2, gr: Object.fromEntries(this.grMin) });
-        this.meterPeak = 0; this.meterFrames = 0; this.trackPeaks.clear(); this.trackMs.clear(); this.grMin.clear();
+        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks), ms: ms2, gr: Object.fromEntries(this.grMin), cl: Object.fromEntries(this.compLv) });
+        this.meterPeak = 0; this.meterFrames = 0; this.trackPeaks.clear(); this.trackMs.clear(); this.grMin.clear(); this.compLv.clear();
       }
     }
     // 负载：这一块渲染花了多久 / 这一块值多久（AudioWorklet 里没有 performance，退回 Date.now：毫秒粗，攒满 1 s 再报就够准）
@@ -582,7 +584,8 @@ export class Studio {
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : undefined, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr, pk = 0, ms = 0;
-      for (let i = 0; i < cnt; i++) { cl += dl; cr += dr; L[off + i] += out[i] * cl; R[off + i] += out[i] * cr; if (this.meterOn) { const a = Math.abs(out[i]) * Math.max(cl, cr) * Math.SQRT2; if (a > pk) pk = a; ms += out[i] * out[i] * (cl * cl + cr * cr); } }   // 峰值按「正中 = 原样」的尺子（和总线一样）；均方 = (x·推子)²（等功率：cl² + cr² = 推子²，声像不算）
+      const sto = this.stereoOn;   // 李萨如图：每张卡都有（v0.10.21，user「性能允许的时候示波器应该每个卡都有，一视同仁，才整齐」）——单声道轨 = 声像那个角度的一根线
+      for (let i = 0; i < cnt; i++) { cl += dl; cr += dr; L[off + i] += out[i] * cl; R[off + i] += out[i] * cr; if (sto) this.stereoPush(id, out[i] * cl, out[i] * cr); if (this.meterOn) { const a = Math.abs(out[i]) * Math.max(cl, cr) * Math.SQRT2; if (a > pk) pk = a; ms += out[i] * out[i] * (cl * cl + cr * cr); } }   // 峰值按「正中 = 原样」的尺子（和总线一样）；均方 = (x·推子)²（等功率：cl² + cr² = 推子²，声像不算）
       if (this.meterOn) { this.trackPeaks.set(id, Math.max(this.trackPeaks.get(id) ?? 0, pk)); this.trackMs.set(id, (this.trackMs.get(id) ?? 0) + ms); this.grOf(id, t.chFx); }
       if (t.ch.sends) for (const sd of t.ch.sends) {   // 发送（推子之后）
         const b = this.buses.get(sd.to); if (!b) continue;

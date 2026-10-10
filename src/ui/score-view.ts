@@ -23,7 +23,7 @@ import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL,
 import { type EditorState, type NoteTok, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, type Pitch } from "../score/pitch.ts";
-import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type ClefHit } from "../render/engrave.ts";
+import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
@@ -325,11 +325,11 @@ export class ScoreView {
   /** 播放线（2026-10-10 Opus 5.5；user「首先是线，和光标用不一样的颜色，然后对齐是和所有track里面最后面的一个音符对齐，取max，然后唱到的音符试着高亮一下。看效果好不好」）：
    *  x = 这一行所有声部里、此刻已经开始的音中最晚开始的那个（取 max）；线从这一行最上面那条谱画到最下面那条；每个声部正在响的音高亮。
    *  颜色走 CSS（.playhead / .play-hl，和光标的 --accent 分开）。暂停着也留着（续播从这儿）。 */
-  setPlayhead(p: { paperId: string; tick: number } | null): void {
+  setPlayhead(p: { paperId: string; tick: number } | null, ahead: { paperId: string; tick: number } | null = null): void {
     this.playP = p;
     const L = this.layout;
     const clear = () => { this.playheadEl?.remove(); this.playheadEl = null; for (const e of this.hlEls) e.remove(); this.hlEls = []; this.barEl?.remove(); this.barEl = null; this.barKey = ""; };
-    if (!p || !L) { clear(); this.playSysKey = ""; return; }
+    if (!p || !L) { clear(); this.playSysKey = ""; this.turnedKey = ""; return; }
     const found = this.soundingAt(p.paperId, p.tick);
     if (!found.length) { clear(); return; }
     const lead = found.reduce((a, b) => (b.start > a.start ? b : a)), h0 = lead.hits[0], sys = L.systems[h0.system].sys;
@@ -337,6 +337,19 @@ export class ScoreView {
     const top = Math.min(...rows.map((r) => r.top)), bottom = Math.max(...rows.map((r) => r.bottom)), x = h0.x + h0.w / 2;
     const sysKey = `${p.paperId}:${sys}`;
     if (sysKey !== this.playSysKey) { this.playSysKey = sysKey; if (this.autoFollow) this.followPlay(top, bottom); }
+    // 提前翻谱（v0.10.21；user「视图跳转能早一点吗…方便对着谱子唱歌？」→「我说的不是看下一行，因为小设备大总谱上面一次只能看一行。以及编排longjump。想一想钢琴家是怎么翻页的」）：
+    //   ahead = 再过一小会儿（主线程 TURN_LEAD 秒）放到的地方——按播放的顺序算，下一行、编排 / 反复跳回去的地方都一样；它在别的一行 = 现在就翻过去
+    if (ahead && this.autoFollow && !this.hscroll) {
+      const fa = this.soundingAt(ahead.paperId, ahead.tick);
+      if (fa.length) {
+        const ha = fa.reduce((a, b) => (b.start > a.start ? b : a)).hits[0], asys = L.systems[ha.system].sys, akey = `${ahead.paperId}:${asys}`;
+        if (akey !== sysKey && akey !== this.turnedKey) {
+          this.turnedKey = akey;
+          const arows = L.systems.filter((r) => r.paper === ahead.paperId && r.sys === asys);
+          this.turnTo(top, Math.min(...arows.map((r) => r.top)), Math.max(...arows.map((r) => r.bottom)));
+        }
+      }
+    }
     if (this.hscroll && this.autoFollow) this.followPlayX(x);   // 横卷：一行很长，横着跟（不等换行）
     // 小节底色（v0.10.12；user「播放动画的时候还得垫一个比较轻的小节高亮…太低调了所以有时候找不到放哪里了」→ AI 建议整小节、user「12都同意」）：
     //   正在放的那个（最晚开始的音）所在的小节，盖住这一行所有声部，很淡，垫在音符高亮下面；一小节才换一次，不晃
@@ -360,12 +373,34 @@ export class ScoreView {
     });
   }
   /** 自动翻：正在放的那一行（纸面坐标 top..bottom）出了舒服区 = 平滑滚到它在屏幕上方两成处。 */
+  private turnedKey = "";
+  /** 翻到接下来那一行：已经整个看得见 = 不动；和现在这一行一起放得下（它在下面）= 这一行贴顶、两行都在；放不下 = 它贴顶（这一行翻走了，最后一小截靠记，像翻谱）。远的（编排跳回去）= 先瞬移再平滑。 */
+  private turnTo(curTop: number, aTop: number, aBottom: number): void {
+    const now = performance.now(); if (now - this.userScrollAt < 4000 || now - this.userEditAt < 4000) return;
+    const z = this.zoom, off = this.sheet.offsetTop, vt = this.el.scrollTop, vh = this.el.clientHeight;
+    const a0 = off + aTop * z, a1 = off + aBottom * z, c0 = off + curTop * z;
+    if (a0 >= vt + vh * 0.03 && a1 <= vt + vh * 0.97) return;
+    const to = Math.max(0, a0 > c0 && a1 - c0 <= vh * 0.94 ? c0 - vh * 0.03 : a0 - vh * 0.1);
+    if (Math.abs(to - vt) > vh * 1.5) this.el.scrollTo({ top: to + (to > vt ? -1 : 1) * vh * 0.3, behavior: "instant" as ScrollBehavior });
+    this.el.scrollTo({ top: to, behavior: "smooth" });
+  }
+  /** 跳到正在放的地方（长按 / 右键 |▶ 的菜单；v0.10.21，user「播放的...可以支持跳转到当前播放的地方」）：不管刚才是不是自己滚过，滚过去、接着跟。 */
+  revealPlayhead(): boolean {
+    const L = this.layout, p = this.playP; if (!L || !p) return false;
+    const found = this.soundingAt(p.paperId, p.tick); if (!found.length) return false;
+    const h0 = found.reduce((a, b) => (b.start > a.start ? b : a)).hits[0], sys = L.systems[h0.system].sys;
+    const rows = L.systems.filter((r) => r.paper === p.paperId && r.sys === sys), top = Math.min(...rows.map((r) => r.top));
+    this.userScrollAt = -1e9; this.userEditAt = -1e9;
+    this.el.scrollTo({ top: Math.max(0, this.sheet.offsetTop + top * this.zoom - this.el.clientHeight * 0.2), behavior: "smooth" });
+    if (this.hscroll) this.el.scrollTo({ left: Math.max(0, this.sheet.offsetLeft + ((L.pageX.left ?? 0) + h0.x) * this.zoom - this.el.clientWidth * 0.2), behavior: "smooth" });
+    return true;
+  }
   private followPlay(top: number, bottom: number): void {
     const now = performance.now();
     if (now - this.userScrollAt < 4000 || now - this.userEditAt < 4000) return;
     const z = this.zoom, off = this.sheet.offsetTop, vt = this.el.scrollTop, vh = this.el.clientHeight;
     const y0 = off + top * z, y1 = off + bottom * z;
-    if (y0 >= vt + vh * 0.05 && y1 <= vt + vh * 0.8) return;
+    if (y0 >= vt + vh * 0.05 && y1 <= vt + vh * 0.95) return;   // 整行看得见就不动（v0.10.21：往下的那一行由「提前翻」在上一行放到六成时露出来；原来 0.8 = 换了行又滚一次）
     const to = Math.max(0, y0 - vh * 0.2);
     // 长跳转（编排 / 反复跳回去、跨好几屏）：先瞬移到还差三成屏的地方，再平滑滚完最后那一段，到了小节底色闪一下——
     //   一路平滑滚好几屏会晕、还会扫过一堆不相干的谱；直接瞬移又找不着北（v0.10.12；user「如果是长跳转也许需要页面动画？不然的话突然teleport会misorientation。但是动画会不会晕车」）

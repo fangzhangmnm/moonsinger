@@ -18,6 +18,7 @@ const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
 await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); m.setMode("notes"); }, XML);
+if (await p.$eval(".pad-panel", (e) => e.hidden)) { await p.click("#padTab"); await p.waitForTimeout(150); }   // 打开有音的歌 = 键盘先收着（v0.10.21）：这个测试要键盘
 // 别家的谱每个小节线都读成人插的「|」；在 app 里写的歌小节线是自动画的（不进串）→ 去掉「|」，换行处的光标位置 = 上一行最后一个音后面 = 下一行第一个音前面
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), pid = s.song.papers[0].id;
   m.set({ ...s, caret: 3, sel: null, song: { ...s.song, papers: s.song.papers.map((q) => (q.id === pid ? { ...q, tracks: { ...q.tracks, [s.at.part]: q.tracks[s.at.part].filter((t) => t.kind !== "bar") } } : q)) } }); });

@@ -15,6 +15,7 @@ for (const touch of [false, true]) {
   await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
   await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML);
   await p.waitForTimeout(300);
+if (await p.$eval(".pad-panel", (e) => e.hidden)) { await p.click("#padTab"); await p.waitForTimeout(150); }   // 打开有音的歌 = 键盘先收着（v0.10.21）：这个测试要键盘
   const tag = touch ? "手指" : "鼠标";
   const restIdx = await p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].findIndex((t) => t.kind === "rest"); });
   const rest = async () => p.$eval("#score text.rest", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });

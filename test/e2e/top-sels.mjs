@@ -12,6 +12,14 @@ const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } }))
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
 await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML);
 await p.waitForTimeout(200);
+// 打开有音的歌 = 键盘先收着、小条上「键盘」点一下才开（v0.10.21；user「或者默认键盘是关的，点一下才会开。」「小工具条也有键盘展开的功能」）
+check(await p.$eval(".pad-panel", (e) => e.hidden) && await p.$eval("#padTab", (e) => !e.hidden && !!e.closest(".dock-tab")), "打开有音的歌：键盘收着，小条上有「键盘」");
+await p.click("#padTab"); await p.waitForTimeout(150);
+check(!(await p.$eval(".pad-panel", (e) => e.hidden)) && await p.$eval("#padTab", (e) => !e.hidden && e.classList.contains("is-on")), "点「键盘」= 打开；开着时它亮着（再点 = 收起）");
+// 记住模式：存在「听」= 打开还是「听」（user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」）
+{ const mode = await p.evaluate(() => { const m = window.__moonsinger; m.setMode("listen"); const bytes = m.bytes(); m.load(m.open("again.mxl", bytes)); const w = m.workspace().mode; m.setMode("notes"); return w; });
+  check(mode === "listen", "存的时候在「听」= 再打开就是「听」", mode); }
+if (await p.$eval(".pad-panel", (e) => e.hidden)) { await p.click("#padTab"); await p.waitForTimeout(150); }
 check(!(await p.$eval("#partSel", (e) => e.hidden)), "载入一首两位歌手的歌 = 歌手下拉马上就在（不用切模式；v0.10.10 修 user「ctrl shift r的时候…看不到下拉框，得切换模式之后下拉框才会出现」）");
 await p.evaluate(() => window.__moonsinger.addPaper());
 await p.waitForTimeout(300);

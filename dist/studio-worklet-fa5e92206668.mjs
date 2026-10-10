@@ -237,6 +237,9 @@ var Comp = class {
   makeup = 1;
   gainReductionDb = 0;
   // 表用（最近一块压了多少）
+  inPeak = 0;
+  outPeak = 0;
+  // 表用（最近一块进 / 出的峰值，线性；压缩页的波形图，v0.10.21）
   id;
   sr;
   constructor(id, sr, p) {
@@ -263,17 +266,21 @@ var Comp = class {
   }
   process(L, R, n, key) {
     if (!this.on) return;
-    let env = this.env, minG = 0;
+    let env = this.env, minG = 0, pin = 0, pout = 0;
     for (let i = 0; i < n; i++) {
-      const k = key ? Math.abs(key[i]) : Math.max(Math.abs(L[i]), R ? Math.abs(R[i]) : 0);
+      const a = Math.max(Math.abs(L[i]), R ? Math.abs(R[i]) : 0), k = key ? Math.abs(key[i]) : a;
       env = k > env ? k + (env - k) * this.aAtt : k + (env - k) * this.aRel;
       const lvl = env > 1e-7 ? 20 * Math.log10(env) : -140, gdb = this.gainDb(lvl), g = dbToLin(gdb) * this.makeup;
       if (gdb < minG) minG = gdb;
+      if (a > pin) pin = a;
+      if (a * g > pout) pout = a * g;
       L[i] *= g;
       if (R) R[i] *= g;
     }
     this.env = env;
     this.gainReductionDb = minG;
+    this.inPeak = pin;
+    this.outPeak = pout;
   }
 };
 var DELAY = {
@@ -679,6 +686,7 @@ var Studio = class {
   /** 平均电平 / 压缩的表（meterOn 时攒）：均方的和 + 帧数；最多压了多少 dB。 */
   trackMs = /* @__PURE__ */ new Map();
   grMin = /* @__PURE__ */ new Map();
+  compLv = /* @__PURE__ */ new Map();
   /** 李萨如图：总轨 / 混音轨推子后的左右最近 STEREO_N 个采样。 */
   stereoOn = false;
   stereoFrames = 0;
@@ -698,6 +706,8 @@ var Studio = class {
     if (!c || !c.on) return;
     const v = c.gainReductionDb ?? 0;
     this.grMin.set(id, Math.min(this.grMin.get(id) ?? 0, v));
+    const lv = this.compLv.get(id) ?? [0, 0];
+    this.compLv.set(id, [Math.max(lv[0], c.inPeak ?? 0), Math.max(lv[1], c.outPeak ?? 0)]);
   }
   specRings = /* @__PURE__ */ new Map();
   /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）；g0 → g1 = 这一段的推子（线性渐变，和出声同一条斜坡）。 */
@@ -875,6 +885,7 @@ var Studio = class {
         this.trackPeaks.clear();
         this.trackMs.clear();
         this.grMin.clear();
+        this.compLv.clear();
         return;
       case "stereo":
         this.stereoOn = m.on;
@@ -1261,12 +1272,13 @@ var Studio = class {
       if (this.meterFrames >= 1024) {
         const f = this.meterFrames, ms2 = {};
         for (const [k, v] of this.trackMs) ms2[k] = v / f;
-        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks), ms: ms2, gr: Object.fromEntries(this.grMin) });
+        this.post({ type: "meter", peak: this.meterPeak, active: this.activeVoices(), tracks: Object.fromEntries(this.trackPeaks), ms: ms2, gr: Object.fromEntries(this.grMin), cl: Object.fromEntries(this.compLv) });
         this.meterPeak = 0;
         this.meterFrames = 0;
         this.trackPeaks.clear();
         this.trackMs.clear();
         this.grMin.clear();
+        this.compLv.clear();
       }
     }
     this.loadBusy += now() - tStart;
@@ -1430,11 +1442,13 @@ var Studio = class {
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : void 0, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr, pk = 0, ms = 0;
+      const sto = this.stereoOn;
       for (let i = 0; i < cnt; i++) {
         cl += dl;
         cr += dr;
         L[off + i] += out[i] * cl;
         R[off + i] += out[i] * cr;
+        if (sto) this.stereoPush(id, out[i] * cl, out[i] * cr);
         if (this.meterOn) {
           const a = Math.abs(out[i]) * Math.max(cl, cr) * Math.SQRT2;
           if (a > pk) pk = a;
@@ -1780,4 +1794,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-b92b6e987b75.mjs.map
+//# sourceMappingURL=studio-worklet-fa5e92206668.mjs.map

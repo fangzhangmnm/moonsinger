@@ -49,7 +49,7 @@ check(started, "焦点在推子上按空格 = 放（原来推子上的空格被�
     rv = await p.textContent(`.strip[data-id="${partId}"] .rms-val`); cv = await p.textContent(`.strip[data-id="__master"] .corr-val`); d = await p.$eval(`.strip[data-id="__master"] .strip-gonio .gon`, (e) => e.getAttribute("d") ?? ""); }
   check(/^-\d+\.\d dB$/.test(rv), "放着 = 歌手卡片上有平均电平（dB）", rv);
   check(cv === "+1.00" && d.length > 100, "总轨卡片背景有李萨如图，正中的单声道 = 左右相关 +1.00", `${cv} / path ${d.length}`);
-  check(!(await p.$(`.strip[data-id="${partId}"] .strip-gonio`)), "歌手卡片（单声道）不画李萨如图"); }
+  check(!!(await p.$(`.strip[data-id="${partId}"] .strip-gonio .gon`)) && ((await p.$eval(`.strip[data-id="${partId}"] .strip-gonio .gon`, (e) => e.getAttribute("d") ?? "")).length > 100), "歌手卡片也有李萨如图（一视同仁；单声道 = 一根线）"); }
 await p.keyboard.press("Space"); await p.waitForTimeout(200);
 await tab("eq");
 // EQ 页卡片背景（v0.10.11）：频谱面 + EQ 曲线；放着的时候频谱有东西，440 Hz 附近最高；拧「厚 ↔ 亮」曲线跟着变（user「看不到频谱背景调均衡等于瞎子」）
@@ -94,7 +94,9 @@ await p.click(`.strip[data-id="${partId}"] [data-v="fxaddkind"][data-kind="comp"
 await p.click("#playBtn");
 { let gv = "0 dB"; for (let i = 0; i < 30 && gv === "0 dB"; i++) { await p.waitForTimeout(150); gv = (await p.textContent(`.strip[data-id="${partId}"] .gr-val`)) ?? ""; }
   const w = await p.$eval(`.strip[data-id="${partId}"] .gr-bar > i`, (e) => parseFloat(e.style.width) || 0);
-  check(/^-\d+\.\d dB$/.test(gv) && w > 0, "压缩页：放着 = 「压了」读数 + 条", `${gv} / 条 ${w}%`); }
+  check(/^-\d+\.\d dB$/.test(gv) && w > 0, "压缩页：放着 = 「压了」读数 + 条", `${gv} / 条 ${w}%`);
+  const cv = await p.$eval(`.strip[data-id="${partId}"] .strip-comp`, (e) => ({ cin: (e.querySelector(".cin")?.getAttribute("d") ?? "").length, cout: (e.querySelector(".cout")?.getAttribute("d") ?? "").length, cgr: (e.querySelector(".cgr")?.getAttribute("d") ?? "").length, thr: !!e.querySelector(".cthr") }));
+  check(cv.cin > 20 && cv.cout > 20 && cv.cgr > 20 && cv.thr, "压缩页卡片背景 = 波形图（进来的一片、出去的线、压了多少的线、阈值虚线；user「压缩器做一个波形图和实时的压缩度的可视化」）", JSON.stringify(cv)); }
 if (await p.evaluate(() => window.__moonsinger.engine.playing)) await p.click("#playBtn");
 await p.waitForTimeout(200); await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
 await tab("chain");

@@ -215,7 +215,7 @@ dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="模式：这�
   `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
 dockTab.append(padTab);
 stageEl.append(dockTab);
-padTab.addEventListener("click", () => showPad(true));
+padTab.addEventListener("click", () => showPad(ws.mode === "listen" ? !studio.isOpen : padEl.hidden));
 // 挂签（v0.10.3）：模式四个钮 + 看哪一段 + 看哪位歌手，从顶栏底下往下挂、浮在谱上（可以挡住谱）。
 //   user 2026-10-10「模式切换不是下拉，回到之前的四个排一起的按钮，然后模式切换，曲段和声部选择这三个不是在顶栏，而是顶栏下面创建一个类似tab的往下的东西，可以遮挡屏幕」
 //   （v0.10.2 那版 = 三个下拉挤在顶栏左上角，user 原话「我希望有一个快速选择看全部或者哪个曲段，以及快速看全部或者哪个声部的下拉框」「模式收到下拉框里面」）。
@@ -249,8 +249,11 @@ function updateChrome(): void {
   if (!chromeReady) return;
   const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);   // 乐器页开着：选区条也收（不然盖住乐器页顶条的「← 谱」）
   dockTab.hidden = over;   // 底座边上的小条 / 挂签：乐器页 / 目录 / 歌库盖着谱时收起
-  padTab.hidden = !padEl.hidden || ((gallery?.isOpen() ?? false) && !finderShown) || studio.isOpen || !hasKeys(ws.mode);
-  { const lab = ws.mode === "listen" ? "混音台" : "键盘", sp = padTab.querySelector("span"); if (sp && sp.textContent !== lab) sp.textContent = lab; padTab.title = ws.mode === "listen" ? "混音台（听的键盘）" : "键盘（pad）"; }
+  // 小条上的「键盘」= 一直在的开关（v0.10.21；user「小工具条也有键盘展开的功能」）：开着亮、点 = 收起；收着点 = 开（「听」= 混音台）。「词」没有键盘 = 不露
+  const dockOpen = ws.mode === "listen" ? studio.isOpen : !padEl.hidden;
+  padTab.hidden = ((gallery?.isOpen() ?? false) && !finderShown) || (!hasKeys(ws.mode) && ws.mode !== "listen");
+  padTab.classList.toggle("is-on", dockOpen);
+  { const lab = ws.mode === "listen" ? "混音台" : "键盘", sp = padTab.querySelector("span"); if (sp && sp.textContent !== lab) sp.textContent = lab; padTab.title = `${ws.mode === "listen" ? "混音台" : "键盘（pad）"}：${dockOpen ? "点 = 收起" : "点 = 打开"}`; }
   renderTopSels();   // 「词 / 听」没有键盘：不露「键盘」tab
   viewTab.hidden = over || (($("paperSel") as HTMLSelectElement).hidden && ($("partSel") as HTMLSelectElement).hidden);   // 挂签只剩看哪一段 / 哪位：都不用选 = 不挂
   finder.setPadShown(!padEl.hidden);
@@ -1174,6 +1177,7 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
   box.innerHTML = (paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放（起点不动）") : "") +
+    (engine.playing || paused ? item("reveal", "跳到正在放的地方", "谱滚到正在放（停着 = 停下）的那一行；刚才自己滚过也照样过去、接着跟") : "") +
     item("follow", `${view.autoFollow ? "✓ " : ""}自动翻`, "放着的时候谱跟着正在放的那一行滚（出了屏幕舒服的那一段才滚；你自己滚过 4 秒内不跟）") +
     item("loop", `${loopOn ? "✓ " : ""}循环`, "放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环") +
     item("head", "从头放", "起点回到开头，从头放（也可以连按两下 |▶ / 空格）") + (loopOn ? item("seam", "听接缝", "从循环段结尾前几秒放起，跳回开头再放几秒就停") : "");
@@ -1189,6 +1193,7 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
     if (v === "resume") resumePlay();
+    else if (v === "reveal") { if (!view.revealPlayhead()) info("现在没有在放的地方"); }
     else if (v === "follow") { view.autoFollow = !view.autoFollow; info(view.autoFollow ? "自动翻：开" : "自动翻：关"); }
     else if (v === "loop") setLoop(!loopOn);
     else if (v === "head") playFromHead();
@@ -1205,11 +1210,18 @@ let lastReorder = 0;
 //   原来画的是录音房「正在算」的位置（每 43 ms 一报），声音还要过系统的输出缓冲才到扬声器 → 画面一直早一个输出延迟；iPad 切后台回来系统可能换了更大的缓冲 = 早得更多。
 //   现在每一帧问浏览器扬声器此刻放到音频时钟的哪一刻（getOutputTimestamp），去录音房报的「音频时钟 → 走带位置」对照表里查（StudioClient.audibleSec）。
 let phRaf = 0, phKey = "", latLogged: number | null = null, latAt = 0, srcLogged: string | null = null;
+/** 翻谱的提前量（秒）：像钢琴家翻谱——这一行最后一小截还没放完就先翻到「接下来要放的地方」（下一行 / 编排、反复跳回去的地方），最后那一点靠记着
+ *  （v0.10.21；user「早跳转：我说的不是看下一行，因为小设备大总谱上面一次只能看一行。以及编排longjump。想一想钢琴家是怎么翻页的」）。 */
+const TURN_LEAD = 1.5;
+let phAheadKey = "";
 function playheadFrame(): void {
   phRaf = 0;
   if (!engine.playing || !playTl) return;
   const sec = engine.audibleSec() ?? engine.position, loc = playTl.locate(sec), k = loc ? `${loc.paperId}:${loc.tick}` : "";
-  if (k !== phKey) { phKey = k; view.setPlayhead(loc); }
+  // 接下来 TURN_LEAD 秒放到哪（按播放的顺序：编排 / 反复照算；开着循环、快到尾了 = 循环头）
+  const r = playRange(playTl); let aSec = sec + TURN_LEAD; if (aSec >= r.to) aSec = loopOn ? r.loopFrom + (aSec - r.to) : r.to - 1e-3;
+  const ahead = playTl.locate(aSec), ak = ahead ? `${ahead.paperId}:${ahead.tick}` : "";
+  if (k !== phKey || ak !== phAheadKey) { phKey = k; phAheadKey = ak; view.setPlayhead(loc, ahead); }
   const now = performance.now();
   if (now - latAt > 2000) {   // 输出延迟变了（换耳机 / 切后台回来）记进黑匣子：错位再报时有数可查
     latAt = now; const lat = engine.latencyMs();
@@ -1778,7 +1790,7 @@ const studio = new Studio($("stage"), {
 /** 混音台 = 「听」的键盘（v0.10.2；user「能不能混音台就是听的键盘，不用单独一个键，就是不同功能有不同键盘」）：打开 = 切到听（底座 = 混音台）；收起 = 收起底座（底下那粒 tab 叫回来）。 */
 function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); ws.collapsed = false; if (ws.mode !== "listen") setMode("listen"); else applyWorkspace(); }   // 峰值表：页开着才要
 function closeStudio(): void { if (!studio.isOpen) return; ws.collapsed = true; applyWorkspace(); scoreEl.focus(); }
-engine.on("meter", (peak, _active, tracks, ms, gr) => { if (studio.isOpen) studio.meter(peak, tracks, ms, gr); });
+engine.on("meter", (peak, _active, tracks, ms, gr, cl) => { if (studio.isOpen) studio.meter(peak, tracks, ms, gr, cl); });
 engine.on("stereo", (tracks) => { if (studio.isOpen) studio.stereo(tracks); });   // 李萨如图（v0.10.16）   // 每张卡片顶上的峰值细线（v0.10.10）
 engine.on("spectrum", (sr, tracks) => studio.spectrum(sr, tracks));   // EQ 页卡片背景的频谱（v0.10.11）
 /** 录音房的频谱只在「混音台开着 + EQ 页 + 页面看得见」时算（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）。 */
@@ -2696,7 +2708,7 @@ instEl.addEventListener("click", (e) => {
   drawInst();
 });
 /** 视图态（desk，src/score/desk.ts）：存时聚一下（bytesNow）、开歌时散回去（loadDoc）。变量本身仍住这里（viewScope / pageFlow / partView）。 */
-const deskNow = (): Desk => ({ scope: viewScope, pageFlow, scroll: scrollFlow, paper: st.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality,
+const deskNow = (): Desk => ({ scope: viewScope, pageFlow, scroll: scrollFlow, paper: st.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality, mode: ws.mode,
   pad: { fifths: st.input.inputFifths, scale: st.input.inputScale, unit: PAD_UNITS[st.input.unit], tuplet: st.input.tuplet, low: pad.rangeLow() }, ref: refHost.panel(), pdf: pdfFont });   // pad 的状态跟着歌走（同 WeebPaint editor-state）
 function applyDesk(d: Desk): void {
   viewScope = d.scope; pageFlow = d.pageFlow; scrollFlow = d.scroll; mp3Quality = d.mp3; pdfFont = d.pdf;
@@ -2718,6 +2730,10 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   doc.saved = { song: st.song, lounge: loungeKey(), refs: refHost.rev() };
   const d = o.view ? unserializeDesk(o.view) : freshDesk();
   applyDesk(d);
+  // 打开 = 上次存时的模式；谱里已经有音 = 键盘先收着，点一下才开（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」「或者默认键盘是关的，点一下才会开。」）。空的新歌照旧开着键盘
+  ws.mode = d.mode; if (d.mode !== "listen") lastEditMode = d.mode;
+  ws.collapsed = st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));
+  applyWorkspace();
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);
   engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; singer.cancelPending(); trimLanesForNewSong(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了、上一首撑大的堆还回去

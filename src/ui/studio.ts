@@ -86,14 +86,16 @@ const HINT = {
   limiter: "限幅（总轨最后一道）：超过天花板（−0.18 dBFS）的那一小段很快压下来，不超的地方一个采样都不动，不改音色。关掉 = 超了就削波（爆音、导出的文件里也是）。一般一直开着；想看自己的混音到底多响，可以先关了看峰值",
   peak: "峰值：最近这一下最响的那个采样（dBFS）。0 dB = 满格，再大就削波；限幅开着时最多到 −0.18 dB。顶上的细线是同一个数",
   rms: "平均电平（RMS，最近 0.3 秒，推子之后，dBFS）：比峰值更接近耳朵觉得的响。几条轨摆平音量看这个；顶上的细线（峰值）看会不会爆",
-  corr: "左右相关（−1 到 +1）：+1 = 左右一样（单声道）；0 附近 = 很宽；小于 0 = 左右反相，手机外放 / 单声道一合就会变小、变空。背景的图：竖线 = 单声道，越圆越宽，横着 = 反相",
+  corr: "左右相关（−1 到 +1）：+1 = 左右一样（单声道）；0 附近 = 很宽；小于 0 = 左右反相，手机外放 / 单声道一合就会变小、变空。背景的图：竖线 = 单声道，越圆越宽，横着 = 反相；往左上斜 = 偏左声道、往右上斜 = 偏右",
   gr: "压了多少：这条轨上第一台压缩此刻把声音压低了几 dB（下面摊开的就是它）。一直压很多 = 阈值太低或比例太大",
   key: "被谁压（侧链）：压缩器不看自己，而看另一条轨有多响——比如月读一唱，伴奏自己让一点",
 };
+/** 压缩页的波形图存多少段（~21 ms 一段 = ~4 s）。 */
+const COMP_HIST = 192;
 const RMS_ROW = row("平均", HINT.rms, `<output class="rms-val">—</output>`, "", "strip-row");
 const CORR_ROW = row("左右相关", HINT.corr, `<output class="corr-val">—</output>`, "", "strip-row");
 /** 李萨如图的底：竖线 = 单声道、横线 = 反相；左上 / 右上 = 只有左 / 右声道。 */
-const GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="gon-axis" d="M0,-1L0,1M-1,0L1,0"/><text class="gon-lab" x="-0.72" y="-0.62">左</text><text class="gon-lab" x="0.6" y="-0.62">右</text><path class="gon" d=""/></svg>`;
+const GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="gon-axis" d="M0,-1L0,1M-1,0L1,0"/><path class="gon" d=""/></svg>`;   // 不写「左 / 右」字（v0.10.21，user「李萨如 左字和ui overlap了」）：方向写在「左右相关」的问号里
 /** 一格的位置：哪条轨的哪一格（插件格的读写、面板和卡片上摊开的控件都按它找）。 */
 interface Target { track: string; fx: string }
 
@@ -117,6 +119,9 @@ export class Studio {
   private msTarget = new Map<string, number>(); private msShown = new Map<string, number>();
   private grTarget = new Map<string, number>(); private grShown = new Map<string, number>();
   private corrShown = new Map<string, number>(); private lastText = 0;
+  private full = false;
+  /** 压缩页：每条轨最近 COMP_HIST 段（~21 ms 一段）的 [进峰值, 出峰值, 压了多少 dB]。 */
+  private compHist = new Map<string, [number, number, number][]>();
   /** 差设备（v0.10.17；user「以及注意一下差设备上的性能影响」）：① 只算 / 只画看得见的卡片（混音台里滚出去的不算 FFT、不画李萨如图）；
    *  ② 背景统计按花的时间自己降频：最近平均一次超过 4 ms = 隔一帧画一帧（最多 4 帧画 1 帧），降到 1.5 ms 以下再恢复。 */
   private seen = new Set<string>(); private io: IntersectionObserver | null = null;
@@ -136,7 +141,7 @@ export class Studio {
   private shownCard(id: string): boolean { return !this.io || this.seen.has(id); }
   constructor(parent: HTMLElement, private host: StudioHost) {
     this.el = document.createElement("div"); this.el.className = "studio"; this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">混音台</span><button class="btn" data-v="back" title="收起混音台：底座让出来、还在「听」（Esc = 回去写）">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button><button class="btn mix-ab" data-v="bypass"></button></div>` +
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">混音台</span><button class="btn" data-v="back" title="收起混音台：底座让出来、还在「听」（Esc = 回去写）">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button><button class="btn mix-ab" data-v="bypass"></button><button class="btn mix-full" data-v="full" title="混音台铺满（推到最上面，卡片排成好几列，一眼看全）；再点 = 回到底座">全屏</button></div>` +
       `<div class="mix-tabbar"></div><div class="fx-note mix-ab-note" hidden>效果全关着：插件和发送都不响，只剩推子、声像、出到和总轨限幅——听谱子本身 / 听差别用；再点一下回来。导出照常带效果。</div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
     parent.append(this.el);
     this.el.addEventListener("click", (e) => this.onClick(e));
@@ -151,7 +156,12 @@ export class Studio {
 
   // ── 峰值 ────────────────────────────────────────────────────────────────
   /** 录音房报的峰值（0–1；总轨 = 出声口；tracks = 每条轨 / 混音轨推子后）。 */
-  meter(peak: number, tracks: Record<string, number> = {}, ms: Record<string, number> = {}, gr: Record<string, number> = {}): void {
+  meter(peak: number, tracks: Record<string, number> = {}, ms: Record<string, number> = {}, gr: Record<string, number> = {}, cl: Record<string, [number, number]> = {}): void {
+    // 压缩页的波形图（v0.10.21；user「压缩器做一个波形图和实时的压缩度的可视化」）：每条轨第一台压缩最近 ~4 s 的进 / 出峰值 + 压了多少，只在压缩页、看得见的卡片上画
+    if (!this.el.hidden && this.tab === "comp") {
+      for (const [id, [i, o]] of Object.entries(cl)) { let h = this.compHist.get(id); if (!h) { h = []; this.compHist.set(id, h); } h.push([i, o, gr[id] ?? 0]); if (h.length > COMP_HIST) h.splice(0, h.length - COMP_HIST); }
+      this.budgeted(() => this.drawComp());
+    }
     this.target.set(MASTER, peak); for (const [k, v] of Object.entries(tracks)) this.target.set(k, v);
     this.msTarget.clear(); for (const [k, v] of Object.entries(ms)) this.msTarget.set(k, v);
     this.grTarget.clear(); for (const [k, v] of Object.entries(gr)) this.grTarget.set(k, v);
@@ -187,6 +197,23 @@ export class Studio {
       if (c === null) this.corrShown.delete(id); else this.corrShown.set(id, c);
       const out = card.querySelector<HTMLElement>(".corr-val"); if (out) { out.textContent = c === null ? "—" : `${c >= 0 ? "+" : "−"}${Math.abs(c).toFixed(2)}`; out.classList.toggle("neg", c !== null && c < -0.05); }
     }
+  }
+  /** 压缩页卡片背景：进来的电平 = 底下一片淡的、出去的 = 一根线、压了多少 = 从顶上往下垂的线、阈值 = 虚线（电平 −48…0 dBFS 映到卡片高度；压了多少 0…−24 dB 映到上半截）。 */
+  private drawComp(): void {
+    for (const [id, h] of this.compHist) {
+      if (!this.shownCard(id)) continue;
+      const svg = this.el.querySelector<SVGSVGElement>(`.strip[data-id="${CSS.escape(id)}"] .strip-comp`); if (!svg) continue;
+      const n = h.length, x = (k: number) => ((100 * (k + COMP_HIST - n)) / (COMP_HIST - 1)).toFixed(2), lv = (v: number) => { const d = v > 1e-6 ? 20 * Math.log10(v) : -96; return (100 * Math.min(1, Math.max(0, -d / 48))).toFixed(2); };
+      let a = "", o = "", g = "";
+      h.forEach(([i, out, gr], k) => { a += `${k ? "L" : `M${x(0)},100L`}${x(k)},${lv(i)}`; o += `${k ? "L" : "M"}${x(k)},${lv(out)}`; g += `${k ? "L" : "M"}${x(k)},${((Math.min(24, -gr) / 24) * 50).toFixed(2)}`; });
+      if (n) a += `L${x(n - 1)},100Z`;
+      svg.querySelector(".cin")!.setAttribute("d", a); svg.querySelector(".cout")!.setAttribute("d", o); svg.querySelector(".cgr")!.setAttribute("d", g);
+    }
+  }
+  private compSvg(track: string): string {
+    const c = this.slots(track).find((s) => s.fx.kind === "comp")?.fx, thr = c && c.on !== false ? paramsOf(c).thresholdDb : null;
+    const ty = thr === null || thr === undefined ? null : (100 * Math.min(1, Math.max(0, -thr / 48))).toFixed(2);
+    return `<svg class="strip-comp" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="cin" d=""/><path class="cout" d=""/><path class="cgr" d=""/>${ty ? `<path class="cthr" d="M0,${ty}L100,${ty}"/>` : ""}</svg>`;
   }
   /** 这一格 EQ 的响应曲线（±18 dB 映到卡片高度，中线 = 0 dB）。 */
   private curvePath(track: string, fx: FxV2 | null): string {
@@ -236,7 +263,8 @@ export class Studio {
     if (v === "back") this.host.close();
     else if (v === "play") this.host.play();
     else if (v === "bypass") { this.host.setBypass(!this.host.bypass()); this.render(); }
-    else if (v === "tab") { this.tab = t.closest<HTMLElement>("[data-tab]")!.dataset.tab as MixTab; this.menuOpen = false; this.addFor = null; this.specShown.clear(); this.render(); this.host.tabChanged?.(this.tab); }
+    else if (v === "full") { this.full = !this.full; this.el.classList.toggle("full", this.full); this.render(); }   // 混音台全屏（user「混音台可以切全屏（就是推到最上面」）：这次打开里有效
+    else if (v === "tab") { this.tab = t.closest<HTMLElement>("[data-tab]")!.dataset.tab as MixTab; this.menuOpen = false; this.addFor = null; this.specShown.clear(); this.compHist.clear(); this.render(); this.host.tabChanged?.(this.tab); }
     else if (v === "more") { this.menuOpen = !this.menuOpen; this.render(); }
     else if (v === "addbus") { this.menuOpen = false; const id = this.host.addBus(); this.render(); this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); }
     else if (v === "mute" && strip) { this.host.toggleMute(strip); this.render(); }
@@ -425,8 +453,9 @@ export class Studio {
   }
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   private card(id: string, cls: string, name: string, who: string, body: string, color?: string): string {
-    const spec = this.tab === "eq" ? this.specSvg(id) : this.tab === "basic" && (id === MASTER || cls.includes("bus")) ? GONIO_SVG : "";   // EQ 页：卡片背景 = 频谱 + 这一格 EQ 的曲线；基础页总轨 / 混音轨 = 李萨如图
-    return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}${body}</div>`;
+    const spec = this.tab === "eq" ? this.specSvg(id) : this.tab === "basic" ? GONIO_SVG : this.tab === "comp" ? this.compSvg(id) : "";   // EQ 页：卡片背景 = 频谱 + 这一格 EQ 的曲线；基础页 = 每张卡都有李萨如图（单声道轨 = 声像角度的一根线）
+    // 卡片一样高（= 基础页的那么高；v0.10.21，user「混音台能解决卡片太长的问题吗？不方便纵览。能不能约定一个卡片的fixed的大小，然后里面自己想办法」「我比较喜欢基础模式的卡片大小」）：名字钉在上面，下面的放不下 = 卡片里自己滚
+    return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}<div class="strip-body">${body}</div></div>`;
   }
   render(): void {
     const box = this.el.querySelector(".studio-strips")!, m = this.host.master(), tab = this.tab, off = this.host.bypass();
@@ -434,6 +463,7 @@ export class Studio {
     ab.textContent = off ? "效果全关" : "效果开着"; ab.classList.toggle("is-on", !off); ab.classList.toggle("ab-off", off);
     ab.title = off ? "现在：插件和发送都不响（推子 / 声像留着）。点 = 效果回来" : "点 = 暂时关掉全部效果（插件 + 发送），听谱子本身 / 听差别；推子、声像留着";
     this.el.querySelector<HTMLElement>(".mix-ab-note")!.hidden = !off; this.el.classList.toggle("bypassed", off);
+    const fb = this.el.querySelector<HTMLElement>(".mix-full")!; fb.textContent = this.full ? "还原" : "全屏"; fb.classList.toggle("is-on", this.full);
     if (this.open && !this.slotOf(this.open)) this.open = null;   // 撤销把这一格撤没了
     this.renderBar();
     const nameDiv = (s: string) => `<div class="strip-name">${esc(s)}</div>`;
