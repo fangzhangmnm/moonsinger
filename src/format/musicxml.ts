@@ -7,7 +7,7 @@
 //   速度记号只写在第一个声部（速度 = 第一个声部的状态机）；各声部小节数不等时后面补整小节休止（别的软件要各声部小节数一样）。
 // 读：自家文件按上面的规矩原样复原（每个声部一串）；别的软件存的尽量读（每个声部第一个 voice；读不了的东西数出来报给人，不静默丢）。
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
-import { DYNS, type ClefName, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
+import { DYNS, withArt, type ClefName, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
@@ -492,6 +492,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
       const n = Number(m.attrs.number ?? mi + 1);
       if (rightRepeat || rightStyle || (manual ? manual.has(n) : mi < measures.length - 1)) body.push({ kind: "bar", id: 0, ...(rightRepeat ? { repeat: "end" as Repeat, ...(rightRepeat.times > 2 ? { times: rightRepeat.times } : {}) } : rightStyle ? { style: rightStyle } : {}) });
     });
+    for (const [k, t] of body.entries()) if (t.kind === "note" && !t.chord?.length && t.art?.includes("arpeggio")) body[k] = withArt(t, "arpeggio", false);   // 单音上的琶音不认（v0.9.46：琶音只挂在和弦上）
     const tokens: Token[] = [{ kind: "key", id: 0, fifths: H.fifths }, { kind: "time", id: 0, beats: H.beats, beatType: H.beatType }, { kind: "tempo", id: 0, bpm: H.bpm }, ...body];
     keepOnlyOverrides(tokens, tokens.map((t) => langRead.get(t) ?? null));
     // 大谱表：文件里每个音都写了 <staff>；和「按音高自动」一样的不记（只留手动指定的），单谱表的一律不记

@@ -260,8 +260,14 @@ export const allPitches = (t: NoteTok): Pitch[] => (t.pitch ? [t.pitch, ...(t.ch
 export function withPitches(t: NoteTok, ps: Pitch[]): NoteTok {
   const seen = new Set<number>(), sorted = [...ps].sort((a, b) => midiOf(b) - midiOf(a)).filter((p) => { const m = midiOf(p); if (seen.has(m)) return false; seen.add(m); return true; });
   const { chord: _chord, ...rest } = t; void _chord;
-  if (!sorted.length) return { ...rest, pitch: null };
-  return sorted.length > 1 ? { ...rest, pitch: sorted[0], chord: sorted.slice(1) } : { ...rest, pitch: sorted[0] };
+  if (!sorted.length) return noArp({ ...rest, pitch: null });
+  return sorted.length > 1 ? { ...rest, pitch: sorted[0], chord: sorted.slice(1) } : noArp({ ...rest, pitch: sorted[0] });
+}
+/** 琶音只挂在和弦上（v0.9.46；user「只有和弦才有，变成单音时自动丢，对吧？」）：变成单音 = 去掉。改音高都走 withPitches，在这里一处收。 */
+function noArp(t: NoteTok): NoteTok {
+  if (!t.art?.includes("arpeggio")) return t;
+  const art = t.art.filter((a) => a !== "arpeggio"); if (art.length) return { ...t, art };
+  const { art: _a, ...rest } = t; return rest;
 }
 /** 叠 / 拿掉一个音高（XOR；最后一个永远留着）。 */
 export function toggleChordPitch(st: EditorState, i: number, p: Pitch): EditorState {
@@ -506,6 +512,7 @@ export function insertPhraseAfter(st: EditorState, i: number): EditorState {
 export const artOf = (t: NoteTok): Art[] => t.art ?? [];
 /** 开 / 关一种演奏法（空了 = 去掉 art 字段，存档不多出空数组）。 */
 export function withArt(t: NoteTok, a: Art, on: boolean): NoteTok {
+  if (on && a === "arpeggio" && !t.chord?.length) return t;   // 琶音只挂在和弦上（v0.9.46）
   const set = new Set(artOf(t)); if (on) { for (const g of [ATTACKS, SWELL_ARTS]) if (g.includes(a)) for (const x of g) set.delete(x); set.add(a); } else set.delete(a);   // 音头那一组互斥；音内起伏那一组互斥
   const art = ARTS.filter((x) => set.has(x));
   const base = !set.has("breath") && t.inhale ? (({ inhale: _i, ...r }) => r)(t) : t;   // 呼吸去掉 = 出声的换气一起去掉
@@ -524,8 +531,8 @@ export function artStateSel(st: EditorState): Record<Art, "all" | "some" | "none
 export function toggleArtSel(st: EditorState, a: Art): EditorState {
   const idx = selNoteIdx(st); if (!idx.length) return st;
   const on = artStateSel(st)[a] !== "all", nt = tr(st).slice();
-  for (const i of idx) nt[i] = withArt(nt[i] as NoteTok, a, on);
-  return next(st, nt);
+  let changed = false; for (const i of idx) { const u = withArt(nt[i] as NoteTok, a, on); if (u !== nt[i]) { nt[i] = u; changed = true; } }
+  return changed ? next(st, nt) : st;   // 一个都没变（比如单音挂琶音）= 原样，不记一步
 }
 /** 演奏法（pad 符号层：跳音 / 重音 / 保持 / 呼吸）：有选区 = 选中的音整组切（同选区条「修」）；没选区 = 光标前最近的那个音切
  *  （中间只隔着句号 / 力度 / 小节线这类不占时值的也算）；前面是休止或没有音 = 原样（返回 null 让界面说一声）。 */
@@ -536,7 +543,8 @@ export function toggleArtBefore(st: EditorState, a: Art): EditorState | null {
     const t = toks[i];
     if (t.kind === "rest") return null;
     if (t.kind !== "note") continue;
-    const nt = toks.slice(); nt[i] = withArt(t, a, !artOf(t).includes(a));
+    const u = withArt(t, a, !artOf(t).includes(a)); if (u === t) return null;   // 没变（单音挂琶音）= null，让界面说一声
+    const nt = toks.slice(); nt[i] = u;
     return next(st, nt);
   }
   return null;

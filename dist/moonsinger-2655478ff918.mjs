@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.45-2026-10-10";
+var APP_VERSION = "v0.9.46-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3152,8 +3152,15 @@ function withPitches(t10, ps) {
     return true;
   });
   const { chord: _chord, ...rest } = t10;
-  if (!sorted.length) return { ...rest, pitch: null };
-  return sorted.length > 1 ? { ...rest, pitch: sorted[0], chord: sorted.slice(1) } : { ...rest, pitch: sorted[0] };
+  if (!sorted.length) return noArp({ ...rest, pitch: null });
+  return sorted.length > 1 ? { ...rest, pitch: sorted[0], chord: sorted.slice(1) } : noArp({ ...rest, pitch: sorted[0] });
+}
+function noArp(t10) {
+  if (!t10.art?.includes("arpeggio")) return t10;
+  const art = t10.art.filter((a10) => a10 !== "arpeggio");
+  if (art.length) return { ...t10, art };
+  const { art: _a2, ...rest } = t10;
+  return rest;
 }
 function toggleChordPitch(st3, i10, p2) {
   const t10 = tr(st3)[i10];
@@ -3399,6 +3406,7 @@ function insertPhraseAfter(st3, i10) {
 }
 var artOf = (t10) => t10.art ?? [];
 function withArt(t10, a10, on2) {
+  if (on2 && a10 === "arpeggio" && !t10.chord?.length) return t10;
   const set = new Set(artOf(t10));
   if (on2) {
     for (const g3 of [ATTACKS, SWELL_ARTS]) if (g3.includes(a10)) for (const x2 of g3) set.delete(x2);
@@ -3428,8 +3436,15 @@ function toggleArtSel(st3, a10) {
   const idx = selNoteIdx(st3);
   if (!idx.length) return st3;
   const on2 = artStateSel(st3)[a10] !== "all", nt2 = tr(st3).slice();
-  for (const i10 of idx) nt2[i10] = withArt(nt2[i10], a10, on2);
-  return next(st3, nt2);
+  let changed2 = false;
+  for (const i10 of idx) {
+    const u2 = withArt(nt2[i10], a10, on2);
+    if (u2 !== nt2[i10]) {
+      nt2[i10] = u2;
+      changed2 = true;
+    }
+  }
+  return changed2 ? next(st3, nt2) : st3;
 }
 function toggleArtBefore(st3, a10) {
   if (st3.sel) {
@@ -3441,8 +3456,10 @@ function toggleArtBefore(st3, a10) {
     const t10 = toks[i10];
     if (t10.kind === "rest") return null;
     if (t10.kind !== "note") continue;
+    const u2 = withArt(t10, a10, !artOf(t10).includes(a10));
+    if (u2 === t10) return null;
     const nt2 = toks.slice();
-    nt2[i10] = withArt(t10, a10, !artOf(t10).includes(a10));
+    nt2[i10] = u2;
     return next(st3, nt2);
   }
   return null;
@@ -21540,6 +21557,7 @@ function readMusicXml(xml, hints) {
       const n10 = Number(m2.attrs.number ?? mi + 1);
       if (rightRepeat || rightStyle || (manual ? manual.has(n10) : mi < measures.length - 1)) body2.push({ kind: "bar", id: 0, ...rightRepeat ? { repeat: "end", ...rightRepeat.times > 2 ? { times: rightRepeat.times } : {} } : rightStyle ? { style: rightStyle } : {} });
     });
+    for (const [k2, t10] of body2.entries()) if (t10.kind === "note" && !t10.chord?.length && t10.art?.includes("arpeggio")) body2[k2] = withArt(t10, "arpeggio", false);
     const tokens = [{ kind: "key", id: 0, fifths: H2.fifths }, { kind: "time", id: 0, beats: H2.beats, beatType: H2.beatType }, { kind: "tempo", id: 0, bpm: H2.bpm }, ...body2];
     keepOnlyOverrides(tokens, tokens.map((t10) => langRead.get(t10) ?? null));
     if (info2.staves === 2) {
@@ -36495,7 +36513,7 @@ var pad3 = new Pad(padEl, {
     if (c10.k === "caret" && half === "once") setHalf("off");
     const nx2 = apply(st2, withHalf(c10), performance.now());
     if (c10.k === "art" && nx2 === st2) {
-      info(`${ART_NAME[c10.a]}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
+      info(c10.a === "arpeggio" ? "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u662F\u5355\u97F3" : `${ART_NAME[c10.a]}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
       return;
     }
     if (c10.k === "slur" && nx2 === st2) {
@@ -40800,4 +40818,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-317b35c7db39.mjs.map
+//# sourceMappingURL=moonsinger-2655478ff918.mjs.map

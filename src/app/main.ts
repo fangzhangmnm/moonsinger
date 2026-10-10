@@ -583,7 +583,7 @@ const pad = new Pad(padEl, {
     if (finder.isOpen) return;
     if (c.k === "caret" && half === "once") setHalf("off");   // 挪光标 = 取消「凑满一份」
     const nx = apply(st, withHalf(c), performance.now());
-    if (c.k === "art" && nx === st) { info(`${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
+    if (c.k === "art" && nx === st) { info(c.a === "arpeggio" ? "琶音只挂在和弦上：光标前那个音（或选中的）是单音" : `${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
     if (c.k === "slur" && nx === st) { info("连线从一个音连到下一个音（光标前面是休止或者还没有音）"); return; }
     if (c.k === "inhale" && nx === st) { info("出声的换气挂在一个音后面（光标前面是休止或者还没有音）"); return; }
     if (c.k === "swell" && nx === st) { info("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）"); return; }
