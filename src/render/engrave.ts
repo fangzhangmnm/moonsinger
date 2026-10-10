@@ -112,7 +112,10 @@ export interface Layout {
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
 const SQUEEZE = 0.15;   // 一行最多压紧多少（音符总宽的比例）
 const MARGIN = 1.2, BAR_W = 1.6, TITLE_H = 4.6;   // TITLE_H = 纸面最上面歌名那一条
-const PAPER_H = 3.4, PAPER_GAP = 1.6, STUB_H = 2.4;   // 曲段名那一条；纸与纸之间多空的；隐藏声部的细行
+const PAPER_H = 3.4, PAPER_GAP = 1.6, STUB_H = 2.4;
+/** 纸上的小控件（不印）：在自己那一条里尽量大（2026-10-10 user「纸张上的小控件既然打印的时候不显示。在不影响点击和排版的时候为什么不做大一点，好点」）——
+ *  高 = 曲段名那一条（3.4）减上下各 0.2；字放大；那一条本身不变高（排版 / 分页 / PDF 都不动）。 */
+const CTL_H = 3.0, CTL_GLYPH = 2.0, CTL_TEXT = 1.4;   // 曲段名那一条；纸与纸之间多空的；隐藏声部的细行
 /** 版式（sp）：舒适 = 谱 7 mm、行距用原来紧凑那一档（user 2026-10-08「舒适的行距太宽了，反而不舒适。和紧凑的对齐」；0.2.x 的 17 sp 退役）；
  *  紧凑 = 谱 5 mm、再卷一点（「紧凑也许可以再卷一点」）：谱上面 / 歌词下面都收、行与行之间不留、没歌词的那条谱更矮。 */
 const SPACING: Record<Density, { staffAbove: number; rowH: number; rowHNoLyric: number; graveUpper: number; lyricBelow: number; sysGap: number }> = {
@@ -339,21 +342,21 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: "歌名", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });   // user「虚框更不舒服，换回字提示（不过简短一点）」
   let paperChip: Box | null = null, addPaper: Box | null = null, nav: Layout["nav"] = null, paperMenu: Box | null = null;
   if (o.paperLabel) {   // 纸右上角：一个扳手小钮（纸的设置）+ 左边一个「＋」（新的纸，低频，收在角上）
-    const ch = P(2.2), cw = ch, cx = o.width - P(MARGIN) - cw, cy = TOP + P(0.9), is = P(1.5);
+    const ch = P(CTL_H), cw = ch, cx = o.width - P(MARGIN) - cw, cy = TOP + P(0.8), is = P(CTL_GLYPH);
     prims.push({ t: "rect", x: cx, y: cy, w: cw, h: ch, cls: "paper-chip" });
     prims.push({ t: "icon", id: "wrench", x: cx + (cw - is) / 2, y: cy + (ch - is) / 2, size: is, cls: "paper-chip-icon", title: `纸：${o.paperLabel}` });
     paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
     if (o.titlePlaceholder) {
-      const ax = cx - cw - P(0.5);
+      const ax = cx - cw - P(0.6);
       prims.push({ t: "rect", x: ax, y: cy, w: cw, h: ch, cls: "paper-chip" });
-      prims.push({ t: "text", x: ax + cw / 2, y: cy + ch * 0.74, s: "＋", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+      prims.push({ t: "text", x: ax + cw / 2, y: cy + ch * 0.74, s: "＋", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
       addPaper = { x: ax - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
     }
   }
   if (o.titlePlaceholder && song.papers.length === 1) {   // 只有一张纸（没有曲段名那一行）：纸的「⋯」在歌名左边；多张纸 = 每张纸自己那一行上一组曲段控件（下面 drawPaperTitle）
-    const ch = P(2.2), cw = P(2.6), cy = TOP + P(0.9), mx = P(MARGIN);
+    const ch = P(CTL_H), cw = P(CTL_H + 0.6), cy = TOP + P(0.8), mx = P(MARGIN);
     prims.push({ t: "rect", x: mx, y: cy, w: cw, h: ch, cls: "paper-chip" });
-    prims.push({ t: "text", x: mx + cw / 2, y: cy + ch * 0.72, s: "⋯", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+    prims.push({ t: "text", x: mx + cw / 2, y: cy + ch * 0.72, s: "⋯", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
     paperMenu = { x: mx - P(0.3), y: cy - P(0.4), w: cw + P(0.6), h: ch + P(0.8) };
   }
   const title: TitleHit = { x: P(MARGIN), y: TOP + P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
@@ -456,23 +459,23 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       // 曲段控件组（2026-10-08 user「…能不能放在和曲段导航在一起」「就一个按钮toggle」「类似solo toggle」「然后曲段的...也放在曲段控件那里」
       //   「多曲段模式下面应该每个曲段都有对应的小控件组」）：每张纸自己那一行右边「‹ k/n › 本段 ⋯」——‹ › 从这张跳；本段 = 只看这张（亮）/ 回到全部；⋯ = 这张纸的菜单
       if (o.titlePlaceholder && song.papers.length > 1) {
-        const k = song.papers.findIndex((p) => p.id === paper.id), n = song.papers.length, ch = P(2.2), cw = P(2.2), cy = yCur + P((PAPER_H - 2.2) / 2);
-        const lab = `${k + 1}/${n}`, lw = (o.measureLyric(lab) * 1.1) / LYRIC_EM + P(0.8), sw = (o.measureLyric("本段") * 1.1) / LYRIC_EM + P(1.2), mw = P(2.6);
-        const segOn = o.onlyPaper === paper.id, total = cw + lw + cw + P(0.8) + sw + P(0.5) + mw;
+        const k = song.papers.findIndex((p) => p.id === paper.id), n = song.papers.length, ch = P(CTL_H), cw = P(CTL_H), cy = yCur + P((PAPER_H - CTL_H) / 2);
+        const lab = `${k + 1}/${n}`, lw = (o.measureLyric(lab) * CTL_TEXT) / LYRIC_EM + P(1.0), sw = (o.measureLyric("本段") * CTL_TEXT) / LYRIC_EM + P(1.6), mw = P(CTL_H + 0.6);
+        const segOn = o.onlyPaper === paper.id, total = cw + lw + cw + P(1.0) + sw + P(0.6) + mw;
         let x = o.width - P(MARGIN) - total;
-        const hit = (bx: number, w: number): Box => ({ x: bx - P(0.3), y: cy - P(0.4), w: w + P(0.6), h: ch + P(0.8) });
+        const hit = (bx: number, w: number): Box => ({ x: bx - P(0.3), y: cy - P(0.2), w: w + P(0.6), h: ch + P(0.4) });   // 上下只多 0.2：不出曲段名那一条，不抢下面谱的点
         prims.push({ t: "rect", x, y: cy, w: cw, h: ch, cls: k > 0 ? "paper-chip" : "paper-chip off" });
-        prims.push({ t: "text", x: x + cw / 2, y: cy + ch * 0.72, s: "‹", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+        prims.push({ t: "text", x: x + cw / 2, y: cy + ch * 0.72, s: "‹", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
         const prev = k > 0 ? hit(x, cw) : null; x += cw;
-        prims.push({ t: "text", x: x + lw / 2, y: cy + ch * 0.7, s: lab, cls: "nav-text", size: P(1.1), anchor: "middle" }); x += lw;
+        prims.push({ t: "text", x: x + lw / 2, y: cy + ch * 0.7, s: lab, cls: "nav-text", size: P(CTL_TEXT), anchor: "middle" }); x += lw;
         prims.push({ t: "rect", x, y: cy, w: cw, h: ch, cls: k < n - 1 ? "paper-chip" : "paper-chip off" });
-        prims.push({ t: "text", x: x + cw / 2, y: cy + ch * 0.72, s: "›", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
-        const next = k < n - 1 ? hit(x, cw) : null; x += cw + P(0.8);
+        prims.push({ t: "text", x: x + cw / 2, y: cy + ch * 0.72, s: "›", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
+        const next = k < n - 1 ? hit(x, cw) : null; x += cw + P(1.0);
         prims.push({ t: "rect", x, y: cy, w: sw, h: ch, cls: segOn ? "paper-chip on" : "paper-chip" });
-        prims.push({ t: "text", x: x + sw / 2, y: cy + ch * 0.7, s: "本段", cls: segOn ? "nav-text on" : "nav-text", size: P(1.1), anchor: "middle" });
-        const scope = hit(x, sw); x += sw + P(0.5);
+        prims.push({ t: "text", x: x + sw / 2, y: cy + ch * 0.7, s: "本段", cls: segOn ? "nav-text on" : "nav-text", size: P(CTL_TEXT), anchor: "middle" });
+        const scope = hit(x, sw); x += sw + P(0.6);
         prims.push({ t: "rect", x, y: cy, w: mw, h: ch, cls: "paper-chip" });
-        prims.push({ t: "text", x: x + mw / 2, y: cy + ch * 0.72, s: "⋯", cls: "paper-chip-text", size: P(1.5), anchor: "middle" });
+        prims.push({ t: "text", x: x + mw / 2, y: cy + ch * 0.72, s: "⋯", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
         menu = hit(x, mw);
         Object.assign(paperNav, { prev, next, scope });
       }

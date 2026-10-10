@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.29-2026-10-10";
+var APP_VERSION = "v0.9.30-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6746,6 +6746,9 @@ var TITLE_H = 4.6;
 var PAPER_H = 3.4;
 var PAPER_GAP = 1.6;
 var STUB_H = 2.4;
+var CTL_H = 3;
+var CTL_GLYPH = 2;
+var CTL_TEXT = 1.4;
 var SPACING = {
   cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },
   // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
@@ -7043,21 +7046,21 @@ function engrave(song, o10) {
   else if (o10.titlePlaceholder) prims.push({ t: "text", x: o10.width / 2, y: titleBase, s: "\u6B4C\u540D", cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });
   let paperChip = null, addPaper2 = null, nav = null, paperMenu = null;
   if (o10.paperLabel) {
-    const ch2 = P2(2.2), cw2 = ch2, cx2 = o10.width - P2(MARGIN) - cw2, cy2 = TOP2 + P2(0.9), is2 = P2(1.5);
+    const ch2 = P2(CTL_H), cw2 = ch2, cx2 = o10.width - P2(MARGIN) - cw2, cy2 = TOP2 + P2(0.8), is2 = P2(CTL_GLYPH);
     prims.push({ t: "rect", x: cx2, y: cy2, w: cw2, h: ch2, cls: "paper-chip" });
     prims.push({ t: "icon", id: "wrench", x: cx2 + (cw2 - is2) / 2, y: cy2 + (ch2 - is2) / 2, size: is2, cls: "paper-chip-icon", title: `\u7EB8\uFF1A${o10.paperLabel}` });
     paperChip = { x: cx2 - P2(0.5), y: cy2 - P2(0.5), w: cw2 + P2(1), h: ch2 + P2(1) };
     if (o10.titlePlaceholder) {
-      const ax2 = cx2 - cw2 - P2(0.5);
+      const ax2 = cx2 - cw2 - P2(0.6);
       prims.push({ t: "rect", x: ax2, y: cy2, w: cw2, h: ch2, cls: "paper-chip" });
-      prims.push({ t: "text", x: ax2 + cw2 / 2, y: cy2 + ch2 * 0.74, s: "\uFF0B", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
+      prims.push({ t: "text", x: ax2 + cw2 / 2, y: cy2 + ch2 * 0.74, s: "\uFF0B", cls: "paper-chip-text", size: P2(CTL_GLYPH), anchor: "middle" });
       addPaper2 = { x: ax2 - P2(0.5), y: cy2 - P2(0.5), w: cw2 + P2(1), h: ch2 + P2(1) };
     }
   }
   if (o10.titlePlaceholder && song.papers.length === 1) {
-    const ch2 = P2(2.2), cw2 = P2(2.6), cy2 = TOP2 + P2(0.9), mx = P2(MARGIN);
+    const ch2 = P2(CTL_H), cw2 = P2(CTL_H + 0.6), cy2 = TOP2 + P2(0.8), mx = P2(MARGIN);
     prims.push({ t: "rect", x: mx, y: cy2, w: cw2, h: ch2, cls: "paper-chip" });
-    prims.push({ t: "text", x: mx + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u22EF", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
+    prims.push({ t: "text", x: mx + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u22EF", cls: "paper-chip-text", size: P2(CTL_GLYPH), anchor: "middle" });
     paperMenu = { x: mx - P2(0.3), y: cy2 - P2(0.4), w: cw2 + P2(0.6), h: ch2 + P2(0.8) };
   }
   const title = { x: P2(MARGIN), y: TOP2 + P2(0.3), w: o10.width - P2(2 * MARGIN), h: P2(TITLE_H), baseline: titleBase, size: titleSize };
@@ -7152,27 +7155,27 @@ function engrave(song, o10) {
       if (paper.name) prims.push({ t: "text", x: P2(MARGIN), y: pBase, s: paper.name, cls: paper.hidden && !o10.onlyPaper ? "paper-name hidden-paper" : "paper-name", size: pSize, anchor: "start" });
       else if (o10.titlePlaceholder) prims.push({ t: "text", x: P2(MARGIN), y: pBase, s: "\u66F2\u6BB5\u540D", cls: "paper-name empty", size: pSize, anchor: "start" });
       if (o10.titlePlaceholder && song.papers.length > 1) {
-        const k2 = song.papers.findIndex((p2) => p2.id === paper.id), n10 = song.papers.length, ch2 = P2(2.2), cw2 = P2(2.2), cy2 = yCur + P2((PAPER_H - 2.2) / 2);
-        const lab = `${k2 + 1}/${n10}`, lw2 = o10.measureLyric(lab) * 1.1 / LYRIC_EM + P2(0.8), sw2 = o10.measureLyric("\u672C\u6BB5") * 1.1 / LYRIC_EM + P2(1.2), mw = P2(2.6);
-        const segOn = o10.onlyPaper === paper.id, total = cw2 + lw2 + cw2 + P2(0.8) + sw2 + P2(0.5) + mw;
+        const k2 = song.papers.findIndex((p2) => p2.id === paper.id), n10 = song.papers.length, ch2 = P2(CTL_H), cw2 = P2(CTL_H), cy2 = yCur + P2((PAPER_H - CTL_H) / 2);
+        const lab = `${k2 + 1}/${n10}`, lw2 = o10.measureLyric(lab) * CTL_TEXT / LYRIC_EM + P2(1), sw2 = o10.measureLyric("\u672C\u6BB5") * CTL_TEXT / LYRIC_EM + P2(1.6), mw = P2(CTL_H + 0.6);
+        const segOn = o10.onlyPaper === paper.id, total = cw2 + lw2 + cw2 + P2(1) + sw2 + P2(0.6) + mw;
         let x3 = o10.width - P2(MARGIN) - total;
-        const hit = (bx, w2) => ({ x: bx - P2(0.3), y: cy2 - P2(0.4), w: w2 + P2(0.6), h: ch2 + P2(0.8) });
+        const hit = (bx, w2) => ({ x: bx - P2(0.3), y: cy2 - P2(0.2), w: w2 + P2(0.6), h: ch2 + P2(0.4) });
         prims.push({ t: "rect", x: x3, y: cy2, w: cw2, h: ch2, cls: k2 > 0 ? "paper-chip" : "paper-chip off" });
-        prims.push({ t: "text", x: x3 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u2039", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
+        prims.push({ t: "text", x: x3 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u2039", cls: "paper-chip-text", size: P2(CTL_GLYPH), anchor: "middle" });
         const prev = k2 > 0 ? hit(x3, cw2) : null;
         x3 += cw2;
-        prims.push({ t: "text", x: x3 + lw2 / 2, y: cy2 + ch2 * 0.7, s: lab, cls: "nav-text", size: P2(1.1), anchor: "middle" });
+        prims.push({ t: "text", x: x3 + lw2 / 2, y: cy2 + ch2 * 0.7, s: lab, cls: "nav-text", size: P2(CTL_TEXT), anchor: "middle" });
         x3 += lw2;
         prims.push({ t: "rect", x: x3, y: cy2, w: cw2, h: ch2, cls: k2 < n10 - 1 ? "paper-chip" : "paper-chip off" });
-        prims.push({ t: "text", x: x3 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u203A", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
+        prims.push({ t: "text", x: x3 + cw2 / 2, y: cy2 + ch2 * 0.72, s: "\u203A", cls: "paper-chip-text", size: P2(CTL_GLYPH), anchor: "middle" });
         const next2 = k2 < n10 - 1 ? hit(x3, cw2) : null;
-        x3 += cw2 + P2(0.8);
+        x3 += cw2 + P2(1);
         prims.push({ t: "rect", x: x3, y: cy2, w: sw2, h: ch2, cls: segOn ? "paper-chip on" : "paper-chip" });
-        prims.push({ t: "text", x: x3 + sw2 / 2, y: cy2 + ch2 * 0.7, s: "\u672C\u6BB5", cls: segOn ? "nav-text on" : "nav-text", size: P2(1.1), anchor: "middle" });
+        prims.push({ t: "text", x: x3 + sw2 / 2, y: cy2 + ch2 * 0.7, s: "\u672C\u6BB5", cls: segOn ? "nav-text on" : "nav-text", size: P2(CTL_TEXT), anchor: "middle" });
         const scope = hit(x3, sw2);
-        x3 += sw2 + P2(0.5);
+        x3 += sw2 + P2(0.6);
         prims.push({ t: "rect", x: x3, y: cy2, w: mw, h: ch2, cls: "paper-chip" });
-        prims.push({ t: "text", x: x3 + mw / 2, y: cy2 + ch2 * 0.72, s: "\u22EF", cls: "paper-chip-text", size: P2(1.5), anchor: "middle" });
+        prims.push({ t: "text", x: x3 + mw / 2, y: cy2 + ch2 * 0.72, s: "\u22EF", cls: "paper-chip-text", size: P2(CTL_GLYPH), anchor: "middle" });
         menu = hit(x3, mw);
         Object.assign(paperNav, { prev, next: next2, scope });
       }
@@ -39999,4 +40002,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2ddf1a89322d.mjs.map
+//# sourceMappingURL=moonsinger-14a410bba960.mjs.map
