@@ -32,6 +32,7 @@ import type { Command } from "../score/commands.ts";
 import { hint } from "../input/keys.ts";
 import { type EditorState, type Acc, type Art, inputKey, keyAt, timeAt, tempoAt, tr, singleSel } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
+import { wheelSteps } from "./wheel.ts";
 
 /** 月读的音域 A3–E5（MIDI）：键底部画细条提示，音域外不拦、不变灰。宿主不给提示音域时（hintRange 没接）用它。 */
 export const HER_RANGE = { lo: 57, hi: 76, who: "月读" } as const;
@@ -620,11 +621,7 @@ export class Pad {
   private knobWheel(b: HTMLElement, e: WheelEvent): void {
     const knob = b.dataset.knob!; if (knob === "more") return;
     e.preventDefault();
-    // 鼠标滚轮一格（Chrome 报 100 px、按行模式报 3 行…）= 正好一档（v0.10.8，user「滚轮滚键盘的range的时候应该是一行行滚而不是两行」：原来 100 / 40 = 一格走两档）；触控板的小 delta 照旧攒够 40 px 才动
-    const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY, STEP_PX = 40;
-    let steps: number;
-    if (Math.abs(px) >= 50) { steps = Math.sign(px); this.wheelAcc.set(knob, 0); }
-    else { const acc = (this.wheelAcc.get(knob) ?? 0) + px; steps = Math.trunc(acc / STEP_PX); this.wheelAcc.set(knob, acc - steps * STEP_PX); }
+    const r = wheelSteps(e, this.wheelAcc.get(knob) ?? 0), steps = r.steps; this.wheelAcc.set(knob, r.acc);   // 鼠标一格 = 一档、触控板攒够才动（wheel.ts，和混音台的滑块共用）
     if (!steps) return;
     const v = this.knobList(knob), n = v.items.length;
     const i = v.loop ? (((v.index + steps) % n) + n) % n : Math.max(0, Math.min(n - 1, v.index + steps));

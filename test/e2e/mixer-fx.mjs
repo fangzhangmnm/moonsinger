@@ -24,6 +24,23 @@ await p.click(`.strip[data-id="${partId}"] .strip-row:has(input[data-gain]) .q`)
 check(await p.$eval(`.strip[data-id="${partId}"] .strip-row:has(input[data-gain])`, (e) => e.classList.contains("show-help") && getComputedStyle(e.querySelector(".row-help")).display !== "none"), "点「?」= 这一行下面展开说明");
 await p.click(`.strip[data-id="${partId}"] .strip-row:has(input[data-gain]) .q`); await p.waitForTimeout(80);
 check(!(await p.$eval(`.strip[data-id="${partId}"] .strip-row:has(input[data-gain])`, (e) => e.classList.contains("show-help"))), "再点 = 收起");
+// 参数行深模块（v0.10.13；user「鼠标滚轮能不能一格一格滚各种slider，帮助强迫症」「我觉得还是滑块吧？」）：滚轮一格 = 一步、触控板攒够才走、横着划不吃、双击回默认
+{ const sel = `.strip[data-id="${partId}"] input[data-gain]`, val = () => p.$eval(sel, (e) => Number(e.value)), out = () => p.$eval(sel, (e) => e.parentElement.querySelector("output").textContent);
+  const at = async () => { const r = await p.$eval(sel, (e) => { const b = e.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; }); await p.mouse.move(r.x, r.y); };
+  const v0 = await val(); await at();
+  await p.mouse.wheel(0, -100); await p.waitForTimeout(80);
+  check((await val()) === v0 + 0.5 && (await out()) === "+0.5 dB", "滚轮往上一格 = 推子正好大一步（0.5 dB），读数跟着变", `${v0} → ${await val()} ${await out()}`);
+  await p.mouse.wheel(0, 100); await p.mouse.wheel(0, 100); await p.waitForTimeout(80);
+  check((await val()) === v0 - 0.5, "往下两格 = 小两步", String(await val()));
+  for (let k = 0; k < 3; k++) await p.mouse.wheel(0, -10);
+  await p.waitForTimeout(60); const vt = await val();
+  await p.mouse.wheel(0, -10); await p.waitForTimeout(80);
+  check(vt === v0 - 0.5 && (await val()) === v0, "触控板的小步子攒够 40 px 才走一步", `${vt} → ${await val()}`);
+  await p.click('.mix-tabbar [data-tab="eq"]'); await p.waitForTimeout(100); await p.click('.mix-tabbar [data-tab="basic"]'); await p.waitForTimeout(100);
+  check((await val()) === v0, "滚出来的值真进了宿主（换页回来还在）");
+  await p.mouse.wheel(0, -100); await p.waitForTimeout(80);
+  await p.dblclick(sel); await p.waitForTimeout(120);
+  check((await val()) === 0 && (await out()) === "0.0 dB", "双击 = 回 0 dB", `${await val()} ${await out()}`); }
 await p.focus(`.strip[data-id="${partId}"] input[data-gain]`); await p.keyboard.press("Space");
 let started = false; for (let i = 0; i < 40 && !started; i++) { await p.waitForTimeout(100); started = await p.evaluate(() => window.__moonsinger.engine.playing); }
 check(started, "焦点在推子上按空格 = 放（原来推子上的空格被放过）");
@@ -82,6 +99,11 @@ check((await chain("master"))[0]?.params.dB === -6, "总轨链：增益 −6 dB 
 const pk1 = await peak();
 check(Math.abs(pk1 / pk0 - 0.501) < 0.01, "离线混音吃到总轨链上的增益（峰值减半）", `${pk0.toFixed(3)} → ${pk1.toFixed(3)}`);
 check(!(await p.$(`.strip[data-id="__master"] [data-fx="eq"]`)), "总轨没有默认 EQ 那一格");
+{ const sel = '.fx-panel input[data-c="dB"]', r = await p.$eval(sel, (e) => { const b = e.getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2, step: Number(e.step) }; });
+  await p.mouse.move(r.x, r.y); await p.mouse.wheel(0, -100); await p.waitForTimeout(150);
+  check(Math.abs((await chain("master"))[0]?.params.dB - (-6 + r.step)) < 1e-6, "插件格的滑块也是滚轮一格一步（一样进歌）", JSON.stringify((await chain("master"))[0]?.params));
+  await p.dblclick(sel); await p.waitForTimeout(150);
+  check((await chain("master"))[0]?.params.dB === 0, "插件格的滑块双击 = 回到刚插上时的样子", JSON.stringify((await chain("master"))[0]?.params)); }
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nmixer-fx: ${pass} passed, ${fail} failed`);

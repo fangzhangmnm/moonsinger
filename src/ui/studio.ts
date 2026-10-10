@@ -11,6 +11,7 @@ import type { FxV2 } from "../format/contract.ts";
 import { eqResponseDb } from "../engine/fx.ts";
 import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath } from "./spectrum.ts";
 import { DEFAULT_EQ_ID, PLUGIN_KINDS, simpleView, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, type Params } from "./plugins.ts";
+import { paramRow, slider, wireParamRows } from "./param-row.ts";
 
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）
 export interface StudioHost {
@@ -67,10 +68,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const panText = (p: number) => (Math.abs(p) < 0.025 ? "中" : p < 0 ? `左 ${Math.round(-p * 100)}` : `右 ${Math.round(p * 100)}`);
 const dbText = (d: number) => `${d > 0 ? "+" : ""}${d.toFixed(1)} dB`;
 const toDb = (x: number) => (x > 1e-5 ? 20 * Math.log10(x) : -60);
-/** 一行参数：名字 + 小方块问号（iPad 点了在这一行下面展开说明；桌面悬停也有）+ 读数 + 控件（v0.10.10；user「每个参数能不能加一个tooltip解释一下是干什么用的」「然后参数后面加一个小的方块问号这样ipad也可以点」）。 */
-function row(label: string, hint: string, out: string, control: string, cls = "fx-row"): string {
-  return `<div class="${cls}" title="${esc(hint)}"><span class="row-lab">${esc(label)}<button class="q" type="button" data-v="help" aria-label="这是什么">?</button> ${out}</span>${control}<div class="row-help">${esc(hint)}</div></div>`;
-}
+const row = paramRow;   // 一行参数 = 深模块 param-row.ts（名字 + 问号 + 读数 + 控件；滑块的滚轮 / 双击也在那里）
 const HINT = {
   gain: "增益（推子）：这条轨整体的音量。混音的第一步 = 先把几条轨的音量摆平",
   pan: "声像：在左右哪个位置。几条轨左右错开一点，就不会都挤在正中间",
@@ -105,13 +103,7 @@ export class Studio {
     this.el.addEventListener("click", (e) => this.onClick(e));
     this.el.addEventListener("input", (e) => this.onInput(e));
     this.el.addEventListener("change", (e) => this.onChange(e));
-    this.el.addEventListener("dblclick", (e) => {   // 双击推子 = 回到 0
-      const t = e.target as HTMLInputElement, strip = t.closest<HTMLElement>(".strip"); if (!strip || t.tagName !== "INPUT") return;
-      const id = strip.dataset.id!;
-      if (t.dataset.master !== undefined) this.host.setMasterGain(0); else if (t.dataset.gain !== undefined) this.host.setGain(id, 0); else if (t.dataset.pan !== undefined) this.host.setPan(id, 0);
-      else if (t.dataset.busgain !== undefined) this.host.setBusGain(id, 0); else if (t.dataset.buspan !== undefined) this.host.setBusPan(id, 0); else return;
-      this.render();
-    });
+    wireParamRows(this.el);   // 滚轮一格一步、双击回默认、问号（v0.10.13）
   }
   get isOpen(): boolean { return !this.el.hidden; }
   get currentTab(): MixTab { return this.tab; }
@@ -165,7 +157,6 @@ export class Studio {
   private onClick(e: Event): void {
     const t = e.target as HTMLElement, v = t.closest<HTMLElement>("[data-v]")?.dataset.v, strip = t.closest<HTMLElement>(".strip")?.dataset.id, tg = this.targetOf(t);
     if (!v) return;
-    if (v === "help") { t.closest(".fx-row, .strip-row")?.classList.toggle("show-help"); return; }   // 小问号：这一行下面展开 / 收起说明
     if (v === "back") this.host.close();
     else if (v === "play") this.host.play();
     else if (v === "tab") { this.tab = t.closest<HTMLElement>("[data-tab]")!.dataset.tab as MixTab; this.menuOpen = false; this.addFor = null; this.specShown.clear(); this.render(); this.host.tabChanged?.(this.tab); }
@@ -274,19 +265,20 @@ export class Studio {
     const keyOpts = fx.kind === "comp" ? this.host.keyTracks(tg.track) : [];
     const keyRow = keyOpts.length ? row("被谁压", HINT.key, "", `<select data-key><option value="">不用（自己压自己）</option>${keyOpts.map((x) => `<option value="${esc(x.id)}"${fx.key === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}</select>`) : "";
     if (mode === "simple" && view) {
-      const cur = read ?? view.read(freshParams(fx.kind, bus)) ?? {};
+      const fresh = view.read(freshParams(fx.kind, bus)) ?? {}, cur = read ?? fresh;
       return (read ? "" : `<div class="fx-note">在全量里调过（不是一键的样子）；动这里会改回一键的样子。</div>`) + view.controls.map((c) => {
         const v = cur[c.id] ?? 0;
         if (c.kind === "toggle") return row(c.label, c.hint, "", `<button class="btn cand${v ? " is-on" : ""}" data-v="fxtoggle" data-c="${c.id}">${v ? "开" : "关"}</button>`);
         if (c.kind === "choice") return row(c.label, c.hint, "", `<span class="fx-seg">${c.choices!.map((x) => `<button class="btn${Math.abs(v - x.v) < 1e-6 ? " is-on" : ""}" data-v="fxchoice" data-c="${c.id}" data-val="${x.v}">${esc(x.label)}</button>`).join("")}</span>`);
-        return row(c.label, c.hint, `<output data-c="${c.id}">${c.fmt ? c.fmt(v) : v}</output>`, `<input type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}" data-c="${c.id}" />`);
+        return row(c.label, c.hint, `<output data-c="${c.id}">${c.fmt ? c.fmt(v) : v}</output>`, slider({ min: c.min!, max: c.max!, step: c.step!, value: v, attrs: `data-c="${c.id}"`, def: fresh[c.id], defText: fresh[c.id] == null ? undefined : c.fmt ? c.fmt(fresh[c.id]) : String(fresh[c.id]) }));
       }).join("") + keyRow;
     }
+    const fresh = freshParams(fx.kind, bus);
     return fullParams(fx.kind).map((d) => {
       const sl = paramView(fx.kind, d);
       if (d.unit === "bool") return row(sl.label, sl.hint, "", `<button class="btn cand${p[d.id] ? " is-on" : ""}" data-v="fxbool" data-p="${d.id}">${p[d.id] ? "开" : "关"}</button>`);
       if (fx.kind === "eq" && d.id === "hpHz" && p.hpAuto) return row(sl.label, sl.hint, "", `<span class="fx-dim">自动（按这个声部最低的音）</span>`);
-      return row(sl.label, sl.hint, `<output>${sl.fmt(p[d.id])}</output>`, `<input type="range" min="${sl.min}" max="${sl.max}" step="${sl.step}" value="${sl.toS(p[d.id])}" data-p="${d.id}" />`);
+      return row(sl.label, sl.hint, `<output>${sl.fmt(p[d.id])}</output>`, slider({ min: sl.min, max: sl.max, step: sl.step, value: sl.toS(p[d.id]), attrs: `data-p="${d.id}"`, def: sl.toS(fresh[d.id]), defText: sl.fmt(fresh[d.id]) }));
     }).join("") + keyRow;
   }
   /** EQ / 压缩页：这条轨上第一格这种插件，摊在卡片上（没有 = 「＋」）。 */
@@ -302,7 +294,7 @@ export class Studio {
   private routeHtml(track: string): string {
     const out = this.host.outTo(track), tg = this.host.targets(track), sends = this.host.sends(track), name = (id: string) => esc(this.trackName(id));
     const outSel = row("出到", HINT.out, "", `<select data-out>${[{ id: "master", name: "总轨" }, ...tg].map((x) => `<option value="${esc(x.id)}"${out === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}${out !== "master" && !tg.some((x) => x.id === out) ? `<option value="${esc(out)}" selected>${name(out)}（接不上）</option>` : ""}</select>`, "strip-row");
-    const rows = sends.map((sd) => `<div class="strip-send">${row(`发给 ${this.trackName(sd.to)}`, HINT.send, `<output>${dbText(sd.gainDb)}</output>`, `<input type="range" min="-40" max="6" step="0.5" value="${sd.gainDb}" data-send="${esc(sd.to)}" />`, "strip-row")}<button class="btn" data-v="sendx" data-to="${esc(sd.to)}" title="不再发给它">✕</button></div>`).join("");
+    const rows = sends.map((sd) => `<div class="strip-send">${row(`发给 ${this.trackName(sd.to)}`, HINT.send, `<output>${dbText(sd.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd.gainDb, attrs: `data-send="${esc(sd.to)}"`, def: -12, defText: "−12 dB" }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc(sd.to)}" title="不再发给它">✕</button></div>`).join("");
     const free = tg.filter((x) => !sends.some((sd) => sd.to === x.id));
     const add = free.length ? `<select class="send-add" data-sendadd title="推子之后发一份到一条混音轨（混响 / 延迟这类放在混音轨上，几条轨共用）"><option value="">＋ 发送到…</option>${free.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select>` : (tg.length ? "" : `<div class="fx-dim">还没有混音轨（「⋯」里加）</div>`);
     // 出到一条带全湿效果的混音轨 = 原声没了：明说（v0.10.10；user「开了混响结果铃声都哑掉了」）
@@ -347,15 +339,15 @@ export class Studio {
     this.renderBar();
     const nameDiv = (s: string) => `<div class="strip-name">${esc(s)}</div>`;
     // 总轨
-    const masterBody = tab === "basic" ? row("增益", HINT.masterGain, `<output>${dbText(m.gainDb)}</output>`, `<input type="range" min="-24" max="12" step="0.5" value="${m.gainDb}" data-master title="双击回 0" />`, "strip-row") +
+    const masterBody = tab === "basic" ? row("增益", HINT.masterGain, `<output>${dbText(m.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") +
         `<div class="strip-btns"><button class="btn cand${m.limiter ? " is-on" : ""}" data-v="limiter" title="母线限幅：超过天花板（−0.18 dBFS）的那一小段压下来，不超的地方不动；关掉 = 可能削波">限幅${m.limiter ? "" : "（关：可能削波）"}</button></div>` +
         `<div class="strip-row">峰值 <span class="meter-val">—</span></div>`
       : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">总轨就是输出，不再发给别处</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv("总轨"), "所有声部混在一起之后", masterBody);
     // 混音轨（自己加的路由轨，普通的轨）：排在总轨后面、歌手前面（user「你自己加的中间的路由轨也是普通的轨道，排在总轨后面，歌手前面」）
     const buses = this.host.buses(), busCards = buses.map((b, k) => {
-      const body = tab === "basic" ? row("增益", HINT.gain, `<output>${dbText(b.gainDb)}</output>`, `<input type="range" min="-24" max="12" step="0.5" value="${b.gainDb}" data-busgain title="双击回 0" />`, "strip-row") +
-          row("声像", HINT.pan, `<output>${panText(b.pan)}</output>`, `<input type="range" min="-1" max="1" step="0.05" value="${b.pan}" data-buspan title="双击回中" />`, "strip-row") +
+      const body = tab === "basic" ? row("增益", HINT.gain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") +
+          row("声像", HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: 0, defText: "中" }), "strip-row") +
           `<div class="strip-btns"><button class="btn" data-v="busleft" title="往前挪一位"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="往后挪一位"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）">删掉</button></div>`
         : tab === "eq" || tab === "comp" ? this.inlineHtml(b.id, tab) : tab === "send" ? this.routeHtml(b.id) : this.chipsHtml(b.id);
       const name = tab === "basic" ? `<input class="bus-name" value="${esc(b.name)}" title="名字（点了改）" />` : nameDiv(b.name);
@@ -363,8 +355,8 @@ export class Studio {
     }).join("");
     // 歌手：顺序跟谱上的声部（user「歌手卡片的排序还是以五线谱为准」）
     const singers = this.host.strips().map((s) => {
-      const body = tab === "basic" ? row("增益", HINT.gain, `<output>${dbText(s.gainDb)}</output>`, `<input type="range" min="-24" max="12" step="0.5" value="${s.gainDb}" data-gain title="双击回 0" />`, "strip-row") +
-          row("声像", HINT.pan, `<output>${panText(s.pan)}</output>`, `<input type="range" min="-1" max="1" step="0.05" value="${s.pan}" data-pan title="双击回中" />`, "strip-row") +
+      const body = tab === "basic" ? row("增益", HINT.gain, `<output>${dbText(s.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") +
+          row("声像", HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: 0, defText: "中" }), "strip-row") +
           `<div class="strip-btns"><button class="btn cand${s.muted ? " is-on" : ""}" data-v="mute">静音</button><button class="btn cand${s.solo ? " is-on" : ""}" data-v="solo">独奏</button></div>` +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
           (s.refs ? `<div class="strip-refs">在 ${s.refs} 张纸上</div>` : `<div class="strip-refs">哪张纸上都没有 <button class="btn cand danger" data-v="delpart" title="删掉这位歌手（休息室里它的配置一起删；能撤销）">删掉这位歌手</button></div>`)
