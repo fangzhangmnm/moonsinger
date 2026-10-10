@@ -1,7 +1,7 @@
 // 音头的力度形状：突强 sfz / 强后即弱 fp（和重音 / 强音同一组、互斥）。created 2026-10-08 by Claude Opus 5.5
 // user「音头先冲一下，再回落…要，要，我都要」；数从演奏者的配置来（user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { initState, tr, withArt, TPQ, type Token, type NoteTok } from "../src/score/song.ts";
+import { initState, tr, withArt, swellOf, TPQ, type Token, type NoteTok } from "../src/score/song.ts";
 import { dynLevels, noteVelocities, gainSegments } from "../src/score/perform.ts";
 import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
@@ -64,15 +64,15 @@ describe("音内的起伏（< / > / <>）", () => {
     st = toggleSwell(st, "<>")!;
     const o = openBytes("x.mxl", saveMxl({ song: st.song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08" }));
     const back = o.song.papers[0].tracks[o.song.parts[0].id].filter((t) => t.kind === "note") as NoteTok[];
-    eq(JSON.stringify(back.map((t) => t.swell ?? null)), `[null,null,"<>"]`);
+    eq(JSON.stringify(back.map((t) => swellOf(t) ?? null)), `[null,null,"<>"]`);
   });
   it("dB 那一路：包络只往下乘（写的力度 = 最高点；user「鼓包改」）：< 从 −swellDb 长到 0；<> 两头 −swellDb、中间 0；能和 fp 叠（fp 之后长回 f，不超过）", () => {
     const D = MARK_DEFAULTS.swellDb, maxOf = (g: { dB: number }[]) => Math.max(...g.map((x) => x.dB));
-    const up = gainSegments(line([note()].map((t) => ({ ...(t as NoteTok), swell: "<" as const }))), undefined, db)!;
+    const up = gainSegments(line([note()].map((t) => ({ ...(t as NoteTok), art: ["swellUp" as const] }))), undefined, db)!;
     assert(up[0].dB < -D + 0.6 && up.at(-1)!.dB > -0.6 && maxOf(up) <= 1e-9, `< ${up[0].dB} → ${up.at(-1)!.dB}（最高 ${maxOf(up)}）`);
-    const bump = gainSegments(line([{ ...(note() as NoteTok), swell: "<>" as const }]), undefined, db)!, mid = bump[Math.floor(bump.length / 2)].dB;
+    const bump = gainSegments(line([{ ...(note() as NoteTok), art: ["swellBoth" as const] }]), undefined, db)!, mid = bump[Math.floor(bump.length / 2)].dB;
     assert(mid > bump[0].dB + 3 && mid > bump.at(-1)!.dB + 3 && maxOf(bump) <= 1e-9, "<> 中间高、两头低，最高 = 写的力度");
-    const fpUp = gainSegments(line([{ ...(note(["fp"]) as NoteTok), swell: "<" as const }]), undefined, db)!;
+    const fpUp = gainSegments(line([{ ...(note(["fp"]) as NoteTok), art: ["fp" as const, "swellUp" as const] }]), undefined, db)!;
     assert(fpUp.at(-1)!.dB > DYNAMICS_DB.p + 3 && maxOf(fpUp) <= DYNAMICS_DB.f + 1e-9, "fp 之后长回去，不超过音头的 f");
   });
 });

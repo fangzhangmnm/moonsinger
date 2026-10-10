@@ -16,7 +16,7 @@
 //   小节线、调号、拍号是各声部自己的画法（契约 §7.8）；速度只画在第一个声部上面；歌手牌（声部名）在每张纸第一行各条谱的左边。
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
-import { DYNS, type ClefName, type Song, type NoteTok, type Token, type GrooveTok, type BarTok, type NavTok, type Repeat, NAV_LABEL, endingLabel, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
+import { DYNS, swellOf, type ClefName, type Song, type NoteTok, type Token, type GrooveTok, type BarTok, type NavTok, type Repeat, NAV_LABEL, endingLabel, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
 import { grooveLabel, grooveStyle } from "../score/groove.ts";
 import { dynOverridden } from "../score/perform.ts";
 import { navWhy } from "../score/repeats.ts";
@@ -161,7 +161,7 @@ const SPACING: Record<Density, { staffAbove: number; rowH: number; rowHNoLyric: 
 };
 const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;
 // 修的字形（SMuFL；宽 / 高 = staff space，浏览器里量的 Bravura：重音 1.36 × 0.99、跳音点 0.28、保持线 1.35 × 0.17）。Above 的从基线往上长，Below 的往下长
-const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp" | "ghost" | "whisper">, { above: string; below: string; w: number; h: number }> = {
+const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp" | "ghost" | "whisper" | "swellUp" | "swellDown" | "swellBoth">, { above: string; below: string; w: number; h: number }> = {
   stress: { above: "\u{E4B6}", below: "\u{E4B7}", w: 1.0, h: 1.0 },     // 次重音（2026-10-08 深夜；宽高 = canvas 量的 Bravura 墨迹）
   unstress: { above: "\u{E4B8}", below: "\u{E4B9}", w: 1.6, h: 0.9 },   // 弱化
   accent: { above: "\u{E4A0}", below: "\u{E4A1}", w: 1.36, h: 0.99 },
@@ -696,7 +696,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     //   里道 = 音的修饰（sfz / fp / 音内起伏：只属于这一个音，在这个音的宽度里），靠谱；外道 = 大的强弱线（pp…ff、渐强渐弱、渐到：状态，管到下一个），在里道上面。
     //   两层不在同一道里抢地方；这一行真有音的修饰才多占一道。
     const bigDynIn = (q: (typeof per)[number], s: number) => q.units.some((u) => u.system === s && (u.kind === "dyn" || u.kind === "hairpin"));
-    const noteDynIn = (q: (typeof per)[number], s: number) => q.units.some((u) => u.system === s && u.kind === "chunk" && u.note && (u.art.includes("sfz") || u.art.includes("fp") || !!(q.tokens[u.index] as NoteTok).swell));
+    const noteDynIn = (q: (typeof per)[number], s: number) => q.units.some((u) => u.system === s && u.kind === "chunk" && u.note && (u.art.includes("sfz") || u.art.includes("fp") || !!swellOf(q.tokens[u.index])));
     /** 第 s 行：每个声部每张谱表的「上面留多少 / 下面留多少 / 歌词基线」（sp）+ 力度字基线的位置（谱上的级数；中间那种放好了再算）。 */
     const ottIn = (q: (typeof per)[number], s: number, up: boolean) => q.staves === 1 && q.units.some((u) => u.system === s && u.kind === "chunk" && (up ? (q.ds.ott[u.index] ?? 0) > 0 : (q.ds.ott[u.index] ?? 0) < 0));
     const geoOf = (s: number) => per.map((q, r) => {
@@ -1113,7 +1113,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       //   符干朝上 = 越过符干尖再往上；都出了谱（第五线上面）
       const ign = new Set(q.p.ignores ?? []);   // 台上那位不认的记号：照画、画灰（user「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）
       for (const c of units) {
-        if (c.kind !== "chunk" || !c.note || (!c.art.length && !c.breath && !(c.j === 0 && (tokens[c.index] as NoteTok).swell))) continue;
+        if (c.kind !== "chunk" || !c.note || (!c.art.length && !c.breath)) continue;
         const row = RW(c), cls = clsOf(c), cx = nhX(c) + nhW(c) / 2;
         const dsC = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff, c.index)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
         const below = upOf.get(c) ?? false, sgn = below ? -1 : 1;
@@ -1134,7 +1134,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           yS -= P(1.5);
         }
         // 音内的起伏（< / > / <>）：里道，这个音自己的宽度里一个小发夹（sfz / fp 在同一道的前面）；做不到的（canSwell = false 的 < / <>）画灰
-        const swl = c.j === 0 ? (tokens[c.index] as NoteTok).swell : undefined;
+        const swl = c.j === 0 ? swellOf(tokens[c.index]) : undefined;   // 音内起伏 = 演奏法里的那一组（v0.9.44）
         if (swl) {
           const y = (noteDynYAt.get(rowOf(c.system, r, 0)) ?? yOf(RW(c), TOP_LINE + 2.4)) - P(0.5), xa = nhX(c) + (c.art.some((a) => a === "sfz" || a === "fp") ? P(2.4) : 0), xb = Math.max(xa + P(1.6), nhX(c) + P(c.w) - P(0.8)), H = P(0.35);
           const cl = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;

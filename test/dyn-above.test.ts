@@ -31,7 +31,7 @@ describe("力度那一行一律在谱上面", () => {
 // 力度两道（2026-10-09，user「两道 可以」）：音的修饰（sfz / fp / 音内起伏）在里道、大的强弱线（字 / 发夹 / 渐到）在外道——同一个音上两样都有不再叠在一起。
 describe("力度两道：音的修饰里道、大的强弱线外道", () => {
   const nn = (k: number, extra: Record<string, unknown>): Token => ({ ...(n(k) as object), ...extra }) as unknown as Token;
-  const sw = (k: number, swell: string): Token => nn(k, { swell });
+  const sw = (k: number, swell: string): Token => nn(k, { art: [({ "<": "swellUp", ">": "swellDown", "<>": "swellBoth" } as Record<string, "swellUp" | "swellDown" | "swellBoth">)[swell]] });
   const lay2 = (items: Token[]) => { const st = song(items); return engrave(st.song, { width: 600, sp: 10, at: st.at, caret: 0, sel: null, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], measureLyric: (s: string) => s.length * 10 } as never); };
   const ys = (d: string) => (d.match(/-?\d+\.?\d*/g) ?? []).filter((_, i) => i % 2 === 1).map(Number);
   it("同一个音上 mf + 音内渐强：mf 在上面一道，小发夹在下面一道（以前叠在一起）", () => {

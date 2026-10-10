@@ -96,7 +96,7 @@ const wedgeXml = (type: "crescendo" | "diminuendo" | "stop", extra = "") => `<di
 /** 渐到（2026-10-08 深夜 Opus 5.5）：写成从上一个力度记号起的虚线 <wedge line-type="dashed">（别的软件照样渐变、照样画虚线），id 以 ramp- 开头 = 我们自己读回来时认出它是渐到、不变成手写的渐强渐弱。 */
 const RAMP_ID = "ramp-";
 const DYN_ORDER: readonly Dyn[] = DYNS;   // ppp…fff（v0.9.23）
-const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "" };   // whisper = × 符头（<notehead>x</notehead>），同幽灵音不在 <articulations> 里   // ghost = 括号符头（<notehead parentheses="yes">），不在 <articulations> 里   // sfz / fp 写在 <notations><dynamics> 里
+const ART_XML: Record<Art, string> = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "", swellUp: "", swellDown: "", swellBoth: "" };   // whisper = × 符头（<notehead>x</notehead>），同幽灵音不在 <articulations> 里   // ghost = 括号符头（<notehead parentheses="yes">），不在 <articulations> 里   // sfz / fp 写在 <notations><dynamics> 里
 const NOTE_DYN: readonly Art[] = ["sfz", "fp"];
 /** 别家谱里音上（或音前）的力度形状 → 我们的两个：突强一族 / 强后即弱一族。 */
 const XML_NOTE_DYN: Record<string, Art> = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
@@ -251,7 +251,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       if (t.kind === "note") {
         const tieIn = firstPiece ? !!t.tie : true, tieOn = last ? tieOut : true;
         // 演奏法：跳音 / 重音 / 保持挂在第一段，呼吸挂在最后一段（音被小节线拆开时）
-        const arts = (t.art ?? []).filter((a) => a !== "ghost" && a !== "whisper" && (a === "breath" ? last : firstPiece)), noteDyn = arts.filter((a) => NOTE_DYN.includes(a)), artic = arts.filter((a) => !NOTE_DYN.includes(a));
+        const arts = (t.art ?? []).filter((a) => !!ART_XML[a] && (a === "breath" ? last : firstPiece)), noteDyn = arts.filter((a) => NOTE_DYN.includes(a)), artic = arts.filter((a) => !NOTE_DYN.includes(a));   // 没有 MusicXML 写法的（幽灵音 / 气声走符头，音内起伏存 score.json）不进 <articulations>, noteDyn = arts.filter((a) => NOTE_DYN.includes(a)), artic = arts.filter((a) => !NOTE_DYN.includes(a));
         // 出声的换气（NoteTok.inhale）= 呼吸记号旁边一个 <other-articulation>（别的软件照样认得是换气，只是不知道要出声）
         const inhaleXml = (a: Art) => (a === "breath" && t.inhale ? `<other-articulation>${t.inhale === "big" ? "inhale-big" : "inhale"}</other-articulation>` : "");
         const artXml = (artic.length ? `<articulations>${artic.map((a) => `<${ART_XML[a]}/>` + inhaleXml(a)).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a) => `<${ART_XML[a]}/>`).join("")}</dynamics>` : "");

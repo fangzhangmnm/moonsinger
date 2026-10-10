@@ -17,7 +17,7 @@ function two(mark?: Mark): EditorState {
   for (const d of [1, 2]) st = writeDegree(st, d, "near");
   if (!mark) return st;
   const i = tr(st).findIndex((t) => t.kind === "note");
-  if (mark === "swellGrow" || mark === "swellFade") { const toks = tr(st).slice(); toks[i] = { ...(toks[i] as NoteTok), swell: mark === "swellGrow" ? "<" : ">" }; return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }
+  if (mark === "swellGrow" || mark === "swellFade") { const toks = tr(st).slice(); toks[i] = { ...(toks[i] as NoteTok), art: [mark === "swellGrow" ? "swellUp" as const : "swellDown" as const] }; return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }
   if (mark === "inhale") { const toks = tr(st).slice(); toks[i] = { ...(toks[i] as NoteTok), art: ["breath"], inhale: "soft" }; return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } }; }   // 出声的换气 = 呼吸 + inhale（比的是「只有呼吸」）
   return mark === "slur" ? toggleSlurSel(select(st, i, i + 1)) : toggleArtSel(select(st, i, i + 1), mark);
 }

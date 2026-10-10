@@ -11,7 +11,7 @@
 // 无地逃生口（user 2026-10-07「先不急着store。可以先按照无地规范导入导出做逃生口」）：这里只管字节 ↔ 歌，打开 / 存的界面在 app 里。
 import { DEFAULT_ROLE, numberParts } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
-import { type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, CLEFS, flattenPart } from "../score/song.ts";
+import { swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, CLEFS, flattenPart } from "../score/song.ts";
 import { resolveSongClefs, displayStates, withAutoOttava } from "../score/clef.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
@@ -105,7 +105,7 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     for (const [pid, toks] of Object.entries(p.tracks)) { const ids = toks.flatMap((t, k) => (t.kind === "phrase" && k > 0 ? [toks[k - 1].id] : [])); if (ids.length) phrases[pid] = ids; }
     // 音内的力度起伏（MusicXML 表达不了音内的发夹）：声部 → 音的 id → 哪一种
     const swells: Record<string, Record<string, "<" | ">" | "<>">> = {};
-    for (const [pid, toks] of Object.entries(p.tracks)) for (const t of toks) if (t.kind === "note" && t.swell) (swells[pid] ??= {})[String(t.id)] = t.swell;
+    for (const [pid, toks] of Object.entries(p.tracks)) for (const t of toks) { const sw = swellOf(t); if (sw) (swells[pid] ??= {})[String(t.id)] = sw; }   // 演奏法里的音内起伏（v0.9.44）→ 照旧这张表
     return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...(Object.keys(phrases).length ? { phrases } : {}), ...(Object.keys(swells).length ? { swells } : {}), ...(p.hidden ? { hidden: true } : {}) };
   });
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
@@ -560,7 +560,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     const ph = p.phrases as Record<string, number[]> | undefined;   // 句号：插回那些 token 后面（id 读的时候保留着；句号 token 本身 id 0 = 之后重编）
     if (ph) for (const [pid, ids] of Object.entries(ph)) { const toks = seg.tracks[pid]; if (!toks) continue; for (const id of ids) { const k = toks.findIndex((t) => t.id === id); if (k >= 0 && toks[k + 1]?.kind !== "phrase") toks.splice(k + 1, 0, { kind: "phrase", id: 0 }); } }
     const sw = p.swells as Record<string, Record<string, string>> | undefined;   // 音内的力度起伏：按音的 id 挂回去（认不出的种类不挂）
-    if (sw) for (const [pid, m] of Object.entries(sw)) { const toks = seg.tracks[pid]; if (!toks) continue; for (const [id, v] of Object.entries(m)) { if (v !== "<" && v !== ">" && v !== "<>") continue; const k = toks.findIndex((t) => t.kind === "note" && t.id === Number(id)); if (k >= 0) toks[k] = { ...(toks[k] as NoteTok), swell: v }; } }
+    if (sw) for (const [pid, m] of Object.entries(sw)) { const toks = seg.tracks[pid]; if (!toks) continue; for (const [id, v] of Object.entries(m)) { if (v !== "<" && v !== ">" && v !== "<>") continue; const k = toks.findIndex((t) => t.kind === "note" && t.id === Number(id)); if (k >= 0) toks[k] = withArt(toks[k] as NoteTok, SWELL_ART[v as Swell], true); } }
     papers.push(seg);
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;

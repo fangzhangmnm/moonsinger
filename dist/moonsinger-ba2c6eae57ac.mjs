@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.43-2026-10-10";
+var APP_VERSION = "v0.9.44-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3065,9 +3065,15 @@ var MIN_DUR = TPQ / 8 * 4 / 7;
 var MAX_DUR = WHOLE * 4;
 var NAV_LABEL = { segno: "Segno", coda: "Coda", fine: "Fine", toCoda: "To Coda", dc: "D.C.", dcFine: "D.C. al Fine", dcCoda: "D.C. al Coda", ds: "D.S.", dsFine: "D.S. al Fine", dsCoda: "D.S. al Coda" };
 var endingLabel = (nums) => nums && nums.length ? nums.map((n10) => `${n10}.`).join(" ") : "1.";
-var ARTS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost", "whisper"];
+var ARTS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost", "whisper", "swellUp", "swellDown", "swellBoth"];
 var ATTACKS = ["ghost", "unstress", "stress", "accent", "marcato", "sfz", "fp"];
-var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", sfz: "\u7A81\u5F3A", fp: "\u5F3A\u540E\u5373\u5F31", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438", stress: "\u6B21\u91CD\u97F3", unstress: "\u5F31\u5316", ghost: "\u5E7D\u7075\u97F3", whisper: "\u6C14\u58F0" };
+var ART_NAME = { staccato: "\u8DF3\u97F3", accent: "\u91CD\u97F3", marcato: "\u5F3A\u97F3", sfz: "\u7A81\u5F3A", fp: "\u5F3A\u540E\u5373\u5F31", tenuto: "\u4FDD\u6301", breath: "\u547C\u5438", stress: "\u6B21\u91CD\u97F3", unstress: "\u5F31\u5316", ghost: "\u5E7D\u7075\u97F3", whisper: "\u6C14\u58F0", swellUp: "\u97F3\u5185\u6E10\u5F3A", swellDown: "\u97F3\u5185\u6E10\u5F31", swellBoth: "\u97F3\u5185\u9F13\u8D77" };
+var SWELL_ART = { "<": "swellUp", ">": "swellDown", "<>": "swellBoth" };
+var SWELL_ARTS = ["swellUp", "swellDown", "swellBoth"];
+function swellOf(t10) {
+  if (t10?.kind !== "note" || !t10.art) return void 0;
+  return t10.art.includes("swellUp") ? "<" : t10.art.includes("swellDown") ? ">" : t10.art.includes("swellBoth") ? "<>" : void 0;
+}
 var DYNS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
 var DEFAULT_DYN = "mf";
 var CLEFS = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
@@ -3354,8 +3360,8 @@ function clearMarks(st3, which) {
       else inside++;
       return;
     }
-    if (which !== "phrase" && i10 >= from && i10 < to2 && t10.kind === "note" && (t10.art || t10.slur || t10.swell || t10.inhale)) {
-      const { art: _a2, slur: _s, swell: _w, inhale: _i, ...rest } = t10;
+    if (which !== "phrase" && i10 >= from && i10 < to2 && t10.kind === "note" && (t10.art || t10.slur || t10.inhale)) {
+      const { art: _a2, slur: _s, inhale: _i, ...rest } = t10;
       out.push(rest);
       touched = true;
       return;
@@ -3395,7 +3401,7 @@ var artOf = (t10) => t10.art ?? [];
 function withArt(t10, a10, on2) {
   const set = new Set(artOf(t10));
   if (on2) {
-    if (ATTACKS.includes(a10)) for (const x2 of ATTACKS) set.delete(x2);
+    for (const g3 of [ATTACKS, SWELL_ARTS]) if (g3.includes(a10)) for (const x2 of g3) set.delete(x2);
     set.add(a10);
   } else set.delete(a10);
   const art = ARTS.filter((x2) => set.has(x2));
@@ -3486,15 +3492,11 @@ function toggleSlurBefore(st3) {
   return null;
 }
 function toggleSwell(st3, w2) {
-  const set = (t10, on2) => {
-    if (on2) return { ...t10, swell: w2 };
-    const { swell: _s, ...rest } = t10;
-    return rest;
-  };
+  const set = (t10, on2) => on2 ? withArt(t10, SWELL_ART[w2], true) : SWELL_ARTS.reduce((u2, a10) => withArt(u2, a10, false), t10);
   if (st3.sel) {
     const idx = selNoteIdx(st3);
     if (!idx.length) return null;
-    const toks2 = tr(st3), all = idx.every((i10) => toks2[i10].swell === w2), nt2 = toks2.slice();
+    const toks2 = tr(st3), all = idx.every((i10) => swellOf(toks2[i10]) === w2), nt2 = toks2.slice();
     for (const i10 of idx) nt2[i10] = set(nt2[i10], !all);
     return next(st3, nt2);
   }
@@ -3504,7 +3506,7 @@ function toggleSwell(st3, w2) {
     if (t10.kind === "rest") return null;
     if (t10.kind !== "note") continue;
     const nt2 = toks.slice();
-    nt2[i10] = set(t10, t10.swell !== w2);
+    nt2[i10] = set(t10, swellOf(t10) !== w2);
     return next(st3, nt2);
   }
   return null;
@@ -4180,9 +4182,12 @@ function symBackspace(st3) {
       const { [k2]: _x, ...rest } = t10;
       return rest;
     };
-    if (t10.swell) {
-      nt2[i10] = strip("swell");
-      return next(st3, nt2);
+    {
+      const sw2 = swellOf(t10);
+      if (sw2) {
+        nt2[i10] = withArt(t10, SWELL_ART[sw2], false);
+        return next(st3, nt2);
+      }
     }
     for (const a10 of ["marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "whisper"]) if (art.includes(a10)) {
       nt2[i10] = withArt(t10, a10, false);
@@ -6537,7 +6542,7 @@ function gainSegments(tokens, map, spec, bounds, groove) {
     }
     const art = artOf(tok);
     let cur = t02;
-    const sw2 = tok.swell && !(spec.canSwell === false && tok.swell !== ">") ? tok.swell : null, D2 = spec.swellDb ?? M.swellDb;
+    const sw0 = swellOf(tok), sw2 = sw0 && !(spec.canSwell === false && sw0 !== ">") ? sw0 : null, D2 = spec.swellDb ?? M.swellDb;
     const swOff = (fr) => sw2 === "<" ? -D2 * (1 - fr) : sw2 === ">" ? -D2 * fr : sw2 === "<>" ? -D2 * Math.abs(2 * fr - 1) : 0;
     const shaped = (a02, a12, s02, s12) => {
       const n10 = Math.max(2, Math.min(48, Math.ceil((s12 - s02) / 0.03)));
@@ -7674,7 +7679,7 @@ function engrave(song, o10) {
       return { top, bot };
     };
     const bigDynIn = (q2, s10) => q2.units.some((u2) => u2.system === s10 && (u2.kind === "dyn" || u2.kind === "hairpin"));
-    const noteDynIn = (q2, s10) => q2.units.some((u2) => u2.system === s10 && u2.kind === "chunk" && u2.note && (u2.art.includes("sfz") || u2.art.includes("fp") || !!q2.tokens[u2.index].swell));
+    const noteDynIn = (q2, s10) => q2.units.some((u2) => u2.system === s10 && u2.kind === "chunk" && u2.note && (u2.art.includes("sfz") || u2.art.includes("fp") || !!swellOf(q2.tokens[u2.index])));
     const ottIn = (q2, s10, up) => q2.staves === 1 && q2.units.some((u2) => u2.system === s10 && u2.kind === "chunk" && (up ? (q2.ds.ott[u2.index] ?? 0) > 0 : (q2.ds.ott[u2.index] ?? 0) < 0));
     const geoOf = (s10) => per.map((q2, r10) => {
       const ex2 = Array.from({ length: q2.staves }, (_2, k2) => extentOf(q2, s10, k2)), big = bigDynIn(q2, s10), own = noteDynIn(q2, s10), dyn = big || own;
@@ -8146,7 +8151,7 @@ function engrave(song, o10) {
       }
       const ign = new Set(q2.p.ignores ?? []);
       for (const c10 of units) {
-        if (c10.kind !== "chunk" || !c10.note || !c10.art.length && !c10.breath && !(c10.j === 0 && tokens[c10.index].swell)) continue;
+        if (c10.kind !== "chunk" || !c10.note || !c10.art.length && !c10.breath) continue;
         const row = RW(c10), cls = clsOf(c10), cx2 = nhX(c10) + nhW(c10) / 2;
         const dsC = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff, c10.index)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
         const below = upOf.get(c10) ?? false, sgn = below ? -1 : 1;
@@ -8165,7 +8170,7 @@ function engrave(song, o10) {
           prims.push({ t: "glyph", x: cx2 - P2(m2.w / 2), y: yS + P2(m2.h / 2), ch: m2.above, cls: artCls(a10) });
           yS -= P2(1.5);
         }
-        const swl = c10.j === 0 ? tokens[c10.index].swell : void 0;
+        const swl = c10.j === 0 ? swellOf(tokens[c10.index]) : void 0;
         if (swl) {
           const y2 = (noteDynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4)) - P2(0.5), xa = nhX(c10) + (c10.art.some((a10) => a10 === "sfz" || a10 === "fp") ? P2(2.4) : 0), xb = Math.max(xa + P2(1.6), nhX(c10) + P2(c10.w) - P2(0.8)), H3 = P2(0.35);
           const cl2 = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
@@ -10752,10 +10757,10 @@ var HER_RANGE = { lo: 57, hi: 76, who: "\u6708\u8BFB" };
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var SYM_PAGES = {
-  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper"],
+  art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper", "swell:<", "swell:>", "swell:<>"],
   // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
-  dyn: ["dyn:ppp", "dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "dyn:fff", "wedge:cresc", "wedge:dim", "dyn:ramp", "swell:<", "swell:>", "swell:<>"],
-  // ppp…fff 两整排（v0.9.23）
+  dyn: ["dyn:ppp", "dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "dyn:fff", "wedge:cresc", "wedge:dim", "dyn:ramp"],
+  // 音内渐强 / 渐弱 / 鼓起搬到「演奏法」（v0.9.44；user「…应该属于演奏法…因为是跟着音符的」）   // ppp…fff 两整排（v0.9.23）
   mark: ["phrase", "key", "time", "tempo", "clef", "ottava", "groove", "repeat", "staff"]
   // 谱号 / 八度线（v0.9.28）
 };
@@ -20973,7 +20978,7 @@ var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v
 var wedgeXml = (type, extra = "") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"${extra}/></direction-type></direction>`;
 var RAMP_ID = "ramp-";
 var DYN_ORDER = DYNS;
-var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "" };
+var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "", swellUp: "", swellDown: "", swellBoth: "" };
 var NOTE_DYN = ["sfz", "fp"];
 var XML_NOTE_DYN = { sfz: "sfz", sf: "sfz", sffz: "sfz", fz: "sfz", sfzp: "fp", fp: "fp", sfp: "fp" };
 var XML_ART = { accent: "accent", "strong-accent": "marcato", staccato: "staccato", tenuto: "tenuto", "breath-mark": "breath", stress: "stress", unstress: "unstress" };
@@ -21192,7 +21197,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       const chordXml = [];
       if (t10.kind === "note") {
         const tieIn = firstPiece ? !!t10.tie : true, tieOn = last ? tieOut : true;
-        const arts = (t10.art ?? []).filter((a10) => a10 !== "ghost" && a10 !== "whisper" && (a10 === "breath" ? last : firstPiece)), noteDyn = arts.filter((a10) => NOTE_DYN.includes(a10)), artic = arts.filter((a10) => !NOTE_DYN.includes(a10));
+        const arts = (t10.art ?? []).filter((a10) => !!ART_XML[a10] && (a10 === "breath" ? last : firstPiece)), noteDyn = arts.filter((a10) => NOTE_DYN.includes(a10)), artic = arts.filter((a10) => !NOTE_DYN.includes(a10));
         const inhaleXml = (a10) => a10 === "breath" && t10.inhale ? `<other-articulation>${t10.inhale === "big" ? "inhale-big" : "inhale"}</other-articulation>` : "";
         const artXml = (artic.length ? `<articulations>${artic.map((a10) => `<${ART_XML[a10]}/>` + inhaleXml(a10)).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a10) => `<${ART_XML[a10]}/>`).join("")}</dynamics>` : "");
         const slurXml = firstPiece ? slurs(i10, t10) : "";
@@ -21683,7 +21688,10 @@ function saveMxl(a10) {
       if (ids.length) phrases[pid] = ids;
     }
     const swells = {};
-    for (const [pid, toks] of Object.entries(p2.tracks)) for (const t10 of toks) if (t10.kind === "note" && t10.swell) (swells[pid] ??= {})[String(t10.id)] = t10.swell;
+    for (const [pid, toks] of Object.entries(p2.tracks)) for (const t10 of toks) {
+      const sw2 = swellOf(t10);
+      if (sw2) (swells[pid] ??= {})[String(t10.id)] = sw2;
+    }
     return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, ...Object.keys(phrases).length ? { phrases } : {}, ...Object.keys(swells).length ? { swells } : {}, ...p2.hidden ? { hidden: true } : {} };
   });
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k2) => {
@@ -22221,7 +22229,7 @@ function openBytes(name, bytes) {
       for (const [id2, v] of Object.entries(m2)) {
         if (v !== "<" && v !== ">" && v !== "<>") continue;
         const k3 = toks.findIndex((t10) => t10.kind === "note" && t10.id === Number(id2));
-        if (k3 >= 0) toks[k3] = { ...toks[k3], swell: v };
+        if (k3 >= 0) toks[k3] = withArt(toks[k3], SWELL_ART[v], true);
       }
     }
     papers.push(seg);
@@ -35856,7 +35864,7 @@ var ignoredHere = () => ignoredFor(curPart().role);
 var MARK_NAME = { ...ART_NAME, slur: "\u8FDE\u7EBF", swellGrow: "\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77", swellFade: "\u97F3\u5185\u6E10\u5F31", inhale: "\u51FA\u58F0\u7684\u6362\u6C14" };
 function discloseArt(prev, a10) {
   if (!ignoredHere().includes(a10)) return;
-  const has = (t10) => t10.kind === "note" && (a10 === "slur" ? !!t10.slur : a10 === "inhale" ? !!t10.inhale : a10 === "swellGrow" ? t10.swell === "<" || t10.swell === "<>" : a10 === "swellFade" ? t10.swell === ">" : (t10.art ?? []).includes(a10));
+  const has = (t10) => t10.kind === "note" && (a10 === "slur" ? !!t10.slur : a10 === "inhale" ? !!t10.inhale : a10 === "swellGrow" ? swellOf(t10) === "<" || swellOf(t10) === "<>" : a10 === "swellFade" ? swellOf(t10) === ">" : (t10.art ?? []).includes(a10));
   const n10 = (s10) => tr(s10).filter(has).length;
   if (n10(st2) <= n10(prev)) return;
   const role = curPart().role, who = activeCandidateName(doc.extras, role) || "\u53F0\u4E0A\u8FD9\u4F4D";
@@ -36499,7 +36507,7 @@ var pad3 = new Pad(padEl, {
       const marks = (s10) => tr(s10).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length, gone = marks(prev) - marks(st2) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length : 0);
       if (gone > 0) info(`\u987A\u624B\u53BB\u6389\u4E86 ${gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09`);
     }
-    if (c10.k === "art") discloseArt(prev, c10.a);
+    if (c10.k === "art") discloseArt(prev, c10.a === "swellDown" ? "swellFade" : c10.a === "swellUp" || c10.a === "swellBoth" ? "swellGrow" : c10.a);
     if (c10.k === "slur") discloseArt(prev, "slur");
     if (c10.k === "inhale") discloseArt(prev, "inhale");
     if (c10.k === "swell") discloseArt(prev, c10.w === ">" ? "swellFade" : "swellGrow");
@@ -40778,4 +40786,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f8f9a24be33c.mjs.map
+//# sourceMappingURL=moonsinger-ba2c6eae57ac.mjs.map

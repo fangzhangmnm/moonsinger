@@ -6,7 +6,7 @@
 //   跳音：SoundFont / 元音版把音截短（lightNotes，乐器自己的余音照常收）；月读截不短（唱法核心按谱唱满）→ 曲线在音的后半段收声（gateStaccato）。
 //   呼吸：月读 = 下一个字前「v」（lab-score.ts）；元音版和乐器 = 前一个音收短一点（lightNotes；乐器上的逗号 = 稍微断开再进下一个音，管乐 / 人声就是换气；
 //   2026-10-08 user「breath是否应该对大量GS乐器也生效。毕竟不断气一直拖着也不对，fl你还得手动调一下时长」）。
-import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, DEFAULT_DYN, rampTarget, isTimed } from "./song.ts";
+import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, swellOf, DEFAULT_DYN, rampTarget, isTimed } from "./song.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
 const DEFAULT_DYN_KEY: Dyn = DEFAULT_DYN;
 
@@ -40,7 +40,7 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
     let cur = t0;
     // 音头那一组（互斥）：重音 / 强音 = 音头一小段加 dB；突强 = 冲高 sfzDb、sfzSec 里落回当下；强后即弱 = 音头这位的 f、fpSec 里落到 p（之后都是 p，dynLevels 管）
     // 音内的力度起伏（< / > / <>，音自己的事；swellDb 由演奏者配置）：做不到在一个音里变强的（canSwell = false：钢琴、拨弦…）只做 >
-    const sw = tok.swell && !(spec.canSwell === false && tok.swell !== ">") ? tok.swell : null, D = spec.swellDb ?? M.swellDb;
+    const sw0 = swellOf(tok), sw = sw0 && !(spec.canSwell === false && sw0 !== ">") ? sw0 : null, D = spec.swellDb ?? M.swellDb;
     // 包络只往下乘（v0.9.29；user 2026-10-10「音内减弱渐强和鼓起都是最大值对应的本来原始值，就是乘一个小于一的包罗，而不是大于一的」→「鼓包改」）：
     //   写的力度 = 这个音的最高点；< 从 −D 长到写的力度、> 从写的力度收到 −D、<> 两头 −D 中间回到写的力度。一个音永远不比写的力度更响。
     const swOff = (fr: number) => (sw === "<" ? -D * (1 - fr) : sw === ">" ? -D * fr : sw === "<>" ? -D * Math.abs(2 * fr - 1) : 0);
