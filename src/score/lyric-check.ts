@@ -45,3 +45,9 @@ export function lyricWhyText(x: LyricIssue, engineName: string, lang: "ja" | "zh
   if (x.why === "beats") return `一个音上 ${x.beats} 拍：月读一个音唱一拍——拆成 ${x.beats} 个音，或者用「+」连着写`;
   return lang === "ja" ? "这条按日语唱：字母 / 数字 / 符号念不准——写成假名" : lang === "zh" ? "这条按中文唱：一个音写一个汉字" : "这条按英文唱：写拉丁字母";
 }
+
+/** 引擎念成什么的显示（v0.9.34，歌词框下面那条）：日语前端的音素写成好认的样子——ん（N_n / N_m / N_ng…）= n，促音 cl = 双写下一个辅音（cl + ch = tch）；
+ *  几拍的「-」照留。中文照原样（国际音标 + 声调数字，不硬转拼音：转错了比不转更误导）。 */
+export function prettyReading(lang: string, x: string): string {
+  return lang !== "ja" ? x : x.split("-").map((y) => y.replace(/N_[a-z]+/g, "n").replace(/^clch/, "tch").replace(/^cl([a-z])/, "$1$1")).join("-");
+}

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.33-2026-10-10";
+var APP_VERSION = "v0.9.34-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6363,6 +6363,9 @@ function lyricWhyText(x2, engineName, lang) {
   if (x2.why === "beats") return `\u4E00\u4E2A\u97F3\u4E0A ${x2.beats} \u62CD\uFF1A\u6708\u8BFB\u4E00\u4E2A\u97F3\u5531\u4E00\u62CD\u2014\u2014\u62C6\u6210 ${x2.beats} \u4E2A\u97F3\uFF0C\u6216\u8005\u7528\u300C+\u300D\u8FDE\u7740\u5199`;
   return lang === "ja" ? "\u8FD9\u6761\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D" : lang === "zh" ? "\u8FD9\u6761\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57" : "\u8FD9\u6761\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD";
 }
+function prettyReading(lang, x2) {
+  return lang !== "ja" ? x2 : x2.split("-").map((y2) => y2.replace(/N_[a-z]+/g, "n").replace(/^clch/, "tch").replace(/^cl([a-z])/, "$1$1")).join("-");
+}
 
 // src/singer/packs.gen.ts
 var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
@@ -8238,6 +8241,11 @@ var LyricEditor = class {
     h2.hidden = true;
     parent.appendChild(h2);
     this.hint = h2;
+    const rd2 = document.createElement("div");
+    rd2.className = "lyric-hint lyric-reading";
+    rd2.hidden = true;
+    parent.appendChild(rd2);
+    this.reading = rd2;
     i10.addEventListener("compositionend", () => this.absorb());
     i10.addEventListener("input", (e10) => {
       if (!e10.isComposing) this.absorb();
@@ -8253,6 +8261,8 @@ var LyricEditor = class {
   merge;
   /** 框上面的小字：这个音的字台上这位唱不出来的那句话（纪律「做不到的一律画灰 + 明说」；2026-10-08 Opus 5.5）。 */
   hint;
+  /** 框下面的小字：这一句月读念成什么（v0.9.34；全假名时助词 は 会被注成 ha，看得见才改得了）。 */
+  reading;
   index = -1;
   system = 0;
   get open() {
@@ -8274,6 +8284,7 @@ var LyricEditor = class {
     if (!this.open) {
       this.merge.hidden = true;
       this.hint.hidden = true;
+      this.reading.hidden = true;
       return;
     }
     const L2 = this.layout(), at2 = this.host.get().at, h2 = L2?.lyrics.find((x2) => x2.index === this.index && L2.systems[x2.system]?.paper === at2.paper && L2.systems[x2.system]?.part === at2.part);
@@ -8294,6 +8305,16 @@ var LyricEditor = class {
     const can = mergeIntoPrev(this.host.get(), this.index) !== this.host.get(), mh = L2.sp * 1.6 * 2;
     this.merge.hidden = !can;
     if (can) Object.assign(this.merge.style, { left: `${h2.x - w2 / 2}px`, top: `${h2.y - L2.sp * 2.1 + L2.sp * 1.6 * 2 + 4}px`, width: `${mh}px`, height: `${mh * 0.8}px` });
+    const rd2 = this.host.lyricReading?.(this.index) ?? null;
+    this.reading.hidden = !rd2;
+    if (rd2) {
+      this.reading.replaceChildren(document.createTextNode(rd2.note), ...rd2.parts.flatMap((x2, k2) => {
+        const e10 = document.createElement(k2 === rd2.at ? "b" : "span");
+        e10.textContent = x2;
+        return [document.createTextNode(" "), e10];
+      }));
+      Object.assign(this.reading.style, { left: `${h2.x - w2 / 2}px`, top: `${h2.y - L2.sp * 2.1 + L2.sp * 1.6 * 2 + 4 + (can ? mh * 0.8 + 4 : 0)}px` });
+    }
   }
   /** 点「合」：框里改过的先贴上，再把这个字并进前一个音、这一句后面的字往前挪；框留在这个音上（现在是挪过来的字）。 */
   mergeNow() {
@@ -8451,6 +8472,7 @@ var LyricEditor = class {
     this.input.hidden = true;
     this.merge.hidden = true;
     this.hint.hidden = true;
+    this.reading.hidden = true;
     this.rerender();
   }
 };
@@ -19647,7 +19669,7 @@ var Singer = class {
   }
   worker(l10) {
     if (l10.w) return l10.w;
-    const w2 = new Worker(new URL(`./${"singer-worker-e5b413f04709.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"singer-worker-a7d3d70fb27a.mjs"}`, import.meta.url), { type: "module" });
     l10.w = w2;
     w2.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -19659,6 +19681,10 @@ var Singer = class {
       this.pending.delete(m2.id);
       if (m2.type === "cache") {
         p2.cache?.(m2.disk);
+        return;
+      }
+      if (m2.type === "read") {
+        p2.read?.({ ready: m2.ready, labels: m2.labels, said: m2.said });
         return;
       }
       if (m2.type === "done") {
@@ -19738,6 +19764,17 @@ var Singer = class {
       this.pending.set(id2, { ok: () => ok2(null), fail, progress: () => {
       }, lane: l10, cache: ok2 });
       this.worker(l10).postMessage(req);
+    });
+  }
+  /** 读音（歌词旁显示引擎念成什么，v0.9.34）：问已经起来的那条道（第一条优先）；一条都没起 = ready false，不为此建 worker、不起引擎。 */
+  read(s10) {
+    const l10 = this.lanes.find((x2) => x2.w);
+    if (!l10) return Promise.resolve({ ready: false, labels: null, said: [] });
+    const id2 = ++this.seq, req = { type: "read", id: id2, score: s10.SCORE, text: s10.TEXT, lang: s10.LANG };
+    return new Promise((ok2, fail) => {
+      this.pending.set(id2, { ok: () => ok2({ ready: false, labels: null, said: [] }), fail, progress: () => {
+      }, lane: l10, read: ok2 });
+      l10.w.postMessage(req);
     });
   }
   get busy() {
@@ -35737,6 +35774,7 @@ var view = new ScoreView(scoreEl, {
   onSelPress: (at2) => openSelMenu(at2),
   onMarkPress: (i10, at2) => openMarkMenu(i10, at2),
   lyricHint: (i10) => lyricHintAt(i10),
+  lyricReading: (i10) => lyricReadingAt(i10),
   notice: (s10) => info(s10),
   onClef: (hit, at2) => openClefMenu(hit, at2),
   onPaperMenu: (id2) => openPaperMenu(id2),
@@ -37250,7 +37288,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "f72711b89bd0",
+  cssHash: "77d1d429ad17",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -37761,6 +37799,44 @@ function lyricHintAt(i10) {
   const x2 = lyricMutes().get(p2.id)?.get(t10.id);
   if (!x2) return null;
   return lyricWhyText(x2, roleName(doc.extras, p2.role), songLangOf(flattenPart(st2.song, p2.id).tokens, st2.song.hum));
+}
+var readPlans = null;
+var readings = /* @__PURE__ */ new Map();
+var readAsked = /* @__PURE__ */ new Set();
+var readRetryAt = 0;
+function readPlanOf(tokId, part) {
+  if (!readPlans || readPlans.song !== st2.song || readPlans.part !== part.id) readPlans = { song: st2.song, part: part.id };
+  for (const scope of ["view", "segment"]) {
+    const chunks2 = readPlans[scope] ??= ((song) => buildTimeline({ song, order: songPlayOrder(song), parts: [part], info: performerInfo, hum: st2.song.hum, singOpt: humOpt() }).chunks)(songIn(scope));
+    const plan = chunks2.find((c10) => c10.entryOf.has(tokId));
+    if (plan) return plan;
+  }
+  return null;
+}
+function lyricReadingAt(i10) {
+  const t10 = tr(st2)[i10], part = st2.song.parts.find((x2) => x2.id === st2.at.part);
+  if (!t10 || t10.kind !== "note" || !part || engineNow() !== "tsukuyomi") return null;
+  const plan = readPlanOf(t10.id, part);
+  if (!plan) return null;
+  const s10 = plan.score, key = `${s10.LANG}|${s10.TEXT}|${s10.SCORE.map((e10) => e10.kana).join(" ")}`, r10 = readings.get(key);
+  if (!r10) {
+    if (!readAsked.has(key) && performance.now() >= readRetryAt) {
+      readAsked.add(key);
+      void singer.read(s10).then((x2) => {
+        if (x2.ready) {
+          readings.set(key, x2);
+          if (readings.size > 200) readings.delete(readings.keys().next().value);
+        } else readRetryAt = performance.now() + 3e3;
+      }).catch(() => void 0).finally(() => {
+        readAsked.delete(key);
+        view.lyrics.reposition();
+      });
+    }
+    return null;
+  }
+  const parts = (r10.labels ?? r10.said).map((x2) => prettyReading(s10.LANG, x2));
+  if (!r10.labels) return { parts, at: -1, note: `\u6708\u8BFB\u5FF5\u51FA\u6765 ${r10.said.length} \u4E2A\u97F3\u8282\u3001\u8C31\u4E0A ${s10.SCORE.length} \u4E2A\uFF0C\u5BF9\u4E0D\u4E0A\uFF08\u5531\u7684\u65F6\u5019\u4F1A\u62A5\u9519\uFF09\uFF1A` };
+  return { parts, at: plan.entryOf.get(t10.id) ?? -1, note: s10.LANG === "zh" ? "\u6708\u8BFB\u5FF5\u6210\uFF08\u97F3\u7D20 + \u58F0\u8C03\uFF09\uFF1A" : "\u6708\u8BFB\u5FF5\u6210\uFF1A" };
 }
 function partLooks() {
   const labels = partLabels(st2.song, doc.extras), sounds = st2.song.parts.map((p2) => roleSound(doc.extras, p2.role));
@@ -40238,4 +40314,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e99c28efe47d.mjs.map
+//# sourceMappingURL=moonsinger-482bc6d3fc06.mjs.map

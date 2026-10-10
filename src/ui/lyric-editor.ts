@@ -16,7 +16,9 @@ const PUNCT = /[。．，、,.!！?？;；:：]+$/;
 const splitPunct = (v: string): { text: string; phrase: boolean } => { const m = PUNCT.exec(v); return m ? { text: v.slice(0, m.index), phrase: true } : { text: v, phrase: false }; };
 import type { Layout } from "../render/engrave.ts";
 
-interface Host { get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void; lyricHint?(i: number): string | null }   // gesture "lyric"：连打的歌词在 undo 里是一步
+/** 这一句引擎念成什么（v0.9.34）：parts = 每个音节的音素，at = 框里这个字是第几个（-1 = 对不上、不标）；note = 前面那句话。 */
+export interface LyricReading { parts: string[]; at: number; note: string }
+interface Host { get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void; lyricHint?(i: number): string | null; lyricReading?(i: number): LyricReading | null }   // gesture "lyric"：连打的歌词在 undo 里是一步
 const CJK = /[\p{Script=Han}぀-ヿ]/u;
 
 export class LyricEditor {
@@ -25,6 +27,8 @@ export class LyricEditor {
   private merge: HTMLButtonElement;
   /** 框上面的小字：这个音的字台上这位唱不出来的那句话（纪律「做不到的一律画灰 + 明说」；2026-10-08 Opus 5.5）。 */
   private hint: HTMLDivElement;
+  /** 框下面的小字：这一句月读念成什么（v0.9.34；全假名时助词 は 会被注成 ha，看得见才改得了）。 */
+  private reading: HTMLDivElement;
   private index = -1;
   system = 0;
 
@@ -41,6 +45,7 @@ export class LyricEditor {
     parent.appendChild(m);
     this.merge = m;
     const h = document.createElement("div"); h.className = "lyric-hint"; h.hidden = true; parent.appendChild(h); this.hint = h;
+    const rd = document.createElement("div"); rd.className = "lyric-hint lyric-reading"; rd.hidden = true; parent.appendChild(rd); this.reading = rd;
     i.addEventListener("compositionend", () => this.absorb());
     i.addEventListener("input", (e) => { if (!(e as InputEvent).isComposing) this.absorb(); });
     i.addEventListener("blur", () => { if (this.open) setTimeout(() => { if (document.activeElement !== this.input) this.commitAndClose(); }, 0); });
@@ -62,7 +67,7 @@ export class LyricEditor {
 
   /** 重画之后把框挪回那个音下面。 */
   reposition(): void {
-    if (!this.open) { this.merge.hidden = true; this.hint.hidden = true; return; }   // 框收了（包括打完最后一个字自己收的）=「合」也收
+    if (!this.open) { this.merge.hidden = true; this.hint.hidden = true; this.reading.hidden = true; return; }   // 框收了（包括打完最后一个字自己收的）=「合」也收
     const L = this.layout(), at = this.host.get().at, h = L?.lyrics.find((x) => x.index === this.index && L.systems[x.system]?.paper === at.paper && L.systems[x.system]?.part === at.part);
     if (!L || !h) { this.close(); return; }
     this.system = h.system;
@@ -78,6 +83,13 @@ export class LyricEditor {
     this.merge.hidden = !can;
     // 放在框的正下方（不挡前面那几个字——要合的就是它们）
     if (can) Object.assign(this.merge.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1 + L.sp * 1.6 * 2 + 4}px`, width: `${mh}px`, height: `${mh * 0.8}px` });
+    // 读音：「合」的下面（没有「合」= 框的正下方）；这个字加粗
+    const rd = this.host.lyricReading?.(this.index) ?? null;
+    this.reading.hidden = !rd;
+    if (rd) {
+      this.reading.replaceChildren(document.createTextNode(rd.note), ...rd.parts.flatMap((x, k) => { const e = document.createElement(k === rd.at ? "b" : "span"); e.textContent = x; return [document.createTextNode(" "), e]; }));
+      Object.assign(this.reading.style, { left: `${h.x - w / 2}px`, top: `${h.y - L.sp * 2.1 + L.sp * 1.6 * 2 + 4 + (can ? mh * 0.8 + 4 : 0)}px` });
+    }
   }
   /** 点「合」：框里改过的先贴上，再把这个字并进前一个音、这一句后面的字往前挪；框留在这个音上（现在是挪过来的字）。 */
   private mergeNow(): void {
@@ -172,5 +184,5 @@ export class LyricEditor {
   }
 
   commitAndClose(): void { if (!this.open) return; this.commitOnly(); this.close(); }
-  close(): void { this.index = -1; this.input.value = ""; this.input.hidden = true; this.merge.hidden = true; this.hint.hidden = true; this.rerender(); }
+  close(): void { this.index = -1; this.input.value = ""; this.input.hidden = true; this.merge.hidden = true; this.hint.hidden = true; this.reading.hidden = true; this.rerender(); }
 }

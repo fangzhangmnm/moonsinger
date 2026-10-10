@@ -60,6 +60,41 @@ import { wordsOf, alignEnglish } from "./en-front.mjs";   // 英文：音节拼�
 const VOWEL = new Set(["a", "i", "u", "e", "o", "N"])   /* cl (っ) is not a sung syllable: it joins the next consonant */, VOICED_FOR = { A: "a", I: "i", U: "u", E: "e", O: "o" };
 const isMark = (t) => "[]#?!".includes(t) || /^tone\d$/.test(t);   // zh: the tone token after each final is a one-frame mark
 
+// 第 1 步的几块（2026-10-10 Claude Opus 5.5 从 singCore 原样切出来，唱和「读音」共用一份——读音显示的必须就是唱的时候用的）：
+//   条目展开（一个音上几拍 = 几条）、注音（→ 唱的音素）、按唱的音素分音节、音节的标签。
+function expandEntries(SRC, TRANSPOSE) {
+  return SRC.map((e) => ({ ...e, notes: e.notes.map(([m, l]) => [m + TRANSPOSE, l]) })).flatMap((e) => { const n = e.moras || 1; if (n === 1) return [e]; if (e.notes.length !== 1) throw new Error(`${e.kana}: moras > 1 needs one note`);
+    const [midi, len] = e.notes[0]; return Array.from({ length: n }, (_, i) => ({ kana: [...e.kana][i] ?? e.kana, notes: [[midi, len / n]], rest: i === n - 1 ? e.rest : 0, before: i === 0 ? e.before : undefined, whisper: e.whisper, inhale: i === 0 ? e.inhale : undefined })); });
+}
+function phonemesOf(LANG, TEXT, pn, EN) {
+  const sungText = TEXT.replace(/[、。，．,.！？!?]/g, "");       // rests are made on the song clock, not as speech pauses
+  const ph = LANG === "en" ? EN : LANG === "zh" ? pn.phonemizeZh(sungText) : pn.phonemize(sungText);
+  const tokens = LANG === "ja" ? ph.tokens.map((t) => VOICED_FOR[t] ?? t) : ph.tokens;
+  return { ph, tokens };
+}
+function sungSyllables(LANG, tokens, EN) {
+  const moras = []; let gap = [];                                 // gap = token indices between two vowels (marks, pauses, consonants)
+  const sung1 = LANG === "zh" ? (t, i) => /^tone\d$/.test(tokens[i + 1] ?? "")   // zh: the final (the token before its tone mark) is the sung part
+    : LANG === "en" ? (t, i) => EN.sung[i]                          // en: the first char of each vowel nucleus (en-front.mjs nucleusStarts)
+    : (t) => VOWEL.has(t) || /^N/.test(t);                          // ja: vowels and ん (N_n / N_m / N_ng … by place of articulation)
+  tokens.forEach((t, i) => { if (sung1(t, i)) { moras.push({ gap, vowel: i }); gap = []; } else gap.push(i); });
+  return { moras, trailing: gap };
+}
+const labelOf = (tokens, m) => [...m.gap.filter((i) => !isMark(tokens[i]) && tokens[i] !== "_").map((i) => tokens[i]), tokens[m.vowel]].join("");
+
+/** 读音（2026-10-10 Claude Opus 5.5；user 同意「歌词旁显示引擎念成什么」——全假名时 OpenJTalk 会把助词注错（としよりだんごは め = ha-me），看得见才改得了）：
+ *  只走第 1 步（注音 → 按唱的音素分音节），不跑 piper / WORLD。labels[k] = 第 k 条 score 条目念成的音素（几拍的条目 = 几段，「-」连）；
+ *  zh 带声调数字。音节数对不上 = labels null + said（念出来的每个音节，同唱的时候报错里那一串）。en 不给（英文按单词对元音核，和写的音节不一一对应）。 */
+export function readingCore({ score: SRC, text: TEXT, lang: LANG = "ja", piper: pn }) {
+  if (LANG === "en") return { labels: null, said: [] };
+  const SCORE = expandEntries(SRC, 0), { tokens } = phonemesOf(LANG, TEXT, pn, null), { moras } = sungSyllables(LANG, tokens, null);
+  const said = moras.map((m) => labelOf(tokens, m) + (LANG === "zh" ? (tokens[m.vowel + 1] ?? "").replace(/^tone/, "") : ""));
+  if (said.length !== SCORE.length) return { labels: null, said };
+  const labels = []; let k = 0;
+  for (const e of SRC) { const n = e.moras || 1; labels.push(said.slice(k, k + n).join("-")); k += n; }
+  return { labels, said };
+}
+
 // only = 只唱第 entry 个字（2026-10-10 Claude Fable 5.1，实时试听刀 3：按键试听 = 念好的那句里光标那个字按下的音高唱 secs 秒；user「可以争取一下实时」）：
 //   整句照常念（piper 两遍 + 分析——念缓存命中时几毫秒）、照常算断句 / 辅音 / 稳态，只把这个字的音换成按下的、长度换成 secs，
 //   然后只重建、只合成它自己那几帧（辅音起、到它的末尾）。不走 only 的那条路一行不动（冻结样本不变）。
@@ -74,14 +109,11 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   // an entry sung on several kana (しい) becomes one entry per kana sharing its single note evenly
   const EIGHTH0 = 60 / TEMPO_QUARTER / 2;
   if (only) SRC = SRC.map((e, k) => (k === only.entry ? { ...e, notes: [[only.midi - TRANSPOSE, Math.max(0.25, only.secs / EIGHTH0)]], rest: 0 } : e));   // 这个字：按下的音高、唱 secs 秒
-  const SCORE = SRC.map((e) => ({ ...e, notes: e.notes.map(([m, l]) => [m + TRANSPOSE, l]) })).flatMap((e) => { const n = e.moras || 1; if (n === 1) return [e]; if (e.notes.length !== 1) throw new Error(`${e.kana}: moras > 1 needs one note`);
-    const [midi, len] = e.notes[0]; return Array.from({ length: n }, (_, i) => ({ kana: [...e.kana][i] ?? e.kana, notes: [[midi, len / n]], rest: i === n - 1 ? e.rest : 0, before: i === 0 ? e.before : undefined, whisper: e.whisper, inhale: i === 0 ? e.inhale : undefined })); });
+  const SCORE = expandEntries(SRC, TRANSPOSE);
   const SR = pn.SR, HOP = pn.HOP, FR = SR / HOP, EIGHTH = 60 / TEMPO_QUARTER / 2, FP = 5, FPS = FP / 1000;
 
   // ---- 1. tokens -> moras -------------------------------------------------------------------------------------------------
-  const sungText = TEXT.replace(/[、。，．,.！？!?]/g, "");       // rests are made on the song clock, not as speech pauses
-  const ph = LANG === "en" ? EN : LANG === "zh" ? pn.phonemizeZh(sungText) : pn.phonemize(sungText);
-  const tokens = LANG === "ja" ? ph.tokens.map((t) => VOICED_FOR[t] ?? t) : ph.tokens;
+  const { ph, tokens } = phonemesOf(LANG, TEXT, pn, EN);
   if (OPT.humNasal && LANG === "ja") {                           // 哼的「ん」：第 k 个唱的音素属于 SCORE[k]（同下面的 sung1 规则）
     let k = 0; tokens.forEach((t, i) => { if (!(VOWEL.has(t) || /^N/.test(t))) return; if (SCORE[k]?.hum && /^N/.test(t)) tokens[i] = OPT.humNasal; k++; });
   }
@@ -90,15 +122,10 @@ export async function singCore({ score: SCORE_IN, text: TEXT, tempo: TEMPO_QUART
   const owner = []; let p = 2;                                   // ids: ^ pad (tok pad)* … $ ; a pause "_" is a single pad id
   for (const t of tokens) { owner.push(t === "_" ? [p] : [p, p + 1]); p += t === "_" ? 1 : 2; }
   if (p !== ids.length - 1) throw new Error(`id layout: expected EOS at ${p}, have ${ids.length - 1}`);
-  const moras = []; let gap = [];                                 // gap = token indices between two vowels (marks, pauses, consonants)
-  const sung1 = LANG === "zh" ? (t, i) => /^tone\d$/.test(tokens[i + 1] ?? "")   // zh: the final (the token before its tone mark) is the sung part
-    : LANG === "en" ? (t, i) => EN.sung[i]                          // en: the first char of each vowel nucleus (en-front.mjs nucleusStarts)
-    : (t) => VOWEL.has(t) || /^N/.test(t);                          // ja: vowels and ん (N_n / N_m / N_ng … by place of articulation)
-  tokens.forEach((t, i) => { if (sung1(t, i)) { moras.push({ gap, vowel: i }); gap = []; } else gap.push(i); });
-  const trailing = gap;
+  const { moras, trailing } = sungSyllables(LANG, tokens, EN);
   if (moras.length !== SCORE.length) throw new Error(`${moras.length} sung syllables in the text, ${SCORE.length} in the score\n text: ${moras.map((m) => tokens.slice(m.gap.length ? m.gap[0] : m.vowel, m.vowel + 1).filter((t) => !"[]#?!_".includes(t)).join("")).join(" ")}`);
   moras.forEach((m, k) => {
-    m.kana = SCORE[k].kana; m.mark = SCORE[k].before ?? null; if (m.mark && !"^vO".includes(m.mark)) throw new Error(`${m.kana}: before must be ^ v or O`); m.label = [...m.gap.filter((i) => !isMark(tokens[i]) && tokens[i] !== "_").map((i) => tokens[i]), tokens[m.vowel]].join("");
+    m.kana = SCORE[k].kana; m.mark = SCORE[k].before ?? null; if (m.mark && !"^vO".includes(m.mark)) throw new Error(`${m.kana}: before must be ^ v or O`); m.label = labelOf(tokens, m);
     const lastPause = m.gap.lastIndexOf(m.gap.findLast?.((i) => tokens[i] === "_") ?? -1);
     m.pause = lastPause >= 0 ? m.gap[lastPause] : null;
     m.cons = m.gap.slice(lastPause + 1);                          // marks + consonants after the last pause: sung on the way into the beat

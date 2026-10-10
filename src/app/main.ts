@@ -16,13 +16,14 @@ import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
-import { lyricIssues, lyricWhyText, type LyricIssue } from "../score/lyric-check.ts";
+import { lyricIssues, lyricWhyText, prettyReading, type LyricIssue } from "../score/lyric-check.ts";
 import { ScoreView } from "../ui/score-view.ts";
 import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
 import { Pad, HER_RANGE, type HintRange } from "../ui/pad.ts";
 import { toLabScore } from "../score/lab-score.ts";
-import { Singer } from "../singer/client.ts";
+import { Singer, type Reading } from "../singer/client.ts";
+import type { LyricReading } from "../ui/lyric-editor.ts";
 import { RULES, MODES, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
@@ -353,6 +354,7 @@ const view = new ScoreView(scoreEl, {
   onSelPress: (at) => openSelMenu(at),
   onMarkPress: (i, at) => openMarkMenu(i, at),
   lyricHint: (i) => lyricHintAt(i),
+  lyricReading: (i) => lyricReadingAt(i),
   notice: (s) => info(s),
   onClef: (hit, at) => openClefMenu(hit, at),
   onPaperMenu: (id) => openPaperMenu(id),
@@ -1752,6 +1754,36 @@ function lyricHintAt(i: number): string | null {
   const t = tr(st)[i], p = st.song.parts.find((x) => x.id === st.at.part); if (!t || !p) return null;
   const x = lyricMutes().get(p.id)?.get(t.id); if (!x) return null;
   return lyricWhyText(x, roleName(doc.extras, p.role), songLangOf(flattenPart(st.song, p.id).tokens, st.song.hum));
+}
+// ── 歌词旁显示引擎念成什么（v0.9.34，2026-10-10 Opus 5.5；user「小件做」，AI 提的「歌词框 / 歌手牌里显示引擎念成什么」）：
+//    全假名时日语前端会把助词 は 注成 ha（团子 B「としよりだんごはめを」= ha-me），user 不懂日语看不出来，看得见才能自己改成 わ。
+//    读音 = 唱的时候同一份第 1 步（sing-core readingCore），按这一句的唱谱内容缓存；只在月读上场、引擎已经起来时有（不为看读音起引擎、下模型）。
+let readPlans: { song: Song; part: string; view?: ChunkPlan[]; segment?: ChunkPlan[] } | null = null;
+const readings = new Map<string, Reading>(), readAsked = new Set<string>(); let readRetryAt = 0;
+function readPlanOf(tokId: number, part: PartDef): ChunkPlan | null {
+  if (!readPlans || readPlans.song !== st.song || readPlans.part !== part.id) readPlans = { song: st.song, part: part.id };
+  for (const scope of ["view", "segment"] as const) {   // 放的时候那一句（视图 / 编排）；不在里面（编排没点到这张纸）= 这张纸单独
+    const chunks = (readPlans[scope] ??= ((song) => buildTimeline({ song, order: songPlayOrder(song), parts: [part], info: performerInfo, hum: st.song.hum, singOpt: humOpt() }).chunks)(songIn(scope)));
+    const plan = chunks.find((c) => c.entryOf.has(tokId)); if (plan) return plan;
+  }
+  return null;
+}
+function lyricReadingAt(i: number): LyricReading | null {
+  const t = tr(st)[i], part = st.song.parts.find((x) => x.id === st.at.part);
+  if (!t || t.kind !== "note" || !part || engineNow() !== "tsukuyomi") return null;
+  const plan = readPlanOf(t.id, part); if (!plan) return null;
+  const s = plan.score, key = `${s.LANG}|${s.TEXT}|${s.SCORE.map((e) => e.kana).join(" ")}`, r = readings.get(key);
+  if (!r) {
+    if (!readAsked.has(key) && performance.now() >= readRetryAt) {
+      readAsked.add(key);
+      void singer.read(s).then((x) => { if (x.ready) { readings.set(key, x); if (readings.size > 200) readings.delete(readings.keys().next().value!); } else readRetryAt = performance.now() + 3000; })
+        .catch(() => undefined).finally(() => { readAsked.delete(key); view.lyrics.reposition(); });
+    }
+    return null;
+  }
+  const parts = (r.labels ?? r.said).map((x) => prettyReading(s.LANG, x));
+  if (!r.labels) return { parts, at: -1, note: `月读念出来 ${r.said.length} 个音节、谱上 ${s.SCORE.length} 个，对不上（唱的时候会报错）：` };
+  return { parts, at: plan.entryOf.get(t.id) ?? -1, note: s.LANG === "zh" ? "月读念成（音素 + 声调）：" : "月读念成：" };
 }
 /** 每位歌手的类别色（tab20 下标）和谱前简写（v0.9.31；user「乐手名和颜色同意」）。简写要目录（仓鼠 v12 的 abbr）：没载就先缩名字，载好了重画。 */
 function partLooks(): { colors: number[]; abbrs: string[] } {

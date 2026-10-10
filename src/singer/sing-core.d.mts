@@ -15,6 +15,8 @@ export interface WorldLike {
 }
 export interface AtlasSet { set: string; midi: number; framePeriodMs: number; entries: unknown[]; data: Float32Array; [k: string]: unknown }
 export declare const DEFAULT_OPT: Record<string, unknown>;
+/** 读音：只走第 1 步（注音 → 按唱的音素分音节）。labels[k] = 第 k 条念成的音素（几拍 = 几段「-」连；zh 带声调数字）；音节数对不上 / en = null。 */
+export declare function readingCore(a: { score: ScoreEntry[] | unknown[]; text: string; lang?: "ja" | "zh" | "en"; piper: Pick<PiperLike, "phonemize" | "phonemizeZh"> }): { labels: string[] | null; said: string[] };
 export declare function singCore(a: {
   score: ScoreEntry[] | unknown[]; text: string; tempo: number; lang?: "ja" | "zh" | "en"; transpose?: number; phrasing?: "score" | "punct" | "none";
   atlas?: string; mix?: number; breath?: boolean; preset?: number; piper: PiperLike; world: WorldLike;

@@ -76,6 +76,8 @@ export interface ScoreViewHost {
   onClef?(hit: ClefHit, at: { x: number; y: number }): void;
   /** 光标所在那条下标 i 的歌词台上这位唱不出来的那句话（歌词框上面的小字）；唱得出来 = null。 */
   lyricHint?(i: number): string | null;
+  /** 光标所在那条下标 i 那个字所在这一句月读念成什么（歌词框下面的小字，v0.9.34）；不是月读 / 引擎还没起来 = null。 */
+  lyricReading?(i: number): import("./lyric-editor.ts").LyricReading | null;
   /** 标题下面靠右的作词 / 作曲点了。 */
   onCredits?(): void;
   /** 空白处长按 / 电脑右键（光标已经放到那里了）：at = 屏幕坐标（小菜单开在那）；row = 这一行里光标所在 track 的音的下标范围（全选这一行用；这行没音 = null）。 */

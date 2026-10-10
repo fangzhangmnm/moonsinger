@@ -6,7 +6,7 @@
 //   句子按内容哈希认一条「自己的道」（同一句的念缓存只在那条道上有：按键试听永远去自己的道，整句唱优先自己的道、它忙就去空着的那条）。
 //   内存吃紧 = 主线程 setLanes(1)：多出来的道算完手上的就关（WASM 堆只有关掉 worker 才还回去）。
 import type { LabScore } from "../score/lab-score.ts";
-import type { SingReply, SingRequest, WarmRequest, CancelRequest, CacheRequest } from "./worker.ts";
+import type { SingReply, SingRequest, WarmRequest, CancelRequest, CacheRequest, ReadRequest } from "./worker.ts";
 import { audioCtx } from "./audio.ts";
 import { diagNote } from "../app/report-error.ts";
 
@@ -16,6 +16,8 @@ const OOM = /out of memory|no available backend/i;
 export interface SingResult { samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> } }
 export interface LaneMem { wasm: number; cache: number }
 export interface DiskInfo { bytes: number; entries: number; budget: number }
+/** 读音（v0.9.34）：labels[k] = 第 k 条念成的音素；对不上 = null + said（念出来的每个音节）；ready false = 引擎还没起来（不为此起引擎）。 */
+export interface Reading { ready: boolean; labels: string[] | null; said: string[] }
 type Extra = Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw" | "cacheBytes" | "diskBytes" | "only">> & { /** 宿主给这一句贴的标签（块的键）：cancelInflight(tag) 只取消它。 */ tag?: string };
 interface Job { s: LabScore; progress: (stage: string) => void; extra: Extra; ok: (r: SingResult) => void; fail: (e: Error) => void }
 interface Pending { ok: (r: SingResult) => void; fail: (e: Error) => void; progress: (s: string) => void; lane: Lane; tag?: string }
@@ -62,6 +64,7 @@ export class Singer {
       if (m.type === "progress") { p.progress(m.stage); return; }
       this.pending.delete(m.id);
       if (m.type === "cache") { (p as Pending & { cache?: (d: DiskInfo | null) => void }).cache?.(m.disk); return; }
+      if (m.type === "read") { (p as Pending & { read?: (r: Reading) => void }).read?.({ ready: m.ready, labels: m.labels, said: m.said }); return; }
       if (m.type === "done") { if (m.mem) { l.mem = m.mem; const i = this.laneIndex(l); if (i >= 0) this.onMem?.(i, m.mem); } p.ok({ samples: m.samples, sr: m.sr, ms: m.ms }); }
       else p.fail(new Error(m.message));
       if (l.closing && ![...this.pending.values()].some((q) => q.lane === l)) this.closeLane(l);
@@ -104,6 +107,12 @@ export class Singer {
   cache(op: "info" | "clear", diskBytes?: number): Promise<DiskInfo | null> {
     const l = this.lanes[0], id = ++this.seq, req: CacheRequest = { type: "cache", id, op, diskBytes };
     return new Promise((ok, fail) => { this.pending.set(id, { ok: () => ok(null), fail, progress: () => {}, lane: l, cache: ok } as Pending & { cache: (d: unknown) => void }); this.worker(l).postMessage(req); });
+  }
+  /** 读音（歌词旁显示引擎念成什么，v0.9.34）：问已经起来的那条道（第一条优先）；一条都没起 = ready false，不为此建 worker、不起引擎。 */
+  read(s: LabScore): Promise<Reading> {
+    const l = this.lanes.find((x) => x.w); if (!l) return Promise.resolve({ ready: false, labels: null, said: [] });
+    const id = ++this.seq, req: ReadRequest = { type: "read", id, score: s.SCORE, text: s.TEXT, lang: s.LANG };
+    return new Promise((ok, fail) => { this.pending.set(id, { ok: () => ok({ ready: false, labels: null, said: [] }), fail, progress: () => {}, lane: l, read: ok } as Pending & { read: (r: Reading) => void }); l.w!.postMessage(req); });
   }
   get busy(): boolean { return this.queue.length > 0 || this.lanes.some((l) => l.inflightId !== 0); }
   get queued(): number { return this.queue.length; }

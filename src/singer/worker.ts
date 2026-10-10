@@ -9,7 +9,7 @@
 //   WORLD = 自己编的 WASM，vendored 在 `vendor/world/`。`dev-assets/` 只剩开发期的元音图谱实验（默认关，出货没有）。
 // piper.run 的喂法照抄 third-party/piper-plus/dur-override-exp/piper-node.mjs 的 run()（逐符号相同的输入 = 浏览器 == Node 的前提）。
 
-import { singCore } from "./sing-core.mjs";
+import { singCore, readingCore } from "./sing-core.mjs";
 import { wrapWorld } from "./world-wrap.mjs";
 import { SpeechCache } from "./speech-cache.ts";
 import { openSpeechStore, type SpeechStore } from "./speech-store.ts";
@@ -34,13 +34,16 @@ export interface WarmRequest { type: "warm"; id: number; models?: string[]; disk
 export interface CancelRequest { type: "cancel"; id: number }
 /** 念缓存持久层：看大小 / 清空（设置页）。不用起引擎。 */
 export interface CacheRequest { type: "cache"; id: number; op: "info" | "clear"; diskBytes?: number }
+/** 读音（歌词旁显示引擎念成什么，v0.9.34）：只注音、分音节，不唱。引擎没起来 / 中文前端没载 / 英文 = ready false（不为了看读音去下模型：重资源要等有意图）。 */
+export interface ReadRequest { type: "read"; id: number; score: unknown[]; text: string; lang: SingLang }
 export type SingReply =
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> };
       /** 这条 worker 现在占多少（刀 6 内存监控）：wasm = 三块 WASM 堆（ort / OpenJTalk / WORLD，只涨不落）；cache = 念缓存的字节。 */
       mem: { wasm: number; cache: number } }
   | { type: "error"; id: number; message: string }
-  | { type: "cache"; id: number; disk: { bytes: number; entries: number; budget: number } | null };
+  | { type: "cache"; id: number; disk: { bytes: number; entries: number; budget: number } | null }
+  | { type: "read"; id: number; ready: boolean; labels: string[] | null; said: string[] };
 
 import * as ortLib from "@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs";
 import createOjt from "@internal/read-aloud/backend/piper-plus/vendor/ojt/ojt.mjs";
@@ -100,7 +103,7 @@ async function packFile(slug: string, path: string): Promise<Uint8Array> {
 const packJson = async (slug: string, path: string) => JSON.parse(new TextDecoder().decode(await packFile(slug, path)));
 const SR = 22050, HOP = 256;
 
-interface Engine { piper: any; world: any; loadAtlas: ((id: string) => Promise<any>) | null; hasAtlas: boolean; ensureZh: (say: (s: string) => void) => Promise<void>; ensureEn: (say: (s: string) => void) => Promise<void>; presetDefault: Record<string, number> }
+interface Engine { piper: any; world: any; loadAtlas: ((id: string) => Promise<any>) | null; hasAtlas: boolean; ensureZh: (say: (s: string) => void) => Promise<void>; ensureEn: (say: (s: string) => void) => Promise<void>; zhReady: () => boolean; presetDefault: Record<string, number> }
 let engine: Promise<Engine> | null = null;
 /** 「念」缓存（两遍 piper + WORLD 分析，只依赖歌词 / 语言 / 哼的参数；刀 2）：命中时只剩按谱重建 + 合成。预算宿主可改（cacheBytes）。 */
 const speech = new SpeechCache(32e6);
@@ -176,17 +179,25 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
   const loadAtlas = hasAtlas ? async (id: string) => { const meta = await json(`atlas/${id}.json`); const raw = await bytes(`atlas/${id}.f32`);
     return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) }; } : null;
-  return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, presetDefault: config.preset_default ?? {} };
+  return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
 }
 
 const cancelled = new Set<number>();
-self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelRequest | CacheRequest>) => {
+self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelRequest | CacheRequest | ReadRequest>) => {
   const q = ev.data;
   const post = (m: SingReply, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(m, transfer);
   if (q.type === "cancel") { cancelled.add(q.id); return; }
   if (q.type === "cache") {
     try { if (q.diskBytes !== undefined) { diskBudget = q.diskBytes; (await storeP)?.setBudget(diskBudget); } const st = await speechStore(); if (q.op === "clear") { await st?.clear(); speech.clear(); } post({ type: "cache", id: q.id, disk: st ? await st.info() : null }); }
     catch (err) { post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) }); }
+    return;
+  }
+  if (q.type === "read") {
+    try {
+      const e = engine ? await engine.catch(() => null) : null;
+      if (!e || q.lang === "en" || (q.lang === "zh" && !e.zhReady())) { post({ type: "read", id: q.id, ready: false, labels: null, said: [] }); return; }
+      post({ type: "read", id: q.id, ready: true, ...readingCore({ score: q.score, text: q.text, lang: q.lang, piper: e.piper }) });
+    } catch (err) { post({ type: "error", id: q.id, message: (err as Error)?.message ?? String(err) }); }
     return;
   }
   if (q.type === "warm") {

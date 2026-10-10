@@ -173,6 +173,48 @@ var DEFAULT_OPT = {
 var VOWEL = /* @__PURE__ */ new Set(["a", "i", "u", "e", "o", "N"]);
 var VOICED_FOR = { A: "a", I: "i", U: "u", E: "e", O: "o" };
 var isMark = (t) => "[]#?!".includes(t) || /^tone\d$/.test(t);
+function expandEntries(SRC, TRANSPOSE) {
+  return SRC.map((e) => ({ ...e, notes: e.notes.map(([m, l]) => [m + TRANSPOSE, l]) })).flatMap((e) => {
+    const n = e.moras || 1;
+    if (n === 1) return [e];
+    if (e.notes.length !== 1) throw new Error(`${e.kana}: moras > 1 needs one note`);
+    const [midi, len] = e.notes[0];
+    return Array.from({ length: n }, (_, i) => ({ kana: [...e.kana][i] ?? e.kana, notes: [[midi, len / n]], rest: i === n - 1 ? e.rest : 0, before: i === 0 ? e.before : void 0, whisper: e.whisper, inhale: i === 0 ? e.inhale : void 0 }));
+  });
+}
+function phonemesOf(LANG, TEXT, pn2, EN) {
+  const sungText = TEXT.replace(/[、。，．,.！？!?]/g, "");
+  const ph = LANG === "en" ? EN : LANG === "zh" ? pn2.phonemizeZh(sungText) : pn2.phonemize(sungText);
+  const tokens = LANG === "ja" ? ph.tokens.map((t) => VOICED_FOR[t] ?? t) : ph.tokens;
+  return { ph, tokens };
+}
+function sungSyllables(LANG, tokens, EN) {
+  const moras = [];
+  let gap = [];
+  const sung1 = LANG === "zh" ? (t, i) => /^tone\d$/.test(tokens[i + 1] ?? "") : LANG === "en" ? (t, i) => EN.sung[i] : (t) => VOWEL.has(t) || /^N/.test(t);
+  tokens.forEach((t, i) => {
+    if (sung1(t, i)) {
+      moras.push({ gap, vowel: i });
+      gap = [];
+    } else gap.push(i);
+  });
+  return { moras, trailing: gap };
+}
+var labelOf = (tokens, m) => [...m.gap.filter((i) => !isMark(tokens[i]) && tokens[i] !== "_").map((i) => tokens[i]), tokens[m.vowel]].join("");
+function readingCore({ score: SRC, text: TEXT, lang: LANG = "ja", piper: pn2 }) {
+  if (LANG === "en") return { labels: null, said: [] };
+  const SCORE = expandEntries(SRC, 0), { tokens } = phonemesOf(LANG, TEXT, pn2, null), { moras } = sungSyllables(LANG, tokens, null);
+  const said = moras.map((m) => labelOf(tokens, m) + (LANG === "zh" ? (tokens[m.vowel + 1] ?? "").replace(/^tone/, "") : ""));
+  if (said.length !== SCORE.length) return { labels: null, said };
+  const labels = [];
+  let k = 0;
+  for (const e of SRC) {
+    const n = e.moras || 1;
+    labels.push(said.slice(k, k + n).join("-"));
+    k += n;
+  }
+  return { labels, said };
+}
 async function singCore({
   score: SCORE_IN,
   text: TEXT,
@@ -201,17 +243,9 @@ async function singCore({
   }
   const EIGHTH0 = 60 / TEMPO_QUARTER / 2;
   if (only) SRC = SRC.map((e, k) => k === only.entry ? { ...e, notes: [[only.midi - TRANSPOSE, Math.max(0.25, only.secs / EIGHTH0)]], rest: 0 } : e);
-  const SCORE = SRC.map((e) => ({ ...e, notes: e.notes.map(([m, l]) => [m + TRANSPOSE, l]) })).flatMap((e) => {
-    const n = e.moras || 1;
-    if (n === 1) return [e];
-    if (e.notes.length !== 1) throw new Error(`${e.kana}: moras > 1 needs one note`);
-    const [midi, len] = e.notes[0];
-    return Array.from({ length: n }, (_, i) => ({ kana: [...e.kana][i] ?? e.kana, notes: [[midi, len / n]], rest: i === n - 1 ? e.rest : 0, before: i === 0 ? e.before : void 0, whisper: e.whisper, inhale: i === 0 ? e.inhale : void 0 }));
-  });
+  const SCORE = expandEntries(SRC, TRANSPOSE);
   const SR2 = pn2.SR, HOP2 = pn2.HOP, FR = SR2 / HOP2, EIGHTH = 60 / TEMPO_QUARTER / 2, FP = 5, FPS = FP / 1e3;
-  const sungText = TEXT.replace(/[、。，．,.！？!?]/g, "");
-  const ph = LANG === "en" ? EN : LANG === "zh" ? pn2.phonemizeZh(sungText) : pn2.phonemize(sungText);
-  const tokens = LANG === "ja" ? ph.tokens.map((t2) => VOICED_FOR[t2] ?? t2) : ph.tokens;
+  const { ph, tokens } = phonemesOf(LANG, TEXT, pn2, EN);
   if (OPT.humNasal && LANG === "ja") {
     let k = 0;
     tokens.forEach((t2, i) => {
@@ -229,23 +263,14 @@ async function singCore({
     p += t2 === "_" ? 1 : 2;
   }
   if (p !== ids.length - 1) throw new Error(`id layout: expected EOS at ${p}, have ${ids.length - 1}`);
-  const moras = [];
-  let gap = [];
-  const sung1 = LANG === "zh" ? (t2, i) => /^tone\d$/.test(tokens[i + 1] ?? "") : LANG === "en" ? (t2, i) => EN.sung[i] : (t2) => VOWEL.has(t2) || /^N/.test(t2);
-  tokens.forEach((t2, i) => {
-    if (sung1(t2, i)) {
-      moras.push({ gap, vowel: i });
-      gap = [];
-    } else gap.push(i);
-  });
-  const trailing = gap;
+  const { moras, trailing } = sungSyllables(LANG, tokens, EN);
   if (moras.length !== SCORE.length) throw new Error(`${moras.length} sung syllables in the text, ${SCORE.length} in the score
  text: ${moras.map((m) => tokens.slice(m.gap.length ? m.gap[0] : m.vowel, m.vowel + 1).filter((t2) => !"[]#?!_".includes(t2)).join("")).join(" ")}`);
   moras.forEach((m, k) => {
     m.kana = SCORE[k].kana;
     m.mark = SCORE[k].before ?? null;
     if (m.mark && !"^vO".includes(m.mark)) throw new Error(`${m.kana}: before must be ^ v or O`);
-    m.label = [...m.gap.filter((i) => !isMark(tokens[i]) && tokens[i] !== "_").map((i) => tokens[i]), tokens[m.vowel]].join("");
+    m.label = labelOf(tokens, m);
     const lastPause = m.gap.lastIndexOf(m.gap.findLast?.((i) => tokens[i] === "_") ?? -1);
     m.pause = lastPause >= 0 ? m.gap[lastPause] : null;
     m.cons = m.gap.slice(lastPause + 1);
@@ -8035,7 +8060,7 @@ async function loadEngine(say) {
     const raw = await bytes(`atlas/${id}.f32`);
     return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) };
   } : null;
-  return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, presetDefault: config.preset_default ?? {} };
+  return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
 }
 var cancelled = /* @__PURE__ */ new Set();
 self.onmessage = async (ev) => {
@@ -8057,6 +8082,19 @@ self.onmessage = async (ev) => {
         speech.clear();
       }
       post({ type: "cache", id: q2.id, disk: st ? await st.info() : null });
+    } catch (err) {
+      post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
+    }
+    return;
+  }
+  if (q2.type === "read") {
+    try {
+      const e = engine ? await engine.catch(() => null) : null;
+      if (!e || q2.lang === "en" || q2.lang === "zh" && !e.zhReady()) {
+        post({ type: "read", id: q2.id, ready: false, labels: null, said: [] });
+        return;
+      }
+      post({ type: "read", id: q2.id, ready: true, ...readingCore({ score: q2.score, text: q2.text, lang: q2.lang, piper: e.piper }) });
     } catch (err) {
       post({ type: "error", id: q2.id, message: err?.message ?? String(err) });
     }
@@ -8140,4 +8178,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-e5b413f04709.mjs.map
+//# sourceMappingURL=singer-worker-a7d3d70fb27a.mjs.map
