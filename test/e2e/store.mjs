@@ -129,6 +129,23 @@ try {
   await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2"); await p.waitForTimeout(3500);
   check(!(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id2)), "之后新建再写也不会把删掉的名字复活");
   const id4 = await p.evaluate(() => window.__moonsinger.identifier()); check(!!id4 && id4 !== id2 && id4 !== id3, "新的一首有自己的身份", id4);
+  // 新建文件夹（2026-10-10 user「gallery怎么没接新建文件夹的功能，这个应该只是接线吧，不过小心一点」）：歌库顶栏的钮 → 起名 → store.files.newFolder → 歌库里出现这个夹
+  await p.click("#libBtn"); await p.waitForTimeout(600);
+  const folderNames = () => p.$$eval("#galleryFull .gallery-folder, #galleryFull [data-folder]", (es) => es.map((e) => e.textContent.trim()));
+  const before = (await p.textContent("#galleryFull")) ?? "";
+  await p.click('#galleryFull [data-v="newfolder"]'); await p.waitForTimeout(250);
+  check(await p.$eval(".offer input.sheet-input", (e) => e.value === "新文件夹").catch(() => false), "新建文件夹：问名字（默认「新文件夹」）");
+  await p.fill(".offer input.sheet-input", "副歌草稿"); await p.keyboard.press("Enter"); await p.waitForTimeout(1200);
+  const after = (await p.textContent("#galleryFull")) ?? "";
+  check(!before.includes("副歌草稿") && after.includes("副歌草稿"), "歌库里出现了「副歌草稿」这个夹", JSON.stringify(await folderNames()));
+  // 同名再建 = 说一声、不另建
+  await p.click('#galleryFull [data-v="newfolder"]'); await p.waitForTimeout(250);
+  await p.fill(".offer input.sheet-input", "副歌草稿"); await p.keyboard.press("Enter"); await p.waitForTimeout(800);
+  check(((await p.textContent("#galleryFull")) ?? "").split("副歌草稿").length - 1 === 1, "同名的夹不再建第二个");
+  // 名字里有 / = 不建、说一声
+  await p.click('#galleryFull [data-v="newfolder"]'); await p.waitForTimeout(250);
+  await p.fill(".offer input.sheet-input", "a/b"); await p.keyboard.press("Enter"); await p.waitForTimeout(500);
+  check(!((await p.textContent("#galleryFull")) ?? "").includes("a/b") && !(await p.$$eval("#galleryFull *", (es) => es.some((e) => e.textContent.trim() === "a"))), "名字带 / = 不建");
   // 冲突面 / 报错 / busy 接线存在（storeUI 对象）
   const ui = await p.evaluate(() => { const s = window.__moonsinger.store(); return !!s; });
   check(ui, "store 活着");

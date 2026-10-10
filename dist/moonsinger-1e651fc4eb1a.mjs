@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.25-2026-10-10";
+var APP_VERSION = "v0.9.26-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -30660,7 +30660,7 @@ function initGalleryHost(d3) {
   fullEl.setAttribute("role", "dialog");
   fullEl.setAttribute("aria-modal", "true");
   fullEl.setAttribute("aria-label", "\u6B4C\u5E93");
-  fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button><button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u4E50\u5668\u76EE\u5F55\uFF1A\u6D4F\u89C8\u3001\u8BD5\u542C\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u4E50\u5668</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\u4E00\u9996">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
+  fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button><button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u4E50\u5668\u76EE\u5F55\uFF1A\u6D4F\u89C8\u3001\u8BD5\u542C\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u4E50\u5668</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\u4E00\u9996">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="newfolder" title="\u65B0\u5EFA\u6587\u4EF6\u5939\uFF08\u5728\u73B0\u5728\u8FD9\u4E2A\u5939\u91CC\uFF09">${iconHtml2("create-folder")}</button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector(".gallery-mount"), asideBar = fullEl.querySelector(".gallery-asidebar");
   const cloudBtn = fullEl.querySelector('[data-v="cloud"]'), refreshBtn = fullEl.querySelector('[data-v="refresh"]');
@@ -30727,6 +30727,41 @@ function initGalleryHost(d3) {
     text: { lang: "zh", t: (key) => TEXT[key] }
   };
   let gallery2 = null;
+  const warn = (msg) => reportError(msg, "warning");
+  async function newFolder() {
+    if (!hasStore()) {
+      warn("\u6B4C\u5E93\u8FD8\u6CA1\u63A5\u4E0A\uFF0C\u5EFA\u4E0D\u4E86\u6587\u4EF6\u5939");
+      return;
+    }
+    const g3 = ensureMounted();
+    const name = await openInputSheet("\u65B0\u5EFA\u6587\u4EF6\u5939", { defaultValue: "\u65B0\u6587\u4EF6\u5939", placeholder: "\u6587\u4EF6\u5939\u540D" });
+    if (name == null) return;
+    const n10 = name.trim();
+    if (!n10) {
+      warn("\u6587\u4EF6\u5939\u540D\u4E0D\u80FD\u7A7A\u7740");
+      return;
+    }
+    if (/[\\/:*?"<>|]/.test(n10) || /^[.\s]|[.\s]$/.test(n10)) {
+      warn('\u6587\u4EF6\u5939\u540D\u91CC\u4E0D\u80FD\u6709 / \\ : * ? " < > |\uFF0C\u4E5F\u4E0D\u80FD\u7528\u70B9\u6216\u7A7A\u683C\u5F00\u5934 / \u7ED3\u5C3E\uFF08OneDrive \u4E0D\u6536\uFF09');
+      return;
+    }
+    const here = g3.handle.getFolder(), full = here ? `${here}/${n10}` : n10;
+    await withBusy(`\u65B0\u5EFA\u6587\u4EF6\u5939\u300C${n10}\u300D\u2026`, async () => {
+      if (await requireStore().files.occupied(full)) {
+        warn(`\u300C${n10}\u300D\u8FD9\u4E2A\u540D\u5B57\u5DF2\u7ECF\u6709\u4E86\uFF08\u540C\u540D\u7684\u6B4C\u6216\u6587\u4EF6\u5939\uFF09`);
+        return;
+      }
+      try {
+        await requireStore().files.newFolder(full);
+        status(`\u5EFA\u597D\u4E86\u6587\u4EF6\u5939\u300C${n10}\u300D`);
+        diagNote("gallery", `new folder ${full}`);
+      } catch (e10) {
+        reportError(e10, "warning");
+        status(`\u65B0\u5EFA\u6587\u4EF6\u5939\u6CA1\u6210\u529F\uFF1A${e10.message ?? String(e10)}`, true);
+      }
+    });
+    g3.handle.refresh();
+  }
   function ensureMounted() {
     if (!gallery2) gallery2 = createGallery(mountEl, deps);
     return gallery2;
@@ -30742,6 +30777,7 @@ function initGalleryHost(d3) {
     if (v === "cloud") d3.openCloudMenu(cloudBtn);
     else if (v === "refresh") gallery2?.handle.refresh();
     else if (v === "new") void d3.newSong();
+    else if (v === "newfolder") void newFolder();
     else if (v === "instruments") d3.openInstruments();
     else if (v === "aside") showAside("trash");
     else if (v === "files") showAside(null);
@@ -39532,4 +39568,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8e483d6278dc.mjs.map
+//# sourceMappingURL=moonsinger-1e651fc4eb1a.mjs.map

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
 <!--
-  48 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
+  49 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
   Family SVG Icons — MIT License, Copyright (c) 2026 fangzhangmnm.
   Contains work derived from (per-icon provenance in data-src):
     Feather Icons — MIT License, Copyright (c) 2013-2023 Cole Bemis · https://github.com/feathericons/feather
@@ -57,6 +57,8 @@
   <symbol id="lock" data-cat="hierarchy" data-src="own" data-note="锁:体 13x11+锁梁抬高(腿3.5),整体居中" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="10" width="13" height="11"/><path d="M8.8 10 V6.5 a3.2 3.2 0 0 1 6.4 0 V10"/></symbol>
   <!-- unlock — 开锁:同 lock 体型+锁梁弹开 -->
   <symbol id="unlock" data-cat="hierarchy" data-src="own" data-note="开锁:同 lock 体型+锁梁弹开" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="10" width="13" height="11"/><path d="M8.8 10 V6.5 a3.2 3.2 0 0 1 6.3 -1.1"/></symbol>
+  <!-- create-folder — 加号做成右下角徽标 -->
+  <symbol id="create-folder" data-cat="hierarchy" data-src="own" data-note="加号做成右下角徽标" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><mask id="icCfd"><rect width="24" height="24" fill="#fff" stroke="none"/><circle cx="17.6" cy="17.6" r="4.6" fill="#000" stroke="none"/></mask><g mask="url(#icCfd)"><g transform="translate(-1.2 -1.6) scale(0.86)"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></g></g><path d="M14.6 17.6 H20.6 M17.6 14.6 V20.6"/></symbol>
   <!-- common -->
   <!-- caret-up — 上调 ▲:圆角实心扁三角(数字框旁上下叠放的小转盘用,12–16px)；与带竿的 chevron-up(上移)分工【JustReadBooks 朗读控制条预设框右侧小转盘「预设加一」；2026-10-02 Claude Opus 5.5 自画未过目】 -->
   <symbol id="caret-up" data-cat="common" data-src="own" data-note="上调 ▲:圆角实心扁三角(数字框旁上下叠放的小转盘用,12–16px)；与带竿的 chevron-up(上移)分工【JustReadBooks 朗读控制条预设框右侧小转盘「预设加一」；2026-10-02 Claude Opus 5.5 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 15.5 L12 8 L18.5 15.5 Z" fill="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>

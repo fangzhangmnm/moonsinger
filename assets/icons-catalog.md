@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-48 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+49 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -63,6 +63,7 @@
 |------|------|
 | `lock` | 锁:体 13x11+锁梁抬高(腿3.5),整体居中 |
 | `unlock` | 开锁:同 lock 体型+锁梁弹开 |
+| `create-folder` | 加号做成右下角徽标 |
 
 ## common
 

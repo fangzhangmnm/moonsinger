@@ -60,6 +60,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
     `<button type="button" class="btn" data-v="refresh" title="刷新云端" hidden>${iconHtml("refresh")}</button>` +
     `<button type="button" class="btn gallery-inst" data-v="instruments" title="乐器目录：浏览、试听、用键盘弹着玩（不写进哪首歌）"><span>乐器</span></button>` +
     `<button type="button" class="btn" data-v="new" title="新建一首">${iconHtml("new")}<span>新建</span></button>` +
+    `<button type="button" class="btn" data-v="newfolder" title="新建文件夹（在现在这个夹里）">${iconHtml("create-folder")}</button>` +
     `<button type="button" class="btn" data-v="aside" title="回收站和备份箱">${iconHtml("trash-can")}</button>` +
     `<button type="button" class="btn" data-v="settings" title="设置">${iconHtml("menu")}</button></div>` +
     `<div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml("back")}<span>回到歌</span></button>` +
@@ -116,6 +117,26 @@ export function initGalleryHost(d: GalleryHostDeps) {
     text: { lang: "zh", t: (key) => TEXT[key] },
   };
   let gallery: Gallery | null = null;
+  /** 新建文件夹（2026-10-10 user「gallery怎么没接新建文件夹的功能，这个应该只是接线吧，不过小心一点」）：照 WeebPaint gallery-shell 的接法——
+   *  名字先查合法（OneDrive 不收的字符）→ 锁屏 → store 的唯一占用检查（files.occupied：同名文件 / 夹占着就说）→ store.files.newFolder（库内单飞；离线也能建，回线补建）→ 刷新歌库。
+   *  只建在现在这个夹里；app 不碰云端、不自己拼请求。 */
+  const warn = (msg: string) => reportError(msg, "warning");   // 名字不对 / 占了 = 提醒（不是出错）
+  async function newFolder(): Promise<void> {
+    if (!hasStore()) { warn("歌库还没接上，建不了文件夹"); return; }
+    const g = ensureMounted();
+    const name = await openInputSheet("新建文件夹", { defaultValue: "新文件夹", placeholder: "文件夹名" });
+    if (name == null) return;
+    const n = name.trim();
+    if (!n) { warn("文件夹名不能空着"); return; }
+    if (/[\\/:*?"<>|]/.test(n) || /^[.\s]|[.\s]$/.test(n)) { warn("文件夹名里不能有 / \\ : * ? \" < > |，也不能用点或空格开头 / 结尾（OneDrive 不收）"); return; }
+    const here = g.handle.getFolder(), full = here ? `${here}/${n}` : n;
+    await withBusy(`新建文件夹「${n}」…`, async () => {
+      if (await requireStore().files.occupied(full)) { warn(`「${n}」这个名字已经有了（同名的歌或文件夹）`); return; }
+      try { await requireStore().files.newFolder(full); status(`建好了文件夹「${n}」`); diagNote("gallery", `new folder ${full}`); }
+      catch (e) { reportError(e, "warning"); status(`新建文件夹没成功：${(e as Error).message ?? String(e)}`, true); }
+    });
+    g.handle.refresh();
+  }
   function ensureMounted(): Gallery { if (!gallery) gallery = createGallery(mountEl, deps); return gallery; }
   function showAside(kind: AsideKind | null): void {
     asideBar.hidden = kind == null;
@@ -128,6 +149,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
     if (v === "cloud") d.openCloudMenu(cloudBtn);
     else if (v === "refresh") gallery?.handle.refresh();
     else if (v === "new") void d.newSong();
+    else if (v === "newfolder") void newFolder();
     else if (v === "instruments") d.openInstruments();
     else if (v === "aside") showAside("trash");
     else if (v === "files") showAside(null);
