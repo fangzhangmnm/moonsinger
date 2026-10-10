@@ -430,6 +430,7 @@ export class Studio {
         if (!this.chunks.has(this.waiting)) { this.renderTracks(done, left, false, false); done = n; break; }
         this.waiting = null; this.resetCursors(true);
       }
+      if (this.tail >= 0 && this.loop) { this.loopBack(); continue; }   // 尾巴还在响的时候开了循环 = 这一轮照样跳回去（2026-10-10 user「中途toggle循环对本轮播放应该生效」）
       if (this.tail >= 0) {   // 范围尾：不排新音，块淡出，响完就停
         this.renderTracks(done, left, false, true); this.pos += left / sr; this.tail += left / sr; done = n;
         if (this.tail >= TAIL_MAX || this.silent()) { this.stop(); this.post({ type: "ended", gen: this.gen }); }
@@ -441,7 +442,7 @@ export class Studio {
       const cnt = Math.min(left, Math.max(0, Math.round((stop - this.pos) * sr)));
       if (cnt > 0) { this.renderTracks(done, cnt, true, true); this.pos += cnt / sr; done += cnt; }
       if (this.pos >= this.range.to - 0.5 / sr) {   // 到范围尾
-        if (this.loop) { this.posFrames = POS_EVERY; this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to)); for (const t of this.tracks.values()) this.endHold(t); this.resetCursors(false); this.chaseAtLoop(); this.checkMissing(); }   // 跳回去：正在响的照响，不松
+        if (this.loop) this.loopBack();   // 跳回去：正在响的照响，不松
         else { this.tail = 0; for (const t of this.tracks.values()) { this.releaseAll(t); t.envTarget = 0; } }
         continue;
       }
@@ -459,6 +460,12 @@ export class Studio {
     this.renderTracks(0, n, false, true, this.drainPos);
     this.drainPos += n / this.sr; this.drainSecs += n / this.sr;
     if (this.drainSecs >= TAIL_MAX || this.silent()) this.draining = false;
+  }
+  /** 循环跳回循环头（到范围尾时；或尾巴还在响时开了循环）。 */
+  private loopBack(): void {
+    this.tail = -1; this.posFrames = POS_EVERY; this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
+    for (const t of this.tracks.values()) this.endHold(t);
+    this.resetCursors(false); this.chaseAtLoop(); this.checkMissing();
   }
   private chaseAtLoop(): void { for (const t of this.tracks.values()) { if (t.spec.kind === "clips") continue; for (const nte of t.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos) this.noteOn(t, nte); } }
   private silent(): boolean {

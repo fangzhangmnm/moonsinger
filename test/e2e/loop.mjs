@@ -60,6 +60,26 @@ check(!!g && g.to < a.to - 1e-6, "本段：范围只有这一张（比全部短�
 await p.click("#playBtn"); await p.waitForTimeout(150);
 await menuClick("loop");
 check(!(await menuHas("seam")) && !(await p.$eval("#transportMore", (e) => e.classList.contains("is-on"))), "关循环 = 菜单里没有「听接缝」、⋯ 钮不亮");
+// 中途切循环 = 这一轮就生效（2026-10-10 user「中途toggle循环对本轮播放应该生效」）：本段视图、循环关着
+const track = async (ms) => { const out = []; for (let i = 0; i < ms / 100; i++) { out.push({ on: await playing(), p: await pos() }); await p.waitForTimeout(100); } return out; };
+await p.click("#playBtn"); check(await waitPlaying(), "中途切：放起来（循环关）");
+await p.waitForTimeout(200); await menuClick("loop");
+check((await tl())?.loop === true, "放着开循环 = 时间线马上循环", JSON.stringify(await tl()));
+let tr = await track(4000);
+check(tr.every((x) => x.on) && tr.some((x, i) => i && x.p < tr[i - 1].p - 0.3), "放着开循环 = 到尾跳回去、一直在放", tr.map((x) => x.p.toFixed(1)).join(" "));
+await menuClick("loop");
+tr = await track(4000);
+check(!tr[tr.length - 1].on, "放着关循环 = 这一遍放完就停", tr.map((x) => (x.on ? "" : "■") + x.p.toFixed(1)).join(" "));
+// 准备中（月读还在唱前几句）切循环 = 这一轮按新的
+await p.evaluate(() => { window.__moonsinger.singer.sing = async () => { await new Promise((r) => setTimeout(r, 1200)); return { samples: new Float32Array(22050 * 2), sr: 22050 }; }; });
+await p.click(".pad-key[data-k] >> nth=2"); await p.waitForTimeout(80);   // 多写一个音 = 唱谱变了、这一句要重唱（走慢的那个）
+await p.click("#playBtn"); await p.waitForTimeout(150);
+const prep = !(await playing());
+await menuClick("loop");
+check(await waitPlaying(), "准备中开了循环：放起来");
+check((await tl())?.loop === true, "准备中开的循环 = 这一轮的时间线循环", `${prep ? "（开的时候还在准备）" : "（开的时候已经在放了）"} ${JSON.stringify(await tl())}`);
+await p.click("#playBtn"); await p.waitForTimeout(150);
+await menuClick("loop");
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);

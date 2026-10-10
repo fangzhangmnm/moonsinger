@@ -74,6 +74,17 @@ describe("录音房：确定性 + 走带", () => {
 });
 
 describe("录音房：停 / 再放 / 放着的时候换时间线（2026-10-10）", () => {
+  it("尾巴还在响的时候开了循环 = 这一轮照样跳回去（user「中途toggle循环对本轮播放应该生效」）；没开 = 照旧响完报 ended", async () => {
+    const { s, out } = await studio(), notes = [{ t0: 0, t1: 0.9, key: 60 }];
+    s.handle({ type: "timeline", tl: tl([sfTrack("p", notes)], { from: 0, to: 1 }) }); s.handle({ type: "play" });
+    run(s, 1.05);   // 过了范围尾：进尾巴
+    assert(s.isPlaying && s.position > 1, "在尾巴里");
+    s.handle({ type: "timeline", tl: tl([sfTrack("p", notes)], { from: 0, to: 1 }, true) });
+    const r = run(s, 0.3);
+    assert(s.isPlaying && s.position < 0.5, `跳回去了（pos ${s.position.toFixed(2)}）`);
+    assert(peak(r.L, sec(0.05), sec(0.3)) > 0.01, "跳回去之后第一个音重新响");
+    assert(!out.some((m) => m.type === "ended"), "没报 ended");
+  });
   it("停 = 释放中的尾巴接着响到静（不是冻住）；再按放 = 上次的音不漏出来（user「每次点play的时候会漏上次的最后一个音」）", async () => {
     const { s } = await studio();
     s.handle({ type: "timeline", tl: tl([sfTrack("p", [{ t0: 0, t1: 1.5, key: 60 }])]) }); s.handle({ type: "play" });

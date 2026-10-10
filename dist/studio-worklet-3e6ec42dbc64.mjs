@@ -1145,6 +1145,10 @@ var Studio = class {
         this.waiting = null;
         this.resetCursors(true);
       }
+      if (this.tail >= 0 && this.loop) {
+        this.loopBack();
+        continue;
+      }
       if (this.tail >= 0) {
         this.renderTracks(done, left, false, true);
         this.pos += left / sr;
@@ -1169,14 +1173,8 @@ var Studio = class {
         done += cnt;
       }
       if (this.pos >= this.range.to - 0.5 / sr) {
-        if (this.loop) {
-          this.posFrames = POS_EVERY;
-          this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
-          for (const t of this.tracks.values()) this.endHold(t);
-          this.resetCursors(false);
-          this.chaseAtLoop();
-          this.checkMissing();
-        } else {
+        if (this.loop) this.loopBack();
+        else {
           this.tail = 0;
           for (const t of this.tracks.values()) {
             this.releaseAll(t);
@@ -1207,6 +1205,16 @@ var Studio = class {
     this.drainPos += n / this.sr;
     this.drainSecs += n / this.sr;
     if (this.drainSecs >= TAIL_MAX || this.silent()) this.draining = false;
+  }
+  /** 循环跳回循环头（到范围尾时；或尾巴还在响时开了循环）。 */
+  loopBack() {
+    this.tail = -1;
+    this.posFrames = POS_EVERY;
+    this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
+    for (const t of this.tracks.values()) this.endHold(t);
+    this.resetCursors(false);
+    this.chaseAtLoop();
+    this.checkMissing();
   }
   chaseAtLoop() {
     for (const t of this.tracks.values()) {
@@ -1549,4 +1557,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-81edd2d6affc.mjs.map
+//# sourceMappingURL=studio-worklet-3e6ec42dbc64.mjs.map

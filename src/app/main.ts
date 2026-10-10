@@ -959,6 +959,8 @@ async function startPlayback(how: "start" | "head" | "resume" | "seam"): Promise
     setChunkOrder(tl, at, loop ? { from: r.loopFrom, to: r.to } : null);
     await waitChunksReady(tl, at, () => cancelPrepare);
     if (cancelPrepare) { progress(""); return; }
+    const loopNow = loopOn || how === "seam";   // 准备的这几秒里切了循环 = 这一轮就按新的（user 2026-10-10「中途toggle循环对本轮播放应该生效」）
+    if (loopNow !== loop) { engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopNow, loopFrom: r.loopFrom }); setChunkOrder(tl, at, loopNow ? { from: r.loopFrom, to: r.to } : null); }
     await engine.play(at);
     paused = null;
     playIcon(true);
@@ -1087,7 +1089,8 @@ function openTransportMenu(): void {
 }
 function setLoop(on: boolean): void {
   loopOn = on; $("transportMore").classList.toggle("is-on", on); $("transportMore").textContent = on ? "循环 ⋯" : "⋯";
-  if (engine.playing && playTl) { const r = playRange(playTl); engine.setTimeline({ tracks: playTl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom }); }   // 放着的时候切 = 下一次到尾按新的来
+  // 放着的时候切 = 这一轮就按新的来：到尾（尾巴还在响也算）跳回去 / 不跳；开了循环 = 循环头那几句也排进去先唱（不然跳回去要冻着等月读）
+  if (engine.playing && playTl) { const r = playRange(playTl); engine.setTimeline({ tracks: playTl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom }); setChunkOrder(playTl, engine.position, loopOn ? { from: r.loopFrom, to: r.to } : null); }
 }
 let lastReorder = 0;
 // 播放头 = 现在**听到的**地方（2026-10-10 Opus 5.5；user「ipad后台唤起后音频和动画错位。以及你有没有办法实际测音频播到哪里了来好好对齐？」）：

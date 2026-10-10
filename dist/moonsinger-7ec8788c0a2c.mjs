@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.9.20-2026-10-10";
+var APP_VERSION = "v0.9.21-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -22582,6 +22582,10 @@ var Studio = class {
         this.waiting = null;
         this.resetCursors(true);
       }
+      if (this.tail >= 0 && this.loop) {
+        this.loopBack();
+        continue;
+      }
       if (this.tail >= 0) {
         this.renderTracks(done, left, false, true);
         this.pos += left / sr2;
@@ -22606,14 +22610,8 @@ var Studio = class {
         done += cnt;
       }
       if (this.pos >= this.range.to - 0.5 / sr2) {
-        if (this.loop) {
-          this.posFrames = POS_EVERY;
-          this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
-          for (const t10 of this.tracks.values()) this.endHold(t10);
-          this.resetCursors(false);
-          this.chaseAtLoop();
-          this.checkMissing();
-        } else {
+        if (this.loop) this.loopBack();
+        else {
           this.tail = 0;
           for (const t10 of this.tracks.values()) {
             this.releaseAll(t10);
@@ -22644,6 +22642,16 @@ var Studio = class {
     this.drainPos += n10 / this.sr;
     this.drainSecs += n10 / this.sr;
     if (this.drainSecs >= TAIL_MAX || this.silent()) this.draining = false;
+  }
+  /** 循环跳回循环头（到范围尾时；或尾巴还在响时开了循环）。 */
+  loopBack() {
+    this.tail = -1;
+    this.posFrames = POS_EVERY;
+    this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
+    for (const t10 of this.tracks.values()) this.endHold(t10);
+    this.resetCursors(false);
+    this.chaseAtLoop();
+    this.checkMissing();
   }
   chaseAtLoop() {
     for (const t10 of this.tracks.values()) {
@@ -34897,7 +34905,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-81edd2d6affc.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-3e6ec42dbc64.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -35908,6 +35916,11 @@ async function startPlayback(how) {
       progress("");
       return;
     }
+    const loopNow = loopOn || how === "seam";
+    if (loopNow !== loop) {
+      engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopNow, loopFrom: r10.loopFrom });
+      setChunkOrder(tl2, at2, loopNow ? { from: r10.loopFrom, to: r10.to } : null);
+    }
     await engine.play(at2);
     paused = null;
     playIcon(true);
@@ -36102,6 +36115,7 @@ function setLoop(on2) {
   if (engine.playing && playTl) {
     const r10 = playRange(playTl);
     engine.setTimeline({ tracks: playTl.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom });
+    setChunkOrder(playTl, engine.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
   }
 }
 var lastReorder = 0;
@@ -39339,4 +39353,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6586414a851b.mjs.map
+//# sourceMappingURL=moonsinger-7ec8788c0a2c.mjs.map

@@ -152,6 +152,7 @@
 - 做了什么 = 仓 CLAUDE.md v0.9.1 那条；设计 = `ai-docs/20261009-realtime-preview-engine-proposal.md`（§1–§12 提案、§13 user 三轮回复与修订、§14 刀 0 量的代价）；原话全集 = `ai-docs/20261009-sound-engine-user-vision.md`。
 - **接口面**（给接着做的人）：`src/engine/studio.ts` 的 `StudioIn / StudioOut / TimelineMsg / TrackSpec / ClipRef`；`src/engine/timeline.ts` 的 `buildTimeline(TimelineInput) → Timeline`、`PerformerInfo`；`src/engine/studio-client.ts` 的 `StudioClient`（bank / vowels / setTimeline / chunk / channel / master / play / stop / seek / audition* / renderOffline / on(pos | ended | missing | meter)）。main.ts 里：`prepare(scope)`（库 → 时间线 → 块）、`playRange(tl)`、`cursorSeconds(tl)`、`togglePlay`、`schedulePlaybackRefresh`、`auditionTarget()`。
 - **user 2026-10-10 拍板刀 5 / 刀 6**：「精度分级做 冷启动做 然后下一刀 内部进度回调中途取消按键加速worker并行 负载和内存监控防闪退 做 llama科研不做」→ 刀 5 = 精度分级（v0.9.11 已落块 Int16 + 分析 bf16；WORLD 单精度另议）+ 冷启动（v0.9.11 先落分段计时；词典解压缓存 / session 选项 / 启动就起引擎接着做；**念缓存持久化到 IDB 仍等 user 一句话**）；刀 6 = WORLD 内部进度回调、正在算的那句中途取消、按键再加速（断句 / 稳态那几步按句缓存）、两个 worker 并行唱（按设备）、音频线程负载 + 内存监控（防闪退：超预算先放块 / 减并行 / 明说）。llama 科研线不做。
+- **中途切循环这一轮生效已落（v0.9.21，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.21 那条。
 - **光标行界亲和 + 从头放不动起点已落（v0.9.20，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.20 那条。下一件：查 iPad 捏合缩放卡（user 同一条消息）。
 - **模式 / 底座 / 一个主键已落（v0.9.19，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.19 那条。还开着：参考窗最小化圆钮（库）；编辑状态机整理（Fable 专门一轮）；图标 `play-from-start` 待 user 过目（图标库 TODO.md 待过目表）。
 - **走带重做 + 听模式已落（v0.9.18，2026-10-10，Opus 5.5）**：仓 CLAUDE.md v0.9.18 那条。A/B 借元音撤了（user「原版是正确的」）。**下一轮 = 模式 / 底座架构**（账本 §3「下一轮」两条：音 / 词 / 符 + 听、pad 位变底座放 音键 / 符号 / 录音室、模式键摘下来；参考窗最小化圆钮）。
@@ -243,6 +244,8 @@
   - **wishlist（user 2026-10-10「wishlist: 播放的时候可以实时跳转到别的地方」）**：放着的时候点谱 / 点小节 = 立刻跳到那儿接着放（录音房 `seek` 已有、调度器会跟着重排；缺的是谱上的手势 / 入口——和「小节开头播放钮」「暂停继续 vs 重放」一起设计）。
   - **wishlist（user 2026-10-10「wishlist: 月度轨加无音调吸气声」）**：月读的轨在换气处加无音调的吸气声（唱法核心里已有合成的「断气」吸气：`BREATH` 开关 + `breathTemplate`，默认跟元音图谱一起关着（user 10-07「元音图谱一般般，先不做」、「usagi断气远优于不断气」）——可以单独把吸气打开，不带图谱；吸气声的样子归 user 耳朵）。
   - **wishlist（user 2026-10-10「wishlist 到时候ui可以在录音室卡片上做一些需要监视的东西的可视化」「wishlist 录音室可能还是做在键盘位吧而不是全屏，还是能看见谱子会方便很多」）**：① 录音室每张卡上画要盯的东西（每轨电平表、压缩器压了多少 `Comp.gainReductionDb`、侧链在不在压、发送量…；录音房的 meter 消息可以扩成每轨）；② 录音室从全屏改到键盘那个位子（谱还看得见）。
+    **补（user 2026-10-10 晚「wishlist: 轨道卡片上面显示电频器，背景显示频谱（不要占用太多资源）」）**：每张轨卡一条电平表 + 卡片背景画这条轨的频谱（看哪几条轨在同一段频率上打架 = 频率遮蔽）。省资源的做法（没定）：录音房按轨算一个粗的频带能量（十几个对数频带、每 100 ms 一次，只在录音室开着时算），不在主线程做 FFT。
+  - **混音下一步 = 频率遮蔽（user 2026-10-10 晚「然后马上就要用到让谱不overlap的东西了」→ 纠正「不是，我说的是混音，你上一轮Nudge的比reverb重要的东西」「我加了pad之后已经糊掉了」）**：「谱」= 频谱，不是乐谱。引擎早有 `eq`（v0.9.9，低切 / 高切 / 低架 / 中峰 / 高架），缺的是录音室里改它的界面。主场 = 桌面（user 同晚「编曲配乐反而是大屏电脑键盘鼠标的主场」）。
   - **定了（user 2026-10-10「嗯然后这样的话是不是你可以创建非乐手轨。所以我觉得轨还是和乐手是两个概念」）**：录音房里「轨」≠ 乐手——轨是通用的条（增益 / 声像 / 效果链 / 发送 / 去哪），乐手的通道只是一种，总线是没有乐手的轨，以后录音 / 音效素材也是轨；谱那边「声部就是歌手」不变。刀 4 的 `studio.json` v2 照这个搭（`tracks[]` kind = mic / bus）。
   - **wishlist（user 2026-10-10「wishlist 总谱可以有小widget切solo mute之类的以及显示隐藏」）**：总谱（全部视图）每行声部名旁边一个小 widget：静音 / 独奏 / 显示 / 隐藏（现在要开歌手牌或录音室）。
   - **齐唱 = 混音效果（user 2026-10-10「要死。团子的C段月读似乎要从清唱变成chorous/unison齐唱…怎么办 以及月读应该可以有多个歌手实例，别的乐器也是，对吧」→ 「齐唱 我想的是用混音效果做，clannad也只有茶太一名歌手啊」）**：不靠多加歌手，靠 `chorus` 效果（v0.9.10 加进 fx.ts：几条带轻微音高抖动的短延迟分到左右 + 干声）。C 段那张纸上月读的通道链挂一个 chorus（或发送到一条合唱总线）；段与段的混音差别 = 那张纸上的轨和链。多个歌手实例技术上本来就可以（每位一个角色），但齐唱不这么做。
