@@ -787,13 +787,13 @@ var Studio = class {
         return;
       case "play":
         if (m.gen !== void 0) this.gen = m.gen;
-        this.play(m.at);
+        this.play(m.at, m.quiet);
         return;
       case "stop":
         this.stop();
         return;
       case "seek":
-        this.seek(m.at);
+        this.seek(m.at, m.quiet);
         return;
       case "audition":
         this.audition(m);
@@ -890,7 +890,17 @@ var Studio = class {
     this.sweepForget();
   }
   // ── 走带 ────────────────────────────────────────────────────────────────────────────────────────────────────────
-  play(at) {
+  /** 起点（见 play 消息的 quiet）：-Infinity = 没有。跳转 / 循环绕回 / 停 = 清掉（循环第二遍前一段照常响）。
+   *  user 2026-10-10「为什么从sheet C播放的时候会带前一个音，也不知道是sheet B的还是stop的时候没弄干净」：从某一段放时起点提前 PRE_ROLL（月读的辅音在拍子前），这一小截落在前一段最后一个音里，追音把它补按下去、前一句的块（带收尾余音）也放出来。 */
+  quiet = -Infinity;
+  mutedNote(n) {
+    return n.t1 <= this.quiet;
+  }
+  mutedClip(c) {
+    return c.end !== void 0 && c.end <= this.quiet;
+  }
+  play(at, quiet) {
+    this.quiet = quiet ?? -Infinity;
     if (at !== void 0) this.pos = at;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
     this.playing = true;
@@ -907,6 +917,7 @@ var Studio = class {
   }
   /** 停：不排新音、块 30 ms 淡出、释放中的尾巴接着响到静（不是冻住）。播放头留在原地。 */
   stop() {
+    this.quiet = -Infinity;
     this.playing = false;
     this.tail = -1;
     this.waiting = null;
@@ -920,7 +931,8 @@ var Studio = class {
     }
     this.sweepForget();
   }
-  seek(at) {
+  seek(at, quiet) {
+    this.quiet = quiet ?? -Infinity;
     this.pos = at;
     this.posFrames = POS_EVERY;
     if (this.playing) {
@@ -996,7 +1008,7 @@ var Studio = class {
       const notes = t.spec.notes;
       let i = 0;
       while (i < notes.length && notes[i].t0 < this.pos) {
-        if (chase && notes[i].t1 > this.pos) this.noteOn(t, notes[i]);
+        if (chase && notes[i].t1 > this.pos && !this.mutedNote(notes[i])) this.noteOn(t, notes[i]);
         i++;
       }
       t.nextNote = i;
@@ -1030,7 +1042,7 @@ var Studio = class {
     const miss = [];
     for (const t of this.tracks.values()) {
       if (t.spec.kind !== "clips") continue;
-      for (const c of t.spec.clips) if (c.t0 + c.dur > this.pos && c.t0 < this.pos + LOOKAHEAD && !this.chunks.has(c.key) && !this.missingSent.has(c.key)) {
+      for (const c of t.spec.clips) if (c.t0 + c.dur > this.pos && c.t0 < this.pos + LOOKAHEAD && !this.mutedClip(c) && !this.chunks.has(c.key) && !this.missingSent.has(c.key)) {
         miss.push(c.key);
         this.missingSent.add(c.key);
       }
@@ -1043,7 +1055,7 @@ var Studio = class {
     for (const t of this.tracks.values()) {
       if (t.spec.kind !== "clips") continue;
       for (const c of t.spec.clips) {
-        if (this.chunks.has(c.key) || t.hold && c.t0 < t.hold.until) continue;
+        if (this.chunks.has(c.key) || t.hold && c.t0 < t.hold.until || this.mutedClip(c)) continue;
         if (c.t0 <= this.pos && c.t0 + c.dur > this.pos) return { stop: this.pos, wait: c.key };
         if (c.t0 > this.pos && c.t0 < stop) stop = c.t0;
       }
@@ -1208,6 +1220,7 @@ var Studio = class {
   }
   /** 循环跳回循环头（到范围尾时；或尾巴还在响时开了循环）。 */
   loopBack() {
+    this.quiet = -Infinity;
     this.tail = -1;
     this.posFrames = POS_EVERY;
     this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
@@ -1301,7 +1314,7 @@ var Studio = class {
     if (t.spec.kind !== "clips") return;
     if (t.hold) this.renderClip(t.hold, mono, cnt, t0);
     for (const c of t.spec.clips) {
-      if (t.hold && c.t0 < t.hold.until) continue;
+      if (t.hold && c.t0 < t.hold.until || this.mutedClip(c)) continue;
       this.renderClip(c, mono, cnt, t0);
     }
   }
@@ -1343,7 +1356,8 @@ var Studio = class {
           this.noteOff(t, o.key, o.preset);
         } else {
           renderTo(Math.min(cnt, Math.max(pos, Math.round((nextOn - t0) * sr))));
-          this.noteOn(t, notes[t.nextNote++]);
+          const nn = notes[t.nextNote++];
+          if (!this.mutedNote(nn)) this.noteOn(t, nn);
         }
       }
     }
@@ -1557,4 +1571,4 @@ var StudioProcessor = class extends AudioWorkletProcessor {
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-3e6ec42dbc64.mjs.map
+//# sourceMappingURL=studio-worklet-19406d0145f4.mjs.map

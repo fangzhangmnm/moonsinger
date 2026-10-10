@@ -31,7 +31,7 @@ const LOOKAHEAD = 30;
 /** 一个要出声的音（时间线上的秒）。preset = 这份库里的预设下标（主线程按 bank:program 查过）；vel 0–1。 */
 export interface NoteEv { t0: number; t1: number; key: number; vel: number; preset: number }
 /** 慢引擎的一块：key = 内容键（主线程按 key 喂 samples）；t0 = 这块第 0 个采样对应时间线的第几秒（含提前量）；dur = 预计几秒（没到时判断「站在它上面」）；gain = 乘多少。 */
-export interface ClipRef { key: string; t0: number; dur: number; gain: number }
+export interface ClipRef { key: string; t0: number; dur: number; gain: number; /** 唱的最后一个音结束的秒（t0 + dur 还含收尾余音）；从某一段放时，end ≤ 起点的块不放。 */ end?: number }
 export interface GainSeg { t0: number; t1: number; dB: number }
 /** chain = 跟着演奏者走的效果（琴箱 / 音箱…；CandidateV2.chain），在表情曲线之后、通道条之前。 */
 export type TrackSpec =
@@ -60,9 +60,9 @@ export type StudioIn =
   | { type: "channel"; id: string; p: Partial<ChannelParams> }
   | { type: "buses"; buses: BusSpec[] }
   | { type: "master"; p: Partial<MasterParams> }
-  | { type: "play"; at?: number; gen?: number }   // gen = 主线程的走带代号：位置报告带着它，停了之后迟到的报告主线程能认出来扔掉
+  | { type: "play"; at?: number; gen?: number; /** 起点（从某一段放：at 比它提前一点给辅音）：在它之前就结束的音不追、不按，唱完在它之前的块不放（v0.10.3）。 */ quiet?: number }   // gen = 主线程的走带代号：位置报告带着它，停了之后迟到的报告主线程能认出来扔掉
   | { type: "stop" }
-  | { type: "seek"; at: number }
+  | { type: "seek"; at: number; quiet?: number }
   /** 按键试听：src = 来源（手指 / 键），同一来源新的顶掉旧的；gainDb / pan = 这条通道（麦克风 + 校准）+ 光标处的力度。 */
   | { type: "audition"; src: string; ev: "on" | "off" | "glide" | "alloff"; inst?: AuditionInst; key?: number; vel?: number; gainDb?: number; pan?: number }
   /** 按键试听：放一段现成的声音（月读唱的一个字；刀 3）。同一来源新的顶掉旧的；off 走 audition off。 */
@@ -216,9 +216,9 @@ export class Studio {
         return;
       }
       case "master": this.master = { ...this.master, ...m.p }; this.masterLin = dbToLin(this.master.gainDb); if (m.p.chain !== undefined) this.masterFx = buildChain(m.p.chain, this.masterFx, this.sr); return;
-      case "play": if (m.gen !== undefined) this.gen = m.gen; this.play(m.at); return;
+      case "play": if (m.gen !== undefined) this.gen = m.gen; this.play(m.at, m.quiet); return;
       case "stop": this.stop(); return;
-      case "seek": this.seek(m.at); return;
+      case "seek": this.seek(m.at, m.quiet); return;
       case "audition": this.audition(m); return;
       case "auditionClip": {
         for (const v of this.auditionClips) if (v.src === m.src) v.state = "cut";
@@ -280,7 +280,13 @@ export class Studio {
   }
 
   // ── 走带 ────────────────────────────────────────────────────────────────────────────────────────────────────────
-  private play(at?: number): void {
+  /** 起点（见 play 消息的 quiet）：-Infinity = 没有。跳转 / 循环绕回 / 停 = 清掉（循环第二遍前一段照常响）。
+   *  user 2026-10-10「为什么从sheet C播放的时候会带前一个音，也不知道是sheet B的还是stop的时候没弄干净」：从某一段放时起点提前 PRE_ROLL（月读的辅音在拍子前），这一小截落在前一段最后一个音里，追音把它补按下去、前一句的块（带收尾余音）也放出来。 */
+  private quiet = -Infinity;
+  private mutedNote(n: NoteEv): boolean { return n.t1 <= this.quiet; }
+  private mutedClip(c: ClipRef): boolean { return c.end !== undefined && c.end <= this.quiet; }
+  private play(at?: number, quiet?: number): void {
+    this.quiet = quiet ?? -Infinity;
     if (at !== undefined) this.pos = at;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
     this.playing = true; this.draining = false; this.tail = -1; this.waiting = null; this.posFrames = POS_EVERY;   // 起放那一块就报（主线程的对照表从这儿开始）
@@ -290,12 +296,14 @@ export class Studio {
   }
   /** 停：不排新音、块 30 ms 淡出、释放中的尾巴接着响到静（不是冻住）。播放头留在原地。 */
   private stop(): void {
+    this.quiet = -Infinity;
     this.playing = false; this.tail = -1; this.waiting = null;
     this.draining = true; this.drainPos = this.pos; this.drainSecs = 0;
     for (const t of this.tracks.values()) { this.releaseAll(t); t.envTarget = 0; this.endHold(t); }
     this.sweepForget();
   }
-  private seek(at: number): void {
+  private seek(at: number, quiet?: number): void {
+    this.quiet = quiet ?? -Infinity;
     this.pos = at; this.posFrames = POS_EVERY;   // 跳了 = 这一块就报（对照表别拿跳之前的位置往后推）
     if (this.playing) { this.tail = -1; this.waiting = null; for (const t of this.tracks.values()) this.endHold(t); this.resetCursors(true); this.checkMissing(); }
   }
@@ -335,7 +343,7 @@ export class Studio {
       if (segs && segs.length) { let k = 0; while (k < segs.length - 1 && this.pos >= segs[k].t1) k++; t.gk = k; if (chase) t.y = dbToLin(segs[k].dB); }
       if (t.spec.kind === "clips") continue;
       const notes = t.spec.notes; let i = 0;
-      while (i < notes.length && notes[i].t0 < this.pos) { if (chase && notes[i].t1 > this.pos) this.noteOn(t, notes[i]); i++; }
+      while (i < notes.length && notes[i].t0 < this.pos) { if (chase && notes[i].t1 > this.pos && !this.mutedNote(notes[i])) this.noteOn(t, notes[i]); i++; }
       t.nextNote = i;
     }
   }
@@ -361,7 +369,7 @@ export class Studio {
     const miss: string[] = [];
     for (const t of this.tracks.values()) {
       if (t.spec.kind !== "clips") continue;
-      for (const c of t.spec.clips) if (c.t0 + c.dur > this.pos && c.t0 < this.pos + LOOKAHEAD && !this.chunks.has(c.key) && !this.missingSent.has(c.key)) { miss.push(c.key); this.missingSent.add(c.key); }
+      for (const c of t.spec.clips) if (c.t0 + c.dur > this.pos && c.t0 < this.pos + LOOKAHEAD && !this.mutedClip(c) && !this.chunks.has(c.key) && !this.missingSent.has(c.key)) { miss.push(c.key); this.missingSent.add(c.key); }
     }
     if (miss.length) this.post({ type: "missing", keys: miss });
   }
@@ -371,7 +379,7 @@ export class Studio {
     for (const t of this.tracks.values()) {
       if (t.spec.kind !== "clips") continue;
       for (const c of t.spec.clips) {
-        if (this.chunks.has(c.key) || (t.hold && c.t0 < t.hold.until)) continue;   // hold 着的那段：旧块顶着，新块没到也不挡
+        if (this.chunks.has(c.key) || (t.hold && c.t0 < t.hold.until) || this.mutedClip(c)) continue;   // hold 着的那段：旧块顶着，新块没到也不挡；这次不放的块也不挡
         if (c.t0 <= this.pos && c.t0 + c.dur > this.pos) return { stop: this.pos, wait: c.key };
         if (c.t0 > this.pos && c.t0 < stop) stop = c.t0;
       }
@@ -463,6 +471,7 @@ export class Studio {
   }
   /** 循环跳回循环头（到范围尾时；或尾巴还在响时开了循环）。 */
   private loopBack(): void {
+    this.quiet = -Infinity;
     this.tail = -1; this.posFrames = POS_EVERY; this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
     for (const t of this.tracks.values()) this.endHold(t);
     this.resetCursors(false); this.chaseAtLoop(); this.checkMissing();
@@ -520,7 +529,7 @@ export class Studio {
   private renderClips(t: TrackState, mono: Float32Array, cnt: number, t0: number): void {
     if (t.spec.kind !== "clips") return;
     if (t.hold) this.renderClip(t.hold, mono, cnt, t0);
-    for (const c of t.spec.clips) { if (t.hold && c.t0 < t.hold.until) continue; this.renderClip(c, mono, cnt, t0); }
+    for (const c of t.spec.clips) { if ((t.hold && c.t0 < t.hold.until) || this.mutedClip(c)) continue; this.renderClip(c, mono, cnt, t0); }
   }
   private renderClip(c: { key: string; t0: number; gain: number }, mono: Float32Array, cnt: number, t0: number): void {
     const sr = this.sr, tEnd = t0 + cnt / sr;
@@ -550,7 +559,7 @@ export class Studio {
         const nextOn = t.nextNote < notes.length ? notes[t.nextNote].t0 : Infinity, nextOff = t.offs.length ? t.offs[0].t : Infinity;
         if (nextOn >= tEnd && nextOff >= tEnd) break;
         if (nextOff <= nextOn) { renderTo(Math.min(cnt, Math.max(pos, Math.round((nextOff - t0) * sr)))); const o = t.offs.shift()!; this.noteOff(t, o.key, o.preset); }
-        else { renderTo(Math.min(cnt, Math.max(pos, Math.round((nextOn - t0) * sr)))); this.noteOn(t, notes[t.nextNote++]); }
+        else { renderTo(Math.min(cnt, Math.max(pos, Math.round((nextOn - t0) * sr)))); const nn = notes[t.nextNote++]; if (!this.mutedNote(nn)) this.noteOn(t, nn); }
       }
     }
     renderTo(cnt);

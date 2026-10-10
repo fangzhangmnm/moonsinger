@@ -14,4 +14,11 @@ describe("调度器", () => {
     eq(readyToStart([], 0, 2, none), true, "没有块 = 齐了");
   });
   it("预卷几块按速度：快 2、中 3、慢 4、没量过 2", () => { eq(prerollCount(null), 2); eq(prerollCount(150), 2); eq(prerollCount(600), 3); eq(prerollCount(1500), 4); });
+  it("从某一段放：唱完在起点之前的块不排在前面、开播不等它（v0.10.3）", () => {
+    const cs = [{ key: "B", t0: 0, dur: 1.6, end: 1.0 }, { key: "C", t0: 0.5, dur: 1.5, end: 1.8 }];
+    eq(chunkOrder(cs, 0.9, null, () => false, 1.0)[0], "C", "起点 1.0：B 那句不算「正站在上面」");
+    eq(chunkOrder(cs, 0.9, null, () => false)[0], "B", "不带起点 = 原来的顺序");
+    eq(readyToStart(cs, 0.9, 2, (k) => k === "C", 1.0), true, "只有 C 到了就能开播");
+    eq(readyToStart(cs, 0.9, 2, (k) => k === "C"), false);
+  });
 });

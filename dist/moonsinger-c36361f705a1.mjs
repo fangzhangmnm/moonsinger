@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.3-2026-10-10";
+var APP_VERSION = "v0.10.4-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -23296,13 +23296,13 @@ var Studio = class {
         return;
       case "play":
         if (m2.gen !== void 0) this.gen = m2.gen;
-        this.play(m2.at);
+        this.play(m2.at, m2.quiet);
         return;
       case "stop":
         this.stop();
         return;
       case "seek":
-        this.seek(m2.at);
+        this.seek(m2.at, m2.quiet);
         return;
       case "audition":
         this.audition(m2);
@@ -23399,7 +23399,17 @@ var Studio = class {
     this.sweepForget();
   }
   // ── 走带 ────────────────────────────────────────────────────────────────────────────────────────────────────────
-  play(at2) {
+  /** 起点（见 play 消息的 quiet）：-Infinity = 没有。跳转 / 循环绕回 / 停 = 清掉（循环第二遍前一段照常响）。
+   *  user 2026-10-10「为什么从sheet C播放的时候会带前一个音，也不知道是sheet B的还是stop的时候没弄干净」：从某一段放时起点提前 PRE_ROLL（月读的辅音在拍子前），这一小截落在前一段最后一个音里，追音把它补按下去、前一句的块（带收尾余音）也放出来。 */
+  quiet = -Infinity;
+  mutedNote(n10) {
+    return n10.t1 <= this.quiet;
+  }
+  mutedClip(c10) {
+    return c10.end !== void 0 && c10.end <= this.quiet;
+  }
+  play(at2, quiet) {
+    this.quiet = quiet ?? -Infinity;
     if (at2 !== void 0) this.pos = at2;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
     this.playing = true;
@@ -23416,6 +23426,7 @@ var Studio = class {
   }
   /** 停：不排新音、块 30 ms 淡出、释放中的尾巴接着响到静（不是冻住）。播放头留在原地。 */
   stop() {
+    this.quiet = -Infinity;
     this.playing = false;
     this.tail = -1;
     this.waiting = null;
@@ -23429,7 +23440,8 @@ var Studio = class {
     }
     this.sweepForget();
   }
-  seek(at2) {
+  seek(at2, quiet) {
+    this.quiet = quiet ?? -Infinity;
     this.pos = at2;
     this.posFrames = POS_EVERY;
     if (this.playing) {
@@ -23505,7 +23517,7 @@ var Studio = class {
       const notes = t10.spec.notes;
       let i10 = 0;
       while (i10 < notes.length && notes[i10].t0 < this.pos) {
-        if (chase && notes[i10].t1 > this.pos) this.noteOn(t10, notes[i10]);
+        if (chase && notes[i10].t1 > this.pos && !this.mutedNote(notes[i10])) this.noteOn(t10, notes[i10]);
         i10++;
       }
       t10.nextNote = i10;
@@ -23539,7 +23551,7 @@ var Studio = class {
     const miss = [];
     for (const t10 of this.tracks.values()) {
       if (t10.spec.kind !== "clips") continue;
-      for (const c10 of t10.spec.clips) if (c10.t0 + c10.dur > this.pos && c10.t0 < this.pos + LOOKAHEAD && !this.chunks.has(c10.key) && !this.missingSent.has(c10.key)) {
+      for (const c10 of t10.spec.clips) if (c10.t0 + c10.dur > this.pos && c10.t0 < this.pos + LOOKAHEAD && !this.mutedClip(c10) && !this.chunks.has(c10.key) && !this.missingSent.has(c10.key)) {
         miss.push(c10.key);
         this.missingSent.add(c10.key);
       }
@@ -23552,7 +23564,7 @@ var Studio = class {
     for (const t10 of this.tracks.values()) {
       if (t10.spec.kind !== "clips") continue;
       for (const c10 of t10.spec.clips) {
-        if (this.chunks.has(c10.key) || t10.hold && c10.t0 < t10.hold.until) continue;
+        if (this.chunks.has(c10.key) || t10.hold && c10.t0 < t10.hold.until || this.mutedClip(c10)) continue;
         if (c10.t0 <= this.pos && c10.t0 + c10.dur > this.pos) return { stop: this.pos, wait: c10.key };
         if (c10.t0 > this.pos && c10.t0 < stop) stop = c10.t0;
       }
@@ -23717,6 +23729,7 @@ var Studio = class {
   }
   /** 循环跳回循环头（到范围尾时；或尾巴还在响时开了循环）。 */
   loopBack() {
+    this.quiet = -Infinity;
     this.tail = -1;
     this.posFrames = POS_EVERY;
     this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
@@ -23810,7 +23823,7 @@ var Studio = class {
     if (t10.spec.kind !== "clips") return;
     if (t10.hold) this.renderClip(t10.hold, mono, cnt, t02);
     for (const c10 of t10.spec.clips) {
-      if (t10.hold && c10.t0 < t10.hold.until) continue;
+      if (t10.hold && c10.t0 < t10.hold.until || this.mutedClip(c10)) continue;
       this.renderClip(c10, mono, cnt, t02);
     }
   }
@@ -23852,7 +23865,8 @@ var Studio = class {
           this.noteOff(t10, o10.key, o10.preset);
         } else {
           renderTo(Math.min(cnt, Math.max(pos, Math.round((nextOn - t02) * sr2))));
-          this.noteOn(t10, notes[t10.nextNote++]);
+          const nn2 = notes[t10.nextNote++];
+          if (!this.mutedNote(nn2)) this.noteOn(t10, nn2);
         }
       }
     }
@@ -24279,14 +24293,15 @@ var StudioClient = class {
     this.post({ type: "buses", buses: b3 });
   }
   /** 从 at 秒放起（不给 = 从范围头 / 上次位置）。要先在用户手势里解锁过 AudioContext（iPad）。 */
-  async play(at2) {
+  /** quiet = 起点（从某一段放时 at 比它提前一点）：在它之前就结束的音 / 唱完的块这次不出声（v0.10.3）。 */
+  async play(at2, quiet) {
     await this.ensure();
     this.gen++;
     this._playing = true;
     this._waiting = null;
     this.hist = [];
     if (at2 !== void 0) this._pos = at2;
-    this.post({ type: "play", at: at2, gen: this.gen });
+    this.post({ type: "play", at: at2, gen: this.gen, ...quiet !== void 0 ? { quiet } : {} });
   }
   stop() {
     this.gen++;
@@ -24314,9 +24329,9 @@ var StudioClient = class {
     const T2 = this.outputTime();
     return T2 === null ? null : audibleAt(this.hist, T2);
   }
-  seek(at2) {
+  seek(at2, quiet) {
     this._pos = at2;
-    this.post({ type: "seek", at: at2 });
+    this.post({ type: "seek", at: at2, ...quiet !== void 0 ? { quiet } : {} });
   }
   /** 按键试听（要先 ensure 过；没装好的这一下丢掉——试听要即时，迟到的音更烦）。 */
   audition(m2) {
@@ -24469,8 +24484,8 @@ function buildTimeline(inp) {
         for (const [i10, e10] of te3) entryOf.set(tokens[i10].id, e10);
         const first = noteAt(a10), last = tl2.filter((x2) => x2.index >= a10 && x2.index < b3 && x2.tok.kind === "note").reduce((m2, x2) => Math.max(m2, x2.t1), first);
         const key = JSON.stringify(["tsukuyomi-chunk", score, inp.singOpt]), t02 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
-        clips.clips.push({ key, t0: t02, dur, gain: SUNG_GAIN });
-        chunks2.push({ part: part.id, key, score, lang, t0: t02, dur, entryOf });
+        clips.clips.push({ key, t0: t02, dur, gain: SUNG_GAIN, end: last });
+        chunks2.push({ part: part.id, key, score, lang, t0: t02, dur, end: last, entryOf });
         from = Math.min(from, t02);
         to2 = Math.max(to2, t02 + dur);
       }
@@ -24565,7 +24580,8 @@ function buildTimeline(inp) {
 }
 
 // src/engine/scheduler.ts
-function chunkOrder(chunks2, pos, loop, has) {
+var mutedAt = (c10, quiet) => c10.end !== void 0 && c10.end <= quiet;
+function chunkOrder(chunks2, pos, loop, has, quiet = -Infinity) {
   const seen = /* @__PURE__ */ new Set(), out = [];
   const add = (c10) => {
     if (!seen.has(c10.key)) {
@@ -24574,7 +24590,7 @@ function chunkOrder(chunks2, pos, loop, has) {
     }
   };
   const sorted = [...chunks2].sort((a10, b3) => a10.t0 - b3.t0);
-  for (const c10 of sorted) if (c10.t0 <= pos && c10.t0 + c10.dur > pos) add(c10);
+  for (const c10 of sorted) if (c10.t0 <= pos && c10.t0 + c10.dur > pos && !mutedAt(c10, quiet)) add(c10);
   for (const c10 of sorted) if (c10.t0 > pos && (!loop || c10.t0 < loop.to)) add(c10);
   if (loop) {
     for (const c10 of sorted) if (c10.t0 >= loop.from && c10.t0 <= pos) add(c10);
@@ -24582,9 +24598,9 @@ function chunkOrder(chunks2, pos, loop, has) {
   for (const c10 of sorted) add(c10);
   return out;
 }
-function readyToStart(chunks2, pos, n10, has) {
+function readyToStart(chunks2, pos, n10, has, quiet = -Infinity) {
   const sorted = [...chunks2].sort((a10, b3) => a10.t0 - b3.t0), need = [];
-  for (const c10 of sorted) if (c10.t0 + c10.dur > pos && need.length < n10 && !need.includes(c10.key)) need.push(c10.key);
+  for (const c10 of sorted) if (c10.t0 + c10.dur > pos && !mutedAt(c10, quiet) && need.length < n10 && !need.includes(c10.key)) need.push(c10.key);
   return need.every(has);
 }
 function prerollCount(msPerSongSec) {
@@ -36158,7 +36174,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-3e6ec42dbc64.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-19406d0145f4.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -36914,9 +36930,10 @@ var pumpQuiet = false;
 var singSpeed = null;
 var inflightKeys = /* @__PURE__ */ new Set();
 var pendingChunks = () => chunkKeysWanted.filter((k2) => !engine.hasChunk(k2)).length;
+var playMute;
 function setChunkOrder(tl2, pos, loop, o10 = {}) {
   chunkPlans = new Map(tl2.chunks.map((c10) => [c10.key, c10]));
-  let keys = chunkOrder(tl2.chunks, pos, loop, (k2) => engine.hasChunk(k2));
+  let keys = chunkOrder(tl2.chunks, pos, loop, (k2) => engine.hasChunk(k2), o10.mute ?? playMute);
   if (o10.limit !== void 0) keys = keys.slice(0, o10.limit);
   chunkKeysWanted = keys;
   pumpQuiet = !!o10.quiet;
@@ -37000,8 +37017,8 @@ async function singOne(key, c10, who) {
   }
   renderBar.next();
 }
-async function waitChunksReady(tl2, pos, stop) {
-  while (!stop() && !readyToStart(tl2.chunks, pos, prerollCount(singSpeed), (k2) => engine.hasChunk(k2))) {
+async function waitChunksReady(tl2, pos, stop, mute) {
+  while (!stop() && !readyToStart(tl2.chunks, pos, prerollCount(singSpeed), (k2) => engine.hasChunk(k2), mute)) {
     if (!pumping && pendingChunks() === 0) break;
     await new Promise((r10) => setTimeout(r10, 80));
   }
@@ -37128,6 +37145,11 @@ function playRange(tl2) {
 var startMark = null;
 var paused = null;
 var clampTo = (r10, s10) => Math.min(Math.max(s10, r10.from), r10.to);
+function startMute(tl2, r10) {
+  if (!startMark) return void 0;
+  const s10 = tl2.secondsAt(startMark.paperId, startMark.tick, 0);
+  return s10 === null ? void 0 : clampTo(r10, s10);
+}
 function startSeconds(tl2, r10) {
   if (!startMark) return r10.from;
   const s10 = tl2.secondsAt(startMark.paperId, startMark.tick, 0);
@@ -37194,17 +37216,19 @@ async function startPlayback(how) {
     const loop = loopOn || how === "seam";
     engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop, loopFrom: r10.loopFrom });
     const at2 = how === "seam" ? Math.max(r10.from, r10.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl2, r10) : how === "head" ? r10.from : startSeconds(tl2, r10);
+    playMute = how === "start" ? startMute(tl2, r10) : void 0;
     setChunkOrder(tl2, at2, loop ? { from: r10.loopFrom, to: r10.to } : null);
-    await waitChunksReady(tl2, at2, () => cancelPrepare);
+    await waitChunksReady(tl2, at2, () => cancelPrepare, playMute);
     if (cancelPrepare) {
       progress("");
       return;
     }
     const loopNow = loopOn || how === "seam";
     const atNow = how === "start" ? startSeconds(tl2, r10) : at2;
+    playMute = how === "start" ? startMute(tl2, r10) : void 0;
     if (loopNow !== loop) engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopNow, loopFrom: r10.loopFrom });
     if (loopNow !== loop || atNow !== at2) setChunkOrder(tl2, atNow, loopNow ? { from: r10.loopFrom, to: r10.to } : null);
-    await engine.play(atNow);
+    await engine.play(atNow, playMute);
     paused = null;
     playIcon(true);
     progress(loopOn ? `\u5FAA\u73AF ${(r10.to - r10.loopFrom).toFixed(1)} \u79D2` : `${(r10.to - atNow).toFixed(1)} \u79D2`);
@@ -37246,7 +37270,9 @@ function pausePlay() {
 function replay() {
   paused = null;
   if (engine.playing && playTl) {
-    engine.seek(startSeconds(playTl, playRange(playTl)));
+    const r10 = playRange(playTl);
+    playMute = startMute(playTl, r10);
+    engine.seek(startSeconds(playTl, r10), playMute);
     return;
   }
   view.setPlayhead(null);
@@ -37276,6 +37302,7 @@ function stopPlay() {
   phKey = "";
   cancelPrepare = true;
   paused = null;
+  playMute = void 0;
   chunkKeysWanted = [];
   singer.cancelPending();
   singer.cancelInflight();
@@ -37436,6 +37463,7 @@ engine.on("pos", (sec, playing, waiting) => {
   if (!playing) return;
   if (playTl && !phRaf) phRaf = requestAnimationFrame(playheadFrame);
   if (waiting) progress("\u7B49\u6708\u8BFB\u5531\u597D\u8FD9\u4E00\u53E5\u2026");
+  if (playMute !== void 0 && sec > playMute + 1) playMute = void 0;
   if (playTl && performance.now() - lastReorder > 1e3) {
     lastReorder = performance.now();
     const r10 = playRange(playTl);
@@ -37482,7 +37510,7 @@ function schedulePrewarm() {
     if (!tl2.chunks.length) return;
     pruneChunks(tl2);
     const r10 = playRange(tl2);
-    setChunkOrder(tl2, paused ? resumeSeconds(tl2, r10) : startSeconds(tl2, r10), null, { quiet: true, limit: PREWARM_PHRASES });
+    setChunkOrder(tl2, paused ? resumeSeconds(tl2, r10) : startSeconds(tl2, r10), null, { quiet: true, limit: PREWARM_PHRASES, mute: paused ? void 0 : startMute(tl2, r10) });
   }, 700);
 }
 $2("playBtn").addEventListener("click", (e10) => playPause(e10.timeStamp));
@@ -40931,4 +40959,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-724021fff5a4.mjs.map
+//# sourceMappingURL=moonsinger-c36361f705a1.mjs.map

@@ -50,7 +50,7 @@ export interface TimelineInput {
   singOpt: Record<string, unknown>;
 }
 /** 月读要唱的一块（主线程拿去让 worker 唱、按 key 喂给录音房）。 */
-export interface ChunkPlan { part: string; key: string; score: LabScore; lang: SingLang; t0: number; dur: number; /** token id → 这句里唱成第几条（按键试听「只唱这个字」用） */ entryOf: Map<number, number> }
+export interface ChunkPlan { part: string; key: string; score: LabScore; lang: SingLang; t0: number; dur: number; /** 唱的最后一个音结束的秒（不含收尾余音）。 */ end: number; /** token id → 这句里唱成第几条（按键试听「只唱这个字」用） */ entryOf: Map<number, number> }
 export interface PaperSpan { paper: PaperSeg; tick0: number; t0: number; t1: number }
 export interface Timeline {
   tracks: TrackSpec[];
@@ -128,8 +128,8 @@ export function buildTimeline(inp: TimelineInput): Timeline {
         const entryOf = new Map<number, number>(); for (const [i, e] of te) entryOf.set(tokens[i].id, e);
         const first = noteAt(a), last = tl.filter((x) => x.index >= a && x.index < b && x.tok.kind === "note").reduce((m, x) => Math.max(m, x.t1), first);
         const key = JSON.stringify(["tsukuyomi-chunk", score, inp.singOpt]), t0 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
-        clips.clips.push({ key, t0, dur, gain: SUNG_GAIN });
-        chunks.push({ part: part.id, key, score, lang, t0, dur, entryOf });
+        clips.clips.push({ key, t0, dur, gain: SUNG_GAIN, end: last });
+        chunks.push({ part: part.id, key, score, lang, t0, dur, end: last, entryOf });
         from = Math.min(from, t0); to = Math.max(to, t0 + dur);
       }
       tracks.push(clips);

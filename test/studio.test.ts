@@ -207,6 +207,26 @@ describe("录音房：块回放（慢引擎）", () => {
   });
 });
 
+describe("录音房：从某一段放（起点提前给辅音）不带出前一段的音（v0.10.3）", () => {
+  // user 2026-10-10「为什么从sheet C播放的时候会带前一个音，也不知道是sheet B的还是stop的时候没弄干净」：起点 1.0（C 段开头），起放在 0.9（PRE_ROLL）
+  const first = async (tracks: TrackSpec[], quiet?: number, chunk?: string) => {
+    const { s } = await studio(); if (chunk) s.handle({ type: "chunk", key: chunk, sr: SR, samples: flat(3, 0.5) });
+    s.handle({ type: "timeline", tl: tl(tracks, { from: 0, to: 3 }) }); s.handle({ type: "play", at: 0.9, ...(quiet !== undefined ? { quiet } : {}) });
+    return peak(run(s, 0.08).L);   // 起点之前那一截（0.9 → 0.98）
+  };
+  it("前一段最后一个音（到 1.0 结束）：带起点 = 不追、不响；不带 = 照旧追（对照）", async () => {
+    eq(await first([sfTrack("b", [{ t0: 0, t1: 1.0, key: 60 }])], 1.0), 0, "带起点");
+    assert((await first([sfTrack("b", [{ t0: 0, t1: 1.0, key: 60 }])])) > 0.01, "不带起点 = 追上了（原来的样子）");
+  });
+  it("跨过起点的音（连线连进来 / 长音）照样追", async () => {
+    assert((await first([sfTrack("x", [{ t0: 0.5, t1: 1.5, key: 60 }])], 1.0)) > 0.01);
+  });
+  it("月读：唱完在起点之前的块（带收尾余音）不放；唱到起点之后的照放", async () => {
+    eq(await first([{ id: "v", kind: "clips", clips: [{ key: "K", t0: 0.2, dur: 1.4, gain: 1, end: 1.0 }], gain: null }], 1.0, "K"), 0, "前一句");
+    assert((await first([{ id: "v", kind: "clips", clips: [{ key: "K", t0: 0.2, dur: 1.4, gain: 1, end: 1.2 }], gain: null }], 1.0, "K")) > 0.1, "跨过起点的一句");
+  });
+});
+
 describe("录音房：通道 / 表情曲线 / 总轨", () => {
   const prep = async (ch: Parameters<Studio["handle"]>[0][] = []) => {
     const { s, out } = await studio();

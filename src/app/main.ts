@@ -810,9 +810,11 @@ const chunkFailed = new Map<string, string>();           // 键 → 为什么唱
 let pumping = false, pumpQuiet = false, singSpeed: number | null = null;   // singSpeed = 算一秒歌几毫秒（预卷几块按它）
 const inflightKeys = new Set<string>();   // 正在算的那几句（几条道并行，刀 6 ③：PC 两条、iPad 一条；user「两个 worker 并行唱（PC）」）
 const pendingChunks = () => chunkKeysWanted.filter((k) => !engine.hasChunk(k)).length;
-function setChunkOrder(tl: Timeline, pos: number, loop: { from: number; to: number } | null, o: { quiet?: boolean; limit?: number } = {}): void {
+/** 这一遍放的起点（从某一段放时 = 那一段开头；起放提前 PRE_ROLL 给辅音）：在它之前就唱完的块这次不放，排队也别排在前面（v0.10.3）。走过起点一秒后清掉。 */
+let playMute: number | undefined;
+function setChunkOrder(tl: Timeline, pos: number, loop: { from: number; to: number } | null, o: { quiet?: boolean; limit?: number; mute?: number } = {}): void {
   chunkPlans = new Map(tl.chunks.map((c) => [c.key, c]));
-  let keys = chunkOrder(tl.chunks, pos, loop, (k) => engine.hasChunk(k));
+  let keys = chunkOrder(tl.chunks, pos, loop, (k) => engine.hasChunk(k), o.mute ?? playMute);
   if (o.limit !== undefined) keys = keys.slice(0, o.limit);
   chunkKeysWanted = keys; pumpQuiet = !!o.quiet;
   for (const k of inflightKeys) if (!keys.includes(k) && !chunkPlans.has(k)) singer.cancelInflight(k);   // 正在算的那句已经不在歌里（改了 / 换歌）= 中途取消
@@ -865,8 +867,8 @@ async function singOne(key: string, c: ChunkPlan, who: string): Promise<void> {
   renderBar.next();
 }
 /** 等从 pos 起的前几块到齐（预卷；几块按这台设备的速度）；stop = 外面取消了。 */
-async function waitChunksReady(tl: Timeline, pos: number, stop: () => boolean): Promise<void> {
-  while (!stop() && !readyToStart(tl.chunks, pos, prerollCount(singSpeed), (k) => engine.hasChunk(k))) {
+async function waitChunksReady(tl: Timeline, pos: number, stop: () => boolean, mute?: number): Promise<void> {
+  while (!stop() && !readyToStart(tl.chunks, pos, prerollCount(singSpeed), (k) => engine.hasChunk(k), mute)) {
     if (!pumping && pendingChunks() === 0) break;   // 泵停了、也没有要算的 = 该来的都来了（或唱不了的已经空着）
     await new Promise<void>((r) => setTimeout(r, 80));
   }
@@ -975,6 +977,13 @@ function playRange(tl: Timeline): { from: number; to: number; loopFrom: number }
 let startMark: { paperId: string; tick: number } | null = null;
 let paused: { sec: number; at: { paperId: string; tick: number } | null } | null = null;   // 暂停在哪：秒 + 谱位置（暂停时改了谱 = 按谱位置接着放）
 const clampTo = (r: { from: number; to: number }, s: number) => Math.min(Math.max(s, r.from), r.to);
+/** 起点本身（不提前）：从某一段放时，在它之前就结束的音 / 唱完的块这次不出声（v0.10.3，user「为什么从sheet C播放的时候会带前一个音，也不知道是sheet B的还是stop的时候没弄干净」——
+ *  是起点提前 PRE_ROLL 那一小截落在前一段最后一个音里：录音房起放时追音把它补按下去、前一句的块带着收尾余音也放了；不是停的时候没收干净，起放前每条轨都先 killAll）。 */
+function startMute(tl: Timeline, r: { from: number; to: number }): number | undefined {
+  if (!startMark) return undefined;
+  const s = tl.secondsAt(startMark.paperId, startMark.tick, 0);
+  return s === null ? undefined : clampTo(r, s);
+}
 function startSeconds(tl: Timeline, r: { from: number; to: number }): number {
   if (!startMark) return r.from;
   const s = tl.secondsAt(startMark.paperId, startMark.tick, 0);
@@ -1013,15 +1022,17 @@ async function startPlayback(how: "start" | "head" | "resume" | "seam"): Promise
     const loop = loopOn || how === "seam";
     engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop, loopFrom: r.loopFrom });
     const at = how === "seam" ? Math.max(r.from, r.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl, r) : how === "head" ? r.from : startSeconds(tl, r);
+    playMute = how === "start" ? startMute(tl, r) : undefined;
     // 边算边放：从 at 起按距离排队唱，前几块到齐就开播，后面的边放边唱（到了没唱好的那句走带会等）
     setChunkOrder(tl, at, loop ? { from: r.loopFrom, to: r.to } : null);
-    await waitChunksReady(tl, at, () => cancelPrepare);
+    await waitChunksReady(tl, at, () => cancelPrepare, playMute);
     if (cancelPrepare) { progress(""); return; }
     const loopNow = loopOn || how === "seam";   // 准备的这几秒里切了循环 = 这一轮就按新的（user 2026-10-10「中途toggle循环对本轮播放应该生效」）
     const atNow = how === "start" ? startSeconds(tl, r) : at;   // 准备的这几秒里起点挪了（连按两下 = 从头放 / 从这儿放）= 从新的起点放
+    playMute = how === "start" ? startMute(tl, r) : undefined;
     if (loopNow !== loop) engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopNow, loopFrom: r.loopFrom });
     if (loopNow !== loop || atNow !== at) setChunkOrder(tl, atNow, loopNow ? { from: r.loopFrom, to: r.to } : null);
-    await engine.play(atNow);
+    await engine.play(atNow, playMute);
     paused = null;
     playIcon(true);
     progress(loopOn ? `循环 ${(r.to - r.loopFrom).toFixed(1)} 秒` : `${(r.to - atNow).toFixed(1)} 秒`);
@@ -1050,7 +1061,7 @@ function pausePlay(): void {
 /** 回到起点重放（一遍一遍听同一个小节；|▶ 和「从这儿放」走这里）。放着 = 直接跳回去。 */
 function replay(): void {
   paused = null;
-  if (engine.playing && playTl) { engine.seek(startSeconds(playTl, playRange(playTl))); return; }
+  if (engine.playing && playTl) { const r = playRange(playTl); playMute = startMute(playTl, r); engine.seek(startSeconds(playTl, r), playMute); return; }
   view.setPlayhead(null);
   if (preparing) return;   // 正在准备开播（月读在唱前几句）：不打断，开播那一刻按新的起点算（startPlayback 里再看一次）
   void startPlayback("start");
@@ -1064,7 +1075,7 @@ function playFromHead(): void { startMark = null; view.setStartMark(null); repla
 /** 听接缝：放着 = 跳到循环尾前几秒；没放 = 从那儿放。 */
 function playSeam(): void { if (engine.playing && playTl) { const r = playRange(playTl); engine.seek(Math.max(r.from, r.to - SEAM_LEAD)); } else void startPlayback("seam"); }
 function stopPlay(): void {
-  engine.stop(); playIcon(false); view.setPlayhead(null); phKey = ""; cancelPrepare = true; paused = null;
+  engine.stop(); playIcon(false); view.setPlayhead(null); phKey = ""; cancelPrepare = true; paused = null; playMute = undefined;
   // 停 = 月读也停：正在念的那句中途取消、后面排着的不念了（user 2026-10-10「按停之后月读不应该把长句念完」）；只留安静的预唱（光标附近几句，改谱那套）
   chunkKeysWanted = []; singer.cancelPending(); singer.cancelInflight(); schedulePrewarm();
 }
@@ -1177,6 +1188,7 @@ engine.on("pos", (sec, playing, waiting) => {
   if (!playing) return;
   if (playTl && !phRaf) phRaf = requestAnimationFrame(playheadFrame);
   if (waiting) progress("等月读唱好这一句…");
+  if (playMute !== undefined && sec > playMute + 1) playMute = undefined;   // 走过起点了：之后排队照常（循环绕回来前一段照样响）
   if (playTl && performance.now() - lastReorder > 1000) { lastReorder = performance.now(); const r = playRange(playTl); setChunkOrder(playTl, sec, loopOn ? { from: r.loopFrom, to: r.to } : null); }   // 顺序跟着播放头走
 });
 engine.on("missing", () => { if (playTl) { const r = playRange(playTl); setChunkOrder(playTl, engine.position, loopOn ? { from: r.loopFrom, to: r.to } : null); } });   // 走带前面缺块（放着的时候改了谱）：现唱（走带到那儿会等，A）
@@ -1211,7 +1223,7 @@ function schedulePrewarm(): void {
     pruneChunks(tl);
     // 从下一次开播会从的地方唱起：暂停着 = 暂停处，否则 = 起点（v0.9.18 起开播不再看光标；原来按光标附近唱，起点在别处时开头那句排不上）
     const r = playRange(tl);
-    setChunkOrder(tl, paused ? resumeSeconds(tl, r) : startSeconds(tl, r), null, { quiet: true, limit: PREWARM_PHRASES });
+    setChunkOrder(tl, paused ? resumeSeconds(tl, r) : startSeconds(tl, r), null, { quiet: true, limit: PREWARM_PHRASES, mute: paused ? undefined : startMute(tl, r) });
   }, 700);
 }
 $("playBtn").addEventListener("click", (e) => playPause(e.timeStamp));

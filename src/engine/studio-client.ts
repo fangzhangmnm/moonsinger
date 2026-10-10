@@ -151,7 +151,8 @@ export class StudioClient {
   buses(b: BusSpec[]): void { this.busesP = b; this.post({ type: "buses", buses: b }); }
 
   /** 从 at 秒放起（不给 = 从范围头 / 上次位置）。要先在用户手势里解锁过 AudioContext（iPad）。 */
-  async play(at?: number): Promise<void> { await this.ensure(); this.gen++; this._playing = true; this._waiting = null; this.hist = []; if (at !== undefined) this._pos = at; this.post({ type: "play", at, gen: this.gen }); }
+  /** quiet = 起点（从某一段放时 at 比它提前一点）：在它之前就结束的音 / 唱完的块这次不出声（v0.10.3）。 */
+  async play(at?: number, quiet?: number): Promise<void> { await this.ensure(); this.gen++; this._playing = true; this._waiting = null; this.hist = []; if (at !== undefined) this._pos = at; this.post({ type: "play", at, gen: this.gen, ...(quiet !== undefined ? { quiet } : {}) }); }
   stop(): void { this.gen++; this._playing = false; this._waiting = null; this.hist = []; this.post({ type: "stop" }); }
   /** 扬声器此刻在放音频时钟的哪一刻（getOutputTimestamp：浏览器按硬件的输出缓冲报的；没有就用 currentTime − 两个延迟估）。 */
   outputTime(): number | null {
@@ -166,7 +167,7 @@ export class StudioClient {
   latencyMs(): number | null { const T = this.outputTime(); return T === null ? null : Math.max(0, (this.ctx().currentTime - T) * 1000); }
   /** 现在**听到的**是走带的哪儿（播放头画这里）；没有报告 = null（退回 position）。 */
   audibleSec(): number | null { const T = this.outputTime(); return T === null ? null : audibleAt(this.hist, T); }
-  seek(at: number): void { this._pos = at; this.post({ type: "seek", at }); }
+  seek(at: number, quiet?: number): void { this._pos = at; this.post({ type: "seek", at, ...(quiet !== undefined ? { quiet } : {}) }); }
   /** 按键试听（要先 ensure 过；没装好的这一下丢掉——试听要即时，迟到的音更烦）。 */
   audition(m: Omit<Extract<StudioIn, { type: "audition" }>, "type">): void { if (this.node) this.post({ type: "audition", ...m }); }
   auditionOn(src: string, inst: AuditionInst, key: number, vel: number, gainDb: number, pan: number): void { this.audition({ src, ev: "on", inst, key, vel, gainDb, pan }); }
