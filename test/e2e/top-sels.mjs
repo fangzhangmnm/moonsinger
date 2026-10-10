@@ -19,6 +19,15 @@ check(!(await p.$eval(".pad-panel", (e) => e.hidden)) && await p.$eval("#padTab"
 // 记住模式：存在「听」= 打开还是「听」（user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」）
 { const mode = await p.evaluate(() => { const m = window.__moonsinger; m.setMode("listen"); const bytes = m.bytes(); m.load(m.open("again.mxl", bytes)); const w = m.workspace().mode; m.setMode("notes"); return w; });
   check(mode === "listen", "存的时候在「听」= 再打开就是「听」", mode); }
+// 「听」：小条上照样有那个开关（叫「混音台」），点 = 开 / 收（v0.10.26；user「左下角小工具条还是忘了做键盘弹出的按钮」——v0.9.18 留下的一条 CSS 在「听」里把它藏了）
+{ await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTimeout(200);
+  const vis = await p.$eval("#padTab", (e) => !e.hidden && getComputedStyle(e).display !== "none" && e.getBoundingClientRect().width > 0 && !!e.closest(".dock-tab") && e.textContent.includes("混音台"));
+  check(vis, "「听」：小条上有「混音台」开关（看得见）");
+  const d0 = await p.evaluate(() => window.__moonsinger.workspace().dock); await p.click("#padTab"); await p.waitForTimeout(200);
+  const d1 = await p.evaluate(() => window.__moonsinger.workspace().dock); await p.click("#padTab"); await p.waitForTimeout(200);
+  const d2 = await p.evaluate(() => window.__moonsinger.workspace().dock);
+  check(d0 !== d1 && d2 === d0 && [d0, d1].includes("studio") && [d0, d1].includes("none"), "点一下 = 混音台开 / 收，再点回来", `${d0} → ${d1} → ${d2}`);
+  await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(150); }
 if (await p.$eval(".pad-panel", (e) => e.hidden)) { await p.click("#padTab"); await p.waitForTimeout(150); }
 check(!(await p.$eval("#partSel", (e) => e.hidden)), "载入一首两位歌手的歌 = 歌手下拉马上就在（不用切模式；v0.10.10 修 user「ctrl shift r的时候…看不到下拉框，得切换模式之后下拉框才会出现」）");
 await p.evaluate(() => window.__moonsinger.addPaper());

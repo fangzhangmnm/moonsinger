@@ -326,6 +326,18 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     const { L, R } = st!.tracks.__master; let d = 0, e = 0; for (let i = 0; i < L.length; i++) { d = Math.max(d, Math.abs(L[i] - R[i])); e = Math.max(e, Math.abs(L[i])); }
     assert(e > 0.01 && d < 1e-6, `正中的单声道 = 左右一样（差 ${d}，幅度 ${e}）`);
   });
+  it("压缩页的波形（v0.10.26，user「效果器的动画没开效果器的卡上面也应该有」）：没有压缩 / 关着的轨也报进出峰值 = 链尾推子前的电平、压了 0", async () => {
+    const { s, out } = await clipS([{ id: "A", v: 0.4 }, { id: "B", v: 0.2 }]);
+    s.handle({ type: "channel", id: "A", p: { gainDb: -12 } });   // 推子不算：波形看的是推子前
+    s.handle({ type: "channel", id: "B", p: { chain: [{ id: "c", kind: "comp", on: false, params: { thresholdDb: -30, ratio: 4, attackMs: 1, releaseMs: 50, kneeDb: 0, makeupDb: 0 } }] } });
+    s.handle({ type: "meter", on: true }); s.handle({ type: "play" }); run(s, 0.5);
+    const m = out.filter((x) => x.type === "meter").at(-1) as Extract<StudioOut, { type: "meter" }>;
+    const a = m.cl?.A, b = m.cl?.B, mm = m.cl?.__master;
+    assert(!!a && Math.abs(a[0] - 0.4) < 1e-3 && Math.abs(a[1] - 0.4) < 1e-3, `没压缩的轨：进 = 出 = 0.4（${a}）`);
+    assert(!!b && Math.abs(b[0] - 0.2) < 1e-3 && b[0] === b[1], `压缩关着：进 = 出 = 0.2（${b}）`);
+    assert(!!mm && mm[0] > 0.1, `总轨也有（${mm}）`);
+    eq(m.gr?.A ?? 0, 0); eq(m.gr?.B ?? 0, 0);
+  });
   it("通道链：EQ 低切把 100 Hz 的轨压掉；总轨链：增益 −6 dB 整体减半", async () => {
     const { s } = await studio();
     const x = Float32Array.from({ length: SR }, (_, i) => 0.3 * Math.sin((2 * Math.PI * 100 * i) / SR));

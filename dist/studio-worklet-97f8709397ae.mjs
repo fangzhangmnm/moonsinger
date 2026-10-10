@@ -701,12 +701,17 @@ var Studio = class {
     g.R[g.w] = r;
     g.w = g.w + 1 & STEREO_N - 1;
   }
-  grOf(id, fx) {
+  /** 第一台压缩（压缩页摊开的就是它）这一块压了多少 + 进 / 出的峰值。没有压缩 / 关着 = 进出都按这条轨链尾、推子前的峰值 `pre`，压了 0
+   *  （v0.10.26，user「效果器的动画没开效果器的卡上面也应该有」：每张卡都有波形，看得出哪儿冲、要不要压）。 */
+  grOf(id, fx, pre) {
     const c = fx.find((f) => f.kind === "comp");
-    if (!c || !c.on) return;
+    const on = !!c && c.on, lv = this.compLv.get(id) ?? [0, 0];
+    if (!on) {
+      this.compLv.set(id, [Math.max(lv[0], pre), Math.max(lv[1], pre)]);
+      return;
+    }
     const v = c.gainReductionDb ?? 0;
     this.grMin.set(id, Math.min(this.grMin.get(id) ?? 0, v));
-    const lv = this.compLv.get(id) ?? [0, 0];
     this.compLv.set(id, [Math.max(lv[0], c.inPeak ?? 0), Math.max(lv[1], c.outPeak ?? 0)]);
   }
   specRings = /* @__PURE__ */ new Map();
@@ -1183,7 +1188,7 @@ var Studio = class {
       let cl = b.gl, cr = b.gr;
       if (this.specOn) this.specPush(b.id, b.L, b.R, n, Math.hypot(b.gl, b.gr), Math.hypot(gl, gr));
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
-      let pk = 0, ms = 0;
+      let pk = 0, ms = 0, pre = 0;
       for (let i = 0; i < n; i++) {
         cl += dl;
         cr += dr;
@@ -1195,13 +1200,15 @@ var Studio = class {
           if (a > pk) pk = a;
           if (c > pk) pk = c;
           ms += (l * l + r * r) * 0.5;
+          const u = Math.max(Math.abs(b.L[i]), Math.abs(b.R[i]));
+          if (u > pre) pre = u;
         }
         if (this.stereoOn) this.stereoPush(b.id, l, r);
       }
       if (this.meterOn) {
         this.trackPeaks.set(b.id, Math.max(this.trackPeaks.get(b.id) ?? 0, pk));
         this.trackMs.set(b.id, (this.trackMs.get(b.id) ?? 0) + ms);
-        this.grOf(b.id, b.fx);
+        this.grOf(b.id, b.fx, pre);
       }
       for (const sd of b.sends) {
         const sl = gl * sd.lin * Math.SQRT2, sr = gr * sd.lin * Math.SQRT2;
@@ -1259,15 +1266,16 @@ var Studio = class {
       }
     }
     if (this.meterOn) {
-      let ms = 0;
+      let ms = 0, pk = 0;
       for (let i = 0; i < n; i++) {
         const a = Math.abs(outL[i]), b = Math.abs(outR[i]);
-        if (a > this.meterPeak) this.meterPeak = a;
-        if (b > this.meterPeak) this.meterPeak = b;
+        if (a > pk) pk = a;
+        if (b > pk) pk = b;
         ms += (outL[i] * outL[i] + outR[i] * outR[i]) * 0.5;
       }
+      if (pk > this.meterPeak) this.meterPeak = pk;
       this.trackMs.set("__master", (this.trackMs.get("__master") ?? 0) + ms);
-      this.grOf("__master", this.masterFx);
+      this.grOf("__master", this.masterFx, pk);
       this.meterFrames += n;
       if (this.meterFrames >= 1024) {
         const f = this.meterFrames, ms2 = {};
@@ -1443,6 +1451,7 @@ var Studio = class {
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : void 0, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr, pk = 0, ms = 0;
       const sto = this.stereoOn;
+      let pre = 0;
       for (let i = 0; i < cnt; i++) {
         cl += dl;
         cr += dr;
@@ -1450,7 +1459,9 @@ var Studio = class {
         R[off + i] += out[i] * cr;
         if (sto) this.stereoPush(id, out[i] * cl, out[i] * cr);
         if (this.meterOn) {
-          const a = Math.abs(out[i]) * Math.max(cl, cr) * Math.SQRT2;
+          const u = Math.abs(out[i]);
+          if (u > pre) pre = u;
+          const a = u * Math.max(cl, cr) * Math.SQRT2;
           if (a > pk) pk = a;
           ms += out[i] * out[i] * (cl * cl + cr * cr);
         }
@@ -1458,7 +1469,7 @@ var Studio = class {
       if (this.meterOn) {
         this.trackPeaks.set(id, Math.max(this.trackPeaks.get(id) ?? 0, pk));
         this.trackMs.set(id, (this.trackMs.get(id) ?? 0) + ms);
-        this.grOf(id, t.chFx);
+        this.grOf(id, t.chFx, pre);
       }
       if (t.ch.sends) for (const sd of t.ch.sends) {
         const b = this.buses.get(sd.to);
@@ -1794,4 +1805,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-fa5e92206668.mjs.map
+//# sourceMappingURL=studio-worklet-97f8709397ae.mjs.map

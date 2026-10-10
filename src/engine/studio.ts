@@ -177,10 +177,14 @@ export class Studio {
     let g = this.stereoRings.get(id); if (!g) { g = { L: new Float32Array(STEREO_N), R: new Float32Array(STEREO_N), w: 0 }; this.stereoRings.set(id, g); }
     g.L[g.w] = l; g.R[g.w] = r; g.w = (g.w + 1) & (STEREO_N - 1);
   }
-  private grOf(id: string, fx: readonly FxInstance[]): void {   // 第一台压缩（压缩页摊开的就是它）这一块压了多少
-    const c = fx.find((f) => f.kind === "comp") as (FxInstance & { gainReductionDb?: number; inPeak?: number; outPeak?: number }) | undefined; if (!c || !c.on) return;
+  /** 第一台压缩（压缩页摊开的就是它）这一块压了多少 + 进 / 出的峰值。没有压缩 / 关着 = 进出都按这条轨链尾、推子前的峰值 `pre`，压了 0
+   *  （v0.10.26，user「效果器的动画没开效果器的卡上面也应该有」：每张卡都有波形，看得出哪儿冲、要不要压）。 */
+  private grOf(id: string, fx: readonly FxInstance[], pre: number): void {
+    const c = fx.find((f) => f.kind === "comp") as (FxInstance & { gainReductionDb?: number; inPeak?: number; outPeak?: number }) | undefined;
+    const on = !!c && c.on, lv = this.compLv.get(id) ?? [0, 0];
+    if (!on) { this.compLv.set(id, [Math.max(lv[0], pre), Math.max(lv[1], pre)]); return; }
     const v = c.gainReductionDb ?? 0; this.grMin.set(id, Math.min(this.grMin.get(id) ?? 0, v));
-    const lv = this.compLv.get(id) ?? [0, 0]; this.compLv.set(id, [Math.max(lv[0], c.inPeak ?? 0), Math.max(lv[1], c.outPeak ?? 0)]);
+    this.compLv.set(id, [Math.max(lv[0], c.inPeak ?? 0), Math.max(lv[1], c.outPeak ?? 0)]);
   }
   private specRings = new Map<string, { buf: Float32Array; w: number }>();
   /** 往某条轨的频谱环里写一段（单声道；立体声的传两路取平均）；g0 → g1 = 这一段的推子（线性渐变，和出声同一条斜坡）。 */
@@ -451,9 +455,9 @@ export class Studio {
       const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;
       if (this.specOn) this.specPush(b.id, b.L, b.R, n, Math.hypot(b.gl, b.gr), Math.hypot(gl, gr));   // 频谱：推子之后（等功率 → hypot = 推子，声像不算）
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
-      let pk = 0, ms = 0;
-      for (let i = 0; i < n; i++) { cl += dl; cr += dr; const l = b.L[i] * cl * Math.SQRT2, r = b.R[i] * cr * Math.SQRT2; L[i] += l; R[i] += r; if (this.meterOn) { const a = Math.abs(l), c = Math.abs(r); if (a > pk) pk = a; if (c > pk) pk = c; ms += (l * l + r * r) * 0.5; } if (this.stereoOn) this.stereoPush(b.id, l, r); }   // 立体声的平衡：正中 = 原样
-      if (this.meterOn) { this.trackPeaks.set(b.id, Math.max(this.trackPeaks.get(b.id) ?? 0, pk)); this.trackMs.set(b.id, (this.trackMs.get(b.id) ?? 0) + ms); this.grOf(b.id, b.fx); }
+      let pk = 0, ms = 0, pre = 0;
+      for (let i = 0; i < n; i++) { cl += dl; cr += dr; const l = b.L[i] * cl * Math.SQRT2, r = b.R[i] * cr * Math.SQRT2; L[i] += l; R[i] += r; if (this.meterOn) { const a = Math.abs(l), c = Math.abs(r); if (a > pk) pk = a; if (c > pk) pk = c; ms += (l * l + r * r) * 0.5; const u = Math.max(Math.abs(b.L[i]), Math.abs(b.R[i])); if (u > pre) pre = u; } if (this.stereoOn) this.stereoPush(b.id, l, r); }   // 立体声的平衡：正中 = 原样
+      if (this.meterOn) { this.trackPeaks.set(b.id, Math.max(this.trackPeaks.get(b.id) ?? 0, pk)); this.trackMs.set(b.id, (this.trackMs.get(b.id) ?? 0) + ms); this.grOf(b.id, b.fx, pre); }
       for (const sd of b.sends) { const sl = gl * sd.lin * Math.SQRT2, sr = gr * sd.lin * Math.SQRT2; for (let i = 0; i < n; i++) { sd.bus.L[i] += b.L[i] * sl; sd.bus.R[i] += b.R[i] * sr; } }
       b.gl = gl; b.gr = gr;
     }
@@ -478,9 +482,10 @@ export class Studio {
       }
     }
     if (this.meterOn) {
-      let ms = 0;
-      for (let i = 0; i < n; i++) { const a = Math.abs(outL[i]), b = Math.abs(outR[i]); if (a > this.meterPeak) this.meterPeak = a; if (b > this.meterPeak) this.meterPeak = b; ms += (outL[i] * outL[i] + outR[i] * outR[i]) * 0.5; }
-      this.trackMs.set("__master", (this.trackMs.get("__master") ?? 0) + ms); this.grOf("__master", this.masterFx);
+      let ms = 0, pk = 0;
+      for (let i = 0; i < n; i++) { const a = Math.abs(outL[i]), b = Math.abs(outR[i]); if (a > pk) pk = a; if (b > pk) pk = b; ms += (outL[i] * outL[i] + outR[i] * outR[i]) * 0.5; }
+      if (pk > this.meterPeak) this.meterPeak = pk;
+      this.trackMs.set("__master", (this.trackMs.get("__master") ?? 0) + ms); this.grOf("__master", this.masterFx, pk);
       this.meterFrames += n;
       if (this.meterFrames >= 1024) {
         const f = this.meterFrames, ms2: Record<string, number> = {}; for (const [k, v] of this.trackMs) ms2[k] = v / f;
@@ -585,8 +590,9 @@ export class Studio {
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : undefined, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr, pk = 0, ms = 0;
       const sto = this.stereoOn;   // 李萨如图：每张卡都有（v0.10.21，user「性能允许的时候示波器应该每个卡都有，一视同仁，才整齐」）——单声道轨 = 声像那个角度的一根线
-      for (let i = 0; i < cnt; i++) { cl += dl; cr += dr; L[off + i] += out[i] * cl; R[off + i] += out[i] * cr; if (sto) this.stereoPush(id, out[i] * cl, out[i] * cr); if (this.meterOn) { const a = Math.abs(out[i]) * Math.max(cl, cr) * Math.SQRT2; if (a > pk) pk = a; ms += out[i] * out[i] * (cl * cl + cr * cr); } }   // 峰值按「正中 = 原样」的尺子（和总线一样）；均方 = (x·推子)²（等功率：cl² + cr² = 推子²，声像不算）
-      if (this.meterOn) { this.trackPeaks.set(id, Math.max(this.trackPeaks.get(id) ?? 0, pk)); this.trackMs.set(id, (this.trackMs.get(id) ?? 0) + ms); this.grOf(id, t.chFx); }
+      let pre = 0;
+      for (let i = 0; i < cnt; i++) { cl += dl; cr += dr; L[off + i] += out[i] * cl; R[off + i] += out[i] * cr; if (sto) this.stereoPush(id, out[i] * cl, out[i] * cr); if (this.meterOn) { const u = Math.abs(out[i]); if (u > pre) pre = u; const a = u * Math.max(cl, cr) * Math.SQRT2; if (a > pk) pk = a; ms += out[i] * out[i] * (cl * cl + cr * cr); } }   // 峰值按「正中 = 原样」的尺子（和总线一样）；均方 = (x·推子)²（等功率：cl² + cr² = 推子²，声像不算）
+      if (this.meterOn) { this.trackPeaks.set(id, Math.max(this.trackPeaks.get(id) ?? 0, pk)); this.trackMs.set(id, (this.trackMs.get(id) ?? 0) + ms); this.grOf(id, t.chFx, pre); }
       if (t.ch.sends) for (const sd of t.ch.sends) {   // 发送（推子之后）
         const b = this.buses.get(sd.to); if (!b) continue;
         const g = dbToLin(sd.gainDb), sl = gl * g, sr2 = gr * g;

@@ -63,6 +63,19 @@ describe("合租：排版（看个大概）", () => {
     const L = lay(setFocus(st, st.song.papers[0].id, a));
     assert(L.systems.some((r) => r.part === c) && L.sharedRows.length === 0, "主人在写 = 房客也拆开、没有只读行");
   });
+  it("房客的低音也算进这一行的高度和墨的上下沿（v0.10.26：播放的灰块不再切掉它们、不压到下一行）", () => {
+    let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
+    const pp = st.song.papers[0], low: Token = { kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 2 }, dur: TPQ, lyric: null } as Token;
+    st = { ...st, song: { ...st.song, papers: [{ ...pp, tracks: { ...pp.tracks, [c]: [...pp.tracks[c].slice(0, headLen(pp.tracks[c])), low] } }] } };
+    st = setFocus(st, pp.id, "P2");
+    const L = lay(st), hi = L.systems.findIndex((r) => r.part === a), row = L.systems[hi];
+    // 高音谱号：E4 = 第一线（staffTop + 4sp）；C2 再低 16 级 = 8sp
+    const want = row.staffTop + 12 * L.sp, head = L.prims.find((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.split(" ").includes("note") && Math.abs((p as { y: number }).y - want) < L.sp * 0.3) as { y: number } | undefined;
+    assert(!!head, "房客的 C2 画在主人那一行的谱下面 8sp");
+    const lowest = head!.y;
+    assert(row.inkBottom! >= lowest + L.sp * 0.4, `墨的下沿（${row.inkBottom}）盖住最低的符头（${lowest}）`);
+    assert(row.bottom >= lowest + L.sp * 0.4, `行高也让开了（不压到下一行）：bottom ${row.bottom} 最低符头 ${lowest}`);
+  });
   it("现在在写的是房客 = 它拆开（有自己的谱行、能点）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
     st = setFocus(st, st.song.papers[0].id, c);

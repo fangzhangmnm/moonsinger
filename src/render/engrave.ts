@@ -113,7 +113,9 @@ const NAME_MAX = 6.5;   // sp：谱前声部名一列最宽（再长折行；eng
 const TEMPO_EM = 1.35;   // 速度记号的字号（sp）
 
 /** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。 */
-export interface SystemBox { top: number; staffTop: number; bottom: number; paper: string; part: string; sys: number; staff: Staff; /** 五线谱右端（px；播放时的小节底色右边界用，v0.10.12）。 */ x1?: number }   // staff = 大谱表里是上（1）还是下（2）
+export interface SystemBox { top: number; staffTop: number; bottom: number; paper: string; part: string; sys: number; staff: Staff; /** 五线谱右端（px；播放时的小节底色右边界用，v0.10.12）。 */ x1?: number;
+  /** 这一行谱上真有墨的上下沿（px）：音（含叠着的房客）、符干、跳音 / 重音、力度那几道、八度线、歌词；不含速度 / 风格记号（那是整张谱的）。播放的灰块按这个（v0.10.26）。 */
+  inkTop?: number; inkBottom?: number }   // staff = 大谱表里是上（1）还是下（2）
 export interface HitNote { index: number; system: number; x: number; y: number; w: number; d: number }
 export interface Slot { caret: number; system: number; x: number; end?: true; /** 补齐的淡色小节的开头：点这里 = 光标在尾巴 + 先补这么长（tick）的休止再写（v0.10.6）。 */ lead?: number }   // end = 行末那个落点（光标在下一行开头的那个位置，点在这一行行末时画在这儿）
 export interface LyricHit { index: number; system: number; x: number; y: number; tight?: true }   // x = 歌词中心，y = 基线；tight = 按节奏排时这个字挤（画灰，歌词框上说一声）
@@ -191,6 +193,7 @@ const PIN_GAP = 0.7;
 /** 渐强渐弱比一整行还长 = 不画发夹，写「cresc. - - -」/「dim. - - -」（user 2026-10-08「如果一个超级长的<号不要让它太awkward」；
  *  记谱的老规矩：长的渐变用文字加虚线，发夹留给短的）。字号 / 大概字宽（sp）、虚线一节多长 / 隔多远。 */
 const PIN_WORD = { size: 2.0, w: { cresc: 4.7, dim: 3.5 } } as const, DASH = { len: 0.6, gap: 1.0 } as const;
+const RAMP_DASH = { len: 0.5, gap: 0.4 } as const;   // 渐到发夹的虚线（sp；原 CSS 4px / 3px 在默认缩放下差不多）
 const SHARP_POS = [38, 35, 39, 36, 33, 37, 34], FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 const GLYPH_TUPLET = (n: number) => [...String(n)].map((d) => String.fromCodePoint(0xe880 + Number(d))).join("");
 
@@ -712,10 +715,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         fitLyrics(items).forEach((f, k) => { lyrPlan.set(`${r}:${items[k].index}`, f); if (f.row) lyr2.add(`${r}:${sy}`); });
       }
     });
-    const extentOf = (q: (typeof per)[number], s: number, k: number) => {
+    const extentOf = (q: (typeof per)[number], s: number, k: number, anyStaff = false) => {
       let top = TOP_LINE, bot = BOTTOM_LINE;
       for (const u of q.units) {
-        if (u.kind !== "chunk" || u.system !== s || !u.note || (u.staff ?? 1) !== k + 1) continue;
+        if (u.kind !== "chunk" || u.system !== s || !u.note || (!anyStaff && (u.staff ?? 1) !== k + 1)) continue;
         const ds = (u.pitches.length ? u.pitches : u.pitch ? [u.pitch] : []).map((pp) => diatonicIndex(pp) + shAt(q, (k + 1) as Staff, u.index)); if (!ds.length) continue;
         const hi = Math.max(...ds), lo = Math.min(...ds), stem = u.base < WHOLE, up = (hi + lo) / 2 < MID_LINE;
         top = Math.max(top, hi + (stem && up ? 7 : 1)); bot = Math.min(bot, lo - (stem && !up ? 7 : 1));
@@ -733,6 +736,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const ottIn = (q: (typeof per)[number], s: number, up: boolean) => q.staves === 1 && q.units.some((u) => u.system === s && u.kind === "chunk" && (up ? (q.ds.ott[u.index] ?? 0) > 0 : (q.ds.ott[u.index] ?? 0) < 0));
     const geoOf = (s: number) => per.map((q, r) => {
       const ex = Array.from({ length: q.staves }, (_, k) => extentOf(q, s, k)), big = bigDynIn(q, s), own = noteDynIn(q, s), dyn = big || own;
+      // 叠在这一行上的房客：它们的音也画在第一张谱表上——行高要算上（v0.10.26：以前只算主人的，房客低音伸出这一行、播放的灰块切掉它们）
+      per.forEach((t, j) => { if (foldTo[j] !== r) return; const e = extentOf(t, s, 0, true); ex[0] = { top: Math.max(ex[0].top, e.top), bot: Math.min(ex[0].bot, e.bot) }; });
       const ottUp = ottIn(q, s, true), ottDown = ottIn(q, s, false);   // 八度线（v0.9.28）：8va / 15ma 在谱上面一道，8vb 在谱下面（歌词往下让）
       const g = ex.map((e, k) => {
         const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
@@ -769,7 +774,10 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       for (let r = 0; r < nR; r++) for (let k = 0; k < effStaves(r); k++) {
         const top = yCur, row = rowOf(s, r, k), g = G[r].g[k], h = g.above + 4 + g.below;
         rowTop.set(row, top); rowAbove.set(row, g.above); if (g.lyric !== null) lyricOff.set(row, g.lyric);
-        rows.push({ top, staffTop: top + P(g.above), bottom: top + P(h), paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff }); yCur += P(h);
+        const e = G[r].ex[k], lane = k === 0 ? (g.navD ?? g.ottD ?? g.dynD ?? g.noteDynD) : null;
+        const inkAbove = Math.max(0, (e.top - TOP_LINE) / 2, lane !== null ? (lane - TOP_LINE) / 2 + 1.3 : 0);   // 力度字的基线在那一道：字往上再高一点
+        const inkBelow = Math.max(0, (BOTTOM_LINE - e.bot) / 2, g.lyric !== null ? g.lyric + 0.5 + (lyr2.has(`${r}:${s}`) ? LYRIC_ROW2 : 0) : 0, g.ottDownD !== null ? (BOTTOM_LINE - g.ottDownD) / 2 + 0.6 : 0);
+        rows.push({ top, staffTop: top + P(g.above), bottom: top + P(h), paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff, inkTop: top + P(g.above - inkAbove), inkBottom: top + P(g.above + 4 + inkBelow) }); yCur += P(h);
         if (foldTo.some((f) => f === r)) sharedRows.push(row);
       }
       for (let r = 0; r < nR; r++) {   // 力度字的基线（px）：按算好的级数（谱上面）
@@ -1280,7 +1288,15 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             if (b - a < P(0.3)) continue;
             const f0 = acc / total, f1 = (acc + b - a) / total; acc += b - a;
             const [h0, h1] = dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)], y = midY(sy);
-            prims.push({ t: "path", d: `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`, cls: ["hairpin", ramp ? "ramp" : "", o.hot?.has(tokens[index].id) ? "hot" : ""].filter(Boolean).join(" ") });
+            // 渐到 = 虚线：两条边的每一小段在同一个 x 上（以前靠 CSS stroke-dasharray——iPad Safari 上第二条边的虚线接着第一条的相位走，
+            //   尖头那边两条快重合时一段段错开打架，user「蝌蚪的尾巴在打架」，v0.10.26）。PDF / SVG 导出也就一样是虚线了
+            let d = `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`;
+            if (ramp) {
+              const hAt = (x: number) => h0 + (h1 - h0) * ((x - a) / (b - a)), on = P(RAMP_DASH.len), per = P(RAMP_DASH.len + RAMP_DASH.gap);
+              d = "";
+              for (let x = a; x < b - P(0.05); x += per) { const x2 = Math.min(b, x + on); d += `M${x},${y - hAt(x)}L${x2},${y - hAt(x2)}M${x},${y + hAt(x)}L${x2},${y + hAt(x2)}`; }
+            }
+            prims.push({ t: "path", d, cls: ["hairpin", ramp ? "ramp" : "", o.hot?.has(tokens[index].id) ? "hot" : ""].filter(Boolean).join(" ") });
             dyns.push({ index, kind: "hairpin", system: rowOf(sy, r, 0), x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
           }
         }

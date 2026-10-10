@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.25-2026-10-10";
+var APP_VERSION = "v0.10.26-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7314,6 +7314,7 @@ var DYN_INK = { ppp: [-0.4, 4.3, 1.1, 0.6], fff: [-0.6, 3.4, 1.8, 0.6], pp: [-0.
 var PIN_GAP = 0.7;
 var PIN_WORD = { size: 2, w: { cresc: 4.7, dim: 3.5 } };
 var DASH = { len: 0.6, gap: 1 };
+var RAMP_DASH = { len: 0.5, gap: 0.4 };
 var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
 var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 var GLYPH_TUPLET = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(59520 + Number(d3))).join("");
@@ -7940,10 +7941,10 @@ function engrave(song, o10) {
         });
       }
     });
-    const extentOf = (q2, s10, k2) => {
+    const extentOf = (q2, s10, k2, anyStaff = false) => {
       let top = TOP_LINE, bot = BOTTOM_LINE;
       for (const u2 of q2.units) {
-        if (u2.kind !== "chunk" || u2.system !== s10 || !u2.note || (u2.staff ?? 1) !== k2 + 1) continue;
+        if (u2.kind !== "chunk" || u2.system !== s10 || !u2.note || !anyStaff && (u2.staff ?? 1) !== k2 + 1) continue;
         const ds = (u2.pitches.length ? u2.pitches : u2.pitch ? [u2.pitch] : []).map((pp) => diatonicIndex(pp) + shAt(q2, k2 + 1, u2.index));
         if (!ds.length) continue;
         const hi = Math.max(...ds), lo2 = Math.min(...ds), stem = u2.base < WHOLE, up = (hi + lo2) / 2 < MID_LINE;
@@ -7962,6 +7963,11 @@ function engrave(song, o10) {
     const ottIn = (q2, s10, up) => q2.staves === 1 && q2.units.some((u2) => u2.system === s10 && u2.kind === "chunk" && (up ? (q2.ds.ott[u2.index] ?? 0) > 0 : (q2.ds.ott[u2.index] ?? 0) < 0));
     const geoOf = (s10) => per.map((q2, r10) => {
       const ex2 = Array.from({ length: q2.staves }, (_2, k2) => extentOf(q2, s10, k2)), big = bigDynIn(q2, s10), own = noteDynIn(q2, s10), dyn = big || own;
+      per.forEach((t10, j2) => {
+        if (foldTo[j2] !== r10) return;
+        const e10 = extentOf(t10, s10, 0, true);
+        ex2[0] = { top: Math.max(ex2[0].top, e10.top), bot: Math.min(ex2[0].bot, e10.bot) };
+      });
       const ottUp = ottIn(q2, s10, true), ottDown = ottIn(q2, s10, false);
       const g3 = ex2.map((e10, k2) => {
         const minBelow = q2.staves === 2 && k2 === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r10] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
@@ -8010,7 +8016,10 @@ function engrave(song, o10) {
         rowTop.set(row2, top);
         rowAbove.set(row2, g3.above);
         if (g3.lyric !== null) lyricOff.set(row2, g3.lyric);
-        rows.push({ top, staffTop: top + P2(g3.above), bottom: top + P2(h2), paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1 });
+        const e10 = G2[r10].ex[k2], lane = k2 === 0 ? g3.navD ?? g3.ottD ?? g3.dynD ?? g3.noteDynD : null;
+        const inkAbove = Math.max(0, (e10.top - TOP_LINE) / 2, lane !== null ? (lane - TOP_LINE) / 2 + 1.3 : 0);
+        const inkBelow = Math.max(0, (BOTTOM_LINE - e10.bot) / 2, g3.lyric !== null ? g3.lyric + 0.5 + (lyr2.has(`${r10}:${s10}`) ? LYRIC_ROW2 : 0) : 0, g3.ottDownD !== null ? (BOTTOM_LINE - g3.ottDownD) / 2 + 0.6 : 0);
+        rows.push({ top, staffTop: top + P2(g3.above), bottom: top + P2(h2), paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1, inkTop: top + P2(g3.above - inkAbove), inkBottom: top + P2(g3.above + 4 + inkBelow) });
         yCur += P2(h2);
         if (foldTo.some((f2) => f2 === r10)) sharedRows.push(row2);
       }
@@ -8571,7 +8580,16 @@ function engrave(song, o10) {
             const f0 = acc2 / total, f1 = (acc2 + b3 - a10) / total;
             acc2 += b3 - a10;
             const [h0, h1] = dir === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)], y2 = midY(sy2);
-            prims.push({ t: "path", d: `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`, cls: ["hairpin", ramp ? "ramp" : "", o10.hot?.has(tokens[index].id) ? "hot" : ""].filter(Boolean).join(" ") });
+            let d3 = `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`;
+            if (ramp) {
+              const hAt = (x3) => h0 + (h1 - h0) * ((x3 - a10) / (b3 - a10)), on2 = P2(RAMP_DASH.len), per2 = P2(RAMP_DASH.len + RAMP_DASH.gap);
+              d3 = "";
+              for (let x3 = a10; x3 < b3 - P2(0.05); x3 += per2) {
+                const x22 = Math.min(b3, x3 + on2);
+                d3 += `M${x3},${y2 - hAt(x3)}L${x22},${y2 - hAt(x22)}M${x3},${y2 + hAt(x3)}L${x22},${y2 + hAt(x22)}`;
+              }
+            }
+            prims.push({ t: "path", d: d3, cls: ["hairpin", ramp ? "ramp" : "", o10.hot?.has(tokens[index].id) ? "hot" : ""].filter(Boolean).join(" ") });
             dyns.push({ index, kind: "hairpin", system: rowOf(sy2, r10, 0), x: a10, y: y2 - P2(1.4), w: b3 - a10, h: P2(2.8) });
           }
         }
@@ -10069,13 +10087,14 @@ var ScoreView = class {
         this.ink.insertBefore(d3, this.ink.firstChild);
         this.barEl = d3;
       }
+      const pad4 = L2.sp * 0.8, bt = Math.min(...rows.map((r10) => r10.inkTop ?? r10.top)) - pad4, bb = Math.max(...rows.map((r10) => r10.inkBottom ?? r10.bottom)) + pad4;
       const key = `${p2.paperId}:${sys}:${Math.round(left)}`;
       if (key !== this.barKey) {
         this.barKey = key;
         d3.style.left = `${left}px`;
-        d3.style.top = `${top}px`;
+        d3.style.top = `${bt}px`;
         d3.style.width = `${Math.max(4, right - left)}px`;
-        d3.style.height = `${bottom - top}px`;
+        d3.style.height = `${bb - bt}px`;
       }
     }
     const spots = found.filter((f2) => f2.note).flatMap((f2) => f2.hits);
@@ -23720,12 +23739,17 @@ var Studio = class {
     g3.R[g3.w] = r10;
     g3.w = g3.w + 1 & STEREO_N - 1;
   }
-  grOf(id2, fx) {
+  /** 第一台压缩（压缩页摊开的就是它）这一块压了多少 + 进 / 出的峰值。没有压缩 / 关着 = 进出都按这条轨链尾、推子前的峰值 `pre`，压了 0
+   *  （v0.10.26，user「效果器的动画没开效果器的卡上面也应该有」：每张卡都有波形，看得出哪儿冲、要不要压）。 */
+  grOf(id2, fx, pre) {
     const c10 = fx.find((f2) => f2.kind === "comp");
-    if (!c10 || !c10.on) return;
+    const on2 = !!c10 && c10.on, lv2 = this.compLv.get(id2) ?? [0, 0];
+    if (!on2) {
+      this.compLv.set(id2, [Math.max(lv2[0], pre), Math.max(lv2[1], pre)]);
+      return;
+    }
     const v = c10.gainReductionDb ?? 0;
     this.grMin.set(id2, Math.min(this.grMin.get(id2) ?? 0, v));
-    const lv2 = this.compLv.get(id2) ?? [0, 0];
     this.compLv.set(id2, [Math.max(lv2[0], c10.inPeak ?? 0), Math.max(lv2[1], c10.outPeak ?? 0)]);
   }
   specRings = /* @__PURE__ */ new Map();
@@ -24202,7 +24226,7 @@ var Studio = class {
       let cl2 = b3.gl, cr2 = b3.gr;
       if (this.specOn) this.specPush(b3.id, b3.L, b3.R, n10, Math.hypot(b3.gl, b3.gr), Math.hypot(gl, gr));
       const L2 = b3.out ? b3.out.L : this.busL, R2 = b3.out ? b3.out.R : this.busR;
-      let pk = 0, ms = 0;
+      let pk = 0, ms = 0, pre = 0;
       for (let i10 = 0; i10 < n10; i10++) {
         cl2 += dl;
         cr2 += dr;
@@ -24214,13 +24238,15 @@ var Studio = class {
           if (a10 > pk) pk = a10;
           if (c10 > pk) pk = c10;
           ms += (l10 * l10 + r10 * r10) * 0.5;
+          const u2 = Math.max(Math.abs(b3.L[i10]), Math.abs(b3.R[i10]));
+          if (u2 > pre) pre = u2;
         }
         if (this.stereoOn) this.stereoPush(b3.id, l10, r10);
       }
       if (this.meterOn) {
         this.trackPeaks.set(b3.id, Math.max(this.trackPeaks.get(b3.id) ?? 0, pk));
         this.trackMs.set(b3.id, (this.trackMs.get(b3.id) ?? 0) + ms);
-        this.grOf(b3.id, b3.fx);
+        this.grOf(b3.id, b3.fx, pre);
       }
       for (const sd2 of b3.sends) {
         const sl2 = gl * sd2.lin * Math.SQRT2, sr2 = gr * sd2.lin * Math.SQRT2;
@@ -24278,15 +24304,16 @@ var Studio = class {
       }
     }
     if (this.meterOn) {
-      let ms = 0;
+      let ms = 0, pk = 0;
       for (let i10 = 0; i10 < n10; i10++) {
         const a10 = Math.abs(outL[i10]), b3 = Math.abs(outR[i10]);
-        if (a10 > this.meterPeak) this.meterPeak = a10;
-        if (b3 > this.meterPeak) this.meterPeak = b3;
+        if (a10 > pk) pk = a10;
+        if (b3 > pk) pk = b3;
         ms += (outL[i10] * outL[i10] + outR[i10] * outR[i10]) * 0.5;
       }
+      if (pk > this.meterPeak) this.meterPeak = pk;
       this.trackMs.set("__master", (this.trackMs.get("__master") ?? 0) + ms);
-      this.grOf("__master", this.masterFx);
+      this.grOf("__master", this.masterFx, pk);
       this.meterFrames += n10;
       if (this.meterFrames >= 1024) {
         const f2 = this.meterFrames, ms2 = {};
@@ -24462,6 +24489,7 @@ var Studio = class {
       const bus = t10.ch.to && t10.ch.to !== "master" ? this.buses.get(t10.ch.to) : void 0, L2 = bus ? bus.L : this.busL, R2 = bus ? bus.R : this.busR;
       let cl2 = t10.gl, cr2 = t10.gr, pk = 0, ms = 0;
       const sto = this.stereoOn;
+      let pre = 0;
       for (let i10 = 0; i10 < cnt; i10++) {
         cl2 += dl;
         cr2 += dr;
@@ -24469,7 +24497,9 @@ var Studio = class {
         R2[off + i10] += out[i10] * cr2;
         if (sto) this.stereoPush(id2, out[i10] * cl2, out[i10] * cr2);
         if (this.meterOn) {
-          const a10 = Math.abs(out[i10]) * Math.max(cl2, cr2) * Math.SQRT2;
+          const u2 = Math.abs(out[i10]);
+          if (u2 > pre) pre = u2;
+          const a10 = u2 * Math.max(cl2, cr2) * Math.SQRT2;
           if (a10 > pk) pk = a10;
           ms += out[i10] * out[i10] * (cl2 * cl2 + cr2 * cr2);
         }
@@ -24477,7 +24507,7 @@ var Studio = class {
       if (this.meterOn) {
         this.trackPeaks.set(id2, Math.max(this.trackPeaks.get(id2) ?? 0, pk));
         this.trackMs.set(id2, (this.trackMs.get(id2) ?? 0) + ms);
-        this.grOf(id2, t10.chFx);
+        this.grOf(id2, t10.chFx, pre);
       }
       if (t10.ch.sends) for (const sd2 of t10.ch.sends) {
         const b3 = this.buses.get(sd2.to);
@@ -38012,7 +38042,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-fa5e92206668.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-97f8709397ae.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -39845,7 +39875,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "43c3fa798ebb",
+  cssHash: "049b5ceb2bd7",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -43045,4 +43075,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0ada1f4767d3.mjs.map
+//# sourceMappingURL=moonsinger-5c7f3c7f4cd4.mjs.map

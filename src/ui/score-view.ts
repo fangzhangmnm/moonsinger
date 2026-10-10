@@ -364,8 +364,11 @@ export class ScoreView {
       if (!Number.isFinite(left)) { let first = Infinity; for (const n of this.hits) if (n.system === row && n.x < first) first = n.x; left = (Number.isFinite(first) ? first : hx) - L.sp * 0.8; }
       if (!Number.isFinite(right)) right = L.systems[row].x1 ?? hx + L.sp * 4;
       let d = this.barEl; if (!d || !d.isConnected) { d = document.createElement("div"); d.className = "play-bar"; this.ink.insertBefore(d, this.ink.firstChild); this.barEl = d; }
+      // 上下沿 = 这一行谱真有墨的地方再留一点（v0.10.26，user「播放进度的灰色方块的top和bottom再推敲一下」：以前用整行的格子——上面空一大截、
+      //   下面切掉叠着的房客的低音）；一整行都一样高，换小节不跳
+      const pad = L.sp * 0.8, bt = Math.min(...rows.map((r) => r.inkTop ?? r.top)) - pad, bb = Math.max(...rows.map((r) => r.inkBottom ?? r.bottom)) + pad;
       const key = `${p.paperId}:${sys}:${Math.round(left)}`;
-      if (key !== this.barKey) { this.barKey = key; d.style.left = `${left}px`; d.style.top = `${top}px`; d.style.width = `${Math.max(4, right - left)}px`; d.style.height = `${bottom - top}px`; } }
+      if (key !== this.barKey) { this.barKey = key; d.style.left = `${left}px`; d.style.top = `${bt}px`; d.style.width = `${Math.max(4, right - left)}px`; d.style.height = `${bb - bt}px`; } }
     void x;   // 播放线先不画（2026-10-10 user「感觉高亮够，可以先不用那根当前播放的线…先试试不用线」）——位置照算，要回来时在这儿画
     // 正在响的音：每个声部各自的那一个（休止不亮）；连音线拆开的几段一起亮
     const spots = found.filter((f) => f.note).flatMap((f) => f.hits);
