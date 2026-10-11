@@ -63,6 +63,17 @@ describe("clipboard", () => {
   });
 });
 
+describe("贴在后面补齐的淡色小节里（v0.10.32，user「复制的时候没有respect开始的ghost小节数」）", () => {
+  it("光标在尾巴后面两小节（lead）= 先落成休止再贴：贴的东西从点的那个小节起", () => {
+    let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 2, "near");   // 第一小节写了两拍
+    const clip = copyTokens(select(st, tr(st).length - 2, tr(st).length))!;
+    const used = tr(st).reduce((n, t) => n + (t.kind === "note" || t.kind === "rest" ? t.dur : 0), 0), bar = 4 * TPQ, lead = 2 * bar - used;   // 补满第一小节 + 空一整小节 = 从第三小节开头起
+    const out = pasteTokens({ ...st, lead }, clip), body = tr(out).filter((t) => t.kind === "note" || t.kind === "rest");
+    let tick = 0, at = -1; for (const t of body) { if (at < 0 && t.kind === "note" && body.indexOf(t) >= 2) at = tick; tick += t.dur; }
+    eq(at, 2 * bar, "贴的第一个音在第三小节开头");
+    eq(out.lead, undefined, "lead 用掉了");
+  });
+});
 describe("复制 / 剪切带上第一个音身上的记号（2026-10-08 深夜，user「复制一段歌的时候第一个音头上的力度符号没被选进来」）", () => {
   it("选区从第一个音开始：它前面紧挨着的力度 / 渐强渐弱跟着进剪贴板；剪切也一起走；前面的小节线不带", async () => {
     const { initState, writeDegree, tr, select } = await import("../src/score/song.ts");

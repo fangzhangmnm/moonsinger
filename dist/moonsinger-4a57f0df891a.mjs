@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.31-2026-10-10";
+var APP_VERSION = "v0.10.32-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -10271,7 +10271,8 @@ var ScoreView = class {
   userScrollAt = -1e9;
   lockTap = null;
   roGesture = false;
-  // 这一下按在合租叠起来的那一行上（只读）
+  roAt = null;
+  // 只读行上按下的地方（轻点 = 展开那一家）   // 这一下按在合租叠起来的那一行上（只读）
   inSharedRow(x2, y2) {
     const L2 = this.layout;
     if (!L2 || !L2.sharedRows.length) return false;
@@ -10694,6 +10695,7 @@ var ScoreView = class {
     if (!L2 || e10.button === 2) return;
     const p2 = this.local(e10);
     this.roGesture = this.rules.edit && this.inSharedRow(p2.x, p2.y) && !L2.parts.some((b3) => this.inBox(b3, p2.x, p2.y));
+    if (this.roGesture) this.roAt = { x: p2.x, y: p2.y };
     if (!this.rules.edit || this.roGesture) {
       if (e10.pointerType === "touch") {
         this.touches.set(e10.pointerId, { x: e10.clientX, y: e10.clientY });
@@ -10824,6 +10826,24 @@ var ScoreView = class {
     this.host.audition?.(hit.index, true);
     this.holdPid = pid;
   }
+  /** 点在叠起来的那一行上：光标去这一家在这一行的那位（主人 / 在场打头的那位），落在点的那个时刻（点在音上 = 它后面，同平常点音）→ 整家拆开。 */
+  expandFamilyAt(x2, y2) {
+    const L2 = this.layout;
+    if (!L2) return;
+    const row2 = this.rowAt(y2);
+    if (row2 < 0) return;
+    const r10 = L2.systems[row2], hit = this.noteAt(x2, y2, true);
+    let caret;
+    if (hit && L2.systems[hit.system]?.paper === r10.paper) caret = this.realIndex(r10.paper, hit.part ?? L2.systems[hit.system].part, hit.index) + 1;
+    else {
+      const c10 = this.caretAt(x2, y2);
+      caret = this.realIndex(c10.at.paper, c10.at.part, c10.caret);
+    }
+    this.holdView = true;
+    this.host.set(setFocus(this.host.get(), r10.paper, realPart(r10.part), caret));
+    this.holdView = false;
+    this.heldBase = this.baseKey();
+  }
   /** 合租展开着的一家左边那条括号（v0.10.29）：点 = 光标挪到这一家后面紧挨着的那位（不在任何一家里的；后面没有 = 前面最近的那位）→ 这一家叠回去。
    *  user「把这一家的几行括在一起…点这条括号等于「光标挪到这一家后面紧挨着的那位」…可以」。视图不跟过去（同点名字）。 */
   leaveFamilyAt(x2, y2) {
@@ -10891,11 +10911,21 @@ var ScoreView = class {
     const hit = this.noteAt(x2, y2, true), r10 = hit ? L2.systems[hit.system] : null;
     if (hit && r10) {
       const id2 = hit.part ?? r10.part, i10 = this.realIndex(r10.paper, id2, hit.index);
-      this.host.onListenMenu?.({ x: cx2, y: cy2 }, { paper: r10.paper, part: realPart(id2), index: i10, caret: i10 });
+      this.host.onListenMenu?.({ x: cx2, y: cy2 }, { paper: r10.paper, part: realPart(id2), index: i10, caret: i10, tick: this.tickIn(r10.paper, id2, hit.index) });
       return;
     }
     const s10 = this.caretAt(x2, y2);
-    this.host.onListenMenu?.({ x: cx2, y: cy2 }, { paper: s10.at.paper, part: realPart(s10.at.part), index: null, caret: this.realIndex(s10.at.paper, s10.at.part, s10.caret) });
+    this.host.onListenMenu?.({ x: cx2, y: cy2 }, { paper: s10.at.paper, part: realPart(s10.at.part), index: null, caret: this.realIndex(s10.at.paper, s10.at.part, s10.caret), tick: this.tickIn(s10.at.paper, s10.at.part, s10.caret) + (s10.lead ?? 0) });
+  }
+  /** 这条 track（真的 / 合租虚拟的那几条）第 i 个之前一共多少 tick。 */
+  tickIn(paperId, part, i10) {
+    const v = this.layout?.virtual[`${paperId}:${part}`] ?? this.host.get().song.papers.find((x2) => x2.id === paperId)?.tracks[realPart(part)] ?? [];
+    let t10 = 0;
+    for (let k2 = 0; k2 < Math.min(i10, v.length); k2++) {
+      const x2 = v[k2];
+      if (isTimed(x2)) t10 += x2.dur;
+    }
+    return t10;
   }
   /** 合租叠起来的那一行（v0.10.28）：点击区的下标指虚拟 track（主人那条 / `主人~lo` / `…~v2`） → 换成主人自己 track 里同一时刻的那个下标（按 tick 对）。不是叠起来的 = 原样。 */
   realIndex(paperId, part, i10) {
@@ -11383,7 +11413,16 @@ var ScoreView = class {
     }
     if (!this.rules.edit || this.roGesture) {
       const lt2 = this.lockTap, f2 = this.finger, pr2 = this.press, fired = !!(pr2 && pr2.pid === e10.pointerId && pr2.fired);
-      if (this.roGesture && (lt2 && e10.pointerId === lt2.pid && !lt2.moved && !fired || f2 && e10.pointerId === f2.pid && !f2.moved && !fired)) this.host.notice?.("\u5408\u79DF\u53E0\u8D77\u6765\u7684\u8FD9\u4E00\u884C\u53EA\u80FD\u770B\uFF1A\u70B9\u5DE6\u8FB9\u7684\u540D\u5B57 = \u62C6\u5F00\u6765\u5199");
+      if (this.roGesture && this.roAt && (lt2 && e10.pointerId === lt2.pid && !lt2.moved && !fired || f2 && e10.pointerId === f2.pid && !f2.moved && !fired)) {
+        const at2 = this.roAt;
+        this.roAt = null;
+        this.roGesture = false;
+        this.cancelPress();
+        this.lockTap = null;
+        this.finger = null;
+        this.expandFamilyAt(at2.x, at2.y);
+        return;
+      }
       if (!this.touches.size) this.roGesture = false;
       if (pr2 && pr2.pid === e10.pointerId) {
         this.press = null;
@@ -37744,6 +37783,7 @@ function clipFrom(st3) {
 }
 function pasteTokens(st3, toks) {
   if (!toks.length) return st3;
+  if (st3.lead) st3 = materializeLead(st3);
   const tokens = tr(st3).slice();
   let nextId = st3.nextId;
   const fresh = toks.filter((t10) => !isMark(t10) || true).map((t10) => ({ ...t10, id: nextId++ }));
@@ -39459,6 +39499,15 @@ function barHeadTick(paperId, part, tick) {
     inBar += k2.dur;
     t10 += k2.dur;
   }
+  if (t10 <= tick) {
+    while (inBar >= len && inBar > 0) {
+      const b3 = t10 - (inBar - len);
+      if (b3 <= tick) head = b3;
+      inBar -= len;
+    }
+    const b0 = t10 - inBar;
+    if (tick >= b0) head = b0 + Math.floor((tick - b0) / len + 1e-9) * len;
+  }
   return head;
 }
 var tickOfCaret = (paperId, part, caret) => {
@@ -39663,7 +39712,7 @@ function openListenMenu(at2, a10) {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
     close();
-    if (v === "here") playFromHere(a10.paper, a10.part, tickOfCaret(a10.paper, a10.part, a10.index ?? a10.caret));
+    if (v === "here") playFromHere(a10.paper, a10.part, a10.tick ?? tickOfCaret(a10.paper, a10.part, a10.index ?? a10.caret));
     else if (v === "resume") resumePlay();
     else if (v === "head") playFromHead();
   });
@@ -41185,7 +41234,7 @@ function openScoreMenu(at2, _row) {
     if (!v) return;
     close();
     if (v === "play") {
-      playFromHere(st2.at.paper, st2.at.part, tickOfCaret(st2.at.paper, st2.at.part, st2.caret));
+      playFromHere(st2.at.paper, st2.at.part, tickOfCaret(st2.at.paper, st2.at.part, st2.caret) + (st2.lead ?? 0));
       return;
     }
     if (v === "paste") void pasteNow();
@@ -43433,4 +43482,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1eb836b2f483.mjs.map
+//# sourceMappingURL=moonsinger-4a57f0df891a.mjs.map

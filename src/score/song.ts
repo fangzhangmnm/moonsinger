@@ -1193,7 +1193,7 @@ export function shownAccAt(tokens: Token[], i: number, p: Pitch): number | null 
   return p.alter === cur ? null : p.alter;
 }
 /** 写之前把 lead 落成休止：先补满尾巴所在的小节，再一小节一个（整小节休止），最后剩的一截。光标在新休止后面。 */
-function materializeLead(st: EditorState): EditorState {
+export function materializeLead(st: EditorState): EditorState {
   const lead = st.lead; if (!lead || st.sel || st.caret !== tr(st).length) return st.lead ? { ...st, lead: undefined } : st;
   const tk = tr(st).slice(), { inBar, len } = barPosAtEnd(tk); let left = lead, id = st.nextId;
   let piece = inBar > 0 ? Math.min(left, len - inBar) : Math.min(left, len);

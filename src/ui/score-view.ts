@@ -47,7 +47,7 @@ export interface ScoreViewHost {
   release?(): void;
   /** 听模式里长按 / 右键谱面（轻点不跳播，防误触；user 2026-10-10「听模式也不应该误触摸导致跳播。可以还是用长按/右键context menu」）：
    *  点在音 / 休止上 = index（它所在的声部）；空白 = caret（那一行光标会落的位置）。宿主开小菜单（从这儿放…）。 */
-  onListenMenu?(at: { x: number; y: number }, target: { paper: string; part: string; index: number | null; caret: number }): void;
+  onListenMenu?(at: { x: number; y: number }, target: { paper: string; part: string; index: number | null; caret: number; tick: number }): void;   // tick = 点的那一刻（这张纸上；补齐的空小节 / 合租叠起来的行都算对）
   /** 五线谱像文本框（user「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
    *  staff = 点在谱上（音 / 空白 / 框选）；text = 打开了要系统键盘的框（歌词 / 歌名）。记号框不算（触屏上不弹系统键盘）。 */
   focus?(where: "staff" | "text"): void;
@@ -332,7 +332,8 @@ export class ScoreView {
   private playSysKey = "";
   private userScrollAt = -1e9;
   private lockTap: { pid: number; x: number; y: number; moved: boolean } | null = null;
-  private roGesture = false;   // 这一下按在合租叠起来的那一行上（只读）
+  private roGesture = false;
+  private roAt: { x: number; y: number } | null = null;   // 只读行上按下的地方（轻点 = 展开那一家）   // 这一下按在合租叠起来的那一行上（只读）
   private inSharedRow(x: number, y: number): boolean { const L = this.layout; if (!L || !L.sharedRows.length) return false; void x; return L.sharedRows.some((i) => { const r = L.systems[i]; return !!r && y >= r.top && y <= r.bottom; }); }
   private holdPid: number | null = null;                                 // 按住一个音在出声（长按 = 预览；抬手停）
   /** 播放头（实时试听「谱上跟着亮」，2026-10-09 Claude Fable 5.1）：p = 哪张纸的第几个 tick（纸自己的，反复已折回去；src/engine/timeline.ts locate）；null = 收起。
@@ -626,7 +627,7 @@ export class ScoreView {
     const L = this.layout; if (!L || e.button === 2) return;   // 右键归 contextmenu
     const p = this.local(e);
     // 合租叠起来的那一行 = 只读（v0.10.25，user「host也应该只读，只有展开时才能编辑」）：这一下按「听」的规矩走（滚 / 捏合 / 看谱的轻点 / 长按小菜单），名字照样能点（点名字 = 拆开来写）
-    this.roGesture = this.rules.edit && this.inSharedRow(p.x, p.y) && !L.parts.some((b) => this.inBox(b, p.x, p.y));   // 先算纸面坐标再拿焦点：focus 可能连带滚一下（分页时光标那行在页外），坐标就错了（2026-10-08 E2E 抓到）
+    this.roGesture = this.rules.edit && this.inSharedRow(p.x, p.y) && !L.parts.some((b) => this.inBox(b, p.x, p.y)); if (this.roGesture) this.roAt = { x: p.x, y: p.y };   // 先算纸面坐标再拿焦点：focus 可能连带滚一下（分页时光标那行在页外），坐标就错了（2026-10-08 E2E 抓到）
     // 笔 / 鼠标：点谱面 = 键盘回到谱上（下面 preventDefault 会拦掉浏览器默认的抢焦点）。手指：按下先不抢——拖 = 滚动，歌词框开着时滚谱不该把它收掉、
     //   把系统键盘收回去（收键盘 → 谱面变高 → 跟随光标又把视图拽回去 = 白滚；user 2026-10-08「每次打日文还是跟八年抗战一样…歌词输入模式滚动会导致键盘弹回来，然后白滚」）；
     //   轻点（up）/ 长按（longPress）才抢
@@ -721,6 +722,17 @@ export class ScoreView {
     this.host.focus?.("staff");
     this.host.audition?.(hit.index, true); this.holdPid = pid;   // 按住音 = 听见它（2026-10-10 user「按住音的时候应该能听到preview」），抬手停
   }
+  /** 点在叠起来的那一行上：光标去这一家在这一行的那位（主人 / 在场打头的那位），落在点的那个时刻（点在音上 = 它后面，同平常点音）→ 整家拆开。 */
+  private expandFamilyAt(x: number, y: number): void {
+    const L = this.layout; if (!L) return;
+    const row = this.rowAt(y); if (row < 0) return;
+    const r = L.systems[row], hit = this.noteAt(x, y, true);
+    let caret: number;
+    if (hit && L.systems[hit.system]?.paper === r.paper) caret = this.realIndex(r.paper, hit.part ?? L.systems[hit.system].part, hit.index) + 1;
+    else { const c = this.caretAt(x, y); caret = this.realIndex(c.at.paper, c.at.part, c.caret); }
+    this.holdView = true; this.host.set(setFocus(this.host.get(), r.paper, realPart(r.part), caret)); this.holdView = false;
+    this.heldBase = this.baseKey();
+  }
   /** 合租展开着的一家左边那条括号（v0.10.29）：点 = 光标挪到这一家后面紧挨着的那位（不在任何一家里的；后面没有 = 前面最近的那位）→ 这一家叠回去。
    *  user「把这一家的几行括在一起…点这条括号等于「光标挪到这一家后面紧挨着的那位」…可以」。视图不跟过去（同点名字）。 */
   private leaveFamilyAt(x: number, y: number): boolean {
@@ -764,9 +776,15 @@ export class ScoreView {
   private listenMenu(x: number, y: number, cx: number, cy: number): void {
     const L = this.layout; if (!L) return;
     const hit = this.noteAt(x, y, true), r = hit ? L.systems[hit.system] : null;
-    if (hit && r) { const id = hit.part ?? r.part, i = this.realIndex(r.paper, id, hit.index); this.host.onListenMenu?.({ x: cx, y: cy }, { paper: r.paper, part: realPart(id), index: i, caret: i }); return; }
+    if (hit && r) { const id = hit.part ?? r.part, i = this.realIndex(r.paper, id, hit.index); this.host.onListenMenu?.({ x: cx, y: cy }, { paper: r.paper, part: realPart(id), index: i, caret: i, tick: this.tickIn(r.paper, id, hit.index) }); return; }
     const s = this.caretAt(x, y);
-    this.host.onListenMenu?.({ x: cx, y: cy }, { paper: s.at.paper, part: realPart(s.at.part), index: null, caret: this.realIndex(s.at.paper, s.at.part, s.caret) });
+    this.host.onListenMenu?.({ x: cx, y: cy }, { paper: s.at.paper, part: realPart(s.at.part), index: null, caret: this.realIndex(s.at.paper, s.at.part, s.caret), tick: this.tickIn(s.at.paper, s.at.part, s.caret) + (s.lead ?? 0) });   // 补齐的淡色小节：光标在尾巴 + lead
+  }
+  /** 这条 track（真的 / 合租虚拟的那几条）第 i 个之前一共多少 tick。 */
+  private tickIn(paperId: string, part: string, i: number): number {
+    const v = this.layout?.virtual[`${paperId}:${part}`] ?? this.host.get().song.papers.find((x) => x.id === paperId)?.tracks[realPart(part)] ?? [];
+    let t = 0; for (let k = 0; k < Math.min(i, v.length); k++) { const x = v[k]; if (isTimed(x)) t += x.dur; }
+    return t;
   }
   /** 合租叠起来的那一行（v0.10.28）：点击区的下标指虚拟 track（主人那条 / `主人~lo` / `…~v2`） → 换成主人自己 track 里同一时刻的那个下标（按 tick 对）。不是叠起来的 = 原样。 */
   private realIndex(paperId: string, part: string, i: number): number {
@@ -1078,7 +1096,8 @@ export class ScoreView {
     if (this.holdPid === e.pointerId) { this.holdPid = null; this.host.release?.(); }   // 按住音的预览：抬手停
     if (!this.rules.edit || this.roGesture) {   // 听模式 / 合租叠起来的那一行：没拖、没长按 = 轻点（只认看谱的那些）
       const lt = this.lockTap, f = this.finger, pr = this.press, fired = !!(pr && pr.pid === e.pointerId && pr.fired);
-      if (this.roGesture && ((lt && e.pointerId === lt.pid && !lt.moved && !fired) || (f && e.pointerId === f.pid && !f.moved && !fired))) this.host.notice?.("合租叠起来的这一行只能看：点左边的名字 = 拆开来写");
+      // 写的模式里轻点叠起来的那一行 = 展开这一家、光标落在点的那儿（v0.10.32；user「音输入模式下应该点开合租的五线谱能展开」）
+      if (this.roGesture && this.roAt && ((lt && e.pointerId === lt.pid && !lt.moved && !fired) || (f && e.pointerId === f.pid && !f.moved && !fired))) { const at = this.roAt; this.roAt = null; this.roGesture = false; this.cancelPress(); this.lockTap = null; this.finger = null; this.expandFamilyAt(at.x, at.y); return; }
       if (!this.touches.size) this.roGesture = false;
       if (pr && pr.pid === e.pointerId) { this.press = null; clearTimeout(pr.timer); }
       if (lt && e.pointerId === lt.pid) { this.lockTap = null; if (!lt.moved && !fired) this.tap(lt.x, lt.y, false, e.pointerId, true); return; }

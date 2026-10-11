@@ -34,7 +34,9 @@ check(names.includes("Piano") && names.includes("Flute") && names.includes("Viol
   const before = await p.evaluate(() => JSON.stringify(window.__moonsinger.state().at));
   await p.mouse.click(pt.x, pt.y); await p.waitForTimeout(250);
   const after = await p.evaluate(() => JSON.stringify(window.__moonsinger.state().at));
-  check(before === after && (await rowsOf("P2")) === 0, "点在叠起来的那一行上 = 光标不动、照旧叠着（只读）", after); }
+  check(JSON.parse(after).part === "P1" && (await rowsOf("P2")) > 0, "「音」里点叠起来的那一行 = 展开这一家、光标去 Piano（v0.10.32，user「音输入模式下应该点开合租的五线谱能展开」）", `${before} → ${after}`);
+  await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ ...st, at: { ...st.at, part: "P3" } }); }); await p.waitForTimeout(200);
+  check((await rowsOf("P2")) === 0, "光标去 Violin = 又叠回去"); }
 await p.click("#score text.part-name >> text=Flute"); await p.waitForTimeout(250);
 check((await focus()) === "P2" && (await rowsOf("P2")) > 0, "点 Flute 的名字 = 去写它、整家拆开（有自己的谱行）", await focus());
 // 听模式 = 每一家都叠起来（不看光标在哪；v0.10.29，user「每一家点开收拢的ux怎么算」→「12 同意」）；回到写的模式 = 光标在哪家哪家展开

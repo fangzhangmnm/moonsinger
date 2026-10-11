@@ -5,7 +5,7 @@
 //   连音线 / 延音：^ 前缀 = 连着前一个音（tie）；0 = 休止（时值同音）；- = 前一个音 / 休止再加一个四分（简谱的横线）；| = 小节线；单独一个 , = 句（换气 / 换行）；
 //   记号：[1=G] 调号、[3/4] 拍号、[T=90] 速度；歌词里的空格 / 斜杠不许（歌词只认到下一个空格）。
 //   写不出的时值（连音 / 奇怪的 tick 数）写成 (tick)：1(560)。
-import { type Dyn, type EditorState, type Token, type NoteTok, type Timed, type Repeat, type NavWhat, NAV_LABEL, tr, withTrack, headLen, keyAt, isMark, TPQ, allPitches, withPitches } from "./song.ts";
+import { type Dyn, type EditorState, type Token, type NoteTok, type Timed, type Repeat, type NavWhat, NAV_LABEL, tr, withTrack, headLen, keyAt, isMark, TPQ, allPitches, withPitches, materializeLead } from "./song.ts";
 import { type Pitch, STEPS, type Step, stepIndex, diatonicIndex, tonicStepIndex, keyAlter, KEY_LABEL } from "./pitch.ts";
 
 /** 选中的那一段（没选中 = null）。原样切片，id 原样（贴的时候重编）。 */
@@ -24,6 +24,7 @@ export function clipFrom(st: EditorState): number {
 /** 贴：有选中 = 替换选中；没有 = 插在光标处。id 从 nextId 重编；光标落在贴的末尾；本次输入记录清空。 */
 export function pasteTokens(st: EditorState, toks: Token[]): EditorState {
   if (!toks.length) return st;
+  if (st.lead) st = materializeLead(st);   // 光标在后面补齐的淡色小节里：先把前面空着的落成休止，贴在点的那个小节（v0.10.32；user「复制的时候没有respect开始的ghost小节数」）
   const tokens = tr(st).slice();
   let nextId = st.nextId;
   const fresh = toks.filter((t) => !isMark(t) || true).map((t) => ({ ...t, id: nextId++ }));

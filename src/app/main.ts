@@ -1059,6 +1059,8 @@ function barHeadTick(paperId: string, part: string, tick: number): number {
     if (t > tick) break;
     inBar += k.dur; t += k.dur;
   }
+  // 过了这位写的尾巴（后面补齐的淡色小节 / 空纸）：照最后的拍号接着往后数整小节（v0.10.32；user「在空的sheet（比如ghost 休止符）上右键从这里放小节号错了，系统的整理一下」）
+  if (t <= tick) { while (inBar >= len && inBar > 0) { const b = t - (inBar - len); if (b <= tick) head = b; inBar -= len; } const b0 = t - inBar; if (tick >= b0) head = b0 + Math.floor((tick - b0) / len + 1e-9) * len; }
   return head;
 }
 /** 一条 track 上第 caret 个 token 之前有多少 tick。 */
@@ -1166,7 +1168,7 @@ function setMode(m: Mode): void {
 }
 const setListen = (on: boolean) => setMode(on ? "listen" : lastEditMode);
 /** 听模式的长按 / 右键小菜单（轻点不跳播，防误触）。 */
-function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: string; index: number | null; caret: number }): void {
+function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: string; index: number | null; caret: number; tick?: number }): void {
   closeOffer?.();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
@@ -1182,7 +1184,7 @@ function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: 
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
-    if (v === "here") playFromHere(a.paper, a.part, tickOfCaret(a.paper, a.part, a.index ?? a.caret));
+    if (v === "here") playFromHere(a.paper, a.part, a.tick ?? tickOfCaret(a.paper, a.part, a.index ?? a.caret));   // tick = 谱面点的那一刻（score-view 算好：补齐的空小节 / 合租叠起来的行都对）
     else if (v === "resume") resumePlay();
     else if (v === "head") playFromHead();
   });
@@ -2201,7 +2203,7 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
-    if (v === "play") { playFromHere(st.at.paper, st.at.part, tickOfCaret(st.at.paper, st.at.part, st.caret)); return; }
+    if (v === "play") { playFromHere(st.at.paper, st.at.part, tickOfCaret(st.at.paper, st.at.part, st.caret) + (st.lead ?? 0)); return; }   // 光标在后面补齐的空小节里：加上 lead
     if (v === "paste") void pasteNow();
     else if (v === "bar") update(apply(st, { k: "bar" }, performance.now()));
     else if (v === "phrase") update(apply(st, { k: "phrase" }, performance.now()));
