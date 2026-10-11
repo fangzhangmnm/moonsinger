@@ -94,6 +94,7 @@ import "./shared-staff.test.ts";
 import "./percussion.test.ts";
 import "./merge.test.ts";
 import "./start-dyns.test.ts";
+import "./icon-wiring.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

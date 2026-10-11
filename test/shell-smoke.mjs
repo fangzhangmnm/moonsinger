@@ -8,7 +8,7 @@ import fs from "node:fs"; import os from "node:os"; import path from "node:path"
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = fs.mkdtempSync(path.join(os.tmpdir(), "moonsinger-shell-"));
-const FILES = ["index.html", "styles.css", "manifest.webmanifest", "service-worker.js", "icon.svg", "icon-192.png", "icon-512.png", "dist", "vendor", "assets"];
+const FILES = ["index.html", "styles.css", "manifest.webmanifest", "service-worker.js", "icon.svg", "icon-192.png", "icon-512.png", "icon-32.png", "apple-touch-icon-180.png", "dist", "vendor", "assets"];
 for (const f of FILES) fs.cpSync(path.join(ROOT, f), path.join(SITE, f), { recursive: true, dereference: true });
 const PORT = 8790 + Math.floor(Math.random() * 100), HOST = "moonsinger.localhost", ORIGIN = `http://${HOST}:${PORT}`;
 const server = spawn("python3", ["-m", "http.server", String(PORT), "--bind", "127.0.0.1", "--directory", SITE], { stdio: "ignore" });

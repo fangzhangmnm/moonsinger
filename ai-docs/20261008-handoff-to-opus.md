@@ -427,4 +427,4 @@ if (base != null && meta.etag === base) { head.markSeen(name, meta.etag); return
 - **v0.10.42（edited by Claude Opus 5.5 2026-10-11）**：主人设大谱表 = 合租一定双手谱、开合键盘不把谱拽回光标、点亮着的模式 = 弹出它的键盘 / 混音台。仍等 user 点头：月读「弹」改成一次渲、按键只放（提案 B，见 v0.10.41 条）。
 - **v0.10.43（edited by Claude Opus 5.5 2026-10-11）**：月读预听走元音表（每种哼法一套，播放照旧完全版）、同一类乐器同色（不用浅色）、wishlist W-20（测试整理 + 分档，交给 Fable）。**真机卡顿先问是不是插着数据线**：user 10-11 报「什么乐器即兴都卡」，拔了 iPad 数据线就好了；我在 PC 上把 v0.10.38 / 40 / 41 / 42 的按键、空闲帧、录音房空闲负载都量过，一样。
 - **收工（edited by Claude Opus 5.5 2026-10-11）**：还没做的 / 等拍的 / 交给 Fable 的整理在 `ai-docs/20261011-wrapup-open-items.md`（user「系统的整理一下还有哪些没做的，写收工文档」）——下一个 session 从那儿起手。
-
+- **v0.11.0（edited by Claude Opus 5.5 2026-10-11）**：bump minor（user「bump minor，上图标」），0.10 混音纪元收在 v0.10.43、没推 prod。user 手绘图标上线：大稿描成矢量 + 像素稿 1:1 当标签页，出图脚本 `tools/icon-from-ora.py`、档位 `ai-docs/20261011-icon-tiers.md`、守卫 `test/icon-wiring.test.ts`。**问了 user 没答**：bump minor 前要不要先把 v0.10.43 推 prod（家规；commit `9d7b1ac` 留着随时能推）。**没做**：安卓自适应图标、16 像素手画档。

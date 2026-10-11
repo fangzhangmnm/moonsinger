@@ -12,6 +12,8 @@ const STATIC_PRECACHE = [
   "./icon.svg",
   "./icon-192.png",
   "./icon-512.png",
+  "./icon-32.png",
+  "./apple-touch-icon-180.png",
   "./styles.css",
   "./vendor/fonts/bravura/Bravura.woff2",
   "./vendor/internal-css/workbench-elements.css",

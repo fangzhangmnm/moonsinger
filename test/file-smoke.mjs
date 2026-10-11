@@ -6,7 +6,7 @@ import { chromium } from "./e2e/pw.mjs";
 import fs from "node:fs"; import os from "node:os"; import path from "node:path"; import { spawn } from "node:child_process"; import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = fs.mkdtempSync(path.join(os.tmpdir(), "moonsinger-file-")), DIR = fs.mkdtempSync(path.join(os.tmpdir(), "moonsinger-dl-"));
-for (const f of ["index.html", "styles.css", "manifest.webmanifest", "service-worker.js", "icon.svg", "icon-192.png", "icon-512.png", "dist", "vendor", "assets"]) fs.cpSync(path.join(ROOT, f), path.join(SITE, f), { recursive: true, dereference: true });
+for (const f of ["index.html", "styles.css", "manifest.webmanifest", "service-worker.js", "icon.svg", "icon-192.png", "icon-512.png", "icon-32.png", "apple-touch-icon-180.png", "dist", "vendor", "assets"]) fs.cpSync(path.join(ROOT, f), path.join(SITE, f), { recursive: true, dereference: true });
 fs.copyFileSync(path.join(ROOT, "test/fixtures/twinkle.musicxml"), path.join(DIR, "twinkle.musicxml"));
 const PORT = 8890 + Math.floor(Math.random() * 100);
 const server = spawn("python3", ["-m", "http.server", String(PORT), "--bind", "127.0.0.1", "--directory", SITE], { stdio: "ignore" });
