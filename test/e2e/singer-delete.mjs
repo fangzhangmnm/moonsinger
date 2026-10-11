@@ -26,6 +26,11 @@ await p.evaluate(() => { const m = window.__moonsinger, st = m.state(), p2 = st.
 await p.waitForTimeout(150);
 await p.click("#score text.part-name >> nth=1"); await p.waitForTimeout(200);
 await p.click('.track-card [data-v="droptrack"]'); await p.waitForTimeout(250);
+// 从纸上去掉一位 = 能撤销（v0.10.30；user「为什么删纸不能undo，然后删track也是希望删track删纸可以undo」）
+{ const trk = () => p.evaluate(() => { const st = window.__moonsinger.state(); return Object.keys(st.song.papers[0].tracks).length; });
+  const n0 = await trk(); await p.click("#undoBtn"); await p.waitForTimeout(200); const n1 = await trk();
+  check(n1 === n0 + 1, "从纸上去掉的这位：撤销 = 回到纸上", `${n0} → ${n1}`);
+  await p.click("#redoBtn"); await p.waitForTimeout(200); }
 await openStudio();
 check(await p.$$eval(".studio .strip [data-v=delpart]", (e) => e.length) === 1, "哪张纸都没有的那位 = 能删");
 await p.click(".studio .strip [data-v=delpart]"); await p.waitForTimeout(250);
@@ -33,6 +38,19 @@ check((await parts()).split(",").length === 1, "删掉了", await parts());
 await p.click('.studio [data-v="back"]'); await p.waitForTimeout(150);
 await p.click("#undoBtn"); await p.waitForTimeout(200);
 check((await parts()).split(",").length === 2, "撤销能找回来", await parts());
+// 删纸 = 能撤销（纸和上面写的东西都回来）；确认框不再说「没有撤销」
+{ await p.evaluate(() => window.__moonsinger.addPaper()); await p.waitForTimeout(250);
+  await p.click(".pad-key[data-k] >> nth=0").catch(() => {}); await p.waitForTimeout(100);
+  const papers = () => p.evaluate(() => window.__moonsinger.state().song.papers.map((x) => `${x.id}:${Object.values(x.tracks).reduce((n, t) => n + t.filter((k) => k.kind === "note").length, 0)}`).join(","));
+  const before = await papers(), pid = await p.evaluate(() => window.__moonsinger.state().song.papers.at(-1).id);
+  await p.evaluate((pid) => window.__moonsinger.view.host.onPaperMenu(pid), pid); await p.waitForTimeout(200);
+  await p.click('.ctx-menu [data-v="del"], [data-v="del"]'); await p.waitForTimeout(250);
+  const txt = await p.evaluate(() => document.body.innerText);
+  check(/能撤销/.test(txt) && !/没有撤销/.test(txt), "确认框写着能撤销");
+  await p.locator("button", { hasText: /^删$/ }).last().click(); await p.waitForTimeout(250);
+  const gone = await papers();
+  await p.click("#undoBtn"); await p.waitForTimeout(250);
+  check(gone.split(",").length === before.split(",").length - 1 && (await papers()) === before, "删纸：撤销 = 纸和上面写的东西都回来", `${before} → ${gone} → ${await papers()}`); }
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\n  ${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);

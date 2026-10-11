@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.29-2026-10-10";
+var APP_VERSION = "v0.10.30-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -9870,6 +9870,7 @@ var caretKey = (st3) => `${st3.at.paper}|${st3.at.part}|${st3.caret}`;
 var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
 var MAX_ZOOM = 6;
+var MIN_ZOOM = 0.4;
 var realPart = (id2) => id2.replace(/~.*$/, "");
 var ScoreView = class {
   constructor(el2, host) {
@@ -9940,6 +9941,12 @@ var ScoreView = class {
     el2.addEventListener("wheel", () => {
       this.userScrollAt = performance.now();
     }, { passive: true });
+    el2.addEventListener("wheel", (e10) => {
+      if (!e10.ctrlKey) return;
+      e10.preventDefault();
+      const sr2 = this.sheet.getBoundingClientRect(), z2 = this.zoom, k2 = Math.exp(-(e10.deltaMode === 1 ? e10.deltaY * 16 : e10.deltaY) * 2e-3);
+      this.setZoom(z2 * k2, { x: e10.clientX, y: e10.clientY, cx: (e10.clientX - sr2.left) / z2, cy: (e10.clientY - sr2.top) / z2 });
+    }, { passive: false });
     el2.addEventListener("scroll", () => this.placePins(), { passive: true });
     el2.addEventListener("pointerup", (e10) => this.up(e10));
     el2.addEventListener("contextmenu", (e10) => {
@@ -10583,7 +10590,7 @@ var ScoreView = class {
   }
   pinchMove() {
     const pi = this.pinch, [a10, b3] = [...this.touches.values()], d3 = Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y));
-    pi.k = Math.max(1, Math.min(this.maxZoom(), pi.z0 * (d3 / pi.d0))) / pi.z0;
+    pi.k = Math.max(MIN_ZOOM, Math.min(this.maxZoom(), pi.z0 * (d3 / pi.d0))) / pi.z0;
     pi.mx = (a10.x + b3.x) / 2;
     pi.my = (a10.y + b3.y) / 2;
     if (!pi.raf) pi.raf = requestAnimationFrame(() => {
@@ -10606,12 +10613,13 @@ var ScoreView = class {
   }
   /** 放大 / 缩小到 z（1 = 原大，最多到纸和屏幕一样宽）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
   setZoom(z2, anchor) {
-    z2 = Math.max(1, Math.min(this.maxZoom(), z2));
+    z2 = Math.max(MIN_ZOOM, Math.min(this.maxZoom(), z2));
+    if (Math.abs(z2 - 1) < 0.02) z2 = 1;
     const r10 = this.el.getBoundingClientRect();
     this.zoom = z2;
     this.sheet.style.zoom = z2 === 1 ? "" : String(z2);
-    this.el.classList.toggle("zoomed", z2 > 1.001);
-    this.zoomBtn.hidden = z2 <= 1.001;
+    this.el.classList.toggle("zoomed", this.paperW * z2 > this.el.clientWidth + 1);
+    this.zoomBtn.hidden = z2 === 1;
     if (anchor) {
       const nsr = this.sheet.getBoundingClientRect(), nl2 = nsr.left - r10.left + this.el.scrollLeft, nt2 = nsr.top - r10.top + this.el.scrollTop;
       this.el.scrollLeft = nl2 + anchor.cx * z2 - (anchor.x - r10.left);
@@ -11456,6 +11464,9 @@ function installPlatformGuards(surfaces) {
   }, cap);
   window.addEventListener("gesturestart", (e10) => e10.preventDefault(), cap);
   window.addEventListener("gesturechange", (e10) => e10.preventDefault(), cap);
+  window.addEventListener("wheel", (e10) => {
+    if (e10.ctrlKey) e10.preventDefault();
+  }, cap);
   document.addEventListener("selectstart", (e10) => {
     if (!isTextTarget(e10.target)) e10.preventDefault();
   }, { capture: true });
@@ -38383,8 +38394,8 @@ var SUNG_SECS = 1;
 var SUNG_GAIN_DB = 20 * Math.log10(SUNG_GAIN);
 var sungSeq = 0;
 var sungHeld = /* @__PURE__ */ new Map();
-function sungPlanAt() {
-  const tok = tr(st2)[st2.sel ? st2.sel.from : st2.caret];
+function sungPlanAt(index) {
+  const tok = tr(st2)[index ?? (st2.sel ? st2.sel.from : st2.caret)];
   if (!tok || tok.kind !== "note") return null;
   let plan = [...chunkPlans.values()].find((c10) => c10.part === st2.at.part && c10.entryOf.has(tok.id)) ?? null;
   if (!plan) {
@@ -38396,8 +38407,8 @@ function sungPlanAt() {
   }
   return plan ? { plan, entry: plan.entryOf.get(tok.id) } : null;
 }
-function sungDown(p2, id2) {
-  const at2 = sungPlanAt();
+function sungDown(p2, id2, index) {
+  const at2 = sungPlanAt(index);
   if (!at2) return;
   const seq = ++sungSeq;
   sungHeld.set(id2, seq);
@@ -38410,9 +38421,9 @@ function sungDown(p2, id2) {
   }).catch(() => void 0);
 }
 var sound = {
-  down: (p2, id2 = "main") => {
+  down: (p2, id2 = "main", index) => {
     if (!finder.isOpen && engineNow() === "tsukuyomi") {
-      sungDown(p2, id2);
+      sungDown(p2, id2, index);
       return;
     }
     const t10 = auditionTarget();
@@ -38453,7 +38464,7 @@ var soundTok = (s10, i10, id2 = "main") => {
   const t10 = tr(s10)[i10];
   if (t10?.kind !== "note" || !t10.pitch) return;
   sound.up(id2);
-  sound.down(t10.pitch, id2);
+  sound.down(t10.pitch, id2, i10);
   const extra = t10.chord ?? [];
   extra.forEach((q2, k2) => sound.down(q2, `${id2}~${k2 + 1}`));
   if (extra.length) chordVoices.set(id2, extra.length);
@@ -40947,7 +40958,7 @@ function openPaperMenu(id2) {
     }
     if (v === "del") {
       close();
-      void askSheet(`\u5220\u6389\u300C${paper.name || `\u7B2C ${k2 + 1} \u5F20\u7EB8`}\u300D\uFF1F`, "\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u58F0\u90E8\u5199\u7684\u4E1C\u897F\u90FD\u6CA1\u4E86\uFF08\u6CA1\u6709\u64A4\u9500\uFF09\u3002", "\u5220").then((ok2) => {
+      void askSheet(`\u5220\u6389\u300C${paper.name || `\u7B2C ${k2 + 1} \u5F20\u7EB8`}\u300D\uFF1F`, "\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u58F0\u90E8\u5199\u7684\u4E1C\u897F\u4E00\u8D77\u5220\u6389\uFF08\u80FD\u64A4\u9500\uFF1A\u64A4\u9500 / Ctrl+Z\uFF09\u3002", "\u5220").then((ok2) => {
         if (ok2) update(removePaper(st2, id2));
       });
     }
@@ -43375,4 +43386,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-dd6d03cbe816.mjs.map
+//# sourceMappingURL=moonsinger-ef50c38983a0.mjs.map

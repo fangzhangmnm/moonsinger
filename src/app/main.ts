@@ -343,8 +343,10 @@ function auditionTarget(): { inst: AuditionInst; key: (midi: number) => number; 
  *  光标不在音上（纸尾 / 休止）= 没有字可唱 = 不出声（不替补）。 */
 const SUNG_SECS = 1.0, SUNG_GAIN_DB = 20 * Math.log10(SUNG_GAIN);
 let sungSeq = 0; const sungHeld = new Map<string, number>();   // 来源 → 最后一次按下的序号（松开 / 再按 = 旧的回来也不放）
-function sungPlanAt(): { plan: ChunkPlan; entry: number } | null {
-  const tok = tr(st)[st.sel ? st.sel.from : st.caret]; if (!tok || tok.kind !== "note") return null;
+function sungPlanAt(index?: number): { plan: ChunkPlan; entry: number } | null {
+  // index = 这一下响的是哪个音（刚写下 / 改了的那个）；没给 = 光标那个（弹）。v0.10.30：以前一律看光标——写完一个音光标已经在它后面，
+  //   歌尾 = 没有字可唱、中间 = 唱成后面那个音的字（user「音模式下面月读的preview没有了，小键盘没有声音」）
+  const tok = tr(st)[index ?? (st.sel ? st.sel.from : st.caret)]; if (!tok || tok.kind !== "note") return null;
   let plan = [...chunkPlans.values()].find((c) => c.part === st.at.part && c.entryOf.has(tok.id)) ?? null;
   if (!plan) {
     const song = songIn("view"), part = st.song.parts.find((x) => x.id === st.at.part); if (!part) return null;
@@ -353,8 +355,8 @@ function sungPlanAt(): { plan: ChunkPlan; entry: number } | null {
   }
   return plan ? { plan, entry: plan.entryOf.get(tok.id)! } : null;
 }
-function sungDown(p: Pitch, id: string): void {
-  const at = sungPlanAt(); if (!at) return;
+function sungDown(p: Pitch, id: string, index?: number): void {
+  const at = sungPlanAt(index); if (!at) return;
   const seq = ++sungSeq; sungHeld.set(id, seq);
   const part = st.song.parts.find((x) => x.id === st.at.part), ch = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
   singer.unlock(); void engine.ensure().catch(() => undefined);
@@ -363,8 +365,8 @@ function sungDown(p: Pitch, id: string): void {
     .catch(() => undefined);   // 唱不了（歌词和音数对不上…）：这一下不出声；真播放时会报出来
 }
 const sound = {
-  down: (p: Pitch, id = "main") => {
-    if (!finder.isOpen && engineNow() === "tsukuyomi") { sungDown(p, id); return; }
+  down: (p: Pitch, id = "main", index?: number) => {
+    if (!finder.isOpen && engineNow() === "tsukuyomi") { sungDown(p, id, index); return; }
     const t = auditionTarget(); if (!t) return; if (t.inst.kind === "vowel" && !vowelsReady) { void ensureVowels(); return; }
     singer.unlock(); engine.auditionOn(id, t.inst, t.key(midiOf(p)), t.vel, t.gainDb, t.pan);
   },
@@ -379,7 +381,7 @@ const chordVoices = new Map<string, number>();
 const soundTok = (s: EditorState, i: number, id = "main") => {
   const t = tr(s)[i]; if (t?.kind !== "note" || !t.pitch) return;
   sound.up(id);   // 同一个来源上次的和弦先松干净（这次的音少了也不留尾巴）
-  sound.down(t.pitch, id); const extra = t.chord ?? []; extra.forEach((q, k) => sound.down(q, `${id}~${k + 1}`)); if (extra.length) chordVoices.set(id, extra.length);
+  sound.down(t.pitch, id, i); const extra = t.chord ?? []; extra.forEach((q, k) => sound.down(q, `${id}~${k + 1}`)); if (extra.length) chordVoices.set(id, extra.length);
 };
 /** 改了音高之后响一下（user 2026-10-10「按住音的时候应该能听到preview，拖动音高，或者改动yngk的时候也会，但是改时长不会」）：有选区 = 选区里第一个音，否则光标前那个音。 */
 function previewEdited(): void {
@@ -2067,7 +2069,7 @@ function openPaperMenu(id: string): void {
     if (v === "newpart") { close(); addNewPart(id); return; }
     if (v === "del") {
       close();
-      void askSheet(`删掉「${paper.name || `第 ${k + 1} 张纸`}」？`, "这张纸上所有声部写的东西都没了（没有撤销）。", "删").then((ok) => { if (ok) update(removePaper(st, id)); });
+      void askSheet(`删掉「${paper.name || `第 ${k + 1} 张纸`}」？`, "这张纸上所有声部写的东西一起删掉（能撤销：撤销 / Ctrl+Z）。", "删").then((ok) => { if (ok) update(removePaper(st, id)); });
     }
   });
 }

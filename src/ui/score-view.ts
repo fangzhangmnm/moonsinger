@@ -100,7 +100,7 @@ export interface ScoreViewHost {
 type Grab = { kind: "lyric" | "mark"; index: number; system: number };
 
 /** 捏合最多放大到原大的几倍（同 PDF 阅读器，横着能滚）。 */
-const MAX_ZOOM = 6;
+const MAX_ZOOM = 6, MIN_ZOOM = 0.4;   // 缩小（v0.10.30：大屏上 A4 太大，Ctrl + 滚轮缩）
 /** 合租虚拟的几条（`主人~lo` / `主人~v2` / `主人~lo~v2`）→ 真的那一位（主人）。 */
 const realPart = (id: string): string => id.replace(/~.*$/, "");
 export class ScoreView {
@@ -180,6 +180,14 @@ export class ScoreView {
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("wheel", () => { this.userScrollAt = performance.now(); }, { passive: true });   // 自己滚了：自动翻让开 4 秒
+    // Ctrl + 滚轮 / 触控板捏合（浏览器报成 ctrlKey 的 wheel）= 缩放这张纸（以鼠标下面那一点为中心），不缩放网页（v0.10.30；user「大屏电脑上面A4放的太大了，有办法zoom吗？
+    //   还是就是ctrl wheel? ctrl wheel不应该zoom网页，而是应该被拦截」）。能缩到比原大小（大屏看整页），和触屏捏合同一个 zoom（视图状态，不进文件）
+    el.addEventListener("wheel", (e) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      const sr = this.sheet.getBoundingClientRect(), z = this.zoom, k = Math.exp(-(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) * 0.002);
+      this.setZoom(z * k, { x: e.clientX, y: e.clientY, cx: (e.clientX - sr.left) / z, cy: (e.clientY - sr.top) / z });
+    }, { passive: false });
     el.addEventListener("scroll", () => this.placePins(), { passive: true });   // 横卷：钉在左边的歌手名跟着横滚挪
     el.addEventListener("pointerup", (e) => this.up(e));
     // 电脑右键 = 空白处的小菜单（手指 / 笔走长按）；音上右键不接（选区条管）。pointerdown 里 button 2 直接不接，免得先放一下光标 / 起框选
@@ -570,7 +578,7 @@ export class ScoreView {
   }
   private pinchMove(): void {
     const pi = this.pinch!, [a, b] = [...this.touches.values()], d = Math.max(1, Math.hypot(a.x - b.x, a.y - b.y));
-    pi.k = Math.max(1, Math.min(this.maxZoom(), pi.z0 * (d / pi.d0))) / pi.z0; pi.mx = (a.x + b.x) / 2; pi.my = (a.y + b.y) / 2;
+    pi.k = Math.max(MIN_ZOOM, Math.min(this.maxZoom(), pi.z0 * (d / pi.d0))) / pi.z0; pi.mx = (a.x + b.x) / 2; pi.my = (a.y + b.y) / 2;
     if (!pi.raf) pi.raf = requestAnimationFrame(() => {   // 一帧最多改一次；中点下面那个纸面点跟着两指走 = 缩放 + 平移一起
       const q = this.pinch; if (!q) return; q.raf = 0;
       const tx = q.mx - q.left - q.k * q.z0 * q.sx, ty = q.my - q.top - q.k * q.z0 * q.sy;
@@ -585,11 +593,11 @@ export class ScoreView {
   }
   /** 放大 / 缩小到 z（1 = 原大，最多到纸和屏幕一样宽）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
   private setZoom(z: number, anchor: { x: number; y: number; cx: number; cy: number } | null): void {
-    z = Math.max(1, Math.min(this.maxZoom(), z));
+    z = Math.max(MIN_ZOOM, Math.min(this.maxZoom(), z)); if (Math.abs(z - 1) < 0.02) z = 1;   // 回到原大附近 = 吸到 1
     const r = this.el.getBoundingClientRect();
     this.zoom = z; this.sheet.style.zoom = z === 1 ? "" : String(z);
-    this.el.classList.toggle("zoomed", z > 1.001);
-    this.zoomBtn.hidden = z <= 1.001;
+    this.el.classList.toggle("zoomed", this.paperW * z > this.el.clientWidth + 1);   // 比屏幕宽了才靠左 + 横着滚（窄的照旧居中；v0.10.30 缩小 / 大屏上放大一点也居中）
+    this.zoomBtn.hidden = z === 1;   // 放大 / 缩小了 = 露「1:1」
     if (anchor) {
       // 纸面点 (cx, cy)（纸面坐标）要落在屏幕 (x, y) 下面：滚动到 纸的位置 + 点 × zoom − (x − 滚动区左上)
       const nsr = this.sheet.getBoundingClientRect(), nl = nsr.left - r.left + this.el.scrollLeft, nt = nsr.top - r.top + this.el.scrollTop;

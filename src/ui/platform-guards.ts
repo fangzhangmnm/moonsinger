@@ -20,6 +20,8 @@ export function installPlatformGuards(surfaces: HTMLElement[]): void {
   window.addEventListener("touchstart", (e) => { if (e.touches.length >= 3 && !isTextTarget(e.target)) e.preventDefault(); }, cap);
   window.addEventListener("gesturestart", (e) => e.preventDefault(), cap);
   window.addEventListener("gesturechange", (e) => e.preventDefault(), cap);
+  // Ctrl + 滚轮 / 触控板捏合：哪儿都不缩放网页（v0.10.30；user「ctrl wheel不应该zoom网页，而是应该被拦截」）——谱面上它 = 缩放这张纸（score-view）
+  window.addEventListener("wheel", (e) => { if (e.ctrlKey) e.preventDefault(); }, cap);
   document.addEventListener("selectstart", (e) => { if (!isTextTarget(e.target)) e.preventDefault(); }, { capture: true });
   document.addEventListener("selectionchange", () => {   // iOS 偶尔无视 selectstart：输入框外冒出非空选区就立刻清掉，系统菜单没得依附
     const sel = document.getSelection();
