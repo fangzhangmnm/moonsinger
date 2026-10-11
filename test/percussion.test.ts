@@ -35,6 +35,10 @@ describe("鼓谱：查表（音乐仓鼠 v13）", () => {
     eq(percKindOf({ bank: 0, program: 119, note: 60 })?.kind, "one", "反向镲固定原速");
     eq(percKindOf({ bank: 0, program: 119 }), null, "关了固定原速（按写的音变调）= 有音高");
     eq(percKindOf({ bank: 0, program: 9 }), null, "钟琴 = 有音高");
+    // GM 116 Woodblock / 117 Taiko：gm-map 那一行没写鼓谱，借本尊概念的（v0.10.31，user「这里没变成鼓谱…以及wood block和太鼓的分类你确定没问题？」）
+    eq(percKindOf({ bank: 0, program: 115, note: 60 })?.kind, "one", "木鱼（固定原速）= 一线谱");
+    eq(percKindOf({ bank: 0, program: 116, note: 60 })?.kind, "one", "太鼓（固定原速）= 一线谱");
+    eq(percOf(0, 115)?.kitKey, 76); eq(percOf(0, 116)?.kitKey, 87);
   });
 });
 
@@ -71,6 +75,17 @@ describe("鼓谱：排版", () => {
   });
 });
 
+describe("鼓谱：木鱼 + 太鼓合租（v0.10.31）", () => {
+  it("两件单件乐器叠成一行 = 五线鼓谱，各在自己那一线（概念的 mainKey）", () => {
+    let st = song([[key(60), key(60)], [key(62), key(62)], [key(60)]]);
+    const [a, b2, c] = st.song.parts.map((p) => p.id); st = setPartHost(st, b2, a); st = setFocus(st, st.song.papers[0].id, c);
+    const L = lay(st, [{ kind: "one", info: percOf(0, 116)!, key: 60 }, { kind: "one", info: percOf(0, 115)!, key: 60 }, undefined]);
+    const hi = L.systems.findIndex((r) => r.part === a), row = L.systems[hi];
+    eq(staffLines(L, hi), 5, "五线鼓谱");
+    const ys = new Set(heads(L).filter((h) => h.y > row.top && h.y < row.bottom).map((h) => Math.round(h.y)));
+    eq(ys.size, 2, "两件各一线");
+  });
+});
 describe("鼓谱：着力点", () => {
   it("反向镲：录音房提前 hitSec 开始放、砸在写的那一拍；时间线从提前的地方起；有音高的不挪", () => {
     let st = initState(); st = addPaper(st);

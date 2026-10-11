@@ -49,19 +49,21 @@ describe("合租：数据", () => {
 });
 
 describe("合租：排版（看个大概）", () => {
-  it("叠起来 = 一条虚拟的多声部 track（v0.10.28）：房客没有自己的谱行；同一时刻的音 = 一个和弦、一根符干（不再各画各的打架）；名字都在、各自能点；那一行只读、点击区指虚拟 track", () => {
+  it("叠起来 = 虚拟的多声部 track（v0.10.28 / v0.10.31 按人分声部）：房客没有自己的谱行；同一张谱上两位 = 两个声部（上面那位符干朝上、下面那位朝下，不打架）；名字都在、各自能点；那一行只读、点击区指虚拟 track", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
-    st = withNotes(st, c, [["G", 4], ["B", 4], ["C", 5], ["E", 4]]);   // 房客和主人（E4 G4 A4 C4）不一样的音、每个和弦都在八度以内（跨八度的会劈成两个声部，下一条测）
+    st = withNotes(st, a, [["E", 5], ["G", 5], ["A", 5], ["C", 6]]); st = withNotes(st, c, [["G", 4], ["B", 4], ["C", 5], ["E", 4]]);   // 主人高、房客低
     st = setFocus(st, st.song.papers[0].id, "P2");   // 光标在别人那儿（一家里有谁在写 = 整家拆开）
     const L = lay(st), pid = st.song.papers[0].id;
     assert(!L.systems.some((r) => r.part === c), "房客没有自己的谱行");
-    const hi = L.systems.findIndex((r) => r.part === a), row = L.systems[hi], inRow = (y: number) => y > row.top && y < row.bottom;
-    const heads = L.prims.filter((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.split(" ").includes("note") && inRow((p as { y: number }).y));
-    eq(heads.length, 8, "四个和弦、每个两个符头");
-    const stems = L.prims.filter((p) => p.t === "line" && Math.abs(p.x1 - p.x2) < 0.01 && Math.abs(p.y2 - p.y1) > 2.5 * L.sp && !["staff", "bar", "ledger", "caret"].some((k) => (p.cls ?? "").includes(k)) && inRow((p.y1 + p.y2) / 2));
-    eq(stems.length, 4, "一个和弦一根符干");
+    const hi = L.systems.findIndex((r) => r.part === a);
+    eq(L.systems.filter((r) => r.part.startsWith(a)).length, 1, "一张谱（读得下 = 不用双手谱）");
+    const stemOf = (h: { x: number; y: number }) => L.prims.find((p) => p.t === "line" && Math.abs(p.x1 - p.x2) < 0.01 && p.x1 >= h.x - 1 && p.x1 <= h.x + 2 * L.sp && Math.abs(p.y2 - p.y1) > 2 * L.sp && Math.min(Math.abs(p.y1 - h.y), Math.abs(p.y2 - h.y)) < L.sp) as { y1: number; y2: number } | undefined;
+    const v1 = L.notes.filter((h) => h.system === hi && !h.part), v2 = L.notes.filter((h) => h.system === hi && h.part === `${a}~v2`);
+    eq(v1.length, 4, "主人四个音（声部 1）"); eq(v2.length, 4, "房客四个音（声部 2）");
+    assert(v1.every((h) => { const sm = stemOf(h); return !!sm && Math.min(sm.y1, sm.y2) < h.y - L.sp; }), "声部 1 符干朝上");
+    assert(v2.every((h) => { const sm = stemOf(h); return !!sm && Math.max(sm.y1, sm.y2) > h.y + L.sp; }), "声部 2 符干朝下");
     const vt = L.virtual[`${pid}:${a}`]; assert(!!vt, "这一行画的是虚拟 track");
-    assert(L.notes.filter((h) => h.system === hi).every((h) => vt[h.index]?.kind === "note"), "点击区的下标指虚拟 track");
+    assert(v1.every((h) => vt[h.index]?.kind === "note"), "点击区的下标指虚拟 track");
     assert(L.parts.some((h) => h.part === c), "房客的名字能点");
     assert(L.sharedRows.length > 0 && L.sharedRows.every((i) => L.systems[i].part === a), "叠起来的那几行（主人的）标成只读");
   });
@@ -113,6 +115,15 @@ describe("合租：排版（看个大概）", () => {
     eq(ed(setFocus(st, st.song.papers[0].id, "P2")).families.length, 0, "叠起来 = 没有括号");
     eq(lay(setFocus(st, st.song.papers[0].id, c)).families.length, 0, "导出（没有编辑器提示）= 不画");
     eq(engrave(st.song, { width: 900, sp: 10, at: { ...st.at, part: c }, caret: 0, sel: null, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true, titlePlaceholder: true, foldAll: true }).families.length, 0, "听模式（foldAll）= 都叠起来");
+  });
+  it("主人不在这张纸上：同一家的两位房客照样叠成一行（v0.10.31，user「piano1不在的时候piano2和3没有成功合并」）", () => {
+    let st = trio(); const [a, b2, c] = st.song.parts.map((p) => p.id); st = setPartHost(st, b2, a); st = setPartHost(st, c, a);
+    const pp = st.song.papers[0], { [a]: _gone, ...rest } = pp.tracks; void _gone;
+    st = { ...st, song: { ...st.song, papers: [{ ...pp, tracks: rest }] } };
+    const L = lay(setFocus(st, pp.id, "nobody"));
+    eq(new Set(L.systems.map((r) => r.part)).size, 1, "两位房客一行");
+    assert(L.sharedRows.length > 0 && L.parts.some((h) => h.part === c) && L.parts.some((h) => h.part === b2), "叠着、只读、两个名字都能点");
+    eq(new Set(lay(setFocus(st, pp.id, c)).systems.map((r) => r.part)).size, 2, "光标在其中一位 = 拆开");
   });
   it("现在在写的是房客 = 它拆开（有自己的谱行、能点）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);

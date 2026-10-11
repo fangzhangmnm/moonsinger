@@ -53,12 +53,25 @@ export function renderPerc() {
     const key = `${r.bank}:${r.program}${r.note !== undefined && r.note !== null ? `:${r.note}` : ""}`; if (out[key]) continue;   // 一个预设好几行（本尊 / 平替）：写法一样，取第一行
     out[key] = { staff: pc.staff, line: pc.line, head: pc.head, stem: pc.stem, ...(pc.smufl ? { smufl: pc.smufl } : {}), ...(typeof r.hitSec === "number" ? { hitSec: r.hitSec } : {}) };
   }
+  // 补洞（v0.10.31；user「这里没变成鼓谱…以及wood block和太鼓的分类你确定没问题？」）：仓鼠只给 GM 120–128 的行写了 percussion，GM 116 Woodblock / 117 Taiko /
+  //   118 Melodic Tom / 119 Synth Drum 这几行没写，但它们的本尊概念是 pitched:false、有 MuseScore 的写法 → 这几行用本尊概念的写法；mainKey = 并成一套鼓时它在哪个鼓键那一线
+  const concepts = JSON.parse(readFileSync(join(DST, FILES.concepts), "utf8")).concepts;
+  for (const c of concepts) {
+    const pc = c.percussion; if (c.pitched !== false || !pc) continue;
+    for (const g of c.ids?.gm ?? []) {
+      if (g.bank === 128) continue;   // 鼓件的行本来就有
+      const key = `${g.bank}:${g.program}`; if (out[key]) { if (pc.mainKey !== undefined && out[key].kitKey === undefined) out[key].kitKey = pc.mainKey; continue; }
+      const row = gm.rows.find((r) => r.bank === g.bank && r.program === g.program && r.relation === "self" && r.concept === c.id);
+      if (!row) continue;   // 只给本尊（平替不算）
+      out[key] = { staff: pc.staff === 5 ? 5 : 1, line: pc.line ?? 0, head: pc.head ?? "normal", stem: pc.stem ?? "up", ...(pc.smufl ? { smufl: pc.smufl } : {}), ...(typeof row.hitSec === "number" ? { hitSec: row.hitSec } : {}), ...(pc.mainKey !== undefined ? { kitKey: pc.mainKey } : {}), from: c.id };
+    }
+  }
   const heads = (gm.defs?.heads ?? []).map((h) => h.id);
   return `// 生成物：node scripts/gen-instruments.mjs（源 = vendor/instruments/${FILES.gmMap} 的 percussion / hitSec + extraDrumKeys）。勿手改。
 // 鼓谱表：键 = "bank:program[:note]"（鼓件 = 128:0:键；音效 = 0:119… 不带键）。line = MuseScore <Drum><line> 的约定（0 = 最上面那条线，往下 +1 走半格；五线谱最下面一线 = 8，一线谱那条线 = 0）。
 // hitSec = 采样开头到「砸下去那一下」几秒（TinySoundFont + GeneralUser GS 实测；反向镲 = 快结尾）。
 export type PercHead = ${heads.map((h) => JSON.stringify(h)).join(" | ")};
-export interface PercInfo { staff: 1 | 5; line: number; head: PercHead; stem: "up" | "down"; smufl?: string; hitSec?: number }
+export interface PercInfo { staff: 1 | 5; line: number; head: PercHead; stem: "up" | "down"; smufl?: string; hitSec?: number; /** 并成一套鼓时画在哪个鼓键那一线（概念的 mainKey）。 */ kitKey?: number; /** 这一行的写法借的是哪个概念（gm-map 那一行没写）。 */ from?: string }
 export const PERC_VERSION = ${VERSION};
 export const PERC: Record<string, PercInfo> = ${JSON.stringify(out)};
 `;

@@ -728,8 +728,9 @@ export class ScoreView {
     const fb = L.families.find((b) => this.inBox(b, x, y)); if (!fb) return false;
     const song = this.host.get().song, hostOf = (id: string) => song.parts.find((p) => p.id === id)?.host;
     const inFam = (id: string) => id === fb.host || hostOf(id) === fb.host, loose = (id: string) => !hostOf(id) && !song.parts.some((p) => p.host === id);
-    const order = [...new Set(L.systems.filter((r) => r.paper === fb.paper).map((r) => realPart(r.part)))], last = Math.max(...order.map((id, i) => (inFam(id) ? i : -1)));
-    const next = order.slice(last + 1).find(loose) ?? [...order.slice(0, order.indexOf(fb.host))].reverse().find(loose) ?? order.slice(last + 1)[0] ?? null;
+    const order = [...new Set(L.systems.filter((r) => r.paper === fb.paper).map((r) => realPart(r.part)))], idx = order.map((id, i) => (inFam(id) ? i : -1)).filter((i) => i >= 0);
+    const first = Math.min(...idx), last = Math.max(...idx);   // 主人可能不在这张纸上：按这一家在场的头尾算
+    const next = order.slice(last + 1).find(loose) ?? [...order.slice(0, first)].reverse().find(loose) ?? order.slice(last + 1)[0] ?? null;
     if (!next) { this.host.notice?.("这张纸上只有这一家：没有别的歌手可以挪过去（切到「听」就都叠起来）"); return true; }
     this.holdView = true; this.host.set(setFocus(this.host.get(), fb.paper, next)); this.holdView = false;
     this.heldBase = this.baseKey();

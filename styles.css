@@ -2,6 +2,7 @@
    家族外壳规矩：页面本身永不滚动（html/body overflow hidden），只有谱面板内部滚。
    z band：menu 300 / sheet 500 / err 900（z 数字只写在这里）。 */
 @font-face { font-family: "Bravura"; src: url("./vendor/fonts/bravura/Bravura.woff2") format("woff2"); font-display: block; }
+.smufl { font-family: "Bravura"; }   /* 所有 SMuFL 字形一律 Bravura（v0.10.31：乐器页力度表的字形漏了这一句 = 显示成方框，user「乱码了」）；各处只管字号 / 位置 */
 :root {
   --bg: #f4f1ea;
   --panel: #ffffff;

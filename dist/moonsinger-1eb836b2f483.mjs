@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.30-2026-10-10";
+var APP_VERSION = "v0.10.31-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6980,7 +6980,7 @@ function lightMarks(spec) {
 }
 
 // src/gm/percussion.gen.ts
-var PERC = { "0:119": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 1.389 }, "0:120": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.057 }, "0:121": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.077 }, "0:122": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:123": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:124": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:125": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:126": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:127": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:35": { "staff": 5, "line": 8, "head": "normal", "stem": "down", "hitSec": 0.037 }, "128:0:36": { "staff": 5, "line": 7, "head": "normal", "stem": "down", "hitSec": 7e-3 }, "128:0:37": { "staff": 5, "line": 3, "head": "slashed1", "stem": "up", "hitSec": 2e-3 }, "128:0:38": { "staff": 5, "line": 3, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:39": { "staff": 5, "line": -2, "head": "plus", "stem": "up", "hitSec": 0.012 }, "128:0:40": { "staff": 5, "line": 3, "head": "slash", "stem": "up", "hitSec": 7e-3 }, "128:0:41": { "staff": 5, "line": 6, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:42": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:43": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:44": { "staff": 5, "line": 9, "head": "x", "stem": "down", "hitSec": 0.012 }, "128:0:45": { "staff": 5, "line": 4, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:46": { "staff": 5, "line": -1, "head": "circle-x", "stem": "up", "hitSec": 0.022 }, "128:0:47": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:48": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:49": { "staff": 5, "line": -2, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:50": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:51": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:52": { "staff": 5, "line": -3, "head": "normal", "stem": "up", "hitSec": 0.027 }, "128:0:53": { "staff": 5, "line": 0, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:54": { "staff": 5, "line": 1, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:55": { "staff": 5, "line": -4, "head": "x", "stem": "up", "hitSec": 0.067 }, "128:0:56": { "staff": 5, "line": 1, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:57": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:58": { "staff": 5, "line": 0, "head": "ti", "stem": "up", "hitSec": 2e-3 }, "128:0:59": { "staff": 5, "line": 2, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:60": { "staff": 5, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:61": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:62": { "staff": 5, "line": 1, "head": "custom", "stem": "up", "smufl": "noteheadXOrnate", "hitSec": 0.012 }, "128:0:63": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:64": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:65": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:66": { "staff": 5, "line": 7, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:67": { "staff": 5, "line": -2, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:68": { "staff": 5, "line": -1, "head": "triangle-down", "stem": "up", "hitSec": 7e-3 }, "128:0:69": { "staff": 5, "line": 2, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:70": { "staff": 5, "line": 4, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:71": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.072 }, "128:0:72": { "staff": 5, "line": -3, "head": "ti", "stem": "up", "hitSec": 0.022 }, "128:0:73": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 0.012 }, "128:0:74": { "staff": 5, "line": -1, "head": "slashed1", "stem": "up", "hitSec": 0.222 }, "128:0:75": { "staff": 5, "line": 0, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:76": { "staff": 5, "line": 5, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:77": { "staff": 5, "line": 7, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:78": { "staff": 5, "line": 8, "head": "x", "stem": "up", "hitSec": 0.062 }, "128:0:79": { "staff": 5, "line": 8, "head": "slashed2", "stem": "up", "hitSec": 0.042 }, "128:0:80": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:81": { "staff": 5, "line": 0, "head": "triangle-up", "stem": "up", "hitSec": 0.022 }, "128:0:27": { "staff": 5, "line": 8, "head": "slash", "stem": "up", "hitSec": 0.012 }, "128:0:28": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 0.012 }, "128:0:29": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.092 }, "128:0:30": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.077 }, "128:0:31": { "staff": 5, "line": -1, "head": "plus", "stem": "up", "hitSec": 7e-3 }, "128:0:32": { "staff": 5, "line": 10, "head": "plus", "stem": "up", "hitSec": 2e-3 }, "128:0:33": { "staff": 5, "line": 10, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:34": { "staff": 5, "line": 10, "head": "triangle-up", "stem": "up", "hitSec": 2e-3 }, "128:0:82": { "staff": 5, "line": 5, "head": "diamond", "stem": "up", "hitSec": 0.027 }, "128:0:83": { "staff": 5, "line": 3, "head": "triangle-down", "stem": "up", "hitSec": 0.072 }, "128:0:84": { "staff": 5, "line": 2, "head": "ti", "stem": "up" }, "128:0:85": { "staff": 5, "line": 2, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:86": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 7e-3 }, "128:0:87": { "staff": 5, "line": 4, "head": "slash", "stem": "up", "hitSec": 0.027 } };
+var PERC = { "0:119": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 1.389, "kitKey": 57 }, "0:120": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.057 }, "0:121": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.077 }, "0:122": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:123": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:124": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:125": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:126": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:127": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:35": { "staff": 5, "line": 8, "head": "normal", "stem": "down", "hitSec": 0.037 }, "128:0:36": { "staff": 5, "line": 7, "head": "normal", "stem": "down", "hitSec": 7e-3 }, "128:0:37": { "staff": 5, "line": 3, "head": "slashed1", "stem": "up", "hitSec": 2e-3 }, "128:0:38": { "staff": 5, "line": 3, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:39": { "staff": 5, "line": -2, "head": "plus", "stem": "up", "hitSec": 0.012 }, "128:0:40": { "staff": 5, "line": 3, "head": "slash", "stem": "up", "hitSec": 7e-3 }, "128:0:41": { "staff": 5, "line": 6, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:42": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:43": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:44": { "staff": 5, "line": 9, "head": "x", "stem": "down", "hitSec": 0.012 }, "128:0:45": { "staff": 5, "line": 4, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:46": { "staff": 5, "line": -1, "head": "circle-x", "stem": "up", "hitSec": 0.022 }, "128:0:47": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:48": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:49": { "staff": 5, "line": -2, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:50": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:51": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:52": { "staff": 5, "line": -3, "head": "normal", "stem": "up", "hitSec": 0.027 }, "128:0:53": { "staff": 5, "line": 0, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:54": { "staff": 5, "line": 1, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:55": { "staff": 5, "line": -4, "head": "x", "stem": "up", "hitSec": 0.067 }, "128:0:56": { "staff": 5, "line": 1, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:57": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:58": { "staff": 5, "line": 0, "head": "ti", "stem": "up", "hitSec": 2e-3 }, "128:0:59": { "staff": 5, "line": 2, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:60": { "staff": 5, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:61": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:62": { "staff": 5, "line": 1, "head": "custom", "stem": "up", "smufl": "noteheadXOrnate", "hitSec": 0.012 }, "128:0:63": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:64": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:65": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:66": { "staff": 5, "line": 7, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:67": { "staff": 5, "line": -2, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:68": { "staff": 5, "line": -1, "head": "triangle-down", "stem": "up", "hitSec": 7e-3 }, "128:0:69": { "staff": 5, "line": 2, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:70": { "staff": 5, "line": 4, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:71": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.072 }, "128:0:72": { "staff": 5, "line": -3, "head": "ti", "stem": "up", "hitSec": 0.022 }, "128:0:73": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 0.012 }, "128:0:74": { "staff": 5, "line": -1, "head": "slashed1", "stem": "up", "hitSec": 0.222 }, "128:0:75": { "staff": 5, "line": 0, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:76": { "staff": 5, "line": 5, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:77": { "staff": 5, "line": 7, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:78": { "staff": 5, "line": 8, "head": "x", "stem": "up", "hitSec": 0.062 }, "128:0:79": { "staff": 5, "line": 8, "head": "slashed2", "stem": "up", "hitSec": 0.042 }, "128:0:80": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:81": { "staff": 5, "line": 0, "head": "triangle-up", "stem": "up", "hitSec": 0.022 }, "128:0:27": { "staff": 5, "line": 8, "head": "slash", "stem": "up", "hitSec": 0.012 }, "128:0:28": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 0.012 }, "128:0:29": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.092 }, "128:0:30": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.077 }, "128:0:31": { "staff": 5, "line": -1, "head": "plus", "stem": "up", "hitSec": 7e-3 }, "128:0:32": { "staff": 5, "line": 10, "head": "plus", "stem": "up", "hitSec": 2e-3 }, "128:0:33": { "staff": 5, "line": 10, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:34": { "staff": 5, "line": 10, "head": "triangle-up", "stem": "up", "hitSec": 2e-3 }, "128:0:82": { "staff": 5, "line": 5, "head": "diamond", "stem": "up", "hitSec": 0.027 }, "128:0:83": { "staff": 5, "line": 3, "head": "triangle-down", "stem": "up", "hitSec": 0.072 }, "128:0:84": { "staff": 5, "line": 2, "head": "ti", "stem": "up" }, "128:0:85": { "staff": 5, "line": 2, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:86": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 7e-3 }, "128:0:87": { "staff": 5, "line": 4, "head": "slash", "stem": "up", "hitSec": 0.027 }, "0:112": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 84, "from": "Q1621499" }, "0:113": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 67, "from": "Q395212" }, "0:115": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 76, "from": "Q957212" }, "0:116": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.027, "kitKey": 87, "from": "Q221769" }, "0:117": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 45, "from": "Q849349" }, "0:118": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3, "from": "Q1327480" } };
 
 // src/gm/percussion.ts
 function percOf(bank, program, note2) {
@@ -7270,21 +7270,59 @@ function resolveSongClefs(song) {
 }
 
 // src/score/merge.ts
-var SPLIT_SPAN = 12;
-function splitAt(ps) {
-  if (ps.length < 2 || midiOf(ps[0]) - midiOf(ps[ps.length - 1]) <= SPLIT_SPAN) return ps.length;
-  let k2 = 1, g3 = -1;
-  for (let i10 = 0; i10 + 1 < ps.length; i10++) {
-    const d3 = midiOf(ps[i10]) - midiOf(ps[i10 + 1]);
-    if (d3 > g3) {
-      g3 = d3;
-      k2 = i10 + 1;
+var SWITCH = 5;
+function planHands(tracks, wantsGrand2) {
+  const host = tracks[0] ?? [], time = host.find((t10) => t10.kind === "time");
+  const bar2 = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t10) => Math.floor(t10 / bar2 + 1e-9);
+  const med = (xs) => {
+    const a10 = [...xs].sort((x2, y2) => x2 - y2);
+    return a10.length ? a10[a10.length >> 1] : NaN;
+  };
+  const per = tracks.map((toks) => {
+    const notes = [];
+    let t10 = 0;
+    for (let i10 = headLen(toks); i10 < toks.length; i10++) {
+      const k2 = toks[i10];
+      if (!isTimed(k2)) continue;
+      if (k2.kind === "note" && k2.pitch) notes.push({ t: t10, m: [k2.pitch, ...k2.chord ?? []].map(midiOf) });
+      t10 += k2.dur;
     }
-  }
-  return k2;
+    return notes;
+  });
+  const mid = per.map((ns2) => med(ns2.flatMap((n10) => n10.m))), home = mid.map((x2) => Number.isNaN(x2) || x2 >= 60 ? 0 : 1);
+  const present = mid.map((x2, i10) => Number.isNaN(x2) ? -1 : i10).filter((i10) => i10 >= 0);
+  const grand = new Set(present.map((i10) => home[i10])).size > 1 && wantsGrand2(mergeTracks(tracks));
+  const staffCache = /* @__PURE__ */ new Map(), staffOf = (m2, ms) => {
+    if (!grand) return 0;
+    const key = `${m2}:${ms}`, hit = staffCache.get(key);
+    if (hit !== void 0) return hit;
+    const mm = med(per[m2].filter((n10) => meas(n10.t) === ms).flatMap((n10) => n10.m));
+    const st3 = Number.isNaN(mm) ? home[m2] : home[m2] === 1 && mm >= 60 + SWITCH ? 0 : home[m2] === 0 && mm < 60 - SWITCH ? 1 : home[m2];
+    staffCache.set(key, st3);
+    return st3;
+  };
+  const voiceCache = /* @__PURE__ */ new Map(), voiceOf = (m2, ms) => {
+    const key = `${m2}:${ms}`, hit = voiceCache.get(key);
+    if (hit !== void 0) return hit;
+    const s10 = staffOf(m2, ms), mates = present.filter((j2) => staffOf(j2, ms) === s10 && per[j2].some((n10) => meas(n10.t) === ms)).sort((x2, y2) => mid[y2] - mid[x2]);
+    let cut = mates.length;
+    if (mates.length >= 2) {
+      let g3 = -1;
+      for (let i10 = 0; i10 + 1 < mates.length; i10++) {
+        const d3 = mid[mates[i10]] - mid[mates[i10 + 1]];
+        if (d3 > g3) {
+          g3 = d3;
+          cut = i10 + 1;
+        }
+      }
+    }
+    for (let i10 = 0; i10 < mates.length; i10++) voiceCache.set(`${mates[i10]}:${ms}`, i10 < cut ? 1 : 2);
+    return voiceCache.get(key) ?? 1;
+  };
+  return { grand, pick: (staff, voice) => (m2, t10) => staffOf(m2, meas(t10)) === staff && voiceOf(m2, meas(t10)) === voice };
 }
 function mergeTracks(tracks, opt = {}) {
-  const { keyOf: keyOf2, keep: keep2 } = opt, barsOnly = opt.marks === "bars";
+  const { keyOf: keyOf2, pick } = opt, barsOnly = opt.marks === "bars";
   const host = tracks[0] ?? [], head = host.slice(0, headLen(host));
   const evs = [], marks = [];
   let end = 0;
@@ -7294,8 +7332,8 @@ function mergeTracks(tracks, opt = {}) {
       const k2 = toks[i10];
       if (isTimed(k2)) {
         if (k2.kind === "note" && k2.pitch) {
-          const ps = [k2.pitch, ...k2.chord ?? []].map((p2) => keyOf2 ? keyOf2(m2, p2) : p2).filter((p2) => !keep2 || keep2(p2));
-          if (ps.length) evs.push({ t0: t10, t1: t10 + k2.dur, ps, host: m2 === 0 && !barsOnly ? k2 : null });
+          const ps = [k2.pitch, ...k2.chord ?? []].map((p2) => keyOf2 ? keyOf2(m2, p2) : p2);
+          if (!pick || pick(m2, t10)) evs.push({ t0: t10, t1: t10 + k2.dur, ps, host: m2 === 0 && !barsOnly ? k2 : null });
         }
         t10 += k2.dur;
       } else if (m2 === 0 && k2.kind !== "clef" && k2.kind !== "ottava" && (!barsOnly || k2.kind === "bar" || k2.kind === "key" || k2.kind === "time")) marks.push({ t: t10, tok: k2 });
@@ -7325,14 +7363,7 @@ function mergeTracks(tracks, opt = {}) {
       seen.add(k2);
       return true;
     }).sort((x2, y2) => midiOf(y2) - midiOf(x2));
-    const cut = opt.voice ? splitAt(all) : all.length, ps = opt.voice === 2 ? all.slice(cut) : all.slice(0, cut);
-    if (!ps.length) {
-      const last = out[out.length - 1];
-      if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b3 - a10) };
-      else out.push({ kind: "rest", id: id2--, dur: b3 - a10 });
-      prevChord = false;
-      continue;
-    }
+    const ps = all;
     const fresh = ps.some((p2) => freshK.has(midiOf(p2))), h2 = on2.find((e10) => e10.host && e10.t0 === a10)?.host ?? null;
     out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {} });
     prevChord = true;
@@ -7860,27 +7891,23 @@ function engrave(song, o10) {
     const editingHere = !o10.foldAll && o10.at.paper === paper.id ? o10.at.part : null;
     const absorbed = /* @__PURE__ */ new Map(), virt = /* @__PURE__ */ new Map(), lowOf = /* @__PURE__ */ new Map();
     const voice2Of = /* @__PURE__ */ new Map(), shareWith = /* @__PURE__ */ new Map(), startFor = /* @__PURE__ */ new Map();
-    for (const hp of visible) {
-      if (hostOf(hp.id)) continue;
-      const ten = visible.filter((t10) => hostOf(t10.id) === hp.id);
-      if (!ten.length) continue;
-      if (editingHere !== null && (editingHere === hp.id || hostOf(editingHere) === hp.id)) continue;
-      const ms = [hp, ...ten], drums = ms.every((m2) => !!m2.perc);
+    const famOf = (id2) => hostOf(id2) ?? (song.parts.some((x3) => x3.host === id2) ? id2 : null);
+    const famIds = [...new Set(visible.map((p2) => famOf(p2.id)).filter((x3) => !!x3))];
+    const famHere = (fid) => visible.filter((p2) => famOf(p2.id) === fid);
+    for (const fid of famIds) {
+      const ms = famHere(fid);
+      if (ms.length < 2) continue;
+      if (editingHere !== null && famOf(editingHere) === fid) continue;
+      const hp = ms[0], ten = ms.slice(1), drums = ms.every((m2) => !!m2.perc);
       const keyOf2 = drums ? (m2, p2) => {
         const pk = ms[m2].perc;
-        return pk.kind === "one" ? spellMidi(pk.info.staff === 5 ? pk.key : 0, 0) : p2;
+        return pk.kind === "one" ? spellMidi(pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0), 0) : p2;
       } : void 0;
-      const tracksM = ms.map((m2) => paper.tracks[m2.id]), all = mergeTracks(tracksM, { keyOf: keyOf2 });
+      const tracksM = ms.map((m2) => paper.tracks[m2.id]);
       absorbed.set(hp.id, ten);
-      const staffOf = (sid, mo) => {
-        const whole = mergeTracks(tracksM, mo);
-        startFor.set(sid, startClef(whole, void 0, null, true));
-        if (drums) {
-          virt.set(sid, whole);
-          virtualOut[`${paper.id}:${sid}`] = whole;
-          return;
-        }
-        const v1 = mergeTracks(tracksM, { ...mo, voice: 1 }), v2 = mergeTracks(tracksM, { ...mo, voice: 2, marks: "bars" });
+      const staffOf = (sid, mo, all) => {
+        startFor.set(sid, startClef(mergeTracks(tracksM, all), void 0, null, true));
+        const v1 = mergeTracks(tracksM, mo(1)), v2 = mergeTracks(tracksM, mo(2));
         virt.set(sid, v1);
         virtualOut[`${paper.id}:${sid}`] = v1;
         if (v2.some((t10) => t10.kind === "note")) {
@@ -7892,15 +7919,25 @@ function engrave(song, o10) {
           startFor.set(vid, startFor.get(sid));
         }
       };
-      if (!drums && wantsGrand(all)) {
-        const lid = `${hp.id}~lo`;
-        lowOf.set(hp.id, lid);
-        staffOf(hp.id, { keyOf: keyOf2, keep: (p2) => midiOf(p2) >= 60 });
-        staffOf(lid, { keyOf: keyOf2, keep: (p2) => midiOf(p2) < 60, marks: "bars" });
-      } else staffOf(hp.id, { keyOf: keyOf2 });
+      if (drums) {
+        const whole = mergeTracks(tracksM, { keyOf: keyOf2 });
+        virt.set(hp.id, whole);
+        virtualOut[`${paper.id}:${hp.id}`] = whole;
+        startFor.set(hp.id, "G");
+      } else {
+        const plan = planHands(tracksM, wantsGrand), staffOpts = (S2, top) => (v) => ({ pick: plan.pick(S2, v), marks: top && v === 1 ? "all" : "bars" });
+        const both = (S2) => ({ pick: (m2, t10) => plan.pick(S2, 1)(m2, t10) || plan.pick(S2, 2)(m2, t10), marks: "bars" });
+        staffOf(hp.id, staffOpts(0, true), both(0));
+        if (plan.grand) {
+          const lid = `${hp.id}~lo`;
+          lowOf.set(hp.id, lid);
+          staffOf(lid, staffOpts(1, false), both(1));
+        }
+      }
     }
-    const openFams = visible.filter((hp) => !hostOf(hp.id) && !absorbed.has(hp.id) && visible.some((t10) => hostOf(t10.id) === hp.id)).map((hp) => ({ host: hp.id, ids: [hp.id, ...visible.filter((t10) => hostOf(t10.id) === hp.id).map((t10) => t10.id)] }));
-    const parts = visible.filter((p2) => !absorbed.get(hostOf(p2.id) ?? "")?.includes(p2)).flatMap((p2) => {
+    const openFams = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p2) => p2.id) }));
+    const gone = new Set([...absorbed.values()].flat().map((p2) => p2.id));
+    const parts = visible.filter((p2) => !gone.has(p2.id)).flatMap((p2) => {
       if (!virt.has(p2.id)) return [p2];
       const drums = [p2, ...absorbed.get(p2.id)].every((m2) => !!m2.perc), lid = lowOf.get(p2.id);
       const v = { ...p2, clef: void 0, staves: void 0, perc: drums ? { kind: "kit" } : void 0, mono: false, xHead: false, ignores: [], lyricMute: void 0 };
@@ -10796,8 +10833,9 @@ var ScoreView = class {
     if (!fb) return false;
     const song = this.host.get().song, hostOf = (id2) => song.parts.find((p2) => p2.id === id2)?.host;
     const inFam = (id2) => id2 === fb.host || hostOf(id2) === fb.host, loose = (id2) => !hostOf(id2) && !song.parts.some((p2) => p2.host === id2);
-    const order = [...new Set(L2.systems.filter((r10) => r10.paper === fb.paper).map((r10) => realPart(r10.part)))], last = Math.max(...order.map((id2, i10) => inFam(id2) ? i10 : -1));
-    const next2 = order.slice(last + 1).find(loose) ?? [...order.slice(0, order.indexOf(fb.host))].reverse().find(loose) ?? order.slice(last + 1)[0] ?? null;
+    const order = [...new Set(L2.systems.filter((r10) => r10.paper === fb.paper).map((r10) => realPart(r10.part)))], idx = order.map((id2, i10) => inFam(id2) ? i10 : -1).filter((i10) => i10 >= 0);
+    const first = Math.min(...idx), last = Math.max(...idx);
+    const next2 = order.slice(last + 1).find(loose) ?? [...order.slice(0, first)].reverse().find(loose) ?? order.slice(last + 1)[0] ?? null;
     if (!next2) {
       this.host.notice?.("\u8FD9\u5F20\u7EB8\u4E0A\u53EA\u6709\u8FD9\u4E00\u5BB6\uFF1A\u6CA1\u6709\u522B\u7684\u6B4C\u624B\u53EF\u4EE5\u632A\u8FC7\u53BB\uFF08\u5207\u5230\u300C\u542C\u300D\u5C31\u90FD\u53E0\u8D77\u6765\uFF09");
       return true;
@@ -38464,7 +38502,7 @@ var soundTok = (s10, i10, id2 = "main") => {
   const t10 = tr(s10)[i10];
   if (t10?.kind !== "note" || !t10.pitch) return;
   sound.up(id2);
-  sound.down(t10.pitch, id2, i10);
+  sound.down(t10.pitch, id2, s10 === st2 ? i10 : void 0);
   const extra = t10.chord ?? [];
   extra.forEach((q2, k2) => sound.down(q2, `${id2}~${k2 + 1}`));
   if (extra.length) chordVoices.set(id2, extra.length);
@@ -40183,7 +40221,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "76a3ea6bbb27",
+  cssHash: "b36d20214697",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -43244,13 +43282,22 @@ function run(a10, repeat, code) {
   }
 }
 var keyTs = 0;
+function finderKey(e10) {
+  if (!isSoundKey(e10) || e10.ctrlKey || e10.metaKey || e10.altKey || typingIn(e10.target)) return;
+  const a10 = route(e10, "impro", "write");
+  if (!a10 || a10.k !== "audition") return;
+  e10.preventDefault();
+  if (e10.repeat) return;
+  const probe = apply({ ...st2, sel: null, log: [] }, { k: "degree", degree: a10.degree, dir: a10.dir }, performance.now());
+  keyTok(probe, probe.caret - 1, e10.code);
+}
 window.addEventListener("keydown", (e10) => {
   keyTs = e10.timeStamp;
   if (finderShown && gallery?.isOpen()) {
     if (e10.key === "Escape") {
       e10.preventDefault();
       closeFinder();
-    }
+    } else finderKey(e10);
     return;
   }
   if (gallery?.isOpen()) return;
@@ -43266,7 +43313,7 @@ window.addEventListener("keydown", (e10) => {
     if (e10.key === "Escape") {
       e10.preventDefault();
       closeFinder();
-    }
+    } else finderKey(e10);
     return;
   }
   if (instShown) {
@@ -43386,4 +43433,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ef50c38983a0.mjs.map
+//# sourceMappingURL=moonsinger-1eb836b2f483.mjs.map

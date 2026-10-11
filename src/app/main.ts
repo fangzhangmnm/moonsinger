@@ -381,7 +381,7 @@ const chordVoices = new Map<string, number>();
 const soundTok = (s: EditorState, i: number, id = "main") => {
   const t = tr(s)[i]; if (t?.kind !== "note" || !t.pitch) return;
   sound.up(id);   // 同一个来源上次的和弦先松干净（这次的音少了也不留尾巴）
-  sound.down(t.pitch, id, i); const extra = t.chord ?? []; extra.forEach((q, k) => sound.down(q, `${id}~${k + 1}`)); if (extra.length) chordVoices.set(id, extra.length);
+  sound.down(t.pitch, id, s === st ? i : undefined); const extra = t.chord ?? []; extra.forEach((q, k) => sound.down(q, `${id}~${k + 1}`)); if (extra.length) chordVoices.set(id, extra.length);   // 下标只对真谱有用（「弹」是在草稿上推的音高 = 月读照旧唱光标那个字）
 };
 /** 改了音高之后响一下（user 2026-10-10「按住音的时候应该能听到preview，拖动音高，或者改动yngk的时候也会，但是改时长不会」）：有选区 = 选区里第一个音，否则光标前那个音。 */
 function previewEdited(): void {
@@ -3606,14 +3606,22 @@ function run(a: Action, repeat: boolean, code: string): boolean {
   }
 }
 let keyTs = 0;   // 这一下按键的时刻（事件的 timeStamp）：空格连按两下 = 从头放，按真的间隔算
+/** 找乐器（歌里的找人视图 / 歌库上面的乐器目录）：电脑键盘的音键 = 弹（只出声、不碰谱；同「弹」的推音高），别的键不接（v0.10.31；user「弹着玩/找乐器的时候应该也能键盘弹」）。 */
+function finderKey(e: KeyboardEvent): void {
+  if (!isSoundKey(e) || e.ctrlKey || e.metaKey || e.altKey || typingIn(e.target)) return;
+  const a = route(e, "impro", "write"); if (!a || a.k !== "audition") return;
+  e.preventDefault(); if (e.repeat) return;
+  const probe = apply({ ...st, sel: null, log: [] }, { k: "degree", degree: a.degree, dir: a.dir }, performance.now());
+  keyTok(probe, probe.caret - 1, e.code);
+}
 window.addEventListener("keydown", (e) => {
   keyTs = e.timeStamp;
-  if (finderShown && gallery?.isOpen()) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } return; }   // 歌库上面的乐器目录（只弹着玩）：Esc 回歌库
+  if (finderShown && gallery?.isOpen()) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } else finderKey(e); return; }   // 歌库上面的乐器目录（只弹着玩）：Esc 回歌库；音键 = 弹
   if (gallery?.isOpen()) return;   // 歌库开着：键盘归它。没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建
   // 存 / 导出 / 打开（Ctrl / ⌘+S、+Shift+S、+O）挂在最外层：不管哪一页开着、焦点在谁身上（录音室 / 乐器页 / 乐器目录 / 参考窗）都是这首歌的事，
   //   不能落到浏览器的「保存网页」（2026-10-10 user「很多地方save没有拦截」）。各页只决定别的键。
   if ((e.ctrlKey || e.metaKey) && !e.altKey && /^[so]$/i.test(e.key)) { const a = route(e, whereNow(), "write"); if (a && a.k === "file") { e.preventDefault(); run(a, e.repeat, e.code); return; } }
-  if (finder.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } return; }   // 找人视图开着：只认 Esc（pad 的触屏键照常）
+  if (finder.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } else finderKey(e); return; }   // 找人视图开着：Esc + 音键只弹不写（pad 的触屏键照常）
   if (instShown) {   // 乐器页：只认 Esc（回谱）和撤销 / 重做；输入框里的照常打字
     const inField = (e.target as HTMLElement | null)?.closest("input, select, textarea");
     if (e.key === "Escape") { e.preventDefault(); closeInstPage(); }

@@ -28,7 +28,7 @@ import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
 import { GLYPH, W, ENGRAVE, STEM_UP_SE, STEM_DOWN_NW, FLAG_ANCHOR_UP, FLAG_ANCHOR_DOWN, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } from "./smufl.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { resolveSongClefs, displayStates, autoOttava, CLEF_SHIFT, baseClef, isFClef, ottavaShift, startClef, wantsGrand } from "../score/clef.ts";
-import { mergeTracks, type MergeOpts } from "../score/merge.ts";
+import { mergeTracks, planHands, type MergeOpts } from "../score/merge.ts";
 
 export type Prim =
   | { t: "line"; x1: number; y1: number; x2: number; y2: number; w: number; cls?: string }
@@ -572,34 +572,41 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const editingHere = !o.foldAll && o.at.paper === paper.id ? o.at.part : null;   // 听模式 = 一律叠起来
     const absorbed = new Map<string, PartView[]>(), virt = new Map<string, Token[]>(), lowOf = new Map<string, string>();   // 主人 id → 叠进来的房客 / 并好的虚拟 track / 双手谱下面那张的假 id
     const voice2Of = new Map<string, string>(), shareWith = new Map<string, string>(), startFor = new Map<string, ClefName>();   // 一张谱表 → 它的声部 2 / 声部 2 → 画在哪一位那行 / 虚拟那几条的谱号
-    for (const hp of visible) {
-      if (hostOf(hp.id)) continue;
-      const ten = visible.filter((t) => hostOf(t.id) === hp.id); if (!ten.length) continue;
-      if (editingHere !== null && (editingHere === hp.id || hostOf(editingHere) === hp.id)) continue;
-      const ms = [hp, ...ten], drums = ms.every((m) => !!m.perc);
+    // 按一家收（主人 id）：这张纸上这一家在场的有两位以上就叠——主人不在这张纸上也照样叠，打头的那位在场的当这一行（v0.10.31；user「piano1不在的时候piano2和3没有成功合并」）
+    const famOf = (id: string) => hostOf(id) ?? (song.parts.some((x) => x.host === id) ? id : null);
+    const famIds = [...new Set(visible.map((p) => famOf(p.id)).filter((x): x is string => !!x))];
+    const famHere = (fid: string) => visible.filter((p) => famOf(p.id) === fid);   // 按歌里的顺序（主人在前）
+    for (const fid of famIds) {
+      const ms = famHere(fid); if (ms.length < 2) continue;
+      if (editingHere !== null && famOf(editingHere) === fid) continue;
+      const hp = ms[0], ten = ms.slice(1), drums = ms.every((m) => !!m.perc);
       // 一家全是鼓：固定敲一件的换成那一件的鼓键（五线鼓谱上它那一线）；音效（不是鼓键）= 一个表里没有的键（画在中间那条线）
-      const keyOf = drums ? (m: number, p: Pitch): Pitch => { const pk = ms[m].perc!; return pk.kind === "one" ? spellMidi(pk.info.staff === 5 ? pk.key : 0, 0) : p; } : undefined;
-      const tracksM = ms.map((m) => paper.tracks[m.id]), all = mergeTracks(tracksM, { keyOf });
+      //   单件乐器（木鱼 / 太鼓…）= 它在一套鼓里的那个键（概念的 mainKey → kitKey）；鼓件 = 它自己的键；都没有（音效）= 一个表里没有的键（画在中间那条线）
+      const keyOf = drums ? (m: number, p: Pitch): Pitch => { const pk = ms[m].perc!; return pk.kind === "one" ? spellMidi(pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0), 0) : p; } : undefined;
+      const tracksM = ms.map((m) => paper.tracks[m.id]);
       absorbed.set(hp.id, ten);
-      // 音域太宽 = 双手谱：中央 C 以上并一条（上面那张，带主人的歌词 / 力度）、以下并一条（下面那张，只有小节线）——两条都当普通的一行谱画，左边一个花括号
-      //   （一个和弦横跨两张谱表的写法现有流程没有：拆成两条最省事；user「share之后能不能选双手谱号，这样爽一点」→「…it is just the proper way of showing multi teanants」= 自动，不存）
-      // 一张谱表的那一条：谱号按这张谱上所有的音挑；隔得太远的和弦劈成两个声部（merge.ts voice；user「隔得太远的音符可以分开来的而不是强行用一根超长的棒子连。以前钢琴家也是这么写的」）——
-      //   声部 1 = 这一位（符干朝上），声部 2 = 假的一位 `…~v2`，画在声部 1 那一行上（符干朝下、不画休止 / 小节线 / 名字）
-      const staffOf = (sid: string, mo: MergeOpts) => {
-        const whole = mergeTracks(tracksM, mo); startFor.set(sid, startClef(whole, undefined, null, true));
-        if (drums) { virt.set(sid, whole); virtualOut[`${paper.id}:${sid}`] = whole; return; }
-        const v1 = mergeTracks(tracksM, { ...mo, voice: 1 }), v2 = mergeTracks(tracksM, { ...mo, voice: 2, marks: "bars" });
+      // 一张谱表的一条：谱号按这张谱上所有的音挑；声部 1 = 这一位（符干朝上）、声部 2 = 假的一位 `…~v2`，画在声部 1 那一行上（符干朝下、不画休止 / 小节线 / 名字）
+      const staffOf = (sid: string, mo: (v: 1 | 2) => MergeOpts, all: MergeOpts) => {
+        startFor.set(sid, startClef(mergeTracks(tracksM, all), undefined, null, true));
+        const v1 = mergeTracks(tracksM, mo(1)), v2 = mergeTracks(tracksM, mo(2));
         virt.set(sid, v1); virtualOut[`${paper.id}:${sid}`] = v1;
         if (v2.some((t) => t.kind === "note")) { const vid = `${sid}~v2`; virt.set(vid, v2); virtualOut[`${paper.id}:${vid}`] = v2; voice2Of.set(sid, vid); shareWith.set(vid, sid); startFor.set(vid, startFor.get(sid)!); }
       };
-      if (!drums && wantsGrand(all)) {
-        const lid = `${hp.id}~lo`; lowOf.set(hp.id, lid);
-        staffOf(hp.id, { keyOf, keep: (p) => midiOf(p) >= 60 }); staffOf(lid, { keyOf, keep: (p) => midiOf(p) < 60, marks: "bars" });
-      } else staffOf(hp.id, { keyOf });
+      if (drums) {   // 一家全是鼓 = 并成一套鼓（五线鼓谱、每件在自己那一线；不分声部，符干按鼓谱表）
+        const whole = mergeTracks(tracksM, { keyOf }); virt.set(hp.id, whole); virtualOut[`${paper.id}:${hp.id}`] = whole; startFor.set(hp.id, "G");
+      } else {
+        // 分手 / 分声部按人（merge.ts planHands；user「我现在觉得合租的时候还是智能分左右手和声部的对应关系比较好」「以及你也可以选择合租的时候不用双手谱」）：
+        //   每位一张家谱、按小节换、几个出格的音不乱认领；一张谱读得下 = 不用双手谱；同一张谱上两组人 = 两个声部（上面朝上、下面朝下）
+        const plan = planHands(tracksM, wantsGrand), staffOpts = (S: 0 | 1, top: boolean) => (v: 1 | 2): MergeOpts => ({ pick: plan.pick(S, v), marks: top && v === 1 ? "all" : "bars" });
+        const both = (S: 0 | 1): MergeOpts => ({ pick: (m, t) => plan.pick(S, 1)(m, t) || plan.pick(S, 2)(m, t), marks: "bars" });
+        staffOf(hp.id, staffOpts(0, true), both(0));
+        if (plan.grand) { const lid = `${hp.id}~lo`; lowOf.set(hp.id, lid); staffOf(lid, staffOpts(1, false), both(1)); }   // 下面那张 + 左边一个花括号
+      }
     }
     // 展开着的那几家（一家里有人在写）：括号画在哪几行（主人 → 这张纸上看得见的最后一位房客）
-    const openFams = visible.filter((hp) => !hostOf(hp.id) && !absorbed.has(hp.id) && visible.some((t) => hostOf(t.id) === hp.id)).map((hp) => ({ host: hp.id, ids: [hp.id, ...visible.filter((t) => hostOf(t.id) === hp.id).map((t) => t.id)] }));
-    const parts: PartView[] = visible.filter((p) => !absorbed.get(hostOf(p.id) ?? "")?.includes(p)).flatMap((p): PartView[] => {
+    const openFams = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p) => p.id) }));
+    const gone = new Set([...absorbed.values()].flat().map((p) => p.id));   // 叠进别人那一行的
+    const parts: PartView[] = visible.filter((p) => !gone.has(p.id)).flatMap((p): PartView[] => {
       if (!virt.has(p.id)) return [p];
       const drums = [p, ...absorbed.get(p.id)!].every((m) => !!m.perc), lid = lowOf.get(p.id);   // 虚拟的那一位：谱号自动、不灰任何东西（叠着只是看）
       const v: PartView = { ...p, clef: undefined, staves: undefined, perc: drums ? { kind: "kit" } : undefined, mono: false, xHead: false, ignores: [], lyricMute: undefined };

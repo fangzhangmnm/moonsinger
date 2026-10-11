@@ -1,7 +1,7 @@
 // 合租叠起来 = 一条虚拟的多声部 track（src/score/merge.ts，v0.10.28）+ 太宽用双手谱（clef.ts wantsGrand）。created 2026-10-10 by Claude Opus 5.5
 // user「i think it is wiser to just 聚合 all the notes and render them as they are a single polyphonic track」「…use the already-have rendering procedure for that virtual track」
 import { describe, it, eq, assert } from "./runner.mjs";
-import { mergeTracks } from "../src/score/merge.ts";
+import { mergeTracks, planHands } from "../src/score/merge.ts";
 import { wantsGrand } from "../src/score/clef.ts";
 import { initState, tr, headLen, TPQ, type Token, type NoteTok } from "../src/score/song.ts";
 import { midiOf, spellMidi, type Pitch } from "../src/score/pitch.ts";
@@ -40,25 +40,28 @@ describe("合租并成一条", () => {
     eq(show(m), "36/1 38+36/1");
   });
 });
-describe("隔得太远 = 两个声部（user「隔得太远的音符可以分开来的而不是强行用一根超长的棒子连。以前钢琴家也是这么写的」）", () => {
-  it("跨过八度以上的和弦在最大的空当处劈开：上面 = 声部 1、下面 = 声部 2；八度以内不劈（声部 2 空着）", () => {
-    const tracks = [[...head(), n(84), n(76)], [...head(), n(60), n(72)]];   // 第一拍 C6+C4（两个八度）、第二拍 E5+C5（以内）
-    eq(show(mergeTracks(tracks, { voice: 1 })), "84/1 76+72/1");
-    eq(show(mergeTracks(tracks, { voice: 2 })), "60/1 r/1");
-    eq(show(mergeTracks(tracks)), "84+60/1 76+72/1", "不给 voice = 不劈");
+describe("合租怎么分手 / 分声部（planHands，v0.10.31；user「我现在觉得合租的时候还是智能分左右手和声部的对应关系比较好」「以及你也可以选择合租的时候不用双手谱」）", () => {
+  const mm = (ms: number[], d = 1) => ms.map((m) => n(m, d * TPQ));   // 一串音（每个 d 拍）
+  const bar = (m: number) => mm([m, m, m, m]);                         // 4/4 一小节 = 四个四分
+  it("两位都在高音区、一张谱读得下 = 一张谱；上面那位 = 声部 1、下面那位 = 声部 2", () => {
+    const tracks = [[...head(), ...bar(76)], [...head(), ...bar(64)]], pl = planHands(tracks, wantsGrand);
+    eq(pl.grand, false);
+    eq(show(mergeTracks(tracks, { pick: pl.pick(0, 1) })), "76/1 76/1 76/1 76/1");
+    eq(show(mergeTracks(tracks, { pick: pl.pick(0, 2) })), "64/1 64/1 64/1 64/1");
   });
-  it("连音线各算各的：声部 2 的长音碰到声部 1 新起的音 = 照样连着", () => {
-    const tracks = [[...head(), n(84), n(86)], [...head(), n(48, 2 * TPQ)]];
-    eq(show(mergeTracks(tracks, { voice: 2 })), "48/1 48/1~");
+  it("一位几乎都是高音、一位几乎都是低音 = 双手谱，各在自己的家谱；几个出格的音不乱认领", () => {
+    const tracks = [[...head(), ...mm([79, 81, 55, 79]), ...bar(81)], [...head(), ...bar(40), ...mm([40, 62, 40, 40])]];   // 上面那位第一小节有个 G3、下面那位第二小节有个 D4
+    const pl = planHands(tracks, wantsGrand);
+    eq(pl.grand, true);
+    eq(show(mergeTracks(tracks, { pick: pl.pick(0, 1) })), "79/1 81/1 55/1 79/1 81/1 81/1 81/1 81/1", "上谱 = 上面那位，连它的 G3");
+    eq(show(mergeTracks(tracks, { pick: pl.pick(1, 1) })), "40/1 40/1 40/1 40/1 40/1 62/1 40/1 40/1", "下谱 = 下面那位，连它的 D4");
   });
-});
-describe("双手谱的两条（keep / marks: bars）", () => {
-  it("中央 C 以上一条、以下一条；下面那条只留小节线、没有歌词 / 力度", () => {
-    const dyn: Token = { kind: "dyn", id: nid++, value: "f" } as Token;
-    const tracks = [[...head(), dyn, n(72, TPQ, "あ"), n(74)], [...head(), n(48), n(43)]];
-    eq(show(mergeTracks(tracks, { keep: (p) => midiOf(p) >= 60 })), "dyn 72/1 74/1");
-    const lo = mergeTracks(tracks, { keep: (p) => midiOf(p) < 60, marks: "bars" });
-    eq(show(lo), "48/1 43/1"); assert(body(lo).every((x) => x.kind !== "note" || !x.lyric), "下面那条没有歌词");
+  it("乱跑的那位按小节换谱：这一小节明显在另一边才过去", () => {
+    const tracks = [[...head(), ...bar(79), ...bar(79)], [...head(), ...bar(40), ...bar(40)], [...head(), ...bar(72), ...bar(43)]];   // 第三位：第一小节高、第二小节低
+    const pl = planHands(tracks, wantsGrand);
+    eq(pl.grand, true);
+    const up = mergeTracks(tracks, { pick: (m, t) => m === 2 && (pl.pick(0, 1)(m, t) || pl.pick(0, 2)(m, t)) }), lo = mergeTracks(tracks, { pick: (m, t) => m === 2 && (pl.pick(1, 1)(m, t) || pl.pick(1, 2)(m, t)) });
+    eq(show(up), "72/1 72/1 72/1 72/1 r/4", "第一小节在上谱"); eq(show(lo), "r/4 43/1 43/1 43/1 43/1", "第二小节在下谱");
   });
 });
 describe("太宽 = 双手谱（自动，不存）", () => {
