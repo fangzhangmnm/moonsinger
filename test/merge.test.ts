@@ -35,6 +35,11 @@ describe("合租并成一条", () => {
     eq(body(m).filter((x): x is NoteTok => x.kind === "note").map((x) => x.lyric).join(","), "あ,い");
     assert(body(m).every((x) => x.kind === "dyn" || x.id < 0), "新造的音 / 休止 id 是负的");
   });
+  it("符头属性（幽灵音 / 气声）跟着并进来（v0.10.33）", () => {
+    const g = (m: number) => ({ ...(n(m) as NoteTok), art: ["ghost"] }) as Token, w = (m: number) => ({ ...(n(m) as NoteTok), art: ["whisper", "accent"] }) as Token;
+    const m = body(mergeTracks([[...head(), g(72), w(74), n(76)]])).filter((x): x is NoteTok => x.kind === "note");
+    eq(m.map((x) => (x.art ?? []).join("+")).join(","), "ghost,whisper,", "幽灵音 / 气声带上，别的演奏法不带");
+  });
   it("keyOf：一家全是鼓 = 每位换成自己那件的鼓键", () => {
     const m = mergeTracks([[...head(), n(60), n(60)], [...head(), r(), n(60)]], { keyOf: (k) => P(k === 0 ? 36 : 38) });
     eq(show(m), "36/1 38+36/1");

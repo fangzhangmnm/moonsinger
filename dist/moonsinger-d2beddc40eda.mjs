@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.32-2026-10-10";
+var APP_VERSION = "v0.10.33-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7270,6 +7270,7 @@ function resolveSongClefs(song) {
 }
 
 // src/score/merge.ts
+var HEAD_ARTS = ["ghost", "whisper"];
 var SWITCH = 5;
 function planHands(tracks, wantsGrand2) {
   const host = tracks[0] ?? [], time = host.find((t10) => t10.kind === "time");
@@ -7333,7 +7334,7 @@ function mergeTracks(tracks, opt = {}) {
       if (isTimed(k2)) {
         if (k2.kind === "note" && k2.pitch) {
           const ps = [k2.pitch, ...k2.chord ?? []].map((p2) => keyOf2 ? keyOf2(m2, p2) : p2);
-          if (!pick || pick(m2, t10)) evs.push({ t0: t10, t1: t10 + k2.dur, ps, host: m2 === 0 && !barsOnly ? k2 : null });
+          if (!pick || pick(m2, t10)) evs.push({ t0: t10, t1: t10 + k2.dur, ps, host: m2 === 0 && !barsOnly ? k2 : null, heads: (k2.art ?? []).filter((a10) => HEAD_ARTS.includes(a10)) });
         }
         t10 += k2.dur;
       } else if (m2 === 0 && k2.kind !== "clef" && k2.kind !== "ottava" && (!barsOnly || k2.kind === "bar" || k2.kind === "key" || k2.kind === "time")) marks.push({ t: t10, tok: k2 });
@@ -7365,7 +7366,8 @@ function mergeTracks(tracks, opt = {}) {
     }).sort((x2, y2) => midiOf(y2) - midiOf(x2));
     const ps = all;
     const fresh = ps.some((p2) => freshK.has(midiOf(p2))), h2 = on2.find((e10) => e10.host && e10.t0 === a10)?.host ?? null;
-    out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {} });
+    const src = on2.filter((e10) => e10.t0 === a10).length ? on2.filter((e10) => e10.t0 === a10) : on2, art = HEAD_ARTS.filter((x2) => src.every((e10) => e10.heads.includes(x2)));
+    out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art.length ? { art } : {} });
     prevChord = true;
   }
   return out;
@@ -10100,7 +10102,7 @@ var ScoreView = class {
    *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
   frame() {
     const st3 = this.host.get(), paper = st3.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
-    const base3 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.el.clientWidth;
+    const base3 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.host.layoutWidth?.() ?? this.el.clientWidth;
     const geo = pageGeoOf(paper), page = this.host.pages?.() ? geo : null;
     if (this.host.scroll?.()) return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base3, avail / 42 * scale)) : base3, width: Math.max(320, avail - (CONT_MARGIN.l + CONT_MARGIN.r) * base3), strict: false, page: null, margins: CONT_MARGIN };
     const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
@@ -38252,6 +38254,7 @@ var PLAY_TITLE = "\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1
 bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
+var dockedSide = 0;
 var attr = (s10) => s10.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 var padTab = document.createElement("button");
 padTab.id = "padTab";
@@ -38633,6 +38636,16 @@ var view = new ScoreView(scoreEl, {
   reflow: () => reflow,
   pages: () => pageFlow && !scrollFlow,
   scroll: () => scrollFlow,
+  // 横屏（底座在右边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）
+  layoutWidth: () => {
+    const w2 = scoreEl.clientWidth, sw2 = stageEl.clientWidth;
+    if (!matchMedia("(min-aspect-ratio: 1/1)").matches) return w2;
+    if (stageEl.dataset.dock !== "none") {
+      dockedSide = sw2 - w2;
+      return w2;
+    }
+    return dockedSide > 0 ? Math.max(200, sw2 - dockedSide) : w2;
+  },
   lyricRaise: () => LYRIC_RAISE[pdfFont],
   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope
@@ -43482,4 +43495,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-4a57f0df891a.mjs.map
+//# sourceMappingURL=moonsinger-d2beddc40eda.mjs.map

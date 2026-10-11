@@ -3,10 +3,12 @@
 //   「i dont believe one need to build a lot of wheels, just concatenate the notes and use the already-have rendering procedure for that virtual track」
 //   「for shared clef i dont know why there is data contract. it is just the proper way of showing multi teanants」（= 不存东西，纯看法）。
 // 以前（v0.10.24–27）各人的音各画各的、叠在主人那一行 = 符干打架（user「蝌蚪的尾巴在打架」）。
-import { headLen, isTimed, WHOLE, type Token, type NoteTok } from "./song.ts";
+import { headLen, isTimed, WHOLE, type Token, type NoteTok, type Art } from "./song.ts";
 import { midiOf, type Pitch } from "./pitch.ts";
 
-interface Ev { t0: number; t1: number; ps: Pitch[]; host: NoteTok | null }
+interface Ev { t0: number; t1: number; ps: Pitch[]; host: NoteTok | null; heads: Art[] }
+/** 符头上看得出来的那几种演奏法（幽灵音 = 括号、气声 = ×）：并进来的和弦里新起的音都有 = 和弦带上（v0.10.33；user「符头属性比如幽灵音这种能显示的可以在合租谱上显示」）。 */
+const HEAD_ARTS: readonly Art[] = ["ghost", "whisper"];
 
 /** 几条 track（第一条 = 主人）→ 一条：
  *  · 切点 = 任何人的音开始 / 结束的地方 + 主人的记号所在的地方；每一段 = 那一刻正在响的所有音并成一个和弦（从高到低、同音只留一个），没人响 = 休止；
@@ -65,7 +67,7 @@ export function mergeTracks(tracks: Token[][], opt: MergeOpts = {}): Token[] {
       if (isTimed(k)) {
         if (k.kind === "note" && k.pitch) {
           const ps = [k.pitch, ...(k.chord ?? [])].map((p) => (keyOf ? keyOf(m, p) : p));
-          if (!pick || pick(m, t)) evs.push({ t0: t, t1: t + k.dur, ps, host: m === 0 && !barsOnly ? k : null });
+          if (!pick || pick(m, t)) evs.push({ t0: t, t1: t + k.dur, ps, host: m === 0 && !barsOnly ? k : null, heads: (k.art ?? []).filter((a) => HEAD_ARTS.includes(a)) });
         }
         t += k.dur;
       } else if (m === 0 && k.kind !== "clef" && k.kind !== "ottava" && (!barsOnly || k.kind === "bar" || k.kind === "key" || k.kind === "time")) marks.push({ t, tok: k });
@@ -91,7 +93,8 @@ export function mergeTracks(tracks: Token[][], opt: MergeOpts = {}): Token[] {
     const all = on.flatMap((e) => e.ps).filter((p) => { const k = midiOf(p); if (seen.has(k)) return false; seen.add(k); return true; }).sort((x, y) => midiOf(y) - midiOf(x));
     const ps = all;
     const fresh = ps.some((p) => freshK.has(midiOf(p))), h = on.find((e) => e.host && e.t0 === a)?.host ?? null;
-    out.push({ kind: "note", id: id--, pitch: ps[0], ...(ps.length > 1 ? { chord: ps.slice(1) } : {}), dur: b - a, lyric: h?.lyric ?? null, ...(h?.hyph ? { hyph: true } : {}), ...(!fresh && prevChord ? { tie: true } : {}) } as Token);
+    const src = on.filter((e) => e.t0 === a).length ? on.filter((e) => e.t0 === a) : on, art = HEAD_ARTS.filter((x) => src.every((e) => e.heads.includes(x)));   // 新起的那几个都有才算（连着的段跟着起头那几个）
+    out.push({ kind: "note", id: id--, pitch: ps[0], ...(ps.length > 1 ? { chord: ps.slice(1) } : {}), dur: b - a, lyric: h?.lyric ?? null, ...(h?.hyph ? { hyph: true } : {}), ...(!fresh && prevChord ? { tie: true } : {}), ...(art.length ? { art } : {}) } as Token);
     prevChord = true;
   }
   return out;
