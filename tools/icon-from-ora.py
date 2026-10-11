@@ -1,9 +1,9 @@
 # tools/icon-from-ora.py —— 从 user 手绘的两份 .ora 出全部图标档。created 2026-10-11 by Claude Opus 5.5
-# 原稿在 OneDrive apps/WeebPaint/（不进仓，照 WeebPaint 图标的规矩）：
-#   大稿   20261011-MoonSinger图标设计.ora（1024²，一色一层）→ icon.svg（真矢量）→ icon-512 / icon-192 / apple-touch-icon-180
-#   像素稿 20261011-MoonSinger像素图标.ora（32²，user 逐像素精修）→ icon-32.png，**原样 1:1，绝不从大稿缩**
+# 原稿在本仓 art/icon/（user 交付后手动拷进来；交付渠道不固定，脚本和文档不引用仓外路径）：
+#   大稿   art/icon/20261011-MoonSinger图标设计.ora（1024²，一色一层）→ icon.svg（真矢量）→ icon-512 / icon-192 / apple-touch-icon-180
+#   像素稿 art/icon/20261011-MoonSinger像素图标.ora（32²，user 逐像素精修）→ icon-32.png，**原样 1:1，绝不从大稿缩**
 # 详 ai-docs/20261011-icon-tiers.md。
-# 用法：~/venvs/20261010-songwriting/bin/python -I tools/icon-from-ora.py <大稿.ora> <像素稿.ora> [输出目录=仓根]
+# 用法（仓根下）：~/venvs/20261010-songwriting/bin/python -I tools/icon-from-ora.py [大稿.ora 像素稿.ora [输出目录=仓根]]
 # 依赖（只在这个开发环境里，不进 app）：pillow / numpy / potracer（potrace 的纯 Python 版）/ cairosvg。
 #
 # 大稿怎么变矢量：每个可见层 = 一条 path（层里的主色，alpha ≥ 128 算有），底色层（铺满 95% 以上）= 满铺 rect——
@@ -50,7 +50,10 @@ def trace_svg(ora: zipfile.ZipFile, note: str) -> str:
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}">\n<!-- {note} -->\n' + "\n".join(parts) + "\n</svg>\n"
 
 
-def main(design_path: str, pixel_path: str, out: str = "."):
+DESIGN, PIXEL = "art/icon/20261011-MoonSinger图标设计.ora", "art/icon/20261011-MoonSinger像素图标.ora"
+
+
+def main(design_path: str = DESIGN, pixel_path: str = PIXEL, out: str = "."):
     design, pixel = zipfile.ZipFile(design_path), zipfile.ZipFile(pixel_path)
     svg = trace_svg(design, f"MoonSinger 图标：user 手绘「{design_path.rsplit('/', 1)[-1]}」，tools/icon-from-ora.py 描成矢量（生成物，别手改，改原稿重跑）")
     open(f"{out}/icon.svg", "w").write(svg)

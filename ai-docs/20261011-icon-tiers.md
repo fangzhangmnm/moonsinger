@@ -1,20 +1,20 @@
 # 图标档位与接线（MoonSinger）
 
 > created 20261011 by Claude Opus 5.5 · as-of v0.11.0 / 2026-10-11
-> user 手绘两份原稿，交付在 OneDrive `apps/WeebPaint/`（不进仓，照 WeebPaint `ai-docs/20260821-icon-tiers.md` 的规矩）。
+> **原稿 = 本仓 `art/icon/` 两份 .ora**（user 手绘，交付后手动拷进来；交付渠道不固定，脚本和文档不引用仓外路径——user「不要直接引用onedrive，需要你或者我手动拷过来，我也会用其他的方式提交」）。改了原稿 = 新版本拷进来覆盖，再重跑脚本。
 > user 原话：「人类subagent跑完了。月读抱团子和app图标。在weebpaint的onedrive文件夹里面你收一下」「这个转svg方便吗」「蓝=底色是白剪影上抠出的嘴巴」「像素版的你推送我一下我去weebpaint里面精修」「onedrrive文件夹收货 bump minor，上图标，看看效果」。
 
 ## 档位表
 
 | 文件 | 来源 | 怎么出 | 用在哪 |
 |---|---|---|---|
-| `icon.svg` | `20261011-MoonSinger图标设计.ora`（1024²，一色一层） | `tools/icon-from-ora.py` 描成矢量（每色一条路径 + 满铺底色） | 只给 manifest 的 `sizes: "any"` |
+| `icon.svg` | `art/icon/20261011-MoonSinger图标设计.ora`（1024²，一色一层） | `tools/icon-from-ora.py` 描成矢量（每色一条路径 + 满铺底色） | 只给 manifest 的 `sizes: "any"` |
 | `icon-512.png` | 同上 | 从 `icon.svg` 渲 | manifest、装机弹窗 |
 | `icon-192.png` | 同上 | 从 `icon.svg` 渲 | manifest |
 | `apple-touch-icon-180.png` | 同上 | 从 `icon.svg` 渲 | iOS / iPad 主屏 |
-| `icon-32.png` | `20261011-MoonSinger像素图标.ora`（32²，user 在 WeebPaint 里逐像素精修） | **原样 1:1，绝不从大稿缩** | 浏览器标签页 / 书签 |
+| `icon-32.png` | `art/icon/20261011-MoonSinger像素图标.ora`（32²，user 在 WeebPaint 里逐像素精修） | **原样 1:1，绝不从大稿缩** | 浏览器标签页 / 书签 |
 
-重出全部：`~/venvs/20261010-songwriting/bin/python -I tools/icon-from-ora.py <大稿.ora> <像素稿.ora>`（依赖 pillow / numpy / potracer / cairosvg，只在开发环境里，不进 app）。生成物别手改，改原稿重跑。
+重出全部（仓根下）：`~/venvs/20261010-songwriting/bin/python -I tools/icon-from-ora.py`（默认读 `art/icon/` 那两份）（依赖 pillow / numpy / potracer / cairosvg，只在开发环境里，不进 app）。生成物别手改，改原稿重跑。
 
 ## 大稿为什么能描成矢量
 
