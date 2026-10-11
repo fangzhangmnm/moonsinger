@@ -17,7 +17,7 @@ export const pluginName = (kind: string): string => FX_KINDS[kind]?.name ?? kind
 
 /** 主线程换算的参数（不是原语的，录音房不认）。 */
 const HOST_PARAMS: Record<string, ParamDef[]> = {
-  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: "自动低切（按这个声部最低的音）" }],
+  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: "自动低切" }],
   delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: "跟速度（几拍一次；0 = 用上面的毫秒）" }],
 };
 /** 全量面板：原语参数表的每一个 + 主线程换算的那几个。 */

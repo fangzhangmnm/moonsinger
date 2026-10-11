@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.40-2026-10-10";
+var APP_VERSION = "v0.10.41-2026-10-11";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3373,7 +3373,9 @@ function eatRests(tk2, i10, need) {
   }
   return { got, end, keep: keep2.slice(0, kept) };
 }
+var isPhraseMark = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove");
 function overwriteInsert(tk2, caret, tok) {
+  if (!tk2.slice(headLen(tk2), caret).some(isTimed)) while (caret < tk2.length && isPhraseMark(tk2[caret])) caret++;
   let i10 = caret;
   while (i10 < tk2.length && !isTimed(tk2[i10]) && tk2[i10].kind !== "bar") i10++;
   const e10 = tk2[i10]?.kind === "rest" ? eatRests(tk2, i10, tok.dur) : null;
@@ -3465,7 +3467,6 @@ function resizeSingle(st3, i10, by) {
   const e10 = eatRests(tk2, i10 + 1, by), nt2 = [...tk2.slice(0, i10), { ...t10, dur: d3 }, ...e10.keep, ...tk2.slice(e10.end)];
   return next(st3, nt2, { sel: { from: i10, to: i10 + 1 }, caret: i10 + 1 });
 }
-var isPhraseMark = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove");
 var behindPhrase = (toks, at2, h2) => {
   let i10 = at2;
   while (i10 > h2 && isPhraseMark(toks[i10 - 1])) i10--;
@@ -26343,7 +26344,7 @@ var PLUGIN_KINDS = ["eq", "comp", "reverb", "delay", "chorus", "gain"];
 var DEFAULT_EQ_ID = "eq";
 var pluginName = (kind) => FX_KINDS[kind]?.name ?? kind;
 var HOST_PARAMS = {
-  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: "\u81EA\u52A8\u4F4E\u5207\uFF08\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\uFF09" }],
+  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: "\u81EA\u52A8\u4F4E\u5207" }],
   delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: "\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09" }]
 };
 function fullParams(kind) {
@@ -26722,8 +26723,8 @@ function stereoShape(L2, R2) {
     lr2 += l10 * r10;
     ll2 += l10 * l10;
     rr2 += r10 * r10;
-    const m3 = Math.abs(l10 + r10), s10 = Math.abs(l10 - r10);
-    if (m3 > pk) pk = m3;
+    const m2 = Math.abs(l10 + r10), s10 = Math.abs(l10 - r10);
+    if (m2 > pk) pk = m2;
     if (s10 > pk) pk = s10;
   }
   pk *= Math.SQRT1_2;
@@ -26736,11 +26737,9 @@ function stereoShape(L2, R2) {
     xs.push(x2 * k2);
     ys.push(y2 * k2);
   }
-  const f2 = (v) => v.toFixed(3), m2 = xs.length;
-  if (m2 < 2) return { path: m2 ? `M${f2(xs[0])},${f2(ys[0])}` : "", corr };
-  let d3 = `M${f2(xs[0])},${f2(ys[0])}L${f2((xs[0] + xs[1]) / 2)},${f2((ys[0] + ys[1]) / 2)}`;
-  for (let i10 = 1; i10 < m2 - 1; i10++) d3 += `Q${f2(xs[i10])},${f2(ys[i10])} ${f2((xs[i10] + xs[i10 + 1]) / 2)},${f2((ys[i10] + ys[i10 + 1]) / 2)}`;
-  d3 += `L${f2(xs[m2 - 1])},${f2(ys[m2 - 1])}`;
+  const f2 = (v) => v.toFixed(3);
+  let d3 = "";
+  for (let i10 = 0; i10 < xs.length; i10++) d3 += `M${f2(xs[i10])},${f2(ys[i10])}h.002`;
   return { path: d3, corr };
 }
 
@@ -27439,7 +27438,6 @@ ${tg2.fx}`);
     }).join("");
     box.innerHTML = master + busCards + singers;
     this.watchCards();
-    box.classList.toggle("wide", tab === "eq" || tab === "comp");
     this.renderPanel();
     this.fitHeight();
   }
@@ -40408,7 +40406,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "e7f004f29e0c",
+  cssHash: "cdcd9240d576",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -43631,4 +43629,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c92aa83e1311.mjs.map
+//# sourceMappingURL=moonsinger-90aa0c1db9fa.mjs.map

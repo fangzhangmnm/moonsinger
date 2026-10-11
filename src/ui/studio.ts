@@ -537,7 +537,6 @@ export class Studio {
     }).join("");
     box.innerHTML = master + busCards + singers;
     this.watchCards();   // 卡片重画了：重新看哪些在屏幕里
-    box.classList.toggle("wide", tab === "eq" || tab === "comp");
     this.renderPanel();
     this.fitHeight();
   }

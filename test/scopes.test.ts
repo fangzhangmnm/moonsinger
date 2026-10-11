@@ -32,9 +32,10 @@ describe("李萨如图 / 左右相关", () => {
     assert(r(sine(1024, 0.013, 0.02)) > 0.25, `−34 dBFS 的小声轨也看得见（半径 ${r(sine(1024, 0.013, 0.02)).toFixed(3)}；线性刻度只有 0.018）`);
   });
 });
-describe("李萨如图 = 圆滑的线（v0.10.17）", () => {
-  it("过中点的二次曲线连（不是散点、不是直线折线）", () => {
+describe("李萨如图 = 散点（v0.10.41；v0.10.17–40 是圆滑的线）", () => {
+  it("每个点一小截（圆头 = 点），点和点之间不连", () => {
     const x = Float32Array.from({ length: 1024 }, (_, i) => 0.5 * Math.sin(i / 7)), g = stereoShape(x, x.map((v, i) => 0.5 * Math.cos(i / 7)));
-    assert(!/h0/.test(g.path) && (g.path.match(/Q/g) ?? []).length >= 500, `${(g.path.match(/Q/g) ?? []).length} 段曲线`);
+    const dots = (g.path.match(/M/g) ?? []).length;
+    assert(!/[QL]/.test(g.path) && dots >= 500 && dots === (g.path.match(/h\.002/g) ?? []).length, `${dots} 个点`);
   });
 });

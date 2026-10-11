@@ -473,9 +473,14 @@ function eatRests(tk: Token[], i: number, need: number): { got: number; end: num
   }
   return { got, end, keep: keep.slice(0, kept) };
 }
+/** 曲级记号（力度字 / 渐强渐弱 / 风格）跟着它后面那个音（复制、清记号都这么算）。 */
+const isPhraseMark = (t: Token | undefined): boolean => !!t && (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove");
 /** 光标处放进一个有时值的 token（写音默认覆盖休止）：光标后（跳过不占时值的记号）紧挨着的是休止 = 放在那些记号后面、吃掉 tok.dur 那么长的休止，
  *  不够的那截才把后面的往后推；后面不是休止 = 照旧插在光标处（全推）。at = 新 token 的下标；ate = 吃了多少休止。 */
 function overwriteInsert(tk: Token[], caret: number, tok: Timed): { tokens: Token[]; at: number; ate: number } {
+  // 纸上还没有音 / 休止（光标前面只有谱头和记号）+ 光标后面紧挨着曲级记号（纸头强制的力度…）= 写在它们后面：那个力度是给第一个音的。
+  //   不然写在它前面 = 第一个音前面没力度 → 又补一个（v0.10.41；user「为什么空文档打字的时候会有两个mf?」「删了一个还有一个」「然后一打字又duplicate了」）
+  if (!tk.slice(headLen(tk), caret).some(isTimed)) while (caret < tk.length && isPhraseMark(tk[caret])) caret++;
   let i = caret; while (i < tk.length && !isTimed(tk[i]) && tk[i].kind !== "bar") i++;
   const e = tk[i]?.kind === "rest" ? eatRests(tk, i, tok.dur) : null;
   if (!e || !e.got) { const nt = tk.slice(); nt.splice(caret, 0, tok); return { tokens: nt, at: caret, ate: 0 }; }
@@ -535,8 +540,6 @@ function resizeSingle(st: EditorState, i: number, by: number): EditorState {
   return next(st, nt, { sel: { from: i, to: i + 1 }, caret: i + 1 });
 }
 
-/** 曲级记号（力度字 / 渐强渐弱 / 风格）跟着它后面那个音（复制、清记号都这么算）。 */
-const isPhraseMark = (t: Token | undefined): boolean => !!t && (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove");
 /** 结构记号（小节线 / 反复 / 跳转）插在光标处时，光标前面紧挨着的曲级记号让到它后面（v0.10.39：纸头强制写了力度之后，在纸头插 |: 会落在力度后面 = 第二遍不重读这个力度）。 */
 const behindPhrase = (toks: Token[], at: number, h: number): number => { let i = at; while (i > h && isPhraseMark(toks[i - 1])) i--; return i; };
 /** 反复小节线（pad 符号层「反复」菜单）：光标紧挨着一条小节线（前面或后面）= 把它改成反复的（|: 和 :| 撞在同一条上 = :|:）；否则在光标处插一条。
