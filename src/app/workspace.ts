@@ -11,9 +11,9 @@ export type Mode = "notes" | "lyrics" | "symbols" | "listen";
 export const MODES: readonly Mode[] = ["notes", "lyrics", "symbols", "listen"];
 export const MODE_LABEL: Record<Mode, string> = { notes: "音", lyrics: "词", symbols: "符", listen: "听" };
 export const MODE_TITLE: Record<Mode, string> = {
-  notes: "音：写音 / 休止 / 小节线（键盘 = 音键）；点音 = 光标，笔 / 鼠标拖音 = 改音高 / 时值；退格 = 删音",
+  notes: "音：键盘 = 音键（写音 / 休止 / 小节线；退格 = 删音）。谱上音和记号都能改：点音 = 光标，笔 / 鼠标拖音 = 改音高 / 时值；点记号 = 它的菜单、按住拖 = 挪",
   lyrics: "词：点音或它下面 = 写这个音的歌词；按住字拖 = 挪 / 合；退格 = 删光标前那个音的字",
-  symbols: "符：力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号（键盘 = 符号格）；点记号 = 它的菜单、按住拖 = 挪；退格 = 删记号",
+  symbols: "符：键盘 = 符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号；退格 = 删记号）。谱上和「音」一样：音和记号都能改",
   listen: "听：谱锁住防误触——轻点只认看谱的（歌手牌 / 翻纸 / 本段），不跳播；长按 / 右键谱面 = 从这儿放 / 接着放 / 从头放；空格 = 放 / 停；底下是混音台（Esc 回到写）",
 };
 
@@ -31,9 +31,11 @@ export interface ModeRules {
   backspace: "notes" | "lyrics" | "symbols" | null;
 }
 export const RULES: Record<Mode, ModeRules> = {
-  notes: { edit: true, noteDrag: true, lyrics: false, symbols: false, backspace: "notes" },
+  // 音 / 符在谱面上一起编辑（v0.10.36；user「音和符应该可以一起编辑，而不是分开来，不知道这样会频繁误触吗，我觉得不大会。然后这里就是键盘还是需要那个切换机制」）：
+  //   两个模式谱面上一样（拖音 + 点 / 拖记号都认）；只差底下的键盘（音键 / 符号格）和退格删什么（跟着键盘）
+  notes: { edit: true, noteDrag: true, lyrics: false, symbols: true, backspace: "notes" },
   lyrics: { edit: true, noteDrag: false, lyrics: true, symbols: false, backspace: "lyrics" },
-  symbols: { edit: true, noteDrag: false, lyrics: false, symbols: true, backspace: "symbols" },
+  symbols: { edit: true, noteDrag: true, lyrics: false, symbols: true, backspace: "symbols" },
   listen: { edit: false, noteDrag: false, lyrics: false, symbols: false, backspace: null },
 };
 

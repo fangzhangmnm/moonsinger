@@ -11,7 +11,7 @@
 // 无地逃生口（user 2026-10-07「先不急着store。可以先按照无地规范导入导出做逃生口」）：这里只管字节 ↔ 歌，打开 / 存的界面在 app 里。
 import { DEFAULT_ROLE, numberParts } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
-import { swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, CLEFS, flattenPart } from "../score/song.ts";
+import { swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, CLEFS, flattenPart, familyOrder } from "../score/song.ts";
 import { resolveSongClefs, displayStates, withAutoOttava } from "../score/clef.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
@@ -593,7 +593,7 @@ function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: 
   for (const p of ps) for (const id of Object.keys(p.tracks)) if (!seen.has(id)) seen.set(id, { id, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
   // 谱号：score.json 没写的（v0.9.28 以前存的 / 别家的谱）= MusicXML 里这个声部第一个 <clef>：不是普通高音谱号的（低音、八度谱号）算写明了，普通高音谱号 = 自动
   for (const r of reads) for (const p of r.parts) { const d = seen.get(p.info.id); if (!d) continue; if (p.info.staves === 2) d.staves = 2; if (!clefFromScore.has(d.id) && !d.clef && p.info.clef && p.info.clef !== "G" && d.staves !== 2) d.clef = p.info.clef; }
-  const parts = [...seen.values()];
+  const parts = familyOrder([...seen.values()]);   // 一家挨在一起（v0.10.36：旧文件里房客可能没挨着主人）
   let id = 1;
   const renumbered = ps.map((p) => ({ ...p, tracks: Object.fromEntries(parts.flatMap((part) => (p.tracks[part.id] ? [[part.id, p.tracks[part.id].map((t) => ({ ...t, id: id++ }))]] : []))) }));
   const r0 = reads[0];

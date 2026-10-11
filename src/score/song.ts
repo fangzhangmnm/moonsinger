@@ -1462,8 +1462,15 @@ export function removePart(st: EditorState, partId: string): EditorState {
 }
 /** 声部上下挪一格（谱上从上到下 = Song.parts 的顺序；user 2026-10-08「声部顺序应该能重排」）。每张纸、每条 track 都不动，只换顺序。
  *  速度只看每张纸最上面那一行（tempoOwner）；挪了谁在最上面，每张纸开头的速度照旧（keepSheetTempos 把各行谱头写齐）。 */
+/** 一家挨在一起（v0.10.36）：每位主人后面紧跟它的房客（房客之间、各家之间原来的先后不变）。读档 / 挪 / 挂的时候都理一遍——
+ *  以前房客没挨着主人时「挪」把它当成单独一块越挪越散，混音台卡片跟着乱序（user「卡片排序在有合租的时候有问题会乱序，可能合租的时候没有正确排好序」）。 */
+export function familyOrder(parts: readonly PartDef[]): PartDef[] {
+  const ids = new Set(parts.map((p) => p.id)), out: PartDef[] = [];
+  for (const p of parts) { if (p.host && ids.has(p.host)) continue; out.push(p); for (const t of parts) if (t.host === p.id) out.push(t); }
+  return out.length === parts.length ? out : [...parts];   // 防御：对不上（不该发生）= 原样
+}
 export function movePart(st: EditorState, partId: string, d: -1 | 1): EditorState {
-  const ps = st.song.parts, me = ps.find((p) => p.id === partId); if (!me) return st;
+  const ps = familyOrder(st.song.parts), me = ps.find((p) => p.id === partId); if (!me) return st;
   // 合租（v0.10.24；user「排序同意」）：主人和房客是一家，挪主人 = 整家挪过邻居（邻居也按一家算）；房客只在自家里挪
   if (me.host) {
     const i = ps.indexOf(me), j = i + d, other = ps[j];
@@ -1485,7 +1492,7 @@ export function setPartHost(st: EditorState, partId: string, host: string | null
   if (!h || h.id === partId || h.host || ps.some((p) => p.host === partId)) return st;
   const others = ps.filter((p) => p.id !== partId), hi = others.indexOf(h);
   let at = hi + 1; while (at < others.length && others[at].host === host) at++;
-  const parts = [...others.slice(0, at), { ...me, host }, ...others.slice(at)];
+  const parts = familyOrder([...others.slice(0, at), { ...me, host }, ...others.slice(at)]);
   return { ...st, song: keepSheetTempos(st.song, { ...st.song, parts }) };
 }
 /** 这张纸上加上某个（歌里已有的）声部：一条只有谱头的 track（谱头抄这张纸第一个在场声部的开头）。user 2026-10-08「每个sheet的track数量当然不同」。 */

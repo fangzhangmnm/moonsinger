@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.35-2026-10-10";
+var APP_VERSION = "v0.10.36-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4584,8 +4584,17 @@ function removePart(st3, partId) {
   const at2 = st3.at.part === partId ? { paper: st3.at.paper, part: song.parts[0].id } : st3.at;
   return setFocus({ ...st3, song }, at2.paper, at2.part, st3.at.part === partId ? void 0 : st3.caret);
 }
+function familyOrder(parts) {
+  const ids = new Set(parts.map((p2) => p2.id)), out = [];
+  for (const p2 of parts) {
+    if (p2.host && ids.has(p2.host)) continue;
+    out.push(p2);
+    for (const t10 of parts) if (t10.host === p2.id) out.push(t10);
+  }
+  return out.length === parts.length ? out : [...parts];
+}
 function movePart(st3, partId, d3) {
-  const ps = st3.song.parts, me = ps.find((p2) => p2.id === partId);
+  const ps = familyOrder(st3.song.parts), me = ps.find((p2) => p2.id === partId);
   if (!me) return st3;
   if (me.host) {
     const i10 = ps.indexOf(me), j2 = i10 + d3, other = ps[j2];
@@ -4617,7 +4626,7 @@ function setPartHost(st3, partId, host) {
   const others = ps.filter((p2) => p2.id !== partId), hi = others.indexOf(h2);
   let at2 = hi + 1;
   while (at2 < others.length && others[at2].host === host) at2++;
-  const parts = [...others.slice(0, at2), { ...me, host }, ...others.slice(at2)];
+  const parts = familyOrder([...others.slice(0, at2), { ...me, host }, ...others.slice(at2)]);
   return { ...st3, song: keepSheetTempos(st3.song, { ...st3.song, parts }) };
 }
 function addTrack(st3, paperId, partId) {
@@ -9808,15 +9817,17 @@ var TitleEditor = class {
 var MODES = ["notes", "lyrics", "symbols", "listen"];
 var MODE_LABEL = { notes: "\u97F3", lyrics: "\u8BCD", symbols: "\u7B26", listen: "\u542C" };
 var MODE_TITLE = {
-  notes: "\u97F3\uFF1A\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF08\u952E\u76D8 = \u97F3\u952E\uFF09\uFF1B\u70B9\u97F3 = \u5149\u6807\uFF0C\u7B14 / \u9F20\u6807\u62D6\u97F3 = \u6539\u97F3\u9AD8 / \u65F6\u503C\uFF1B\u9000\u683C = \u5220\u97F3",
+  notes: "\u97F3\uFF1A\u952E\u76D8 = \u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF1B\u9000\u683C = \u5220\u97F3\uFF09\u3002\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539\uFF1A\u70B9\u97F3 = \u5149\u6807\uFF0C\u7B14 / \u9F20\u6807\u62D6\u97F3 = \u6539\u97F3\u9AD8 / \u65F6\u503C\uFF1B\u70B9\u8BB0\u53F7 = \u5B83\u7684\u83DC\u5355\u3001\u6309\u4F4F\u62D6 = \u632A",
   lyrics: "\u8BCD\uFF1A\u70B9\u97F3\u6216\u5B83\u4E0B\u9762 = \u5199\u8FD9\u4E2A\u97F3\u7684\u6B4C\u8BCD\uFF1B\u6309\u4F4F\u5B57\u62D6 = \u632A / \u5408\uFF1B\u9000\u683C = \u5220\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u7684\u5B57",
-  symbols: "\u7B26\uFF1A\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF08\u952E\u76D8 = \u7B26\u53F7\u683C\uFF09\uFF1B\u70B9\u8BB0\u53F7 = \u5B83\u7684\u83DC\u5355\u3001\u6309\u4F4F\u62D6 = \u632A\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7",
+  symbols: "\u7B26\uFF1A\u952E\u76D8 = \u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7\uFF09\u3002\u8C31\u4E0A\u548C\u300C\u97F3\u300D\u4E00\u6837\uFF1A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539",
   listen: "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u6B4C\u624B\u724C / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\uFF08Esc \u56DE\u5230\u5199\uFF09"
 };
 var RULES = {
-  notes: { edit: true, noteDrag: true, lyrics: false, symbols: false, backspace: "notes" },
+  // 音 / 符在谱面上一起编辑（v0.10.36；user「音和符应该可以一起编辑，而不是分开来，不知道这样会频繁误触吗，我觉得不大会。然后这里就是键盘还是需要那个切换机制」）：
+  //   两个模式谱面上一样（拖音 + 点 / 拖记号都认）；只差底下的键盘（音键 / 符号格）和退格删什么（跟着键盘）
+  notes: { edit: true, noteDrag: true, lyrics: false, symbols: true, backspace: "notes" },
   lyrics: { edit: true, noteDrag: false, lyrics: true, symbols: false, backspace: "lyrics" },
-  symbols: { edit: true, noteDrag: false, lyrics: false, symbols: true, backspace: "symbols" },
+  symbols: { edit: true, noteDrag: true, lyrics: false, symbols: true, backspace: "symbols" },
   listen: { edit: false, noteDrag: false, lyrics: false, symbols: false, backspace: null }
 };
 function dockOf(s10) {
@@ -23165,7 +23176,7 @@ function songFromReads(reads, papers, partList = null) {
     if (p2.info.staves === 2) d3.staves = 2;
     if (!clefFromScore.has(d3.id) && !d3.clef && p2.info.clef && p2.info.clef !== "G" && d3.staves !== 2) d3.clef = p2.info.clef;
   }
-  const parts = [...seen.values()];
+  const parts = familyOrder([...seen.values()]);
   let id2 = 1;
   const renumbered = ps.map((p2) => ({ ...p2, tracks: Object.fromEntries(parts.flatMap((part) => p2.tracks[part.id] ? [[part.id, p2.tracks[part.id].map((t10) => ({ ...t10, id: id2++ }))]] : [])) }));
   const r02 = reads[0];
@@ -43264,7 +43275,7 @@ function lyricBackspace() {
 function run(a10, repeat, code) {
   switch (a10.k) {
     case "cmd":
-      if (ws.mode !== "notes" && NOTE_EDIT.has(a10.cmd.k)) {
+      if (ws.mode === "lyrics" && NOTE_EDIT.has(a10.cmd.k)) {
         if (modeHintShown !== ws.mode) {
           modeHintShown = ws.mode;
           info(`\u300C${MODE_LABEL[ws.mode]}\u300D\u91CC\u952E\u76D8\u4E0D\u5199\u97F3\uFF08\u5207\u5230\u300C\u97F3\u300D\u518D\u5199\uFF09`);
@@ -43508,4 +43519,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-57d69ceb28dc.mjs.map
+//# sourceMappingURL=moonsinger-516acd8eb317.mjs.map

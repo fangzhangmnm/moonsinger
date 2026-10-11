@@ -3581,7 +3581,7 @@ function lyricBackspace(): void {
 function run(a: Action, repeat: boolean, code: string): boolean {
   switch (a.k) {
     case "cmd":
-      if (ws.mode !== "notes" && NOTE_EDIT.has(a.cmd.k)) { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(`「${MODE_LABEL[ws.mode]}」里键盘不写音（切到「音」再写）`); } return true; }
+      if (ws.mode === "lyrics" && NOTE_EDIT.has(a.cmd.k)) { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(`「${MODE_LABEL[ws.mode]}」里键盘不写音（切到「音」再写）`); } return true; }   // 「符」里电脑键盘照样写音（v0.10.36 音符一起编辑）；只有「词」不写
       if (a.cmd.k === "backspace" && ws.mode === "symbols") { update(apply(st, { k: "symBackspace" }, performance.now())); return true; }   // 符：退格删记号（user「我早就想用退格删强度曲线了」）
       if (a.cmd.k === "backspace" && ws.mode === "lyrics") { lyricBackspace(); return true; }
       if (a.cmd.k === "degree") {

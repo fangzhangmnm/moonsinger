@@ -4,11 +4,11 @@ import { RULES, MODES, dockOf, hasKeys, type WorkspaceState } from "../src/app/w
 
 const ws = (o: Partial<WorkspaceState>): WorkspaceState => ({ mode: "notes", collapsed: false, tryout: false, ...o });
 describe("模式规则表", () => {
-  it("每一层只在自己的模式里点得到：音 = 拖音，词 = 歌词，符 = 记号；听 = 都不（不改谱）", () => {
+  it("音 / 符在谱面上一起编辑（v0.10.36：拖音 + 点 / 拖记号都认，只差键盘和退格）；词 = 歌词；听 = 都不（不改谱）", () => {
     eq(MODES.join(","), "notes,lyrics,symbols,listen");
-    assert(RULES.notes.noteDrag && !RULES.notes.lyrics && !RULES.notes.symbols, "音");
+    assert(RULES.notes.noteDrag && !RULES.notes.lyrics && RULES.notes.symbols, "音");
     assert(!RULES.lyrics.noteDrag && RULES.lyrics.lyrics && !RULES.lyrics.symbols, "词");
-    assert(!RULES.symbols.noteDrag && !RULES.symbols.lyrics && RULES.symbols.symbols, "符");
+    assert(RULES.symbols.noteDrag && !RULES.symbols.lyrics && RULES.symbols.symbols, "符");
     assert(!RULES.listen.edit && !RULES.listen.noteDrag && !RULES.listen.lyrics && !RULES.listen.symbols && RULES.listen.backspace === null, "听");
     eq([RULES.notes.backspace, RULES.lyrics.backspace, RULES.symbols.backspace].join(","), "notes,lyrics,symbols");
   });

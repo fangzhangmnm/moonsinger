@@ -2,7 +2,7 @@
 // user「合租还是有主人吧」「排序同意」「我的想法就是先做一个看上去大概的…主要就是总览监视用。所以撞一起就撞」「…宁缺误骗」
 import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave } from "../src/render/engrave.ts";
-import { initState, addPart, setPartHost, movePart, removePart, setFocus, headLen, TPQ, type Token, type EditorState } from "../src/score/song.ts";
+import { initState, addPart, setPartHost, movePart, removePart, setFocus, headLen, familyOrder, TPQ, type Token, type EditorState } from "../src/score/song.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 
 let nid = 9700;
@@ -37,6 +37,14 @@ describe("合租：数据", () => {
     eq(ids(movePart(st, a, 1)), `P2,${a},${c}<${a}`, "主人往下 = 一家挪过 P2");
     eq(ids(movePart(st, c, 1)), ids(st), "房客挪出自家 = 不动");
     eq(ids(removePart(st, a)), `${c},P2`, "删了主人：房客没有 host 了");
+  });
+  it("一家挨在一起（v0.10.36）：房客没挨着主人（旧文件 / 以前挪乱的）= 读的时候 / 挪的时候理好", () => {
+    let st = trio(); st = addPart(st, { id: "P4", role: "r4", mic: "m4" }); const [a, b2, c, d] = st.song.parts.map((p) => p.id);
+    const messy = { ...st.song, parts: [st.song.parts[0], st.song.parts[1], st.song.parts[2], { ...st.song.parts[3], host: a }] };   // P4 挂 a，却排在最后
+    eq(familyOrder(messy.parts).map((p) => p.id).join(","), `${a},${d},${b2},${c}`);
+    const o = openBytes("t.mxl", saveMxl({ song: messy, hum: messy.hum, extras: emptyExtras(), app: "test", date: "2026-10-10T00:00:00Z" }));
+    eq(o.song.parts.map((p) => p.id).join(","), `${a},${d},${b2},${c}`, "读的时候理好");
+    eq(movePart({ ...st, song: messy }, c, -1).song.parts.map((p) => p.id).join(","), `${a},${d},${c},${b2}`, "挪的时候一家一起算");
   });
   it("存进文件再读回来：host 留着；不合规矩的（主人不在）读的时候丢掉", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
