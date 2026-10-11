@@ -101,6 +101,8 @@ type Grab = { kind: "lyric" | "mark"; index: number; system: number };
 
 /** 捏合最多放大到原大的几倍（同 PDF 阅读器，横着能滚）。 */
 const MAX_ZOOM = 6;
+/** 合租虚拟的几条（`主人~lo` / `主人~v2` / `主人~lo~v2`）→ 真的那一位（主人）。 */
+const realPart = (id: string): string => id.replace(/~.*$/, "");
 export class ScoreView {
   layout: Layout | null = null;
   private sheet: HTMLDivElement;
@@ -337,7 +339,10 @@ export class ScoreView {
     if (!p || !L) { clear(); this.playSysKey = ""; this.turnedKey = ""; return; }
     const found = this.soundingAt(p.paperId, p.tick);
     if (!found.length) { clear(); return; }
-    const lead = found.reduce((a, b) => (b.start > a.start ? b : a)), h0 = lead.hits[0], sys = L.systems[h0.system].sys;
+    // 放到哪一小节 / 哪一行：按播放的 tick 查小节（v0.10.28；以前按「最晚开始的那个音」——跨小节的长音后半截没有点击区，小节底色和翻谱都停在上一小节 / 上一行；
+    //   user「小节高亮也算错了，如果你只用第一个合租声部来算的话，因为碰到跨小节的音小节高亮没有update」）
+    const msr = this.barAt(p.paperId, p.tick);
+    const lead = found.reduce((a, b) => (b.start > a.start ? b : a)), h0 = lead.hits[0], sys = L.systems[msr ? msr.row : h0.system].sys;
     const rows = L.systems.filter((r) => r.paper === p.paperId && r.sys === sys);
     const top = Math.min(...rows.map((r) => r.top)), bottom = Math.max(...rows.map((r) => r.bottom)), x = h0.x + h0.w / 2;
     const sysKey = `${p.paperId}:${sys}`;
@@ -345,9 +350,9 @@ export class ScoreView {
     // 提前翻谱（v0.10.21；user「视图跳转能早一点吗…方便对着谱子唱歌？」→「我说的不是看下一行，因为小设备大总谱上面一次只能看一行。以及编排longjump。想一想钢琴家是怎么翻页的」）：
     //   ahead = 再过一小会儿（主线程 TURN_LEAD 秒）放到的地方——按播放的顺序算，下一行、编排 / 反复跳回去的地方都一样；它在别的一行 = 现在就翻过去
     if (ahead && this.autoFollow && !this.hscroll) {
-      const fa = this.soundingAt(ahead.paperId, ahead.tick);
-      if (fa.length) {
-        const ha = fa.reduce((a, b) => (b.start > a.start ? b : a)).hits[0], asys = L.systems[ha.system].sys, akey = `${ahead.paperId}:${asys}`;
+      const fa = this.soundingAt(ahead.paperId, ahead.tick), ma = this.barAt(ahead.paperId, ahead.tick);
+      if (fa.length || ma) {
+        const asys = L.systems[ma ? ma.row : fa.reduce((a, b) => (b.start > a.start ? b : a)).hits[0].system].sys, akey = `${ahead.paperId}:${asys}`;
         if (akey !== sysKey && akey !== this.turnedKey) {
           // 放到这一行最后一个音了没（这一行所有声部里最靠右的那个音头）：没到 = 翻过去会把它翻没的那种翻法先等着（user「至少不要把每行最后一个音丢了。当然如果是一堆小快音的话人类会precache」）
           const ids = new Set(rows.map((r) => L.systems.indexOf(r))); let lastX = -Infinity; for (const n of this.hits) if (ids.has(n.system) && n.x > lastX) lastX = n.x;
@@ -359,7 +364,7 @@ export class ScoreView {
     if (this.hscroll && this.autoFollow) this.followPlayX(x);   // 横卷：一行很长，横着跟（不等换行）
     // 小节底色（v0.10.12；user「播放动画的时候还得垫一个比较轻的小节高亮…太低调了所以有时候找不到放哪里了」→ AI 建议整小节、user「12都同意」）：
     //   正在放的那个（最晚开始的音）所在的小节，盖住这一行所有声部，很淡，垫在音符高亮下面；一小节才换一次，不晃
-    { const row = h0.system, hx = h0.x + h0.w / 2; let left = -Infinity, right = Infinity;
+    { const row = msr ? msr.row : h0.system, hx = msr ? msr.x + 1 : h0.x + h0.w / 2; let left = -Infinity, right = Infinity;
       for (const b of L.bars) if (b.system === row) { if (b.x <= hx - 1 && b.x > left) left = b.x; if (b.x > hx + 1 && b.x < right) right = b.x; }
       if (!Number.isFinite(left)) { let first = Infinity; for (const n of this.hits) if (n.system === row && n.x < first) first = n.x; left = (Number.isFinite(first) ? first : hx) - L.sp * 0.8; }
       if (!Number.isFinite(right)) right = L.systems[row].x1 ?? hx + L.sp * 4;
@@ -376,7 +381,7 @@ export class ScoreView {
     spots.forEach((h, k) => {
       let d = this.hlEls[k];
       if (!d || !d.isConnected) { d = document.createElement("div"); d.className = "play-hl"; this.ink.appendChild(d); this.hlEls[k] = d; }
-      const r = Math.max(6, h.w * 0.8), pv = this.host.parts().find((q) => q.id === L.systems[h.system]?.part);   // 这位歌手的类别色（v0.9.31）
+      const r = Math.max(6, h.w * 0.8), pv = this.host.parts().find((q) => q.id === realPart(L.systems[h.system]?.part ?? ""));   // 这位歌手的类别色（v0.9.31）
       d.style.setProperty("--hl", pv?.colorIdx !== undefined ? TAB20[pv.colorIdx] : "");
       d.style.left = `${h.x + h.w / 2 - r}px`; d.style.top = `${h.y - r}px`; d.style.width = d.style.height = `${2 * r}px`;
     });
@@ -453,18 +458,24 @@ export class ScoreView {
     this.pinEl.classList.toggle("is-on", left > (this.layout?.sp ?? 10) * 4);
   }
   /** 这张纸 tick 那一刻每个声部（排出来的每一行）正在放的 token：下标、开始的 tick、画出来的位置（音 / 休止）。 */
+  /** 播放的 tick 在哪个小节（Layout.measures；v0.10.28）。 */
+  private barAt(paperId: string, tick: number): { row: number; x: number } | null {
+    return this.layout?.measures.find((m) => m.paper === paperId && tick >= m.t0 && tick < m.t1) ?? null;
+  }
   private soundingAt(paperId: string, tick: number): { part: string; index: number; start: number; note: boolean; hits: { x: number; y: number; w: number; system: number }[] }[] {
     const L = this.layout; if (!L) return [];
     const paper = this.host.get().song.papers.find((x) => x.id === paperId); if (!paper) return [];
-    const out: { part: string; index: number; start: number; note: boolean; hits: { x: number; y: number; w: number; system: number }[] }[] = [], seen = new Set<string>();
-    for (const r of L.systems) {
-      if (r.paper !== paperId || seen.has(r.part)) continue; seen.add(r.part);
-      const toks = paper.tracks[r.part] ?? []; let t = 0, at = -1, start = 0;
+    const out: { part: string; index: number; start: number; note: boolean; hits: { x: number; y: number; w: number; system: number }[] }[] = [];
+    // 每一条画出来的 track：每行那一位 + 合租虚拟的那几条（双手谱下面那张 `~lo`、隔得远劈出来的声部 2 `~v2`；v0.10.28）——下标指的都是它自己那条
+    const ids = new Set(L.systems.filter((r) => r.paper === paperId).map((r) => r.part));
+    for (const k of Object.keys(L.virtual)) if (k.startsWith(`${paperId}:`)) ids.add(k.slice(paperId.length + 1));
+    for (const id of ids) {
+      const toks = L.virtual[`${paperId}:${id}`] ?? paper.tracks[id] ?? []; let t = 0, at = -1, start = 0;
       for (let i = 0; i < toks.length; i++) { const k = toks[i]; if (!isTimed(k)) continue; if (t + k.dur > tick) { at = i; start = t; break; } t += k.dur; }
       if (at < 0) continue;
-      const mine = (h: { index: number; system: number }) => h.index === at && L.systems[h.system]?.paper === paperId && L.systems[h.system]?.part === r.part;
+      const mine = (h: { index: number; system: number; part?: string }) => h.index === at && L.systems[h.system]?.paper === paperId && (h.part ?? L.systems[h.system]?.part) === id;
       const hits = [...L.notes.filter(mine), ...L.chordHeads.filter(mine), ...L.rests.filter(mine)];   // 和弦 = 每个符头都亮（v0.10.23）
-      if (hits.length) out.push({ part: r.part, index: at, start, note: toks[at].kind === "note", hits });
+      if (hits.length) out.push({ part: id, index: at, start, note: toks[at].kind === "note", hits });
     }
     return out;
   }
@@ -730,9 +741,17 @@ export class ScoreView {
   private listenMenu(x: number, y: number, cx: number, cy: number): void {
     const L = this.layout; if (!L) return;
     const hit = this.noteAt(x, y, true), r = hit ? L.systems[hit.system] : null;
-    if (hit && r) { this.host.onListenMenu?.({ x: cx, y: cy }, { paper: r.paper, part: r.part, index: hit.index, caret: hit.index }); return; }
+    if (hit && r) { const id = hit.part ?? r.part, i = this.realIndex(r.paper, id, hit.index); this.host.onListenMenu?.({ x: cx, y: cy }, { paper: r.paper, part: realPart(id), index: i, caret: i }); return; }
     const s = this.caretAt(x, y);
-    this.host.onListenMenu?.({ x: cx, y: cy }, { paper: s.at.paper, part: s.at.part, index: null, caret: s.caret });
+    this.host.onListenMenu?.({ x: cx, y: cy }, { paper: s.at.paper, part: realPart(s.at.part), index: null, caret: this.realIndex(s.at.paper, s.at.part, s.caret) });
+  }
+  /** 合租叠起来的那一行（v0.10.28）：点击区的下标指虚拟 track（主人那条 / `主人~lo` / `…~v2`） → 换成主人自己 track 里同一时刻的那个下标（按 tick 对）。不是叠起来的 = 原样。 */
+  private realIndex(paperId: string, part: string, i: number): number {
+    const v = this.layout?.virtual[`${paperId}:${part}`]; if (!v) return i;
+    let tick = 0; for (let k = 0; k < Math.min(i, v.length); k++) { const t = v[k]; if (isTimed(t)) tick += t.dur; }
+    const real = this.host.get().song.papers.find((x) => x.id === paperId)?.tracks[realPart(part)] ?? [];
+    let t = 0; for (let k = 0; k < real.length; k++) { const x = real[k]; if (!isTimed(x)) continue; if (t + x.dur > tick) return k; t += x.dur; }
+    return real.length;
   }
   /** 空白处长按 / 右键：收起编辑框、光标放到那里（同轻点空白），再告诉宿主开小菜单。row = 这一行里光标所在 track 的音的下标范围。 */
   private blankPress(x: number, y: number, cx: number, cy: number): void {

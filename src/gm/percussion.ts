@@ -11,10 +11,10 @@ export function percOf(bank: number, program: number, note?: number): PercInfo |
 }
 
 /** 台上那位怎么记谱：kit = 整套鼓（bank 128 没固定键：写的音高 = 敲哪个鼓，五线鼓谱）；one = 固定敲一件（鼓件 / 固定原速的音效：一线谱，写的音高不出声）；null = 有音高。 */
-export type PercKind = { kind: "kit" } | { kind: "one"; info: PercInfo };
+export type PercKind = { kind: "kit" } | { kind: "one"; info: PercInfo; key: number };   // key = 固定敲的那个键
 export function percKindOf(inst: { bank: number; program: number; note?: number }): PercKind | null {
   if (inst.bank === 128 && inst.note === undefined) return { kind: "kit" };
   if (inst.note === undefined) return null;   // note = 每个音都敲这个键（鼓件 / 音效「固定原速」）；音效关了固定原速（猫叫歌）= 按写的音变调 = 有音高
   const info = percOf(inst.bank, inst.program, inst.bank === 128 ? inst.note : undefined);
-  return info ? { kind: "one", info } : null;
+  return info ? { kind: "one", info, key: inst.note } : null;
 }

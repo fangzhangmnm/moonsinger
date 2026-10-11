@@ -68,6 +68,21 @@ export function startClef(tokens: readonly Token[], partClef: ClefName | undefin
   return autoClef(pos, prev);
 }
 
+/** 双手谱多占一张谱的代价（每个音折几条加线的成本）。 */
+const GRAND_BIAS = 0.5;
+/** 合租叠起来的那一行（v0.10.28，src/score/merge.ts）用不用双手谱：一个谱号（自动挑 + 自动八度线）的阅读成本 vs 双手谱（中央 C 以上上谱、以下下谱）+ 每个音 GRAND_BIAS。
+ *  user「share之后能不能选双手谱号，这样爽一点」→「for shared clef i dont know why there is data contract. it is just the proper way of showing multi teanants」：按音自动，不存。 */
+export function wantsGrand(tokens: readonly Token[]): boolean {
+  const pos: number[] = []; for (const t of tokens) if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...(t.chord ?? [])]) pos.push(diatonicIndex(p as Pitch));
+  if (pos.length < 2) return false;
+  const c = startClef(tokens, undefined, null, true), ao = autoOttava(tokens, displayStates(tokens, c));
+  let single = ao.runs.length * RUN_COST;
+  tokens.forEach((t, i) => { if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...(t.chord ?? [])]) single += ledgerCost(diatonicIndex(p as Pitch) + CLEF_SHIFT[c] + ottavaShift(ao.ott[i] ?? 0)); });
+  const grand = pos.reduce((a, d) => a + ledgerCost(d >= MIDDLE_C ? d : d + CLEF_SHIFT.F), 0) + GRAND_BIAS * pos.length;
+  return grand < single;
+}
+const MIDDLE_C = 28;   // diatonicIndex(C4)
+
 /** 每个下标处生效的谱号和八度线（开头 = start）：画的时候每个音按这两个挪位置。 */
 export function displayStates(tokens: readonly Token[], start: ClefName): { clef: ClefName[]; ott: number[] } {
   const clef: ClefName[] = new Array(tokens.length), ott: number[] = new Array(tokens.length);

@@ -1,6 +1,6 @@
 # 设计账：合租谱线 / 鼓和大炮（不分音高的一下） / 反向镲右对齐 / 曲段连排预览
 
-> created 20261010 by Claude Opus 5.5 · as-of v0.10.24 / 2026-10-10 · **user 点头**（「合租 大炮 reverse cymbal continuous seg view 同意」）· §1 合租 = v0.10.24 做了（只做了 (a) 自己有轨那种；(b) 纯记谱用主人的轨还没做）；§2–4 还没动代码（音乐仓鼠 export v13 已交付）；user「单乐器一线谱同意」
+> created 20261010 by Claude Opus 5.5 · as-of v0.10.28 / 2026-10-10 · **user 点头**（「合租 大炮 reverse cymbal continuous seg view 同意」）· §1 合租 = v0.10.24 做了（只做了 (a) 自己有轨那种；(b) 纯记谱用主人的轨还没做）；§2–4 还没动代码（音乐仓鼠 export v13 已交付）；user「单乐器一线谱同意」
 > 碰到 `src/format/` 的几处（下面标 ⚑）= 格式红线区，动手前给 Fable / user 过目形状。
 
 ## user 原话（2026-10-10 晚）
@@ -27,7 +27,14 @@
   - 先不着色（user「先不建议着色」）。
 - （edited by Claude Opus 5.5 2026-10-10：以上按 user 10-10 晚的回复改；原稿的「上下声部写死」「按类别色分」作废。）
 
-## 1½. 叠着的那一行 = 一位虚拟的多声部歌手（提案，等点头；edited by Claude Opus 5.5 2026-10-10）
+## 1¼. v0.10.28 改成「并成一条」（edited by Claude Opus 5.5 2026-10-10，取代下面 §1 的「各画各的」和 §1½ 的提案）
+
+- user：「i think it is wiser to just 聚合 all the notes and render them as they are a single polyphonic track」「i dont believe one need to build a lot of wheels, just concatenate the notes and use the already-have rendering procedure for that virtual track」「for shared clef i dont know why there is data contract. it is just the proper way of showing multi teanants」。起因：v0.10.24–27 各画各的 = 符干打架（user「蝌蚪的尾巴在打架」——我当时误读成渐到虚线，改了虚线对齐；那个改动保留但没解决这件事）。
+- 做法（`src/score/merge.ts mergeTracks` → engrave 当成主人那一位画）：切点 = 任何人的音开始 / 结束 + 主人的记号；每一段 = 正在响的所有音一个和弦（同音只留一个）；没有新起的音 = tie；有新起的音时还在响的长音照样画进和弦（单声部写法表达不了只连其中一个音）。主人的力度 / 小节线 / 反复 / 歌词留着；谱号 / 八度线不要。
+- 谱号自动（`startClef` + 自动八度线）；音域太宽（`clef.ts wantsGrand`：一个谱号的加线成本 vs 双手谱）= 中央 C 以上 / 以下各并一条、两行谱 + 花括号（下面那条 id = `主人~lo`，只有小节线）；一家全是鼓 = 每位换成自己那件的鼓键、并成一套鼓（五线鼓谱）。**不存任何东西**（§1½ 的 shareClef 字段作废）。
+- 只读照旧；点击区的下标指虚拟 track（`Layout.virtual`），播放高亮 / 听模式的「从这儿放」按 tick 换回主人自己的下标（score-view `realIndex`）。
+
+## 1½. 叠着的那一行 = 一位虚拟的多声部歌手（提案；**作废**，见 §1¼：不要数据字段，纯看法自动；edited by Claude Opus 5.5 2026-10-10）
 
 - user 原话：「两个铃差了两个八度合租之后会用不同的谱号吗？一个是8va一个是15va」「然后share之后能不能选双手谱号，这样爽一点，以及这时候8va怎么解决」「其实我的思路是就把他当做一个正常的virtual的polyphonic谱进行绘制，然后只读」。
 - 现状（v0.10.26）：房客借主人的谱号（主人是 G15ma = 大家都按 G15ma 摆）；主人是双手谱时房客一律画在上面那张谱上；各人自己的 8va / 15ma 不算——差两个八度的铃，低的那位挂一串加线。

@@ -41,7 +41,7 @@ describe("鼓谱：查表（音乐仓鼠 v13）", () => {
 describe("鼓谱：排版", () => {
   it("固定敲一件 = 一线谱：一条线、打击乐谱号、没有调号 / 升降号、音都在那条线上、符头按表（踩镲 = ×）、符干朝上", () => {
     const st = song([[key(61), key(66), key(70)]]);   // 写的音高各不一样（还带升号）：都画在线上
-    const L = lay(st, [{ kind: "one", info: HAT }]), row = L.systems[0], mid = row.staffTop + 2 * L.sp;
+    const L = lay(st, [{ kind: "one", info: HAT, key: 42 }]), row = L.systems[0], mid = row.staffTop + 2 * L.sp;
     eq(staffLines(L, 0), 1, "一条线");
     assert(L.prims.some((p) => p.t === "glyph" && p.ch === PERC_CLEF), "打击乐谱号");
     assert(!L.prims.some((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.startsWith("keysig")), "没有调号");
@@ -63,7 +63,7 @@ describe("鼓谱：排版", () => {
     let st = song([[key(60), key(60)], [key(60), key(60)], [key(60)]]);   // 写的音高都一样：各人的线按台上那件
     const [a, b, c] = st.song.parts.map((p) => p.id);
     st = setPartHost(st, b, a); st = setFocus(st, st.song.papers[0].id, c);   // 光标在第三位那儿 = 鼓这一家叠着
-    const L = lay(st, [{ kind: "one", info: KICK }, { kind: "one", info: HAT }, undefined]);
+    const L = lay(st, [{ kind: "one", info: KICK, key: 36 }, { kind: "one", info: HAT, key: 42 }, undefined]);
     const hi = L.systems.findIndex((r) => r.part === a), row = L.systems[hi];
     eq(staffLines(L, hi), 5, "叠起来的鼓 = 五线");
     const ys = new Set(heads(L).filter((h) => h.y > row.top && h.y < row.bottom).map((h) => Math.round(((h.y - row.staffTop) / L.sp) * 2) / 2));

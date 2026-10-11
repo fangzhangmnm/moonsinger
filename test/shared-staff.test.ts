@@ -13,6 +13,11 @@ function trio(): EditorState {
   const pp = st.song.papers[0], tracks = Object.fromEntries(Object.entries(pp.tracks).map(([id, t]) => [id, [...t.slice(0, headLen(t)), q("E", "あ"), q("G"), q("A"), q("C")]]));
   return setFocus({ ...st, song: { ...st.song, papers: [{ ...pp, tracks }] } }, pp.id, st.song.parts[0].id);
 }
+/** 某位歌手这张纸上换成这几个四分音符（[音名, 八度]）。 */
+function withNotes(st: EditorState, part: string, ps: [string, number][]): EditorState {
+  const pp = st.song.papers[0], t = pp.tracks[part];
+  return { ...st, song: { ...st.song, papers: [{ ...pp, tracks: { ...pp.tracks, [part]: [...t.slice(0, headLen(t)), ...ps.map(([step, octave]) => ({ kind: "note", id: nid++, pitch: { step, alter: 0, octave }, dur: TPQ, lyric: null } as Token))] } }] } };
+}
 const ids = (st: EditorState) => st.song.parts.map((p) => `${p.id}${p.host ? `<${p.host}` : ""}`).join(",");
 const parts = (st: EditorState) => st.song.parts.map((p, k) => ({ id: p.id, name: `V${k}`, empty: false, first: k === 0, hidden: false, badges: [], mono: false }));
 const lay = (st: EditorState) => engrave(st.song, { width: 900, sp: 10, at: st.at, caret: st.caret, sel: st.sel, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true });
@@ -44,37 +49,60 @@ describe("合租：数据", () => {
 });
 
 describe("合租：排版（看个大概）", () => {
-  it("房客不占自己的谱行；它的音画在主人那一行上；不进点击区、不画歌词；主人名字下面写房客的名字、各自能点；叠起来的那一行只读", () => {
+  it("叠起来 = 一条虚拟的多声部 track（v0.10.28）：房客没有自己的谱行；同一时刻的音 = 一个和弦、一根符干（不再各画各的打架）；名字都在、各自能点；那一行只读、点击区指虚拟 track", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
+    st = withNotes(st, c, [["G", 4], ["B", 4], ["C", 5], ["E", 4]]);   // 房客和主人（E4 G4 A4 C4）不一样的音、每个和弦都在八度以内（跨八度的会劈成两个声部，下一条测）
     st = setFocus(st, st.song.papers[0].id, "P2");   // 光标在别人那儿（一家里有谁在写 = 整家拆开）
-    const L0 = lay(trio()), L = lay(st);
+    const L = lay(st), pid = st.song.papers[0].id;
     assert(!L.systems.some((r) => r.part === c), "房客没有自己的谱行");
-    assert(L.systems.length < L0.systems.length, `谱行少了：${L0.systems.length} → ${L.systems.length}`);
-    const hostRows = new Set(L.systems.map((r, i) => (r.part === a ? i : -1)).filter((i) => i >= 0));
-    assert(L.notes.every((h) => L.systems[h.system].part !== c), "点击区里没有房客的音");
-    const heads = L.prims.filter((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.split(" ").includes("note"));
-    const heads0 = L0.prims.filter((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.split(" ").includes("note"));
-    eq(heads.length, heads0.length, "符头一个不少（房客的画到主人那行上了）");
-    assert(L.parts.some((h) => h.part === c) && hostRows.size > 0, "房客的名字能点");
+    const hi = L.systems.findIndex((r) => r.part === a), row = L.systems[hi], inRow = (y: number) => y > row.top && y < row.bottom;
+    const heads = L.prims.filter((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.split(" ").includes("note") && inRow((p as { y: number }).y));
+    eq(heads.length, 8, "四个和弦、每个两个符头");
+    const stems = L.prims.filter((p) => p.t === "line" && Math.abs(p.x1 - p.x2) < 0.01 && Math.abs(p.y2 - p.y1) > 2.5 * L.sp && !["staff", "bar", "ledger", "caret"].some((k) => (p.cls ?? "").includes(k)) && inRow((p.y1 + p.y2) / 2));
+    eq(stems.length, 4, "一个和弦一根符干");
+    const vt = L.virtual[`${pid}:${a}`]; assert(!!vt, "这一行画的是虚拟 track");
+    assert(L.notes.filter((h) => h.system === hi).every((h) => vt[h.index]?.kind === "note"), "点击区的下标指虚拟 track");
+    assert(L.parts.some((h) => h.part === c), "房客的名字能点");
     assert(L.sharedRows.length > 0 && L.sharedRows.every((i) => L.systems[i].part === a), "叠起来的那几行（主人的）标成只读");
+  });
+  it("隔得太远 = 同一张谱上两个声部：上面的符干朝上、下面的朝下（user「隔得太远的音符可以分开来的而不是强行用一根超长的棒子连。以前钢琴家也是这么写的」）", () => {
+    let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
+    st = withNotes(st, a, [["C", 6], ["D", 6], ["E", 6], ["C", 6]]); st = withNotes(st, c, [["C", 4], ["D", 4], ["E", 4], ["C", 4]]);   // 两个八度
+    st = setFocus(st, st.song.papers[0].id, "P2");
+    const L = lay(st), pid = st.song.papers[0].id, hi = L.systems.findIndex((r) => r.part === a), row = L.systems[hi];
+    eq(L.systems.filter((r) => r.part.startsWith(a)).length, 1, "一张谱（两个八度还用不着双手谱）");
+    const v2 = `${a}~v2`; assert(!!L.virtual[`${pid}:${v2}`], "劈出了声部 2");
+    const up = L.notes.filter((h) => h.system === hi && !h.part), down = L.notes.filter((h) => h.system === hi && h.part === v2);
+    eq(up.length, 4); eq(down.length, 4);
+    const stemOf = (h: { x: number; y: number }) => L.prims.find((p) => p.t === "line" && Math.abs(p.x1 - p.x2) < 0.01 && p.x1 >= h.x - 1 && p.x1 <= h.x + 2 * L.sp && Math.abs(Math.max(p.y1, p.y2) - Math.min(p.y1, p.y2)) > 2.5 * L.sp && Math.min(Math.abs(p.y1 - h.y), Math.abs(p.y2 - h.y)) < L.sp) as { y1: number; y2: number } | undefined;
+    assert(up.every((h) => { const s = stemOf(h); return !!s && Math.min(s.y1, s.y2) < h.y - 2 * L.sp; }), "上面那个声部符干朝上");
+    assert(down.every((h) => { const s = stemOf(h); return !!s && Math.max(s.y1, s.y2) > h.y + 2 * L.sp; }), "下面那个声部符干朝下");
+    assert(!L.prims.some((p) => p.t === "line" && Math.abs(p.x1 - p.x2) < 0.01 && Math.abs(p.y2 - p.y1) > 7 * L.sp && p.y1 > row.top && p.y2 < row.bottom), "没有一根跨两个八度的长符干");
+  });
+  it("音域太宽 = 自动双手谱（不存东西）", () => {
+    let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
+    st = withNotes(st, a, [["C", 6], ["D", 6], ["E", 6], ["C", 6]]); st = withNotes(st, c, [["C", 2], ["G", 2], ["E", 2], ["C", 2]]);
+    st = setFocus(st, st.song.papers[0].id, "P2");
+    const L = lay(st);
+    eq(L.systems.filter((r) => (r.part === a || r.part === `${a}~lo`) && r.sys === 0).length, 2, "主人那一位两张谱表（中央 C 以上 / 以下各并一条）");
+    assert(L.prims.some((p) => p.t === "path" && p.cls === "brace"), "左边一个花括号");
+    eq(st.song.parts.find((p) => p.id === a)!.staves, undefined, "歌里没改");
   });
   it("光标在主人上 = 整家拆开（v0.10.25，user「host也应该只读，只有展开时才能编辑」）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
     const L = lay(setFocus(st, st.song.papers[0].id, a));
     assert(L.systems.some((r) => r.part === c) && L.sharedRows.length === 0, "主人在写 = 房客也拆开、没有只读行");
   });
-  it("房客的低音也算进这一行的高度和墨的上下沿（v0.10.26：播放的灰块不再切掉它们、不压到下一行）", () => {
+  it("叠起来的那几行：每个符头都在它那一行墨的上下沿里（v0.10.26 的灰块；v0.10.28 起低音并到自己那张谱上）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
     const pp = st.song.papers[0], low: Token = { kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 2 }, dur: TPQ, lyric: null } as Token;
     st = { ...st, song: { ...st.song, papers: [{ ...pp, tracks: { ...pp.tracks, [c]: [...pp.tracks[c].slice(0, headLen(pp.tracks[c])), low] } }] } };
     st = setFocus(st, pp.id, "P2");
-    const L = lay(st), hi = L.systems.findIndex((r) => r.part === a), row = L.systems[hi];
-    // 高音谱号：E4 = 第一线（staffTop + 4sp）；C2 再低 16 级 = 8sp
-    const want = row.staffTop + 12 * L.sp, head = L.prims.find((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.split(" ").includes("note") && Math.abs((p as { y: number }).y - want) < L.sp * 0.3) as { y: number } | undefined;
-    assert(!!head, "房客的 C2 画在主人那一行的谱下面 8sp");
-    const lowest = head!.y;
-    assert(row.inkBottom! >= lowest + L.sp * 0.4, `墨的下沿（${row.inkBottom}）盖住最低的符头（${lowest}）`);
-    assert(row.bottom >= lowest + L.sp * 0.4, `行高也让开了（不压到下一行）：bottom ${row.bottom} 最低符头 ${lowest}`);
+    const L = lay(st), rows = L.systems.filter((r) => r.part === a || r.part === `${a}~lo`);
+    const heads = L.prims.filter((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.split(" ").includes("note")) as { y: number }[];
+    let n = 0;
+    for (const r of rows) for (const h of heads) if (h.y > r.top && h.y < r.bottom) { n++; assert(h.y >= r.inkTop! && h.y <= r.inkBottom! && r.bottom >= h.y + L.sp * 0.4, `符头 ${h.y} 在 [${r.inkTop}, ${r.inkBottom}] 里`); }
+    assert(n >= 4, `叠起来的行里有符头（${n}）`);
   });
   it("现在在写的是房客 = 它拆开（有自己的谱行、能点）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);

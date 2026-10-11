@@ -92,6 +92,7 @@ import "./header-layout.test.ts";
 import "./ghost-acc.test.ts";
 import "./shared-staff.test.ts";
 import "./percussion.test.ts";
+import "./merge.test.ts";
 import { run } from "./runner.mjs";
 
 await run();
