@@ -28,6 +28,7 @@
 1. **`icon.svg` 不挂 `<link rel="icon">`**：浏览器会优先拿 SVG 自己缩到 16 / 32 px，盖掉手画的像素档（大稿的细发丝、腿缝缩下去就糊成一团，矢量也一样）。标签页走 `icon-32.png`。`test/icon-wiring.test.ts` 守着。
 2. **`icon-32.png` 不从大稿缩**：它是另一幅画（user 把蝴蝶结放大了、嘴等细节自己定）。要改这一档，在 WeebPaint 里改像素稿再重跑脚本。
 3. **加档位 / 改文件名要同时改**：`index.html` 的 `<link>` 或 `manifest.webmanifest` 的 `icons`、`service-worker.js` 的 `STATIC_PRECACHE`、`.github/workflows/deploy.yml` 的拷贝白名单（漏了 = 线上静默 404）、`scripts/serve.sh`、`test/shell-smoke.mjs` / `test/file-smoke.mjs` 的文件表。前四处 `test/icon-wiring.test.ts` 守着，两个冒烟测试漏了会在 SW 装不上时红。
+4. **deploy 拼站点时 prod 的树可以缺新档位**：prod 分支是老版本（v0.11.0 时 = v0.8.17），没有后来加的文件；`compose` 对 prod 缺的跳过、对 main 缺的报错。v0.11.0 第一次推 dev 时这里没处理，整次部署失败（`cp: cannot stat 'prod-tree/icon-32.png'`），dev 没更新。
 
 ## 没做
 

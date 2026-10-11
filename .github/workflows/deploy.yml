@@ -45,7 +45,9 @@ jobs:
           mkdir -p site/dev
           compose() {   # $1 = 源树, $2 = 目标目录
             for f in index.html manifest.webmanifest service-worker.js styles.css icon.svg icon-192.png icon-512.png icon-32.png apple-touch-icon-180.png; do
-              cp -p "$1/$f" "$2/"
+              if [ -e "$1/$f" ]; then cp -p "$1/$f" "$2/"
+              elif [ "$1" = main-tree ]; then echo "main 少了 $f" >&2; return 1
+              fi   # prod 是老版本：没有后来加的档位 = 跳过（它的 index.html 也不引用）
             done
             for d in vendor dist assets; do cp -r "$1/$d" "$2/"; done
           }

@@ -17,7 +17,7 @@ describe("图标接线", () => {
     for (const ic of man.icons) { const f = rootFile(ic.src); if (f) refs.add(f); }
     assert(refs.size >= 5, `应当至少有 manifest + 四个图标，拿到 ${[...refs]}`);
     const sw = read("service-worker.js"), deploy = read(".github/workflows/deploy.yml"), serve = read("scripts/serve.sh");
-    const deployList = (deploy.match(/for f in ([^;]+); do\s+cp -p/) ?? [])[1]?.split(/\s+/) ?? [];
+    const deployList = (deploy.match(/for f in ([^;]+); do/) ?? [])[1]?.split(/\s+/) ?? [];  // 第一个 for f = 根目录文件表
     const serveList = (serve.match(/for f in ([^;]+); do/) ?? [])[1]?.split(/\s+/) ?? [];
     for (const f of refs) {
       assert(fs.existsSync(at(f)), `${f} 不存在`);
