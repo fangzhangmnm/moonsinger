@@ -460,6 +460,12 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 /* 混音台全屏（v0.10.21）：铺满整个舞台、卡片排成好几列 */
 .studio.full { grid-area: 1 / 1 / -1 / -1; position: absolute; inset: 0; z-index: 46; border-left: 0; }
 .strip-name { font-weight: 600; }
+.strip-head { display: flex; align-items: center; gap: 6px; min-width: 0; }   /* 歌手卡顶上：名字 + 静 / 独（v0.10.34） */
+.strip-head .strip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.strip-ms { margin-left: auto; display: flex; gap: 3px; flex: none; }
+.strip .strip-ms .btn { height: 22px; min-width: 24px; padding: 0 5px; font-size: 12px; border-radius: 6px; }
+.strip .strip-ms .btn.mute { background: color-mix(in srgb, var(--danger) 15%, var(--panel)); border-color: var(--danger); color: var(--danger); }
+.strip .strip-ms .btn.solo { background: color-mix(in srgb, var(--accent) 15%, var(--panel)); border-color: var(--accent); color: var(--accent); }
 .strip-who { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .strip-row { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 2px; }
 .strip-row output { color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -682,6 +688,14 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 /* pad：叠音键（Shift 逻辑同 /2）；单声乐器的声部叠不了 = 灰 */
 .pad-tools .btn.stack.off { opacity: .3; pointer-events: none; }
 @container (max-width: 520px) { .pad-tools.writes .btn.stack { display: none; } }
+/* 横屏（键盘在右边一栏，窄）：写字那一排不藏键、折成两行（v0.10.34；user「横屏的时候小键盘的叠不见了。横屏的时候能显示全部widget吗」） */
+@media (min-aspect-ratio: 1/1) {
+  .pad-tools.writes { flex-wrap: wrap; }
+  @container (max-width: 520px) {
+    .pad-tools.writes .btn.stack, .pad-tools.writes .btn.accshift { display: flex; }
+    .pad-tools.writes .btn, .pad-tools.writes .btn[data-caret] { flex: 1 1 calc(20% - 4px); }
+  }
+}
 @container (max-width: 440px) { .pad-tools.writes .btn small { font-size: 9px; white-space: nowrap; letter-spacing: -0.3px; } }   /* 窄 pad 多了呼吸键（9 颗 ≈ 32 px）：小字不折行（「小节线」原来折成两行） */
 /* pad 符号层（像 iOS 键盘的 .?123 翻过去那一页；user 2026-10-08「软键盘里面后面有一个符号模式」「row col 超了可以拖动滚」） */
 .pad-grid.symbols { overflow-y: auto; touch-action: pan-y; align-content: start; grid-auto-rows: var(--key-h); -webkit-overflow-scrolling: touch; overscroll-behavior: contain;

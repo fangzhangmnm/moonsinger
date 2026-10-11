@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.33-2026-10-10";
+var APP_VERSION = "v0.10.34-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -27328,9 +27328,10 @@ ${tg2.fx}`);
       return this.card(b3.id, ` bus${b3.bypass ? " bypassed" : ""}`, name, b3.bypass ? "\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09" : "\u6DF7\u97F3\u8F68", body2);
     }).join("");
     const strips = this.host.strips(), singers = strips.map((s10, k2) => {
-      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + `<div class="strip-btns"><button class="btn cand${s10.muted ? " is-on" : ""}" data-v="mute">\u9759\u97F3</button><button class="btn cand${s10.solo ? " is-on" : ""}" data-v="solo">\u72EC\u594F</button><button class="btn" data-v="partleft" title="\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
+      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + `<div class="strip-btns"><button class="btn" data-v="partleft" title="\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
       (s10.refs ? `<div class="strip-refs">\u5728 ${s10.refs} \u5F20\u7EB8\u4E0A</div>` : `<div class="strip-refs">\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709 <button class="btn cand danger" data-v="delpart" title="\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? this.routeHtml(s10.id) : this.chipsHtml(s10.id);
-      return this.card(s10.id, "", nameDiv(s10.name), s10.performer, body2, s10.color);
+      const ms = `<span class="strip-ms"><button class="btn${s10.muted ? " is-on mute" : ""}" data-v="mute" title="\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u6B4C\u624B\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09">\u9759</button><button class="btn${s10.solo ? " is-on solo" : ""}" data-v="solo" title="\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09">\u72EC</button></span>`;
+      return this.card(s10.id, "", `<div class="strip-head">${nameDiv(s10.name)}${ms}</div>`, s10.performer, body2, s10.color);
     }).join("");
     box.innerHTML = master + busCards + singers;
     this.watchCards();
@@ -40283,7 +40284,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "b36d20214697",
+  cssHash: "1dff65700036",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -43495,4 +43496,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d2beddc40eda.mjs.map
+//# sourceMappingURL=moonsinger-792dcba88c6a.mjs.map
