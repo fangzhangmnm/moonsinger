@@ -1324,7 +1324,12 @@ function wirePlayBtn(btn: HTMLElement): void {
   btn.addEventListener("contextmenu", (e) => { e.preventDefault(); cancel(); openTransportMenu(btn); });
 }
 wirePlayBtn($("playBtn")); wirePlayBtn($("dockPlay"));
-dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.addEventListener("click", () => { const m = b.dataset.mode as Mode; if (m === "notes" && ws.mode === "symbols") return; setMode(m); }));   // 用符号格时点「音」= 已经在「音」里，不换键盘
+dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.addEventListener("click", () => {
+  const m = b.dataset.mode as Mode;
+  // 点亮着的那个 = 把它底下的东西弹出来（音 / 符 = 键盘，听 = 混音台）；只弹不收（幂等）。v0.10.42，user「idiempotent点听，音也应该跳出相应的软键盘」
+  if (barMode(ws.mode) === m) { if (hasKeys(ws.mode) && ws.collapsed) showPad(true); return; }
+  setMode(m);
+}));   // 用符号格时点「音」= 已经在「音」里，不换键盘
 // 看哪一段 / 看哪位歌手（v0.10.2）：全部 = 都看；选一段 = 本段视图跳到它；选一位 = 「只看它」（别的缩成细行），再选「全部」= 都看
 $("paperSel").addEventListener("change", (e) => {
   const v = (e.target as HTMLSelectElement).value; (e.target as HTMLSelectElement).blur();

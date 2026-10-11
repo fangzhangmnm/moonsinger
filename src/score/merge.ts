@@ -30,7 +30,9 @@ export interface HandPlan { grand: boolean; pick: (staff: 0 | 1, voice: 1 | 2) =
 const SWITCH = 5;   // 换谱的门槛（半音，一个四度）
 /** homes（可选）：各位的家谱 = 它拆开来时的谱号（低音谱号 = 下谱、高音谱号 = 上谱；null = 它自己是大谱表 / 不知道 → 按音高中位数）。v0.10.38；user「所以合租的时候分谱号你用的是分轨的时候的谱号分配对吧，聪明！」——
  *  原来只按中位数，这一版照这个思路改成先看各位自己的谱号（和拆开来看的一致，手动设过的谱号也算数）。 */
-export function planHands(tracks: Token[][], wantsGrand: (merged: Token[]) => boolean, homes?: readonly (0 | 1 | null)[]): HandPlan {
+/** force（v0.10.42）：主人自己设成大谱表 = 这一行一定是双手谱（user「就是我希望让合租是grand staff调piano1没用需要调2，很奇怪」——原来只看各位的家谱分不分两边，
+ *  主人设大谱表不算数；房客里谁设成大谱表才会按音高掉到下谱）。各位的谱号都在同一边时 = 按音高中位数在最大的空当处分上下（上面那组 = 上谱）。 */
+export function planHands(tracks: Token[][], wantsGrand: (merged: Token[]) => boolean, homes?: readonly (0 | 1 | null)[], force = false): HandPlan {
   const host = tracks[0] ?? [], time = host.find((t) => t.kind === "time") as { beats?: number; beatType?: number } | undefined;
   const bar = ((time?.beats ?? 4) * WHOLE) / (time?.beatType ?? 4), meas = (t: number) => Math.floor(t / bar + 1e-9);
   const med = (xs: number[]) => { const a = [...xs].sort((x, y) => x - y); return a.length ? a[a.length >> 1] : NaN; };
@@ -39,7 +41,12 @@ export function planHands(tracks: Token[][], wantsGrand: (merged: Token[]) => bo
     return notes; });
   const mid = per.map((ns) => med(ns.flatMap((n) => n.m))), home = mid.map((x, i) => homes?.[i] ?? ((Number.isNaN(x) || x >= 60 ? 0 : 1) as 0 | 1));
   const present = mid.map((x, i) => (Number.isNaN(x) ? -1 : i)).filter((i) => i >= 0);
-  const grand = new Set(present.map((i) => home[i])).size > 1 && wantsGrand(mergeTracks(tracks));
+  if (force && present.length >= 2 && new Set(present.map((i) => home[i])).size < 2) {
+    const order = [...present].sort((x, y) => mid[y] - mid[x]); let cut = 1, g = -1;
+    for (let k = 0; k + 1 < order.length; k++) { const d = mid[order[k]] - mid[order[k + 1]]; if (d > g) { g = d; cut = k + 1; } }
+    order.forEach((m, k) => { home[m] = k < cut ? 0 : 1; });
+  }
+  const grand = force || (new Set(present.map((i) => home[i])).size > 1 && wantsGrand(mergeTracks(tracks)));
   const staffCache = new Map<string, 0 | 1>(), staffOf = (m: number, ms: number): 0 | 1 => {
     if (!grand) return 0;
     const key = `${m}:${ms}`, hit = staffCache.get(key); if (hit !== undefined) return hit;

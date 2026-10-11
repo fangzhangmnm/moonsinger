@@ -190,7 +190,7 @@ export class ScoreView {
       const sr = this.sheet.getBoundingClientRect(), z = this.zoom, k = Math.exp(-(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) * 0.002);
       this.setZoom(z * k, { x: e.clientX, y: e.clientY, cx: (e.clientX - sr.left) / z, cy: (e.clientY - sr.top) / z });
     }, { passive: false });
-    el.addEventListener("scroll", () => this.placePins(), { passive: true });   // 横卷：钉在左边的歌手名跟着横滚挪
+    el.addEventListener("scroll", () => { this.placePins(); this.caretSeen = this.caretVisible(); }, { passive: true });   // 横卷：钉在左边的歌手名跟着横滚挪
     el.addEventListener("pointerup", (e) => this.up(e));
     // 电脑右键 = 空白处的小菜单（手指 / 笔走长按）；音上右键不接（选区条管）。pointerdown 里 button 2 直接不接，免得先放一下光标 / 起框选
     el.addEventListener("contextmenu", (e) => {
@@ -277,7 +277,14 @@ export class ScoreView {
     //   （user 2026-10-08「toggle mute solo的时候页面滚动会变」：原来每次重画都 follow，滚开了光标那行再点静音 = 被拽回去）
     const base = this.baseKey(), fk = `${base}|${this.el.clientWidth}x${this.el.clientHeight}`;   // 窗口变了（pad 弹出把谱挤矮）照样跟
     if (this.holdView) this.heldBase = base;   // 点声部名：这个光标位置不跟，直到光标再挪
-    if (fk !== this.followKey) { this.followKey = fk; if (base !== this.heldBase) { this.heldBase = null; this.follow(); } }
+    // 只是窗口变了（键盘弹出 / 收起、转屏）= 光标那行本来就在视野里才跟（被键盘挡住时拉上来）；自己滚开去看别处了 = 不拽回光标那儿
+    //   （v0.10.42；user「toggle软键盘之后谱子还是会跳到奇怪的地方」——原来窗口一变就跟，滚开了再开合键盘 = 跳回光标那行）
+    if (fk !== this.followKey) {
+      const moved = this.followKey.slice(0, this.followKey.lastIndexOf("|")) !== base;
+      this.followKey = fk;
+      if (base !== this.heldBase && (moved || this.caretSeen)) { this.heldBase = null; this.follow(); }
+    }
+    this.caretSeen = this.caretVisible();
   }
   // ── 「弹」的鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「特别是前面有一个音的时候…如果是叠的话会在前面一个音上面加东西，但是不能动排版！！！，
   //   如果是非叠的话就是在要插入的地方加东西」「鬼音符的时候千万不能动排版！」）：盖在谱上的一层（ink 里一个不接点击的 svg），只借排版现成的位置——
@@ -510,6 +517,7 @@ export class ScoreView {
     return `${st.at.paper}|${st.at.part}|${st.caret}|${st.sel ? `${st.sel.from}-${st.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}`;
   }
   private followKey = "";
+  private caretSeen = true;               // 光标那行现在在不在视野里（滚动 / 重画时记；窗口变了要不要跟就看它）
   private holdView = false;               // 正在点声部名（这一次重画不跟光标）
   private heldBase: string | null = null; // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
   /** 光标画在上一行末尾（点在上一行行末放的）：记着是哪个光标位置（纸|声部|下标），光标一挪就失效；不进文件、不进 undo（2026-10-10 user「然后我希望光标能同时支持一行的末尾和下一行的开头两个位置取决于点在哪里」）。 */
@@ -537,13 +545,25 @@ export class ScoreView {
   }
   /** 光标那一行滚进视野（软键盘弹出 / 收起时宿主调）。 */
   followNow(): void { this.follow(); }   // 明着要（撤销把视图带过去等）= 照拉
-  /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
-  private follow(): void {
-    const L = this.layout, st = this.host.get(); if (!L) return;
+  /** 光标（选中 = 它的第一个音；开着歌词 / 记号框 = 那一行）在哪一行。 */
+  private caretSystem(): number {
+    const L = this.layout, st = this.host.get(); if (!L) return -1;
     let sys = L.head?.system ?? -1;
     if (sys < 0 && st.sel) sys = this.hits.find((n) => this.onTrack(n) && n.index >= st.sel!.from && n.index < st.sel!.to)?.system ?? -1;
     if (this.lyrics.open) sys = this.lyrics.system;
     if (this.marks.open) sys = this.marks.system;
+    return sys;
+  }
+  /** 光标那一行有没有一部分在视野里（没有光标 / 还没排好 = 算在）。 */
+  private caretVisible(): boolean {
+    const L = this.layout, box = L?.systems[this.caretSystem()]; if (!box) return true;
+    const top = this.el.scrollTop, h = this.el.clientHeight, z = this.zoom, off = this.sheet.offsetTop;
+    return off + box.bottom * z > top && off + box.top * z < top + h;
+  }
+  /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
+  private follow(): void {
+    const L = this.layout, st = this.host.get(); if (!L) return;
+    const sys = this.caretSystem();
     const box = L.systems[sys]; if (!box) return;
     const top = this.el.scrollTop, h = this.el.clientHeight, z = this.zoom, off = this.sheet.offsetTop;   // off = 纸上面留给走带胶囊的边距（styles.css .sheet margin-top）
     // 不贴着最下面：下面留出大约一行（user 2026-10-08「打字的自动对齐也不要靠着最下面，而是倒数第二排之类的，打音符也是」）——最多三成屏高

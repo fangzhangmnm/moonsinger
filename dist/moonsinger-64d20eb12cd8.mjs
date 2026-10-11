@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.41-2026-10-11";
+var APP_VERSION = "v0.10.42-2026-10-11";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7325,7 +7325,7 @@ function resolveSongClefs(song) {
 // src/score/merge.ts
 var HEAD_ARTS = ["ghost", "whisper"];
 var SWITCH = 5;
-function planHands(tracks, wantsGrand2, homes) {
+function planHands(tracks, wantsGrand2, homes, force = false) {
   const host = tracks[0] ?? [], time = host.find((t10) => t10.kind === "time");
   const bar2 = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t10) => Math.floor(t10 / bar2 + 1e-9);
   const med = (xs) => {
@@ -7345,7 +7345,21 @@ function planHands(tracks, wantsGrand2, homes) {
   });
   const mid = per.map((ns2) => med(ns2.flatMap((n10) => n10.m))), home = mid.map((x2, i10) => homes?.[i10] ?? (Number.isNaN(x2) || x2 >= 60 ? 0 : 1));
   const present = mid.map((x2, i10) => Number.isNaN(x2) ? -1 : i10).filter((i10) => i10 >= 0);
-  const grand = new Set(present.map((i10) => home[i10])).size > 1 && wantsGrand2(mergeTracks(tracks));
+  if (force && present.length >= 2 && new Set(present.map((i10) => home[i10])).size < 2) {
+    const order = [...present].sort((x2, y2) => mid[y2] - mid[x2]);
+    let cut = 1, g3 = -1;
+    for (let k2 = 0; k2 + 1 < order.length; k2++) {
+      const d3 = mid[order[k2]] - mid[order[k2 + 1]];
+      if (d3 > g3) {
+        g3 = d3;
+        cut = k2 + 1;
+      }
+    }
+    order.forEach((m2, k2) => {
+      home[m2] = k2 < cut ? 0 : 1;
+    });
+  }
+  const grand = force || new Set(present.map((i10) => home[i10])).size > 1 && wantsGrand2(mergeTracks(tracks));
   const staffCache = /* @__PURE__ */ new Map(), staffOf = (m2, ms) => {
     if (!grand) return 0;
     const key = `${m2}:${ms}`, hit = staffCache.get(key);
@@ -7985,7 +7999,7 @@ function engrave(song, o10) {
           const c10 = m2.clef ?? clefStarts.get(paper.id)?.get(m2.id);
           return c10 ? isFClef(c10) ? 1 : 0 : null;
         });
-        const plan = planHands(tracksM, wantsGrand, homes), staffOpts = (S2, top) => (v) => ({ pick: plan.pick(S2, v), marks: top && v === 1 ? "all" : "bars" });
+        const plan = planHands(tracksM, wantsGrand, homes, song.parts.find((x3) => x3.id === fid)?.staves === 2), staffOpts = (S2, top) => (v) => ({ pick: plan.pick(S2, v), marks: top && v === 1 ? "all" : "bars" });
         const both = (S2) => ({ pick: (m2, t10) => plan.pick(S2, 1)(m2, t10) || plan.pick(S2, 2)(m2, t10), marks: "bars" });
         staffOf(hp.id, staffOpts(0, true), both(0));
         if (plan.grand) {
@@ -10047,7 +10061,10 @@ var ScoreView = class {
       const sr2 = this.sheet.getBoundingClientRect(), z2 = this.zoom, k2 = Math.exp(-(e10.deltaMode === 1 ? e10.deltaY * 16 : e10.deltaY) * 2e-3);
       this.setZoom(z2 * k2, { x: e10.clientX, y: e10.clientY, cx: (e10.clientX - sr2.left) / z2, cy: (e10.clientY - sr2.top) / z2 });
     }, { passive: false });
-    el2.addEventListener("scroll", () => this.placePins(), { passive: true });
+    el2.addEventListener("scroll", () => {
+      this.placePins();
+      this.caretSeen = this.caretVisible();
+    }, { passive: true });
     el2.addEventListener("pointerup", (e10) => this.up(e10));
     el2.addEventListener("contextmenu", (e10) => {
       if (this.layout && this.openPartAt(this.local(e10).x, this.local(e10).y)) {
@@ -10237,12 +10254,14 @@ var ScoreView = class {
     const base3 = this.baseKey(), fk = `${base3}|${this.el.clientWidth}x${this.el.clientHeight}`;
     if (this.holdView) this.heldBase = base3;
     if (fk !== this.followKey) {
+      const moved = this.followKey.slice(0, this.followKey.lastIndexOf("|")) !== base3;
       this.followKey = fk;
-      if (base3 !== this.heldBase) {
+      if (base3 !== this.heldBase && (moved || this.caretSeen)) {
         this.heldBase = null;
         this.follow();
       }
     }
+    this.caretSeen = this.caretVisible();
   }
   // ── 「弹」的鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「特别是前面有一个音的时候…如果是叠的话会在前面一个音上面加东西，但是不能动排版！！！，
   //   如果是非叠的话就是在要插入的地方加东西」「鬼音符的时候千万不能动排版！」）：盖在谱上的一层（ink 里一个不接点击的 svg），只借排版现成的位置——
@@ -10607,6 +10626,8 @@ var ScoreView = class {
     return `${st3.at.paper}|${st3.at.part}|${st3.caret}|${st3.sel ? `${st3.sel.from}-${st3.sel.to}` : ""}|${this.lyrics.open ? this.lyrics.system : ""}|${this.marks.open ? this.marks.system : ""}`;
   }
   followKey = "";
+  caretSeen = true;
+  // 光标那行现在在不在视野里（滚动 / 重画时记；窗口变了要不要跟就看它）
   holdView = false;
   // 正在点声部名（这一次重画不跟光标）
   heldBase = null;
@@ -10645,14 +10666,28 @@ var ScoreView = class {
     this.follow();
   }
   // 明着要（撤销把视图带过去等）= 照拉
-  /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
-  follow() {
+  /** 光标（选中 = 它的第一个音；开着歌词 / 记号框 = 那一行）在哪一行。 */
+  caretSystem() {
     const L2 = this.layout, st3 = this.host.get();
-    if (!L2) return;
+    if (!L2) return -1;
     let sys = L2.head?.system ?? -1;
     if (sys < 0 && st3.sel) sys = this.hits.find((n10) => this.onTrack(n10) && n10.index >= st3.sel.from && n10.index < st3.sel.to)?.system ?? -1;
     if (this.lyrics.open) sys = this.lyrics.system;
     if (this.marks.open) sys = this.marks.system;
+    return sys;
+  }
+  /** 光标那一行有没有一部分在视野里（没有光标 / 还没排好 = 算在）。 */
+  caretVisible() {
+    const L2 = this.layout, box = L2?.systems[this.caretSystem()];
+    if (!box) return true;
+    const top = this.el.scrollTop, h2 = this.el.clientHeight, z2 = this.zoom, off = this.sheet.offsetTop;
+    return off + box.bottom * z2 > top && off + box.top * z2 < top + h2;
+  }
+  /** 光标（或选中）那一行保持在视野里（只滚谱面板自己，页面不滚）。 */
+  follow() {
+    const L2 = this.layout, st3 = this.host.get();
+    if (!L2) return;
+    const sys = this.caretSystem();
     const box = L2.systems[sys];
     if (!box) return;
     const top = this.el.scrollTop, h2 = this.el.clientHeight, z2 = this.zoom, off = this.sheet.offsetTop;
@@ -40019,7 +40054,10 @@ wirePlayBtn($2("playBtn"));
 wirePlayBtn($2("dockPlay"));
 dockTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.addEventListener("click", () => {
   const m2 = b3.dataset.mode;
-  if (m2 === "notes" && ws.mode === "symbols") return;
+  if (barMode(ws.mode) === m2) {
+    if (hasKeys(ws.mode) && ws.collapsed) showPad(true);
+    return;
+  }
   setMode(m2);
 }));
 $2("paperSel").addEventListener("change", (e10) => {
@@ -43629,4 +43667,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-90aa0c1db9fa.mjs.map
+//# sourceMappingURL=moonsinger-64d20eb12cd8.mjs.map

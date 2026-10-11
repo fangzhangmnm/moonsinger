@@ -68,6 +68,15 @@ describe("合租怎么分手 / 分声部（planHands，v0.10.31；user「我现�
     eq(show(mergeTracks(tracks, { pick: byClef.pick(1, 1) })).split(" ").filter((x) => !x.startsWith("r")).length, 8, "第二位八个音都在下谱");
     eq(byMid.grand, false, "只按中位数 = 两位都算上谱、不用双手谱（以前的做法）");
   });
+  it("主人设成大谱表 = 一定双手谱；各位的谱号都在上谱时按音高在最大空当处分（v0.10.42，user「就是我希望让合租是grand staff调piano1没用需要调2，很奇怪」）", () => {
+    // 团子：Piano 1（主人）A♯4、Piano 2 G3 但谱号写的高音、Piano 3 G4
+    const tracks = [[...head(), ...bar(70)], [...head(), ...bar(55)], [...head(), ...bar(67)]], homes = [null, 0, 0] as const;
+    eq(planHands(tracks, () => true, homes).grand, false, "主人没设大谱表：三位的家谱都在上谱 = 一张谱（原来的样子）");
+    const pl = planHands(tracks, () => true, homes, true);
+    eq(pl.grand, true, "主人设了大谱表 = 双手谱");
+    eq(show(mergeTracks(tracks, { pick: (m, t) => pl.pick(1, 1)(m, t) || pl.pick(1, 2)(m, t) })), "55/1 55/1 55/1 55/1", "下谱 = Piano 2（最低的那组）");
+    eq(show(mergeTracks(tracks, { pick: (m, t) => pl.pick(0, 1)(m, t) || pl.pick(0, 2)(m, t) })), "70+67/1 70+67/1 70+67/1 70+67/1", "上谱 = Piano 1 + 3");
+  });
   it("乱跑的那位按小节换谱：这一小节明显在另一边才过去", () => {
     const tracks = [[...head(), ...bar(79), ...bar(79)], [...head(), ...bar(40), ...bar(40)], [...head(), ...bar(72), ...bar(43)]];   // 第三位：第一小节高、第二小节低
     const pl = planHands(tracks, wantsGrand);
