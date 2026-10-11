@@ -597,7 +597,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       } else {
         // 分手 / 分声部按人（merge.ts planHands；user「我现在觉得合租的时候还是智能分左右手和声部的对应关系比较好」「以及你也可以选择合租的时候不用双手谱」）：
         //   每位一张家谱、按小节换、几个出格的音不乱认领；一张谱读得下 = 不用双手谱；同一张谱上两组人 = 两个声部（上面朝上、下面朝下）
-        const plan = planHands(tracksM, wantsGrand), staffOpts = (S: 0 | 1, top: boolean) => (v: 1 | 2): MergeOpts => ({ pick: plan.pick(S, v), marks: top && v === 1 ? "all" : "bars" });
+        // 各位的家谱 = 它拆开来时的谱号（低音谱号 = 下谱；自己是大谱表 = 按音高）
+        const homes = ms.map((m): 0 | 1 | null => { if (m.staves === 2) return null; const c = m.clef ?? clefStarts.get(paper.id)?.get(m.id); return c ? (isFClef(c) ? 1 : 0) : null; });
+        const plan = planHands(tracksM, wantsGrand, homes), staffOpts = (S: 0 | 1, top: boolean) => (v: 1 | 2): MergeOpts => ({ pick: plan.pick(S, v), marks: top && v === 1 ? "all" : "bars" });
         const both = (S: 0 | 1): MergeOpts => ({ pick: (m, t) => plan.pick(S, 1)(m, t) || plan.pick(S, 2)(m, t), marks: "bars" });
         staffOf(hp.id, staffOpts(0, true), both(0));
         if (plan.grand) { const lid = `${hp.id}~lo`; lowOf.set(hp.id, lid); staffOf(lid, staffOpts(1, false), both(1)); }   // 下面那张 + 左边一个花括号

@@ -15,7 +15,9 @@ await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTi
 const top = await p.$eval('.strip [data-v="mute"]', (b) => b.getBoundingClientRect().top - b.closest(".strip").getBoundingClientRect().top);
 check(top < 40, "「静」钉在歌手卡顶上（不用在卡片里滚）", String(Math.round(top)));
 const badge = () => p.evaluate(() => [...document.querySelectorAll("#score text.part-badge")].map((t) => t.textContent).join("|"));
+await p.evaluate(() => { const e = window.__moonsinger.engine; window.__ch = []; const ch = e.channel.bind(e); e.channel = (id, prm) => { window.__ch.push([id, !!prm.mute, !!prm.solo]); return ch(id, prm); }; });
 await p.click('.strip [data-v="mute"]'); await p.waitForTimeout(250);
+check(await p.evaluate(() => window.__ch.some(([, m]) => m)), "点「静」= 录音房马上收到这位静音（推子到底、发送一起停；v0.10.38）", JSON.stringify(await p.evaluate(() => window.__ch)));
 check((await badge()).includes("静音") && await p.$eval('.strip [data-v="mute"]', (b) => b.classList.contains("is-on")), "点「静」= 谱上歌手名下面出现「静音」、钮亮着", await badge());
 await p.click('.strip [data-v="mute"]'); await p.waitForTimeout(250);
 check(!(await badge()).includes("静音"), "再点 = 不静音了");

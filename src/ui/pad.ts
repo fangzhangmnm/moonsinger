@@ -142,6 +142,8 @@ export interface PadHost {
   onSoundDown(p: Pitch, id: string): void;   // 试听 / 弹：按下响（复音：每根手指一个声音）
   onSoundUp(id: string): void;
   onImpro(): void;                         // 「弹」开关（第一排「收起」左边）：只响不写
+  /** 音键 ↔ 符号格（第一排「弹」左边，两面同一个位置；v0.10.37：「符」不再是模式条上的一个模式）。 */
+  onKbSwitch?(): void;
   /** 键底部细条提示的音域 = 现在谁在弹（2026-10-08 by Claude Opus 5.5；user「试弹的时候键盘上的音域没有跟进」）：月读 / 元音版 = 她的；乐器 = 目录里它的音域；不知道 = null 不画。不接 = 月读。 */
   hintRange?(): HintRange;
 }
@@ -323,12 +325,14 @@ export class Pad {
     const tabs = this.symbols !== "off" && this.mode === "normal";   // 符号层：1= / 长短 / 音域（只管音键）换成三页的标签，位置 / 大小不变
     box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ?
       (Object.keys(SYM_PAGES) as SymPage[]).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp !== "off" ? `<small class="ramp-tag${this.ramp === "lock" ? " lock" : ""}">渐到</small>` : ""}</button>`).join("") +
+      `<button class="btn kb-switch" data-kbswitch="1" title="换回音键（写音 / 休止 / 小节线）">音</button>` +
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="弹：音键只响不写（快捷键 \`）；再点回到写">弹</button>` +
       `<button class="btn hide-pad" data-hide="1" title="收起键盘（点五线谱再弹出来）">收起</button>` +
       `<button class="btn knob k-more" data-knob="more" title="更多：布局、插记号"><span class="kl">⋯</span></button>` :
       `<button class="btn knob k-key" data-knob="key" title="1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-unit" data-knob="unit" title="长短基线：按住上下滑 / 点开选（含连音）"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-range" data-knob="range" title="音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的"><span class="kl"></span><span class="kh">⇅</span></button>` +
+      `<button class="btn kb-switch" data-kbswitch="1" title="换成符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号）——谱上音和记号本来就一起改，这里只换键盘">符</button>` +
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="弹：音键只响不写（快捷键 \`）；再点回到写">弹</button>` +
       `<button class="btn hide-pad" data-hide="1" title="收起键盘（点五线谱再弹出来）">收起</button>` +
       `<button class="btn knob k-more" data-knob="more" title="更多：布局、插记号"><span class="kl">⋯</span></button>`;
@@ -339,6 +343,7 @@ export class Pad {
     this.on(box, "[data-staff]", () => { this.host.onCommand({ k: "staff" }); });
     this.on(box, "[data-back]", () => this.back());
     this.on(box, "[data-impro]", () => this.host.onImpro());
+    this.on(box, "[data-kbswitch]", () => this.host.onKbSwitch?.());
     this.on(box, "[data-sympage]", (b) => { this.symPage = b.dataset.sympage as SymPage; this.render(); });
     this.on(box, "[data-hide]", () => this.host.onHide());   // 「⋯」左边的收起键盘（user「...左边加一个hide keyboard的方形小按钮」）
     this.on(box, "[data-autobars]", () => { this.host.onAutoBars(!this.host.autoBars()); this.toolsFor = ""; this.render(); });   // 开关：点了不收，钮上亮 / 灭

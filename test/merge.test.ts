@@ -61,6 +61,13 @@ describe("合租怎么分手 / 分声部（planHands，v0.10.31；user「我现�
     eq(show(mergeTracks(tracks, { pick: pl.pick(0, 1) })), "79/1 81/1 55/1 79/1 81/1 81/1 81/1 81/1", "上谱 = 上面那位，连它的 G3");
     eq(show(mergeTracks(tracks, { pick: pl.pick(1, 1) })), "40/1 40/1 40/1 40/1 40/1 62/1 40/1 40/1", "下谱 = 下面那位，连它的 D4");
   });
+  it("家谱 = 各位实际的谱号（v0.10.38，user「我是说用声部的实际谱号怎么样？」）：低音谱号的那位音偏高也在下谱", () => {
+    const tracks = [[...head(), ...mm([84, 86, 88, 84]), ...mm([84, 86, 88, 84])], [...head(), ...mm([43, 64, 64, 64]), ...mm([64, 64, 62, 64])]];   // 第二位中位数 64（> 中央 C）但它用的是低音谱号
+    const byClef = planHands(tracks, () => true, [0, 1]), byMid = planHands(tracks, () => true);
+    eq(byClef.grand, true, "按谱号：一上一下 = 双手谱");
+    eq(show(mergeTracks(tracks, { pick: byClef.pick(1, 1) })).split(" ").filter((x) => !x.startsWith("r")).length, 8, "第二位八个音都在下谱");
+    eq(byMid.grand, false, "只按中位数 = 两位都算上谱、不用双手谱（以前的做法）");
+  });
   it("乱跑的那位按小节换谱：这一小节明显在另一边才过去", () => {
     const tracks = [[...head(), ...bar(79), ...bar(79)], [...head(), ...bar(40), ...bar(40)], [...head(), ...bar(72), ...bar(43)]];   // 第三位：第一小节高、第二小节低
     const pl = planHands(tracks, wantsGrand);

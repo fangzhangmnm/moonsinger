@@ -2,7 +2,7 @@
 // 收位置 / 结束 / 缺块。离线导出 = 同一个 Studio 类在这边的循环里跑（同一份数学；提案 §5）。created 2026-10-09 by Claude Fable 5.1
 // 一个 app 一个实例；AudioContext 全 app 共用（src/singer/audio.ts）。装 worklet 第一次用才做（家规：重资源要等用户有意图才加载）。
 import { instantiateTsf } from "../gm/tsf-standalone.ts";
-import { Studio, BLOCK, toInt16, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
+import { Studio, BLOCK, packInt16, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
 
 export interface VowelTableMsg { sr: number; entries: VowelEntry[]; pcm: Int16Array }
 export interface LoadInfo { busy: number; chunkBytes: number; chunks: number; voices: number }
@@ -44,8 +44,8 @@ export class StudioClient {
   private vowelTable: VowelTableMsg | null = null;
   private tl: TimelineMsg | null = null;
   private chunkKeys = new Set<string>();   // 块只在录音房里一份（Int16；刀 5）；主线程只记键
-  private pendingChunks: { key: string; sr: number; samples: Int16Array }[] = [];   // worklet 还没装好时先排着
-  private chunkWait: ((items: { key: string; sr: number; samples: Int16Array }[]) => void) | null = null;
+  private pendingChunks: { key: string; sr: number; samples: Int16Array; k?: number }[] = [];   // worklet 还没装好时先排着
+  private chunkWait: ((items: { key: string; sr: number; samples: Int16Array; k?: number }[]) => void) | null = null;
   private channels = new Map<string, Partial<ChannelParams>>();
   private masterP: Partial<MasterParams> = {};
   private busesP: BusSpec[] = [];
@@ -111,7 +111,7 @@ export class StudioClient {
       if (this.busesP.length) this.post({ type: "buses", buses: this.busesP });
       if (Object.keys(this.masterP).length) this.post({ type: "master", p: this.masterP });
       if (this.tl) this.post({ type: "timeline", tl: this.tl });
-      for (const c of this.pendingChunks.splice(0)) this.post({ type: "chunk", key: c.key, sr: c.sr, samples: c.samples }, [c.samples.buffer]);
+      for (const c of this.pendingChunks.splice(0)) this.post({ type: "chunk", key: c.key, sr: c.sr, samples: c.samples, ...(c.k ? { k: c.k } : {}) }, [c.samples.buffer]);
     })().catch((e) => { this.readyP = null; throw e; });
     return this.readyP;
   }
@@ -137,14 +137,14 @@ export class StudioClient {
   setTimeline(tl: TimelineMsg): void { this.tl = tl; this.post({ type: "timeline", tl }); }
   /** 喂一块：转成 Int16 转移给录音房（只在那边留一份；离线导出再要回来）。worklet 还没装好 = 先排着、装好就发。 */
   chunk(key: string, sr: number, samples: Float32Array | Int16Array): void {
-    const i16 = samples instanceof Int16Array ? samples : toInt16(samples);
+    const p = samples instanceof Int16Array ? { s: samples, k: 1 } : packInt16(samples), i16 = p.s, k = p.k !== 1 ? { k: p.k } : {};   // 超过满幅的块整块缩进 Int16、带上倍数（不削顶）
     this.chunkKeys.add(key);
-    if (this.node) this.post({ type: "chunk", key, sr, samples: i16 }, [i16.buffer]);
-    else { this.pendingChunks.push({ key, sr, samples: i16 }); void this.ensure().catch(() => undefined); }
+    if (this.node) this.post({ type: "chunk", key, sr, samples: i16, ...k }, [i16.buffer]);
+    else { this.pendingChunks.push({ key, sr, samples: i16, ...k }); void this.ensure().catch(() => undefined); }
   }
   forget(keys: string[]): void { for (const k of keys) { this.chunkKeys.delete(k); this.pendingChunks = this.pendingChunks.filter((c) => c.key !== k); } this.post({ type: "forget", keys }); }
   /** 向录音房要几块（拷贝）：离线导出用。 */
-  private fetchChunks(keys: string[]): Promise<{ key: string; sr: number; samples: Int16Array }[]> {
+  private fetchChunks(keys: string[]): Promise<{ key: string; sr: number; samples: Int16Array; k?: number }[]> {
     if (!keys.length || !this.node) return Promise.resolve([]);
     return new Promise((ok) => { this.chunkWait = ok; this.post({ type: "getChunks", keys }); });
   }
@@ -201,7 +201,7 @@ export class StudioClient {
     s.handle({ type: "master", p: this.masterP });
     s.handle({ type: "timeline", tl: { ...tl, loop: false } });
     const keys = tl.tracks.flatMap((t) => (t.kind === "clips" ? t.clips.map((c) => c.key) : [])).filter((k) => this.chunkKeys.has(k));
-    if (keys.length) { await this.ensure(); for (const c of await this.fetchChunks([...new Set(keys)])) s.handle({ type: "chunk", key: c.key, sr: c.sr, samples: c.samples }); }
+    if (keys.length) { await this.ensure(); for (const c of await this.fetchChunks([...new Set(keys)])) s.handle({ type: "chunk", key: c.key, sr: c.sr, samples: c.samples, ...(c.k ? { k: c.k } : {}) }); }   // 倍数跟着走（离线导出）
     const lat = s.latency, total = Math.ceil((tl.range.to - tl.range.from) * sr) + lat + Math.ceil(2.5 * sr);   // + 尾巴上限
     const L = new Float32Array(total), R = new Float32Array(total), bl = new Float32Array(BLOCK), br = new Float32Array(BLOCK);
     s.handle({ type: "play", at: tl.range.from });

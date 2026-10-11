@@ -154,6 +154,7 @@ export class Studio {
   }
   private shownCard(id: string): boolean { return !this.io || this.seen.has(id); }
   constructor(parent: HTMLElement, private host: StudioHost) {
+    addEventListener("resize", () => this.fitHeight());   // 转屏 / 窗口变了：重新按整排对齐
     this.el = document.createElement("div"); this.el.className = "studio"; this.el.hidden = true;
     this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">混音台</span><button class="btn" data-v="back" title="收起混音台：底座让出来、还在「听」（Esc = 回去写）">收起</button><button class="btn" data-v="play" title="播放（空格）"><svg class="ico"><use href="#play"/></svg></button><button class="btn mix-ab" data-v="bypass"></button><button class="btn mix-full" data-v="full" title="混音台铺满（推到最上面，卡片排成好几列，一眼看全）；再点 = 回到底座">全屏</button></div>` +
       `<div class="mix-tabbar"></div><div class="fx-note mix-ab-note" hidden>效果全关着：插件和发送都不响，只剩推子、声像、出到和总轨限幅——听谱子本身 / 听差别用；再点一下回来。导出照常带效果。</div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
@@ -253,10 +254,11 @@ export class Studio {
       const next = want >= cur ? want : Math.max(want, cur - 30 * dt);
       this.shown.set(id, next); if (next > -59.5) alive = true;
       const bar = el.querySelector<HTMLElement>(".strip-meter > i");
-      if (bar) { bar.style.width = `${Math.max(0, Math.min(100, ((next + 60) / 60) * 100))}%`; bar.classList.toggle("hot", raw >= 0.98); }
+      if (bar) { bar.style.width = `${Math.max(0, Math.min(100, ((next + 60) / 60) * 100))}%`; bar.classList.toggle("hot", raw >= 0.98); bar.parentElement!.classList.toggle("hot", raw >= 0.98); }
       // 平均电平：均方按 0.3 s 时间常数平滑（RMS）
       const msWant = stale ? 0 : this.msTarget.get(id) ?? 0, msCur = this.msShown.get(id) ?? 0, ms = msCur + (msWant - msCur) * (1 - Math.exp(-dt / 0.3));
       this.msShown.set(id, ms); if (ms > 1e-6) alive = true;
+      { const rb = el.querySelector<HTMLElement>(".strip-meter > b"); if (rb) { const d = ms > 1e-9 ? 10 * Math.log10(ms) : -120; rb.style.width = `${Math.max(0, Math.min(100, ((d + 60) / 60) * 100))}%`; } }   // 电平条的实心段 = 平均（同一把 −60…0 dB 尺子）
       // 压了多少：一压就到、每秒回 20 dB
       const grWant = stale ? 0 : this.grTarget.get(id) ?? 0, grCur = this.grShown.get(id) ?? 0, gr = grWant <= grCur ? grWant : Math.min(0, grCur + 20 * dt);
       this.grShown.set(id, gr); if (gr < -0.05) alive = true;
@@ -478,7 +480,19 @@ export class Studio {
   private card(id: string, cls: string, name: string, who: string, body: string, color?: string): string {
     const spec = this.tab === "eq" ? this.specSvg(id) : this.tab === "basic" ? GONIO_SVG : this.tab === "comp" ? this.compSvg(id) : "";   // EQ 页：卡片背景 = 频谱 + 这一格 EQ 的曲线；基础页 = 每张卡都有李萨如图（单声道轨 = 声像角度的一根线）
     // 卡片一样高（= 基础页的那么高；v0.10.21，user「混音台能解决卡片太长的问题吗？不方便纵览。能不能约定一个卡片的fixed的大小，然后里面自己想办法」「我比较喜欢基础模式的卡片大小」）：名字钉在上面，下面的放不下 = 卡片里自己滚
-    return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}<div class="strip-body">${body}</div></div>`;
+    return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}>${spec}<div class="strip-meter"><i></i><b></b></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}<div class="strip-body">${body}</div></div>`;
+  }
+  /** 竖屏（混音台在底下）：高度 = 顶上两条 + 正好 N 排卡片（N = 半屏放得下的最多排，至少一排；卡片不多 = 有几排就几排），不再切在第二排中间。
+   *  v0.10.38；user「混音台的高度是怎么决定的，现在怎么不三不四的」→「按整排卡片对齐，最高半屏；iPad mini 上就是一排」「好」。横屏 / 全屏 = 不管（CSS）。 */
+  private fitHeight(): void {
+    const el = this.el; el.style.maxHeight = "";
+    if (this.full || el.hidden || !matchMedia("(max-aspect-ratio: 1/1)").matches) return;
+    const box = el.querySelector<HTMLElement>(".studio-strips"), card = box?.querySelector<HTMLElement>(".strip"); if (!box || !card) return;
+    const cs = getComputedStyle(box), gap = parseFloat(cs.rowGap) || 0, pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const head = [...el.children].filter((c) => c !== box && !(c as HTMLElement).hidden).reduce((n, c) => n + (c as HTMLElement).getBoundingClientRect().height, 0);
+    const H = card.getBoundingClientRect().height, cols = cs.gridTemplateColumns.split(" ").filter(Boolean).length || 1, rows = Math.ceil(box.querySelectorAll(".strip").length / cols);
+    const fit = Math.max(1, Math.floor((innerHeight * 0.5 - head - pad + gap) / (H + gap))), n = Math.min(rows, fit);
+    el.style.maxHeight = `${Math.ceil(head + pad + n * H + (n - 1) * gap + 2)}px`;
   }
   render(): void {
     const box = this.el.querySelector(".studio-strips")!, m = this.host.master(), tab = this.tab, off = this.host.bypass();
@@ -525,6 +539,7 @@ export class Studio {
     this.watchCards();   // 卡片重画了：重新看哪些在屏幕里
     box.classList.toggle("wide", tab === "eq" || tab === "comp");
     this.renderPanel();
+    this.fitHeight();
   }
 }
 // 参数的类型（给宿主用）

@@ -54,7 +54,7 @@ export type StudioIn =
   | { type: "unbank"; sha: string }
   | { type: "vowels"; sr: number; entries: VowelEntry[]; pcm: Int16Array }
   | { type: "timeline"; tl: TimelineMsg }
-  | { type: "chunk"; key: string; sr: number; samples: Float32Array | Int16Array }
+  | { type: "chunk"; key: string; sr: number; samples: Float32Array | Int16Array; k?: number }
   | { type: "forget"; keys: string[] }
   /** 离线导出要块（主线程不再留拷贝）：录音房把这几块拷一份发回来。 */
   | { type: "getChunks"; keys: string[] }
@@ -81,7 +81,7 @@ export type StudioOut =
   | { type: "pos"; sec: number; playing: boolean; waiting: string | null; gen: number; at?: number }
   | { type: "ended"; gen: number }
   | { type: "missing"; keys: string[] }
-  | { type: "chunks"; items: { key: string; sr: number; samples: Int16Array }[] }
+  | { type: "chunks"; items: { key: string; sr: number; samples: Int16Array; k?: number }[] }
   | { type: "meter"; peak: number; active: number; /** 每条轨 / 混音轨推子后的峰值（v0.10.10：混音台每张卡片顶上一条细线）。 */ tracks?: Record<string, number>;
       /** 这一段推子后的均方（v0.10.16：平均电平 = RMS；单声道轨 = (x·推子)²，立体声 = (L² + R²) / 2；总轨 = 出声口）。 */ ms?: Record<string, number>;
       /** 每条轨上第一台压缩这一段最多压了多少 dB（≤ 0；v0.10.16 压缩页的表）。 */ gr?: Record<string, number>;
@@ -92,7 +92,7 @@ export type StudioOut =
   | { type: "load"; busy: number; chunkBytes: number; chunks: number; voices: number };
 
 // ── 内部状态 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-interface Chunk { sr: number; samples: Int16Array }   // 块存 Int16（刀 5 精度分级：一半内存；放的时候乘回来）
+interface Chunk { sr: number; samples: Int16Array; /** 存的时候缩了几倍（合成出来超过满幅的块：整块按峰值缩进 Int16 再乘回来 = 不削顶；没有 = 1；v0.10.38）。 */ k?: number }   // 块存 Int16（刀 5 精度分级：一半内存；放的时候乘回来）
 interface VowelVoice { src: string | null; data: Float32Array; pos: number; rate: number; target: number; loopStart: number; loopEnd: number; env: number; state: "attack" | "hold" | "release" | "cut"; gl: number; gr: number; key: number; baseMidi: number }
 interface VowelTable { sr: number; entries: (VowelEntry & { data: Float32Array })[] }
 interface SfPlayer { bank: TsfBank; player: TsfBank }
@@ -119,6 +119,14 @@ const dbToLin = (dB: number) => (dB === -Infinity ? 0 : 10 ** (dB / 20));
 const now: () => number = typeof performance !== "undefined" && typeof performance.now === "function" ? () => performance.now() : () => Date.now();
 const I16 = 1 / 32768;
 /** Float32 → Int16（夹到 ±1）。 */
+/** Float32 → Int16 不削顶（v0.10.38；user「合成结果转成 16 位时超过满幅会被直接削顶…这个你也能修吧」）：整块峰值超过满幅 = 整块按峰值缩进来（k = 峰值），
+ *  放的时候乘回 k——音量不变、不削顶（toInt16 在 ±1 处硬削 = 月读合成冲过满幅那一下就成了爆音）。没超 = k 1，和 toInt16 一样。 */
+export function packInt16(x: Float32Array): { s: Int16Array; k: number } {
+  let pk = 0; for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > pk) pk = a; }
+  if (pk <= 1) return { s: toInt16(x), k: 1 };
+  const s = new Int16Array(x.length), f = 32767 / pk; for (let i = 0; i < x.length; i++) s[i] = Math.round(x[i] * f);
+  return { s, k: pk };
+}
 export function toInt16(x: Float32Array): Int16Array { const out = new Int16Array(x.length); for (let i = 0; i < x.length; i++) { const v = x[i]; out[i] = v >= 1 ? 32767 : v <= -1 ? -32768 : Math.round(v * 32767); } return out; }
 const panGains = (gainDb: number, pan: number): [number, number] => { const g = dbToLin(gainDb), p = Math.max(-1, Math.min(1, pan)); return [g * Math.cos(((p + 1) * Math.PI) / 4), g * Math.sin(((p + 1) * Math.PI) / 4)]; };
 const DEFAULT_CH: ChannelParams = { gainDb: 0, pan: 0, mute: false, solo: false };
@@ -242,8 +250,8 @@ export class Studio {
         return;
       }
       case "timeline": this.setTimeline(m.tl); return;
-      case "chunk": { this.dropChunk(m.key); const samples = m.samples instanceof Int16Array ? m.samples : toInt16(m.samples); this.chunks.set(m.key, { sr: m.sr, samples }); this.chunkBytes += samples.byteLength; this.missingSent.delete(m.key); return; }
-      case "getChunks": { const items = m.keys.flatMap((k) => { const c = this.chunks.get(k); return c ? [{ key: k, sr: c.sr, samples: c.samples.slice() }] : []; }); this.post({ type: "chunks", items }, items.map((x) => x.samples.buffer)); return; }
+      case "chunk": { this.dropChunk(m.key); const p = m.samples instanceof Int16Array ? { s: m.samples, k: m.k ?? 1 } : packInt16(m.samples), samples = p.s; this.chunks.set(m.key, { sr: m.sr, samples, ...(p.k !== 1 ? { k: p.k } : {}) }); this.chunkBytes += samples.byteLength; this.missingSent.delete(m.key); return; }
+      case "getChunks": { const items = m.keys.flatMap((k) => { const c = this.chunks.get(k); return c ? [{ key: k, sr: c.sr, samples: c.samples.slice(), ...(c.k ? { k: c.k } : {}) }] : []; }); this.post({ type: "chunks", items }, items.map((x) => x.samples.buffer)); return; }
       case "forget": for (const k of m.keys) { if (this.held(k) || this.sounding(k)) this.forgetLater.add(k); else this.dropChunk(k); } return;   // 正在响 / hold 着的块：响完再删（主线程换时间线之前就会先来清块）
       case "channel": {
         const cur = this.channels.get(m.id) ?? { ...DEFAULT_CH }, next = { ...cur, ...m.p };
@@ -616,7 +624,7 @@ export class Studio {
     const ch = this.chunks.get(c.key); if (!ch) return;
     const len = ch.samples.length, cEnd = c.t0 + len / ch.sr;
     if (c.t0 >= tEnd || cEnd <= t0) return;
-    const s = ch.samples, g = c.gain * I16;
+    const s = ch.samples, g = c.gain * I16 * (ch.k ?? 1);   // k = 存的时候缩了几倍（packInt16）
     for (let i = 0; i < cnt; i++) {
       const p = (t0 + i / sr - c.t0) * ch.sr; if (p < 0) continue;
       const k = p | 0; if (k >= len - 1) break;

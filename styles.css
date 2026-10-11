@@ -282,9 +282,10 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .credits.empty { fill: var(--muted); opacity: .7; }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
 /* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
-.pad-tools.knobs { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--knob) var(--knob) var(--knob); }   /* 1= / 长短 / 音域 分宽度；弹、收起、⋯ = 方块（2026-10-08 Opus：加「弹」时漏加一列，「⋯」被挤到第二排） */
+.pad-tools.knobs { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--knob) var(--knob) var(--knob) var(--knob); }   /* v0.10.37 又加「符 / 音」切换键 = 再加一列（同一个坑：漏加 = 「⋯」掉到第二排） */   /* 1= / 长短 / 音域 分宽度；弹、收起、⋯ = 方块（2026-10-08 Opus：加「弹」时漏加一列，「⋯」被挤到第二排） */
 .pad-tools .btn.hide-pad { height: var(--knob); font-size: 13px; color: var(--muted); padding: 0; }
 .pad-tools .btn.impro-pad { height: var(--knob); font-size: 15px; font-weight: 600; padding: 0; }
+.pad-tools .btn.kb-switch { height: var(--knob); font-size: 15px; font-weight: 600; padding: 0; color: var(--accent); }   /* 音键 ↔ 符号格（v0.10.37；两面同一个位置） */
 .pad-tools .btn.sym-tab { height: var(--knob); font-size: 14px; padding: 0 4px; }   /* 符号层的三页标签（占 1= / 长短 / 音域 的位置；亮 = 现在这页） */   /* 弹（只响不写）：收起左边 */
 .pad-panel.is-locked .pad-tools .btn.impro-pad { pointer-events: none; }   /* 找人视图里一直是弹 */
 /* 写字键：← → 方块；0 | 升降 /2 — ⌫ 分剩下的宽。pad 窄了依次让位（user「太窄的时候这几个功能怎么办…0和-是必须要的|一般一首歌至少要一次，
@@ -458,7 +459,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .strip { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); height: var(--card-h, 248px); overflow: hidden; }   /* 一样高 = 基础页那么高（v0.10.21） */
 .strip-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 6px; margin: 0 -4px; padding: 0 4px; }   /* 放不下 = 卡片里自己滚 */
 /* 混音台全屏（v0.10.21）：铺满整个舞台、卡片排成好几列 */
-.studio.full { grid-area: 1 / 1 / -1 / -1; position: absolute; inset: 0; z-index: 46; border-left: 0; }
+.studio.full { grid-area: 1 / 1 / -1 / -1; position: absolute; inset: 0; z-index: 46; border-left: 0; max-height: none !important; }   /* 全屏：竖屏的半屏上限不算（v0.10.38；user「混音台全屏有bug，下面谱子露出来了，可能高度没有适配」） */
 .strip-name { font-weight: 600; }
 .strip-head { display: flex; align-items: center; gap: 6px; min-width: 0; }   /* 歌手卡顶上：名字 + 静 / 独（v0.10.34） */
 .strip-head .strip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -518,10 +519,11 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .mix-menu { display: flex; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--bg); }
 .mix-menu[hidden] { display: none; }
 .strip { position: relative; }
-.strip-meter { position: absolute; left: 0; right: 0; top: 0; height: 3px; overflow: hidden; border-radius: 10px 10px 0 0; pointer-events: none; }
-.strip-meter > i { display: block; height: 100%; width: 0; background: var(--accent); }
-.strip-meter > i.hot { background: #d33; }
-.strip[data-color] .strip-meter { top: -3px; }   /* 有类别色顶边的卡片：细线压在色条上 */
+.strip-meter { position: absolute; left: 10px; right: 10px; top: 4px; height: 6px; overflow: hidden; border-radius: 3px; pointer-events: none; background: color-mix(in srgb, var(--ink) 7%, transparent); }   /* 电平条（v0.10.38：每一页每张卡都有、粗一点——user「任何模式的所有卡上面应该都有那个音量的调，这样我知道谁在动」）：淡底槽 */
+.strip-meter > i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: color-mix(in srgb, var(--accent) 35%, transparent); }   /* 峰值：淡的 */
+.strip-meter > b { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent); }   /* 平均（RMS）：实心 = 耳朵觉得的响 */
+.strip-meter > i.hot, .strip-meter.hot > b { background: #d33; }
+.strip { padding-top: 14px; }   /* 给电平条让出地方 */
 .studio-strips.wide { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 /* 窄屏（iPad mini 竖屏 744）：每页一排都放得下三张卡——字小一号、钮矮一点、间距抠一点（v0.10.26，user「能稍微抠一点让ipadmini竖屏显示三张混音卡吗。整体放小字号？」） */
 @media (max-width: 820px) {
@@ -873,9 +875,8 @@ span.smufl { pointer-events: none; }
 .start-mark::before { content: ""; position: absolute; left: -2px; top: -2px; width: 10px; height: 8px; background: var(--start); clip-path: polygon(0 0, 100% 50%, 0 100%); }
 body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不画光标 */
 /* 模式（2026-10-10）：顶栏的分段钮；「听」亮着用播放色 */
-/* 不是这一层的东西淡一点（看得见、点不到）：词 = 记号淡；符 = 歌词淡；音 = 都不淡 */
-.score[data-mode="lyrics"] .staff-svg :is(.dyn, .dyn-word, .dyn-implied, .dyn-dash, .hairpin, .art, .breath, .breath-label, .groove-mark, .nav-mark, .nav-text, .phrase-mark, .slur, .tempo-change, .volta) { opacity: .35; }
-.score[data-mode="symbols"] .staff-svg :is(.lyric, .melisma) { opacity: .35; }
+/* 模式不再把别的层调淡（v0.10.38，见下） */
+/* （v0.10.38 拿掉：「词」里记号变淡、「符」里歌词变淡——user「词模式下符号没必要灰色」；音 / 符现在是同一个模式，歌词也不淡） */
 /* 歌库「新建」小菜单（v0.9.41） */
 .gallery-full .gallery-new-menu { z-index: var(--z-menu); }
 .gallery-new-menu .ctx-item { display: flex; align-items: center; gap: 8px; }

@@ -9,9 +9,13 @@
 /** 音 = 写音（音 / 休止 / 小节线；pad 音键）；词 = 写歌词；符 = 一切不占时值的记号（力度 / 渐强渐弱 / 演奏法 / 调号拍号速度 / 反复 / 风格 / 句号；pad 符号格）；听 = 锁住谱只听。 */
 export type Mode = "notes" | "lyrics" | "symbols" | "listen";
 export const MODES: readonly Mode[] = ["notes", "lyrics", "symbols", "listen"];
+/** 模式条上的钮（v0.10.37）：音 / 词 / 听——「符」不再是一个模式，是「音」里的另一面键盘（小键盘顶上「符 / 音」切；user「音和符应该只是是个模式，你看一下切换放哪里，反正不应该用模式来切」）。 */
+export const MODE_BAR: readonly Mode[] = ["notes", "lyrics", "listen"];
+/** 模式条上哪个钮亮：用符号格时「音」亮。 */
+export const barMode = (m: Mode): Mode => (m === "symbols" ? "notes" : m);
 export const MODE_LABEL: Record<Mode, string> = { notes: "音", lyrics: "词", symbols: "符", listen: "听" };
 export const MODE_TITLE: Record<Mode, string> = {
-  notes: "音：键盘 = 音键（写音 / 休止 / 小节线；退格 = 删音）。谱上音和记号都能改：点音 = 光标，笔 / 鼠标拖音 = 改音高 / 时值；点记号 = 它的菜单、按住拖 = 挪",
+  notes: "音：写音和记号——谱上音和记号都能改（点音 = 光标，笔 / 鼠标拖音 = 改音高 / 时值；点记号 = 它的菜单、按住拖 = 挪）；小键盘顶上「符 / 音」切音键 / 符号格，退格删什么跟着键盘",
   lyrics: "词：点音或它下面 = 写这个音的歌词；按住字拖 = 挪 / 合；退格 = 删光标前那个音的字",
   symbols: "符：键盘 = 符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号；退格 = 删记号）。谱上和「音」一样：音和记号都能改",
   listen: "听：谱锁住防误触——轻点只认看谱的（歌手牌 / 翻纸 / 本段），不跳播；长按 / 右键谱面 = 从这儿放 / 接着放 / 从头放；空格 = 放 / 停；底下是混音台（Esc 回到写）",

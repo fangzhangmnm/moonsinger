@@ -28,14 +28,16 @@ export interface MergeOpts { keyOf?: (member: number, p: Pitch) => Pitch; pick?:
  *  pick(谱 0 上 / 1 下, 声部 1 / 2) = 给 mergeTracks 的 pick。 */
 export interface HandPlan { grand: boolean; pick: (staff: 0 | 1, voice: 1 | 2) => (member: number, t0: number) => boolean }
 const SWITCH = 5;   // 换谱的门槛（半音，一个四度）
-export function planHands(tracks: Token[][], wantsGrand: (merged: Token[]) => boolean): HandPlan {
+/** homes（可选）：各位的家谱 = 它拆开来时的谱号（低音谱号 = 下谱、高音谱号 = 上谱；null = 它自己是大谱表 / 不知道 → 按音高中位数）。v0.10.38；user「所以合租的时候分谱号你用的是分轨的时候的谱号分配对吧，聪明！」——
+ *  原来只按中位数，这一版照这个思路改成先看各位自己的谱号（和拆开来看的一致，手动设过的谱号也算数）。 */
+export function planHands(tracks: Token[][], wantsGrand: (merged: Token[]) => boolean, homes?: readonly (0 | 1 | null)[]): HandPlan {
   const host = tracks[0] ?? [], time = host.find((t) => t.kind === "time") as { beats?: number; beatType?: number } | undefined;
   const bar = ((time?.beats ?? 4) * WHOLE) / (time?.beatType ?? 4), meas = (t: number) => Math.floor(t / bar + 1e-9);
   const med = (xs: number[]) => { const a = [...xs].sort((x, y) => x - y); return a.length ? a[a.length >> 1] : NaN; };
   const per = tracks.map((toks) => { const notes: { t: number; m: number[] }[] = []; let t = 0;
     for (let i = headLen(toks); i < toks.length; i++) { const k = toks[i]; if (!isTimed(k)) continue; if (k.kind === "note" && k.pitch) notes.push({ t, m: [k.pitch, ...(k.chord ?? [])].map(midiOf) }); t += k.dur; }
     return notes; });
-  const mid = per.map((ns) => med(ns.flatMap((n) => n.m))), home = mid.map((x) => (Number.isNaN(x) || x >= 60 ? 0 : 1) as 0 | 1);
+  const mid = per.map((ns) => med(ns.flatMap((n) => n.m))), home = mid.map((x, i) => homes?.[i] ?? ((Number.isNaN(x) || x >= 60 ? 0 : 1) as 0 | 1));
   const present = mid.map((x, i) => (Number.isNaN(x) ? -1 : i)).filter((i) => i >= 0);
   const grand = new Set(present.map((i) => home[i])).size > 1 && wantsGrand(mergeTracks(tracks));
   const staffCache = new Map<string, 0 | 1>(), staffOf = (m: number, ms: number): 0 | 1 => {

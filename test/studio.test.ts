@@ -359,6 +359,16 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     const both = await lvl([{ id: "b1", gainDb: 0, pan: 0, chain: [], sends: [{ to: "b2", gainDb: 0 }] }, { id: "b2", gainDb: 0, pan: 0, chain: [] }], { to: "b1" });
     assert(Math.abs(both - 0.4 * PAN0 * 2) < 1e-3, `b1 直出 + 发一份给 b2 = 两份 ${both}`);
   });
+  it("超过满幅的块（月读合成冲过 ±1）存进 Int16 不削顶：整块缩进来、放的时候乘回去（v0.10.38，user「…这个你也能修吧」）", async () => {
+    const { s } = await studio();
+    s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(1, 1.5) });   // 一整秒 1.5（超过满幅）
+    s.handle({ type: "timeline", tl: tl([clipTrack("a", "A", 0, 1)], { from: 0, to: 1 }) });
+    s.handle({ type: "master", p: { gainDb: -12.0412, limiter: false } });   // 总轨 ×0.25：不让限幅来搅
+    s.handle({ type: "play" });
+    const pk = peak(run(s, 1).L, sec(0.3), sec(0.8));
+    const want = 1.5 * 0.25 * Math.SQRT1_2;   // 正中声像：每个声道 ×0.707（等功率）
+    assert(Math.abs(pk - want) < 0.005, `峰值 ${pk.toFixed(4)}（不削顶 ≈ ${want.toFixed(4)}；削顶了 ≈ ${(0.25 * Math.SQRT1_2).toFixed(4)}）`);
+  });
   it("混音轨静音（v0.10.35）：这条混音轨不出声、也不往下发；发给它的那位原声照旧", async () => {
     const lvl = async (mute: boolean) => { const { s } = await clipS([{ id: "A", v: 0.4 }]); s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [], ...(mute ? { mute: true } : {}) }] as never }); s.handle({ type: "channel", id: "A", p: { sends: [{ to: "b1", gainDb: 0 }] } as never }); s.handle({ type: "play" }); return peak(run(s, 1).L, sec(0.5), sec(0.9)); };
     const on = await lvl(false), off = await lvl(true);

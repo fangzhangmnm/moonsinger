@@ -602,6 +602,17 @@ var LOOKAHEAD = 30;
 var dbToLin2 = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
 var now = typeof performance !== "undefined" && typeof performance.now === "function" ? () => performance.now() : () => Date.now();
 var I16 = 1 / 32768;
+function packInt16(x) {
+  let pk = 0;
+  for (let i = 0; i < x.length; i++) {
+    const a = Math.abs(x[i]);
+    if (a > pk) pk = a;
+  }
+  if (pk <= 1) return { s: toInt16(x), k: 1 };
+  const s = new Int16Array(x.length), f = 32767 / pk;
+  for (let i = 0; i < x.length; i++) s[i] = Math.round(x[i] * f);
+  return { s, k: pk };
+}
 function toInt16(x) {
   const out = new Int16Array(x.length);
   for (let i = 0; i < x.length; i++) {
@@ -816,8 +827,8 @@ var Studio = class {
         return;
       case "chunk": {
         this.dropChunk(m.key);
-        const samples = m.samples instanceof Int16Array ? m.samples : toInt16(m.samples);
-        this.chunks.set(m.key, { sr: m.sr, samples });
+        const p = m.samples instanceof Int16Array ? { s: m.samples, k: m.k ?? 1 } : packInt16(m.samples), samples = p.s;
+        this.chunks.set(m.key, { sr: m.sr, samples, ...p.k !== 1 ? { k: p.k } : {} });
         this.chunkBytes += samples.byteLength;
         this.missingSent.delete(m.key);
         return;
@@ -825,7 +836,7 @@ var Studio = class {
       case "getChunks": {
         const items = m.keys.flatMap((k) => {
           const c = this.chunks.get(k);
-          return c ? [{ key: k, sr: c.sr, samples: c.samples.slice() }] : [];
+          return c ? [{ key: k, sr: c.sr, samples: c.samples.slice(), ...c.k ? { k: c.k } : {} }] : [];
         });
         this.post({ type: "chunks", items }, items.map((x) => x.samples.buffer));
         return;
@@ -1504,7 +1515,7 @@ var Studio = class {
     if (!ch) return;
     const len = ch.samples.length, cEnd = c.t0 + len / ch.sr;
     if (c.t0 >= tEnd || cEnd <= t0) return;
-    const s = ch.samples, g = c.gain * I16;
+    const s = ch.samples, g = c.gain * I16 * (ch.k ?? 1);
     for (let i = 0; i < cnt; i++) {
       const p = (t0 + i / sr - c.t0) * ch.sr;
       if (p < 0) continue;
@@ -1805,4 +1816,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-1b0aad95b775.mjs.map
+//# sourceMappingURL=studio-worklet-5c1a2c2736d5.mjs.map

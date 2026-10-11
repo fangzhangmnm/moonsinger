@@ -33,7 +33,7 @@ check(!(await p.$eval("#partSel", (e) => e.hidden)), "载入一首两位歌手�
 await p.evaluate(() => window.__moonsinger.addPaper());
 await p.waitForTimeout(300);
 check(!(await p.$("#studioBtn")) && !(await p.$(".bar .mode-seg")) && !(await p.$(".bar select")), "顶栏里没有录音室钮、模式钮、下拉");
-check((await p.$$(".dock-tab .mode-seg [data-mode]")).length === 4 && !(await p.$(".view-tab .mode-seg")) && !!(await p.$(".view-tab #paperSel")) && !!(await p.$(".view-tab #partSel")) && !(await p.$eval("#paperSel", (e) => e.hidden)) && !(await p.$eval("#partSel", (e) => e.hidden)), "模式四个钮在底座边上的小条里（v0.10.20）；挂签里 = 看哪一段 + 看哪位歌手");
+check((await p.$$(".dock-tab .mode-seg [data-mode]")).length === 3 && !(await p.$(".view-tab .mode-seg")) && !!(await p.$(".view-tab #paperSel")) && !!(await p.$(".view-tab #partSel")) && !(await p.$eval("#paperSel", (e) => e.hidden)) && !(await p.$eval("#partSel", (e) => e.hidden)), "模式钮（音 / 词 / 听，v0.10.37）在底座边上的小条里（v0.10.20）；挂签里 = 看哪一段 + 看哪位歌手");
 { const g = await p.evaluate(() => { const t = document.querySelector(".view-tab").getBoundingClientRect(), b = document.getElementById("bar").getBoundingClientRect(), s = document.getElementById("score").getBoundingClientRect(); return { gap: Math.round(t.top - b.bottom), overScore: t.top >= s.top && t.left < s.right && t.bottom > s.top, pos: getComputedStyle(document.querySelector(".view-tab")).position }; });
   check(g.gap === 0 && g.overScore && g.pos === "absolute", "挂签贴着顶栏底边往下挂、浮在谱上（不占谱的位置）", JSON.stringify(g)); }
 // 底座边上的小条（v0.10.20；user「音符词听那个小面版变成靠着键盘…」「尤其是模式条的位置（这个其实蛮重要的，不然鼠标上下跑）」）：横屏 = 贴着键盘左边；顶栏只剩一个 |▶
@@ -52,7 +52,7 @@ await p.selectOption("#partSel", "all"); await p.waitForTimeout(200);
 check((await shown()).includes(":P1") && (await shown()).includes(":P2"), "选「全部歌手」= 都看", await shown());
 // 每个模式自己的键盘：音 = 音键、符 = 符号格、词 = 空（系统键盘）、听 = 混音台
 const dock = () => p.evaluate(() => document.getElementById("stage").dataset.dock);
-await p.click('.mode-seg [data-mode="symbols"]'); await p.waitForTimeout(150); check((await dock()) === "symbols", "符 = 符号格");
+await p.click('.pad-head [data-kbswitch]'); await p.waitForTimeout(150); check((await dock()) === "symbols", "符 = 符号格");
 await p.click('.mode-seg [data-mode="lyrics"]'); await p.waitForTimeout(150); check((await dock()) === "none", "词 = 不占（用系统键盘）");
 await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(250); check((await dock()) === "studio" && (await p.$eval(".studio", (e) => !e.hidden)), "听 = 混音台在底下");
 await p.keyboard.press("Escape"); await p.waitForTimeout(200);

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.36-2026-10-10";
+var APP_VERSION = "v0.10.38-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7281,7 +7281,7 @@ function resolveSongClefs(song) {
 // src/score/merge.ts
 var HEAD_ARTS = ["ghost", "whisper"];
 var SWITCH = 5;
-function planHands(tracks, wantsGrand2) {
+function planHands(tracks, wantsGrand2, homes) {
   const host = tracks[0] ?? [], time = host.find((t10) => t10.kind === "time");
   const bar2 = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t10) => Math.floor(t10 / bar2 + 1e-9);
   const med = (xs) => {
@@ -7299,7 +7299,7 @@ function planHands(tracks, wantsGrand2) {
     }
     return notes;
   });
-  const mid = per.map((ns2) => med(ns2.flatMap((n10) => n10.m))), home = mid.map((x2) => Number.isNaN(x2) || x2 >= 60 ? 0 : 1);
+  const mid = per.map((ns2) => med(ns2.flatMap((n10) => n10.m))), home = mid.map((x2, i10) => homes?.[i10] ?? (Number.isNaN(x2) || x2 >= 60 ? 0 : 1));
   const present = mid.map((x2, i10) => Number.isNaN(x2) ? -1 : i10).filter((i10) => i10 >= 0);
   const grand = new Set(present.map((i10) => home[i10])).size > 1 && wantsGrand2(mergeTracks(tracks));
   const staffCache = /* @__PURE__ */ new Map(), staffOf = (m2, ms) => {
@@ -7936,7 +7936,12 @@ function engrave(song, o10) {
         virtualOut[`${paper.id}:${hp.id}`] = whole;
         startFor.set(hp.id, "G");
       } else {
-        const plan = planHands(tracksM, wantsGrand), staffOpts = (S2, top) => (v) => ({ pick: plan.pick(S2, v), marks: top && v === 1 ? "all" : "bars" });
+        const homes = ms.map((m2) => {
+          if (m2.staves === 2) return null;
+          const c10 = m2.clef ?? clefStarts.get(paper.id)?.get(m2.id);
+          return c10 ? isFClef(c10) ? 1 : 0 : null;
+        });
+        const plan = planHands(tracksM, wantsGrand, homes), staffOpts = (S2, top) => (v) => ({ pick: plan.pick(S2, v), marks: top && v === 1 ? "all" : "bars" });
         const both = (S2) => ({ pick: (m2, t10) => plan.pick(S2, 1)(m2, t10) || plan.pick(S2, 2)(m2, t10), marks: "bars" });
         staffOf(hp.id, staffOpts(0, true), both(0));
         if (plan.grand) {
@@ -9814,10 +9819,11 @@ var TitleEditor = class {
 };
 
 // src/app/workspace.ts
-var MODES = ["notes", "lyrics", "symbols", "listen"];
+var MODE_BAR = ["notes", "lyrics", "listen"];
+var barMode = (m2) => m2 === "symbols" ? "notes" : m2;
 var MODE_LABEL = { notes: "\u97F3", lyrics: "\u8BCD", symbols: "\u7B26", listen: "\u542C" };
 var MODE_TITLE = {
-  notes: "\u97F3\uFF1A\u952E\u76D8 = \u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF1B\u9000\u683C = \u5220\u97F3\uFF09\u3002\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539\uFF1A\u70B9\u97F3 = \u5149\u6807\uFF0C\u7B14 / \u9F20\u6807\u62D6\u97F3 = \u6539\u97F3\u9AD8 / \u65F6\u503C\uFF1B\u70B9\u8BB0\u53F7 = \u5B83\u7684\u83DC\u5355\u3001\u6309\u4F4F\u62D6 = \u632A",
+  notes: "\u97F3\uFF1A\u5199\u97F3\u548C\u8BB0\u53F7\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539\uFF08\u70B9\u97F3 = \u5149\u6807\uFF0C\u7B14 / \u9F20\u6807\u62D6\u97F3 = \u6539\u97F3\u9AD8 / \u65F6\u503C\uFF1B\u70B9\u8BB0\u53F7 = \u5B83\u7684\u83DC\u5355\u3001\u6309\u4F4F\u62D6 = \u632A\uFF09\uFF1B\u5C0F\u952E\u76D8\u9876\u4E0A\u300C\u7B26 / \u97F3\u300D\u5207\u97F3\u952E / \u7B26\u53F7\u683C\uFF0C\u9000\u683C\u5220\u4EC0\u4E48\u8DDF\u7740\u952E\u76D8",
   lyrics: "\u8BCD\uFF1A\u70B9\u97F3\u6216\u5B83\u4E0B\u9762 = \u5199\u8FD9\u4E2A\u97F3\u7684\u6B4C\u8BCD\uFF1B\u6309\u4F4F\u5B57\u62D6 = \u632A / \u5408\uFF1B\u9000\u683C = \u5220\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u7684\u5B57",
   symbols: "\u7B26\uFF1A\u952E\u76D8 = \u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7\uFF09\u3002\u8C31\u4E0A\u548C\u300C\u97F3\u300D\u4E00\u6837\uFF1A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539",
   listen: "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u6B4C\u624B\u724C / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\uFF08Esc \u56DE\u5230\u5199\uFF09"
@@ -11916,7 +11922,7 @@ var Pad = class {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     const tabs = this.symbols !== "off" && this.mode === "normal";
-    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp !== "off" ? `<small class="ramp-tag${this.ramp === "lock" ? " lock" : ""}">\u6E10\u5230</small>` : ""}</button>`).join("") + `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp !== "off" ? `<small class="ramp-tag${this.ramp === "lock" ? " lock" : ""}">\u6E10\u5230</small>` : ""}</button>`).join("") + `<button class="btn kb-switch" data-kbswitch="1" title="\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09">\u97F3</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn kb-switch" data-kbswitch="1" title="\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8">\u7B26</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b3) => {
       b3.addEventListener("pointerdown", (e10) => {
         e10.preventDefault();
@@ -11937,6 +11943,7 @@ var Pad = class {
     });
     this.on(box, "[data-back]", () => this.back());
     this.on(box, "[data-impro]", () => this.host.onImpro());
+    this.on(box, "[data-kbswitch]", () => this.host.onKbSwitch?.());
     this.on(box, "[data-sympage]", (b3) => {
       this.symPage = b3.dataset.sympage;
       this.render();
@@ -24009,6 +24016,17 @@ var LOOKAHEAD = 30;
 var dbToLin2 = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
 var now = typeof performance !== "undefined" && typeof performance.now === "function" ? () => performance.now() : () => Date.now();
 var I16 = 1 / 32768;
+function packInt16(x2) {
+  let pk = 0;
+  for (let i10 = 0; i10 < x2.length; i10++) {
+    const a10 = Math.abs(x2[i10]);
+    if (a10 > pk) pk = a10;
+  }
+  if (pk <= 1) return { s: toInt16(x2), k: 1 };
+  const s10 = new Int16Array(x2.length), f2 = 32767 / pk;
+  for (let i10 = 0; i10 < x2.length; i10++) s10[i10] = Math.round(x2[i10] * f2);
+  return { s: s10, k: pk };
+}
 function toInt16(x2) {
   const out = new Int16Array(x2.length);
   for (let i10 = 0; i10 < x2.length; i10++) {
@@ -24223,8 +24241,8 @@ var Studio = class {
         return;
       case "chunk": {
         this.dropChunk(m2.key);
-        const samples = m2.samples instanceof Int16Array ? m2.samples : toInt16(m2.samples);
-        this.chunks.set(m2.key, { sr: m2.sr, samples });
+        const p2 = m2.samples instanceof Int16Array ? { s: m2.samples, k: m2.k ?? 1 } : packInt16(m2.samples), samples = p2.s;
+        this.chunks.set(m2.key, { sr: m2.sr, samples, ...p2.k !== 1 ? { k: p2.k } : {} });
         this.chunkBytes += samples.byteLength;
         this.missingSent.delete(m2.key);
         return;
@@ -24232,7 +24250,7 @@ var Studio = class {
       case "getChunks": {
         const items = m2.keys.flatMap((k2) => {
           const c10 = this.chunks.get(k2);
-          return c10 ? [{ key: k2, sr: c10.sr, samples: c10.samples.slice() }] : [];
+          return c10 ? [{ key: k2, sr: c10.sr, samples: c10.samples.slice(), ...c10.k ? { k: c10.k } : {} }] : [];
         });
         this.post({ type: "chunks", items }, items.map((x2) => x2.samples.buffer));
         return;
@@ -24911,7 +24929,7 @@ var Studio = class {
     if (!ch2) return;
     const len = ch2.samples.length, cEnd = c10.t0 + len / ch2.sr;
     if (c10.t0 >= tEnd || cEnd <= t02) return;
-    const s10 = ch2.samples, g3 = c10.gain * I16;
+    const s10 = ch2.samples, g3 = c10.gain * I16 * (ch2.k ?? 1);
     for (let i10 = 0; i10 < cnt; i10++) {
       const p2 = (t02 + i10 / sr2 - c10.t0) * ch2.sr;
       if (p2 < 0) continue;
@@ -25335,7 +25353,7 @@ var StudioClient = class {
       if (this.busesP.length) this.post({ type: "buses", buses: this.busesP });
       if (Object.keys(this.masterP).length) this.post({ type: "master", p: this.masterP });
       if (this.tl) this.post({ type: "timeline", tl: this.tl });
-      for (const c10 of this.pendingChunks.splice(0)) this.post({ type: "chunk", key: c10.key, sr: c10.sr, samples: c10.samples }, [c10.samples.buffer]);
+      for (const c10 of this.pendingChunks.splice(0)) this.post({ type: "chunk", key: c10.key, sr: c10.sr, samples: c10.samples, ...c10.k ? { k: c10.k } : {} }, [c10.samples.buffer]);
     })().catch((e10) => {
       this.readyP = null;
       throw e10;
@@ -25384,11 +25402,11 @@ var StudioClient = class {
   }
   /** 喂一块：转成 Int16 转移给录音房（只在那边留一份；离线导出再要回来）。worklet 还没装好 = 先排着、装好就发。 */
   chunk(key, sr2, samples) {
-    const i162 = samples instanceof Int16Array ? samples : toInt16(samples);
+    const p2 = samples instanceof Int16Array ? { s: samples, k: 1 } : packInt16(samples), i162 = p2.s, k2 = p2.k !== 1 ? { k: p2.k } : {};
     this.chunkKeys.add(key);
-    if (this.node) this.post({ type: "chunk", key, sr: sr2, samples: i162 }, [i162.buffer]);
+    if (this.node) this.post({ type: "chunk", key, sr: sr2, samples: i162, ...k2 }, [i162.buffer]);
     else {
-      this.pendingChunks.push({ key, sr: sr2, samples: i162 });
+      this.pendingChunks.push({ key, sr: sr2, samples: i162, ...k2 });
       void this.ensure().catch(() => void 0);
     }
   }
@@ -25523,7 +25541,7 @@ var StudioClient = class {
     const keys = tl2.tracks.flatMap((t10) => t10.kind === "clips" ? t10.clips.map((c10) => c10.key) : []).filter((k3) => this.chunkKeys.has(k3));
     if (keys.length) {
       await this.ensure();
-      for (const c10 of await this.fetchChunks([...new Set(keys)])) s10.handle({ type: "chunk", key: c10.key, sr: c10.sr, samples: c10.samples });
+      for (const c10 of await this.fetchChunks([...new Set(keys)])) s10.handle({ type: "chunk", key: c10.key, sr: c10.sr, samples: c10.samples, ...c10.k ? { k: c10.k } : {} });
     }
     const lat = s10.latency, total = Math.ceil((tl2.range.to - tl2.range.from) * sr2) + lat + Math.ceil(2.5 * sr2);
     const L2 = new Float32Array(total), R2 = new Float32Array(total), bl = new Float32Array(BLOCK), br = new Float32Array(BLOCK);
@@ -26715,6 +26733,7 @@ var GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRati
 var Studio2 = class {
   constructor(parent, host) {
     this.host = host;
+    addEventListener("resize", () => this.fitHeight());
     this.el = document.createElement("div");
     this.el.className = "studio";
     this.el.hidden = true;
@@ -26937,10 +26956,18 @@ var Studio2 = class {
       if (bar2) {
         bar2.style.width = `${Math.max(0, Math.min(100, (next2 + 60) / 60 * 100))}%`;
         bar2.classList.toggle("hot", raw >= 0.98);
+        bar2.parentElement.classList.toggle("hot", raw >= 0.98);
       }
       const msWant = stale ? 0 : this.msTarget.get(id2) ?? 0, msCur = this.msShown.get(id2) ?? 0, ms = msCur + (msWant - msCur) * (1 - Math.exp(-dt / 0.3));
       this.msShown.set(id2, ms);
       if (ms > 1e-6) alive = true;
+      {
+        const rb2 = el2.querySelector(".strip-meter > b");
+        if (rb2) {
+          const d3 = ms > 1e-9 ? 10 * Math.log10(ms) : -120;
+          rb2.style.width = `${Math.max(0, Math.min(100, (d3 + 60) / 60 * 100))}%`;
+        }
+      }
       const grWant = stale ? 0 : this.grTarget.get(id2) ?? 0, grCur = this.grShown.get(id2) ?? 0, gr = grWant <= grCur ? grWant : Math.min(0, grCur + 20 * dt);
       this.grShown.set(id2, gr);
       if (gr < -0.05) alive = true;
@@ -27318,7 +27345,21 @@ ${tg2.fx}`);
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   card(id2, cls, name, who, body2, color) {
     const spec = this.tab === "eq" ? this.specSvg(id2) : this.tab === "basic" ? GONIO_SVG : this.tab === "comp" ? this.compSvg(id2) : "";
-    return `<div class="strip${cls}" data-id="${esc5(id2)}"${color ? ` data-color style="--cat:${esc5(color)}"` : ""}>${spec}<div class="strip-meter"><i></i></div>${name}${who ? `<div class="strip-who">${esc5(who)}</div>` : ""}<div class="strip-body">${body2}</div></div>`;
+    return `<div class="strip${cls}" data-id="${esc5(id2)}"${color ? ` data-color style="--cat:${esc5(color)}"` : ""}>${spec}<div class="strip-meter"><i></i><b></b></div>${name}${who ? `<div class="strip-who">${esc5(who)}</div>` : ""}<div class="strip-body">${body2}</div></div>`;
+  }
+  /** 竖屏（混音台在底下）：高度 = 顶上两条 + 正好 N 排卡片（N = 半屏放得下的最多排，至少一排；卡片不多 = 有几排就几排），不再切在第二排中间。
+   *  v0.10.38；user「混音台的高度是怎么决定的，现在怎么不三不四的」→「按整排卡片对齐，最高半屏；iPad mini 上就是一排」「好」。横屏 / 全屏 = 不管（CSS）。 */
+  fitHeight() {
+    const el2 = this.el;
+    el2.style.maxHeight = "";
+    if (this.full || el2.hidden || !matchMedia("(max-aspect-ratio: 1/1)").matches) return;
+    const box = el2.querySelector(".studio-strips"), card = box?.querySelector(".strip");
+    if (!box || !card) return;
+    const cs2 = getComputedStyle(box), gap = parseFloat(cs2.rowGap) || 0, pad4 = (parseFloat(cs2.paddingTop) || 0) + (parseFloat(cs2.paddingBottom) || 0);
+    const head = [...el2.children].filter((c10) => c10 !== box && !c10.hidden).reduce((n11, c10) => n11 + c10.getBoundingClientRect().height, 0);
+    const H2 = card.getBoundingClientRect().height, cols = cs2.gridTemplateColumns.split(" ").filter(Boolean).length || 1, rows = Math.ceil(box.querySelectorAll(".strip").length / cols);
+    const fit = Math.max(1, Math.floor((innerHeight * 0.5 - head - pad4 + gap) / (H2 + gap))), n10 = Math.min(rows, fit);
+    el2.style.maxHeight = `${Math.ceil(head + pad4 + n10 * H2 + (n10 - 1) * gap + 2)}px`;
   }
   render() {
     const box = this.el.querySelector(".studio-strips"), m2 = this.host.master(), tab = this.tab, off = this.host.bypass();
@@ -27353,6 +27394,7 @@ ${tg2.fx}`);
     this.watchCards();
     box.classList.toggle("wide", tab === "eq" || tab === "comp");
     this.renderPanel();
+    this.fitHeight();
   }
 };
 
@@ -38283,7 +38325,7 @@ padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8
 var dockTab = document.createElement("div");
 dockTab.className = "dock-tab";
 dockTab.setAttribute("role", "toolbar");
-dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODES.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${attr(MODE_TITLE[m2])}">${MODE_LABEL[m2]}</button>`).join("")}</span><span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
+dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42">${MODE_BAR.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${attr(MODE_TITLE[m2])}">${MODE_LABEL[m2]}</button>`).join("")}</span><span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="undoBtn" class="btn" title="\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
 dockTab.append(padTab);
 stageEl.append(dockTab);
 padTab.addEventListener("click", () => showPad(ws.mode === "listen" ? !studio.isOpen : padEl.hidden));
@@ -38441,7 +38483,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-1b0aad95b775.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-5c1a2c2736d5.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -38853,6 +38895,8 @@ var pad3 = new Pad(padEl, {
   isImpro: () => impro || finderShown || instShown,
   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
   onImpro: () => toggleImpro(),
+  onKbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),
+  // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
   accept: (id2) => canStack() ? (monoHeld.add(id2), true) : monoAccept(id2),
   // 能叠音的声部：同时多按都收（80 ms 内 = 叠在一起）；单声乐器照旧只写第一个
   // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
@@ -39197,7 +39241,7 @@ function pushChannels(raw = mixBypass) {
   const bpm = songBpm(), ctx2 = (lowestMidi) => ({ lowestMidi, bpm }), fx = (x2) => raw ? [] : x2;
   for (const p2 of st2.song.parts) {
     const t10 = studioTrack(doc.extras, p2.mic);
-    engine.channel(p2.id, { ...channelOf(p2), mute: false, solo: false, chain: fx(resolveChain(t10?.chain ?? [], ctx2(lowestMidiOf(p2.id)))), sends: fx(t10?.sends ?? []), to: t10?.to ?? "master" });
+    engine.channel(p2.id, { ...channelOf(p2), mute: pv(p2.id).muted, solo: pv(p2.id).solo, chain: fx(resolveChain(t10?.chain ?? [], ctx2(lowestMidiOf(p2.id)))), sends: fx(t10?.sends ?? []), to: t10?.to ?? "master" });
   }
   engine.buses(studioTracks(doc.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: b3.bypass ? [] : fx(resolveChain(b3.chain, ctx2(null))), to: b3.to, sends: fx(b3.sends), ...busMuted.has(b3.id) ? { mute: true } : {} })));
   const m2 = activeMaster(doc.extras);
@@ -39683,7 +39727,7 @@ function applyWorkspace() {
   document.body.dataset.wmode = ws.mode;
   document.body.classList.toggle("listen-mode", ws.mode === "listen");
   scoreEl.dataset.mode = ws.mode;
-  dockTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.mode === ws.mode));
+  dockTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.mode === barMode(ws.mode)));
   const changed2 = padEl.hidden === padOn || stageEl.dataset.dock !== d3;
   stageEl.dataset.dock = d3;
   padEl.hidden = !padOn;
@@ -39916,7 +39960,11 @@ function wirePlayBtn(btn) {
 }
 wirePlayBtn($2("playBtn"));
 wirePlayBtn($2("dockPlay"));
-dockTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.addEventListener("click", () => setMode(b3.dataset.mode)));
+dockTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.addEventListener("click", () => {
+  const m2 = b3.dataset.mode;
+  if (m2 === "notes" && ws.mode === "symbols") return;
+  setMode(m2);
+}));
 $2("paperSel").addEventListener("change", (e10) => {
   const v = e10.target.value;
   e10.target.blur();
@@ -40301,7 +40349,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "1dff65700036",
+  cssHash: "e7f004f29e0c",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -40611,11 +40659,12 @@ var studio = new Studio2($2("stage"), {
   },
   toggleMute: (id2) => {
     setPv(id2, { muted: !pv(id2).muted });
-    view.render();
+    afterViewChange();
   },
+  // 放着的时候马上静（录音房推子到底、发送一起停）+ 时间线重算（v0.10.38；user「我mute了之后它的reverb为什么还是进了reverb轨？」）
   toggleSolo: (id2) => {
     setPv(id2, { solo: !pv(id2).solo });
-    view.render();
+    afterViewChange();
   },
   play: () => playPause(),
   close: () => closeStudio(),
@@ -40972,6 +41021,7 @@ function partViews() {
   });
 }
 function afterViewChange() {
+  pushChannels();
   schedulePlaybackRefresh();
   if (!isShown(st2.at.part)) {
     const paper = st2.song.papers.find((pp) => pp.id === st2.at.paper), to2 = st2.song.parts.find((p2) => isShown(p2.id) && paper?.tracks[p2.id]);
@@ -41210,10 +41260,10 @@ function openTrackCard(at2) {
       afterViewChange();
     } else if (v === "mute") {
       setPv(me.id, { muted: !pv(me.id).muted });
-      view.render();
+      afterViewChange();
     } else if (v === "solo") {
       setPv(me.id, { solo: !pv(me.id).solo });
-      view.render();
+      afterViewChange();
     } else if (v.startsWith("clef:")) update(setPartClef(st2, me.id, v.slice(5) === "auto" ? null : v.slice(5)));
     else if (v === "moveup" || v === "movedown") {
       update(movePart(st2, me.id, v === "moveup" ? -1 : 1));
@@ -43519,4 +43569,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-516acd8eb317.mjs.map
+//# sourceMappingURL=moonsinger-b17ed1429878.mjs.map

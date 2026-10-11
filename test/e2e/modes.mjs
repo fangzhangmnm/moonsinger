@@ -10,11 +10,18 @@ const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } }))
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 const W = () => p.evaluate(() => window.__moonsinger.workspace());
 const notes = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "note").map((t) => t.lyric ?? "·").join(" "); });
-const mode = async (m) => { await p.click(`.mode-seg [data-mode="${m}"]`); await p.waitForTimeout(150); };
+// v0.10.37：模式条上只有 音 / 词 / 听；「符」= 「音」里小键盘顶上的「符 / 音」切过去的那面键盘（user「音和符应该只是是个模式…反正不应该用模式来切」）
+const mode = async (m) => {
+  if (m === "symbols") { if ((await p.evaluate(() => window.__moonsinger.workspace().mode)) !== "notes") { await p.click('.mode-seg [data-mode="notes"]'); await p.waitForTimeout(150); } await p.click(".pad-head [data-kbswitch]"); }
+  else await p.click(`.mode-seg [data-mode="${m}"]`);
+  await p.waitForTimeout(150);
+};
 // 0. 默认
 let w = await W();
 check(w.mode === "notes" && w.dock === "keys" && !(await p.$eval(".pad-panel", (e) => e.hidden)), "默认 = 「音」、底座是音键", JSON.stringify(w));
-check(!(await p.$(".pad-tools [data-symbols]")), "pad 上没有「符」键了（模式键摘到顶栏）");
+check((await p.$$eval(".mode-seg [data-mode]", (bs) => bs.map((b) => b.dataset.mode).join(","))) === "notes,lyrics,listen", "模式条 = 音 / 词 / 听（「符」不是模式了）");
+check(!(await p.$(".pad-tools [data-symbols]")) && (await p.$eval(".pad-head [data-kbswitch]", (e) => e.textContent)) === "符", "pad 顶上有「符」切换键（只换键盘，v0.10.37）");
+check(await p.$eval(".pad-head", (h) => new Set([...h.children].map((c) => Math.round(c.getBoundingClientRect().top))).size === 1), "pad 顶上一排没折行（加了钮要加列：「⋯」掉到第二排过两次）");
 for (let i = 0; i < 4; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(30); }
 check((await notes()) === "· · · ·", "写了四个音");
 // 1. 「音」里点歌词行 = 不开歌词框
@@ -25,7 +32,8 @@ check(await p.$eval(".lyric-input", (e) => e.hidden), "「音」里点歌词行 
 await mode("lyrics");
 w = await W();
 check(w.mode === "lyrics" && w.dock === "none" && (await p.$eval(".pad-panel", (e) => e.hidden)) && (await p.$eval("#padTab", (e) => e.hidden)), "「词」= 底座空（系统键盘打字），也不露「键盘」tab", JSON.stringify(w));
-check((await p.$eval("#score", (e) => e.dataset.mode)) === "lyrics", "谱面标着「词」（记号淡下去）");
+check((await p.$eval("#score", (e) => e.dataset.mode)) === "lyrics", "谱面标着「词」");
+check(await p.evaluate(() => { const d = document.querySelector("#score .staff-svg .dyn, #score .staff-svg .art, #score .staff-svg .breath"); return !d || getComputedStyle(d).opacity === "1"; }), "「词」里记号不变灰（v0.10.38，user「词模式下符号没必要灰色」）");
 const head = await p.locator(".staff-svg .note").nth(1).boundingBox();
 await p.mouse.click(head.x + head.width / 2, head.y + head.height / 2); await p.waitForTimeout(200);
 check(!(await p.$eval(".lyric-input", (e) => e.hidden)), "「词」里点音 = 开它的歌词框");
@@ -59,7 +67,8 @@ w = await W();
 check(w.dock === "studio" && !(await p.$eval(".studio", (e) => e.hidden)) && (await p.$eval(".pad-panel", (e) => e.hidden)) && !(await p.$eval("#score", (e) => e.hidden)), "录音室 = 在底座里（键盘让位，谱还在）", JSON.stringify(w));
 await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 w = await W();
-check(w.dock === "keys" && (await p.$eval(".studio", (e) => e.hidden)), "Esc = 收起录音室、键盘回来", JSON.stringify(w));
+check((w.dock === "keys" || w.dock === "symbols") && (await p.$eval(".studio", (e) => e.hidden)), "Esc = 收起录音室、键盘回来（上次用的那面：音键 / 符号格）", JSON.stringify(w));
+if (w.dock === "symbols") { await p.click(".pad-head [data-kbswitch]"); await p.waitForTimeout(150); }   // 下面接着用音键
 // 4½. 右键歌手名 = 歌手牌（同左键；user「右键歌手名应该也是弹歌手选项，和左键一样」）
 await p.click("#score text.part-name", { button: "right" }); await p.waitForTimeout(200);
 check(!!(await p.$(".track-card:not(.ctx-menu)")), "右键歌手名 = 开歌手牌");

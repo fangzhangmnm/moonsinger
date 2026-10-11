@@ -24,7 +24,7 @@ import { Pad, HER_RANGE, type HintRange } from "../ui/pad.ts";
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
-import { RULES, MODES, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, type Mode, type WorkspaceState } from "./workspace.ts";
+import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
@@ -220,7 +220,7 @@ padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>键盘</span
 //   按键盘的时候东西就在手边，鼠标不用上下跑（user「音符词听那个小面版变成靠着键盘 / 加一个按一下弹出键盘的钮…所以竖屏的时候就是左下角，拉着键盘的左上角 / 横屏的时候变成竖排可以吗 /
 //   这样按键盘的时候东西就在手边 / 然后走带控制也放这个面版上面 / 就是 play/pause undo redo 音符词听」「尤其是模式条的位置（这个其实蛮重要的，不然鼠标上下跑）」）。位置全在 CSS（grid 区域定位）。
 const dockTab = document.createElement("div"); dockTab.className = "dock-tab"; dockTab.setAttribute("role", "toolbar");
-dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="模式：这一下点的是哪一层">${MODES.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
+dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="模式：这一下点的是哪一层">${MODE_BAR.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
   `<span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
   `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
 dockTab.append(padTab);
@@ -604,6 +604,7 @@ const pad = new Pad(padEl, {
   state: () => st,
   isImpro: () => impro || finderShown || instShown,   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
   onImpro: () => toggleImpro(),
+  onKbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
   accept: (id) => (canStack() ? (monoHeld.add(id), true) : monoAccept(id)),   // 能叠音的声部：同时多按都收（80 ms 内 = 叠在一起）；单声乐器照旧只写第一个
   // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
   onPitch: (p, id) => {
@@ -820,7 +821,7 @@ let mixBypass = false;
 function pushChannels(raw = mixBypass): void {
   // 插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）在这里换成录音房认的数（src/ui/plugins.ts resolveChain；v0.10.8）
   const bpm = songBpm(), ctx = (lowestMidi: number | null) => ({ lowestMidi, bpm }), fx = <T,>(x: T[]): T[] => (raw ? [] : x);
-  for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: false, solo: false, chain: fx(resolveChain(t?.chain ?? [], ctx(lowestMidiOf(p.id)))), sends: fx(t?.sends ?? []), to: t?.to ?? "master" }); }
+  for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: pv(p.id).muted, solo: pv(p.id).solo, chain: fx(resolveChain(t?.chain ?? [], ctx(lowestMidiOf(p.id)))), sends: fx(t?.sends ?? []), to: t?.to ?? "master" }); }
   engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: b.bypass ? [] : fx(resolveChain(b.chain, ctx(null))), to: b.to, sends: fx(b.sends), ...(busMuted.has(b.id) ? { mute: true } : {}) })));   // 混音轨旁通 = 插件全跳过，推子 / 发送照旧   // 总线也能出到 / 发给别的总线（v0.10.9）
   const m = activeMaster(doc.extras); engine.master({ ...m, chain: fx(resolveChain(m.chain, ctx(null))) });
 }
@@ -1157,7 +1158,7 @@ function applyWorkspace(): void {
   const d = dockOf(ws), padOn = d === "keys" || d === "symbols", wasEdit = view.rules.edit;
   view.rules = RULES[ws.mode];
   document.body.dataset.wmode = ws.mode; document.body.classList.toggle("listen-mode", ws.mode === "listen"); scoreEl.dataset.mode = ws.mode;   // 不用 body[data-mode]：歌库自己用它（gallery）
-  dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.classList.toggle("is-on", b.dataset.mode === ws.mode));
+  dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.classList.toggle("is-on", b.dataset.mode === barMode(ws.mode)));   // 用符号格时「音」亮
   const changed = padEl.hidden === padOn || stageEl.dataset.dock !== d;
   stageEl.dataset.dock = d;
   padEl.hidden = !padOn; pad.setSymbols(d === "symbols"); if (!padOn) pad.clearHeld();
@@ -1314,7 +1315,7 @@ function wirePlayBtn(btn: HTMLElement): void {
   btn.addEventListener("contextmenu", (e) => { e.preventDefault(); cancel(); openTransportMenu(btn); });
 }
 wirePlayBtn($("playBtn")); wirePlayBtn($("dockPlay"));
-dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode as Mode)));
+dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.addEventListener("click", () => { const m = b.dataset.mode as Mode; if (m === "notes" && ws.mode === "symbols") return; setMode(m); }));   // 用符号格时点「音」= 已经在「音」里，不换键盘
 // 看哪一段 / 看哪位歌手（v0.10.2）：全部 = 都看；选一段 = 本段视图跳到它；选一位 = 「只看它」（别的缩成细行），再选「全部」= 都看
 $("paperSel").addEventListener("change", (e) => {
   const v = (e.target as HTMLSelectElement).value; (e.target as HTMLSelectElement).blur();
@@ -1776,8 +1777,8 @@ const studio = new Studio($("stage"), {
   strips: () => { const labels = partLabels(st.song, doc.extras), cols = partColorIndices(st.song.parts.map((p) => roleSound(doc.extras, p.role))); return st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], color: TAB20[cols[k]], refs: st.song.papers.filter((pp) => pp.tracks[p.id]).length, performer: activeCandidateName(doc.extras, p.role) ?? "（没人上场）", ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
   setGain: (id, dB) => { const p = st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(doc.extras, p.mic, { gainDb: dB }), { kind: "studio", label: `${partLabel(id)} 增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id}`); },
   setPan: (id, pan) => { const p = st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(doc.extras, p.mic, { pan }), { kind: "studio", label: `${partLabel(id)} 声像 ${Math.abs(pan) < 0.025 ? "中" : pan < 0 ? `左 ${Math.round(-pan * 100)}` : `右 ${Math.round(pan * 100)}`}` }, `mix:pan:${id}`); },
-  toggleMute: (id) => { setPv(id, { muted: !pv(id).muted }); view.render(); },
-  toggleSolo: (id) => { setPv(id, { solo: !pv(id).solo }); view.render(); },
+  toggleMute: (id) => { setPv(id, { muted: !pv(id).muted }); afterViewChange(); },   // 放着的时候马上静（录音房推子到底、发送一起停）+ 时间线重算（v0.10.38；user「我mute了之后它的reverb为什么还是进了reverb轨？」）
+  toggleSolo: (id) => { setPv(id, { solo: !pv(id).solo }); afterViewChange(); },
   play: () => playPause(),
   close: () => closeStudio(),
   master: () => activeMaster(doc.extras),
@@ -2008,7 +2009,8 @@ function partViews(): PartView[] {
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
 function afterViewChange(): void {
-  schedulePlaybackRefresh();   // 静音 / 独奏 / 隐藏变了：放着的时候时间线重算
+  pushChannels();              // 静音 / 独奏马上进录音房（推子到底、发送一起停；v0.10.38，user「我mute了之后它的reverb为什么还是进了reverb轨？」）
+  schedulePlaybackRefresh();   // 静音 / 独奏 / 隐藏变了：放着的时候时间线重算（解除静音的那位也回来）
   if (!isShown(st.at.part)) {
     const paper = st.song.papers.find((pp) => pp.id === st.at.paper), to = st.song.parts.find((p) => isShown(p.id) && paper?.tracks[p.id]);
     if (to) update(setFocus(st, st.at.paper, to.id));
@@ -2162,8 +2164,8 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     if (v === "addnew") { close(); addNewPart(st.at.paper); return; }
     if (v === "hide") { setPv(me.id, { hidden: !pv(me.id).hidden }); afterViewChange(); }
     else if (v === "only") { setPv(me.id, { only: !pv(me.id).only }); afterViewChange(); }
-    else if (v === "mute") { setPv(me.id, { muted: !pv(me.id).muted }); view.render(); }
-    else if (v === "solo") { setPv(me.id, { solo: !pv(me.id).solo }); view.render(); }
+    else if (v === "mute") { setPv(me.id, { muted: !pv(me.id).muted }); afterViewChange(); }
+    else if (v === "solo") { setPv(me.id, { solo: !pv(me.id).solo }); afterViewChange(); }
     else if (v.startsWith("clef:")) update(setPartClef(st, me.id, v.slice(5) === "auto" ? null : (v.slice(5) as ClefName)));
     else if (v === "moveup" || v === "movedown") { update(movePart(st, me.id, v === "moveup" ? -1 : 1)); renderTitle(); }
     else if (v.startsWith("staves:")) { update(setPartStaves(st, me.id, v.slice(7) === "2" ? 2 : 1)); pad.render(); }
