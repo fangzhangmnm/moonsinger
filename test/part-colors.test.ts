@@ -3,10 +3,10 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { categoryOfSound, partColorIndices, partAbbr, shortName, TAB20, fitAbbr, dispWidth, ABBR_W } from "../src/ui/part-colors.ts";
 
 describe("类别色", () => {
-  it("sound id 的前缀 = 类别；同一类第一位深色、第二位浅色、再往后轮回", () => {
+  it("sound id 的前缀 = 类别；同一类都用深的那个（v0.10.43；原来第二位用浅的——user「二号同样乐器不要用弱颜色，宁愿用和一号一样的」）", () => {
     eq(categoryOfSound("voice.vocals"), "voice"); eq(categoryOfSound("keyboard.piano"), "keys"); eq(categoryOfSound("pluck.guitar"), "pluck");
     eq(categoryOfSound("drum.group.set"), "perc"); eq(categoryOfSound("pitched-percussion.glockenspiel"), "mallet"); eq(categoryOfSound("whatever.x"), "fx");
-    eq(partColorIndices(["voice.vocals", "keyboard.piano", "voice.vocals", "voice.alto"]).join(" "), "2 0 3 2");
+    eq(partColorIndices(["voice.vocals", "keyboard.piano", "voice.vocals", "voice.alto"]).join(" "), "2 0 2 2");
     eq(TAB20.length, 20);
   });
 });

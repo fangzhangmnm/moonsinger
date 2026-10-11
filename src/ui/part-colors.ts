@@ -24,10 +24,10 @@ export function categoryOfSound(sound: string): PartCategory {
   if (head === "metal" || head === "pitched-percussion") return "mallet";
   return "fx";
 }
-/** 每个声部在 tab20 里的下标：同一类的第一位用深的，第二位用浅的，再往后轮回去。 */
+/** 每个声部在 tab20 里的下标：同一类都用深的那个（v0.10.43；浅的那半不用了——user 10-10「我不太喜欢淡色alternative，可读性太差」、10-11「我之前说了二号同样乐器不要用弱颜色，宁愿用和一号一样的」；
+ *  起因：主人不在时合租那一行归 Piano 2，它的浅蓝播放高亮在纸上几乎看不见，user「piano1不在的时候23的高亮动画没有」）。 */
 export function partColorIndices(sounds: readonly string[]): number[] {
-  const seen = new Map<PartCategory, number>();
-  return sounds.map((s) => { const c = categoryOfSound(s), k = seen.get(c) ?? 0; seen.set(c, k + 1); return HUE[c] * 2 + (k % 2); });
+  return sounds.map((s) => HUE[categoryOfSound(s)] * 2);
 }
 
 /** 合唱 / 人声预设的谱前简写（出版谱的老规矩）。 */

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.42-2026-10-11";
+var APP_VERSION = "v0.10.43-2026-10-11";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -9939,12 +9939,7 @@ function categoryOfSound(sound2) {
   return "fx";
 }
 function partColorIndices(sounds) {
-  const seen = /* @__PURE__ */ new Map();
-  return sounds.map((s10) => {
-    const c10 = categoryOfSound(s10), k2 = seen.get(c10) ?? 0;
-    seen.set(c10, k2 + 1);
-    return HUE[c10] * 2 + k2 % 2;
-  });
+  return sounds.map((s10) => HUE[categoryOfSound(s10)] * 2);
 }
 var VOICE_ABBR = { Vocals: "Vo.", "Backing Vocals": "B. Vo.", Soprano: "S.", Alto: "A.", Tenor: "T.", Bass: "B." };
 function shortName(name) {
@@ -38611,42 +38606,8 @@ function auditionTarget() {
   }
   return { inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: ch2.gainDb + dyn.dB, pan: ch2.pan };
 }
-var SUNG_SECS = 1;
-var SUNG_GAIN_DB = 20 * Math.log10(SUNG_GAIN);
-var sungSeq = 0;
-var sungHeld = /* @__PURE__ */ new Map();
-function sungPlanAt(index) {
-  const tok = tr(st2)[index ?? (st2.sel ? st2.sel.from : st2.caret)];
-  if (!tok || tok.kind !== "note") return null;
-  let plan = [...chunkPlans.values()].find((c10) => c10.part === st2.at.part && c10.entryOf.has(tok.id)) ?? null;
-  if (!plan) {
-    const song = songIn("view"), part = st2.song.parts.find((x2) => x2.id === st2.at.part);
-    if (!part) return null;
-    const tl2 = buildTimeline({ song, order: songPlayOrder(song), parts: [part], info: performerInfo, hum: st2.song.hum, singOpt: humOpt() });
-    plan = tl2.chunks.find((c10) => c10.entryOf.has(tok.id)) ?? null;
-    if (plan) chunkPlans.set(plan.key, plan);
-  }
-  return plan ? { plan, entry: plan.entryOf.get(tok.id) } : null;
-}
-function sungDown(p2, id2, index) {
-  const at2 = sungPlanAt(index);
-  if (!at2) return;
-  const seq = ++sungSeq;
-  sungHeld.set(id2, seq);
-  const part = st2.song.parts.find((x2) => x2.id === st2.at.part), ch2 = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
-  singer.unlock();
-  void engine.ensure().catch(() => void 0);
-  void singer.singOnly(at2.plan.score, { entry: at2.entry, midi: midiOf(p2), secs: SUNG_SECS }, { opt: humOpt(), models: modelBases(), diskBytes: BUDGET.speechDisk }).then((r10) => {
-    if (sungHeld.get(id2) !== seq) return;
-    engine.auditionClip(id2, r10.sr, r10.samples, ch2.gainDb + dyn.dB + SUNG_GAIN_DB, ch2.pan);
-  }).catch(() => void 0);
-}
 var sound = {
-  down: (p2, id2 = "main", index) => {
-    if (!finder.isOpen && engineNow() === "tsukuyomi") {
-      sungDown(p2, id2, index);
-      return;
-    }
+  down: (p2, id2 = "main") => {
     const t10 = auditionTarget();
     if (!t10) return;
     if (t10.inst.kind === "vowel" && !vowelsReady) {
@@ -38657,25 +38618,16 @@ var sound = {
     engine.auditionOn(id2, t10.inst, t10.key(midiOf(p2)), t10.vel, t10.gainDb, t10.pan);
   },
   glide: (p2, id2 = "main") => {
-    if (!finder.isOpen && engineNow() === "tsukuyomi") {
-      sungDown(p2, id2);
-      return;
-    }
     const t10 = auditionTarget();
     if (t10) engine.auditionGlide(id2, t10.key(midiOf(p2)));
   },
   up: (id2 = "main") => {
-    sungHeld.delete(id2);
     engine.auditionOff(id2);
     const n10 = chordVoices.get(id2) ?? 0;
-    for (let k2 = 1; k2 <= n10; k2++) {
-      sungHeld.delete(`${id2}~${k2}`);
-      engine.auditionOff(`${id2}~${k2}`);
-    }
+    for (let k2 = 1; k2 <= n10; k2++) engine.auditionOff(`${id2}~${k2}`);
     chordVoices.delete(id2);
   },
   allOff: () => {
-    sungHeld.clear();
     chordVoices.clear();
     engine.auditionAllOff();
   }
@@ -38685,7 +38637,7 @@ var soundTok = (s10, i10, id2 = "main") => {
   const t10 = tr(s10)[i10];
   if (t10?.kind !== "note" || !t10.pitch) return;
   sound.up(id2);
-  sound.down(t10.pitch, id2, s10 === st2 ? i10 : void 0);
+  sound.down(t10.pitch, id2);
   const extra = t10.chord ?? [];
   extra.forEach((q2, k2) => sound.down(q2, `${id2}~${k2 + 1}`));
   if (extra.length) chordVoices.set(id2, extra.length);
@@ -43667,4 +43619,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-64d20eb12cd8.mjs.map
+//# sourceMappingURL=moonsinger-0cd8ba3e2a69.mjs.map

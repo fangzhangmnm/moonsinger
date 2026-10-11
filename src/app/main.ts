@@ -46,7 +46,7 @@ import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSound
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
 import { StudioClient } from "../engine/studio-client.ts";
 import type { AuditionInst, TrackSpec } from "../engine/studio.ts";
-import { buildTimeline, lightNotes, songLangOf, LEAD_IN, PRE_ROLL, SUNG_GAIN, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
+import { buildTimeline, lightNotes, songLangOf, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
 import { loadVowelTable } from "../engine/vowel-table.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
@@ -340,41 +340,18 @@ function auditionTarget(): { inst: AuditionInst; key: (midi: number) => number; 
   }
   return { inst: { kind: "vowel", kana }, key: (m) => m, vel: 1, gainDb: ch.gainDb + dyn.dB, pan: ch.pan };
 }
-/** 月读的按键试听 = 只唱光标那个字（刀 3；user「可以争取一下实时，现在也看能不能争取」）：找到光标所在的那句（预唱 / 播放建的计划，没有就现建），让 worker 只唱第 entry 个字、
- *  按下的音高、一秒——念缓存命中时几毫秒（刀 0：合成 0.3 s ≈ 4.6 ms）；没命中 = 先念整句（几百毫秒到一两秒），这一下迟到了就不放（迟到的音更烦），下一下就快了。
- *  光标不在音上（纸尾 / 休止）= 没有字可唱 = 不出声（不替补）。 */
-const SUNG_SECS = 1.0, SUNG_GAIN_DB = 20 * Math.log10(SUNG_GAIN);
-let sungSeq = 0; const sungHeld = new Map<string, number>();   // 来源 → 最后一次按下的序号（松开 / 再按 = 旧的回来也不放）
-function sungPlanAt(index?: number): { plan: ChunkPlan; entry: number } | null {
-  // index = 这一下响的是哪个音（刚写下 / 改了的那个）；没给 = 光标那个（弹）。v0.10.30：以前一律看光标——写完一个音光标已经在它后面，
-  //   歌尾 = 没有字可唱、中间 = 唱成后面那个音的字（user「音模式下面月读的preview没有了，小键盘没有声音」）
-  const tok = tr(st)[index ?? (st.sel ? st.sel.from : st.caret)]; if (!tok || tok.kind !== "note") return null;
-  let plan = [...chunkPlans.values()].find((c) => c.part === st.at.part && c.entryOf.has(tok.id)) ?? null;
-  if (!plan) {
-    const song = songIn("view"), part = st.song.parts.find((x) => x.id === st.at.part); if (!part) return null;
-    const tl = buildTimeline({ song, order: songPlayOrder(song), parts: [part], info: performerInfo, hum: st.song.hum, singOpt: humOpt() });
-    plan = tl.chunks.find((c) => c.entryOf.has(tok.id)) ?? null; if (plan) chunkPlans.set(plan.key, plan);
-  }
-  return plan ? { plan, entry: plan.entryOf.get(tok.id)! } : null;
-}
-function sungDown(p: Pitch, id: string, index?: number): void {
-  const at = sungPlanAt(index); if (!at) return;
-  const seq = ++sungSeq; sungHeld.set(id, seq);
-  const part = st.song.parts.find((x) => x.id === st.at.part), ch = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
-  singer.unlock(); void engine.ensure().catch(() => undefined);
-  void singer.singOnly(at.plan.score, { entry: at.entry, midi: midiOf(p), secs: SUNG_SECS }, { opt: humOpt(), models: modelBases(), diskBytes: BUDGET.speechDisk })
-    .then((r) => { if (sungHeld.get(id) !== seq) return; engine.auditionClip(id, r.sr, r.samples, ch.gainDb + dyn.dB + SUNG_GAIN_DB, ch.pan); })
-    .catch(() => undefined);   // 唱不了（歌词和音数对不上…）：这一下不出声；真播放时会报出来
-}
+/** 月读的按键试听（弹 / 写音 / 拖音高的预听）= 元音表（v0.10.43；user「月读的即兴keyboard还是卡…我发现它还是每次按键的时候算一下」「月读预览应该是每种哼法只有一个cache」
+ *  「而不是一个音高一个长度cache一下」「预览时这样，不过播放的时候还是完全版的」）：完全版也走 auditionTarget 的元音那条路——表是月读自己离线预渲的
+ *  （scripts/gen-preview-vowels.mjs：每种哼法 ら / ん / う / お / あ 各 7 个锚音 A3–D♯5、隔小三度，按住循环颤音整周期），按键不再去 worker 现唱。播放照旧完全版。
+ *  原来（刀 3，v0.9.5–v0.10.42）：每按一下让 worker 只唱光标 / 刚写下那个字一秒——iPad 上一条工作道、和预唱抢，按键常常迟到。 */
 const sound = {
-  down: (p: Pitch, id = "main", index?: number) => {
-    if (!finder.isOpen && engineNow() === "tsukuyomi") { sungDown(p, id, index); return; }
+  down: (p: Pitch, id = "main") => {
     const t = auditionTarget(); if (!t) return; if (t.inst.kind === "vowel" && !vowelsReady) { void ensureVowels(); return; }
     singer.unlock(); engine.auditionOn(id, t.inst, t.key(midiOf(p)), t.vel, t.gainDb, t.pan);
   },
-  glide: (p: Pitch, id = "main") => { if (!finder.isOpen && engineNow() === "tsukuyomi") { sungDown(p, id); return; } const t = auditionTarget(); if (t) engine.auditionGlide(id, t.key(midiOf(p))); },
-  up: (id = "main") => { sungHeld.delete(id); engine.auditionOff(id); const n = chordVoices.get(id) ?? 0; for (let k = 1; k <= n; k++) { sungHeld.delete(`${id}~${k}`); engine.auditionOff(`${id}~${k}`); } chordVoices.delete(id); },
-  allOff: () => { sungHeld.clear(); chordVoices.clear(); engine.auditionAllOff(); },
+  glide: (p: Pitch, id = "main") => { const t = auditionTarget(); if (t) engine.auditionGlide(id, t.key(midiOf(p))); },
+  up: (id = "main") => { engine.auditionOff(id); const n = chordVoices.get(id) ?? 0; for (let k = 1; k <= n; k++) engine.auditionOff(`${id}~${k}`); chordVoices.delete(id); },
+  allOff: () => { chordVoices.clear(); engine.auditionAllOff(); },
 };
 /** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
 /** 响下标 i 的音：和弦 = 整个和弦一起响（v0.10.18；user「叠音的时候预览的是chord还是之前的旧音啊？」——原来只响 t.pitch 那一个）。
@@ -383,7 +360,7 @@ const chordVoices = new Map<string, number>();
 const soundTok = (s: EditorState, i: number, id = "main") => {
   const t = tr(s)[i]; if (t?.kind !== "note" || !t.pitch) return;
   sound.up(id);   // 同一个来源上次的和弦先松干净（这次的音少了也不留尾巴）
-  sound.down(t.pitch, id, s === st ? i : undefined); const extra = t.chord ?? []; extra.forEach((q, k) => sound.down(q, `${id}~${k + 1}`)); if (extra.length) chordVoices.set(id, extra.length);   // 下标只对真谱有用（「弹」是在草稿上推的音高 = 月读照旧唱光标那个字）
+  sound.down(t.pitch, id); const extra = t.chord ?? []; extra.forEach((q, k) => sound.down(q, `${id}~${k + 1}`)); if (extra.length) chordVoices.set(id, extra.length);
 };
 /** 改了音高之后响一下（user 2026-10-10「按住音的时候应该能听到preview，拖动音高，或者改动yngk的时候也会，但是改时长不会」）：有选区 = 选区里第一个音，否则光标前那个音。 */
 function previewEdited(): void {
