@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.39-2026-10-10";
+var APP_VERSION = "v0.10.40-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3326,16 +3326,15 @@ function writeRest(st3) {
   if (one >= 0) {
     const t10 = tr(st3)[one];
     if (t10.kind !== "note") return st3;
-    const nt3 = tr(st3).slice();
-    nt3[one] = { kind: "rest", id: t10.id, dur: t10.dur };
-    dropTieAfter(nt3, one);
-    return next(st3, nt3);
+    const nt2 = tr(st3).slice();
+    nt2[one] = { kind: "rest", id: t10.id, dur: t10.dur };
+    dropTieAfter(nt2, one);
+    return next(st3, nt2);
   }
   if (st3.sel) return fillSel(st3, { kind: "rest" });
   if (st3.lead) st3 = materializeLead(st3);
-  const dur = unitDur(st3.input), id2 = st3.nextId, nt2 = tr(st3).slice();
-  nt2.splice(st3.caret, 0, { kind: "rest", id: id2, dur });
-  return next(st3, nt2, { caret: st3.caret + 1, nextId: id2 + 1, log: [...st3.log, { k: "ins", id: id2, unit: dur }] });
+  const dur = unitDur(st3.input), id2 = st3.nextId, o10 = overwriteInsert(tr(st3), st3.caret, { kind: "rest", id: id2, dur });
+  return next(st3, o10.tokens, { caret: o10.at + 1, nextId: id2 + 1, log: [...st3.log, { k: "ins", id: id2, unit: dur, ...o10.ate ? { ate: o10.ate } : {} }] });
 }
 function singleSel(st3) {
   if (!st3.sel) return -1;
@@ -43632,4 +43631,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b57f52ee55a9.mjs.map
+//# sourceMappingURL=moonsinger-c92aa83e1311.mjs.map

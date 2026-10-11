@@ -60,7 +60,21 @@ describe("写音默认覆盖休止（光标）", () => {
   it("光标和休止之间的记号留在新音前面（力度跟着这个时刻）", () => {
     eq(show(writePitch(unit(at(rests(["dyn", ["r", 2]]), H), 2), P("C"))), "dyn C4/1 r/1");
   });
-  it("休止键 = 插进去、后面往后推（不吃后面的休止；v0.10.19，user「type 0: push forward」）", () => { eq(show(writeRest(unit(at(rests([["r", 2], ["D", 1]]), H), 2))), "r/1 r/2 D4/1"); });
+  it("休止键：后面紧挨着休止 = 只往前走、吃掉那么长（拆开），后面不挪（v0.10.40；user「光标后面是休止时，写休止只往前走…对」）", () => {
+    const st = writeRest(unit(at(rests([["r", 2], ["D", 1]]), H), 2));
+    eq(show(st), "r/1 r/1 D4/1"); eq(st.caret, H + 1);
+  });
+  it("休止键：连按 = 一拍一拍数过去；数到音了 = 照旧插、后面往后推（v0.10.19「type 0: push forward」管这种）", () => {
+    let st = unit(at(rests([["r", 4], ["D", 1]]), H), 2);
+    for (let k = 0; k < 4; k++) st = writeRest(st);
+    eq(show(st), "r/1 r/1 r/1 r/1 D4/1", "四下正好数完那个休止");
+    eq(show(writeRest(st)), "r/1 r/1 r/1 r/1 r/1 D4/1", "第五下碰到 D = 插进去");
+    eq(show(writeRest(unit(at(rests([["D", 1]]), H), 2))), "r/1 D4/1");
+  });
+  it("休止键 ⌫ 撤回 = 吃掉的休止放回去，后面不挪", () => {
+    const st = backspace(writeRest(unit(at(rests([["r", 4], ["D", 1]]), H), 2)));
+    eq(show(st), "r/1 r/3 D4/1"); eq(st.caret, H);
+  });
   it("⌫ 撤回刚写的 = 吃掉的休止放回去，后面不挪", () => {
     const st = backspace(writePitch(unit(at(rests([["r", 4], ["D", 1]]), H), 2), P("C")));
     eq(show(st), "r/1 r/3 D4/1"); eq(st.caret, H);

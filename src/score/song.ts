@@ -441,9 +441,11 @@ export function writeRest(st: EditorState): EditorState {
   if (one >= 0) { const t = tr(st)[one]; if (t.kind !== "note") return st; const nt = tr(st).slice(); nt[one] = { kind: "rest", id: t.id, dur: t.dur }; dropTieAfter(nt, one); return next(st, nt); }   // 改这个音：变成一样长的休止
   if (st.sel) return fillSel(st, { kind: "rest" });   // 选了好几个 = 换成一样长的休止
   if (st.lead) st = materializeLead(st);
-  // 光标处打休止 = 插进去、后面的往后推（不吃后面的休止；v0.10.19，user「type 0: push forward」）。写音才盖休止（「type note: insert the mute, of overflow, push forward」）
-  const dur = unitDur(st.input), id = st.nextId, nt = tr(st).slice(); nt.splice(st.caret, 0, { kind: "rest", id, dur } as Token);
-  return next(st, nt, { caret: st.caret + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur }] });
+  // 光标处打休止（v0.10.40）：和写音同一个 overwriteInsert——光标后面（跳过不占时值的记号）紧挨着休止 = 只往前走、吃掉那么长的休止（拆开，后面不挪；不够的那截才推）；
+  //   后面是音 = 插进去、后面的往后推（v0.10.19 user「type 0: push forward」管的是这种）。user「光标后面是休止时，写休止只往前走、吃掉那么长的休止（不往后推）；
+  //   后面是音则照旧插入。这样在已经乱了的小节里也能数到第几拍再写。对」。⌫ 撤回 = 吃掉的放回去（同写音）。
+  const dur = unitDur(st.input), id = st.nextId, o = overwriteInsert(tr(st), st.caret, { kind: "rest", id, dur } as Timed);
+  return next(st, o.tokens, { caret: o.at + 1, nextId: id + 1, log: [...st.log, { k: "ins", id, unit: dur, ...(o.ate ? { ate: o.ate } : {}) }] });
 }
 
 // ── 写音覆盖休止 / 选区输入 / 改一个音（v0.10.5，ai-docs/20261010-keyboard-selection-rules.md） ──────────────────────────────
