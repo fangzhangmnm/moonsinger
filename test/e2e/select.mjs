@@ -9,6 +9,7 @@ const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { 
 try {
   const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
   await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(500);
+  // v0.10.39：纸头自动补了一个力度（下标 3），音从 4 起——下面的下标都 +1
   const S = () => p.evaluate(() => { const s = window.__moonsinger.state(); return { sel: s.sel, caret: s.caret, n: s.song.papers[0].tracks.P1.length }; });
   const notes = () => p.$$eval("#score text.note", (ts) => ts.map((t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
   await p.click("#score", { position: { x: 600, y: 400 } });
@@ -17,24 +18,24 @@ try {
   const ns = await notes(); check(ns.length === 6, "写了 6 个音", String(ns.length));
   // 轻点第二个音 = 光标到它后面，不选中
   await p.mouse.click(ns[1].x, ns[1].y); await p.waitForTimeout(100);
-  let s = await S(); check(s.sel === null && s.caret === 3 + 2, "轻点音符：光标到它后面、不选中", JSON.stringify(s));
+  let s = await S(); check(s.sel === null && s.caret === 3 + 1 + 2, "轻点音符：光标到它后面、不选中", JSON.stringify(s));
   check(await p.evaluate(() => document.getElementById("stage").querySelector(".sel-bar").hidden), "没选区：选区条藏着");
   // 长按第二个音 = 选中它
   await p.mouse.move(ns[1].x, ns[1].y); await p.mouse.down(); await p.waitForTimeout(600); await p.mouse.up(); await p.waitForTimeout(150);
-  s = await S(); check(!!s.sel && s.sel.from === 4 && s.sel.to === 5, "长按音符：选中它", JSON.stringify(s.sel));
+  s = await S(); check(!!s.sel && s.sel.from === 5 && s.sel.to === 6, "长按音符：选中它", JSON.stringify(s.sel));
   check(!(await p.evaluate(() => document.getElementById("stage").querySelector(".sel-bar").hidden)), "有选区：选区条露出来");
   check(await p.evaluate(() => !document.querySelector(".sel-handle.start").hidden && !document.querySelector(".sel-handle.end").hidden), "两个把手露出来");
   check(await p.$("svg .note.sel") == null || (await p.$eval("svg .note.sel", (e) => getComputedStyle(e).fill)) !== "rgb(29, 95, 168)", "音不涂蓝（只有带子）");
   // 长按不抬手接着拖到第四个音 = 扩选
   await p.mouse.move(ns[1].x, ns[1].y); await p.mouse.down(); await p.waitForTimeout(600); await p.mouse.move(ns[3].x, ns[3].y, { steps: 5 }); await p.waitForTimeout(100); await p.mouse.up(); await p.waitForTimeout(150);
-  s = await S(); check(!!s.sel && s.sel.from === 4 && s.sel.to === 7, "长按后拖：扩选到第四个音", JSON.stringify(s.sel));
+  s = await S(); check(!!s.sel && s.sel.from === 5 && s.sel.to === 8, "长按后拖：扩选到第四个音", JSON.stringify(s.sel));
   // 拖右把手到第五个音
   const hb = await p.$eval(".sel-handle.end", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height * 0.7 }; });
   await p.mouse.move(hb.x, hb.y); await p.mouse.down(); await p.mouse.move(ns[4].x, hb.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
-  s = await S(); check(!!s.sel && s.sel.from === 4 && s.sel.to === 8, "拖右把手：扩到第五个音", JSON.stringify(s.sel));
+  s = await S(); check(!!s.sel && s.sel.from === 5 && s.sel.to === 9, "拖右把手：扩到第五个音", JSON.stringify(s.sel));
   // 长按选区里的音、原地抬手 = 选区菜单（选区不变；拖走 = 照常扩选，上面那条守着）
   await p.mouse.move(ns[2].x, ns[2].y); await p.mouse.down(); await p.waitForTimeout(600); await p.mouse.up(); await p.waitForTimeout(150);
-  s = await S(); check(!!(await p.$(".sel-menu")) && !!s.sel && s.sel.from === 4 && s.sel.to === 8, "长按选区里的音、原地抬手 = 选区菜单（选区不变）", JSON.stringify(s.sel));
+  s = await S(); check(!!(await p.$(".sel-menu")) && !!s.sel && s.sel.from === 5 && s.sel.to === 9, "长按选区里的音、原地抬手 = 选区菜单（选区不变）", JSON.stringify(s.sel));
   // 复制 → 系统剪贴板是简谱文字；选区条「复制」
   await p.click('.sel-bar [data-v="copy"]'); await p.waitForTimeout(200);
   const clipText = await p.evaluate(() => navigator.clipboard.readText());
@@ -45,7 +46,7 @@ try {
   check(/粘贴到光标处/.test(await p.textContent(".sel-bar")), "剪贴板有东西：露「粘贴到光标处」");
   // 末尾粘贴
   await p.keyboard.press("End"); await p.click('.sel-bar [data-v="paste"]'); await p.waitForTimeout(200);
-  s = await S(); check(s.n === 3 + 6 + 4, "贴了 4 个在末尾", String(s.n));
+  s = await S(); check(s.n === 3 + 1 + 6 + 4, "贴了 4 个在末尾", String(s.n));
   // 系统剪贴板放别的简谱文字 → 贴进来认它
   await p.evaluate(() => navigator.clipboard.writeText("1 - 0 | 5'/la"));
   await p.keyboard.press("Control+v"); await p.waitForTimeout(300);

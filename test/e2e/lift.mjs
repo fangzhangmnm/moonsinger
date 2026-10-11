@@ -77,11 +77,11 @@ const undo = (p) => p.keyboard.press("Control+z");
   h = await heads(p);
   const d0 = (await p.$$eval("#score text.dyn", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, l: r.x }; })))[0];
   await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(d0.x + (h[2].l - h[0].l), d0.y, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(150);
-  check(await marks(p) === "n < n p n f n n n n n", "鼠标拖 p 到第三个音", await marks(p));
+  check(await marks(p) === "mf n < n p n f n n n n n", "鼠标拖 p 到第三个音", await marks(p));
   await undo(p); await p.waitForTimeout(150);
   // 7. 拖 p 到 f 那个音 = 顶掉 f（湮灭 + 说一声）
   await p.mouse.move(d0.x, d0.y); await p.mouse.down(); await p.waitForTimeout(500); await p.mouse.move(d0.x + (h[3].l - h[0].l), d0.y, { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(200);
-  check(await marks(p) === "n < n n p n n n n n", "拖 p 到 f 那个音 = p 算数、f 去掉（渐强走一档）", await marks(p));
+  check(await marks(p) === "mf n < n n p n n n n n", "拖 p 到 f 那个音 = p 算数、f 去掉（渐强走一档）", await marks(p));
   const note = await p.$eval(".wb-notice, .notice, [class*=notice]", (e) => e.textContent).catch(() => "");
   check(/顺手去掉了 1 个/.test(note ?? ""), "说一声", note ?? "");
   await undo(p); await p.waitForTimeout(150);
@@ -131,7 +131,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   // 13. 手指长按力度字拖到第二个音
   const hd = await heads(p), dl = await p.$$eval("#score text.dyn", (es) => { const r = es[0].getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   await touch(path(dl, dl.x + (hd[1].l - hd[0].l)), 600);
-  check(await marks(p) === "n p < n n f n n n n n", "手指长按 p 拖到第二个音（排在渐强前面）", await marks(p));
+  check(await marks(p) === "mf n p < n n f n n n n n", "手指长按 p 拖到第二个音（排在渐强前面）", await marks(p));
   check(p.errs.length === 0, "手指：没有页面错误", p.errs.join(" | "));
 }
 // ── 力度记号拖到休止上 + 拖的时候强调色（2026-10-08 Opus 5.5；user「力度符号应该能拖动到休止符上」「然后拖动能不能给一点视觉反馈」）──
@@ -155,7 +155,7 @@ const undo = (p) => p.keyboard.press("Control+z");
   await p.mouse.move(d.x + (rest.x - head0), d.y, { steps: 8 }); await p.waitForTimeout(100);
   check(await p.$$eval("#score text.dyn.hot", (e) => e.length) === 1, "拖着的时候一直亮");
   await p.mouse.up(); await p.waitForTimeout(200);
-  check(await seq() === "n n p r n", "拖到休止上 = 从休止起", await seq());
+  check(await seq() === "mf n n p r n", "拖到休止上 = 从休止起", await seq());
   check(await p.$$eval("#score .hot", (e) => e.length) === 0, "松手就不亮了");
   // 长按原地（不动）也亮
   const d2 = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });

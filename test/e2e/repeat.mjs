@@ -22,7 +22,7 @@ const menu = async (v) => {
 };
 check(!!(await p.evaluate(() => true)), "开好了");
 await menu("bar:start");
-check((await shape()).startsWith("start A"), "光标在纸头：插 |:", await shape());
+check((await shape()).startsWith("start dyn A"), "光标在纸头：插 |:（v0.10.39：插在纸头强制的力度前面）", await shape());
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: s.song.papers[0].tracks[s.at.part].length }); });
 await menu("bar:end");
 check((await shape()).endsWith("end"), "光标在末尾：插 :|", await shape());

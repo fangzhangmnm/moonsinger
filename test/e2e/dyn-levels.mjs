@@ -15,7 +15,7 @@ await p.click('.pad-head [data-sympage="dyn"]'); await p.waitForTimeout(100);
 const cells = await p.$$eval(".pad-grid.symbols [data-sym]", (es) => es.map((e) => e.dataset.sym).filter((x) => x.startsWith("dyn:") && x !== "dyn:ramp").slice(0, 8).join(" "));
 check(cells.replace(/:on/g, "") === "dyn:ppp dyn:pp dyn:p dyn:mp dyn:mf dyn:f dyn:ff dyn:fff", "力度页：ppp…fff 八格", cells);
 await p.click('.pad-grid.symbols [data-sym^="dyn:fff"]'); await p.waitForTimeout(150);
-check((await dyns()) === "fff", "点 fff = 光标前那个音起 fff", await dyns());
+check((await dyns()) === "mf,fff", "点 fff = 光标前那个音起 fff（mf = v0.10.39 纸头强制的）", await dyns());
 check((await p.$$eval("#score text", (ts) => ts.some((t) => t.textContent === "\u{E530}"))), "谱上画了 fff 的字形");
 // MusicXML 原生往返
 const xml = await p.evaluate(() => { const m = window.__moonsinger, id = m.state().song.papers[0].id; return m.zipText(m.bytes(), `.moonsinger/papers/${id}.musicxml`); });

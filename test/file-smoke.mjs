@@ -70,8 +70,9 @@ check((await p.textContent(".offer .offer-title")) === `「${day}-春の歌」�
 const [fc] = await Promise.all([p.waitForEvent("filechooser"), p.click('.offer [data-v="go"]')]);
 await fc.setFiles(saved); await p.waitForTimeout(300);
 const after = await tokens();
-const canon = (j) => JSON.stringify(JSON.parse(j).map((t) => { const o = (t.kind === "note" || t.kind === "rest") ? t : { ...t, id: 0 }; return Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]])); }));
-check(canon(after) === canon(before), "打开存的文件：逐 token 相同（小节线 / 记号的 id 是编辑器自己的，不比）");
+const canon = (j) => JSON.stringify(JSON.parse(j).map((t) => { const o = { ...t, id: 0 }; return Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]])); }));
+{ const A = JSON.parse(canon(after)), B = JSON.parse(canon(before)), k = A.findIndex((t, i) => JSON.stringify(t) !== JSON.stringify(B[i]));
+  check(canon(after) === canon(before), "打开存的文件：逐 token 相同（id 是编辑器自己的、打开时按顺序重编号，不比；v0.10.39 起纸头自动补的力度比第一个音晚编号）", k < 0 ? `长度 ${A.length} vs ${B.length}` : `第 ${k} 个：${JSON.stringify(B[k])} → ${JSON.stringify(A[k])}`); }
 // 别家的谱
 await p.click("#setBtn");
 const [fc2] = await Promise.all([p.waitForEvent("filechooser"), p.click('.main-menu [data-v="open"]')]);

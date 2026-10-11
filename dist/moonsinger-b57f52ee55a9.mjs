@@ -1497,10 +1497,10 @@ var init_upng_esm = __esm({
             x2 += 3;
             if (i10 == 0) {
               if ((x2 & 7) != 0) x2 += 8 - (x2 & 7);
-              var K4 = (x2 >>> 3) + 4, m2 = o10[K4 - 4] | o10[K4 - 3] << 8;
+              var K3 = (x2 >>> 3) + 4, m2 = o10[K3 - 4] | o10[K3 - 3] << 8;
               if (A2) j2 = H2(j2, N2 + m2);
-              j2.set(new I2(o10.buffer, o10.byteOffset + K4, m2), N2);
-              x2 = K4 + m2 << 3;
+              j2.set(new I2(o10.buffer, o10.byteOffset + K3, m2), N2);
+              x2 = K3 + m2 << 3;
               N2 += m2;
               continue;
             }
@@ -2346,12 +2346,12 @@ var init_upng_esm = __esm({
         var time = Date.now();
         var sb2 = new Uint8Array(abuf), tb2 = sb2.slice(0), tb32 = new Uint32Array(tb2.buffer);
         var KD = getKDtree(tb2, ps);
-        var root = KD[0], leafs = KD[1], K4 = leafs.length;
-        var cl32 = new Uint32Array(K4), clr8 = new Uint8Array(cl32.buffer);
-        for (var i10 = 0; i10 < K4; i10++) cl32[i10] = leafs[i10].est.rgba;
+        var root = KD[0], leafs = KD[1], K3 = leafs.length;
+        var cl32 = new Uint32Array(K3), clr8 = new Uint8Array(cl32.buffer);
+        for (var i10 = 0; i10 < K3; i10++) cl32[i10] = leafs[i10].est.rgba;
         var len = sb2.length;
         var inds = new Uint8Array(len >> 2), nd2;
-        if (K4 <= 60) {
+        if (K3 <= 60) {
           findNearest(sb2, inds, clr8);
           remap(inds, tb32, cl32);
         } else if (sb2.length < 32e6)
@@ -2369,14 +2369,14 @@ var init_upng_esm = __esm({
             inds[i10 >> 2] = nd2.ind;
             tb32[i10 >> 2] = nd2.est.rgba;
           }
-        if (doKmeans || sb2.length * K4 < 10 * 4e6) {
+        if (doKmeans || sb2.length * K3 < 10 * 4e6) {
           var le2 = 1e9;
           for (var i10 = 0; i10 < 10; i10++) {
             var ce2 = kmeans(sb2, inds, clr8);
             if (ce2 / le2 > 0.997) break;
             le2 = ce2;
           }
-          for (var i10 = 0; i10 < K4; i10++) leafs[i10].est.rgba = cl32[i10];
+          for (var i10 = 0; i10 < K3; i10++) leafs[i10].est.rgba = cl32[i10];
           remap(inds, tb32, cl32);
         }
         return { abuf: tb2.buffer, inds, plte: leafs };
@@ -2390,8 +2390,8 @@ var init_upng_esm = __esm({
         return err2;
       }
       function updatePalette(sb2, inds, plte) {
-        var K4 = plte.length >>> 2;
-        var sums = new Uint32Array(K4 * 4), cnts = new Uint32Array(K4);
+        var K3 = plte.length >>> 2;
+        var sums = new Uint32Array(K3 * 4), cnts = new Uint32Array(K3);
         for (var i10 = 0; i10 < sb2.length; i10 += 4) {
           var ind = inds[i10 >>> 2], qi = ind * 4;
           cnts[ind]++;
@@ -2403,12 +2403,12 @@ var init_upng_esm = __esm({
         for (var i10 = 0; i10 < plte.length; i10++) plte[i10] = Math.round(sums[i10] / cnts[i10 >>> 2]);
       }
       function findNearest(sb2, inds, plte) {
-        var terr = 0, K4 = plte.length >>> 2;
+        var terr = 0, K3 = plte.length >>> 2;
         var nd2 = [];
-        for (var i10 = 0; i10 < K4; i10++) {
+        for (var i10 = 0; i10 < K3; i10++) {
           var qi = i10 * 4;
           var r10 = plte[qi], g3 = plte[qi + 1], b3 = plte[qi + 2], a10 = plte[qi + 3], ti2 = 0, te3 = 1e9;
-          for (var j2 = 0; j2 < K4; j2++) {
+          for (var j2 = 0; j2 < K3; j2++) {
             if (i10 == j2) continue;
             var qj = j2 * 4, dr = r10 - plte[qj], dg = g3 - plte[qj + 1], db = b3 - plte[qj + 2], da = a10 - plte[qj + 3];
             var err2 = dr * dr + dg * dg + db * db + da * da;
@@ -2423,7 +2423,7 @@ var init_upng_esm = __esm({
         for (var i10 = 0; i10 < sb2.length; i10 += 4) {
           var r10 = sb2[i10], g3 = sb2[i10 + 1], b3 = sb2[i10 + 2], a10 = sb2[i10 + 3];
           var ti2 = inds[i10 >>> 2], qi = ti2 * 4, dr = r10 - plte[qi], dg = g3 - plte[qi + 1], db = b3 - plte[qi + 2], da = a10 - plte[qi + 3], te3 = dr * dr + dg * dg + db * db + da * da;
-          if (te3 > nd2[ti2]) for (var j2 = 0; j2 < K4; j2++) {
+          if (te3 > nd2[ti2]) for (var j2 = 0; j2 < K3; j2++) {
             qi = j2 * 4;
             dr = r10 - plte[qi];
             dg = g3 - plte[qi + 1];
@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.38-2026-10-10";
+var APP_VERSION = "v0.10.39-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3466,8 +3466,14 @@ function resizeSingle(st3, i10, by) {
   const e10 = eatRests(tk2, i10 + 1, by), nt2 = [...tk2.slice(0, i10), { ...t10, dur: d3 }, ...e10.keep, ...tk2.slice(e10.end)];
   return next(st3, nt2, { sel: { from: i10, to: i10 + 1 }, caret: i10 + 1 });
 }
+var isPhraseMark = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove");
+var behindPhrase = (toks, at2, h2) => {
+  let i10 = at2;
+  while (i10 > h2 && isPhraseMark(toks[i10 - 1])) i10--;
+  return i10;
+};
 function setRepeatBar(st3, repeat, times) {
-  const toks = tr(st3), at2 = st3.sel ? st3.sel.to : st3.caret, h2 = headLen(toks);
+  const toks = tr(st3), h2 = headLen(toks), was = st3.sel ? st3.sel.to : st3.caret, at2 = behindPhrase(toks, was, h2);
   const near2 = toks[at2 - 1]?.kind === "bar" && at2 - 1 >= h2 ? at2 - 1 : toks[at2]?.kind === "bar" ? at2 : -1;
   const mk2 = (b3) => {
     let r10 = repeat;
@@ -3484,10 +3490,10 @@ function setRepeatBar(st3, repeat, times) {
   if (!repeat) return st3;
   const id2 = st3.nextId;
   nt2.splice(at2, 0, mk2({ kind: "bar", id: id2 }));
-  return next(st3, nt2, { caret: at2 + 1, sel: null, nextId: id2 + 1, log: [] });
+  return next(st3, nt2, { caret: was + 1, sel: null, nextId: id2 + 1, log: [] });
 }
 function setBarStyle(st3, style) {
-  const toks = tr(st3), at2 = st3.sel ? st3.sel.to : st3.caret, h2 = headLen(toks);
+  const toks = tr(st3), h2 = headLen(toks), was = st3.sel ? st3.sel.to : st3.caret, at2 = behindPhrase(toks, was, h2);
   const near2 = toks[at2 - 1]?.kind === "bar" && at2 - 1 >= h2 ? at2 - 1 : toks[at2]?.kind === "bar" ? at2 : -1;
   const nt2 = toks.slice();
   if (near2 >= 0) {
@@ -3498,20 +3504,20 @@ function setBarStyle(st3, style) {
   if (!style) return st3;
   const id2 = st3.nextId;
   nt2.splice(at2, 0, { kind: "bar", id: id2, style });
-  return next(st3, nt2, { caret: at2 + 1, sel: null, nextId: id2 + 1, log: [] });
+  return next(st3, nt2, { caret: was + 1, sel: null, nextId: id2 + 1, log: [] });
 }
 function insertNav(st3, what, nums) {
-  const toks = tr(st3);
-  let at2 = st3.sel ? st3.sel.from : st3.caret;
+  const toks = tr(st3), was = st3.sel ? st3.sel.from : st3.caret;
+  let at2 = behindPhrase(toks, was, headLen(toks));
   if (what === "ending" && toks[at2]?.kind === "bar") at2++;
   const id2 = st3.nextId, nt2 = toks.slice();
   nt2.splice(at2, 0, { kind: "nav", id: id2, what, ...what === "ending" ? { nums: nums && nums.length ? [...nums].sort((a10, b3) => a10 - b3) : [1] } : {} });
-  return next(st3, nt2, { caret: at2 + 1, sel: null, nextId: id2 + 1, log: [] });
+  return next(st3, nt2, { caret: Math.max(at2, was) + 1, sel: null, nextId: id2 + 1, log: [] });
 }
 function clearMarks(st3, which) {
   if (!st3.sel) return st3;
   const toks = tr(st3), h2 = headLen(toks), { from, to: to2 } = st3.sel;
-  const isPhrase = (t10) => t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove";
+  const isPhrase = isPhraseMark;
   let a10 = from;
   while (a10 > h2 && isPhrase(toks[a10 - 1])) a10--;
   const out = [];
@@ -4583,6 +4589,44 @@ function removePart(st3, partId) {
   const song = { ...st3.song, parts: st3.song.parts.filter((p2) => p2.id !== partId).map((p2) => p2.host === partId ? (({ host: _h, ...rest }) => rest)(p2) : p2), papers };
   const at2 = st3.at.part === partId ? { paper: st3.at.paper, part: song.parts[0].id } : st3.at;
   return setFocus({ ...st3, song }, at2.paper, at2.part, st3.at.part === partId ? void 0 : st3.caret);
+}
+function ensureStartDyns(song, nextId) {
+  let id2 = nextId;
+  const added = [], last = /* @__PURE__ */ new Map();
+  const papers = song.papers.map((pp) => {
+    let tracks = pp.tracks, changed2 = false;
+    for (const part of song.parts) {
+      const t10 = tracks[part.id];
+      if (!t10) continue;
+      let first = -1, has = false;
+      for (let i10 = headLen(t10); i10 < t10.length; i10++) {
+        const k2 = t10[i10];
+        if (k2.kind === "dyn") {
+          has = true;
+          break;
+        }
+        if (k2.kind === "note") {
+          first = i10;
+          break;
+        }
+      }
+      if (!has && first >= 0) {
+        tracks = { ...tracks, [part.id]: [...t10.slice(0, first), { kind: "dyn", id: id2++, value: last.get(part.id) ?? "mf" }, ...t10.slice(first)] };
+        changed2 = true;
+        added.push({ paper: pp.id, part: part.id, index: first });
+      }
+      const tt2 = tracks[part.id];
+      for (let i10 = tt2.length - 1; i10 >= 0; i10--) {
+        const k2 = tt2[i10];
+        if (k2.kind === "dyn") {
+          last.set(part.id, k2.value);
+          break;
+        }
+      }
+    }
+    return changed2 ? { ...pp, tracks } : pp;
+  });
+  return added.length ? { song: { ...song, papers }, nextId: id2, added } : { song, nextId, added };
 }
 function familyOrder(parts) {
   const ids = new Set(parts.map((p2) => p2.id)), out = [];
@@ -12284,9 +12328,9 @@ var Pad = class {
   knobList(knob, narrow = this.rangeNarrow()) {
     const st3 = this.host.state(), f2 = inputKey(st3);
     if (knob === "key") {
-      const K4 = [...KEY_CIRCLE].reverse();
+      const K3 = [...KEY_CIRCLE].reverse();
       const sc2 = this.scale();
-      return { items: K4.map((k2) => keyLabel(k2, sc2)), index: Math.max(0, K4.indexOf(f2)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i10) => this.host.onInputKey(K4[i10]), loop: true };
+      return { items: K3.map((k2) => keyLabel(k2, sc2)), index: Math.max(0, K3.indexOf(f2)), title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", set: (i10) => this.host.onInputKey(K3[i10]), loop: true };
     }
     if (knob === "unit") return { items: UNITS.map((u2) => `<span class="smufl">${UNIT_GLYPH[u2]}</span>`), index: Math.max(0, UNITS.indexOf(st3.input.unit)), title: "\u957F\u77ED\u57FA\u7EBF", set: (i10) => this.host.onUnit(UNITS[i10]) };
     const rows = this.rows();
@@ -12408,13 +12452,13 @@ var Pad = class {
       return;
     }
     if (knob === "key") {
-      const st3 = this.host.state(), K4 = [...KEY_CIRCLE].reverse();
+      const st3 = this.host.state(), K3 = [...KEY_CIRCLE].reverse();
       const [wk, ws2] = w2 >= 210 ? [Math.round(w2 * 0.36), w2 - Math.round(w2 * 0.36) - 2] : [72, 136];
       openDrum(anchor, [
-        { items: K4.map((k2) => `1=${KEY_NAMES[k2]}`), index: Math.max(0, K4.indexOf(inputKey(st3))), width: wk, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", loop: true },
+        { items: K3.map((k2) => `1=${KEY_NAMES[k2]}`), index: Math.max(0, K3.indexOf(inputKey(st3))), width: wk, title: "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09", loop: true },
         { items: SCALES.map(scaleItem), index: Math.max(0, SCALES.findIndex((x2) => x2.id === st3.input.inputScale)), width: ws2, title: "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3" }
       ], { onChange: (c10, i10) => {
-        if (c10 === 0) this.host.onInputKey(K4[i10]);
+        if (c10 === 0) this.host.onInputKey(K3[i10]);
         else this.host.onInputScale(SCALES[i10].id);
       } });
       return;
@@ -23669,10 +23713,10 @@ var Comp = class {
     this.aRel = Math.exp(-1 / (Math.max(1e-3, g3("releaseMs") / 1e3) * this.sr));
   }
   gainDb(levelDb) {
-    const { T: T2, R: R2, K: K4 } = this, over = levelDb - T2;
-    if (K4 > 0 && over > -K4 / 2 && over < K4 / 2) {
-      const t10 = over + K4 / 2;
-      return -(t10 * t10 * (1 - 1 / R2)) / (2 * K4);
+    const { T: T2, R: R2, K: K3 } = this, over = levelDb - T2;
+    if (K3 > 0 && over > -K3 / 2 && over < K3 / 2) {
+      const t10 = over + K3 / 2;
+      return -(t10 * t10 * (1 - 1 / R2)) / (2 * K3);
     }
     return over <= 0 ? 0 : -over * (1 - 1 / R2);
   }
@@ -26666,7 +26710,10 @@ function wireParamRows(root) {
 
 // src/ui/scopes.ts
 var SCOPE_POINTS = 512;
-var K2 = 0.9 / Math.SQRT2;
+var EDGE = 0.9;
+var FLOOR_DB = 48;
+var FS = Math.SQRT2;
+var radius = (len) => len <= 0 ? 0 : EDGE * Math.max(0, Math.min(1, (20 * Math.log10(len / FS) + FLOOR_DB) / FLOOR_DB)) / len;
 var SILENT = 1e-4;
 function stereoShape(L2, R2) {
   const n10 = Math.min(L2.length, R2.length);
@@ -26683,11 +26730,12 @@ function stereoShape(L2, R2) {
   pk *= Math.SQRT1_2;
   const corr = ll2 > 1e-9 && rr2 > 1e-9 ? Math.max(-1, Math.min(1, lr2 / Math.sqrt(ll2 * rr2))) : ll2 + rr2 > 1e-9 ? 0 : null;
   if (pk < SILENT) return { path: "", corr };
-  const k2 = K2, step = Math.max(1, Math.floor(n10 / SCOPE_POINTS));
+  const step = Math.max(1, Math.floor(n10 / SCOPE_POINTS));
   const xs = [], ys = [];
   for (let i10 = 0; i10 < n10; i10 += step) {
-    xs.push((R2[i10] - L2[i10]) * Math.SQRT1_2 * k2);
-    ys.push(-(L2[i10] + R2[i10]) * Math.SQRT1_2 * k2);
+    const x2 = (R2[i10] - L2[i10]) * Math.SQRT1_2, y2 = -(L2[i10] + R2[i10]) * Math.SQRT1_2, k2 = radius(Math.hypot(x2, y2));
+    xs.push(x2 * k2);
+    ys.push(y2 * k2);
   }
   const f2 = (v) => v.toFixed(3), m2 = xs.length;
   if (m2 < 2) return { path: m2 ? `M${f2(xs[0])},${f2(ys[0])}` : "", corr };
@@ -28297,7 +28345,7 @@ var W2 = (e10) => {
   let t10 = parseFloat(e10);
   return isNaN(t10) ? e10 : t10;
 };
-var K3 = (e10) => {
+var K2 = (e10) => {
   let t10 = N(e10) ? Number(e10) : NaN;
   return isNaN(t10) ? e10 : t10;
 };
@@ -30556,7 +30604,7 @@ function iL(e10, t10) {
     let a11, c11 = t11.el = e11.el, { patchFlag: u3, dynamicChildren: d4, dirs: h3 } = t11;
     u3 |= 16 & e11.patchFlag;
     let g3 = e11.props || f, m2 = t11.props || f;
-    if (n11 && iV(n11, false), (a11 = m2.onVnodeBeforeUpdate) && lm(a11, n11, t11, e11), h3 && nu(t11, e11, n11, "beforeUpdate"), n11 && iV(n11, true), (g3.innerHTML && null == m2.innerHTML || g3.textContent && null == m2.textContent) && p2(c11, ""), d4 ? D2(e11.dynamicChildren, d4, c11, n11, r11, i$(t11, i11), l11) : s11 || K4(e11, t11, c11, null, n11, r11, i$(t11, i11), l11, false), u3 > 0) {
+    if (n11 && iV(n11, false), (a11 = m2.onVnodeBeforeUpdate) && lm(a11, n11, t11, e11), h3 && nu(t11, e11, n11, "beforeUpdate"), n11 && iV(n11, true), (g3.innerHTML && null == m2.innerHTML || g3.textContent && null == m2.textContent) && p2(c11, ""), d4 ? D2(e11.dynamicChildren, d4, c11, n11, r11, i$(t11, i11), l11) : s11 || K3(e11, t11, c11, null, n11, r11, i$(t11, i11), l11, false), u3 > 0) {
       if (16 & u3) F2(c11, g3, m2, n11, i11);
       else if (2 & u3 && g3.class !== m2.class && o10(c11, "class", null, m2.class, i11), 4 & u3 && o10(c11, "style", g3.style, m2.style, i11), 8 & u3) {
         let e12 = t11.dynamicProps;
@@ -30587,7 +30635,7 @@ function iL(e10, t10) {
     }
   }, $3 = (e11, t11, n11, r11, i11, s11, o11, a11, u3) => {
     let d4 = t11.el = e11 ? e11.el : c10(""), p3 = t11.anchor = e11 ? e11.anchor : c10(""), { patchFlag: h3, dynamicChildren: f2, slotScopeIds: g3 } = t11;
-    g3 && (a11 = a11 ? a11.concat(g3) : g3), null == e11 ? (l10(d4, n11, r11), l10(p3, n11, r11), O2(t11.children || [], n11, p3, i11, s11, o11, a11, u3)) : h3 > 0 && 64 & h3 && f2 && e11.dynamicChildren && e11.dynamicChildren.length === f2.length ? (D2(e11.dynamicChildren, f2, n11, i11, s11, o11, a11), (null != t11.key || i11 && t11 === i11.subTree) && ij(e11, t11, true)) : K4(e11, t11, n11, p3, i11, s11, o11, a11, u3);
+    g3 && (a11 = a11 ? a11.concat(g3) : g3), null == e11 ? (l10(d4, n11, r11), l10(p3, n11, r11), O2(t11.children || [], n11, p3, i11, s11, o11, a11, u3)) : h3 > 0 && 64 & h3 && f2 && e11.dynamicChildren && e11.dynamicChildren.length === f2.length ? (D2(e11.dynamicChildren, f2, n11, i11, s11, o11, a11), (null != t11.key || i11 && t11 === i11.subTree) && ij(e11, t11, true)) : K3(e11, t11, n11, p3, i11, s11, o11, a11, u3);
   }, B2 = (e11, t11, n11, r11, i11, l11, s11, o11, a11) => {
     t11.slotScopeIds = o11, null == e11 ? 512 & t11.shapeFlag ? i11.ctx.activate(t11, n11, r11, s11, a11) : j2(t11, n11, r11, i11, l11, s11, a11) : U2(e11, t11, a11);
   }, j2 = (e11, t11, n11, r11, i11, l11, s11) => {
@@ -30697,7 +30745,7 @@ function iL(e10, t10) {
       } else t12 && (iO(e12, t12), s11 = { default: 1 });
       if (l11) for (let e13 in i11) iA(e13) || null != s11[e13] || delete i11[e13];
     })(e11, t11.children, n11), eI(), t7(e11), eO();
-  }, K4 = (e11, t11, n11, r11, i11, l11, s11, o11, a11 = false) => {
+  }, K3 = (e11, t11, n11, r11, i11, l11, s11, o11, a11 = false) => {
     let c11 = e11 && e11.children, u3 = e11 ? e11.shapeFlag : 0, d4 = t11.children, { patchFlag: h3, shapeFlag: f2 } = t11;
     if (h3 > 0) {
       if (128 & h3) return void G2(c11, d4, n11, r11, i11, l11, s11, o11, a11);
@@ -30855,7 +30903,7 @@ function iL(e10, t10) {
   }, er2 = false, ei2 = (e11, t11, n11) => {
     let r11;
     null == e11 ? t11._vnode && (Q2(t11._vnode, null, null, true), r11 = t11._vnode.component) : x2(t11._vnode || null, e11, t11, null, null, null, n11), t11._vnode = e11, er2 || (er2 = true, t7(r11), ne(), er2 = false);
-  }, el2 = { p: x2, um: Q2, m: X2, r: Z2, mt: j2, mc: O2, pc: K4, pbc: D2, n: en2, o: e10 };
+  }, el2 = { p: x2, um: Q2, m: X2, r: Z2, mt: j2, mc: O2, pc: K3, pbc: D2, n: en2, o: e10 };
   return t10 && ([r10, i10] = t10(el2)), { render: ei2, hydrate: r10, createApp: (n10 = r10, function(e11, t11 = null) {
     w(e11) || (e11 = S({}, e11)), null == t11 || E(t11) || (t11 = null);
     let r11 = io(), i11 = /* @__PURE__ */ new WeakSet(), l11 = [], s11 = false, o11 = r11.app = { _uid: ia++, _component: e11, _props: t11, _container: null, _context: r11, _instance: null, version: lB, get config() {
@@ -30943,7 +30991,7 @@ function iz(e10, t10, n10, r10, i10, l10, s10, o10, a10, c10, u2 = false) {
   var d3;
   let p2, h2, { p: f2, m: g3, um: m2, n: y2, o: { parentNode: b3, remove: _2 } } = c10, S2 = null != (p2 = (d3 = e10).props && d3.props.suspensible) && false !== p2;
   S2 && t10 && t10.pendingBranch && (h2 = t10.pendingId, t10.deps++);
-  let x2 = e10.props ? K3(e10.props.timeout) : void 0, C2 = l10, k2 = { vnode: e10, parent: t10, parentComponent: n10, namespace: s10, container: r10, hiddenContainer: i10, deps: 0, pendingId: iq++, timeout: "number" == typeof x2 ? x2 : -1, activeBranch: null, isFallbackMountPending: false, pendingBranch: null, isInFallback: !u2, isHydrating: u2, isUnmounted: false, effects: [], resolve(e11 = false, n11 = false) {
+  let x2 = e10.props ? K2(e10.props.timeout) : void 0, C2 = l10, k2 = { vnode: e10, parent: t10, parentComponent: n10, namespace: s10, container: r10, hiddenContainer: i10, deps: 0, pendingId: iq++, timeout: "number" == typeof x2 ? x2 : -1, activeBranch: null, isFallbackMountPending: false, pendingBranch: null, isInFallback: !u2, isHydrating: u2, isUnmounted: false, effects: [], resolve(e11 = false, n11 = false) {
     let { vnode: r11, activeBranch: i11, pendingBranch: s11, pendingId: o11, effects: a11, parentComponent: c11, container: u3, isInFallback: d4 } = k2, p3 = false;
     if (k2.isHydrating) k2.isHydrating = false;
     else if (!e11) {
@@ -31423,12 +31471,12 @@ function l9(e10) {
     if (null == e11) return null;
     {
       if (E(e11)) return [function(e12) {
-        return K3(e12);
+        return K2(e12);
       }(e11.enter), function(e12) {
-        return K3(e12);
+        return K2(e12);
       }(e11.leave)];
       let t11 = function(e12) {
-        return K3(e12);
+        return K2(e12);
       }(e11);
       return [t11, t11];
     }
@@ -31756,7 +31804,7 @@ var sM = class _sM extends sP {
       let { props: r10, styles: i10 } = e11;
       if (r10 && !T(r10)) for (let e12 in r10) {
         let t12 = r10[e12];
-        (t12 === Number || t12 && t12.type === Number) && (e12 in this._props && (this._props[e12] = K3(this._props[e12])), (n10 || (n10 = /* @__PURE__ */ Object.create(null)))[L(e12)] = true);
+        (t12 === Number || t12 && t12.type === Number) && (e12 in this._props && (this._props[e12] = K2(this._props[e12])), (n10 || (n10 = /* @__PURE__ */ Object.create(null)))[L(e12)] = true);
       }
       this._numberProps = n10, this._resolveProps(e11), this.shadowRoot && this._applyStyles(i10), this._mount(e11);
     }, t10 = this._def.__asyncLoader;
@@ -31781,7 +31829,7 @@ var sM = class _sM extends sP {
   _setAttr(e10) {
     if (e10.startsWith("data-v-")) return;
     let t10 = this.hasAttribute(e10), n10 = t10 ? this.getAttribute(e10) : sR, r10 = L(e10);
-    t10 && this._numberProps && this._numberProps[r10] && (n10 = K3(n10)), this._setProp(r10, n10, false, true);
+    t10 && this._numberProps && this._numberProps[r10] && (n10 = K2(n10)), this._setProp(r10, n10, false, true);
   }
   _getProp(e10) {
     return this._props[e10];
@@ -39077,12 +39125,24 @@ function ghostSync() {
 var history = emptyHistory();
 function update(next2, gesture) {
   if (next2 === st2) return;
+  const asked = next2;
+  if (next2.song !== st2.song) next2 = withStartDyns(next2);
   if (next2.song !== st2.song || next2.caret !== st2.caret || next2.sel !== st2.sel) view.noteUserEdit();
   if (next2.song !== st2.song) {
-    history = record2(history, st2, doc.extras, gesture ?? null, performance.now(), describeSongChange(st2, next2));
+    history = record2(history, st2, doc.extras, gesture ?? null, performance.now(), describeSongChange(st2, asked.song !== st2.song ? asked : next2));
     renderUndo();
   }
   applyState(next2);
+}
+function withStartDyns(s10) {
+  const r10 = ensureStartDyns(s10.song, s10.nextId);
+  if (!r10.added.length) return s10;
+  let caret = s10.caret, sel = s10.sel;
+  for (const a10 of r10.added) if (a10.paper === s10.at.paper && a10.part === s10.at.part) {
+    if (a10.index <= caret) caret++;
+    if (sel) sel = { from: sel.from + (a10.index <= sel.from ? 1 : 0), to: sel.to + (a10.index < sel.to ? 1 : 0) };
+  }
+  return { ...s10, song: r10.song, nextId: r10.nextId, caret, sel };
 }
 function updateExtras(next2, locus, gesture) {
   if (next2 === doc.extras) return;
@@ -42165,6 +42225,8 @@ function loadDoc(song, o10) {
   coverTouched = false;
   history = emptyHistory();
   st2 = initState(song);
+  const startDyns = ensureStartDyns(st2.song, st2.nextId).added.length;
+  st2 = withStartDyns(st2);
   doc.saved = { song: st2.song, lounge: loungeKey(), refs: refHost.rev() };
   const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
   applyDesk(d3);
@@ -42186,6 +42248,7 @@ function loadDoc(song, o10) {
   renderTitle();
   updateChrome();
   if (st2.song.parts.some((p2) => activeInstrument(doc.extras, p2.role)?.engine === "tsukuyomi")) void singer.warm(modelBases(), BUDGET.speechDisk);
+  if (startDyns) info(`\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 ${startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09`);
   schedulePrewarm();
 }
 function markSaved() {
@@ -43569,4 +43632,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b17ed1429878.mjs.map
+//# sourceMappingURL=moonsinger-b57f52ee55a9.mjs.map

@@ -21,12 +21,15 @@ describe("李萨如图 / 左右相关", () => {
     assert(pts(g.path).every(([px, py]) => Math.abs(px - py) < 1e-3), "x = y：正半周落在左上");
     assert(pts(g.path).some(([px, py]) => px < -0.3 && py < -0.3), "有点在左上");
   });
-  it("静音 = 没有相关、什么都不画（停了不留一个点）；刻度固定：小一半的声音画得小一半（v0.10.25，不自动放大）", () => {
+  it("静音 = 没有相关、什么都不画（停了不留一个点）；刻度固定（不自动放大）：对数半径——小声的也看得见", () => {
     const z = stereoShape(new Float32Array(1024), new Float32Array(1024)); eq(z.corr, null); eq(z.path, "");
     const big = sine(1024, 0.013, 0.5), small = sine(1024, 0.013, 0.25);
     const r = (a: Float32Array) => Math.max(...pts(stereoShape(a, a).path).map(([, py]) => Math.abs(py)));
-    assert(Math.abs(r(big) / r(small) - 2) < 0.05, `大小比 ${(r(big) / r(small)).toFixed(3)}`);
+    // 对数半径（v0.10.39）：−6 dB = 外圈往里 6/48 那么多；0 dBFS 单声道碰到边；−48 dBFS 及以下 = 中心
+    const at = (db: number) => 0.9 * (1 - (-db) / 48);
+    assert(Math.abs(r(big) - at(-6.02)) < 0.02 && Math.abs(r(small) - at(-12.04)) < 0.02, `−6 / −12 dB 的半径 ${r(big).toFixed(3)} / ${r(small).toFixed(3)}（应 ${at(-6.02).toFixed(3)} / ${at(-12.04).toFixed(3)}）`);
     assert(Math.abs(r(sine(1024, 0.013, 1)) - 0.9) < 0.02, `0 dBFS 单声道碰到边（${r(sine(1024, 0.013, 1)).toFixed(3)}）`);
+    assert(r(sine(1024, 0.013, 0.02)) > 0.25, `−34 dBFS 的小声轨也看得见（半径 ${r(sine(1024, 0.013, 0.02)).toFixed(3)}；线性刻度只有 0.018）`);
   });
 });
 describe("李萨如图 = 圆滑的线（v0.10.17）", () => {

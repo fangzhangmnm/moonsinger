@@ -63,7 +63,7 @@ if (await p.$eval(".pad-panel", (e) => e.hidden)) { await p.click("#padTab"); aw
     check((await st()).toks === was.replace(/r(\d+)/, (_m, d) => `r${Number(d) - 840} r840`), "选中休止按退格 = 短一步（后面不挪）", `${was} → ${(await st()).toks}`);
     await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), t = s.song.papers[0].tracks[s.at.part], i = t.findIndex((x) => x.kind === "rest"); m.set({ ...s, sel: { from: i, to: i + 1 }, caret: i + 1 }); });
     await p.keyboard.press("Delete"); await p.waitForTimeout(150);
-    check((await st()).toks === "n r840 n n", "选中休止按 Delete = 删掉", (await st()).toks);
+    check((await st()).toks === "d n r840 n n", "选中休止按 Delete = 删掉", (await st()).toks);
   }
   check(errs.length === 0, `${tag}：没有页面错误`, errs.join(" | "));
   await ctx.close();

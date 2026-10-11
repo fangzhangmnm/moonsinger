@@ -22,7 +22,7 @@ try {
   await p.keyboard.press("End");
   // Shift+Enter = 句号（pad 符号层里那个键同一条命令）
   await p.keyboard.press("Shift+Enter"); await p.waitForTimeout(150);
-  check((await kinds()) === "n n n n ,", "Shift+Enter = 句号", await kinds());
+  check((await kinds()) === "dyn n n n n ,", "Shift+Enter = 句号", await kinds());
   for (const k of ["Digit6", "Digit5", "Digit3"]) await p.keyboard.press(k);
   await p.waitForTimeout(150);
   check((await systems()) === 1, "句不换行（还是一行谱）", String(await systems()));
@@ -40,7 +40,7 @@ try {
   console.log("    [dbg] lyric open:", await p.evaluate(() => window.__moonsinger.view.lyrics.open), "click", JSON.stringify(ly), "kinds", await kinds());
   for (const ch of ["さ", "く", "ら", "。"]) { await p.keyboard.type(ch); await p.waitForTimeout(80); }
   await p.waitForTimeout(200);
-  const k2 = await kinds(); check(k2.startsWith("n n n ,"), "歌词「さくら。」：第三个音后面插了句", k2);
+  const k2 = await kinds(); check(k2.startsWith("dyn n n n ,"), "歌词「さくら。」：第三个音后面插了句", k2);
   await p.keyboard.press("Escape"); await p.evaluate(() => window.__moonsinger.setMode("notes"));
   // 存 → 开：句来回（breath-mark）
   const bytes = await p.evaluate(() => Array.from(window.__moonsinger.bytes()));

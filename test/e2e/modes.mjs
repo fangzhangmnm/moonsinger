@@ -52,13 +52,13 @@ await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ .
 await p.click('.pad-head [data-sympage="dyn"]'); await p.waitForTimeout(80);
 await p.click('[data-sym="dyn:f"]'); await p.waitForTimeout(150);
 const dynN = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "dyn").length; });
-check((await dynN()) === 1, "放了一个 f");
+check((await dynN()) === 2, "放了一个 f（另一个 = v0.10.39 纸头强制的 mf）");
 const f = await p.$eval("#score text.dyn", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await p.mouse.click(f.x, f.y); await p.waitForTimeout(150);
 check(!!(await p.$(".ctx-menu")), "「符」里点力度字 = 它的小菜单");
 await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu")?.remove()); await p.waitForTimeout(80);
 await p.keyboard.press("Backspace"); await p.waitForTimeout(120);
-check((await dynN()) === 0 && (await notes()).split(" ").length === 4, "「符」里退格 = 删记号（不删音）", `${await dynN()} 个力度 / ${await notes()}`);
+check((await dynN()) === 1 && (await notes()).split(" ").length === 4, "「符」里退格 = 删记号（不删音）", `${await dynN()} 个力度 / ${await notes()}`);
 await mode("notes");
 await p.mouse.click(f.x, f.y); await p.waitForTimeout(150);
 // 4. 录音室进底座：键盘让位、谱还看得见；Esc 收起 = 键盘回来

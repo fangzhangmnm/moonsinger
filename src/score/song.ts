@@ -533,10 +533,14 @@ function resizeSingle(st: EditorState, i: number, by: number): EditorState {
   return next(st, nt, { sel: { from: i, to: i + 1 }, caret: i + 1 });
 }
 
+/** 曲级记号（力度字 / 渐强渐弱 / 风格）跟着它后面那个音（复制、清记号都这么算）。 */
+const isPhraseMark = (t: Token | undefined): boolean => !!t && (t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove");
+/** 结构记号（小节线 / 反复 / 跳转）插在光标处时，光标前面紧挨着的曲级记号让到它后面（v0.10.39：纸头强制写了力度之后，在纸头插 |: 会落在力度后面 = 第二遍不重读这个力度）。 */
+const behindPhrase = (toks: Token[], at: number, h: number): number => { let i = at; while (i > h && isPhraseMark(toks[i - 1])) i--; return i; };
 /** 反复小节线（pad 符号层「反复」菜单）：光标紧挨着一条小节线（前面或后面）= 把它改成反复的（|: 和 :| 撞在同一条上 = :|:）；否则在光标处插一条。
  *  repeat = null = 改回普通小节线。times 只给 :|（一共放几遍，2 = 不写）。 */
 export function setRepeatBar(st: EditorState, repeat: Repeat | null, times?: number): EditorState {
-  const toks = tr(st), at = st.sel ? st.sel.to : st.caret, h = headLen(toks);
+  const toks = tr(st), h = headLen(toks), was = st.sel ? st.sel.to : st.caret, at = behindPhrase(toks, was, h);
   const near = toks[at - 1]?.kind === "bar" && at - 1 >= h ? at - 1 : toks[at]?.kind === "bar" ? at : -1;
   const mk = (b: BarTok): BarTok => {
     let r: Repeat | null = repeat;
@@ -550,25 +554,25 @@ export function setRepeatBar(st: EditorState, repeat: Repeat | null, times?: num
   if (!repeat) return st;
   const id = st.nextId;
   nt.splice(at, 0, mk({ kind: "bar", id }));
-  return next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+  return next(st, nt, { caret: was + 1, sel: null, nextId: id + 1, log: [] });
 }
 /** 段落线 ‖ / 终止线（v0.9.32）：光标挨着一条小节线（前面或后面）= 把它改成这种（反复去掉）；否则在光标处插一条。null = 改回普通小节线。 */
 export function setBarStyle(st: EditorState, style: "double" | "final" | null): EditorState {
-  const toks = tr(st), at = st.sel ? st.sel.to : st.caret, h = headLen(toks);
+  const toks = tr(st), h = headLen(toks), was = st.sel ? st.sel.to : st.caret, at = behindPhrase(toks, was, h);
   const near = toks[at - 1]?.kind === "bar" && at - 1 >= h ? at - 1 : toks[at]?.kind === "bar" ? at : -1;
   const nt = toks.slice();
   if (near >= 0) { const { repeat: _r, times: _t, style: _s, ...rest } = toks[near] as BarTok; nt[near] = { ...rest, ...(style ? { style } : {}) }; return next(st, nt, { sel: null }); }
   if (!style) return st;
   const id = st.nextId; nt.splice(at, 0, { kind: "bar", id, style });
-  return next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+  return next(st, nt, { caret: was + 1, sel: null, nextId: id + 1, log: [] });
 }
 /** 房子 / 跳转记号：插在光标处（同调号 / 拍号 / 速度，是结构不是表情）。光标后面紧挨着小节线 = 插在小节线后面（房子从下一小节开头起）。 */
 export function insertNav(st: EditorState, what: NavWhat, nums?: number[]): EditorState {
-  const toks = tr(st); let at = st.sel ? st.sel.from : st.caret;
+  const toks = tr(st), was = st.sel ? st.sel.from : st.caret; let at = behindPhrase(toks, was, headLen(toks));
   if (what === "ending" && toks[at]?.kind === "bar") at++;
   const id = st.nextId, nt = toks.slice();
   nt.splice(at, 0, { kind: "nav", id, what, ...(what === "ending" ? { nums: nums && nums.length ? [...nums].sort((a, b) => a - b) : [1] } : {}) });
-  return next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
+  return next(st, nt, { caret: Math.max(at, was) + 1, sel: null, nextId: id + 1, log: [] });
 }
 /** 选区里清掉记号（2026-10-10 user「批量修改，删除曲级（你之前分了曲级vs音符级）力度记号的方法，而不是得一个个手删 场景是我把人声的notes给复制到其他的轨里面之后，
  *  想把之前调校的力度和articulation给删了按新乐器的特性写」）。phrase = 曲级：力度字 / 渐强渐弱 / 渐到 / 风格（选区起点前紧挨着第一个音的也算，同复制）；
@@ -576,7 +580,7 @@ export function insertNav(st: EditorState, what: NavWhat, nums?: number[]): Edit
 export function clearMarks(st: EditorState, which: "phrase" | "note" | "all"): EditorState {
   if (!st.sel) return st;
   const toks = tr(st), h = headLen(toks), { from, to } = st.sel;
-  const isPhrase = (t: Token) => t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove";
+  const isPhrase = isPhraseMark;
   let a = from; while (a > h && isPhrase(toks[a - 1])) a--;
   const out: Token[] = []; let before = 0, inside = 0, touched = false;
   toks.forEach((t, i) => {
@@ -1462,6 +1466,27 @@ export function removePart(st: EditorState, partId: string): EditorState {
 }
 /** 声部上下挪一格（谱上从上到下 = Song.parts 的顺序；user 2026-10-08「声部顺序应该能重排」）。每张纸、每条 track 都不动，只换顺序。
  *  速度只看每张纸最上面那一行（tempoOwner）；挪了谁在最上面，每张纸开头的速度照旧（keepSheetTempos 把各行谱头写齐）。 */
+/** 每张纸（曲段）开头强制写明力度（v0.10.39；user wishlist「强制要求开头有力度标记」→「每张纸（曲段）开头，对」）：
+ *  每位歌手在每张纸上第一个音之前没有力度记号 = 在第一个音前面补一个——**补的是这里本来就生效的那个**（这位在前一张纸（歌里的顺序）最后一个力度；最前面 = mf，同播放的默认），听起来不变、只是写明了。
+ *  返回补了哪几处（纸 / 歌手 / 下标）。纯函数：main 在每次改谱（update）和打开歌时过一遍。 */
+export function ensureStartDyns(song: Song, nextId: number): { song: Song; nextId: number; added: { paper: string; part: string; index: number }[] } {
+  let id = nextId; const added: { paper: string; part: string; index: number }[] = [], last = new Map<string, Dyn>();
+  const papers = song.papers.map((pp) => {
+    let tracks = pp.tracks, changed = false;
+    for (const part of song.parts) {
+      const t = tracks[part.id]; if (!t) continue;
+      let first = -1, has = false;
+      for (let i = headLen(t); i < t.length; i++) { const k = t[i]; if (k.kind === "dyn") { has = true; break; } if (k.kind === "note") { first = i; break; } }
+      if (!has && first >= 0) {
+        tracks = { ...tracks, [part.id]: [...t.slice(0, first), { kind: "dyn", id: id++, value: last.get(part.id) ?? "mf" } as Token, ...t.slice(first)] };
+        changed = true; added.push({ paper: pp.id, part: part.id, index: first });
+      }
+      const tt = tracks[part.id]; for (let i = tt.length - 1; i >= 0; i--) { const k = tt[i]; if (k.kind === "dyn") { last.set(part.id, k.value); break; } }
+    }
+    return changed ? { ...pp, tracks } : pp;
+  });
+  return added.length ? { song: { ...song, papers }, nextId: id, added } : { song, nextId, added };
+}
 /** 一家挨在一起（v0.10.36）：每位主人后面紧跟它的房客（房客之间、各家之间原来的先后不变）。读档 / 挪 / 挂的时候都理一遍——
  *  以前房客没挨着主人时「挪」把它当成单独一块越挪越散，混音台卡片跟着乱序（user「卡片排序在有合租的时候有问题会乱序，可能合租的时候没有正确排好序」）。 */
 export function familyOrder(parts: readonly PartDef[]): PartDef[] {

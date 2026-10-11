@@ -93,6 +93,7 @@ import "./ghost-acc.test.ts";
 import "./shared-staff.test.ts";
 import "./percussion.test.ts";
 import "./merge.test.ts";
+import "./start-dyns.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

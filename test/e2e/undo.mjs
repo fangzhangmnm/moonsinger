@@ -9,9 +9,9 @@ const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { 
 try {
   const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
   await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(500);
-  const n = () => p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.length - 3);
+  const n = () => p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").length);   // v0.10.39：纸头自动补一个力度，只数音
   const hist = () => p.evaluate(() => window.__moonsinger.history());
-  const lyrics = () => p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.slice(3).map((t) => t.kind === "note" ? (t.lyric ?? "·") : t.kind).join(" "));
+  const lyrics = () => p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.slice(3).filter((t) => t.kind !== "dyn").map((t) => t.kind === "note" ? (t.lyric ?? "·") : t.kind).join(" "));
   check(await p.$eval("#undoBtn", (e) => e.disabled) && await p.$eval("#redoBtn", (e) => e.disabled), "开局：撤销 / 重做都灰");
   await p.click("#score", { position: { x: 300, y: 300 } });
   for (const k of ["Digit1", "Digit2", "Digit3"]) await p.keyboard.press(k);
@@ -51,7 +51,7 @@ try {
   await p.waitForTimeout(2600);
   await p.keyboard.press("Control+z"); await p.waitForTimeout(2600);
   const id = await p.evaluate(() => window.__moonsinger.identifier());
-  const saved = await p.evaluate(async (id) => { const bl = await window.__moonsinger.store().zip(id, { mode: "existing" }).open(); const u = new Uint8Array(await bl.arrayBuffer()); return window.__moonsinger.open("x.mxl", u).song.papers[0].tracks.P1.length - 3; }, id);
+  const saved = await p.evaluate(async (id) => { const bl = await window.__moonsinger.store().zip(id, { mode: "existing" }).open(); const u = new Uint8Array(await bl.arrayBuffer()); return window.__moonsinger.open("x.mxl", u).song.papers[0].tracks.P1.filter((t) => t.kind === "note").length; }, id);
   check(saved === 1, "歌库里撤销也自动存进去了", String(saved));
   // ── extras 进同一条 undo（user 2026-10-08「undo 同意啊」「每一步快照带 locus 同意」）：录音室推子 → ⌘Z 回去 + toast 说是录音室的；重做再回来
   await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(300);
