@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.28-2026-10-10";
+var APP_VERSION = "v0.10.29-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7767,7 +7767,7 @@ function engrave(song, o10) {
   };
   const bars = [];
   const chordHeads = [];
-  const sharedRows = [], virtualOut = {}, measures = [];
+  const sharedRows = [], virtualOut = {}, measures = [], families = [];
   const rows = [], notes = [], slots = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
   const partsHit = [], papersHit = [];
   let head = null, shortBars = 0;
@@ -7857,7 +7857,7 @@ function engrave(song, o10) {
     }
     const present = o10.parts.filter((p2) => paper.tracks[p2.id]), visible = present.filter((p2) => !p2.hidden), hiddenParts = present.filter((p2) => p2.hidden);
     const hostOf = (id2) => song.parts.find((x3) => x3.id === id2)?.host;
-    const editingHere = o10.at.paper === paper.id ? o10.at.part : null;
+    const editingHere = !o10.foldAll && o10.at.paper === paper.id ? o10.at.part : null;
     const absorbed = /* @__PURE__ */ new Map(), virt = /* @__PURE__ */ new Map(), lowOf = /* @__PURE__ */ new Map();
     const voice2Of = /* @__PURE__ */ new Map(), shareWith = /* @__PURE__ */ new Map(), startFor = /* @__PURE__ */ new Map();
     for (const hp of visible) {
@@ -7899,6 +7899,7 @@ function engrave(song, o10) {
         staffOf(lid, { keyOf: keyOf2, keep: (p2) => midiOf(p2) < 60, marks: "bars" });
       } else staffOf(hp.id, { keyOf: keyOf2 });
     }
+    const openFams = visible.filter((hp) => !hostOf(hp.id) && !absorbed.has(hp.id) && visible.some((t10) => hostOf(t10.id) === hp.id)).map((hp) => ({ host: hp.id, ids: [hp.id, ...visible.filter((t10) => hostOf(t10.id) === hp.id).map((t10) => t10.id)] }));
     const parts = visible.filter((p2) => !absorbed.get(hostOf(p2.id) ?? "")?.includes(p2)).flatMap((p2) => {
       if (!virt.has(p2.id)) return [p2];
       const drums = [p2, ...absorbed.get(p2.id)].every((m2) => !!m2.perc), lid = lowOf.get(p2.id);
@@ -8008,8 +8009,9 @@ function engrave(song, o10) {
     const cols = [...colMap.values()].sort((a10, b3) => a10.tick - b3.tick || a10.slot - b3.slot || a10.n - b3.n);
     const spans = per.flatMap((q2) => q2.units.filter((u2) => u2.kind === "chunk").map((u2) => [u2.tick, u2.tick + u2.ticks]));
     const breakableAt = (tick) => !spans.some(([a10, b3]) => a10 < tick - 1e-6 && b3 > tick + 1e-6);
-    const ind0 = Math.max(...parts.map((p2) => Math.max(...nameLines(p2.name, p2.staves ?? 1).map(nameW)))) + 1.4;
-    const indN = parts.some((p2) => p2.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p2) => nameW(p2.abbr ?? ""))) + 1.4 : 0;
+    const FAM_W = openFams.length && o10.titlePlaceholder ? 0.8 : 0;
+    const ind0 = Math.max(...parts.map((p2) => Math.max(...nameLines(p2.name, p2.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;
+    const indN = parts.some((p2) => p2.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p2) => nameW(p2.abbr ?? ""))) + 1.4 + FAM_W : 0;
     const keyNow = new Map(per.map((q2) => [q2.p.id, q2.head.key]));
     const clefW = (q2) => q2.fFam ? W.fClef : W.gClef;
     const headerOf = (first) => Math.max(...per.map((q2) => {
@@ -8295,6 +8297,13 @@ function engrave(song, o10) {
           prims.push({ t: "path", d: `M${bx + P2(0.5)},${y02}Q${bx - P2(0.3)},${y02 + P2(0.6)} ${bx},${(y02 + y1) / 2}Q${bx - P2(0.3)},${y1 - P2(0.6)} ${bx + P2(0.5)},${y1}`, cls: "brace" });
         }
       });
+      if (ind > 0 && o10.titlePlaceholder) for (const fam of openFams) {
+        const rs2 = fam.ids.map((id2) => per.findIndex((q2) => q2.p.id === id2)).filter((i10) => i10 >= 0);
+        if (rs2.length < 2) continue;
+        const r02 = Math.min(...rs2), r13 = Math.max(...rs2), x3 = P2(MARGIN + ind - 1.55), y02 = yOf(rowOf(s10, r02, 0), TOP_LINE) - P2(0.6), y1 = yOf(rowOf(s10, r13, per[r13].staves - 1), BOTTOM_LINE) + P2(0.6);
+        prims.push({ t: "path", d: `M${x3 + P2(0.55)},${y02}L${x3},${y02}L${x3},${y1}L${x3 + P2(0.55)},${y1}`, cls: "family-bracket" });
+        families.push({ paper: paper.id, host: fam.host, x: x3 - P2(0.6), y: y02, w: P2(1.3), h: y1 - y02 });
+      }
       if (nRowsSys > 1) prims.push({ t: "line", x1: P2(MARGIN + ind), y1: yOf(rowOf(s10, 0, 0), TOP_LINE), x2: P2(MARGIN + ind), y2: yOf(rowOf(s10, nR2 - 1, per[nR2 - 1].staves - 1), BOTTOM_LINE), w: P2(ENGRAVE.thinBar * 1.4), cls: "bar" });
     }
     {
@@ -8931,7 +8940,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P2(PG.h) : yCur + P2(MX.b);
-  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -10090,6 +10099,7 @@ var ScoreView = class {
       parts: this.host.parts(),
       measureLyric: this.measureAt(LYRIC_EM * sp2),
       titlePlaceholder: true,
+      ...this.rules.edit ? {} : { foldAll: true },
       ...this.caretEnd ? { caretEnd: true } : {},
       ...page && this.host.lyricRaise?.() ? { lyricRaise: this.host.lyricRaise() } : {},
       autoBars: this.host.autoBars?.() ?? true,
@@ -10769,6 +10779,27 @@ var ScoreView = class {
     this.host.audition?.(hit.index, true);
     this.holdPid = pid;
   }
+  /** 合租展开着的一家左边那条括号（v0.10.29）：点 = 光标挪到这一家后面紧挨着的那位（不在任何一家里的；后面没有 = 前面最近的那位）→ 这一家叠回去。
+   *  user「把这一家的几行括在一起…点这条括号等于「光标挪到这一家后面紧挨着的那位」…可以」。视图不跟过去（同点名字）。 */
+  leaveFamilyAt(x2, y2) {
+    const L2 = this.layout;
+    if (!L2 || !this.rules.edit) return false;
+    const fb = L2.families.find((b3) => this.inBox(b3, x2, y2));
+    if (!fb) return false;
+    const song = this.host.get().song, hostOf = (id2) => song.parts.find((p2) => p2.id === id2)?.host;
+    const inFam = (id2) => id2 === fb.host || hostOf(id2) === fb.host, loose = (id2) => !hostOf(id2) && !song.parts.some((p2) => p2.host === id2);
+    const order = [...new Set(L2.systems.filter((r10) => r10.paper === fb.paper).map((r10) => realPart(r10.part)))], last = Math.max(...order.map((id2, i10) => inFam(id2) ? i10 : -1));
+    const next2 = order.slice(last + 1).find(loose) ?? [...order.slice(0, order.indexOf(fb.host))].reverse().find(loose) ?? order.slice(last + 1)[0] ?? null;
+    if (!next2) {
+      this.host.notice?.("\u8FD9\u5F20\u7EB8\u4E0A\u53EA\u6709\u8FD9\u4E00\u5BB6\uFF1A\u6CA1\u6709\u522B\u7684\u6B4C\u624B\u53EF\u4EE5\u632A\u8FC7\u53BB\uFF08\u5207\u5230\u300C\u542C\u300D\u5C31\u90FD\u53E0\u8D77\u6765\uFF09");
+      return true;
+    }
+    this.holdView = true;
+    this.host.set(setFocus(this.host.get(), fb.paper, next2));
+    this.holdView = false;
+    this.heldBase = this.baseKey();
+    return true;
+  }
   /** 歌手牌（每张纸第一行各条谱左边的声部名）：开轨的小卡——光标换到那条（setFocus 放在那条的最后），但视图不跟过去
    *  （user 2026-10-08「按vocal字弹track窗的时候页面滚动会乱」）。左键 / 右键（2026-10-10 user「右键歌手名应该也是弹歌手选项，和左键一样」）/ 听模式都走这里。 */
   openPartAt(x2, y2) {
@@ -11047,6 +11078,7 @@ var ScoreView = class {
       this.host.onCredits?.();
       return true;
     }
+    if (this.leaveFamilyAt(x2, y2)) return true;
     if (this.openPartAt(x2, y2)) return true;
     if (view2) {
       for (const pp of L2.papers) {
@@ -39517,7 +39549,7 @@ var ws = { mode: "notes", collapsed: false, tryout: false };
 var lastEditMode = "notes";
 var listenOn = () => ws.mode === "listen";
 function applyWorkspace() {
-  const d3 = dockOf(ws), padOn = d3 === "keys" || d3 === "symbols";
+  const d3 = dockOf(ws), padOn = d3 === "keys" || d3 === "symbols", wasEdit = view.rules.edit;
   view.rules = RULES[ws.mode];
   document.body.dataset.wmode = ws.mode;
   document.body.classList.toggle("listen-mode", ws.mode === "listen");
@@ -39540,7 +39572,7 @@ function applyWorkspace() {
     syncSpectrum();
   }
   updateChrome();
-  if (changed2) view.render();
+  if (changed2 || wasEdit !== view.rules.edit) view.render();
 }
 function setMode(m2) {
   if (m2 === ws.mode) return;
@@ -40140,7 +40172,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "049b5ceb2bd7",
+  cssHash: "76a3ea6bbb27",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -43343,4 +43375,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-390fcc832c06.mjs.map
+//# sourceMappingURL=moonsinger-dd6d03cbe816.mjs.map

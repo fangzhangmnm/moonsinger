@@ -1141,7 +1141,7 @@ const ws: WorkspaceState = { mode: "notes", collapsed: false, tryout: false };
 let lastEditMode: Mode = "notes";   // 从「听」回来回到哪
 const listenOn = () => ws.mode === "listen";
 function applyWorkspace(): void {
-  const d = dockOf(ws), padOn = d === "keys" || d === "symbols";
+  const d = dockOf(ws), padOn = d === "keys" || d === "symbols", wasEdit = view.rules.edit;
   view.rules = RULES[ws.mode];
   document.body.dataset.wmode = ws.mode; document.body.classList.toggle("listen-mode", ws.mode === "listen"); scoreEl.dataset.mode = ws.mode;   // 不用 body[data-mode]：歌库自己用它（gallery）
   dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.classList.toggle("is-on", b.dataset.mode === ws.mode));
@@ -1151,7 +1151,7 @@ function applyWorkspace(): void {
   if (d === "studio" && !studio.isOpen) { studio.show(); void engine.ensure().then(() => { engine.meter(true); syncSpectrum(); }).catch(() => undefined); }   // 峰值表 / 频谱：开着才要
   else if (d !== "studio" && studio.isOpen) { studio.hide(); engine.meter(false); syncSpectrum(); }
   updateChrome();
-  if (changed) view.render();
+  if (changed || wasEdit !== view.rules.edit) view.render();   // 进出「听」：合租的每一家叠起来 / 回到跟着光标（v0.10.29）
 }
 /** 换模式：收起编辑框；进「音 / 符」= 键盘弹出来；进「听」= 谱锁住、键盘收起（录音室开着的话留着）。 */
 function setMode(m: Mode): void {

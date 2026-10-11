@@ -104,6 +104,16 @@ describe("合租：排版（看个大概）", () => {
     for (const r of rows) for (const h of heads) if (h.y > r.top && h.y < r.bottom) { n++; assert(h.y >= r.inkTop! && h.y <= r.inkBottom! && r.bottom >= h.y + L.sp * 0.4, `符头 ${h.y} 在 [${r.inkTop}, ${r.inkBottom}] 里`); }
     assert(n >= 4, `叠起来的行里有符头（${n}）`);
   });
+  it("展开着的一家左边有一条括号（编辑器里才画、点它的区域在 Layout.families）；叠起来 / 导出 = 没有（v0.10.29）", () => {
+    let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
+    const ed = (x: EditorState) => engrave(x.song, { width: 900, sp: 10, at: x.at, caret: x.caret, sel: x.sel, parts: parts(x), measureLyric: (s: string) => s.length * 10, autoBars: true, titlePlaceholder: true });
+    const open = ed(setFocus(st, st.song.papers[0].id, c));
+    eq(open.families.length, 1); eq(open.families[0].host, a);
+    assert(open.prims.some((p) => p.t === "path" && p.cls === "family-bracket"), "画了括号");
+    eq(ed(setFocus(st, st.song.papers[0].id, "P2")).families.length, 0, "叠起来 = 没有括号");
+    eq(lay(setFocus(st, st.song.papers[0].id, c)).families.length, 0, "导出（没有编辑器提示）= 不画");
+    eq(engrave(st.song, { width: 900, sp: 10, at: { ...st.at, part: c }, caret: 0, sel: null, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true, titlePlaceholder: true, foldAll: true }).families.length, 0, "听模式（foldAll）= 都叠起来");
+  });
   it("现在在写的是房客 = 它拆开（有自己的谱行、能点）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
     st = setFocus(st, st.song.papers[0].id, c);

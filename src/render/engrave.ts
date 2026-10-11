@@ -54,6 +54,8 @@ export interface EngraveOpts {
   parts: PartView[];                     // 显示的声部
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
   titlePlaceholder?: boolean;            // 歌名 / 词曲 / 曲段名空着时画浅色提示 + 「＋ 新的纸」（编辑器里；导出 / 打印不画）
+  /** 合租的每一家都叠起来、不看光标在哪（v0.10.29：听模式；user「每一家点开收拢的ux怎么算」→ AI 提「听模式里所有家一律叠起来 / 写的模式光标在哪家哪家展开」→「12 同意」）。 */
+  foldAll?: boolean;
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
   /** 分页排法（user 2026-10-08「显示法还加一个分页？可以预览打印，要求和之后生成的pdf wysiwyg」）：按纸高分页、画页框 + 页码；h = 整页高、l r t b = 四边边距（sp）。没有 = 连续（一张长纸）。 */
   page?: { h: number; l: number; r: number; t: number; b: number };
@@ -145,6 +147,8 @@ export interface Layout {
   /** 每个小节在哪（v0.10.28）：这张纸上的 tick 区间 + 画在哪一行（systems 下标）、小节里第一个东西的 x（px）。播放的小节底色按播放的 tick 查这个——
    *  不再按「最晚开始的那个音」找（跨小节的长音 / 连音线后半截没有自己的点击区，小节底色就停在上一小节；user「小节高亮也算错了…碰到跨小节的音小节高亮没有update」）。 */
   measures: { paper: string; t0: number; t1: number; row: number; x: number }[];
+  /** 合租展开着的那一家（v0.10.29）：每行左边一条括号把这一家的几行括在一起；点它 = 光标挪出这一家（叠回去）。user「把这一家的几行括在一起…点这条括号等于「光标挪到这一家后面紧挨着的那位」…可以」。 */
+  families: { paper: string; host: string; x: number; y: number; w: number; h: number }[];
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; rests: RestHit[]; title: TitleHit; clefs: ClefHit[];
   arrangement: TitleHit | null;                 // 编排那一行（只在「全部」视图里有；点了就地改）
   credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
@@ -466,7 +470,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
 
   const bars: Layout["bars"] = [];
   const chordHeads: Layout["chordHeads"] = [];
-  const sharedRows: number[] = [], virtualOut: Record<string, Token[]> = {}, measures: Layout["measures"] = [];   // 合租叠起来的那几行（只读：点了不写、不放光标；v0.10.25）
+  const sharedRows: number[] = [], virtualOut: Record<string, Token[]> = {}, measures: Layout["measures"] = [], families: Layout["families"] = [];   // 合租叠起来的那几行（只读：点了不写、不放光标；v0.10.25）
   const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
   let head: Layout["head"] = null, shortBars = 0;
@@ -565,7 +569,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     //   「for shared clef i dont know why there is data contract. it is just the proper way of showing multi teanants」（不存东西）。以前（v0.10.24–27）各画各的 = 符干打架（「蝌蚪的尾巴在打架」）。
     //   一家里有谁是现在在写的 = 整家拆开（各自一行、能写）；都不是 = 叠起来、整行只读（v0.10.25，user「host也应该只读，只有展开时才能编辑」）。
     const hostOf = (id: string) => song.parts.find((x) => x.id === id)?.host;
-    const editingHere = o.at.paper === paper.id ? o.at.part : null;
+    const editingHere = !o.foldAll && o.at.paper === paper.id ? o.at.part : null;   // 听模式 = 一律叠起来
     const absorbed = new Map<string, PartView[]>(), virt = new Map<string, Token[]>(), lowOf = new Map<string, string>();   // 主人 id → 叠进来的房客 / 并好的虚拟 track / 双手谱下面那张的假 id
     const voice2Of = new Map<string, string>(), shareWith = new Map<string, string>(), startFor = new Map<string, ClefName>();   // 一张谱表 → 它的声部 2 / 声部 2 → 画在哪一位那行 / 虚拟那几条的谱号
     for (const hp of visible) {
@@ -593,6 +597,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         staffOf(hp.id, { keyOf, keep: (p) => midiOf(p) >= 60 }); staffOf(lid, { keyOf, keep: (p) => midiOf(p) < 60, marks: "bars" });
       } else staffOf(hp.id, { keyOf });
     }
+    // 展开着的那几家（一家里有人在写）：括号画在哪几行（主人 → 这张纸上看得见的最后一位房客）
+    const openFams = visible.filter((hp) => !hostOf(hp.id) && !absorbed.has(hp.id) && visible.some((t) => hostOf(t.id) === hp.id)).map((hp) => ({ host: hp.id, ids: [hp.id, ...visible.filter((t) => hostOf(t.id) === hp.id).map((t) => t.id)] }));
     const parts: PartView[] = visible.filter((p) => !absorbed.get(hostOf(p.id) ?? "")?.includes(p)).flatMap((p): PartView[] => {
       if (!virt.has(p.id)) return [p];
       const drums = [p, ...absorbed.get(p.id)!].every((m) => !!m.perc), lid = lowOf.get(p.id);   // 虚拟的那一位：谱号自动、不灰任何东西（叠着只是看）
@@ -689,11 +695,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const spans = per.flatMap((q) => q.units.filter((u): u is Chunk => u.kind === "chunk").map((u) => [u.tick, u.tick + u.ticks] as const));
     const breakableAt = (tick: number) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
     // 3. 折行（像文字：优先在小节线后折；一个小节都放不下就逐列折）。每行开头的调号 = 各声部那里生效的调号；行首宽 = 最宽的那个声部
-    const ind0 = Math.max(...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4;   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
+    const FAM_W = openFams.length && o.titlePlaceholder ? 0.8 : 0;   // 有展开着的一家：名字和谱之间多让一点给括号
+    const ind0 = Math.max(...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
     // 第二行起每行写简写（v0.9.31；user「todo 总谱的每一行都放乐器名的省空间简写」→「乐手名和颜色同意」）：缩进 = 最宽的那个简写；没给简写（测试 / 老调用）= 0，照旧
     //   v0.9.41：定宽（user 经仓鼠转达「没简写的能不能想办法也按定宽裁一下，不然有一个没查到简写就beat the propose了」）——简写已按 ABBR_W 裁好（part-colors.ts fitAbbr），
     //   列宽 = 一个 ABBR_W 宽的参照（Vln.Vc.），不随谁最长变；字形特别宽、量出来超了参照的那个才撑一点（不叠到谱上）
-    const indN = parts.some((p) => p.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 : 0;
+    const indN = parts.some((p) => p.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 + FAM_W : 0;
     const keyNow = new Map<string, number>(per.map((q) => [q.p.id, q.head.key]));
     const clefW = (q: { fFam: boolean }) => (q.fFam ? W.fClef : W.gClef);
     const headerOf = (first: boolean) => Math.max(...per.map((q) => {
@@ -929,6 +936,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           prims.push({ t: "path", d: `M${bx + P(0.5)},${y0}Q${bx - P(0.3)},${y0 + P(0.6)} ${bx},${(y0 + y1) / 2}Q${bx - P(0.3)},${y1 - P(0.6)} ${bx + P(0.5)},${y1}`, cls: "brace" });
         }
       });
+      // 展开着的一家：一条括号（粗竖线 + 两头往右的小钩），在名字和谱之间；点它 = 光标挪出这一家（score-view）
+      if (ind > 0 && o.titlePlaceholder) for (const fam of openFams) {   // 编辑器的提示（导出 / 打印不画）
+        const rs = fam.ids.map((id) => per.findIndex((q) => q.p.id === id)).filter((i) => i >= 0); if (rs.length < 2) continue;
+        const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 1.55), y0 = yOf(rowOf(s, r0, 0), TOP_LINE) - P(0.6), y1 = yOf(rowOf(s, r1, per[r1].staves - 1), BOTTOM_LINE) + P(0.6);
+        prims.push({ t: "path", d: `M${x + P(0.55)},${y0}L${x},${y0}L${x},${y1}L${x + P(0.55)},${y1}`, cls: "family-bracket" });
+        families.push({ paper: paper.id, host: fam.host, x: x - P(0.6), y: y0, w: P(1.3), h: y1 - y0 });
+      }
       if (nRowsSys > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: yOf(rowOf(s, 0, 0), TOP_LINE), x2: P(MARGIN + ind), y2: yOf(rowOf(s, nR - 1, per[nR - 1].staves - 1), BOTTOM_LINE), w: P(ENGRAVE.thinBar * 1.4), cls: "bar" });
     }
     // 5¾. 每个小节的 tick 区间和位置：拿第一位（补齐过，人人一样长）的排版单元数（每一段 chunk 自己的 ticks、第几小节 m）
@@ -1490,7 +1504,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, head, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

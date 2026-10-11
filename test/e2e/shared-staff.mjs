@@ -37,6 +37,16 @@ check(names.includes("Piano") && names.includes("Flute") && names.includes("Viol
   check(before === after && (await rowsOf("P2")) === 0, "点在叠起来的那一行上 = 光标不动、照旧叠着（只读）", after); }
 await p.click("#score text.part-name >> text=Flute"); await p.waitForTimeout(250);
 check((await focus()) === "P2" && (await rowsOf("P2")) > 0, "点 Flute 的名字 = 去写它、整家拆开（有自己的谱行）", await focus());
+// 听模式 = 每一家都叠起来（不看光标在哪；v0.10.29，user「每一家点开收拢的ux怎么算」→「12 同意」）；回到写的模式 = 光标在哪家哪家展开
+await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTimeout(250);
+check((await focus()) === "P2" && (await rowsOf("P2")) === 0, "听模式：光标还在 Flute，也叠起来", String(await rowsOf("P2")));
+await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(250);
+check((await rowsOf("P2")) > 0, "回到「音」：光标在的那一家又拆开");
+// 展开着的那一家左边一条括号；点它 = 光标挪到这一家后面紧挨着的那位（Violin）→ 叠回去（v0.10.29）
+{ const pt = await p.evaluate(() => { const L = window.__moonsinger.layout(), sh = document.querySelector("#score .sheet").getBoundingClientRect(), z = sh.width / L.width, f = L.families[0]; return f ? { x: sh.left + (L.pageX.left + f.x + f.w / 2) * z, y: sh.top + (f.y + f.h / 2) * z } : null; });
+  check(!!pt && !!(await p.$("#score path.family-bracket")), "展开着的一家左边有括号");
+  if (pt) { await p.mouse.click(pt.x, pt.y); await p.waitForTimeout(250); }
+  check((await focus()) === "P3" && (await rowsOf("P2")) === 0 && !(await p.$("#score path.family-bracket")), "点括号 = 光标去 Violin、这一家叠回去", await focus()); }
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nshared-staff: ${pass} passed, ${fail} failed`);

@@ -243,7 +243,7 @@ export class ScoreView {
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
-    this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, ...(st.lead ? { lead: st.lead } : {}), sel: st.sel, parts: this.host.parts(), measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.caretEnd ? { caretEnd: true } : {}),
+    this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, ...(st.lead ? { lead: st.lead } : {}), sel: st.sel, parts: this.host.parts(), measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.rules.edit ? {} : { foldAll: true }), ...(this.caretEnd ? { caretEnd: true } : {}),
       ...(page && this.host.lyricRaise?.() ? { lyricRaise: this.host.lyricRaise() } : {}),
       autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
       ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}), ...(this.hot ? { hot: this.hot } : {}), ...(this.span ? { span: this.span } : {}),
@@ -713,6 +713,20 @@ export class ScoreView {
     this.host.focus?.("staff");
     this.host.audition?.(hit.index, true); this.holdPid = pid;   // 按住音 = 听见它（2026-10-10 user「按住音的时候应该能听到preview」），抬手停
   }
+  /** 合租展开着的一家左边那条括号（v0.10.29）：点 = 光标挪到这一家后面紧挨着的那位（不在任何一家里的；后面没有 = 前面最近的那位）→ 这一家叠回去。
+   *  user「把这一家的几行括在一起…点这条括号等于「光标挪到这一家后面紧挨着的那位」…可以」。视图不跟过去（同点名字）。 */
+  private leaveFamilyAt(x: number, y: number): boolean {
+    const L = this.layout; if (!L || !this.rules.edit) return false;
+    const fb = L.families.find((b) => this.inBox(b, x, y)); if (!fb) return false;
+    const song = this.host.get().song, hostOf = (id: string) => song.parts.find((p) => p.id === id)?.host;
+    const inFam = (id: string) => id === fb.host || hostOf(id) === fb.host, loose = (id: string) => !hostOf(id) && !song.parts.some((p) => p.host === id);
+    const order = [...new Set(L.systems.filter((r) => r.paper === fb.paper).map((r) => realPart(r.part)))], last = Math.max(...order.map((id, i) => (inFam(id) ? i : -1)));
+    const next = order.slice(last + 1).find(loose) ?? [...order.slice(0, order.indexOf(fb.host))].reverse().find(loose) ?? order.slice(last + 1)[0] ?? null;
+    if (!next) { this.host.notice?.("这张纸上只有这一家：没有别的歌手可以挪过去（切到「听」就都叠起来）"); return true; }
+    this.holdView = true; this.host.set(setFocus(this.host.get(), fb.paper, next)); this.holdView = false;
+    this.heldBase = this.baseKey();
+    return true;
+  }
   /** 歌手牌（每张纸第一行各条谱左边的声部名）：开轨的小卡——光标换到那条（setFocus 放在那条的最后），但视图不跟过去
    *  （user 2026-10-08「按vocal字弹track窗的时候页面滚动会乱」）。左键 / 右键（2026-10-10 user「右键歌手名应该也是弹歌手选项，和左键一样」）/ 听模式都走这里。 */
   private openPartAt(x: number, y: number): boolean {
@@ -904,6 +918,7 @@ export class ScoreView {
     // 0⅙. 作词 / 作曲（标题下面靠右）
     if (!view && this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌
+    if (this.leaveFamilyAt(x, y)) return true;
     if (this.openPartAt(x, y)) return true;
     // 0¼. 纸面最上面的歌名（可不填）；歌名下面的编排那一行（全部视图里才有）
     if (view) { for (const pp of L.papers) { if (this.inBox(pp.prev ?? null, x, y)) { this.host.onNavFrom?.(pp.id, -1); return true; } if (this.inBox(pp.next ?? null, x, y)) { this.host.onNavFrom?.(pp.id, 1); return true; } if (this.inBox(pp.scope, x, y)) { this.host.onScopeOf?.(pp.id); return true; } } return false; }   // 听：看谱的到此为止

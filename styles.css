@@ -265,6 +265,7 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .part-stub { fill: #b9b2a5; }                                   /* 隐藏的声部缩成的细行 */
 .staff-svg .part-stub-line { stroke: #ddd6c8; }
 .staff-svg path.brace { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }   /* 大谱表花括号 */
+.staff-svg path.family-bracket { fill: none; stroke: var(--muted); stroke-width: 2.4; stroke-linejoin: miter; cursor: pointer; }   /* 合租展开着的一家（v0.10.29）：括在一起；点它 = 叠回去。灰一点（是编辑器的提示，不印——导出不画，见 svg.ts） */
 .staff-svg rect.paper-chip.off { opacity: .35; }                           /* ‹ › 到头了 */
 .staff-svg rect.paper-chip.on { fill: var(--accent-soft); stroke: var(--accent); }   /* 「本段 | 全部」亮的那个 */
 .staff-svg .nav-text.on { fill: var(--accent); font-weight: 600; }
