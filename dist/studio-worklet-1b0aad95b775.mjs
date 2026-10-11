@@ -852,7 +852,7 @@ var Studio = class {
         this.buses = /* @__PURE__ */ new Map();
         for (const b of m.buses) {
           const had = old.get(b.id);
-          this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] });
+          this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, mute: !!b.mute, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] });
         }
         this.busList = busOrder(m.buses, this.buses);
         return;
@@ -1184,7 +1184,7 @@ var Studio = class {
     else if (this.draining) this.renderDrain(n);
     for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
-      const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n;
+      const [gl, gr] = b.mute ? [0, 0] : panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n;
       let cl = b.gl, cr = b.gr;
       if (this.specOn) this.specPush(b.id, b.L, b.R, n, Math.hypot(b.gl, b.gr), Math.hypot(gl, gr));
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
@@ -1805,4 +1805,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-97f8709397ae.mjs.map
+//# sourceMappingURL=studio-worklet-1b0aad95b775.mjs.map

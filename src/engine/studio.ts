@@ -44,7 +44,7 @@ export interface TimelineMsg { tracks: TrackSpec[]; range: { from: number; to: n
  *  chain = 通道条上的效果（EQ / 压缩（可侧链 key = 别的轨 id）…）；sends = 推子之后发到总线多少；to = 去哪（"master" / 总线 id）。 */
 export interface ChannelParams { gainDb: number; pan: number; mute: boolean; solo: boolean; chain?: FxV2[]; sends?: { to: string; gainDb: number }[]; to?: string }
 /** 路由轨（总线）：to = 出到哪（"master" / 别的总线）；sends = 推子后发给别的总线（v0.10.9：总线也能接总线；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨」）。 */
-export interface BusSpec { id: string; gainDb: number; pan: number; chain: FxV2[]; to?: string; sends?: { to: string; gainDb: number }[] }
+export interface BusSpec { id: string; gainDb: number; pan: number; chain: FxV2[]; to?: string; sends?: { to: string; gainDb: number }[]; /** 静音（v0.10.35，视图态）：这条混音轨不出声、也不往下发。 */ mute?: boolean }
 export interface MasterParams { gainDb: number; limiter: boolean; chain?: FxV2[] }
 /** 元音表（assets/preview/vowels.json + .pcm16 的形状）。 */
 export interface VowelEntry { kana: string; midi: number; start: number; len: number; loopStart: number; loopEnd: number }
@@ -111,7 +111,7 @@ interface TrackState {
   src: Float32Array; out: Float32Array;   // 第一趟（出声 + 曲线 + 演奏者链）/ 第二趟（通道链）的这一段；src 给别的轨当侧链 key
   perfFx: FxInstance[]; chFx: FxInstance[];
 }
-interface Bus { id: string; gainDb: number; pan: number; gl: number; gr: number; fx: FxInstance[]; L: Float32Array; R: Float32Array; /** 出到的总线（null = 总轨）。 */ out: Bus | null; sends: { bus: Bus; lin: number }[] }
+interface Bus { id: string; gainDb: number; pan: number; mute: boolean; gl: number; gr: number; fx: FxInstance[]; L: Float32Array; R: Float32Array; /** 出到的总线（null = 总轨）。 */ out: Bus | null; sends: { bus: Bus; lin: number }[] }
 interface Audition { inst: AuditionInst; key: number; gl: number; gr: number }
 interface ClipVoice { src: string; data: Float32Array; ratio: number; pos: number; env: number; state: "attack" | "hold" | "release" | "cut"; gl: number; gr: number }
 
@@ -253,7 +253,7 @@ export class Studio {
       }
       case "buses": {
         const old = this.buses; this.buses = new Map();
-        for (const b of m.buses) { const had = old.get(b.id); this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] }); }
+        for (const b of m.buses) { const had = old.get(b.id); this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, mute: !!b.mute, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] }); }
         this.busList = busOrder(m.buses, this.buses);
         return;
       }
@@ -452,7 +452,7 @@ export class Studio {
     //   按 busOrder 的顺序（送出去的先处理），轮到一条总线时送进它的都已经加好了（v0.10.9 总线接总线）。
     for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
-      const [gl, gr] = panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;
+      const [gl, gr] = b.mute ? [0, 0] : panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;   // 静音 = 推子到底（照样走斜坡，不咔哒）
       if (this.specOn) this.specPush(b.id, b.L, b.R, n, Math.hypot(b.gl, b.gr), Math.hypot(gl, gr));   // 频谱：推子之后（等功率 → hypot = 推子，声像不算）
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
       let pk = 0, ms = 0, pre = 0;

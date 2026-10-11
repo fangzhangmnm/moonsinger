@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.10.34-2026-10-10";
+var APP_VERSION = "v0.10.35-2026-10-10";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -24248,7 +24248,7 @@ var Studio = class {
         this.buses = /* @__PURE__ */ new Map();
         for (const b3 of m2.buses) {
           const had = old.get(b3.id);
-          this.buses.set(b3.id, { id: b3.id, gainDb: b3.gainDb, pan: b3.pan, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b3.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] });
+          this.buses.set(b3.id, { id: b3.id, gainDb: b3.gainDb, pan: b3.pan, mute: !!b3.mute, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b3.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] });
         }
         this.busList = busOrder(m2.buses, this.buses);
         return;
@@ -24580,7 +24580,7 @@ var Studio = class {
     else if (this.draining) this.renderDrain(n10);
     for (const b3 of this.busList) {
       for (const fx of b3.fx) fx.process(b3.L, b3.R, n10, null);
-      const [gl, gr] = panGains(b3.gainDb, b3.pan), dl = (gl - b3.gl) / n10, dr = (gr - b3.gr) / n10;
+      const [gl, gr] = b3.mute ? [0, 0] : panGains(b3.gainDb, b3.pan), dl = (gl - b3.gl) / n10, dr = (gr - b3.gr) / n10;
       let cl2 = b3.gl, cr2 = b3.gr;
       if (this.specOn) this.specPush(b3.id, b3.L, b3.R, n10, Math.hypot(b3.gl, b3.gr), Math.hypot(gl, gr));
       const L2 = b3.out ? b3.out.L : this.busL, R2 = b3.out ? b3.out.R : this.busR;
@@ -26688,7 +26688,8 @@ var HINT2 = {
   pan: "\u58F0\u50CF\uFF1A\u5728\u5DE6\u53F3\u54EA\u4E2A\u4F4D\u7F6E\u3002\u51E0\u6761\u8F68\u5DE6\u53F3\u9519\u5F00\u4E00\u70B9\uFF0C\u5C31\u4E0D\u4F1A\u90FD\u6324\u5728\u6B63\u4E2D\u95F4\u3002\u6570\u5B57 = \u5F80\u4E00\u8FB9\u63A8\u4E86\u591A\u5C11\uFF08\u7B49\u529F\u7387\uFF1A\u600E\u4E48\u6446\u603B\u54CD\u5EA6\u4E0D\u53D8\uFF09\uFF1A\u4E2D = \u4E24\u4E2A\u5587\u53ED\u5404 \u22123 dB\uFF1B50 = \u8FD9\u8FB9 \u22120.7 dB\u3001\u90A3\u8FB9 \u22128.3 dB\uFF08\u5DEE 7.7 dB\uFF09\uFF1B100 = \u5168\u5728\u8FD9\u8FB9\uFF0C\u53E6\u4E00\u8FB9\u6CA1\u58F0",
   masterGain: "\u603B\u8F68\u589E\u76CA\uFF1A\u6240\u6709\u8F68\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E\u6574\u4F53\u518D\u8C03\u5927\u8C03\u5C0F",
   out: "\u51FA\u5230\uFF1A\u8FD9\u6761\u8F68\u7684\u58F0\u97F3\u6700\u540E\u53BB\u54EA\u2014\u2014\u76F4\u63A5\u53BB\u603B\u8F68\uFF0C\u6216\u8005\u5148\u8FDB\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u5728\u90A3\u91CC\u4E00\u8D77\u8FC7\u6548\u679C\uFF09",
-  send: "\u53D1\u9001\uFF1A\u63A8\u5B50\u4E4B\u540E\u518D\u590D\u5236\u4E00\u4EFD\u7ED9\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF1B\u8D8A\u5927\uFF0C\u90A3\u8FB9\u7684\u6548\u679C\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\uFF09\u8D8A\u591A\uFF0C\u539F\u58F0\u7167\u65E7\u8D70\u300C\u51FA\u5230\u300D",
+  send: "\u53D1\u9001\uFF1A\u63A8\u5B50\u4E4B\u540E\u518D\u590D\u5236\u4E00\u4EFD\u7ED9\u8FD9\u6761\u6DF7\u97F3\u8F68\u2014\u2014\u8DDF\u7740\u8FD9\u6761\u8F68\u7684\u589E\u76CA\u548C\u58F0\u50CF\u8D70\uFF1A\u63A8\u5B50\u62C9\u4F4E 3 dB\uFF0C\u53D1\u8FC7\u53BB\u7684\u4E5F\u4F4E 3 dB\uFF08\u539F\u58F0\u548C\u6548\u679C\u7684\u6BD4\u4F8B\u4E0D\u53D8\uFF09\uFF1B\u9759\u97F3\u4E86\u5C31\u4E0D\u53D1\u3002\u8FD9\u91CC\u7684\u6570 = \u8FD9\u4E00\u4F4D\u8FDB\u90A3\u8FB9\u7684\u91CF\uFF0C\u8D8A\u5927\u90A3\u8FB9\u7684\u6548\u679C\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\uFF09\u8D8A\u591A\uFF1B\u539F\u58F0\u7167\u65E7\u8D70\u300C\u51FA\u5230\u300D",
+  busGain: "\u6DF7\u97F3\u8F68\u589E\u76CA\uFF1A\u4ECE\u8FD9\u6761\u6DF7\u97F3\u8F68\u51FA\u6765\u7684\u603B\u91CF\u3002\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u5168\u6E7F\u7684\u6DF7\u97F3\u8F68 = \u90A3\u8FB9\u7684\u6548\u679C\u6709\u591A\u5927\uFF0C\u53D1\u7ED9\u5B83\u7684\u51E0\u4F4D\u4E00\u8D77\u53D8\uFF08\u6BCF\u4F4D\u5355\u72EC\u591A\u5C11\u770B\u5404\u81EA\u7684\u300C\u53D1\u9001\u300D\uFF09\u3002\u8981\u662F\u6709\u51E0\u4F4D\u662F\u300C\u51FA\u5230\u300D\u5B83\uFF08\u539F\u58F0\u4E5F\u8FDB\u6765\uFF09\uFF0C\u90A3\u8FD9\u4E2A\u63A8\u5B50\u8FDE\u539F\u58F0\u4E00\u8D77\u8C03",
   limiter: "\u9650\u5E45\uFF08\u603B\u8F68\u6700\u540E\u4E00\u9053\uFF09\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u5F88\u5FEB\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E00\u4E2A\u91C7\u6837\u90FD\u4E0D\u52A8\uFF0C\u4E0D\u6539\u97F3\u8272\u3002\u5173\u6389 = \u8D85\u4E86\u5C31\u524A\u6CE2\uFF08\u7206\u97F3\u3001\u5BFC\u51FA\u7684\u6587\u4EF6\u91CC\u4E5F\u662F\uFF09\u3002\u4E00\u822C\u4E00\u76F4\u5F00\u7740\uFF1B\u60F3\u770B\u81EA\u5DF1\u7684\u6DF7\u97F3\u5230\u5E95\u591A\u54CD\uFF0C\u53EF\u4EE5\u5148\u5173\u4E86\u770B\u5CF0\u503C",
   peak: "\u5CF0\u503C\uFF1A\u6700\u8FD1\u8FD9\u4E00\u4E0B\u6700\u54CD\u7684\u90A3\u4E2A\u91C7\u6837\uFF08dBFS\uFF09\u30020 dB = \u6EE1\u683C\uFF0C\u518D\u5927\u5C31\u524A\u6CE2\uFF1B\u9650\u5E45\u5F00\u7740\u65F6\u6700\u591A\u5230 \u22120.18 dB\u3002\u9876\u4E0A\u7684\u7EC6\u7EBF\u662F\u540C\u4E00\u4E2A\u6570",
   rms: "\u5E73\u5747\u7535\u5E73\uFF08RMS\uFF0C\u6700\u8FD1 0.3 \u79D2\uFF0C\u63A8\u5B50\u4E4B\u540E\uFF0CdBFS\uFF09\uFF1A\u6BD4\u5CF0\u503C\u66F4\u63A5\u8FD1\u8033\u6735\u89C9\u5F97\u7684\u54CD\u3002\u51E0\u6761\u8F68\u6446\u5E73\u97F3\u91CF\u770B\u8FD9\u4E2A\uFF1B\u9876\u4E0A\u7684\u7EC6\u7EBF\uFF08\u5CF0\u503C\uFF09\u770B\u4F1A\u4E0D\u4F1A\u7206",
@@ -26984,6 +26985,9 @@ var Studio2 = class {
       this.render();
     } else if (v === "solo" && strip) {
       this.host.toggleSolo(strip);
+      this.render();
+    } else if (v === "busmute" && strip) {
+      this.host.toggleBusMute?.(strip);
       this.render();
     } else if (v === "busbypass" && strip) {
       const b3 = this.host.buses().find((x2) => x2.id === strip);
@@ -27323,9 +27327,10 @@ ${tg2.fx}`);
     const masterBody = tab === "basic" ? row("\u589E\u76CA", HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") + row("\u9650\u5E45", HINT2.limiter, "", `<button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter">${m2.limiter ? "\u5F00\u7740" : "\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09"}</button>`, "strip-row") + row("\u5CF0\u503C", HINT2.peak, `<span class="meter-val">\u2014</span>`, "", "strip-row") + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv("\u603B\u8F68"), "\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E", masterBody);
     const buses = this.host.buses(), busCards = buses.map((b3, k2) => {
-      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="strip-btns"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765">${b3.bypass ? "\u65C1\u901A\u4E2D" : "\u65C1\u901A"}</button><button class="btn" data-v="busleft" title="\u5F80\u524D\u632A\u4E00\u4F4D"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="\u5F80\u540E\u632A\u4E00\u4F4D"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? this.routeHtml(b3.id) : this.chipsHtml(b3.id);
+      const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.busGain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="strip-btns"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765">${b3.bypass ? "\u65C1\u901A\u4E2D" : "\u65C1\u901A"}</button><button class="btn" data-v="busleft" title="\u5F80\u524D\u632A\u4E00\u4F4D"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="\u5F80\u540E\u632A\u4E00\u4F4D"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09">\u5220\u6389</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? this.routeHtml(b3.id) : this.chipsHtml(b3.id);
       const name = tab === "basic" ? `<input class="bus-name" value="${esc5(b3.name)}" title="\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09" />` : nameDiv(b3.name);
-      return this.card(b3.id, ` bus${b3.bypass ? " bypassed" : ""}`, name, b3.bypass ? "\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09" : "\u6DF7\u97F3\u8F68", body2);
+      const ms = `<span class="strip-ms"><button class="btn${b3.muted ? " is-on mute" : ""}" data-v="busmute" title="\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09">\u9759</button></span>`;
+      return this.card(b3.id, ` bus${b3.bypass ? " bypassed" : ""}`, `<div class="strip-head">${name}${ms}</div>`, b3.bypass ? "\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09" : "\u6DF7\u97F3\u8F68", body2);
     }).join("");
     const strips = this.host.strips(), singers = strips.map((s10, k2) => {
       const body2 = tab === "basic" ? row("\u589E\u76CA", HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") + row("\u58F0\u50CF", HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: 0, defText: "\u4E2D" }), "strip-row") + RMS_ROW + `<div class="strip-btns"><button class="btn" data-v="partleft" title="\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
@@ -38255,6 +38260,7 @@ var PLAY_TITLE = "\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1
 bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
+var busMuted = /* @__PURE__ */ new Set();
 var dockedSide = 0;
 var attr = (s10) => s10.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 var padTab = document.createElement("button");
@@ -38424,7 +38430,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-97f8709397ae.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-1b0aad95b775.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -39182,7 +39188,7 @@ function pushChannels(raw = mixBypass) {
     const t10 = studioTrack(doc.extras, p2.mic);
     engine.channel(p2.id, { ...channelOf(p2), mute: false, solo: false, chain: fx(resolveChain(t10?.chain ?? [], ctx2(lowestMidiOf(p2.id)))), sends: fx(t10?.sends ?? []), to: t10?.to ?? "master" });
   }
-  engine.buses(studioTracks(doc.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: b3.bypass ? [] : fx(resolveChain(b3.chain, ctx2(null))), to: b3.to, sends: fx(b3.sends) })));
+  engine.buses(studioTracks(doc.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: b3.bypass ? [] : fx(resolveChain(b3.chain, ctx2(null))), to: b3.to, sends: fx(b3.sends), ...busMuted.has(b3.id) ? { mute: true } : {} })));
   const m2 = activeMaster(doc.extras);
   engine.master({ ...m2, chain: fx(resolveChain(m2.chain, ctx2(null))) });
 }
@@ -40633,7 +40639,12 @@ var studio = new Studio2($2("stage"), {
     return st2.song.parts.flatMap((p2, k2) => p2.id === track ? [] : [{ id: p2.id, name: labels[k2] }]);
   },
   // 路由轨（v0.10.9；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨。比如我可以放两个路由轨然后放混响」「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
-  buses: () => studioTracks(doc.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, name: b3.name, gainDb: b3.gainDb, pan: b3.pan, bypass: b3.bypass })),
+  buses: () => studioTracks(doc.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, name: b3.name, gainDb: b3.gainDb, pan: b3.pan, bypass: b3.bypass, muted: busMuted.has(b3.id) })),
+  toggleBusMute: (id2) => {
+    if (!busMuted.delete(id2)) busMuted.add(id2);
+    pushChannels();
+  },
+  // 混音轨静音：视图态（不进文件、不进 undo），同歌手的静音
   setBusBypass: (id2, on2) => updateExtras(withTrack2(doc.extras, id2, { bypass: on2 }), { kind: "studio", label: `${studioTrack(doc.extras, id2)?.name ?? id2} ${on2 ? "\u65C1\u901A" : "\u53D6\u6D88\u65C1\u901A"}` }),
   addBus: () => {
     const id2 = newBusId(doc.extras), n10 = studioTracks(doc.extras).filter((t10) => t10.kind === "bus").length + 1, name = `\u6DF7\u97F3\u8F68 ${n10}`;
@@ -42079,6 +42090,7 @@ function applyDesk(d3) {
 }
 function loadDoc(song, o10) {
   mixBypass = false;
+  busMuted.clear();
   if (impro) toggleImpro();
   closeOffer?.();
   closeInstPage();
@@ -43496,4 +43508,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-792dcba88c6a.mjs.map
+//# sourceMappingURL=moonsinger-57d69ceb28dc.mjs.map

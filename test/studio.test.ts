@@ -359,6 +359,11 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     const both = await lvl([{ id: "b1", gainDb: 0, pan: 0, chain: [], sends: [{ to: "b2", gainDb: 0 }] }, { id: "b2", gainDb: 0, pan: 0, chain: [] }], { to: "b1" });
     assert(Math.abs(both - 0.4 * PAN0 * 2) < 1e-3, `b1 直出 + 发一份给 b2 = 两份 ${both}`);
   });
+  it("混音轨静音（v0.10.35）：这条混音轨不出声、也不往下发；发给它的那位原声照旧", async () => {
+    const lvl = async (mute: boolean) => { const { s } = await clipS([{ id: "A", v: 0.4 }]); s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [], ...(mute ? { mute: true } : {}) }] as never }); s.handle({ type: "channel", id: "A", p: { sends: [{ to: "b1", gainDb: 0 }] } as never }); s.handle({ type: "play" }); return peak(run(s, 1).L, sec(0.5), sec(0.9)); };
+    const on = await lvl(false), off = await lvl(true);
+    assert(off > 0.01 && on > off * 1.5, `发送加到总线上更响（${on.toFixed(3)}），静音了 = 只剩原声（${off.toFixed(3)}）`);
+  });
   it("总线接成环（手改过的文件）= 断掉成环的那一条、照样出声、不挂", async () => {
     const { s } = await clipS([{ id: "A", v: 0.4 }]);
     s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [], to: "b2" }, { id: "b2", gainDb: 0, pan: 0, chain: [], to: "b1" }] });

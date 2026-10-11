@@ -41,7 +41,9 @@ export interface StudioHost {
   /** 压缩「被谁压」能选的轨（除了自己；没有 = 这条轨上的压缩器只听自己）。 */
   keyTracks(track: string): { id: string; name: string }[];
   // 路由轨（v0.10.9）：歌手轨和输出（总轨）是内置的，混音轨自己加（user「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
-  buses(): { id: string; name: string; gainDb: number; pan: number; bypass: boolean }[];
+  buses(): { id: string; name: string; gainDb: number; pan: number; bypass: boolean; muted?: boolean }[];
+  /** 混音轨静音（v0.10.35，视图态；不进文件）。 */
+  toggleBusMute?(id: string): void;
   /** 混音轨整条旁通（插件全跳过，推子 / 声像 / 发送照旧；v0.10.23）。 */
   setBusBypass(id: string, on: boolean): void;
   addBus(): string;
@@ -84,7 +86,8 @@ const HINT = {
   pan: "声像：在左右哪个位置。几条轨左右错开一点，就不会都挤在正中间。数字 = 往一边推了多少（等功率：怎么摆总响度不变）：中 = 两个喇叭各 −3 dB；50 = 这边 −0.7 dB、那边 −8.3 dB（差 7.7 dB）；100 = 全在这边，另一边没声",
   masterGain: "总轨增益：所有轨混在一起之后整体再调大调小",
   out: "出到：这条轨的声音最后去哪——直接去总轨，或者先进一条混音轨（在那里一起过效果）",
-  send: "发送：推子之后再复制一份给这条混音轨；越大，那边的效果（混响 / 延迟）越多，原声照旧走「出到」",
+  send: "发送：推子之后再复制一份给这条混音轨——跟着这条轨的增益和声像走：推子拉低 3 dB，发过去的也低 3 dB（原声和效果的比例不变）；静音了就不发。这里的数 = 这一位进那边的量，越大那边的效果（混响 / 延迟）越多；原声照旧走「出到」",
+  busGain: "混音轨增益：从这条混音轨出来的总量。混响 / 延迟这类全湿的混音轨 = 那边的效果有多大，发给它的几位一起变（每位单独多少看各自的「发送」）。要是有几位是「出到」它（原声也进来），那这个推子连原声一起调",
   limiter: "限幅（总轨最后一道）：超过天花板（−0.18 dBFS）的那一小段很快压下来，不超的地方一个采样都不动，不改音色。关掉 = 超了就削波（爆音、导出的文件里也是）。一般一直开着；想看自己的混音到底多响，可以先关了看峰值",
   peak: "峰值：最近这一下最响的那个采样（dBFS）。0 dB = 满格，再大就削波；限幅开着时最多到 −0.18 dB。顶上的细线是同一个数",
   rms: "平均电平（RMS，最近 0.3 秒，推子之后，dBFS）：比峰值更接近耳朵觉得的响。几条轨摆平音量看这个；顶上的细线（峰值）看会不会爆",
@@ -280,6 +283,7 @@ export class Studio {
     else if (v === "addbus") { this.menuOpen = false; const id = this.host.addBus(); this.render(); this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); }
     else if (v === "mute" && strip) { this.host.toggleMute(strip); this.render(); }
     else if (v === "solo" && strip) { this.host.toggleSolo(strip); this.render(); }
+    else if (v === "busmute" && strip) { this.host.toggleBusMute?.(strip); this.render(); }
     else if (v === "busbypass" && strip) { const b = this.host.buses().find((x) => x.id === strip); if (b) { this.host.setBusBypass(strip, !b.bypass); this.render(); } }
     else if ((v === "partleft" || v === "partright") && strip) { this.host.movePart(strip, v === "partleft" ? -1 : 1); this.render(); }
     else if (v === "delpart" && strip) this.host.deletePart(strip);
@@ -494,12 +498,14 @@ export class Studio {
     const master = this.card(MASTER, " master", nameDiv("总轨"), "所有声部混在一起之后", masterBody);
     // 混音轨（自己加的路由轨，普通的轨）：排在总轨后面、歌手前面（user「你自己加的中间的路由轨也是普通的轨道，排在总轨后面，歌手前面」）
     const buses = this.host.buses(), busCards = buses.map((b, k) => {
-      const body = tab === "basic" ? row("增益", HINT.gain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") +
+      const body = tab === "basic" ? row("增益", HINT.busGain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") +
           row("声像", HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: 0, defText: "中" }), "strip-row") + RMS_ROW + CORR_ROW +
           `<div class="strip-btns"><button class="btn cand${b.bypass ? " is-on" : ""}" data-v="busbypass" title="旁通：这条混音轨上的插件全跳过（推子 / 声像 / 出到 / 发送照旧）；再点 = 回来">${b.bypass ? "旁通中" : "旁通"}</button><button class="btn" data-v="busleft" title="往前挪一位"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="往后挪一位"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）">删掉</button></div>`
         : tab === "eq" || tab === "comp" ? this.inlineHtml(b.id, tab) : tab === "send" ? this.routeHtml(b.id) : this.chipsHtml(b.id);
       const name = tab === "basic" ? `<input class="bus-name" value="${esc(b.name)}" title="名字（点了改）" />` : nameDiv(b.name);
-      return this.card(b.id, ` bus${b.bypass ? " bypassed" : ""}`, name, b.bypass ? "混音轨 · 旁通中（插件全跳过）" : "混音轨", body);
+      // 混音轨也能静音（不能独奏：独奏是挑歌手听；user「哦，混音轨也要mute，（不过可能不能solo了」）——钉在名字右边，同歌手卡
+      const ms = `<span class="strip-ms"><button class="btn${b.muted ? " is-on mute" : ""}" data-v="busmute" title="静音：这条混音轨不出声、也不往下发（发给它的那几位原声照旧）">静</button></span>`;
+      return this.card(b.id, ` bus${b.bypass ? " bypassed" : ""}`, `<div class="strip-head">${name}${ms}</div>`, b.bypass ? "混音轨 · 旁通中（插件全跳过）" : "混音轨", body);
     }).join("");
     // 歌手：顺序跟谱上的声部（user「歌手卡片的排序还是以五线谱为准」）
     const strips = this.host.strips(), singers = strips.map((s, k) => {

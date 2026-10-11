@@ -211,6 +211,7 @@ bar.innerHTML =
 /** 渲染进度条（顶栏底边；播放的准备和 mp3 导出共用 renderMix 这一条路）。顶栏的 HTML 写好之后再挂（上面 bar.innerHTML = … 会冲掉先挂的）。 */
 const renderBar = new RenderProgress(bar);
 const stageEl = $("stage");
+const busMuted = new Set<string>();   // 静音的混音轨（v0.10.35，视图态：不进文件、不进 undo；换歌清空）
 let dockedSide = 0;   // 横屏底座在的时候，舞台里谱面以外占的宽（px；排谱宽度不跟着底座开合跳，见 view 的 layoutWidth；v0.10.33）   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
 const attr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = "键盘（pad）";
@@ -820,7 +821,7 @@ function pushChannels(raw = mixBypass): void {
   // 插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）在这里换成录音房认的数（src/ui/plugins.ts resolveChain；v0.10.8）
   const bpm = songBpm(), ctx = (lowestMidi: number | null) => ({ lowestMidi, bpm }), fx = <T,>(x: T[]): T[] => (raw ? [] : x);
   for (const p of st.song.parts) { const t = studioTrack(doc.extras, p.mic); engine.channel(p.id, { ...channelOf(p), mute: false, solo: false, chain: fx(resolveChain(t?.chain ?? [], ctx(lowestMidiOf(p.id)))), sends: fx(t?.sends ?? []), to: t?.to ?? "master" }); }
-  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: b.bypass ? [] : fx(resolveChain(b.chain, ctx(null))), to: b.to, sends: fx(b.sends) })));   // 混音轨旁通 = 插件全跳过，推子 / 发送照旧   // 总线也能出到 / 发给别的总线（v0.10.9）
+  engine.buses(studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: b.bypass ? [] : fx(resolveChain(b.chain, ctx(null))), to: b.to, sends: fx(b.sends), ...(busMuted.has(b.id) ? { mute: true } : {}) })));   // 混音轨旁通 = 插件全跳过，推子 / 发送照旧   // 总线也能出到 / 发给别的总线（v0.10.9）
   const m = activeMaster(doc.extras); engine.master({ ...m, chain: fx(resolveChain(m.chain, ctx(null))) });
 }
 /** 焦点在能打字的框里（文字输入 / 多行）：空格归它。推子（range）、下拉、按钮不算。 */
@@ -1794,7 +1795,8 @@ const studio = new Studio($("stage"), {
   tabChanged: () => syncSpectrum(),
   keyTracks: (track) => { if (!st.song.parts.some((p) => p.id === track)) return []; const labels = partLabels(st.song, doc.extras); return st.song.parts.flatMap((p, k) => (p.id === track ? [] : [{ id: p.id, name: labels[k] }])); },
   // 路由轨（v0.10.9；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨。比如我可以放两个路由轨然后放混响」「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
-  buses: () => studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, name: b.name, gainDb: b.gainDb, pan: b.pan, bypass: b.bypass })),
+  buses: () => studioTracks(doc.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, name: b.name, gainDb: b.gainDb, pan: b.pan, bypass: b.bypass, muted: busMuted.has(b.id) })),
+  toggleBusMute: (id) => { if (!busMuted.delete(id)) busMuted.add(id); pushChannels(); },   // 混音轨静音：视图态（不进文件、不进 undo），同歌手的静音
   setBusBypass: (id, on) => updateExtras(withTrack(doc.extras, id, { bypass: on }), { kind: "studio", label: `${studioTrack(doc.extras, id)?.name ?? id} ${on ? "旁通" : "取消旁通"}` }),
   addBus: () => { const id = newBusId(doc.extras), n = studioTracks(doc.extras).filter((t) => t.kind === "bus").length + 1, name = `混音轨 ${n}`; updateExtras(withTrack(doc.extras, id, { kind: "bus", name }), { kind: "studio", label: `加${name}` }); return id; },
   removeBus: (id) => { const name = studioTrack(doc.extras, id)?.name ?? id; updateExtras(withoutBus(doc.extras, id), { kind: "studio", label: `删${name}` }); },
@@ -2764,7 +2766,7 @@ function applyDesk(d: Desk): void {
   }
 }
 function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; handle: docFile.FileHandle | null; mtime?: number | null; identifier?: string | null; view?: unknown; references?: Record<string, Uint8Array> }): void {
-  mixBypass = false;   // 效果全关是这次听的，换歌复位
+  mixBypass = false; busMuted.clear();   // 效果全关 / 混音轨静音是这次听的，换歌复位
   if (impro) toggleImpro();
   closeOffer?.(); closeInstPage();
   doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.mtime = o.handle ? (o.mtime ?? null) : null; doc.extras = o.extras;
