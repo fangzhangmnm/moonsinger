@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.11.0-2026-10-11";
+var APP_VERSION = "v0.11.1-2026-10-13";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6699,54 +6699,55 @@ var HAN = /\p{Script=Han}/u;
 var KANA = /[぀-ヿ]/;
 var LATIN = /[A-Za-z]/;
 var kanaBeats = (s10) => [...s10].filter((c10) => !isSmallKana(c10)).length;
-function lyricIssues(tokens, engine2, lang) {
+function lyricIssues(tokens, engine2, langAt) {
   const out = /* @__PURE__ */ new Map();
   if (engine2 !== "tsukuyomi" && engine2 !== "vowel-sampler" && engine2 !== "soundfont") return out;
   tokens.forEach((t10, i10) => {
     if (t10.kind !== "note" || t10.tie || !t10.lyric || t10.lyric === MELISMA_MARK) return;
+    const lang = typeof langAt === "string" ? langAt : langAt(i10);
     if (engine2 !== "tsukuyomi") {
-      out.set(i10, { why: "notSung" });
+      out.set(i10, { why: "notSung", lang });
       return;
     }
     for (const part of t10.lyric.split(ELISION).filter(Boolean)) {
       if (lang === "ja") {
         if (isSmallKana(part)) continue;
         if (HAN.test(part)) {
-          out.set(i10, { why: "kanji" });
+          out.set(i10, { why: "kanji", lang });
           return;
         }
         if (!/^[぀-ヿー]+$/.test(part)) {
-          out.set(i10, { why: "script" });
+          out.set(i10, { why: "script", lang });
           return;
         }
         const b3 = kanaBeats(part);
         if (b3 !== 1) {
-          out.set(i10, { why: "beats", beats: b3 });
+          out.set(i10, { why: "beats", beats: b3, lang });
           return;
         }
       } else if (lang === "zh") {
         if (KANA.test(part) || LATIN.test(part) || !HAN.test(part)) {
-          out.set(i10, { why: "script" });
+          out.set(i10, { why: "script", lang });
           return;
         }
         const b3 = [...part].filter((c10) => HAN.test(c10)).length;
         if (b3 !== 1) {
-          out.set(i10, { why: "beats", beats: b3 });
+          out.set(i10, { why: "beats", beats: b3, lang });
           return;
         }
       } else if (HAN.test(part) || KANA.test(part) || !LATIN.test(part)) {
-        out.set(i10, { why: "script" });
+        out.set(i10, { why: "script", lang });
         return;
       }
     }
   });
   return out;
 }
-function lyricWhyText(x2, engineName, lang) {
+function lyricWhyText(x2, engineName) {
   if (x2.why === "notSung") return `${engineName}\u4E0D\u5531\u6B4C\u8BCD\uFF08\u53EA\u54FC / \u53EA\u5F39\uFF09\uFF1B\u6B4C\u8BCD\u7167\u5199\u7167\u5B58`;
-  if (x2.why === "kanji") return "\u6C49\u5B57\uFF1A\u6708\u8BFB\u6309\u8BFB\u97F3\u6570\u62CD\uFF0C\u4E00\u4E2A\u5B57\u53EF\u80FD\u597D\u51E0\u62CD\u3001\u5BF9\u4E0D\u4E0A\u97F3\u2014\u2014\u5199\u6210\u5047\u540D";
+  if (x2.why === "kanji") return "\u8FD9\u53E5\u6709\u5047\u540D\u3001\u6309\u65E5\u8BED\u5531\uFF1A\u6C49\u5B57\u6708\u8BFB\u6309\u8BFB\u97F3\u6570\u62CD\uFF0C\u4E00\u4E2A\u5B57\u53EF\u80FD\u597D\u51E0\u62CD\u3001\u5BF9\u4E0D\u4E0A\u97F3\u2014\u2014\u5199\u6210\u5047\u540D\uFF08\u6574\u53E5\u90FD\u662F\u6C49\u5B57\u624D\u6309\u4E2D\u6587\u5531\uFF09";
   if (x2.why === "beats") return `\u4E00\u4E2A\u97F3\u4E0A ${x2.beats} \u62CD\uFF1A\u6708\u8BFB\u4E00\u4E2A\u97F3\u5531\u4E00\u62CD\u2014\u2014\u62C6\u6210 ${x2.beats} \u4E2A\u97F3\uFF0C\u6216\u8005\u7528\u300C+\u300D\u8FDE\u7740\u5199`;
-  return lang === "ja" ? "\u8FD9\u6761\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D" : lang === "zh" ? "\u8FD9\u6761\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57" : "\u8FD9\u6761\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD";
+  return x2.lang === "ja" ? "\u8FD9\u53E5\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D" : x2.lang === "zh" ? "\u8FD9\u53E5\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57" : "\u8FD9\u53E5\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD";
 }
 function prettyReading(lang, x2) {
   return lang !== "ja" ? x2 : x2.split("-").map((y2) => y2.replace(/N_[a-z]+/g, "n").replace(/^clch/, "tch").replace(/^cl([a-z])/, "$1$1")).join("-");
@@ -12623,20 +12624,23 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
   return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base3, LANG: lang };
 }
 var PHRASE_REST_SEC = 0.25;
+function restCuts(tokens, tempoMap) {
+  const cuts = [];
+  let rest = 0;
+  for (const x2 of timeline(tokens, tempoMap)) {
+    if (x2.tok.kind === "rest") {
+      rest += x2.t1 - x2.t0;
+      continue;
+    }
+    if (rest >= PHRASE_REST_SEC) cuts.push(x2.index);
+    rest = 0;
+  }
+  return cuts;
+}
 function singChunks(tokens, tempoMap, bounds, mode) {
   if (mode === "whole") return tokens.some((t10) => t10.kind === "note") ? [[0, tokens.length]] : [];
   const cuts = new Set(bounds.filter((b3) => b3 > 0 && b3 < tokens.length));
-  if (mode === "phrase") {
-    let rest = 0;
-    for (const x2 of timeline(tokens, tempoMap)) {
-      if (x2.tok.kind === "rest") {
-        rest += x2.t1 - x2.t0;
-        continue;
-      }
-      if (rest >= PHRASE_REST_SEC) cuts.add(x2.index);
-      rest = 0;
-    }
-  }
+  if (mode === "phrase") for (const c10 of restCuts(tokens, tempoMap)) cuts.add(c10);
   const starts = [0, ...[...cuts].sort((a10, b3) => a10 - b3)];
   return starts.map((a10, k2) => [a10, starts[k2 + 1] ?? tokens.length]).filter(([a10, b3]) => tokens.slice(a10, b3).some((t10) => t10.kind === "note"));
 }
@@ -21774,6 +21778,7 @@ init_fflate_esm();
 var KANA2 = /[぀-ヿㇰ-ㇿｦ-ﾟ]/;
 var HAN2 = /\p{Script=Han}/u;
 var LATIN2 = /[A-Za-z]/;
+var scriptLang = (lyric) => KANA2.test(lyric) ? "ja" : HAN2.test(lyric) ? "zh" : LATIN2.test(lyric) ? "en" : null;
 function partDefaultLang(tokens) {
   const ls2 = tokens.flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
   if (KANA2.test(ls2)) return "ja";
@@ -25653,6 +25658,37 @@ var LEAD_IN = 0.5;
 var SUNG_GAIN = 0.89 / 0.42;
 var SUNG_TAIL = 0.6;
 var PRE_ROLL = 0.1;
+function singLangs(tokens, tempoMap, bounds, hum) {
+  const cuts = /* @__PURE__ */ new Set([...bounds, ...restCuts(tokens, tempoMap)]);
+  tokens.forEach((t10, i10) => {
+    if (t10.kind === "phrase") cuts.add(i10);
+  });
+  const starts = [0, ...[...cuts].filter((c10) => c10 > 0 && c10 < tokens.length).sort((a10, b3) => a10 - b3)];
+  const sentences = starts.map((a10, k2) => {
+    const b3 = starts[k2 + 1] ?? tokens.length;
+    const text2 = tokens.slice(a10, b3).flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
+    return { a: a10, b: b3, lang: text2 ? scriptLang(text2) : null };
+  });
+  let prev = sentences.find((s10) => s10.lang)?.lang ?? songLangOf(tokens, hum);
+  const out = new Array(tokens.length);
+  for (const s10 of sentences) {
+    prev = s10.lang ?? prev;
+    for (let i10 = s10.a; i10 < s10.b; i10++) out[i10] = prev;
+  }
+  return out;
+}
+function splitByLang(ranges, langs) {
+  const out = [];
+  for (const [a10, b3] of ranges) {
+    let s10 = a10;
+    for (let i10 = a10 + 1; i10 < b3; i10++) if (langs[i10] !== langs[i10 - 1]) {
+      out.push([s10, i10]);
+      s10 = i10;
+    }
+    out.push([s10, b3]);
+  }
+  return out;
+}
 function songLangOf(tokens, hum) {
   const ls2 = tokens.flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
   if (/[A-Za-z]/.test(ls2) && !/[\p{Script=Han}぀-ヿ]/u.test(ls2)) return "en";
@@ -25709,12 +25745,12 @@ function buildTimeline(inp) {
     const groove = grooveWeights(tokens, bounds, gmap, info2.follow);
     const gain = gainSegments(tokens, map, info2.spec, bounds, groove);
     if (info2.engine === "tsukuyomi") {
-      const lang = songLangOf(tokens, hum), mode = info2.chunk;
+      const langs = singLangs(tokens, map, bounds, hum), mode = info2.chunk;
       const noteAt = (a10) => tl2.find((x2) => x2.index >= a10 && x2.tok.kind === "note")?.t0 ?? 0;
-      const ranges = singChunks(tokens, map, mode === "sheet" ? bounds : [], mode);
+      const ranges = splitByLang(singChunks(tokens, map, mode === "sheet" ? bounds : [], mode), langs);
       const clips = { id: part.id, kind: "clips", clips: [], gain, ...info2.chain?.length ? { chain: info2.chain } : {} };
       for (const [a10, b3] of ranges) {
-        const te3 = /* @__PURE__ */ new Map(), score = toLabScore(tokens, hum, lang, map, info2.spec.sing, [a10, b3], te3);
+        const lang = langs[a10], te3 = /* @__PURE__ */ new Map(), score = toLabScore(tokens, hum, lang, map, info2.spec.sing, [a10, b3], te3);
         if (!score.SCORE.length) continue;
         const entryOf = /* @__PURE__ */ new Map();
         for (const [i10, e10] of te3) entryOf.set(tokens[i10].id, e10);
@@ -40982,11 +41018,15 @@ var lyricMuteVal = /* @__PURE__ */ new Map();
 function lyricMutes() {
   if (lyricMuteKey[0] === st2.song && lyricMuteKey[1] === doc.extras) return lyricMuteVal;
   const out = /* @__PURE__ */ new Map();
+  const order = songPlayOrder(st2.song), map = timeMapOf(st2.song, order);
   for (const p2 of st2.song.parts) {
-    const eng = activeInstrument(doc.extras, p2.role)?.engine ?? null, lang = songLangOf(flattenPart(st2.song, p2.id).tokens, st2.song.hum), m2 = /* @__PURE__ */ new Map();
+    const eng = activeInstrument(doc.extras, p2.role)?.engine ?? null, m2 = /* @__PURE__ */ new Map();
+    const flat = flattenPart(st2.song, p2.id, { order }), fl2 = singLangs(flat.tokens, map, flat.starts.map((s10) => s10.index), st2.song.hum), byId = new Map(flat.tokens.map((t10, i10) => [t10.id, fl2[i10]]));
     for (const paper of st2.song.papers) {
       const toks = paper.tracks[p2.id];
-      if (toks) for (const [i10, x2] of lyricIssues(toks, eng, lang)) m2.set(toks[i10].id, x2);
+      if (!toks) continue;
+      const own = toks.some((t10) => !byId.has(t10.id)) ? singLangs(toks, void 0, [], st2.song.hum) : null;
+      for (const [i10, x2] of lyricIssues(toks, eng, (i11) => byId.get(toks[i11].id) ?? own[i11])) m2.set(toks[i10].id, x2);
     }
     out.set(p2.id, m2);
   }
@@ -40999,7 +41039,7 @@ function lyricHintAt(i10) {
   if (!t10 || !p2) return null;
   const x2 = lyricMutes().get(p2.id)?.get(t10.id);
   if (!x2) return null;
-  return lyricWhyText(x2, roleName(doc.extras, p2.role), songLangOf(flattenPart(st2.song, p2.id).tokens, st2.song.hum));
+  return lyricWhyText(x2, roleName(doc.extras, p2.role));
 }
 var readPlans = null;
 var readings = /* @__PURE__ */ new Map();
@@ -41202,8 +41242,8 @@ function openTrackCard(at2) {
     const onPaper = Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
     box.innerHTML = `<button class="tc-inst" data-v="inst" title="\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\u3001\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\uFF08\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09"><span class="tc-l"><b>${esc8(label)}</b><small>${((who) => who ? `${esc8(who)} \u5728\u6F14` : "\u6CA1\u4EBA\u4E0A\u573A")(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">\u4E50\u5668 \u203A</span></button>` + ((m3) => {
       if (!m3 || !m3.size) return "";
-      const xs = [...m3.values()], first = xs[0], lang = songLangOf(flattenPart(st2.song, me.id).tokens, st2.song.hum);
-      return `<div class="tc-warn">${first.why === "notSung" ? esc8(lyricWhyText(first, roleName(doc.extras, me.role), lang)) : `\u6709 ${xs.length} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A${esc8(lyricWhyText(first, roleName(doc.extras, me.role), lang))}${xs.some((x3) => x3.why !== first.why) ? " \u7B49" : ""}`}</div>`;
+      const xs = [...m3.values()], first = xs[0];
+      return `<div class="tc-warn">${first.why === "notSung" ? esc8(lyricWhyText(first, roleName(doc.extras, me.role))) : `\u6709 ${xs.length} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A${esc8(lyricWhyText(first, roleName(doc.extras, me.role)))}${xs.some((x3) => x3.why !== first.why) ? " \u7B49" : ""}`}</div>`;
     })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">\u663E\u793A</span><div class="tc-v">${chip("hide", "\u9690\u85CF", v.hidden, "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0")}${chip("only", "\u53EA\u770B\u5B83", v.only, "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09")}</div><span class="tc-k">\u51FA\u58F0</span><div class="tc-v">${chip("mute", "\u9759\u97F3", v.muted, "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B")}${chip("solo", "\u72EC\u594F", v.solo, "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8")}</div><span class="tc-k">\u8C31\u8868</span><div class="tc-v">${chip("staves:1", "\u4E00\u5F20", one)}${chip("staves:2", "\u5927\u8C31\u8868", !one, "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A")}</div>` + (one ? `<span class="tc-k">\u8C31\u53F7</span><div class="tc-v">${chip("clef:auto", "\u81EA\u52A8", !me.clef, "\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684\u8C31\u53F7\uFF08\u5F88\u9AD8\u7684\u4F1A\u6311 15ma / 8va\uFF0C\u5F88\u4F4E\u7684\u6311\u4F4E\u97F3 / \u4F4E\u97F3 8vb\uFF09\uFF1B\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002\u8FD8\u4E0D\u770B\u4E50\u5668\u7684\u4E60\u60EF\uFF08\u6BD4\u5982\u5409\u4ED6\u5199 8vb\uFF09\uFF0C\u8981\u7684\u8BDD\u624B\u52A8\u9009")}${CLEFS.map((c10) => chip(`clef:${c10}`, CLEF_LABEL[c10], me.clef === c10, CLEF_TITLE[c10])).join("")}</div>` : "") + // 合租（v0.10.24；user「合租还是有主人吧，这样钢琴小花可以挂钢琴上」）：画在谁的谱线上；只管画，出声 / 混音台照旧各是各的
     ((cands3, hasTenants) => st2.song.parts.length > 1 ? `<span class="tc-k">\u5408\u79DF</span><div class="tc-v">${hasTenants ? `<span class="tc-hint">\u6709\u522B\u7684\u6B4C\u624B\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA</span>` : `<select class="tc-sel" data-hostsel title="\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09"><option value="">\u81EA\u5DF1\u4E00\u884C</option>${cands3.map((p2) => `<option value="${esc8(p2.id)}"${me.host === p2.id ? " selected" : ""}>\u6302\u5728\u300C${esc8(labels[st2.song.parts.indexOf(p2)] ?? p2.id)}\u300D\u4E0A</option>`).join("")}</select>`}</div>` : "")(
       st2.song.parts.filter((p2) => p2.id !== me.id && !p2.host),
@@ -43619,4 +43659,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f82d881d921b.mjs.map
+//# sourceMappingURL=moonsinger-73412bf3bbfd.mjs.map

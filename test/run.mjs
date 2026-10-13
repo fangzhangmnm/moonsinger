@@ -52,6 +52,7 @@ import "./dyn-override.test.ts";
 import "./pdf-wysiwyg.test.ts";
 import "./repeats.test.ts";
 import "./lyric-check.test.ts";
+import "./sing-langs.test.ts";
 import "./ramp.test.ts";
 import "./arrange.test.ts";
 import "./groove.test.ts";

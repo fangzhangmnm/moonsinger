@@ -46,7 +46,7 @@ import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSound
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
 import { StudioClient } from "../engine/studio-client.ts";
 import type { AuditionInst, TrackSpec } from "../engine/studio.ts";
-import { buildTimeline, lightNotes, songLangOf, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
+import { buildTimeline, lightNotes, songLangOf, singLangs, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
 import { loadVowelTable } from "../engine/vowel-table.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
@@ -1930,9 +1930,16 @@ let lyricMuteKey: unknown[] = [], lyricMuteVal = new Map<string, Map<number, Lyr
 function lyricMutes(): Map<string, Map<number, LyricIssue>> {
   if (lyricMuteKey[0] === st.song && lyricMuteKey[1] === doc.extras) return lyricMuteVal;
   const out = new Map<string, Map<number, LyricIssue>>();
+  const order = songPlayOrder(st.song), map = timeMapOf(st.song, order);
   for (const p of st.song.parts) {
-    const eng = activeInstrument(doc.extras, p.role)?.engine ?? null, lang = songLangOf(flattenPart(st.song, p.id).tokens, st.song.hum), m = new Map<number, LyricIssue>();
-    for (const paper of st.song.papers) { const toks = paper.tracks[p.id]; if (toks) for (const [i, x] of lyricIssues(toks, eng, lang)) m.set(toks[i].id, x); }
+    const eng = activeInstrument(doc.extras, p.role)?.engine ?? null, m = new Map<number, LyricIssue>();
+    // 语言按句判、和唱的时候同一份（singLangs：按编排压平 + 速度表）；编排没点到 / 隐藏的纸压不进来 = 那张纸自己按句算（没速度表，句界只差在卡着 0.25 s 的休止上）
+    const flat = flattenPart(st.song, p.id, { order }), fl = singLangs(flat.tokens, map, flat.starts.map((s) => s.index), st.song.hum), byId = new Map(flat.tokens.map((t, i) => [t.id, fl[i]]));
+    for (const paper of st.song.papers) {
+      const toks = paper.tracks[p.id]; if (!toks) continue;
+      const own = toks.some((t) => !byId.has(t.id)) ? singLangs(toks, undefined, [], st.song.hum) : null;
+      for (const [i, x] of lyricIssues(toks, eng, (i) => byId.get(toks[i].id) ?? own![i])) m.set(toks[i].id, x);
+    }
     out.set(p.id, m);
   }
   lyricMuteKey = [st.song, doc.extras]; lyricMuteVal = out;
@@ -1942,7 +1949,7 @@ function lyricMutes(): Map<string, Map<number, LyricIssue>> {
 function lyricHintAt(i: number): string | null {
   const t = tr(st)[i], p = st.song.parts.find((x) => x.id === st.at.part); if (!t || !p) return null;
   const x = lyricMutes().get(p.id)?.get(t.id); if (!x) return null;
-  return lyricWhyText(x, roleName(doc.extras, p.role), songLangOf(flattenPart(st.song, p.id).tokens, st.song.hum));
+  return lyricWhyText(x, roleName(doc.extras, p.role));
 }
 // ── 歌词旁显示引擎念成什么（v0.9.34，2026-10-10 Opus 5.5；user「小件做」，AI 提的「歌词框 / 歌手牌里显示引擎念成什么」）：
 //    全假名时日语前端会把助词 は 注成 ha（团子 B「としよりだんごはめを」= ha-me），user 不懂日语看不出来，看得见才能自己改成 わ。
@@ -2104,8 +2111,8 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     const onPaper = Object.keys(st.song.papers.find((p) => p.id === st.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
     box.innerHTML =
       `<button class="tc-inst" data-v="inst" title="这个声部是什么、谁来演、怎么演（全屏一页，右边的键盘能试）"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? `${esc(who)} 在演` : "没人上场"))(activeCandidateName(doc.extras, me.role))}</small></span><span class="tc-go">乐器 ›</span></button>` +
-      ((m) => { if (!m || !m.size) return ""; const xs = [...m.values()], first = xs[0], lang = songLangOf(flattenPart(st.song, me.id).tokens, st.song.hum);   // 唱不出来的歌词：几个、为什么（纪律：画灰 + 明说）
-        return `<div class="tc-warn">${first.why === "notSung" ? esc(lyricWhyText(first, roleName(doc.extras, me.role), lang)) : `有 ${xs.length} 个字唱不出来（谱上画灰）：${esc(lyricWhyText(first, roleName(doc.extras, me.role), lang))}${xs.some((x) => x.why !== first.why) ? " 等" : ""}`}</div>`; })(lyricMutes().get(me.id)) +
+      ((m) => { if (!m || !m.size) return ""; const xs = [...m.values()], first = xs[0];   // 唱不出来的歌词：几个、为什么（纪律：画灰 + 明说）
+        return `<div class="tc-warn">${first.why === "notSung" ? esc(lyricWhyText(first, roleName(doc.extras, me.role))) : `有 ${xs.length} 个字唱不出来（谱上画灰）：${esc(lyricWhyText(first, roleName(doc.extras, me.role)))}${xs.some((x) => x.why !== first.why) ? " 等" : ""}`}</div>`; })(lyricMutes().get(me.id)) +
       `<div class="tc-grid">` +
       `<span class="tc-k">显示</span><div class="tc-v">${chip("hide", "隐藏", v.hidden, "谱上缩成一条细行（点细行再放出来）；照样出声")}${chip("only", "只看它", v.only, "其余声部都缩成细行（可以几个一起「只看」）")}</div>` +
       `<span class="tc-k">出声</span><div class="tc-v">${chip("mute", "静音", v.muted, "播放时不出声；谱上照画")}${chip("solo", "独奏", v.solo, "播放时只出有独奏的声部")}</div>` +

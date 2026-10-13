@@ -91,17 +91,21 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
  *  返回 token 下标范围 [from, to)；没有音的段不要。 */
 export type SingChunkMode = "phrase" | "sheet" | "whole";
 export const PHRASE_REST_SEC = 0.25;   // 这么长以上的休止（连着几个休止加起来）= 一句的边界：那里本来就没声音，切开听不出接缝
+/** 够长的休止（连着几个加起来 ≥ PHRASE_REST_SEC）后面第一个音的下标 = 一句的起点。分段唱（phrase）和按句判语言（timeline.ts singLangs）同一把尺。 */
+export function restCuts(tokens: readonly Token[], tempoMap: TempoMap | undefined): number[] {
+  const cuts: number[] = [];
+  let rest = 0;
+  for (const x of timeline(tokens as Token[], tempoMap)) {
+    if (x.tok.kind === "rest") { rest += x.t1 - x.t0; continue; }
+    if (rest >= PHRASE_REST_SEC) cuts.push(x.index);
+    rest = 0;
+  }
+  return cuts;
+}
 export function singChunks(tokens: Token[], tempoMap: TempoMap | undefined, bounds: readonly number[], mode: SingChunkMode): [number, number][] {
   if (mode === "whole") return tokens.some((t) => t.kind === "note") ? [[0, tokens.length]] : [];
   const cuts = new Set(bounds.filter((b) => b > 0 && b < tokens.length));
-  if (mode === "phrase") {
-    let rest = 0;
-    for (const x of timeline(tokens, tempoMap)) {
-      if (x.tok.kind === "rest") { rest += x.t1 - x.t0; continue; }
-      if (rest >= PHRASE_REST_SEC) cuts.add(x.index);
-      rest = 0;
-    }
-  }
+  if (mode === "phrase") for (const c of restCuts(tokens, tempoMap)) cuts.add(c);
   const starts = [0, ...[...cuts].sort((a, b) => a - b)];
   return starts.map((a, k) => [a, starts[k + 1] ?? tokens.length] as [number, number]).filter(([a, b]) => tokens.slice(a, b).some((t) => t.kind === "note"));
 }

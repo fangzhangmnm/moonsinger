@@ -2,10 +2,15 @@
 // 持久化第 6 题（user 选「每个音节都写明」）：存档时每个音节都写明语言（MusicXML `<text xml:lang>`），编辑时自动认——
 //   有假名 → 日；拉丁字母（且没有假名汉字）→ 英；只有汉字 → 跟前一个音节；一条声部开头就是汉字 → 跟这条声部的默认语言。
 //   认错了才在音符上记 lang（只记和自动认不一样的），所以猜法以后改了，写明过的不变。
+// 唱 / 画灰不用这里的逐音节规则，按「句」判（engine/timeline.ts singLangs：一句里有假名 = 日、只有汉字 = 中；user 2026-10-13「每一段里面有假名就算日文」「就是句子的单位」），
+//   句界要速度表（够长的休止）这里够不着，存档标注暂仍逐音节；两者只在「日语句后面紧跟中文句」的第一个字上可能不一致。edited by Claude Fable 5.1 2026-10-13
 import type { Token } from "./song.ts";
 import { MELISMA_MARK } from "./lyrics.ts";
 
 const KANA = /[぀-ヿㇰ-ㇿｦ-ﾟ]/, HAN = /\p{Script=Han}/u, LATIN = /[A-Za-z]/;
+
+/** 一段文字按文字系统唱哪种语言（唱 / 画灰按句用它：喂一整句的字）：有假名 → 日；有汉字（没假名）→ 中；拉丁字母 → 英；都没有（数字 / 符号 / 空）→ null = 跟前面的。 */
+export const scriptLang = (lyric: string): "ja" | "zh" | "en" | null => (KANA.test(lyric) ? "ja" : HAN.test(lyric) ? "zh" : LATIN.test(lyric) ? "en" : null);
 
 /** 这条声部的默认语言：整条歌词里有假名 → 日；只有汉字 → 中；只有拉丁字母 → 英；什么都没有 → 日。 */
 export function partDefaultLang(tokens: Token[]): string {
