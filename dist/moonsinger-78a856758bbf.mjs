@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.11.1-2026-10-13";
+var APP_VERSION = "v0.11.3-2026-10-13";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -9372,7 +9372,8 @@ var LyricEditor = class {
       return;
     }
     if (v === this.slotText(this.index)) return;
-    const syl = splitSyllables(v.replace(/-$/, "")).map((s10, k2, a10) => k2 === a10.length - 1 && /-$/.test(v) ? { ...s10, hyph: true } : s10);
+    const hy = /[A-Za-z'’]-$/.test(v);
+    const syl = splitSyllables(hy ? v.slice(0, -1) : v).map((s10, k2, a10) => k2 === a10.length - 1 && hy ? { ...s10, hyph: true } : s10);
     if (syl.length) this.host.set(distributeFrom(st3, this.index, syl).st);
   }
   commitAndClose() {
@@ -43638,4 +43639,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-615b956dca85.mjs.map
+//# sourceMappingURL=moonsinger-78a856758bbf.mjs.map

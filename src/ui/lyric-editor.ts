@@ -179,7 +179,10 @@ export class LyricEditor {
     if (sp.phrase) { if (v) this.host.set(distributeFrom(st, this.index, splitSyllables(v)).st); this.host.set(insertPhraseAfter(this.host.get(), this.index)); return; }
     if (!v) { if (cur.lyric) this.host.set({ ...st, song: withTrack(st.song, st.at.paper, st.at.part, tr(st).map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t))) }); return; }
     if (v === this.slotText(this.index)) return;
-    const syl = splitSyllables(v.replace(/-$/, "")).map((s, k, a) => (k === a.length - 1 && /-$/.test(v) ? { ...s, hyph: true } : s));
+    // 字母后面的「-」= 词没完（同「-」键）；别的「-」（中日文后面、单独一个）交给 splitSyllables = 拖腔，和空格那条路一样
+    //   （2026-10-13 Opus 5.5；user「-空格显示 -回车不显示」：此前回车一律剥掉结尾的「-」，单独一个「-」剥完是空的、什么都没写）
+    const hy = /[A-Za-z'’]-$/.test(v);
+    const syl = splitSyllables(hy ? v.slice(0, -1) : v).map((s, k, a) => (k === a.length - 1 && hy ? { ...s, hyph: true } : s));
     if (syl.length) this.host.set(distributeFrom(st, this.index, syl).st);
   }
 
