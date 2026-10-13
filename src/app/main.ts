@@ -46,7 +46,7 @@ import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSound
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
 import { StudioClient } from "../engine/studio-client.ts";
 import type { AuditionInst, TrackSpec } from "../engine/studio.ts";
-import { buildTimeline, lightNotes, songLangOf, singLangs, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
+import { buildTimeline, lightNotes, songLangOf, sungPlan, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
 import { loadVowelTable } from "../engine/vowel-table.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
@@ -1932,12 +1932,12 @@ function lyricMutes(): Map<string, Map<number, LyricIssue>> {
   const out = new Map<string, Map<number, LyricIssue>>();
   const order = songPlayOrder(st.song), map = timeMapOf(st.song, order);
   for (const p of st.song.parts) {
-    const eng = activeInstrument(doc.extras, p.role)?.engine ?? null, m = new Map<number, LyricIssue>();
-    // 语言按句判、和唱的时候同一份（singLangs：按编排压平 + 速度表）；编排没点到 / 隐藏的纸压不进来 = 那张纸自己按句算（没速度表，句界只差在卡着 0.25 s 的休止上）
-    const flat = flattenPart(st.song, p.id, { order }), fl = singLangs(flat.tokens, map, flat.starts.map((s) => s.index), st.song.hum), byId = new Map(flat.tokens.map((t, i) => [t.id, fl[i]]));
+    const eng = activeInstrument(doc.extras, p.role)?.engine ?? null, mode = activeSingChunk(doc.extras, p.role), m = new Map<number, LyricIssue>();
+    // 语言 = 小月相唱的那一段的语言，和唱的时候同一份（sungPlan：按编排压平 + 速度表 + 这位的分段唱设置）；编排没点到 / 隐藏的纸压不进来 = 那张纸自己算（没速度表，段界只差在卡着 0.25 s 的休止上）
+    const flat = flattenPart(st.song, p.id, { order }), fl = sungPlan(flat.tokens, map, flat.starts.map((s) => s.index), mode, st.song.hum).at, byId = new Map(flat.tokens.map((t, i) => [t.id, fl[i]]));
     for (const paper of st.song.papers) {
       const toks = paper.tracks[p.id]; if (!toks) continue;
-      const own = toks.some((t) => !byId.has(t.id)) ? singLangs(toks, undefined, [], st.song.hum) : null;
+      const own = toks.some((t) => !byId.has(t.id)) ? sungPlan(toks, undefined, [], mode, st.song.hum).at : null;
       for (const [i, x] of lyricIssues(toks, eng, (i) => byId.get(toks[i].id) ?? own![i])) m.set(toks[i].id, x);
     }
     out.set(p.id, m);

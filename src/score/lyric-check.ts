@@ -2,8 +2,8 @@
 // 纪律（user 2026-10-08「不能成功发音识别的歌词也标灰，我觉得这个可以变成这个项目的纪律了哈哈」；CLAUDE.md「纪律：做不到的一律画灰 + 明说」）：
 //   照写、照存、不替人改，只是在谱上画灰、在看得见的地方说清楚为什么。
 // 只有月读唱字：元音版只哼（ら / ん / う / あ）、乐器不唱 → 整条歌词都灰（这位不唱字）。
-// 语言按「句」判（engine/timeline.ts singLangs：一句里有假名 = 日、只有汉字 = 中、只有字母 = 英；唱的时候也按句分语言），langAt 由调用方给。
-//   2026-10-13 之前整条声部一种语言（songLangOf）：日文歌换中文翻译时每个汉字都灰（user「每一段里面有假名就算日文」「就是句子的单位」；edited by Claude Fable 5.1）。
+// 语言按小月相唱的那一段判（engine/timeline.ts sungPlan：一段里有假名 = 日、只有汉字 = 中、只有字母 = 英；唱和画灰同一份），langAt 由调用方给。
+//   2026-10-13 之前整条声部一种语言（songLangOf）：日文歌换中文翻译时每个汉字都灰（user「每一段里面有假名就算日文」「就是句子的单位」「用同一个深模块」；edited by Claude Fable 5.1 / Claude Opus 5.5）。
 // 唱法核心按读音数拍，一个音一拍（src/singer/sing-core.mjs「sung syllables in the text」）：
 //   日语：汉字的读音几拍说不准（星 = ほし 两拍）、字母 / 数字会被念成别的、一个音上两拍（ラー）→ 拍数对不上，整条不出声；
 //   中文：一个音一个汉字；英文：拉丁字母（词典查不到的现在查不出来）。小字 / 促音自己占一个音是可以的（lab-score 兜住）。
@@ -45,9 +45,9 @@ export function lyricIssues(tokens: Token[], engine: string | null | undefined, 
 /** 给人看的那句话。 */
 export function lyricWhyText(x: LyricIssue, engineName: string): string {
   if (x.why === "notSung") return `${engineName}不唱歌词（只哼 / 只弹）；歌词照写照存`;
-  if (x.why === "kanji") return "这句有假名、按日语唱：汉字月读按读音数拍，一个字可能好几拍、对不上音——写成假名（整句都是汉字才按中文唱）";
+  if (x.why === "kanji") return "这一段有假名、按日语唱：汉字月读按读音数拍，一个字可能好几拍、对不上音——写成假名（一段都是汉字才按中文唱；段 = 歌手牌里的「分段唱」）";
   if (x.why === "beats") return `一个音上 ${x.beats} 拍：月读一个音唱一拍——拆成 ${x.beats} 个音，或者用「+」连着写`;
-  return x.lang === "ja" ? "这句按日语唱：字母 / 数字 / 符号念不准——写成假名" : x.lang === "zh" ? "这句按中文唱：一个音写一个汉字" : "这句按英文唱：写拉丁字母";
+  return x.lang === "ja" ? "这一段按日语唱：字母 / 数字 / 符号念不准——写成假名" : x.lang === "zh" ? "这一段按中文唱：一个音写一个汉字" : "这一段按英文唱：写拉丁字母";
 }
 
 /** 引擎念成什么的显示（v0.9.34，歌词框下面那条）：日语前端的音素写成好认的样子——ん（N_n / N_m / N_ng…）= n，促音 cl = 双写下一个辅音（cl + ch = tch）；

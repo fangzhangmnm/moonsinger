@@ -6745,9 +6745,9 @@ function lyricIssues(tokens, engine2, langAt) {
 }
 function lyricWhyText(x2, engineName) {
   if (x2.why === "notSung") return `${engineName}\u4E0D\u5531\u6B4C\u8BCD\uFF08\u53EA\u54FC / \u53EA\u5F39\uFF09\uFF1B\u6B4C\u8BCD\u7167\u5199\u7167\u5B58`;
-  if (x2.why === "kanji") return "\u8FD9\u53E5\u6709\u5047\u540D\u3001\u6309\u65E5\u8BED\u5531\uFF1A\u6C49\u5B57\u6708\u8BFB\u6309\u8BFB\u97F3\u6570\u62CD\uFF0C\u4E00\u4E2A\u5B57\u53EF\u80FD\u597D\u51E0\u62CD\u3001\u5BF9\u4E0D\u4E0A\u97F3\u2014\u2014\u5199\u6210\u5047\u540D\uFF08\u6574\u53E5\u90FD\u662F\u6C49\u5B57\u624D\u6309\u4E2D\u6587\u5531\uFF09";
+  if (x2.why === "kanji") return "\u8FD9\u4E00\u6BB5\u6709\u5047\u540D\u3001\u6309\u65E5\u8BED\u5531\uFF1A\u6C49\u5B57\u6708\u8BFB\u6309\u8BFB\u97F3\u6570\u62CD\uFF0C\u4E00\u4E2A\u5B57\u53EF\u80FD\u597D\u51E0\u62CD\u3001\u5BF9\u4E0D\u4E0A\u97F3\u2014\u2014\u5199\u6210\u5047\u540D\uFF08\u4E00\u6BB5\u90FD\u662F\u6C49\u5B57\u624D\u6309\u4E2D\u6587\u5531\uFF1B\u6BB5 = \u6B4C\u624B\u724C\u91CC\u7684\u300C\u5206\u6BB5\u5531\u300D\uFF09";
   if (x2.why === "beats") return `\u4E00\u4E2A\u97F3\u4E0A ${x2.beats} \u62CD\uFF1A\u6708\u8BFB\u4E00\u4E2A\u97F3\u5531\u4E00\u62CD\u2014\u2014\u62C6\u6210 ${x2.beats} \u4E2A\u97F3\uFF0C\u6216\u8005\u7528\u300C+\u300D\u8FDE\u7740\u5199`;
-  return x2.lang === "ja" ? "\u8FD9\u53E5\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D" : x2.lang === "zh" ? "\u8FD9\u53E5\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57" : "\u8FD9\u53E5\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD";
+  return x2.lang === "ja" ? "\u8FD9\u4E00\u6BB5\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D" : x2.lang === "zh" ? "\u8FD9\u4E00\u6BB5\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57" : "\u8FD9\u4E00\u6BB5\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD";
 }
 function prettyReading(lang, x2) {
   return lang !== "ja" ? x2 : x2.split("-").map((y2) => y2.replace(/N_[a-z]+/g, "n").replace(/^clch/, "tch").replace(/^cl([a-z])/, "$1$1")).join("-");
@@ -12624,23 +12624,20 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
   return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base3, LANG: lang };
 }
 var PHRASE_REST_SEC = 0.25;
-function restCuts(tokens, tempoMap) {
-  const cuts = [];
-  let rest = 0;
-  for (const x2 of timeline(tokens, tempoMap)) {
-    if (x2.tok.kind === "rest") {
-      rest += x2.t1 - x2.t0;
-      continue;
-    }
-    if (rest >= PHRASE_REST_SEC) cuts.push(x2.index);
-    rest = 0;
-  }
-  return cuts;
-}
 function singChunks(tokens, tempoMap, bounds, mode) {
   if (mode === "whole") return tokens.some((t10) => t10.kind === "note") ? [[0, tokens.length]] : [];
   const cuts = new Set(bounds.filter((b3) => b3 > 0 && b3 < tokens.length));
-  if (mode === "phrase") for (const c10 of restCuts(tokens, tempoMap)) cuts.add(c10);
+  if (mode === "phrase") {
+    let rest = 0;
+    for (const x2 of timeline(tokens, tempoMap)) {
+      if (x2.tok.kind === "rest") {
+        rest += x2.t1 - x2.t0;
+        continue;
+      }
+      if (rest >= PHRASE_REST_SEC) cuts.add(x2.index);
+      rest = 0;
+    }
+  }
   const starts = [0, ...[...cuts].sort((a10, b3) => a10 - b3)];
   return starts.map((a10, k2) => [a10, starts[k2 + 1] ?? tokens.length]).filter(([a10, b3]) => tokens.slice(a10, b3).some((t10) => t10.kind === "note"));
 }
@@ -25658,36 +25655,19 @@ var LEAD_IN = 0.5;
 var SUNG_GAIN = 0.89 / 0.42;
 var SUNG_TAIL = 0.6;
 var PRE_ROLL = 0.1;
-function singLangs(tokens, tempoMap, bounds, hum) {
-  const cuts = /* @__PURE__ */ new Set([...bounds, ...restCuts(tokens, tempoMap)]);
-  tokens.forEach((t10, i10) => {
-    if (t10.kind === "phrase") cuts.add(i10);
-  });
-  const starts = [0, ...[...cuts].filter((c10) => c10 > 0 && c10 < tokens.length).sort((a10, b3) => a10 - b3)];
-  const sentences = starts.map((a10, k2) => {
-    const b3 = starts[k2 + 1] ?? tokens.length;
+function sungPlan(tokens, tempoMap, bounds, mode, hum) {
+  const ranges = singChunks(tokens, tempoMap, mode === "sheet" ? bounds : [], mode);
+  const own = ranges.map(([a10, b3]) => {
     const text2 = tokens.slice(a10, b3).flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
-    return { a: a10, b: b3, lang: text2 ? scriptLang(text2) : null };
+    return text2 ? scriptLang(text2) : null;
   });
-  let prev = sentences.find((s10) => s10.lang)?.lang ?? songLangOf(tokens, hum);
-  const out = new Array(tokens.length);
-  for (const s10 of sentences) {
-    prev = s10.lang ?? prev;
-    for (let i10 = s10.a; i10 < s10.b; i10++) out[i10] = prev;
-  }
-  return out;
-}
-function splitByLang(ranges, langs) {
-  const out = [];
-  for (const [a10, b3] of ranges) {
-    let s10 = a10;
-    for (let i10 = a10 + 1; i10 < b3; i10++) if (langs[i10] !== langs[i10 - 1]) {
-      out.push([s10, i10]);
-      s10 = i10;
-    }
-    out.push([s10, b3]);
-  }
-  return out;
+  let prev = own.find((l10) => l10) ?? songLangOf(tokens, hum);
+  const langs = own.map((l10) => prev = l10 ?? prev);
+  const at2 = new Array(tokens.length).fill(langs[0] ?? prev);
+  ranges.forEach(([a10, b3], k2) => {
+    for (let i10 = a10; i10 < tokens.length && (i10 < b3 || !ranges[k2 + 1]); i10++) at2[i10] = langs[k2];
+  });
+  return { ranges, langs, at: at2 };
 }
 function songLangOf(tokens, hum) {
   const ls2 = tokens.flatMap((t10) => t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? [t10.lyric] : []).join("");
@@ -25745,12 +25725,11 @@ function buildTimeline(inp) {
     const groove = grooveWeights(tokens, bounds, gmap, info2.follow);
     const gain = gainSegments(tokens, map, info2.spec, bounds, groove);
     if (info2.engine === "tsukuyomi") {
-      const langs = singLangs(tokens, map, bounds, hum), mode = info2.chunk;
+      const plan = sungPlan(tokens, map, bounds, info2.chunk, hum);
       const noteAt = (a10) => tl2.find((x2) => x2.index >= a10 && x2.tok.kind === "note")?.t0 ?? 0;
-      const ranges = splitByLang(singChunks(tokens, map, mode === "sheet" ? bounds : [], mode), langs);
       const clips = { id: part.id, kind: "clips", clips: [], gain, ...info2.chain?.length ? { chain: info2.chain } : {} };
-      for (const [a10, b3] of ranges) {
-        const lang = langs[a10], te3 = /* @__PURE__ */ new Map(), score = toLabScore(tokens, hum, lang, map, info2.spec.sing, [a10, b3], te3);
+      for (const [k2, [a10, b3]] of plan.ranges.entries()) {
+        const lang = plan.langs[k2], te3 = /* @__PURE__ */ new Map(), score = toLabScore(tokens, hum, lang, map, info2.spec.sing, [a10, b3], te3);
         if (!score.SCORE.length) continue;
         const entryOf = /* @__PURE__ */ new Map();
         for (const [i10, e10] of te3) entryOf.set(tokens[i10].id, e10);
@@ -41020,12 +40999,12 @@ function lyricMutes() {
   const out = /* @__PURE__ */ new Map();
   const order = songPlayOrder(st2.song), map = timeMapOf(st2.song, order);
   for (const p2 of st2.song.parts) {
-    const eng = activeInstrument(doc.extras, p2.role)?.engine ?? null, m2 = /* @__PURE__ */ new Map();
-    const flat = flattenPart(st2.song, p2.id, { order }), fl2 = singLangs(flat.tokens, map, flat.starts.map((s10) => s10.index), st2.song.hum), byId = new Map(flat.tokens.map((t10, i10) => [t10.id, fl2[i10]]));
+    const eng = activeInstrument(doc.extras, p2.role)?.engine ?? null, mode = activeSingChunk(doc.extras, p2.role), m2 = /* @__PURE__ */ new Map();
+    const flat = flattenPart(st2.song, p2.id, { order }), fl2 = sungPlan(flat.tokens, map, flat.starts.map((s10) => s10.index), mode, st2.song.hum).at, byId = new Map(flat.tokens.map((t10, i10) => [t10.id, fl2[i10]]));
     for (const paper of st2.song.papers) {
       const toks = paper.tracks[p2.id];
       if (!toks) continue;
-      const own = toks.some((t10) => !byId.has(t10.id)) ? singLangs(toks, void 0, [], st2.song.hum) : null;
+      const own = toks.some((t10) => !byId.has(t10.id)) ? sungPlan(toks, void 0, [], mode, st2.song.hum).at : null;
       for (const [i10, x2] of lyricIssues(toks, eng, (i11) => byId.get(toks[i11].id) ?? own[i11])) m2.set(toks[i10].id, x2);
     }
     out.set(p2.id, m2);
@@ -43659,4 +43638,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-73412bf3bbfd.mjs.map
+//# sourceMappingURL=moonsinger-615b956dca85.mjs.map

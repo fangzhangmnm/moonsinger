@@ -9,7 +9,7 @@ import { MELISMA_MARK } from "../score/lyrics.ts";
 import { scriptLang } from "../score/lang.ts";
 import { gainSegments, noteEnd, noteVelocities, lightMarks, type PerfSpec } from "../score/perform.ts";
 import { grooveWeights, grooveMapOf, followOf, timeMapOf, type GrooveStyle } from "../score/groove.ts";
-import { toLabScore, singChunks, restCuts, type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
+import { toLabScore, singChunks, type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
 import { playSegments } from "../score/repeats.ts";
 import { sfKey, type SfxInfo } from "../gm/sf-key.ts";
 import type { SingMark } from "../format/performance.ts";
@@ -73,37 +73,25 @@ export interface Timeline {
   secondsAt(paperId: string, tick: number, near: number): number | null;
 }
 
-/** 每个 token 唱哪种语言——按「句」判（2026-10-13，Claude Fable 5.1；user「打了日文之后想换成中文翻译会说不能打汉字然后报错」「每一段里面有假名就算日文」「就是句子的单位」）：
- *  句界 = 「句」记号 + 够长的休止（restCuts，和分段唱同一把尺）+ 纸界（bounds）；一句的字合起来看（score/lang.ts scriptLang）：有假名 = 日（夹着的汉字照旧画灰「写成假名」）、
- *  只有汉字 = 中、只有字母 = 英；一句没字（哼）= 跟前一句，开头 = 跟后面第一句有字的；整条没字 = songLangOf（哼法定）。
- *  此前整条声部一种语言（songLangOf）：跨所有纸只要还剩一个假名就整条按日语，中文翻译打到一半每个汉字都灰、一放就「sung syllables … in the score」报错。 */
-export function singLangs(tokens: readonly Token[], tempoMap: TempoMap | undefined, bounds: readonly number[], hum: Hum): SingLang[] {
-  const cuts = new Set<number>([...bounds, ...restCuts(tokens, tempoMap)]);
-  tokens.forEach((t, i) => { if (t.kind === "phrase") cuts.add(i); });
-  const starts = [0, ...[...cuts].filter((c) => c > 0 && c < tokens.length).sort((a, b) => a - b)];
-  const sentences = starts.map((a, k) => {
-    const b = starts[k + 1] ?? tokens.length;
-    const text = tokens.slice(a, b).flatMap((t) => (t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : [])).join("");
-    return { a, b, lang: text ? scriptLang(text) : null };
-  });
-  let prev: SingLang = sentences.find((s) => s.lang)?.lang ?? songLangOf(tokens, hum);
-  const out: SingLang[] = new Array(tokens.length);
-  for (const s of sentences) { prev = s.lang ?? prev; for (let i = s.a; i < s.b; i++) out[i] = prev; }
-  return out;
+/** 小月相唱的段和每段的语言（2026-10-13；user「打了日文之后想换成中文翻译会说不能打汉字然后报错」→「每一段里面有假名就算日文」「就是句子的单位」
+ *  →「小月相不是本来就是默认模式一句一句吃的吗，用同一个深模块」）。唱（buildTimeline）、画灰（main.ts lyricMutes）都走这一个，切分只有 singChunks 一份：
+ *  段 = 歌手的「分段唱」（每句 = 休止处切、每张纸、一整首）；一段的字合起来看（score/lang.ts scriptLang）：有假名 = 日（夹着的汉字照旧画灰「写成假名」）、只有汉字 = 中、只有字母 = 英；
+ *  没字的段（哼）跟前一段，开头跟后面第一个有字的段；整条没字 = songLangOf（哼法定）。
+ *  此前整条声部一种语言（songLangOf）：跨所有纸只要还剩一个假名就整条按日语，中文翻译打到一半每个汉字都灰、一放就「sung syllables … in the score」报错。
+ *  （同日 Fable 5.1 先另写了一套切句 + 按语言再切段，跟唱的段不是同一份，Opus 5.5 收回这一个。）
+ *  at = 每个 token 下标 → 它所在那段的语言（不在任何段里的 = 没有音的那几个 token，给前一段的）。 */
+export interface SungPlan { ranges: [number, number][]; langs: SingLang[]; at: SingLang[] }
+export function sungPlan(tokens: Token[], tempoMap: TempoMap | undefined, bounds: readonly number[], mode: SingChunkMode, hum: Hum): SungPlan {
+  const ranges = singChunks(tokens, tempoMap, mode === "sheet" ? bounds : [], mode);   // 每句：只看休止，不看纸界
+  const own = ranges.map(([a, b]) => { const text = tokens.slice(a, b).flatMap((t) => (t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : [])).join(""); return text ? scriptLang(text) : null; });
+  let prev: SingLang = own.find((l) => l) ?? songLangOf(tokens, hum);
+  const langs = own.map((l) => (prev = l ?? prev));
+  const at: SingLang[] = new Array(tokens.length).fill(langs[0] ?? prev);
+  ranges.forEach(([a, b], k) => { for (let i = a; i < tokens.length && (i < b || !ranges[k + 1]); i++) at[i] = langs[k]; });
+  return { ranges, langs, at };
 }
 
-/** 唱的段再按语言切开（一段只能一种语言：piper 一种语言一个前端）：切在换了语言的第一个字上（前面的休止留给上一段）。 */
-export function splitByLang(ranges: readonly (readonly [number, number])[], langs: readonly SingLang[]): [number, number][] {
-  const out: [number, number][] = [];
-  for (const [a, b] of ranges) {
-    let s = a;
-    for (let i = a + 1; i < b; i++) if (langs[i] !== langs[i - 1]) { out.push([s, i]); s = i; }
-    out.push([s, b]);
-  }
-  return out;
-}
-
-/** 整条声部只有一种语言时它是哪种（singLangs 的兜底：整条没写歌词时哼什么；debug 面板的整首唱谱）：歌词里有汉字、没有假名 → 中；有字母、没假名汉字 → 英；其余按日语。 */
+/** 整条声部只有一种语言时它是哪种（sungPlan 的兜底：整条没写歌词时哼什么；debug 面板的整首唱谱）：歌词里有汉字、没有假名 → 中；有字母、没假名汉字 → 英；其余按日语。 */
 export function songLangOf(tokens: readonly Token[], hum: Hum): SingLang {
   const ls = tokens.flatMap((t) => (t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : [])).join("");
   // 英文：歌词里有拉丁字母、没有假名也没有汉字（user「好吧英文先做完」）；中英日混着的歌第一版按日 / 中唱
@@ -152,12 +140,11 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const groove = grooveWeights(tokens, bounds, gmap, info.follow);
     const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove);
     if (info.engine === "tsukuyomi") {
-      const langs = singLangs(tokens, map, bounds, hum), mode = info.chunk;
+      const plan = sungPlan(tokens, map, bounds, info.chunk, hum);   // 段 + 每段的语言（画灰也走它）
       const noteAt = (a: number) => tl.find((x) => x.index >= a && x.tok.kind === "note")?.t0 ?? 0;
-      const ranges = splitByLang(singChunks(tokens, map, mode === "sheet" ? bounds : [], mode), langs);   // 每句：只看休止，不看纸界；再按语言切开
       const clips: TrackSpec & { kind: "clips" } = { id: part.id, kind: "clips", clips: [], gain, ...(info.chain?.length ? { chain: info.chain } : {}) };
-      for (const [a, b] of ranges) {
-        const lang = langs[a], te = new Map<number, number>(), score = toLabScore(tokens, hum, lang, map, info.spec.sing, [a, b], te);
+      for (const [k, [a, b]] of plan.ranges.entries()) {
+        const lang = plan.langs[k], te = new Map<number, number>(), score = toLabScore(tokens, hum, lang, map, info.spec.sing, [a, b], te);
         if (!score.SCORE.length) continue;
         const entryOf = new Map<number, number>(); for (const [i, e] of te) entryOf.set(tokens[i].id, e);
         const first = noteAt(a), last = tl.filter((x) => x.index >= a && x.index < b && x.tok.kind === "note").reduce((m, x) => Math.max(m, x.t1), first);
