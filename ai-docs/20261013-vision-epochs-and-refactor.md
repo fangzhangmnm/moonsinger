@@ -34,7 +34,7 @@
 | ① 谱子的数据模型 | 「首先谱子的数据模型」 | `src/score/song.ts` 1792 行，数据类型和大量编辑函数住在一起 | — |
 | ② 编辑模型 | 「然后是编辑模型」 | 已有一个指令入口 `src/score/commands.ts apply(state, command)`；但很多改动绕过它，直接在 `src/app/main.ts`（3691 行）里拼新状态 | W-32 歌词输入三条路各算各的；user 10-10「记账以后需要fable专门做一轮编辑状态机的屎山整理」（CLAUDE.md v0.9.19 条） |
 | ③ 无头渲染 | 「然后是无头渲染」「无头渲染也可以拆」 | 零件在：混音 `src/engine/studio.ts` 不依赖宿主，唱法核心已在 node 跑；胶水散在 main.ts | W-38、W-37（状态漏网就在这片胶水里）、`20261006-singer-core-extraction-proposal.md` |
-| ④ UI 的编辑器模型 | 「全部都指令式，可以云端multiplayer或者mcp」 | 见 ②：指令入口有，但不是唯一入口 | W-36（键盘抢文本框）、同上「编辑状态机整理」 |
+| ④ UI 的编辑器模型 | 「全部都指令式，可以云端multiplayer或者mcp」 | 见 ②：指令入口有，但不是唯一入口。家族版（WeebPaint / CatsUp 也要；逼出它的路 = 多人、教人的猫娘 @internal-nudge、测试、给 AI 用的无头 app）= 家族根 `ai-docs/20261013-command-api-and-nudge-vision.md` | W-36（键盘抢文本框）、同上「编辑状态机整理」 |
 | ⑤ 谱面显示拆开 | 「不同五线谱简谱钢琴格可视化，以及对应的click记录」 | 只有五线谱：排版 `src/render/engrave.ts` 1520 行 + 视图 `src/ui/score-view.ts` 1160 行 | W-1 简谱、W-17 智能重画、W-30 预览图 |
 | ⑥ 键盘拆开 | 「键盘是一个很好的深模块。但是我们有不同的键盘，也要拆。以后写词也会有一个键盘」 | 电脑键位是一张表 `src/input/keys.ts`；屏幕键盘 `src/ui/pad.ts` 722 行，写音 / 符号几层在一个文件里 | W-31 词的键盘、W-34 |
 | ⑦ 音源的数据模型 | 「现在音源的数据模型其实不对」「ui上面数据结构不对，我觉得很怪」 | 现行 = v0.4.3「乐器的数据结构」五个名词（乐器概念 / 角色 / 演奏者 = 候选 / 货架 / …，见 CLAUDE.md），存在 `src/format/project.ts` 的休息室里 | `20261010-mixing-plugins-proposal.md`（插件制，数据形状待点头）、`20261009-sound-engine-user-vision.md` §12 |
