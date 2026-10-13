@@ -13,7 +13,7 @@ await p.evaluate(() => { const m = window.__moonsinger, e = m.engine; window.__s
   const a = e.audition.bind(e); e.audition = (msg) => { window.__au.push({ ev: msg.ev, src: msg.src, kind: msg.inst?.kind, kana: msg.inst?.kana }); return a(msg); }; });
 await p.evaluate(() => window.__moonsinger.setMode("notes"));
 await p.click("#score", { position: { x: 300, y: 300 } });
-for (let i = 0; i < 3; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(200); }
+for (let i = 0; i < 3; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); for (let w = 0; w < 30 && (await p.evaluate(() => window.__au.filter((x) => x.ev === "on").length)) < i + 1; w++) await p.waitForTimeout(100); await p.waitForTimeout(120); }   // 每一下等到它的预听「on」记进来再按下一下（机器忙时固定 200 ms 会把两下按成「同时按」只响一下；2026-10-13 并行跑 E2E 时红过）
 let ons = await p.evaluate(() => window.__au.filter((x) => x.ev === "on"));
 check(ons.length >= 3 && ons.every((x) => x.kind === "vowel" && x.kana === "ん"), "「音」里写三个音 = 三下预听，走元音表的哼的字（ん）", JSON.stringify(ons.slice(-3)));
 check((await p.evaluate(() => window.__sung)) === 0, "写音预听不去 worker 现唱");
