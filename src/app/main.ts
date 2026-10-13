@@ -908,6 +908,7 @@ async function singOne(key: string, c: ChunkPlan, who: string): Promise<void> {
   } catch (e) {
     const msg = (e as Error).message ?? String(e);
     if (msg === "cancelled") return;
+    if (!chunkPlans.has(key)) return;   // W-37（2026-10-13）：这句已经不在这首歌里（换歌 / 改了）= 静默丢掉——不报、不记、不塞空块（成功分支早就这么核了，失败分支漏了：换歌后红框报的是上一首的那一句）
     chunkFailed.set(key, msg);
     if (!pumpQuiet) { showError(`「${who}」唱不了这一句：${msg}`); engine.chunk(key, 22050, new Float32Array(0)); }
     else chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key);
@@ -2784,7 +2785,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   applyWorkspace();
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);
-  engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; singer.cancelPending(); trimLanesForNewSong(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了、上一首撑大的堆还回去
+  engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; chunkPlans = new Map(); singer.cancelPending(); singer.cancelInflight(); trimLanesForNewSong(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
   view.render(); pad.render(); renderTitle(); updateChrome();   // 挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
   if (st.song.parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "tsukuyomi")) void singer.warm(modelBases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
   if (startDyns) info(`每张纸开头补了 ${startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）`);   // v0.10.39（user「每张纸（曲段）开头，对」）

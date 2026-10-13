@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.11.3-2026-10-13";
+var APP_VERSION = "v0.11.4-2026-10-13";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -21025,7 +21025,7 @@ var Singer = class {
   }
   worker(l10) {
     if (l10.w) return l10.w;
-    const w2 = new Worker(new URL(`./${"singer-worker-c2ce06a03c42.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"singer-worker-c0686a2ea9c7.mjs"}`, import.meta.url), { type: "module" });
     l10.w = w2;
     w2.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -39456,6 +39456,7 @@ async function singOne(key, c10, who) {
   } catch (e10) {
     const msg = e10.message ?? String(e10);
     if (msg === "cancelled") return;
+    if (!chunkPlans.has(key)) return;
     chunkFailed.set(key, msg);
     if (!pumpQuiet) {
       showError(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${msg}`);
@@ -42246,7 +42247,9 @@ function loadDoc(song, o10) {
   engine.forget(chunkKeys.splice(0));
   chunkFailed.clear();
   chunkKeysWanted = [];
+  chunkPlans = /* @__PURE__ */ new Map();
   singer.cancelPending();
+  singer.cancelInflight();
   trimLanesForNewSong();
   sound.allOff();
   void prepareBank();
@@ -43639,4 +43642,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-78a856758bbf.mjs.map
+//# sourceMappingURL=moonsinger-5b3be3c436e1.mjs.map

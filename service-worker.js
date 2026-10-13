@@ -91,9 +91,13 @@ self.addEventListener("fetch", (event) => {
 });
 
 // 导航响应加 Cache-Control: no-store → WebKit 不把本页放进 bfcache（登录 redirect 离场时旧页冻进 bfcache 会握死 IDB 锁；store 0.12.1 闸门是承重层，这是额外一层）。
+//   跳转响应原样交回（W-21，2026-10-13 Claude Fable 5.1）：导航请求的 fetch 碰到 301 / 302 交回的是「跳转响应」（type opaqueredirect、status 0），
+//   拿它的 status 重建 Response 会抛 RangeError → 整次导航失败、页面打不开（2026-10-11 搬到 sing.weebpaint.com，旧地址 301 过来就撞这个）。
+//   原样交回 = 浏览器自己跟着跳。顺带：任何不在 200–599 的状态（Response 构造器不收）也原样交回。
 async function withNoStore(p) {
   const r = await p;
   if (!(r instanceof Response)) return r;
+  if (r.type === "opaqueredirect" || r.status < 200 || r.status > 599) return r;
   const h = new Headers();
   if (r.headers && typeof r.headers.forEach === "function") r.headers.forEach((v, k) => h.set(k, v));
   h.set("Cache-Control", "no-store");

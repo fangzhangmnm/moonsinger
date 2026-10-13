@@ -233,6 +233,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
     const piper = { ...e.piper, run: async (ids: number[], pros: number[][], o: Record<string, unknown>) => { check(); say(runs++ === 0 ? "念（1/2）" : "念（2/2）"); const r = await e.piper.run(ids, pros, o); check(); return r; } };
     const names: Record<string, string> = { f0: "分析（1/3 音高）", sp: "分析（2/3 谱包络）", ap: "分析（3/3 气声）", cached: "分析（缓存）" };
     const world = { ...e.world, analyze: (x: ArrayLike<number>, fs: number, o?: Record<string, unknown>) => e.world.analyze(x, fs, o, { stage: (n: string) => say(names[n] ?? n), check }), synth: (a: unknown) => { check(); say("合成"); return e.world.synth(a); } };
+    check();   // W-37（2026-10-13）：开唱前认一次取消——拍数对不上这类检查在第一次 piper.run 之前就抛，等到检查点才认 = 一句已经取消的请求回去的是「32 sung syllables…」不是 cancelled
     const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper, world, loadAtlas: e.loadAtlas, opt: q.opt ?? {}, only: q.only ?? null });
     check();
     const samples: Float32Array = q.raw || q.only ? Float32Array.from(r.y as ArrayLike<number>) : r.sung;

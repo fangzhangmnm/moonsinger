@@ -8161,6 +8161,7 @@ self.onmessage = async (ev) => {
       say("\u5408\u6210");
       return e.world.synth(a);
     } };
+    check();
     const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas, breath, preset, piper, world, loadAtlas: e.loadAtlas, opt: q2.opt ?? {}, only: q2.only ?? null });
     check();
     const samples = q2.raw || q2.only ? Float32Array.from(r.y) : r.sung;
@@ -8181,4 +8182,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-c2ce06a03c42.mjs.map
+//# sourceMappingURL=singer-worker-c0686a2ea9c7.mjs.map

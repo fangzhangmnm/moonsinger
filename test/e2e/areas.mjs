@@ -15,7 +15,7 @@ export const AREAS = {
   pad: ["stack-caps", "pad-toggle", "pad-ghost", "dyn-levels", "ramp", "groove", "clef", "repeat", "finder-keys", "modes", "landscape-widgets",
     "dock-zoom", "save-keys", "swell-art", "start-dyn", "lyric-dash", "phrase", "sel-tweak"],
   // 放：走带 / 循环 / 翻谱 / 播放头 / 节拍器 / 月读的块与预听
-  play: ["transport", "loop", "follow", "measure-follow", "playhead", "seg-jump", "metronome", "progress", "sing-chunks", "sung-preview",
+  play: ["transport", "loop", "follow", "measure-follow", "playhead", "seg-jump", "metronome", "progress", "sing-chunks", "sing-stale", "sung-preview",
     "listen-ghost", "lyric-mute", "reading", "ramp", "groove", "repeat", "arrange"],
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "landscape-widgets", "modes", "dyn-levels"],
