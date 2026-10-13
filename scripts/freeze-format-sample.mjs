@@ -2,14 +2,14 @@
 // freeze-format-sample.mjs —— 冻结这一版的 .mxl 样本 + 形状快照（持久化向后兼容的证据）。created 2026-10-07 by Claude Fable 5.1
 // 用法：node scripts/freeze-format-sample.mjs [--force]（已有的版本目录默认不碰，只更新 shape.json）
 //   写 test/fixtures/format/v<manifest>-<score>-<lounge>-<studio>/{sample.mxl,expected.json}（按当前 FORMAT 命名；旧版的目录**不删**——守卫测试要拿它们验「老文件永远能开」）
-//   和 test/fixtures/format/shape.json（当前写出来的各份 JSON 的键形状）。
+//   和 test/fixtures/format/shape.json（当前写出来的各份 JSON 的键形状；2026-10-13 起数组取所有元素的并集、样本把可选字段都用上——见 sample-song.ts 头注释）。
 // 什么时候跑：① 改了 FORMAT（升版本）→ 生成新版目录、旧目录保留；② 只加了可选字段（不升版本）→ 形状快照更新，审 diff。守卫测试 = test/format-guard.test.ts。
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { saveMxl, openBytes, emptyExtras, activeInstrument, withActive, FORMAT } from "../src/format/project.ts";
+import { saveMxl, openBytes, activeInstrument, FORMAT } from "../src/format/project.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
-import { sampleSong, sampleView, canonTokens, canonTracks, shapeOf } from "../test/fixtures/format/sample-song.ts";
+import { sampleSong, sampleView, sampleExtras, canonTokens, canonTracks, shapeOf, mergeShape } from "../test/fixtures/format/sample-song.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const tag = `v${Object.values(FORMAT).join("-")}`;
@@ -18,7 +18,7 @@ const force = process.argv.includes("--force");
 const exists = existsSync(join(dir, "sample.mxl"));
 mkdirSync(dir, { recursive: true });
 const song = sampleSong();
-const bytes = saveMxl({ song, hum: song.hum, extras: withActive(emptyExtras(), "r1", "c2", song.hum), app: "frozen-sample", date: "2026-10-07T00:00:00.000Z", view: sampleView() });   // 上场 = 月读元音版（同 v1 样本的 quality light）
+const bytes = saveMxl({ song, hum: song.hum, extras: sampleExtras(song), app: "frozen-sample", date: "2026-10-07T00:00:00.000Z", view: sampleView() });   // 上场 = 月读元音版（同 v1 样本的 quality light）；2026-10-13 起休息室 / 录音房的可选字段都摆上（sampleExtras，守卫同一份）
 const o = openBytes("sample.mxl", bytes);
 const files = unzipSync(bytes);
 const json = (p) => JSON.parse(strFromU8(files[p]));
@@ -36,7 +36,7 @@ if (!exists || force) {
 }
 const shape = { versions: FORMAT, shapes: {
   manifest: shapeOf(json(".moonsinger/manifest.json")), score: shapeOf(json(".moonsinger/score.json")),
-  lounge: shapeOf(role), studio: shapeOf(studio),
+  lounge: Object.keys(files).filter((p) => /^\.moonsinger\/lounge\/r\d+\.json$/.test(p)).sort().map(json).map(shapeOf).reduce(mergeShape), studio: shapeOf(studio),   // 所有角色的并集（2026-10-13）
 } };
 writeFileSync(join(ROOT, "test/fixtures/format/shape.json"), JSON.stringify(shape, null, 2) + "\n");
 console.log(`${exists && !force ? `kept test/fixtures/format/${tag}/ (use --force to regenerate)` : `frozen: test/fixtures/format/${tag}/`} + shape.json`);

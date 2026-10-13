@@ -6,27 +6,28 @@ const fs = (await import("node:fs" as string)) as {
   readFileSync(u: URL, enc: "utf8"): string; readFileSync(u: URL): Uint8Array;
   readdirSync(u: URL): string[]; existsSync(u: URL): boolean;
 };
-import { saveMxl, openBytes, emptyExtras, activeInstrument, FORMAT } from "../src/format/project.ts";
+import { saveMxl, openBytes, activeInstrument, FORMAT } from "../src/format/project.ts";
 import { MIGRATIONS } from "../src/format/migrate/index.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
-import { sampleSong, sampleView, canonTokens, canonTracks, shapeOf } from "./fixtures/format/sample-song.ts";
+import { sampleSong, sampleView, sampleExtras, canonTokens, canonTracks, shapeOf, mergeShape } from "./fixtures/format/sample-song.ts";
 
 const DIR = new URL("./fixtures/format/", import.meta.url);
 const at = (...parts: string[]) => new URL(parts.join("/"), DIR);
 const HOW = "改格式的规矩（src/format/contract.ts 头注释）：只加可选字段 → node scripts/freeze-format-sample.mjs 更新形状快照、审 diff；删 / 改字段 → FORMAT +1 + src/format/migrate/ 一条纯函数 + 旧版冻结样本保留。";
 type Json = Record<string, unknown>;
 const KINDS = ["manifest", "score", "lounge", "studio"] as const;
-function writeNow(): Record<(typeof KINDS)[number], Json> {
+function writeNow(): Record<(typeof KINDS)[number], Json> & { loungeAll: Json[] } {
   const song = sampleSong();
-  const files = unzipSync(saveMxl({ song, hum: song.hum, extras: emptyExtras(), app: "guard", date: "2026-10-07T00:00:00.000Z", view: sampleView() }));
+  const files = unzipSync(saveMxl({ song, hum: song.hum, extras: sampleExtras(song), app: "guard", date: "2026-10-07T00:00:00.000Z", view: sampleView() }));   // 2026-10-13：样本的休息室 / 录音房把可选字段都摆上（F-18）
   const json = (p: string): Json => JSON.parse(strFromU8(files[p]));
-  return { manifest: json(".moonsinger/manifest.json"), score: json(".moonsinger/score.json"), lounge: json(".moonsinger/lounge/r1.json"), studio: json(".moonsinger/studio.json") };
+  return { manifest: json(".moonsinger/manifest.json"), score: json(".moonsinger/score.json"), lounge: json(".moonsinger/lounge/r1.json"), studio: json(".moonsinger/studio.json"),
+    loungeAll: Object.keys(files).filter((p) => /^\.moonsinger\/lounge\/r\d+\.json$/.test(p)).sort().map(json) };   // 2026-10-13：形状看所有角色的并集（第二位的乐器概念 / SoundFont 演奏者在 r2）
 }
 
 describe("持久化守卫", () => {
   it("写出来的各份 JSON 的键形状 = 冻结的形状快照（形状变了就红）", () => {
     const w = writeNow();
-    const now = { versions: FORMAT, shapes: Object.fromEntries(KINDS.map((k) => [k, shapeOf(w[k])])) };
+    const now = { versions: FORMAT, shapes: Object.fromEntries(KINDS.map((k) => [k, k === "lounge" ? w.loungeAll.map(shapeOf).reduce(mergeShape) : shapeOf(w[k])])) };
     const frozen = JSON.parse(fs.readFileSync(at("shape.json"), "utf8"));
     eq(JSON.stringify(now), JSON.stringify(frozen), `形状变了。${HOW}`);
   });
