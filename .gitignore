@@ -13,3 +13,5 @@ dev-assets/
 # 临时
 *.log
 .DS_Store
+# E2E 运行器的时长缓存（test/e2e/run.mjs 排序用）
+.e2e-times.json

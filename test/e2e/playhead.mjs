@@ -19,11 +19,12 @@ check(ok, "放起来了");
 await p.waitForTimeout(600);
 const s = await p.evaluate(() => { const e = window.__moonsinger.engine; return { heard: e.audibleSec(), at: e.position, lat: e.latencyMs(), ts: typeof AudioContext.prototype.getOutputTimestamp === "function" }; });
 check(s.heard !== null && s.heard <= s.at + 1e-6, "听到的位置不超过算到的位置", JSON.stringify(s));
-check(s.lat !== null && s.lat >= 0 && s.lat < 1000, "输出延迟有数（浏览器报的）", `${s.lat?.toFixed(1)} ms`);
+check(s.lat !== null && s.lat >= 0 && s.lat < 5000, "输出延迟有数（浏览器报的）", `${s.lat?.toFixed(1)} ms`);   // 上限原来 1 s；无头 Chromium 的假声卡在机器忙时（并行跑 E2E）报过 1.27 s——这条只守「有数、不离谱」，不守快慢（2026-10-13）
 check(s.heard !== null && s.at - s.heard < (s.lat ?? 0) / 1000 + 0.06, "两者之差 ≈ 输出延迟（+ 位置报告的间隔）", `${((s.at - s.heard) * 1000).toFixed(1)} ms`);
 // 播放线先不画（user「先试试不用线」）：正在响的音高亮，跟着走
 const hl = () => p.evaluate(() => { const e = document.querySelector(".play-hl"); return e ? parseFloat(e.style.left) : null; });
-const ph1 = await hl(); await p.waitForTimeout(700); const ph2 = await hl();
+let ph1 = null; for (let i = 0; i < 30 && ph1 === null; i++) { ph1 = await hl(); if (ph1 === null) await p.waitForTimeout(100); }   // 第一个高亮等它画出来（机器忙时 600 ms 不一定够；2026-10-13 并行跑 E2E 时红过）
+await p.waitForTimeout(700); const ph2 = await hl();
 check(ph1 !== null && ph2 !== null && ph2 > ph1, "正在响的音高亮了、往右走（没有播放线）", `${ph1} → ${ph2}`);
 check(!(await p.$(".playhead")), "不画播放线");
 // 小节底色（v0.10.12；user「播放动画的时候还得垫一个比较轻的小节高亮…太低调了所以有时候找不到放哪里了」）：有一块、盖住正在响的音、在它下面
