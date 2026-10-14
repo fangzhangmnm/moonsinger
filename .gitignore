@@ -15,3 +15,5 @@ dev-assets/
 .DS_Store
 # E2E 运行器的时长缓存（test/e2e/run.mjs 排序用）
 .e2e-times.json
+# 机器生成的报告（架构总览 html 等；同 WeebPaint，本机留着不进仓）
+ai-docs/reports/
