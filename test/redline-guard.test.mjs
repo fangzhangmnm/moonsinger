@@ -1,7 +1,8 @@
 // 红线守卫（结构性，非行为）：接缝之外不得出现第二条存储 / 云路径。created 2026-10-08 by Claude Fable 5.1（抄 WebXiaoHeiWu test/redline-guard.test.mjs）
 //   白名单：src/app-store.ts（store 接缝）、src/device-kv.ts（localStorage 唯一器官）、src/config.ts（常量 SSoT：URL / 路径字符串，不是访问）。
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, assert } from "./runner.mjs";
 
 const SEAM = new Set(["src/app-store.ts", "src/device-kv.ts", "src/config.ts", "src/singer/speech-store.ts"]);   // speech-store = 念缓存全局池（可再生派生 IDB，user 2026-10-10 批）
@@ -94,3 +95,20 @@ describe("redline-guard", () => {
     assert(hits.length === 0, "reset scope violations:\n" + hits.join("\n"));
   });
 });
+
+// ── 反弃坑红线（2026-10-14，Claude Fable 5.1；user「moonsinger的代码为什么会依赖它，我们anti abandonware的规则是非常严的」）：
+//    公开仓的 src / scripts / test 不许引用兄弟私有仓（名字 / 日期前缀）和只靠它的软链才通的 dev-assets。注释里提来历用「Lab/…」可以，带仓名 / 日期 / dev-assets 不行。
+describe("反弃坑红线：不依赖兄弟私有仓", () => {
+  it("src / scripts / test 里没有私有仓的名字、日期前缀、dev-assets", () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), ".."), bad = [];
+    const SELF = "test/redline-guard.test.mjs";
+    const re = /写歌实验室|20260810|dev-assets|link-dev-assets/;
+    const walk = (d) => { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) { if (f !== "node_modules" && f !== "fixtures") walk(p); } else if (/\.(ts|mjs|js|sh|json|html)$/.test(f)) check(p); } };
+    const check = (p) => { const rel = relative(root, p).replaceAll("\\", "/"); if (rel === SELF) return;
+      readFileSync(p, "utf8").split("\n").forEach((line, i) => { if (re.test(line)) bad.push(`${rel}:${i + 1}`); }); };
+    for (const d of ["src", "scripts", "test"]) walk(join(root, d));
+    for (const f of ["package.json", "index.html", "service-worker.js", "manifest.webmanifest"]) check(join(root, f));
+    assert(bad.length === 0, `公开仓不许依赖私有仓：\n  ${bad.join("\n  ")}`);
+  });
+});
+

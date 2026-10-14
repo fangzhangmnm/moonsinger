@@ -9,10 +9,10 @@
 //   ん 用「んま」（注成双唇 N_m = 闭嘴哼；「らんら」里是舌根 N_uvular ≈ 鼻化的 a）；呜 / 啦 用中文前端唱（日语 う 不圆唇、ら 是轻弹舌）；
 //   切口从真正出声前 5 ms 起；循环段在颤音完全进来以后、长度取整数个颤音周期（接缝处音高连续）；整张表一个增益（保留 ん 比 あ 轻）。
 //   user：「preview的嗯对了，呜还是啊，拉也不行而且attack太慢」→ 改中文 + 去空白后「嗯现在呜啊嗯啦好多了」；「对，哦 / お」→ 加 お。
-// 输出（assets/preview/，进仓随 app 出货，约 3.3 MB；2026-10-07 起，原来在 gitignored 的 dev-assets/preview/）：
+// 输出（assets/preview/，进仓随 app 出货，约 3.3 MB；2026-10-07 起，原来在 gitignored 的开发目录里）：
 //   vowels.pcm16  所有样本首尾相接的 16 位单声道 PCM（22050 Hz）
 //   vowels.json   索引 { sr, entries: [{ kana, midi, start, len, loopStart, loopEnd }] }（单位：样本）
-// 用法：node scripts/gen-preview-vowels.mjs   （先跑过 scripts/link-dev-assets.sh）
+// 用法：node scripts/gen-preview-vowels.mjs   （要 ~/jupyter/third-party 检疫桶里的 piper-plus 壳 + world 构建；不碰任何兄弟仓）
 import fs from "node:fs"; import os from "node:os"; import path from "node:path"; import { fileURLToPath, pathToFileURL } from "node:url";
 import { singCore, DEFAULT_OPT } from "../src/singer/sing-core.mjs";
 import { wrapWorld } from "../src/singer/world-wrap.mjs";

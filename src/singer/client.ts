@@ -18,7 +18,7 @@ export interface LaneMem { wasm: number; cache: number; /** 引擎刚加载完�
 export interface DiskInfo { bytes: number; entries: number; budget: number }
 /** 读音（v0.9.34）：labels[k] = 第 k 条念成的音素；对不上 = null + said（念出来的每个音节）；ready false = 引擎还没起来（不为此起引擎）。 */
 export interface Reading { ready: boolean; labels: string[] | null; said: string[] }
-type Extra = Partial<Pick<SingRequest, "opt" | "atlas" | "breath" | "models" | "raw" | "cacheBytes" | "diskBytes" | "only">> & { /** 宿主给这一句贴的标签（块的键）：cancelInflight(tag) 只取消它。 */ tag?: string };
+type Extra = Partial<Pick<SingRequest, "opt" | "breath" | "models" | "raw" | "cacheBytes" | "diskBytes" | "only">> & { /** 宿主给这一句贴的标签（块的键）：cancelInflight(tag) 只取消它。 */ tag?: string };
 interface Job { s: LabScore; progress: (stage: string) => void; extra: Extra; ok: (r: SingResult) => void; fail: (e: Error) => void }
 interface Pending { ok: (r: SingResult) => void; fail: (e: Error) => void; progress: (s: string) => void; lane: Lane; tag?: string }
 interface Lane {

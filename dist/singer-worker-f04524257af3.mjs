@@ -522,10 +522,10 @@ async function singCore({
       let i = idx0 % Math.max(1, 2 * L - 2);
       if (i >= L) i = 2 * L - 2 - i;
       const gdb = Math.max(-OPT.atlasGainClamp, Math.min(OPT.atlasGainClamp, m.levelDb - e.energyDb)) + OPT.atlasExprLevel * (a.exprOffset?.[v] ?? 0);
-      const base2 = (e.frame0 + i) * bins * 2, gain = gdb / 10 * Math.LN10;
+      const base = (e.frame0 + i) * bins * 2, gain = gdb / 10 * Math.LN10;
       for (let q2 = 0; q2 < bins; q2++) {
-        logsp[q2] += w * (Math.log(a.data[base2 + q2] + 1e-16) + gain);
-        apo[q2] += w * a.data[base2 + bins + q2];
+        logsp[q2] += w * (Math.log(a.data[base + q2] + 1e-16) + gain);
+        apo[q2] += w * a.data[base + bins + q2];
       }
       used += w;
     }
@@ -576,8 +576,8 @@ async function singCore({
     const V = OPT.vibrato;
     if (n.t1 - n.t0 < V.minNote) continue;
     for (let j = Math.ceil((n.t0 + V.delay) / FPS); j * FPS < n.t1 && j < N2; j++) {
-      const u2 = j * FPS - n.t0 - V.delay;
-      smooth[j] += V.cents * Math.min(1, u2 / V.fadeIn) * Math.sin(2 * Math.PI * V.hz * u2);
+      const u = j * FPS - n.t0 - V.delay;
+      smooth[j] += V.cents * Math.min(1, u / V.fadeIn) * Math.sin(2 * Math.PI * V.hz * u);
     }
   }
   const onlyK = only ? SRC.slice(0, only.entry).reduce((a, e) => a + (e.moras || 1), 0) : -1;
@@ -607,7 +607,7 @@ async function singCore({
         const bl = Math.min(g.max, 0.8 * restLen), b0 = s.s1 - bl, boost = 10 ** (g.db / 10);
         if (tt >= b0) {
           if (!breathSp.has(nk)) breathSp.set(nk, breathTemplate(moras[nk], midiOf(nk), nk));
-          const u2 = (tt - b0) / bl, env = u2 < 0.7 ? 0.5 - 0.5 * Math.cos(Math.PI * u2 / 0.7) : 0.5 + 0.5 * Math.cos(Math.PI * (u2 - 0.7) / 0.3);
+          const u = (tt - b0) / bl, env = u < 0.7 ? 0.5 - 0.5 * Math.cos(Math.PI * u / 0.7) : 0.5 + 0.5 * Math.cos(Math.PI * (u - 0.7) / 0.3);
           const tpl = breathSp.get(nk);
           for (let q2 = 0; q2 < bins; q2++) {
             sp[jj * bins + q2] = Math.exp(tpl[q2]) * env * env * boost;
@@ -923,11 +923,11 @@ var SpeechCache = class {
       self2.misses++;
       const an2 = analyze(x, fs2, o, hooks), { f0, sp, ap, ...meta } = an2, spB = toBf16(sp), apB = toBf16(ap);
       if (k) {
-        const bytes2 = f0.byteLength + spB.byteLength + apB.byteLength, f0c = f0.slice();
-        self2.put(k, { bytes: bytes2, an: { meta, f0: f0c, sp: spB, ap: apB } });
+        const bytes = f0.byteLength + spB.byteLength + apB.byteLength, f0c = f0.slice();
+        self2.put(k, { bytes, an: { meta, f0: f0c, sp: spB, ap: apB } });
         if (self2.store && from) void Promise.all([self2.diskKey("a", from, "|"), sha256(k)]).then(([pre, h]) => {
           self2.diskKeys.set(`a|${k}`, h);
-          return self2.store.put(pre + h, { kind: "a", k, bytes: bytes2, meta: structuredClone(meta), f0: f0c, sp: spB, ap: apB });
+          return self2.store.put(pre + h, { kind: "a", k, bytes, meta: structuredClone(meta), f0: f0c, sp: spB, ap: apB });
         }).catch((e) => self2.diskFail(e));
       }
       const outAn = { ...meta, f0, sp: fromBf16(spB), ap: fromBf16(apB) };
@@ -989,7 +989,7 @@ async function openSpeechStore(name, budget) {
   }
   let budgetNow = budget;
   const total = async (tx) => (await req(tx.objectStore(META).get("total")))?.bytes ?? 0;
-  const setTotal = (tx, bytes2) => tx.objectStore(META).put({ key: "total", bytes: Math.max(0, bytes2) });
+  const setTotal = (tx, bytes) => tx.objectStore(META).put({ key: "total", bytes: Math.max(0, bytes) });
   return {
     async get(key) {
       const tx = db.transaction(STORE, "readonly"), r = await req(tx.objectStore(STORE).get(key));
@@ -1037,8 +1037,8 @@ async function openSpeechStore(name, budget) {
     },
     async info() {
       const tx = db.transaction([STORE, META], "readonly");
-      const [bytes2, entries] = await Promise.all([total(tx), req(tx.objectStore(STORE).count())]);
-      return { bytes: bytes2, entries, budget: budgetNow };
+      const [bytes, entries] = await Promise.all([total(tx), req(tx.objectStore(STORE).count())]);
+      return { bytes, entries, budget: budgetNow };
     },
     async clear() {
       const tx = db.transaction([STORE, META], "readwrite");
@@ -1126,14 +1126,14 @@ var Sha256 = class {
   total = 0;
   w = new Uint32Array(64);
   done = false;
-  update(bytes2) {
+  update(bytes) {
     if (this.done)
       throw new Error("Sha256: update after hex()");
     let i = 0;
-    this.total += bytes2.length;
+    this.total += bytes.length;
     if (this.bufLen) {
-      const take = Math.min(64 - this.bufLen, bytes2.length);
-      this.buf.set(bytes2.subarray(0, take), this.bufLen);
+      const take = Math.min(64 - this.bufLen, bytes.length);
+      this.buf.set(bytes.subarray(0, take), this.bufLen);
       this.bufLen += take;
       i = take;
       if (this.bufLen === 64) {
@@ -1141,11 +1141,11 @@ var Sha256 = class {
         this.bufLen = 0;
       }
     }
-    for (; i + 64 <= bytes2.length; i += 64)
-      this.block(bytes2, i);
-    if (i < bytes2.length) {
-      this.buf.set(bytes2.subarray(i), 0);
-      this.bufLen = bytes2.length - i;
+    for (; i + 64 <= bytes.length; i += 64)
+      this.block(bytes, i);
+    if (i < bytes.length) {
+      this.buf.set(bytes.subarray(i), 0);
+      this.bufLen = bytes.length - i;
     }
     return this;
   }
@@ -1235,10 +1235,10 @@ function createPackStore(deps) {
     }
     return sizes;
   }
-  async function putChunk(slug, name, bytes2) {
+  async function putChunk(slug, name, bytes) {
     const cache = await openCache();
-    const size = bytes2 instanceof Blob ? bytes2.size : bytes2.length;
-    await cache.put(keyOf(slug, name), new Response(bytes2, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
+    const size = bytes instanceof Blob ? bytes.size : bytes.length;
+    await cache.put(keyOf(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
   }
   async function markVerified(slug, packId) {
     const cache = await openCache();
@@ -1281,13 +1281,13 @@ function createPackStore(deps) {
     }
     await markVerified(slug, packId);
   }
-  async function download(slug, base2, progress) {
+  async function download(slug, base, progress) {
     const { packId, manifest: m } = manifestOf(slug);
     await dropIfStale(slug);
     const sizes = await cachedChunkSizes(slug, m);
     let done2 = sizes.reduce((a, n, i) => a + (n === m.chunks[i].bytes ? n : 0), 0);
     progress({ done: done2, total: m.totalBytes });
-    const root = base2.replace(/\/+$/, "");
+    const root = base.replace(/\/+$/, "");
     for (let i = 0; i < m.chunks.length; i++) {
       const c = m.chunks[i];
       if (sizes[i] === c.bytes)
@@ -1371,13 +1371,13 @@ function createPackStore(deps) {
       throw new Error("no-matching-file");
     return Promise.all(slugs.map(status));
   }
-  async function downloadAll(slugs, base2, progress) {
+  async function downloadAll(slugs, base, progress) {
     const total = slugs.reduce((a, s) => a + manifestOf(s).manifest.totalBytes, 0);
     const have = (await Promise.all(slugs.map(status))).map((st) => st.bytesCached);
     const report = () => progress({ done: have.reduce((a, b) => a + b, 0), total });
     report();
     for (let i = 0; i < slugs.length; i++)
-      await download(slugs[i], base2, (p) => {
+      await download(slugs[i], base, (p) => {
         have[i] = p.done;
         report();
       });
@@ -1394,7 +1394,7 @@ function createPackStore(deps) {
   };
   return {
     status: (slugs) => Promise.all(slugs.map(status)),
-    download: (slugs, base2, onProgress) => downloadAll(slugs, base2, onProgress ?? noop),
+    download: (slugs, base, onProgress) => downloadAll(slugs, base, onProgress ?? noop),
     importFiles: (slugs, files, onProgress) => importFiles(slugs, files, onProgress ?? noop),
     async delete(slugs) {
       for (const slug of slugs)
@@ -1453,15 +1453,15 @@ var N = (n, t, a) => () => {
   if (a) throw a[0];
   try {
     return n && (t = n(n = 0)), t;
-  } catch (u2) {
-    throw a = [u2], u2;
+  } catch (u) {
+    throw a = [u], u;
   }
 };
 var ut = (n, t) => {
   for (var a in t) qt(n, a, { get: t[a], enumerable: true });
 };
-var ts = (n, t, a, u2) => {
-  if (t && typeof t == "object" || typeof t == "function") for (let o of Ka(t)) !es.call(n, o) && o !== a && qt(n, o, { get: () => t[o], enumerable: !(u2 = Qa(t, o)) || u2.enumerable });
+var ts = (n, t, a, u) => {
+  if (t && typeof t == "object" || typeof t == "function") for (let o of Ka(t)) !es.call(n, o) && o !== a && qt(n, o, { get: () => t[o], enumerable: !(u = Qa(t, o)) || u.enumerable });
   return n;
 };
 var Xt = (n) => ts(qt({}, "__esModule", { value: true }), n);
@@ -1474,11 +1474,11 @@ var Zt = N(() => {
   "use strict";
   ft = /* @__PURE__ */ new Map(), Be = [], Je = (n, t, a) => {
     if (t && typeof t.init == "function" && typeof t.createInferenceSessionHandler == "function") {
-      let u2 = ft.get(n);
-      if (u2 === void 0) ft.set(n, { backend: t, priority: a });
+      let u = ft.get(n);
+      if (u === void 0) ft.set(n, { backend: t, priority: a });
       else {
-        if (u2.priority > a) return;
-        if (u2.priority === a && u2.backend !== t) throw new Error(`cannot register backend "${n}" using priority ${a}`);
+        if (u.priority > a) return;
+        if (u.priority === a && u.backend !== t) throw new Error(`cannot register backend "${n}" using priority ${a}`);
       }
       if (a >= 0) {
         let o = Be.indexOf(n);
@@ -1501,15 +1501,15 @@ var Zt = N(() => {
       let a = !!t.initPromise;
       try {
         return a || (t.initPromise = t.backend.init(n)), await t.initPromise, t.initialized = true, t.backend;
-      } catch (u2) {
-        return a || (t.error = `${u2}`, t.aborted = true), t.error;
+      } catch (u) {
+        return a || (t.error = `${u}`, t.aborted = true), t.error;
       } finally {
         delete t.initPromise;
       }
     }
   }, pr = async (n) => {
-    let t = n.executionProviders || [], a = t.map((m) => typeof m == "string" ? m : m.name), u2 = a.length === 0 ? Be : a, o, d = [], c = /* @__PURE__ */ new Set();
-    for (let m of u2) {
+    let t = n.executionProviders || [], a = t.map((m) => typeof m == "string" ? m : m.name), u = a.length === 0 ? Be : a, o, d = [], c = /* @__PURE__ */ new Set();
+    for (let m of u) {
       let h = await ns(m);
       typeof h == "string" ? d.push({ name: m, err: h }) : (o || (o = h), o === h && c.add(m));
     }
@@ -1556,8 +1556,8 @@ var Tr = N(() => {
   gr = (n, t) => {
     let a = typeof document < "u" ? document.createElement("canvas") : new OffscreenCanvas(1, 1);
     a.width = n.dims[3], a.height = n.dims[2];
-    let u2 = a.getContext("2d");
-    if (u2 != null) {
+    let u = a.getContext("2d");
+    if (u != null) {
       let o, d;
       t?.tensorLayout !== void 0 && t.tensorLayout === "NHWC" ? (o = n.dims[2], d = n.dims[3]) : (o = n.dims[3], d = n.dims[2]);
       let c = t?.format !== void 0 ? t.format : "RGB", l = t?.norm, m, h;
@@ -1566,13 +1566,13 @@ var Tr = N(() => {
       c === "RGBA" ? (b = 0, y = g, T = g * 2, I = g * 3) : c === "RGB" ? (b = 0, y = g, T = g * 2) : c === "RBG" && (b = 0, T = g, y = g * 2);
       for (let D = 0; D < d; D++) for (let $ = 0; $ < o; $++) {
         let v = (n.data[b++] - h[0]) * m[0], A = (n.data[y++] - h[1]) * m[1], F = (n.data[T++] - h[2]) * m[2], P = I === -1 ? 255 : (n.data[I++] - h[3]) * m[3];
-        u2.fillStyle = "rgba(" + v + "," + A + "," + F + "," + P + ")", u2.fillRect($, D, 1, 1);
+        u.fillStyle = "rgba(" + v + "," + A + "," + F + "," + P + ")", u.fillRect($, D, 1, 1);
       }
       if ("toDataURL" in a) return a.toDataURL();
       throw new Error("toDataURL is not supported");
     } else throw new Error("Can not access image data");
   }, Er = (n, t) => {
-    let a = typeof document < "u" ? document.createElement("canvas").getContext("2d") : new OffscreenCanvas(1, 1).getContext("2d"), u2;
+    let a = typeof document < "u" ? document.createElement("canvas").getContext("2d") : new OffscreenCanvas(1, 1).getContext("2d"), u;
     if (a != null) {
       let o, d, c;
       t?.tensorLayout !== void 0 && t.tensorLayout === "NHWC" ? (o = n.dims[2], d = n.dims[1], c = n.dims[3]) : (o = n.dims[3], d = n.dims[2], c = n.dims[1]);
@@ -1581,10 +1581,10 @@ var Tr = N(() => {
       let b = d * o;
       if (t !== void 0 && (t.format !== void 0 && c === 4 && t.format !== "RGBA" || c === 3 && t.format !== "RGB" && t.format !== "BGR")) throw new Error("Tensor format doesn't match input tensor dims");
       let y = 4, T = 0, I = 1, D = 2, $ = 3, v = 0, A = b, F = b * 2, P = -1;
-      l === "RGBA" ? (v = 0, A = b, F = b * 2, P = b * 3) : l === "RGB" ? (v = 0, A = b, F = b * 2) : l === "RBG" && (v = 0, F = b, A = b * 2), u2 = a.createImageData(o, d);
-      for (let k = 0; k < d * o; T += y, I += y, D += y, $ += y, k++) u2.data[T] = (n.data[v++] - g[0]) * h[0], u2.data[I] = (n.data[A++] - g[1]) * h[1], u2.data[D] = (n.data[F++] - g[2]) * h[2], u2.data[$] = P === -1 ? 255 : (n.data[P++] - g[3]) * h[3];
+      l === "RGBA" ? (v = 0, A = b, F = b * 2, P = b * 3) : l === "RGB" ? (v = 0, A = b, F = b * 2) : l === "RBG" && (v = 0, F = b, A = b * 2), u = a.createImageData(o, d);
+      for (let k = 0; k < d * o; T += y, I += y, D += y, $ += y, k++) u.data[T] = (n.data[v++] - g[0]) * h[0], u.data[I] = (n.data[A++] - g[1]) * h[1], u.data[D] = (n.data[F++] - g[2]) * h[2], u.data[$] = P === -1 ? 255 : (n.data[P++] - g[3]) * h[3];
     } else throw new Error("Can not access image data");
-    return u2;
+    return u;
   };
 });
 var Kt;
@@ -1600,14 +1600,14 @@ var Br = N(() => {
     if (n === void 0) throw new Error("Image buffer must be defined");
     if (t.height === void 0 || t.width === void 0) throw new Error("Image height and width must be defined");
     if (t.tensorLayout === "NHWC") throw new Error("NHWC Tensor layout is not supported yet");
-    let { height: a, width: u2 } = t, o = t.norm ?? { mean: 255, bias: 0 }, d, c;
+    let { height: a, width: u } = t, o = t.norm ?? { mean: 255, bias: 0 }, d, c;
     typeof o.mean == "number" ? d = [o.mean, o.mean, o.mean, o.mean] : d = [o.mean[0], o.mean[1], o.mean[2], o.mean[3] ?? 255], typeof o.bias == "number" ? c = [o.bias, o.bias, o.bias, o.bias] : c = [o.bias[0], o.bias[1], o.bias[2], o.bias[3] ?? 0];
-    let l = t.format !== void 0 ? t.format : "RGBA", m = t.tensorFormat !== void 0 && t.tensorFormat !== void 0 ? t.tensorFormat : "RGB", h = a * u2, g = m === "RGBA" ? new Float32Array(h * 4) : new Float32Array(h * 3), b = 4, y = 0, T = 1, I = 2, D = 3, $ = 0, v = h, A = h * 2, F = -1;
+    let l = t.format !== void 0 ? t.format : "RGBA", m = t.tensorFormat !== void 0 && t.tensorFormat !== void 0 ? t.tensorFormat : "RGB", h = a * u, g = m === "RGBA" ? new Float32Array(h * 4) : new Float32Array(h * 3), b = 4, y = 0, T = 1, I = 2, D = 3, $ = 0, v = h, A = h * 2, F = -1;
     l === "RGB" && (b = 3, y = 0, T = 1, I = 2, D = -1), m === "RGBA" ? F = h * 3 : m === "RBG" ? ($ = 0, A = h, v = h * 2) : m === "BGR" && (A = 0, v = h, $ = h * 2);
     for (let k = 0; k < h; k++, y += b, I += b, T += b, D += b) g[$++] = (n[y] + c[0]) / d[0], g[v++] = (n[T] + c[1]) / d[1], g[A++] = (n[I] + c[2]) / d[2], F !== -1 && D !== -1 && (g[F++] = (n[D] + c[3]) / d[3]);
-    return m === "RGBA" ? new Z("float32", g, [1, 4, a, u2]) : new Z("float32", g, [1, 3, a, u2]);
+    return m === "RGBA" ? new Z("float32", g, [1, 4, a, u]) : new Z("float32", g, [1, 3, a, u]);
   }, Sr = async (n, t) => {
-    let a = typeof HTMLImageElement < "u" && n instanceof HTMLImageElement, u2 = typeof ImageData < "u" && n instanceof ImageData, o = typeof ImageBitmap < "u" && n instanceof ImageBitmap, d = typeof n == "string", c, l = t ?? {}, m = () => {
+    let a = typeof HTMLImageElement < "u" && n instanceof HTMLImageElement, u = typeof ImageData < "u" && n instanceof ImageData, o = typeof ImageBitmap < "u" && n instanceof ImageBitmap, d = typeof n == "string", c, l = t ?? {}, m = () => {
       if (typeof document < "u") return document.createElement("canvas");
       if (typeof OffscreenCanvas < "u") return new OffscreenCanvas(1, 1);
       throw new Error("Canvas is not supported");
@@ -1624,7 +1624,7 @@ var Br = N(() => {
         } else l.tensorFormat = "RGBA", l.height = y, l.width = T;
         b.drawImage(n, 0, 0), c = b.getImageData(0, 0, T, y).data;
       } else throw new Error("Can not access image data");
-    } else if (u2) {
+    } else if (u) {
       let g, b;
       if (t !== void 0 && t.resizedWidth !== void 0 && t.resizedHeight !== void 0 ? (g = t.resizedHeight, b = t.resizedWidth) : (g = n.height, b = n.width), t !== void 0 && (l = t), l.format = "RGBA", l.height = g, l.width = b, t !== void 0) {
         let y = m();
@@ -1658,14 +1658,14 @@ var Br = N(() => {
     if (c !== void 0) return Kt(c, l);
     throw new Error("Input data provided is not supported - aborted tensor creation");
   }, vr = (n, t) => {
-    let { width: a, height: u2, download: o, dispose: d } = t, c = [1, u2, a, 4];
+    let { width: a, height: u, download: o, dispose: d } = t, c = [1, u, a, 4];
     return new Z({ location: "texture", type: "float32", texture: n, dims: c, download: o, dispose: d });
   }, Ar = (n, t) => {
-    let { dataType: a, dims: u2, download: o, dispose: d } = t;
-    return new Z({ location: "gpu-buffer", type: a ?? "float32", gpuBuffer: n, dims: u2, download: o, dispose: d });
+    let { dataType: a, dims: u, download: o, dispose: d } = t;
+    return new Z({ location: "gpu-buffer", type: a ?? "float32", gpuBuffer: n, dims: u, download: o, dispose: d });
   }, Or = (n, t) => {
-    let { dataType: a, dims: u2, download: o, dispose: d } = t;
-    return new Z({ location: "ml-tensor", type: a ?? "float32", mlTensor: n, dims: u2, download: o, dispose: d });
+    let { dataType: a, dims: u, download: o, dispose: d } = t;
+    return new Z({ location: "ml-tensor", type: a ?? "float32", mlTensor: n, dims: u, download: o, dispose: d });
   }, Ir = (n, t, a) => new Z({ location: "cpu-pinned", type: n, data: t, dims: a ?? [t.length] });
 });
 var Le;
@@ -1677,8 +1677,8 @@ var Dr = N(() => {
   Le = /* @__PURE__ */ new Map([["float32", Float32Array], ["uint8", Uint8Array], ["int8", Int8Array], ["uint16", Uint16Array], ["int16", Int16Array], ["int32", Int32Array], ["bool", Uint8Array], ["float64", Float64Array], ["uint32", Uint32Array], ["int4", Uint8Array], ["uint4", Uint8Array]]), Xe = /* @__PURE__ */ new Map([[Float32Array, "float32"], [Uint8Array, "uint8"], [Int8Array, "int8"], [Uint16Array, "uint16"], [Int16Array, "int16"], [Int32Array, "int32"], [Float64Array, "float64"], [Uint32Array, "uint32"]]), Lr = false, _r = () => {
     if (!Lr) {
       Lr = true;
-      let n = typeof BigInt64Array < "u" && BigInt64Array.from, t = typeof BigUint64Array < "u" && BigUint64Array.from, a = globalThis.Float16Array, u2 = typeof a < "u" && a.from;
-      n && (Le.set("int64", BigInt64Array), Xe.set(BigInt64Array, "int64")), t && (Le.set("uint64", BigUint64Array), Xe.set(BigUint64Array, "uint64")), u2 ? (Le.set("float16", a), Xe.set(a, "float16")) : Le.set("float16", Uint16Array);
+      let n = typeof BigInt64Array < "u" && BigInt64Array.from, t = typeof BigUint64Array < "u" && BigUint64Array.from, a = globalThis.Float16Array, u = typeof a < "u" && a.from;
+      n && (Le.set("int64", BigInt64Array), Xe.set(BigInt64Array, "int64")), t && (Le.set("uint64", BigUint64Array), Xe.set(BigUint64Array, "uint64")), u ? (Le.set("float16", a), Xe.set(a, "float16")) : Le.set("float16", Uint16Array);
     }
   };
 });
@@ -1690,10 +1690,10 @@ var xr = N(() => {
   Pr = (n) => {
     let t = 1;
     for (let a = 0; a < n.length; a++) {
-      let u2 = n[a];
-      if (typeof u2 != "number" || !Number.isSafeInteger(u2)) throw new TypeError(`dims[${a}] must be an integer, got: ${u2}`);
-      if (u2 < 0) throw new RangeError(`dims[${a}] must be a non-negative integer, got: ${u2}`);
-      t *= u2;
+      let u = n[a];
+      if (typeof u != "number" || !Number.isSafeInteger(u)) throw new TypeError(`dims[${a}] must be an integer, got: ${u}`);
+      if (u < 0) throw new RangeError(`dims[${a}] must be a non-negative integer, got: ${u}`);
+      t *= u;
     }
     return t;
   }, Ur = (n, t) => {
@@ -1721,7 +1721,7 @@ var ct = N(() => {
   Dr();
   xr();
   Z = class {
-    constructor(t, a, u2) {
+    constructor(t, a, u) {
       _r();
       let o, d;
       if (typeof t == "object" && "location" in t) switch (this.dataLocation = t.location, o = t.type, d = t.dims, t.location) {
@@ -1752,7 +1752,7 @@ var ct = N(() => {
       }
       else {
         let l, m;
-        if (typeof t == "string") if (o = t, m = u2, t === "string") {
+        if (typeof t == "string") if (o = t, m = u, t === "string") {
           if (!Array.isArray(a)) throw new TypeError("A string tensor's data must be a string array.");
           l = a;
         } else {
@@ -1799,8 +1799,8 @@ var ct = N(() => {
     static fromMLTensor(t, a) {
       return Or(t, a);
     }
-    static fromPinnedBuffer(t, a, u2) {
-      return Ir(t, a, u2);
+    static fromPinnedBuffer(t, a, u) {
+      return Ir(t, a, u);
     }
     toDataURL(t) {
       return gr(this, t);
@@ -1880,14 +1880,14 @@ var tn = N(() => {
   Cr = (n, t) => {
     (typeof q.trace > "u" ? !q.wasm.trace : !q.trace) || console.timeStamp(`${n}::ORT::${t}`);
   }, Mr = (n, t) => {
-    let a = new Error().stack?.split(/\r\n|\r|\n/g) || [], u2 = false;
+    let a = new Error().stack?.split(/\r\n|\r|\n/g) || [], u = false;
     for (let o = 0; o < a.length; o++) {
-      if (u2 && !a[o].includes("TRACE_FUNC")) {
+      if (u && !a[o].includes("TRACE_FUNC")) {
         let d = `FUNC_${n}::${a[o].trim().split(" ")[1]}`;
         t && (d += `::${t}`), Cr("CPU", d);
         return;
       }
-      a[o].includes("TRACE_FUNC") && (u2 = true);
+      a[o].includes("TRACE_FUNC") && (u = true);
     }
   }, _e = (n) => {
     (typeof q.trace > "u" ? !q.wasm.trace : !q.trace) || Mr("BEGIN", n);
@@ -1909,7 +1909,7 @@ var Rr = N(() => {
     constructor(t) {
       this.handler = t;
     }
-    async run(t, a, u2) {
+    async run(t, a, u) {
       _e(), Pe("InferenceSession.run");
       let o = {}, d = {};
       if (typeof t != "object" || t === null || t instanceof de || Array.isArray(t)) throw new TypeError("'feeds' must be an object that use input names as keys and OnnxValue as corresponding values.");
@@ -1925,8 +1925,8 @@ var Rr = N(() => {
             if (this.outputNames.indexOf(h) === -1) throw new RangeError(`'fetches' contains invalid output name: ${h}.`);
             o[h] = null;
           }
-          if (typeof u2 == "object" && u2 !== null) d = u2;
-          else if (typeof u2 < "u") throw new TypeError("'options' must be an object.");
+          if (typeof u == "object" && u !== null) d = u;
+          else if (typeof u < "u") throw new TypeError("'options' must be an object.");
         } else {
           let h = false, g = Object.getOwnPropertyNames(a);
           for (let b of this.outputNames) if (g.indexOf(b) !== -1) {
@@ -1934,8 +1934,8 @@ var Rr = N(() => {
             (y === null || y instanceof de) && (h = true, c = false, o[b] = y);
           }
           if (h) {
-            if (typeof u2 == "object" && u2 !== null) d = u2;
-            else if (typeof u2 < "u") throw new TypeError("'options' must be an object.");
+            if (typeof u == "object" && u !== null) d = u;
+            else if (typeof u < "u") throw new TypeError("'options' must be an object.");
           } else d = a;
         }
       } else if (typeof a < "u") throw new TypeError("Unexpected argument[1]: must be 'fetches' or 'options'.");
@@ -1951,7 +1951,7 @@ var Rr = N(() => {
     async release() {
       return this.handler.dispose();
     }
-    static async create(t, a, u2, o) {
+    static async create(t, a, u, o) {
       _e(), Pe("InferenceSession.create");
       let d, c = {};
       if (typeof t == "string") {
@@ -1966,12 +1966,12 @@ var Rr = N(() => {
         else if (typeof a == "number") {
           if (b = a, !Number.isSafeInteger(b)) throw new RangeError("'byteOffset' must be an integer.");
           if (b < 0 || b >= g.byteLength) throw new RangeError(`'byteOffset' is out of range [0, ${g.byteLength}).`);
-          if (y = t.byteLength - b, typeof u2 == "number") {
-            if (y = u2, !Number.isSafeInteger(y)) throw new RangeError("'byteLength' must be an integer.");
+          if (y = t.byteLength - b, typeof u == "number") {
+            if (y = u, !Number.isSafeInteger(y)) throw new RangeError("'byteLength' must be an integer.");
             if (y <= 0 || b + y > g.byteLength) throw new RangeError(`'byteLength' is out of range (0, ${g.byteLength - b}].`);
             if (typeof o == "object" && o !== null) c = o;
             else if (typeof o < "u") throw new TypeError("'options' must be an object.");
-          } else if (typeof u2 < "u") throw new TypeError("'byteLength' must be a number.");
+          } else if (typeof u < "u") throw new TypeError("'byteLength' must be a number.");
         } else if (typeof a < "u") throw new TypeError("'options' must be an object.");
         d = new Uint8Array(g, b, y);
       } else throw new TypeError("Unexpected argument[0]: must be 'path' or 'buffer'.");
@@ -2052,16 +2052,16 @@ var Vr = N(() => {
           mt(a.wasm).then(() => {
             ht(a).then(() => {
               postMessage({ type: t });
-            }, (u2) => {
-              postMessage({ type: t, err: u2 });
+            }, (u) => {
+              postMessage({ type: t, err: u });
             });
-          }, (u2) => {
-            postMessage({ type: t, err: u2 });
+          }, (u) => {
+            postMessage({ type: t, err: u });
           });
           break;
         case "init-ep": {
-          let { epName: u2, env: o } = a;
-          wt(o, u2).then(() => {
+          let { epName: u, env: o } = a;
+          wt(o, u).then(() => {
             postMessage({ type: t });
           }, (d) => {
             postMessage({ type: t, err: d });
@@ -2069,13 +2069,13 @@ var Vr = N(() => {
           break;
         }
         case "copy-from": {
-          let { buffer: u2 } = a, o = Ze(u2);
+          let { buffer: u } = a, o = Ze(u);
           postMessage({ type: t, out: o });
           break;
         }
         case "create": {
-          let { model: u2, options: o } = a;
-          bt(u2, o).then((d) => {
+          let { model: u, options: o } = a;
+          bt(u, o).then((d) => {
             postMessage({ type: t, out: d });
           }, (d) => {
             postMessage({ type: t, err: d });
@@ -2086,8 +2086,8 @@ var Vr = N(() => {
           yt(a), postMessage({ type: t });
           break;
         case "run": {
-          let { sessionId: u2, inputIndices: o, inputs: d, outputIndices: c, options: l } = a;
-          gt(u2, o, d, c, new Array(c.length).fill(null), l).then((m) => {
+          let { sessionId: u, inputIndices: o, inputs: d, outputIndices: c, options: l } = a;
+          gt(u, o, d, c, new Array(c.length).fill(null), l).then((m) => {
             m.some((h) => h[3] !== "cpu") ? postMessage({ type: t, err: "Proxy does not support non-cpu tensor location." }) : postMessage({ type: t, out: m }, Tt([...d, ...m]));
           }, (m) => {
             postMessage({ type: t, err: m });
@@ -2099,8 +2099,8 @@ var Vr = N(() => {
           break;
         default:
       }
-    } catch (u2) {
-      postMessage({ type: t, err: u2 });
+    } catch (u) {
+      postMessage({ type: t, err: u });
     }
   });
   os = Hr ? null : (n) => new Worker(n ?? oe, { type: "module", name: zr });
@@ -2108,7 +2108,7 @@ var Vr = N(() => {
 var qr = {};
 ut(qr, { default: () => as });
 async function Yr(n = {}) {
-  var t = n, a = !!globalThis.window, u2 = !!globalThis.WorkerGlobalScope, o = u2 && self.name?.startsWith("em-pthread");
+  var t = n, a = !!globalThis.window, u = !!globalThis.WorkerGlobalScope, o = u && self.name?.startsWith("em-pthread");
   t.mountExternalData = (e, r) => {
     e.startsWith("./") && (e = e.substring(2)), (t.Tb || (t.Tb = /* @__PURE__ */ new Map())).set(e, r);
   }, t.unmountExternalData = () => {
@@ -2117,12 +2117,12 @@ async function Yr(n = {}) {
   var d, c, l = (e, r) => {
     throw r;
   }, m = import.meta.url, h = "";
-  if (a || u2) {
+  if (a || u) {
     try {
       h = new URL(".", m).href;
     } catch {
     }
-    u2 && (c = (e) => {
+    u && (c = (e) => {
       var r = new XMLHttpRequest();
       return r.open("GET", e, false), r.responseType = "arraybuffer", r.send(null), new Uint8Array(r.response);
     }), d = async (e) => {
@@ -2428,7 +2428,7 @@ async function Yr(n = {}) {
   }
   var Ro = () => j("");
   function Fo(e) {
-    zt(e >>> 0, !u2, 1, !a, 131072, false), wn();
+    zt(e >>> 0, !u, 1, !a, 131072, false), wn();
   }
   var Rt = (e) => {
     if (!P) try {
@@ -3173,10 +3173,10 @@ var pt = N(() => {
     if (on(oe)) return [void 0, Xr()];
     let n = await eo(oe);
     return [n, Xr(n)];
-  }, Zr = (Jr(), Xt(qr)).default, no = async (n, t, a, u2) => {
+  }, Zr = (Jr(), Xt(qr)).default, no = async (n, t, a, u) => {
     let o = Zr && !(n || t);
-    if (o) if (oe) o = on(oe) || u2 && !a;
-    else if (u2 && !a) o = true;
+    if (o) if (oe) o = on(oe) || u && !a;
+    else if (u && !a) o = true;
     else throw new Error("cannot determine the script source URL.");
     if (o) return [void 0, Zr];
     {
@@ -3227,8 +3227,8 @@ var xe = N(() => {
         if (!ps()) throw new Error("Relaxed WebAssembly SIMD is not supported in the current environment.");
       } else if (!ds()) throw new Error("WebAssembly SIMD is not supported in the current environment.");
     }
-    let u2 = ls();
-    a > 1 && !u2 && (typeof self < "u" && !self.crossOriginIsolated && console.warn("env.wasm.numThreads is set to " + a + ", but this will not work unless you enable crossOriginIsolated mode. See https://web.dev/cross-origin-isolation-guide/ for more info."), console.warn("WebAssembly multi-threading is not supported in the current environment. Falling back to single-threading."), n.numThreads = a = 1);
+    let u = ls();
+    a > 1 && !u && (typeof self < "u" && !self.crossOriginIsolated && console.warn("env.wasm.numThreads is set to " + a + ", but this will not work unless you enable crossOriginIsolated mode. See https://web.dev/cross-origin-isolation-guide/ for more info."), console.warn("WebAssembly multi-threading is not supported in the current environment. Falling back to single-threading."), n.numThreads = a = 1);
     let o = n.wasmPaths, d = typeof o == "string" ? o : void 0, c = o?.mjs, l = c?.href ?? c, m = o?.wasm, h = m?.href ?? m, g = n.wasmBinary, [b, y] = await no(l, d, a > 1, !!g || !!h), T = false, I = [];
     if (t > 0 && I.push(new Promise((D) => {
       setTimeout(() => {
@@ -3261,26 +3261,26 @@ var vt = N(() => {
   "use strict";
   xe();
   ae = (n, t) => {
-    let a = z(), u2 = a.lengthBytesUTF8(n) + 1, o = a._malloc(u2);
-    return a.stringToUTF8(n, o, u2), t.push(o), o;
-  }, Qe = (n, t, a, u2) => {
+    let a = z(), u = a.lengthBytesUTF8(n) + 1, o = a._malloc(u);
+    return a.stringToUTF8(n, o, u), t.push(o), o;
+  }, Qe = (n, t, a, u) => {
     if (typeof n == "object" && n !== null) {
       if (a.has(n)) throw new Error("Circular reference in options");
       a.add(n);
     }
     Object.entries(n).forEach(([o, d]) => {
       let c = t ? t + o : o;
-      if (typeof d == "object") Qe(d, c + ".", a, u2);
-      else if (typeof d == "string" || typeof d == "number") u2(c, d.toString());
-      else if (typeof d == "boolean") u2(c, d ? "1" : "0");
+      if (typeof d == "object") Qe(d, c + ".", a, u);
+      else if (typeof d == "string" || typeof d == "number") u(c, d.toString());
+      else if (typeof d == "boolean") u(c, d ? "1" : "0");
       else throw new Error(`Can't handle extra config type: ${typeof d}`);
     });
   }, G = (n) => {
     let t = z(), a = t.stackSave();
     try {
-      let u2 = t.PTR_SIZE, o = t.stackAlloc(2 * u2);
-      t._OrtGetLastError(o, o + u2);
-      let d = Number(t.getValue(o, u2 === 4 ? "i32" : "i64")), c = t.getValue(o + u2, "*"), l = c ? t.UTF8ToString(c) : "";
+      let u = t.PTR_SIZE, o = t.stackAlloc(2 * u);
+      t._OrtGetLastError(o, o + u);
+      let d = Number(t.getValue(o, u === 4 ? "i32" : "i64")), c = t.getValue(o + u, "*"), l = c ? t.UTF8ToString(c) : "";
       throw new Error(`${n} ERROR_CODE: ${d}, ERROR_MESSAGE: ${l}`);
     } finally {
       t.stackRestore(a);
@@ -3293,7 +3293,7 @@ var ao = N(() => {
   xe();
   vt();
   oo = (n) => {
-    let t = z(), a = 0, u2 = [], o = n || {};
+    let t = z(), a = 0, u = [], o = n || {};
     try {
       if (n?.logSeverityLevel === void 0) o.logSeverityLevel = 2;
       else if (typeof n.logSeverityLevel != "number" || !Number.isInteger(n.logSeverityLevel) || n.logSeverityLevel < 0 || n.logSeverityLevel > 4) throw new Error(`log severity level is not valid: ${n.logSeverityLevel}`);
@@ -3301,12 +3301,12 @@ var ao = N(() => {
       else if (typeof n.logVerbosityLevel != "number" || !Number.isInteger(n.logVerbosityLevel)) throw new Error(`log verbosity level is not valid: ${n.logVerbosityLevel}`);
       n?.terminate === void 0 && (o.terminate = false);
       let d = 0;
-      return n?.tag !== void 0 && (d = ae(n.tag, u2)), a = t._OrtCreateRunOptions(o.logSeverityLevel, o.logVerbosityLevel, !!o.terminate, d), a === 0 && G("Can't create run options."), n?.extra !== void 0 && Qe(n.extra, "", /* @__PURE__ */ new WeakSet(), (c, l) => {
-        let m = ae(c, u2), h = ae(l, u2);
+      return n?.tag !== void 0 && (d = ae(n.tag, u)), a = t._OrtCreateRunOptions(o.logSeverityLevel, o.logVerbosityLevel, !!o.terminate, d), a === 0 && G("Can't create run options."), n?.extra !== void 0 && Qe(n.extra, "", /* @__PURE__ */ new WeakSet(), (c, l) => {
+        let m = ae(c, u), h = ae(l, u);
         t._OrtAddRunConfigEntry(a, m, h) !== 0 && G(`Can't set a run config entry: ${c} - ${l}.`);
-      }), [a, u2];
+      }), [a, u];
     } catch (d) {
-      throw a !== 0 && t._OrtReleaseRunOptions(a), u2.forEach((c) => t._free(c)), d;
+      throw a !== 0 && t._OrtReleaseRunOptions(a), u.forEach((c) => t._free(c)), d;
     }
   };
 });
@@ -3348,12 +3348,12 @@ var io = N(() => {
     n.extra || (n.extra = {}), n.extra.session || (n.extra.session = {});
     let t = n.extra.session;
     t.use_ort_model_bytes_directly || (t.use_ort_model_bytes_directly = "1"), n.executionProviders && n.executionProviders.some((a) => (typeof a == "string" ? a : a.name) === "webgpu") && (n.enableMemPattern = false);
-  }, ke = (n, t, a, u2) => {
-    let o = ae(t, u2), d = ae(a, u2);
+  }, ke = (n, t, a, u) => {
+    let o = ae(t, u), d = ae(a, u);
     z()._OrtAddSessionConfigEntry(n, o, d) !== 0 && G(`Can't set a session config entry: ${t} - ${a}.`);
   }, bs = async (n, t, a) => {
-    let u2 = t.executionProviders;
-    for (let o of u2) {
+    let u = t.executionProviders;
+    for (let o of u) {
       let d = typeof o == "string" ? o : o.name, c = [];
       switch (d) {
         case "webnn":
@@ -3385,29 +3385,29 @@ var io = N(() => {
       await z()._OrtAppendExecutionProvider(n, l, h, g, m) !== 0 && G(`Can't append execution provider: ${d}.`);
     }
   }, so = async (n) => {
-    let t = z(), a = 0, u2 = [], o = n || {};
+    let t = z(), a = 0, u = [], o = n || {};
     ws(o);
     try {
-      let d = ms(o.graphOptimizationLevel ?? "all"), c = hs(o.executionMode ?? "sequential"), l = typeof o.logId == "string" ? ae(o.logId, u2) : 0, m = o.logSeverityLevel ?? 2;
+      let d = ms(o.graphOptimizationLevel ?? "all"), c = hs(o.executionMode ?? "sequential"), l = typeof o.logId == "string" ? ae(o.logId, u) : 0, m = o.logSeverityLevel ?? 2;
       if (!Number.isInteger(m) || m < 0 || m > 4) throw new Error(`log severity level is not valid: ${m}`);
       let h = o.logVerbosityLevel ?? 0;
       if (!Number.isInteger(h) || h < 0 || h > 4) throw new Error(`log verbosity level is not valid: ${h}`);
-      let g = typeof o.optimizedModelFilePath == "string" ? ae(o.optimizedModelFilePath, u2) : 0;
-      if (a = t._OrtCreateSessionOptions(d, !!o.enableCpuMemArena, !!o.enableMemPattern, c, !!o.enableProfiling, 0, l, m, h, g), a === 0 && G("Can't create session options."), o.executionProviders && await bs(a, o, u2), o.enableGraphCapture !== void 0) {
+      let g = typeof o.optimizedModelFilePath == "string" ? ae(o.optimizedModelFilePath, u) : 0;
+      if (a = t._OrtCreateSessionOptions(d, !!o.enableCpuMemArena, !!o.enableMemPattern, c, !!o.enableProfiling, 0, l, m, h, g), a === 0 && G("Can't create session options."), o.executionProviders && await bs(a, o, u), o.enableGraphCapture !== void 0) {
         if (typeof o.enableGraphCapture != "boolean") throw new Error(`enableGraphCapture must be a boolean value: ${o.enableGraphCapture}`);
-        ke(a, "enableGraphCapture", o.enableGraphCapture.toString(), u2);
+        ke(a, "enableGraphCapture", o.enableGraphCapture.toString(), u);
       }
       if (o.freeDimensionOverrides) for (let [b, y] of Object.entries(o.freeDimensionOverrides)) {
         if (typeof b != "string") throw new Error(`free dimension override name must be a string: ${b}`);
         if (typeof y != "number" || !Number.isInteger(y) || y < 0) throw new Error(`free dimension override value must be a non-negative integer: ${y}`);
-        let T = ae(b, u2);
+        let T = ae(b, u);
         t._OrtAddFreeDimensionOverride(a, T, y) !== 0 && G(`Can't set a free dimension override: ${b} - ${y}.`);
       }
       return o.extra !== void 0 && Qe(o.extra, "", /* @__PURE__ */ new WeakSet(), (b, y) => {
-        ke(a, b, y, u2);
-      }), [a, u2];
+        ke(a, b, y, u);
+      }), [a, u];
     } catch (d) {
-      throw a !== 0 && t._OrtReleaseSessionOptions(a) !== 0 && G("Can't release session options."), u2.forEach((c) => t._free(c)), d;
+      throw a !== 0 && t._OrtReleaseSessionOptions(a) !== 0 && G("Can't release session options."), u.forEach((c) => t._free(c)), d;
     }
   };
 });
@@ -3492,8 +3492,8 @@ var fn = N(() => {
         throw new Error(`unsupported data type: ${n}`);
     }
   }, Ge = (n, t) => {
-    let a = [-1, 4, 1, 1, 2, 2, 4, 8, -1, 1, 2, 8, 4, 8, -1, -1, -1, -1, -1, -1, -1, 0.5, 0.5][n], u2 = typeof t == "number" ? t : t.reduce((o, d) => o * d, 1);
-    return a > 0 ? Math.ceil(u2 * a) : void 0;
+    let a = [-1, 4, 1, 1, 2, 2, 4, 8, -1, 1, 2, 8, 4, 8, -1, -1, -1, -1, -1, -1, -1, 0.5, 0.5][n], u = typeof t == "number" ? t : t.reduce((o, d) => o * d, 1);
+    return a > 0 ? Math.ceil(u * a) : void 0;
   }, uo = (n) => {
     switch (n) {
       case "float16":
@@ -3567,8 +3567,8 @@ var cn = N(() => {
       return new Uint8Array(await t(n));
     } catch (t) {
       if (t.code === "ERR_FS_FILE_TOO_LARGE") {
-        let { createReadStream: a } = Jt("node:fs"), u2 = a(n), o = [];
-        for await (let d of u2) o.push(d);
+        let { createReadStream: a } = Jt("node:fs"), u = a(n), o = [];
+        for await (let d of u) o.push(d);
         return new Uint8Array(Buffer.concat(o));
       }
       throw t;
@@ -3576,16 +3576,16 @@ var cn = N(() => {
     else {
       let t = await fetch(n);
       if (!t.ok) throw new Error(`failed to load external data file: ${n}`);
-      let a = t.headers.get("Content-Length"), u2 = a ? parseInt(a, 10) : 0;
-      if (u2 < 1073741824) return new Uint8Array(await t.arrayBuffer());
+      let a = t.headers.get("Content-Length"), u = a ? parseInt(a, 10) : 0;
+      if (u < 1073741824) return new Uint8Array(await t.arrayBuffer());
       {
         if (!t.body) throw new Error(`failed to load external data file: ${n}, no response body.`);
         let o = t.body.getReader(), d;
         try {
-          d = new ArrayBuffer(u2);
+          d = new ArrayBuffer(u);
         } catch (l) {
           if (l instanceof RangeError) {
-            let m = Math.ceil(u2 / 65536);
+            let m = Math.ceil(u / 65536);
             d = new WebAssembly.Memory({ initial: m, maximum: m }).buffer;
           } else throw l;
         }
@@ -3596,7 +3596,7 @@ var cn = N(() => {
           let h = m.byteLength;
           new Uint8Array(d, c, h).set(m), c += h;
         }
-        return new Uint8Array(d, 0, u2);
+        return new Uint8Array(d, 0, u);
       }
     }
     else return n instanceof Blob ? new Uint8Array(await n.arrayBuffer()) : n instanceof Uint8Array ? n : new Uint8Array(n);
@@ -3636,26 +3636,26 @@ var rn = N(() => {
       if (a) {
         if (typeof a.limits != "object" || typeof a.features != "object" || typeof a.requestDevice != "function") throw new Error("Invalid GPU adapter set in `env.webgpu.adapter`. It must be a GPUAdapter object.");
       } else {
-        let u2 = n.webgpu.powerPreference;
-        if (u2 !== void 0 && u2 !== "low-power" && u2 !== "high-performance") throw new Error(`Invalid powerPreference setting: "${u2}"`);
+        let u = n.webgpu.powerPreference;
+        if (u !== void 0 && u !== "low-power" && u !== "high-performance") throw new Error(`Invalid powerPreference setting: "${u}"`);
         let o = n.webgpu.forceFallbackAdapter;
         if (o !== void 0 && typeof o != "boolean") throw new Error(`Invalid forceFallbackAdapter setting: "${o}"`);
-        if (a = await navigator.gpu.requestAdapter({ powerPreference: u2, forceFallbackAdapter: o }), !a) throw new Error('Failed to get GPU adapter. You may need to enable flag "--enable-unsafe-webgpu" if you are using Chrome.');
+        if (a = await navigator.gpu.requestAdapter({ powerPreference: u, forceFallbackAdapter: o }), !a) throw new Error('Failed to get GPU adapter. You may need to enable flag "--enable-unsafe-webgpu" if you are using Chrome.');
       }
     }
     if (t === "webnn" && (typeof navigator > "u" || !navigator.ml)) throw new Error("WebNN is not supported in current environment");
   }, $e = /* @__PURE__ */ new Map(), gs = (n) => {
     let t = z(), a = t.stackSave();
     try {
-      let u2 = t.PTR_SIZE, o = t.stackAlloc(2 * u2);
-      t._OrtGetInputOutputCount(n, o, o + u2) !== 0 && G("Can't get session input/output count.");
-      let c = u2 === 4 ? "i32" : "i64";
-      return [Number(t.getValue(o, c)), Number(t.getValue(o + u2, c))];
+      let u = t.PTR_SIZE, o = t.stackAlloc(2 * u);
+      t._OrtGetInputOutputCount(n, o, o + u) !== 0 && G("Can't get session input/output count.");
+      let c = u === 4 ? "i32" : "i64";
+      return [Number(t.getValue(o, c)), Number(t.getValue(o + u, c))];
     } finally {
       t.stackRestore(a);
     }
   }, lo = (n, t) => {
-    let a = z(), u2 = a.stackSave(), o = 0;
+    let a = z(), u = a.stackSave(), o = 0;
     try {
       let d = a.PTR_SIZE, c = a.stackAlloc(2 * d);
       a._OrtGetInputOutputMetadata(n, t, c, c + d) !== 0 && G("Can't get session input/output metadata.");
@@ -3670,15 +3670,15 @@ var rn = N(() => {
       }
       return [m, h, b];
     } finally {
-      a.stackRestore(u2), o !== 0 && a._OrtFree(o);
+      a.stackRestore(u), o !== 0 && a._OrtFree(o);
     }
   }, Ze = (n) => {
     let t = z(), a = t._malloc(n.byteLength);
     if (a === 0) throw new Error(`Can't create a session. failed to allocate a buffer of size ${n.byteLength}.`);
     return t.HEAPU8.set(n, a), [a, n.byteLength];
   }, bt = async (n, t) => {
-    let a, u2, o = z();
-    Array.isArray(n) ? [a, u2] = n : n.buffer === o.HEAPU8.buffer ? [a, u2] = [n.byteOffset, n.byteLength] : [a, u2] = Ze(n);
+    let a, u, o = z();
+    Array.isArray(n) ? [a, u] = n : n.buffer === o.HEAPU8.buffer ? [a, u] = [n.byteOffset, n.byteLength] : [a, u] = Ze(n);
     let d = 0, c = 0, l = 0, m = [], h = [], g = [];
     try {
       if ([c, m] = await so(t), t?.externalData && o.mountExternalData) {
@@ -3698,7 +3698,7 @@ var rn = N(() => {
         } else o.currentContext = await o.webnnCreateMLContext();
         break;
       }
-      d = await o._OrtCreateSession(a, u2, c), o.webgpuOnCreateSession?.(d), d === 0 && G("Can't create a session."), o.jsepOnCreateSession?.(), o.currentContext && (o.webnnRegisterMLContext(d, o.currentContext), o.currentContext = void 0, o.shouldTransferToMLTensor = true);
+      d = await o._OrtCreateSession(a, u, c), o.webgpuOnCreateSession?.(d), d === 0 && G("Can't create a session."), o.jsepOnCreateSession?.(), o.currentContext && (o.webnnRegisterMLContext(d, o.currentContext), o.currentContext = void 0, o.shouldTransferToMLTensor = true);
       let [b, y] = gs(d), T = !!t?.enableGraphCapture, I = [], D = [], $ = [], v = [], A = [];
       for (let P = 0; P < b; P++) {
         let [k, w, Q] = lo(d, P);
@@ -3721,9 +3721,9 @@ var rn = N(() => {
   }, yt = (n) => {
     let t = z(), a = $e.get(n);
     if (!a) throw new Error(`cannot release session. invalid session id: ${n}`);
-    let [u2, o, d, c, l] = a;
-    c && (l && t._OrtClearBoundOutputs(c.handle) !== 0 && G("Can't clear bound outputs."), t._OrtReleaseBinding(c.handle) !== 0 && G("Can't release IO binding.")), t.jsepOnReleaseSession?.(n), t.webnnOnReleaseSession?.(n), t.webgpuOnReleaseSession?.(n), o.forEach((m) => t._OrtFree(m)), d.forEach((m) => t._OrtFree(m)), t._OrtReleaseSession(u2) !== 0 && G("Can't release session."), $e.delete(n);
-  }, po = async (n, t, a, u2, o, d, c = false) => {
+    let [u, o, d, c, l] = a;
+    c && (l && t._OrtClearBoundOutputs(c.handle) !== 0 && G("Can't clear bound outputs."), t._OrtReleaseBinding(c.handle) !== 0 && G("Can't release IO binding.")), t.jsepOnReleaseSession?.(n), t.webnnOnReleaseSession?.(n), t.webgpuOnReleaseSession?.(n), o.forEach((m) => t._OrtFree(m)), d.forEach((m) => t._OrtFree(m)), t._OrtReleaseSession(u) !== 0 && G("Can't release session."), $e.delete(n);
+  }, po = async (n, t, a, u, o, d, c = false) => {
     if (!n) {
       t.push(0);
       return;
@@ -3737,14 +3737,14 @@ var rn = N(() => {
       {
         let A = l.jsepRegisterBuffer;
         if (!A) throw new Error('Tensor location "gpu-buffer" is not supported without using WebGPU.');
-        T = A(u2, d, v, I);
+        T = A(u, d, v, I);
       }
     } else if (b === "ml-tensor") {
       let v = n[2].mlTensor;
       I = Ge(We(h), g);
       let A = l.webnnRegisterMLTensor;
       if (!A) throw new Error('Tensor location "ml-tensor" is not supported without using WebNN.');
-      T = A(u2, v, We(h), g);
+      T = A(u, v, We(h), g);
     } else {
       let v = n[2];
       if (Array.isArray(v)) {
@@ -3757,12 +3757,12 @@ var rn = N(() => {
         let A = l.webnnIsGraphInput, F = l.webnnIsGraphOutput;
         if (h !== "string" && A && F) {
           let P = l.UTF8ToString(o);
-          if (A(u2, P) || F(u2, P)) {
+          if (A(u, P) || F(u, P)) {
             let k = We(h);
             I = Ge(k, g), y = "ml-tensor";
             let w = l.webnnCreateTemporaryTensor, Q = l.webnnUploadTensor;
             if (!w || !Q) throw new Error('Tensor location "ml-tensor" is not supported without using WebNN.');
-            let H = await w(u2, k, g);
+            let H = await w(u, k, g);
             Q(H, new Uint8Array(v.buffer, v.byteOffset, v.byteLength)), T = H;
           } else I = v.byteLength, T = l._malloc(I), a.push(T), l.HEAPU8.set(new Uint8Array(v.buffer, v.byteOffset, I), T);
         } else I = v.byteLength, T = l._malloc(I), a.push(T), l.HEAPU8.set(new Uint8Array(v.buffer, v.byteOffset, I), T);
@@ -3772,21 +3772,21 @@ var rn = N(() => {
     try {
       g.forEach((A, F) => l.setValue($ + F * m, A, m === 4 ? "i32" : "i64"));
       let v = l._OrtCreateTensor(We(h), T, I, $, g.length, co(y));
-      v === 0 && G(`Can't create tensor for input/output. session=${u2}, index=${d}.`), t.push(v);
+      v === 0 && G(`Can't create tensor for input/output. session=${u}, index=${d}.`), t.push(v);
     } finally {
       l.stackRestore(D);
     }
-  }, gt = async (n, t, a, u2, o, d) => {
+  }, gt = async (n, t, a, u, o, d) => {
     let c = z(), l = c.PTR_SIZE, m = $e.get(n);
     if (!m) throw new Error(`cannot run inference. invalid session id: ${n}`);
-    let h = m[0], g = m[1], b = m[2], y = m[3], T = m[4], I = m[5], D = t.length, $ = u2.length, v = 0, A = [], F = [], P = [], k = [], w = [], Q = c.stackSave(), H = c.stackAlloc(D * l), ne = c.stackAlloc(D * l), pe = c.stackAlloc($ * l), B = c.stackAlloc($ * l);
+    let h = m[0], g = m[1], b = m[2], y = m[3], T = m[4], I = m[5], D = t.length, $ = u.length, v = 0, A = [], F = [], P = [], k = [], w = [], Q = c.stackSave(), H = c.stackAlloc(D * l), ne = c.stackAlloc(D * l), pe = c.stackAlloc($ * l), B = c.stackAlloc($ * l);
     try {
       [v, A] = oo(d), Pe("wasm prepareInputOutputTensor");
       for (let O = 0; O < D; O++) await po(a[O], F, k, n, g[t[O]], t[O], T);
-      for (let O = 0; O < $; O++) await po(o[O], P, k, n, b[u2[O]], D + u2[O], T);
+      for (let O = 0; O < $; O++) await po(o[O], P, k, n, b[u[O]], D + u[O], T);
       Ue("wasm prepareInputOutputTensor");
       for (let O = 0; O < D; O++) c.setValue(H + O * l, F[O], "*"), c.setValue(ne + O * l, g[t[O]], "*");
-      for (let O = 0; O < $; O++) c.setValue(pe + O * l, P[O], "*"), c.setValue(B + O * l, b[u2[O]], "*");
+      for (let O = 0; O < $; O++) c.setValue(pe + O * l, P[O], "*"), c.setValue(B + O * l, b[u[O]], "*");
       c.jsepOnRunStart?.(h), c.webnnOnRunStart?.(h);
       let W;
       W = await c._OrtRun(h, ne, H, D, B, $, pe, v), W !== 0 && G("failed to call OrtRun().");
@@ -3808,7 +3808,7 @@ var rn = N(() => {
           c._OrtFree(Ve) !== 0 && G("Can't free memory for tensor dims.");
           let ue = te.reduce((L, V) => L * V, 1);
           j = At(ve);
-          let se = y?.outputPreferredLocations[u2[O]];
+          let se = y?.outputPreferredLocations[u[O]];
           if (j === "string") {
             if (se === "gpu-buffer" || se === "ml-tensor") throw new Error("String tensor is not supported on GPU.");
             let L = [];
@@ -3857,13 +3857,13 @@ var rn = N(() => {
   }, Et = (n) => {
     let t = z(), a = $e.get(n);
     if (!a) throw new Error("invalid session id");
-    let u2 = a[0], o = t._OrtEndProfiling(u2);
+    let u = a[0], o = t._OrtEndProfiling(u);
     o === 0 && G("Can't get an profile file name."), t._OrtFree(o);
   }, Tt = (n) => {
     let t = [];
     for (let a of n) {
-      let u2 = a[2];
-      !Array.isArray(u2) && "buffer" in u2 && t.push(u2.buffer);
+      let u = a[2];
+      !Array.isArray(u) && "buffer" in u && t.push(u.buffer);
     }
     return t;
   };
@@ -3919,9 +3919,9 @@ var pn = N(() => {
       if (et) throw new Error("multiple calls to 'initWasm()' detected.");
       if (_t) throw new Error("previous call to 'initWasm()' failed.");
       if (et = true, Me()) return new Promise((n, t) => {
-        ie?.terminate(), to().then(([a, u2]) => {
+        ie?.terminate(), to().then(([a, u]) => {
           try {
-            ie = u2, ie.onerror = (d) => t(d), ie.onmessage = Ts, ln = [n, t];
+            ie = u, ie.onerror = (d) => t(d), ie.onmessage = Ts, ln = [n, t];
             let o = { type: "init-wasm", in: Y };
             !o.in.wasm.wasmPaths && (a || an) && (o.in.wasm.wasmPaths = { wasm: new URL("ort-wasm-simd-threaded.wasm", import.meta.url).href }), ie.postMessage(o), Bt = a;
           } catch (o) {
@@ -3940,19 +3940,19 @@ var pn = N(() => {
   }, ho = async (n) => {
     if (Me()) return He(), new Promise((t, a) => {
       ze("init-ep", [t, a]);
-      let u2 = { type: "init-ep", in: { epName: n, env: Y } };
-      ie.postMessage(u2);
+      let u = { type: "init-ep", in: { epName: n, env: Y } };
+      ie.postMessage(u);
     });
     await wt(Y, n);
   }, wo = async (n) => Me() ? (He(), new Promise((t, a) => {
     ze("copy-from", [t, a]);
-    let u2 = { type: "copy-from", in: { buffer: n } };
-    ie.postMessage(u2, [n.buffer]);
+    let u = { type: "copy-from", in: { buffer: n } };
+    ie.postMessage(u, [n.buffer]);
   })) : Ze(n), bo = async (n, t) => {
     if (Me()) {
       if (t?.preferredOutputLocation) throw new Error('session option "preferredOutputLocation" is not supported for proxy.');
-      return He(), new Promise((a, u2) => {
-        ze("create", [a, u2]);
+      return He(), new Promise((a, u) => {
+        ze("create", [a, u]);
         let o = { type: "create", in: { model: n, options: { ...t } } }, d = [];
         n instanceof Uint8Array && d.push(n.buffer), ie.postMessage(o, d);
       });
@@ -3960,25 +3960,25 @@ var pn = N(() => {
   }, yo = async (n) => {
     if (Me()) return He(), new Promise((t, a) => {
       ze("release", [t, a]);
-      let u2 = { type: "release", in: n };
-      ie.postMessage(u2);
+      let u = { type: "release", in: n };
+      ie.postMessage(u);
     });
     yt(n);
-  }, go = async (n, t, a, u2, o, d) => {
+  }, go = async (n, t, a, u, o, d) => {
     if (Me()) {
       if (a.some((c) => c[3] !== "cpu")) throw new Error("input tensor on GPU is not supported for proxy.");
       if (o.some((c) => c)) throw new Error("pre-allocated output tensor is not supported for proxy.");
       return He(), new Promise((c, l) => {
         ze("run", [c, l]);
-        let m = a, h = { type: "run", in: { sessionId: n, inputIndices: t, inputs: m, outputIndices: u2, options: d } };
+        let m = a, h = { type: "run", in: { sessionId: n, inputIndices: t, inputs: m, outputIndices: u, options: d } };
         ie.postMessage(h, Tt(m));
       });
-    } else return gt(n, t, a, u2, o, d);
+    } else return gt(n, t, a, u, o, d);
   }, Eo = async (n) => {
     if (Me()) return He(), new Promise((t, a) => {
       ze("end-profiling", [t, a]);
-      let u2 = { type: "end-profiling", in: n };
-      ie.postMessage(u2);
+      let u = { type: "end-profiling", in: n };
+      ie.postMessage(u);
     });
     Et(n);
   };
@@ -4011,14 +4011,14 @@ var So = N(() => {
       case "gpu-buffer": {
         let t = n[0];
         if (!Ot(t)) throw new Error(`not supported data type: ${t} for deserializing GPU tensor`);
-        let { gpuBuffer: a, download: u2, dispose: o } = n[2];
-        return de.fromGpuBuffer(a, { dataType: t, dims: n[1], download: u2, dispose: o });
+        let { gpuBuffer: a, download: u, dispose: o } = n[2];
+        return de.fromGpuBuffer(a, { dataType: t, dims: n[1], download: u, dispose: o });
       }
       case "ml-tensor": {
         let t = n[0];
         if (!It(t)) throw new Error(`not supported data type: ${t} for deserializing MLTensor tensor`);
-        let { mlTensor: a, download: u2, dispose: o } = n[2];
-        return de.fromMLTensor(a, { dataType: t, dims: n[1], download: u2, dispose: o });
+        let { mlTensor: a, download: u, dispose: o } = n[2];
+        return de.fromMLTensor(a, { dataType: t, dims: n[1], download: u, dispose: o });
       }
       default:
         throw new Error(`invalid data location: ${n[3]}`);
@@ -4029,13 +4029,13 @@ var So = N(() => {
     }
     async loadModel(t, a) {
       _e();
-      let u2;
-      typeof t == "string" ? u2 = await this.fetchModelAndCopyToWasmMemory(t) : u2 = t, [this.sessionId, this.inputNames, this.outputNames, this.inputMetadata, this.outputMetadata] = await bo(u2, a), De();
+      let u;
+      typeof t == "string" ? u = await this.fetchModelAndCopyToWasmMemory(t) : u = t, [this.sessionId, this.inputNames, this.outputNames, this.inputMetadata, this.outputMetadata] = await bo(u, a), De();
     }
     async dispose() {
       return yo(this.sessionId);
     }
-    async run(t, a, u2) {
+    async run(t, a, u) {
       _e();
       let o = [], d = [];
       Object.entries(t).forEach((y) => {
@@ -4049,7 +4049,7 @@ var So = N(() => {
         if (D === -1) throw new Error(`invalid output '${T}'`);
         c.push(I), l.push(D);
       });
-      let m = o.map((y, T) => To(y, () => `input "${this.inputNames[d[T]]}"`)), h = c.map((y, T) => y ? To(y, () => `output "${this.outputNames[l[T]]}"`) : null), g = await go(this.sessionId, d, m, l, h, u2), b = {};
+      let m = o.map((y, T) => To(y, () => `input "${this.inputNames[d[T]]}"`)), h = c.map((y, T) => y ? To(y, () => `output "${this.outputNames[l[T]]}"`) : null), g = await go(this.sessionId, d, m, l, h, u), b = {};
       for (let y = 0; y < g.length; y++) b[this.outputNames[l[y]]] = c[y] ?? Ss(g[y]);
       return De(), b;
     }
@@ -4083,8 +4083,8 @@ var Oo = N(() => {
       vo(), await mo(), await ho(t);
     }
     async createInferenceSessionHandler(t, a) {
-      let u2 = new Dt();
-      return await u2.loadModel(t, a), u2;
+      let u = new Dt();
+      return await u.loadModel(t, a), u;
     }
   }, vs = new Pt();
 });
@@ -4474,25 +4474,25 @@ async function Module(moduleArg = {}) {
     var startIdx = outIdx;
     var endIdx = outIdx + maxBytesToWrite - 1;
     for (var i = 0; i < str.length; ++i) {
-      var u2 = str.codePointAt(i);
-      if (u2 <= 127) {
+      var u = str.codePointAt(i);
+      if (u <= 127) {
         if (outIdx >= endIdx) break;
-        heap[outIdx++] = u2;
-      } else if (u2 <= 2047) {
+        heap[outIdx++] = u;
+      } else if (u <= 2047) {
         if (outIdx + 1 >= endIdx) break;
-        heap[outIdx++] = 192 | u2 >> 6;
-        heap[outIdx++] = 128 | u2 & 63;
-      } else if (u2 <= 65535) {
+        heap[outIdx++] = 192 | u >> 6;
+        heap[outIdx++] = 128 | u & 63;
+      } else if (u <= 65535) {
         if (outIdx + 2 >= endIdx) break;
-        heap[outIdx++] = 224 | u2 >> 12;
-        heap[outIdx++] = 128 | u2 >> 6 & 63;
-        heap[outIdx++] = 128 | u2 & 63;
+        heap[outIdx++] = 224 | u >> 12;
+        heap[outIdx++] = 128 | u >> 6 & 63;
+        heap[outIdx++] = 128 | u & 63;
       } else {
         if (outIdx + 3 >= endIdx) break;
-        heap[outIdx++] = 240 | u2 >> 18;
-        heap[outIdx++] = 128 | u2 >> 12 & 63;
-        heap[outIdx++] = 128 | u2 >> 6 & 63;
-        heap[outIdx++] = 128 | u2 & 63;
+        heap[outIdx++] = 240 | u >> 18;
+        heap[outIdx++] = 128 | u >> 12 & 63;
+        heap[outIdx++] = 128 | u >> 6 & 63;
+        heap[outIdx++] = 128 | u & 63;
         i++;
       }
     }
@@ -7191,7 +7191,7 @@ function labelsToTokens(labels, text) {
 }
 function mountDictionaryBytes(Module2, dict, dicDir = "/dic") {
   Module2.FS.mkdir(dicDir);
-  for (const [name, bytes2] of [["char.bin", dict.char], ["matrix.bin", dict.matrix], ["unk.dic", dict.unk]]) Module2.FS.writeFile(`${dicDir}/${name}`, bytes2);
+  for (const [name, bytes] of [["char.bin", dict.char], ["matrix.bin", dict.matrix], ["unk.dic", dict.unk]]) Module2.FS.writeFile(`${dicDir}/${name}`, bytes);
   const len = dict.sys.length, ptr = Module2._malloc(len);
   if (!ptr) throw new Error("out of memory while loading the Japanese dictionary");
   Module2.HEAPU8.set(dict.sys, ptr);
@@ -7475,16 +7475,16 @@ function createChineseG2p({ single, phrases }) {
       }
       if (hit) {
         for (let j = 0; j < hitLen; j++) {
-          const [base2, tone] = j < hit.length ? extractTone(hit[j]) : ["", 5];
-          out.push({ chinese: true, normalized: normalizePinyin(base2), tone });
+          const [base, tone] = j < hit.length ? extractTone(hit[j]) : ["", 5];
+          out.push({ chinese: true, normalized: normalizePinyin(base), tone });
         }
         i += hitLen;
         continue;
       }
       const raw = singleDict.get(cp);
       if (raw !== void 0) {
-        const [base2, tone] = extractTone(raw.split(",")[0]);
-        out.push({ chinese: true, normalized: normalizePinyin(base2), tone });
+        const [base, tone] = extractTone(raw.split(",")[0]);
+        out.push({ chinese: true, normalized: normalizePinyin(base), tone });
       } else out.push({ chinese: false, normalized: "", tone: 0 });
       i++;
     }
@@ -7530,8 +7530,8 @@ function createChineseG2p({ single, phrases }) {
         if (/[A-Za-z]/.test(tok)) {
           const syl = latinToPinyin(tok);
           syl.forEach((py, k) => {
-            const [base2, tone2] = extractTone(py);
-            for (const t of pinyinToIpa(normalizePinyin(base2), tone2)) {
+            const [base, tone2] = extractTone(py);
+            for (const t of pinyinToIpa(normalizePinyin(base), tone2)) {
               tokens.push(t);
               prosody.push([tone2, k + 1, syl.length]);
             }
@@ -7813,9 +7813,9 @@ function createEnglishG2p({ cmudict, homographs = null }) {
     if (cmu[word]) return cmu[word].split(" ");
     const m = /^(.+)'(s|ll|d|ve|re)$/.exec(word);
     if (m && cmu[m[1]]) {
-      const base2 = cmu[m[1]].split(" "), last = base2[base2.length - 1].replace(/\d/, "");
+      const base = cmu[m[1]].split(" "), last = base[base.length - 1].replace(/\d/, "");
       const suf = m[2] === "s" ? SIBILANT.has(last) ? ["IH0", "Z"] : VOICELESS.has(last) ? ["S"] : ["Z"] : { ll: ["AH0", "L"], d: ["D"], ve: ["V"], re: ["ER0"] }[m[2]];
-      return [...base2, ...suf];
+      return [...base, ...suf];
     }
     const bare = word.replace(/'/g, "");
     if (bare !== word && cmu[bare]) return cmu[bare].split(" ");
@@ -7827,21 +7827,21 @@ function createEnglishG2p({ cmudict, homographs = null }) {
     for (let i = 0; i < arpa.length; i++) {
       const m = /^([A-Z]+)(\d)?$/.exec(arpa[i]);
       if (!m) continue;
-      const base2 = m[1], stress = m[2] === void 0 ? -1 : +m[2];
-      if (base2 === "AA" && arpa[i + 1] === "R") {
+      const base = m[1], stress = m[2] === void 0 ? -1 : +m[2];
+      if (base === "AA" && arpa[i + 1] === "R") {
         out.push(["\u0251\u02D0\u0279", stress]);
         i++;
         continue;
       }
-      if (base2 === "ER" && stress === 1) {
+      if (base === "ER" && stress === 1) {
         out.push(["\u025C\u02D0", stress]);
         continue;
       }
-      if (base2 === "AH" && stress === 0) {
+      if (base === "AH" && stress === 0) {
         out.push(["\u0259", stress]);
         continue;
       }
-      if (ARPA2IPA[base2]) out.push([ARPA2IPA[base2], stress]);
+      if (ARPA2IPA[base]) out.push([ARPA2IPA[base], stress]);
     }
     return out;
   }
@@ -7924,23 +7924,15 @@ var heapNow = () => {
 };
 var baseHeap;
 var memNow = () => ({ wasm: heapNow(), cache: speech.used, base: baseHeap });
-var base = new URL("../dev-assets/", import.meta.url);
-var u = (p) => new URL(p, base).href;
-async function bytes(p) {
-  const r = await fetch(u(p));
-  if (!r.ok) throw new Error(`${p}: HTTP ${r.status}\uFF08\u5148\u8DD1 scripts/link-dev-assets.sh\uFF1F\uFF09`);
-  return new Uint8Array(await r.arrayBuffer());
-}
-var json = async (p) => JSON.parse(new TextDecoder().decode(await bytes(p)));
 var WORLD = new URL("../vendor/world/", import.meta.url);
 var bases = ["https://fangzhangmnm.github.io/pwa-models"];
 var store = createPackStore({ packs: PACKS });
 async function ensurePacks(slugs, what, say) {
   if ((await store.status(slugs)).every((s) => s.ready)) return;
   let last = null;
-  for (const base2 of bases) {
+  for (const base of bases) {
     try {
-      await store.download(slugs, base2, (p) => say(`\u4E0B\u8F7D${what}\uFF08${(p.total / 1e6).toFixed(0)} MB\uFF0C\u53EA\u4E0B\u8FD9\u4E00\u6B21\uFF09${Math.floor(p.done / p.total * 100)}%`));
+      await store.download(slugs, base, (p) => say(`\u4E0B\u8F7D${what}\uFF08${(p.total / 1e6).toFixed(0)} MB\uFF0C\u53EA\u4E0B\u8FD9\u4E00\u6B21\uFF09${Math.floor(p.done / p.total * 100)}%`));
       return;
     } catch (e) {
       last = e;
@@ -7969,7 +7961,7 @@ var speechStore = () => storeP ??= (diskBudget <= 0 ? Promise.resolve(null) : op
   st?.setBudget(diskBudget);
   return st;
 }).catch(() => null);
-var hex16 = async (bytes2) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes2))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
+var hex16 = async (bytes) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
 var bootMs = {};
 async function loadEngine(say) {
   const V = SINGER.voice, JA = SINGER.lang.ja;
@@ -8056,14 +8048,8 @@ async function loadEngine(say) {
   if (store2) speech.attachStore(store2, `${PACKS[V].packId.slice(0, 16)}:${PACKS[SINGER.runtime].packId.slice(0, 16)}:w${await hex16(worldBytes)}:v${SPEECH_FORMAT}`);
   const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: worldBytes })));
   lap("world");
-  const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
-  const loadAtlas = hasAtlas ? async (id) => {
-    const meta = await json(`atlas/${id}.json`);
-    const raw = await bytes(`atlas/${id}.f32`);
-    return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) };
-  } : null;
   baseHeap = heapNow();
-  return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
+  return { piper, world, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
 }
 var cancelled = /* @__PURE__ */ new Set();
 self.onmessage = async (ev) => {
@@ -8145,7 +8131,7 @@ self.onmessage = async (ev) => {
     if (q2.lang === "en") await e.ensureEn(say);
     const t1 = performance.now();
     say("\u5C0F\u6708\u76F8\u5728\u5531");
-    const atlas = q2.atlas ?? "off", breath = q2.breath ?? atlas !== "off";
+    const breath = q2.breath ?? false;
     const preset = e.presetDefault[q2.lang] ?? 0;
     let runs = 0;
     const piper = { ...e.piper, run: async (ids, pros, o) => {
@@ -8162,7 +8148,7 @@ self.onmessage = async (ev) => {
       return e.world.synth(a);
     } };
     check();
-    const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas, breath, preset, piper, world, loadAtlas: e.loadAtlas, opt: q2.opt ?? {}, only: q2.only ?? null });
+    const r = await singCore({ score: q2.score, text: q2.text, tempo: q2.tempo, lang: q2.lang, atlas: "off", breath, preset, piper, world, loadAtlas: null, opt: q2.opt ?? {}, only: q2.only ?? null });
     check();
     const samples = q2.raw || q2.only ? Float32Array.from(r.y) : r.sung;
     post({ type: "done", id: q2.id, samples, sr: r.SR, mem: memNow(), ms: { load: t1 - t0, sing: performance.now() - t1, ...Object.keys(bootMs).length ? { boot: bootMs } : {} } }, [samples.buffer]);
@@ -8182,4 +8168,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-5a2668549143.mjs.map
+//# sourceMappingURL=singer-worker-f04524257af3.mjs.map

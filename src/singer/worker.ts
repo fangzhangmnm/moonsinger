@@ -6,7 +6,7 @@
 //   同域名的 JustReadBooks 也用同一份（user「然后最好jrb和moonsinger只用存一份」）。模型源 = 家族模型仓的 GitHub Pages。
 // JS 胶水（2026-10-07 起，user「毕业差的东西做」）：日 / 中 / 英前端、encode、onnxruntime-web 与 OpenJTalk 的胶水 = 朗读库的底层出口
 //   `@internal/read-aloud/backend/piper-plus/*`（0.1.22；前端与 ort 胶水和检疫桶那份逐字节相同，ojt 胶水是同一份 C 的纯浏览器构建），打进本 worker；
-//   WORLD = 自己编的 WASM，vendored 在 `vendor/world/`。`dev-assets/` 只剩开发期的元音图谱实验（默认关，出货没有）。
+//   WORLD = 自己编的 WASM，vendored 在 `vendor/world/`。元音图谱那条开发期实验路（只靠兄弟私有仓的软链才通）2026-10-14 删了：公开仓不许依赖私有仓（反弃坑红线）；要再做就走模型包。
 // piper.run 的喂法照抄 third-party/piper-plus/dur-override-exp/piper-node.mjs 的 run()（逐符号相同的输入 = 浏览器 == Node 的前提）。
 
 import { singCore, readingCore } from "./sing-core.mjs";
@@ -18,7 +18,7 @@ import type { SingLang } from "../score/lab-score.ts";
 import { createPackStore } from "@internal/model-packs";
 import { PACKS, SINGER } from "./packs.gen.ts";
 
-export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: SingLang; opt?: Record<string, unknown>; atlas?: string; breath?: boolean;
+export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: SingLang; opt?: Record<string, unknown>; breath?: boolean;
   /** true = 回 WORLD 的原样输出（不归一化、不补尾巴）：分段唱时宿主自己拼、整首最后归一化一次（2026-10-08 深夜）。 */
   raw?: boolean;
   /** 模型源，按顺序试（宿主给：同源 pwa-models/ → 设置里的来源）。不给 = 出厂默认。 */
@@ -72,13 +72,6 @@ const heapNow = () => { let n = 0; for (const m of wasmMems) n += m.buffer.byteL
 let baseHeap: number | undefined;
 const memNow = () => ({ wasm: heapNow(), cache: speech.used, base: baseHeap });
 
-const base = new URL("../dev-assets/", import.meta.url);   // 开发期：元音图谱（默认关）
-const u = (p: string) => new URL(p, base).href;
-async function bytes(p: string): Promise<Uint8Array> {
-  const r = await fetch(u(p)); if (!r.ok) throw new Error(`${p}: HTTP ${r.status}（先跑 scripts/link-dev-assets.sh？）`);
-  return new Uint8Array(await r.arrayBuffer());
-}
-const json = async (p: string) => JSON.parse(new TextDecoder().decode(await bytes(p)));
 const WORLD = new URL("../vendor/world/", import.meta.url);   // 相对 dist/singer-worker.mjs
 
 // ── 模型包 ──
@@ -107,7 +100,7 @@ async function packFile(slug: string, path: string): Promise<Uint8Array> {
 const packJson = async (slug: string, path: string) => JSON.parse(new TextDecoder().decode(await packFile(slug, path)));
 const SR = 22050, HOP = 256;
 
-interface Engine { piper: any; world: any; loadAtlas: ((id: string) => Promise<any>) | null; hasAtlas: boolean; ensureZh: (say: (s: string) => void) => Promise<void>; ensureEn: (say: (s: string) => void) => Promise<void>; zhReady: () => boolean; presetDefault: Record<string, number> }
+interface Engine { piper: any; world: any; ensureZh: (say: (s: string) => void) => Promise<void>; ensureEn: (say: (s: string) => void) => Promise<void>; zhReady: () => boolean; presetDefault: Record<string, number> }
 let engine: Promise<Engine> | null = null;
 /** 「念」缓存（两遍 piper + WORLD 分析，只依赖歌词 / 语言 / 哼的参数；刀 2）：命中时只剩按谱重建 + 合成。预算宿主可改（cacheBytes）。 */
 const speech = new SpeechCache(32e6);
@@ -180,11 +173,8 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   if (store) speech.attachStore(store, `${PACKS[V].packId.slice(0, 16)}:${PACKS[SINGER.runtime].packId.slice(0, 16)}:w${await hex16(worldBytes)}:v${SPEECH_FORMAT}`);
   const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: worldBytes })));   // 「念」缓存：分析按它来自哪段 piper 输出记
   lap("world");
-  const hasAtlas = (await fetch(u("atlas/atlas.json"), { method: "HEAD" })).ok;
-  const loadAtlas = hasAtlas ? async (id: string) => { const meta = await json(`atlas/${id}.json`); const raw = await bytes(`atlas/${id}.f32`);
-    return { ...meta, data: new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength >> 2) }; } : null;
   baseHeap = heapNow();
-  return { piper, world, loadAtlas, hasAtlas, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
+  return { piper, world, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
 }
 
 const cancelled = new Set<number>();
@@ -225,8 +215,8 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
     if (q.lang === "en") await e.ensureEn(say);
     const t1 = performance.now();
     say("小月相在唱");
-    // 元音图谱默认关（user 2026-10-06「元音图谱一般般，先不做」）；断气随图谱（和 Lab 命令行的规则一样）。要试图谱就传 atlas: "normal"。
-    const atlas = q.atlas ?? "off", breath = q.breath ?? atlas !== "off";
+    // 元音图谱：关（user 2026-10-06「元音图谱一般般，先不做」；它那条开发期的路 2026-10-14 删了）；断气默认关（原来随图谱）
+    const breath = q.breath ?? false;
     const preset = e.presetDefault[q.lang] ?? 0;   // 模型配置的 preset_default（中 3、英 9；日语没写 = 0 = 原版），同 Lab piper-node.mjs
     // 这一句自己的 piper / WORLD 视图：段与段之间报进度、认取消（sing-core 一行不动）
     let runs = 0;
@@ -234,7 +224,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
     const names: Record<string, string> = { f0: "分析（1/3 音高）", sp: "分析（2/3 谱包络）", ap: "分析（3/3 气声）", cached: "分析（缓存）" };
     const world = { ...e.world, analyze: (x: ArrayLike<number>, fs: number, o?: Record<string, unknown>) => e.world.analyze(x, fs, o, { stage: (n: string) => say(names[n] ?? n), check }), synth: (a: unknown) => { check(); say("合成"); return e.world.synth(a); } };
     check();   // W-37（2026-10-13）：开唱前认一次取消——拍数对不上这类检查在第一次 piper.run 之前就抛，等到检查点才认 = 一句已经取消的请求回去的是「32 sung syllables…」不是 cancelled
-    const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas, breath, preset, piper, world, loadAtlas: e.loadAtlas, opt: q.opt ?? {}, only: q.only ?? null });
+    const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas: "off", breath, preset, piper, world, loadAtlas: null, opt: q.opt ?? {}, only: q.only ?? null });
     check();
     const samples: Float32Array = q.raw || q.only ? Float32Array.from(r.y as ArrayLike<number>) : r.sung;
     post({ type: "done", id: q.id, samples, sr: r.SR, mem: memNow(), ms: { load: t1 - t0, sing: performance.now() - t1, ...(Object.keys(bootMs).length ? { boot: bootMs } : {}) } }, [samples.buffer]); bootMs = {};

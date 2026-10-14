@@ -11,7 +11,7 @@ import { wrapWorld } from "../src/singer/world-wrap.mjs";
 
 const ROUNDS = Number((process.argv.find((a) => a.startsWith("--rounds=")) || "--rounds=2").slice(9));
 const HOME = os.homedir(), TP = path.join(HOME, "jupyter/third-party");
-const LAB = path.resolve(import.meta.dirname, "../../20260810 写歌实验室/Lab/20261005 月读第一首");
+const LAB = (process.argv.find((a) => a.startsWith("--lab=")) || "").slice(6);   // 可选：兄弟私有仓 Lab/20261005 月读第一首 的目录（多跑一首団子）；默认只跑本仓冻的 うさぎ（公开仓不依赖私有仓）
 const now = () => performance.now();
 const med = (a) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 const f = (x, d = 0) => (Number.isFinite(x) ? x.toFixed(d) : "-");
@@ -30,11 +30,9 @@ const W = {
   analyze: (x, fs_, o) => { const t = now(); const r = W0.analyze(x, fs_, o); timed.analyze.push({ ms: now() - t, frames: r.frames, bins: r.bins, secs: x.length / fs_ }); lastAn = r; return r; },
   synth: (a) => { const t = now(); const y = W0.synth(a); timed.synth.push({ ms: now() - t, frames: a.f0.length }); return y; },
 };
-const songs = {};
-for (const [name, file] of [["うさぎ", "score.mjs"], ["団子", "score-dango.mjs"]]) {
-  const m = await import(pathToFileURL(path.join(LAB, file)).href);
-  songs[name] = { SCORE: m.SCORE, TEMPO: m.TEMPO_QUARTER };
-}
+const FIX = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../test/fixtures/usagi-lab-score.json"), "utf8"));
+const songs = { "うさぎ": { SCORE: FIX.SCORE, TEMPO: FIX.TEMPO_QUARTER } };
+if (LAB) { const m = await import(pathToFileURL(path.join(LAB, "score-dango.mjs")).href); songs["団子"] = { SCORE: m.SCORE, TEMPO: m.TEMPO_QUARTER }; }
 /** Lab 乐谱按休止切成句（和编辑器 singChunks 的「≥0.25 s 休止」同一个意思；这里按条目上的 rest 切）。TEXT = 假名直接拼。 */
 function phrasesOf(SCORE) {
   const out = []; let cur = [];

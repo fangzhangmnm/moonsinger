@@ -1,6 +1,6 @@
-// 验收预演：用键盘把《うさぎ》整首打进去 + 贴歌词 → 转成 Lab 乐谱结构 → 与 Lab/20261005 月读第一首/score.mjs 逐音相同。
+// 验收预演：用键盘把《うさぎ》整首打进去 + 贴歌词 → 转成 Lab 乐谱结构 → 与冻结的 Lab 乐谱（test/fixtures/usagi-lab-score.json）逐音相同。
 // created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改成新打法：默认八分，四分 = 八分 + 「−」，十六分 = 「短」再「长」回来，二分 = 八分 + 三个「−」
-import { describe, it, eq, todo } from "./runner.mjs";
+import { describe, it, eq } from "./runner.mjs";
 import { initState, emptySong, tr } from "../src/score/song.ts";
 import { route } from "../src/input/keys.ts";
 import { apply } from "../src/score/commands.ts";
@@ -17,21 +17,18 @@ function press(st: ReturnType<typeof initState>, keys: string) {
   return st;
 }
 
-// Lab 乐谱在兄弟仓「写歌实验室」里（2026-10-07 分家）；单独 clone 本仓时没有它，这条记成 todo。
-const LAB_SCORE = new URL("../../20260810 写歌实验室/Lab/20261005 月读第一首/score.mjs", import.meta.url);
+// 对照 = 冻在本仓的 Lab 乐谱 test/fixtures/usagi-lab-score.json（2026-10-14 从兄弟私有仓的 score.mjs 冻的）：公开仓的测试不依赖私有仓、不静默跳过（反弃坑红线；原来私有仓不在旁边就 todo）。
 const fs = await import("node:fs" as string);
-const haveLab: boolean = fs.existsSync(LAB_SCORE);
+const lab = JSON.parse(fs.readFileSync(new URL("./fixtures/usagi-lab-score.json", import.meta.url), "utf8")) as { SCORE: unknown[]; TEXT: string; TEMPO_QUARTER: number };
 
 describe("うさぎ（验收预演）", () => {
-  if (!haveLab) { todo("键盘打完 + 贴歌词 == Lab score.mjs（写歌实验室仓不在旁边，跳过）"); return; }
-  it("键盘打完 + 贴歌词 == Lab score.mjs", async () => {
+  it("键盘打完 + 贴歌词 == 冻结的 Lab score（fixture）", () => {
     let st = initState(emptySong({ fifths: 0, beats: 2, beatType: 4, bpm: 72 }));
     st = press(st, `
       4-46 | 7670 | 4446 | 7670 |
       6711 | 78669 43 | 643- | 432- | 3---`);
     st = applyLyricLine(st, "うさぎうさぎ、なにみてはねる、じゅうごやおつきさま、みてはーーねる");
     const ours = toLabScore(tr(st), st.song.hum, "ja");
-    const lab = await import(LAB_SCORE.href);
     eq(JSON.stringify(ours.SCORE), JSON.stringify(lab.SCORE), "SCORE");
     eq(ours.TEXT, lab.TEXT, "TEXT");
     eq(ours.TEMPO_QUARTER, lab.TEMPO_QUARTER, "TEMPO");
