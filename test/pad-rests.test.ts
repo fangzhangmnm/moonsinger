@@ -60,7 +60,7 @@ describe("点空小节写到那里（lead）", () => {
   it("排版：lead 的落点就是那个小节的开头（光标画在落点上 = score-view 的事，排版不认光标；W-17 第 1 刀）", () => {
     const st = setCaretLead(two(12, 1), 7 * TPQ), L = lay(st), s3 = L.slots.find((s) => s.lead === 7 * TPQ)!, s2 = L.slots.find((s) => s.lead === 3 * TPQ)!;
     assert(!!s3 && !!s2 && s3.x > s2.x + 15, `第 3 小节开头的落点 ${s3?.x} 在第 2 小节开头 ${s2?.x} 右边`);
-    eq(typeof s3.shift, "number");
+    const h3 = L.heads.find((h) => h.lead === 7 * TPQ)!; assert(!!h3 && Math.abs(h3.x - s3.x) < 1e-6, "写字头画在那个落点上"); eq(typeof h3.shift, "number");
     eq(JSON.stringify(L.slots), JSON.stringify(lay(two(12, 1)).slots), "有没有 lead，落点一样（lead 不进排版）");
   });
 });

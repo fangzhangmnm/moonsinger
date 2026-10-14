@@ -23,9 +23,12 @@ describe("排版不认光标（W-17 第 1 刀）", () => {
     const st = song(12), L = lay(st);
     for (const p of L.prims) { const c = p.cls ?? ""; assert(!/\b(caret|selbox|cur|sel|hot|in-span)\b/.test(c), `不该有：${c}`); }
   });
-  it("落点带 shift（光标那里的谱号 / 八度线位移）；每个 caret 位置都有落点", () => {
+  it("写字头画在哪（heads）：每个 caret 位置都有一条、带 shift；光标停在小节线前 = 画在小节线后面的那个音那儿（老规矩）", () => {
     const st = song(12), L = lay(st), n = tr(st).length;
-    for (let c = 3; c <= n; c++) { const s = L.slots.find((x) => x.caret === c && !x.end && x.lead === undefined); assert(s, `caret ${c} 有落点`); eq(typeof s!.shift, "number"); }
+    for (let c = 3; c <= n; c++) { const h = L.heads.find((x) => x.caret === c && !x.end && x.lead === undefined); assert(h, `caret ${c} 有写字头位置`); eq(typeof h!.shift, "number"); }
+    // 4/4 里 12 个四分音符 = 3 个整小节；自动小节线不是 token，所以每个 caret 都落在下一个音的 x 上
+    const notes = L.notes, byIdx = new Map(notes.map((x) => [x.index, x]));
+    for (let c = 3; c < n; c++) { const h = L.heads.find((x) => x.caret === c && !x.end && x.lead === undefined)!, nx = byIdx.get(c)!; eq(h.system, nx.system, `caret ${c} 和音同一行`); assert(Math.abs(h.x - nx.x) < 1e-6, `caret ${c} x = 音的 x`); }
   });
   it("tailOpen：写字头在尾巴后面 = 最后一行五线画到右边；别的一样", () => {
     const st = song(40), a = lay(st, false), b = lay(st, true);

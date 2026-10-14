@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.15-2026-10-15";
+var APP_VERSION = "v0.12.16-2026-10-15";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7877,7 +7877,7 @@ function engrave(song, o10) {
   const bars = [];
   const chordHeads = [];
   const sharedRows = [], virtualOut = {}, measures = [], families = [];
-  const rows = [], notes = [], slots = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
+  const rows = [], notes = [], slots = [], heads = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
   const partsHit = [], papersHit = [];
   let shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
@@ -8998,10 +8998,43 @@ function engrave(song, o10) {
         const u2 = c10 < tokens.length ? firstUnitOf.get(c10) : void 0;
         const last = u2 ? null : [...units].reverse().find((v) => v.kind !== "head");
         const sys = u2 ? u2.system : last ? last.system : 0, x3 = u2 ? P2(u2.x) : last ? P2(last.x + last.w) : P2(sysStarts[0]);
-        const kk = Math.min(c10, realLen) - 1, si2 = kk >= H2 ? kk : -1;
-        for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: c10, system: rowOf(sys, r10, k2), x: x3, shift: shAt(q2, k2 + 1, si2) });
+        for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: c10, system: rowOf(sys, r10, k2), x: x3 });
       }
-      for (const u2 of units) if (u2.kind === "chunk" && u2.pad && u2.inBar < 1e-6 && u2.tick - q2.realTicks > 1e-6) for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: realLen, system: rowOf(u2.system, r10, k2), x: P2(u2.x), shift: shAt(q2, k2 + 1, realLen - 1 >= H2 ? realLen - 1 : -1), lead: u2.tick - q2.realTicks });
+      const shiftAt2 = (c10) => {
+        const kk = Math.min(c10, realLen) - 1, si2 = kk >= H2 ? kk : -1;
+        return Array.from({ length: q2.staves }, (_2, k2) => shAt(q2, k2 + 1, si2));
+      };
+      for (let c10 = H2; c10 <= realLen; c10++) {
+        const u0 = c10 < tokens.length ? firstUnitOf.get(c10) : void 0;
+        let sys, x3;
+        if (!u0) {
+          const last = [...units].reverse().find((v) => v.kind !== "head");
+          sys = last ? last.system : 0;
+          x3 = last ? P2(last.x + last.w) : P2(sysStarts[0]);
+        } else if (u0.kind === "chunk") {
+          sys = u0.system;
+          x3 = P2(u0.x);
+        } else {
+          const T2 = u0.tick, ch2 = units.find((v) => v.kind === "chunk" && v.index >= c10 && Math.abs(v.tick - T2) < 1e-6);
+          if (ch2) {
+            sys = ch2.system;
+            x3 = P2(ch2.x);
+          } else {
+            const same = units.filter((v) => v.kind !== "head" && v.index >= c10 && Math.abs(v.tick - T2) < 1e-6), lastT = same[same.length - 1] ?? u0;
+            sys = lastT.system;
+            x3 = P2(lastT.x + lastT.w);
+          }
+        }
+        const sh2 = shiftAt2(c10);
+        for (let k2 = 0; k2 < q2.staves; k2++) heads.push({ caret: c10, system: rowOf(sys, r10, k2), x: x3, shift: sh2[k2] });
+      }
+      for (const u2 of units) if (u2.kind === "chunk" && u2.pad && u2.inBar < 1e-6 && u2.tick - q2.realTicks > 1e-6) {
+        const sh2 = shiftAt2(realLen);
+        for (let k2 = 0; k2 < q2.staves; k2++) {
+          slots.push({ caret: realLen, system: rowOf(u2.system, r10, k2), x: P2(u2.x), lead: u2.tick - q2.realTicks });
+          heads.push({ caret: realLen, system: rowOf(u2.system, r10, k2), x: P2(u2.x), shift: sh2[k2], lead: u2.tick - q2.realTicks });
+        }
+      }
       let lastSys = -1;
       for (let c10 = H2; c10 < Math.min(tokens.length, realLen + 1); c10++) {
         const u2 = firstUnitOf.get(c10);
@@ -9012,8 +9045,11 @@ function engrave(song, o10) {
         const prevRow = cols.filter((cc2) => cc2.system === u2.system - 1);
         if (!prevRow.length) continue;
         const x3 = P2(Math.max(...prevRow.map((cc2) => cc2.x + cc2.w)));
-        const kk = Math.min(c10, realLen) - 1, si2 = kk >= H2 ? kk : -1;
-        for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: c10, system: rowOf(u2.system - 1, r10, k2), x: x3, shift: shAt(q2, k2 + 1, si2), end: true });
+        const sh2 = shiftAt2(c10);
+        for (let k2 = 0; k2 < q2.staves; k2++) {
+          slots.push({ caret: c10, system: rowOf(u2.system - 1, r10, k2), x: x3, end: true });
+          heads.push({ caret: c10, system: rowOf(u2.system - 1, r10, k2), x: x3, shift: sh2[k2], end: true });
+        }
       }
     });
     stubs();
@@ -9031,7 +9067,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P2(PG.h) : yCur + P2(MX.b);
-  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -10664,7 +10700,7 @@ var ScoreView = class {
       const r10 = L2.systems[s10.system];
       return !!r10 && r10.paper === st3.at.paper && r10.part === st3.at.part;
     };
-    const want = st3.lead ? L2.slots.filter((s10) => mine(s10) && s10.lead === st3.lead) : this.caretEnd === caretKey(st3) ? L2.slots.filter((s10) => mine(s10) && !!s10.end && s10.caret === st3.caret) : L2.slots.filter((s10) => mine(s10) && !s10.end && s10.lead === void 0 && s10.caret === st3.caret);
+    const want = st3.lead ? L2.heads.filter((s10) => mine(s10) && s10.lead === st3.lead) : this.caretEnd === caretKey(st3) ? L2.heads.filter((s10) => mine(s10) && !!s10.end && s10.caret === st3.caret) : L2.heads.filter((s10) => mine(s10) && !s10.end && s10.lead === void 0 && s10.caret === st3.caret);
     if (!want.length) return null;
     let pick = want[0];
     if (want.length > 1) {
@@ -21544,10 +21580,10 @@ var Singer = class {
     }
   }
   /** 只把引擎起起来（打开歌就起；user 10-10「冷启动做」）：第一条道。别的道第一次用到才起（起在并行里，不另花等待）。失败不抛（第一次真唱会再报）。 */
-  warm(models, diskBytes) {
+  warm(models2, diskBytes) {
     const l10 = this.lanes[0];
     return l10.warming ??= new Promise((ok2) => {
-      const id2 = ++this.seq, req = { type: "warm", id: id2, models, diskBytes };
+      const id2 = ++this.seq, req = { type: "warm", id: id2, models: models2, diskBytes };
       this.pending.set(id2, { ok: () => ok2(), fail: () => ok2(), progress: () => {
       }, lane: l10 });
       this.worker(l10).postMessage(req);
@@ -22174,6 +22210,406 @@ var SOUNDS = {
     "notes": "\u5B57\u8282 = \u4E0A\u6E38\u4ED3\u539F\u6837\uFF08\u6587\u4EF6\u5185 INAM \u5199\u7684\u662F\u300C2.0.3 BETA\u300D\uFF0C2.0.3 \u6B63\u5F0F\u7248\u91CC\u5C31\u662F\u8FD9\u4E2A\u5B57\u4E32\uFF09\u3002\u6B8B\u4F59\u98CE\u9669\u6309\u4F5C\u8005\u539F\u8BDD\uFF1A\u90E8\u5206\u91C7\u6837\u6765\u6E90\u4ED6\u4E0D\u80FD 100% \u786E\u5B9A\uFF0C2000 \u5E74\u81F3\u4ECA\u6CA1\u4EBA\u6295\u8BC9\u3002"
   }
 };
+
+// src/gm/sound-cache.ts
+var CACHE = "pwa-sounds";
+var keyOf = (sha256) => `${location.origin}/__pwa-sounds__/${sha256}`;
+var MEM_MAX = 2;
+var memory = /* @__PURE__ */ new Map();
+var hasCaches = () => typeof caches !== "undefined";
+var sha256Hex = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+function rememberInMemory(sha256, bytes) {
+  memory.delete(sha256);
+  memory.set(sha256, bytes);
+  while (memory.size > MEM_MAX) memory.delete(memory.keys().next().value);
+}
+async function cachedSound(sha256) {
+  const m2 = memory.get(sha256);
+  if (m2) {
+    rememberInMemory(sha256, m2);
+    return m2;
+  }
+  if (!hasCaches()) return null;
+  try {
+    const c10 = await caches.open(CACHE), r10 = await c10.match(keyOf(sha256));
+    if (!r10) return null;
+    const bytes = new Uint8Array(await r10.arrayBuffer());
+    if (await sha256Hex(bytes) !== sha256) {
+      await c10.delete(keyOf(sha256));
+      return null;
+    }
+    rememberInMemory(sha256, bytes);
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+async function rememberSound(sha256, bytes, persist) {
+  rememberInMemory(sha256, bytes);
+  if (!persist || !hasCaches()) return;
+  try {
+    const c10 = await caches.open(CACHE);
+    await c10.put(keyOf(sha256), new Response(bytes, { headers: { "Content-Type": "application/octet-stream", "Content-Length": String(bytes.length) } }));
+  } catch {
+  }
+}
+async function listCachedSounds() {
+  if (!hasCaches()) return [];
+  try {
+    const c10 = await caches.open(CACHE), keys = await c10.keys(), out = [];
+    for (const k2 of keys) {
+      const sha256 = k2.url.slice(k2.url.lastIndexOf("/") + 1), r10 = await c10.match(k2);
+      out.push({ sha256, bytes: Number(r10?.headers.get("Content-Length") ?? 0) });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+async function isSoundPersisted(sha256) {
+  if (!hasCaches()) return false;
+  try {
+    return !!await (await caches.open(CACHE)).match(keyOf(sha256));
+  } catch {
+    return false;
+  }
+}
+async function forgetSound(sha256) {
+  memory.delete(sha256);
+  if (!hasCaches()) return;
+  try {
+    await (await caches.open(CACHE)).delete(keyOf(sha256));
+  } catch {
+  }
+}
+function releaseSoundMemory() {
+  memory.clear();
+}
+function soundMemoryBytes() {
+  let n10 = 0;
+  for (const b3 of memory.values()) n10 += b3.length;
+  return n10;
+}
+async function siteStorageEstimate() {
+  try {
+    const est = await navigator.storage?.estimate?.();
+    return est?.usage !== void 0 && est.quota ? { usage: est.usage, quota: est.quota } : null;
+  } catch {
+    return null;
+  }
+}
+
+// src/gm/sf2-subset.ts
+var REC = { phdr: 38, pbag: 4, pmod: 10, pgen: 4, inst: 22, ibag: 4, imod: 10, igen: 4, shdr: 46 };
+var GEN_INSTRUMENT = 41;
+var GEN_SAMPLE_ID = 53;
+var ZERO_TAIL = 46;
+var tag = (b3, o10) => String.fromCharCode(b3[o10], b3[o10 + 1], b3[o10 + 2], b3[o10 + 3]);
+var plain = (b3) => b3.constructor === Uint8Array ? b3 : new Uint8Array(b3.buffer, b3.byteOffset, b3.byteLength);
+function parse(b3) {
+  const dv = new DataView(b3.buffer, b3.byteOffset, b3.byteLength);
+  if (tag(b3, 0) !== "RIFF" || tag(b3, 8) !== "sfbk") throw new Error("sf2: not a SoundFont 2 file");
+  let info2 = null, smpl = null;
+  const pdta = {};
+  let o10 = 12;
+  while (o10 + 8 <= b3.length) {
+    const id2 = tag(b3, o10), size = dv.getUint32(o10 + 4, true), data = o10 + 8;
+    if (id2 === "LIST") {
+      const kind = tag(b3, data);
+      if (kind === "INFO") info2 = b3.subarray(o10, data + size);
+      else {
+        let p2 = data + 4;
+        while (p2 + 8 <= data + size) {
+          const sid = tag(b3, p2), ssize = dv.getUint32(p2 + 4, true);
+          if (kind === "sdta" && sid === "smpl") smpl = { off: p2 + 8, size: ssize };
+          if (kind === "pdta" && sid in REC) pdta[sid] = { off: p2 + 8, size: ssize };
+          p2 += 8 + ssize + (ssize & 1);
+        }
+      }
+    }
+    o10 = data + size + (size & 1);
+  }
+  if (!info2 || !smpl) throw new Error("sf2: missing INFO or sample data");
+  for (const k2 of Object.keys(REC)) if (!pdta[k2]) throw new Error(`sf2: missing ${k2}`);
+  return { info: info2, smpl, pdta };
+}
+var nameOf = (b3, o10) => {
+  let s10 = "";
+  for (let i10 = 0; i10 < 20 && b3[o10 + i10]; i10++) s10 += String.fromCharCode(b3[o10 + i10]);
+  return s10;
+};
+function listSf2Presets(input) {
+  const bytes = plain(input);
+  const { pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const n10 = pdta.phdr.size / REC.phdr - 1, out = [];
+  for (let i10 = 0; i10 < n10; i10++) {
+    const o10 = pdta.phdr.off + i10 * REC.phdr;
+    out.push({ name: nameOf(bytes, o10), program: dv.getUint16(o10 + 20, true), bank: dv.getUint16(o10 + 22, true) });
+  }
+  return out;
+}
+function subsetSf2(input, want) {
+  const bytes = plain(input);
+  const { info: info2, smpl, pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const count = (k2) => pdta[k2].size / REC[k2];
+  const at2 = (k2, i10) => pdta[k2].off + i10 * REC[k2];
+  const u163 = (k2, i10, field) => dv.getUint16(at2(k2, i10) + field, true);
+  const nP2 = count("phdr") - 1;
+  const wantKey = new Set(want.map((w2) => `${w2.bank}:${w2.program}`));
+  const presets = [];
+  for (let i10 = 0; i10 < nP2; i10++) if (wantKey.has(`${u163("phdr", i10, 22)}:${u163("phdr", i10, 20)}`)) presets.push(i10);
+  const found = new Set(presets.map((i10) => `${u163("phdr", i10, 22)}:${u163("phdr", i10, 20)}`));
+  const missing = [...wantKey].filter((k2) => !found.has(k2));
+  if (missing.length) throw new Error(`sf2: presets not in this bank: ${missing.join(", ")}`);
+  const instSet = /* @__PURE__ */ new Set();
+  for (const i10 of presets) for (let b3 = u163("phdr", i10, 24); b3 < u163("phdr", i10 + 1, 24); b3++)
+    for (let g3 = u163("pbag", b3, 0); g3 < u163("pbag", b3 + 1, 0); g3++) if (u163("pgen", g3, 0) === GEN_INSTRUMENT) instSet.add(u163("pgen", g3, 2));
+  const insts = [...instSet].sort((a10, b3) => a10 - b3), instMap = new Map(insts.map((v, i10) => [v, i10]));
+  const nS2 = count("shdr") - 1, sampleSet = /* @__PURE__ */ new Set();
+  for (const j2 of insts) for (let b3 = u163("inst", j2, 20); b3 < u163("inst", j2 + 1, 20); b3++)
+    for (let g3 = u163("ibag", b3, 0); g3 < u163("ibag", b3 + 1, 0); g3++) if (u163("igen", g3, 0) === GEN_SAMPLE_ID) sampleSet.add(u163("igen", g3, 2));
+  for (const s10 of [...sampleSet]) {
+    const type = u163("shdr", s10, 44), link = u163("shdr", s10, 42);
+    if (type & 14 && link < nS2) sampleSet.add(link);
+  }
+  const samples = [...sampleSet].sort((a10, b3) => a10 - b3), sampleMap = new Map(samples.map((v, i10) => [v, i10]));
+  const out = { phdr: [], pbag: [], pmod: [], pgen: [], inst: [], ibag: [], imod: [], igen: [], shdr: [] };
+  const copy = (k2, i10, patch) => {
+    const rec = bytes.slice(at2(k2, i10), at2(k2, i10) + REC[k2]);
+    patch?.(rec);
+    out[k2].push(...rec);
+  };
+  const w16 = (rec, o10, v) => {
+    rec[o10] = v & 255;
+    rec[o10 + 1] = v >> 8 & 255;
+  };
+  const w32 = (rec, o10, v) => {
+    w16(rec, o10, v & 65535);
+    w16(rec, o10 + 2, v >>> 16 & 65535);
+  };
+  let nBag = 0, nGen = 0, nMod = 0;
+  for (const i10 of presets) {
+    copy("phdr", i10, (r10) => w16(r10, 24, nBag));
+    for (let b3 = u163("phdr", i10, 24); b3 < u163("phdr", i10 + 1, 24); b3++) {
+      copy("pbag", b3, (r10) => {
+        w16(r10, 0, nGen);
+        w16(r10, 2, nMod);
+      });
+      nBag++;
+      for (let g3 = u163("pbag", b3, 0); g3 < u163("pbag", b3 + 1, 0); g3++) {
+        copy("pgen", g3, (r10) => {
+          if (u163("pgen", g3, 0) === GEN_INSTRUMENT) w16(r10, 2, instMap.get(u163("pgen", g3, 2)));
+        });
+        nGen++;
+      }
+      for (let m2 = u163("pbag", b3, 2); m2 < u163("pbag", b3 + 1, 2); m2++) {
+        copy("pmod", m2);
+        nMod++;
+      }
+    }
+  }
+  copy("phdr", nP2, (r10) => w16(r10, 24, nBag));
+  out.pbag.push(...new Uint8Array(REC.pbag));
+  const pb = out.pbag.length - REC.pbag;
+  out.pbag[pb] = nGen & 255;
+  out.pbag[pb + 1] = nGen >> 8;
+  out.pbag[pb + 2] = nMod & 255;
+  out.pbag[pb + 3] = nMod >> 8;
+  out.pgen.push(...new Uint8Array(REC.pgen));
+  out.pmod.push(...new Uint8Array(REC.pmod));
+  nBag = 0;
+  nGen = 0;
+  nMod = 0;
+  for (const j2 of insts) {
+    copy("inst", j2, (r10) => w16(r10, 20, nBag));
+    for (let b3 = u163("inst", j2, 20); b3 < u163("inst", j2 + 1, 20); b3++) {
+      copy("ibag", b3, (r10) => {
+        w16(r10, 0, nGen);
+        w16(r10, 2, nMod);
+      });
+      nBag++;
+      for (let g3 = u163("ibag", b3, 0); g3 < u163("ibag", b3 + 1, 0); g3++) {
+        copy("igen", g3, (r10) => {
+          if (u163("igen", g3, 0) === GEN_SAMPLE_ID) w16(r10, 2, sampleMap.get(u163("igen", g3, 2)));
+        });
+        nGen++;
+      }
+      for (let m2 = u163("ibag", b3, 2); m2 < u163("ibag", b3 + 1, 2); m2++) {
+        copy("imod", m2);
+        nMod++;
+      }
+    }
+  }
+  copy("inst", count("inst") - 1, (r10) => w16(r10, 20, nBag));
+  out.ibag.push(...new Uint8Array(REC.ibag));
+  const ib2 = out.ibag.length - REC.ibag;
+  out.ibag[ib2] = nGen & 255;
+  out.ibag[ib2 + 1] = nGen >> 8;
+  out.ibag[ib2 + 2] = nMod & 255;
+  out.ibag[ib2 + 3] = nMod >> 8;
+  out.igen.push(...new Uint8Array(REC.igen));
+  out.imod.push(...new Uint8Array(REC.imod));
+  const pieces = [];
+  let pos = 0;
+  const u322 = (k2, i10, field) => dv.getUint32(at2(k2, i10) + field, true);
+  for (const s10 of samples) {
+    const start = u322("shdr", s10, 20), end = u322("shdr", s10, 24), len = end - start;
+    copy("shdr", s10, (r10) => {
+      w32(r10, 20, pos);
+      w32(r10, 24, pos + len);
+      w32(r10, 28, pos + (u322("shdr", s10, 28) - start));
+      w32(r10, 32, pos + (u322("shdr", s10, 32) - start));
+      const link = u163("shdr", s10, 42), ns2 = sampleMap.get(link);
+      if (ns2 === void 0) {
+        w16(r10, 42, 0);
+        w16(r10, 44, 1);
+      } else w16(r10, 42, ns2);
+    });
+    pieces.push(bytes.subarray(smpl.off + start * 2, smpl.off + end * 2), new Uint8Array(ZERO_TAIL * 2));
+    pos += len + ZERO_TAIL;
+  }
+  copy("shdr", nS2);
+  const chunk = (id2, data) => {
+    const d3 = data instanceof Uint8Array ? data : Uint8Array.from(data), pad4 = d3.length & 1;
+    const r10 = new Uint8Array(8 + d3.length + pad4);
+    r10.set([...id2].map((c10) => c10.charCodeAt(0)), 0);
+    new DataView(r10.buffer).setUint32(4, d3.length, true);
+    r10.set(d3, 8);
+    return r10;
+  };
+  const list = (kind, parts) => chunk("LIST", concat([Uint8Array.from([...kind].map((c10) => c10.charCodeAt(0))), ...parts]));
+  const sdta = list("sdta", [chunk("smpl", concat(pieces))]);
+  const pdtaOut = list("pdta", Object.keys(REC).map((k2) => chunk(k2, out[k2])));
+  const body2 = concat([Uint8Array.from([..."sfbk"].map((c10) => c10.charCodeAt(0))), info2, sdta, pdtaOut]);
+  return chunk("RIFF", body2);
+}
+function concat(parts) {
+  const n10 = parts.reduce((s10, p2) => s10 + p2.length, 0), r10 = new Uint8Array(n10);
+  let o10 = 0;
+  for (const p2 of parts) {
+    r10.set(p2, o10);
+    o10 += p2.length;
+  }
+  return r10;
+}
+function sf2Info(input) {
+  const bytes = plain(input), { info: info2 } = parse(bytes), dv = new DataView(info2.buffer, info2.byteOffset, info2.byteLength);
+  const out = {}, map = { INAM: "name", IENG: "engineer", ICOP: "copyright", ICMT: "comment", IPRD: "product" };
+  let p2 = 12;
+  while (p2 + 8 <= info2.length) {
+    const id2 = tag(info2, p2), size = dv.getUint32(p2 + 4, true), key = map[id2];
+    if (key) {
+      let s10 = "";
+      for (let i10 = 0; i10 < size && info2[p2 + 8 + i10]; i10++) s10 += String.fromCharCode(info2[p2 + 8 + i10]);
+      out[key] = s10.trim();
+    }
+    p2 += 8 + size + (size & 1);
+  }
+  return out;
+}
+
+// src/sources/sha256.ts
+var sha256Hex2 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+
+// src/sources/sounds.ts
+function createSoundSources(o10) {
+  let source = SOUNDS_SOURCE_DEFAULT;
+  const bases = () => [.../* @__PURE__ */ new Set([new URL("pwa-sounds", location.href).href, source.trim().replace(/\/+$/, "") || SOUNDS_SOURCE_DEFAULT])];
+  const session = /* @__PURE__ */ new Map();
+  async function fetchSound(e10, onProgress) {
+    const hit = await cachedSound(e10.sha256);
+    if (hit) return hit;
+    let last = "";
+    for (const base3 of bases()) {
+      try {
+        const res = await fetch(`${base3}/${e10.file}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const out = new Uint8Array(e10.bytes);
+        let o11 = 0;
+        const rd2 = res.body?.getReader();
+        if (!rd2) {
+          const b3 = new Uint8Array(await res.arrayBuffer());
+          if (b3.length !== e10.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${b3.length} \u2260 ${e10.bytes}\uFF09`);
+          out.set(b3);
+          o11 = b3.length;
+        } else for (; ; ) {
+          const { done, value } = await rd2.read();
+          if (done) break;
+          if (o11 + value.length > e10.bytes) throw new Error("\u6BD4\u76EE\u5F55\u91CC\u8BF4\u7684\u5927");
+          out.set(value, o11);
+          o11 += value.length;
+          onProgress(o11);
+        }
+        if (o11 !== e10.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${o11} \u2260 ${e10.bytes}\uFF09`);
+        const got = await sha256Hex2(out);
+        if (got !== e10.sha256) throw new Error(`\u5185\u5BB9\u548C\u76EE\u5F55\u91CC\u9489\u7684\u4E0D\u4E00\u6837\uFF08sha256 ${got.slice(0, 12)}\u2026 \u2260 ${e10.sha256.slice(0, 12)}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83`);
+        await rememberSound(e10.sha256, out, true);
+        return out;
+      } catch (err2) {
+        last = `${base3}\uFF1A${err2.message}`;
+      }
+    }
+    throw new Error(`\u300C${e10.name}\u300D\u62FF\u4E0D\u5230\uFF08\u8BD5\u8FC7 ${bases().join("\u3001")}\uFF09\u3002\u6700\u540E\u4E00\u6B21\uFF1A${last}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u97F3\u6E90\u5E93\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A .sf2 \u6587\u4EF6\u9009\u3002`);
+  }
+  async function resolveGmBytes(g3) {
+    if (g3.bytes) return g3.bytes;
+    if (g3.path) throw new Error(`\u300C${g3.name}\u300D\u7684\u58F0\u97F3\uFF08${g3.path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765`);
+    const have = session.get(g3.subsetSha256);
+    if (have) return have;
+    const kept = await cachedSound(g3.subsetSha256);
+    if (kept) {
+      session.set(g3.subsetSha256, kept);
+      return kept;
+    }
+    let bank = await cachedSound(g3.origin.fileSha256);
+    if (!bank) {
+      const e10 = Object.values(SOUNDS).find((x2) => x2.sha256 === g3.origin.fileSha256);
+      if (e10) {
+        try {
+          bank = await fetchSound(e10, (done) => o10.progress(`\u627E\u300C${g3.name}\u300D\u7684\u58F0\u97F3\uFF1A\u4E0B\u8F7D ${e10.name} ${Math.round(done / e10.bytes * 100)}%`));
+        } finally {
+          o10.progress("");
+        }
+      }
+    }
+    if (!bank) throw new Error(`\u300C${g3.name}\u300D\u7684\u58F0\u97F3\u6CA1\u968F\u6B4C\u5E26\uFF08\u5F31\u5F15\u7528\uFF09\uFF0C\u8FD9\u53F0\u8BBE\u5907\u548C\u5BB6\u65CF\u97F3\u6E90\u5E93\u91CC\u4E5F\u6CA1\u6709\u5B83\u6765\u81EA\u7684\u300C${g3.origin.name}\u300D\uFF08sha256 ${g3.origin.fileSha256.slice(0, 12)}\u2026\uFF09\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${o10.roleLabel()}\u300D\uFF0C\u7ED9\u5B83\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u6216\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D`);
+    const subset = subsetSf2(bank, [{ bank: g3.bank, program: g3.program }]), sha = await sha256Hex2(subset);
+    if (sha !== g3.subsetSha256) throw new Error(`\u4ECE\u300C${g3.origin.name}\u300D\u5207\u51FA\u6765\u7684\u300C${g3.name}\u300D\u548C\u6B4C\u91CC\u8BB0\u7684\u4E0D\u4E00\u6837\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g3.subsetSha256.slice(0, 12)}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83`);
+    session.set(g3.subsetSha256, subset);
+    return subset;
+  }
+  return {
+    get source() {
+      return source;
+    },
+    set source(v) {
+      source = v.trim() || SOUNDS_SOURCE_DEFAULT;
+    },
+    bases,
+    fetchSound,
+    resolveGmBytes,
+    session: { keep: (k2, b3) => {
+      session.set(k2, b3);
+    }, drop: (k2) => {
+      session.delete(k2);
+    }, has: (k2) => session.has(k2), get: (k2) => session.get(k2) }
+  };
+}
+
+// src/sources/models.ts
+var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
+function createModelSources() {
+  let source = MODEL_SOURCE_DEFAULT;
+  return {
+    get source() {
+      return source;
+    },
+    set source(v) {
+      source = v.trim() || MODEL_SOURCE_DEFAULT;
+    },
+    bases: () => [.../* @__PURE__ */ new Set([new URL("pwa-models", location.href).href, source.trim().replace(/\/+$/, "") || MODEL_SOURCE_DEFAULT])]
+  };
+}
 
 // src/score/roles.ts
 var ROLE_GROUPS = [
@@ -23838,94 +24274,6 @@ function creditsText(lines) {
     const lic = l10.license.name === "unknown" ? "\u8BB8\u53EF\u8BC1\u4E0D\u660E" : `${l10.license.name}${l10.license.url ? ` ${l10.license.url}` : ""}`;
     return [`${l10.who.join("\u3001")} \u2014 ${lic}`, ...l10.attribution.length ? l10.attribution : ["\uFF08\u6CA1\u6709\u7F72\u540D\u4FE1\u606F\uFF09"]].join("\n");
   }).join("\n\n");
-}
-
-// src/gm/sound-cache.ts
-var CACHE = "pwa-sounds";
-var keyOf = (sha256) => `${location.origin}/__pwa-sounds__/${sha256}`;
-var MEM_MAX = 2;
-var memory = /* @__PURE__ */ new Map();
-var hasCaches = () => typeof caches !== "undefined";
-var sha256Hex = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
-function rememberInMemory(sha256, bytes) {
-  memory.delete(sha256);
-  memory.set(sha256, bytes);
-  while (memory.size > MEM_MAX) memory.delete(memory.keys().next().value);
-}
-async function cachedSound(sha256) {
-  const m2 = memory.get(sha256);
-  if (m2) {
-    rememberInMemory(sha256, m2);
-    return m2;
-  }
-  if (!hasCaches()) return null;
-  try {
-    const c10 = await caches.open(CACHE), r10 = await c10.match(keyOf(sha256));
-    if (!r10) return null;
-    const bytes = new Uint8Array(await r10.arrayBuffer());
-    if (await sha256Hex(bytes) !== sha256) {
-      await c10.delete(keyOf(sha256));
-      return null;
-    }
-    rememberInMemory(sha256, bytes);
-    return bytes;
-  } catch {
-    return null;
-  }
-}
-async function rememberSound(sha256, bytes, persist) {
-  rememberInMemory(sha256, bytes);
-  if (!persist || !hasCaches()) return;
-  try {
-    const c10 = await caches.open(CACHE);
-    await c10.put(keyOf(sha256), new Response(bytes, { headers: { "Content-Type": "application/octet-stream", "Content-Length": String(bytes.length) } }));
-  } catch {
-  }
-}
-async function listCachedSounds() {
-  if (!hasCaches()) return [];
-  try {
-    const c10 = await caches.open(CACHE), keys = await c10.keys(), out = [];
-    for (const k2 of keys) {
-      const sha256 = k2.url.slice(k2.url.lastIndexOf("/") + 1), r10 = await c10.match(k2);
-      out.push({ sha256, bytes: Number(r10?.headers.get("Content-Length") ?? 0) });
-    }
-    return out;
-  } catch {
-    return [];
-  }
-}
-async function isSoundPersisted(sha256) {
-  if (!hasCaches()) return false;
-  try {
-    return !!await (await caches.open(CACHE)).match(keyOf(sha256));
-  } catch {
-    return false;
-  }
-}
-async function forgetSound(sha256) {
-  memory.delete(sha256);
-  if (!hasCaches()) return;
-  try {
-    await (await caches.open(CACHE)).delete(keyOf(sha256));
-  } catch {
-  }
-}
-function releaseSoundMemory() {
-  memory.clear();
-}
-function soundMemoryBytes() {
-  let n10 = 0;
-  for (const b3 of memory.values()) n10 += b3.length;
-  return n10;
-}
-async function siteStorageEstimate() {
-  try {
-    const est = await navigator.storage?.estimate?.();
-    return est?.usage !== void 0 && est.quota ? { usage: est.usage, quota: est.quota } : null;
-  } catch {
-    return null;
-  }
 }
 
 // src/gm/tsf-standalone.ts
@@ -26879,7 +27227,7 @@ function describeSongChange(prev, next2) {
 function createPerformance(host) {
   const { engine: engine2, singer: singer2, view: view2 } = host;
   const { progress: progress2, info: info2, showError: showError2, renderBar: renderBar2, playBtns: playBtns2, playIcon: playIcon2, offerFile: offerFile2 } = host.ui;
-  const { resolveGmBytes: resolveGmBytes2, ensureVowels: ensureVowels2, soundMemoryBytes: soundMemoryBytes2, modelBases: modelBases2 } = host.sounds;
+  const { resolveGmBytes, ensureVowels: ensureVowels2, soundMemoryBytes: soundMemoryBytes2, modelBases } = host.sounds;
   const { creditsOf: creditsOf2, creditsBlock: creditsBlock2 } = host.credits;
   const escHtml = (x2) => x2.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10] ?? c10);
   const st3 = () => host.state(), extras = () => host.extras(), pv2 = (id2) => host.pv(id2), curRole2 = () => host.curRole(), docName2 = () => host.docName();
@@ -26937,7 +27285,7 @@ function createPerformance(host) {
       const plugin = performerOf(activeInstrument(extras(), part.role)?.engine);
       if (!plugin) continue;
       try {
-        await plugin.prepare({ extras: extras(), role: part.role, engine: engine2, resolveGmBytes: resolveGmBytes2, ensureVowels: ensureVowels2 });
+        await plugin.prepare({ extras: extras(), role: part.role, engine: engine2, resolveGmBytes, ensureVowels: ensureVowels2 });
       } catch (e10) {
         errs.push({ part: part.id, cand: activeId(extras(), part.role), why: e10.message });
       }
@@ -27041,7 +27389,7 @@ function createPerformance(host) {
         const pc = /(\d+)%$/.exec(stage);
         if (pc) renderBar2.frac(Number(pc[1]) / 100);
         else if (stage in STAGE_FRAC) renderBar2.frac(STAGE_FRAC[stage]);
-      }, { opt: c10.opt, models: modelBases2(), raw: true, tag: key, diskBytes: BUDGET2.speechDisk });
+      }, { opt: c10.opt, models: modelBases(), raw: true, tag: key, diskBytes: BUDGET2.speechDisk });
       if (engine2.hasChunk(key) || !chunkPlans.has(key)) {
         renderBar2.next();
         return;
@@ -27484,7 +27832,7 @@ function createPerformance(host) {
     if (!g3 || engine2.hasBank(g3.subsetSha256)) return Promise.resolve();
     if (bankPreparing) return bankPreparing;
     bankPreparing = (async () => {
-      await engine2.bank(g3.subsetSha256, await resolveGmBytes2(g3));
+      await engine2.bank(g3.subsetSha256, await resolveGmBytes(g3));
     })().catch((e10) => {
       showError2(`\u300C${g3.name}\u300D\u54CD\u4E0D\u4E86\uFF1A${e10.message}`);
     }).finally(() => {
@@ -27749,12 +28097,12 @@ function loadCatalogFromJson(concepts, gmMap) {
   return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c10) => [c10.id, c10])), gmSelf, rows, defs: { ...gmMap.defs ?? {}, ...concepts.defs } };
 }
 var cached = null;
-var sha256Hex2 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+var sha256Hex3 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
 async function fetchChecked(base3, k2) {
   const e10 = INSTRUMENT_FILES[k2], r10 = await fetch(new URL(`../${e10.file}`, base3));
   if (!r10.ok) throw new Error(`${e10.file}: HTTP ${r10.status}`);
   const b3 = new Uint8Array(await r10.arrayBuffer());
-  if (b3.length !== e10.bytes || await sha256Hex2(b3) !== e10.sha256) throw new Error(`${e10.file} \u548C app \u5185\u5D4C\u7684\u4E0D\u4E00\u6837\uFF08\u88AB\u6539\u8FC7\uFF1F\uFF09`);
+  if (b3.length !== e10.bytes || await sha256Hex3(b3) !== e10.sha256) throw new Error(`${e10.file} \u548C app \u5185\u5D4C\u7684\u4E0D\u4E00\u6837\uFF08\u88AB\u6539\u8FC7\uFF1F\uFF09`);
   return b3;
 }
 function loadCatalog(base3) {
@@ -28999,215 +29347,6 @@ ${tg2.fx}`);
     this.fitHeight();
   }
 };
-
-// src/gm/sf2-subset.ts
-var REC = { phdr: 38, pbag: 4, pmod: 10, pgen: 4, inst: 22, ibag: 4, imod: 10, igen: 4, shdr: 46 };
-var GEN_INSTRUMENT = 41;
-var GEN_SAMPLE_ID = 53;
-var ZERO_TAIL = 46;
-var tag = (b3, o10) => String.fromCharCode(b3[o10], b3[o10 + 1], b3[o10 + 2], b3[o10 + 3]);
-var plain = (b3) => b3.constructor === Uint8Array ? b3 : new Uint8Array(b3.buffer, b3.byteOffset, b3.byteLength);
-function parse(b3) {
-  const dv = new DataView(b3.buffer, b3.byteOffset, b3.byteLength);
-  if (tag(b3, 0) !== "RIFF" || tag(b3, 8) !== "sfbk") throw new Error("sf2: not a SoundFont 2 file");
-  let info2 = null, smpl = null;
-  const pdta = {};
-  let o10 = 12;
-  while (o10 + 8 <= b3.length) {
-    const id2 = tag(b3, o10), size = dv.getUint32(o10 + 4, true), data = o10 + 8;
-    if (id2 === "LIST") {
-      const kind = tag(b3, data);
-      if (kind === "INFO") info2 = b3.subarray(o10, data + size);
-      else {
-        let p2 = data + 4;
-        while (p2 + 8 <= data + size) {
-          const sid = tag(b3, p2), ssize = dv.getUint32(p2 + 4, true);
-          if (kind === "sdta" && sid === "smpl") smpl = { off: p2 + 8, size: ssize };
-          if (kind === "pdta" && sid in REC) pdta[sid] = { off: p2 + 8, size: ssize };
-          p2 += 8 + ssize + (ssize & 1);
-        }
-      }
-    }
-    o10 = data + size + (size & 1);
-  }
-  if (!info2 || !smpl) throw new Error("sf2: missing INFO or sample data");
-  for (const k2 of Object.keys(REC)) if (!pdta[k2]) throw new Error(`sf2: missing ${k2}`);
-  return { info: info2, smpl, pdta };
-}
-var nameOf = (b3, o10) => {
-  let s10 = "";
-  for (let i10 = 0; i10 < 20 && b3[o10 + i10]; i10++) s10 += String.fromCharCode(b3[o10 + i10]);
-  return s10;
-};
-function listSf2Presets(input) {
-  const bytes = plain(input);
-  const { pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const n10 = pdta.phdr.size / REC.phdr - 1, out = [];
-  for (let i10 = 0; i10 < n10; i10++) {
-    const o10 = pdta.phdr.off + i10 * REC.phdr;
-    out.push({ name: nameOf(bytes, o10), program: dv.getUint16(o10 + 20, true), bank: dv.getUint16(o10 + 22, true) });
-  }
-  return out;
-}
-function subsetSf2(input, want) {
-  const bytes = plain(input);
-  const { info: info2, smpl, pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const count = (k2) => pdta[k2].size / REC[k2];
-  const at2 = (k2, i10) => pdta[k2].off + i10 * REC[k2];
-  const u163 = (k2, i10, field) => dv.getUint16(at2(k2, i10) + field, true);
-  const nP2 = count("phdr") - 1;
-  const wantKey = new Set(want.map((w2) => `${w2.bank}:${w2.program}`));
-  const presets = [];
-  for (let i10 = 0; i10 < nP2; i10++) if (wantKey.has(`${u163("phdr", i10, 22)}:${u163("phdr", i10, 20)}`)) presets.push(i10);
-  const found = new Set(presets.map((i10) => `${u163("phdr", i10, 22)}:${u163("phdr", i10, 20)}`));
-  const missing = [...wantKey].filter((k2) => !found.has(k2));
-  if (missing.length) throw new Error(`sf2: presets not in this bank: ${missing.join(", ")}`);
-  const instSet = /* @__PURE__ */ new Set();
-  for (const i10 of presets) for (let b3 = u163("phdr", i10, 24); b3 < u163("phdr", i10 + 1, 24); b3++)
-    for (let g3 = u163("pbag", b3, 0); g3 < u163("pbag", b3 + 1, 0); g3++) if (u163("pgen", g3, 0) === GEN_INSTRUMENT) instSet.add(u163("pgen", g3, 2));
-  const insts = [...instSet].sort((a10, b3) => a10 - b3), instMap = new Map(insts.map((v, i10) => [v, i10]));
-  const nS2 = count("shdr") - 1, sampleSet = /* @__PURE__ */ new Set();
-  for (const j2 of insts) for (let b3 = u163("inst", j2, 20); b3 < u163("inst", j2 + 1, 20); b3++)
-    for (let g3 = u163("ibag", b3, 0); g3 < u163("ibag", b3 + 1, 0); g3++) if (u163("igen", g3, 0) === GEN_SAMPLE_ID) sampleSet.add(u163("igen", g3, 2));
-  for (const s10 of [...sampleSet]) {
-    const type = u163("shdr", s10, 44), link = u163("shdr", s10, 42);
-    if (type & 14 && link < nS2) sampleSet.add(link);
-  }
-  const samples = [...sampleSet].sort((a10, b3) => a10 - b3), sampleMap = new Map(samples.map((v, i10) => [v, i10]));
-  const out = { phdr: [], pbag: [], pmod: [], pgen: [], inst: [], ibag: [], imod: [], igen: [], shdr: [] };
-  const copy = (k2, i10, patch) => {
-    const rec = bytes.slice(at2(k2, i10), at2(k2, i10) + REC[k2]);
-    patch?.(rec);
-    out[k2].push(...rec);
-  };
-  const w16 = (rec, o10, v) => {
-    rec[o10] = v & 255;
-    rec[o10 + 1] = v >> 8 & 255;
-  };
-  const w32 = (rec, o10, v) => {
-    w16(rec, o10, v & 65535);
-    w16(rec, o10 + 2, v >>> 16 & 65535);
-  };
-  let nBag = 0, nGen = 0, nMod = 0;
-  for (const i10 of presets) {
-    copy("phdr", i10, (r10) => w16(r10, 24, nBag));
-    for (let b3 = u163("phdr", i10, 24); b3 < u163("phdr", i10 + 1, 24); b3++) {
-      copy("pbag", b3, (r10) => {
-        w16(r10, 0, nGen);
-        w16(r10, 2, nMod);
-      });
-      nBag++;
-      for (let g3 = u163("pbag", b3, 0); g3 < u163("pbag", b3 + 1, 0); g3++) {
-        copy("pgen", g3, (r10) => {
-          if (u163("pgen", g3, 0) === GEN_INSTRUMENT) w16(r10, 2, instMap.get(u163("pgen", g3, 2)));
-        });
-        nGen++;
-      }
-      for (let m2 = u163("pbag", b3, 2); m2 < u163("pbag", b3 + 1, 2); m2++) {
-        copy("pmod", m2);
-        nMod++;
-      }
-    }
-  }
-  copy("phdr", nP2, (r10) => w16(r10, 24, nBag));
-  out.pbag.push(...new Uint8Array(REC.pbag));
-  const pb = out.pbag.length - REC.pbag;
-  out.pbag[pb] = nGen & 255;
-  out.pbag[pb + 1] = nGen >> 8;
-  out.pbag[pb + 2] = nMod & 255;
-  out.pbag[pb + 3] = nMod >> 8;
-  out.pgen.push(...new Uint8Array(REC.pgen));
-  out.pmod.push(...new Uint8Array(REC.pmod));
-  nBag = 0;
-  nGen = 0;
-  nMod = 0;
-  for (const j2 of insts) {
-    copy("inst", j2, (r10) => w16(r10, 20, nBag));
-    for (let b3 = u163("inst", j2, 20); b3 < u163("inst", j2 + 1, 20); b3++) {
-      copy("ibag", b3, (r10) => {
-        w16(r10, 0, nGen);
-        w16(r10, 2, nMod);
-      });
-      nBag++;
-      for (let g3 = u163("ibag", b3, 0); g3 < u163("ibag", b3 + 1, 0); g3++) {
-        copy("igen", g3, (r10) => {
-          if (u163("igen", g3, 0) === GEN_SAMPLE_ID) w16(r10, 2, sampleMap.get(u163("igen", g3, 2)));
-        });
-        nGen++;
-      }
-      for (let m2 = u163("ibag", b3, 2); m2 < u163("ibag", b3 + 1, 2); m2++) {
-        copy("imod", m2);
-        nMod++;
-      }
-    }
-  }
-  copy("inst", count("inst") - 1, (r10) => w16(r10, 20, nBag));
-  out.ibag.push(...new Uint8Array(REC.ibag));
-  const ib2 = out.ibag.length - REC.ibag;
-  out.ibag[ib2] = nGen & 255;
-  out.ibag[ib2 + 1] = nGen >> 8;
-  out.ibag[ib2 + 2] = nMod & 255;
-  out.ibag[ib2 + 3] = nMod >> 8;
-  out.igen.push(...new Uint8Array(REC.igen));
-  out.imod.push(...new Uint8Array(REC.imod));
-  const pieces = [];
-  let pos = 0;
-  const u322 = (k2, i10, field) => dv.getUint32(at2(k2, i10) + field, true);
-  for (const s10 of samples) {
-    const start = u322("shdr", s10, 20), end = u322("shdr", s10, 24), len = end - start;
-    copy("shdr", s10, (r10) => {
-      w32(r10, 20, pos);
-      w32(r10, 24, pos + len);
-      w32(r10, 28, pos + (u322("shdr", s10, 28) - start));
-      w32(r10, 32, pos + (u322("shdr", s10, 32) - start));
-      const link = u163("shdr", s10, 42), ns2 = sampleMap.get(link);
-      if (ns2 === void 0) {
-        w16(r10, 42, 0);
-        w16(r10, 44, 1);
-      } else w16(r10, 42, ns2);
-    });
-    pieces.push(bytes.subarray(smpl.off + start * 2, smpl.off + end * 2), new Uint8Array(ZERO_TAIL * 2));
-    pos += len + ZERO_TAIL;
-  }
-  copy("shdr", nS2);
-  const chunk = (id2, data) => {
-    const d3 = data instanceof Uint8Array ? data : Uint8Array.from(data), pad4 = d3.length & 1;
-    const r10 = new Uint8Array(8 + d3.length + pad4);
-    r10.set([...id2].map((c10) => c10.charCodeAt(0)), 0);
-    new DataView(r10.buffer).setUint32(4, d3.length, true);
-    r10.set(d3, 8);
-    return r10;
-  };
-  const list = (kind, parts) => chunk("LIST", concat([Uint8Array.from([...kind].map((c10) => c10.charCodeAt(0))), ...parts]));
-  const sdta = list("sdta", [chunk("smpl", concat(pieces))]);
-  const pdtaOut = list("pdta", Object.keys(REC).map((k2) => chunk(k2, out[k2])));
-  const body2 = concat([Uint8Array.from([..."sfbk"].map((c10) => c10.charCodeAt(0))), info2, sdta, pdtaOut]);
-  return chunk("RIFF", body2);
-}
-function concat(parts) {
-  const n10 = parts.reduce((s10, p2) => s10 + p2.length, 0), r10 = new Uint8Array(n10);
-  let o10 = 0;
-  for (const p2 of parts) {
-    r10.set(p2, o10);
-    o10 += p2.length;
-  }
-  return r10;
-}
-function sf2Info(input) {
-  const bytes = plain(input), { info: info2 } = parse(bytes), dv = new DataView(info2.buffer, info2.byteOffset, info2.byteLength);
-  const out = {}, map = { INAM: "name", IENG: "engineer", ICOP: "copyright", ICMT: "comment", IPRD: "product" };
-  let p2 = 12;
-  while (p2 + 8 <= info2.length) {
-    const id2 = tag(info2, p2), size = dv.getUint32(p2 + 4, true), key = map[id2];
-    if (key) {
-      let s10 = "";
-      for (let i10 = 0; i10 < size && info2[p2 + 8 + i10]; i10++) s10 += String.fromCharCode(info2[p2 + 8 + i10]);
-      out[key] = s10.trim();
-    }
-    p2 += 8 + size + (size & 1);
-  }
-  return out;
-}
 
 // src/app/doc-file.ts
 var TYPES2 = [{ description: "MusicXML \u4E50\u8C31\uFF08MoonSinger \u5B58\u6210 .mxl\uFF09", accept: {
@@ -40500,7 +40639,7 @@ var perfApi = createPerformance({
   singer,
   view,
   ui: { progress, info, showError, renderBar, playBtns, playIcon, offerFile: (f2, t10, m2) => offerFile(f2, t10, m2), onIssues: (list) => onIssuesChanged(list) },
-  sounds: { resolveGmBytes: (g3) => resolveGmBytes(g3), ensureVowels, soundMemoryBytes, modelBases: () => modelBases() },
+  sounds: { resolveGmBytes: (g3) => sources.resolveGmBytes(g3), ensureVowels, soundMemoryBytes, modelBases: () => models.bases() },
   credits: { creditsOf: (roles, rights) => creditsOf(roles, rights), creditsBlock: (lines, title) => creditsBlock(lines, title) }
 });
 var { humOpt, resetLatencyLog, refreshIssues, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
@@ -40696,34 +40835,7 @@ $2("partSel").addEventListener("change", (e10) => {
   updateChrome();
 });
 var embedSoftLimit = 1e7;
-var sessionSubsets = /* @__PURE__ */ new Map();
-async function resolveGmBytes(g3) {
-  if (g3.bytes) return g3.bytes;
-  if (g3.path) throw new Error(`\u300C${g3.name}\u300D\u7684\u58F0\u97F3\uFF08${g3.path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765`);
-  const have = sessionSubsets.get(g3.subsetSha256);
-  if (have) return have;
-  const kept = await cachedSound(g3.subsetSha256);
-  if (kept) {
-    sessionSubsets.set(g3.subsetSha256, kept);
-    return kept;
-  }
-  let bank = await cachedSound(g3.origin.fileSha256);
-  if (!bank) {
-    const e10 = Object.values(SOUNDS).find((x2) => x2.sha256 === g3.origin.fileSha256);
-    if (e10) {
-      try {
-        bank = await fetchSound(e10, (done) => progress(`\u627E\u300C${g3.name}\u300D\u7684\u58F0\u97F3\uFF1A\u4E0B\u8F7D ${e10.name} ${Math.round(done / e10.bytes * 100)}%`));
-      } finally {
-        progress("");
-      }
-    }
-  }
-  if (!bank) throw new Error(`\u300C${g3.name}\u300D\u7684\u58F0\u97F3\u6CA1\u968F\u6B4C\u5E26\uFF08\u5F31\u5F15\u7528\uFF09\uFF0C\u8FD9\u53F0\u8BBE\u5907\u548C\u5BB6\u65CF\u97F3\u6E90\u5E93\u91CC\u4E5F\u6CA1\u6709\u5B83\u6765\u81EA\u7684\u300C${g3.origin.name}\u300D\uFF08sha256 ${g3.origin.fileSha256.slice(0, 12)}\u2026\uFF09\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${roleName(doc.extras, curRole())}\u300D\uFF0C\u7ED9\u5B83\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u6216\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D`);
-  const subset = subsetSf2(bank, [{ bank: g3.bank, program: g3.program }]), sha = await sha256Hex3(subset);
-  if (sha !== g3.subsetSha256) throw new Error(`\u4ECE\u300C${g3.origin.name}\u300D\u5207\u51FA\u6765\u7684\u300C${g3.name}\u300D\u548C\u6B4C\u91CC\u8BB0\u7684\u4E0D\u4E00\u6837\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g3.subsetSha256.slice(0, 12)}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83`);
-  sessionSubsets.set(g3.subsetSha256, subset);
-  return subset;
-}
+var sources = createSoundSources({ progress: (m2) => progress(m2), roleLabel: () => roleName(doc.extras, curRole()) });
 var mp3Scope = "all";
 function openIssuesSheet() {
   ui2.close();
@@ -40795,46 +40907,7 @@ function openMp3Panel() {
     }
   });
 }
-var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
-var soundsSource = SOUNDS_SOURCE_DEFAULT;
-var soundsBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-sounds", location.href).href, soundsSource.trim().replace(/\/+$/, "") || SOUNDS_SOURCE_DEFAULT])];
-async function fetchSound(e10, onProgress) {
-  const hit = await cachedSound(e10.sha256);
-  if (hit) return hit;
-  let last = "";
-  for (const base3 of soundsBases()) {
-    try {
-      const res = await fetch(`${base3}/${e10.file}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const out = new Uint8Array(e10.bytes);
-      let o10 = 0;
-      const rd2 = res.body?.getReader();
-      if (!rd2) {
-        const b3 = new Uint8Array(await res.arrayBuffer());
-        if (b3.length !== e10.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${b3.length} \u2260 ${e10.bytes}\uFF09`);
-        out.set(b3);
-        o10 = b3.length;
-      } else for (; ; ) {
-        const { done, value } = await rd2.read();
-        if (done) break;
-        if (o10 + value.length > e10.bytes) throw new Error("\u6BD4\u76EE\u5F55\u91CC\u8BF4\u7684\u5927");
-        out.set(value, o10);
-        o10 += value.length;
-        onProgress(o10);
-      }
-      if (o10 !== e10.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${o10} \u2260 ${e10.bytes}\uFF09`);
-      const got = await sha256Hex3(out);
-      if (got !== e10.sha256) throw new Error(`\u5185\u5BB9\u548C\u76EE\u5F55\u91CC\u9489\u7684\u4E0D\u4E00\u6837\uFF08sha256 ${got.slice(0, 12)}\u2026 \u2260 ${e10.sha256.slice(0, 12)}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83`);
-      await rememberSound(e10.sha256, out, true);
-      return out;
-    } catch (err2) {
-      last = `${base3}\uFF1A${err2.message}`;
-    }
-  }
-  throw new Error(`\u300C${e10.name}\u300D\u62FF\u4E0D\u5230\uFF08\u8BD5\u8FC7 ${soundsBases().join("\u3001")}\uFF09\u3002\u6700\u540E\u4E00\u6B21\uFF1A${last}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u97F3\u6E90\u5E93\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A .sf2 \u6587\u4EF6\u9009\u3002`);
-}
-var modelSource = MODEL_SOURCE_DEFAULT;
-var modelBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-models", location.href).href, modelSource.trim().replace(/\/+$/, "") || MODEL_SOURCE_DEFAULT])];
+var models = createModelSources();
 var packStore = createPackStore({ packs: PACKS });
 var esc8 = (s10) => s10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
 async function packStatusText() {
@@ -40845,7 +40918,7 @@ function openSettings() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(modelSource)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(soundsSource)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc8(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? `
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(models.source)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(sources.source)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc8(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? `
     \u6539\u52A8\uFF1A${c10.modified}` : ""}`).join("\n"))}</pre></details><details class="set-credit"><summary>\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><div class="part-sec">\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09</div><pre>${esc8(CREDIT.credit)}
 
 ${esc8(CREDIT.terms)}
@@ -40897,8 +40970,8 @@ ${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C
   void refreshSounds();
   const close = () => {
     clearInterval(resTimer);
-    modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT;
-    soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT;
+    models.source = srcIn.value;
+    sources.source = sndIn.value;
     box.remove();
     ui2.closed(close);
     scoreEl.focus();
@@ -40916,8 +40989,8 @@ ${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C
     else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
     else if (v?.startsWith("snd:get:")) {
       const e11 = SOUNDS[v.slice(8)];
-      soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT;
-      void fetchSound(e11, (done) => progress(`\u4E0B\u8F7D ${e11.name} ${Math.round(done / e11.bytes * 100)}%`)).then(() => {
+      sources.source = sndIn.value;
+      void sources.fetchSound(e11, (done) => progress(`\u4E0B\u8F7D ${e11.name} ${Math.round(done / e11.bytes * 100)}%`)).then(() => {
         progress("");
         info(`${e11.name} \u7559\u5728\u8BBE\u5907\u4E0A\u4E86`);
       }).catch((err2) => {
@@ -41193,9 +41266,9 @@ async function setAudition(p2) {
     return;
   }
   try {
-    const bank = await fetchSound(GS, (done) => progress(`\u4E0B\u8F7D ${GS.name} ${Math.round(done / GS.bytes * 100)}%`));
+    const bank = await sources.fetchSound(GS, (done) => progress(`\u4E0B\u8F7D ${GS.name} ${Math.round(done / GS.bytes * 100)}%`));
     progress("");
-    const subset = subsetSf2(bank, [{ bank: p2.provider.bank, program: p2.provider.program }]), sha256 = await sha256Hex3(subset);
+    const subset = subsetSf2(bank, [{ bank: p2.provider.bank, program: p2.provider.program }]), sha256 = await sha256Hex2(subset);
     audition = { bank: p2.provider.bank, program: p2.provider.program, ...cat2 ? gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note) : {}, sha256, subset, label: p2.provider.gmName };
     sound.allOff();
     await engine.bank(sha256, subset);
@@ -41311,7 +41384,7 @@ async function castPick(p2) {
     origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id },
     credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } }
   }, st2.song.hum), { kind: "lounge", label: `\u300C${roleNameOf(c10)}\u300D\u4E0A\u573A\uFF1A${p2.provider.gmName}` }, "cast");
-  sessionSubsets.set(sha256, subset);
+  sources.session.keep(sha256, subset);
   closeFinder();
   setActive(activeId(doc.extras, curRole()));
   info(`\u300C${roleNameOf(c10)}\u300D\u6362\u6210\uFF1A${p2.provider.gmName}`);
@@ -41505,7 +41578,6 @@ function setActive(id2) {
   view.render();
   renderTitle();
 }
-var sha256Hex3 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
 function openCreditsSheet() {
   ui2.close();
   const box = document.createElement("div");
@@ -42546,7 +42618,7 @@ var fileInput = (accept, onFile) => {
 async function pickOfficial(id2) {
   const e10 = SOUNDS[id2];
   try {
-    const bytes = await fetchSound(e10, (done) => progress(`\u4E0B\u8F7D ${e10.name} ${Math.round(done / e10.bytes * 100)}%`));
+    const bytes = await sources.fetchSound(e10, (done) => progress(`\u4E0B\u8F7D ${e10.name} ${Math.round(done / e10.bytes * 100)}%`));
     progress("");
     const presets = listSf2Presets(bytes), first = presets.find((p2) => p2.bank === 0) ?? presets[0];
     instPicked = { name: e10.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e10 };
@@ -42572,11 +42644,11 @@ var findBankFile = (id2) => {
   if (!g3) return;
   fileInput(".sf2,audio/x-soundfont", async (f2) => {
     try {
-      const bytes = new Uint8Array(await f2.arrayBuffer()), sha = await sha256Hex3(bytes);
+      const bytes = new Uint8Array(await f2.arrayBuffer()), sha = await sha256Hex2(bytes);
       if (sha !== g3.origin.fileSha256) throw new Error(`\u300C${f2.name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C${g3.origin.name}\u300D\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g3.origin.fileSha256.slice(0, 12)}\u2026\uFF09`);
       await rememberSound(sha, bytes, true);
-      sessionSubsets.delete(g3.subsetSha256);
-      await resolveGmBytes(g3);
+      sources.session.drop(g3.subsetSha256);
+      await sources.resolveGmBytes(g3);
       info(`\u627E\u5230\u4E86\uFF1A\u300C${g3.name}\u300D\u80FD\u54CD\u4E86`);
       drawInst();
     } catch (e10) {
@@ -42586,7 +42658,7 @@ var findBankFile = (id2) => {
 };
 async function finishAdd(c10) {
   updateExtras(withSf2Candidate(doc.extras, curRole(), { ...c10, embed: false }, st2.song.hum), { kind: "lounge", label: `\u300C${roleName(doc.extras, curRole())}\u300D\u6362\u6210\uFF1A${c10.name}` });
-  sessionSubsets.set(c10.sha256, c10.subset);
+  sources.session.keep(c10.sha256, c10.subset);
   instPicked = null;
   sound.allOff();
   void prepareBank();
@@ -42606,7 +42678,7 @@ async function addPicked() {
   const name = instEl.querySelector("#sfName")?.value.trim() || preset.name;
   try {
     const subset = subsetSf2(picked.bytes, [{ bank, program }]), inf = sf2Info(picked.bytes);
-    const [sha256, fileSha256] = await Promise.all([sha256Hex3(subset), sha256Hex3(picked.bytes)]);
+    const [sha256, fileSha256] = await Promise.all([sha256Hex2(subset), sha256Hex2(picked.bytes)]);
     const lib = picked.library;
     const credit = lib ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } } : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x2) => !!x2), license: { name: "unknown", text: inf.comment } };
     const keys = lib?.id === GS_LIBRARY_ID ? gsKeyArgs(catalogNow ??= await loadCatalog(new URL(import.meta.url)), bank, program) : {};
@@ -42632,7 +42704,7 @@ function drawInst() {
     if (!g3) return performerOf(c10.engine)?.description ?? UNKNOWN_TITLE;
     return g3.bytes ? `SoundFont ${g3.bank}:${g3.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText2(g3.bytes.length)}\uFF09` : g3.path ? "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765" : `\u5F31\u5F15\u7528\uFF1A\u58F0\u97F3\u4E0D\u5728\u6B4C\u91CC\uFF0C\u7528\u65F6\u4ECE\u300C${g3.origin.name}\u300D\u627E`;
   };
-  const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText2(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc8(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc8(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : ((found) => `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc8(active.origin.name)}\u300D\u627E\uFF08${found ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09${found ? "" : `<button class="btn" data-v="find:${esc8(active.id)}">\u627E\u6587\u4EF6\u2026</button>`}</div>`)(sessionSubsets.has(active.subsetSha256));
+  const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText2(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc8(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc8(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : ((found) => `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc8(active.origin.name)}\u300D\u627E\uFF08${found ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09${found ? "" : `<button class="btn" data-v="find:${esc8(active.id)}">\u627E\u6587\u4EF6\u2026</button>`}</div>`)(sources.session.has(active.subsetSha256));
   const labels = partLabels(st2.song, doc.extras), onPaper = new Set(Object.keys(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.tracks ?? {}));
   const parts = st2.song.parts.map((p2, k2) => ({ p: p2, label: labels[k2] })).filter((x2) => onPaper.has(x2.p.id));
   const cal = activeCalibrationDb(doc.extras, role), tr3 = activeTranspose(doc.extras, role);
@@ -42851,7 +42923,7 @@ function loadDoc(song, o10) {
   pad3.render();
   renderTitle();
   updateChrome();
-  if (st2.song.parts.some((p2) => performerOf(activeInstrument(doc.extras, p2.role)?.engine)?.sound === "chunks")) void singer.warm(modelBases(), BUDGET.speechDisk);
+  if (st2.song.parts.some((p2) => performerOf(activeInstrument(doc.extras, p2.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);
   if (startDyns) info(`\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 ${startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09`);
   schedulePrewarm();
 }
@@ -42993,7 +43065,7 @@ async function gatherSubsets(extras) {
     if (g3.bytes || seen.has(g3.subsetSha256)) continue;
     seen.add(g3.subsetSha256);
     try {
-      got.set(g3.subsetSha256, await resolveGmBytes({ ...g3, path: null }));
+      got.set(g3.subsetSha256, await sources.resolveGmBytes({ ...g3, path: null }));
     } catch {
       missing.push(g3.name);
     }
@@ -43022,7 +43094,7 @@ async function unpackAll() {
   const ok2 = /* @__PURE__ */ new Set(), stuck = [];
   for (const u2 of uses) {
     const b3 = bytesBySha.get(u2.subsetSha256);
-    sessionSubsets.set(u2.subsetSha256, b3);
+    sources.session.keep(u2.subsetSha256, b3);
     await rememberSound(u2.subsetSha256, b3, true);
     if (u2.origin.library || await isSoundPersisted(u2.subsetSha256)) ok2.add(u2.subsetSha256);
     else stuck.push(u2.names.join("\u3001"));
@@ -44232,4 +44304,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-10ebc21c1e53.mjs.map
+//# sourceMappingURL=moonsinger-740568bc9edb.mjs.map

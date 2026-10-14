@@ -37,6 +37,9 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
+import { createSoundSources } from "../sources/sounds.ts";   // 音源来源 + 弱引用解析（刀 4 接缝）
+import { createModelSources, MODEL_SOURCE_DEFAULT } from "../sources/models.ts";
+import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
 import { activeSingCore, withSingCore, type SingCoreKey, moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
@@ -657,7 +660,7 @@ const perfApi = createPerformance({
   state: () => st, extras: () => doc.extras, viewScope: () => viewScope, pv: (id) => pv(id), busMuted: () => busMuted, curRole: () => curRole(), docName: () => docName(),
   engine, singer, view,
   ui: { progress, info, showError, renderBar, playBtns, playIcon, offerFile: (f, t, m) => offerFile(f, t, m), onIssues: (list) => onIssuesChanged(list) },
-  sounds: { resolveGmBytes: (g) => resolveGmBytes(g), ensureVowels, soundMemoryBytes, modelBases: () => modelBases() },
+  sounds: { resolveGmBytes: (g) => sources.resolveGmBytes(g), ensureVowels, soundMemoryBytes, modelBases: () => models.bases() },
   credits: { creditsOf: (roles, rights) => creditsOf(roles, rights), creditsBlock: (lines, title) => creditsBlock(lines, title) },
 });
 const { humOpt, resetLatencyLog, refreshIssues, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
@@ -781,27 +784,8 @@ $("partSel").addEventListener("change", (e) => {
 });
 /** 嵌进歌的软上限（user 2026-10-07「控制在10M左右的体积（不严格要求）」）：超了三选一——嵌 / 不嵌只记来源（弱引用）/ 算了。 */
 let embedSoftLimit = 10e6;
-/** 弱引用解析到的子集（本次打开；subsetSha256 → 字节）。 */
-const sessionSubsets = new Map<string, Uint8Array>();
-/** 拿到一个 SoundFont 候选的子集字节（契约 Sf2Source）：歌里嵌的 → 本次已解析的 → 弱引用去找整包（本次内存 / 持久缓存 / 家族音源库按整包 sha256 对条目）→ 切子集、核 sha256。
- *  都找不到 = 抛错（没人上场、报出来、人换 = 换人的窄接口）；人也可以在歌手牌里「找文件…」把整包给它。 */
-async function resolveGmBytes(g: GmCandidate): Promise<Uint8Array> {
-  if (g.bytes) return g.bytes;
-  if (g.path) throw new Error(`「${g.name}」的声音（${g.path}）没随这首歌带来`);
-  const have = sessionSubsets.get(g.subsetSha256); if (have) return have;
-  const kept = await cachedSound(g.subsetSha256);   // 设备上留着的子集（自己的 .sf2 加进来时 / 解包时留的；按子集 sha256 存，取出来核过）
-  if (kept) { sessionSubsets.set(g.subsetSha256, kept); return kept; }
-  let bank = await cachedSound(g.origin.fileSha256);
-  if (!bank) {
-    const e = Object.values(SOUNDS).find((x) => x.sha256 === g.origin.fileSha256);
-    if (e) { try { bank = await fetchSound(e, (done) => progress(`找「${g.name}」的声音：下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`)); } finally { progress(""); } }
-  }
-  if (!bank) throw new Error(`「${g.name}」的声音没随歌带（弱引用），这台设备和家族音源库里也没有它来自的「${g.origin.name}」（sha256 ${g.origin.fileSha256.slice(0, 12)}…）。点谱前面的「${roleName(doc.extras, curRole())}」，给它「找文件…」，或换一个「谁来演」`);
-  const subset = subsetSf2(bank, [{ bank: g.bank, program: g.program }]), sha = await sha256Hex(subset);
-  if (sha !== g.subsetSha256) throw new Error(`从「${g.origin.name}」切出来的「${g.name}」和歌里记的不一样（sha256 ${sha.slice(0, 12)}… ≠ ${g.subsetSha256.slice(0, 12)}…），没有用它`);
-  sessionSubsets.set(g.subsetSha256, subset);
-  return subset;
-}
+// 音源来源 + 弱引用解析 = src/sources/sounds.ts（刀 4 音源来源接缝，2026-10-15）；这里只留一个实例
+const sources = createSoundSources({ progress: (m) => progress(m), roleLabel: () => roleName(doc.extras, curRole()) });
 
 // ── 导出歌声（user「基于wxhw的经验分享是可以很早就做」）：照 WXHW 的形状——先生成，再弹「好了」面板，
 //    点「分享」那一下才调系统分享（iOS Safari 只认用户手势里的 navigator.share）；没有分享的（桌面 / Quest）= 下载。
@@ -861,37 +845,8 @@ function openMp3Panel(): void {
   });
 }
 
-// ── 模型来源（ADR-0006 ③ re-pointable endpoints：界面上能改、出厂预填；user 2026-10-07「i might worry about hardcode my gh link so if
-//    i closed my gh account all app are not able to run in private server which violates the anti abandonware rule」）：
-//    先找同一个网站下的 pwa-models/（自己搭服务器的人把模型仓拷过来就能用、不用配置），找不到再用这里设的；还能从本机文件导入。
-//    设的值只在这次打开里有效（持久化还没定）。
-const MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
-// 音源库（pwa-sounds）同样一套：先找同源 pwa-sounds/，再用设置里的；只在这次打开里有效
-let soundsSource = SOUNDS_SOURCE_DEFAULT;
-const soundsBases = () => [...new Set([new URL("pwa-sounds", location.href).href, soundsSource.trim().replace(/\/+$/, "") || SOUNDS_SOURCE_DEFAULT])];
-/** 从音源库拿一个文件：逐个地址试，流式读（报进度），到手对目录里钉的 sha256（不对 = 不用、报出来）。 */
-async function fetchSound(e: SoundEntry, onProgress: (done: number) => void): Promise<Uint8Array> {
-  const hit = await cachedSound(e.sha256); if (hit) return hit;   // 本次内存 / 持久缓存 `pwa-sounds`（user「可以缓存指定的包，不然没网的时候很麻烦」）
-  let last = "";
-  for (const base of soundsBases()) {
-    try {
-      const res = await fetch(`${base}/${e.file}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const out = new Uint8Array(e.bytes); let o = 0;
-      const rd = res.body?.getReader();
-      if (!rd) { const b = new Uint8Array(await res.arrayBuffer()); if (b.length !== e.bytes) throw new Error(`大小不对（${b.length} ≠ ${e.bytes}）`); out.set(b); o = b.length; }
-      else for (;;) { const { done, value } = await rd.read(); if (done) break; if (o + value.length > e.bytes) throw new Error("比目录里说的大"); out.set(value, o); o += value.length; onProgress(o); }
-      if (o !== e.bytes) throw new Error(`大小不对（${o} ≠ ${e.bytes}）`);
-      const got = await sha256Hex(out);
-      if (got !== e.sha256) throw new Error(`内容和目录里钉的不一样（sha256 ${got.slice(0, 12)}… ≠ ${e.sha256.slice(0, 12)}…），没有用它`);
-      await rememberSound(e.sha256, out, true);   // 核过了才留；第一次下载就留在设备上（user「每次加乐器都会重新下一下GS」）
-      return out;
-    } catch (err) { last = `${base}：${(err as Error).message}`; }
-  }
-  throw new Error(`「${e.name}」拿不到（试过 ${soundsBases().join("、")}）。最后一次：${last}。可以在设置里换音源库来源，或从本机 .sf2 文件选。`);
-}
-let modelSource = MODEL_SOURCE_DEFAULT;
-const modelBases = () => [...new Set([new URL("pwa-models", location.href).href, modelSource.trim().replace(/\/+$/, "") || MODEL_SOURCE_DEFAULT])];
+// 模型来源（pwa-models）= src/sources/models.ts：同源 pwa-models/ 先、再设置里的；只在这次打开里有效
+const models = createModelSources();
 const packStore = createPackStore({ packs: PACKS });   // 只用来导入 / 看状态；下载在 worker 里（同一个 Cache Storage pwa-models）
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 async function packStatusText(): Promise<string> {
@@ -904,8 +859,8 @@ function openSettings(): void {
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">设置</div>` +
-    `<label class="set-field">模型来源<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(modelSource)}" /></label>` +
-    `<label class="set-field">音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(soundsSource)}" /></label>` +
+    `<label class="set-field">模型来源<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>` +
+    `<label class="set-field">音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
     `<div class="set-field">音源库缓存（留在设备上，没网也能用；歌自己带声音，这里只是货架）<div id="sndCache" class="set-packs">…</div></div>` +
     `<div class="offer-msg">先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。</div>` +
     `<div class="set-row"><button class="btn" data-v="default">恢复默认</button>` +
@@ -942,7 +897,7 @@ function openSettings(): void {
       cached.filter((c) => !known.has(c.sha256)).map((c) => { const u = uses.get(c.sha256); return `<div class="set-row"><span>${u ? `「${esc(u.names.join("、"))}」的声音（这首歌${u.packed ? "也打包着" : "引用着；删了要从「" + esc(u.origin.name) + "」找"}）` : `别的歌 / 别的版本 / 别的 app 留的（${c.sha256.slice(0, 8)}…）`} · ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">删掉</button></div>`; }).join("") || "（没有）";
   };
   void refreshSounds();
-  const close = () => { clearInterval(resTimer); modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; box.remove(); ui.closed(close); scoreEl.focus(); };
+  const close = () => { clearInterval(resTimer); models.source = srcIn.value; sources.source = sndIn.value; box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
@@ -952,7 +907,7 @@ function openSettings(): void {
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
     else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
-    else if (v?.startsWith("snd:get:")) { const e = SOUNDS[v.slice(8)]; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; void fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`)).then(() => { progress(""); info(`${e.name} 留在设备上了`); }).catch((err) => { progress(""); showError((err as Error).message); }).finally(() => void refreshSounds()); }
+    else if (v?.startsWith("snd:get:")) { const e = SOUNDS[v.slice(8)]; sources.source = sndIn.value; void sources.fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`)).then(() => { progress(""); info(`${e.name} 留在设备上了`); }).catch((err) => { progress(""); showError((err as Error).message); }).finally(() => void refreshSounds()); }
     else if (v?.startsWith("snd:del:")) { const e = SOUNDS[v.slice(8)]; void forgetSound(e.sha256).then(refreshSounds); }
     else if (v?.startsWith("snd:delsha:")) void forgetSound(v.slice(11)).then(refreshSounds);
     else if (v === "snd:mem") { releaseSoundMemory(); void refreshSounds(); }
@@ -1104,7 +1059,7 @@ async function setAudition(p: FinderPick | null): Promise<void> {
   if (auditionHint) pad.follow(auditionHint.lo, auditionHint.hi); else pad.render();
   if (!p || p.kind === "voice") { audition = null; sound.allOff(); return; }
   try {
-    const bank = await fetchSound(GS, (done) => progress(`下载 ${GS.name} ${Math.round((done / GS.bytes) * 100)}%`)); progress("");
+    const bank = await sources.fetchSound(GS, (done) => progress(`下载 ${GS.name} ${Math.round((done / GS.bytes) * 100)}%`)); progress("");
     const subset = subsetSf2(bank, [{ bank: p.provider.bank, program: p.provider.program }]), sha256 = await sha256Hex(subset);
     audition = { bank: p.provider.bank, program: p.provider.program, ...(cat ? gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note) : {}), sha256, subset, label: p.provider.gmName };   // 音效默认固定原速（上场后也是）
     sound.allOff(); await engine.bank(sha256, subset);
@@ -1195,7 +1150,7 @@ async function castPick(p: FinderPick): Promise<void> {
   const fileSha256 = GS.sha256;   // 试听台的整包 = 货架上的那份（哈希就是目录钉的）
   updateExtras(withSf2Candidate(doc.extras, curRole(), { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false,
     origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, st.song.hum), { kind: "lounge", label: `「${roleNameOf(c)}」上场：${p.provider.gmName}` }, "cast");
-  sessionSubsets.set(sha256, subset);
+  sources.session.keep(sha256, subset);
   closeFinder(); setActive(activeId(doc.extras, curRole())); info(`「${roleNameOf(c)}」换成：${p.provider.gmName}`);
 }
 const finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName: () => roleName(doc.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
@@ -1269,7 +1224,6 @@ function openFinder(): void {
 function closeFinder(back: boolean = ui.page.k === "finder" && ui.page.backToInst): void { if (!finder.isOpen) return; const wasPlayOnly = finderPlayOnly(); ui.setPage({ k: "score" }); if (wasPlayOnly) document.body.classList.remove("finder-over-gallery"); finder.hide(); audition = null; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = back; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (back) openInstPage(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 function setActive(id: string): void { const next = withActive(doc.extras, curRole(), id, st.song.hum); updateExtras(next, { kind: "lounge", label: `「${roleName(next, curRole())}」换人：${activeCandidateName(next, curRole()) ?? id}` }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
-const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");
 /** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。
  *  不提醒、不帮用户写任何东西（user「只是举例子，然后这个你也不应该强迫或者提醒用户写这个，因为谱子也不绑定乐器的」「…一键插入按钮 不要」）。 */
 function openCreditsSheet(): void {
@@ -2022,7 +1976,7 @@ const fileInput = (accept: string, onFile: (f: File) => Promise<void>) => {
 async function pickOfficial(id: string): Promise<void> {
   const e = SOUNDS[id];
   try {
-    const bytes = await fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`));
+    const bytes = await sources.fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`));
     progress("");
     const presets = listSf2Presets(bytes), first = presets.find((p) => p.bank === 0) ?? presets[0];
     instPicked = { name: e.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e }; drawInst();
@@ -2043,8 +1997,8 @@ const findBankFile = (id: string) => {
     try {
       const bytes = new Uint8Array(await f.arrayBuffer()), sha = await sha256Hex(bytes);
       if (sha !== g.origin.fileSha256) throw new Error(`「${f.name}」不是歌里记的那个「${g.origin.name}」（sha256 ${sha.slice(0, 12)}… ≠ ${g.origin.fileSha256.slice(0, 12)}…）`);
-      await rememberSound(sha, bytes, true); sessionSubsets.delete(g.subsetSha256);
-      await resolveGmBytes(g); info(`找到了：「${g.name}」能响了`); drawInst();
+      await rememberSound(sha, bytes, true); sources.session.drop(g.subsetSha256);
+      await sources.resolveGmBytes(g); info(`找到了：「${g.name}」能响了`); drawInst();
     } catch (e) { showError((e as Error).message); }
   });
 };
@@ -2053,7 +2007,7 @@ const findBankFile = (id: string) => {
 //   要歌自己带着声音（发给别人）= 文件菜单「全部打包进歌」或导出「打包音源」的副本。
 async function finishAdd(c: Chosen): Promise<void> {
   updateExtras(withSf2Candidate(doc.extras, curRole(), { ...c, embed: false }, st.song.hum), { kind: "lounge", label: `「${roleName(doc.extras, curRole())}」换成：${c.name}` });
-  sessionSubsets.set(c.sha256, c.subset);   // 本次打开里直接能响
+  sources.session.keep(c.sha256, c.subset);   // 本次打开里直接能响
   instPicked = null; sound.allOff(); void prepareBank(); view.render(); renderTitle(); drawInst();
   if (!c.origin.library) {
     await rememberSound(c.sha256, c.subset, true);
@@ -2096,7 +2050,7 @@ function drawInst(): void {
   const chipTitle = (c: { id: string; engine: Engine }) => { const g = gms.get(c.id); if (!g) return performerOf(c.engine)?.description ?? UNKNOWN_TITLE; return g.bytes ? `SoundFont ${g.bank}:${g.program}，声音嵌在歌里（${sizeText(g.bytes.length)}）` : g.path ? "声音没随这首歌带来" : `弱引用：声音不在歌里，用时从「${g.origin.name}」找`; };
   const status = !active ? "" : active.bytes ? `<div class="cand-status">声音嵌在歌里（${sizeText(active.bytes.length)}）${active.origin.library ? `，来自家族音源库的 ${esc(active.origin.name)}` : `，来自 ${esc(active.origin.name)}`}</div>`
     : active.path ? `<div class="cand-status">声音没随这首歌带来，所以没人上场——换一个「谁来演」</div>`
-    : ((found) => `<div class="cand-status">弱引用：歌里不带声音，用时从「${esc(active.origin.name)}」找（${found ? "本次已找到" : "家族音源库 / 设备缓存 / 你的文件"}）${found ? "" : `<button class="btn" data-v="find:${esc(active.id)}">找文件…</button>`}</div>`)(sessionSubsets.has(active.subsetSha256));
+    : ((found) => `<div class="cand-status">弱引用：歌里不带声音，用时从「${esc(active.origin.name)}」找（${found ? "本次已找到" : "家族音源库 / 设备缓存 / 你的文件"}）${found ? "" : `<button class="btn" data-v="find:${esc(active.id)}">找文件…</button>`}</div>`)(sources.session.has(active.subsetSha256));
   const labels = partLabels(st.song, doc.extras), onPaper = new Set(Object.keys(st.song.papers.find((p) => p.id === st.at.paper)?.tracks ?? {}));
   const parts = st.song.parts.map((p, k) => ({ p, label: labels[k] })).filter((x) => onPaper.has(x.p.id));
   const cal = activeCalibrationDb(doc.extras, role), tr = activeTranspose(doc.extras, role);
@@ -2227,7 +2181,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   pad.setRangeLow(d.pad.low);
   onSongSwitch(); sound.allOff(); void prepareBank(); refreshIssues();   // 开歌那一刻清单重算：有事 = 一条 toast + 角标（§2.2½ 出口 ③）   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
   view.render(); pad.render(); renderTitle(); updateChrome();   // 挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
-  if (st.song.parts.some((p) => performerOf(activeInstrument(doc.extras, p.role)?.engine)?.sound === "chunks")) void singer.warm(modelBases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
+  if (st.song.parts.some((p) => performerOf(activeInstrument(doc.extras, p.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
   if (startDyns) info(`每张纸开头补了 ${startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）`);   // v0.10.39（user「每张纸（曲段）开头，对」）
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }
@@ -2340,7 +2294,7 @@ async function gatherSubsets(extras: Extras): Promise<{ got: Map<string, Uint8Ar
   for (const role of Object.keys(extras.lounge)) for (const g of gmCandidates(extras, role)) {
     if (g.bytes || seen.has(g.subsetSha256)) continue;
     seen.add(g.subsetSha256);
-    try { got.set(g.subsetSha256, await resolveGmBytes({ ...g, path: null })); } catch { missing.push(g.name); }   // path: null = 强引用但文件里少了那块的，也去找一次
+    try { got.set(g.subsetSha256, await sources.resolveGmBytes({ ...g, path: null })); } catch { missing.push(g.name); }   // path: null = 强引用但文件里少了那块的，也去找一次
   }
   return { got, missing };
 }
@@ -2364,7 +2318,7 @@ async function unpackAll(): Promise<void> {
   const ok = new Set<string>(), stuck: string[] = [];
   for (const u of uses) {
     const b = bytesBySha.get(u.subsetSha256)!;
-    sessionSubsets.set(u.subsetSha256, b);
+    sources.session.keep(u.subsetSha256, b);
     await rememberSound(u.subsetSha256, b, true);
     if (u.origin.library || (await isSoundPersisted(u.subsetSha256))) ok.add(u.subsetSha256); else stuck.push(u.names.join("、"));
   }

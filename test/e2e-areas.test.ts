@@ -23,7 +23,7 @@ describe("E2E 分区表", () => {
     eq(areasOf("service-worker.js"), "smoke"); eq(areasOf("src/app/pwa-shell.ts"), "smoke");
     eq(JSON.stringify(areasOf("src/keyboard/pad.ts")), JSON.stringify(["pad"])); eq(JSON.stringify(areasOf("src/keyboard/wheel.ts")), JSON.stringify(["pad", "studio", "play"]));
     eq(JSON.stringify(areasOf("src/ui/score-view.ts")), JSON.stringify(["score"]));
-    eq(JSON.stringify(areasOf("src/engine/studio.ts")), JSON.stringify(["studio", "play"]));
+    eq(JSON.stringify(areasOf("src/engine/studio.ts")), JSON.stringify(["studio", "play"])); eq(JSON.stringify(areasOf("src/sources/sounds.ts")), JSON.stringify(["play", "studio"]));
     eq(JSON.stringify(areasOf("ai-docs/x.md")), "[]"); eq(JSON.stringify(areasOf("src/version.ts")), "[]");
     eq(areasOf("src/new-dir/thing.ts"), "all", "没登记的 src 目录 = 整套（宁多跑不漏跑）");
   });

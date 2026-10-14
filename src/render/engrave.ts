@@ -114,7 +114,10 @@ export interface SystemBox { top: number; staffTop: number; bottom: number; pape
   /** 这一行谱上真有墨的上下沿（px）：音（含叠着的房客）、符干、跳音 / 重音、力度那几道、八度线、歌词；不含速度 / 风格记号（那是整张谱的）。播放的灰块按这个（v0.10.26）。 */
   inkTop?: number; inkBottom?: number }   // staff = 大谱表里是上（1）还是下（2）
 export interface HitNote { index: number; system: number; x: number; y: number; w: number; d: number; /** 合租的声部 2（v0.10.28）：下标指这条虚拟 track（`…~v2`），不是这一行那一位的。 */ part?: string }
-export interface Slot { caret: number; system: number; x: number; /** 这里的谱号 + 八度线位移（音级 → 谱上第几级；「弹」的鬼音符按它画在对的高低）。 */ shift: number; end?: true; /** 补齐的淡色小节的开头：点这里 = 光标在尾巴 + 先补这么长（tick）的休止再写（v0.10.6）。 */ lead?: number }   // end = 行末那个落点（光标在下一行开头的那个位置，点在这一行行末时画在这儿）
+export interface Slot { caret: number; system: number; x: number; end?: true; /** 补齐的淡色小节的开头：点这里 = 光标在尾巴 + 先补这么长（tick）的休止再写（v0.10.6）。 */ lead?: number }   // end = 行末那个落点（光标在下一行开头的那个位置，点在这一行行末时画在这儿）
+/** 光标画在哪（W-17 第 1 刀：排版不认光标，只给出每个 caret 位置该画的地方，score-view 按 EditorState 挑）：老规矩 = 同一 tick 上排在小节线 / 记号后面、音前面；
+ *  end = 点在行末放的（画在上一行末尾）；lead = 补齐的小节里；shift = 那里的谱号 / 八度线位移（鬼音符用）。 */
+export interface CaretHead { caret: number; system: number; x: number; shift: number; end?: true; lead?: number }
 export interface LyricHit { index: number; system: number; x: number; y: number; tight?: true }   // x = 歌词中心，y = 基线；tight = 按节奏排时这个字挤（画灰，歌词框上说一声）
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
@@ -140,7 +143,7 @@ export interface Layout {
   measures: { paper: string; t0: number; t1: number; row: number; x: number }[];
   /** 合租展开着的那一家（v0.10.29）：每行左边一条括号把这一家的几行括在一起；点它 = 光标挪出这一家（叠回去）。user「把这一家的几行括在一起…点这条括号等于「光标挪到这一家后面紧挨着的那位」…可以」。 */
   families: { paper: string; host: string; x: number; y: number; w: number; h: number }[];
-  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; rests: RestHit[]; title: TitleHit; clefs: ClefHit[];
+  systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; heads: CaretHead[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; rests: RestHit[]; title: TitleHit; clefs: ClefHit[];
   arrangement: TitleHit | null;                 // 编排那一行（只在「全部」视图里有；点了就地改）
   credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
   /** 每行每根小节线的 x（px；播放时的小节底色用，v0.10.12；只是多带的数据，不改任何位置）。 */
@@ -460,7 +463,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const bars: Layout["bars"] = [];
   const chordHeads: Layout["chordHeads"] = [];
   const sharedRows: number[] = [], virtualOut: Record<string, Token[]> = {}, measures: Layout["measures"] = [], families: Layout["families"] = [];   // 合租叠起来的那几行（只读：点了不写、不放光标；v0.10.25）
-  const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
+  const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], heads: CaretHead[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
   let shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
@@ -1446,11 +1449,27 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const u = c < tokens.length ? firstUnitOf.get(c) : undefined;
         const last = u ? null : [...units].reverse().find((v) => v.kind !== "head");
         const sys = u ? u.system : last ? last.system : 0, x = u ? P(u.x) : last ? P(last.x + last.w) : P(sysStarts[0]);
-        const kk = Math.min(c, realLen) - 1, si = kk >= H ? kk : -1;   // 光标那里的谱号 / 八度线位移 = 前一个音处的（同原来的 head.shift）
-        for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(sys, r, k), x, shift: shAt(q, (k + 1) as Staff, si) });
+        for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(sys, r, k), x });
+      }
+      // 11½. 写字头画在哪（W-17 第 1 刀，2026-10-15）：排版不认光标，只给每个 caret 位置该画的地方。老规矩（原来零宽 head 单元的 SLOT = 4）：
+      //   同一 tick 上排在小节线 / 记号（句号 / 调号 / 拍号 / 速度 / 力度…）后面、音前面——光标停在行末的小节线前 = 画在下一行开头（2026-10-10 user「光标应该在每行的开头」）；
+      //   那一 tick 上没有音 = 排在这一 tick 最后一个单元后面；尾巴 = 最后一个单元后面。shift = 前一个音处的谱号 / 八度线位移（同原来的 head.shift）
+      const shiftAt = (c: number): number[] => { const kk = Math.min(c, realLen) - 1, si = kk >= H ? kk : -1; return Array.from({ length: q.staves }, (_, k) => shAt(q, (k + 1) as Staff, si)); };
+      for (let c = H; c <= realLen; c++) {
+        const u0 = c < tokens.length ? firstUnitOf.get(c) : undefined;
+        let sys: number, x: number;
+        if (!u0) { const last = [...units].reverse().find((v) => v.kind !== "head"); sys = last ? last.system : 0; x = last ? P(last.x + last.w) : P(sysStarts[0]); }
+        else if (u0.kind === "chunk") { sys = u0.system; x = P(u0.x); }
+        else {
+          const T = u0.tick, ch = units.find((v) => v.kind === "chunk" && v.index >= c && Math.abs(v.tick - T) < 1e-6);
+          if (ch) { sys = ch.system; x = P(ch.x); }
+          else { const same = units.filter((v) => v.kind !== "head" && v.index >= c && Math.abs(v.tick - T) < 1e-6), lastT = same[same.length - 1] ?? u0; sys = lastT.system; x = P(lastT.x + lastT.w); }
+        }
+        const sh = shiftAt(c);
+        for (let k = 0; k < q.staves; k++) heads.push({ caret: c, system: rowOf(sys, r, k), x, shift: sh[k] });
       }
       // 补齐的淡色小节：每个小节开头一个落点（caret = 尾巴、lead = 离尾巴多少 tick）
-      for (const u of units) if (u.kind === "chunk" && u.pad && u.inBar < 1e-6 && u.tick - q.realTicks > 1e-6) for (let k = 0; k < q.staves; k++) slots.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), shift: shAt(q, (k + 1) as Staff, realLen - 1 >= H ? realLen - 1 : -1), lead: u.tick - q.realTicks });
+      for (const u of units) if (u.kind === "chunk" && u.pad && u.inBar < 1e-6 && u.tick - q.realTicks > 1e-6) { const sh = shiftAt(realLen); for (let k = 0; k < q.staves; k++) { slots.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), lead: u.tick - q.realTicks }); heads.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), shift: sh[k], lead: u.tick - q.realTicks }); } }
       // 行末落点：这一行最后一个东西后面 = 下一行第一个光标位置，点在这里 = 光标画在这一行末尾（caretEnd）。原来这里没有落点，点行末空白会落到最后一个音前面。
       let lastSys = -1;
       for (let c = H; c < Math.min(tokens.length, realLen + 1); c++) {
@@ -1460,8 +1479,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const prevRow = cols.filter((cc) => cc.system === u.system - 1);
         if (!prevRow.length) continue;
         const x = P(Math.max(...prevRow.map((cc) => cc.x + cc.w)));
-        const kk = Math.min(c, realLen) - 1, si = kk >= H ? kk : -1;
-        for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(u.system - 1, r, k), x, shift: shAt(q, (k + 1) as Staff, si), end: true });
+        const sh = shiftAt(c);
+        for (let k = 0; k < q.staves; k++) { slots.push({ caret: c, system: rowOf(u.system - 1, r, k), x, end: true }); heads.push({ caret: c, system: rowOf(u.system - 1, r, k), x, shift: sh[k], end: true }); }
       }
     });
     stubs();
@@ -1480,7 +1499,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
 }
 
 export type { Token };

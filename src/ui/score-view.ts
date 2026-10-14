@@ -23,7 +23,7 @@ import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL,
 import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
-import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type ClefHit, type SystemBox } from "../render/engrave.ts";
+import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg, toSvgParts } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
@@ -570,10 +570,10 @@ export class ScoreView {
    *  大谱表：两张谱表各一个落点，光标跟着前一个音在哪张。有选区 / 还没排好 = null。shift = 那里的谱号 / 八度线位移（鬼音符用）。 */
   head(): { system: number; x: number; shift: number } | null {
     const L = this.layout, st = this.host.get(); if (!L || st.sel) return null;
-    const mine = (s: Slot) => { const r = L.systems[s.system]; return !!r && r.paper === st.at.paper && r.part === st.at.part; };
-    const want = st.lead ? L.slots.filter((s) => mine(s) && s.lead === st.lead)
-      : this.caretEnd === caretKey(st) ? L.slots.filter((s) => mine(s) && !!s.end && s.caret === st.caret)
-      : L.slots.filter((s) => mine(s) && !s.end && s.lead === undefined && s.caret === st.caret);
+    const mine = (s: CaretHead) => { const r = L.systems[s.system]; return !!r && r.paper === st.at.paper && r.part === st.at.part; };
+    const want = st.lead ? L.heads.filter((s) => mine(s) && s.lead === st.lead)
+      : this.caretEnd === caretKey(st) ? L.heads.filter((s) => mine(s) && !!s.end && s.caret === st.caret)
+      : L.heads.filter((s) => mine(s) && !s.end && s.lead === undefined && s.caret === st.caret);
     if (!want.length) return null;
     let pick = want[0];
     if (want.length > 1) {
