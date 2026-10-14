@@ -84,3 +84,7 @@
 
 8 条并行时 follow / routing / mixer-fx 这类「放着 = 表上有数」「翻谱提前量」的用例一再红、单跑绿（抢同一台机子，时间假设迟到）。`run.mjs` 现在把并行红的文件在最后**单跑一遍**：单跑绿 = 算过、但在总结里明说「并行红、单跑绿（负载 flake）」（不静默洗白）；单跑也红 = 真红。`--no-retry` 关掉（查 flake 本身时用）。真修法仍是把那些用例的固定等待改成「等到为止」（mixer-fx / routing / playhead / sung-preview 已改）。
 
+## 补：脚本链里别让 `| tail` 吞掉 build 的退出码（2026-10-14 深夜踩，edited by Claude Fable 5.1）
+
+`npm run build 2>&1 | tail -1 && git commit …` 这种链，管道的退出码是 tail 的（0），build 红了也照样 commit——v0.12.7 第一笔就这么带着一个类型错 + bump 前的 dist 推了上去。要么 `set -o pipefail`，要么把输出写进文件再看 `$?`。
+
