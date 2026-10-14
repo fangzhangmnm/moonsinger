@@ -10,20 +10,20 @@
     <meta name="apple-mobile-web-app-title" content="MoonSinger" />
     <!-- SEO / 分享卡片（W-29 + W-22，2026-10-13 Claude Opus 5.5；照 WeebPaint index.html 那一段，理由在它的注释里）。
          · 标题 / 简介 = 文案，归 user：字句从 B 站简介（user 精修版，宣发仓 ai-docs/20261011-b站中文标题简介-初稿.txt 第 5 节）里摘；
-           标题现在是候选之一，user 挑定前别当定稿（候选见 ai-docs/20261007-wishlist.md W-29）。
+           标题 = app 名字，不为 SEO 让路（user 2026-10-14「标题，就叫MoonSinger，不要有别的干扰。这里不应该为seo让路」，全家族同一标准）；
          · <title> 永远是这一句，运行时不再改成歌名（W-22，user「标题不要显示歌名，不然这样浏览器老是会记错」）——<title> 和 og:title 同文。
          · lang = zh-CN：界面只有中文。
          · canonical 写死正式版地址：同一份 index.html 部署到 / 和 /dev/，/dev/ 上这行 = 「正主在 /」。
          · og:image = 现成的 icon-512.png（方图 → twitter:card=summary 小卡）；是 <meta content>，浏览器加载页面不请求它，零变胖。
            ⚠ 它指的文件必须在 deploy.yml 的拷贝白名单里，漏了线上静默 404（test/icon-wiring.test.ts 守着）。
          · JSON-LD 不写 aggregateRating（没有真评分）、不写 screenshot（没有截图卡）。 -->
-    <title>MoonSinger — 免费开源的写歌编曲混音软件，打开就能写</title>
+    <title>MoonSinger</title>
     <meta name="description" content="免费、开源，浏览器打开就能写。五线谱打谱，数字键盘按简谱输入；力度、渐强渐弱、重音、跳音、连线、呼吸都写在谱上；歌词照写，小月相（つくよみちゃん）直接唱出来，边写边听。多声部编曲、混音台，导出 mp3、PDF 乐谱、MusicXML。" />
     <link rel="canonical" href="https://sing.weebpaint.com/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MoonSinger" />
     <meta property="og:locale" content="zh_CN" />
-    <meta property="og:title" content="MoonSinger — 免费开源的写歌编曲混音软件，打开就能写" />
+    <meta property="og:title" content="MoonSinger" />
     <meta property="og:description" content="免费、开源，浏览器打开就能写。五线谱打谱，数字键盘按简谱输入；力度、渐强渐弱、重音、跳音、连线、呼吸都写在谱上；歌词照写，小月相（つくよみちゃん）直接唱出来，边写边听。多声部编曲、混音台，导出 mp3、PDF 乐谱、MusicXML。" />
     <meta property="og:url" content="https://sing.weebpaint.com/" />
     <meta property="og:image" content="https://sing.weebpaint.com/icon-512.png" />
@@ -195,6 +195,6 @@
         <aside id="padPanel" class="pad-panel"></aside>
       </main>
     </div>
-    <script type="module" src="./dist/moonsinger-e1c707c7e96e.mjs" onerror="window.__msShowError && window.__msShowError(\'主程序没加载下来（刚发了新版本还没到、或网络不通）：等几秒再刷新一次\')"></script>
+    <script type="module" src="./dist/moonsinger-c5255a4460c2.mjs" onerror="window.__msShowError && window.__msShowError(\'主程序没加载下来（刚发了新版本还没到、或网络不通）：等几秒再刷新一次\')"></script>
   </body>
 </html>

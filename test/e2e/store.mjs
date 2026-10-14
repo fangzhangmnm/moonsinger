@@ -22,6 +22,8 @@ const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { 
 try {
   const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => { if (m.type() === "error" && !/已经进了回收站/.test(m.text())) errs.push("console: " + m.text()); });
   const title = () => p.textContent("#docTitle");
+  /** 等自动落盘：「•」消失为止（editor-session 每 2 s 一跳；原来睡 3.5 s——并行跑时它只是下限，改成等到为止更稳也更快；2026-10-14）。 */
+  const saved = async () => { for (let i = 0; i < 80 && /•/.test((await title()) ?? ""); i++) await p.waitForTimeout(100); };
   const tokens = () => p.evaluate(() => JSON.stringify(window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.pitch)));
   await p.goto(URL0); await p.waitForTimeout(500);
   check(await p.evaluate(() => window.__moonsinger.store() === null), "无地开局：store 没建");
@@ -67,7 +69,7 @@ try {
   await p.keyboard.press("Digit3"); await p.keyboard.press("Digit5");
   const tDirty = await title();
   check(/•$/.test(tDirty), "写了之后「•」", tDirty);
-  await p.waitForTimeout(3500);
+  await saved();
   check(!/•/.test(await title()), "2 s 内自动存了（「•」消失）", await title());
   const toks1 = await tokens();
   const bytes1 = await p.evaluate(async (id) => { const bl = await window.__moonsinger.store().zip(id, { mode: "existing" }).open(); return bl ? bl.size : -1; }, id1);
@@ -94,7 +96,7 @@ try {
   const tmp = path.join(OUT, "cover.png"); fs.writeFileSync(tmp, png(64, 48));
   await p.setInputFiles("#coverIn", tmp); await p.waitForTimeout(600);
   const thumbLen = await p.evaluate(() => window.__moonsinger.extras().thumbnail?.length ?? 0); check(thumbLen > 100 && thumbLen < 70 * 1024, "封面图缩成 PNG 进 extras", String(thumbLen));
-  await p.waitForTimeout(3500);
+  await saved();
   const zipHas = await p.evaluate(async (id) => { const bl = await window.__moonsinger.store().zip(id, { mode: "existing" }).open(); const u = new Uint8Array(await bl.arrayBuffer()); const list = window.__moonsinger.zipList(u); return { last: list[list.length - 1], n: list.length }; }, id2);
   check(zipHas.last === "Thumbnails/thumbnail.png", "存的 zip 最后一个 entry = Thumbnails/thumbnail.png（尾读）", JSON.stringify(zipHas));
   const peek = await p.evaluate(async (id) => { const bl = await window.__moonsinger.store().zip(id, { mode: "existing" }).getPeek({ bytesLength: 128 * 1024, zipEntry: "Thumbnails/thumbnail.png", source: "local" }); return bl ? bl.size : -1; }, id2);
@@ -133,7 +135,7 @@ try {
   const del = await p.evaluate(async (id) => (await window.__moonsinger.store().zip(id, { mode: "existing" }).delete()).status, id2);
   check(typeof del === "string", "删掉小星星（store delete）", del);
   await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(600);
-  await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2"); await p.waitForTimeout(3500);
+  await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2"); await saved();
   check(!(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id2)), "之后新建再写也不会把删掉的名字复活");
   const id4 = await p.evaluate(() => window.__moonsinger.identifier()); check(!!id4 && id4 !== id2 && id4 !== id3, "新的一首有自己的身份", id4);
   // 新建文件夹（2026-10-10 user「gallery怎么没接新建文件夹的功能，这个应该只是接线吧，不过小心一点」）：歌库顶栏的钮 → 起名 → store.files.newFolder → 歌库里出现这个夹

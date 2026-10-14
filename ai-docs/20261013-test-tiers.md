@@ -1,6 +1,6 @@
 # 测试分档（W-20 / 家族周账 F-9）：改了哪类东西跑哪一档
 
-> created 20261013 by Claude Fable 5.1 · as-of v0.11.3（dev）/ 2026-10-13
+> created 20261013 by Claude Fable 5.1 · as-of v0.11.5（dev）/ 2026-10-14（节奏按 user 10-14 改：先推 dev 再验）
 > user 2026-10-11：「wishlist，之后让fable设计一个测试计划，不然现在感觉全量测试每次改一点点都要30分钟，就不大好」「就是让fable整理一下测试，以及tier机制」「E2E是什么，这个蛮伤敏捷开发的，到时候fable需要做测试分级」。
 > 家规硬线：全量测试 < 1 分钟（MEMORY「长跑纪律」）。
 
@@ -27,7 +27,7 @@
 |---|---|---|---|
 | **T0 快门** | `npm run check`（= typecheck + 单元 + 守卫） | < 10 s | **每改一下都跑**。纯函数（`src/score` / `src/format` / `src/engine` / `src/singer` 的算法）的正确性主要靠这一档，E2E 只是接线。 |
 | **T1 这一区** | `node test/e2e/run.mjs @区名…` 或 `… 文件名子串…` 或 `… --changed` | 几秒 ～ 45 s | 一块改完、commit 之前。**反证（换回旧代码再跑一遍）只在这一档做**，不跑整套。 |
-| **T2 整套** | `npm run e2e`（60 个 E2E 并行） | ≈ 1.5 min | **每次 push dev 之前**一次。红了继续跑、最后一起报，一轮看全。 |
+| **T2 整套** | `npm run e2e`（60 个 E2E 并行） | ≈ 1.5 min | **先推 dev、再跑整套**（user 2026-10-14「先推dev，我先看到，然后你开始验证。人类时间更宝贵」）：推完立刻跑，红了修了再推一次；人在的时候 user 有权打断 suite；整夜挂机 / 没人盯着的时候这一档的反馈就是你唯一的眼睛，必须跑完、按结果行动（user「如果是整夜挂机的话test suite的反馈对你也很重要吧」）。 |
 | **T2 + 壳** | `npm run test:full`（check + 整套 E2E + 两份冒烟一起并行） | ≈ 2.5 min | push prod 之前；bump minor 之前；碰了离线壳 / 图标接线 / build.sh / index.html 之后。 |
 
 `--changed` 自己看 git 改了什么（相对 HEAD + 未跟踪的）、按 §3 的表推出区，并把每条推理打出来。改了某个 E2E 文件本身 = 只跑它自己。
@@ -71,7 +71,7 @@
 改一下 → npm run check
 改完一块 → node test/e2e/run.mjs --changed     （或 @pad / @score / 文件名）
           反证：换回旧代码，再跑同一条命令，看它红
-推 dev 前 → npm run e2e                           （≈ 1.5 min，全绿才推）
+推 dev → 立刻 npm run e2e                         （≈ 1.5 min；人在 = 先让他看到，红了修了再推；没人 = 跑完按结果行动）
 推 prod / bump minor / 碰了壳 → npm run test:full （≈ 2.5 min）
 加了 E2E → 登记进 test/e2e/areas.mjs（不登记 npm test 红）
 ```
