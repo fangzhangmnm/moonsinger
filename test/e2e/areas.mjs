@@ -48,11 +48,13 @@ export const AREA_OF_PATH = [
   [/^src\/ui\/score-view\.ts$|^src\/render\//, ["score"]],
   [/^src\/score\/(perform|groove|grooves\.gen|repeats|lab-score|arrange)\.ts$/, ["score", "play"]],
   [/^src\/score\//, ["score", "pad"]],
-  // 键盘与小编辑器
-  [/^src\/ui\/(pad|wheel|drum|mark-editor|sel-bar)\.ts$/, ["pad"]],
+  // 键盘模块（src/keyboard/，刀 2 = 2026-10-15）：pad / 键位表 / 锁；滚轮 / 参数行是 W-5 原语，混音台也用
+  [/^src\/keyboard\/(wheel|param-row)\.ts$/, ["pad", "studio", "play"]],
+  [/^src\/keyboard\//, ["pad"]],
+  [/^src\/ui\/(mark-editor|sel-bar)\.ts$/, ["pad"]],
   [/^src\/ui\/(lyric-editor|title-editor)\.ts$/, ["pad", "score"]],
   // 录音房 / 引擎 / 音源 / 月读
-  [/^src\/ui\/(studio|plugins|scopes|spectrum|param-row|part-colors|metronome|render-progress)\.ts$/, ["studio", "play"]],
+  [/^src\/ui\/(studio|plugins|scopes|spectrum|part-colors|metronome|render-progress)\.ts$/, ["studio", "play"]],
   // 演奏者插件（ADR-0004）：能什么 / 怎么出声 / 谱上怎么画 / 怎么试听 → 放 + 录音房 + 键盘（提示音域 / 叠音灰）
   [/^src\/performers\//, ["play", "studio", "pad"]],
   // 唱歌 / 播放胶水（刀 1 从 main.ts 抽出）

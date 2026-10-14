@@ -38,7 +38,7 @@
 |---|---|---|
 | `src/ui/score-view.ts`、`src/render/**` | @score | 谱面手势 / 排版 |
 | `src/score/**`（perform / groove / repeats / lab-score / arrange 另加 @play） | @score @pad | 乐谱数据与命令，pad 写进去的就是它 |
-| `src/ui/pad.ts` / wheel / drum / mark-editor / sel-bar | @pad | 键盘与锁 |
+| `src/keyboard/`（pad / keys / latch / wheel / drum；param-row 也归 @studio @play）+ `src/ui/` mark-editor / sel-bar | @pad | 键盘与锁 |
 | `src/ui/lyric-editor.ts` / title-editor | @pad @score | |
 | `src/ui/studio.ts` / plugins / scopes / spectrum / param-row / part-colors / metronome / render-progress；`src/engine/**` `src/gm/**` `src/singer/**` | @studio @play | 录音房、引擎、月读 |
 | `src/app-store.ts` / identifiers / encryption / `src/app/doc-file.ts` / `src/ui/sheets.ts` / song-cover / `src/editor-session/**` | @store | 文件、云、歌库 |

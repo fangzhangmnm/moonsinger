@@ -5,7 +5,7 @@
 //   · 英文：空格 = 这个词完了、跳下一个音；「-」= 音节完了、词没完（谱面画连字符）、跳下一个音；
 //   · 「~」（或 _ ー）= 拖腔：这个音延续上一个字；
 //   · 空框里退格 = 回到上一个音，把它的字拿出来接着删；回车 / 点别处 = 收起；Esc = 收起不贴；Tab / Shift+Tab = 前后挪。
-//   键位在 src/input/keys.ts（一张表）；这里只收路由来的动作（act）。
+//   键位在 src/keyboard/keys.ts（一张表）；这里只收路由来的动作（act）。
 // 输入法还在拼（isComposing）的时候什么都不做——拼音、假名输入法都不被打断。
 
 import { type EditorState, type NoteTok, tr, withTrack } from "../score/song.ts";
@@ -144,7 +144,7 @@ export class LyricEditor {
     this.reposition();
   }
 
-  /** 键盘路由来的动作（src/input/keys.ts 的「歌词框」那几行）。返回 false = 这一下不归歌词框管（让输入框照常打字）。 */
+  /** 键盘路由来的动作（src/keyboard/keys.ts 的「歌词框」那几行）。返回 false = 这一下不归歌词框管（让输入框照常打字）。 */
   act(a: "commit" | "cancel" | "next" | "prev" | "hyphen" | "back"): boolean {
     if (!this.open) return false;
     const v = this.input.value;

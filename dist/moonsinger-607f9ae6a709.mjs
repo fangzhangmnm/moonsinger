@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.10-2026-10-15";
+var APP_VERSION = "v0.12.11-2026-10-15";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6237,7 +6237,7 @@ function apply(st3, c10, now2 = Date.now()) {
   }
 }
 
-// src/input/keys.ts
+// src/keyboard/keys.ts
 var range = (codes, m2 = {}) => codes.map((code) => ({ code, ...m2 }));
 var DIGITS = ["Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7"];
 var NUMPAD = ["Numpad1", "Numpad2", "Numpad3", "Numpad4", "Numpad5", "Numpad6", "Numpad7"];
@@ -9320,7 +9320,7 @@ var LyricEditor = class {
     }
     this.reposition();
   }
-  /** 键盘路由来的动作（src/input/keys.ts 的「歌词框」那几行）。返回 false = 这一下不归歌词框管（让输入框照常打字）。 */
+  /** 键盘路由来的动作（src/keyboard/keys.ts 的「歌词框」那几行）。返回 false = 这一下不归歌词框管（让输入框照常打字）。 */
   act(a10) {
     if (!this.open) return false;
     const v = this.input.value;
@@ -9441,7 +9441,7 @@ function parseMark(kind, raw) {
   return w2 ? { kind, bpm: w2.typical } : null;
 }
 
-// src/ui/drum.ts
+// src/keyboard/drum.ts
 var ROW = 44;
 var VISIBLE = 5;
 var LOOP_COPIES = 7;
@@ -9651,7 +9651,7 @@ var MarkEditor = class {
   get open() {
     return this.id >= 0;
   }
-  /** 键盘路由来的动作（src/input/keys.ts 的「记号框」那几行）。 */
+  /** 键盘路由来的动作（src/keyboard/keys.ts 的「记号框」那几行）。 */
   act(a10) {
     if (a10 !== "commit") this.close();
     else if (this.kind === "tempo") this.confirmTempo();
@@ -11732,7 +11732,7 @@ function ladderHome(sc2, tonicD, fifths) {
 }
 var degLabel = (g3) => `${g3.alt > 0 ? "\u266F" : g3.alt < 0 ? "\u266D" : ""}${g3.deg}`;
 
-// src/ui/wheel.ts
+// src/keyboard/wheel.ts
 var STEP_PX = 40;
 var NOTCH_PX = 50;
 function wheelSteps(e10, acc) {
@@ -11743,7 +11743,7 @@ function wheelSteps(e10, acc) {
   return { steps, acc: a10 - steps * STEP_PX };
 }
 
-// src/ui/pad.ts
+// src/keyboard/pad.ts
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var SYM_PAGES = {
@@ -27781,7 +27781,7 @@ function areaPath(b3, lo2 = -80, hi = 4) {
   return d3 + "L100,100Z";
 }
 
-// src/ui/param-row.ts
+// src/keyboard/param-row.ts
 var esc4 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 function paramRow(label, hint2, out, control, cls = "fx-row") {
   return `<div class="param ${cls}" title="${esc4(hint2)}"><span class="row-lab">${esc4(label)}<button class="q" type="button" aria-label="\u8FD9\u662F\u4EC0\u4E48">?</button> ${out}</span>${control}<div class="row-help">${esc4(hint2)}</div></div>`;
@@ -40794,7 +40794,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "2b57ccea5c44",
+  cssHash: "03f8c2b257dc",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -43994,4 +43994,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c67b752f4bd0.mjs.map
+//# sourceMappingURL=moonsinger-607f9ae6a709.mjs.map

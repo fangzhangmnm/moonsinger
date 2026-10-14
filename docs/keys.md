@@ -1,8 +1,8 @@
-<!-- 自动生成：node scripts/gen-keys-doc.mjs 从 src/input/keys.ts 的 BINDINGS 生成——别手改，改表再重跑（测试守着它不过期）。 -->
+<!-- 自动生成：node scripts/gen-keys-doc.mjs 从 src/keyboard/keys.ts 的 BINDINGS 生成——别手改，改表再重跑（测试守着它不过期）。 -->
 
 # 键盘
 
-> 生成自 `src/input/keys.ts`
+> 生成自 `src/keyboard/keys.ts`
 
 谱面上有三种状态：**写**（光标，打的音插在光标处）、**改**（选中了一段，打的音覆盖选中）、**弹**（「弹」开着：音符键只唱不写，其余键照写 / 改）。
 按物理键位认（换输入法 / 键盘布局不乱）；Ctrl / ⌘ 组合只接存 / 导出 / 打开，其余交给浏览器。

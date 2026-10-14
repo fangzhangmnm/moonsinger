@@ -13,7 +13,7 @@
 //   滚轮藏在下面，就像汽车里程表一样」）；内容跟着手指走，大的在上——音域就是一张纸：往上推 = 看下面更低的
 //   （user「如果键盘是一个可以滑动的纸，那么你往上滑应该是往下看」）；一次最多一格、滑几下就是几格（user「in place的时候一次最多一格，
 //   这样方便快速swipe几次就是几格」）；松手立刻停（user「手指松了立刻停，不要顿一下，这是快速输入」）。
-//   只是点一下 = 从那一格展开一根同样宽的竖直滚轮（src/ui/drum.ts，原生滚动），点格子或滚到哪就是哪
+//   只是点一下 = 从那一格展开一根同样宽的竖直滚轮（src/keyboard/drum.ts，原生滚动），点格子或滚到哪就是哪
 //   （user「那些上下可以滑或者点开选对吧」「我想的是点了之后变成一个overlay的同样宽度的竖直滚动桶」；长短那根旁边并一根窄的连音滚轮「2好主意」，
 //   连音画成真的一组小蝌蚪、跟着长短变：user「三联我是说画具体的小蝌蚪」「三联五联的小蝌蚪应该跟着base时值adaptive的变」）。没有「本调」。
 //   移调（有选中时）和「⋯」是一次性的动作、不是选一个值：点了整排换成候选。
@@ -27,10 +27,10 @@
 // · 有选中（改）的时候「1=」旋钮变成「移调」：点了 = 半音 / 全音 / 八度 / 转调…
 
 import { type Pitch, HOME, diatonicIndex, tonicStepIndex, pitchName, alterBy, midiOf, KEY_LABEL } from "../score/pitch.ts";
-import { LATCH_OFF, latchTap, latchWrite, type Latch } from "../keyboard/latch.ts";
+import { LATCH_OFF, latchTap, latchWrite, type Latch } from "./latch.ts";
 import { type Scale, SCALES, scaleById, ladderAt, ladderFirstAtOrAbove, ladderHome, degLabel } from "../score/scales.ts";
 import type { Command } from "../score/commands.ts";
-import { hint } from "../input/keys.ts";
+import { hint } from "./keys.ts";
 import { type EditorState, type Acc, type Art, inputKey, keyAt, timeAt, tempoAt, tr, singleSel } from "../score/song.ts";
 import { openDrum, type DrumHandle } from "./drum.ts";
 import { wheelSteps } from "./wheel.ts";

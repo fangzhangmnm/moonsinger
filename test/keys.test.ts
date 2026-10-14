@@ -1,8 +1,8 @@
-// 键盘映射（src/input/keys.ts）：路由矩阵 + 表的结构守卫 + 文档不过期。created 2026-10-07 by Claude Opus 5.5
+// 键盘映射（src/keyboard/keys.ts）：路由矩阵 + 表的结构守卫 + 文档不过期。created 2026-10-07 by Claude Opus 5.5
 import { describe, it, eq } from "./runner.mjs";
 // 仓里不装 @types/node：node:fs 走动态 import（类型当 any）
 const { readFileSync } = (await import("node:fs" as string)) as { readFileSync(u: URL, enc: "utf8"): string };
-import { BINDINGS, route, isSoundKey, chordName, renderKeysDoc, type Where, type KeyLike } from "../src/input/keys.ts";
+import { BINDINGS, route, isSoundKey, chordName, renderKeysDoc, type Where, type KeyLike } from "../src/keyboard/keys.ts";
 
 const K = (code: string, m: Partial<KeyLike> = {}): KeyLike => ({ code, key: m.key ?? "x", shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, ...m });
 const r = (k: KeyLike, w: Where, base: "write" | "edit" = "write") => JSON.stringify(route(k, w, base));

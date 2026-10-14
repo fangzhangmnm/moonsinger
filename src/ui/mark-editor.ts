@@ -16,7 +16,7 @@ import { type EditorState, type MarkTok, type MarkVal, setMark, deleteMark, head
 import { KEY_LABEL } from "../score/pitch.ts";
 import { markText, parseMark } from "../score/marks.ts";
 import type { Layout } from "../render/engrave.ts";
-import { mountWheel, type WheelHandle } from "./drum.ts";
+import { mountWheel, type WheelHandle } from "../keyboard/drum.ts";
 import { metroStart, metroStep, type MetroState } from "./metronome.ts";
 
 interface Host { get(): EditorState; set(next: EditorState): void }
@@ -77,7 +77,7 @@ export class MarkEditor {
   }
 
   get open(): boolean { return this.id >= 0; }
-  /** 键盘路由来的动作（src/input/keys.ts 的「记号框」那几行）。 */
+  /** 键盘路由来的动作（src/keyboard/keys.ts 的「记号框」那几行）。 */
   act(a: "commit" | "cancel"): void { if (a !== "commit") this.close(); else if (this.kind === "tempo") this.confirmTempo(); else this.commitAndClose(); }
   private indexNow(): number { return tr(this.host.get()).findIndex((t) => t.id === this.id); }
 

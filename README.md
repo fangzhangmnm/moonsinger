@@ -29,7 +29,7 @@ npm run smoke        # 真浏览器 + 真 service worker 冒烟（借兄弟仓 W
 1. `CLAUDE.md`（仓库纪律、出货状态、黄线区）
 2. `ai-docs/20261005-moonsinger-upheaval.md`（为什么是小月相）
 3. `ai-docs/20261006-editor-v0-grill.md`（编辑器第一版的决定与原话）
-4. `docs/keys.md`（键位，由 `src/input/keys.ts` 生成）
+4. `docs/keys.md`（键位，由 `src/keyboard/keys.ts` 生成）
 
 ## 小月相的声音
 

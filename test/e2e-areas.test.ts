@@ -21,7 +21,7 @@ describe("E2E 分区表", () => {
     for (const [, a] of AREA_OF_PATH as [RegExp, string | string[]][]) if (Array.isArray(a)) for (const x of a) assert(x in (AREAS as object), `AREA_OF_PATH 指向不存在的区 ${x}`);
     eq(areasOf("src/app/main.ts"), "all"); eq(areasOf("styles.css"), "all"); eq(areasOf("index.html"), "all");
     eq(areasOf("service-worker.js"), "smoke"); eq(areasOf("src/app/pwa-shell.ts"), "smoke");
-    eq(JSON.stringify(areasOf("src/ui/pad.ts")), JSON.stringify(["pad"]));
+    eq(JSON.stringify(areasOf("src/keyboard/pad.ts")), JSON.stringify(["pad"])); eq(JSON.stringify(areasOf("src/keyboard/wheel.ts")), JSON.stringify(["pad", "studio", "play"]));
     eq(JSON.stringify(areasOf("src/ui/score-view.ts")), JSON.stringify(["score"]));
     eq(JSON.stringify(areasOf("src/engine/studio.ts")), JSON.stringify(["studio", "play"]));
     eq(JSON.stringify(areasOf("ai-docs/x.md")), "[]"); eq(JSON.stringify(areasOf("src/version.ts")), "[]");

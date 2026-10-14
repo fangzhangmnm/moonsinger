@@ -2,7 +2,7 @@
 // created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改成新打法：默认八分，四分 = 八分 + 「−」，十六分 = 「短」再「长」回来，二分 = 八分 + 三个「−」
 import { describe, it, eq } from "./runner.mjs";
 import { initState, emptySong, tr } from "../src/score/song.ts";
-import { route } from "../src/input/keys.ts";
+import { route } from "../src/keyboard/keys.ts";
 import { apply } from "../src/score/commands.ts";
 import { applyLyricLine } from "../src/score/lyrics.ts";
 import { toLabScore } from "../src/score/lab-score.ts";

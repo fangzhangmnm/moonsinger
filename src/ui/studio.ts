@@ -12,7 +12,7 @@ import { eqResponseDb } from "../engine/fx.ts";
 import { SPEC_BANDS, bandHz, bandsDb, smoothBands, areaPath, xOfHz } from "./spectrum.ts";
 const SPEC_TICKS = [100, 1000, 10000];
 import { DEFAULT_EQ_ID, PLUGIN_KINDS, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, viewOfFx, type Params } from "./plugins.ts";
-import { paramRow, slider, wireParamRows } from "./param-row.ts";
+import { paramRow, slider, wireParamRows } from "../keyboard/param-row.ts";
 import { stereoShape } from "./scopes.ts";
 
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）

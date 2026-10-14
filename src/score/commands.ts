@@ -1,5 +1,5 @@
 // commands.ts —— 键盘 / pad / 按钮条发来的命令 → 编辑器状态。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
-// 键盘怎么变成命令 = src/input/keys.ts（一张表）；这里只管命令做什么。
+// 键盘怎么变成命令 = src/keyboard/keys.ts（一张表）；这里只管命令做什么。
 import type { Dir } from "./pitch.ts";
 import { type EditorState, type Art, type Dyn, setDynSel, dynMarkSel, toggleSlurBefore, toggleHairpin, toggleSwell, symBackspace, writeDegree, writeRest, writeBar, writePhrase, shorter, longer, setTuplet, extend, tapAcc, octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward, transposeSel, respellSel, modulateSel, selectToEdge, tr, toggleStaff, toggleArtBefore, toggleInhaleBefore, setSelDur, scaleSelDur } from "./song.ts";
 

@@ -318,7 +318,7 @@ button, input, select { font: inherit; color: inherit; }
 .pad-key.hint { box-shadow: inset 0 -3px 0 #e3cf9c, 0 1px 0 rgba(42, 42, 42, .28); }
 .pad-key.swiping { background: var(--accent-soft); }
 .pad-key.swiping .acc { font-weight: 700; }
-/* 竖直滚轮（点开 pad 的旋钮；src/ui/drum.ts）：中间那格 = 选中 */
+/* 竖直滚轮（点开 pad 的旋钮；src/keyboard/drum.ts）：中间那格 = 选中 */
 .drum { position: fixed; z-index: var(--z-menu); display: flex; gap: 2px; background: #fff; border-radius: 10px; box-shadow: 0 0 0 1px var(--line), 0 8px 28px rgba(0,0,0,.18); overflow: hidden; }   /* 描边不占地方：滚轮和旋钮一样宽 */
 .drum::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); background: var(--accent-soft); pointer-events: none; }
 /* 原生滚动 + 吸附（user「拖动的物理也很难受，能不能换成标准的」）：手感 = 系统里别的列表 */

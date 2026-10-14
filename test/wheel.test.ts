@@ -1,6 +1,6 @@
-// 滚轮 → 几步（src/ui/wheel.ts；pad 旋钮和混音台滑块共用；v0.10.13）。created 2026-10-10 by Claude Opus 5.5
+// 滚轮 → 几步（src/keyboard/wheel.ts；pad 旋钮和混音台滑块共用；v0.10.13）。created 2026-10-10 by Claude Opus 5.5
 import { describe, it, eq } from "./runner.mjs";
-import { wheelSteps } from "../src/ui/wheel.ts";
+import { wheelSteps } from "../src/keyboard/wheel.ts";
 
 const px = (deltaY: number) => ({ deltaMode: 0, deltaY });
 describe("滚轮一格 = 一步", () => {

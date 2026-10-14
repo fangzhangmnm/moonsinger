@@ -14,13 +14,13 @@ import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
-import { type Action, type Where, route, isSoundKey } from "../input/keys.ts";
+import { type Action, type Where, route, isSoundKey } from "../keyboard/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { lyricIssues, lyricWhyText, prettyReading, type LyricIssue } from "../score/lyric-check.ts";
 import { ScoreView } from "../ui/score-view.ts";
 import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
-import { Pad, type HintRange } from "../ui/pad.ts";
+import { Pad, type HintRange } from "../keyboard/pad.ts";
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
@@ -3134,7 +3134,7 @@ window.addEventListener("online", () => { renderTitle(); if (!hasStore()) return
 window.addEventListener("offline", () => renderTitle());
 document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible" || !hasStore()) return; if (isSignedIn()) void refreshOpenDoc(); else retrySilent(); });
 
-// ── 键盘：映射是一张表（src/input/keys.ts）；这里只算「键盘现在归谁」，再照路由的结果做 ─────────────
+// ── 键盘：映射是一张表（src/keyboard/keys.ts）；这里只算「键盘现在归谁」，再照路由的结果做 ─────────────
 /** 谁在最上面归谁：导出面板 > 记号框 > 歌词框 > 谱面（弹 / 改 / 写）。 */
 function whereNow(): Where {
   if (ui.overlay || isSheetOpen() || isGateOpen()) return "sheet";
