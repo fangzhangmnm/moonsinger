@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.3-2026-10-14";
+var APP_VERSION = "v0.12.4-2026-10-14";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -26417,7 +26417,16 @@ function createPerformance(host) {
   const { creditsOf: creditsOf2, creditsBlock: creditsBlock2 } = host.credits;
   const escHtml = (x2) => x2.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10] ?? c10);
   const st3 = () => host.state(), extras = () => host.extras(), pv2 = (id2) => host.pv(id2), curRole2 = () => host.curRole(), docName2 = () => host.docName();
-  const humOpt2 = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
+  let singExperiment = {};
+  function setSingExperiment(key, value) {
+    const next2 = { ...singExperiment };
+    if (value === null) delete next2[key];
+    else next2[key] = value;
+    singExperiment = next2;
+    schedulePlaybackRefresh2();
+    schedulePrewarm2();
+  }
+  const humOpt2 = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN, ...singExperiment });
   const playSong2 = () => host.viewScope() === "segment" ? songOnlyPaper(st3().song, st3().at.paper) : st3().song;
   const curFlat2 = () => {
     const s10 = playSong2(), order = songPlayOrder(s10);
@@ -27147,6 +27156,8 @@ function createPerformance(host) {
     previewTrack: previewTrack2,
     budget: BUDGET2,
     TURN_LEADS: TURN_LEADS2,
+    singExperiment: () => singExperiment,
+    setSingExperiment,
     issues: () => issues,
     issueOf: (part) => issues.find((i10) => i10.part === part) ?? null,
     issuesText,
@@ -42190,6 +42201,12 @@ instEl.hidden = true;
 $2("stage").append(instEl);
 var instPicked = null;
 var UNKNOWN_TITLE = "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09";
+var SING_EXPERIMENTS = [
+  { key: "cleanMax", label: "\u501F\u5143\u97F3\u95E8\u69DB", def: 0.4, values: [0.3, 0.4, 0.5], why: "\u4E00\u4E2A\u5B57\u81EA\u5DF1\u7684\u5143\u97F3\u6BD4\u8FD9\u4E2A\u6570\u8FD8\u6742\uFF08\u6C14\u58F0\uFF09= \u4E0D\u5531\u5B83\u81EA\u5DF1\u7684\uFF0C\u4ECE\u540C\u4E00\u53E5\u91CC\u522B\u7684\u5E72\u51C0\u7684\u540C\u5143\u97F3\u501F\u4E00\u4EFD\u6765\u5531\u3002\u56E2\u5B50 C \u6BB5\u7B2C 10 \u5C0F\u8282\u7684\u300C\u305D\u300D\u81EA\u5DF1\u662F 0.34\uFF1A\u95E8\u69DB 0.3 = \u5B83\u6539\u6210\u501F\uFF1B0.5 = \u66F4\u591A\u5B57\u7167\u81EA\u5DF1\u5FF5\u7684\u5531" },
+  { key: "breath", label: "\u6C14\u606F", def: 0, values: [0, 0.5, 1], why: "0 = \u6BCF\u4E2A\u5143\u97F3\u7684\u6BCF\u4E00\u5E27\u90FD\u538B\u6210\u8FD9\u4E2A\u5143\u97F3\u6700\u5E72\u51C0\u90A3\u51E0\u5E27\u7684\u5B9E\u58F0\uFF1B1 = \u7167 piper \u5FF5\u51FA\u6765\u7684\u6C14\u606F\u3002\u6E05\u8F85\u97F3\u8FDB\u5143\u97F3\u90A3\u4E00\u4E0B\uFF08s \u2192 o\uFF09\u4ECE\u6742\u53D8\u5B9E\u592A\u731B\u4F1A\u50CF\u7206\u97F3\uFF0C\u8FD9\u4E2A\u65CB\u94AE\u7BA1\u5B83" },
+  { key: "levelMaxDb", label: "\u9F50\u5E73\u4E0A\u9650", def: 6, values: [6, 12], why: "\u628A\u6BCF\u4E2A\u5B57\u7684\u54CD\u5EA6\u5F80\u6574\u53E5\u7684\u4E2D\u4F4D\u6570\u62C9\u65F6\u6700\u591A\u62C9\u51E0 dB\u3002\u300C\u305D\u300D\u5FF5\u51FA\u6765\u6BD4\u90BB\u5B57\u4F4E\u7EA6 20 dB\uFF0C6 \u53EA\u62C9\u56DE\u4E00\u5C0F\u534A" },
+  { key: "level", label: "\u9F50\u5E73\u591A\u5C11", def: 0.8, values: [0, 0.8], why: "0 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF1B0.8 = \u5F80\u4E2D\u4F4D\u6570\u62C9\u516B\u6210" }
+];
 function openInstPage() {
   closeOffer?.();
   finderBackToInst = false;
@@ -42379,7 +42396,8 @@ function drawInst() {
     const text2 = octaveDisclosure(nt2, oc2, (c10) => CLEF_LABEL[c10] ?? c10);
     return text2 ? row2("\u516B\u5EA6", "", esc8(text2)) : "";
   })(activeGm(doc.extras, role)) : "") + ((performerOf(eng)?.lyrics ?? "none") !== "none" ? row2("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
-  (performerOf(eng)?.sound === "chunks" ? ((sc2) => row2(
+  // 唱法实验（F-16，2026-10-14）：只在这次打开里有效（不进歌、不进撤销）；不是默认值时进唱法的 opt = 进块的内容键 = 切了用到的句子重唱。AI 不听，哪个对归耳朵
+  (performerOf(eng)?.sound === "chunks" ? SING_EXPERIMENTS.map((x2) => row2(`${x2.label}\uFF08\u5B9E\u9A8C\uFF09`, x2.values.map((v) => chip(`exp:${x2.key}:${v}`, v === x2.def ? `${v} \u9ED8\u8BA4` : String(v), (perfApi.singExperiment()[x2.key] ?? x2.def) === v, v === x2.def ? "\u5531\u6CD5\u6838\u5FC3\u7684\u9ED8\u8BA4\u503C" : "\u5207\u4E86\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548")).join(""), x2.why)).join("") : "") + (performerOf(eng)?.sound === "chunks" ? ((sc2) => row2(
     "\u5206\u6BB5\u5531",
     [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
     sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF"
@@ -42481,7 +42499,14 @@ instEl.addEventListener("click", (e10) => {
     const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d3));
     updateExtras(withCalibration(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u54CD\u5EA6\u6821\u51C6 ${next2} dB` }, "cal");
   } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
-  else if (v.startsWith("chunk:")) {
+  else if (v.startsWith("exp:")) {
+    const [, key, val] = v.split(":"), x2 = SING_EXPERIMENTS.find((e11) => e11.key === key), n10 = Number(val);
+    if (x2) {
+      perfApi.setSingExperiment(key, n10 === x2.def ? null : n10);
+      drawInst();
+      info(`${x2.label}\uFF1A${val}${n10 === x2.def ? "\uFF08\u9ED8\u8BA4\uFF09" : ""}\u2014\u2014\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548`);
+    }
+  } else if (v.startsWith("chunk:")) {
     const c10 = v.slice(6);
     updateExtras(withSingChunk(doc.extras, role, c10, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u5206\u6BB5\u5531\uFF1A${c10 === "phrase" ? "\u6BCF\u53E5" : c10 === "sheet" ? "\u6BCF\u5F20\u7EB8" : "\u4E00\u6574\u9996"}` });
   } else return;
@@ -43934,4 +43959,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-fb5ae94a8c56.mjs.map
+//# sourceMappingURL=moonsinger-ae06f82c17ee.mjs.map

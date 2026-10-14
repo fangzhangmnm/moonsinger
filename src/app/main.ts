@@ -2123,6 +2123,14 @@ $("stage").append(instEl);
 let instPicked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel: string; library?: SoundEntry } | null = null;
 type Chosen = { name: string; bank: number; program: number; note?: number; sfx?: SfxInfo; subset: Uint8Array; sha256: string; origin: GmCandidate["origin"]; credit: { attribution: string[]; license: { name: string; url?: string; text?: string } } };
 const UNKNOWN_TITLE = "这一版出不了声（别的软件原来的乐器）";   // 认得出的候选：说明由插件自报（description）
+/** 唱法实验的四个旋钮（F-16 团子 C 段第 10 小节「そ」爆音查案；探针 ai-docs/20261013-dango-c10-pop-probe.md §5）：乐器页「实验」几行，切着听同一句。
+ *  默认值 = 唱法核心 DEFAULT_OPT（src/singer/sing-core.mjs）；选回默认 = 从覆盖表里删掉。定了哪个对 → 再决定改默认还是变成歌手属性（不在这里决定）。 */
+const SING_EXPERIMENTS: { key: string; label: string; def: number; values: number[]; why: string }[] = [
+  { key: "cleanMax", label: "借元音门槛", def: 0.4, values: [0.3, 0.4, 0.5], why: "一个字自己的元音比这个数还杂（气声）= 不唱它自己的，从同一句里别的干净的同元音借一份来唱。团子 C 段第 10 小节的「そ」自己是 0.34：门槛 0.3 = 它改成借；0.5 = 更多字照自己念的唱" },
+  { key: "breath", label: "气息", def: 0, values: [0, 0.5, 1], why: "0 = 每个元音的每一帧都压成这个元音最干净那几帧的实声；1 = 照 piper 念出来的气息。清辅音进元音那一下（s → o）从杂变实太猛会像爆音，这个旋钮管它" },
+  { key: "levelMaxDb", label: "齐平上限", def: 6, values: [6, 12], why: "把每个字的响度往整句的中位数拉时最多拉几 dB。「そ」念出来比邻字低约 20 dB，6 只拉回一小半" },
+  { key: "level", label: "齐平多少", def: 0.8, values: [0, 0.8], why: "0 = 照念的时候自己的轻重；0.8 = 往中位数拉八成" },
+];
 function openInstPage(): void {
   closeOffer?.(); finderBackToInst = false;
   if (finder.isOpen) closeFinder();
@@ -2266,6 +2274,8 @@ function drawInst(): void {
     })(activeGm(doc.extras, role)) : "") +
     ((performerOf(eng)?.lyrics ?? "none") !== "none" ? row("哼的字", HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), "没写歌词的音唱什么（整首歌一个）") : "") +
     // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
+    // 唱法实验（F-16，2026-10-14）：只在这次打开里有效（不进歌、不进撤销）；不是默认值时进唱法的 opt = 进块的内容键 = 切了用到的句子重唱。AI 不听，哪个对归耳朵
+    (performerOf(eng)?.sound === "chunks" ? SING_EXPERIMENTS.map((x) => row(`${x.label}（实验）`, x.values.map((v) => chip(`exp:${x.key}:${v}`, v === x.def ? `${v} 默认` : String(v), (perfApi.singExperiment()[x.key] ?? x.def) === v, v === x.def ? "唱法核心的默认值" : "切了用到的句子会重唱；只在这次打开里有效")).join(""), x.why)).join("") : "") +
     (performerOf(eng)?.sound === "chunks" ? ((sc) => row("分段唱", (([["phrase", "每句", "在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句"], ["sheet", "每张纸", "一张纸一段"], ["whole", "一整首", "一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）"]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),
       sc === "whole" ? "一口气唱完：句和句之间唱法最连贯，但长歌在 iPad 上可能内存不够" : "分段唱：一段唱完就放掉，重复的段 / 没改的句子直接拿上次的；段和段之间切在休止 / 纸界，整首最后统一音量"))(activeSingChunk(doc.extras, role)) : "") +
     (!performerOf(eng) ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
@@ -2314,6 +2324,7 @@ instEl.addEventListener("click", (e) => {
   else if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4)))); updateExtras(withGapSec(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」音和音之间 ${Math.round(next * 1000)} ms` }, "gap"); }
   else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d)); updateExtras(withCalibration(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
   else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
+  else if (v.startsWith("exp:")) { const [, key, val] = v.split(":"), x = SING_EXPERIMENTS.find((e) => e.key === key), n = Number(val); if (x) { perfApi.setSingExperiment(key, n === x.def ? null : n); drawInst(); info(`${x.label}：${val}${n === x.def ? "（默认）" : ""}——用到的句子会重唱；只在这次打开里有效`); } }
   else if (v.startsWith("chunk:")) { const c = v.slice(6) as "phrase" | "sheet" | "whole"; updateExtras(withSingChunk(doc.extras, role, c, st.song.hum), { kind: "lounge", label: `「${rn}」分段唱：${c === "phrase" ? "每句" : c === "sheet" ? "每张纸" : "一整首"}` }); }
   else return;
   drawInst();
