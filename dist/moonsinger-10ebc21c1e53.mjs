@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.14-2026-10-15";
+var APP_VERSION = "v0.12.15-2026-10-15";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -29312,6 +29312,9 @@ function consumeLaunchFiles(cb2) {
   });
 }
 
+// src/app/main.ts
+init_fflate_esm();
+
 // src/config.ts
 var APP_ID = "moonsinger";
 var CLIENT_ID2 = "ce612efe-ea39-4a52-872d-550cd9f7d71b";
@@ -41039,7 +41042,18 @@ window.__moonsinger = {
     embedSoftLimit = n10;
   },
   layout: () => view.layout ? { ...view.layout, head: view.head() } : null,
-  // head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
+  bytes: () => bytesNow(),
+  open: (name, bytes) => openBytes(name, bytes),
+  view,
+  zipList: (bytes) => Object.keys(unzipSync(bytes)),
+  zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]),
+  load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null, view: o10.view, references: o10.references }),
+  refHost,
+  makePdf: async (id2, pick) => {
+    const { r: r10, file } = await makePdf(id2, pick);
+    progress("");
+    return { bytes: r10.bytes, pages: r10.pages, stats: r10.stats, name: file.name };
+  },
   setChunk: (v) => {
     const role = st2.song.parts.find((x2) => x2.id === st2.at.part)?.role;
     if (role) updateExtras(withSingChunk(doc.extras, role, v, st2.song.hum), { kind: "lounge", label: `\u5206\u6BB5\u5531\uFF1A${v}` });
@@ -44218,4 +44232,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-7873e5f1c170.mjs.map
+//# sourceMappingURL=moonsinger-10ebc21c1e53.mjs.map
