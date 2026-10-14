@@ -1,6 +1,6 @@
 # MoonSinger
 
-在五线谱上写旋律和歌词，让月读唱出来。
+在五线谱上写旋律和歌词，让小月相唱出来。
 created 2026-10-07 by Claude Opus 5.5（公开工坊道首日）
 
 - **开发版（随 main 更新）**：https://sing.weebpaint.com/dev/
@@ -9,7 +9,7 @@ created 2026-10-07 by Claude Opus 5.5（公开工坊道首日）
 ## 现状（as-of v0.1.1 / 2026-10-07）
 
 - 真五线谱，旋律是一串 token（音符 / 休止 / 小节线 / 调号 / 拍号 / 速度）。三路输入写同一串：电脑键盘（键位表 `docs/keys.md`）、笔 / 鼠标、手指 pad。
-- 月读（つくよみちゃん）唱日文 / 中文 / 英文歌词，没写歌词的音唱「哼的字」。第一次整首唱要下载约 65 MB 模型（家族模型仓，之后不再下）；轻量版是月读的元音采样，按下即响。
+- 小月相（つくよみちゃん）唱日文 / 中文 / 英文歌词，没写歌词的音唱「哼的字」。第一次整首唱要下载约 65 MB 模型（家族模型仓，之后不再下）；轻量版是小月相的元音采样，按下即响。
 - 存成 `.mxl`（MusicXML 乐谱的压缩包，别的乐谱软件也能打开；MoonSinger 自己的东西放在里面的 `.moonsinger/`，格式说明 = `ai-docs/20261007-data-contract-draft.md`）。
 - 导出 mp3；装成 PWA 后离线可用。
 - 这是一个**公开工坊**：`ai-docs/` 是 AI 时代的 source，与代码一起公开；`journals/` 是人类区，不进仓。
@@ -27,11 +27,11 @@ npm run smoke        # 真浏览器 + 真 service worker 冒烟（借兄弟仓 W
 ## 读什么
 
 1. `CLAUDE.md`（仓库纪律、出货状态、黄线区）
-2. `ai-docs/20261005-moonsinger-upheaval.md`（为什么是月读）
+2. `ai-docs/20261005-moonsinger-upheaval.md`（为什么是小月相）
 3. `ai-docs/20261006-editor-v0-grill.md`（编辑器第一版的决定与原话）
 4. `docs/keys.md`（键位，由 `src/input/keys.ts` 生成）
 
-## 月读的声音
+## 小月相的声音
 
 本ソフトウェアの音声合成には、フリー素材キャラクター「つくよみちゃん」（© Rei Yumesaki）が無料公開している音声データを使用しています。
 ■つくよみちゃんコーパス（CV.夢前黎）
@@ -52,5 +52,5 @@ https://tyc.rei-yumesaki.net/material/corpus/
 
 - 本仓自己写的代码与文档：MIT（`LICENSE`）。
 - `vendor/` 下的第三方各按各的许可证：Bravura（SIL OFL 1.1）、lamejs（LGPL-3.0）、WORLD（modified BSD），原文都在各自目录里。
-- `assets/preview/`（试听元音表）是月读唱出来的声音，按上面つくよみちゃん 的条款，不在 MIT 之内。
+- `assets/preview/`（试听元音表）是小月相唱出来的声音，按上面つくよみちゃん 的条款，不在 MIT 之内。
 - 模型（家族模型仓 pwa-models 的包）的许可证随包附带。

@@ -35,7 +35,7 @@ import { openDrum, type DrumHandle } from "./drum.ts";
 import { wheelSteps } from "./wheel.ts";
 
 /** 月读的音域 A3–E5（MIDI）：键底部画细条提示，音域外不拦、不变灰。宿主不给提示音域时（hintRange 没接）用它。 */
-export const HER_RANGE = { lo: 57, hi: 76, who: "月读" } as const;
+export const HER_RANGE = { lo: 57, hi: 76, who: "小月相" } as const;
 /** 提示音域：谁在弹（宿主说）+ 她 / 它的音域（MIDI，含两端）。null = 不画提示。 */
 export type HintRange = { lo: number; hi: number; who: string; title?: string } | null;   // title = 键上的提示字（没有 = 「谁的音域里」）
 /** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
@@ -226,7 +226,7 @@ export class Pad {
         `<button class="btn wk" data-cmd="rest" title="休止（${hint("rest")}）"><span>0</span><small>休止</small></button>` +
         `<button class="btn wk" data-cmd="bar" title="小节线（${hint("bar")}）"><span>|</span><small>小节线</small></button>` +
         // 呼吸放在写音那一排（user 2026-10-08「呼吸应该是我在first pass 旋律flow的时候非常高频会用到的符号」）：和符号层「演奏法」页那一格同一件事——光标前那个音后面换气，再点去掉；符号层开着也能按
-        `<button class="btn wk breath" data-breath="1" title="呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"><span class="smufl">\uE4CE</span><small>呼吸</small></button>` +
+        `<button class="btn wk breath" data-breath="1" title="呼吸：光标前那个音后面换一口气（小月相唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"><span class="smufl">\uE4CE</span><small>呼吸</small></button>` +
         `<button class="btn wk accshift" data-accshift="1" title="升降（和 Shift 一样）：点一下 = 下一个音；连点两下 = 锁住，再点解开；按住写 = 按住期间。在键上上下滑换 𝄪 / ♯ / ♭ / 𝄫"><span class="ag"></span><small>升降</small></button>` +
         `<button class="btn wk stack" data-stack="1" title="叠（像 Caps Lock）：按一下 = 选中光标前那个音来改——按音键叠上 / 拿掉（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）、— 长一步、⌫ 短一步、← → 换前后的音；再按一下 = 回到它后面接着写。单声乐器的声部叠不了"><span>叠</span><small>叠音</small></button>` +
         `<button class="btn wk half" data-half="1" title="减半（长短基线短一档）：点一下 = 下一个音；连点两下 = 锁住，再点解开；也可以按住写"><span>/2</span><small>减半</small></button>` +
@@ -413,10 +413,10 @@ export class Pad {
       cell("dyn:ramp", RAMP_CELL, "渐到", "渐到：点一下 = 下一个力度从这张纸里上一个力度记号那儿一路渐变过来（谱上画虚线发夹；手写的渐强渐弱是实线）；连点两下 = 锁住，之后写的力度都是渐到；再点 = 关。不开 = 到那儿突变", this.ramp === "off" ? "" : this.ramp),
       ...(["<", ">", "<>"] as const).map((w) => cell(`swell:${w}`, SWELL_CELL[w], w === "<" ? "音内渐强" : w === ">" ? "音内渐弱" : "音内鼓起", `${w === "<" ? "音内渐强" : w === ">" ? "音内渐弱（锯齿）" : "音内鼓起（messa di voce）"}：光标前那个音（有选区 = 选中的）自己里面的起伏；和段落的渐强渐弱是两层，可以叠；再点 = 去掉`)),
       cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；有选区 = 选中的连起来；再点一次去掉）。同一个音上又有呼吸 = 呼吸算数：那里照样断开换气，连线照画"),
-      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（月读唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"),
+      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（小月相唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"),
       cell("inhale:soft", `<span class="glyphs"><span class="smufl">\uE4CE</span><span class="big">吸</span></span>`, "轻吸", "出声的换气（轻吸）：光标前那个音后面换气、听得见吸气声（没有呼吸记号就连逗号一起加上；再点一次 = 整个去掉）。只有点了的地方才出声，普通的呼吸记号照旧静默"),
       cell("inhale:big", `<span class="glyphs"><span class="smufl">\uE4CE</span><span class="big">深吸</span></span>`, "深吸", "出声的换气（深吸）：大口吸气、换气的空当也长一点（从前一个音末尾借时间）；再点一次 = 整个去掉"),
-      cell("art:whisper", `<span class="smufl">\uE0A9</span>`, "气声", "气声（× 符头）：光标前那个音（有选区 = 选中的）不唱音高、用气声唱这个字（念白 / 耳语）；再点一次去掉。只有月读做得到，乐器上画灰"),
+      cell("art:whisper", `<span class="smufl">\uE0A9</span>`, "气声", "气声（× 符头）：光标前那个音（有选区 = 选中的）不唱音高、用气声唱这个字（念白 / 耳语）；再点一次去掉。只有小月相做得到，乐器上画灰"),
       cell("key", `<span class="big">1=</span>`, "调号", "插调号（在光标处；先填现在的，插了再改）"),
       cell("time", `<span class="big">4/4</span>`, "拍号", "插拍号（在光标处）"),
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "速度", "插速度（在光标处）"),

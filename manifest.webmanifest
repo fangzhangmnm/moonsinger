@@ -1,7 +1,7 @@
 {
   "name": "MoonSinger",
   "short_name": "MoonSinger",
-  "description": "在五线谱上写旋律和歌词，让月读唱出来。",
+  "description": "在五线谱上写旋律和歌词，让小月相唱出来。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

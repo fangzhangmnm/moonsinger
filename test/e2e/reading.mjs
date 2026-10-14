@@ -25,7 +25,7 @@ const reading = () => p.$eval(".lyric-reading", (e) => (e.hidden ? null : { text
 await openAt("は");
 const r1 = await reading();
 check(!!r1, "开了「は」的歌词框 = 框下面一条读音", JSON.stringify(r1));
-check(r1 && r1.text.includes("月读念成") && r1.text.includes("da n go ha me o"), "这一句的读音（ん 写成 n）", r1?.text);
+check(r1 && r1.text.includes("小月相念成") && r1.text.includes("da n go ha me o"), "这一句的读音（ん 写成 n）", r1?.text);
 check(r1?.bold === "ha", "这个字加粗", r1?.bold);
 check((await p.evaluate(() => window.__readAsked.length)) >= 1, "问了 worker 一次这一句");
 const asked = await p.evaluate(() => window.__readAsked.length);

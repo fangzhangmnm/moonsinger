@@ -7979,7 +7979,7 @@ async function loadEngine(say) {
     bootMs[name] = Math.round(t - tk);
     tk = t;
   };
-  await ensurePacks([V, SINGER.runtime, JA], "\u6708\u8BFB", say);
+  await ensurePacks([V, SINGER.runtime, JA], "\u5C0F\u6708\u76F8", say);
   lap("packs");
   const store2 = await speechStore();
   say("\u52A0\u8F7D piper \u5F15\u64CE");
@@ -7988,7 +7988,7 @@ async function loadEngine(say) {
   ort.env.wasm.proxy = false;
   ort.env.wasm.wasmBinary = await packFile(SINGER.runtime, "ort-wasm-simd-threaded.wasm.gz");
   lap("ortWasm");
-  say("\u52A0\u8F7D\u6708\u8BFB\u7684\u6A21\u578B");
+  say("\u52A0\u8F7D\u5C0F\u6708\u76F8\u7684\u6A21\u578B");
   const sess = await ort.InferenceSession.create(await packFile(V, "model.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
   ort.env.wasm.wasmBinary = void 0;
   lap("session");
@@ -8144,7 +8144,7 @@ self.onmessage = async (ev) => {
     if (q2.lang === "zh") await e.ensureZh(say);
     if (q2.lang === "en") await e.ensureEn(say);
     const t1 = performance.now();
-    say("\u6708\u8BFB\u5728\u5531");
+    say("\u5C0F\u6708\u76F8\u5728\u5531");
     const atlas = q2.atlas ?? "off", breath = q2.breath ?? atlas !== "off";
     const preset = e.presetDefault[q2.lang] ?? 0;
     let runs = 0;
@@ -8182,4 +8182,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-c0686a2ea9c7.mjs.map
+//# sourceMappingURL=singer-worker-5a2668549143.mjs.map

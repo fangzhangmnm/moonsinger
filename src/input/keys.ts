@@ -106,7 +106,7 @@ export const BINDINGS: Binding[] = [
     does: { write: "撤回本次输入的最后一笔（「−」、音）；挪过光标后 = 删光标前一个", edit: "删掉选中", lyric: "框是空的：回到上一个音，把它的字拿出来接着删" } },
   { id: "delete", group: "光标与选中", keys: [{ code: "Delete" }], act: cmd({ k: "delete" }), does: { write: "删光标后一个", edit: "删掉选中" } },
   // ── 播放 ──
-  { id: "play", group: "播放", keys: [{ code: "Space" }], act: () => ({ k: "play" }), does: { write: "月读唱 / 停", edit: "月读唱 / 停" } },
+  { id: "play", group: "播放", keys: [{ code: "Space" }], act: () => ({ k: "play" }), does: { write: "小月相唱 / 停", edit: "小月相唱 / 停" } },
   { id: "impro", group: "播放", keys: [{ code: "Backquote" }], show: "`", act: () => ({ k: "impro" }), does: { write: "「弹」开 / 关（音符键只唱不写）", edit: "「弹」开 / 关", impro: "「弹」关" } },
   // ── 文件（无地逃生口：.mxl；user 2026-10-07「先按照无地规范导入导出做逃生口」）。新建只在菜单里（Ctrl+N 浏览器不让拦） ──
   { id: "file.save", group: "文件", keys: [{ code: "KeyS", mod: true }], show: "Ctrl / ⌘+S", act: () => ({ k: "file", a: "save" }),

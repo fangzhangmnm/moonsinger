@@ -69,7 +69,7 @@ export function licenseHints(rights: string | undefined, performers: readonly Cr
   const reusable = !!rights && (/CC0|public ?domain|公有领域|publicdomain\/zero/i.test(rights) || (/CC[ -]?BY/i.test(rights) && !/\bND\b|-nd\//i.test(rights)));
   const tsukuyomi = performers.some((l) => l.license.name.includes("つくよみちゃん"));
   // 不拦、不当警察（user「即使版权冲突…也不block导出mp3和工程文件。而只是回到未声明。不警察用户」）：导出那一份的许可按未声明写，这里只说明一句
-  return reusable && tsukuyomi ? ["你选的许可允许别人改编 / 当素材再用，可里面有月读的声音，月读的条款不许这样公开（设置里有原文和译文），所以导出时许可那一项按「未声明」写；你在这里的选择没动。"] : [];
+  return reusable && tsukuyomi ? ["你选的许可允许别人改编 / 当素材再用，可里面有小月相的声音，小月相的条款不许这样公开（设置里有原文和译文），所以导出时许可那一项按「未声明」写；你在这里的选择没动。"] : [];
 }
 /** 推成纯文字（可直接贴进作品说明）：每组首行「谁 — 许可证」，下面逐行署名（月读的署名块自带换行，原样保留），组间空一行。空 = ""。 */
 export function creditsText(lines: readonly CreditLine[]): string {

@@ -10,10 +10,10 @@ export const AREAS = {
   // 谱面：手势（点 / 长按 / 拖 / 框选 / 把手）、排版、显示、谱上记号
   score: ["select", "finger", "rest", "lift", "sel-tweak", "top-sels", "undo", "caret-end", "clef", "auto-ottava", "shared-staff", "hscroll", "only1",
     "zoom", "ctrl-zoom", "dock-zoom", "scroll", "swell-art", "phrase", "repeat", "transpose", "arrange", "pad-ghost", "listen-ghost", "start-dyn",
-    "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow"],
+    "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys"],
   // 键盘（pad）：音键 / 符号格 / 几种锁 / 歌词框 / 记号菜单
   pad: ["stack-caps", "pad-toggle", "pad-ghost", "dyn-levels", "ramp", "groove", "clef", "repeat", "finder-keys", "modes", "landscape-widgets",
-    "dock-zoom", "save-keys", "swell-art", "start-dyn", "lyric-dash", "phrase", "sel-tweak"],
+    "dock-zoom", "save-keys", "swell-art", "start-dyn", "lyric-dash", "phrase", "sel-tweak", "title-keys"],
   // 放：走带 / 循环 / 翻谱 / 播放头 / 节拍器 / 月读的块与预听
   play: ["transport", "loop", "follow", "measure-follow", "playhead", "seg-jump", "metronome", "progress", "sing-chunks", "sing-stale", "sung-preview",
     "listen-ghost", "lyric-mute", "reading", "ramp", "groove", "repeat", "arrange"],

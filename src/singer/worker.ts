@@ -124,13 +124,13 @@ let bootMs: Record<string, number> = {};   // 冷启动各段多久（刀 5；�
 async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const V = SINGER.voice, JA = SINGER.lang.ja;
   let tk = performance.now(); const lap = (name: string) => { const t = performance.now(); bootMs[name] = Math.round(t - tk); tk = t; };
-  await ensurePacks([V, SINGER.runtime, JA], "月读", say); lap("packs");
+  await ensurePacks([V, SINGER.runtime, JA], "小月相", say); lap("packs");
   const store = await speechStore();   // 持久层（没有 IndexedDB = 只用内存）；引擎标签等 WORLD 的字节到手再算
   say("加载 piper 引擎");
   const ort: any = ortLib;
   ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
   ort.env.wasm.wasmBinary = await packFile(SINGER.runtime, "ort-wasm-simd-threaded.wasm.gz"); lap("ortWasm");
-  say("加载月读的模型");
+  say("加载小月相的模型");
   // 中英增强（zhen）时长接管版：全 0 = 中英增强原包（日 / 中 / 英逐样本相同，2026-10-07 实测），中 / 英按它的预设读——user「中英增强的日文是原版的，理论上我们只需要host这一个模型就行了」
   const sess = await ort.InferenceSession.create(await packFile(V, "model.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
   ort.env.wasm.wasmBinary = undefined; lap("session");
@@ -224,7 +224,7 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
     if (q.lang === "zh") await e.ensureZh(say);
     if (q.lang === "en") await e.ensureEn(say);
     const t1 = performance.now();
-    say("月读在唱");
+    say("小月相在唱");
     // 元音图谱默认关（user 2026-10-06「元音图谱一般般，先不做」）；断气随图谱（和 Lab 命令行的规则一样）。要试图谱就传 atlas: "normal"。
     const atlas = q.atlas ?? "off", breath = q.breath ?? atlas !== "off";
     const preset = e.presetDefault[q.lang] ?? 0;   // 模型配置的 preset_default（中 3、英 9；日语没写 = 0 = 原版），同 Lab piper-node.mjs

@@ -68,7 +68,7 @@ export function advise(s: Snapshot, b: Budget): Advice[] {
 const sizeText = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : `${(n / 1e3).toFixed(0)} KB`);
 /** 设置页 / 诊断用的一句人话（能算的那部分，不假装是页面总内存）。 */
 export function describe(s: Snapshot, b: Budget): string {
-  const lanes = s.lanes.length ? s.lanes.map((l, i) => `道 ${i + 1}：堆 ${sizeText(l.wasm)}${l.base !== undefined ? `（刚起来 ${sizeText(l.base)}）` : ""} + 念缓存 ${sizeText(l.cache)}`).join("；") : "月读引擎没起";
+  const lanes = s.lanes.length ? s.lanes.map((l, i) => `道 ${i + 1}：堆 ${sizeText(l.wasm)}${l.base !== undefined ? `（刚起来 ${sizeText(l.base)}）` : ""} + 念缓存 ${sizeText(l.cache)}`).join("；") : "小月相引擎没起";
   const audio = s.audioBusy === null ? "音频线程：没在报" : `音频线程最近 1 s 忙 ${Math.round(s.audioBusy * 100)}%${s.audioBusy > AUDIO_HOT ? "（热：可能爆音）" : ""}`;
   return `能算到的占用 ${sizeText(totalBytes(s))} / 预算 ${sizeText(b.total)}（${lanes}；录音房里 ${s.chunks} 块 ${sizeText(s.chunkBytes)}；音源内存 ${sizeText(s.soundMem)}）。${audio}。`;
 }

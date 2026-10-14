@@ -3,7 +3,7 @@
 // deploy.yml 拼站点时拷的白名单（漏了 = 线上静默 404，WeebPaint 踩过）、scripts/serve.sh 的本机服务表。
 // 档位与规矩见 ai-docs/20261011-icon-tiers.md。
 import { describe, it, assert } from "./runner.mjs";
-const fs = (await import("node:fs" as string)) as { readFileSync(u: URL, enc: "utf8"): string; existsSync(u: URL): boolean };
+const fs = (await import("node:fs" as string)) as { readFileSync(u: URL, enc: "utf8"): string; existsSync(u: URL): boolean; readdirSync(u: URL, o: { recursive: true }): string[] };
 
 const at = (f: string) => new URL(`../${f}`, import.meta.url);
 const read = (f: string) => fs.readFileSync(at(f), "utf8");
@@ -25,6 +25,17 @@ describe("图标接线", () => {
       assert(deployList.includes(f), `${f} 不在 deploy.yml 的拷贝白名单里`);
       assert(serveList.includes(f), `${f} 不在 scripts/serve.sh 里`);
     }
+  });
+  it("分享卡片的 og:image 指的根目录文件在，且在 deploy 白名单里（它是 content= 绝对地址，上面那条看不到它）", () => {
+    const html = read("index.html"), deploy = read(".github/workflows/deploy.yml");
+    const deployList = (deploy.match(/for f in ([^;]+); do/) ?? [])[1]?.split(/\s+/) ?? [];
+    const imgs = [...html.matchAll(/<meta\s+property="og:image"\s+content="https:\/\/sing\.weebpaint\.com\/([^"/?#]+)"/g)].map((m) => m[1]);
+    assert(imgs.length === 1, `应当有一个 og:image 指着 sing.weebpaint.com 根目录，拿到 ${imgs}`);
+    for (const f of imgs) { assert(fs.existsSync(at(f)), `${f} 不存在`); assert(deployList.includes(f), `${f} 不在 deploy.yml 的拷贝白名单里（线上会 404）`); }
+  });
+  it("网页标题不跟歌名：运行时不改 document.title（W-22）", () => {
+    const hits = fs.readdirSync(at("src"), { recursive: true }).filter((f) => /\.(ts|mjs|js)$/.test(f) && /document\.title\s*=/.test(read(`src/${f}`)));
+    assert(hits.length === 0, `这些文件在改 document.title：${hits}`);
   });
   it("标签页走手画的 32 像素档，icon.svg 不挂 rel=icon", () => {
     const html = read("index.html");

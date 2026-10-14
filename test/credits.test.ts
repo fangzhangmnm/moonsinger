@@ -31,12 +31,12 @@ describe("署名推演：演出署名（performerCredits）", () => {
     const { extras } = await band();
     const lines = performerCredits(extras, ["r1", "r2"]);
     eq(lines.length, 2);
-    assert(lines.some((l) => l.license.name === TSUKUYOMI_CREDIT.license.name && l.who[0] === "月读"), "月读没算进来");
+    assert(lines.some((l) => l.license.name === TSUKUYOMI_CREDIT.license.name && l.who[0] === "小月相"), "月读没算进来");
     assert(lines.some((l) => l.who.includes("Square Lead")), "弱引用的 Square 出了声，该算");
   });
   it("新歌：没有角色快照的声部 = 默认的月读在唱，照样署月读（之前漏了）", () => {
     const lines = performerCredits(emptyExtras(), ["r1"]);
-    eq(lines.length, 1); eq(lines[0].who[0], "月读"); eq(lines[0].license.name, TSUKUYOMI_CREDIT.license.name);
+    eq(lines.length, 1); eq(lines[0].who[0], "小月相"); eq(lines[0].license.name, TSUKUYOMI_CREDIT.license.name);
   });
   it("打包的也一样算（打包 / 弱引用不影响演出署名）", async () => {
     const { extras, have } = await band();
@@ -48,7 +48,7 @@ describe("署名推演：演出署名（performerCredits）", () => {
     assert(!performerCredits(extras, ["r1", "r2"]).some((l) => l.who.includes("Castanets")), "r3 没出声");
     const back = withActive(extras, "r2", CANDIDATE_ID.full, "n");   // r2 换回月读：Square 坐冷板凳
     const lines = performerCredits(back, ["r2"]);
-    eq(lines.length, 1); eq(lines[0].who[0], "月读");
+    eq(lines.length, 1); eq(lines[0].who[0], "小月相");
   });
 });
 

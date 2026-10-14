@@ -72,7 +72,7 @@ export class Singer {
       if (l.closing && ![...this.pending.values()].some((q) => q.lane === l)) this.closeLane(l);
     };
     w.onerror = (e) => {   // 坏了就丢掉，下次用重建（不然下一次永远等不到回复）
-      this.failLane(l, new Error(e.message || "月读的 worker 出错"));
+      this.failLane(l, new Error(e.message || "小月相的 worker 出错"));
     };
     return w;
   }
@@ -84,9 +84,9 @@ export class Singer {
   }
 
   /** 重开所有道：wasm 的内存只涨不落，只有整个 worker 关掉才真还回去。 */
-  restart(): void { for (const l of this.lanes) this.failLane(l, new Error("月读的 worker 重开了")); }
+  restart(): void { for (const l of this.lanes) this.failLane(l, new Error("小月相的 worker 重开了")); }
   /** 只重开一条道（换歌时：上一首的长句把这条道的堆撑大了、现在空着；念缓存盘上那份还在）。 */
-  restartLane(i: number): void { const l = this.lanes[i]; if (l) this.failLane(l, new Error("月读的 worker 重开了")); }
+  restartLane(i: number): void { const l = this.lanes[i]; if (l) this.failLane(l, new Error("小月相的 worker 重开了")); }
   /** 还没开始算的全扔掉（以 "cancelled" 拒绝）；正在算的照常回来。返回扔了几个。 */
   cancelPending(): number {
     const n = this.queue.length;
@@ -140,12 +140,12 @@ export class Singer {
       const msg = (e as Error).message ?? "";
       if (!OOM.test(msg)) throw e;
       diagNote("singer", `out of memory, restarting worker and retrying once: ${msg}`);
-      this.failLane(lane, new Error("月读的 worker 重开了")); progress("内存不够：重开月读的引擎再试一次");
+      this.failLane(lane, new Error("小月相的 worker 重开了")); progress("内存不够：重开小月相的引擎再试一次");
       try { return await this.singOnce(lane, s, progress, extra); }
       catch (e2) {
         const m2 = (e2 as Error).message ?? "";
         diagNote("singer", `retry after restart failed: ${m2}`);
-        if (OOM.test(m2)) throw new Error("这台设备的内存不够，月读的引擎起不来（已经重开过一次引擎）。可以把别的乐器声部静音再放，或者关掉 app 重新打开；也可以给这个声部换「月读（元音）」");
+        if (OOM.test(m2)) throw new Error("这台设备的内存不够，小月相的引擎起不来（已经重开过一次引擎）。可以把别的乐器声部静音再放，或者关掉 app 重新打开；也可以给这个声部换「小月相（元音）」");
         throw e2;
       }
     }

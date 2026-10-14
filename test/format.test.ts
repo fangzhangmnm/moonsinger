@@ -59,7 +59,7 @@ describe("存档 .mxl", () => {
     const xml = strFromU8(unzipSync(save(bigSong()))["score.musicxml"]);
     assert(xml.includes("<score-partwise version=\"4.0\">"), "partwise 4.0");
     assert(xml.includes("<part-name>Vocals</part-name>") && xml.includes("<instrument-sound>voice.vocals</instrument-sound>"), "声部名 = 角色名、乐器语义 = 官方 id");
-    assert(xml.includes("<instrument-name>月读（元音）</instrument-name>") && xml.includes("<midi-program>55</midi-program>") && xml.includes("<virtual-name>tsukuyomi-vowels</virtual-name>"), "乐器");
+    assert(xml.includes("<instrument-name>小月相（元音）</instrument-name>") && xml.includes("<midi-program>55</midi-program>") && xml.includes("<virtual-name>tsukuyomi-vowels</virtual-name>"), "乐器");
     assert(xml.includes(`<text xml:lang="ja">う</text>`) && xml.includes(`<text xml:lang="en">hap</text>`) && xml.includes(`<text xml:lang="zh">爱</text>`) && xml.includes(`<text xml:lang="zh">你</text>`), "xml:lang（你 跟着前面改过的 爱 走）");
     assert(xml.includes("<syllabic>begin</syllabic><text xml:lang=\"en\">hap</text>") && xml.includes("<syllabic>end</syllabic><text xml:lang=\"en\">py</text>"), "syllabic");
     assert(xml.includes("<time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>"), "三连音显示");

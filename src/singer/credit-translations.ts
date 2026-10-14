@@ -9,7 +9,7 @@ export const CREDIT_TRANSLATIONS = {
     terms: "6c04cd4680d210e6eb189cdc1e5a81b2c65c65510a46eb5708076b612b930887",
   },
   zh: {
-    credit: "本软件的语音合成使用了免费素材角色「つくよみちゃん」（月读；© Rei Yumesaki）免费公开的语音数据。\n■つくよみちゃん语料库（CV. 夢前黎）\nhttps://tyc.rei-yumesaki.net/material/corpus/",
+    credit: "本软件的语音合成使用了免费素材角色「つくよみちゃん」（小月相；© Rei Yumesaki）免费公开的语音数据。\n■つくよみちゃん语料库（CV. 夢前黎）\nhttps://tyc.rei-yumesaki.net/material/corpus/",
     terms: "使用つくよみちゃん的声线时，禁止把生成出来的声音用于以下目的。\n【禁止事项】\n" +
       "■批评、攻击他人。（「批评、攻击」的定义以つくよみちゃん角色许可（キャラクターライセンス）为准）\n" +
       "■号召人们赞同或反对特定的政治立场、宗教、思想。\n" +

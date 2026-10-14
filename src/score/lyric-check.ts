@@ -45,8 +45,8 @@ export function lyricIssues(tokens: Token[], engine: string | null | undefined, 
 /** 给人看的那句话。 */
 export function lyricWhyText(x: LyricIssue, engineName: string): string {
   if (x.why === "notSung") return `${engineName}不唱歌词（只哼 / 只弹）；歌词照写照存`;
-  if (x.why === "kanji") return "这一段有假名、按日语唱：汉字月读按读音数拍，一个字可能好几拍、对不上音——写成假名（一段都是汉字才按中文唱；段 = 歌手牌里的「分段唱」）";
-  if (x.why === "beats") return `一个音上 ${x.beats} 拍：月读一个音唱一拍——拆成 ${x.beats} 个音，或者用「+」连着写`;
+  if (x.why === "kanji") return "这一段有假名、按日语唱：汉字小月相按读音数拍，一个字可能好几拍、对不上音——写成假名（一段都是汉字才按中文唱；段 = 歌手牌里的「分段唱」）";
+  if (x.why === "beats") return `一个音上 ${x.beats} 拍：小月相一个音唱一拍——拆成 ${x.beats} 个音，或者用「+」连着写`;
   return x.lang === "ja" ? "这一段按日语唱：字母 / 数字 / 符号念不准——写成假名" : x.lang === "zh" ? "这一段按中文唱：一个音写一个汉字" : "这一段按英文唱：写拉丁字母";
 }
 
